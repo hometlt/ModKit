@@ -220,11 +220,32 @@ function packSerializedUvmGlb(jsonBytes, binary) {
     bin
   ]);
 }
+var URI_PATH_CHARACTER = /^[A-Za-z0-9\-._~!$&'()*+,;=@/]$/u;
+function uvmImageUri(logicalId) {
+  let uri = "";
+  for (const character of logicalId) {
+    if (URI_PATH_CHARACTER.test(character))
+      uri += character;
+    else
+      for (const byte of encoder.encode(character))
+        uri += `%${byte.toString(16).toUpperCase().padStart(2, "0")}`;
+  }
+  return uri;
+}
+function uvmImageLogicalId(uri) {
+  try {
+    return decodeURIComponent(uri);
+  } catch {
+    return uri;
+  }
+}
 
 export {
   DEFAULT_UVM_CONTAINER_BUDGET,
   checkUvmContainerBudget,
   readUvmContainer,
   writeUvmContainer,
-  packUvmGlb
+  packUvmGlb,
+  uvmImageUri,
+  uvmImageLogicalId
 };

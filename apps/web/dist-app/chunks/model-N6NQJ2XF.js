@@ -12,7 +12,6 @@ import {
   canRenameClips,
   clipNamePath,
   createModelViewer,
-  createOrbitController,
   createViewGizmo,
   describeModelFacetPages,
   framePrimitive,
@@ -33,10 +32,16 @@ import {
   resolveModelViewerTextures,
   sceneMaterials,
   skeletonJoints
-} from "./chunk-YTZZGCUZ.js";
-import "./chunk-Z2D6YWX3.js";
-import "./chunk-FBGUD7CM.js";
-import "./chunk-NCOJRWIO.js";
+} from "./chunk-R76FSVUV.js";
+import {
+  createOrbitController
+} from "./chunk-O2DY4UGD.js";
+import "./chunk-Q27WXNQ4.js";
+import "./chunk-QQJVD7VT.js";
+import "./chunk-NCJM34Q7.js";
+import "./chunk-L2ERXEFC.js";
+import "./chunk-J4UN5ND3.js";
+import "./chunk-BPQHTKO4.js";
 import "./chunk-BLWUC7LO.js";
 export {
   GIZMO_SIZE,

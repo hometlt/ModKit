@@ -8,14 +8,8 @@ import {
   readUvmBillboards,
   readUvmModelStates,
   readUvmShadowMeshBindings
-} from "../../../chunks/chunk-E52YCAAC.js";
+} from "../../../chunks/chunk-SUUBTARU.js";
 import "../../../chunks/chunk-QONSPCLP.js";
-import {
-  DEFAULT_UVM_CONTAINER_BUDGET,
-  checkUvmContainerBudget,
-  readUvmContainer,
-  writeUvmContainer
-} from "../../../chunks/chunk-BC5RDUGA.js";
 import {
   array,
   field,
@@ -24,9 +18,15 @@ import {
   safeIndex
 } from "../../../chunks/chunk-I4Z5J3HX.js";
 import {
+  DEFAULT_UVM_CONTAINER_BUDGET,
+  checkUvmContainerBudget,
+  readUvmContainer,
+  writeUvmContainer
+} from "../../../chunks/chunk-OAFBQXD6.js";
+import {
   readUvmAccessor,
   validateUvmDocument
-} from "../../../chunks/chunk-A7Y3WO4R.js";
+} from "../../../chunks/chunk-OLH77CRA.js";
 import {
   readUvmAnimationClips,
   readUvmAnimationMaterialTargets,

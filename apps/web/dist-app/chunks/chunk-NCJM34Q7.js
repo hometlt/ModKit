@@ -1,26 +1,28 @@
 import {
+  collectEncodedMedia,
+  createMediaShell,
+  mountContributedSections
+} from "./chunk-L2ERXEFC.js";
+import {
   IMAGE_EDITING_FALLBACK_MESSAGES,
   IMAGE_FALLBACK_MESSAGES,
   NAMESPACE_FALLBACK_MESSAGES,
   ViewerMountScope,
-  collectEncodedMedia,
-  createMediaShell,
   createSurface,
   createViewerMount,
   defineViewerModule,
   element,
-  mountContributedSections,
   setPart,
   setState,
   setViewerText,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-FBGUD7CM.js";
+} from "./chunk-J4UN5ND3.js";
 import {
   createSubjectCandidateProvider,
   isKnowledgeTarget,
   loadSubjectCandidatePage
-} from "./chunk-NCOJRWIO.js";
+} from "./chunk-BPQHTKO4.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunk-BLWUC7LO.js";

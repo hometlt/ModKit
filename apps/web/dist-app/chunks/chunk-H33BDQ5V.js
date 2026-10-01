@@ -2,7 +2,7 @@ import {
   AUXILIARY_DATA_SOURCE_SURFACES,
   STANDARD_DATA_SOURCE_SURFACES,
   STANDARD_EDITING_SURFACES
-} from "./chunk-MAAPKCDG.js";
+} from "./chunk-S6YMWV3Q.js";
 import {
   ModkitError,
   OperationCancelledError,

@@ -2884,7 +2884,8 @@ var rasterImageSourceSurface = {
   methods: {
     info: cancellableValue,
     encoded: { kind: "lease", result: ENCODED_MEDIA, wrapper: "bare", ...sig },
-    readRegion: { kind: "value", optional: true, ...sig }
+    readRegion: { kind: "value", optional: true, ...sig },
+    readCompressed: { kind: "value", optional: true, ...sig }
   }
 };
 var vectorSceneSourceSurface = {

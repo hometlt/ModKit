@@ -6,8 +6,9 @@ import {
   encodeSkeleton
 } from "../../../chunks/chunk-QONSPCLP.js";
 import {
-  packUvmGlb
-} from "../../../chunks/chunk-BC5RDUGA.js";
+  packUvmGlb,
+  uvmImageUri
+} from "../../../chunks/chunk-OAFBQXD6.js";
 import {
   materializeUvmAnimationMaterialTargets,
   uvmKeyTimesMetadata,
@@ -190,7 +191,7 @@ function writeUvmSkinAttributes(primitive, attributes, skeleton, storage) {
   addJointAttribute(attributes, mesh, vertexCount, storage.buffer, storage.views, storage.accessors);
   return hierarchy.skin;
 }
-function writeUvmAnimations(source, nodeIndices, boneByNode, storage, budget, signal, primitiveIndices = /* @__PURE__ */ new Map(), rigidNodeIds = /* @__PURE__ */ new Set(), morphTargetCounts = /* @__PURE__ */ new Map()) {
+function writeUvmAnimations(source, nodeIndices, boneByNode, storage, budget, signal, primitiveIndices = /* @__PURE__ */ new Map(), rigidNodeIds = /* @__PURE__ */ new Set(), morphTargetCounts = /* @__PURE__ */ new Map(), hiddenPrimitives = []) {
   const clips = snapshotModelAnimations(source, budget, signal);
   const animations = [];
   const catalog = [];
@@ -198,6 +199,10 @@ function writeUvmAnimations(source, nodeIndices, boneByNode, storage, budget, si
   const losses = [];
   const visibility = [];
   const visibilityIndices = /* @__PURE__ */ new Map();
+  for (const target of hiddenPrimitives) {
+    visibilityIndices.set(`${target.mesh}/${target.primitive}/visibility`, visibility.length);
+    visibility.push({ mesh: target.mesh, primitive: target.primitive, value: 0 });
+  }
   for (const [clipIndex, clip] of clips.entries()) {
     const sequenceIndex = clip.sequenceIndex ?? clipIndex;
     if (sequenceIndices.has(sequenceIndex))
@@ -453,22 +458,44 @@ function singleChannel(mask) {
   return mask === 1 ? "r" : mask === 2 ? "g" : mask === 4 ? "b" : mask === 8 ? "a" : void 0;
 }
 var GLTF_FILTER = { nearest: 9728, linear: 9729 };
-function texturesWithSamplers(filters) {
+function texturesWithSamplers(filters, colorKeys = []) {
   const samplers = [];
   const samplerOf = /* @__PURE__ */ new Map();
   const textures = filters.map((filter, index) => {
+    const colorKey = colorKeys[index];
+    const keyed = colorKey === void 0 ? {} : {
+      extensions: {
+        UV_texture_color_key: {
+          color: [...colorKey.color],
+          ...colorKey.tolerance === void 0 || colorKey.tolerance === 0 ? {} : { tolerance: colorKey.tolerance }
+        }
+      }
+    };
     if (filter === void 0)
-      return { source: index };
+      return { source: index, ...keyed };
     let sampler = samplerOf.get(filter);
     if (sampler === void 0) {
       sampler = samplers.length;
       samplerOf.set(filter, sampler);
       samplers.push({ magFilter: GLTF_FILTER[filter], minFilter: GLTF_FILTER[filter] });
     }
-    return { source: index, sampler };
+    return { source: index, sampler, ...keyed };
   });
   return samplers.length === 0 ? { textures } : { textures, samplers };
 }
+var colorChannel = (value) => typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 255;
+var UVM_GAME_BLEND_MODES = [
+  "opaque",
+  "alpha-blend",
+  "alpha-test",
+  "additive",
+  "modulate",
+  "modulate2x",
+  "alpha-key",
+  "screen",
+  "subtract"
+];
+var isUvmGameBlendMode = (value) => UVM_GAME_BLEND_MODES.includes(value);
 var MATERIALIZER_ID = "modkit/uvm-materializer";
 var MATERIALIZER_VERSION = "1.0.0";
 var PROFILE = "UVM/core@1.0";
@@ -889,7 +916,14 @@ function materializeUvmCore(projection, request, { digest, materialBudget = DEFA
       target.extras = { modkit: { material: { version: 1, fields } } };
     const artifactContracts = [];
     if (shader !== void 0) {
-      target.extensions = { UV_game_material: { shader: shader.id, params: shader.parameters } };
+      const blendMode = fields["blendMode"];
+      target.extensions = {
+        UV_game_material: {
+          shader: shader.id,
+          ...isUvmGameBlendMode(blendMode) ? { blendMode } : {},
+          params: shader.parameters
+        }
+      };
       const renderModel = shader.parameters["renderModel"];
       if (renderModel !== null && typeof renderModel === "object" && !Array.isArray(renderModel)) {
         const snapshot = renderModel;
@@ -910,7 +944,9 @@ function materializeUvmCore(projection, request, { digest, materialBudget = DEFA
   }
   const closure = projection.resourceClosure;
   const resourceImages = [];
+  const imageLogicalIds = [];
   const imageFilters = [];
+  const imageColorKeys = [];
   if (closure !== void 0 && closure !== null) {
     if (closure.mode !== "logical" && closure.mode !== "content-qualified") {
       fail("resourceClosure.mode must be logical or content-qualified");
@@ -924,11 +960,20 @@ function materializeUvmCore(projection, request, { digest, materialBudget = DEFA
       if (entry.filter !== void 0 && entry.filter !== "nearest" && entry.filter !== "linear") {
         fail("a resource-closure filter is nearest or linear");
       }
+      const colorKey = entry.colorKey;
+      if (colorKey !== void 0 && (!Array.isArray(colorKey.color) || colorKey.color.length !== 3 || !colorKey.color.every(colorChannel) || colorKey.tolerance !== void 0 && !colorChannel(colorKey.tolerance))) {
+        fail("a resource-closure colour key is three stored 8-bit channels and a 0..255 tolerance");
+      }
       resourceImages.push({
-        uri: entry.logicalId,
+        uri: uvmImageUri(entry.logicalId),
         ...typeof entry.mediaHint === "string" ? { mimeType: entry.mediaHint } : {}
       });
+      imageLogicalIds.push(entry.logicalId);
       imageFilters.push(entry.filter);
+      imageColorKeys.push(colorKey === void 0 ? void 0 : {
+        color: [colorKey.color[0], colorKey.color[1], colorKey.color[2]],
+        ...colorKey.tolerance === void 0 ? {} : { tolerance: colorKey.tolerance }
+      });
     }
     const uncarried = (closure.entries ?? []).filter((entry) => entry?.role !== "image" && entry?.role !== "texture");
     if (uncarried.length > 0) {
@@ -946,7 +991,7 @@ function materializeUvmCore(projection, request, { digest, materialBudget = DEFA
     losses.push(`${info.textures} texture reference(s) were not carried`);
     note("uv.model/structure@1", "value-differs", "/textures", "the base model contract publishes a texture count but no texture identity; writing empty texture objects to make the count match would be inventing data");
   }
-  const imageIndex = new Map(resourceImages.map((image, index) => [image.uri, index]));
+  const imageIndex = new Map(imageLogicalIds.map((logicalId, index) => [logicalId, index]));
   for (const definition of imageIndex.size === 0 ? [] : definitions ?? []) {
     const target = materials[materialIndexById.get(definition.id)];
     for (const layer of definition.layers ?? []) {
@@ -1014,6 +1059,7 @@ function materializeUvmCore(projection, request, { digest, materialBudget = DEFA
   }
   let rootIndices = orderedNodes.filter((node) => childless.has(node.id)).map((node) => nodeIndexById.get(node.id));
   const socketByNodeId = /* @__PURE__ */ new Map();
+  const socketIds = /* @__PURE__ */ new Set();
   const roleOrdinals = /* @__PURE__ */ new Map();
   for (const socket of projection.sockets ?? []) {
     if (typeof socket?.id !== "string" || socket.id.length === 0 || typeof socket.nodeId !== "string" || typeof socket.role !== "string" || socket.role.length === 0) {
@@ -1025,19 +1071,74 @@ function materializeUvmCore(projection, request, { digest, materialBudget = DEFA
     if (socketByNodeId.has(socket.nodeId)) {
       fail(`node \xAB${socket.nodeId}\xBB carries more than one socket`);
     }
+    if (socketIds.has(socket.id))
+      fail(`socket \xAB${socket.id}\xBB is duplicated`);
+    socketIds.add(socket.id);
     const index = roleOrdinals.get(socket.role) ?? 0;
     roleOrdinals.set(socket.role, index + 1);
     socketByNodeId.set(socket.nodeId, {
+      .../^[a-z][a-z0-9-]*$/u.test(socket.id) ? { id: socket.id } : {},
       role: socket.role,
       index,
       ...typeof socket.sourceName === "string" ? { sourceName: socket.sourceName } : {},
       ...socket.orientation === void 0 ? {} : { forward: socket.orientation.forward, up: socket.orientation.up },
-      // UV_game_socket's open `extras` is the standards-defined place for publisher identity.
-      // The node supplies transform semantics; these two strings make the independent facet's
-      // stable id and target join round-trip without a source-format branch in the reader.
+      // Preserve the previous publisher metadata while the shared socket ID is authoritative.
       extras: { modkit: { id: socket.id, nodeId: socket.nodeId } }
     });
   }
+  let billboardNodes = 0;
+  const nodeBillboard = (id, billboard) => {
+    if (billboard.mode === "inverse-camera") {
+      const rotations = billboard.basisRotations;
+      if (rotations.length > 4)
+        fail(`node \xAB${id}\xBB billboard needs at most four basis rotations`);
+      for (const rotation of rotations)
+        if (rotation.length !== 4 || !rotation.every((value) => Number.isFinite(Math.fround(value))) || Math.hypot(...rotation) === 0)
+          fail(`node \xAB${id}\xBB billboard basis rotation must be a finite nonzero quaternion`);
+      return {
+        schemaVersion: 1,
+        mode: "inverse-camera",
+        basisRotations: rotations.map((rotation) => [...rotation])
+      };
+    }
+    if (billboard.mode === "face-camera") {
+      if (billboard.rotationAxes !== "z" && billboard.rotationAxes !== "xz")
+        fail(`node \xAB${id}\xBB billboard rotation axes must be z or xz`);
+      finite([...billboard.pivot], `node ${id} billboard pivot`);
+      if (billboard.pivot.length !== 3)
+        fail(`node \xAB${id}\xBB billboard pivot must carry 3 numbers`);
+      return {
+        schemaVersion: 1,
+        mode: "face-camera",
+        rotationAxes: billboard.rotationAxes,
+        pivot: [...billboard.pivot]
+      };
+    }
+    if (billboard.mode === "aim") {
+      if (billboard.aim !== "view" && billboard.aim !== "eye")
+        fail(`node \xAB${id}\xBB aim billboard must aim along the view or from the eye`);
+      if (!["free", "frame-x", "frame-y", "frame-z", "own-x", "own-y"].includes(billboard.lock))
+        fail(`node \xAB${id}\xBB aim billboard lock is unknown`);
+      const quaternion = (value, label) => {
+        if (value === void 0)
+          return void 0;
+        if (value.length !== 4 || !value.every((item) => Number.isFinite(Math.fround(item))) || Math.hypot(...value) === 0)
+          fail(`node \xAB${id}\xBB aim billboard ${label} must be a finite nonzero quaternion`);
+        return [...value];
+      };
+      const correction = quaternion(billboard.correction, "correction");
+      const rootCorrection = quaternion(billboard.rootCorrection, "root correction");
+      return {
+        schemaVersion: 1,
+        mode: "aim",
+        aim: billboard.aim,
+        lock: billboard.lock,
+        ...correction === void 0 ? {} : { correction },
+        ...rootCorrection === void 0 ? {} : { rootCorrection }
+      };
+    }
+    return fail(`node \xAB${id}\xBB billboard mode is unknown`);
+  };
   const documentNodes = orderedNodes.map((node) => {
     const entry = {};
     const bone = skeleton?.boneByNode.get(node.id);
@@ -1080,8 +1181,14 @@ function materializeUvmCore(projection, request, { digest, materialBudget = DEFA
       entry.matrix = transform;
     }
     const socket = socketByNodeId.get(node.id);
-    if (socket !== void 0)
-      entry.extensions = { UV_game_socket: socket };
+    const billboard = node.billboard === void 0 ? void 0 : nodeBillboard(node.id, node.billboard);
+    if (billboard !== void 0)
+      billboardNodes += 1;
+    if (socket !== void 0 || billboard !== void 0)
+      entry.extensions = {
+        ...socket === void 0 ? {} : { UV_game_socket: socket },
+        ...billboard === void 0 ? {} : { UV_node_billboard: billboard }
+      };
     return entry;
   });
   const documentMeshes = emittedMeshes.map(({ mesh, primitives: entries }) => {
@@ -1188,6 +1295,10 @@ function materializeUvmCore(projection, request, { digest, materialBudget = DEFA
     rootIndices = [root];
     note("uv.model/structure@1", "value-differs", "/nodes", "one scale node brings the source units to metres (UV_units)");
   }
+  const hiddenPrimitives = (primitives ?? []).filter((primitive) => primitive.hidden === true).flatMap((primitive) => {
+    const target = primitiveIndices.get(primitive.id);
+    return target === void 0 ? [] : [target];
+  }).sort((a, b) => a.mesh - b.mesh || a.primitive - b.primitive);
   const animation = projection.animations === void 0 ? void 0 : writeUvmAnimations(
     projection.animations,
     nodeIndexById,
@@ -1205,10 +1316,23 @@ function materializeUvmCore(projection, request, { digest, materialBudget = DEFA
     new Map(orderedNodes.flatMap((node) => {
       const count = meshTargetNames.get((node.meshIds ?? [])[0] ?? "")?.length ?? 0;
       return count > 0 ? [[node.id, count]] : [];
-    }))
+    })),
+    hiddenPrimitives
   );
+  const visibility = animation?.visibility ?? hiddenPrimitives.map((target) => ({ mesh: target.mesh, primitive: target.primitive, value: 0 }));
+  const animatesPointers = (animation?.animations ?? []).some((clip) => clip["channels"].some((channel) => channel["target"]?.["path"] === "pointer"));
+  const clipLosses = /* @__PURE__ */ new Map();
   for (const loss of animation?.losses ?? []) {
-    losses.push(`animation ${loss.clipId}: ${loss.reason}`);
+    const key = `${loss.clipId}\0${loss.reason}`;
+    const entry = clipLosses.get(key);
+    if (entry === void 0)
+      clipLosses.set(key, { clipId: loss.clipId, reason: loss.reason, count: 1 });
+    else
+      entry.count += 1;
+  }
+  for (const { clipId, reason, count } of clipLosses.values())
+    losses.push(`animation ${clipId}: ${reason}${count > 1 ? ` (${count} channels)` : ""}`);
+  for (const loss of animation?.losses ?? []) {
     note("common.view/model-animation-source@1", "value-differs", `/animations/${loss.clipId}${loss.channel === void 0 ? "" : `/channels/${loss.channel}`}`, loss.reason);
     lostFacetIds.push("common.view/model-animation-source@1");
   }
@@ -1232,10 +1356,13 @@ function materializeUvmCore(projection, request, { digest, materialBudget = DEFA
       "UV_asset",
       "UV_provenance",
       ...socketByNodeId.size === 0 ? [] : ["UV_game_socket"],
+      ...billboardNodes === 0 ? [] : ["UV_node_billboard"],
       ...materials.some((material) => material.extensions?.UV_game_material !== void 0) ? ["UV_game_material"] : [],
       ...materials.some((material) => material.extensions?.UV_game_material_team_color !== void 0) ? ["UV_game_material_team_color"] : [],
       ...animation === void 0 || animation.catalog.length === 0 ? [] : ["UV_game_animation_clips"],
-      ...animation === void 0 || animation.visibility.length === 0 ? [] : ["UV_game_variants", "KHR_animation_pointer"],
+      ...visibility.length === 0 ? [] : ["UV_game_variants"],
+      ...animatesPointers ? ["KHR_animation_pointer"] : [],
+      ...imageColorKeys.some((key) => key !== void 0) ? ["UV_texture_color_key"] : [],
       ...unitsExtension === void 0 ? [] : ["UV_units"],
       ...projection.lods !== void 0 && projection.lods.length > 0 ? ["MSFT_lod"] : [],
       ...lodSelection === void 0 ? [] : ["MODKITX_lod_selection"],
@@ -1245,9 +1372,7 @@ function materializeUvmCore(projection, request, { digest, materialBudget = DEFA
       ...Object.fromEntries(gameExtensions),
       ...unitsExtension === void 0 ? {} : { UV_units: unitsExtension },
       ...lodSelection === void 0 ? {} : { MODKITX_lod_selection: lodSelection },
-      ...animation === void 0 || animation.visibility.length === 0 ? {} : {
-        UV_game_variants: { visibility: animation.visibility }
-      },
+      ...visibility.length === 0 ? {} : { UV_game_variants: { visibility } },
       ...animation === void 0 || animation.catalog.length === 0 ? {} : {
         UV_game_animation_clips: {
           clips: animation.catalog,
@@ -1275,7 +1400,7 @@ function materializeUvmCore(projection, request, { digest, materialBudget = DEFA
     ...animation === void 0 || animation.animations.length === 0 ? {} : { animations: animation.animations },
     ...resourceImages.length === 0 ? {} : {
       images: resourceImages,
-      ...texturesWithSamplers(imageFilters)
+      ...texturesWithSamplers(imageFilters, imageColorKeys)
     },
     accessors,
     bufferViews: buffers.views,

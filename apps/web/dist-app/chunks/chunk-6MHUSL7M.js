@@ -10,8 +10,11 @@ import {
   vector4
 } from "./chunk-I4Z5J3HX.js";
 import {
+  uvmImageLogicalId
+} from "./chunk-OAFBQXD6.js";
+import {
   readUvmAccessor
-} from "./chunk-A7Y3WO4R.js";
+} from "./chunk-OLH77CRA.js";
 import {
   readUvmAnimationClips,
   readUvmKeyTimes,
@@ -170,13 +173,27 @@ function decodeUvmRig(document, readAccessor, maxScalarBytes, sceneNodes, signal
       const target = object(channel["target"] ?? {}, "UVM animation target");
       const targetPath = target["path"];
       const visible = targetPath === "pointer" ? uvmVisibilityTarget(field(field(target["extensions"], "KHR_animation_pointer"), "pointer"), visibility) : void 0;
-      if (visible === void 0 && (typeof targetPath !== "string" || !["translation", "rotation", "scale"].includes(targetPath))) {
+      if (visible === void 0 && (typeof targetPath !== "string" || !["translation", "rotation", "scale", "weights"].includes(targetPath))) {
         unsupportedChannels++;
         continue;
       }
       const node = visible === void 0 ? safeIndex(target["node"], nodes.length, "animation target") : void 0;
-      if (node !== void 0 && required(nodes[node], "animation target")["matrix"] !== void 0)
+      const morphWeights = targetPath === "weights";
+      if (node !== void 0 && !morphWeights && required(nodes[node], "animation target")["matrix"] !== void 0)
         throw new TypeError("UVM animated node cannot use matrix");
+      const morphTargets = (() => {
+        if (!morphWeights || node === void 0)
+          return 0;
+        const meshes = array(document, "meshes");
+        const mesh = required(nodes[node], "morph node")["mesh"];
+        if (mesh === void 0)
+          throw new TypeError("UVM weights channel targets a node without a mesh");
+        const primitive = array(object(meshes[safeIndex(mesh, meshes.length, "morph mesh")], "morph mesh"), "primitives")[0];
+        const targets2 = primitive === void 0 ? [] : array(object(primitive, "morph primitive"), "targets");
+        if (targets2.length === 0)
+          throw new TypeError("UVM weights channel targets a mesh without morph targets");
+        return targets2.length;
+      })();
       const targetId = visible === void 0 ? `node-${node}` : "node" in visible ? `node-${visible.node}` : `mesh-${visible.mesh}-primitive-${visible.primitive}`;
       const key = `${targetId}/${targetPath}`;
       if (targets.has(key))
@@ -187,8 +204,8 @@ function decodeUvmRig(document, readAccessor, maxScalarBytes, sceneNodes, signal
         throw new TypeError("UVM animation interpolation is invalid");
       const cubic = interpolation === "CUBICSPLINE";
       const output = read(sampler["output"], "animation value");
-      const width = visible !== void 0 ? 1 : targetPath === "rotation" ? 4 : 3;
-      if (output.width !== width || output.count !== input.count * (cubic ? 3 : 1) || output.componentType !== 5126 || output.normalized)
+      const width = morphWeights ? morphTargets : visible !== void 0 ? 1 : targetPath === "rotation" ? 4 : 3;
+      if (output.width !== (morphWeights ? 1 : width) || output.count * output.width !== input.count * (cubic ? 3 : 1) * width || output.componentType !== 5126 || output.normalized)
         throw new TypeError("UVM animation input/output accessor shape is invalid");
       const metadata2 = uvMetadata(channel);
       const keyTimes = readUvmKeyTimes(metadata2["keyTimes"], { values: input.values, maxScalarBytes: maxScalarBytes - decodedBytes }, signal);
@@ -200,7 +217,7 @@ function decodeUvmRig(document, readAccessor, maxScalarBytes, sceneNodes, signal
           return Array.from(output.values.subarray(start, start + width));
         };
         const value = at(cubic ? 1 : 0);
-        if (width === 4 && Math.abs(Math.hypot(...value) - 1) > 1e-4)
+        if (width === 4 && !morphWeights && Math.abs(Math.hypot(...value) - 1) > 1e-4)
           throw new TypeError("UVM animation quaternion is not a unit quaternion");
         return cubic ? { frame, timeSeconds, value, inTangent: at(0), outTangent: at(2) } : { frame, timeSeconds, value };
       });
@@ -220,7 +237,7 @@ function decodeUvmRig(document, readAccessor, maxScalarBytes, sceneNodes, signal
         firstFrame: 0,
         lastFrame: samples.length - 1,
         samples,
-        interpolation: interpolation === "STEP" ? "step" : cubic ? "cubic-spline" : width === 4 ? "spherical-linear" : "linear",
+        interpolation: interpolation === "STEP" ? "step" : cubic ? "cubic-spline" : width === 4 && !morphWeights ? "spherical-linear" : "linear",
         ...metadata2["concurrent"] === void 0 ? {} : { concurrent: metadata2["concurrent"] },
         ...metadata2["wrapSeconds"] === void 0 ? {} : { wrapSeconds: metadata2["wrapSeconds"] },
         ...metadata2["repeatCount"] === void 0 ? {} : { repeatCount: metadata2["repeatCount"] }
@@ -345,6 +362,7 @@ function decodeUvmGeometry(document, binary, budget, signal) {
   const animations = array(document, "animations");
   signal?.throwIfAborted();
   const meshSkins = uvmMeshSkins(document);
+  const hiddenPrimitiveIds = new Set(readUvmPrimitiveVisibility(document, signal).flatMap((item) => "mesh" in item && item.value <= 0 ? [`mesh-${item.mesh}-primitive-${item.primitive}`] : []));
   const primitives = [];
   let decodedGeometryBytes = 0;
   const remaining = () => ({
@@ -358,6 +376,10 @@ function decodeUvmGeometry(document, binary, budget, signal) {
   const modelMeshes = meshes.map((candidate, meshIndex) => {
     signal?.throwIfAborted();
     const mesh = object(candidate, `mesh ${meshIndex}`);
+    const extras = mesh["extras"];
+    const names = extras !== null && typeof extras === "object" && !Array.isArray(extras) ? extras["targetNames"] : void 0;
+    const targetNames = Array.isArray(names) ? names : [];
+    let targetCount;
     const primitiveIds = array(mesh, "primitives").map((candidatePrimitive, primitiveIndex) => {
       const primitive = object(candidatePrimitive, `mesh ${meshIndex} primitive ${primitiveIndex}`);
       if ((primitive["mode"] ?? 4) !== 4)
@@ -457,6 +479,39 @@ function decodeUvmGeometry(document, binary, budget, signal) {
         throw new TypeError("UVM UV sets must be consecutive from zero");
       }
       const textureCoordinates = textureCoordinateSets.find((channel) => channel.set === 0)?.coordinates;
+      const targetList = primitive["targets"];
+      if (targetList !== void 0 && !Array.isArray(targetList))
+        throw new TypeError("UVM morph targets must be an array");
+      const morphTargets = (Array.isArray(targetList) ? targetList : []).map((candidateTarget, targetIndex) => {
+        const target = object(candidateTarget, `mesh ${meshIndex} primitive ${primitiveIndex} morph target ${targetIndex}`);
+        const delta = (semantic) => {
+          if (target[semantic] === void 0)
+            return void 0;
+          const accessor = readUvmAccessor(document, binary, target[semantic], remaining(), `morph ${semantic}`, signal);
+          if (accessor.width !== 3 || accessor.count !== position.count || accessor.componentType !== 5126 || accessor.normalized)
+            throw new TypeError(`UVM morph ${semantic} must be float VEC3 deltas matching POSITION`);
+          const values = floatValues(accessor);
+          if (!values.every(Number.isFinite))
+            throw new TypeError(`UVM morph ${semantic} contains non-finite values`);
+          charge(values.byteLength);
+          return values;
+        };
+        const deltas = delta("POSITION");
+        if (deltas === void 0)
+          charge(position.count * 12);
+        const normalDeltas = delta("NORMAL");
+        const tangentDeltas = delta("TANGENT");
+        const name = targetNames[targetIndex];
+        return {
+          ...typeof name === "string" ? { name } : {},
+          positions: deltas ?? new Float32Array(position.count * 3),
+          ...normalDeltas === void 0 ? {} : { normals: normalDeltas },
+          ...tangentDeltas === void 0 ? {} : { tangents: tangentDeltas }
+        };
+      });
+      if (targetCount !== void 0 && targetCount !== morphTargets.length)
+        throw new TypeError("UVM mesh primitives must carry the same number of morph targets");
+      targetCount = morphTargets.length;
       charge(textureCoordinates?.byteLength ?? 0);
       const id = `mesh-${meshIndex}-primitive-${primitiveIndex}`;
       primitives.push({
@@ -476,14 +531,20 @@ function decodeUvmGeometry(document, binary, budget, signal) {
         ...textureCoordinateSets.length === 0 ? {} : { textureCoordinateSets },
         ...primitive["material"] !== void 0 ? {
           materialId: `material-${safeIndex(primitive["material"], materials.length, "primitive material")}`
-        } : {}
+        } : {},
+        ...morphTargets.length === 0 ? {} : { morphTargets },
+        ...hiddenPrimitiveIds.has(id) ? { hidden: true } : {}
       });
       return id;
     });
+    const weights = mesh["weights"];
+    if (weights !== void 0 && (!Array.isArray(weights) || weights.length !== (targetCount ?? 0) || !weights.every((weight) => typeof weight === "number" && Number.isFinite(weight))))
+      throw new TypeError("UVM mesh weights must be one finite number per morph target");
     return {
       id: `mesh-${meshIndex}`,
       ...typeof mesh["name"] === "string" ? { name: mesh["name"] } : {},
-      primitiveIds
+      primitiveIds,
+      ...Array.isArray(weights) && weights.length > 0 ? { morphWeights: Object.freeze([...weights]) } : {}
     };
   });
   const modelNodes = nodes.map((candidate, nodeIndex) => {
@@ -526,7 +587,7 @@ function uvmImageResourceId(document, index) {
   if (typeof image["name"] === "string" && image["name"].length > 0)
     return image["name"];
   if (typeof image["uri"] === "string" && !image["uri"].startsWith("data:"))
-    return image["uri"];
+    return uvmImageLogicalId(image["uri"]);
   return `uvm-image-${index}`;
 }
 function prepareUvmTextureImages(document, binary, indices, maxEmbeddedBytes, signal) {
@@ -599,7 +660,7 @@ function prepareUvmImages(document, binary, indices, maxEmbeddedBytes, signal) {
             kind: "logical",
             requirement: {
               id: `uvm-image-${imageIndex}`,
-              logicalId: decodeURIComponent(uri),
+              logicalId: uvmImageLogicalId(uri),
               role: "texture",
               scopes: [
                 "sibling-directory",

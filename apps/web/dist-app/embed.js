@@ -19,24 +19,28 @@ import {
   sourceRevisionToken,
   sourceUriFor,
   stageIdOf
-} from "./chunks/chunk-JP3EV444.js";
+} from "./chunks/chunk-ZWJ67IWG.js";
+import "./chunks/chunk-IFXQVKX6.js";
+import "./chunks/chunk-J5MSXPDW.js";
+import "./chunks/chunk-O7X6ZY4K.js";
+import "./chunks/chunk-64G7DVXS.js";
+import "./chunks/chunk-R76FSVUV.js";
+import "./chunks/chunk-O2DY4UGD.js";
 import "./chunks/chunk-Q27WXNQ4.js";
-import "./chunks/chunk-BA6DD73E.js";
-import "./chunks/chunk-JDCQNX54.js";
-import "./chunks/chunk-JKB67RI6.js";
-import "./chunks/chunk-YTZZGCUZ.js";
-import "./chunks/chunk-Z2D6YWX3.js";
+import "./chunks/chunk-QQJVD7VT.js";
+import "./chunks/chunk-NCJM34Q7.js";
+import "./chunks/chunk-L2ERXEFC.js";
 import {
   element,
   setPart,
   setState,
   setViewerText
-} from "./chunks/chunk-FBGUD7CM.js";
+} from "./chunks/chunk-J4UN5ND3.js";
 import {
   parseSubjectRef,
   revisionId,
   serializeSubjectRef
-} from "./chunks/chunk-NCOJRWIO.js";
+} from "./chunks/chunk-BPQHTKO4.js";
 import {
   define_MODKIT_EMBED_EXTENSION_ORIGINS_default,
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS

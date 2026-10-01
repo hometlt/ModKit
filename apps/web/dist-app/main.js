@@ -50,14 +50,17 @@ import {
   subjectFactsSourceFromWire,
   webExtensionSubjectCardBundle,
   withoutHiddenEntries
-} from "./chunks/chunk-JP3EV444.js";
-import "./chunks/chunk-Q27WXNQ4.js";
-import "./chunks/chunk-BA6DD73E.js";
-import "./chunks/chunk-JDCQNX54.js";
-import "./chunks/chunk-JKB67RI6.js";
+} from "./chunks/chunk-ZWJ67IWG.js";
+import "./chunks/chunk-IFXQVKX6.js";
+import "./chunks/chunk-J5MSXPDW.js";
+import "./chunks/chunk-O7X6ZY4K.js";
+import "./chunks/chunk-64G7DVXS.js";
 import {
   resolveModelViewerTextures
-} from "./chunks/chunk-YTZZGCUZ.js";
+} from "./chunks/chunk-R76FSVUV.js";
+import "./chunks/chunk-O2DY4UGD.js";
+import "./chunks/chunk-Q27WXNQ4.js";
+import "./chunks/chunk-QQJVD7VT.js";
 import {
   declaredMutatingOperations,
   editOffer,
@@ -66,7 +69,8 @@ import {
   isRejected,
   mountFieldEditor,
   subjectCandidateProviderLease
-} from "./chunks/chunk-Z2D6YWX3.js";
+} from "./chunks/chunk-NCJM34Q7.js";
+import "./chunks/chunk-L2ERXEFC.js";
 import {
   DEFAULT_UI_LOCALIZER,
   PANELS_FALLBACK_MESSAGES,
@@ -84,7 +88,7 @@ import {
   setState,
   setViewerText,
   withEnglishUiFallback
-} from "./chunks/chunk-FBGUD7CM.js";
+} from "./chunks/chunk-J4UN5ND3.js";
 import {
   CONTAINER_EXTRACT_OPERATION_ID,
   compareUtf8,
@@ -94,7 +98,7 @@ import {
   normalizeModkitIdentifier,
   presentationSlotId,
   revisionId
-} from "./chunks/chunk-NCOJRWIO.js";
+} from "./chunks/chunk-BPQHTKO4.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunks/chunk-BLWUC7LO.js";
@@ -745,7 +749,8 @@ var COORDINATOR_LIMITS = Object.freeze({
   maxDepth: 16,
   catalogEnrichment: MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY,
   limits: Object.freeze({
-    maxRequirements: 16,
+    // Warzone 2100 reads 22 map documents (level.json and each tileset's ground and decal files).
+    maxRequirements: 32,
     maxDocumentBytes: 33554432,
     maxTotalBytes: 67108864,
     maxObjects: 1e5,

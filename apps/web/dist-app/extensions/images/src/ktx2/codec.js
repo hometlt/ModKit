@@ -5,6 +5,7 @@ import {
 } from '@modkit/codec-kit'
 import { decodeZstd } from '@modkit/codec-kit/compression/zstd'
 import { decodeBcSurface } from '@modkit/codec-kit/texture/bc'
+import { decodeUastcSurface } from '@modkit/codec-kit/texture/uastc'
 
 const ID = 'modkit/ktx2'
 const IDENTIFIER = Object.freeze([
@@ -62,6 +63,9 @@ function parseKtx2(bytes, maxNodes) {
   if (dfdLength > 0n) checkedRange(bytes, dfdOffset, dfdLength, 'data-format descriptor')
   if (kvdLength > 0n) checkedRange(bytes, kvdOffset, kvdLength, 'key/value data')
   if (sgdLength > 0n) checkedRange(bytes, sgdOffset, sgdLength, 'supercompression global data')
+  // Basic data-format descriptor: colour model and transfer function after the block header.
+  const colorModel = dfdLength >= 16n ? bytes[Number(dfdOffset) + 12] : undefined
+  const transfer = dfdLength >= 16n ? bytes[Number(dfdOffset) + 14] : undefined
   const levels = []
   for (let level = 0; level < levelCount; level += 1) {
     const position = 80 + level * 24
@@ -92,6 +96,8 @@ function parseKtx2(bytes, maxNodes) {
     faceCount,
     levelCount,
     supercompression,
+    colorModel,
+    transfer,
     dfdOffset,
     dfdLength,
     kvdOffset,
@@ -128,13 +134,22 @@ const BLOCK_FORMATS = Object.freeze({
   142: { format: 'BC5', colorSpace: 'linear', snorm: true },
 })
 
+/** KHR_DF_MODEL_UASTC: Basis Universal UASTC 4x4 blocks under VK_FORMAT_UNDEFINED. */
+const DF_MODEL_UASTC = 166
+/** KHR_DF_TRANSFER_SRGB */
+const DF_TRANSFER_SRGB = 2
+
 /**
- * Pixels are decoded for single 2D images (one layer, one face, depth 1) in a BC format, stored
- * plain or with Zstandard supercompression — what the Roblox asset cache holds. Anything else keeps
- * metadata and encoded payload access only.
+ * Pixels are decoded for single 2D images (one layer, one face, depth 1) in a BC format — what the
+ * Roblox asset cache holds — or in UASTC, the Basis Universal blocks Warzone 2100 ships its ground and
+ * water textures in; stored plain or with Zstandard supercompression. Anything else (BasisLZ/ETC1S
+ * among it) keeps metadata and encoded payload access only.
  */
 function decodable(ktx, maxScalarBytes) {
-  const block = BLOCK_FORMATS[ktx.vkFormat]
+  const block =
+    ktx.vkFormat === 0 && ktx.colorModel === DF_MODEL_UASTC
+      ? { format: 'UASTC', colorSpace: ktx.transfer === DF_TRANSFER_SRGB ? 'srgb' : 'linear' }
+      : BLOCK_FORMATS[ktx.vkFormat]
   return block !== undefined && ktx.depth === 1 && ktx.layerCount <= 1 && ktx.faceCount === 1 &&
     (ktx.supercompression === 0 || ktx.supercompression === 2) &&
     ktx.width * ktx.height * 4 <= maxScalarBytes
@@ -148,6 +163,7 @@ function levelPixels(bytes, ktx, block, level) {
   const stored = bytes.subarray(Number(level.offset), Number(level.offset + level.length))
   const data = ktx.supercompression === 2 ? decodeZstd(stored, { expectedLength: expected, maxOutputBytes: expected }) : stored
   if (data.byteLength < expected) throw new TypeError(`KTX2 level ${level.level} holds ${data.byteLength} of ${expected} block bytes`)
+  if (block.format === 'UASTC') return decodeUastcSurface(data, level.width, level.height)
   return decodeBcSurface(data, 0, level.width, level.height, block.format, block.snorm === true)
 }
 
@@ -279,7 +295,7 @@ const definition = Object.freeze({
       },
       unsupportedFeatures: [
         ...(block === undefined ? ['decoded-region-provider'] : []),
-        'basis-transcoding',
+        ...(block?.format === 'UASTC' ? [] : ['basis-transcoding']),
         ...(ktx.supercompression === 1 || ktx.supercompression === 3 ? ['supercompression-decoding'] : []),
         'ktx2-writing',
         'pixel-editing',

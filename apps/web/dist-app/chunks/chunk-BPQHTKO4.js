@@ -806,6 +806,104 @@ function revisionIdFromRef(ref) {
   return revisionId(serializeRevisionRef(ref));
 }
 
+// ../MODDING/modkit-core/packages/sdk/dist/relation-graph-neighbourhood.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var PAGE_SIZE = 1024;
+var MAX_PAGES = 4096;
+function limit(value2, name, maximum = Number.MAX_SAFE_INTEGER) {
+  if (!Number.isSafeInteger(value2) || value2 < 1 || value2 > maximum)
+    throw new RangeError(`relation graph ${name} must be an integer 1..${maximum}`);
+}
+async function scan(read, scanLimit, signal) {
+  const items = [];
+  const seen = /* @__PURE__ */ new Set();
+  let cursor;
+  for (let pages = 0; items.length < scanLimit && pages < MAX_PAGES; pages += 1) {
+    signal?.throwIfAborted();
+    const page = await read({
+      ...cursor === void 0 ? {} : { cursor },
+      limit: Math.min(PAGE_SIZE, scanLimit - items.length)
+    }, signal);
+    items.push(...page.items.slice(0, scanLimit - items.length));
+    if (page.nextCursor === void 0)
+      return { items, scan: { read: items.length, exhausted: true, invalidCursor: false } };
+    if (seen.has(page.nextCursor) || page.nextCursor === cursor)
+      return { items, scan: { read: items.length, exhausted: false, invalidCursor: true } };
+    seen.add(page.nextCursor);
+    cursor = page.nextCursor;
+  }
+  return { items, scan: { read: items.length, exhausted: false, invalidCursor: false } };
+}
+async function relationGraphNeighbourhood(source, request, signal) {
+  limit(request.roots.length, "root count", 64);
+  limit(request.depth, "depth", 8);
+  limit(request.maxNodes, "maxNodes");
+  limit(request.maxEdges, "maxEdges");
+  limit(request.scanLimit, "scanLimit");
+  if (!["outgoing", "incoming", "both"].includes(request.direction))
+    throw new RangeError(`relation graph direction \xAB${String(request.direction)}\xBB is unknown`);
+  const summary = await source.summary(signal);
+  const nodeScan = await scan((page, s) => source.nodes(page, s), request.scanLimit, signal);
+  const edgeScan = await scan((page, s) => source.edges(page, s), request.scanLimit, signal);
+  const byId = new Map(nodeScan.items.map((node) => [node.id, node]));
+  const types = request.types === void 0 ? void 0 : new Set(request.types);
+  const enters = (id2) => {
+    const type = byId.get(id2)?.type;
+    return types === void 0 || type === void 0 || types.has(type);
+  };
+  const kept = new Set(request.roots);
+  const edges = [];
+  const edgeKeys = /* @__PURE__ */ new Set();
+  let frontier = new Set(request.roots);
+  let capped = false;
+  for (let level = 0; level < request.depth && frontier.size > 0; level += 1) {
+    const next = /* @__PURE__ */ new Set();
+    for (const edge of edgeScan.items) {
+      const outgoing = request.direction !== "incoming" && frontier.has(edge.from);
+      const incoming = request.direction !== "outgoing" && frontier.has(edge.to);
+      if (!outgoing && !incoming)
+        continue;
+      const other = outgoing ? edge.to : edge.from;
+      if (!kept.has(other)) {
+        if (!enters(other))
+          continue;
+        if (kept.size >= request.maxNodes) {
+          capped = true;
+          continue;
+        }
+        kept.add(other);
+        next.add(other);
+      }
+      const key2 = `${edge.from}\0${edge.to}\0${edge.role ?? ""}\0${edge.dead === true}`;
+      if (edgeKeys.has(key2))
+        continue;
+      if (edges.length >= request.maxEdges) {
+        capped = true;
+        continue;
+      }
+      edgeKeys.add(key2);
+      edges.push(edge);
+    }
+    frontier = next;
+  }
+  const nodes = [...kept].flatMap((id2) => {
+    const node = byId.get(id2);
+    return node === void 0 ? [] : [node];
+  });
+  const partial = summary.completeness === "partial" || nodeScan.scan.invalidCursor || edgeScan.scan.invalidCursor;
+  const complete = summary.completeness === "complete" && nodeScan.scan.exhausted && edgeScan.scan.exhausted && !capped;
+  return {
+    snapshotId: summary.snapshotId,
+    nodes,
+    edges,
+    missingNodeIds: [...kept].filter((id2) => !byId.has(id2)),
+    completeness: complete ? "complete" : partial ? "partial" : "capped",
+    capped,
+    scanned: { nodes: nodeScan.scan, edges: edgeScan.scan },
+    ...summary.reason === void 0 ? {} : { reason: summary.reason }
+  };
+}
+
 // ../MODDING/modkit-core/packages/sdk/dist/index.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
@@ -5063,104 +5161,6 @@ init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 // ../MODDING/modkit-core/packages/sdk/dist/index-caches.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
-// ../MODDING/modkit-core/packages/sdk/dist/relation-graph-neighbourhood.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-var PAGE_SIZE = 1024;
-var MAX_PAGES = 4096;
-function limit(value2, name, maximum = Number.MAX_SAFE_INTEGER) {
-  if (!Number.isSafeInteger(value2) || value2 < 1 || value2 > maximum)
-    throw new RangeError(`relation graph ${name} must be an integer 1..${maximum}`);
-}
-async function scan(read, scanLimit, signal) {
-  const items = [];
-  const seen = /* @__PURE__ */ new Set();
-  let cursor;
-  for (let pages = 0; items.length < scanLimit && pages < MAX_PAGES; pages += 1) {
-    signal?.throwIfAborted();
-    const page = await read({
-      ...cursor === void 0 ? {} : { cursor },
-      limit: Math.min(PAGE_SIZE, scanLimit - items.length)
-    }, signal);
-    items.push(...page.items.slice(0, scanLimit - items.length));
-    if (page.nextCursor === void 0)
-      return { items, scan: { read: items.length, exhausted: true, invalidCursor: false } };
-    if (seen.has(page.nextCursor) || page.nextCursor === cursor)
-      return { items, scan: { read: items.length, exhausted: false, invalidCursor: true } };
-    seen.add(page.nextCursor);
-    cursor = page.nextCursor;
-  }
-  return { items, scan: { read: items.length, exhausted: false, invalidCursor: false } };
-}
-async function relationGraphNeighbourhood(source, request, signal) {
-  limit(request.roots.length, "root count", 64);
-  limit(request.depth, "depth", 8);
-  limit(request.maxNodes, "maxNodes");
-  limit(request.maxEdges, "maxEdges");
-  limit(request.scanLimit, "scanLimit");
-  if (!["outgoing", "incoming", "both"].includes(request.direction))
-    throw new RangeError(`relation graph direction \xAB${String(request.direction)}\xBB is unknown`);
-  const summary = await source.summary(signal);
-  const nodeScan = await scan((page, s) => source.nodes(page, s), request.scanLimit, signal);
-  const edgeScan = await scan((page, s) => source.edges(page, s), request.scanLimit, signal);
-  const byId = new Map(nodeScan.items.map((node) => [node.id, node]));
-  const types = request.types === void 0 ? void 0 : new Set(request.types);
-  const enters = (id2) => {
-    const type = byId.get(id2)?.type;
-    return types === void 0 || type === void 0 || types.has(type);
-  };
-  const kept = new Set(request.roots);
-  const edges = [];
-  const edgeKeys = /* @__PURE__ */ new Set();
-  let frontier = new Set(request.roots);
-  let capped = false;
-  for (let level = 0; level < request.depth && frontier.size > 0; level += 1) {
-    const next = /* @__PURE__ */ new Set();
-    for (const edge of edgeScan.items) {
-      const outgoing = request.direction !== "incoming" && frontier.has(edge.from);
-      const incoming = request.direction !== "outgoing" && frontier.has(edge.to);
-      if (!outgoing && !incoming)
-        continue;
-      const other = outgoing ? edge.to : edge.from;
-      if (!kept.has(other)) {
-        if (!enters(other))
-          continue;
-        if (kept.size >= request.maxNodes) {
-          capped = true;
-          continue;
-        }
-        kept.add(other);
-        next.add(other);
-      }
-      const key2 = `${edge.from}\0${edge.to}\0${edge.role ?? ""}\0${edge.dead === true}`;
-      if (edgeKeys.has(key2))
-        continue;
-      if (edges.length >= request.maxEdges) {
-        capped = true;
-        continue;
-      }
-      edgeKeys.add(key2);
-      edges.push(edge);
-    }
-    frontier = next;
-  }
-  const nodes = [...kept].flatMap((id2) => {
-    const node = byId.get(id2);
-    return node === void 0 ? [] : [node];
-  });
-  const partial = summary.completeness === "partial" || nodeScan.scan.invalidCursor || edgeScan.scan.invalidCursor;
-  const complete = summary.completeness === "complete" && nodeScan.scan.exhausted && edgeScan.scan.exhausted && !capped;
-  return {
-    snapshotId: summary.snapshotId,
-    nodes,
-    edges,
-    missingNodeIds: [...kept].filter((id2) => !byId.has(id2)),
-    completeness: complete ? "complete" : partial ? "partial" : "capped",
-    capped,
-    scanned: { nodes: nodeScan.scan, edges: edgeScan.scan },
-    ...summary.reason === void 0 ? {} : { reason: summary.reason }
-  };
-}
-
 // ../MODDING/modkit-core/packages/sdk/dist/language/index.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
@@ -5930,7 +5930,8 @@ var rasterImageSourceSurface = {
   methods: {
     info: cancellableValue,
     encoded: { kind: "lease", result: ENCODED_MEDIA, wrapper: "bare", ...sig },
-    readRegion: { kind: "value", optional: true, ...sig }
+    readRegion: { kind: "value", optional: true, ...sig },
+    readCompressed: { kind: "value", optional: true, ...sig }
   }
 };
 var vectorSceneSourceSurface = {

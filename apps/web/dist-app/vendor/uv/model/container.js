@@ -3,8 +3,10 @@ import {
   checkUvmContainerBudget,
   packUvmGlb,
   readUvmContainer,
+  uvmImageLogicalId,
+  uvmImageUri,
   writeUvmContainer
-} from "../../../chunks/chunk-BC5RDUGA.js";
+} from "../../../chunks/chunk-OAFBQXD6.js";
 import "../../../chunks/chunk-ZSDVUSRM.js";
 import "../../../chunks/chunk-TKIPZ6HV.js";
 import "../../../chunks/chunk-NUFRM6SI.js";
@@ -15,5 +17,7 @@ export {
   checkUvmContainerBudget,
   packUvmGlb,
   readUvmContainer,
+  uvmImageLogicalId,
+  uvmImageUri,
   writeUvmContainer
 };

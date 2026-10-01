@@ -7,20 +7,20 @@ import {
   assembleSubjectDescriptor,
   createAssetSession,
   createUtf8TextDataSource
-} from "../../chunks/chunk-QJZPE5FO.js";
+} from "../../chunks/chunk-XG5H6MC4.js";
 import "../../chunks/chunk-5GGWVEQJ.js";
 import {
   RESOLVED_DATA_WORKSPACE_CONTRACT,
   containerEntryRevision,
   contributionSettingsFor
-} from "../../chunks/chunk-MAAPKCDG.js";
+} from "../../chunks/chunk-S6YMWV3Q.js";
+import "../../chunks/chunk-MT2JUZZJ.js";
 import "../../chunks/chunk-R2P56FTH.js";
 import "../../chunks/chunk-P5QJHSUW.js";
 import {
   revisionId,
   toPortableProjectionReceipt
 } from "../../chunks/chunk-VI4QBV4T.js";
-import "../../chunks/chunk-MT2JUZZJ.js";
 import {
   ModkitError,
   canonicalJsonStringify,
@@ -2938,7 +2938,7 @@ function withComputedMips(info, readRegion) {
     }
   };
 }
-function createRasterImageSource(bytes, mediaType, rawInfo, rawReadRegion) {
+function createRasterImageSource(bytes, mediaType, rawInfo, rawReadRegion, readCompressed) {
   const { info, readRegion } = rawReadRegion === void 0 ? { info: rawInfo, readRegion: void 0 } : withComputedMips(rawInfo, rawReadRegion);
   const ownedInfo = Object.freeze({ ...info });
   const encoded = createEncodedMediaSource(bytes, { mediaType });
@@ -2953,6 +2953,7 @@ function createRasterImageSource(bytes, mediaType, rawInfo, rawReadRegion) {
     }
   };
   if (readRegion !== void 0) source.readRegion = readRegion;
+  if (readCompressed !== void 0) source.readCompressed = readCompressed;
   return Object.freeze(source);
 }
 function createAudioMediaSource(bytes, mediaType, info, readPcm) {

@@ -2,13 +2,13 @@ import {
   createProjectionReceipt
 } from "../../../chunks/chunk-ZC6AMIVY.js";
 import {
-  createJsonTreeSource
-} from "../../../chunks/chunk-KA3J6DLB.js";
-import {
   readCollisionMesh,
   readUvmModel,
   uvmImageResourceId
-} from "../../../chunks/chunk-B7S5KEHR.js";
+} from "../../../chunks/chunk-6MHUSL7M.js";
+import {
+  createJsonTreeSource
+} from "../../../chunks/chunk-KA3J6DLB.js";
 import {
   array,
   field,
@@ -18,9 +18,10 @@ import {
   safeIndex,
   string
 } from "../../../chunks/chunk-I4Z5J3HX.js";
+import "../../../chunks/chunk-OAFBQXD6.js";
 import {
   validateUvmDocument
-} from "../../../chunks/chunk-A7Y3WO4R.js";
+} from "../../../chunks/chunk-OLH77CRA.js";
 import "../../../chunks/chunk-3TRK5GFM.js";
 import {
   createModelAnimationSource,
@@ -36,6 +37,9 @@ import "../../../chunks/chunk-UWXEC6C3.js";
 import "../../../chunks/chunk-GMWDAJID.js";
 import "../../../chunks/chunk-ZSDVUSRM.js";
 import "../../../chunks/chunk-5SBJANAJ.js";
+import "../../../chunks/chunk-TKIPZ6HV.js";
+import "../../../chunks/chunk-NUFRM6SI.js";
+import "../../../chunks/chunk-W2UBWFML.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 
 // ../MODDING/modkit-core/packages/scene/dist/uvm/facets.js

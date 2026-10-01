@@ -189,7 +189,7 @@ var javascriptDefaults = new LanguageServiceDefaultsImpl(
   modeConfigurationDefault
 );
 function getMode() {
-  return import("./tsMode-Q43GUE2P.js");
+  return import("./tsMode-7TL3I7SK.js");
 }
 languages.onLanguage("typescript", () => {
   return getMode().then((mode) => mode.setupTypeScript(typescriptDefaults));

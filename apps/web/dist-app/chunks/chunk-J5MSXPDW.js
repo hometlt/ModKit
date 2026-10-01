@@ -1,18 +1,20 @@
 import {
-  AUDIO_FALLBACK_MESSAGES,
-  ViewerMountScope,
   collectEncodedMedia,
   createMediaShell,
+  mountContributedSections
+} from "./chunk-L2ERXEFC.js";
+import {
+  AUDIO_FALLBACK_MESSAGES,
+  ViewerMountScope,
   createSurface,
   createViewerMount,
   defineViewerModule,
   element,
-  mountContributedSections,
   setState,
   setViewerText,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-FBGUD7CM.js";
+} from "./chunk-J4UN5ND3.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunk-BLWUC7LO.js";

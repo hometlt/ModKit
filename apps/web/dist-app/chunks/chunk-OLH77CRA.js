@@ -16,6 +16,7 @@ import {
 function validateSocketMetadata(document, used, signal) {
   signal?.throwIfAborted();
   let count = 0;
+  const ids = /* @__PURE__ */ new Set();
   const axes = ["+x", "-x", "+y", "-y", "+z", "-z"];
   for (const [nodeIndex, candidate] of array(document, "nodes").entries()) {
     signal?.throwIfAborted();
@@ -25,6 +26,11 @@ function validateSocketMetadata(document, used, signal) {
       continue;
     count += 1;
     const socket = object(candidateSocket, `node ${nodeIndex} UV_game_socket`);
+    const id = socket["id"];
+    if (id !== void 0 && (typeof id !== "string" || !/^[a-z][a-z0-9-]*$/u.test(id) || ids.has(id)))
+      throw new TypeError(`node ${nodeIndex} socket ID is invalid or duplicated`);
+    if (typeof id === "string")
+      ids.add(id);
     if (!nonBlank(socket["role"]))
       throw new TypeError(`node ${nodeIndex} socket needs a role`);
     if (socket["index"] !== void 0 && (!integer(socket["index"]) || socket["index"] < 0)) {
@@ -43,6 +49,9 @@ function validateSocketMetadata(document, used, signal) {
     const identity = candidateIdentity === void 0 ? void 0 : object(candidateIdentity, "socket Modkit identity");
     if (identity !== void 0 && (!nonBlank(identity["id"]) || !nonBlank(identity["nodeId"]))) {
       throw new TypeError(`node ${nodeIndex} socket Modkit identity is invalid`);
+    }
+    if (id !== void 0 && identity !== void 0 && identity["id"] !== id) {
+      throw new TypeError(`node ${nodeIndex} socket IDs disagree`);
     }
   }
   if (count > 0 && !used.includes("UV_game_socket")) {
@@ -285,11 +294,11 @@ function validateAnimationPointers(document, used, signal) {
     const targets = /* @__PURE__ */ new Set();
     for (const [channelIndex, channelCandidate] of array(animation, "channels").entries()) {
       signal?.throwIfAborted();
-      const channel = object(channelCandidate, `animation ${animationIndex} channel ${channelIndex}`);
-      const target = object(channel["target"], `animation ${animationIndex} channel target`);
-      const exactTimes = readUvmKeyTimes(field(field(channel["extras"], "uv"), "keyTimes"), void 0, signal);
+      const channel2 = object(channelCandidate, `animation ${animationIndex} channel ${channelIndex}`);
+      const target = object(channel2["target"], `animation ${animationIndex} channel target`);
+      const exactTimes = readUvmKeyTimes(field(field(channel2["extras"], "uv"), "keyTimes"), void 0, signal);
       if (exactTimes !== void 0) {
-        const timeSampler = object(samplers[safeIndex(channel["sampler"], samplers.length, "keyTimes sampler")], "keyTimes sampler");
+        const timeSampler = object(samplers[safeIndex(channel2["sampler"], samplers.length, "keyTimes sampler")], "keyTimes sampler");
         const timeAccessor = object(accessors[safeIndex(timeSampler["input"], accessors.length, "keyTimes accessor")], "keyTimes accessor");
         if (timeAccessor["count"] !== exactTimes.length || timeAccessor["type"] !== "SCALAR" || timeAccessor["componentType"] !== 5126)
           throw new TypeError("UVM keyTimes accessor shape mismatch");
@@ -298,7 +307,7 @@ function validateAnimationPointers(document, used, signal) {
       if (target["path"] !== "pointer" && extension === void 0)
         continue;
       count += 1;
-      const samplerIndex = safeIndex(channel["sampler"], samplers.length, `animation ${animationIndex} pointer sampler`);
+      const samplerIndex = safeIndex(channel2["sampler"], samplers.length, `animation ${animationIndex} pointer sampler`);
       const sampler = object(samplers[samplerIndex], `animation ${animationIndex} pointer sampler`);
       const pointer = object(extension, `animation ${animationIndex} KHR_animation_pointer`);
       const pointerPath = pointer["pointer"];
@@ -316,7 +325,7 @@ function validateAnimationPointers(document, used, signal) {
       if (!oneOf(interpolation, ["STEP", "LINEAR", "CUBICSPLINE"])) {
         throw new TypeError(`animation ${animationIndex} pointer interpolation is invalid`);
       }
-      const channelUv = field(channel["extras"], "uv") === void 0 ? void 0 : object(field(channel["extras"], "uv"), `animation ${animationIndex} channel extras.uv`);
+      const channelUv = field(channel2["extras"], "uv") === void 0 ? void 0 : object(field(channel2["extras"], "uv"), `animation ${animationIndex} channel extras.uv`);
       const sourceLineType = channelUv?.["sourceLineType"];
       if (sourceLineType !== void 0 && (!integer(sourceLineType) || sourceLineType < 0 || sourceLineType > 3)) {
         throw new TypeError(`animation ${animationIndex} pointer sourceLineType is invalid`);
@@ -447,6 +456,41 @@ function validateTeamColorMetadata(document, used, signal) {
   }
 }
 
+// ../MODDING/modkit-core/packages/uv/dist/model/validation/textures.js
+var channel = (value) => integer(value) && value >= 0 && value <= 255;
+function colorKeyOf(value, label) {
+  const extension = object(value, label);
+  if (Object.keys(extension).some((key) => !["color", "tolerance", "extras"].includes(key)))
+    throw new TypeError(`${label} has an unknown property`);
+  const color = extension["color"];
+  if (!Array.isArray(color) || color.length !== 3 || !color.every(channel))
+    throw new TypeError(`${label} color must be three stored 8-bit channels`);
+  const tolerance = extension["tolerance"] ?? 0;
+  if (!channel(tolerance))
+    throw new TypeError(`${label} tolerance must be an integer 0..255`);
+  return Object.freeze({
+    color: Object.freeze([color[0], color[1], color[2]]),
+    tolerance
+  });
+}
+function readUvmTextureColorKeys(document, signal) {
+  const keys = /* @__PURE__ */ new Map();
+  for (const [index2, candidate] of array(document, "textures").entries()) {
+    signal?.throwIfAborted();
+    const extension = field(field(candidate, "extensions"), "UV_texture_color_key");
+    if (extension !== void 0)
+      keys.set(index2, colorKeyOf(extension, `texture ${index2} UV_texture_color_key`));
+  }
+  return keys;
+}
+function validateTextureColorKeys(document, used, signal) {
+  const keys = readUvmTextureColorKeys(document, signal);
+  if (keys.size > 0 && !used.includes("UV_texture_color_key"))
+    throw new TypeError("UV_texture_color_key is not declared in extensionsUsed");
+  if (keys.size === 0 && used.includes("UV_texture_color_key"))
+    throw new TypeError("UV_texture_color_key is declared but absent");
+}
+
 // ../MODDING/modkit-core/packages/uv/dist/model/validation/index.js
 function validateUvmDocument(document, options = {}) {
   const { binaryByteLength, signal } = options;
@@ -485,6 +529,7 @@ function validateUvmDocument(document, options = {}) {
   validateSocketMetadata(document, used, signal);
   validateTeamColorMetadata(document, used, signal);
   validateGameMaterialMetadata(document, used, signal);
+  validateTextureColorKeys(document, used, signal);
   validateEffectsMetadata(document, used, signal);
   validateAnimationPointers(document, used, signal);
   validateUvmAnimationClips(document, signal);
@@ -493,5 +538,6 @@ function validateUvmDocument(document, options = {}) {
 export {
   uvmAccessorWidth,
   readUvmAccessor,
+  readUvmTextureColorKeys,
   validateUvmDocument
 };

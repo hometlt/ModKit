@@ -1,9 +1,9 @@
 import {
-  typescriptDefaults
-} from "./chunk-PSAZPMCJ.js";
-import {
   createWebWorker
 } from "./chunk-DOGAU2X2.js";
+import {
+  typescriptDefaults
+} from "./chunk-OO6MHGCS.js";
 import "./chunk-ZO3ADLRA.js";
 import {
   MarkerSeverity2 as MarkerSeverity,

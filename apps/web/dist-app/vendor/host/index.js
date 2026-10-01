@@ -13,14 +13,14 @@ import {
   createStandardSurfaceRegistry,
   framePortFromMessagePort,
   protocolLimits
-} from "../../chunks/chunk-QYMOBICX.js";
+} from "../../chunks/chunk-H33BDQ5V.js";
 import {
   assembleSubjectDescriptor,
   createAssetSession,
   createByteRangeSource,
   createLazyTableDataSource,
   createUtf8TextDataSource
-} from "../../chunks/chunk-QJZPE5FO.js";
+} from "../../chunks/chunk-XG5H6MC4.js";
 import {
   metadataFieldProjections
 } from "../../chunks/chunk-5GGWVEQJ.js";
@@ -90,7 +90,11 @@ import {
   validateContributionManifest,
   writerOfferSatisfies,
   writerSelectionKey
-} from "../../chunks/chunk-MAAPKCDG.js";
+} from "../../chunks/chunk-S6YMWV3Q.js";
+import {
+  SCENE_RENDERER_CONTRACT,
+  SCENE_RENDERER_MATCHER_PROFILE
+} from "../../chunks/chunk-MT2JUZZJ.js";
 import {
   NATIVE_MODEL_ENCODER_CONTRACT,
   NATIVE_MODEL_ENCODER_MATCHER_PROFILE
@@ -116,10 +120,6 @@ import {
   snapshotJsonWireData,
   subjectRefEquals
 } from "../../chunks/chunk-VI4QBV4T.js";
-import {
-  SCENE_RENDERER_CONTRACT,
-  SCENE_RENDERER_MATCHER_PROFILE
-} from "../../chunks/chunk-MT2JUZZJ.js";
 import {
   CONTAINER_EXTRACT_OPERATION_ID,
   ModkitError,
@@ -2337,7 +2337,9 @@ var DEFAULT_RESOURCE_SESSION_LIMITS = Object.freeze({
   maxResources: 256,
   maxBytes: 256n * 1024n * 1024n,
   maxDepth: 8,
-  maxEntries: 4096
+  // One scope of a game archive: a bare texture name is looked for in every folder (Emperor's
+  // 3DDATA0001.RFH holds 3 749 entries, Diablo III's anim/ 15 258); see DEFAULT_COMPANION_LIMITS.
+  maxEntries: 65536
 });
 function fold(value, caseSensitivity) {
   return caseSensitivity === "insensitive" ? value.toLowerCase() : value;
@@ -2427,9 +2429,9 @@ function createResourceSession(options) {
   const locate = async (normalized, scopes, signal) => {
     const wanted = fold(normalized, origin.caseSensitivity);
     const byName = !normalized.includes("/");
-    let entries = 0;
     for (const scope of scopes) {
       throwIfAborted(signal);
+      let entries = 0;
       for await (const entry2 of origin.enumerate(scope, { prefix: byName ? "" : normalized }, signal)) {
         entries += 1;
         if (entries > limits.maxEntries)
@@ -2446,7 +2448,7 @@ function createResourceSession(options) {
     }
     return { found: void 0, overBudget: false };
   };
-  return {
+  const port = {
     sessionId,
     revision: options.revision,
     primaryLogicalId: options.origin.primaryLogicalId,
@@ -2611,6 +2613,19 @@ function createResourceSession(options) {
       const failure3 = results.find((result) => result.status === "rejected");
       if (failure3 !== void 0 && failure3.status === "rejected")
         throw failure3.reason;
+    }
+  };
+  return {
+    ...port,
+    // The logical id, then each alternative while the last one was not found: the game's fallback.
+    async resolve(requirement, signal) {
+      let result = await port.resolve(requirement, signal);
+      for (const logicalId of requirement.alternatives ?? []) {
+        if (result.state === "resolved" || result.reason !== "not-found")
+          break;
+        result = await port.resolve({ ...requirement, logicalId }, signal);
+      }
+      return result;
     }
   };
 }
@@ -8788,6 +8803,40 @@ function captureRasterSelection(value) {
   }
   return Object.freeze(owned);
 }
+function captureCompressedFormats(value) {
+  if (value === void 0)
+    return /* @__PURE__ */ new Set();
+  if (!Array.isArray(value) || value.length > 64 || value.some((item) => typeof item !== "string" || item.length === 0 || item.length > 64))
+    throw new TypeError("invalid compressed texture formats");
+  return new Set(value);
+}
+function blockBytes(compression) {
+  if (compression === "bc1" || compression === "bc4")
+    return 8;
+  if (compression === "bc2" || compression === "bc3" || compression === "bc5")
+    return 16;
+  if (compression === "bc6h" || compression === "bc7")
+    return 16;
+  return void 0;
+}
+function compressedSelectionPlan(info, selection, maxBytes) {
+  const block = blockBytes(info.compression);
+  if (block === void 0 || selection.face === "all" || info.depth !== 1)
+    return void 0;
+  const stored = info.storedMipLevels ?? info.mipLevels;
+  const chain = (level) => {
+    let bytes2 = 0;
+    for (let index = level; index < stored; index++)
+      bytes2 += Math.ceil(Math.max(1, Math.floor(info.width / 2 ** index)) / 4) * Math.ceil(Math.max(1, Math.floor(info.height / 2 ** index)) / 4) * block;
+    return bytes2;
+  };
+  const selected = selection.mipLevel ?? 0;
+  const mipLevel = selected === "fit" ? Array.from({ length: stored }, (_, index) => index).find((level) => chain(level) <= maxBytes) : selected;
+  if (mipLevel === void 0 || mipLevel >= stored)
+    return void 0;
+  const bytes = chain(mipLevel);
+  return bytes <= maxBytes ? Object.freeze({ mipLevel, bytes }) : void 0;
+}
 function rasterSelectionPlan(info, selection, maxBytes) {
   for (const key3 of ["width", "height", "depth", "layers", "faces", "mipLevels", "frames"])
     if (!Number.isSafeInteger(info[key3]) || info[key3] <= 0)
@@ -8850,6 +8899,47 @@ function rasterSpellings(logicalId, rule) {
     }
   return spellings;
 }
+function ownedCompressedTexture(texture, info, plan, maxBytes) {
+  const levels = texture?.subresources;
+  const block = texture?.block;
+  if (!Array.isArray(levels) || levels.length === 0 || typeof texture.format !== "string" || block === null || typeof block !== "object" || block.width !== 4 || block.height !== 4 || block.depth !== 1 || block.bytes !== 8 && block.bytes !== 16)
+    return void 0;
+  let total = 0;
+  const owned = [];
+  for (const [index, level] of levels.entries()) {
+    const width = Math.max(1, Math.floor(info.width / 2 ** (plan.mipLevel + index)));
+    const height = Math.max(1, Math.floor(info.height / 2 ** (plan.mipLevel + index)));
+    const bytes = Math.ceil(width / 4) * Math.ceil(height / 4) * block.bytes;
+    if (level === null || typeof level !== "object" || level.mipLevel !== index || level.layer !== 0 || level.face !== 0 || level.width !== width || level.height !== height || !(level.data instanceof Uint8Array) || level.data.byteLength !== bytes)
+      return void 0;
+    total += bytes;
+    if (total > maxBytes)
+      return void 0;
+    owned.push(Object.freeze({
+      mipLevel: index,
+      layer: 0,
+      face: 0,
+      depthSlice: 0,
+      width,
+      height,
+      depth: 1,
+      data: level.data.slice()
+    }));
+  }
+  return Object.freeze({
+    schemaVersion: 1,
+    format: texture.format,
+    dimensions: Object.freeze({ width: owned[0].width, height: owned[0].height, depth: 1 }),
+    mipLevelCount: owned.length,
+    layerCount: 1,
+    faceCount: 1,
+    colorSpace: texture.colorSpace,
+    alphaMode: texture.alphaMode,
+    block: Object.freeze({ width: 4, height: 4, depth: 1, bytes: block.bytes }),
+    subresources: Object.freeze(owned),
+    source: Object.freeze({ ...texture.source })
+  });
+}
 function createSubjectRasterResources(options) {
   const refusal = (code, message, provenance) => ({
     state: "unresolved",
@@ -8867,9 +8957,11 @@ function createSubjectRasterResources(options) {
         return refusal("x3.host/raster-request-invalid", "A raster resource request is required.");
       const maxBytes = request.maxBytes;
       let selection;
+      let compressedFormats;
       const explicitSelection = request.selection !== void 0;
       try {
         selection = captureRasterSelection(request.selection);
+        compressedFormats = captureCompressedFormats(request.compressedFormats);
       } catch (error3) {
         return refusal("x3.host/raster-request-invalid", error3 instanceof Error ? error3.message : "Invalid raster selection");
       }
@@ -8946,6 +9038,38 @@ function createSubjectRasterResources(options) {
         const raster = await opened.session.dataSource("common.view/raster-image-source", 1);
         releases.push(() => raster.release());
         const info = Object.freeze({ ...await raster.value.info(signal) });
+        const compressedPlan = compressedFormats.size === 0 || atlasRegion !== void 0 || raster.value.readCompressed === void 0 || ![...compressedFormats].some((format2) => format2.startsWith(`${info.compression}-`)) ? void 0 : compressedSelectionPlan(info, selection, maxBytes);
+        if (compressedPlan !== void 0) {
+          const subresource = Object.freeze({
+            frame: selection.frame ?? 0,
+            mipLevel: compressedPlan.mipLevel,
+            layer: selection.layer ?? 0,
+            face: typeof selection.face === "number" ? selection.face : 0,
+            slice: 0
+          });
+          let texture;
+          try {
+            texture = await raster.value.readCompressed({
+              mipLevel: subresource.mipLevel,
+              layer: subresource.layer,
+              face: subresource.face,
+              maxBytes
+            }, signal);
+          } catch (error3) {
+            if (signal?.aborted)
+              throw error3;
+          }
+          const owned = texture === void 0 ? void 0 : ownedCompressedTexture(texture, info, compressedPlan, maxBytes);
+          if (owned !== void 0 && compressedFormats.has(owned.format))
+            return {
+              state: "compressed",
+              info,
+              texture: owned,
+              subresource,
+              diagnostics: Object.freeze([...opened.diagnostics]),
+              ...provenance === void 0 ? {} : { provenance }
+            };
+        }
         if (!info.decodedAccess || raster.value.readRegion === void 0)
           return refusal("x3.host/raster-decode-unavailable", "The selected image codec does not decode pixel regions.", provenance);
         if (atlasRegion !== void 0) {
@@ -9117,7 +9241,7 @@ function capture(request, context) {
     if (expectedRevision !== void 0 && !isRevisionId(expectedRevision) || size !== void 0 && (typeof size !== "bigint" || size < 0n))
       throw new TypeError("Invalid batch revision or extent.");
     const requirement = context.captureRequirement(raw);
-    textBytes += new TextEncoder().encode(requirement.id + requirement.logicalId + (requirement.parentResourceId ?? "") + (expectedRevision ?? "") + requirement.scopes.join("")).length;
+    textBytes += new TextEncoder().encode(requirement.id + requirement.logicalId + (requirement.parentResourceId ?? "") + (requirement.alternatives ?? []).join("") + (expectedRevision ?? "") + requirement.scopes.join("")).length;
     if (textBytes > context.budget.maxScalarBytes)
       throw new TypeError("Batch metadata exceeds the subject budget.");
     selected.push(Object.freeze({
@@ -9330,6 +9454,7 @@ async function readLogicalResourceBatch(request, context, signal) {
 
 // ../MODDING/modkit-core/packages/host/dist/logical-resources.js
 var ROLES = ["texture", "sidecar", "buffer"];
+var MAXIMUM_ALTERNATIVES = 8;
 var SCOPES = [
   "sibling-directory",
   "current-mount",
@@ -9394,9 +9519,9 @@ function snapshotLogicalResourceDiscoveryPolicies(policies) {
 function captureRequirement(request, maxLength) {
   if (request === null || typeof request !== "object")
     throw new TypeError("A logical requirement is required.");
-  const { id, logicalId, role, scopes, parentResourceId } = request;
+  const { id, logicalId, role, scopes, parentResourceId, alternatives } = request;
   const scopeCount = Array.isArray(scopes) ? scopes.length : -1;
-  if (Object.keys(request).some((key3) => !["id", "logicalId", "role", "scopes", "parentResourceId"].includes(key3)) || ![id, logicalId].every((value) => typeof value === "string" && value.length > 0 && value.length <= maxLength) || !ROLES.includes(role) || !Array.isArray(scopes) || !Number.isSafeInteger(scopeCount) || scopeCount < 0 || scopeCount > SCOPES.length || parentResourceId !== void 0 && (typeof parentResourceId !== "string" || parentResourceId.length === 0 || parentResourceId.length > maxLength))
+  if (Object.keys(request).some((key3) => !["id", "logicalId", "role", "scopes", "parentResourceId", "alternatives"].includes(key3)) || alternatives !== void 0 && (!Array.isArray(alternatives) || alternatives.length > MAXIMUM_ALTERNATIVES || !alternatives.every((value) => typeof value === "string" && value.length > 0 && value.length <= maxLength)) || ![id, logicalId].every((value) => typeof value === "string" && value.length > 0 && value.length <= maxLength) || !ROLES.includes(role) || !Array.isArray(scopes) || !Number.isSafeInteger(scopeCount) || scopeCount < 0 || scopeCount > SCOPES.length || parentResourceId !== void 0 && (typeof parentResourceId !== "string" || parentResourceId.length === 0 || parentResourceId.length > maxLength))
     throw new TypeError("Invalid bounded logical requirement.");
   const capturedScopes = [];
   for (let index = 0; index < scopeCount; index += 1) {
@@ -9410,7 +9535,8 @@ function captureRequirement(request, maxLength) {
     logicalId,
     role,
     scopes: Object.freeze(capturedScopes),
-    ...parentResourceId === void 0 ? {} : { parentResourceId }
+    ...parentResourceId === void 0 ? {} : { parentResourceId },
+    ...alternatives === void 0 ? {} : { alternatives: Object.freeze([...alternatives]) }
   });
 }
 function copyProvenance(record3) {
@@ -9432,7 +9558,9 @@ function snapshotLogicalResourceRequirements(inputs, budget) {
   const encoder5 = new TextEncoder();
   for (const input of captured) {
     normalizeCompanionLogicalId(input.logicalId);
-    textBytes += encoder5.encode(input.id + input.logicalId + (input.parentResourceId ?? "")).length;
+    for (const alternative of input.alternatives ?? [])
+      normalizeCompanionLogicalId(alternative);
+    textBytes += encoder5.encode(input.id + input.logicalId + (input.parentResourceId ?? "") + (input.alternatives ?? []).join("")).length;
     if (textBytes > budget.maxScalarBytes)
       throw new TypeError("Logical input descriptors exceed the host scalar budget.");
   }
@@ -9882,7 +10010,10 @@ function createCompositeWorkspaceNamespaceCompanionOrigin(options) {
       logicalPrefix,
       namespace: root.namespace,
       containerRevision: root.containerRevision,
-      extract: root.extract
+      extract: root.extract,
+      ...root.assetRoots === void 0 ? {} : {
+        assetRoots: Object.freeze(root.assetRoots.map((pattern) => pattern === "" ? "" : normalizeCompanionLogicalId(pattern).replace(/\/$/u, "")))
+      }
     });
   });
   if (roots.length === 0)
@@ -9933,6 +10064,25 @@ function createCompositeWorkspaceNamespaceCompanionOrigin(options) {
     const prefix = `${root.logicalPrefix}/`;
     return fold2(logicalId).startsWith(fold2(prefix)) ? logicalId.slice(prefix.length) : void 0;
   };
+  const assetSpellings = (root, relative) => {
+    const slash = relative.indexOf("/");
+    if (root.assetRoots === void 0 || slash <= 0)
+      return [relative];
+    const first = fold2(relative.slice(0, slash));
+    const rest = relative.slice(slash + 1);
+    const named = root.assetRoots.some((pattern) => pattern.startsWith("*") ? first.endsWith(fold2(pattern.slice(1))) : pattern !== "" && first === fold2(pattern));
+    if (!named)
+      return [relative];
+    const spellings = [relative];
+    for (const pattern of root.assetRoots) {
+      if (pattern.startsWith("*"))
+        continue;
+      const spelling = pattern === "" ? rest : `${pattern}/${rest}`;
+      if (!spellings.some((known) => fold2(known) === fold2(spelling)))
+        spellings.push(spelling);
+    }
+    return spellings;
+  };
   const remember2 = (root, entry2) => {
     if (entry2.kind !== "file")
       return void 0;
@@ -9977,16 +10127,19 @@ function createCompositeWorkspaceNamespaceCompanionOrigin(options) {
       const relative = relativeRequest(root, logicalId);
       if (relative === void 0)
         continue;
-      for await (const entry2 of pages(root, joinPrefix(root.pathPrefix, relative), signal)) {
-        const remembered = remember2(root, entry2);
-        if (remembered === void 0)
-          continue;
-        const exposed = qualified ? remembered : relativeEntryPath(root, entry2);
-        if (exposed !== void 0 && fold2(exposed) === key3) {
-          const bound = byLogicalId.get(fold2(remembered));
-          if (bound !== void 0)
-            byLogicalId.set(key3, bound);
-          return bound;
+      for (const spelling of qualified ? [relative] : assetSpellings(root, relative)) {
+        const wanted = qualified ? key3 : fold2(spelling);
+        for await (const entry2 of pages(root, joinPrefix(root.pathPrefix, spelling), signal)) {
+          const remembered = remember2(root, entry2);
+          if (remembered === void 0)
+            continue;
+          const exposed = qualified ? remembered : relativeEntryPath(root, entry2);
+          if (exposed !== void 0 && fold2(exposed) === wanted) {
+            const bound = byLogicalId.get(fold2(remembered));
+            if (bound !== void 0)
+              byLogicalId.set(key3, bound);
+            return bound;
+          }
         }
       }
     }
@@ -10005,23 +10158,26 @@ function createCompositeWorkspaceNamespaceCompanionOrigin(options) {
         const relative = relativeRequest(root, enumeration.prefix);
         if (relative === void 0)
           continue;
-        for await (const entry2 of pages(root, joinPrefix(root.pathPrefix, relative), signal)) {
-          throwIfAborted(signal);
-          const remembered = remember2(root, entry2);
-          if (remembered === void 0)
-            continue;
-          const logicalId = qualified ? remembered : relativeEntryPath(root, entry2);
-          if (logicalId === void 0 || yielded.has(fold2(logicalId)))
-            continue;
-          const bound = byLogicalId.get(fold2(remembered));
-          if (bound !== void 0)
-            byLogicalId.set(fold2(logicalId), bound);
-          yielded.add(fold2(logicalId));
-          yield Object.freeze({
-            logicalId,
-            rootId: root.rootId,
-            ...entry2.size === void 0 ? {} : { size: entry2.size }
-          });
+        for (const spelling of qualified ? [relative] : assetSpellings(root, relative)) {
+          for await (const entry2 of pages(root, joinPrefix(root.pathPrefix, spelling), signal)) {
+            throwIfAborted(signal);
+            const remembered = remember2(root, entry2);
+            if (remembered === void 0)
+              continue;
+            const exposed = qualified ? remembered : relativeEntryPath(root, entry2);
+            const logicalId = exposed === void 0 || qualified || spelling === relative ? exposed : fold2(exposed).startsWith(fold2(spelling)) ? `${relative}${exposed.slice(spelling.length)}` : void 0;
+            if (logicalId === void 0 || yielded.has(fold2(logicalId)))
+              continue;
+            const bound = byLogicalId.get(fold2(remembered));
+            if (bound !== void 0)
+              byLogicalId.set(fold2(logicalId), bound);
+            yielded.add(fold2(logicalId));
+            yield Object.freeze({
+              logicalId,
+              rootId: root.rootId,
+              ...entry2.size === void 0 ? {} : { size: entry2.size }
+            });
+          }
         }
       }
     },
@@ -13241,10 +13397,15 @@ var COMPANION_PLAN_INVALID = "x3.host/companion-plan-invalid";
 var COMPANION_TRAIT_PROBE_UNAVAILABLE = "x3.host/companion-trait-probe-unavailable";
 var COMPANION_UNAVAILABLE = "x3.host/companion-unavailable";
 var DEFAULT_COMPANION_LIMITS = Object.freeze({
-  maxEntries: 4096,
+  // One scope of a game archive: a model's bare texture name is looked for in every folder of the
+  // enclosing container, and Emperor's 3DDATA0001.RFH holds 3 749 entries, Diablo III's anim/ 15 258.
+  maxEntries: 65536,
   maxProbes: 64,
   maxProbeBytes: 256 * 1024,
-  maxBindings: 64
+  // A binding is a reference into a scope already bounded by maxEntries. Kane's Wrath's compiled
+  // containers bind their meshes and clips one by one: the MARV names 164 parts, the Eradicator
+  // Hexapod 175 plus 19 clips, and at 64 they did not open.
+  maxBindings: 1024
 });
 var DRIVE_PREFIX = /^[A-Za-z]:/u;
 function refusePath(value, why, context) {
@@ -13541,10 +13702,12 @@ function createCompanionInputResolver(origin, options = {}) {
           ids.push(normalizeCompanionLogicalId(value, { scope }));
         }
       } else {
+        let taken = 0;
         for await (const entry2 of origin.enumerate(scope, namePrefix === "" ? { prefix } : { prefix, namePrefix }, signal)) {
           checkpoint(`enumerate:${scope}`);
           budget.entries += 1;
-          if (budget.entries > limits.maxEntries)
+          taken += 1;
+          if (taken > limits.maxEntries)
             exceeded("entries", limits.maxEntries);
           ids.push(normalizeCompanionLogicalId(entry2.logicalId, { scope }));
         }
@@ -16500,6 +16663,9 @@ function resolveContentRuntimePreparer(contentSources, gameId) {
 var MAX_FILES = 4096;
 var MAX_TOTAL_BYTES = 512 * 1024 * 1024;
 var MAX_PATH_LENGTH = 4096;
+var MAX_LIST_PAGES = 4096;
+var MAX_LIST_ITEMS = 262144;
+var MAX_LIST_BYTES = 64 * 1024 * 1024;
 var encoder3 = new TextEncoder();
 var RuntimeSourceChangedError = class extends Error {
   code = "x3.host/runtime-source-changed";
@@ -16527,9 +16693,22 @@ function validAddress(layerId2, path) {
 }
 function captureRuntimeSourceReads(context) {
   const reads = /* @__PURE__ */ new Map();
+  const listings = /* @__PURE__ */ new Map();
+  const locations = /* @__PURE__ */ new Map();
   let totalBytes = 0;
+  let listedItems = 0;
+  let listedBytes = 0;
   let verifying = false;
   let inFlight = 0;
+  const same2 = (left, right) => JSON.stringify(left) === JSON.stringify(right);
+  const listAnswer = (page, limit) => {
+    if (!Array.isArray(page?.items) || page.items.length > limit || page.items.length > MAX_LIST_ITEMS || page.items.some((item) => typeof item !== "string" || !validAddress("listed", item)) || page.nextCursor !== void 0 && (typeof page.nextCursor !== "string" || page.nextCursor.length > MAX_PATH_LENGTH))
+      throw new RuntimeSourceBudgetError("Runtime source listing is invalid or unbounded");
+    return {
+      items: [...page.items],
+      ...page.nextCursor === void 0 ? {} : { nextCursor: page.nextCursor }
+    };
+  };
   const wrapped = Object.freeze({
     schemaVersion: context.schemaVersion,
     gameId: context.gameId,
@@ -16537,8 +16716,65 @@ function captureRuntimeSourceReads(context) {
     layers: context.layers,
     unresolved: context.unresolved,
     diagnostics: context.diagnostics,
-    files: (...args) => context.files(...args),
-    locate: (...args) => context.locate(...args),
+    async files(layerId2, page) {
+      if (verifying)
+        throw new RuntimeSourceChangedError("Runtime inputs changed during verification");
+      if (!validAddress(layerId2, "files") || !Number.isSafeInteger(page?.limit) || page.limit < 1 || page.limit > MAX_LIST_ITEMS || page.prefix !== void 0 && (typeof page.prefix !== "string" || !validAddress(layerId2, page.prefix || "files")) || page.cursor !== void 0 && (typeof page.cursor !== "string" || page.cursor.length > MAX_PATH_LENGTH))
+        throw new TypeError("Runtime source listing has invalid arguments");
+      const request = {
+        limit: page.limit,
+        ...page.prefix === void 0 ? {} : { prefix: page.prefix },
+        ...page.cursor === void 0 ? {} : { cursor: page.cursor }
+      };
+      const key3 = JSON.stringify([layerId2, request]);
+      inFlight += 1;
+      try {
+        const answer = listAnswer(await context.files(layerId2, request), request.limit);
+        const previous = listings.get(key3);
+        if (previous !== void 0) {
+          if (!same2(answer, {
+            items: previous.items,
+            ...previous.nextCursor === void 0 ? {} : { nextCursor: previous.nextCursor }
+          }))
+            throw new RuntimeSourceChangedError(`Runtime source listing changed for ${layerId2}`);
+          return answer;
+        }
+        const bytes = encoder3.encode(JSON.stringify(answer)).byteLength;
+        if (listings.size >= MAX_LIST_PAGES || answer.items.length > MAX_LIST_ITEMS - listedItems || bytes > MAX_LIST_BYTES - listedBytes)
+          throw new RuntimeSourceBudgetError("Runtime source listing exceeds its page or byte budget");
+        listings.set(key3, { layerId: layerId2, request, ...answer });
+        listedItems += answer.items.length;
+        listedBytes += bytes;
+        return answer;
+      } finally {
+        inFlight -= 1;
+      }
+    },
+    async locate(path) {
+      if (verifying)
+        throw new RuntimeSourceChangedError("Runtime inputs changed during verification");
+      if (!validAddress("locate", path))
+        throw new TypeError("Runtime source location has an invalid path");
+      inFlight += 1;
+      try {
+        const found = await context.locate(path);
+        if (found !== void 0 && !validAddress(found.layerId, found.path))
+          throw new RuntimeSourceBudgetError("Runtime source location is invalid");
+        const answer = found === void 0 ? void 0 : { layerId: found.layerId, path: found.path };
+        const previous = locations.get(path);
+        if (previous !== void 0) {
+          if (!same2(previous.answer, answer))
+            throw new RuntimeSourceChangedError(`Runtime source location changed for ${path}`);
+        } else {
+          if (locations.size >= MAX_FILES)
+            throw new RuntimeSourceBudgetError("Runtime source locations exceed their budget");
+          locations.set(path, { path, answer });
+        }
+        return answer;
+      } finally {
+        inFlight -= 1;
+      }
+    },
     ...context.query === void 0 ? {} : {
       async query() {
         throw new RuntimeSourceUntrackedQueryError();
@@ -16582,6 +16818,37 @@ function captureRuntimeSourceReads(context) {
         const second = `${b.layerId}\0${b.path}`;
         return first < second ? -1 : first > second ? 1 : 0;
       });
+      const replayListings = [...listings.entries()];
+      const orderedListings = [...replayListings].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0);
+      const orderedLocations = [...locations.values()].sort((a, b) => a.path < b.path ? -1 : a.path > b.path ? 1 : 0);
+      for (const [, listing] of replayListings) {
+        signal?.throwIfAborted();
+        let answer;
+        try {
+          answer = listAnswer(await context.files(listing.layerId, listing.request), listing.request.limit);
+        } catch (error3) {
+          signal?.throwIfAborted();
+          throw new RuntimeSourceChangedError(`Runtime source listing is no longer readable: ${String(error3)}`);
+        }
+        if (!same2(answer, {
+          items: listing.items,
+          ...listing.nextCursor === void 0 ? {} : { nextCursor: listing.nextCursor }
+        }))
+          throw new RuntimeSourceChangedError(`Runtime source listing changed for ${listing.layerId}`);
+      }
+      for (const location of orderedLocations) {
+        signal?.throwIfAborted();
+        let answer;
+        try {
+          const found = await context.locate(location.path);
+          answer = found === void 0 ? void 0 : { layerId: found.layerId, path: found.path };
+        } catch (error3) {
+          signal?.throwIfAborted();
+          throw new RuntimeSourceChangedError(`Runtime source location is no longer readable: ${String(error3)}`);
+        }
+        if (!same2(answer, location.answer))
+          throw new RuntimeSourceChangedError(`Runtime source location changed for ${location.path}`);
+      }
       for (const read of ordered) {
         signal?.throwIfAborted();
         let bytes;
@@ -16595,6 +16862,8 @@ function captureRuntimeSourceReads(context) {
           throw new RuntimeSourceChangedError(`Runtime source changed while preparing ${read.path}`);
       }
       const identity = ordered.map((read) => [read.layerId, read.path, read.digest]);
+      identity.push(...orderedListings.map(([key3, listing]) => ["files", key3, listing.items, listing.nextCursor ?? null]));
+      identity.push(...orderedLocations.map((location) => ["locate", location.path, location.answer ?? null]));
       return Object.freeze({
         digest: await sha256(encoder3.encode(JSON.stringify(identity))),
         fileCount: ordered.length,
@@ -19260,6 +19529,19 @@ function positiveLimit(value, maximum) {
   }
   return value;
 }
+function textureVariantLogicalId(logicalId, variant) {
+  if (variant === void 0 || variant.suffix.length === 0)
+    return void 0;
+  const slash = logicalId.lastIndexOf("/");
+  const file = logicalId.slice(slash + 1);
+  const dot = file.lastIndexOf(".");
+  const stem = dot <= 0 ? file : file.slice(0, dot);
+  const name = stem.toLowerCase();
+  const matches = variant.names.some((entry2) => name.startsWith(entry2.prefix.toLowerCase()) && name.includes(entry2.contains.toLowerCase()));
+  if (!matches)
+    return void 0;
+  return `${logicalId.slice(0, slash + 1)}${stem}${variant.suffix}${dot <= 0 ? "" : file.slice(dot)}`;
+}
 function childResourceLogicalId(parentLogicalId, childLogicalId) {
   const childRoot = childLogicalId.split("/")[0];
   if (childRoot === void 0 || childRoot.length === 0)
@@ -19273,6 +19555,21 @@ function childResourceLogicalId(parentLogicalId, childLogicalId) {
 function worldTexture(id, result) {
   if (result.info.orientation === "unknown")
     return void 0;
+  if (result.state === "compressed") {
+    if (result.info.orientation !== "top-left")
+      return void 0;
+    return Object.freeze({
+      id,
+      width: result.texture.dimensions.width,
+      height: result.texture.dimensions.height,
+      rgba: new Uint8Array(0),
+      compressed: result.texture,
+      ...result.info.channelLayout === void 0 ? {} : { channelLayout: result.info.channelLayout },
+      ...result.info.compression === void 0 ? {} : { compression: result.info.compression },
+      wrapU: "repeat",
+      wrapV: "repeat"
+    });
+  }
   const { region } = result;
   const rowBytes = region.width * 4;
   const rgba = new Uint8Array(rowBytes * region.height);
@@ -19290,6 +19587,14 @@ function worldTexture(id, result) {
     wrapU: "repeat",
     wrapV: "repeat"
   });
+}
+function worldTextureBytes(texture) {
+  if (texture.compressed === void 0)
+    return texture.rgba.byteLength;
+  let bytes = 0;
+  for (const level of texture.compressed.subresources)
+    bytes += level.data.byteLength;
+  return bytes;
 }
 async function readAllPages(read, pageLimit2, cap) {
   const items = [];
@@ -19457,9 +19762,12 @@ async function worldSceneModel(asset, request, options, signal) {
       textureDiagnostics.push(diagnostic("warning", "x3.host/world-model-texture-budget-exhausted", `model texture budget omitted ${reference.id}`));
       continue;
     }
-    const logicalId = childResourceLogicalId(modelRequirement.logicalId, reference.id);
+    const namedLogicalId = childResourceLogicalId(modelRequirement.logicalId, reference.id);
+    const variantLogicalId = textureVariantLogicalId(namedLogicalId, options.textureVariant);
+    const logicalId = variantLogicalId ?? namedLogicalId;
     const previewTextureBytes = Math.max(1, Math.min(maxTextureBytes, remaining, sharedTextureBytes));
-    const cacheKey = `${logicalId}\0${String(previewTextureBytes)}`;
+    const compressedFormats = request.compressedTextureFormats;
+    const cacheKey = `${logicalId}\0${String(previewTextureBytes)}\0${compressedFormats?.join(",") ?? ""}`;
     let pending = textureCache.get(cacheKey);
     if (pending === void 0) {
       pending = (async () => {
@@ -19468,14 +19776,16 @@ async function worldSceneModel(asset, request, options, signal) {
           requirement: {
             id: `world-texture:${encodeURIComponent(logicalId)}`,
             logicalId,
+            ...variantLogicalId === void 0 ? {} : { alternatives: [namedLogicalId] },
             role: reference.role,
             scopes: modelRequirement.scopes,
             parentResourceId: modelRequirement.id
           },
           maxBytes: previewTextureBytes,
-          selection: { mipLevel: "fit" }
+          selection: { mipLevel: "fit" },
+          ...compressedFormats === void 0 ? {} : { compressedFormats }
         }, signal);
-        if (raster.state !== "decoded")
+        if (raster.state !== "decoded" && raster.state !== "compressed")
           return Object.freeze({
             diagnostics: Object.freeze([...raster.diagnostics])
           });
@@ -19501,11 +19811,12 @@ async function worldSceneModel(asset, request, options, signal) {
     const texture = loaded.texture;
     if (texture === void 0)
       continue;
-    if (texture.rgba.byteLength > remaining) {
+    const bytes = worldTextureBytes(texture);
+    if (bytes > remaining) {
       textureDiagnostics.push(diagnostic("warning", "x3.host/world-model-texture-budget-exhausted", `decoded model texture ${reference.id} exceeds the aggregate texture budget`));
       continue;
     }
-    textureBytes += texture.rgba.byteLength;
+    textureBytes += bytes;
     textures.push(texture);
   }
   return Object.freeze({
@@ -19682,7 +19993,7 @@ function canonicalPosition(position, transform) {
   };
   return Object.freeze({ x: axis("x"), y: axis("y"), z: axis("z") });
 }
-function canonicalObjectRotation(rotation, nativeUnit) {
+function canonicalObjectRotation(rotation, nativeUnit, sense) {
   let radians;
   if (rotation === void 0)
     radians = 0;
@@ -19696,6 +20007,8 @@ function canonicalObjectRotation(rotation, nativeUnit) {
     return void 0;
   if (!Number.isFinite(radians))
     return void 0;
+  if (sense === "clockwise")
+    radians = -radians;
   const half = radians / 2;
   const y = Math.sin(half);
   const w = Math.cos(half);
@@ -19869,6 +20182,9 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize, mode
   const incompleteObjectPositionCount = semanticObjects.filter((item) => item.sourcePositionDimensions === 2).length;
   const terrain = Object.freeze((semantic.terrain?.samples ?? []).map((item) => {
     const mapNativePosition = terrainTransform === void 0 ? void 0 : terrainMapNativePosition(item, terrainTransform);
+    const baseOffset = terrainTransform !== void 0 && "vertData" in terrainTransform ? (item.heightBase * terrainTransform.vertData.quantizeScale - terrainTransform.vertData.quantizeBias - terrainTransform.vertData.standardHeight) * terrainTransform.heightMap.scale.z : void 0;
+    const presentationAdjustment = terrainTransform !== void 0 && !("vertData" in terrainTransform) && item.presentationHeightAdjustment !== void 0 && Number.isFinite(item.presentationHeightAdjustment) && item.presentationHeightAdjustment !== 0 ? item.presentationHeightAdjustment * terrainTransform.heightMap.scale.z : void 0;
+    const presentationUvwPosition = presentationAdjustment === void 0 || mapNativePosition === void 0 || uvwTransform === void 0 ? void 0 : canonicalPosition({ ...mapNativePosition, z: mapNativePosition.z + presentationAdjustment }, uvwTransform);
     return Object.freeze({
       facet: "terrain",
       id: `${terrainLayerId}:sample:${String(item.x)}:${String(item.y)}`,
@@ -19877,7 +20193,9 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize, mode
       lod: terrainLod,
       ...item,
       ...mapNativePosition === void 0 ? {} : { mapNativePosition },
-      ...mapNativePosition === void 0 || uvwTransform === void 0 ? {} : { uvwPosition: canonicalPosition(mapNativePosition, uvwTransform) }
+      ...mapNativePosition === void 0 || uvwTransform === void 0 ? {} : { uvwPosition: canonicalPosition(mapNativePosition, uvwTransform) },
+      ...presentationUvwPosition === void 0 ? {} : { presentationUvwPosition },
+      ...baseOffset === void 0 ? {} : { baseOffset }
     });
   }));
   const terrainByGrid = new Map(terrain.flatMap((item) => item.facet === "terrain" ? [[`${String(item.x)}:${String(item.y)}`, item]] : []));
@@ -19932,7 +20250,7 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize, mode
   const semanticObjectItems = Object.freeze(semanticObjects.map((item) => {
     const id = `${objectLayerId}:object:${String(item.objectId)}`;
     const ref2 = item.catalog?.ref;
-    const uvwRotation = canonicalObjectRotation(item.rotation, item.nativeRotationUnit);
+    const uvwRotation = canonicalObjectRotation(item.presentationRotation ?? item.rotation, item.nativeRotationUnit, item.nativeRotationSense);
     const groundHeight = terrainHeightAt(item.position, semantic.terrain, terrainTransform);
     const mapNativePresentationPosition = groundHeight === void 0 || item.heightReference === void 0 || item.heightReference === "absolute" ? item.position : Object.freeze({
       ...item.position,
@@ -20029,11 +20347,14 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize, mode
         entityId: item.catalog.ref.entityId,
         resolved: item.catalog.entity !== void 0,
         objectIds: [],
-        ...item.modelResource === void 0 ? {} : { modelResource: item.modelResource }
+        ...item.modelResource === void 0 ? {} : { modelResource: item.modelResource },
+        ...item.modelTextureVariant === void 0 ? {} : { modelTextureVariant: item.modelTextureVariant }
       };
       current.resolved ||= item.catalog.entity !== void 0;
       if (current.modelResource === void 0 && item.modelResource !== void 0) {
         current.modelResource = item.modelResource;
+        if (item.modelTextureVariant !== void 0)
+          current.modelTextureVariant = item.modelTextureVariant;
       }
       current.objectIds.push(item.id);
       resourceJoins.set(key3, current);
@@ -20057,6 +20378,7 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize, mode
     ...item.entityId === void 0 ? {} : { entityId: item.entityId },
     resolved: item.resolved,
     ...item.modelResource === void 0 ? {} : { modelResource: item.modelResource },
+    ...item.modelTextureVariant === void 0 ? {} : { modelTextureVariant: item.modelTextureVariant },
     ...item.modelCandidates === void 0 ? {} : { modelCandidates: item.modelCandidates },
     ...item.materialModel === void 0 ? {} : { materialModel: item.materialModel },
     objectIds: Object.freeze([...item.objectIds])
@@ -20092,7 +20414,8 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize, mode
       directional: snapshot2.lighting.directional,
       ...snapshot2.lighting.terrain === void 0 ? {} : { terrain: snapshot2.lighting.terrain },
       ...snapshot2.lighting.toneMapping === void 0 ? {} : { toneMapping: snapshot2.lighting.toneMapping },
-      ...snapshot2.lighting.shadowRange === void 0 ? {} : { shadowRange: snapshot2.lighting.shadowRange }
+      ...snapshot2.lighting.shadowRange === void 0 ? {} : { shadowRange: snapshot2.lighting.shadowRange },
+      ...snapshot2.lighting.fog === void 0 ? {} : { fog: snapshot2.lighting.fog }
     })
   ]);
   const contentRevisions = Object.freeze({
@@ -20571,6 +20894,7 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize, mode
             yaw: chosen.yaw,
             maxPageSize,
             textureCache: modelTextureCache,
+            ...item.modelTextureVariant === void 0 ? {} : { textureVariant: item.modelTextureVariant },
             ...materialModel === void 0 ? {} : {
               async skin(materials) {
                 const skinItems = await skinItemsOf(materialModel);
@@ -20637,7 +20961,11 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize, mode
             ...(candidate.causticsFrameResourceIds ?? []).flatMap((resourceId2, index) => {
               const frame = candidate.causticsFrameResources?.[index];
               return resourceId2 === requestedResourceId && frame !== void 0 ? [frame] : [];
-            })
+            }),
+            ...[
+              ...(candidate.detailWaves?.normalResourceIds ?? []).map((resourceId2, index) => [resourceId2, candidate.detailWaves?.normalResources[index]]),
+              ...(candidate.detailWaves?.foamResourceIds ?? []).map((resourceId2, index) => [resourceId2, candidate.detailWaves?.foamResources?.[index]])
+            ].flatMap(([resourceId2, resource]) => resourceId2 === requestedResourceId && resource !== void 0 ? [resource] : [])
           ])
         ][0];
         if (requirement === void 0) {
@@ -20651,9 +20979,10 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize, mode
         const raster = await rasterResources.read({
           kind: "logical",
           requirement,
-          maxBytes: request.maxBytes
+          maxBytes: request.maxBytes,
+          ...request.compressedFormats === void 0 ? {} : { compressedFormats: request.compressedFormats }
         }, signal);
-        if (raster.state !== "decoded") {
+        if (raster.state !== "decoded" && raster.state !== "compressed") {
           return Object.freeze({
             state: "unresolved",
             diagnostics: Object.freeze([...raster.diagnostics])
@@ -21680,11 +22009,11 @@ function jsonSafeValue(value, depth = 0) {
 }
 function validHostResourceRoot(value) {
   const record3 = recordOf10(value);
-  return record3 !== void 0 && Object.keys(record3).every((key3) => key3 === "rootId" || key3 === "locator") && nonEmptyString7(record3["rootId"]) && Object.hasOwn(record3, "locator") && jsonSafeValue(record3["locator"]);
+  return record3 !== void 0 && Object.keys(record3).every((key3) => key3 === "rootId" || key3 === "locator" || key3 === "optional") && nonEmptyString7(record3["rootId"]) && Object.hasOwn(record3, "locator") && jsonSafeValue(record3["locator"]) && (record3["optional"] === void 0 || typeof record3["optional"] === "boolean");
 }
 function validSubjectNamespaceRoot(value) {
   const record3 = recordOf10(value);
-  return record3 !== void 0 && Object.keys(record3).every((key3) => key3 === "rootId" || key3 === "namespacePrefix") && nonEmptyString7(record3["rootId"]) && typeof record3["namespacePrefix"] === "string";
+  return record3 !== void 0 && Object.keys(record3).every((key3) => key3 === "rootId" || key3 === "namespacePrefix" || key3 === "assetRoots") && nonEmptyString7(record3["rootId"]) && typeof record3["namespacePrefix"] === "string" && (record3["assetRoots"] === void 0 || Array.isArray(record3["assetRoots"]) && record3["assetRoots"].length <= 16 && record3["assetRoots"].every((root) => typeof root === "string" && root.length <= 128));
 }
 function validateResourcePlan(value, maxRoots) {
   const plan = recordOf10(value);

@@ -15,7 +15,7 @@ import {
 } from "./chunk-V3DESLW4.js";
 
 // ../MODDING/modkit-core/packages/host/dist/session.js
-var projection = () => import("./subject-projection-5EUEKMBZ.js");
+var projection = () => import("./subject-projection-DBTJVTRE.js");
 function rejected(reason, message) {
   return {
     state: "rejected",

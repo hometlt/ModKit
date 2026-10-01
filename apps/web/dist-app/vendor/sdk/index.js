@@ -116,7 +116,11 @@ import {
   validateLocalizationContributionSemantics,
   writerOfferSatisfies,
   writerSelectionKey
-} from "../../chunks/chunk-MAAPKCDG.js";
+} from "../../chunks/chunk-S6YMWV3Q.js";
+import {
+  SCENE_RENDERER_CONTRACT,
+  SCENE_RENDERER_MATCHER_PROFILE
+} from "../../chunks/chunk-MT2JUZZJ.js";
 import {
   NATIVE_MODEL_ENCODER_CONTRACT,
   NATIVE_MODEL_ENCODER_MATCHER_PROFILE
@@ -212,10 +216,6 @@ import {
   writerOfferV1Schema,
   writerRequirementV1Schema
 } from "../../chunks/chunk-VI4QBV4T.js";
-import {
-  SCENE_RENDERER_CONTRACT,
-  SCENE_RENDERER_MATCHER_PROFILE
-} from "../../chunks/chunk-MT2JUZZJ.js";
 import "../../chunks/chunk-V3DESLW4.js";
 import "../../chunks/chunk-CQ52GEHY.js";
 export {

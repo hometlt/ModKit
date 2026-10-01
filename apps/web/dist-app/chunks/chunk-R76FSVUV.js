@@ -1,27 +1,32 @@
 import {
+  createOrbitController
+} from "./chunk-O2DY4UGD.js";
+import {
   convertedFileName,
   exportOffer,
   invokeRefusalMessage,
   isRejected,
   mountFieldEditor
-} from "./chunk-Z2D6YWX3.js";
+} from "./chunk-NCJM34Q7.js";
+import {
+  createMediaShell,
+  mountContributedSections
+} from "./chunk-L2ERXEFC.js";
 import {
   MODEL_FALLBACK_MESSAGES,
   MODEL_GIZMO_FALLBACK_MESSAGES,
   PART_ATTRIBUTE,
   ViewerMountScope,
-  createMediaShell,
   createSurface,
   createViewerMount,
   defineViewerModule,
   element,
-  mountContributedSections,
   setPart,
   setState,
   setViewerText,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-FBGUD7CM.js";
+} from "./chunk-J4UN5ND3.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunk-BLWUC7LO.js";
@@ -140,7 +145,7 @@ function normalizeQuat(value) {
   return [x / length, y / length, z / length, w / length];
 }
 function decomposeMatrix4(matrix2) {
-  const m = (at) => matrix2[at] ?? (at % 5 === 0 ? 1 : 0);
+  const m = (at2) => matrix2[at2] ?? (at2 % 5 === 0 ? 1 : 0);
   const determinant = m(0) * (m(5) * m(10) - m(9) * m(6)) - m(4) * (m(1) * m(10) - m(9) * m(2)) + m(8) * (m(1) * m(6) - m(5) * m(2));
   const sx = (determinant < 0 ? -1 : 1) * Math.hypot(m(0), m(1), m(2));
   const sy = Math.hypot(m(4), m(5), m(6));
@@ -299,6 +304,7 @@ function multiplyMatrix4(a, b) {
 }
 
 // ../MODDING/modkit-core/packages/scene/dist/model/billboards.js
+var AIM_LOCKS = ["free", "frame-x", "frame-y", "frame-z", "own-x", "own-y"];
 function needed(value, label) {
   if (value === void 0)
     throw new TypeError("billboard " + label + " absent");
@@ -339,6 +345,13 @@ function snapshotModelBillboards(values, maxBytes, signal) {
       if (Object.keys(item).some((key) => !["nodeId", "mode", "rotationAxes", "pivot"].includes(key)) || !["z", "xz"].includes(item.rotationAxes))
         throw new TypeError("invalid face-camera billboard constraint");
       position(item.pivot);
+    } else if (item.mode === "aim") {
+      if (Object.keys(item).some((key) => !["nodeId", "mode", "aim", "lock", "correction", "rootCorrection"].includes(key)) || item.aim !== "view" && item.aim !== "eye" || !AIM_LOCKS.includes(item.lock))
+        throw new TypeError("invalid aim billboard constraint");
+      if (item.correction !== void 0)
+        rotation(item.correction);
+      if (item.rootCorrection !== void 0)
+        rotation(item.rootCorrection);
     } else
       throw new TypeError("invalid billboard mode");
     seen.add(item.nodeId);
@@ -378,9 +391,15 @@ function applyModelFaceCameraBillboard(sourceWorld, constraint, cameraPosition) 
     throw new RangeError("face-camera billboard exceeds float32");
   return result;
 }
-function applyModelBillboards(pose, bindings, constraints, cameraRotation, hierarchyFrame, maxBytes, signal) {
+function billboardCameraRotation(view) {
+  const inverse = invertMatrix4OrNull(matrix(view));
+  if (inverse === null)
+    throw new TypeError("billboard camera view is singular");
+  return decomposeMatrix4(inverse).rotation;
+}
+function applyModelBillboards(pose, bindings, constraints, cameraRotation, hierarchyFrame, maxBytes, signal, cameraPosition) {
   signal?.throwIfAborted();
-  const inverseConstraints = constraints.filter((item) => item.mode === "inverse-camera");
+  const inverseConstraints = constraints.filter((item) => item.mode === "inverse-camera" || item.mode === "aim");
   if (cameraRotation === void 0 || inverseConstraints.length === 0)
     return pose;
   if (!Number.isSafeInteger(maxBytes) || maxBytes < 0 || pose.length * 2048 + inverseConstraints.length * 256 > maxBytes)
@@ -393,7 +412,15 @@ function applyModelBillboards(pose, bindings, constraints, cameraRotation, hiera
   }
   if (!pose.some((item) => byNode.has(item.nodeId)))
     return pose;
-  const cameraInFrame = multiplyQuat(invertQuat(decomposeMatrix4(matrix(hierarchyFrame)).rotation), rotation(cameraRotation)), cameraInverse = invertQuat(cameraInFrame);
+  const cameraInFrame = multiplyQuat(invertQuat(decomposeMatrix4(matrix(hierarchyFrame)).rotation), rotation(cameraRotation));
+  const frameInverse = invertMatrix4OrNull(matrix(hierarchyFrame));
+  const eye = cameraPosition === void 0 || frameInverse === null ? void 0 : transformPoint(frameInverse, position(cameraPosition));
+  const camera = {
+    forward: rotateVector(cameraInFrame, [0, 0, -1]),
+    up: rotateVector(cameraInFrame, [0, 1, 0]),
+    axisX: rotateVector(cameraInFrame, [1, 0, 0]),
+    ...eye === void 0 ? {} : { eye }
+  };
   const adjusted = /* @__PURE__ */ new Map(), output = /* @__PURE__ */ new Map();
   for (const entry of pose) {
     const chain = [], visiting = /* @__PURE__ */ new Set();
@@ -420,12 +447,21 @@ function applyModelBillboards(pose, bindings, constraints, cameraRotation, hiera
       const constraint = byNode.get(original.nodeId);
       if (constraint !== void 0) {
         const localTransform = decomposeMatrix4(local), parentInverse = adjustedParent === void 0 ? [0, 0, 0, 1] : invertQuat(decomposeMatrix4(adjustedParent).rotation);
-        let facing = multiplyQuat(parentInverse, cameraInverse);
-        for (const basis of constraint.basisRotations)
-          facing = multiplyQuat(facing, rotation(basis));
-        facing = multiplyQuat(facing, localTransform.rotation);
-        const billboardLocal = rotationTranslationScaleOriginMatrix(normalizeQuat(facing), localTransform.translation, localTransform.scaling, [0, 0, 0]);
-        world = adjustedParent === void 0 ? billboardLocal : multiplyMatrix4(adjustedParent, billboardLocal);
+        let facing;
+        if (constraint.mode === "inverse-camera") {
+          facing = multiplyQuat(parentInverse, cameraInFrame);
+          for (const basis of constraint.basisRotations)
+            facing = multiplyQuat(facing, rotation(basis));
+          facing = multiplyQuat(facing, localTransform.rotation);
+        } else {
+          const aimed = aimRotation(constraint, camera, world, parent === null, localTransform.rotation);
+          if (aimed !== void 0)
+            facing = multiplyQuat(parentInverse, aimed);
+        }
+        if (facing !== void 0) {
+          const billboardLocal = rotationTranslationScaleOriginMatrix(normalizeQuat(facing), localTransform.translation, localTransform.scaling, [0, 0, 0]);
+          world = adjustedParent === void 0 ? billboardLocal : multiplyMatrix4(adjustedParent, billboardLocal);
+        }
       }
       if (!world.every(Number.isFinite))
         throw new RangeError("billboard world exceeds float32");
@@ -443,6 +479,109 @@ function applyModelBillboards(pose, bindings, constraints, cameraRotation, hiera
   }
   signal?.throwIfAborted();
   return pose.map((item) => needed(output.get(item.boneIndex), "result"));
+}
+var sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+var dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+var cross = (a, b) => [
+  a[1] * b[2] - a[2] * b[1],
+  a[2] * b[0] - a[0] * b[2],
+  a[0] * b[1] - a[1] * b[0]
+];
+var unit = (v) => {
+  const length = Math.hypot(v[0], v[1], v[2]);
+  return length > 0 ? [v[0] / length, v[1] / length, v[2] / length] : v;
+};
+var unit2 = (a, b) => {
+  const length = Math.hypot(a, b);
+  return length > 0 ? [a / length, b / length] : [a, b];
+};
+function rotateVector(q, v) {
+  const u = [q[0], q[1], q[2]];
+  const c1 = cross(u, v);
+  const t = [c1[0] * 2, c1[1] * 2, c1[2] * 2];
+  const c2 = cross(u, t);
+  return [v[0] + q[3] * t[0] + c2[0], v[1] + q[3] * t[1] + c2[1], v[2] + q[3] * t[2] + c2[2]];
+}
+function transformPoint(m, p) {
+  const row = (r) => (m[r] ?? 0) * p[0] + (m[4 + r] ?? 0) * p[1] + (m[8 + r] ?? 0) * p[2] + (m[12 + r] ?? 0);
+  return [row(0), row(1), row(2)];
+}
+var AXIS_EPSILON = 2384185791015625e-22;
+var DEGENERATE_LENGTH_SQUARED = 1e-4;
+var ORTHONORMAL_TOLERANCE = 1e-3;
+function aimRotation(constraint, camera, world, root, spin) {
+  let d;
+  if (constraint.aim === "eye") {
+    if (camera.eye === void 0)
+      return void 0;
+    d = unit(sub([world[12] ?? 0, world[13] ?? 0, world[14] ?? 0], camera.eye));
+  } else
+    d = camera.forward;
+  if (d.every((component) => Math.abs(component) < AXIS_EPSILON))
+    return void 0;
+  let rows = [
+    [1, 0, 0],
+    [0, 1, 0],
+    [0, 0, 1]
+  ];
+  switch (constraint.lock) {
+    case "frame-x": {
+      let v = [0, d[1], d[2]];
+      if (d[1] * d[1] + d[2] * d[2] < DEGENERATE_LENGTH_SQUARED)
+        v = camera.axisX;
+      v = unit(v);
+      const p = unit2(-v[2], v[1]);
+      rows = [[1, 0, 0], v, [0, p[0], p[1]]];
+      break;
+    }
+    case "frame-y": {
+      let v = [d[0], 0, d[2]];
+      if (d[2] * d[2] + d[0] * d[0] < DEGENERATE_LENGTH_SQUARED)
+        v = camera.up;
+      v = unit(v);
+      const p = unit2(-v[2], v[0]);
+      rows = [v, [0, 1, 0], [p[0], 0, p[1]]];
+      break;
+    }
+    case "frame-z": {
+      let v = [d[0], d[1], 0];
+      if (d[1] * d[1] + d[0] * d[0] < DEGENERATE_LENGTH_SQUARED)
+        v = camera.up;
+      v = unit(v);
+      const p = unit2(v[1], -v[0]);
+      rows = [[p[0], p[1], 0], v, [0, 0, 1]];
+      break;
+    }
+    case "own-x":
+    case "own-y": {
+      const column = constraint.lock === "own-x" ? 0 : 4;
+      const a = unit([world[column] ?? 0, world[column + 1] ?? 0, world[column + 2] ?? 0]);
+      const c = cross(a, d);
+      if (dot(c, c) < DEGENERATE_LENGTH_SQUARED)
+        return void 0;
+      const cn = unit(c);
+      rows = constraint.lock === "own-x" ? [a, cn, cross(a, cn)] : [cn, cross(a, cn), a];
+      break;
+    }
+    case "free": {
+      const e = cross(d, camera.up);
+      if (dot(e, e) < DEGENERATE_LENGTH_SQUARED)
+        break;
+      const en = unit(e);
+      rows = [en, d, unit(cross(en, d))];
+      break;
+    }
+  }
+  if (rows.some((row) => Math.abs(dot(row, row) - 1) >= ORTHONORMAL_TOLERANCE))
+    return void 0;
+  let q = normalizeQuat(quaternionFromRotationMatrix([...rows[0], ...rows[1], ...rows[2]]));
+  if (root) {
+    q = multiplyQuat(q, spin);
+    if (constraint.rootCorrection !== void 0)
+      q = multiplyQuat(q, rotation(constraint.rootCorrection));
+  } else if (constraint.correction !== void 0)
+    q = multiplyQuat(q, rotation(constraint.correction));
+  return q;
 }
 
 // ../MODDING/modkit-core/packages/codec-kit/dist/model-math/sequence-pose.js
@@ -516,18 +655,18 @@ function copyVector(source, out) {
   return out;
 }
 function slerpVector(a, b, t, out) {
-  let dot2 = a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
+  let dot3 = a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
   let sign = 1;
-  if (dot2 < 0) {
-    dot2 = -dot2;
+  if (dot3 < 0) {
+    dot3 = -dot3;
     sign = -1;
   }
   out.length = 4;
-  if (dot2 > 0.9995) {
+  if (dot3 > 0.9995) {
     for (let i = 0; i < 4; i += 1)
       out[i] = a[i] + (sign * b[i] - a[i]) * t;
   } else {
-    const theta = Math.acos(Math.min(1, dot2));
+    const theta = Math.acos(Math.min(1, dot3));
     const sinTheta = Math.sin(theta);
     const wa = Math.sin((1 - t) * theta) / sinTheta;
     const wb = Math.sin(t * theta) / sinTheta * sign;
@@ -1241,7 +1380,7 @@ function skinInterleaved(source, mesh, matrices, target) {
       const matrix2 = matrices[mesh.skin.boneIndices[skinBase + slot] ?? 0];
       if (!matrix2)
         continue;
-      const transformed = transformPoint(matrix2, px, py, pz);
+      const transformed = transformPoint2(matrix2, px, py, pz);
       const transformedNormal = transformVector(matrix2, nx, ny, nz);
       const transformedTangent = transformVector(matrix2, tx, ty, tz);
       x += transformed[0] * weight;
@@ -1271,7 +1410,7 @@ function skinInterleaved(source, mesh, matrices, target) {
   }
   return out;
 }
-function transformPoint(matrix2, x, y, z) {
+function transformPoint2(matrix2, x, y, z) {
   return [
     (matrix2[0] ?? 0) * x + (matrix2[4] ?? 0) * y + (matrix2[8] ?? 0) * z + (matrix2[12] ?? 0),
     (matrix2[1] ?? 0) * x + (matrix2[5] ?? 0) * y + (matrix2[9] ?? 0) * z + (matrix2[13] ?? 0),
@@ -1509,6 +1648,47 @@ function present(value, label) {
     throw new TypeError(`missing scene ${label}`);
   return value;
 }
+function morphPrimitive(primitive, weights) {
+  const targets = present(primitive.morphTargets, "morph targets");
+  const positions = Float32Array.from(primitive.positions);
+  const normals = primitive.normals === void 0 ? void 0 : Float32Array.from(primitive.normals);
+  let normalsMoved = false;
+  for (let target = 0; target < targets.length; target++) {
+    const weight = weights[target] ?? 0;
+    if (weight === 0)
+      continue;
+    const deltas = present(targets[target], "morph target");
+    for (let index = 0; index < positions.length; index++)
+      positions[index] = (positions[index] ?? 0) + weight * (deltas.positions[index] ?? 0);
+    if (normals !== void 0 && deltas.normals !== void 0) {
+      normalsMoved = true;
+      for (let index = 0; index < normals.length; index++)
+        normals[index] = (normals[index] ?? 0) + weight * (deltas.normals[index] ?? 0);
+    }
+  }
+  if (normals !== void 0 && normalsMoved)
+    for (let index = 0; index + 2 < normals.length; index += 3) {
+      const x = normals[index] ?? 0;
+      const y = normals[index + 1] ?? 0;
+      const z = normals[index + 2] ?? 0;
+      const length = Math.hypot(x, y, z);
+      if (length > 0) {
+        normals[index] = x / length;
+        normals[index + 1] = y / length;
+        normals[index + 2] = z / length;
+      }
+    }
+  if (!positions.every(Number.isFinite))
+    throw new RangeError("morphed positions exceed finite float range");
+  const { bounds: _bounds, ...rest } = primitive;
+  return { ...rest, positions, ...normals === void 0 ? {} : { normals } };
+}
+function drawn(primitive) {
+  if (primitive.morphTargets === void 0 && primitive.hidden === void 0)
+    return primitive;
+  const { morphTargets: _targets, hidden: _hidden, ...rest } = primitive;
+  return rest;
+}
 function createModelSceneSampler(projection, options = {}) {
   const { signal, clip } = options;
   const gpuSkinning = options.skinning === "gpu";
@@ -1521,7 +1701,19 @@ function createModelSceneSampler(projection, options = {}) {
   const budget = { maxDepth: 64, maxNodes: 1e6, maxBytes };
   const owned = snapshotJson({ nodes: projection.nodes, meshes: projection.meshes }, budget, signal);
   const bindings = snapshotModelSkeleton(projection.skeleton ?? [], budget, signal);
-  const billboards = snapshotModelBillboards(options.billboards ?? [], maxBytes, signal);
+  const stated = new Set((options.billboards ?? []).map((item) => item.nodeId));
+  const unusable = [];
+  const declared = projection.nodes.flatMap((node) => {
+    if (node.billboard === void 0 || stated.has(node.id))
+      return [];
+    const bound = bindings.some((bone) => bone.nodeId === node.id);
+    if (node.billboard.mode === "face-camera" ? bound : !bound) {
+      unusable.push(node.id);
+      return [];
+    }
+    return [{ nodeId: node.id, ...node.billboard }];
+  });
+  const billboards = snapshotModelBillboards([...options.billboards ?? [], ...declared], maxBytes, signal);
   const billboardBytes = billboards.length === 0 ? 0 : bindings.length * 2048 + billboards.length * 512;
   if (billboardBytes > maxBytes)
     throw new RangeError("scene billboards exceed byte budget");
@@ -1543,9 +1735,11 @@ function createModelSceneSampler(projection, options = {}) {
       ...primitiveId === void 0 ? {} : { primitiveId }
     });
   };
-  if (billboards.some((item) => item.mode === "inverse-camera") && billboardCamera === void 0)
+  if (unusable.length > 0)
+    report("billboard-node-unsupported", `Nodes ${unusable.join(", ")} declare a camera rule their binding cannot take; authored poses are retained.`);
+  if (billboards.some((item) => item.mode === "inverse-camera" || item.mode === "aim") && billboardCamera === void 0 && options.billboardCameraPerSample !== true)
     report("billboard-camera-required", "Node billboard constraints require an explicit camera orientation; authored poses are retained.");
-  if (billboards.some((item) => item.mode === "face-camera") && billboardPosition === void 0)
+  if (billboards.some((item) => item.mode === "face-camera") && billboardPosition === void 0 && options.billboardCameraPerSample !== true)
     report("billboard-camera-position-required", "Position-facing billboard constraints require an explicit camera position; authored poses are retained.");
   const nodes = /* @__PURE__ */ new Map();
   const parents = /* @__PURE__ */ new Map();
@@ -1672,8 +1866,9 @@ function createModelSceneSampler(projection, options = {}) {
   });
   const trs = clip?.channels.filter((channel) => ["translation", "rotation", "scale"].includes(channel.kind)) ?? [];
   const visibility = clip?.channels.filter((channel) => channel.kind === "visibility") ?? [];
-  if ((clip?.channels.length ?? 0) > trs.length + visibility.length || (clip?.unsupportedChannels ?? 0) > 0)
-    report("animation-channels-unrendered", "Some animation channels are not bone TRS or primitive visibility; their effects are not rendered.");
+  const morphs = clip?.channels.filter((channel) => channel.kind === "weights") ?? [];
+  if ((clip?.channels.length ?? 0) > trs.length + visibility.length + morphs.length || (clip?.unsupportedChannels ?? 0) > 0)
+    report("animation-channels-unrendered", "Some animation channels are not bone TRS, primitive visibility or morph weights; their effects are not rendered.");
   for (const channel of trs)
     if (!bindingsByNode.has(channel.target) && !poseNodeIds.has(channel.target))
       report("animation-target-unrendered", `Animation target ${channel.target} has no explicit bone binding.`);
@@ -1792,6 +1987,38 @@ function createModelSceneSampler(projection, options = {}) {
       report("skin-unavailable", `${primitive.id}: ${error instanceof Error ? error.message : String(error)}`, primitive.id);
     }
   }
+  const meshOfPrimitive = /* @__PURE__ */ new Map();
+  for (const mesh of owned.meshes)
+    for (const primitive of mesh.primitiveIds)
+      meshOfPrimitive.set(primitive, mesh);
+  const morphed = projection.primitives.filter((primitive) => primitive.morphTargets !== void 0 && primitive.morphTargets.length > 0);
+  for (const primitive of morphed) {
+    if (deformers.has(primitive)) {
+      report("morph-skinned-unrendered", `${primitive.id}: morph targets under a skin are drawn without their weights.`, primitive.id);
+      continue;
+    }
+    workingBytes += (primitive.positions.byteLength + (primitive.normals?.byteLength ?? 0)) * (primitiveNodes.get(primitive.id)?.length ?? 1);
+    if (workingBytes > maxBytes)
+      throw new RangeError("morphed geometry exceeds maxBytes");
+  }
+  const morphTargetCounts = /* @__PURE__ */ new Map();
+  for (const primitive of morphed)
+    for (const node of primitiveNodes.get(primitive.id) ?? [])
+      if (node !== void 0)
+        morphTargetCounts.set(node, primitive.morphTargets?.length ?? 0);
+  let morphSampler;
+  if (morphs.length > 0) {
+    for (const channel of morphs)
+      if (!morphTargetCounts.has(channel.target))
+        report("animation-target-unrendered", `Morph weights target ${channel.target} is not a scene node drawing morph targets.`);
+    try {
+      morphSampler = createModelAnimationSampler({ ...present(clip, "morph clip"), channels: morphs }, { ...budget, maxBytes: Math.floor(maxBytes / 4) }, signal);
+    } catch (error) {
+      if (signal?.aborted || error instanceof RangeError)
+        throw error;
+      report("morph-unavailable", `Morph weights are not sampleable: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
   let visibilitySampler;
   if (visibility.length > 0) {
     for (const channel of visibility)
@@ -1807,24 +2034,34 @@ function createModelSceneSampler(projection, options = {}) {
   }
   return Object.freeze({
     diagnostics: Object.freeze(diagnostics),
-    sample(timeSeconds, requestSignal) {
+    sample(timeSeconds, requestSignal, camera) {
       if (!Number.isFinite(timeSeconds))
         throw new TypeError("scene time must be finite");
       if (requestSignal?.aborted)
         throw new DOMException("operation cancelled", "AbortError");
+      const cameraRotation = camera?.rotation === void 0 ? billboardCamera : sampleRotation(camera.rotation);
+      const cameraPosition = camera?.position === void 0 ? billboardPosition : samplePosition(camera.position);
       const poses = /* @__PURE__ */ new Map();
       const animatedWorlds = /* @__PURE__ */ new Map();
-      const hiddenPrimitives = /* @__PURE__ */ new Set();
+      const hiddenPrimitives = new Set(projection.primitives.filter((primitive) => primitive.hidden === true).map((primitive) => primitive.id));
       for (const value of visibilitySampler?.sample(timeSeconds, requestSignal) ?? [])
-        if (primitiveIds.has(value.target) && (value.value[0] ?? 0) <= 0)
-          hiddenPrimitives.add(value.target);
+        if (primitiveIds.has(value.target)) {
+          if ((value.value[0] ?? 0) > 0)
+            hiddenPrimitives.delete(value.target);
+          else
+            hiddenPrimitives.add(value.target);
+        }
+      const nodeWeights = /* @__PURE__ */ new Map();
+      for (const value of morphSampler?.sample(timeSeconds, requestSignal) ?? [])
+        if (value.value.length === morphTargetCounts.get(value.target))
+          nodeWeights.set(value.target, value.value);
       const localPoses = nodeSampler?.sample(timeSeconds, requestSignal);
       const faceBillboards = new Map(billboards.flatMap((item) => item.mode === "face-camera" ? [[item.nodeId, item]] : []));
       const joints = [];
       const palettes = /* @__PURE__ */ new Map();
       for (const [hierarchyId, sampler] of poseSamplers) {
         const originalPose = sampler.sample(timeSeconds, requestSignal).bones;
-        const pose = applyModelBillboards(originalPose, [...present(hierarchyBindings.get(hierarchyId), "billboard bindings").values()], billboards, billboardCamera, present(hierarchyFrames.get(hierarchyId), "billboard frame"), billboardBytes, requestSignal);
+        const pose = applyModelBillboards(originalPose, [...present(hierarchyBindings.get(hierarchyId), "billboard bindings").values()], billboards, cameraRotation, present(hierarchyFrames.get(hierarchyId), "billboard frame"), billboardBytes, requestSignal, cameraPosition);
         poses.set(hierarchyId, pose);
         const offset = joints.length;
         const byIndex = new Map(pose.map((bone, i) => [bone.boneIndex, offset + i]));
@@ -1858,7 +2095,7 @@ function createModelSceneSampler(projection, options = {}) {
           const matrix2 = new Float32Array(16);
           multiplyMat4(matrix2, 0, parent === void 0 ? IDENTITY : present(animatedWorlds.get(parent), "animated parent"), 0, localPoses?.get(id) ?? present(nodes.get(id), "animated node").transform, 0);
           const face = faceBillboards.get(id);
-          const adjusted = face === void 0 || billboardPosition === void 0 ? matrix2 : applyModelFaceCameraBillboard(matrix2, face, billboardPosition);
+          const adjusted = face === void 0 || cameraPosition === void 0 ? matrix2 : applyModelFaceCameraBillboard(matrix2, face, cameraPosition);
           if (!adjusted.every(Number.isFinite))
             throw new RangeError("animated scene transform exceeds finite float range");
           animatedWorlds.set(id, adjusted);
@@ -1891,17 +2128,21 @@ function createModelSceneSampler(projection, options = {}) {
           const instances2 = primitiveNodes.get(primitive.id)?.length ?? 1;
           for (let instance = 0; instance < instances2; instance++) {
             const posed = {
-              ...skin === void 0 ? present(deformed, "deformed skin") : gpu.bindPose,
+              ...drawn(skin === void 0 ? present(deformed, "deformed skin") : gpu.bindPose),
               ...transformed ? { transform: new Float32Array(frame) } : {},
               ...skin === void 0 ? {} : { skin }
             };
             primitives.push(posed);
           }
         } else {
+          const targets = primitive.morphTargets?.length ?? 0;
+          const defaults = meshOfPrimitive.get(primitive.id)?.morphWeights;
           for (const node of primitiveNodes.get(primitive.id) ?? [void 0]) {
             const transform = node === void 0 ? void 0 : animatedWorlds.get(node) ?? worlds.get(node);
+            const weights = (node === void 0 ? void 0 : nodeWeights.get(node)) ?? defaults;
+            const shaped = targets > 0 && weights !== void 0 && weights.some((weight) => weight !== 0) ? morphPrimitive(primitive, weights) : primitive;
             primitives.push({
-              ...primitive,
+              ...drawn(shaped),
               ...transform === void 0 ? {} : { transform: new Float32Array(transform) }
             });
           }
@@ -1918,6 +2159,143 @@ function createModelSceneSampler(projection, options = {}) {
     }
   });
 }
+function sampleRotation(value) {
+  if (value.length !== 4 || !value.every(Number.isFinite) || Math.hypot(...value) === 0)
+    throw new TypeError("sample camera rotation must be a finite nonzero quaternion");
+  return [value[0], value[1], value[2], value[3]];
+}
+function samplePosition(value) {
+  if (value.length !== 3 || !value.every(Number.isFinite))
+    throw new TypeError("sample camera position must contain three finite numbers");
+  return [value[0], value[1], value[2]];
+}
+
+// ../MODDING/modkit-core/packages/codec-kit/dist/raster/index.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// ../MODDING/modkit-core/packages/codec-kit/dist/raster/encoders.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var PNG_SIGNATURE = Object.freeze([137, 80, 78, 71, 13, 10, 26, 10]);
+var ascii = new TextEncoder();
+
+// ../MODDING/modkit-core/packages/codec-kit/dist/raster/png.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var SIGNATURE = Object.freeze([137, 80, 78, 71, 13, 10, 26, 10]);
+var DEFAULT_MAX_PIXELS = 64 * 1024 * 1024;
+
+// ../MODDING/modkit-core/packages/codec-kit/dist/raster/ops.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var at = (pixels, index) => pixels[index];
+function checked(image) {
+  if (image.pixels.length !== image.width * image.height * 4) {
+    throw new TypeError(`image: expected ${image.width * image.height * 4} bytes, got ${image.pixels.length}`);
+  }
+  return image;
+}
+function applyColorKeyTransparency(image, options) {
+  checked(image);
+  const tolerance = options.tolerance ?? 0;
+  const replacement = options.replacement ?? { r: 0, g: 0, b: 0, a: 0 };
+  const out = image.pixels.slice();
+  for (let index = 0; index < out.length; index += 4) {
+    const close = Math.abs(at(out, index) - options.target.r) <= tolerance && Math.abs(at(out, index + 1) - options.target.g) <= tolerance && Math.abs(at(out, index + 2) - options.target.b) <= tolerance;
+    if (close) {
+      out[index] = replacement.r;
+      out[index + 1] = replacement.g;
+      out[index + 2] = replacement.b;
+      out[index + 3] = replacement.a;
+    }
+  }
+  return { width: image.width, height: image.height, pixels: out };
+}
+
+// ../MODDING/modkit-core/packages/codec-kit/dist/raster/jpeg.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var ZIGZAG = Int32Array.from([
+  0,
+  1,
+  8,
+  16,
+  9,
+  2,
+  3,
+  10,
+  17,
+  24,
+  32,
+  25,
+  18,
+  11,
+  4,
+  5,
+  12,
+  19,
+  26,
+  33,
+  40,
+  48,
+  41,
+  34,
+  27,
+  20,
+  13,
+  6,
+  7,
+  14,
+  21,
+  28,
+  35,
+  42,
+  49,
+  56,
+  57,
+  50,
+  43,
+  36,
+  29,
+  22,
+  15,
+  23,
+  30,
+  37,
+  44,
+  51,
+  58,
+  59,
+  52,
+  45,
+  38,
+  31,
+  39,
+  46,
+  53,
+  60,
+  61,
+  54,
+  47,
+  55,
+  62,
+  63
+]);
+var MAX_DIMENSION = 1 << 15;
+var COS = (() => {
+  const table = new Float64Array(64);
+  for (let u = 0; u < 8; u += 1) {
+    const scale = u === 0 ? Math.SQRT1_2 : 1;
+    for (let x = 0; x < 8; x += 1)
+      table[u * 8 + x] = scale * Math.cos((2 * x + 1) * u * Math.PI / 16);
+  }
+  return table;
+})();
+
+// ../MODDING/modkit-core/packages/codec-kit/dist/raster/embedded.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// ../MODDING/modkit-core/packages/codec-kit/dist/raster/tga.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// ../MODDING/modkit-core/packages/codec-kit/dist/raster/pcx.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
 // ../MODDING/modkit-core/packages/ui/dist/model/source.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
@@ -2079,7 +2457,7 @@ function framePrimitives(primitives) {
     }
   return boundsFraming({ min, max }) ?? { center: [0, 0, 0], radius: 1 };
 }
-var dot = (left, right) => left[0] * right[0] + left[1] * right[1] + left[2] * right[2];
+var dot2 = (left, right) => left[0] * right[0] + left[1] * right[1] + left[2] * right[2];
 function modelCamera(framing, basis, distanceScale, viewport) {
   const radius = framing.radius > 0 && Number.isFinite(framing.radius) ? framing.radius : 1;
   const distance = radius / Math.sin(MODEL_FIELD_OF_VIEW / 2) * Math.max(0.15, distanceScale);
@@ -2100,15 +2478,15 @@ function modelCamera(framing, basis, distanceScale, viewport) {
   view[0] = rightAxis[0];
   view[4] = rightAxis[1];
   view[8] = rightAxis[2];
-  view[12] = -dot(rightAxis, eye);
+  view[12] = -dot2(rightAxis, eye);
   view[1] = upAxis[0];
   view[5] = upAxis[1];
   view[9] = upAxis[2];
-  view[13] = -dot(upAxis, eye);
+  view[13] = -dot2(upAxis, eye);
   view[2] = backwardAxis[0];
   view[6] = backwardAxis[1];
   view[10] = backwardAxis[2];
-  view[14] = -dot(backwardAxis, eye);
+  view[14] = -dot2(backwardAxis, eye);
   view[15] = 1;
   const projection = new Float32Array(16);
   projection[0] = focal / (aspect === 0 ? 1 : aspect);
@@ -2426,154 +2804,6 @@ async function mountInlineField(container, options) {
       root.remove();
     }
   };
-}
-
-// ../MODDING/modkit-core/packages/ui/dist/model/orbit.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-var PITCH_MINIMUM = -1.4;
-var PITCH_MAXIMUM = 1.5;
-var DRAG_RADIANS_PER_PIXEL = 8e-3;
-var WHEEL_IN = 0.9;
-var WHEEL_OUT = 1.1;
-var DISTANCE_MINIMUM = 0.15;
-var DISTANCE_MAXIMUM = 8;
-var RESET_YAW = 0.7;
-var RESET_PITCH = 0.45;
-var clamp = (value, low, high) => Math.min(Math.max(value, low), high);
-var POLE = Math.PI / 2 - 1e-3;
-var AXIS_POSE = Object.freeze({
-  "+x": [Math.PI / 2, 0],
-  "-x": [-Math.PI / 2, 0],
-  "+y": [0, POLE],
-  "-y": [0, -POLE],
-  "+z": [0, 0],
-  "-z": [Math.PI, 0]
-});
-function createOrbitController(initial = {}) {
-  let yaw = initial.yaw ?? RESET_YAW;
-  let pitch = clamp(initial.pitch ?? RESET_PITCH, PITCH_MINIMUM, PITCH_MAXIMUM);
-  let distanceScale = clamp(initial.distanceScale ?? 1, DISTANCE_MINIMUM, DISTANCE_MAXIMUM);
-  const listeners = /* @__PURE__ */ new Set();
-  const emit = () => {
-    const pose = { yaw, pitch, distanceScale };
-    for (const listener of listeners)
-      listener(pose);
-  };
-  const controller = {
-    get pose() {
-      return { yaw, pitch, distanceScale };
-    },
-    position(target, radius) {
-      const scaled = radius * distanceScale;
-      return [
-        target[0] + Math.sin(yaw) * Math.cos(pitch) * scaled,
-        target[1] + Math.sin(pitch) * scaled,
-        target[2] + Math.cos(yaw) * Math.cos(pitch) * scaled
-      ];
-    },
-    basis() {
-      const backward = [
-        Math.sin(yaw) * Math.cos(pitch),
-        Math.sin(pitch),
-        Math.cos(yaw) * Math.cos(pitch)
-      ];
-      const horizontal = Math.hypot(backward[0], backward[2]) || 1;
-      const right = [backward[2] / horizontal, 0, -backward[0] / horizontal];
-      const up = [
-        backward[1] * right[2],
-        backward[2] * right[0] - backward[0] * right[2],
-        -backward[1] * right[0]
-      ];
-      return { backward, right, up };
-    },
-    orbit(deltaX, deltaY) {
-      yaw += deltaX * DRAG_RADIANS_PER_PIXEL;
-      pitch = clamp(pitch + deltaY * DRAG_RADIANS_PER_PIXEL, PITCH_MINIMUM, PITCH_MAXIMUM);
-      emit();
-    },
-    zoom(wheelDelta) {
-      distanceScale = clamp(distanceScale * (wheelDelta > 0 ? WHEEL_OUT : WHEEL_IN), DISTANCE_MINIMUM, DISTANCE_MAXIMUM);
-      emit();
-    },
-    snapTo(axis) {
-      const pose = AXIS_POSE[axis];
-      if (pose === void 0)
-        throw new TypeError(`unknown view axis: ${String(axis)}`);
-      yaw = pose[0];
-      pitch = pose[1];
-      emit();
-    },
-    reset() {
-      yaw = RESET_YAW;
-      pitch = RESET_PITCH;
-      distanceScale = 1;
-      emit();
-    },
-    set(pose) {
-      if (pose.yaw !== void 0)
-        yaw = pose.yaw;
-      if (pose.pitch !== void 0)
-        pitch = clamp(pose.pitch, PITCH_MINIMUM, PITCH_MAXIMUM);
-      if (pose.distanceScale !== void 0) {
-        distanceScale = clamp(pose.distanceScale, DISTANCE_MINIMUM, DISTANCE_MAXIMUM);
-      }
-      emit();
-    },
-    attach(host, signal) {
-      let dragging = false;
-      let lastX = 0;
-      let lastY = 0;
-      const options = signal === void 0 ? {} : { signal };
-      host.addEventListener("pointerdown", (event) => {
-        dragging = true;
-        lastX = event.clientX;
-        lastY = event.clientY;
-        host.setPointerCapture(event.pointerId);
-      }, options);
-      host.addEventListener("pointermove", (event) => {
-        if (!dragging)
-          return;
-        controller.orbit(event.clientX - lastX, event.clientY - lastY);
-        lastX = event.clientX;
-        lastY = event.clientY;
-      }, options);
-      const stop = () => {
-        dragging = false;
-      };
-      host.addEventListener("pointerup", stop, options);
-      host.addEventListener("pointercancel", stop, options);
-      host.addEventListener("wheel", (event) => {
-        event.preventDefault();
-        controller.zoom(event.deltaY);
-      }, { passive: false, ...options });
-      host.addEventListener("keydown", (event) => {
-        const step = event.shiftKey ? 40 : 12;
-        if (event.key === "ArrowLeft")
-          controller.orbit(-step, 0);
-        else if (event.key === "ArrowRight")
-          controller.orbit(step, 0);
-        else if (event.key === "ArrowUp")
-          controller.orbit(0, -step);
-        else if (event.key === "ArrowDown")
-          controller.orbit(0, step);
-        else if (event.key === "+" || event.key === "=")
-          controller.zoom(-1);
-        else if (event.key === "-")
-          controller.zoom(1);
-        else if (event.key === "0")
-          controller.reset();
-        else
-          return;
-        event.preventDefault();
-      }, options);
-      return stop;
-    },
-    onChange(listener) {
-      listeners.add(listener);
-      return () => listeners.delete(listener);
-    }
-  };
-  return controller;
 }
 
 // ../MODDING/modkit-core/packages/ui/dist/model/gizmo.js
@@ -3182,12 +3412,12 @@ function drawSkeleton(context, joints, viewProjection, viewport, stroke) {
   context.strokeStyle = stroke;
   context.fillStyle = stroke;
   context.lineWidth = 1.5;
-  let drawn = 0;
+  let drawn2 = 0;
   for (const [index, joint] of joints.entries()) {
     const point = projected[index];
     if (point === void 0)
       continue;
-    drawn += 1;
+    drawn2 += 1;
     context.beginPath();
     context.arc(point[0], point[1], 2.5, 0, Math.PI * 2);
     context.fill();
@@ -3200,7 +3430,7 @@ function drawSkeleton(context, joints, viewProjection, viewport, stroke) {
     context.stroke();
   }
   context.restore();
-  return drawn;
+  return drawn2;
 }
 function themeColor(canvas, token, fallback) {
   return getComputedStyle(canvas).getPropertyValue(token).trim() || fallback;
@@ -3234,7 +3464,7 @@ async function resolveModelViewerTextures(port, references, signal) {
       selection: { face: "all", mipLevel: "fit" }
     }, signal);
     signal?.throwIfAborted();
-    if (result.state === "unresolved")
+    if (result.state === "unresolved" || result.state === "compressed")
       continue;
     const faces = result.info.faces ?? 1;
     if (faces !== 1 && faces !== 6)
@@ -3280,11 +3510,16 @@ async function resolveModelViewerTextures(port, references, signal) {
     if (!valid)
       continue;
     remaining -= byteLength;
+    const key = reference.colorKey;
+    const keyed = key === void 0 || faces !== 1 ? rgba : applyColorKeyTransparency({ width, height, pixels: rgba }, {
+      target: { r: key.color[0], g: key.color[1], b: key.color[2] },
+      tolerance: key.tolerance ?? 0
+    }).pixels;
     textures.set(reference.id, {
       id: textureId,
       width,
       height,
-      rgba,
+      rgba: keyed,
       ...faces === 6 ? { dimension: "cube" } : {},
       ...result.info.channelLayout === void 0 ? {} : { channelLayout: result.info.channelLayout },
       ...result.info.compression === void 0 ? {} : { compression: result.info.compression }
@@ -3362,6 +3597,12 @@ function mountClipRename(toolbar, options) {
     field.remove();
     status.remove();
   };
+}
+function modelFrameCamera(placement, correction) {
+  const view = correction === void 0 ? placement.viewMatrix : multiply4x4(placement.viewMatrix, correction);
+  const [x, y, z] = placement.eye;
+  const position2 = correction === void 0 ? [x, y, z] : [0, 1, 2].map((axis) => (correction[axis * 4] ?? 0) * x + (correction[axis * 4 + 1] ?? 0) * y + (correction[axis * 4 + 2] ?? 0) * z);
+  return { rotation: billboardCameraRotation(Array.from(view)), position: position2 };
 }
 function createModelViewer(options = {}) {
   const localizer = withEnglishUiFallback(options.localizer, MODEL_FALLBACK_MESSAGES);
@@ -3613,7 +3854,10 @@ function createModelViewer(options = {}) {
             ...sampled,
             primitives: sampled.primitives.map((one) => orientPrimitive(one, correction))
           };
-          let player = createModelSceneSampler(projection, { signal: scope.signal });
+          let player = createModelSceneSampler(projection, {
+            signal: scope.signal,
+            billboardCameraPerSample: true
+          });
           let scene = orient(player.sample(0, scope.signal));
           let selectedPrimitive;
           let activeClip;
@@ -3665,8 +3909,9 @@ function createModelViewer(options = {}) {
               redrawPending = true;
               return;
             }
+            const viewPlacement = modelCamera(framing(), camera.basis(), pose.distanceScale, viewport);
             try {
-              scene = orient(player.sample(timeSeconds, scope.signal));
+              scene = orient(player.sample(timeSeconds, scope.signal, modelFrameCamera(viewPlacement, correction)));
             } catch (error) {
               setViewerText(playbackStatus, error instanceof Error ? error.message : String(error));
               canvas.setAttribute("data-model-pose-diagnostics", "common.model/pose-failed");
@@ -3696,6 +3941,11 @@ function createModelViewer(options = {}) {
                   clearColor: [0, 0, 0, 0],
                   light: MODEL_KEY_LIGHT,
                   materialContext: {
+                    // Scene lighting, as the headless render: the key light's ambient lights every
+                    // face and emission and environment show whatever the facing. Without it a
+                    // standard material shaded inside `lambert > 0` — faces turned from the light
+                    // drew black and lost their glow.
+                    sceneLighting: true,
                     time: drawnTime,
                     sequenceTime: drawnTime,
                     teamColor,
@@ -3952,6 +4202,7 @@ function createModelViewer(options = {}) {
                 const clip = clips.find((item) => item.id === selector.value);
                 const nextPlayer = createModelSceneSampler(projection, {
                   signal: scope.signal,
+                  billboardCameraPerSample: true,
                   ...clip === void 0 ? {} : { clip }
                 });
                 player = nextPlayer;
@@ -4022,6 +4273,7 @@ export {
   snapshotModelSkeleton,
   createModelSkeletonNodes,
   createModelSceneSampler,
+  applyColorKeyTransparency,
   MODEL_MAXIMUM_PRIMITIVE_BYTES,
   MODEL_MAXIMUM_PRIMITIVES,
   loadModelStage,
@@ -4042,7 +4294,6 @@ export {
   fieldWriteRefusal,
   commitOperationWrite,
   mountInlineField,
-  createOrbitController,
   GIZMO_SIZE,
   createViewGizmo,
   modelAnimationPlaybackDuration,
