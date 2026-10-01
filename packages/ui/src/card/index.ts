@@ -1395,8 +1395,36 @@ export function createSubjectCardViewer(options: SubjectCardViewerOptions = {}):
         forward.textContent = '\u2192'
         forward.title = localizer.text('card.historyForward')
         forward.setAttribute('aria-label', localizer.text('card.historyForward'))
-        nav.append(back, forward)
+        // where the reader came from, as MK2's card showed it: the last subjects, each a jump back
+        const trail = document.createElement('span')
+        setPart(trail, 'card.breadcrumbs')
+        nav.append(back, forward, trail)
         root.append(nav)
+        const labels = new Map<string, string>()
+        const renderTrail = (): void => {
+          trail.replaceChildren()
+          const crumbs = history.breadcrumbs
+          const shown = crumbs.slice(-CARD_BREADCRUMBS)
+          if (shown.length < crumbs.length) trail.append('… › ')
+          shown.forEach((address, index) => {
+            const label = safeViewerText(labels.get(address) ?? address, 64)
+            if (index === shown.length - 1) {
+              const current = document.createElement('strong')
+              current.textContent = label
+              trail.append(current)
+              return
+            }
+            const crumb = document.createElement('button')
+            crumb.type = 'button'
+            crumb.textContent = label
+            crumb.title = address
+            crumb.addEventListener('click', () => {
+              const target = history.jump(address)
+              if (target !== undefined) void show(target).catch(() => undefined)
+            })
+            trail.append(crumb, ' › ')
+          })
+        }
 
         const resolveImage =
           options.textures === undefined
@@ -1485,6 +1513,8 @@ export function createSubjectCardViewer(options: SubjectCardViewerOptions = {}):
               ...(resolveImage === undefined ? {} : { resolveImage }),
             })
             commit?.()
+            const heading = loaded.find(section => section.kind === 'header')
+            if (heading?.kind === 'header') labels.set(address, heading.title)
             const previous = page
             page = { card, scope: pageScope }
             pageScope.cleanup(() => card.destroy())
@@ -1494,6 +1524,7 @@ export function createSubjectCardViewer(options: SubjectCardViewerOptions = {}):
             back.disabled = !history.canBack
             forward.disabled = !history.canForward
             nav.hidden = !history.canBack && !history.canForward
+            renderTrail()
             root.dataset['subject'] = address
           } catch (error) {
             await pageScope.close()
@@ -1596,6 +1627,8 @@ export function createSubjectCardViewer(options: SubjectCardViewerOptions = {}):
 }
 
 const SUBJECT_SELECTOR_CONTRACT = 'common.view/subject-selector-source'
+/** How many subjects the card's trail shows; the older ones fold into an ellipsis. */
+const CARD_BREADCRUMBS = 6
 
 const PREVIEW_STAGES = [
   { kind: 'model', contract: 'common.view/model-scene-source' },

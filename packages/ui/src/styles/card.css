@@ -217,6 +217,26 @@
     display: none;
   }
 
+  [data-mk-part='card.breadcrumbs'] {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 var(--mk-space-1);
+    align-items: center;
+    margin-inline-start: var(--mk-space-2);
+    color: var(--mk-color-fg-muted);
+    font-size: var(--mk-font-size-sm);
+  }
+
+  [data-mk-part='card.nav'] [data-mk-part='card.breadcrumbs'] button {
+    min-width: 0;
+    height: auto;
+    padding: 0;
+    color: var(--mk-color-fg-link);
+    border: 0;
+    background: none;
+    cursor: pointer;
+  }
+
   [data-mk-part='card.nav'] button {
     min-width: var(--mk-size-control);
     height: var(--mk-size-control);
