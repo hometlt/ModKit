@@ -10,7 +10,11 @@ import {
   addAccessor,
 } from './legacy/rig-kernels.js'
 import type { UvmJsonObject } from './legacy/rig-types.js'
-import { uvmAnimationPlayback, uvmVisibilityPointer } from './animation-clips.js'
+import {
+  uvmAnimationEvents,
+  uvmAnimationPlayback,
+  uvmVisibilityPointer,
+} from './animation-clips.js'
 import { uvmKeyTimesMetadata } from './key-times.js'
 
 export interface RigStorage {
@@ -606,7 +610,24 @@ export function writeUvmAnimations(
       ...(clip.looping === undefined ? {} : { looping: clip.looping }),
       ...(clip.repeatCount === undefined ? {} : { repeatCount: clip.repeatCount }),
     })
-    if (animationIndex === undefined) continue
+    if (animationIndex === undefined) {
+      if ((clip.events?.length ?? 0) > 0)
+        losses.push({ clipId: clip.id, reason: 'events of a clip without motion are not written' })
+      continue
+    }
+    const events: UvmJsonObject[] = (clip.events ?? []).map(event => {
+      const socket = event.nodeId === undefined ? undefined : nodeIndices.get(event.nodeId)
+      if (event.nodeId !== undefined && socket === undefined)
+        refuse(`clip ${clip.id} names event node ${event.nodeId}, not a scene node`)
+      return {
+        t: event.timeSeconds,
+        name: event.name,
+        ...(socket === undefined ? {} : { socket }),
+        ...(event.payload === undefined ? {} : { payload: event.payload as UvmJsonObject }),
+        ...(event.durationSeconds === undefined ? {} : { duration: event.durationSeconds }),
+      }
+    })
+    uvmAnimationEvents({ events }, Number.MAX_SAFE_INTEGER)
     const playback = uvmAnimationPlayback({
       ...(clip.loop === undefined ? {} : { loop: clip.loop }),
       ...(clip.priority === undefined ? {} : { priority: clip.priority }),
@@ -618,9 +639,16 @@ export function writeUvmAnimations(
       name: clip.name,
       samplers,
       channels,
-      ...(Object.keys(playback).length === 0
+      ...(Object.keys(playback).length === 0 && events.length === 0
         ? {}
-        : { extensions: { UV_game_animation_clips: { ...playback } } }),
+        : {
+            extensions: {
+              ...(Object.keys(playback).length === 0
+                ? {}
+                : { UV_game_animation_clips: { ...playback } }),
+              ...(events.length === 0 ? {} : { UV_game_animation_events: { events } }),
+            },
+          }),
       extras: {
         uv: {
           sourceSequenceIndex: sequenceIndex,

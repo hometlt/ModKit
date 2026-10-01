@@ -22,7 +22,7 @@ import {
   createModelPoseBlendSampler,
   snapshotModelSkeleton,
 } from '@modkit/codec-kit/model/skeleton'
-import { createModelAnimationSampler } from '@modkit/codec-kit/model/animation'
+import { clipEventsBetween, createModelAnimationSampler } from '@modkit/codec-kit/model/animation'
 import type { ModelBonePoseSample, ModelPoseBlendSample } from '@modkit/codec-kit/model/skeleton'
 import { createModelSkinDeformer } from '@modkit/codec-kit/model/skinning'
 import { modelPrimitiveByteLength } from '@modkit/codec-kit/model/geometry'
@@ -697,6 +697,9 @@ export function createModelSceneSampler(
   }
   return Object.freeze({
     diagnostics: Object.freeze(diagnostics),
+    /** The clip's events passed after `fromSeconds` up to `toSeconds` (see clipEventsBetween). */
+    eventsBetween: (fromSeconds: number, toSeconds: number) =>
+      clip === undefined ? [] : clipEventsBetween(clip, fromSeconds, toSeconds),
     sample(timeSeconds: number, requestSignal?: AbortSignal, camera?: ModelSceneCamera) {
       if (!Number.isFinite(timeSeconds)) throw new TypeError('scene time must be finite')
       if (requestSignal?.aborted) throw new DOMException('operation cancelled', 'AbortError')

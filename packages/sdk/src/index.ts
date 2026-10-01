@@ -505,6 +505,7 @@ export {
   RESERVED_MODEL_FACET_SOURCES,
   type ModelAnimationChannel,
   type ModelAnimationClip,
+  type ModelAnimationEvent,
   type ModelAnimationInfo,
   type ModelAnimationInterpolation,
   type ModelAnimationKind,

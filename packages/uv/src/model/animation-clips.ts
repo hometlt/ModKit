@@ -61,6 +61,55 @@ export function uvmAnimationPlayback(value: unknown): UvmAnimationPlayback {
   })
 }
 
+/** One record of an animation's `UV_game_animation_events` (SPEC_UVM §12.3). */
+export interface UvmAnimationEvent {
+  readonly t: number
+  readonly name: string
+  /** A node index. */
+  readonly socket?: number
+  readonly payload?: JsonObject
+  readonly duration?: number
+}
+
+const EVENT_KEYS = new Set(['t', 'name', 'socket', 'payload', 'duration'])
+
+/** The events of an animation (or to write on one), checked against its node count; empty when none. */
+export function uvmAnimationEvents(
+  value: unknown,
+  nodeCount: number,
+): readonly UvmAnimationEvent[] {
+  if (value === undefined) return []
+  const events = object(value, 'UV_game_animation_events')['events']
+  if (!Array.isArray(events)) throw new TypeError('UV_game_animation_events requires events')
+  return Object.freeze(
+    events.map(item => {
+      const record = object(item, 'UVM animation event')
+      const { t, name, socket, payload, duration } = record
+      if (
+        Object.keys(record).some(key => !EVENT_KEYS.has(key)) ||
+        typeof t !== 'number' ||
+        !Number.isFinite(t) ||
+        t < 0 ||
+        typeof name !== 'string' ||
+        !name ||
+        (socket !== undefined && (!integer(socket) || socket < 0 || socket >= nodeCount)) ||
+        (payload !== undefined &&
+          (payload === null || typeof payload !== 'object' || Array.isArray(payload))) ||
+        (duration !== undefined &&
+          (typeof duration !== 'number' || !Number.isFinite(duration) || duration < 0))
+      )
+        throw new TypeError('UVM animation event is invalid')
+      return Object.freeze({
+        t,
+        name,
+        ...(socket === undefined ? {} : { socket: socket as number }),
+        ...(payload === undefined ? {} : { payload: payload as JsonObject }),
+        ...(duration === undefined ? {} : { duration }),
+      })
+    }),
+  )
+}
+
 /** A scalar visibility property applies to every instance of one actual mesh primitive. */
 export type UvmPrimitiveVisibility =
   | { readonly mesh: number; readonly primitive: number; readonly value: number }
@@ -172,6 +221,10 @@ export function readUvmAnimationClips(
       if (linked.has(animation)) throw new TypeError('UVM animation is linked by multiple clips')
       const target = object(animations[animation], 'clip animation')
       uvmAnimationPlayback(field(target['extensions'], 'UV_game_animation_clips'))
+      uvmAnimationEvents(
+        field(target['extensions'], 'UV_game_animation_events'),
+        array(document, 'nodes').length,
+      )
       if (array(target, 'channels').length === 0 || array(target, 'samplers').length === 0)
         throw new TypeError('UVM catalog must not link an empty glTF animation')
       const declared = field(field(target['extras'], 'uv'), 'sourceSequenceIndex')

@@ -1678,6 +1678,11 @@ export function materializeUvmCore(
       ...(animation === undefined || animation.catalog.length === 0
         ? []
         : ['UV_game_animation_clips']),
+      ...(animation?.animations.some(
+        clip => (clip['extensions'] as UvmJsonObject | undefined)?.['UV_game_animation_events'],
+      )
+        ? ['UV_game_animation_events']
+        : []),
       ...(visibility.length === 0 ? [] : ['UV_game_variants']),
       ...(animatesPointers ? ['KHR_animation_pointer'] : []),
       ...(imageColorKeys.some(key => key !== undefined) ? ['UV_texture_color_key'] : []),

@@ -1,4 +1,4 @@
-import type { ModelAnimationClip, ModelAnimationSample } from '@modkit/sdk'
+import type { ModelAnimationClip, ModelAnimationEvent, ModelAnimationSample } from '@modkit/sdk'
 import { snapshotJson, type JsonSnapshotBudget } from '../json-snapshot.js'
 import { CUBIC_SPLINE_LINE_TYPE, sampleTrackValue } from '../model-math/sequence-pose.js'
 import type { RenderScalarAnimationTrack } from '../legacy-model-support.js'
@@ -180,6 +180,54 @@ export function snapshotModelAnimations(
     }
   }
   return clips
+}
+
+export interface ModelAnimationEventOccurrence {
+  readonly event: ModelAnimationEvent
+  /** Playback seconds of this occurrence: a looping clip repeats its events. */
+  readonly atSeconds: number
+}
+
+/** A playback jump this long names at most this many occurrences; the rest are left out. */
+const MAX_EVENT_OCCURRENCES = 4096
+
+/**
+ * The events a clip passes from `fromSeconds` (excluded) to `toSeconds` (included) of playback, in
+ * time order: a `loop` clip (or `looping`) repeats them every duration, a `ping-pong` one forth and
+ * then back, and `once` or `hold` passes each once.
+ */
+export function clipEventsBetween(
+  clip: ModelAnimationClip,
+  fromSeconds: number,
+  toSeconds: number,
+): readonly ModelAnimationEventOccurrence[] {
+  if (!Number.isFinite(fromSeconds) || !Number.isFinite(toSeconds))
+    throw new TypeError('event window must be finite')
+  if ((clip.events?.length ?? 0) === 0 || !(toSeconds > fromSeconds)) return []
+  const mode = clip.loop ?? (clip.looping === true ? 'loop' : 'once')
+  const duration = clip.durationSeconds ?? 0
+  const period = mode === 'loop' ? duration : mode === 'ping-pong' ? 2 * duration : 0
+  const found: ModelAnimationEventOccurrence[] = []
+  for (const event of clip.events ?? []) {
+    const back = 2 * duration - event.timeSeconds
+    const times =
+      mode === 'ping-pong' && back !== event.timeSeconds
+        ? [event.timeSeconds, back]
+        : [event.timeSeconds]
+    for (const time of times) {
+      if (!(period > 0)) {
+        if (fromSeconds < time && time <= toSeconds) found.push({ event, atSeconds: time })
+        continue
+      }
+      for (
+        let at = time + (Math.floor((fromSeconds - time) / period) + 1) * period;
+        at <= toSeconds && found.length < MAX_EVENT_OCCURRENCES;
+        at += period
+      )
+        if (at > fromSeconds) found.push({ event, atSeconds: at })
+    }
+  }
+  return found.sort((left, right) => left.atSeconds - right.atSeconds)
 }
 
 export interface ModelAnimationValue {

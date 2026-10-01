@@ -95,3 +95,38 @@ it('writes no playback extension for a clip that states none, and refuses an inv
   for (const extra of [{ speedScale: 0 }, { priority: 1.5 }, { blendInSeconds: -1 }])
     expect(() => materializeUvmCore(projection(clip(extra)), request)).toThrow()
 })
+
+it('carries a clip’s events to UV_game_animation_events, their node as a socket index, and back', () => {
+  const events = [
+    { timeSeconds: 0.5, name: 'fire_weapon', nodeId: 'body', payload: { weapon: 'cannon' } },
+    { timeSeconds: 0.9, name: 'sound', durationSeconds: 0.2 },
+  ]
+  const written = materializeUvmCore(projection(clip({ events })), request) as unknown as {
+    readonly bytes: Uint8Array
+    readonly document: {
+      readonly extensionsUsed: readonly string[]
+      readonly animations: readonly { readonly extensions?: Record<string, unknown> }[]
+    }
+  }
+  expect(written.document.animations[0]!.extensions?.['UV_game_animation_events']).toEqual({
+    events: [
+      { t: 0.5, name: 'fire_weapon', socket: 0, payload: { weapon: 'cannon' } },
+      { t: 0.9, name: 'sound', duration: 0.2 },
+    ],
+  })
+  expect(written.document.extensionsUsed).toContain('UV_game_animation_events')
+  const container = readUvmContainer(written.bytes)
+  const model = readUvmModel(container.document as never, container.binary, {
+    maxScalarBytes: 1 << 20,
+  })
+  expect(model.rig.clips[0]!.events).toEqual([
+    { timeSeconds: 0.5, name: 'fire_weapon', nodeId: 'node-0', payload: { weapon: 'cannon' } },
+    { timeSeconds: 0.9, name: 'sound', durationSeconds: 0.2 },
+  ])
+  expect(() =>
+    materializeUvmCore(
+      projection(clip({ events: [{ timeSeconds: 0, name: 'hit', nodeId: 'missing' }] })),
+      request,
+    ),
+  ).toThrow(/event node/)
+})

@@ -11,6 +11,7 @@ import type { ModelNodePose } from '../model/node-pose.js'
 import {
   readUvmAnimationClips,
   readUvmPrimitiveVisibility,
+  uvmAnimationEvents,
   uvmAnimationPlayback,
   uvmVisibilityTarget,
 } from '@modkit/uv/model/animation-clips'
@@ -32,6 +33,25 @@ export interface UvmRig {
   readonly decodedBytes: number
 }
 const identity = () => [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
+
+/** An animation's events as the facet names them: a socket by its node id. */
+function clipEvents(animation: JsonObject, nodeCount: number) {
+  const events = uvmAnimationEvents(
+    field(animation['extensions'], 'UV_game_animation_events'),
+    nodeCount,
+  )
+  return events.length === 0
+    ? {}
+    : {
+        events: events.map(event => ({
+          timeSeconds: event.t,
+          name: event.name,
+          ...(event.socket === undefined ? {} : { nodeId: `node-${event.socket}` }),
+          ...(event.payload === undefined ? {} : { payload: event.payload }),
+          ...(event.duration === undefined ? {} : { durationSeconds: event.duration }),
+        })),
+      }
+}
 
 function uvMetadata(value: JsonObject): JsonObject {
   const extras = value['extras']
@@ -397,6 +417,7 @@ export function decodeUvmRig(
       ...(metadata['looping'] === undefined ? {} : { looping: metadata['looping'] }),
       ...(metadata['repeatCount'] === undefined ? {} : { repeatCount: metadata['repeatCount'] }),
       ...uvmAnimationPlayback(field(animation['extensions'], 'UV_game_animation_clips')),
+      ...clipEvents(animation, nodes.length),
       ...(unsupportedChannels === 0 ? {} : { unsupportedChannels }),
       ...(sequenceIndex === undefined ? {} : { sequenceIndex }),
     })

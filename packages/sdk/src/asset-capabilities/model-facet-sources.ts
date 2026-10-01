@@ -227,6 +227,8 @@ export interface ModelAnimationClip {
   /** Seconds to blend in from the clip before it, and out to the one after. */
   readonly blendInSeconds?: number
   readonly blendOutSeconds?: number
+  /** Moments the game acts on, in time order of the clip. */
+  readonly events?: readonly ModelAnimationEvent[]
   readonly movementSpeed?: number
   readonly boundsSphere?: {
     readonly center: readonly [number, number, number]
@@ -238,6 +240,21 @@ export interface ModelAnimationClip {
   readonly channels: readonly ModelAnimationChannel[]
   /** Channels the publisher recognised but does not represent; stated rather than dropped. */
   readonly unsupportedChannels?: number
+}
+
+/**
+ * A moment of a clip the game acts on (UVM `UV_game_animation_events`, SPEC_UVM §12.3): a shot, a
+ * sound, a footstep, a variant swap (`swap_variant`). Names outside the registered set are kept.
+ */
+export interface ModelAnimationEvent {
+  /** Seconds from the clip's start. */
+  readonly timeSeconds: number
+  readonly name: string
+  /** The node it happens at (a socket), by facet node id. */
+  readonly nodeId?: string
+  /** Data only: a consumer never evaluates it as code. */
+  readonly payload?: { readonly [key: string]: JsonValue }
+  readonly durationSeconds?: number
 }
 
 export interface ModelAnimationTimeBounds {
