@@ -9,10 +9,11 @@ import {
   type GameInstallationDiscovery,
   type GameInstallationDiscoveryResult,
   type GameInstallationMarker,
-  type GameInstallationOfferFacet,
   type GameInstallationOrigin,
   type GameInstallationRequestFacet,
   type GameLaunchLogReport,
+  type GameLaunchOfferFacet,
+  type GameLaunchOptionSchema,
   type GameLaunchPlan,
   type GameLaunchPlanner,
   type GameLaunchResource,
@@ -39,7 +40,17 @@ import { createHostServiceResolver } from '../service-leases.js'
 /** Owner id under which the standard installation-discovery definition is registered. */
 export const STANDARD_GAMES_OWNER = 'modkit/games'
 
-const OFFER_KEYS = new Set(['gameIds', 'markers', 'searchFolders'])
+const OFFER_KEYS = new Set(['gameIds', 'markers', 'searchFolders', 'launchOptions'])
+const OPTION_NAME = /^[A-Za-z][A-Za-z0-9]{0,63}$/u
+const OPTION_KEYS = new Set([
+  'type',
+  'description',
+  'default',
+  'enum',
+  'minimum',
+  'maximum',
+  'path',
+])
 /** A marker names files of one folder and a search folder one folder of a drive root: plain names. */
 const FOLDER_NAME = /^[^\\/:*?"<>|\u0000-\u001f]{1,255}$/u
 const REQUEST_KEYS = new Set(['gameId'])
@@ -87,7 +98,72 @@ function nameList(value: unknown): readonly string[] | undefined {
     : undefined
 }
 
-function parseOffer(value: unknown): GameInstallationOfferFacet | undefined {
+/** A launch-plan offer's `launchOptions`, or undefined when any option is not well formed. */
+function launchOptionsOf(
+  value: unknown,
+): Readonly<Record<string, GameLaunchOptionSchema>> | undefined {
+  const record = recordOf(value)
+  const entries = record === undefined ? [] : Object.entries(record)
+  if (entries.length === 0 || entries.length > 64) return undefined
+  const options: Record<string, GameLaunchOptionSchema> = {}
+  for (const [name, raw] of entries) {
+    const option = recordOf(raw)
+    if (
+      !OPTION_NAME.test(name) ||
+      option === undefined ||
+      Object.keys(option).some(key => !OPTION_KEYS.has(key))
+    )
+      return undefined
+    const type = option['type']
+    if (type !== 'boolean' && type !== 'string' && type !== 'number' && type !== 'integer')
+      return undefined
+    const numeric = type === 'number' || type === 'integer'
+    const fits = (item: unknown) =>
+      numeric
+        ? typeof item === 'number' &&
+          Number.isFinite(item) &&
+          (type === 'number' || Number.isInteger(item))
+        : typeof item === type
+    const { description, enum: choices, minimum, maximum, path } = option
+    const fallback = option['default']
+    const bound = (item: unknown) =>
+      item === undefined || (numeric && typeof item === 'number' && Number.isFinite(item))
+    if (
+      (description !== undefined &&
+        (typeof description !== 'string' || description.length > 512)) ||
+      (choices !== undefined &&
+        (type === 'boolean' ||
+          !Array.isArray(choices) ||
+          choices.length === 0 ||
+          choices.length > 64 ||
+          !choices.every(fits))) ||
+      !bound(minimum) ||
+      !bound(maximum) ||
+      (typeof minimum === 'number' && typeof maximum === 'number' && minimum > maximum) ||
+      (path !== undefined && (path !== true || type !== 'string')) ||
+      (fallback !== undefined &&
+        (!fits(fallback) ||
+          (Array.isArray(choices) && !choices.includes(fallback)) ||
+          (typeof minimum === 'number' && (fallback as number) < minimum) ||
+          (typeof maximum === 'number' && (fallback as number) > maximum)))
+    )
+      return undefined
+    options[name] = Object.freeze({
+      type,
+      ...(description === undefined ? {} : { description: description as string }),
+      ...(fallback === undefined ? {} : { default: fallback as boolean | string | number }),
+      ...(choices === undefined
+        ? {}
+        : { enum: Object.freeze([...(choices as (string | number)[])]) }),
+      ...(minimum === undefined ? {} : { minimum: minimum as number }),
+      ...(maximum === undefined ? {} : { maximum: maximum as number }),
+      ...(path === undefined ? {} : { path: true }),
+    })
+  }
+  return Object.freeze(options)
+}
+
+function parseOffer(value: unknown): GameLaunchOfferFacet | undefined {
   const record = recordOf(value)
   if (record === undefined || Object.keys(record).some(key => !OFFER_KEYS.has(key)))
     return undefined
@@ -113,11 +189,51 @@ function parseOffer(value: unknown): GameInstallationOfferFacet | undefined {
   const searchFolders =
     record['searchFolders'] === undefined ? undefined : nameList(record['searchFolders'])
   if (record['searchFolders'] !== undefined && searchFolders === undefined) return undefined
+  const launchOptions =
+    record['launchOptions'] === undefined ? undefined : launchOptionsOf(record['launchOptions'])
+  if (record['launchOptions'] !== undefined && launchOptions === undefined) return undefined
   return {
     gameIds,
     ...(markers.length === 0 ? {} : { markers }),
     ...(searchFolders === undefined ? {} : { searchFolders }),
+    ...(launchOptions === undefined ? {} : { launchOptions }),
   }
+}
+
+/** Every well-formed offer of `contract`@1 that an activation-eligible provider makes. */
+function* gameOffersOf(inventory: Inventory, contract: string): Generator<GameLaunchOfferFacet> {
+  for (const extension of inventory.extensions) {
+    for (const contribution of extension.contributions) {
+      const manifest = contribution.manifest
+      if (
+        !contribution.activationEligible ||
+        manifest?.contract.id !== SERVICE_PROVIDER_CONTRIBUTION_CONTRACT ||
+        manifest.contract.major !== 1
+      )
+        continue
+      const spec = manifest.spec as unknown as ServiceProviderContributionSpecV1
+      for (const offer of spec.provides) {
+        if (offer.contract !== contract || offer.major !== 1) continue
+        const facet = parseOffer(offer.facet)
+        if (facet !== undefined) yield facet
+      }
+    }
+  }
+}
+
+/**
+ * The launch options each game's launch-plan offer declares, by game id: manifest data, read
+ * without activating a planner, for editors that offer and check a launch configuration's options.
+ */
+export function gameLaunchOptionsOf(
+  inventory: Inventory,
+): ReadonlyMap<string, Readonly<Record<string, GameLaunchOptionSchema>>> {
+  const byGame = new Map<string, Readonly<Record<string, GameLaunchOptionSchema>>>()
+  for (const facet of gameOffersOf(inventory, GAME_LAUNCH_PLAN_CONTRACT))
+    for (const gameId of facet.gameIds)
+      if (facet.launchOptions !== undefined && !byGame.has(gameId))
+        byGame.set(gameId, facet.launchOptions)
+  return byGame
 }
 
 /** What the host's folder search looks for, gathered from every installation-discovery offer. */
@@ -135,25 +251,10 @@ export interface GameInstallationSearch {
 export function gameInstallationSearchOf(inventory: Inventory): GameInstallationSearch {
   const markers: GameInstallationMarker[] = []
   const searchFolders = new Map<string, string>()
-  for (const extension of inventory.extensions) {
-    for (const contribution of extension.contributions) {
-      const manifest = contribution.manifest
-      if (
-        !contribution.activationEligible ||
-        manifest?.contract.id !== SERVICE_PROVIDER_CONTRIBUTION_CONTRACT ||
-        manifest.contract.major !== 1
-      )
-        continue
-      const spec = manifest.spec as unknown as ServiceProviderContributionSpecV1
-      for (const offer of spec.provides) {
-        if (offer.contract !== GAME_INSTALLATION_DISCOVERY_CONTRACT || offer.major !== 1) continue
-        const facet = parseOffer(offer.facet)
-        markers.push(...(facet?.markers ?? []))
-        for (const folder of facet?.searchFolders ?? [])
-          if (!searchFolders.has(folder.toLowerCase()))
-            searchFolders.set(folder.toLowerCase(), folder)
-      }
-    }
+  for (const facet of gameOffersOf(inventory, GAME_INSTALLATION_DISCOVERY_CONTRACT)) {
+    markers.push(...(facet.markers ?? []))
+    for (const folder of facet.searchFolders ?? [])
+      if (!searchFolders.has(folder.toLowerCase())) searchFolders.set(folder.toLowerCase(), folder)
   }
   return Object.freeze({
     markers: Object.freeze(markers),

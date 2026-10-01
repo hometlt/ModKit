@@ -219,8 +219,48 @@ export interface GameInstallationRequestFacet {
   readonly gameId: string
 }
 
-export type GameLaunchOfferFacet = GameInstallationOfferFacet
+/**
+ * One option a game's launch takes (a key of a launch configuration's `options`), declared as data
+ * by its launch-plan offer so an editor can offer, describe and check it without the planner.
+ */
+export interface GameLaunchOptionSchema {
+  readonly type: 'boolean' | 'string' | 'number' | 'integer'
+  readonly description?: string
+  readonly default?: boolean | string | number
+  /** The only values allowed, of the option's type. */
+  readonly enum?: readonly (string | number)[]
+  readonly minimum?: number
+  readonly maximum?: number
+  /** A string option that names an absolute path on this computer (a map, a mod). */
+  readonly path?: boolean
+}
+
+export interface GameLaunchOfferFacet extends GameInstallationOfferFacet {
+  /**
+   * The options the planner takes, by name (`triggerDebug`, `difficulty`). The planner still
+   * validates a request's options itself; this is what editors offer and check.
+   */
+  readonly launchOptions?: Readonly<Record<string, GameLaunchOptionSchema>>
+}
 export type GameLaunchRequestFacet = GameInstallationRequestFacet
+
+/** The JSON Schema of a launch configuration's `options`: these options and no others. */
+export function gameLaunchOptionsJsonSchema(
+  options: Readonly<Record<string, GameLaunchOptionSchema>>,
+): JsonValue {
+  const properties: Record<string, JsonValue> = {}
+  for (const [name, option] of Object.entries(options)) {
+    properties[name] = {
+      type: option.type,
+      ...(option.description === undefined ? {} : { description: option.description }),
+      ...(option.default === undefined ? {} : { default: option.default }),
+      ...(option.enum === undefined ? {} : { enum: [...option.enum] }),
+      ...(option.minimum === undefined ? {} : { minimum: option.minimum }),
+      ...(option.maximum === undefined ? {} : { maximum: option.maximum }),
+    }
+  }
+  return { type: 'object', additionalProperties: false, properties }
+}
 
 declare module '../service-contracts.js' {
   interface ContractMap {

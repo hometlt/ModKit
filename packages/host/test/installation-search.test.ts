@@ -2,7 +2,12 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
-import { GAME_INSTALLATION_MATCHER, gameInstallationSearchOf } from '../src/games/index.js'
+import { gameLaunchOptionsJsonSchema } from '../../sdk/src/games/index.js'
+import {
+  GAME_INSTALLATION_MATCHER,
+  gameInstallationSearchOf,
+  gameLaunchOptionsOf,
+} from '../src/games/index.js'
 import type { Inventory } from '../src/inventory.js'
 import { searchInstallationFolders } from '../src/node/installation-search.js'
 
@@ -146,5 +151,69 @@ describe('installation markers in discovery offers', () => {
       expect(match(facet).state).toBe('invalid')
       expect(gameInstallationSearchOf(offer(facet))).toEqual({ markers: [], searchFolders: [] })
     }
+  })
+})
+
+describe('launch options in launch-plan offers', () => {
+  const launchOffer = (facet: unknown) =>
+    ({
+      extensions: [
+        {
+          contributions: [
+            {
+              activationEligible: true,
+              manifest: {
+                contract: { id: 'modkit/service-provider-contribution', major: 1 },
+                spec: { provides: [{ contract: 'common.game/launch-plan', major: 1, facet }] },
+              },
+            },
+          ],
+        },
+      ],
+    }) as unknown as Inventory
+  const options = {
+    triggerDebug: { type: 'boolean', default: false, description: 'Open the trigger debugger' },
+    difficulty: { type: 'integer', minimum: 1, maximum: 10, default: 4 },
+    speed: { type: 'integer', enum: [0, 1, 2, 3, 4] },
+    map: { type: 'string', path: true },
+  }
+
+  it('are gathered by game from the inventory without activating a planner', () => {
+    const facet = { gameIds: ['blizzard/starcraft-2'], launchOptions: options }
+    expect(
+      GAME_INSTALLATION_MATCHER.match({
+        contract: 'common.game/launch-plan',
+        major: 1,
+        offerFacet: facet,
+        requestFacet: { gameId: 'blizzard/starcraft-2' },
+      } as never).state,
+    ).toBe('match')
+    expect(gameLaunchOptionsOf(launchOffer(facet)).get('blizzard/starcraft-2')).toEqual(options)
+    // an offer without options adds none
+    expect(gameLaunchOptionsOf(launchOffer({ gameIds: ['blizzard/starcraft-2'] })).size).toBe(0)
+  })
+
+  it('make the offer invalid when an option is not well formed', () => {
+    for (const launchOptions of [
+      {},
+      { 'bad name': { type: 'boolean' } },
+      { flag: { type: 'boolean', enum: [true] } },
+      { level: { type: 'integer', default: 2.5 } },
+      { level: { type: 'integer', minimum: 5, maximum: 1 } },
+      { level: { type: 'number', minimum: 1, default: 0 } },
+      { speed: { type: 'integer', enum: [1, 2], default: 3 } },
+      { path: { type: 'number', path: true } },
+      { note: { type: 'string', extra: 1 } },
+    ]) {
+      expect(gameLaunchOptionsOf(launchOffer({ gameIds: ['g/x'], launchOptions })).size).toBe(0)
+    }
+  })
+
+  it('give a launch configuration the JSON Schema of exactly these options', () => {
+    expect(gameLaunchOptionsJsonSchema({ difficulty: options.difficulty } as never)).toEqual({
+      type: 'object',
+      additionalProperties: false,
+      properties: { difficulty: { type: 'integer', default: 4, minimum: 1, maximum: 10 } },
+    })
   })
 })
