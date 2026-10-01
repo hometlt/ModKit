@@ -714,7 +714,27 @@ export function createNodeMapPreviewResourcePlanResolver(
       const chosen = discovery.result.installations.filter(installation =>
         configured.some(path => samePath(path, installation.installPath)),
       )
-      const candidates = chosen.length > 0 ? chosen : discovery.result.installations
+      // Without a choice, a file opened inside one installation belongs to it (Warzone's mp.wz
+      // under F:\GAMES, not the Store copy).
+      const descriptor = await request.original.descriptor()
+      const subjectPath = filePathFromSubjectUri(descriptor.subjectUri)
+      const inside = (root: string) => {
+        if (subjectPath === undefined) return false
+        const path = relative(
+          process.platform === 'win32' ? resolve(root).toLowerCase() : resolve(root),
+          process.platform === 'win32' ? resolve(subjectPath).toLowerCase() : resolve(subjectPath),
+        )
+        return path !== '' && !path.startsWith('..') && !isAbsolute(path)
+      }
+      const containing = discovery.result.installations.filter(installation =>
+        inside(installation.installPath),
+      )
+      const candidates =
+        chosen.length > 0
+          ? chosen
+          : containing.length === 1
+            ? containing
+            : discovery.result.installations
       if (candidates.length > 1) {
         return fail(
           'x3.host/map-preview-installation-ambiguous',
@@ -724,7 +744,6 @@ export function createNodeMapPreviewResourcePlanResolver(
       }
       const installation = candidates[0] as GameInstallation
 
-      const descriptor = await request.original.descriptor()
       if (
         String(descriptor.revision) !== request.subject.revision ||
         descriptor.subjectUri !== request.subject.subjectUri

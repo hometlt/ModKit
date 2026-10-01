@@ -660,13 +660,18 @@ describe('Node game-installation map-preview resource resolver', () => {
       ]),
     })
 
+    // a file outside both installations names neither
+    const elsewhere = await installationRoot()
+    const outsidePath = join(elsewhere, 'subject.wz')
+    await writeFile(outsidePath, 'subject')
+    const outside = await namespaceSession(pathToFileURL(outsidePath).href, new Map())
     mocks.discover.mockResolvedValueOnce({
       state: 'discovered',
       result: discovery(root, { secondRoot: second }),
       diagnostics: [],
     })
     const ambiguous = await resolver.resolve(
-      await requestFixture(plan(), originalPath, original.session),
+      await requestFixture(plan(), outsidePath, outside.session),
     )
     expect(ambiguous).toMatchObject({
       state: 'unresolved',
@@ -674,6 +679,21 @@ describe('Node game-installation map-preview resource resolver', () => {
         expect.objectContaining({ code: 'x3.host/map-preview-installation-ambiguous' }),
       ]),
     })
+
+    // a file inside one of them belongs to it: no ambiguity without a choice
+    mocks.discover.mockResolvedValueOnce({
+      state: 'discovered',
+      result: discovery(root, { secondRoot: second }),
+      diagnostics: [],
+    })
+    const containing = await resolver.resolve(
+      await requestFixture(plan(), originalPath, original.session),
+    )
+    expect(
+      (containing.diagnostics ?? []).some(
+        item => item.code === 'x3.host/map-preview-installation-ambiguous',
+      ),
+    ).toBe(false)
 
     // The installation the user configured is their choice, not an ambiguity.
     const configuredResolver = createNodeMapPreviewResourcePlanResolver({
