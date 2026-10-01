@@ -1,4 +1,10 @@
-import type { ModelAnimationClip, ModelAnimationEvent, ModelAnimationSample } from '@modkit/sdk'
+import type {
+  ModelAnimationChannel,
+  ModelAnimationClip,
+  ModelAnimationEvent,
+  ModelAnimationSample,
+} from '@modkit/sdk'
+import { xxHash32 } from '../checksum/xxhash32.js'
 import { snapshotJson, type JsonSnapshotBudget } from '../json-snapshot.js'
 import { CUBIC_SPLINE_LINE_TYPE, sampleTrackValue } from '../model-math/sequence-pose.js'
 import type { RenderScalarAnimationTrack } from '../legacy-model-support.js'
@@ -180,6 +186,94 @@ export function snapshotModelAnimations(
     }
   }
   return clips
+}
+
+/** The longest common period a layered set loops by before its clips line up again, in seconds. */
+const MAX_LAYERED_PERIOD = 60
+
+/**
+ * Clips that play at once as one clip, layered by priority: each target (a joint, a node, a
+ * primitive) takes the channel of the highest-`priority` clip that animates it (ties: the later in
+ * the list), at weight 1 - a run on the legs under a carry on the arms. Each clip keeps its own
+ * clock: its `speedScale` scales its key times, and a looping clip's channels wrap by its own
+ * length (as concurrent channels). The set loops by the common period of its looping clips (to the
+ * millisecond, at most a minute; else by its longest clip), so a caller that loops it sees no seam.
+ */
+export function layeredClip(clips: readonly ModelAnimationClip[]): ModelAnimationClip {
+  const first = clips[0]
+  if (first === undefined) throw new TypeError('layeredClip needs a clip')
+  if (clips.length === 1) return first
+  const ranked = clips
+    .map((clip, order) => ({ clip, order }))
+    .sort((a, b) => (a.clip.priority ?? 0) - (b.clip.priority ?? 0) || a.order - b.order)
+  const channels = new Map<string, ModelAnimationChannel>()
+  const periods: number[] = []
+  let longest = 0
+  for (const { clip } of ranked) {
+    const speed = clip.speedScale ?? 1
+    if (!(speed > 0) || !Number.isFinite(speed)) throw new TypeError('clip speed must be positive')
+    const lastKey = clip.channels.reduce(
+      (end, channel) =>
+        (channel.samples ?? []).reduce((last, key) => Math.max(last, key.timeSeconds ?? 0), end),
+      0,
+    )
+    const length = (clip.durationSeconds ?? lastKey) / speed
+    longest = Math.max(longest, length)
+    const looping = (clip.loop ?? (clip.looping === true ? 'loop' : 'once')) === 'loop'
+    if (looping && length > 0) periods.push(Math.max(1, Math.round(length * 1000)))
+    for (const channel of clip.channels)
+      channels.set(`${channel.target}/${channel.kind}/${channel.axis ?? ''}`, {
+        ...channel,
+        ...(speed === 1 || channel.samples === undefined
+          ? {}
+          : {
+              samples: channel.samples.map(key => ({
+                ...key,
+                timeSeconds: (key.timeSeconds ?? 0) / speed,
+                ...(key.inTangent === undefined
+                  ? {}
+                  : { inTangent: key.inTangent.map(value => value * speed) }),
+                ...(key.outTangent === undefined
+                  ? {}
+                  : { outTangent: key.outTangent.map(value => value * speed) }),
+              })),
+            }),
+        ...(looping && length > 0 && channel.concurrent !== true
+          ? { concurrent: true, wrapSeconds: length }
+          : {}),
+      })
+  }
+  const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b))
+  const common = periods.reduce((period, next) => (period / gcd(period, next)) * next, 1)
+  const period = periods.length > 0 && common / 1000 <= MAX_LAYERED_PERIOD ? common / 1000 : longest
+  return {
+    id: clips.map(clip => clip.id).join('+'),
+    name: clips.map(clip => clip.name).join(' + '),
+    kind: 'animation',
+    provenance: clips.every(clip => clip.provenance === 'companion') ? 'companion' : 'direct',
+    frames: Math.max(...clips.map(clip => clip.frames)),
+    durationSeconds: period,
+    ...(periods.length > 0 ? { looping: true } : {}),
+    channels: [...channels.values()],
+  }
+}
+
+/**
+ * One of several candidates by weight (same-named StarCraft II clips by `frequency`, a Diablo III
+ * actor's looks), the same for the same seed: an object of a map keeps its choice frame to frame.
+ */
+export function chooseByWeight<T>(
+  candidates: readonly { readonly value: T; readonly weight: number }[],
+  seed: string,
+): T {
+  const total = candidates.reduce((sum, item) => sum + Math.max(0, item.weight), 0)
+  if (!(total > 0)) throw new TypeError('chooseByWeight needs a positive weight')
+  let point = (xxHash32(new TextEncoder().encode(seed)) / 2 ** 32) * total
+  for (const item of candidates) {
+    point -= Math.max(0, item.weight)
+    if (point < 0) return item.value
+  }
+  return candidates.findLast(item => item.weight > 0)!.value
 }
 
 export interface ModelAnimationEventOccurrence {
