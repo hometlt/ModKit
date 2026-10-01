@@ -25,7 +25,9 @@ import { createFileVfsProvider } from '@modkit/vfs/providers/file'
 import { discoverGameInstallations } from '../games/index.js'
 import {
   createCompositeWorkspaceNamespaceCompanionOrigin,
+  storedEntrySource,
   type CompositeWorkspaceNamespaceRoot,
+  type StoredSourceOpener,
 } from '../namespace-origin.js'
 import { openSubject } from '../subject-open.js'
 import type {
@@ -112,6 +114,8 @@ export interface NamespaceMount {
   readonly namespaceRelease: () => Promise<void>
   readonly revision: RevisionId
   readonly extract: (entryId: string, signal?: AbortSignal) => Promise<Uint8Array>
+  /** The container's bytes, of which its uncompressed entries are ranges. */
+  readonly openStoredSource?: StoredSourceOpener
 }
 
 export interface NodeMapPreviewResourcePlanResolverOptions {
@@ -445,11 +449,13 @@ export async function namespaceMount(session: AssetSession): Promise<NamespaceMo
   }
   const lease = await session.dataSource('common.view/namespace-entry-source', 1)
   const namespaceRelease = releaseOnce(() => lease.release())
+  const openStoredSource = storedEntrySource(session, descriptor)
   return Object.freeze({
     session,
     namespace: lease.value as NamespaceEntrySource,
     namespaceRelease,
     revision: descriptor.revision,
+    ...(openStoredSource === undefined ? {} : { openStoredSource }),
     async extract(entryId: string, signal?: AbortSignal): Promise<Uint8Array> {
       signal?.throwIfAborted()
       const result = await session
@@ -763,6 +769,9 @@ export function createNodeMapPreviewResourcePlanResolver(
               namespace: originalMount.namespace,
               containerRevision: descriptor.revision,
               extract: originalMount.extract,
+              ...(originalMount.openStoredSource === undefined
+                ? {}
+                : { openStoredSource: originalMount.openStoredSource }),
               ...(root.assetRoots === undefined ? {} : { assetRoots: root.assetRoots }),
             }),
           )
@@ -1054,6 +1063,9 @@ export function createNodeMapPreviewResourcePlanResolver(
             namespace: mount.namespace,
             containerRevision: mount.revision,
             extract: mount.extract,
+            ...(mount.openStoredSource === undefined
+              ? {}
+              : { openStoredSource: mount.openStoredSource }),
           }),
         )
       }

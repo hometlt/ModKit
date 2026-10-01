@@ -84,7 +84,7 @@ import {
 import { resolveContentAssetOrigins } from '../content-dependency-operations.js'
 import type { ContentSources } from '@modkit/vfs/content-sources'
 import type { Inventory } from '../inventory.js'
-import { createWorkspaceNamespaceCompanionOrigin } from '../namespace-origin.js'
+import { createWorkspaceNamespaceCompanionOrigin, storedEntrySource } from '../namespace-origin.js'
 import { createResourceSession } from '../resource-session.js'
 import { createHostServiceResolver } from '../service-leases.js'
 import { assembleSubjectDescriptor, createAssetSession } from '../session.js'
@@ -2590,6 +2590,7 @@ async function resolveSubjectNamespacePreviewResources(request: {
         logicalPrefix: root.sourcePath,
       }),
     )
+    const openStoredSource = storedEntrySource(request.original, request.descriptor)
     return Object.freeze({
       state: 'resolved' as const,
       origin: createWorkspaceNamespaceCompanionOrigin({
@@ -2598,6 +2599,7 @@ async function resolveSubjectNamespacePreviewResources(request: {
         logicalRoots,
         containerRevision: request.descriptor.revision,
         extract,
+        ...(openStoredSource === undefined ? {} : { openStoredSource }),
       }),
       revision: request.descriptor.revision,
       diagnostics: Object.freeze([

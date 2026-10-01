@@ -28,7 +28,6 @@ import { ModkitError, throwIfAborted, type Diagnostic } from '@modkit/core'
 import {
   type AnyDescriptor,
   type AssetSession,
-  type ByteRangeSource,
   type HostPolicy,
   type NamespaceEntry,
   type NamespaceEntrySource,
@@ -61,6 +60,7 @@ import {
   createNamespaceCompanionOrigin,
   createWorkspaceNamespaceCompanionOrigin,
   createWorkspaceNamespaceCandidateDiscovery,
+  storedEntrySource,
   type WorkspaceNamespaceCandidateSearch,
   type WorkspaceNamespaceCandidateDiscoveryLimits,
   type WorkspaceNamespaceLogicalRoot,
@@ -81,7 +81,6 @@ export const NESTED_ENTRY_UNREADABLE = 'x3.host/nested-entry-unreadable'
 /** The standard container operation this route needs; a container declares it or it is not one. */
 const CONTAINER_EXTRACT = 'container.extract'
 const NAMESPACE_ENTRY_SOURCE = 'common.view/namespace-entry-source'
-const BYTE_RANGE_SOURCE = 'common.view/byte-range-source'
 
 /** Host-selected discovery policies inside the same explicit roots as resource resolution. */
 export interface NestedLogicalResourceSearch {
@@ -438,7 +437,8 @@ export async function openNestedSubject(
     // An uncompressed entry is read in place from the parent's byte-range source, so an entry of any
     // size opens without being extracted; everything else is extracted within the open budget.
     // An entry the container decodes by range (block-compressed, or stored in a companion) is read
-    // through its own range source, also without extraction.
+    // through its own range source, also without extraction. Its companions are read the same way.
+    const openStoredSource = storedEntrySource(options.parent, descriptor)
     const entrySourceLease =
       entry.rangeAccess === true && namespace.openEntrySource !== undefined
         ? await namespace.openEntrySource(entry.id, options.signal)
@@ -446,8 +446,8 @@ export async function openNestedSubject(
     const rangeLease =
       entrySourceLease === undefined &&
       entry.storedRange !== undefined &&
-      descriptor.dataSources.some(item => item.contract === BYTE_RANGE_SOURCE && item.major === 1)
-        ? await options.parent.dataSource(BYTE_RANGE_SOURCE, 1)
+      openStoredSource !== undefined
+        ? await openStoredSource()
         : undefined
     const previousRelease = release
     let refReleased = false
@@ -475,7 +475,7 @@ export async function openNestedSubject(
         source = containerEntryRangeSource(
           refLease.value,
           containerEntryRevision(descriptor.revision, entry.id, entry.storedRange.length),
-          rangeLease.value as ByteRangeSource,
+          rangeLease.value,
           entry.storedRange,
         )
       } else {
@@ -491,6 +491,7 @@ export async function openNestedSubject(
         primaryLogicalId,
         containerRevision: descriptor.revision,
         extract,
+        ...(openStoredSource === undefined ? {} : { openStoredSource }),
         ...(caseSensitivity === undefined ? {} : { caseSensitivity }),
         pageLimit,
       }

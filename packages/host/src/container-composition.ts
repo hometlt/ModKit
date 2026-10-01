@@ -30,6 +30,7 @@ import {
   containerEntryRevision,
   containerEntrySource,
   createNamespaceCompanionOrigin,
+  storedEntrySource,
 } from './namespace-origin.js'
 import { createResourceSession, type ResourceSessionOptions } from './resource-session.js'
 
@@ -462,6 +463,7 @@ export async function createContainerNamespaceComposition(
     throw error
   }
   const namespace = namespaceLease.value as NamespaceEntrySource
+  const openStoredSource = storedEntrySource(options.parent, descriptor)
   const parentOperations = options.parent.operations()
   const bindings = new Map<string, EntryBinding>()
   const outstanding = new Set<() => Promise<void>>()
@@ -870,6 +872,7 @@ export async function createContainerNamespaceComposition(
           containerRevision: options.revision,
           maxPages: options.budget.maxNodes,
           maxSourceBytes,
+          ...(openStoredSource === undefined ? {} : { openStoredSource }),
           async extract(entryId, signal) {
             ensureLive(signal)
             const result = await parentOperations.invoke(

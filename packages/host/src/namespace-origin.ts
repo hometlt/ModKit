@@ -18,8 +18,10 @@ import { ModkitError, throwIfAborted } from '@modkit/core'
 import {
   containerEntryRevision,
   revisionIdFromRef,
+  type AnyDescriptor,
   type ArtifactByteSource,
   type ArtifactSource,
+  type AssetSession,
   type AssetSourceRef,
   type ByteRangeSource,
   type InputSearchScope,
@@ -79,6 +81,30 @@ export interface NamespaceCompanionOriginOptions {
   readonly maxPages?: number
   /** Optional per-source extraction ceiling checked both before and after extraction. */
   readonly maxSourceBytes?: bigint
+  /** The parent's bytes, of which an entry it stores uncompressed is a range (`storedEntrySource`). */
+  readonly openStoredSource?: StoredSourceOpener
+}
+
+/** Opens a container session's `common.view/byte-range-source`. */
+export type StoredSourceOpener = () => Promise<Lease<ByteRangeSource>>
+
+const BYTE_RANGE_SOURCE = 'common.view/byte-range-source'
+
+/**
+ * How a container's uncompressed entries are read in place: `NamespaceEntry.storedRange` names a range
+ * of its session's byte-range source, so such an entry (C&C4's 672 MB `static.bin` in a BIG) is read
+ * by range like the nested subject itself, never extracted. Undefined when the session publishes no
+ * byte-range source; its entries are then extracted.
+ */
+export function storedEntrySource(
+  session: Pick<AssetSession, 'dataSource'>,
+  descriptor: Pick<AnyDescriptor, 'dataSources'>,
+): StoredSourceOpener | undefined {
+  return descriptor.dataSources.some(
+    item => item.contract === BYTE_RANGE_SOURCE && item.major === 1,
+  )
+    ? () => session.dataSource(BYTE_RANGE_SOURCE, 1)
+    : undefined
 }
 
 /** One game-provider-resolved logical root, in VFS overlay precedence. */
@@ -106,6 +132,7 @@ export interface CompositeWorkspaceNamespaceRoot extends WorkspaceNamespaceLogic
   readonly namespace: NamespaceEntrySource
   readonly containerRevision: RevisionId
   readonly extract: (entryId: string, signal?: AbortSignal) => Promise<Uint8Array>
+  readonly openStoredSource?: StoredSourceOpener
   /** The root's asset directories in lookup order (`MapPreviewSubjectNamespaceRoot.assetRoots`). */
   readonly assetRoots?: readonly string[]
 }
@@ -186,6 +213,8 @@ interface IndexedEntry {
   readonly size?: bigint
   /** The container reads it by range (`openEntrySource`), without extracting it. */
   readonly rangeAccess?: true
+  /** Stored uncompressed: this range of the parent's bytes. */
+  readonly storedRange?: NamespaceEntry['storedRange']
   readonly revision: RevisionId
 }
 
@@ -258,6 +287,7 @@ export function createNamespaceCompanionOrigin(
               path: entry.path,
               ...(entry.size === undefined ? {} : { size: entry.size }),
               ...(entry.rangeAccess === true ? { rangeAccess: true as const } : {}),
+              ...(entry.storedRange === undefined ? {} : { storedRange: entry.storedRange }),
               revision: entry.revision,
             }
             built.set(key, value)
@@ -330,9 +360,16 @@ export function createNamespaceCompanionOrigin(
           context: { logicalId },
         })
       }
-      // an entry the container reads by range (a RefPack stream) is never extracted, whatever its size
-      if (entry.rangeAccess === true && options.namespace.openEntrySource !== undefined)
-        return rangeEntryLease(options.namespace, entry.entryId, options.containerRevision, signal)
+      // an entry the container reads by range (a RefPack stream) or stores uncompressed is never
+      // extracted, whatever its size
+      const ranged = rangeEntryLease(
+        options.namespace,
+        entry,
+        options.containerRevision,
+        options.openStoredSource,
+        signal,
+      )
+      if (ranged !== undefined) return ranged
       if (
         options.maxSourceBytes !== undefined &&
         entry.size !== undefined &&
@@ -388,6 +425,9 @@ export function createWorkspaceNamespaceCompanionOrigin(
       namespace: options.namespace,
       containerRevision: options.containerRevision,
       extract: options.extract,
+      ...(options.openStoredSource === undefined
+        ? {}
+        : { openStoredSource: options.openStoredSource }),
     })),
     ...(options.caseSensitivity === undefined ? {} : { caseSensitivity: options.caseSensitivity }),
     ...(options.pageLimit === undefined ? {} : { pageLimit: options.pageLimit }),
@@ -430,6 +470,7 @@ export function createCompositeWorkspaceNamespaceCompanionOrigin(
       namespace: root.namespace,
       containerRevision: root.containerRevision,
       extract: root.extract,
+      ...(root.openStoredSource === undefined ? {} : { openStoredSource: root.openStoredSource }),
       ...(root.assetRoots === undefined
         ? {}
         : {
@@ -449,6 +490,7 @@ export function createCompositeWorkspaceNamespaceCompanionOrigin(
     readonly namespace: NamespaceEntrySource
     readonly containerRevision: RevisionId
     readonly extract: (entryId: string, signal?: AbortSignal) => Promise<Uint8Array>
+    readonly openStoredSource?: StoredSourceOpener
   }
   const byLogicalId = new Map<string, BoundIndexedEntry>()
 
@@ -552,10 +594,12 @@ export function createCompositeWorkspaceNamespaceCompanionOrigin(
         path: entry.path,
         ...(entry.size === undefined ? {} : { size: entry.size }),
         ...(entry.rangeAccess === true ? { rangeAccess: true as const } : {}),
+        ...(entry.storedRange === undefined ? {} : { storedRange: entry.storedRange }),
         revision: entry.revision,
         namespace: root.namespace,
         containerRevision: root.containerRevision,
         extract: root.extract,
+        ...(root.openStoredSource === undefined ? {} : { openStoredSource: root.openStoredSource }),
       })
     }
     return logicalId
@@ -696,8 +740,14 @@ export function createCompositeWorkspaceNamespaceCompanionOrigin(
           context: { logicalId },
         })
       }
-      if (entry.rangeAccess === true && entry.namespace.openEntrySource !== undefined)
-        return rangeEntryLease(entry.namespace, entry.entryId, entry.containerRevision, signal)
+      const ranged = rangeEntryLease(
+        entry.namespace,
+        entry,
+        entry.containerRevision,
+        entry.openStoredSource,
+        signal,
+      )
+      if (ranged !== undefined) return ranged
       const refLease = await entry.namespace.openEntry(entry.entryId, signal)
       let bytes: Uint8Array
       try {
@@ -1086,29 +1136,60 @@ export function containerEntryRangeSource(
   })
 }
 
-/** An entry the container reads by range, as a source of its own; both leases go with it. */
-async function rangeEntryLease(
+/**
+ * An entry read by range, never extracted — through the container's own range source for it
+ * (`rangeAccess`), or as the range of the parent's bytes it is stored in (`storedRange`); undefined
+ * when it is neither. Both leases go with the source.
+ */
+function rangeEntryLease(
+  namespace: NamespaceEntrySource,
+  entry: IndexedEntry,
+  containerRevision: RevisionId,
+  openStoredSource: StoredSourceOpener | undefined,
+  signal?: AbortSignal,
+): Promise<Lease<ArtifactSource>> | undefined {
+  const { entryId, storedRange } = entry
+  if (entry.rangeAccess === true && namespace.openEntrySource !== undefined)
+    return entryRangeLease(namespace, entryId, containerRevision, signal, () =>
+      namespace.openEntrySource!(entryId, signal),
+    )
+  if (storedRange !== undefined && openStoredSource !== undefined)
+    return entryRangeLease(
+      namespace,
+      entryId,
+      containerRevision,
+      signal,
+      openStoredSource,
+      storedRange,
+    )
+  return undefined
+}
+
+async function entryRangeLease(
   namespace: NamespaceEntrySource,
   entryId: string,
   containerRevision: RevisionId,
-  signal?: AbortSignal,
+  signal: AbortSignal | undefined,
+  openSource: () => Promise<Lease<ByteRangeSource>>,
+  storedRange?: { readonly offset: bigint; readonly length: bigint },
 ): Promise<Lease<ArtifactSource>> {
   const refLease = await namespace.openEntry(entryId, signal)
   let sourceLease: Lease<ByteRangeSource>
   try {
-    sourceLease = await namespace.openEntrySource!(entryId, signal)
+    throwIfAborted(signal)
+    sourceLease = await openSource()
   } catch (error) {
     await refLease.release()
     throw error
   }
   try {
-    const size = await sourceLease.value.size()
+    const range = storedRange ?? { offset: 0n, length: await sourceLease.value.size() }
     return Object.freeze({
       value: containerEntryRangeSource(
         refLease.value,
-        containerEntryRevision(containerRevision, entryId, size),
+        containerEntryRevision(containerRevision, entryId, range.length),
         sourceLease.value,
-        { offset: 0n, length: size },
+        range,
       ),
       release: async () => {
         await sourceLease.release()

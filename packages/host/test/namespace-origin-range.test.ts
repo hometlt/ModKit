@@ -78,3 +78,82 @@ describe('a companion the container reads by range', () => {
     }
   })
 })
+
+describe('a companion the container stores uncompressed', () => {
+  // C&C4 static.bin, stored in its BIG: the entry is bytes 4.. of the BIG
+  const big = new TextEncoder().encode('BIGFstatic.bin stored as is, read in place')
+  const storedRange = { offset: 4n, length: BigInt(big.byteLength - 4) }
+  const stored = (released: string[]): NamespaceEntrySource =>
+    ({
+      async list() {
+        const entry = {
+          id: 'static.bin',
+          path: 'static.bin',
+          name: 'static.bin',
+          kind: 'file' as const,
+          size: storedRange.length,
+          storedRange,
+          revision,
+        }
+        return { items: [entry] }
+      },
+      async openEntry(entryId: string) {
+        return {
+          value: { id: `big:${entryId}`, uri: `big:StaticStream.big!/${entryId}` },
+          release: async () => void released.push('ref'),
+        }
+      },
+    }) as NamespaceEntrySource
+  const openStoredSource = (released: string[]) => async () => ({
+    value: {
+      size: async () => BigInt(big.byteLength),
+      read: async (offset: bigint, length: number) =>
+        big.slice(Number(offset), Number(offset) + length),
+    },
+    release: async () => void released.push('source'),
+  })
+
+  it('is read in place from the parent’s bytes past the extraction budget', async () => {
+    for (const make of ['single', 'workspace'] as const) {
+      const released: string[] = []
+      const origin =
+        make === 'single'
+          ? createNamespaceCompanionOrigin({
+              namespace: stored(released),
+              primaryLogicalId: 'static.manifest',
+              containerRevision: revision,
+              extract: refuseExtract,
+              maxSourceBytes: 8n,
+              openStoredSource: openStoredSource(released),
+            })
+          : createWorkspaceNamespaceCompanionOrigin({
+              namespace: stored(released),
+              primaryLogicalId: 'static.manifest',
+              containerRevision: revision,
+              logicalRoots: [{ rootId: 'stream', pathPrefix: '' }],
+              extract: refuseExtract,
+              openStoredSource: openStoredSource(released),
+            })
+      const lease = await origin.open('static.bin')
+      if (lease.value.kind !== 'bytes') throw new Error('not bytes')
+      expect(lease.value.size).toBe(storedRange.length)
+      expect(new TextDecoder().decode(await lease.value.read(0n, 10))).toBe('static.bin')
+      expect(new TextDecoder().decode(await lease.value.read(25n, 99))).toBe('read in place')
+      await lease.release()
+      expect(released).toEqual(['source', 'ref'])
+    }
+  })
+
+  it('is extracted when the parent publishes no bytes to read it from', async () => {
+    const origin = createNamespaceCompanionOrigin({
+      namespace: stored([]),
+      primaryLogicalId: 'static.manifest',
+      containerRevision: revision,
+      extract: async () => big.slice(4),
+    })
+    const lease = await origin.open('static.bin')
+    if (lease.value.kind !== 'bytes') throw new Error('not bytes')
+    expect(new TextDecoder().decode(await lease.value.read(25n, 99))).toBe('read in place')
+    await lease.release()
+  })
+})
