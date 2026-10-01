@@ -102,6 +102,20 @@ describe('publisher material properties', () => {
     ).toEqual([{ slot: 'teamColor', blend: 'multiply' }])
   })
 
+  it('carries metallic and roughness factors through UVM, silence as the rough dielectric', () => {
+    const metal = { metallicFactor: 1, roughnessFactor: 0.25 }
+    const { document, binary } = materializeUvmCore(projection([metal, {}]), request)
+    const json = document as unknown as JsonObject
+    const [first, second] = document.materials as unknown as {
+      pbrMetallicRoughness: Record<string, unknown>
+    }[]
+    expect(first!.pbrMetallicRoughness).toMatchObject({ metallicFactor: 1, roughnessFactor: 0.25 })
+    expect(second!.pbrMetallicRoughness).toMatchObject({ metallicFactor: 0, roughnessFactor: 1 })
+    const refs = readUvmFacets(json, binary, { maxScalarBytes: 1_000_000 }).materialRefs
+    expect(refs[0]).toMatchObject(metal)
+    expect(refs[1]).not.toHaveProperty('metallicFactor')
+  })
+
   it('refuses a colour factor outside glTF 0..1', () => {
     expect(() => materializeUvmCore(projection([{ emissiveFactor: [3, 0, 0] }]), request)).toThrow(
       /emissiveFactor must be 3 finite components in 0\.\.1/u,

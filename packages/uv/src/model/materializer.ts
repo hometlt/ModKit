@@ -242,7 +242,14 @@ export interface UvmMaterial {
 }
 /** Material fields written as glTF itself states them, so not repeated in extras. */
 type MaterialFieldsInGltf =
-  'alphaMode' | 'alphaCutoff' | 'doubleSided' | 'baseColorFactor' | 'emissiveFactor' | 'unlit'
+  | 'alphaMode'
+  | 'alphaCutoff'
+  | 'doubleSided'
+  | 'baseColorFactor'
+  | 'emissiveFactor'
+  | 'unlit'
+  | 'metallicFactor'
+  | 'roughnessFactor'
 interface PrimitiveEntry {
   attributes: { [semantic: string]: number }
   indices: number
@@ -922,6 +929,8 @@ export function materializeUvmCore(
       baseColorFactor,
       emissiveFactor,
       unlit,
+      metallicFactor,
+      roughnessFactor,
       ...fields
     } = definition
     if (name !== undefined) target.name = name
@@ -929,6 +938,18 @@ export function materializeUvmCore(
       target.alphaMode = alphaMode === 'opaque' ? 'OPAQUE' : alphaMode === 'mask' ? 'MASK' : 'BLEND'
     if (alphaCutoff !== undefined) target.alphaCutoff = alphaCutoff
     if (doubleSided === true) target.doubleSided = true
+    if (metallicFactor !== undefined)
+      target.pbrMetallicRoughness.metallicFactor = colorFactor<[number]>(
+        [metallicFactor],
+        1,
+        `material ${definition.id} metallicFactor`,
+      )[0]
+    if (roughnessFactor !== undefined)
+      target.pbrMetallicRoughness.roughnessFactor = colorFactor<[number]>(
+        [roughnessFactor],
+        1,
+        `material ${definition.id} roughnessFactor`,
+      )[0]
     if (baseColorFactor !== undefined)
       target.pbrMetallicRoughness.baseColorFactor = colorFactor(
         baseColorFactor,

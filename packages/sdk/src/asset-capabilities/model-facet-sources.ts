@@ -342,6 +342,13 @@ export interface ModelMaterialRef {
   readonly emissiveFactor?: readonly [number, number, number]
   /** Drawn without lighting: the base colour as it is (glTF `KHR_materials_unlit`). */
   readonly unlit?: boolean
+  /**
+   * glTF metallic-roughness factors in 0..1, multiplying a `metallicRoughness` layer (blue metallic,
+   * green roughness). Absent: a rough dielectric (0 and 1), as Modkit writes a material that says
+   * nothing.
+   */
+  readonly metallicFactor?: number
+  readonly roughnessFactor?: number
   /** Among translucent draws, a higher priority draws later (UVM `UV_game_material.sortPriority`). */
   readonly priority?: number
   readonly nativeFlags?: number

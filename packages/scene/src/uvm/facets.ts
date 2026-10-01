@@ -234,6 +234,8 @@ function decodeMaterialRefs(document: JsonObject): readonly ModelMaterialRef[] {
         'baseColorFactor',
         'emissiveFactor',
         'unlit',
+        'metallicFactor',
+        'roughnessFactor',
       ]) {
         if (Object.hasOwn(fields, key))
           throw new TypeError(`material ${index} metadata shadows ${key}`)
@@ -272,6 +274,21 @@ function decodeMaterialRefs(document: JsonObject): readonly ModelMaterialRef[] {
       3,
       'emissiveFactor',
     ) as ModelMaterialRef['emissiveFactor']
+    // what the document states (glTF fills a missing one with 1); the rough dielectric (0, 1) is
+    // what Modkit writes for a material that says nothing, so it says nothing back
+    const metallicStated = field(material['pbrMetallicRoughness'], 'metallicFactor')
+    const roughnessStated = field(material['pbrMetallicRoughness'], 'roughnessFactor')
+    const metallic = metallicStated ?? 1
+    const roughness = roughnessStated ?? 1
+    if (
+      typeof metallic !== 'number' ||
+      typeof roughness !== 'number' ||
+      !(metallic >= 0 && metallic <= 1 && roughness >= 0 && roughness <= 1)
+    )
+      throw new TypeError(`material ${index} metallic and roughness factors must be in 0..1`)
+    const stated =
+      (metallicStated !== undefined || roughnessStated !== undefined) &&
+      (metallic !== 0 || roughness !== 1)
     // a document from elsewhere states these only in its game material
     const gameMaterial = field(material['extensions'], 'UV_game_material')
     const depthWrite = field(gameMaterial, 'depthWrite')
@@ -284,6 +301,7 @@ function decodeMaterialRefs(document: JsonObject): readonly ModelMaterialRef[] {
       ...(material['doubleSided'] === true ? { doubleSided: true } : {}),
       ...(baseColorFactor === undefined ? {} : { baseColorFactor }),
       ...(emissiveFactor === undefined ? {} : { emissiveFactor }),
+      ...(stated ? { metallicFactor: metallic, roughnessFactor: roughness } : {}),
       ...(field(material['extensions'], 'KHR_materials_unlit') === undefined
         ? {}
         : { unlit: true }),
