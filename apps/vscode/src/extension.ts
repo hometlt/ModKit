@@ -151,6 +151,7 @@ CONTAINER_ENTRY_NOT_FOUND,
 type ContainerRegistry,
 } from './containers.js'
 import { registerWorkspaceSearch, type SearchFolderFile } from './workspace-search.js'
+import { decodeText } from './workspace-search-core.js'
 import {
 createOperationOutputStore,
 operationOutputName,
@@ -6722,25 +6723,37 @@ async function activateModkit(
         const pathIndex = await workspaceContentPathIndex(scope, contextId)
         request.signal.throwIfAborted()
         let totalTextBytes = 0
+        /*
+         * An open document gives its unsaved text; any other file is read from disk. Opening it as
+         * a TextDocument would open it in the language workspace too, and every such opening
+         * cancels the request this snapshot serves — a completion never got past the mod's files.
+         */
+        const openDocuments = new Map(
+          vscode.workspace.textDocuments.map(item => [item.uri.toString(), item]),
+        )
         for (const candidate of ranked.slice(0, request.maxDocuments)) {
           request.signal.throwIfAborted()
-          const document = await vscode.workspace.openTextDocument(candidate.uri)
+          const open = openDocuments.get(candidate.uri.toString())
           const classified = classifyLanguageFile(languageRoutes, candidate.uri.path)
           const routedLanguageIds = classified.candidates.filter(languageId =>
             accepted.has(languageId),
           )
-          const languageId = accepted.has(document.languageId)
-            ? document.languageId
-            : routedLanguageIds.length === 1
-              ? routedLanguageIds[0]
-              : undefined
+          const languageId =
+            open !== undefined && accepted.has(open.languageId)
+              ? open.languageId
+              : routedLanguageIds.length === 1
+                ? routedLanguageIds[0]
+                : undefined
           if (languageId === undefined) {
             // `.xml` and `.txt` commonly have several SC2 meanings. Extension-only routing would
             // inject the wrong semantic document, so leave the snapshot honestly incomplete.
             isComplete = false
             continue
           }
-          const text = document.getText()
+          const version = open?.version ?? 0
+          const text =
+            open?.getText() ??
+            decodeText(await vscode.workspace.fs.readFile(candidate.uri), undefined)
           const bytes = new TextEncoder().encode(text).byteLength
           if (bytes > 4_194_304 || totalTextBytes + bytes > 67_108_864) {
             isComplete = false
@@ -6751,7 +6764,7 @@ async function activateModkit(
             Object.freeze({
               uri: candidate.uri.toString(),
               languageId,
-              version: document.version,
+              version,
               text,
               ...(classified.dialect === undefined || classified.languageId !== languageId
                 ? {}
@@ -6775,10 +6788,7 @@ async function activateModkit(
                 layerId: scope?.layerId ?? `${contextId}:root:${precedence}`,
                 logicalId,
                 precedence,
-                sourceRevision: languageWorkspaceContextToken({
-                  version: document.version,
-                  text,
-                }),
+                sourceRevision: languageWorkspaceContextToken({ version, text }),
                 readOnly: candidate.uri.scheme !== 'file',
                 overlay: candidate.uri.scheme === 'file',
               }),

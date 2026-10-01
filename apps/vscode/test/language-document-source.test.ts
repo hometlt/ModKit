@@ -16,7 +16,10 @@ describe('default language workspace composition', () => {
     // Project files come from the folders on disk only, through the one helper that asks VS Code.
     expect(source).toContain('findDiskFiles(')
     expect(read('workspace-files.ts')).toContain('vscode.workspace.findFiles(')
-    expect(source).toContain('vscode.workspace.openTextDocument(candidate.uri)')
+    // A file that is not open is read from disk: opening it would open it in the language
+    // workspace, and that cancels the request the snapshot serves.
+    expect(source).toContain('vscode.workspace.fs.readFile(candidate.uri)')
+    expect(source).not.toContain('vscode.workspace.openTextDocument(candidate.uri)')
     expect(source).toContain('routedLanguageIds.length === 1')
     expect(source).toContain('bytes > 4_194_304 || totalTextBytes + bytes > 67_108_864')
     expect(source).toContain('isComplete = false')
