@@ -741,12 +741,60 @@ export function createGameTemplateViewer(options: GameTemplateViewerOptions = {}
       const root = createSurface(args.container, localizer.text('viewer.gameTemplate'))
       let renderRevision = 0
       let rootPath: string | undefined
+      let shown:
+        { descriptor: typeof args.descriptor; preview: GameTemplatePreviewResult } | undefined
       const selection: TemplateSelection = { key: undefined }
-      // «Reveal in DescTree»: a reveal that arrives before the tree is drawn waits for it
+      /*
+       * A template names templates in other files. The host is the only side that may read them,
+       * so what it handed over goes to the operation; without the port the operation still runs
+       * and reports what it could not resolve, which is the honest half-answer.
+       */
+      const fetchPreview = async (
+        descriptor: typeof args.descriptor,
+        from: string | undefined,
+      ): Promise<GameTemplatePreviewResult | { readonly refused: string }> => {
+        const input = await templateInput(args.workspaceDocuments, scope.signal)
+        const result = await invokeOperation(
+          descriptor,
+          args.operations,
+          GAME_TEMPLATE_PREVIEW_OPERATION_ID,
+          (from === undefined
+            ? input
+            : { ...(input as Record<string, JsonValue>), rootPath: from }) as JsonValue,
+          { signal: scope.signal },
+        )
+        if (result.state !== 'ok') return { refused: result.reason }
+        if (result.output.kind !== 'json' || !isGameTemplatePreviewResult(result.output.value)) {
+          throw new TypeError('view.template returned an invalid game-template-preview result')
+        }
+        return result.output.value
+      }
+      /*
+       * «Reveal in DescTree»: a reveal that arrives before the tree is drawn waits for it; one the
+       * shown root does not declare is looked for under the other roots the producer offers, and
+       * the first that declares it is shown.
+       */
+      const revealElsewhere = async (detail: TemplateRevealDetail): Promise<void> => {
+        const current = shown
+        if (current === undefined) return
+        for (const candidate of current.preview.roots ?? []) {
+          if (candidate === (current.preview.rootPath ?? rootPath)) continue
+          const other = await fetchPreview(current.descriptor, candidate)
+          if (scope.signal.aborted || shown !== current) return
+          if ('refused' in other || !isGameTemplateTreeNode(other.resolvedTree)) continue
+          if (templateNodeAt(other.resolvedTree, detail.uri, detail.offset) === undefined) continue
+          rootPath = candidate
+          selection.key = undefined
+          selection.pending = detail
+          await render(current.descriptor)
+          return
+        }
+      }
       const onReveal = (event: Event): void => {
         const detail = (event as CustomEvent<TemplateRevealDetail>).detail
         if (selection.reveal === undefined) selection.pending = detail
-        else selection.reveal(detail.uri, detail.offset)
+        else if (!selection.reveal(detail.uri, detail.offset))
+          void revealElsewhere(detail).catch(() => undefined)
       }
       root.ownerDocument.addEventListener(TEMPLATE_REVEAL_EVENT, onReveal)
       scope.cleanup(() => root.ownerDocument.removeEventListener(TEMPLATE_REVEAL_EVENT, onReveal))
@@ -758,34 +806,17 @@ export function createGameTemplateViewer(options: GameTemplateViewerOptions = {}
           text: localizer.text('viewer.loadingTemplate'),
           part: 'viewer.status',
         })
-        /*
-         * A template names templates in other files. The host is the only side that may read them,
-         * so what it handed over goes to the operation; without the port the operation still runs
-         * and reports what it could not resolve, which is the honest half-answer.
-         */
-        const input = await templateInput(args.workspaceDocuments, scope.signal)
-        const result = await invokeOperation(
-          descriptor,
-          args.operations,
-          GAME_TEMPLATE_PREVIEW_OPERATION_ID,
-          (rootPath === undefined
-            ? input
-            : { ...(input as Record<string, JsonValue>), rootPath }) as JsonValue,
-          { signal: scope.signal },
-        )
+        const answer = await fetchPreview(descriptor, rootPath)
         if (scope.signal.aborted || revision !== renderRevision) return
-        if (result.state !== 'ok') {
+        if ('refused' in answer) {
           root.replaceChildren()
           element(root, 'output', {
-            text: localizer.text('viewer.templateUnavailable', { reason: result.reason }),
+            text: localizer.text('viewer.templateUnavailable', { reason: answer.refused }),
             part: 'viewer.status',
           })
           return
         }
-        if (result.output.kind !== 'json' || !isGameTemplatePreviewResult(result.output.value)) {
-          throw new TypeError('view.template returned an invalid game-template-preview result')
-        }
-        const preview = result.output.value
+        const preview = answer
         const assets = [
           ...new Set(
             preview.displayItems.flatMap(item =>
@@ -798,6 +829,7 @@ export function createGameTemplateViewer(options: GameTemplateViewerOptions = {}
             ? new Map<string, string>()
             : await options.images(descriptor, assets, scope.signal)
         if (scope.signal.aborted || revision !== renderRevision) return
+        shown = { descriptor, preview }
         renderGameTemplatePreview(root.ownerDocument, root, preview, localizer, images, {
           selection,
           ...(options.openSource === undefined ? {} : { openSource: options.openSource }),

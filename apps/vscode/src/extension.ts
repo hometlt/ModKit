@@ -8640,15 +8640,20 @@ async function activateModkit(
         if (range !== undefined) {
           // a declaration by its offsets (a template node, plan 3.33): selected, as text
           const document = await vscode.workspace.openTextDocument(uri)
-          const shown = vscode.window.visibleTextEditors.find(
-            editor => editor.document.uri.toString() === uri.toString(),
+          // in the group that already has the file as text, else beside
+          const group = vscode.window.tabGroups.all.find(item =>
+            item.tabs.some(
+              tab =>
+                tab.input instanceof vscode.TabInputText &&
+                tab.input.uri.toString() === uri.toString(),
+            ),
           )
           await vscode.window.showTextDocument(document, {
             selection: new vscode.Range(
               document.positionAt(range.start),
               document.positionAt(range.end ?? range.start),
             ),
-            viewColumn: shown?.viewColumn ?? vscode.ViewColumn.Beside,
+            viewColumn: group?.viewColumn ?? vscode.ViewColumn.Beside,
             preview: false,
           })
           return
