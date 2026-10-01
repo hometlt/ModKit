@@ -81,6 +81,7 @@
         "title": "%command.contentSources%",
         "icon": "$(remote-explorer)"
       },
+      { "command": "modkit.convertFiles", "title": "%command.convertFiles%" },
       { "command": "modkit.convertFolder", "title": "%command.convertFolder%" },
       { "command": "modkit.explainResolution", "title": "%command.explainResolution%" },
       { "command": "modkit.exportDiagnostics", "title": "%command.exportDiagnostics%" },
@@ -879,7 +880,19 @@
           "group": "navigation@4"
         }
       ],
+      "editor/title/context": [
+        {
+          "command": "modkit.convertFiles",
+          "when": "resourceScheme == file && resourceExtname in modkit.pictureExtensions",
+          "group": "modkit@1"
+        }
+      ],
       "explorer/context": [
+        {
+          "command": "modkit.convertFiles",
+          "when": "!explorerResourceIsFolder && resourceScheme == file && resourceExtname in modkit.pictureExtensions",
+          "group": "navigation@19"
+        },
         {
           "command": "modkit.convertFolder",
           "when": "explorerResourceIsFolder && resourceScheme == file",
@@ -974,7 +987,7 @@
         },
         {
           "command": "modkit.extensions.disableContribution",
-          "when": "view == modkit.extensions && viewItem == modkitContribution.codec.enabled",
+          "when": "view == modkit.extensions && viewItem =~ /^modkitContribution\\.(codec|installed)\\.enabled$/",
           "group": "inline@1"
         },
         {
@@ -984,7 +997,7 @@
         },
         {
           "command": "modkit.extensions.enableContribution",
-          "when": "view == modkit.extensions && viewItem == modkitContribution.codec.disabled",
+          "when": "view == modkit.extensions && viewItem =~ /^modkitContribution\\.(codec|installed)\\.disabled$/",
           "group": "inline@1"
         },
         {
@@ -1260,6 +1273,7 @@
     "onCommand:modkit.browseContainer",
     "onCommand:modkit.closeContainers",
     "onCommand:modkit.contentSources",
+    "onCommand:modkit.convertFiles",
     "onCommand:modkit.convertFolder",
     "onCommand:modkit.explainResolution",
     "onCommand:modkit.exportDiagnostics",

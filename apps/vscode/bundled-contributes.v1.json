@@ -1434,12 +1434,12 @@
       },
       {
         "command": "modkit.extensions.enableContribution",
-        "when": "view == modkit.extensions && viewItem == modkitContribution.codec.disabled",
+        "when": "view == modkit.extensions && viewItem =~ /^modkitContribution\\.(codec|installed)\\.disabled$/",
         "group": "inline@1"
       },
       {
         "command": "modkit.extensions.disableContribution",
-        "when": "view == modkit.extensions && viewItem == modkitContribution.codec.enabled",
+        "when": "view == modkit.extensions && viewItem =~ /^modkitContribution\\.(codec|installed)\\.enabled$/",
         "group": "inline@1"
       },
       {

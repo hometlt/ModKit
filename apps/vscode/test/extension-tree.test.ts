@@ -208,6 +208,16 @@ describe('VS Code extension contribution tree', () => {
       'modkitContribution.codec.enabled',
       'modkitContribution.codec.disabled',
     ])
+    // any installed contribution switches as its card does; one of an available package does not
+    const provider = required(codecs[0], 'codec node is missing')
+    const asProvider = {
+      ...provider,
+      contribution: { ...provider.contribution, contract: 'modkit/service-provider-contribution' },
+    }
+    expect(extensionActionContextValue(asProvider)).toBe('modkitContribution.installed.enabled')
+    expect(extensionActionContextValue({ ...asProvider, group: 'available' })).toBe(
+      'modkitContribution.enabled',
+    )
     expect(
       extensionActionContextValue({
         ...installedEntry,

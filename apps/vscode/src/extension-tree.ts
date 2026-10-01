@@ -147,10 +147,12 @@ export function extensionVendorActionContextValue(node: ExtensionVendorNode): st
 export function extensionActionContextValue(node: ExtensionEntryNode | ContributionNode): string {
   if (node.kind === 'contribution') {
     if (node.contribution.id === undefined) return 'modkitContribution.invalid'
-    if (node.group === 'installed' && node.contribution.contract === 'modkit/codec-contribution') {
-      return `modkitContribution.codec.${node.configuredDisabled ? 'disabled' : 'enabled'}`
-    }
-    return `modkitContribution.${node.configuredDisabled ? 'disabled' : 'enabled'}`
+    const state = node.configuredDisabled ? 'disabled' : 'enabled'
+    if (node.group !== 'installed') return `modkitContribution.${state}`
+    // every installed contribution switches on and off, as its card does (plan 8.14)
+    return node.contribution.contract === 'modkit/codec-contribution'
+      ? `modkitContribution.codec.${state}`
+      : `modkitContribution.installed.${state}`
   }
 
   const { entry } = node
