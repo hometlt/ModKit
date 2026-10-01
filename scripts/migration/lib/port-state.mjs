@@ -73,6 +73,8 @@ export async function discoverContributions(
           'dist',
           'dist-app',
           'vendor',
+          // run outputs (acceptance copies of whole roots), not sources
+          'artifacts',
           'reports',
           'migration',
           'test',

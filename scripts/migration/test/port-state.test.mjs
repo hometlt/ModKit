@@ -419,6 +419,14 @@ test('discovery reads authored manifest globs and excludes fixtures and build ar
       spec: { formatRefs: [{ formatId: 'sample' }], operations: [] },
     }),
   )
+  // an acceptance run's copy of the whole root is output, not a second contribution
+  const copy = path.join(root, 'artifacts', 'run-1', 'extension')
+  await mkdir(path.join(copy, 'contributions'), { recursive: true })
+  for (const file of ['package.json', 'contributions/codec.json'])
+    await writeFile(
+      path.join(copy, file),
+      await readFile(path.join(root, 'extension', file), 'utf8'),
+    )
   const found = await discoverContributions([{ id: 'fixture', directory: root }])
   assert.equal(found.length, 1)
   assert.deepEqual(found[0].formats, ['sample'])

@@ -66,7 +66,7 @@ Pending requires source copy, behavioral evidence and the declared acceptance su
 | flv | other | other:modkit/flv | pending | 3 / 3 | pending |
 | fsb | other | other:modkit/fsb | pending | 0 / 4 | evidence-ready |
 | gaf | other | other:modkit/gaf | pending | 0 / 2 | evidence-ready |
-| galaxy | sc2 | blizzard:blizzard/galaxy, blizzard:blizzard/galaxy | available | 0 / 32 | evidence-ready |
+| galaxy | sc2 | blizzard:blizzard/galaxy | available | 0 / 32 | evidence-ready |
 | gif | other | core:modkit/gif | pending | 3 / 3 | pending |
 | glb | other | core:modkit/model-gltf | pending | 3 / 3 | pending |
 | gltf | other | core:modkit/model-gltf | pending | 3 / 3 | pending |
@@ -133,16 +133,16 @@ Pending requires source copy, behavioral evidence and the declared acceptance su
 | sage-asset-bundle | other | none | pending | 0 / 1 | evidence-ready |
 | sage-skudef | other | ea:ea/sage-skudef | pending | 0 / 2 | evidence-ready |
 | sage-w3x | other | ea:ea/sage-w3x | pending | 3 / 3 | pending |
-| sc2-bank | sc2 | blizzard:blizzard/sc2-bank, blizzard:blizzard/sc2-bank | available | 0 / 27 | evidence-ready |
-| sc2-data | sc2 | blizzard:blizzard/sc2-data, blizzard:blizzard/sc2-data | available | 0 / 26 | evidence-ready |
-| sc2-document-metadata | sc2 | blizzard:blizzard/sc2-document-metadata, blizzard:blizzard/sc2-document-metadata | available | 0 / 19 | evidence-ready |
-| sc2-layout | sc2 | blizzard:blizzard/sc2-layout, blizzard:blizzard/sc2-layout | available | 2 / 28 | pending |
-| sc2-map | sc2 | blizzard:blizzard/sc2-map, blizzard:blizzard/sc2-map | available | 1 / 23 | pending |
-| sc2-mod | sc2 | blizzard:blizzard/sc2-mod, blizzard:blizzard/sc2-mod | available | 2 / 24 | pending |
-| sc2-replay | sc2 | blizzard:blizzard/sc2-replay, blizzard:blizzard/sc2-replay | available | 1 / 27 | pending |
-| sc2-runtime | sc2 | blizzard:blizzard/sc2-runtime, blizzard:blizzard/sc2-runtime | available | 18 / 19 | pending |
-| sc2-strings | sc2 | blizzard:blizzard/sc2-strings, blizzard:blizzard/sc2-strings | available | 0 / 26 | evidence-ready |
-| sc2-triggers | sc2 | blizzard:blizzard/sc2-triggers, blizzard:blizzard/sc2-triggers | available | 0 / 24 | evidence-ready |
+| sc2-bank | sc2 | blizzard:blizzard/sc2-bank | available | 0 / 27 | evidence-ready |
+| sc2-data | sc2 | blizzard:blizzard/sc2-data | available | 0 / 26 | evidence-ready |
+| sc2-document-metadata | sc2 | blizzard:blizzard/sc2-document-metadata | available | 0 / 19 | evidence-ready |
+| sc2-layout | sc2 | blizzard:blizzard/sc2-layout | available | 2 / 28 | pending |
+| sc2-map | sc2 | blizzard:blizzard/sc2-map | available | 1 / 23 | pending |
+| sc2-mod | sc2 | blizzard:blizzard/sc2-mod | available | 2 / 24 | pending |
+| sc2-replay | sc2 | blizzard:blizzard/sc2-replay | available | 1 / 27 | pending |
+| sc2-runtime | sc2 | blizzard:blizzard/sc2-runtime | available | 18 / 19 | pending |
+| sc2-strings | sc2 | blizzard:blizzard/sc2-strings | available | 0 / 26 | evidence-ready |
+| sc2-triggers | sc2 | blizzard:blizzard/sc2-triggers | available | 0 / 24 | evidence-ready |
 | shp | other | ea:ea/shp | pending | 0 / 4 | evidence-ready |
 | sld | other | none | pending | 0 / 2 | evidence-ready |
 | slp | other | none | pending | 0 / 2 | evidence-ready |
