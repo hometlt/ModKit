@@ -33,7 +33,25 @@ export type SceneRendererColor = readonly [number, number, number, number]
  * material asking for `lambert` is asking for the scene's light to be applied, and a provider that
  * cannot shade says so with a diagnostic and falls back to `unlit` rather than refusing the frame.
  */
-export type SceneRendererShadingModel = 'unlit' | 'lambert'
+/**
+ * `pbr` is glTF metallic-roughness (`SceneRendererMaterial.pbr`, the one BRDF of codec-kit
+ * model-math/pbr) under the scene light; like `lambert`, it needs a light and is unlit without one.
+ */
+export type SceneRendererShadingModel = 'unlit' | 'lambert' | 'pbr'
+
+/** glTF metallic-roughness inputs of a `pbr` material; textures are scene texture ids. */
+export interface SceneRendererPbr {
+  readonly metallic: number
+  readonly roughness: number
+  /** glTF metallicRoughnessTexture: blue scales metallic, green roughness. */
+  readonly metallicRoughnessTexture?: string
+  /** glTF occlusionTexture (red), scaled by `occlusionStrength` (default 1); darkens the ambient. */
+  readonly occlusionTexture?: string
+  readonly occlusionStrength?: number
+  /** Emitted colour, RGB 0..1 in the base colour's space; multiplies `emissiveTexture`. */
+  readonly emissive?: readonly [number, number, number]
+  readonly emissiveTexture?: string
+}
 
 /** glTF-style coverage: opaque ignores alpha, mask tests it, blend uses source-over. */
 export type SceneRendererAlphaMode = 'opaque' | 'mask' | 'blend'
@@ -115,6 +133,8 @@ export interface SceneRendererMaterial {
   readonly shading?: SceneRendererShadingModel
   /** Draw back faces too. Absent means the provider's own default, as before. */
   readonly doubleSided?: boolean
+  /** Metallic-roughness inputs, read when `shading` is `pbr`; textures use the base-colour UVs. */
+  readonly pbr?: SceneRendererPbr
   /**
    * Team colour as `UV_game_material_team_color` states it (SPEC_UVM §11.2). The base route draws
    * it; a material program states its own team colour. The colour is the draw's

@@ -25,7 +25,9 @@ import { materialWebGlDraws } from './material-webgl.js'
 import { applyTextureFilter } from './texture-filtering.js'
 import { sceneTextureBytes } from '../textures/cube.js'
 import { TEAM_COLOR_GLSL } from '@modkit/codec-kit/model-math/color-remap'
+import { PBR_GLSL } from '@modkit/codec-kit/model-math/pbr'
 import { drawTeamColor, teamMaskTexture } from './team-color.js'
+import { drawPbr } from './pbr-material.js'
 
 const RENDERER_ID = 'modkit.browser-webgl'
 const MAX_DIMENSION = 4_096
@@ -103,8 +105,29 @@ uniform float teamMaskChannel;
 uniform float teamBlend;
 uniform float teamStrength;
 uniform vec3 teamColor;
+// a pbr material: the one glTF BRDF (codec-kit model-math/pbr) under the scene light
+uniform float pbrEnabled;
+uniform float pbrMetallic;
+uniform float pbrRoughness;
+uniform float pbrOcclusionStrength;
+uniform vec3 pbrEmissive;
+uniform float pbrMetallicRoughnessTextured;
+uniform sampler2D pbrMetallicRoughnessMap;
+uniform float pbrOcclusionTextured;
+uniform sampler2D pbrOcclusionMap;
+uniform float pbrEmissiveTextured;
+uniform sampler2D pbrEmissiveMap;
+uniform float eyeKnown;
+uniform vec3 eyePosition;
 ${PREVIEW_LIGHT_GLSL}
 ${TEAM_COLOR_GLSL}
+${PBR_GLSL}
+vec3 modkitSrgbToLinear(vec3 value) {
+  return mix(value / 12.92, pow((value + 0.055) / 1.055, vec3(2.4)), vec3(greaterThan(value, vec3(0.04045))));
+}
+vec3 modkitLinearToSrgb(vec3 value) {
+  return mix(value * 12.92, 1.055 * pow(value, vec3(1.0 / 2.4)) - 0.055, vec3(greaterThan(value, vec3(0.0031308))));
+}
 out vec4 outColor;
 void main() {
   vec4 base = color;
@@ -126,6 +149,25 @@ void main() {
       mask = teamMaskChannel > 3.5 ? texel.rgb : vec3(channel);
     }
     base.rgb = modkitTeamColor(base.rgb, mask, teamColor, int(teamBlend + 0.5), teamStrength);
+  }
+  if (pbrEnabled > 0.5) {
+    vec3 surfaceNormal = hasNormals > 0.5
+      ? normalize(worldNormal)
+      : normalize(cross(dFdx(worldPosition), dFdy(worldPosition)));
+    vec3 view = eyeKnown > 0.5 ? normalize(eyePosition - worldPosition) : surfaceNormal;
+    vec4 metallicRoughness = pbrMetallicRoughnessTextured > 0.5
+      ? texture(pbrMetallicRoughnessMap, sampleUv)
+      : vec4(1.0);
+    float occlusion = pbrOcclusionTextured > 0.5
+      ? 1.0 + pbrOcclusionStrength * (texture(pbrOcclusionMap, sampleUv).r - 1.0)
+      : 1.0;
+    vec3 emissive = pbrEmissive * (pbrEmissiveTextured > 0.5
+      ? modkitSrgbToLinear(texture(pbrEmissiveMap, sampleUv).rgb)
+      : vec3(1.0));
+    vec3 lit = modkitPbr(modkitSrgbToLinear(clamp(base.rgb, 0.0, 1.0)), pbrMetallic * metallicRoughness.b,
+      pbrRoughness * metallicRoughness.g, occlusion, emissive, surfaceNormal, view, lightDirection,
+      lightColor.rgb * (1.0 - ambient), lightColor.rgb * ambient);
+    base.rgb = modkitLinearToSrgb(clamp(lit, 0.0, 1.0));
   }
   if (shaded > 0.5) {
     /*
@@ -431,6 +473,7 @@ export async function renderBrowser(request: SceneRenderRequest): Promise<SceneR
           Object.freeze({
             team,
             teamMask: team === undefined || mask === undefined ? undefined : mask,
+            pbr: drawPbr(material, sceneTextures, diagnostics),
             baseColor: material.baseColor,
             simpleEffect: readSimpleEffect(material.simpleEffect),
             sourceTexture: (request.scene.textures ?? []).find(
@@ -477,6 +520,9 @@ export async function renderBrowser(request: SceneRenderRequest): Promise<SceneR
     }
     if (baseColorMap !== null) gl.uniform1i(baseColorMap, 0)
     if (teamMaskMap !== null) gl.uniform1i(teamMaskMap, 1)
+    const eye = request.camera.eyePosition
+    gl.uniform1f(uniform('eyeKnown'), eye === undefined ? 0 : 1)
+    if (eye !== undefined) gl.uniform3f(uniform('eyePosition'), eye[0], eye[1], eye[2])
     let triangles = 0
     for (const draw of sceneMaterialDraws(
       request.scene.primitives,
@@ -553,9 +599,10 @@ export async function renderBrowser(request: SceneRenderRequest): Promise<SceneR
         effect === undefined &&
         (light !== undefined || preview !== undefined) &&
         surface?.shading === 'lambert'
+      const pbr = effect === undefined && light !== undefined ? surface?.pbr : undefined
       const normalBuffer =
         normal < 0 ||
-        !shaded ||
+        (!shaded && pbr === undefined) ||
         !(primitive.normals instanceof Float32Array) ||
         primitive.normals.length < primitive.positions.length
           ? undefined
@@ -564,7 +611,11 @@ export async function renderBrowser(request: SceneRenderRequest): Promise<SceneR
       const team = effect === undefined ? surface?.team : undefined
       const uvBuffer =
         uv < 0 ||
-        (!textured && surface?.teamMask === undefined) ||
+        (!textured &&
+          surface?.teamMask === undefined &&
+          pbr?.metallicRoughness === undefined &&
+          pbr?.occlusion === undefined &&
+          pbr?.emissiveTexture === undefined) ||
         !(primitive.textureCoordinates instanceof Float32Array) ||
         primitive.textureCoordinates.length < vertexCount * 2
           ? undefined
@@ -638,6 +689,31 @@ export async function renderBrowser(request: SceneRenderRequest): Promise<SceneR
           gl.TEXTURE_WRAP_T,
           effect.wrapV === 'repeat' ? gl.REPEAT : gl.CLAMP_TO_EDGE,
         )
+      }
+      gl.uniform1f(uniform('pbrEnabled'), pbr === undefined ? 0 : 1)
+      if (pbr !== undefined) {
+        gl.uniform1f(uniform('pbrMetallic'), pbr.metallic)
+        gl.uniform1f(uniform('pbrRoughness'), pbr.roughness)
+        gl.uniform1f(uniform('pbrOcclusionStrength'), pbr.occlusionStrength)
+        gl.uniform3f(uniform('pbrEmissive'), ...pbr.emissive)
+        const bindPbr = (
+          texture: SceneRendererTexture | undefined,
+          flag: string,
+          sampler: string,
+          unit: number,
+        ) => {
+          const handle =
+            texture === undefined || uvBuffer === undefined ? undefined : textures.get(texture.id)
+          gl.uniform1f(uniform(flag), handle === undefined ? 0 : 1)
+          if (handle === undefined) return
+          gl.activeTexture(gl.TEXTURE0 + unit)
+          gl.bindTexture(gl.TEXTURE_2D, handle)
+          gl.uniform1i(uniform(sampler), unit)
+          gl.activeTexture(gl.TEXTURE0)
+        }
+        bindPbr(pbr.metallicRoughness, 'pbrMetallicRoughnessTextured', 'pbrMetallicRoughnessMap', 2)
+        bindPbr(pbr.occlusion, 'pbrOcclusionTextured', 'pbrOcclusionMap', 3)
+        bindPbr(pbr.emissiveTexture, 'pbrEmissiveTextured', 'pbrEmissiveMap', 4)
       }
       const teamMasked = team !== undefined && surface?.teamMask !== undefined
       if (teamColorMode !== null)

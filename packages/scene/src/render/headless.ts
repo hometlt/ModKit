@@ -18,6 +18,7 @@ import {
   teamMaskTexture,
   type DrawTeamColor,
 } from './team-color.js'
+import { drawPbr, shadeDrawPbr, type DrawPbr } from './pbr-material.js'
 import { headlessDepthBias, type SceneDepthBias } from './depth-bias.js'
 import type {
   SceneRenderRequest,
@@ -66,8 +67,10 @@ interface Surface {
   simpleEffect?: SimpleEffectState
   baseColor: Vec4
   alpha: MaterialAlpha
-  shading: 'unlit' | 'lambert'
+  shading: 'unlit' | 'lambert' | 'pbr'
   texture?: SceneRendererTexture
+  /** glTF metallic-roughness of a `pbr` material. */
+  pbr?: DrawPbr
   teamColor?: DrawTeamColor
   /** The team colour's mask texture; absent for a `whole` team colour. */
   teamMask?: SceneRendererTexture
@@ -81,6 +84,8 @@ interface RasterContext {
   materials: Map<string, Surface>
   light: Light | undefined
   previewLighting: PreviewLighting | undefined
+  /** The camera's world position, for the view direction of `pbr` specular light. */
+  eye: Vec3 | undefined
   diagnostics: SceneRendererDiagnostic[]
   triangles: number
   fragments: number
@@ -326,7 +331,12 @@ function rasterizeTriangle(
    * per triangle rather than per fragment: a flat-shaded triangle needs one, and a smooth-shaded
    * one needs the three it already has.
    */
-  const flatNormal = shaded && normals === undefined ? faceNormal(first, second, third) : undefined
+  // a `pbr` material under the scene light: the one glTF BRDF (codec-kit model-math/pbr)
+  const pbr = light !== undefined && effect === undefined ? surface.pbr : undefined
+  const flatNormal =
+    (shaded || pbr !== undefined) && normals === undefined
+      ? faceNormal(first, second, third)
+      : undefined
   const flatShade = flatNormal === undefined || light === undefined ? 1 : lambert(flatNormal, light)
   let fragments = 0
   for (let y = minimumY; y <= maximumY; y += 1) {
@@ -408,8 +418,17 @@ function rasterizeTriangle(
         )
       }
       let maskTexel: Vec4 | undefined
+      let pbrTexels: {
+        metallicRoughness?: Vec4
+        occlusion?: Vec4
+        emissive?: Vec4
+      } = {}
       if (
-        (surface.texture !== undefined || surface.teamMask !== undefined) &&
+        (surface.texture !== undefined ||
+          surface.teamMask !== undefined ||
+          pbr?.metallicRoughness !== undefined ||
+          pbr?.occlusion !== undefined ||
+          pbr?.emissiveTexture !== undefined) &&
         (uvs !== undefined || effect?.screenUv !== undefined)
       ) {
         // perspective-correct: interpolate attribute/w and 1/w, then divide
@@ -452,6 +471,18 @@ function rasterizeTriangle(
             alpha = Math.fround(alpha * Math.fround(texel[3]))
           }
           if (surface.teamMask !== undefined) maskTexel = sampleTexture(surface.teamMask, u, v)
+          if (pbr !== undefined)
+            pbrTexels = {
+              ...(pbr.metallicRoughness === undefined
+                ? {}
+                : { metallicRoughness: sampleTexture(pbr.metallicRoughness, u, v) }),
+              ...(pbr.occlusion === undefined
+                ? {}
+                : { occlusion: sampleTexture(pbr.occlusion, u, v) }),
+              ...(pbr.emissiveTexture === undefined
+                ? {}
+                : { emissive: sampleTexture(pbr.emissiveTexture, u, v) }),
+            }
         }
       }
       // the team colour tints the albedo, before light: a mask texel weighs it, `whole` is 1
@@ -460,6 +491,26 @@ function rasterizeTriangle(
         (surface.teamMask === undefined || maskTexel !== undefined)
       )
         [red, green, blue] = applyDrawTeamColor(surface.teamColor, [red, green, blue], maskTexel)
+      if (pbr !== undefined && light !== undefined) {
+        const a = firstWeight * first.invW,
+          b = secondWeight * second.invW,
+          c = thirdWeight * third.invW
+        const sum = a + b + c
+        if (sum <= 1e-9) continue
+        const at = (values: Triangle<Vec3>): Vec3 => [
+          (a * values[0][0] + b * values[1][0] + c * values[2][0]) / sum,
+          (a * values[0][1] + b * values[1][1] + c * values[2][1]) / sum,
+          (a * values[0][2] + b * values[1][2] + c * values[2][2]) / sum,
+        ]
+        const normal = (normals === undefined ? flatNormal : normalize(at(normals))) ?? [0, 0, 1]
+        const eye = context.eye
+        const world = at([first.world, second.world, third.world])
+        const view =
+          eye === undefined
+            ? normal
+            : (normalize([eye[0] - world[0], eye[1] - world[1], eye[2] - world[2]]) ?? normal)
+        ;[red, green, blue] = shadeDrawPbr(pbr, [red, green, blue], pbrTexels, normal, view, light)
+      }
       let shade = flatShade
       if (shaded && normals !== undefined && light !== undefined) {
         const smooth = normalize([
@@ -701,7 +752,7 @@ function materialSurfaces(
       throw new TypeError('renderer materials must have unique non-empty ids')
     }
     const shading = material.shading ?? 'unlit'
-    if (shading !== 'unlit' && shading !== 'lambert') {
+    if (shading !== 'unlit' && shading !== 'lambert' && shading !== 'pbr') {
       throw new TypeError(`material ${material.id} declares an unknown shading model`)
     }
     let texture
@@ -733,6 +784,7 @@ function materialSurfaces(
     }
     if (texture !== undefined && material.simpleEffect !== undefined)
       texture = { ...texture, filter: 'linear' as const }
+    const pbr = drawPbr(material, textures, diagnostics)
     let teamColor = drawTeamColor(material, context)
     const teamMask = teamMaskTexture(teamColor, textures)
     if (teamColor?.maskTexture !== undefined && teamMask === undefined) {
@@ -753,6 +805,7 @@ function materialSurfaces(
           : { simpleEffect: readSimpleEffect(material.simpleEffect) as SimpleEffectState }),
         shading,
         ...(texture === undefined ? {} : { texture }),
+        ...(pbr === undefined ? {} : { pbr }),
         ...(teamColor === undefined ? {} : { teamColor }),
         ...(teamMask === undefined || teamColor === undefined ? {} : { teamMask }),
       }),
@@ -952,6 +1005,7 @@ export async function renderHeadless(request: SceneRenderRequest): Promise<Scene
     materials: materialSurfaces(scene.materials, textures, diagnostics, scene.materialContext),
     light: sceneLight(scene.light),
     previewLighting: readPreviewLighting(scene.lights, scene.ambientLight),
+    eye: snapshotEyePosition(camera.eyePosition),
     diagnostics,
     triangles: 0,
     fragments: 0,
