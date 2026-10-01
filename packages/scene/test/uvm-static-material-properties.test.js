@@ -97,3 +97,28 @@ test('static authoring reads a program material that also states the glTF look (
   )
   assert.equal(projected.materialRequirements.length, 1)
 })
+
+test('a static projection accepts a document that declares clip events (the rig path writes them)', () => {
+  const document = {
+    asset: { version: '2.0', extras: { uv: { format: 'UVM', version: '1.0', profile: 'core' } } },
+    extensionsUsed: ['UV_asset', 'UV_provenance', 'UV_game_animation_events'],
+    extensions: {
+      UV_asset: { id: 'static-events', class: 'prop' },
+      UV_provenance: { source: { format: 'test' }, importer: { id: 'test', version: '1' } },
+    },
+    scene: 0,
+    scenes: [{ nodes: [] }],
+    nodes: [],
+  }
+  assert.doesNotThrow(() => {
+    try {
+      projectUvmStaticModel(
+        { document, binary: new Uint8Array() },
+        { maxScalarBytes: 1 << 24, maxNodes: 10_000 },
+      )
+    } catch (error) {
+      // an empty scene may be refused for its own reason, never for the extension
+      if (/unsupported static extension/.test(String(error))) throw error
+    }
+  })
+})

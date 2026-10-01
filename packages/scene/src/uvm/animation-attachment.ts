@@ -432,12 +432,53 @@ export async function composeUvmAnimationBundle(
   const appended: UvmAnimationClip[] = []
   const appendedRecords: JsonObject[] = []
   let pointerUsed = false
+  let eventsUsed = false
   for (const { clip, id: clipId, sequenceIndex } of selected) {
     signal?.throwIfAborted()
     let animationIndex: number | undefined
     if (clip.animation !== undefined) {
-      const animation = object(array(source, 'animations')[clip.animation], 'source animation')
-      noIndexedExtensions(animation, 'animation')
+      const sourceAnimation = object(
+        array(source, 'animations')[clip.animation],
+        'source animation',
+      )
+      // how the clip plays carries no index; its events name sockets, mapped as targets are
+      const { extensions: animationExtensions, ...withoutExtensions } = sourceAnimation
+      const {
+        UV_game_animation_clips: playback,
+        UV_game_animation_events: events,
+        ...others
+      } = object(animationExtensions ?? {}, 'source animation extensions')
+      noIndexedExtensions({ extensions: others }, 'animation')
+      const mappedEvents =
+        events === undefined
+          ? undefined
+          : {
+              events: array(events, 'events').map(value => {
+                const event = object(value, 'source animation event')
+                const socket = event['socket']
+                return socket === undefined
+                  ? event
+                  : {
+                      ...event,
+                      socket: required(
+                        nodeMap.get(safeIndex(socket, array(source, 'nodes').length, 'event node')),
+                        `explicit node mapping for ${String(socket)}`,
+                      ),
+                    }
+              }),
+            }
+      if (mappedEvents !== undefined) eventsUsed = true
+      const animation: JsonObject = {
+        ...withoutExtensions,
+        ...(playback === undefined && mappedEvents === undefined
+          ? {}
+          : {
+              extensions: {
+                ...(playback === undefined ? {} : { UV_game_animation_clips: playback }),
+                ...(mappedEvents === undefined ? {} : { UV_game_animation_events: mappedEvents }),
+              },
+            }),
+      }
       const samplers = array(animation, 'samplers').map(value => {
         const sampler = object(value, 'source sampler')
         noIndexedExtensions(sampler, 'animation sampler')
@@ -630,6 +671,7 @@ export async function composeUvmAnimationBundle(
   const extensions = object(document['extensions'], 'base extensions')
   const used = new Set(array(document, 'extensionsUsed'))
   used.add('UV_game_animation_clips')
+  if (eventsUsed) used.add('UV_game_animation_events')
   if (pointerUsed) used.add('KHR_animation_pointer')
   if (visibility.length > 0) used.add('UV_game_variants')
   const binary = new Uint8Array(binaryLength)

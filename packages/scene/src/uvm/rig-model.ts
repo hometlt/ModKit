@@ -393,13 +393,12 @@ export function projectUvmRigModel(
   if (Object.hasOwn(detachedExtensions, 'UV_game_animation_clips')) {
     const { UV_game_animation_clips: _clips, ...extensions } = detachedExtensions
     detached['extensions'] = extensions
-    detached['extensionsUsed'] = array(detached, 'extensionsUsed').filter(
-      name => name !== 'UV_game_animation_clips',
-    )
-    detached['extensionsRequired'] = array(detached, 'extensionsRequired').filter(
-      name => name !== 'UV_game_animation_clips',
-    )
   }
+  // the clips' declarations go with the animations they describe (their events are on those)
+  for (const key of ['extensionsUsed', 'extensionsRequired'])
+    detached[key] = array(detached, key).filter(
+      name => name !== 'UV_game_animation_clips' && name !== 'UV_game_animation_events',
+    )
   // Detached with the rig: its clips (and the animation pointers and primitive visibility they
   // drive, returned as `meshTracks`), and the joints' camera rules (returned as `billboards`).
   const sceneOnlyExtensions = new Set([

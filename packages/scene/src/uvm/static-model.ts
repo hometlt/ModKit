@@ -126,6 +126,8 @@ export function projectUvmStaticModel(
         'UV_units',
         'UV_game_material',
         'UV_game_animation_clips',
+        // a clip's events ride on its animation (П18), which the rig path writes
+        'UV_game_animation_events',
         // the glTF fallback's look, as doubleSided is: the program states what the target writes
         'KHR_materials_unlit',
       ].includes(String(name)))
