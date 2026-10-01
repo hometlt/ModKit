@@ -64,15 +64,21 @@ export const SUBJECT_EDITING = Object.freeze({ contract: 'x3.app/subject-editing
 /** Loader-validated module identity of the services root (there is nothing to import). */
 export const SUBJECT_SERVICES_URL = 'x3-app://subject-services'
 
+/**
+ * How long an opening call may take: preparing a map's world preview reads the map, its mod chain and
+ * catalog (Amphion: about a minute warm, four cold). The serving side's budgets bound the work.
+ */
+const SUBJECT_OPEN_DEADLINE_MS = 600_000
+
 const subjectServicesSurface: CapabilitySurface = {
   ...SUBJECT_SERVICES,
   methods: {
     /** `open(path)` → an inert snapshot (opened carries a `sessionId` to attach). */
-    open: { kind: 'value', signal: 'last' },
+    open: { kind: 'value', signal: 'last', deadlineMs: SUBJECT_OPEN_DEADLINE_MS },
     /** `attach(sessionId)` → the live session under `x3.abi/asset-session@1`. */
     attach: { kind: 'lease', result: ABI_ASSET_SESSION, wrapper: 'bare' },
     /** `navigate(sessionId, target)` resolves a target from that exact live parent session. */
-    navigate: { kind: 'value', signal: 'last', arity: 2 },
+    navigate: { kind: 'value', signal: 'last', arity: 2, deadlineMs: SUBJECT_OPEN_DEADLINE_MS },
     /** `edit(sessionId)` → the editing arm, when this host can write this subject. */
     edit: { kind: 'lease', result: SUBJECT_EDITING, wrapper: 'bare' },
     /** Decode one bounded image through the attached subject's confined resource origin. */

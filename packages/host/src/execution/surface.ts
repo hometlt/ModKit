@@ -65,6 +65,12 @@ export interface MethodSurface {
    */
   readonly batchItems?: number
   /**
+   * The consuming side's deadline for this method, over the endpoint's default; 0 waits without one.
+   * For a call whose work is legitimately long (opening a map's world preview): cancelled at the
+   * default, a retry only starts that work again.
+   */
+  readonly deadlineMs?: number
+  /**
    * ABI shape of a `lease` result on the consuming side: `'lease'` materializes as
    * `{ value, release }` (`AssetSession.dataSource()`), `'bare'` (default) as the capability
    * object itself whose `releaseVia` method releases the handle (`Codec.open()` → session).
@@ -168,6 +174,7 @@ function snapshotMethod(
   const arity = raw.arity
   const optional = raw.optional
   const batchItems = raw.batchItems
+  const deadlineMs = raw.deadlineMs
   const validateArgs = raw.validateArgs
   const validateReturn = raw.validateReturn
   if (
@@ -190,6 +197,9 @@ function snapshotMethod(
     (kind !== 'iterable' || !Number.isSafeInteger(batchItems) || batchItems < 1)
   ) {
     return invalidSurface(`method «${name}» has an invalid batchItems`, { surface })
+  }
+  if (deadlineMs !== undefined && (!Number.isSafeInteger(deadlineMs) || deadlineMs < 0)) {
+    return invalidSurface(`method «${name}» has an invalid deadline`, { surface })
   }
   if (
     resultFromArgs !== undefined &&
@@ -270,6 +280,7 @@ function snapshotMethod(
     ...(arity === undefined ? {} : { arity }),
     ...(optional === undefined ? {} : { optional }),
     ...(batchItems === undefined ? {} : { batchItems }),
+    ...(deadlineMs === undefined ? {} : { deadlineMs }),
     ...(validateArgs === undefined ? {} : { validateArgs }),
     ...(validateReturn === undefined ? {} : { validateReturn }),
   })

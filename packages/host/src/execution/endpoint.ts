@@ -574,6 +574,7 @@ class EndpointImpl implements Endpoint {
         const outcome = await remote.call(name, args, {
           ...(signal === undefined ? {} : { signal }),
           ...(onProgress === undefined ? {} : { onProgress }),
+          ...(method.deadlineMs === undefined ? {} : { deadlineMs: method.deadlineMs }),
         })
         switch (outcome.kind) {
           case 'value':

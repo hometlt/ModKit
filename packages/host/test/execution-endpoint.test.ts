@@ -126,6 +126,7 @@ const surfaces = createSurfaceRegistry([
       readRegion: { kind: 'value', optional: true, signal: 'last' },
       absentOpt: { kind: 'value', optional: true },
       hang: { kind: 'value', signal: 'last' },
+      slow: { kind: 'value', signal: 'last', deadlineMs: 20 },
       boom: { kind: 'value' },
       bytes: { kind: 'value' },
       leak: { kind: 'lease', result: { contract: 'x3.demo/text', major: 1 } },
@@ -244,6 +245,12 @@ function workerWorld(): WorkerWorld {
           () => reject(new OperationCancelledError('worker saw abort')),
           { once: true },
         )
+      }),
+    slow: (_input: unknown, signal: AbortSignal) =>
+      new Promise((_resolve, reject) => {
+        signal.addEventListener('abort', () => reject(new OperationCancelledError('slow')), {
+          once: true,
+        })
       }),
     boom: async () => {
       throw new ModkitError({
@@ -549,6 +556,18 @@ describe('capability-rpc endpoints — events, cancellation, deadlines, releases
       retryability: 'conditional',
     })
     expect(typeof hang).toBe('function')
+    expect(p.host.state).toBe('open')
+  })
+
+  it('a method declaring its own deadline is held to it, not to the endpoint default', async () => {
+    const p = pair()
+    const { session } = await openSession(p)
+    const slow = session['slow'] as (input: unknown) => Promise<unknown>
+    // the endpoint default is 2 s; `slow` declares 20 ms
+    await expect(slow({})).rejects.toMatchObject({
+      code: 'x3.host/rpc-deadline-exceeded',
+      context: { deadlineMs: 20 },
+    })
     expect(p.host.state).toBe('open')
   })
 
