@@ -136,6 +136,16 @@ export type ShellRequest =
   | { readonly op: 'ask'; readonly message: string; readonly choices: readonly string[] }
   /** A baseline copy of a locale table the reader picks: its values in one locale, or null. */
   | { readonly op: 'table-baseline'; readonly variant: string }
+  /** One of many choices (a map of a package) in the editor's picker; the chosen id, or null. */
+  | {
+      readonly op: 'pick'
+      readonly title: string
+      readonly items: readonly {
+        readonly id: string
+        readonly label: string
+        readonly detail?: string
+      }[]
+    }
   /** Show another file in this editor (a gallery pick). */
   /** A file, or with `entry` one member of the container file at `path`. */
   | {

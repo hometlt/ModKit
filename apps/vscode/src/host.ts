@@ -879,6 +879,11 @@ export interface VsCodeServeOptions {
   readonly ask?: (message: string, choices: readonly string[]) => Promise<number | undefined>
   /** A baseline copy of a locale table the reader picks, read in one locale (plan 7.36). */
   readonly tableBaseline?: (variant: string) => Promise<VsCodeTableBaseline | undefined>
+  /** One of a page's many choices in the editor's picker (a webview has no prompt); the id. */
+  readonly pick?: (
+    title: string,
+    items: readonly { readonly id: string; readonly label: string; readonly detail?: string }[],
+  ) => Promise<string | undefined>
   /**
    * A file-manager action inside a container (`container` may be a member archive): the adapter
    * asks for names, confirms deletes, owns the clipboard. `true` when the container changed.
@@ -2029,6 +2034,27 @@ function serveVsCode(
           throw new TypeError('a question needs a message and one to four short choices')
         }
         return (await options.ask?.(request.message, choices)) ?? null
+      }
+      case 'pick': {
+        const items = Array.isArray(request.items) ? request.items : []
+        if (
+          typeof request.title !== 'string' ||
+          request.title.length > 512 ||
+          items.length === 0 ||
+          items.length > 1024 ||
+          !items.every(
+            item =>
+              typeof item?.id === 'string' &&
+              typeof item.label === 'string' &&
+              item.id.length <= 512 &&
+              item.label.length <= 512 &&
+              (item.detail === undefined ||
+                (typeof item.detail === 'string' && item.detail.length <= 1024)),
+          )
+        ) {
+          throw new TypeError('a pick needs a title and one to 1024 short choices')
+        }
+        return (await options.pick?.(request.title, items)) ?? null
       }
       case 'table-baseline': {
         if (typeof request.variant !== 'string' || request.variant.length > 64) {

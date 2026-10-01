@@ -23,14 +23,16 @@ export function commandOutputLeaf(
   command: string,
   subject: string | undefined,
   name: string,
+  /** A name the output takes instead of the subject's (the map an export chose from a package). */
+  chosen?: string,
 ): string {
   if (command === 'subject.extract') return basename(name.replaceAll('\\', '/')) || 'extracted'
   const extension = name.slice(name.lastIndexOf('.') + 1) || 'bin'
   const path =
     subject === undefined ? undefined : (parseContainerUriText(subject)?.entry ?? subject)
   const leaf = path === undefined ? '' : basename(path.replaceAll('\\', '/'))
-  const stem = leaf.includes('.') ? leaf.slice(0, leaf.lastIndexOf('.')) : leaf
-  return `${stem || 'export'}.${extension}`
+  const stem = chosen ?? (leaf.includes('.') ? leaf.slice(0, leaf.lastIndexOf('.')) : leaf)
+  return `${stem.replace(/[\\/:*?"<>|]+/gu, '-') || 'export'}.${extension}`
 }
 
 export interface WorldUvwReceipt {

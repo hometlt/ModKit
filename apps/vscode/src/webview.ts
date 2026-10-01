@@ -151,6 +151,8 @@ function describe(error: unknown): string {
 
 const NAMESPACE_CONTRACT = 'common.view/namespace-entry-source'
 const SUBJECT_SELECTOR_CONTRACT = 'common.view/subject-selector-source'
+/** How long an open runs before the page says it is still waiting (it waits for the answer anyway). */
+const STILL_OPENING_NOTICE_MS = 20_000
 
 /** Which entries the explorer's gallery shows: files whose extension an enabled image codec reads. */
 function galleryAccepts(
@@ -650,19 +652,20 @@ async function mount(
   let requestedCard: string | undefined
   let openNavigatedSubject: ((event: NavigationEvent) => Promise<void>) | undefined
   /*
-   * A cold codec realm can take longer to start than one RPC call may last (60 s; a Roblox place
-   * took 89 s on a loaded machine). The extension host goes on warming it after the call gives up,
-   * so the page asks again, at most twice, and says it is still waiting.
+   * A cold codec realm or a map's world can take minutes (a Roblox place took 89 s on a loaded
+   * machine, an SC2 map's world longer). `open` has a deadline of its own for that (core 8f41aeea),
+   * so the page waits for one call — asking again restarted the work from nothing — and says it is
+   * still waiting once that becomes noticeable.
    */
   const openPatiently = async (path: string): Promise<SubjectClientOpenResult> => {
-    for (let attempt = 1; ; attempt += 1) {
-      try {
-        return await client.open(path)
-      } catch (error) {
-        const code = (error as { readonly code?: unknown } | null)?.code
-        if (code !== 'x3.host/rpc-deadline-exceeded' || attempt >= 3) throw error
-        say(localizer.text('vscode.webview.stillOpening'))
-      }
+    const waiting = setTimeout(
+      () => say(localizer.text('vscode.webview.stillOpening')),
+      STILL_OPENING_NOTICE_MS,
+    )
+    try {
+      return await client.open(path)
+    } finally {
+      clearTimeout(waiting)
     }
   }
   const client = await connectSubjectRpc({
@@ -1078,32 +1081,26 @@ async function mount(
       if (result.state === 'opened') {
         const candidates = mapPreviewCandidates(result.snapshot.candidates)
         if (candidates.length > 0) {
-          const choice = window.prompt(
-            localizer.text('vscode.webview.chooseMap', {
-              candidates: candidates
-                .map(
-                  candidate =>
-                    `${candidate.candidateId} — ${candidate.displayName}${
-                      candidate.sourcePath === undefined ? '' : ` (${candidate.sourcePath})`
-                    }`,
-                )
-                .join('\n'),
-            }),
-            '',
-          )
-          if (choice !== null && choice.trim().length > 0) {
-            const selected = candidates.find(candidate => candidate.candidateId === choice.trim())
-            if (selected === undefined) {
-              say(localizer.text('vscode.webview.invalidMapSelection', { name: entry.name }))
-            } else {
-              const firstSession = result.session
-              result = await continueVsCodeMapPreviewSelection({
-                path: entry.id,
-                selectionId: selected.candidateId,
-                dispose: () => firstSession.dispose(),
-                open: request => client.open(request),
-              })
-            }
+          // A package of several maps: which one the World view shows. A webview has no prompt
+          // (it answers null at once), so the editor's own picker asks.
+          const choice = await bridge.request({
+            op: 'pick',
+            title: localizer.text('vscode.webview.chooseMap', { name: entry.name }),
+            items: candidates.map(candidate => ({
+              id: candidate.candidateId,
+              label: candidate.displayName,
+              ...(candidate.sourcePath === undefined ? {} : { detail: candidate.sourcePath }),
+            })),
+          })
+          const selected = candidates.find(candidate => candidate.candidateId === choice)
+          if (selected !== undefined) {
+            const firstSession = result.session
+            result = await continueVsCodeMapPreviewSelection({
+              path: entry.id,
+              selectionId: selected.candidateId,
+              dispose: () => firstSession.dispose(),
+              open: request => client.open(request),
+            })
           }
         }
       }

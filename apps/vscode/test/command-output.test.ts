@@ -10,6 +10,10 @@ describe('command output', () => {
     )
     expect(commandOutputLeaf('subject.convert', '/models/Marine.m3', 'uvm')).toBe('Marine.uvm')
     expect(commandOutputLeaf('subject.convert', undefined, 'world.uvw')).toBe('export.uvw')
+    // a map chosen from a package names the output, not the package
+    expect(commandOutputLeaf('subject.convert', 'F:\\wz\\mp.wz', 'world.uvw', '4c-rush')).toBe(
+      '4c-rush.uvw',
+    )
     expect(commandOutputLeaf('subject.extract', 'C:\\mp.wz', 'multiplay/maps/rush.gam')).toBe(
       'rush.gam',
     )

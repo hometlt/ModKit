@@ -8514,6 +8514,17 @@ async function activateModkit(
           }),
       confirmClose,
       ask,
+      pick: async (title, items) =>
+        (
+          await vscode.window.showQuickPick(
+            items.map(item => ({
+              label: item.label,
+              ...(item.detail === undefined ? {} : { description: item.detail }),
+              id: item.id,
+            })),
+            { title, matchOnDescription: true },
+          )
+        )?.id,
       tableBaseline: pickTableBaseline,
       confirmLossyWrite,
       ...(openPath === undefined
@@ -9464,6 +9475,8 @@ async function activateModkit(
    * should ever differ between the three applications.
    */
   const commandRuntime = createModkitCommandRuntime()
+  /** The map of a package an export chose, whose name its output takes (П24). */
+  let chosenMapName: string | undefined
   const commandOpenerOptions: Parameters<typeof createVsCodeCommandOpener>[0] = {
     readContentSource,
     services: host.services,
@@ -9486,19 +9499,19 @@ async function activateModkit(
         resourcePlanResolver: mapPreviewResourcePlanResolver,
         locales: configuredGameLocales,
         contentSources: () => requireContentSources().catch(() => undefined),
-        choose: async candidates =>
-          (
-            await vscode.window.showQuickPick(
-              candidates.map(candidate => ({
-                label: candidate.displayName,
-                ...(candidate.sourcePath === undefined
-                  ? {}
-                  : { description: candidate.sourcePath }),
-                candidateId: candidate.candidateId,
-              })),
-              { title: localizer.text('vscode.world.chooseMap') },
-            )
-          )?.candidateId,
+        choose: async candidates => {
+          const picked = await vscode.window.showQuickPick(
+            candidates.map(candidate => ({
+              label: candidate.displayName,
+              ...(candidate.sourcePath === undefined ? {} : { description: candidate.sourcePath }),
+              candidateId: candidate.candidateId,
+            })),
+            { title: localizer.text('vscode.world.chooseMap') },
+          )
+          // the file the world is saved to takes the map's name, not the package's
+          chosenMapName = picked?.label
+          return picked?.candidateId
+        },
         report: diagnostics => {
           for (const item of diagnostics) log(`[world-export] ${item.code}: ${item.message}`)
         },
@@ -9788,7 +9801,12 @@ async function activateModkit(
               // what a command produces (a converted model, a world, an extracted member) is saved
               // where the person says; without a place the run ends as cancelled
               writeOutput: async (name, bytes) => {
-                const leaf = commandOutputLeaf(request.command, request.subject, name)
+                const leaf = commandOutputLeaf(
+                  request.command,
+                  request.subject,
+                  name,
+                  chosenMapName,
+                )
                 const near =
                   request.subject === undefined
                     ? undefined
@@ -11365,6 +11383,7 @@ async function activateModkit(
         void vscode.window.showWarningMessage(localizer.text('vscode.world.exportNoSubject'))
         return undefined
       }
+      chosenMapName = undefined
       return runSharedCommand({ command: 'subject.convert', subject, target: 'uvw' }, worldOpener)
     }),
 
