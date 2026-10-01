@@ -23,6 +23,7 @@ import type {
   NamespaceEntry,
   NamespaceEntrySource,
 } from '@modkit/sdk'
+import type { CandidateWorldSceneSource } from '@modkit/sdk/maps'
 import { SUBJECT_COMMAND_TARGETS } from './subject-command-targets.js'
 import {
   commandDiagnostic,
@@ -47,6 +48,7 @@ const CONTAINER_EXTRACT_OPERATION_ID = SUBJECT_COMMAND_TARGETS.extract.operation
 const NAMESPACE_ENTRY_SOURCE = SUBJECT_COMMAND_TARGETS.extract.dataSourceContracts[0]
 const CONVERT_COMMAND = SUBJECT_COMMAND_TARGETS.convert.commandId
 const CONVERT = SUBJECT_COMMAND_TARGETS.convert.operationIds[0]
+const WORLD_SCENE_SOURCE = SUBJECT_COMMAND_TARGETS.convert.dataSourceContracts[0]
 const PREVIEW_COMMAND = SUBJECT_COMMAND_TARGETS.preview.commandId
 const THUMBNAIL = SUBJECT_COMMAND_TARGETS.preview.operationIds[0]
 
@@ -529,6 +531,61 @@ const convertCommand: CommandDescriptor = {
             'operation must be an operation id',
             diagnostics,
           )
+        // a map world becomes UVW from the world it publishes, with the receipt of what UVW lacks;
+        // an operation the caller names still runs instead
+        if (
+          input['target'] === 'uvw' &&
+          input['operation'] === undefined &&
+          descriptor.dataSources?.some(
+            offer => offer.contract === WORLD_SCENE_SOURCE && offer.major === 1,
+          )
+        ) {
+          if (context.worldToUvw === undefined)
+            return unavailable(
+              CONVERT_COMMAND,
+              'this application has no UV module to write UVW',
+              'convert with the CLI or the desktop application',
+              diagnostics,
+            )
+          context.progress?.({ step: 'convert', message: 'materializing the map world as UVW' })
+          const lease = await session.dataSource(WORLD_SCENE_SOURCE, 1)
+          try {
+            const world = await context.worldToUvw(
+              lease.value as unknown as CandidateWorldSceneSource,
+              context.signal,
+            )
+            if (world.state === 'refused')
+              return failed(
+                CONVERT_COMMAND,
+                'x3.host/world-uvw-refused',
+                world.refusals.map(refusal => `${refusal.code}: ${refusal.message}`).join('; '),
+                diagnostics,
+              )
+            const wroteTo =
+              context.writeOutput === undefined
+                ? undefined
+                : await context.writeOutput('world.uvw', world.bytes, context.signal)
+            return ok(
+              CONVERT_COMMAND,
+              {
+                ref: subject.ref,
+                via: WORLD_SCENE_SOURCE,
+                outputKind: 'bytes',
+                byteLength: world.bytes.byteLength,
+                wroteTo: wroteTo ?? null,
+                receipt: {
+                  artifactDigest: world.artifactDigest,
+                  excludedFacetIds: [...world.excludedFacetIds],
+                  omittedObjects: world.omittedObjects,
+                  lostFields: world.lostFields.map(field => ({ ...field })),
+                },
+              },
+              diagnostics,
+            )
+          } finally {
+            await lease.release()
+          }
+        }
         const operation = selectedOperation(
           descriptor,
           SUBJECT_COMMAND_TARGETS.convert.operationIds,

@@ -417,6 +417,7 @@ const discardEditInput = z.object({ id: z.string().min(1).max(256) }).strict()
 
 const worldSceneInput = z.discriminatedUnion('view', [
   z.object({ handle: handleSchema, view: z.literal('info') }).strict(),
+  z.object({ handle: handleSchema, view: z.literal('export') }).strict(),
   z
     .object({
       handle: handleSchema,
@@ -988,7 +989,7 @@ export function createModkitMcpServer(host: ModkitMcpHostPort): ModkitMcpServerR
     {
       title: 'Read a map world',
       description:
-        'Read the map world a subject publishes: info (coordinate spaces, facets and edit — the operationId and moveObjectKind that modkit.propose_edit takes to change an object, with expectedSourceRevision and edits [{ kind, objectId, patch }]), one bounded page of the layers, objects or regions facet, or image: the world drawn from above, north up, as an image block with each objectId\'s pixel box in data.objects (models drawn as placeholders).',
+        'Read the map world a subject publishes: info (coordinate spaces, facets and edit — the operationId and moveObjectKind that modkit.propose_edit takes to change an object, with expectedSourceRevision and edits [{ kind, objectId, patch }]), one bounded page of the layers, objects or regions facet, or image: the world drawn from above, north up, as an image block with each objectId\'s pixel box in data.objects (models drawn as placeholders), or export: the world as one UVW document, kept as a retained output resource (data.outputArtifact), with the receipt of what the UVW leaves out (excludedFacetIds, omittedObjects, lostFields).',
       inputSchema: worldSceneInput,
       outputSchema: envelopeSchema,
       annotations: { ...readOnlyAnnotations, idempotentHint: true },

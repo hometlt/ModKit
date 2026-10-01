@@ -53,7 +53,8 @@ export const SUBJECT_COMMAND_TARGETS = defineSubjectCommandTargets({
       'model.export-native',
       'model.write',
     ],
-    dataSourceContracts: [],
+    // a map world converts to UVW from the world it publishes (target `uvw`)
+    dataSourceContracts: ['common.view/world-scene-source'],
     hostCallers: ['automation', 'cli', 'electron', 'pwa', 'server', 'vscode'],
   },
   preview: {

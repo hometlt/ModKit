@@ -80,6 +80,7 @@ export {
   type CommandRuntime,
   type CommandSubject,
   type CommandSubjectOpener,
+  type CommandWorldExport,
   type SubjectCommandEndpoint,
   type SubjectCommandEndpointOptions,
   type SubjectCommandTarget,

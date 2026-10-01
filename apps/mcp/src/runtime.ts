@@ -26,6 +26,7 @@ import { relationGraphNeighbourhood, type RelationGraphScan } from '@modkit/sdk'
 import {
   MAP_LAYER_READ_OPERATION,
   WORLD_SCENE_SOURCE_CONTRACT,
+  type CandidateWorldSceneSource,
   type MapLayerGrid,
   type WorldSceneSource,
 } from '@modkit/sdk/maps'
@@ -193,6 +194,7 @@ export type CalculationsQuery =
 export type WorldSceneQuery =
   | { readonly view: 'info' }
   | { readonly view: 'image'; readonly maxSize: number }
+  | { readonly view: 'export' }
   | {
       readonly view: 'page'
       readonly facet: 'layers' | 'objects' | 'regions'
@@ -1387,6 +1389,48 @@ export class ModkitMcpRuntime {
             data: { width: image.width, height: image.height, world: image.world, objects: image.objects },
             images: [shown],
           })
+        }
+        if (query.view === 'export') {
+          // one UVW document of the world, kept as an output resource, and what the UVW lacks
+          const reservation = this.outputs.reserve(entry.id)
+          try {
+            const { materializeWorldToUvw } = await import('@modkit/uv/world')
+            const world = await materializeWorldToUvw(
+              source as unknown as CandidateWorldSceneSource,
+              {
+                maxPageItems: MCP_MAX_WORLD_PAGE_ITEMS,
+                maxTerrainItems: 4096 * 4096,
+                maxOutputBytes: OUTPUT_ARTIFACT_POLICY.maxArtifactBytes,
+                signal: scopedSignal,
+              },
+            )
+            if (world.state === 'refused')
+              throw new McpOperationError(
+                'x3.mcp/world-uvw-refused',
+                world.refusals.map(refusal => `${refusal.code}: ${refusal.message}`).join('; '),
+              )
+            const outputArtifact = this.outputs.commit(reservation, world.bytes, {
+              sourceRevision: String(descriptor.revision),
+              operationId: WORLD_SCENE_SOURCE_CONTRACT,
+            })
+            const whole =
+              world.excludedFacetIds.length === 0 &&
+              world.omittedObjects === 0 &&
+              world.lostFields.length === 0
+            return envelope({
+              snapshotId: world.sourceSnapshotId,
+              completeness: whole ? 'complete' : 'partial',
+              data: {
+                outputArtifact,
+                artifactDigest: world.artifactDigest,
+                excludedFacetIds: world.excludedFacetIds,
+                omittedObjects: world.omittedObjects,
+                lostFields: world.lostFields,
+              },
+            })
+          } finally {
+            this.outputs.cancel(reservation)
+          }
         }
         const binding = `world:${handle}:${query.facet}:${query.layerId ?? ''}`
         const request = boundPageRequest(this.cursorSecret, query, source.snapshotId, binding)

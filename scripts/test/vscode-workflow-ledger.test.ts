@@ -141,8 +141,9 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
       },
       decisionRequired: 0,
       releaseCandidateGaps: 5,
-      // the 1 October surface: accounts, sources, resources, maps, languages, the mod wiki
-      currentX3ObservedFacts: 248,
+      // the 1 October surface: accounts, sources, resources, maps, languages, the mod wiki,
+      // launch options, translation gaps, layout templates, file conversion
+      currentX3ObservedFacts: 260,
     })
     expect(ledger.counts.byKind).toEqual({
       'cli-command': 5,
@@ -248,20 +249,20 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
     ).toHaveLength(126)
   })
 
-  it('records the factual 64→82, 11→9, 8→20 and 6→4 surface change', () => {
+  it('records the factual 64→87, 11→9, 8→20 and 6→4 surface change', () => {
     const ledger = JSON.parse(readFileSync(committedLedger, 'utf8'))
     expect(ledger.surfaceComparison).toEqual({
       legacyVsCode: { commands: 64, customEditors: 11, languages: 8, views: 6 },
       currentX3VsCode: {
         // 1 October: accounts, sources, resources, map and world editors, the game languages, the
-        // mod wiki, folder conversion
-        commands: 82,
-        configurationProperties: 22,
+        // mod wiki, folder and file conversion, launch options, translation gaps, layout templates
+        commands: 87,
+        configurationProperties: 23,
         customEditors: 9,
         fileSystemSchemes: 2,
         keybindings: 0,
         languages: 20,
-        menus: 104,
+        menus: 110,
         runtimeOnlyCommands: 4,
         viewContainers: 1,
         views: 4,
@@ -286,7 +287,7 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
       'Доказанные callers: Automation, CLI, Electron, PWA, `server`, VS Code.',
     )
     expect(status).not.toContain('PWA не заявлен')
-    expect(ledger.currentX3Facts).toHaveLength(248)
+    expect(ledger.currentX3Facts).toHaveLength(260)
     expect(
       ledger.currentX3Facts.every((row: { state: string }) => row.state === 'observed-only'),
     ).toBe(true)
@@ -434,6 +435,7 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
         'modkit.browseContainer',
         'modkit.closeContainers',
         'modkit.contentSources',
+        'modkit.convertFiles',
         'modkit.convertFolder',
         'modkit.explainResolution',
         'modkit.exportDiagnostics',
@@ -454,6 +456,7 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
         'modkit.extensions.removeGameSupport',
         'modkit.extensions.removeVendorSupport',
         'modkit.extensions.update',
+        'modkit.game.configureLaunch',
         'modkit.game.launchActiveMap',
         'modkit.game.launchActiveMod',
         'modkit.indexCaches',
@@ -504,7 +507,10 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
         'modkit.sources.signIn',
         'modkit.sources.signOut',
         'modkit.sources.unmount',
+        'modkit.strings.extractChanged',
+        'modkit.strings.translationGaps',
         'modkit.syncEditorAssociations',
+        'modkit.template.reveal',
         'modkit.unloadSource',
         'modkit.verifyDocument',
         'modkit.verifyMod',
@@ -518,6 +524,7 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
         'modkit.browseContainer',
         'modkit.closeContainers',
         'modkit.contentSources',
+        'modkit.convertFiles',
         'modkit.convertFolder',
         'modkit.explainResolution',
         'modkit.exportDiagnostics',
@@ -540,6 +547,7 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
         'modkit.extensions.removeGameSupport',
         'modkit.extensions.removeVendorSupport',
         'modkit.extensions.update',
+        'modkit.game.configureLaunch',
         'modkit.game.launchActiveMap',
         'modkit.game.launchActiveMod',
         'modkit.indexCaches',
@@ -591,7 +599,10 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
         'modkit.sources.signIn',
         'modkit.sources.signOut',
         'modkit.sources.unmount',
+        'modkit.strings.extractChanged',
+        'modkit.strings.translationGaps',
         'modkit.syncEditorAssociations',
+        'modkit.template.reveal',
         'modkit.unloadSource',
         'modkit.verifyDocument',
         'modkit.verifyMod',
@@ -605,7 +616,7 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
       ],
       externalOrBuiltinCommands: [],
       legacyKeybindings: 0,
-      currentX3Menus: 104,
+      currentX3Menus: 110,
       currentX3Keybindings: 0,
     })
     expect(ledger.ownerBlockers).toEqual([])

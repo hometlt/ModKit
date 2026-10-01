@@ -28,6 +28,7 @@
 
 import type { Diagnostic } from '@modkit/core'
 import type { AssetSession, JsonValue } from '@modkit/sdk'
+import type { CandidateWorldSceneSource } from '@modkit/sdk/maps'
 import type { SubjectOpenSnapshot } from '../subject-rpc.js'
 import type { SubjectEditing } from '../subject-editing.js'
 import type { ServiceOperationCatalog, ServiceOperationInvocation } from '../service-operations.js'
@@ -106,8 +107,32 @@ export type CommandOutputStreamSink = (
   signal?: AbortSignal,
 ) => Promise<string>
 
+/** What `worldToUvw` gives back: the UVW document, and the receipt of what it left out. */
+export type CommandWorldExport =
+  | Readonly<{
+      readonly state: 'refused'
+      readonly refusals: readonly { readonly code: string; readonly message: string }[]
+    }>
+  | Readonly<{
+      readonly state: 'materialized'
+      readonly bytes: Uint8Array
+      readonly artifactDigest: string
+      readonly excludedFacetIds: readonly string[]
+      readonly omittedObjects: number
+      readonly lostFields: readonly { readonly path: string; readonly count: number }[]
+    }>
+
 export interface CommandContext {
   readonly openSubject: CommandSubjectOpener
+  /**
+   * Turns a map world into a UVW document - `@modkit/uv` materializeWorldToUvw, which the host does
+   * not import (the UV module depends on it): `subject.convert` with target `uvw` uses it. Absent
+   * where the application has no UV module.
+   */
+  readonly worldToUvw?: (
+    source: CandidateWorldSceneSource,
+    signal?: AbortSignal,
+  ) => Promise<CommandWorldExport>
   /** Where produced bytes go. Absent means this host cannot write; commands say so structurally. */
   readonly writeOutput?: CommandOutputSink
   readonly writeOutputStream?: CommandOutputStreamSink

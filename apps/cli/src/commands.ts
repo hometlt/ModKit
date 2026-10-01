@@ -60,6 +60,14 @@ export function parseByteSize(text: string | undefined): bigint | undefined {
   return bytes > 0n ? bytes : undefined
 }
 
+// ponytail: fixed limits of a UVW export (4096² terrain cells, 256 MiB); a flag when a map needs more
+const WORLD_UVW_LIMITS = Object.freeze({
+  maxPageItems: 4096,
+  maxTerrainItems: 4096 * 4096,
+  maxFacetItems: 4096 * 1024,
+  maxOutputBytes: 256 * 1024 * 1024,
+})
+
 export type RunOutputFormat = 'text' | 'json' | 'protocol-json'
 
 export interface RunArguments {
@@ -340,6 +348,14 @@ export async function runCommand(
           ? { progress: step => writeStderr(`… ${step.message}\n`) }
           : {}),
         ...(options.signal === undefined ? {} : { signal: options.signal }),
+        // `subject.convert --target uvw` of a map: the world it publishes, as one UVW document
+        worldToUvw: async (source, signal) => {
+          const { materializeWorldToUvw } = await import('@modkit/uv/world')
+          return materializeWorldToUvw(source, {
+            ...WORLD_UVW_LIMITS,
+            ...(signal === undefined ? {} : { signal }),
+          })
+        },
       },
     )
     writeStdout(
