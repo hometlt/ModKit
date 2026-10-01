@@ -10826,6 +10826,8 @@ async function activateModkit(
     const input = vscode.window.tabGroups.activeTabGroup.activeTab?.input as { uri?: vscode.Uri } | undefined
     const uri = input?.uri ?? vscode.window.activeTextEditor?.document.uri
     const target = uri?.scheme === 'file' ? launchTargetOf(uri.fsPath) : undefined
+    // the editor's context menu offers the same launch (plan 8.2)
+    void vscode.commands.executeCommand('setContext', 'modkit.launchTarget', target?.kind ?? '')
     if (target === undefined) {
       launchStatus.hide()
       return

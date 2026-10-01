@@ -827,6 +827,16 @@
           "group": "modkit@2"
         },
         {
+          "command": "modkit.game.launchActiveMap",
+          "when": "modkit.launchTarget == map",
+          "group": "modkit@9"
+        },
+        {
+          "command": "modkit.game.launchActiveMod",
+          "when": "modkit.launchTarget == mod",
+          "group": "modkit@9"
+        },
+        {
           "command": "modkit.openEntityCard",
           "when": "editorLangId in modkit.languages",
           "group": "modkit@5"
@@ -850,6 +860,11 @@
           "command": "modkit.selectGameLocale",
           "when": "editorLangId in modkit.languages",
           "group": "modkit@4"
+        },
+        {
+          "command": "modkit.template.reveal",
+          "when": "editorLangId == sc2-layout",
+          "group": "modkit@8"
         },
         {
           "command": "modkit.verifyDocument",
