@@ -176,10 +176,7 @@ export function rasterIdParameters(
 ): Readonly<{ name: string; region?: string; frame?: number; plane?: 'indices' }> {
   const { name, parameters } = resourceIdParameters(logicalId)
   const keys = Object.keys(parameters)
-  if (
-    keys.length === 0 ||
-    keys.some(key => key !== 'region' && key !== 'frame' && key !== 'plane')
-  )
+  if (keys.length === 0 || keys.some(key => key !== 'region' && key !== 'frame' && key !== 'plane'))
     return { name: logicalId }
   const { region, frame, plane } = parameters
   if (plane !== undefined && plane !== 'indices')
