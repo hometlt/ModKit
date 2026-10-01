@@ -42,6 +42,8 @@ import {
   createMediaShell,
   mountContributedSections,
   type MediaShellContribution,
+  mediaFacts,
+  MEDIA_ZOOM_CHOICES,
 } from '../media-shell/index.js'
 import {
   createImageEditing,
@@ -444,7 +446,6 @@ export interface ImagePixelOperationPort {
  */
 export type ImageSidebarSection = MediaShellContribution
 
-const ZOOM_CHOICES = [0.25, 0.5, 1, 2, 4, 8] as const
 const CHANNELS: readonly ImageChannel[] = ['rgb', 'r', 'g', 'b', 'a']
 
 /*
@@ -767,7 +768,7 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
             selected: fit ? 'fit' : String(zoom),
             choices: [
               { id: 'fit', label: localizer.text('viewer.fit') },
-              ...ZOOM_CHOICES.map(value => ({ id: String(value), label: `${value * 100}%` })),
+              ...MEDIA_ZOOM_CHOICES.map(value => ({ id: String(value), label: `${value * 100}%` })),
             ],
           },
         ].filter(item => item.text !== '')
@@ -1138,16 +1139,6 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
         canvas.removeEventListener('pointercancel', onPointerUp)
         root.removeEventListener('keydown', onKeyDown)
       })
-
-      const facts = (parent: HTMLElement, rows: readonly (readonly [string, string])[]): void => {
-        const list = element(parent, 'dl', { part: 'image.metadata' })
-        for (const [label, value] of rows) {
-          const row = element(list, 'div', { part: 'metadata.row' })
-          element(row, 'dt', { text: label, part: 'metadata.label' })
-          const cell = element(row, 'dd', { part: 'metadata.value' })
-          setViewerText(cell, value, 512)
-        }
-      }
 
       /** The codec's own `export.convert` presets, as data the status menu and a button can use. */
       /**
@@ -1593,7 +1584,7 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
         shell.clearSections()
         if (info !== undefined && model !== undefined) {
           const extent = subresourceExtent(info, subresource.mipLevel)
-          facts(
+          mediaFacts(
             shell.section('image', localizer.text('viewer.imageSectionImage'), { icon: 'info' })
               .body,
             [
@@ -1605,7 +1596,7 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
               ],
             ],
           )
-          facts(
+          mediaFacts(
             shell.section('format', localizer.text('viewer.imageSectionFormat'), { icon: 'file' })
               .body,
             [
@@ -1840,7 +1831,7 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
             if (groups.length > 1) {
               element(body, 'h3', { part: 'image.metadata-group', text: group.label })
             }
-            facts(
+            mediaFacts(
               body,
               group.entries.map(entry => [entry.key, String(entry.value)] as const),
             )

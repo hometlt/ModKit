@@ -847,10 +847,26 @@ export const TREE_FALLBACK_MESSAGES = {
 } as const satisfies UiMessageCatalog
 
 export const VECTOR_FALLBACK_MESSAGES = {
+  'viewer.fit': 'Fit',
+  'viewer.fitTitle': 'Fit to the stage',
   'viewer.vector': 'Vector viewer',
   'viewer.vectorError': 'The vector scene cannot be rendered safely: {reason}',
+  'viewer.vectorExport': 'Export',
+  'viewer.vectorExportPng': 'Export PNG…',
+  'viewer.vectorExportRefused': 'Not exported: {reason}',
+  'viewer.vectorExportScale': 'PNG scale',
+  'viewer.vectorExportTooLarge':
+    '{width} × {height} is over the export budget; choose a smaller scale.',
+  'viewer.vectorExported': 'Saved {name}.',
+  'viewer.vectorExporting': 'Exporting…',
+  'viewer.vectorGradients': 'Gradients',
+  'viewer.vectorNodes': 'Nodes',
+  'viewer.vectorPaths': 'Paths',
   'viewer.vectorPreview': 'Vector scene preview',
+  'viewer.vectorShapes': 'Shapes',
+  'viewer.vectorSize': 'Size',
   'viewer.vectorSummary': '{nodes} nodes · {paths} paths · {shapes} shapes · {text} text nodes',
+  'viewer.vectorText': 'Text nodes',
 } as const satisfies UiMessageCatalog
 
 export const VIDEO_FALLBACK_MESSAGES = {

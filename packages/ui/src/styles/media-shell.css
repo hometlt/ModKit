@@ -501,7 +501,8 @@
   }
 
   /* Image render area: the canvas is the whole stage; the image is centred inside it. */
-  [data-mk-part='media-shell.stage'] > [data-mk-part='image'] {
+  [data-mk-part='media-shell.stage'] > [data-mk-part='image'],
+  [data-mk-part='media-shell.stage'] > [data-mk-part='vector'] {
     position: absolute;
     inset: 0;
     display: block;

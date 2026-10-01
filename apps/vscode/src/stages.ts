@@ -176,7 +176,11 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
       id: 'vector',
       label: context.localizer.text('stage.vector'),
       contract: 'common.view/vector-scene-source',
-      module: createVectorViewer({ localizer: context.localizer }),
+      module: createVectorViewer({
+        localizer: context.localizer,
+        ...(context.exportFiles === undefined ? {} : { exportBytes: context.exportFiles }),
+        exportBaseName: descriptor => context.exportBaseName?.(descriptor) ?? 'vector',
+      }),
     },
     {
       id: 'playback',

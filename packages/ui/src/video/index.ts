@@ -10,6 +10,7 @@ import {
   createMediaShell,
   mountContributedSections,
   type MediaShellContribution,
+  mediaFacts,
 } from '../media-shell/index.js'
 import { type UiLocalizer } from '../localization/index.js'
 import { VIDEO_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
@@ -68,15 +69,6 @@ function metadataGroups(descriptor: AnyDescriptor): readonly MetadataGroup[] {
   return 'identity' in descriptor
     ? ((descriptor as { readonly metadata?: readonly MetadataGroup[] }).metadata ?? [])
     : []
-}
-
-function facts(parent: HTMLElement, rows: readonly (readonly [string, string])[]): void {
-  const list = element(parent, 'dl', { part: 'image.metadata' })
-  for (const [label, value] of rows) {
-    const row = element(list, 'div', { part: 'metadata.row' })
-    element(row, 'dt', { text: label, part: 'metadata.label' })
-    setViewerText(element(row, 'dd', { part: 'metadata.value' }), value, 512)
-  }
 }
 
 export function createVideoViewer(options: VideoViewerOptions = {}): ViewerModule {
@@ -158,7 +150,7 @@ export function createVideoViewer(options: VideoViewerOptions = {}): ViewerModul
         const section = shell.section('video', localizer.text('viewer.video'), {
           icon: 'device-camera-video',
         }).body
-        facts(section, rows)
+        mediaFacts(section, rows)
         const playback = element(section, 'div', { part: 'video.options' })
         for (const [key, label, apply] of [
           [
@@ -227,7 +219,7 @@ export function createVideoViewer(options: VideoViewerOptions = {}): ViewerModul
         }
         for (const group of metadataGroups(args.descriptor)) {
           if (/^(identity|traits|detection)$/iu.test(group.id)) continue
-          facts(
+          mediaFacts(
             shell.section(`metadata:${group.id}`, group.label, {
               icon: 'symbol-misc',
               collapsed: true,

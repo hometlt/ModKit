@@ -23,7 +23,7 @@ import type {
 } from '@modkit/sdk'
 import { icon } from '../icons/index.js'
 import { setToken } from '../tokens/index.js'
-import { createMediaShell } from '../media-shell/index.js'
+import { createMediaShell, mediaFacts } from '../media-shell/index.js'
 import { describeEntry, formatEntryBytes } from '../namespace/index.js'
 import { type UiLocalizer } from '../localization/index.js'
 import { ARCHIVE_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
@@ -214,14 +214,10 @@ function metadataGroups(descriptor: AnyDescriptor): readonly MetadataGroup[] {
     : []
 }
 
+/** The facts of a section, drawn again in place. */
 function facts(parent: HTMLElement, rows: readonly (readonly [string, string])[]): void {
   parent.replaceChildren()
-  const list = element(parent, 'dl', { part: 'image.metadata' })
-  for (const [label, value] of rows) {
-    const row = element(list, 'div', { part: 'metadata.row' })
-    element(row, 'dt', { text: label, part: 'metadata.label' })
-    setViewerText(element(row, 'dd', { part: 'metadata.value' }), value, 512)
-  }
+  mediaFacts(parent, rows)
 }
 
 export function createArchiveViewer(options: ArchiveViewerOptions = {}): ViewerModule {

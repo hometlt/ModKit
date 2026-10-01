@@ -1328,17 +1328,41 @@
     font-variant-numeric: tabular-nums;
   }
 
-  /* The secure-static profile is rendered as an isolated image; it never enters the DOM. */
+  /*
+   * The secure-static profile is rendered as an isolated image; it never enters the DOM. The stage
+   * sizes and places it (zoom and pan), over a checker so that transparency reads as such.
+   */
   [data-mk-part='vector.image'] {
     display: block;
-    flex: 1 1 auto;
-    min-height: 0;
-    max-width: 100%;
-    margin: auto;
-    object-fit: contain;
-    border: 1px solid var(--mk-color-border);
-    border-radius: var(--mk-radius-sm);
-    background: var(--mk-color-sunken);
+    position: absolute;
+    max-width: none;
+    background:
+      conic-gradient(
+          from 90deg at 50% 50%,
+          var(--mk-color-canvas-grid) 0 25%,
+          transparent 0 50%,
+          var(--mk-color-canvas-grid) 0 75%,
+          transparent 0
+        )
+        0 0 / 14px 14px,
+      var(--mk-color-canvas-bg);
+    user-select: none;
+  }
+
+  [data-mk-part='vector'] {
+    overflow: hidden;
+    cursor: grab;
+  }
+
+  [data-mk-part='vector']:active {
+    cursor: grabbing;
+  }
+
+  /* The counts stay readable over a drawing zoomed under them. */
+  [data-mk-part='vector.readout'] {
+    position: relative;
+    z-index: 1;
+    pointer-events: none;
   }
 
   [data-mk-part='video.options'] {

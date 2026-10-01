@@ -17,6 +17,7 @@ import {
   createMediaShell,
   mountContributedSections,
   type MediaShellContribution,
+  mediaFacts,
 } from '../media-shell/index.js'
 import {
   createSurface,
@@ -302,15 +303,6 @@ function containerOf(descriptor: AnyDescriptor, mediaType: string | undefined): 
   return type === undefined ? identity.formatLabel : `${identity.formatLabel} (${type})`
 }
 
-function facts(parent: HTMLElement, rows: readonly (readonly [string, string])[]): void {
-  const list = element(parent, 'dl', { part: 'image.metadata' })
-  for (const [label, value] of rows) {
-    const row = element(list, 'div', { part: 'metadata.row' })
-    element(row, 'dt', { text: label, part: 'metadata.label' })
-    setViewerText(element(row, 'dd', { part: 'metadata.value' }), value, 512)
-  }
-}
-
 export function createAudioViewer(options: AudioViewerOptions = {}): ViewerModule {
   const localizer = withEnglishUiFallback(options.localizer, AUDIO_FALLBACK_MESSAGES)
   return defineViewerModule({
@@ -565,7 +557,7 @@ export function createAudioViewer(options: AudioViewerOptions = {}): ViewerModul
       }).body
       for (const group of metadataGroups(args.descriptor)) {
         if (/^(identity|traits|detection)$/iu.test(group.id)) continue
-        facts(
+        mediaFacts(
           shell.section(`metadata:${group.id}`, group.label, {
             icon: 'symbol-misc',
             collapsed: true,
@@ -618,7 +610,7 @@ export function createAudioViewer(options: AudioViewerOptions = {}): ViewerModul
           // The facts, once per track: they belong in the sidebar, not in the repainted readout.
           const container = containerOf(args.descriptor, loaded.mediaType)
           factsBody.replaceChildren()
-          facts(factsBody, [
+          mediaFacts(factsBody, [
             [localizer.text('viewer.duration'), clock(loaded.model.duration)],
             [localizer.text('viewer.audioChannels'), String(loaded.model.channels)],
             [

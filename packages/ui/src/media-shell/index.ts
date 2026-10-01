@@ -19,6 +19,23 @@ import type { UiLocalizer } from '../localization/index.js'
 import { MEDIA_SHELL_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
 import { withEnglishUiFallback } from '../localization/fallback.js'
 import { rememberUiPreference, uiPreference } from '../viewer/preferences.js'
+import { element, setViewerText } from '../viewer/index.js'
+
+/** A sidebar section's facts: one row of label and value each, the value bounded as text. */
+export function mediaFacts(
+  parent: HTMLElement,
+  rows: readonly (readonly [string, string])[],
+): void {
+  const list = element(parent, 'dl', { part: 'image.metadata' })
+  for (const [label, value] of rows) {
+    const row = element(list, 'div', { part: 'metadata.row' })
+    element(row, 'dt', { text: label, part: 'metadata.label' })
+    setViewerText(element(row, 'dd', { part: 'metadata.value' }), value, 512)
+  }
+}
+
+/** Zoom steps a media stage offers beside Fit, as fractions of the native size. */
+export const MEDIA_ZOOM_CHOICES = [0.25, 0.5, 1, 2, 4, 8] as const
 
 export interface MediaShellState {
   leftWidth?: number
