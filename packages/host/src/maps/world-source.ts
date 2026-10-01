@@ -143,18 +143,62 @@ function numericPair(value: string | undefined): Readonly<{ x: number; y: number
     : undefined
 }
 
+/**
+ * A publisher's region shape as geometry: a circle (`center`, `radius`), a rectangle (`rect` or
+ * `rectangle`: `min`/`max` or `minimum`/`maximum`, corners in either order — Warcraft III `w3r`,
+ * SC2 `rect`), SC2's `diamond` (the rhombus inside its rectangle) and a polygon (`points`,
+ * `x,y` pairs apart by spaces or semicolons). Anything else keeps its raw parameters only.
+ */
 function regionShape(shape: {
   readonly type: string
   readonly parameters: Readonly<Record<string, string>>
 }): WorldSceneRegionShape {
-  const center = numericPair(shape.parameters['center'])
-  const radiusValue = shape.parameters['radius']
+  const { parameters } = shape
+  const type = shape.type.toLowerCase()
+  const center = numericPair(parameters['center'])
+  const radiusValue = parameters['radius']
   const radius = radiusValue === undefined ? undefined : Number(radiusValue)
+  const corner = (short: string, long: string) =>
+    numericPair(parameters[short] ?? parameters[long])
+  const first = corner('min', 'minimum')
+  const second = corner('max', 'maximum')
+  const box =
+    first === undefined || second === undefined
+      ? undefined
+      : {
+          minimum: Object.freeze({ x: Math.min(first.x, second.x), y: Math.min(first.y, second.y) }),
+          maximum: Object.freeze({ x: Math.max(first.x, second.x), y: Math.max(first.y, second.y) }),
+        }
+  if ((type === 'rect' || type === 'rectangle') && box !== undefined)
+    return Object.freeze({ kind: 'rectangle', ...box, rawParameters: parameters })
+  if (type === 'diamond' && box !== undefined) {
+    const middle = { x: (box.minimum.x + box.maximum.x) / 2, y: (box.minimum.y + box.maximum.y) / 2 }
+    return Object.freeze({
+      kind: 'polygon',
+      points: Object.freeze([
+        Object.freeze({ x: middle.x, y: box.minimum.y }),
+        Object.freeze({ x: box.maximum.x, y: middle.y }),
+        Object.freeze({ x: middle.x, y: box.maximum.y }),
+        Object.freeze({ x: box.minimum.x, y: middle.y }),
+      ]),
+      rawParameters: parameters,
+    })
+  }
+  const points = parameters['points']
+    ?.split(/[\s;]+/u)
+    .filter(item => item !== '')
+    .map(numericPair)
+  if (type === 'polygon' && points !== undefined && points.length >= 3 && points.every(Boolean))
+    return Object.freeze({
+      kind: 'polygon',
+      points: Object.freeze(points as Readonly<{ x: number; y: number }>[]),
+      rawParameters: parameters,
+    })
   return Object.freeze({
     kind: shape.type,
     ...(center === undefined ? {} : { center }),
     ...(radius !== undefined && Number.isFinite(radius) ? { radius } : {}),
-    rawParameters: shape.parameters,
+    rawParameters: parameters,
   })
 }
 

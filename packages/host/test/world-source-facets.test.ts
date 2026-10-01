@@ -521,6 +521,73 @@ describe('common world source native visual facets', () => {
     }
   })
 
+  it('reads rectangles, diamonds and polygons of regions as geometry', async () => {
+    const region = (regionId: number, type: string, parameters: Record<string, string>) => ({
+      regionId,
+      name: `Region ${String(regionId)}`,
+      shapes: [{ type, parameters }],
+    })
+    const lease = createSourceWorldSceneLease(
+      {
+        ...snapshot,
+        semantic: {
+          ...snapshot.semantic,
+          regions: [
+            region(1, 'rect', { min: '3,3', max: '1,1' }),
+            region(2, 'Rectangle', { minimum: '0,4', maximum: '2,6' }),
+            region(3, 'diamond', { min: '0,0', max: '2,4' }),
+            region(4, 'polygon', { points: '0,0 1,0;1,1' }),
+            region(5, 'circle', { center: '1,1', radius: '0.5' }),
+            region(6, 'polygon', { points: '0,0 1,0' }),
+          ],
+        },
+      },
+      [],
+      64,
+    )
+    try {
+      const info = await lease.value.info()
+      const layerId = info.facets.find(item => item.facet === 'regions')!.layerId
+      const shapes = new Map(
+        (await lease.value.page({ facet: 'regions', layerId, limit: 64 })).items.flatMap(item =>
+          item.facet === 'regions' ? [[item.regionId, item.shapes[0]!]] : [],
+        ),
+      )
+      expect(shapes.get(1)).toMatchObject({
+        kind: 'rectangle',
+        minimum: { x: 1, y: 1 },
+        maximum: { x: 3, y: 3 },
+      })
+      expect(shapes.get(2)).toMatchObject({
+        kind: 'rectangle',
+        minimum: { x: 0, y: 4 },
+        maximum: { x: 2, y: 6 },
+      })
+      expect(shapes.get(3)).toMatchObject({
+        kind: 'polygon',
+        points: [
+          { x: 1, y: 0 },
+          { x: 2, y: 2 },
+          { x: 1, y: 4 },
+          { x: 0, y: 2 },
+        ],
+      })
+      expect(shapes.get(4)).toMatchObject({
+        kind: 'polygon',
+        points: [
+          { x: 0, y: 0 },
+          { x: 1, y: 0 },
+          { x: 1, y: 1 },
+        ],
+      })
+      expect(shapes.get(5)).toMatchObject({ kind: 'circle', center: { x: 1, y: 1 }, radius: 0.5 })
+      // two points are no polygon: the shape keeps its raw parameters only
+      expect(shapes.get(6)).toEqual({ kind: 'polygon', rawParameters: { points: '0,0 1,0' } })
+    } finally {
+      await lease.release()
+    }
+  })
+
   it('keeps layer and item identities compact while cursors remain snapshot-bound', async () => {
     const longSnapshotId = `snapshot-${'dependency-revision/'.repeat(1_024)}`
     const longSnapshot = { ...snapshot, snapshotId: longSnapshotId }
