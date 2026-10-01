@@ -366,6 +366,11 @@ const EN_MESSAGES = Object.freeze({
   'vscode.export.noFolder':
     'This window has no folder to export into. Open a folder or workspace, then export again.',
   'vscode.export.written': 'Modkit exported {count} file(s) to {folder}',
+  'vscode.export.save': 'Export',
+  'vscode.export.saveTitle': 'Export {name}',
+  'vscode.export.saveHere': 'Export here',
+  'vscode.export.saveManyTitle': 'Folder for {count} exported files',
+  'vscode.export.cancelled': 'Export cancelled',
   'vscode.webview.noCodecClaimed':
     '{name} — no codec claimed it ({reason}); showing the raw bytes.',
   'vscode.webview.mapWorldUnavailable':
@@ -890,6 +895,11 @@ const RU_MESSAGES: Readonly<Record<keyof typeof EN_MESSAGES, string>> = Object.f
   'vscode.export.noFolder':
     'В этом окне нет папки для экспорта. Откройте папку или рабочую область и повторите экспорт.',
   'vscode.export.written': 'Modkit экспортировал файлов: {count} — в {folder}',
+  'vscode.export.save': 'Экспортировать',
+  'vscode.export.saveTitle': 'Экспорт {name}',
+  'vscode.export.saveHere': 'Экспортировать сюда',
+  'vscode.export.saveManyTitle': 'Папка для экспорта файлов: {count}',
+  'vscode.export.cancelled': 'Экспорт отменён',
   'vscode.webview.noCodecClaimed':
     '{name} — ни один кодек не распознал файл ({reason}); показаны исходные байты.',
   'vscode.webview.mapWorldUnavailable':

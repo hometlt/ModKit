@@ -98,6 +98,7 @@
   "configuration.launch.warnIfRunning.description": "Спрашивать перед закрытием запущенной игры для нового запуска.",
   "configuration.extensionPackages.description": "Папка пакетов игр, опубликованных рядом с Modkit (`catalog.v1.json` и бандлы). Игры ставятся из неё, только если её каталог подписан ключом реестра Modkit; действует в новом окне.",
   "configuration.maxGraphHops.description": "Сколько связей граф связей проходит от корня, когда строится от узла (1–4).",
+  "configuration.askExportLocation.description": "Спрашивать, куда сохранить экспорт («Сохранить как…»). Выключено: конвертация пишется рядом с исходником, остальной экспорт — в папку `modkit-export` рабочей области, без диалога.",
   "configuration.showHiddenEntries.description": "Показывать файлы и папки, которые архив или хранилище игры помечает скрытыми (`__MACOSX`, имена с точки, `Thumbs.db` и то, что скрывает каждый формат). По пути такой файл открывается всегда.",
   "configuration.launch.testMap.description": "Абсолютный путь карты для теста мода. Пусто — выбрать при запуске.",
   "configuration.launch.documentsDirectory.description": "Папка «Документы», если игра пишет журналы не в `~/Documents` (перенесённая папка или OneDrive).",

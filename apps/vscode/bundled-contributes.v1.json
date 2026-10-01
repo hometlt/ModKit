@@ -448,6 +448,11 @@
         "default": false,
         "markdownDescription": "%configuration.showHiddenEntries.description%"
       },
+      "modkit.askExportLocation": {
+        "type": "boolean",
+        "default": true,
+        "markdownDescription": "%configuration.askExportLocation.description%"
+      },
       "modkit.extensionPackages": {
         "type": "string",
         "default": "",

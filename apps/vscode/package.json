@@ -332,6 +332,11 @@
     "configuration": {
       "title": "%configuration.title%",
       "properties": {
+        "modkit.askExportLocation": {
+          "default": true,
+          "markdownDescription": "%configuration.askExportLocation.description%",
+          "type": "boolean"
+        },
         "modkit.baseMods": {
           "additionalProperties": { "items": { "type": "string" }, "type": "array" },
           "default": {},

@@ -1,6 +1,9 @@
-/** Files a viewer exports, written where the extension host decides. */
+/** Files a viewer exports, written where the user picks or, unattended, where the host decides. */
+import { homedir } from 'node:os'
+import { dirname } from 'node:path'
 import * as vscode from 'vscode'
 
+import { parseContainerUriText, splitContainer } from './container-uri.js'
 import { createVscodeLocalizer } from './localization.js'
 import { subjectUriOf } from './subject-uris.js'
 
@@ -25,14 +28,14 @@ export async function exportViewerFiles(
     }
 > {
   const localizer = createVscodeLocalizer(vscode.env.language)
+  if (vscode.workspace.getConfiguration('modkit').get<boolean>('askExportLocation', true)) {
+    return saveAs(files, beside)
+  }
   if (beside !== undefined) return writeBeside(files, beside)
-  const folder = (vscode.workspace.workspaceFolders ?? []).find(
-    candidate => candidate.uri.scheme === 'file',
-  )
-  if (folder === undefined) {
+  const target = exportFolder()
+  if (target === undefined) {
     return { state: 'refused', reason: localizer.text('vscode.export.noFolder') }
   }
-  const target = vscode.Uri.joinPath(folder.uri, VIEWER_EXPORT_FOLDER)
   await vscode.workspace.fs.createDirectory(target)
   const names: string[] = []
   for (const file of files) {
@@ -47,16 +50,80 @@ export async function exportViewerFiles(
   return { state: 'written', names: Object.freeze(names) }
 }
 
+/** This window's export folder: `modkit-export` in its first folder on disk. */
+function exportFolder(): vscode.Uri | undefined {
+  const folder = (vscode.workspace.workspaceFolders ?? []).find(
+    candidate => candidate.uri.scheme === 'file',
+  )
+  return folder === undefined ? undefined : vscode.Uri.joinPath(folder.uri, VIEWER_EXPORT_FOLDER)
+}
+
 /**
- * A conversion lands where MK2 put it: beside its source — inside the same archive for a member —
- * under a name that does not overwrite anything, and opens in a tab of its own.
+ * Save As, as MK2 asked: one file names itself in a save dialog, several share a folder. The
+ * dialog starts beside the source on disk (beside the archive for a member); a source it cannot
+ * write into — a game's storage, a content source — starts in the export folder.
  */
-export async function writeBeside(
+async function saveAs(
   files: readonly { readonly name: string; readonly bytes: Uint8Array }[],
-  beside: string,
-): Promise<{ readonly state: 'written'; readonly names: readonly string[] }> {
-  const source = subjectUriOf(beside)
-  const folder = vscode.Uri.joinPath(source, '..')
+  beside: string | undefined,
+): Promise<
+  | { readonly state: 'written'; readonly names: readonly string[] }
+  | { readonly state: 'refused'; readonly reason: string }
+> {
+  const localizer = createVscodeLocalizer(vscode.env.language)
+  const onDisk =
+    beside === undefined
+      ? undefined
+      : (() => {
+          const location = parseContainerUriText(beside)
+          return location === undefined ? beside : splitContainer(location.container).file
+        })()
+  const start =
+    onDisk !== undefined
+      ? vscode.Uri.file(dirname(onDisk))
+      : (exportFolder() ?? vscode.Uri.file(homedir()))
+  const first = files[0]
+  if (files.length === 1 && first !== undefined) {
+    const chosen = await vscode.window.showSaveDialog({
+      defaultUri: vscode.Uri.joinPath(start, first.name),
+      saveLabel: localizer.text('vscode.export.save'),
+      title: localizer.text('vscode.export.saveTitle', { name: first.name }),
+    })
+    if (chosen === undefined) {
+      return { state: 'refused', reason: localizer.text('vscode.export.cancelled') }
+    }
+    // the dialog asked before replacing a file, so the chosen name is written as it is
+    await vscode.workspace.fs.writeFile(chosen, new Uint8Array(first.bytes))
+    await vscode.commands.executeCommand('vscode.open', chosen, { preview: false })
+    return {
+      state: 'written',
+      names: Object.freeze([chosen.path.slice(chosen.path.lastIndexOf('/') + 1)]),
+    }
+  }
+  const picked = await vscode.window.showOpenDialog({
+    canSelectFiles: false,
+    canSelectFolders: true,
+    canSelectMany: false,
+    defaultUri: start,
+    openLabel: localizer.text('vscode.export.saveHere'),
+    title: localizer.text('vscode.export.saveManyTitle', { count: files.length }),
+  })
+  const folder = picked?.[0]
+  if (folder === undefined) {
+    return { state: 'refused', reason: localizer.text('vscode.export.cancelled') }
+  }
+  const names = await writeUnique(files, folder)
+  void vscode.window.showInformationMessage(
+    localizer.text('vscode.export.written', { count: names.length, folder: folder.fsPath }),
+  )
+  return { state: 'written', names }
+}
+
+/** Write each file into `folder` under a name that replaces nothing: `x.png`, `x (2).png`… */
+async function writeUnique(
+  files: readonly { readonly name: string; readonly bytes: Uint8Array }[],
+  folder: vscode.Uri,
+): Promise<readonly string[]> {
   const exists = (uri: vscode.Uri): Thenable<boolean> =>
     vscode.workspace.fs.stat(uri).then(
       () => true,
@@ -73,7 +140,24 @@ export async function writeBeside(
     }
     await vscode.workspace.fs.writeFile(destination, new Uint8Array(file.bytes))
     names.push(destination.path.slice(destination.path.lastIndexOf('/') + 1))
-    await vscode.commands.executeCommand('vscode.open', destination, { preview: false })
   }
-  return { state: 'written', names: Object.freeze(names) }
+  return Object.freeze(names)
+}
+
+/**
+ * A conversion lands where MK2 put it: beside its source — inside the same archive for a member —
+ * under a name that does not overwrite anything, and opens in a tab of its own.
+ */
+export async function writeBeside(
+  files: readonly { readonly name: string; readonly bytes: Uint8Array }[],
+  beside: string,
+): Promise<{ readonly state: 'written'; readonly names: readonly string[] }> {
+  const folder = vscode.Uri.joinPath(subjectUriOf(beside), '..')
+  const names = await writeUnique(files, folder)
+  for (const name of names) {
+    await vscode.commands.executeCommand('vscode.open', vscode.Uri.joinPath(folder, name), {
+      preview: false,
+    })
+  }
+  return { state: 'written', names }
 }

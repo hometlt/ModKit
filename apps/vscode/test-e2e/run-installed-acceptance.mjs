@@ -295,7 +295,8 @@ writeFileSync(corruptDdsPath, Buffer.concat([Buffer.from('DDS ', 'ascii'), Buffe
  */
 writeFileSync(
   workspaceFile,
-  `${JSON.stringify({ folders: [{ path: basename(workspace) }], settings: {} }, null, 2)}\n`,
+  // Exports land in the workspace's modkit-export folder: no Save As dialog stops the run.
+  `${JSON.stringify({ folders: [{ path: basename(workspace) }], settings: { 'modkit.askExportLocation': false } }, null, 2)}\n`,
 )
 
 const startedAt = new Date().toISOString()
