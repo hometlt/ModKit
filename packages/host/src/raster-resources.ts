@@ -163,6 +163,44 @@ function ownedCompressedTexture(
   })
 }
 
+/**
+ * The parameters a logical raster id names after its last `#`, and the resource name before them:
+ * a named atlas area (`textures/tex.gaf#region=Metal01`), one frame of a many-frame image
+ * (`gi.shp#frame=3`), or both, joined by `&` (an area of that frame). Each part of a parameter
+ * list is one of these words; a fragment of other words stays part of the name, as file names may
+ * hold `#`. A known word with an unusable value is refused rather than read as a name.
+ */
+export function rasterIdParameters(
+  logicalId: string,
+): Readonly<{ name: string; region?: string; frame?: number }> {
+  const hash = logicalId.lastIndexOf('#')
+  if (hash < 0) return { name: logicalId }
+  let region: string | undefined
+  let frame: number | undefined
+  for (const part of logicalId.slice(hash + 1).split('&')) {
+    const equals = part.indexOf('=')
+    const key = equals < 0 ? part : part.slice(0, equals)
+    if (key !== 'region' && key !== 'frame') return { name: logicalId }
+    let value: string
+    try {
+      value = decodeURIComponent(part.slice(equals + 1))
+    } catch {
+      return { name: logicalId }
+    }
+    if (equals < 0 || value.length === 0 || (key === 'region' ? region : frame) !== undefined)
+      throw new TypeError(`raster id parameter ${key} is empty or repeated`)
+    if (key === 'region') region = value
+    else if (/^(?:0|[1-9][0-9]*)$/u.test(value) && Number.isSafeInteger(Number(value)))
+      frame = Number(value)
+    else throw new TypeError('raster id frame must be a nonnegative integer')
+  }
+  return {
+    name: logicalId.slice(0, hash),
+    ...(region === undefined ? {} : { region }),
+    ...(frame === undefined ? {} : { frame }),
+  }
+}
+
 export function createSubjectRasterResources(
   options: SubjectRasterResourceOptions,
 ): RasterResourcePort {
@@ -226,6 +264,8 @@ export function createSubjectRasterResources(
       let provenance: ResourceProvenanceRecord | undefined
       /** A named area of an atlas image (`textures/tex.gaf#region=Metal01`): its pixels only. */
       let atlasRegion: string | undefined
+      /** One frame of a many-frame image (`gi.shp#frame=3`): an image of its own, of one frame. */
+      let frameOnly: number | undefined
       try {
         let source: ArtifactByteSource
         let hint: { path?: string; mediaType?: string } = {}
@@ -247,15 +287,26 @@ export function createSubjectRasterResources(
            * sweep of the model's own directory never sees.
            */
           const rule = options.companionRule?.(request.requirement.role)
-          const named = /#region=([^#]+)$/u.exec(request.requirement.logicalId)
-          if (named !== null) atlasRegion = decodeURIComponent(named[1]!)
+          let parameters: ReturnType<typeof rasterIdParameters>
+          try {
+            parameters = rasterIdParameters(request.requirement.logicalId)
+          } catch (error) {
+            return refusal(
+              'x3.host/raster-request-invalid',
+              error instanceof Error ? error.message : 'Invalid raster id parameters.',
+            )
+          }
+          atlasRegion = parameters.region
+          frameOnly = parameters.frame
+          if (frameOnly !== undefined && (selection.frame ?? 0) !== 0)
+            return refusal(
+              'x3.host/raster-selection-invalid',
+              'The resource names one frame of its image: it has no other frame to select.',
+            )
           const asked =
-            named === null
+            parameters.name === request.requirement.logicalId
               ? request.requirement
-              : {
-                  ...request.requirement,
-                  logicalId: request.requirement.logicalId.slice(0, named.index),
-                }
+              : { ...request.requirement, logicalId: parameters.name }
           const requirement = rule === undefined ? asked : { ...asked, scopes: rule.scopes }
           const spellings = rasterSpellings(requirement.logicalId, rule)
           let resolution = await resources.resolve(requirement, signal)
@@ -341,6 +392,7 @@ export function createSubjectRasterResources(
         const compressedPlan =
           compressedFormats.size === 0 ||
           atlasRegion !== undefined ||
+          frameOnly !== undefined ||
           raster.value.readCompressed === undefined ||
           ![...compressedFormats].some(format => format.startsWith(`${info.compression}-`))
             ? undefined
@@ -388,6 +440,12 @@ export function createSubjectRasterResources(
             'The selected image codec does not decode pixel regions.',
             provenance,
           )
+        if (frameOnly !== undefined && frameOnly >= info.frames)
+          return refusal(
+            'x3.host/raster-frame-missing',
+            `The image has no frame ${String(frameOnly)}; it has ${String(info.frames)}.`,
+            provenance,
+          )
         if (atlasRegion !== undefined) {
           // the codec names its atlas areas in mip 0 pixels; one area is one image of its own
           const area = info.atlasRegions?.find(item => item.name === atlasRegion)
@@ -403,6 +461,7 @@ export function createSubjectRasterResources(
               y: area.y,
               width: area.width,
               height: area.height,
+              ...(frameOnly === undefined ? {} : { frame: frameOnly }),
               pixelFormat: 'rgba8',
               maxBytes,
             },
@@ -422,7 +481,13 @@ export function createSubjectRasterResources(
             )
           const { atlasRegions: _atlas, ...rest } = info
           return {
-            info: Object.freeze({ ...rest, width: area.width, height: area.height, mipLevels: 1 }),
+            info: Object.freeze({
+              ...rest,
+              width: area.width,
+              height: area.height,
+              mipLevels: 1,
+              ...(frameOnly === undefined ? {} : { frames: 1 }),
+            }),
             diagnostics: Object.freeze([...opened.diagnostics]),
             ...(provenance === undefined ? {} : { provenance }),
             state: 'decoded',
@@ -431,7 +496,11 @@ export function createSubjectRasterResources(
         }
         let plan: ReturnType<typeof rasterSelectionPlan>
         try {
-          plan = rasterSelectionPlan(info, selection, maxBytes)
+          plan = rasterSelectionPlan(
+            info,
+            frameOnly === undefined ? selection : { ...selection, frame: frameOnly },
+            maxBytes,
+          )
         } catch (error) {
           return refusal(
             isModkitError(error) ? error.code : 'x3.host/raster-selection-invalid',
@@ -486,13 +555,15 @@ export function createSubjectRasterResources(
           remaining -= region.pixels.length
           surfaces.push(
             Object.freeze({
-              subresource,
+              // a named frame is frame 0 of the one-frame image the resource is
+              subresource:
+                frameOnly === undefined ? subresource : Object.freeze({ ...subresource, frame: 0 }),
               region: Object.freeze({ ...region, pixels: region.pixels.slice() }),
             }),
           )
         }
         const common = {
-          info: Object.freeze({ ...info }),
+          info: Object.freeze(frameOnly === undefined ? { ...info } : { ...info, frames: 1 }),
           diagnostics: Object.freeze([...opened.diagnostics]),
           ...(provenance === undefined ? {} : { provenance }),
         }
