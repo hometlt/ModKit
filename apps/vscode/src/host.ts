@@ -1420,7 +1420,17 @@ function serveVsCode(
   /** Codec-declared entries that stand for their source; read once per window. */
   const anchors = anchorDocumentIndex(services.inventory)
 
-  const openSubject: SubjectOpener = async (requested, signal) => {
+  const openSubject: SubjectOpener = (requested, signal) => openSubjectAs(requested, signal, true)
+  /*
+   * `preview: false` opens the codec alone. Warming a realm needs no more, and a map's world is the
+   * slow part: the warm-up prepared Amphion's world for 104 s and threw it away, while the page
+   * prepared the same world beside it (v82).
+   */
+  const openSubjectAs = async (
+    requested: string,
+    signal: AbortSignal | undefined,
+    preview: boolean,
+  ): ReturnType<SubjectOpener> => {
     const generation = beginsSubjectOpen()
     if (requested.startsWith('modkit-source:')) {
       if (!options.readContentSource) throw new Error('Content source provider is unavailable')
@@ -1507,9 +1517,10 @@ function serveVsCode(
         )
         const result = await services.open(request)
         finished?.()
-        if (result.state === 'opened') {
+        if (result.state === 'opened' && !preview) opened = result
+        if (result.state === 'opened' && preview) {
           const contentSources = await options.contentSources?.()
-          const preview = await prepareVsCodeMapPreview({
+          const prepared = await prepareVsCodeMapPreview({
             services,
             opened: result,
             grant: request.grant,
@@ -1523,9 +1534,9 @@ function serveVsCode(
               : { resourcePlanResolver: options.mapPreviewResourcePlanResolver }),
             ...(signal === undefined ? {} : { signal }),
           })
-          opened = preview.opened
-          mapPreviewCandidates = preview.candidates
-          return preview.opened
+          opened = prepared.opened
+          mapPreviewCandidates = prepared.candidates
+          return prepared.opened
         }
         return result
       },
@@ -2336,7 +2347,7 @@ function serveVsCode(
       if (warmed.has(subjectKey(path))) return
       warmed.add(subjectKey(path))
       const started = performance.now()
-      void openSubject(path)
+      void openSubjectAs(path, undefined, false)
         .then(async answer => {
           await answer.session?.dispose()
           options.timing?.mark(
