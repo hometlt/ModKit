@@ -99,7 +99,11 @@ export const WORLD_VIEWER_TEXTURE_BYTES_PER_MODEL = 2 * 1024 * 1024
 /** One model's textures once `maxModelBytes` is spent. */
 export const WORLD_VIEWER_SPENT_TEXTURE_BYTES_PER_MODEL = 256 * 1024
 export const WORLD_VIEWER_MAX_CONCURRENT_MODEL_ACQUISITIONS = 4
-export const WORLD_VIEWER_MAX_TERRAIN_TEXTURES = 256
+/**
+ * A bound on terrain texture requests, not on their bytes: those share `maxModelBytes` out, one ask
+ * per texture. Westwood's theater tiles are one texture per subtile — 911 small diamonds on a TS map.
+ */
+export const WORLD_VIEWER_MAX_TERRAIN_TEXTURES = 4096
 
 export interface CandidateWorldViewerOptions {
   readonly maxLayers: number
@@ -563,7 +567,7 @@ export async function inspectCandidateWorld(
   }
   const terrainTextures = new Map<string, SceneRendererTexture>()
   const terrainTextureDiagnostics: Diagnostic[] = []
-  const terrainTextureIds = [
+  const allTerrainTextureIds = [
     ...new Set(
       inspected.flatMap(({ layer }) => [
         ...(layer.materials ?? []).flatMap(material =>
@@ -587,7 +591,16 @@ export async function inspectCandidateWorld(
         ...(layer.weightRasters ?? []).map(raster => raster.resourceId),
       ]),
     ),
-  ].slice(0, WORLD_VIEWER_MAX_TERRAIN_TEXTURES)
+  ]
+  const terrainTextureIds = allTerrainTextureIds.slice(0, WORLD_VIEWER_MAX_TERRAIN_TEXTURES)
+  if (allTerrainTextureIds.length > terrainTextureIds.length)
+    terrainTextureDiagnostics.push(
+      diagnostic(
+        'warning',
+        'x3.ui/world-terrain-textures-capped',
+        `the terrain names ${allTerrainTextureIds.length} textures; the first ${terrainTextureIds.length} are loaded.`,
+      ),
+    )
   if (options.previous?.snapshotId === identity.snapshotId) {
     for (const resourceId of terrainTextureIds) {
       const previous = options.previous.terrainTextures?.get(resourceId)
