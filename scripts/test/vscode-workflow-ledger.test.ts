@@ -141,8 +141,8 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
       },
       decisionRequired: 0,
       releaseCandidateGaps: 5,
-      // the 1 October surface: accounts, sources, resources, maps, languages and their menus
-      currentX3ObservedFacts: 240,
+      // the 1 October surface: accounts, sources, resources, maps, languages, the mod wiki
+      currentX3ObservedFacts: 248,
     })
     expect(ledger.counts.byKind).toEqual({
       'cli-command': 5,
@@ -248,19 +248,20 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
     ).toHaveLength(126)
   })
 
-  it('records the factual 64→79, 11→6, 8→20 and 6→4 surface change', () => {
+  it('records the factual 64→82, 11→9, 8→20 and 6→4 surface change', () => {
     const ledger = JSON.parse(readFileSync(committedLedger, 'utf8'))
     expect(ledger.surfaceComparison).toEqual({
       legacyVsCode: { commands: 64, customEditors: 11, languages: 8, views: 6 },
       currentX3VsCode: {
-        // 1 October: accounts, sources, resources, map and world editors, the game languages
-        commands: 79,
-        configurationProperties: 20,
-        customEditors: 8,
+        // 1 October: accounts, sources, resources, map and world editors, the game languages, the
+        // mod wiki, folder conversion
+        commands: 82,
+        configurationProperties: 22,
+        customEditors: 9,
         fileSystemSchemes: 2,
         keybindings: 0,
         languages: 20,
-        menus: 102,
+        menus: 104,
         runtimeOnlyCommands: 4,
         viewContainers: 1,
         views: 4,
@@ -285,7 +286,7 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
       'Доказанные callers: Automation, CLI, Electron, PWA, `server`, VS Code.',
     )
     expect(status).not.toContain('PWA не заявлен')
-    expect(ledger.currentX3Facts).toHaveLength(240)
+    expect(ledger.currentX3Facts).toHaveLength(248)
     expect(
       ledger.currentX3Facts.every((row: { state: string }) => row.state === 'observed-only'),
     ).toBe(true)
@@ -431,7 +432,9 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
         'modkit.accounts.signOut',
         'modkit.addExtensionFolder',
         'modkit.browseContainer',
+        'modkit.closeContainers',
         'modkit.contentSources',
+        'modkit.convertFolder',
         'modkit.explainResolution',
         'modkit.exportDiagnostics',
         'modkit.extensions.completeGameSupport',
@@ -464,6 +467,7 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
         'modkit.openMap2D',
         'modkit.openMap3D',
         'modkit.openModCard',
+        'modkit.openModWiki',
         'modkit.openResource',
         'modkit.openWith',
         'modkit.refreshContainer',
@@ -512,7 +516,9 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
         'modkit.accounts.signOut',
         'modkit.addExtensionFolder',
         'modkit.browseContainer',
+        'modkit.closeContainers',
         'modkit.contentSources',
+        'modkit.convertFolder',
         'modkit.explainResolution',
         'modkit.exportDiagnostics',
         'modkit.extensions.completeGameSupport',
@@ -547,6 +553,7 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
         'modkit.openMap2D',
         'modkit.openMap3D',
         'modkit.openModCard',
+        'modkit.openModWiki',
         'modkit.openResource',
         'modkit.openWith',
         'modkit.refreshContainer',
@@ -598,7 +605,7 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
       ],
       externalOrBuiltinCommands: [],
       legacyKeybindings: 0,
-      currentX3Menus: 102,
+      currentX3Menus: 104,
       currentX3Keybindings: 0,
     })
     expect(ledger.ownerBlockers).toEqual([])

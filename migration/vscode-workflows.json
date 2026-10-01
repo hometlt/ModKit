@@ -406,10 +406,24 @@
       "state": "observed-only"
     },
     {
+      "factId": "x3:vscode-command:modkit.closeContainers",
+      "kind": "vscode-command",
+      "key": "modkit.closeContainers",
+      "workflowId": "vscode/container-vfs-cache",
+      "state": "observed-only"
+    },
+    {
       "factId": "x3:vscode-command:modkit.contentSources",
       "kind": "vscode-command",
       "key": "modkit.contentSources",
       "workflowId": "vscode/source-workspace-lifecycle",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-command:modkit.convertFolder",
+      "kind": "vscode-command",
+      "key": "modkit.convertFolder",
+      "workflowId": "vscode/asset-inspect-preview-convert",
       "state": "observed-only"
     },
     {
@@ -633,6 +647,13 @@
       "factId": "x3:vscode-command:modkit.openModCard",
       "kind": "vscode-command",
       "key": "modkit.openModCard",
+      "workflowId": "vscode/navigation-relations-refactors",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-command:modkit.openModWiki",
+      "kind": "vscode-command",
+      "key": "modkit.openModWiki",
       "workflowId": "vscode/navigation-relations-refactors",
       "state": "observed-only"
     },
@@ -966,6 +987,20 @@
       "state": "observed-only"
     },
     {
+      "factId": "x3:vscode-configuration-property:modkit.documentDiagnosticsDelay",
+      "kind": "vscode-configuration-property",
+      "key": "modkit.documentDiagnosticsDelay",
+      "workflowId": "vscode/manifest-settings",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-configuration-property:modkit.documentUpdateDelay",
+      "kind": "vscode-configuration-property",
+      "key": "modkit.documentUpdateDelay",
+      "workflowId": "vscode/manifest-settings",
+      "state": "observed-only"
+    },
+    {
       "factId": "x3:vscode-configuration-property:modkit.extensionPackages",
       "kind": "vscode-configuration-property",
       "key": "modkit.extensionPackages",
@@ -1103,6 +1138,13 @@
       "kind": "vscode-custom-editor",
       "key": "modkit.playbackViewer",
       "workflowId": "vscode/asset-inspect-preview-convert",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-custom-editor:modkit.wikiViewer",
+      "kind": "vscode-custom-editor",
+      "key": "modkit.wikiViewer",
+      "workflowId": "vscode/navigation-relations-refactors",
       "state": "observed-only"
     },
     {
@@ -1512,6 +1554,13 @@
       "state": "observed-only"
     },
     {
+      "factId": "x3:vscode-menu-item:explorer%2Fcontext/modkit.convertFolder//explorerResourceIsFolder%20%26%26%20resourceScheme%20%3D%3D%20file/navigation%4019",
+      "kind": "vscode-menu-item",
+      "key": "explorer%2Fcontext/modkit.convertFolder//explorerResourceIsFolder%20%26%26%20resourceScheme%20%3D%3D%20file/navigation%4019",
+      "workflowId": "vscode/asset-inspect-preview-convert",
+      "state": "observed-only"
+    },
+    {
       "factId": "x3:vscode-menu-item:explorer%2Fcontext/modkit.game.launchActiveMap//resourceExtname%20%3D~%20%2F%5E%5C.(sc2map%7Cs2ma)%24%2Fi/navigation%4090",
       "kind": "vscode-menu-item",
       "key": "explorer%2Fcontext/modkit.game.launchActiveMap//resourceExtname%20%3D~%20%2F%5E%5C.(sc2map%7Cs2ma)%24%2Fi/navigation%4090",
@@ -1719,6 +1768,13 @@
       "kind": "vscode-menu-item",
       "key": "view%2Fitem%2Fcontext/modkit.openExplorer//view%20%3D%3D%20modkit.sources%20%26%26%20viewItem%20%3D~%20%2F%5EmodkitSource%5C.(%3F%3AproviderRoot%7CpublicRoot%7ClocalRoot%7Cinstallation)(%3F%3A%5C.(%3F%3Amounted%7Cmounting))%3F%24%2F/explorer%400",
       "workflowId": "vscode/source-workspace-lifecycle",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-menu-item:view%2Fitem%2Fcontext/modkit.openModWiki//view%20%3D%3D%20modkit.resources%20%26%26%20viewItem%20%3D%3D%20modkitResource.mod/navigation%402",
+      "kind": "vscode-menu-item",
+      "key": "view%2Fitem%2Fcontext/modkit.openModWiki//view%20%3D%3D%20modkit.resources%20%26%26%20viewItem%20%3D%3D%20modkitResource.mod/navigation%402",
+      "workflowId": "vscode/navigation-relations-refactors",
       "state": "observed-only"
     },
     {

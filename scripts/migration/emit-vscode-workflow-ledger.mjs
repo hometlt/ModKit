@@ -803,8 +803,8 @@ const legacyKeybindings = inventory.units.filter(unit => unit.kind === 'vscode-k
 if (legacyKeybindings !== 0) {
   fail(`legacy VS Code keybinding ratchet drifted: expected 0, found ${legacyKeybindings}`)
 }
-if (menuCommands.length !== 102) {
-  fail(`current X3 menu ratchet drifted: expected 102, found ${menuCommands.length}`)
+if (menuCommands.length !== 104) {
+  fail(`current X3 menu ratchet drifted: expected 104, found ${menuCommands.length}`)
 }
 if (keybindingCommands.length !== 0) {
   fail(`current X3 keybinding ratchet drifted: expected 0, found ${keybindingCommands.length}`)

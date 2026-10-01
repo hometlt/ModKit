@@ -16,7 +16,7 @@ Ledger распределяет **266** legacy-единиц (VS Code 258 + CLI 8
 | `release-candidate`   | 36     |
 | `post-release`        | 126    |
 
-Product GA gaps: **5**. Наблюдаемых текущих X3-фактов: **240**.
+Product GA gaps: **5**. Наблюдаемых текущих X3-фактов: **248**.
 
 ### 1.1. Workflow-строки
 
