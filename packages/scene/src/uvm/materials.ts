@@ -2,6 +2,7 @@ import type { JsonObject, RasterResourcePort } from '@modkit/sdk'
 import type {
   SceneRendererDiagnostic,
   SceneRendererMaterial,
+  SceneRendererPbr,
   SceneRendererTeamColor,
   SceneRendererTexture,
 } from '@modkit/sdk/renderer'
@@ -90,6 +91,69 @@ export function uvmMaterialDrawOrder(
   return {
     ...(typeof depthWrite === 'boolean' ? { depthWrite } : {}),
     ...(typeof priority === 'number' && Number.isFinite(priority) ? { priority } : {}),
+  }
+}
+
+/**
+ * The glTF metallic-roughness inputs of a UVM material for the base route's `pbr` shading: the
+ * factors, and the metallic-roughness, occlusion and emissive textures (as `uvm-texture-<index>`)
+ * when they read the base colour's UVs. What the route does not draw — a normal map, a texture on
+ * other UVs — is listed in `unrendered`.
+ */
+export function uvmMaterialPbr(
+  material: JsonObject,
+  baseTexCoord: number,
+): Readonly<{ pbr: SceneRendererPbr; unrendered: readonly string[] }> {
+  const pbr = object(material['pbrMetallicRoughness'] ?? {}, 'PBR material')
+  const unrendered: string[] = []
+  const unit = (value: unknown, fallback: number, label: string) => {
+    const result = value ?? fallback
+    if (typeof result !== 'number' || !Number.isFinite(result) || result < 0 || result > 1)
+      throw new TypeError(`material ${label} must be in 0..1`)
+    return result
+  }
+  const texture = (reference: unknown, label: string) => {
+    if (reference === undefined) return undefined
+    const binding = object(reference, `${label} texture`)
+    const index = binding['index']
+    if (typeof index !== 'number' || !Number.isSafeInteger(index) || index < 0)
+      throw new TypeError(`material ${label} texture index is invalid`)
+    if ((binding['texCoord'] ?? 0) !== baseTexCoord) {
+      unrendered.push(`reads its ${label} texture from other UVs than its base colour`)
+      return undefined
+    }
+    return `uvm-texture-${String(index)}`
+  }
+  if (material['normalTexture'] !== undefined) unrendered.push('has a normal map, not drawn yet')
+  const emissive = material['emissiveFactor']
+  if (
+    emissive !== undefined &&
+    (!Array.isArray(emissive) ||
+      emissive.length !== 3 ||
+      !emissive.every(item => typeof item === 'number' && item >= 0 && item <= 1))
+  )
+    throw new TypeError('material emissiveFactor must be three components in 0..1')
+  const occlusion = material['occlusionTexture']
+  const metallicRoughnessTexture = texture(pbr['metallicRoughnessTexture'], 'metallic-roughness')
+  const occlusionTexture = texture(occlusion, 'occlusion')
+  const emissiveTexture = texture(material['emissiveTexture'], 'emissive')
+  return {
+    pbr: {
+      metallic: unit(pbr['metallicFactor'], 1, 'metallicFactor'),
+      roughness: unit(pbr['roughnessFactor'], 1, 'roughnessFactor'),
+      ...(metallicRoughnessTexture === undefined ? {} : { metallicRoughnessTexture }),
+      ...(occlusionTexture === undefined
+        ? {}
+        : {
+            occlusionTexture,
+            occlusionStrength: unit(field(occlusion, 'strength'), 1, 'occlusion strength'),
+          }),
+      ...(emissive === undefined
+        ? {}
+        : { emissive: [emissive[0], emissive[1], emissive[2]] as [number, number, number] }),
+      ...(emissiveTexture === undefined ? {} : { emissiveTexture }),
+    },
+    unrendered,
   }
 }
 

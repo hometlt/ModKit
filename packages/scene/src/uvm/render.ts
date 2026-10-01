@@ -41,6 +41,7 @@ import { array, field, finiteArray, object, safeIndex, vector4 } from './values.
 import {
   uvmMaterialBlendEffect,
   uvmMaterialDrawOrder,
+  uvmMaterialPbr,
   uvmMaterialShader,
   uvmMaterialTeamColor,
   uvmMaterialResources,
@@ -67,7 +68,8 @@ export interface UvmRenderOptions extends UvmFrameOptions {
 
 /** Read a UVM frame, then invoke the selected standard scene renderer. The request is inert JSON:
  * {schemaVersion:1, viewport:{width,height}, camera:{viewProjection:[16 numbers],viewMatrix?,eyePosition?},
- *  sceneIndex?, modelState?, clipId?, time?, poseSamples?:[{clipId,time,weight,additive?}], materialContext?:{teamColor?,teamColorIntensity?,ambient?,environment?}, collisions?, shadows?, clearColor?, rendererId?}.
+ *  sceneIndex?, modelState?, clipId?, time?, poseSamples?:[{clipId,time,weight,additive?}], materialContext?:{teamColor?,teamColorIntensity?,ambient?,environment?}, collisions?, shadows?, clearColor?, rendererId?, lighting?:'unlit'|'material'}.
+ * `lighting: 'material'` shades glTF materials with their own metallic-roughness (`pbr`); KHR_materials_unlit stays unlit.
  * A `clipId` is the `id` of a clip in `UV_game_animation_clips` (the publisher's clip id), or
  * `animation-<index>` of a glTF animation when the document has no clip catalog; `time` is seconds.
  * Native extras are never interpreted here. Unsupported material/effect rendering is reported.
@@ -189,6 +191,7 @@ async function prepareNestedUvmRender(
           'sceneIndex',
           'modelState',
           'materialContext',
+          'lighting',
         ].includes(key),
     )
   )
@@ -209,6 +212,10 @@ async function prepareNestedUvmRender(
     height > 4096
   )
     throw new TypeError('UVM render dimensions must be integers in 1..4096')
+  // `material`: glTF materials take their own light (pbr); `unlit` (the default) draws them flat
+  const lighting = input['lighting'] ?? 'unlit'
+  if (lighting !== 'unlit' && lighting !== 'material')
+    throw new TypeError('UVM render lighting must be unlit or material')
   const materialInput = object(input['materialContext'] ?? {}, 'material context')
   const environment = snapshotEnvironment(materialInput['environment'])
   if (
@@ -640,15 +647,17 @@ async function prepareNestedUvmRender(
           `Material ${index} texture transform is preserved but not rendered.`,
         )
       const shader = uvmMaterialShader(material)
-      if (
-        shader === undefined &&
-        field(material['extensions'], 'KHR_materials_unlit') === undefined
-      )
+      const unlit = field(material['extensions'], 'KHR_materials_unlit') !== undefined
+      const lit = lighting === 'material' && !unlit ? uvmMaterialPbr(material, texCoord) : undefined
+      if (lit === undefined && shader === undefined && !unlit)
         warn(
           'common.uvm/pbr-lighting-unrendered',
           `Material ${index} is rendered without PBR lighting by the current base-color scene route.`,
         )
-      if (
+      if (lit !== undefined)
+        for (const reason of lit.unrendered)
+          warn('common.uvm/material-features-unrendered', `Material ${index} ${reason}.`)
+      else if (
         material['normalTexture'] !== undefined ||
         material['emissiveTexture'] !== undefined ||
         pbr['metallicRoughnessTexture'] !== undefined
@@ -675,7 +684,8 @@ async function prepareNestedUvmRender(
         baseColor,
         alphaMode: alphaMode === 'OPAQUE' ? 'opaque' : alphaMode === 'MASK' ? 'mask' : 'blend',
         alphaCutoff,
-        shading: 'unlit',
+        shading: lit !== undefined && simpleEffect === undefined ? 'pbr' : 'unlit',
+        ...(lit === undefined || simpleEffect !== undefined ? {} : { pbr: lit.pbr }),
         ...(textureIndex === undefined ? {} : { baseColorTexture: `uvm-texture-${textureIndex}` }),
         doubleSided: material['doubleSided'] === true,
         ...uvmMaterialDrawOrder(material),
@@ -839,6 +849,9 @@ async function prepareNestedUvmRender(
     return [
       materialTextures.get(materialId ?? '') ?? documentTextureIndex(material?.baseColorTexture),
       mask === undefined || mask === 'whole' ? undefined : documentTextureIndex(mask.texture),
+      documentTextureIndex(material?.pbr?.metallicRoughnessTexture),
+      documentTextureIndex(material?.pbr?.occlusionTexture),
+      documentTextureIndex(material?.pbr?.emissiveTexture),
     ].filter((index): index is number => index !== undefined)
   }
   const usedTextures = new Set(primitives.flatMap(primitive => drawnTextures(primitive.materialId)))
