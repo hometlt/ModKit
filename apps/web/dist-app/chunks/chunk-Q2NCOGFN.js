@@ -1,20 +1,16 @@
 import {
   createVideoViewer
-} from "./chunk-IFXQVKX6.js";
+} from "./chunk-C6BD32XP.js";
 import {
   createAudioViewer
-} from "./chunk-J5MSXPDW.js";
+} from "./chunk-4FI3CWMI.js";
 import {
   createRelationGraphViewer
-} from "./chunk-O7X6ZY4K.js";
-import {
-  metadataFieldProjections
-} from "./chunk-64G7DVXS.js";
+} from "./chunk-OL2ISRO5.js";
 import {
   DEFAULT_MODEL_ANIMATION_BUDGET,
   DEFAULT_MODEL_SKELETON_BUDGET,
   MODEL_FACET_CONTRACTS,
-  applyColorKeyTransparency,
   commitOperationWrite,
   composeTrsMatrix,
   createModelSceneSampler,
@@ -28,18 +24,24 @@ import {
   snapshotJson,
   snapshotModelAnimations,
   snapshotModelSkeleton
-} from "./chunk-R76FSVUV.js";
+} from "./chunk-IKJEYTGU.js";
+import {
+  metadataFieldProjections
+} from "./chunk-64G7DVXS.js";
+import {
+  applyColorKeyTransparency
+} from "./chunk-MVL6AV2G.js";
 import {
   createImageViewer,
   createNamespaceViewer,
   invokeRefusalMessage
-} from "./chunk-NCJM34Q7.js";
+} from "./chunk-VYEBGA3S.js";
 import {
   compileMatcher,
   compilePattern,
   createMediaShell,
   textMatches
-} from "./chunk-L2ERXEFC.js";
+} from "./chunk-XMM5M5LA.js";
 import {
   CALCULATIONS_FALLBACK_MESSAGES,
   CARD_FALLBACK_MESSAGES,
@@ -82,7 +84,7 @@ import {
   setViewerText,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-J4UN5ND3.js";
+} from "./chunk-BD2JSGWD.js";
 import {
   A1_SPEC_SCHEMA_ENTRIES,
   AUXILIARY_DATA_SOURCE_SURFACES,
@@ -27429,6 +27431,19 @@ async function requestEditorSave(host) {
   editor.dispatchEvent(new CustomEvent(EDITOR_SAVE_REQUEST, { detail }));
   return operation === void 0 ? void 0 : operation;
 }
+var EDITOR_EDITED_EVENT = "modkit-editor-edited";
+var EDITOR_HISTORY_REQUEST = "modkit-editor-history-request";
+function announceEditorEdit(root) {
+  root.dispatchEvent(new CustomEvent(EDITOR_EDITED_EVENT, { bubbles: true }));
+}
+function handleEditorHistoryRequest(root, history) {
+  const listener = (event) => {
+    const request = event;
+    request.detail.answer(request.detail.direction === "undo" ? history.undo() : history.redo());
+  };
+  root.addEventListener(EDITOR_HISTORY_REQUEST, listener);
+  return () => root.removeEventListener(EDITOR_HISTORY_REQUEST, listener);
+}
 
 // ../MODDING/modkit-core/packages/ui/dist/explorer/editors.js
 function fileKindOf(name) {
@@ -27722,6 +27737,25 @@ function createEditorArea(document2, options) {
     root,
     get groupCount() {
       return groups.length;
+    },
+    activeViews() {
+      const handle = focused.active?.handle;
+      return handle === void 0 ? void 0 : { views: handle.views.map((view) => view.id), active: handle.activeView };
+    },
+    async showView(viewId) {
+      const group2 = focused;
+      const handle = group2.active?.handle;
+      if (handle === void 0 || !handle.views.some((view) => view.id === viewId))
+        return false;
+      await handle.show(viewId);
+      syncPicker(group2);
+      report2({
+        ...group2.active === void 0 ? {} : { path: group2.active.entry.id },
+        view: handle.views.find((view) => view.id === handle.activeView)?.label ?? viewId,
+        detail: group2.active?.entry.name ?? "",
+        severity: "info"
+      });
+      return true;
     },
     async close(entryId) {
       for (const group2 of groups) {
@@ -46676,7 +46710,7 @@ var lazyEditor = Object.freeze({
   abiVersion: 1,
   default: Object.freeze({
     async mount(args) {
-      const { monacoEditor } = await import("./editor-V3FR2FZG.js");
+      const { monacoEditor } = await import("./editor-YXRHL67O.js");
       return monacoEditor.mount(args);
     }
   })
@@ -66194,6 +66228,25 @@ function createHexEditor(options = {}) {
         syncDirty();
         announce();
       };
+      const history = [];
+      const future = [];
+      const editByte = (absolute, base, next) => {
+        const from = pending.get(absolute.toString(10))?.after ?? base;
+        setByte(absolute, base, next);
+        if (from === next)
+          return;
+        history.push({ offset: absolute, base, from, to: next });
+        future.length = 0;
+        announceEditorEdit(root);
+      };
+      const step = (from, into, value2) => {
+        const record9 = from.pop();
+        if (record9 === void 0)
+          return false;
+        setByte(record9.offset, record9.base, value2(record9));
+        into.push(record9);
+        return true;
+      };
       const syncDirty = () => {
         const dirty = pending.size > 0;
         save.disabled = !dirty;
@@ -66206,6 +66259,8 @@ function createHexEditor(options = {}) {
         windowOffset = view.offset;
         original = view.bytes;
         pending.clear();
+        history.length = 0;
+        future.length = 0;
         drawWindow();
       };
       const drawWindow = () => {
@@ -66234,6 +66289,11 @@ function createHexEditor(options = {}) {
               if (!/^[0-9a-f]$/iu.test(data) || current.length >= 2)
                 event.preventDefault();
             });
+            cell.addEventListener("input", () => {
+              const text4 = (cell.textContent ?? "").trim();
+              if (text4.length === 2 && HEX_BYTE.test(text4))
+                editByte(absolute, value2, Number.parseInt(text4, 16));
+            });
             cell.addEventListener("blur", () => {
               const text4 = (cell.textContent ?? "").trim();
               if (!HEX_BYTE.test(text4)) {
@@ -66242,7 +66302,7 @@ function createHexEditor(options = {}) {
                 setByte(absolute, value2, known2);
                 return;
               }
-              setByte(absolute, value2, Number.parseInt(text4, 16));
+              editByte(absolute, value2, Number.parseInt(text4, 16));
             });
           }
           const ascii = element(line, "span", { part: "hex.ascii" });
@@ -66270,7 +66330,7 @@ function createHexEditor(options = {}) {
                 setByte(absolute, value2, known2);
                 return;
               }
-              setByte(absolute, value2, code);
+              editByte(absolute, value2, code);
             });
           }
         }
@@ -66317,6 +66377,8 @@ function createHexEditor(options = {}) {
         }
         original = updated;
         pending.clear();
+        history.length = 0;
+        future.length = 0;
         drawWindow();
         setState(root, []);
         setViewerText(status, localizer.text("editor.committedRanges", { count: runs.length }));
@@ -66333,6 +66395,10 @@ function createHexEditor(options = {}) {
         });
       });
       const removeSaveRequest = handleEditorSaveRequest(root, commit);
+      const removeHistoryRequest = handleEditorHistoryRequest(root, {
+        undo: () => step(history, future, (record9) => record9.from),
+        redo: () => step(future, history, (record9) => record9.to)
+      });
       await renderWindow();
       return {
         async update(next) {
@@ -66341,6 +66407,7 @@ function createHexEditor(options = {}) {
         },
         async unmount() {
           removeSaveRequest();
+          removeHistoryRequest();
           await scope.close();
           root.remove();
         }
@@ -67828,13 +67895,13 @@ var PREVIEW_STAGES = [
 async function defaultPreviewStage(kind, localizer) {
   switch (kind) {
     case "model":
-      return (await import("./model-N6NQJ2XF.js")).createModelViewer({ localizer });
+      return (await import("./model-7IYRC2ZH.js")).createModelViewer({ localizer });
     case "image":
-      return (await import("./image-4GTKF6RY.js")).createImageViewer({ localizer });
+      return (await import("./image-XQXXF36Y.js")).createImageViewer({ localizer });
     case "video":
-      return (await import("./video-GMA4TETO.js")).createVideoViewer({ localizer });
+      return (await import("./video-N4PSPMCL.js")).createVideoViewer({ localizer });
     case "audio":
-      return (await import("./audio-NFD54EFZ.js")).createAudioViewer({ localizer });
+      return (await import("./audio-CIF6JXHH.js")).createAudioViewer({ localizer });
   }
 }
 function embedPreview(sections, args, scope, localizer, previews) {
@@ -67873,7 +67940,7 @@ function embedRelationGraph(sections, args, scope, localizer, graph) {
   return [
     ...sections,
     stageSection({ id: "relations-graph", title: localizer.text("card.relationGraph"), expanded: false }, scope, localizer, "card.relationGraphUnavailable", async (host) => {
-      const module = graph ?? (await import("./graph-WQWTT6XD.js")).createRelationGraphViewer({ localizer });
+      const module = graph ?? (await import("./graph-BYRCH66U.js")).createRelationGraphViewer({ localizer });
       return scope.signal.aborted ? void 0 : module.mount({ ...args, container: host, signal: scope.signal });
     })
   ];
@@ -69866,6 +69933,7 @@ var PLAYBACK_MAX_MARKERS = 2e3;
 var PLAYBACK_MAX_SERIES_POINTS = 400;
 var PLAYBACK_MAX_OBJECTS = 4096;
 var PLAYBACK_RATES = Object.freeze([0.5, 1, 2, 4, 8, 16]);
+var PLAYBACK_SEEK_STEP_MS = 5e3;
 var PAGE_LIMIT2 = 1024;
 var MAP_SIZE = 480;
 var GRID_CELLS = 16;
@@ -69981,6 +70049,20 @@ function svg2(parent, tag, attributes) {
   parent.append(node);
   return node;
 }
+function playbackKeyAction(event, snapshot3) {
+  if (event.ctrlKey || event.altKey || event.metaKey)
+    return void 0;
+  const target = event.target;
+  if (target?.closest?.("input, select, textarea, button") != null)
+    return void 0;
+  if (event.key === " ")
+    return { kind: "toggle" };
+  if (event.key !== "ArrowLeft" && event.key !== "ArrowRight")
+    return void 0;
+  const step = event.key === "ArrowRight" ? PLAYBACK_SEEK_STEP_MS : -PLAYBACK_SEEK_STEP_MS;
+  const end = typeof snapshot3.durationMs === "number" ? snapshot3.durationMs : Infinity;
+  return { kind: "seek", positionMs: Math.min(end, Math.max(0, snapshot3.positionMs + step)) };
+}
 function createPlaybackViewer(options = {}) {
   const localizer = withEnglishUiFallback(options.localizer, TRANSPORT_PLAYBACK_FALLBACK_MESSAGES);
   return defineViewerModule({
@@ -70018,6 +70100,18 @@ function createPlaybackViewer(options = {}) {
         const option = element(rate, "option", { text: `${value2}\xD7` });
         option.value = String(value2);
       }
+      const units = element(bar, "output", { part: "playback.units" });
+      units.hidden = world === void 0;
+      const openWorld = options.openWorld;
+      if (openWorld !== void 0 && world !== void 0) {
+        const show3d = element(bar, "button", {
+          part: "transport.button",
+          text: localizer.text("viewer.playbackWorld")
+        });
+        show3d.type = "button";
+        show3d.title = localizer.text("viewer.playbackWorldTitle");
+        show3d.addEventListener("click", () => openWorld());
+      }
       const status = element(stage, "output", { part: "transport.status" });
       const body = element(stage, "div", { part: "playback.body" });
       const mapSection = element(body, "section", { part: "playback.map" });
@@ -70035,6 +70129,10 @@ function createPlaybackViewer(options = {}) {
       participantList.setAttribute("aria-label", localizer.text("viewer.playbackParticipants"));
       const charts = element(side, "section", { part: "playback.charts" });
       charts.setAttribute("aria-label", localizer.text("viewer.playbackCharts"));
+      const kinds = element(side, "div", { part: "playback.kinds" });
+      kinds.setAttribute("role", "group");
+      kinds.setAttribute("aria-label", localizer.text("viewer.playbackKinds"));
+      const hiddenKinds = /* @__PURE__ */ new Set();
       const eventList = element(side, "ol", { part: "playback.events" });
       eventList.setAttribute("aria-label", localizer.text("viewer.playbackEvents"));
       let snapshot3 = await transport.snapshot(scope.signal);
@@ -70156,10 +70254,12 @@ function createPlaybackViewer(options = {}) {
         }
         eventList.replaceChildren();
         activeEvent = -1;
+        const kindLabel = (kind) => known(localizer.text(`viewer.playbackEvent.${kind}`), `viewer.playbackEvent.${kind}`, kind);
         eventItems = value2.markers.map((marker) => {
           const item = element(eventList, "li", { part: "playback.event" });
+          item.hidden = hiddenKinds.has(marker.kind);
           const button = element(item, "button", {
-            text: `${formatPlaybackTime(marker.positionMs)} ${known(localizer.text(`viewer.playbackEvent.${marker.kind}`), `viewer.playbackEvent.${marker.kind}`, marker.kind)} ${marker.label}`
+            text: `${formatPlaybackTime(marker.positionMs)} ${kindLabel(marker.kind)} ${marker.label}`
           });
           button.type = "button";
           const swatch = colors.get(marker.participantId ?? "");
@@ -70170,6 +70270,27 @@ function createPlaybackViewer(options = {}) {
           });
           return item;
         });
+        kinds.replaceChildren();
+        const present = [...new Set(value2.markers.map((marker) => marker.kind))];
+        for (const kind of present) {
+          const label = element(kinds, "label", { part: "playback.kind" });
+          const box = element(label, "input");
+          box.type = "checkbox";
+          box.checked = !hiddenKinds.has(kind);
+          label.append(kindLabel(kind));
+          box.addEventListener("change", () => {
+            if (box.checked)
+              hiddenKinds.delete(kind);
+            else
+              hiddenKinds.add(kind);
+            value2.markers.forEach((marker, index2) => {
+              const item = eventItems[index2];
+              if (item !== void 0)
+                item.hidden = hiddenKinds.has(marker.kind);
+            });
+          });
+        }
+        kinds.hidden = present.length < 2;
         const notes = [
           world === void 0 ? localizer.text("viewer.playbackNoWorld") : "",
           value2.fidelity === "sampled" ? localizer.text("viewer.playbackSampled") : "",
@@ -70194,6 +70315,7 @@ function createPlaybackViewer(options = {}) {
             if (frame === void 0 || scope.signal.aborted)
               continue;
             drawPlaybackMap(canvas, frame, colors);
+            setViewerText(units, localizer.text("viewer.playbackUnits", { count: frame.objects.length }));
             canvas.setAttribute("aria-label", localizer.text("viewer.playbackMap", {
               time: formatPlaybackTime(snapshot3.positionMs),
               count: frame.objects.length
@@ -70218,15 +70340,28 @@ function createPlaybackViewer(options = {}) {
         void invoke(snapshot3.controls.seek, { positionMs: Number(seek.value) });
       };
       const onRate = () => void invoke(snapshot3.controls.setRate, { rate: Number(rate.value) });
+      const onKey = (event) => {
+        const action = playbackKeyAction(event, snapshot3);
+        if (action === void 0)
+          return;
+        event.preventDefault();
+        if (action.kind === "toggle")
+          onPlay();
+        else
+          void invoke(snapshot3.controls.seek, { positionMs: action.positionMs });
+      };
+      stage.tabIndex = 0;
       play.addEventListener("click", onPlay);
       seek.addEventListener("input", onSeekInput);
       seek.addEventListener("change", onSeekChange);
       rate.addEventListener("change", onRate);
+      stage.addEventListener("keydown", onKey);
       scope.cleanup(() => {
         play.removeEventListener("click", onPlay);
         seek.removeEventListener("input", onSeekInput);
         seek.removeEventListener("change", onSeekChange);
         rate.removeEventListener("change", onRate);
+        stage.removeEventListener("keydown", onKey);
       });
       if (typeof transport.timeline === "function") {
         setState(side, ["loading"]);

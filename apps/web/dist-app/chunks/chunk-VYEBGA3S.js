@@ -2,7 +2,7 @@ import {
   collectEncodedMedia,
   createMediaShell,
   mountContributedSections
-} from "./chunk-L2ERXEFC.js";
+} from "./chunk-XMM5M5LA.js";
 import {
   IMAGE_EDITING_FALLBACK_MESSAGES,
   IMAGE_FALLBACK_MESSAGES,
@@ -17,7 +17,7 @@ import {
   setViewerText,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-J4UN5ND3.js";
+} from "./chunk-BD2JSGWD.js";
 import {
   createSubjectCandidateProvider,
   isKnowledgeTarget,
@@ -913,6 +913,49 @@ function describeEntry(entry, localizer) {
   return parts.join(" \xB7 ");
 }
 
+// ../MODDING/modkit-core/packages/ui/dist/image/frames.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var MAX_GRID_FRAMES = 4096;
+function gridFrames(width, height, columns, rows) {
+  const across = Math.max(1, Math.floor(columns));
+  const down = Math.max(1, Math.floor(rows));
+  const cellWidth = Math.floor(width / across);
+  const cellHeight = Math.floor(height / down);
+  if (cellWidth < 1 || cellHeight < 1 || across * down > MAX_GRID_FRAMES)
+    return [];
+  const frames = [];
+  for (let row = 0; row < down; row += 1) {
+    for (let column = 0; column < across; column += 1) {
+      frames.push({
+        x: column * cellWidth,
+        y: row * cellHeight,
+        width: cellWidth,
+        height: cellHeight,
+        name: String(frames.length)
+      });
+    }
+  }
+  return frames;
+}
+function shownRegion(region, base, shownWidth, shownHeight) {
+  const kx = shownWidth / Math.max(1, base.width);
+  const ky = shownHeight / Math.max(1, base.height);
+  const x = Math.min(shownWidth - 1, Math.max(0, Math.floor(region.x * kx)));
+  const y = Math.min(shownHeight - 1, Math.max(0, Math.floor(region.y * ky)));
+  return {
+    x,
+    y,
+    width: Math.max(1, Math.min(shownWidth - x, Math.round(region.width * kx))),
+    height: Math.max(1, Math.min(shownHeight - y, Math.round(region.height * ky))),
+    ...region.name === void 0 ? {} : { name: region.name }
+  };
+}
+function frameFileName(base, index, count, name) {
+  const number = String(index).padStart(Math.max(3, String(count - 1).length), "0");
+  const label = name === void 0 || name === String(index) ? "" : name.replace(/[^\w.-]+/gu, "_");
+  return `${base}_frame_${number}${label === "" ? "" : `_${label}`}.png`;
+}
+
 // ../MODDING/modkit-core/packages/ui/dist/field-editor/index.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
@@ -1676,6 +1719,7 @@ function fidelityNote(plan) {
 var isRejected = (result) => result.state === "rejected";
 
 // ../MODDING/modkit-core/packages/ui/dist/image/index.js
+var FRAME_PREVIEW_EDGE = 192;
 var IMAGE_MAXIMUM_BYTES = 64 * 1024 * 1024;
 var IMAGE_MAXIMUM_EXPORTED_SUBRESOURCES = 256;
 function convertedFileName(baseName, presetId, ext) {
@@ -1869,6 +1913,23 @@ function createImageViewer(options = {}) {
       let workingCanvas;
       let editing;
       let placed = { x: 0, y: 0, width: 1, height: 1, scale: 1 };
+      let frameSource = "atlas";
+      let gridColumns = 4;
+      let gridRows = 4;
+      let frameIndex = 0;
+      let outlineFrames = false;
+      let framesPerSecond = 10;
+      let frameTimer;
+      let framePreview;
+      let frameLabel;
+      const usingAtlas = () => frameSource === "atlas" && (info?.atlasRegions?.length ?? 0) > 0;
+      const frames = () => info === void 0 ? [] : usingAtlas() ? info.atlasRegions ?? [] : gridFrames(info.width, info.height, gridColumns, gridRows);
+      const stopFrames = () => {
+        if (frameTimer !== void 0)
+          clearInterval(frameTimer);
+        frameTimer = void 0;
+      };
+      scope.cleanup(stopFrames);
       const context = canvas.getContext("2d");
       if (context === null)
         throw new TypeError("2d canvas context is unavailable");
@@ -2093,6 +2154,21 @@ function createImageViewer(options = {}) {
             context.restore();
           }
         }
+        const regions = outlineFrames && info !== void 0 ? frames() : [];
+        if (regions.length > 0 && info !== void 0) {
+          const unitX = width / info.width;
+          const unitY = height / info.height;
+          context.save();
+          context.strokeStyle = globalThis.getComputedStyle?.(stage).getPropertyValue("--mk-color-accent").trim() || "#3794ff";
+          regions.forEach((region, index) => {
+            const strong = index === frameIndex;
+            context.globalAlpha = strong ? 1 : 0.55;
+            context.lineWidth = strong ? 2 : 1;
+            context.strokeRect(x + region.x * unitX + context.lineWidth / 2, y + region.y * unitY + context.lineWidth / 2, Math.max(1, region.width * unitX - context.lineWidth), Math.max(1, region.height * unitY - context.lineWidth));
+          });
+          context.restore();
+        }
+        drawFramePreview();
         setViewerText(readout, `${compare === "off" ? "" : localizer.text("viewer.imageCompareWith", {
           subresource: subresourceLabel(info, compareWith),
           mode: compare
@@ -2101,6 +2177,37 @@ function createImageViewer(options = {}) {
         renderOverlay();
         publishStatus();
         editing?.refresh();
+      };
+      const drawFramePreview = () => {
+        const current = shown();
+        const list = frames();
+        const region = list[frameIndex];
+        if (framePreview === void 0 || current === void 0 || info === void 0)
+          return;
+        if (region === void 0) {
+          framePreview.hidden = true;
+          if (frameLabel !== void 0)
+            setViewerText(frameLabel, "");
+          return;
+        }
+        framePreview.hidden = false;
+        const crop = shownRegion(region, info, current.width, current.height);
+        const fitted = Math.min(FRAME_PREVIEW_EDGE / crop.width, FRAME_PREVIEW_EDGE / crop.height);
+        const scale = fitted >= 1 ? Math.floor(fitted) : fitted;
+        framePreview.width = Math.max(1, Math.round(crop.width * scale));
+        framePreview.height = Math.max(1, Math.round(crop.height * scale));
+        const preview = framePreview.getContext("2d");
+        if (preview === null)
+          return;
+        preview.imageSmoothingEnabled = scale < 1;
+        preview.drawImage(current.image, crop.x, crop.y, crop.width, crop.height, 0, 0, framePreview.width, framePreview.height);
+        if (frameLabel !== void 0) {
+          const named = region.name !== void 0 && region.name !== String(frameIndex);
+          setViewerText(frameLabel, `${localizer.text("viewer.imageFrameLabel", {
+            index: frameIndex + 1,
+            count: list.length
+          })}${named ? ` \xB7 ${region.name}` : ""}`);
+        }
       };
       const resize = new ResizeObserver(() => paint());
       resize.observe(stage);
@@ -2294,6 +2401,171 @@ function createImageViewer(options = {}) {
           }
           paint();
         })();
+      };
+      const exportFrames = () => {
+        const write = options.exportBytes;
+        const current = shown();
+        const list = frames();
+        if (write === void 0 || current === void 0 || info === void 0)
+          return;
+        if (list.length === 0)
+          return;
+        const base = info;
+        const baseName = exportSafeName(options.exportBaseName === void 0 ? "image" : options.exportBaseName(descriptor));
+        note = localizer.text("viewer.imageFramesExporting", { count: list.length });
+        paint();
+        void (async () => {
+          try {
+            const { encodePng } = await import("./raster-LXQ2C4TI.js");
+            const scratch = root.ownerDocument.createElement("canvas");
+            const scratchContext = scratch.getContext("2d", { willReadFrequently: true });
+            if (scratchContext === null)
+              throw new TypeError("2d canvas context is unavailable");
+            const files = [];
+            for (const [index, region] of list.entries()) {
+              const crop = shownRegion(region, base, current.width, current.height);
+              scratch.width = crop.width;
+              scratch.height = crop.height;
+              scratchContext.clearRect(0, 0, crop.width, crop.height);
+              scratchContext.drawImage(current.image, crop.x, crop.y, crop.width, crop.height, 0, 0, crop.width, crop.height);
+              const pixels = scratchContext.getImageData(0, 0, crop.width, crop.height);
+              files.push({
+                name: frameFileName(baseName, index, list.length, region.name),
+                mediaType: "image/png",
+                bytes: await encodePng(crop.width, crop.height, new Uint8Array(pixels.data.buffer), scope.signal)
+              });
+            }
+            const outcome = await write(files, scope.signal);
+            note = outcome.state === "written" ? localizer.text("viewer.imageExported", { count: outcome.names.length }) : localizer.text("viewer.imageExportRefused", { reason: outcome.reason });
+          } catch (error) {
+            note = localizer.text("viewer.imageExportRefused", {
+              reason: error instanceof Error ? error.message : String(error)
+            });
+          }
+          paint();
+        })();
+      };
+      const renderFramesSection = () => {
+        if (info === void 0)
+          return;
+        const atlas = info.atlasRegions ?? [];
+        const section = shell.section("frames", localizer.text("viewer.imageSectionFrames"), {
+          icon: "symbol-array",
+          collapsed: atlas.length === 0
+        });
+        const settings = element(section.body, "div", {
+          part: "image.subresources",
+          role: "toolbar"
+        });
+        const restart = () => {
+          frameIndex = 0;
+          renderSections();
+          paint();
+        };
+        if (atlas.length > 0) {
+          const select = element(settings, "select");
+          select.setAttribute("aria-label", localizer.text("viewer.imageFramesSource"));
+          for (const [value, label] of [
+            ["atlas", localizer.text("viewer.imageFramesAtlas", { count: atlas.length })],
+            ["grid", localizer.text("viewer.imageFramesGrid")]
+          ]) {
+            const option = element(select, "option", { text: label });
+            option.value = value;
+          }
+          select.value = usingAtlas() ? "atlas" : "grid";
+          select.addEventListener("change", () => {
+            frameSource = select.value === "grid" ? "grid" : "atlas";
+            restart();
+          });
+        }
+        if (!usingAtlas()) {
+          for (const [label, value, set] of [
+            [
+              localizer.text("viewer.imageFramesColumns"),
+              gridColumns,
+              (next) => {
+                gridColumns = next;
+              }
+            ],
+            [
+              localizer.text("viewer.imageFramesRows"),
+              gridRows,
+              (next) => {
+                gridRows = next;
+              }
+            ]
+          ]) {
+            const field = element(settings, "label");
+            field.append(label, " ");
+            const input = element(field, "input");
+            input.type = "number";
+            input.min = "1";
+            input.max = "256";
+            input.value = String(value);
+            input.addEventListener("change", () => {
+              const next = Number(input.value);
+              if (!Number.isInteger(next) || next < 1 || next > 256)
+                return;
+              set(next);
+              frameIndex = 0;
+              paint();
+            });
+          }
+        }
+        const outline = element(settings, "label");
+        const box = element(outline, "input");
+        box.type = "checkbox";
+        box.checked = outlineFrames;
+        outline.append(" ", localizer.text("viewer.imageFramesOutline"));
+        box.addEventListener("change", () => {
+          outlineFrames = box.checked;
+          paint();
+        });
+        framePreview = element(section.body, "canvas", {
+          part: "image.frame-preview"
+        });
+        const controls = element(section.body, "div", {
+          part: "image.subresources",
+          role: "toolbar"
+        });
+        const go = (delta) => {
+          const count = frames().length;
+          if (count === 0)
+            return;
+          frameIndex = ((frameIndex + delta) % count + count) % count;
+          paint();
+        };
+        button(controls, "\u25C0", localizer.text("viewer.imageFramePrevious"), () => go(-1));
+        frameLabel = element(controls, "span", { part: "image.readout" });
+        button(controls, "\u25B6", localizer.text("viewer.imageFrameNext"), () => go(1));
+        const play = button(controls, localizer.text(frameTimer === void 0 ? "viewer.play" : "viewer.pause"), localizer.text("viewer.imageFramesPlayTitle"), () => {
+          if (frameTimer !== void 0)
+            stopFrames();
+          else
+            frameTimer = setInterval(() => go(1), 1e3 / framesPerSecond);
+          play.textContent = localizer.text(frameTimer === void 0 ? "viewer.play" : "viewer.pause");
+          play.setAttribute("aria-pressed", String(frameTimer !== void 0));
+        }, frameTimer !== void 0);
+        const speed = element(controls, "input");
+        speed.type = "number";
+        speed.min = "1";
+        speed.max = "60";
+        speed.value = String(framesPerSecond);
+        speed.title = localizer.text("viewer.imageFramesFps");
+        speed.setAttribute("aria-label", localizer.text("viewer.imageFramesFps"));
+        speed.addEventListener("change", () => {
+          const next = Number(speed.value);
+          if (!Number.isFinite(next) || next < 1 || next > 60)
+            return;
+          framesPerSecond = next;
+          if (frameTimer !== void 0) {
+            stopFrames();
+            frameTimer = setInterval(() => go(1), 1e3 / framesPerSecond);
+          }
+        });
+        if (options.exportBytes !== void 0) {
+          button(controls, localizer.text("viewer.imageFramesExport"), localizer.text("viewer.imageFramesExportTitle"), exportFrames);
+        }
       };
       const editSurface = {
         pixels: () => ensureWorking(),
@@ -2513,6 +2785,7 @@ function createImageViewer(options = {}) {
             }
           }
         }
+        renderFramesSection();
         if (options.editing !== false) {
           const section = shell.section("edit", localizer.text("viewer.imageSectionEdit"), {
             icon: "tools",

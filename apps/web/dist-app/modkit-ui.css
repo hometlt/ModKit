@@ -1948,7 +1948,8 @@
     accent-color: var(--mk-color-accent);
   }
 
-  [data-mk-part='playback.time'] {
+  [data-mk-part='playback.time'],
+  [data-mk-part='playback.units'] {
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
     color: var(--mk-color-fg-muted);
@@ -2047,6 +2048,20 @@
     stroke: var(--mk-color-accent);
     stroke-width: 1;
     vector-effect: non-scaling-stroke;
+  }
+
+  [data-mk-part='playback.kinds'] {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--mk-space-1) var(--mk-space-3);
+    font-size: var(--mk-font-size-xs);
+    color: var(--mk-color-fg-muted);
+  }
+
+  [data-mk-part='playback.kind'] {
+    display: inline-flex;
+    gap: var(--mk-space-1);
+    align-items: center;
   }
 
   [data-mk-part='playback.events'] {
@@ -2529,6 +2544,20 @@
     font-family: var(--mk-font-mono);
     font-size: var(--mk-font-size-xs);
     font-variant-numeric: tabular-nums;
+  }
+
+  /* The shown sprite-sheet frame, enlarged by whole pixels over a checker of canvas tokens. */
+  [data-mk-part='image.frame-preview'] {
+    display: block;
+    max-inline-size: 100%;
+    margin-block: var(--mk-space-2);
+    border: 1px solid var(--mk-color-border);
+    background: repeating-conic-gradient(
+        var(--mk-color-canvas-grid) 0% 25%,
+        var(--mk-color-canvas-bg) 0% 50%
+      )
+      0 0 / 12px 12px;
+    image-rendering: pixelated;
   }
 
   [data-mk-part='audio.waveform'] {

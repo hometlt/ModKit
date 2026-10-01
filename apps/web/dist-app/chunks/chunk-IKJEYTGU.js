@@ -2,16 +2,19 @@ import {
   createOrbitController
 } from "./chunk-O2DY4UGD.js";
 import {
+  applyColorKeyTransparency
+} from "./chunk-MVL6AV2G.js";
+import {
   convertedFileName,
   exportOffer,
   invokeRefusalMessage,
   isRejected,
   mountFieldEditor
-} from "./chunk-NCJM34Q7.js";
+} from "./chunk-VYEBGA3S.js";
 import {
   createMediaShell,
   mountContributedSections
-} from "./chunk-L2ERXEFC.js";
+} from "./chunk-XMM5M5LA.js";
 import {
   MODEL_FALLBACK_MESSAGES,
   MODEL_GIZMO_FALLBACK_MESSAGES,
@@ -26,7 +29,7 @@ import {
   setViewerText,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-J4UN5ND3.js";
+} from "./chunk-BD2JSGWD.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunk-BLWUC7LO.js";
@@ -145,7 +148,7 @@ function normalizeQuat(value) {
   return [x / length, y / length, z / length, w / length];
 }
 function decomposeMatrix4(matrix2) {
-  const m = (at2) => matrix2[at2] ?? (at2 % 5 === 0 ? 1 : 0);
+  const m = (at) => matrix2[at] ?? (at % 5 === 0 ? 1 : 0);
   const determinant = m(0) * (m(5) * m(10) - m(9) * m(6)) - m(4) * (m(1) * m(10) - m(9) * m(2)) + m(8) * (m(1) * m(6) - m(5) * m(2));
   const sx = (determinant < 0 ? -1 : 1) * Math.hypot(m(0), m(1), m(2));
   const sy = Math.hypot(m(4), m(5), m(6));
@@ -2170,133 +2173,6 @@ function samplePosition(value) {
   return [value[0], value[1], value[2]];
 }
 
-// ../MODDING/modkit-core/packages/codec-kit/dist/raster/index.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-
-// ../MODDING/modkit-core/packages/codec-kit/dist/raster/encoders.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-var PNG_SIGNATURE = Object.freeze([137, 80, 78, 71, 13, 10, 26, 10]);
-var ascii = new TextEncoder();
-
-// ../MODDING/modkit-core/packages/codec-kit/dist/raster/png.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-var SIGNATURE = Object.freeze([137, 80, 78, 71, 13, 10, 26, 10]);
-var DEFAULT_MAX_PIXELS = 64 * 1024 * 1024;
-
-// ../MODDING/modkit-core/packages/codec-kit/dist/raster/ops.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-var at = (pixels, index) => pixels[index];
-function checked(image) {
-  if (image.pixels.length !== image.width * image.height * 4) {
-    throw new TypeError(`image: expected ${image.width * image.height * 4} bytes, got ${image.pixels.length}`);
-  }
-  return image;
-}
-function applyColorKeyTransparency(image, options) {
-  checked(image);
-  const tolerance = options.tolerance ?? 0;
-  const replacement = options.replacement ?? { r: 0, g: 0, b: 0, a: 0 };
-  const out = image.pixels.slice();
-  for (let index = 0; index < out.length; index += 4) {
-    const close = Math.abs(at(out, index) - options.target.r) <= tolerance && Math.abs(at(out, index + 1) - options.target.g) <= tolerance && Math.abs(at(out, index + 2) - options.target.b) <= tolerance;
-    if (close) {
-      out[index] = replacement.r;
-      out[index + 1] = replacement.g;
-      out[index + 2] = replacement.b;
-      out[index + 3] = replacement.a;
-    }
-  }
-  return { width: image.width, height: image.height, pixels: out };
-}
-
-// ../MODDING/modkit-core/packages/codec-kit/dist/raster/jpeg.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-var ZIGZAG = Int32Array.from([
-  0,
-  1,
-  8,
-  16,
-  9,
-  2,
-  3,
-  10,
-  17,
-  24,
-  32,
-  25,
-  18,
-  11,
-  4,
-  5,
-  12,
-  19,
-  26,
-  33,
-  40,
-  48,
-  41,
-  34,
-  27,
-  20,
-  13,
-  6,
-  7,
-  14,
-  21,
-  28,
-  35,
-  42,
-  49,
-  56,
-  57,
-  50,
-  43,
-  36,
-  29,
-  22,
-  15,
-  23,
-  30,
-  37,
-  44,
-  51,
-  58,
-  59,
-  52,
-  45,
-  38,
-  31,
-  39,
-  46,
-  53,
-  60,
-  61,
-  54,
-  47,
-  55,
-  62,
-  63
-]);
-var MAX_DIMENSION = 1 << 15;
-var COS = (() => {
-  const table = new Float64Array(64);
-  for (let u = 0; u < 8; u += 1) {
-    const scale = u === 0 ? Math.SQRT1_2 : 1;
-    for (let x = 0; x < 8; x += 1)
-      table[u * 8 + x] = scale * Math.cos((2 * x + 1) * u * Math.PI / 16);
-  }
-  return table;
-})();
-
-// ../MODDING/modkit-core/packages/codec-kit/dist/raster/embedded.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-
-// ../MODDING/modkit-core/packages/codec-kit/dist/raster/tga.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-
-// ../MODDING/modkit-core/packages/codec-kit/dist/raster/pcx.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-
 // ../MODDING/modkit-core/packages/ui/dist/model/source.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var MODEL_MAXIMUM_PRIMITIVE_BYTES = 64 * 1024 * 1024;
@@ -4273,7 +4149,6 @@ export {
   snapshotModelSkeleton,
   createModelSkeletonNodes,
   createModelSceneSampler,
-  applyColorKeyTransparency,
   MODEL_MAXIMUM_PRIMITIVE_BYTES,
   MODEL_MAXIMUM_PRIMITIVES,
   loadModelStage,
