@@ -10,7 +10,7 @@ import {
 import "./chunks/chunk-RP2NZG33.js";
 import "./chunks/chunk-MT2JUZZJ.js";
 import "./chunks/chunk-R2P56FTH.js";
-import "./chunks/chunk-P5QJHSUW.js";
+import "./chunks/chunk-5A3JGV66.js";
 import "./chunks/chunk-3PXCW2IQ.js";
 import {
   ModkitError

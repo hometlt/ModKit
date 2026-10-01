@@ -7,7 +7,7 @@ import {
   assembleSubjectDescriptor,
   createAssetSession,
   createUtf8TextDataSource
-} from "../../chunks/chunk-6WWYE5QA.js";
+} from "../../chunks/chunk-LDOMA6BE.js";
 import "../../chunks/chunk-5GGWVEQJ.js";
 import {
   RESOLVED_DATA_WORKSPACE_CONTRACT,
@@ -16,7 +16,7 @@ import {
 } from "../../chunks/chunk-RP2NZG33.js";
 import "../../chunks/chunk-MT2JUZZJ.js";
 import "../../chunks/chunk-R2P56FTH.js";
-import "../../chunks/chunk-P5QJHSUW.js";
+import "../../chunks/chunk-5A3JGV66.js";
 import {
   revisionId,
   toPortableProjectionReceipt

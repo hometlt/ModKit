@@ -20,7 +20,7 @@ import {
   createByteRangeSource,
   createLazyTableDataSource,
   createUtf8TextDataSource
-} from "../../chunks/chunk-6WWYE5QA.js";
+} from "../../chunks/chunk-LDOMA6BE.js";
 import {
   metadataFieldProjections
 } from "../../chunks/chunk-5GGWVEQJ.js";
@@ -99,7 +99,7 @@ import {
   NATIVE_MODEL_ENCODER_CONTRACT,
   NATIVE_MODEL_ENCODER_MATCHER_PROFILE
 } from "../../chunks/chunk-R2P56FTH.js";
-import "../../chunks/chunk-P5QJHSUW.js";
+import "../../chunks/chunk-5A3JGV66.js";
 import {
   PERMISSION_CLASSES,
   algorithmQualifiedDigest,
@@ -20509,11 +20509,11 @@ function admittedTerrainTransform(snapshot2, terrain, exact) {
   }
   return ["x", "y", "z"].every((axis) => transform.bounds.minimum[axis] === minimum[axis] && transform.bounds.maximum[axis] === maximum[axis]) ? transform : void 0;
 }
-function admittedWorldCanonicalTransform(snapshot2, terrainTransform) {
+function admittedWorldCanonicalTransform(snapshot2, terrainTransform, hasTerrain) {
   const transform = snapshot2.uvwTransform;
   if (transform === void 0)
     return {};
-  if (terrainTransform === void 0) {
+  if (terrainTransform === void 0 && hasTerrain) {
     return { refusal: "the terrain has no admitted exact native transform to qualify it against" };
   }
   const finite = (value) => Number.isFinite(value);
@@ -20521,7 +20521,7 @@ function admittedWorldCanonicalTransform(snapshot2, terrainTransform) {
   const sha2562 = (value) => /^sha256:[0-9a-f]{64}$/u.test(value);
   const { basis, heightfield, bounds, proof } = transform;
   const axes = Object.values(transform.axes);
-  const [columns, rows] = terrainTransform.heightMap.dim;
+  const [columns, rows] = terrainTransform?.heightMap.dim ?? [0, 0];
   const checks = [
     ["its schemaVersion is not 1", () => transform.schemaVersion !== 1],
     ["it belongs to another snapshot", () => transform.snapshotId !== snapshot2.snapshotId],
@@ -20546,8 +20546,8 @@ function admittedWorldCanonicalTransform(snapshot2, terrainTransform) {
       () => new Set(axes.map((item) => item.sourceAxis)).size !== 3
     ],
     [
-      `its heightfield ${String(heightfield.columns)}x${String(heightfield.rows)} is not the terrain grid ${String(columns)}x${String(rows)}`,
-      () => !Number.isSafeInteger(heightfield.columns) || !Number.isSafeInteger(heightfield.rows) || heightfield.columns !== columns || heightfield.rows !== rows
+      terrainTransform === void 0 ? `its heightfield ${String(heightfield.columns)}x${String(heightfield.rows)} is not a grid of positive size` : `its heightfield ${String(heightfield.columns)}x${String(heightfield.rows)} is not the terrain grid ${String(columns)}x${String(rows)}`,
+      () => !Number.isSafeInteger(heightfield.columns) || !Number.isSafeInteger(heightfield.rows) || (terrainTransform === void 0 ? heightfield.columns <= 0 || heightfield.rows <= 0 : heightfield.columns !== columns || heightfield.rows !== rows)
     ],
     [
       "its cellSize is not positive or unitsPerCell differs from it",
@@ -20585,6 +20585,8 @@ function admittedWorldCanonicalTransform(snapshot2, terrainTransform) {
   const failed2 = checks.find(([, fails]) => fails());
   if (failed2 !== void 0)
     return { refusal: failed2[0] };
+  if (terrainTransform === void 0)
+    return { transform };
   const nativeBounds = terrainTransform.bounds;
   const corners = [nativeBounds.minimum.x, nativeBounds.maximum.x].flatMap((x) => [nativeBounds.minimum.y, nativeBounds.maximum.y].flatMap((y) => [nativeBounds.minimum.z, nativeBounds.maximum.z].map((z) => ({ x, y, z }))));
   let minimum = { x: Infinity, y: Infinity, z: Infinity };
@@ -20622,7 +20624,7 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize, mode
   const terrainSummary = semantic.terrain;
   const terrainExact = hasExactTerrainGrid(terrainSummary);
   const terrainTransform = admittedTerrainTransform(snapshot2, terrainSummary, terrainExact);
-  const { transform: uvwTransform, refusal: uvwTransformRefusal } = admittedWorldCanonicalTransform(snapshot2, terrainTransform);
+  const { transform: uvwTransform, refusal: uvwTransformRefusal } = admittedWorldCanonicalTransform(snapshot2, terrainTransform, terrainSummary !== void 0);
   const terrainLod = terrainExact ? "exact" : "sampled";
   const terrainMaterialExact = snapshot2.terrainMaterials?.exact === true && (uvwTransform === void 0 || snapshot2.terrainMaterials.width === uvwTransform.heightfield.columns && snapshot2.terrainMaterials.height === uvwTransform.heightfield.rows);
   const terrainWeightRasterExact = (snapshot2.terrainMaterials?.weightRasters?.length ?? 0) > 0 && snapshot2.terrainMaterials.weightRasters.every((raster) => Number.isSafeInteger(raster.width) && raster.width > 0 && Number.isSafeInteger(raster.height) && raster.height > 0 && raster.materialIds.length > 0 && raster.materialIds.length <= 4 && raster.rgba?.byteLength === raster.width * raster.height * 4);
@@ -20983,11 +20985,15 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize, mode
       itemCount: semanticObjects.length,
       lods: Object.freeze(["exact"]),
       contentRevision: contentRevisions.objects,
-      ...semanticObjects.length === 0 ? { reason: "semantic snapshot contains no objects" } : duplicateObjectCount > 0 || incompleteObjectPositionCount > 0 ? {
+      ...semanticObjects.length === 0 ? { reason: "semantic snapshot contains no objects" } : duplicateObjectCount > 0 || incompleteObjectPositionCount > 0 || uvwTransform === void 0 ? {
         reason: [
           ...duplicateObjectCount > 0 ? [`${duplicateObjectCount} duplicate object identities were omitted`] : [],
           ...incompleteObjectPositionCount > 0 ? [
             `${incompleteObjectPositionCount} objects publish two-dimensional source positions; elevation remains unknown`
+          ] : [],
+          // a viewer then places them by their native axes as (x, z, y)
+          ...uvwTransform === void 0 ? [
+            `objects have no canonical UVW placement: ${uvwTransformRefusal === void 0 ? "no map-native to UVW transform is published" : `the UVW transform was refused (${uvwTransformRefusal})`}`
           ] : []
         ].join("; ")
       } : {}

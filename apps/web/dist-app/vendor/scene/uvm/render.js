@@ -2,8 +2,9 @@ import {
   prepareUvmTextureImages,
   readCollisionMesh,
   readUvmModel,
+  uvmImageFilters,
   uvmImageTexels
-} from "../../../chunks/chunk-ELMFYHZT.js";
+} from "../../../chunks/chunk-J6HN2JJW.js";
 import {
   IDENTITY_MATERIAL_FRAME,
   RENDER_MATERIAL_SHADER,
@@ -21001,7 +21002,7 @@ function uvmMaterialResources(materials, maxBytes, signal) {
       result.set(material.id, materialLayerResources(material.shader));
   return result;
 }
-async function acquireUvmMaterialTextures(resources, port, maxBytes, diagnostics, signal) {
+async function acquireUvmMaterialTextures(resources, port, maxBytes, diagnostics, signal, filters = /* @__PURE__ */ new Map()) {
   const textures = [], textureIds = /* @__PURE__ */ new Map();
   let remaining = maxBytes;
   let resourceIndex = 0;
@@ -21093,11 +21094,13 @@ async function acquireUvmMaterialTextures(resources, port, maxBytes, diagnostics
           message: `${path}: drawn at mip ${mipLevel} (${width}\xD7${height}) of ${result.info.width}\xD7${result.info.height} to fit the texture budget`
         });
       textureIds.set(path, id);
+      const filter = filters.get(path);
       textures.push({
         id,
         width,
         height,
         rgba,
+        ...filter === void 0 ? {} : { filter },
         ...cube ? { dimension: "cube" } : {},
         ...result.info.channelLayout === void 0 ? {} : { channelLayout: result.info.channelLayout },
         ...result.info.compression === void 0 ? {} : { compression: result.info.compression }
@@ -21593,7 +21596,7 @@ async function prepareNestedUvmRender(bytes, value, options, depth, cache) {
   const materialResources = uvmMaterialResources(materials.filter((material) => activeMaterials.has(material.id)), stageBytes, signal);
   diagnostics.push(...samplerDiagnostics);
   let remainingDecodedBytes = Math.floor(rasterBudget / 2);
-  const acquiredMaterials = await acquireUvmMaterialTextures(materialResources, rasterResources, remainingDecodedBytes, diagnostics, signal);
+  const acquiredMaterials = await acquireUvmMaterialTextures(materialResources, rasterResources, remainingDecodedBytes, diagnostics, signal, uvmImageFilters(document2));
   for (const texture of acquiredMaterials.textures)
     remainingDecodedBytes -= texture.rgba.length;
   const drawnByShader = new Set(materials.filter((material) => material.shader?.id === RENDER_MATERIAL_SHADER && (materialResources.get(material.id) ?? []).length === acquiredMaterials.bindings(material.id).length).map((material) => material.id));

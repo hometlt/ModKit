@@ -2592,7 +2592,7 @@ function isNodeShallow(value2) {
   if (typeof value2 !== "object" || value2 === null || Array.isArray(value2))
     return false;
   const node = value2;
-  return typeof node["name"] === "string" && optionalString(node["type"]) && optionalString(node["template"]) && Array.isArray(node["path"]) && node["path"].every((part) => typeof part === "string") && Array.isArray(node["children"]) && recordsOk(node["properties"], (item) => typeof item["name"] === "string" && optionalString(item["val"]) && optionalString(item["resolved"]) && isValueSource(item["source"])) && recordsOk(node["anchors"], (item) => typeof item["side"] === "string" && optionalString(item["relative"]) && optionalString(item["pos"]) && optionalString(item["offset"]) && isValueSource(item["source"]));
+  return typeof node["name"] === "string" && optionalString(node["type"]) && optionalString(node["template"]) && isValueSource(node["source"]) && Array.isArray(node["path"]) && node["path"].every((part) => typeof part === "string") && Array.isArray(node["children"]) && recordsOk(node["properties"], (item) => typeof item["name"] === "string" && optionalString(item["val"]) && optionalString(item["resolved"]) && isValueSource(item["source"])) && recordsOk(node["anchors"], (item) => typeof item["side"] === "string" && optionalString(item["relative"]) && optionalString(item["pos"]) && optionalString(item["offset"]) && isValueSource(item["source"]));
 }
 function isGameTemplateTreeNode(value2, maximumNodes = 1e5) {
   const pending = [value2];

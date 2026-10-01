@@ -7,11 +7,11 @@ import {
   invokeRefusalMessage,
   isRejected,
   mountFieldEditor
-} from "./chunk-HYSNN3B5.js";
+} from "./chunk-SEYT6RD2.js";
 import {
   createMediaShell,
   mountContributedSections
-} from "./chunk-GP4R44PF.js";
+} from "./chunk-32RBDAGR.js";
 import {
   MODEL_FALLBACK_MESSAGES,
   MODEL_GIZMO_FALLBACK_MESSAGES,
@@ -26,7 +26,7 @@ import {
   setViewerText,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-ZKA6ERAI.js";
+} from "./chunk-SMVZNSDO.js";
 import {
   applyColorKeyTransparency,
   billboardCameraRotation,
@@ -343,9 +343,13 @@ function sceneMaterials(refs, textures, shaded) {
        * it by the untextured grey made textured models darker than untextured ones — worst on the
        * dark textures where detail matters most.
        */
-      baseColor: texture === void 0 ? materialColorFor(ref.id) : MODEL_TEXTURED_BASE_COLOR,
+      // A stated factor multiplies the texture, or is the colour itself without one (glTF).
+      baseColor: ref.baseColorFactor ?? (texture === void 0 ? materialColorFor(ref.id) : MODEL_TEXTURED_BASE_COLOR),
       ...texture === void 0 ? {} : { baseColorTexture: texture.id },
-      shading: shaded ? "lambert" : "unlit",
+      shading: shaded && ref.unlit !== true ? "lambert" : "unlit",
+      ...ref.doubleSided === void 0 ? {} : { doubleSided: ref.doubleSided },
+      ...ref.depthWrite === void 0 ? {} : { depthWrite: ref.depthWrite },
+      ...ref.priority === void 0 ? {} : { priority: ref.priority },
       ...ref.alphaMode === void 0 ? {} : { alphaMode: ref.alphaMode },
       ...ref.alphaCutoff === void 0 ? {} : { alphaCutoff: ref.alphaCutoff },
       ...ref.shader === void 0 ? {} : { shader: ref.shader },
@@ -1764,7 +1768,7 @@ function createModelViewer(options = {}) {
               const output = result.output;
               if (output.kind !== "bytes" || !(output.value instanceof Uint8Array))
                 throw new Error(`the codec answered ${output.kind}, not bytes`);
-              const { createUvmFramePreparer } = await import("./render-KR6T4LQ5.js");
+              const { createUvmFramePreparer } = await import("./render-SKC7NDO6.js");
               const raster = options.rasterResources?.(args.descriptor);
               const preparer = createUvmFramePreparer(output.value, {
                 budget: MODEL_EFFECT_BUDGET,

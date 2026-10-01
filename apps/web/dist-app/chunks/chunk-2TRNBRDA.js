@@ -1,12 +1,12 @@
 import {
   createVideoViewer
-} from "./chunk-NZQUMSVU.js";
+} from "./chunk-VACF7Q3Q.js";
 import {
   createAudioViewer
-} from "./chunk-ZUJKKWDD.js";
+} from "./chunk-2TDTIOTQ.js";
 import {
   createRelationGraphViewer
-} from "./chunk-FHVBI4IR.js";
+} from "./chunk-435AQ7QC.js";
 import {
   MODEL_FACET_CONTRACTS,
   commitOperationWrite,
@@ -14,7 +14,7 @@ import {
   fieldWriteRefusal,
   mountFieldEditTarget,
   mountInlineField
-} from "./chunk-4MBVYYX6.js";
+} from "./chunk-6UK2KRST.js";
 import {
   metadataFieldProjections
 } from "./chunk-CW2HIMYV.js";
@@ -104,12 +104,12 @@ import {
   validateContributionManifest,
   writerOfferSatisfies,
   writerSelectionKey
-} from "./chunk-ECZ32GDU.js";
+} from "./chunk-XOX5OSCM.js";
 import {
   createImageViewer,
   createNamespaceViewer,
   invokeRefusalMessage
-} from "./chunk-HYSNN3B5.js";
+} from "./chunk-SEYT6RD2.js";
 import {
   MEDIA_ZOOM_CHOICES,
   canvasPng,
@@ -118,7 +118,7 @@ import {
   createMediaShell,
   mediaFacts,
   textMatches
-} from "./chunk-GP4R44PF.js";
+} from "./chunk-32RBDAGR.js";
 import {
   CALCULATIONS_FALLBACK_MESSAGES,
   CARD_FALLBACK_MESSAGES,
@@ -164,7 +164,7 @@ import {
   uiPreference,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-ZKA6ERAI.js";
+} from "./chunk-SMVZNSDO.js";
 import {
   PERMISSION_CLASSES,
   contributionId,
@@ -240,10 +240,11 @@ import {
   textureNormalFormat,
   unit,
   uvmImageColorKeys,
+  uvmImageFilters,
   uvmImageUri,
   uvmKeyTimesMetadata,
   uvmVisibilityPointer
-} from "./chunk-CBCIV5JO.js";
+} from "./chunk-X7ARX4OZ.js";
 import {
   DEFAULT_MODEL_ANIMATION_BUDGET,
   DEFAULT_MODEL_SKELETON_BUDGET,
@@ -6182,7 +6183,7 @@ function sessionAdapter(realm, session, exposedInput, watch, openingSignal) {
 
 // ../MODDING/modkit-core/packages/host/dist/session.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-var projection = () => import("./subject-projection-VNDCDUZ4.js");
+var projection = () => import("./subject-projection-YWTR4JIR.js");
 function rejected(reason, message) {
   return {
     state: "rejected",
@@ -20436,11 +20437,11 @@ function admittedTerrainTransform(snapshot3, terrain, exact) {
   }
   return ["x", "y", "z"].every((axis) => transform.bounds.minimum[axis] === minimum[axis] && transform.bounds.maximum[axis] === maximum[axis]) ? transform : void 0;
 }
-function admittedWorldCanonicalTransform(snapshot3, terrainTransform) {
+function admittedWorldCanonicalTransform(snapshot3, terrainTransform, hasTerrain) {
   const transform = snapshot3.uvwTransform;
   if (transform === void 0)
     return {};
-  if (terrainTransform === void 0) {
+  if (terrainTransform === void 0 && hasTerrain) {
     return { refusal: "the terrain has no admitted exact native transform to qualify it against" };
   }
   const finite3 = (value) => Number.isFinite(value);
@@ -20448,7 +20449,7 @@ function admittedWorldCanonicalTransform(snapshot3, terrainTransform) {
   const sha2565 = (value) => /^sha256:[0-9a-f]{64}$/u.test(value);
   const { basis: basis2, heightfield, bounds: bounds2, proof } = transform;
   const axes = Object.values(transform.axes);
-  const [columns, rows] = terrainTransform.heightMap.dim;
+  const [columns, rows] = terrainTransform?.heightMap.dim ?? [0, 0];
   const checks = [
     ["its schemaVersion is not 1", () => transform.schemaVersion !== 1],
     ["it belongs to another snapshot", () => transform.snapshotId !== snapshot3.snapshotId],
@@ -20473,8 +20474,8 @@ function admittedWorldCanonicalTransform(snapshot3, terrainTransform) {
       () => new Set(axes.map((item) => item.sourceAxis)).size !== 3
     ],
     [
-      `its heightfield ${String(heightfield.columns)}x${String(heightfield.rows)} is not the terrain grid ${String(columns)}x${String(rows)}`,
-      () => !Number.isSafeInteger(heightfield.columns) || !Number.isSafeInteger(heightfield.rows) || heightfield.columns !== columns || heightfield.rows !== rows
+      terrainTransform === void 0 ? `its heightfield ${String(heightfield.columns)}x${String(heightfield.rows)} is not a grid of positive size` : `its heightfield ${String(heightfield.columns)}x${String(heightfield.rows)} is not the terrain grid ${String(columns)}x${String(rows)}`,
+      () => !Number.isSafeInteger(heightfield.columns) || !Number.isSafeInteger(heightfield.rows) || (terrainTransform === void 0 ? heightfield.columns <= 0 || heightfield.rows <= 0 : heightfield.columns !== columns || heightfield.rows !== rows)
     ],
     [
       "its cellSize is not positive or unitsPerCell differs from it",
@@ -20512,6 +20513,8 @@ function admittedWorldCanonicalTransform(snapshot3, terrainTransform) {
   const failed2 = checks.find(([, fails]) => fails());
   if (failed2 !== void 0)
     return { refusal: failed2[0] };
+  if (terrainTransform === void 0)
+    return { transform };
   const nativeBounds = terrainTransform.bounds;
   const corners = [nativeBounds.minimum.x, nativeBounds.maximum.x].flatMap((x) => [nativeBounds.minimum.y, nativeBounds.maximum.y].flatMap((y) => [nativeBounds.minimum.z, nativeBounds.maximum.z].map((z) => ({ x, y, z }))));
   let minimum = { x: Infinity, y: Infinity, z: Infinity };
@@ -20549,7 +20552,7 @@ function createCandidateWorldSceneLease(snapshot3, provenance, maxPageSize, mode
   const terrainSummary = semantic.terrain;
   const terrainExact = hasExactTerrainGrid(terrainSummary);
   const terrainTransform = admittedTerrainTransform(snapshot3, terrainSummary, terrainExact);
-  const { transform: uvwTransform, refusal: uvwTransformRefusal } = admittedWorldCanonicalTransform(snapshot3, terrainTransform);
+  const { transform: uvwTransform, refusal: uvwTransformRefusal } = admittedWorldCanonicalTransform(snapshot3, terrainTransform, terrainSummary !== void 0);
   const terrainLod = terrainExact ? "exact" : "sampled";
   const terrainMaterialExact = snapshot3.terrainMaterials?.exact === true && (uvwTransform === void 0 || snapshot3.terrainMaterials.width === uvwTransform.heightfield.columns && snapshot3.terrainMaterials.height === uvwTransform.heightfield.rows);
   const terrainWeightRasterExact = (snapshot3.terrainMaterials?.weightRasters?.length ?? 0) > 0 && snapshot3.terrainMaterials.weightRasters.every((raster) => Number.isSafeInteger(raster.width) && raster.width > 0 && Number.isSafeInteger(raster.height) && raster.height > 0 && raster.materialIds.length > 0 && raster.materialIds.length <= 4 && raster.rgba?.byteLength === raster.width * raster.height * 4);
@@ -20910,11 +20913,15 @@ function createCandidateWorldSceneLease(snapshot3, provenance, maxPageSize, mode
       itemCount: semanticObjects.length,
       lods: Object.freeze(["exact"]),
       contentRevision: contentRevisions.objects,
-      ...semanticObjects.length === 0 ? { reason: "semantic snapshot contains no objects" } : duplicateObjectCount > 0 || incompleteObjectPositionCount > 0 ? {
+      ...semanticObjects.length === 0 ? { reason: "semantic snapshot contains no objects" } : duplicateObjectCount > 0 || incompleteObjectPositionCount > 0 || uvwTransform === void 0 ? {
         reason: [
           ...duplicateObjectCount > 0 ? [`${duplicateObjectCount} duplicate object identities were omitted`] : [],
           ...incompleteObjectPositionCount > 0 ? [
             `${incompleteObjectPositionCount} objects publish two-dimensional source positions; elevation remains unknown`
+          ] : [],
+          // a viewer then places them by their native axes as (x, z, y)
+          ...uvwTransform === void 0 ? [
+            `objects have no canonical UVW placement: ${uvwTransformRefusal === void 0 ? "no map-native to UVW transform is published" : `the UVW transform was refused (${uvwTransformRefusal})`}`
           ] : []
         ].join("; ")
       } : {}
@@ -49620,7 +49627,7 @@ function uploadTextures(gl, textures, diagnostics, uploaded) {
     gl.texParameteri(target, gl.TEXTURE_WRAP_T, cube ? gl.CLAMP_TO_EDGE : wrap(texture.wrapV));
     if (cube)
       gl.texParameteri(target, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE);
-    applyTextureFilter(gl, target, "linear");
+    applyTextureFilter(gl, target, texture.filter ?? "linear");
     uploaded.set(texture.id, handle);
   }
   return uploaded;
@@ -62278,7 +62285,31 @@ function templateChain(node) {
   }
   return [...links];
 }
-function renderTreePanel(host, rows, select) {
+var TEMPLATE_REVEAL_EVENT = "modkit-template-reveal";
+var sameDocument = (left, right) => {
+  const normal = (uri) => {
+    let text3 = uri;
+    try {
+      text3 = decodeURIComponent(uri);
+    } catch {
+    }
+    return text3.replaceAll("\\", "/").toLowerCase();
+  };
+  return left === right || normal(left) === normal(right);
+};
+function templateNodeAt(root, uri, offset) {
+  let found2;
+  const pending = [root];
+  for (let node = pending.pop(); node !== void 0; node = pending.pop()) {
+    const source2 = node.source;
+    if (source2?.uri !== void 0 && source2.start !== void 0 && source2.end !== void 0 && source2.start <= offset && offset <= source2.end && sameDocument(source2.uri, uri) && (found2?.source?.start === void 0 || source2.start >= found2.source.start)) {
+      found2 = node;
+    }
+    pending.push(...node.children);
+  }
+  return found2;
+}
+function renderTreePanel(host, rows, select, openSource) {
   const panel = element(host, "nav", { className: "modkit-template__tree", part: "tree" });
   const list = element(panel, "ul", { part: "tree.list", role: "tree" });
   const byKey = /* @__PURE__ */ new Map();
@@ -62297,6 +62328,8 @@ function renderTreePanel(host, rows, select) {
       element(line, "span", { part: "tree.key", text: `\u2192 ${row.node.template}` });
     }
     item.addEventListener("click", () => select(row.key));
+    if (openSource !== void 0)
+      item.addEventListener("dblclick", () => openSource(row.node));
     item.addEventListener("keydown", (event) => {
       const step = event.key === "ArrowDown" ? 1 : event.key === "ArrowUp" ? -1 : 0;
       const next = step === 0 ? void 0 : rows[index + step];
@@ -62310,7 +62343,7 @@ function renderTreePanel(host, rows, select) {
   });
   return byKey;
 }
-function renderPropertiesPanel(panel, node, localizer) {
+function renderPropertiesPanel(panel, node, localizer, openSource) {
   panel.replaceChildren();
   if (node === void 0) {
     element(panel, "p", { part: "viewer.empty", text: localizer.text("viewer.templateSelectNode") });
@@ -62319,6 +62352,14 @@ function renderPropertiesPanel(panel, node, localizer) {
   element(panel, "strong", { part: "viewer.status", text: node.path.join("/") });
   if (node.type !== void 0)
     element(panel, "div", { part: "viewer.status", text: node.type });
+  if (openSource !== void 0 && node.source?.uri !== void 0) {
+    const show = element(panel, "button", {
+      part: "operations.button",
+      text: localizer.text("viewer.templateShowSource")
+    });
+    show.type = "button";
+    show.addEventListener("click", () => openSource(node));
+  }
   const chain = templateChain(node);
   if (chain.length > 0) {
     element(panel, "div", {
@@ -62345,8 +62386,18 @@ function renderPropertiesPanel(panel, node, localizer) {
     });
   }
 }
-function renderTemplateBody(document, host, tree, drawable, images, localizer, selection) {
+function renderTemplateBody(document, host, tree, drawable, images, localizer, selection, openSource) {
   const body = element(host, "div", { className: "modkit-template__body", part: "template.body" });
+  const showSource = openSource === void 0 ? void 0 : (node) => {
+    const source2 = node.source;
+    if (source2?.uri === void 0)
+      return;
+    openSource({
+      uri: source2.uri,
+      ...source2.start === void 0 ? {} : { start: source2.start },
+      ...source2.end === void 0 ? {} : { end: source2.end }
+    });
+  };
   const rows = templateTreeRows(tree);
   const nodes = new Map(rows.map((row) => [row.key, row.node]));
   let byKey = /* @__PURE__ */ new Map();
@@ -62359,9 +62410,9 @@ function renderTemplateBody(document, host, tree, drawable, images, localizer, s
     for (const group2 of canvas?.querySelectorAll("g[data-path]") ?? []) {
       setState(group2, group2.getAttribute("data-path") === key3 ? ["selected"] : []);
     }
-    renderPropertiesPanel(panel, nodes.get(key3), localizer);
+    renderPropertiesPanel(panel, nodes.get(key3), localizer, showSource);
   };
-  byKey = renderTreePanel(body, rows, select);
+  byKey = renderTreePanel(body, rows, select, showSource);
   const stage = element(body, "div", { className: "modkit-template__stage" });
   const canvas = drawable.length > 0 ? drawTemplateItems(document, stage, drawable, images) : void 0;
   if (canvas === void 0) {
@@ -62388,6 +62439,19 @@ function renderTemplateBody(document, host, tree, drawable, images, localizer, s
   const initial = selection.key !== void 0 && nodes.has(selection.key) ? selection.key : rows[0]?.key;
   if (initial !== void 0)
     select(initial);
+  selection.reveal = (uri, offset) => {
+    const key3 = templateNodeAt(tree, uri, offset)?.path.join("/");
+    if (key3 === void 0 || !nodes.has(key3))
+      return false;
+    select(key3);
+    byKey.get(key3)?.scrollIntoView({ block: "nearest" });
+    byKey.get(key3)?.focus();
+    return true;
+  };
+  const pending = selection.pending;
+  selection.pending = void 0;
+  if (pending !== void 0)
+    selection.reveal(pending.uri, pending.offset);
 }
 function renderGameTemplatePreview(document, host, preview2, localizer = withEnglishUiFallback(void 0, TEMPLATE_FALLBACK_MESSAGES), images = /* @__PURE__ */ new Map(), options = {}) {
   host.replaceChildren();
@@ -62435,7 +62499,7 @@ function renderGameTemplatePreview(document, host, preview2, localizer = withEng
   const rest = preview2.displayItems.slice(0, MAXIMUM_DISPLAY_ITEMS).filter((item) => !isGameTemplateDisplayItem(item));
   const tree = isGameTemplateTreeNode(preview2.resolvedTree) ? preview2.resolvedTree : void 0;
   if (tree !== void 0) {
-    renderTemplateBody(document, host, tree, drawable, images, localizer, options.selection ?? { key: void 0 });
+    renderTemplateBody(document, host, tree, drawable, images, localizer, options.selection ?? { key: void 0 }, options.openSource);
   } else if (drawable.length > 0)
     drawTemplateItems(document, host, drawable, images);
   if (rest.length > 0 || drawable.length === 0 && tree === void 0) {
@@ -62513,8 +62577,18 @@ function createGameTemplateViewer(options = {}) {
       let renderRevision = 0;
       let rootPath;
       const selection = { key: void 0 };
+      const onReveal = (event) => {
+        const detail = event.detail;
+        if (selection.reveal === void 0)
+          selection.pending = detail;
+        else
+          selection.reveal(detail.uri, detail.offset);
+      };
+      root.ownerDocument.addEventListener(TEMPLATE_REVEAL_EVENT, onReveal);
+      scope.cleanup(() => root.ownerDocument.removeEventListener(TEMPLATE_REVEAL_EVENT, onReveal));
       const render = async (descriptor) => {
         const revision = ++renderRevision;
+        selection.reveal = void 0;
         root.replaceChildren();
         element(root, "output", {
           text: localizer.text("viewer.loadingTemplate"),
@@ -62544,6 +62618,7 @@ function createGameTemplateViewer(options = {}) {
           return;
         renderGameTemplatePreview(root.ownerDocument, root, preview2, localizer, images, {
           selection,
+          ...options.openSource === void 0 ? {} : { openSource: options.openSource },
           chooseRoot: (next) => {
             rootPath = next;
             selection.key = void 0;
@@ -64788,13 +64863,13 @@ var PREVIEW_STAGES = [
 async function defaultPreviewStage(kind, localizer) {
   switch (kind) {
     case "model":
-      return (await import("./model-4RGGIBDO.js")).createModelViewer({ localizer });
+      return (await import("./model-5AJXVOKT.js")).createModelViewer({ localizer });
     case "image":
-      return (await import("./image-IFAGVIEI.js")).createImageViewer({ localizer });
+      return (await import("./image-CYCRPYAN.js")).createImageViewer({ localizer });
     case "video":
-      return (await import("./video-EBZKAWPJ.js")).createVideoViewer({ localizer });
+      return (await import("./video-SUSZAN6I.js")).createVideoViewer({ localizer });
     case "audio":
-      return (await import("./audio-TYSKJRX6.js")).createAudioViewer({ localizer });
+      return (await import("./audio-N4JOBWBY.js")).createAudioViewer({ localizer });
   }
 }
 function embedPreview(sections, args, scope, localizer, previews) {
@@ -64833,7 +64908,7 @@ function embedRelationGraph(sections, args, scope, localizer, graph) {
   return [
     ...sections,
     stageSection({ id: "relations-graph", title: localizer.text("card.relationGraph"), expanded: false }, scope, localizer, "card.relationGraphUnavailable", async (host) => {
-      const module = graph ?? (await import("./graph-4WFFJNO3.js")).createRelationGraphViewer({ localizer });
+      const module = graph ?? (await import("./graph-YWVZC5TE.js")).createRelationGraphViewer({ localizer });
       return scope.signal.aborted ? void 0 : module.mount({ ...args, container: host, signal: scope.signal });
     })
   ];
@@ -75801,14 +75876,14 @@ var WATER_CELL_MARGIN = 2;
 
 // ../MODDING/modkit-core/packages/scene/dist/world/color-keys.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-var MARKER = "UV_texture_color_key";
 var utf8 = new TextDecoder("utf-8", { fatal: false });
-function mentionsColorKey(bytes) {
+function mentions(bytes) {
   if (bytes.byteLength < 20)
-    return false;
+    return { colorKey: false, filter: false };
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   const jsonLength = Math.min(view.getUint32(12, true), bytes.byteLength - 20);
-  return utf8.decode(bytes.subarray(20, 20 + jsonLength)).includes(MARKER);
+  const json2 = utf8.decode(bytes.subarray(20, 20 + jsonLength));
+  return { colorKey: json2.includes("UV_texture_color_key"), filter: json2.includes("magFilter") };
 }
 function colorKeyedTexture(texture, key3) {
   const [r2, g, b2] = key3.color;
@@ -75817,8 +75892,11 @@ function colorKeyedTexture(texture, key3) {
     rgba: applyColorKeyTransparency({ width: texture.width, height: texture.height, pixels: texture.rgba }, { target: { r: r2, g, b: b2 }, tolerance: key3.tolerance }).pixels
   });
 }
-function keyWorldModelTextures(result, signal) {
-  if (result.state !== "converted" || result.uvmBytes === void 0 || (result.textures?.length ?? 0) === 0 || !mentionsColorKey(result.uvmBytes))
+function presentWorldModelTextures(result, signal) {
+  if (result.state !== "converted" || result.uvmBytes === void 0 || (result.textures?.length ?? 0) === 0)
+    return result;
+  const mentioned = mentions(result.uvmBytes);
+  if (!mentioned.colorKey && !mentioned.filter)
     return result;
   const { document } = readUvmContainer(result.uvmBytes, {
     maxInputBytes: result.uvmBytes.byteLength,
@@ -75826,19 +75904,22 @@ function keyWorldModelTextures(result, signal) {
     maxDepth: 128,
     maxNodes: 1e6
   }, signal);
-  const keys = uvmImageColorKeys(document, signal);
-  if (keys.size === 0)
+  const keys = mentioned.colorKey ? uvmImageColorKeys(document, signal) : /* @__PURE__ */ new Map();
+  const filters = mentioned.filter ? uvmImageFilters(document) : /* @__PURE__ */ new Map();
+  if (keys.size === 0 && filters.size === 0)
     return result;
   const unkeyed = [];
   const textures = (result.textures ?? []).map((texture) => {
+    const filter = filters.get(texture.id);
+    const filtered = filter === void 0 || texture.filter !== void 0 ? texture : Object.freeze({ ...texture, filter });
     const key3 = keys.get(texture.id);
     if (key3 === void 0)
-      return texture;
+      return filtered;
     if (texture.compressed !== void 0) {
       unkeyed.push(texture.id);
-      return texture;
+      return filtered;
     }
-    return colorKeyedTexture(texture, key3);
+    return colorKeyedTexture(filtered, key3);
   });
   return Object.freeze({
     ...result,
@@ -76351,7 +76432,7 @@ async function inspectCandidateWorld(source2, options) {
     if (retry !== void 0)
       result = await requestModel(item, retry, textureBytes);
     options.signal?.throwIfAborted();
-    result = keyWorldModelTextures(result, options.signal);
+    result = presentWorldModelTextures(result, options.signal);
     deliveredModelBytes += deliveredBytes(result);
     models.set(item.id, spent && result.state === "converted" ? Object.freeze({
       ...result,

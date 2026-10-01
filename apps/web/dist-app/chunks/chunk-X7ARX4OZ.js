@@ -9154,6 +9154,29 @@ function uvmImageColorKeys(document2, signal) {
       keys.set(uvmImageResourceId(document2, image), key);
   return keys;
 }
+function uvmImageFilters(document2) {
+  const textures = array(document2, "textures");
+  const samplers = document2["samplers"] === void 0 ? [] : array(document2, "samplers");
+  const byImage = /* @__PURE__ */ new Map();
+  for (const candidate of textures) {
+    const texture = object(candidate, "texture");
+    const source = texture["source"];
+    const samplerIndex = texture["sampler"];
+    if (typeof source !== "number" || typeof samplerIndex !== "number")
+      continue;
+    const magnified = object(samplers[samplerIndex] ?? {}, "sampler")["magFilter"];
+    const filter = magnified === 9728 ? "nearest" : magnified === 9729 ? "linear" : void 0;
+    if (filter === void 0)
+      continue;
+    const known = byImage.get(source);
+    byImage.set(source, known === void 0 || known === filter ? filter : null);
+  }
+  const filters = /* @__PURE__ */ new Map();
+  for (const [image, filter] of byImage)
+    if (filter !== null)
+      filters.set(uvmImageResourceId(document2, image), filter);
+  return filters;
+}
 function prepareUvmTextureImages(document2, binary, indices, maxEmbeddedBytes, signal) {
   const textures = array(document2, "textures"), images = array(document2, "images");
   const imageIndices = indices.map((textureIndex) => {
@@ -24960,6 +24983,7 @@ export {
   createUvmEffectFrameCache,
   createUvmEffectFrame,
   uvmImageColorKeys,
+  uvmImageFilters,
   prepareUvmTextureImages,
   uvmImageTexels,
   textureNormalFormat,

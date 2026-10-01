@@ -5,7 +5,7 @@ import {
   readCollisionMesh,
   readUvmModel,
   uvmImageResourceId
-} from "../../../chunks/chunk-ELMFYHZT.js";
+} from "../../../chunks/chunk-J6HN2JJW.js";
 import {
   createJsonTreeSource
 } from "../../../chunks/chunk-KA3J6DLB.js";
