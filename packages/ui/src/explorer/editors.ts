@@ -94,6 +94,13 @@ export interface EditorArea {
   close(entryId: string): Promise<boolean>
   /** Save an open tab through its mounted editor, or the host fallback when it has none. */
   save(entryId: string): Promise<boolean>
+  /** The views the focused tab offers and the one on screen; undefined with nothing mounted. */
+  activeViews(): { readonly views: readonly string[]; readonly active: string } | undefined
+  /**
+   * Show the focused tab as another of its views, as the view picker would — the way a host whose
+   * own picker is off (VS Code) switches them. False when the tab offers no such view.
+   */
+  showView(viewId: string): Promise<boolean>
   /** Add a group beside the focused one and make it the target for the next open. */
   split(): void
   /** Number of groups, for hosts that expose "close split" affordances. */
@@ -468,6 +475,28 @@ export function createEditorArea(document: Document, options: EditorAreaOptions)
 
     get groupCount() {
       return groups.length
+    },
+
+    activeViews() {
+      const handle = focused.active?.handle
+      return handle === undefined
+        ? undefined
+        : { views: handle.views.map(view => view.id), active: handle.activeView }
+    },
+
+    async showView(viewId) {
+      const group = focused
+      const handle = group.active?.handle
+      if (handle === undefined || !handle.views.some(view => view.id === viewId)) return false
+      await handle.show(viewId)
+      syncPicker(group)
+      report({
+        ...(group.active === undefined ? {} : { path: group.active.entry.id }),
+        view: handle.views.find(view => view.id === handle.activeView)?.label ?? viewId,
+        detail: group.active?.entry.name ?? '',
+        severity: 'info',
+      })
+      return true
     },
 
     async close(entryId) {

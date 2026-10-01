@@ -156,7 +156,13 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
       id: 'playback',
       label: context.localizer.text('stage.playback'),
       contract: 'common.view/transport-source',
-      module: createPlaybackViewer({ localizer: context.localizer }),
+      module: createPlaybackViewer({
+        localizer: context.localizer,
+        // The same recording in the 3D world, which follows this transport (V switches back).
+        ...(context.showStage === undefined
+          ? {}
+          : { openWorld: () => void context.showStage?.('world') }),
+      }),
       optionalContracts: ['common.view/world-scene-source'],
     },
     {

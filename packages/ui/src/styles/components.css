@@ -527,7 +527,8 @@
     accent-color: var(--mk-color-accent);
   }
 
-  [data-mk-part='playback.time'] {
+  [data-mk-part='playback.time'],
+  [data-mk-part='playback.units'] {
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
     color: var(--mk-color-fg-muted);
@@ -626,6 +627,20 @@
     stroke: var(--mk-color-accent);
     stroke-width: 1;
     vector-effect: non-scaling-stroke;
+  }
+
+  [data-mk-part='playback.kinds'] {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--mk-space-1) var(--mk-space-3);
+    font-size: var(--mk-font-size-xs);
+    color: var(--mk-color-fg-muted);
+  }
+
+  [data-mk-part='playback.kind'] {
+    display: inline-flex;
+    gap: var(--mk-space-1);
+    align-items: center;
   }
 
   [data-mk-part='playback.events'] {

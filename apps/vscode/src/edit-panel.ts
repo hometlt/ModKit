@@ -90,6 +90,8 @@ export interface EditPanelOptions {
   openArchiveEntry?(entry: string): Promise<void>
   /** Show a card's source in the editor, at its line when the publisher knows it. */
   openSource?(location: CardLocation): void
+  /** Switch the open subject to another of its views (the replay's 3D world); false when absent. */
+  showStage?(stageId: string): Promise<boolean>
   /** A file-manager action on the shown archive; `true` when it changed. */
   archiveAction?(action: ArchiveAction, target: ArchiveTarget): Promise<boolean>
   /** The explorer's gallery of pictures among the shown archive's members. */

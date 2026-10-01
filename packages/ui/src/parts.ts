@@ -116,6 +116,7 @@ export const PARTS = Object.freeze([
   'playback.bar',
   'playback.seek',
   'playback.time',
+  'playback.units',
   'playback.rate',
   'playback.body',
   'playback.map',
@@ -127,6 +128,8 @@ export const PARTS = Object.freeze([
   'playback.charts',
   'playback.chart',
   'playback.playhead',
+  'playback.kinds',
+  'playback.kind',
   'playback.events',
   'playback.event',
 

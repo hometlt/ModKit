@@ -38,6 +38,8 @@ export const PLAYBACK_MAX_MARKERS = 2_000
 export const PLAYBACK_MAX_SERIES_POINTS = 400
 export const PLAYBACK_MAX_OBJECTS = 4_096
 export const PLAYBACK_RATES: readonly number[] = Object.freeze([0.5, 1, 2, 4, 8, 16])
+/** The ←/→ step, as MK2's player: five seconds of the recording. */
+export const PLAYBACK_SEEK_STEP_MS = 5_000
 const PAGE_LIMIT = 1_024
 const MAP_SIZE = 480
 const GRID_CELLS = 16
@@ -194,7 +196,33 @@ function svg<K extends keyof SVGElementTagNameMap>(
   return node
 }
 
-export function createPlaybackViewer(options: UiLocalizationOptions = {}): ViewerModule {
+export interface PlaybackViewerOptions extends UiLocalizationOptions {
+  /** Shows the same subject in the host's 3D world view, which follows this transport. */
+  readonly openWorld?: () => void
+}
+
+/**
+ * What a key asks of the transport: Space toggles, ←/→ step, clamped to the recording. Keys aimed
+ * at a control (the slider, the rate, a button) and chords belong to the control or the host.
+ */
+export function playbackKeyAction(
+  event: Pick<KeyboardEvent, 'key' | 'ctrlKey' | 'altKey' | 'metaKey'> & {
+    readonly target: unknown
+  },
+  snapshot: Pick<TransportSnapshot, 'positionMs' | 'durationMs'>,
+):
+  { readonly kind: 'toggle' } | { readonly kind: 'seek'; readonly positionMs: number } | undefined {
+  if (event.ctrlKey || event.altKey || event.metaKey) return undefined
+  const target = event.target as { closest?: (selector: string) => unknown } | null
+  if (target?.closest?.('input, select, textarea, button') != null) return undefined
+  if (event.key === ' ') return { kind: 'toggle' }
+  if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return undefined
+  const step = event.key === 'ArrowRight' ? PLAYBACK_SEEK_STEP_MS : -PLAYBACK_SEEK_STEP_MS
+  const end = typeof snapshot.durationMs === 'number' ? snapshot.durationMs : Infinity
+  return { kind: 'seek', positionMs: Math.min(end, Math.max(0, snapshot.positionMs + step)) }
+}
+
+export function createPlaybackViewer(options: PlaybackViewerOptions = {}): ViewerModule {
   const localizer = withEnglishUiFallback(options.localizer, TRANSPORT_PLAYBACK_FALLBACK_MESSAGES)
   return defineViewerModule({
     abiVersion: 1,
@@ -231,6 +259,19 @@ export function createPlaybackViewer(options: UiLocalizationOptions = {}): Viewe
         const option = element(rate, 'option', { text: `${value}×` }) as HTMLOptionElement
         option.value = String(value)
       }
+      // How many objects the map shows at this moment, as MK2's player counted its units.
+      const units = element(bar, 'output', { part: 'playback.units' })
+      units.hidden = world === undefined
+      const openWorld = options.openWorld
+      if (openWorld !== undefined && world !== undefined) {
+        const show3d = element(bar, 'button', {
+          part: 'transport.button',
+          text: localizer.text('viewer.playbackWorld'),
+        }) as HTMLButtonElement
+        show3d.type = 'button'
+        show3d.title = localizer.text('viewer.playbackWorldTitle')
+        show3d.addEventListener('click', () => openWorld())
+      }
       const status = element(stage, 'output', { part: 'transport.status' })
 
       const body = element(stage, 'div', { part: 'playback.body' })
@@ -251,6 +292,11 @@ export function createPlaybackViewer(options: UiLocalizationOptions = {}): Viewe
       participantList.setAttribute('aria-label', localizer.text('viewer.playbackParticipants'))
       const charts = element(side, 'section', { part: 'playback.charts' })
       charts.setAttribute('aria-label', localizer.text('viewer.playbackCharts'))
+      // Which kinds of events the list shows: production alone reads as a build order.
+      const kinds = element(side, 'div', { part: 'playback.kinds' })
+      kinds.setAttribute('role', 'group')
+      kinds.setAttribute('aria-label', localizer.text('viewer.playbackKinds'))
+      const hiddenKinds = new Set<string>()
       const eventList = element(side, 'ol', { part: 'playback.events' })
       eventList.setAttribute('aria-label', localizer.text('viewer.playbackEvents'))
 
@@ -394,10 +440,17 @@ export function createPlaybackViewer(options: UiLocalizationOptions = {}): Viewe
 
         eventList.replaceChildren()
         activeEvent = -1
+        const kindLabel = (kind: string) =>
+          known(
+            localizer.text(`viewer.playbackEvent.${kind}`),
+            `viewer.playbackEvent.${kind}`,
+            kind,
+          )
         eventItems = value.markers.map(marker => {
           const item = element(eventList, 'li', { part: 'playback.event' })
+          item.hidden = hiddenKinds.has(marker.kind)
           const button = element(item, 'button', {
-            text: `${formatPlaybackTime(marker.positionMs)} ${known(localizer.text(`viewer.playbackEvent.${marker.kind}`), `viewer.playbackEvent.${marker.kind}`, marker.kind)} ${marker.label}`,
+            text: `${formatPlaybackTime(marker.positionMs)} ${kindLabel(marker.kind)} ${marker.label}`,
           }) as HTMLButtonElement
           button.type = 'button'
           const swatch = colors.get(marker.participantId ?? '')
@@ -407,6 +460,24 @@ export function createPlaybackViewer(options: UiLocalizationOptions = {}): Viewe
           })
           return item
         })
+        kinds.replaceChildren()
+        const present = [...new Set(value.markers.map(marker => marker.kind))]
+        for (const kind of present) {
+          const label = element(kinds, 'label', { part: 'playback.kind' })
+          const box = element(label, 'input') as HTMLInputElement
+          box.type = 'checkbox'
+          box.checked = !hiddenKinds.has(kind)
+          label.append(kindLabel(kind))
+          box.addEventListener('change', () => {
+            if (box.checked) hiddenKinds.delete(kind)
+            else hiddenKinds.add(kind)
+            value.markers.forEach((marker, index) => {
+              const item = eventItems[index]
+              if (item !== undefined) item.hidden = hiddenKinds.has(marker.kind)
+            })
+          })
+        }
+        kinds.hidden = present.length < 2
         const notes = [
           world === undefined ? localizer.text('viewer.playbackNoWorld') : '',
           value.fidelity === 'sampled' ? localizer.text('viewer.playbackSampled') : '',
@@ -431,6 +502,10 @@ export function createPlaybackViewer(options: UiLocalizationOptions = {}): Viewe
             const frame = await readPlaybackWorld(world, scope.signal)
             if (frame === undefined || scope.signal.aborted) continue
             drawPlaybackMap(canvas, frame, colors)
+            setViewerText(
+              units,
+              localizer.text('viewer.playbackUnits', { count: frame.objects.length }),
+            )
             canvas.setAttribute(
               'aria-label',
               localizer.text('viewer.playbackMap', {
@@ -458,15 +533,26 @@ export function createPlaybackViewer(options: UiLocalizationOptions = {}): Viewe
         void invoke(snapshot.controls.seek, { positionMs: Number(seek.value) })
       }
       const onRate = () => void invoke(snapshot.controls.setRate, { rate: Number(rate.value) })
+      const onKey = (event: KeyboardEvent) => {
+        const action = playbackKeyAction(event, snapshot)
+        if (action === undefined) return
+        event.preventDefault()
+        if (action.kind === 'toggle') onPlay()
+        else void invoke(snapshot.controls.seek, { positionMs: action.positionMs })
+      }
+      // Focus anywhere in the stage (a click on the map) takes the keys; a page holds many stages.
+      stage.tabIndex = 0
       play.addEventListener('click', onPlay)
       seek.addEventListener('input', onSeekInput)
       seek.addEventListener('change', onSeekChange)
       rate.addEventListener('change', onRate)
+      stage.addEventListener('keydown', onKey)
       scope.cleanup(() => {
         play.removeEventListener('click', onPlay)
         seek.removeEventListener('input', onSeekInput)
         seek.removeEventListener('change', onSeekChange)
         rate.removeEventListener('change', onRate)
+        stage.removeEventListener('keydown', onKey)
       })
 
       if (typeof transport.timeline === 'function') {

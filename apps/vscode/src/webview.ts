@@ -703,6 +703,8 @@ async function mount(
         registerPixelEditing(handlers) {
           pixelEditing = handlers
         },
+        // The recording's other view: its 2D player and its 3D world follow one transport.
+        showStage: stageId => editors.showView(stageId),
         // A card's source: the extension host shows the declaring file at its line.
         openSource(location) {
           void bridge
@@ -1169,6 +1171,24 @@ async function mount(
       throw new Error(`subject navigation rejected ${target}: ${result.reason}`)
     }
   }
+
+  /*
+   * V flips a recording between its 2D player and its 3D world, as MK2's player did: both views
+   * follow the same transport, so the moment on screen stays. Typing in a field keeps its V.
+   */
+  document.addEventListener('keydown', event => {
+    if (event.key !== 'v' && event.key !== 'V') return
+    if (event.ctrlKey || event.altKey || event.metaKey) return
+    const target = event.target as Element | null
+    if (target?.closest('input, select, textarea, [contenteditable="true"]') != null) return
+    const views = editors.activeViews()
+    if (views === undefined || !views.views.includes('playback') || !views.views.includes('world'))
+      return
+    event.preventDefault()
+    void editors
+      .showView(views.active === 'world' ? 'playback' : 'world')
+      .catch((error: unknown) => say(describe(error)))
+  })
 
   bridge.onEvent(event => {
     switch (event.op) {

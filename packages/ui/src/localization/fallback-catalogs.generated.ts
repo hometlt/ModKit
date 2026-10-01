@@ -756,6 +756,7 @@ export const TRANSPORT_PLAYBACK_FALLBACK_MESSAGES = {
   'viewer.playbackEvent.upgrade': 'Upgrade',
   'viewer.playbackEvents': 'Events',
   'viewer.playbackFact.apm': 'APM',
+  'viewer.playbackKinds': 'Event kinds',
   'viewer.playbackMap': 'Positions at {time}: {count} units',
   'viewer.playbackMetric.army-value': 'Army value',
   'viewer.playbackMetric.units': 'Units',
@@ -772,6 +773,9 @@ export const TRANSPORT_PLAYBACK_FALLBACK_MESSAGES = {
   'viewer.playbackSeek': 'Playback position',
   'viewer.playbackTime': '{position} / {duration}',
   'viewer.playbackTruncated': 'Bounded view: some events or samples are not shown.',
+  'viewer.playbackUnits': 'Units: {count}',
+  'viewer.playbackWorld': '3D',
+  'viewer.playbackWorldTitle': 'Show in the 3D world (V)',
 } as const satisfies UiMessageCatalog
 
 export const TREE_FALLBACK_MESSAGES = {
