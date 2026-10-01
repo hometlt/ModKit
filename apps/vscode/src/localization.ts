@@ -186,8 +186,6 @@ const EN_MESSAGES = Object.freeze({
   'vscode.explorer.cannotOpen': 'Modkit Explorer cannot list {name}: {reason}',
   'vscode.shell.exportDiagnostics': 'Export Modkit diagnostics',
   'vscode.shell.alreadyPresent': 'Already present',
-  'vscode.shell.statusNotOpened': 'Not opened by a codec',
-  'vscode.shell.statusReadLimit': 'Reads up to {mib} MiB per file',
 
   'vscode.extensions.noCardData': 'Modkit has no card data for {id}.',
   'vscode.extensions.installTitle': 'Install a Modkit extension',
@@ -723,8 +721,6 @@ const RU_MESSAGES: Readonly<Record<keyof typeof EN_MESSAGES, string>> = Object.f
   'vscode.explorer.cannotOpen': 'Проводник Modkit не может показать {name}: {reason}',
   'vscode.shell.exportDiagnostics': 'Экспортировать диагностику Modkit',
   'vscode.shell.alreadyPresent': 'Уже добавлено',
-  'vscode.shell.statusNotOpened': 'Не открыт кодеком',
-  'vscode.shell.statusReadLimit': 'Читается до {mib} МиБ из одного файла',
 
   'vscode.extensions.noCardData': 'У Modkit нет данных карточки для {id}.',
   'vscode.extensions.installTitle': 'Установить расширение Modkit',

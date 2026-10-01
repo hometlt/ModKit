@@ -11842,7 +11842,6 @@ async function activateModkit(
         if (activeSubject === subjectKey(target.path)) {
           activeSubject = undefined
         }
-        subjectFacts.delete(subjectKey(target.path))
         document.state.detach(served)
         live.delete(served)
         liveSubjects.delete(served)
@@ -12417,52 +12416,13 @@ async function activateModkit(
     vscode.workspace.onDidSaveTextDocument(document => modFileChanged(document.uri)),
   )
 
-  // ---------------------------------------------------------------- status bar
   /*
-   * The subject's own facts, on the editor's status bar.
-   *
-   * This replaces a footer the webview drew inside itself, which — besides being chrome in a
-   * surface that should hold only the working area — printed the subject's *absolute* path. A
-   * status bar is where an editor says what the active thing is, and `asRelativePath` is how it
-   * says it without handing out the shape of this machine.
-   *
-   * Shown only while a Modkit editor is the active one: a status bar entry that outlives its
-   * subject is describing a file the user is no longer looking at.
+   * A subject opened in an editor: the loaded mods may have changed. Its facts — size, format,
+   * codec — are the viewer's own status items (`viewerStatusBar`); the subject entry that once
+   * stood beside them was removed in 168cf44d.
    */
-  const status = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100)
-  status.command = 'modkit.explainResolution'
-  context.subscriptions.push(status)
-
-  /** Facts per opened subject, kept so activating a tab again can restate them. */
-  const subjectFacts = new Map<
-    string,
-    { readonly contributionId: string; readonly variantId: string; readonly bytes?: number }
-  >()
-
-  const rememberSubject = (opened: {
-    readonly path: string
-    readonly contributionId: string
-    readonly variantId: string
-  }): void => {
-    const key = subjectKey(opened.path)
+  const rememberSubject = (): void => {
     resourcesView.refresh()
-    // The size of a container member comes from the provider registered above, so this one call
-    // answers for both kinds of subject.
-    void vscode.workspace.fs.stat(subjectUriOf(key)).then(
-      stat => {
-        subjectFacts.set(key, {
-          contributionId: opened.contributionId,
-          variantId: opened.variantId,
-          bytes: stat.size,
-        })
-      },
-      () => {
-        subjectFacts.set(key, {
-          contributionId: opened.contributionId,
-          variantId: opened.variantId,
-        })
-      },
-    )
   }
 
   context.subscriptions.push({
