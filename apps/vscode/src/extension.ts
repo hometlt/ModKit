@@ -8959,12 +8959,19 @@ async function activateModkit(
       else await vscode.commands.executeCommand('vscode.openWith', anchored, CUSTOM_EDITOR_TYPE)
       return true
     }
-    const uri = subjectUriOf(root)
+    /*
+     * An entity opens inside its package. A folder package has no editor of its own — opening it
+     * as one said «… is not a file» — so it opens through the document that stands for it, as a
+     * click on that document does; a packed package opens as itself.
+     */
+    const packageUri = subjectUriOf(root)
+    const uri = (await anchoredUri(packageUri).catch(() => undefined)) ?? packageUri
     await vscode.commands.executeCommand('vscode.openWith', uri, CUSTOM_EDITOR_TYPE, {
       viewColumn: vscode.ViewColumn.Beside,
       preserveFocus: false,
     })
-    const served = [...liveSubjects].find(([, path]) => path === subjectKey(root))?.[0]
+    const opened = new Set([subjectKey(root), subjectKey(subjectPathOf(uri))])
+    const served = [...liveSubjects].find(([, path]) => path !== undefined && opened.has(path))?.[0]
     if (served === undefined) {
       throw new Error(`the resource workspace subject did not open: ${basename(root)}`)
     }
