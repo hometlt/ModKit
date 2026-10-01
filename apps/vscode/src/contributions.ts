@@ -49,6 +49,14 @@ export interface ContributionRow {
    * editor and the subject opener, where the anchor rule lives, would never see them.
    */
   readonly anchorFileNames: readonly string[]
+  /**
+   * File names the codec matches by path: the `spec.match.pathGlobs` that name one file in any
+   * folder, `DocumentHeader` or `MapInfo`.
+   *
+   * They carry no extension either. A glob with a wildcard or a folder in the name keys no
+   * association and is left out; a glob of an extension is the codec's `match.extensions` already.
+   */
+  readonly pathFileNames: readonly string[]
 }
 
 /** `spec.match.extensions` of a codec contribution, normalised; empty for anything else. */
@@ -88,6 +96,25 @@ function anchorFileNamesOf(manifest: unknown): readonly string[] {
   )
 }
 
+/** The literal file names among `spec.match.pathGlobs`, recursive or not; empty for anything else. */
+function pathFileNamesOf(manifest: unknown): readonly string[] {
+  const spec = (
+    manifest as { readonly spec?: { readonly match?: { readonly pathGlobs?: unknown } } }
+  )?.spec
+  if (!Array.isArray(spec?.match?.pathGlobs)) return Object.freeze([])
+  return Object.freeze(
+    [
+      ...new Set(
+        spec.match.pathGlobs.flatMap(value => {
+          if (typeof value !== 'string') return []
+          const name = value.replace(/^(\*\*\/)+/u, '')
+          return name.length > 0 && !/[\\/*?[\]{}!]/u.test(name) ? [name] : []
+        }),
+      ),
+    ].sort(),
+  )
+}
+
 /** Flatten the inventory, sorted by owner then id, so the list is stable across launches. */
 export function describeInventoryContributions(inventory: Inventory): readonly ContributionRow[] {
   const rows = inventory.extensions.flatMap(extension => {
@@ -112,6 +139,10 @@ export function describeInventoryContributions(inventory: Inventory): readonly C
         anchorFileNames:
           manifest?.contract.id === 'modkit/codec-contribution'
             ? anchorFileNamesOf(manifest)
+            : Object.freeze([]),
+        pathFileNames:
+          manifest?.contract.id === 'modkit/codec-contribution'
+            ? pathFileNamesOf(manifest)
             : Object.freeze([]),
       }
     })

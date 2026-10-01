@@ -265,6 +265,7 @@ import {
 anchorAssociationPattern,
 associationPattern,
 contributedLanguageExtensions,
+contributedLanguageFileNames,
 planEditorAssociations,
 type AssociationPlan,
 } from './editor-associations.js'
@@ -5728,6 +5729,7 @@ async function activateModkit(
           // Not installed here, so this window knows no formats for it; only inventory rows do.
           fileExtensions: [],
           anchorFileNames: [],
+          pathFileNames: [],
         })),
       ),
   )
@@ -12126,6 +12128,8 @@ async function activateModkit(
         vscode.workspace.getConfiguration().get('modkit.defaultEditorForTextFormats') === true,
       // `.SC2Style`, `.SC2Bank`, `.BlizWiz`…: this extension's own text languages open as text
       textLanguageExtensions: contributedLanguageExtensions(context.extension.packageJSON),
+      // `Objects`, `Preload.xml`, a map's `Regions`: names those languages claim open as text as well
+      textLanguageFileNames: contributedLanguageFileNames(context.extension.packageJSON),
     })
     const managedChanged =
       JSON.stringify(plan.managed) !==

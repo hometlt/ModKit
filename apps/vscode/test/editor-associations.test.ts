@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
+import type { Inventory } from '@modkit/host'
+import { describeInventoryContributions } from '../src/contributions.js'
 import {
   associationPattern,
   contributedLanguageExtensions,
+  contributedLanguageFileNames,
   defaultAssociationPatterns,
   planEditorAssociations,
   TEXT_FIRST_EXTENSIONS,
@@ -47,8 +50,12 @@ describe('which formats an enabled codec claims by default', () => {
     expect(
       defaultAssociationPatterns({
         contributions: [
-          { id: 'blizzard/sc2-map', disabled: false, fileExtensions: ['sc2map'],
-            anchorFileNames: ['MapInfo'] },
+          {
+            id: 'blizzard/sc2-map',
+            disabled: false,
+            fileExtensions: ['sc2map'],
+            anchorFileNames: ['MapInfo'],
+          },
         ],
         nonDefault: [],
         includeTextFormats: false,
@@ -61,8 +68,12 @@ describe('which formats an enabled codec claims by default', () => {
     expect(
       defaultAssociationPatterns({
         contributions: [
-          { id: 'blizzard/sc2-map', disabled: false, fileExtensions: ['sc2map'],
-            anchorFileNames: ['MapInfo'] },
+          {
+            id: 'blizzard/sc2-map',
+            disabled: false,
+            fileExtensions: ['sc2map'],
+            anchorFileNames: ['MapInfo'],
+          },
         ],
         nonDefault: ['blizzard/sc2-map'],
         includeTextFormats: false,
@@ -146,6 +157,105 @@ describe('which formats an enabled codec claims by default', () => {
         textLanguageExtensions,
       }),
     ).toEqual(['*.dds'])
+  })
+
+  it('claims a file a codec matches by path by its name, unless it is text', () => {
+    const manifest = {
+      contributes: {
+        languages: [
+          { id: 'sc2-map-objects', filenames: ['Objects'] },
+          { id: 'xml', filenamePatterns: ['**/*.[Ss][Cc]2[Mm][Aa][Pp]/{Regions,Attributes}'] },
+          { id: 'jass', filenamePatterns: ['**/[Ss]cripts/*.ai'] },
+        ],
+      },
+    }
+    const textLanguageFileNames = contributedLanguageFileNames(manifest)
+    expect(textLanguageFileNames).toEqual(['Attributes', 'Objects', 'Regions'])
+    // The names come from the codec's own path globs; a wildcard, a folder or an extension glob is no name.
+    const inventory = {
+      extensions: [
+        {
+          manifest: { publisher: 'blizzard', id: 'starcraft2' },
+          origin: 'local',
+          contributions: [
+            {
+              path: 'codec.json',
+              activationEligible: true,
+              diagnostics: [],
+              manifest: {
+                id: 'blizzard/sc2-document-metadata',
+                displayName: 'Document metadata',
+                contract: { id: 'modkit/codec-contribution', major: 1 },
+                spec: {
+                  match: {
+                    pathGlobs: [
+                      '**/DocumentHeader',
+                      'DocumentInfo',
+                      '**/*.version',
+                      '**/CellAttribute_*',
+                      '**/EditorWizards/**',
+                    ],
+                  },
+                },
+              },
+            },
+          ],
+        },
+      ],
+    }
+    expect(
+      describeInventoryContributions(inventory as unknown as Inventory)[0]?.pathFileNames,
+    ).toEqual(['DocumentHeader', 'DocumentInfo'])
+    const contributions: AssociationContribution[] = [
+      {
+        id: 'blizzard/sc2-document-metadata',
+        disabled: false,
+        fileExtensions: ['version'],
+        pathFileNames: ['DocumentHeader', 'DocumentInfo'],
+      },
+      {
+        id: 'blizzard/sc2-map-objects',
+        disabled: false,
+        fileExtensions: [],
+        pathFileNames: ['Objects'],
+      },
+      {
+        id: 'blizzard/sc2-map-regions',
+        disabled: false,
+        fileExtensions: [],
+        pathFileNames: ['Regions'],
+      },
+      {
+        id: 'blizzard/sc2-preload',
+        disabled: false,
+        fileExtensions: [],
+        pathFileNames: ['Preload.xml'],
+      },
+    ]
+    // Without these, DocumentHeader opens in the text editor (parity 8.25); the map's XML stays text.
+    expect(
+      defaultAssociationPatterns({
+        contributions,
+        nonDefault: [],
+        includeTextFormats: false,
+        textLanguageFileNames,
+      }),
+    ).toEqual(['**/DocumentHeader', '**/DocumentInfo', '*.version'])
+    expect(
+      defaultAssociationPatterns({
+        contributions,
+        nonDefault: [],
+        includeTextFormats: true,
+        textLanguageFileNames,
+      }),
+    ).toEqual([
+      '**/DocumentHeader',
+      '**/DocumentInfo',
+      '**/Objects',
+      '**/Preload.xml',
+      '**/Regions',
+      '*.version',
+    ])
   })
 })
 

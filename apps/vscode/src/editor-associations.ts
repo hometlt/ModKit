@@ -18,6 +18,8 @@ export interface AssociationContribution {
   readonly disabled: boolean
   readonly fileExtensions: readonly string[]
   readonly anchorFileNames?: readonly string[]
+  /** File names the codec matches by path (`DocumentHeader`, `Objects`). */
+  readonly pathFileNames?: readonly string[]
 }
 
 export interface AssociationInputs {
@@ -39,6 +41,8 @@ export interface AssociationInputs {
    * language support of their own, they open as text too unless `includeTextFormats` says otherwise.
    */
   readonly textLanguageExtensions?: readonly string[]
+  /** File names those text languages claim (`Objects`, `Preload.xml`); they open as text too. */
+  readonly textLanguageFileNames?: readonly string[]
 }
 
 export interface AssociationPlan {
@@ -102,6 +106,30 @@ export function contributedLanguageExtensions(packageJson: unknown): readonly st
   return Object.freeze([...extensions].sort())
 }
 
+/**
+ * The file names the languages of an extension manifest claim: `filenames`, and the literal names
+ * a `filenamePatterns` entry ends with (`{Regions,Attributes}` inside a map folder).
+ */
+export function contributedLanguageFileNames(packageJson: unknown): readonly string[] {
+  const languages = (packageJson as { contributes?: { languages?: unknown } } | undefined)
+    ?.contributes?.languages
+  if (!Array.isArray(languages)) return Object.freeze([])
+  const names = new Set<string>()
+  for (const language of languages as { filenames?: unknown; filenamePatterns?: unknown }[]) {
+    if (Array.isArray(language.filenames)) {
+      for (const item of language.filenames) if (typeof item === 'string') names.add(item)
+    }
+    if (!Array.isArray(language.filenamePatterns)) continue
+    for (const item of language.filenamePatterns) {
+      if (typeof item !== 'string') continue
+      const last = item.split('/').at(-1) ?? ''
+      const choices = /^\{([^{}]*)\}$/u.exec(last)?.[1]?.split(',') ?? [last]
+      for (const name of choices) if (name !== '' && !/[*?[\]{}!]/u.test(name)) names.add(name)
+    }
+  }
+  return Object.freeze([...names].sort())
+}
+
 const normalizedExtension = (value: string): string => value.replace(/^\./u, '').toLowerCase()
 
 /** The glob VS Code keys an association by. One per file extension, lower case. */
@@ -120,7 +148,11 @@ export const anchorAssociationPattern = (name: string): string => `**/${name}`
 export function defaultAssociationPatterns(
   inputs: Pick<
     AssociationInputs,
-    'contributions' | 'nonDefault' | 'includeTextFormats' | 'textLanguageExtensions'
+    | 'contributions'
+    | 'nonDefault'
+    | 'includeTextFormats'
+    | 'textLanguageExtensions'
+    | 'textLanguageFileNames'
   >,
 ): readonly string[] {
   const excluded = new Set(inputs.nonDefault)
@@ -128,6 +160,7 @@ export function defaultAssociationPatterns(
     ...TEXT_FIRST_EXTENSIONS,
     ...(inputs.textLanguageExtensions ?? []).map(normalizedExtension),
   ])
+  const textNames = new Set(inputs.textLanguageFileNames ?? [])
   const patterns = new Set<string>()
   for (const contribution of inputs.contributions) {
     if (contribution.disabled) continue
@@ -144,6 +177,14 @@ export function defaultAssociationPatterns(
     // declared the name precisely because reading the document is not the point.
 
     for (const name of contribution.anchorFileNames ?? []) {
+      if (name.length > 0) patterns.add(anchorAssociationPattern(name))
+    }
+    // A name matched by path keys on itself the same way, unless it is text: a text format by its
+    // extension (`Preload.xml`), or a name one of this extension's text languages claims (`Objects`).
+    for (const name of contribution.pathFileNames ?? []) {
+      const dot = name.lastIndexOf('.')
+      const extension = dot < 0 ? '' : normalizedExtension(name.slice(dot + 1))
+      if (!inputs.includeTextFormats && (textNames.has(name) || text.has(extension))) continue
       if (name.length > 0) patterns.add(anchorAssociationPattern(name))
     }
   }
