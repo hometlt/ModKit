@@ -129,6 +129,13 @@ export interface NodeMapPreviewResourcePlanResolverOptions {
     >
   /** User/app settings, keyed by the same extension-owned game id used for discovery routing. */
   readonly configuredPaths?: Readonly<Record<string, readonly string[]>>
+  /**
+   * The folders the host's folder search found for a game (`searchInstallationFolders`); its
+   * provider confirms them after its own probes, as any installation discovery does.
+   */
+  readonly searchPaths?: (
+    gameId: string,
+  ) => readonly string[] | undefined | Promise<readonly string[] | undefined>
   /*
    * Installation discovery is a filesystem/registry probe, not a subject read, so it needs its own
    * narrow grant: a map opened with `read-source` alone made every discovery provider reject with
@@ -627,6 +634,7 @@ export function createNodeMapPreviewResourcePlanResolver(
       }
       let discovery: Awaited<ReturnType<typeof discoverGameInstallations>>
       try {
+        const searchPaths = await options.searchPaths?.(request.workspace.gameId)
         discovery = await discoverGameInstallations({
           services: request.services,
           gameId: request.workspace.gameId,
@@ -634,6 +642,7 @@ export function createNodeMapPreviewResourcePlanResolver(
           !Object.hasOwn(options.configuredPaths, request.workspace.gameId)
             ? {}
             : { configuredPaths: options.configuredPaths[request.workspace.gameId] }),
+          ...(searchPaths === undefined ? {} : { searchPaths }),
           maxCandidates: maxInstallationCandidates,
           grant: options.installationDiscoveryGrant ?? request.grant,
           budgets: request.budgets,

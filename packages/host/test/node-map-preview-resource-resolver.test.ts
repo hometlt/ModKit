@@ -321,6 +321,8 @@ describe('Node game-installation map-preview resource resolver', () => {
       installationRetentionMs: 0,
       subjects: { open } as unknown as Pick<SubjectServices, 'open'>,
       configuredPaths: { [GAME_ID]: [root] },
+      // the host's folder search reaches the provider too
+      searchPaths: async gameId => (gameId === GAME_ID ? ['F:/GAMES/Warzone 2100'] : undefined),
     })
     const result = await resolver.resolve(await requestFixture(plan(), mpPath, original.session))
 
@@ -331,6 +333,7 @@ describe('Node game-installation map-preview resource resolver', () => {
     expect(mocks.discover.mock.calls[0]?.[0]).toMatchObject({
       gameId: GAME_ID,
       configuredPaths: [root],
+      searchPaths: ['F:/GAMES/Warzone 2100'],
     })
     const logicalIds: string[] = []
     for await (const entry of result.origin.enumerate('workspace-dependency-layer', {
