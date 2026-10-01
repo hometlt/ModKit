@@ -521,6 +521,102 @@ describe('common world source native visual facets', () => {
     }
   })
 
+  it('admits a forward row order and names the check a refused UVW transform failed', async () => {
+    const terrainTransform = {
+      schemaVersion: 1 as const,
+      snapshotId: snapshot.snapshotId,
+      descriptorVersion: 1,
+      heightMap: {
+        dim: [2, 2] as const,
+        offset: { x: 0, y: 0, z: 0 },
+        scale: { x: 1, y: 1, z: 1 },
+      },
+      bounds: {
+        coordinateSpaceId: 'map-native' as const,
+        minimum: { x: 0, y: 0, z: 0 },
+        maximum: { x: 1, y: 1, z: 3 },
+      },
+      source: { terrainDocumentPath: 'terrain', format: 'fixture', heightEncoding: 'f64' },
+      mapping: {
+        horizontal: 'offset-plus-grid-index-times-scale' as const,
+        vertical: 'direct-base-times-scale-plus-offset' as const,
+      },
+    }
+    // (x, y, z) -> (x, z, y): rows run along +z in file order
+    const uvwTransform = {
+      schemaVersion: 1 as const,
+      snapshotId: snapshot.snapshotId,
+      sourceCoordinateSpaceId: 'map-native',
+      targetCoordinateSpaceId: 'uvw-canonical' as const,
+      basis: {
+        handedness: 'right' as const,
+        upAxis: 'y' as const,
+        forwardAxis: '+z' as const,
+        unit: 'source-unit' as const,
+        sourceUnit: 'fixture-unit',
+      },
+      axes: {
+        x: { sourceAxis: 'x' as const, scale: 1, offset: 0 },
+        y: { sourceAxis: 'z' as const, scale: 1, offset: 0 },
+        z: { sourceAxis: 'y' as const, scale: 1, offset: 0 },
+      },
+      heightfield: {
+        columns: 2,
+        rows: 2,
+        cellSize: 1,
+        origin: [0, 0, 0] as const,
+        sourceRowOrder: 'forward' as const,
+      },
+      bounds: {
+        coordinateSpaceId: 'uvw-canonical' as const,
+        minimum: { x: 0, y: 0, z: 0 },
+        maximum: { x: 1, y: 3, z: 1 },
+      },
+      proof: {
+        kind: 'adapter-qualification' as const,
+        method: 'third-party-reference-differential' as const,
+        oracle: 'fixture',
+        corpus: 'fixture',
+        sourceDigests: { fixture: `sha256:${'a'.repeat(64)}` as const },
+        tupleCount: 4,
+        comparison: 'ieee-754-binary64-exact' as const,
+        nativeTupleDigest: `sha256:${'b'.repeat(64)}` as const,
+        canonicalTupleDigest: `sha256:${'c'.repeat(64)}` as const,
+      },
+    }
+    const infoOf = async (transform: object) => {
+      const lease = createSourceWorldSceneLease(
+        { ...snapshot, terrainTransform, uvwTransform: transform as typeof uvwTransform },
+        [],
+        64,
+      )
+      try {
+        return (await lease.value.info()) as Awaited<ReturnType<typeof lease.value.info>> & {
+          uvwTransformRefusal?: string
+        }
+      } finally {
+        await lease.release()
+      }
+    }
+    const admitted = await infoOf(uvwTransform)
+    expect(admitted.uvwTransform?.heightfield.sourceRowOrder).toBe('forward')
+    expect(admitted.uvwTransformRefusal).toBeUndefined()
+
+    const refusalOf = async (transform: object) => (await infoOf(transform)).uvwTransformRefusal
+    expect(
+      await refusalOf({ ...uvwTransform, heightfield: { ...uvwTransform.heightfield, columns: 3 } }),
+    ).toBe('its heightfield 3x2 is not the terrain grid 2x2')
+    expect(
+      await refusalOf({ ...uvwTransform, proof: { ...uvwTransform.proof, comparison: 'close' } }),
+    ).toBe('its proof comparison is not ieee-754-binary64-exact')
+    expect(
+      await refusalOf({
+        ...uvwTransform,
+        bounds: { ...uvwTransform.bounds, maximum: { x: 1, y: 2, z: 1 } },
+      }),
+    ).toBe('its bounds are not the canonical image of the terrain bounds')
+  })
+
   it('reads rectangles, diamonds and polygons of regions as geometry', async () => {
     const region = (regionId: number, type: string, parameters: Record<string, string>) => ({
       regionId,

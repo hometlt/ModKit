@@ -255,7 +255,13 @@ export async function materializeWorldToUvw(
     )
   }
   const transform = info.uvwTransform
-  if (transform === undefined) {
+  if (transform === undefined && info.uvwTransformRefusal !== undefined) {
+    refuse(
+      'canonical-transform-invalid',
+      `world source refused the publisher's UVW transform: ${info.uvwTransformRefusal}`,
+      'info.uvwTransformRefusal',
+    )
+  } else if (transform === undefined) {
     refuse(
       'canonical-transform-missing',
       'world source does not prove a map-native to UVW canonical transform',

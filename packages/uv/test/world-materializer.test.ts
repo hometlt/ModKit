@@ -178,6 +178,14 @@ describe('production world to UVW materializer', () => {
     )
     expect(noTransform.refusalCodes).toEqual(['canonical-transform-missing'])
 
+    // a transform the world source refused is named with its reason, not reported as never published
+    const refused = await materializeWorldToUvw(
+      source(4, Object.freeze({ ...infoWithoutTransform, uvwTransformRefusal: 'its proof is short' })),
+      options,
+    )
+    expect(refused.refusalCodes).toEqual(['canonical-transform-invalid'])
+    expect(refused.state === 'refused' && refused.refusals[0]?.message).toContain('its proof is short')
+
     const incomplete = await materializeWorldToUvw(source(2), {
       ...options,
       maxTerrainItems: 3,

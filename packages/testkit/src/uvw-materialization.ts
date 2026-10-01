@@ -261,7 +261,8 @@ function provenCanonicalTransform(
     !positive(transform.heightfield.cellSize) ||
     transform.heightfield.origin.length !== 3 ||
     !transform.heightfield.origin.every(finite) ||
-    transform.heightfield.sourceRowOrder !== 'reverse'
+    (transform.heightfield.sourceRowOrder !== 'forward' &&
+      transform.heightfield.sourceRowOrder !== 'reverse')
   ) {
     return undefined
   }

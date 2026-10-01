@@ -1333,6 +1333,8 @@ interface WorldSceneInfoBase {
   readonly bounds: readonly WorldSceneFacetBounds[]
   readonly terrainTransform?: MapTerrainNativeTransform
   readonly uvwTransform?: MapWorldCanonicalTransform
+  /** Why the publisher's `uvwTransform` was refused: the first check it failed. */
+  readonly uvwTransformRefusal?: string
   readonly facets: readonly WorldSceneFacetState[]
   readonly provenance: readonly ResourceProvenanceRecord[]
   readonly unknownFacets: readonly string[]
