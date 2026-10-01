@@ -8,6 +8,7 @@ import {
   createModelSocketSource,
   createModelMaterialSource,
 } from '@modkit/codec-kit/model/sources'
+import { animationSnapshotBudget } from '@modkit/codec-kit/model/animation'
 import { createProjectionReceipt } from '@modkit/codec-kit/projection'
 import { createJsonTreeSource } from '@modkit/codec-kit/tree/json'
 import type { UvmContainer } from '@modkit/uv/model/container'
@@ -89,6 +90,7 @@ export function createUvmInspection(
   })
   const jsonNodes = countJsonNodes(document, budget, signal)
   const { scene, rig } = readUvmModel(document, container.binary, budget, signal)
+  const clipBudget = animationSnapshotBudget(rig.clips)
   const { collisions, teamColors, advancedMaterials, effects, sockets, materialRefs } =
     readUvmFacets(document, container.binary, budget, signal)
   const extensions = object(document['extensions'], 'UVM extensions')
@@ -297,12 +299,14 @@ export function createUvmInspection(
       ...(rig.clips.length === 0
         ? {}
         : {
+            // Sized by the clips already decoded out of the bounded binary: a pose per frame
+            // (Grey Goo ALA, Earth 2160) is millions of snapshot nodes, over the host's node budget.
             'common.view/model-animation-source': createModelAnimationSource({
               clips: rig.clips,
               budget: {
                 maxDepth: budget.maxDepth,
-                maxNodes: budget.maxNodes,
-                maxBytes: budget.maxScalarBytes,
+                maxNodes: Math.max(budget.maxNodes, clipBudget.maxNodes),
+                maxBytes: Math.max(budget.maxScalarBytes, clipBudget.maxBytes),
               },
             }),
           }),
