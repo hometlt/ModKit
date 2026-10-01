@@ -74,12 +74,19 @@ describe('generated VS Code contributions', () => {
 
   it('pins generated contributions and their ordered activation events to package.json', () => {
     const authorityDocument = JSON.parse(readFileSync(authority, 'utf8'))
-    const expectedActivationEventCount =
+    // One event per command, custom editor, view, file system scheme and debugger; the rest are the
+    // extensions' workspace markers (workspaceContains), collected when the manifest is generated.
+    const activationEvents = (
+      JSON.parse(readFileSync(manifest, 'utf8')) as { activationEvents: readonly string[] }
+    ).activationEvents
+    expect(activationEvents.filter(event => !event.startsWith('workspaceContains:'))).toHaveLength(
       authorityDocument.commands.length +
-      authorityDocument.customEditors.length +
-      Object.values(authorityDocument.views as Record<string, unknown[]>).flat().length +
-      authorityDocument.fileSystemSchemes.length +
-      1 // onStartupFinished: language routes are composed dynamically.
+        authorityDocument.customEditors.length +
+        Object.values(authorityDocument.views as Record<string, unknown[]>).flat().length +
+        authorityDocument.fileSystemSchemes.length +
+        authorityDocument.debuggers.length,
+    )
+    const expectedActivationEventCount = activationEvents.length
     const result = run()
 
     expect(
@@ -131,7 +138,7 @@ describe('generated VS Code contributions', () => {
       expect.arrayContaining([
         expect.objectContaining({
           command: 'modkit.sources.open',
-          when: 'view == modkit.sources && viewItem =~ /^modkitSource\\.(?:providerRoot|localRoot)$/',
+          when: 'view == modkit.sources && viewItem =~ /^modkitSource\\.(?:providerRoot|publicRoot|localRoot)$/',
         }),
         expect.objectContaining({
           command: 'modkit.sources.openInstallation',
@@ -183,7 +190,7 @@ describe('generated VS Code contributions', () => {
     expect(contributions.menus['view/item/context']).toContainEqual(
       expect.objectContaining({
         command: 'modkit.resources.open',
-        when: 'view == modkit.resources && viewItem == modkitResource.openable',
+        when: 'view == modkit.resources && viewItem =~ /^modkitResource\\.openable/',
       }),
     )
   })
