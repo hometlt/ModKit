@@ -34,7 +34,7 @@ import {
   handleEditorHistoryRequest,
   handleEditorSaveRequest,
 } from '../editor/commands.js'
-import type { UiLocalizer } from '../localization/index.js'
+import type { UiLocalizer, UiMessageKey } from '../localization/index.js'
 import { TABLE_VARIANTS_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
 import { withEnglishUiFallback } from '../localization/fallback.js'
 
@@ -84,7 +84,10 @@ export interface VariantTableArgs {
   readonly signal: AbortSignal
   readonly localizer?: UiLocalizer
   /** Draws rows with the table's own cells and inline editing. */
-  readonly render: (rows: readonly Row[]) => readonly HTMLTableRowElement[]
+  readonly render: (
+    rows: readonly Row[],
+    order?: readonly number[],
+  ) => readonly HTMLTableRowElement[]
   /** Called after any committed write; `true` means the host reopens the subject. */
   readonly committed: () => Promise<void>
   readonly writeRefusal?: () => string | undefined
@@ -240,6 +243,8 @@ interface FilterState {
   widths?: Record<string, number>
   /** The locale the others are read against, when the reader chose one (MK2's first column). */
   base?: string
+  /** Headers in the order the reader arranged them; the key stays first (MK2 dragged its columns). */
+  order?: string[]
 }
 const remembered = new Map<string, FilterState>()
 /** The narrowest a dragged column gets, so its grip stays within reach. */
@@ -545,17 +550,57 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
   translateService.append(automatic)
   translateService.hidden = true
 
+  /*
+   * The columns in the order they are drawn: the key first, then the reader's arrangement. Each
+   * drawn row and the head start with the selection cell, so a column sits at its place + 1.
+   */
+  const headRow = (args.before as HTMLTableElement).tHead?.rows[0]
+  const headCells = header.map((_, column) => headRow?.cells[column + 1])
+  let order: readonly number[] = []
+  let places = new Map<number, number>()
+  const arrange = (): void => {
+    const arranged = (state.order ?? [])
+      .map(label => header.indexOf(label))
+      .filter(column => column >= 0 && column !== keyColumn)
+    order = [
+      keyColumn,
+      ...new Set([
+        ...arranged,
+        ...header.map((_, column) => column).filter(column => column !== keyColumn),
+      ]),
+    ]
+    places = new Map(order.map((column, place) => [column, place + 1]))
+    for (const column of order) {
+      const th = headCells[column]
+      if (th !== undefined) headRow?.append(th)
+    }
+  }
+  arrange()
+  /** The cell of a column in a drawn row (or the head), wherever the reader moved the column. */
+  const cellOf = (tr: HTMLTableRowElement, column: number): HTMLTableCellElement | undefined => {
+    const place = places.get(column)
+    return place === undefined ? undefined : tr.cells[place]
+  }
+  /** Moves a column before another, or to the end; the key stays first. */
+  const moveColumn = (column: number, before: number | undefined): void => {
+    const rest = order.filter(item => item !== keyColumn && item !== column)
+    const at = before === undefined ? rest.length : rest.indexOf(before)
+    rest.splice(at < 0 ? rest.length : at, 0, column)
+    state.order = rest.map(item => header[item] ?? '')
+    arrange()
+    listColumns()
+    draw()
+  }
+
   // Every column but the key can be hidden; the choice follows the subject across reopens.
   const columns = element(bar, 'details', { part: 'table.columns' })
   element(columns, 'summary', { text: text('table.columns') })
   const choices = element(columns, 'div', {})
   const isHidden = (column: number): boolean => state.hidden.includes(header[column] ?? '')
   const showColumns = (): void => {
-    const head = (args.before as HTMLTableElement).tHead?.rows[0]
-    // Each drawn row and the head start with the selection cell, so column c sits at c + 1.
-    for (const tr of [...(head === undefined ? [] : [head]), ...drawnRows]) {
+    for (const tr of [...(headRow === undefined ? [] : [headRow]), ...drawnRows]) {
       header.forEach((label, column) => {
-        const cell = tr.cells[column + 1]
+        const cell = cellOf(tr, column)
         if (cell === undefined) return
         cell.hidden = isHidden(column)
         sizeCell(cell, state.widths?.[label])
@@ -567,9 +612,10 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
    * arrow keys move the edge too, and a double click gives the column its own width back.
    */
   header.forEach((label, column) => {
-    const th = (args.before as HTMLTableElement).tHead?.rows[0]?.cells[column + 1]
+    const th = headCells[column]
     if (th === undefined) return
     const grip = element(th, 'span', { part: 'table.resize' })
+    grip.draggable = false
     grip.tabIndex = 0
     grip.setAttribute('role', 'separator')
     grip.setAttribute('aria-orientation', 'vertical')
@@ -603,23 +649,65 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
       event.preventDefault()
       resize(th.getBoundingClientRect().width + (event.key === 'ArrowRight' ? 16 : -16))
     })
-  })
-  header.forEach((label, column) => {
+    // a header dropped on another moves its column there, as MK2's locale columns moved
     if (column === keyColumn) return
-    const line = element(choices, 'label', {})
-    const box = element(line, 'input', {}) as HTMLInputElement
-    box.type = 'checkbox'
-    box.checked = !isHidden(column)
-    line.append(line.ownerDocument.createTextNode(` ${label}`))
-    box.addEventListener('change', () => {
-      state.hidden = box.checked
-        ? state.hidden.filter(item => item !== label)
-        : [...state.hidden, label]
-      // the find bar counts only the columns on screen
-      if (state.find.open) seek()
-      else showColumns()
+    th.draggable = true
+    th.addEventListener('dragstart', event => {
+      dragged = column
+      event.dataTransfer?.setData('text/plain', label)
+    })
+    th.addEventListener('dragover', event => {
+      if (dragged !== undefined && dragged !== column) event.preventDefault()
+    })
+    th.addEventListener('drop', event => {
+      event.preventDefault()
+      const moved = dragged
+      dragged = undefined
+      if (moved !== undefined && moved !== column) moveColumn(moved, column)
+    })
+    th.addEventListener('dragend', () => {
+      dragged = undefined
     })
   })
+  /** The column a header drag carries. */
+  let dragged: number | undefined
+  /** The hide switches, in the order the columns stand, each with a way to move its column. */
+  const listColumns = (): void => {
+    choices.replaceChildren()
+    const movable = order.filter(column => column !== keyColumn)
+    movable.forEach((column, place) => {
+      const label = header[column] ?? ''
+      const line = element(choices, 'div', {})
+      const toggle = element(line, 'label', {})
+      const box = element(toggle, 'input', {}) as HTMLInputElement
+      box.type = 'checkbox'
+      box.checked = !isHidden(column)
+      toggle.append(toggle.ownerDocument.createTextNode(` ${label}`))
+      box.addEventListener('change', () => {
+        state.hidden = box.checked
+          ? state.hidden.filter(item => item !== label)
+          : [...state.hidden, label]
+        // the find bar counts only the columns on screen
+        if (state.find.open) seek()
+        else showColumns()
+      })
+      const shift = (glyph: string, key: UiMessageKey, before: number | undefined | null) => {
+        const button = element(line, 'button', {
+          part: 'toolbar.action',
+          text: glyph,
+        }) as HTMLButtonElement
+        button.type = 'button'
+        button.setAttribute('aria-label', text(key, { column: label }))
+        button.disabled = before === null
+        button.addEventListener('click', () => {
+          if (before !== null) moveColumn(column, before)
+        })
+      }
+      shift('←', 'table.moveColumnEarlier', place === 0 ? null : movable[place - 1])
+      shift('→', 'table.moveColumnLater', place === movable.length - 1 ? null : movable[place + 2])
+    })
+  }
+  listColumns()
   columns.hidden = header.length < 3
 
   // The draft's Save and Revert; VS Code takes both into its own Save and Revert File.
@@ -806,7 +894,7 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
       const columns = findColumns()
       for (const tr of drawnRows) {
         for (const column of columns) {
-          const cell = tr.cells[column + 1]
+          const cell = cellOf(tr, column)
           // A marked cell keeps its marks: the syntax runs drawn on hover would replace them.
           if (cell !== undefined && markMatches(cell, pattern)) cell.dataset['highlighted'] = 'true'
         }
@@ -875,7 +963,7 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
 
   const draw = (): void => {
     const page = visible.slice(0, shown)
-    const drawn = args.render(page)
+    const drawn = args.render(page, order)
     drawn.forEach((tr, position) => {
       const row = page[position]
       if (row === undefined) return
@@ -890,14 +978,14 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
         else selected.delete(row.index)
       })
       cell.append(box)
-      const keyCell = tr.cells[keyColumn + 1]
+      const keyCell = cellOf(tr, keyColumn)
       if (keyCell !== undefined) {
         // «Wrap» keeps a key on one line and may cut it short; the whole key stays at hand
         keyCell.dataset['key'] = 'true'
         keyCell.title = row.cells[keyColumn] ?? ''
       }
       for (const column of variants) {
-        const valueCell = tr.cells[column.index + 1]
+        const valueCell = cellOf(tr, column.index)
         if (valueCell === undefined) continue
         // each locale's state at a glance, as MK2 coloured its cells: no value, or still the base's
         const value = row.cells[column.index] ?? ''
@@ -952,8 +1040,7 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
       if (row === undefined) return
       for (const column of variants) {
         const value = row.cells[column.index] ?? ''
-        // Each drawn row starts with the selection cell, so column c sits at c + 1.
-        const cell = tr.cells[column.index + 1]
+        const cell = cellOf(tr, column.index)
         if (value !== '' && cell !== undefined) cells.push({ cell, column: column.index, text: value })
       }
     })

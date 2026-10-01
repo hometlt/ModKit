@@ -399,6 +399,27 @@ describe('variant table surface', () => {
     await page.click('[data-mk-part="table.columns"] summary')
   })
 
+  it('moves a column, in the head and every row, and keeps the order with the file (7.36)', async () => {
+    const head = () =>
+      page.$$eval('[data-mk-part="table.head"] th', cells => cells.map(cell => cell.textContent))
+    const firstRow = () =>
+      page.$$eval('[data-mk-part="table.row"]:first-child td', cells =>
+        cells.map(cell => cell.textContent),
+      )
+    await page.click('[data-mk-part="table.columns"] summary')
+    await page.click('button[aria-label="Move ruRU left"]')
+    expect(await head()).toEqual(['', 'Key', 'ruRU', 'enUS', 'Preview', 'Status'])
+    expect((await firstRow()).slice(1, 4)).toEqual(['Abil/Name/A', 'Альфа', 'Alpha'])
+    // the next mount of the file's table draws the columns where the reader put them
+    await page.evaluate(() => (globalThis as unknown as Probe).mountTable())
+    expect(await head()).toEqual(['', 'Key', 'ruRU', 'enUS', 'Preview', 'Status'])
+    await page.click('[data-mk-part="table.columns"] summary')
+    await page.click('button[aria-label="Move ruRU right"]')
+    expect(await head()).toEqual(['', 'Key', 'enUS', 'ruRU', 'Preview', 'Status'])
+    expect((await firstRow()).slice(1, 4)).toEqual(['Abil/Name/A', 'Alpha', 'Альфа'])
+    await page.click('[data-mk-part="table.columns"] summary')
+  })
+
   it('reads and translates the other locales against the base the reader picks (7.36)', async () => {
     const baseChoice = 'select[aria-label^="Base locale"]'
     // the cells still holding the base's text, by row: td 2 is enUS, td 3 ruRU

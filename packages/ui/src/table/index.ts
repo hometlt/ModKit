@@ -543,7 +543,11 @@ export function createTableViewer(options: TableViewerOptions = {}): ViewerModul
         cell.querySelector<HTMLElement>('input, textarea, select')?.focus()
       }
 
-      const render = (rows: readonly Row[]): readonly HTMLTableRowElement[] => {
+      /** Draws the rows; `order` lists the columns as they stand, the stored order otherwise. */
+      const render = (
+        rows: readonly Row[],
+        order?: readonly number[],
+      ): readonly HTMLTableRowElement[] => {
         cancelLookup('table-page-changed')
         clearEditTarget()
         showMissingKnowledge()
@@ -555,7 +559,8 @@ export function createTableViewer(options: TableViewerOptions = {}): ViewerModul
           drawn.push(tr)
           setPart(tr, 'table.row')
           tr.dataset['row'] = String(row.index)
-          for (const [column, value] of row.cells.entries()) {
+          for (const column of order ?? row.cells.keys()) {
+            const value = row.cells[column] ?? ''
             const cell = tr.insertCell()
             setPart(cell, 'table.cell')
             cell.tabIndex = 0

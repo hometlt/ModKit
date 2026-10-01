@@ -786,6 +786,8 @@ export const TABLE_VARIANTS_FALLBACK_MESSAGES = {
   'table.groupAll': 'All groups',
   'table.keyExists': '{key} already exists',
   'table.more': 'Show more rows',
+  'table.moveColumnEarlier': 'Move {column} left',
+  'table.moveColumnLater': 'Move {column} right',
   'table.refused': 'Not saved: {reason}',
   'table.renameKey': 'Rename key…',
   'table.renameKeyName': 'New key',
