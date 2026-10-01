@@ -9282,6 +9282,7 @@ async function activateModkit(
             sectionTitle: declared.title,
             ...(declared.icon === undefined ? {} : { icon: declared.icon }),
             ...(declared.forms === undefined ? {} : { inputSchema: declared.forms }),
+            ...(declared.copyPresetId === undefined ? {} : { copyPresetId: declared.copyPresetId }),
           },
         ]
       })

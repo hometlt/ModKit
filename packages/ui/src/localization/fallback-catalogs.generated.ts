@@ -411,6 +411,7 @@ export const IMAGE_FALLBACK_MESSAGES = {
   'viewer.imageControls': 'Image controls',
   'viewer.imageConvert': 'Conversions',
   'viewer.imageConverting': 'converting: {preset}…',
+  'viewer.imageCopyWritten': 'Wrote {name}.',
   'viewer.imageDecodeError':
     'The platform decoder cannot render these bytes: {reason}. A format-specific decoder provider is required.',
   'viewer.imageDimensions': 'Dimensions',
@@ -455,6 +456,7 @@ export const IMAGE_FALLBACK_MESSAGES = {
   'viewer.imageSectionMetadata': 'Header / metadata',
   'viewer.imageSubresourceIndex': '{axis} number',
   'viewer.imageSubresources': 'Subresource, comparison and export',
+  'viewer.imageWriteCopy': 'Write a copy (.{preset})',
   'viewer.isolateChannel': 'Isolate the {channel} channel',
   'viewer.pause': 'Pause',
   'viewer.play': 'Play',

@@ -420,6 +420,11 @@ export interface ImagePixelOperation {
   readonly icon?: string
   /** The published `edit.content`-shaped form document, or nothing for a one-button operation. */
   readonly inputSchema?: unknown
+  /**
+   * After it runs, the viewer offers a copy of the result beside the file as
+   * `<base>.<copyPresetId>.<extension>` (MK2's `tex.button.dds`, plan 7.13).
+   */
+  readonly copyPresetId?: string
 }
 
 export type ImagePixelResult =
@@ -1565,10 +1570,55 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
                 next.data.set(outcome.image.rgba.subarray(0, next.data.length))
                 editing?.applyImage(next)
                 note = ''
+                if (copy !== undefined) copy.hidden = false
                 paint()
               })()
             })
             run.textContent = localizer.text('viewer.imageOperationRun')
+            /*
+             * The copy the operation names (MK2 wrote `tex.button.dds` beside an icon framed as a
+             * button): the current pixels, encoded by the subject's own codec as a save would, and
+             * written through the host's writer. Offered once the operation has run.
+             */
+            const copyPresetId = operation.copyPresetId
+            const write = options.exportBytes
+            const copy =
+              copyPresetId === undefined || write === undefined || options.savePixels === undefined
+                ? undefined
+                : button(row, '', '', () => {
+                    const path = descriptor.subjectUri.split(/[?#]/u)[0] ?? ''
+                    const extension = /\.([A-Za-z0-9]+)$/u.exec(path)?.[1] ?? 'dds'
+                    const name = convertedFileName(
+                      exportSafeName(options.exportBaseName?.(descriptor) ?? 'image'),
+                      copyPresetId,
+                      extension,
+                    )
+                    void (async () => {
+                      try {
+                        const outcome = await write(
+                          [
+                            {
+                              name,
+                              mediaType: 'application/octet-stream',
+                              bytes: await encodeEdits(),
+                            },
+                          ],
+                          scope.signal,
+                        )
+                        note =
+                          outcome.state === 'written'
+                            ? localizer.text('viewer.imageCopyWritten', { name })
+                            : (outcome.reason ?? outcome.state)
+                      } catch (error) {
+                        note = error instanceof Error ? error.message : String(error)
+                      }
+                      paint()
+                    })()
+                  })
+            if (copy !== undefined && copyPresetId !== undefined) {
+              copy.textContent = localizer.text('viewer.imageWriteCopy', { preset: copyPresetId })
+              copy.hidden = true
+            }
           }
         }
       }

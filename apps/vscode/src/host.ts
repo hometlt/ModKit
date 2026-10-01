@@ -1048,6 +1048,8 @@ export interface ViewerSurfaceOperation {
   readonly sectionTitle: string
   readonly icon?: string
   readonly inputSchema?: unknown
+  /** The copy the viewer offers after the operation runs (`tex.button.dds`). */
+  readonly copyPresetId?: string
 }
 
 export type ViewerSurfaceOperationResult =
