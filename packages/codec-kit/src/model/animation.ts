@@ -1,4 +1,4 @@
-import type { ModelAnimationClip } from '@modkit/sdk'
+import type { ModelAnimationClip, ModelAnimationSample } from '@modkit/sdk'
 import { snapshotJson, type JsonSnapshotBudget } from '../json-snapshot.js'
 import { CUBIC_SPLINE_LINE_TYPE, sampleTrackValue } from '../model-math/sequence-pose.js'
 import type { RenderScalarAnimationTrack } from '../legacy-model-support.js'
@@ -8,6 +8,56 @@ export const DEFAULT_MODEL_ANIMATION_BUDGET: JsonSnapshotBudget = Object.freeze(
   maxNodes: 1_000_000,
   maxBytes: 134_217_728,
 })
+
+/**
+ * The keys without those equal to both neighbours: linear, spherical and step interpolation
+ * between equal values give that value, so the track plays the same. A held run keeps its first
+ * and last key; a cubic-spline key goes only when it and both neighbours have zero tangents.
+ * Formats that store a pose per frame (SAGE, Earth 2160 `.mot`, Grey Goo ALA) were millions of
+ * snapshot nodes and did not open. `frame` is renumbered to the kept order.
+ */
+export function withoutHeldSamples(
+  samples: readonly ModelAnimationSample[],
+): ModelAnimationSample[] {
+  const still = (sample: ModelAnimationSample) =>
+    (sample.inTangent ?? []).every(value => value === 0) &&
+    (sample.outTangent ?? []).every(value => value === 0)
+  const same = (a: ModelAnimationSample, b: ModelAnimationSample) =>
+    a.value.length === b.value.length &&
+    a.value.every((value, index) => Object.is(value, b.value[index])) &&
+    still(a) &&
+    still(b)
+  const kept = samples.filter((sample, index) => {
+    const previous = samples[index - 1]
+    const next = samples[index + 1]
+    return previous === undefined || next === undefined || !same(previous, sample) || !same(sample, next)
+  })
+  return kept.map((sample, index) => (sample.frame === index ? sample : { ...sample, frame: index }))
+}
+
+/**
+ * The animation snapshot budget sized by clips the codec already decoded out of its bounded input
+ * (a key is about nine JSON nodes and eighty bytes), never below the default. Give it to
+ * `createModelAnimationSource` and to the UVM materializer's `animationBudget`: the default holds a
+ * vehicle, not an infantry skeleton with fifty clips.
+ */
+export function animationSnapshotBudget(clips: readonly ModelAnimationClip[]): JsonSnapshotBudget {
+  let samples = 0
+  let channels = 0
+  for (const clip of clips)
+    for (const channel of clip.channels) {
+      channels += 1
+      samples += channel.samples?.length ?? 0
+    }
+  return Object.freeze({
+    maxDepth: DEFAULT_MODEL_ANIMATION_BUDGET.maxDepth,
+    maxNodes: Math.max(
+      DEFAULT_MODEL_ANIMATION_BUDGET.maxNodes,
+      16 * samples + 64 * channels + 64 * clips.length,
+    ),
+    maxBytes: Math.max(DEFAULT_MODEL_ANIMATION_BUDGET.maxBytes, 256 * samples + 1024 * channels),
+  })
+}
 
 function finite(value: unknown, label: string): asserts value is number {
   if (typeof value !== 'number' || !Number.isFinite(value))
