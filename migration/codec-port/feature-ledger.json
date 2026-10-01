@@ -1123,6 +1123,10 @@
         {
           "path": "modkit-extensions-other/test/receipts/k1/earth2160-model.model-read.r2.json",
           "sha256": "ff81f2a3e45c6478ccd98fd14665bd9a545ba45be6938f7555783ac64ebce71d"
+        },
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/earth2160-model.model-read.r3.json",
+          "sha256": "ca0e603d865b9dc48730306d85a904c67433a482c0d0cefcf8faf1ab21e5a2ca"
         }
       ],
       "id": "legacy/codec-manifest/modkit/earth2160-model/operation/model.read",
