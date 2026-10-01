@@ -1830,6 +1830,13 @@
     font-size: var(--mk-font-size-sm);
   }
 
+  /* What the translator should know about the text. */
+  [data-mk-part='table.context'] {
+    width: 16em;
+    height: var(--mk-size-control);
+    font-size: var(--mk-font-size-sm);
+  }
+
   [data-mk-part='table.columns'] {
     position: relative;
     font-size: var(--mk-font-size-sm);

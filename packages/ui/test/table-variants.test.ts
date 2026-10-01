@@ -97,7 +97,8 @@ beforeAll(async () => {
         ...Array.from({ length: options.many ?? 0 }, (_, index) => [
           `Long/Name/${String(index).padStart(4, '0')}`,
           `Value ${index}`,
-          `Значение ${index}`,
+          // every other one untranslated, for a translation batch of several
+          index % 2 === 0 ? `Значение ${index}` : '',
           `Value ${index}`,
           '',
         ]),
@@ -661,8 +662,9 @@ describe('variant table surface', () => {
     expect(await page.isDisabled(translate)).toBe(true)
     expect(await page.evaluate(() => (globalThis as unknown as Probe).commits.length)).toBe(0)
     await page.evaluate(() => (globalThis as unknown as Probe).finishTranslation())
-    await page.waitForSelector('[data-mk-part="table.panel"] button')
-    await page.click('[data-mk-part="table.panel"] button')
+    const apply = '[data-mk-part="table.panel"] button:has-text("Apply translations")'
+    await page.waitForSelector(apply)
+    await page.click(apply)
     // Accepted translations join the draft; Save writes them.
     expect(await page.evaluate(() => (globalThis as unknown as Probe).commits.length)).toBe(0)
     await page.click('[data-modkit-action="save"]')
@@ -698,8 +700,34 @@ describe('variant table surface', () => {
     await page.waitForFunction(() =>
       document.querySelector('[data-mk-part="table.panel"]')?.textContent?.includes('Beta'),
     )
-    expect(await page.locator('[data-mk-part="table.panel"] button').count()).toBe(0)
+    await expect.poll(() => page.locator('[data-mk-part="table.panel"] button').count()).toBe(0)
     expect(await page.evaluate(() => (globalThis as unknown as Probe).commits.length)).toBe(0)
+  })
+
+  it('stops a translation batch and still offers what came back, with the context sent (7.35)', async () => {
+    await page.evaluate(() =>
+      (globalThis as unknown as Probe).mountTable({ available: true, wait: true, many: 4 }),
+    )
+    await page.fill('input[aria-label="Context for the translator (optional)"]', 'StarCraft II')
+    await page.click('button[aria-label="Translate empty cells"]')
+    await page.click('[data-mk-part="table.panel"] button:has-text("Stop")')
+    await page.evaluate(() => (globalThis as unknown as Probe).finishTranslation())
+    await page.waitForFunction(() =>
+      document.querySelector('[data-mk-part="table.panel"]')?.textContent?.includes('Stopped'),
+    )
+    // the value on its way when Stop was pressed came back; the batch asked for no more
+    const asked = await page.evaluate(() =>
+      (globalThis as unknown as Probe).calls
+        .filter(call => call.handler === 'translate')
+        .map(call => call.input as { probe?: boolean; context?: string })
+        .filter(input => input.probe !== true),
+    )
+    expect(asked).toHaveLength(1)
+    expect(asked[0]?.context).toBe('StarCraft II')
+    expect(
+      await page.isVisible('[data-mk-part="table.panel"] button:has-text("Apply translations")'),
+    ).toBe(true)
+    await page.evaluate(() => (globalThis as unknown as Probe).mountTable())
   })
 
   it('draws locale values as in game in one batch, only through safe text and colours', async () => {

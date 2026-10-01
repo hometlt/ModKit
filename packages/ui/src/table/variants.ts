@@ -468,6 +468,12 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
     target.append(node)
   }
   target.hidden = actions.translateVariant === undefined || variants.length < 2
+  // What the translator should know about the text (a game, a unit's voice), sent with each value
+  const translateContext = element(bar, 'input', { part: 'table.context' }) as HTMLInputElement
+  translateContext.type = 'text'
+  translateContext.placeholder = text('table.translateContext')
+  translateContext.setAttribute('aria-label', text('table.translateContext'))
+  translateContext.hidden = target.hidden
 
   // Every column but the key can be hidden; the choice follows the subject across reopens.
   const columns = element(bar, 'details', { part: 'table.columns' })
@@ -1364,11 +1370,25 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
     }
     translating = true
     toolbar.setDisabled('translate', true)
+    // A batch can be stopped; what came back before the stop can still be applied (7.35).
+    const stopping = new AbortController()
+    const stop = element(panel, 'button', {
+      part: 'toolbar.action',
+      text: text('table.translateStop'),
+    }) as HTMLButtonElement
+    stop.type = 'button'
+    stop.addEventListener('click', () => stopping.abort(), { once: true })
+    const signal = AbortSignal.any([args.signal, stopping.signal])
+    const context = translateContext.value.trim()
     try {
       const ready: { key: string; value: string }[] = []
       say(text('table.working'))
       for (const row of empty.slice(0, TRANSLATE_BATCH)) {
         if (args.signal.aborted) return
+        if (stopping.signal.aborted) {
+          setViewerText(element(panel, 'p', {}), text('table.translateStopped'))
+          break
+        }
         const key = row.cells[keyColumn] ?? ''
         const result = await invokeOperation(
           args.descriptor,
@@ -1380,8 +1400,9 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
             targetVariant: column.variant ?? '',
             sourceLanguage: base.language ?? base.variant ?? '',
             targetLanguage: column.language ?? column.variant ?? '',
+            ...(context === '' ? {} : { context }),
           },
-          { signal: args.signal },
+          { signal },
         )
         const value =
           result.state === 'ok' && result.output.kind === 'json'
@@ -1400,6 +1421,7 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
         setViewerText(line, `${key} → ${value.translated}`, 1024)
         if (value.changed !== false) ready.push({ key, value: value.translated })
       }
+      stop.remove()
       say(text('table.translateReady', { count: ready.length, variant: column.variant ?? '' }))
       if (ready.length === 0 || actions.addRow === undefined) return
       // A human accepts the batch: one step of the draft, which Save writes with the rest.
@@ -1416,8 +1438,16 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
         if (edit(changes)) panel.hidden = true
       })
     } catch (error) {
-      say(text('table.refused', { reason: error instanceof Error ? error.message : String(error) }))
+      // a stop while a value was on its way ends the batch, not the panel
+      if (stopping.signal.aborted && !args.signal.aborted) {
+        setViewerText(element(panel, 'p', {}), text('table.translateStopped'))
+      } else {
+        say(
+          text('table.refused', { reason: error instanceof Error ? error.message : String(error) }),
+        )
+      }
     } finally {
+      stop.remove()
       translating = false
       if (!args.signal.aborted) toolbar.setDisabled('translate', false)
     }
