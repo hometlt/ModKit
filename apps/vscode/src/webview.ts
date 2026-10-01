@@ -1094,6 +1094,9 @@ async function mount(
           })
           const selected = candidates.find(candidate => candidate.candidateId === choice)
           if (selected !== undefined) {
+            // the map was chosen for the World view, so that is where the tab opens — not on the
+            // package's own first view (v82: mp.wz opened on its research tree)
+            if (!pendingStages.has(entry.id)) pendingStages.set(entry.id, 'world')
             const firstSession = result.session
             result = await continueVsCodeMapPreviewSelection({
               path: entry.id,
