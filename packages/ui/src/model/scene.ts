@@ -24,11 +24,10 @@ import type {
   SceneRendererDirectionalLight,
   SceneRendererMaterial,
   SceneRendererMaterialContext,
-  SceneRendererTeamColor,
   SceneRendererTexture,
   SceneRendererPrimitive,
 } from '@modkit/sdk'
-import { createModelSceneSampler } from '@modkit/scene/model'
+import { createModelSceneSampler, modelMaterialTeamColor } from '@modkit/scene/model'
 import { createModelSkeletonNodes } from '@modkit/codec-kit/model/skeleton'
 
 import type { OrbitBasis } from './orbit.js'
@@ -369,37 +368,6 @@ export function baseColorResourceOf(material: ModelMaterialRef): string | undefi
   return undefined
 }
 
-/** The slots a team-colour layer names, as the world reads them. */
-const TEAM_COLOR_SLOTS = new Set(['teamcolor', 'team'])
-const TEAM_COLOR_CHANNELS: Readonly<Record<number, 'r' | 'g' | 'b' | 'a'>> = {
-  1: 'r',
-  2: 'g',
-  4: 'b',
-  8: 'a',
-}
-
-/**
- * The team colour a material's team-colour layer states (UV_game_material_team_color, SPEC_UVM
- * §11.2), as the base route draws it: the whole material without a mask, or a mask texture sampled
- * with the base-colour UVs, by one channel or by all three. A mask that did not resolve, or that lies
- * on other UVs, is left out, as the world leaves it.
- */
-export function materialTeamColor(
-  ref: ModelMaterialRef,
-  textures: ReadonlyMap<string, SceneRendererTexture>,
-): SceneRendererTeamColor | undefined {
-  const layers = ref.layers ?? []
-  const layer = layers.find(item => TEAM_COLOR_SLOTS.has(slotKey(item.slot)))
-  if (layer === undefined) return undefined
-  const blend = layer.blend ?? 'multiply'
-  if (layer.resourceId === undefined) return { mask: 'whole', blend }
-  const texture = textures.get(layer.resourceId)
-  const base = layers.find(item => item.resourceId === baseColorResourceOf(ref))
-  if (texture === undefined || (layer.uvSource ?? 0) !== (base?.uvSource ?? 0)) return undefined
-  const channel = TEAM_COLOR_CHANNELS[layer.colorChannels ?? 0] ?? 'rgb'
-  return { mask: { texture: texture.id, channel }, blend }
-}
-
 export interface ModelSceneMaterials {
   readonly materials: readonly SceneRendererMaterial[]
   readonly textures: readonly SceneRendererTexture[]
@@ -433,7 +401,9 @@ export function sceneMaterials(
       used.set(layerTexture.id, layerTexture)
       bindings.push({ resourceId: layer.resourceId, textureId: layerTexture.id })
     }
-    const teamColor = materialTeamColor(ref, textures)
+    // the team colour the world draws, by the same rule: the mask on the base colour's UVs
+    const base = ref.layers?.find(layer => layer.resourceId === resourceId)
+    const teamColor = modelMaterialTeamColor(ref, textures, base?.uvSource ?? 0)
     return Object.freeze({
       id: ref.id,
       /*
