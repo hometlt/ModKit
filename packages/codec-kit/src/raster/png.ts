@@ -29,6 +29,12 @@ export interface PngSamples {
   readonly channels: 1 | 2 | 3 | 4
   /** Row-major, top row first, `channels` samples per pixel. */
   readonly samples: Uint16Array
+  /**
+   * The `tRNS` colour of a grey or RGB image in `samples` terms (sub-byte grey scaled as its
+   * samples are): a pixel whose samples equal it is transparent. A palette image's `tRNS` is
+   * already its alpha channel.
+   */
+  readonly transparent?: readonly number[]
 }
 
 export interface PngDecodeOptions {
@@ -141,7 +147,26 @@ export async function decodePngSamples(
       samples[y * width * stored + index] = Math.round(sampleAt(y, index) * scale)
     }
   }
-  return Object.freeze({ width, height, bitDepth: depth === 16 ? 16 : 8, channels: stored, samples })
+  // tRNS of grey (one 16-bit sample) or RGB (three): the transparent colour, in the image's depth
+  const keyed = colorType === 0 ? 1 : colorType === 2 ? 3 : 0
+  const transparent =
+    transparency === undefined || keyed === 0 || transparency.byteLength < keyed * 2
+      ? undefined
+      : Array.from({ length: keyed }, (_, index) =>
+          Math.round(
+            ((((transparency[index * 2] as number) << 8) | (transparency[index * 2 + 1] as number)) &
+              ((1 << depth) - 1)) *
+              scale,
+          ),
+        )
+  return Object.freeze({
+    width,
+    height,
+    bitDepth: depth === 16 ? 16 : 8,
+    channels: stored,
+    samples,
+    ...(transparent === undefined ? {} : { transparent: Object.freeze(transparent) }),
+  })
 }
 
 /** A grid of integers — a map's heights, levels, masks — as an image carries it. */
