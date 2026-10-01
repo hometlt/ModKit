@@ -126,6 +126,8 @@ export function projectUvmStaticModel(
         'UV_units',
         'UV_game_material',
         'UV_game_animation_clips',
+        // the glTF fallback's look, as doubleSided is: the program states what the target writes
+        'KHR_materials_unlit',
       ].includes(String(name)))
         throw new TypeError(`unsupported static extension ${String(name)}`)
   const scenes = array(document, 'scenes'),
@@ -220,7 +222,7 @@ export function projectUvmStaticModel(
     )
     keys(
       object(material['extensions'], 'material extensions'),
-      ['UV_game_material'],
+      ['UV_game_material', 'KHR_materials_unlit'],
       'material extensions',
     )
     const ref = facets.materialRefs[index],
