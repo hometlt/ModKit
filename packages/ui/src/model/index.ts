@@ -1147,6 +1147,9 @@ function modelFrameCamera(placement: CameraPlacement, correction: Float32Array |
   return { rotation: billboardCameraRotation(Array.from(view)), position }
 }
 
+/** Animation speeds the clip can play at, as multiples of its own pace. */
+const MODEL_ANIMATION_SPEEDS: readonly number[] = [0.25, 0.5, 1, 2, 4]
+
 export function createModelViewer(options: ModelViewerOptions = {}): ViewerModule {
   const localizer = withEnglishUiFallback(options.localizer, MODEL_FALLBACK_MESSAGES)
   return defineViewerModule({
@@ -2004,11 +2007,31 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
               panel.animation,
               localizer.text('viewer.modelPlayback'),
             ).field
-            const seek = element(
-              controlRow(panel.animation, localizer.text('viewer.modelAnimationTime')).field,
-              'input',
-              { part: 'model.animation-seek' },
-            ) as HTMLInputElement
+            const seekField = controlRow(
+              panel.animation,
+              localizer.text('viewer.modelAnimationTime'),
+            ).field
+            const seek = element(seekField, 'input', {
+              part: 'model.animation-seek',
+            }) as HTMLInputElement
+            // where the clip is and how long it runs, as MK2's player showed it
+            const clock = element(seekField, 'output', { part: 'model.readout' })
+            // speed and loop beside the clip, as MK2 offered them
+            const pace = controlRow(panel.animation, localizer.text('viewer.modelSpeed')).field
+            const speedSelect = element(pace, 'select') as HTMLSelectElement
+            speedSelect.setAttribute('aria-label', localizer.text('viewer.modelSpeed'))
+            for (const value of MODEL_ANIMATION_SPEEDS) {
+              const option = element(speedSelect, 'option', {
+                text: `${value}×`,
+              }) as HTMLOptionElement
+              option.value = String(value)
+            }
+            speedSelect.value = '1'
+            const loopLabel = element(pace, 'label')
+            const loop = element(loopLabel, 'input') as HTMLInputElement
+            loop.type = 'checkbox'
+            loopLabel.append(' ', localizer.text('viewer.modelLoop'))
+            let speed = 1
             seek.type = 'range'
             seek.min = '0'
             seek.max = '0'
@@ -2020,16 +2043,33 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
             let playing = false
             let duration = 0
             let startedAt = 0
+            const showClock = (): void =>
+              setViewerText(
+                clock,
+                localizer.text('viewer.modelClock', {
+                  time: timeSeconds.toFixed(2),
+                  duration: duration.toFixed(2),
+                }),
+              )
             const toggle = button(playbackField, '▶', localizer.text('viewer.playPause'), () => {
               if (duration <= 0) return
               playing = !playing
               if (playing) {
                 if (timeSeconds >= duration) timeSeconds = 0
-                startedAt = performance.now() - timeSeconds * 1000
+                startedAt = performance.now() - (timeSeconds / speed) * 1000
                 frameId = requestAnimationFrame(tick)
               } else cancelAnimationFrame(frameId)
               toggle.setAttribute('aria-pressed', String(playing))
             })
+            speedSelect.addEventListener(
+              'change',
+              () => {
+                speed = Number(speedSelect.value) || 1
+                // the clip goes on from where it is, at the new pace
+                if (playing) startedAt = performance.now() - (timeSeconds / speed) * 1000
+              },
+              { signal: scope.signal },
+            )
             toggle.setAttribute('aria-pressed', 'false')
             const stop = () => {
               playing = false
@@ -2038,8 +2078,14 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
             }
             const tick = (now: number) => {
               if (!playing || scope.signal.aborted) return
-              timeSeconds = Math.min(duration, (now - startedAt) / 1000)
+              timeSeconds = Math.min(duration, ((now - startedAt) / 1000) * speed)
+              // a looping clip starts over instead of stopping at its end
+              if (timeSeconds >= duration && loop.checked) {
+                startedAt = now
+                timeSeconds = 0
+              }
               seek.value = String(timeSeconds)
+              showClock()
               redraw()
               if (timeSeconds < duration) frameId = requestAnimationFrame(tick)
               else stop()
@@ -2063,6 +2109,7 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
                   seek.max = String(duration)
                   seek.value = '0'
                   seek.disabled = duration <= 0
+                  showClock()
                   canvas.setAttribute('data-model-animation', clip?.id ?? '')
                   showDiagnostics()
                   redraw()
@@ -2081,6 +2128,7 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
                 stop()
                 generation++
                 timeSeconds = Number(seek.value)
+                showClock()
                 redraw()
               },
               { signal: scope.signal },

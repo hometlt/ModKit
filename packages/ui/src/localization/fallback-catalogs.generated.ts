@@ -503,6 +503,7 @@ export const MODEL_FALLBACK_MESSAGES = {
   'viewer.modelCameras': 'cameras',
   'viewer.modelClipDetail': '{frames} frames · {channels} channels · {samples} samples',
   'viewer.modelClips': 'clips',
+  'viewer.modelClock': '{time} / {duration} s',
   'viewer.modelCollision': 'collision',
   'viewer.modelConvert': 'Convert…',
   'viewer.modelConvertUnavailable': 'this window cannot write converted files',
@@ -519,6 +520,7 @@ export const MODEL_FALLBACK_MESSAGES = {
     'Scene metadata is available. A buffer resolver/renderer provider is required for geometry.',
   'viewer.modelLayers': '{count} layers',
   'viewer.modelLights': 'lights',
+  'viewer.modelLoop': 'Loop',
   'viewer.modelMaterial': 'material',
   'viewer.modelMaterialCount': 'Materials',
   'viewer.modelMaterials': 'materials',
@@ -539,6 +541,7 @@ export const MODEL_FALLBACK_MESSAGES = {
   'viewer.modelSceneCounts': '{meshes} meshes · {materials} materials · {animations} animations',
   'viewer.modelSkeletonOverlay': 'Show the bone overlay',
   'viewer.modelSockets': 'sockets',
+  'viewer.modelSpeed': 'Speed',
   'viewer.modelSummary':
     '{nodes} nodes · {meshes} meshes · {primitives} primitives · {materials} materials · {animations} animations{facets}',
   'viewer.modelTeamColor': 'Team Color',
