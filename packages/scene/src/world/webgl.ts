@@ -209,6 +209,12 @@ interface MutableBatch {
 interface MutableTexturedBatch extends MutableBatch {
   readonly textureCoordinates: number[]
   readonly secondaryTextureCoordinates?: number[]
+  /**
+   * The base texture is an atlas of tiles in this grid (MapTerrainMaterialDefinition.atlas); the
+   * secondary coordinates are then the cell's grid coordinates, by which the shader keeps each
+   * sample inside its tile at the mip level it reads.
+   */
+  readonly atlas?: AtlasGrid
   readonly texture: NonNullable<
     Extract<WorldSceneModelResult, { state: 'converted' }>['textures']
   >[number]
@@ -288,6 +294,7 @@ export interface WorldWebGlShadowControlledBatch extends WorldWebGlBatch {
 export interface WorldWebGlTexturedBatch extends WorldWebGlBatch {
   readonly textureCoordinates: Float32Array
   readonly secondaryTextureCoordinates?: Float32Array
+  readonly atlas?: AtlasGrid
   readonly texture: MutableTexturedBatch['texture']
   readonly normalTexture?: MutableTexturedBatch['normalTexture']
   readonly normalSwizzle?: number
@@ -1656,11 +1663,34 @@ function terrainSurfaceUv(
   return transformedTerrainUv([cell.x + inCell[0], cell.y + inCell[1]], materialTransform)
 }
 
+interface AtlasGrid {
+  readonly columns: number
+  readonly rows: number
+}
+
+/** An atlas material's tile grid: `rows` rows, as many square-tile columns as the texture's aspect. */
+function atlasGrid(rows: number, texture: SceneRendererTexture): AtlasGrid {
+  return Object.freeze({
+    columns: Math.max(1, Math.round((rows * texture.width) / texture.height)),
+    rows,
+  })
+}
+
+/** The cell grid coordinates of a triangle's corners, on an atlas batch's secondary unit. */
+function pushCellCoordinates(
+  target: MutableTexturedBatch,
+  cell: Readonly<{ x: number; y: number }>,
+  locals: readonly (readonly [number, number])[],
+) {
+  for (const local of locals)
+    target.secondaryTextureCoordinates?.push(cell.x + local[0], cell.y + local[1])
+}
+
 /**
  * A cell corner in a tile of an atlas material (MapTerrainMaterialSample.layers): square tiles in
  * `rows` rows and as many columns as the texture's aspect gives, the cell's top (local y = 1) on
- * the tile's top row. Half a texel inside the tile, so filtering does not reach its neighbour.
- * ponytail: smaller mips still mix neighbouring tiles at a distance; per-tile mips if it shows.
+ * the tile's top row. Half a texel inside the tile, so filtering at the full level does not reach
+ * its neighbour; at smaller levels the shader keeps the sample inside (atlasGrid).
  */
 function atlasTileUv(
   local: readonly [number, number],
@@ -1668,7 +1698,7 @@ function atlasTileUv(
   texture: SceneRendererTexture,
   tile: Readonly<{ column: number; row: number }>,
 ): readonly [number, number] {
-  const columns = Math.max(1, Math.round((rows * texture.width) / texture.height))
+  const { columns } = atlasGrid(rows, texture)
   const inside = (value: number, start: number, size: number, texels: number) =>
     Math.min(Math.max(value, start / size + 0.5 / texels), (start + 1) / size - 0.5 / texels)
   return [
@@ -2246,6 +2276,7 @@ function frozenTexturedBatch(source: MutableTexturedBatch): WorldWebGlTexturedBa
       ? {}
       : { secondaryTextureCoordinates: Float32Array.from(source.secondaryTextureCoordinates) }),
     texture: source.texture,
+    ...(source.atlas === undefined ? {} : { atlas: source.atlas }),
     ...(source.normalTexture === undefined ? {} : { normalTexture: source.normalTexture }),
     ...(source.normalSwizzle === undefined ? {} : { normalSwizzle: source.normalSwizzle }),
     ...(source.specularTexture === undefined ? {} : { specularTexture: source.specularTexture }),
@@ -5040,6 +5071,7 @@ function prepareWorldStaticTerrain(
           definition: MapTerrainMaterialDefinition,
           texture: SceneRendererTexture,
         ) => readonly [number, number],
+        atlasLayer = false,
       ) => {
         const definition = input.terrainMaterials?.find(
           candidate => candidate.materialId === materialId,
@@ -5057,14 +5089,23 @@ function prepareWorldStaticTerrain(
           definition?.specularResourceId === undefined
             ? undefined
             : input.terrainTextures?.get(definition.specularResourceId)
-        const key = [depth, texture.id, normalTexture?.id ?? '', specularTexture?.id ?? ''].join(
-          String.fromCharCode(0),
-        )
+        const atlas =
+          atlasLayer && definition?.atlas !== undefined
+            ? atlasGrid(definition.atlas.rows, texture)
+            : undefined
+        const key = [
+          depth,
+          texture.id,
+          normalTexture?.id ?? '',
+          specularTexture?.id ?? '',
+          atlas === undefined ? '' : 'atlas',
+        ].join(String.fromCharCode(0))
         decalDepths.set(key, depth)
         const target = decals.get(key) ?? {
           ...batch(),
           textureCoordinates: [],
           texture,
+          ...(atlas === undefined ? {} : { atlas, secondaryTextureCoordinates: [] }),
           ...(normalTexture === undefined
             ? {}
             : { normalTexture, normalSwizzle: normalSwizzleOf(definition!.normalEncoding) }),
@@ -5085,7 +5126,7 @@ function prepareWorldStaticTerrain(
           WorldColor,
           WorldColor,
         ]
-        for (const index of [0, 1] as const)
+        for (const index of [0, 1] as const) {
           pushTexturedTriangle(
             target,
             tri(quad, index),
@@ -5093,15 +5134,21 @@ function prepareWorldStaticTerrain(
             tri(aoColors, index),
             tri(cornerNormals, index),
           )
+          pushCellCoordinates(target, item, tri(patch.locals, index))
+        }
         terrainDecalTriangles += 2
       }
       const groundLayer = materialSample?.layers?.[0]
       const drawUpperLayers = () =>
         materialSample?.layers?.slice(1).forEach((layer, index) =>
-          drawOverlay(layer.materialId, index + 1, (local, definition, texture) =>
-            definition.atlas === undefined
-              ? terrainSurfaceUv(item, local, undefined, definition.uvTransform)
-              : atlasTileUv(local, definition.atlas.rows, texture, layer.tile),
+          drawOverlay(
+            layer.materialId,
+            index + 1,
+            (local, definition, texture) =>
+              definition.atlas === undefined
+                ? terrainSurfaceUv(item, local, undefined, definition.uvTransform)
+                : atlasTileUv(local, definition.atlas.rows, texture, layer.tile),
+            true,
           ),
         )
       const drawDecal = () => {
@@ -5286,12 +5333,22 @@ function prepareWorldStaticTerrain(
             )
         }
       } else {
-        const key = `terrain\u0000${texture.id}\u0000${normalTexture?.id ?? ''}`
+        const atlas =
+          groundLayer !== undefined && material?.atlas !== undefined
+            ? atlasGrid(material.atlas.rows, texture)
+            : undefined
+        const key = [
+          'terrain',
+          texture.id,
+          normalTexture?.id ?? '',
+          atlas === undefined ? '' : 'atlas',
+        ].join(String.fromCharCode(0))
         const target = textured.get(key) ?? {
           ...batch(),
           textureCoordinates: [],
           texture,
           ...(normalTexture === undefined ? {} : { normalTexture }),
+          ...(atlas === undefined ? {} : { atlas, secondaryTextureCoordinates: [] }),
         }
         textured.set(key, target)
         const uv = (local: readonly [number, number]) =>
@@ -5311,6 +5368,7 @@ function prepareWorldStaticTerrain(
           color,
           tri(cornerNormals, 0),
         )
+        pushCellCoordinates(target, item, tri(patch.locals, 0))
         pushTexturedTriangle(
           target,
           tri(quad, 1),
@@ -5318,6 +5376,7 @@ function prepareWorldStaticTerrain(
           color,
           tri(cornerNormals, 1),
         )
+        pushCellCoordinates(target, item, tri(patch.locals, 1))
         terrainTexturedTriangles += 2
       }
       drawUpperLayers()
@@ -6915,7 +6974,9 @@ uniform float pointSize;
 out vec3 worldNormal;
 out vec3 worldPosition;
 out vec4 vertexColor;
-out vec2 textureCoordinate;
+// centroid: an edge pixel under MSAA reads inside its triangle, not past it into the next
+// atlas tile or texture edge
+centroid out vec2 textureCoordinate;
 out vec2 secondaryTextureCoordinate;
 out vec4 splatWeights0;
 out vec4 splatWeights1;
@@ -6950,7 +7011,7 @@ precision highp sampler2DArray;
 in vec3 worldNormal;
 in vec3 worldPosition;
 in vec4 vertexColor;
-in vec2 textureCoordinate;
+centroid in vec2 textureCoordinate;
 in vec2 secondaryTextureCoordinate;
 in vec4 splatWeights0;
 in vec4 splatWeights1;
@@ -7014,6 +7075,9 @@ uniform float teamBlend;
 uniform float teamStrength;
 uniform vec3 teamColor;
 uniform sampler2D baseColorMap;
+// The base map is an atlas of tiles in this grid, columns and rows (MapTerrainMaterialDefinition.atlas);
+// 0 when it is none. The secondary coordinate is then the cell's grid coordinate.
+uniform vec2 atlasGrid;
 uniform float alphaCutoff;
 uniform sampler2D normalMap;
 uniform sampler2D secondaryColorMap;
@@ -7062,6 +7126,26 @@ uniform float cliffMaskMode;
 uniform vec4 cliffMaskSelector;
 out vec4 outColor;
 ${TEAM_COLOR_GLSL}
+// The base colour; for an atlas, from inside the sample's tile at the level it reads. The level comes
+// from the cell coordinate (the atlas coordinate jumps between tiles at a cell edge), it stops where a
+// tile is one texel, and the sample stays half a texel of the coarser level read inside the tile: a far
+// view mixes no neighbouring tile in.
+vec4 baseColorSample(vec2 uv) {
+  if (atlasGrid.x <= 0.0) return texture(baseColorMap, uv);
+  vec2 size = vec2(textureSize(baseColorMap, 0));
+  vec2 tileTexels = size / atlasGrid;
+  vec2 dx = dFdx(secondaryTextureCoordinate) * tileTexels;
+  vec2 dy = dFdy(secondaryTextureCoordinate) * tileTexels;
+  float lod = clamp(
+    0.5 * log2(max(max(dot(dx, dx), dot(dy, dy)), 1e-8)),
+    0.0,
+    log2(max(min(tileTexels.x, tileTexels.y), 1.0))
+  );
+  vec2 tile = floor(uv * atlasGrid);
+  vec2 inset = 0.5 * exp2(ceil(lod)) / size;
+  vec2 inside = clamp(uv, tile / atlasGrid + inset, (tile + 1.0) / atlasGrid - inset);
+  return textureLod(baseColorMap, inside, lod);
+}
 float layerValue(vec4 first, vec4 second, int layer) {
   return layer < 4 ? first[layer] : second[layer - 4];
 }
@@ -7271,7 +7355,7 @@ void main() {
   float terrainSpecular = 0.0;
   // A decal's colour alpha is its AO; its coverage is the texture's own alpha.
   if (terrainSurface) surface.a = 1.0;
-  if (textured > 0.5) surface *= texture(baseColorMap, textureCoordinate);
+  if (textured > 0.5) surface *= baseColorSample(textureCoordinate);
   if (teamColorMode > 0.5) {
     vec3 teamMask = vec3(1.0);
     if (teamColorMode > 1.5) {
@@ -8890,6 +8974,11 @@ function drawTexturedBatch(
   const gl = resources.gl
   bindTexture2d(resources, source.texture, 4)
   worldUniform1i(gl, program, 'baseColorMap', 4)
+  gl.uniform2f(
+    uniformLocation(gl, program, 'atlasGrid'),
+    source.atlas?.columns ?? 0,
+    source.atlas?.rows ?? 0,
+  )
   if (source.normalTexture === undefined) {
     worldUniform1f(gl, program, 'normalTextured', 0)
   } else {

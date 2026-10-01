@@ -135,6 +135,21 @@ describe('world terrain overlays', () => {
     corners(plan.texturedTriangles[0], 4, { column: 0, row: 0 }, 256, 256)
     corners(plan.terrainDecalTriangles[0], 8, { column: 5, row: 0 }, 512, 256)
     corners(plan.terrainDecalTriangles[1], 4, { column: 3, row: 2 }, 256, 256)
+    // At smaller mips the shader keeps a sample in its tile: it gets the grid, and the cell's grid
+    // coordinates (continuous across cells, unlike the tile coordinates) to pick the level by.
+    assert.deepEqual(plan.texturedTriangles[0].atlas, { columns: 4, rows: 4 })
+    assert.deepEqual(
+      plan.terrainDecalTriangles.map(batch => batch.atlas),
+      [{ columns: 8, rows: 4 }, { columns: 4, rows: 4 }, undefined],
+    )
+    const ground = plan.texturedTriangles[0]
+    assert.deepEqual(
+      [...ground.secondaryTextureCoordinates],
+      Array.from({ length: 6 }, (_, vertex) => [
+        ground.positions[vertex * 3],
+        ground.positions[vertex * 3 + 2],
+      ]).flat(),
+    )
   })
 
   it('blends a cell decal tile over its ground with the tile orientation', () => {
