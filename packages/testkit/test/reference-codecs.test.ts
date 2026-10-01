@@ -4,6 +4,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import { deflateRawSync, deflateSync } from 'node:zlib'
 import { build } from 'esbuild'
 import { describe, expect, expectTypeOf, it } from 'vitest'
+import { crc32 } from '../../../packages/codec-kit/src/checksum/index.js'
 import type { InspectionCodecDefinition } from '../../../packages/codec-kit/src/index.js'
 import {
   A1_SPEC_SCHEMA_ENTRIES,
@@ -87,6 +88,7 @@ function zipEntry(path: string, contents: string, method: 0 | 8 = 0): Uint8Array
   const name = new TextEncoder().encode(path)
   const data = new TextEncoder().encode(contents)
   const compressed = method === 8 ? new Uint8Array(deflateRawSync(data)) : data
+  const checksum = crc32(data)
   const local = concat(
     u32(0x04034b50),
     u16(20),
@@ -94,7 +96,7 @@ function zipEntry(path: string, contents: string, method: 0 | 8 = 0): Uint8Array
     u16(method),
     u16(0),
     u16(0),
-    u32(0),
+    u32(checksum),
     u32(compressed.byteLength),
     u32(data.byteLength),
     u16(name.byteLength),
@@ -110,7 +112,7 @@ function zipEntry(path: string, contents: string, method: 0 | 8 = 0): Uint8Array
     u16(method),
     u16(0),
     u16(0),
-    u32(0),
+    u32(checksum),
     u32(compressed.byteLength),
     u32(data.byteLength),
     u16(name.byteLength),
@@ -137,14 +139,7 @@ function zipEntry(path: string, contents: string, method: 0 | 8 = 0): Uint8Array
 
 function pngChunk(type: string, data: Uint8Array): Uint8Array {
   const payload = concat(new TextEncoder().encode(type), data)
-  let crc = 0xffffffff
-  for (const value of payload) {
-    crc ^= value
-    for (let bit = 0; bit < 8; bit += 1) {
-      crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0)
-    }
-  }
-  return concat(be32(data.byteLength), payload, be32((crc ^ 0xffffffff) >>> 0))
+  return concat(be32(data.byteLength), payload, be32(crc32(payload)))
 }
 
 function minimalPng(): Uint8Array {
@@ -561,7 +556,7 @@ describe('reference codec specification stress suite', () => {
       expect(await source.info()).toMatchObject({
         width: 2,
         height: 3,
-        decodedAccess: format === 'png',
+        decodedAccess: true,
       })
       const encoded = await source.encoded()
       expect((await encoded.descriptor()).mediaType).toMatch(/^image\//u)

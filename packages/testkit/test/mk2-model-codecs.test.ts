@@ -278,7 +278,7 @@ describe('ported MK2 geometry model codecs', () => {
       else if (format === 'stl') new DataView(corrupted.buffer).setUint32(80, 2, true)
       else new DataView(corrupted.buffer).setUint32(8, corrupted.byteLength + 4, true)
     }
-    await expect(open(format, corrupted)).rejects.toThrow(/OBJ|PLY|STL|COLLADA|glTF|UVM|M3/u)
+    await expect(open(format, corrupted)).rejects.toThrow(/OBJ|PLY|STL|COLLADA|glTF|GLB|UVM|M3/u)
   })
 
   it.each(formats)('%s enforces node and scalar budgets', async format => {

@@ -831,7 +831,7 @@ describe('UVM convergence through A-2 inventory and A-3 sessions', () => {
     ).rejects.toThrow(/budget|maxScalarBytes/u)
   })
 
-  it('retains the observed timeline of an unsupported legacy cubic clip without a catalog or a rest-pose label', async () => {
+  it('reads a cubic-spline clip with its tangents without a catalog or a rest-pose label', async () => {
     const written = materializeUvmCore(rigProjection(), rigRequest)
     const document = structuredClone(written.document)
     // Exercise timeline inference from raw glTF samplers, without the source clip's declared duration.
@@ -883,8 +883,17 @@ describe('UVM convergence through A-2 inventory and A-3 sessions', () => {
           kind: 'animation',
           frames: 2,
           durationSeconds: 1,
-          channels: [],
-          unsupportedChannels: 1,
+          channels: [
+            {
+              kind: 'translation',
+              target: 'node-2',
+              interpolation: 'cubic-spline',
+              samples: [
+                { frame: 0, value: [3, 0, 0], inTangent: [0, 0, 0], outTangent: [0, 0, 0] },
+                { frame: 1, value: [5, 0, 0], inTangent: [0, 0, 0], outTangent: [0, 0, 0] },
+              ],
+            },
+          ],
         })
       } finally {
         await animation.release()
@@ -1010,6 +1019,7 @@ describe('UVM convergence through A-2 inventory and A-3 sessions', () => {
                 wrapSeconds: 1.5,
                 track: {
                   lineType: 1,
+                  globalSeqId: null,
                   keys: [
                     { frame: 0, vector: [0, 0] },
                     { frame: 1.5, vector: [1, 0] },

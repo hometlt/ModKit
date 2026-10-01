@@ -406,9 +406,15 @@ describe('11B common/documents — the OpenDocument quartet', () => {
     for (const format of FORMATS) {
       const session = await open(format, await fixture(format))
       const descriptor = await session.descriptor()
-      expect(descriptor.dataSources.map(source => source.contract).toSorted(), format).toEqual(
-        expected[format],
-      )
+      // the codec's own representations, not the facts the host adds to every subject
+      const hostAdded = new Set(descriptor.hostDataSources?.map(source => source.contract))
+      expect(
+        descriptor.dataSources
+          .map(source => source.contract)
+          .filter(contract => !hostAdded.has(contract))
+          .toSorted(),
+        format,
+      ).toEqual(expected[format])
       if (descriptor.interpretation !== 'codec') throw new Error('expected a codec descriptor')
       expect(descriptor.identity.formatId, format).toBe(format)
       expect(descriptor.identity.mediaType, format).toBe(MEDIA_TYPES[format])

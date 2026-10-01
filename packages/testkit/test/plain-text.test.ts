@@ -212,7 +212,10 @@ describe('A-7 external common/plain-text vertical slice', () => {
       dataSources: [
         { contract: 'common.view/text-data-source', major: 1 },
         { contract: 'common.view/byte-range-source', major: 1 },
+        { contract: 'common.view/subject-facts-source', major: 1 },
       ],
+      // the host's fallback facts, named as its own (963f39a8)
+      hostDataSources: [{ contract: 'common.view/subject-facts-source', major: 1 }],
     })
     const textLease = await session.dataSource('common.view/text-data-source', 1)
     const page = await textLease.value.slice({
