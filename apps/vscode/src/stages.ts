@@ -213,7 +213,8 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
       module: lazyViewerModule(async () =>
         (await import('@modkit/ui/world')).createWorldViewer({
           localizer: context.localizer,
-          initialView: 'lattice',
+          // the height lattice first, unless the map is of one height (a 2D game's): then 3D
+          initialView: 'auto',
           /*
            * A map's identity documents open the map, not themselves: MapInfo names the map and
            * carries little else, so a person who clicks it came for the terrain. Its facts would

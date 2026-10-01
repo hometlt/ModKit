@@ -20,6 +20,8 @@ export interface WorldLatticePlan {
   readonly ramps: readonly Quad<Point>[]
   readonly objects: readonly { readonly point: Point; readonly objectId: number; readonly kind: MapObjectKind }[]
   readonly bounds: readonly [number, number, number, number]
+  /** Terrain of one height (a 2D game's map): its cells all draw the same colour. */
+  readonly flat: boolean
 }
 
 /** Ramp cells: translucent over the height colours, so the slope still reads. */
@@ -182,6 +184,7 @@ export function createWorldLatticePlan(items: readonly WorldSceneItem[]): WorldL
     ramps,
     objects,
     bounds: Number.isFinite(minX) ? [minX, minY, maxX, maxY] : [0, 0, 1, 1],
+    flat: cells.length > 0 && minimumHeight === maximumHeight,
   }
 }
 

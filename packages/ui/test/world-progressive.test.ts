@@ -219,6 +219,16 @@ describe('progressive world preview', () => {
     expect(worldLatticeObjectAt(canvas, plan, 0, 0)).toBeUndefined()
     expect(worldLatticeColor(0, 0, 1, true)).toContain('207')
     expect(plan.ramps).toEqual([])
+    expect(plan.flat).toBe(false)
+    // terrain of one height (a 2D game's map) is flat: its lattice would draw one colour
+    const level = createWorldLatticePlan(
+      items.map(item =>
+        item.facet === 'terrain' && item.uvwPosition !== undefined
+          ? { ...item, uvwPosition: { ...item.uvwPosition, y: 0 } }
+          : item,
+      ),
+    )
+    expect(level.flat).toBe(true)
   })
 
   it('draws a ramp as its cells, with no cliff line across it', async () => {

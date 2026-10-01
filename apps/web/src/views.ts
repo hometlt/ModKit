@@ -537,7 +537,8 @@ export function createWebPreviewStages(context: WebViewContext): readonly Previe
       id: 'world',
       label: text('web.view.world'),
       contract: 'common.view/world-scene-source',
-      module: createWorldViewer({ localizer }),
+      // the height lattice first, unless the map is of one height (a 2D game's): then 3D
+      module: createWorldViewer({ localizer, initialView: 'auto' }),
       // an object moved in the world is saved through the map's own editing arm (6.4)
       usesEditorPorts: true,
       // A timed world (a replay, a cutscene) follows its transport.

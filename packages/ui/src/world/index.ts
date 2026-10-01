@@ -1495,8 +1495,12 @@ export function drawCandidateWorld(
 /** Common viewer for every world publisher that implements the shared candidate source contract. */
 export interface WorldViewerModuleOptions {
   readonly localizer?: UiLocalizer
-  /** Maps can show their bounded height lattice immediately while assets load. */
-  readonly initialView?: 'lattice' | '3d'
+  /**
+   * Maps can show their bounded height lattice immediately while assets load. `auto` does so
+   * unless the terrain is of one height — a 2D game's map, whose lattice is one colour — and then
+   * starts in 3D; it decides once, on the first terrain, so a later choice of view stays.
+   */
+  readonly initialView?: 'lattice' | '3d' | 'auto'
   /**
    * Sidebar sections the host contributes, beside the world's own readout.
    *
@@ -1627,7 +1631,9 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
       let renderRevision = 0
       let descriptor = args.descriptor
       let currentModel: CandidateWorldViewerModel | undefined
-      let viewMode = options.initialView ?? '3d'
+      let viewMode: 'lattice' | '3d' =
+        options.initialView === 'auto' ? 'lattice' : (options.initialView ?? '3d')
+      let viewUndecided = options.initialView === 'auto'
       let latticePlan: WorldLatticePlan | undefined
       let latticeLayers: CandidateWorldViewerModel['layers'] | undefined
       let loading = false
@@ -1690,6 +1696,15 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
         return times
       }
       const redraw = () => {
+        if (viewUndecided && currentModel !== undefined) {
+          const items = currentModel.layers.flatMap(layer => layer.page.items)
+          if (items.some(item => item.facet === 'terrain')) {
+            viewUndecided = false
+            latticePlan = createWorldLatticePlan(items)
+            latticeLayers = currentModel.layers
+            if (latticePlan.flat) viewMode = '3d'
+          }
+        }
         canvas.hidden = viewMode !== '3d'
         latticeCanvas.hidden = viewMode !== 'lattice'
         latticeButton.setAttribute('aria-pressed', String(viewMode === 'lattice'))
