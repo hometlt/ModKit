@@ -332,6 +332,13 @@ export interface ModelSceneInfo {
   readonly bounds?: ModelBounds
   /** Defaults to `+y` when absent. */
   readonly upAxis?: ModelUpAxis
+  /**
+   * `left`: the coordinates are left-handed (Direct3D games: Emperor, Westwood), so they are a
+   * mirror image of glTF's right-handed frame. A consumer mirrors the axis that is neither up nor
+   * sideways - z of a `+y`-up scene, y of a `+z`-up one - before turning it upright; the UVM
+   * materializer does it with one mirror node. Defaults to `right` when absent.
+   */
+  readonly handedness?: 'right' | 'left'
   /** Metadata-only sources remain useful while buffer resolution is unavailable. */
   readonly geometryAccess: 'decoded' | 'metadata-only'
 }

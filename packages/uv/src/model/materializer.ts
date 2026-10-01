@@ -1523,6 +1523,23 @@ export function materializeUvmCore(
 
   // A +z-up source (ModelSceneInfo.upAxis) is turned to UVM's +y-up by one rotation node — the same
   // (x, y, z) → (x, z, -y) the model viewer applies — so the geometry itself stays as published.
+  // A left-handed source is mirrored first, in its own frame (ModelSceneInfo.handedness): glTF draws
+  // a node of negative determinant with its faces wound the other way, so nothing else changes.
+  if (info.handedness === 'left') {
+    const root = documentNodes.length
+    documentNodes.push({
+      name: 'uv:handedness',
+      scale: info.upAxis === '+z' ? [1, -1, 1] : [1, 1, -1],
+      children: [...rootIndices],
+    })
+    rootIndices = [root]
+    note(
+      'uv.model/structure@1',
+      'value-differs',
+      '/nodes',
+      'one mirror node makes the left-handed source right-handed',
+    )
+  }
   if (info.upAxis === '+z') {
     const root = documentNodes.length
     documentNodes.push({
