@@ -151,7 +151,9 @@ var DEFAULT_PROTOCOL_LIMITS = Object.freeze({
   // in one pinned snapshot. The byte, array, object-key, deadline and worker-memory ceilings still
   // bound the frame; this node ceiling prevents valid schemas from being rejected first.
   maxNodes: 4e6,
-  maxStringLength: 4 * 1024 * 1024,
+  // As large as a frame: a pixel operation carries its image as base64 in its JSON input (a 1024²
+  // RGBA image is 5.6 M characters). ponytail: an image past ~3500² needs bytes in operation input.
+  maxStringLength: 64 * 1024 * 1024,
   maxArrayLength: 1e5,
   maxObjectKeys: 1e4,
   maxTransferBytes: 64 * 1024 * 1024,

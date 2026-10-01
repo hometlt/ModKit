@@ -13,7 +13,7 @@ import {
   createStandardSurfaceRegistry,
   framePortFromMessagePort,
   protocolLimits
-} from "../../chunks/chunk-6I4OSK3T.js";
+} from "../../chunks/chunk-D7XRHOEF.js";
 import {
   assembleSubjectDescriptor,
   createAssetSession,
