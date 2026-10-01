@@ -1,4 +1,4 @@
-import { linearToSrgb, srgbToLinear } from '../raster/ops.js'
+import { hsvToRgb, linearToSrgb, rgbToHsv, srgbToLinear } from '../raster/ops.js'
 
 /** Normalized sRGB display color used by renderer-neutral model materials. */
 export type RenderRgba = readonly [number, number, number, number]
@@ -59,41 +59,6 @@ export function applyRenderMaterialColorRemap(
     clamp01(linearToSrgb(remapped[2])),
     base[3],
   ]
-}
-
-function rgbToHsv(rgb: readonly [number, number, number]): readonly [number, number, number] {
-  const [r, g, b] = rgb
-  const max = Math.max(r, g, b)
-  const min = Math.min(r, g, b)
-  const delta = max - min
-  if (delta === 0) return [0, 0, max]
-
-  let hue: number
-  if (max === r) hue = ((g - b) / delta) % 6
-  else if (max === g) hue = (b - r) / delta + 2
-  else hue = (r - g) / delta + 4
-  hue /= 6
-  if (hue < 0) hue += 1
-  return [hue, max === 0 ? 0 : delta / max, max]
-}
-
-function hsvToRgb(
-  hue: number,
-  saturation: number,
-  value: number,
-): readonly [number, number, number] {
-  const chroma = value * saturation
-  const sector = (((hue % 1) + 1) % 1) * 6
-  const secondary = chroma * (1 - Math.abs((sector % 2) - 1))
-  let rgb: readonly [number, number, number]
-  if (sector < 1) rgb = [chroma, secondary, 0]
-  else if (sector < 2) rgb = [secondary, chroma, 0]
-  else if (sector < 3) rgb = [0, chroma, secondary]
-  else if (sector < 4) rgb = [0, secondary, chroma]
-  else if (sector < 5) rgb = [secondary, 0, chroma]
-  else rgb = [chroma, 0, secondary]
-  const match = value - chroma
-  return [rgb[0] + match, rgb[1] + match, rgb[2] + match]
 }
 
 function clamp01(value: number): number {

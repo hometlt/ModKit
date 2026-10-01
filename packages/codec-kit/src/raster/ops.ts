@@ -159,3 +159,46 @@ export function srgbToLinear(value: number): number {
 export function linearToSrgb(value: number): number {
   return value <= 0.0031308 ? value * 12.92 : 1.055 * value ** (1 / 2.4) - 0.055
 }
+
+/**
+ * RGB in 0..1 as hue (turns, 0..1), saturation and value (0..1), and back: the colour model a
+ * game's player colours are authored in (Westwood `[Colors]` H, S, V — scaled to 0..1 by the
+ * caller). Grey has hue 0.
+ */
+export function rgbToHsv(
+  rgb: readonly [number, number, number],
+): readonly [number, number, number] {
+  const [r, g, b] = rgb
+  const max = Math.max(r, g, b)
+  const min = Math.min(r, g, b)
+  const delta = max - min
+  if (delta === 0) return [0, 0, max]
+
+  let hue: number
+  if (max === r) hue = ((g - b) / delta) % 6
+  else if (max === g) hue = (b - r) / delta + 2
+  else hue = (r - g) / delta + 4
+  hue /= 6
+  if (hue < 0) hue += 1
+  return [hue, max === 0 ? 0 : delta / max, max]
+}
+
+/** {@link rgbToHsv} inverted; a hue outside 0..1 wraps. */
+export function hsvToRgb(
+  hue: number,
+  saturation: number,
+  value: number,
+): readonly [number, number, number] {
+  const chroma = value * saturation
+  const sector = (((hue % 1) + 1) % 1) * 6
+  const secondary = chroma * (1 - Math.abs((sector % 2) - 1))
+  let rgb: readonly [number, number, number]
+  if (sector < 1) rgb = [chroma, secondary, 0]
+  else if (sector < 2) rgb = [secondary, chroma, 0]
+  else if (sector < 3) rgb = [0, chroma, secondary]
+  else if (sector < 4) rgb = [0, secondary, chroma]
+  else if (sector < 5) rgb = [secondary, 0, chroma]
+  else rgb = [chroma, 0, secondary]
+  const match = value - chroma
+  return [rgb[0] + match, rgb[1] + match, rgb[2] + match]
+}
