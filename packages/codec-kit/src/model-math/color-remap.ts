@@ -102,3 +102,47 @@ function clamp01(value: number): number {
   if (clamped > 1 - 1e-12) return 1
   return clamped
 }
+
+/** How `UV_game_material_team_color` combines the team colour (SPEC_UVM §11.2), in GLSL index order. */
+export const TEAM_COLOR_BLENDS = ['multiply', 'add', 'replace', 'overlay', 'lerp'] as const
+export type TeamColorBlend = (typeof TEAM_COLOR_BLENDS)[number]
+
+/**
+ * The one formula of `UV_game_material_team_color`, for one colour channel. `base` is the
+ * material's colour, `mask` the mask's weight (1 for `maskSource: whole`), `team` the team colour,
+ * `strength` the extension's weight; with w = max(0, mask · strength):
+ *
+ * - `multiply`: base · mix(1, team, min(w, 1)) — the team colour tints where the mask is;
+ * - `add`: base + team · w;
+ * - `replace`, `lerp`: mix(base, team, min(w, 1)) — the team colour takes the masked part;
+ * - `overlay`: mix(base, overlay(base, team), min(w, 1)), overlay as image editors define it.
+ *
+ * Alpha is never the team colour's: a caller keeps its own. TEAM_COLOR_GLSL is the same formula
+ * for shaders; the two must change together.
+ */
+export function teamColorChannel(
+  base: number,
+  mask: number,
+  team: number,
+  blend: TeamColorBlend,
+  strength = 1,
+): number {
+  const weight = Math.max(0, mask * strength)
+  const mixed = Math.min(weight, 1)
+  if (blend === 'add') return base + team * weight
+  if (blend === 'multiply') return base * (1 + (team - 1) * mixed)
+  const target =
+    blend === 'overlay' ? (base < 0.5 ? 2 * base * team : 1 - 2 * (1 - base) * (1 - team)) : team
+  return base + (target - base) * mixed
+}
+
+/** teamColorChannel for shaders: `blend` is the index in TEAM_COLOR_BLENDS. */
+export const TEAM_COLOR_GLSL = `vec3 modkitTeamColor(vec3 base, vec3 mask, vec3 team, int blend, float strength) {
+  vec3 weight = max(mask * strength, vec3(0.0));
+  vec3 mixed = min(weight, vec3(1.0));
+  if (blend == 1) return base + team * weight;
+  if (blend == 0) return base * (vec3(1.0) + (team - vec3(1.0)) * mixed);
+  vec3 target = team;
+  if (blend == 3) target = mix(1.0 - 2.0 * (1.0 - base) * (1.0 - team), 2.0 * base * team, vec3(lessThan(base, vec3(0.5))));
+  return base + (target - base) * mixed;
+}`
