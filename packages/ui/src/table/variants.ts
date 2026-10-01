@@ -474,6 +474,14 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
   translateContext.placeholder = text('table.translateContext')
   translateContext.setAttribute('aria-label', text('table.translateContext'))
   translateContext.hidden = target.hidden
+  // The service to translate with, once the codec names more than one; automatic lets it choose
+  const translateService = element(bar, 'select', { part: 'table.group' }) as HTMLSelectElement
+  translateService.setAttribute('aria-label', text('table.translateService'))
+  const automatic = translateService.ownerDocument.createElement('option')
+  automatic.value = ''
+  automatic.textContent = text('table.translateServiceAuto')
+  translateService.append(automatic)
+  translateService.hidden = true
 
   // Every column but the key can be hidden; the choice follows the subject across reopens.
   const columns = element(bar, 'details', { part: 'table.columns' })
@@ -1328,7 +1336,11 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
     )
     const answer =
       probe.state === 'ok' && probe.output.kind === 'json'
-        ? (probe.output.value as { available?: boolean; reason?: string })
+        ? (probe.output.value as {
+            available?: boolean
+            reason?: string
+            backends?: readonly { id?: unknown; label?: unknown; available?: unknown }[]
+          })
         : undefined
     const reason =
       probe.state !== 'ok'
@@ -1337,6 +1349,24 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
           ? undefined
           : (answer?.reason ?? 'unavailable')
     toolbar.setDisabled('translate', reason !== undefined)
+    // the backends the probe names, for the operation's `backend` input (7.35); one needing a key
+    // is listed but cannot be picked until it has one
+    const backends = (Array.isArray(answer?.backends) ? answer.backends : []).filter(
+      backend => typeof backend?.id === 'string' && backend.id !== '',
+    )
+    if (reason === undefined && backends.length > 1) {
+      for (const backend of backends) {
+        const option = translateService.ownerDocument.createElement('option')
+        option.value = String(backend.id)
+        const label = String(backend.label ?? backend.id)
+        option.disabled = backend.available !== true
+        option.textContent = option.disabled
+          ? text('table.translateServiceOff', { service: label })
+          : label
+        translateService.append(option)
+      }
+      translateService.hidden = target.hidden
+    }
     if (reason !== undefined) {
       const message = text('table.translateUnavailable', { reason })
       const button = [...toolbar.root.querySelectorAll('button')].find(
@@ -1380,6 +1410,7 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
     stop.addEventListener('click', () => stopping.abort(), { once: true })
     const signal = AbortSignal.any([args.signal, stopping.signal])
     const context = translateContext.value.trim()
+    const backend = translateService.value
     try {
       const ready: { key: string; value: string }[] = []
       say(text('table.working'))
@@ -1401,6 +1432,7 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
             sourceLanguage: base.language ?? base.variant ?? '',
             targetLanguage: column.language ?? column.variant ?? '',
             ...(context === '' ? {} : { context }),
+            ...(backend === '' ? {} : { backend }),
           },
           { signal },
         )

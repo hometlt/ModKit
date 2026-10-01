@@ -29,6 +29,7 @@ interface Probe {
     reopen?: boolean
     wait?: boolean
     many?: number
+    backends?: readonly { id: string; label: string; available: boolean }[]
   }): Promise<void>
   finishTranslation(): void
 }
@@ -79,6 +80,7 @@ beforeAll(async () => {
         reopen?: boolean
         wait?: boolean
         many?: number
+        backends?: readonly { id: string; label: string; available: boolean }[]
       } = {},
     ) => {
       await mounted?.unmount()
@@ -186,6 +188,7 @@ beforeAll(async () => {
                     ? {
                         available: options.available === true,
                         reason: 'no backend has credentials',
+                        ...(options.backends === undefined ? {} : { backends: options.backends }),
                       }
                     : {
                         translated: options.changed === false ? 'Beta' : 'Бета',
@@ -728,6 +731,44 @@ describe('variant table surface', () => {
       await page.isVisible('[data-mk-part="table.panel"] button:has-text("Apply translations")'),
     ).toBe(true)
     await page.evaluate(() => (globalThis as unknown as Probe).mountTable())
+  })
+
+  it('translates with the service picked from the ones the codec names (7.35)', async () => {
+    await page.evaluate(() =>
+      (globalThis as unknown as Probe).mountTable({
+        available: true,
+        backends: [
+          { id: 'google', label: 'Google', available: true },
+          { id: 'deepl', label: 'DeepL', available: false },
+        ],
+      }),
+    )
+    const service = 'select[aria-label="Translation service"]'
+    await page.waitForSelector(service)
+    expect(
+      await page.$$eval(`${service} option`, nodes =>
+        nodes.map(node => [node.textContent, (node as HTMLOptionElement).disabled]),
+      ),
+    ).toEqual([
+      ['Automatic', false],
+      ['Google', false],
+      ['DeepL (not configured)', true],
+    ])
+    await page.selectOption(service, 'google')
+    await page.click('button[aria-label="Translate empty cells"]')
+    await page.waitForFunction(() =>
+      document.querySelector('[data-mk-part="table.panel"]')?.textContent?.includes('Бета'),
+    )
+    const asked = await page.evaluate(() =>
+      (globalThis as unknown as Probe).calls
+        .filter(call => call.handler === 'translate')
+        .map(call => call.input as { probe?: boolean; backend?: string })
+        .filter(input => input.probe !== true),
+    )
+    expect(asked.map(input => input.backend)).toEqual(['google'])
+    await page.evaluate(() => (globalThis as unknown as Probe).mountTable())
+    // without a choice of services there is nothing to pick
+    expect(await page.isHidden(service)).toBe(true)
   })
 
   it('draws locale values as in game in one batch, only through safe text and colours', async () => {
