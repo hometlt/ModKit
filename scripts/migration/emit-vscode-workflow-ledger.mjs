@@ -698,21 +698,28 @@ function readRegisteredCommands(source, file) {
       node.expression.name.text === 'registerCommand'
     ) {
       const argument = node.arguments[0]
-      const literal =
-        argument !== undefined && ts.isStringLiteral(argument)
-          ? argument.text
-          : argument !== undefined && ts.isIdentifier(argument)
-            ? importedStrings.get(argument.text)
+      const literalOf = expression =>
+        expression !== undefined && ts.isStringLiteral(expression)
+          ? expression.text
+          : expression !== undefined && ts.isIdentifier(expression)
+            ? importedStrings.get(expression.text)
             : undefined
-      if (literal === undefined) {
+      // one call may register either of two literal ids (`stage === 'card' ? 'a' : 'b'` in a map)
+      const literals =
+        argument !== undefined && ts.isConditionalExpression(argument)
+          ? [literalOf(argument.whenTrue), literalOf(argument.whenFalse)]
+          : [literalOf(argument)]
+      if (literals.some(literal => literal === undefined)) {
         const position = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile))
         fail(
           `runtime command registration must use a string literal at ${position.line + 1}:${position.character + 1}`,
         )
       }
-      const command = normalizeCommandId(literal, 'runtime command registration')
-      if (commands.has(command)) fail(`runtime command ${command} is registered more than once`)
-      commands.set(command, argument.getStart(sourceFile))
+      for (const literal of literals) {
+        const command = normalizeCommandId(literal, 'runtime command registration')
+        if (commands.has(command)) fail(`runtime command ${command} is registered more than once`)
+        commands.set(command, argument.getStart(sourceFile))
+      }
     }
     ts.forEachChild(node, visit)
   }
@@ -721,13 +728,15 @@ function readRegisteredCommands(source, file) {
 }
 
 // Commands register in extension.ts and in the modules it activates (verify-document.ts, …).
+// A given --extension-source stands in for extension.ts only; the other modules stay the app's.
 const registeredCommands = new Map()
-const extensionSourceDirectory = path.dirname(extensionSourcePath)
-for (const name of readdirSync(extensionSourceDirectory)
+const registeringDirectory = path.join(repoRoot, 'apps/vscode/src')
+const canonicalExtensionSource = path.join(registeringDirectory, 'extension.ts')
+for (const name of readdirSync(registeringDirectory)
   .filter(name => name.endsWith('.ts') && !name.endsWith('.d.ts'))
   .sort()) {
-  const file = path.join(extensionSourceDirectory, name)
-  const source = file === extensionSourcePath ? extensionSource : readFileSync(file, 'utf8')
+  const file = path.join(registeringDirectory, name)
+  const source = file === canonicalExtensionSource ? extensionSource : readFileSync(file, 'utf8')
   for (const [command, start] of readRegisteredCommands(source, file)) {
     if (registeredCommands.has(command))
       fail(`runtime command ${command} is registered more than once`)
@@ -794,8 +803,8 @@ const legacyKeybindings = inventory.units.filter(unit => unit.kind === 'vscode-k
 if (legacyKeybindings !== 0) {
   fail(`legacy VS Code keybinding ratchet drifted: expected 0, found ${legacyKeybindings}`)
 }
-if (menuCommands.length !== 50) {
-  fail(`current X3 menu ratchet drifted: expected 50, found ${menuCommands.length}`)
+if (menuCommands.length !== 102) {
+  fail(`current X3 menu ratchet drifted: expected 102, found ${menuCommands.length}`)
 }
 if (keybindingCommands.length !== 0) {
   fail(`current X3 keybinding ratchet drifted: expected 0, found ${keybindingCommands.length}`)

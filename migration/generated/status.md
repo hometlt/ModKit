@@ -52,10 +52,10 @@ Ledger распределяет ровно **258 VS Code + 8 CLI = 266** legacy-
 
 | Поверхность    | Legacy | X3 сейчас |
 | -------------- | ------ | --------- |
-| commands       | 64     | 37        |
-| custom editors | 11     | 4         |
-| languages      | 8      | 0         |
-| views          | 6      | 2         |
+| commands       | 64     | 79        |
+| custom editors | 11     | 6         |
+| languages      | 8      | 20        |
+| views          | 6      | 4         |
 
 Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`, `subject.open`, `subject.preview`, `subject.validate`. Доказанные callers: Automation, CLI, Electron, PWA, `server`, VS Code.
 

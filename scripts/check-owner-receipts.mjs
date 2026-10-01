@@ -24,7 +24,10 @@ const expectedRoots = [
   'data',
   'documents',
   'images',
+  'java',
+  'lua',
   'models',
+  'translation',
   'vector',
   'video',
 ]

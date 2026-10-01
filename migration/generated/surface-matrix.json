@@ -16,7 +16,7 @@
     "script",
     "no-op-edit"
   ],
-  "counts": { "rows": 75, "applicableClaims": 514, "smokePassed": 0, "smokeMissing": 75 },
+  "counts": { "rows": 76, "applicableClaims": 520, "smokePassed": 0, "smokeMissing": 76 },
   "rows": [
     {
       "rowId": "modkit/7z#7z",
@@ -2290,6 +2290,72 @@
       "surfaces": {
         "sections": { "applicable": true, "sources": ["spec.operations[0]"] },
         "tree": { "applicable": true, "sources": ["spec.publishesDataSources[1]"] },
+        "hex": { "applicable": true, "sources": ["spec.publishesDataSources[2]"] },
+        "card": { "applicable": true, "sources": ["spec.operations[0]:metadata-fallback"] },
+        "preview": { "applicable": false, "sources": [] },
+        "relations": { "applicable": false, "sources": [] },
+        "selector": { "applicable": false, "sources": [] },
+        "mcp-inspect": { "applicable": true, "sources": ["spec.operations[0]"] },
+        "script": { "applicable": true, "sources": ["spec.operations[0]:metadata-projection"] },
+        "no-op-edit": { "applicable": false, "sources": [] }
+      },
+      "smoke": { "status": "missing", "receiptIds": [] }
+    },
+    {
+      "rowId": "modkit/java-class#java-class",
+      "repository": "core",
+      "extensionId": "modkit/java",
+      "contributionId": "modkit/java-class",
+      "contributionPath": "contributions/codec-java-class.json",
+      "format": { "id": "java-class", "label": "JVM class file", "source": "spec.formatRefs[0]" },
+      "dataSources": [
+        {
+          "contract": "common.view/tree-data-source",
+          "major": 1,
+          "source": "spec.publishesDataSources[0]"
+        },
+        {
+          "contract": "common.view/text-data-source",
+          "major": 1,
+          "source": "spec.publishesDataSources[1]"
+        },
+        {
+          "contract": "common.view/byte-range-source",
+          "major": 1,
+          "source": "spec.publishesDataSources[2]"
+        }
+      ],
+      "operations": [
+        {
+          "id": "view.inspect",
+          "handlerId": "inspect",
+          "mutatesSource": false,
+          "outputKinds": ["json"],
+          "source": "spec.operations[0]"
+        },
+        {
+          "id": "asset.validate",
+          "handlerId": "validate",
+          "mutatesSource": false,
+          "outputKinds": ["none"],
+          "source": "spec.operations[1]"
+        },
+        {
+          "id": "export.raw",
+          "handlerId": "export-raw",
+          "mutatesSource": false,
+          "outputKinds": ["bytes"],
+          "source": "spec.operations[2]"
+        }
+      ],
+      "writerOffers": [],
+      "languageProviders": [],
+      "runtimeProviders": [],
+      "subjectKinds": [],
+      "projections": [],
+      "surfaces": {
+        "sections": { "applicable": true, "sources": ["spec.operations[0]"] },
+        "tree": { "applicable": true, "sources": ["spec.publishesDataSources[0]"] },
         "hex": { "applicable": true, "sources": ["spec.publishesDataSources[2]"] },
         "card": { "applicable": true, "sources": ["spec.operations[0]:metadata-fallback"] },
         "preview": { "applicable": false, "sources": [] },
