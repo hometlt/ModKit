@@ -591,6 +591,22 @@ describe('variant table surface', () => {
     expect(await page.textContent(`${cell} [data-mk-part="table.trailing"]`)).toBe('  ')
   })
 
+  it("marks each locale's cell without a value or with the base text still (7.36)", async () => {
+    await page.evaluate(() => (globalThis as unknown as Probe).mountTable())
+    const states = await page.$$eval('[data-mk-part="table.body"] tr', rows =>
+      rows.map(row =>
+        [2, 3].map(index => row.querySelectorAll('td')[index]?.getAttribute('data-mk-state') ?? ''),
+      ),
+    )
+    expect(states).toEqual([
+      ['', ''],
+      ['', 'empty'],
+      ['', 'stale'],
+    ])
+    const missing = '[data-mk-part="table.body"] tr:nth-child(2) td:nth-child(4)'
+    expect(await page.getAttribute(missing, 'title')).toBe('No value in ruRU')
+  })
+
   it('reverts the draft to the values the source holds, writing nothing', async () => {
     await page.evaluate(() => (globalThis as unknown as Probe).mountTable())
     const cell = '[data-mk-part="table.body"] tr:first-child td:nth-child(4)'

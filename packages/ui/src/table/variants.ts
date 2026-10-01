@@ -749,8 +749,23 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
       cell.append(box)
       for (const column of variants) {
         const valueCell = tr.cells[column.index + 1]
-        if (valueCell !== undefined && draft.has(`${row.index}:${column.index}`)) {
-          setState(valueCell, ['mutating'])
+        if (valueCell === undefined) continue
+        // each locale's state at a glance, as MK2 coloured its cells: no value, or still the base's
+        const value = row.cells[column.index] ?? ''
+        const state =
+          value === ''
+            ? ('empty' as const)
+            : base !== undefined && column.index !== base.index && value === row.cells[base.index]
+              ? ('stale' as const)
+              : undefined
+        const states = [
+          ...(draft.has(`${row.index}:${column.index}`) ? (['mutating'] as const) : []),
+          ...(state === undefined ? [] : [state]),
+        ]
+        if (states.length > 0) setState(valueCell, states)
+        if (state !== undefined) {
+          const key = state === 'empty' ? 'table.cellMissing' : 'table.cellUntranslated'
+          valueCell.title = text(key, { locale: column.variant ?? '' })
         }
       }
     })

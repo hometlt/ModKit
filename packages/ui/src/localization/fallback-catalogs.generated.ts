@@ -730,6 +730,8 @@ export const TABLE_VARIANTS_FALLBACK_MESSAGES = {
   'table.addKeyName': 'New key',
   'table.addKeySubmit': 'Add',
   'table.addKeyValue': 'Value ({variant})',
+  'table.cellMissing': 'No value in {locale}',
+  'table.cellUntranslated': '{locale} still has the base text',
   'table.columns': 'Columns',
   'table.compare': 'Compare locales',
   'table.compareEmpty': 'Empty',
