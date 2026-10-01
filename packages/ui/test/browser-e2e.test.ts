@@ -3911,6 +3911,115 @@ describe('13C real-browser viewer host', () => {
     ).toBe(5)
   })
 
+  it('draws the most detailed level of detail and switches levels through the mesh list', async () => {
+    await reset()
+    await page.evaluate(async () => {
+      const { ui } = (globalThis as unknown as { modkit: { ui: Record<string, unknown> } }).modkit
+      const typed = ui as unknown as typeof import('@modkit/ui')
+      const root = document.querySelector('#app') as HTMLElement
+      const identity = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
+      const scene = {
+        async info() {
+          return {
+            scenes: 1,
+            nodes: 2,
+            meshes: 2,
+            primitives: 2,
+            geometryAccess: 'decoded' as const,
+          }
+        },
+        async nodes() {
+          return {
+            items: [
+              { id: 'node-near', childIds: [], meshIds: ['mesh-near'], transform: identity },
+              { id: 'node-far', childIds: [], meshIds: ['mesh-far'], transform: identity },
+            ],
+          }
+        },
+        async meshes() {
+          return {
+            items: [
+              { id: 'mesh-near', primitiveIds: ['near'] },
+              { id: 'mesh-far', primitiveIds: ['far'] },
+            ],
+          }
+        },
+        async primitive(id: string) {
+          return {
+            id,
+            topology: 'triangles' as const,
+            positions: new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0]),
+            indices: new Uint32Array([0, 1, 2]),
+          }
+        },
+      }
+      const lods = {
+        async info() {
+          return { levels: 2 }
+        },
+        async levels() {
+          return {
+            items: [
+              { id: 'lod-far', order: 1, nodeIds: ['node-far'] },
+              { id: 'lod-near', order: 0, nodeIds: ['node-near'] },
+            ],
+          }
+        },
+      }
+      const values: Record<string, unknown> = {
+        'common.view/model-scene-source': scene,
+        'common.view/model-lod-source': lods,
+      }
+      const mount = await typed.modelViewer.mount({
+        container: root,
+        descriptor: { revision: 'content-hash.sha256:lod', operations: [], diagnostics: [] },
+        slot: {
+          slotId: 'model',
+          kind: 'stage',
+          contributionId: 'modkit.ui/model-stage',
+          extensionId: 'modkit/ui',
+          priority: 100,
+          bindings: Object.keys(values).map(contract => ({
+            bindingId: contract,
+            contract,
+            major: 1,
+          })),
+        },
+        sources: {
+          async get(binding: { contract: string }) {
+            return { value: values[binding.contract], async release() {} }
+          },
+        },
+        operations: { async dispose() {} },
+      } as never)
+      ;(globalThis as unknown as Record<string, unknown>)['lodFixture'] = { mount }
+    })
+
+    const level = page.getByRole('combobox', { name: 'Level of detail' })
+    const meshes = page.getByRole('group', { name: 'Model primitive' })
+    const near = meshes.getByRole('checkbox', { name: 'near' })
+    const far = meshes.getByRole('checkbox', { name: 'far' })
+    // the most detailed level draws; the coarse one is not stacked over it
+    expect(await level.inputValue()).toBe('lod-near')
+    expect(await near.isChecked()).toBe(true)
+    expect(await far.isChecked()).toBe(false)
+    await level.selectOption('lod-far')
+    expect(await near.isChecked()).toBe(false)
+    expect(await far.isChecked()).toBe(true)
+    expect(await page.locator('[data-mk-part="model.canvas"]').getAttribute('data-model-lod')).toBe(
+      'lod-far',
+    )
+    await level.selectOption({ label: 'All levels' })
+    expect(await near.isChecked()).toBe(true)
+    expect(await far.isChecked()).toBe(true)
+    expect(await page.getByText('2 LOD levels').count()).toBeGreaterThan(0)
+    await page.evaluate(async () => {
+      await (
+        globalThis as unknown as { lodFixture: { mount: { unmount(): Promise<void> } } }
+      ).lodFixture.mount.unmount()
+    })
+  })
+
   /**
    * The two render paths of the model stage, in a real browser, told apart by the evidence.
    *

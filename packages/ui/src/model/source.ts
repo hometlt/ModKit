@@ -1,4 +1,5 @@
 import type {
+  ModelLodLevelRef,
   ModelSceneInfo,
   ModelSceneSource,
   ModelPrimitive,
@@ -107,4 +108,40 @@ export async function loadModelStage(
     primitiveIds: Object.freeze([...ids]),
     ...(primitives[0] === undefined ? {} : { primitive: primitives[0] }),
   }
+}
+
+export interface ModelLodPrimitives {
+  readonly id: string
+  readonly order: number
+  readonly primitiveIds: ReadonlySet<string>
+}
+
+/**
+ * Each level of detail as the primitives it draws, most detailed first: the meshes of the level's
+ * nodes and of their descendants. A level that reaches no geometry is left out.
+ */
+export function modelLodPrimitives(
+  levels: readonly ModelLodLevelRef[],
+  model: Pick<ModelStageModel, 'nodes' | 'meshes'>,
+): readonly ModelLodPrimitives[] {
+  const nodes = new Map(model.nodes.map(node => [node.id, node]))
+  const meshes = new Map(model.meshes.map(mesh => [mesh.id, mesh]))
+  return [...levels]
+    .sort((a, b) => a.order - b.order)
+    .map(level => {
+      const primitiveIds = new Set<string>()
+      const seen = new Set<string>()
+      const pending = [...level.nodeIds]
+      for (let id = pending.pop(); id !== undefined; id = pending.pop()) {
+        const node = seen.has(id) ? undefined : nodes.get(id)
+        seen.add(id)
+        if (node === undefined) continue
+        for (const meshId of node.meshIds)
+          for (const primitiveId of meshes.get(meshId)?.primitiveIds ?? [])
+            primitiveIds.add(primitiveId)
+        pending.push(...node.childIds)
+      }
+      return { id: level.id, order: level.order, primitiveIds }
+    })
+    .filter(level => level.primitiveIds.size > 0)
 }

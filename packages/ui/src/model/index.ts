@@ -10,6 +10,7 @@ import type {
   ModelCameraRef,
   ModelEffectRef,
   ModelLightRef,
+  ModelLodLevelRef,
   ModelNodeBehaviourRef,
   ModelPhysicsRef,
   ModelMaterialRef,
@@ -27,7 +28,12 @@ import type {
 } from '@modkit/sdk'
 import { billboardCameraRotation, createModelSceneSampler } from '@modkit/scene/model'
 import { applyColorKeyTransparency } from '@modkit/codec-kit/raster'
-import { loadModelStage, readModelRecords, MODEL_MAXIMUM_RECORDS } from './source.js'
+import {
+  loadModelStage,
+  modelLodPrimitives,
+  readModelRecords,
+  MODEL_MAXIMUM_RECORDS,
+} from './source.js'
 import { orientPrimitive, upAxisCorrection } from './scene.js'
 import type { UvmFramePreparer } from '@modkit/scene/uvm/render'
 import {
@@ -239,6 +245,7 @@ export const MODEL_FACET_CONTRACTS = Object.freeze([
   'common.view/model-camera-source',
   'common.view/model-physics-source',
   'common.view/model-node-behaviour-source',
+  'common.view/model-lod-source',
 ] as const)
 
 /** Facet id → the one count worth putting on a single readout line. */
@@ -261,6 +268,7 @@ const FACET_READOUT: Readonly<Record<string, { labelKey: UiMessageKey; key: stri
       labelKey: 'viewer.modelBehaviours',
       key: 'behaviours',
     },
+    'common.view/model-lod-source': { labelKey: 'viewer.modelLods', key: 'levels' },
   })
 
 /**
@@ -599,6 +607,10 @@ function facetItem(
     // distinguish one emitter from another without printing seventy-odd parameters in a list.
     return `${short(item.name ?? item.id)} · ${item.kind} · ${item.nodeId ?? '—'} · ${localizer.text('viewer.modelEffectProperties', { count: item.properties?.length ?? 0 })}`
   }
+  if (contract === 'common.view/model-lod-source') {
+    const item = value as ModelLodLevelRef
+    return `${short(item.id)} · ${localizer.text('viewer.modelLodLevel', { order: item.order })} · ${String(item.nodeIds.length)}`
+  }
   const item = value as ModelSocketRef
   return `${short(item.sourceName ?? item.id)} · ${item.role} · ${item.nodeId}`
 }
@@ -616,6 +628,7 @@ const FACET_PAGE_METHOD: Readonly<Record<ModelFacetDetail['contract'], string>> 
   'common.view/model-camera-source': 'cameras',
   'common.view/model-physics-source': 'bodies',
   'common.view/model-node-behaviour-source': 'behaviours',
+  'common.view/model-lod-source': 'levels',
 })
 
 export interface ModelFacetPage {
@@ -1677,6 +1690,28 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
           let scene = orient(player.sample(0, scope.signal))
           /** Primitives the reader switched off; every other one draws (MK2's mesh list). */
           const hiddenPrimitives = new Set<string>()
+          /*
+           * Levels of detail (plan 6.22). A publisher puts every level's geometry in the one scene,
+           * so drawing all of it stacks the coarse meshes over the fine ones. The viewer draws the
+           * most detailed level, as MK2 did; choosing another switches the levels' meshes in the
+           * mesh list. Geometry no level names always draws.
+           */
+          const lodLevels = modelLodPrimitives(
+            (facetPages.get('common.view/model-lod-source')?.items ??
+              []) as readonly ModelLodLevelRef[],
+            model,
+          )
+          const showLod = (chosen: (typeof lodLevels)[number] | undefined): void => {
+            for (const level of lodLevels)
+              for (const id of level.primitiveIds)
+                if (chosen === undefined || chosen.primitiveIds.has(id)) hiddenPrimitives.delete(id)
+                else hiddenPrimitives.add(id)
+          }
+          if (lodLevels.length > 1) showLod(lodLevels[0])
+          const primitiveBoxes = new Map<string, HTMLInputElement>()
+          const syncPrimitiveBoxes = (): void => {
+            for (const [id, box] of primitiveBoxes) box.checked = !hiddenPrimitives.has(id)
+          }
           let activeClip: ModelAnimationClip | undefined
           let timeSeconds = 0
           /*
@@ -2176,12 +2211,42 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
             canvas.setAttribute('data-model-team-color', '#d9140f')
           }
 
+          const [detailed] = lodLevels
+          if (detailed !== undefined && lodLevels.length > 1) {
+            const field = controlRow(panel.rendering, localizer.text('viewer.modelLod')).field
+            const selector = element(field, 'select') as HTMLSelectElement
+            selector.setAttribute('aria-label', localizer.text('viewer.modelLod'))
+            const all = element(selector, 'option', {
+              text: localizer.text('viewer.modelLodAll'),
+            }) as HTMLOptionElement
+            all.value = ''
+            for (const level of lodLevels) {
+              const option = element(selector, 'option', {
+                text: localizer.text('viewer.modelLodLevel', { order: level.order }),
+              }) as HTMLOptionElement
+              option.value = level.id
+            }
+            selector.value = detailed.id
+            canvas.setAttribute('data-model-lod', selector.value)
+            selector.addEventListener(
+              'change',
+              () => {
+                showLod(lodLevels.find(level => level.id === selector.value))
+                canvas.setAttribute('data-model-lod', selector.value)
+                syncPrimitiveBoxes()
+                generation++
+                redraw()
+              },
+              { signal: scope.signal },
+            )
+          }
+
           if (model.primitiveIds.length > 1) {
             // each mesh on or off, and all or none at once, as MK2's mesh list
             const field = controlRow(panel.rendering, localizer.text('viewer.modelPrimitive')).field
-            const boxes = new Map<string, HTMLInputElement>()
+            const boxes = primitiveBoxes
             const apply = (): void => {
-              for (const [id, box] of boxes) box.checked = !hiddenPrimitives.has(id)
+              syncPrimitiveBoxes()
               generation++
               redraw()
             }
@@ -2201,7 +2266,7 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
               const line = element(list, 'label')
               const box = element(line, 'input') as HTMLInputElement
               box.type = 'checkbox'
-              box.checked = true
+              box.checked = !hiddenPrimitives.has(id)
               line.append(' ', id)
               boxes.set(id, box)
               box.addEventListener(
