@@ -2,10 +2,10 @@ import { diagnostic } from '@modkit/core'
 import type { OpenedSubject } from '@modkit/host'
 import { describe, expect, it, vi } from 'vitest'
 
-import { MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY, prepareWebMapPreview } from '../src/map-preview.js'
+import { MAP_PREVIEW_COORDINATOR_LIMITS } from '@modkit/host/maps'
+import { prepareWebMapPreview } from '../src/map-preview.js'
 import { createWebLocalizer } from '../src/localization.js'
 import { MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY as ELECTRON_CATALOG_POLICY } from '../../electron/src/map-preview.js'
-import { MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY as VSCODE_CATALOG_POLICY } from '../../vscode/src/map-preview.js'
 
 const budget = {
   maxInputBytes: 64n * 1024n * 1024n,
@@ -40,7 +40,7 @@ describe('Web map preview binding', () => {
       catalog: explicitCatalog,
       coordinate: async request => {
         expect(request).not.toHaveProperty('resourcePlanResolver')
-        expect(request.catalogEnrichment).toBe(MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY)
+        expect(request.catalogEnrichment).toBe(MAP_PREVIEW_COORDINATOR_LIMITS.catalogEnrichment)
         expect(request.catalog).toBe(explicitCatalog)
         return {
           state: 'unresolved',
@@ -100,6 +100,8 @@ describe('Web map preview binding', () => {
   })
 
   it('keeps the explicit catalog enrichment policy identical in every production adapter', () => {
+    // VS Code and the PWA take the host's set; Electron keeps its copy until it is touched again
+    const MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY = MAP_PREVIEW_COORDINATOR_LIMITS.catalogEnrichment
     expect(MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY).toEqual({
       locales: ['enUS'],
       limits: {
@@ -112,7 +114,6 @@ describe('Web map preview binding', () => {
       },
     })
     expect(ELECTRON_CATALOG_POLICY).toEqual(MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY)
-    expect(VSCODE_CATALOG_POLICY).toEqual(MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY)
   })
 
   it('passes an explicit selectionId on continuation without selecting the first candidate', async () => {

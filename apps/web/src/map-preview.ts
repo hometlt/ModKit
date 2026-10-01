@@ -6,50 +6,13 @@ import type { MapPreviewSelectionCandidate } from '@modkit/sdk/maps'
 import type { OpenedSubject } from '@modkit/host'
 import {
   coordinateMapPreviewAssetSession,
+  MAP_PREVIEW_COORDINATOR_LIMITS,
   type CoordinateMapPreviewAssetSessionRequest,
   type CoordinatedMapPreviewAssetSessionResult,
 } from '@modkit/host/maps'
 import type { UiLocalizer } from '@modkit/ui/localization'
 
 import { createWebLocalizer } from './localization.js'
-
-export const MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY: NonNullable<
-  CoordinateMapPreviewAssetSessionRequest['catalogEnrichment']
-> = Object.freeze({
-  locales: Object.freeze(['enUS']),
-  limits: Object.freeze({
-    // A multi-root workspace may need hundreds of bounded reads across catalog families and locale.
-    maxRequirements: 512,
-    maxDocumentBytes: 16_777_216,
-    maxTextBytes: 268_435_456,
-    maxEntities: 100_000,
-    maxDepth: 128,
-    maxPageSize: 1_000,
-  }),
-})
-
-const COORDINATOR_LIMITS = Object.freeze({
-  // Pinned mp.wz publishes 39 map candidates; 64 is the bounded product ceiling above that corpus.
-  maxCandidates: 64,
-  maxSubjectEntries: 4_096,
-  maxSubjectPages: 64,
-  maxRoots: 64,
-  maxDepth: 16,
-  catalogEnrichment: MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY,
-  limits: Object.freeze({
-    // Warzone 2100 reads 22 map documents (level.json and each tileset's ground and decal files).
-    maxRequirements: 32,
-    maxDocumentBytes: 33_554_432,
-    maxTotalBytes: 67_108_864,
-    maxObjects: 100_000,
-    maxRegions: 10_000,
-    maxTerrainCells: 100_000,
-    maxTerrainSamples: 100_000,
-    maxDepth: 64,
-    maxPageSize: 4_096,
-    maxDiagnostics: 100,
-  }),
-})
 
 type MapPreviewCoordinator = (
   request: CoordinateMapPreviewAssetSessionRequest,
@@ -112,7 +75,7 @@ export async function prepareWebMapPreview(
       budgets: request.budgets,
       original: request.opened.session,
       ...(request.selectionId === undefined ? {} : { selectionId: request.selectionId }),
-      ...COORDINATOR_LIMITS,
+      ...MAP_PREVIEW_COORDINATOR_LIMITS,
       ...(request.catalog === undefined ? {} : { catalog: request.catalog }),
       ...(request.signal === undefined ? {} : { signal: request.signal }),
     })

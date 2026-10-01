@@ -6,6 +6,8 @@ import type { MapPreviewSelectionCandidate } from '@modkit/sdk/maps'
 import type { OpenedSubject, SubjectOpener } from '@modkit/host'
 import {
   coordinateMapPreviewAssetSession,
+  MAP_PREVIEW_COORDINATOR_LIMITS,
+  withMapPreviewSources,
   type CoordinateMapPreviewAssetSessionRequest,
   type CoordinatedMapPreviewAssetSessionResult,
   type MapPreviewResourcePlanResolver,
@@ -13,47 +15,6 @@ import {
 import type { UiLocalizer } from '@modkit/ui/localization'
 
 import { createVscodeLocalizer } from './localization.js'
-
-export const MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY: NonNullable<
-  CoordinateMapPreviewAssetSessionRequest['catalogEnrichment']
-> = Object.freeze({
-  locales: Object.freeze(['enUS']),
-  limits: Object.freeze({
-    // A multi-root workspace may need hundreds of bounded reads across catalog families and locale.
-    // Full catalog planning over the installed StarCraft II stock chain asks for 555. Granting it
-    // (1024) was measured together with a raised node ceiling: the analysis then cost 3 GB in one
-    // process and still missed the call deadline, so the reduced plan stands until it can be paged.
-    maxRequirements: 512,
-    maxDocumentBytes: 16_777_216,
-    maxTextBytes: 268_435_456,
-    maxEntities: 100_000,
-    maxDepth: 128,
-    maxPageSize: 1_000,
-  }),
-})
-
-const COORDINATOR_LIMITS = Object.freeze({
-  // Pinned mp.wz publishes 39 map candidates; 64 is the bounded product ceiling above that corpus.
-  maxCandidates: 64,
-  maxSubjectEntries: 4_096,
-  maxSubjectPages: 64,
-  maxRoots: 64,
-  maxDepth: 16,
-  catalogEnrichment: MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY,
-  limits: Object.freeze({
-    // Warzone 2100 reads 22 map documents (level.json and each tileset's ground and decal files).
-    maxRequirements: 32,
-    maxDocumentBytes: 33_554_432,
-    maxTotalBytes: 67_108_864,
-    maxObjects: 100_000,
-    maxRegions: 10_000,
-    maxTerrainCells: 100_000,
-    maxTerrainSamples: 100_000,
-    maxDepth: 64,
-    maxPageSize: 4_096,
-    maxDiagnostics: 100,
-  }),
-})
 
 type MapPreviewCoordinator = (
   request: CoordinateMapPreviewAssetSessionRequest,
@@ -111,12 +72,12 @@ export async function prepareVsCodeMapPreview(
         ? {}
         : { resourcePlanResolver: request.resourcePlanResolver }),
       ...(request.selectionId === undefined ? {} : { selectionId: request.selectionId }),
-      ...COORDINATOR_LIMITS,
+      ...MAP_PREVIEW_COORDINATOR_LIMITS,
       ...(request.locales === undefined
         ? {}
         : {
             catalogEnrichment: {
-              ...MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY,
+              ...MAP_PREVIEW_COORDINATOR_LIMITS.catalogEnrichment,
               locales: Object.freeze([...request.locales]),
             },
           }),
@@ -174,9 +135,9 @@ export interface VsCodeMapWorldInputs {
 
 /**
  * An opener whose maps come with the world their preview builds (П24), so `subject.convert` with
- * target `uvw` finds it, with this window's preview limits, locales and sources (the session the
- * served map preview gets). A package of several maps (a campaign, `mp.wz`) asks which one; anything
- * that is no map opens as before. The preview owns the opened session and releases it with its own.
+ * target `uvw` finds it: the CLI's way, with this window's locales and sources. A package of
+ * several maps (a campaign, `mp.wz`) asks which one; anything that is no map opens as before. The
+ * subject keeps its own operations beside the world, and disposing it releases both.
  */
 export function withVsCodeMapWorld(
   opener: SubjectOpener,
@@ -194,12 +155,12 @@ export function withVsCodeMapWorld(
         grant: inputs.grant,
         budgets: inputs.budgets,
         original,
-        ...COORDINATOR_LIMITS,
+        ...MAP_PREVIEW_COORDINATOR_LIMITS,
         ...(locales === undefined
           ? {}
           : {
               catalogEnrichment: {
-                ...MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY,
+                ...MAP_PREVIEW_COORDINATOR_LIMITS.catalogEnrichment,
                 locales: Object.freeze([...locales]),
               },
             }),
@@ -222,7 +183,9 @@ export function withVsCodeMapWorld(
       await original.dispose()
       throw error
     }
-    if (preview.state === 'opened') return { ...opened, session: preview.session }
+    if (preview.state === 'opened') {
+      return { ...opened, session: withMapPreviewSources(original, preview.session) }
+    }
     if (preview.state !== 'not-applicable') inputs.report?.(preview.diagnostics)
     return opened
   }

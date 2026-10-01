@@ -42,7 +42,7 @@ describe('a map opened with its world (П24)', () => {
     session: { dispose } as never,
   })
 
-  it('asks which map of a package, then hands over the preview session', async () => {
+  it('asks which map of a package, then adds its world to the subject', async () => {
     const preview = { dispose: vi.fn(async () => undefined) }
     const selections: (string | undefined)[] = []
     const open = withVsCodeMapWorld(
@@ -69,7 +69,9 @@ describe('a map opened with its world (П24)', () => {
     )
     const opened = await open('C:\\maps\\mp.wz')
     expect(selections).toEqual([undefined, 'b'])
-    expect(opened.session).toBe(preview)
+    // the world joins the subject, which keeps its own operations; releasing it releases both
+    await opened.session?.dispose()
+    expect(preview.dispose).toHaveBeenCalledOnce()
   })
 
   it('releases the subject when no map is chosen, and keeps a subject that is no map', async () => {

@@ -3,10 +3,8 @@ import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import type { OpenedSubject } from '@modkit/host'
 
-import {
-  MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY,
-  prepareVsCodeMapPreview,
-} from '../src/map-preview.js'
+import { MAP_PREVIEW_COORDINATOR_LIMITS } from '@modkit/host/maps'
+import { prepareVsCodeMapPreview } from '../src/map-preview.js'
 import {
   continueVsCodeMapPreviewSelection,
   parseVsCodeMapPreviewSelectionRequest,
@@ -50,7 +48,7 @@ describe('VS Code map preview binding', () => {
       catalog: explicitCatalog,
       coordinate: async request => {
         expect(request.maxCandidates).toBe(64)
-        expect(request.catalogEnrichment).toBe(MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY)
+        expect(request.catalogEnrichment).toBe(MAP_PREVIEW_COORDINATOR_LIMITS.catalogEnrichment)
         expect(request.catalog).toBe(explicitCatalog)
         expect(request.resourcePlanResolver).toBe(resourcePlanResolver)
         return {
@@ -93,7 +91,9 @@ describe('VS Code map preview binding', () => {
     })
     expect(seen?.catalogEnrichment?.locales).toEqual(['ruRU', 'enUS'])
     // the limits stay those of the policy; only the locales follow the window
-    expect(seen?.catalogEnrichment?.limits).toBe(MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY.limits)
+    expect(seen?.catalogEnrichment?.limits).toBe(
+      MAP_PREVIEW_COORDINATOR_LIMITS.catalogEnrichment.limits,
+    )
     expect(seen?.contentSources).toBe(contentSources)
   })
 
