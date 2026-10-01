@@ -16,12 +16,12 @@ import {
 import {
   uvmAccessorWidth,
   validateUvmDocument
-} from "./chunk-U6K3QYX2.js";
+} from "./chunk-5DT7SGOU.js";
 import {
   array,
   isStandardLayerSlot,
   object
-} from "./chunk-3TRK5GFM.js";
+} from "./chunk-CTXZR5MG.js";
 import {
   decomposeMatrix4,
   normalizeQuat,
@@ -358,6 +358,28 @@ function validateStandard(value, path, signal) {
     throw new TypeError(`${path}.normalMapSpace is unsupported`);
   if (material["normalMapTransform"] !== void 0)
     vector2(material["normalMapTransform"], `${path}.normalMapTransform`, 9);
+  const lightingModel = material["lightingModel"] ?? "m3";
+  if (lightingModel !== "m3" && lightingModel !== "pbr-metallic-roughness")
+    throw new TypeError(`${path}.lightingModel is unsupported`);
+  for (const key of ["metallicFactor", "roughnessFactor"])
+    if (material[key] !== void 0) {
+      const factor = finite(material[key], `${path}.${key}`);
+      if (factor < 0 || factor > 1)
+        throw new TypeError(`${path}.${key} must be in 0..1`);
+    }
+  const colorPipeline = material["colorPipeline"] ?? "m3";
+  if (colorPipeline !== "m3" && colorPipeline !== "linear-srgb")
+    throw new TypeError(`${path}.colorPipeline is unsupported`);
+  if (colorPipeline === "linear-srgb" && lightingModel !== "pbr-metallic-roughness")
+    throw new TypeError(`${path}.colorPipeline linear-srgb requires the pbr lighting model`);
+  if (material["tonemap"] !== void 0) {
+    vector2(material["tonemap"], `${path}.tonemap`, 5);
+    const curve = material["tonemap"];
+    if (curve.some((term) => term < 0) || !(curve[4] > 0))
+      throw new TypeError(`${path}.tonemap needs nonnegative terms and e > 0`);
+    if (colorPipeline !== "linear-srgb")
+      throw new TypeError(`${path}.tonemap requires the linear-srgb color pipeline`);
+  }
   if (material["normalMapSpace"] !== "object" && material["normalMapTransform"] !== void 0)
     throw new TypeError(`${path}.normalMapTransform requires object-space normals`);
   const layers = record(material["layers"], `${path}.layers`);

@@ -10,7 +10,7 @@ import {
   readUvmKeyTimes,
   safeIndex,
   validateUvmAnimationClips
-} from "./chunk-3TRK5GFM.js";
+} from "./chunk-CTXZR5MG.js";
 
 // ../MODDING/modkit-core/packages/uv/dist/model/validation/spatial.js
 function validateSocketMetadata(document, used, signal) {

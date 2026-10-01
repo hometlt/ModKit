@@ -48,7 +48,7 @@ import {
   validateUvmDocument,
   vector3,
   vector4
-} from "./chunk-L5QNXEVA.js";
+} from "./chunk-ZNIKBHDN.js";
 import {
   applyColorKeyTransparency,
   billboardCameraRotation,

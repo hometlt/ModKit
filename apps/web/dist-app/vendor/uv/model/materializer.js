@@ -13,7 +13,7 @@ import {
   materializeUvmAnimationMaterialTargets,
   uvmKeyTimesMetadata,
   uvmVisibilityPointer
-} from "../../../chunks/chunk-3TRK5GFM.js";
+} from "../../../chunks/chunk-CTXZR5MG.js";
 import {
   DEFAULT_MODEL_MATERIAL_BUDGET,
   snapshotModelMaterials

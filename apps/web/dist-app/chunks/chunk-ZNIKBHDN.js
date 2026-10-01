@@ -1,8 +1,10 @@
 import {
   composeTrsMatrix,
+  linearToSrgb,
   multiplyMat4,
   sampleTrackValue,
-  snapshotJson
+  snapshotJson,
+  srgbToLinear
 } from "./chunk-EOJHBJMF.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
@@ -445,7 +447,9 @@ var LAYER_SLOTS = [
   "height",
   "lightMap",
   "ao",
-  "teamColorMask"
+  "teamColorMask",
+  "metalness",
+  "roughness"
 ];
 function isStandardLayerSlot(value2) {
   return LAYER_SLOTS.includes(value2);
@@ -1596,6 +1600,28 @@ function validateStandard(value2, path, signal) {
     throw new TypeError(`${path}.normalMapSpace is unsupported`);
   if (material["normalMapTransform"] !== void 0)
     vector5(material["normalMapTransform"], `${path}.normalMapTransform`, 9);
+  const lightingModel = material["lightingModel"] ?? "m3";
+  if (lightingModel !== "m3" && lightingModel !== "pbr-metallic-roughness")
+    throw new TypeError(`${path}.lightingModel is unsupported`);
+  for (const key of ["metallicFactor", "roughnessFactor"])
+    if (material[key] !== void 0) {
+      const factor = finite2(material[key], `${path}.${key}`);
+      if (factor < 0 || factor > 1)
+        throw new TypeError(`${path}.${key} must be in 0..1`);
+    }
+  const colorPipeline = material["colorPipeline"] ?? "m3";
+  if (colorPipeline !== "m3" && colorPipeline !== "linear-srgb")
+    throw new TypeError(`${path}.colorPipeline is unsupported`);
+  if (colorPipeline === "linear-srgb" && lightingModel !== "pbr-metallic-roughness")
+    throw new TypeError(`${path}.colorPipeline linear-srgb requires the pbr lighting model`);
+  if (material["tonemap"] !== void 0) {
+    vector5(material["tonemap"], `${path}.tonemap`, 5);
+    const curve2 = material["tonemap"];
+    if (curve2.some((term) => term < 0) || !(curve2[4] > 0))
+      throw new TypeError(`${path}.tonemap needs nonnegative terms and e > 0`);
+    if (colorPipeline !== "linear-srgb")
+      throw new TypeError(`${path}.tonemap requires the linear-srgb color pipeline`);
+  }
   if (material["normalMapSpace"] !== "object" && material["normalMapTransform"] !== void 0)
     throw new TypeError(`${path}.normalMapTransform requires object-space normals`);
   const layers = record3(material["layers"], `${path}.layers`);
@@ -1910,6 +1936,90 @@ init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
 // ../MODDING/modkit-core/packages/codec-kit/dist/model-math/standard-material-glsl.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// ../MODDING/modkit-core/packages/codec-kit/dist/model-math/pbr.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+var clamp01 = (value2) => Math.min(1, Math.max(0, value2));
+function shadePbr(surface, normal2, view, light, ambient) {
+  const roughness = clamp01(surface.roughness);
+  const metallic = clamp01(surface.metallic);
+  const alpha = Math.max(roughness * roughness, 1e-3);
+  const alpha2 = alpha * alpha;
+  const nDotL = clamp01(dot(normal2, light.direction));
+  const nDotV = Math.max(dot(normal2, view), 1e-4);
+  const half = [
+    light.direction[0] + view[0],
+    light.direction[1] + view[1],
+    light.direction[2] + view[2]
+  ];
+  const halfLength = Math.hypot(half[0], half[1], half[2]) || 1;
+  const nDotH = clamp01(dot(normal2, half) / halfLength);
+  const vDotH = clamp01(dot(view, half) / halfLength);
+  const d = alpha2 / (Math.PI * (nDotH * nDotH * (alpha2 - 1) + 1) ** 2);
+  const visibility = 0.5 / Math.max(nDotL * Math.sqrt(nDotV * nDotV * (1 - alpha2) + alpha2) + nDotV * Math.sqrt(nDotL * nDotL * (1 - alpha2) + alpha2), 1e-6);
+  const r0 = roughness * -1 + 1;
+  const r1 = roughness * -0.0275 + 0.0425;
+  const r2 = roughness * -0.572 + 1.04;
+  const r3 = roughness * 0.022 - 0.04;
+  const a004 = Math.min(r0 * r0, 2 ** (-9.28 * nDotV)) * r0 + r1;
+  const scale = a004 * -1.04 + r2;
+  const bias = a004 * 1.04 + r3;
+  const occlusion = surface.occlusion ?? 1;
+  return [0, 1, 2].map((channel2) => {
+    const base = surface.baseColor[channel2];
+    const diffuse = base * (1 - metallic);
+    const f0 = 0.04 + (base - 0.04) * metallic;
+    const fresnel = f0 + (1 - f0) * (1 - vDotH) ** 5;
+    const direct = ((1 - fresnel) * diffuse + Math.PI * fresnel * d * visibility) * light.color[channel2] * nDotL;
+    const environment = ambient[channel2] * (diffuse + f0 * scale + bias) * occlusion;
+    return direct + environment + (surface.emissive?.[channel2] ?? 0);
+  });
+}
+function tonemap(value2, curve2) {
+  const [a, b, c, d, e] = curve2;
+  const x = Math.max(0, value2);
+  return clamp01(x * (a * x + b) / (x * (c * x + d) + e));
+}
+var TONEMAP_GLSL = `vec3 modkitTonemap(vec3 x, vec4 abcd, float e) {
+  x = max(x, vec3(0.0));
+  return clamp(x * (abcd.x * x + abcd.y) / (x * (abcd.z * x + abcd.w) + e), 0.0, 1.0);
+}`;
+var SRGB_GLSL = `vec3 modkitSrgbToLinear(vec3 value) {
+  return mix(value / 12.92, pow((value + 0.055) / 1.055, vec3(2.4)), vec3(greaterThan(value, vec3(0.04045))));
+}
+vec3 modkitLinearToSrgb(vec3 value) {
+  return mix(value * 12.92, 1.055 * pow(value, vec3(1.0 / 2.4)) - 0.055, vec3(greaterThan(value, vec3(0.0031308))));
+}`;
+var PBR_GLSL = `vec3 modkitPbr(vec3 baseColor, float metallic, float roughness, float occlusion, vec3 emissive,
+    vec3 normal, vec3 view, vec3 lightDirection, vec3 lightColor, vec3 ambient) {
+  roughness = clamp(roughness, 0.0, 1.0);
+  metallic = clamp(metallic, 0.0, 1.0);
+  float alpha = max(roughness * roughness, 1e-3);
+  float alpha2 = alpha * alpha;
+  float nDotL = clamp(dot(normal, lightDirection), 0.0, 1.0);
+  float nDotV = max(dot(normal, view), 1e-4);
+  vec3 halfVector = lightDirection + view;
+  float halfLength = length(halfVector);
+  halfVector = halfLength > 0.0 ? halfVector / halfLength : halfVector;
+  float nDotH = clamp(dot(normal, halfVector), 0.0, 1.0);
+  float vDotH = clamp(dot(view, halfVector), 0.0, 1.0);
+  float distribution = alpha2 / (3.14159265358979 * pow(nDotH * nDotH * (alpha2 - 1.0) + 1.0, 2.0));
+  float visibility = 0.5 / max(nDotL * sqrt(nDotV * nDotV * (1.0 - alpha2) + alpha2)
+    + nDotV * sqrt(nDotL * nDotL * (1.0 - alpha2) + alpha2), 1e-6);
+  vec4 r = roughness * vec4(-1.0, -0.0275, -0.572, 0.022) + vec4(1.0, 0.0425, 1.04, -0.04);
+  float a004 = min(r.x * r.x, exp2(-9.28 * nDotV)) * r.x + r.y;
+  vec2 environmentBrdf = vec2(-1.04, 1.04) * a004 + r.zw;
+  vec3 diffuse = baseColor * (1.0 - metallic);
+  vec3 f0 = mix(vec3(0.04), baseColor, metallic);
+  vec3 fresnel = f0 + (1.0 - f0) * pow(1.0 - vDotH, 5.0);
+  vec3 direct = ((1.0 - fresnel) * diffuse + 3.14159265358979 * fresnel * distribution * visibility)
+    * lightColor * nDotL;
+  vec3 environment = ambient * (diffuse + f0 * environmentBrdf.x + environmentBrdf.y) * occlusion;
+  return direct + environment + emissive;
+}`;
+
+// ../MODDING/modkit-core/packages/codec-kit/dist/model-math/standard-material-glsl.js
 var FRAGMENT_LAYER_SLOTS = [
   "diffuse",
   "decal",
@@ -1930,7 +2040,9 @@ var FRAGMENT_LAYER_SLOTS = [
   "ao",
   "teamColorMask",
   "alpha1",
-  "alpha2"
+  "alpha2",
+  "metalness",
+  "roughness"
 ];
 var TEXTURE_FALLBACK_PRIORITY = [
   "diffuse",
@@ -1952,7 +2064,9 @@ var TEXTURE_FALLBACK_PRIORITY = [
   "envi",
   "enviMask",
   "height",
-  "teamColorMask"
+  "teamColorMask",
+  "metalness",
+  "roughness"
 ];
 function uvSourceKind(uvSource) {
   if (uvSource === 0)
@@ -2040,12 +2154,15 @@ function buildMaterialDefines(material, options = {}) {
     ...options.gpuSkinning === true ? { gpuSkinning: true } : {},
     ...options.hardwareInstancing === true ? { hardwareInstancing: true } : {},
     ...options.bakedPoseInstancing === true && options.gpuSkinning === true && options.hardwareInstancing === true ? { bakedPoseInstancing: true } : {},
-    ...options.sceneLighting === true ? { sceneLighting: true } : {}
+    ...options.sceneLighting === true ? { sceneLighting: true } : {},
+    ...material.lightingModel === "pbr-metallic-roughness" ? { pbr: true } : {},
+    // an unshaded material is drawn as stored, without light to sum linearly
+    ...material.lightingModel === "pbr-metallic-roughness" && material.colorPipeline === "linear-srgb" && !material.unshaded ? { linearColor: true, ...material.tonemap === void 0 ? {} : { tonemap: true } } : {}
   };
 }
 function canonicalDefineKey(defines) {
   const layerKeys = defines.layers.map((layer) => `${layer.slot}:${layer.hasTexture ? "t" : "c"}${layer.uvSource}.${layer.channels}.${layer.op}.${layer.teamColorMode}${layer.invert ? "i" : ""}${layer.clampResult ? "k" : ""}${layer.hasColorMultiply ? "m" : ""}${layer.hasColorAdd ? "a" : ""}${layer.hasAlphaFactor ? "f" : ""}${layer.hasUvTransform ? "u" : ""}${layer.fresnel ? `;fr=${layer.fresnel.mode},${layer.fresnel.exponent},${layer.fresnel.min},${layer.fresnel.maxOffset},${layer.fresnel.transformMode},${layer.fresnel.localTransform ? 1 : 0},${layer.fresnel.doNotMirror ? 1 : 0},${layer.fresnel.translation.join(",")},${layer.fresnel.invertMask.join(",")},${layer.fresnel.rotation.join(",")}` : ""}`).join("|");
-  return `layers[${layerKeys}];n=${defines.normalMapFormat}.${defines.normalMapSpace};spec=${defines.specMode};${defines.unshaded ? "U" : ""}${defines.doubleLambert ? "D" : ""}${defines.clampOutput ? "C" : ""}${defines.usesVertexColor ? "vc" : ""}${defines.usesVertexAlpha ? "va" : ""}${defines.modAlpha ? "ma" : ""}${defines.alphaTest ? "at" : ""}${defines.specularEnergyConservation ? "ec" : ""};uv=${defines.uvSetCount};${defines.gpuSkinning ? "skin" : ""}${defines.hardwareInstancing ? "inst" : ""}${defines.bakedPoseInstancing ? "baked" : ""}${defines.sceneLighting ? ";scene" : ""}`;
+  return `layers[${layerKeys}];n=${defines.normalMapFormat}.${defines.normalMapSpace};spec=${defines.specMode};${defines.unshaded ? "U" : ""}${defines.doubleLambert ? "D" : ""}${defines.clampOutput ? "C" : ""}${defines.usesVertexColor ? "vc" : ""}${defines.usesVertexAlpha ? "va" : ""}${defines.modAlpha ? "ma" : ""}${defines.alphaTest ? "at" : ""}${defines.specularEnergyConservation ? "ec" : ""};uv=${defines.uvSetCount};${defines.gpuSkinning ? "skin" : ""}${defines.hardwareInstancing ? "inst" : ""}${defines.bakedPoseInstancing ? "baked" : ""}${defines.sceneLighting ? ";scene" : ""}${defines.pbr ? ";pbr" : ""}${defines.linearColor ? ";linear" : ""}${defines.tonemap ? ";tonemap" : ""}`;
 }
 function standardBlendModeName(blendMode, alphaTestThreshold) {
   switch (blendMode) {
@@ -2113,7 +2230,7 @@ function computeLayerColorCpu(sample, teamColor, viewNormal = [0, 0, 1], eyeToVe
   if (sample.alphaFactor !== void 0)
     c = [c[0], c[1], c[2], c[3] * sample.alphaFactor];
   if (sample.clampResult) {
-    c = [clamp01(c[0]), clamp01(c[1]), clamp01(c[2]), clamp01(c[3])];
+    c = [clamp012(c[0]), clamp012(c[1]), clamp012(c[2]), clamp012(c[3])];
   }
   if (sample.fresnel) {
     const factor = calculateLayerFresnelCpu(sample.fresnel, viewNormal, eyeToVertex);
@@ -2124,12 +2241,12 @@ function computeLayerColorCpu(sample, teamColor, viewNormal = [0, 0, 1], eyeToVe
 function calculateLayerFresnelCpu(fresnel, viewNormal, eyeToVertex) {
   const normal2 = normalize3(viewNormal);
   const direction = normalize3(eyeToVertex);
-  const dot4 = dot3(normal2, direction);
-  const edge = fresnel.doNotMirror ? 1 - clamp01(-dot4) : 1 - Math.abs(dot4);
+  const dot5 = dot3(normal2, direction);
+  const edge = fresnel.doNotMirror ? 1 - clamp012(-dot5) : 1 - Math.abs(dot5);
   let factor = Math.pow(Math.max(edge, 1e-4), Math.max(fresnel.exponent, 0));
   if (fresnel.mode === 2)
     factor = 1 - factor;
-  return clamp01(factor * fresnel.maxOffset + fresnel.min);
+  return clamp012(factor * fresnel.maxOffset + fresnel.min);
 }
 function combineLayerColorCpu(op, color, result, teamColor) {
   switch (op) {
@@ -2172,7 +2289,9 @@ function decodeNormalCpu(texel, format) {
   return [x, y, z];
 }
 var DEFAULT_AMBIENT = [0.02, 0.02, 0.02, 0];
-function clamp01(v) {
+var PBR_VIEWER_LIGHT = [0.75, 0.75, 0.75];
+var PBR_VIEWER_AMBIENT = [0.25, 0.25, 0.25];
+function clamp012(v) {
   return Math.min(Math.max(v, 0), 1);
 }
 function dot3(a, b) {
@@ -2184,7 +2303,7 @@ function normalize3(value2) {
 }
 function computeTriPlanarWeightsCpu(normalValue) {
   const normal2 = normalize3(normalValue);
-  const weight = (component2) => Math.pow(clamp01((Math.abs(component2) - 0.2) * 7), 3);
+  const weight = (component2) => Math.pow(clamp012((Math.abs(component2) - 0.2) * 7), 3);
   const weights = [
     weight(normal2[0]),
     weight(normal2[1]),
@@ -2208,7 +2327,7 @@ function planarLocalUvCpu(position, axis) {
   return [projected[0] * 0.09375, 1 - projected[1] * 0.09375];
 }
 function blendNormalCpu(base, detail, factor) {
-  const amount = clamp01(factor);
+  const amount = clamp012(factor);
   return normalize3([
     base[0] + (detail[0] - base[0]) * amount,
     base[1] + (detail[1] - base[1]) * amount,
@@ -2250,12 +2369,19 @@ function composeStandardPixelCpu(input) {
     const ao = computeLayerColorCpu(layers.ao, teamColor);
     color = [color[0] * ao[0], color[1] * ao[1], color[2] * ao[2]];
   }
+  const linear = input.linearColor !== void 0;
+  const inPipeline = (value2) => linear ? [
+    srgbToLinear(clamp012(value2[0])),
+    srgbToLinear(clamp012(value2[1])),
+    srgbToLinear(clamp012(value2[2])),
+    value2[3]
+  ] : [value2[0], value2[1], value2[2], value2[3]];
   const applyEmissive = (base) => {
     let final2 = [base[0], base[1], base[2]];
     let addEmissive = false;
     let emissive = [0, 0, 0];
     if (layers.emissive1) {
-      const temp = computeLayerColorCpu(layers.emissive1, teamColor);
+      const temp = inPipeline(computeLayerColorCpu(layers.emissive1, teamColor));
       const op = layers.emissive1.op;
       if (op === 0 || op === 1 || op === 3) {
         final2 = combineLayerColorCpu(op, temp, final2, teamColor);
@@ -2265,7 +2391,7 @@ function composeStandardPixelCpu(input) {
       }
     }
     if (layers.emissive2) {
-      const temp = computeLayerColorCpu(layers.emissive2, teamColor);
+      const temp = inPipeline(computeLayerColorCpu(layers.emissive2, teamColor));
       const op = layers.emissive2.op;
       if (!addEmissive && (op === 0 || op === 1 || op === 3)) {
         final2 = combineLayerColorCpu(op, temp, final2, teamColor);
@@ -2288,7 +2414,7 @@ function composeStandardPixelCpu(input) {
   const applyEnvironment = (base, diffuseLight, specularLight) => {
     if (!layers.envi)
       return base;
-    const environment = computeLayerColorCpu(layers.envi, teamColor);
+    const environment = inPipeline(computeLayerColorCpu(layers.envi, teamColor));
     let mask;
     if (layers.enviMask) {
       const sampledMask = computeLayerColorCpu(layers.enviMask, teamColor);
@@ -2332,7 +2458,7 @@ function composeStandardPixelCpu(input) {
     return base;
   };
   const scene = input.sceneLighting;
-  let final = scene === void 0 ? [ambient[0], ambient[1], ambient[2], ambient[3]] : [0, 0, 0, 0];
+  let final = scene === void 0 && input.pbr === void 0 ? [ambient[0], ambient[1], ambient[2], ambient[3]] : [0, 0, 0, 0];
   const specularCpu = (lambert) => {
     if (!layers.specular || !(lambert > 0))
       return [0, 0, 0];
@@ -2345,24 +2471,42 @@ function composeStandardPixelCpu(input) {
     let energy = 1;
     if (input.specularEnergyConservation === true) {
       const p = Math.min(Math.max(power, 1), 512);
-      energy = clamp01(-4444e-9 * p * p + 4333e-6 * p + 20834e-7);
+      energy = clamp012(-4444e-9 * p * p + 4333e-6 * p + 20834e-7);
     }
     const factor = Math.pow(Math.max(-dot3(halfVec, normal2), 0), Math.max(power, 1)) * input.specMult * energy;
     return input.specMode === 1 ? [specColor[3] * factor, specColor[3] * factor, specColor[3] * factor] : [specColor[0] * factor, specColor[1] * factor, specColor[2] * factor];
   };
-  if (input.unshaded) {
+  if (input.pbr !== void 0 && !input.unshaded) {
+    const channel2 = (slot) => {
+      const layer = layers[slot];
+      return layer === void 0 ? 1 : computeLayerColorCpu(layer, teamColor)[0];
+    };
+    const base = inPipeline([color[0], color[1], color[2], 1]);
+    const n = normalize3(normal2), l = normalize3(lightDir);
+    let rgb = shadePbr({
+      baseColor: [base[0], base[1], base[2]],
+      metallic: input.pbr.metallicFactor * channel2("metalness"),
+      roughness: input.pbr.roughnessFactor * channel2("roughness")
+    }, n, normalize3(input.viewDir ?? [0, 0, 1]), { direction: l, color: scene === void 0 ? PBR_VIEWER_LIGHT : scene.lightColor }, scene === void 0 ? PBR_VIEWER_AMBIENT : scene.ambientColor);
+    rgb = applyEmissive(applyEnvironment(rgb, Math.max(dot3(n, l), 0), [0, 0, 0]));
+    if (input.linearColor !== void 0) {
+      const curve2 = input.linearColor.tonemap;
+      rgb = rgb.map((value2) => linearToSrgb(curve2 === void 0 ? clamp012(value2) : tonemap(value2, curve2)));
+    }
+    final = [rgb[0], rgb[1], rgb[2], final[3]];
+  } else if (input.unshaded) {
     const rgb = applyEmissive(applyEnvironment(color, 0, [0, 0, 0]));
     final = [final[0] + rgb[0], final[1] + rgb[1], final[2] + rgb[2], final[3]];
   } else if (scene !== void 0) {
     const nl = dot3(normal2, lightDir);
-    const lambert = input.doubleLambert ? clamp01(-1 + 2 * nl) : Math.max(nl, 0);
+    const lambert = input.doubleLambert ? clamp012(-1 + 2 * nl) : Math.max(nl, 0);
     const spec = specularCpu(lambert);
     const lit = (channel2) => color[channel2] * (scene.ambientColor[channel2] + scene.lightColor[channel2] * lambert) + spec[channel2] * scene.lightColor[channel2];
     const rgb = applyEmissive(applyEnvironment([lit(0), lit(1), lit(2)], lambert, spec));
     final = [final[0] + rgb[0], final[1] + rgb[1], final[2] + rgb[2], final[3]];
   } else {
     const nl = dot3(normal2, lightDir);
-    const lambert = input.doubleLambert ? clamp01(-1 + 2 * nl) : Math.max(nl, 0);
+    const lambert = input.doubleLambert ? clamp012(-1 + 2 * nl) : Math.max(nl, 0);
     if (lambert > 0) {
       const spec = specularCpu(lambert);
       let rgb = [
@@ -2410,7 +2554,7 @@ function composeStandardPixelCpu(input) {
   if (input.modAlpha === true)
     final = [final[0] * fade, final[1] * fade, final[2] * fade, final[3]];
   if (input.clampOutput) {
-    final = [clamp01(final[0]), clamp01(final[1]), clamp01(final[2]), clamp01(final[3])];
+    final = [clamp012(final[0]), clamp012(final[1]), clamp012(final[2]), clamp012(final[3])];
   }
   const alphaTestPassed = input.alphaTestThreshold <= 0 || final[3] >= input.alphaTestThreshold;
   return { rgba: final, alphaTestPassed };
@@ -2730,16 +2874,26 @@ function buildStandardFragmentSource(defines, options = {}) {
     parts.push("uniform float u_parallaxHeight;");
   if (defines.alphaTest)
     parts.push("uniform float u_alphaTestThreshold;");
+  if (defines.pbr)
+    parts.push("uniform float u_metallicFactor;", "uniform float u_roughnessFactor;");
+  if (defines.tonemap)
+    parts.push("uniform vec4 u_tonemapCurve;", "uniform float u_tonemapE;");
   for (const layer of defines.layers)
     parts.push(layerUniformDeclarations(layer));
   parts.push(SHARED_FRAGMENT_HELPERS);
+  if (defines.pbr)
+    parts.push(PBR_GLSL);
+  if (defines.linearColor)
+    parts.push(SRGB_GLSL);
+  if (defines.tonemap)
+    parts.push(TONEMAP_GLSL);
   if (hasDecodedNormal)
     parts.push(normalDecodeGlsl(defines.normalMapFormat));
   for (const layer of defines.layers)
     parts.push(layerFunction(layer));
   const body = [];
   body.push("void main() {");
-  body.push(defines.sceneLighting ? "  vec4 final = vec4(0.0);" : "  vec4 final = u_ambient;");
+  body.push(defines.sceneLighting || defines.pbr ? "  vec4 final = vec4(0.0);" : "  vec4 final = u_ambient;");
   if (layerBySlot.has("height")) {
     body.push("  float parallaxSample = computeLayer_height().r - 0.5;");
     body.push("  vec3 parallaxView = normalize(v_viewDir);");
@@ -2779,6 +2933,7 @@ function buildStandardFragmentSource(defines, options = {}) {
     body.push("  color *= computeLayer_lightMap().rgb * 2.0;");
   if (layerBySlot.has("ao"))
     body.push("  color *= computeLayer_ao().rgb;");
+  const inPipeline = (indent, name) => defines.linearColor ? [`${indent}${name}.rgb = modkitSrgbToLinear(clamp(${name}.rgb, 0.0, 1.0));`] : [];
   const emissiveBlock = (indent, target) => {
     const lines = [];
     const emis1 = layerBySlot.get("emissive1");
@@ -2789,6 +2944,7 @@ function buildStandardFragmentSource(defines, options = {}) {
     lines.push(`${indent}bool addEmissive = false;`);
     if (emis1) {
       lines.push(`${indent}vec4 emis1Color = computeLayer_emissive1();`);
+      lines.push(...inPipeline(indent, "emis1Color"));
       if (emis1.op === 0 || emis1.op === 1 || emis1.op === 3) {
         lines.push(`${indent}${combineExpression(emis1.op, "emis1Color", target)}`);
       } else {
@@ -2798,6 +2954,7 @@ function buildStandardFragmentSource(defines, options = {}) {
     }
     if (emis2) {
       lines.push(`${indent}vec4 emis2Color = computeLayer_emissive2();`);
+      lines.push(...inPipeline(indent, "emis2Color"));
       if (emis2.op === 0 || emis2.op === 1 || emis2.op === 3) {
         lines.push(`${indent}if (!addEmissive) {`);
         lines.push(`${indent}  ${combineExpression(emis2.op, "emis2Color", target)}`);
@@ -2818,7 +2975,10 @@ function buildStandardFragmentSource(defines, options = {}) {
     if (!environment || environment.op !== 0 && environment.op !== 2 && environment.op !== 3) {
       return [];
     }
-    const lines = [`${indent}vec4 environmentColor = computeLayer_envi();`];
+    const lines = [
+      `${indent}vec4 environmentColor = computeLayer_envi();`,
+      ...inPipeline(indent, "environmentColor")
+    ];
     const maskLayer = layerBySlot.get("enviMask");
     if (maskLayer) {
       lines.push(`${indent}vec4 environmentMask = computeLayer_enviMask();`);
@@ -2857,7 +3017,18 @@ function buildStandardFragmentSource(defines, options = {}) {
       defines.specMode === 1 ? `${indent}vec3 spec = vec3(specColor.a) * specFactor;` : `${indent}vec3 spec = specColor.rgb * specFactor;`
     ];
   };
-  if (defines.unshaded) {
+  if (defines.pbr && !defines.unshaded) {
+    const channel2 = (slot) => layerBySlot.has(slot) ? ` * computeLayer_${slot}().r` : "";
+    const vector10 = (value2) => `vec3(${value2.map(glslFloat).join(", ")})`;
+    const light = defines.sceneLighting ? "u_sceneLightColor" : vector10(PBR_VIEWER_LIGHT);
+    const ambient = defines.sceneLighting ? "u_sceneAmbientColor" : vector10(PBR_VIEWER_AMBIENT);
+    body.push(`  vec3 pbrBase = ${defines.linearColor ? "modkitSrgbToLinear(clamp(color, 0.0, 1.0))" : "color"};`, `  float pbrMetallic = u_metallicFactor${channel2("metalness")};`, `  float pbrRoughness = u_roughnessFactor${channel2("roughness")};`, "  vec3 pbrNormal = normalize(normal);", "  vec3 pbrLight = normalize(v_lightDir);", "  vec3 pbrView = normalize(v_viewDir);", `  vec3 shaded = modkitPbr(pbrBase, pbrMetallic, pbrRoughness, 1.0, vec3(0.0), pbrNormal, pbrView, pbrLight, ${light}, ${ambient});`);
+    body.push(...environmentBlock("  ", "shaded", "max(dot(pbrNormal, pbrLight), 0.0)", "vec3(0.0)"));
+    body.push(...emissiveBlock("  ", "shaded"));
+    if (defines.linearColor)
+      body.push(defines.tonemap ? "  shaded = modkitLinearToSrgb(modkitTonemap(shaded, u_tonemapCurve, u_tonemapE));" : "  shaded = modkitLinearToSrgb(clamp(shaded, 0.0, 1.0));");
+    body.push("  final.rgb += shaded;");
+  } else if (defines.unshaded) {
     body.push("  vec3 shaded = color;");
     body.push(...environmentBlock("  ", "shaded", "0.0", "vec3(0.0)"));
     body.push(...emissiveBlock("  ", "shaded"));
@@ -3199,7 +3370,7 @@ var component = (values, index2) => {
     throw new TypeError("invalid projector coordinate");
   return value2;
 };
-var dot = (x, y, z, v) => x * v[0] + y * v[1] + z * v[2];
+var dot2 = (x, y, z, v) => x * v[0] + y * v[1] + z * v[2];
 var clamp = (value2) => Math.min(1, Math.max(0, value2));
 var finiteReceiverPositions = /* @__PURE__ */ new WeakSet();
 var highestReceiverIndex = /* @__PURE__ */ new WeakMap();
@@ -3459,9 +3630,9 @@ function clipProjectorReceivers(frame, receivers, options) {
             px,
             py,
             pz,
-            dot(px - frame.origin[0], py - frame.origin[1], pz - frame.origin[2], frame.rightAxis),
-            dot(px - frame.origin[0], py - frame.origin[1], pz - frame.origin[2], frame.upAxis),
-            dot(px - frame.origin[0], py - frame.origin[1], pz - frame.origin[2], frame.forwardAxis)
+            dot2(px - frame.origin[0], py - frame.origin[1], pz - frame.origin[2], frame.rightAxis),
+            dot2(px - frame.origin[0], py - frame.origin[1], pz - frame.origin[2], frame.upAxis),
+            dot2(px - frame.origin[0], py - frame.origin[1], pz - frame.origin[2], frame.forwardAxis)
           ], vertex * 6);
         }
         const count2 = clipped();
@@ -3741,7 +3912,7 @@ function writeEffectRibbonRingPositions(out, vertexOffset, stride, center, tange
     return vertexCount;
   }
   const segments = vertexCount - 1;
-  const innerRadius = clamp012(finiteNumber(starRatio, 0.5));
+  const innerRadius = clamp013(finiteNumber(starRatio, 0.5));
   for (let index2 = 0; index2 <= segments; index2 += 1) {
     const angle = index2 / segments * Math.PI * 2;
     const scale = ribbonType === "star" && index2 % 2 === 1 ? innerRadius : 1;
@@ -4275,7 +4446,7 @@ var ModelEffectSimulation = class {
     if (targetIndex === null || targetIndex >= this.effects.particles.length)
       return;
     const rawChance = Math.max(0, finiteNumber(sourceEmitter.collisionEmitChance, 0));
-    const chance = clamp012(rawChance > 1 ? rawChance / 100 : rawChance);
+    const chance = clamp013(rawChance > 1 ? rawChance / 100 : rawChance);
     if (!(chance > 0) || this.random() >= chance)
       return;
     const minimum = finiteNonNegativeInteger(sourceEmitter.collisionEmitMin) ?? 0;
@@ -4308,7 +4479,7 @@ var ModelEffectSimulation = class {
     if (!source || projectorIndex === null || !projector)
       return;
     const rawChance = Math.max(0, finiteNumber(source.collisionProjectorChance, 0));
-    const chance = clamp012(rawChance > 1 ? rawChance / 100 : rawChance);
+    const chance = clamp013(rawChance > 1 ? rawChance / 100 : rawChance);
     if (!(chance > 0) || this.random() >= chance)
       return;
     const slot = allocateSlot(this.projectorSplatPool);
@@ -4324,7 +4495,7 @@ var ModelEffectSimulation = class {
     state.decayTimes[slot] = randomProjectorStage(projector.lifetimeDecay, projector.lifetimeDecayTo, this.randomSource);
     const authoredLife = state.attackTimes[slot] + state.holdTimes[slot] + state.decayTimes[slot];
     state.lifeSpans[slot] = authoredLife > TIME_EPSILON ? authoredLife : 1;
-    state.alphas[slot] = clamp012(normalizeEffectAlpha(projector.alphaInit));
+    state.alphas[slot] = clamp013(normalizeEffectAlpha(projector.alphaInit));
     const offset = slot * 3;
     state.positions[offset] = this.particles.positions[positionOffset];
     state.positions[offset + 1] = this.particles.positions[positionOffset + 1];
@@ -4343,7 +4514,7 @@ var ModelEffectSimulation = class {
     if ((emitter.splineEndpoints?.length ?? 0) > 0)
       return;
     const rawChance = Math.max(0, finiteNumber(source?.bounceRibbonChance, 0));
-    const chance = clamp012(rawChance > 1 ? rawChance / 100 : rawChance);
+    const chance = clamp013(rawChance > 1 ? rawChance / 100 : rawChance);
     if (!(chance > 0) || this.random() >= chance)
       return;
     const index2 = this.bounceRibbonSpawnCount;
@@ -4396,7 +4567,7 @@ var ModelEffectSimulation = class {
         const alphaStart = normalizeEffectAlpha(projector.alphaInit);
         const alphaMiddle = normalizeEffectAlpha(projector.alphaMid);
         const alphaEnd = normalizeEffectAlpha(projector.alphaEnd);
-        state.alphas[slot] = clamp012(age < attack ? lerpEffectValue(alphaStart, alphaMiddle, attack > 0 ? age / attack : 1) : age < attack + hold ? alphaMiddle : lerpEffectValue(alphaMiddle, alphaEnd, decay > 0 ? (age - attack - hold) / decay : 1));
+        state.alphas[slot] = clamp013(age < attack ? lerpEffectValue(alphaStart, alphaMiddle, attack > 0 ? age / attack : 1) : age < attack + hold ? alphaMiddle : lerpEffectValue(alphaMiddle, alphaEnd, decay > 0 ? (age - attack - hold) / decay : 1));
       }
       activeIndex += 1;
     }
@@ -4413,7 +4584,7 @@ var ModelEffectSimulation = class {
     if (!(rate > 0))
       return;
     const chanceValue = Math.max(0, finiteNumber(sourceEmitter.trailEmitChance, 1));
-    const chance = clamp012(chanceValue > 1 ? chanceValue / 100 : chanceValue);
+    const chance = clamp013(chanceValue > 1 ? chanceValue / 100 : chanceValue);
     let debt = state.trailEmission[slot] + rate * delta;
     let groups = Math.floor(debt + EMISSION_EPSILON);
     debt -= groups;
@@ -4494,7 +4665,7 @@ var ModelEffectSimulation = class {
       state.vertices[vertexOffset + 3] = state.vertices[vertexOffset + 3] + dx;
       state.vertices[vertexOffset + 4] = state.vertices[vertexOffset + 4] + dy;
       state.vertices[vertexOffset + 5] = state.vertices[vertexOffset + 5] + dz;
-      state.alphas[slot] = clamp012(sampleEffectSequenceScalar(emitter.sequenceAnimation?.alpha, emitter.animation?.alpha, this.sequenceId, animationTime, finiteNumber(emitter.alpha, 1) * (1 + effectVariationValue(emitter.alphaVariation, age, state.randomSeeds[slot]))));
+      state.alphas[slot] = clamp013(sampleEffectSequenceScalar(emitter.sequenceAnimation?.alpha, emitter.animation?.alpha, this.sequenceId, animationTime, finiteNumber(emitter.alpha, 1) * (1 + effectVariationValue(emitter.alphaVariation, age, state.randomSeeds[slot]))));
       state.textureSlots[slot] = Math.max(0, Math.floor(sampleEffectSequenceScalar(emitter.sequenceAnimation?.textureSlot, emitter.animation?.textureSlot, this.sequenceId, animationTime, finiteNumber(emitter.textureSlot, 0))));
       activeIndex += 1;
     }
@@ -4524,7 +4695,7 @@ var ModelEffectSimulation = class {
         continue;
       const above = sampleEffectSequenceScalar(emitter.sequenceAnimation?.heightAbove, emitter.animation?.heightAbove, this.sequenceId, animationTime, finiteNumber(emitter.heightAbove, 0));
       const below = sampleEffectSequenceScalar(emitter.sequenceAnimation?.heightBelow, emitter.animation?.heightBelow, this.sequenceId, animationTime, finiteNumber(emitter.heightBelow, 0));
-      const alpha = clamp012(sampleEffectSequenceScalar(emitter.sequenceAnimation?.alpha, emitter.animation?.alpha, this.sequenceId, animationTime, finiteNumber(emitter.alpha, 1)));
+      const alpha = clamp013(sampleEffectSequenceScalar(emitter.sequenceAnimation?.alpha, emitter.animation?.alpha, this.sequenceId, animationTime, finiteNumber(emitter.alpha, 1)));
       const textureSlot = Math.max(0, Math.floor(sampleEffectSequenceScalar(emitter.sequenceAnimation?.textureSlot, emitter.animation?.textureSlot, this.sequenceId, animationTime, finiteNumber(emitter.textureSlot, 0))));
       let slot = state.firstSlots[emitterIndex];
       for (let ringIndex = 0; ringIndex < count && slot >= 0; ringIndex += 1) {
@@ -4908,7 +5079,7 @@ var ModelEffectSimulation = class {
     state.explosionMasks[slot] = 0;
     state.collisionMasks[slot] = (emitter.collideTerrain ? EFFECT_COLLISION_TERRAIN : 0) | (emitter.collideObjects ? EFFECT_COLLISION_OBJECTS : 0);
     state.spaces[slot] = emitter.modelSpace ? 1 : 0;
-    state.alphas[slot] = clamp012(sampleEffectSequenceScalar(emitter.sequenceAnimation?.alpha, emitter.animation?.alpha, this.sequenceId, animationTime, finiteNumber(emitter.alpha, 1)));
+    state.alphas[slot] = clamp013(sampleEffectSequenceScalar(emitter.sequenceAnimation?.alpha, emitter.animation?.alpha, this.sequenceId, animationTime, finiteNumber(emitter.alpha, 1)));
     state.textureSlots[slot] = Math.max(0, Math.floor(sampleEffectSequenceScalar(emitter.sequenceAnimation?.textureSlot, emitter.animation?.textureSlot, this.sequenceId, animationTime, finiteNumber(emitter.textureSlot, 0))));
     const previous = state.lastSlots[emitterIndex];
     state.previousSlots[slot] = previous;
@@ -5152,7 +5323,7 @@ function effectFieldInfluence(force, anchor, positions, offset) {
     return 0;
   let influence = force.falloff ? 1 - normalizedDistance : 1;
   if (force.heightGradient)
-    influence *= clamp012((z / halfHeight + 1) * 0.5);
+    influence *= clamp013((z / halfHeight + 1) * 0.5);
   return Math.max(0, influence);
 }
 function applyEffectForce(force, anchor, positions, velocities, offset, influence, timeScale, amountScale = 1) {
@@ -5979,9 +6150,9 @@ function normalizeEffectAlpha(value2) {
   return alpha > 1 ? alpha / 255 : alpha;
 }
 function lerpEffectValue(first, second, factor) {
-  return first + (second - first) * clamp012(factor);
+  return first + (second - first) * clamp013(factor);
 }
-function clamp012(value2) {
+function clamp013(value2) {
   return Math.min(1, Math.max(0, value2));
 }
 function normalizeSeed(seed) {
@@ -7329,7 +7500,7 @@ function prepareAnchor2(emitter, index2, options, scratch) {
     localX: local ? [1, 0, 0] : normalizeVec3(tuple(scratch.xAxis)),
     localY: local ? [0, 1, 0] : normalizeVec3(tuple(scratch.yAxis)),
     localZ: local ? [0, 0, 1] : normalizeVec3(tuple(scratch.zAxis)),
-    alpha: clamp013(finite5(emitter.alpha ?? 1)),
+    alpha: clamp014(finite5(emitter.alpha ?? 1)),
     visibility: Number.isFinite(visibility) ? visibility : void 0,
     width: dimension("width"),
     length: dimension("length"),
@@ -7444,7 +7615,7 @@ function createUvmParticleGeometry(state, emitters, options) {
     writeEffectParticleRenderPosition(positionBuffer, 0, state, slot, scratch);
     const position = tuple(positionBuffer), rawVelocity = tuple(state.velocities, slot * 3);
     const velocity = state.spaces[slot] === 2 ? tuple(addVec3(addVec3(scaleVec3(tuple(scratch.xAxis), rawVelocity[0]), scaleVec3(tuple(scratch.yAxis), rawVelocity[1])), scaleVec3(tuple(scratch.zAxis), rawVelocity[2])).map(Math.fround)) : rawVelocity;
-    const age = required2(state.ages[slot]), seed = required2(state.randomSeeds[slot]), phase = clamp013(age / Math.max(1e-6, required2(state.lifeSpans[slot])));
+    const age = required2(state.ages[slot]), seed = required2(state.randomSeeds[slot]), phase = clamp014(age / Math.max(1e-6, required2(state.lifeSpans[slot])));
     const baseSize = particlePreviewSize(anchor, phase, defaultSize, required2(state.sizeRandomFactors[slot]));
     const sizeVariation = Math.max(0, 1 + effectVariationValue(emitter.sizeVariation, age, seed));
     const size = [
@@ -7458,7 +7629,7 @@ function createUvmParticleGeometry(state, emitters, options) {
       const axes = rotateParticlePreviewAxes(particleHeadAxes(anchor, required2(state.facings[slot]), velocity, position, options.cameraRight, options.cameraUp, options.cameraPosition, options.terrainNormal), particlePreviewRotation(emitter, phase, required2(state.rotationRandomFactors[slot]), age, seed));
       const modelPaths = emitter.modelPaths;
       if (options.drawModelParticle !== void 0 && modelPaths !== void 0 && modelPaths.length > 0) {
-        const pathIndex = Math.min(modelPaths.length - 1, Math.floor(clamp013(seed) * modelPaths.length)), path = required2(modelPaths[pathIndex]);
+        const pathIndex = Math.min(modelPaths.length - 1, Math.floor(clamp014(seed) * modelPaths.length)), path = required2(modelPaths[pathIndex]);
         modelBytes += 768 + path.length * 2;
         if (entries.length * 168 + modelBytes + scratchBytes > options.maxBytes)
           throw new RangeError("model particle descriptors exceed byte budget");
@@ -7546,7 +7717,7 @@ function particlePreviewSize(anchor, phase, fallbackSize, randomFactor = 0) {
   const lifecycle = anchor.lifecycleSize;
   if (lifecycle) {
     const randomLifecycle = anchor.lifecycleSizeRandom ?? lifecycle;
-    const factor = clamp013(randomFactor);
+    const factor = clamp014(randomFactor);
     return [
       Math.max(1e-4, lerpNumber(sampleLifecycleValue(lifecycle.start[0], lifecycle.middle[0], lifecycle.end[0], phase, lifecycle.timeMiddle), sampleLifecycleValue(randomLifecycle.start[0], randomLifecycle.middle[0], randomLifecycle.end[0], phase, randomLifecycle.timeMiddle), factor)),
       Math.max(1e-4, lerpNumber(sampleLifecycleValue(lifecycle.start[1], lifecycle.middle[1], lifecycle.end[1], phase, lifecycle.timeMiddle), sampleLifecycleValue(randomLifecycle.start[1], randomLifecycle.middle[1], randomLifecycle.end[1], phase, randomLifecycle.timeMiddle), factor))
@@ -7563,7 +7734,7 @@ function particlePreviewSize(anchor, phase, fallbackSize, randomFactor = 0) {
   ];
 }
 function sampleLifecycleValue(start, middle, end, phase, timeMiddle) {
-  const split = clamp013(timeMiddle);
+  const split = clamp014(timeMiddle);
   if (phase < split && split > 0)
     return lerpNumber(start, middle, phase / split);
   if (split < 1)
@@ -7577,7 +7748,7 @@ function particlePreviewColor(anchor, emitter, phase, colorRandomFactor = 0, alp
     [0.25, 0.08, 0.02]
   ];
   const alphas = anchor.segmentAlphas ?? [anchor.alpha, anchor.alpha, 0];
-  const middle = clamp013(anchor.timeMiddle ?? 0.5);
+  const middle = clamp014(anchor.timeMiddle ?? 0.5);
   const firstIndex = phase < middle ? 0 : 1;
   const secondIndex = phase < middle ? 1 : 2;
   const t = phase < middle ? middle > 0 ? phase / middle : 0 : middle < 1 ? (phase - middle) / (1 - middle) : 1;
@@ -7587,16 +7758,16 @@ function particlePreviewColor(anchor, emitter, phase, colorRandomFactor = 0, alp
   const randomColors = emitter?.segmentColorsRandom;
   const randomFirst = randomColors?.[firstIndex] ?? first;
   const randomSecond = randomColors?.[secondIndex] ?? randomFirst;
-  const colorFactor = clamp013(colorRandomFactor);
+  const colorFactor = clamp014(colorRandomFactor);
   const colorVariation = Math.max(0, 1 + effectVariationValue(emitter?.colorVariation, age, seed));
   const randomAlphas = emitter?.segmentAlphasRandom;
   const randomAlpha = randomAlphas ? lerpNumber(randomAlphas[firstIndex] ?? baseAlpha, randomAlphas[secondIndex] ?? baseAlpha, t) : baseAlpha;
-  const alpha = lerpNumber(baseAlpha, randomAlpha, clamp013(alphaRandomFactor)) * Math.max(0, 1 + effectVariationValue(emitter?.alphaVariation, age, seed));
+  const alpha = lerpNumber(baseAlpha, randomAlpha, clamp014(alphaRandomFactor)) * Math.max(0, 1 + effectVariationValue(emitter?.alphaVariation, age, seed));
   return [
-    clamp013(lerpNumber(lerpNumber(first[0], second[0], t), lerpNumber(randomFirst[0], randomSecond[0], t), colorFactor) * colorVariation),
-    clamp013(lerpNumber(lerpNumber(first[1], second[1], t), lerpNumber(randomFirst[1], randomSecond[1], t), colorFactor) * colorVariation),
-    clamp013(lerpNumber(lerpNumber(first[2], second[2], t), lerpNumber(randomFirst[2], randomSecond[2], t), colorFactor) * colorVariation),
-    clamp013(alpha)
+    clamp014(lerpNumber(lerpNumber(first[0], second[0], t), lerpNumber(randomFirst[0], randomSecond[0], t), colorFactor) * colorVariation),
+    clamp014(lerpNumber(lerpNumber(first[1], second[1], t), lerpNumber(randomFirst[1], randomSecond[1], t), colorFactor) * colorVariation),
+    clamp014(lerpNumber(lerpNumber(first[2], second[2], t), lerpNumber(randomFirst[2], randomSecond[2], t), colorFactor) * colorVariation),
+    clamp014(alpha)
   ];
 }
 function particlePreviewRotation(emitter, phase, randomFactor, age, seed) {
@@ -7604,7 +7775,7 @@ function particlePreviewRotation(emitter, phase, randomFactor, age, seed) {
   const base = lifecycle ? sampleLifecycleValue(lifecycle.start[2], lifecycle.middle[2], lifecycle.end[2], phase, lifecycle.timeMiddle) : 0;
   const randomLifecycle = emitter.lifecycleRotationRandom;
   const random = randomLifecycle ? sampleLifecycleValue(randomLifecycle.start[2], randomLifecycle.middle[2], randomLifecycle.end[2], phase, randomLifecycle.timeMiddle) : base;
-  return lerpNumber(base, random, clamp013(randomFactor)) + effectVariationValue(emitter.rotationVariation, age, seed);
+  return lerpNumber(base, random, clamp014(randomFactor)) + effectVariationValue(emitter.rotationVariation, age, seed);
 }
 function rotateParticlePreviewAxes(axes, angle) {
   if (!(Math.abs(angle) > 1e-8))
@@ -7669,7 +7840,7 @@ function particleTailSide(velocity, cameraPosition, particlePosition, fallback) 
 function particleUvRect(anchor, phase, tail) {
   const rows = Math.max(1, Math.trunc(anchor.rows ?? 1));
   const columns = Math.max(1, Math.trunc(anchor.columns ?? 1));
-  const middle = clamp013(anchor.timeMiddle ?? 0.5);
+  const middle = clamp014(anchor.timeMiddle ?? 0.5);
   const firstHalf = phase < middle;
   const t = firstHalf ? middle > 0 ? phase / middle : 0 : middle < 1 ? (phase - middle) / (1 - middle) : 1;
   const frames = tail ? firstHalf ? anchor.tailUvAnim : anchor.tailDecayUvAnim : firstHalf ? anchor.lifeSpanUvAnim : anchor.decayUvAnim;
@@ -7728,7 +7899,7 @@ function particleSegmentsForAnchor(effect, sequenceId, animationTime) {
 function normalizeEffectAlpha2(value2) {
   return value2 > 1 ? value2 / 255 : value2;
 }
-function clamp013(value2) {
+function clamp014(value2) {
   return Math.max(0, Math.min(1, value2));
 }
 function lerpNumber(a, b, t) {
@@ -23737,7 +23908,7 @@ var value = (array3, index2) => {
     throw new TypeError("invalid material geometry component");
   return result;
 };
-var dot2 = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+var dot4 = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 var cross2 = (a, b) => [
   a[1] * b[2] - a[2] * b[1],
   a[2] * b[0] - a[0] * b[2],
@@ -23773,7 +23944,7 @@ function affine(matrix, name) {
 }
 function normalMatrix(matrix) {
   const a = [value(matrix, 0), value(matrix, 1), value(matrix, 2)], b = [value(matrix, 4), value(matrix, 5), value(matrix, 6)], c = [value(matrix, 8), value(matrix, 9), value(matrix, 10)];
-  const columns = [cross2(b, c), cross2(c, a), cross2(a, b)], sign = dot2(a, columns[0] ?? [0, 0, 0]) < 0 ? -1 : 1;
+  const columns = [cross2(b, c), cross2(c, a), cross2(a, b)], sign = dot4(a, columns[0] ?? [0, 0, 0]) < 0 ? -1 : 1;
   return { matrix: Float32Array.from(columns.flat(), (component2) => component2 * sign), sign };
 }
 var normal = (matrix, vector10) => unit4([
@@ -23863,7 +24034,7 @@ function materialGeometry(primitive, camera, light, worldToMaterial, environment
         throw new TypeError("material geometry requires prepared normals and tangents");
       const position = read3(primitive.positions, index2), sourceNormal = unit4(read3(primitive.normals, index2)), sourceTangent = read4(primitive.tangents, index2);
       const world = point(model, position, 1), inView = xyz(point(modelView, position, 1)), n = normal(viewNormal.matrix, sourceNormal);
-      const tangent = xyz(point(modelView, [sourceTangent[0], sourceTangent[1], sourceTangent[2]], 0)), nt = dot2(n, tangent);
+      const tangent = xyz(point(modelView, [sourceTangent[0], sourceTangent[1], sourceTangent[2]], 0)), nt = dot4(n, tangent);
       const t = unit4([tangent[0] - n[0] * nt, tangent[1] - n[1] * nt, tangent[2] - n[2] * nt], tangentFallback(n));
       const handedness = (sourceTangent[3] < 0 ? -1 : 1) * viewNormal.sign, bitangent = cross2(n, t);
       const b = [
@@ -23871,7 +24042,7 @@ function materialGeometry(primitive, camera, light, worldToMaterial, environment
         bitangent[1] * handedness,
         bitangent[2] * handedness
       ];
-      const tangentSpace = (v) => [dot2(v, t), dot2(v, b), dot2(v, n)];
+      const tangentSpace = (v) => [dot4(v, t), dot4(v, b), dot4(v, n)];
       const eye = orthographic ? [0, 0, 1] : unit4([-inView[0], -inView[1], -inView[2]]);
       const half = unit4([
         eye[0] + lightDirection[0],
@@ -23883,7 +24054,7 @@ function materialGeometry(primitive, camera, light, worldToMaterial, environment
         const position2 = xyz(world);
         const n2 = normal(environmentNormal.matrix, sourceNormal);
         const tangent2 = xyz(point(model, [sourceTangent[0], sourceTangent[1], sourceTangent[2]], 0));
-        const nt2 = dot2(n2, tangent2);
+        const nt2 = dot4(n2, tangent2);
         const t2 = unit4([tangent2[0] - n2[0] * nt2, tangent2[1] - n2[1] * nt2, tangent2[2] - n2[2] * nt2], tangentFallback(n2));
         const handedness2 = (sourceTangent[3] < 0 ? -1 : 1) * environmentNormal.sign;
         const bitangent2 = cross2(n2, t2);
@@ -24053,8 +24224,8 @@ function prepareMaterialGeometry(primitive, maxBytes, options) {
       if (primitive.normals === void 0)
         normals.set(face, j * 3);
       if (primitive.tangents === void 0) {
-        const n = unit4(read3(normals, j)), nt = dot2(n, tangent), t = unit4([tangent[0] - n[0] * nt, tangent[1] - n[1] * nt, tangent[2] - n[2] * nt], tangentFallback(n));
-        tangents.set([...t, dot2(cross2(n, t), bitangent) < 0 ? -1 : 1], j * 4);
+        const n = unit4(read3(normals, j)), nt = dot4(n, tangent), t = unit4([tangent[0] - n[0] * nt, tangent[1] - n[1] * nt, tangent[2] - n[2] * nt], tangentFallback(n));
+        tangents.set([...t, dot4(cross2(n, t), bitangent) < 0 ? -1 : 1], j * 4);
       }
     }
   }
@@ -24219,8 +24390,8 @@ function blendSignedNormals(base, first, second, maskSum, basis) {
 function signedNormalFactor(first, firstFactors, second, secondFactors) {
   const maskScale = Math.max(1, ...first.map(Math.abs), ...second.map(Math.abs));
   const factorScale = Math.max(1, ...firstFactors.map(Math.abs), ...secondFactors.map(Math.abs));
-  const dot4 = (mask, factors) => mask.reduce((sum, value3, index2) => sum + value3 / maskScale * ((factors[index2] ?? 0) / factorScale), 0);
-  const value2 = dot4(first, firstFactors) + dot4(second, secondFactors);
+  const dot5 = (mask, factors) => mask.reduce((sum, value3, index2) => sum + value3 / maskScale * ((factors[index2] ?? 0) / factorScale), 0);
+  const value2 = dot5(first, firstFactors) + dot5(second, secondFactors);
   if (value2 === 0)
     return 0;
   return Math.abs(value2) >= 1 / factorScale / maskScale ? Math.sign(value2) : value2 * factorScale * maskScale;
@@ -24377,7 +24548,12 @@ function compilePass(pass, lighting, sources, bindings, worldToMaterial, texture
       0,
       0
     ],
-    u_normalMapTransform: material.normalMapTransform ?? [1, 0, 0, 0, 1, 0, 0, 0, 1]
+    u_normalMapTransform: material.normalMapTransform ?? [1, 0, 0, 0, 1, 0, 0, 0, 1],
+    ...defines.pbr === true ? {
+      u_metallicFactor: material.metallicFactor ?? 1,
+      u_roughnessFactor: material.roughnessFactor ?? 1
+    } : {},
+    ...defines.tonemap === true && material.tonemap !== void 0 ? { u_tonemapCurve: material.tonemap.slice(0, 4), u_tonemapE: material.tonemap[4] } : {}
   };
   const textures = [], diagnostics = [];
   for (const definition of defines.layers) {
@@ -24497,6 +24673,7 @@ function shade(material, alpha, lighting, pixel, normalFormats, sceneLighting = 
     pixel.shadingNormal,
     pixel.lightDirection,
     pixel.halfVector,
+    pixel.viewDirection,
     pixel.viewNormal,
     pixel.eyeToVertex
   ])
@@ -24545,7 +24722,16 @@ function shade(material, alpha, lighting, pixel, normalFormats, sceneLighting = 
     ...vertexNormal === void 0 ? {} : { vertexNormal },
     ...pixel.lightDirection === void 0 ? {} : { lightDir: pixel.lightDirection },
     ...pixel.halfVector === void 0 ? {} : { halfVec: pixel.halfVector },
-    ...pixel.vertexColor === void 0 ? {} : { vertexColor: pixel.vertexColor }
+    ...pixel.viewDirection === void 0 ? {} : { viewDir: pixel.viewDirection },
+    ...pixel.vertexColor === void 0 ? {} : { vertexColor: pixel.vertexColor },
+    ...material.lightingModel === "pbr-metallic-roughness" ? {
+      pbr: {
+        metallicFactor: material.metallicFactor ?? 1,
+        roughnessFactor: material.roughnessFactor ?? 1
+      }
+    } : {},
+    // as buildMaterialDefines: an unshaded material is drawn as stored
+    ...material.lightingModel === "pbr-metallic-roughness" && material.colorPipeline === "linear-srgb" && !material.unshaded ? { linearColor: material.tonemap === void 0 ? {} : { tonemap: material.tonemap } } : {}
   });
 }
 function pixelLayers(material, pixel, teamColor, normalFormats, slots = Object.keys(material.layers)) {
@@ -24989,6 +25175,9 @@ export {
   uvmKeyTimesMetadata,
   readUvmTextureColorKeys,
   validateUvmDocument,
+  shadePbr,
+  SRGB_GLSL,
+  PBR_GLSL,
   computeLayerColorCpu,
   computeTriPlanarWeightsCpu,
   sphericalEnvironmentUvCpu,
@@ -25043,7 +25232,7 @@ export {
   materialPosedPrimitive,
   primitiveVertexTints,
   primitiveTint,
-  dot2 as dot,
+  dot4 as dot,
   unit4 as unit,
   materialModelMatrix,
   materialNormalMatrix,

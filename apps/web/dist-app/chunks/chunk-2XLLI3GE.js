@@ -15,7 +15,7 @@ import {
   modelMaterialTeamColor,
   mountFieldEditTarget,
   mountInlineField
-} from "./chunk-CI5CLTJB.js";
+} from "./chunk-B7S7GMGG.js";
 import {
   metadataFieldProjections
 } from "./chunk-CW2HIMYV.js";
@@ -189,10 +189,12 @@ import {
   Matrix4,
   ModkitError as ModkitError2,
   OrthographicCamera,
+  PBR_GLSL,
   PREVIEW_LIGHT_GLSL,
   RENDER_MATERIAL_SHADER,
   Raycaster,
   SCENE_ENVIRONMENT_RESOURCE,
+  SRGB_GLSL,
   Sphere,
   TERRAIN_RECEIVER_ID,
   UnsupportedCubeCoordinatesError,
@@ -236,6 +238,7 @@ import {
   requiresEnvironmentEye,
   samplePreviewLighting,
   sceneMaterialVertexSource,
+  shadePbr,
   snapshotEnvironment,
   snapshotEyePosition,
   snapshotModelMaterials,
@@ -248,7 +251,7 @@ import {
   uvmImageUri,
   uvmKeyTimesMetadata,
   uvmVisibilityPointer
-} from "./chunk-L5QNXEVA.js";
+} from "./chunk-ZNIKBHDN.js";
 import {
   DEFAULT_MODEL_ANIMATION_BUDGET,
   DEFAULT_MODEL_SKELETON_BUDGET,
@@ -19946,13 +19949,13 @@ function textureVariantLogicalId(logicalId, variant) {
     return void 0;
   const slash = logicalId.lastIndexOf("/");
   const file = logicalId.slice(slash + 1);
-  const dot3 = file.lastIndexOf(".");
-  const stem = dot3 <= 0 ? file : file.slice(0, dot3);
+  const dot2 = file.lastIndexOf(".");
+  const stem = dot2 <= 0 ? file : file.slice(0, dot2);
   const name = stem.toLowerCase();
   const matches2 = variant.names.some((entry2) => name.startsWith(entry2.prefix.toLowerCase()) && name.includes(entry2.contains.toLowerCase()));
   if (!matches2)
     return void 0;
-  return `${logicalId.slice(0, slash + 1)}${stem}${variant.suffix}${dot3 <= 0 ? "" : file.slice(dot3)}`;
+  return `${logicalId.slice(0, slash + 1)}${stem}${variant.suffix}${dot2 <= 0 ? "" : file.slice(dot2)}`;
 }
 function childResourceLogicalId(parentLogicalId, childLogicalId) {
   const childRoot = childLogicalId.split("/")[0];
@@ -26559,8 +26562,8 @@ var OPERATION_DECLARATIONS = Object.freeze([
 function extensionOf(uri) {
   const clean = uri.split(/[?#]/u, 1)[0] ?? "";
   const name = clean.slice(clean.lastIndexOf("/") + 1);
-  const dot3 = name.lastIndexOf(".");
-  return dot3 === -1 ? "" : name.slice(dot3 + 1).toLowerCase();
+  const dot2 = name.lastIndexOf(".");
+  return dot2 === -1 ? "" : name.slice(dot2 + 1).toLowerCase();
 }
 function decodeSample(bytes) {
   if (bytes[0] === 239 && bytes[1] === 187 && bytes[2] === 191) {
@@ -27820,10 +27823,10 @@ function handleEditorHistoryRequest(root, history) {
 
 // ../MODDING/modkit-core/packages/ui/dist/explorer/editors.js
 function fileKindOf(name) {
-  const dot3 = name.lastIndexOf(".");
-  if (dot3 <= 0 || dot3 === name.length - 1)
+  const dot2 = name.lastIndexOf(".");
+  if (dot2 <= 0 || dot2 === name.length - 1)
     return "file";
-  const kind = name.slice(dot3 + 1).toLowerCase();
+  const kind = name.slice(dot2 + 1).toLowerCase();
   return /^[a-z0-9_-]{1,16}$/u.test(kind) ? kind : "file";
 }
 var describe = (error5) => error5 instanceof Error ? error5.message : String(error5);
@@ -28791,8 +28794,8 @@ function createSearchField(document, options) {
 // ../MODDING/modkit-core/packages/ui/dist/explorer/index.js
 var EXPLORER_MAXIMUM_BYTES = 64 * 1024 * 1024;
 var extensionOf2 = (name) => {
-  const dot3 = name.lastIndexOf(".");
-  return dot3 <= 0 ? "" : name.slice(dot3 + 1).toLowerCase();
+  const dot2 = name.lastIndexOf(".");
+  return dot2 <= 0 ? "" : name.slice(dot2 + 1).toLowerCase();
 };
 var formatBytes2 = (bytes) => {
   if (bytes < 1024)
@@ -49573,73 +49576,6 @@ var TEAM_COLOR_GLSL = `vec3 modkitTeamColor(vec3 base, vec3 mask, vec3 team, int
   return base + (target - base) * mixed;
 }`;
 
-// ../MODDING/modkit-core/packages/codec-kit/dist/model-math/pbr.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-var dot2 = (a2, b2) => a2[0] * b2[0] + a2[1] * b2[1] + a2[2] * b2[2];
-var clamp01 = (value) => Math.min(1, Math.max(0, value));
-function shadePbr(surface, normal, view, light, ambient) {
-  const roughness = clamp01(surface.roughness);
-  const metallic = clamp01(surface.metallic);
-  const alpha = Math.max(roughness * roughness, 1e-3);
-  const alpha2 = alpha * alpha;
-  const nDotL = clamp01(dot2(normal, light.direction));
-  const nDotV = Math.max(dot2(normal, view), 1e-4);
-  const half = [
-    light.direction[0] + view[0],
-    light.direction[1] + view[1],
-    light.direction[2] + view[2]
-  ];
-  const halfLength = Math.hypot(half[0], half[1], half[2]) || 1;
-  const nDotH = clamp01(dot2(normal, half) / halfLength);
-  const vDotH = clamp01(dot2(view, half) / halfLength);
-  const d = alpha2 / (Math.PI * (nDotH * nDotH * (alpha2 - 1) + 1) ** 2);
-  const visibility = 0.5 / Math.max(nDotL * Math.sqrt(nDotV * nDotV * (1 - alpha2) + alpha2) + nDotV * Math.sqrt(nDotL * nDotL * (1 - alpha2) + alpha2), 1e-6);
-  const r0 = roughness * -1 + 1;
-  const r1 = roughness * -0.0275 + 0.0425;
-  const r2 = roughness * -0.572 + 1.04;
-  const r3 = roughness * 0.022 - 0.04;
-  const a004 = Math.min(r0 * r0, 2 ** (-9.28 * nDotV)) * r0 + r1;
-  const scale = a004 * -1.04 + r2;
-  const bias = a004 * 1.04 + r3;
-  const occlusion = surface.occlusion ?? 1;
-  return [0, 1, 2].map((channel) => {
-    const base = surface.baseColor[channel];
-    const diffuse = base * (1 - metallic);
-    const f0 = 0.04 + (base - 0.04) * metallic;
-    const fresnel = f0 + (1 - f0) * (1 - vDotH) ** 5;
-    const direct = ((1 - fresnel) * diffuse + Math.PI * fresnel * d * visibility) * light.color[channel] * nDotL;
-    const environment = ambient[channel] * (diffuse + f0 * scale + bias) * occlusion;
-    return direct + environment + (surface.emissive?.[channel] ?? 0);
-  });
-}
-var PBR_GLSL = `vec3 modkitPbr(vec3 baseColor, float metallic, float roughness, float occlusion, vec3 emissive,
-    vec3 normal, vec3 view, vec3 lightDirection, vec3 lightColor, vec3 ambient) {
-  roughness = clamp(roughness, 0.0, 1.0);
-  metallic = clamp(metallic, 0.0, 1.0);
-  float alpha = max(roughness * roughness, 1e-3);
-  float alpha2 = alpha * alpha;
-  float nDotL = clamp(dot(normal, lightDirection), 0.0, 1.0);
-  float nDotV = max(dot(normal, view), 1e-4);
-  vec3 halfVector = lightDirection + view;
-  float halfLength = length(halfVector);
-  halfVector = halfLength > 0.0 ? halfVector / halfLength : halfVector;
-  float nDotH = clamp(dot(normal, halfVector), 0.0, 1.0);
-  float vDotH = clamp(dot(view, halfVector), 0.0, 1.0);
-  float distribution = alpha2 / (3.14159265358979 * pow(nDotH * nDotH * (alpha2 - 1.0) + 1.0, 2.0));
-  float visibility = 0.5 / max(nDotL * sqrt(nDotV * nDotV * (1.0 - alpha2) + alpha2)
-    + nDotV * sqrt(nDotL * nDotL * (1.0 - alpha2) + alpha2), 1e-6);
-  vec4 r = roughness * vec4(-1.0, -0.0275, -0.572, 0.022) + vec4(1.0, 0.0425, 1.04, -0.04);
-  float a004 = min(r.x * r.x, exp2(-9.28 * nDotV)) * r.x + r.y;
-  vec2 environmentBrdf = vec2(-1.04, 1.04) * a004 + r.zw;
-  vec3 diffuse = baseColor * (1.0 - metallic);
-  vec3 f0 = mix(vec3(0.04), baseColor, metallic);
-  vec3 fresnel = f0 + (1.0 - f0) * pow(1.0 - vDotH, 5.0);
-  vec3 direct = ((1.0 - fresnel) * diffuse + 3.14159265358979 * fresnel * distribution * visibility)
-    * lightColor * nDotL;
-  vec3 environment = ambient * (diffuse + f0 * environmentBrdf.x + environmentBrdf.y) * occlusion;
-  return direct + environment + emissive;
-}`;
-
 // ../MODDING/modkit-core/packages/scene/dist/render/team-color.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var CHANNELS2 = { r: 0, g: 1, b: 2, a: 3, rgb: "rgb" };
@@ -49853,12 +49789,7 @@ uniform vec3 eyePosition;
 ${PREVIEW_LIGHT_GLSL}
 ${TEAM_COLOR_GLSL}
 ${PBR_GLSL}
-vec3 modkitSrgbToLinear(vec3 value) {
-  return mix(value / 12.92, pow((value + 0.055) / 1.055, vec3(2.4)), vec3(greaterThan(value, vec3(0.04045))));
-}
-vec3 modkitLinearToSrgb(vec3 value) {
-  return mix(value * 12.92, 1.055 * pow(value, vec3(1.0 / 2.4)) - 0.055, vec3(greaterThan(value, vec3(0.0031308))));
-}
+${SRGB_GLSL}
 out vec4 outColor;
 void main() {
   vec4 base = color;
@@ -50596,7 +50527,7 @@ function shadeMaterial(program, textures, vertex, sceneLighting) {
       if (layer2.hasTexture && deferred.includes(layer2.slot))
         texels[layer2.slot] = read(layer2, parallax);
   }
-  let lightDirection = vertex.lightDirection, halfVector = vertex.halfVector;
+  let lightDirection = vertex.lightDirection, halfVector = vertex.halfVector, viewDirection = vertex.viewDirection;
   if (program.normalBlendPolicy !== void 0 || program.normalMapSpace === "object") {
     const frame = vertex.environment, lighting = frame?.worldLighting;
     if (frame === void 0 || lighting === void 0 || worldNormal === void 0)
@@ -50613,6 +50544,7 @@ function shadeMaterial(program, textures, vertex, sceneLighting) {
       eye[2] + lightDirection[2]
     ]);
     halfVector = [-half[0], -half[1], -half[2]];
+    viewDirection = eye;
   }
   return program.shade({
     texels,
@@ -50620,6 +50552,7 @@ function shadeMaterial(program, textures, vertex, sceneLighting) {
     ...program.normalBlendPolicy === void 0 && program.normalMapSpace !== "object" || worldNormal === void 0 ? {} : { shadingNormal: worldNormal },
     lightDirection,
     halfVector,
+    viewDirection,
     viewNormal: vertex.viewNormal,
     eyeToVertex: vertex.viewPosition,
     vertexColor: vertex.color,
@@ -65594,7 +65527,7 @@ var PREVIEW_STAGES = [
 async function defaultPreviewStage(kind, localizer) {
   switch (kind) {
     case "model":
-      return (await import("./model-RVYVQAIY.js")).createModelViewer({ localizer });
+      return (await import("./model-HIVWVAOI.js")).createModelViewer({ localizer });
     case "image":
       return (await import("./image-UQ7YYYDB.js")).createImageViewer({ localizer });
     case "video":

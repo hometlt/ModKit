@@ -50,13 +50,13 @@ import {
   subjectFactsSourceFromWire,
   webExtensionSubjectCardBundle,
   withoutHiddenEntries
-} from "./chunks/chunk-774ZXZ5S.js";
+} from "./chunks/chunk-2XLLI3GE.js";
 import "./chunks/chunk-BQ7JEYJN.js";
 import "./chunks/chunk-I7RSGSTR.js";
 import "./chunks/chunk-37DORWOX.js";
 import {
   resolveModelViewerTextures
-} from "./chunks/chunk-CI5CLTJB.js";
+} from "./chunks/chunk-B7S7GMGG.js";
 import "./chunks/chunk-O2DY4UGD.js";
 import "./chunks/chunk-CW2HIMYV.js";
 import {
@@ -95,7 +95,7 @@ import "./chunks/chunk-5MQCQKKD.js";
 import {
   revisionId
 } from "./chunks/chunk-U4VIZDRF.js";
-import "./chunks/chunk-L5QNXEVA.js";
+import "./chunks/chunk-ZNIKBHDN.js";
 import "./chunks/chunk-EOJHBJMF.js";
 import "./chunks/chunk-OZX7B633.js";
 import "./chunks/chunk-Q27WXNQ4.js";

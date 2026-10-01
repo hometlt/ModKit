@@ -62,7 +62,9 @@ var LAYER_SLOTS = [
   "height",
   "lightMap",
   "ao",
-  "teamColorMask"
+  "teamColorMask",
+  "metalness",
+  "roughness"
 ];
 function isStandardLayerSlot(value) {
   return LAYER_SLOTS.includes(value);

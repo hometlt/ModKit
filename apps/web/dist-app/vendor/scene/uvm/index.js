@@ -8,7 +8,7 @@ import {
   readUvmBillboards,
   readUvmModelStates,
   readUvmShadowMeshBindings
-} from "../../../chunks/chunk-BZJ3SJHH.js";
+} from "../../../chunks/chunk-QXYENN4V.js";
 import {
   array,
   field,
@@ -26,14 +26,14 @@ import {
 import {
   readUvmAccessor,
   validateUvmDocument
-} from "../../../chunks/chunk-U6K3QYX2.js";
+} from "../../../chunks/chunk-5DT7SGOU.js";
 import {
   readUvmAnimationClips,
   readUvmAnimationMaterialTargets,
   readUvmPrimitiveVisibility,
   uvmVisibilityPointer,
   uvmVisibilityTarget
-} from "../../../chunks/chunk-3TRK5GFM.js";
+} from "../../../chunks/chunk-CTXZR5MG.js";
 import "../../../chunks/chunk-I675VFQQ.js";
 import "../../../chunks/chunk-MUN4JEOH.js";
 import {
