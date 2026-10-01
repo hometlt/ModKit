@@ -37,91 +37,26 @@ beforeAll(() => {
 
 afterAll(() => rmSync(stagedDist, { recursive: true, force: true }))
 
-const PUBLISHED_ENTRIES = [
-  'packages/core/dist/index.js',
-  'packages/sdk/dist/index.js',
-  // the generated AJV validator table as its own entry: 2.6 MB that `validateWithSchema` loads on
-  // first use, so importing the SDK no longer makes every host pay for schema validation it may
-  // never do (closure-import p50 59 ms -> 35 ms against a 50 ms budget, BRIEF-12 §6)
-  'packages/sdk/dist/manifest/validators.generated.js',
-  'packages/sdk/dist/authoring/index.js',
-  'packages/sdk/dist/data-sources.js',
-  'packages/sdk/dist/editing.js',
-  'packages/sdk/dist/service-contracts.js',
-  'packages/sdk/dist/language/index.js',
-  'packages/sdk/dist/knowledge/index.js',
-  'packages/sdk/dist/templates/index.js',
-  'packages/sdk/dist/renderer/index.js',
-  'packages/sdk/dist/games/index.js',
-  'packages/sdk/dist/mods/index.js',
-  'packages/sdk/dist/data/index.js',
-  'packages/sdk/dist/maps/index.js',
-  'packages/sdk/dist/runtime/index.js',
-  'packages/sdk/dist/text-data/index.js',
-  'packages/sdk/dist/formats/index.js',
-  'packages/sdk/dist/subjects/index.js',
-  'packages/sdk/dist/ui-contracts/index.js',
-  'packages/vfs/dist/index.js',
-  'packages/vfs/dist/providers/file/index.js',
-  'packages/vfs/dist/providers/memory/index.js',
-  'packages/vfs/dist/providers/http/index.js',
-  'packages/vfs/dist/providers/browser-file/index.js',
-  'packages/vfs/dist/providers/rapid/index.js',
-  'packages/host/dist/index.js',
-  'packages/host/dist/node/index.js',
-  'packages/host/dist/browser/index.js',
-  // capability-RPC core (NXT-105) as its own entry so transports/preloads/testkit depend on the
-  // protocol alone, without pulling inventory/resolution/gate code into a renderer or worker
-  'packages/host/dist/execution/index.js',
-  'packages/host/dist/language/index.js',
-  'packages/host/dist/knowledge/index.js',
-  'packages/host/dist/renderer/index.js',
-  'packages/host/dist/games/index.js',
-  'packages/host/dist/mods/index.js',
-  'packages/host/dist/data/index.js',
-  'packages/host/dist/maps/index.js',
-  'packages/host/dist/runtime/index.js',
-  // worker-side bootstrap of the Node worker backend: its own file so `new Worker(url)` finds it
-  'packages/host/dist/node/worker-bootstrap.js',
-  // worker-side entry of the browser worker backend (S5b): spawned as a module Worker by URL
-  'packages/host/dist/browser/worker-entry.js',
-  'packages/ui/dist/index.js',
-  'packages/ui/dist/viewer/index.js',
-  'packages/ui/dist/world/index.js',
-  'packages/ui/dist/localization/index.js',
-  'packages/ui/dist/code/index.js',
-  'packages/ui/dist/editor/index.js',
-  'packages/ui/dist/text-virtual/index.js',
-  'packages/ui/dist/hex/index.js',
-  'packages/ui/dist/tree/index.js',
-  'packages/ui/dist/table/index.js',
-  'packages/ui/dist/transport/index.js',
-  'packages/ui/dist/namespace/index.js',
-  'packages/ui/dist/panels/index.js',
-  'packages/ui/dist/tokens/index.js',
-  'packages/ui/dist/search/matcher.js',
-  'packages/ui/dist/primitives/search-field.js',
-  'packages/ui/dist/shell/chrome.js',
-  'packages/ui/dist/card/index.js',
-  'packages/ui/dist/calculations/index.js',
-  'packages/ui/dist/graph/index.js',
-  'packages/ui/dist/template/index.js',
-  'packages/ui/dist/composition/index.js',
-  'packages/ui/dist/workbench/index.js',
-  'packages/ui/dist/settings/index.js',
-  'packages/ui/dist/metadata/index.js',
-  'packages/ui/dist/image/index.js',
-  'packages/ui/dist/audio/index.js',
-  'packages/ui/dist/vector/index.js',
-  'packages/ui/dist/video/index.js',
-  'packages/ui/dist/model/index.js',
-  // the three subpaths the minimal-build lane added: explorer (previewer/tabs), the hex
-  // editor, and the encoded-media helper — every exports-map entry must be listed here, or the
-  // determinism case reports the honest bundle as a surprise
-  'packages/ui/dist/explorer/index.js',
-  'packages/ui/dist/hex-editor/index.js',
-  'packages/ui/dist/media/encoded.js',
-]
+/**
+ * Every `.js` target of the bundled packages' exports maps, which bundle.mjs reads too: each must
+ * build into one self-contained file, and the bundle must build nothing else. A hand-kept copy of
+ * this list fell behind each new subpath.
+ */
+const PUBLISHED_ENTRIES = ['core', 'sdk', 'vfs', 'host', 'ui'].flatMap(pkg => {
+  const manifest = JSON.parse(
+    readFileSync(join(root, 'packages', pkg, 'package.json'), 'utf8'),
+  ) as { exports: unknown }
+  const targets = new Set<string>()
+  const walk = (value: unknown): void => {
+    if (typeof value === 'string') {
+      if (value.endsWith('.js')) targets.add(value)
+    } else if (value !== null && typeof value === 'object') {
+      for (const item of Object.values(value)) walk(item)
+    }
+  }
+  walk(manifest.exports)
+  return [...targets].map(target => `packages/${pkg}/${target.replace(/^\.\//u, '')}`)
+})
 
 const repositoryDistHashes = () =>
   Object.fromEntries(
@@ -167,10 +102,24 @@ describe('single-file production dist', () => {
       ...manifest.peerDependencies,
     }
     expect(declared).toHaveProperty('three')
-    for (const entry of ['browser.js', 'headless.js']) {
+    for (const entry of ['browser.ts', 'headless.ts']) {
       const source = readFileSync(bundlePath('packages/scene/src/render', entry), 'utf8')
       expect(importSpecifiers(source)).not.toContain('three')
     }
+  })
+
+  it('publishes the entries designed to stand alone', () => {
+    expect(PUBLISHED_ENTRIES).toEqual(
+      expect.arrayContaining([
+        // the AJV validator table (2.6 MB) loads on first use, not with every import of the SDK
+        'packages/sdk/dist/manifest/validators.generated.js',
+        // the capability-RPC core, without inventory, resolution or gate code
+        'packages/host/dist/execution/index.js',
+        // worker entries a Worker finds by URL
+        'packages/host/dist/node/worker-bootstrap.js',
+        'packages/host/dist/browser/worker-entry.js',
+      ]),
+    )
   })
 
   it.each(PUBLISHED_ENTRIES)('%s is one self-contained file', entry => {
@@ -208,7 +157,8 @@ describe('single-file production dist', () => {
     expect(hostImports).toContain('@modkit/sdk')
 
     const ui = readFileSync(bundlePath('packages/ui/dist/index.js'), 'utf8')
-    expect(ui).not.toContain('node:')
+    // a node: module specifier, not the text: `{ node: root }` is an ordinary object key
+    expect(ui).not.toMatch(/(?:from\s*['"]|import\s*\(\s*['"]|require\s*\(\s*['"])node:/u)
   })
 
   it('does not bundle the dev-only testkit', () => {
