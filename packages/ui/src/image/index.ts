@@ -434,6 +434,41 @@ export type ImageSidebarSection = MediaShellContribution
 const ZOOM_CHOICES = [0.25, 0.5, 1, 2, 4, 8] as const
 const CHANNELS: readonly ImageChannel[] = ['rgb', 'r', 'g', 'b', 'a']
 
+/*
+ * Zoom, pan and channel per subject, kept by the page: a save reopens the tab on the new revision,
+ * and the reader comes back to the place they were working on, not to Fit.
+ */
+interface ImageViewState {
+  readonly zoom: number
+  readonly fit: boolean
+  readonly panX: number
+  readonly panY: number
+  readonly channel: ImageChannel
+}
+const viewStates = new Map<string, ImageViewState>()
+/** ponytail: the oldest subject is dropped past this many; an LRU if readers keep hundreds open. */
+const VIEW_STATES = 64
+
+/** The editor's recent colours, kept between sessions where the page has storage. */
+const RECENT_COLORS_KEY = 'modkit.image.recentColors'
+function rememberedColors(): readonly string[] {
+  try {
+    const value: unknown = JSON.parse(globalThis.localStorage?.getItem(RECENT_COLORS_KEY) ?? '[]')
+    return Array.isArray(value)
+      ? value.filter((item): item is string => typeof item === 'string')
+      : []
+  } catch {
+    return []
+  }
+}
+function rememberColors(colors: readonly string[]): void {
+  try {
+    globalThis.localStorage?.setItem(RECENT_COLORS_KEY, JSON.stringify(colors))
+  } catch {
+    // a page without storage keeps them until it closes
+  }
+}
+
 export function createImageViewer(options: ImageViewerOptions = {}): ViewerModule {
   const localizer = withEnglishUiFallback(options.localizer, IMAGE_FALLBACK_MESSAGES)
   return defineViewerModule({
@@ -487,6 +522,8 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
       // Fixed, as in MK2: the checkerboard is what "transparent" looks like, not a preference.
       const background: ImageBackground = 'checker'
       let channel: ImageChannel = 'rgb'
+      const kept = viewStates.get(args.descriptor.subjectUri)
+      if (kept !== undefined) ({ zoom, fit, panX, panY, channel } = kept)
       let note = ''
       /** The encoded file's size, once its descriptor answers. */
       let fileBytes: bigint | undefined
@@ -834,6 +871,12 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
         renderOverlay()
         publishStatus()
         editing?.refresh()
+        viewStates.delete(args.descriptor.subjectUri)
+        viewStates.set(args.descriptor.subjectUri, { zoom, fit, panX, panY, channel })
+        if (viewStates.size > VIEW_STATES) {
+          const oldest = viewStates.keys().next().value
+          if (oldest !== undefined) viewStates.delete(oldest)
+        }
       }
 
       /** The shown frame, cropped from the image on screen and enlarged by whole pixels. */
@@ -1606,6 +1649,8 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
             surface: editSurface,
             overlay: stage,
             editable: writable,
+            recentColors: rememberedColors(),
+            onRecentColors: rememberColors,
             ...(refusal === undefined ? {} : { unavailableReason: refusal }),
             ...(writable ? { onSave: saveEdits } : {}),
             onDirty(dirty) {
