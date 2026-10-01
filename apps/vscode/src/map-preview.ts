@@ -68,6 +68,8 @@ export async function prepareVsCodeMapPreview(
       grant: request.grant,
       budgets: request.budgets,
       original: request.opened.session,
+      // a viewer: the world shows before the catalog answers, and its answered form redraws it
+      progressiveCatalog: true,
       ...(request.resourcePlanResolver === undefined
         ? {}
         : { resourcePlanResolver: request.resourcePlanResolver }),
