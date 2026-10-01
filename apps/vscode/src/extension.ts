@@ -7185,8 +7185,8 @@ async function activateModkit(
     // a vector picture goes as it is; the host takes SVG up to its own bound
     if ('svg' in picture)
       return { mediaType: 'image/svg+xml', bytes: new TextEncoder().encode(picture.svg) }
-    // a file only a browser decodes is not a picture this host can encode
-    if ('image' in picture) return undefined
+    // a file only a browser decodes, or a font only a page sets, is not a picture this host encodes
+    if ('image' in picture || 'font' in picture) return undefined
     return { mediaType: 'image/png', bytes: await encodeRgbaPng(picture, request.signal) }
   }
 

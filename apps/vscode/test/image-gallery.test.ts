@@ -92,6 +92,41 @@ describe('image gallery', () => {
     expect(released).toEqual(['common.view/vector-scene-source', 'session'])
   })
 
+  it('sends a font as its own bytes for the page to set a sample in (7.26)', async () => {
+    const font = new Uint8Array([0x77, 0x4f, 0x46, 0x32, 1, 2, 3, 4])
+    const released: string[] = []
+    const session = {
+      async descriptor() {
+        return { traits: [{ id: 'content.fonts' }] }
+      },
+      async dataSource(contract: string) {
+        if (contract !== 'common.view/byte-range-source') throw new Error(`no ${contract}`)
+        return {
+          value: {
+            async size() {
+              return BigInt(font.byteLength)
+            },
+            async read(offset: bigint, length: number) {
+              return font.subarray(Number(offset), Number(offset) + length)
+            },
+          },
+          async release() {
+            released.push(contract)
+          },
+        }
+      },
+      async dispose() {
+        released.push('session')
+      },
+    }
+    const thumbnail = await renderGalleryThumbnail(
+      async () => ({ snapshot: {} as never, session: session as never }),
+      'mod/fonts/title.woff2',
+    )
+    expect(thumbnail).toEqual({ font })
+    expect(released).toEqual(['common.view/byte-range-source', 'session'])
+  })
+
   it('names the formats the page decodes itself when no codec decodes them (7.37)', () => {
     expect(browserImageType('ui/Loading.WEBP')).toBe('image/webp')
     expect(browserImageType('anim.gif')).toBe('image/gif')

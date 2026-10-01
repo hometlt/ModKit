@@ -6,7 +6,13 @@
  * it shows whatever that explorer lists — archive members, folder files, content-source entries.
  */
 import type { Inventory, SubjectOpener } from '@modkit/host'
-import type { Lease, RasterImageSource, RasterRegion, VectorSceneSource } from '@modkit/sdk'
+import type {
+  ByteRangeSource,
+  Lease,
+  RasterImageSource,
+  RasterRegion,
+  VectorSceneSource,
+} from '@modkit/sdk'
 
 /** Largest decode the gallery asks for; a bigger picture is drawn from a smaller mip or not at all. */
 const MAXIMUM_THUMBNAIL_SOURCE_BYTES = 16 * 1024 * 1024
@@ -73,6 +79,8 @@ export type GalleryThumbnail =
   | { readonly svg: string }
   /** A file in a format the page decodes itself. */
   | { readonly image: Uint8Array; readonly mediaType: string }
+  /** A font's own bytes, which the page sets a sample in (plan 7.26). */
+  | { readonly font: Uint8Array }
 
 /** Nearest-neighbour downscale of a decoded region to at most `maxEdge` on its long side. */
 export function galleryThumbnail(region: RasterRegion, maxEdge = 96): GalleryThumbnail {
@@ -104,12 +112,37 @@ export async function renderGalleryThumbnail(
   const session = opened.session
   if (session === undefined) return undefined
   try {
+    // a font is shown as text set in it, not as its glyph sheet shrunk to a thumbnail
+    const descriptor = await Promise.resolve()
+      .then(() => session.descriptor())
+      .catch(() => undefined)
+    if (descriptor?.traits.some(trait => trait.id === 'content.fonts') === true) {
+      return await fontThumbnail(session, signal)
+    }
     return (
       (await rasterThumbnail(session, maxEdge, signal).catch(() => undefined)) ??
       (await vectorThumbnail(session, signal))
     )
   } finally {
     await session.dispose()
+  }
+}
+
+async function fontThumbnail(
+  session: ThumbnailSession,
+  signal?: AbortSignal,
+): Promise<GalleryThumbnail | undefined> {
+  const lease = (await session
+    .dataSource('common.view/byte-range-source', 1)
+    .catch(() => undefined)) as Lease<ByteRangeSource> | undefined
+  if (lease === undefined) return undefined
+  try {
+    const size = await lease.value.size()
+    if (size > BigInt(MAXIMUM_THUMBNAIL_SOURCE_BYTES)) return undefined
+    // a copy the bridge can carry: the read may view a pooled buffer
+    return { font: new Uint8Array(await lease.value.read(0n, Number(size), signal)) }
+  } finally {
+    await lease.release()
   }
 }
 

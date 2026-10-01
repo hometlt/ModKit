@@ -194,6 +194,8 @@ async function thumbnailFrom(
   if (answer === null || typeof answer !== 'object') return undefined
   const svg = (answer as { readonly svg?: unknown }).svg
   if (typeof svg === 'string') return svgThumbnail(svg, maxEdge)
+  const font = (answer as { readonly font?: unknown }).font
+  if (font instanceof Uint8Array) return fontThumbnail(font, maxEdge)
   const { image, mediaType } = answer as { readonly image?: unknown; readonly mediaType?: unknown }
   if (image instanceof Uint8Array && typeof mediaType === 'string')
     return bitmapThumbnail(image, mediaType, maxEdge)
@@ -240,6 +242,44 @@ async function svgThumbnail(
     return undefined
   } finally {
     URL.revokeObjectURL(url)
+  }
+}
+
+/** Each thumbnail's font is a face of its own, so two never stand for each other. */
+let thumbnailFaces = 0
+
+/**
+ * A font the host sent as its bytes (plan 7.26): «Aa» set in it at the gallery's size, in the
+ * page's text colour, as the font viewer sets its sample. The face leaves once the pixels are taken.
+ */
+async function fontThumbnail(
+  bytes: Uint8Array,
+  maxEdge: number,
+): Promise<ArchiveGalleryThumbnail | undefined> {
+  const face = new FontFace(`modkit-thumbnail-${String(++thumbnailFaces)}`, new Uint8Array(bytes))
+  try {
+    await face.load()
+    document.fonts.add(face)
+    const canvas = document.createElement('canvas')
+    canvas.width = maxEdge
+    canvas.height = maxEdge
+    const context = canvas.getContext('2d')
+    if (context === null) return undefined
+    context.fillStyle = getComputedStyle(document.body).color || '#808080'
+    context.font = `${String(Math.round(maxEdge * 0.5))}px "${face.family}"`
+    context.textAlign = 'center'
+    context.textBaseline = 'middle'
+    context.fillText('Aa', maxEdge / 2, maxEdge / 2)
+    const pixels = context.getImageData(0, 0, maxEdge, maxEdge).data
+    return {
+      width: maxEdge,
+      height: maxEdge,
+      rgba: new Uint8Array(pixels.buffer, pixels.byteOffset, pixels.length),
+    }
+  } catch {
+    return undefined
+  } finally {
+    document.fonts.delete(face)
   }
 }
 
