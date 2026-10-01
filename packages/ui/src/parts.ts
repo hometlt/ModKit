@@ -100,6 +100,8 @@ export const PARTS = Object.freeze([
   'table.match',
   /** A value's trailing white space, shown where it is drawn. */
   'table.trailing',
+  /** A row's status in its status cell (missing, untranslated, duplicate, error…). */
+  'table.badge',
 
   // namespace
   'namespace',

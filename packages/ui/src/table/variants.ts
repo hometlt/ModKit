@@ -58,6 +58,15 @@ const FILTER_LABELS = {
   error: 'table.filterErrors',
   changed: 'table.filterChanged',
 } as const
+/** A row's status as a badge in its status cell, as MK2 marked its keys (dup, syn…). */
+const BADGE_LABELS: Readonly<Record<string, UiMessageKey>> = {
+  missing: 'table.badgeMissing',
+  untranslated: 'table.badgeUntranslated',
+  duplicate: 'table.badgeDuplicate',
+  empty: 'table.badgeEmpty',
+  error: 'table.badgeError',
+  changed: 'table.badgeChanged',
+}
 const COMPARE_LABELS = {
   missing: 'table.filterMissing',
   untranslated: 'table.filterUntranslated',
@@ -983,6 +992,22 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
         // «Wrap» keeps a key on one line and may cut it short; the whole key stays at hand
         keyCell.dataset['key'] = 'true'
         keyCell.title = row.cells[keyColumn] ?? ''
+      }
+      // The status cell shows what the filters see, as badges: the codec's statuses and the
+      // table's own, untranslated against the chosen base included; the codec's raw words would
+      // disagree with the filters once another base is chosen.
+      const statusCell = statusColumn < 0 ? undefined : cellOf(tr, statusColumn)
+      if (statusCell !== undefined) {
+        statusCell.replaceChildren()
+        statusCell.dataset['rendered'] = 'true'
+        for (const status of statusOf(row)) {
+          const key = BADGE_LABELS[status]
+          const badge = element(statusCell, 'span', {
+            part: 'table.badge',
+            text: key === undefined ? status : text(key),
+          })
+          badge.dataset['status'] = status
+        }
       }
       for (const column of variants) {
         const valueCell = cellOf(tr, column.index)
