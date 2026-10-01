@@ -10547,6 +10547,47 @@ async function activateModkit(
     vscode.window.tabGroups.onDidChangeTabs(updateLaunchStatus),
   )
 
+  /** The package of the mod the active (or given) file belongs to, at its anchor, in `viewType`. */
+  const openModPackage = async (argument: unknown, viewType: string): Promise<boolean> => {
+    const tab = vscode.window.tabGroups.activeTabGroup.activeTab?.input
+    const uri =
+      argument instanceof vscode.Uri
+        ? argument
+        : tab instanceof vscode.TabInputCustom || tab instanceof vscode.TabInputText
+          ? tab.uri
+          : undefined
+    if (uri === undefined) {
+      void vscode.window.showInformationMessage(localizer.text('vscode.resolution.noFile'))
+      return false
+    }
+    const target = modContextTargetOf(subjectPathOf(uri))
+    const source = await requireContentSources().catch(() => undefined)
+    const placement = target === undefined ? undefined : await source?.locateModPackage?.(target)
+    if (placement?.kind !== 'package') {
+      void vscode.window.showInformationMessage(
+        localizer.text('vscode.modCard.none', { name: basename(uri.path) }),
+      )
+      return false
+    }
+    const packageUri =
+      placement.sourceId === HOST_LAYER_SOURCE_ID
+        ? vscode.Uri.file(placement.path)
+        : vscode.Uri.from({
+            scheme: 'modkit-source',
+            authority: 'battlenet',
+            path: `/${placement.sourceId}/${placement.path}`,
+          })
+    const anchored = await anchoredUri(packageUri)
+    if (anchored === undefined) {
+      void vscode.window.showInformationMessage(
+        localizer.text('vscode.map.noAnchor', { name: placement.displayName }),
+      )
+      return false
+    }
+    await vscode.commands.executeCommand('vscode.openWith', anchored, viewType)
+    return true
+  }
+
   context.subscriptions.push(
     /*
      * Focuses the native view container rather than opening a panel of its own. What this command
@@ -11336,45 +11377,18 @@ async function activateModkit(
     ),
 
     /** The card of the mod the active (or given) file belongs to: its package, at its anchor. */
-    vscode.commands.registerCommand('modkit.openModCard', async (argument: unknown) => {
-      const tab = vscode.window.tabGroups.activeTabGroup.activeTab?.input
-      const uri =
-        argument instanceof vscode.Uri
-          ? argument
-          : tab instanceof vscode.TabInputCustom || tab instanceof vscode.TabInputText
-            ? tab.uri
-            : undefined
-      if (uri === undefined) {
-        void vscode.window.showInformationMessage(localizer.text('vscode.resolution.noFile'))
-        return false
-      }
-      const target = modContextTargetOf(subjectPathOf(uri))
-      const source = await requireContentSources().catch(() => undefined)
-      const placement =
-        target === undefined ? undefined : await source?.locateModPackage?.(target)
-      if (placement?.kind !== 'package') {
-        void vscode.window.showInformationMessage(
-          localizer.text('vscode.modCard.none', { name: basename(uri.path) }),
-        )
-        return false
-      }
-      const packageUri =
-        placement.sourceId === HOST_LAYER_SOURCE_ID
-          ? vscode.Uri.file(placement.path)
-          : vscode.Uri.from({
-              scheme: 'modkit-source',
-              authority: 'battlenet',
-              path: `/${placement.sourceId}/${placement.path}`,
-            })
-      const anchored = await anchoredUri(packageUri)
-      if (anchored === undefined) {
-        void vscode.window.showInformationMessage(
-          localizer.text('vscode.map.noAnchor', { name: placement.displayName }),
-        )
-        return false
-      }
-      await vscode.commands.executeCommand('vscode.openWith', anchored, CUSTOM_EDITOR_TYPE)
-      return true
+    vscode.commands.registerCommand('modkit.openModCard', (argument: unknown) =>
+      openModPackage(argument, CUSTOM_EDITOR_TYPE),
+    ),
+    /*
+     * The wiki of a mod (plan 5.25): a loaded mod's row in Resources opens its subject on the wiki;
+     * from the palette, the mod the active file belongs to, in the wiki's own editor.
+     */
+    vscode.commands.registerCommand('modkit.openModWiki', (argument: unknown) => {
+      const row = argument as ResourceTreeNode | undefined
+      return row?.kind === 'resource' && row.facts.kind === 'mod'
+        ? resourcesView.open(row, 'wiki')
+        : openModPackage(argument, 'modkit.wikiViewer')
     }),
 
     /** Unload a mod from Resources: the row it ran on, else one picked from the loaded mods. */

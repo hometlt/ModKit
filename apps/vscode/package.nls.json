@@ -18,6 +18,7 @@
   "configuration.installationSearchFolders.description": "Folders searched for installed games (**Select Game Installation**): a plain name is that folder at the root of every local drive, anything else a folder as it is — network drives only this way; `%VARIABLE%` is expanded. A match is only a candidate the game's own check confirms, after the registry and the stores. Folders a game names itself (`GOG Games`, `XboxGames`) are searched too.",
   "command.openEntityGraph": "Modkit: Relations Graph…",
   "command.openModCard": "Modkit: Mod Card",
+  "command.openModWiki": "Modkit: Mod Wiki",
   "command.unloadMod": "Modkit: Unload Mod…",
   "extension.displayName": "Modkit MK3",
   "extension.description": "Modkit MK3 host for game mod assets.",
@@ -131,6 +132,7 @@
   "customEditor.mapLayersViewer": "Modkit Map Layers (2D)",
   "customEditor.playbackViewer": "Modkit Replay Player (2D)",
   "customEditor.modelViewer": "Modkit Model Viewer",
+  "customEditor.wikiViewer": "Modkit Wiki",
   "command.showLog": "Modkit: Show Log",
   "command.openLogFolder": "Modkit: Open Log Folder"
 }

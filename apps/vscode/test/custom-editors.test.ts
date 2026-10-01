@@ -26,4 +26,8 @@ describe('custom editors', () => {
     expect(STAGE_CUSTOM_EDITOR_TYPES['modkit.playbackViewer']).toBe('playback')
     expect(STAGE_CUSTOM_EDITOR_TYPES['modkit.modelViewer']).toBe('model')
   })
+
+  it('opens a mod on its wiki (plan 5.25)', () => {
+    expect(STAGE_CUSTOM_EDITOR_TYPES['modkit.wikiViewer']).toBe('wiki')
+  })
 })

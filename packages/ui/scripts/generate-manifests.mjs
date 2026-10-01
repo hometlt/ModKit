@@ -69,7 +69,36 @@ const contributions = [
     spec: {
       kind: 'stage',
       consumesDataSources: [dataSource('common.view/subject-facts-source')],
+      // the subject's own picture, model, media and recording in its preview section, and the
+      // other subjects its links open in place
+      optionalDataSources: [
+        dataSource('common.view/raster-image-source'),
+        dataSource('common.view/model-scene-source'),
+        dataSource('common.view/model-resource-refs-source'),
+        dataSource('common.view/model-skeleton-source'),
+        dataSource('common.view/model-animation-source'),
+        dataSource('common.view/model-collision-source'),
+        dataSource('common.view/model-material-source'),
+        dataSource('common.view/model-socket-source'),
+        dataSource('common.view/video-media-source'),
+        dataSource('common.view/audio-media-source'),
+        dataSource('common.view/transport-source'),
+        dataSource('common.view/subject-selector-source'),
+      ],
+      optionalServices: [{ contract: 'common.render/scene-3d', major: 1 }],
       priority: 390,
+      singletonGroup: 'center-stage',
+    },
+  },
+  {
+    // a mod's entities by kind, each opening in the card (plan 5.25)
+    id: 'subject-wiki-stage',
+    entrypoint: './dist/card/index.js',
+    spec: {
+      kind: 'stage',
+      consumesDataSources: [dataSource('common.view/subject-selector-source')],
+      optionalDataSources: [dataSource('common.view/subject-facts-source')],
+      priority: 385,
       singletonGroup: 'center-stage',
     },
   },
@@ -100,7 +129,7 @@ const contributions = [
       kind: 'stage',
       requiresOperations: ['view.template'],
       consumesDataSources: [],
-      priority: 365,
+      priority: 410,
       singletonGroup: 'center-stage',
     },
   },
@@ -185,6 +214,30 @@ const contributions = [
       // path to `common.render/scene-3d` at all.
       optionalServices: [{ contract: 'common.render/scene-3d', major: 1 }],
       priority: 350,
+      singletonGroup: 'center-stage',
+    },
+  },
+  {
+    // a game's localisation as one table with a column per locale (SC2 GameStrings and the like)
+    id: 'localization-table-stage',
+    entrypoint: './dist/table/index.js',
+    spec: {
+      kind: 'stage',
+      requiresTraits: [trait('game.localization'), trait('table.cells')],
+      consumesDataSources: [dataSource('common.view/table-data-source')],
+      priority: 410,
+      singletonGroup: 'stage.localization',
+    },
+  },
+  {
+    // a recording's player, with its world when the subject publishes one
+    id: 'playback-stage',
+    entrypoint: './dist/transport/playback.js',
+    spec: {
+      kind: 'stage',
+      consumesDataSources: [dataSource('common.view/transport-source')],
+      optionalDataSources: [dataSource('common.view/world-scene-source')],
+      priority: 355,
       singletonGroup: 'center-stage',
     },
   },

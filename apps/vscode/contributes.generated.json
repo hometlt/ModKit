@@ -189,6 +189,11 @@
       "icon": "$(package)"
     },
     {
+      "command": "modkit.openModWiki",
+      "title": "%command.openModWiki%",
+      "icon": "$(book)"
+    },
+    {
       "command": "modkit.openResource",
       "title": "%command.openInModkit%"
     },
@@ -661,6 +666,16 @@
     {
       "viewType": "modkit.playbackViewer",
       "displayName": "%customEditor.playbackViewer%",
+      "selector": [
+        {
+          "filenamePattern": "*"
+        }
+      ],
+      "priority": "option"
+    },
+    {
+      "viewType": "modkit.wikiViewer",
+      "displayName": "%customEditor.wikiViewer%",
       "selector": [
         {
           "filenamePattern": "*"
@@ -1239,6 +1254,11 @@
         "command": "modkit.openExplorer",
         "when": "view == modkit.sources && viewItem =~ /^modkitSource\\.(?:providerRoot|publicRoot|localRoot|installation)(?:\\.(?:mounted|mounting))?$/",
         "group": "explorer@0"
+      },
+      {
+        "command": "modkit.openModWiki",
+        "when": "view == modkit.resources && viewItem == modkitResource.mod",
+        "group": "navigation@2"
       },
       {
         "command": "modkit.resources.goToDeclaration",

@@ -180,6 +180,7 @@
       { "command": "modkit.openMap2D", "title": "%command.openMap2D%", "icon": "$(layers)" },
       { "command": "modkit.openMap3D", "title": "%command.openMap3D%", "icon": "$(globe)" },
       { "command": "modkit.openModCard", "title": "%command.openModCard%", "icon": "$(package)" },
+      { "command": "modkit.openModWiki", "title": "%command.openModWiki%", "icon": "$(book)" },
       { "command": "modkit.openResource", "title": "%command.openInModkit%" },
       { "command": "modkit.openWith", "title": "%command.openActiveFile%" },
       { "command": "modkit.refreshContainer", "title": "%command.refreshContainer%" },
@@ -548,6 +549,12 @@
       {
         "viewType": "modkit.playbackViewer",
         "displayName": "%customEditor.playbackViewer%",
+        "selector": [{ "filenamePattern": "*" }],
+        "priority": "option"
+      },
+      {
+        "viewType": "modkit.wikiViewer",
+        "displayName": "%customEditor.wikiViewer%",
         "selector": [{ "filenamePattern": "*" }],
         "priority": "option"
       },
@@ -1031,6 +1038,11 @@
           "group": "explorer@0"
         },
         {
+          "command": "modkit.openModWiki",
+          "when": "view == modkit.resources && viewItem == modkitResource.mod",
+          "group": "navigation@2"
+        },
+        {
           "command": "modkit.resources.goToDeclaration",
           "when": "view == modkit.resources && viewItem =~ /\\.declared$/",
           "group": "inline@2"
@@ -1281,6 +1293,7 @@
     "onCommand:modkit.openMap2D",
     "onCommand:modkit.openMap3D",
     "onCommand:modkit.openModCard",
+    "onCommand:modkit.openModWiki",
     "onCommand:modkit.openResource",
     "onCommand:modkit.openWith",
     "onCommand:modkit.refreshContainer",
@@ -1328,6 +1341,7 @@
     "onCustomEditor:modkit.mapLayersViewer",
     "onCustomEditor:modkit.modelViewer",
     "onCustomEditor:modkit.playbackViewer",
+    "onCustomEditor:modkit.wikiViewer",
     "onCustomEditor:modkit.worldViewer",
     "onView:modkit.accounts",
     "onView:modkit.extensions",

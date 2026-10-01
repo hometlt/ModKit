@@ -24,6 +24,8 @@ export const STAGE_CUSTOM_EDITOR_TYPES: Readonly<Record<string, string>> = Objec
   // A recording's 2D player, and a model's shaded view (plan 6.8).
   'modkit.playbackViewer': 'playback',
   'modkit.modelViewer': 'model',
+  // A mod's entities by kind, each opening in its card (plan 5.25).
+  'modkit.wikiViewer': 'wiki',
 })
 
 /** Every view type this extension owns; the association sync never removes anyone else's. */

@@ -587,4 +587,35 @@ export const COMMON_PRESENTATION_CATALOG = Object.freeze([
       singletonGroup: 'center-stage',
     }),
   }),
+  Object.freeze({
+    slot: Object.freeze({
+      slotId: 'wiki',
+      kind: 'stage',
+      contributionId: 'modkit.ui/subject-wiki-stage',
+      extensionId: 'modkit/ui',
+      priority: 385,
+      singletonGroup: 'center-stage',
+      bindings: Object.freeze([
+        Object.freeze({
+          bindingId: 'wiki-content',
+          contract: 'common.view/subject-selector-source',
+          major: 1,
+        }),
+      ]),
+    }),
+    optionalBindings: Object.freeze([
+      Object.freeze({
+        bindingId: 'wiki-optional-1',
+        contract: 'common.view/subject-facts-source',
+        major: 1,
+      }),
+    ]),
+    spec: Object.freeze({
+      kind: 'stage',
+      consumesDataSources: [{ contract: 'common.view/subject-selector-source', major: 1 }],
+      optionalDataSources: [{ contract: 'common.view/subject-facts-source', major: 1 }],
+      priority: 385,
+      singletonGroup: 'center-stage',
+    }),
+  }),
 ])

@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "modkit/viewer-contribution", "major": 1 },
+  "id": "modkit.ui/subject-wiki-stage",
+  "displayName": "subject wiki stage",
+  "runtimeVariants": [
+    {
+      "variantId": "browser",
+      "entrypoint": "./dist/card/index.js",
+      "target": { "environments": ["browser-main"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": []
+    }
+  ],
+  "spec": {
+    "kind": "stage",
+    "consumesDataSources": [{ "contract": "common.view/subject-selector-source", "major": 1 }],
+    "optionalDataSources": [{ "contract": "common.view/subject-facts-source", "major": 1 }],
+    "priority": 385,
+    "singletonGroup": "center-stage"
+  }
+}

@@ -83,6 +83,7 @@ describe('web preview policy', () => {
       'archive',
       'template',
       'card',
+      'wiki',
       'calculations',
       'table',
       'tree',

@@ -162,6 +162,12 @@ const presentationPolicy = Object.freeze([
     label: 'Archive',
     contributionId: 'modkit.ui/archive-stage',
   },
+  // A mod's entities by kind, each opening in the subject card (plan 5.25); composed by each app.
+  {
+    slotId: 'wiki',
+    label: 'Wiki',
+    contributionId: 'modkit.ui/subject-wiki-stage',
+  },
 ])
 
 function json(path) {

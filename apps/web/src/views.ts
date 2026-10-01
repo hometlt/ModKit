@@ -54,7 +54,11 @@ import { createModelViewer, MODEL_FACET_CONTRACTS } from '@modkit/ui/model'
 import { createNamespaceViewer } from '@modkit/ui/namespace'
 import { createRelationGraphViewer } from '@modkit/ui/graph'
 import { createSubjectCalculationsViewer } from '@modkit/ui/calculations'
-import { createSubjectCardViewer } from '@modkit/ui/card'
+import {
+  createSubjectCardViewer,
+  createSubjectWikiViewer,
+  type SubjectCardViewerOptions,
+} from '@modkit/ui/card'
 import { createTextEditorModule } from '@modkit/ui/editor'
 import { tableViewer } from '@modkit/ui/table'
 import { virtualTextViewer } from '@modkit/ui/text-virtual'
@@ -500,6 +504,14 @@ export function createWebPreviewStages(context: WebViewContext): readonly Previe
     })
   // One relations stage: its own view and the section of a subject's card.
   const relationsStage = createRelationGraphViewer({ localizer })
+  // The card: a stage of its own and the card each entity of the wiki opens in. Its preview
+  // section mounts the same model, image, video or audio stage.
+  const cardOptions: SubjectCardViewerOptions = {
+    localizer,
+    previews: { model: modelViewer(), audio: audioStage(localizer) },
+    ...(context.textures === undefined ? {} : { textures: context.textures }),
+    graph: relationsStage,
+  }
   return Object.freeze([
     {
       id: 'image',
@@ -564,13 +576,7 @@ export function createWebPreviewStages(context: WebViewContext): readonly Previe
       id: 'card',
       label: text('web.view.card'),
       contract: 'common.view/subject-facts-source',
-      // The card's preview section mounts the same model, image, video or audio stage.
-      module: createSubjectCardViewer({
-        localizer,
-        previews: { model: modelViewer(), audio: audioStage(localizer) },
-        ...(context.textures === undefined ? {} : { textures: context.textures }),
-        graph: relationsStage,
-      }),
+      module: createSubjectCardViewer(cardOptions),
       optionalContracts: [
         'common.view/raster-image-source',
         'common.view/model-scene-source',
@@ -581,6 +587,18 @@ export function createWebPreviewStages(context: WebViewContext): readonly Previe
         'common.view/subject-selector-source',
         'common.view/relation-graph-source',
       ],
+    },
+    {
+      id: 'wiki',
+      label: text('web.view.wiki'),
+      contract: 'common.view/subject-selector-source',
+      // A mod's entities by kind, each opening in the same card, started on it (plan 5.25).
+      module: createSubjectWikiViewer({
+        localizer,
+        card: subject => createSubjectCardViewer({ ...cardOptions, subject }),
+        ...(context.textures === undefined ? {} : { textures: context.textures }),
+      }),
+      optionalContracts: ['common.view/subject-facts-source'],
     },
     {
       id: 'calculations',

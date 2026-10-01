@@ -13,7 +13,11 @@
 import { createArchiveViewer } from '@modkit/ui/archive'
 import { createAudioViewer } from '@modkit/ui/audio'
 import { createBoundedTextViewer } from '@modkit/ui/code'
-import { createSubjectCardViewer } from '@modkit/ui/card'
+import {
+  createSubjectCardViewer,
+  createSubjectWikiViewer,
+  type SubjectCardViewerOptions,
+} from '@modkit/ui/card'
 import { createSubjectCalculationsViewer } from '@modkit/ui/calculations'
 import { createTextEditorModule } from '@modkit/ui/editor'
 import type { PreviewStage } from '@modkit/ui/explorer'
@@ -101,6 +105,25 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
     localizer: context.localizer,
     ...(context.graphDepth === undefined ? {} : { depth: context.graphDepth }),
   })
+  /** The subject card: a stage of its own, and the card each entity of the wiki opens in. */
+  const cardOptions: SubjectCardViewerOptions = {
+    localizer: context.localizer,
+    // VS Code's tab and breadcrumb already name the subject; the card's own header repeated it.
+    header: false,
+    // The locale `modkit.locale` names; the header still switches it for this card.
+    ...(context.gameLocale === undefined ? {} : { locale: context.gameLocale }),
+    // The card's preview section mounts the same shaded, textured model stage.
+    previews: { model: modelViewer() },
+    ...(context.textures === undefined ? {} : { textures: context.textures }),
+    // The subject's relations, walked from it, as a section of its card (MK2 had it there).
+    graph: relationsStage,
+    // A fact's source opens the declaring file at its line.
+    ...(context.openSource === undefined ? {} : { openSource: context.openSource }),
+    // A value written from the card changed the file: reopen at the new revision.
+    onCommitted: descriptor => context.reopen(descriptor as unknown as Record<string, unknown>),
+    // The embedded model opens as a subject of its own, found in the subject's mod chain.
+    ...(context.openModel === undefined ? {} : { openModel: context.openModel }),
+  }
   return orderStages<PreviewStage>([
     {
       id: 'image',
@@ -290,24 +313,7 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
       id: 'card',
       label: context.localizer.text('stage.card'),
       contract: 'common.view/subject-facts-source',
-      // The card's preview section mounts the same shaded, textured model stage.
-      module: createSubjectCardViewer({
-        localizer: context.localizer,
-        // VS Code's tab and breadcrumb already name the subject; the card's own header repeated it.
-        header: false,
-        // The locale `modkit.locale` names; the header still switches it for this card.
-        ...(context.gameLocale === undefined ? {} : { locale: context.gameLocale }),
-        previews: { model: modelViewer() },
-        ...(context.textures === undefined ? {} : { textures: context.textures }),
-        // The subject's relations, walked from it, as a section of its card (MK2 had it there).
-        graph: relationsStage,
-        // A fact's source opens the declaring file at its line.
-        ...(context.openSource === undefined ? {} : { openSource: context.openSource }),
-        // A value written from the card changed the file: reopen at the new revision.
-        onCommitted: descriptor => context.reopen(descriptor as unknown as Record<string, unknown>),
-        // The embedded model opens as a subject of its own, found in the subject's mod chain.
-        ...(context.openModel === undefined ? {} : { openModel: context.openModel }),
-      }),
+      module: createSubjectCardViewer(cardOptions),
       // A writable fact edits in place through the subject's own editing arm, as a table cell does.
       usesEditorPorts: true,
       optionalContracts: [
@@ -318,6 +324,18 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
         'common.view/subject-selector-source',
         'common.view/relation-graph-source',
       ],
+    },
+    {
+      id: 'wiki',
+      label: context.localizer.text('stage.wiki'),
+      contract: 'common.view/subject-selector-source',
+      // A mod's entities by kind, each opening in the same card, started on it (plan 5.25).
+      module: createSubjectWikiViewer({
+        localizer: context.localizer,
+        card: subject => createSubjectCardViewer({ ...cardOptions, subject }),
+        ...(context.textures === undefined ? {} : { textures: context.textures }),
+      }),
+      optionalContracts: ['common.view/subject-facts-source'],
     },
     {
       id: 'calculations',

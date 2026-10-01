@@ -283,6 +283,11 @@
       "icon": "$(package)"
     },
     {
+      "command": "modkit.openModWiki",
+      "title": "%command.openModWiki%",
+      "icon": "$(book)"
+    },
+    {
       "command": "modkit.resources.unloadMod",
       "title": "%command.unloadMod%",
       "icon": "$(close)"
@@ -642,6 +647,16 @@
     {
       "viewType": "modkit.modelViewer",
       "displayName": "%customEditor.modelViewer%",
+      "selector": [
+        {
+          "filenamePattern": "*"
+        }
+      ],
+      "priority": "option"
+    },
+    {
+      "viewType": "modkit.wikiViewer",
+      "displayName": "%customEditor.wikiViewer%",
       "selector": [
         {
           "filenamePattern": "*"
@@ -1371,6 +1386,11 @@
         "command": "modkit.resources.unloadMod",
         "when": "view == modkit.resources && viewItem == modkitResource.mod",
         "group": "navigation@1"
+      },
+      {
+        "command": "modkit.openModWiki",
+        "when": "view == modkit.resources && viewItem == modkitResource.mod",
+        "group": "navigation@2"
       },
       {
         "command": "modkit.extensions.enableContribution",

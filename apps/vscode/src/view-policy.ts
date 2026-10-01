@@ -33,6 +33,7 @@ export const STAGE_ORDER: readonly string[] = Object.freeze([
   'template',
   'localization',
   'card',
+  'wiki',
   'calculations',
   'table',
   'tree',
