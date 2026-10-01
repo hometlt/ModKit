@@ -83,6 +83,8 @@ export interface ImageStageModel {
 
 /** One addressable surface of the image. Every axis is zero when the info does not declare it. */
 export interface ImageSubresource {
+  /** The frame of an animated image (GIF, ANI, a sprite's frames). */
+  readonly frame: number
   readonly mipLevel: number
   readonly layer: number
   readonly face: number
@@ -115,15 +117,20 @@ export type ImageExportOutcome =
   | { readonly state: 'refused'; readonly reason: string }
 
 const ZERO_SUBRESOURCE: ImageSubresource = Object.freeze({
+  frame: 0,
   mipLevel: 0,
   layer: 0,
   face: 0,
   slice: 0,
 })
 
+/** Decoded subresources kept for stepping back and forth, an animation's frames among them. */
+const DECODED_CACHE_BYTES = 4 * IMAGE_MAXIMUM_BYTES
+
 const axisCount = (info: RasterImageInfo | undefined, axis: keyof ImageSubresource): number => {
   if (info === undefined) return 1
   const counts = {
+    frame: info.frames,
     mipLevel: info.mipLevels,
     layer: info.layers,
     face: info.faces,
@@ -173,6 +180,7 @@ export function subresourceLabel(
   subresource: ImageSubresource,
 ): string {
   const parts: string[] = [`mip${subresource.mipLevel}`]
+  if (axisCount(info, 'frame') > 1) parts.unshift(`frame${subresource.frame}`)
   if (axisCount(info, 'layer') > 1) parts.push(`layer${subresource.layer}`)
   if (axisCount(info, 'face') > 1) parts.push(`face${subresource.face}`)
   if (axisCount(info, 'slice') > 1) parts.push(`slice${subresource.slice}`)
@@ -185,13 +193,15 @@ export function enumerateSubresources(
   maximum = IMAGE_MAXIMUM_EXPORTED_SUBRESOURCES,
 ): readonly ImageSubresource[] {
   const all: ImageSubresource[] = []
-  for (let layer = 0; layer < axisCount(info, 'layer'); layer += 1) {
-    for (let face = 0; face < axisCount(info, 'face'); face += 1) {
-      for (let mipLevel = 0; mipLevel < axisCount(info, 'mipLevel'); mipLevel += 1) {
-        const depth = Math.max(1, axisCount(info, 'slice') >>> mipLevel)
-        for (let slice = 0; slice < depth; slice += 1) {
-          if (all.length >= maximum) return Object.freeze(all)
-          all.push(Object.freeze({ mipLevel, layer, face, slice }))
+  for (let frame = 0; frame < axisCount(info, 'frame'); frame += 1) {
+    for (let layer = 0; layer < axisCount(info, 'layer'); layer += 1) {
+      for (let face = 0; face < axisCount(info, 'face'); face += 1) {
+        for (let mipLevel = 0; mipLevel < axisCount(info, 'mipLevel'); mipLevel += 1) {
+          const depth = Math.max(1, axisCount(info, 'slice') >>> mipLevel)
+          for (let slice = 0; slice < depth; slice += 1) {
+            if (all.length >= maximum) return Object.freeze(all)
+            all.push(Object.freeze({ frame, mipLevel, layer, face, slice }))
+          }
         }
       }
     }
@@ -219,7 +229,7 @@ async function loadSubresource(
         y: 0,
         width: extent.width,
         height: extent.height,
-        frame: 0,
+        frame: subresource.frame,
         mipLevel: subresource.mipLevel,
         layer: subresource.layer,
         face: subresource.face,
@@ -239,6 +249,7 @@ async function loadSubresource(
    * a subresource would silently hand back mip 0 under another name.
    */
   if (
+    subresource.frame !== 0 ||
     subresource.mipLevel !== 0 ||
     subresource.layer !== 0 ||
     subresource.face !== 0 ||
@@ -576,15 +587,58 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
       if (context === null) throw new TypeError('2d canvas context is unavailable')
 
       const key = (value: ImageSubresource): string =>
-        `${value.mipLevel}/${value.layer}/${value.face}/${value.slice}`
+        `${value.frame}/${value.mipLevel}/${value.layer}/${value.face}/${value.slice}`
 
+      let decodedBytes = 0
       const modelFor = async (value: ImageSubresource): Promise<ImageStageModel> => {
         const cached = decoded.get(key(value))
         if (cached !== undefined) return cached
         if (info === undefined) throw new TypeError('image info is unavailable')
         const loaded = await loadSubresource(source, info, value, scope.signal)
         decoded.set(key(value), loaded)
+        decodedBytes += loaded.bytes
+        // the oldest go first once a long animation has filled the budget
+        for (const [old, entry] of decoded) {
+          if (decodedBytes <= DECODED_CACHE_BYTES || old === key(value)) break
+          decoded.delete(old)
+          decodedBytes -= entry.bytes
+        }
         return loaded
+      }
+
+      /*
+       * An animated image (GIF, ANI, a sprite's frames) plays in place, as MK2's viewer played one:
+       * the frame axis steps on a timer and only the picture is drawn again, not the sections. The
+       * raster contract carries no frame times, so the rate is the reader's.
+       */
+      let animation: AbortController | undefined
+      let animationFps = 10
+      let animationLoop = true
+      let frameField: HTMLInputElement | undefined
+      const stopAnimation = (): void => {
+        animation?.abort()
+        animation = undefined
+      }
+      scope.cleanup(stopAnimation)
+      const animate = async (signal: AbortSignal): Promise<void> => {
+        const count = axisCount(info, 'frame')
+        while (!signal.aborted) {
+          const started = performance.now()
+          if (subresource.frame + 1 >= count && !animationLoop) break
+          const next = Object.freeze({ ...subresource, frame: (subresource.frame + 1) % count })
+          const shown = await modelFor(next)
+          if (signal.aborted) return
+          subresource = next
+          model = shown
+          working = undefined
+          workingCanvas = undefined
+          if (frameField !== undefined) frameField.value = String(next.frame)
+          paint()
+          const wait = Math.max(0, 1000 / animationFps - (performance.now() - started))
+          await new Promise(resolve => setTimeout(resolve, wait))
+        }
+        if (animation?.signal === signal) animation = undefined
+        if (!scope.signal.aborted) renderSections()
       }
 
       const bitmapData = (bitmap: ImageBitmap): ImageData => {
@@ -1562,6 +1616,7 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
             ],
           )
           const axes: readonly (readonly [keyof ImageSubresource, string])[] = [
+            ['frame', 'frame'],
             ['mipLevel', 'mip'],
             ['layer', 'layer'],
             ['face', 'face'],
@@ -1620,6 +1675,7 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
                   else field.value = String(subresource[axis])
                 })
                 element(bar, 'span', { part: 'image.readout', text: `/${count - 1}` })
+                if (axis === 'frame') frameField = field
               }
               button(
                 bar,
@@ -1627,6 +1683,47 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
                 localizer.text('viewer.imageNextSubresource', { axis: name }),
                 () => step(1),
               )
+              if (axis === 'frame') {
+                const play = button(
+                  bar,
+                  animation === undefined ? '▶' : '■',
+                  localizer.text('viewer.imageFramesPlayTitle'),
+                  () => {
+                    if (animation === undefined) {
+                      const controller = new AbortController()
+                      animation = controller
+                      void animate(controller.signal).catch((error: unknown) => {
+                        note = error instanceof Error ? error.message : String(error)
+                        if (animation === controller) animation = undefined
+                        if (!scope.signal.aborted) renderSections()
+                      })
+                    } else stopAnimation()
+                    play.textContent = animation === undefined ? '▶' : '■'
+                    play.setAttribute('aria-pressed', String(animation !== undefined))
+                  },
+                  animation !== undefined,
+                )
+                const fps = element(bar, 'input', { part: 'image.readout' }) as HTMLInputElement
+                fps.type = 'number'
+                fps.min = '1'
+                fps.max = '60'
+                fps.value = String(animationFps)
+                fps.title = localizer.text('viewer.imageFramesFps')
+                fps.setAttribute('aria-label', fps.title)
+                fps.addEventListener('change', () => {
+                  const value = Number(fps.value)
+                  if (Number.isFinite(value)) animationFps = Math.min(60, Math.max(1, value))
+                  fps.value = String(animationFps)
+                })
+                const loop = element(bar, 'label', {}) as HTMLLabelElement
+                const box = element(loop, 'input', {}) as HTMLInputElement
+                box.type = 'checkbox'
+                box.checked = animationLoop
+                loop.append(' ', localizer.text('viewer.imageFramesLoop'))
+                box.addEventListener('change', () => {
+                  animationLoop = box.checked
+                })
+              }
             }
             if (enumerateSubresources(current).length > 1) {
               button(
@@ -1636,14 +1733,22 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
                 () => {
                   compare =
                     compare === 'off' ? 'side-by-side' : compare === 'side-by-side' ? 'diff' : 'off'
+                  // the next mip, or for an animation of one mip the next frame
                   if (compare !== 'off' && key(compareWith) === key(subresource)) {
-                    compareWith = Object.freeze({
-                      ...subresource,
-                      mipLevel: Math.min(
-                        axisCount(current, 'mipLevel') - 1,
-                        subresource.mipLevel + 1,
-                      ),
-                    })
+                    compareWith = Object.freeze(
+                      axisCount(current, 'mipLevel') > 1
+                        ? {
+                            ...subresource,
+                            mipLevel: Math.min(
+                              axisCount(current, 'mipLevel') - 1,
+                              subresource.mipLevel + 1,
+                            ),
+                          }
+                        : {
+                            ...subresource,
+                            frame: (subresource.frame + 1) % axisCount(current, 'frame'),
+                          },
+                    )
                   }
                   reload()
                 },
@@ -1672,14 +1777,18 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
             subresource.layer === 0 &&
             subresource.face === 0 &&
             subresource.slice === 0
+          // a save writes one picture, so an animation would keep one of its frames
+          const frames = axisCount(info, 'frame')
           const refusal =
             options.savePixels === undefined
               ? options.editableReason
-              : !base
-                ? localizer.text('viewer.imageEditBaseOnly', {
-                    subresource: subresourceLabel(info, subresource),
-                  })
-                : options.saveRefusal?.(descriptor)
+              : frames > 1
+                ? localizer.text('viewer.imageEditFrames', { count: frames })
+                : !base
+                  ? localizer.text('viewer.imageEditBaseOnly', {
+                      subresource: subresourceLabel(info, subresource),
+                    })
+                  : options.saveRefusal?.(descriptor)
           const writable = options.savePixels !== undefined && refusal === undefined
           editing = createImageEditing(section.body, {
             localizer,

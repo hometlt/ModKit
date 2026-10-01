@@ -416,6 +416,8 @@ export const IMAGE_FALLBACK_MESSAGES = {
   'viewer.imageDimensions': 'Dimensions',
   'viewer.imageEditBaseOnly':
     'Edits are saved as the whole image, so they are made on mip 0 of the first layer; this view shows {subresource}.',
+  'viewer.imageEditFrames':
+    'Edits are saved as one picture, which would keep one of the {count} frames, so this image is not edited here.',
   'viewer.imageExportRefused': 'export refused: {reason}',
   'viewer.imageExported': 'exported {count} file(s)',
   'viewer.imageFormat': 'Format',
@@ -429,6 +431,7 @@ export const IMAGE_FALLBACK_MESSAGES = {
   'viewer.imageFramesExporting': 'Exporting {count} frames…',
   'viewer.imageFramesFps': 'Frames per second',
   'viewer.imageFramesGrid': 'Grid',
+  'viewer.imageFramesLoop': 'Loop',
   'viewer.imageFramesOutline': 'Outline frames',
   'viewer.imageFramesPlayTitle': 'Play the frames in turn',
   'viewer.imageFramesRows': 'Rows',

@@ -170,6 +170,8 @@ const EN_MESSAGES = Object.freeze({
     'Shown from mip {level}: the full image ({width}×{height}) is over the viewer budget.',
   'viewer.imageEditBaseOnly':
     'Edits are saved as the whole image, so they are made on mip 0 of the first layer; this view shows {subresource}.',
+  'viewer.imageEditFrames':
+    'Edits are saved as one picture, which would keep one of the {count} frames, so this image is not edited here.',
   'viewer.imageChannel': ' · channel {channel}',
   'viewer.imageSubresources': 'Subresource, comparison and export',
   'viewer.imageSectionFrames': 'Frames',
@@ -184,6 +186,7 @@ const EN_MESSAGES = Object.freeze({
   'viewer.imageFrameNext': 'Next frame',
   'viewer.imageFramesPlayTitle': 'Play the frames in turn',
   'viewer.imageFramesFps': 'Frames per second',
+  'viewer.imageFramesLoop': 'Loop',
   'viewer.imageFramesExport': 'Export frames…',
   'viewer.imageFramesExportTitle': 'Save every frame as a PNG of its own',
   'viewer.imageFramesExporting': 'Exporting {count} frames…',
@@ -1162,6 +1165,8 @@ const RU_MESSAGES: Readonly<Record<CoreUiMessageKey, string>> = Object.freeze({
     'Показан уровень mip {level}: полный размер ({width}×{height}) больше бюджета просмотрщика.',
   'viewer.imageEditBaseOnly':
     'Правка сохраняется как всё изображение, поэтому делается на mip 0 первого слоя; сейчас показан {subresource}.',
+  'viewer.imageEditFrames':
+    'Правка сохраняется одной картинкой и оставила бы один кадр из {count}, поэтому здесь это изображение не правится.',
   'viewer.imageChannel': ' · канал {channel}',
   'viewer.imageSubresources': 'Субресурс, сравнение и экспорт',
   'viewer.imageSectionFrames': 'Кадры',
@@ -1176,6 +1181,7 @@ const RU_MESSAGES: Readonly<Record<CoreUiMessageKey, string>> = Object.freeze({
   'viewer.imageFrameNext': 'Следующий кадр',
   'viewer.imageFramesPlayTitle': 'Проиграть кадры по очереди',
   'viewer.imageFramesFps': 'Кадров в секунду',
+  'viewer.imageFramesLoop': 'Повтор',
   'viewer.imageFramesExport': 'Экспорт кадров…',
   'viewer.imageFramesExportTitle': 'Сохранить каждый кадр отдельным PNG',
   'viewer.imageFramesExporting': 'Экспорт {count} кадров…',

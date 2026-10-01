@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { frameFileName, gridFrames, shownRegion } from '../src/image/frames.js'
+import { enumerateSubresources, subresourceLabel } from '../src/image/index.js'
 
 describe('sprite-sheet frames', () => {
   it('lays a grid row by row and leaves a remainder outside', () => {
@@ -33,5 +34,39 @@ describe('sprite-sheet frames', () => {
     expect(frameFileName('marine', 7, 21)).toBe('marine_frame_007.png')
     expect(frameFileName('marine', 7, 21, '7')).toBe('marine_frame_007.png')
     expect(frameFileName('ui', 12, 2_000, 'idle left')).toBe('ui_frame_0012_idle_left.png')
+  })
+})
+
+describe('the frames of an animated image', () => {
+  const info = {
+    width: 4,
+    height: 4,
+    depth: 1,
+    layers: 1,
+    faces: 1,
+    mipLevels: 2,
+    frames: 3,
+    channels: 4,
+    bitDepth: 8,
+    colorSpace: 'srgb',
+    alphaMode: 'straight',
+    orientation: 'top-left',
+    decodedAccess: true,
+  } as const
+
+  it('are an axis of their own, outermost, named in an exported file', () => {
+    const all = enumerateSubresources(info)
+    expect(all).toHaveLength(6)
+    expect(all[2]).toEqual({ frame: 1, mipLevel: 0, layer: 0, face: 0, slice: 0 })
+    expect(subresourceLabel(info, { frame: 2, mipLevel: 1, layer: 0, face: 0, slice: 0 })).toBe(
+      'frame2-mip1',
+    )
+    // a still image says nothing of frames
+    expect(
+      subresourceLabel(
+        { ...info, frames: 1 },
+        { frame: 0, mipLevel: 0, layer: 0, face: 0, slice: 0 },
+      ),
+    ).toBe('mip0')
   })
 })
