@@ -284,6 +284,29 @@ describe('the mod context of a layered installation', () => {
     await expect(
       sources.openModContext!({ schemaVersion: 1, target: 'C:/Games/unit.dds' }),
     ).rejects.toThrow(TypeError)
+    // without a gameId of its own, a root's game names the context: one call, several games
+    const several = createLayeredArchiveContentSources(
+      'Earth',
+      [
+        {
+          root: { ...root('local:earth-2150'), game: 'realitypump/earth-2150' },
+          open: async () => chain(log),
+        },
+        { root: root('local:anonymous'), open: async () => chain(log) },
+      ],
+      { modContext: {} },
+    )
+    const earth = await several.openModContext!({
+      schemaVersion: 1,
+      target: { sourceId: 'local:earth-2150', path: 'readme.txt' },
+    })
+    expect(earth.gameId).toBe('realitypump/earth-2150')
+    await expect(
+      several.openModContext!({
+        schemaVersion: 1,
+        target: { sourceId: 'local:anonymous', path: 'readme.txt' },
+      }),
+    ).rejects.toThrow(/names no game/u)
   })
 
   it('reads an opened archive over the installation, without its hidden entries, and closes it', async () => {

@@ -96,8 +96,8 @@ export interface LayeredContextLayer extends ModContextLayer {
 }
 
 export interface LayeredModContextOptions {
-  /** `ModContext.gameId`. */
-  readonly gameId: string
+  /** `ModContext.gameId`; by default the opened root's `game`, so one call serves several games. */
+  readonly gameId?: string
 }
 
 export interface LayeredArchiveContentSources extends ContentSources {
@@ -356,6 +356,9 @@ export function createLayeredArchiveContentSources(
               throw new TypeError(`${label} opens only paths inside its own content sources`)
             const path = normalized(request.target.path)
             const { root } = plan
+            const gameId = modContext.gameId ?? root.game
+            if (gameId === undefined)
+              throw new TypeError(`${label} root ${root.id} names no game for its mod context`)
             const installation: LayeredContextLayer = {
               id: 'installation',
               displayName: root.label,
@@ -382,8 +385,8 @@ export function createLayeredArchiveContentSources(
                     },
                   ]
             return layeredModContext(sources, {
-              gameId: modContext.gameId,
-              contextId: `${modContext.gameId}:${root.id}:${root.revision ?? '-'}:${keyOf(path)}`,
+              gameId,
+              contextId: `${gameId}:${root.id}:${root.revision ?? '-'}:${keyOf(path)}`,
               layers: [installation, ...opened],
             })
           },
