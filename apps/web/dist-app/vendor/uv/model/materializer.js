@@ -1170,6 +1170,7 @@ function materializeUvmCore(projection, request, { digest, materialBudget = DEFA
     }
     return fail(`node \xAB${id}\xBB billboard mode is unknown`);
   };
+  const meshChildren = [];
   const documentNodes = orderedNodes.map((node) => {
     const entry = {};
     const bone = skeleton?.boneByNode.get(node.id);
@@ -1178,17 +1179,25 @@ function materializeUvmCore(projection, request, { digest, materialBudget = DEFA
     else if (typeof bone?.boneName === "string" && bone.boneName.length > 0)
       entry.name = bone.boneName;
     const children = (node.childIds ?? []).map((child) => nodeIndexById.get(child)).filter((index) => index !== void 0);
-    if (children.length > 0)
-      entry.children = children;
-    const meshId = (node.meshIds ?? [])[0];
+    const [meshId, ...moreMeshIds] = node.meshIds ?? [];
     if (meshId !== void 0 && meshIndexById.has(meshId))
       entry.mesh = meshIndexById.get(meshId);
     const skin = meshId === void 0 ? void 0 : meshSkins.get(meshId);
     if (skin !== void 0 && skin !== null)
       entry.skin = skin;
-    if ((node.meshIds ?? []).length > 1) {
-      note("uv.model/hierarchy@1", "value-differs", `/nodes/${node.id}/meshIds`, "a glTF node carries at most one mesh; only the first was written");
+    for (const id of moreMeshIds) {
+      const mesh = meshIndexById.get(id);
+      if (mesh === void 0)
+        continue;
+      const child = { mesh };
+      const childSkin = meshSkins.get(id);
+      if (childSkin !== void 0 && childSkin !== null)
+        child.skin = childSkin;
+      children.push(orderedNodes.length + meshChildren.length);
+      meshChildren.push(child);
     }
+    if (children.length > 0)
+      entry.children = children;
     const transform = finite([...node.transform ?? []], `node ${node.id} transform`);
     if (transform.length !== 16)
       fail(`node \xAB${node.id}\xBB transform must carry 16 numbers`);
@@ -1222,6 +1231,7 @@ function materializeUvmCore(projection, request, { digest, materialBudget = DEFA
       };
     return entry;
   });
+  documentNodes.push(...meshChildren);
   const documentMeshes = emittedMeshes.map(({ mesh, primitives: entries }) => {
     const value = {};
     if (typeof mesh.name === "string")

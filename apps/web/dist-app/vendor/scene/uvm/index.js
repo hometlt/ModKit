@@ -8,7 +8,7 @@ import {
   readUvmBillboards,
   readUvmModelStates,
   readUvmShadowMeshBindings
-} from "../../../chunks/chunk-KAS7MIDG.js";
+} from "../../../chunks/chunk-BZJ3SJHH.js";
 import {
   array,
   field,

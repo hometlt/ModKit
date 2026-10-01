@@ -1,12 +1,12 @@
 import {
   createVideoViewer
-} from "./chunk-PJUTFHWD.js";
+} from "./chunk-WISH5XOF.js";
 import {
   createAudioViewer
-} from "./chunk-N7LAQMIR.js";
+} from "./chunk-PDLZUNZU.js";
 import {
   createRelationGraphViewer
-} from "./chunk-6EN5LQAC.js";
+} from "./chunk-3TCNBX7M.js";
 import {
   MODEL_FACET_CONTRACTS,
   commitOperationWrite,
@@ -15,7 +15,7 @@ import {
   modelMaterialTeamColor,
   mountFieldEditTarget,
   mountInlineField
-} from "./chunk-46VWPTA5.js";
+} from "./chunk-O37BI45Q.js";
 import {
   metadataFieldProjections
 } from "./chunk-CW2HIMYV.js";
@@ -110,7 +110,7 @@ import {
   createImageViewer,
   createNamespaceViewer,
   invokeRefusalMessage
-} from "./chunk-M727HE4V.js";
+} from "./chunk-OMON3H53.js";
 import {
   MEDIA_ZOOM_CHOICES,
   canvasPng,
@@ -119,7 +119,7 @@ import {
   createMediaShell,
   mediaFacts,
   textMatches
-} from "./chunk-PTYGPWW5.js";
+} from "./chunk-KTQLJDWD.js";
 import {
   CALCULATIONS_FALLBACK_MESSAGES,
   CARD_FALLBACK_MESSAGES,
@@ -165,7 +165,7 @@ import {
   uiPreference,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-6YIXCJUM.js";
+} from "./chunk-HBDJKHSZ.js";
 import {
   PERMISSION_CLASSES,
   contributionId,
@@ -184,12 +184,15 @@ import {
   Box3,
   BufferBuilder,
   DEFAULT_MODEL_MATERIAL_BUDGET,
+  DEFAULT_SCENE_ENVIRONMENT,
+  MATERIAL_LAYERS_SHADER,
   Matrix4,
   ModkitError as ModkitError2,
   OrthographicCamera,
   PREVIEW_LIGHT_GLSL,
   RENDER_MATERIAL_SHADER,
   Raycaster,
+  SCENE_ENVIRONMENT_RESOURCE,
   Sphere,
   TERRAIN_RECEIVER_ID,
   UnsupportedCubeCoordinatesError,
@@ -245,7 +248,7 @@ import {
   uvmImageUri,
   uvmKeyTimesMetadata,
   uvmVisibilityPointer
-} from "./chunk-PGI2EIK2.js";
+} from "./chunk-L5QNXEVA.js";
 import {
   DEFAULT_MODEL_ANIMATION_BUDGET,
   DEFAULT_MODEL_SKELETON_BUDGET,
@@ -5397,6 +5400,27 @@ function modContextCatalogEntities(context) {
     return entities;
   };
 }
+function modContextCatalogStrings(context) {
+  const query2 = context.query?.bind(context);
+  if (query2 === void 0)
+    return void 0;
+  return async (keys, locales, signal) => {
+    const strings = [];
+    for (let start = 0; start < keys.length; start += MOD_CONTEXT_MAX_QUERY_REFS) {
+      const answer = await query2({
+        kind: "data.strings",
+        keys: keys.slice(start, start + MOD_CONTEXT_MAX_QUERY_REFS),
+        ...locales === void 0 ? {} : { locales }
+      }, signal);
+      if (!Array.isArray(answer?.strings))
+        throw new TypeError("data.strings answered no string list");
+      for (const item of answer.strings)
+        if (typeof item?.key === "string" && typeof item.value === "string")
+          strings.push(item);
+    }
+    return strings;
+  };
+}
 function subjectCatalogEntities(options, subjectUri) {
   let opened;
   const open = () => opened ??= (async () => {
@@ -5410,13 +5434,18 @@ function subjectCatalogEntities(options, subjectUri) {
       target,
       ...baseMods === void 0 ? {} : { baseMods }
     });
-    const entities = modContextCatalogEntities(context);
-    return entities === void 0 ? { context } : { context, entities };
+    return { context };
   })();
   return Object.freeze({
     async entities(refs, signal) {
-      const { entities } = await open();
+      const { context } = await open();
+      const entities = context === void 0 ? void 0 : modContextCatalogEntities(context);
       return entities === void 0 ? [] : entities(refs, signal);
+    },
+    async strings(keys, locales, signal) {
+      const { context } = await open();
+      const strings = context === void 0 ? void 0 : modContextCatalogStrings(context);
+      return strings === void 0 ? [] : strings(keys, locales, signal);
     },
     async release() {
       if (opened === void 0)
@@ -5777,7 +5806,10 @@ var installationFilesSurface = {
 };
 var subjectCatalogSurface = {
   ...ABI_SUBJECT_CATALOG,
-  methods: { entities: { kind: "value", arity: 2, ...sig } }
+  methods: {
+    entities: { kind: "value", arity: 2, ...sig },
+    strings: { kind: "value", arity: 3, optional: true, ...sig }
+  }
 };
 var credentialsSurface = {
   ...ABI_CREDENTIALS,
@@ -10942,7 +10974,9 @@ async function openSubjectDirectWith(options, route, catalog) {
             ...settings === void 0 ? {} : { settings },
             ...options.videoFrames === void 0 ? {} : { videoFrames: options.videoFrames },
             ...options.installationFiles === void 0 ? {} : { installationFiles: options.installationFiles },
-            ...catalog === void 0 ? {} : { catalog: Object.freeze({ entities: catalog.entities }) },
+            ...catalog === void 0 ? {} : {
+              catalog: Object.freeze({ entities: catalog.entities, strings: catalog.strings })
+            },
             ...credentials === void 0 ? {} : { credentials },
             ...options.containerContext === void 0 ? {} : { containerContext: options.containerContext },
             logicalResources: createSubjectLogicalResources({
@@ -47945,6 +47979,10 @@ function createSceneMaterialProgramSampler(materials, textures, signal) {
       entries.push({ kind: "skip", diagnostics: skipped });
       continue;
     }
+    if (material.shader.id === MATERIAL_LAYERS_SHADER) {
+      entries.push({ kind: "skip", diagnostics: skipped });
+      continue;
+    }
     if (material.shader.id !== RENDER_MATERIAL_SHADER) {
       skipped.push({
         severity: "warning",
@@ -47981,6 +48019,8 @@ function createSceneMaterialProgramSampler(materials, textures, signal) {
       entries.push({ kind: "skip", diagnostics: skipped });
       continue;
     }
+    if (sampler.usesSceneEnvironment)
+      bound.set(SCENE_ENVIRONMENT_RESOURCE, DEFAULT_SCENE_ENVIRONMENT);
     const normalMapFormats = /* @__PURE__ */ new Map();
     for (const [id, texture] of bound) {
       const format2 = textureNormalFormat(texture);
@@ -50077,6 +50117,9 @@ async function renderBrowser(request) {
   try {
     uploadTextures(gl, request.scene.textures, diagnostics, textures);
     const materialPrograms = prepareSceneMaterialPrograms(request.scene.materials ?? [], new Map((request.scene.textures ?? []).filter((texture) => textures.has(texture.id)).map((texture) => [texture.id, texture])), request.scene.materialContext, diagnostics, request.signal);
+    uploadTextures(gl, [
+      ...new Set([...materialPrograms.values()].flatMap((program2) => [...program2.textures.values()]))
+    ].filter((texture) => !textures.has(texture.id)), diagnostics, textures);
     const cubeIds = new Set((request.scene.textures ?? []).filter((texture) => texture.dimension === "cube").map((texture) => texture.id));
     const sceneTextures = new Map((request.scene.textures ?? []).map((texture) => [texture.id, texture]));
     const materials = new Map((request.scene.materials ?? []).map(bindSimpleEffectTexture).map((material) => {
@@ -53069,6 +53112,7 @@ function materializeUvmCore(projection2, request, { digest, materialBudget = DEF
     }
     return fail6(`node \xAB${id}\xBB billboard mode is unknown`);
   };
+  const meshChildren = [];
   const documentNodes = orderedNodes.map((node) => {
     const entry2 = {};
     const bone = skeleton?.boneByNode.get(node.id);
@@ -53077,17 +53121,25 @@ function materializeUvmCore(projection2, request, { digest, materialBudget = DEF
     else if (typeof bone?.boneName === "string" && bone.boneName.length > 0)
       entry2.name = bone.boneName;
     const children = (node.childIds ?? []).map((child) => nodeIndexById.get(child)).filter((index) => index !== void 0);
-    if (children.length > 0)
-      entry2.children = children;
-    const meshId = (node.meshIds ?? [])[0];
+    const [meshId, ...moreMeshIds] = node.meshIds ?? [];
     if (meshId !== void 0 && meshIndexById.has(meshId))
       entry2.mesh = meshIndexById.get(meshId);
     const skin = meshId === void 0 ? void 0 : meshSkins.get(meshId);
     if (skin !== void 0 && skin !== null)
       entry2.skin = skin;
-    if ((node.meshIds ?? []).length > 1) {
-      note("uv.model/hierarchy@1", "value-differs", `/nodes/${node.id}/meshIds`, "a glTF node carries at most one mesh; only the first was written");
+    for (const id of moreMeshIds) {
+      const mesh = meshIndexById.get(id);
+      if (mesh === void 0)
+        continue;
+      const child = { mesh };
+      const childSkin = meshSkins.get(id);
+      if (childSkin !== void 0 && childSkin !== null)
+        child.skin = childSkin;
+      children.push(orderedNodes.length + meshChildren.length);
+      meshChildren.push(child);
     }
+    if (children.length > 0)
+      entry2.children = children;
     const transform = finite([...node.transform ?? []], `node ${node.id} transform`);
     if (transform.length !== 16)
       fail6(`node \xAB${node.id}\xBB transform must carry 16 numbers`);
@@ -53121,6 +53173,7 @@ function materializeUvmCore(projection2, request, { digest, materialBudget = DEF
       };
     return entry2;
   });
+  documentNodes.push(...meshChildren);
   const documentMeshes = emittedMeshes.map(({ mesh, primitives: entries }) => {
     const value = {};
     if (typeof mesh.name === "string")
@@ -65412,13 +65465,13 @@ var PREVIEW_STAGES = [
 async function defaultPreviewStage(kind, localizer) {
   switch (kind) {
     case "model":
-      return (await import("./model-ZETLXIV5.js")).createModelViewer({ localizer });
+      return (await import("./model-5B5IN6VH.js")).createModelViewer({ localizer });
     case "image":
-      return (await import("./image-EATI7WIY.js")).createImageViewer({ localizer });
+      return (await import("./image-OD5NCKWL.js")).createImageViewer({ localizer });
     case "video":
-      return (await import("./video-4XFNAENQ.js")).createVideoViewer({ localizer });
+      return (await import("./video-X47GYJ6D.js")).createVideoViewer({ localizer });
     case "audio":
-      return (await import("./audio-VPNTZN2F.js")).createAudioViewer({ localizer });
+      return (await import("./audio-36HD47XI.js")).createAudioViewer({ localizer });
   }
 }
 function embedPreview(sections, args, scope, localizer, previews) {
@@ -65457,7 +65510,7 @@ function embedRelationGraph(sections, args, scope, localizer, graph) {
   return [
     ...sections,
     stageSection({ id: "relations-graph", title: localizer.text("card.relationGraph"), expanded: false }, scope, localizer, "card.relationGraphUnavailable", async (host) => {
-      const module = graph ?? (await import("./graph-3QJ45XYK.js")).createRelationGraphViewer({ localizer });
+      const module = graph ?? (await import("./graph-G4RQC3PG.js")).createRelationGraphViewer({ localizer });
       return scope.signal.aborted ? void 0 : module.mount({ ...args, container: host, signal: scope.signal });
     })
   ];
@@ -66621,10 +66674,26 @@ async function mountVariantTable(args) {
           selected.delete(row.index);
       });
       cell.append(box);
+      const keyCell = tr.cells[keyColumn + 1];
+      if (keyCell !== void 0) {
+        keyCell.dataset["key"] = "true";
+        keyCell.title = row.cells[keyColumn] ?? "";
+      }
       for (const column of variants) {
         const valueCell = tr.cells[column.index + 1];
-        if (valueCell !== void 0 && draft.has(`${row.index}:${column.index}`)) {
-          setState(valueCell, ["mutating"]);
+        if (valueCell === void 0)
+          continue;
+        const value = row.cells[column.index] ?? "";
+        const state2 = value === "" ? "empty" : base !== void 0 && column.index !== base.index && value === row.cells[base.index] ? "stale" : void 0;
+        const states = [
+          ...draft.has(`${row.index}:${column.index}`) ? ["mutating"] : [],
+          ...state2 === void 0 ? [] : [state2]
+        ];
+        if (states.length > 0)
+          setState(valueCell, states);
+        if (state2 !== void 0) {
+          const key3 = state2 === "empty" ? "table.cellMissing" : "table.cellUntranslated";
+          valueCell.title = text3(key3, { locale: column.variant ?? "" });
         }
       }
     });
@@ -74016,13 +74085,36 @@ function worldUniform1i(gl, program, name, value) {
   gl.uniform1i(location, value);
   held.set(location, stored);
 }
+var SCENE_ENVIRONMENT_TEXTURES = Object.freeze([DEFAULT_SCENE_ENVIRONMENT]);
 function bindTexture2d(resources, texture, unit2) {
-  if (texture.width <= 0 || texture.height <= 0 || texture.compressed === void 0 && texture.rgba.byteLength !== texture.width * texture.height * 4)
+  const cube = texture.dimension === "cube";
+  if (texture.width <= 0 || texture.height <= 0 || cube && texture.compressed !== void 0 || texture.compressed === void 0 && texture.rgba.byteLength !== texture.width * texture.height * 4 * (cube ? 6 : 1))
     throw new TypeError(`world texture ${texture.id} is not tightly packed RGBA8`);
   const gl = resources.gl;
   const contentKey = worldTextureKey(texture);
   let entry2 = resources.textures.get(contentKey);
-  if (entry2 === void 0) {
+  if (entry2 === void 0 && cube) {
+    const handle = gl.createTexture();
+    if (handle === null)
+      throw new TypeError("WebGL could not allocate a world texture");
+    gl.activeTexture(gl.TEXTURE0 + unit2);
+    gl.bindTexture(gl.TEXTURE_CUBE_MAP, handle);
+    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+    const faceBytes = texture.width * texture.height * 4;
+    for (let face = 0; face < 6; face++)
+      gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X + face, 0, gl.RGBA, texture.width, texture.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, texture.rgba.subarray(face * faceBytes, (face + 1) * faceBytes));
+    for (const wrap of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T, gl.TEXTURE_WRAP_R])
+      gl.texParameteri(gl.TEXTURE_CUBE_MAP, wrap, gl.CLAMP_TO_EDGE);
+    applyTextureFilter(gl, gl.TEXTURE_CUBE_MAP, texture.filter === "nearest" ? "nearest" : "linear");
+    entry2 = Object.freeze({
+      key: texture,
+      handle,
+      target: gl.TEXTURE_CUBE_MAP,
+      bytes: faceBytes * 6
+    });
+    resources.textures.set(contentKey, entry2);
+    resources.textureUploads += 1;
+  } else if (entry2 === void 0) {
     const handle = gl.createTexture();
     if (handle === null)
       throw new TypeError("WebGL could not allocate a world texture");
@@ -74054,7 +74146,7 @@ function bindTexture2d(resources, texture, unit2) {
   } else {
     resources.textureCacheHits += 1;
     gl.activeTexture(gl.TEXTURE0 + unit2);
-    gl.bindTexture(gl.TEXTURE_2D, entry2.handle);
+    gl.bindTexture(entry2.target, entry2.handle);
   }
   resources.usedTextures.add(entry2);
   return entry2.handle;
@@ -74497,6 +74589,7 @@ function prepareWorldMaterialResources(resources, plan) {
     bind(scene.textures);
   for (const effect of plan.modelEffects)
     bind(effect.textures);
+  bind(SCENE_ENVIRONMENT_TEXTURES);
   const palettes = /* @__PURE__ */ new Set();
   for (const scene of plan.modelMaterialScenes)
     for (const palette of worldScenePalettes(scene))

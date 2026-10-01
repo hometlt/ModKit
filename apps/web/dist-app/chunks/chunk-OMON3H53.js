@@ -5,7 +5,7 @@ import {
   createMediaShell,
   mediaFacts,
   mountContributedSections
-} from "./chunk-PTYGPWW5.js";
+} from "./chunk-KTQLJDWD.js";
 import {
   IMAGE_EDITING_FALLBACK_MESSAGES,
   IMAGE_FALLBACK_MESSAGES,
@@ -22,7 +22,7 @@ import {
   uiPreference,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-6YIXCJUM.js";
+} from "./chunk-HBDJKHSZ.js";
 import {
   createSubjectCandidateProvider,
   isKnowledgeTarget,
@@ -1729,7 +1729,8 @@ var IMAGE_MAXIMUM_BYTES = 64 * 1024 * 1024;
 var IMAGE_MAXIMUM_EXPORTED_SUBRESOURCES = 256;
 function convertedFileName(baseName, presetId, ext) {
   const bare = ext.replace(/^\./u, "");
-  return presetId === bare ? `${baseName}.${bare}` : `${baseName}.${exportSafeName(presetId)}.${bare}`;
+  const variant = presetId.startsWith(`${bare}-`) ? presetId.slice(bare.length + 1) : presetId;
+  return variant === bare ? `${baseName}.${bare}` : `${baseName}.${exportSafeName(variant)}.${bare}`;
 }
 var ZERO_SUBRESOURCE = Object.freeze({
   frame: 0,

@@ -13,7 +13,7 @@ import {
   createStandardSurfaceRegistry,
   framePortFromMessagePort,
   protocolLimits
-} from "../../chunks/chunk-CWN72PN7.js";
+} from "../../chunks/chunk-6I4OSK3T.js";
 import {
   assembleSubjectDescriptor,
   createAssetSession,
@@ -8795,6 +8795,27 @@ function modContextCatalogEntities(context) {
     return entities;
   };
 }
+function modContextCatalogStrings(context) {
+  const query = context.query?.bind(context);
+  if (query === void 0)
+    return void 0;
+  return async (keys, locales, signal) => {
+    const strings = [];
+    for (let start = 0; start < keys.length; start += MOD_CONTEXT_MAX_QUERY_REFS) {
+      const answer = await query({
+        kind: "data.strings",
+        keys: keys.slice(start, start + MOD_CONTEXT_MAX_QUERY_REFS),
+        ...locales === void 0 ? {} : { locales }
+      }, signal);
+      if (!Array.isArray(answer?.strings))
+        throw new TypeError("data.strings answered no string list");
+      for (const item of answer.strings)
+        if (typeof item?.key === "string" && typeof item.value === "string")
+          strings.push(item);
+    }
+    return strings;
+  };
+}
 function subjectCatalogEntities(options, subjectUri) {
   let opened;
   const open = () => opened ??= (async () => {
@@ -8808,13 +8829,18 @@ function subjectCatalogEntities(options, subjectUri) {
       target,
       ...baseMods === void 0 ? {} : { baseMods }
     });
-    const entities = modContextCatalogEntities(context);
-    return entities === void 0 ? { context } : { context, entities };
+    return { context };
   })();
   return Object.freeze({
     async entities(refs, signal) {
-      const { entities } = await open();
+      const { context } = await open();
+      const entities = context === void 0 ? void 0 : modContextCatalogEntities(context);
       return entities === void 0 ? [] : entities(refs, signal);
+    },
+    async strings(keys, locales, signal) {
+      const { context } = await open();
+      const strings = context === void 0 ? void 0 : modContextCatalogStrings(context);
+      return strings === void 0 ? [] : strings(keys, locales, signal);
     },
     async release() {
       if (opened === void 0)
@@ -12892,7 +12918,9 @@ async function openSubjectDirectWith(options, route, catalog) {
             ...settings === void 0 ? {} : { settings },
             ...options.videoFrames === void 0 ? {} : { videoFrames: options.videoFrames },
             ...options.installationFiles === void 0 ? {} : { installationFiles: options.installationFiles },
-            ...catalog === void 0 ? {} : { catalog: Object.freeze({ entities: catalog.entities }) },
+            ...catalog === void 0 ? {} : {
+              catalog: Object.freeze({ entities: catalog.entities, strings: catalog.strings })
+            },
             ...credentials === void 0 ? {} : { credentials },
             ...options.containerContext === void 0 ? {} : { containerContext: options.containerContext },
             logicalResources: createSubjectLogicalResources({
@@ -23683,6 +23711,7 @@ function exposeSubjectRpc(options) {
   const pending = /* @__PURE__ */ new Map();
   const live = /* @__PURE__ */ new Map();
   const operationPlans = /* @__PURE__ */ new Map();
+  const maximumPendingOperationPlans = 8;
   const maximumLiveSessions = 1024;
   const canonicalSubject2 = (value) => {
     if (typeof value !== "string" || value.length === 0 || value.length > 16384)
@@ -23769,10 +23798,18 @@ function exposeSubjectRpc(options) {
                     throw new TypeError("the operation returned an edit plan without an identity");
                   }
                   const plans = operationPlans.get(sessionId) ?? /* @__PURE__ */ new Map();
-                  if (plans.has(plan.planId))
-                    throw new TypeError("duplicate operation edit plan identity");
-                  plans.set(plan.planId, structuredClone(plan));
+                  let planId = plan.planId;
+                  for (let copy = 2; plans.has(planId); copy += 1)
+                    planId = `${plan.planId}#${copy}`;
+                  plans.set(planId, structuredClone({ ...plan, planId }));
+                  if (plans.size > maximumPendingOperationPlans)
+                    plans.delete(plans.keys().next().value);
                   operationPlans.set(sessionId, plans);
+                  if (planId !== plan.planId)
+                    return {
+                      ...result,
+                      output: { ...result.output, plan: { ...result.output.plan, planId } }
+                    };
                 }
               }
               return result;
@@ -30047,6 +30084,7 @@ export {
   loadLocalizationCatalogs,
   metadataFieldProjections,
   modContextCatalogEntities,
+  modContextCatalogStrings,
   modContextResolution,
   nestedSubjectServices,
   offersFromInventory,

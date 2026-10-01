@@ -6,6 +6,7 @@ import {
   Float32BufferAttribute,
   IDENTITY_MATERIAL_FRAME,
   Line3,
+  MATERIAL_LAYERS_SHADER,
   MathUtils,
   Matrix4,
   OrthographicCamera,
@@ -47,7 +48,7 @@ import {
   validateUvmDocument,
   vector3,
   vector4
-} from "./chunk-PGI2EIK2.js";
+} from "./chunk-L5QNXEVA.js";
 import {
   applyColorKeyTransparency,
   billboardCameraRotation,
@@ -1760,7 +1761,6 @@ function createUvmCollisionOverlay(document, binary, budget, signal) {
 
 // ../MODDING/modkit-core/packages/scene/dist/uvm/materials.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-var MATERIAL_LAYERS_SHADER = "modkit.material-layers.v1";
 function layerList(material) {
   const extras = field(material["extras"], "modkit");
   const native = extras === void 0 ? void 0 : field(extras, "material");

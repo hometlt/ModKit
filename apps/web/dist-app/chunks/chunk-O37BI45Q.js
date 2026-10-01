@@ -7,12 +7,12 @@ import {
   invokeRefusalMessage,
   isRejected,
   mountFieldEditor
-} from "./chunk-M727HE4V.js";
+} from "./chunk-OMON3H53.js";
 import {
   canvasPng,
   createMediaShell,
   mountContributedSections
-} from "./chunk-PTYGPWW5.js";
+} from "./chunk-KTQLJDWD.js";
 import {
   MODEL_FALLBACK_MESSAGES,
   MODEL_GIZMO_FALLBACK_MESSAGES,
@@ -27,7 +27,7 @@ import {
   setViewerText,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-6YIXCJUM.js";
+} from "./chunk-HBDJKHSZ.js";
 import {
   applyColorKeyTransparency,
   billboardCameraRotation,
@@ -1858,7 +1858,7 @@ function createModelViewer(options = {}) {
               const output = result.output;
               if (output.kind !== "bytes" || !(output.value instanceof Uint8Array))
                 throw new Error(`the codec answered ${output.kind}, not bytes`);
-              const { createUvmFramePreparer } = await import("./render-OJKTY5EE.js");
+              const { createUvmFramePreparer } = await import("./render-XCQJQGJA.js");
               const raster = options.rasterResources?.(args.descriptor);
               const preparer = createUvmFramePreparer(output.value, {
                 budget: MODEL_EFFECT_BUDGET,

@@ -3139,7 +3139,10 @@ var installationFilesSurface = {
 };
 var subjectCatalogSurface = {
   ...ABI_SUBJECT_CATALOG,
-  methods: { entities: { kind: "value", arity: 2, ...sig } }
+  methods: {
+    entities: { kind: "value", arity: 2, ...sig },
+    strings: { kind: "value", arity: 3, optional: true, ...sig }
+  }
 };
 var credentialsSurface = {
   ...ABI_CREDENTIALS,

@@ -34,6 +34,63 @@ import {
   sampleTrackValue
 } from "./chunk-5SBJANAJ.js";
 
+// ../MODDING/modkit-core/packages/scene/dist/materials/environment.js
+function vector(value, length, name) {
+  if (!Array.isArray(value) || value.length !== length)
+    throw new TypeError(`${name} requires ${length} finite float32 components`);
+  const captured = [];
+  for (let index = 0; index < length; index++) {
+    const item = value[index];
+    if (typeof item !== "number" || !Number.isFinite(item) || !Number.isFinite(Math.fround(item)))
+      throw new TypeError(`${name} requires ${length} finite float32 components`);
+    captured.push(Math.fround(item));
+  }
+  return Object.freeze(captured);
+}
+function snapshotEnvironment(value) {
+  if (value === void 0)
+    return void 0;
+  if (value === null || typeof value !== "object" || Array.isArray(value) || Object.keys(value).some((key) => key !== "worldToEnvironment"))
+    throw new TypeError("invalid environment frame");
+  const worldToEnvironment = vector(Reflect.get(value, "worldToEnvironment"), 16, "worldToEnvironment");
+  if ([3, 7, 11].some((index) => worldToEnvironment[index] !== 0) || worldToEnvironment[15] !== 1)
+    throw new TypeError("worldToEnvironment must be affine");
+  const envelope = Math.max(...[0, 1, 2].map((row) => [0, 4, 8, 12].reduce((sum, column) => sum + Math.abs(worldToEnvironment[row + column] ?? 0), 0)));
+  if (envelope + 6 * envelope ** 3 > 34028234663852886e22 / 2)
+    throw new TypeError("worldToEnvironment exceeds safe float32 reflection arithmetic");
+  return Object.freeze({ worldToEnvironment });
+}
+function snapshotEyePosition(value) {
+  return value === void 0 ? void 0 : vector(value, 3, "eyePosition");
+}
+var SCENE_ENVIRONMENT_RESOURCE = "modkit:scene-environment";
+var SKY_SIZE = 16;
+var ZENITH = [168, 180, 196];
+var HORIZON = [216, 216, 212];
+var NADIR = [92, 88, 84];
+var DEFAULT_SCENE_ENVIRONMENT = Object.freeze({
+  id: SCENE_ENVIRONMENT_RESOURCE,
+  dimension: "cube",
+  width: SKY_SIZE,
+  height: SKY_SIZE,
+  rgba: (() => {
+    const rgba = new Uint8Array(SKY_SIZE * SKY_SIZE * 4 * 6);
+    for (let face = 0; face < 6; face++)
+      for (let row = 0; row < SKY_SIZE; row++)
+        for (let column = 0; column < SKY_SIZE; column++) {
+          const x = (column + 0.5) / SKY_SIZE * 2 - 1, y = (row + 0.5) / SKY_SIZE * 2 - 1;
+          const up = (face === 2 ? 1 : face === 3 ? -1 : -y) / Math.hypot(1, x, y);
+          const [toward, amount] = up >= 0 ? [ZENITH, up] : [NADIR, Math.min(1, -up * 1.5)];
+          const at = ((face * SKY_SIZE + row) * SKY_SIZE + column) * 4;
+          for (let channel = 0; channel < 3; channel++)
+            rgba[at + channel] = Math.round(HORIZON[channel] + (toward[channel] - HORIZON[channel]) * amount);
+          rgba[at + 3] = 255;
+        }
+    return rgba;
+  })()
+});
+var isEnvironmentBinding = (binding) => binding.dimension === "cube" && (binding.slot === "envi" || binding.slot === "enviMask");
+
 // ../MODDING/modkit-core/packages/scene/dist/materials/frame.js
 function materialFrame(value) {
   if (!Array.isArray(value) || value.length !== 16 || value[3] !== 0 || value[7] !== 0 || value[11] !== 0 || value[15] !== 1)
@@ -121,6 +178,7 @@ var IDENTITY_MATERIAL_FRAME = Object.freeze([
 
 // ../MODDING/modkit-core/packages/scene/dist/materials/render-model.js
 var RENDER_MATERIAL_SHADER = "modkit.render-material.v1";
+var MATERIAL_LAYERS_SHADER = "modkit.material-layers.v1";
 function activeLayers(material) {
   return Object.values(material.layers).filter((layer) => layer.slot !== "normalBlend2Mask" || material.normalBlendPolicy?.secondMask !== false);
 }
@@ -141,7 +199,7 @@ var integer = (value, path, min, max) => {
     throw new TypeError(`${path} must be an integer in ${min}..${max}`);
   return result;
 };
-var vector = (value, path, size) => {
+var vector2 = (value, path, size) => {
   if (!Array.isArray(value) || value.length !== size)
     throw new TypeError(`${path} must contain ${size} components`);
   for (const component of value)
@@ -168,10 +226,10 @@ function validateTrack(value, path, size, signal) {
     if (frame < previous)
       throw new TypeError(`${path} keys must be ordered by frame`);
     previous = frame;
-    vector(key["vector"], `${keyPath}.vector`, size);
+    vector2(key["vector"], `${keyPath}.vector`, size);
     for (const tangent of ["inTan", "outTan"])
       if (key[tangent] !== void 0)
-        vector(key[tangent], `${keyPath}.${tangent}`, size);
+        vector2(key[tangent], `${keyPath}.${tangent}`, size);
   }
 }
 function animated(value, path, size, signal) {
@@ -179,7 +237,7 @@ function animated(value, path, size, signal) {
   if (size === 1)
     finite(property["value"], `${path}.value`);
   else
-    vector(property["value"], `${path}.value`, size);
+    vector2(property["value"], `${path}.value`, size);
   if (property["track"] !== void 0)
     validateTrack(property["track"], `${path}.track`, size, signal);
   const sequences = property["sequenceTracks"];
@@ -219,7 +277,10 @@ function validateLayer(value, slot, path, signal) {
     throw new TypeError(`${path}.slot does not match its layer key`);
   if (layer["texturePath"] !== null && (typeof layer["texturePath"] !== "string" || layer["texturePath"].trim() === ""))
     throw new TypeError(`${path}.texturePath must be a nonempty logical id or null`);
-  if (layer["texturePath"] === null && layer["constantColor"] === void 0)
+  if (layer["sceneEnvironment"] !== void 0) {
+    if (layer["sceneEnvironment"] !== true || slot !== "envi" || layer["texturePath"] !== null || layer["constantColor"] !== void 0)
+      throw new TypeError(`${path}.sceneEnvironment is true only on an envi layer without a texture or constant color`);
+  } else if (layer["texturePath"] === null && layer["constantColor"] === void 0)
     throw new TypeError(`${path} has no texture or constant color`);
   integer(layer["uvSource"], `${path}.uvSource`, 0, 18);
   integer(layer["channels"], `${path}.channels`, 0, 5);
@@ -234,7 +295,7 @@ function validateLayer(value, slot, path, signal) {
     integer(flip["rows"], `${path}.flipbook.rows`, 1, 65535);
     integer(flip["cols"], `${path}.flipbook.cols`, 1, 65535);
     if (flip["frameSize"] !== void 0) {
-      vector(flip["frameSize"], `${path}.flipbook.frameSize`, 2);
+      vector2(flip["frameSize"], `${path}.flipbook.frameSize`, 2);
       if (flip["frameSize"].some((component) => component <= 0))
         throw new TypeError(`${path}.flipbook.frameSize must be positive`);
     }
@@ -248,8 +309,8 @@ function validateLayer(value, slot, path, signal) {
       finite(fresnel[key], `${path}.fresnel.${key}`);
     flags(fresnel, `${path}.fresnel`, ["localTransform", "doNotMirror"]);
     for (const key of ["translation", "invertMask"])
-      vector(fresnel[key], `${path}.fresnel.${key}`, 3);
-    vector(fresnel["rotation"], `${path}.fresnel.rotation`, 2);
+      vector2(fresnel[key], `${path}.fresnel.${key}`, 3);
+    vector2(fresnel["rotation"], `${path}.fresnel.rotation`, 2);
   }
 }
 function validateStandard(value, path, signal) {
@@ -281,7 +342,7 @@ function validateStandard(value, path, signal) {
       integer(material[key], `${path}.${key}`, 0, 4294967295);
   for (const key of ["environmentMultipliers", "emissiveTint"])
     if (material[key] !== void 0)
-      vector(material[key], `${path}.${key}`, 3);
+      vector2(material[key], `${path}.${key}`, 3);
   if (material["parallaxHeight"] !== void 0)
     animated(material["parallaxHeight"], `${path}.parallaxHeight`, 1, signal);
   const factors = material["normalBlendFactors"];
@@ -296,7 +357,7 @@ function validateStandard(value, path, signal) {
   if (material["normalMapSpace"] !== void 0 && material["normalMapSpace"] !== "tangent" && material["normalMapSpace"] !== "object")
     throw new TypeError(`${path}.normalMapSpace is unsupported`);
   if (material["normalMapTransform"] !== void 0)
-    vector(material["normalMapTransform"], `${path}.normalMapTransform`, 9);
+    vector2(material["normalMapTransform"], `${path}.normalMapTransform`, 9);
   if (material["normalMapSpace"] !== "object" && material["normalMapTransform"] !== void 0)
     throw new TypeError(`${path}.normalMapTransform requires object-space normals`);
   const layers = record(material["layers"], `${path}.layers`);
@@ -337,23 +398,27 @@ function createRenderMaterialSampler(parameters, budget, signal) {
       validateStandard(pass["material"], `material pass ${index}`, signal);
       animated(pass["alphaFactor"], `material pass ${index}.alphaFactor`, 1, signal);
     }
-    passes = composite["passes"];
+    passes = composite["passes"].map((pass) => ({
+      ...pass,
+      material: withSceneEnvironment(pass.material)
+    }));
     if (model["standard"] !== void 0)
       validateStandard(model["standard"], "standard material", signal);
   } else {
     validateStandard(model["standard"], "standard material", signal);
     passes = [
       {
-        material: model["standard"],
+        material: withSceneEnvironment(model["standard"]),
         alphaFactor: { value: 1 }
       }
     ];
   }
   const resources = Object.freeze(colorless ? [] : [
-    ...new Set(passes.flatMap((pass) => activeLayers(pass.material).flatMap((layer) => layer.texturePath === null ? [] : [layer.texturePath])))
+    ...new Set(passes.flatMap((pass) => activeLayers(pass.material).flatMap((layer) => layer.texturePath === null || layer.texturePath === SCENE_ENVIRONMENT_RESOURCE ? [] : [layer.texturePath])))
   ]);
   return Object.freeze({
     resources,
+    usesSceneEnvironment: !colorless && passes.some((pass) => pass.material.layers.envi?.texturePath === SCENE_ENVIRONMENT_RESOURCE),
     presentation,
     ...worldToMaterial === void 0 ? {} : { worldToMaterial },
     usesWorldProjection: passes.some((pass) => (
@@ -381,6 +446,17 @@ function createRenderMaterialSampler(parameters, budget, signal) {
       }));
     }
   });
+}
+function withSceneEnvironment(material) {
+  const envi = material.layers.envi;
+  if (envi?.sceneEnvironment !== true)
+    return material;
+  const { sceneEnvironment: _, ...layer } = envi;
+  void _;
+  return {
+    ...material,
+    layers: { ...material.layers, envi: { ...layer, texturePath: SCENE_ENVIRONMENT_RESOURCE } }
+  };
 }
 function sampleAnimated(value, time) {
   const sequence = time.sequenceIndex === void 0 ? void 0 : value.sequenceTracks?.find((entry) => entry.sequenceIndex === time.sequenceIndex);
@@ -1069,7 +1145,11 @@ export {
   invertMaterialFrame,
   multiplyMaterialFrames,
   IDENTITY_MATERIAL_FRAME,
+  snapshotEnvironment,
+  snapshotEyePosition,
+  isEnvironmentBinding,
   RENDER_MATERIAL_SHADER,
+  MATERIAL_LAYERS_SHADER,
   createRenderMaterialSampler,
   snapshotModelBillboards,
   applyModelFaceCameraBillboard,

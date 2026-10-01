@@ -7,18 +7,22 @@ import {
 } from "../../../chunks/chunk-J6HN2JJW.js";
 import {
   IDENTITY_MATERIAL_FRAME,
+  MATERIAL_LAYERS_SHADER,
   RENDER_MATERIAL_SHADER,
   applyModelBillboards,
   applyModelFaceCameraBillboard,
   billboardCameraRotation,
   createRenderMaterialSampler,
   invertMaterialFrame,
+  isEnvironmentBinding,
   multiplyMaterialFrames,
   readUvmBillboards,
   readUvmModelStates,
   readUvmShadowMeshBindings,
+  snapshotEnvironment,
+  snapshotEyePosition,
   snapshotModelBillboards
-} from "../../../chunks/chunk-KAS7MIDG.js";
+} from "../../../chunks/chunk-BZJ3SJHH.js";
 import {
   array,
   field,
@@ -416,15 +420,15 @@ function readUvmEffectAnimation(value, sequence, timeUnit, maxKeys, signal) {
         frame: frame / (timeUnit === "milliseconds" ? 1e3 : 1)
       };
       for (const name of ["vector", "inTan", "outTan"]) {
-        const vector8 = key[name];
-        if (vector8 === void 0 && name !== "vector")
+        const vector7 = key[name];
+        if (vector7 === void 0 && name !== "vector")
           continue;
-        if (!Array.isArray(vector8) || vector8.length < 1 || vector8.length > 4 || vector8.some((component2) => typeof component2 !== "number" || !Number.isFinite(component2)))
+        if (!Array.isArray(vector7) || vector7.length < 1 || vector7.length > 4 || vector7.some((component2) => typeof component2 !== "number" || !Number.isFinite(component2)))
           throw new TypeError("effect key values must be finite vectors of arity 1..4");
-        arity ??= vector8.length;
-        if (vector8.length !== arity)
+        arity ??= vector7.length;
+        if (vector7.length !== arity)
           throw new TypeError("effect track vector/tangent arity differs");
-        result[name] = [...vector8];
+        result[name] = [...vector7];
       }
       return result;
     });
@@ -2101,8 +2105,8 @@ function clipProjectorReceivers(frame, receivers, options) {
       throw new RangeError("invalid projector budget");
   if (options.maxBytes < 480)
     throw new RangeError("projector scratch exceeds budget");
-  for (const vector8 of [frame.origin, frame.rightAxis, frame.upAxis, frame.forwardAxis])
-    for (const value of vector8)
+  for (const vector7 of [frame.origin, frame.rightAxis, frame.upAxis, frame.forwardAxis])
+    for (const value of vector7)
       if (!Number.isFinite(value))
         throw new TypeError("invalid projector frame");
   for (const value of [
@@ -7292,9 +7296,9 @@ var Box3 = class {
    * @param {Vector3} vector - The vector that should expand the bounding box.
    * @return {Box3} A reference to this bounding box.
    */
-  expandByVector(vector8) {
-    this.min.sub(vector8);
-    this.max.add(vector8);
+  expandByVector(vector7) {
+    this.min.sub(vector7);
+    this.max.add(vector7);
     return this;
   }
   /**
@@ -9710,9 +9714,9 @@ var Object3D = class _Object3D extends EventDispatcher {
    * @param {Vector3} vector - The vector to convert.
    * @return {Vector3} The converted vector.
    */
-  localToWorld(vector8) {
+  localToWorld(vector7) {
     this.updateWorldMatrix(true, false);
-    return vector8.applyMatrix4(this.matrixWorld);
+    return vector7.applyMatrix4(this.matrixWorld);
   }
   /**
    * Converts the given vector from this 3D object's word space to local space.
@@ -9720,9 +9724,9 @@ var Object3D = class _Object3D extends EventDispatcher {
    * @param {Vector3} vector - The vector to convert.
    * @return {Vector3} The converted vector.
    */
-  worldToLocal(vector8) {
+  worldToLocal(vector7) {
     this.updateWorldMatrix(true, false);
-    return vector8.applyMatrix4(_m1$1.copy(this.matrixWorld).invert());
+    return vector7.applyMatrix4(_m1$1.copy(this.matrixWorld).invert());
   }
   /**
    * Rotates the object to face a point in world space.
@@ -12139,8 +12143,8 @@ var BufferGeometry = class _BufferGeometry extends EventDispatcher {
    * @param {Vector3} vector - The target point.
    * @return {BufferGeometry} A reference to this instance.
    */
-  lookAt(vector8) {
-    _obj.lookAt(vector8);
+  lookAt(vector7) {
+    _obj.lookAt(vector7);
     _obj.updateMatrix();
     this.applyMatrix4(_obj.matrix);
     return this;
@@ -12699,19 +12703,19 @@ var BoxGeometry = class _BoxGeometry extends BufferGeometry {
       const gridY1 = gridY + 1;
       let vertexCounter = 0;
       let groupCount = 0;
-      const vector8 = new Vector3();
+      const vector7 = new Vector3();
       for (let iy = 0; iy < gridY1; iy++) {
         const y = iy * segmentHeight - heightHalf;
         for (let ix = 0; ix < gridX1; ix++) {
           const x = ix * segmentWidth - widthHalf;
-          vector8[u] = x * udir;
-          vector8[v] = y * vdir;
-          vector8[w] = depthHalf;
-          vertices.push(vector8.x, vector8.y, vector8.z);
-          vector8[u] = 0;
-          vector8[v] = 0;
-          vector8[w] = depth2 > 0 ? 1 : -1;
-          normals.push(vector8.x, vector8.y, vector8.z);
+          vector7[u] = x * udir;
+          vector7[v] = y * vdir;
+          vector7[w] = depthHalf;
+          vertices.push(vector7.x, vector7.y, vector7.z);
+          vector7[u] = 0;
+          vector7[v] = 0;
+          vector7[w] = depth2 > 0 ? 1 : -1;
+          normals.push(vector7.x, vector7.y, vector7.z);
           uvs.push(ix / gridX);
           uvs.push(1 - iy / gridY);
           vertexCounter += 1;
@@ -16140,37 +16144,6 @@ var reversedFuncs = {
   [GreaterEqualDepth]: LessEqualDepth
 };
 
-// ../MODDING/modkit-core/packages/scene/dist/materials/environment.js
-function vector2(value, length, name) {
-  if (!Array.isArray(value) || value.length !== length)
-    throw new TypeError(`${name} requires ${length} finite float32 components`);
-  const captured = [];
-  for (let index = 0; index < length; index++) {
-    const item = value[index];
-    if (typeof item !== "number" || !Number.isFinite(item) || !Number.isFinite(Math.fround(item)))
-      throw new TypeError(`${name} requires ${length} finite float32 components`);
-    captured.push(Math.fround(item));
-  }
-  return Object.freeze(captured);
-}
-function snapshotEnvironment(value) {
-  if (value === void 0)
-    return void 0;
-  if (value === null || typeof value !== "object" || Array.isArray(value) || Object.keys(value).some((key) => key !== "worldToEnvironment"))
-    throw new TypeError("invalid environment frame");
-  const worldToEnvironment = vector2(Reflect.get(value, "worldToEnvironment"), 16, "worldToEnvironment");
-  if ([3, 7, 11].some((index) => worldToEnvironment[index] !== 0) || worldToEnvironment[15] !== 1)
-    throw new TypeError("worldToEnvironment must be affine");
-  const envelope = Math.max(...[0, 1, 2].map((row) => [0, 4, 8, 12].reduce((sum, column) => sum + Math.abs(worldToEnvironment[row + column] ?? 0), 0)));
-  if (envelope + 6 * envelope ** 3 > 34028234663852886e22 / 2)
-    throw new TypeError("worldToEnvironment exceeds safe float32 reflection arithmetic");
-  return Object.freeze({ worldToEnvironment });
-}
-function snapshotEyePosition(value) {
-  return value === void 0 ? void 0 : vector2(value, 3, "eyePosition");
-}
-var isEnvironmentBinding = (binding) => binding.dimension === "cube" && (binding.slot === "envi" || binding.slot === "enviMask");
-
 // ../MODDING/modkit-core/packages/scene/dist/uvm/cameras.js
 function numbers(value, count, label) {
   if (!Array.isArray(value) && !(value instanceof Float32Array) || value.length !== count || !Array.from(value).every((component2) => typeof component2 === "number" && Number.isFinite(component2)))
@@ -18021,7 +17994,7 @@ function finite2(value, label) {
     throw new TypeError(`invalid spline ${label}`);
   return value;
 }
-function vector5(value, label) {
+function vector2(value, label) {
   if (!Array.isArray(value) || value.length !== 3)
     throw new TypeError(`spline ${label} requires a three-component vector`);
   return value.map((component2) => finite2(component2, label));
@@ -18099,7 +18072,7 @@ function readUvmEffectSplines(entry, kind, options) {
     if (points !== void 0) {
       if (!Array.isArray(points))
         throw new TypeError("spline points must be an array");
-      values["emitShapePoints"] = points.map((point) => vector5(point, "point"));
+      values["emitShapePoints"] = points.map((point) => vector2(point, "point"));
       particleWork = points.length * 32;
     }
     if (entry["emitShape"] === "spline" && (!Array.isArray(points) || points.length === 0))
@@ -18124,7 +18097,7 @@ function readUvmEffectSplines(entry, kind, options) {
       values["emitShapeCutoutRadius"] = radius;
     }
     if (owned["emitShapeCutoutSize"] !== void 0) {
-      const size = vector5(owned["emitShapeCutoutSize"], "cutout size");
+      const size = vector2(owned["emitShapeCutoutSize"], "cutout size");
       if (size.some((value) => value < 0))
         throw new TypeError("negative cutout size");
       values["emitShapeCutoutSize"] = size;
@@ -18132,7 +18105,7 @@ function readUvmEffectSplines(entry, kind, options) {
   } else {
     for (const key of ["emissionOffset", "emissionVector"])
       if (owned[key] !== void 0)
-        values[key] = vector5(owned[key], key);
+        values[key] = vector2(owned[key], key);
     if (owned["lengthAndTime"] !== void 0) {
       if (typeof owned["lengthAndTime"] !== "boolean")
         throw new TypeError("ribbon lengthAndTime must be boolean");
@@ -18170,8 +18143,8 @@ function readUvmEffectSplines(entry, kind, options) {
         nodeIndices.push(node);
         const result = {
           boneIndex: node,
-          emissionOffset: vector5(endpoint["emissionOffset"], "endpoint offset"),
-          emissionVector: vector5(endpoint["emissionVector"], "endpoint vector")
+          emissionOffset: vector2(endpoint["emissionOffset"], "endpoint offset"),
+          emissionVector: vector2(endpoint["emissionVector"], "endpoint vector")
         };
         for (const key of scalars)
           result[key] = finite2(endpoint[key], key);
@@ -18356,7 +18329,7 @@ function validatePreviewEmitter(emitter) {
   ])
     if (emitter[field2] !== void 0 && typeof emitter[field2] !== "boolean")
       throw new TypeError("particle preview flags must be booleans");
-  const vector8 = (value) => {
+  const vector7 = (value) => {
     if (!Array.isArray(value) || value.length !== 3)
       throw new TypeError("particle preview requires declared three-component vectors");
     for (const component2 of value)
@@ -18372,7 +18345,7 @@ function validatePreviewEmitter(emitter) {
     "tailDecayUvAnim"
   ])
     if (emitter[field2] !== void 0)
-      vector8(emitter[field2]);
+      vector7(emitter[field2]);
   for (const field2 of ["segmentColors", "segmentColorsRandom"]) {
     const colors = emitter[field2];
     if (colors === void 0)
@@ -18380,7 +18353,7 @@ function validatePreviewEmitter(emitter) {
     if (!Array.isArray(colors))
       throw new TypeError("particle preview colors must be an array");
     for (const color of colors)
-      vector8(color);
+      vector7(color);
   }
   for (const field2 of [
     "lifecycleSize",
@@ -18391,9 +18364,9 @@ function validatePreviewEmitter(emitter) {
     const value = emitter[field2];
     if (value === void 0)
       continue;
-    vector8(value.start);
-    vector8(value.middle);
-    vector8(value.end);
+    vector7(value.start);
+    vector7(value.middle);
+    vector7(value.end);
     finite3(value.timeMiddle);
   }
   for (const field2 of [
@@ -18879,7 +18852,7 @@ function scalar2(emitter, key, sequence, time, fallback) {
   const legacy = emitter.animation?.[key];
   return sampleEffectSequenceScalar(tracks(emitter, key), legacy, sequence, time, fallback);
 }
-function vector6(emitter, key, sequence, time, fallback) {
+function vector5(emitter, key, sequence, time, fallback) {
   const value = sampleEffectSequenceVector(tracks(emitter, key), sequence, time, fallback);
   return [finite4(value[0]), finite4(value[1]), finite4(value[2])];
 }
@@ -18920,8 +18893,8 @@ function createUvmRibbonGeometry(state, emitters, options) {
       return (finite4(state.vertices[offset]) + finite4(state.vertices[offset + 3])) * 0.5;
     };
     const rows = Math.max(1, Math.trunc(emitter.rows ?? 1)), columns = Math.max(1, Math.trunc(emitter.columns ?? 1));
-    const fallback = vector6(emitter, "color", sequence, options.time, emitter.color ?? [0.45, 0.85, 1]), fallbackAlpha = scalar2(emitter, "alpha", sequence, options.time, emitter.alpha ?? 1);
-    const colorStages = ["Start", "Middle", "End"].map((suffix, index) => vector6(emitter, `segmentColor${suffix}`, sequence, options.time, emitter.segmentColors?.[index] ?? fallback));
+    const fallback = vector5(emitter, "color", sequence, options.time, emitter.color ?? [0.45, 0.85, 1]), fallbackAlpha = scalar2(emitter, "alpha", sequence, options.time, emitter.alpha ?? 1);
+    const colorStages = ["Start", "Middle", "End"].map((suffix, index) => vector5(emitter, `segmentColor${suffix}`, sequence, options.time, emitter.segmentColors?.[index] ?? fallback));
     const alphaStages = ["Start", "Middle", "End"].map((suffix, index) => scalar2(emitter, `segmentAlpha${suffix}`, sequence, options.time, emitter.segmentAlphas?.[index] ?? fallbackAlpha));
     const fallbackWidth = scalar2(emitter, "heightAbove", sequence, options.time, emitter.heightAbove ?? 0.5) + scalar2(emitter, "heightBelow", sequence, options.time, emitter.heightBelow ?? 0.5);
     const widthStages = ["Start", "Middle", "End"].map((suffix, index) => scalar2(emitter, `width${suffix}`, sequence, options.time, emitter.widths?.[index] ?? fallbackWidth));
@@ -19247,12 +19220,12 @@ function selectUvmEffectSquirt(emitter, sequenceIndex, maxNodes, signal) {
     const item = object2(raw), index = item["sequenceIndex"], track = object2(item["track"]), keys = track["keys"];
     if (typeof index !== "number" || !Number.isSafeInteger(index) || index < 0 || seen.has(index) || track["lineType"] !== 0 || track["globalSeqId"] !== null || item["concurrent"] === true || item["wrapSeconds"] !== void 0 || !Array.isArray(keys) || keys.length !== 1)
       throw new TypeError("effect sequence mode must use a constant boolean STEP track");
-    const key = object2(keys[0]), vector8 = key["vector"];
-    if (key["frame"] !== 0 || !Array.isArray(vector8) || vector8.length !== 1 || vector8[0] !== 0 && vector8[0] !== 1 || key["inTan"] !== void 0 || key["outTan"] !== void 0)
+    const key = object2(keys[0]), vector7 = key["vector"];
+    if (key["frame"] !== 0 || !Array.isArray(vector7) || vector7.length !== 1 || vector7[0] !== 0 && vector7[0] !== 1 || key["inTan"] !== void 0 || key["outTan"] !== void 0)
       throw new TypeError("effect sequence mode must have one 0/1 key at zero");
     seen.add(index);
     if (sequenceIndex === index)
-      selected = vector8[0] === 1;
+      selected = vector7[0] === 1;
   }
   return selected;
 }
@@ -19468,7 +19441,7 @@ function number(value, fallback) {
     throw new TypeError("effect scalar must be finite");
   return value;
 }
-function vector7(value, fallback) {
+function vector6(value, fallback) {
   if (value === void 0)
     return fallback;
   if (!Array.isArray(value) || value.length !== 3)
@@ -19683,7 +19656,7 @@ function prepareUvmEffectFrame(document2, options) {
             throw new TypeError(`${label}.${key} must be boolean`);
           output[key] = value2;
         } else if (key === "gravity")
-          output[key] = kind === "particles" ? number(value2, 0) : [...vector7(value2, [0, 0, 0])];
+          output[key] = kind === "particles" ? number(value2, 0) : [...vector6(value2, [0, 0, 0])];
         else if (key === "emitShape" && typeof value2 === "string" && shapeNames.has(value2))
           output[key] = value2;
         else if (key === "orientationMode" && typeof value2 === "string" && orientationNames.has(value2))
@@ -19721,16 +19694,16 @@ function prepareUvmEffectFrame(document2, options) {
           output[key] = {
             offset: pair(uv["offset"]),
             tiling: pair(uv["tiling"]),
-            angle: [...vector7(uv["angle"], [0, 0, 0])],
+            angle: [...vector6(uv["angle"], [0, 0, 0])],
             threshold: number(uv["threshold"], 0)
           };
         } else if (structures.has(key)) {
           if (key === "emitShapeSize")
-            output[key] = [...vector7(value2, [0, 0, 0])];
+            output[key] = [...vector6(value2, [0, 0, 0])];
           if (key === "segmentColors" || key === "segmentColorsRandom") {
             if (!Array.isArray(value2) || value2.length !== 3)
               throw new TypeError("effect colors require three stages");
-            output[key] = value2.map((item) => [...vector7(item, [1, 1, 1])]);
+            output[key] = value2.map((item) => [...vector6(item, [1, 1, 1])]);
           }
           if ([
             "segmentAlphas",
@@ -19741,9 +19714,9 @@ function prepareUvmEffectFrame(document2, options) {
             "tailUvAnim",
             "tailDecayUvAnim"
           ].includes(key))
-            output[key] = [...vector7(value2, [1, 1, 1])];
+            output[key] = [...vector6(value2, [1, 1, 1])];
           if (key === "widths" || key === "color")
-            output[key] = [...vector7(value2, [1, 1, 1])];
+            output[key] = [...vector6(value2, [1, 1, 1])];
           if ([
             "lifecycleSize",
             "lifecycleSizeRandom",
@@ -19752,9 +19725,9 @@ function prepareUvmEffectFrame(document2, options) {
           ].includes(key)) {
             const size = object(value2, "effect lifecycle size");
             output[key] = {
-              start: [...vector7(size["start"], [1, 1, 1])],
-              middle: [...vector7(size["middle"], [1, 1, 1])],
-              end: [...vector7(size["end"], [1, 1, 1])],
+              start: [...vector6(size["start"], [1, 1, 1])],
+              middle: [...vector6(size["middle"], [1, 1, 1])],
+              end: [...vector6(size["end"], [1, 1, 1])],
               timeMiddle: number(size["timeMiddle"], 0.5)
             };
           }
@@ -20574,6 +20547,7 @@ function createStandardMaterialPrograms(parameters, options) {
   const sources = /* @__PURE__ */ new Map();
   return Object.freeze({
     resources: sampler.resources,
+    usesSceneEnvironment: sampler.usesSceneEnvironment,
     sample(time, lighting = {}, signal) {
       const teamColor = Object.freeze([
         ...finiteVector(lighting.teamColor ?? [1, 0, 0], 3, "team color")
@@ -20747,7 +20721,7 @@ function shade(material, alpha, lighting, pixel, normalFormats, sceneLighting = 
   const teamColor = pixel.teamColor ?? lighting.teamColor, ambient = pixel.ambient ?? lighting.ambient;
   finiteVector(teamColor, 3, "team color");
   finiteVector(ambient, 4, "material ambient");
-  for (const vector8 of [
+  for (const vector7 of [
     pixel.normal,
     pixel.shadingNormal,
     pixel.lightDirection,
@@ -20755,8 +20729,8 @@ function shade(material, alpha, lighting, pixel, normalFormats, sceneLighting = 
     pixel.viewNormal,
     pixel.eyeToVertex
   ])
-    if (vector8 !== void 0)
-      finiteVector(vector8, 3, "material lighting vector");
+    if (vector7 !== void 0)
+      finiteVector(vector7, 3, "material lighting vector");
   if (pixel.vertexColor !== void 0)
     finiteVector(pixel.vertexColor, 4, "material vertex color");
   const shadingNormal = pixel.shadingNormal ?? (material.normalBlendPolicy === void 0 ? void 0 : sampleNormal(material, lighting, pixel, normalFormats));
@@ -20900,7 +20874,6 @@ function sampleNormal(material, lighting, pixel, formats, basis) {
 }
 
 // ../MODDING/modkit-core/packages/scene/dist/uvm/materials.js
-var MATERIAL_LAYERS_SHADER = "modkit.material-layers.v1";
 function layerList(material) {
   const extras = field(material["extras"], "modkit");
   const native = extras === void 0 ? void 0 : field(extras, "material");
