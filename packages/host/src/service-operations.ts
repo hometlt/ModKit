@@ -195,7 +195,14 @@ const DESCRIPTOR_KEYS = Object.freeze([
 ])
 /** Every key but `surface` is required; a descriptor that omits it is the ordinary case. */
 const REQUIRED_DESCRIPTOR_KEYS = Object.freeze(DESCRIPTOR_KEYS.filter(key => key !== 'surface'))
-const SURFACE_KEYS = Object.freeze(['target', 'sectionId', 'title', 'icon', 'forms'])
+const SURFACE_KEYS = Object.freeze([
+  'target',
+  'sectionId',
+  'title',
+  'icon',
+  'forms',
+  'copyPresetId',
+])
 const REQUIRED_SURFACE_KEYS = Object.freeze(['target', 'sectionId', 'title'])
 const SURFACE_TARGETS = new Set(['viewer.image'])
 const BUDGET_KEYS = Object.freeze(['maxInputBytes', 'maxOutputBytes', 'maxWallTimeMs'])
@@ -320,7 +327,10 @@ export function validateServiceOperationProvider(
         !SURFACE_TARGETS.has(surface['target'] as string) ||
         !nonEmpty(surface['sectionId']) ||
         !nonEmpty(surface['title']) ||
-        (surface['icon'] !== undefined && !nonEmpty(surface['icon'])))
+        (surface['icon'] !== undefined && !nonEmpty(surface['icon'])) ||
+        (surface['copyPresetId'] !== undefined &&
+          (typeof surface['copyPresetId'] !== 'string' ||
+            !/^[a-z0-9-]{1,32}$/u.test(surface['copyPresetId']))))
     ) {
       return { valid: false, reason: 'operation descriptor declares an unusable viewer surface' }
     }

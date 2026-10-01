@@ -53,6 +53,12 @@ export interface ServiceOperationSurface {
    * the host validates the input against, and these are the fields a person fills in.
    */
   readonly forms?: JsonValue
+  /**
+   * After this pixel operation the viewer offers to write a copy of the result beside the file as
+   * `<base>.<copyPresetId>.<extension>` (MK2's `tex.button.dds`): lower-case letters, digits and
+   * `-`, at most 32. The game names what the copy is for (`button`); the viewer encodes the pixels.
+   */
+  readonly copyPresetId?: string
 }
 
 export interface ServiceOperationRequest {
