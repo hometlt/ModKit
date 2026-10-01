@@ -411,6 +411,21 @@ async function mount(
   }
   const bridge = createBridge({ channel, idPrefix: 'view' })
   /*
+   * An entity clicked in Resources opens a new panel and names the entity at once (plan 5.29): the
+   * request arrives while the subject is still being mounted, before the handlers below exist. It
+   * waits for the mount; dropped, the panel showed the package instead of the entity's card.
+   */
+  let subjectMounted = (): void => undefined
+  const mounted = new Promise<void>(resolve => {
+    subjectMounted = resolve
+  })
+  bridge.onEvent(event => {
+    if (event.op !== 'navigate-subject') return
+    void mounted
+      .then(() => navigateSubject(event.subjectId, event.stage))
+      .catch((error: unknown) => say(describe(error)))
+  })
+  /*
    * Viewer preferences (the media shell's layout, recent colours) are kept by the extension host:
    * this page's storage is its own origin's and ends with the tab. Read from the bootstrap, each
    * change sent back for the pages after this one.
@@ -1265,11 +1280,6 @@ async function mount(
       case 'open':
         void openPath(event.path, event.name).catch((error: unknown) => say(describe(error)))
         break
-      case 'navigate-subject':
-        void navigateSubject(event.subjectId, event.stage).catch((error: unknown) =>
-          say(describe(error)),
-        )
-        break
       case 'notice':
         say(event.text)
         break
@@ -1298,13 +1308,17 @@ async function mount(
   if (snapshot.openPath !== undefined) {
     // The number that matters: from this bundle's first line to pixels on the screen.
     const started = performance.now()
-    await openPath(snapshot.openPath, baseName(snapshot.openPath))
+    try {
+      await openPath(snapshot.openPath, baseName(snapshot.openPath))
+    } finally {
+      subjectMounted()
+    }
     bridge.emit({
       op: 'timing',
       name: 'subject mounted (rpc open, decode, first paint)',
       milliseconds: performance.now() - started,
     })
-  }
+  } else subjectMounted()
 }
 
 async function mountExtensionSubjectCard(
