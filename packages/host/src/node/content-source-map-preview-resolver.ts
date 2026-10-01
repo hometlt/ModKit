@@ -212,6 +212,13 @@ export function createContentSourceMapPreviewResourcePlanResolver(
         await releaseContext()
         return fallback(request, closure.diagnostics)
       }
+      // a source of another game that answered for this file is no context of this map
+      if (context !== undefined && context.gameId !== request.workspace.gameId) {
+        await releaseContext()
+        return fallback(request, [...closure.diagnostics, diagnostic('information',
+          'x3.host/map-preview-content-sources-other-game',
+          `the content sources opened ${context.gameId} for a ${request.workspace.gameId} map`)])
+      }
       try {
         request.signal?.throwIfAborted()
       } catch (error) {

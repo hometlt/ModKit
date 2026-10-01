@@ -159,6 +159,26 @@ async function text(origin: Extract<Awaited<ReturnType<MapPreviewResourcePlanRes
 
 // The first case pays the host's cold module load, which alone nears the 5 s default under load.
 describe('content-source map preview resources', { timeout: 30_000 }, () => {
+  it('leaves a mod context of another game to the fallback', async () => {
+    const original = await mapSession(new Map())
+    const catalogue = contentSources({})
+    const dispose = vi.fn(async () => {})
+    catalogue.openModContext.mockImplementationOnce(async request => ({
+      ...(await contentSources({}).openModContext(request)),
+      gameId: 'other/game',
+      dispose,
+    }))
+    const resolver = createContentSourceMapPreviewResourcePlanResolver({
+      contentSources: async () => catalogue.sources,
+    })
+    const result = await resolver.resolve(request(original.session))
+    expect(result.state).toBe('unresolved')
+    expect(result.diagnostics.map(item => item.code)).toContain(
+      'x3.host/map-preview-content-sources-other-game',
+    )
+    expect(dispose).toHaveBeenCalledOnce()
+  })
+
   it('reads every layer of the mod context the map opens in', async () => {
     const original = await mapSession(new Map([['Assets/Textures/Shared.dds', bytes('map')]]))
     const catalogue = contentSources({
