@@ -220,8 +220,9 @@ export interface UvmMaterial {
       params: NonNullable<ModelMaterialRef['shader']>['parameters']
     }
     UV_game_material_team_color?: {
-      maskSource: 'texture'
-      maskTexture: UvmTextureRef
+      /** `whole`: a team-colour layer naming no texture tints the entire material. */
+      maskSource: 'texture' | 'whole'
+      maskTexture?: UvmTextureRef
       targets: ['baseColor']
       blend: NonNullable<ModelMaterialLayerRef['blend']>
     }
@@ -971,6 +972,21 @@ export function materializeUvmCore(
       }
     }
     if (unlit === true) target.extensions = { ...target.extensions, KHR_materials_unlit: {} }
+    // a team-colour layer without a texture: the whole material is the mask (Earth's side colour)
+    const wholeTeam = definition.layers?.find(
+      layer =>
+        GLTF_LAYER_SLOTS[layer.slot.toLowerCase()] === 'teamColor' &&
+        layer.resourceId === undefined,
+    )
+    if (wholeTeam !== undefined)
+      target.extensions = {
+        ...target.extensions,
+        UV_game_material_team_color: {
+          maskSource: 'whole',
+          targets: ['baseColor'],
+          blend: wholeTeam.blend ?? 'multiply',
+        },
+      }
     if (
       JSON.stringify([...(contracts ?? [])].sort(byUtf8)) !==
       JSON.stringify(artifactContracts.sort(byUtf8))

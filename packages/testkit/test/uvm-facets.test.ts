@@ -191,6 +191,8 @@ describe('shared UVM metadata facets', () => {
         name: 'Authored',
         type: 'standard',
         priority: 7,
+        // the team colour extension, as the layer a publisher states it with
+        layers: [{ slot: 'teamColor', blend: 'replace' }],
         contracts: [
           'UV_game_material/standard',
           'UV_game_material/composite',

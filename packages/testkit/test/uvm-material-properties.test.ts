@@ -86,6 +86,22 @@ describe('publisher material properties', () => {
     expect(refs[1]).not.toHaveProperty('unlit')
   })
 
+  it('writes a team-colour layer without a texture as a whole mask and reads it back (П9)', () => {
+    const side = { layers: [{ slot: 'teamColor', blend: 'multiply' }] }
+    const { document, binary } = materializeUvmCore(projection([side]), request)
+    const json = document as unknown as JsonObject
+    expect(() => validateUvmDocument(json, { binaryByteLength: binary.byteLength })).not.toThrow()
+    expect(document.extensionsUsed).toContain('UV_game_material_team_color')
+    expect(
+      (document.materials[0] as unknown as { extensions: Record<string, unknown> }).extensions[
+        'UV_game_material_team_color'
+      ],
+    ).toEqual({ maskSource: 'whole', targets: ['baseColor'], blend: 'multiply' })
+    expect(
+      readUvmFacets(json, binary, { maxScalarBytes: 1_000_000 }).materialRefs[0]?.layers,
+    ).toEqual([{ slot: 'teamColor', blend: 'multiply' }])
+  })
+
   it('refuses a colour factor outside glTF 0..1', () => {
     expect(() => materializeUvmCore(projection([{ emissiveFactor: [3, 0, 0] }]), request)).toThrow(
       /emissiveFactor must be 3 finite components in 0\.\.1/u,

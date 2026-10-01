@@ -21,6 +21,11 @@ import type {
   SceneRendererTexture,
 } from '@modkit/sdk'
 import { boundsOf } from '@modkit/codec-kit/model/bounds'
+import {
+  TEAM_COLOR_BLENDS,
+  TEAM_COLOR_GLSL,
+  teamColorChannel,
+} from '@modkit/codec-kit/model-math/color-remap'
 import { createModelSceneSampler } from '../model/index.js'
 import { createUvmEffectSource, type UvmEffectSource } from '../uvm/effect-source.js'
 import { TERRAIN_RECEIVER_ID } from '../uvm/projectors.js'
@@ -226,6 +231,23 @@ interface MutableTexturedBatch extends MutableBatch {
   readonly unlit?: boolean
   /** Among transparent draws, a higher priority draws later (ModelMaterialRef.priority). */
   readonly priority?: number
+  /** The team colour of a model material the shared path does not draw. */
+  readonly team?: WorldBatchTeamColor
+}
+
+/**
+ * A model batch's `UV_game_material_team_color` as the world shader applies it (codec-kit
+ * TEAM_COLOR_GLSL): its mask (on the secondary unit, which model batches leave free) weighs the
+ * object's team colour into the albedo; without a mask the whole material takes it.
+ */
+export interface WorldBatchTeamColor {
+  readonly mask?: SceneRendererTexture
+  /** Mask channel 0-3, or 4 for one weight per channel. */
+  readonly channel: number
+  /** TEAM_COLOR_BLENDS index. */
+  readonly blend: number
+  readonly strength: number
+  readonly color: readonly [number, number, number]
 }
 
 interface MutableSplatBatch extends MutableBatch {
@@ -280,6 +302,7 @@ export interface WorldWebGlTexturedBatch extends WorldWebGlBatch {
   readonly unlit?: boolean
   /** Among transparent draws, a higher priority draws later (ModelMaterialRef.priority). */
   readonly priority?: number
+  readonly team?: WorldBatchTeamColor
 }
 
 export interface WorldWebGlTransparentTexturedBatch extends WorldWebGlTexturedBatch {
@@ -2233,6 +2256,7 @@ function frozenTexturedBatch(source: MutableTexturedBatch): WorldWebGlTexturedBa
     ...(source.receiveShadows === undefined ? {} : { receiveShadows: source.receiveShadows }),
     ...(source.unlit === undefined ? {} : { unlit: source.unlit }),
     ...(source.priority === undefined ? {} : { priority: source.priority }),
+    ...(source.team === undefined ? {} : { team: source.team }),
   })
 }
 
@@ -2277,6 +2301,39 @@ function frozenSplatBatch(source: MutableSplatBatch): WorldWebGlSplatBatch {
 const BASE_COLOR_SLOTS = new Set(['diffuse', 'basecolor', 'albedo', 'color', 'colour', 'mapkd'])
 const NORMAL_SLOTS = new Set(['normal', 'normalmap', 'mapnormal', 'mapbump', 'bump'])
 const materialSlot = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/gu, '')
+const TEAM_COLOR_SLOTS = new Set(['teamcolor', 'team'])
+
+/**
+ * The team colour of a model material's team-colour layer (UV_game_material_team_color, as
+ * the layer a publisher states it with), on the base layer's UVs; undefined when the material has
+ * none, the object has none (intensity 0), or its mask texture did not arrive.
+ */
+function worldBatchTeamColor(
+  material: ModelMaterialRef | undefined,
+  textures: readonly SceneRendererTexture[] | undefined,
+  uvSource: number,
+  color: readonly [number, number, number] | undefined,
+  intensity: number | undefined,
+): WorldBatchTeamColor | undefined {
+  const layer = material?.layers?.find(candidate =>
+    TEAM_COLOR_SLOTS.has(materialSlot(candidate.slot)),
+  )
+  if (layer === undefined || intensity === 0) return undefined
+  const mask =
+    layer.resourceId === undefined
+      ? undefined
+      : textures?.find(candidate => candidate.id === layer.resourceId)
+  if (layer.resourceId !== undefined && (mask === undefined || (layer.uvSource ?? 0) !== uvSource))
+    return undefined
+  const bits = [1, 2, 4, 8].indexOf(layer.colorChannels ?? 0)
+  return Object.freeze({
+    ...(mask === undefined ? {} : { mask }),
+    channel: bits < 0 ? 4 : bits,
+    blend: Math.max(0, TEAM_COLOR_BLENDS.indexOf(layer.blend ?? 'multiply')),
+    strength: 1,
+    color: color ?? ([1, 1, 1] as const),
+  })
+}
 
 type ShaderParameters = NonNullable<ModelMaterialRef['shader']>['parameters']
 type JsonRecord = { readonly [key: string]: ShaderParameters[string] }
@@ -3448,6 +3505,7 @@ function writtenTexturedBatch(
     ...(template.receiveShadows === undefined ? {} : { receiveShadows: template.receiveShadows }),
     ...(template.unlit === undefined ? {} : { unlit: template.unlit }),
     ...(template.priority === undefined ? {} : { priority: template.priority }),
+    ...(template.team === undefined ? {} : { team: template.team }),
   })
 }
 
@@ -6044,6 +6102,13 @@ export function createWorldWebGlPlan(
             ? undefined
             : result.textures?.find(candidate => candidate.id === layer.resourceId)
         const requestedUv = layer?.uvSource ?? 0
+        const team = worldBatchTeamColor(
+          material,
+          result.textures,
+          requestedUv,
+          moment.teamColor,
+          materialContext.teamColorIntensity,
+        )
         const coverage = modelMaterialCoverage(material)
         const blendMode =
           coverage.mode !== 'blend'
@@ -6068,11 +6133,27 @@ export function createWorldWebGlPlan(
         const unlit = material?.unlit === true
         const priority = blendMode === undefined ? 0 : (material?.priority ?? 0)
         const tint = item.presentationTint ?? [1, 1, 1]
+        // without a texture to weigh, a `whole` team colour is the colour itself
+        const albedo: WorldColor =
+          team !== undefined && team.mask === undefined && texture === undefined
+            ? [
+                ...([0, 1, 2].map(channel =>
+                  teamColorChannel(
+                    factor[channel]!,
+                    1,
+                    team.color[channel]!,
+                    TEAM_COLOR_BLENDS[team.blend]!,
+                    team.strength,
+                  ),
+                ) as [number, number, number]),
+                factor[3],
+              ]
+            : factor
         const base: WorldColor = [
-          factor[0] * tint[0],
-          factor[1] * tint[1],
-          factor[2] * tint[2],
-          factor[3],
+          albedo[0] * tint[0],
+          albedo[1] * tint[1],
+          albedo[2] * tint[2],
+          albedo[3],
         ]
         const vertexColors = primitive.colors
         const colorAt = (index: number): WorldColor =>
@@ -6116,7 +6197,11 @@ export function createWorldWebGlPlan(
             textureCoordinates.length >= (primitive.positions.length / 3) * 2
           ) {
             if (texturedWrite === undefined) {
-              const key = `${result.sourceKey}\u0000${texture.id}\u0000${normalTexture?.id ?? ''}\u0000${blendMode ?? 'opaque'}\u0000${String(coverage.cutoff)}\u0000${String(shadowPolicy.castShadows)}\u0000${String(shadowPolicy.receiveShadows)}\u0000${String(unlit)}\u0000${String(priority)}`
+              const teamKey =
+                team === undefined
+                  ? ''
+                  : `${team.mask?.id ?? 'whole'}:${String(team.channel)}:${String(team.blend)}:${team.color.join(',')}`
+              const key = `${result.sourceKey}\u0000${texture.id}\u0000${normalTexture?.id ?? ''}\u0000${blendMode ?? 'opaque'}\u0000${String(coverage.cutoff)}\u0000${String(shadowPolicy.castShadows)}\u0000${String(shadowPolicy.receiveShadows)}\u0000${String(unlit)}\u0000${String(priority)}\u0000${teamKey}`
               const collection = blendMode === undefined ? textured : transparentTextured
               const target = collection.get(key) ?? {
                 ...batch(),
@@ -6129,6 +6214,7 @@ export function createWorldWebGlPlan(
                 ...(coverage.cutoff === 0 ? {} : { alphaCutoff: coverage.cutoff }),
                 ...(unlit ? { unlit } : {}),
                 ...(priority === 0 ? {} : { priority }),
+                ...(team === undefined ? {} : { team }),
               }
               collection.set(key, target as WorldTransparentTexturedBatch)
               texturedWrite = { ...batch(), textureCoordinates: [], texture }
@@ -6913,6 +6999,13 @@ uniform float terrainWeightMapCount;
 uniform float terrainWeightOverlay;
 // The surface colour as it is, no light: water that multiplies the ground under it.
 uniform float unlitSurface;
+// UV_game_material_team_color of a model batch: 0 none, 1 whole, 2 weighed by the mask on the
+// secondary unit at the base UVs; mask channel 0-3, or 4 per channel
+uniform float teamColorMode;
+uniform float teamMaskChannel;
+uniform float teamBlend;
+uniform float teamStrength;
+uniform vec3 teamColor;
 uniform sampler2D baseColorMap;
 uniform float alphaCutoff;
 uniform sampler2D normalMap;
@@ -6961,6 +7054,7 @@ uniform float waterTime;
 uniform float cliffMaskMode;
 uniform vec4 cliffMaskSelector;
 out vec4 outColor;
+${TEAM_COLOR_GLSL}
 float layerValue(vec4 first, vec4 second, int layer) {
   return layer < 4 ? first[layer] : second[layer - 4];
 }
@@ -7171,6 +7265,15 @@ void main() {
   // A decal's colour alpha is its AO; its coverage is the texture's own alpha.
   if (terrainSurface) surface.a = 1.0;
   if (textured > 0.5) surface *= texture(baseColorMap, textureCoordinate);
+  if (teamColorMode > 0.5) {
+    vec3 teamMask = vec3(1.0);
+    if (teamColorMode > 1.5) {
+      vec4 maskTexel = texture(secondaryColorMap, textureCoordinate);
+      float maskChannel = teamMaskChannel < 0.5 ? maskTexel.r : teamMaskChannel < 1.5 ? maskTexel.g : teamMaskChannel < 2.5 ? maskTexel.b : maskTexel.a;
+      teamMask = teamMaskChannel > 3.5 ? maskTexel.rgb : vec3(maskChannel);
+    }
+    surface.rgb = modkitTeamColor(surface.rgb, teamMask, teamColor, int(teamBlend + 0.5), teamStrength);
+  }
   if (secondaryTextured > 0.5) {
     float secondarySurface = texture(secondaryColorMap, secondaryTextureCoordinate).r;
     surface.rgb *= secondarySurface;
@@ -8786,8 +8889,21 @@ function drawTexturedBatch(
   worldUniform1f(gl, program, 'textured', 1)
   worldUniform1f(gl, program, 'alphaCutoff', source.alphaCutoff ?? 0)
   if (source.unlit === true) worldUniform1f(gl, program, 'unlitSurface', 1)
+  const team = source.team
+  if (team !== undefined) {
+    worldUniform1f(gl, program, 'teamColorMode', team.mask === undefined ? 1 : 2)
+    worldUniform1f(gl, program, 'teamMaskChannel', team.channel)
+    worldUniform1f(gl, program, 'teamBlend', team.blend)
+    worldUniform1f(gl, program, 'teamStrength', team.strength)
+    gl.uniform3f(uniformLocation(gl, program, 'teamColor'), ...team.color)
+    if (team.mask !== undefined) {
+      bindTexture2d(resources, team.mask, 6)
+      worldUniform1i(gl, program, 'secondaryColorMap', 6)
+    }
+  }
   drawBatch(resources, program, source, gl.TRIANGLES, source, range)
   if (source.unlit === true) worldUniform1f(gl, program, 'unlitSurface', 0)
+  if (team !== undefined) worldUniform1f(gl, program, 'teamColorMode', 0)
   if (detail !== undefined) worldUniform1f(gl, program, 'waterDetailMode', 0)
 }
 

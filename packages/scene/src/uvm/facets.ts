@@ -167,6 +167,36 @@ function materialImageLayers(
       throw new TypeError('material texture texCoord must be a nonnegative integer')
     layers.push(Object.freeze({ slot, resourceId: uvmImageResourceId(document, image), uvSource }))
   }
+  // the team colour extension as the layer a publisher states it with (slot teamColor)
+  const team = field(material['extensions'], 'UV_game_material_team_color')
+  if (team !== undefined) {
+    const blend = field(team, 'blend')
+    const common = typeof blend === 'string' ? { blend } : {}
+    if (field(team, 'maskSource') === 'whole')
+      layers.push(Object.freeze({ slot: 'teamColor', ...common }) as ModelMaterialLayerRef)
+    const mask = field(team, 'maskTexture')
+    if (field(team, 'maskSource') === 'texture' && mask !== undefined) {
+      const texture = object(
+        textures[safeIndex(field(mask, 'index'), textures.length, 'team colour mask texture')],
+        'texture',
+      )
+      const channel = field(mask, 'channel')
+      const bit = { r: 1, g: 2, b: 4, a: 8 }[typeof channel === 'string' ? channel : ''] as
+        number | undefined
+      layers.push(
+        Object.freeze({
+          slot: 'teamColor',
+          resourceId: uvmImageResourceId(
+            document,
+            safeIndex(texture['source'], images.length, 'texture image'),
+          ),
+          uvSource: Number(field(mask, 'texCoord') ?? 0),
+          ...(bit === undefined ? {} : { colorChannels: bit }),
+          ...common,
+        }) as ModelMaterialLayerRef,
+      )
+    }
+  }
   return Object.freeze(layers)
 }
 
