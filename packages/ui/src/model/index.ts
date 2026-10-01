@@ -797,6 +797,53 @@ const MODEL_STAGE_HEIGHT = 480
  * skeleton, and a bone drawn as scene geometry would be neither — it would vanish with the
  * renderer and be depth-tested against the mesh that hides it.
  */
+/**
+ * Each vertex's normal as a short line from the vertex (MK2's normals view, plan 6.22), `length`
+ * in the model's own units. A primitive without normals draws nothing; the count is returned.
+ */
+function drawNormals(
+  context: CanvasRenderingContext2D,
+  primitive: SceneRendererPrimitive,
+  viewProjection: Float32Array,
+  viewport: { readonly width: number; readonly height: number },
+  length: number,
+  stroke: string,
+): number {
+  const { positions, normals } = primitive
+  if (normals === undefined || normals.length !== positions.length) return 0
+  const matrix =
+    primitive.transform === undefined
+      ? viewProjection
+      : multiply4x4(viewProjection, primitive.transform)
+  context.save()
+  context.strokeStyle = stroke
+  context.lineWidth = 1
+  context.beginPath()
+  let drawn = 0
+  for (let index = 0; index + 2 < positions.length; index += 3) {
+    const x = positions[index]!
+    const y = positions[index + 1]!
+    const z = positions[index + 2]!
+    const from = projectPoint(matrix, [x, y, z], viewport)
+    const to = projectPoint(
+      matrix,
+      [
+        x + normals[index]! * length,
+        y + normals[index + 1]! * length,
+        z + normals[index + 2]! * length,
+      ],
+      viewport,
+    )
+    if (from === undefined || to === undefined) continue
+    context.moveTo(from[0], from[1])
+    context.lineTo(to[0], to[1])
+    drawn += 1
+  }
+  context.stroke()
+  context.restore()
+  return drawn
+}
+
 function drawSkeleton(
   context: CanvasRenderingContext2D,
   joints: readonly SkeletonJoint[],
@@ -1674,6 +1721,23 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
           )
           canvas.setAttribute('data-model-skeleton', String(scene.joints.length))
           let skeletonVisible = scene.joints.length > 0
+          // the mesh's edges over the shaded frame, and each vertex's normal (MK2's views, 6.22)
+          let wireframeVisible = false
+          let normalsVisible = false
+          const overlay = (
+            context: CanvasRenderingContext2D,
+            primitives: readonly SceneRendererPrimitive[],
+            viewProjection: Float32Array,
+            size: { readonly width: number; readonly height: number },
+            shaded: boolean,
+          ): void => {
+            if (wireframeVisible && shaded)
+              for (const primitive of primitives) drawPrimitive(canvas, primitive, viewProjection)
+            if (!normalsVisible) return
+            const stroke = themeColor(canvas, '--mk-chart-categorical-2', '#7ec27e')
+            for (const primitive of primitives)
+              drawNormals(context, primitive, viewProjection, size, framing().radius * 0.04, stroke)
+          }
 
           const framing = () => restFraming
 
@@ -1825,6 +1889,14 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
               if (!hiddenPrimitives.has(primitive.id))
                 drawPrimitive(canvas, primitive, placement.viewProjection)
             const context = canvas.getContext('2d')
+            if (context !== null)
+              overlay(
+                context,
+                scene.primitives.filter(item => !hiddenPrimitives.has(item.id)),
+                placement.viewProjection,
+                viewport,
+                false,
+              )
             if (context !== null && skeletonVisible)
               drawSkeleton(
                 context,
@@ -1927,6 +1999,7 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
                 pixels.set(frame.rgba)
                 context.putImageData(new ImageData(pixels, frame.width, frame.height), 0, 0)
                 canvas.setAttribute('data-model-animation-time', String(drawnTime))
+                overlay(context, primitives, placement.viewProjection, frame, true)
                 if (skeletonVisible && joints.length > 0) {
                   drawSkeleton(
                     context,
@@ -2011,6 +2084,25 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
             toggle.setAttribute('aria-pressed', String(skeletonVisible))
             canvas.setAttribute('data-model-skeleton-visible', String(skeletonVisible))
           }
+          const overlayToggle = (
+            label: UiMessageKey,
+            title: UiMessageKey,
+            flip: () => boolean,
+          ): void => {
+            const toggle = button(viewRow, localizer.text(label), localizer.text(title), () => {
+              toggle.setAttribute('aria-pressed', String(flip()))
+              redraw()
+            })
+            toggle.setAttribute('aria-pressed', 'false')
+          }
+          overlayToggle('viewer.modelWireframe', 'viewer.modelWireframeOverlay', () => {
+            wireframeVisible = !wireframeVisible
+            return wireframeVisible
+          })
+          overlayToggle('viewer.modelNormals', 'viewer.modelNormalsOverlay', () => {
+            normalsVisible = !normalsVisible
+            return normalsVisible
+          })
           if (effectsOffered) {
             const effectsField = controlRow(
               panel.rendering,
