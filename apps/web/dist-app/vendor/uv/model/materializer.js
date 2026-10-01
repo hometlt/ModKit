@@ -531,6 +531,47 @@ var UVM_GAME_BLEND_MODES = [
   "subtract"
 ];
 var isUvmGameBlendMode = (value) => UVM_GAME_BLEND_MODES.includes(value);
+var unitRgb = (value) => Array.isArray(value) && value.length === 3 && value.every((component) => typeof component === "number" && component >= 0 && component <= 1);
+function teamColorExtension(layer, mask) {
+  const rule = layer.teamColor ?? {};
+  const blend = layer.blend ?? "multiply";
+  const keyed = rule.maskSource === "channelKey";
+  const ramped = rule.maskSource === "paletteRange";
+  if ((keyed || ramped) && blend !== "replace")
+    fail(`a team colour ${rule.maskSource} blends replace, stated by the publisher`);
+  if (ramped) {
+    const [first, last] = rule.range ?? [];
+    const scale = rule.paletteIndexScale ?? 255;
+    if (mask === void 0 || !Number.isSafeInteger(first) || !Number.isSafeInteger(last) || first < 0 || last < first || last > scale || rule.ramp?.length !== last - first + 1 || !rule.ramp.every(unitRgb))
+      fail("a team colour ramp needs its mask, an ascending range and one 0..1 shade per index");
+  }
+  if (rule.keyThreshold !== void 0 && (!Number.isSafeInteger(rule.keyThreshold) || rule.keyThreshold < 0 || rule.keyThreshold > 255))
+    fail("a team colour key threshold is an integer 0..255");
+  if (rule.strength !== void 0 && !(Number.isFinite(rule.strength) && rule.strength >= 0))
+    fail("a team colour strength is nonnegative");
+  if (rule.defaultColor !== void 0 && !unitRgb(rule.defaultColor))
+    fail("a team colour default is three components in 0..1");
+  const channel = singleChannel(layer.colorChannels);
+  const maskTexture = mask === void 0 ? void 0 : { ...mask, ...channel === void 0 ? {} : { channel } };
+  return {
+    maskSource: keyed ? "channelKey" : ramped ? "paletteRange" : maskTexture === void 0 ? "whole" : "texture",
+    ...maskTexture === void 0 ? {} : { maskTexture },
+    targets: ["baseColor"],
+    blend,
+    ...rule.keyChannels === void 0 ? {} : { keyChannels: [...rule.keyChannels] },
+    ...rule.keyThreshold === void 0 ? {} : { keyThreshold: rule.keyThreshold },
+    ...rule.intensityChannel === void 0 ? {} : { intensityChannel: rule.intensityChannel },
+    ...rule.range === void 0 ? {} : { range: [rule.range[0], rule.range[1]] },
+    ...rule.ramp === void 0 ? {} : {
+      ramp: rule.ramp.map((shade) => [shade[0], shade[1], shade[2]])
+    },
+    ...rule.paletteIndexScale === void 0 ? {} : { paletteIndexScale: rule.paletteIndexScale },
+    ...rule.colorSource === "object-tint" ? { colorSource: "object-tint" } : {},
+    ...rule.tint === "mask-rgb" ? { tint: "mask-rgb" } : {},
+    ...rule.strength === void 0 ? {} : { strength: rule.strength },
+    ...rule.defaultColor === void 0 ? {} : { defaultColor: [...rule.defaultColor, 1] }
+  };
+}
 var MATERIALIZER_ID = "modkit/uvm-materializer";
 var MATERIALIZER_VERSION = "1.0.0";
 var PROFILE = "UVM/core@1.0";
@@ -993,11 +1034,7 @@ function materializeUvmCore(projection, request, { digest, materialBudget = DEFA
     if (wholeTeam !== void 0)
       target.extensions = {
         ...target.extensions,
-        UV_game_material_team_color: {
-          maskSource: "whole",
-          targets: ["baseColor"],
-          blend: wholeTeam.blend ?? "multiply"
-        }
+        UV_game_material_team_color: teamColorExtension(wholeTeam, void 0)
       };
     if (JSON.stringify([...contracts ?? []].sort(byUtf8)) !== JSON.stringify(artifactContracts.sort(byUtf8))) {
       note("common.view/model-material-source@1", "value-differs", `/materials/${definition.id}/contracts`, "contract coverage is derived from the extensions actually written to UVM");
@@ -1083,15 +1120,9 @@ function materializeUvmCore(projection, request, { digest, materialBudget = DEFA
         target.emissiveTexture = ref;
         target.emissiveFactor ??= [1, 1, 1];
       } else if (slot === "teamColor" && target.extensions?.UV_game_material_team_color === void 0) {
-        const channel = singleChannel(layer.colorChannels);
         target.extensions = {
           ...target.extensions,
-          UV_game_material_team_color: {
-            maskSource: "texture",
-            maskTexture: { ...ref, ...channel === void 0 ? {} : { channel } },
-            targets: ["baseColor"],
-            blend: layer.blend ?? "multiply"
-          }
+          UV_game_material_team_color: teamColorExtension(layer, ref)
         };
       }
     }

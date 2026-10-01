@@ -49,22 +49,50 @@ init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 // ../MODDING/modkit-core/packages/scene/dist/model/team-color.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var TEAM_COLOR_SLOTS = /* @__PURE__ */ new Set(["teamcolor", "team"]);
+var BASE_COLOR_SLOTS = /* @__PURE__ */ new Set(["diffuse", "basecolor", "albedo", "color"]);
 var CHANNELS = { 1: "r", 2: "g", 4: "b", 8: "a" };
 var slotKey = (slot) => slot.toLowerCase().replace(/[^a-z0-9]/gu, "");
 function modelMaterialTeamColor(material, textures, uvSource) {
   const layer = material.layers?.find((candidate) => TEAM_COLOR_SLOTS.has(slotKey(candidate.slot)));
   if (layer === void 0)
     return void 0;
-  const blend = layer.blend ?? "multiply";
-  if (layer.resourceId === void 0)
-    return { mask: "whole", blend };
-  const texture = textures.get(layer.resourceId);
-  if (texture === void 0 || (layer.uvSource ?? 0) !== uvSource)
-    return void 0;
-  return {
-    mask: { texture: texture.id, channel: CHANNELS[layer.colorChannels ?? 0] ?? "rgb" },
-    blend
+  const rule = layer.teamColor;
+  const common = {
+    blend: layer.blend ?? "multiply",
+    ...rule?.strength === void 0 ? {} : { strength: rule.strength },
+    ...rule?.defaultColor === void 0 ? {} : { defaultColor: rule.defaultColor },
+    ...rule?.colorSource === "object-tint" ? { source: "object-tint" } : {},
+    ...rule?.tint === "mask-rgb" ? { tint: "mask-rgb" } : {}
   };
+  const source = layer.resourceId === void 0 && rule?.maskSource === "channelKey" ? material.layers?.find((candidate) => BASE_COLOR_SLOTS.has(slotKey(candidate.slot)) && candidate.resourceId !== void 0) : layer;
+  if (source?.resourceId === void 0)
+    return rule?.maskSource === void 0 ? { mask: "whole", ...common } : void 0;
+  const texture = textures.get(source.resourceId);
+  if (texture === void 0 || (source.uvSource ?? 0) !== uvSource)
+    return void 0;
+  const channel = CHANNELS[layer.colorChannels ?? 0];
+  if (rule?.maskSource === "channelKey")
+    return {
+      mask: { texture: texture.id, channel: channel ?? "rgb" },
+      ...common,
+      key: {
+        channels: rule.keyChannels ?? ["r", "g"],
+        threshold: rule.keyThreshold ?? 0,
+        intensity: rule.intensityChannel ?? "b"
+      }
+    };
+  if (rule?.maskSource === "paletteRange")
+    return rule.ramp === void 0 || rule.range === void 0 ? void 0 : {
+      // the indices are one scalar channel
+      mask: { texture: texture.id, channel: channel ?? "r" },
+      ...common,
+      ramp: {
+        shades: rule.ramp,
+        first: rule.range[0],
+        scale: rule.paletteIndexScale ?? 255
+      }
+    };
+  return { mask: { texture: texture.id, channel: channel ?? "rgb" }, ...common };
 }
 
 // ../MODDING/modkit-core/packages/ui/dist/model/source.js
@@ -341,7 +369,7 @@ function hueToRgb(hue, saturation, lightness) {
   const rgb = base;
   return [rgb[0] + match, rgb[1] + match, rgb[2] + match];
 }
-var BASE_COLOR_SLOTS = Object.freeze([
+var BASE_COLOR_SLOTS2 = Object.freeze([
   "diffuse",
   "basecolor",
   "albedo",
@@ -352,7 +380,7 @@ var BASE_COLOR_SLOTS = Object.freeze([
 var slotKey2 = (value) => value.toLowerCase().replace(/[^a-z0-9]/gu, "");
 function baseColorResourceOf(material) {
   const layers = material.layers ?? [];
-  for (const slot of BASE_COLOR_SLOTS) {
+  for (const slot of BASE_COLOR_SLOTS2) {
     for (const layer of layers) {
       if (slotKey2(layer.slot) === slot && layer.resourceId !== void 0)
         return layer.resourceId;
@@ -1948,7 +1976,7 @@ function createModelViewer(options = {}) {
               const output = result.output;
               if (output.kind !== "bytes" || !(output.value instanceof Uint8Array))
                 throw new Error(`the codec answered ${output.kind}, not bytes`);
-              const { createUvmFramePreparer } = await import("./render-Q5OF23MJ.js");
+              const { createUvmFramePreparer } = await import("./render-WRHCC5J3.js");
               const raster = options.rasterResources?.(args.descriptor);
               const preparer = createUvmFramePreparer(output.value, {
                 budget: MODEL_EFFECT_BUDGET,

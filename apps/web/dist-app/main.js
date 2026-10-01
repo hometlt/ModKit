@@ -52,19 +52,19 @@ import {
   webExtensionSubjectCardBundle,
   withMapPreviewSources,
   withoutHiddenEntries
-} from "./chunks/chunk-OEU4SOLQ.js";
+} from "./chunks/chunk-ZSLWBAGZ.js";
 import "./chunks/chunk-YHDKYGJK.js";
 import "./chunks/chunk-BBPEOGNI.js";
-import "./chunks/chunk-DWYOZ2DI.js";
+import "./chunks/chunk-JLL7IGH4.js";
 import {
   resolveModelViewerTextures
-} from "./chunks/chunk-XYHGZFNJ.js";
+} from "./chunks/chunk-VBIE4P5V.js";
 import "./chunks/chunk-O2DY4UGD.js";
 import "./chunks/chunk-CW2HIMYV.js";
 import {
   normalizeModkitIdentifier,
   presentationSlotId
-} from "./chunks/chunk-XOX5OSCM.js";
+} from "./chunks/chunk-QDBJZAOT.js";
 import {
   declaredMutatingOperations,
   editOffer,
@@ -97,7 +97,7 @@ import "./chunks/chunk-5MQCQKKD.js";
 import {
   revisionId
 } from "./chunks/chunk-U4VIZDRF.js";
-import "./chunks/chunk-WCNOEKSC.js";
+import "./chunks/chunk-QXP2LEJM.js";
 import "./chunks/chunk-S3XCLL57.js";
 import "./chunks/chunk-OZX7B633.js";
 import "./chunks/chunk-R3U752LL.js";
@@ -757,6 +757,8 @@ async function prepareWebMapPreview(request) {
       grant: request.grant,
       budgets: request.budgets,
       original: request.opened.session,
+      // a viewer: the world shows before the catalog answers, and its answered form redraws it
+      progressiveCatalog: true,
       ...request.selectionId === void 0 ? {} : { selectionId: request.selectionId },
       ...MAP_PREVIEW_COORDINATOR_LIMITS,
       ...request.catalog === void 0 ? {} : { catalog: request.catalog },

@@ -2,7 +2,6 @@ import {
   ARCHITECTURES,
   OPERATING_SYSTEMS,
   RUNTIME_ENVIRONMENTS,
-  STANDARD_DATA_SOURCE_CONTRACTS,
   codecContributionSpecV1Schema,
   contractDefinitionSpecV1Schema,
   contributionId,
@@ -23,7 +22,7 @@ import {
   traitDefinitionSpecV1Schema,
   validateWithSchema,
   viewerContributionSpecV1Schema
-} from "./chunk-3PXCW2IQ.js";
+} from "./chunk-U4VIZDRF.js";
 import {
   ModkitError,
   OPERATION_DOMAINS,
@@ -41,9 +40,114 @@ import {
   parseVersionRange,
   uniqueSortedUtf8,
   versionRangeTargetsMajor
-} from "./chunk-V3DESLW4.js";
+} from "./chunk-33VOQNJR.js";
+import {
+  init_define_MODKIT_EMBED_EXTENSION_ORIGINS
+} from "./chunk-BLWUC7LO.js";
+
+// ../MODDING/modkit-core/packages/sdk/dist/relation-graph-neighbourhood.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var PAGE_SIZE = 1024;
+var MAX_PAGES = 4096;
+function limit(value2, name, maximum = Number.MAX_SAFE_INTEGER) {
+  if (!Number.isSafeInteger(value2) || value2 < 1 || value2 > maximum)
+    throw new RangeError(`relation graph ${name} must be an integer 1..${maximum}`);
+}
+async function scan(read, scanLimit, signal) {
+  const items = [];
+  const seen = /* @__PURE__ */ new Set();
+  let cursor;
+  for (let pages = 0; items.length < scanLimit && pages < MAX_PAGES; pages += 1) {
+    signal?.throwIfAborted();
+    const page = await read({
+      ...cursor === void 0 ? {} : { cursor },
+      limit: Math.min(PAGE_SIZE, scanLimit - items.length)
+    }, signal);
+    items.push(...page.items.slice(0, scanLimit - items.length));
+    if (page.nextCursor === void 0)
+      return { items, scan: { read: items.length, exhausted: true, invalidCursor: false } };
+    if (seen.has(page.nextCursor) || page.nextCursor === cursor)
+      return { items, scan: { read: items.length, exhausted: false, invalidCursor: true } };
+    seen.add(page.nextCursor);
+    cursor = page.nextCursor;
+  }
+  return { items, scan: { read: items.length, exhausted: false, invalidCursor: false } };
+}
+async function relationGraphNeighbourhood(source, request, signal) {
+  limit(request.roots.length, "root count", 64);
+  limit(request.depth, "depth", 8);
+  limit(request.maxNodes, "maxNodes");
+  limit(request.maxEdges, "maxEdges");
+  limit(request.scanLimit, "scanLimit");
+  if (!["outgoing", "incoming", "both"].includes(request.direction))
+    throw new RangeError(`relation graph direction \xAB${String(request.direction)}\xBB is unknown`);
+  const summary = await source.summary(signal);
+  const nodeScan = await scan((page, s) => source.nodes(page, s), request.scanLimit, signal);
+  const edgeScan = await scan((page, s) => source.edges(page, s), request.scanLimit, signal);
+  const byId = new Map(nodeScan.items.map((node) => [node.id, node]));
+  const types = request.types === void 0 ? void 0 : new Set(request.types);
+  const enters = (id) => {
+    const type = byId.get(id)?.type;
+    return types === void 0 || type === void 0 || types.has(type);
+  };
+  const kept = new Set(request.roots);
+  const edges = [];
+  const edgeKeys = /* @__PURE__ */ new Set();
+  let frontier = new Set(request.roots);
+  let capped = false;
+  for (let level = 0; level < request.depth && frontier.size > 0; level += 1) {
+    const next = /* @__PURE__ */ new Set();
+    for (const edge of edgeScan.items) {
+      const outgoing = request.direction !== "incoming" && frontier.has(edge.from);
+      const incoming = request.direction !== "outgoing" && frontier.has(edge.to);
+      if (!outgoing && !incoming)
+        continue;
+      const other = outgoing ? edge.to : edge.from;
+      if (!kept.has(other)) {
+        if (!enters(other))
+          continue;
+        if (kept.size >= request.maxNodes) {
+          capped = true;
+          continue;
+        }
+        kept.add(other);
+        next.add(other);
+      }
+      const key2 = `${edge.from}\0${edge.to}\0${edge.role ?? ""}\0${edge.dead === true}`;
+      if (edgeKeys.has(key2))
+        continue;
+      if (edges.length >= request.maxEdges) {
+        capped = true;
+        continue;
+      }
+      edgeKeys.add(key2);
+      edges.push(edge);
+    }
+    frontier = next;
+  }
+  const nodes = [...kept].flatMap((id) => {
+    const node = byId.get(id);
+    return node === void 0 ? [] : [node];
+  });
+  const partial = summary.completeness === "partial" || nodeScan.scan.invalidCursor || edgeScan.scan.invalidCursor;
+  const complete = summary.completeness === "complete" && nodeScan.scan.exhausted && edgeScan.scan.exhausted && !capped;
+  return {
+    snapshotId: summary.snapshotId,
+    nodes,
+    edges,
+    missingNodeIds: [...kept].filter((id) => !byId.has(id)),
+    completeness: complete ? "complete" : partial ? "partial" : "capped",
+    capped,
+    scanned: { nodes: nodeScan.scan, edges: edgeScan.scan },
+    ...summary.reason === void 0 ? {} : { reason: summary.reason }
+  };
+}
+
+// ../MODDING/modkit-core/packages/sdk/dist/index.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
 // ../MODDING/modkit-core/packages/sdk/dist/identity.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var QUALIFIED_RULES = [
   ["org.modkitx/starcraft-2", "blizzard/starcraft-2", true],
   ["org.modkitx/warzone-2100", "wz2100project/warzone-2100", true],
@@ -54,16 +158,6 @@ var QUALIFIED_RULES = [
   ["org.modkitx/", "modkit/"],
   ["org.modkitx.", "modkit."],
   ["org.modkitx", "modkit", true]
-];
-var SOURCE_RULES = [
-  ["org.modkitx.blizzard", "blizzard", true],
-  ["org.modkitx.ea", "ea", true],
-  ["org.modkitx.opensource", "opensource", true],
-  ["org.modkitx", "modkit", true]
-];
-var PACKAGE_RULES = [
-  ["@modkitx-x3/", "@modkit/"],
-  ["@modkitx/", "@modkit/"]
 ];
 function normalizeByRules(value2, rules) {
   for (const [from, to, exact] of rules) {
@@ -76,14 +170,9 @@ function normalizeByRules(value2, rules) {
 function normalizeModkitIdentifier(value2) {
   return normalizeByRules(value2, QUALIFIED_RULES).value;
 }
-function normalizeModkitPackageSpecifier(value2) {
-  return normalizeByRules(value2, PACKAGE_RULES).value;
-}
-function normalizeModkitSourceIdentifier(value2) {
-  return normalizeByRules(value2, SOURCE_RULES).value;
-}
 
 // ../MODDING/modkit-core/packages/sdk/dist/editing.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var WRITER_CONTRACT_ID = "common.edit/writer";
 var WRITER_FACET_MATCHER_PROFILE = "modkit/writer-facet-matcher";
 var writerSurface = {
@@ -138,65 +227,8 @@ function namespaceEntryEditTarget(input) {
   });
 }
 
-// ../MODDING/modkit-core/packages/sdk/dist/subjects/candidates.js
-var nonEmptyStrings = (value2) => value2 === void 0 || value2.every((item) => typeof item === "string" && item.length > 0) && new Set(value2).size === value2.length;
-function validCandidate(candidate) {
-  return typeof candidate === "object" && candidate !== null && typeof candidate.subjectId === "string" && candidate.subjectId.length > 0 && typeof candidate.label === "string" && candidate.label.length > 0 && typeof candidate.kind === "string" && candidate.kind.length > 0 && (candidate.type === void 0 || typeof candidate.type === "string" && candidate.type.length > 0) && nonEmptyStrings(candidate.tags) && (candidate.portrait === void 0 || typeof candidate.portrait === "string" && candidate.portrait.length > 0) && (candidate.asset === void 0 || typeof candidate.asset === "object" && candidate.asset !== null && typeof candidate.asset.formatId === "string" && candidate.asset.formatId.length > 0 && nonEmptyStrings(candidate.asset.traits));
-}
-function validSummary(summary) {
-  return typeof summary === "object" && summary !== null && typeof summary.snapshotId === "string" && summary.snapshotId.length > 0 && Number.isSafeInteger(summary.totalSubjects) && summary.totalSubjects >= 0 && (summary.completeness === "complete" || summary.completeness === "partial" || summary.completeness === "capped") && (summary.reason === void 0 || typeof summary.reason === "string") && (summary.kinds === void 0 || Array.isArray(summary.kinds) && summary.kinds.every((item) => typeof item?.kind === "string" && item.kind.length > 0 && Number.isSafeInteger(item.count) && item.count >= 0));
-}
-function validateQuery(query) {
-  if (!Number.isSafeInteger(query.limit) || query.limit < 1) {
-    throw new RangeError("subject candidate limit must be a positive safe integer");
-  }
-  if (query.text !== void 0 && typeof query.text !== "string") {
-    throw new TypeError("subject candidate text must be a string");
-  }
-  if (query.cursor !== void 0 && (typeof query.cursor !== "string" || query.cursor.length === 0)) {
-    throw new TypeError("subject candidate cursor must be a non-empty string");
-  }
-  if (query.target.kind === "subject-ref" && (typeof query.target.subjectKind !== "string" || query.target.subjectKind.length === 0)) {
-    throw new TypeError("subject candidate kind must be a non-empty string");
-  }
-  if (query.target.kind === "asset-ref" && (!nonEmptyStrings(query.target.accepts.formatIds) || !nonEmptyStrings(query.target.accepts.traits))) {
-    throw new TypeError("asset candidate constraints must contain unique non-empty strings");
-  }
-}
-async function loadSubjectCandidatePage(provider, query, signal) {
-  signal?.throwIfAborted();
-  validateQuery(query);
-  const [summary, page] = await Promise.all([
-    provider.summary(signal),
-    provider.candidates(query, signal)
-  ]);
-  signal?.throwIfAborted();
-  if (!validSummary(summary))
-    throw new TypeError("subject candidate summary is malformed");
-  if (typeof page !== "object" || page === null || !Array.isArray(page.items) || page.items.length > query.limit || !page.items.every(validCandidate) || new Set(page.items.map((item) => item.subjectId)).size !== page.items.length || page.nextCursor !== void 0 && (typeof page.nextCursor !== "string" || page.nextCursor.length === 0)) {
-    throw new TypeError("subject candidate page is malformed or exceeds its requested limit");
-  }
-  return Object.freeze({ summary, page });
-}
-function createSubjectCandidateProvider(source) {
-  return Object.freeze({
-    summary: (signal) => source.summary(signal),
-    candidates(query, signal) {
-      const page = {
-        ...query.cursor === void 0 ? {} : { cursor: query.cursor },
-        limit: query.limit,
-        ...query.text === void 0 ? {} : { text: query.text },
-        ...query.target.kind === "subject-ref" ? {
-          kind: query.target.subjectKind,
-          ...query.target.filter === void 0 ? {} : { filter: query.target.filter }
-        } : { asset: query.target.accepts }
-      };
-      return source.subjects(page, signal);
-    }
-  });
-}
-
 // ../MODDING/modkit-core/packages/sdk/dist/manifest/operation-permissions.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 function operationScopedPermissionClasses(operations) {
   const out = /* @__PURE__ */ new Set();
   for (const operation of operations ?? []) {
@@ -213,7 +245,14 @@ function activationRequiredPermissionClasses(requested, operations) {
   return Object.freeze(requested.filter((item) => !scoped.has(item)));
 }
 
+// ../MODDING/modkit-core/packages/sdk/dist/manifest/spec-registry.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// ../MODDING/modkit-core/packages/sdk/dist/host-profile.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
 // ../MODDING/modkit-core/packages/sdk/dist/host-facilities.generated.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var STANDARD_HOST_FACILITY_IDS = Object.freeze([
   "clipboard.write",
   "credential.broker",
@@ -378,7 +417,7 @@ function createHostRealmProfile(profile) {
     maxTransferBytes: bytes(snapshot.budgets.maxTransferBytes, "budgets.maxTransferBytes"),
     defaultDeadlineMs: count(snapshot.budgets.defaultDeadlineMs, "budgets.defaultDeadlineMs")
   });
-  const policy2 = Object.freeze({
+  const policy = Object.freeze({
     id: nonEmpty(snapshot.policy.id, "policy.id"),
     revision: nonEmpty(snapshot.policy.revision, "policy.revision"),
     ...snapshot.policy.digest === void 0 ? {} : { digest: nonEmpty(snapshot.policy.digest, "policy.digest") }
@@ -390,7 +429,7 @@ function createHostRealmProfile(profile) {
     target,
     facilities: Object.freeze(facilities),
     budgets,
-    policy: policy2
+    policy
   });
 }
 function createHostTopology(topology) {
@@ -775,6 +814,7 @@ async function validateContributionManifest(value2, registry) {
 }
 
 // ../MODDING/modkit-core/packages/sdk/dist/manifest/contribution-contract-registry.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var SUBJECT_KIND_DEFINITION_CONTRIBUTION_CONTRACT = contractId("modkit/subject-kind-definition");
 var SUBJECT_KIND_DEFINITION_FACT = contractId("modkit.inventory/subject-kind-definition");
 var CODEC_CONTRIBUTION_CONTRACT = contractId("modkit/codec-contribution");
@@ -1491,130 +1531,25 @@ var A1_SPEC_SCHEMA_ENTRIES = [
   }
 ];
 
-// ../MODDING/modkit-core/packages/sdk/dist/service-contracts.js
-function foreignServiceContractId(contract) {
-  if (!isQualifiedId(contract))
-    throw new TypeError(`invalid foreign service contract: ${contract}`);
-  return contract;
-}
+// ../MODDING/modkit-core/packages/sdk/dist/model-encoding.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var NATIVE_MODEL_ENCODER_CONTRACT = "common.model/native-encoder";
+var NATIVE_MODEL_ENCODER_MATCHER_PROFILE = "modkit/native-model-encoder-matcher";
 
-// ../MODDING/modkit-core/packages/sdk/dist/oodle.js
-var OODLE_DECODER_CONTRACT = "common.compression/oodle-decoder";
-
-// ../MODDING/modkit-core/packages/sdk/dist/index-caches.js
-var INDEX_CACHE_DIRECTORY_SETTING = "indexCacheDirectory";
-var INDEX_CACHE_MANIFEST = "cache.json";
-function indexCacheEnabled(switches, product, kind) {
-  return switches?.[product]?.[kind] !== false;
-}
-
-// ../MODDING/modkit-core/packages/sdk/dist/relation-graph-neighbourhood.js
-var PAGE_SIZE = 1024;
-var MAX_PAGES = 4096;
-function limit(value2, name, maximum = Number.MAX_SAFE_INTEGER) {
-  if (!Number.isSafeInteger(value2) || value2 < 1 || value2 > maximum)
-    throw new RangeError(`relation graph ${name} must be an integer 1..${maximum}`);
-}
-async function scan(read, scanLimit, signal) {
-  const items = [];
-  const seen = /* @__PURE__ */ new Set();
-  let cursor;
-  for (let pages = 0; items.length < scanLimit && pages < MAX_PAGES; pages += 1) {
-    signal?.throwIfAborted();
-    const page = await read({
-      ...cursor === void 0 ? {} : { cursor },
-      limit: Math.min(PAGE_SIZE, scanLimit - items.length)
-    }, signal);
-    items.push(...page.items.slice(0, scanLimit - items.length));
-    if (page.nextCursor === void 0)
-      return { items, scan: { read: items.length, exhausted: true, invalidCursor: false } };
-    if (seen.has(page.nextCursor) || page.nextCursor === cursor)
-      return { items, scan: { read: items.length, exhausted: false, invalidCursor: true } };
-    seen.add(page.nextCursor);
-    cursor = page.nextCursor;
-  }
-  return { items, scan: { read: items.length, exhausted: false, invalidCursor: false } };
-}
-async function relationGraphNeighbourhood(source, request, signal) {
-  limit(request.roots.length, "root count", 64);
-  limit(request.depth, "depth", 8);
-  limit(request.maxNodes, "maxNodes");
-  limit(request.maxEdges, "maxEdges");
-  limit(request.scanLimit, "scanLimit");
-  if (!["outgoing", "incoming", "both"].includes(request.direction))
-    throw new RangeError(`relation graph direction \xAB${String(request.direction)}\xBB is unknown`);
-  const summary = await source.summary(signal);
-  const nodeScan = await scan((page, s) => source.nodes(page, s), request.scanLimit, signal);
-  const edgeScan = await scan((page, s) => source.edges(page, s), request.scanLimit, signal);
-  const byId = new Map(nodeScan.items.map((node) => [node.id, node]));
-  const types = request.types === void 0 ? void 0 : new Set(request.types);
-  const enters = (id) => {
-    const type = byId.get(id)?.type;
-    return types === void 0 || type === void 0 || types.has(type);
-  };
-  const kept = new Set(request.roots);
-  const edges = [];
-  const edgeKeys = /* @__PURE__ */ new Set();
-  let frontier = new Set(request.roots);
-  let capped = false;
-  for (let level = 0; level < request.depth && frontier.size > 0; level += 1) {
-    const next = /* @__PURE__ */ new Set();
-    for (const edge of edgeScan.items) {
-      const outgoing = request.direction !== "incoming" && frontier.has(edge.from);
-      const incoming = request.direction !== "outgoing" && frontier.has(edge.to);
-      if (!outgoing && !incoming)
-        continue;
-      const other = outgoing ? edge.to : edge.from;
-      if (!kept.has(other)) {
-        if (!enters(other))
-          continue;
-        if (kept.size >= request.maxNodes) {
-          capped = true;
-          continue;
-        }
-        kept.add(other);
-        next.add(other);
-      }
-      const key2 = `${edge.from}\0${edge.to}\0${edge.role ?? ""}\0${edge.dead === true}`;
-      if (edgeKeys.has(key2))
-        continue;
-      if (edges.length >= request.maxEdges) {
-        capped = true;
-        continue;
-      }
-      edgeKeys.add(key2);
-      edges.push(edge);
-    }
-    frontier = next;
-  }
-  const nodes = [...kept].flatMap((id) => {
-    const node = byId.get(id);
-    return node === void 0 ? [] : [node];
-  });
-  const partial = summary.completeness === "partial" || nodeScan.scan.invalidCursor || edgeScan.scan.invalidCursor;
-  const complete = summary.completeness === "complete" && nodeScan.scan.exhausted && edgeScan.scan.exhausted && !capped;
-  return {
-    snapshotId: summary.snapshotId,
-    nodes,
-    edges,
-    missingNodeIds: [...kept].filter((id) => !byId.has(id)),
-    completeness: complete ? "complete" : partial ? "partial" : "capped",
-    capped,
-    scanned: { nodes: nodeScan.scan, edges: edgeScan.scan },
-    ...summary.reason === void 0 ? {} : { reason: summary.reason }
-  };
-}
+// ../MODDING/modkit-core/packages/sdk/dist/language/index.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
 // ../MODDING/modkit-core/packages/sdk/dist/language/translation.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var TRANSLATION_CONTRACT = "common.language/translation";
 var TRANSLATION_MATCHER_PROFILE = "modkit/translation-matcher";
 
 // ../MODDING/modkit-core/packages/sdk/dist/language/index.js
 var LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT = "common.language/document-analysis";
 var LANGUAGE_DOCUMENT_MATCHER_PROFILE = "modkit/language-document-matcher";
-var languageWorkspaceIsSemanticallyIncomplete = (request) => request.workspaceContext === void 0 ? request.workspaceIncomplete : !request.workspaceContext.semanticComplete;
 
 // ../MODDING/modkit-core/packages/sdk/dist/runtime/index.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var RUNTIME_PROVIDER_CONTRACT = "common.runtime/provider";
 var RUNTIME_SESSION_CONTRACT = "common.runtime/session";
 var RUNTIME_PROVIDER_MATCHER_PROFILE = "modkit/runtime-provider-matcher";
@@ -1629,29 +1564,18 @@ var RUNTIME_SESSION_V2_MEMBERS = Object.freeze([
 ]);
 
 // ../MODDING/modkit-core/packages/sdk/dist/service-operations.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var SERVICE_OPERATION_PROVIDER_CONTRACT = "common.runtime/operation-provider";
 var SERVICE_OPERATION_MATCHER_PROFILE = "modkit/service-operation-matcher";
 
 // ../MODDING/modkit-core/packages/sdk/dist/games/index.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var GAME_INSTALLATION_DISCOVERY_CONTRACT = "common.game/installation-discovery";
 var GAME_LAUNCH_PLAN_CONTRACT = "common.game/launch-plan";
 var GAME_INSTALLATION_MATCHER_PROFILE = "modkit/game-installation-matcher";
-function gameLaunchOptionsJsonSchema(options) {
-  const properties = {};
-  for (const [name, option] of Object.entries(options)) {
-    properties[name] = {
-      type: option.type,
-      ...option.description === void 0 ? {} : { description: option.description },
-      ...option.default === void 0 ? {} : { default: option.default },
-      ...option.enum === void 0 ? {} : { enum: [...option.enum] },
-      ...option.minimum === void 0 ? {} : { minimum: option.minimum },
-      ...option.maximum === void 0 ? {} : { maximum: option.maximum }
-    };
-  }
-  return { type: "object", additionalProperties: false, properties };
-}
 
 // ../MODDING/modkit-core/packages/sdk/dist/mods/index.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var MOD_WORKSPACE_COMPOSITION_CONTRACT = "common.mod/workspace-composition";
 var MOD_WORKSPACE_MATCHER_PROFILE = "modkit/mod-workspace-matcher";
 function positiveLimit(value2, name) {
@@ -1809,641 +1733,16 @@ function resolveModWorkspaceGraph(input) {
 }
 
 // ../MODDING/modkit-core/packages/sdk/dist/data/index.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var DATA_CATALOG_ANALYSIS_CONTRACT = "common.data/catalog-analysis";
 var DATA_CATALOG_MATCHER_PROFILE = "modkit/data-catalog-matcher";
 var RESOLVED_DATA_WORKSPACE_CONTRACT = "common.data/resolved-workspace";
 var RESOLVED_DATA_WORKSPACE_MATCHER_PROFILE = "modkit/resolved-data-workspace-matcher";
-var RESOLVED_DATA_AUTHORING_INDEX_KIND = "resolved-data-authoring-index";
 var DATA_CATALOG_QUERIES_OUTPUT = "catalogQueries";
 var DATA_CATALOG_ENTITIES_INPUT = "catalogEntities";
-function positiveLimit2(value2, name) {
-  if (!Number.isSafeInteger(value2) || value2 <= 0) {
-    throw new TypeError(`${name} must be a positive safe integer`);
-  }
-  return value2;
-}
-function entityKey(namespace, entityId) {
-  return `${namespace}\0${entityId}`;
-}
-function cloneJson(value2) {
-  if (Array.isArray(value2))
-    return value2.map(cloneJson);
-  if (typeof value2 === "object" && value2 !== null) {
-    return Object.fromEntries(Object.entries(value2).map(([key2, item]) => [key2, cloneJson(item)]));
-  }
-  return value2;
-}
-function immutableJson(value2) {
-  if (Array.isArray(value2))
-    return Object.freeze(value2.map(immutableJson));
-  if (typeof value2 === "object" && value2 !== null) {
-    return Object.freeze(Object.fromEntries(Object.entries(value2).map(([key2, item]) => [key2, immutableJson(item)])));
-  }
-  return value2;
-}
-function immutableSource2(value2) {
-  return Object.freeze({ ...value2 });
-}
-function immutableRef(value2) {
-  return Object.freeze({ ...value2 });
-}
-function immutableDiagnostic2(value2) {
-  return Object.freeze({
-    ...value2,
-    ...value2.source === void 0 ? {} : { source: immutableSource2(value2.source) },
-    ...value2.chain === void 0 ? {} : { chain: Object.freeze(value2.chain.map(immutableRef)) }
-  });
-}
-function immutableSchema(value2) {
-  const immutableField = (field) => Object.freeze({
-    ...field,
-    ...field.type === void 0 ? {} : { type: immutableJson(field.type) },
-    ...field.fields === void 0 ? {} : { fields: Object.freeze(field.fields.map(immutableField)) }
-  });
-  return Object.freeze({ ...value2, fields: Object.freeze(value2.fields.map(immutableField)) });
-}
-function recordOf(value2) {
-  return typeof value2 === "object" && value2 !== null && !Array.isArray(value2) ? value2 : void 0;
-}
-function indexedKey(value2, indexKey) {
-  const record = recordOf(value2);
-  const index = record?.[indexKey];
-  return typeof index === "string" || typeof index === "number" ? String(index) : void 0;
-}
-function isRemoved(value2) {
-  const removed = recordOf(value2)?.["removed"];
-  return removed === true || removed === 1 || removed === "1";
-}
-var authoringOriginKey = (path) => JSON.stringify(path);
-var authoringPathStartsWith = (path, prefix) => prefix.length <= path.length && prefix.every((part, index) => path[index] === part);
-function clearAuthoringOrigins(tracker, path) {
-  for (const [key2, origin] of tracker.origins) {
-    if (authoringPathStartsWith(origin.path, path))
-      tracker.origins.delete(key2);
-  }
-}
-function setAuthoringOrigin(tracker, path) {
-  const origin = tracker.originForPath(path);
-  const immutablePath = Object.freeze([...path]);
-  tracker.origins.set(authoringOriginKey(path), Object.freeze({
-    path: immutablePath,
-    source: origin.source,
-    originEntityId: origin.originEntityId
-  }));
-}
-function visitStructuredOriginPaths(value2, nestedFields, path, visit, ignoredKeys = /* @__PURE__ */ new Set()) {
-  const record = recordOf(value2);
-  if (record !== void 0) {
-    const nested = new Map((nestedFields ?? []).map((field) => [field.fieldId, field]));
-    let visited = false;
-    for (const [key2, childValue] of Object.entries(record)) {
-      if (ignoredKeys.has(key2))
-        continue;
-      visited = true;
-      const child = nested.get(key2);
-      if (child === void 0) {
-        visitStructuredOriginPaths(childValue, void 0, [...path, key2], visit);
-      } else {
-        visitFieldOriginPaths(childValue, child, [...path, key2], visit);
-      }
-    }
-    if (!visited)
-      visit(path);
-    return;
-  }
-  if (Array.isArray(value2)) {
-    if (value2.length === 0)
-      visit(path);
-    else
-      value2.forEach((item, index) => visitStructuredOriginPaths(item, nestedFields, [...path, String(index)], visit));
-    return;
-  }
-  visit(path);
-}
-function visitFieldOriginPaths(value2, field, path, visit) {
-  if (field.cardinality === "indexed") {
-    const indexKey = field.indexKey ?? "index";
-    let visited = false;
-    for (const item of Array.isArray(value2) ? value2 : [value2]) {
-      const selector = indexedKey(item, indexKey);
-      if (selector === void 0 || isRemoved(item))
-        continue;
-      visited = true;
-      const record = recordOf(item);
-      const wrapped = record?.["value"];
-      visitStructuredOriginPaths(wrapped === void 0 ? item : wrapped, field.fields, [...path, selector], visit, wrapped === void 0 ? /* @__PURE__ */ new Set([indexKey, "removed"]) : /* @__PURE__ */ new Set());
-    }
-    if (!visited)
-      visit(path);
-    return;
-  }
-  if (field.cardinality === "append") {
-    const values = Array.isArray(value2) ? value2 : [value2];
-    if (values.length === 0)
-      visit(path);
-    else
-      values.forEach((item, index) => visitStructuredOriginPaths(item, field.fields, [...path, String(index)], visit));
-    return;
-  }
-  visitStructuredOriginPaths(value2, field.fields, path, visit);
-}
-function replaceStructuredAuthoringOrigins(tracker, value2, nestedFields, path, ignoredKeys = /* @__PURE__ */ new Set()) {
-  if (tracker === void 0)
-    return;
-  clearAuthoringOrigins(tracker, path);
-  visitStructuredOriginPaths(value2, nestedFields, path, (item) => setAuthoringOrigin(tracker, item), ignoredKeys);
-}
-function mergeAppend(previous, incoming, field, tracker, path = []) {
-  const left = Array.isArray(previous) ? previous : previous === void 0 ? [] : [previous];
-  const right = Array.isArray(incoming) ? incoming : [incoming];
-  right.forEach((item, index) => replaceStructuredAuthoringOrigins(tracker, item, field.fields, [
-    ...path,
-    String(left.length + index)
-  ]));
-  return [...left.map(cloneJson), ...right.map(cloneJson)];
-}
-function mergeIndexed(previous, incoming, field, tracker, path = []) {
-  const indexKey = field.indexKey ?? "index";
-  const result = Array.isArray(previous) ? previous.map(cloneJson) : [];
-  const additions = Array.isArray(incoming) ? incoming : [incoming];
-  for (const item of additions) {
-    const key2 = indexedKey(item, indexKey);
-    if (key2 === void 0)
-      continue;
-    const found = result.findIndex((candidate) => indexedKey(candidate, indexKey) === key2);
-    if (isRemoved(item)) {
-      if (tracker !== void 0)
-        clearAuthoringOrigins(tracker, [...path, key2]);
-      if (found !== -1)
-        result.splice(found, 1);
-    } else if (found === -1) {
-      result.push(cloneJson(item));
-      const record = recordOf(item);
-      const wrapped = record?.["value"];
-      replaceStructuredAuthoringOrigins(tracker, wrapped === void 0 ? item : wrapped, field.fields, [...path, key2], wrapped === void 0 ? /* @__PURE__ */ new Set([indexKey, "removed"]) : /* @__PURE__ */ new Set());
-    } else {
-      const existing = recordOf(result[found]);
-      const replacement = recordOf(item);
-      result[found] = existing !== void 0 && replacement !== void 0 && "value" in existing && "value" in replacement ? {
-        ...mergeStructured(existing, item, void 0),
-        value: mergeStructured(existing["value"], replacement["value"], field.fields, tracker, [...path, key2])
-      } : mergeStructured(result[found], item, field.fields, tracker, [...path, key2], /* @__PURE__ */ new Set([indexKey, "removed"]));
-    }
-  }
-  return result;
-}
-function mergeStructured(previous, incoming, nestedFields, tracker, path = [], ignoredOriginKeys = /* @__PURE__ */ new Set()) {
-  const left = previous === void 0 ? void 0 : recordOf(previous);
-  const right = recordOf(incoming);
-  if (left === void 0 || right === void 0) {
-    replaceStructuredAuthoringOrigins(tracker, incoming, nestedFields, path, ignoredOriginKeys);
-    return cloneJson(incoming);
-  }
-  const nested = new Map((nestedFields ?? []).map((child) => [child.fieldId, child]));
-  const merged = Object.fromEntries(Object.entries(left).map(([key2, value2]) => [key2, cloneJson(value2)]));
-  for (const [key2, value2] of Object.entries(right)) {
-    const child = nested.get(key2);
-    const childTracker = ignoredOriginKeys.has(key2) ? void 0 : tracker;
-    merged[key2] = child === void 0 ? mergeStructured(merged[key2], value2, void 0, childTracker, [...path, key2]) : mergeFieldValue(merged[key2], value2, child, childTracker, [...path, key2]);
-  }
-  return merged;
-}
-function mergeFieldValue(previous, incoming, field, tracker, path = []) {
-  if (field.cardinality === "append")
-    return mergeAppend(previous, incoming, field, tracker, path);
-  if (field.cardinality === "indexed")
-    return mergeIndexed(previous, incoming, field, tracker, path);
-  return mergeStructured(previous, incoming, field.fields, tracker, path);
-}
-function schemaFields(schema, schemas, diagnostics, visiting = /* @__PURE__ */ new Set()) {
-  if (visiting.has(schema.typeId)) {
-    diagnostics.push({
-      severity: "error",
-      code: "common.data/schema-inheritance-cycle",
-      message: `schema inheritance cycle includes ${schema.typeId}`,
-      typeId: schema.typeId
-    });
-    return /* @__PURE__ */ new Map();
-  }
-  const fields = /* @__PURE__ */ new Map();
-  if (schema.parentTypeId !== void 0) {
-    const parent = schemas.get(schema.parentTypeId);
-    if (parent === void 0) {
-      diagnostics.push({
-        severity: "error",
-        code: "common.data/schema-parent-unavailable",
-        message: `${schema.typeId} names unavailable schema parent ${schema.parentTypeId}`,
-        typeId: schema.typeId
-      });
-    } else {
-      const next = new Set(visiting);
-      next.add(schema.typeId);
-      for (const [fieldId, field] of schemaFields(parent, schemas, diagnostics, next)) {
-        fields.set(fieldId, field);
-      }
-    }
-  }
-  for (const field of schema.fields)
-    fields.set(field.fieldId, field);
-  return fields;
-}
-function mergeFields(base, patch, fields) {
-  const merged = Object.fromEntries(Object.entries(base).map(([key2, value2]) => [key2, cloneJson(value2)]));
-  for (const [fieldId, incoming] of Object.entries(patch)) {
-    const field = fields.get(fieldId);
-    if (field === void 0)
-      continue;
-    merged[fieldId] = mergeFieldValue(merged[fieldId], incoming, field);
-  }
-  return merged;
-}
-function relationScalarValues(value2) {
-  if (typeof value2 === "string" || typeof value2 === "number")
-    return [String(value2)];
-  if (Array.isArray(value2))
-    return value2.flatMap(relationScalarValues);
-  const record = recordOf(value2);
-  if (record === void 0)
-    return [];
-  return record["value"] === void 0 ? [] : relationScalarValues(record["value"]);
-}
-function visitRelationField(value2, field, path, visit) {
-  if (Array.isArray(value2) && (field.cardinality === "indexed" || field.cardinality === "append")) {
-    value2.forEach((item, ordinal) => {
-      const record = recordOf(item);
-      const indexKey = field.indexKey ?? "index";
-      const explicitIndex = field.cardinality === "indexed" ? record?.[indexKey] : void 0;
-      const selector = typeof explicitIndex === "string" || typeof explicitIndex === "number" ? String(explicitIndex) : String(ordinal);
-      visitRelationField(item, { ...field, cardinality: "scalar" }, `${path}.${selector}`, visit);
-    });
-    return;
-  }
-  if (field.linkNamespace !== void 0 && field.linkNamespace !== "") {
-    for (const entityId of relationScalarValues(value2)) {
-      if (entityId.length > 0)
-        visit(field.linkNamespace, entityId, path);
-    }
-  }
-  if (field.fields === void 0)
-    return;
-  const values = Array.isArray(value2) ? value2 : [value2];
-  for (const item of values) {
-    const record = recordOf(item);
-    if (record === void 0)
-      continue;
-    const wrapped = record["value"];
-    const nested = wrapped === void 0 ? record : recordOf(wrapped) ?? record;
-    for (const child of field.fields) {
-      const childValue = nested[child.fieldId];
-      if (childValue === void 0)
-        continue;
-      visitRelationField(childValue, child, `${path}.${child.fieldId}`, visit);
-    }
-  }
-}
-var immutableToken = (token) => Object.freeze({ ...token });
-function resolveDataCatalog(input) {
-  const maxEntities = positiveLimit2(input.maxEntities, "maxEntities");
-  const maxDepth = positiveLimit2(input.maxDepth, "maxDepth");
-  if (input.patches.length > maxEntities) {
-    throw new TypeError(`patches exceeds maxEntities (${input.patches.length} > ${maxEntities})`);
-  }
-  const extended = input.includeWorkspaceFacets === true;
-  const diagnostics = [...extended ? input.diagnostics ?? [] : []];
-  const schemas = /* @__PURE__ */ new Map();
-  for (const schema of input.schemas) {
-    if (schemas.has(schema.typeId)) {
-      diagnostics.push({
-        severity: "error",
-        code: "common.data/schema-type-duplicate",
-        message: `catalog schema type is duplicated: ${schema.typeId}`,
-        typeId: schema.typeId
-      });
-    } else {
-      schemas.set(schema.typeId, schema);
-    }
-  }
-  const fieldsByType = /* @__PURE__ */ new Map();
-  for (const schema of schemas.values()) {
-    fieldsByType.set(schema.typeId, schemaFields(schema, schemas, diagnostics));
-  }
-  const entities = /* @__PURE__ */ new Map();
-  const unknownFields = /* @__PURE__ */ new Set();
-  for (const patch of input.patches) {
-    const typeFields = fieldsByType.get(patch.typeId);
-    if (typeFields === void 0) {
-      diagnostics.push({
-        severity: "warning",
-        code: "common.data/schema-type-unsupported",
-        message: `no catalog schema is available for ${patch.typeId}`,
-        namespace: patch.namespace,
-        typeId: patch.typeId,
-        entityId: patch.entityId,
-        source: patch.source
-      });
-      continue;
-    }
-    const key2 = entityKey(patch.namespace, patch.entityId);
-    let current = entities.get(key2);
-    if (current === void 0) {
-      current = {
-        namespace: patch.namespace,
-        entityId: patch.entityId,
-        typeId: patch.typeId,
-        ...patch.parentEntityId === void 0 ? {} : { parentEntityId: patch.parentEntityId },
-        defaultTemplate: false,
-        tokens: /* @__PURE__ */ new Map(),
-        fields: {},
-        fieldSources: {},
-        sources: []
-      };
-      entities.set(key2, current);
-    } else if (current.typeId !== patch.typeId) {
-      diagnostics.push({
-        severity: "error",
-        code: "common.data/entity-type-conflict",
-        message: `${patch.namespace}/${patch.entityId} changes type from ${current.typeId} to ${patch.typeId}`,
-        namespace: patch.namespace,
-        typeId: patch.typeId,
-        entityId: patch.entityId,
-        source: patch.source
-      });
-      continue;
-    }
-    if (patch.parentEntityId !== void 0)
-      current.parentEntityId = patch.parentEntityId;
-    if (patch.defaultTemplate !== void 0)
-      current.defaultTemplate = patch.defaultTemplate;
-    for (const token of patch.tokens ?? [])
-      current.tokens.set(token.id, immutableToken(token));
-    current.sources.push(patch.source);
-    for (const fieldId of Object.keys(patch.fields)) {
-      if (typeFields.has(fieldId)) {
-        current.fieldSources[fieldId] = patch.source;
-        continue;
-      }
-      const diagnosticKey = `${patch.typeId}\0${fieldId}`;
-      if (unknownFields.has(diagnosticKey))
-        continue;
-      unknownFields.add(diagnosticKey);
-      diagnostics.push({
-        severity: "information",
-        code: "common.data/schema-field-unsupported",
-        message: `${patch.typeId}.${fieldId} is outside the active schema slice`,
-        namespace: patch.namespace,
-        typeId: patch.typeId,
-        entityId: patch.entityId,
-        fieldId,
-        source: patch.source
-      });
-    }
-    current.fields = mergeFields(current.fields, patch.fields, typeFields);
-  }
-  const resolvedCache = /* @__PURE__ */ new Map();
-  const resolveEntity = (ref, depth, path) => {
-    const key2 = entityKey(ref.namespace, ref.entityId);
-    const cached = resolvedCache.get(key2);
-    if (cached !== void 0)
-      return cached;
-    const current = entities.get(key2);
-    if (current === void 0)
-      return void 0;
-    if (depth > maxDepth) {
-      diagnostics.push({
-        severity: "error",
-        code: "common.data/entity-inheritance-depth-exceeded",
-        message: `${ref.namespace}/${ref.entityId} exceeds inheritance depth ${maxDepth}`,
-        namespace: ref.namespace,
-        typeId: current.typeId,
-        entityId: ref.entityId,
-        chain: [...path, ref]
-      });
-      return void 0;
-    }
-    const cycleAt = path.findIndex((item) => entityKey(item.namespace, item.entityId) === key2);
-    if (cycleAt !== -1) {
-      diagnostics.push({
-        severity: "error",
-        code: "common.data/entity-inheritance-cycle",
-        message: `entity inheritance cycle includes ${ref.namespace}/${ref.entityId}`,
-        namespace: ref.namespace,
-        typeId: current.typeId,
-        entityId: ref.entityId,
-        chain: [...path.slice(cycleAt), ref]
-      });
-      return void 0;
-    }
-    let complete = true;
-    let fields = {};
-    let fieldSources = {};
-    let inheritanceChain = [];
-    let sources = [];
-    let tokens = /* @__PURE__ */ new Map();
-    if (current.parentEntityId !== void 0) {
-      const parentRef = { namespace: current.namespace, entityId: current.parentEntityId };
-      const parent = resolveEntity(parentRef, depth + 1, [...path, ref]);
-      if (parent === void 0) {
-        complete = false;
-        diagnostics.push({
-          severity: "error",
-          code: "common.data/entity-parent-unavailable",
-          message: `${current.namespace}/${current.entityId} names unavailable parent ${current.parentEntityId}`,
-          namespace: current.namespace,
-          typeId: current.typeId,
-          entityId: current.entityId,
-          chain: [...path, ref, parentRef]
-        });
-      } else {
-        complete = parent.complete;
-        fields = Object.fromEntries(Object.entries(parent.fields).map(([fieldId, value2]) => [fieldId, cloneJson(value2)]));
-        fieldSources = Object.fromEntries(Object.entries(parent.fieldSources ?? {}).map(([fieldId, source]) => [
-          fieldId,
-          immutableSource2(source)
-        ]));
-        inheritanceChain = [...parent.inheritanceChain];
-        sources = [...parent.sources];
-        for (const token of parent.tokens ?? [])
-          tokens.set(token.id, token);
-      }
-    }
-    for (const [id, token] of current.tokens)
-      tokens.set(id, token);
-    fields = mergeFields(fields, current.fields, fieldsByType.get(current.typeId) ?? /* @__PURE__ */ new Map());
-    for (const [fieldId, source] of Object.entries(current.fieldSources)) {
-      fieldSources[fieldId] = source;
-    }
-    inheritanceChain.push(ref);
-    sources.push(...current.sources);
-    const resolved = Object.freeze({
-      namespace: current.namespace,
-      typeId: current.typeId,
-      entityId: current.entityId,
-      ...current.parentEntityId === void 0 ? {} : { parentEntityId: current.parentEntityId },
-      ...current.defaultTemplate ? { defaultTemplate: true } : {},
-      ...tokens.size === 0 ? {} : {
-        tokens: Object.freeze([...tokens.values()].sort((left, right) => left.id.localeCompare(right.id)))
-      },
-      inheritanceChain: Object.freeze(inheritanceChain.map(immutableRef)),
-      fields: Object.freeze(Object.fromEntries(Object.entries(fields).map(([fieldId, value2]) => [fieldId, immutableJson(value2)]))),
-      ...input.includeFieldSources === true ? {
-        fieldSources: Object.freeze(Object.fromEntries(Object.entries(fieldSources).map(([fieldId, source]) => [
-          fieldId,
-          immutableSource2(source)
-        ])))
-      } : {},
-      sources: Object.freeze(sources.map(immutableSource2)),
-      complete
-    });
-    resolvedCache.set(key2, resolved);
-    return resolved;
-  };
-  const definitions = [];
-  if (extended) {
-    for (const current of entities.values()) {
-      const entity = resolveEntity({ namespace: current.namespace, entityId: current.entityId }, 0, []);
-      if (entity !== void 0)
-        definitions.push(entity);
-    }
-    definitions.sort((left, right) => left.namespace.localeCompare(right.namespace) || left.entityId.localeCompare(right.entityId));
-  }
-  const results = [];
-  for (const query of input.queries) {
-    const entity = resolveEntity(query, 0, []);
-    if (entity === void 0) {
-      diagnostics.push({
-        severity: "error",
-        code: "common.data/entity-query-unresolved",
-        message: `catalog query did not resolve ${query.namespace}/${query.entityId}`,
-        namespace: query.namespace,
-        entityId: query.entityId
-      });
-    } else {
-      results.push(entity);
-    }
-  }
-  const resolvedKeys = new Set(definitions.map((item) => entityKey(item.namespace, item.entityId)));
-  const relationKeys = /* @__PURE__ */ new Set();
-  const relations = [];
-  for (const entity of extended ? definitions : []) {
-    const fields = fieldsByType.get(entity.typeId) ?? /* @__PURE__ */ new Map();
-    for (const [fieldId, value2] of Object.entries(entity.fields)) {
-      const field = fields.get(fieldId);
-      if (field === void 0)
-        continue;
-      visitRelationField(value2, field, fieldId, (namespace, entityId, role) => {
-        const key2 = `${entity.namespace}\0${entity.entityId}\0${namespace}\0${entityId}\0${role}`;
-        if (relationKeys.has(key2))
-          return;
-        relationKeys.add(key2);
-        const dead = !resolvedKeys.has(entityKey(namespace, entityId));
-        const relation = Object.freeze({
-          from: immutableRef({ namespace: entity.namespace, entityId: entity.entityId }),
-          to: immutableRef({ namespace, entityId }),
-          role,
-          dead,
-          ...entity.sources.at(-1) === void 0 ? {} : { source: immutableSource2(entity.sources.at(-1)) }
-        });
-        relations.push(relation);
-        if (dead) {
-          diagnostics.push({
-            severity: "warning",
-            code: "common.data/relation-target-unavailable",
-            message: `${entity.namespace}/${entity.entityId} ${role} names unavailable ${namespace}/${entityId}`,
-            namespace: entity.namespace,
-            typeId: entity.typeId,
-            entityId: entity.entityId,
-            fieldId: role,
-            ...relation.source === void 0 ? {} : { source: relation.source }
-          });
-        }
-      });
-    }
-  }
-  relations.sort((left, right) => left.from.namespace.localeCompare(right.from.namespace) || left.from.entityId.localeCompare(right.from.entityId) || left.role.localeCompare(right.role) || left.to.namespace.localeCompare(right.to.namespace) || left.to.entityId.localeCompare(right.to.entityId));
-  const localizationPatches = extended ? input.localizationPatches ?? [] : [];
-  const localePreferences = input.localePreferences ?? [];
-  const localizedByLocale = /* @__PURE__ */ new Map();
-  for (const patch of localizationPatches) {
-    let entries = localizedByLocale.get(patch.locale);
-    if (entries === void 0) {
-      entries = /* @__PURE__ */ new Map();
-      localizedByLocale.set(patch.locale, entries);
-    }
-    if (!entries.has(patch.key))
-      entries.set(patch.key, patch);
-  }
-  const requestedLocales = localePreferences.length > 0 ? localePreferences : [...localizedByLocale.keys()];
-  const localizedStrings = [];
-  for (const key2 of [...new Set(extended ? input.localizationKeys ?? [] : [])].sort()) {
-    let found;
-    let resolvedLocale;
-    for (const locale of requestedLocales) {
-      const candidate = localizedByLocale.get(locale)?.get(key2);
-      if (candidate === void 0)
-        continue;
-      found = candidate;
-      resolvedLocale = locale;
-      break;
-    }
-    if (found === void 0 || resolvedLocale === void 0) {
-      diagnostics.push({
-        severity: "warning",
-        code: "common.data/localization-key-unavailable",
-        message: `no requested locale resolves localization key ${key2}`,
-        fieldId: key2
-      });
-      continue;
-    }
-    const requestedLocale = requestedLocales[0] ?? resolvedLocale;
-    localizedStrings.push(Object.freeze({
-      key: key2,
-      requestedLocale,
-      resolvedLocale,
-      value: found.value,
-      source: immutableSource2(found.source),
-      fallback: resolvedLocale !== requestedLocale
-    }));
-    if (resolvedLocale !== requestedLocale) {
-      diagnostics.push({
-        severity: "information",
-        code: "common.data/localization-fallback",
-        message: `${key2} fell back from ${requestedLocale} to ${resolvedLocale}`,
-        fieldId: key2,
-        source: found.source
-      });
-    }
-  }
-  const namespaceCounts = /* @__PURE__ */ new Map();
-  for (const entity of entities.values()) {
-    namespaceCounts.set(entity.namespace, (namespaceCounts.get(entity.namespace) ?? 0) + 1);
-  }
-  const immutableDiagnostics = Object.freeze(diagnostics.map(immutableDiagnostic2));
-  return Object.freeze({
-    schemaVersion: 1,
-    workspaceId: input.workspaceId,
-    gameId: input.gameId,
-    analyzerId: input.analyzerId,
-    typeIds: Object.freeze([...schemas.keys()].sort()),
-    namespaces: Object.freeze([...namespaceCounts.entries()].sort(([left], [right]) => left.localeCompare(right)).map(([namespace, entityCount]) => Object.freeze({ namespace, entityCount }))),
-    entityCount: entities.size,
-    patchCount: input.patches.length,
-    entities: Object.freeze(results),
-    diagnostics: immutableDiagnostics,
-    ...input.ownerMetadata === void 0 ? {} : { ownerMetadata: immutableJson(input.ownerMetadata) },
-    ...extended ? {
-      schemas: Object.freeze(input.schemas.map(immutableSchema)),
-      definitions: Object.freeze(definitions),
-      relations: Object.freeze(relations),
-      localizedStrings: Object.freeze(localizedStrings),
-      snapshotId: input.snapshotId ?? `${input.gameId}:${input.workspaceId}:${input.patches.length}:${localizationPatches.length}`,
-      ...input.projectionPlan === void 0 ? {} : { projectionPlan: input.projectionPlan },
-      ...input.projectionReceipt === void 0 ? {} : { projectionReceipt: input.projectionReceipt }
-    } : {},
-    complete: immutableDiagnostics.every((item) => item.severity !== "error") && results.every((item) => item.complete)
-  });
-}
 
 // ../MODDING/modkit-core/packages/sdk/dist/maps/index.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var MAP_SEMANTIC_ANALYSIS_CONTRACT = "common.map/semantic-analysis";
 var RESOLVED_MAP_WORKSPACE_CONTRACT = "common.map/resolved-workspace";
 var MAP_PREVIEW_PREPARATION_CONTRACT = "common.map/preview-preparation";
@@ -2451,11 +1750,6 @@ var WORLD_SCENE_SOURCE_CONTRACT = "common.view/world-scene-source";
 var MAP_LAYERS_OPERATION = "map.layers";
 var MAP_LAYER_READ_OPERATION = "map.layer-read";
 var MAP_LAYER_WRITE_OPERATION = "map.layer-write";
-var MAP_LAYERS_REPRESENTATION = /* @__PURE__ */ Object.freeze({
-  id: "map-layers",
-  contract: "common.map/layers",
-  major: 1
-});
 var sampleX = {
   type: "integer",
   minimum: 0,
@@ -2589,41 +1883,9 @@ function transformTerrainUv(uv, transform) {
     0.5 + x * sine + y * cosine + transform.offset[1]
   ];
 }
-function terrainUvTransformFromOrigin(transform) {
-  const x = 0.5 * transform.scale[0];
-  const y = 0.5 * transform.scale[1];
-  const cosine = Math.cos(transform.rotation);
-  const sine = Math.sin(transform.rotation);
-  return Object.freeze({
-    offset: Object.freeze([
-      transform.offset[0] - 0.5 + x * cosine - y * sine,
-      transform.offset[1] - 0.5 + x * sine + y * cosine
-    ]),
-    scale: Object.freeze([transform.scale[0], transform.scale[1]]),
-    rotation: transform.rotation
-  });
-}
-function mapQualificationTupleBytes(tuples) {
-  const view = new DataView(new ArrayBuffer(tuples.length * 24));
-  tuples.forEach((tuple, index) => {
-    for (let axis = 0; axis < 3; axis += 1)
-      view.setFloat64(index * 24 + axis * 8, tuple[axis] ?? Number.NaN, true);
-  });
-  return new Uint8Array(view.buffer);
-}
-function worldModelRequiredBytes(result) {
-  let required;
-  for (const item of result.diagnostics) {
-    const named = item.data?.requiredBytes;
-    if (item.code === "x3.host/model-resource-too-large" && typeof named === "number")
-      required = named;
-    else if (item.code === "x3.host/resource-budget-exceeded" && result.state === "converted")
-      required = result.uvmBytes?.byteLength ?? required;
-  }
-  return required !== void 0 && Number.isSafeInteger(required) && required > 0 ? required : void 0;
-}
 
 // ../MODDING/modkit-core/packages/sdk/dist/runtime-abi.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 function contributionSettingsFor(settings, sourceUri) {
   if (settings === void 0)
     return Object.freeze({});
@@ -2632,6 +1894,7 @@ function contributionSettingsFor(settings, sourceUri) {
 }
 
 // ../MODDING/modkit-core/packages/sdk/dist/manifest/patterns.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 function normalize(path) {
   return path.startsWith("./") ? path.slice(2) : path;
 }
@@ -2690,6 +1953,7 @@ function expandContributionManifests(patterns, files) {
 }
 
 // ../MODDING/modkit-core/packages/sdk/dist/manifest/normalize.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 function isRecord(value2) {
   return typeof value2 === "object" && value2 !== null && !Array.isArray(value2);
 }
@@ -2880,7 +2144,81 @@ async function normalizeExtensionManifestUncached(input) {
   return hasErrors(all) ? { container: "package-json", diagnostics: all } : { container: "package-json", manifest, diagnostics: all };
 }
 
+// ../MODDING/modkit-core/packages/sdk/dist/security/grant.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+function grantValidity(grant, now = Date.now()) {
+  if (grant.expiresAt === void 0)
+    return { state: "valid" };
+  const parsed = Date.parse(grant.expiresAt);
+  if (Number.isNaN(parsed))
+    return { state: "malformed", value: grant.expiresAt };
+  return parsed > now ? { state: "valid" } : { state: "expired", at: grant.expiresAt };
+}
+function intersectClasses(a, b) {
+  return uniqueSortedUtf8(a.filter((cls) => b.includes(cls)));
+}
+function intersectStrings(a, b) {
+  if (a === void 0)
+    return b === void 0 ? void 0 : [...b];
+  if (b === void 0)
+    return [...a];
+  return uniqueSortedUtf8(a.filter((item) => b.includes(item)));
+}
+function narrowPaths(parent, requestedRoots) {
+  if (parent === void 0)
+    return void 0;
+  if (requestedRoots === void 0)
+    return [...parent];
+  return parent.filter((scope) => requestedRoots.includes(scope.root));
+}
+function narrowNetwork(parent, requestedOrigins) {
+  if (parent === void 0)
+    return void 0;
+  if (requestedOrigins === void 0)
+    return [...parent];
+  return parent.map((scope) => ({
+    ...scope,
+    origins: scope.origins.filter((origin) => requestedOrigins.includes(origin))
+  })).filter((scope) => scope.origins.length > 0);
+}
+function narrowGrant(parent, request) {
+  const validity = grantValidity(parent);
+  if (validity.state !== "valid") {
+    return {
+      child: { id: request.childId, classes: [], parentGrant: parent.id },
+      missing: uniqueSortedUtf8(request.requestedClasses)
+    };
+  }
+  let allowed = intersectClasses(request.requestedClasses, parent.classes);
+  const policy = request.policy;
+  if (policy?.allowedClasses !== void 0) {
+    allowed = intersectClasses(allowed, policy.allowedClasses);
+  }
+  if (request.operation !== void 0 && policy?.operationClasses !== void 0) {
+    const ceiling = policy.operationClasses[request.operation];
+    if (ceiling !== void 0)
+      allowed = intersectClasses(allowed, ceiling);
+  }
+  const missing = uniqueSortedUtf8(request.requestedClasses.filter((cls) => !allowed.includes(cls)));
+  const sourceScope = intersectStrings(parent.sourceScope, request.requestedSourceRoots);
+  const filesystem = narrowPaths(parent.filesystem, request.requestedSourceRoots);
+  const network = narrowNetwork(parent.network, request.requestedOrigins);
+  const child = {
+    id: request.childId,
+    classes: allowed,
+    parentGrant: parent.id,
+    ...parent.subjectScope === void 0 ? {} : { subjectScope: [...parent.subjectScope] },
+    ...sourceScope === void 0 ? {} : { sourceScope },
+    ...filesystem === void 0 ? {} : { filesystem },
+    ...network === void 0 ? {} : { network },
+    ...parent.credentials === void 0 ? {} : { credentials: [...parent.credentials] },
+    ...parent.expiresAt === void 0 ? {} : { expiresAt: parent.expiresAt }
+  };
+  return { child, missing };
+}
+
 // ../MODDING/modkit-core/packages/sdk/dist/asset-capabilities/data-source-surfaces.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var ENCODED_MEDIA_SURFACE_ID = "common.view/encoded-media";
 var ENCODED_MEDIA = Object.freeze({
   contract: contractId(ENCODED_MEDIA_SURFACE_ID),
@@ -2994,7 +2332,8 @@ var worldSceneSourceSurface = {
     info: cancellableValue,
     page: cancellableValue,
     model: { kind: "value", optional: true, ...sig },
-    texture: { kind: "value", optional: true, ...sig }
+    texture: { kind: "value", optional: true, ...sig },
+    refined: { kind: "value", optional: true, ...sig }
   }
 };
 var modelResourceRefsSourceSurface = {
@@ -3172,19 +2511,19 @@ var STANDARD_DATA_SOURCE_SURFACES = deepFreeze({
 var AUXILIARY_DATA_SOURCE_SURFACES = deepFreeze({
   [ENCODED_MEDIA_SURFACE_ID]: encodedMediaSurface
 });
-function standardDataSourceSurfaceFor(contract, major) {
-  if (major !== 1)
-    return void 0;
-  if (STANDARD_DATA_SOURCE_CONTRACTS.includes(contract)) {
-    return STANDARD_DATA_SOURCE_SURFACES[contract];
-  }
-  if (contract === ENCODED_MEDIA_SURFACE_ID)
-    return AUXILIARY_DATA_SOURCE_SURFACES[contract];
-  return void 0;
-}
 var ENCODED_MEDIA_SURFACE_CONTRACT = contractId(ENCODED_MEDIA_SURFACE_ID);
 
+// ../MODDING/modkit-core/packages/sdk/dist/asset-capabilities/uv-projection.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+function toPortableProjectionReceipt(receipt, identity) {
+  const { form, sourceUri, ...rest } = receipt;
+  void form;
+  void sourceUri;
+  return { ...rest, form: "portable", sourceIdentity: identity };
+}
+
 // ../MODDING/modkit-core/packages/sdk/dist/asset-capabilities/presentation.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 function bindingId(value2) {
   if (!isSegment(value2))
     throw new TypeError(`invalid binding id: ${value2}`);
@@ -3214,364 +2553,86 @@ function definePresentationPlan(plan) {
   return snapshotJsonWireData(plan);
 }
 
-// ../MODDING/modkit-core/packages/sdk/dist/asset-capabilities/visual-composition.js
-var MIXED_VISUAL_STAGE_ID = presentationSlotId("mixed-visual");
-var MIXED_VISUAL_WORLD_BINDING_ID = bindingId("mixed-world");
-var MIXED_VISUAL_MODEL_BINDING_ID = bindingId("mixed-model");
-function nonEmpty2(value2, label) {
-  if (value2.trim().length === 0)
-    throw new TypeError(`${label} must not be empty`);
-}
-function finiteTuple(value2, label, positive = false) {
-  if (value2.length !== 3 || value2.some((item) => !Number.isFinite(item) || positive && item <= 0)) {
-    throw new TypeError(`${label} must contain three ${positive ? "positive " : ""}finite numbers`);
-  }
-}
-function basis(value2, label) {
-  if (value2.unit === "meter") {
-    if (value2.sourceUnit !== void 0) {
-      throw new TypeError(`${label}.sourceUnit is only valid for source-unit coordinates`);
-    }
-  } else {
-    nonEmpty2(value2.sourceUnit ?? "", `${label}.sourceUnit`);
-  }
-  if (value2.metersPerUnit !== void 0 && (!Number.isFinite(value2.metersPerUnit) || value2.metersPerUnit <= 0)) {
-    throw new TypeError(`${label}.metersPerUnit must be positive and finite`);
-  }
-  if (value2.unitsPerCell !== void 0 && (!Number.isFinite(value2.unitsPerCell) || value2.unitsPerCell <= 0)) {
-    throw new TypeError(`${label}.unitsPerCell must be positive and finite`);
-  }
-}
-function frame(value2, label) {
-  nonEmpty2(value2.coordinateSpaceId, `${label}.coordinateSpaceId`);
-  basis(value2.basis, `${label}.basis`);
-  finiteTuple(value2.origin, `${label}.origin`);
-}
-function subject(value2, label) {
-  nonEmpty2(value2.subjectUri, `${label}.subjectUri`);
-  nonEmpty2(value2.revision, `${label}.revision`);
-}
-function digest(value2, label) {
-  if (value2 !== void 0 && !/^sha256:[0-9a-f]{64}$/u.test(value2)) {
-    throw new TypeError(`${label} must be a lowercase SHA-256 digest`);
-  }
-}
-function policy(value2, label) {
-  nonEmpty2(value2.provenance.sourceIdentity, `${label}.provenance.sourceIdentity`);
-  subject(value2.provenance.subject, `${label}.provenance.subject`);
-  nonEmpty2(value2.provenance.originUri, `${label}.provenance.originUri`);
-  digest(value2.provenance.contentDigest, `${label}.provenance.contentDigest`);
-  if (value2.license.state === "declared")
-    nonEmpty2(value2.license.expression, `${label}.license.expression`);
-  else
-    nonEmpty2(value2.license.reason, `${label}.license.reason`);
-  if (value2.redistribution.state === "allowed")
-    nonEmpty2(value2.redistribution.basis, `${label}.redistribution.basis`);
-  else
-    nonEmpty2(value2.redistribution.reason, `${label}.redistribution.reason`);
-}
-function sameSubject(left, right) {
-  return left.subjectUri === right.subjectUri && left.revision === right.revision;
-}
-function sameJson(left, right) {
-  return JSON.stringify(left) === JSON.stringify(right);
-}
-function sameFrame(left, right) {
-  return sameJson(left, right);
-}
-function validateTransform(value2, worldFrame) {
-  if (value2.schemaVersion !== 1)
-    throw new TypeError("overlay transform schemaVersion must be 1");
-  frame(value2.source, "overlay transform source");
-  frame(value2.target, "overlay transform target");
-  if (!sameFrame(value2.target, worldFrame)) {
-    throw new TypeError("overlay transform target must exactly match the workspace world frame");
-  }
-  const sourceAxes = Object.values(value2.axes).map((item) => item.sourceAxis);
-  if (new Set(sourceAxes).size !== 3) {
-    throw new TypeError("overlay transform must map each source axis exactly once");
-  }
-  const indices = sourceAxes.map((axis) => axis === "x" ? 0 : axis === "y" ? 1 : 2);
-  let inversions = 0;
-  for (let left = 0; left < indices.length; left += 1) {
-    for (let right = left + 1; right < indices.length; right += 1) {
-      if (indices[left] > indices[right])
-        inversions += 1;
-    }
-  }
-  const permutationDirection = inversions % 2 === 0 ? 1 : -1;
-  const mappedDirection = permutationDirection * value2.axes.x.direction * value2.axes.y.direction * value2.axes.z.direction;
-  const expectedDirection = value2.source.basis.handedness === value2.target.basis.handedness ? 1 : -1;
-  if (mappedDirection !== expectedDirection) {
-    throw new TypeError("overlay transform axis directions do not preserve the declared handedness");
-  }
-  finiteTuple(value2.scale, "overlay transform scale", true);
-  finiteTuple(value2.translation, "overlay transform translation");
-  nonEmpty2(value2.evidence.reference, "overlay transform evidence reference");
-  digest(value2.evidence.receiptDigest, "overlay transform evidence receiptDigest");
-}
-function validateDocument(document) {
-  if (document.schemaVersion !== 1)
-    throw new TypeError("mixed visual schemaVersion must be 1");
-  nonEmpty2(document.workspaceId, "workspaceId");
-  frame(document.worldFrame, "worldFrame");
-  if (document.sources.length !== 2)
-    throw new TypeError("mixed visual workspace needs two sources");
-  const world = document.sources.find((source) => source.role === "world-base");
-  const model = document.sources.find((source) => source.role === "model-overlay");
-  if (world === void 0 || model === void 0) {
-    throw new TypeError("mixed visual workspace needs one world source and one model source");
-  }
-  if (world.originGroup === model.originGroup) {
-    throw new TypeError("mixed visual sources must declare different origin groups");
-  }
-  if (sameSubject(world.subject, model.subject)) {
-    throw new TypeError("mixed visual sources must retain two distinct subject snapshots");
-  }
-  for (const source of document.sources) {
-    if (!isSegment(source.sourceId))
-      throw new TypeError(`invalid mixed visual source id: ${source.sourceId}`);
-    nonEmpty2(source.originGroup, `source ${source.sourceId} originGroup`);
-    subject(source.subject, `source ${source.sourceId} subject`);
-  }
-  if (world.binding.contract !== "common.view/world-scene-source" || world.binding.major !== 1) {
-    throw new TypeError("world source must use common.view/world-scene-source@1");
-  }
-  if (model.binding.contract !== "common.view/model-scene-source" || model.binding.major !== 1) {
-    throw new TypeError("model source must use common.view/model-scene-source@1");
-  }
-  if (!isSegment(world.binding.bindingId) || !isSegment(model.binding.bindingId)) {
-    throw new TypeError("mixed visual binding ids must be portable segments");
-  }
-  if (world.binding.bindingId === model.binding.bindingId) {
-    throw new TypeError("mixed visual world/model binding ids must be distinct");
-  }
-  const sourceIds = new Set(document.sources.map((source) => source.sourceId));
-  if (sourceIds.size !== document.sources.length)
-    throw new TypeError("mixed visual source ids must be unique");
-  const resources = /* @__PURE__ */ new Map();
-  for (const resource of document.resources) {
-    if (!isSegment(resource.resourceId))
-      throw new TypeError(`invalid mixed visual resource id: ${resource.resourceId}`);
-    if (resources.has(resource.resourceId))
-      throw new TypeError(`duplicate mixed visual resource id: ${resource.resourceId}`);
-    const source = document.sources.find((candidate) => candidate.sourceId === resource.sourceId);
-    if (source === void 0)
-      throw new TypeError(`unknown resource source: ${resource.sourceId}`);
-    nonEmpty2(resource.logicalId, `resource ${resource.resourceId} logicalId`);
-    if (!sameSubject(resource.provenance.subject, source.subject)) {
-      throw new TypeError(`resource ${resource.resourceId} provenance does not match its source snapshot`);
-    }
-    policy(resource, `resource ${resource.resourceId}`);
-    resources.set(resource.resourceId, resource);
-  }
-  const objects = /* @__PURE__ */ new Map();
-  for (const object of document.objects) {
-    if (!isSegment(object.objectId))
-      throw new TypeError(`invalid mixed visual object id: ${object.objectId}`);
-    if (objects.has(object.objectId))
-      throw new TypeError(`duplicate mixed visual object id: ${object.objectId}`);
-    const source = document.sources.find((candidate) => candidate.sourceId === object.sourceId);
-    if (source === void 0)
-      throw new TypeError(`unknown object source: ${object.sourceId}`);
-    if (source.role !== object.role)
-      throw new TypeError(`object ${object.objectId} role does not match its source`);
-    if (!sameSubject(object.provenance.subject, source.subject)) {
-      throw new TypeError(`object ${object.objectId} provenance does not match its source snapshot`);
-    }
-    if (new Set(object.resourceIds).size !== object.resourceIds.length) {
-      throw new TypeError(`object ${object.objectId} resource ids must be unique`);
-    }
-    for (const resourceId of object.resourceIds) {
-      const resource = resources.get(resourceId);
-      if (resource === void 0)
-        throw new TypeError(`object ${object.objectId} references unknown resource ${resourceId}`);
-      if (resource.sourceId !== object.sourceId) {
-        throw new TypeError(`object ${object.objectId} cannot claim a resource from another source`);
-      }
-    }
-    policy(object, `object ${object.objectId}`);
-    objects.set(object.objectId, object);
-  }
-  if (![...objects.values()].some((object) => object.role === "world-base")) {
-    throw new TypeError("mixed visual workspace needs a world-base object");
-  }
-  if (![...objects.values()].some((object) => object.role === "model-overlay")) {
-    throw new TypeError("mixed visual workspace needs a model-overlay object");
-  }
-  const placementIds = /* @__PURE__ */ new Set();
-  for (const placement of document.overlayPlacements) {
-    if (!isSegment(placement.placementId))
-      throw new TypeError(`invalid overlay placement id: ${placement.placementId}`);
-    if (placementIds.has(placement.placementId))
-      throw new TypeError(`duplicate overlay placement id: ${placement.placementId}`);
-    const object = objects.get(placement.objectId);
-    if (object?.role !== "model-overlay") {
-      throw new TypeError(`overlay placement ${placement.placementId} must reference a model-overlay object`);
-    }
-    validateTransform(placement.transform, document.worldFrame);
-    placementIds.add(placement.placementId);
-  }
-  const placedObjects = new Set(document.overlayPlacements.map((placement) => placement.objectId));
-  for (const object of objects.values()) {
-    if (object.role === "model-overlay" && !placedObjects.has(object.objectId)) {
-      throw new TypeError(`model-overlay object ${object.objectId} has no separate placement`);
-    }
-  }
-  if (document.compatibility.mode !== "visual-only" || document.compatibility.definitionCompatible !== false || document.compatibility.runtimeCompatible !== false || document.compatibility.nativeExportable !== false) {
-    throw new TypeError("mixed visual compatibility must remain visual-only");
-  }
-  if (document.compatibility.reasons.length < 3 || document.compatibility.reasons.some((reason) => reason.trim().length === 0) || !sameJson(document.compatibility.requiredEvidence, [
-    "definition-mapping",
-    "runtime-conformance",
-    "native-export"
-  ])) {
-    throw new TypeError("mixed visual compatibility must name every missing promotion evidence");
-  }
-}
-function defineMixedVisualWorkspace(input) {
-  const world = {
-    ...input.world,
-    binding: input.world.binding ?? {
-      bindingId: MIXED_VISUAL_WORLD_BINDING_ID,
-      contract: "common.view/world-scene-source",
-      major: 1
-    }
-  };
-  const model = {
-    ...input.model,
-    binding: input.model.binding ?? {
-      bindingId: MIXED_VISUAL_MODEL_BINDING_ID,
-      contract: "common.view/model-scene-source",
-      major: 1
-    }
-  };
-  const document = {
-    schemaVersion: 1,
-    workspaceId: input.workspaceId,
-    worldFrame: input.worldFrame,
-    sources: [world, model],
-    objects: input.objects,
-    resources: input.resources,
-    overlayPlacements: input.overlayPlacements,
-    compatibility: {
-      mode: "visual-only",
-      definitionCompatible: false,
-      runtimeCompatible: false,
-      nativeExportable: false,
-      reasons: [
-        "visual placement does not prove definition compatibility",
-        "no runtime conformance evidence is attached",
-        "no native writer or export fidelity evidence is attached"
-      ],
-      requiredEvidence: ["definition-mapping", "runtime-conformance", "native-export"]
-    }
-  };
-  validateDocument(document);
-  const frozenDocument = snapshotJsonWireData(document);
-  const slot = {
-    slotId: MIXED_VISUAL_STAGE_ID,
-    kind: "stage",
-    contributionId: "modkit.ui/mixed-visual-stage",
-    extensionId: "modkit/ui",
-    priority: 390,
-    singletonGroup: "center-stage",
-    bindings: [world.binding, model.binding],
-    composition: frozenDocument
-  };
-  const presentation = definePresentationPlan({
-    subjectUri: input.workspaceUri,
-    revision: input.workspaceRevision,
-    slots: [slot],
-    unsatisfied: [],
-    activeStage: MIXED_VISUAL_STAGE_ID,
-    alternateStages: []
-  });
-  return Object.freeze({ document: frozenDocument, presentation });
-}
-function isMixedVisualPresentationSlot(slot) {
-  const candidate = slot;
-  if (slot.slotId !== MIXED_VISUAL_STAGE_ID || candidate.composition === void 0)
+// ../MODDING/modkit-core/packages/sdk/dist/templates/index.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var GAME_TEMPLATE_PREVIEW_OPERATION_ID = "view.template";
+var GAME_TEMPLATE_PREVIEW_SCHEMA_VERSION = 1;
+var GAME_TEMPLATE_WORKSPACE_INPUT = "workspaceDocuments";
+var finite = (value2) => typeof value2 === "number" && Number.isFinite(value2);
+var optionalBoolean = (value2) => value2 === void 0 || typeof value2 === "boolean";
+function isGameTemplateTextRun(value2) {
+  if (typeof value2 !== "object" || value2 === null || Array.isArray(value2))
     return false;
-  try {
-    validateDocument(candidate.composition);
-    const expectedBindings = candidate.composition.sources.map((source) => source.binding);
-    return slot.kind === "stage" && slot.bindings.length === expectedBindings.length && slot.bindings.every((binding, index) => {
-      const expected = expectedBindings[index];
-      return expected !== void 0 && "contract" in binding && binding.bindingId === expected.bindingId && binding.contract === expected.contract && binding.major === expected.major;
-    });
-  } catch {
-    return false;
-  }
+  const run = value2;
+  return typeof run["text"] === "string" && (run["color"] === void 0 || typeof run["color"] === "string") && optionalBoolean(run["bold"]) && optionalBoolean(run["italic"]) && optionalBoolean(run["underline"]) && (run["size"] === void 0 || finite(run["size"]) && run["size"] > 0) && (run["asset"] === void 0 || typeof run["asset"] === "string" && run["text"] === "") && (run["unresolved"] === void 0 || typeof run["unresolved"] === "string");
 }
-
-// ../MODDING/modkit-core/packages/sdk/dist/asset-capabilities/v1-projection.js
-var V1_PROJECTION_UNAVAILABLE_CODE = "modkit/compat-v1-projection-unavailable";
-
-// ../MODDING/modkit-core/packages/sdk/dist/references.js
-var bounded = (value2, label) => {
-  if (typeof value2 !== "string" || value2.length === 0 || value2.length > 8192 || value2.includes("\0")) {
-    throw new TypeError(`${label} must be a bounded non-empty string`);
+function isGameTemplateDisplayItem(value2) {
+  if (typeof value2 !== "object" || value2 === null || Array.isArray(value2))
+    return false;
+  const item = value2;
+  const rect = item["rect"];
+  const text = item["text"];
+  return ["box", "text", "image"].includes(String(item["kind"])) && Array.isArray(item["path"]) && item["path"].every((part) => typeof part === "string") && typeof rect === "object" && rect !== null && finite(rect["x"]) && finite(rect["y"]) && finite(rect["width"]) && finite(rect["height"]) && optionalBoolean(item["visible"]) && (text === void 0 || typeof text === "string" || Array.isArray(text) && text.every(isGameTemplateTextRun)) && (item["asset"] === void 0 || typeof item["asset"] === "string") && (item["frameType"] === void 0 || typeof item["frameType"] === "string");
+}
+function gameTemplateTextRuns(item) {
+  if (item.text === void 0)
+    return [];
+  return typeof item.text === "string" ? [{ text: item.text }] : item.text;
+}
+var optionalString = (value2) => value2 === void 0 || typeof value2 === "string";
+function isValueSource(value2) {
+  if (value2 === void 0)
+    return true;
+  if (typeof value2 !== "object" || value2 === null || Array.isArray(value2))
+    return false;
+  const source = value2;
+  return optionalString(source["uri"]) && optionalString(source["origin"]) && optionalString(source["frame"]) && (source["start"] === void 0 || finite(source["start"])) && (source["end"] === void 0 || finite(source["end"]));
+}
+var recordsOk = (list, check) => list === void 0 || Array.isArray(list) && list.every((item) => typeof item === "object" && item !== null && !Array.isArray(item) && check(item));
+function isNodeShallow(value2) {
+  if (typeof value2 !== "object" || value2 === null || Array.isArray(value2))
+    return false;
+  const node = value2;
+  return typeof node["name"] === "string" && optionalString(node["type"]) && optionalString(node["template"]) && isValueSource(node["source"]) && Array.isArray(node["path"]) && node["path"].every((part) => typeof part === "string") && Array.isArray(node["children"]) && recordsOk(node["properties"], (item) => typeof item["name"] === "string" && optionalString(item["val"]) && optionalString(item["resolved"]) && isValueSource(item["source"])) && recordsOk(node["anchors"], (item) => typeof item["side"] === "string" && optionalString(item["relative"]) && optionalString(item["pos"]) && optionalString(item["offset"]) && isValueSource(item["source"]));
+}
+function isGameTemplateTreeNode(value2, maximumNodes = 1e5) {
+  const pending = [value2];
+  let seen = 0;
+  while (pending.length > 0) {
+    const node = pending.pop();
+    if (!isNodeShallow(node) || ++seen > maximumNodes)
+      return false;
+    for (const child of node.children)
+      pending.push(child);
   }
-  return value2;
-};
-function referenceTargetKey(target) {
-  if (!isQualifiedId(target.owner))
-    throw new TypeError("reference target owner must be qualified");
-  bounded(target.kind, "reference target kind");
-  bounded(target.id, "reference target id");
-  for (const [name, value2] of Object.entries({
-    namespace: target.namespace,
-    typeId: target.typeId,
-    locale: target.locale,
-    workspace: target.workspace
-  })) {
-    if (value2 !== void 0)
-      bounded(value2, `reference target ${name}`);
-  }
-  return canonicalJsonStringify({
-    owner: target.owner,
-    kind: target.kind,
-    id: target.id,
-    ...target.namespace === void 0 ? {} : { namespace: target.namespace },
-    ...target.typeId === void 0 ? {} : { typeId: target.typeId },
-    ...target.locale === void 0 ? {} : { locale: target.locale },
-    ...target.workspace === void 0 ? {} : { workspace: target.workspace }
-  });
+  return true;
+}
+var nonEmpty2 = (value2) => typeof value2 === "string" && value2.trim().length > 0;
+function isGameTemplatePreviewResult(value2) {
+  if (typeof value2 !== "object" || value2 === null || Array.isArray(value2))
+    return false;
+  const result = value2;
+  const fidelity = result["fidelity"];
+  return result["schemaVersion"] === GAME_TEMPLATE_PREVIEW_SCHEMA_VERSION && result["operationId"] === GAME_TEMPLATE_PREVIEW_OPERATION_ID && nonEmpty2(result["templateKind"]) && nonEmpty2(result["entryUri"]) && (result["rootPath"] === void 0 || typeof result["rootPath"] === "string") && (result["roots"] === void 0 || Array.isArray(result["roots"]) && result["roots"].every((root) => typeof root === "string")) && typeof result["resolvedTree"] === "object" && result["resolvedTree"] !== null && Array.isArray(result["displayItems"]) && Array.isArray(result["diagnostics"]) && ["complete", "partial", "capped", "invalid"].includes(String(result["completeness"])) && typeof fidelity === "object" && fidelity !== null && !Array.isArray(fidelity) && fidelity["comparison"] === "semantic" && Array.isArray(fidelity["unsupported"]) && result["provenance"] !== void 0 && result["digest"] !== void 0;
 }
 
 export {
   normalizeModkitIdentifier,
-  normalizeModkitPackageSpecifier,
-  normalizeModkitSourceIdentifier,
   WRITER_CONTRACT_ID,
   WRITER_FACET_MATCHER_PROFILE,
   WRITER_SURFACE,
   STANDARD_EDITING_SURFACES,
-  ROUND_TRIP_RANK,
   writerOfferSatisfies,
   writerSelectionKey,
   containerEntryRevision,
   namespaceEntryEditTarget,
-  loadSubjectCandidatePage,
-  createSubjectCandidateProvider,
   operationScopedPermissionClasses,
   activationRequiredPermissionClasses,
-  STANDARD_HOST_FACILITY_IDS,
-  LEGACY_HOST_FACILITY_ALIASES,
-  HOST_TRANSPORT_KINDS,
-  isStandardHostFacilityId,
-  isHostFacilityId,
-  hostFacilityId,
-  hostFacilityDiagnostics,
-  createHostRealmProfile,
   createHostTopology,
   runtimeTargetForHostRealm,
   hostRealmCacheKey,
-  createSpecSchemaRegistry,
   validateContributionManifest,
   SUBJECT_KIND_DEFINITION_CONTRIBUTION_CONTRACT,
-  SUBJECT_KIND_DEFINITION_FACT,
   CODEC_CONTRIBUTION_CONTRACT,
   SERVICE_PROVIDER_CONTRIBUTION_CONTRACT,
   VIEWER_CONTRIBUTION_CONTRACT,
@@ -3581,39 +2642,26 @@ export {
   CONTRACT_DEFINITION_CONTRIBUTION_CONTRACT,
   KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT,
   LOCALIZATION_CONTRIBUTION_CONTRACT,
-  TRAIT_DEFINITION_FACT,
   CONTRACT_DEFINITION_FACT,
   EDITOR_CONTRIBUTION_FACT,
   FIELD_EDITOR_CONTRIBUTION_FACT,
-  KNOWLEDGE_PACK_FACT,
-  LOCALIZATION_CONTRIBUTION_FACT,
-  validateEditorContributionSemantics,
-  validateKnowledgePackSemantics,
-  validateLocalizationContributionSemantics,
-  validateFieldEditorContributionSemantics,
   createContributionContractRegistry,
   A1_SPEC_SCHEMA_ENTRIES,
-  foreignServiceContractId,
-  OODLE_DECODER_CONTRACT,
-  INDEX_CACHE_DIRECTORY_SETTING,
-  INDEX_CACHE_MANIFEST,
-  indexCacheEnabled,
+  NATIVE_MODEL_ENCODER_CONTRACT,
+  NATIVE_MODEL_ENCODER_MATCHER_PROFILE,
   relationGraphNeighbourhood,
   TRANSLATION_CONTRACT,
   TRANSLATION_MATCHER_PROFILE,
   LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT,
   LANGUAGE_DOCUMENT_MATCHER_PROFILE,
-  languageWorkspaceIsSemanticallyIncomplete,
   RUNTIME_PROVIDER_CONTRACT,
   RUNTIME_SESSION_CONTRACT,
   RUNTIME_PROVIDER_MATCHER_PROFILE,
-  RUNTIME_SESSION_V2_MEMBERS,
   SERVICE_OPERATION_PROVIDER_CONTRACT,
   SERVICE_OPERATION_MATCHER_PROFILE,
   GAME_INSTALLATION_DISCOVERY_CONTRACT,
   GAME_LAUNCH_PLAN_CONTRACT,
   GAME_INSTALLATION_MATCHER_PROFILE,
-  gameLaunchOptionsJsonSchema,
   MOD_WORKSPACE_COMPOSITION_CONTRACT,
   MOD_WORKSPACE_MATCHER_PROFILE,
   resolveModWorkspaceGraph,
@@ -3621,10 +2669,8 @@ export {
   DATA_CATALOG_MATCHER_PROFILE,
   RESOLVED_DATA_WORKSPACE_CONTRACT,
   RESOLVED_DATA_WORKSPACE_MATCHER_PROFILE,
-  RESOLVED_DATA_AUTHORING_INDEX_KIND,
   DATA_CATALOG_QUERIES_OUTPUT,
   DATA_CATALOG_ENTITIES_INPUT,
-  resolveDataCatalog,
   MAP_SEMANTIC_ANALYSIS_CONTRACT,
   RESOLVED_MAP_WORKSPACE_CONTRACT,
   MAP_PREVIEW_PREPARATION_CONTRACT,
@@ -3632,7 +2678,6 @@ export {
   MAP_LAYERS_OPERATION,
   MAP_LAYER_READ_OPERATION,
   MAP_LAYER_WRITE_OPERATION,
-  MAP_LAYERS_REPRESENTATION,
   MAP_LAYERS_INPUT_SCHEMA,
   MAP_LAYER_READ_INPUT_SCHEMA,
   MAP_LAYER_WRITE_INPUT_SCHEMA,
@@ -3640,26 +2685,22 @@ export {
   MAP_SEMANTIC_MATCHER_PROFILE,
   MAP_PREVIEW_PREPARATION_MATCHER_PROFILE,
   transformTerrainUv,
-  terrainUvTransformFromOrigin,
-  mapQualificationTupleBytes,
-  worldModelRequiredBytes,
   contributionSettingsFor,
-  validateContributionPattern,
   expandContributionManifests,
   normalizeExtensionManifest,
-  ENCODED_MEDIA_SURFACE_ID,
+  grantValidity,
+  narrowGrant,
   STANDARD_DATA_SOURCE_SURFACES,
   AUXILIARY_DATA_SOURCE_SURFACES,
-  standardDataSourceSurfaceFor,
-  ENCODED_MEDIA_SURFACE_CONTRACT,
+  toPortableProjectionReceipt,
   bindingId,
   presentationSlotId,
   definePresentationPlan,
-  MIXED_VISUAL_STAGE_ID,
-  MIXED_VISUAL_WORLD_BINDING_ID,
-  MIXED_VISUAL_MODEL_BINDING_ID,
-  defineMixedVisualWorkspace,
-  isMixedVisualPresentationSlot,
-  V1_PROJECTION_UNAVAILABLE_CODE,
-  referenceTargetKey
+  GAME_TEMPLATE_PREVIEW_OPERATION_ID,
+  GAME_TEMPLATE_WORKSPACE_INPUT,
+  isGameTemplateTextRun,
+  isGameTemplateDisplayItem,
+  gameTemplateTextRuns,
+  isGameTemplateTreeNode,
+  isGameTemplatePreviewResult
 };

@@ -420,6 +420,44 @@ function validateGameMaterialMetadata(document, used, signal) {
     throw new TypeError("UV_game_material is declared but absent");
   }
 }
+var integerIn = (value, minimum, maximum) => typeof value === "number" && Number.isSafeInteger(value) && value >= minimum && value <= maximum;
+var unitRgb = (value) => Array.isArray(value) && value.length === 3 && value.every((component) => typeof component === "number" && component >= 0 && component <= 1);
+function validateTeamColorRule(teamColor, material, label) {
+  const channels = teamColor["keyChannels"];
+  if (channels !== void 0 && (!Array.isArray(channels) || channels.length === 0 || channels.some((channel2) => !oneOf(channel2, ["r", "g", "b"])) || new Set(channels).size !== channels.length))
+    throw new TypeError(`${label} has invalid keyChannels`);
+  if (teamColor["keyThreshold"] !== void 0 && !integerIn(teamColor["keyThreshold"], 0, 255))
+    throw new TypeError(`${label} has an invalid keyThreshold`);
+  for (const [key, values] of [
+    ["intensityChannel", ["r", "g", "b", "a"]],
+    ["colorSource", ["team", "object-tint"]],
+    ["tint", ["none", "mask-rgb"]]
+  ])
+    if (teamColor[key] !== void 0 && !oneOf(teamColor[key], [...values]))
+      throw new TypeError(`${label} has an invalid ${key}`);
+  const scale = teamColor["paletteIndexScale"] ?? 255;
+  if (!integerIn(scale, 1, 65535))
+    throw new TypeError(`${label} has an invalid paletteIndexScale`);
+  const range = teamColor["range"];
+  if (range !== void 0 && (!Array.isArray(range) || range.length !== 2 || !integerIn(range[0], 0, scale) || !integerIn(range[1], range[0], scale)))
+    throw new TypeError(`${label} has an invalid range`);
+  if (teamColor["defaultColor"] !== void 0) {
+    const color = teamColor["defaultColor"];
+    if (!Array.isArray(color) || color.length !== 4 || !unitRgb(color.slice(0, 3)))
+      throw new TypeError(`${label} has an invalid defaultColor`);
+  }
+  const keyed = teamColor["maskSource"] === "channelKey";
+  const ramp = teamColor["ramp"];
+  if ((keyed || ramp !== void 0) && teamColor["blend"] !== "replace")
+    throw new TypeError(`${label} states a key or a ramp without blend replace`);
+  if (keyed && teamColor["maskTexture"] === void 0 && field(material["pbrMetallicRoughness"], "baseColorTexture") === void 0)
+    throw new TypeError(`${label} keys no texture`);
+  if (ramp !== void 0) {
+    const span = Array.isArray(range) ? range[1] - range[0] + 1 : -1;
+    if (teamColor["maskSource"] !== "paletteRange" || teamColor["maskTexture"] === void 0 || !Array.isArray(ramp) || ramp.length !== span || !ramp.every(unitRgb))
+      throw new TypeError(`${label} has a ramp without its mask, range or one shade per index`);
+  }
+}
 function validateTeamColorMetadata(document, used, signal) {
   signal?.throwIfAborted();
   let extensionCount = 0;
@@ -435,9 +473,16 @@ function validateTeamColorMetadata(document, used, signal) {
       throw new TypeError(`${label} is not declared in extensionsUsed`);
     }
     const teamColor = object(extension, label);
-    if (!oneOf(teamColor["maskSource"], ["texture", "vertexColor", "paletteRange", "whole"])) {
+    if (!oneOf(teamColor["maskSource"], [
+      "texture",
+      "vertexColor",
+      "paletteRange",
+      "whole",
+      "channelKey"
+    ])) {
       throw new TypeError(`${label} has an invalid maskSource`);
     }
+    validateTeamColorRule(teamColor, material, label);
     if (teamColor["blend"] !== void 0 && !oneOf(teamColor["blend"], ["multiply", "add", "replace", "overlay", "lerp"])) {
       throw new TypeError(`${label} has an invalid blend`);
     }

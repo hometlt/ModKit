@@ -5,7 +5,7 @@ import {
   readCollisionMesh,
   readUvmModel,
   uvmImageResourceId
-} from "../../../chunks/chunk-7E747Z63.js";
+} from "../../../chunks/chunk-E5MNFFI7.js";
 import {
   createJsonTreeSource
 } from "../../../chunks/chunk-KA3J6DLB.js";
@@ -22,7 +22,7 @@ import {
 import "../../../chunks/chunk-OAFBQXD6.js";
 import {
   validateUvmDocument
-} from "../../../chunks/chunk-GE6PEFUL.js";
+} from "../../../chunks/chunk-KURLZAFQ.js";
 import "../../../chunks/chunk-I43233HX.js";
 import {
   createModelAnimationSource,
@@ -149,11 +149,16 @@ function materialImageLayers(document, material) {
   const team = field(material["extensions"], "UV_game_material_team_color");
   if (team !== void 0) {
     const blend = field(team, "blend");
-    const common = typeof blend === "string" ? { blend } : {};
-    if (field(team, "maskSource") === "whole")
-      layers.push(Object.freeze({ slot: "teamColor", ...common }));
+    const rule = teamColorRuleOf(team);
+    const common = {
+      ...typeof blend === "string" ? { blend } : {},
+      ...rule === void 0 ? {} : { teamColor: rule }
+    };
+    const source = field(team, "maskSource");
     const mask = field(team, "maskTexture");
-    if (field(team, "maskSource") === "texture" && mask !== void 0) {
+    if (mask === void 0 && (source === "whole" || source === "channelKey"))
+      layers.push(Object.freeze({ slot: "teamColor", ...common }));
+    if (mask !== void 0 && (source === "texture" || source === "channelKey" || source === "paletteRange")) {
       const texture = object(textures[safeIndex(field(mask, "index"), textures.length, "team colour mask texture")], "texture");
       const channel = field(mask, "channel");
       const bit = { r: 1, g: 2, b: 4, a: 8 }[typeof channel === "string" ? channel : ""];
@@ -167,6 +172,29 @@ function materialImageLayers(document, material) {
     }
   }
   return Object.freeze(layers);
+}
+function teamColorRuleOf(team) {
+  const value = (key) => field(team, key);
+  const source = value("maskSource");
+  const defaultColor = value("defaultColor");
+  const rule = {
+    ...source === "channelKey" || source === "paletteRange" ? { maskSource: source } : {},
+    ...Array.isArray(value("keyChannels")) ? { keyChannels: Object.freeze([...value("keyChannels")]) } : {},
+    ...typeof value("keyThreshold") === "number" ? { keyThreshold: value("keyThreshold") } : {},
+    ...typeof value("intensityChannel") === "string" ? { intensityChannel: value("intensityChannel") } : {},
+    ...Array.isArray(value("range")) ? { range: Object.freeze([...value("range")]) } : {},
+    ...Array.isArray(value("ramp")) ? {
+      ramp: Object.freeze(value("ramp").map((shade) => Object.freeze([...shade])))
+    } : {},
+    ...typeof value("paletteIndexScale") === "number" ? { paletteIndexScale: value("paletteIndexScale") } : {},
+    ...value("colorSource") === "object-tint" ? { colorSource: "object-tint" } : {},
+    ...value("tint") === "mask-rgb" ? { tint: "mask-rgb" } : {},
+    ...typeof value("strength") === "number" ? { strength: value("strength") } : {},
+    ...Array.isArray(defaultColor) ? {
+      defaultColor: Object.freeze(defaultColor.slice(0, 3))
+    } : {}
+  };
+  return Object.keys(rule).length === 0 ? void 0 : Object.freeze(rule);
 }
 function decodeMaterialRefs(document) {
   return array(document, "materials").map((candidate, index) => {

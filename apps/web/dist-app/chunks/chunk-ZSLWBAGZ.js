@@ -6,7 +6,7 @@ import {
 } from "./chunk-BBPEOGNI.js";
 import {
   createRelationGraphViewer
-} from "./chunk-DWYOZ2DI.js";
+} from "./chunk-JLL7IGH4.js";
 import {
   MODEL_FACET_CONTRACTS,
   commitOperationWrite,
@@ -15,7 +15,7 @@ import {
   modelMaterialTeamColor,
   mountFieldEditTarget,
   mountInlineField
-} from "./chunk-XYHGZFNJ.js";
+} from "./chunk-VBIE4P5V.js";
 import {
   metadataFieldProjections
 } from "./chunk-CW2HIMYV.js";
@@ -105,7 +105,7 @@ import {
   validateContributionManifest,
   writerOfferSatisfies,
   writerSelectionKey
-} from "./chunk-XOX5OSCM.js";
+} from "./chunk-QDBJZAOT.js";
 import {
   createImageViewer,
   createNamespaceViewer,
@@ -257,7 +257,7 @@ import {
   uvmImagesIgnoringAlpha,
   uvmKeyTimesMetadata,
   uvmVisibilityPointer
-} from "./chunk-WCNOEKSC.js";
+} from "./chunk-QXP2LEJM.js";
 import {
   DEFAULT_MODEL_ANIMATION_BUDGET,
   DEFAULT_MODEL_SKELETON_BUDGET,
@@ -5381,7 +5381,7 @@ var key = (ref2) => JSON.stringify([ref2.namespace, ref2.entityId]);
 async function answerCatalogQueries(options) {
   const asked = /* @__PURE__ */ new Set();
   const entities = /* @__PURE__ */ new Map();
-  let result = await options.run(void 0, 0);
+  let result = options.initial ?? await options.run(void 0, 0);
   for (let round = 1; round <= options.rounds; round += 1) {
     const refs = options.queriesOf(result).filter((ref2) => !asked.has(key(ref2)));
     if (refs.length === 0)
@@ -6233,7 +6233,7 @@ function sessionAdapter(realm, session, exposedInput, watch, openingSignal) {
 
 // ../MODDING/modkit-core/packages/host/dist/session.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-var projection = () => import("./subject-projection-YWTR4JIR.js");
+var projection = () => import("./subject-projection-K4LNSP5G.js");
 function rejected(reason, message) {
   return {
     state: "rejected",
@@ -7138,9 +7138,11 @@ function ownedCompressedTexture(texture, info, plan, maxBytes) {
 function rasterIdParameters(logicalId) {
   const { name, parameters } = resourceIdParameters(logicalId);
   const keys = Object.keys(parameters);
-  if (keys.length === 0 || keys.some((key3) => key3 !== "region" && key3 !== "frame"))
+  if (keys.length === 0 || keys.some((key3) => key3 !== "region" && key3 !== "frame" && key3 !== "plane"))
     return { name: logicalId };
-  const { region, frame } = parameters;
+  const { region, frame, plane } = parameters;
+  if (plane !== void 0 && plane !== "indices")
+    throw new TypeError("raster id plane must be indices");
   if (region !== void 0 && region.length === 0)
     throw new TypeError("raster id region must name an area");
   if (frame !== void 0 && !(/^(?:0|[1-9][0-9]*)$/u.test(frame) && Number.isSafeInteger(Number(frame))))
@@ -7148,8 +7150,20 @@ function rasterIdParameters(logicalId) {
   return {
     name,
     ...region === void 0 ? {} : { region },
-    ...frame === void 0 ? {} : { frame: Number(frame) }
+    ...frame === void 0 ? {} : { frame: Number(frame) },
+    ...plane === void 0 ? {} : { plane: "indices" }
   };
+}
+function indexPlaneRgba(region, width, height) {
+  if (region.width !== width || region.height !== height || region.pixelFormat !== "gray8" || !Number.isSafeInteger(region.rowStride) || region.rowStride < width || !(region.pixels instanceof Uint8Array) || region.rowStride * (height - 1) + width > region.pixels.length)
+    return void 0;
+  const rgba = new Uint8Array(width * height * 4);
+  for (let y = 0; y < height; y += 1)
+    for (let x = 0; x < width; x += 1) {
+      const index = region.pixels[y * region.rowStride + x];
+      rgba.set([index, index, index, 255], (y * width + x) * 4);
+    }
+  return Object.freeze({ width, height, rowStride: width * 4, pixelFormat: "rgba8", pixels: rgba });
 }
 function createSubjectRasterResources(options) {
   const refusal = (code, message, provenance) => ({
@@ -7185,6 +7199,7 @@ function createSubjectRasterResources(options) {
       let provenance;
       let atlasRegion;
       let frameOnly;
+      let indices = false;
       try {
         let source2;
         let hint = {};
@@ -7201,6 +7216,9 @@ function createSubjectRasterResources(options) {
           }
           atlasRegion = parameters.region;
           frameOnly = parameters.frame;
+          indices = parameters.plane === "indices";
+          if (indices)
+            selection = { ...selection, mipLevel: 0 };
           if (frameOnly !== void 0 && (selection.frame ?? 0) !== 0)
             return refusal("x3.host/raster-selection-invalid", "The resource names one frame of its image: it has no other frame to select.");
           const asked = parameters.name === request.requirement.logicalId ? request.requirement : { ...request.requirement, logicalId: parameters.name };
@@ -7256,7 +7274,9 @@ function createSubjectRasterResources(options) {
         const raster = await opened.session.dataSource("common.view/raster-image-source", 1);
         releases.push(() => raster.release());
         const info = Object.freeze({ ...await raster.value.info(signal) });
-        const compressedPlan = compressedFormats.size === 0 || atlasRegion !== void 0 || frameOnly !== void 0 || raster.value.readCompressed === void 0 || ![...compressedFormats].some((format2) => format2.startsWith(`${info.compression}-`)) ? void 0 : compressedSelectionPlan(info, selection, maxBytes);
+        if (indices && info.indexed !== true)
+          return refusal("x3.host/raster-plane-missing", "The image stores no palette indices to read.", provenance);
+        const compressedPlan = compressedFormats.size === 0 || indices || atlasRegion !== void 0 || frameOnly !== void 0 || raster.value.readCompressed === void 0 || ![...compressedFormats].some((format2) => format2.startsWith(`${info.compression}-`)) ? void 0 : compressedSelectionPlan(info, selection, maxBytes);
         if (compressedPlan !== void 0) {
           const subresource = Object.freeze({
             frame: selection.frame ?? 0,
@@ -7296,15 +7316,16 @@ function createSubjectRasterResources(options) {
           const area = info.atlasRegions?.find((item) => item.name === atlasRegion);
           if (area === void 0)
             return refusal("x3.host/raster-atlas-region-missing", `The image has no atlas region named ${atlasRegion}.`, provenance);
-          const region = await raster.value.readRegion({
+          const read = await raster.value.readRegion({
             x: area.x,
             y: area.y,
             width: area.width,
             height: area.height,
             ...frameOnly === void 0 ? {} : { frame: frameOnly },
-            pixelFormat: "rgba8",
+            ...indices ? { pixelFormat: "gray8", plane: "indices" } : { pixelFormat: "rgba8" },
             maxBytes
           }, signal);
+          const region = indices ? indexPlaneRgba(read, area.width, area.height) ?? read : read;
           if (region.width !== area.width || region.height !== area.height || region.pixelFormat !== "rgba8" || !(region.pixels instanceof Uint8Array) || region.pixels.length > maxBytes)
             return refusal("x3.host/raster-region-invalid", "The image codec returned an invalid bounded RGBA region.", provenance);
           const { atlasRegions: _atlas, ...rest } = info;
@@ -7334,15 +7355,16 @@ function createSubjectRasterResources(options) {
           signal?.throwIfAborted();
           if (!options.state.live || !options.isAuthorized())
             return refusal("x3.host/raster-context-unavailable", "The raster context is no longer readable.", provenance);
-          const region = await raster.value.readRegion({
+          const read = await raster.value.readRegion({
             x: 0,
             y: 0,
             width: plan.width,
             height: plan.height,
             ...subresource,
-            pixelFormat: "rgba8",
+            ...indices ? { pixelFormat: "gray8", plane: "indices" } : { pixelFormat: "rgba8" },
             maxBytes: remaining
           }, signal);
+          const region = indices ? indexPlaneRgba(read, plan.width, plan.height) ?? read : read;
           signal?.throwIfAborted();
           if (!options.state.live || !options.isAuthorized())
             return refusal("x3.host/raster-context-unavailable", "The raster context is no longer readable.", provenance);
@@ -22007,6 +22029,7 @@ async function resolveMapPreviewPreparation(request) {
 var MAP_CATALOG_ROUNDS = 6;
 async function analyzeWithCatalogEntities(options) {
   return answerCatalogQueries({
+    ...options.initial === void 0 ? {} : { initial: options.initial },
     run: (answered, round) => options.analyze(answered === void 0 ? void 0 : Object.freeze({
       schemaVersion: 1,
       workspaceId: options.workspace.workspaceId,
@@ -22266,12 +22289,16 @@ async function analyzeResolvedMapWorkspace(request) {
       requiredRequirementIds: plan.requirements.filter((item) => item.required).map((item) => item.requirementId),
       ...request.signal === void 0 ? {} : { signal: request.signal }
     });
-    const snapshot3 = request.catalog === void 0 && request.catalogEntities !== void 0 ? await analyzeWithCatalogEntities({
+    const asking = request.catalog === void 0 ? request.catalogEntities : void 0;
+    const progressive = asking !== void 0 && request.progressiveCatalog === true;
+    const background = new AbortController();
+    const backgroundSignal = request.signal === void 0 ? background.signal : AbortSignal.any([request.signal, background.signal]);
+    const snapshot3 = asking === void 0 ? await analyze(request.catalog, 0) : progressive ? await analyze(void 0, 0) : await analyzeWithCatalogEntities({
       workspace: request.workspace,
       analyze,
-      catalogEntities: request.catalogEntities,
+      catalogEntities: asking,
       ...request.signal === void 0 ? {} : { signal: request.signal }
-    }) : await analyze(request.catalog, 0);
+    });
     if (request.resources.state() !== "live") {
       throw new Error("resource session was disposed while workspace map was analyzed");
     }
@@ -22337,7 +22364,17 @@ async function analyzeResolvedMapWorkspace(request) {
         ...signal === void 0 ? {} : { signal }
       })
     });
-    const world = createCandidateWorldSceneLease(snapshot3, request.resources.provenance().slice(provenanceOffset), limits.maxPageSize, modelResources, releaseModelResources, rasterResources);
+    const worldOf = (analyzed, release) => createCandidateWorldSceneLease(analyzed, request.resources.provenance().slice(provenanceOffset), limits.maxPageSize, modelResources, release, rasterResources);
+    const world = !progressive ? worldOf(snapshot3, releaseModelResources) : refinableWorldLease(worldOf(snapshot3), analyzeWithCatalogEntities({
+      workspace: request.workspace,
+      analyze: (catalog, round) => analyze(catalog, round).then((result) => {
+        backgroundSignal.throwIfAborted();
+        return result;
+      }),
+      catalogEntities: asking,
+      initial: snapshot3,
+      signal: backgroundSignal
+    }).then((answered) => answered === snapshot3 ? void 0 : worldOf(answered), () => void 0), () => background.abort(), releaseModelResources);
     let released = false;
     return Object.freeze({
       state: "resolved",
@@ -22389,7 +22426,16 @@ function borrowCommonWorldScene(candidate) {
   const source2 = Object.freeze({
     contract: WORLD_SCENE_SOURCE_CONTRACT,
     major: 1,
-    snapshotId: candidate.snapshotId,
+    // a refinable world names a new snapshot once refined
+    get snapshotId() {
+      return candidate.snapshotId;
+    },
+    ...candidate.refined === void 0 ? {} : {
+      async refined(signal) {
+        assertLive(signal);
+        return candidate.refined(signal);
+      }
+    },
     async info(signal) {
       assertLive(signal);
       const info = await candidate.info(signal);
@@ -23178,6 +23224,57 @@ async function resolveSubjectNamespacePreviewResources(request) {
     throw error5;
   }
 }
+function refinableWorldLease(initial, refinement, abort, releaseShared) {
+  let current = initial;
+  let swapped = false;
+  let released = false;
+  const value = Object.freeze({
+    contract: initial.value.contract,
+    major: 1,
+    get snapshotId() {
+      return current.value.snapshotId;
+    },
+    info: (signal) => current.value.info(signal),
+    page: (request, signal) => current.value.page(request, signal),
+    ...initial.value.model === void 0 ? {} : {
+      model: (resourceId2, request, signal) => current.value.model(resourceId2, request, signal)
+    },
+    ...initial.value.texture === void 0 ? {} : {
+      texture: (resourceId2, request, signal) => current.value.texture(resourceId2, request, signal)
+    },
+    async refined(signal) {
+      const next = await Promise.race([
+        refinement,
+        new Promise((_, reject) => {
+          signal?.throwIfAborted();
+          signal?.addEventListener("abort", () => reject(signal.reason), { once: true });
+        })
+      ]);
+      if (next === void 0 || released)
+        return false;
+      if (!swapped) {
+        const old = current;
+        current = next;
+        swapped = true;
+        await old.release();
+      }
+      return true;
+    }
+  });
+  return Object.freeze({
+    value,
+    async release() {
+      if (released)
+        return;
+      released = true;
+      abort();
+      await current.release();
+      if (!swapped)
+        await (await refinement)?.release();
+      await releaseShared();
+    }
+  });
+}
 async function coordinateMapPreviewAssetSession(request) {
   const maxCandidates = positiveCoordinatorLimit(request.maxCandidates, "maxCandidates");
   const maxSubjectEntries = boundedCoordinatorLimit(request.maxSubjectEntries, "maxSubjectEntries", MAX_PREVIEW_NAMESPACE_FACT_ENTRIES);
@@ -23451,6 +23548,7 @@ async function coordinateMapPreviewAssetSession(request) {
       ...request.onModelResourceProfile === void 0 ? {} : { onModelResourceProfile: request.onModelResourceProfile },
       ...enrichment.catalog === void 0 ? {} : { catalog: enrichment.catalog },
       ...catalogEntities === void 0 ? {} : { catalogEntities },
+      ...request.progressiveCatalog === true ? { progressiveCatalog: true } : {},
       ...enrichment.sources === void 0 ? {} : { catalogSources: enrichment.sources },
       limits: request.limits,
       ...request.signal === void 0 ? {} : { signal: request.signal }
@@ -49836,10 +49934,84 @@ var TEAM_COLOR_GLSL = `vec3 modkitTeamColor(vec3 base, vec3 mask, vec3 team, int
   if (blend == 3) target = mix(1.0 - 2.0 * (1.0 - base) * (1.0 - team), 2.0 * base * team, vec3(lessThan(base, vec3(0.5))));
   return base + (target - base) * mixed;
 }`;
+var TEAM_RAMP_MAX = 16;
+function teamMaskSample(rule, filtered, stored, team) {
+  const tint = (color2) => rule.tintRgb === true ? [0, 1, 2].map((index) => color2[index] * (filtered[index] ?? 0)) : color2;
+  if (rule.mode === "ramp") {
+    const data = (stored[rule.channel === "rgb" ? 0 : rule.channel] ?? 0) / 255;
+    const index = Math.floor(data * (rule.scale ?? 255) + 0.5) - (rule.first ?? 0);
+    const shade = rule.shades?.[index];
+    return shade === void 0 || index < 0 || index >= TEAM_RAMP_MAX ? { weight: [0, 0, 0], color: team } : { weight: [1, 1, 1], color: tint(shade) };
+  }
+  if (rule.mode === "key") {
+    const thresholds = rule.thresholds ?? [0, 0, 255];
+    const keyed = [0, 1, 2].every((index) => (stored[index] ?? 0) <= thresholds[index]);
+    const shade = (stored[rule.intensity ?? 2] ?? 0) / 255;
+    return {
+      weight: keyed ? [1, 1, 1] : [0, 0, 0],
+      color: tint([team[0] * shade, team[1] * shade, team[2] * shade])
+    };
+  }
+  const weight = rule.channel === "rgb" ? [filtered[0] ?? 0, filtered[1] ?? 0, filtered[2] ?? 0] : [0, 0, 0].map(() => filtered[rule.channel] ?? 0);
+  return { weight, color: tint(team) };
+}
+var TEAM_MASK_GLSL = `float modkitTeamChannel(vec4 texel, float channel) {
+  return channel < 0.5 ? texel.r : channel < 1.5 ? texel.g : channel < 2.5 ? texel.b : texel.a;
+}
+vec3 modkitTeamMask(sampler2D mask, vec2 uv, float mode, float channel, vec3 key, float intensity,
+    vec3 shades[${TEAM_RAMP_MAX}], float rampCount, float rampFirst, float rampScale, float tintRgb,
+    inout vec3 team) {
+  vec4 texel = texture(mask, uv);
+  vec3 weight = vec3(0.0);
+  if (mode > 0.5) {
+    // keys and indices read the texel under the sample, as stored: never a blend of two
+    ivec2 size = textureSize(mask, 0);
+    vec4 stored = texelFetch(mask, clamp(ivec2(floor(fract(uv) * vec2(size))), ivec2(0), size - ivec2(1)), 0);
+    if (mode > 1.5) {
+      float index = floor(modkitTeamChannel(stored, channel) * rampScale + 0.5) - rampFirst;
+      for (int i = 0; i < ${TEAM_RAMP_MAX}; i++)
+        if (float(i) == index && float(i) < rampCount) {
+          team = shades[i];
+          weight = vec3(1.0);
+        }
+    } else {
+      bool keyed = all(lessThanEqual(floor(stored.rgb * 255.0 + 0.5), key));
+      weight = keyed ? vec3(1.0) : vec3(0.0);
+      team *= modkitTeamChannel(stored, intensity);
+    }
+  } else {
+    weight = channel > 3.5 ? texel.rgb : vec3(modkitTeamChannel(texel, channel));
+  }
+  if (tintRgb > 0.5) team *= texel.rgb;
+  return weight;
+}`;
 
 // ../MODDING/modkit-core/packages/scene/dist/render/team-color.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var CHANNELS2 = { r: 0, g: 1, b: 2, a: 3, rgb: "rgb" };
+function teamMaskRule(team, context) {
+  const channel = team.mask === "whole" ? "rgb" : CHANNELS2[team.mask.channel];
+  const tint = team.tint === "mask-rgb" ? { tintRgb: true } : {};
+  if (team.key !== void 0) {
+    const thresholds = ["r", "g", "b"].map((name) => team.key.channels.includes(name) ? team.key.threshold : 255);
+    return { mode: "key", channel, thresholds, intensity: CHANNELS2[team.key.intensity], ...tint };
+  }
+  if (team.ramp !== void 0) {
+    const own = context?.teamRamp;
+    const shades = own !== void 0 && own.length === team.ramp.shades.length ? own : team.ramp.shades;
+    if (shades.length > TEAM_RAMP_MAX)
+      return void 0;
+    return {
+      mode: "ramp",
+      channel: channel === "rgb" ? 0 : channel,
+      shades,
+      first: team.ramp.first,
+      scale: team.ramp.scale,
+      ...tint
+    };
+  }
+  return { mode: "data", channel, ...tint };
+}
 function rgb(value, label) {
   if (!Array.isArray(value) || value.length !== 3 || !value.every((item) => typeof item === "number" && item >= 0 && item <= 1))
     throw new TypeError(`${label} must be three components in 0..1`);
@@ -49861,19 +50033,23 @@ function drawTeamColor(material, scene) {
   const context = material.context ?? scene;
   if (context?.teamColorIntensity === 0)
     return void 0;
-  const color2 = context?.teamColor !== void 0 ? rgb(context.teamColor, "team colour") : rgb(team.defaultColor ?? [1, 1, 1], `material ${material.id} team colour default`);
+  const rule = teamMaskRule(team, context);
+  if (rule === void 0)
+    return void 0;
+  const color2 = context?.teamColor !== void 0 && team.source !== "object-tint" ? rgb(context.teamColor, "team colour") : rgb(team.defaultColor ?? [1, 1, 1], `material ${material.id} team colour default`);
   return {
     ...mask === "whole" ? {} : { maskTexture: mask.texture },
     channel: mask === "whole" ? "rgb" : CHANNELS2[mask.channel],
     blend: team.blend,
     blendIndex,
     strength,
-    color: color2
+    color: color2,
+    rule
   };
 }
-function applyDrawTeamColor(team, color2, maskTexel) {
-  const weight = (channel) => maskTexel === void 0 ? 1 : maskTexel[team.channel === "rgb" ? channel : team.channel] ?? 0;
-  return [0, 1, 2].map((channel) => teamColorChannel(color2[channel], weight(channel), team.color[channel], team.blend, team.strength));
+function applyDrawTeamColor(team, color2, maskTexel, storedTexel = (maskTexel ?? []).map((value) => Math.round(value * 255))) {
+  const sample = maskTexel === void 0 ? { weight: [1, 1, 1], color: team.color } : teamMaskSample(team.rule, maskTexel, storedTexel, team.color);
+  return [0, 1, 2].map((channel) => teamColorChannel(color2[channel], sample.weight[channel], sample.color[channel], team.blend, team.strength));
 }
 function teamMaskTexture(team, textures) {
   if (team?.maskTexture === void 0)
@@ -50029,6 +50205,15 @@ uniform float teamMaskChannel;
 uniform float teamBlend;
 uniform float teamStrength;
 uniform vec3 teamColor;
+// how the mask weighs it (TEAM_MASK_GLSL): 0 its data channel, 1 a key, 2 an indexed ramp
+uniform float teamMaskMode;
+uniform vec3 teamKey;
+uniform float teamKeyIntensity;
+uniform vec3 teamRamp[${TEAM_RAMP_MAX}];
+uniform float teamRampCount;
+uniform float teamRampFirst;
+uniform float teamRampScale;
+uniform float teamTintRgb;
 // a pbr material: the one glTF BRDF (codec-kit model-math/pbr) under the scene light
 uniform float pbrEnabled;
 uniform float pbrMetallic;
@@ -50049,6 +50234,7 @@ uniform float eyeKnown;
 uniform vec3 eyePosition;
 ${PREVIEW_LIGHT_GLSL}
 ${TEAM_COLOR_GLSL}
+${TEAM_MASK_GLSL}
 ${PBR_GLSL}
 ${SRGB_GLSL}
 out vec4 outColor;
@@ -50066,12 +50252,11 @@ void main() {
   if (textured > 0.5) base *= texture(baseColorMap, sampleUv);
   if (teamColorMode > 0.5) {
     vec3 mask = vec3(1.0);
-    if (teamColorMode > 1.5) {
-      vec4 texel = texture(teamMaskMap, sampleUv);
-      float channel = teamMaskChannel < 0.5 ? texel.r : teamMaskChannel < 1.5 ? texel.g : teamMaskChannel < 2.5 ? texel.b : texel.a;
-      mask = teamMaskChannel > 3.5 ? texel.rgb : vec3(channel);
-    }
-    base.rgb = modkitTeamColor(base.rgb, mask, teamColor, int(teamBlend + 0.5), teamStrength);
+    vec3 team = teamColor;
+    if (teamColorMode > 1.5)
+      mask = modkitTeamMask(teamMaskMap, sampleUv, teamMaskMode, teamMaskChannel, teamKey,
+        teamKeyIntensity, teamRamp, teamRampCount, teamRampFirst, teamRampScale, teamTintRgb, team);
+    base.rgb = modkitTeamColor(base.rgb, mask, team, int(teamBlend + 0.5), teamStrength);
   }
   if (pbrEnabled > 0.5) {
     vec3 surfaceNormal = hasNormals > 0.5
@@ -50531,6 +50716,25 @@ async function renderBrowser(request) {
           gl.uniform3f(teamColorUniform, ...team.color);
         if (teamMaskChannel !== null)
           gl.uniform1f(teamMaskChannel, team.channel === "rgb" ? 4 : team.channel);
+        const rule = team.rule;
+        const set1 = (name, value) => {
+          const location = uniform2(name);
+          if (location !== null)
+            gl.uniform1f(location, value);
+        };
+        set1("teamMaskMode", rule.mode === "key" ? 1 : rule.mode === "ramp" ? 2 : 0);
+        const key3 = uniform2("teamKey");
+        if (key3 !== null)
+          gl.uniform3f(key3, ...rule.thresholds ?? [0, 0, 255]);
+        set1("teamKeyIntensity", rule.intensity ?? 2);
+        const shades = rule.shades ?? [];
+        const ramp = uniform2("teamRamp");
+        if (ramp !== null)
+          gl.uniform3fv(ramp, Float32Array.from({ length: TEAM_RAMP_MAX * 3 }, (_, index) => shades[Math.floor(index / 3)]?.[index % 3] ?? 0));
+        set1("teamRampCount", shades.length);
+        set1("teamRampFirst", rule.first ?? 0);
+        set1("teamRampScale", rule.scale ?? 255);
+        set1("teamTintRgb", rule.tintRgb === true ? 1 : 0);
         if (teamMasked) {
           const mask = surface.teamMask;
           gl.activeTexture(gl.TEXTURE1);
@@ -52670,6 +52874,47 @@ var UVM_GAME_BLEND_MODES = [
   "subtract"
 ];
 var isUvmGameBlendMode = (value) => UVM_GAME_BLEND_MODES.includes(value);
+var unitRgb = (value) => Array.isArray(value) && value.length === 3 && value.every((component) => typeof component === "number" && component >= 0 && component <= 1);
+function teamColorExtension(layer2, mask) {
+  const rule = layer2.teamColor ?? {};
+  const blend = layer2.blend ?? "multiply";
+  const keyed = rule.maskSource === "channelKey";
+  const ramped = rule.maskSource === "paletteRange";
+  if ((keyed || ramped) && blend !== "replace")
+    fail6(`a team colour ${rule.maskSource} blends replace, stated by the publisher`);
+  if (ramped) {
+    const [first, last] = rule.range ?? [];
+    const scale = rule.paletteIndexScale ?? 255;
+    if (mask === void 0 || !Number.isSafeInteger(first) || !Number.isSafeInteger(last) || first < 0 || last < first || last > scale || rule.ramp?.length !== last - first + 1 || !rule.ramp.every(unitRgb))
+      fail6("a team colour ramp needs its mask, an ascending range and one 0..1 shade per index");
+  }
+  if (rule.keyThreshold !== void 0 && (!Number.isSafeInteger(rule.keyThreshold) || rule.keyThreshold < 0 || rule.keyThreshold > 255))
+    fail6("a team colour key threshold is an integer 0..255");
+  if (rule.strength !== void 0 && !(Number.isFinite(rule.strength) && rule.strength >= 0))
+    fail6("a team colour strength is nonnegative");
+  if (rule.defaultColor !== void 0 && !unitRgb(rule.defaultColor))
+    fail6("a team colour default is three components in 0..1");
+  const channel = singleChannel(layer2.colorChannels);
+  const maskTexture = mask === void 0 ? void 0 : { ...mask, ...channel === void 0 ? {} : { channel } };
+  return {
+    maskSource: keyed ? "channelKey" : ramped ? "paletteRange" : maskTexture === void 0 ? "whole" : "texture",
+    ...maskTexture === void 0 ? {} : { maskTexture },
+    targets: ["baseColor"],
+    blend,
+    ...rule.keyChannels === void 0 ? {} : { keyChannels: [...rule.keyChannels] },
+    ...rule.keyThreshold === void 0 ? {} : { keyThreshold: rule.keyThreshold },
+    ...rule.intensityChannel === void 0 ? {} : { intensityChannel: rule.intensityChannel },
+    ...rule.range === void 0 ? {} : { range: [rule.range[0], rule.range[1]] },
+    ...rule.ramp === void 0 ? {} : {
+      ramp: rule.ramp.map((shade) => [shade[0], shade[1], shade[2]])
+    },
+    ...rule.paletteIndexScale === void 0 ? {} : { paletteIndexScale: rule.paletteIndexScale },
+    ...rule.colorSource === "object-tint" ? { colorSource: "object-tint" } : {},
+    ...rule.tint === "mask-rgb" ? { tint: "mask-rgb" } : {},
+    ...rule.strength === void 0 ? {} : { strength: rule.strength },
+    ...rule.defaultColor === void 0 ? {} : { defaultColor: [...rule.defaultColor, 1] }
+  };
+}
 var MATERIALIZER_ID = "modkit/uvm-materializer";
 var MATERIALIZER_VERSION = "1.0.0";
 var PROFILE = "UVM/core@1.0";
@@ -53132,11 +53377,7 @@ function materializeUvmCore(projection2, request, { digest, materialBudget = DEF
     if (wholeTeam !== void 0)
       target.extensions = {
         ...target.extensions,
-        UV_game_material_team_color: {
-          maskSource: "whole",
-          targets: ["baseColor"],
-          blend: wholeTeam.blend ?? "multiply"
-        }
+        UV_game_material_team_color: teamColorExtension(wholeTeam, void 0)
       };
     if (JSON.stringify([...contracts ?? []].sort(byUtf8)) !== JSON.stringify(artifactContracts.sort(byUtf8))) {
       note("common.view/model-material-source@1", "value-differs", `/materials/${definition2.id}/contracts`, "contract coverage is derived from the extensions actually written to UVM");
@@ -53222,15 +53463,9 @@ function materializeUvmCore(projection2, request, { digest, materialBudget = DEF
         target.emissiveTexture = ref2;
         target.emissiveFactor ??= [1, 1, 1];
       } else if (slot === "teamColor" && target.extensions?.UV_game_material_team_color === void 0) {
-        const channel = singleChannel(layer2.colorChannels);
         target.extensions = {
           ...target.extensions,
-          UV_game_material_team_color: {
-            maskSource: "texture",
-            maskTexture: { ...ref2, ...channel === void 0 ? {} : { channel } },
-            targets: ["baseColor"],
-            blend: layer2.blend ?? "multiply"
-          }
+          UV_game_material_team_color: teamColorExtension(layer2, ref2)
         };
       }
     }
@@ -65918,7 +66153,7 @@ var PREVIEW_STAGES = [
 async function defaultPreviewStage(kind, localizer) {
   switch (kind) {
     case "model":
-      return (await import("./model-RI6IGFTU.js")).createModelViewer({ localizer });
+      return (await import("./model-P6TDG36V.js")).createModelViewer({ localizer });
     case "image":
       return (await import("./image-3KATOXWA.js")).createImageViewer({ localizer });
     case "video":
@@ -65963,7 +66198,7 @@ function embedRelationGraph(sections, args, scope, localizer, graph) {
   return [
     ...sections,
     stageSection({ id: "relations-graph", title: localizer.text("card.relationGraph"), expanded: false }, scope, localizer, "card.relationGraphUnavailable", async (host) => {
-      const module = graph ?? (await import("./graph-ETUNU4Y5.js")).createRelationGraphViewer({ localizer });
+      const module = graph ?? (await import("./graph-2CFZZHMJ.js")).createRelationGraphViewer({ localizer });
       return scope.signal.aborted ? void 0 : module.mount({ ...args, container: host, signal: scope.signal });
     })
   ];
@@ -70541,6 +70776,25 @@ var DEFAULT_WORLD_WEBGL_CAMERA = Object.freeze({
   zoom: 1,
   target: Object.freeze([0, 0, 0])
 });
+function worldTeamKey(team) {
+  if (team === void 0)
+    return "";
+  const rule = team.rule;
+  return [
+    team.mask?.id ?? "whole",
+    team.channel,
+    team.blend,
+    team.strength,
+    team.color.join(","),
+    rule.mode,
+    rule.thresholds?.join(",") ?? "",
+    rule.intensity ?? "",
+    rule.shades?.map((shade) => shade.join(",")).join(";") ?? "",
+    rule.first ?? "",
+    rule.scale ?? "",
+    rule.tintRgb === true ? "tint" : ""
+  ].join(":");
+}
 var waterDetailCache = /* @__PURE__ */ new WeakMap();
 function waterDetailOf(material, textures) {
   const detail = material?.detailWaves;
@@ -71584,7 +71838,7 @@ var BASE_COLOR_SLOTS = /* @__PURE__ */ new Set(["diffuse", "basecolor", "albedo"
 var NORMAL_SLOTS = /* @__PURE__ */ new Set(["normal", "normalmap", "mapnormal", "mapbump", "bump"]);
 var materialSlot = (value) => value.toLowerCase().replace(/[^a-z0-9]/gu, "");
 var texturesById = /* @__PURE__ */ new WeakMap();
-function worldBatchTeamColor(material, textures, uvSource, color2, intensity) {
+function worldBatchTeamColor(material, textures, uvSource, color2, intensity, objectTint, teamRamp) {
   if (material === void 0 || intensity === 0)
     return void 0;
   const list = textures ?? [];
@@ -71594,13 +71848,19 @@ function worldBatchTeamColor(material, textures, uvSource, color2, intensity) {
   const team = modelMaterialTeamColor(material, byId, uvSource);
   if (team === void 0)
     return void 0;
+  const rule = teamMaskRule(team, teamRamp === void 0 ? void 0 : { teamRamp });
+  if (rule === void 0)
+    return void 0;
   const mask = team.mask === "whole" ? void 0 : byId.get(team.mask.texture);
+  const tinted = team.source === "object-tint";
   return Object.freeze({
     ...mask === void 0 ? {} : { mask },
     channel: team.mask === "whole" ? 4 : ["r", "g", "b", "a", "rgb"].indexOf(team.mask.channel),
     blend: TEAM_COLOR_BLENDS.indexOf(team.blend),
     strength: team.strength ?? 1,
-    color: color2 ?? [1, 1, 1]
+    color: (tinted ? objectTint : color2) ?? team.defaultColor ?? [1, 1, 1],
+    rule,
+    ...tinted ? { objectTint: true } : {}
   });
 }
 var record5 = (value) => value !== null && typeof value === "object" && !Array.isArray(value) ? value : void 0;
@@ -73825,7 +74085,7 @@ function createWorldWebGlPlan(input, previousPlan) {
         const normalLayer = material?.layers?.find((candidate) => NORMAL_SLOTS.has(materialSlot(candidate.slot)));
         const texture = layer2?.resourceId === void 0 ? void 0 : result.textures?.find((candidate) => candidate.id === layer2.resourceId);
         const requestedUv = layer2?.uvSource ?? 0;
-        const team = worldBatchTeamColor(material, result.textures, requestedUv, moment.teamColor, materialContext.teamColorIntensity);
+        const team = worldBatchTeamColor(material, result.textures, requestedUv, moment.teamColor, materialContext.teamColorIntensity, item.presentationTint, item.player === void 0 ? void 0 : input.teamRamps?.get(item.player));
         const coverage = modelMaterialCoverage(material);
         const blendMode = coverage.mode !== "blend" ? void 0 : (
           // the world's adding blend is SrcAlpha, One: add-alpha's (UV_game_material)
@@ -73836,7 +74096,7 @@ function createWorldWebGlPlan(input, previousPlan) {
         const factor2 = material?.baseColorFactor ?? (texture === void 0 && primitive.colors === void 0 ? colorHash(primitive.materialId ?? item.kind) : [1, 1, 1, 1]);
         const unlit2 = material?.unlit === true;
         const priority = blendMode === void 0 ? 0 : material?.priority ?? 0;
-        const tint = item.presentationTint ?? [1, 1, 1];
+        const tint = team?.objectTint === true ? [1, 1, 1] : item.presentationTint ?? [1, 1, 1];
         const albedo = team !== void 0 && team.mask === void 0 && texture === void 0 ? [
           ...[0, 1, 2].map((channel) => teamColorChannel(factor2[channel], 1, team.color[channel], TEAM_COLOR_BLENDS[team.blend], team.strength)),
           factor2[3]
@@ -73863,7 +74123,7 @@ function createWorldWebGlPlan(input, previousPlan) {
           const vertices = triangle.map((index) => instanceVertex(transformedComponentVertex(transformedPrimitiveVertex(primitive, index), componentTransform), item, translation));
           if (texture !== void 0 && textureCoordinates !== void 0 && textureCoordinates.length >= primitive.positions.length / 3 * 2) {
             if (texturedWrite === void 0) {
-              const teamKey = team === void 0 ? "" : `${team.mask?.id ?? "whole"}:${String(team.channel)}:${String(team.blend)}:${team.color.join(",")}`;
+              const teamKey = worldTeamKey(team);
               const key3 = `${result.sourceKey}\0${texture.id}\0${normalTexture?.id ?? ""}\0${blendMode ?? "opaque"}\0${String(coverage.cutoff)}\0${String(shadowPolicy.castShadows)}\0${String(shadowPolicy.receiveShadows)}\0${String(unlit2)}\0${String(priority)}\0${teamKey}`;
               const collection = blendMode === void 0 ? textured : transparentTextured;
               const target = collection.get(key3) ?? {
@@ -74462,6 +74722,15 @@ uniform float teamMaskChannel;
 uniform float teamBlend;
 uniform float teamStrength;
 uniform vec3 teamColor;
+// how the mask weighs it (TEAM_MASK_GLSL): 0 its data channel, 1 a key, 2 an indexed ramp
+uniform float teamMaskMode;
+uniform vec3 teamKey;
+uniform float teamKeyIntensity;
+uniform vec3 teamRamp[${TEAM_RAMP_MAX}];
+uniform float teamRampCount;
+uniform float teamRampFirst;
+uniform float teamRampScale;
+uniform float teamTintRgb;
 uniform sampler2D baseColorMap;
 // The base map is an atlas of tiles in this grid, columns and rows (MapTerrainMaterialDefinition.atlas);
 // 0 when it is none. The secondary coordinate is then the cell's grid coordinate.
@@ -74514,6 +74783,7 @@ uniform float cliffMaskMode;
 uniform vec4 cliffMaskSelector;
 out vec4 outColor;
 ${TEAM_COLOR_GLSL}
+${TEAM_MASK_GLSL}
 // The base colour; for an atlas, from inside the sample's tile at the level it reads. The level comes
 // from the cell coordinate (the atlas coordinate jumps between tiles at a cell edge), it stops where a
 // tile is one texel, and the sample stays half a texel of the coarser level read inside the tile: a far
@@ -74746,12 +75016,11 @@ void main() {
   if (textured > 0.5) surface *= baseColorSample(textureCoordinate);
   if (teamColorMode > 0.5) {
     vec3 teamMask = vec3(1.0);
-    if (teamColorMode > 1.5) {
-      vec4 maskTexel = texture(secondaryColorMap, textureCoordinate);
-      float maskChannel = teamMaskChannel < 0.5 ? maskTexel.r : teamMaskChannel < 1.5 ? maskTexel.g : teamMaskChannel < 2.5 ? maskTexel.b : maskTexel.a;
-      teamMask = teamMaskChannel > 3.5 ? maskTexel.rgb : vec3(maskChannel);
-    }
-    surface.rgb = modkitTeamColor(surface.rgb, teamMask, teamColor, int(teamBlend + 0.5), teamStrength);
+    vec3 team = teamColor;
+    if (teamColorMode > 1.5)
+      teamMask = modkitTeamMask(secondaryColorMap, textureCoordinate, teamMaskMode, teamMaskChannel,
+        teamKey, teamKeyIntensity, teamRamp, teamRampCount, teamRampFirst, teamRampScale, teamTintRgb, team);
+    surface.rgb = modkitTeamColor(surface.rgb, teamMask, team, int(teamBlend + 0.5), teamStrength);
   }
   if (secondaryTextured > 0.5) {
     float secondarySurface = texture(secondaryColorMap, secondaryTextureCoordinate).r;
@@ -75165,6 +75434,7 @@ function snapshotWorldPlanInput(input) {
     ...input.waterMaterials === void 0 ? {} : { waterMaterials: [...input.waterMaterials] },
     ...input.animationTimes === void 0 ? {} : { animationTimes: new Map(input.animationTimes) },
     ...input.teamColors === void 0 ? {} : { teamColors: new Map(input.teamColors) },
+    ...input.teamRamps === void 0 ? {} : { teamRamps: new Map(input.teamRamps) },
     ...input.previewPosition === void 0 ? {} : { previewPosition: { ...input.previewPosition } }
   };
 }
@@ -75179,7 +75449,7 @@ function sameWorldMap(left, right) {
   return true;
 }
 function sameWorldPlanInputExceptAnimationTimes(left, right) {
-  return sameArrayIdentity(left.items, right.items) && sameWorldMap(left.models, right.models) && sameArrayIdentity(left.terrainMaterials, right.terrainMaterials) && sameArrayIdentity(left.terrainWeightRasters, right.terrainWeightRasters) && sameWorldMap(left.terrainTextures, right.terrainTextures) && sameArrayIdentity(left.waterMaterials, right.waterMaterials) && left.selectedObjectId === right.selectedObjectId && samePreviewPosition(left.previewPosition, right.previewPosition) && sameWorldMap(left.teamColors, right.teamColors);
+  return sameArrayIdentity(left.items, right.items) && sameWorldMap(left.models, right.models) && sameArrayIdentity(left.terrainMaterials, right.terrainMaterials) && sameArrayIdentity(left.terrainWeightRasters, right.terrainWeightRasters) && sameWorldMap(left.terrainTextures, right.terrainTextures) && sameArrayIdentity(left.waterMaterials, right.waterMaterials) && left.selectedObjectId === right.selectedObjectId && samePreviewPosition(left.previewPosition, right.previewPosition) && sameWorldMap(left.teamColors, right.teamColors) && sameWorldMap(left.teamRamps, right.teamRamps);
 }
 function sameWorldPlanInput(left, right) {
   return (left.timeSeconds ?? 0) === (right.timeSeconds ?? 0) && sameNumberMap(left.animationTimes, right.animationTimes) && sameWorldPlanInputExceptAnimationTimes(left, right) && // a camera-facing node draws differently as the camera turns
@@ -76010,6 +76280,16 @@ function drawTexturedBatch(resources, program, source2, range) {
     worldUniform1f(gl, program, "teamBlend", team.blend);
     worldUniform1f(gl, program, "teamStrength", team.strength);
     gl.uniform3f(uniformLocation(gl, program, "teamColor"), ...team.color);
+    const rule = team.rule;
+    worldUniform1f(gl, program, "teamMaskMode", rule.mode === "key" ? 1 : rule.mode === "ramp" ? 2 : 0);
+    gl.uniform3f(uniformLocation(gl, program, "teamKey"), ...rule.thresholds ?? [0, 0, 255]);
+    worldUniform1f(gl, program, "teamKeyIntensity", rule.intensity ?? 2);
+    const shades = rule.shades ?? [];
+    gl.uniform3fv(uniformLocation(gl, program, "teamRamp"), Float32Array.from({ length: TEAM_RAMP_MAX * 3 }, (_, index) => shades[Math.floor(index / 3)]?.[index % 3] ?? 0));
+    worldUniform1f(gl, program, "teamRampCount", shades.length);
+    worldUniform1f(gl, program, "teamRampFirst", rule.first ?? 0);
+    worldUniform1f(gl, program, "teamRampScale", rule.scale ?? 255);
+    worldUniform1f(gl, program, "teamTintRgb", rule.tintRgb === true ? 1 : 0);
     if (team.mask !== void 0) {
       bindTexture2d(resources, team.mask, 6);
       worldUniform1i(gl, program, "secondaryColorMap", 6);
@@ -77814,7 +78094,8 @@ function createWorldLatticePlan(items) {
     contours,
     ramps,
     objects,
-    bounds: Number.isFinite(minX) ? [minX, minY, maxX, maxY] : [0, 0, 1, 1]
+    bounds: Number.isFinite(minX) ? [minX, minY, maxX, maxY] : [0, 0, 1, 1],
+    flat: cells.length > 0 && minimumHeight === maximumHeight
   };
 }
 function latticeScreen(canvas, plan) {
@@ -78532,14 +78813,25 @@ function worldTeamColorsOf(info) {
   }
   return colors;
 }
+var worldTeamRamps = /* @__PURE__ */ new WeakMap();
+function worldTeamRampsOf(info) {
+  let ramps = worldTeamRamps.get(info);
+  if (ramps === void 0) {
+    ramps = new Map((info.players ?? []).flatMap((player) => player.colorRamp === void 0 ? [] : [[player.id, player.colorRamp]]));
+    worldTeamRamps.set(info, ramps);
+  }
+  return ramps;
+}
 function drawCandidateWorld(canvas, model, selection, camera, animationTimes, timeSeconds = 0, renderer, hiddenOverlays) {
   const flattened = flattenedWorldLayersOf(model.layers);
   const worldItems = shownWorldItems(flattened.items, hiddenOverlays);
   const selectedObjectId = typeof selection === "number" ? selection : selection?.selectedObjectId;
   const teamColors = worldTeamColorsOf(model.info);
+  const teamRamps = worldTeamRampsOf(model.info);
   const webGlInput = {
     items: worldItems,
     ...teamColors.size === 0 ? {} : { teamColors },
+    ...teamRamps.size === 0 ? {} : { teamRamps },
     ...model.models === void 0 ? {} : { models: model.models },
     terrainMaterials: flattened.terrainMaterials,
     waterMaterials: flattened.waterMaterials,
@@ -78956,7 +79248,8 @@ function createWorldViewer(options = {}) {
       let renderRevision = 0;
       let descriptor = args.descriptor;
       let currentModel;
-      let viewMode = options.initialView ?? "3d";
+      let viewMode = options.initialView === "auto" ? "lattice" : options.initialView ?? "3d";
+      let viewUndecided = options.initialView === "auto";
       let latticePlan;
       let latticeLayers;
       let loading = false;
@@ -79001,6 +79294,16 @@ function createWorldViewer(options = {}) {
         return times;
       };
       const redraw = () => {
+        if (viewUndecided && currentModel !== void 0) {
+          const items = currentModel.layers.flatMap((layer2) => layer2.page.items);
+          if (items.some((item) => item.facet === "terrain")) {
+            viewUndecided = false;
+            latticePlan = createWorldLatticePlan(items);
+            latticeLayers = currentModel.layers;
+            if (latticePlan.flat)
+              viewMode = "3d";
+          }
+        }
         canvas.hidden = viewMode !== "3d";
         latticeCanvas.hidden = viewMode !== "lattice";
         latticeButton.setAttribute("aria-pressed", String(viewMode === "lattice"));
@@ -79278,6 +79581,11 @@ function createWorldViewer(options = {}) {
         saveMove.removeEventListener("click", onSave);
       });
       void render().then(async () => {
+        const source2 = lease2.value;
+        if (source2.refined !== void 0 && !scope.signal.aborted) {
+          if (await source2.refined(scope.signal) && !scope.signal.aborted)
+            await render();
+        }
         if (transportLease === void 0 || scope.signal.aborted)
           return;
         await watchTransportedWorld(transportLease.value, render, scope.signal);
@@ -79574,7 +79882,10 @@ function createWebPreviewStages(context) {
       id: "world",
       label: text3("web.view.world"),
       contract: "common.view/world-scene-source",
-      module: createWorldViewer({ localizer }),
+      // the height lattice first, unless the map is of one height (a 2D game's): then 3D
+      module: createWorldViewer({ localizer, initialView: "auto" }),
+      // an object moved in the world is saved through the map's own editing arm (6.4)
+      usesEditorPorts: true,
       // A timed world (a replay, a cutscene) follows its transport.
       optionalContracts: ["common.view/transport-source"]
     },

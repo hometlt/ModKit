@@ -13,14 +13,14 @@ import {
   createStandardSurfaceRegistry,
   framePortFromMessagePort,
   protocolLimits
-} from "../../chunks/chunk-5JBCUCUP.js";
+} from "../../chunks/chunk-2XPNTW3Y.js";
 import {
   assembleSubjectDescriptor,
   createAssetSession,
   createByteRangeSource,
   createLazyTableDataSource,
   createUtf8TextDataSource
-} from "../../chunks/chunk-LDOMA6BE.js";
+} from "../../chunks/chunk-X52F4B5G.js";
 import {
   metadataFieldProjections
 } from "../../chunks/chunk-5GGWVEQJ.js";
@@ -90,7 +90,7 @@ import {
   validateContributionManifest,
   writerOfferSatisfies,
   writerSelectionKey
-} from "../../chunks/chunk-RP2NZG33.js";
+} from "../../chunks/chunk-M7ZGWVBJ.js";
 import {
   SCENE_RENDERER_CONTRACT,
   SCENE_RENDERER_MATCHER_PROFILE
@@ -8792,7 +8792,7 @@ var key = (ref2) => JSON.stringify([ref2.namespace, ref2.entityId]);
 async function answerCatalogQueries(options) {
   const asked = /* @__PURE__ */ new Set();
   const entities = /* @__PURE__ */ new Map();
-  let result = await options.run(void 0, 0);
+  let result = options.initial ?? await options.run(void 0, 0);
   for (let round = 1; round <= options.rounds; round += 1) {
     const refs = options.queriesOf(result).filter((ref2) => !asked.has(key(ref2)));
     if (refs.length === 0)
@@ -9088,9 +9088,11 @@ function ownedCompressedTexture(texture, info, plan, maxBytes) {
 function rasterIdParameters(logicalId) {
   const { name, parameters } = resourceIdParameters(logicalId);
   const keys = Object.keys(parameters);
-  if (keys.length === 0 || keys.some((key3) => key3 !== "region" && key3 !== "frame"))
+  if (keys.length === 0 || keys.some((key3) => key3 !== "region" && key3 !== "frame" && key3 !== "plane"))
     return { name: logicalId };
-  const { region, frame } = parameters;
+  const { region, frame, plane } = parameters;
+  if (plane !== void 0 && plane !== "indices")
+    throw new TypeError("raster id plane must be indices");
   if (region !== void 0 && region.length === 0)
     throw new TypeError("raster id region must name an area");
   if (frame !== void 0 && !(/^(?:0|[1-9][0-9]*)$/u.test(frame) && Number.isSafeInteger(Number(frame))))
@@ -9098,8 +9100,20 @@ function rasterIdParameters(logicalId) {
   return {
     name,
     ...region === void 0 ? {} : { region },
-    ...frame === void 0 ? {} : { frame: Number(frame) }
+    ...frame === void 0 ? {} : { frame: Number(frame) },
+    ...plane === void 0 ? {} : { plane: "indices" }
   };
+}
+function indexPlaneRgba(region, width, height) {
+  if (region.width !== width || region.height !== height || region.pixelFormat !== "gray8" || !Number.isSafeInteger(region.rowStride) || region.rowStride < width || !(region.pixels instanceof Uint8Array) || region.rowStride * (height - 1) + width > region.pixels.length)
+    return void 0;
+  const rgba = new Uint8Array(width * height * 4);
+  for (let y = 0; y < height; y += 1)
+    for (let x = 0; x < width; x += 1) {
+      const index = region.pixels[y * region.rowStride + x];
+      rgba.set([index, index, index, 255], (y * width + x) * 4);
+    }
+  return Object.freeze({ width, height, rowStride: width * 4, pixelFormat: "rgba8", pixels: rgba });
 }
 function createSubjectRasterResources(options) {
   const refusal = (code, message, provenance) => ({
@@ -9135,6 +9149,7 @@ function createSubjectRasterResources(options) {
       let provenance;
       let atlasRegion;
       let frameOnly;
+      let indices = false;
       try {
         let source;
         let hint = {};
@@ -9151,6 +9166,9 @@ function createSubjectRasterResources(options) {
           }
           atlasRegion = parameters.region;
           frameOnly = parameters.frame;
+          indices = parameters.plane === "indices";
+          if (indices)
+            selection = { ...selection, mipLevel: 0 };
           if (frameOnly !== void 0 && (selection.frame ?? 0) !== 0)
             return refusal("x3.host/raster-selection-invalid", "The resource names one frame of its image: it has no other frame to select.");
           const asked = parameters.name === request.requirement.logicalId ? request.requirement : { ...request.requirement, logicalId: parameters.name };
@@ -9206,7 +9224,9 @@ function createSubjectRasterResources(options) {
         const raster = await opened.session.dataSource("common.view/raster-image-source", 1);
         releases.push(() => raster.release());
         const info = Object.freeze({ ...await raster.value.info(signal) });
-        const compressedPlan = compressedFormats.size === 0 || atlasRegion !== void 0 || frameOnly !== void 0 || raster.value.readCompressed === void 0 || ![...compressedFormats].some((format2) => format2.startsWith(`${info.compression}-`)) ? void 0 : compressedSelectionPlan(info, selection, maxBytes);
+        if (indices && info.indexed !== true)
+          return refusal("x3.host/raster-plane-missing", "The image stores no palette indices to read.", provenance);
+        const compressedPlan = compressedFormats.size === 0 || indices || atlasRegion !== void 0 || frameOnly !== void 0 || raster.value.readCompressed === void 0 || ![...compressedFormats].some((format2) => format2.startsWith(`${info.compression}-`)) ? void 0 : compressedSelectionPlan(info, selection, maxBytes);
         if (compressedPlan !== void 0) {
           const subresource = Object.freeze({
             frame: selection.frame ?? 0,
@@ -9246,15 +9266,16 @@ function createSubjectRasterResources(options) {
           const area = info.atlasRegions?.find((item) => item.name === atlasRegion);
           if (area === void 0)
             return refusal("x3.host/raster-atlas-region-missing", `The image has no atlas region named ${atlasRegion}.`, provenance);
-          const region = await raster.value.readRegion({
+          const read = await raster.value.readRegion({
             x: area.x,
             y: area.y,
             width: area.width,
             height: area.height,
             ...frameOnly === void 0 ? {} : { frame: frameOnly },
-            pixelFormat: "rgba8",
+            ...indices ? { pixelFormat: "gray8", plane: "indices" } : { pixelFormat: "rgba8" },
             maxBytes
           }, signal);
+          const region = indices ? indexPlaneRgba(read, area.width, area.height) ?? read : read;
           if (region.width !== area.width || region.height !== area.height || region.pixelFormat !== "rgba8" || !(region.pixels instanceof Uint8Array) || region.pixels.length > maxBytes)
             return refusal("x3.host/raster-region-invalid", "The image codec returned an invalid bounded RGBA region.", provenance);
           const { atlasRegions: _atlas, ...rest } = info;
@@ -9284,15 +9305,16 @@ function createSubjectRasterResources(options) {
           signal?.throwIfAborted();
           if (!options.state.live || !options.isAuthorized())
             return refusal("x3.host/raster-context-unavailable", "The raster context is no longer readable.", provenance);
-          const region = await raster.value.readRegion({
+          const read = await raster.value.readRegion({
             x: 0,
             y: 0,
             width: plan.width,
             height: plan.height,
             ...subresource,
-            pixelFormat: "rgba8",
+            ...indices ? { pixelFormat: "gray8", plane: "indices" } : { pixelFormat: "rgba8" },
             maxBytes: remaining
           }, signal);
+          const region = indices ? indexPlaneRgba(read, plan.width, plan.height) ?? read : read;
           signal?.throwIfAborted();
           if (!options.state.live || !options.isAuthorized())
             return refusal("x3.host/raster-context-unavailable", "The raster context is no longer readable.", provenance);
@@ -22083,6 +22105,7 @@ async function resolveMapPreviewPreparation(request) {
 var MAP_CATALOG_ROUNDS = 6;
 async function analyzeWithCatalogEntities(options) {
   return answerCatalogQueries({
+    ...options.initial === void 0 ? {} : { initial: options.initial },
     run: (answered, round) => options.analyze(answered === void 0 ? void 0 : Object.freeze({
       schemaVersion: 1,
       workspaceId: options.workspace.workspaceId,
@@ -22342,12 +22365,16 @@ async function analyzeResolvedMapWorkspace(request) {
       requiredRequirementIds: plan.requirements.filter((item) => item.required).map((item) => item.requirementId),
       ...request.signal === void 0 ? {} : { signal: request.signal }
     });
-    const snapshot2 = request.catalog === void 0 && request.catalogEntities !== void 0 ? await analyzeWithCatalogEntities({
+    const asking = request.catalog === void 0 ? request.catalogEntities : void 0;
+    const progressive = asking !== void 0 && request.progressiveCatalog === true;
+    const background = new AbortController();
+    const backgroundSignal = request.signal === void 0 ? background.signal : AbortSignal.any([request.signal, background.signal]);
+    const snapshot2 = asking === void 0 ? await analyze(request.catalog, 0) : progressive ? await analyze(void 0, 0) : await analyzeWithCatalogEntities({
       workspace: request.workspace,
       analyze,
-      catalogEntities: request.catalogEntities,
+      catalogEntities: asking,
       ...request.signal === void 0 ? {} : { signal: request.signal }
-    }) : await analyze(request.catalog, 0);
+    });
     if (request.resources.state() !== "live") {
       throw new Error("resource session was disposed while workspace map was analyzed");
     }
@@ -22413,7 +22440,17 @@ async function analyzeResolvedMapWorkspace(request) {
         ...signal === void 0 ? {} : { signal }
       })
     });
-    const world = createCandidateWorldSceneLease(snapshot2, request.resources.provenance().slice(provenanceOffset), limits.maxPageSize, modelResources, releaseModelResources, rasterResources);
+    const worldOf = (analyzed, release) => createCandidateWorldSceneLease(analyzed, request.resources.provenance().slice(provenanceOffset), limits.maxPageSize, modelResources, release, rasterResources);
+    const world = !progressive ? worldOf(snapshot2, releaseModelResources) : refinableWorldLease(worldOf(snapshot2), analyzeWithCatalogEntities({
+      workspace: request.workspace,
+      analyze: (catalog, round) => analyze(catalog, round).then((result) => {
+        backgroundSignal.throwIfAborted();
+        return result;
+      }),
+      catalogEntities: asking,
+      initial: snapshot2,
+      signal: backgroundSignal
+    }).then((answered) => answered === snapshot2 ? void 0 : worldOf(answered), () => void 0), () => background.abort(), releaseModelResources);
     let released = false;
     return Object.freeze({
       state: "resolved",
@@ -22465,7 +22502,16 @@ function borrowCommonWorldScene(candidate) {
   const source = Object.freeze({
     contract: WORLD_SCENE_SOURCE_CONTRACT,
     major: 1,
-    snapshotId: candidate.snapshotId,
+    // a refinable world names a new snapshot once refined
+    get snapshotId() {
+      return candidate.snapshotId;
+    },
+    ...candidate.refined === void 0 ? {} : {
+      async refined(signal) {
+        assertLive(signal);
+        return candidate.refined(signal);
+      }
+    },
     async info(signal) {
       assertLive(signal);
       const info = await candidate.info(signal);
@@ -23254,6 +23300,57 @@ async function resolveSubjectNamespacePreviewResources(request) {
     throw error3;
   }
 }
+function refinableWorldLease(initial, refinement, abort, releaseShared) {
+  let current = initial;
+  let swapped = false;
+  let released = false;
+  const value = Object.freeze({
+    contract: initial.value.contract,
+    major: 1,
+    get snapshotId() {
+      return current.value.snapshotId;
+    },
+    info: (signal) => current.value.info(signal),
+    page: (request, signal) => current.value.page(request, signal),
+    ...initial.value.model === void 0 ? {} : {
+      model: (resourceId2, request, signal) => current.value.model(resourceId2, request, signal)
+    },
+    ...initial.value.texture === void 0 ? {} : {
+      texture: (resourceId2, request, signal) => current.value.texture(resourceId2, request, signal)
+    },
+    async refined(signal) {
+      const next = await Promise.race([
+        refinement,
+        new Promise((_, reject) => {
+          signal?.throwIfAborted();
+          signal?.addEventListener("abort", () => reject(signal.reason), { once: true });
+        })
+      ]);
+      if (next === void 0 || released)
+        return false;
+      if (!swapped) {
+        const old = current;
+        current = next;
+        swapped = true;
+        await old.release();
+      }
+      return true;
+    }
+  });
+  return Object.freeze({
+    value,
+    async release() {
+      if (released)
+        return;
+      released = true;
+      abort();
+      await current.release();
+      if (!swapped)
+        await (await refinement)?.release();
+      await releaseShared();
+    }
+  });
+}
 async function coordinateMapPreviewAssetSession(request) {
   const maxCandidates = positiveCoordinatorLimit(request.maxCandidates, "maxCandidates");
   const maxSubjectEntries = boundedCoordinatorLimit(request.maxSubjectEntries, "maxSubjectEntries", MAX_PREVIEW_NAMESPACE_FACT_ENTRIES);
@@ -23527,6 +23624,7 @@ async function coordinateMapPreviewAssetSession(request) {
       ...request.onModelResourceProfile === void 0 ? {} : { onModelResourceProfile: request.onModelResourceProfile },
       ...enrichment.catalog === void 0 ? {} : { catalog: enrichment.catalog },
       ...catalogEntities === void 0 ? {} : { catalogEntities },
+      ...request.progressiveCatalog === true ? { progressiveCatalog: true } : {},
       ...enrichment.sources === void 0 ? {} : { catalogSources: enrichment.sources },
       limits: request.limits,
       ...request.signal === void 0 ? {} : { signal: request.signal }
@@ -30336,6 +30434,7 @@ export {
   planGameLaunch,
   presentationSemanticHash,
   readResourceText,
+  refinableWorldLease,
   registerServiceContractDefinitionsFromInventory,
   registerServiceDefinitionsOrThrow,
   registerStandardCompressionDefinitions,

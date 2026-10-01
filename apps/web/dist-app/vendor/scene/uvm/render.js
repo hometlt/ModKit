@@ -5,7 +5,7 @@ import {
   readUvmModel,
   uvmImageFilters,
   uvmImageTexels
-} from "../../../chunks/chunk-7E747Z63.js";
+} from "../../../chunks/chunk-E5MNFFI7.js";
 import {
   IDENTITY_MATERIAL_FRAME,
   MATERIAL_LAYERS_SHADER,
@@ -23,7 +23,7 @@ import {
   snapshotEnvironment,
   snapshotEyePosition,
   snapshotModelBillboards
-} from "../../../chunks/chunk-4LSJBOIV.js";
+} from "../../../chunks/chunk-I3F2EMHG.js";
 import {
   array,
   field,
@@ -44,7 +44,7 @@ import {
   readUvmTextureAlpha,
   readUvmTextureColorKeys,
   validateUvmDocument
-} from "../../../chunks/chunk-GE6PEFUL.js";
+} from "../../../chunks/chunk-KURLZAFQ.js";
 import {
   readUvmAnimationClips,
   readUvmPrimitiveVisibility
