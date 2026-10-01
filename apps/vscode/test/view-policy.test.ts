@@ -187,6 +187,7 @@ describe('VS Code view policy', () => {
       'hex',
       'viewer',
       'hex-editor',
+      'font',
       'image',
       'map-layers',
       'model',

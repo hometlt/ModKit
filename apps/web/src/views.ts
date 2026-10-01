@@ -66,6 +66,7 @@ import { createPlaybackViewer, transportViewer } from '@modkit/ui/transport'
 import { createAudioViewer } from '@modkit/ui/audio'
 import { createTreeViewer } from '@modkit/ui/tree'
 import { createVectorViewer } from '@modkit/ui/vector'
+import { createFontViewer } from '@modkit/ui/font'
 import { createVideoViewer } from '@modkit/ui/video'
 import { createWorldViewer } from '@modkit/ui/world'
 import { DEFAULT_UI_LOCALIZER, type UiLocalizer } from '@modkit/ui/localization'
@@ -518,6 +519,13 @@ export function createWebPreviewStages(context: WebViewContext): readonly Previe
       label: text('web.view.image'),
       contract: 'common.view/raster-image-source',
       module: createImageViewer({ localizer }),
+    },
+    {
+      id: 'font',
+      label: text('web.view.font'),
+      contract: 'common.view/byte-range-source',
+      trait: 'content.fonts',
+      module: createFontViewer({ localizer }),
     },
     {
       id: 'vector',

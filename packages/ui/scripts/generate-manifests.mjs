@@ -156,6 +156,18 @@ const contributions = [
     },
   },
   {
+    // a font set in text from its own bytes; above the glyph sheet a TrueType font also has
+    id: 'font-stage',
+    entrypoint: './dist/font/index.js',
+    spec: {
+      kind: 'stage',
+      requiresTraits: [trait('content.fonts')],
+      consumesDataSources: [dataSource('common.view/byte-range-source')],
+      priority: 360,
+      singletonGroup: 'center-stage',
+    },
+  },
+  {
     id: 'audio-stage',
     entrypoint: './dist/audio/index.js',
     spec: {

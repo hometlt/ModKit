@@ -2830,6 +2830,58 @@
     pointer-events: none;
   }
 
+  /* A font set in text down MK2's sizes, the sample on one line per size. */
+  [data-mk-part='font'] {
+    overflow: auto;
+    padding: var(--mk-space-3);
+  }
+
+  [data-mk-part='font.toolbar'] {
+    display: flex;
+    margin-block-end: var(--mk-space-3);
+  }
+
+  [data-mk-part='font.text'] {
+    flex: 1 1 auto;
+    height: var(--mk-size-control);
+  }
+
+  [data-mk-part='font.row'] {
+    display: flex;
+    align-items: baseline;
+    gap: var(--mk-space-3);
+    padding-block: var(--mk-space-2);
+    border-block-end: 1px solid var(--mk-color-separator);
+  }
+
+  [data-mk-part='font.size'] {
+    flex: none;
+    width: 4em;
+    color: var(--mk-color-fg-muted);
+    font-size: var(--mk-font-size-xs);
+    font-variant-numeric: tabular-nums;
+  }
+
+  [data-mk-part='font.sample'] {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  [data-mk-part='font.heading'] {
+    margin-block: var(--mk-space-3) var(--mk-space-1);
+    color: var(--mk-color-fg-muted);
+    font-size: var(--mk-font-size-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  [data-mk-part='font.set'] {
+    font-size: 22px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+  }
+
   [data-mk-part='video.options'] {
     display: flex;
     flex-wrap: wrap;

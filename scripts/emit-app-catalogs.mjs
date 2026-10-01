@@ -168,6 +168,12 @@ const presentationPolicy = Object.freeze([
     label: 'Wiki',
     contributionId: 'modkit.ui/subject-wiki-stage',
   },
+  // A font set in text from its own bytes (plan 7.26); VS Code and the PWA compose it.
+  {
+    slotId: 'font',
+    label: 'Font',
+    contributionId: 'modkit.ui/font-stage',
+  },
 ])
 
 function json(path) {

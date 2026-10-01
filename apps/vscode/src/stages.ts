@@ -26,6 +26,7 @@ import { createGameTemplateViewer } from '@modkit/ui/template'
 import { createHexViewer } from '@modkit/ui/hex'
 import { defineViewerModule, lazyViewerModule } from '@modkit/ui/viewer'
 import { createHexEditor } from '@modkit/ui/hex-editor'
+import { createFontViewer } from '@modkit/ui/font'
 import { createImageViewer } from '@modkit/ui/image'
 import { createMapLayersViewer } from '@modkit/ui/map-layers'
 import { createModelViewer, MODEL_FACET_CONTRACTS } from '@modkit/ui/model'
@@ -171,6 +172,14 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
           },
         ],
       }),
+    },
+    {
+      // the font set in text from its own bytes, ahead of the glyph sheet of a TrueType font
+      id: 'font',
+      label: context.localizer.text('stage.font'),
+      contract: 'common.view/byte-range-source',
+      trait: 'content.fonts',
+      module: createFontViewer({ localizer: context.localizer }),
     },
     {
       id: 'vector',

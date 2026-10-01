@@ -228,6 +228,16 @@ export const PARTS = Object.freeze([
   'vector.image',
   'vector.readout',
 
+  // font stage
+  'font',
+  'font.toolbar',
+  'font.text',
+  'font.row',
+  'font.size',
+  'font.sample',
+  'font.heading',
+  'font.set',
+
   // archive stage
   'archive.members',
   'archive.member-list',

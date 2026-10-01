@@ -618,4 +618,28 @@ export const COMMON_PRESENTATION_CATALOG = Object.freeze([
       singletonGroup: 'center-stage',
     }),
   }),
+  Object.freeze({
+    slot: Object.freeze({
+      slotId: 'font',
+      kind: 'stage',
+      contributionId: 'modkit.ui/font-stage',
+      extensionId: 'modkit/ui',
+      priority: 360,
+      singletonGroup: 'center-stage',
+      bindings: Object.freeze([
+        Object.freeze({
+          bindingId: 'font-content',
+          contract: 'common.view/byte-range-source',
+          major: 1,
+        }),
+      ]),
+    }),
+    spec: Object.freeze({
+      kind: 'stage',
+      requiresTraits: [{ id: 'content.fonts', states: ['available'] }],
+      consumesDataSources: [{ contract: 'common.view/byte-range-source', major: 1 }],
+      priority: 360,
+      singletonGroup: 'center-stage',
+    }),
+  }),
 ])

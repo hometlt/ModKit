@@ -170,6 +170,10 @@
       "types": "./dist/hex-editor/index.d.ts",
       "default": "./dist/hex-editor/index.js"
     },
+    "./font": {
+      "types": "./dist/font/index.d.ts",
+      "default": "./dist/font/index.js"
+    },
     "./field-editor": {
       "types": "./dist/field-editor/index.d.ts",
       "default": "./dist/field-editor/index.js"

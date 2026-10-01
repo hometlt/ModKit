@@ -260,6 +260,18 @@ export const FILTER_FALLBACK_MESSAGES = {
   'filter.wholeWord': 'Match whole word',
 } as const satisfies UiMessageCatalog
 
+export const FONT_FALLBACK_MESSAGES = {
+  'viewer.font': 'Font viewer',
+  'viewer.fontCyrillic': 'Cyrillic',
+  'viewer.fontDigits': 'Digits and punctuation',
+  'viewer.fontLatin': 'Latin',
+  'viewer.fontRefused': 'The file was not read as a font: {reason}',
+  'viewer.fontSample':
+    'The quick brown fox jumps over the lazy dog. Съешь же ещё этих мягких французских булок.',
+  'viewer.fontText': 'Sample text',
+  'viewer.fontTooLarge': 'The font is larger than {limit} MiB; its specimen is not drawn.',
+} as const satisfies UiMessageCatalog
+
 export const GRAPH_FALLBACK_MESSAGES = {
   'graph.all': 'All',
   'graph.allRelations': 'all',

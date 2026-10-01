@@ -74,6 +74,7 @@ describe('web preview policy', () => {
   it('offers every first-party viewer the ui package ships, in preference order', () => {
     expect(stages.map(stageIdOf)).toEqual([
       'image',
+      'font',
       'vector',
       'world',
       'model',

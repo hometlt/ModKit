@@ -22,6 +22,7 @@
 /** Slot ids in the order the picker offers them. Anything not listed here is not offered. */
 export const STAGE_ORDER: readonly string[] = Object.freeze([
   'image',
+  'font',
   'vector',
   'world',
   'map-layers',
@@ -57,6 +58,7 @@ export const STAGE_ORDER: readonly string[] = Object.freeze([
  */
 export const MEDIA_STAGE_IDS: readonly string[] = Object.freeze([
   'image',
+  'font',
   'vector',
   'world',
   'model',

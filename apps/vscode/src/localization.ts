@@ -428,6 +428,7 @@ const EN_MESSAGES = Object.freeze({
 
   'stage.image': 'Image',
   'stage.vector': 'Vector',
+  'stage.font': 'Font',
   'stage.world': 'World',
   'stage.playback': 'Player',
   'stage.model': 'Model',
@@ -1001,6 +1002,7 @@ const RU_MESSAGES: Readonly<Record<keyof typeof EN_MESSAGES, string>> = Object.f
 
   'stage.image': 'Изображение',
   'stage.vector': 'Вектор',
+  'stage.font': 'Шрифт',
   'stage.world': 'Мир',
   'stage.playback': 'Плеер',
   'stage.model': 'Модель',

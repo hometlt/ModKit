@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "modkit/viewer-contribution", "major": 1 },
+  "id": "modkit.ui/font-stage",
+  "displayName": "font stage",
+  "runtimeVariants": [
+    {
+      "variantId": "browser",
+      "entrypoint": "./dist/font/index.js",
+      "target": { "environments": ["browser-main"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": []
+    }
+  ],
+  "spec": {
+    "kind": "stage",
+    "requiresTraits": [{ "id": "content.fonts", "states": ["available"] }],
+    "consumesDataSources": [{ "contract": "common.view/byte-range-source", "major": 1 }],
+    "priority": 360,
+    "singletonGroup": "center-stage"
+  }
+}
