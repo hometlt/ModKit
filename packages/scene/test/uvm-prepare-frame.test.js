@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { it } from 'node:test'
 import { materializeUvmCore } from '@modkit/uv/model/materializer'
-import { prepareUvmRender, renderUvm } from '../src/uvm/render.js'
+import { createUvmFramePreparer, prepareUvmRender, renderUvm } from '../src/uvm/render.js'
 import { renderHeadless } from '../src/render/headless.js'
 
 const identity = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
@@ -117,4 +117,29 @@ it('names the source unit the frame was scaled from (UV_units)', async () => {
   )
   const prepared = await prepareUvmRender(scaled, request, { budget })
   assert.equal(prepared.metersPerSourceUnit, 0.0254)
+})
+
+it('prepares many frames of one document the same as one by one', async () => {
+  const preparer = createUvmFramePreparer(bytes, { budget })
+  const turned = {
+    ...request,
+    camera: {
+      viewProjection: [2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+      viewMatrix: identity,
+    },
+  }
+  for (const frame of [request, turned, request]) {
+    const kept = await preparer.prepare(frame)
+    const fresh = await prepareUvmRender(bytes, frame, { budget })
+    assert.deepEqual(
+      Array.from(kept.request.camera.viewProjection),
+      Array.from(fresh.request.camera.viewProjection),
+    )
+    assert.deepEqual(
+      kept.request.scene.primitives.map(item => [item.id, Array.from(item.positions)]),
+      fresh.request.scene.primitives.map(item => [item.id, Array.from(item.positions)]),
+    )
+  }
+  preparer.dispose()
+  await assert.rejects(preparer.prepare(request), /disposed/)
 })

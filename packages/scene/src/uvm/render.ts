@@ -101,12 +101,55 @@ export function prepareUvmRender(
   return prepareNestedUvmRender(bytes, value, options, 0)
 }
 
+export interface UvmFramePreparer {
+  /** {@link prepareUvmRender} for this document; `signal` replaces the options' one for a call. */
+  prepare(request: JsonValue, signal?: AbortSignal): Promise<PreparedUvmRender>
+  /** Forgets the parsed document; later calls refuse. */
+  dispose(): void
+}
+
+/**
+ * {@link prepareUvmRender} for many frames of one document (a viewer turning its camera): the
+ * container is read and validated once and the decoded geometry is kept while the frame's stage
+ * budget stays the same (a resize changes it). Effects are still simulated per frame.
+ */
+export function createUvmFramePreparer(
+  bytes: Uint8Array,
+  options: UvmFrameOptions,
+): UvmFramePreparer {
+  const owned = bytes.slice()
+  let cache: UvmParseCache | undefined = {}
+  return Object.freeze({
+    prepare(request: JsonValue, signal?: AbortSignal) {
+      if (cache === undefined) return Promise.reject(new TypeError('the frame preparer is disposed'))
+      return prepareNestedUvmRender(
+        owned,
+        request,
+        signal === undefined ? options : { ...options, signal },
+        0,
+        cache,
+      )
+    },
+    dispose() {
+      cache = undefined
+    },
+  })
+}
+
+/** What {@link createUvmFramePreparer} keeps between frames. */
+interface UvmParseCache {
+  container?: { readonly document: UvmJsonDocument; readonly binary: Uint8Array }
+  model?: { readonly stageBytes: number; readonly decoded: ReturnType<typeof readUvmModel> }
+}
+type UvmJsonDocument = ReturnType<typeof readUvmContainer>['document']
+
 /** {@link prepareUvmRender} at a nesting depth: model states and particles prepare their models. */
 async function prepareNestedUvmRender(
   bytes: Uint8Array,
   value: JsonValue,
   options: UvmFrameOptions,
   depth: number,
+  cache?: UvmParseCache,
 ): Promise<PreparedUvmRender> {
   const { budget, signal, rasterResources } = options
   signal?.throwIfAborted()
@@ -226,23 +269,30 @@ async function prepareNestedUvmRender(
   }
   const available = budget.maxScalarBytes - frameBytes - textureBytes
   if (available < 0) throw new RangeError('render frame exceeds maxScalarBytes')
-  const container = readUvmContainer(
-    bytes,
-    {
-      maxInputBytes: Number(
-        budget.maxInputBytes > 0xffffffffn ? 0xffffffffn : budget.maxInputBytes,
-      ),
-      maxJsonBytes: budget.maxScalarBytes,
-      maxDepth: budget.maxDepth,
-      maxNodes: budget.maxNodes,
-    },
-    signal,
-  )
-  const { document, binary } = container
-  validateUvmDocument(document, {
-    binaryByteLength: binary.length,
-    ...(signal === undefined ? {} : { signal }),
-  })
+  const parsed =
+    cache?.container ??
+    (() => {
+      const container = readUvmContainer(
+        bytes,
+        {
+          maxInputBytes: Number(
+            budget.maxInputBytes > 0xffffffffn ? 0xffffffffn : budget.maxInputBytes,
+          ),
+          maxJsonBytes: budget.maxScalarBytes,
+          maxDepth: budget.maxDepth,
+          maxNodes: budget.maxNodes,
+        },
+        signal,
+      )
+      validateUvmDocument(container.document, {
+        binaryByteLength: container.binary.length,
+        ...(signal === undefined ? {} : { signal }),
+      })
+      const read = { document: container.document, binary: container.binary }
+      if (cache !== undefined) cache.container = read
+      return read
+    })()
+  const { document, binary } = parsed
   const units = field(document['extensions'], 'UV_units')
   const metersPerSourceUnit = units === undefined ? 1 : field(units, 'metersPerSourceUnit')
   if (
@@ -350,7 +400,12 @@ async function prepareNestedUvmRender(
   }
   for (const [index, texels] of textures)
     textures.set(index, { ...keyed(index, texels), ...textureSampler(index) })
-  const { scene, rig } = readUvmModel(document, binary, { maxScalarBytes: stageBytes }, signal)
+  const decoded =
+    cache?.model?.stageBytes === stageBytes
+      ? cache.model.decoded
+      : readUvmModel(document, binary, { maxScalarBytes: stageBytes }, signal)
+  if (cache !== undefined) cache.model = { stageBytes, decoded }
+  const { scene, rig } = decoded
   const scenes = array(document, 'scenes')
   const selected =
     scenes.length === 0 && input['sceneIndex'] === undefined
