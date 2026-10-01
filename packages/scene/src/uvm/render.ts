@@ -121,7 +121,8 @@ export function createUvmFramePreparer(
   let cache: UvmParseCache | undefined = {}
   return Object.freeze({
     prepare(request: JsonValue, signal?: AbortSignal) {
-      if (cache === undefined) return Promise.reject(new TypeError('the frame preparer is disposed'))
+      if (cache === undefined)
+        return Promise.reject(new TypeError('the frame preparer is disposed'))
       return prepareNestedUvmRender(
         owned,
         request,
