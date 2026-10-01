@@ -49,3 +49,24 @@ it('shades a pbr material with the one glTF BRDF under the scene light (П11)', 
     [255, 255, 255, 255],
   )
 })
+
+it('reads team masks and pbr maps on a primitive without a base colour texture', async () => {
+  const frame = await renderHeadless({
+    outputKind: 'rgba8',
+    viewport: { width: 8, height: 8 },
+    camera: { viewProjection: identity },
+    scene: {
+      materials: [
+        {
+          id: 'm',
+          baseColor: [1, 1, 1, 1],
+          teamColor: { mask: { texture: 'mask', channel: 'a' }, blend: 'lerp' },
+        },
+      ],
+      primitives: [{ ...quad, textureCoordinates: Float32Array.of(0, 0, 1, 0, 1, 1, 0, 1) }],
+      textures: [{ id: 'mask', width: 1, height: 1, rgba: Uint8Array.of(0, 0, 0, 255) }],
+      materialContext: { teamColor: [0, 0, 1] },
+    },
+  })
+  assert.deepEqual([...frame.rgba.subarray((4 * 8 + 4) * 4, (4 * 8 + 4) * 4 + 4)], [0, 0, 255, 255])
+})

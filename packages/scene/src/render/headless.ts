@@ -897,13 +897,20 @@ function renderPrimitive(context: RasterContext, primitive: SceneRendererPrimiti
       ? DEFAULT_SURFACE
       : (context.materials.get(primitive.materialId) ?? DEFAULT_SURFACE)
   const colorBuffer = readSimpleEffectColors(primitive)
+  // every texture of the base route reads these UVs: the base colour, a team mask, pbr maps
+  const sampled =
+    surface.texture !== undefined ||
+    surface.teamMask !== undefined ||
+    surface.pbr?.metallicRoughness !== undefined ||
+    surface.pbr?.occlusion !== undefined ||
+    surface.pbr?.emissiveTexture !== undefined
   const uvBuffer =
-    surface.texture === undefined || !(primitive.textureCoordinates instanceof Float32Array)
+    !sampled || !(primitive.textureCoordinates instanceof Float32Array)
       ? undefined
       : primitive.textureCoordinates
   const normalBuffer =
     context.light === undefined ||
-    surface.shading !== 'lambert' ||
+    (surface.shading !== 'lambert' && surface.shading !== 'pbr') ||
     !(primitive.normals instanceof Float32Array) ||
     primitive.normals.length < primitive.positions.length
       ? undefined
