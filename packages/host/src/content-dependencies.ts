@@ -10,7 +10,6 @@ import {
   isRevisionId,
   revisionId,
   revisionIdFromRef,
-  type ArtifactByteSource,
   type ArtifactSource,
   type InputSearchScope,
   type Lease,
@@ -29,6 +28,7 @@ import type {
   LanguageWorkspaceDocumentSourceRequest,
 } from './language/workspace.js'
 import { languageWorkspaceContextToken } from './language/context.js'
+import { artifactByteSourceFromBytes } from './source-bridge.js'
 import { classifyLanguageFile } from './language/workspace.js'
 import {
   normalizeCompanionLogicalId,
@@ -277,48 +277,11 @@ function createContentDependencyOrigin(
         maximumEntryBytes,
       )
       const uri = `content-source://${encodeURIComponent(mount.sourceId)}/${normalized.split('/').map(encodeURIComponent).join('/')}`
-      const source: ArtifactByteSource = Object.freeze({
-        kind: 'bytes',
-        ref: Object.freeze({ id: `${mount.rootId}:${normalized}`, uri }),
-        revision: mount.revision,
-        size: BigInt(bytes.byteLength),
-        async read(offset: bigint, length: number, readSignal?: AbortSignal) {
-          throwIfAborted(readSignal)
-          if (
-            offset < 0n ||
-            offset > BigInt(bytes.byteLength) ||
-            !Number.isSafeInteger(length) ||
-            length < 0
-          ) {
-            throw new RangeError('invalid content dependency byte range')
-          }
-          const start = Number(offset)
-          return bytes.slice(start, Math.min(bytes.byteLength, start + length))
-        },
-        async *stream(
-          range?: { readonly offset: bigint; readonly length?: bigint },
-          streamSignal?: AbortSignal,
-        ) {
-          throwIfAborted(streamSignal)
-          const start = range === undefined ? 0 : Number(range.offset)
-          const end =
-            range?.length === undefined
-              ? bytes.byteLength
-              : Math.min(bytes.byteLength, start + Number(range.length))
-          if (
-            !Number.isSafeInteger(start) ||
-            !Number.isSafeInteger(end) ||
-            start < 0 ||
-            end < start
-          ) {
-            throw new RangeError('invalid content dependency stream range')
-          }
-          for (let offset = start; offset < end; offset += 64 * 1024) {
-            throwIfAborted(streamSignal)
-            yield bytes.slice(offset, Math.min(end, offset + 64 * 1024))
-          }
-        },
-      })
+      const source = artifactByteSourceFromBytes(
+        Object.freeze({ id: `${mount.rootId}:${normalized}`, uri }),
+        mount.revision,
+        bytes,
+      )
       return Object.freeze({ value: source, release: async () => undefined })
     },
   })

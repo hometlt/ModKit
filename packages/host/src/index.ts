@@ -175,6 +175,12 @@ export {
   type CompanionOrigin,
 } from './input-resolution.js'
 export {
+  createContentSourceCompanionOrigin,
+  createContentSourceInputResolver,
+  type ContentSourceCompanionOriginOptions,
+  type ContentSourceInputResolverOptions,
+} from './content-source-companion.js'
+export {
   createWorkspaceNamespaceCandidateDiscovery,
   type WorkspaceNamespaceCandidateDiscovery,
   type WorkspaceNamespaceCandidateDiscoveryLimits,

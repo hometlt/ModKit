@@ -10,12 +10,7 @@
 import { randomUUID } from 'node:crypto'
 import { dirname, isAbsolute, relative, resolve } from 'node:path'
 import type { Diagnostic } from '@modkit/core'
-import {
-  CODEC_CONTRIBUTION_CONTRACT,
-  type CodecContributionSpecV1Wire,
-  type PermissionGrant,
-  type ResourceBudget,
-} from '@modkit/sdk'
+import type { PermissionGrant, ResourceBudget } from '@modkit/sdk'
 import type { SubjectServices } from '../subject-services.js'
 import type { Inventory } from '../inventory.js'
 import type { OpenedSubject, SubjectInputResolver } from '../subject-open.js'
@@ -33,6 +28,11 @@ import {
 import type { ContentSources } from '@modkit/vfs/content-sources'
 import { createContentAssetOrigin, type BaseModSetting } from '../content-dependency-operations.js'
 import { createFilesystemCompanionOrigin } from './companion-origin.js'
+import {
+  containerAssetRootsOf,
+  containerExtensionsOf,
+  containerMarkersOf,
+} from '../content-source-companion.js'
 import { openPathArtifactSource } from './directory-artifact-source.js'
 import type {
   FileArtifactReadTelemetry,
@@ -139,58 +139,6 @@ export function createFilesystemInputResolver(
       ...(options.deadlineMs === undefined ? {} : { deadlineMs: options.deadlineMs }),
     },
   )
-}
-
-/** Per container extension, the asset directories its codec declares (first declaration wins). */
-function containerAssetRootsOf(inventory: Inventory): Readonly<Record<string, readonly string[]>> {
-  const roots: Record<string, readonly string[]> = {}
-  for (const extension of inventory.extensions) {
-    for (const contribution of extension.contributions) {
-      const manifest = contribution.manifest
-      if (manifest?.contract.id !== CODEC_CONTRIBUTION_CONTRACT) continue
-      const spec = manifest.spec as unknown as CodecContributionSpecV1Wire
-      const assetRoots = spec.container?.assetRoots
-      if (spec.sourceTopology !== 'namespace' || assetRoots === undefined) continue
-      for (const value of spec.match.extensions ?? []) roots[value.toLowerCase()] ??= assetRoots
-    }
-  }
-  return Object.freeze(roots)
-}
-
-/** Per marker file a container codec declares (`pack.mcmeta`), that container's asset directories. */
-function containerMarkersOf(inventory: Inventory): Readonly<Record<string, readonly string[]>> {
-  const markers: Record<string, readonly string[]> = {}
-  for (const extension of inventory.extensions) {
-    for (const contribution of extension.contributions) {
-      const manifest = contribution.manifest
-      // a codec that cannot activate (an invalid spec, switched off) marks nothing
-      if (!contribution.activationEligible || manifest?.contract.id !== CODEC_CONTRIBUTION_CONTRACT)
-        continue
-      const spec = manifest.spec as unknown as CodecContributionSpecV1Wire
-      if (spec.sourceTopology !== 'namespace') continue
-      for (const marker of spec.container?.markers ?? [])
-        markers[marker.toLowerCase()] ??= spec.container?.assetRoots ?? ['']
-    }
-  }
-  return Object.freeze(markers)
-}
-
-/**
- * Extensions of the archive formats a namespace codec opens. A loose folder named like one of them
- * is that archive unpacked, so it bounds the `enclosing-container` companion scope on disk too.
- */
-function containerExtensionsOf(inventory: Inventory): readonly string[] {
-  const extensions = new Set<string>()
-  for (const extension of inventory.extensions) {
-    for (const contribution of extension.contributions) {
-      const manifest = contribution.manifest
-      if (manifest?.contract.id !== CODEC_CONTRIBUTION_CONTRACT) continue
-      const spec = manifest.spec as unknown as CodecContributionSpecV1Wire
-      if (spec.sourceTopology !== 'namespace' || spec.container === undefined) continue
-      for (const value of spec.match.extensions ?? []) extensions.add(value.toLowerCase())
-    }
-  }
-  return Object.freeze([...extensions].sort())
 }
 
 /** The opener a host passes to `exposeSubjectRpc`; refusals throw, so the RPC reports them. */
