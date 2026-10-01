@@ -52,6 +52,9 @@ export function loadBrotliSync(): Promise<BrotliSync> {
 }
 
 /** {@link loadBrotliSync} for one stream. */
-export async function decodeBrotli(payload: Uint8Array, maxOutputBytes: number): Promise<Uint8Array> {
+export async function decodeBrotli(
+  payload: Uint8Array,
+  maxOutputBytes: number,
+): Promise<Uint8Array> {
   return (await loadBrotliSync())(payload, maxOutputBytes)
 }

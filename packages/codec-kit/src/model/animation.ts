@@ -30,9 +30,13 @@ export function withoutHeldSamples(
   const kept = samples.filter((sample, index) => {
     const previous = samples[index - 1]
     const next = samples[index + 1]
-    return previous === undefined || next === undefined || !same(previous, sample) || !same(sample, next)
+    return (
+      previous === undefined || next === undefined || !same(previous, sample) || !same(sample, next)
+    )
   })
-  return kept.map((sample, index) => (sample.frame === index ? sample : { ...sample, frame: index }))
+  return kept.map((sample, index) =>
+    sample.frame === index ? sample : { ...sample, frame: index },
+  )
 }
 
 /**

@@ -10,7 +10,10 @@ import {
 const keys = (values: readonly number[][], extra: Partial<ModelAnimationSample> = {}) =>
   values.map((value, frame) => ({ frame, timeSeconds: frame, value, ...extra }))
 
-const clip = (samples: readonly ModelAnimationSample[], interpolation: 'linear' | 'step' | 'cubic-spline' = 'linear'): ModelAnimationClip => ({
+const clip = (
+  samples: readonly ModelAnimationSample[],
+  interpolation: 'linear' | 'step' | 'cubic-spline' = 'linear',
+): ModelAnimationClip => ({
   id: 'walk',
   name: 'walk',
   kind: 'animation',
@@ -24,7 +27,11 @@ describe('animation snapshot helpers', () => {
     const full = keys([[0], [1], [1], [1], [1], [2], [2], [2]])
     const thin = withoutHeldSamples(full)
     expect(thin.map(sample => [sample.frame, sample.timeSeconds, sample.value[0]])).toEqual([
-      [0, 0, 0], [1, 1, 1], [2, 4, 1], [3, 5, 2], [4, 7, 2],
+      [0, 0, 0],
+      [1, 1, 1],
+      [2, 4, 1],
+      [3, 5, 2],
+      [4, 7, 2],
     ])
     for (const interpolation of ['linear', 'step'] as const) {
       const before = createModelAnimationSampler(clip(full, interpolation))
@@ -48,6 +55,8 @@ describe('animation snapshot helpers', () => {
     const many = clip(keys(Array.from({ length: 200_000 }, (_, index) => [index])))
     const budget = animationSnapshotBudget([many])
     expect(budget.maxNodes).toBe(16 * 200_000 + 64 + 64)
-    expect(budget.maxBytes).toBe(Math.max(DEFAULT_MODEL_ANIMATION_BUDGET.maxBytes, 256 * 200_000 + 1024))
+    expect(budget.maxBytes).toBe(
+      Math.max(DEFAULT_MODEL_ANIMATION_BUDGET.maxBytes, 256 * 200_000 + 1024),
+    )
   })
 })
