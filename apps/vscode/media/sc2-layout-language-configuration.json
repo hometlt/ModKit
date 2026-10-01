@@ -21,6 +21,17 @@
     ],
     "wordPattern": "(-?\\d*\\.\\d\\w*)|([#$]+[^~!@#$%^&*()\\-=+\\[{\\]}\\\\|;:'\",.<>/?\\s`]*)|([^~!@#$%^&*()\\-=+\\[{\\]}\\\\|;:'\",.<>/?\\s`]+)",
     "autoCloseBefore": ";:.,=}])>/\" \n\t",
+    "indentationRules": {
+        "increaseIndentPattern": "<(?!\\?|[^>]*\\/>)([-_\\.A-Za-z0-9]+)(?=\\s|>)\\b[^>]*>(?!.*<\\/\\1>)|<!--(?!.*-->)|\\{[^}\"']*$",
+        "decreaseIndentPattern": "^\\s*(<\\/[-_\\.A-Za-z0-9]+\\b[^>]*>|-->|\\})"
+    },
+    "onEnterRules": [
+        {
+            "beforeText": { "pattern": "<([_:\\w][_:\\w-.\\d]*)([^>/]*(?!\\/>)(\\/[^>]|>))+[^</]*$", "flags": "i" },
+            "afterText": { "pattern": "^<\\/([_:\\w][_:\\w-.\\d]*)\\s*>\\s*$", "flags": "i" },
+            "action": { "indent": "indentOutdent" }
+        }
+    ],
     "folding": {
         "markers": {
             "start": "^\\s*<!--\\s*#region\\b.*-->",
