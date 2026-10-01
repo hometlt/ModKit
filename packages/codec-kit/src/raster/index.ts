@@ -13,7 +13,9 @@ export {
   applyColorKeyTransparency,
   applyRoundedAlpha,
   combineNormalSpecular,
+  linearToSrgb,
   resizeRgba,
+  srgbToLinear,
   type ColorKeyOptions,
   type Rgba,
 } from './ops.js'

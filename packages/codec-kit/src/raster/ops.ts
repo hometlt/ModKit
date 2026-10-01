@@ -146,3 +146,16 @@ export function applyColorKeyTransparency(image: RgbaImage, options: ColorKeyOpt
   }
   return { width: image.width, height: image.height, pixels: out }
 }
+
+/**
+ * An sRGB-encoded channel in 0..1 as linear light, and back (IEC 61966-2-1): what a colour picked
+ * in a game's editor (Roblox `Color3`, a BAR shader's `SRGBtoLINEAR`) is before it is lit.
+ */
+export function srgbToLinear(value: number): number {
+  return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4
+}
+
+/** {@link srgbToLinear} inverted. */
+export function linearToSrgb(value: number): number {
+  return value <= 0.0031308 ? value * 12.92 : 1.055 * value ** (1 / 2.4) - 0.055
+}

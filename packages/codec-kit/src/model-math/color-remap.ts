@@ -1,3 +1,5 @@
+import { linearToSrgb, srgbToLinear } from '../raster/ops.js'
+
 /** Normalized sRGB display color used by renderer-neutral model materials. */
 export type RenderRgba = readonly [number, number, number, number]
 
@@ -92,14 +94,6 @@ function hsvToRgb(
   else rgb = [chroma, 0, secondary]
   const match = value - chroma
   return [rgb[0] + match, rgb[1] + match, rgb[2] + match]
-}
-
-function srgbToLinear(value: number): number {
-  return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4
-}
-
-function linearToSrgb(value: number): number {
-  return value <= 0.0031308 ? value * 12.92 : 1.055 * value ** (1 / 2.4) - 0.055
 }
 
 function clamp01(value: number): number {
