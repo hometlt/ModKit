@@ -300,7 +300,11 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
         graph: relationsStage,
         // A fact's source opens the declaring file at its line.
         ...(context.openSource === undefined ? {} : { openSource: context.openSource }),
+        // A value written from the card changed the file: reopen at the new revision.
+        onCommitted: descriptor => context.reopen(descriptor as unknown as Record<string, unknown>),
       }),
+      // A writable fact edits in place through the subject's own editing arm, as a table cell does.
+      usesEditorPorts: true,
       optionalContracts: [
         'common.view/raster-image-source',
         'common.view/model-scene-source',

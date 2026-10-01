@@ -184,4 +184,38 @@ describe('subject card projection of typed facts', () => {
     expect(cardRefAction({ label: 'core:Core.SC2Mod' }, navigate, open)).toBeUndefined()
     expect(cardRefAction({ ...declared, dead: true }, navigate, open)).toBeUndefined()
   })
+
+  it('marks a fact the codec declares writable with the write a table cell would make', async () => {
+    const editable = { write: { operation: 'edit.field' } } as unknown as SubjectFact['editable']
+    const sections = await loadSubjectCardSections(
+      source({
+        combat: [
+          fact('life', 45, {
+            type: { kind: 'number' } as SubjectFact['type'],
+            unit: 'hp',
+            editable,
+          }),
+          fact('armor', 0, { type: { kind: 'number' } as SubjectFact['type'] }),
+        ],
+      }),
+    )
+    const fields = sections.find(section => section.kind === 'fields')
+    expect(fields).toMatchObject({
+      fields: [
+        {
+          name: 'life',
+          edit: {
+            type: { kind: 'number' },
+            unit: 'hp',
+            editable,
+            value: 45,
+            target: { groupId: 'combat', key: 'life' },
+          },
+        },
+        { name: 'armor' },
+      ],
+    })
+    // a value without a declared write stays text
+    expect(fields?.kind === 'fields' ? fields.fields[1]?.edit : 'not fields').toBeUndefined()
+  })
 })

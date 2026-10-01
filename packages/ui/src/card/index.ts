@@ -10,6 +10,9 @@
  * and it still renders inside the same chrome, collapsing and theming like every other section.
  */
 import type {
+  AnyDescriptor,
+  FieldEditable,
+  FieldType,
   JsonValue,
   Lease,
   ModelResourceRef,
@@ -42,7 +45,11 @@ import {
 import { type UiLocalizer, type UiMessageKey } from '../localization/index.js'
 import { CARD_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
 import { withEnglishUiFallback } from '../localization/fallback.js'
-import { mountFieldEditTarget } from '../field-write/index.js'
+import {
+  mountFieldEditTarget,
+  mountInlineField,
+  type FieldWriteTarget,
+} from '../field-write/index.js'
 import type { ModelViewerOptions } from '../model/index.js'
 
 export interface CardRef {
@@ -163,6 +170,14 @@ export interface CardField {
   /** Exact codec-owned address for lazily resolving field help. */
   readonly knowledgeTarget?: KnowledgeTarget
   readonly editTarget?: SubjectEditTargetResult
+  /** A value the codec declares writable: its type, its write and where the write goes. */
+  readonly edit?: {
+    readonly type: FieldType
+    readonly unit?: string
+    readonly editable: FieldEditable
+    readonly value: JsonValue
+    readonly target: FieldWriteTarget
+  }
 }
 
 export interface CardGridCell {
@@ -255,6 +270,8 @@ export interface SubjectCardOptions {
   onNavigate?(ref: CardRef): void
   /** Opens a `CardRef.location` in the host's editor; without it a location falls back to `href`. */
   onOpenSource?(location: CardLocation): void
+  /** Edits a writable value in place (double-click or Enter on it); without it values stay text. */
+  onEditField?(field: CardField, host: HTMLElement): void
   /**
    * False drops the subject's name and kind chips, which the host's own chrome already shows. The
    * rest of the header — portrait, stats, description, locale, sources and notes — is the card's
@@ -474,6 +491,11 @@ function systemSubjectLabel(
 }
 
 /** A provenance entry as a link: to its file, at its declaration when the publisher knows it. */
+/** A value as text in a node that held a control. */
+function setViewerTextNode(node: HTMLElement, text: string): void {
+  node.replaceChildren(node.ownerDocument.createTextNode(safeViewerText(text, 2048)))
+}
+
 function provenanceRef(item: SubjectFactProvenance): CardRef {
   if (item.source === undefined) return { label: item.label }
   const text = item.range as { readonly line?: number; readonly column?: number } | undefined
@@ -487,7 +509,12 @@ function provenanceRef(item: SubjectFactProvenance): CardRef {
   }
 }
 
-function factField(fact: SubjectFact, subjectKind: string, localizer: UiLocalizer): CardField {
+function factField(
+  fact: SubjectFact,
+  subjectKind: string,
+  localizer: UiLocalizer,
+  groupId: string,
+): CardField {
   const keys: Readonly<Record<string, UiMessageKey>> =
     subjectKind === EXTENSION_SUBJECT_KIND
       ? EXTENSION_FACT_MESSAGE_KEYS
@@ -503,6 +530,18 @@ function factField(fact: SubjectFact, subjectKind: string, localizer: UiLocalize
     ...(fact.note === undefined ? {} : { note: fact.note }),
     ...(fact.knowledgeTarget === undefined ? {} : { knowledgeTarget: fact.knowledgeTarget }),
     ...(fact.editTarget === undefined ? {} : { editTarget: fact.editTarget }),
+    // the same write a tree node or a table cell makes: the codec's operation, keyed by group and fact
+    ...(fact.editable === undefined || fact.type === undefined
+      ? {}
+      : {
+          edit: {
+            type: fact.type,
+            ...(fact.unit === undefined ? {} : { unit: fact.unit }),
+            editable: fact.editable,
+            value: fact.value,
+            target: { groupId, key: fact.id },
+          },
+        }),
   }
 }
 
@@ -730,7 +769,7 @@ export async function loadSubjectCardSections(
         page.capped || page.items.length < group.factCount
           ? localizer.text('card.capped', { label: groupLabel })
           : groupLabel,
-      fields: page.items.map(fact => factField(fact, summary.identity.kind, localizer)),
+      fields: page.items.map(fact => factField(fact, summary.identity.kind, localizer, group.id)),
       expanded: true,
     })
   }
@@ -960,6 +999,7 @@ function renderFields(
   inspectKnowledge?: (target: KnowledgeTarget | undefined) => void,
   onNavigate?: (ref: CardRef) => void,
   onOpenSource?: (location: CardLocation) => void,
+  onEditField?: (field: CardField, host: HTMLElement) => void,
 ): void {
   const list = document.createElement('div')
   list.className = 'modkit-card__fields'
@@ -987,6 +1027,16 @@ function renderFields(
       value.append(note)
     }
     row.append(name, value)
+    if (field.edit !== undefined && onEditField !== undefined) {
+      const begin = () => onEditField(field, value)
+      value.dataset['editable'] = 'true'
+      value.addEventListener('dblclick', begin)
+      row.addEventListener('keydown', event => {
+        if (event.key !== 'Enter' || value.dataset['editing'] === 'true') return
+        event.preventDefault()
+        begin()
+      })
+    }
     if (field.badge !== undefined) {
       const badge = document.createElement('span')
       badge.className = 'modkit-card__chip'
@@ -1140,6 +1190,7 @@ export function createSubjectCard(document: Document, options: SubjectCardOption
               options.knowledge === undefined ? undefined : inspectKnowledge,
               options.onNavigate,
               options.onOpenSource,
+              options.onEditField,
             )
             return
           case 'links': {
@@ -1298,6 +1349,11 @@ export interface SubjectCardViewerOptions {
   readonly graph?: ViewerModule
   /** The host's editor for a fact's declaration; without it a source stays a label. */
   readonly openSource?: (location: CardLocation) => void
+  /**
+   * After a value written from the card: the subject's file changed, so the host reopens it at its
+   * new revision (the session the card read was pinned to the old one).
+   */
+  readonly onCommitted?: (descriptor: AnyDescriptor) => void
 }
 
 export function createSubjectCardViewer(options: SubjectCardViewerOptions = {}): ViewerModule {
@@ -1424,6 +1480,8 @@ export function createSubjectCardViewer(options: SubjectCardViewerOptions = {}):
                 ? {}
                 : { onNavigate: navigate }),
               ...(options.openSource === undefined ? {} : { onOpenSource: options.openSource }),
+              // only the subject this card was opened on writes through this session's ports
+              ...(address === ownId ? { onEditField: editField } : {}),
               ...(resolveImage === undefined ? {} : { resolveImage }),
             })
             commit?.()
@@ -1441,6 +1499,59 @@ export function createSubjectCardViewer(options: SubjectCardViewerOptions = {}):
             await pageScope.close()
             throw error
           }
+        }
+        /*
+         * A writable value edits in place through the same field write a tree or a table makes; the
+         * field explains a refusal and stays open, Escape gives up, an accepted write shows its value
+         * and asks the host to reopen the subject at its new revision.
+         */
+        function editField(field: CardField, host: HTMLElement): void {
+          const edit = field.edit
+          if (edit === undefined || host.dataset['editing'] === 'true') return
+          host.dataset['editing'] = 'true'
+          const previous = [...host.childNodes]
+          host.replaceChildren()
+          let written: JsonValue | undefined
+          const close = (): void => {
+            delete host.dataset['editing']
+            if (written === undefined) host.replaceChildren(...previous)
+            else setViewerTextNode(host, factValue(written))
+          }
+          void mountInlineField(host, {
+            label: field.name,
+            type: edit.type,
+            value: edit.value,
+            ...(edit.unit === undefined ? {} : { unit: edit.unit }),
+            editable: edit.editable,
+            target: edit.target,
+            descriptor: args.descriptor,
+            operations: args.operations,
+            ...(args.commit === undefined ? {} : { commit: args.commit }),
+            ...(args.authorization === undefined ? {} : { authorization: args.authorization }),
+            signal: scope.signal,
+            onWritten: value => {
+              written = value
+            },
+          }).then(
+            mount => {
+              const finish = async (save: boolean): Promise<void> => {
+                if (save && !(await mount.commit())) return
+                host.removeEventListener('keydown', onKey)
+                await mount.unmount()
+                close()
+                if (save) options.onCommitted?.(args.descriptor)
+              }
+              const onKey = (event: KeyboardEvent): void => {
+                if (event.key !== 'Enter' && event.key !== 'Escape') return
+                event.preventDefault()
+                event.stopPropagation()
+                void finish(event.key === 'Enter')
+              }
+              host.addEventListener('keydown', onKey)
+              host.querySelector<HTMLElement>('input, textarea, select')?.focus()
+            },
+            () => close(),
+          )
         }
         const subjectNavigation = args.subjectNavigation
         const navigate = (reference: CardRef): void => {
