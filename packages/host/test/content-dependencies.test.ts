@@ -198,15 +198,37 @@ describe('content dependency language documents', () => {
         { logicalId: 'Base.SC2Data/GameData/Units.xml', precedence: 1, readOnly: true },
       ],
     })
-    expect(
-      result.workspaceContext?.semanticInputs?.find(input => input.kind === 'content-path-index'),
-    ).toMatchObject({
+    const pathIndex = result.workspaceContext?.semanticInputs?.find(
+      input => input.kind === 'content-path-index',
+    )
+    expect(pathIndex).toMatchObject({
       payload: {
         schemaVersion: 1,
         isComplete: true,
         paths: expect.arrayContaining(['Base.SC2Data/Assets/Textures/Marine.dds']),
       },
     })
+    // Every layer's files are addressable, open or not: the closure names where each layer lives,
+    // and the path index names the layer a path is read from — the strongest that lists it.
+    const closure = result.workspaceContext?.semanticInputs?.find(
+      input => input.kind === 'dependency-closure',
+    )
+    const layers = (
+      closure?.payload as {
+        layers: readonly { layerId: string; sourceId: string; sourcePath: string }[]
+      }
+    ).layers
+    expect(layers.map(layer => [layer.sourceId, layer.sourcePath])).toEqual([
+      ['cache', 'cache/base'],
+      ['cache', 'cache/override'],
+    ])
+    expect(layers.map(layer => layer.layerId)).toEqual(
+      result.workspaceContext?.documentOrigins.map(origin => origin.layerId),
+    )
+    const index = pathIndex?.payload as { paths: readonly string[]; layers: readonly number[] }
+    const layerOf = (path: string) => index.layers[index.paths.indexOf(path)]
+    expect(layerOf('Base.SC2Data/Assets/Textures/Marine.dds')).toBe(0)
+    expect(layerOf('Base.SC2Data/GameData/Units.xml')).toBe(1)
     expect(
       result.documents.map(document => [document.uri, document.languageId, document.text]),
     ).toEqual([

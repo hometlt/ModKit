@@ -337,7 +337,8 @@ export function createContentDependencyLanguageDocumentSource(
         readonly path: string
         readonly relative: string
       }[] = []
-      const contentPaths = new Set<string>()
+      // Each path with the strongest mount that lists it (mounts walk weaker first).
+      const contentPaths = new Map<string, number>()
       // Knowledge files the provider asked for, at a layer's root, in layer order (weaker first).
       const wantedKnowledge = new Set(
         (request.knowledgeFileNames ?? []).map(name => name.toLowerCase()),
@@ -384,7 +385,7 @@ export function createContentDependencyLanguageDocumentSource(
             await walk(mount, entry.path)
             continue
           }
-          contentPaths.add(relative)
+          contentPaths.set(relative, mounts.indexOf(mount))
           if (path === mount.sourcePath && wantedKnowledge.has(relative.toLowerCase())) {
             knowledge.push({ mount, path: entry.path, fileName: relative })
             continue
@@ -411,11 +412,13 @@ export function createContentDependencyLanguageDocumentSource(
         if (visited > maxEntries) break
         await walk(mount, mount.sourcePath)
       }
-      const indexedPaths = Object.freeze([...contentPaths].sort(compareUtf8))
+      const indexedPaths = Object.freeze([...contentPaths.keys()].sort(compareUtf8))
+      const pathLayers = Object.freeze(indexedPaths.map(path => contentPaths.get(path)!))
       const pathIndexRevision = languageWorkspaceContextToken({
         contextRevision,
         complete: pathIndexComplete,
         paths: indexedPaths,
+        layers: pathLayers,
       })
       const documents = []
       const documentOrigins = []
@@ -549,6 +552,20 @@ export function createContentDependencyLanguageDocumentSource(
               kind: 'dependency-closure',
               id: `${options.resolution.gameId}:${contextId}`,
               revision: contextRevision,
+              // Where each layer's files live: a file `path` of layer `layerId` is
+              // `content-source://<sourceId>/<sourcePath>/<path>`, open or not (weaker first).
+              payload: Object.freeze({
+                schemaVersion: 1,
+                layers: Object.freeze(
+                  mounts.map(mount =>
+                    Object.freeze({
+                      layerId: `${contextId}:${mount.order}:${mount.dependencyId}`,
+                      sourceId: mount.sourceId,
+                      sourcePath: mount.sourcePath,
+                    }),
+                  ),
+                ),
+              }),
             }),
             Object.freeze({
               kind: 'content-path-index',
@@ -558,6 +575,8 @@ export function createContentDependencyLanguageDocumentSource(
                 schemaVersion: 1,
                 isComplete: pathIndexComplete,
                 paths: indexedPaths,
+                // the dependency-closure layer each path is read from (its strongest)
+                layers: pathLayers,
               }),
             }),
           ]),
