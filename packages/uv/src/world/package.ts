@@ -1281,7 +1281,12 @@ export async function materializeWorldToUvpMap(
                 options.signal,
               )
             const modelRequestBytes = Math.min(remaining, maxModelResourceBytes)
-            let result = await ask(modelRequestBytes, Math.min(textureBytes, modelRequestBytes))
+            // The first ask leaves the UVM a quarter: a texture asked for all of maxBytes refuses
+            // beside any UVM, and the host keeps that refusal for the same budget.
+            let result = await ask(
+              modelRequestBytes,
+              Math.max(1, Math.min(textureBytes, Math.floor((modelRequestBytes * 3) / 4))),
+            )
             // A model that names what it needed is asked once more, as the world viewer does. Its
             // UVM stays reserved while its textures decode, so they get what the UVM leaves.
             const required =
