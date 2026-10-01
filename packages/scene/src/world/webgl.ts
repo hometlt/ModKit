@@ -24,8 +24,12 @@ import { boundsOf } from '@modkit/codec-kit/model/bounds'
 import {
   TEAM_COLOR_BLENDS,
   TEAM_COLOR_GLSL,
+  TEAM_MASK_GLSL,
+  TEAM_RAMP_MAX,
   teamColorChannel,
+  type TeamMaskRule,
 } from '@modkit/codec-kit/model-math/color-remap'
+import { teamMaskRule } from '../render/team-color.js'
 import { createModelSceneSampler, modelMaterialTeamColor } from '../model/index.js'
 import {
   decomposeMatrix4,
@@ -91,6 +95,8 @@ export interface WorldWebGlInput {
   readonly animationTimes?: ReadonlyMap<number, number>
   /** Explicit source/player colours. Missing entries retain the standalone material default. */
   readonly teamColors?: ReadonlyMap<number, readonly [number, number, number]>
+  /** Player slots' own shades for indexed team-colour ramps (MapPlayer.colorRamp). */
+  readonly teamRamps?: ReadonlyMap<number, readonly (readonly [number, number, number])[]>
   /** Global initial-world clock used by actor animations and scrolling water surfaces. */
   readonly timeSeconds?: number
   /**
@@ -261,6 +267,30 @@ export interface WorldBatchTeamColor {
   readonly blend: number
   readonly strength: number
   readonly color: readonly [number, number, number]
+  /** How the mask weighs it: data channel, key or indexed ramp (TEAM_MASK_GLSL). */
+  readonly rule: TeamMaskRule
+  /** The colour is the object's tint, which then tints nothing else of the material. */
+  readonly objectTint?: true
+}
+
+/** What of a team colour separates one batch from another. */
+function worldTeamKey(team: WorldBatchTeamColor | undefined): string {
+  if (team === undefined) return ''
+  const rule = team.rule
+  return [
+    team.mask?.id ?? 'whole',
+    team.channel,
+    team.blend,
+    team.strength,
+    team.color.join(','),
+    rule.mode,
+    rule.thresholds?.join(',') ?? '',
+    rule.intensity ?? '',
+    rule.shades?.map(shade => shade.join(',')).join(';') ?? '',
+    rule.first ?? '',
+    rule.scale ?? '',
+    rule.tintRgb === true ? 'tint' : '',
+  ].join(':')
 }
 
 interface MutableSplatBatch extends MutableBatch {
@@ -2358,6 +2388,8 @@ function worldBatchTeamColor(
   uvSource: number,
   color: readonly [number, number, number] | undefined,
   intensity: number | undefined,
+  objectTint?: readonly [number, number, number],
+  teamRamp?: readonly (readonly [number, number, number])[],
 ): WorldBatchTeamColor | undefined {
   if (material === undefined || intensity === 0) return undefined
   const list = textures ?? []
@@ -2366,13 +2398,18 @@ function worldBatchTeamColor(
     texturesById.set(list, (byId = new Map(list.map(texture => [texture.id, texture]))))
   const team = modelMaterialTeamColor(material, byId, uvSource)
   if (team === undefined) return undefined
+  const rule = teamMaskRule(team, teamRamp === undefined ? undefined : { teamRamp })
+  if (rule === undefined) return undefined
   const mask = team.mask === 'whole' ? undefined : byId.get(team.mask.texture)
+  const tinted = team.source === 'object-tint'
   return Object.freeze({
     ...(mask === undefined ? {} : { mask }),
     channel: team.mask === 'whole' ? 4 : ['r', 'g', 'b', 'a', 'rgb'].indexOf(team.mask.channel),
     blend: TEAM_COLOR_BLENDS.indexOf(team.blend),
     strength: team.strength ?? 1,
-    color: color ?? ([1, 1, 1] as const),
+    color: (tinted ? objectTint : color) ?? team.defaultColor ?? ([1, 1, 1] as const),
+    rule,
+    ...(tinted ? { objectTint: true as const } : {}),
   })
 }
 
@@ -6246,6 +6283,8 @@ export function createWorldWebGlPlan(
           requestedUv,
           moment.teamColor,
           materialContext.teamColorIntensity,
+          item.presentationTint,
+          item.player === undefined ? undefined : input.teamRamps?.get(item.player),
         )
         const coverage = modelMaterialCoverage(material)
         const blendMode =
@@ -6271,7 +6310,8 @@ export function createWorldWebGlPlan(
             : [1, 1, 1, 1])
         const unlit = material?.unlit === true
         const priority = blendMode === undefined ? 0 : (material?.priority ?? 0)
-        const tint = item.presentationTint ?? [1, 1, 1]
+        // an object-tint team colour takes the tint: it does not tint the material again
+        const tint = team?.objectTint === true ? [1, 1, 1] : (item.presentationTint ?? [1, 1, 1])
         // without a texture to weigh, a `whole` team colour is the colour itself
         const albedo: WorldColor =
           team !== undefined && team.mask === undefined && texture === undefined
@@ -6336,10 +6376,7 @@ export function createWorldWebGlPlan(
             textureCoordinates.length >= (primitive.positions.length / 3) * 2
           ) {
             if (texturedWrite === undefined) {
-              const teamKey =
-                team === undefined
-                  ? ''
-                  : `${team.mask?.id ?? 'whole'}:${String(team.channel)}:${String(team.blend)}:${team.color.join(',')}`
+              const teamKey = worldTeamKey(team)
               const key = `${result.sourceKey}\u0000${texture.id}\u0000${normalTexture?.id ?? ''}\u0000${blendMode ?? 'opaque'}\u0000${String(coverage.cutoff)}\u0000${String(shadowPolicy.castShadows)}\u0000${String(shadowPolicy.receiveShadows)}\u0000${String(unlit)}\u0000${String(priority)}\u0000${teamKey}`
               const collection = blendMode === undefined ? textured : transparentTextured
               const target = collection.get(key) ?? {
@@ -7153,6 +7190,15 @@ uniform float teamMaskChannel;
 uniform float teamBlend;
 uniform float teamStrength;
 uniform vec3 teamColor;
+// how the mask weighs it (TEAM_MASK_GLSL): 0 its data channel, 1 a key, 2 an indexed ramp
+uniform float teamMaskMode;
+uniform vec3 teamKey;
+uniform float teamKeyIntensity;
+uniform vec3 teamRamp[${TEAM_RAMP_MAX}];
+uniform float teamRampCount;
+uniform float teamRampFirst;
+uniform float teamRampScale;
+uniform float teamTintRgb;
 uniform sampler2D baseColorMap;
 // The base map is an atlas of tiles in this grid, columns and rows (MapTerrainMaterialDefinition.atlas);
 // 0 when it is none. The secondary coordinate is then the cell's grid coordinate.
@@ -7205,6 +7251,7 @@ uniform float cliffMaskMode;
 uniform vec4 cliffMaskSelector;
 out vec4 outColor;
 ${TEAM_COLOR_GLSL}
+${TEAM_MASK_GLSL}
 // The base colour; for an atlas, from inside the sample's tile at the level it reads. The level comes
 // from the cell coordinate (the atlas coordinate jumps between tiles at a cell edge), it stops where a
 // tile is one texel, and the sample stays half a texel of the coarser level read inside the tile: a far
@@ -7437,12 +7484,11 @@ void main() {
   if (textured > 0.5) surface *= baseColorSample(textureCoordinate);
   if (teamColorMode > 0.5) {
     vec3 teamMask = vec3(1.0);
-    if (teamColorMode > 1.5) {
-      vec4 maskTexel = texture(secondaryColorMap, textureCoordinate);
-      float maskChannel = teamMaskChannel < 0.5 ? maskTexel.r : teamMaskChannel < 1.5 ? maskTexel.g : teamMaskChannel < 2.5 ? maskTexel.b : maskTexel.a;
-      teamMask = teamMaskChannel > 3.5 ? maskTexel.rgb : vec3(maskChannel);
-    }
-    surface.rgb = modkitTeamColor(surface.rgb, teamMask, teamColor, int(teamBlend + 0.5), teamStrength);
+    vec3 team = teamColor;
+    if (teamColorMode > 1.5)
+      teamMask = modkitTeamMask(secondaryColorMap, textureCoordinate, teamMaskMode, teamMaskChannel,
+        teamKey, teamKeyIntensity, teamRamp, teamRampCount, teamRampFirst, teamRampScale, teamTintRgb, team);
+    surface.rgb = modkitTeamColor(surface.rgb, teamMask, team, int(teamBlend + 0.5), teamStrength);
   }
   if (secondaryTextured > 0.5) {
     float secondarySurface = texture(secondaryColorMap, secondaryTextureCoordinate).r;
@@ -8059,6 +8105,7 @@ function snapshotWorldPlanInput(input: WorldWebGlInput): WorldWebGlInput {
       ? {}
       : { animationTimes: new Map(input.animationTimes) }),
     ...(input.teamColors === undefined ? {} : { teamColors: new Map(input.teamColors) }),
+    ...(input.teamRamps === undefined ? {} : { teamRamps: new Map(input.teamRamps) }),
     ...(input.previewPosition === undefined
       ? {}
       : { previewPosition: { ...input.previewPosition } }),
@@ -8089,7 +8136,8 @@ function sameWorldPlanInputExceptAnimationTimes(
     sameArrayIdentity(left.waterMaterials, right.waterMaterials) &&
     left.selectedObjectId === right.selectedObjectId &&
     samePreviewPosition(left.previewPosition, right.previewPosition) &&
-    sameWorldMap(left.teamColors, right.teamColors)
+    sameWorldMap(left.teamColors, right.teamColors) &&
+    sameWorldMap(left.teamRamps, right.teamRamps)
   )
 }
 
@@ -9111,6 +9159,27 @@ function drawTexturedBatch(
     worldUniform1f(gl, program, 'teamBlend', team.blend)
     worldUniform1f(gl, program, 'teamStrength', team.strength)
     gl.uniform3f(uniformLocation(gl, program, 'teamColor'), ...team.color)
+    const rule = team.rule
+    worldUniform1f(
+      gl,
+      program,
+      'teamMaskMode',
+      rule.mode === 'key' ? 1 : rule.mode === 'ramp' ? 2 : 0,
+    )
+    gl.uniform3f(uniformLocation(gl, program, 'teamKey'), ...(rule.thresholds ?? [0, 0, 255]))
+    worldUniform1f(gl, program, 'teamKeyIntensity', rule.intensity ?? 2)
+    const shades = rule.shades ?? []
+    gl.uniform3fv(
+      uniformLocation(gl, program, 'teamRamp'),
+      Float32Array.from(
+        { length: TEAM_RAMP_MAX * 3 },
+        (_, index) => shades[Math.floor(index / 3)]?.[index % 3] ?? 0,
+      ),
+    )
+    worldUniform1f(gl, program, 'teamRampCount', shades.length)
+    worldUniform1f(gl, program, 'teamRampFirst', rule.first ?? 0)
+    worldUniform1f(gl, program, 'teamRampScale', rule.scale ?? 255)
+    worldUniform1f(gl, program, 'teamTintRgb', rule.tintRgb === true ? 1 : 0)
     if (team.mask !== undefined) {
       bindTexture2d(resources, team.mask, 6)
       worldUniform1i(gl, program, 'secondaryColorMap', 6)

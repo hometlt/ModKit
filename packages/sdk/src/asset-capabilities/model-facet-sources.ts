@@ -335,6 +335,50 @@ export interface ModelMaterialLayerRef {
   readonly blend?: 'multiply' | 'add' | 'replace' | 'overlay' | 'lerp'
   readonly nativeFlags?: number
   readonly flagNames?: readonly string[]
+  /** How a team-colour layer recolours beyond its mask channel and blend (ModelTeamColorRule). */
+  readonly teamColor?: ModelTeamColorRule
+}
+
+/**
+ * The common recolouring of a team-colour layer (slot `teamColor`), in the terms of
+ * `UV_game_material_team_color` (SPEC_UVM_EXTENSIONS, Runtime 02.10). The layer's resource is the
+ * mask, its `colorChannels` the data channel and its `blend` the blend: `replace`, stated, for a key
+ * or a ramp. No game is guessed from pixels or names: the native format's owner states the rule.
+ */
+export interface ModelTeamColorRule {
+  /**
+   * `channelKey`: the texels whose `keyChannels` are all at most `keyThreshold` (stored 8-bit, before
+   * any colour conversion or filtering) take the colour times their `intensityChannel` (Emperor's
+   * blue key: R and G zero, the shade in B); the source is the layer's resource, else the base colour.
+   * `paletteRange`: the mask's channel holds palette indices as normalized data,
+   * index = floor(sample × `paletteIndexScale` + 0.5), read nearest; an index within `range` takes
+   * `ramp[index − range[0]]` (SC1, Dune 2000, RA2/TS house shades), any other keeps its colour.
+   * Absent: the mask weighs the colour by its data channel, or the whole material without one.
+   */
+  readonly maskSource?: 'channelKey' | 'paletteRange'
+  /** `channelKey` channels, default `['r', 'g']`. */
+  readonly keyChannels?: readonly ('r' | 'g' | 'b')[]
+  /** `channelKey` threshold 0–255, default 0. */
+  readonly keyThreshold?: number
+  /** `channelKey` shade channel, data / 255 multiplying the colour, default `b`. */
+  readonly intensityChannel?: 'r' | 'g' | 'b' | 'a'
+  /** `paletteRange` inclusive index range, ascending. */
+  readonly range?: readonly [number, number]
+  /**
+   * `paletteRange` exact shades, linear RGB 0..1, one per index of `range`. A player's own ramp of
+   * the same length replaces it (`SceneRendererMaterialContext.teamRamp`); none is ever generated.
+   */
+  readonly ramp?: readonly (readonly [number, number, number])[]
+  /** `paletteRange` index scale 1–65535, default 255. */
+  readonly paletteIndexScale?: number
+  /** `object-tint`: the colour is the object's `presentationTint`, which then tints nothing else of this material. */
+  readonly colorSource?: 'team' | 'object-tint'
+  /** `mask-rgb`: the colour times the mask texel's colour; coverage stays the data channel. */
+  readonly tint?: 'none' | 'mask-rgb'
+  /** Weight of the blend, nonnegative, default 1. */
+  readonly strength?: number
+  /** The colour when the draw names none, linear RGB 0..1, default white. */
+  readonly defaultColor?: readonly [number, number, number]
 }
 
 export interface ModelMaterialRef {

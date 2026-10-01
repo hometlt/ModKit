@@ -201,6 +201,102 @@ interface UvmTextureRef {
   texCoord?: number
   channel?: 'r' | 'g' | 'b' | 'a'
 }
+
+/** `UV_game_material_team_color` as the materializer writes it (SPEC_UVM_EXTENSIONS). */
+interface UvmTeamColorExtension {
+  /** `whole`: a team-colour layer naming no texture tints the entire material. */
+  maskSource: 'texture' | 'whole' | 'channelKey' | 'paletteRange'
+  maskTexture?: UvmTextureRef
+  targets: ['baseColor']
+  blend: NonNullable<ModelMaterialLayerRef['blend']>
+  keyChannels?: ('r' | 'g' | 'b')[]
+  keyThreshold?: number
+  intensityChannel?: 'r' | 'g' | 'b' | 'a'
+  range?: [number, number]
+  ramp?: [number, number, number][]
+  paletteIndexScale?: number
+  colorSource?: 'object-tint'
+  tint?: 'mask-rgb'
+  strength?: number
+  defaultColor?: [number, number, number, number]
+}
+
+const unitRgb = (value: unknown): value is readonly [number, number, number] =>
+  Array.isArray(value) &&
+  value.length === 3 &&
+  value.every(component => typeof component === 'number' && component >= 0 && component <= 1)
+
+/**
+ * The extension of one team-colour layer: its mask (a texture, else the whole material, or for a
+ * key the base colour), its blend and its rule (ModelTeamColorRule), checked as the publisher's
+ * statement: a key or a ramp blends `replace`, a ramp has as many shades as its range indices.
+ */
+function teamColorExtension(
+  layer: ModelMaterialLayerRef,
+  mask: UvmTextureRef | undefined,
+): UvmTeamColorExtension {
+  const rule = layer.teamColor ?? {}
+  const blend = layer.blend ?? 'multiply'
+  const keyed = rule.maskSource === 'channelKey'
+  const ramped = rule.maskSource === 'paletteRange'
+  if ((keyed || ramped) && blend !== 'replace')
+    fail(`a team colour ${rule.maskSource} blends replace, stated by the publisher`)
+  if (ramped) {
+    const [first, last] = rule.range ?? []
+    const scale = rule.paletteIndexScale ?? 255
+    if (
+      mask === undefined ||
+      !Number.isSafeInteger(first) ||
+      !Number.isSafeInteger(last) ||
+      first! < 0 ||
+      last! < first! ||
+      last! > scale ||
+      rule.ramp?.length !== last! - first! + 1 ||
+      !rule.ramp.every(unitRgb)
+    )
+      fail('a team colour ramp needs its mask, an ascending range and one 0..1 shade per index')
+  }
+  if (
+    rule.keyThreshold !== undefined &&
+    (!Number.isSafeInteger(rule.keyThreshold) || rule.keyThreshold < 0 || rule.keyThreshold > 255)
+  )
+    fail('a team colour key threshold is an integer 0..255')
+  if (rule.strength !== undefined && !(Number.isFinite(rule.strength) && rule.strength >= 0))
+    fail('a team colour strength is nonnegative')
+  if (rule.defaultColor !== undefined && !unitRgb(rule.defaultColor))
+    fail('a team colour default is three components in 0..1')
+  const channel = singleChannel(layer.colorChannels)
+  const maskTexture =
+    mask === undefined ? undefined : { ...mask, ...(channel === undefined ? {} : { channel }) }
+  return {
+    maskSource: keyed
+      ? 'channelKey'
+      : ramped
+        ? 'paletteRange'
+        : maskTexture === undefined
+          ? 'whole'
+          : 'texture',
+    ...(maskTexture === undefined ? {} : { maskTexture }),
+    targets: ['baseColor'],
+    blend,
+    ...(rule.keyChannels === undefined ? {} : { keyChannels: [...rule.keyChannels] }),
+    ...(rule.keyThreshold === undefined ? {} : { keyThreshold: rule.keyThreshold }),
+    ...(rule.intensityChannel === undefined ? {} : { intensityChannel: rule.intensityChannel }),
+    ...(rule.range === undefined ? {} : { range: [rule.range[0], rule.range[1]] }),
+    ...(rule.ramp === undefined
+      ? {}
+      : {
+          ramp: rule.ramp.map(shade => [shade[0], shade[1], shade[2]] as [number, number, number]),
+        }),
+    ...(rule.paletteIndexScale === undefined ? {} : { paletteIndexScale: rule.paletteIndexScale }),
+    ...(rule.colorSource === 'object-tint' ? { colorSource: 'object-tint' as const } : {}),
+    ...(rule.tint === 'mask-rgb' ? { tint: 'mask-rgb' as const } : {}),
+    ...(rule.strength === undefined ? {} : { strength: rule.strength }),
+    ...(rule.defaultColor === undefined
+      ? {}
+      : { defaultColor: [...rule.defaultColor, 1] as [number, number, number, number] }),
+  }
+}
 export interface UvmMaterial {
   pbrMetallicRoughness: {
     baseColorFactor?: [number, number, number, number]
@@ -225,13 +321,7 @@ export interface UvmMaterial {
       sortPriority?: number
       params: NonNullable<ModelMaterialRef['shader']>['parameters']
     }
-    UV_game_material_team_color?: {
-      /** `whole`: a team-colour layer naming no texture tints the entire material. */
-      maskSource: 'texture' | 'whole'
-      maskTexture?: UvmTextureRef
-      targets: ['baseColor']
-      blend: NonNullable<ModelMaterialLayerRef['blend']>
-    }
+    UV_game_material_team_color?: UvmTeamColorExtension
   }
   extras?: {
     modkit: {
@@ -1008,11 +1098,7 @@ export function materializeUvmCore(
     if (wholeTeam !== undefined)
       target.extensions = {
         ...target.extensions,
-        UV_game_material_team_color: {
-          maskSource: 'whole',
-          targets: ['baseColor'],
-          blend: wholeTeam.blend ?? 'multiply',
-        },
+        UV_game_material_team_color: teamColorExtension(wholeTeam, undefined),
       }
     if (
       JSON.stringify([...(contracts ?? [])].sort(byUtf8)) !==
@@ -1147,15 +1233,9 @@ export function materializeUvmCore(
         slot === 'teamColor' &&
         target.extensions?.UV_game_material_team_color === undefined
       ) {
-        const channel = singleChannel(layer.colorChannels)
         target.extensions = {
           ...target.extensions,
-          UV_game_material_team_color: {
-            maskSource: 'texture',
-            maskTexture: { ...ref, ...(channel === undefined ? {} : { channel }) },
-            targets: ['baseColor'],
-            blend: layer.blend ?? 'multiply',
-          },
+          UV_game_material_team_color: teamColorExtension(layer, ref),
         }
       }
     }

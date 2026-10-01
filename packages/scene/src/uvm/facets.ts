@@ -4,6 +4,7 @@ import type {
   ModelCollisionVolume,
   ModelMaterialRef,
   ModelMaterialLayerRef,
+  ModelTeamColorRule,
   ModelSocketRef,
   ModelSocketOrientation,
 } from '@modkit/sdk'
@@ -171,11 +172,19 @@ function materialImageLayers(
   const team = field(material['extensions'], 'UV_game_material_team_color')
   if (team !== undefined) {
     const blend = field(team, 'blend')
-    const common = typeof blend === 'string' ? { blend } : {}
-    if (field(team, 'maskSource') === 'whole')
-      layers.push(Object.freeze({ slot: 'teamColor', ...common }) as ModelMaterialLayerRef)
+    const rule = teamColorRuleOf(team)
+    const common = {
+      ...(typeof blend === 'string' ? { blend } : {}),
+      ...(rule === undefined ? {} : { teamColor: rule }),
+    }
+    const source = field(team, 'maskSource')
     const mask = field(team, 'maskTexture')
-    if (field(team, 'maskSource') === 'texture' && mask !== undefined) {
+    if (mask === undefined && (source === 'whole' || source === 'channelKey'))
+      layers.push(Object.freeze({ slot: 'teamColor', ...common }) as ModelMaterialLayerRef)
+    if (
+      mask !== undefined &&
+      (source === 'texture' || source === 'channelKey' || source === 'paletteRange')
+    ) {
       const texture = object(
         textures[safeIndex(field(mask, 'index'), textures.length, 'team colour mask texture')],
         'texture',
@@ -198,6 +207,56 @@ function materialImageLayers(
     }
   }
   return Object.freeze(layers)
+}
+
+/**
+ * The recolouring rule an extension states beyond its mask and blend (ModelTeamColorRule), as a
+ * document from elsewhere carries it; undefined when it states none. The document was validated.
+ */
+function teamColorRuleOf(team: JsonValue): ModelTeamColorRule | undefined {
+  const value = (key: string) => field(team, key)
+  const source = value('maskSource')
+  const defaultColor = value('defaultColor')
+  const rule = {
+    ...(source === 'channelKey' || source === 'paletteRange'
+      ? { maskSource: source as 'channelKey' | 'paletteRange' }
+      : {}),
+    ...(Array.isArray(value('keyChannels'))
+      ? { keyChannels: Object.freeze([...(value('keyChannels') as ('r' | 'g' | 'b')[])]) }
+      : {}),
+    ...(typeof value('keyThreshold') === 'number'
+      ? { keyThreshold: value('keyThreshold') as number }
+      : {}),
+    ...(typeof value('intensityChannel') === 'string'
+      ? { intensityChannel: value('intensityChannel') as 'r' | 'g' | 'b' | 'a' }
+      : {}),
+    ...(Array.isArray(value('range'))
+      ? { range: Object.freeze([...(value('range') as [number, number])]) as [number, number] }
+      : {}),
+    ...(Array.isArray(value('ramp'))
+      ? {
+          ramp: Object.freeze(
+            (value('ramp') as [number, number, number][]).map(shade => Object.freeze([...shade])),
+          ) as readonly (readonly [number, number, number])[],
+        }
+      : {}),
+    ...(typeof value('paletteIndexScale') === 'number'
+      ? { paletteIndexScale: value('paletteIndexScale') as number }
+      : {}),
+    ...(value('colorSource') === 'object-tint' ? { colorSource: 'object-tint' as const } : {}),
+    ...(value('tint') === 'mask-rgb' ? { tint: 'mask-rgb' as const } : {}),
+    ...(typeof value('strength') === 'number' ? { strength: value('strength') as number } : {}),
+    ...(Array.isArray(defaultColor)
+      ? {
+          defaultColor: Object.freeze(defaultColor.slice(0, 3) as number[]) as unknown as readonly [
+            number,
+            number,
+            number,
+          ],
+        }
+      : {}),
+  }
+  return Object.keys(rule).length === 0 ? undefined : Object.freeze(rule)
 }
 
 /** Material identities, declared image bindings and extension contracts; no shader simulation. */

@@ -24,7 +24,11 @@ import { sceneMaterialDraws } from './material-draws.js'
 import { materialWebGlDraws } from './material-webgl.js'
 import { applyTextureFilter } from './texture-filtering.js'
 import { sceneTextureBytes } from '../textures/cube.js'
-import { TEAM_COLOR_GLSL } from '@modkit/codec-kit/model-math/color-remap'
+import {
+  TEAM_COLOR_GLSL,
+  TEAM_MASK_GLSL,
+  TEAM_RAMP_MAX,
+} from '@modkit/codec-kit/model-math/color-remap'
 import { PBR_GLSL, SRGB_GLSL } from '@modkit/codec-kit/model-math/pbr'
 import { drawTeamColor, teamMaskTexture } from './team-color.js'
 import { drawPbr } from './pbr-material.js'
@@ -105,6 +109,15 @@ uniform float teamMaskChannel;
 uniform float teamBlend;
 uniform float teamStrength;
 uniform vec3 teamColor;
+// how the mask weighs it (TEAM_MASK_GLSL): 0 its data channel, 1 a key, 2 an indexed ramp
+uniform float teamMaskMode;
+uniform vec3 teamKey;
+uniform float teamKeyIntensity;
+uniform vec3 teamRamp[${TEAM_RAMP_MAX}];
+uniform float teamRampCount;
+uniform float teamRampFirst;
+uniform float teamRampScale;
+uniform float teamTintRgb;
 // a pbr material: the one glTF BRDF (codec-kit model-math/pbr) under the scene light
 uniform float pbrEnabled;
 uniform float pbrMetallic;
@@ -125,6 +138,7 @@ uniform float eyeKnown;
 uniform vec3 eyePosition;
 ${PREVIEW_LIGHT_GLSL}
 ${TEAM_COLOR_GLSL}
+${TEAM_MASK_GLSL}
 ${PBR_GLSL}
 ${SRGB_GLSL}
 out vec4 outColor;
@@ -142,12 +156,11 @@ void main() {
   if (textured > 0.5) base *= texture(baseColorMap, sampleUv);
   if (teamColorMode > 0.5) {
     vec3 mask = vec3(1.0);
-    if (teamColorMode > 1.5) {
-      vec4 texel = texture(teamMaskMap, sampleUv);
-      float channel = teamMaskChannel < 0.5 ? texel.r : teamMaskChannel < 1.5 ? texel.g : teamMaskChannel < 2.5 ? texel.b : texel.a;
-      mask = teamMaskChannel > 3.5 ? texel.rgb : vec3(channel);
-    }
-    base.rgb = modkitTeamColor(base.rgb, mask, teamColor, int(teamBlend + 0.5), teamStrength);
+    vec3 team = teamColor;
+    if (teamColorMode > 1.5)
+      mask = modkitTeamMask(teamMaskMap, sampleUv, teamMaskMode, teamMaskChannel, teamKey,
+        teamKeyIntensity, teamRamp, teamRampCount, teamRampFirst, teamRampScale, teamTintRgb, team);
+    base.rgb = modkitTeamColor(base.rgb, mask, team, int(teamBlend + 0.5), teamStrength);
   }
   if (pbrEnabled > 0.5) {
     vec3 surfaceNormal = hasNormals > 0.5
@@ -759,6 +772,29 @@ export async function renderBrowser(request: SceneRenderRequest): Promise<SceneR
         if (teamColorUniform !== null) gl.uniform3f(teamColorUniform, ...team.color)
         if (teamMaskChannel !== null)
           gl.uniform1f(teamMaskChannel, team.channel === 'rgb' ? 4 : team.channel)
+        const rule = team.rule
+        const set1 = (name: string, value: number) => {
+          const location = uniform(name)
+          if (location !== null) gl.uniform1f(location, value)
+        }
+        set1('teamMaskMode', rule.mode === 'key' ? 1 : rule.mode === 'ramp' ? 2 : 0)
+        const key = uniform('teamKey')
+        if (key !== null) gl.uniform3f(key, ...(rule.thresholds ?? [0, 0, 255]))
+        set1('teamKeyIntensity', rule.intensity ?? 2)
+        const shades = rule.shades ?? []
+        const ramp = uniform('teamRamp')
+        if (ramp !== null)
+          gl.uniform3fv(
+            ramp,
+            Float32Array.from(
+              { length: TEAM_RAMP_MAX * 3 },
+              (_, index) => shades[Math.floor(index / 3)]?.[index % 3] ?? 0,
+            ),
+          )
+        set1('teamRampCount', shades.length)
+        set1('teamRampFirst', rule.first ?? 0)
+        set1('teamRampScale', rule.scale ?? 255)
+        set1('teamTintRgb', rule.tintRgb === true ? 1 : 0)
         if (teamMasked) {
           const mask = surface.teamMask!
           gl.activeTexture(gl.TEXTURE1)

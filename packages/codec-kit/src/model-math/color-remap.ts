@@ -111,3 +111,104 @@ export const TEAM_COLOR_GLSL = `vec3 modkitTeamColor(vec3 base, vec3 mask, vec3 
   if (blend == 3) target = mix(1.0 - 2.0 * (1.0 - base) * (1.0 - team), 2.0 * base * team, vec3(lessThan(base, vec3(0.5))));
   return base + (target - base) * mixed;
 }`
+
+/** The most shades an indexed team-colour ramp has here (SC1 8, Dune 2000 and RA2/TS 16). */
+export const TEAM_RAMP_MAX = 16
+
+/**
+ * How a team colour's mask weighs it at one sample (UV_game_material_team_color, Runtime 02.10):
+ * - `data`: the mask's data channel (`channel` 0–3, or `rgb` for one weight per channel);
+ * - `key`: the stored texel under the sample is keyed when each channel is at most its threshold
+ *   (255 for a channel the key does not test): weight 1 and the colour times its `intensity`
+ *   channel, else weight 0 (Emperor's blue key);
+ * - `ramp`: the stored texel's `channel` is a palette index, floor(data × `scale` + 0.5); from
+ *   `first` on it takes its shade, weight 1, else weight 0 (SC1, Dune 2000, RA2/TS houses).
+ * `tintRgb` multiplies the colour by the mask's own colour. TEAM_MASK_GLSL is the same for
+ * shaders; the two change together.
+ */
+export interface TeamMaskRule {
+  readonly mode: 'data' | 'key' | 'ramp'
+  readonly channel: 0 | 1 | 2 | 3 | 'rgb'
+  readonly thresholds?: readonly [number, number, number]
+  readonly intensity?: 0 | 1 | 2 | 3
+  readonly shades?: readonly (readonly [number, number, number])[]
+  readonly first?: number
+  readonly scale?: number
+  readonly tintRgb?: boolean
+}
+
+/**
+ * The weight per channel and the colour of one sample: `filtered` is the mask as drawn there (0..1),
+ * `stored` the texel under the sample as stored (0–255), which keys and indices read.
+ */
+export function teamMaskSample(
+  rule: TeamMaskRule,
+  filtered: readonly number[],
+  stored: readonly number[],
+  team: readonly [number, number, number],
+): {
+  readonly weight: readonly [number, number, number]
+  readonly color: readonly [number, number, number]
+} {
+  const tint = (color: readonly [number, number, number]) =>
+    rule.tintRgb === true
+      ? ([0, 1, 2].map(index => color[index]! * (filtered[index] ?? 0)) as [number, number, number])
+      : color
+  if (rule.mode === 'ramp') {
+    const data = (stored[rule.channel === 'rgb' ? 0 : rule.channel] ?? 0) / 255
+    const index = Math.floor(data * (rule.scale ?? 255) + 0.5) - (rule.first ?? 0)
+    const shade = rule.shades?.[index]
+    return shade === undefined || index < 0 || index >= TEAM_RAMP_MAX
+      ? { weight: [0, 0, 0], color: team }
+      : { weight: [1, 1, 1], color: tint(shade) }
+  }
+  if (rule.mode === 'key') {
+    const thresholds = rule.thresholds ?? [0, 0, 255]
+    const keyed = [0, 1, 2].every(index => (stored[index] ?? 0) <= thresholds[index]!)
+    const shade = (stored[rule.intensity ?? 2] ?? 0) / 255
+    return {
+      weight: keyed ? [1, 1, 1] : [0, 0, 0],
+      color: tint([team[0] * shade, team[1] * shade, team[2] * shade]),
+    }
+  }
+  const weight =
+    rule.channel === 'rgb'
+      ? ([filtered[0] ?? 0, filtered[1] ?? 0, filtered[2] ?? 0] as const)
+      : ([0, 0, 0].map(() => filtered[rule.channel as number] ?? 0) as [number, number, number])
+  return { weight, color: tint(team) }
+}
+
+/**
+ * teamMaskSample for shaders, returning the weight and updating `team`: `mode` 0 data, 1 key, 2 ramp;
+ * `channel` 0–3, or 4 per channel; `key` the thresholds; `intensity` the key's shade channel.
+ */
+export const TEAM_MASK_GLSL = `float modkitTeamChannel(vec4 texel, float channel) {
+  return channel < 0.5 ? texel.r : channel < 1.5 ? texel.g : channel < 2.5 ? texel.b : texel.a;
+}
+vec3 modkitTeamMask(sampler2D mask, vec2 uv, float mode, float channel, vec3 key, float intensity,
+    vec3 shades[${TEAM_RAMP_MAX}], float rampCount, float rampFirst, float rampScale, float tintRgb,
+    inout vec3 team) {
+  vec4 texel = texture(mask, uv);
+  vec3 weight = vec3(0.0);
+  if (mode > 0.5) {
+    // keys and indices read the texel under the sample, as stored: never a blend of two
+    ivec2 size = textureSize(mask, 0);
+    vec4 stored = texelFetch(mask, clamp(ivec2(floor(fract(uv) * vec2(size))), ivec2(0), size - ivec2(1)), 0);
+    if (mode > 1.5) {
+      float index = floor(modkitTeamChannel(stored, channel) * rampScale + 0.5) - rampFirst;
+      for (int i = 0; i < ${TEAM_RAMP_MAX}; i++)
+        if (float(i) == index && float(i) < rampCount) {
+          team = shades[i];
+          weight = vec3(1.0);
+        }
+    } else {
+      bool keyed = all(lessThanEqual(floor(stored.rgb * 255.0 + 0.5), key));
+      weight = keyed ? vec3(1.0) : vec3(0.0);
+      team *= modkitTeamChannel(stored, intensity);
+    }
+  } else {
+    weight = channel > 3.5 ? texel.rgb : vec3(modkitTeamChannel(texel, channel));
+  }
+  if (tintRgb > 0.5) team *= texel.rgb;
+  return weight;
+}`

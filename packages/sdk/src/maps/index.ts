@@ -1275,6 +1275,12 @@ export interface MapPlayer {
   readonly id: number
   /** Team colour, RGB in 0..1 as `presentationTeamColor`. */
   readonly color?: readonly [number, number, number]
+  /**
+   * The player's own shades for indexed team-colour ramps (`ModelTeamColorRule.ramp`), linear RGB
+   * 0..1, as the game builds them (SC1 8, Dune 2000 and RA2/TS 16); a material's ramp of another
+   * length keeps its own shades.
+   */
+  readonly colorRamp?: readonly (readonly [number, number, number])[]
   /** The alliance the slot starts in. */
   readonly team?: number
   readonly name?: string

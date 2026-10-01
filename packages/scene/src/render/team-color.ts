@@ -5,8 +5,11 @@ import type {
 } from '@modkit/sdk/renderer'
 import {
   TEAM_COLOR_BLENDS,
+  TEAM_RAMP_MAX,
   teamColorChannel,
+  teamMaskSample,
   type TeamColorBlend,
+  type TeamMaskRule,
 } from '@modkit/codec-kit/model-math/color-remap'
 
 /** A material's team colour as a base-route draw applies it (codec-kit teamColorChannel). */
@@ -20,9 +23,45 @@ export interface DrawTeamColor {
   readonly blendIndex: number
   readonly strength: number
   readonly color: readonly [number, number, number]
+  /** How the mask weighs it: its data channel, a key or an indexed ramp (codec-kit TeamMaskRule). */
+  readonly rule: TeamMaskRule
 }
 
 const CHANNELS = { r: 0, g: 1, b: 2, a: 3, rgb: 'rgb' } as const
+
+/**
+ * The mask rule of a team colour (codec-kit TeamMaskRule): a key's thresholds per stored channel,
+ * a ramp's shades — the draw's own when as long as the material's. Undefined for a ramp longer than
+ * renderers draw (TEAM_RAMP_MAX).
+ */
+export function teamMaskRule(
+  team: NonNullable<SceneRendererMaterial['teamColor']>,
+  context: SceneRendererMaterialContext | undefined,
+): TeamMaskRule | undefined {
+  const channel = team.mask === 'whole' ? 'rgb' : CHANNELS[team.mask.channel]
+  const tint = team.tint === 'mask-rgb' ? { tintRgb: true } : {}
+  if (team.key !== undefined) {
+    const thresholds = (['r', 'g', 'b'] as const).map(name =>
+      team.key!.channels.includes(name) ? team.key!.threshold : 255,
+    ) as [number, number, number]
+    return { mode: 'key', channel, thresholds, intensity: CHANNELS[team.key.intensity], ...tint }
+  }
+  if (team.ramp !== undefined) {
+    const own = context?.teamRamp
+    const shades =
+      own !== undefined && own.length === team.ramp.shades.length ? own : team.ramp.shades
+    if (shades.length > TEAM_RAMP_MAX) return undefined
+    return {
+      mode: 'ramp',
+      channel: channel === 'rgb' ? 0 : channel,
+      shades,
+      first: team.ramp.first,
+      scale: team.ramp.scale,
+      ...tint,
+    }
+  }
+  return { mode: 'data', channel, ...tint }
+}
 
 function rgb(value: unknown, label: string): readonly [number, number, number] {
   if (
@@ -55,8 +94,11 @@ export function drawTeamColor(
     throw new TypeError(`material ${material.id} team colour mask is invalid`)
   const context = material.context ?? scene
   if (context?.teamColorIntensity === 0) return undefined
+  const rule = teamMaskRule(team, context)
+  if (rule === undefined) return undefined
+  // an object-tint colour is the object's, which a model drawn alone has not: the default
   const color =
-    context?.teamColor !== undefined
+    context?.teamColor !== undefined && team.source !== 'object-tint'
       ? rgb(context.teamColor, 'team colour')
       : rgb(team.defaultColor ?? [1, 1, 1], `material ${material.id} team colour default`)
   return {
@@ -66,22 +108,29 @@ export function drawTeamColor(
     blendIndex,
     strength,
     color,
+    rule,
   }
 }
 
-/** `rgb` with the team colour applied, the mask texel (or none, for `whole`) weighing it. */
+/**
+ * `rgb` with the team colour applied: the mask texel as drawn (`maskTexel`, 0..1; none for `whole`)
+ * weighing it, and for a key or a ramp the texel under the sample as stored (`storedTexel`, 0–255).
+ */
 export function applyDrawTeamColor(
   team: DrawTeamColor,
   color: readonly [number, number, number],
   maskTexel: readonly number[] | undefined,
+  storedTexel: readonly number[] = (maskTexel ?? []).map(value => Math.round(value * 255)),
 ): [number, number, number] {
-  const weight = (channel: number) =>
-    maskTexel === undefined ? 1 : (maskTexel[team.channel === 'rgb' ? channel : team.channel] ?? 0)
+  const sample =
+    maskTexel === undefined
+      ? { weight: [1, 1, 1] as const, color: team.color }
+      : teamMaskSample(team.rule, maskTexel, storedTexel, team.color)
   return [0, 1, 2].map(channel =>
     teamColorChannel(
       color[channel]!,
-      weight(channel),
-      team.color[channel]!,
+      sample.weight[channel]!,
+      sample.color[channel]!,
       team.blend,
       team.strength,
     ),

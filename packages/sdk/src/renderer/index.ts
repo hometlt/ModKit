@@ -176,6 +176,29 @@ export interface SceneRendererTeamColor {
   readonly strength?: number
   /** RGB in 0..1, as `materialContext.teamColor`, when the draw names none; default white. */
   readonly defaultColor?: readonly [number, number, number]
+  /** `object-tint`: the colour is the object's tint, which then tints nothing else of this material. */
+  readonly source?: 'team' | 'object-tint'
+  /** `mask-rgb`: the colour times the mask texel's colour; the channel still weighs it. */
+  readonly tint?: 'mask-rgb'
+  /**
+   * The mask texture's texels whose key channels are all at most `threshold` (stored 8-bit) take
+   * the colour times their `intensity` channel; the others keep theirs (Emperor's blue key).
+   */
+  readonly key?: Readonly<{
+    readonly channels: readonly ('r' | 'g' | 'b')[]
+    readonly threshold: number
+    readonly intensity: 'r' | 'g' | 'b' | 'a'
+  }>
+  /**
+   * The mask channel holds palette indices, floor(sample × `scale` + 0.5), read nearest: an index from
+   * `first` on takes `shades[index − first]` (or the draw's `teamRamp` of as many), any other keeps
+   * its colour.
+   */
+  readonly ramp?: Readonly<{
+    readonly shades: readonly (readonly [number, number, number])[]
+    readonly first: number
+    readonly scale: number
+  }>
 }
 
 /** Explicit mapping for environment materials. Supplied by the scene, never inferred from a file. */
@@ -194,6 +217,11 @@ export interface SceneRendererMaterialContext {
   /** The selected index in the shader vocabulary's sequence table. */
   readonly sequenceIndex?: number
   readonly teamColor?: readonly [number, number, number]
+  /**
+   * A player's own shades for a material's indexed team-colour ramp (`SceneRendererTeamColor.ramp`),
+   * used in its place when as long; another length keeps the material's shades.
+   */
+  readonly teamRamp?: readonly (readonly [number, number, number])[]
   /**
    * Exponent on the texel alpha of diffuse team-color layers, default 1. 0 marks an object
    * without team color (such layers keep their texel color). Only 0 and 1 are accepted.

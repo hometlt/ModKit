@@ -1067,6 +1067,27 @@ function worldTeamColorsOf(
   return colors
 }
 
+const worldTeamRamps = new WeakMap<
+  CandidateWorldViewerModel['info'],
+  ReadonlyMap<number, readonly (readonly [number, number, number])[]>
+>()
+
+/** Player slots' own shades for indexed team-colour ramps (MapPlayer.colorRamp). */
+function worldTeamRampsOf(
+  info: CandidateWorldViewerModel['info'],
+): ReadonlyMap<number, readonly (readonly [number, number, number])[]> {
+  let ramps = worldTeamRamps.get(info)
+  if (ramps === undefined) {
+    ramps = new Map(
+      (info.players ?? []).flatMap(player =>
+        player.colorRamp === undefined ? [] : [[player.id, player.colorRamp] as const],
+      ),
+    )
+    worldTeamRamps.set(info, ramps)
+  }
+  return ramps
+}
+
 export function drawCandidateWorld(
   canvas: HTMLCanvasElement,
   model: CandidateWorldViewerModel,
@@ -1082,9 +1103,11 @@ export function drawCandidateWorld(
   const selectedObjectId = typeof selection === 'number' ? selection : selection?.selectedObjectId
   // objects of a player slot take its colour (an object's own presentationTeamColor still wins)
   const teamColors = worldTeamColorsOf(model.info)
+  const teamRamps = worldTeamRampsOf(model.info)
   const webGlInput = {
     items: worldItems,
     ...(teamColors.size === 0 ? {} : { teamColors }),
+    ...(teamRamps.size === 0 ? {} : { teamRamps }),
     ...(model.models === undefined ? {} : { models: model.models }),
     terrainMaterials: flattened.terrainMaterials,
     waterMaterials: flattened.waterMaterials,
