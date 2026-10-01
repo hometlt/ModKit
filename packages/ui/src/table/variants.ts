@@ -58,6 +58,8 @@ const FILTER_LABELS = {
   error: 'table.filterErrors',
   changed: 'table.filterChanged',
   review: 'table.filterReview',
+  // a reference in a value naming an entity the mod does not have (SC2: `<d ref>`, `<s ref>`)
+  'broken-ref': 'table.filterBrokenRef',
 } as const
 /** A row's status as a badge in its status cell, as MK2 marked its keys (dup, syn…). */
 const BADGE_LABELS: Readonly<Record<string, UiMessageKey>> = {
@@ -68,6 +70,7 @@ const BADGE_LABELS: Readonly<Record<string, UiMessageKey>> = {
   error: 'table.badgeError',
   changed: 'table.badgeChanged',
   review: 'table.badgeReview',
+  'broken-ref': 'table.badgeBrokenRef',
 }
 const COMPARE_LABELS = {
   missing: 'table.filterMissing',
@@ -378,6 +381,7 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
     'duplicate',
     'empty',
     'error',
+    'broken-ref',
     'changed',
     ...(args.baseline === undefined ? [] : (['review'] as const)),
   ] as const

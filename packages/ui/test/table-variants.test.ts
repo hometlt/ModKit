@@ -96,7 +96,7 @@ beforeAll(async () => {
       const rows = [
         ['Abil/Name/A', 'Alpha', 'Альфа', 'Alpha', ''],
         ['Abil/Name/B', 'Beta', '', 'Beta', 'missing'],
-        ['Unit/Name/C', 'Gamma', 'Gamma', 'Gamma', 'untranslated error'],
+        ['Unit/Name/C', 'Gamma', 'Gamma', 'Gamma', 'untranslated error broken-ref'],
         // a long file, past one page of shown rows
         ...Array.from({ length: options.many ?? 0 }, (_, index) => [
           `Long/Name/${String(index).padStart(4, '0')}`,
@@ -408,6 +408,18 @@ describe('variant table surface', () => {
     expect(await visibleHead()).toEqual(['', 'Key', 'enUS', 'ruRU', 'Preview', 'Status'])
     expect(await visibleCells()).toEqual([6, 6, 6])
     await page.click('[data-mk-part="table.columns"] summary')
+  })
+
+  it('marks a value whose reference the mod lacks, and filters to those rows (7.36)', async () => {
+    await page.evaluate(() => (globalThis as unknown as Probe).mountTable())
+    expect(
+      await page.$$eval('[data-mk-part="table.badge"][data-status="broken-ref"]', badges =>
+        badges.map(badge => badge.textContent),
+      ),
+    ).toEqual(['broken reference'])
+    await page.click('[data-mk-part="toolbar.chip"]:has-text("Broken references")')
+    expect(await keys()).toEqual(['Unit/Name/C'])
+    await page.click('[data-mk-part="toolbar.chip"]:has-text("Broken references")')
   })
 
   it('marks the keys whose base text changed or appeared since a baseline copy (7.36)', async () => {
