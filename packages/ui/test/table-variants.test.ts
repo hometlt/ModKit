@@ -28,6 +28,7 @@ interface Probe {
     changed?: boolean
     reopen?: boolean
     wait?: boolean
+    many?: number
   }): Promise<void>
   finishTranslation(): void
 }
@@ -72,7 +73,13 @@ beforeAll(async () => {
   await page.evaluate(async () => {
     let mounted: { unmount(): Promise<void> } | undefined
     const mountTable = async (
-      options: { available?: boolean; changed?: boolean; reopen?: boolean; wait?: boolean } = {},
+      options: {
+        available?: boolean
+        changed?: boolean
+        reopen?: boolean
+        wait?: boolean
+        many?: number
+      } = {},
     ) => {
       await mounted?.unmount()
       let finishTranslation = () => undefined
@@ -86,6 +93,14 @@ beforeAll(async () => {
         ['Abil/Name/A', 'Alpha', 'Альфа', 'Alpha', ''],
         ['Abil/Name/B', 'Beta', '', 'Beta', 'missing'],
         ['Unit/Name/C', 'Gamma', 'Gamma', 'Gamma', 'untranslated error'],
+        // a long file, past one page of shown rows
+        ...Array.from({ length: options.many ?? 0 }, (_, index) => [
+          `Long/Name/${String(index).padStart(4, '0')}`,
+          `Value ${index}`,
+          `Значение ${index}`,
+          `Value ${index}`,
+          '',
+        ]),
       ]
       const calls: { handler: string; input: unknown }[] = []
       const commits: unknown[] = []
@@ -609,6 +624,18 @@ describe('variant table surface', () => {
     ])
     const missing = '[data-mk-part="table.body"] tr:nth-child(2) td:nth-child(4)'
     expect(await page.getAttribute(missing, 'title')).toBe('No value in ruRU')
+  })
+
+  it('shows the next page of rows once the reader scrolls to the end (7.36)', async () => {
+    await page.evaluate(() => (globalThis as unknown as Probe).mountTable({ many: 450 }))
+    const drawn = () => page.locator('[data-mk-part="table.body"] tr').count()
+    expect(await drawn()).toBe(200)
+    await page.locator('[data-mk-part="table.next"]').scrollIntoViewIfNeeded()
+    await expect.poll(drawn).toBe(400)
+    await page.locator('[data-mk-part="table.next"]').scrollIntoViewIfNeeded()
+    await expect.poll(drawn).toBe(453)
+    expect(await page.isHidden('[data-mk-part="table.next"]')).toBe(true)
+    await page.evaluate(() => (globalThis as unknown as Probe).mountTable())
   })
 
   it('reverts the draft to the values the source holds, writing nothing', async () => {

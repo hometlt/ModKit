@@ -902,6 +902,25 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
     shown += VARIANT_PAGE_ROWS
     draw()
   })
+  /*
+   * Scrolled to the end of the shown rows, the reader gets the next page without a click, as MK2's
+   * list scrolled on (7.36). A cell being edited is never redrawn under the reader: the page waits
+   * for the button. ponytail: each page redraws the whole body; true virtualization if a scroll
+   * through tens of thousands of rows gets slow.
+   */
+  if (typeof IntersectionObserver === 'function') {
+    const onward = new IntersectionObserver(entries => {
+      if (!entries.some(entry => entry.isIntersecting) || more.hidden) return
+      if (args.root.querySelector('[data-editing="true"]') !== null) return
+      shown += VARIANT_PAGE_ROWS
+      draw()
+      // still in view after a short page: observing again reports it and loads one more
+      onward.unobserve(more)
+      onward.observe(more)
+    })
+    onward.observe(more)
+    args.signal.addEventListener('abort', () => onward.disconnect(), { once: true })
+  }
 
   const route = {
     descriptor: args.descriptor,
