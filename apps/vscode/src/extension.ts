@@ -203,6 +203,7 @@ import {
 catalogCandidates,
 createVsCodeCommandOpener,
 createVsCodeSubjectHost,
+ownedWireBytes,
 subjectKey,
 subjectLabel, type ViewerSurfaceOperation,
 type ViewerSurfaceOperationResult,
@@ -8341,7 +8342,8 @@ async function activateModkit(
     if (mediaType === undefined) return undefined
     const uri = subjectUriOf(ref)
     if ((await vscode.workspace.fs.stat(uri)).size > MAXIMUM_BROWSER_IMAGE_BYTES) return undefined
-    return { image: await vscode.workspace.fs.readFile(uri), mediaType }
+    // a Buffer would cross to the page through its `toJSON`, as a list of numbers
+    return { image: ownedWireBytes(await vscode.workspace.fs.readFile(uri)), mediaType }
   }
   const galleryThumbnailOf = (
     ref: string,
