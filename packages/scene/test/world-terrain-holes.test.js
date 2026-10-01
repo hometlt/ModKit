@@ -34,3 +34,15 @@ it('neither draws nor casts a cell the map cut out of its ground', () => {
   const empty = createWorldWebGlPlan({ items: grid('0:0', '1:0', '0:1', '1:1') })
   assert.equal(empty.stats.terrainTriangles, 0)
 })
+
+it('leaves a hole where a sample has no ground, as the world leaves it out (П26)', () => {
+  // the centre sample of the 3×3 grid is an air column: every cell touches it
+  const air = grid().filter(item => !(item.x === 1 && item.y === 1))
+  const plan = createWorldWebGlPlan({ items: air })
+  assert.equal(plan.stats.terrainTriangles, 0)
+  // a corner sample takes only its own cell
+  const corner = createWorldWebGlPlan({
+    items: grid().filter(item => !(item.x === 0 && item.y === 0)),
+  })
+  assert.equal(corner.stats.terrainTriangles, 6)
+})

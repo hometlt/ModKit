@@ -193,6 +193,58 @@ describe('production world to UVW materializer', () => {
     expect(incomplete.refusalCodes).toEqual(['terrain-budget-exceeded'])
   })
 
+  it('writes noDataValue where the layer leaves out samples with no ground (П26)', async () => {
+    const holed = items.filter(item => item.id !== '1:1')
+    const holedInfo: CandidateWorldSceneInfo = {
+      ...info,
+      uvwTransform: {
+        ...info.uvwTransform!,
+        bounds: { ...info.uvwTransform!.bounds, maximum: { x: 1, y: 2, z: 0 } },
+      },
+      facets: [{ ...info.facets[0]!, itemCount: 3 }],
+    }
+    const layer = {
+      facet: 'layers',
+      id: layerId,
+      layerId,
+      kind: 'terrain',
+      state: 'available',
+      itemCount: 3,
+      lods: ['exact'],
+      grid: {
+        columns: 2,
+        rows: 2,
+        cellSize: 1,
+        origin: [0, 0, -1],
+        coordinateSpaceId: 'uvw-canonical',
+        noDataValue: -9999,
+      },
+    } as const
+    const holedSource = (declared: boolean): CandidateWorldSceneSource => ({
+      ...source(4, holedInfo),
+      page: (request: WorldScenePageRequest) =>
+        Promise.resolve({
+          snapshotId,
+          facet: request.facet,
+          state: 'available' as const,
+          items: request.facet === 'layers' ? (declared ? [layer] : []) : holed,
+        }),
+    })
+    const result = await materializeWorldToUvw(holedSource(true), options)
+    if (result.state !== 'materialized') throw new Error(JSON.stringify(result.refusals))
+    // (1, 1) ends the last source row, which reverses into the first canonical row
+    expect(result.document.spaces[0]?.layers[0]).toMatchObject({
+      noDataValue: -9999,
+      samples: [
+        [2, -9999],
+        [0, 1],
+      ],
+    })
+    // the same items without the declaration are an incomplete grid
+    const undeclared = await materializeWorldToUvw(holedSource(false), options)
+    expect(undeclared.refusalCodes).toEqual(['terrain-grid-invalid'])
+  })
+
   it('keeps a partial object facet, losing alone the objects without a canonical place', async () => {
     const objectsLayerId = 'native:objects'
     const objectInfo: CandidateWorldSceneInfo = {

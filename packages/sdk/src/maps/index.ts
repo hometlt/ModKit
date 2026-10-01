@@ -692,6 +692,14 @@ export interface MapTerrainSample {
    * neither drawn nor casts. Presentation only: heights stay authored for editing and export.
    */
   readonly presentationCellHidden?: true
+  /**
+   * No ground at this sample: a column the map leaves empty (a Roblox air column, a Westwood cell
+   * outside the map's diamond), so what lies below shows through. Data, unlike
+   * `presentationCellHidden`: the world publishes no terrain item here and declares its layer's
+   * `grid.noDataValue`, which UVW keeps; a cell touching the sample is not drawn. Its heights are
+   * placeholders, outside the terrain's bounds.
+   */
+  readonly noGround?: true
   readonly mask: number
 }
 

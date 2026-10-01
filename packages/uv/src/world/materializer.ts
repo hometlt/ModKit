@@ -282,6 +282,44 @@ export async function materializeWorldToUvw(
   }
   if (refusals.length > 0 || transform === undefined || exact[0] === undefined) return finish()
 
+  // A terrain layer leaves out the samples where there is no ground (a Roblox air column, a cell
+  // outside a Westwood map's diamond) and declares the sentinel its grid writes there instead.
+  let noDataValue: number | undefined
+  try {
+    let layerCursor: string | undefined
+    const layerCursors = new Set<string>()
+    do {
+      pageRequests += 1
+      const page = await source.page(
+        {
+          facet: 'layers',
+          ...(layerCursor === undefined ? {} : { cursor: layerCursor }),
+          limit: options.maxPageItems,
+        },
+        options.signal,
+      )
+      const layer = page.items.find(
+        item => item.facet === 'layers' && item.layerId === exact[0]?.layerId,
+      )
+      if (layer?.facet === 'layers') {
+        noDataValue = layer.grid?.noDataValue
+        break
+      }
+      layerCursor = page.nextCursor
+      if (layerCursor !== undefined && layerCursors.has(layerCursor)) break
+      if (layerCursor !== undefined) layerCursors.add(layerCursor)
+    } while (layerCursor !== undefined)
+  } catch (error) {
+    if (cancelled(options.signal))
+      refuse('cancelled', 'UVW materialization was cancelled while reading layers')
+    else refuse('source-page-failed', `layer catalogue page failed: ${String(error)}`)
+    return finish()
+  }
+  if (noDataValue !== undefined && !finite(noDataValue)) {
+    refuse('terrain-grid-invalid', 'terrain noDataValue must be finite', 'layers.grid.noDataValue')
+    return finish()
+  }
+
   const items: WorldSceneTerrainItem[] = []
   const seenCursors = new Set<string>()
   let cursor: string | undefined
@@ -340,7 +378,7 @@ export async function materializeWorldToUvw(
 
   const { columns, rows, cellSize, origin, sourceRowOrder } = transform.heightfield
   const expectedCount = columns * rows
-  if (items.length !== expectedCount) {
+  if (noDataValue === undefined ? items.length !== expectedCount : items.length > expectedCount) {
     refuse(
       'terrain-grid-invalid',
       `exact terrain layer has ${String(items.length)} items; expected ${String(expectedCount)}`,
@@ -383,6 +421,10 @@ export async function materializeWorldToUvw(
     const row: number[] = []
     for (let x = 0; x < columns; x += 1) {
       const item = grid[sourceRow * columns + x]
+      if (item === undefined && noDataValue !== undefined) {
+        row.push(noDataValue)
+        continue
+      }
       const position = item?.uvwPosition
       if (
         position === undefined ||
@@ -394,6 +436,10 @@ export async function materializeWorldToUvw(
           'canonical positions do not form the declared scalar heightfield',
           'info.uvwTransform.heightfield',
         )
+        return finish()
+      }
+      if (position.y === noDataValue) {
+        refuse('terrain-grid-invalid', 'a ground height equals the noDataValue', 'page.items')
         return finish()
       }
       row.push(position.y)
@@ -469,6 +515,7 @@ export async function materializeWorldToUvw(
             rows,
             cellSize,
             origin,
+            ...(noDataValue === undefined ? {} : { noDataValue }),
             samples: Object.freeze(samples.map(row => Object.freeze(row))),
           }),
           ...additional.layers,

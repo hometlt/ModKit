@@ -35,6 +35,7 @@ import type {
   WorldSceneTextureRequest,
   WorldSceneObjectItem,
   WorldSceneResourceItem,
+  WorldSceneTerrainItem,
   WorldScenePage,
   WorldScenePageRequest,
   WorldSceneRegionShape,
@@ -431,15 +432,17 @@ function admittedTerrainTransform(
   for (const sample of terrain.samples) {
     const position = terrainMapNativePosition(sample, transform)
     if (!Object.values(position).every(finite)) return undefined
+    // a sample with no ground spans the grid but has no height: its height is a placeholder
+    const ground = sample.noGround !== true
     minimum = {
       x: Math.min(minimum.x, position.x),
       y: Math.min(minimum.y, position.y),
-      z: Math.min(minimum.z, position.z),
+      z: ground ? Math.min(minimum.z, position.z) : minimum.z,
     }
     maximum = {
       x: Math.max(maximum.x, position.x),
       y: Math.max(maximum.y, position.y),
-      z: Math.max(maximum.z, position.z),
+      z: ground ? Math.max(maximum.z, position.z) : maximum.z,
     }
   }
   return (['x', 'y', 'z'] as const).every(
@@ -699,7 +702,7 @@ export function createCandidateWorldSceneLease(
     item => item.sourcePositionDimensions === 2,
   ).length
 
-  const terrain: readonly WorldSceneItem[] = Object.freeze(
+  const allTerrain: readonly WorldSceneTerrainItem[] = Object.freeze(
     (semantic.terrain?.samples ?? []).map(item => {
       const mapNativePosition =
         terrainTransform === undefined
@@ -747,10 +750,29 @@ export function createCandidateWorldSceneLease(
       })
     }),
   )
+  // A sample with no ground (an air column) is no terrain item: its cells are holes, and the layer
+  // declares the sentinel UVW writes there, below every ground height. Materials keep its place.
+  const terrain: readonly WorldSceneItem[] = Object.freeze(
+    allTerrain.filter(item => item.noGround !== true),
+  )
+  const noGroundSamples = allTerrain.length - terrain.length
+  const terrainNoDataValue =
+    noGroundSamples === 0 || uvwTransform === undefined
+      ? undefined
+      : Math.min(
+          -9999,
+          Math.floor(
+            terrain.reduce(
+              (lowest, item) =>
+                item.facet === 'terrain' && item.uvwPosition !== undefined
+                  ? Math.min(lowest, item.uvwPosition.y)
+                  : lowest,
+              0,
+            ),
+          ) - 1,
+        )
   const terrainByGrid = new Map(
-    terrain.flatMap(item =>
-      item.facet === 'terrain' ? [[`${String(item.x)}:${String(item.y)}`, item]] : [],
-    ),
+    allTerrain.map(item => [`${String(item.x)}:${String(item.y)}`, item] as const),
   )
   const terrainMaterials: readonly WorldSceneItem[] = Object.freeze(
     (snapshot.terrainMaterials?.samples ?? []).map(item => {
@@ -1148,7 +1170,7 @@ export function createCandidateWorldSceneLease(
           : terrainExact
             ? ('available' as const)
             : ('partial' as const),
-      itemCount: semantic.terrain?.cellCount ?? 0,
+      itemCount: (semantic.terrain?.cellCount ?? 0) - noGroundSamples,
       lods: Object.freeze(
         terrainSummary === undefined ? [] : terrainExact ? ['exact'] : ['summary', 'sampled'],
       ),
@@ -1391,6 +1413,9 @@ export function createCandidateWorldSceneLease(
                       ] as const)
                     : uvwTransform.heightfield.origin,
                 coordinateSpaceId: 'uvw-canonical',
+                ...(item.facet === 'terrain' && terrainNoDataValue !== undefined
+                  ? { noDataValue: terrainNoDataValue }
+                  : {}),
               }),
             }
           : {}),
