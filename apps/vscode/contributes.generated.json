@@ -181,6 +181,10 @@
       "icon": "$(package)"
     },
     {
+      "command": "modkit.openResource",
+      "title": "%command.openInModkit%"
+    },
+    {
       "command": "modkit.openWith",
       "title": "%command.openActiveFile%"
     },
@@ -911,6 +915,10 @@
         "when": "false"
       },
       {
+        "command": "modkit.openResource",
+        "when": "false"
+      },
+      {
         "command": "modkit.resources.goToDeclaration",
         "when": "false"
       },
@@ -1052,6 +1060,11 @@
         "command": "modkit.openMap3D",
         "when": "resourceExtname =~ /^\\.(sc2map|s2ma)$/i",
         "group": "navigation@88"
+      },
+      {
+        "command": "modkit.openResource",
+        "when": "explorerResourceIsFolder && resourceExtname && resourceScheme == file",
+        "group": "navigation@18"
       },
       {
         "command": "modkit.sources.clearCache",

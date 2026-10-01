@@ -7,6 +7,8 @@ import { describe, expect, it } from 'vitest'
  * the active tab's container — stays.
  */
 const ROW_ONLY = [
+  // a package folder's menu item: it opens the folder it was chosen on
+  'modkit.openResource',
   'modkit.navigateResource',
   'modkit.resources.open',
   'modkit.resources.goToDeclaration',

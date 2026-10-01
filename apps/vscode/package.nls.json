@@ -24,6 +24,7 @@
   "command.addExtensionFolder": "Modkit: Add Extension Folder…",
   "command.browseContainer": "Modkit: Browse Container in Explorer",
   "command.openExplorer": "Modkit: Open in Modkit Explorer",
+  "command.openInModkit": "Modkit: Open in Modkit",
   "view.loading": "Loading Modkit…",
   "command.controlRuntime": "Modkit: Control Runtime Session…",
   "command.disableExtension": "Modkit: Disable Extension…",

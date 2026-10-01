@@ -8629,6 +8629,26 @@ async function activateModkit(
     return anchor === undefined ? undefined : vscode.Uri.joinPath(target, anchor[0])
   }
 
+  /**
+   * A resource a menu names: a file as itself, a package folder (`X.SC2Map`) at the document its
+   * codec declares to stand for it — a folder is not something a VS Code editor opens.
+   */
+  const openNamedResource = (uri: vscode.Uri): void => {
+    void anchoredUri(uri)
+      .then(anchored => {
+        if (anchored !== undefined) openResource(anchored)
+        else
+          void vscode.window.showWarningMessage(
+            localizer.text('vscode.map.noAnchor', { name: basename(uri.path) }),
+          )
+      })
+      .catch(error =>
+        vscode.window.showErrorMessage(
+          `Modkit: ${error instanceof Error ? error.message : String(error)}`,
+        ),
+      )
+  }
+
   navigateWorkspaceResource = async (root, subjectId, range, stage) => {
     /*
      * A resource that *is* a file opens as that file. Routing it through the package's own custom
@@ -10441,10 +10461,15 @@ async function activateModkit(
     }),
 
     vscode.commands.registerCommand('modkit.openResource', (uri: unknown) => {
-      if (uri instanceof vscode.Uri) openResource(uri)
+      if (uri instanceof vscode.Uri) openNamedResource(uri)
     }),
 
-    vscode.commands.registerCommand('modkit.openWith', () => {
+    vscode.commands.registerCommand('modkit.openWith', (argument: unknown) => {
+      // From a menu: the resource the menu was opened on, not whichever tab has focus.
+      if (argument instanceof vscode.Uri) {
+        openNamedResource(argument)
+        return
+      }
       void (async () => {
         /*
          * A binary tab has no `activeTextEditor`, so fall back to whatever the active tab names.

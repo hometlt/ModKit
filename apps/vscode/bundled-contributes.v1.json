@@ -137,6 +137,10 @@
       "title": "%command.openActiveFile%"
     },
     {
+      "command": "modkit.openResource",
+      "title": "%command.openInModkit%"
+    },
+    {
       "command": "modkit.showHostProfile",
       "title": "%command.openWorkbench%"
     },
@@ -955,6 +959,10 @@
   "menus": {
     "commandPalette": [
       {
+        "command": "modkit.openResource",
+        "when": "false"
+      },
+      {
         "command": "modkit.navigateResource",
         "when": "false"
       },
@@ -1108,6 +1116,11 @@
       }
     ],
     "explorer/context": [
+      {
+        "command": "modkit.openResource",
+        "when": "explorerResourceIsFolder && resourceExtname && resourceScheme == file",
+        "group": "navigation@18"
+      },
       {
         "command": "modkit.openExplorer",
         "when": "explorerResourceIsFolder",
