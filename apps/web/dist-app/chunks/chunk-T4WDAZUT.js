@@ -1,12 +1,19 @@
 import {
+  crc32Range
+} from "./chunk-Q27WXNQ4.js";
+import {
   compressPortable,
   decompressBounded
-} from "./chunk-GDKG5J25.js";
+} from "./chunk-QQJVD7VT.js";
 import {
-  crc32Range
-} from "./chunk-TWH75SBL.js";
+  init_define_MODKIT_EMBED_EXTENSION_ORIGINS
+} from "./chunk-BLWUC7LO.js";
+
+// ../MODDING/modkit-core/packages/codec-kit/dist/raster/index.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
 // ../MODDING/modkit-core/packages/codec-kit/dist/raster/encoders.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var at = (pixels, index) => pixels[index];
 var PNG_SIGNATURE = Object.freeze([137, 80, 78, 71, 13, 10, 26, 10]);
 var ascii = new TextEncoder();
@@ -116,6 +123,7 @@ function encodeIconDib(image) {
 }
 
 // ../MODDING/modkit-core/packages/codec-kit/dist/raster/png.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var SIGNATURE = Object.freeze([137, 80, 78, 71, 13, 10, 26, 10]);
 var CHANNELS = /* @__PURE__ */ new Map([
   [0, 1],
@@ -263,7 +271,100 @@ async function greyGridFromPng(png, expected, signal) {
   return Object.freeze({ width: image.width, height: image.height, values: Object.freeze(values) });
 }
 
+// ../MODDING/modkit-core/packages/codec-kit/dist/raster/ops.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var at2 = (pixels, index) => pixels[index];
+function checked(image) {
+  if (image.pixels.length !== image.width * image.height * 4) {
+    throw new TypeError(`image: expected ${image.width * image.height * 4} bytes, got ${image.pixels.length}`);
+  }
+  return image;
+}
+function resizeRgba(image, width, height) {
+  checked(image);
+  if (width === image.width && height === image.height) {
+    return { width, height, pixels: image.pixels.slice() };
+  }
+  const out = new Uint8Array(width * height * 4);
+  const xScale = image.width / width;
+  const yScale = image.height / height;
+  for (let y = 0; y < height; y += 1) {
+    const sourceY = Math.min(image.height - 1, (y + 0.5) * yScale - 0.5);
+    const y0 = Math.max(0, Math.floor(sourceY));
+    const y1 = Math.min(image.height - 1, y0 + 1);
+    const fy = sourceY - y0;
+    for (let x = 0; x < width; x += 1) {
+      const sourceX = Math.min(image.width - 1, (x + 0.5) * xScale - 0.5);
+      const x0 = Math.max(0, Math.floor(sourceX));
+      const x1 = Math.min(image.width - 1, x0 + 1);
+      const fx = sourceX - x0;
+      const target = (y * width + x) * 4;
+      for (let channel = 0; channel < 4; channel += 1) {
+        const p00 = at2(image.pixels, (y0 * image.width + x0) * 4 + channel);
+        const p10 = at2(image.pixels, (y0 * image.width + x1) * 4 + channel);
+        const p01 = at2(image.pixels, (y1 * image.width + x0) * 4 + channel);
+        const p11 = at2(image.pixels, (y1 * image.width + x1) * 4 + channel);
+        out[target + channel] = Math.round(p00 * (1 - fx) * (1 - fy) + p10 * fx * (1 - fy) + p01 * (1 - fx) * fy + p11 * fx * fy);
+      }
+    }
+  }
+  return { width, height, pixels: out };
+}
+function combineNormalSpecular(normal, specular) {
+  checked(normal);
+  checked(specular);
+  const scaled = specular.width === normal.width && specular.height === normal.height ? specular : resizeRgba(specular, normal.width, normal.height);
+  const out = normal.pixels.slice();
+  for (let index = 0; index < out.length; index += 4) {
+    out[index + 2] = at2(scaled.pixels, index + 2);
+  }
+  return { width: normal.width, height: normal.height, pixels: out };
+}
+function roundedRectCoverage(x, y, width, height, radius) {
+  const px = x + 0.5;
+  const py = y + 0.5;
+  const cx = px < radius ? radius : px > width - radius ? width - radius : px;
+  const cy = py < radius ? radius : py > height - radius ? height - radius : py;
+  const dx = px - cx;
+  const dy = py - cy;
+  const distance = Math.sqrt(dx * dx + dy * dy);
+  if (distance <= radius - 0.5)
+    return 1;
+  if (distance >= radius + 0.5)
+    return 0;
+  return radius + 0.5 - distance;
+}
+function applyRoundedAlpha(image, radius) {
+  checked(image);
+  const out = image.pixels.slice();
+  for (let y = 0; y < image.height; y += 1) {
+    for (let x = 0; x < image.width; x += 1) {
+      const coverage = roundedRectCoverage(x, y, image.width, image.height, radius);
+      const alpha = (y * image.width + x) * 4 + 3;
+      out[alpha] = Math.round(at2(out, alpha) * coverage);
+    }
+  }
+  return { width: image.width, height: image.height, pixels: out };
+}
+function applyColorKeyTransparency(image, options) {
+  checked(image);
+  const tolerance = options.tolerance ?? 0;
+  const replacement = options.replacement ?? { r: 0, g: 0, b: 0, a: 0 };
+  const out = image.pixels.slice();
+  for (let index = 0; index < out.length; index += 4) {
+    const close = Math.abs(at2(out, index) - options.target.r) <= tolerance && Math.abs(at2(out, index + 1) - options.target.g) <= tolerance && Math.abs(at2(out, index + 2) - options.target.b) <= tolerance;
+    if (close) {
+      out[index] = replacement.r;
+      out[index + 1] = replacement.g;
+      out[index + 2] = replacement.b;
+      out[index + 3] = replacement.a;
+    }
+  }
+  return { width: image.width, height: image.height, pixels: out };
+}
+
 // ../MODDING/modkit-core/packages/codec-kit/dist/raster/jpeg.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var ZIGZAG = Int32Array.from([
   0,
   1,
@@ -496,36 +597,36 @@ function parse(bytes) {
       throw new TypeError("JPEG segment is truncated");
     const payload = bytes.subarray(offset + 2, offset + length);
     if (marker === 219) {
-      let at2 = 0;
-      while (at2 < payload.length) {
-        const spec = payload[at2] ?? 0;
+      let at3 = 0;
+      while (at3 < payload.length) {
+        const spec = payload[at3] ?? 0;
         const precision = spec >> 4;
         const slot = spec & 15;
-        at2 += 1;
+        at3 += 1;
         if (slot > 3)
           throw new TypeError("JPEG quantization table slot is out of range");
         const table = new Int32Array(64);
         for (let index = 0; index < 64; index += 1) {
-          table[index] = precision === 0 ? payload[at2] ?? 0 : u16(payload, at2);
-          at2 += precision === 0 ? 1 : 2;
+          table[index] = precision === 0 ? payload[at3] ?? 0 : u16(payload, at3);
+          at3 += precision === 0 ? 1 : 2;
         }
         quantization[slot] = table;
       }
     } else if (marker === 196) {
-      let at2 = 0;
-      while (at2 < payload.length) {
-        const spec = payload[at2] ?? 0;
+      let at3 = 0;
+      while (at3 < payload.length) {
+        const spec = payload[at3] ?? 0;
         const slot = spec & 15;
-        at2 += 1;
+        at3 += 1;
         if (slot > 3)
           throw new TypeError("JPEG Huffman table slot is out of range");
-        const counts = payload.subarray(at2, at2 + 16);
-        at2 += 16;
+        const counts = payload.subarray(at3, at3 + 16);
+        at3 += 16;
         let total = 0;
         for (const count of counts)
           total += count;
-        const values = payload.subarray(at2, at2 + total);
-        at2 += total;
+        const values = payload.subarray(at3, at3 + total);
+        at3 += total;
         const table = buildHuffmanTable(Uint8Array.from(counts), Uint8Array.from(values));
         if (spec >> 4 === 0)
           huffmanDc[slot] = table;
@@ -553,17 +654,17 @@ function parse(bytes) {
         throw new TypeError("JPEG component count is not supported");
       components = [];
       for (let index = 0; index < count; index += 1) {
-        const at2 = 6 + index * 3;
-        const sampling = payload[at2 + 1] ?? 0;
+        const at3 = 6 + index * 3;
+        const sampling = payload[at3 + 1] ?? 0;
         const horizontal = sampling >> 4;
         const vertical = sampling & 15;
         if (horizontal < 1 || horizontal > 4 || vertical < 1 || vertical > 4)
           throw new TypeError("JPEG sampling factor is out of range");
         components.push({
-          id: payload[at2] ?? 0,
+          id: payload[at3] ?? 0,
           horizontal,
           vertical,
-          quantizationTable: payload[at2 + 2] ?? 0,
+          quantizationTable: payload[at3 + 2] ?? 0,
           blocksPerLine: 0,
           blocksPerColumn: 0,
           samples: new Uint8Array(0),
@@ -763,10 +864,59 @@ function readJpegFrameInfo(bytes) {
   }
 }
 
+// ../MODDING/modkit-core/packages/codec-kit/dist/raster/surfaces.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+function surfaceRegionReader(sizeOf, decode) {
+  let held;
+  return async (request, signal) => {
+    signal?.throwIfAborted();
+    const surface = Object.freeze({
+      frame: request.frame ?? 0,
+      mipLevel: request.mipLevel ?? 0,
+      layer: request.layer ?? 0,
+      face: request.face ?? 0,
+      slice: request.slice ?? 0
+    });
+    const { x, y, width, height, maxBytes } = request;
+    for (const value of [x, y, width, height, maxBytes, ...Object.values(surface)])
+      if (!Number.isSafeInteger(value) || value < 0)
+        throw new TypeError("raster region coordinates, surface and budget must be non-negative safe integers");
+    if (request.pixelFormat !== "rgba8")
+      throw new RangeError("raster surfaces read as rgba8");
+    const size = sizeOf(surface);
+    if (size === void 0)
+      throw new RangeError(`raster surface frame ${surface.frame}, mip ${surface.mipLevel}, layer ${surface.layer}, face ${surface.face}, slice ${surface.slice} is not present`);
+    if (x + width > size.width || y + height > size.height)
+      throw new RangeError("raster region is outside the surface");
+    if (width * height * 4 > maxBytes)
+      throw new RangeError("raster region exceeds maxBytes");
+    const key = Object.values(surface).join(":");
+    if (held?.key !== key) {
+      const pixels2 = await decode(surface, signal);
+      if (pixels2.length !== size.width * size.height * 4)
+        throw new TypeError(`decoded raster surface is ${pixels2.length} bytes, not ${size.width}\xD7${size.height} RGBA8`);
+      held = { key, pixels: pixels2 };
+    }
+    const pixels = new Uint8Array(width * height * 4);
+    for (let row = 0; row < height; row += 1) {
+      const start = ((y + row) * size.width + x) * 4;
+      pixels.set(held.pixels.subarray(start, start + width * 4), row * width * 4);
+    }
+    return Object.freeze({
+      width,
+      height,
+      rowStride: width * 4,
+      pixelFormat: "rgba8",
+      pixels
+    });
+  };
+}
+
 // ../MODDING/modkit-core/packages/codec-kit/dist/raster/embedded.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 function findEmbeddedImage(head, scanBytes = 1024) {
   const scan = Math.min(head.byteLength, scanBytes);
-  const u164 = (at2) => (head[at2] ?? 0) | (head[at2 + 1] ?? 0) << 8;
+  const u164 = (at3) => (head[at3] ?? 0) | (head[at3 + 1] ?? 0) << 8;
   for (let offset = 0; offset + 8 <= scan; offset += 1) {
     const magic = String.fromCharCode(...head.subarray(offset, offset + 4));
     if (magic === "DDS ")
@@ -782,6 +932,7 @@ function findEmbeddedImage(head, scanBytes = 1024) {
 }
 
 // ../MODDING/modkit-core/packages/codec-kit/dist/raster/tga.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var FOOTER = [
   84,
   82,
@@ -979,6 +1130,7 @@ function decodeTga(bytes, maxDecodedBytes = 64 * 1024 * 1024) {
 }
 
 // ../MODDING/modkit-core/packages/codec-kit/dist/raster/pcx.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var HEADER_BYTES = 128;
 function u163(bytes, offset) {
   if (offset < 0 || offset + 2 > bytes.byteLength)
@@ -1147,9 +1299,14 @@ export {
   greyDepthFor,
   greyGridToPng,
   greyGridFromPng,
+  resizeRgba,
+  combineNormalSpecular,
+  applyRoundedAlpha,
+  applyColorKeyTransparency,
   decodeBaselineJpegPlanes,
   decodeBaselineJpeg,
   readJpegFrameInfo,
+  surfaceRegionReader,
   findEmbeddedImage,
   plausibleTgaHeader,
   parseTga,

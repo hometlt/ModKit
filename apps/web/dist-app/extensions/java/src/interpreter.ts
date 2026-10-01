@@ -8,7 +8,9 @@
  * up to there, so a caller can use it and name what it skipped.
  *
  * Builder code such as a model definition (`CubeListBuilder.create().texOffs(0, 0).addBox(...)`)
- * is straight-line with constant arguments and reads back as a list of calls.
+ * is straight-line with constant arguments and reads back as a list of calls. Code that reads the
+ * model's state (`setupAnim`: fields, arrays of parts, static tables) folds when the caller answers
+ * those reads through `heap`.
  */
 
 import { ConstantPool, type ClassFile, type ClassMember } from './class-file.js'
@@ -58,6 +60,8 @@ export type JvmValue =
   | { readonly kind: 'operation'; readonly op: string; readonly operands: readonly JvmValue[] }
 
 export interface JvmCall {
+  /** Order among calls and stores, one counter for both: a store in an unrolled loop falls between its calls. */
+  readonly step: number
   readonly pc: number
   readonly invoke:
     'invokevirtual' | 'invokespecial' | 'invokestatic' | 'invokeinterface' | 'invokedynamic'
@@ -82,6 +86,8 @@ export interface JvmCall {
 }
 
 export interface JvmStore {
+  /** See {@link JvmCall.step}. */
+  readonly step: number
   readonly pc: number
   readonly target?: JvmValue
   readonly owner: string
@@ -105,11 +111,35 @@ export type InterpretResult =
       readonly stores: readonly JvmStore[]
     }
 
+export interface JvmField {
+  readonly owner: string
+  readonly name: string
+  readonly descriptor: string
+}
+
+/**
+ * The caller's answers for the memory a method reads. An answer replaces the symbolic value, so a
+ * constant folds branches and unrolls loops; `undefined` keeps the read symbolic (an array read
+ * then refuses, as without a heap). An object the caller hands out is `{ kind: 'object',
+ * className, id }` with its own ids, an array `{ kind: 'array', elementType, elements }` or
+ * answered through `arrayLength` and `arrayElement`. A static table a class fills in `<clinit>`
+ * is the value of that method's `putstatic` store, read with this interpreter.
+ */
+export interface JvmHeap {
+  getStatic?(field: JvmField): JvmValue | undefined
+  getField?(target: JvmValue, field: JvmField): JvmValue | undefined
+  arrayLength?(array: JvmValue): number | undefined
+  arrayElement?(array: JvmValue, index: number): JvmValue | undefined
+}
+
 export interface InterpretOptions {
   /** Values for the parameters (`this` first for an instance method); the rest stay symbolic. */
   readonly args?: readonly (JvmValue | undefined)[]
   /** Instructions walked at most, loops unrolled included. Default 100 000. */
   readonly maxInstructions?: number
+  readonly heap?: JvmHeap
+  /** The id of the first object `new` makes here, above the ids of the caller's objects. Default 0. */
+  readonly firstObjectId?: number
 }
 
 class Refusal extends Error {
@@ -374,8 +404,12 @@ function branchTaken(name: string, operands: readonly JvmValue[]): boolean | und
   }
   if (name === 'if_acmpeq' || name === 'if_acmpne') {
     if (a === undefined || b === undefined) return undefined
-    // the same tracked object, or two nulls, are equal; two different new objects are not
-    const same = a === b || (a.kind === 'null' && b.kind === 'null')
+    // the same tracked object (by id: the caller's heap may answer one object twice), or two
+    // nulls, are equal; two different objects are not
+    const same =
+      a === b ||
+      (a.kind === 'null' && b.kind === 'null') ||
+      (a.kind === 'object' && b.kind === 'object' && a.id === b.id)
     const different =
       !same &&
       (a.kind === 'object' || a.kind === 'array' || a.kind === 'null') &&
@@ -425,7 +459,9 @@ export function interpretMethod(
   const instructions = decodeInstructions(code.code)
   const byPc = new Map(instructions.map((item, index) => [item.pc, index]))
   const stack: JvmValue[] = []
-  let objects = 0
+  let objects = options.firstObjectId ?? 0
+  let step = 0
+  const heap = options.heap
   let instruction: Instruction | undefined
   const pc = () => instruction?.pc ?? 0
   const pop = (): JvmValue => {
@@ -567,13 +603,19 @@ export function interpretMethod(
         })
       } else if (name === 'arraylength') {
         const array = pop()
-        if (array.kind !== 'array') throw new Refusal(pc(), 'arraylength of an unknown array')
-        push({ kind: 'int', value: array.elements.length })
+        const length = array.kind === 'array' ? array.elements.length : heap?.arrayLength?.(array)
+        if (length === undefined || !Number.isSafeInteger(length) || length < 0)
+          throw new Refusal(pc(), 'arraylength of an unknown array')
+        push({ kind: 'int', value: length })
       } else if (/^[ilfdabcs]aload$/u.test(name)) {
         const at = pop()
         const array = pop()
         const element =
-          array.kind === 'array' && at.kind === 'int' ? array.elements[at.value] : undefined
+          at.kind !== 'int'
+            ? undefined
+            : array.kind === 'array'
+              ? array.elements[at.value]
+              : heap?.arrayElement?.(array, at.value)
         if (element === undefined)
           throw new Refusal(pc(), 'an array load is not of a known element at a constant index')
         push(element)
@@ -593,15 +635,32 @@ export function interpretMethod(
         // the value is unchanged; the cast only narrows its static type
       } else if (name === 'getstatic') {
         const { owner, name: field, descriptor } = pool.member(operand)
-        push({ kind: 'static', owner, name: field, descriptor })
+        push(
+          heap?.getStatic?.({ owner, name: field, descriptor }) ?? {
+            kind: 'static',
+            owner,
+            name: field,
+            descriptor,
+          },
+        )
       } else if (name === 'getfield') {
         const { owner, name: field, descriptor } = pool.member(operand)
-        push({ kind: 'field', target: pop(), owner, name: field, descriptor })
+        const target = pop()
+        push(
+          heap?.getField?.(target, { owner, name: field, descriptor }) ?? {
+            kind: 'field',
+            target,
+            owner,
+            name: field,
+            descriptor,
+          },
+        )
       } else if (name === 'putstatic' || name === 'putfield') {
         const { owner, name: field } = pool.member(operand)
         const value = pop()
         const target = name === 'putfield' ? pop() : undefined
         stores.push({
+          step: step++,
           pc: pc(),
           ...(target === undefined ? {} : { target }),
           owner,
@@ -644,6 +703,7 @@ export function interpretMethod(
         const receiver = invoke === 'invokestatic' || invoke === 'invokedynamic' ? undefined : pop()
         const at = calls.length
         calls.push({
+          step: step++,
           pc: pc(),
           invoke,
           owner,

@@ -18,8 +18,9 @@ import {
   parsePcx,
   parseTga,
   plausibleTgaHeader,
-  readJpegFrameInfo
-} from "../../../chunks/chunk-4FPUQ2AH.js";
+  readJpegFrameInfo,
+  surfaceRegionReader
+} from "../../../chunks/chunk-3TXS6OSI.js";
 import {
   applyColorKeyTransparency,
   applyRoundedAlpha,
@@ -53,5 +54,6 @@ export {
   parseTga,
   plausibleTgaHeader,
   readJpegFrameInfo,
-  resizeRgba
+  resizeRgba,
+  surfaceRegionReader
 };

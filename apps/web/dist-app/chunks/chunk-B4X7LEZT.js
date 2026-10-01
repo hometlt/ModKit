@@ -1,12 +1,12 @@
 import {
   createVideoViewer
-} from "./chunk-D64GDMDV.js";
+} from "./chunk-7JPCIVZ4.js";
 import {
   createAudioViewer
-} from "./chunk-ZZ7LYVEP.js";
+} from "./chunk-Z5XHOTCN.js";
 import {
   createRelationGraphViewer
-} from "./chunk-C7XUNIMS.js";
+} from "./chunk-V76DKQLW.js";
 import {
   DEFAULT_MODEL_ANIMATION_BUDGET,
   DEFAULT_MODEL_SKELETON_BUDGET,
@@ -24,24 +24,24 @@ import {
   snapshotJson,
   snapshotModelAnimations,
   snapshotModelSkeleton
-} from "./chunk-NVE5X4IG.js";
+} from "./chunk-4WFNAHF6.js";
 import {
   metadataFieldProjections
 } from "./chunk-64G7DVXS.js";
 import {
   applyColorKeyTransparency
-} from "./chunk-MVL6AV2G.js";
+} from "./chunk-T4WDAZUT.js";
 import {
   createImageViewer,
   createNamespaceViewer,
   invokeRefusalMessage
-} from "./chunk-6RNPYSWW.js";
+} from "./chunk-KFLOH6HO.js";
 import {
   compileMatcher,
   compilePattern,
   createMediaShell,
   textMatches
-} from "./chunk-V22C5AWV.js";
+} from "./chunk-K243RDSA.js";
 import {
   CALCULATIONS_FALLBACK_MESSAGES,
   CARD_FALLBACK_MESSAGES,
@@ -84,7 +84,7 @@ import {
   setViewerText,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-A5JQ45D3.js";
+} from "./chunk-JJCRWSLE.js";
 import {
   A1_SPEC_SCHEMA_ENTRIES,
   AUXILIARY_DATA_SOURCE_SURFACES,
@@ -39968,9 +39968,9 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: "sha256:1ffa690b364fea6d767fca183d8b87aa32166fa82ff2973560b81abe8adfb1d8",
+        artifactDigest: "sha256:68b6d3b1f4d1a0fb002d1a42aea6e2bea5b0e4faca70aa04b883e0a851d6defb",
         fileDigests: {
-          "README.md": "sha256:eebf23501ef4156fbcefeb5b0bbacc7c5eabe56b10538c262dae1bec206acadf",
+          "README.md": "sha256:dc21108b37dc3a12e6621c2a3a7ac470eae82047f2be78a687358ccbd94b92d1",
           "contributions/codec-java-class.json": "sha256:abeaf9e56aa1a4a1fd91d10fe7cb98bdebb953b0796dadccd97bbf870fca3647",
           "dist/bytecode.d.ts": "sha256:f9c542f6a73b6586fffb2177172bf24ca63abc22d464d45f2680b629ef468dc6",
           "dist/bytecode.d.ts.map": "sha256:f8c2f7f5bd9a4c2b95806f3d77d15fc2e6d984c010abf8b9e56b22479c0f8a5c",
@@ -39988,22 +39988,25 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
           "dist/index.d.ts.map": "sha256:4e48b0ab1fc7e712837c5ec80354dc9113b1a53cbb329c958c8eba6eb3b1ccb0",
           "dist/index.js": "sha256:0028b845707c649e1b5b9e91d79c1e2fea4429e4b41db0b261b42061ef06561f",
           "dist/index.js.map": "sha256:4618118effa3f9dd6de4e26d5e3b13e083f0f445c3923245dea21a4d076cac58",
-          "dist/interpreter.d.ts": "sha256:153bafcafc7e40fd9b8a6b71c3244a8afd1de509e8d08bd2ee7998c8f1c04b57",
-          "dist/interpreter.d.ts.map": "sha256:0b9e344a2dd3f66237fefcd3d1c4a47bc5d15e1154227c3aca49b3700ed90d1f",
-          "dist/interpreter.js": "sha256:b2fd7dfc5b52110007b16ddf1f74f4e05c15a154860a1eb228d7e3e3ff013efe",
-          "dist/interpreter.js.map": "sha256:de28bd531344cba78ffb376eb489b623802c0a770676ea34767abb9229e579d9",
+          "dist/interpreter.d.ts": "sha256:436fca33a83a914317719a27d51fb5640e30f531a906e7f1c50bf4b5e8bf5d8a",
+          "dist/interpreter.d.ts.map": "sha256:53bbd3e5ecbe9909783ce15a186c47901668ceedeacf8ee1d9c51503808c8daa",
+          "dist/interpreter.js": "sha256:9c60f9b6c8df7768f6f8512c98da02f8053ae607905e87c259eda94e2ccb7a3b",
+          "dist/interpreter.js.map": "sha256:2c4f8209bae5676ee2f91ddd121c4fa89b3e4502e4f3ef184be713a50576e3f1",
           "package.json": "sha256:bbc40fcdf10b49710604f8019903157f4d221e58aaef96b298b5dc6f8118a952",
           "src/bytecode.ts": "sha256:c9beb7f1f6c92ad84b0fe6b842eef99be908f798db6b8bbca008d828893a31cd",
           "src/class-file.ts": "sha256:08bab8bce935fb8a57134a87fbdc1920f718ecce267710ca6ed1fd297433f891",
           "src/codec.ts": "sha256:0b11ebffa5132857c86d14d2426de9f4f754109ab1759b769663cec0fbfff97e",
           "src/index.ts": "sha256:2542de1574c447ff09f0f2bd0edc5ab9d6073956f475aa2e7fbb6930994a996a",
-          "src/interpreter.ts": "sha256:e3445639ed13c26463449422801e05ab1c8cbfde3ca5d1e8a84bdd0d71c51d38",
+          "src/interpreter.ts": "sha256:76da936479aad43a8d7213761202f82892bedc337e9d3271a3473089bbcd5f75",
           "test/class-file.test.ts": "sha256:0b636ff59b13a75414a9fe072d3616e1ab06b7d312caa89b68533bfdfc5c2888",
+          "test/fixtures/Heap.class": "sha256:8c6d93052e3fcfade678ed5b8c1b76fea8c655cee5efce08185d6cfd9beb8614",
+          "test/fixtures/Heap.java": "sha256:3bfefaca93328cebb9914635fedfaf29eb37a2d791473588ebedc43ea1d7a501",
           "test/fixtures/Sample.class": "sha256:0e6bca2c5fc36451a73e353e247779f252db8a62a200cdc24752d938491bd900",
           "test/fixtures/Sample.java": "sha256:a232f456df6e55858e48d1b2bdc1727ee96b55013e147c5a14d544fa80f813be",
+          "test/interpreter-heap.test.ts": "sha256:5989a2ffaa07a6b17dd695146b7a5e88db7bdd543f13619e86db1f9b11884681",
           "tsconfig.json": "sha256:daba80f2abbe46449d7ffad22c2029633475f729b9380cc79daeb850c2223492"
         },
-        inventoryRecordId: "artifact:sha256:1ffa690b364fea6d767fca183d8b87aa32166fa82ff2973560b81abe8adfb1d8"
+        inventoryRecordId: "artifact:sha256:68b6d3b1f4d1a0fb002d1a42aea6e2bea5b0e4faca70aa04b883e0a851d6defb"
       },
       artifactRoot: "extensions/java/",
       containers: {
@@ -40197,8 +40200,11 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
         "src/index.ts",
         "src/interpreter.ts",
         "test/class-file.test.ts",
+        "test/fixtures/Heap.class",
+        "test/fixtures/Heap.java",
         "test/fixtures/Sample.class",
         "test/fixtures/Sample.java",
+        "test/interpreter-heap.test.ts",
         "tsconfig.json"
       ],
       name: "java",
@@ -68012,13 +68018,13 @@ var PREVIEW_STAGES = [
 async function defaultPreviewStage(kind, localizer) {
   switch (kind) {
     case "model":
-      return (await import("./model-VTPBOQYD.js")).createModelViewer({ localizer });
+      return (await import("./model-JIUFN6ML.js")).createModelViewer({ localizer });
     case "image":
-      return (await import("./image-RCZAWK42.js")).createImageViewer({ localizer });
+      return (await import("./image-BCR2UAGX.js")).createImageViewer({ localizer });
     case "video":
-      return (await import("./video-FQIGI7YK.js")).createVideoViewer({ localizer });
+      return (await import("./video-UCB4DFMR.js")).createVideoViewer({ localizer });
     case "audio":
-      return (await import("./audio-47SJ3PSF.js")).createAudioViewer({ localizer });
+      return (await import("./audio-H3QV2ZNQ.js")).createAudioViewer({ localizer });
   }
 }
 function embedPreview(sections, args, scope, localizer, previews) {
@@ -68057,7 +68063,7 @@ function embedRelationGraph(sections, args, scope, localizer, graph) {
   return [
     ...sections,
     stageSection({ id: "relations-graph", title: localizer.text("card.relationGraph"), expanded: false }, scope, localizer, "card.relationGraphUnavailable", async (host) => {
-      const module = graph ?? (await import("./graph-RGAAJUXW.js")).createRelationGraphViewer({ localizer });
+      const module = graph ?? (await import("./graph-5H5RAQKL.js")).createRelationGraphViewer({ localizer });
       return scope.signal.aborted ? void 0 : module.mount({ ...args, container: host, signal: scope.signal });
     })
   ];
@@ -70311,6 +70317,8 @@ function createPlaybackViewer(options = {}) {
       let descriptor = args.descriptor;
       const root = createSurface(args.container, localizer.text("viewer.playback"));
       const stage = element(root, "div", { part: "playback" });
+      const title = element(stage, "h2", { part: "playback.title" });
+      title.hidden = true;
       const bar = element(stage, "div", { part: "playback.bar" });
       const play = element(bar, "button", { part: "transport.button" });
       play.type = "button";
@@ -70420,6 +70428,8 @@ function createPlaybackViewer(options = {}) {
       };
       const renderTimeline = (value2) => {
         timeline = value2;
+        title.hidden = value2.label === void 0;
+        setViewerText(title, value2.label ?? "");
         colors.clear();
         participantList.replaceChildren();
         for (const participant of value2.participants) {

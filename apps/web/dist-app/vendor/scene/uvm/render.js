@@ -63,7 +63,7 @@ import {
 } from "../../../chunks/chunk-4A3BDPFP.js";
 import {
   encodePng
-} from "../../../chunks/chunk-4FPUQ2AH.js";
+} from "../../../chunks/chunk-3TXS6OSI.js";
 import {
   applyColorKeyTransparency
 } from "../../../chunks/chunk-COUIZZOL.js";
@@ -21084,7 +21084,10 @@ async function acquireUvmMaterialTextures(resources, port, maxBytes, diagnostics
 }
 
 // ../MODDING/modkit-core/packages/scene/dist/uvm/render.js
-async function prepareUvmRender(bytes, value, options, depth = 0) {
+function prepareUvmRender(bytes, value, options) {
+  return prepareNestedUvmRender(bytes, value, options, 0);
+}
+async function prepareNestedUvmRender(bytes, value, options, depth) {
   const { budget, signal, rasterResources } = options;
   signal?.throwIfAborted();
   for (const limit of [
@@ -21612,9 +21615,9 @@ async function prepareUvmRender(bytes, value, options, depth = 0) {
       swapYZ: false,
       transform: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
     }
-  ], request, options, depth, nestedBudget, prepareUvmRender, { id: "model-state", label: "Model states", prefix: "model-state" });
+  ], request, options, depth, nestedBudget, prepareNestedUvmRender, { id: "model-state", label: "Model states", prefix: "model-state" });
   const stateApplied = modelStateNested.composedInstances > 0;
-  const nested = await composeModelParticles(stateApplied ? [] : modelParticles, request, options, depth, nestedBudget, prepareUvmRender);
+  const nested = await composeModelParticles(stateApplied ? [] : modelParticles, request, options, depth, nestedBudget, prepareNestedUvmRender);
   if (diagnostics.length + modelStateNested.diagnostics.length + nested.diagnostics.length > budget.maxDiagnostics)
     throw new RangeError("UVM render diagnostics exceed maxDiagnostics");
   const basePrimitives = stateApplied ? modelStateNested.primitives : request.scene.primitives;
@@ -21683,6 +21686,7 @@ function documentTextureIndex(id) {
   return match === null ? void 0 : Number(match[1]);
 }
 export {
+  prepareUvmRender,
   renderUvm,
   renderUvmPng
 };

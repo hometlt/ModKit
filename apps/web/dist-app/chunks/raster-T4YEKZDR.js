@@ -22,8 +22,9 @@ import {
   parseTga,
   plausibleTgaHeader,
   readJpegFrameInfo,
-  resizeRgba
-} from "./chunk-MVL6AV2G.js";
+  resizeRgba,
+  surfaceRegionReader
+} from "./chunk-T4WDAZUT.js";
 import "./chunk-Q27WXNQ4.js";
 import "./chunk-QQJVD7VT.js";
 import "./chunk-BLWUC7LO.js";
@@ -51,5 +52,6 @@ export {
   parseTga,
   plausibleTgaHeader,
   readJpegFrameInfo,
-  resizeRgba
+  resizeRgba,
+  surfaceRegionReader
 };
