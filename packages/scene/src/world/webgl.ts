@@ -13,6 +13,7 @@ import type {
   WorldShadowRange,
   WorldHeightFog,
 } from '@modkit/sdk/maps'
+import { transformTerrainUv, type MapTerrainUvTransform } from '@modkit/sdk/maps'
 import type {
   ModelMaterialRef,
   SceneRendererMaterial,
@@ -1581,22 +1582,12 @@ function normalSwizzleOf(encoding: MapTerrainMaterialDefinition['normalEncoding'
   return encoding === 'xy-in-alpha-green' ? 1 : encoding === 'rgb-inverted-y' ? 2 : 0
 }
 
+/** The sdk's centre rule (MapTerrainUvTransform); no transform leaves the coordinate as it is. */
 function transformedTerrainUv(
   uv: readonly [number, number],
-  transform:
-    | Readonly<{
-        readonly offset: readonly [number, number]
-        readonly scale: readonly [number, number]
-        readonly rotation: number
-      }>
-    | undefined,
+  transform: MapTerrainUvTransform | undefined,
 ): readonly [number, number] {
-  if (transform === undefined) return uv
-  const x = uv[0] * transform.scale[0]
-  const y = uv[1] * transform.scale[1]
-  const cosine = Math.cos(transform.rotation)
-  const sine = Math.sin(transform.rotation)
-  return [transform.offset[0] + x * cosine - y * sine, transform.offset[1] + x * sine + y * cosine]
+  return transform === undefined ? uv : transformTerrainUv(uv, transform)
 }
 
 /**
@@ -2834,10 +2825,10 @@ function fitWorldTerrainTiling(
   if (!Number.isFinite(ax) || !Number.isFinite(ay) || ax === 0 || ay === 0) return undefined
   const bx = start[0] - ax * origin.x,
     by = start[1] - ay * origin.y
+  // Unrotated, the centre rule is terrain u = o0 + s0 * cell x with o0 its value at cell 0, the
+  // shader's u = X * t0 + t2; terrain v = o1 + s1 * cell y, the shader's v = 1 - (Y * t1 + t3).
   const [s0, s1] = transform.scale,
-    [o0, o1] = transform.offset
-  // Terrain u = o0 + s0 * cell x, the shader's u = X * t0 + t2; terrain v = o1 + s1 * cell y, the
-  // shader's v = 1 - (Y * t1 + t3).
+    [o0, o1] = transformTerrainUv([0, 0], transform)
   const tiling = [s0 / ax, -s1 / ay, o0 - (s0 * bx) / ax, 1 - o1 + (s1 * by) / ay] as const
   return tiling.every(Number.isFinite) ? Object.freeze(tiling) : undefined
 }

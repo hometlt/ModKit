@@ -183,13 +183,13 @@ describe('world terrain overlays', () => {
     assert.equal(decal.texture.id, 'tile-07.png')
     assert.equal(plan.stats.terrainDecalTriangles, 2)
     assert.deepEqual(Array.from(decal.positions), Array.from(plan.splatTriangles[0].positions))
-    // Turned a quarter: in-cell (u, v) reads the tile at (v, -u).
+    // Turned a quarter about the tile's centre: in-cell (u, v) reads the tile at (v, 1 - u).
     for (let vertex = 0; vertex < 6; vertex += 1) {
       const x = decal.positions[vertex * 3]
       const z = decal.positions[vertex * 3 + 2]
       const u = decal.textureCoordinates[vertex * 2]
       const v = decal.textureCoordinates[vertex * 2 + 1]
-      assert.ok(Math.abs(u - z) < 1e-9 && Math.abs(v + x) < 1e-9, `vertex ${vertex}: ${u}, ${v}`)
+      assert.ok(Math.abs(u - z) < 1e-9 && Math.abs(v - (1 - x)) < 1e-9, `vertex ${vertex}: ${u}, ${v}`)
     }
     // Without its texture the decal is left out, not drawn opaque.
     const unresolved = createWorldWebGlPlan({

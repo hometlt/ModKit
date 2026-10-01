@@ -714,6 +714,55 @@ export interface MapTerrainSummary {
   readonly samples: readonly MapTerrainSample[]
 }
 
+/**
+ * A terrain texture coordinate transform, the rule of SPEC_UVW_PROFILE (owner decision 48):
+ * `uv' = c + R·S·(uv − c) + offset` with `c = (0.5, 0.5)`, `S = diag(scale)` and `R` the rotation by
+ * `rotation` radians, turning the u axis toward v. Pivoting on the centre turns or flips a tile in
+ * place. `transformTerrainUv` applies it; a publisher holding a transform written about the UV origin
+ * converts it with `terrainUvTransformFromOrigin`.
+ */
+export type MapTerrainUvTransform = Readonly<{
+  readonly offset: readonly [number, number]
+  readonly scale: readonly [number, number]
+  readonly rotation: number
+}>
+
+/** `transform` applied to `uv` by the centre rule of `MapTerrainUvTransform`. */
+export function transformTerrainUv(
+  uv: readonly [number, number],
+  transform: MapTerrainUvTransform,
+): readonly [number, number] {
+  const x = (uv[0] - 0.5) * transform.scale[0]
+  const y = (uv[1] - 0.5) * transform.scale[1]
+  const cosine = Math.cos(transform.rotation)
+  const sine = Math.sin(transform.rotation)
+  return [
+    0.5 + x * cosine - y * sine + transform.offset[0],
+    0.5 + x * sine + y * cosine + transform.offset[1],
+  ]
+}
+
+/**
+ * The centre-rule transform of a mapping written about the UV origin, `uv' = R·S·uv + offset`
+ * (scale, then rotation, then offset): the same `scale` and `rotation`, `offset − c + R·S·c`.
+ */
+export function terrainUvTransformFromOrigin(
+  transform: MapTerrainUvTransform,
+): MapTerrainUvTransform {
+  const x = 0.5 * transform.scale[0]
+  const y = 0.5 * transform.scale[1]
+  const cosine = Math.cos(transform.rotation)
+  const sine = Math.sin(transform.rotation)
+  return Object.freeze({
+    offset: Object.freeze([
+      transform.offset[0] - 0.5 + x * cosine - y * sine,
+      transform.offset[1] - 0.5 + x * sine + y * cosine,
+    ] as const),
+    scale: Object.freeze([transform.scale[0], transform.scale[1]] as const),
+    rotation: transform.rotation,
+  })
+}
+
 /** Dominant authored terrain material at one terrain cell. */
 export interface MapTerrainMaterialSample {
   readonly x: number
@@ -722,12 +771,11 @@ export interface MapTerrainMaterialSample {
   readonly textureName?: string
   /** Exact normalized blend weights when the publisher exposes the authored splat data. */
   readonly weights?: readonly Readonly<{ readonly materialId: string; readonly weight: number }>[]
-  /** Per-sample UV orientation/tiling; needed for formats with rotated or flipped terrain tiles. */
-  readonly uvTransform?: Readonly<{
-    readonly offset: readonly [number, number]
-    readonly scale: readonly [number, number]
-    readonly rotation: number
-  }>
+  /**
+   * Per-sample UV orientation/tiling, in the cell's own 0..1 coordinates (centre rule of
+   * `MapTerrainUvTransform`); needed for formats with rotated or flipped terrain tiles.
+   */
+  readonly uvTransform?: MapTerrainUvTransform
   /**
    * A tile drawn over this cell's blended ground with its base colour's alpha (Warzone 2100 decal
    * tiles): the material's texture over the cell, oriented by `uvTransform` as a tile is. Presentation
@@ -735,11 +783,7 @@ export interface MapTerrainMaterialSample {
    */
   readonly decal?: Readonly<{
     readonly materialId: string
-    readonly uvTransform?: Readonly<{
-      readonly offset: readonly [number, number]
-      readonly scale: readonly [number, number]
-      readonly rotation: number
-    }>
+    readonly uvTransform?: MapTerrainUvTransform
   }>
   /**
    * Tiles of atlas materials drawn over this cell, bottom first (Warcraft III tilesets): the first
@@ -793,11 +837,11 @@ export interface MapTerrainMaterialDefinition {
    * are the lighting's `terrain` settings.
    */
   readonly specularEncoding?: 'color' | 'gloss'
-  readonly uvTransform?: Readonly<{
-    readonly offset: readonly [number, number]
-    readonly scale: readonly [number, number]
-    readonly rotation: number
-  }>
+  /**
+   * World tiling of the material's textures, in continuous terrain cell coordinates (cell x and y),
+   * by the centre rule of `MapTerrainUvTransform`; a cell's own transform applies first.
+   */
+  readonly uvTransform?: MapTerrainUvTransform
 }
 
 /**

@@ -24,8 +24,9 @@ const grid = (place = (x, y) => ({ x, y: 0, z: -y })) =>
       uvwPosition: place(x, y),
     }
   })
-// Tokyo_Rooftops' ground: 24 repeats over 256 cells, v flipped (SC2 `<heightMap uvtiling>`).
-const sc2Ground = { offset: [0, 1], scale: [24 / 256, -24 / 256], rotation: 0 }
+// Tokyo_Rooftops' ground: 24 repeats over 256 cells, v flipped (SC2 `<heightMap uvtiling>`):
+// u = s·x and v = 1 − s·y, written by the centre rule (offset = (0, 1) − c + S·c).
+const sc2Ground = { offset: [-0.453125, 0.453125], scale: [24 / 256, -24 / 256], rotation: 0 }
 const materials = (...transforms) =>
   transforms.map((uvTransform, index) => ({
     materialId: `m${index}`,

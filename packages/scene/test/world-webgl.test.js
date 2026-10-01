@@ -1229,9 +1229,10 @@ describe('common world WebGL plan', () => {
     assert.equal(plan.stats.terrainTexturedTriangles, 2)
     assert.equal(plan.opaqueTriangles.positions.length, 0)
     assert.equal(plan.texturedTriangles.length, 1)
+    // The flip turns the tile over on its own cell (centre rule): u' = 1 - u.
     assert.deepEqual(
       Array.from(plan.texturedTriangles[0].textureCoordinates),
-      [0, 0, -1, 0, -1, 1, 0, 0, -1, 1, 0, 1],
+      [1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 1],
     )
     assert.deepEqual(Array.from(plan.texturedTriangles[0].texture.rgba), [12, 80, 28, 255])
     assert.deepEqual(Array.from(plan.texturedTriangles[0].normalTexture.rgba), [128, 128, 255, 255])
