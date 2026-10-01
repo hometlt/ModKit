@@ -917,6 +917,13 @@
       "state": "observed-only"
     },
     {
+      "factId": "x3:vscode-configuration-property:modkit.askExportLocation",
+      "kind": "vscode-configuration-property",
+      "key": "modkit.askExportLocation",
+      "workflowId": "vscode/manifest-settings",
+      "state": "observed-only"
+    },
+    {
       "factId": "x3:vscode-configuration-property:modkit.baseMods",
       "kind": "vscode-configuration-property",
       "key": "modkit.baseMods",
@@ -1081,6 +1088,20 @@
       "factId": "x3:vscode-custom-editor:modkit.mapLayersViewer",
       "kind": "vscode-custom-editor",
       "key": "modkit.mapLayersViewer",
+      "workflowId": "vscode/asset-inspect-preview-convert",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-custom-editor:modkit.modelViewer",
+      "kind": "vscode-custom-editor",
+      "key": "modkit.modelViewer",
+      "workflowId": "vscode/asset-inspect-preview-convert",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-custom-editor:modkit.playbackViewer",
+      "kind": "vscode-custom-editor",
+      "key": "modkit.playbackViewer",
       "workflowId": "vscode/asset-inspect-preview-convert",
       "state": "observed-only"
     },

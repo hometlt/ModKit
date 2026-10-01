@@ -4,8 +4,8 @@
   "generator": "scripts/migration/emit-vscode-workflow-ledger.mjs",
   "inputs": {
     "sourceInventorySha256": "0447c03c102be0f4b098cfa175a3706fee51c757216f1a42314e7ca7aefeb3bb",
-    "decisionsSha256": "d4ba47044e32ba32bebaa950daf0c9cb68b140b70d08e0c858f56b23fd38895c",
-    "vscodeManifestSha256": "3f01080684c84c8b489b206267e901824d1477da00650ed9fd81f5cd406567c5",
+    "decisionsSha256": "7cf7104b55372f12242f2b967a0a4ae130df935f506e63948705dcb04b0fb864",
+    "vscodeManifestSha256": "950ac89a08b08afb1b22deb37543855c359d4df2138c563cae062c5d239b2ace",
     "vscodeExtensionSourceSha256": "59bba76778901d83cc640f7073bffdb2f6d9190824d93702218ddd22d923393b",
     "vscodeCatalogSha256": "d92ddfee3a16240235c6ce8c2f338eb5fa23e390a8ed13e8877dc9bebfaa3832",
     "vscodePublicationInventorySha256": "91d22805850cbac55ce8df3fbd4a2d195ccb58af14908f5bcfa9b6684f7463a7",
@@ -30,14 +30,14 @@
     "byDisposition": { "already-equivalent": 104, "release-candidate": 36, "post-release": 126 },
     "decisionRequired": 0,
     "releaseCandidateGaps": 5,
-    "currentX3ObservedFacts": 237
+    "currentX3ObservedFacts": 240
   },
   "surfaceComparison": {
     "legacyVsCode": { "commands": 64, "customEditors": 11, "languages": 8, "views": 6 },
     "currentX3VsCode": {
       "commands": 79,
-      "configurationProperties": 19,
-      "customEditors": 6,
+      "configurationProperties": 20,
+      "customEditors": 8,
       "fileSystemSchemes": 2,
       "keybindings": 0,
       "languages": 20,
@@ -916,6 +916,15 @@
       "state": "observed-only"
     },
     {
+      "factId": "x3:vscode-configuration-property:modkit.askExportLocation",
+      "sourceFactSha256": "dbb641448c65206b0aba192b244bd01a641d311b37307e2747d312227ea5fee0",
+      "kind": "vscode-configuration-property",
+      "key": "modkit.askExportLocation",
+      "source": "contributes.configuration.modkit.askExportLocation",
+      "workflowId": "vscode/manifest-settings",
+      "state": "observed-only"
+    },
+    {
       "factId": "x3:vscode-configuration-property:modkit.baseMods",
       "sourceFactSha256": "9317baacc7d21affb4a199d4e2a052c7a11acced738f6500ff1ddd32707fc742",
       "kind": "vscode-configuration-property",
@@ -1132,29 +1141,47 @@
       "state": "observed-only"
     },
     {
-      "factId": "x3:vscode-custom-editor:modkit.worldViewer",
-      "sourceFactSha256": "a3a54401f403a3729b8b821a8277950f9fa29cb960e875ba8e83efe67d3a1ee9",
+      "factId": "x3:vscode-custom-editor:modkit.modelViewer",
+      "sourceFactSha256": "dc6c788ce83e6183a0d22719b5d6be7c8ac28fc0733008c968a53bd5f8bc11c5",
       "kind": "vscode-custom-editor",
-      "key": "modkit.worldViewer",
+      "key": "modkit.modelViewer",
       "source": "contributes.customEditors[5]",
       "workflowId": "vscode/asset-inspect-preview-convert",
       "state": "observed-only"
     },
     {
+      "factId": "x3:vscode-custom-editor:modkit.playbackViewer",
+      "sourceFactSha256": "2f0946a91c974adb6d4d92fa3e59abcfeda48d5c15d7ffd4eef22bc96838b479",
+      "kind": "vscode-custom-editor",
+      "key": "modkit.playbackViewer",
+      "source": "contributes.customEditors[6]",
+      "workflowId": "vscode/asset-inspect-preview-convert",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-custom-editor:modkit.worldViewer",
+      "sourceFactSha256": "849b156981aa58ebbf6c4494f66cbd8f183de4d21cecdb9e7b2a9a01be858698",
+      "kind": "vscode-custom-editor",
+      "key": "modkit.worldViewer",
+      "source": "contributes.customEditors[7]",
+      "workflowId": "vscode/asset-inspect-preview-convert",
+      "state": "observed-only"
+    },
+    {
       "factId": "x3:vscode-filesystem-scheme:modkit-container",
-      "sourceFactSha256": "4502733eae7c0a7cb32d7fc6fb2ae54c51d1fcda120e2d989021d56ee49a0f00",
+      "sourceFactSha256": "d396d9a9f2b4028ac75f3c1662eb271c057bff6f12dc951cf338878abf67986e",
       "kind": "vscode-filesystem-scheme",
       "key": "modkit-container",
-      "source": "activationEvents[89]",
+      "source": "activationEvents[91]",
       "workflowId": "vscode/manifest-settings",
       "state": "observed-only"
     },
     {
       "factId": "x3:vscode-filesystem-scheme:modkit-source",
-      "sourceFactSha256": "8649876c20cccc96ba33b6dfcbb04a1a2bf7170c0c6a0cb11a38c2426a44c9a2",
+      "sourceFactSha256": "8992b79755d59b9bfb72b701bb6275a220addd1cb213012c74ccc9eee9b8d811",
       "kind": "vscode-filesystem-scheme",
       "key": "modkit-source",
-      "source": "activationEvents[90]",
+      "source": "activationEvents[92]",
       "workflowId": "vscode/manifest-settings",
       "state": "observed-only"
     },
