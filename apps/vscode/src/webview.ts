@@ -22,6 +22,7 @@ import {
   type FileAccess,
   type PreviewResolver,
 } from '@modkit/ui/explorer'
+import { EDITOR_EDITED_EVENT, requestEditorHistory } from '@modkit/ui/editor'
 import { createWorkbench } from '@modkit/ui/workbench'
 import { resolveModelViewerTextures } from '@modkit/ui/model'
 import { templateImagesFromRaster } from '@modkit/ui/template'
@@ -1103,8 +1104,11 @@ async function mount(
       if (pixelEditing?.dirty !== true) return null
       return base64Of(await pixelEditing.encode())
     }
-    if (request.op === 'document-undo') return pixelEditing?.undo() ?? false
-    if (request.op === 'document-redo') return pixelEditing?.redo() ?? false
+    // The mounted editor's own history first (the hex editor), then the painted pixels.
+    if (request.op === 'document-undo')
+      return requestEditorHistory(document, 'undo') ?? pixelEditing?.undo() ?? false
+    if (request.op === 'document-redo')
+      return requestEditorHistory(document, 'redo') ?? pixelEditing?.redo() ?? false
     if (request.op === 'document-save') {
       // Painted pixels are saved by the view that holds them, through its codec operation.
       if (pixelEditing?.dirty === true) {
@@ -1171,6 +1175,12 @@ async function mount(
       throw new Error(`subject navigation rejected ${target}: ${result.reason}`)
     }
   }
+
+  // An editor's undoable change is a step on VS Code's undo stack, as a painted pixel is.
+  document.addEventListener(EDITOR_EDITED_EVENT, () => {
+    if (snapshot.openPath !== undefined)
+      bridge.emit({ op: 'document-edited', path: snapshot.openPath })
+  })
 
   /*
    * V flips a recording between its 2D player and its 3D world, as MK2's player did: both views

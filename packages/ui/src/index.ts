@@ -121,9 +121,15 @@ export {
   textEditor,
   createTextEditorModule,
   defineEditorModule,
+  announceEditorEdit,
+  EDITOR_EDITED_EVENT,
+  EDITOR_HISTORY_REQUEST,
   EDITOR_SAVE_REQUEST,
+  handleEditorHistoryRequest,
   handleEditorSaveRequest,
+  requestEditorHistory,
   requestEditorSave,
+  type EditorHistoryRequestDetail,
   type EditorSaveRequestDetail,
 } from './editor/index.js'
 export { hexEditor, createHexEditor, type HexEditorOptions } from './hex-editor/index.js'

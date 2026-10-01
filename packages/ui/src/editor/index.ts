@@ -267,9 +267,15 @@ export function createTextEditorModule(options: TextEditorModuleOptions = {}): E
 export const textEditor = createTextEditorModule()
 
 export {
+  announceEditorEdit,
+  EDITOR_EDITED_EVENT,
+  EDITOR_HISTORY_REQUEST,
   EDITOR_SAVE_REQUEST,
+  handleEditorHistoryRequest,
   handleEditorSaveRequest,
+  requestEditorHistory,
   requestEditorSave,
+  type EditorHistoryRequestDetail,
   type EditorSaveRequestDetail,
 } from './commands.js'
 

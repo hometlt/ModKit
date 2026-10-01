@@ -20,7 +20,11 @@ import {
   ViewerMountScope,
 } from '../viewer/index.js'
 import { HexWindowModel, HEX_WINDOW_BYTES, parseByteOffset } from '../hex/index.js'
-import { handleEditorSaveRequest } from '../editor/commands.js'
+import {
+  announceEditorEdit,
+  handleEditorHistoryRequest,
+  handleEditorSaveRequest,
+} from '../editor/commands.js'
 import { type UiLocalizer } from '../localization/index.js'
 import { HEX_EDITOR_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
 import { withEnglishUiFallback } from '../localization/fallback.js'
@@ -191,6 +195,42 @@ export function createHexEditor(options: HexEditorOptions = {}): EditorModule {
         announce()
       }
 
+      /*
+       * Each committed byte change, newest last. Undo walks back and redo forward; the host's own
+       * stack (VS Code's Edit > Undo, Ctrl+Z) drives both through `handleEditorHistoryRequest`,
+       * one step per `announceEditorEdit`. A new window, a revert or a save starts over.
+       */
+      interface ByteStep {
+        readonly offset: bigint
+        readonly base: number
+        readonly from: number
+        readonly to: number
+      }
+      const history: ByteStep[] = []
+      const future: ByteStep[] = []
+
+      /** A change the user made: applied, recorded and announced, unless it changed nothing. */
+      const editByte = (absolute: bigint, base: number, next: number): void => {
+        const from = pending.get(absolute.toString(10))?.after ?? base
+        setByte(absolute, base, next)
+        if (from === next) return
+        history.push({ offset: absolute, base, from, to: next })
+        future.length = 0
+        announceEditorEdit(root)
+      }
+
+      const step = (
+        from: ByteStep[],
+        into: ByteStep[],
+        value: (record: ByteStep) => number,
+      ): boolean => {
+        const record = from.pop()
+        if (record === undefined) return false
+        setByte(record.offset, record.base, value(record))
+        into.push(record)
+        return true
+      }
+
       const syncDirty = (): void => {
         const dirty = pending.size > 0
         save.disabled = !dirty
@@ -209,6 +249,8 @@ export function createHexEditor(options: HexEditorOptions = {}): EditorModule {
         windowOffset = view.offset
         original = view.bytes
         pending.clear()
+        history.length = 0
+        future.length = 0
         drawWindow()
       }
 
@@ -257,6 +299,13 @@ export function createHexEditor(options: HexEditorOptions = {}): EditorModule {
               if (!/^[0-9a-f]$/iu.test(data) || current.length >= 2) event.preventDefault()
             })
 
+            // Two digits are a whole byte: it is one undoable step then, not at some later blur.
+            cell.addEventListener('input', () => {
+              const text = (cell.textContent ?? '').trim()
+              if (text.length === 2 && HEX_BYTE.test(text))
+                editByte(absolute, value, Number.parseInt(text, 16))
+            })
+
             cell.addEventListener('blur', () => {
               const text = (cell.textContent ?? '').trim()
               if (!HEX_BYTE.test(text)) {
@@ -266,7 +315,7 @@ export function createHexEditor(options: HexEditorOptions = {}): EditorModule {
                 setByte(absolute, value, known)
                 return
               }
-              setByte(absolute, value, Number.parseInt(text, 16))
+              editByte(absolute, value, Number.parseInt(text, 16))
             })
           }
           /*
@@ -303,7 +352,7 @@ export function createHexEditor(options: HexEditorOptions = {}): EditorModule {
                 setByte(absolute, value, known)
                 return
               }
-              setByte(absolute, value, code)
+              editByte(absolute, value, code)
             })
           }
         }
@@ -376,6 +425,8 @@ export function createHexEditor(options: HexEditorOptions = {}): EditorModule {
         }
         original = updated
         pending.clear()
+        history.length = 0
+        future.length = 0
         drawWindow()
         setState(root, [])
         /*
@@ -402,6 +453,10 @@ export function createHexEditor(options: HexEditorOptions = {}): EditorModule {
         })
       })
       const removeSaveRequest = handleEditorSaveRequest(root, commit)
+      const removeHistoryRequest = handleEditorHistoryRequest(root, {
+        undo: () => step(history, future, record => record.from),
+        redo: () => step(future, history, record => record.to),
+      })
 
       await renderWindow()
 
@@ -412,6 +467,7 @@ export function createHexEditor(options: HexEditorOptions = {}): EditorModule {
         },
         async unmount() {
           removeSaveRequest()
+          removeHistoryRequest()
           await scope.close()
           root.remove()
         },
