@@ -1,9 +1,9 @@
 {
-  "$comment": "JSON Schema assertions over everything in the seed that has a schema. The runner executes them only when an engine is supplied (--schemas <module url>), because the seed ships no dependencies; a consumer that already has an engine runs the same assertions against its pinned snapshot.",
+  "$comment": "JSON Schema assertions over everything in the seed that has a schema. The runner executes them only when an engine is supplied (--schemas <module url>), because the seed ships no dependencies; a consumer that already has an engine runs the same assertions against its pinned snapshot. Optional id names a case; optional mutations use tools/mutations.mjs on a copy of the pointed value before validation.",
   "schemaVersion": "uv-schema-assertions-1",
   "engine": "JSON Schema draft 2020-12",
   "checkedWith": "ajv 8.20.0, { allErrors: true, strict: false, validateFormats: false }",
-  "checkedOn": "2026-09-01",
+  "checkedOn": "2026-09-28",
   "note": "the engine and the options are the ones the sealed legacy validator used, so a pass here means what a pass meant there",
   "schemaDirectories": [
     "behavior/schema",
@@ -21,6 +21,138 @@
     "world/schema"
   ],
   "assertions": [
+    {
+      "document": "world/fixtures/uvw-exact-pages.json",
+      "pointer": "/f64",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.exact-page.v1.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "world/fixtures/uvw-exact-pages.json",
+      "pointer": "/u32",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.exact-page.v1.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "world/fixtures/uvw-exact-pages.json",
+      "pointer": "/u8",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.exact-page.v1.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "world/fixtures/uvw-exact-pages.json",
+      "pointer": "/booleans",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.exact-page.v1.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "world/fixtures/uvw-exact-pages.json",
+      "pointer": "/zeroCount",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.exact-page.v1.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "world/fixtures/uvw-exact-pages.json",
+      "pointer": "/overBudget",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.exact-page.v1.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "world/fixtures/uvw-exact-pages.json",
+      "pointer": "/float32",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.exact-page.v1.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "world/fixtures/uvw-exact-pages.json",
+      "pointer": "/unknownField",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.exact-page.v1.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "world/fixtures/uvw-terrain-material-colors.json",
+      "pointer": "/legacy",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/terrainMaterial",
+      "expect": "valid"
+    },
+    {
+      "document": "world/fixtures/uvw-terrain-material-colors.json",
+      "pointer": "/colorOnly",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/terrainMaterial",
+      "expect": "valid"
+    },
+    {
+      "document": "world/fixtures/uvw-terrain-material-colors.json",
+      "pointer": "/textured",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/terrainMaterial",
+      "expect": "valid"
+    },
+    {
+      "document": "world/fixtures/uvw-terrain-material-colors.json",
+      "pointer": "/boundaries",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/terrainMaterial",
+      "expect": "valid"
+    },
+    {
+      "document": "world/fixtures/uvw-terrain-material-colors.json",
+      "pointer": "/rgbOnly",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/terrainMaterial",
+      "expect": "invalid"
+    },
+    {
+      "document": "world/fixtures/uvw-terrain-material-colors.json",
+      "pointer": "/extraComponent",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/terrainMaterial",
+      "expect": "invalid"
+    },
+    {
+      "document": "world/fixtures/uvw-terrain-material-colors.json",
+      "pointer": "/negative",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/terrainMaterial",
+      "expect": "invalid"
+    },
+    {
+      "document": "world/fixtures/uvw-terrain-material-colors.json",
+      "pointer": "/aboveOne",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/terrainMaterial",
+      "expect": "invalid"
+    },
+    {
+      "document": "world/fixtures/uvw-terrain-material-colors.json",
+      "pointer": "/stringComponent",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/terrainMaterial",
+      "expect": "invalid"
+    },
+    {
+      "document": "world/fixtures/uvw-terrain-material-colors.json",
+      "pointer": "/nullFactor",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/terrainMaterial",
+      "expect": "invalid"
+    },
+    {
+      "document": "package/fixtures/uvp-runtime-rules.manifests.json", "pointer": "/static",
+      "schemaId": "https://modkitx.org/uvp/1.0/uvp.manifest.schema.json", "expect": "valid"
+    },
+    {
+      "document": "package/fixtures/uvp-runtime-rules.manifests.json", "pointer": "/blockers",
+      "schemaId": "https://modkitx.org/uvp/1.0/uvp.manifest.schema.json", "expect": "valid"
+    },
+    {
+      "document": "package/fixtures/uvp-runtime-rules.manifests.json", "pointer": "/partial",
+      "schemaId": "https://modkitx.org/uvp/1.0/uvp.manifest.schema.json", "expect": "invalid"
+    },
+    {
+      "document": "package/fixtures/uvp-runtime-rules.manifests.json", "pointer": "/unsupported",
+      "schemaId": "https://modkitx.org/uvp/1.0/uvp.manifest.schema.json", "expect": "invalid"
+    },
+    {
+      "document": "package/fixtures/uvp-runtime-rules.manifests.json", "pointer": "/future",
+      "schemaId": "https://modkitx.org/uvp/1.0/uvp.manifest.schema.json", "expect": "invalid"
+    },
+    {
+      "document": "package/fixtures/uvp-runtime-rules.manifests.json", "pointer": "/extra",
+      "schemaId": "https://modkitx.org/uvp/1.0/uvp.manifest.schema.json", "expect": "invalid"
+    },
     {
       "document": "model/fixtures/uvm-core-triangle.uvm.gltf",
       "pointer": "/extensions/UV_asset",
@@ -94,6 +226,22 @@
       "expect": "valid"
     },
     {
+      "id": "uvm-socket-stable-id-valid",
+      "document": "model/examples/siege_tank.uvm.gltf",
+      "pointer": "/nodes/6/extensions/UV_game_socket",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.socket.schema.json",
+      "expect": "valid",
+      "mutations": [{ "op": "set", "path": "id", "value": "weapon-socket" }]
+    },
+    {
+      "id": "uvm-socket-stable-id-invalid",
+      "document": "model/examples/siege_tank.uvm.gltf",
+      "pointer": "/nodes/6/extensions/UV_game_socket",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.socket.schema.json",
+      "expect": "invalid",
+      "mutations": [{ "op": "set", "path": "id", "value": "Weapon Socket" }]
+    },
+    {
       "document": "model/examples/siege_tank.uvm.gltf",
       "pointer": "/nodes/1/extensions/UV_game_collision",
       "schemaId": "https://modkitx.org/uvm/1.0/uvm.collision.schema.json",
@@ -110,6 +258,25 @@
       "pointer": "/materials/1/extensions/UV_game_material",
       "schemaId": "https://modkitx.org/uvm/1.0/uvm.material.schema.json#gameMaterial",
       "expect": "valid"
+    },
+    {
+      "document": "model/examples/uv_texture_color_key.json",
+      "pointer": "/magenta",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.texture.schema.json#colorKey",
+      "expect": "valid"
+    },
+    {
+      "document": "model/examples/uv_texture_color_key.json",
+      "pointer": "/tolerant",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.texture.schema.json#colorKey",
+      "expect": "valid"
+    },
+    {
+      "document": "model/examples/uv_texture_color_key.json",
+      "pointer": "/linearFloats",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.texture.schema.json#colorKey",
+      "expect": "invalid",
+      "note": "a colour key matches stored bytes, so a key stated as linear floats is refused rather than rounded"
     },
     {
       "document": "model/examples/siege_tank.uvm.gltf",
@@ -168,6 +335,12 @@
       "expect": "valid"
     },
     {
+      "document": "conformance/verified-composition/vectors.json",
+      "pointer": "/manifests/0",
+      "schemaId": "https://modkitx.org/uvp/1.0/uvp.manifest.schema.json",
+      "expect": "valid"
+    },
+    {
       "document": "package/fixtures/invalid/map-without-world.manifest.json",
       "pointer": "/",
       "schemaId": "https://modkitx.org/uvp/1.0/uvp.manifest.schema.json",
@@ -196,6 +369,24 @@
       "pointer": "/",
       "schemaId": "https://modkitx.org/uvd/1.0/uvd.document.schema.json",
       "expect": "valid"
+    },
+    {
+      "document": "data/fixtures/uvd-kind-schema-assembly.uvd.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/uvd/1.0/uvd.document.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "data/fixtures/uvd-kind-schema-movement.uvd.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/uvd/1.0/uvd.document.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "data/fixtures/invalid/assembly-role-unknown.uvd.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/uvd/1.0/uvd.document.schema.json",
+      "expect": "invalid"
     },
     {
       "document": "data/fixtures/uvd-definitions-inheritance.uvd.json",
@@ -246,6 +437,24 @@
       "expect": "valid"
     },
     {
+      "document": "scenario/fixtures/uvs-typed-initials.uvs.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/uvs/1.0/uvs.document.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "scenario/fixtures/invalid/numeric-initial.uvs.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/uvs/1.0/uvs.document.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "scenario/fixtures/invalid/zero-ref-initial.uvs.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/uvs/1.0/uvs.document.schema.json",
+      "expect": "invalid"
+    },
+    {
       "document": "scenario/fixtures/invalid/refusal-without-origin.uvs.json",
       "pointer": "/",
       "schemaId": "https://modkitx.org/uvs/1.0/uvs.document.schema.json",
@@ -262,6 +471,30 @@
       "pointer": "/",
       "schemaId": "https://modkitx.org/uvb/1.0/uvb.module.schema.json",
       "expect": "valid"
+    },
+    {
+      "document": "behavior/fixtures/uvb-module-verified.uvb.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/uvb/1.0/uvb.module.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "behavior/fixtures/uvb-module-typed-value.uvb.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/uvb/2.0/uvb.module.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "behavior/fixtures/uvb-module-typed-value.uvb.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/uvb/1.0/uvb.module.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "behavior/fixtures/uvb-module-verified.uvb.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/uvb/2.0/uvb.module.schema.json",
+      "expect": "invalid"
     },
     {
       "document": "behavior/fixtures/invalid/float-op.uvb.json",
@@ -295,6 +528,18 @@
     },
     {
       "document": "world/fixtures/uvw-profile-renderable-world.uvw.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "world/fixtures/uvw-profile-traversal.uvw.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "world/fixtures/uvw-profile-traversal-surface.uvw.json",
       "pointer": "/",
       "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json",
       "expect": "valid"
@@ -355,6 +600,12 @@
     },
     {
       "document": "receipts/fixtures/composition-layer-order.receipt.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/receipts/1.0/composition.receipt.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "receipts/fixtures/composition-verified-uvb.receipt.json",
       "pointer": "/",
       "schemaId": "https://modkitx.org/receipts/1.0/composition.receipt.schema.json",
       "expect": "valid"
@@ -432,6 +683,24 @@
       "expect": "valid"
     },
     {
+      "document": "state/fixtures/observations-sparse.sc2.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/state/1.0/observations.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "state/fixtures/observations-sparse.sc2.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/state/1.0/replay.journal.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "state/fixtures/invalid/observations-remove-world.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/state/1.0/observations.schema.json",
+      "expect": "invalid"
+    },
+    {
       "document": "state/fixtures/invalid/save-without-state-hash.save.json",
       "pointer": "/",
       "schemaId": "https://modkitx.org/state/1.0/save.envelope.schema.json",
@@ -466,6 +735,1149 @@
       "pointer": "/",
       "schemaId": "https://modkitx.org/receipts/1.0/lowering.receipt.schema.json",
       "expect": "valid"
+    },
+    {
+      "document": "package/fixtures/uvp-world-instances.manifests.json",
+      "pointer": "/valid",
+      "schemaId": "https://modkitx.org/uvp/1.0/uvp.manifest.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "package/fixtures/uvp-world-instances.manifests.json",
+      "pointer": "/future",
+      "schemaId": "https://modkitx.org/uvp/1.0/uvp.manifest.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "package/fixtures/uvp-world-instances.manifests.json",
+      "pointer": "/empty",
+      "schemaId": "https://modkitx.org/uvp/1.0/uvp.manifest.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "package/fixtures/uvp-world-instances.manifests.json",
+      "pointer": "/extra",
+      "schemaId": "https://modkitx.org/uvp/1.0/uvp.manifest.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "package/fixtures/uvp-world-instances.manifests.json",
+      "pointer": "/unsafePath",
+      "schemaId": "https://modkitx.org/uvp/1.0/uvp.manifest.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "package/fixtures/uvp-world-instances.manifests.json",
+      "pointer": "/badId",
+      "schemaId": "https://modkitx.org/uvp/1.0/uvp.manifest.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "model/fixtures/gltf-materials.profile.json",
+      "pointer": "/default",
+      "schemaId": "https://modkitx.org/gltf/2.0/material.profile.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "model/fixtures/gltf-materials.profile.json",
+      "pointer": "/pbr",
+      "schemaId": "https://modkitx.org/gltf/2.0/material.profile.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "model/fixtures/gltf-materials.profile.json",
+      "pointer": "/normalOcclusion",
+      "schemaId": "https://modkitx.org/gltf/2.0/material.profile.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "model/fixtures/gltf-materials.profile.json",
+      "pointer": "/specularHdr",
+      "schemaId": "https://modkitx.org/gltf/2.0/material.profile.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "model/fixtures/gltf-materials.profile.json",
+      "pointer": "/zeroUvScale",
+      "schemaId": "https://modkitx.org/gltf/2.0/material.profile.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "model/fixtures/gltf-materials.profile.json",
+      "pointer": "/opaqueExtension",
+      "schemaId": "https://modkitx.org/gltf/2.0/material.profile.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "model/fixtures/gltf-materials.profile.json",
+      "pointer": "/invalidColorLength",
+      "schemaId": "https://modkitx.org/gltf/2.0/material.profile.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "model/fixtures/gltf-materials.profile.json",
+      "pointer": "/invalidColorRange",
+      "schemaId": "https://modkitx.org/gltf/2.0/material.profile.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "model/fixtures/gltf-materials.profile.json",
+      "pointer": "/invalidColorType",
+      "schemaId": "https://modkitx.org/gltf/2.0/material.profile.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "model/fixtures/gltf-materials.profile.json",
+      "pointer": "/invalidRoughness",
+      "schemaId": "https://modkitx.org/gltf/2.0/material.profile.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "model/fixtures/gltf-materials.profile.json",
+      "pointer": "/invalidMetallic",
+      "schemaId": "https://modkitx.org/gltf/2.0/material.profile.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "model/fixtures/gltf-materials.profile.json",
+      "pointer": "/invalidTextureIndex",
+      "schemaId": "https://modkitx.org/gltf/2.0/material.profile.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "model/fixtures/gltf-materials.profile.json",
+      "pointer": "/invalidTexCoord",
+      "schemaId": "https://modkitx.org/gltf/2.0/material.profile.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "model/fixtures/gltf-materials.profile.json",
+      "pointer": "/invalidTextureField",
+      "schemaId": "https://modkitx.org/gltf/2.0/material.profile.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "model/fixtures/gltf-materials.profile.json",
+      "pointer": "/invalidNormalScale",
+      "schemaId": "https://modkitx.org/gltf/2.0/material.profile.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "model/fixtures/gltf-materials.profile.json",
+      "pointer": "/invalidOcclusionStrength",
+      "schemaId": "https://modkitx.org/gltf/2.0/material.profile.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "model/fixtures/gltf-materials.profile.json",
+      "pointer": "/invalidTransform",
+      "schemaId": "https://modkitx.org/gltf/2.0/material.profile.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "model/fixtures/gltf-materials.profile.json",
+      "pointer": "/invalidTransformCoord",
+      "schemaId": "https://modkitx.org/gltf/2.0/material.profile.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "model/fixtures/gltf-materials.profile.json",
+      "pointer": "/invalidAlphaMode",
+      "schemaId": "https://modkitx.org/gltf/2.0/material.profile.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "model/fixtures/gltf-materials.profile.json",
+      "pointer": "/invalidAlphaDependency",
+      "schemaId": "https://modkitx.org/gltf/2.0/material.profile.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "model/fixtures/gltf-materials.profile.json",
+      "pointer": "/invalidSpecularStrength",
+      "schemaId": "https://modkitx.org/gltf/2.0/material.profile.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "model/fixtures/gltf-materials.profile.json",
+      "pointer": "/invalidSpecularColor",
+      "schemaId": "https://modkitx.org/gltf/2.0/material.profile.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "model/fixtures/gltf-materials.profile.json",
+      "pointer": "/invalidLegacyField",
+      "schemaId": "https://modkitx.org/gltf/2.0/material.profile.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "id": "uvw-gltf-valid",
+      "document": "world/fixtures/uvw-gltf-spatial.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "valid"
+    },
+    {
+      "id": "uvw-gltf-cliffs-valid",
+      "document": "world/fixtures/uvw-gltf-cliffs.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "valid"
+    },
+    {
+      "id": "uvw-gltf-objects-valid",
+      "document": "world/fixtures/uvw-gltf-objects.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "valid"
+    },
+    {
+      "id": "uvw-gltf-visual-valid",
+      "document": "world/fixtures/uvw-gltf-visual.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "valid"
+    },
+    {
+      "id": "uvw-gltf-cliffs-paged-valid",
+      "document": "world/fixtures/uvw-gltf-cliffs.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.pages.v1.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "id": "uvw-gltf-paged-valid",
+      "document": "world/fixtures/uvw-gltf-paged.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.pages.v1.schema.json",
+      "expect": "valid"
+    },
+    {
+      "id": "uvw-gltf-paged-refused-by-inline-profile",
+      "document": "world/fixtures/uvw-gltf-paged.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "id": "uvw-gltf-paged-needs-buffers",
+      "document": "world/fixtures/uvw-gltf-paged.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.pages.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [{ "op": "delete", "path": "buffers" }]
+    },
+    {
+      "id": "uvw-gltf-without-comment",
+      "document": "world/fixtures/uvw-gltf-spatial.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "valid",
+      "mutations": [
+        {
+          "op": "delete",
+          "path": "extras"
+        }
+      ]
+    },
+    {
+      "id": "uvw-gltf-unknown-gltf-version",
+      "document": "world/fixtures/uvw-gltf-spatial.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "asset.version",
+          "value": "1.0"
+        }
+      ]
+    },
+    {
+      "id": "uvw-gltf-unknown-uvw-version",
+      "document": "world/fixtures/uvw-gltf-spatial.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "asset.extras.uv.version",
+          "value": "2.0"
+        }
+      ]
+    },
+    {
+      "id": "uvw-gltf-missing-required",
+      "document": "world/fixtures/uvw-gltf-spatial.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "delete",
+          "path": "extensionsRequired"
+        }
+      ]
+    },
+    {
+      "id": "uvw-gltf-undeclared-extension",
+      "document": "world/fixtures/uvw-gltf-spatial.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "extensionsUsed",
+          "value": []
+        }
+      ]
+    },
+    {
+      "id": "uvw-gltf-unknown-graph-version",
+      "document": "world/fixtures/uvw-gltf-spatial.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "extensions.UV_world_graph.schemaVersion",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "id": "uvw-gltf-empty-spaces",
+      "document": "world/fixtures/uvw-gltf-spatial.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "extensions.UV_world_graph.spaces",
+          "value": []
+        }
+      ]
+    },
+    {
+      "id": "uvw-gltf-reserved-connections",
+      "document": "world/fixtures/uvw-gltf-spatial.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "extensions.UV_world_graph.connections",
+          "value": [
+            {
+              "kind": "portal"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "uvw-gltf-reserved-topology",
+      "document": "world/fixtures/uvw-gltf-spatial.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "extensions.UV_world_graph.spaces.0.topology",
+          "value": "volume"
+        }
+      ]
+    },
+    {
+      "id": "uvw-gltf-unbound-buffer",
+      "document": "world/fixtures/uvw-gltf-spatial.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "buffers",
+          "value": [
+            {
+              "byteLength": 4,
+              "uri": "world.bin"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "uvw-gltf-no-heightfield",
+      "document": "world/fixtures/uvw-gltf-spatial.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "delete",
+          "path": "extensions.UV_world_graph.spaces.0.layers.0"
+        }
+      ]
+    },
+    {
+      "id": "uvw-gltf-non-number-height",
+      "document": "world/fixtures/uvw-gltf-spatial.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "extensions.UV_world_graph.spaces.0.layers.0.samples.0.0",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "id": "uvw-gltf-mixed-legacy",
+      "document": "world/fixtures/uvw-gltf-spatial.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "uv",
+          "value": {
+            "format": "UVW"
+          }
+        }
+      ]
+    },
+    {
+      "id": "uvw-gltf-extra-source-comment",
+      "document": "world/fixtures/uvw-gltf-spatial.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "extras.unknown",
+          "value": true
+        }
+      ]
+    },
+    {
+      "id": "uvw-gltf-materials-valid",
+      "document": "world/fixtures/uvw-gltf-materials.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "valid"
+    },
+    {
+      "id": "uvw-gltf-empty-material-table",
+      "document": "world/fixtures/uvw-gltf-materials.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "materials",
+          "value": []
+        }
+      ]
+    },
+    {
+      "id": "uvw-gltf-negative-material-index",
+      "document": "world/fixtures/uvw-gltf-materials.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "extensions.UV_world_graph.spaces.0.layers.0.materials.0.material",
+          "value": -1
+        }
+      ]
+    },
+    {
+      "id": "uvw-gltf-mixed-terrain-dialect",
+      "document": "world/fixtures/uvw-gltf-materials.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "extensions.UV_world_graph.spaces.0.layers.0.materials.0.baseColorFactor",
+          "value": [
+            1,
+            1,
+            1,
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "id": "uvw-gltf-mixed-water-dialect",
+      "document": "world/fixtures/uvw-gltf-materials.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "extensions.UV_world_graph.spaces.0.layers.3.materials.0.color",
+          "value": [
+            1,
+            1,
+            1,
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "id": "uvw-gltf-water-effect-unadmitted",
+      "document": "world/fixtures/uvw-gltf-materials.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "extensions.UV_world_graph.spaces.0.layers.3.materials.0.scroll",
+          "value": [
+            1,
+            0,
+            0,
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "id": "uvw-gltf-weight-raster-unadmitted",
+      "document": "world/fixtures/uvw-gltf-materials.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "extensions.UV_world_graph.spaces.0.layers.0.weightRasters",
+          "value": []
+        }
+      ]
+    },
+    {
+      "id": "uvw-gltf-factor-out-of-range",
+      "document": "world/fixtures/uvw-gltf-materials.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "materials.0.pbrMetallicRoughness.baseColorFactor",
+          "value": [
+            1.1,
+            0,
+            0,
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "id": "uvw-gltf-unknown-material-extension",
+      "document": "world/fixtures/uvw-gltf-materials.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "materials.0.extensions",
+          "value": {
+            "UNKNOWN": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "uvw-gltf-unknown-used-extension",
+      "document": "world/fixtures/uvw-gltf-materials.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "extensionsUsed",
+          "value": [
+            "UV_world_graph",
+            "UNKNOWN"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "uvw-gltf-repeated-extension",
+      "document": "world/fixtures/uvw-gltf-materials.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "extensionsUsed",
+          "value": [
+            "UV_world_graph",
+            "UV_world_graph"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "uvw-gltf-external-image",
+      "document": "world/fixtures/uvw-gltf-materials.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "images",
+          "value": [
+            {
+              "uri": "outside.png"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "uvw-gltf-normal-texture",
+      "document": "world/fixtures/uvw-gltf-textured.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "valid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "materials.0.normalTexture",
+          "value": {
+            "index": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "uvw-gltf-occlusion-texture",
+      "document": "world/fixtures/uvw-gltf-textured.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "valid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "materials.0.occlusionTexture",
+          "value": {
+            "index": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "uvw-gltf-emissive-texture",
+      "document": "world/fixtures/uvw-gltf-textured.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "valid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "materials.0.emissiveTexture",
+          "value": {
+            "index": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "uvw-gltf-base-texture",
+      "document": "world/fixtures/uvw-gltf-textured.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "valid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "materials.0.pbrMetallicRoughness.baseColorTexture",
+          "value": {
+            "index": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "uvw-gltf-metallic-texture",
+      "document": "world/fixtures/uvw-gltf-textured.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "valid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "materials.0.pbrMetallicRoughness.metallicRoughnessTexture",
+          "value": {
+            "index": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "uvw-gltf-specular-texture",
+      "document": "world/fixtures/uvw-gltf-textured.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "valid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "materials.0.extensions",
+          "value": {
+            "KHR_materials_specular": {
+              "specularTexture": {
+                "index": 0
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "uvw-gltf-specular-color-texture",
+      "document": "world/fixtures/uvw-gltf-textured.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "valid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "materials.0.extensions",
+          "value": {
+            "KHR_materials_specular": {
+              "specularColorTexture": {
+                "index": 0
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "uvw-gltf-standard-specular-factor",
+      "document": "world/fixtures/uvw-gltf-materials.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "valid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "extensionsUsed",
+          "value": [
+            "UV_world_graph",
+            "KHR_materials_specular"
+          ]
+        },
+        {
+          "op": "set",
+          "path": "materials.0.extensions",
+          "value": {
+            "KHR_materials_specular": {
+              "specularFactor": 0.8,
+              "specularColorFactor": [
+                2,
+                1,
+                0.5
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "uvw-gltf-shared-material",
+      "document": "world/fixtures/uvw-gltf-materials.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "valid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "extensions.UV_world_graph.spaces.0.layers.0.materials.1.material",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "id": "uvw-gltf-absent-material-table",
+      "document": "world/fixtures/uvw-gltf-materials.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "valid",
+      "mutations": [
+        {
+          "op": "delete",
+          "path": "materials"
+        }
+      ]
+    },
+    {
+      "id": "uvw-gltf-unsupported-layer",
+      "document": "world/fixtures/uvw-gltf-spatial.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "extensions.UV_world_graph.spaces.0.layers.0.kind",
+          "value": "lighting"
+        }
+      ]
+    },
+    {
+      "id": "uvw-gltf-textured-valid",
+      "document": "world/fixtures/uvw-gltf-textured.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "valid"
+    },
+    {
+      "id": "uvw-gltf-remote-image",
+      "document": "world/fixtures/uvw-gltf-textured.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "images.0.uri",
+          "value": "https://example.invalid/a.png"
+        }
+      ]
+    },
+    {
+      "id": "uvw-gltf-image-mime",
+      "document": "world/fixtures/uvw-gltf-textured.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "images.0.mimeType",
+          "value": "image/x-tga"
+        }
+      ]
+    },
+    {
+      "id": "uvw-gltf-image-buffer",
+      "document": "world/fixtures/uvw-gltf-textured.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "images.0.bufferView",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "id": "uvw-gltf-sampler-enum",
+      "document": "world/fixtures/uvw-gltf-textured.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "samplers.0.wrapS",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "id": "uvw-gltf-texture-negative-source",
+      "document": "world/fixtures/uvw-gltf-textured.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "textures.0.source",
+          "value": -1
+        }
+      ]
+    },
+    {
+      "id": "uvw-gltf-texture-unknown-extension",
+      "document": "world/fixtures/uvw-gltf-textured.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "textures.0.extensions",
+          "value": {
+            "UNKNOWN": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "uvw-gltf-empty-image-table",
+      "document": "world/fixtures/uvw-gltf-textured.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "images",
+          "value": []
+        }
+      ]
+    },
+    {
+      "id": "uvw-gltf-missing-image-mime",
+      "document": "world/fixtures/uvw-gltf-textured.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "delete",
+          "path": "images.0.mimeType"
+        }
+      ]
+    },
+    {
+      "id": "uvw-gltf-resources-valid",
+      "document": "world/fixtures/uvw-gltf-resources.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "valid"
+    },
+    {
+      "id": "uvw-gltf-resource-missing-original",
+      "document": "world/fixtures/uvw-gltf-resources.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [{ "op": "delete", "path": "extensions.UV_world_graph.spaces.0.layers.0.resources.0.original" }]
+    },
+    {
+      "id": "uvw-gltf-water-profile-valid",
+      "document": "world/fixtures/uvw-gltf-water-profile.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "valid"
+    },
+    {
+      "id": "uvw-legacy-water-current-core-fields-valid",
+      "document": "world/fixtures/uvw-water-material.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/waterMaterial",
+      "expect": "valid"
+    },
+    {
+      "id": "uvw-legacy-water-negative-caustics-falloff",
+      "document": "world/fixtures/uvw-water-material.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/waterMaterial",
+      "expect": "invalid",
+      "mutations": [{ "op": "set", "path": "causticsFalloff", "value": -1 }]
+    },
+    {
+      "id": "uvw-gltf-water-profile-unknown-param",
+      "document": "world/fixtures/uvw-gltf-water-profile.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [{ "op": "set", "path": "materials.2.extensions.UV_game_material.params.gameShader", "value": "unverified" }]
+    },
+    {
+      "id": "uvw-gltf-water-profile-missing-frames",
+      "document": "world/fixtures/uvw-gltf-water-profile.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [{ "op": "delete", "path": "materials.2.extensions.UV_game_material.layers.2.frames" }]
+    },
+    {
+      "id": "uvw-gltf-raster-valid",
+      "document": "world/fixtures/uvw-gltf-raster.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "valid"
+    },
+    {
+      "id": "uvw-gltf-raster-mixed-inline-invalid",
+      "document": "world/fixtures/uvw-gltf-raster.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [{ "op": "set", "path": "extensions.UV_world_graph.spaces.0.layers.0.samples", "value": [] }]
+    },
+    {
+      "id": "uvw-gltf-raster-no-sampling-invalid",
+      "document": "world/fixtures/uvw-gltf-raster.uvw.gltf",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [{ "op": "delete", "path": "extensions.UV_world_graph.spaces.0.layers.0.rasterSampling" }]
+    },
+    {
+      "id": "uvw-gltf-migration-receipt-valid-shape",
+      "document": "world/fixtures/uvw-gltf-migration.receipt.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.migration.receipt.v1.schema.json",
+      "expect": "valid"
+    },
+    {
+      "id": "uvw-gltf-migration-receipt-missing-source-identity",
+      "document": "world/fixtures/uvw-gltf-migration.receipt.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.migration.receipt.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [{ "op": "delete", "path": "source.compositionHash" }]
+    },
+    {
+      "id": "uvw-gltf-migration-receipt-cannot-be-refused",
+      "document": "world/fixtures/uvw-gltf-migration.receipt.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.migration.receipt.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [{ "op": "set", "path": "refusals", "value": [{ "rule": "missing" }] }]
+    },
+    {
+      "id": "uvw-gltf-migration-receipt-preview-tolerance-bounded",
+      "document": "world/fixtures/uvw-gltf-migration.receipt.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.migration.receipt.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [{ "op": "set", "path": "rasters.0.inlinePreview.maxAbsError", "value": 0.1 }]
+    },
+    {
+      "id": "uvw-gltf-migration-receipt-socket-link-needs-node",
+      "document": "world/fixtures/uvw-gltf-migration.receipt.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.migration.receipt.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [{ "op": "delete", "path": "socketLinks.0.nodeIndex" }]
+    },
+    {
+      "id": "uvw-lighting-core-settings",
+      "document": "world/fixtures/uvw-profile-renderable-world.uvw.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json",
+      "expect": "valid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "spaces.0.layers.2.toneMapping",
+          "value": {
+            "operator": "filmic",
+            "exposure": 1,
+            "whitePoint": 2,
+            "contrast": 1,
+            "correctGamma": true
+          }
+        },
+        {
+          "op": "set",
+          "path": "spaces.0.layers.2.terrain",
+          "value": {
+            "specularExponent": 16,
+            "diffuseMultiplier": 1,
+            "specularMultiplier": 0.5
+          }
+        },
+        {
+          "op": "set",
+          "path": "spaces.0.layers.2.directional.0.specularColor",
+          "value": [
+            0.2,
+            0.3,
+            0.4
+          ]
+        }
+      ]
+    },
+    {
+      "id": "uvw-lighting-tone-positive",
+      "document": "world/fixtures/uvw-profile-renderable-world.uvw.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "spaces.0.layers.2.toneMapping",
+          "value": {
+            "operator": "filmic",
+            "exposure": 0,
+            "whitePoint": 2,
+            "contrast": 1,
+            "correctGamma": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "uvw-lighting-terrain-complete",
+      "document": "world/fixtures/uvw-profile-renderable-world.uvw.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "spaces.0.layers.2.terrain",
+          "value": {
+            "specularExponent": 16
+          }
+        }
+      ]
+    },
+    {
+      "id": "uvw-lighting-occlusion-boolean",
+      "document": "world/fixtures/uvw-profile-renderable-world.uvw.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "spaces.0.layers.2.directional.0.useAmbientOcclusion",
+          "value": 1
+        }
+      ]
     }
   ]
 }

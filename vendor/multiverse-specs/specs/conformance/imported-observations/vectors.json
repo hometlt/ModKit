@@ -1,0 +1,164 @@
+{
+  "schemaVersion": "uv-conformance-vectors-1",
+  "fixture": "state/fixtures/observations-sparse.sc2.json",
+  "accept": {
+    "count": 5,
+    "observationsDigest": "sha256:ec2ff495a3a91e1669fe022c38d7941dfe6f1b1529dfd490a044bb0946f0696b"
+  },
+  "reject": [
+    {
+      "id": "out-of-order",
+      "rule": "observation-order",
+      "mutations": [
+        {
+          "op": "reverse",
+          "path": "observations"
+        }
+      ]
+    },
+    {
+      "id": "duplicate-native-event",
+      "rule": "observation-identity",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "observations.1.sourceEventId",
+          "value": "tracker/12/0"
+        }
+      ]
+    },
+    {
+      "id": "missing-generation",
+      "rule": "observation-generation",
+      "mutations": [
+        {
+          "op": "delete",
+          "path": "observations.0.subject.generation"
+        }
+      ]
+    },
+    {
+      "id": "reused-dead-generation",
+      "rule": "observation-lifecycle",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "observations.4.subject.generation",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "id": "world-removal",
+      "rule": "observation-removal",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "observations.3.subject.kind",
+          "value": "world"
+        }
+      ]
+    },
+    {
+      "id": "remove-with-fields",
+      "rule": "observation-removal",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "observations.0.action",
+          "value": "remove"
+        }
+      ]
+    },
+    {
+      "id": "duplicate-field",
+      "rule": "observation-fields",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "observations.0.fields.1.path",
+          "value": "position"
+        }
+      ]
+    },
+    {
+      "id": "changed-observation",
+      "rule": "observation-digest",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "observations.1.fields.0.value.x",
+          "value": "999"
+        }
+      ]
+    },
+    {
+      "id": "fractional-native-tick",
+      "rule": "observation-time",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "observations.1.tick",
+          "value": "13.5"
+        }
+      ]
+    },
+    {
+      "id": "missing-source-identity",
+      "rule": "observation-shape",
+      "mutations": [
+        {
+          "op": "delete",
+          "path": "source.artifactDigest"
+        }
+      ]
+    }
+  ],
+  "samples": [
+    {
+      "tick": "11",
+      "subjectCount": 0,
+      "removedCount": 0
+    },
+    {
+      "tick": "12",
+      "subjectCount": 1,
+      "generation": "0",
+      "health": "45",
+      "healthSource": "tracker/12/0",
+      "positionX": "65536",
+      "removedCount": 0
+    },
+    {
+      "tick": "13",
+      "sequence": 0,
+      "subjectCount": 1,
+      "generation": "0",
+      "health": "45",
+      "healthSource": "tracker/12/0",
+      "positionX": "65537",
+      "removedCount": 0
+    },
+    {
+      "tick": "13",
+      "subjectCount": 1,
+      "generation": "0",
+      "health": "44",
+      "healthSource": "tracker/13/1",
+      "positionX": "65537",
+      "removedCount": 0
+    },
+    {
+      "tick": "40",
+      "subjectCount": 0,
+      "removedCount": 1
+    },
+    {
+      "tick": "41",
+      "subjectCount": 1,
+      "generation": "1",
+      "unitType": "Marine",
+      "removedCount": 1
+    }
+  ]
+}

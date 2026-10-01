@@ -93,3 +93,83 @@ closes them; the schema stays 1.0-compatible (every 1.0 document is a valid 1.1 
     `base.wz`) maps one source table to one UVD document.
 11. **Nested records.** `recordFields` recurse: a record field may itself be a record or a
     list of records (Warzone `propulsionExtraModels`); type discipline recurses with it.
+12. **Nested identities and references.** `${self}` substitution and typed-reference checks
+    recurse through every declared list/record level, including references inside lists in
+    records. A missing or wrong-kind target uses the same refusal/diagnostic policy as a
+    top-level reference. Paths such as `assembly.slots[0].allowed[0]` identify the failing value.
+    This enables UVD to describe composite loadouts without a second reference resolver; it
+    does not by itself admit list/record gameplay values into the current scalar Runtime binding.
+
+## 6. Assembly role amendment (candidate, 2026-09-25)
+
+A top-level kind field may declare `runtimeRole: "assembly.slots@1"`,
+`"assembly.initial-parts@1"`, or `"assembly.stat-effects@1"`. This annotation is part of the **same UVD kind-schema** and
+does not create a second catalog. It identifies meaning by field role, not by game kind or
+native field name. Each role occurs at most once per kind. An initial-parts field requires a
+slots field on that kind. Both are gameplay fields; `presentation: true` is forbidden.
+
+`assembly.slots@1` is a `list<record>` with exactly three required record fields:
+`id: string`, `capacity: i64`, `accepts: list<ref>`. `assembly.initial-parts@1` is a
+`list<record>` with exactly `id: string`, `slot: string`, `definition: ref`. Both reference
+fields declare `refKind` and use ordinary UVD reference checking. Missing role fields mean
+empty lists. IDs are non-empty, at most 128 UTF-8 bytes and contain no NUL; slot and part IDs
+are unique within an effective definition. Capacity is an exact integer from 0 to 4096;
+each effective definition has at most 4096 slots and 4096 initial parts. A part may repeat a
+definition address but not an instance ID. Every initial part names an existing slot, an
+explicitly accepted definition, and consumes one capacity. Duplicate accepted references,
+absent accepted definitions even under `danglingReferences: diagnose`, and over-capacity
+loadouts refuse the whole composition. The canonical resolver returns an `assemblies` view
+alongside resolved definitions and provenance; Runtime binding must consume that view.
+
+`assembly.stat-effects@1` is a `list<record>` on a part kind, with exactly required
+`id: string`, `field: string`, and `delta: fixed64`. IDs are stable and unique within the
+effective part definition; a delta is an exact signed Q32.32 quantum within i64 range.
+For every assembly slot accepting the part, the target field must exist as a fixed64
+field with an effective value on that assembled definition. The resolver returns the
+effects beside `assemblies`; the binder maps target names to the same numeric field IDs
+as scalar UVD. Every installed part instance contributes its own delta. Effective values
+sum base, authored/script modifier sources, and live part instances in i128, then check
+the i64 range once. Removing/replacing a part recomputes from remaining sources; no
+rounded total is reversed. Part effect values are immutable composition, while saved
+State carries the part instance IDs that determine which effects are live.
+
+Initial assembly, atomic part transitions and fixed64 part effects are executable in the
+bounded Runtime profile. Weapon grants, independent weapon state, timed jobs, resource
+policy and visual attachment authority remain RT-02A/M1B work. UVM sockets describe
+presentation and do not determine gameplay compatibility.
+
+### Capability grant admission (candidate, 2026-09-26)
+
+The same UVD kind-schema also admits `assembly.grants@1` on a part definition as
+`list<record{id:string, capability:ref}>` and `capability.counters@1` on a capability
+definition as `list<record{id:string, initial:i64, minimum:i64, maximum:i64}>`. The
+resolver requires unique stable IDs, existing typed capability references, exact signed
+i64 values, `minimum ≤ initial ≤ maximum`, and at most 4096 entries per definition.
+Repeated part definitions share immutable grant templates but their installed instances
+will have distinct live identities `(part instance ID, grant ID)`. Counter names can
+represent ammo or a next-ready tick without baking either game's weapon class into UVD.
+
+The verified Runtime binder carries these resolved roles in MVBC8. Rust State keys live
+counters by `(part instance ID, grant ID)`; a new part initializes from verified UVD,
+removal deletes only that part's grants, and unchanged instances retain their values.
+Entities section v5 and the binding digest include the corresponding mutable and immutable
+halves. This bounded profile does not define firing, damage, automatic cooldown advancement
+or game-specific ammunition policy; those require later combat rules and native lowering.
+
+## 7. Movement identity roles (candidate, 2026-09-28)
+
+The same kind-schema may declare one `movement.class@1` string field and one
+`movement.speed@1` fixed64 field with `unit: "space-unit-per-tick"`. Both roles must be
+declared together; each effective definition either sets both or neither. The class is a
+stable UVW traversal class ID (1–128 UTF-8 bytes, no NUL). Speed is an exact positive signed
+Q32.32 quantum in the current space's local units per simulation tick. A game adapter must
+convert its native speed and tick scale before publishing UVD; Runtime does not infer them
+from a native field name or wall-clock rate. Definitions without both values are immobile.
+
+The canonical UVD resolver validates the pair and returns one `movements` view alongside
+resolved definitions. The binder verifies the class against the same verified UVW world,
+keeps speed as a normal fixed64 state field so source-keyed modifiers can change it, and
+binds only the class and speed field ID into composition. This is admission metadata for
+`order.move@1`, not a claim that the current kernel already moves entities. Dynamic
+movement-class changes, space transitions, collision shapes and non-heightfield movement
+require later explicit mechanics profiles, never fallback to a guessed class or speed.

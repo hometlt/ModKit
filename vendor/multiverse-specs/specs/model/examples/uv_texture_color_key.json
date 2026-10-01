@@ -1,0 +1,6 @@
+{
+  "$comment": "UV_texture_color_key objects for the schema assertions (SPEC_UVM §11.6): Emperor: Battle for Dune's magenta key, a tolerant key, and a key stated as linear floats, which the extension refuses because a key matches stored bytes.",
+  "magenta": { "color": [255, 0, 255] },
+  "tolerant": { "color": [0, 255, 0], "tolerance": 8 },
+  "linearFloats": { "color": [1, 0, 1.0e-3] }
+}

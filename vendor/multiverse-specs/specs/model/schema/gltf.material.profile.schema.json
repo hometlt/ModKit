@@ -1,0 +1,221 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modkitx.org/gltf/2.0/material.profile.schema.json",
+  "title": "Shared glTF metallic-roughness material profile for UVM and UVW",
+  "description": "Owner-maintained admitted material shape, not a replacement for the Khronos glTF document validator. Texture indices and extension declarations are checked by the shared reference verifier. Unknown optional material extensions remain metadata; admission of their semantics belongs to their extension owners.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "pbrMetallicRoughness": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "baseColorFactor": {
+          "$ref": "#/$defs/baseColorFactor"
+        },
+        "baseColorTexture": {
+          "$ref": "#/$defs/textureInfo"
+        },
+        "metallicFactor": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 1
+        },
+        "roughnessFactor": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 1
+        },
+        "metallicRoughnessTexture": {
+          "$ref": "#/$defs/textureInfo"
+        },
+        "extras": {}
+      }
+    },
+    "normalTexture": {
+      "$ref": "#/$defs/normalTextureInfo"
+    },
+    "occlusionTexture": {
+      "$ref": "#/$defs/occlusionTextureInfo"
+    },
+    "emissiveTexture": {
+      "$ref": "#/$defs/textureInfo"
+    },
+    "emissiveFactor": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1
+      }
+    },
+    "alphaMode": {
+      "enum": [
+        "OPAQUE",
+        "MASK",
+        "BLEND"
+      ],
+      "default": "OPAQUE"
+    },
+    "alphaCutoff": {
+      "type": "number",
+      "minimum": 0,
+      "default": 0.5
+    },
+    "doubleSided": {
+      "type": "boolean",
+      "default": false
+    },
+    "extensions": {
+      "type": "object",
+      "properties": {
+        "KHR_materials_specular": {
+          "$ref": "#/$defs/specular"
+        }
+      }
+    },
+    "extras": {}
+  },
+  "dependentRequired": {
+    "alphaCutoff": [
+      "alphaMode"
+    ]
+  },
+  "$defs": {
+    "baseColorFactor": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1
+      },
+      "default": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "description": "Linear straight RGBA multipliers. Omitted factor and absent texture each contribute white; defaults never mutate authored bytes."
+    },
+    "textureInfo": {
+      "$ref": "#/$defs/textureInfoBase",
+      "unevaluatedProperties": false
+    },
+    "normalTextureInfo": {
+      "$ref": "#/$defs/textureInfoBase",
+      "type": "object",
+      "properties": {
+        "scale": {
+          "type": "number",
+          "default": 1
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "occlusionTextureInfo": {
+      "$ref": "#/$defs/textureInfoBase",
+      "type": "object",
+      "properties": {
+        "strength": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 1
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "textureTransform": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "offset": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "type": "number"
+          }
+        },
+        "rotation": {
+          "type": "number"
+        },
+        "scale": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "type": "number"
+          }
+        },
+        "texCoord": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "specular": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "specularFactor": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 1
+        },
+        "specularTexture": {
+          "$ref": "#/$defs/textureInfo"
+        },
+        "specularColorFactor": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": {
+            "type": "number",
+            "minimum": 0
+          }
+        },
+        "specularColorTexture": {
+          "$ref": "#/$defs/textureInfo"
+        },
+        "extras": {}
+      }
+    },
+    "textureInfoBase": {
+      "type": "object",
+      "required": [
+        "index"
+      ],
+      "properties": {
+        "index": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "texCoord": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "extensions": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "KHR_texture_transform": {
+              "$ref": "#/$defs/textureTransform"
+            }
+          }
+        },
+        "extras": {}
+      }
+    }
+  }
+}

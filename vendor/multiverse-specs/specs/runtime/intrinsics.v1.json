@@ -25,6 +25,15 @@
       ]
     },
     {
+      "name": "InstallationPayment",
+      "fields": [
+        { "name": "payer", "type": "ref<entity>" },
+        { "name": "field", "type": "ref<field>" },
+        { "name": "amount", "type": "i64" },
+        { "name": "refund", "type": "i64" }
+      ]
+    },
+    {
       "name": "Filter",
       "fields": [
         {
@@ -217,6 +226,33 @@
       "capability": "read"
     },
     {
+      "id": "entity.orientation-component",
+      "version": 1,
+      "params": [
+        { "name": "e", "type": "ref<entity>" },
+        { "name": "component", "type": "i64" }
+      ],
+      "returns": "fixed64",
+      "reads": ["entities"],
+      "writes": [],
+      "capability": "read"
+    },
+    {
+      "id": "entity.set-orientation",
+      "version": 1,
+      "params": [
+        { "name": "e", "type": "ref<entity>" },
+        { "name": "x", "type": "fixed64" },
+        { "name": "y", "type": "fixed64" },
+        { "name": "z", "type": "fixed64" },
+        { "name": "w", "type": "fixed64" }
+      ],
+      "returns": "result<bool>",
+      "reads": [],
+      "writes": ["entities"],
+      "capability": "mutate"
+    },
+    {
       "id": "entity.teleport",
       "version": 1,
       "params": [
@@ -285,6 +321,64 @@
       "writes": [
         "entities"
       ],
+      "capability": "mutate"
+    },
+    {
+      "id": "assembly.install",
+      "version": 1,
+      "params": [
+        { "name": "target", "type": "ref<entity>" },
+        { "name": "ticks", "type": "i64" },
+        { "name": "instance", "type": "strref" },
+        { "name": "slot", "type": "strref" },
+        { "name": "part", "type": "ref<def>" },
+        { "name": "payments", "type": "list<InstallationPayment>" }
+      ],
+      "returns": "ref<job>",
+      "reads": ["entities", "defs"],
+      "writes": ["entities"],
+      "capability": "mutate"
+    },
+    {
+      "id": "assembly.replace",
+      "version": 1,
+      "params": [
+        { "name": "target", "type": "ref<entity>" },
+        { "name": "ticks", "type": "i64" },
+        { "name": "remove", "type": "strref" },
+        { "name": "instance", "type": "strref" },
+        { "name": "slot", "type": "strref" },
+        { "name": "part", "type": "ref<def>" },
+        { "name": "payments", "type": "list<InstallationPayment>" }
+      ],
+      "returns": "ref<job>",
+      "reads": ["entities", "defs"],
+      "writes": ["entities"],
+      "capability": "mutate"
+    },
+    {
+      "id": "assembly.remove",
+      "version": 1,
+      "params": [
+        { "name": "target", "type": "ref<entity>" },
+        { "name": "ticks", "type": "i64" },
+        { "name": "remove", "type": "strref" },
+        { "name": "payments", "type": "list<InstallationPayment>" }
+      ],
+      "returns": "ref<job>",
+      "reads": ["entities"],
+      "writes": ["entities"],
+      "capability": "mutate"
+    },
+    {
+      "id": "assembly.cancel",
+      "version": 1,
+      "params": [
+        { "name": "job", "type": "ref<job>" }
+      ],
+      "returns": "result<bool>",
+      "reads": ["entities"],
+      "writes": ["entities"],
       "capability": "mutate"
     },
     {
@@ -497,6 +591,19 @@
       "capability": "read"
     },
     {
+      "id": "query.def-flag",
+      "version": 1,
+      "params": [
+        { "name": "d", "type": "ref<def>" },
+        { "name": "field", "type": "strref" },
+        { "name": "key", "type": "strref" }
+      ],
+      "returns": "bool",
+      "reads": ["defs"],
+      "writes": [],
+      "capability": "read"
+    },
+    {
       "id": "order.move",
       "version": 1,
       "params": [
@@ -514,7 +621,11 @@
         }
       ],
       "returns": "result<bool>",
-      "reads": [],
+      "reads": [
+        "defs",
+        "entities",
+        "space"
+      ],
       "writes": [
         "orders"
       ],
@@ -620,7 +731,9 @@
         }
       ],
       "returns": "result<bool>",
-      "reads": [],
+      "reads": [
+        "entities"
+      ],
       "writes": [
         "orders"
       ],

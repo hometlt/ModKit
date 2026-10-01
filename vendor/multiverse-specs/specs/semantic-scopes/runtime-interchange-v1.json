@@ -232,7 +232,8 @@
       "spec": "../state/SPEC_STATE_SAVES_REPLAYS.md",
       "kinds": [
         "uv.save",
-        "uv.replay"
+        "uv.replay",
+        "uv.observations"
       ]
     },
     "fixedPoint": "../foundation/SPEC_UV_FIXED_POINT.md",

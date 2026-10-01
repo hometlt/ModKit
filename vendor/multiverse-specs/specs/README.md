@@ -120,15 +120,16 @@ Maturity and support are independent axes
 | UVP                          | yes      | yes        | yes     | 2 + 4 invalid                               | schema assertions + `uv-composition.mjs` composition vectors | reference | no | no |
 | UVB                          | yes      | yes        | yes     | 1 + 3 invalid                               | schema assertions + `uvb-binary.mjs` bijection, pinned digest | reference codec | reference codec | binary frozen |
 | UVC                          | yes      | yes        | yes     | 1 + 3 invalid                               | schema assertions                | no     | no     | no     |
-| receipts, state (save/replay) | yes     | yes        | yes     | 4 + 4 invalid, 2 + 3 invalid                | schema assertions                | no     | no     | no     |
+| receipts, state (save/replay/observations) | yes | yes | yes | save/replay plus imported-observations sparse/invalid fixtures | schema assertions + imported-observations semantic vectors | no | no | no |
 | UVS                          | yes      | yes        | yes     | 1 + 2 invalid                               | schema assertions                | no     | no     | no     |
 | UVT                          | yes      | conversion-grade | yes | 3 sidecar fixtures                    | yes, profile rules + schema      | no     | no     | no     |
 | UVA, UVV, UVF, UVG           | yes      | stub       | no      | no                                          | no                              | no     | no     | no     |
 | UVI, UVY                     | candidate| no         | no      | no                                          | no                              | no     | no     | no     |
 
-Rows updated 2026-09-01 by the Multiverse design lane: every family above with a schema has its
-fixtures executed by `conformance/schema-assertions.json` (69 assertions with an ajv 2020 engine)
-and, where a reference tool exists, by executable vectors in `uv-conformance.mjs` (69 vectors).
+Every family above with a schema has fixtures declared in
+`conformance/schema-assertions.json`; run `uv-conformance.mjs --schemas` with a
+draft-2020-12 engine to execute them. Reference tools also run the executable
+vectors in `uv-conformance.mjs`, including sparse imported observations.
 "reference" reader/writer means the dependency-free tool in `tools/`, not a product codec.
 UVA/UVV/UVF/UVG remain stubs. Admission ladder of the runtime families: `semantic-scopes/runtime-interchange-v1.json`.
 

@@ -1,0 +1,19 @@
+{
+  "uv": { "format": "UVB", "version": "2.0" },
+  "namespace": "example.value-expect",
+  "requires": { "intrinsics": [] },
+  "functions": [
+    {
+      "name": "strictIdentity",
+      "params": ["i64"],
+      "returns": "i64",
+      "registers": 3,
+      "effects": { "reads": [], "writes": [] },
+      "body": [
+        { "op": "value.box", "dst": 1, "a": 0, "type": "i64" },
+        { "op": "value.expect", "dst": 2, "a": 1, "type": "i64" },
+        { "op": "ret", "a": 2 }
+      ]
+    }
+  ]
+}

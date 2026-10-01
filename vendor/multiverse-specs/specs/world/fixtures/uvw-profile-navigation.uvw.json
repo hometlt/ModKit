@@ -1,0 +1,16 @@
+{
+  "uv": { "format": "UVW", "version": "1.0", "status": "profile" },
+  "spaces": [{
+    "id": "main",
+    "topology": "heightfield",
+    "basis": { "handedness": "right", "upAxis": "y", "forwardAxis": "+z", "unit": "meter", "metersPerUnit": 1, "unitsPerCell": 1 },
+    "bounds": { "min": [0, 0, 0], "max": [1, 1, 1] },
+    "layers": [
+      { "schemaVersion": 1, "id": "navigation", "kind": "navigation", "columns": 2, "rows": 2,
+        "cellSize": 1, "origin": [0, 0, 0], "samples": [[0, 1], [1, 0]] },
+      { "id": "terrain", "kind": "heightfield", "columns": 2, "rows": 2,
+        "cellSize": 1, "origin": [0, 0, 0], "samples": [[0, 0], [0, 0]] }
+    ]
+  }],
+  "connections": []
+}

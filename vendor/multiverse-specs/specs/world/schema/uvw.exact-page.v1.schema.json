@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modkitx.dev/specs/world/uvw.exact-page.v1.schema.json",
+  "title": "UVW exact scalar page descriptor v1",
+  "description": "Standalone storage primitive; does not admit buffers in the current UVW glTF profile. Byte length must also equal the encoding-specific count formula.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "encoding", "count", "byteLength"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "encoding": { "enum": ["f64-le", "u32-le", "u8", "bool-lsb0"] },
+    "count": { "type": "integer", "minimum": 1, "maximum": 1048576 },
+    "byteLength": { "type": "integer", "minimum": 1, "maximum": 8388608 }
+  }
+}

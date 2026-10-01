@@ -1,0 +1,12 @@
+{
+  "legacy": { "id": "grass" },
+  "colorOnly": { "id": "grass", "baseColorFactor": [0.4, 0.2, 0.1, 1] },
+  "textured": { "id": "grass", "baseColorResourceId": "grass-image", "baseColorFactor": [0.4, 0.2, 0.1, 1] },
+  "boundaries": { "id": "grass", "baseColorFactor": [0, 1, 0, 0] },
+  "rgbOnly": { "id": "grass", "baseColorFactor": [0.4, 0.2, 0.1] },
+  "extraComponent": { "id": "grass", "baseColorFactor": [0.4, 0.2, 0.1, 1, 1] },
+  "negative": { "id": "grass", "baseColorFactor": [0.4, -0.1, 0.1, 1] },
+  "aboveOne": { "id": "grass", "baseColorFactor": [0.4, 0.2, 0.1, 1.01] },
+  "stringComponent": { "id": "grass", "baseColorFactor": ["0.4", 0.2, 0.1, 1] },
+  "nullFactor": { "id": "grass", "baseColorFactor": null }
+}

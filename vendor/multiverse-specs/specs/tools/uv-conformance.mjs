@@ -19,7 +19,9 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 import { canonicalBytes, canonicalStringify, sha256Hex } from './uv-canonical.mjs'
+import { jcsStringify, uvpJsonArtifactDigest } from './uv-canonical-form.mjs'
 import { applyMutations } from './mutations.mjs'
+import { observedStateAt, verifyImportedObservations } from './uv-observations.mjs'
 import {
   assertUvmCore,
   packGlb,
@@ -30,7 +32,8 @@ import {
 import { buildFacetBundle, projectionSemanticHash, DESCRIPTOR } from './model-interchange.mjs'
 import { assertUvtProfile } from './uvt-profile.mjs'
 import { assertUvwProfile } from './uvw-profile.mjs'
-import { composePackages, resolveDefinitions } from './uv-composition.mjs'
+import { composePackages, composeVerifiedReceipt, resolveDefinitions, verifyCompositionReceipt,
+  verifiedCompositionDocuments, verifiedCompositionBytecode } from './uv-composition.mjs'
 import { encodeUvb, decodeUvb, uvbIdentityDigest, locateFirstInstructionFlags } from './uvb-binary.mjs'
 import { verifyModule, verifyCharts } from './uv-verify.mjs'
 
@@ -87,6 +90,52 @@ function runCanonicalForm() {
   return file.vectors.length
 }
 
+async function runUvpJsonArtifact() {
+  const suite = 'uvp-json-artifact'
+  const file = readJson('conformance/uvp-json-artifact/vectors.json')
+  for (const vector of file.jcs)
+    expectEqual(suite, vector.id, jcsStringify(vector.value), vector.canonicalText, 'RFC 8785/JCS text')
+  for (const vector of file.reject) {
+    const value = vector.nonFinite === undefined ? vector.value : NON_FINITE[vector.nonFinite]
+    expectThrow(suite, vector.id, vector.reason, () => jcsStringify(value))
+  }
+  for (const vector of file.artifacts)
+    expectEqual(suite, vector.id, await uvpJsonArtifactDigest(vector.family, readJson(vector.fixture)),
+      vector.digest, 'UVP JCS artifact digest')
+  const artifact = file.artifacts[0]
+  const document = readJson(artifact.fixture)
+  const baseManifest = { id: 'test/artifact', version: '1.0.0', kind: 'library', dependencies: [],
+    requires: { intrinsics: [], capabilities: [] },
+    contents: [{ family: 'uvd', path: 'schema.uvd.json', hash: artifact.digest }] }
+  for (const vector of file.composition) {
+    const manifest = structuredClone(baseManifest)
+    const grants = []
+    const compose = callback => composeVerifiedReceipt(manifest.id, [manifest], { intrinsics: [] }, grants, callback)
+    const callback = vector.mode === 'valid' ? async () => ({ digest: artifact.digest, document })
+      : vector.mode === 'mutate-caller' ? async () => {
+        manifest.contents[0].hash = `sha256:${'0'.repeat(64)}`
+        grants.push('mutate')
+        return { digest: artifact.digest, document }
+      }
+      : vector.mode === 'mismatch' ? async () => ({ digest: artifact.digest,
+        document: { ...document, role: 'definitions' } })
+        : async () => artifact.digest
+    const result = await compose(callback)
+    if (vector.refusal !== undefined) {
+      expectEqual(suite, vector.id, result.refusal?.rule, vector.refusal, 'composition refusal')
+    } else if ('refusal' in result) {
+      fail(suite, vector.id, `unexpected refusal ${result.refusal.rule}`)
+    } else {
+      const source = await verifiedCompositionDocuments(result.receipt)
+      expectEqual(suite, vector.id, source.documents?.length, vector.capturedDocuments, 'captured document count')
+      if (vector.capabilitiesGranted !== undefined)
+        expectEqual(suite, vector.id, result.receipt.requirements.capabilitiesGranted.length,
+          vector.capabilitiesGranted, 'caller mutation cannot change granted capabilities')
+    }
+  }
+  return file.jcs.length + file.reject.length + file.artifacts.length + file.composition.length
+}
+
 // --- suite: uvm-core -----------------------------------------------------------------------------
 
 /**
@@ -113,11 +162,12 @@ async function runSchemaAssertions(engineUrl) {
   }
   for (const assertion of assertions) {
     const document = readJson(assertion.document)
-    const value = assertion.pointer
+    const pointed = assertion.pointer
       .split('/')
       .filter(Boolean)
       .reduce((cursor, key) => (cursor === undefined ? undefined : cursor[key]), document)
-    const id = `${assertion.document}${assertion.pointer}`
+    const value = assertion.mutations === undefined ? pointed : applyMutations(pointed, assertion.mutations)
+    const id = assertion.id ?? `${assertion.document}${assertion.pointer}`
     const validate = ajv.getSchema(assertion.schemaId)
     checks += 1
     if (validate === undefined) {
@@ -352,6 +402,67 @@ function runUvpComposition() {
   return file.vectors.length
 }
 
+async function runCompositionReceipt() {
+  const suite = 'composition-receipt'
+  const file = readJson('conformance/composition-receipt/vectors.json')
+  for (const vector of file.vectors) {
+    const fixture = readJson(vector.fixture)
+    const receipt = applyMutations(fixture, vector.mutations)
+    const outcome = await verifyCompositionReceipt(receipt)
+    checks += 1
+    if (vector.expect === 'accept') {
+      if (outcome.refusal !== undefined) fail(suite, vector.id, `unexpected refusal ${outcome.refusal.rule}`)
+      else expectEqual(suite, vector.id, outcome.compositionHash, vector.compositionHash, 'pinned composition identity')
+    } else if (outcome.refusal?.rule !== vector.rule) {
+      fail(suite, vector.id, `expected ${vector.rule}, got ${outcome.refusal?.rule ?? 'accept'}`)
+    }
+  }
+  return file.vectors.length
+}
+
+async function runVerifiedComposition() {
+  const suite = 'verified-composition'
+  const file = readJson('conformance/verified-composition/vectors.json')
+  const registry = readJson('runtime/intrinsics.v1.json')
+  for (const vector of file.vectors) {
+    const module = applyMutations(readJson(vector.actualFixture), vector.mutations ?? [])
+    delete module.$comment
+    const bytes = encodeUvb(module)
+    const actual = await uvbIdentityDigest(bytes)
+    if (vector.corruptMagic === true) bytes[0] = 0
+    const manifests = applyMutations(file.manifests, vector.manifestMutations ?? [])
+    let reads = 0
+    const outcome = await composeVerifiedReceipt(file.root, manifests, registry,
+      vector.granted ?? ['mutate'], async () => {
+        reads += 1
+        return vector.digestOnly === true ? actual : { digest: actual, bytes }
+      })
+    expectEqual(suite, vector.id, reads, vector.reads, 'artifact reads')
+    if (vector.expect === 'accept') {
+      checks += 1
+      if (outcome.refusal !== undefined) fail(suite, vector.id, `unexpected refusal ${outcome.refusal.rule}`)
+      else {
+        expectEqual(suite, vector.id, canonicalStringify(outcome.receipt),
+          canonicalStringify(readJson(vector.receiptFixture)), 'verified receipt bytes and identity')
+        const captured = await verifiedCompositionBytecode(outcome.receipt)
+        expectEqual(suite, vector.id, captured.modules?.length, 1, 'captured one UVB module')
+        if (captured.modules?.length !== 1) continue
+        expectEqual(suite, vector.id, captured.modules?.[0]?.digest, actual, 'captured UVB identity')
+        expectEqual(suite, vector.id, Buffer.compare(Buffer.from(captured.modules?.[0]?.bytes ?? []), Buffer.from(bytes)),
+          0, 'captured canonical UVB bytes')
+        captured.modules[0].bytes[0] = 0
+        const again = await verifiedCompositionBytecode(outcome.receipt)
+        expectEqual(suite, vector.id, again.modules?.[0]?.bytes[0], bytes[0], 'private bytes are not aliased')
+      }
+    } else {
+      checks += 1
+      if (outcome.refusal?.rule !== vector.rule)
+        fail(suite, vector.id, `expected ${vector.rule}, got ${outcome.refusal?.rule ?? 'accept'}`)
+    }
+  }
+  return file.vectors.length
+}
+
 // --- suite: uvd-resolution -----------------------------------------------------------------------
 
 function runUvdResolution() {
@@ -411,7 +522,7 @@ function runUvdResolution() {
 
 // --- suite: uvb-binary ---------------------------------------------------------------------------
 
-function runUvbBinary() {
+async function runUvbBinary() {
   const suite = 'uvb-binary'
   const file = readJson('conformance/uvb-binary/vectors.json')
   for (const vector of file.vectors) {
@@ -444,7 +555,7 @@ function runUvbBinary() {
     const again = encodeUvb(decoded)
     expectEqual(suite, vector.id, Buffer.compare(Buffer.from(again), Buffer.from(bytes)), 0, 'structural → binary byte identity')
     if (vector.identityDigest !== undefined) {
-      expectEqual(suite, vector.id, uvbIdentityDigest(bytes), vector.identityDigest, 'pinned identity digest')
+      expectEqual(suite, vector.id, await uvbIdentityDigest(bytes), vector.identityDigest, 'pinned identity digest')
     }
     if (vector.byteLength !== undefined) expectEqual(suite, vector.id, bytes.length, vector.byteLength, 'pinned byte length')
   }
@@ -462,15 +573,9 @@ function runVerifier() {
     const fixture = readJson(`conformance/uvs-uvb-verifier/${vector.fixture}`)
     delete fixture.$comment
     const input = vector.mutations !== undefined ? applyMutations(fixture, vector.mutations) : fixture
-    let outcome
-    try {
-      outcome =
-        vector.kind === 'module'
-          ? verifyModule(input, registry, { granted: vector.granted })
-          : verifyCharts(input, registry, events)
-    } catch (thrown) {
-      outcome = thrown.refusal !== undefined ? thrown : { refusal: { rule: 'crash', message: String(thrown?.message ?? thrown) } }
-    }
+    const outcome = vector.kind === 'module'
+      ? verifyModule(input, registry, { granted: vector.granted, maxCallDepth: vector.maxCallDepth })
+      : verifyCharts(input, registry, events)
     checks += 1
     if (vector.expect === 'accept') {
       if (outcome.refusal !== undefined) {
@@ -507,19 +612,63 @@ function runUvFamilies() {
   return copies.length
 }
 
+// --- suite: imported-observations -----------------------------------------------------------------
+
+function runImportedObservations() {
+  const suite = 'imported-observations'
+  const vectors = readJson('conformance/imported-observations/vectors.json')
+  const document = readJson(vectors.fixture)
+  const accepted = verifyImportedObservations(document)
+  expectEqual(suite, 'accept', accepted.count, vectors.accept.count, 'observed event count')
+  expectEqual(suite, 'accept', accepted.observationsDigest,
+    vectors.accept.observationsDigest, 'canonical observation digest')
+  for (const vector of vectors.reject) {
+    const result = verifyImportedObservations(applyMutations(document, vector.mutations))
+    expectEqual(suite, vector.id, result.refusal?.rule, vector.rule, 'refusal rule')
+  }
+  for (const sample of vectors.samples) {
+    const result = observedStateAt(document, sample.tick, sample.sequence ?? Number.MAX_SAFE_INTEGER)
+    const id = `sample-${sample.tick}-${sample.sequence ?? 'end'}`
+    expectEqual(suite, id, result.subjects?.length,
+      sample.subjectCount, 'active subject count')
+    expectEqual(suite, id, result.removed?.length,
+      sample.removedCount, 'explicit removals')
+    const entity = result.subjects?.find(entry => entry.subject.kind === 'entity'
+      && entry.subject.id === '17')
+    if (sample.generation !== undefined)
+      expectEqual(suite, id, entity?.subject.generation,
+        sample.generation, 'native entity generation')
+    for (const field of ['health', 'unitType']) if (sample[field] !== undefined)
+      expectEqual(suite, id, entity?.fields.find(item => item.path === field)?.value,
+        sample[field], `retained ${field}`)
+    if (sample.healthSource !== undefined)
+      expectEqual(suite, id, entity?.fields.find(item => item.path === 'health')?.sourceEventId,
+        sample.healthSource, 'health provenance')
+    if (sample.positionX !== undefined)
+      expectEqual(suite, id,
+        entity?.fields.find(item => item.path === 'position')?.value?.x,
+        sample.positionX, 'measured position x')
+  }
+  return 1 + vectors.reject.length + vectors.samples.length
+}
+
 // --- entry point -----------------------------------------------------------------------------------
 
 const suites = {
   'canonical-form': runCanonicalForm,
+  'uvp-json-artifact': runUvpJsonArtifact,
   'uvm-core': runUvmCore,
   uvt: runUvt,
   uvw: runUvw,
   'model-interchange-v1': runModelInterchange,
   'uvp-composition': runUvpComposition,
+  'composition-receipt': runCompositionReceipt,
+  'verified-composition': runVerifiedComposition,
   'uvd-resolution': runUvdResolution,
   'uvb-binary': runUvbBinary,
   'uv-families': runUvFamilies,
   'uvs-uvb-verifier': runVerifier,
+  'imported-observations': runImportedObservations,
 }
 
 const argv = process.argv.slice(2)
@@ -534,7 +683,7 @@ if (requested !== undefined && suites[requested] === undefined) {
 let vectorCount = 0
 for (const [name, run] of Object.entries(suites)) {
   if (requested !== undefined && name !== requested) continue
-  vectorCount += run()
+  vectorCount += await run()
 }
 
 let schemaNote = requested === undefined ? '' : ', schema assertions skipped (single-suite run)'

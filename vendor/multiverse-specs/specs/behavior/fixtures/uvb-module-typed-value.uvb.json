@@ -1,0 +1,27 @@
+{
+  "uv": { "format": "UVB", "version": "2.0" },
+  "namespace": "example.typed-value",
+  "requires": { "intrinsics": [] },
+  "types": [
+    { "name": "Filter", "fields": [
+      { "name": "player", "type": "ref<player>", "optional": true },
+      { "name": "def", "type": "ref<def>", "optional": true },
+      { "name": "tag", "type": "strref", "optional": true },
+      { "name": "alive", "type": "bool", "optional": true }
+    ] }
+  ],
+  "functions": [
+    {
+      "name": "checkedRoundtrip",
+      "params": ["i64"],
+      "returns": "result<i64>",
+      "registers": 3,
+      "effects": { "reads": [], "writes": [] },
+      "body": [
+        { "op": "value.box", "dst": 1, "a": 0, "type": "i64" },
+        { "op": "value.unbox", "dst": 2, "a": 1, "type": "i64" },
+        { "op": "ret", "a": 2 }
+      ]
+    }
+  ]
+}

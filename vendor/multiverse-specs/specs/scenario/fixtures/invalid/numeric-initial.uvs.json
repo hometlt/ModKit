@@ -1,0 +1,10 @@
+{
+  "uv": { "format": "UVS", "version": "1.0" },
+  "namespace": "example",
+  "charts": [{
+    "name": "intro",
+    "initialState": "idle",
+    "variables": [{ "name": "count", "type": "i64", "initial": 2 }],
+    "states": [{ "name": "idle", "on": [] }]
+  }]
+}

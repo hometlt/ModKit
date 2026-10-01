@@ -1,5 +1,5 @@
 {
-  "$comment": "Valid fixture: the layer-order composition of the uvp-composition suite as its receipt would record it. Content digests are placeholders; the SHAPE and the composed/refused discipline are what the schema pins.",
+  "$comment": "Valid layer-order fixture with a recomputable compositionHash. Content digests are placeholders; only the receipt's internal hash relation is asserted here.",
   "kind": "uv.receipt/composition",
   "schemaVersion": 1,
   "root": {
@@ -46,6 +46,6 @@
       "control"
     ]
   },
-  "compositionHash": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+  "compositionHash": "sha256:5c2ee3dd9753e356f2135b037149e003bac485f227320b4669d2447eca9e7b58",
   "verdict": "composed"
 }

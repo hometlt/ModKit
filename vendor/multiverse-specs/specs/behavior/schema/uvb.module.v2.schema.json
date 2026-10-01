@@ -1,0 +1,452 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modkitx.org/uvb/2.0/uvb.module.schema.json",
+  "title": "UVB module (structural form)",
+  "description": "Status: proposed UVB 2.0 structural profile; binary 2.0. Adds tagged value, checked box/unbox, and record optionality. Verification is static; VM and State admission remain separate.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "uv",
+    "namespace",
+    "requires",
+    "functions"
+  ],
+  "properties": {
+    "uv": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "format",
+        "version"
+      ],
+      "properties": {
+        "format": {
+          "const": "UVB"
+        },
+        "version": {
+          "const": "2.0"
+        }
+      }
+    },
+    "namespace": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*(\\.[a-z0-9][a-z0-9-]*)*$"
+    },
+    "requires": {
+      "description": "Every intrinsic this module may call, versioned. A call to an undeclared intrinsic fails verification; the declared set is what composition checks against the table and against granted capabilities.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "intrinsics"
+      ],
+      "properties": {
+        "intrinsics": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+@[1-9]\\d*$"
+          }
+        }
+      }
+    },
+    "strings": {
+      "description": "Interned strings; instructions reference them by index. State math never touches string content.",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "functions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "params",
+          "returns",
+          "registers",
+          "effects",
+          "body"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[a-z][a-zA-Z0-9-]*$"
+          },
+          "params": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/valueType"
+            }
+          },
+          "returns": {
+            "description": "`void`, a value type, or result<T> — errors are values, obligatory to handle; exceptions do not exist.",
+            "type": "string",
+            "pattern": "^(void|value|bool|i64|fixed64|strref|ref<[a-z][a-z0-9-]*>|list<[A-Za-z0-9<>-]+>|[A-Z][A-Za-z0-9]*|result<[A-Za-z0-9<>-]+>)$"
+          },
+          "registers": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4096
+          },
+          "effects": {
+            "description": "Declared state areas. The verifier proves the union of called intrinsics' effects stays inside; the scheduler orders rules from this.",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "reads",
+              "writes"
+            ],
+            "properties": {
+              "reads": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "entities",
+                    "defs",
+                    "orders",
+                    "space",
+                    "players",
+                    "timers",
+                    "rng",
+                    "scenario"
+                  ]
+                }
+              },
+              "writes": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "entities",
+                    "defs",
+                    "orders",
+                    "space",
+                    "players",
+                    "timers",
+                    "rng",
+                    "scenario"
+                  ]
+                }
+              }
+            }
+          },
+          "body": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/$defs/instruction"
+            }
+          }
+        }
+      }
+    },
+    "$comment": {
+      "description": "Free commentary; never semantic.",
+      "type": "string"
+    },
+    "types": {
+      "description": "Nominal record types this module uses (Pos, Filter, OrderInfo, ...). Declarations must be structurally identical to the intrinsic table entries of the same name; the verifier checks that. Binary section 4.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "fields"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Za-z0-9]*$"
+          },
+          "fields": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name",
+                "type"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-zA-Z0-9]*$"
+                },
+                "type": {
+                  "$ref": "#/$defs/valueType"
+                },
+                "optional": {
+                  "const": true
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "valueType": {
+      "type": "string",
+      "pattern": "^(value|bool|i64|fixed64|strref|ref<[a-z][a-z0-9-]*>|list<[A-Za-z0-9<>-]+>|[A-Z][A-Za-z0-9]*)$",
+      "description": "Scalar, typed reference, list, or a NOMINAL RECORD named in the module `types` section (capitalised, e.g. Pos, Filter — structurally identical to the intrinsic table declaration)."
+    },
+    "instruction": {
+      "description": "One register instruction. The op set is closed: no float ops, no address arithmetic, only structural control flow. `loop` is a fallthrough iteration header with a forward exit target and a mandatory typed-error fuel check; a loop without that budget fails the schema. `call.intrinsic` indexes the module's requires list.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "op"
+      ],
+      "properties": {
+        "op": {
+          "enum": [
+            "const",
+            "move",
+            "list.get",
+            "list.set",
+            "list.len",
+            "list.append",
+            "record.get",
+            "record.set",
+            "add.i64",
+            "sub.i64",
+            "mul.i64",
+            "div.i64",
+            "add.fx",
+            "sub.fx",
+            "mul.fx",
+            "div.fx",
+            "eq",
+            "lt",
+            "le",
+            "and",
+            "or",
+            "not",
+            "br",
+            "br_if",
+            "loop",
+            "ret",
+            "call",
+            "call.intrinsic",
+            "result.ok",
+            "result.err",
+            "result.unwrap-or-branch",
+            "value.box",
+            "value.unbox",
+            "result.value-or-false",
+            "list.empty",
+            "option.unwrap-or-branch",
+            "fixed.parse-decimal",
+            "result.value-or",
+            "pos.make",
+            "value.expect"
+          ]
+        },
+        "dst": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "a": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "b": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "value": {},
+        "type": {
+          "$ref": "#/$defs/valueType"
+        },
+        "target": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "budget": {
+          "description": "loop only: mandatory typed-error check against the shared instruction fuel on every visit to the header.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "onExhausted"
+          ],
+          "properties": {
+            "onExhausted": {
+              "enum": [
+                "typed-error"
+              ]
+            }
+          }
+        },
+        "function": {
+          "type": "string"
+        },
+        "intrinsicIndex": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "args": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "source": {
+          "description": "Optional source map entry: the Luau projection line this instruction lowers, for receipts and diagnostics.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "file",
+            "line"
+          ],
+          "properties": {
+            "file": {
+              "type": "string"
+            },
+            "line": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "op": {
+                "const": "loop"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "budget",
+              "target"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "op": {
+                "const": "call.intrinsic"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "intrinsicIndex",
+              "args"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "op": {
+                "const": "call"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "function",
+              "args"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "op": {
+                "const": "const"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "dst",
+              "type",
+              "value"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "op": {
+                "enum": [
+                  "br",
+                  "br_if"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "target"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "op": {
+                "enum": [
+                  "value.box",
+                  "value.unbox",
+                  "value.expect"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "dst",
+              "a",
+              "type"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "op": { "const": "result.value-or-false" }
+            }
+          },
+          "then": { "required": ["dst", "a"] }
+        },
+        {
+          "if": { "properties": { "op": { "const": "list.empty" } } },
+          "then": { "required": ["dst", "type"] }
+        },
+        {
+          "if": { "properties": { "op": { "const": "option.unwrap-or-branch" } } },
+          "then": { "required": ["dst", "a", "target"] }
+        },
+        {
+          "if": { "properties": { "op": { "const": "fixed.parse-decimal" } } },
+          "then": { "required": ["dst", "a"] }
+        },
+        {
+          "if": { "properties": { "op": { "const": "result.value-or" } } },
+          "then": { "required": ["dst", "a", "b"] }
+        },
+        {
+          "if": { "properties": { "op": { "const": "pos.make" } } },
+          "then": { "required": ["dst", "type", "args"] }
+        },
+        {
+          "if": { "properties": { "op": { "const": "list.append" } } },
+          "then": { "required": ["dst", "a", "b"] }
+        }
+      ]
+    }
+  }
+}

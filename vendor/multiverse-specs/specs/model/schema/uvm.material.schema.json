@@ -152,7 +152,8 @@
                 "ao",
                 "height",
                 "env",
-                "decal"
+                "decal",
+                "caustics"
               ]
             },
             {
@@ -164,6 +165,14 @@
           "type": "integer",
           "minimum": 0
         },
+        "frames": {
+          "type": "array", "minItems": 1, "maxItems": 256,
+          "items": { "type": "integer", "minimum": 0 },
+          "description": "Ordered texture indices for a presentation-clock flipbook."
+        },
+        "framesPerSecond": { "type": "number", "minimum": 0 },
+        "timeDomain": { "const": "presentation-seconds" },
+        "channelPacking": { "const": "rg-ba-xy" },
         "uv": {
           "type": "integer",
           "minimum": 0,
@@ -217,7 +226,11 @@
           "default": ["repeat", "repeat"]
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "allOf": [{
+        "if": { "required": ["frames"] },
+        "then": { "required": ["framesPerSecond", "timeDomain"] }
+      }]
     },
     "vec2": {
       "type": "array",
@@ -226,6 +239,65 @@
       },
       "minItems": 2,
       "maxItems": 2
+    },
+    "vec4": {
+      "type": "array", "minItems": 4, "maxItems": 4,
+      "items": { "type": "number" }
+    },
+    "nonzeroVec4": {
+      "type": "array", "minItems": 4, "maxItems": 4,
+      "items": {
+        "anyOf": [
+          { "type": "number", "exclusiveMaximum": 0 },
+          { "type": "number", "exclusiveMinimum": 0 }
+        ]
+      }
+    },
+    "waterSurfaceParams": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schemaVersion", "inputs", "surfaceCoordinateSystem", "timeDomain"],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "inputs": { "const": ["world-position", "water-depth", "shadow"] },
+        "surfaceCoordinateSystem": { "const": "world-xz" },
+        "timeDomain": { "const": "presentation-seconds" },
+        "surfaceUvScale": { "$ref": "#/$defs/nonzeroVec4" },
+        "surfaceScroll": { "$ref": "#/$defs/vec4" },
+        "colorFalloff": { "type": "number", "minimum": 0 },
+        "specularity": { "type": "number", "minimum": 0 },
+        "specularScale": { "type": "number", "minimum": 0 },
+        "reflectivityPower": { "type": "number", "exclusiveMinimum": 0 },
+        "causticsFalloff": { "type": "number", "minimum": 0 },
+        "receiveShadows": { "type": "boolean" }
+      }
+    },
+    "waterSurfaceLayer": {
+      "allOf": [
+        { "$ref": "#/$defs/layer" },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["slot", "texture"],
+          "properties": {
+            "slot": { "enum": ["diffuse", "layer1", "normal", "caustics"] },
+            "texture": { "type": "integer", "minimum": 0 },
+            "op": { "enum": ["blend", "modulate", "add"] },
+            "channelPacking": { "const": "rg-ba-xy" },
+            "frames": { "type": "array", "minItems": 1, "maxItems": 256,
+              "items": { "type": "integer", "minimum": 0 } },
+            "framesPerSecond": { "type": "number", "minimum": 0 },
+            "timeDomain": { "const": "presentation-seconds" },
+            "tiling": { "$ref": "#/$defs/vec2" }
+          },
+          "allOf": [
+            { "if": { "properties": { "slot": { "const": "normal" } }, "required": ["slot"] },
+              "then": { "required": ["channelPacking"] } },
+            { "if": { "properties": { "slot": { "const": "caustics" } }, "required": ["slot"] },
+              "then": { "required": ["frames", "framesPerSecond", "timeDomain"] } },
+            { "if": { "properties": { "slot": { "const": "layer1" } }, "required": ["slot"] },
+              "then": { "required": ["op"] } }
+          ]
+        }
+      ]
     },
     "gameMaterial": {
       "$anchor": "gameMaterial",
@@ -323,7 +395,19 @@
         },
         "extras": {}
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "allOf": [{
+        "if": { "properties": { "shader": { "const": "uv.water.surface@1" } }, "required": ["shader"] },
+        "then": {
+          "required": ["layers", "params"],
+          "properties": {
+            "shader": { "const": "uv.water.surface@1" },
+            "layers": { "type": "array", "items": { "$ref": "#/$defs/waterSurfaceLayer" } },
+            "params": { "$ref": "#/$defs/waterSurfaceParams" }
+          },
+          "additionalProperties": false
+        }
+      }]
     }
   },
   "oneOf": [

@@ -1,0 +1,247 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+  "title": "UVW glTF space-graph profile, version 1",
+  "description": "Exact spatial JSON in a required glTF extension with standard glTF materials and package-local PNG/JPEG resources. No visual fallback or buffers. Existing UVW geometry definitions remain the sole schema owner.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["asset", "extensionsUsed", "extensionsRequired", "extensions"],
+  "properties": {
+    "asset": {
+      "type": "object", "additionalProperties": false, "required": ["version", "extras"],
+      "properties": {
+        "version": { "const": "2.0" },
+        "extras": {
+          "type": "object", "additionalProperties": false, "required": ["uv"],
+          "properties": {
+            "uv": { "const": { "format": "UVW", "version": "1.0", "profile": "space-graph" } }
+          }
+        }
+      }
+    },
+    "extensionsUsed": {
+      "type": "array", "minItems": 1, "uniqueItems": true,
+      "items": { "enum": ["UV_world_graph", "UV_game_material", "KHR_materials_specular", "KHR_texture_transform"] },
+      "contains": { "const": "UV_world_graph" }
+    },
+    "extensionsRequired": { "const": ["UV_world_graph"] },
+    "extensions": {
+      "type": "object", "additionalProperties": false, "required": ["UV_world_graph"],
+      "properties": { "UV_world_graph": { "$ref": "#/$defs/worldGraph" } }
+    },
+    "materials": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/material" } },
+    "images": { "type": "array", "minItems": 1, "maxItems": 4096, "items": { "$ref": "#/$defs/image" } },
+    "textures": { "type": "array", "minItems": 1, "maxItems": 4096, "items": { "$ref": "#/$defs/texture" } },
+    "samplers": { "type": "array", "minItems": 1, "maxItems": 4096, "items": { "$ref": "#/$defs/sampler" } },
+    "extras": {
+      "type": "object", "additionalProperties": false, "required": ["sourceComment"],
+      "properties": { "sourceComment": { "type": "string" } }
+    }
+  },
+  "$defs": {
+    "spatialLayerKinds": { "enum": ["heightfield", "cliffs", "objects", "regions", "gateways", "lighting", "navigation", "traversal"] },
+    "image": {
+      "type": "object", "additionalProperties": false, "required": ["uri", "mimeType"],
+      "properties": {
+        "uri": { "type": "string", "minLength": 1, "pattern": "^[^/\\\\:?#\\s][^\\\\:?#\\s]*$" },
+        "mimeType": { "enum": ["image/png", "image/jpeg"] },
+        "name": { "type": "string" }
+      }
+    },
+    "texture": {
+      "type": "object", "additionalProperties": false, "required": ["source"],
+      "properties": {
+        "source": { "type": "integer", "minimum": 0 },
+        "sampler": { "type": "integer", "minimum": 0 },
+        "name": { "type": "string" }
+      }
+    },
+    "sampler": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "magFilter": { "enum": [9728, 9729] },
+        "minFilter": { "enum": [9728, 9729, 9984, 9985, 9986, 9987] },
+        "wrapS": { "enum": [33071, 33648, 10497] },
+        "wrapT": { "enum": [33071, 33648, 10497] },
+        "name": { "type": "string" }
+      }
+    },
+    "resource": {
+      "type": "object", "additionalProperties": false, "required": ["id", "original", "outputs"],
+      "properties": {
+        "id": { "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/localId" },
+        "original": {
+          "type": "object", "additionalProperties": false, "required": ["family", "path"],
+          "properties": {
+            "family": { "enum": ["media", "uvm"] },
+            "path": { "type": "string", "minLength": 1 }
+          }
+        },
+        "outputs": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "type": "object", "additionalProperties": false, "required": ["usage", "texture"],
+                "properties": {
+                  "usage": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$",
+                    "not": { "const": "weight-rgba8" } },
+                  "texture": { "type": "integer", "minimum": 0 }
+                }
+              },
+              {
+                "type": "object", "additionalProperties": false, "required": ["usage", "path", "encoding"],
+                "properties": {
+                  "usage": { "const": "weight-rgba8" },
+                  "path": { "type": "string", "minLength": 1 },
+                  "encoding": { "const": "rgba8-unorm" }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "resourcesLayer": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schemaVersion", "id", "kind", "resources"],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "id": { "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/localId" },
+        "kind": { "const": "resources" },
+        "label": { "type": "string" },
+        "resources": { "type": "array", "items": { "$ref": "#/$defs/resource" } }
+      }
+    },
+    "material": {
+      "$ref": "https://modkitx.org/gltf/2.0/material.profile.schema.json",
+      "type": "object",
+      "properties": {
+        "extensions": {
+          "type": "object", "additionalProperties": false,
+          "properties": {
+            "KHR_materials_specular": { "type": "object" },
+            "UV_game_material": {
+              "$ref": "https://modkitx.org/uvm/1.0/uvm.material.schema.json#gameMaterial",
+              "properties": { "shader": { "const": "uv.water.surface@1" } }
+            }
+          }
+        }
+      }
+    },
+    "terrainMaterial": {
+      "type": "object", "additionalProperties": false, "required": ["id", "material"],
+      "properties": {
+        "id": { "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/localId" },
+        "material": { "type": "integer", "minimum": 0 },
+        "classification": { "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/terrainMaterial/properties/classification" },
+        "sourceIndex": { "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/terrainMaterial/properties/sourceIndex" }
+      }
+    },
+    "waterMaterial": {
+      "type": "object", "additionalProperties": false, "required": ["id", "material"],
+      "properties": {
+        "id": { "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/localId" },
+        "material": { "type": "integer", "minimum": 0 },
+        "classification": { "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/waterMaterial/properties/classification" },
+        "shorelineMode": { "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/waterMaterial/properties/shorelineMode" }
+      }
+    },
+    "terrainMaterialsLayer": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schemaVersion", "id", "kind", "columns", "rows", "cellSize", "origin", "materials"],
+      "oneOf": [
+        { "required": ["samples"], "not": { "required": ["weightRasters"] } },
+        { "required": ["weightRasters", "rasterSampling", "weightAuthoring"], "not": { "required": ["samples"] } }
+      ],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "id": { "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/localId" },
+        "kind": { "const": "terrain-materials" },
+        "label": { "type": "string" },
+        "columns": { "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/terrainMaterialsLayer/properties/columns" },
+        "rows": { "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/terrainMaterialsLayer/properties/rows" },
+        "cellSize": { "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/terrainMaterialsLayer/properties/cellSize" },
+        "origin": { "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/vec3" },
+        "materials": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/terrainMaterial" } },
+        "samples": { "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/materialWeightGrid" },
+        "weightAuthoring": { "const": "raster" },
+        "weightRasters": {
+          "type": "array", "minItems": 1, "maxItems": 2,
+          "items": { "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/terrainWeightRaster" }
+        },
+        "rasterSampling": {
+          "type": "object", "additionalProperties": false,
+          "required": ["coordinates", "filter", "wrap", "normalization", "zeroSum"],
+          "properties": {
+            "coordinates": { "const": "material-grid-extent" },
+            "filter": { "const": "bilinear" },
+            "wrap": { "const": "clamp" },
+            "normalization": { "const": "sum" },
+            "zeroSum": {
+              "oneOf": [
+                { "type": "object", "additionalProperties": false,
+                  "required": ["mode"], "properties": { "mode": { "const": "refuse" } } },
+                { "type": "object", "additionalProperties": false,
+                  "required": ["mode", "materialId"],
+                  "properties": { "mode": { "const": "material" },
+                    "materialId": { "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/localId" } } }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "waterLayer": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schemaVersion", "id", "kind", "zones"],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "id": { "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/localId" },
+        "kind": { "const": "water" },
+        "label": { "type": "string" },
+        "materials": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/waterMaterial" } },
+        "zones": { "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/waterLayer/properties/zones" }
+      }
+    },
+    "space": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "topology", "basis", "bounds", "layers"],
+      "properties": {
+        "id": { "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/heightfieldSpace/properties/id" },
+        "topology": { "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/heightfieldSpace/properties/topology" },
+        "label": { "type": "string" },
+        "basis": { "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/basis" },
+        "bounds": { "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/heightfieldSpace/properties/bounds" },
+        "layers": {
+          "type": "array", "minItems": 1,
+          "contains": { "type": "object", "required": ["kind"], "properties": { "kind": { "const": "heightfield" } } },
+          "items": {
+            "oneOf": [
+              { "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/heightfieldLayer" },
+              { "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/cliffsLayer" },
+              { "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/objectsLayer" },
+              { "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/regionsLayer" },
+              { "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/gatewaysLayer" },
+              { "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/lightingLayer" },
+              { "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/navigationLayer" },
+              { "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/traversalLayer" },
+              { "$ref": "#/$defs/terrainMaterialsLayer" },
+              { "$ref": "#/$defs/waterLayer" },
+              { "$ref": "#/$defs/resourcesLayer" }
+            ]
+          }
+        }
+      }
+    },
+    "worldGraph": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schemaVersion", "spaces", "connections"],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "spaces": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/space" } },
+        "connections": { "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/properties/connections" }
+      }
+    }
+  }
+}

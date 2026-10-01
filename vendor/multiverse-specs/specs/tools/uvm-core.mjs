@@ -4,7 +4,8 @@
  * Scope: exactly what `model-interchange-v1` needs from a UVM artifact, and nothing more. It is
  * not a full UVM implementation: the optional `UV_*` planes (materials, skeleton, animation
  * clips, effects, collision, LOD, variants) are read as counts or ignored, because 1.0 of the
- * scope hashes counts and structure, not those planes.
+ * scope hashes counts and structure, not those planes. Standard material resource
+ * references are checked by the shared glTF verifier used by UVW migration.
  *
  * The fixture source form is `.uvm.gltf` with one `data:` buffer, because a spec repository has
  * to be diffable. `packGlb` produces the `.uvm.glb` bytes from it under a documented, byte-stable
@@ -15,40 +16,13 @@
  */
 
 import { readFileSync } from 'node:fs'
+import { assertUvmCore } from './uvm-profile.mjs'
+export { assertUvmCore } from './uvm-profile.mjs'
+export { packGlb, unpackGlb } from './gltf-container.mjs'
 
-const GLB_MAGIC = 0x46546c67
-const JSON_CHUNK = 0x4e4f534a
-const BIN_CHUNK = 0x004e4942
 const COMPONENT_BYTES = { 5121: 1, 5123: 2, 5125: 4, 5126: 4 }
 const COMPONENT_COUNTS = { SCALAR: 1, VEC2: 2, VEC3: 3, VEC4: 4 }
 const IDENTITY = Object.freeze([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1])
-
-const encoder = new TextEncoder()
-const decoder = new TextDecoder('utf-8', { fatal: true })
-
-function concat(...parts) {
-  const total = parts.reduce((size, part) => size + part.byteLength, 0)
-  const result = new Uint8Array(total)
-  let cursor = 0
-  for (const part of parts) {
-    result.set(part, cursor)
-    cursor += part.byteLength
-  }
-  return result
-}
-
-function le32(value) {
-  const result = new Uint8Array(4)
-  new DataView(result.buffer).setUint32(0, value, true)
-  return result
-}
-
-function pad4(bytes, fill) {
-  const result = new Uint8Array((bytes.byteLength + 3) & ~3)
-  result.fill(fill)
-  result.set(bytes)
-  return result
-}
 
 // --- fixture source form -----------------------------------------------------------------------
 
@@ -77,86 +51,7 @@ export function readGltfFixture(path) {
   return { document: packed, binary }
 }
 
-/**
- * Pack a GLB-shaped document plus BIN payload into `.uvm.glb` bytes.
- *
- * Byte stability rule: JSON is `JSON.stringify` of the document with no whitespace, so the key
- * order committed in the fixture is the key order on the wire; the JSON chunk is padded with
- * 0x20 and the BIN chunk with 0x00 to the next multiple of four. Nothing here depends on hash
- * iteration order, so packing the same fixture twice produces the same bytes.
- */
-export function packGlb(document, binary) {
-  const json = pad4(encoder.encode(JSON.stringify(document)), 0x20)
-  const bin = pad4(binary, 0x00)
-  const jsonChunk = concat(le32(json.byteLength), le32(JSON_CHUNK), json)
-  const binChunk = concat(le32(bin.byteLength), le32(BIN_CHUNK), bin)
-  const length = 12 + jsonChunk.byteLength + binChunk.byteLength
-  return concat(le32(GLB_MAGIC), le32(2), le32(length), jsonChunk, binChunk)
-}
-
-export function unpackGlb(bytes) {
-  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
-  if (bytes.byteLength < 20 || view.getUint32(0, true) !== GLB_MAGIC) {
-    throw new TypeError('UVM requires the GLB magic')
-  }
-  if (view.getUint32(4, true) !== 2) throw new TypeError('UVM requires GLB version 2')
-  if (view.getUint32(8, true) !== bytes.byteLength) {
-    throw new TypeError('UVM GLB declared length does not match the source')
-  }
-  let cursor = 12
-  let document
-  let binary = new Uint8Array()
-  while (cursor < bytes.byteLength) {
-    const length = view.getUint32(cursor, true)
-    const type = view.getUint32(cursor + 4, true)
-    const start = cursor + 8
-    const end = start + length
-    if (end > bytes.byteLength) throw new TypeError('UVM GLB chunk exceeds the source length')
-    if (type === JSON_CHUNK) {
-      document = JSON.parse(decoder.decode(bytes.subarray(start, end)).replace(/[\u0000\u0020]+$/u, ''))
-    } else if (type === BIN_CHUNK) {
-      binary = bytes.slice(start, end)
-    }
-    cursor = end
-  }
-  if (document === undefined) throw new TypeError('UVM GLB has no JSON chunk')
-  return { document, binary }
-}
-
 // --- profile marker ----------------------------------------------------------------------------
-
-/** Assert the UVM/core 1.0 markers the profile requires. Throws with the failing rule named. */
-export function assertUvmCore(document) {
-  const asset = document.asset
-  if (asset?.version !== '2.0') throw new TypeError('UVM asset.version must be 2.0')
-  const uv = asset.extras?.uv
-  if (uv?.format !== 'UVM' || uv.version !== '1.0' || uv.profile !== 'core') {
-    throw new TypeError('asset.extras.uv must identify the UVM/core 1.0 profile')
-  }
-  const used = document.extensionsUsed ?? []
-  for (const required of ['UV_asset', 'UV_provenance']) {
-    if (!used.includes(required)) throw new TypeError(`${required} is not declared in extensionsUsed`)
-    if (document.extensions?.[required] === undefined) {
-      throw new TypeError(`${required} is declared but absent`)
-    }
-  }
-  if ((document.extensionsRequired ?? []).some(id => String(id).startsWith('UV_'))) {
-    throw new TypeError('UVM/core must not require a UV_ extension')
-  }
-  const identity = document.extensions.UV_asset
-  if (typeof identity.id !== 'string' || identity.id.trim() === '') {
-    throw new TypeError('UV_asset requires a non-empty id')
-  }
-  const provenance = document.extensions.UV_provenance
-  if (
-    typeof provenance.source?.format !== 'string' ||
-    typeof provenance.importer?.id !== 'string' ||
-    typeof provenance.importer?.version !== 'string'
-  ) {
-    throw new TypeError('UV_provenance requires source format and importer coordinate')
-  }
-  return document
-}
 
 // --- accessors ---------------------------------------------------------------------------------
 

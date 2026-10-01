@@ -42,7 +42,7 @@
       "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$"
     },
     "kind": {
-      "description": "What role the package plays in composition. `map` REQUIRES exactly one uvw entry in contents. `library` carries shared UVB/UVS/UVD for other packages and no world. The kind name `universe` (multi-world packages with inter-world portals, DESIGN_UVW_TOPOLOGIES §5) is RESERVED and not admitted by this version.",
+      "description": "What role the package plays in composition. `map` REQUIRES exactly one uvw entry in contents. `library` carries shared UVB/UVS/UVD for other packages and no world. Immutable worldInstances selection is independent of kind. The kind name `universe` for a later connected-world package profile is RESERVED.",
       "enum": [
         "game-base",
         "mod",
@@ -88,7 +88,7 @@
             "description": "Package-relative, forward-slash: no drive letter, no leading slash, no `..` segment. `a..b.json` is a legal name; `/etc/x`, `C:/x` and `../x` are not."
           },
           "hash": {
-            "description": "Algorithm-qualified canonical digest, e.g. `sha256:<64 hex>`.",
+            "description": "Algorithm-qualified canonical digest, e.g. `sha256:<64 hex>`. UVD/UVW use the domain-tagged RFC 8785/JCS envelope in SPEC_UVP.md; other families retain their own identity profiles.",
             "type": "string",
             "pattern": "^sha256:[0-9a-f]{64}$"
           },
@@ -167,6 +167,44 @@
               "space-mutate"
             ]
           }
+        }
+      }
+    },
+    "worldInstances": {
+      "description": "Immutable root selection of UVW instances. Dependency selections are presets and require an explicit root selection. An instance reuses captured UVW geometry with isolated entities, blockers and orders within the one runtime State. Local space IDs become <instance>/<space>; no unqualified fallback. Omitting this field retains the single-world legacy profile. Portals, frame motion and dynamic instance creation are not admitted by this profile.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "instances"],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "instances": {
+          "description": "Unique instance IDs, sorted in ASCII order. The target must name exactly one UVW content entry in the reachable package closure. Repeated targets with different IDs are allowed.",
+          "type": "array", "minItems": 1, "maxItems": 64,
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["id", "packageId", "path"],
+            "properties": {
+              "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$", "maxLength": 48,
+                "description": "Stable match-local identity; independent of array position and content digest." },
+              "packageId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*(\\.[a-z0-9][a-z0-9-]*)*/[a-z0-9][a-z0-9-]*$" },
+              "path": { "type": "string", "minLength": 1,
+                "pattern": "^(?![A-Za-z]:)(?!/)(?!.*(?:^|/)(?:\\.|\\.\\.)(?:/|$))(?!.*//)(?!.*?/$)[^\\\\\\u0000]+$",
+                "description": "Exact package-relative UVW content path, not a host URI. No empty, dot or parent segments." }
+            }
+          }
+        }
+      }
+    },
+    "runtimeRules": {
+      "description": "Immutable rules selected by the root before a match. Dependencies may supply presets, but a root must explicitly select a complete policy if any dependency declares one. Rules are bound into composition identity and cannot change through runtime commands. UVD remains the owner of game definitions; UVW remains the owner of topology. Omission preserves the legacy bounded runtime profile.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "worldMutation"],
+      "properties": {
+        "schemaVersion": { "const": 1, "description": "Version of the immutable runtime policy. Unknown versions are refused before launch." },
+        "worldMutation": {
+          "description": "none freezes world topology while entities may still move; cell-blockers permits independent source-keyed closure of initially walkable traversal cells. Neither value admits terrain editing, digging, portals or moving frames.",
+          "enum": ["none", "cell-blockers"]
         }
       }
     },

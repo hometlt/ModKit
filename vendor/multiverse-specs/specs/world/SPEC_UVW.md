@@ -9,6 +9,9 @@ heightfield base facet, and the StarCraft II and Warzone 2100 live publishers ha
 measured candidate materializations. The two-family evidence gate is closed, but block 18 has not
 yet frozen the admitted scope, so nothing here is a release compatibility guarantee
 **Extension:** `.uvw.json` · **Physical base:** canonical JSON
+**Target architecture (owner confirmed 2026-09-28):** glTF 2.0 plus `UV_world_*`;
+the JSON form above is the current implementation, not that completed migration.
+See the [staged migration plan](../../design/PLAN_UVW_GLTF_MIGRATION_2026-09-28.md).
 **Schema:** [`schema/uvw.candidate.v1.schema.json`](schema/uvw.candidate.v1.schema.json) ·
 **Vectors:** [`../conformance/uvw/vectors.json`](../conformance/uvw/vectors.json)
 

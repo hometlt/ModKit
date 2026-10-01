@@ -1,0 +1,10 @@
+{
+  "f64": { "schemaVersion": 1, "encoding": "f64-le", "count": 4, "byteLength": 32 },
+  "u32": { "schemaVersion": 1, "encoding": "u32-le", "count": 4, "byteLength": 16 },
+  "u8": { "schemaVersion": 1, "encoding": "u8", "count": 4, "byteLength": 4 },
+  "booleans": { "schemaVersion": 1, "encoding": "bool-lsb0", "count": 9, "byteLength": 2 },
+  "zeroCount": { "schemaVersion": 1, "encoding": "u8", "count": 0, "byteLength": 1 },
+  "overBudget": { "schemaVersion": 1, "encoding": "u8", "count": 1048577, "byteLength": 1048577 },
+  "float32": { "schemaVersion": 1, "encoding": "f32-le", "count": 1, "byteLength": 4 },
+  "unknownField": { "schemaVersion": 1, "encoding": "u8", "count": 1, "byteLength": 1, "stride": 2 }
+}

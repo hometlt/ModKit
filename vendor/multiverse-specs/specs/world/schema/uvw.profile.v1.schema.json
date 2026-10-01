@@ -121,6 +121,7 @@
             "resources",
             "regions",
             "navigation",
+            "traversal",
             "gateways",
             "lighting"
           ]
@@ -136,6 +137,7 @@
         { "$ref": "#/$defs/resourcesLayer" },
         { "$ref": "#/$defs/regionsLayer" },
         { "$ref": "#/$defs/navigationLayer" },
+        { "$ref": "#/$defs/traversalLayer" },
         { "$ref": "#/$defs/gatewaysLayer" },
         { "$ref": "#/$defs/lightingLayer" }
       ]
@@ -269,6 +271,10 @@
         "label": { "type": "string" },
         "classification": { "type": "string" },
         "sourceIndex": { "type": "integer", "minimum": 0 },
+        "baseColorFactor": {
+          "description": "glTF pbrMetallicRoughness.baseColorFactor semantics: linear, straight RGBA in [0,1]. Multiplies the linear base-color texture sample; without a base-color texture, this factor is the base color. Omission means [1,1,1,1]; this default is interpreted, never injected into canonical authored bytes. Alpha coverage is separate from terrain blend weights and does not itself select a transparency mode.",
+          "$ref": "https://modkitx.org/gltf/2.0/material.profile.schema.json#/$defs/baseColorFactor"
+        },
         "baseColorResourceId": { "$ref": "#/$defs/localId" },
         "normalResourceId": { "$ref": "#/$defs/localId" },
         "specularResourceId": { "$ref": "#/$defs/localId" },
@@ -436,13 +442,19 @@
           }
         },
         "scroll": { "$ref": "#/$defs/vec4" },
+        "normalResourceId": { "$ref": "#/$defs/localId" },
         "colorFalloff": { "type": "number", "minimum": 0 },
         "specularity": { "type": "number", "minimum": 0 },
         "specularScale": { "type": "number", "minimum": 0 },
         "reflectivityPower": { "type": "number", "exclusiveMinimum": 0 },
         "causticsResourceId": { "$ref": "#/$defs/localId" },
+        "causticsFrameResourceIds": {
+          "type": "array", "minItems": 1,
+          "items": { "$ref": "#/$defs/localId" }
+        },
         "causticsScale": { "$ref": "#/$defs/uvScale" },
         "causticsFramesPerSecond": { "type": "number", "minimum": 0 },
+        "causticsFalloff": { "type": "number", "minimum": 0 },
         "receiveShadows": { "type": "boolean" }
       }
     },
@@ -616,6 +628,30 @@
         "samples": { "$ref": "#/$defs/integerGrid" }
       }
     },
+    "traversalLayer": {
+      "$comment": "Portable static cell traversal for one movement class. Each exits mask has bits 1=+x, 2=-x, 4=+z, 8=-z. One-way edges are valid; dynamic blockers are Runtime state.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "id", "kind", "classId", "columns", "rows", "cellSize", "origin", "walkable", "exits"],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "id": { "$ref": "#/$defs/localId" },
+        "kind": { "const": "traversal" },
+        "label": { "type": "string" },
+        "classId": { "$ref": "#/$defs/localId" },
+        "surfaceLayerId": { "$ref": "#/$defs/localId" },
+        "columns": { "type": "integer", "minimum": 1 },
+        "rows": { "type": "integer", "minimum": 1 },
+        "cellSize": { "type": "number", "exclusiveMinimum": 0 },
+        "origin": { "$ref": "#/$defs/vec3" },
+        "walkable": { "$ref": "#/$defs/booleanGrid" },
+        "exits": {
+          "type": "array", "minItems": 1,
+          "items": { "type": "array", "minItems": 1,
+            "items": { "type": "integer", "minimum": 0, "maximum": 15 } }
+        }
+      }
+    },
     "gatewaySegment": {
       "type": "object",
       "additionalProperties": false,
@@ -644,12 +680,35 @@
     "directionalLight": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "direction", "color", "intensity"],
+      "required": [
+        "id",
+        "direction",
+        "color",
+        "intensity"
+      ],
       "properties": {
-        "id": { "$ref": "#/$defs/localId" },
-        "direction": { "$ref": "#/$defs/vec3" },
-        "color": { "$ref": "#/$defs/vec3" },
-        "intensity": { "type": "number", "exclusiveMinimum": 0 }
+        "id": {
+          "$ref": "#/$defs/localId"
+        },
+        "direction": {
+          "$ref": "#/$defs/vec3"
+        },
+        "color": {
+          "$ref": "#/$defs/vec3"
+        },
+        "intensity": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "specularColor": {
+          "$ref": "#/$defs/vec3"
+        },
+        "specularIntensity": {
+          "type": "number"
+        },
+        "useAmbientOcclusion": {
+          "type": "boolean"
+        }
       }
     },
     "lightingLayer": {
@@ -664,15 +723,162 @@
         "directional"
       ],
       "properties": {
-        "schemaVersion": { "const": 1 },
-        "id": { "$ref": "#/$defs/localId" },
-        "kind": { "const": "lighting" },
-        "label": { "type": "string" },
-        "ambientColor": { "$ref": "#/$defs/vec3" },
-        "ambientIntensity": { "type": "number", "minimum": 0 },
+        "schemaVersion": {
+          "const": 1
+        },
+        "id": {
+          "$ref": "#/$defs/localId"
+        },
+        "kind": {
+          "const": "lighting"
+        },
+        "label": {
+          "type": "string"
+        },
+        "ambientColor": {
+          "$ref": "#/$defs/vec3"
+        },
+        "ambientIntensity": {
+          "type": "number",
+          "minimum": 0
+        },
         "directional": {
           "type": "array",
-          "items": { "$ref": "#/$defs/directionalLight" }
+          "items": {
+            "$ref": "#/$defs/directionalLight"
+          }
+        },
+        "toneMapping": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "operator",
+            "exposure",
+            "whitePoint",
+            "contrast"
+          ],
+          "properties": {
+            "operator": {
+              "enum": [
+                "reinhard",
+                "exponential",
+                "logarithmic",
+                "linear",
+                "filmic"
+              ]
+            },
+            "exposure": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "whitePoint": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "contrast": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "correctGamma": {
+              "type": "boolean"
+            },
+            "colorization": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "inputLow",
+                "inputHigh",
+                "inputGamma",
+                "outputLow",
+                "outputHigh",
+                "brightness",
+                "contrast",
+                "hue",
+                "saturation",
+                "lightness",
+                "blend"
+              ],
+              "properties": {
+                "inputLow": {
+                  "type": "number"
+                },
+                "inputHigh": {
+                  "type": "number"
+                },
+                "inputGamma": {
+                  "type": "number"
+                },
+                "outputLow": {
+                  "type": "number"
+                },
+                "outputHigh": {
+                  "type": "number"
+                },
+                "brightness": {
+                  "type": "number"
+                },
+                "contrast": {
+                  "type": "number"
+                },
+                "hue": {
+                  "type": "number"
+                },
+                "saturation": {
+                  "type": "number"
+                },
+                "lightness": {
+                  "type": "number"
+                },
+                "blend": {
+                  "type": "number"
+                }
+              }
+            },
+            "ambientOcclusion": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "radius",
+                "noOcclusion",
+                "fullOcclusion",
+                "power"
+              ],
+              "properties": {
+                "radius": {
+                  "type": "number"
+                },
+                "noOcclusion": {
+                  "type": "number"
+                },
+                "fullOcclusion": {
+                  "type": "number"
+                },
+                "power": {
+                  "type": "number"
+                }
+              }
+            }
+          }
+        },
+        "terrain": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "specularExponent",
+            "diffuseMultiplier",
+            "specularMultiplier"
+          ],
+          "properties": {
+            "specularExponent": {
+              "type": "number"
+            },
+            "diffuseMultiplier": {
+              "type": "number"
+            },
+            "specularMultiplier": {
+              "type": "number"
+            }
+          }
         }
       }
     }

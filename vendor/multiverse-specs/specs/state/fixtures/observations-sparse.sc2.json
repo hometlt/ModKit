@@ -1,0 +1,117 @@
+{
+  "$comment": "Imported SC2 observations have source identity and native loops but no invented universal kernel, seed, or commands. Absence at tick 13 does not remove entity 17; removal at tick 40 is explicit.",
+  "kind": "uv.observations",
+  "schemaVersion": 1,
+  "source": {
+    "game": "starcraft2",
+    "format": "sc2replay",
+    "artifactDigest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "version": "fixture"
+  },
+  "clock": {
+    "domain": "sc2.game-loop",
+    "ticksPerSecond": {
+      "numerator": "112",
+      "denominator": "5"
+    }
+  },
+  "observations": [
+    {
+      "tick": "12",
+      "sequence": 0,
+      "sourceEventId": "tracker/12/0",
+      "coverage": "complete-subject",
+      "subject": {
+        "kind": "entity",
+        "id": "17",
+        "generation": "0"
+      },
+      "action": "fields",
+      "fields": [
+        {
+          "path": "position",
+          "value": {
+            "x": "65536",
+            "y": "0",
+            "z": "131072"
+          }
+        },
+        {
+          "path": "health",
+          "value": "45"
+        }
+      ]
+    },
+    {
+      "tick": "13",
+      "sequence": 0,
+      "sourceEventId": "tracker/13/0",
+      "coverage": "partial",
+      "subject": {
+        "kind": "entity",
+        "id": "17",
+        "generation": "0"
+      },
+      "action": "fields",
+      "fields": [
+        {
+          "path": "position",
+          "value": {
+            "x": "65537",
+            "y": "0",
+            "z": "131072"
+          }
+        }
+      ]
+    },
+    {
+      "tick": "13",
+      "sequence": 1,
+      "sourceEventId": "tracker/13/1",
+      "coverage": "partial",
+      "subject": {
+        "kind": "entity",
+        "id": "17",
+        "generation": "0"
+      },
+      "action": "fields",
+      "fields": [
+        {
+          "path": "health",
+          "value": "44"
+        }
+      ]
+    },
+    {
+      "tick": "40",
+      "sequence": 0,
+      "sourceEventId": "tracker/40/0",
+      "coverage": "partial",
+      "subject": {
+        "kind": "entity",
+        "id": "17",
+        "generation": "0"
+      },
+      "action": "remove"
+    },
+    {
+      "tick": "41",
+      "sequence": 0,
+      "sourceEventId": "tracker/41/0",
+      "coverage": "partial",
+      "subject": {
+        "kind": "entity",
+        "id": "17",
+        "generation": "1"
+      },
+      "action": "fields",
+      "fields": [
+        {
+          "path": "unitType",
+          "value": "Marine"
+        }
+      ]
+    }
+  ],
+  "observationsDigest": "sha256:ec2ff495a3a91e1669fe022c38d7941dfe6f1b1529dfd490a044bb0946f0696b"
+}

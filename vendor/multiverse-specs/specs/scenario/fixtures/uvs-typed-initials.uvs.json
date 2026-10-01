@@ -1,0 +1,14 @@
+{
+  "uv": { "format": "UVS", "version": "1.0" },
+  "namespace": "example",
+  "charts": [{
+    "name": "intro",
+    "initialState": "idle",
+    "variables": [
+      { "name": "count", "type": "i64", "initial": "-2" },
+      { "name": "cooldown", "type": "fixed64", "initial": "6442450944" },
+      { "name": "target", "type": "ref", "refKind": "entity", "initial": "7" }
+    ],
+    "states": [{ "name": "idle", "on": [] }]
+  }]
+}

@@ -1,0 +1,76 @@
+{
+  "schemaVersion": "uv-conformance-vectors-1",
+  "suite": "uvp-json-artifact",
+  "spec": "../../package/SPEC_UVP.md",
+  "jcs": [
+    {
+      "id": "rfc8785-number-and-property-order",
+      "value": {
+        "numbers": [333333333.33333329, 1e30, 4.50, 2e-3, 1e-27],
+        "literals": [null, true, false]
+      },
+      "canonicalText": "{\"literals\":[null,true,false],\"numbers\":[333333333.3333333,1e+30,4.5,0.002,1e-27]}"
+    },
+    {
+      "id": "rfc8785-utf16-property-order",
+      "value": {
+        "€": "Euro Sign",
+        "\r": "Carriage Return",
+        "דּ": "Hebrew Letter Dalet With Dagesh",
+        "1": "One",
+        "😀": "Emoji: Grinning Face",
+        "": "Control",
+        "ö": "Latin Small Letter O With Diaeresis"
+      },
+      "canonicalText": "{\"\\r\":\"Carriage Return\",\"1\":\"One\",\"\":\"Control\",\"ö\":\"Latin Small Letter O With Diaeresis\",\"€\":\"Euro Sign\",\"😀\":\"Emoji: Grinning Face\",\"דּ\":\"Hebrew Letter Dalet With Dagesh\"}"
+    }
+  ],
+  "reject": [
+    { "id": "lone-surrogate", "value": "\ud800", "reason": "lone surrogate" },
+    { "id": "non-finite", "nonFinite": "NaN", "reason": "NaN or infinity" }
+  ],
+  "artifacts": [
+    {
+      "id": "uvd-kind-schema",
+      "family": "uvd",
+      "fixture": "data/fixtures/uvd-kind-schema-minimal.uvd.json",
+      "digest": "sha256:7573d5a80f060151c64a5b33a79d2f0bfdc1040d0be28a5dc3db1a7f1eb8b5b7"
+    },
+    {
+      "id": "uvw-profile",
+      "family": "uvw",
+      "fixture": "world/fixtures/uvw-profile-single-space.uvw.json",
+      "digest": "sha256:743ce21d511858ecea6570e9f9a7fdc3120159836581cf00112553ecba028642"
+    },
+    {
+      "id": "uvs-typed-initials",
+      "family": "uvs",
+      "fixture": "scenario/fixtures/uvs-typed-initials.uvs.json",
+      "digest": "sha256:1fc826b0161bcdacdd340d696b64fc0fe6dc928e3bda1085cd00f56074fa727b"
+    },
+    {
+      "id": "uvw-gltf-spatial",
+      "family": "uvw",
+      "fixture": "world/fixtures/uvw-gltf-spatial.uvw.gltf",
+      "digest": "sha256:03e22857c5669457721eb6a0c4d52055010175711beb11838926ebda3bc7a927"
+    },
+    {
+      "id": "uvw-gltf-materials",
+      "family": "uvw",
+      "fixture": "world/fixtures/uvw-gltf-materials.uvw.gltf",
+      "digest": "sha256:10a7a7b8f252d7e16e7c43c93566c7ec91e342dc7a0fe92254a853d6de03aedb"
+    },
+    {
+      "id": "uvw-gltf-textured",
+      "family": "uvw",
+      "fixture": "world/fixtures/uvw-gltf-textured.uvw.gltf",
+      "digest": "sha256:9d37ed51a62ee9fca83ea4ad829aaf9e4e3f513bc6327edeaa11ecb059a9d377"
+    }
+  ],
+  "composition": [
+    { "id": "document-witness", "mode": "valid", "capturedDocuments": 1 },
+    { "id": "mutable-caller-input", "mode": "mutate-caller", "capturedDocuments": 1, "capabilitiesGranted": 0 },
+    { "id": "mismatched-document", "mode": "mismatch", "refusal": "artifact-digest-mismatch" },
+    { "id": "missing-document", "mode": "missing", "refusal": "artifact-document-missing" }
+  ]
+}

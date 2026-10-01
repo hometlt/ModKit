@@ -1,0 +1,19 @@
+{
+  "uv": { "format": "UVB", "version": "1.0" },
+  "namespace": "test.loop",
+  "requires": { "intrinsics": [] },
+  "functions": [{
+    "name": "countdown", "params": ["i64"], "returns": "i64", "registers": 4,
+    "effects": { "reads": [], "writes": [] },
+    "body": [
+      { "op": "const", "dst": 1, "type": "i64", "value": 0 },
+      { "op": "loop", "target": 7, "budget": { "onExhausted": "typed-error" } },
+      { "op": "le", "dst": 2, "a": 0, "b": 1 },
+      { "op": "br_if", "a": 2, "target": 7 },
+      { "op": "const", "dst": 3, "type": "i64", "value": 1 },
+      { "op": "sub.i64", "dst": 0, "a": 0, "b": 3 },
+      { "op": "br", "target": 1 },
+      { "op": "ret", "a": 0 }
+    ]
+  }]
+}

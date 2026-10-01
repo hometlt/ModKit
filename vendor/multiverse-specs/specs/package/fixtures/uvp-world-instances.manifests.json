@@ -1,0 +1,208 @@
+{
+  "valid": {
+    "uv": {
+      "format": "UVP",
+      "version": "1.0"
+    },
+    "id": "sample/world",
+    "version": "1.0.0",
+    "kind": "map",
+    "contents": [
+      {
+        "family": "uvw",
+        "path": "world.uvw.json",
+        "hash": "sha256:162eeffbca1f66c9016b807c2588d4d33a924131ca9f2a90571f011ac09409b5"
+      }
+    ],
+    "dependencies": [],
+    "requires": {
+      "intrinsics": [],
+      "capabilities": []
+    },
+    "worldInstances": {
+      "schemaVersion": 1,
+      "instances": [
+        {
+          "id": "alpha",
+          "packageId": "sample/world",
+          "path": "world.uvw.json"
+        },
+        {
+          "id": "beta",
+          "packageId": "sample/world",
+          "path": "world.uvw.json"
+        }
+      ]
+    }
+  },
+  "future": {
+    "uv": {
+      "format": "UVP",
+      "version": "1.0"
+    },
+    "id": "sample/world",
+    "version": "1.0.0",
+    "kind": "map",
+    "contents": [
+      {
+        "family": "uvw",
+        "path": "world.uvw.json",
+        "hash": "sha256:162eeffbca1f66c9016b807c2588d4d33a924131ca9f2a90571f011ac09409b5"
+      }
+    ],
+    "dependencies": [],
+    "requires": {
+      "intrinsics": [],
+      "capabilities": []
+    },
+    "worldInstances": {
+      "schemaVersion": 2,
+      "instances": [
+        {
+          "id": "alpha",
+          "packageId": "sample/world",
+          "path": "world.uvw.json"
+        },
+        {
+          "id": "beta",
+          "packageId": "sample/world",
+          "path": "world.uvw.json"
+        }
+      ]
+    }
+  },
+  "empty": {
+    "uv": {
+      "format": "UVP",
+      "version": "1.0"
+    },
+    "id": "sample/world",
+    "version": "1.0.0",
+    "kind": "map",
+    "contents": [
+      {
+        "family": "uvw",
+        "path": "world.uvw.json",
+        "hash": "sha256:162eeffbca1f66c9016b807c2588d4d33a924131ca9f2a90571f011ac09409b5"
+      }
+    ],
+    "dependencies": [],
+    "requires": {
+      "intrinsics": [],
+      "capabilities": []
+    },
+    "worldInstances": {
+      "schemaVersion": 1,
+      "instances": []
+    }
+  },
+  "extra": {
+    "uv": {
+      "format": "UVP",
+      "version": "1.0"
+    },
+    "id": "sample/world",
+    "version": "1.0.0",
+    "kind": "map",
+    "contents": [
+      {
+        "family": "uvw",
+        "path": "world.uvw.json",
+        "hash": "sha256:162eeffbca1f66c9016b807c2588d4d33a924131ca9f2a90571f011ac09409b5"
+      }
+    ],
+    "dependencies": [],
+    "requires": {
+      "intrinsics": [],
+      "capabilities": []
+    },
+    "worldInstances": {
+      "schemaVersion": 1,
+      "instances": [
+        {
+          "id": "alpha",
+          "packageId": "sample/world",
+          "path": "world.uvw.json"
+        },
+        {
+          "id": "beta",
+          "packageId": "sample/world",
+          "path": "world.uvw.json"
+        }
+      ],
+      "frames": []
+    }
+  },
+  "unsafePath": {
+    "uv": {
+      "format": "UVP",
+      "version": "1.0"
+    },
+    "id": "sample/world",
+    "version": "1.0.0",
+    "kind": "map",
+    "contents": [
+      {
+        "family": "uvw",
+        "path": "world.uvw.json",
+        "hash": "sha256:162eeffbca1f66c9016b807c2588d4d33a924131ca9f2a90571f011ac09409b5"
+      }
+    ],
+    "dependencies": [],
+    "requires": {
+      "intrinsics": [],
+      "capabilities": []
+    },
+    "worldInstances": {
+      "schemaVersion": 1,
+      "instances": [
+        {
+          "id": "alpha",
+          "packageId": "sample/world",
+          "path": "../world.uvw.json"
+        },
+        {
+          "id": "beta",
+          "packageId": "sample/world",
+          "path": "world.uvw.json"
+        }
+      ]
+    }
+  },
+  "badId": {
+    "uv": {
+      "format": "UVP",
+      "version": "1.0"
+    },
+    "id": "sample/world",
+    "version": "1.0.0",
+    "kind": "map",
+    "contents": [
+      {
+        "family": "uvw",
+        "path": "world.uvw.json",
+        "hash": "sha256:162eeffbca1f66c9016b807c2588d4d33a924131ca9f2a90571f011ac09409b5"
+      }
+    ],
+    "dependencies": [],
+    "requires": {
+      "intrinsics": [],
+      "capabilities": []
+    },
+    "worldInstances": {
+      "schemaVersion": 1,
+      "instances": [
+        {
+          "id": "alpha/main",
+          "packageId": "sample/world",
+          "path": "world.uvw.json"
+        },
+        {
+          "id": "beta",
+          "packageId": "sample/world",
+          "path": "world.uvw.json"
+        }
+      ]
+    }
+  }
+}

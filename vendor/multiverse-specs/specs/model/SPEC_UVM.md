@@ -176,6 +176,7 @@ migration notes.
 | `UV_retarget`                 | skin                     | Humanoid / vehicle rig profile mapping                                          |
 | `UV_game_material_team_color` | material                 | Team, house and player colour                                                   |
 | `UV_game_material`            | material                 | Legacy fixed-function and game-shader parameters                                |
+| `UV_texture_color_key`        | texture                  | A stored colour the source game loads as transparent (colour key)               |
 | `UV_game_animation_clips`     | root and animation       | Complete selectable clip catalog; clip name, priority, loop, blend, concurrency |
 | `UV_game_animation_events`    | animation                | Timestamped gameplay events                                                     |
 | `UV_animation_layers`         | document root            | Additive/override layers with bone masks                                        |
@@ -266,12 +267,19 @@ UVM inherits glTF's coordinate system without modification, and this is not nego
 deviating would break every consumer listed in [section 4.2](#42-khronos-extensions-uvm-adopts-rather-than-reinvents).
 
 - Right-handed.
-- **+Y up**, **+X right**, **-Z forward** (an object's facing direction is its local -Z).
+- **+Y up**, nominal asset forward **+Z**, as in the shared
+  [coordinate contract](../foundation/SPEC_UV_COORDINATES.md) and
+  [glTF §3.4](https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#coordinate-system-and-units).
+  A camera looks along local **−Z**; this is not a gameplay entity's authored nose.
+  Source-specific model forward axes and sockets remain explicit local metadata.
 - Distances in **metres**, angles in **radians**, time in **seconds**.
 - Rotations as **quaternions** `[x, y, z, w]`, XYZW order.
 - Matrices **column-major**, matching `Float32Array` upload order for WebGL and Three.js.
 
-Source games differ. The importer, not the format, performs the change of basis:
+Source games differ. The importer, not the format, performs the change of basis.
+The table below is informative; measured per-source entries in
+[`uv-coordinates.v1.json`](../foundation/uv-coordinates.v1.json) are authoritative
+where a source's axes or unit evidence differs from this older summary:
 
 | Source                | Basis     | Forward | Units                                | Transform to UVM                                              |
 | --------------------- | --------- | ------- | ------------------------------------ | ------------------------------------------------------------- |
@@ -628,6 +636,12 @@ normalise proportions rather than guessing from bounding boxes.
 The brief proposed sockets as records with a bone name and a position. UVM instead makes a
 socket **a glTF node with a `UV_game_socket` extension**:
 
+For cross-artifact references such as UVW compound components, that extension
+may carry a unique, stable lowercase `id`. It is a semantic identity of the
+socket, independent of the glTF node index and source display name. Unaddressed
+sockets may omit it; Core's earlier `extras.modkit.id` remains a read-compatible
+location until its writer emits the standard field.
+
 ```json
 {
   "nodes": [
@@ -675,10 +689,20 @@ Reasons a node beats a record:
 | `hitpoint`       | Damage impact reference                 | `tags` may name a body region          |
 
 `forward` names which local axis points "out" of the socket (`+x`, `-x`, `+y`, `-y`, `+z`,
-`-z`), defaulting to `-z` to match glTF's forward convention. This matters because source
+`-z`), defaulting to `-z` as the socket profile's local convention, independently of
+the asset's nominal forward direction. This matters because source
 formats disagree: W3D muzzles point down +X, M3 `Ref_` bones vary per asset.
 
 ## 11. Materials
+
+Reference tooling shares the bounded standard-material shape in
+[`gltf.material.profile.schema.json`](schema/gltf.material.profile.schema.json)
+with the UVW material migration. `../tools/gltf-materials.mjs` checks known
+material texture/image/sampler joins and extension declarations; the UVM/core
+reader calls that same helper. Neither check replaces full glTF validation or
+proves support for optional shader extensions. UVW migration policy and retained
+native fields are described in the
+[migration plan](../../design/PLAN_UVW_GLTF_MIGRATION_2026-09-28.md#m1a-выполненный-api-и-границы).
 
 ### 11.1 Layered model
 
@@ -787,6 +811,27 @@ PNG and JPEG payloads use ordinary glTF images and texture `source` indices. KTX
 A source texture container for which no safe glTF projection or installed transcoder is available
 is recorded as an explicit loss. Native texture containers are never retained as opaque UVM data
 and are never replaced with a guessed image.
+
+### 11.6 Colour keys
+
+Games of the fixed-function era mark transparency in textures that have no alpha channel with a
+reserved colour, most often magenta: Direct3D and DirectDraw loaders replaced every texel of that
+colour with transparent black before the texture reached the GPU. The colour is a property of how
+the game loads the image, not of the image file, so a writer states it on the glTF texture with
+`UV_texture_color_key` and keeps the image bytes unchanged:
+
+```json
+{ "source": 3, "extensions": { "UV_texture_color_key": { "color": [255, 0, 255] } } }
+```
+
+`color` names the texel's stored 8-bit RGB, compared before any colour-space conversion, filtering
+or mipmap generation; this is the one colour in the registry that is not a linear float. A consumer
+that implements the extension replaces every texel whose three channels are each within `tolerance`
+(default `0`, an exact match) of `color` with `(0, 0, 0, 0)` before sampling, whatever that texel's
+stored alpha. Transparent black rather than the key colour with alpha zero keeps filtered edges and
+additive blending free of the key colour. A consumer that ignores the extension draws the key colour
+where the game drew nothing (the base-rendering fallback §3.1 allows), so writers **MUST NOT** list it
+in `extensionsRequired`.
 
 ## 12. Animation
 
@@ -1263,7 +1308,10 @@ not clamped to `0..1`: imported native scalar tracks may use other finite magnit
 visibility predicate stays explicit. An omitted record leaves the primitive visible. A channel
 animates `/extensions/UV_game_variants/visibility/N/value` using `KHR_animation_pointer` (§12.5).
 No synthetic scene nodes or dummy materials are needed. Selecting a clip samples its property;
-with no clip selected the stored value applies. Stage playback time remains caller-controlled,
+with no clip selected the stored value applies. A primitive the source game never draws until a state
+or a clip shows it — authoring helper geometry, or an overlay such as a status effect — is written with
+stored value `0`, and a clip that shows it animates the value above zero; the geometry is kept, not
+dropped. Stage playback time remains caller-controlled,
 with explicitly concurrent channels using their own declared wrap duration.
 
 ## 16. Gameplay metadata

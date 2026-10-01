@@ -29,6 +29,7 @@ consumer that ignores it loses.
 | [`UV_retarget`](#uv_retarget)                                               | skin                     | Animation cannot be shared with other rigs                            |
 | [`UV_game_material_team_color`](#uv_game_material_team_color)               | material                 | Unit renders in its neutral colour                                    |
 | [`UV_game_material`](#uv_game_material)                                     | material                 | PBR approximation is used                                             |
+| [`UV_texture_color_key`](#uv_texture_color_key)                             | texture                  | The key colour is drawn where the game drew nothing                   |
 | [`UV_game_animation_clips`](#uv_game_animation_clips)                       | root and animation       | glTF clips play; catalog-only selection and binding slots unavailable |
 | [`UV_game_animation_events`](#uv_game_animation_events)                     | animation                | No gameplay events fire                                               |
 | [`UV_animation_layers`](#uv_animation_layers)                               | root                     | All clips treated as full-body overrides                              |
@@ -97,6 +98,7 @@ Attaches to: node.
 
 | Property     | Type     | Required | Default | Description                                                         |
 | ------------ | -------- | -------- | ------- | ------------------------------------------------------------------- |
+| `id`         | string   | no       | —       | Stable model-local socket ID for UVW component links                |
 | `role`       | string   | yes      | —       | See role table in [SPEC_UVM.md §10.2](SPEC_UVM.md#102-socket-roles) |
 | `index`      | integer  | no       | `0`     | Ordinal among sockets sharing a role                                |
 | `tags`       | string[] | no       | `[]`    | Free-form qualifiers (`primary`, `left`, `cannon`)                  |
@@ -110,6 +112,11 @@ Attaches to: node.
 
 `sourceName` matters for round-trip: Spring scripts and Warcraft 3 triggers reference
 attachments by their original string name, and a renamed node would break them.
+`id`, when present, uses UVW's lowercase local-ID grammar and must be unique within
+one UVM. A UVW `parentSocketId` resolves to this identity, never to a node index
+or display name. Existing Core-produced assets may carry the same identity in
+`extras.modkit.id`; readers accept that legacy location only when `id` is absent
+or agrees with it. Publishers should write `id` directly.
 
 ---
 
@@ -216,8 +223,46 @@ Layer object:
 | `strength` | number    | `1.0`                 | Slot-specific intensity                                                                          |
 | `wrap`     | string[2] | `["repeat","repeat"]` | `repeat`, `clamp`, `mirror` per axis                                                             |
 
+`UV_game_material` also owns the closed shader profile `uv.water.surface@1` used by
+UVW water. It keeps a standard glTF PBR material as a static fallback; the shared
+layer stack carries up to two surface samples (`diffuse`, `layer1`), one packed
+wave-normal sample (`normal`, `channelPacking:"rg-ba-xy"`) and ordered caustic
+frames (`caustics`). The second surface sample reuses the first texture when the
+source has no secondary image. `layer1.op` explicitly selects `blend`, `modulate`
+or `add`; its operation is never inferred from a game name.
+
+The closed `params` vocabulary is versioned by `schemaVersion:1` and declares
+`world-position`, `water-depth` and `shadow` inputs, `world-xz` coordinates and
+`presentation-seconds` time. It distinguishes `colorFalloff` from
+`causticsFalloff`, preserves authored specular parameters and shadow choice,
+and keeps the two UV scale/scroll pairs separately. Flipbook `frames` are glTF
+texture indices in playing order, with `texture` naming the first frame for
+ordinary layer consumers. Shared material reference checks traverse every
+frame; an unknown shader string or unlisted `params` field is not executable
+under this profile. Admission proves structure and resource closure, not native
+pixel parity or availability of a renderer implementing the profile.
+
 When `passes` is present, `layers` **MUST** describe pass 0 as well, so single-pass consumers
 have something to render.
+
+---
+
+## `UV_texture_color_key`
+
+Attaches to: texture.
+
+| Property    | Type       | Required | Default | Description                                                                             |
+| ----------- | ---------- | -------- | ------- | --------------------------------------------------------------------------------------- |
+| `color`     | integer[3] | yes      | —       | The key's stored 8-bit RGB, `0`–`255` per channel; compared before colour conversion    |
+| `tolerance` | integer    | no       | `0`     | Largest per-channel difference, `0`–`255`, that still matches; `0` is an exact match    |
+
+Every texel of the texture's image whose red, green and blue each lie within `tolerance` of `color`
+becomes `(0, 0, 0, 0)` before sampling, filtering or mipmap generation, whatever its stored alpha.
+The image bytes are not rewritten: the key is how the source game loaded them (DirectDraw and
+Direct3D colour keys — Emperor: Battle for Dune keys magenta `[255, 0, 255]` in its textures without
+alpha). `color` is the one colour of this registry stated as stored bytes rather than as linear floats,
+because a key matches bytes. Two textures sharing one image may state different keys. See SPEC_UVM
+§11.6.
 
 ---
 

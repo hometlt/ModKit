@@ -1,0 +1,49 @@
+{
+  "profile": "uv/uvw-gltf-migration@1",
+  "status": "verified",
+  "scope": "preview",
+  "source": {
+    "packageId": "sample/source",
+    "path": "worlds/source.uvw.json",
+    "hash": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+    "compositionHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+  },
+  "target": {
+    "packageId": "sample/target",
+    "path": "worlds/target.uvw.gltf",
+    "hash": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+    "compositionHash": "sha256:3333333333333333333333333333333333333333333333333333333333333333"
+  },
+  "resources": [],
+  "materials": [],
+  "socketLinks": [{
+    "spaceId": "main",
+    "layerId": "objects",
+    "instanceId": "actor",
+    "componentId": "weapon",
+    "parentSocketId": "weapon-socket",
+    "sourcePointer": "/spaces/0/layers/0/instances/0/modelComponents/1",
+    "modelPath": "models/actor.uvm.glb",
+    "modelHash": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+    "nodeIndex": 2
+  }],
+  "rasters": [{
+    "spaceId": "main",
+    "layerId": "paint",
+    "sourcePointer": "/spaces/0/layers/0",
+    "sampling": {
+      "coordinates": "material-grid-extent",
+      "filter": "bilinear",
+      "wrap": "clamp",
+      "normalization": "sum",
+      "zeroSum": { "mode": "refuse" }
+    },
+    "inlinePreview": {
+      "role": "assert-equivalent-preview",
+      "maxAbsError": 0,
+      "sourcePointer": "/spaces/0/layers/0/samples"
+    }
+  }],
+  "losses": [{ "sourcePointer": "/spaces/0/layers/0/samples", "reason": "Inline samples checked at grid points" }],
+  "refusals": []
+}

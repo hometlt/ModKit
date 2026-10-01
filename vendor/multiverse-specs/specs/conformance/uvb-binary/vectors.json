@@ -5,12 +5,72 @@
   "spec": "../../behavior/SPEC_UVB.md",
   "vectors": [
     {
+      "id": "bijection/value-expect-v2",
+      "expect": "accept",
+      "fixture": "../../behavior/fixtures/uvb-module-value-expect.uvb.json",
+      "identityDigest": "sha256:0cbd5dd629ea787d839243bffa447e3373983019d3ef32a1989ce6ded84ce322",
+      "byteLength": 157,
+      "note": "UVB 2 appends exact boxed scalar read without changing earlier opcode bytes"
+    },
+    {
+      "id": "reject/v1-value-expect",
+      "expect": "reject-encode",
+      "fixture": "../../behavior/fixtures/uvb-module-value-expect.uvb.json",
+      "mutations": [{ "op": "set", "path": "uv.version", "value": "1.0" }],
+      "reason": "unknown op"
+    },
+    {
+      "id": "bijection/typed-value-v2",
+      "expect": "accept",
+      "fixture": "../../behavior/fixtures/uvb-module-typed-value.uvb.json",
+      "identityDigest": "sha256:45d365bf6019ae902e57a8e1424ff448419e3b679eeec491b993b6f1d17aa4e5",
+      "byteLength": 271,
+      "note": "UVB 2.0 has distinct version bytes, optional-field presence bits, and appended box/unbox opcodes"
+    },
+    {
+      "id": "reject/v1-box-op",
+      "expect": "reject-encode",
+      "fixture": "../../behavior/fixtures/uvb-module-minimal.uvb.json",
+      "mutations": [{ "op": "set", "path": "functions.0.body.0.op", "value": "value.box" }],
+      "reason": "unknown op"
+    },
+    {
+      "id": "reject/v1-optional-field",
+      "expect": "reject-encode",
+      "fixture": "../../behavior/fixtures/uvb-module-typed-value.uvb.json",
+      "mutations": [{ "op": "set", "path": "uv.version", "value": "1.0" }],
+      "reason": "optional record fields require UVB 2.0"
+    },
+    {
+      "id": "reject/v2-unsupported-minor",
+      "expect": "reject",
+      "fixture": "../../behavior/fixtures/uvb-module-typed-value.uvb.json",
+      "corrupt": { "offset": 5, "value": 1 },
+      "reason": "unsupported UVB binary version"
+    },
+    {
+      "id": "reject/v2-invalid-optional-flag",
+      "expect": "reject",
+      "fixture": "../../behavior/fixtures/uvb-module-typed-value.uvb.json",
+      "corrupt": { "offset": 100, "value": 2 },
+      "reason": "noncanonical optional field flag",
+      "note": "offset 100 is the first field optionality byte in the pinned 271-byte UVB 2 fixture"
+    },
+    {
       "id": "bijection/fixture",
       "expect": "accept",
       "fixture": "../../behavior/fixtures/uvb-module-minimal.uvb.json",
       "identityDigest": "sha256:552561bb29d19cf4245d7491511a54fff610428fc79d5dcf8e487947d8e51ff7",
       "byteLength": 419,
       "note": "encode → decode → canonical JSON equal; decode → encode byte-identical; digest pinned — the freeze"
+    },
+    {
+      "id": "bijection/verified-module",
+      "expect": "accept",
+      "fixture": "../../behavior/fixtures/uvb-module-verified.uvb.json",
+      "identityDigest": "sha256:174b5845b2518ecb08233164aaedd2be389f5d66ad8d5defcd7c4e42d91eba6f",
+      "byteLength": 289,
+      "note": "the semantically verified module also round-trips through the frozen 1.1 binary"
     },
     {
       "id": "digest-ignores-source-map",
@@ -98,6 +158,41 @@
         }
       ],
       "note": "an i64 constant outside the safe range travels as a decimal string and decodes back to the same string"
+    },
+    {
+      "id": "reject/i64-overflow",
+      "expect": "reject-encode",
+      "fixture": "../../behavior/fixtures/uvb-module-minimal.uvb.json",
+      "mutations": [{ "op": "set", "path": "functions.0.body.5.value", "value": "9223372036854775808" }],
+      "reason": "i64 out of range"
+    },
+    {
+      "id": "reject/i64-underflow",
+      "expect": "reject-encode",
+      "fixture": "../../behavior/fixtures/uvb-module-minimal.uvb.json",
+      "mutations": [{ "op": "set", "path": "functions.0.body.5.value", "value": "-9223372036854775809" }],
+      "reason": "i64 out of range"
+    },
+    {
+      "id": "reject/rounded-js-number",
+      "expect": "reject-encode",
+      "fixture": "../../behavior/fixtures/uvb-module-minimal.uvb.json",
+      "mutations": [{ "op": "set", "path": "functions.0.body.5.value", "value": 9007199254740992 }],
+      "reason": "non-integer value"
+    },
+    {
+      "id": "reject/noncanonical-small-string",
+      "expect": "reject-encode",
+      "fixture": "../../behavior/fixtures/uvb-module-minimal.uvb.json",
+      "mutations": [{ "op": "set", "path": "functions.0.body.5.value", "value": "42" }],
+      "reason": "noncanonical i64 string"
+    },
+    {
+      "id": "reject/noncanonical-leading-zero",
+      "expect": "reject-encode",
+      "fixture": "../../behavior/fixtures/uvb-module-minimal.uvb.json",
+      "mutations": [{ "op": "set", "path": "functions.0.body.5.value", "value": "09007199254740993" }],
+      "reason": "non-integer value"
     }
   ]
 }

@@ -5,13 +5,473 @@
   "spec": "../../scenario/SPEC_UVS.md ../../behavior/SPEC_UVB.md",
   "vectors": [
     {
+      "id": "module/v2-list-of-nominal-record-is-a-concrete-type",
+      "expect": "accept", "kind": "module",
+      "fixture": "../../behavior/fixtures/uvb-module-typed-value.uvb.json",
+      "mutations": [{ "op": "set", "path": "functions.0.params",
+        "value": ["i64", "list<Filter>"] }]
+    },
+    {
+      "id": "module/v2-list-of-value-refused",
+      "expect": "reject", "kind": "module", "rule": "value-type-budget",
+      "fixture": "../../behavior/fixtures/uvb-module-typed-value.uvb.json",
+      "mutations": [{ "op": "set", "path": "functions.0.params",
+        "value": ["list<value>"] }]
+    },
+    {
+      "id": "module/v2-type-nesting-budget",
+      "expect": "reject", "kind": "module", "rule": "value-type-budget",
+      "fixture": "../../behavior/fixtures/uvb-module-typed-value.uvb.json",
+      "mutations": [{ "op": "set", "path": "functions.0.params",
+        "value": ["list<list<list<list<list<list<list<list<list<list<list<list<list<list<list<list<list<i64>>>>>>>>>>>>>>>>>"] }]
+    },
+    {
+      "id": "module/v2-malformed-type-brackets",
+      "expect": "reject", "kind": "module", "rule": "value-type-budget",
+      "fixture": "../../behavior/fixtures/uvb-module-typed-value.uvb.json",
+      "mutations": [{ "op": "set", "path": "functions.0.params",
+        "value": ["list<Filter>>"] }]
+    },
+    {
+      "id": "module/v2-box-unbox-and-optional-filter",
+      "expect": "accept", "kind": "module",
+      "fixture": "../../behavior/fixtures/uvb-module-typed-value.uvb.json"
+    },
+    {
+      "id": "module/v2-generic-scenario-var",
+      "expect": "accept", "kind": "module", "granted": ["read"],
+      "expectBound": ["scenario.var@1"],
+      "fixture": "../../behavior/fixtures/uvb-module-typed-value.uvb.json",
+      "mutations": [
+        { "op": "set", "path": "requires.intrinsics", "value": ["scenario.var@1"] },
+        { "op": "set", "path": "functions.0.params", "value": ["strref"] },
+        { "op": "set", "path": "functions.0.returns", "value": "value" },
+        { "op": "set", "path": "functions.0.effects.reads", "value": ["scenario"] },
+        { "op": "set", "path": "functions.0.body", "value": [
+          { "op": "call.intrinsic", "dst": 1, "intrinsicIndex": 0, "args": [0] },
+          { "op": "ret", "a": 1 }
+        ] }
+      ]
+    },
+    {
+      "id": "module/v2-boxed-scenario-write-result",
+      "expect": "accept", "kind": "module", "granted": ["control"],
+      "expectBound": ["scenario.set-var@1"],
+      "fixture": "../../behavior/fixtures/uvb-module-typed-value.uvb.json",
+      "mutations": [
+        { "op": "set", "path": "requires.intrinsics", "value": ["scenario.set-var@1"] },
+        { "op": "set", "path": "functions.0.params", "value": ["strref", "i64"] },
+        { "op": "set", "path": "functions.0.returns", "value": "result<bool>" },
+        { "op": "set", "path": "functions.0.registers", "value": 4 },
+        { "op": "set", "path": "functions.0.effects.writes", "value": ["scenario"] },
+        { "op": "set", "path": "functions.0.body", "value": [
+          { "op": "value.box", "dst": 2, "a": 1, "type": "i64" },
+          { "op": "call.intrinsic", "dst": 3, "intrinsicIndex": 0, "args": [0, 2] },
+          { "op": "ret", "a": 3 }
+        ] }
+      ]
+    },
+    {
+      "id": "module/v2-scenario-write-cannot-drop-error",
+      "expect": "reject", "kind": "module", "rule": "results-are-handled",
+      "fixture": "../../behavior/fixtures/uvb-module-typed-value.uvb.json",
+      "mutations": [
+        { "op": "set", "path": "requires.intrinsics", "value": ["scenario.set-var@1"] },
+        { "op": "set", "path": "functions.0.params", "value": ["strref", "i64"] },
+        { "op": "set", "path": "functions.0.returns", "value": "void" },
+        { "op": "set", "path": "functions.0.registers", "value": 4 },
+        { "op": "set", "path": "functions.0.effects.writes", "value": ["scenario"] },
+        { "op": "set", "path": "functions.0.body", "value": [
+          { "op": "value.box", "dst": 2, "a": 1, "type": "i64" },
+          { "op": "call.intrinsic", "dst": 3, "intrinsicIndex": 0, "args": [0, 2] },
+          { "op": "ret" }
+        ] }
+      ]
+    },
+    {
+      "id": "module/v2-box-type-mismatch",
+      "expect": "reject", "kind": "module", "rule": "register-type-mismatch",
+      "fixture": "../../behavior/fixtures/uvb-module-typed-value.uvb.json",
+      "mutations": [{ "op": "set", "path": "functions.0.body.0.type", "value": "bool" }]
+    },
+    {
+      "id": "module/v2-unbox-result-discarded",
+      "expect": "reject", "kind": "module", "rule": "results-are-handled",
+      "fixture": "../../behavior/fixtures/uvb-module-typed-value.uvb.json",
+      "mutations": [{ "op": "set", "path": "functions.0.body.2", "value": { "op": "ret", "a": 0 } }]
+    },
+    {
+      "id": "module/v2-optional-filter-mismatch",
+      "expect": "reject", "kind": "module", "rule": "nominal-type-mismatch",
+      "fixture": "../../behavior/fixtures/uvb-module-typed-value.uvb.json",
+      "mutations": [{ "op": "set", "path": "types.0.fields.0.optional", "value": false }]
+    },
+    {
       "id": "module/fixture-verifies",
       "expect": "accept",
       "kind": "module",
+      "fixture": "../../behavior/fixtures/uvb-module-verified.uvb.json",
+      "granted": ["read", "mutate"],
+      "expectBound": ["entity.set-stat-modifier@1"],
+      "note": "all intrinsic arguments are initialized on the reachable path, effects are declared, and the result is returned"
+    },
+    {
+      "id": "module/typed-arithmetic-verifies",
+      "expect": "accept", "kind": "module",
+      "fixture": "../../behavior/fixtures/uvb-module-verified.uvb.json",
+      "mutations": [
+        { "op": "set", "path": "functions.0.params", "value": ["i64", "i64"] },
+        { "op": "set", "path": "functions.0.returns", "value": "i64" },
+        { "op": "set", "path": "functions.0.body", "value": [
+          { "op": "add.i64", "dst": 2, "a": 0, "b": 1 }, { "op": "ret", "a": 2 }
+        ] }
+      ]
+    },
+    {
+      "id": "module/typed-list-read-verifies",
+      "expect": "accept", "kind": "module",
+      "fixture": "../../behavior/fixtures/uvb-module-verified.uvb.json",
+      "mutations": [
+        { "op": "set", "path": "functions.0.params", "value": ["list<i64>", "i64"] },
+        { "op": "set", "path": "functions.0.returns", "value": "i64" },
+        { "op": "set", "path": "functions.0.body", "value": [
+          { "op": "list.get", "dst": 2, "a": 0, "b": 1 }, { "op": "ret", "a": 2 }
+        ] }
+      ]
+    },
+    {
+      "id": "module/registry-nominal-pos-verifies",
+      "expect": "accept", "kind": "module",
+      "fixture": "../../behavior/fixtures/uvb-module-verified.uvb.json",
+      "mutations": [
+        { "op": "set", "path": "types", "value": [{ "name": "Pos", "fields": [
+          { "name": "space", "type": "strref" }, { "name": "x", "type": "fixed64" },
+          { "name": "y", "type": "fixed64" }, { "name": "z", "type": "fixed64" }
+        ] }] },
+        { "op": "set", "path": "functions.0.params", "value": ["Pos"] },
+        { "op": "set", "path": "functions.0.returns", "value": "Pos" },
+        { "op": "set", "path": "functions.0.body", "value": [{ "op": "ret", "a": 0 }] }
+      ]
+    },
+    {
+      "id": "module/unknown-nominal-type",
+      "expect": "reject", "kind": "module", "rule": "nominal-type-unresolved",
+      "fixture": "../../behavior/fixtures/uvb-module-verified.uvb.json",
+      "mutations": [
+        { "op": "set", "path": "functions.0.params", "value": ["Mystery"] },
+        { "op": "set", "path": "functions.0.returns", "value": "Mystery" },
+        { "op": "set", "path": "functions.0.body", "value": [{ "op": "ret", "a": 0 }] }
+      ]
+    },
+    {
+      "id": "module/nominal-shape-mismatch",
+      "expect": "reject", "kind": "module", "rule": "nominal-type-mismatch",
+      "fixture": "../../behavior/fixtures/uvb-module-verified.uvb.json",
+      "mutations": [{ "op": "set", "path": "types", "value": [{ "name": "Pos", "fields": [
+        { "name": "space", "type": "strref" }, { "name": "x", "type": "i64" },
+        { "name": "y", "type": "fixed64" }, { "name": "z", "type": "fixed64" }
+      ] }] }]
+    },
+    {
+      "id": "module/optional-nominal-binary-gap",
+      "expect": "reject", "kind": "module", "rule": "nominal-optional-unrepresentable",
+      "fixture": "../../behavior/fixtures/uvb-module-verified.uvb.json",
+      "mutations": [
+        { "op": "set", "path": "types", "value": [{ "name": "Filter", "fields": [
+          { "name": "player", "type": "ref<player>" }, { "name": "def", "type": "ref<def>" },
+          { "name": "tag", "type": "strref" }, { "name": "alive", "type": "bool" }
+        ] }] },
+        { "op": "set", "path": "functions.0.params", "value": ["Filter"] },
+        { "op": "set", "path": "functions.0.returns", "value": "Filter" },
+        { "op": "set", "path": "functions.0.body", "value": [{ "op": "ret", "a": 0 }] }
+      ]
+    },
+    {
+      "id": "module/internal-call-signature-verifies",
+      "expect": "accept", "kind": "module",
+      "maxCallDepth": 2,
+      "fixture": "../../behavior/fixtures/uvb-module-verified.uvb.json",
+      "mutations": [{ "op": "set", "path": "functions", "value": [
+        { "name": "helper", "params": ["bool"], "returns": "bool", "registers": 1,
+          "effects": { "reads": [], "writes": [] }, "body": [{ "op": "ret", "a": 0 }] },
+        { "name": "caller", "params": ["bool"], "returns": "bool", "registers": 2,
+          "effects": { "reads": [], "writes": [] }, "body": [
+            { "op": "call", "function": "helper", "args": [0], "dst": 1 }, { "op": "ret", "a": 1 }
+          ] }
+      ] }]
+    },
+    {
+      "id": "module/trailing-optional-intrinsic-argument",
+      "expect": "accept", "kind": "module", "granted": ["present"],
+      "fixture": "../../behavior/fixtures/uvb-module-verified.uvb.json",
+      "expectBound": ["ui.print@1"],
+      "mutations": [
+        { "op": "set", "path": "requires.intrinsics", "value": ["ui.print@1"] },
+        { "op": "set", "path": "functions.0.params", "value": [] },
+        { "op": "set", "path": "functions.0.returns", "value": "void" },
+        { "op": "set", "path": "functions.0.effects", "value": { "reads": [], "writes": [] } },
+        { "op": "set", "path": "functions.0.body", "value": [
+          { "op": "const", "dst": 0, "type": "strref", "value": "hello" },
+          { "op": "call.intrinsic", "intrinsicIndex": 0, "args": [0] }, { "op": "ret" }
+        ] }
+      ]
+    },
+    {
+      "id": "module/internal-call-effects",
+      "expect": "reject", "kind": "module", "rule": "effects-within-declaration",
+      "fixture": "../../behavior/fixtures/uvb-module-verified.uvb.json",
+      "mutations": [{ "op": "set", "path": "functions", "value": [
+        { "name": "helper", "params": ["bool"], "returns": "bool", "registers": 1,
+          "effects": { "reads": [], "writes": ["entities"] }, "body": [{ "op": "ret", "a": 0 }] },
+        { "name": "caller", "params": ["bool"], "returns": "bool", "registers": 2,
+          "effects": { "reads": [], "writes": [] }, "body": [
+            { "op": "call", "function": "helper", "args": [0], "dst": 1 }, { "op": "ret", "a": 1 }
+          ] }
+      ] }]
+    },
+    {
+      "id": "module/recursive-call-refuses-until-bounded-vm",
+      "expect": "reject", "kind": "module", "rule": "call-graph-cycle",
+      "fixture": "../../behavior/fixtures/uvb-module-verified.uvb.json",
+      "mutations": [{ "op": "set", "path": "functions", "value": [
+        { "name": "recursive", "params": ["bool"], "returns": "bool", "registers": 2,
+          "effects": { "reads": [], "writes": [] }, "body": [
+            { "op": "call", "function": "recursive", "args": [0], "dst": 1 },
+            { "op": "ret", "a": 1 }
+          ] }
+      ] }]
+    },
+    {
+      "id": "module/call-depth-exceeds-composition-budget",
+      "expect": "reject", "kind": "module", "rule": "call-depth-budget",
+      "maxCallDepth": 1,
+      "fixture": "../../behavior/fixtures/uvb-module-verified.uvb.json",
+      "mutations": [{ "op": "set", "path": "functions", "value": [
+        { "name": "helper", "params": ["bool"], "returns": "bool", "registers": 1,
+          "effects": { "reads": [], "writes": [] }, "body": [{ "op": "ret", "a": 0 }] },
+        { "name": "caller", "params": ["bool"], "returns": "bool", "registers": 2,
+          "effects": { "reads": [], "writes": [] }, "body": [
+            { "op": "call", "function": "helper", "args": [0], "dst": 1 }, { "op": "ret", "a": 1 }
+          ] }
+      ] }]
+    },
+    {
+      "id": "module/budgeted-loop-with-forward-exit",
+      "expect": "accept", "kind": "module",
+      "fixture": "../../behavior/fixtures/uvb-module-loop.uvb.json"
+    },
+    {
+      "id": "module/backedge-bypasses-loop-header",
+      "expect": "reject", "kind": "module", "rule": "loops-carry-budget",
+      "fixture": "../../behavior/fixtures/uvb-module-loop.uvb.json",
+      "mutations": [{ "op": "set", "path": "functions.0.body.6.target", "value": 0 }]
+    },
+    {
+      "id": "module/loop-without-budget-refuses-in-verifier",
+      "expect": "reject", "kind": "module", "rule": "loops-carry-budget",
+      "fixture": "../../behavior/fixtures/uvb-module-verified.uvb.json",
+      "mutations": [
+        { "op": "set", "path": "functions.0.returns", "value": "void" },
+        { "op": "set", "path": "functions.0.body", "value": [
+          { "op": "loop", "target": 1 }, { "op": "ret" }
+        ] }
+      ]
+    },
+    {
+      "id": "module/duplicate-function-name",
+      "expect": "reject", "kind": "module", "rule": "duplicate-function",
+      "fixture": "../../behavior/fixtures/uvb-module-verified.uvb.json",
+      "mutations": [{ "op": "set", "path": "functions.1", "value": {
+        "name": "apply-bonus", "params": [], "returns": "void", "registers": 0,
+        "effects": { "reads": [], "writes": [] }, "body": [{ "op": "ret" }]
+      } }]
+    },
+    {
+      "id": "module/intrinsic-argument-type",
+      "expect": "reject", "kind": "module", "rule": "register-type-mismatch",
+      "fixture": "../../behavior/fixtures/uvb-module-verified.uvb.json",
+      "mutations": [{ "op": "set", "path": "functions.0.body.0", "value": { "op": "const", "dst": 2, "type": "bool", "value": true } }]
+    },
+    {
+      "id": "module/intrinsic-arity",
+      "expect": "reject", "kind": "module", "rule": "register-type-mismatch",
+      "fixture": "../../behavior/fixtures/uvb-module-verified.uvb.json",
+      "mutations": [{ "op": "set", "path": "functions.0.body.2.args", "value": [0, 2, 3] }]
+    },
+    {
+      "id": "module/return-type",
+      "expect": "reject", "kind": "module", "rule": "register-type-mismatch",
+      "fixture": "../../behavior/fixtures/uvb-module-verified.uvb.json",
+      "mutations": [{ "op": "set", "path": "functions.0.returns", "value": "bool" }]
+    },
+    {
+      "id": "module/branch-condition-type",
+      "expect": "reject", "kind": "module", "rule": "register-type-mismatch",
+      "fixture": "../../behavior/fixtures/uvb-module-verified.uvb.json",
+      "mutations": [
+        { "op": "set", "path": "functions.0.returns", "value": "void" },
+        { "op": "set", "path": "functions.0.body", "value": [
+          { "op": "const", "dst": 2, "type": "i64", "value": 1 },
+          { "op": "br_if", "a": 2, "target": 3 },
+          { "op": "ret" }, { "op": "ret" }
+        ] }
+      ]
+    },
+    {
+      "id": "module/arithmetic-operand-type",
+      "expect": "reject", "kind": "module", "rule": "register-type-mismatch",
+      "fixture": "../../behavior/fixtures/uvb-module-verified.uvb.json",
+      "mutations": [
+        { "op": "set", "path": "functions.0.returns", "value": "void" },
+        { "op": "set", "path": "functions.0.body", "value": [
+          { "op": "const", "dst": 2, "type": "i64", "value": 1 },
+          { "op": "const", "dst": 3, "type": "fixed64", "value": 0 },
+          { "op": "add.i64", "dst": 4, "a": 2, "b": 3 }, { "op": "ret" }
+        ] }
+      ]
+    },
+    {
+      "id": "module/path-type-conflict",
+      "expect": "reject", "kind": "module", "rule": "register-type-conflict",
+      "fixture": "../../behavior/fixtures/uvb-module-verified.uvb.json",
+      "mutations": [
+        { "op": "set", "path": "functions.0.returns", "value": "void" },
+        { "op": "set", "path": "functions.0.body", "value": [
+          { "op": "const", "dst": 2, "type": "bool", "value": true },
+          { "op": "br_if", "a": 2, "target": 4 },
+          { "op": "const", "dst": 3, "type": "i64", "value": 1 },
+          { "op": "br", "target": 5 },
+          { "op": "const", "dst": 3, "type": "bool", "value": true },
+          { "op": "ret" }
+        ] }
+      ]
+    },
+    {
+      "id": "module/unadmitted-operand-rule",
+      "expect": "reject", "kind": "module", "rule": "type-rule-unavailable",
+      "fixture": "../../behavior/fixtures/uvb-module-verified.uvb.json",
+      "mutations": [
+        { "op": "set", "path": "functions.0.returns", "value": "void" },
+        { "op": "set", "path": "functions.0.body", "value": [
+          { "op": "record.set", "dst": 2, "a": 0, "b": 1, "value": "field" },
+          { "op": "ret" }
+        ] }
+      ]
+    },
+    {
+      "id": "module/unencodable-constant-type",
+      "expect": "reject", "kind": "module", "rule": "type-rule-unavailable",
+      "fixture": "../../behavior/fixtures/uvb-module-verified.uvb.json",
+      "mutations": [
+        { "op": "set", "path": "functions.0.returns", "value": "void" },
+        { "op": "set", "path": "functions.0.body", "value": [
+          { "op": "const", "dst": 2, "type": "ref<entity>", "value": 1 }, { "op": "ret" }
+        ] }
+      ]
+    },
+    {
+      "id": "module/noncanonical-constant-value",
+      "expect": "reject", "kind": "module", "rule": "constant-not-encodable",
+      "fixture": "../../behavior/fixtures/uvb-module-verified.uvb.json",
+      "mutations": [
+        { "op": "set", "path": "functions.0.returns", "value": "void" },
+        { "op": "set", "path": "functions.0.body", "value": [
+          { "op": "const", "dst": 2, "type": "i64", "value": "45" }, { "op": "ret" }
+        ] }
+      ]
+    },
+    {
+      "id": "module/unadmitted-list-equality",
+      "expect": "reject", "kind": "module", "rule": "type-rule-unavailable",
+      "fixture": "../../behavior/fixtures/uvb-module-verified.uvb.json",
+      "mutations": [
+        { "op": "set", "path": "functions.0.params", "value": ["list<i64>", "list<i64>"] },
+        { "op": "set", "path": "functions.0.returns", "value": "bool" },
+        { "op": "set", "path": "functions.0.body", "value": [
+          { "op": "eq", "dst": 2, "a": 0, "b": 1 }, { "op": "ret", "a": 2 }
+        ] }
+      ]
+    },
+    {
+      "id": "module/unwrap-propagates-error-verifies",
+      "expect": "accept", "kind": "module",
+      "fixture": "../../behavior/fixtures/uvb-module-verified.uvb.json",
+      "mutations": [
+        { "op": "set", "path": "functions.0.registers", "value": 7 },
+        { "op": "set", "path": "functions.0.body", "value": [
+          { "op": "const", "dst": 2, "type": "strref", "value": "health" },
+          { "op": "const", "dst": 3, "type": "strref", "value": "tuning" },
+          { "op": "call.intrinsic", "intrinsicIndex": 0, "args": [0, 2, 3, 1], "dst": 4 },
+          { "op": "result.unwrap-or-branch", "a": 4, "dst": 5, "target": 6 },
+          { "op": "result.ok", "a": 5, "dst": 6 },
+          { "op": "ret", "a": 6 }, { "op": "ret", "a": 4 }
+        ] }
+      ]
+    },
+    {
+      "id": "module/unwrap-cannot-swallow-error",
+      "expect": "reject", "kind": "module", "rule": "results-are-handled",
+      "fixture": "../../behavior/fixtures/uvb-module-verified.uvb.json",
+      "mutations": [
+        { "op": "set", "path": "functions.0.returns", "value": "void" },
+        { "op": "set", "path": "functions.0.registers", "value": 6 },
+        { "op": "set", "path": "functions.0.body", "value": [
+          { "op": "const", "dst": 2, "type": "strref", "value": "health" },
+          { "op": "const", "dst": 3, "type": "strref", "value": "tuning" },
+          { "op": "call.intrinsic", "intrinsicIndex": 0, "args": [0, 2, 3, 1], "dst": 4 },
+          { "op": "result.unwrap-or-branch", "a": 4, "dst": 5, "target": 5 },
+          { "op": "ret" }, { "op": "ret" }
+        ] }
+      ]
+    },
+    {
+      "id": "module/moved-result-source-cannot-be-reused",
+      "expect": "reject", "kind": "module", "rule": "register-type-mismatch",
+      "fixture": "../../behavior/fixtures/uvb-module-verified.uvb.json",
+      "mutations": [
+        { "op": "set", "path": "functions.0.registers", "value": 7 },
+        { "op": "set", "path": "functions.0.body", "value": [
+          { "op": "const", "dst": 2, "type": "strref", "value": "health" },
+          { "op": "const", "dst": 3, "type": "strref", "value": "tuning" },
+          { "op": "call.intrinsic", "intrinsicIndex": 0, "args": [0, 2, 3, 1], "dst": 4 },
+          { "op": "move", "dst": 5, "a": 4 },
+          { "op": "eq", "dst": 6, "a": 4, "b": 4 },
+          { "op": "ret", "a": 5 }
+        ] }
+      ]
+    },
+    {
+      "id": "module/unwrap-joined-error-path-has-no-value",
+      "expect": "reject", "kind": "module", "rule": "register-uninitialized",
+      "fixture": "../../behavior/fixtures/uvb-module-verified.uvb.json",
+      "mutations": [
+        { "op": "set", "path": "functions.0.returns", "value": "bool" },
+        { "op": "set", "path": "functions.0.registers", "value": 6 },
+        { "op": "set", "path": "functions.0.body", "value": [
+          { "op": "const", "dst": 2, "type": "strref", "value": "health" },
+          { "op": "const", "dst": 3, "type": "strref", "value": "tuning" },
+          { "op": "call.intrinsic", "intrinsicIndex": 0, "args": [0, 2, 3, 1], "dst": 4 },
+          { "op": "result.unwrap-or-branch", "a": 4, "dst": 5, "target": 4 },
+          { "op": "ret", "a": 5 }
+        ] }
+      ]
+    },
+    {
+      "id": "module/frozen-binary-is-not-executable",
+      "expect": "reject",
+      "kind": "module",
+      "rule": "register-uninitialized",
       "fixture": "../../behavior/fixtures/uvb-module-minimal.uvb.json",
       "granted": ["read", "mutate"],
-      "expectBound": ["entity.set-stat-modifier@1", "query.entities@1"],
-      "note": "the shipped module binds both requirements, its effects cover the called intrinsics, and the result of set-stat-modifier is read"
+      "note": "the pinned 1.1 binary fixture is a byte-format vector, but r5/r6 are uninitialized at its intrinsic call"
+    },
+    {
+      "id": "module/branch-outside-function",
+      "expect": "reject",
+      "kind": "module",
+      "rule": "branch-target",
+      "fixture": "../../behavior/fixtures/uvb-module-verified.uvb.json",
+      "mutations": [{ "op": "set", "path": "functions.0.body.2", "value": { "op": "br", "target": 99 } }]
     },
     {
       "id": "module/effects-within-declaration",
@@ -32,6 +492,68 @@
       "note": "a result<T> without a destination register is a discarded error"
     },
     {
+      "id": "module/result-overwritten-before-handling",
+      "expect": "reject",
+      "kind": "module",
+      "rule": "results-are-handled",
+      "fixture": "../../behavior/fixtures/uvb-module-verified.uvb.json",
+      "mutations": [{ "op": "set", "path": "functions.0.body", "value": [
+        { "op": "const", "dst": 2, "type": "strref", "value": "health" },
+        { "op": "const", "dst": 3, "type": "strref", "value": "tuning" },
+        { "op": "call.intrinsic", "intrinsicIndex": 0, "args": [0, 2, 3, 1], "dst": 4 },
+        { "op": "const", "dst": 4, "type": "bool", "value": true },
+        { "op": "ret", "a": 4 }
+      ] }]
+    },
+    {
+      "id": "module/result-unhandled-on-one-branch",
+      "expect": "reject",
+      "kind": "module",
+      "rule": "results-are-handled",
+      "fixture": "../../behavior/fixtures/uvb-module-verified.uvb.json",
+      "mutations": [
+        { "op": "set", "path": "functions.0.registers", "value": 6 },
+        { "op": "set", "path": "functions.0.body", "value": [
+          { "op": "const", "dst": 2, "type": "strref", "value": "health" },
+          { "op": "const", "dst": 3, "type": "strref", "value": "tuning" },
+          { "op": "const", "dst": 5, "type": "bool", "value": true },
+          { "op": "call.intrinsic", "intrinsicIndex": 0, "args": [0, 2, 3, 1], "dst": 4 },
+          { "op": "br_if", "a": 5, "target": 6 },
+          { "op": "ret", "a": 4 },
+          { "op": "ret" }
+        ] }
+      ]
+    },
+    {
+      "id": "module/result-moved-then-returned",
+      "expect": "accept",
+      "kind": "module",
+      "fixture": "../../behavior/fixtures/uvb-module-verified.uvb.json",
+      "granted": ["read", "mutate"],
+      "expectBound": ["entity.set-stat-modifier@1"],
+      "mutations": [
+        { "op": "set", "path": "functions.0.registers", "value": 6 },
+        { "op": "set", "path": "functions.0.body.3", "value": { "op": "move", "dst": 5, "a": 4 } },
+        { "op": "set", "path": "functions.0.body.4", "value": { "op": "ret", "a": 5 } }
+      ]
+    },
+    {
+      "id": "module/unknown-function-is-refusal",
+      "expect": "reject",
+      "kind": "module",
+      "rule": "references-resolve",
+      "fixture": "../../behavior/fixtures/uvb-module-minimal.uvb.json",
+      "mutations": [{ "op": "set", "path": "functions.0.body.4", "value": { "op": "call", "function": "missing", "args": [], "dst": 7 } }]
+    },
+    {
+      "id": "module/unknown-intrinsic-index-is-refusal",
+      "expect": "reject",
+      "kind": "module",
+      "rule": "references-resolve",
+      "fixture": "../../behavior/fixtures/uvb-module-minimal.uvb.json",
+      "mutations": [{ "op": "set", "path": "functions.0.body.4.intrinsicIndex", "value": 99 }]
+    },
+    {
       "id": "module/capability-not-granted",
       "expect": "reject",
       "kind": "module",
@@ -48,6 +570,23 @@
       "fixture": "../../behavior/fixtures/uvb-module-minimal.uvb.json",
       "mutations": [{ "op": "set", "path": "requires.intrinsics.1", "value": "world.portal-create@1" }],
       "note": "a name reserved for the uvw-dynamic-topology amendment cannot be bound until the amendment lands"
+    },
+    {
+      "id": "module/value-return-needs-versioned-type",
+      "expect": "reject",
+      "kind": "module",
+      "rule": "unrepresentable-value",
+      "fixture": "../../behavior/fixtures/uvb-module-minimal.uvb.json",
+      "mutations": [{ "op": "set", "path": "requires.intrinsics.1", "value": "query.def-field@1" }],
+      "note": "the active registry name is not executable through UVB 1.1 because generic value has no register type"
+    },
+    {
+      "id": "module/value-param-needs-versioned-type",
+      "expect": "reject",
+      "kind": "module",
+      "rule": "unrepresentable-value",
+      "fixture": "../../behavior/fixtures/uvb-module-minimal.uvb.json",
+      "mutations": [{ "op": "set", "path": "requires.intrinsics.1", "value": "scenario.set-var@1" }]
     },
     {
       "id": "chart/fixture-verifies",
@@ -80,6 +619,22 @@
       "rule": "references-resolve",
       "fixture": "../../scenario/fixtures/uvs-chart-minimal.uvs.json",
       "mutations": [{ "op": "set", "path": "charts.0.states.1.on.0.event", "value": "entity.teleported" }]
+    },
+    {
+      "id": "chart/value-event-needs-versioned-type",
+      "expect": "reject",
+      "kind": "chart",
+      "rule": "unrepresentable-value",
+      "fixture": "../../scenario/fixtures/uvs-chart-minimal.uvs.json",
+      "mutations": [{ "op": "set", "path": "charts.0.states.1.on.0.event", "value": "scenario.message" }]
+    },
+    {
+      "id": "chart/value-intrinsic-needs-versioned-type",
+      "expect": "reject",
+      "kind": "chart",
+      "rule": "unrepresentable-value",
+      "fixture": "../../scenario/fixtures/uvs-chart-minimal.uvs.json",
+      "mutations": [{ "op": "set", "path": "charts.0.states.0.on.0.condition.args.0.intrinsic", "value": "scenario.var@1" }]
     },
     {
       "id": "chart/undeclared-variable",

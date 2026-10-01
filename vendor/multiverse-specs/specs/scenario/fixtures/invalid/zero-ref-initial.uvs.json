@@ -1,0 +1,10 @@
+{
+  "uv": { "format": "UVS", "version": "1.0" },
+  "namespace": "example",
+  "charts": [{
+    "name": "intro",
+    "initialState": "idle",
+    "variables": [{ "name": "target", "type": "ref", "refKind": "entity", "initial": "0" }],
+    "states": [{ "name": "idle", "on": [] }]
+  }]
+}

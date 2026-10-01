@@ -1,0 +1,220 @@
+{
+  "asset": {
+    "version": "2.0",
+    "extras": {
+      "uv": {
+        "format": "UVW",
+        "version": "1.0",
+        "profile": "space-graph"
+      }
+    }
+  },
+  "extensionsUsed": [
+    "UV_world_graph"
+  ],
+  "extensionsRequired": [
+    "UV_world_graph"
+  ],
+  "extensions": {
+    "UV_world_graph": {
+      "schemaVersion": 1,
+      "spaces": [
+        {
+          "id": "main",
+          "topology": "heightfield",
+          "basis": {
+            "handedness": "right",
+            "upAxis": "y",
+            "forwardAxis": "+z",
+            "unit": "meter",
+            "metersPerUnit": 1,
+            "unitsPerCell": 1
+          },
+          "bounds": {
+            "min": [
+              0,
+              0,
+              0
+            ],
+            "max": [
+              3,
+              6,
+              3
+            ]
+          },
+          "layers": [
+            {
+              "schemaVersion": 1,
+              "id": "gateways",
+              "kind": "gateways",
+              "segments": [
+                {
+                  "id": "east-west",
+                  "start": [
+                    0,
+                    0.5
+                  ],
+                  "end": [
+                    1,
+                    0.5
+                  ]
+                },
+                {
+                  "id": "north-south",
+                  "start": [
+                    0.5,
+                    0
+                  ],
+                  "end": [
+                    0.5,
+                    1
+                  ]
+                }
+              ]
+            },
+            {
+              "schemaVersion": 1,
+              "id": "lighting",
+              "kind": "lighting",
+              "ambientColor": [
+                0.2,
+                0.25,
+                0.3
+              ],
+              "ambientIntensity": 0.5,
+              "directional": [
+                {
+                  "id": "sun",
+                  "direction": [
+                    -0.4,
+                    -1,
+                    0.2
+                  ],
+                  "color": [
+                    1,
+                    0.95,
+                    0.8
+                  ],
+                  "intensity": 1.25
+                }
+              ]
+            },
+            {
+              "schemaVersion": 1,
+              "id": "regions",
+              "kind": "regions",
+              "regions": [
+                {
+                  "id": "start",
+                  "name": "Start",
+                  "shapes": [
+                    {
+                      "kind": "circle",
+                      "center": [
+                        0.5,
+                        0.5
+                      ],
+                      "radius": 0.25
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "terrain",
+              "kind": "heightfield",
+              "columns": 4,
+              "rows": 4,
+              "cellSize": 1,
+              "origin": [
+                0,
+                0,
+                0
+              ],
+              "samples": [
+                [
+                  1.0000000002328306,
+                  1,
+                  2,
+                  -9999
+                ],
+                [
+                  1,
+                  2,
+                  3,
+                  4
+                ],
+                [
+                  2,
+                  3,
+                  4,
+                  5
+                ],
+                [
+                  3,
+                  4,
+                  5,
+                  6
+                ]
+              ],
+              "noDataValue": -9999
+            },
+            {
+              "schemaVersion": 1,
+              "id": "traversal-ground",
+              "kind": "traversal",
+              "classId": "ground",
+              "surfaceLayerId": "terrain",
+              "columns": 3,
+              "rows": 3,
+              "cellSize": 1,
+              "origin": [
+                0,
+                0,
+                0
+              ],
+              "walkable": [
+                [
+                  true,
+                  true,
+                  true
+                ],
+                [
+                  true,
+                  false,
+                  true
+                ],
+                [
+                  true,
+                  true,
+                  true
+                ]
+              ],
+              "exits": [
+                [
+                  5,
+                  3,
+                  6
+                ],
+                [
+                  12,
+                  0,
+                  12
+                ],
+                [
+                  9,
+                  3,
+                  10
+                ]
+              ]
+            }
+          ]
+        }
+      ],
+      "connections": []
+    }
+  },
+  "extras": {
+    "sourceComment": "Exact spatial fixture: non-FLOAT32 elevation, noData and directed traversal."
+  }
+}

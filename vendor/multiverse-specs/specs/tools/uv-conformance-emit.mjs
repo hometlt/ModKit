@@ -228,6 +228,19 @@ write('conformance', 'schema-assertions.json', {
       schemaId: 'https://modkitx.org/uvm/1.0/uvm.material.schema.json#gameMaterial',
       expect: 'valid',
     },
+    ...['magenta', 'tolerant'].map(name => ({
+      document: 'model/examples/uv_texture_color_key.json',
+      pointer: `/${name}`,
+      schemaId: 'https://modkitx.org/uvm/1.0/uvm.texture.schema.json#colorKey',
+      expect: 'valid',
+    })),
+    {
+      document: 'model/examples/uv_texture_color_key.json',
+      pointer: '/linearFloats',
+      schemaId: 'https://modkitx.org/uvm/1.0/uvm.texture.schema.json#colorKey',
+      expect: 'invalid',
+      note: 'a colour key matches stored bytes, so a key stated as linear floats is refused rather than rounded',
+    },
     {
       document: 'model/examples/siege_tank.uvm.gltf',
       pointer: '/animations/1/extensions/UV_game_animation_clips',

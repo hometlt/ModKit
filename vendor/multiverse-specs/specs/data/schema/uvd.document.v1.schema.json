@@ -98,6 +98,18 @@
                   "type": "boolean",
                   "default": false
                 },
+                "runtimeRole": {
+                    "description": "Optional versioned gameplay meaning for this UVD field. The canonical UVD resolver validates movement class/speed and assembly roles before Runtime binding. Native class names are not Runtime roles.",
+                  "enum": [
+                    "assembly.slots@1",
+                    "assembly.initial-parts@1",
+                      "assembly.stat-effects@1",
+                      "assembly.grants@1",
+                      "capability.counters@1",
+                      "movement.class@1",
+                      "movement.speed@1"
+                  ]
+                },
                 "unit": {
                   "description": "Declared unit for numeric fields, from the UV coordinates/units vocabulary (e.g. `metre`, `tick`, `per-tick`). Unitless numbers say `scalar`.",
                   "type": "string"

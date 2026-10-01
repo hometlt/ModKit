@@ -1,0 +1,21 @@
+{
+  "uv": { "format": "UVB", "version": "1.0" },
+  "namespace": "example-vendor",
+  "requires": { "intrinsics": ["entity.set-stat-modifier@1"] },
+  "strings": ["health", "tuning"],
+  "functions": [
+    {
+      "name": "apply-bonus",
+      "params": ["ref<entity>", "fixed64"],
+      "returns": "result<bool>",
+      "registers": 5,
+      "effects": { "reads": [], "writes": ["entities"] },
+      "body": [
+        { "op": "const", "dst": 2, "type": "strref", "value": "health" },
+        { "op": "const", "dst": 3, "type": "strref", "value": "tuning" },
+        { "op": "call.intrinsic", "intrinsicIndex": 0, "args": [0, 2, 3, 1], "dst": 4 },
+        { "op": "ret", "a": 4 }
+      ]
+    }
+  ]
+}

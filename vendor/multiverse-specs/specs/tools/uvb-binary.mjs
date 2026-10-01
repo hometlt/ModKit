@@ -1,7 +1,7 @@
 /**
- * Reference codec for the canonical UVB binary, version 1.0.
+ * Reference codec for the canonical UVB 1.1 binary and proposed UVB 2.0 binary.
  *
- * The structural JSON form (behavior/schema/uvb.module.v1.schema.json) is the specification view;
+ * The versioned structural JSON schemas in behavior/schema are the specification view;
  * this module is its canonical byte encoding and the inverse. Two rules make the encoding an
  * identity, not a serialisation convenience:
  *
@@ -34,11 +34,16 @@
  *                     dst u32, a u32, b u32, value (u8 tag: 1 i64 LE64 / 2 bool u8 / 3 string),
  *                     type string, target u32, budget u8 (0 = typed-error), function string,
  *                     intrinsicIndex u32, args (u32 count, u32[])
+ * Binary 2.0 retains the envelope and section order, uses version bytes 02 00, appends
+ * one 0/1 optionality byte to each record field in section 4, and appends value.box/unbox
+ * and result.value-or-false/list.empty/option.unwrap-or-branch/fixed.parse-decimal/
+ * result.value-or/pos.make/value.expect to the
+ * version-2-only opcode table.
  *
- * Dependency-free by design: Node built-ins only.
+ * Dependency-free and browser-portable: the identity digest uses Web Crypto.
  */
 
-import { createHash } from 'node:crypto'
+import { classifyUvbConstant } from './uvb-constant.mjs'
 
 export const OPCODES = [
   'const', 'move',
@@ -51,6 +56,9 @@ export const OPCODES = [
   'call', 'call.intrinsic',
   'result.ok', 'result.err', 'result.unwrap-or-branch',
 ]
+const V2_OPCODES = [...OPCODES, 'value.box', 'value.unbox', 'result.value-or-false',
+  'list.empty', 'option.unwrap-or-branch', 'fixed.parse-decimal', 'result.value-or', 'pos.make',
+  'value.expect']
 
 const FIELDS = ['dst', 'a', 'b', 'value', 'type', 'target', 'budget', 'function', 'intrinsicIndex', 'args']
 const MAGIC = [0x55, 0x56, 0x42, 0x00]
@@ -82,8 +90,9 @@ class Writer {
     this.push(b)
   }
   i64(v) {
+    if (v < -(1n << 63n) || v > (1n << 63n) - 1n) throw new Error(`i64 out of range: ${v}`)
     const b = new Uint8Array(8)
-    new DataView(b.buffer).setBigInt64(0, BigInt(v), true)
+    new DataView(b.buffer).setBigInt64(0, v, true)
     this.push(b)
   }
   string(text) {
@@ -159,27 +168,15 @@ const encodeStrings = (w, list) => {
 }
 
 const encodeValue = (w, value, type) => {
-  if (type === 'i64' || type === 'fixed64') {
-    if (typeof value === 'boolean' || (typeof value === 'string' && !/^-?\d+$/.test(value))) {
-      throw new Error(`const of type ${type} carries a non-integer value ${JSON.stringify(value)}`)
-    }
-    w.u8(1)
-    w.i64(value)
-  } else if (type === 'bool') {
-    if (typeof value !== 'boolean') throw new Error(`const of type bool carries ${JSON.stringify(value)}`)
-    w.u8(2)
-    w.u8(value ? 1 : 0)
-  } else if (type === 'strref') {
-    if (typeof value !== 'string') throw new Error(`const of type strref carries ${JSON.stringify(value)}`)
-    w.u8(3)
-    w.string(value)
-  } else {
-    throw new Error(`const with unencodable declared type ${JSON.stringify(type)}`)
-  }
+  const constant = classifyUvbConstant(value, type)
+  w.u8(constant.tag)
+  if (constant.tag === 1) w.i64(constant.value)
+  else if (constant.tag === 2) w.u8(constant.value ? 1 : 0)
+  else w.string(constant.value)
 }
 
-const encodeInstruction = (w, instruction, sourceMap, functionIndex, instructionIndex) => {
-  const opcode = OPCODES.indexOf(instruction.op)
+const encodeInstruction = (w, instruction, sourceMap, functionIndex, instructionIndex, major) => {
+  const opcode = (major === 2 ? V2_OPCODES : OPCODES).indexOf(instruction.op)
   if (opcode < 0) throw new Error(`unknown op ${instruction.op}`)
   w.u8(opcode)
   let flags = 0
@@ -211,11 +208,13 @@ const encodeInstruction = (w, instruction, sourceMap, functionIndex, instruction
 
 /** Encode a structural UVB module into its canonical bytes. */
 export function encodeUvb(module) {
-  if (module?.uv?.format !== 'UVB' || module.uv.version !== '1.0') throw new Error('not a UVB 1.0 module')
+  if (module?.uv?.format !== 'UVB' || !['1.0', '2.0'].includes(module.uv.version))
+    throw new Error('not a supported UVB module')
+  const major = module.uv.version === '2.0' ? 2 : 1
   const out = new Writer()
   out.push(Uint8Array.from(MAGIC))
-  out.u8(1)
-  out.u8(1)
+  out.u8(major)
+  out.u8(major === 2 ? 0 : 1)
 
   const ns = new Writer()
   ns.string(module.namespace)
@@ -238,6 +237,12 @@ export function encodeUvb(module) {
       for (const field of record.fields) {
         types.string(field.name)
         types.string(field.type)
+        if (major === 2) {
+          if (field.optional !== undefined && field.optional !== true)
+            throw new Error(`noncanonical optional field ${record.name}.${field.name}`)
+          types.u8(field.optional === true ? 1 : 0)
+        } else if (field.optional !== undefined)
+          throw new Error(`optional record fields require UVB 2.0: ${record.name}.${field.name}`)
       }
     }
     out.push(section(4, types))
@@ -255,7 +260,7 @@ export function encodeUvb(module) {
     encodeStrings(fns, fn.effects.writes)
     fns.u32(fn.body.length)
     fn.body.forEach((instruction, instructionIndex) =>
-      encodeInstruction(fns, instruction, sourceMap, functionIndex, instructionIndex),
+      encodeInstruction(fns, instruction, sourceMap, functionIndex, instructionIndex, major),
     )
   })
   out.push(section(5, fns))
@@ -291,10 +296,11 @@ const decodeValue = r => {
   throw new Error(`unknown value tag ${tag}`)
 }
 
-const decodeInstruction = r => {
+const decodeInstruction = (r, major) => {
   const opcode = r.u8()
-  if (opcode >= OPCODES.length) throw new Error(`unknown opcode ${opcode}`)
-  const instruction = { op: OPCODES[opcode] }
+  const opcodes = major === 2 ? V2_OPCODES : OPCODES
+  if (opcode >= opcodes.length) throw new Error(`unknown opcode ${opcode}`)
+  const instruction = { op: opcodes[opcode] }
   const flags = r.u16()
   // unused flag bits must be zero: otherwise two different byte sequences would decode to one
   // module and the identity digest would stop being an identity
@@ -329,8 +335,9 @@ export function decodeUvb(bytes) {
   }
   const major = r.u8()
   const minor = r.u8()
-  if (major !== 1 || minor !== 1) throw new Error(`unsupported UVB binary version ${major}.${minor}`)
-  const module = { uv: { format: 'UVB', version: '1.0' } }
+  if (!((major === 1 && minor === 1) || (major === 2 && minor === 0)))
+    throw new Error(`unsupported UVB binary version ${major}.${minor}`)
+  const module = { uv: { format: 'UVB', version: major === 2 ? '2.0' : '1.0' } }
   let lastId = 0
   const sourceMap = []
   while (r.offset < bytes.length) {
@@ -349,7 +356,15 @@ export function decodeUvb(bytes) {
       for (let i = 0; i < n; i += 1) {
         const record = { name: r.string(), fields: [] }
         const fieldCount = r.u32()
-        for (let j = 0; j < fieldCount; j += 1) record.fields.push({ name: r.string(), type: r.string() })
+        for (let j = 0; j < fieldCount; j += 1) {
+          const field = { name: r.string(), type: r.string() }
+          if (major === 2) {
+            const optional = r.u8()
+            if (optional > 1) throw new Error(`noncanonical optional field flag ${optional}`)
+            if (optional === 1) field.optional = true
+          }
+          record.fields.push(field)
+        }
         module.types.push(record)
       }
     } else if (id === 5) {
@@ -363,7 +378,7 @@ export function decodeUvb(bytes) {
         fn.effects = { reads: decodeStrings(r), writes: decodeStrings(r) }
         const count = r.u32()
         fn.body = []
-        for (let j = 0; j < count; j += 1) fn.body.push(decodeInstruction(r))
+        for (let j = 0; j < count; j += 1) fn.body.push(decodeInstruction(r, major))
         module.functions.push(fn)
       }
     } else if (id === 6) {
@@ -419,19 +434,31 @@ export function locateFirstInstructionFlags(bytes) {
 }
 
 /** The identity digest: sha256 over every section except the source map. */
-export function uvbIdentityDigest(bytes) {
+export async function uvbIdentityDigest(bytes) {
   const r = new Reader(bytes)
-  const hash = createHash('sha256')
-  hash.update(bytes.subarray(0, 6))
+  const sections = [bytes.subarray(0, 6)]
+  let length = 6
   r.offset = 6
   while (r.offset < bytes.length) {
     const start = r.offset
     const id = r.u8()
-    const length = r.u32()
-    const end = r.offset + length
-    r.need(length)
-    if (id !== 6) hash.update(bytes.subarray(start, end))
+    const sectionLength = r.u32()
+    const end = r.offset + sectionLength
+    r.need(sectionLength)
+    if (id !== 6) {
+      sections.push(bytes.subarray(start, end))
+      length += end - start
+    }
     r.offset = end
   }
-  return `sha256:${hash.digest('hex')}`
+  const canonical = new Uint8Array(length)
+  let offset = 0
+  for (const section of sections) {
+    canonical.set(section, offset)
+    offset += section.length
+  }
+  const subtle = globalThis.crypto?.subtle
+  if (subtle === undefined) throw new TypeError('Web Crypto SHA-256 is required for UVB identity')
+  const hash = new Uint8Array(await subtle.digest('SHA-256', canonical))
+  return `sha256:${[...hash].map(byte => byte.toString(16).padStart(2, '0')).join('')}`
 }

@@ -6,6 +6,11 @@
   "type": "object",
   "required": ["role"],
   "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$",
+      "description": "Stable UVM-local socket identity for cross-artifact UVW component links. Omission is allowed for unaddressed sockets."
+    },
     "role": {
       "type": "string",
       "anyOf": [

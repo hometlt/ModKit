@@ -112,6 +112,11 @@ fixed `128` world-unit grid relationship. Its physical metre scale is likewise n
 
 ## 7. Machine form
 
+The measured Z-up rotation `(x,y,z) → (x,z,−y)` is not self-inverse. Its inverse
+is `(x,y,z) → (x,−z,y)`; applying the forward transform twice gives `(x,−y,−z)`.
+The M3, SC2 map and Warzone map entries state this inverse explicitly. This
+correction does not change their forward conversion or any measured native axis.
+
 `uv-coordinates.v1.json` beside this file carries the canonical basis and one entry per known
 source frame. A converter reads it rather than this prose; a reviewer checks the prose against it.
 Where the two disagree, this document is normative and the JSON is stale — with one exception:

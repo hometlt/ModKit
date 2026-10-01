@@ -3,7 +3,9 @@
 **Status:** normative for the profiles this seed carries, 2026-08-25
 **Owns:** which canonical form applies to which quantity, and the exact encoding of each
 **Machine form:** [`uv-canonical-form.v1.json`](uv-canonical-form.v1.json)
-**Reference implementation:** [`../tools/uv-canonical.mjs`](../tools/uv-canonical.mjs)
+**Reference implementation:** [`../tools/uv-canonical.mjs`](../tools/uv-canonical.mjs),
+with its shared browser-safe byte form in
+[`../tools/uv-canonical-form.mjs`](../tools/uv-canonical-form.mjs).
 **Vectors:** [`../conformance/canonical-form/vectors.json`](../conformance/canonical-form/vectors.json)
 
 [SPEC_UV_FOUNDATION §3](SPEC_UV_FOUNDATION.md#3-canonical-json-and-integrity) states the rule for

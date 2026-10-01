@@ -24,23 +24,6 @@
       "layers": [
         {
           "schemaVersion": 1,
-          "id": "gateways",
-          "kind": "gateways",
-          "segments": [
-            {
-              "id": "east-west",
-              "start": [0, 0.5],
-              "end": [1, 0.5]
-            },
-            {
-              "id": "north-south",
-              "start": [0.5, 0],
-              "end": [0.5, 1]
-            }
-          ]
-        },
-        {
-          "schemaVersion": 1,
           "id": "cliffs",
           "kind": "cliffs",
           "columns": 2,
@@ -54,6 +37,23 @@
           "authored": [
             [false, false],
             [true, true]
+          ]
+        },
+        {
+          "schemaVersion": 1,
+          "id": "gateways",
+          "kind": "gateways",
+          "segments": [
+            {
+              "id": "east-west",
+              "start": [0, 0.5],
+              "end": [1, 0.5]
+            },
+            {
+              "id": "north-south",
+              "start": [0.5, 0],
+              "end": [0.5, 1]
+            }
           ]
         },
         {

@@ -75,6 +75,97 @@
       "note": "source-unit means nobody measured a metre factor; stating one asserts a measurement that was never made",
       "mutations": [{ "op": "set", "path": "basis.metersPerUnit", "value": 0.5 }],
       "rule": "no-invented-scale"
+    },
+    {
+      "id": "traversal-requires-profile",
+      "expect": "reject",
+      "fixture": "uvw-heightfield-basic.uvw.json",
+      "note": "portable traversal belongs to a named space, not the legacy candidate body",
+      "mutations": [{ "op": "set", "path": "layers.0.kind", "value": "traversal" }],
+      "rule": "traversal-profile-only"
+    },
+    {
+      "id": "traversal-around-blocker/accept",
+      "expect": "accept",
+      "fixture": "uvw-profile-traversal.uvw.json",
+      "note": "portable directed ground transitions encode a detour around the blocked middle cell",
+      "mutations": []
+    },
+    {
+      "id": "traversal-surface/accept",
+      "expect": "accept",
+      "fixture": "uvw-profile-traversal-surface.uvw.json",
+      "note": "movement topology names an existing canonical heightfield, not a second height model",
+      "mutations": []
+    },
+    {
+      "id": "traversal-surface-reference",
+      "expect": "reject",
+      "fixture": "uvw-profile-traversal-surface.uvw.json",
+      "mutations": [{ "op": "set", "path": "spaces.0.layers.1.surfaceLayerId", "value": "missing" }],
+      "rule": "traversal-surface-reference"
+    },
+    {
+      "id": "traversal-surface-coverage",
+      "expect": "reject",
+      "fixture": "uvw-profile-traversal-surface.uvw.json",
+      "mutations": [{ "op": "set", "path": "spaces.0.layers.0.cellSize", "value": 0.75 }],
+      "rule": "traversal-surface-coverage"
+    },
+    {
+      "id": "traversal-blocked-cell-exit",
+      "expect": "reject",
+      "fixture": "uvw-profile-traversal.uvw.json",
+      "note": "blocked cells cannot retain an outgoing transition",
+      "mutations": [{ "op": "set", "path": "spaces.0.layers.1.exits.1.1", "value": 1 }],
+      "rule": "traversal-edge-valid"
+    },
+    {
+      "id": "traversal-edge-into-blocker",
+      "expect": "reject",
+      "fixture": "uvw-profile-traversal.uvw.json",
+      "note": "a passable source cannot claim a transition into a blocked cell",
+      "mutations": [{ "op": "set", "path": "spaces.0.layers.1.exits.1.0", "value": 13 }],
+      "rule": "traversal-edge-valid"
+    },
+    {
+      "id": "traversal-cell-size-out-of-bounds",
+      "expect": "reject",
+      "fixture": "uvw-profile-traversal.uvw.json",
+      "note": "cell extents, unlike sample positions, span columns times cellSize",
+      "mutations": [{ "op": "set", "path": "spaces.0.layers.1.cellSize", "value": 2 }],
+      "rule": "layer-within-bounds"
+    },
+    {
+      "id": "navigation-grid/accept",
+      "expect": "accept",
+      "fixture": "uvw-profile-navigation.uvw.json",
+      "note": "a complete native-flags layer may be carried without assigning its flags portable movement meaning",
+      "mutations": []
+    },
+    {
+      "id": "navigation-grid-matches/rows",
+      "expect": "reject",
+      "fixture": "uvw-profile-navigation.uvw.json",
+      "note": "a native flags grid must not omit a declared row before traversal mapping",
+      "mutations": [{ "op": "set", "path": "spaces.0.layers.0.rows", "value": 3 }],
+      "rule": "sample-grid-matches"
+    },
+    {
+      "id": "navigation-flags-valid",
+      "expect": "reject",
+      "fixture": "uvw-profile-navigation.uvw.json",
+      "note": "publisher flags remain uninterpreted but must be exact non-negative integers",
+      "mutations": [{ "op": "set", "path": "spaces.0.layers.0.samples.0.0", "value": -1 }],
+      "rule": "navigation-flags-valid"
+    },
+    {
+      "id": "navigation-grid-within-bounds",
+      "expect": "reject",
+      "fixture": "uvw-profile-navigation.uvw.json",
+      "note": "native flags must refer to positions inside the same UVW space",
+      "mutations": [{ "op": "set", "path": "spaces.0.layers.0.cellSize", "value": 2 }],
+      "rule": "layer-within-bounds"
     }
   ]
 }

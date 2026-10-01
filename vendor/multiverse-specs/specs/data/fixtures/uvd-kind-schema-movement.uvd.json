@@ -1,0 +1,13 @@
+{
+  "uv": { "format": "UVD", "version": "1.0" },
+  "namespace": "example-vendor",
+  "role": "kind-schema",
+  "kinds": [{
+    "kind": "unit",
+    "version": 1,
+    "fields": [
+      { "name": "terrainMode", "type": "string", "runtimeRole": "movement.class@1" },
+      { "name": "pace", "type": "fixed64", "unit": "space-unit-per-tick", "runtimeRole": "movement.speed@1" }
+    ]
+  }]
+}

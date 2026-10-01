@@ -1,0 +1,11 @@
+{
+  "uv": { "format": "UVD", "version": "1.0" },
+  "namespace": "sample",
+  "role": "kind-schema",
+  "kinds": [{
+    "kind": "vehicle", "version": 1,
+    "fields": [{ "name": "mounts", "type": "list", "itemType": "record",
+      "runtimeRole": "assembly.unknown@1",
+      "recordFields": [{ "name": "id", "type": "string", "required": true }] }]
+  }]
+}

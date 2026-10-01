@@ -1,0 +1,33 @@
+{
+  "$comment": "Manifest-schema vectors only; no content hash claim. Runtime semantics are exercised by uv-runtime-rules.test.mjs and the WASM movement gate.",
+  "static": {
+    "uv": { "format": "UVP", "version": "1.0" }, "id": "sample/rules", "version": "1.0.0", "kind": "library",
+    "contents": [], "dependencies": [], "requires": { "intrinsics": [], "capabilities": [] },
+    "runtimeRules": { "schemaVersion": 1, "worldMutation": "none" }
+  },
+  "blockers": {
+    "uv": { "format": "UVP", "version": "1.0" }, "id": "sample/rules", "version": "1.0.0", "kind": "library",
+    "contents": [], "dependencies": [], "requires": { "intrinsics": [], "capabilities": [] },
+    "runtimeRules": { "schemaVersion": 1, "worldMutation": "cell-blockers" }
+  },
+  "partial": {
+    "uv": { "format": "UVP", "version": "1.0" }, "id": "sample/rules", "version": "1.0.0", "kind": "library",
+    "contents": [], "dependencies": [], "requires": { "intrinsics": [], "capabilities": [] },
+    "runtimeRules": { "schemaVersion": 1 }
+  },
+  "unsupported": {
+    "uv": { "format": "UVP", "version": "1.0" }, "id": "sample/rules", "version": "1.0.0", "kind": "library",
+    "contents": [], "dependencies": [], "requires": { "intrinsics": [], "capabilities": [] },
+    "runtimeRules": { "schemaVersion": 1, "worldMutation": "voxel-edit" }
+  },
+  "future": {
+    "uv": { "format": "UVP", "version": "1.0" }, "id": "sample/rules", "version": "1.0.0", "kind": "library",
+    "contents": [], "dependencies": [], "requires": { "intrinsics": [], "capabilities": [] },
+    "runtimeRules": { "schemaVersion": 2, "worldMutation": "none" }
+  },
+  "extra": {
+    "uv": { "format": "UVP", "version": "1.0" }, "id": "sample/rules", "version": "1.0.0", "kind": "library",
+    "contents": [], "dependencies": [], "requires": { "intrinsics": [], "capabilities": [] },
+    "runtimeRules": { "schemaVersion": 1, "worldMutation": "none", "portals": true }
+  }
+}

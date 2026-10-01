@@ -1,0 +1,145 @@
+{
+  "asset": {
+    "version": "2.0",
+    "extras": {
+      "uv": {
+        "format": "UVW",
+        "version": "1.0",
+        "profile": "space-graph-paged"
+      }
+    }
+  },
+  "extensionsUsed": [
+    "UV_world_graph"
+  ],
+  "extensionsRequired": [
+    "UV_world_graph"
+  ],
+  "extensions": {
+    "UV_world_graph": {
+      "schemaVersion": 1,
+      "spaces": [
+        {
+          "id": "main",
+          "topology": "heightfield",
+          "basis": {
+            "handedness": "right",
+            "upAxis": "y",
+            "forwardAxis": "+z",
+            "unit": "meter",
+            "metersPerUnit": 1,
+            "unitsPerCell": 1
+          },
+          "bounds": {
+            "min": [
+              0,
+              0,
+              0
+            ],
+            "max": [
+              3,
+              6,
+              3
+            ]
+          },
+          "layers": [
+            {
+              "id": "terrain",
+              "kind": "heightfield",
+              "columns": 4,
+              "rows": 4,
+              "cellSize": 1,
+              "origin": [
+                0,
+                0,
+                0
+              ],
+              "samples": {
+                "count": 16,
+                "pages": [
+                  {
+                    "start": 0,
+                    "bufferView": 0,
+                    "descriptor": {
+                      "schemaVersion": 1,
+                      "encoding": "f64-le",
+                      "count": 16,
+                      "byteLength": 128
+                    }
+                  }
+                ]
+              },
+              "noDataValue": -9999
+            },
+            {
+              "schemaVersion": 1,
+              "id": "traversal-ground",
+              "kind": "traversal",
+              "classId": "ground",
+              "surfaceLayerId": "terrain",
+              "columns": 3,
+              "rows": 3,
+              "cellSize": 1,
+              "origin": [
+                0,
+                0,
+                0
+              ],
+              "walkable": [
+                [
+                  true,
+                  true,
+                  true
+                ],
+                [
+                  true,
+                  false,
+                  true
+                ],
+                [
+                  true,
+                  true,
+                  true
+                ]
+              ],
+              "exits": [
+                [
+                  5,
+                  3,
+                  6
+                ],
+                [
+                  12,
+                  0,
+                  12
+                ],
+                [
+                  9,
+                  3,
+                  10
+                ]
+              ]
+            }
+          ]
+        }
+      ],
+      "connections": []
+    }
+  },
+  "extras": {
+    "sourceComment": "Exact spatial fixture: non-FLOAT32 elevation, noData and directed traversal."
+  },
+  "buffers": [
+    {
+      "uri": "../media/terrain.bin",
+      "byteLength": 128
+    }
+  ],
+  "bufferViews": [
+    {
+      "buffer": 0,
+      "byteOffset": 0,
+      "byteLength": 128
+    }
+  ]
+}

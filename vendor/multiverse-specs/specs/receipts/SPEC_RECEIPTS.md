@@ -32,6 +32,16 @@ missing receipt is never evidence of anything.
 4. Receipts chain by digest: a SimulationReceipt names its `compositionHash`; a
    CompositionReceipt names its layer content digests; a LoweringReceipt names both
    its source and its outputs. Evidence is a chain, not a pile.
+5. `compositionHash` is `uvDigest('uv.composition/layers', orderedLayers)` using the
+   UV typed canonical form. `orderedLayers` contains exactly the receipt's ordered
+   `{id, version, rank, contentDigest}` entries. Verification of this hash proves
+   internal consistency; it does not prove that the named content digests match
+   the actual source artifacts. The content-source owner must verify those bytes.
+6. A layer's `contentDigest` is `uvDigest('uvp/contents', orderedContents)`, where each
+   entry is `{family, path, hash}` plus declared `layer` when present. The format owner
+   computes each artifact's canonical `hash` from bytes first; the compositor compares it
+   with UVP and refuses any mismatch before creating a composed receipt. A callback that
+   merely echoes the manifest hash is not verification.
 
 ## 3. Honesty notes
 

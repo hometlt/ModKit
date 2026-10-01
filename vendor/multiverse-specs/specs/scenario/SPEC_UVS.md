@@ -30,3 +30,12 @@ hashed, replayed.
 5. A non-portable source construct is a `refusal` action carrying the original fragment
    and a reason. Silent loss is forbidden; a refusal without its original is invalid at
    the schema.
+6. A chart-local variable has the composition-wide ID `namespace/chart/variable`, using
+   the names already declared in UVS. Two documents declaring the same `namespace/chart`
+   refuse at composition, even when their local variables differ; a layer does not silently
+   replace a chart. `scenario.var/set-var` take this qualified ID. The verified composition
+   binds the declared concrete type and initializer, not an inferred host-language type.
+   UVS 1.0 initializers are bool, exact-decimal i64/fixed64, bounded UTF-8 strref or
+   nonzero exact-decimal `ref<refKind>`; list and nominal record variables require a
+   versioned UVS amendment. Until chart state/reactions run in the common kernel, a
+   foundation session containing UVS refuses before provider-open.

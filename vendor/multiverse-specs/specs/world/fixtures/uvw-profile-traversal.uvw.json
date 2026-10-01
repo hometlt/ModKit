@@ -1,0 +1,19 @@
+{
+  "uv": { "format": "UVW", "version": "1.0", "status": "profile" },
+  "spaces": [{
+    "id": "main",
+    "topology": "heightfield",
+    "basis": { "handedness": "right", "upAxis": "y", "forwardAxis": "+z", "unit": "meter", "metersPerUnit": 1, "unitsPerCell": 1 },
+    "bounds": { "min": [0, 0, 0], "max": [3, 1, 3] },
+    "layers": [
+      { "id": "terrain", "kind": "heightfield", "columns": 4, "rows": 4,
+        "cellSize": 1, "origin": [0, 0, 0],
+        "samples": [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]] },
+      { "schemaVersion": 1, "id": "traversal-ground", "kind": "traversal", "classId": "ground",
+        "columns": 3, "rows": 3, "cellSize": 1, "origin": [0, 0, 0],
+        "walkable": [[true, true, true], [true, false, true], [true, true, true]],
+        "exits": [[5, 3, 6], [12, 0, 12], [9, 3, 10]] }
+    ]
+  }],
+  "connections": []
+}

@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modkitx.org/uvm/1.0/uvm.texture.schema.json",
+  "title": "UVM texture extensions",
+  "description": "UV_texture_color_key. Attaches to a glTF texture's `extensions`; the image bytes stay as the source stored them (SPEC_UVM §11.6).",
+  "$defs": {
+    "channel": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 255
+    },
+    "colorKey": {
+      "$anchor": "colorKey",
+      "title": "UV_texture_color_key",
+      "type": "object",
+      "required": ["color"],
+      "properties": {
+        "color": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/channel" },
+          "minItems": 3,
+          "maxItems": 3,
+          "description": "The key's stored 8-bit RGB, compared before colour conversion, filtering or mipmap generation."
+        },
+        "tolerance": {
+          "$ref": "#/$defs/channel",
+          "default": 0,
+          "description": "Largest per-channel difference that still matches; 0 is an exact match."
+        },
+        "extras": {}
+      },
+      "additionalProperties": false
+    }
+  },
+  "$ref": "#colorKey"
+}

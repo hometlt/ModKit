@@ -1,0 +1,9 @@
+{
+  "id": "lake",
+  "color": [0.2, 0.3, 0.4, 0.8],
+  "normalResourceId": "waves",
+  "causticsResourceId": "caustics-a",
+  "causticsFrameResourceIds": ["caustics-a", "caustics-b"],
+  "causticsFalloff": 0.4,
+  "colorFalloff": 0.5
+}

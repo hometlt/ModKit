@@ -1,0 +1,15 @@
+{
+  "kind": "uv.observations",
+  "schemaVersion": 1,
+  "source": {
+    "game": "starcraft2", "format": "sc2replay",
+    "artifactDigest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  },
+  "clock": { "domain": "sc2.game-loop" },
+  "observations": [{
+    "tick": "2", "sequence": 0, "sourceEventId": "tracker/2/0",
+    "coverage": "partial", "subject": { "kind": "world", "id": "main" },
+    "action": "remove"
+  }],
+  "observationsDigest": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+}

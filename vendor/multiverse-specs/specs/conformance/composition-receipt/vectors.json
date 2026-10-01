@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "uv-conformance-vectors-1",
+  "suite": "composition-receipt",
+  "vectors": [
+    { "id": "ordered-layers", "fixture": "receipts/fixtures/composition-layer-order.receipt.json", "expect": "accept", "compositionHash": "sha256:5c2ee3dd9753e356f2135b037149e003bac485f227320b4669d2447eca9e7b58" },
+    { "id": "wrong-hash", "fixture": "receipts/fixtures/composition-layer-order.receipt.json", "expect": "refuse", "rule": "composition-hash-mismatch", "mutations": [{ "op": "set", "path": "compositionHash", "value": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" }] },
+    { "id": "reversed-ranks", "fixture": "receipts/fixtures/composition-layer-order.receipt.json", "expect": "refuse", "rule": "composition-layer-order", "mutations": [{ "op": "reverse", "path": "layers" }] },
+    { "id": "missing-root", "fixture": "receipts/fixtures/composition-layer-order.receipt.json", "expect": "refuse", "rule": "composition-root", "mutations": [{ "op": "set", "path": "root.id", "value": "v/other" }] },
+    { "id": "changed-content-digest", "fixture": "receipts/fixtures/composition-layer-order.receipt.json", "expect": "refuse", "rule": "composition-hash-mismatch", "mutations": [{ "op": "set", "path": "layers.0.contentDigest", "value": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }] }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "kind": "uv.receipt/composition",
+  "schemaVersion": 1,
+  "root": { "id": "example/behavior", "version": "1.0.0" },
+  "verdict": "composed",
+  "layers": [
+    {
+      "id": "example/behavior",
+      "version": "1.0.0",
+      "rank": "base",
+      "contentDigest": "sha256:88cac56dbc0f9ebfb1042bede87b3221135e724a64d5f6cdcb15ec1e4adb5b99"
+    }
+  ],
+  "requirements": { "intrinsicsChecked": 1, "capabilitiesGranted": ["mutate"] },
+  "compositionHash": "sha256:a17b760691a5c51c6e57e4ccaaaf4c9e6b868cdb10fddd47bbc07793979c4b28"
+}

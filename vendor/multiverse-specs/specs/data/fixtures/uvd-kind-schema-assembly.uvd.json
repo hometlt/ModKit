@@ -1,0 +1,52 @@
+{
+  "uv": { "format": "UVD", "version": "1.0" },
+  "namespace": "sample",
+  "role": "kind-schema",
+  "kinds": [
+    {
+      "kind": "vehicle", "version": 1,
+      "fields": [
+        {
+          "name": "mounts", "type": "list", "itemType": "record", "runtimeRole": "assembly.slots@1",
+          "recordFields": [
+            { "name": "id", "type": "string", "required": true },
+            { "name": "capacity", "type": "i64", "required": true },
+            { "name": "accepts", "type": "list", "itemType": "ref", "refKind": "part", "required": true }
+          ]
+        },
+        {
+          "name": "loadout", "type": "list", "itemType": "record", "runtimeRole": "assembly.initial-parts@1",
+          "recordFields": [
+            { "name": "id", "type": "string", "required": true },
+            { "name": "slot", "type": "string", "required": true },
+            { "name": "definition", "type": "ref", "refKind": "part", "required": true }
+          ]
+        },
+        { "name": "health", "type": "fixed64", "required": true }
+      ]
+    },
+    { "kind": "part", "version": 1, "fields": [
+      { "name": "mass", "type": "i64" },
+      { "name": "bonuses", "type": "list", "itemType": "record", "runtimeRole": "assembly.stat-effects@1",
+        "recordFields": [
+          { "name": "id", "type": "string", "required": true },
+          { "name": "field", "type": "string", "required": true },
+          { "name": "delta", "type": "fixed64", "required": true }
+        ] },
+      { "name": "abilities", "type": "list", "itemType": "record", "runtimeRole": "assembly.grants@1",
+        "recordFields": [
+          { "name": "id", "type": "string", "required": true },
+          { "name": "capability", "type": "ref", "refKind": "capability", "required": true }
+        ] }
+    ] },
+    { "kind": "capability", "version": 1, "fields": [
+      { "name": "state", "type": "list", "itemType": "record", "runtimeRole": "capability.counters@1",
+        "recordFields": [
+          { "name": "id", "type": "string", "required": true },
+          { "name": "initial", "type": "i64", "required": true },
+          { "name": "minimum", "type": "i64", "required": true },
+          { "name": "maximum", "type": "i64", "required": true }
+        ] }
+    ] }
+  ]
+}

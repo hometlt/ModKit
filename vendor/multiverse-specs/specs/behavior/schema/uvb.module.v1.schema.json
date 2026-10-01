@@ -193,7 +193,7 @@
       "description": "Scalar, typed reference, list, or a NOMINAL RECORD named in the module `types` section (capitalised, e.g. Pos, Filter — structurally identical to the intrinsic table declaration)."
     },
     "instruction": {
-      "description": "One register instruction. The op set is closed: no float ops, no address arithmetic, only structural control flow. `loop` REQUIRES a budget register check; a loop without one fails the schema, not just the verifier. `call.intrinsic` indexes the module's requires list.",
+      "description": "One register instruction. The op set is closed: no float ops, no address arithmetic, only structural control flow. `loop` is a fallthrough iteration header with a forward exit target and a mandatory typed-error fuel check; a loop without that budget fails the schema. `call.intrinsic` indexes the module's requires list.",
       "type": "object",
       "additionalProperties": false,
       "required": [
@@ -256,7 +256,7 @@
           "minimum": 0
         },
         "budget": {
-          "description": "loop only: the mandatory per-iteration budget check against the composition-supplied instruction budget.",
+          "description": "loop only: mandatory typed-error check against the shared instruction fuel on every visit to the header.",
           "type": "object",
           "additionalProperties": false,
           "required": [

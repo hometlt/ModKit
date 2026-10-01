@@ -1,0 +1,147 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modkitx.dev/specs/world/uvw.gltf.migration.receipt.v1.schema.json",
+  "title": "Identity-bound UVW profile to glTF migration receipt v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["profile", "status", "scope", "source", "target", "resources", "materials", "rasters", "losses", "refusals"],
+  "properties": {
+    "profile": { "const": "uv/uvw-gltf-migration@1" },
+    "status": { "const": "verified" },
+    "scope": { "enum": ["media-verified", "manifest-verified", "preview"] },
+    "source": { "$ref": "#/$defs/artifact" },
+    "target": { "$ref": "#/$defs/artifact" },
+    "resources": { "type": "array", "items": { "$ref": "#/$defs/resource" } },
+    "materials": { "type": "array", "items": { "$ref": "#/$defs/material" } },
+    "rasters": { "type": "array", "items": { "$ref": "#/$defs/raster" } },
+    "socketLinks": { "type": "array", "items": { "$ref": "#/$defs/socketLink" } },
+    "losses": { "type": "array", "items": { "$ref": "#/$defs/loss" } },
+    "refusals": { "const": [] }
+  },
+  "$defs": {
+    "digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "artifact": {
+      "type": "object", "additionalProperties": false,
+      "required": ["packageId", "path", "hash", "compositionHash"],
+      "properties": {
+        "packageId": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 },
+        "hash": { "$ref": "#/$defs/digest" },
+        "compositionHash": { "$ref": "#/$defs/digest" }
+      }
+    },
+    "address": {
+      "type": "object", "additionalProperties": false,
+      "required": ["spaceId", "layerId", "resourceId"],
+      "properties": {
+        "spaceId": { "type": "string", "minLength": 1 },
+        "layerId": { "type": "string", "minLength": 1 },
+        "resourceId": { "type": "string", "minLength": 1 }
+      }
+    },
+    "original": {
+      "type": "object", "additionalProperties": false,
+      "required": ["family", "sourcePath", "targetPath", "hash"],
+      "properties": {
+        "family": { "enum": ["media", "uvm"] },
+        "sourcePath": { "type": "string", "minLength": 1 },
+        "targetPath": { "type": "string", "minLength": 1 },
+        "hash": { "$ref": "#/$defs/digest" }
+      }
+    },
+    "output": {
+      "type": "object", "additionalProperties": false,
+      "required": ["usage", "family", "path", "hash"],
+      "oneOf": [
+        { "required": ["texture"], "not": { "required": ["encoding"] } },
+        { "required": ["encoding"], "not": { "required": ["texture"] } }
+      ],
+      "properties": {
+        "usage": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+        "family": { "const": "media" },
+        "path": { "type": "string", "minLength": 1 },
+        "texture": { "type": "integer", "minimum": 0 },
+        "encoding": { "const": "rgba8-unorm" },
+        "hash": { "$ref": "#/$defs/digest" }
+      }
+    },
+    "resource": {
+      "type": "object", "additionalProperties": false,
+      "required": ["source", "sourceUri", "original", "outputs"],
+      "properties": {
+        "source": { "$ref": "#/$defs/address" },
+        "sourceUri": { "type": "string", "minLength": 1 },
+        "sourceDigest": { "$ref": "#/$defs/digest" },
+        "original": { "$ref": "#/$defs/original" },
+        "outputs": { "type": "array", "items": { "$ref": "#/$defs/output" } }
+      }
+    },
+    "retained": {
+      "type": "object", "additionalProperties": false,
+      "required": ["sourcePointer", "value"],
+      "properties": { "sourcePointer": { "type": "string", "pattern": "^/spaces/" }, "value": {} }
+    },
+    "material": {
+      "type": "object", "additionalProperties": false,
+      "required": ["source", "sourcePointer", "targetMaterial", "policy", "retained", "fidelity"],
+      "properties": {
+        "source": {
+          "type": "object", "additionalProperties": false,
+          "required": ["spaceId", "layerId", "materialId"],
+          "properties": {
+            "spaceId": { "type": "string", "minLength": 1 },
+            "layerId": { "type": "string", "minLength": 1 },
+            "materialId": { "type": "string", "minLength": 1 }
+          }
+        },
+        "targetMaterial": { "type": "integer", "minimum": 0 },
+        "sourcePointer": { "type": "string", "pattern": "^/spaces/" },
+        "policy": { "type": "object" },
+        "retained": { "type": "array", "items": { "$ref": "#/$defs/retained" } },
+        "fidelity": { "enum": ["material", "preview"] }
+      }
+    },
+    "raster": {
+      "type": "object", "additionalProperties": false,
+      "required": ["spaceId", "layerId", "sourcePointer", "sampling"],
+      "properties": {
+        "spaceId": { "type": "string", "minLength": 1 },
+        "layerId": { "type": "string", "minLength": 1 },
+        "sourcePointer": { "type": "string", "pattern": "^/spaces/" },
+        "sampling": { "$ref": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json#/$defs/terrainMaterialsLayer/properties/rasterSampling" },
+        "inlinePreview": {
+          "type": "object", "additionalProperties": false,
+          "required": ["role", "maxAbsError", "sourcePointer"],
+          "properties": {
+            "role": { "const": "assert-equivalent-preview" },
+            "maxAbsError": { "type": "number", "minimum": 0, "maximum": 0.00392156862745098 },
+            "sourcePointer": { "type": "string", "pattern": "^/spaces/.+/samples$" }
+          }
+        }
+      }
+    },
+    "socketLink": {
+      "type": "object", "additionalProperties": false,
+      "required": ["spaceId", "layerId", "instanceId", "componentId", "parentSocketId", "sourcePointer", "modelPath", "modelHash", "nodeIndex"],
+      "properties": {
+        "spaceId": { "type": "string", "minLength": 1 },
+        "layerId": { "type": "string", "minLength": 1 },
+        "instanceId": { "type": "string", "minLength": 1 },
+        "componentId": { "type": "string", "minLength": 1 },
+        "parentSocketId": { "type": "string", "minLength": 1 },
+        "sourcePointer": { "type": "string", "pattern": "^/spaces/.+/modelComponents/" },
+        "modelPath": { "type": "string", "minLength": 1 },
+        "modelHash": { "$ref": "#/$defs/digest" },
+        "nodeIndex": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "loss": {
+      "type": "object", "additionalProperties": false,
+      "required": ["sourcePointer", "reason"],
+      "properties": {
+        "sourcePointer": { "type": "string", "pattern": "^/spaces/" },
+        "reason": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

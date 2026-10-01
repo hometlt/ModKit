@@ -15,6 +15,17 @@
       ]
     },
     {
+      "id": "order.arrived",
+      "version": 1,
+      "status": "active",
+      "payload": [
+        {
+          "name": "entity",
+          "type": "ref<entity>"
+        }
+      ]
+    },
+    {
       "id": "entity.died",
       "version": 1,
       "status": "active",
@@ -22,6 +33,21 @@
         {
           "name": "entity",
           "type": "ref<entity>"
+        }
+      ]
+    },
+    {
+      "id": "assembly.installation-completed",
+      "version": 1,
+      "status": "active",
+      "payload": [
+        {
+          "name": "entity",
+          "type": "ref<entity>"
+        },
+        {
+          "name": "job",
+          "type": "strref"
         }
       ]
     },
