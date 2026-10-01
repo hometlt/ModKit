@@ -77,6 +77,32 @@ describe('generic field editor', () => {
     )
   })
 
+  it('tells a field that names an entry which keys the subject already carries', () => {
+    const keyed = {
+      schemaVersion: 1,
+      forms: [
+        {
+          id: 'set-property',
+          label: 'Set a property',
+          summary: 'Sets one property.',
+          binding: { groupId: 'properties' },
+          fields: [
+            {
+              key: 'key',
+              label: 'Name',
+              type: { kind: 'text' },
+              inputPath: ['key'],
+              source: 'entry-key',
+            },
+            { key: 'value', label: 'Value', type: { kind: 'text' }, inputPath: ['value'] },
+          ],
+        },
+      ],
+    }
+    const fields = editOffer(descriptor(keyed), { editable: true }).forms[0]?.fields ?? []
+    expect(fields.map(field => field.carried)).toEqual([['title'], undefined])
+  })
+
   it('fails closed for missing, malformed, duplicate and unbound schemas', () => {
     expect(editOffer(descriptor(undefined), { editable: true }).forms).toEqual([])
     expect(editOffer(descriptor(schema, false), { editable: true }).unsupported[0]?.reason).toMatch(

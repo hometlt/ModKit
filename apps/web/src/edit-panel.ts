@@ -191,6 +191,12 @@ export function createEditPanel(options: EditPanelOptions): ViewerModule {
           if (item.hint !== undefined) {
             element(row, 'span', { part: 'form.description', text: item.hint })
           }
+          // the keys the file already has, which this one joins or replaces
+          if (item.carried !== undefined) {
+            control
+              .querySelector('[data-mk-part="form.input"]')
+              ?.setAttribute('title', text('web.edit.carried', { keys: item.carried.join(', ') }))
+          }
         }
       }
 

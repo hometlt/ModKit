@@ -131,6 +131,11 @@ export interface EditOperationField extends FieldEditFormField {
   readonly hint?: string
   readonly initialText: string
   readonly editorId?: string
+  /**
+   * For a field that names an entry of the bound group (`source: 'entry-key'`), the keys the subject
+   * already carries there — which a new value would join and an existing key would replace.
+   */
+  readonly carried?: readonly string[]
 }
 
 export interface EditOperationForm {
@@ -827,7 +832,12 @@ function resolveForm(
   operation: AssetOperationDescriptor,
   spec: FieldEditFormSpecV1,
   entry: MetadataEntry | undefined,
+  descriptor?: AnyDescriptor,
 ): EditOperationForm {
+  const carried =
+    spec.binding === undefined || descriptor === undefined
+      ? []
+      : metadataEntries(descriptor, spec.binding.groupId).map(item => item.key)
   const fields = Object.freeze(
     spec.fields.map(field => {
       const sourced =
@@ -846,6 +856,9 @@ function resolveForm(
         initial: initialText,
         ...(field.description === undefined ? {} : { hint: field.description }),
         ...(entry?.editable?.editor === undefined ? {} : { editorId: entry.editable.editor }),
+        ...(field.source === 'entry-key' && carried.length > 0
+          ? { carried: Object.freeze([...carried]) }
+          : {}),
         initialText,
       })
     }),
@@ -946,7 +959,7 @@ export function editOffer(descriptor: AnyDescriptor, options: EditOfferOptions):
         }
       }
       if (rejected !== undefined) break
-      forms.push(resolveForm(operation, spec, entry))
+      forms.push(resolveForm(operation, spec, entry, descriptor))
     }
     if (rejected !== undefined) {
       unsupported.push({
@@ -976,7 +989,7 @@ export function exportOffer(
     for (const spec of schema?.forms ?? []) {
       if (spec.binding !== undefined || spec.fields.some(field => field.type.kind === 'custom'))
         continue
-      forms.push(resolveForm(operation, spec, undefined))
+      forms.push(resolveForm(operation, spec, undefined, descriptor))
     }
   }
   return Object.freeze(forms)

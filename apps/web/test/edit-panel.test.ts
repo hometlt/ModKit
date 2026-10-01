@@ -358,7 +358,7 @@ describe('the Edit panel in a real browser', () => {
 
     expect(await writes()).toHaveLength(0)
     await applyForm('zip-add-entry', { path: ADDED, content: ADDED_TEXT })
-    await waitForPanelText('Last change: Add archive entry')
+    await waitForPanelText('Last change: Add an entry to the archive')
     // the panel that reports it is the one the reopen mounted, and it says so
     await waitForPanelText('the tab was reopened, so this view is not stale')
 
@@ -382,7 +382,7 @@ describe('the Edit panel in a real browser', () => {
   it('removes the entry again, and the reopened view and the bytes agree it is gone', async () => {
     await waitForEditPanel()
     await applyForm('zip-remove-entry', { path: ADDED })
-    await waitForPanelText('Last change: Remove archive entry')
+    await waitForPanelText('Last change: Remove an entry from the archive')
 
     const log = await writes()
     expect(log).toHaveLength(2)
@@ -440,8 +440,8 @@ describe('the Edit panel in a real browser', () => {
       PNG_TEXT,
     )
 
-    await applyForm('png-set-text', { keyword: 'Description', text: PNG_TEXT })
-    await waitForPanelText('Last change: Set PNG text')
+    await applyForm('png-set-text', { key: 'Description', value: PNG_TEXT })
+    await waitForPanelText('Last change: Set a PNG text field')
 
     const log = await writes()
     expect(log).toHaveLength(3)
@@ -482,9 +482,9 @@ describe('the Edit panel in a real browser', () => {
         ],
       ),
     )
-    expect(Object.fromEntries(values)).toEqual({ keyword: 'Description', text: PNG_TEXT })
+    expect(Object.fromEntries(values)).toEqual({ key: 'Description', value: PNG_TEXT })
     const hint = await page
-      .locator(`${EDIT_PANEL} [data-mk-part="form.input"][name="keyword"]`)
+      .locator(`${EDIT_PANEL} [data-mk-part="form.input"][name="key"]`)
       .getAttribute('title')
     expect(hint).toBe('this file already carries: Description')
   }, 180_000)
@@ -513,8 +513,8 @@ describe('the Edit panel in a real browser', () => {
     expect(duration).toBeGreaterThan(0.9)
     expect(duration).toBeLessThan(1.2)
 
-    await applyForm('mp3-set-text-frame', { keyword: 'TIT2', text: MP3_TEXT })
-    await waitForPanelText('Last change: Set ID3 text frame')
+    await applyForm('mp3-set-text-frame', { key: 'TIT2', value: MP3_TEXT })
+    await waitForPanelText('Last change: Set an ID3v2 text frame')
     await waitForPanelText('the tab was reopened, so this view is not stale')
 
     const log = await writes()
@@ -552,7 +552,7 @@ describe('the Edit panel in a real browser', () => {
         ],
       ),
     )
-    expect(Object.fromEntries(values)).toEqual({ keyword: 'TIT2', text: MP3_TEXT })
+    expect(Object.fromEntries(values)).toEqual({ key: 'TIT2', value: MP3_TEXT })
   }, 300_000)
 
   it('raised no page error and no CSP refusal along the way', () => {
