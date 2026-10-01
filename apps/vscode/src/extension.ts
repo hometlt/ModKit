@@ -7097,8 +7097,7 @@ async function activateModkit(
   let drawThumbnail: (
     ref: string,
     maxEdge: number,
-  ) => Promise<{ width: number; height: number; rgba: Uint8Array } | undefined> = async () =>
-    undefined
+  ) => Promise<GalleryThumbnail | undefined> = async () => undefined
   /**
    * Where a path the game names (an asset, a model) lies in the mod chain of the document at `uri`:
    * a path on disk for a host layer, a `modkit-source:` address for a layer of a content source.
@@ -7137,6 +7136,9 @@ async function activateModkit(
     if (ref === undefined) return undefined
     const picture = await drawThumbnail(ref, request.maxEdge)
     if (picture === undefined) return undefined
+    // a vector picture goes as it is; the host takes SVG up to its own bound
+    if ('svg' in picture)
+      return { mediaType: 'image/svg+xml', bytes: new TextEncoder().encode(picture.svg) }
     return { mediaType: 'image/png', bytes: await encodeRgbaPng(picture, request.signal) }
   }
 

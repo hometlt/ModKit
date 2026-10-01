@@ -187,15 +187,57 @@ function rememberedThumbnails(
 }
 
 /** A `thumbnail` answer, checked: the host may have had nothing to draw. */
-function thumbnailFrom(answer: unknown): ArchiveGalleryThumbnail | undefined {
+async function thumbnailFrom(
+  answer: unknown,
+  maxEdge: number,
+): Promise<ArchiveGalleryThumbnail | undefined> {
   if (answer === null || typeof answer !== 'object') return undefined
-  const { width, height, rgba } = answer as Partial<ShellThumbnail>
+  const svg = (answer as { readonly svg?: unknown }).svg
+  if (typeof svg === 'string') return svgThumbnail(svg, maxEdge)
+  const { width, height, rgba } = answer as {
+    readonly width?: unknown
+    readonly height?: unknown
+    readonly rgba?: unknown
+  }
   return typeof width === 'number' &&
     typeof height === 'number' &&
     rgba instanceof Uint8Array &&
     rgba.byteLength === width * height * 4
     ? { width, height, rgba }
     : undefined
+}
+
+/**
+ * A vector picture the host sent as its SVG text (SVG, EMF, WMF — plan 7.37), drawn here at the
+ * gallery's size: the page has a canvas, the extension host has none. A vector draws sharp at any
+ * size, so a small one is scaled up to the thumbnail's edge.
+ */
+async function svgThumbnail(
+  svg: string,
+  maxEdge: number,
+): Promise<ArchiveGalleryThumbnail | undefined> {
+  const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }))
+  try {
+    const image = new Image()
+    image.src = url
+    await image.decode()
+    const natural = Math.max(image.naturalWidth, image.naturalHeight)
+    const scale = natural > 0 ? maxEdge / natural : 1
+    const width = Math.max(1, Math.round((image.naturalWidth || maxEdge) * scale))
+    const height = Math.max(1, Math.round((image.naturalHeight || maxEdge) * scale))
+    const canvas = document.createElement('canvas')
+    canvas.width = width
+    canvas.height = height
+    const context = canvas.getContext('2d')
+    if (context === null) return undefined
+    context.drawImage(image, 0, 0, width, height)
+    const pixels = context.getImageData(0, 0, width, height).data
+    return { width, height, rgba: new Uint8Array(pixels.buffer, pixels.byteOffset, pixels.length) }
+  } catch {
+    return undefined
+  } finally {
+    URL.revokeObjectURL(url)
+  }
 }
 
 /**
@@ -284,6 +326,7 @@ async function mountExplorerFolder(
             thumbnail: rememberedThumbnails(async (entry, maxEdge) =>
               thumbnailFrom(
                 await bridge.request({ op: 'thumbnail', explorerId: entry.id, maxEdge }),
+                maxEdge,
               ),
             ),
           },
@@ -817,6 +860,7 @@ async function mount(
                       entry: entry.path,
                       maxEdge,
                     }),
+                    maxEdge,
                   )
                 }),
               },

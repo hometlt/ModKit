@@ -256,12 +256,13 @@ export type ShellRequest =
   /** Open one Modkit Explorer entry in an editor tab of its own. */
   | { readonly op: 'explorer-open'; readonly id: string }
 
-/** A picture the gallery draws: RGBA, at most the requested edge on its long side. */
-export interface ShellThumbnail {
-  readonly width: number
-  readonly height: number
-  readonly rgba: Uint8Array
-}
+/**
+ * A picture the gallery draws: RGBA, at most the requested edge on its long side, or a vector
+ * picture's SVG text, which the page draws itself.
+ */
+export type ShellThumbnail =
+  | { readonly width: number; readonly height: number; readonly rgba: Uint8Array }
+  | { readonly svg: string }
 
 /** One entry of a Modkit Explorer folder: `id` is opaque to the page, `path` is from the root. */
 export interface ShellExplorerEntry {

@@ -6,10 +6,12 @@
  * it shows whatever that explorer lists — archive members, folder files, content-source entries.
  */
 import type { Inventory, SubjectOpener } from '@modkit/host'
-import type { Lease, RasterImageSource, RasterRegion } from '@modkit/sdk'
+import type { Lease, RasterImageSource, RasterRegion, VectorSceneSource } from '@modkit/sdk'
 
 /** Largest decode the gallery asks for; a bigger picture is drawn from a smaller mip or not at all. */
 const MAXIMUM_THUMBNAIL_SOURCE_BYTES = 16 * 1024 * 1024
+/** Longest SVG text a vector thumbnail carries to the page. */
+const MAXIMUM_THUMBNAIL_SVG_CHARACTERS = 2 * 1024 * 1024
 
 /** Image support comes from enabled codec contracts, including external extensions. */
 export function imageGalleryExtensions(inventory: Inventory): ReadonlySet<string> {
@@ -38,11 +40,13 @@ export function imageGalleryExtensions(inventory: Inventory): ReadonlySet<string
   return result
 }
 
-export interface GalleryThumbnail {
-  readonly width: number
-  readonly height: number
-  readonly rgba: Uint8Array
-}
+/**
+ * A small picture: decoded pixels, or a vector picture's SVG text (SVG, EMF, WMF — plan 7.37), which
+ * the page draws, having the canvas the extension host lacks.
+ */
+export type GalleryThumbnail =
+  | { readonly width: number; readonly height: number; readonly rgba: Uint8Array }
+  | { readonly svg: string }
 
 /** Nearest-neighbour downscale of a decoded region to at most `maxEdge` on its long side. */
 export function galleryThumbnail(region: RasterRegion, maxEdge = 96): GalleryThumbnail {
@@ -73,6 +77,41 @@ export async function renderGalleryThumbnail(
   const opened = await open(ref, signal)
   const session = opened.session
   if (session === undefined) return undefined
+  try {
+    return (
+      (await rasterThumbnail(session, maxEdge, signal).catch(() => undefined)) ??
+      (await vectorThumbnail(session, signal))
+    )
+  } finally {
+    await session.dispose()
+  }
+}
+
+type ThumbnailSession = NonNullable<Awaited<ReturnType<SubjectOpener>>['session']>
+
+async function vectorThumbnail(
+  session: ThumbnailSession,
+  signal?: AbortSignal,
+): Promise<GalleryThumbnail | undefined> {
+  const lease = (await session
+    .dataSource('common.view/vector-scene-source', 1)
+    .catch(() => undefined)) as Lease<VectorSceneSource> | undefined
+  if (lease === undefined) return undefined
+  try {
+    const document = await lease.value.document(signal)
+    return document.text.length <= MAXIMUM_THUMBNAIL_SVG_CHARACTERS
+      ? { svg: document.text }
+      : undefined
+  } finally {
+    await lease.release()
+  }
+}
+
+async function rasterThumbnail(
+  session: ThumbnailSession,
+  maxEdge: number,
+  signal?: AbortSignal,
+): Promise<GalleryThumbnail | undefined> {
   let raster: Lease<RasterImageSource> | undefined
   try {
     raster = await session.dataSource('common.view/raster-image-source', 1)
@@ -106,6 +145,5 @@ export async function renderGalleryThumbnail(
     return galleryThumbnail(region, maxEdge)
   } finally {
     await raster?.release()
-    await session.dispose()
   }
 }
