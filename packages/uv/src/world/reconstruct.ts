@@ -223,13 +223,103 @@ function canonicalLightDirection(
   }
 }
 
+const PLACING_FIELDS = ['facet', 'id', 'layerId', 'coordinateSpaceId', 'lod']
+/**
+ * The item fields each facet writes into UVW, or that only place the item (its ids, the native
+ * coordinates its canonical ones stand for). Any other field an item carries is not in the UVW, and
+ * the receipt names it with how many items had it (lostFields).
+ */
+const KEPT_FIELDS: Readonly<Record<string, ReadonlySet<string>>> = Object.freeze({
+  terrain: new Set(['x', 'y', 'heightBase', 'heightAdjustment', 'uvwPosition']),
+  'terrain-materials': new Set(['x', 'y', 'uvwPosition', 'weights', 'textureIndex', 'uvTransform']),
+  cliffs: new Set(['x', 'y', 'uvwPosition', 'level', 'authored']),
+  water: new Set([
+    'minimum',
+    'maximum',
+    'elevation',
+    'uvwMinimum',
+    'uvwMaximum',
+    'uvwElevation',
+    'materialId',
+  ]),
+  regions: new Set(['regionId', 'name', 'color', 'shapes', 'uvwShapes']),
+  navigation: new Set(['x', 'y', 'flags', 'uvwPosition']),
+  gateways: new Set(['start', 'end', 'uvwStart', 'uvwEnd']),
+  lighting: new Set(['ambientColor', 'ambientIntensity', 'toneMapping', 'terrain', 'directional']),
+  objects: new Set([
+    'kind',
+    'objectId',
+    'sourceObjectId',
+    'sourceKey',
+    'position',
+    'sourcePositionDimensions',
+    'heightReference',
+    'rotation',
+    'nativeRotationUnit',
+    'nativeRotationSense',
+    'presentationRotation',
+    'scale',
+    'mapNativePresentationPosition',
+    'uvwPosition',
+    'uvwRotation',
+    'uvwScale',
+    'derivedFrom',
+    'typeId',
+    'player',
+    'variation',
+    'name',
+    'resourceIds',
+    'modelComponents',
+  ]),
+})
+
+/** Counts, per facet field, the items whose field the UVW leaves out (see KEPT_FIELDS). */
+function noteLostFields(
+  kind: string,
+  items: readonly WorldSceneItem[],
+  lost: Map<string, number>,
+): void {
+  const kept = KEPT_FIELDS[kind]
+  if (kept === undefined) return
+  const add = (path: string) => lost.set(path, (lost.get(path) ?? 0) + 1)
+  for (const item of items) {
+    const record = item as unknown as Readonly<Record<string, unknown>>
+    // a presentation-only instance belongs to its source facet and is never exported; an object
+    // without a canonical place is left out whole (omittedObjects)
+    if (
+      record['derivedFrom'] !== undefined ||
+      (kind === 'objects' &&
+        (record['uvwPosition'] === undefined || record['uvwRotation'] === undefined))
+    )
+      continue
+    for (const [key, value] of Object.entries(record))
+      if (value !== undefined && !PLACING_FIELDS.includes(key) && !kept.has(key))
+        add(`world.${kind}.${key}`)
+    if (kind !== 'objects') continue
+    // only resources the UVW package holds are written; a model named only by the host is not
+    const object = item as WorldSceneObjectItem
+    if (
+      (object.resourceIds ?? []).some(id => !id.startsWith('uvw-resource:')) ||
+      (object.modelComponents ?? []).some(
+        component => !component.resourceId.startsWith('uvw-resource:'),
+      )
+    )
+      add('world.objects.resourceIds (not packaged)')
+  }
+}
+
 async function reconstructLayer(
   source: CandidateWorldSceneSource,
   info: CandidateWorldSceneInfo,
   layer: WorldSceneLayerItem,
   spaceId: string,
   options: CanonicalUvwReconstructionOptions,
-  state: { pageRequests: number; observedItems: number; omittedObjects?: number },
+  state: {
+    pageRequests: number
+    observedItems: number
+    omittedObjects?: number
+    lostFields?: Map<string, number>
+  },
 ): Promise<UvwHeightfieldSpaceLayer> {
   const id = layer.localLayerId ?? localId(layer.layerId)
   const label = layerLabel(layer)
@@ -296,6 +386,7 @@ async function reconstructLayer(
     })
   }
   const items = await drain(source, info, layer.kind, layer.layerId, options, state)
+  if (state.lostFields !== undefined) noteLostFields(layer.kind, items, state.lostFields)
   if (layer.kind === 'terrain') {
     const grid = layer.grid
     if (grid === undefined)
@@ -812,6 +903,8 @@ export interface AdditionalExactLayers {
   readonly observedItems: number
   /** Objects left out alone: no canonical place (a 2D unit) or a repeated id. */
   readonly omittedObjects: number
+  /** Item fields the UVW leaves out, by `world.<facet>.<field>`, with how many items had them. */
+  readonly lostFields: readonly { readonly path: string; readonly count: number }[]
 }
 
 /** Reconstruct the exact native facets whose current common contract already proves UVW geometry. */
@@ -820,7 +913,12 @@ export async function reconstructAdditionalExactLayers(
   info: CandidateWorldSceneInfo,
   options: CanonicalUvwReconstructionOptions,
 ): Promise<AdditionalExactLayers> {
-  const state = { pageRequests: 0, observedItems: 0, omittedObjects: 0 }
+  const state = {
+    pageRequests: 0,
+    observedItems: 0,
+    omittedObjects: 0,
+    lostFields: new Map<string, number>(),
+  }
   const supported = new Set([
     'terrain-materials',
     'cliffs',
@@ -845,6 +943,7 @@ export async function reconstructAdditionalExactLayers(
       pageRequests: 0,
       observedItems: 0,
       omittedObjects: 0,
+      lostFields: Object.freeze([]),
     })
   }
   const catalog = (await drain(source, info, 'layers', undefined, options, state)).map(item => {
@@ -887,5 +986,10 @@ export async function reconstructAdditionalExactLayers(
     pageRequests: state.pageRequests,
     observedItems: state.observedItems,
     omittedObjects: state.omittedObjects,
+    lostFields: Object.freeze(
+      [...state.lostFields]
+        .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
+        .map(([path, count]) => Object.freeze({ path, count })),
+    ),
   })
 }

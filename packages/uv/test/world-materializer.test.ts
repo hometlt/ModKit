@@ -253,6 +253,115 @@ describe('production world to UVW materializer', () => {
     expect(layer?.kind === 'objects' && layer.instances.map(instance => instance.id)).toEqual(['tree-1'])
   })
 
+  it('names in its receipt every field of a kept facet the UVW leaves out (П23)', async () => {
+    const objectsLayerId = 'native:objects'
+    const lightingLayerId = 'native:lighting'
+    const lossInfo: CandidateWorldSceneInfo = {
+      ...info,
+      unknownFacets: [],
+      facets: [
+        ...info.facets,
+        {
+          facet: 'objects',
+          layerId: objectsLayerId,
+          state: 'available',
+          itemCount: 2,
+          lods: ['exact'],
+        },
+        {
+          facet: 'lighting',
+          layerId: lightingLayerId,
+          state: 'available',
+          itemCount: 1,
+          lods: ['exact'],
+        },
+      ],
+    }
+    const placed = (id: string, extra: object) => ({
+      facet: 'objects' as const,
+      id,
+      layerId: objectsLayerId,
+      coordinateSpaceId: 'map-native',
+      kind: 'unit' as const,
+      objectId: 1,
+      position: { x: 0, y: 0 },
+      uvwPosition: { x: 0.5, y: 1, z: -0.5 },
+      uvwRotation: [0, 0, 0, 1] as const,
+      ...extra,
+    })
+    const terrainSource = source(4, lossInfo)
+    const lossSource: CandidateWorldSceneSource = {
+      ...terrainSource,
+      page: request => {
+        if (request.facet === 'layers')
+          return Promise.resolve({
+            snapshotId,
+            facet: 'layers',
+            state: 'available',
+            items: [
+              {
+                facet: 'layers',
+                id: objectsLayerId,
+                layerId: objectsLayerId,
+                kind: 'objects',
+                state: 'available',
+                itemCount: 2,
+                lods: ['exact'],
+              },
+              {
+                facet: 'layers',
+                id: lightingLayerId,
+                layerId: lightingLayerId,
+                kind: 'lighting',
+                state: 'available',
+                itemCount: 1,
+                lods: ['exact'],
+              },
+            ],
+          })
+        if (request.facet === 'objects')
+          return Promise.resolve({
+            snapshotId,
+            facet: 'objects',
+            state: 'available',
+            items: [
+              // a tinted marine whose model only the host can resolve, and a plain one
+              placed('native:marine-1', {
+                presentationTint: [1, 0.5, 0.5],
+                resourceIds: ['model:marine'],
+              }),
+              placed('native:marine-2', { presentationTint: [1, 1, 1] }),
+            ],
+          })
+        if (request.facet === 'lighting')
+          return Promise.resolve({
+            snapshotId,
+            facet: 'lighting',
+            state: 'available',
+            items: [
+              {
+                facet: 'lighting',
+                id: 'native:environment',
+                layerId: lightingLayerId,
+                coordinateSpaceId: 'uvw-canonical',
+                ambientColor: [0.2, 0.2, 0.2],
+                ambientIntensity: 1,
+                directional: [],
+                fog: { color: [1, 1, 1], density: 0.1, falloff: 0, startingHeight: 0 },
+              },
+            ],
+          })
+        return terrainSource.page(request)
+      },
+    }
+    const result = await materializeWorldToUvw(lossSource, { ...options, maxFacetItems: 64 })
+    if (result.state !== 'materialized') throw new Error(JSON.stringify(result.refusals))
+    expect(result.lostFields).toEqual([
+      { path: 'world.lighting.fog', count: 1 },
+      { path: 'world.objects.presentationTint', count: 2 },
+      { path: 'world.objects.resourceIds (not packaged)', count: 1 },
+    ])
+  })
   it('turns a map-native light into UVW axes', async () => {
     const lightingLayerId = 'native:lighting'
     const lightingInfo: CandidateWorldSceneInfo = {
