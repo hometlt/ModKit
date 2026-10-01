@@ -119,14 +119,15 @@ export interface LanguageControllerNotice {
 export interface LanguageSessionControllerOptions {
   readonly workspace: LanguageWorkspace
   readonly routes: readonly LanguageProviderRoute[]
-  readonly debounceMs?: number
+  /** How long an edit waits before it is synchronized; a function is asked each time (a setting). */
+  readonly debounceMs?: number | (() => number)
   /**
    * After an edit, how long the other open documents wait for the edits to pause before their
    * semantic diagnostics are asked again (an edit here can break a reference there). Default 750 ms.
    */
   readonly relatedDiagnosticsDelayMs?: number
   /** Delay background analysis and semantic diagnostics so interactive requests run first. */
-  readonly semanticDiagnosticsDelayMs?: number
+  readonly semanticDiagnosticsDelayMs?: number | (() => number)
   /** Document diagnostics have their own native collection. Host notices must not enter it. */
   readonly publishDiagnostics: (
     uri: string,
@@ -498,8 +499,12 @@ export function createLanguageSessionController(
 ): LanguageSessionController {
   const documents = new Map<string, TrackedDocument>()
   const refusals = new Map<string, string>()
-  const debounceMs = options.debounceMs ?? 150
-  const semanticDiagnosticsDelayMs = options.semanticDiagnosticsDelayMs ?? 0
+  const delay = (value: number | (() => number) | undefined, fallback: number): number => {
+    const ms = typeof value === 'function' ? value() : value
+    return typeof ms === 'number' && Number.isFinite(ms) && ms >= 0 ? ms : fallback
+  }
+  const debounceMs = (): number => delay(options.debounceMs, 150)
+  const semanticDiagnosticsDelayMs = (): number => delay(options.semanticDiagnosticsDelayMs, 0)
   const relatedDiagnosticsDelayMs = options.relatedDiagnosticsDelayMs ?? 750
   let state: 'new' | 'ready' | 'shut-down' = 'new'
   let shutdownPromise: Promise<void> | undefined
@@ -643,9 +648,10 @@ export function createLanguageSessionController(
         markSynchronized()
         // Analysis is intentionally idle-delayed. Completion and on-type formatting only need the
         // synchronized live snapshot and should enter the provider worker before background work.
-        if (semanticDiagnosticsDelayMs > 0) {
+        const idle = semanticDiagnosticsDelayMs()
+        if (idle > 0) {
           await waitWithSignal(
-            new Promise<void>(resolve => setTimeout(resolve, semanticDiagnosticsDelayMs)),
+            new Promise<void>(resolve => setTimeout(resolve, idle)),
             controller.signal,
           )
         }
@@ -749,8 +755,9 @@ export function createLanguageSessionController(
       delete prior.analysis
       prior.controller?.abort('editor document changed')
       clearTimer(prior)
-      if (immediate || debounceMs === 0) void execute(prior)
-      else prior.timer = setTimeout(() => void execute(prior), debounceMs)
+      const wait = debounceMs()
+      if (immediate || wait === 0) void execute(prior)
+      else prior.timer = setTimeout(() => void execute(prior), wait)
       return prior
     }
 
@@ -765,8 +772,9 @@ export function createLanguageSessionController(
     if (prior !== undefined) {
       tracked.task = retire(prior)
     }
-    if (immediate || debounceMs === 0) void execute(tracked)
-    else tracked.timer = setTimeout(() => void execute(tracked), debounceMs)
+    const wait = debounceMs()
+    if (immediate || wait === 0) void execute(tracked)
+    else tracked.timer = setTimeout(() => void execute(tracked), wait)
     return tracked
   }
 

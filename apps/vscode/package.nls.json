@@ -99,6 +99,8 @@
   "configuration.launch.warnIfRunning.description": "Ask before closing a running game to launch again.",
   "configuration.extensionPackages.description": "Folder of game packages published beside Modkit (`catalog.v1.json` and the bundles). Games install from it only when its catalog is signed by the Modkit registry key; takes effect in a new window.",
   "configuration.maxGraphHops.description": "How many relations the relations graph follows from its root when it walks from a node (1–4).",
+  "configuration.documentUpdateDelay.description": "Milliseconds an edit waits before the language features read the document again (completion, hover, outline). Lower is fresher, higher spares a slow machine.",
+  "configuration.documentDiagnosticsDelay.description": "Milliseconds after the last edit before the reference and semantic problems are checked again. Modkit: Verify Mod checks at once.",
   "configuration.askExportLocation.description": "Ask where to save an export (Save As). Off: a conversion is written next to its source and other exports go to the `modkit-export` folder of the workspace, without a dialog.",
   "configuration.showHiddenEntries.description": "Show files and folders an archive or a game storage marks as hidden (`__MACOSX`, names starting with a dot, `Thumbs.db` and what each format hides). Opening one by its path always works.",
   "configuration.launch.testMap.description": "Absolute path of the map a mod is tested on. Empty: choose one when testing.",

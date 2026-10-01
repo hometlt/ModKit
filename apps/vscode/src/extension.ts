@@ -7297,7 +7297,11 @@ async function activateModkit(
     routes: languageRoutes,
     // Keep background semantic analysis out of the completion latency window after a keystroke.
     // Explicit Verify is immediate; only automatic diagnostics wait for the editor to go idle.
-    semanticDiagnosticsDelayMs: 2_500,
+    // Both waits are settings (MK2's documentUpdateDelay, documentDiagnosticsDelay), read each time.
+    debounceMs: () =>
+      vscode.workspace.getConfiguration('modkit').get<number>('documentUpdateDelay', 150),
+    semanticDiagnosticsDelayMs: () =>
+      vscode.workspace.getConfiguration('modkit').get<number>('documentDiagnosticsDelay', 2_500),
     publishDiagnostics: (uri, diagnostics) => {
       const target = vscode.Uri.parse(uri)
       for (const item of diagnostics) {

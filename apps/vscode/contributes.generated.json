@@ -429,6 +429,20 @@
         "markdownDescription": "%configuration.disabledExtensions.description%",
         "type": "array"
       },
+      "modkit.documentDiagnosticsDelay": {
+        "default": 2500,
+        "markdownDescription": "%configuration.documentDiagnosticsDelay.description%",
+        "maximum": 60000,
+        "minimum": 0,
+        "type": "integer"
+      },
+      "modkit.documentUpdateDelay": {
+        "default": 150,
+        "markdownDescription": "%configuration.documentUpdateDelay.description%",
+        "maximum": 5000,
+        "minimum": 0,
+        "type": "integer"
+      },
       "modkit.extensionPackages": {
         "default": "",
         "markdownDescription": "%configuration.extensionPackages.description%",
