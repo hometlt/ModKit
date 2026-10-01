@@ -200,8 +200,13 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
           ],
         }),
       ),
-      // A timed world (a replay, a cutscene) follows its transport.
-      optionalContracts: ['common.view/transport-source'],
+      // A timed world (a replay, a cutscene) follows its transport. The Card and Structure sections
+      // mount on this stage's slot, so they get the subject's facts and tree only when it binds them.
+      optionalContracts: [
+        'common.view/transport-source',
+        'common.view/subject-facts-source',
+        'common.view/tree-data-source',
+      ],
     },
     {
       id: 'model',
