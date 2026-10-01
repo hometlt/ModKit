@@ -514,6 +514,12 @@
     background: var(--mk-color-surface);
   }
 
+  [data-mk-part='playback.title'] {
+    margin: 0;
+    font-size: var(--mk-font-size-md);
+    font-weight: 600;
+  }
+
   [data-mk-part='playback.bar'] {
     display: flex;
     gap: var(--mk-space-2);

@@ -93,6 +93,7 @@ describe('playback stage in a real browser', () => {
         },
         async timeline() {
           return {
+            label: 'Abyssal Reef LE · 30.09.2026',
             participants: [
               {
                 id: '1',
@@ -113,6 +114,7 @@ describe('playback stage in a real browser', () => {
               { positionMs: 5_000, kind: 'unit-born', label: 'Marine', participantId: '1' },
               { positionMs: 20_000, kind: 'unit-died', label: 'Zergling', participantId: '2' },
               { positionMs: 40_000, kind: 'novel-kind', label: 'Mystery' },
+              { positionMs: 50_000, kind: 'chat', label: 'Alpha: gg', participantId: '1' },
             ],
             complete: false,
             fidelity: 'sampled',
@@ -229,6 +231,8 @@ describe('playback stage in a real browser', () => {
     })
 
     const text = (selector: string) => page.locator(selector).first().innerText()
+    // the replay's map and date as the player's title
+    expect(await text('[data-mk-part="playback.title"]')).toBe('Abyssal Reef LE · 30.09.2026')
     expect(await text('[data-mk-part="playback.time"]')).toBe('0:00 / 1:00')
     expect(await text('[data-mk-part="playback.note"]')).toContain('not a game simulation')
     expect(await text('[data-mk-part="playback.note"]')).toContain('Bounded view')
@@ -240,7 +244,12 @@ describe('playback stage in a real browser', () => {
       await page.locator('[data-mk-part="playback.chart"] figcaption').allInnerTexts(),
     ).toEqual(['Units', 'Custom metric'])
     const events = await page.locator('[data-mk-part="playback.event"]').allInnerTexts()
-    expect(events).toEqual(['0:05 Born Marine', '0:20 Died Zergling', '0:40 novel-kind Mystery'])
+    expect(events).toEqual([
+      '0:05 Born Marine',
+      '0:20 Died Zergling',
+      '0:40 novel-kind Mystery',
+      '0:50 Chat Alpha: gg',
+    ])
     expect(
       await page.locator('[data-mk-part="playback.map"] canvas').getAttribute('aria-label'),
     ).toBe('Positions at 0:00: 2 units')

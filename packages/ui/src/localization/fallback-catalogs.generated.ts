@@ -785,6 +785,7 @@ export const TRANSPORT_PLAYBACK_FALLBACK_MESSAGES = {
   'viewer.play': 'Play',
   'viewer.playback': 'Playback',
   'viewer.playbackCharts': 'Values over time',
+  'viewer.playbackEvent.chat': 'Chat',
   'viewer.playbackEvent.structure-done': 'Built',
   'viewer.playbackEvent.unit-born': 'Born',
   'viewer.playbackEvent.unit-died': 'Died',

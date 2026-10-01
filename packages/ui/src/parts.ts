@@ -113,6 +113,7 @@ export const PARTS = Object.freeze([
 
   // playback stage: a transport with its world positions, participants, series and events
   'playback',
+  'playback.title',
   'playback.bar',
   'playback.seek',
   'playback.time',

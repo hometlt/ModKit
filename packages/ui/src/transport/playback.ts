@@ -244,6 +244,9 @@ export function createPlaybackViewer(options: PlaybackViewerOptions = {}): Viewe
 
       const root = createSurface(args.container, localizer.text('viewer.playback'))
       const stage = element(root, 'div', { part: 'playback' })
+      // What plays, as the source names it (a replay's map and date), once the timeline says.
+      const title = element(stage, 'h2', { part: 'playback.title' })
+      title.hidden = true
       const bar = element(stage, 'div', { part: 'playback.bar' })
       const play = element(bar, 'button', { part: 'transport.button' }) as HTMLButtonElement
       play.type = 'button'
@@ -367,6 +370,8 @@ export function createPlaybackViewer(options: PlaybackViewerOptions = {}): Viewe
 
       const renderTimeline = (value: TransportTimeline) => {
         timeline = value
+        title.hidden = value.label === undefined
+        setViewerText(title, value.label ?? '')
         colors.clear()
         participantList.replaceChildren()
         for (const participant of value.participants) {
