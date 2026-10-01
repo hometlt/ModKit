@@ -402,6 +402,12 @@ export function createWorkspaceNamespaceCompanionOrigin(
  * capabilities until its enclosing ResourceSession is disposed, so release order stays with the
  * host adapter that acquired them.
  */
+const WORKSPACE_SCOPES: readonly InputSearchScope[] = Object.freeze([
+  'workspace-dependency-layer',
+  'current-mount',
+  'enclosing-container',
+])
+
 export function createCompositeWorkspaceNamespaceCompanionOrigin(
   options: CompositeWorkspaceNamespaceCompanionOriginOptions,
 ): CompanionOrigin {
@@ -594,16 +600,59 @@ export function createCompositeWorkspaceNamespaceCompanionOrigin(
     return undefined
   }
 
+  /**
+   * The workspace's own entries for a resource opened out of it, each entry once, named as the
+   * workspace names it: two roots over one archive (a map folder and the archive root) would name
+   * one entry twice, which a companion admitting one candidate refuses as ambiguous. No asset-root
+   * spellings (that is the dependency layer's overlay lookup); nothing outside the roots.
+   */
+  async function* containerEntries(
+    prefix: string,
+    signal?: AbortSignal,
+  ): AsyncIterable<CompanionOriginEntry> {
+    const qualified = isQualifiedRequest(prefix)
+    const entriesSeen = new Map<NamespaceEntrySource, Set<string>>()
+    const yielded = new Set<string>()
+    for (const root of roots) {
+      const relative = relativeRequest(root, prefix)
+      if (relative === undefined) continue
+      let seen = entriesSeen.get(root.namespace)
+      if (seen === undefined) entriesSeen.set(root.namespace, (seen = new Set()))
+      for await (const entry of pages(root, joinPrefix(root.pathPrefix, relative), signal)) {
+        throwIfAborted(signal)
+        const remembered = remember(root, entry)
+        if (remembered === undefined) continue
+        const logicalId = qualified ? remembered : relativeEntryPath(root, entry)
+        if (logicalId === undefined || seen.has(entry.id) || yielded.has(fold(logicalId))) continue
+        seen.add(entry.id)
+        yielded.add(fold(logicalId))
+        const bound = byLogicalId.get(fold(remembered))
+        if (bound !== undefined) byLogicalId.set(fold(logicalId), bound)
+        yield Object.freeze({
+          logicalId,
+          rootId: root.rootId,
+          ...(entry.size === undefined ? {} : { size: entry.size }),
+        })
+      }
+    }
+  }
+
   return Object.freeze({
     primaryLogicalId: options.primaryLogicalId,
     caseSensitivity,
-    scopes: Object.freeze(['workspace-dependency-layer'] as const),
+    // a resource opened out of the workspace (a map's terrain raster) finds its own companions in
+    // the mount it lives in: the workspace's containers are that mount
+    scopes: WORKSPACE_SCOPES,
     async *enumerate(
       scope: InputSearchScope,
       enumeration: CompanionEnumerationOptions,
       signal?: AbortSignal,
     ): AsyncIterable<CompanionOriginEntry> {
-      if (scope !== 'workspace-dependency-layer') return
+      if (!WORKSPACE_SCOPES.includes(scope)) return
+      if (scope !== 'workspace-dependency-layer') {
+        yield* containerEntries(enumeration.prefix, signal)
+        return
+      }
       const yielded = new Set<string>()
       const qualified = isQualifiedRequest(enumeration.prefix)
       for (const root of roots) {

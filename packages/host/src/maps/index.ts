@@ -1138,6 +1138,15 @@ export async function analyzeResolvedMapWorkspace(
       reservedBytes: 0,
       resources: request.resources,
     }
+    // a model or raster the map names opens with its own companions (a .smf's .smt tiles), found
+    // around it in the map's mount rather than around the map
+    const resourceInput = (path: string | undefined) => {
+      const resolver =
+        path === undefined || path === ''
+          ? request.inputResolver
+          : (request.inputResolver?.forResource?.(path) ?? request.inputResolver)
+      return resolver === undefined ? {} : { resolveInput: resolver }
+    }
     const modelReleases: Array<() => Promise<void>> = []
     const modelResources = createSubjectModelResources({
       state: modelState,
@@ -1165,7 +1174,7 @@ export async function analyzeResolvedMapWorkspace(
             ? {}
             : { contributionSettings: request.services.contributionSettings }),
           resourceSession: request.resources,
-          ...(request.inputResolver === undefined ? {} : { resolveInput: request.inputResolver }),
+          ...resourceInput(path),
           ...(signal === undefined ? {} : { signal }),
         }),
     })
@@ -1197,7 +1206,7 @@ export async function analyzeResolvedMapWorkspace(
             ? {}
             : { contributionSettings: request.services.contributionSettings }),
           resourceSession: request.resources,
-          ...(request.inputResolver === undefined ? {} : { resolveInput: request.inputResolver }),
+          ...resourceInput(hint.path),
           ...(signal === undefined ? {} : { signal }),
         }),
     })

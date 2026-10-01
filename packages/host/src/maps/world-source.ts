@@ -2014,6 +2014,8 @@ export function createCandidateWorldSceneLease(
                 kind: 'logical',
                 requirement,
                 maxBytes: request.maxBytes,
+                // a texture bigger than the budget comes at the largest level that fits, not refused
+                selection: { mipLevel: 'fit' },
                 ...(request.compressedFormats === undefined
                   ? {}
                   : { compressedFormats: request.compressedFormats }),

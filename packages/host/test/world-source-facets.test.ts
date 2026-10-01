@@ -1174,9 +1174,11 @@ describe('common world source native visual facets', () => {
       scopes: ['current-mount' as const],
     })
     const requested: string[] = []
+    const selections: unknown[] = []
     const rasterResources = {
-      async read(request: { requirement: { logicalId: string } }) {
+      async read(request: { requirement: { logicalId: string }; selection?: unknown }) {
         requested.push(request.requirement.logicalId)
+        selections.push(request.selection)
         return {
           state: 'decoded',
           info: { orientation: 'top-left' },
@@ -1213,6 +1215,8 @@ describe('common world source native visual facets', () => {
       const second = await lease.value.texture?.('caustics:2', { maxBytes: 1024 })
       expect(second).toMatchObject({ state: 'decoded', texture: { id: 'caustics:2', width: 1 } })
       expect(requested).toEqual(['base.assets/Water/Caustics_002.dds'])
+      // a texture larger than maxBytes comes at the largest level that fits (a BAR map's 4096²)
+      expect(selections).toEqual([{ mipLevel: 'fit' }])
     } finally {
       await lease.release()
     }
