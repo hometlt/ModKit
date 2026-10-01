@@ -50,14 +50,15 @@ import {
   stageIdOf,
   subjectFactsSourceFromWire,
   webExtensionSubjectCardBundle,
+  withMapPreviewSources,
   withoutHiddenEntries
-} from "./chunks/chunk-OEF6GXCM.js";
-import "./chunks/chunk-6FK5CZ3A.js";
-import "./chunks/chunk-AKFVSFT7.js";
-import "./chunks/chunk-27563W7H.js";
+} from "./chunks/chunk-TS2KI3SY.js";
+import "./chunks/chunk-RM2A3HIE.js";
+import "./chunks/chunk-2G743M23.js";
+import "./chunks/chunk-B5NKOS45.js";
 import {
   resolveModelViewerTextures
-} from "./chunks/chunk-5PUECZ53.js";
+} from "./chunks/chunk-BGGILURI.js";
 import "./chunks/chunk-O2DY4UGD.js";
 import "./chunks/chunk-CW2HIMYV.js";
 import {
@@ -72,8 +73,8 @@ import {
   isRejected,
   mountFieldEditor,
   subjectCandidateProviderLease
-} from "./chunks/chunk-K2SS7OVY.js";
-import "./chunks/chunk-BJ2R5ZZC.js";
+} from "./chunks/chunk-GP37WETK.js";
+import "./chunks/chunk-6CRNUBVW.js";
 import {
   DEFAULT_UI_LOCALIZER,
   PANELS_FALLBACK_MESSAGES,
@@ -91,7 +92,7 @@ import {
   setState,
   setViewerText,
   withEnglishUiFallback
-} from "./chunks/chunk-CNISMXJW.js";
+} from "./chunks/chunk-S34VKIDA.js";
 import "./chunks/chunk-5MQCQKKD.js";
 import {
   revisionId
@@ -777,16 +778,22 @@ async function prepareWebMapPreview(request) {
       (candidate) => Object.freeze({ kind: "map-preview-selection", ...candidate })
     )
   ) : Object.freeze([]);
-  const opened = Object.freeze({
-    ...request.opened,
-    ...result.state === "opened" ? { descriptor: result.descriptor, session: result.session } : {},
-    diagnostics
-  });
+  const joined = result.state === "opened" ? await joinWorld(request.opened, result.session) : {};
+  const opened = Object.freeze({ ...request.opened, ...joined, diagnostics });
   return Object.freeze({
     state: permissionRequired ? "permission-required" : result.state,
     opened,
     candidates
   });
+}
+async function joinWorld(opened, preview) {
+  const session = withMapPreviewSources(opened.session, preview);
+  try {
+    return { descriptor: await session.descriptor(), session };
+  } catch (error) {
+    await session.dispose();
+    throw error;
+  }
 }
 
 // apps/web/src/extensions-ui.ts
@@ -1496,6 +1503,9 @@ function createEditPanel(options) {
           );
           if (item.hint !== void 0) {
             element(row, "span", { part: "form.description", text: item.hint });
+          }
+          if (item.carried !== void 0) {
+            control.querySelector('[data-mk-part="form.input"]')?.setAttribute("title", text("web.edit.carried", { keys: item.carried.join(", ") }));
           }
         }
       };

@@ -5,7 +5,7 @@ import {
   createMediaShell,
   mediaFacts,
   mountContributedSections
-} from "./chunk-BJ2R5ZZC.js";
+} from "./chunk-6CRNUBVW.js";
 import {
   IMAGE_EDITING_FALLBACK_MESSAGES,
   IMAGE_FALLBACK_MESSAGES,
@@ -22,7 +22,7 @@ import {
   uiPreference,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-CNISMXJW.js";
+} from "./chunk-S34VKIDA.js";
 import {
   createSubjectCandidateProvider,
   isKnowledgeTarget,
@@ -1087,20 +1087,20 @@ async function subjectCandidateProviderLease(sources, slot) {
 async function mountSubjectSelector(container, options) {
   const document = container.ownerDocument;
   const root = document.createElement("div");
-  root.setAttribute("part", "selector");
+  setPart(root, "selector");
   const search = document.createElement("input");
   search.type = "search";
-  search.setAttribute("part", "selector.search");
+  setPart(search, "selector.search");
   search.setAttribute("aria-label", options.labels?.search ?? "Search candidates");
   const select = document.createElement("select");
-  select.setAttribute("part", "selector.candidates");
+  setPart(select, "selector.candidates");
   select.setAttribute("aria-label", options.labels?.candidates ?? "Candidates");
   const more = document.createElement("button");
   more.type = "button";
-  more.setAttribute("part", "selector.more");
+  setPart(more, "selector.more");
   more.textContent = options.labels?.loadMore ?? "Load more";
   const status = document.createElement("output");
-  status.setAttribute("part", "selector.status");
+  setPart(status, "selector.status");
   root.append(search, select, more, status);
   container.append(root);
   const model = new SubjectSelectorModel(options);
@@ -1296,7 +1296,7 @@ async function mountFieldEditor(container, field, signal, registry, editorId, ca
     unavailable.disabled = true;
     unavailable.setAttribute("name", field.key);
     unavailable.setAttribute("aria-label", field.label);
-    unavailable.setAttribute("part", "form.input");
+    setPart(unavailable, "form.input");
     container.append(unavailable);
     return Object.freeze({
       read: () => fieldValue(field, unavailable.value),
@@ -1308,7 +1308,7 @@ async function mountFieldEditor(container, field, signal, registry, editorId, ca
   const input = field.type.kind === "enum" ? document.createElement("select") : field.type.kind === "script" || field.type.kind === "struct" || field.type.kind === "array" || field.type.kind === "record" || field.type.kind === "instructions" || field.type.kind === "json" ? document.createElement("textarea") : document.createElement("input");
   input.setAttribute("name", field.key);
   input.setAttribute("aria-label", field.label);
-  input.setAttribute("part", "form.input");
+  setPart(input, "form.input");
   if (input instanceof HTMLSelectElement && field.type.kind === "enum") {
     for (const member of field.type.members) {
       const option = document.createElement("option");
@@ -1576,7 +1576,8 @@ function setAtPath(root, path, value) {
     current = existing ?? child;
   });
 }
-function resolveForm(operation, spec, entry) {
+function resolveForm(operation, spec, entry, descriptor) {
+  const carried = spec.binding === void 0 || descriptor === void 0 ? [] : metadataEntries(descriptor, spec.binding.groupId).map((item) => item.key);
   const fields = Object.freeze(spec.fields.map((field) => {
     const sourced = field.source === "entry-key" ? entry?.key : field.source === "entry-value" ? entry?.value : field.initial;
     const initialText = scalarText(sourced === null || sourced === void 0 ? field.initial : sourced);
@@ -1587,6 +1588,7 @@ function resolveForm(operation, spec, entry) {
       initial: initialText,
       ...field.description === void 0 ? {} : { hint: field.description },
       ...entry?.editable?.editor === void 0 ? {} : { editorId: entry.editable.editor },
+      ...field.source === "entry-key" && carried.length > 0 ? { carried: Object.freeze([...carried]) } : {},
       initialText
     });
   }));
@@ -1670,7 +1672,7 @@ function editOffer(descriptor, options) {
       }
       if (rejected !== void 0)
         break;
-      forms.push(resolveForm(operation, spec, entry));
+      forms.push(resolveForm(operation, spec, entry, descriptor));
     }
     if (rejected !== void 0) {
       unsupported.push({
@@ -1691,7 +1693,7 @@ function exportOffer(descriptor, operationId = "export.convert") {
     for (const spec of schema?.forms ?? []) {
       if (spec.binding !== void 0 || spec.fields.some((field) => field.type.kind === "custom"))
         continue;
-      forms.push(resolveForm(operation, spec, void 0));
+      forms.push(resolveForm(operation, spec, void 0, descriptor));
     }
   }
   return Object.freeze(forms);

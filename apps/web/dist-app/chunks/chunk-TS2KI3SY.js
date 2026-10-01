@@ -1,12 +1,12 @@
 import {
   createVideoViewer
-} from "./chunk-6FK5CZ3A.js";
+} from "./chunk-RM2A3HIE.js";
 import {
   createAudioViewer
-} from "./chunk-AKFVSFT7.js";
+} from "./chunk-2G743M23.js";
 import {
   createRelationGraphViewer
-} from "./chunk-27563W7H.js";
+} from "./chunk-B5NKOS45.js";
 import {
   MODEL_FACET_CONTRACTS,
   commitOperationWrite,
@@ -15,7 +15,7 @@ import {
   modelMaterialTeamColor,
   mountFieldEditTarget,
   mountInlineField
-} from "./chunk-5PUECZ53.js";
+} from "./chunk-BGGILURI.js";
 import {
   metadataFieldProjections
 } from "./chunk-CW2HIMYV.js";
@@ -110,7 +110,7 @@ import {
   createImageViewer,
   createNamespaceViewer,
   invokeRefusalMessage
-} from "./chunk-K2SS7OVY.js";
+} from "./chunk-GP37WETK.js";
 import {
   MEDIA_ZOOM_CHOICES,
   canvasPng,
@@ -119,7 +119,7 @@ import {
   createMediaShell,
   mediaFacts,
   textMatches
-} from "./chunk-BJ2R5ZZC.js";
+} from "./chunk-6CRNUBVW.js";
 import {
   CALCULATIONS_FALLBACK_MESSAGES,
   CARD_FALLBACK_MESSAGES,
@@ -166,7 +166,7 @@ import {
   uiPreference,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-CNISMXJW.js";
+} from "./chunk-S34VKIDA.js";
 import {
   PERMISSION_CLASSES,
   contributionId,
@@ -8203,6 +8203,11 @@ function createWorkspaceNamespaceCompanionOrigin(options) {
     ...options.maxPages === void 0 ? {} : { maxPages: options.maxPages }
   });
 }
+var WORKSPACE_SCOPES = Object.freeze([
+  "workspace-dependency-layer",
+  "current-mount",
+  "enclosing-container"
+]);
 function createCompositeWorkspaceNamespaceCompanionOrigin(options) {
   const pageLimit = options.pageLimit ?? 256;
   const maxPages = options.maxPages ?? 4096;
@@ -8352,13 +8357,51 @@ function createCompositeWorkspaceNamespaceCompanionOrigin(options) {
     }
     return void 0;
   };
+  async function* containerEntries(prefix, signal) {
+    const qualified = isQualifiedRequest(prefix);
+    const entriesSeen = /* @__PURE__ */ new Map();
+    const yielded = /* @__PURE__ */ new Set();
+    for (const root of roots) {
+      const relative = relativeRequest(root, prefix);
+      if (relative === void 0)
+        continue;
+      let seen = entriesSeen.get(root.namespace);
+      if (seen === void 0)
+        entriesSeen.set(root.namespace, seen = /* @__PURE__ */ new Set());
+      for await (const entry2 of pages(root, joinPrefix(root.pathPrefix, relative), signal)) {
+        throwIfAborted(signal);
+        const remembered2 = remember2(root, entry2);
+        if (remembered2 === void 0)
+          continue;
+        const logicalId = qualified ? remembered2 : relativeEntryPath(root, entry2);
+        if (logicalId === void 0 || seen.has(entry2.id) || yielded.has(fold2(logicalId)))
+          continue;
+        seen.add(entry2.id);
+        yielded.add(fold2(logicalId));
+        const bound = byLogicalId.get(fold2(remembered2));
+        if (bound !== void 0)
+          byLogicalId.set(fold2(logicalId), bound);
+        yield Object.freeze({
+          logicalId,
+          rootId: root.rootId,
+          ...entry2.size === void 0 ? {} : { size: entry2.size }
+        });
+      }
+    }
+  }
   return Object.freeze({
     primaryLogicalId: options.primaryLogicalId,
     caseSensitivity,
-    scopes: Object.freeze(["workspace-dependency-layer"]),
+    // a resource opened out of the workspace (a map's terrain raster) finds its own companions in
+    // the mount it lives in: the workspace's containers are that mount
+    scopes: WORKSPACE_SCOPES,
     async *enumerate(scope, enumeration, signal) {
-      if (scope !== "workspace-dependency-layer")
+      if (!WORKSPACE_SCOPES.includes(scope))
         return;
+      if (scope !== "workspace-dependency-layer") {
+        yield* containerEntries(enumeration.prefix, signal);
+        return;
+      }
       const yielded = /* @__PURE__ */ new Set();
       const qualified = isQualifiedRequest(enumeration.prefix);
       for (const root of roots) {
@@ -20591,15 +20634,16 @@ function admittedTerrainTransform(snapshot3, terrain, exact) {
     const position = terrainMapNativePosition(sample, transform);
     if (!Object.values(position).every(finite3))
       return void 0;
+    const ground = sample.noGround !== true;
     minimum = {
       x: Math.min(minimum.x, position.x),
       y: Math.min(minimum.y, position.y),
-      z: Math.min(minimum.z, position.z)
+      z: ground ? Math.min(minimum.z, position.z) : minimum.z
     };
     maximum = {
       x: Math.max(maximum.x, position.x),
       y: Math.max(maximum.y, position.y),
-      z: Math.max(maximum.z, position.z)
+      z: ground ? Math.max(maximum.z, position.z) : maximum.z
     };
   }
   return ["x", "y", "z"].every((axis) => transform.bounds.minimum[axis] === minimum[axis] && transform.bounds.maximum[axis] === maximum[axis]) ? transform : void 0;
@@ -20754,7 +20798,7 @@ function createCandidateWorldSceneLease(snapshot3, provenance, maxPageSize, mode
   const duplicateObjectCount = semantic.objects.length - semanticObjects.length;
   const duplicateRegionCount = semantic.regions.length - semanticRegions.length;
   const incompleteObjectPositionCount = semanticObjects.filter((item) => item.sourcePositionDimensions === 2).length;
-  const terrain = Object.freeze((semantic.terrain?.samples ?? []).map((item) => {
+  const allTerrain = Object.freeze((semantic.terrain?.samples ?? []).map((item) => {
     const mapNativePosition = terrainTransform === void 0 ? void 0 : terrainMapNativePosition(item, terrainTransform);
     const baseOffset = terrainTransform !== void 0 && "vertData" in terrainTransform ? (item.heightBase * terrainTransform.vertData.quantizeScale - terrainTransform.vertData.quantizeBias - terrainTransform.vertData.standardHeight) * terrainTransform.heightMap.scale.z : void 0;
     const presentationAdjustment = terrainTransform !== void 0 && !("vertData" in terrainTransform) && item.presentationHeightAdjustment !== void 0 && Number.isFinite(item.presentationHeightAdjustment) && item.presentationHeightAdjustment !== 0 ? item.presentationHeightAdjustment * terrainTransform.heightMap.scale.z : void 0;
@@ -20772,7 +20816,10 @@ function createCandidateWorldSceneLease(snapshot3, provenance, maxPageSize, mode
       ...baseOffset === void 0 ? {} : { baseOffset }
     });
   }));
-  const terrainByGrid = new Map(terrain.flatMap((item) => item.facet === "terrain" ? [[`${String(item.x)}:${String(item.y)}`, item]] : []));
+  const terrain = Object.freeze(allTerrain.filter((item) => item.noGround !== true));
+  const noGroundSamples = allTerrain.length - terrain.length;
+  const terrainNoDataValue = noGroundSamples === 0 || uvwTransform === void 0 ? void 0 : Math.min(-9999, Math.floor(terrain.reduce((lowest, item) => item.facet === "terrain" && item.uvwPosition !== void 0 ? Math.min(lowest, item.uvwPosition.y) : lowest, 0)) - 1);
+  const terrainByGrid = new Map(allTerrain.map((item) => [`${String(item.x)}:${String(item.y)}`, item]));
   const terrainMaterials = Object.freeze((snapshot3.terrainMaterials?.samples ?? []).map((item) => {
     const terrainItem = terrainByGrid.get(`${String(item.x)}:${String(item.y)}`);
     const materialId = snapshot3.terrainMaterials?.materials?.find((material) => material.sourceIndex === item.textureIndex)?.materialId ?? `material-${String(item.textureIndex)}`;
@@ -21035,7 +21082,7 @@ function createCandidateWorldSceneLease(snapshot3, provenance, maxPageSize, mode
       facet: "terrain",
       layerId: terrainLayerId,
       state: terrainSummary === void 0 ? "unavailable" : terrainExact ? "available" : "partial",
-      itemCount: semantic.terrain?.cellCount ?? 0,
+      itemCount: (semantic.terrain?.cellCount ?? 0) - noGroundSamples,
       lods: Object.freeze(terrainSummary === void 0 ? [] : terrainExact ? ["exact"] : ["summary", "sampled"]),
       contentRevision: contentRevisions.terrain,
       ...terrainSummary === void 0 ? { reason: "authoritative semantic snapshot contains no terrain height grid" } : terrainExact ? {} : {
@@ -21167,7 +21214,8 @@ function createCandidateWorldSceneLease(snapshot3, provenance, maxPageSize, mode
           uvwTransform.heightfield.origin[1],
           uvwTransform.heightfield.origin[2] + uvwTransform.heightfield.cellSize
         ]) : uvwTransform.heightfield.origin,
-        coordinateSpaceId: "uvw-canonical"
+        coordinateSpaceId: "uvw-canonical",
+        ...item.facet === "terrain" && terrainNoDataValue !== void 0 ? { noDataValue: terrainNoDataValue } : {}
       })
     } : {},
     ...item.facet === "terrain-materials" && commonTerrainMaterials.length > 0 ? {
@@ -21562,6 +21610,8 @@ function createCandidateWorldSceneLease(snapshot3, provenance, maxPageSize, mode
           kind: "logical",
           requirement,
           maxBytes: request.maxBytes,
+          // a texture bigger than the budget comes at the largest level that fits, not refused
+          selection: { mipLevel: "fit" },
           ...request.compressedFormats === void 0 ? {} : { compressedFormats: request.compressedFormats }
         }, signal);
         if (raster.state !== "decoded" && raster.state !== "compressed") {
@@ -22194,6 +22244,10 @@ async function analyzeResolvedMapWorkspace(request) {
       reservedBytes: 0,
       resources: request.resources
     };
+    const resourceInput = (path) => {
+      const resolver = path === void 0 || path === "" ? request.inputResolver : request.inputResolver?.forResource?.(path) ?? request.inputResolver;
+      return resolver === void 0 ? {} : { resolveInput: resolver };
+    };
     const modelReleases = [];
     const modelResources = createSubjectModelResources({
       state: modelState,
@@ -22214,7 +22268,7 @@ async function analyzeResolvedMapWorkspace(request) {
         ...request.services.serviceDefinitions === void 0 ? {} : { serviceDefinitions: request.services.serviceDefinitions },
         ...request.services.contributionSettings === void 0 ? {} : { contributionSettings: request.services.contributionSettings },
         resourceSession: request.resources,
-        ...request.inputResolver === void 0 ? {} : { resolveInput: request.inputResolver },
+        ...resourceInput(path),
         ...signal === void 0 ? {} : { signal }
       })
     });
@@ -22243,7 +22297,7 @@ async function analyzeResolvedMapWorkspace(request) {
         ...request.services.serviceDefinitions === void 0 ? {} : { serviceDefinitions: request.services.serviceDefinitions },
         ...request.services.contributionSettings === void 0 ? {} : { contributionSettings: request.services.contributionSettings },
         resourceSession: request.resources,
-        ...request.inputResolver === void 0 ? {} : { resolveInput: request.inputResolver },
+        ...resourceInput(hint.path),
         ...signal === void 0 ? {} : { signal }
       })
     });
@@ -22480,6 +22534,41 @@ var MAP_PREVIEW_COORDINATOR_LIMITS = Object.freeze({
     maxDiagnostics: 100
   })
 });
+function withMapPreviewSources(codec, preview2) {
+  const key3 = (offer) => `${offer.contract}@${offer.major}`;
+  const descriptor = async () => {
+    const [own, previewed] = await Promise.all([codec.descriptor(), preview2.descriptor()]);
+    const owned = new Set(own.dataSources.map(key3));
+    const added = previewed.dataSources.filter((offer) => !owned.has(key3(offer)));
+    const ownTraits = new Set(own.traits.map((trait) => trait.id));
+    const traits = previewed.traits.filter((trait) => !ownTraits.has(trait.id));
+    const cited = new Set(traits.flatMap((trait) => trait.diagnosticIds ?? []));
+    const ownDiagnostics = new Set(own.diagnostics.map((item) => item.id));
+    const diagnostics = previewed.diagnostics.filter((item) => cited.has(item.id) && !ownDiagnostics.has(item.id));
+    return {
+      added,
+      merged: Object.freeze({
+        ...own,
+        traits: Object.freeze([...own.traits, ...traits]),
+        dataSources: Object.freeze([...own.dataSources, ...added]),
+        diagnostics: Object.freeze([...own.diagnostics, ...diagnostics])
+      })
+    };
+  };
+  return Object.freeze({
+    revision: codec.revision,
+    state: () => codec.state(),
+    descriptor: async () => (await descriptor()).merged,
+    dataSource: (async (contract, major, ...rest) => {
+      const { added } = await descriptor();
+      const from = added.some((offer) => offer.contract === contract && offer.major === major) ? preview2 : codec;
+      return from.dataSource(contract, major, ...rest);
+    }),
+    operations: () => codec.operations(),
+    events: (signal) => codec.events(signal),
+    dispose: () => preview2.dispose()
+  });
+}
 var PREVIEW_DIAGNOSTIC_SEVERITIES = /* @__PURE__ */ new Set(["error", "warning", "information", "hint"]);
 var MAX_PREVIEW_NAMESPACE_SEARCHES = 8;
 var MAX_PREVIEW_NAMESPACE_SEARCH_BASENAMES = 16;
@@ -46634,6 +46723,7 @@ var EN = parseUiCatalogDocument(
       "web.inspector.noWritableHandle": "this page holds no writable handle for the file.",
       "web.inspector.noForm": "{operation}: no editing form \u2014 {reason}.",
       "web.edit.unsupported": "{operation}: not available in this host yet \u2014 {reason}",
+      "web.edit.carried": "this file already carries: {keys}",
       "web.edit.invoking": "{operation}: invoking {handler}\u2026",
       "web.edit.codecRefused": "The codec refused the operation: {reason}",
       "web.edit.hostRefused": "The host refused the plan: {reason}",
@@ -46817,6 +46907,7 @@ var RU = parseUiCatalogDocument(
       "web.inspector.noWritableHandle": "\u0443 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u044B \u043D\u0435\u0442 \u0440\u0430\u0437\u0440\u0435\u0448\u0435\u043D\u0438\u044F \u043D\u0430 \u0437\u0430\u043F\u0438\u0441\u044C \u0432 \u0444\u0430\u0439\u043B.",
       "web.inspector.noForm": "{operation}: \u043D\u0435\u0442 \u0444\u043E\u0440\u043C\u044B \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F \u2014 {reason}.",
       "web.edit.unsupported": "{operation}: \u043F\u043E\u043A\u0430 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u043E \u0432 \u044D\u0442\u043E\u043C \u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u0438 \u2014 {reason}",
+      "web.edit.carried": "\u0432 \u0444\u0430\u0439\u043B\u0435 \u0443\u0436\u0435 \u0435\u0441\u0442\u044C: {keys}",
       "web.edit.invoking": "{operation}: \u0437\u0430\u043F\u0443\u0441\u043A {handler}\u2026",
       "web.edit.codecRefused": "\u041A\u043E\u0434\u0435\u043A \u043E\u0442\u043A\u043B\u043E\u043D\u0438\u043B \u043E\u043F\u0435\u0440\u0430\u0446\u0438\u044E: {reason}",
       "web.edit.hostRefused": "\u041F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u0435 \u043E\u0442\u043A\u043B\u043E\u043D\u0438\u043B\u043E \u043F\u043B\u0430\u043D \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F: {reason}",
@@ -65720,13 +65811,13 @@ var PREVIEW_STAGES = [
 async function defaultPreviewStage(kind, localizer) {
   switch (kind) {
     case "model":
-      return (await import("./model-TOFH6WBH.js")).createModelViewer({ localizer });
+      return (await import("./model-MWTXTAR2.js")).createModelViewer({ localizer });
     case "image":
-      return (await import("./image-TD6ZXQ24.js")).createImageViewer({ localizer });
+      return (await import("./image-XZVDR5QH.js")).createImageViewer({ localizer });
     case "video":
-      return (await import("./video-DGBKTXPL.js")).createVideoViewer({ localizer });
+      return (await import("./video-KR6DCCKK.js")).createVideoViewer({ localizer });
     case "audio":
-      return (await import("./audio-RKFFYZ35.js")).createAudioViewer({ localizer });
+      return (await import("./audio-B3UL65JS.js")).createAudioViewer({ localizer });
   }
 }
 function embedPreview(sections, args, scope, localizer, previews) {
@@ -65765,7 +65856,7 @@ function embedRelationGraph(sections, args, scope, localizer, graph) {
   return [
     ...sections,
     stageSection({ id: "relations-graph", title: localizer.text("card.relationGraph"), expanded: false }, scope, localizer, "card.relationGraphUnavailable", async (host) => {
-      const module = graph ?? (await import("./graph-T2WIVXXX.js")).createRelationGraphViewer({ localizer });
+      const module = graph ?? (await import("./graph-LRUW625X.js")).createRelationGraphViewer({ localizer });
       return scope.signal.aborted ? void 0 : module.mount({ ...args, container: host, signal: scope.signal });
     })
   ];
@@ -66370,7 +66461,17 @@ var FILTER_LABELS = {
   empty: "table.filterEmpty",
   // a value the codec's checks refuse in some locale (SC2: markup, a hotkey)
   error: "table.filterErrors",
-  changed: "table.filterChanged"
+  changed: "table.filterChanged",
+  review: "table.filterReview"
+};
+var BADGE_LABELS = {
+  missing: "table.badgeMissing",
+  untranslated: "table.badgeUntranslated",
+  duplicate: "table.badgeDuplicate",
+  empty: "table.badgeEmpty",
+  error: "table.badgeError",
+  changed: "table.badgeChanged",
+  review: "table.badgeReview"
 };
 var COMPARE_LABELS = {
   missing: "table.filterMissing",
@@ -66493,7 +66594,13 @@ async function mountVariantTable(args) {
   const keyColumn = Math.max(0, info.findIndex((column) => column.role === "key"));
   const statusColumn = info.findIndex((column) => column.role === "status");
   const variants = info.flatMap((column, index) => column.role === "variant" && column.variant !== void 0 ? [{ ...column, index }] : []);
-  const base = variants.find((column) => column.base === true) ?? variants[0];
+  const fileBase = variants.find((column) => column.base === true) ?? variants[0];
+  let base = fileBase;
+  const untranslatedIn = (row) => {
+    const reference = base;
+    const value = reference === void 0 ? "" : row.cells[reference.index] ?? "";
+    return value !== "" && variants.some((column) => column !== reference && row.cells[column.index] === value);
+  };
   const separator = args.shape.keySeparator;
   const rows = [];
   for (let from = 0; ; from += LOAD_PAGE_ROWS) {
@@ -66507,12 +66614,16 @@ async function mountVariantTable(args) {
   const selected = /* @__PURE__ */ new Set();
   const foreignIn = (row, column) => foreignScript(column.language ?? column.variant ?? "", row.cells[column.index] ?? "");
   const statusOf = (row) => [
-    ...statusColumn < 0 ? [] : (row.cells[statusColumn] ?? "").split(" ").filter(Boolean),
+    // the codec says untranslated against the file's own locale; the table, against the chosen base
+    ...statusColumn < 0 ? [] : (row.cells[statusColumn] ?? "").split(" ").filter((status2) => status2 !== "" && status2 !== "untranslated"),
+    ...untranslatedIn(row) ? ["untranslated"] : [],
     // a locale without a value, missing or blank (MK2's «empty» filter)
     ...variants.some((column) => (row.cells[column.index] ?? "") === "") ? ["empty"] : [],
     ...variants.some((column) => foreignIn(row, column)) ? ["error"] : [],
-    ...changed.has(row.index) || draftedRows.has(row.index) ? ["changed"] : []
+    ...changed.has(row.index) || draftedRows.has(row.index) ? ["changed"] : [],
+    ...review?.rows.has(row.index) === true ? ["review"] : []
   ];
+  let review;
   const state = remembered.get(args.descriptor.subjectUri) ?? {
     search: "",
     caseSensitive: false,
@@ -66534,6 +66645,7 @@ async function mountVariantTable(args) {
     render: false
   };
   remembered.set(args.descriptor.subjectUri, state);
+  base = variants.find((column) => column.variant === state.base) ?? fileBase;
   const bar = element(args.root, "div", { part: "table.controls" });
   const status = element(args.root, "output", { part: "viewer.status" });
   status.setAttribute("role", "status");
@@ -66547,7 +66659,15 @@ async function mountVariantTable(args) {
     else
       delete args.before.dataset["wrap"];
   };
-  const statuses = ["missing", "untranslated", "duplicate", "empty", "error", "changed"];
+  const statuses = [
+    "missing",
+    "untranslated",
+    "duplicate",
+    "empty",
+    "error",
+    "changed",
+    ...args.baseline === void 0 ? [] : ["review"]
+  ];
   const matchToggles = (target2, prefix, changed2) => MATCH_TOGGLES.map(([id, glyph, label, key3]) => ({
     kind: "toggle",
     id: `${prefix}-${id}`,
@@ -66610,7 +66730,7 @@ async function mountVariantTable(args) {
           }
         }
       ],
-      ...actions.addRow === void 0 || base === void 0 ? [] : [
+      ...actions.addRow === void 0 || fileBase === void 0 ? [] : [
         {
           kind: "action",
           id: "add",
@@ -66637,6 +66757,14 @@ async function mountVariantTable(args) {
           id: "compare",
           label: text3("table.compare"),
           onActivate: () => void compare()
+        }
+      ],
+      ...args.baseline === void 0 ? [] : [
+        {
+          kind: "action",
+          id: "baseline",
+          label: text3("table.baseline"),
+          onActivate: () => void compareBaseline()
         }
       ],
       ...actions.translateVariant === void 0 || variants.length < 2 ? [] : [
@@ -66679,15 +66807,43 @@ async function mountVariantTable(args) {
     state.group = group2.value;
     refresh();
   });
+  const baseChoice = element(bar, "select", { part: "table.group" });
+  baseChoice.setAttribute("aria-label", text3("table.base"));
+  baseChoice.title = text3("table.base");
+  for (const column of variants) {
+    const node = baseChoice.ownerDocument.createElement("option");
+    node.value = column.variant ?? "";
+    node.textContent = column.variant ?? header[column.index] ?? "";
+    baseChoice.append(node);
+  }
+  baseChoice.value = base?.variant ?? "";
+  baseChoice.hidden = variants.length < 2;
   const target = element(bar, "select", { part: "table.group" });
   target.setAttribute("aria-label", text3("table.translateTarget"));
-  for (const column of variants.filter((column2) => column2 !== base)) {
-    const node = target.ownerDocument.createElement("option");
-    node.value = String(column.index);
-    node.textContent = column.variant ?? header[column.index] ?? "";
-    target.append(node);
-  }
+  const listTargets = () => {
+    const kept = target.value;
+    target.replaceChildren();
+    for (const column of variants.filter((column2) => column2 !== base)) {
+      const node = target.ownerDocument.createElement("option");
+      node.value = String(column.index);
+      node.textContent = column.variant ?? header[column.index] ?? "";
+      target.append(node);
+    }
+    if ([...target.options].some((option2) => option2.value === kept))
+      target.value = kept;
+  };
+  listTargets();
   target.hidden = actions.translateVariant === void 0 || variants.length < 2;
+  baseChoice.addEventListener("change", () => {
+    base = variants.find((column) => column.variant === baseChoice.value) ?? fileBase;
+    if (base === fileBase || base?.variant === void 0)
+      delete state.base;
+    else
+      state.base = base.variant;
+    review = void 0;
+    listTargets();
+    refresh();
+  });
   const translateContext = element(bar, "input", { part: "table.context" });
   translateContext.type = "text";
   translateContext.placeholder = text3("table.translateContext");
@@ -66700,15 +66856,48 @@ async function mountVariantTable(args) {
   automatic.textContent = text3("table.translateServiceAuto");
   translateService.append(automatic);
   translateService.hidden = true;
+  const headRow = args.before.tHead?.rows[0];
+  const headCells = header.map((_, column) => headRow?.cells[column + 1]);
+  let order = [];
+  let places = /* @__PURE__ */ new Map();
+  const arrange = () => {
+    const arranged = (state.order ?? []).map((label) => header.indexOf(label)).filter((column) => column >= 0 && column !== keyColumn);
+    order = [
+      keyColumn,
+      .../* @__PURE__ */ new Set([
+        ...arranged,
+        ...header.map((_, column) => column).filter((column) => column !== keyColumn)
+      ])
+    ];
+    places = new Map(order.map((column, place) => [column, place + 1]));
+    for (const column of order) {
+      const th = headCells[column];
+      if (th !== void 0)
+        headRow?.append(th);
+    }
+  };
+  arrange();
+  const cellOf = (tr, column) => {
+    const place = places.get(column);
+    return place === void 0 ? void 0 : tr.cells[place];
+  };
+  const moveColumn = (column, before) => {
+    const rest = order.filter((item) => item !== keyColumn && item !== column);
+    const at2 = before === void 0 ? rest.length : rest.indexOf(before);
+    rest.splice(at2 < 0 ? rest.length : at2, 0, column);
+    state.order = rest.map((item) => header[item] ?? "");
+    arrange();
+    listColumns();
+    draw();
+  };
   const columns = element(bar, "details", { part: "table.columns" });
   element(columns, "summary", { text: text3("table.columns") });
   const choices = element(columns, "div", {});
   const isHidden = (column) => state.hidden.includes(header[column] ?? "");
   const showColumns = () => {
-    const head = args.before.tHead?.rows[0];
-    for (const tr of [...head === void 0 ? [] : [head], ...drawnRows]) {
+    for (const tr of [...headRow === void 0 ? [] : [headRow], ...drawnRows]) {
       header.forEach((label, column) => {
-        const cell = tr.cells[column + 1];
+        const cell = cellOf(tr, column);
         if (cell === void 0)
           return;
         cell.hidden = isHidden(column);
@@ -66717,10 +66906,11 @@ async function mountVariantTable(args) {
     }
   };
   header.forEach((label, column) => {
-    const th = args.before.tHead?.rows[0]?.cells[column + 1];
+    const th = headCells[column];
     if (th === void 0)
       return;
     const grip = element(th, "span", { part: "table.resize" });
+    grip.draggable = false;
     grip.tabIndex = 0;
     grip.setAttribute("role", "separator");
     grip.setAttribute("aria-orientation", "vertical");
@@ -66754,23 +66944,65 @@ async function mountVariantTable(args) {
       event.preventDefault();
       resize(th.getBoundingClientRect().width + (event.key === "ArrowRight" ? 16 : -16));
     });
-  });
-  header.forEach((label, column) => {
     if (column === keyColumn)
       return;
-    const line = element(choices, "label", {});
-    const box = element(line, "input", {});
-    box.type = "checkbox";
-    box.checked = !isHidden(column);
-    line.append(line.ownerDocument.createTextNode(` ${label}`));
-    box.addEventListener("change", () => {
-      state.hidden = box.checked ? state.hidden.filter((item) => item !== label) : [...state.hidden, label];
-      if (state.find.open)
-        seek();
-      else
-        showColumns();
+    th.draggable = true;
+    th.addEventListener("dragstart", (event) => {
+      dragged = column;
+      event.dataTransfer?.setData("text/plain", label);
+    });
+    th.addEventListener("dragover", (event) => {
+      if (dragged !== void 0 && dragged !== column)
+        event.preventDefault();
+    });
+    th.addEventListener("drop", (event) => {
+      event.preventDefault();
+      const moved = dragged;
+      dragged = void 0;
+      if (moved !== void 0 && moved !== column)
+        moveColumn(moved, column);
+    });
+    th.addEventListener("dragend", () => {
+      dragged = void 0;
     });
   });
+  let dragged;
+  const listColumns = () => {
+    choices.replaceChildren();
+    const movable = order.filter((column) => column !== keyColumn);
+    movable.forEach((column, place) => {
+      const label = header[column] ?? "";
+      const line = element(choices, "div", {});
+      const toggle = element(line, "label", {});
+      const box = element(toggle, "input", {});
+      box.type = "checkbox";
+      box.checked = !isHidden(column);
+      toggle.append(toggle.ownerDocument.createTextNode(` ${label}`));
+      box.addEventListener("change", () => {
+        state.hidden = box.checked ? state.hidden.filter((item) => item !== label) : [...state.hidden, label];
+        if (state.find.open)
+          seek();
+        else
+          showColumns();
+      });
+      const shift = (glyph, key3, before) => {
+        const button = element(line, "button", {
+          part: "toolbar.action",
+          text: glyph
+        });
+        button.type = "button";
+        button.setAttribute("aria-label", text3(key3, { column: label }));
+        button.disabled = before === null;
+        button.addEventListener("click", () => {
+          if (before !== null)
+            moveColumn(column, before);
+        });
+      };
+      shift("\u2190", "table.moveColumnEarlier", place === 0 ? null : movable[place - 1]);
+      shift("\u2192", "table.moveColumnLater", place === movable.length - 1 ? null : movable[place + 2]);
+    });
+  };
+  listColumns();
   columns.hidden = header.length < 3;
   const drafting = actions.addRow !== void 0;
   const draftButton = (label, action, run) => {
@@ -66928,7 +67160,7 @@ async function mountVariantTable(args) {
       const columns2 = findColumns();
       for (const tr of drawnRows) {
         for (const column of columns2) {
-          const cell = tr.cells[column + 1];
+          const cell = cellOf(tr, column);
           if (cell !== void 0 && markMatches(cell, pattern))
             cell.dataset["highlighted"] = "true";
         }
@@ -66993,7 +67225,7 @@ async function mountVariantTable(args) {
   }, { signal: args.signal });
   const draw = () => {
     const page2 = visible.slice(0, shown);
-    const drawn = args.render(page2);
+    const drawn = args.render(page2, order);
     drawn.forEach((tr, position) => {
       const row = page2[position];
       if (row === void 0)
@@ -67011,13 +67243,32 @@ async function mountVariantTable(args) {
           selected.delete(row.index);
       });
       cell.append(box);
-      const keyCell = tr.cells[keyColumn + 1];
+      const keyCell = cellOf(tr, keyColumn);
       if (keyCell !== void 0) {
         keyCell.dataset["key"] = "true";
         keyCell.title = row.cells[keyColumn] ?? "";
       }
+      const statusCell = statusColumn < 0 ? void 0 : cellOf(tr, statusColumn);
+      if (statusCell !== void 0) {
+        statusCell.replaceChildren();
+        statusCell.dataset["rendered"] = "true";
+        for (const status2 of statusOf(row)) {
+          const key3 = BADGE_LABELS[status2];
+          const badge = element(statusCell, "span", {
+            part: "table.badge",
+            text: key3 === void 0 ? status2 : text3(key3)
+          });
+          badge.dataset["status"] = status2;
+          const since = status2 === "review" ? review?.rows.get(row.index) : void 0;
+          if (since !== void 0 && review !== void 0) {
+            badge.title = text3(since === "added" ? "table.reviewAdded" : "table.reviewChanged", {
+              baseline: review.label
+            });
+          }
+        }
+      }
       for (const column of variants) {
-        const valueCell = tr.cells[column.index + 1];
+        const valueCell = cellOf(tr, column.index);
         if (valueCell === void 0)
           continue;
         const value = row.cells[column.index] ?? "";
@@ -67061,7 +67312,7 @@ async function mountVariantTable(args) {
         return;
       for (const column of variants) {
         const value = row.cells[column.index] ?? "";
-        const cell = tr.cells[column.index + 1];
+        const cell = cellOf(tr, column.index);
         if (value !== "" && cell !== void 0)
           cells.push({ cell, column: column.index, text: value });
       }
@@ -67329,7 +67580,7 @@ async function mountVariantTable(args) {
       say(text3("table.replaced", { count: changes.length }));
   };
   const showAdd = () => {
-    if (actions.addRow === void 0 || base === void 0 || unsaved())
+    if (actions.addRow === void 0 || fileBase === void 0 || unsaved())
       return;
     panel.hidden = false;
     panel.replaceChildren();
@@ -67339,7 +67590,7 @@ async function mountVariantTable(args) {
     key3.setAttribute("aria-label", text3("table.addKeyName"));
     key3.required = true;
     const value = element(form, "input", { part: "toolbar.search-input" });
-    const valueLabel = text3("table.addKeyValue", { variant: base.variant ?? "" });
+    const valueLabel = text3("table.addKeyValue", { variant: fileBase.variant ?? "" });
     value.placeholder = valueLabel;
     value.setAttribute("aria-label", valueLabel);
     const submit = element(form, "button", {
@@ -67356,11 +67607,16 @@ async function mountVariantTable(args) {
         say(text3("table.refused", { reason: text3("table.keyExists", { key: name }) }));
         return;
       }
-      const request = { action: "add", key: name, value: value.value, variant: base.variant ?? "" };
+      const request = {
+        action: "add",
+        key: name,
+        value: value.value,
+        variant: fileBase.variant ?? ""
+      };
       void write(actions.addRow, request).then((done) => {
         if (!done)
           return;
-        const cells = header.map((_, index) => index === keyColumn ? name : index === base.index ? value.value : "");
+        const cells = header.map((_, index) => index === keyColumn ? name : index === fileBase.index ? value.value : "");
         if (statusColumn >= 0)
           cells[statusColumn] = variants.length > 1 ? "missing" : "";
         const row = { index: rows.length, cells };
@@ -67454,12 +67710,31 @@ async function mountVariantTable(args) {
     });
     submit.focus();
   };
+  const compareBaseline = async () => {
+    const reference = base;
+    if (args.baseline === void 0 || reference === void 0)
+      return;
+    const loaded = await args.baseline(reference.variant ?? "", args.signal);
+    if (loaded === void 0 || args.signal.aborted)
+      return;
+    const changes = /* @__PURE__ */ new Map();
+    for (const row of rows) {
+      const value = row.cells[reference.index] ?? "";
+      const before = loaded.values.get(row.cells[keyColumn] ?? "");
+      if (before === void 0 ? value !== "" : before !== value) {
+        changes.set(row.index, before === void 0 ? "added" : "changed");
+      }
+    }
+    review = { label: loaded.label, rows: changes };
+    refresh();
+    say(text3("table.reviewLoaded", { count: changes.size, baseline: loaded.label }));
+  };
   const compare = async () => {
-    if (actions.compareVariants === void 0 || base === void 0)
+    if (actions.compareVariants === void 0 || fileBase === void 0)
       return;
     panel.hidden = false;
     panel.replaceChildren();
-    for (const column of variants.filter((item) => item !== base)) {
+    for (const column of variants.filter((item) => item !== fileBase)) {
       const result = await invokeOperation(args.descriptor, args.operations, actions.compareVariants, { variant: column.variant ?? "" }, { signal: args.signal });
       const line = element(panel, "p", { part: "table.compare" });
       if (result.state !== "ok" || result.output.kind !== "json") {
@@ -67470,7 +67745,7 @@ async function mountVariantTable(args) {
       const value = result.output.value;
       setViewerText(line, text3("table.compareLine", {
         variant: column.variant ?? "",
-        base: base.variant ?? "",
+        base: fileBase.variant ?? "",
         translated: value.translated,
         total: value.total,
         missing: value.missing.length,
@@ -67535,13 +67810,14 @@ async function mountVariantTable(args) {
   const translate = async () => {
     if (translating || args.signal.aborted)
       return;
-    if (actions.translateVariant === void 0 || base === void 0)
+    const source2 = base;
+    if (actions.translateVariant === void 0 || source2 === void 0)
       return;
     const column = variants.find((item) => String(item.index) === target.value);
     if (column === void 0)
       return;
     const chosen = visible.filter((row) => selected.size === 0 || selected.has(row.index));
-    const empty = chosen.filter((row) => (row.cells[column.index] ?? "") === "" && (row.cells[base.index] ?? "") !== "");
+    const empty = chosen.filter((row) => (row.cells[column.index] ?? "") === "" && (row.cells[source2.index] ?? "") !== "");
     panel.hidden = false;
     panel.replaceChildren();
     if (empty.length === 0) {
@@ -67573,9 +67849,9 @@ async function mountVariantTable(args) {
         const key3 = row.cells[keyColumn] ?? "";
         const result = await invokeOperation(args.descriptor, args.operations, actions.translateVariant, {
           key: key3,
-          sourceVariant: base.variant ?? "",
+          sourceVariant: source2.variant ?? "",
           targetVariant: column.variant ?? "",
-          sourceLanguage: base.language ?? base.variant ?? "",
+          sourceLanguage: source2.language ?? source2.variant ?? "",
           targetLanguage: column.language ?? column.variant ?? "",
           ...context === "" ? {} : { context },
           ...backend === "" ? {} : { backend }
@@ -68060,7 +68336,7 @@ function createTableViewer(options = {}) {
         cell.addEventListener("keydown", onKey);
         cell.querySelector("input, textarea, select")?.focus();
       };
-      const render = (rows) => {
+      const render = (rows, order) => {
         cancelLookup("table-page-changed");
         clearEditTarget();
         showMissingKnowledge();
@@ -68073,7 +68349,8 @@ function createTableViewer(options = {}) {
           drawn.push(tr);
           setPart(tr, "table.row");
           tr.dataset["row"] = String(row.index);
-          for (const [column, value] of row.cells.entries()) {
+          for (const column of order ?? row.cells.keys()) {
+            const value = row.cells[column] ?? "";
             const cell = tr.insertCell();
             setPart(cell, "table.cell");
             cell.tabIndex = 0;
@@ -68141,6 +68418,7 @@ function createTableViewer(options = {}) {
           ...options.localizer === void 0 ? {} : { localizer: options.localizer },
           documents,
           ...options.images === void 0 ? {} : { images: options.images },
+          ...options.baseline === void 0 ? {} : { baseline: options.baseline },
           render,
           committed,
           writeRefusal: () => stale,
@@ -70776,8 +71054,18 @@ function terrainSurfaceUv(cell, local, sampleTransform, materialTransform) {
   const inCell = transformedTerrainUv(local, sampleTransform);
   return transformedTerrainUv([cell.x + inCell[0], cell.y + inCell[1]], materialTransform);
 }
+function atlasGrid(rows, texture) {
+  return Object.freeze({
+    columns: Math.max(1, Math.round(rows * texture.width / texture.height)),
+    rows
+  });
+}
+function pushCellCoordinates(target, cell, locals) {
+  for (const local of locals)
+    target.secondaryTextureCoordinates?.push(cell.x + local[0], cell.y + local[1]);
+}
 function atlasTileUv(local, rows, texture, tile) {
-  const columns = Math.max(1, Math.round(rows * texture.width / texture.height));
+  const { columns } = atlasGrid(rows, texture);
   const inside = (value, start, size, texels) => Math.min(Math.max(value, start / size + 0.5 / texels), (start + 1) / size - 0.5 / texels);
   return [
     inside((tile.column + local[0]) / columns, tile.column, columns, texture.width),
@@ -71141,6 +71429,7 @@ function frozenTexturedBatch(source2) {
     textureCoordinates: Float32Array.from(source2.textureCoordinates),
     ...source2.secondaryTextureCoordinates === void 0 ? {} : { secondaryTextureCoordinates: Float32Array.from(source2.secondaryTextureCoordinates) },
     texture: source2.texture,
+    ...source2.atlas === void 0 ? {} : { atlas: source2.atlas },
     ...source2.normalTexture === void 0 ? {} : { normalTexture: source2.normalTexture },
     ...source2.normalSwizzle === void 0 ? {} : { normalSwizzle: source2.normalSwizzle },
     ...source2.specularTexture === void 0 ? {} : { specularTexture: source2.specularTexture },
@@ -72700,31 +72989,41 @@ function prepareWorldStaticTerrain(input, sampleSharedModel) {
       const quad = patch.positions;
       const cornerAo = patch.locals.map(([x, y]) => terrainAoAt(item.x + x, item.y + y));
       const materialSample = materialByCell.get(`${item.x}:${item.y}`);
-      const drawOverlay = (materialId, depth, uvAt) => {
+      const drawOverlay = (materialId, depth, uvAt, atlasLayer = false) => {
         const definition2 = input.terrainMaterials?.find((candidate) => candidate.materialId === materialId);
         const texture2 = definition2?.baseColorResourceId === void 0 ? void 0 : input.terrainTextures?.get(definition2.baseColorResourceId);
         if (texture2 === void 0)
           return;
         const normalTexture2 = definition2?.normalResourceId === void 0 ? void 0 : input.terrainTextures?.get(definition2.normalResourceId);
         const specularTexture = definition2?.specularResourceId === void 0 ? void 0 : input.terrainTextures?.get(definition2.specularResourceId);
-        const key3 = [depth, texture2.id, normalTexture2?.id ?? "", specularTexture?.id ?? ""].join(String.fromCharCode(0));
+        const atlas = atlasLayer && definition2?.atlas !== void 0 ? atlasGrid(definition2.atlas.rows, texture2) : void 0;
+        const key3 = [
+          depth,
+          texture2.id,
+          normalTexture2?.id ?? "",
+          specularTexture?.id ?? "",
+          atlas === void 0 ? "" : "atlas"
+        ].join(String.fromCharCode(0));
         decalDepths.set(key3, depth);
         const target = decals.get(key3) ?? {
           ...batch(),
           textureCoordinates: [],
           texture: texture2,
+          ...atlas === void 0 ? {} : { atlas, secondaryTextureCoordinates: [] },
           ...normalTexture2 === void 0 ? {} : { normalTexture: normalTexture2, normalSwizzle: normalSwizzleOf(definition2.normalEncoding) },
           ...specularTexture === void 0 ? {} : { specularTexture, specularGloss: definition2.specularEncoding === "gloss" }
         };
         decals.set(key3, target);
         const uvs = patch.locals.map((local) => uvAt(local, definition2, texture2));
         const aoColors = cornerAo.map((ao) => [1, 1, 1, ao]);
-        for (const index of [0, 1])
+        for (const index of [0, 1]) {
           pushTexturedTriangle(target, tri(quad, index), tri(uvs, index), tri(aoColors, index), tri(cornerNormals, index));
+          pushCellCoordinates(target, item, tri(patch.locals, index));
+        }
         terrainDecalTriangles += 2;
       };
       const groundLayer = materialSample?.layers?.[0];
-      const drawUpperLayers = () => materialSample?.layers?.slice(1).forEach((layer2, index) => drawOverlay(layer2.materialId, index + 1, (local, definition2, texture2) => definition2.atlas === void 0 ? terrainSurfaceUv(item, local, void 0, definition2.uvTransform) : atlasTileUv(local, definition2.atlas.rows, texture2, layer2.tile)));
+      const drawUpperLayers = () => materialSample?.layers?.slice(1).forEach((layer2, index) => drawOverlay(layer2.materialId, index + 1, (local, definition2, texture2) => definition2.atlas === void 0 ? terrainSurfaceUv(item, local, void 0, definition2.uvTransform) : atlasTileUv(local, definition2.atlas.rows, texture2, layer2.tile), true));
       const drawDecal = () => {
         const decal = materialSample?.decal;
         if (decal === void 0)
@@ -72803,18 +73102,27 @@ function prepareWorldStaticTerrain(input, sampleSharedModel) {
             pushVertex(opaque, vertices[corner], normals[corner], factor2 === void 0 ? heightColor(vertices[corner][1]) : color2);
         }
       } else {
-        const key3 = `terrain\0${texture.id}\0${normalTexture?.id ?? ""}`;
+        const atlas = groundLayer !== void 0 && material?.atlas !== void 0 ? atlasGrid(material.atlas.rows, texture) : void 0;
+        const key3 = [
+          "terrain",
+          texture.id,
+          normalTexture?.id ?? "",
+          atlas === void 0 ? "" : "atlas"
+        ].join(String.fromCharCode(0));
         const target = textured.get(key3) ?? {
           ...batch(),
           textureCoordinates: [],
           texture,
-          ...normalTexture === void 0 ? {} : { normalTexture }
+          ...normalTexture === void 0 ? {} : { normalTexture },
+          ...atlas === void 0 ? {} : { atlas, secondaryTextureCoordinates: [] }
         };
         textured.set(key3, target);
         const uv = (local) => groundLayer !== void 0 && material?.atlas !== void 0 ? atlasTileUv(local, material.atlas.rows, texture, groundLayer.tile) : terrainSurfaceUv(item, local, materialSample?.uvTransform, material?.uvTransform);
         const [uvA, uvB, uvC, uvD] = patch.locals.map(uv);
         pushTexturedTriangle(target, tri(quad, 0), tri([uvA, uvB, uvC, uvD], 0), color2, tri(cornerNormals, 0));
+        pushCellCoordinates(target, item, tri(patch.locals, 0));
         pushTexturedTriangle(target, tri(quad, 1), tri([uvA, uvB, uvC, uvD], 1), color2, tri(cornerNormals, 1));
+        pushCellCoordinates(target, item, tri(patch.locals, 1));
         terrainTexturedTriangles += 2;
       }
       drawUpperLayers();
@@ -73895,7 +74203,9 @@ uniform float pointSize;
 out vec3 worldNormal;
 out vec3 worldPosition;
 out vec4 vertexColor;
-out vec2 textureCoordinate;
+// centroid: an edge pixel under MSAA reads inside its triangle, not past it into the next
+// atlas tile or texture edge
+centroid out vec2 textureCoordinate;
 out vec2 secondaryTextureCoordinate;
 out vec4 splatWeights0;
 out vec4 splatWeights1;
@@ -73929,7 +74239,7 @@ precision highp sampler2DArray;
 in vec3 worldNormal;
 in vec3 worldPosition;
 in vec4 vertexColor;
-in vec2 textureCoordinate;
+centroid in vec2 textureCoordinate;
 in vec2 secondaryTextureCoordinate;
 in vec4 splatWeights0;
 in vec4 splatWeights1;
@@ -73993,6 +74303,9 @@ uniform float teamBlend;
 uniform float teamStrength;
 uniform vec3 teamColor;
 uniform sampler2D baseColorMap;
+// The base map is an atlas of tiles in this grid, columns and rows (MapTerrainMaterialDefinition.atlas);
+// 0 when it is none. The secondary coordinate is then the cell's grid coordinate.
+uniform vec2 atlasGrid;
 uniform float alphaCutoff;
 uniform sampler2D normalMap;
 uniform sampler2D secondaryColorMap;
@@ -74041,6 +74354,26 @@ uniform float cliffMaskMode;
 uniform vec4 cliffMaskSelector;
 out vec4 outColor;
 ${TEAM_COLOR_GLSL}
+// The base colour; for an atlas, from inside the sample's tile at the level it reads. The level comes
+// from the cell coordinate (the atlas coordinate jumps between tiles at a cell edge), it stops where a
+// tile is one texel, and the sample stays half a texel of the coarser level read inside the tile: a far
+// view mixes no neighbouring tile in.
+vec4 baseColorSample(vec2 uv) {
+  if (atlasGrid.x <= 0.0) return texture(baseColorMap, uv);
+  vec2 size = vec2(textureSize(baseColorMap, 0));
+  vec2 tileTexels = size / atlasGrid;
+  vec2 dx = dFdx(secondaryTextureCoordinate) * tileTexels;
+  vec2 dy = dFdy(secondaryTextureCoordinate) * tileTexels;
+  float lod = clamp(
+    0.5 * log2(max(max(dot(dx, dx), dot(dy, dy)), 1e-8)),
+    0.0,
+    log2(max(min(tileTexels.x, tileTexels.y), 1.0))
+  );
+  vec2 tile = floor(uv * atlasGrid);
+  vec2 inset = 0.5 * exp2(ceil(lod)) / size;
+  vec2 inside = clamp(uv, tile / atlasGrid + inset, (tile + 1.0) / atlasGrid - inset);
+  return textureLod(baseColorMap, inside, lod);
+}
 float layerValue(vec4 first, vec4 second, int layer) {
   return layer < 4 ? first[layer] : second[layer - 4];
 }
@@ -74250,7 +74583,7 @@ void main() {
   float terrainSpecular = 0.0;
   // A decal's colour alpha is its AO; its coverage is the texture's own alpha.
   if (terrainSurface) surface.a = 1.0;
-  if (textured > 0.5) surface *= texture(baseColorMap, textureCoordinate);
+  if (textured > 0.5) surface *= baseColorSample(textureCoordinate);
   if (teamColorMode > 0.5) {
     vec3 teamMask = vec3(1.0);
     if (teamColorMode > 1.5) {
@@ -75472,6 +75805,7 @@ function drawTexturedBatch(resources, program, source2, range) {
   const gl = resources.gl;
   bindTexture2d(resources, source2.texture, 4);
   worldUniform1i(gl, program, "baseColorMap", 4);
+  gl.uniform2f(uniformLocation(gl, program, "atlasGrid"), source2.atlas?.columns ?? 0, source2.atlas?.rows ?? 0);
   if (source2.normalTexture === void 0) {
     worldUniform1f(gl, program, "normalTextured", 0);
   } else {
@@ -79233,6 +79567,7 @@ export {
   openNestedSubjectRef,
   openNestedSubject,
   MAP_PREVIEW_COORDINATOR_LIMITS,
+  withMapPreviewSources,
   coordinateMapPreviewAssetSession,
   createScopedViewerSubjectNavigation,
   withoutHiddenEntries,

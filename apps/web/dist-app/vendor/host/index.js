@@ -10174,6 +10174,11 @@ function createWorkspaceNamespaceCompanionOrigin(options) {
     ...options.maxPages === void 0 ? {} : { maxPages: options.maxPages }
   });
 }
+var WORKSPACE_SCOPES = Object.freeze([
+  "workspace-dependency-layer",
+  "current-mount",
+  "enclosing-container"
+]);
 function createCompositeWorkspaceNamespaceCompanionOrigin(options) {
   const pageLimit2 = options.pageLimit ?? 256;
   const maxPages = options.maxPages ?? 4096;
@@ -10323,13 +10328,51 @@ function createCompositeWorkspaceNamespaceCompanionOrigin(options) {
     }
     return void 0;
   };
+  async function* containerEntries(prefix, signal) {
+    const qualified = isQualifiedRequest(prefix);
+    const entriesSeen = /* @__PURE__ */ new Map();
+    const yielded = /* @__PURE__ */ new Set();
+    for (const root of roots) {
+      const relative = relativeRequest(root, prefix);
+      if (relative === void 0)
+        continue;
+      let seen = entriesSeen.get(root.namespace);
+      if (seen === void 0)
+        entriesSeen.set(root.namespace, seen = /* @__PURE__ */ new Set());
+      for await (const entry2 of pages(root, joinPrefix(root.pathPrefix, relative), signal)) {
+        throwIfAborted(signal);
+        const remembered = remember2(root, entry2);
+        if (remembered === void 0)
+          continue;
+        const logicalId = qualified ? remembered : relativeEntryPath(root, entry2);
+        if (logicalId === void 0 || seen.has(entry2.id) || yielded.has(fold3(logicalId)))
+          continue;
+        seen.add(entry2.id);
+        yielded.add(fold3(logicalId));
+        const bound = byLogicalId.get(fold3(remembered));
+        if (bound !== void 0)
+          byLogicalId.set(fold3(logicalId), bound);
+        yield Object.freeze({
+          logicalId,
+          rootId: root.rootId,
+          ...entry2.size === void 0 ? {} : { size: entry2.size }
+        });
+      }
+    }
+  }
   return Object.freeze({
     primaryLogicalId: options.primaryLogicalId,
     caseSensitivity,
-    scopes: Object.freeze(["workspace-dependency-layer"]),
+    // a resource opened out of the workspace (a map's terrain raster) finds its own companions in
+    // the mount it lives in: the workspace's containers are that mount
+    scopes: WORKSPACE_SCOPES,
     async *enumerate(scope, enumeration, signal) {
-      if (scope !== "workspace-dependency-layer")
+      if (!WORKSPACE_SCOPES.includes(scope))
         return;
+      if (scope !== "workspace-dependency-layer") {
+        yield* containerEntries(enumeration.prefix, signal);
+        return;
+      }
       const yielded = /* @__PURE__ */ new Set();
       const qualified = isQualifiedRequest(enumeration.prefix);
       for (const root of roots) {
@@ -20620,15 +20663,16 @@ function admittedTerrainTransform(snapshot2, terrain, exact) {
     const position = terrainMapNativePosition(sample, transform);
     if (!Object.values(position).every(finite))
       return void 0;
+    const ground = sample.noGround !== true;
     minimum = {
       x: Math.min(minimum.x, position.x),
       y: Math.min(minimum.y, position.y),
-      z: Math.min(minimum.z, position.z)
+      z: ground ? Math.min(minimum.z, position.z) : minimum.z
     };
     maximum = {
       x: Math.max(maximum.x, position.x),
       y: Math.max(maximum.y, position.y),
-      z: Math.max(maximum.z, position.z)
+      z: ground ? Math.max(maximum.z, position.z) : maximum.z
     };
   }
   return ["x", "y", "z"].every((axis) => transform.bounds.minimum[axis] === minimum[axis] && transform.bounds.maximum[axis] === maximum[axis]) ? transform : void 0;
@@ -20783,7 +20827,7 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize, mode
   const duplicateObjectCount = semantic.objects.length - semanticObjects.length;
   const duplicateRegionCount = semantic.regions.length - semanticRegions.length;
   const incompleteObjectPositionCount = semanticObjects.filter((item) => item.sourcePositionDimensions === 2).length;
-  const terrain = Object.freeze((semantic.terrain?.samples ?? []).map((item) => {
+  const allTerrain = Object.freeze((semantic.terrain?.samples ?? []).map((item) => {
     const mapNativePosition = terrainTransform === void 0 ? void 0 : terrainMapNativePosition(item, terrainTransform);
     const baseOffset = terrainTransform !== void 0 && "vertData" in terrainTransform ? (item.heightBase * terrainTransform.vertData.quantizeScale - terrainTransform.vertData.quantizeBias - terrainTransform.vertData.standardHeight) * terrainTransform.heightMap.scale.z : void 0;
     const presentationAdjustment = terrainTransform !== void 0 && !("vertData" in terrainTransform) && item.presentationHeightAdjustment !== void 0 && Number.isFinite(item.presentationHeightAdjustment) && item.presentationHeightAdjustment !== 0 ? item.presentationHeightAdjustment * terrainTransform.heightMap.scale.z : void 0;
@@ -20801,7 +20845,10 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize, mode
       ...baseOffset === void 0 ? {} : { baseOffset }
     });
   }));
-  const terrainByGrid = new Map(terrain.flatMap((item) => item.facet === "terrain" ? [[`${String(item.x)}:${String(item.y)}`, item]] : []));
+  const terrain = Object.freeze(allTerrain.filter((item) => item.noGround !== true));
+  const noGroundSamples = allTerrain.length - terrain.length;
+  const terrainNoDataValue = noGroundSamples === 0 || uvwTransform === void 0 ? void 0 : Math.min(-9999, Math.floor(terrain.reduce((lowest, item) => item.facet === "terrain" && item.uvwPosition !== void 0 ? Math.min(lowest, item.uvwPosition.y) : lowest, 0)) - 1);
+  const terrainByGrid = new Map(allTerrain.map((item) => [`${String(item.x)}:${String(item.y)}`, item]));
   const terrainMaterials = Object.freeze((snapshot2.terrainMaterials?.samples ?? []).map((item) => {
     const terrainItem = terrainByGrid.get(`${String(item.x)}:${String(item.y)}`);
     const materialId = snapshot2.terrainMaterials?.materials?.find((material) => material.sourceIndex === item.textureIndex)?.materialId ?? `material-${String(item.textureIndex)}`;
@@ -21064,7 +21111,7 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize, mode
       facet: "terrain",
       layerId: terrainLayerId,
       state: terrainSummary === void 0 ? "unavailable" : terrainExact ? "available" : "partial",
-      itemCount: semantic.terrain?.cellCount ?? 0,
+      itemCount: (semantic.terrain?.cellCount ?? 0) - noGroundSamples,
       lods: Object.freeze(terrainSummary === void 0 ? [] : terrainExact ? ["exact"] : ["summary", "sampled"]),
       contentRevision: contentRevisions.terrain,
       ...terrainSummary === void 0 ? { reason: "authoritative semantic snapshot contains no terrain height grid" } : terrainExact ? {} : {
@@ -21196,7 +21243,8 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize, mode
           uvwTransform.heightfield.origin[1],
           uvwTransform.heightfield.origin[2] + uvwTransform.heightfield.cellSize
         ]) : uvwTransform.heightfield.origin,
-        coordinateSpaceId: "uvw-canonical"
+        coordinateSpaceId: "uvw-canonical",
+        ...item.facet === "terrain" && terrainNoDataValue !== void 0 ? { noDataValue: terrainNoDataValue } : {}
       })
     } : {},
     ...item.facet === "terrain-materials" && commonTerrainMaterials.length > 0 ? {
@@ -21591,6 +21639,8 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize, mode
           kind: "logical",
           requirement,
           maxBytes: request.maxBytes,
+          // a texture bigger than the budget comes at the largest level that fits, not refused
+          selection: { mipLevel: "fit" },
           ...request.compressedFormats === void 0 ? {} : { compressedFormats: request.compressedFormats }
         }, signal);
         if (raster.state !== "decoded" && raster.state !== "compressed") {
@@ -22283,6 +22333,10 @@ async function analyzeResolvedMapWorkspace(request) {
       reservedBytes: 0,
       resources: request.resources
     };
+    const resourceInput = (path) => {
+      const resolver = path === void 0 || path === "" ? request.inputResolver : request.inputResolver?.forResource?.(path) ?? request.inputResolver;
+      return resolver === void 0 ? {} : { resolveInput: resolver };
+    };
     const modelReleases = [];
     const modelResources = createSubjectModelResources({
       state: modelState,
@@ -22303,7 +22357,7 @@ async function analyzeResolvedMapWorkspace(request) {
         ...request.services.serviceDefinitions === void 0 ? {} : { serviceDefinitions: request.services.serviceDefinitions },
         ...request.services.contributionSettings === void 0 ? {} : { contributionSettings: request.services.contributionSettings },
         resourceSession: request.resources,
-        ...request.inputResolver === void 0 ? {} : { resolveInput: request.inputResolver },
+        ...resourceInput(path),
         ...signal === void 0 ? {} : { signal }
       })
     });
@@ -22332,7 +22386,7 @@ async function analyzeResolvedMapWorkspace(request) {
         ...request.services.serviceDefinitions === void 0 ? {} : { serviceDefinitions: request.services.serviceDefinitions },
         ...request.services.contributionSettings === void 0 ? {} : { contributionSettings: request.services.contributionSettings },
         resourceSession: request.resources,
-        ...request.inputResolver === void 0 ? {} : { resolveInput: request.inputResolver },
+        ...resourceInput(hint.path),
         ...signal === void 0 ? {} : { signal }
       })
     });

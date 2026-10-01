@@ -1813,6 +1813,33 @@
     text-overflow: ellipsis;
   }
 
+  /* A row's statuses, as MK2's key badges: errors red, things to look at yellow. */
+  [data-mk-part='table.badge'] {
+    display: inline-block;
+    margin-inline-end: var(--mk-space-1);
+    padding-inline: var(--mk-space-1);
+    border-radius: var(--mk-radius-sm);
+    color: var(--mk-color-fg-muted);
+    background: var(--mk-color-raised);
+    font-size: var(--mk-font-size-xs);
+  }
+
+  [data-mk-part='table.badge'][data-status='error'],
+  [data-mk-part='table.badge'][data-status='missing'],
+  [data-mk-part='table.badge'][data-status='empty'] {
+    color: var(--mk-status-error);
+  }
+
+  [data-mk-part='table.badge'][data-status='untranslated'],
+  [data-mk-part='table.badge'][data-status='duplicate'],
+  [data-mk-part='table.badge'][data-status='changed'] {
+    color: var(--mk-status-warn);
+  }
+
+  [data-mk-part='table.badge'][data-status='review'] {
+    color: var(--mk-color-accent);
+  }
+
   /* A value's trailing white space: kept by the game, invisible unless marked. */
   [data-mk-part='table.trailing'] {
     white-space: pre;

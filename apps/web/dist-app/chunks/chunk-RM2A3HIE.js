@@ -3,7 +3,7 @@ import {
   createMediaShell,
   mediaFacts,
   mountContributedSections
-} from "./chunk-BJ2R5ZZC.js";
+} from "./chunk-6CRNUBVW.js";
 import {
   VIDEO_FALLBACK_MESSAGES,
   ViewerMountScope,
@@ -17,7 +17,7 @@ import {
   uiPreference,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-CNISMXJW.js";
+} from "./chunk-S34VKIDA.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunk-BLWUC7LO.js";
