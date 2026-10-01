@@ -110,6 +110,9 @@ export interface ArchiveTarget {
 /** Listing pages read before the tree says it is incomplete (per directory level, in lazy mode). */
 const PAGE_SIZE = 500
 const MAXIMUM_PAGES = 200
+/** Folders and entries the gallery lists ahead of the tree in a lazily listed archive. */
+const GALLERY_WALK_FOLDERS = 256
+const GALLERY_WALK_ENTRIES = 20_000
 
 interface Folder {
   readonly name: string
@@ -255,9 +258,40 @@ export function createArchiveViewer(options: ArchiveViewerOptions = {}): ViewerM
       const entriesById = new Map<string, NamespaceEntry>()
       const remember = (items: readonly NamespaceEntry[]): void => {
         for (const item of items) {
+          // a folder the gallery listed ahead is listed again when the tree opens it
+          if (entriesById.has(item.id)) continue
           entries.push(item)
           entriesById.set(item.id, item)
         }
+      }
+      /*
+       * Lazy mode lists a folder when the tree opens it, so the gallery saw only the folders a
+       * reader had opened (plan 7.37). It walks the folders not listed yet, breadth first, once and
+       * within bounds, so the pictures of a folder or container are there before anything opens.
+       */
+      const listedFolders = new Set<string>([''])
+      let galleryWalk: Promise<void> | undefined
+      const walkForGallery = async (): Promise<void> => {
+        const queue = entries
+          .filter(entry => entry.kind === 'directory' && !listedFolders.has(entry.path))
+          .map(entry => entry.path)
+        for (
+          let path = queue.shift(), folders = 0;
+          path !== undefined &&
+          folders < GALLERY_WALK_FOLDERS &&
+          entries.length < GALLERY_WALK_ENTRIES &&
+          !scope.signal.aborted;
+          path = queue.shift()
+        ) {
+          if (listedFolders.has(path)) continue
+          listedFolders.add(path)
+          folders += 1
+          const { items } = await pageAll(page => listChildren(path, page))
+          remember(items)
+          for (const item of items)
+            if (item.kind === 'directory' && !listedFolders.has(item.path)) queue.push(item.path)
+        }
+        renderFacts()
       }
 
       // ------------------------------------------------------------ gallery
@@ -274,6 +308,10 @@ export function createArchiveViewer(options: ArchiveViewerOptions = {}): ViewerM
           ? args.gallery
           : {
               async list() {
+                if (hasChildren) {
+                  galleryWalk ??= walkForGallery().catch(() => undefined)
+                  await galleryWalk
+                }
                 return entries
                   .filter(entry => entry.kind === 'file' && galleryOptions.accepts(entry))
                   .map(entry => ({
@@ -653,6 +691,7 @@ export function createArchiveViewer(options: ArchiveViewerOptions = {}): ViewerM
             const list = element(item, 'ul', { part: 'archive.children', role: 'group' })
             childList = list
             updateChevrons()
+            listedFolders.add(child.path)
             void pageAll(page => listChildren(child.path, page))
               .then(({ items: nested }) => {
                 remember(nested)

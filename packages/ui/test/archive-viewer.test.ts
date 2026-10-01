@@ -363,4 +363,42 @@ describe('archive viewer', () => {
     expect(calls).toEqual(['', 'dir'])
     expect(rowNamed(root, 'nested.txt')).toBeDefined()
   })
+
+  it('lists the pictures of unopened folders for the gallery in a lazily listed archive (7.37)', async () => {
+    const calls: string[] = []
+    const tree: Record<string, readonly NamespaceEntry[]> = {
+      '': [entry('tex', 'tex', 'directory'), entry('root', 'root.dds')],
+      tex: [entry('deep', 'tex/deep', 'directory'), entry('a', 'tex/a.dds')],
+      'tex/deep': [entry('b', 'tex/deep/b.dds'), entry('note', 'tex/deep/note.txt')],
+    }
+    const source: NamespaceEntrySource = {
+      async list() {
+        throw new Error('list must not be called when children() exists')
+      },
+      async children(path: string) {
+        calls.push(path)
+        return { items: tree[path] ?? [] }
+      },
+      async openEntry(id) {
+        return { value: { id, uri: `mem://${id}` } as never, async release() {} }
+      },
+    }
+    const { root } = await mountArchive(source, {
+      gallery: { accepts: found => found.name.endsWith('.dds'), thumbnail: async () => undefined },
+    })
+    await flush()
+    await flush()
+    // the gallery walked the folders the tree has not opened, each once
+    expect(calls).toEqual(['', 'tex', 'tex/deep'])
+    const labels = partsIn(root, 'media-shell.gallery-item').map(
+      cell => firstPart(cell, 'media-shell.gallery-label')?.textContent,
+    )
+    expect(labels.sort()).toEqual(['a.dds', 'b.dds', 'root.dds'])
+    // opening a walked folder in the tree lists it, and the gallery keeps one item per picture
+    const folderRow = rowNamed(root, 'tex')
+    if (folderRow === undefined) throw new Error('folder row not found')
+    folderRow.dispatchEvent(CLICK)
+    await flush()
+    expect(partsIn(root, 'media-shell.gallery-item')).toHaveLength(3)
+  })
 })
