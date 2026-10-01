@@ -333,6 +333,10 @@ describe('variant table surface', () => {
     await page.click('button[aria-label="Missing"]')
     expect(await keys()).toEqual(['Abil/Name/B'])
     await page.click('button[aria-label="Missing"]')
+    // a locale without a value, as MK2's «empty» filter counted it
+    await page.click('button[aria-label="Empty"]')
+    expect(await keys()).toEqual(['Abil/Name/B'])
+    await page.click('button[aria-label="Empty"]')
     await page.selectOption('select[aria-label="Key group"]', 'Unit/')
     expect(await keys()).toEqual(['Unit/Name/C'])
     await page.selectOption('select[aria-label="Key group"]', '')

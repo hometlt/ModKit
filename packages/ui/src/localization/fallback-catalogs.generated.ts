@@ -740,6 +740,7 @@ export const TABLE_VARIANTS_FALLBACK_MESSAGES = {
   'table.draftFirst': 'Save or revert the unsaved changes first.',
   'table.filterChanged': 'Changed',
   'table.filterDuplicate': 'Duplicates',
+  'table.filterEmpty': 'Empty',
   'table.filterMissing': 'Missing',
   'table.filterUntranslated': 'Untranslated',
   'table.filters': 'Table filters',

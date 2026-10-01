@@ -53,6 +53,7 @@ const FILTER_LABELS = {
   missing: 'table.filterMissing',
   untranslated: 'table.filterUntranslated',
   duplicate: 'table.filterDuplicate',
+  empty: 'table.filterEmpty',
   changed: 'table.filterChanged',
 } as const
 const COMPARE_LABELS = {
@@ -244,6 +245,8 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
   const selected = new Set<number>()
   const statusOf = (row: Row): readonly string[] => [
     ...(statusColumn < 0 ? [] : (row.cells[statusColumn] ?? '').split(' ').filter(Boolean)),
+    // a locale without a value, missing or blank (MK2's «empty» filter)
+    ...(variants.some(column => (row.cells[column.index] ?? '') === '') ? ['empty'] : []),
     ...(changed.has(row.index) || draftedRows.has(row.index) ? ['changed'] : []),
   ]
   const state: FilterState = remembered.get(args.descriptor.subjectUri) ?? {
@@ -275,7 +278,7 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
   const panel = element(args.root, 'section', { part: 'table.panel' })
   panel.hidden = true
   args.before.before(bar, status, panel)
-  const statuses = ['missing', 'untranslated', 'duplicate', 'changed'] as const
+  const statuses = ['missing', 'untranslated', 'duplicate', 'empty', 'changed'] as const
   const matchToggles = (
     target: { caseSensitive: boolean; wholeWord: boolean; regex: boolean },
     prefix: string,
