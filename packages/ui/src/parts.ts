@@ -470,6 +470,10 @@ export const PARTS = Object.freeze([
   'card.field-name',
   'card.field-value',
   'card.field-note',
+  /** An inline icon in a styled value (`text-runs`): its slot, its pixels, an unresolved run. */
+  'card.asset',
+  'card.asset-image',
+  'card.unresolved',
   'card.nav',
   'card.breadcrumbs',
   'card.knowledge',

@@ -208,6 +208,22 @@
     white-space: normal;
   }
 
+  [data-mk-part='card.asset'],
+  [data-mk-part='card.unresolved'] {
+    color: var(--mk-color-fg-muted);
+    text-decoration: underline dotted;
+  }
+
+  [data-mk-part='card.asset-image'] {
+    block-size: 1.2em;
+    vertical-align: text-bottom;
+  }
+
+  /* the icon's name stands in until its pixels arrive */
+  [data-mk-part='card.asset-image']:not([hidden]) + span {
+    display: none;
+  }
+
   /*
    * A narrow card (a sidebar section of the world or the model): a field's name over its value and
    * its sources under them. Three columns left the value a few pixels, one character to a line.

@@ -32,6 +32,8 @@ import type {
 } from '@modkit/sdk'
 import { createAccordion, accordionField } from '../primitives/accordion.js'
 import { setPart, setState } from '../parts.js'
+import { appendTextRuns, textRunsOf } from '../text-runs.js'
+import type { GameTemplateTextRun } from '@modkit/sdk/templates'
 import { setToken } from '../tokens/index.js'
 import {
   bindingFor,
@@ -161,6 +163,8 @@ export interface CardStat {
 export interface CardField {
   readonly name: string
   readonly value: string
+  /** The value as its producer styled it (`text-runs`): drawn in place of `value`. */
+  readonly runs?: readonly GameTemplateTextRun[]
   /** Optional subject link rendered in the left/name column of the two-column table. */
   readonly ref?: CardRef
   /** Rendered as a chip after the value: the origin subject, a unit, a schema hint. */
@@ -543,9 +547,12 @@ function factField(
         : isRepositorySubjectKind(subjectKind)
           ? REPOSITORY_SUBJECT_FACT_MESSAGE_KEYS
           : NO_FACT_MESSAGE_KEYS
+  // a description the producer styled — colours, emphasis, icons — as it reads in the game (5.9)
+  const runs = fact.type?.kind === 'text-runs' ? textRunsOf(fact.value) : undefined
   return {
     name: systemSubjectLabel(localizer, subjectKind, keys, fact.id, fact.label),
-    value: factValue(fact.value),
+    value: runs === undefined ? factValue(fact.value) : runs.map(run => run.text).join(''),
+    ...(runs === undefined ? {} : { runs }),
     ...(fact.provenance.length === 0 ? {} : { sources: fact.provenance.map(provenanceRef) }),
     ...(fact.note === undefined ? {} : { note: fact.note }),
     ...(fact.knowledgeTarget === undefined ? {} : { knowledgeTarget: fact.knowledgeTarget }),
@@ -1256,6 +1263,10 @@ function renderFields(
   onNavigate?: (ref: CardRef) => void,
   onOpenSource?: (location: CardLocation) => void,
   onEditField?: (field: CardField, host: HTMLElement) => void,
+  pictures?: {
+    readonly resolve: NonNullable<SubjectCardOptions['resolveImage']>
+    readonly signal: AbortSignal
+  },
 ): void {
   const list = document.createElement('div')
   list.className = 'modkit-card__fields'
@@ -1274,7 +1285,18 @@ function renderFields(
     if (field.ref === undefined) name.textContent = safeViewerText(field.name, 128)
     setPart(name, 'card.field-name')
     const value = document.createElement('span')
-    value.textContent = safeViewerText(field.value, 2048)
+    if (field.runs === undefined) value.textContent = safeViewerText(field.value, 2048)
+    else {
+      appendTextRuns(value, field.runs, { asset: 'card.asset', unresolved: 'card.unresolved' })
+      // an inline icon the host turns into pixels; its name shows until they arrive
+      for (const slot of value.querySelectorAll<HTMLElement>('[data-asset]')) {
+        if (pictures === undefined) break
+        const canvas = document.createElement('canvas')
+        setPart(canvas, 'card.asset-image')
+        slot.prepend(canvas)
+        drawCardImage(canvas, slot.dataset['asset'] ?? '', pictures.resolve, pictures.signal)
+      }
+    }
     setPart(value, 'card.field-value')
     if (field.note !== undefined) {
       const note = document.createElement('small')
@@ -1447,6 +1469,9 @@ export function createSubjectCard(document: Document, options: SubjectCardOption
               options.onNavigate,
               options.onOpenSource,
               options.onEditField,
+              options.resolveImage === undefined
+                ? undefined
+                : { resolve: options.resolveImage, signal: images.signal },
             )
             return
           case 'links': {

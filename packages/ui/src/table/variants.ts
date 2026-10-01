@@ -24,6 +24,7 @@ import type {
 import { isGameTemplateTextRun, type GameTemplateTextRun } from '@modkit/sdk/templates'
 import type { GameTemplateImageResolver } from '../template/index.js'
 import { createToolbar } from '../toolbar/index.js'
+import { appendTextRuns } from '../text-runs.js'
 import { compileMatcher, compilePattern, textMatches, type TextMatcher } from '../filter/index.js'
 import { setState } from '../parts.js'
 import { element, invokeOperation, setPart, setViewerText } from '../viewer/index.js'
@@ -47,7 +48,6 @@ export const TRANSLATE_BATCH = 50
 /** Values one render request carries: a page of a dozen locales is a few requests, not one per cell. */
 export const RENDER_BATCH = 400
 /** A run's colour is drawn only in this form; anything else stays the default colour. */
-const RUN_COLOR = /^#[0-9a-f]{6}$/iu
 
 const FILTER_LABELS = {
   missing: 'table.filterMissing',
@@ -136,44 +136,11 @@ export interface VariantTable {
   refusal(column: number): string | undefined
 }
 
-/**
- * One value as runs. Text goes in through `textContent` and a colour only as `#rrggbb`; an image is
- * a named slot the host's pixels replace later, and an unresolved run is marked with why.
- */
+/** One value as runs; an image's slot is replaced by the host's pixels later. */
 function drawRuns(cell: HTMLTableCellElement, runs: readonly GameTemplateTextRun[]): void {
-  const document = cell.ownerDocument
   cell.dataset['rendered'] = 'true'
   cell.replaceChildren()
-  for (const run of runs) {
-    if (run.asset !== undefined) {
-      const slot = document.createElement('span')
-      setPart(slot, 'table.asset')
-      slot.dataset['asset'] = run.asset
-      slot.title = run.asset
-      setViewerText(slot, run.asset.split(/[\\/]/u).pop() ?? run.asset)
-      cell.append(slot)
-      continue
-    }
-    run.text.split('\n').forEach((line, index) => {
-      if (index > 0) cell.append(document.createElement('br'))
-      if (line === '') return
-      const span = document.createElement('span')
-      setViewerText(span, line)
-      if (run.color !== undefined && RUN_COLOR.test(run.color)) span.style.color = run.color
-      if (run.bold === true) span.style.fontWeight = 'bold'
-      if (run.italic === true) span.style.fontStyle = 'italic'
-      if (run.underline === true) span.style.textDecoration = 'underline'
-      // A style sheet's glyph height, relative to a 16-unit body and kept readable in a row.
-      if (run.size !== undefined) {
-        span.style.fontSize = `${Math.min(2, Math.max(0.75, run.size / 16))}em`
-      }
-      if (run.unresolved !== undefined) {
-        setPart(span, 'table.unresolved')
-        span.title = run.unresolved
-      }
-      cell.append(span)
-    })
-  }
+  appendTextRuns(cell, runs, { asset: 'table.asset', unresolved: 'table.unresolved' })
 }
 
 /** `pattern` is global, so its position is reset before every use. */
