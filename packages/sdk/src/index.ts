@@ -445,6 +445,8 @@ export {
   type SlidePageRef,
   type SubjectFact,
   type SubjectFactGroup,
+  type SubjectFactSlot,
+  type SubjectFactSlots,
   type SubjectFactProvenance,
   type SubjectFactsIdentity,
   type SubjectFactsSource,

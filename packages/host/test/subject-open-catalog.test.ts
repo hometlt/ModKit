@@ -32,14 +32,21 @@ it('a codec asks the resolved catalog of its subject mod context, opened on the 
     async openModContext(request: ModContextRequest) {
       requests.push(request)
       return {
-        query: async (question: { refs: readonly { namespace: string; entityId: string }[] }) => ({
-          entities: question.refs.map(ref => ({
-            ...ref,
-            // Liberty's value, inherited by the mod that does not set it
-            fields: { LifeMax: '45' },
-            complete: true,
-          })),
-        }),
+        query: async (question: {
+          kind: string
+          refs: readonly { namespace: string; entityId: string }[]
+          keys: readonly string[]
+        }) =>
+          question.kind === 'data.strings'
+            ? { strings: question.keys.map(key => ({ key, value: 'Hold Position' })) }
+            : {
+                entities: question.refs.map(ref => ({
+                  ...ref,
+                  // Liberty's value, inherited by the mod that does not set it
+                  fields: { LifeMax: '45' },
+                  complete: true,
+                })),
+              },
         dispose: async () => {
           disposed += 1
         },
@@ -101,6 +108,10 @@ it('a codec asks the resolved catalog of its subject mod context, opened on the 
     { namespace: 'Unit', entityId: 'Marine', fields: { LifeMax: '45' } },
   ])
   await catalog!.entities([{ namespace: 'Unit', entityId: 'Hero' }])
+  // the button names a card shows come from the same context
+  expect(await catalog!.strings?.(['Button/Name/MoveHoldPosition'])).toMatchObject([
+    { key: 'Button/Name/MoveHoldPosition', value: 'Hold Position' },
+  ])
   expect(requests).toEqual([
     { schemaVersion: 1, target: 'C:/Mods/Probe.SC2Mod/Base.SC2Data/GameData/UnitData.card' },
   ])

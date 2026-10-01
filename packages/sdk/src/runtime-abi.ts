@@ -8,7 +8,7 @@ import type { InstallationProbes } from './installation-probes.js'
 import type { VideoFrameDecoder } from './video-frames.js'
 import type { InstallationFiles } from './installation-files.js'
 import type { CredentialPort } from './credentials.js'
-import type { DataEntityRef, DataResolvedEntity } from './data/index.js'
+import type { DataEntityRef, DataLocalizedString, DataResolvedEntity } from './data/index.js'
 import type {
   AnyDescriptor,
   AssetDiagnostic,
@@ -129,6 +129,16 @@ export interface SubjectCatalogPort {
     refs: readonly DataEntityRef[],
     signal?: AbortSignal,
   ): Promise<readonly DataResolvedEntity[]>
+  /**
+   * Localized strings by key (names, tooltips, hotkeys), each in the first of `locales` that has
+   * it, else along the game's fallback chain (`fallback: true`); a key nothing defines is left
+   * out. Absent where the host places no subject in a mod context that keeps strings.
+   */
+  strings?(
+    keys: readonly string[],
+    locales?: readonly string[],
+    signal?: AbortSignal,
+  ): Promise<readonly DataLocalizedString[]>
 }
 
 export type InputSearchScope = CompanionSearchScope

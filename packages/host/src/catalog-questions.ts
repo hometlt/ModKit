@@ -7,6 +7,7 @@
 import {
   DATA_CATALOG_QUERIES_OUTPUT,
   type DataEntityRef,
+  type DataLocalizedString,
   type DataResolvedEntity,
   type OperationResult,
 } from '@modkit/sdk'
@@ -23,6 +24,13 @@ export type CatalogEntities = (
   refs: readonly DataEntityRef[],
   signal?: AbortSignal,
 ) => Promise<readonly DataResolvedEntity[]>
+
+/** Localized strings by key, in the first of `locales` that has each (see `SubjectCatalogPort`). */
+export type CatalogStrings = (
+  keys: readonly string[],
+  locales?: readonly string[],
+  signal?: AbortSignal,
+) => Promise<readonly DataLocalizedString[]>
 
 const key = (ref: DataEntityRef): string => JSON.stringify([ref.namespace, ref.entityId])
 
@@ -75,6 +83,31 @@ export function modContextCatalogEntities(context: ModContext): CatalogEntities 
   }
 }
 
+/** The context's `data.strings` query, a bounded batch at a time; undefined if it has none. */
+export function modContextCatalogStrings(context: ModContext): CatalogStrings | undefined {
+  const query = context.query?.bind(context)
+  if (query === undefined) return undefined
+  return async (keys, locales, signal) => {
+    const strings: DataLocalizedString[] = []
+    for (let start = 0; start < keys.length; start += MOD_CONTEXT_MAX_QUERY_REFS) {
+      const answer = (await query(
+        {
+          kind: 'data.strings',
+          keys: keys.slice(start, start + MOD_CONTEXT_MAX_QUERY_REFS),
+          ...(locales === undefined ? {} : { locales }),
+        },
+        signal,
+      )) as { readonly strings?: unknown } | undefined
+      if (!Array.isArray(answer?.strings))
+        throw new TypeError('data.strings answered no string list')
+      for (const item of answer.strings as readonly Partial<DataLocalizedString>[])
+        if (typeof item?.key === 'string' && typeof item.value === 'string')
+          strings.push(item as DataLocalizedString)
+    }
+    return strings
+  }
+}
+
 /** Where a host answers an opened subject's catalog questions from. */
 export interface SubjectCatalogOptions {
   /** The product's source catalogue; its game's loader opens the subject's mod context. */
@@ -90,8 +123,12 @@ export interface SubjectCatalogOptions {
 export function subjectCatalogEntities(
   options: SubjectCatalogOptions,
   subjectUri: () => Promise<string | undefined>,
-): { readonly entities: CatalogEntities; release(): Promise<void> } {
-  let opened: Promise<{ readonly context?: ModContext; readonly entities?: CatalogEntities }> | undefined
+): {
+  readonly entities: CatalogEntities
+  readonly strings: CatalogStrings
+  release(): Promise<void>
+} {
+  let opened: Promise<{ readonly context?: ModContext }> | undefined
   const open = () =>
     (opened ??= (async () => {
       const [sources, uri] = await Promise.all([options.contentSources(), subjectUri()])
@@ -103,13 +140,18 @@ export function subjectCatalogEntities(
         target,
         ...(baseMods === undefined ? {} : { baseMods }),
       })
-      const entities = modContextCatalogEntities(context)
-      return entities === undefined ? { context } : { context, entities }
+      return { context }
     })())
   return Object.freeze({
     async entities(refs: readonly DataEntityRef[], signal?: AbortSignal) {
-      const { entities } = await open()
+      const { context } = await open()
+      const entities = context === undefined ? undefined : modContextCatalogEntities(context)
       return entities === undefined ? [] : entities(refs, signal)
+    },
+    async strings(keys: readonly string[], locales?: readonly string[], signal?: AbortSignal) {
+      const { context } = await open()
+      const strings = context === undefined ? undefined : modContextCatalogStrings(context)
+      return strings === undefined ? [] : strings(keys, locales, signal)
     },
     async release() {
       if (opened === undefined) return

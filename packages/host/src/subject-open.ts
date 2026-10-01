@@ -1642,7 +1642,9 @@ async function openSubjectDirectWith(
               : { installationFiles: options.installationFiles }),
             ...(catalog === undefined
               ? {}
-              : { catalog: Object.freeze({ entities: catalog.entities }) }),
+              : {
+                  catalog: Object.freeze({ entities: catalog.entities, strings: catalog.strings }),
+                }),
             ...(credentials === undefined ? {} : { credentials }),
             ...(options.containerContext === undefined
               ? {}

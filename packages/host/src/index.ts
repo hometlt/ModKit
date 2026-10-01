@@ -194,9 +194,11 @@ export {
 export {
   answerCatalogQueries,
   modContextCatalogEntities,
+  modContextCatalogStrings,
   operationCatalogQueries,
   subjectCatalogEntities,
   type CatalogEntities,
+  type CatalogStrings,
   type SubjectCatalogOptions,
 } from './catalog-questions.js'
 export {

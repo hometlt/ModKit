@@ -940,10 +940,39 @@ export interface SubjectFactGroup {
   readonly factCount: number
   /**
    * How the producer means the group to be read: `fields` (label and value, the default), `grid`
-   * (a compact table of short values, stats) or `cards` (each fact a tile: abilities, weapons). A
-   * hint; a surface that cannot draw it draws fields.
+   * (a compact table of short values, stats), `cards` (each fact a tile: abilities, weapons) or
+   * `slots` (each fact a cell of a fixed grid by its `slot`: a command card). A hint; a surface
+   * that cannot draw it draws fields.
    */
-  readonly presentation?: 'fields' | 'grid' | 'cards'
+  readonly presentation?: 'fields' | 'grid' | 'cards' | 'slots'
+  /** The grid a `slots` group fills. */
+  readonly slots?: SubjectFactSlots
+}
+
+export interface SubjectFactSlots {
+  readonly rows: number
+  readonly columns: number
+  /** Pages of the same grid (submenus), the first shown first; absent for one page. */
+  readonly pages?: readonly { readonly id: string; readonly label: string }[]
+}
+
+/**
+ * The cell of a `slots` group a fact occupies, row and column from 0 at the top left. Facts that
+ * share a cell are alternatives (a button that changes with state). The fact's label, note and
+ * value are its tooltip.
+ */
+export interface SubjectFactSlot {
+  readonly row: number
+  readonly column: number
+  /** A page of the group's `slots.pages`; absent on a group with one page. */
+  readonly page?: string
+  readonly hotkey?: string
+  /** A logical image id the host resolves as it does `identity.portrait`. */
+  readonly image?: string
+  /** The page a click shows: a submenu, or the page its Cancel returns to. */
+  readonly opensPage?: string
+  /** The subject a click opens. */
+  readonly subjectId?: string
 }
 
 export interface SubjectFact {
@@ -973,6 +1002,8 @@ export interface SubjectFact {
   readonly editable?: FieldEditable
   /** Host-bound destination preview for this exact semantic field. */
   readonly editTarget?: SubjectEditTargetResult
+  /** Its cell, in a `slots` group. */
+  readonly slot?: SubjectFactSlot
 }
 
 export interface RelatedSubjectFact {

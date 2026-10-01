@@ -251,7 +251,21 @@ export interface ModContextEntitiesAnswer {
   /** Resolved entities in the game's data-catalog shape (`namespace`, `entityId`, `fields`, …). */
   readonly entities: readonly unknown[]
 }
-/** References one entities query may carry. */
+/**
+ * Localized strings by key, a few at a time: each in the first of `locales` (else the context's)
+ * that has it, then along the game's fallback chain. A key the context does not define is left out
+ * of the answer; a game that keeps no strings does not answer the question.
+ */
+export interface ModContextStringsQuery {
+  readonly kind: 'data.strings'
+  readonly keys: readonly string[]
+  readonly locales?: readonly string[]
+}
+export interface ModContextStringsAnswer {
+  /** In the data-catalog shape (`key`, `requestedLocale`, `resolvedLocale`, `value`, `source`, `fallback`). */
+  readonly strings: readonly unknown[]
+}
+/** References (or string keys) one query may carry. */
 export const MOD_CONTEXT_MAX_QUERY_REFS = 1024
 
 /** Source identifiers remain opaque; only an explicit trusted provider may reveal a local target. */
