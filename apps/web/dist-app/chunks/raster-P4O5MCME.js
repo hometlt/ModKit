@@ -18,13 +18,15 @@ import {
   greyDepthFor,
   greyGridFromPng,
   greyGridToPng,
+  linearToSrgb,
   parsePcx,
   parseTga,
   plausibleTgaHeader,
   readJpegFrameInfo,
   resizeRgba,
+  srgbToLinear,
   surfaceRegionReader
-} from "./chunk-S46IJQIE.js";
+} from "./chunk-ZA2BG7C6.js";
 import "./chunk-Q27WXNQ4.js";
 import "./chunk-QQJVD7VT.js";
 import "./chunk-BLWUC7LO.js";
@@ -48,10 +50,12 @@ export {
   greyDepthFor,
   greyGridFromPng,
   greyGridToPng,
+  linearToSrgb,
   parsePcx,
   parseTga,
   plausibleTgaHeader,
   readJpegFrameInfo,
   resizeRgba,
+  srgbToLinear,
   surfaceRegionReader
 };

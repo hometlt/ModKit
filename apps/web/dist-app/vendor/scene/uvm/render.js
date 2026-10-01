@@ -66,7 +66,7 @@ import {
 } from "../../../chunks/chunk-P3KDCCMI.js";
 import {
   applyColorKeyTransparency
-} from "../../../chunks/chunk-COUIZZOL.js";
+} from "../../../chunks/chunk-GO3VAZA2.js";
 import "../../../chunks/chunk-WYUQ3HXR.js";
 import {
   createModelPoseBlendSampler,

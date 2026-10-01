@@ -50,16 +50,18 @@ import {
   subjectFactsSourceFromWire,
   webExtensionSubjectCardBundle,
   withoutHiddenEntries
-} from "./chunks/chunk-BWQFOGNM.js";
-import "./chunks/chunk-YGYRW32C.js";
-import "./chunks/chunk-GSFZBIQN.js";
-import "./chunks/chunk-QWJVCEY6.js";
+} from "./chunks/chunk-NGS5HKMS.js";
+import "./chunks/chunk-AKPN3O2W.js";
+import "./chunks/chunk-CHJXHITU.js";
+import "./chunks/chunk-URAS4C7Z.js";
+import "./chunks/chunk-UCN4DEWI.js";
 import {
   resolveModelViewerTextures
-} from "./chunks/chunk-UOFWHONS.js";
+} from "./chunks/chunk-AOBHKK4R.js";
 import "./chunks/chunk-O2DY4UGD.js";
-import "./chunks/chunk-T52KF3Q6.js";
-import "./chunks/chunk-S46IJQIE.js";
+import "./chunks/chunk-JRG6LWG6.js";
+import "./chunks/chunk-XWTSK4JH.js";
+import "./chunks/chunk-ZA2BG7C6.js";
 import "./chunks/chunk-Q27WXNQ4.js";
 import "./chunks/chunk-QQJVD7VT.js";
 import {
@@ -70,8 +72,8 @@ import {
   isRejected,
   mountFieldEditor,
   subjectCandidateProviderLease
-} from "./chunks/chunk-TJCMN5YR.js";
-import "./chunks/chunk-OSXJCULW.js";
+} from "./chunks/chunk-T5VB5FND.js";
+import "./chunks/chunk-BZC27BIS.js";
 import {
   DEFAULT_UI_LOCALIZER,
   PANELS_FALLBACK_MESSAGES,
@@ -89,17 +91,19 @@ import {
   setState,
   setViewerText,
   withEnglishUiFallback
-} from "./chunks/chunk-6S27EKIS.js";
+} from "./chunks/chunk-DYNIDBAC.js";
+import {
+  normalizeModkitIdentifier,
+  presentationSlotId,
+  revisionId
+} from "./chunks/chunk-M6BGIGEK.js";
 import {
   CONTAINER_EXTRACT_OPERATION_ID,
   compareUtf8,
   diagnostic,
   isModkitError,
-  isQualifiedId,
-  normalizeModkitIdentifier,
-  presentationSlotId,
-  revisionId
-} from "./chunks/chunk-CIWTP27X.js";
+  isQualifiedId
+} from "./chunks/chunk-3LWCT2HN.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunks/chunk-BLWUC7LO.js";
@@ -2766,6 +2770,7 @@ async function boot() {
       const raster = rasterResources.get(descriptorKey(descriptor));
       return raster === void 0 ? Promise.resolve(/* @__PURE__ */ new Map()) : resolveModelViewerTextures(raster, references, signal);
     },
+    rasterResources: (descriptor) => rasterResources.get(descriptorKey(descriptor)),
     /*
      * The web half of `block9/archive-entry-as-subject` (block 13 slice B).
      *

@@ -1,9 +1,11 @@
 import {
-  compareUtf8,
   parseSubjectRef,
   rootSubject,
   serializeSubjectRef
-} from "./chunk-CIWTP27X.js";
+} from "./chunk-M6BGIGEK.js";
+import {
+  compareUtf8
+} from "./chunk-3LWCT2HN.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunk-BLWUC7LO.js";

@@ -2,7 +2,7 @@ import {
   collectEncodedMedia,
   createMediaShell,
   mountContributedSections
-} from "./chunk-OSXJCULW.js";
+} from "./chunk-BZC27BIS.js";
 import {
   IMAGE_EDITING_FALLBACK_MESSAGES,
   IMAGE_FALLBACK_MESSAGES,
@@ -19,12 +19,12 @@ import {
   uiPreference,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-6S27EKIS.js";
+} from "./chunk-DYNIDBAC.js";
 import {
   createSubjectCandidateProvider,
   isKnowledgeTarget,
   loadSubjectCandidatePage
-} from "./chunk-CIWTP27X.js";
+} from "./chunk-M6BGIGEK.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunk-BLWUC7LO.js";
@@ -2443,7 +2443,7 @@ function createImageViewer(options = {}) {
         paint();
         void (async () => {
           try {
-            const { encodePng } = await import("./raster-5QR4VMAI.js");
+            const { encodePng } = await import("./raster-P4O5MCME.js");
             const scratch = root.ownerDocument.createElement("canvas");
             const scratchContext = scratch.getContext("2d", { willReadFrequently: true });
             if (scratchContext === null)

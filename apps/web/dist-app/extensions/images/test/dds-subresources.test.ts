@@ -271,8 +271,11 @@ describe('DDS subresource selection', () => {
   it('refuses each out-of-range axis by the name of that axis', async () => {
     const bytes = buildDds({ width: 4, height: 4 }, [dxt1Surface(4, 4, 'red')])
     const raster = await rasterOf(bytes)
-    await expect(pixelAt(raster, { width: 4, height: 4, mipLevel: 1 })).rejects.toThrow(
-      /mip level 1 is outside 0\.\.0/u,
+    // levels below the stored one are computed (codec-kit, core 15b2d098): only past the full chain
+    // of a 4 × 4 texture (4, 2, 1) is a mip level out of range
+    expect(await pixelAt(raster, { width: 2, height: 2, mipLevel: 1 })).toEqual(COLORS.red.rgba)
+    await expect(pixelAt(raster, { width: 1, height: 1, mipLevel: 3 })).rejects.toThrow(
+      /mip level is out of range/u,
     )
     await expect(pixelAt(raster, { width: 4, height: 4, layer: 1 })).rejects.toThrow(
       /array layer 1 is outside 0\.\.0/u,
