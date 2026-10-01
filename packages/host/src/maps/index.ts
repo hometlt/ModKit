@@ -1643,11 +1643,22 @@ export function withMapPreviewSources(codec: AssetSession, preview: AssetSession
     const [own, previewed] = await Promise.all([codec.descriptor(), preview.descriptor()])
     const owned = new Set(own.dataSources.map(key))
     const added = previewed.dataSources.filter(offer => !owned.has(key(offer)))
+    // the preview's traits the codec lacks (a world viewer asks for model.geometry), with the
+    // diagnostics they cite
+    const ownTraits = new Set(own.traits.map(trait => trait.id))
+    const traits = previewed.traits.filter(trait => !ownTraits.has(trait.id))
+    const cited = new Set(traits.flatMap(trait => trait.diagnosticIds ?? []))
+    const ownDiagnostics = new Set(own.diagnostics.map(item => item.id))
+    const diagnostics = previewed.diagnostics.filter(
+      item => cited.has(item.id) && !ownDiagnostics.has(item.id),
+    )
     return {
       added,
       merged: Object.freeze({
         ...own,
+        traits: Object.freeze([...own.traits, ...traits]),
         dataSources: Object.freeze([...own.dataSources, ...added]),
+        diagnostics: Object.freeze([...own.diagnostics, ...diagnostics]),
       }),
     }
   }
