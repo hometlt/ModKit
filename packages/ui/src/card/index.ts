@@ -20,6 +20,7 @@ import type {
   Page,
   PresentationSlot,
   SubjectFact,
+  SubjectFactProvenance,
   SubjectFactsSource,
   SubjectEditTargetResult,
   ViewerModule,
@@ -51,6 +52,15 @@ export interface CardRef {
   readonly title?: string
   /** A stable unresolved target. It remains visible but cannot be opened. */
   readonly dead?: boolean
+  /** A place in a file (a fact's declaration, a subject's origin), opened by the host's editor. */
+  readonly location?: CardLocation
+}
+
+/** A file and, when the publisher knows it, the zero-based line and column to show. */
+export interface CardLocation {
+  readonly uri: string
+  readonly line?: number
+  readonly column?: number
 }
 
 /** Host-neutral back/forward state for serialized subject references. */
@@ -145,6 +155,8 @@ export interface CardField {
   readonly ref?: CardRef
   /** Rendered as a chip after the value: the origin subject, a unit, a schema hint. */
   readonly badge?: string
+  /** Where the value was declared, in the publisher's order (a mod chain: load order). */
+  readonly sources?: readonly CardRef[]
   readonly title?: string
   /** One sentence under the value about what it is, when the value alone misleads. */
   readonly note?: string
@@ -241,6 +253,8 @@ export interface SubjectCardOptions {
   readonly knowledge?: KnowledgeCatalog
   readonly knowledgeLocales?: readonly string[]
   onNavigate?(ref: CardRef): void
+  /** Opens a `CardRef.location` in the host's editor; without it a location falls back to `href`. */
+  onOpenSource?(location: CardLocation): void
   /**
    * False drops the subject's name and kind chips, which the host's own chrome already shows. The
    * rest of the header — portrait, stats, description, locale, sources and notes — is the card's
@@ -459,8 +473,21 @@ function systemSubjectLabel(
   return key === undefined ? fallback : localizer.text(key)
 }
 
+/** A provenance entry as a link: to its file, at its declaration when the publisher knows it. */
+function provenanceRef(item: SubjectFactProvenance): CardRef {
+  if (item.source === undefined) return { label: item.label }
+  const text = item.range as { readonly line?: number; readonly column?: number } | undefined
+  return {
+    label: item.label,
+    href: item.source.uri,
+    location: {
+      uri: item.source.uri,
+      ...(typeof text?.line === 'number' ? { line: text.line, column: text.column ?? 0 } : {}),
+    },
+  }
+}
+
 function factField(fact: SubjectFact, subjectKind: string, localizer: UiLocalizer): CardField {
-  const provenance = fact.provenance.map(item => item.label)
   const keys: Readonly<Record<string, UiMessageKey>> =
     subjectKind === EXTENSION_SUBJECT_KIND
       ? EXTENSION_FACT_MESSAGE_KEYS
@@ -472,8 +499,7 @@ function factField(fact: SubjectFact, subjectKind: string, localizer: UiLocalize
   return {
     name: systemSubjectLabel(localizer, subjectKind, keys, fact.id, fact.label),
     value: factValue(fact.value),
-    ...(provenance.length === 0 ? {} : { badge: provenance[0] }),
-    ...(provenance.length <= 1 ? {} : { title: provenance.join(' · ') }),
+    ...(fact.provenance.length === 0 ? {} : { sources: fact.provenance.map(provenanceRef) }),
     ...(fact.note === undefined ? {} : { note: fact.note }),
     ...(fact.knowledgeTarget === undefined ? {} : { knowledgeTarget: fact.knowledgeTarget }),
     ...(fact.editTarget === undefined ? {} : { editTarget: fact.editTarget }),
@@ -620,10 +646,7 @@ export async function loadSubjectCardSections(
               ...(options.onLocaleChange === undefined ? {} : { onChange: options.onLocaleChange }),
             },
           }),
-      refs: summary.identity.origins.map(origin => ({
-        label: origin.label,
-        ...(origin.source === undefined ? {} : { href: origin.source.uri }),
-      })),
+      refs: summary.identity.origins.map(provenanceRef),
       chips: [
         { label: summary.identity.kind },
         ...(summary.identity.type === undefined ? [] : [{ label: summary.identity.type }]),
@@ -744,8 +767,29 @@ export async function loadSubjectCardSections(
   return applyCardLayout(sections, summary.card?.sections)
 }
 
-function ref(document: Document, item: CardRef, onNavigate?: (ref: CardRef) => void): HTMLElement {
-  const navigable = onNavigate !== undefined && item.href !== undefined && item.dead !== true
+/**
+ * What a click on a ref does: a location opens in the host's editor, anything else goes through the
+ * card's navigation; a dead ref, or one the host can follow neither way, is only text.
+ */
+export function cardRefAction(
+  item: CardRef,
+  onNavigate?: (ref: CardRef) => void,
+  onOpenSource?: (location: CardLocation) => void,
+): (() => void) | undefined {
+  const location = item.location
+  if (item.dead === true) return undefined
+  if (location !== undefined && onOpenSource !== undefined) return () => onOpenSource(location)
+  return onNavigate !== undefined && item.href !== undefined ? () => onNavigate(item) : undefined
+}
+
+function ref(
+  document: Document,
+  item: CardRef,
+  onNavigate?: (ref: CardRef) => void,
+  onOpenSource?: (location: CardLocation) => void,
+): HTMLElement {
+  const open = cardRefAction(item, onNavigate, onOpenSource)
+  const navigable = open !== undefined
   const node = document.createElement(navigable ? 'button' : 'span')
   node.className = 'modkit-card__ref'
   setPart(node, 'card.ref')
@@ -755,9 +799,9 @@ function ref(document: Document, item: CardRef, onNavigate?: (ref: CardRef) => v
     node.setAttribute('aria-disabled', 'true')
     setState(node, ['disabled'])
   }
-  if (navigable) {
+  if (open !== undefined) {
     ;(node as HTMLButtonElement).type = 'button'
-    node.addEventListener('click', () => onNavigate(item))
+    node.addEventListener('click', open)
   }
   return node
 }
@@ -772,6 +816,7 @@ function renderHeader(
   resolveImage?: SubjectCardOptions['resolveImage'],
   /** False: the host names the subject, so the title and kind chips are left out. */
   named = true,
+  onOpenSource?: (location: CardLocation) => void,
 ): void {
   const header = document.createElement('div')
   header.className = 'modkit-card__header'
@@ -823,7 +868,7 @@ function renderHeader(
     const subtitle = document.createElement('div')
     subtitle.className = 'modkit-card__subtitle'
     setPart(subtitle, 'card.subtitle')
-    for (const item of section.refs) subtitle.append(ref(document, item, onNavigate))
+    for (const item of section.refs) subtitle.append(ref(document, item, onNavigate, onOpenSource))
     identity.append(subtitle)
   }
 
@@ -914,6 +959,7 @@ function renderFields(
   fields: readonly CardField[],
   inspectKnowledge?: (target: KnowledgeTarget | undefined) => void,
   onNavigate?: (ref: CardRef) => void,
+  onOpenSource?: (location: CardLocation) => void,
 ): void {
   const list = document.createElement('div')
   list.className = 'modkit-card__fields'
@@ -948,6 +994,13 @@ function renderFields(
       badge.textContent = safeViewerText(field.badge, 48)
       setPart(badge, 'card.chip')
       row.append(badge)
+    }
+    if (field.sources !== undefined && field.sources.length > 0) {
+      const sources = document.createElement('span')
+      setPart(sources, 'card.sources')
+      for (const item of field.sources)
+        sources.append(ref(document, item, onNavigate, onOpenSource))
+      row.append(sources)
     }
     mountFieldEditTarget(row, field.editTarget)
     if (inspectKnowledge !== undefined) {
@@ -984,6 +1037,7 @@ export function createSubjectCard(document: Document, options: SubjectCardOption
       options.onNavigate,
       options.resolveImage,
       options.header !== false,
+      options.onOpenSource,
     )
 
   const knowledge = document.createElement('aside')
@@ -1085,6 +1139,7 @@ export function createSubjectCard(document: Document, options: SubjectCardOption
               section.fields,
               options.knowledge === undefined ? undefined : inspectKnowledge,
               options.onNavigate,
+              options.onOpenSource,
             )
             return
           case 'links': {
@@ -1237,8 +1292,12 @@ export interface SubjectCardViewerOptions {
   readonly textures?: ModelViewerOptions['textures']
   /** False drops the card's identity header (a host whose chrome already names the subject). */
   readonly header?: boolean
+  /** The locale the card opens on (the host's game-strings setting); the header still switches it. */
+  readonly locale?: string
   /** The host's relations stage (its default depth) for the card's relations graph section. */
   readonly graph?: ViewerModule
+  /** The host's editor for a fact's declaration; without it a source stays a label. */
+  readonly openSource?: (location: CardLocation) => void
 }
 
 export function createSubjectCardViewer(options: SubjectCardViewerOptions = {}): ViewerModule {
@@ -1307,7 +1366,7 @@ export function createSubjectCardViewer(options: SubjectCardViewerOptions = {}):
                 }
               }
 
-        let locale: string | undefined
+        let locale = options.locale
         let page: { card: SubjectCard; scope: ViewerMountScope } | undefined
         let generation = 0
         /*
@@ -1364,6 +1423,7 @@ export function createSubjectCardViewer(options: SubjectCardViewerOptions = {}):
               ...(args.subjectNavigation === undefined && selector === undefined
                 ? {}
                 : { onNavigate: navigate }),
+              ...(options.openSource === undefined ? {} : { onOpenSource: options.openSource }),
               ...(resolveImage === undefined ? {} : { resolveImage }),
             })
             commit?.()

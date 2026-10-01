@@ -882,6 +882,8 @@ export interface VsCodeServeOptions {
   }) => Promise<boolean>
   /** Open a file in an editor of its own kind (a gallery pick). */
   readonly openInEditor?: (path: string) => Promise<void>
+  /** Show a card's source file as text, at its declaration when the line is known. */
+  readonly openSource?: (uri: string, line?: number, column?: number) => Promise<void>
   /**
    * A small picture of one archive member for the explorer's gallery. The ref reaching it is
    * already authorized: a member of a container inside the granted folders.
@@ -1900,6 +1902,9 @@ function serveVsCode(
         )
         return true
       }
+      case 'open-source':
+        await options.openSource?.(request.uri, request.line, request.column)
+        return true
       case 'archive-action': {
         const container = containerOfSubject(request.subject)
         const roots = options.roots().map(root => resolve(root))

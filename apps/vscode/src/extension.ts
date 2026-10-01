@@ -7171,6 +7171,8 @@ async function activateModkit(
     write: vscode.DocumentHighlightKind.Write,
   } as const
 
+  /** The schemes of a file a page may ask this window to show: on disk, of a source, in a container. */
+  const SOURCE_SCHEMES = new Set(['file', 'modkit-source', CONTAINER_SCHEME])
   /** A link's target as the editor opens it: a content-source address through its mounted source. */
   const linkTarget = (target: string): vscode.Uri | undefined => {
     const place = target.startsWith('content-source:') ? subjectTarget(target) : undefined
@@ -8455,6 +8457,21 @@ async function activateModkit(
       openInEditor: async path => {
         // A tab of its own: a preview tab would replace the archive the member was opened from.
         await vscode.commands.executeCommand('vscode.open', subjectUriOf(path), { preview: false })
+      },
+      // A card's source opens where Resources opens a declaration: the file, at its line.
+      openSource: async (address, line, column) => {
+        const uri = linkTarget(address)
+        // the page names files only; a link of any other kind is not this request's to follow
+        if (uri === undefined || !SOURCE_SCHEMES.has(uri.scheme)) {
+          log(`[card] not a file this window opens: ${address}`)
+          return
+        }
+        await openResourceFile(
+          uri,
+          line === undefined
+            ? undefined
+            : ({ line, column: column ?? 0 } as TreeNodeFacts['range']),
+        )
       },
       thumbnail: galleryThumbnailOf,
       ...(explorer === undefined ? {} : { explorer: explorer.backend }),

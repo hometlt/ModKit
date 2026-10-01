@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import type { RelatedSubjectFact, SubjectFact, SubjectFactsSource } from '@modkit/sdk'
-import { loadSubjectCardSections, type CardSection } from '../src/card/index.js'
+import {
+  cardRefAction,
+  loadSubjectCardSections,
+  type CardLocation,
+  type CardRef,
+  type CardSection,
+} from '../src/card/index.js'
 
 function source(
   facts: Readonly<Record<string, readonly SubjectFact[]>>,
@@ -127,5 +133,55 @@ describe('subject card projection of typed facts', () => {
         { label: 'Missing', dead: true },
       ],
     })
+  })
+
+  it('lists every source of a fact in order and opens a declaration at its line', async () => {
+    const unitData = {
+      id: 'liberty-unitdata',
+      uri: 'content-source://local:casc/mods/liberty.sc2mod/base.sc2data/GameData/UnitData.xml',
+    }
+    const sections = await loadSubjectCardSections(
+      source(
+        {
+          combat: [
+            fact('life', 45, {
+              provenance: [
+                { label: 'core:Core.SC2Mod' },
+                {
+                  label: 'liberty:UnitData.xml',
+                  source: unitData,
+                  range: { utf16Offset: 120, utf16Length: 9, line: 41, column: 4 },
+                },
+              ],
+            }),
+          ],
+        },
+        [],
+        { origins: [{ label: 'UnitData.xml', source: unitData }] },
+      ),
+    )
+    const declared: CardRef = {
+      label: 'liberty:UnitData.xml',
+      href: unitData.uri,
+      location: { uri: unitData.uri, line: 41, column: 4 },
+    }
+    expect(sections.find(section => section.kind === 'fields')).toMatchObject({
+      fields: [{ name: 'life', sources: [{ label: 'core:Core.SC2Mod' }, declared] }],
+    })
+    expect(header(sections).refs).toEqual([
+      { label: 'UnitData.xml', href: unitData.uri, location: { uri: unitData.uri } },
+    ])
+
+    const opened: CardLocation[] = []
+    const navigated: CardRef[] = []
+    const open = (location: CardLocation) => void opened.push(location)
+    const navigate = (item: CardRef) => void navigated.push(item)
+    cardRefAction(declared, navigate, open)?.()
+    expect(opened).toEqual([{ uri: unitData.uri, line: 41, column: 4 }])
+    // a host without an editor still follows the address; a label without a file is only text
+    cardRefAction(declared, navigate)?.()
+    expect(navigated).toEqual([declared])
+    expect(cardRefAction({ label: 'core:Core.SC2Mod' }, navigate, open)).toBeUndefined()
+    expect(cardRefAction({ ...declared, dead: true }, navigate, open)).toBeUndefined()
   })
 })

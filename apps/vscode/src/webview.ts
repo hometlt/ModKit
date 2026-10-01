@@ -703,6 +703,12 @@ async function mount(
         registerPixelEditing(handlers) {
           pixelEditing = handlers
         },
+        // A card's source: the extension host shows the declaring file at its line.
+        openSource(location) {
+          void bridge
+            .request({ op: 'open-source', ...location })
+            .catch((error: unknown) => say(describe(error)))
+        },
         // An archive member opens as a tab of its own, addressed through the container VFS.
         async openArchiveEntry(entry) {
           const container = focused ?? snapshot.openPath

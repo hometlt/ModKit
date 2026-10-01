@@ -21,6 +21,7 @@ import type {
   ImageViewerOptions,
 } from '@modkit/ui/image'
 import type { ArchiveAction, ArchiveGalleryOptions, ArchiveTarget } from '@modkit/ui/archive'
+import type { CardLocation } from '@modkit/ui/card'
 import type { UiLocalizer } from '@modkit/ui/localization'
 import type { ModelViewerOptions } from '@modkit/ui/model'
 import type { GameTemplateViewerOptions } from '@modkit/ui/template'
@@ -87,6 +88,8 @@ export interface EditPanelOptions {
   readonly omitEncoding?: boolean
   /** Open one member of the shown archive in an editor tab of its own. */
   openArchiveEntry?(entry: string): Promise<void>
+  /** Show a card's source in the editor, at its line when the publisher knows it. */
+  openSource?(location: CardLocation): void
   /** A file-manager action on the shown archive; `true` when it changed. */
   archiveAction?(action: ArchiveAction, target: ArchiveTarget): Promise<boolean>
   /** The explorer's gallery of pictures among the shown archive's members. */

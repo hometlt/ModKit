@@ -4215,6 +4215,15 @@
     content: '\00B7';
   }
 
+  /* A fact's sources after its value: every declaring file, in the publisher's order. */
+  [data-mk-part='card.sources'] {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 var(--mk-space-1);
+    justify-content: end;
+    max-inline-size: 48ch;
+  }
+
   [data-mk-part='card.chips'] {
     display: flex;
     flex-wrap: wrap;

@@ -134,6 +134,13 @@ export type ShellRequest =
   /** Show another file in this editor (a gallery pick). */
   /** A file, or with `entry` one member of the container file at `path`. */
   | { readonly op: 'open-in-editor'; readonly path: string; readonly entry?: string }
+  /** A card's source: the declaring file, at its zero-based line and column when known. */
+  | {
+      readonly op: 'open-source'
+      readonly uri: string
+      readonly line?: number
+      readonly column?: number
+    }
   /** A file-manager action inside the archive `subject` shows (a file, or a member archive). */
   | {
       readonly op: 'archive-action'

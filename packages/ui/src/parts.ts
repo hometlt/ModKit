@@ -415,6 +415,7 @@ export const PARTS = Object.freeze([
   'card.title',
   'card.subtitle',
   'card.ref',
+  'card.sources',
   'card.locale',
   'card.chips',
   'card.chip',

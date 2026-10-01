@@ -182,6 +182,7 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
               module: createSubjectCardViewer({
                 localizer: context.localizer,
                 ...(context.gameLocale === undefined ? {} : { locale: context.gameLocale }),
+                ...(context.openSource === undefined ? {} : { openSource: context.openSource }),
               }),
             },
             {
@@ -286,6 +287,8 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
         ...(context.textures === undefined ? {} : { textures: context.textures }),
         // The subject's relations, walked from it, as a section of its card (MK2 had it there).
         graph: relationsStage,
+        // A fact's source opens the declaring file at its line.
+        ...(context.openSource === undefined ? {} : { openSource: context.openSource }),
       }),
       optionalContracts: [
         'common.view/raster-image-source',
