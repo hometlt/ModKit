@@ -366,7 +366,11 @@ describe('large namespace companion resolution remains bounded', () => {
     try {
       let code = 'no-error'
       try {
-        await createCompanionInputResolver(origin)(resolutionContext('cube.texture'))
+        // the default scope (65 536 entries, 9783de03) would take a crowd that size; the rule is the
+        // same at 4 096
+        await createCompanionInputResolver(origin, { limits: { maxEntries: 4096 } })(
+          resolutionContext('cube.texture'),
+        )
       } catch (error) {
         code = isModkitError(error) ? error.code : String(error)
       }

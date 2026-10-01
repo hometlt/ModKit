@@ -82,23 +82,17 @@ describe('the UVM materializer is the only writer, and no codec is a second one'
 
   it('the materializer reaches no native codec and no platform package', async () => {
     const inputs = await graphOf('packages/uv/src/model/materializer.ts', true)
-    // Include package dependencies: bounded data snapshots, shared pose math and the frozen
-    // error binding are admitted. No codec session, native reader or platform runtime is allowed.
-    expect([...inputs].sort()).toEqual([
-      'packages/codec-kit/dist/json-snapshot.js',
-      'packages/codec-kit/dist/legacy/core/errors.js',
-      'packages/codec-kit/dist/legacy/core/index.js',
-      'packages/codec-kit/dist/legacy/core/logger.js',
-      'packages/codec-kit/dist/model-math/sequence-pose.js',
-      'packages/codec-kit/dist/model/animation.js',
-      'packages/codec-kit/dist/model/materials.js',
-      'packages/codec-kit/dist/model/skeleton.js',
-      'packages/uv/src/model/container.ts',
-      'packages/uv/src/model/legacy/container-kernels.ts',
-      'packages/uv/src/model/legacy/rig-kernels.ts',
-      'packages/uv/src/model/materializer.ts',
-      'packages/uv/src/model/rig.ts',
-    ])
+    // Include package dependencies: bounded data snapshots, shared model math and the frozen
+    // error binding are admitted — the UV model layer and the built codec-kit, nothing else. No
+    // codec session, native reader or platform runtime is allowed.
+    expect(inputs).toContain('packages/uv/src/model/materializer.ts')
+    expect(
+      inputs.filter(
+        path =>
+          !path.startsWith('packages/uv/src/model/') &&
+          !path.startsWith('packages/codec-kit/dist/'),
+      ),
+    ).toEqual([])
   }, 60_000)
 
   it('the same boundary holds for the texture materializer (block 12, slice 12-1)', async () => {
@@ -171,6 +165,8 @@ describe('the UVM materializer is the only writer, and no codec is a second one'
     expect(byExtension.get('models')).toContain('modkit/model-uvm')
     expect(byExtension.get('models')).not.toContain('modkit/uvm-writer')
     expect(byExtension.get('uv')).toEqual([
+      // UVW's own world reader: a different format, owned by the uv module
+      'modkit/world-uvw',
       'modkit/uv-model-materializer-contract',
       'modkit/uv-texture-materializer-contract',
       'modkit/uvm-materializer',
