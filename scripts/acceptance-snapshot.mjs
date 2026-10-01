@@ -46,7 +46,7 @@ const REPOSITORIES = [
   'modkit-extensions-dune2000',
   'multiverse',
   // Optional GPL Oodle decoder (rad/oodle): no lockfile, so no install; its build runs the core's tsc.
-  'modkit-extension-rad',
+  'modkit-extensions-rad',
 ]
 
 const argument = name => {
