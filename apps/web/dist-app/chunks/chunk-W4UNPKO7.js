@@ -1,12 +1,12 @@
 import {
   createVideoViewer
-} from "./chunk-7JPCIVZ4.js";
+} from "./chunk-YGYRW32C.js";
 import {
   createAudioViewer
-} from "./chunk-Z5XHOTCN.js";
+} from "./chunk-GSFZBIQN.js";
 import {
   createRelationGraphViewer
-} from "./chunk-V76DKQLW.js";
+} from "./chunk-26CNHD5J.js";
 import {
   DEFAULT_MODEL_ANIMATION_BUDGET,
   DEFAULT_MODEL_SKELETON_BUDGET,
@@ -24,7 +24,7 @@ import {
   snapshotJson,
   snapshotModelAnimations,
   snapshotModelSkeleton
-} from "./chunk-4WFNAHF6.js";
+} from "./chunk-P3UIQ2VQ.js";
 import {
   metadataFieldProjections
 } from "./chunk-64G7DVXS.js";
@@ -35,13 +35,13 @@ import {
   createImageViewer,
   createNamespaceViewer,
   invokeRefusalMessage
-} from "./chunk-KFLOH6HO.js";
+} from "./chunk-XOBS3R2V.js";
 import {
   compileMatcher,
   compilePattern,
   createMediaShell,
   textMatches
-} from "./chunk-K243RDSA.js";
+} from "./chunk-OSXJCULW.js";
 import {
   CALCULATIONS_FALLBACK_MESSAGES,
   CARD_FALLBACK_MESSAGES,
@@ -84,7 +84,7 @@ import {
   setViewerText,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-JJCRWSLE.js";
+} from "./chunk-6S27EKIS.js";
 import {
   A1_SPEC_SCHEMA_ENTRIES,
   AUXILIARY_DATA_SOURCE_SURFACES,
@@ -616,6 +616,143 @@ init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var LANGUAGE_WORKSPACE_SEMANTIC_PAYLOAD_MAX_BYTES = 64 * 1024 * 1024;
 var encoder = new TextEncoder();
+
+// ../MODDING/modkit-core/packages/host/dist/source-bridge.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+function invalidRange(sourceId, offset, length, size, message) {
+  return new ModkitError({
+    code: "x3.host/source-range-unrepresentable",
+    message,
+    context: {
+      sourceId,
+      offset: offset.toString(),
+      length: length.toString(),
+      size: size.toString()
+    }
+  });
+}
+function checkedRange(sourceId, size, offset, length) {
+  if (offset < 0n || length < 0n || offset > size || length > size - offset) {
+    throw invalidRange(sourceId, offset, length, size, `read [${offset}, ${offset + length}) exceeds source \xAB${sourceId}\xBB of size ${size}`);
+  }
+  if (offset > BigInt(Number.MAX_SAFE_INTEGER) || length > BigInt(Number.MAX_SAFE_INTEGER)) {
+    throw invalidRange(sourceId, offset, length, size, `read range for source \xAB${sourceId}\xBB cannot be represented exactly by the current VFS`);
+  }
+  const start = Number(offset);
+  const numericLength = Number(length);
+  const end = start + numericLength;
+  if (!Number.isSafeInteger(end)) {
+    throw invalidRange(sourceId, offset, length, size, `read end for source \xAB${sourceId}\xBB cannot be represented exactly by the current VFS`);
+  }
+  return { start, length: numericLength, end };
+}
+async function artifactByteSourceFromRandomAccess(source2, options) {
+  throwIfAborted(options.signal);
+  const numericSize = await source2.size(options.signal);
+  throwIfAborted(options.signal);
+  if (!Number.isSafeInteger(numericSize) || numericSize < 0) {
+    throw new ModkitError({
+      code: "x3.host/source-size-unrepresentable",
+      message: `source \xAB${source2.id}\xBB reported a size outside the exact JavaScript integer range`,
+      context: { sourceId: source2.id, size: String(numericSize) }
+    });
+  }
+  const size = BigInt(numericSize);
+  const ref2 = Object.freeze({
+    ...options.ref,
+    ...options.ref.parentIds === void 0 ? {} : {
+      parentIds: Object.freeze([...options.ref.parentIds])
+    }
+  });
+  const bridged = {
+    kind: "bytes",
+    ref: ref2,
+    revision: options.revision,
+    size,
+    async read(offset, length, signal) {
+      throwIfAborted(signal);
+      if (!Number.isSafeInteger(length) || length < 0) {
+        throw invalidRange(source2.id, offset, BigInt(Number.isFinite(length) ? Math.trunc(length) : 0), size, `read length for source \xAB${source2.id}\xBB must be a non-negative safe integer`);
+      }
+      const range = checkedRange(source2.id, size, offset, BigInt(length));
+      const bytes = await source2.readAt(range.start, range.length, signal);
+      throwIfAborted(signal);
+      if (bytes.byteLength !== range.length) {
+        throw new ModkitError({
+          code: "x3.host/source-short-read",
+          message: `source \xAB${source2.id}\xBB returned ${bytes.byteLength} bytes for an exact ${range.length}-byte read`,
+          context: { sourceId: source2.id, expected: range.length, actual: bytes.byteLength }
+        });
+      }
+      return bytes;
+    },
+    async *stream(range, signal) {
+      throwIfAborted(signal);
+      const offset = range?.offset ?? 0n;
+      const length = range?.length ?? size - offset;
+      const checked = checkedRange(source2.id, size, offset, length);
+      const reader = source2.stream(checked.start, checked.end, signal).getReader();
+      let seen = 0;
+      try {
+        for (; ; ) {
+          throwIfAborted(signal);
+          const next = await reader.read();
+          if (next.done)
+            break;
+          seen += next.value.byteLength;
+          if (seen > checked.length) {
+            throw new ModkitError({
+              code: "x3.host/source-stream-overrun",
+              message: `source \xAB${source2.id}\xBB streamed beyond its requested range`,
+              context: { sourceId: source2.id, expected: checked.length, actual: seen }
+            });
+          }
+          yield next.value;
+        }
+        if (seen !== checked.length) {
+          throw new ModkitError({
+            code: "x3.host/source-short-stream",
+            message: `source \xAB${source2.id}\xBB streamed ${seen} bytes for an exact ${checked.length}-byte range`,
+            context: { sourceId: source2.id, expected: checked.length, actual: seen }
+          });
+        }
+      } finally {
+        if (seen < checked.length)
+          await reader.cancel().catch(() => void 0);
+        reader.releaseLock();
+      }
+    }
+  };
+  return Object.freeze(bridged);
+}
+function artifactByteSourceFromBytes(ref2, revision, bytes) {
+  return Object.freeze({
+    kind: "bytes",
+    ref: ref2,
+    revision,
+    size: BigInt(bytes.byteLength),
+    async read(offset, length, readSignal) {
+      throwIfAborted(readSignal);
+      if (offset < 0n || offset > BigInt(bytes.byteLength) || !Number.isSafeInteger(length) || length < 0) {
+        throw new RangeError("invalid byte range");
+      }
+      const start = Number(offset);
+      return bytes.slice(start, Math.min(bytes.byteLength, start + length));
+    },
+    async *stream(range, streamSignal) {
+      throwIfAborted(streamSignal);
+      const start = range === void 0 ? 0 : Number(range.offset);
+      const end = range?.length === void 0 ? bytes.byteLength : Math.min(bytes.byteLength, start + Number(range.length));
+      if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start < 0 || end < start) {
+        throw new RangeError("invalid stream range");
+      }
+      for (let offset = start; offset < end; offset += 64 * 1024) {
+        throwIfAborted(streamSignal);
+        yield bytes.slice(offset, Math.min(end, offset + 64 * 1024));
+      }
+    }
+  });
+}
 
 // ../MODDING/modkit-core/packages/host/dist/language/workspace.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
@@ -4982,32 +5119,7 @@ function createContentDependencyOrigin(contentSources, mounts, maximumEntryBytes
         throw new RangeError(`content dependency has no file ${normalized}`);
       const bytes = await contentSources.read(mount.sourceId, joinPath(mount.sourcePath, relative), maximumEntryBytes);
       const uri = `content-source://${encodeURIComponent(mount.sourceId)}/${normalized.split("/").map(encodeURIComponent).join("/")}`;
-      const source2 = Object.freeze({
-        kind: "bytes",
-        ref: Object.freeze({ id: `${mount.rootId}:${normalized}`, uri }),
-        revision: mount.revision,
-        size: BigInt(bytes.byteLength),
-        async read(offset, length, readSignal) {
-          throwIfAborted(readSignal);
-          if (offset < 0n || offset > BigInt(bytes.byteLength) || !Number.isSafeInteger(length) || length < 0) {
-            throw new RangeError("invalid content dependency byte range");
-          }
-          const start = Number(offset);
-          return bytes.slice(start, Math.min(bytes.byteLength, start + length));
-        },
-        async *stream(range, streamSignal) {
-          throwIfAborted(streamSignal);
-          const start = range === void 0 ? 0 : Number(range.offset);
-          const end = range?.length === void 0 ? bytes.byteLength : Math.min(bytes.byteLength, start + Number(range.length));
-          if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start < 0 || end < start) {
-            throw new RangeError("invalid content dependency stream range");
-          }
-          for (let offset = start; offset < end; offset += 64 * 1024) {
-            throwIfAborted(streamSignal);
-            yield bytes.slice(offset, Math.min(end, offset + 64 * 1024));
-          }
-        }
-      });
+      const source2 = artifactByteSourceFromBytes(Object.freeze({ id: `${mount.rootId}:${normalized}`, uri }), mount.revision, bytes);
       return Object.freeze({ value: source2, release: async () => void 0 });
     }
   });
@@ -6709,115 +6821,6 @@ var VirtualFileSystem = class {
     });
   }
 };
-
-// ../MODDING/modkit-core/packages/host/dist/source-bridge.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-function invalidRange(sourceId, offset, length, size, message) {
-  return new ModkitError({
-    code: "x3.host/source-range-unrepresentable",
-    message,
-    context: {
-      sourceId,
-      offset: offset.toString(),
-      length: length.toString(),
-      size: size.toString()
-    }
-  });
-}
-function checkedRange(sourceId, size, offset, length) {
-  if (offset < 0n || length < 0n || offset > size || length > size - offset) {
-    throw invalidRange(sourceId, offset, length, size, `read [${offset}, ${offset + length}) exceeds source \xAB${sourceId}\xBB of size ${size}`);
-  }
-  if (offset > BigInt(Number.MAX_SAFE_INTEGER) || length > BigInt(Number.MAX_SAFE_INTEGER)) {
-    throw invalidRange(sourceId, offset, length, size, `read range for source \xAB${sourceId}\xBB cannot be represented exactly by the current VFS`);
-  }
-  const start = Number(offset);
-  const numericLength = Number(length);
-  const end = start + numericLength;
-  if (!Number.isSafeInteger(end)) {
-    throw invalidRange(sourceId, offset, length, size, `read end for source \xAB${sourceId}\xBB cannot be represented exactly by the current VFS`);
-  }
-  return { start, length: numericLength, end };
-}
-async function artifactByteSourceFromRandomAccess(source2, options) {
-  throwIfAborted(options.signal);
-  const numericSize = await source2.size(options.signal);
-  throwIfAborted(options.signal);
-  if (!Number.isSafeInteger(numericSize) || numericSize < 0) {
-    throw new ModkitError({
-      code: "x3.host/source-size-unrepresentable",
-      message: `source \xAB${source2.id}\xBB reported a size outside the exact JavaScript integer range`,
-      context: { sourceId: source2.id, size: String(numericSize) }
-    });
-  }
-  const size = BigInt(numericSize);
-  const ref2 = Object.freeze({
-    ...options.ref,
-    ...options.ref.parentIds === void 0 ? {} : {
-      parentIds: Object.freeze([...options.ref.parentIds])
-    }
-  });
-  const bridged = {
-    kind: "bytes",
-    ref: ref2,
-    revision: options.revision,
-    size,
-    async read(offset, length, signal) {
-      throwIfAborted(signal);
-      if (!Number.isSafeInteger(length) || length < 0) {
-        throw invalidRange(source2.id, offset, BigInt(Number.isFinite(length) ? Math.trunc(length) : 0), size, `read length for source \xAB${source2.id}\xBB must be a non-negative safe integer`);
-      }
-      const range = checkedRange(source2.id, size, offset, BigInt(length));
-      const bytes = await source2.readAt(range.start, range.length, signal);
-      throwIfAborted(signal);
-      if (bytes.byteLength !== range.length) {
-        throw new ModkitError({
-          code: "x3.host/source-short-read",
-          message: `source \xAB${source2.id}\xBB returned ${bytes.byteLength} bytes for an exact ${range.length}-byte read`,
-          context: { sourceId: source2.id, expected: range.length, actual: bytes.byteLength }
-        });
-      }
-      return bytes;
-    },
-    async *stream(range, signal) {
-      throwIfAborted(signal);
-      const offset = range?.offset ?? 0n;
-      const length = range?.length ?? size - offset;
-      const checked = checkedRange(source2.id, size, offset, length);
-      const reader = source2.stream(checked.start, checked.end, signal).getReader();
-      let seen = 0;
-      try {
-        for (; ; ) {
-          throwIfAborted(signal);
-          const next = await reader.read();
-          if (next.done)
-            break;
-          seen += next.value.byteLength;
-          if (seen > checked.length) {
-            throw new ModkitError({
-              code: "x3.host/source-stream-overrun",
-              message: `source \xAB${source2.id}\xBB streamed beyond its requested range`,
-              context: { sourceId: source2.id, expected: checked.length, actual: seen }
-            });
-          }
-          yield next.value;
-        }
-        if (seen !== checked.length) {
-          throw new ModkitError({
-            code: "x3.host/source-short-stream",
-            message: `source \xAB${source2.id}\xBB streamed ${seen} bytes for an exact ${checked.length}-byte range`,
-            context: { sourceId: source2.id, expected: checked.length, actual: seen }
-          });
-        }
-      } finally {
-        if (seen < checked.length)
-          await reader.cancel().catch(() => void 0);
-        reader.releaseLock();
-      }
-    }
-  };
-  return Object.freeze(bridged);
-}
 
 // ../MODDING/modkit-core/packages/host/dist/raster-selection.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
@@ -18327,6 +18330,9 @@ function createSubjectEditing(options) {
   };
   return Object.freeze(editing);
 }
+
+// ../MODDING/modkit-core/packages/host/dist/content-source-companion.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
 // ../MODDING/modkit-core/packages/host/dist/mod-context-layer-source.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
@@ -68018,13 +68024,13 @@ var PREVIEW_STAGES = [
 async function defaultPreviewStage(kind, localizer) {
   switch (kind) {
     case "model":
-      return (await import("./model-JIUFN6ML.js")).createModelViewer({ localizer });
+      return (await import("./model-UGHQS5SY.js")).createModelViewer({ localizer });
     case "image":
-      return (await import("./image-BCR2UAGX.js")).createImageViewer({ localizer });
+      return (await import("./image-JZP75TYN.js")).createImageViewer({ localizer });
     case "video":
-      return (await import("./video-UCB4DFMR.js")).createVideoViewer({ localizer });
+      return (await import("./video-3KWORBK2.js")).createVideoViewer({ localizer });
     case "audio":
-      return (await import("./audio-H3QV2ZNQ.js")).createAudioViewer({ localizer });
+      return (await import("./audio-PWHTGLTW.js")).createAudioViewer({ localizer });
   }
 }
 function embedPreview(sections, args, scope, localizer, previews) {
@@ -68063,7 +68069,7 @@ function embedRelationGraph(sections, args, scope, localizer, graph) {
   return [
     ...sections,
     stageSection({ id: "relations-graph", title: localizer.text("card.relationGraph"), expanded: false }, scope, localizer, "card.relationGraphUnavailable", async (host) => {
-      const module = graph ?? (await import("./graph-5H5RAQKL.js")).createRelationGraphViewer({ localizer });
+      const module = graph ?? (await import("./graph-WFHSMAFM.js")).createRelationGraphViewer({ localizer });
       return scope.signal.aborted ? void 0 : module.mount({ ...args, container: host, signal: scope.signal });
     })
   ];

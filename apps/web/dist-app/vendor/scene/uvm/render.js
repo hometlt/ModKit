@@ -21087,7 +21087,21 @@ async function acquireUvmMaterialTextures(resources, port, maxBytes, diagnostics
 function prepareUvmRender(bytes, value, options) {
   return prepareNestedUvmRender(bytes, value, options, 0);
 }
-async function prepareNestedUvmRender(bytes, value, options, depth) {
+function createUvmFramePreparer(bytes, options) {
+  const owned = bytes.slice();
+  let cache = {};
+  return Object.freeze({
+    prepare(request, signal) {
+      if (cache === void 0)
+        return Promise.reject(new TypeError("the frame preparer is disposed"));
+      return prepareNestedUvmRender(owned, request, signal === void 0 ? options : { ...options, signal }, 0, cache);
+    },
+    dispose() {
+      cache = void 0;
+    }
+  });
+}
+async function prepareNestedUvmRender(bytes, value, options, depth, cache) {
   const { budget, signal, rasterResources } = options;
   signal?.throwIfAborted();
   for (const limit of [
@@ -21152,17 +21166,28 @@ async function prepareNestedUvmRender(bytes, value, options, depth) {
   const available = budget.maxScalarBytes - frameBytes - textureBytes;
   if (available < 0)
     throw new RangeError("render frame exceeds maxScalarBytes");
-  const container = readUvmContainer(bytes, {
-    maxInputBytes: Number(budget.maxInputBytes > 0xffffffffn ? 0xffffffffn : budget.maxInputBytes),
-    maxJsonBytes: budget.maxScalarBytes,
-    maxDepth: budget.maxDepth,
-    maxNodes: budget.maxNodes
-  }, signal);
-  const { document: document2, binary } = container;
-  validateUvmDocument(document2, {
-    binaryByteLength: binary.length,
-    ...signal === void 0 ? {} : { signal }
-  });
+  const parsed = cache?.container ?? (() => {
+    const container = readUvmContainer(bytes, {
+      maxInputBytes: Number(budget.maxInputBytes > 0xffffffffn ? 0xffffffffn : budget.maxInputBytes),
+      maxJsonBytes: budget.maxScalarBytes,
+      maxDepth: budget.maxDepth,
+      maxNodes: budget.maxNodes
+    }, signal);
+    validateUvmDocument(container.document, {
+      binaryByteLength: container.binary.length,
+      ...signal === void 0 ? {} : { signal }
+    });
+    const read = { document: container.document, binary: container.binary };
+    if (cache !== void 0)
+      cache.container = read;
+    return read;
+  })();
+  const { document: document2, binary } = parsed;
+  const units = field(document2["extensions"], "UV_units");
+  const metersPerSourceUnit = units === void 0 ? 1 : field(units, "metersPerSourceUnit");
+  if (typeof metersPerSourceUnit !== "number" || !Number.isFinite(metersPerSourceUnit) || metersPerSourceUnit <= 0)
+    throw new TypeError("UV_units.metersPerSourceUnit must be a positive finite number");
+  const effectPrimitiveIds = [];
   const modelStates = readUvmModelStates(document2, budget.maxScalarBytes, signal);
   const selectedModelState = modelState === "base" ? void 0 : modelStates.find((candidate) => candidate.state === modelState);
   const textureDeclarations = array(document2, "textures");
@@ -21221,7 +21246,10 @@ async function prepareNestedUvmRender(bytes, value, options, depth) {
   };
   for (const [index, texels] of textures)
     textures.set(index, { ...keyed(index, texels), ...textureSampler(index) });
-  const { scene, rig } = readUvmModel(document2, binary, { maxScalarBytes: stageBytes }, signal);
+  const decoded = cache?.model?.stageBytes === stageBytes ? cache.model.decoded : readUvmModel(document2, binary, { maxScalarBytes: stageBytes }, signal);
+  if (cache !== void 0)
+    cache.model = { stageBytes, decoded };
+  const { scene, rig } = decoded;
   const scenes = array(document2, "scenes");
   const selected = scenes.length === 0 && input["sceneIndex"] === void 0 ? void 0 : object(scenes[safeIndex(input["sceneIndex"] ?? document2["scene"] ?? 0, scenes.length, "scene")], "scene");
   const activeNodes = /* @__PURE__ */ new Set();
@@ -21451,6 +21479,7 @@ async function prepareNestedUvmRender(bytes, value, options, depth) {
       ...signal === void 0 ? {} : { signal }
     });
     primitives.push(...effects.primitives);
+    effectPrimitiveIds.push(...effects.primitives.map((primitive) => primitive.id));
     modelParticles = effects.modelParticles;
     materials.push(...effects.materials);
     diagnostics.push(...effects.diagnostics);
@@ -21468,6 +21497,7 @@ async function prepareNestedUvmRender(bytes, value, options, depth) {
       ...signal === void 0 ? {} : { signal }
     });
     primitives.push(...projected.primitives);
+    effectPrimitiveIds.push(...projected.primitives.map((primitive) => primitive.id));
     materials.push(...projected.materials);
   }
   if (input["collisions"] === true) {
@@ -21542,8 +21572,8 @@ async function prepareNestedUvmRender(bytes, value, options, depth) {
     signal?.throwIfAborted();
     if (!fallbackTextures.has(image.texture) || failedImages.has(image.image))
       continue;
-    let decoded = decodedImages.get(image.image);
-    if (decoded === void 0 && rasterResources !== void 0) {
+    let decoded2 = decodedImages.get(image.image);
+    if (decoded2 === void 0 && rasterResources !== void 0) {
       const result = await rasterResources.read({ ...image.source, maxBytes: remainingDecodedBytes }, signal);
       signal?.throwIfAborted();
       for (const item of result.diagnostics)
@@ -21558,19 +21588,19 @@ async function prepareNestedUvmRender(bytes, value, options, depth) {
             throw new RangeError("decoded UVM images exceed budget");
           const rgba = uvmImageTexels(result);
           remainingDecodedBytes -= rgba.length;
-          decoded = { width: result.info.width, height: result.info.height, rgba };
-          decodedImages.set(image.image, decoded);
+          decoded2 = { width: result.info.width, height: result.info.height, rgba };
+          decodedImages.set(image.image, decoded2);
         } catch (error) {
           warn("common.uvm/image-unrendered", error instanceof Error ? error.message : "Invalid decoded image");
         }
       }
     }
-    if (decoded === void 0) {
+    if (decoded2 === void 0) {
       failedImages.add(image.image);
       continue;
     }
     textures.set(image.texture, {
-      ...keyed(image.texture, decoded),
+      ...keyed(image.texture, decoded2),
       id: `uvm-texture-${image.texture}`,
       ...textureSampler(image.texture)
     });
@@ -21634,7 +21664,12 @@ async function prepareNestedUvmRender(bytes, value, options, depth) {
       }
     },
     diagnostics: [...diagnostics, ...modelStateNested.diagnostics, ...nested.diagnostics],
-    ...rendererId === void 0 ? {} : { rendererId }
+    ...rendererId === void 0 ? {} : { rendererId },
+    metersPerSourceUnit,
+    effectPrimitiveIds: [
+      ...effectPrimitiveIds,
+      ...nested.primitives.map((primitive) => primitive.id)
+    ]
   };
 }
 function previewKeyLight(viewMatrix) {
@@ -21686,6 +21721,7 @@ function documentTextureIndex(id) {
   return match === null ? void 0 : Number(match[1]);
 }
 export {
+  createUvmFramePreparer,
   prepareUvmRender,
   renderUvm,
   renderUvmPng

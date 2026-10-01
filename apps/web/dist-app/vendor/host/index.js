@@ -13,14 +13,14 @@ import {
   createStandardSurfaceRegistry,
   framePortFromMessagePort,
   protocolLimits
-} from "../../chunks/chunk-H33BDQ5V.js";
+} from "../../chunks/chunk-BLFJWZUD.js";
 import {
   assembleSubjectDescriptor,
   createAssetSession,
   createByteRangeSource,
   createLazyTableDataSource,
   createUtf8TextDataSource
-} from "../../chunks/chunk-XG5H6MC4.js";
+} from "../../chunks/chunk-QIE3EZCD.js";
 import {
   metadataFieldProjections
 } from "../../chunks/chunk-5GGWVEQJ.js";
@@ -90,7 +90,7 @@ import {
   validateContributionManifest,
   writerOfferSatisfies,
   writerSelectionKey
-} from "../../chunks/chunk-S6YMWV3Q.js";
+} from "../../chunks/chunk-QAFTCMTY.js";
 import {
   SCENE_RENDERER_CONTRACT,
   SCENE_RENDERER_MATCHER_PROFILE
@@ -215,13 +215,13 @@ async function buildInventory(inputs, registry, options = {}) {
     if (!execution.valid) {
       diagnostics.push(diagnostic("error", "x3.host/invalid-extension-execution-policy", "the host loader supplied malformed extension execution provenance; activation is disabled", [input.source]));
     }
-    const normalized = await normalizeExtensionManifest(input.containers);
-    diagnostics.push(...normalized.diagnostics.map((d) => ({ ...d, path: [input.source, ...d.path ?? []] })));
-    if (!normalized.manifest || !normalized.container)
+    const normalized2 = await normalizeExtensionManifest(input.containers);
+    diagnostics.push(...normalized2.diagnostics.map((d) => ({ ...d, path: [input.source, ...d.path ?? []] })));
+    if (!normalized2.manifest || !normalized2.container)
       continue;
-    const extensionCoordinate2 = coordinate(normalized.manifest);
+    const extensionCoordinate2 = coordinate(normalized2.manifest);
     const extensionDisabled = disabledExtensions.has(extensionCoordinate2);
-    const expansion = expandContributionManifests(normalized.manifest.contributionManifests, input.files);
+    const expansion = expandContributionManifests(normalized2.manifest.contributionManifests, input.files);
     diagnostics.push(...expansion.diagnostics.map((d) => ({ ...d, path: [input.source, ...d.path ?? []] })));
     const fileDigests = input.artifact.fileDigests === void 0 ? void 0 : Object.freeze({ ...input.artifact.fileDigests });
     const contributions = [];
@@ -282,7 +282,7 @@ async function buildInventory(inputs, registry, options = {}) {
         } else {
           const context = Object.freeze({
             ownerExtensionId: extensionCoordinate2,
-            extensionVersion: normalized.manifest.version,
+            extensionVersion: normalized2.manifest.version,
             inventoryRecordId: `${input.artifact.inventoryRecordId}:${entry2.path}`,
             manifestDigest,
             artifactDigest: input.artifact.artifactDigest,
@@ -341,8 +341,8 @@ async function buildInventory(inputs, registry, options = {}) {
     extensions.push({
       source: input.source,
       origin: execution.policy.origin,
-      container: normalized.container,
-      manifest: normalized.manifest,
+      container: normalized2.container,
+      manifest: normalized2.manifest,
       contributions
     });
   }
@@ -878,12 +878,12 @@ function confinedArtifactPath(authored, artifactRoot, label) {
   if (authored.startsWith("/") || authored.startsWith("\\") || authored.includes("\\")) {
     throw new TypeError(`${label} path must be a portable relative POSIX path`);
   }
-  const normalized = normalizeVfsPath(authored);
-  if (normalized === "" || !normalized.toLowerCase().endsWith(".json")) {
+  const normalized2 = normalizeVfsPath(authored);
+  if (normalized2 === "" || !normalized2.toLowerCase().endsWith(".json")) {
     throw new TypeError(`${label} path must identify a JSON file`);
   }
-  resolveContainedEntrypoint(artifactRoot, normalized);
-  return normalized;
+  resolveContainedEntrypoint(artifactRoot, normalized2);
+  return normalized2;
 }
 async function sha256(bytes) {
   const copy = Uint8Array.from(bytes);
@@ -2252,6 +2252,34 @@ async function artifactByteSourceFromRandomAccess(source, options) {
   };
   return Object.freeze(bridged);
 }
+function artifactByteSourceFromBytes(ref2, revision, bytes) {
+  return Object.freeze({
+    kind: "bytes",
+    ref: ref2,
+    revision,
+    size: BigInt(bytes.byteLength),
+    async read(offset, length, readSignal) {
+      throwIfAborted(readSignal);
+      if (offset < 0n || offset > BigInt(bytes.byteLength) || !Number.isSafeInteger(length) || length < 0) {
+        throw new RangeError("invalid byte range");
+      }
+      const start = Number(offset);
+      return bytes.slice(start, Math.min(bytes.byteLength, start + length));
+    },
+    async *stream(range, streamSignal) {
+      throwIfAborted(streamSignal);
+      const start = range === void 0 ? 0 : Number(range.offset);
+      const end = range?.length === void 0 ? bytes.byteLength : Math.min(bytes.byteLength, start + Number(range.length));
+      if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start < 0 || end < start) {
+        throw new RangeError("invalid stream range");
+      }
+      for (let offset = start; offset < end; offset += 64 * 1024) {
+        throwIfAborted(streamSignal);
+        yield bytes.slice(offset, Math.min(end, offset + 64 * 1024));
+      }
+    }
+  });
+}
 
 // ../MODDING/modkit-core/packages/host/dist/detection-index.js
 var MAX_SIGNATURE_WINDOW_BYTES = 4096 + 64;
@@ -2350,8 +2378,8 @@ function allowed(logicalId, allowlist) {
   return allowlist.some((entry2) => {
     if (entry2 === "")
       return true;
-    const normalized = entry2.endsWith("/") ? entry2 : `${entry2}/`;
-    return logicalId === entry2 || logicalId.startsWith(normalized);
+    const normalized2 = entry2.endsWith("/") ? entry2 : `${entry2}/`;
+    return logicalId === entry2 || logicalId.startsWith(normalized2);
   });
 }
 function createResourceSession(options) {
@@ -2426,13 +2454,13 @@ function createResourceSession(options) {
     }
     return chain;
   };
-  const locate = async (normalized, scopes, signal) => {
-    const wanted = fold(normalized, origin.caseSensitivity);
-    const byName = !normalized.includes("/");
+  const locate = async (normalized2, scopes, signal) => {
+    const wanted = fold(normalized2, origin.caseSensitivity);
+    const byName = !normalized2.includes("/");
     for (const scope of scopes) {
       throwIfAborted(signal);
       let entries = 0;
-      for await (const entry2 of origin.enumerate(scope, { prefix: byName ? "" : normalized }, signal)) {
+      for await (const entry2 of origin.enumerate(scope, { prefix: byName ? "" : normalized2 }, signal)) {
         entries += 1;
         if (entries > limits.maxEntries)
           return { found: void 0, overBudget: true };
@@ -2467,9 +2495,9 @@ function createResourceSession(options) {
       if (requirement.parentResourceId !== void 0) {
         parents.set(requirement.id, requirement.parentResourceId);
       }
-      let normalized;
+      let normalized2;
       try {
-        normalized = normalizeCompanionLogicalId(requirement.logicalId, {
+        normalized2 = normalizeCompanionLogicalId(requirement.logicalId, {
           sessionId,
           requirementId: requirement.id
         });
@@ -2483,17 +2511,17 @@ function createResourceSession(options) {
       if (chain === void 0) {
         return unresolved2(requirement, "budget-exceeded", `resource chain for \xAB${requirement.logicalId}\xBB is deeper than the session depth budget of ${limits.maxDepth}`);
       }
-      if (chain.some((item) => fold(item, origin.caseSensitivity) === fold(normalized, origin.caseSensitivity))) {
+      if (chain.some((item) => fold(item, origin.caseSensitivity) === fold(normalized2, origin.caseSensitivity))) {
         return unresolved2(requirement, "cycle-detected", `resource \xAB${requirement.logicalId}\xBB is already in its own reference chain: ${[...chain, requirement.logicalId].join(" -> ")}`);
       }
-      if (!allowed(normalized, options.allowlist)) {
+      if (!allowed(normalized2, options.allowlist)) {
         return unresolved2(requirement, "not-allowlisted", `resource \xAB${requirement.logicalId}\xBB is outside every allowlisted prefix of this session`);
       }
       const servedScopes = requirement.scopes.filter((scope) => origin.scopes.includes(scope));
       if (servedScopes.length === 0) {
         return unresolved2(requirement, "scope-unsupported", `this origin serves ${origin.scopes.join(", ")}; the requirement asked only for ${requirement.scopes.join(", ")}`);
       }
-      const key3 = JSON.stringify([fold(normalized, origin.caseSensitivity), servedScopes]);
+      const key3 = JSON.stringify([fold(normalized2, origin.caseSensitivity), servedScopes]);
       const cached = index.get(key3);
       let found;
       let rootId;
@@ -2506,7 +2534,7 @@ function createResourceSession(options) {
       } else {
         let located;
         try {
-          located = await locate(normalized, servedScopes, signal);
+          located = await locate(normalized2, servedScopes, signal);
         } catch (error3) {
           if (isModkitError(error3) && error3.code === COMPANION_BUDGET_EXCEEDED)
             return unresolved2(requirement, "budget-exceeded", error3.message);
@@ -2803,11 +2831,11 @@ function uniqueTraitRequirements(values) {
   const unique = /* @__PURE__ */ new Map();
   for (const value of values ?? []) {
     const range = value.definitionRange === void 0 ? void 0 : parseVersionRange(value.definitionRange);
-    const normalized = {
+    const normalized2 = {
       id: value.id,
       ...value.definitionRange === void 0 ? {} : { definitionRange: range?.normalized ?? value.definitionRange }
     };
-    unique.set(canonicalJsonStringify(normalized), normalized);
+    unique.set(canonicalJsonStringify(normalized2), normalized2);
   }
   return [...unique.values()];
 }
@@ -2984,7 +3012,7 @@ function sortRejected(rejected2) {
 
 // ../MODDING/modkit-core/packages/host/dist/resolution/lock.js
 function normalizeTraitRequirements(values) {
-  const normalized = /* @__PURE__ */ new Map();
+  const normalized2 = /* @__PURE__ */ new Map();
   for (const value of values ?? []) {
     let item;
     if (isStandardTraitId(value.id)) {
@@ -3005,9 +3033,9 @@ function normalizeTraitRequirements(values) {
       }
       item = { id: value.id, definitionRange: range.normalized };
     }
-    normalized.set(canonicalJsonStringify(item), item);
+    normalized2.set(canonicalJsonStringify(item), item);
   }
-  return [...normalized.entries()].sort(([left], [right]) => compareUtf8(left, right)).map(([, item]) => item);
+  return [...normalized2.entries()].sort(([left], [right]) => compareUtf8(left, right)).map(([, item]) => item);
 }
 function buildLockKey(request) {
   const range = parseVersionRange(request.contract.range ?? "*");
@@ -3131,11 +3159,11 @@ function parseLockedTraits(value, label) {
   if (!Array.isArray(value))
     return failLock(`${label} must be an array`);
   const parsed = value.map((item, index) => parseLockedTrait(item, `${label}[${index}]`));
-  const normalized = normalizeTraitRequirements(parsed);
-  if (canonicalJsonStringify(parsed) !== canonicalJsonStringify(normalized)) {
+  const normalized2 = normalizeTraitRequirements(parsed);
+  if (canonicalJsonStringify(parsed) !== canonicalJsonStringify(normalized2)) {
     return failLock(`${label} must be unique and canonically sorted`);
   }
-  return normalized;
+  return normalized2;
 }
 function parseLockKey(value, label) {
   const record3 = exactKeys(value, ["contract", "major", "normalizedRange", "requiredOutputs", "preferredOutputs"], ["contractSelectionKey", "operation", "workload"], label);
@@ -6413,8 +6441,8 @@ function languageOfferFacet(value) {
 }
 var normalizedExtension2 = (value) => value.replace(/^\./u, "").toLowerCase();
 var baseNameOf = (path) => {
-  const normalized = path.replaceAll("\\", "/");
-  return normalized.slice(normalized.lastIndexOf("/") + 1);
+  const normalized2 = path.replaceAll("\\", "/");
+  return normalized2.slice(normalized2.lastIndexOf("/") + 1);
 };
 function languageFileExtension(path) {
   const name = baseNameOf(path);
@@ -6443,12 +6471,12 @@ function languageFileAssociations(inventory) {
   const seen = /* @__PURE__ */ new Map();
   for (const extension of inventory.extensions)
     for (const association of extension.manifest.languageFiles ?? []) {
-      const normalized = Object.freeze({
+      const normalized2 = Object.freeze({
         extension: normalizedExtension2(association.extension),
         languageId: association.languageId,
         ...association.dialect === void 0 ? {} : { dialect: association.dialect }
       });
-      seen.set(canonicalJsonStringify(normalized), normalized);
+      seen.set(canonicalJsonStringify(normalized2), normalized2);
     }
   return Object.freeze([...seen.entries()].sort(([a], [b]) => compareUtf8(a, b)).map(([, value]) => value));
 }
@@ -8062,14 +8090,14 @@ function contentDependencyDiagnostics(values) {
 function createContentDependencyOrigin(contentSources, mounts, maximumEntryBytes) {
   const overlay = Object.freeze([...mounts].reverse());
   const locations = /* @__PURE__ */ new Map();
-  const fold2 = (value) => value.toLowerCase();
+  const fold3 = (value) => value.toLowerCase();
   const relativeRequest = (mount, logicalId) => {
     if (logicalId === "")
       return "";
-    if (fold2(logicalId) === fold2(mount.logicalPrefix))
+    if (fold3(logicalId) === fold3(mount.logicalPrefix))
       return "";
     const prefix = `${mount.logicalPrefix}/`;
-    return fold2(logicalId).startsWith(fold2(prefix)) ? logicalId.slice(prefix.length) : void 0;
+    return fold3(logicalId).startsWith(fold3(prefix)) ? logicalId.slice(prefix.length) : void 0;
   };
   const findEntries = async (mount, logicalPrefix, signal) => {
     throwIfAborted(signal);
@@ -8089,10 +8117,10 @@ function createContentDependencyOrigin(contentSources, mounts, maximumEntryBytes
       if (entry2.directory)
         continue;
       const relative = relativeEntry(mount, entry2);
-      if (relative === void 0 || !fold2(relative).startsWith(fold2(relativePrefix)))
+      if (relative === void 0 || !fold3(relative).startsWith(fold3(relativePrefix)))
         continue;
       const logicalId = joinPath(mount.logicalPrefix, relative);
-      locations.set(fold2(logicalId), mount);
+      locations.set(fold3(logicalId), mount);
       output.push(Object.freeze({
         logicalId,
         ...entry2.size === void 0 ? {} : { size: BigInt(entry2.size) }
@@ -8117,7 +8145,7 @@ function createContentDependencyOrigin(contentSources, mounts, maximumEntryBytes
             ...found,
             logicalId: found.logicalId.slice(mount.logicalPrefix.length + 1)
           });
-          const key3 = fold2(entry2.logicalId);
+          const key3 = fold3(entry2.logicalId);
           if (emitted.has(key3))
             continue;
           emitted.add(key3);
@@ -8129,52 +8157,27 @@ function createContentDependencyOrigin(contentSources, mounts, maximumEntryBytes
     },
     async open(logicalId, signal) {
       throwIfAborted(signal);
-      const normalized = normalizeCompanionLogicalId(logicalId);
-      const qualifiedIn = (candidate) => relativeRequest(candidate, normalized) === void 0 ? joinPath(candidate.logicalPrefix, normalized) : normalized;
-      let mount = locations.get(fold2(normalized));
+      const normalized2 = normalizeCompanionLogicalId(logicalId);
+      const qualifiedIn = (candidate) => relativeRequest(candidate, normalized2) === void 0 ? joinPath(candidate.logicalPrefix, normalized2) : normalized2;
+      let mount = locations.get(fold3(normalized2));
       if (mount === void 0) {
         for (const candidate of overlay) {
           const qualified = qualifiedIn(candidate);
           const found = await findEntries(candidate, qualified, signal);
-          if (found.some((entry2) => fold2(entry2.logicalId) === fold2(qualified))) {
+          if (found.some((entry2) => fold3(entry2.logicalId) === fold3(qualified))) {
             mount = candidate;
             break;
           }
         }
       }
       if (mount === void 0)
-        throw new RangeError(`content dependency has no entry ${normalized}`);
+        throw new RangeError(`content dependency has no entry ${normalized2}`);
       const relative = relativeRequest(mount, qualifiedIn(mount));
       if (relative === void 0 || relative === "")
-        throw new RangeError(`content dependency has no file ${normalized}`);
+        throw new RangeError(`content dependency has no file ${normalized2}`);
       const bytes = await contentSources.read(mount.sourceId, joinPath(mount.sourcePath, relative), maximumEntryBytes);
-      const uri = `content-source://${encodeURIComponent(mount.sourceId)}/${normalized.split("/").map(encodeURIComponent).join("/")}`;
-      const source = Object.freeze({
-        kind: "bytes",
-        ref: Object.freeze({ id: `${mount.rootId}:${normalized}`, uri }),
-        revision: mount.revision,
-        size: BigInt(bytes.byteLength),
-        async read(offset, length, readSignal) {
-          throwIfAborted(readSignal);
-          if (offset < 0n || offset > BigInt(bytes.byteLength) || !Number.isSafeInteger(length) || length < 0) {
-            throw new RangeError("invalid content dependency byte range");
-          }
-          const start = Number(offset);
-          return bytes.slice(start, Math.min(bytes.byteLength, start + length));
-        },
-        async *stream(range, streamSignal) {
-          throwIfAborted(streamSignal);
-          const start = range === void 0 ? 0 : Number(range.offset);
-          const end = range?.length === void 0 ? bytes.byteLength : Math.min(bytes.byteLength, start + Number(range.length));
-          if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start < 0 || end < start) {
-            throw new RangeError("invalid content dependency stream range");
-          }
-          for (let offset = start; offset < end; offset += 64 * 1024) {
-            throwIfAborted(streamSignal);
-            yield bytes.slice(offset, Math.min(end, offset + 64 * 1024));
-          }
-        }
-      });
+      const uri = `content-source://${encodeURIComponent(mount.sourceId)}/${normalized2.split("/").map(encodeURIComponent).join("/")}`;
+      const source = artifactByteSourceFromBytes(Object.freeze({ id: `${mount.rootId}:${normalized2}`, uri }), mount.revision, bytes);
       return Object.freeze({ value: source, release: async () => void 0 });
     }
   });
@@ -9872,7 +9875,7 @@ var NESTED_ENTRY_NOT_FOUND = "x3.host/nested-entry-not-found";
 function createNamespaceCompanionOrigin(options) {
   const pageLimit2 = options.pageLimit ?? 256;
   const caseSensitivity = options.caseSensitivity ?? "insensitive";
-  const fold2 = (value) => caseSensitivity === "insensitive" ? value.toLowerCase() : value;
+  const fold3 = (value) => caseSensitivity === "insensitive" ? value.toLowerCase() : value;
   const index = /* @__PURE__ */ new Map();
   const observed = /* @__PURE__ */ new Map();
   const listing = async function* (prefix, signal) {
@@ -9882,7 +9885,7 @@ function createNamespaceCompanionOrigin(options) {
       return;
     }
     const built = /* @__PURE__ */ new Map();
-    const spellings = [...new Set(prefix === "" ? [""] : [prefix, fold2(prefix)])];
+    const spellings = [...new Set(prefix === "" ? [""] : [prefix, fold3(prefix)])];
     let pages = 0;
     for (const spelling of spellings) {
       let cursor2;
@@ -9900,7 +9903,7 @@ function createNamespaceCompanionOrigin(options) {
         for (const entry2 of page.items) {
           if (entry2.kind !== "file")
             continue;
-          const key3 = fold2(entry2.path);
+          const key3 = fold3(entry2.path);
           if (!built.has(key3)) {
             const value = {
               entryId: entry2.id,
@@ -9928,10 +9931,10 @@ function createNamespaceCompanionOrigin(options) {
       throwIfAborted(signal);
       if (scope !== "current-mount" && scope !== "enclosing-container")
         return;
-      const namePrefix = enumeration.namePrefix === void 0 ? "" : fold2(enumeration.prefix + enumeration.namePrefix);
+      const namePrefix = enumeration.namePrefix === void 0 ? "" : fold3(enumeration.prefix + enumeration.namePrefix);
       for await (const entry2 of listing(enumeration.prefix, signal)) {
         throwIfAborted(signal);
-        if (namePrefix !== "" && !fold2(entry2.path).startsWith(namePrefix))
+        if (namePrefix !== "" && !fold3(entry2.path).startsWith(namePrefix))
           continue;
         yield Object.freeze({
           logicalId: entry2.path,
@@ -9941,10 +9944,10 @@ function createNamespaceCompanionOrigin(options) {
     },
     async open(logicalId, signal) {
       throwIfAborted(signal);
-      let entry2 = observed.get(fold2(logicalId));
+      let entry2 = observed.get(fold3(logicalId));
       if (entry2 === void 0) {
         for await (const candidate of listing(logicalId, signal)) {
-          if (fold2(candidate.path) === fold2(logicalId)) {
+          if (fold3(candidate.path) === fold3(logicalId)) {
             entry2 = candidate;
             break;
           }
@@ -10000,7 +10003,7 @@ function createCompositeWorkspaceNamespaceCompanionOrigin(options) {
   const pageLimit2 = options.pageLimit ?? 256;
   const maxPages = options.maxPages ?? 4096;
   const caseSensitivity = options.caseSensitivity ?? "insensitive";
-  const fold2 = (value) => caseSensitivity === "insensitive" ? value.toLowerCase() : value;
+  const fold3 = (value) => caseSensitivity === "insensitive" ? value.toLowerCase() : value;
   const roots = options.roots.map((root) => {
     const pathPrefix = root.pathPrefix === "" ? "" : normalizeCompanionLogicalId(root.pathPrefix).replace(/\/$/u, "");
     const logicalPrefix = root.logicalPrefix === void 0 || root.logicalPrefix === "" ? "" : normalizeCompanionLogicalId(root.logicalPrefix).replace(/\/$/u, "");
@@ -10023,7 +10026,7 @@ function createCompositeWorkspaceNamespaceCompanionOrigin(options) {
   }
   const byLogicalId = /* @__PURE__ */ new Map();
   const pages = async function* (root, prefix, signal) {
-    const spellings = [...new Set(prefix === "" ? [""] : [prefix, fold2(prefix)])];
+    const spellings = [...new Set(prefix === "" ? [""] : [prefix, fold3(prefix)])];
     for (const spelling of spellings) {
       let cursor2;
       let pageCount = 0;
@@ -10050,7 +10053,7 @@ function createCompositeWorkspaceNamespaceCompanionOrigin(options) {
   const isQualifiedRequest = (logicalId) => roots.some((root) => {
     if (root.logicalPrefix === "")
       return false;
-    return fold2(logicalId) === fold2(root.logicalPrefix) || fold2(logicalId).startsWith(fold2(`${root.logicalPrefix}/`));
+    return fold3(logicalId) === fold3(root.logicalPrefix) || fold3(logicalId).startsWith(fold3(`${root.logicalPrefix}/`));
   });
   const relativeRequest = (root, logicalId) => {
     if (logicalId === "")
@@ -10059,18 +10062,18 @@ function createCompositeWorkspaceNamespaceCompanionOrigin(options) {
       return logicalId;
     if (!isQualifiedRequest(logicalId))
       return logicalId;
-    if (fold2(logicalId) === fold2(root.logicalPrefix))
+    if (fold3(logicalId) === fold3(root.logicalPrefix))
       return "";
     const prefix = `${root.logicalPrefix}/`;
-    return fold2(logicalId).startsWith(fold2(prefix)) ? logicalId.slice(prefix.length) : void 0;
+    return fold3(logicalId).startsWith(fold3(prefix)) ? logicalId.slice(prefix.length) : void 0;
   };
   const assetSpellings = (root, relative) => {
     const slash = relative.indexOf("/");
     if (root.assetRoots === void 0 || slash <= 0)
       return [relative];
-    const first = fold2(relative.slice(0, slash));
+    const first = fold3(relative.slice(0, slash));
     const rest = relative.slice(slash + 1);
-    const named = root.assetRoots.some((pattern) => pattern.startsWith("*") ? first.endsWith(fold2(pattern.slice(1))) : pattern !== "" && first === fold2(pattern));
+    const named = root.assetRoots.some((pattern) => pattern.startsWith("*") ? first.endsWith(fold3(pattern.slice(1))) : pattern !== "" && first === fold3(pattern));
     if (!named)
       return [relative];
     const spellings = [relative];
@@ -10078,7 +10081,7 @@ function createCompositeWorkspaceNamespaceCompanionOrigin(options) {
       if (pattern.startsWith("*"))
         continue;
       const spelling = pattern === "" ? rest : `${pattern}/${rest}`;
-      if (!spellings.some((known) => fold2(known) === fold2(spelling)))
+      if (!spellings.some((known) => fold3(known) === fold3(spelling)))
         spellings.push(spelling);
     }
     return spellings;
@@ -10087,13 +10090,13 @@ function createCompositeWorkspaceNamespaceCompanionOrigin(options) {
     if (entry2.kind !== "file")
       return void 0;
     const prefix = root.pathPrefix === "" ? "" : `${root.pathPrefix}/`;
-    if (prefix !== "" && !fold2(entry2.path).startsWith(fold2(prefix)))
+    if (prefix !== "" && !fold3(entry2.path).startsWith(fold3(prefix)))
       return void 0;
     const relative = prefix === "" ? entry2.path : entry2.path.slice(prefix.length);
     if (relative === "")
       return void 0;
     const logicalId = joinPrefix(root.logicalPrefix, relative);
-    const key3 = fold2(logicalId);
+    const key3 = fold3(logicalId);
     if (!byLogicalId.has(key3)) {
       byLogicalId.set(key3, {
         entryId: entry2.id,
@@ -10112,13 +10115,13 @@ function createCompositeWorkspaceNamespaceCompanionOrigin(options) {
     if (entry2.kind !== "file")
       return void 0;
     const prefix = root.pathPrefix === "" ? "" : `${root.pathPrefix}/`;
-    if (prefix !== "" && !fold2(entry2.path).startsWith(fold2(prefix)))
+    if (prefix !== "" && !fold3(entry2.path).startsWith(fold3(prefix)))
       return void 0;
     const relative = prefix === "" ? entry2.path : entry2.path.slice(prefix.length);
     return relative === "" ? void 0 : relative;
   };
   const find = async (logicalId, signal) => {
-    const key3 = fold2(logicalId);
+    const key3 = fold3(logicalId);
     const cached = byLogicalId.get(key3);
     if (cached !== void 0)
       return cached;
@@ -10128,14 +10131,14 @@ function createCompositeWorkspaceNamespaceCompanionOrigin(options) {
       if (relative === void 0)
         continue;
       for (const spelling of qualified ? [relative] : assetSpellings(root, relative)) {
-        const wanted = qualified ? key3 : fold2(spelling);
+        const wanted = qualified ? key3 : fold3(spelling);
         for await (const entry2 of pages(root, joinPrefix(root.pathPrefix, spelling), signal)) {
           const remembered = remember2(root, entry2);
           if (remembered === void 0)
             continue;
           const exposed = qualified ? remembered : relativeEntryPath(root, entry2);
-          if (exposed !== void 0 && fold2(exposed) === wanted) {
-            const bound = byLogicalId.get(fold2(remembered));
+          if (exposed !== void 0 && fold3(exposed) === wanted) {
+            const bound = byLogicalId.get(fold3(remembered));
             if (bound !== void 0)
               byLogicalId.set(key3, bound);
             return bound;
@@ -10165,13 +10168,13 @@ function createCompositeWorkspaceNamespaceCompanionOrigin(options) {
             if (remembered === void 0)
               continue;
             const exposed = qualified ? remembered : relativeEntryPath(root, entry2);
-            const logicalId = exposed === void 0 || qualified || spelling === relative ? exposed : fold2(exposed).startsWith(fold2(spelling)) ? `${relative}${exposed.slice(spelling.length)}` : void 0;
-            if (logicalId === void 0 || yielded.has(fold2(logicalId)))
+            const logicalId = exposed === void 0 || qualified || spelling === relative ? exposed : fold3(exposed).startsWith(fold3(spelling)) ? `${relative}${exposed.slice(spelling.length)}` : void 0;
+            if (logicalId === void 0 || yielded.has(fold3(logicalId)))
               continue;
-            const bound = byLogicalId.get(fold2(remembered));
+            const bound = byLogicalId.get(fold3(remembered));
             if (bound !== void 0)
-              byLogicalId.set(fold2(logicalId), bound);
-            yielded.add(fold2(logicalId));
+              byLogicalId.set(fold3(logicalId), bound);
+            yielded.add(fold3(logicalId));
             yield Object.freeze({
               logicalId,
               rootId: root.rootId,
@@ -10229,8 +10232,8 @@ function createWorkspaceNamespaceCandidateDiscovery(options) {
     throw new TypeError("candidate extension must be an exact dotted suffix without glob syntax");
   }
   const caseSensitivity = options.caseSensitivity ?? "insensitive";
-  const fold2 = (value) => caseSensitivity === "insensitive" ? value.toLowerCase() : value;
-  const extension = fold2(options.extension);
+  const fold3 = (value) => caseSensitivity === "insensitive" ? value.toLowerCase() : value;
+  const extension = fold3(options.extension);
   const roots = options.logicalRoots.map((root, index) => {
     if (typeof root.rootId !== "string" || root.rootId.trim() === "") {
       throw new TypeError(`logicalRoots[${index}].rootId must be a non-empty string`);
@@ -10248,12 +10251,12 @@ function createWorkspaceNamespaceCandidateDiscovery(options) {
     throw new TypeError("candidate discovery requires an explicit search root");
   }
   const relativeRequest = (root, logicalId) => {
-    if (logicalId === "" || fold2(logicalId) === fold2(root.logicalPrefix))
+    if (logicalId === "" || fold3(logicalId) === fold3(root.logicalPrefix))
       return "";
     if (root.logicalPrefix === "")
       return logicalId;
     const prefix = `${root.logicalPrefix}/`;
-    return fold2(logicalId).startsWith(fold2(prefix)) ? logicalId.slice(prefix.length) : void 0;
+    return fold3(logicalId).startsWith(fold3(prefix)) ? logicalId.slice(prefix.length) : void 0;
   };
   const joinPrefix = (prefix, suffix) => prefix === "" ? suffix : suffix === "" ? prefix : `${prefix}/${suffix}`;
   const searches = options.searches.map((search, index) => {
@@ -10299,7 +10302,7 @@ function createWorkspaceNamespaceCandidateDiscovery(options) {
         const subtree = joinPrefix(search.root.pathPrefix, search.relative);
         const namespacePrefix = subtree === "" ? "" : `${subtree}/`;
         const spellings = [
-          ...new Set(caseSensitivity === "insensitive" ? [namespacePrefix, fold2(namespacePrefix)] : [namespacePrefix])
+          ...new Set(caseSensitivity === "insensitive" ? [namespacePrefix, fold3(namespacePrefix)] : [namespacePrefix])
         ];
         for (const spelling of spellings) {
           let cursor2;
@@ -10339,19 +10342,19 @@ function createWorkspaceNamespaceCandidateDiscovery(options) {
               } catch {
                 return refused4("namespace-invalid", "candidate discovery received an invalid entry path");
               }
-              if (entry2.kind === "file" && path !== entry2.path || namespacePrefix !== "" && !fold2(path).startsWith(fold2(namespacePrefix)) && !(entry2.kind !== "file" && fold2(path) === fold2(subtree))) {
+              if (entry2.kind === "file" && path !== entry2.path || namespacePrefix !== "" && !fold3(path).startsWith(fold3(namespacePrefix)) && !(entry2.kind !== "file" && fold3(path) === fold3(subtree))) {
                 return refused4("namespace-invalid", `namespace entry \xAB${entry2.path}\xBB escaped or changed requested subtree \xAB${subtree}\xBB of logical root \xAB${search.root.rootId}\xBB`);
               }
-              if (entry2.kind !== "file" || !fold2(path).endsWith(extension))
+              if (entry2.kind !== "file" || !fold3(path).endsWith(extension))
                 continue;
               const relative = path.slice(rootPrefix.length);
               if (relative === "")
                 continue;
               const logicalId = joinPrefix(search.root.logicalPrefix, relative);
-              const key3 = fold2(logicalId);
+              const key3 = fold3(logicalId);
               if (candidates.has(key3))
                 continue;
-              const uncovered = roots.find((root) => root.rank < search.root.rank && (relativeRequest(root, logicalId)?.length ?? 0) > 0 && !searches.some((higher) => higher.root.rank === root.rank && (higher.logicalPrefix === "" || key3.startsWith(fold2(`${higher.logicalPrefix}/`)))));
+              const uncovered = roots.find((root) => root.rank < search.root.rank && (relativeRequest(root, logicalId)?.length ?? 0) > 0 && !searches.some((higher) => higher.root.rank === root.rank && (higher.logicalPrefix === "" || key3.startsWith(fold3(`${higher.logicalPrefix}/`)))));
               if (uncovered !== void 0)
                 return refused4("namespace-invalid", `candidate \xAB${logicalId}\xBB has incomplete precedence coverage for logical root \xAB${uncovered.rootId}\xBB; that root may serve the same logical id`);
               if (entry2.size === void 0 || typeof entry2.size !== "bigint" || entry2.size < 0n || entry2.size > BigInt(Number.MAX_SAFE_INTEGER)) {
@@ -10759,7 +10762,7 @@ async function createContainerNamespaceComposition(options) {
         message: "container namespace returned a malformed entry"
       });
     }
-    const normalized = normalizePath(entry2.path, false);
+    const normalized2 = normalizePath(entry2.path, false);
     exposedEntries += 1;
     if (exposedEntries > options.budget.maxNodes) {
       throw new ModkitError({
@@ -10767,7 +10770,7 @@ async function createContainerNamespaceComposition(options) {
         message: `container namespace exceeded its ${options.budget.maxNodes}-entry budget`
       });
     }
-    return normalized === entry2.path ? entry2 : Object.freeze({ ...entry2, path: normalized });
+    return normalized2 === entry2.path ? entry2 : Object.freeze({ ...entry2, path: normalized2 });
   };
   const pages = async function* (prefix, signal) {
     let cursor2;
@@ -12124,9 +12127,9 @@ function normalizeNamespaceProbePath(path, plan) {
     }
     parts.push(part);
   }
-  const normalized = parts.join("/");
-  const pathBytes = NAMESPACE_PATH_ENCODER.encode(normalized).byteLength;
-  if (normalized === "" || parts.length > plan.maxDepth || pathBytes > plan.maxPathBytes) {
+  const normalized2 = parts.join("/");
+  const pathBytes = NAMESPACE_PATH_ENCODER.encode(normalized2).byteLength;
+  if (normalized2 === "" || parts.length > plan.maxDepth || pathBytes > plan.maxPathBytes) {
     throw new ModkitError({
       code: "x3.host/namespace-probe-path-budget-exceeded",
       message: "namespace probe marker exceeds its declared path budget",
@@ -12139,7 +12142,7 @@ function normalizeNamespaceProbePath(path, plan) {
       }
     });
   }
-  return normalized;
+  return normalized2;
 }
 function boundedNamespaceProbeSource(source, plan) {
   if (plan.markers.length > plan.maxEntries) {
@@ -12229,22 +12232,22 @@ function boundedNamespaceProbeSource(source, plan) {
               message: "namespace enumeration is forbidden unless the codec declares probe prefixes"
             });
           }
-          const normalized = normalizeNamespaceProbePath(prefix, plan);
-          if (!prefixes.has(normalized)) {
+          const normalized2 = normalizeNamespaceProbePath(prefix, plan);
+          if (!prefixes.has(normalized2)) {
             throw new ModkitError({
               code: "x3.host/namespace-probe-prefix-refused",
-              message: `codec attempted to enumerate undeclared namespace prefix \xAB${normalized}\xBB`,
-              context: { prefix: normalized, prefixes: [...prefixes] }
+              message: `codec attempted to enumerate undeclared namespace prefix \xAB${normalized2}\xBB`,
+              context: { prefix: normalized2, prefixes: [...prefixes] }
             });
           }
-          for await (const entry2 of lease2.value.list(normalized, listSignal)) {
+          for await (const entry2 of lease2.value.list(normalized2, listSignal)) {
             throwIfAborted(listSignal);
             const entryPath = normalizeNamespaceProbePath(entry2.path, plan);
-            if (entryPath !== normalized && !entryPath.startsWith(`${normalized}/`)) {
+            if (entryPath !== normalized2 && !entryPath.startsWith(`${normalized2}/`)) {
               throw new ModkitError({
                 code: "x3.host/namespace-probe-prefix-escape",
-                message: `namespace probe entry \xAB${entryPath}\xBB escaped prefix \xAB${normalized}\xBB`,
-                context: { prefix: normalized, path: entryPath }
+                message: `namespace probe entry \xAB${entryPath}\xBB escaped prefix \xAB${normalized2}\xBB`,
+                context: { prefix: normalized2, path: entryPath }
               });
             }
             consumedEntries += 1;
@@ -12258,12 +12261,12 @@ function boundedNamespaceProbeSource(source, plan) {
           }
         },
         async open(path, openSignal) {
-          const normalized = normalizeNamespaceProbePath(path, plan);
-          if (!markers.has(normalized)) {
+          const normalized2 = normalizeNamespaceProbePath(path, plan);
+          if (!markers.has(normalized2)) {
             throw new ModkitError({
               code: "x3.host/namespace-probe-path-refused",
-              message: `codec attempted to inspect undeclared namespace marker \xAB${normalized}\xBB`,
-              context: { path: normalized, markers: [...markers] }
+              message: `codec attempted to inspect undeclared namespace marker \xAB${normalized2}\xBB`,
+              context: { path: normalized2, markers: [...markers] }
             });
           }
           consumedEntries += 1;
@@ -12273,9 +12276,9 @@ function boundedNamespaceProbeSource(source, plan) {
               message: `namespace probe exceeded its declared ${plan.maxEntries}-entry budget`
             });
           }
-          const opened = await lease2.value.open(normalized, openSignal);
+          const opened = await lease2.value.open(normalized2, openSignal);
           return Object.freeze({
-            value: guardMarkerSource(normalized, opened.value),
+            value: guardMarkerSource(normalized2, opened.value),
             release: () => opened.release()
           });
         }
@@ -13396,6 +13399,69 @@ var COMPANION_BUDGET_EXCEEDED = "x3.host/companion-budget-exceeded";
 var COMPANION_PLAN_INVALID = "x3.host/companion-plan-invalid";
 var COMPANION_TRAIT_PROBE_UNAVAILABLE = "x3.host/companion-trait-probe-unavailable";
 var COMPANION_UNAVAILABLE = "x3.host/companion-unavailable";
+function traitIdsOf(query, key3) {
+  return (query[key3] ?? []).map((item) => item.id);
+}
+function createSignatureTraitProbe(inventory) {
+  const entries = [];
+  for (const extension of inventory.extensions) {
+    for (const contribution of extension.contributions) {
+      const manifest = contribution.manifest;
+      if (manifest?.contract.id !== CODEC_CONTRIBUTION_CONTRACT || manifest.contract.major !== 1) {
+        continue;
+      }
+      const spec = manifest.spec;
+      const signatures = spec.match.signatures;
+      if (signatures === void 0 || signatures.length === 0)
+        continue;
+      entries.push({
+        signatures,
+        traits: (spec.traitDeclarations ?? []).map((item) => item.id)
+      });
+    }
+  }
+  const needs = signatureNeeds(entries.map((entry2) => entry2.signatures));
+  return async (request, signal) => {
+    for (const key3 of ["all", "any", "none"]) {
+      if ((request.expected[key3] ?? []).some((item) => item.states !== void 0)) {
+        throw new ModkitError({
+          code: COMPANION_TRAIT_PROBE_UNAVAILABLE,
+          message: "the signature trait probe proves declared traits, not observed trait states; a state-constrained companion query needs a probe this composition does not have",
+          context: { requirementId: request.requirementId, logicalId: request.logicalId }
+        });
+      }
+    }
+    if (request.source.kind !== "bytes")
+      return false;
+    const source = request.source;
+    const size = source.size;
+    if (size === void 0)
+      return false;
+    const budget = BigInt(request.maxBytes);
+    const headLength = Number([size, BigInt(needs.prefix), budget].reduce((left, right) => left < right ? left : right));
+    const head = headLength <= 0 ? new Uint8Array(0) : await source.read(0n, headLength, signal);
+    const tailLength = Number([size, BigInt(needs.suffix), budget - BigInt(headLength)].reduce((left, right) => left < right ? left : right));
+    const tail = tailLength <= 0 ? new Uint8Array(0) : await source.read(size - BigInt(tailLength), tailLength, signal);
+    const windows = { head, tail, size };
+    const declared = /* @__PURE__ */ new Set();
+    for (const entry2 of entries) {
+      if (!matchesSignatures(entry2.signatures, windows))
+        continue;
+      for (const trait of entry2.traits)
+        declared.add(trait);
+    }
+    const all = traitIdsOf(request.expected, "all");
+    const any = traitIdsOf(request.expected, "any");
+    const none = traitIdsOf(request.expected, "none");
+    if (!all.every((id) => declared.has(id)))
+      return false;
+    if (any.length > 0 && !any.some((id) => declared.has(id)))
+      return false;
+    if (none.some((id) => declared.has(id)))
+      return false;
+    return true;
+  };
+}
 var DEFAULT_COMPANION_LIMITS = Object.freeze({
   // One scope of a game archive: a model's bare texture name is looked for in every folder of the
   // enclosing container, and Emperor's 3DDATA0001.RFH holds 3 749 entries, Diablo III's anim/ 15 258.
@@ -13433,10 +13499,10 @@ function normalizeCompanionLogicalId(value, context = {}) {
       refusePath(slashed, "it escapes the confined origin root", context);
     parts.push(part);
   }
-  const normalized = parts.join("/");
-  if (normalized === "")
+  const normalized2 = parts.join("/");
+  if (normalized2 === "")
     refusePath(value, "it names nothing", context);
-  return normalized;
+  return normalized2;
 }
 var WILDCARDS = /* @__PURE__ */ new Set(["*", "?"]);
 function compilePatterns(requirementId, patterns, caseSensitivity) {
@@ -13517,13 +13583,13 @@ function enumerationNamePrefix(patterns, caseSensitivity) {
   const directory = enumerationPrefix(patterns);
   if (directory === "")
     return "";
-  const fold2 = (value) => caseSensitivity === "insensitive" ? value.toLowerCase() : value;
+  const fold3 = (value) => caseSensitivity === "insensitive" ? value.toLowerCase() : value;
   const starts = patterns.map((pattern) => {
-    const normalized = pattern.replaceAll("\\", "/");
-    const wildcard = normalized.search(/[*?]/u);
-    if (wildcard === -1 || !fold2(normalized).startsWith(fold2(directory)))
+    const normalized2 = pattern.replaceAll("\\", "/");
+    const wildcard = normalized2.search(/[*?]/u);
+    if (wildcard === -1 || !fold3(normalized2).startsWith(fold3(directory)))
       return void 0;
-    const literal = normalized.slice(directory.length, wildcard);
+    const literal = normalized2.slice(directory.length, wildcard);
     return literal.includes("/") ? void 0 : literal;
   });
   if (starts.some((start) => start === void 0))
@@ -13531,7 +13597,7 @@ function enumerationNamePrefix(patterns, caseSensitivity) {
   let common = starts[0];
   for (const start of starts.slice(1)) {
     let length = 0;
-    while (length < common.length && length < start.length && fold2(common[length]) === fold2(start[length]))
+    while (length < common.length && length < start.length && fold3(common[length]) === fold3(start[length]))
       length += 1;
     common = common.slice(0, length);
   }
@@ -13539,13 +13605,13 @@ function enumerationNamePrefix(patterns, caseSensitivity) {
 }
 function enumerationPrefix(patterns) {
   const safe = patterns.map((pattern) => {
-    const normalized = pattern.replaceAll("\\", "/");
-    if (!normalized.includes("/"))
+    const normalized2 = pattern.replaceAll("\\", "/");
+    if (!normalized2.includes("/"))
       return "";
-    const wildcard = normalized.search(/[*?]/u);
+    const wildcard = normalized2.search(/[*?]/u);
     if (wildcard === -1)
-      return normalized;
-    const literal = normalized.slice(0, wildcard);
+      return normalized2;
+    const literal = normalized2.slice(0, wildcard);
     const cut2 = literal.lastIndexOf("/");
     return cut2 === -1 ? "" : literal.slice(0, cut2 + 1);
   });
@@ -13600,7 +13666,7 @@ function createLayeredCompanionOrigin(origins) {
   const first = origins[0];
   if (first === void 0)
     throw new TypeError("a layered companion origin needs a backend");
-  const fold2 = (value) => first.caseSensitivity === "insensitive" ? value.toLowerCase() : value;
+  const fold3 = (value) => first.caseSensitivity === "insensitive" ? value.toLowerCase() : value;
   const producedBy = /* @__PURE__ */ new Map();
   return Object.freeze({
     primaryLogicalId: first.primaryLogicalId,
@@ -13612,7 +13678,7 @@ function createLayeredCompanionOrigin(origins) {
         if (!origin.scopes.includes(scope))
           continue;
         for await (const entry2 of origin.enumerate(scope, options, signal)) {
-          const key3 = fold2(entry2.logicalId);
+          const key3 = fold3(entry2.logicalId);
           if (seen.has(key3))
             continue;
           seen.add(key3);
@@ -13622,7 +13688,7 @@ function createLayeredCompanionOrigin(origins) {
       }
     },
     async open(logicalId, signal) {
-      const remembered = producedBy.get(fold2(logicalId));
+      const remembered = producedBy.get(fold3(logicalId));
       if (remembered !== void 0)
         return remembered.open(logicalId, signal);
       let failure3;
@@ -13716,8 +13782,8 @@ function createCompanionInputResolver(origin, options = {}) {
       enumerated.set(key3, frozen);
       return frozen;
     };
-    const fold2 = (value) => origin.caseSensitivity === "insensitive" ? value.toLowerCase() : value;
-    const primaryKey = fold2(normalizeCompanionLogicalId(origin.primaryLogicalId));
+    const fold3 = (value) => origin.caseSensitivity === "insensitive" ? value.toLowerCase() : value;
+    const primaryKey = fold3(normalizeCompanionLogicalId(origin.primaryLogicalId));
     const selected = [];
     const usedBindingIds = /* @__PURE__ */ new Set();
     const pinned = /* @__PURE__ */ new Map();
@@ -13745,10 +13811,10 @@ function createCompanionInputResolver(origin, options = {}) {
         for (const prefix of patterns.prefixes) {
           const namePrefix = patterns.prefixes.length === 1 ? patterns.namePrefix : "";
           for (const logicalId of await enumerateScope(scope, prefix, namePrefix)) {
-            if (scope === "explicit-user-selection" && !(explicit?.[requirement.id] ?? []).some((value) => fold2(normalizeCompanionLogicalId(value)) === fold2(logicalId))) {
+            if (scope === "explicit-user-selection" && !(explicit?.[requirement.id] ?? []).some((value) => fold3(normalizeCompanionLogicalId(value)) === fold3(logicalId))) {
               continue;
             }
-            if (fold2(logicalId) === primaryKey)
+            if (fold3(logicalId) === primaryKey)
               continue;
             if (!patterns.test(logicalId))
               continue;
@@ -13760,7 +13826,7 @@ function createCompanionInputResolver(origin, options = {}) {
       const unique = [];
       const seenKeys = /* @__PURE__ */ new Set();
       for (const { logicalId } of matched) {
-        const key3 = fold2(logicalId);
+        const key3 = fold3(logicalId);
         if (seenKeys.has(key3))
           continue;
         seenKeys.add(key3);
@@ -14031,8 +14097,8 @@ function buildAssetInput(context, plan, origin, selected, signal) {
 
 // ../MODDING/modkit-core/packages/host/dist/vfs-source.js
 function scopedPath(root, path) {
-  const normalized = normalizeVfsPath(path);
-  return root === "" ? normalized : normalized === "" ? root : `${root}/${normalized}`;
+  const normalized2 = normalizeVfsPath(path);
+  return root === "" ? normalized2 : normalized2 === "" ? root : `${root}/${normalized2}`;
 }
 function relativePath(root, path) {
   if (root === "")
@@ -14073,14 +14139,14 @@ function createVfsCompanionOrigin(options) {
   }
   const absolute = (logicalId) => scopedPath(root, logicalId);
   const fileSource = async (logicalId, signal) => {
-    const normalized = normalizeVfsPath(logicalId);
-    const path = absolute(normalized);
+    const normalized2 = normalizeVfsPath(logicalId);
+    const path = absolute(normalized2);
     const node = await options.mount.stat(path, signal);
     if (node?.kind !== "file") {
       throw new ModkitError({
         code: "x3.host/vfs-companion-not-found",
-        message: `VFS mount has no companion file \xAB${normalized}\xBB`,
-        context: { logicalId: normalized }
+        message: `VFS mount has no companion file \xAB${normalized2}\xBB`,
+        context: { logicalId: normalized2 }
       });
     }
     const random = await options.mount.open(path, signal);
@@ -15892,8 +15958,8 @@ async function openNestedSubject(options) {
           const result2 = await discovery.discover(context.signal);
           if (result2.state === "refused")
             return result2;
-          const fold2 = (id) => caseSensitivity === "sensitive" ? id : id.toLowerCase();
-          const candidates = result2.candidates.filter((candidate) => fold2(candidate.logicalId) !== fold2(primaryLogicalId));
+          const fold3 = (id) => caseSensitivity === "sensitive" ? id : id.toLowerCase();
+          const candidates = result2.candidates.filter((candidate) => fold3(candidate.logicalId) !== fold3(primaryLogicalId));
           return Object.freeze({
             state: "complete",
             context: Object.freeze({ primaryLogicalId }),
@@ -15956,13 +16022,13 @@ async function openNestedSubject(options) {
   }
 }
 function logicalEntryPath(entryPath, roots, caseSensitivity = "insensitive") {
-  const normalized = normalizeCompanionLogicalId(entryPath);
-  const fold2 = (value) => caseSensitivity === "insensitive" ? value.toLowerCase() : value;
+  const normalized2 = normalizeCompanionLogicalId(entryPath);
+  const fold3 = (value) => caseSensitivity === "insensitive" ? value.toLowerCase() : value;
   for (const root of roots) {
     const prefix = root.pathPrefix === "" ? "" : `${root.pathPrefix}/`;
-    if (!fold2(normalized).startsWith(fold2(prefix)))
+    if (!fold3(normalized2).startsWith(fold3(prefix)))
       continue;
-    const relative = normalized.slice(prefix.length);
+    const relative = normalized2.slice(prefix.length);
     if (relative === "")
       continue;
     return root.logicalPrefix ? `${root.logicalPrefix}/${relative}` : relative;
@@ -15996,6 +16062,189 @@ function sessionHoldingContainer(session, release) {
       if (firstError !== void 0)
         throw firstError;
     }
+  });
+}
+
+// ../MODDING/modkit-core/packages/host/dist/content-source-companion.js
+function containerExtensionsOf(inventory) {
+  const extensions = /* @__PURE__ */ new Set();
+  for (const extension of inventory.extensions) {
+    for (const contribution of extension.contributions) {
+      const manifest = contribution.manifest;
+      if (manifest?.contract.id !== CODEC_CONTRIBUTION_CONTRACT)
+        continue;
+      const spec = manifest.spec;
+      if (spec.sourceTopology !== "namespace" || spec.container === void 0)
+        continue;
+      for (const value of spec.match.extensions ?? [])
+        extensions.add(value.toLowerCase());
+    }
+  }
+  return Object.freeze([...extensions].sort());
+}
+function containerAssetRootsOf(inventory) {
+  const roots = {};
+  for (const extension of inventory.extensions) {
+    for (const contribution of extension.contributions) {
+      const manifest = contribution.manifest;
+      if (manifest?.contract.id !== CODEC_CONTRIBUTION_CONTRACT)
+        continue;
+      const spec = manifest.spec;
+      const assetRoots = spec.container?.assetRoots;
+      if (spec.sourceTopology !== "namespace" || assetRoots === void 0)
+        continue;
+      for (const value of spec.match.extensions ?? [])
+        roots[value.toLowerCase()] ??= assetRoots;
+    }
+  }
+  return Object.freeze(roots);
+}
+function containerMarkersOf(inventory) {
+  const markers = {};
+  for (const extension of inventory.extensions) {
+    for (const contribution of extension.contributions) {
+      const manifest = contribution.manifest;
+      if (!contribution.activationEligible || manifest?.contract.id !== CODEC_CONTRIBUTION_CONTRACT)
+        continue;
+      const spec = manifest.spec;
+      if (spec.sourceTopology !== "namespace")
+        continue;
+      for (const marker of spec.container?.markers ?? [])
+        markers[marker.toLowerCase()] ??= spec.container?.assetRoots ?? [""];
+    }
+  }
+  return Object.freeze(markers);
+}
+var normalized = (path) => path.replaceAll("\\", "/").replace(/^\/+|\/+$/gu, "");
+var join = (base, path) => base === "" ? path : path === "" ? base : `${base}/${path}`;
+var parentOf = (path) => path.slice(0, Math.max(0, path.lastIndexOf("/")));
+var nameOf = (path) => path.slice(path.lastIndexOf("/") + 1);
+var fold2 = (value) => value.toLowerCase();
+function createContentSourceCompanionOrigin(options) {
+  const { contentSources } = options;
+  const { sourceId } = options.target;
+  const primary = normalized(options.target.path);
+  if (primary === "")
+    throw new TypeError("a content-source companion origin needs a file path");
+  const maximumEntryBytes = options.maximumEntryBytes ?? 64 * 1024 * 1024;
+  if (!Number.isSafeInteger(maximumEntryBytes) || maximumEntryBytes <= 0)
+    throw new TypeError("maximumEntryBytes must be a positive safe integer");
+  const directory = parentOf(primary);
+  const list = async (path) => {
+    try {
+      return await contentSources.list(sourceId, path);
+    } catch {
+      return [];
+    }
+  };
+  const suffixes = (options.containerExtensions ?? []).map((extension) => `.${fold2(extension)}`);
+  let named;
+  for (let current = directory; current !== ""; current = parentOf(current)) {
+    const name = fold2(nameOf(current));
+    if (suffixes.some((suffix) => name.endsWith(suffix) && name.length > suffix.length)) {
+      named = current;
+      break;
+    }
+  }
+  const markers = options.containerMarkers ?? {};
+  const markerNames = Object.keys(markers);
+  let containerBases;
+  const bases = () => containerBases ??= (async () => {
+    let container = named;
+    let patterns;
+    if (container === void 0 && markerNames.length > 0) {
+      for (let current = directory; ; current = parentOf(current)) {
+        const names = new Set((await list(current)).map((entry2) => fold2(entry2.name)));
+        const marker = markerNames.find((file) => names.has(fold2(file)));
+        if (marker !== void 0) {
+          container = current;
+          patterns = markers[marker] ?? [""];
+          break;
+        }
+        if (current === "")
+          break;
+      }
+    }
+    if (container === void 0)
+      return [];
+    const containerName = fold2(nameOf(container));
+    patterns ??= Object.entries(options.containerAssetRoots ?? {}).find(([extension]) => containerName.endsWith(`.${fold2(extension)}`))?.[1] ?? [""];
+    const folders = (await list(container)).filter((entry2) => entry2.directory);
+    const found = [];
+    for (const pattern of patterns) {
+      const names = pattern === "" ? [container] : pattern.startsWith("*") ? folders.filter((entry2) => fold2(entry2.name).endsWith(fold2(pattern.slice(1)))).map((entry2) => join(container, entry2.name)).sort() : folders.filter((entry2) => fold2(entry2.name) === fold2(pattern)).map((entry2) => join(container, entry2.name));
+      for (const base of names)
+        if (!found.some((item) => fold2(item) === fold2(base)))
+          found.push(base);
+    }
+    return found;
+  })();
+  const located = /* @__PURE__ */ new Map();
+  async function* enumerateBase(base, scope, yielded, enumeration, signal) {
+    const prefix = enumeration.prefix.replaceAll("\\", "/");
+    const parent = prefix.slice(0, prefix.lastIndexOf("/") + 1);
+    for (const entry2 of await list(join(base, normalized(parent)))) {
+      throwIfAborted(signal);
+      if (entry2.directory)
+        continue;
+      const logicalId = parent + entry2.name;
+      if (!fold2(logicalId).startsWith(fold2(prefix)))
+        continue;
+      if (scope !== "sibling-directory") {
+        if (fold2(join(base, logicalId)) === fold2(primary) || yielded.has(fold2(logicalId)))
+          continue;
+        yielded.add(fold2(logicalId));
+      }
+      located.set(fold2(logicalId), base);
+      yield Object.freeze({
+        logicalId,
+        ...entry2.size === void 0 ? {} : { size: BigInt(entry2.size) }
+      });
+    }
+  }
+  return Object.freeze({
+    primaryLogicalId: nameOf(primary),
+    caseSensitivity: "insensitive",
+    scopes: Object.freeze([
+      "sibling-directory",
+      "current-mount",
+      ...named !== void 0 || markerNames.length > 0 ? ["enclosing-container"] : []
+    ]),
+    async *enumerate(scope, enumeration, signal) {
+      throwIfAborted(signal);
+      const roots = scope === "sibling-directory" ? [directory] : scope === "current-mount" ? [""] : scope === "enclosing-container" ? await bases() : [];
+      const yielded = /* @__PURE__ */ new Set();
+      for (const base of roots)
+        yield* enumerateBase(base, scope, yielded, enumeration, signal);
+    },
+    async open(logicalId, signal) {
+      throwIfAborted(signal);
+      const id = normalizeCompanionLogicalId(logicalId);
+      const path = join(located.get(fold2(id)) ?? directory, id);
+      const bytes = await contentSources.read(sourceId, path, maximumEntryBytes);
+      throwIfAborted(signal);
+      const uri = `content-source://${encodeURIComponent(sourceId)}/${path.split("/").map(encodeURIComponent).join("/")}`;
+      const source = artifactByteSourceFromBytes(Object.freeze({ id: `${sourceId}:${path}`, uri }), revisionIdFromRef({
+        kind: "provider-token",
+        value: `${sourceId}\0${path}\0${String(bytes.byteLength)}`
+      }), bytes);
+      return Object.freeze({ value: source, release: async () => void 0 });
+    }
+  });
+}
+function createContentSourceInputResolver(options) {
+  const own = createContentSourceCompanionOrigin({
+    contentSources: options.contentSources,
+    target: options.target,
+    containerExtensions: containerExtensionsOf(options.inventory),
+    containerAssetRoots: containerAssetRootsOf(options.inventory),
+    containerMarkers: containerMarkersOf(options.inventory),
+    ...options.maximumEntryBytes === void 0 ? {} : { maximumEntryBytes: options.maximumEntryBytes }
+  });
+  return createCompanionInputResolver(options.assetOrigins === void 0 || options.assetOrigins.length === 0 ? own : createLayeredCompanionOrigin([own, ...options.assetOrigins]), {
+    traitProbe: createSignatureTraitProbe(options.inventory),
+    ...options.onDiagnostic === void 0 ? {} : { onDiagnostic: options.onDiagnostic },
+    ...options.deadlineMs === void 0 ? {} : { deadlineMs: options.deadlineMs }
   });
 }
 
@@ -16048,7 +16297,7 @@ async function openModContextLayerSource(options) {
   }
   const resolvePath = (path) => folders.has(path) || files.has(path) ? path : folded.get(path.toLowerCase()) ?? path;
   const revision = layer.fingerprint !== void 0 && isRevisionId(layer.fingerprint) ? revisionId(layer.fingerprint) : revisionId(`provider-token:${encodeURIComponent(`${context.contextId}/${layerId2}`)}`);
-  const join = (prefix, path) => [prefix, path].filter((part) => part !== "").join("/");
+  const join2 = (prefix, path) => [prefix, path].filter((part) => part !== "").join("/");
   const fileSource = async (path) => {
     const all = await context.read(layerId2, path, MAX_ENTRY_BYTES);
     return Object.freeze({
@@ -16079,7 +16328,7 @@ async function openModContextLayerSource(options) {
         revision,
         async *list(listPrefix, listSignal) {
           throwIfAborted(listSignal);
-          const path = resolvePath(join(prefix, listPrefix.replace(/^\/+|\/+$/gu, "")));
+          const path = resolvePath(join2(prefix, listPrefix.replace(/^\/+|\/+$/gu, "")));
           const folder = folders.get(path);
           if (folder === void 0) {
             throw refused2("x3.host/namespace-entry-not-directory", `namespace entry \xAB${path}\xBB is not a directory`, path);
@@ -16087,14 +16336,14 @@ async function openModContextLayerSource(options) {
           const base = path === prefix ? "" : path.slice(prefix === "" ? 0 : prefix.length + 1);
           for (const [name, directory] of folder.children) {
             yield Object.freeze({
-              path: join(base, name),
+              path: join2(base, name),
               kind: directory ? "directory" : "file"
             });
           }
         },
         async open(entryPath, openSignal) {
           throwIfAborted(openSignal);
-          const path = resolvePath(join(prefix, entryPath.replace(/^\/+|\/+$/gu, "")));
+          const path = resolvePath(join2(prefix, entryPath.replace(/^\/+|\/+$/gu, "")));
           const value = folders.has(path) ? namespaceAt(path, nestedRef2(ref2, path)) : files.has(path) ? await fileSource(path) : void 0;
           if (value === void 0) {
             throw refused2("x3.host/namespace-entry-not-found", `the layer lists no \xAB${path}\xBB`, path);
@@ -16245,10 +16494,10 @@ function createModContextDataWorkspaceInputs(context, options) {
     },
     async open(logicalId, signal) {
       signal?.throwIfAborted();
-      const normalized = normalizeCompanionLogicalId(logicalId);
-      const item = find(normalized);
+      const normalized2 = normalizeCompanionLogicalId(logicalId);
+      const item = find(normalized2);
       if (item === void 0)
-        throw new RangeError(`ModContext has no layer for ${normalized}`);
+        throw new RangeError(`ModContext has no layer for ${normalized2}`);
       const bytes = await context.read(item.readLayerId, [item.readPrefix, item.relative].filter(Boolean).join("/"), MAX_ENTRY_BYTES2);
       const uri = `mod-context://${encodeURIComponent(context.contextId)}/${encodeURIComponent(item.layer.id)}/${item.relative.split("/").map(encodeURIComponent).join("/")}`;
       const source = Object.freeze({
@@ -18845,10 +19094,10 @@ function isGameLaunchPlanner(value) {
 function validRelativeProcessPath(value, allowDot) {
   if (!nonEmptyString5(value) || value.includes("\0"))
     return false;
-  const normalized = value.replace(/\\/gu, "/");
-  if (normalized.startsWith("/") || /^[a-z]:/iu.test(normalized))
+  const normalized2 = value.replace(/\\/gu, "/");
+  if (normalized2.startsWith("/") || /^[a-z]:/iu.test(normalized2))
     return false;
-  const segments = normalized.split("/");
+  const segments = normalized2.split("/");
   if (segments.some((segment) => segment === ".." || segment.length === 0))
     return false;
   return allowDot || segments.some((segment) => segment !== ".");
@@ -26902,14 +27151,14 @@ function encodeText(text, source, target = {}) {
   const facts = { ...source, ...target };
   const newline = facts.newline === "none" ? source.newline : facts.newline;
   const separator = newline === "crlf" ? "\r\n" : newline === "cr" ? "\r" : "\n";
-  const normalized = newline === "mixed" || newline === "none" ? text : text.replace(/\r\n|\r|\n/gu, separator);
+  const normalized2 = newline === "mixed" || newline === "none" ? text : text.replace(/\r\n|\r|\n/gu, separator);
   let bytes;
-  if (facts.encoding === "utf-8") bytes = new TextEncoder().encode(normalized);
+  if (facts.encoding === "utf-8") bytes = new TextEncoder().encode(normalized2);
   else {
-    const little = new Uint8Array(normalized.length * 2);
+    const little = new Uint8Array(normalized2.length * 2);
     const view = new DataView(little.buffer);
-    for (let index = 0; index < normalized.length; index += 1) {
-      view.setUint16(index * 2, normalized.charCodeAt(index), facts.encoding === "utf-16le");
+    for (let index = 0; index < normalized2.length; index += 1) {
+      view.setUint16(index * 2, normalized2.charCodeAt(index), facts.encoding === "utf-16le");
     }
     bytes = little;
   }
@@ -29393,6 +29642,8 @@ export {
   createContentAssetOrigin,
   createContentDependencyLanguageDocumentSource,
   createContentIndexBuilder,
+  createContentSourceCompanionOrigin,
+  createContentSourceInputResolver,
   createContractResolverPort,
   createCredentialBroker,
   createDescriptorFallbackSubjectFactsSource,

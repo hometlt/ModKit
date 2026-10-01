@@ -1,10 +1,12 @@
 import {
   FILTER_FALLBACK_MESSAGES,
   MEDIA_SHELL_FALLBACK_MESSAGES,
+  rememberUiPreference,
   setPart,
   setState,
+  uiPreference,
   withEnglishUiFallback
-} from "./chunk-JJCRWSLE.js";
+} from "./chunk-6S27EKIS.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunk-BLWUC7LO.js";
@@ -196,6 +198,39 @@ function mountContributedSections(shell, sections, args, onMounted) {
 }
 var MIN_PANE = 120;
 var MAX_PANE = 640;
+var LEFT_WIDTH = 240;
+var RIGHT_WIDTH = 280;
+var REMEMBERED_SECTIONS = 64;
+var SHELL_PREFERENCE = "mediaShell.layout";
+function mediaShellStateOf(value) {
+  if (value === null || typeof value !== "object" || Array.isArray(value))
+    return {};
+  const record = value;
+  const width = (key) => {
+    const item = record[key];
+    return typeof item === "number" && Number.isFinite(item) ? { [key]: Math.min(MAX_PANE, Math.max(MIN_PANE, Math.round(item))) } : {};
+  };
+  const flag = (key) => typeof record[key] === "boolean" ? { [key]: record[key] } : {};
+  const ids = (key) => {
+    const item = record[key];
+    return Array.isArray(item) ? {
+      [key]: item.filter((id) => typeof id === "string" && id.length <= 256).slice(-REMEMBERED_SECTIONS)
+    } : {};
+  };
+  const mode = record["galleryMode"];
+  return {
+    ...width("leftWidth"),
+    ...width("rightWidth"),
+    ...flag("leftCollapsed"),
+    ...flag("rightCollapsed"),
+    ...mode === "list" || mode === "small" || mode === "big" ? { galleryMode: mode } : {},
+    ...ids("collapsedSections"),
+    ...ids("expandedSections"),
+    ...flag("filterCase"),
+    ...flag("filterWord"),
+    ...flag("filterRegex")
+  };
+}
 var THUMB_EDGE = { small: 76, big: 128 };
 var THUMB_CONCURRENCY = 6;
 var AUTO_EXPAND_MAX_ITEMS = 200;
@@ -207,15 +242,18 @@ function el(document, tag, part, parent) {
 }
 function createMediaShell(document, options) {
   const localizer = withEnglishUiFallback(options.localizer, MEDIA_SHELL_FALLBACK_MESSAGES);
+  const remembers = options.state === void 0 && options.onStateChange === void 0;
   const state = {
-    leftWidth: 240,
-    rightWidth: 280,
+    leftWidth: LEFT_WIDTH,
+    rightWidth: RIGHT_WIDTH,
     leftCollapsed: false,
     rightCollapsed: false,
     galleryMode: "list",
     collapsedSections: [],
-    ...options.state
+    expandedSections: [],
+    ...remembers ? mediaShellStateOf(uiPreference(SHELL_PREFERENCE)) : options.state
   };
+  const chosenLeftCollapsed = state.leftCollapsed;
   if (options.gallery === void 0)
     state.leftCollapsed = true;
   const cleanup = [];
@@ -240,7 +278,14 @@ function createMediaShell(document, options) {
   splitRight.setAttribute("aria-orientation", "vertical");
   const right = el(document, "aside", "media-shell.sidebar", root);
   right.setAttribute("aria-label", localizer.text("mediaShell.sidebar"));
-  const emit = () => options.onStateChange?.({ ...state });
+  const emit = () => {
+    options.onStateChange?.({ ...state });
+    if (remembers)
+      rememberUiPreference(SHELL_PREFERENCE, {
+        ...state,
+        leftCollapsed: options.gallery === void 0 ? chosenLeftCollapsed : state.leftCollapsed
+      });
+  };
   const applyLayout = () => {
     root.style.setProperty("--shell-left", `${state.leftWidth}px`);
     root.style.setProperty("--shell-right", `${state.rightWidth}px`);
@@ -298,6 +343,14 @@ function createMediaShell(document, options) {
       splitter.addEventListener("pointerup", up);
       splitter.addEventListener("pointercancel", up);
     });
+    splitter.addEventListener("dblclick", () => {
+      if (side === "left")
+        state.leftWidth = LEFT_WIDTH;
+      else
+        state.rightWidth = RIGHT_WIDTH;
+      applyLayout();
+      emit();
+    });
   };
   dragSplitter(splitLeft, "left");
   dragSplitter(splitRight, "right");
@@ -326,13 +379,14 @@ function createMediaShell(document, options) {
       header.setAttribute("aria-expanded", String(!collapsed));
       body.hidden = collapsed;
     };
-    const remembered = state.collapsedSections?.includes(id);
-    setCollapsed(remembered === true ? true : sectionOptions.collapsed ?? false);
+    setCollapsed(state.collapsedSections?.includes(id) === true ? true : state.expandedSections?.includes(id) === true ? false : sectionOptions.collapsed ?? false);
     header.addEventListener("click", () => {
       const collapsed = box.dataset["collapsed"] !== "true";
       setCollapsed(collapsed);
-      const others = (state.collapsedSections ?? []).filter((item) => item !== id);
-      state.collapsedSections = collapsed ? [...others, id] : others;
+      const closed = (state.collapsedSections ?? []).filter((item) => item !== id);
+      const opened = (state.expandedSections ?? []).filter((item) => item !== id);
+      state.collapsedSections = (collapsed ? [...closed, id] : closed).slice(-REMEMBERED_SECTIONS);
+      state.expandedSections = (collapsed ? opened : [...opened, id]).slice(-REMEMBERED_SECTIONS);
       for (const listener of listeners)
         listener(collapsed);
       emit();

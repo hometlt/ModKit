@@ -2550,6 +2550,17 @@ function mapQualificationTupleBytes(tuples) {
   });
   return new Uint8Array(view.buffer);
 }
+function worldModelRequiredBytes(result) {
+  let required;
+  for (const item of result.diagnostics) {
+    const named = item.data?.requiredBytes;
+    if (item.code === "x3.host/model-resource-too-large" && typeof named === "number")
+      required = named;
+    else if (item.code === "x3.host/resource-budget-exceeded" && result.state === "converted")
+      required = result.uvmBytes?.byteLength ?? required;
+  }
+  return required !== void 0 && Number.isSafeInteger(required) && required > 0 ? required : void 0;
+}
 
 // ../MODDING/modkit-core/packages/sdk/dist/runtime-abi.js
 function contributionSettingsFor(settings, sourceUri) {
@@ -3567,6 +3578,7 @@ export {
   MAP_SEMANTIC_MATCHER_PROFILE,
   MAP_PREVIEW_PREPARATION_MATCHER_PROFILE,
   mapQualificationTupleBytes,
+  worldModelRequiredBytes,
   contributionSettingsFor,
   validateContributionPattern,
   expandContributionManifests,

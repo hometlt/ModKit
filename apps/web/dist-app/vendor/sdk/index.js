@@ -114,9 +114,10 @@ import {
   validateFieldEditorContributionSemantics,
   validateKnowledgePackSemantics,
   validateLocalizationContributionSemantics,
+  worldModelRequiredBytes,
   writerOfferSatisfies,
   writerSelectionKey
-} from "../../chunks/chunk-S6YMWV3Q.js";
+} from "../../chunks/chunk-QAFTCMTY.js";
 import {
   SCENE_RENDERER_CONTRACT,
   SCENE_RENDERER_MATCHER_PROFILE
@@ -423,6 +424,7 @@ export {
   validateSubjectDescriptorV2,
   validateWithSchema,
   viewerContributionSpecV1Schema,
+  worldModelRequiredBytes,
   writerOfferSatisfies,
   writerOfferV1Schema,
   writerRequirementV1Schema,

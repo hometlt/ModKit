@@ -543,6 +543,32 @@ function setState(element2, states) {
     element2.setAttribute(STATE_ATTRIBUTE, [...new Set(states)].join(" "));
 }
 
+// ../MODDING/modkit-core/packages/ui/dist/viewer/preferences.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var browserPreferences = {
+  get(key) {
+    try {
+      const text = globalThis.localStorage?.getItem(`modkit.${key}`);
+      return text === null || text === void 0 ? void 0 : JSON.parse(text);
+    } catch {
+      return void 0;
+    }
+  },
+  set(key, value) {
+    try {
+      globalThis.localStorage?.setItem(`modkit.${key}`, JSON.stringify(value));
+    } catch {
+    }
+  }
+};
+var preferences = browserPreferences;
+function uiPreference(key) {
+  return preferences.get(key);
+}
+function rememberUiPreference(key, value) {
+  preferences.set(key, value);
+}
+
 // ../MODDING/modkit-core/packages/ui/dist/viewer/index.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var VIEWER_CSP = Object.freeze({
@@ -902,6 +928,7 @@ var EN_MESSAGES = Object.freeze({
   "viewer.imageCompareWith": "compared with {subresource} ({mode})",
   "viewer.imagePreviousSubresource": "Previous {axis}",
   "viewer.imageNextSubresource": "Next {axis}",
+  "viewer.imageSubresourceIndex": "{axis} number",
   "viewer.imageCompare": "Compare",
   "viewer.imageCompareTitle": "Cycle comparison: off, side by side, difference",
   "viewer.imageExport": "Export",
@@ -1833,6 +1860,7 @@ var RU_MESSAGES = Object.freeze({
   "viewer.imageCompareWith": "\u0441\u0440\u0430\u0432\u043D\u0435\u043D\u0438\u0435 \u0441 {subresource} ({mode})",
   "viewer.imagePreviousSubresource": "\u041F\u0440\u0435\u0434\u044B\u0434\u0443\u0449\u0438\u0439: {axis}",
   "viewer.imageNextSubresource": "\u0421\u043B\u0435\u0434\u0443\u044E\u0449\u0438\u0439: {axis}",
+  "viewer.imageSubresourceIndex": "\u041D\u043E\u043C\u0435\u0440: {axis}",
   "viewer.imageCompare": "\u0421\u0440\u0430\u0432\u043D\u0438\u0442\u044C",
   "viewer.imageCompareTitle": "\u0420\u0435\u0436\u0438\u043C \u0441\u0440\u0430\u0432\u043D\u0435\u043D\u0438\u044F: \u0432\u044B\u043A\u043B., \u0440\u044F\u0434\u043E\u043C, \u0440\u0430\u0437\u043D\u0438\u0446\u0430",
   "viewer.imageExport": "\u042D\u043A\u0441\u043F\u043E\u0440\u0442",
@@ -3160,6 +3188,7 @@ var IMAGE_FALLBACK_MESSAGES = {
   "viewer.imageSectionFrames": "Frames",
   "viewer.imageSectionImage": "Image",
   "viewer.imageSectionMetadata": "Header / metadata",
+  "viewer.imageSubresourceIndex": "{axis} number",
   "viewer.imageSubresources": "Subresource, comparison and export",
   "viewer.isolateChannel": "Isolate the {channel} channel",
   "viewer.pause": "Pause",
@@ -3560,6 +3589,8 @@ export {
   PART_ATTRIBUTE,
   setPart,
   setState,
+  uiPreference,
+  rememberUiPreference,
   safeViewerText,
   setViewerText,
   requireContainer,

@@ -2,7 +2,7 @@ import {
   collectEncodedMedia,
   createMediaShell,
   mountContributedSections
-} from "./chunk-K243RDSA.js";
+} from "./chunk-OSXJCULW.js";
 import {
   IMAGE_EDITING_FALLBACK_MESSAGES,
   IMAGE_FALLBACK_MESSAGES,
@@ -12,12 +12,14 @@ import {
   createViewerMount,
   defineViewerModule,
   element,
+  rememberUiPreference,
   setPart,
   setState,
   setViewerText,
+  uiPreference,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-JJCRWSLE.js";
+} from "./chunk-6S27EKIS.js";
 import {
   createSubjectCandidateProvider,
   isKnowledgeTarget,
@@ -1868,20 +1870,18 @@ var ZOOM_CHOICES = [0.25, 0.5, 1, 2, 4, 8];
 var CHANNELS = ["rgb", "r", "g", "b", "a"];
 var viewStates = /* @__PURE__ */ new Map();
 var VIEW_STATES = 64;
-var RECENT_COLORS_KEY = "modkit.image.recentColors";
+var RECENT_COLORS_KEY = "image.recentColors";
 function rememberedColors() {
-  try {
-    const value = JSON.parse(globalThis.localStorage?.getItem(RECENT_COLORS_KEY) ?? "[]");
-    return Array.isArray(value) ? value.filter((item) => typeof item === "string") : [];
-  } catch {
-    return [];
-  }
+  const value = uiPreference(RECENT_COLORS_KEY);
+  return Array.isArray(value) ? value.filter((item) => typeof item === "string") : [];
 }
 function rememberColors(colors) {
-  try {
-    globalThis.localStorage?.setItem(RECENT_COLORS_KEY, JSON.stringify(colors));
-  } catch {
-  }
+  rememberUiPreference(RECENT_COLORS_KEY, colors);
+}
+var CUBE_FACES = ["+X", "\u2212X", "+Y", "\u2212Y", "+Z", "\u2212Z"];
+function axisCountAt(info, axis, mipLevel) {
+  const count = axisCount(info, axis);
+  return axis === "slice" ? Math.max(1, count >>> mipLevel) : count;
 }
 function createImageViewer(options = {}) {
   const localizer = withEnglishUiFallback(options.localizer, IMAGE_FALLBACK_MESSAGES);
@@ -2783,19 +2783,49 @@ function createImageViewer(options = {}) {
             const bar = element(body, "div", { part: "image.subresources", role: "toolbar" });
             const current = info;
             for (const [axis, name] of axes) {
-              const count = axisCount(current, axis);
-              if (count <= 1)
+              if (axisCount(current, axis) <= 1)
                 continue;
-              const step = (delta) => {
-                const next = Math.min(count - 1, Math.max(0, subresource[axis] + delta));
-                subresource = Object.freeze({ ...subresource, [axis]: next });
+              const count = axisCountAt(current, axis, subresource.mipLevel);
+              const go = (value) => {
+                const next = Math.min(count - 1, Math.max(0, value));
+                const moved = Object.freeze({ ...subresource, [axis]: next });
+                subresource = Object.freeze({
+                  ...moved,
+                  slice: Math.min(moved.slice, axisCountAt(current, "slice", moved.mipLevel) - 1)
+                });
                 reload();
               };
+              const step = (delta) => go(subresource[axis] + delta);
               button(bar, `${name}\u2212`, localizer.text("viewer.imagePreviousSubresource", { axis: name }), () => step(-1));
-              element(bar, "span", {
-                part: "image.readout",
-                text: `${subresource[axis]}/${count - 1}`
-              });
+              const label = localizer.text("viewer.imageSubresourceIndex", { axis: name });
+              if (axis === "face" && count === CUBE_FACES.length) {
+                const faces = element(bar, "select");
+                faces.setAttribute("aria-label", label);
+                faces.title = label;
+                for (const [index, face] of CUBE_FACES.entries()) {
+                  const option = element(faces, "option", { text: face });
+                  option.value = String(index);
+                }
+                faces.value = String(subresource.face);
+                faces.addEventListener("change", () => go(Number(faces.value)));
+              } else {
+                const field = element(bar, "input", { part: "image.readout" });
+                field.type = "number";
+                field.min = "0";
+                field.max = String(count - 1);
+                field.step = "1";
+                field.value = String(subresource[axis]);
+                field.setAttribute("aria-label", label);
+                field.title = label;
+                field.addEventListener("change", () => {
+                  const value = Number(field.value);
+                  if (Number.isInteger(value))
+                    go(value);
+                  else
+                    field.value = String(subresource[axis]);
+                });
+                element(bar, "span", { part: "image.readout", text: `/${count - 1}` });
+              }
               button(bar, `${name}+`, localizer.text("viewer.imageNextSubresource", { axis: name }), () => step(1));
             }
             if (enumerateSubresources(current).length > 1) {

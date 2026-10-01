@@ -7,13 +7,13 @@ import {
   assembleSubjectDescriptor,
   createAssetSession,
   createUtf8TextDataSource
-} from "../../chunks/chunk-XG5H6MC4.js";
+} from "../../chunks/chunk-QIE3EZCD.js";
 import "../../chunks/chunk-5GGWVEQJ.js";
 import {
   RESOLVED_DATA_WORKSPACE_CONTRACT,
   containerEntryRevision,
   contributionSettingsFor
-} from "../../chunks/chunk-S6YMWV3Q.js";
+} from "../../chunks/chunk-QAFTCMTY.js";
 import "../../chunks/chunk-MT2JUZZJ.js";
 import "../../chunks/chunk-R2P56FTH.js";
 import "../../chunks/chunk-P5QJHSUW.js";
