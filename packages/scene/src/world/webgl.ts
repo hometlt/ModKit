@@ -1614,6 +1614,27 @@ function terrainSurfaceUv(
   return transformedTerrainUv([cell.x + inCell[0], cell.y + inCell[1]], materialTransform)
 }
 
+/**
+ * A cell corner in a tile of an atlas material (MapTerrainMaterialSample.layers): square tiles in
+ * `rows` rows and as many columns as the texture's aspect gives, the cell's top (local y = 1) on
+ * the tile's top row. Half a texel inside the tile, so filtering does not reach its neighbour.
+ * ponytail: smaller mips still mix neighbouring tiles at a distance; per-tile mips if it shows.
+ */
+function atlasTileUv(
+  local: readonly [number, number],
+  rows: number,
+  texture: SceneRendererTexture,
+  tile: Readonly<{ column: number; row: number }>,
+): readonly [number, number] {
+  const columns = Math.max(1, Math.round((rows * texture.width) / texture.height))
+  const inside = (value: number, start: number, size: number, texels: number) =>
+    Math.min(Math.max(value, start / size + 0.5 / texels), (start + 1) / size - 0.5 / texels)
+  return [
+    inside((tile.column + local[0]) / columns, tile.column, columns, texture.width),
+    inside((tile.row + 1 - local[1]) / rows, tile.row, rows, texture.height),
+  ]
+}
+
 function pushLine(
   target: MutableBatch,
   a: readonly [number, number, number],
@@ -4079,8 +4100,9 @@ function prepareWorldStaticTerrain(
   const splat = new Map<string, MutableSplatBatch>()
   /** Weight-raster groups after the first, blended over it (see `splatOverlayTriangles`). */
   const splatOverlays = new Map<string, MutableSplatBatch>()
-  /** Decal tiles over the blended ground, one batch per texture. */
+  /** Tiles over the ground (upper tileset layers, then decals), one batch per depth and texture. */
   const decals = new Map<string, MutableTexturedBatch>()
+  const decalDepths = new Map<string, number>()
   const terrainPickTriangles: number[] = []
   const terrain = input.items.filter(
     (item): item is WorldSceneTerrainItem => item.facet === 'terrain',
@@ -4906,14 +4928,22 @@ function prepareWorldStaticTerrain(
       ]
       const materialSample = materialByCell.get(`${item.x}:${item.y}`)
       /**
-       * The cell's decal tile over the ground drawn below, same triangles, its alpha blending; lit as
-       * the ground is, with its own normal and specular maps and the ground's AO in colour alpha.
+       * A tile over the ground drawn below, same triangles, its alpha blending; lit as the ground is,
+       * with its own normal and specular maps and the ground's AO in colour alpha. `depth` orders the
+       * batches: a cell's upper tileset layers (`layers` after the first) in their order, then the
+       * decal.
        */
-      const drawDecal = () => {
-        const decal = materialSample?.decal
-        if (decal === undefined) return
+      const drawOverlay = (
+        materialId: string,
+        depth: number,
+        uvAt: (
+          local: readonly [number, number],
+          definition: MapTerrainMaterialDefinition,
+          texture: SceneRendererTexture,
+        ) => readonly [number, number],
+      ) => {
         const definition = input.terrainMaterials?.find(
-          candidate => candidate.materialId === decal.materialId,
+          candidate => candidate.materialId === materialId,
         )
         const texture =
           definition?.baseColorResourceId === undefined
@@ -4928,9 +4958,10 @@ function prepareWorldStaticTerrain(
           definition?.specularResourceId === undefined
             ? undefined
             : input.terrainTextures?.get(definition.specularResourceId)
-        const key = [texture.id, normalTexture?.id ?? '', specularTexture?.id ?? ''].join(
+        const key = [depth, texture.id, normalTexture?.id ?? '', specularTexture?.id ?? ''].join(
           String.fromCharCode(0),
         )
+        decalDepths.set(key, depth)
         const target = decals.get(key) ?? {
           ...batch(),
           textureCoordinates: [],
@@ -4943,9 +4974,7 @@ function prepareWorldStaticTerrain(
             : { specularTexture, specularGloss: definition!.specularEncoding === 'gloss' }),
         }
         decals.set(key, target)
-        const uvs = patch.locals.map(local =>
-          terrainSurfaceUv(item, local, decal.uvTransform, definition!.uvTransform),
-        ) as [
+        const uvs = patch.locals.map(local => uvAt(local, definition!, texture)) as [
           readonly [number, number],
           readonly [number, number],
           readonly [number, number],
@@ -4966,6 +4995,22 @@ function prepareWorldStaticTerrain(
             tri(cornerNormals, index),
           )
         terrainDecalTriangles += 2
+      }
+      const groundLayer = materialSample?.layers?.[0]
+      const drawUpperLayers = () =>
+        materialSample?.layers?.slice(1).forEach((layer, index) =>
+          drawOverlay(layer.materialId, index + 1, (local, definition, texture) =>
+            definition.atlas === undefined
+              ? terrainSurfaceUv(item, local, undefined, definition.uvTransform)
+              : atlasTileUv(local, definition.atlas.rows, texture, layer.tile),
+          ),
+        )
+      const drawDecal = () => {
+        const decal = materialSample?.decal
+        if (decal === undefined) return
+        drawOverlay(decal.materialId, Number.MAX_SAFE_INTEGER, (local, definition) =>
+          terrainSurfaceUv(item, local, decal.uvTransform, definition.uvTransform),
+        )
       }
       if (exactRasterSplat !== undefined) {
         const [uvA, uvB, uvC, uvD] = patch.locals.map(local =>
@@ -5019,6 +5064,9 @@ function prepareWorldStaticTerrain(
         continue
       }
       const declaredWeights =
+        (groundLayer === undefined
+          ? undefined
+          : [{ materialId: groundLayer.materialId, weight: 1 }]) ??
         materialSample?.weights?.filter(weight => weight.weight > 0) ??
         input.terrainMaterials
           ?.filter(material => material.sourceIndex === materialSample?.textureIndex)
@@ -5144,7 +5192,9 @@ function prepareWorldStaticTerrain(
         }
         textured.set(key, target)
         const uv = (local: readonly [number, number]) =>
-          terrainSurfaceUv(item, local, materialSample?.uvTransform, material?.uvTransform)
+          groundLayer !== undefined && material?.atlas !== undefined
+            ? atlasTileUv(local, material.atlas.rows, texture, groundLayer.tile)
+            : terrainSurfaceUv(item, local, materialSample?.uvTransform, material?.uvTransform)
         const [uvA, uvB, uvC, uvD] = patch.locals.map(uv) as [
           readonly [number, number],
           readonly [number, number],
@@ -5167,6 +5217,7 @@ function prepareWorldStaticTerrain(
         )
         terrainTexturedTriangles += 2
       }
+      drawUpperLayers()
       drawDecal()
       terrainPickTriangles.push(...tri(quad, 0).flat(), ...tri(quad, 1).flat())
       terrainTriangles += 2
@@ -5346,7 +5397,12 @@ function prepareWorldStaticTerrain(
     texturedTriangles: Object.freeze([...textured.values()].map(frozenTexturedBatch)),
     splatTriangles: Object.freeze([...splat.values()].map(frozenSplatBatch)),
     splatOverlayTriangles: Object.freeze([...splatOverlays.values()].map(frozenSplatBatch)),
-    decalTriangles: Object.freeze([...decals.values()].map(frozenTexturedBatch)),
+    // bottom to top: a stable sort keeps one depth's batches in the order the cells made them
+    decalTriangles: Object.freeze(
+      [...decals]
+        .sort(([left], [right]) => decalDepths.get(left)! - decalDepths.get(right)!)
+        .map(([, item]) => frozenTexturedBatch(item)),
+    ),
     lines: frozenBatch(lines),
     points: frozenBatch(points),
     terrainTriangles: Float32Array.from(terrainPickTriangles),

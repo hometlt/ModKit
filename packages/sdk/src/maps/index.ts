@@ -717,11 +717,25 @@ export interface MapTerrainMaterialSample {
       readonly rotation: number
     }>
   }>
+  /**
+   * Tiles of atlas materials drawn over this cell, bottom first (Warcraft III tilesets): the first
+   * opaque, each other one over it by its tile's alpha; the cell's top (local y = 1) is the tile's
+   * top row. When present the cell's ground is these, not `weights`.
+   */
+  readonly layers?: readonly Readonly<{
+    readonly materialId: string
+    readonly tile: Readonly<{ readonly column: number; readonly row: number }>
+  }>[]
 }
 
 export interface MapTerrainMaterialDefinition {
   readonly materialId: string
   readonly label?: string
+  /**
+   * The base colour texture is an atlas of square tiles in `rows` rows, as many columns as its
+   * aspect gives, column 0 and row 0 at the top left; cells name a tile in `layers`.
+   */
+  readonly atlas?: Readonly<{ readonly rows: number }>
   /** Portable semantic classification when the publisher can prove one (for example TER_WATER). */
   readonly classification?: string
   readonly sourceIndex?: number

@@ -80,6 +80,63 @@ describe('world terrain overlays', () => {
     assert.equal(tooMany.splatOverlayTriangles.length, 0)
   })
 
+  it('draws tileset layers from atlas tiles, the first opaque and the rest over it in order', () => {
+    const items = [
+      ...cell(),
+      {
+        facet: 'terrain-materials',
+        id: 'overlay-materials:0',
+        layerId: 'terrain-materials',
+        coordinateSpaceId: 'height-grid',
+        lod: 'exact',
+        x: 0,
+        y: 0,
+        textureIndex: 0,
+        weights: [{ materialId: 'rock', weight: 1 }],
+        layers: [
+          { materialId: 'grass', tile: { column: 0, row: 0 } },
+          { materialId: 'dirt', tile: { column: 5, row: 0 } },
+          { materialId: 'rock', tile: { column: 3, row: 2 } },
+        ],
+        decal: { materialId: 'decal' },
+      },
+    ]
+    const plan = createWorldWebGlPlan({
+      items,
+      terrainMaterials: [
+        { materialId: 'grass', baseColorResourceId: 'grass.blp', atlas: { rows: 4 } },
+        { materialId: 'dirt', baseColorResourceId: 'dirt.blp', atlas: { rows: 4 } },
+        { materialId: 'rock', baseColorResourceId: 'rock.blp', atlas: { rows: 4 } },
+        { materialId: 'decal', baseColorResourceId: 'decal.png' },
+      ],
+      terrainTextures: new Map([
+        ['grass.blp', texture('grass.blp', 256, 256)],
+        ['dirt.blp', texture('dirt.blp', 512, 256)],
+        ['rock.blp', texture('rock.blp', 256, 256)],
+        ['decal.png', texture('decal.png')],
+      ]),
+    })
+    assert.deepEqual(plan.texturedTriangles.map(batch => batch.texture.id), ['grass.blp'])
+    assert.deepEqual(
+      plan.terrainDecalTriangles.map(batch => batch.texture.id),
+      ['dirt.blp', 'rock.blp', 'decal.png'],
+    )
+    // Each corner in its tile, half a texel inside; the cell's top (z = 1) on the tile's top row.
+    const corners = (batch, columns, tile, width, height) => {
+      for (let vertex = 0; vertex < 6; vertex += 1) {
+        const x = batch.positions[vertex * 3]
+        const z = batch.positions[vertex * 3 + 2]
+        const u = (tile.column + x) / columns + (x === 0 ? 0.5 / width : -0.5 / width)
+        const v = (tile.row + 1 - z) / 4 + (z === 1 ? 0.5 / height : -0.5 / height)
+        assert.ok(Math.abs(batch.textureCoordinates[vertex * 2] - u) < 1e-9, `u of vertex ${vertex}`)
+        assert.ok(Math.abs(batch.textureCoordinates[vertex * 2 + 1] - v) < 1e-9, `v of vertex ${vertex}`)
+      }
+    }
+    corners(plan.texturedTriangles[0], 4, { column: 0, row: 0 }, 256, 256)
+    corners(plan.terrainDecalTriangles[0], 8, { column: 5, row: 0 }, 512, 256)
+    corners(plan.terrainDecalTriangles[1], 4, { column: 3, row: 2 }, 256, 256)
+  })
+
   it('blends a cell decal tile over its ground with the tile orientation', () => {
     const items = [
       ...cell(),
