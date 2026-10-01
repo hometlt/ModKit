@@ -1092,6 +1092,11 @@ export interface SelectableSubject {
   readonly type?: string
   /** Provider-published semantic tags used by structured subject filters. */
   readonly tags?: readonly string[]
+  /**
+   * A logical image id for the subject (its icon), as `SubjectFactsIdentity.portrait`: the host
+   * resolves it through the subject's own raster resources. Published on the returned page only.
+   */
+  readonly portrait?: string
   /** Present only when this candidate is a root asset selectable by an `asset-ref` field. */
   readonly asset?: {
     readonly formatId: string
@@ -1104,6 +1109,8 @@ export interface SubjectSelectorSummary {
   readonly totalSubjects: number
   readonly completeness: SubjectSelectorCompleteness
   readonly reason?: string
+  /** The kinds the subjects fall into and how many of each (a wiki's left column). */
+  readonly kinds?: readonly { readonly kind: string; readonly count: number }[]
 }
 
 export interface SubjectEditDocumentRef {

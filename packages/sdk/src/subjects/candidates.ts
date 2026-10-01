@@ -67,6 +67,8 @@ function validCandidate(candidate: SelectableSubject): boolean {
     (candidate.type === undefined ||
       (typeof candidate.type === 'string' && candidate.type.length > 0)) &&
     nonEmptyStrings(candidate.tags) &&
+    (candidate.portrait === undefined ||
+      (typeof candidate.portrait === 'string' && candidate.portrait.length > 0)) &&
     (candidate.asset === undefined ||
       (typeof candidate.asset === 'object' &&
         candidate.asset !== null &&
@@ -87,7 +89,16 @@ function validSummary(summary: SubjectSelectorSummary): boolean {
     (summary.completeness === 'complete' ||
       summary.completeness === 'partial' ||
       summary.completeness === 'capped') &&
-    (summary.reason === undefined || typeof summary.reason === 'string')
+    (summary.reason === undefined || typeof summary.reason === 'string') &&
+    (summary.kinds === undefined ||
+      (Array.isArray(summary.kinds) &&
+        summary.kinds.every(
+          item =>
+            typeof item?.kind === 'string' &&
+            item.kind.length > 0 &&
+            Number.isSafeInteger(item.count) &&
+            item.count >= 0,
+        )))
   )
 }
 
