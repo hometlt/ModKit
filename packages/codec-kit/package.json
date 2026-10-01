@@ -198,6 +198,10 @@
       "types": "./dist/compression/lzo.d.ts",
       "default": "./dist/compression/lzo.js"
     },
+    "./compression/brotli": {
+      "types": "./dist/compression/brotli.d.ts",
+      "default": "./dist/compression/brotli.js"
+    },
     "./storage/leveldb": {
       "types": "./dist/storage/leveldb.d.ts",
       "default": "./dist/storage/leveldb.js"
