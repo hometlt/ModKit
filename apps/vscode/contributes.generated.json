@@ -860,7 +860,7 @@
     {
       "id": "sc2-data",
       "aliases": ["StarCraft II GameData"],
-      "filenamePatterns": ["**/[Gg]ame[Dd]ata/*.[xX][mM][lL]"],
+      "filenamePatterns": ["**/[Gg]ame[Dd]ata/**/*.[xX][mM][lL]"],
       "configuration": "./media/sc2-data-language-configuration.json"
     },
     {
