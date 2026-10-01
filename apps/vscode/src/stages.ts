@@ -271,7 +271,10 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
         localizer: context.localizer,
         ...(context.openArchiveEntry === undefined
           ? {}
-          : { openEntry: entry => context.openArchiveEntry?.(entry.path) }),
+          : {
+              openEntry: (entry, preview) =>
+                context.openArchiveEntry?.(entry.path, preview === true),
+            }),
         ...(context.archiveAction === undefined
           ? {}
           : {

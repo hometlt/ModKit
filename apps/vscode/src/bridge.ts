@@ -134,7 +134,13 @@ export type ShellRequest =
   | { readonly op: 'confirm'; readonly message: string; readonly savable: boolean }
   /** Show another file in this editor (a gallery pick). */
   /** A file, or with `entry` one member of the container file at `path`. */
-  | { readonly op: 'open-in-editor'; readonly path: string; readonly entry?: string }
+  | {
+      readonly op: 'open-in-editor'
+      readonly path: string
+      readonly entry?: string
+      /** A gallery click: the tab the next gallery click reuses. */
+      readonly preview?: boolean
+    }
   /** The model a card's subject names (a logical path), opened from that subject's mod chain. */
   | { readonly op: 'open-model'; readonly subject: string; readonly model: string }
   /** Keep one viewer preference (layout, recent colours) for every later page. */
@@ -254,7 +260,7 @@ export type ShellRequest =
   /** The immediate children of `path` (`''` is the root) in the folder a Modkit Explorer shows. */
   | { readonly op: 'explorer-children'; readonly path: string }
   /** Open one Modkit Explorer entry in an editor tab of its own. */
-  | { readonly op: 'explorer-open'; readonly id: string }
+  | { readonly op: 'explorer-open'; readonly id: string; readonly preview?: boolean }
 
 /**
  * A picture the gallery draws: RGBA, at most the requested edge on its long side, or a vector

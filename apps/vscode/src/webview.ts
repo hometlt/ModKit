@@ -353,8 +353,12 @@ async function mountExplorerFolder(
   const viewer = createArchiveViewer({
     localizer,
     ...(snapshot.explorer === undefined ? {} : { rootLabel: snapshot.explorer.label }),
-    openEntry: async entry => {
-      await bridge.request({ op: 'explorer-open', id: entry.id })
+    openEntry: async (entry, preview) => {
+      await bridge.request({
+        op: 'explorer-open',
+        id: entry.id,
+        ...(preview === true ? { preview } : {}),
+      })
     },
     ...(accepts === undefined
       ? {}
@@ -877,10 +881,15 @@ async function mount(
             .catch((error: unknown) => say(describe(error)))
         },
         // An archive member opens as a tab of its own, addressed through the container VFS.
-        async openArchiveEntry(entry) {
+        async openArchiveEntry(entry, preview) {
           const container = focused ?? snapshot.openPath
           if (container === undefined) return
-          await bridge.request({ op: 'open-in-editor', path: container, entry })
+          await bridge.request({
+            op: 'open-in-editor',
+            path: container,
+            entry,
+            ...(preview ? { preview } : {}),
+          })
         },
         // The explorer's gallery: members an enabled image codec reads, drawn by the extension host.
         ...(archiveGalleryAccepts === undefined

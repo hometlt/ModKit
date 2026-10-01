@@ -223,8 +223,8 @@ describe('archive viewer', () => {
     }
     const opened: string[] = []
     const { root } = await mountArchive(source, {
-      openEntry: found => {
-        opened.push(found.id)
+      openEntry: (found, preview) => {
+        opened.push(preview === true ? `${found.id} (preview)` : found.id)
       },
       gallery: {
         accepts: found => found.name.endsWith('.dds'),
@@ -263,6 +263,13 @@ describe('archive viewer', () => {
     if (rowRoot2 === undefined) throw new Error('row not found')
     rowRoot2.dispatchEvent(ENTER)
     expect(opened).toEqual(['c', 'e'])
+
+    // a gallery click opens the picture in the tab the next gallery click reuses (7.37)
+    partsIn(root, 'media-shell.gallery-item')
+      .find(cell => firstPart(cell, 'media-shell.gallery-label')?.textContent === 'a.dds')
+      ?.dispatchEvent(CLICK)
+    await flush()
+    expect(opened).toEqual(['c', 'e', 'a (preview)'])
   })
 
   it('offers only "Open in Tab" when openEntry is given without act, and the menu item opens the file', async () => {

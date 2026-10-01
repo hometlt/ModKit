@@ -8359,6 +8359,19 @@ async function activateModkit(
   drawThumbnail = galleryThumbnailOf
 
   // ---------------------------------------------------------------- webviews
+  /*
+   * A member or file opened from an explorer page (plan 7.37).
+   *
+   * MK2 showed a gallery's clicked picture in the same panel. Here a gallery click opens a preview
+   * tab, which the next gallery click reuses, as a single click in VS Code's Explorer does, and
+   * `workbench.editor.enablePreview` turns that off. The page's own tab is kept first: a preview
+   * tab would otherwise replace the archive or folder the click came from. Everything else opens
+   * a tab of its own.
+   */
+  const openGalleryAware = async (uri: vscode.Uri, preview: boolean): Promise<void> => {
+    if (preview) await vscode.commands.executeCommand('workbench.action.keepEditor')
+    await vscode.commands.executeCommand('vscode.open', uri, { preview })
+  }
   const attach = (
     webview: vscode.Webview,
     openPath?: string,
@@ -8627,9 +8640,8 @@ async function activateModkit(
           return false
         }
       },
-      openInEditor: async path => {
-        // A tab of its own: a preview tab would replace the archive the member was opened from.
-        await vscode.commands.executeCommand('vscode.open', subjectUriOf(path), { preview: false })
+      openInEditor: async (path, preview) => {
+        await openGalleryAware(subjectUriOf(path), preview)
       },
       // A viewer preference from a page, kept for the pages after it (plan 7.18).
       preference: async (key, value) => {
@@ -9075,11 +9087,11 @@ async function activateModkit(
    * through `vscode.workspace.fs`, the one API all of those schemes answer. The page names only ids
    * this panel handed out and paths below its one root.
    */
-  const openInTab = async (uri: vscode.Uri): Promise<void> => {
+  const openInTab = async (uri: vscode.Uri, preview = false): Promise<void> => {
     const target = describeOpenTarget(uri)
     if (target.state !== 'refused') grantFor(target)
     // VS Code's own choice of editor: an associated format opens in Modkit, text in the text editor.
-    await vscode.commands.executeCommand('vscode.open', uri, { preview: false })
+    await openGalleryAware(uri, preview)
   }
   const explorerBackend = (root: vscode.Uri): NonNullable<VsCodeServeOptions['explorer']> => {
     const listed = new Map<string, vscode.Uri>()
@@ -9116,10 +9128,10 @@ async function activateModkit(
           }),
         )
       },
-      async open(id) {
+      async open(id, preview) {
         const uri = listed.get(id)
         if (uri === undefined) throw new Error('that entry is not listed in this explorer')
-        await openInTab(uri)
+        await openInTab(uri, preview)
       },
       async thumbnail(id, maxEdge) {
         const uri = listed.get(id)

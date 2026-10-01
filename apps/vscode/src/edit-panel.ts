@@ -88,8 +88,8 @@ export interface EditPanelOptions {
   onPixelEdit?(): void
   /** Leave the encoding field out of every form; the status bar's format menu owns that choice. */
   readonly omitEncoding?: boolean
-  /** Open one member of the shown archive in an editor tab of its own. */
-  openArchiveEntry?(entry: string): Promise<void>
+  /** Open one member of the shown archive in an editor tab of its own, or in the preview tab. */
+  openArchiveEntry?(entry: string, preview: boolean): Promise<void>
   /** Show a card's source in the editor, at its line when the publisher knows it. */
   openSource?(location: CardLocation): void
   /** Open the model a card's subject names in a tab of its own. */

@@ -63,8 +63,10 @@ export interface ArchiveViewerOptions {
   /**
    * Open a member as a document of its own — a new editor tab in VS Code. Absent, the viewer
    * dispatches `modkit-open-source` with the member's leased source, as the namespace view does.
+   * `preview` marks a gallery click: MK2 showed the clicked picture in the same panel, so the host
+   * may show it in a tab the next gallery click reuses.
    */
-  readonly openEntry?: (entry: NamespaceEntry) => void | Promise<void>
+  readonly openEntry?: (entry: NamespaceEntry, preview?: boolean) => void | Promise<void>
   /**
    * Run a file-manager action — the host asks for names, confirms deletes and owns the clipboard.
    * Answers `true` when the archive changed. Absent, the context menu offers only "Open in Tab",
@@ -329,7 +331,7 @@ export function createArchiveViewer(options: ArchiveViewerOptions = {}): ViewerM
               },
               async open(id) {
                 const entry = entriesById.get(id)
-                if (entry !== undefined) await openInTab(entry)
+                if (entry !== undefined) await openInTab(entry, true)
               },
             }
 
@@ -441,9 +443,9 @@ export function createArchiveViewer(options: ArchiveViewerOptions = {}): ViewerM
       }
 
       /** "Open in Tab": `openEntry` first, then the host's file-manager `open`, then a bare event. */
-      const openInTab = async (entry: NamespaceEntry): Promise<void> => {
+      const openInTab = async (entry: NamespaceEntry, preview = false): Promise<void> => {
         if (options.openEntry !== undefined) {
-          await options.openEntry(entry)
+          await options.openEntry(entry, preview)
           return
         }
         if (options.act !== undefined) {

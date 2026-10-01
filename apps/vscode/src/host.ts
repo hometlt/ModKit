@@ -881,7 +881,7 @@ export interface VsCodeServeOptions {
     readonly kind: ArchiveTarget['kind']
   }) => Promise<boolean>
   /** Open a file in an editor of its own kind (a gallery pick). */
-  readonly openInEditor?: (path: string) => Promise<void>
+  readonly openInEditor?: (path: string, preview: boolean) => Promise<void>
   /** Show a card's source file as text, at its declaration when the line is known. */
   readonly openSource?: (
     uri: string,
@@ -904,7 +904,7 @@ export interface VsCodeServeOptions {
    */
   readonly explorer?: {
     children(path: string): Promise<readonly ShellExplorerEntry[]>
-    open(id: string): Promise<void>
+    open(id: string, preview: boolean): Promise<void>
     thumbnail(id: string, maxEdge: number): Promise<ShellThumbnail | undefined>
   }
   /** Draw the mounted viewer's status items; `choose` reports a picked choice back to the page. */
@@ -1914,6 +1914,7 @@ function serveVsCode(
           throw new Error('that file is outside the granted folders')
         await options.openInEditor?.(
           request.entry === undefined ? request.path : containerUriText(container, request.entry),
+          request.preview === true,
         )
         return true
       }
@@ -1965,7 +1966,7 @@ function serveVsCode(
         return options.explorer.children(request.path)
       case 'explorer-open':
         if (options.explorer === undefined) throw new Error('this page is not a Modkit Explorer')
-        await options.explorer.open(request.id)
+        await options.explorer.open(request.id, request.preview === true)
         return true
       case 'viewer-operations':
         return (await options.viewerOperations?.list(request.surface)) ?? []
