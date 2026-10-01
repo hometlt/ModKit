@@ -300,6 +300,13 @@ export interface DataCatalogResolutionInput {
   readonly includeWorkspaceFacets?: boolean
   /** Additive provenance for consumers that resolve field-owned assets against workspace roots. */
   readonly includeFieldSources?: boolean
+  /**
+   * Each patch is already a whole resolved entity (one per entity, values merged, no parent): its
+   * fields are taken as they are, not merged again. SC2 hands the entities its catalog engine
+   * resolved; merging them once more was a fifth of a cold analysis. A second patch of the same
+   * entity still merges over the first.
+   */
+  readonly patchesResolved?: boolean
   readonly maxEntities: number
   readonly maxDepth: number
 }
@@ -782,6 +789,16 @@ function mergeFields(
   return merged
 }
 
+/** The patch's fields the schema knows, as they are (freezing copies them later). */
+function knownFields(
+  patch: Readonly<Record<string, JsonValue>>,
+  fields: ReadonlyMap<string, DataSchemaField>,
+): Record<string, JsonValue> {
+  const known: Record<string, JsonValue> = {}
+  for (const [fieldId, value] of Object.entries(patch)) if (fields.has(fieldId)) known[fieldId] = value
+  return known
+}
+
 function relationScalarValues(value: JsonValue): readonly string[] {
   if (typeof value === 'string' || typeof value === 'number') return [String(value)]
   if (Array.isArray(value)) return value.flatMap(relationScalarValues)
@@ -928,7 +945,10 @@ export function resolveDataCatalog(input: DataCatalogResolutionInput): DataCatal
         source: patch.source,
       })
     }
-    current.fields = mergeFields(current.fields, patch.fields, typeFields)
+    current.fields =
+      input.patchesResolved === true && current.sources.length === 1
+        ? knownFields(patch.fields, typeFields)
+        : mergeFields(current.fields, patch.fields, typeFields)
   }
 
   const resolvedCache = new Map<string, DataResolvedEntity>()
@@ -1005,7 +1025,11 @@ export function resolveDataCatalog(input: DataCatalogResolutionInput): DataCatal
       }
     }
     for (const [id, token] of current.tokens) tokens.set(id, token)
-    fields = mergeFields(fields, current.fields, fieldsByType.get(current.typeId) ?? new Map())
+    // the entity's own fields are already merged; only a parent's need merging under them
+    fields =
+      current.parentEntityId === undefined
+        ? current.fields
+        : mergeFields(fields, current.fields, fieldsByType.get(current.typeId) ?? new Map())
     for (const [fieldId, source] of Object.entries(current.fieldSources)) {
       fieldSources[fieldId] = source
     }
