@@ -197,6 +197,7 @@ interface UvmTextureRef {
 }
 export interface UvmMaterial {
   pbrMetallicRoughness: {
+    baseColorFactor?: [number, number, number, number]
     metallicFactor: number
     roughnessFactor: number
     baseColorTexture?: UvmTextureRef
@@ -208,10 +209,14 @@ export interface UvmMaterial {
   name?: string
   alphaMode?: 'OPAQUE' | 'MASK' | 'BLEND'
   alphaCutoff?: number
+  doubleSided?: true
   extensions?: {
+    KHR_materials_unlit?: Record<string, never>
     UV_game_material?: {
       shader: string
       blendMode?: UvmGameBlendMode
+      depthWrite?: boolean
+      sortPriority?: number
       params: NonNullable<ModelMaterialRef['shader']>['parameters']
     }
     UV_game_material_team_color?: {
@@ -225,11 +230,18 @@ export interface UvmMaterial {
     modkit: {
       material: {
         version: 1
-        fields: Omit<ModelMaterialRef, 'id' | 'name' | 'shader' | 'contracts'>
+        /** What glTF itself does not carry; `depthWrite` and `priority` stay here beside UV_game_material. */
+        fields: Omit<
+          ModelMaterialRef,
+          'id' | 'name' | 'shader' | 'contracts' | MaterialFieldsInGltf
+        >
       }
     }
   }
 }
+/** Material fields written as glTF itself states them, so not repeated in extras. */
+type MaterialFieldsInGltf =
+  'alphaMode' | 'alphaCutoff' | 'doubleSided' | 'baseColorFactor' | 'emissiveFactor' | 'unlit'
 interface PrimitiveEntry {
   attributes: { [semantic: string]: number }
   indices: number
@@ -298,6 +310,20 @@ const encoder = new TextEncoder()
 
 function fail(message: string): never {
   throw new TypeError(`UVM materialization refused: ${message}`)
+}
+
+/** A linear colour factor as glTF states one: `length` finite components in 0..1. */
+function colorFactor<T extends number[]>(
+  value: readonly number[],
+  length: number,
+  label: string,
+): T {
+  if (
+    value.length !== length ||
+    !value.every(component => Number.isFinite(component) && component >= 0 && component <= 1)
+  )
+    fail(`${label} must be ${length} finite components in 0..1`)
+  return [...value] as T
 }
 
 function finite<T extends Iterable<number>>(values: T, label: string): T {
@@ -884,11 +910,37 @@ export function materializeUvmCore(
   for (const definition of definitions ?? []) {
     const index = materialIndexById.get(definition.id)!
     const target = materials[index]!
-    const { id: _id, name, shader, contracts, alphaMode, alphaCutoff, ...fields } = definition
+    const {
+      id: _id,
+      name,
+      shader,
+      contracts,
+      alphaMode,
+      alphaCutoff,
+      doubleSided,
+      baseColorFactor,
+      emissiveFactor,
+      unlit,
+      ...fields
+    } = definition
     if (name !== undefined) target.name = name
     if (alphaMode !== undefined)
       target.alphaMode = alphaMode === 'opaque' ? 'OPAQUE' : alphaMode === 'mask' ? 'MASK' : 'BLEND'
     if (alphaCutoff !== undefined) target.alphaCutoff = alphaCutoff
+    if (doubleSided === true) target.doubleSided = true
+    if (baseColorFactor !== undefined)
+      target.pbrMetallicRoughness.baseColorFactor = colorFactor(
+        baseColorFactor,
+        4,
+        `material ${definition.id} baseColorFactor`,
+      )
+    // also without an emissive layer: then the factor is the emitted colour (glTF)
+    if (emissiveFactor !== undefined)
+      target.emissiveFactor = colorFactor(
+        emissiveFactor,
+        3,
+        `material ${definition.id} emissiveFactor`,
+      )
     if (Object.keys(fields).length > 0)
       target.extras = { modkit: { material: { version: 1, fields } } }
     const artifactContracts: string[] = []
@@ -896,10 +948,16 @@ export function materializeUvmCore(
       // the publisher's blend equation, when it is one the extension names (an additive light cone
       // is black where it adds nothing: without it, the reader draws a black card)
       const blendMode = fields['blendMode']
+      const { depthWrite, priority } = fields
       target.extensions = {
         UV_game_material: {
           shader: shader.id,
           ...(isUvmGameBlendMode(blendMode) ? { blendMode } : {}),
+          ...(depthWrite === undefined ? {} : { depthWrite }),
+          // the extension's integer order; a fractional priority stays in extras only
+          ...(priority !== undefined && Number.isSafeInteger(priority)
+            ? { sortPriority: priority }
+            : {}),
           params: shader.parameters,
         },
       }
@@ -912,6 +970,7 @@ export function materializeUvmCore(
           artifactContracts.push('UV_game_material/composite')
       }
     }
+    if (unlit === true) target.extensions = { ...target.extensions, KHR_materials_unlit: {} }
     if (
       JSON.stringify([...(contracts ?? [])].sort(byUtf8)) !==
       JSON.stringify(artifactContracts.sort(byUtf8))
@@ -1036,7 +1095,7 @@ export function materializeUvmCore(
       else if (slot === 'emissive' && target.emissiveTexture === undefined) {
         target.emissiveTexture = ref
         // glTF multiplies the emissive texture by emissiveFactor, black by default
-        target.emissiveFactor = [1, 1, 1]
+        target.emissiveFactor ??= [1, 1, 1]
       } else if (
         slot === 'teamColor' &&
         target.extensions?.UV_game_material_team_color === undefined
@@ -1570,6 +1629,9 @@ export function materializeUvmCore(
         : []),
       ...(materials.some(material => material.extensions?.UV_game_material_team_color !== undefined)
         ? ['UV_game_material_team_color']
+        : []),
+      ...(materials.some(material => material.extensions?.KHR_materials_unlit !== undefined)
+        ? ['KHR_materials_unlit']
         : []),
       ...(animation === undefined || animation.catalog.length === 0
         ? []

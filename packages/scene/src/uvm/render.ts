@@ -40,6 +40,7 @@ import { prepareUvmTextureImages, uvmImageTexels } from './images.js'
 import { array, field, finiteArray, object, safeIndex, vector4 } from './values.js'
 import {
   uvmMaterialBlendEffect,
+  uvmMaterialDrawOrder,
   uvmMaterialShader,
   uvmMaterialResources,
   acquireUvmMaterialTextures,
@@ -670,6 +671,7 @@ async function prepareNestedUvmRender(
         shading: 'unlit',
         ...(textureIndex === undefined ? {} : { baseColorTexture: `uvm-texture-${textureIndex}` }),
         doubleSided: material['doubleSided'] === true,
+        ...uvmMaterialDrawOrder(material),
         ...(shader === undefined ? {} : { shader }),
         ...(simpleEffect === undefined ? {} : { simpleEffect }),
       }

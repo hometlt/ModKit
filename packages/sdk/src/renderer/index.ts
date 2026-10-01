@@ -115,6 +115,10 @@ export interface SceneRendererMaterial {
   readonly shading?: SceneRendererShadingModel
   /** Draw back faces too. Absent means the provider's own default, as before. */
   readonly doubleSided?: boolean
+  /** Whether the draw writes depth; absent follows `alphaMode` (opaque and mask write, blend does not). */
+  readonly depthWrite?: boolean
+  /** Among blended draws, a higher priority draws later; equal priorities keep back-to-front. */
+  readonly priority?: number
   /** Inert, publisher-qualified material vocabulary, as published by model-material-source.
    * A provider must report an unsupported shader and use the base-color fallback explicitly.
    */

@@ -483,10 +483,8 @@ function rasterizeTriangle(
         continue
       }
       if (surface.alpha.mode === 'mask' && alpha < surface.alpha.cutoff) continue
-      if (surface.alpha.mode !== 'blend') {
-        alpha = 1
-        context.depth[pixel] = sampleDepth
-      }
+      if (surface.alpha.mode !== 'blend') alpha = 1
+      if (surface.alpha.depthWrite) context.depth[pixel] = sampleDepth
       const remaining = 1 - alpha
       context.frame[offset] = byte(
         Math.min(1, Math.max(0, red)) * alpha + ((context.frame[offset] ?? 0) / 255) * remaining,

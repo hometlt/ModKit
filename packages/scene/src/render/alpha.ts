@@ -9,12 +9,26 @@ import type {
 export interface MaterialAlpha {
   readonly mode: SceneRendererAlphaMode
   readonly cutoff: number
+  /** The material's own word, else every mode but blend writes depth. */
+  readonly depthWrite: boolean
+  /** Among blended draws, a higher priority draws later. */
+  readonly priority: number
 }
 
 export function materialAlpha(material?: SceneRendererMaterial): MaterialAlpha {
+  const priority = material?.priority ?? 0
+  if (typeof priority !== 'number' || !Number.isFinite(priority))
+    throw new TypeError('material priority must be finite')
+  if (material?.depthWrite !== undefined && typeof material.depthWrite !== 'boolean')
+    throw new TypeError('material depthWrite must be boolean')
   const effect = readSimpleEffect(material?.simpleEffect)
   if (effect !== undefined)
-    return { mode: simpleEffectSolid(effect) ? 'opaque' : 'blend', cutoff: effect.alphaCutoff }
+    return {
+      mode: simpleEffectSolid(effect) ? 'opaque' : 'blend',
+      cutoff: effect.alphaCutoff,
+      depthWrite: effect.depthWrite,
+      priority,
+    }
   const mode = material?.alphaMode ?? 'opaque',
     cutoff = material?.alphaCutoff ?? 0.5
   if (!['opaque', 'mask', 'blend'].includes(mode))
@@ -23,7 +37,12 @@ export function materialAlpha(material?: SceneRendererMaterial): MaterialAlpha {
     throw new TypeError('material alpha cutoff must be finite and nonnegative')
   // WebGL uniforms are float32. Keep every valid >1 threshold fully transparent even when
   // its double value would round down to 1 on upload.
-  return { mode, cutoff: cutoff > 1 ? 2 : Math.fround(cutoff) }
+  return {
+    mode,
+    cutoff: cutoff > 1 ? 2 : Math.fround(cutoff),
+    depthWrite: material?.depthWrite ?? mode !== 'blend',
+    priority,
+  }
 }
 
 /**
@@ -52,8 +71,9 @@ function boundsCenter(positions: Float32Array): readonly number[] {
   return center
 }
 
-/** Solid geometry first, then stable back-to-front primitive bounds centers for source-over.
- * Intersecting translucent primitives still require a geometry split or an order-independent renderer.
+/** Solid geometry first, then blended by priority and, within one, stable back-to-front primitive
+ * bounds centers for source-over. Intersecting translucent primitives still require a geometry
+ * split or an order-independent renderer.
  */
 export function alphaDrawOrder(
   primitives: readonly SceneRendererPrimitive[],
@@ -65,7 +85,12 @@ export function alphaDrawOrder(
   for (const primitive of primitives)
     if (alphaFor(primitive.materialId).mode !== 'blend') opaque.push(primitive)
     else blending.push(primitive)
-  const blended: { primitive: SceneRendererPrimitive; depth: number; order: number }[] = []
+  const blended: {
+    primitive: SceneRendererPrimitive
+    priority: number
+    depth: number
+    order: number
+  }[] = []
   for (const [order, primitive] of blending.entries()) {
     // A skin posed on the GPU is ordered where its pose stands. A lone blended primitive has no
     // order to find: its checks read the vertices it has, and a skin is not posed on the CPU for it.
@@ -93,9 +118,9 @@ export function alphaDrawOrder(
       w = center[3] ?? 0
     const depth = w === 0 ? z : z / w
     if (!Number.isFinite(depth)) throw new TypeError('blend depth exceeds finite range')
-    blended.push({ primitive, depth, order })
+    blended.push({ primitive, priority: alphaFor(primitive.materialId).priority, depth, order })
   }
-  blended.sort((a, b) => b.depth - a.depth || a.order - b.order)
+  blended.sort((a, b) => a.priority - b.priority || b.depth - a.depth || a.order - b.order)
   return [...opaque, ...blended.map(item => item.primitive)]
 }
 

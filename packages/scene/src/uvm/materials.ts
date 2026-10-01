@@ -75,6 +75,23 @@ export function uvmMaterialBlendEffect(
   }
 }
 
+/**
+ * Depth write and translucent order of the base route: the game material's (`depthWrite`,
+ * `sortPriority`), else the publisher's own fields, which stay in extras for a material without one.
+ */
+export function uvmMaterialDrawOrder(
+  material: JsonObject,
+): Pick<SceneRendererMaterial, 'depthWrite' | 'priority'> {
+  const game = field(material['extensions'], 'UV_game_material')
+  const fields = field(field(field(material['extras'], 'modkit'), 'material'), 'fields')
+  const depthWrite = field(game, 'depthWrite') ?? field(fields, 'depthWrite')
+  const priority = field(game, 'sortPriority') ?? field(fields, 'priority')
+  return {
+    ...(typeof depthWrite === 'boolean' ? { depthWrite } : {}),
+    ...(typeof priority === 'number' && Number.isFinite(priority) ? { priority } : {}),
+  }
+}
+
 export function uvmMaterialShader(material: JsonObject): SceneRendererMaterial['shader'] {
   const extension = field(material['extensions'], 'UV_game_material')
   if (extension === undefined) {

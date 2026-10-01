@@ -222,6 +222,10 @@ interface MutableTexturedBatch extends MutableBatch {
   readonly alphaCutoff?: number
   readonly castShadows?: boolean
   readonly receiveShadows?: boolean
+  /** Drawn without the scene light: the surface as it is (ModelMaterialRef.unlit). */
+  readonly unlit?: boolean
+  /** Among transparent draws, a higher priority draws later (ModelMaterialRef.priority). */
+  readonly priority?: number
 }
 
 interface MutableSplatBatch extends MutableBatch {
@@ -272,6 +276,10 @@ export interface WorldWebGlTexturedBatch extends WorldWebGlBatch {
   readonly alphaCutoff?: number
   readonly castShadows?: boolean
   readonly receiveShadows?: boolean
+  /** Drawn without the scene light: the surface as it is (ModelMaterialRef.unlit). */
+  readonly unlit?: boolean
+  /** Among transparent draws, a higher priority draws later (ModelMaterialRef.priority). */
+  readonly priority?: number
 }
 
 export interface WorldWebGlTransparentTexturedBatch extends WorldWebGlTexturedBatch {
@@ -2223,6 +2231,8 @@ function frozenTexturedBatch(source: MutableTexturedBatch): WorldWebGlTexturedBa
     ...(source.alphaCutoff === undefined ? {} : { alphaCutoff: source.alphaCutoff }),
     ...(source.castShadows === undefined ? {} : { castShadows: source.castShadows }),
     ...(source.receiveShadows === undefined ? {} : { receiveShadows: source.receiveShadows }),
+    ...(source.unlit === undefined ? {} : { unlit: source.unlit }),
+    ...(source.priority === undefined ? {} : { priority: source.priority }),
   })
 }
 
@@ -3431,6 +3441,8 @@ function writtenTexturedBatch(
     ...(template.alphaCutoff === undefined ? {} : { alphaCutoff: template.alphaCutoff }),
     ...(template.castShadows === undefined ? {} : { castShadows: template.castShadows }),
     ...(template.receiveShadows === undefined ? {} : { receiveShadows: template.receiveShadows }),
+    ...(template.unlit === undefined ? {} : { unlit: template.unlit }),
+    ...(template.priority === undefined ? {} : { priority: template.priority }),
   })
 }
 
@@ -6041,12 +6053,15 @@ export function createWorldWebGlPlan(
         const textureCoordinates =
           primitive.textureCoordinateSets?.find(candidate => candidate.set === requestedUv)
             ?.coordinates ?? (requestedUv === 0 ? primitive.textureCoordinates : undefined)
-        // As glTF: COLOR_0 × the object's tint (× the texture, in the shader). A primitive with
-        // neither texture nor COLOR_0 keeps a stand-in hue per material.
+        // As glTF: baseColorFactor × COLOR_0 × the object's tint (× the texture, in the shader). A
+        // primitive with none of factor, texture and COLOR_0 keeps a stand-in hue per material.
         const factor: WorldColor =
-          texture === undefined && primitive.colors === undefined
+          material?.baseColorFactor ??
+          (texture === undefined && primitive.colors === undefined
             ? colorHash(primitive.materialId ?? item.kind)
-            : [1, 1, 1, 1]
+            : [1, 1, 1, 1])
+        const unlit = material?.unlit === true
+        const priority = blendMode === undefined ? 0 : (material?.priority ?? 0)
         const tint = item.presentationTint ?? [1, 1, 1]
         const base: WorldColor = [
           factor[0] * tint[0],
@@ -6096,7 +6111,7 @@ export function createWorldWebGlPlan(
             textureCoordinates.length >= (primitive.positions.length / 3) * 2
           ) {
             if (texturedWrite === undefined) {
-              const key = `${result.sourceKey}\u0000${texture.id}\u0000${normalTexture?.id ?? ''}\u0000${blendMode ?? 'opaque'}\u0000${String(coverage.cutoff)}\u0000${String(shadowPolicy.castShadows)}\u0000${String(shadowPolicy.receiveShadows)}`
+              const key = `${result.sourceKey}\u0000${texture.id}\u0000${normalTexture?.id ?? ''}\u0000${blendMode ?? 'opaque'}\u0000${String(coverage.cutoff)}\u0000${String(shadowPolicy.castShadows)}\u0000${String(shadowPolicy.receiveShadows)}\u0000${String(unlit)}\u0000${String(priority)}`
               const collection = blendMode === undefined ? textured : transparentTextured
               const target = collection.get(key) ?? {
                 ...batch(),
@@ -6107,6 +6122,8 @@ export function createWorldWebGlPlan(
                 castShadows: shadowPolicy.castShadows,
                 receiveShadows: shadowPolicy.receiveShadows,
                 ...(coverage.cutoff === 0 ? {} : { alphaCutoff: coverage.cutoff }),
+                ...(unlit ? { unlit } : {}),
+                ...(priority === 0 ? {} : { priority }),
               }
               collection.set(key, target as WorldTransparentTexturedBatch)
               texturedWrite = { ...batch(), textureCoordinates: [], texture }
@@ -8763,7 +8780,9 @@ function drawTexturedBatch(
   }
   worldUniform1f(gl, program, 'textured', 1)
   worldUniform1f(gl, program, 'alphaCutoff', source.alphaCutoff ?? 0)
+  if (source.unlit === true) worldUniform1f(gl, program, 'unlitSurface', 1)
   drawBatch(resources, program, source, gl.TRIANGLES, source, range)
+  if (source.unlit === true) worldUniform1f(gl, program, 'unlitSurface', 0)
   if (detail !== undefined) worldUniform1f(gl, program, 'waterDetailMode', 0)
 }
 
@@ -9092,6 +9111,7 @@ function sortedWorldWebGlTransparentDraws(
   ]
   const triangles: Array<{
     sourceIndex: number
+    priority: number
     offset: number
     depth: number
     ordinal: number
@@ -9114,6 +9134,7 @@ function sortedWorldWebGlTransparentDraws(
     // The untextured batch starts with the clipped water; a renderer drawing the planes skips it.
     const first =
       excludeClippedWater && source.kind === 'untextured' ? plan.transparentWaterTriangles * 9 : 0
+    const priority = source.kind === 'textured' ? (source.batch.priority ?? 0) : 0
     for (let offset = first; offset < positions.length; offset += 9) {
       let depth = 0
       for (let vertex = 0; vertex < 3; vertex += 1) {
@@ -9123,12 +9144,16 @@ function sortedWorldWebGlTransparentDraws(
           positions[start + 1]! * direction[1] +
           positions[start + 2]! * direction[2]
       }
-      triangles.push({ sourceIndex, offset, depth, ordinal })
+      triangles.push({ sourceIndex, priority, offset, depth, ordinal })
       ordinal += 1
     }
   }
-  // The camera is positioned along +direction, so the smallest projection is farthest away.
-  triangles.sort((left, right) => left.depth - right.depth || left.ordinal - right.ordinal)
+  // By priority, then back to front: the camera is positioned along +direction, so the smallest
+  // projection is farthest away.
+  triangles.sort(
+    (left, right) =>
+      left.priority - right.priority || left.depth - right.depth || left.ordinal - right.ordinal,
+  )
 
   const output: WorldWebGlTransparentDraw[] = []
   const indices = sources.map(source => new Uint32Array(source.batch.positions.length / 3))
@@ -9307,7 +9332,7 @@ export function createWorldWebGlCompositeTransparentDrawPlan(
   for (const draw of worldDraws)
     entries.push({
       value: Object.freeze({ kind: 'world', draw }),
-      priority: 0,
+      priority: draw.kind === 'textured' ? (draw.batch.priority ?? 0) : 0,
       depth: draw.range.depth,
       ordinal: entries.length,
     })

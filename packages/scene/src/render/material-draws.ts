@@ -225,9 +225,14 @@ export function sceneMaterialDraws(
     })
   const alpha = (primitive: SceneRendererPrimitive) => {
     const program = entries.get(primitive)?.program
-    return program === undefined
-      ? (alphas.get(primitive.materialId ?? '') ?? materialAlpha())
-      : { mode: materialIsSolid(program) ? ('opaque' as const) : ('blend' as const), cutoff: 0 }
+    if (program === undefined) return alphas.get(primitive.materialId ?? '') ?? materialAlpha()
+    const solid = materialIsSolid(program)
+    return {
+      mode: solid ? ('opaque' as const) : ('blend' as const),
+      cutoff: 0,
+      depthWrite: solid,
+      priority: program.priority,
+    }
   }
   // Unique scheduling ids allow the existing stable depth sort to retain composite pass identity.
   const keys = [...entries.keys()].map((primitive, index) => ({
@@ -243,21 +248,12 @@ export function sceneMaterialDraws(
     },
     viewProjection,
   )
+  // solid first, then blended by priority (a program's, or its material's), back to front within one
   const draws = ordered.map(key => {
     const original = originals[Number(key.materialId)],
       entry = original === undefined ? undefined : entries.get(original)
     if (entry === undefined) throw new TypeError('invalid material draw')
     return entry
-  })
-  draws.sort((a, b) => {
-    const solid = (draw: MaterialDraw) =>
-      draw.program === undefined
-        ? (alphas.get(draw.primitive.materialId ?? '')?.mode ?? 'opaque') !== 'blend'
-        : materialIsSolid(draw.program)
-    return (
-      Number(solid(b)) - Number(solid(a)) ||
-      (solid(a) ? 0 : (a.program?.priority ?? 0) - (b.program?.priority ?? 0))
-    )
   })
   return [...prepasses, ...draws]
 }

@@ -482,7 +482,7 @@ export async function renderBrowser(request: SceneRenderRequest): Promise<SceneR
       if (coverageMode !== null)
         gl.uniform1f(coverageMode, alpha.mode === 'opaque' ? 0 : alpha.mode === 'mask' ? 1 : 2)
       if (alphaCutoff !== null) gl.uniform1f(alphaCutoff, alpha.cutoff)
-      gl.depthMask(alpha.mode !== 'blend')
+      gl.depthMask(alpha.depthWrite)
       if (alpha.mode === 'blend') {
         gl.enable(gl.BLEND)
         gl.blendEquation(gl.FUNC_ADD)

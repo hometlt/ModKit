@@ -321,6 +321,23 @@ export interface ModelMaterialRef {
   readonly castShadows?: boolean
   /** False when direct lighting on this material must ignore the world shadow map. */
   readonly receiveShadows?: boolean
+  /** Both faces are fronts: nothing is culled (glTF `material.doubleSided`). */
+  readonly doubleSided?: boolean
+  /** Whether the material writes depth; absent follows the coverage (opaque and mask write, blend does not). */
+  readonly depthWrite?: boolean
+  /**
+   * Linear RGBA in 0..1 multiplying the base-colour layer, or the base colour itself without one
+   * (glTF `baseColorFactor`).
+   */
+  readonly baseColorFactor?: readonly [number, number, number, number]
+  /**
+   * Linear RGB in 0..1 multiplying the emissive layer, or the emitted colour itself without one
+   * (glTF `emissiveFactor`).
+   */
+  readonly emissiveFactor?: readonly [number, number, number]
+  /** Drawn without lighting: the base colour as it is (glTF `KHR_materials_unlit`). */
+  readonly unlit?: boolean
+  /** Among translucent draws, a higher priority draws later (UVM `UV_game_material.sortPriority`). */
   readonly priority?: number
   readonly nativeFlags?: number
   readonly flagNames?: readonly string[]
