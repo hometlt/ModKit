@@ -491,7 +491,14 @@ export function projectUvmRigModel(
   })
   for (const rawAnimation of array(document, 'animations')) {
     const animation = object(rawAnimation, 'animation')
-    only(animation, ['name', 'channels', 'samplers', 'extras'], 'animation')
+    only(animation, ['name', 'channels', 'samplers', 'extras', 'extensions'], 'animation')
+    // how the clip plays and its events: the rig reader checked them and they ride on the clip
+    if (animation['extensions'] !== undefined)
+      only(
+        object(animation['extensions'], 'animation extensions'),
+        ['UV_game_animation_clips', 'UV_game_animation_events'],
+        'animation.extensions',
+      )
     if (animation['extras'] !== undefined) {
       const extras = object(animation['extras'], 'clip extras')
       only(extras, ['uv'], 'clip extras')
@@ -583,6 +590,29 @@ export function projectUvmRigModel(
       name: clip.name,
       durationSeconds: clip.durationSeconds,
       looping: clip.looping ?? false,
+      ...(clip.loop === undefined ? {} : { loop: clip.loop }),
+      ...(clip.priority === undefined ? {} : { priority: clip.priority }),
+      ...(clip.speedScale === undefined ? {} : { speedScale: clip.speedScale }),
+      ...(clip.blendInSeconds === undefined ? {} : { blendInSeconds: clip.blendInSeconds }),
+      ...(clip.blendOutSeconds === undefined ? {} : { blendOutSeconds: clip.blendOutSeconds }),
+      // an event at a joint names its bone, as the tracks do
+      ...(clip.events === undefined
+        ? {}
+        : {
+            events: clip.events.map(event => {
+              const boneIndex =
+                event.nodeId === undefined ? undefined : nodeToBone.get(event.nodeId)
+              return {
+                timeSeconds: event.timeSeconds,
+                name: event.name,
+                ...(boneIndex === undefined ? {} : { boneIndex }),
+                ...(event.payload === undefined ? {} : { payload: event.payload }),
+                ...(event.durationSeconds === undefined
+                  ? {}
+                  : { durationSeconds: event.durationSeconds }),
+              }
+            }),
+          }),
       nodeTracks: [...nodeTracks.values()],
       ...(meshTracks.size === 0 ? {} : { meshTracks: [...meshTracks.values()] }),
     }

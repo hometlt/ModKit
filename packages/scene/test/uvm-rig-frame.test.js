@@ -261,3 +261,26 @@ test('a mirrored or non-uniform frame is refused, not baked', () => {
     /uniform scale, rotation and translation/,
   )
 })
+
+test('how a clip plays and its events ride on the rig clip, an event joint as its bone', () => {
+  const container = framedRig(translate(0, 0, 0))
+  container.document.animations[0].extensions = {
+    UV_game_animation_clips: { loop: 'loop', priority: 20, blendInSeconds: 0.15 },
+    UV_game_animation_events: {
+      events: [
+        { t: 0.5, name: 'fire_weapon', socket: 2, payload: { weapon: 'cannon' } },
+        { t: 0.9, name: 'sound' },
+      ],
+    },
+  }
+  const [clip] = projectUvmRigModel(container, budget).model.animations
+  assert.deepEqual(
+    { loop: clip.loop, priority: clip.priority, blendInSeconds: clip.blendInSeconds },
+    { loop: 'loop', priority: 20, blendInSeconds: 0.15 },
+  )
+  // node 2 is the skin's second joint: bone 1
+  assert.deepEqual(clip.events, [
+    { timeSeconds: 0.5, name: 'fire_weapon', boneIndex: 1, payload: { weapon: 'cannon' } },
+    { timeSeconds: 0.9, name: 'sound' },
+  ])
+})
