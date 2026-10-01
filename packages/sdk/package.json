@@ -4,6 +4,7 @@
   "description": "MK3 clean-core lab: extension/contribution envelope, schemas, subjects (BRIEF-12; not a release)",
   "license": "UNLICENSED",
   "type": "module",
+  "sideEffects": false,
   "engines": {
     "node": ">=22"
   },
