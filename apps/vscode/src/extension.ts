@@ -16,7 +16,9 @@
  */
 import { createHash } from 'node:crypto'
 import {
+browserImageType,
 imageGalleryExtensions,
+MAXIMUM_BROWSER_IMAGE_BYTES,
 renderGalleryThumbnail,
 type GalleryThumbnail,
 } from './image-gallery.js'
@@ -7139,6 +7141,8 @@ async function activateModkit(
     // a vector picture goes as it is; the host takes SVG up to its own bound
     if ('svg' in picture)
       return { mediaType: 'image/svg+xml', bytes: new TextEncoder().encode(picture.svg) }
+    // a file only a browser decodes is not a picture this host can encode
+    if ('image' in picture) return undefined
     return { mediaType: 'image/png', bytes: await encodeRgbaPng(picture, request.signal) }
   }
 
@@ -8328,11 +8332,26 @@ async function activateModkit(
     readContentSource,
   })
   let thumbnailQueue: Promise<unknown> = Promise.resolve()
+  /*
+   * A picture no codec decodes to pixels (WebP and GIF publish none) but the page can decode: the
+   * file's bytes, read through VS Code's file system (plan 7.37).
+   */
+  const browserImageOf = async (ref: string): Promise<GalleryThumbnail | undefined> => {
+    const mediaType = browserImageType(ref)
+    if (mediaType === undefined) return undefined
+    const uri = subjectUriOf(ref)
+    if ((await vscode.workspace.fs.stat(uri)).size > MAXIMUM_BROWSER_IMAGE_BYTES) return undefined
+    return { image: await vscode.workspace.fs.readFile(uri), mediaType }
+  }
   const galleryThumbnailOf = (
     ref: string,
     maxEdge: number,
   ): Promise<GalleryThumbnail | undefined> => {
-    const drawn = thumbnailQueue.then(() => renderGalleryThumbnail(thumbnailOpener, ref, maxEdge))
+    const drawn = thumbnailQueue.then(
+      async () =>
+        (await renderGalleryThumbnail(thumbnailOpener, ref, maxEdge).catch(() => undefined)) ??
+        (await browserImageOf(ref)),
+    )
     thumbnailQueue = drawn.catch(() => undefined)
     // A file with no decoded pixels stays in the gallery by name.
     return drawn.catch(() => undefined)

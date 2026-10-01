@@ -194,6 +194,9 @@ async function thumbnailFrom(
   if (answer === null || typeof answer !== 'object') return undefined
   const svg = (answer as { readonly svg?: unknown }).svg
   if (typeof svg === 'string') return svgThumbnail(svg, maxEdge)
+  const { image, mediaType } = answer as { readonly image?: unknown; readonly mediaType?: unknown }
+  if (image instanceof Uint8Array && typeof mediaType === 'string')
+    return bitmapThumbnail(image, mediaType, maxEdge)
   const { width, height, rgba } = answer as {
     readonly width?: unknown
     readonly height?: unknown
@@ -237,6 +240,41 @@ async function svgThumbnail(
     return undefined
   } finally {
     URL.revokeObjectURL(url)
+  }
+}
+
+/**
+ * A picture the host has no decoded pixels for (WebP, GIF) but this page's browser decodes, drawn at
+ * the gallery's size; never larger than the picture itself.
+ */
+async function bitmapThumbnail(
+  bytes: Uint8Array,
+  mediaType: string,
+  maxEdge: number,
+): Promise<ArchiveGalleryThumbnail | undefined> {
+  try {
+    const bitmap = await createImageBitmap(new Blob([new Uint8Array(bytes)], { type: mediaType }))
+    try {
+      const scale = Math.min(1, maxEdge / Math.max(bitmap.width, bitmap.height, 1))
+      const width = Math.max(1, Math.round(bitmap.width * scale))
+      const height = Math.max(1, Math.round(bitmap.height * scale))
+      const canvas = document.createElement('canvas')
+      canvas.width = width
+      canvas.height = height
+      const context = canvas.getContext('2d')
+      if (context === null) return undefined
+      context.drawImage(bitmap, 0, 0, width, height)
+      const pixels = context.getImageData(0, 0, width, height).data
+      return {
+        width,
+        height,
+        rgba: new Uint8Array(pixels.buffer, pixels.byteOffset, pixels.length),
+      }
+    } finally {
+      bitmap.close()
+    }
+  } catch {
+    return undefined
   }
 }
 

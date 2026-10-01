@@ -263,6 +263,7 @@ export type ShellRequest =
 export type ShellThumbnail =
   | { readonly width: number; readonly height: number; readonly rgba: Uint8Array }
   | { readonly svg: string }
+  | { readonly image: Uint8Array; readonly mediaType: string }
 
 /** One entry of a Modkit Explorer folder: `id` is opaque to the page, `path` is from the root. */
 export interface ShellExplorerEntry {

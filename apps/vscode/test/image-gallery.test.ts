@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import type { Inventory } from '@modkit/host'
 import {
+  browserImageType,
   galleryThumbnail,
   imageGalleryExtensions,
   renderGalleryThumbnail,
@@ -89,5 +90,13 @@ describe('image gallery', () => {
     )
     expect(thumbnail).toEqual({ svg })
     expect(released).toEqual(['common.view/vector-scene-source', 'session'])
+  })
+
+  it('names the formats the page decodes itself when no codec decodes them (7.37)', () => {
+    expect(browserImageType('ui/Loading.WEBP')).toBe('image/webp')
+    expect(browserImageType('anim.gif')).toBe('image/gif')
+    expect(browserImageType('photo.jfif')).toBe('image/jpeg')
+    expect(browserImageType('unit.dds')).toBeUndefined()
+    expect(browserImageType('README')).toBeUndefined()
   })
 })

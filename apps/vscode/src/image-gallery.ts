@@ -12,6 +12,30 @@ import type { Lease, RasterImageSource, RasterRegion, VectorSceneSource } from '
 const MAXIMUM_THUMBNAIL_SOURCE_BYTES = 16 * 1024 * 1024
 /** Longest SVG text a vector thumbnail carries to the page. */
 const MAXIMUM_THUMBNAIL_SVG_CHARACTERS = 2 * 1024 * 1024
+/** Largest file the page is asked to decode itself. */
+export const MAXIMUM_BROWSER_IMAGE_BYTES = 16 * 1024 * 1024
+
+/** Formats a browser decodes on its own, by extension. */
+const BROWSER_IMAGE_TYPES: Readonly<Record<string, string>> = {
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  jpe: 'image/jpeg',
+  jfif: 'image/jpeg',
+  png: 'image/png',
+  gif: 'image/gif',
+  webp: 'image/webp',
+  bmp: 'image/bmp',
+  avif: 'image/avif',
+}
+
+/**
+ * The media type of a picture the page can decode itself (plan 7.37): the fallback for a format
+ * whose codec publishes no decoded pixels (WebP, GIF animations) or none at all.
+ */
+export function browserImageType(name: string): string | undefined {
+  const dot = name.lastIndexOf('.')
+  return dot < 0 ? undefined : BROWSER_IMAGE_TYPES[name.slice(dot + 1).toLowerCase()]
+}
 
 /** Image support comes from enabled codec contracts, including external extensions. */
 export function imageGalleryExtensions(inventory: Inventory): ReadonlySet<string> {
@@ -47,6 +71,8 @@ export function imageGalleryExtensions(inventory: Inventory): ReadonlySet<string
 export type GalleryThumbnail =
   | { readonly width: number; readonly height: number; readonly rgba: Uint8Array }
   | { readonly svg: string }
+  /** A file in a format the page decodes itself. */
+  | { readonly image: Uint8Array; readonly mediaType: string }
 
 /** Nearest-neighbour downscale of a decoded region to at most `maxEdge` on its long side. */
 export function galleryThumbnail(region: RasterRegion, maxEdge = 96): GalleryThumbnail {
