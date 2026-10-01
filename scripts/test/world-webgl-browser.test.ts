@@ -436,7 +436,10 @@ describe('common world renderer in a real browser WebGL2 context', () => {
     expect(Number(evidence.retainedBeforeDispose['textureEntries'])).toBeGreaterThan(0)
     expect(Number(evidence.retainedBeforeDispose['textureBytesRetained'])).toBeGreaterThan(0)
     expect(Number(evidence.retainedBeforeDispose['worldPlanBytesRetained'])).toBeGreaterThan(0)
-    expect(Number(evidence.retainedBeforeDispose['shadowTargetBytesRetained'])).toBe(512 * 512 * 4)
+    // the shadow target and the kept depth of the casters that stayed (b82be52b)
+    expect(Number(evidence.retainedBeforeDispose['shadowTargetBytesRetained'])).toBe(
+      2 * 512 * 512 * 4,
+    )
     expect(Number(evidence.retainedBeforeDispose['knownGpuBytesRetained'])).toBeGreaterThan(
       Number(evidence.retainedBeforeDispose['geometryBytesRetained']),
     )
@@ -448,9 +451,12 @@ describe('common world renderer in a real browser WebGL2 context', () => {
     } else {
       expect(evidence.retainedBeforeDispose['gpuFrameSamples']).toBe(0)
     }
+    // a selection and an animation seek redraw the plan's dynamic part; its static preparation
+    // (terrain, water, object scenes) is kept, so only the first frame builds
     expect(evidence.afterInvalidation).toMatchObject({
       frames: 4,
-      worldPlanBuilds: 2,
+      worldPlanBuilds: 1,
+      worldPlanDynamicUpdates: 1,
       worldPlanReuses: 3,
       disposed: false,
     })
@@ -459,9 +465,10 @@ describe('common world renderer in a real browser WebGL2 context', () => {
     )
     expect(evidence.afterAnimationSeek).toMatchObject({
       frames: 5,
-      worldPlanBuilds: 3,
+      worldPlanBuilds: 1,
+      worldPlanDynamicUpdates: 2,
       worldPlanReuses: 3,
-      worldPlanBuildSamples: 3,
+      worldPlanBuildSamples: 1,
       animationSeekSamples: 1,
       disposed: false,
     })
@@ -472,7 +479,8 @@ describe('common world renderer in a real browser WebGL2 context', () => {
       programCompilations: 2,
       shadowTargetAllocations: 1,
       shadowTargetReuses: 3,
-      worldPlanBuilds: 3,
+      worldPlanBuilds: 1,
+      worldPlanDynamicUpdates: 2,
       worldPlanReuses: 3,
       geometryEntries: 0,
       geometryBytesRetained: 0,
