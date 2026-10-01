@@ -11,6 +11,7 @@ import {
   panWorldWebGlCamera,
   pickWorldWebGl,
   SCENE_COMPRESSED_TEXTURE_FORMATS,
+  WORLD_MAX_TERRAIN_WEIGHT_RASTERS,
   worldObjectModelResources,
   zoomWorldWebGlCamera,
   type WorldWebGlCamera,
@@ -592,6 +593,15 @@ export async function inspectCandidateWorld(
       ]),
     ),
   ]
+  const weightRasters = inspected.flatMap(({ layer }) => layer.weightRasters ?? []).length
+  if (weightRasters > WORLD_MAX_TERRAIN_WEIGHT_RASTERS)
+    terrainTextureDiagnostics.push(
+      diagnostic(
+        'warning',
+        'x3.ui/world-terrain-weight-rasters-capped',
+        `the terrain blends ${String(weightRasters)} weight rasters; the world draws at most ${String(WORLD_MAX_TERRAIN_WEIGHT_RASTERS)}, so each cell shows its own weights instead.`,
+      ),
+    )
   const terrainTextureIds = allTerrainTextureIds.slice(0, WORLD_VIEWER_MAX_TERRAIN_TEXTURES)
   if (allTerrainTextureIds.length > terrainTextureIds.length)
     terrainTextureDiagnostics.push(

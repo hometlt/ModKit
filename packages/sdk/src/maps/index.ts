@@ -881,8 +881,8 @@ export interface MapTerrainMaterialDefinition {
 }
 
 /**
- * GPU-ready exact authored blend raster. Channels name materials in RGBA order; with `sum`
- * normalization the weights of all of a map's rasters add up to one at each texel.
+ * GPU-ready blend raster. Channels name materials in RGBA order; with `sum` normalization the
+ * weights of all of a map's rasters add up to one at each texel.
  */
 export interface MapTerrainWeightRaster {
   readonly resourceId: string
@@ -891,6 +891,12 @@ export interface MapTerrainWeightRaster {
   readonly materialIds: readonly string[]
   readonly encoding: 'rgba8-unorm'
   readonly normalization: 'sum'
+  /**
+   * `authored` (the default): the map's own blend data. `presentation`: the publisher's
+   * approximation of how the game blends its cells (Roblox voxel materials), drawn the same but
+   * not map data; a UVW export names it among its lost fields, as UVW cannot tell the two apart.
+   */
+  readonly derivation?: 'authored' | 'presentation'
   /** Publisher-owned decoded bytes; omitted from layer catalogs and serialized UVW metadata. */
   readonly rgba?: Uint8Array
 }

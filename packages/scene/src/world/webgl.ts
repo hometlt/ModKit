@@ -1648,8 +1648,11 @@ function pushSplatTriangle(
   }
 }
 
-/** Weight rasters the exact raster splat draws: two per draw (eight layers), up to sixteen layers. */
-const MAX_TERRAIN_WEIGHT_RASTERS = 4
+/**
+ * Weight rasters the exact raster splat draws: two per draw (eight layers), each later draw blended
+ * over the first, up to 64 layers; past that the cells fall back to their own weights.
+ */
+export const WORLD_MAX_TERRAIN_WEIGHT_RASTERS = 16
 
 /** Neutral stand-in for a splat layer whose base-color texture did not resolve. */
 const MISSING_TERRAIN_LAYER_TEXTURE: SceneRendererTexture = Object.freeze({
@@ -4480,7 +4483,7 @@ function prepareWorldStaticTerrain(
   const weightRasters = input.terrainWeightRasters ?? []
   const rasterGroups =
     weightRasters.length > 0 &&
-    weightRasters.length <= MAX_TERRAIN_WEIGHT_RASTERS &&
+    weightRasters.length <= WORLD_MAX_TERRAIN_WEIGHT_RASTERS &&
     terrainMaximumX > terrainMinimumX &&
     terrainMaximumY > terrainMinimumY
       ? Array.from({ length: Math.ceil(weightRasters.length / 2) }, (_, index) =>

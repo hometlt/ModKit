@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
-import { createWorldWebGlPlan } from '../src/world/webgl.js'
+import { createWorldWebGlPlan, WORLD_MAX_TERRAIN_WEIGHT_RASTERS } from '../src/world/webgl.js'
 
 /** One terrain cell (2 × 2 grid points). */
 function cell() {
@@ -70,7 +70,7 @@ describe('world terrain overlays', () => {
       Array.from(overlay.weightTextureCoordinates),
       Array.from(plan.splatTriangles[0].weightTextureCoordinates),
     )
-    // Past the ceiling nothing is drawn by rasters.
+    // Rasters whose textures did not load draw nothing.
     const tooMany = createWorldWebGlPlan({
       items: cell(),
       terrainMaterials: materials,
@@ -78,6 +78,50 @@ describe('world terrain overlays', () => {
       terrainTextures: new Map(),
     })
     assert.equal(tooMany.splatOverlayTriangles.length, 0)
+  })
+
+  it('blends as many weight rasters as a place holds, up to the world ceiling', () => {
+    const planOf = count => {
+      const materials = Array.from({ length: count * 4 }, (_, index) => ({
+        materialId: `ground-${index}`,
+        baseColorResourceId: `ground-${index}.png`,
+      }))
+      const rasters = Array.from({ length: count }, (_, raster) => ({
+        resourceId: `weights-${raster}`,
+        width: 2,
+        height: 2,
+        materialIds: materials
+          .slice(raster * 4, raster * 4 + 4)
+          .map(material => material.materialId),
+        encoding: 'rgba8-unorm',
+        normalization: 'sum',
+      }))
+      return createWorldWebGlPlan({
+        items: cell(),
+        terrainMaterials: materials,
+        terrainWeightRasters: rasters,
+        terrainTextures: new Map([
+          ...materials.map(material => [
+            material.baseColorResourceId,
+            texture(material.baseColorResourceId),
+          ]),
+          ...rasters.map(raster => [
+            raster.resourceId,
+            texture(raster.resourceId, 2, 2, [0, 0, 0, 0]),
+          ]),
+        ]),
+      })
+    }
+    // Roblox's 21 ground materials in six rasters: the ground and two groups over it
+    const place = planOf(6)
+    assert.equal(place.splatTriangles.length, 1)
+    assert.equal(place.splatOverlayTriangles.length, 2)
+    assert.equal(
+      planOf(WORLD_MAX_TERRAIN_WEIGHT_RASTERS).splatOverlayTriangles.length,
+      WORLD_MAX_TERRAIN_WEIGHT_RASTERS / 2 - 1,
+    )
+    // past the ceiling the cells show their own weights
+    assert.equal(planOf(WORLD_MAX_TERRAIN_WEIGHT_RASTERS + 1).splatOverlayTriangles.length, 0)
   })
 
   it('draws tileset layers from atlas tiles, the first opaque and the rest over it in order', () => {

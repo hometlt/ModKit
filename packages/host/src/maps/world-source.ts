@@ -1136,6 +1136,7 @@ export function createCandidateWorldSceneLease(
         materialIds: raster.materialIds,
         encoding: raster.encoding,
         normalization: raster.normalization,
+        ...(raster.derivation === undefined ? {} : { derivation: raster.derivation }),
       }),
     ),
   )

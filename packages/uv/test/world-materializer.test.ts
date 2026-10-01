@@ -665,6 +665,41 @@ describe('production world to UVW materializer', () => {
           .toEqual([0.5, 0.25, 1, 1])
       }
     }
+    // a raster the publisher approximated is written all the same and named among the lost fields
+    const presentationSource: CandidateWorldSceneSource = {
+      ...rasterSource,
+      page: async request => {
+        const page = await rasterSource.page(request)
+        if (request.facet !== 'layers') return page
+        return {
+          ...page,
+          items: page.items.map(item =>
+            item.facet === 'layers' && item.weightRasters !== undefined
+              ? {
+                  ...item,
+                  weightRasters: item.weightRasters.map(raster => ({
+                    ...raster,
+                    derivation: 'presentation' as const,
+                  })),
+                }
+              : item,
+          ),
+        }
+      },
+    }
+    const presented = await materializeWorldToUvw(presentationSource, {
+      ...options,
+      maxFacetItems: 8,
+    })
+    if (presented.state !== 'materialized') throw new Error(JSON.stringify(presented.refusals))
+    expect(presented.lostFields).toContainEqual({
+      path: 'world.layers.weightRasters.derivation',
+      count: 1,
+    })
+    if (rasterResult.state === 'materialized')
+      expect(rasterResult.lostFields.map(field => field.path)).not.toContain(
+        'world.layers.weightRasters.derivation',
+      )
   })
 
   it('round-trips every admitted facet from a canonical source at different page sizes', async () => {

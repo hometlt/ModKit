@@ -339,6 +339,14 @@ async function reconstructLayer(
 ): Promise<UvwHeightfieldSpaceLayer> {
   const id = layer.localLayerId ?? localId(layer.layerId)
   const label = layerLabel(layer)
+  // UVW holds no derivation: a raster the publisher approximated reads there as the map's own
+  const presentationRasters =
+    layer.weightRasters?.filter(raster => raster.derivation === 'presentation').length ?? 0
+  if (presentationRasters > 0 && state.lostFields !== undefined)
+    state.lostFields.set(
+      'world.layers.weightRasters.derivation',
+      (state.lostFields.get('world.layers.weightRasters.derivation') ?? 0) + presentationRasters,
+    )
   if (
     layer.kind === 'terrain-materials' &&
     layer.weightRasters !== undefined &&
