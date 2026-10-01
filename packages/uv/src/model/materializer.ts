@@ -1339,6 +1339,9 @@ export function materializeUvmCore(
     }
     return fail(`node «${id}» billboard mode is unknown`)
   }
+  // glTF gives a node one mesh: each further mesh of a node hangs under it on an identity child
+  // ponytail: a clip's morph weights drive only the first mesh; the children keep their defaults
+  const meshChildren: DocumentNode[] = []
   const documentNodes = orderedNodes.map(node => {
     const entry: DocumentNode = {}
     const bone = skeleton?.boneByNode.get(node.id)
@@ -1348,19 +1351,20 @@ export function materializeUvmCore(
     const children = (node.childIds ?? [])
       .map(child => nodeIndexById.get(child))
       .filter(index => index !== undefined)
-    if (children.length > 0) entry.children = children
-    const meshId = (node.meshIds ?? [])[0]
+    const [meshId, ...moreMeshIds] = node.meshIds ?? []
     if (meshId !== undefined && meshIndexById.has(meshId)) entry.mesh = meshIndexById.get(meshId)
     const skin = meshId === undefined ? undefined : meshSkins.get(meshId)
     if (skin !== undefined && skin !== null) entry.skin = skin
-    if ((node.meshIds ?? []).length > 1) {
-      note(
-        'uv.model/hierarchy@1',
-        'value-differs',
-        `/nodes/${node.id}/meshIds`,
-        'a glTF node carries at most one mesh; only the first was written',
-      )
+    for (const id of moreMeshIds) {
+      const mesh = meshIndexById.get(id)
+      if (mesh === undefined) continue
+      const child: DocumentNode = { mesh }
+      const childSkin = meshSkins.get(id)
+      if (childSkin !== undefined && childSkin !== null) child.skin = childSkin
+      children.push(orderedNodes.length + meshChildren.length)
+      meshChildren.push(child)
     }
+    if (children.length > 0) entry.children = children
     const transform = finite([...(node.transform ?? [])], `node ${node.id} transform`)
     if (transform.length !== 16) fail(`node «${node.id}» transform must carry 16 numbers`)
     // identity is the reader's default; writing it back would be noise, and it reopens the same
@@ -1394,6 +1398,7 @@ export function materializeUvmCore(
       }
     return entry
   })
+  documentNodes.push(...meshChildren)
 
   const documentMeshes = emittedMeshes.map(({ mesh, primitives: entries }) => {
     const value: {
