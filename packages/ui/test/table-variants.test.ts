@@ -538,6 +538,34 @@ describe('variant table surface', () => {
     expect(await page.textContent('[data-modkit-action="save"]')).toBe('Save (2)')
   })
 
+  it('moves between cells with the arrows and goes on editing below with ↓ (7.36)', async () => {
+    await page.evaluate(() => (globalThis as unknown as Probe).mountTable())
+    const cell = (row: number, column: number) =>
+      `[data-mk-part="table.body"] tr:nth-child(${row}) td:nth-child(${column})`
+    // not editing: the arrows move the focus, as in a spreadsheet
+    await page.focus(cell(1, 3))
+    await page.keyboard.press('ArrowDown')
+    await page.keyboard.press('ArrowRight')
+    expect(
+      await page.evaluate(
+        () =>
+          document.activeElement?.closest('tr')?.querySelector('td:nth-child(2)')?.textContent +
+          ' ' +
+          String((document.activeElement as HTMLTableCellElement | null)?.cellIndex),
+      ),
+    ).toBe('Abil/Name/B 3')
+    // editing: Shift+Enter keeps the field open; ↓ keeps the value and edits the cell below
+    await page.dblclick(cell(1, 3))
+    await page.fill(`${cell(1, 3)} input`, 'Alpha!')
+    await page.keyboard.press('Shift+Enter')
+    expect(await page.isVisible(`${cell(1, 3)} input`)).toBe(true)
+    await page.keyboard.press('ArrowDown')
+    await page.waitForSelector(`${cell(2, 3)} input`)
+    expect(await page.textContent(cell(1, 3))).toBe('Alpha!')
+    expect(await page.textContent('[data-modkit-action="save"]')).toBe('Save (1)')
+    await page.keyboard.press('Escape')
+  })
+
   it('reverts the draft to the values the source holds, writing nothing', async () => {
     await page.evaluate(() => (globalThis as unknown as Probe).mountTable())
     const cell = '[data-mk-part="table.body"] tr:first-child td:nth-child(4)'

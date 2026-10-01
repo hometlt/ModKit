@@ -39,6 +39,13 @@ export const TABLE_PAGE_ROWS = 200
 export const TABLE_KNOWLEDGE_SUMMARY_CHARACTERS = 512
 export const TABLE_KNOWLEDGE_SOURCE_TITLE_CHARACTERS = 160
 export const TABLE_KNOWLEDGE_MISSING = 'Description is not available yet.'
+/** Rows and columns an arrow key moves the focus between cells. */
+const CELL_STEPS: Readonly<Record<string, readonly [number, number]>> = {
+  ArrowUp: [-1, 0],
+  ArrowDown: [1, 0],
+  ArrowLeft: [0, -1],
+  ArrowRight: [0, 1],
+}
 
 export class LazyTableModel {
   #cursor: string | undefined
@@ -301,6 +308,26 @@ export function createTableViewer(options: TableViewerOptions = {}): ViewerModul
         body.querySelector<HTMLTableCellElement>(
           `tr[data-row="${coord.row}"] > td:nth-child(${coord.column + 2})`,
         )
+      /** The value cell `rows` rows or `columns` columns away from `cell`, as drawn now. */
+      const besideCell = (
+        cell: HTMLTableCellElement,
+        rows: number,
+        columns: number,
+      ): HTMLTableCellElement | undefined => {
+        const isValue = (item: Element | null | undefined): item is HTMLTableCellElement =>
+          item instanceof HTMLTableCellElement && item.dataset['mkPart'] === 'table.cell'
+        const row = cell.parentElement
+        if (rows !== 0) {
+          const next = rows > 0 ? row?.nextElementSibling : row?.previousElementSibling
+          const target =
+            next instanceof HTMLTableRowElement ? next.cells[cell.cellIndex] : undefined
+          return isValue(target) ? target : undefined
+        }
+        let target = columns > 0 ? cell.nextElementSibling : cell.previousElementSibling
+        while (target !== null && !isValue(target))
+          target = columns > 0 ? target.nextElementSibling : target.previousElementSibling
+        return isValue(target) ? target : undefined
+      }
       const beginEdit = async (cell: HTMLTableCellElement, coord: CellCoord): Promise<void> => {
         if (cell.dataset['editing'] === 'true') return
         // One draft cell editor at a time: the open one keeps its value, as leaving a cell does, and
@@ -449,7 +476,8 @@ export function createTableViewer(options: TableViewerOptions = {}): ViewerModul
         }
         const keep = () => finish(true)
         const onKey = (event: KeyboardEvent) => {
-          if (event.key === 'Enter') {
+          // Shift+Enter is the field's own line break, as in MK2's table, not a save
+          if (event.key === 'Enter' && !event.shiftKey) {
             event.preventDefault()
             void finish(true)
           }
@@ -457,6 +485,33 @@ export function createTableViewer(options: TableViewerOptions = {}): ViewerModul
             event.preventDefault()
             void finish(false)
           }
+          // ↑/↓ at the field's first or last line save it and go on to the cell above or below
+          if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return
+          const step = event.key === 'ArrowDown' ? 1 : -1
+          const control = event.target
+          const atEdge =
+            control instanceof HTMLTextAreaElement
+              ? step > 0
+                ? !control.value.slice(control.selectionEnd).includes('\n')
+                : !control.value.slice(0, control.selectionStart).includes('\n')
+              : control instanceof HTMLInputElement &&
+                (control.type === 'text' || control.type === 'search')
+          const next = atEdge ? besideCell(cell, step, 0) : undefined
+          const nextRow = next?.parentElement?.dataset['row']
+          if (next === undefined || nextRow === undefined) return
+          event.preventDefault()
+          const index = cell.cellIndex
+          void finish(true).then(() => {
+            if (!finished) return // refused: the field says why and stays open
+            // a draft draws the page again, so the cell is found where it is drawn now
+            const target = body.querySelector<HTMLTableRowElement>(`tr[data-row="${nextRow}"]`)
+              ?.cells[index]
+            if (target === undefined) return
+            target.focus()
+            void beginEdit(target, { row: Number(nextRow), column: coord.column }).catch(
+              () => undefined,
+            )
+          })
         }
         if (scope.signal.aborted || !body.contains(cell)) {
           await dispose()
@@ -533,10 +588,18 @@ export function createTableViewer(options: TableViewerOptions = {}): ViewerModul
               })
             cell.addEventListener('dblclick', begin)
             const onKey = (event: KeyboardEvent) => {
-              if (event.key === 'Enter' && cell.dataset['editing'] !== 'true') {
+              if (cell.dataset['editing'] === 'true') return
+              if (event.key === 'Enter') {
                 event.preventDefault()
                 begin()
+                return
               }
+              // the arrows move between cells, as in a spreadsheet
+              const step = CELL_STEPS[event.key]
+              const next = step === undefined ? undefined : besideCell(cell, step[0], step[1])
+              if (next === undefined) return
+              event.preventDefault()
+              next.focus()
             }
             cell.addEventListener('keydown', onKey)
             scope.cleanup(() => {
