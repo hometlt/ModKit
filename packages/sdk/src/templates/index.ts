@@ -205,6 +205,8 @@ export interface GameTemplateTreeNode {
   readonly path: readonly string[]
   /** The template this node was declared from, as written. */
   readonly template?: string
+  /** Where the node itself is declared: the range a "show in text" or "reveal in tree" opens. */
+  readonly source?: GameTemplateValueSource
   readonly properties?: readonly GameTemplateNodeProperty[]
   readonly anchors?: readonly GameTemplateNodeAnchor[]
   readonly children: readonly GameTemplateTreeNode[]
@@ -243,6 +245,7 @@ function isNodeShallow(value: unknown): value is GameTemplateTreeNode {
     typeof node['name'] === 'string' &&
     optionalString(node['type']) &&
     optionalString(node['template']) &&
+    isValueSource(node['source']) &&
     Array.isArray(node['path']) &&
     node['path'].every(part => typeof part === 'string') &&
     Array.isArray(node['children']) &&

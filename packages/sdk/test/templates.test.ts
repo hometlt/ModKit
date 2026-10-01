@@ -5,6 +5,7 @@ import {
   isGameTemplateDisplayItem,
   isGameTemplatePreviewResult,
   isGameTemplateTextRun,
+  isGameTemplateTreeNode,
 } from '../src/templates/index.js'
 
 describe('game template preview contract', () => {
@@ -84,5 +85,14 @@ describe('game template display items', () => {
       { text: 'Lair' },
     ])
     expect(gameTemplateTextRuns(box as never)).toEqual([])
+  })
+})
+
+describe('resolved template tree', () => {
+  const node = { name: 'Panel', path: ['Panel'], children: [] }
+  it('carries where a node is declared, so a viewer can open that range', () => {
+    const source = { uri: 'file:///Layout.SC2Layout', start: 10, end: 40, origin: 'declared' }
+    expect(isGameTemplateTreeNode({ ...node, source })).toBe(true)
+    expect(isGameTemplateTreeNode({ ...node, source: { start: 'ten' } })).toBe(false)
   })
 })
