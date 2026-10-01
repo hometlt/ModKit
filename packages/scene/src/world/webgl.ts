@@ -2555,14 +2555,13 @@ function modelMaterialCoverage(material: ModelMaterialRef | undefined): Readonly
   if (cutoff !== undefined && (!Number.isFinite(cutoff) || cutoff < 0))
     throw new TypeError(`world material ${material?.id ?? '(unknown)'} has invalid alpha cutoff`)
   const nativeBlend = material?.blendMode
+  const blended =
+    nativeBlend === 'blend' || nativeBlend === 'additive' || nativeBlend === 'add-alpha'
   const mode =
     material?.alphaMode === 'mask' ||
-    (material?.alphaMode === undefined &&
-      (cutoff ?? 0) > 0 &&
-      nativeBlend !== 'blend' &&
-      nativeBlend !== 'additive')
+    (material?.alphaMode === undefined && (cutoff ?? 0) > 0 && !blended)
       ? 'mask'
-      : material?.alphaMode === 'blend' || nativeBlend === 'blend' || nativeBlend === 'additive'
+      : material?.alphaMode === 'blend' || blended
         ? 'blend'
         : 'opaque'
   return Object.freeze({ mode, cutoff: mode === 'mask' ? (cutoff ?? 0.5) : 0 })
@@ -6252,7 +6251,8 @@ export function createWorldWebGlPlan(
         const blendMode =
           coverage.mode !== 'blend'
             ? undefined
-            : material?.blendMode === 'additive'
+            : // the world's adding blend is SrcAlpha, One: add-alpha's (UV_game_material)
+              material?.blendMode === 'additive' || material?.blendMode === 'add-alpha'
               ? ('additive' as const)
               : ('blend' as const)
         const normalTexture =

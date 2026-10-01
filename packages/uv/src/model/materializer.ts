@@ -159,6 +159,7 @@ const UVM_GAME_BLEND_MODES = [
   'alpha-blend',
   'alpha-test',
   'additive',
+  'add-alpha',
   'modulate',
   'modulate2x',
   'alpha-key',

@@ -59,21 +59,24 @@ interface Written {
 
 describe('a material blend equation', () => {
   it('is written as UV_game_material.blendMode when the extension names it', () => {
-    const written = materializeUvmCore(projection('additive'), request) as unknown as Written
-    const material = written.document.materials[0]!
-    expect(material.extensions?.UV_game_material).toMatchObject({
-      shader: 'DefaultW3D.fx',
-      blendMode: 'additive',
-      params: { BlendMode: 2 },
-    })
-    // the publisher-native field keeps its place in the material's own envelope
-    expect(material.extras?.modkit?.material?.fields).toMatchObject({ blendMode: 'additive' })
+    // add-alpha (SrcAlpha, One) joined the extension's equations on 02.10 (Kane's Wrath)
+    for (const blendMode of ['additive', 'add-alpha']) {
+      const written = materializeUvmCore(projection(blendMode), request) as unknown as Written
+      const material = written.document.materials[0]!
+      expect(material.extensions?.UV_game_material).toMatchObject({
+        shader: 'DefaultW3D.fx',
+        blendMode,
+        params: { BlendMode: 2 },
+      })
+      // the publisher-native field keeps its place in the material's own envelope
+      expect(material.extras?.modkit?.material?.fields).toMatchObject({ blendMode })
+    }
   })
 
   it('stays only in the envelope when the extension has no such equation', () => {
-    const written = materializeUvmCore(projection('add-alpha'), request) as unknown as Written
+    const written = materializeUvmCore(projection('add-signed'), request) as unknown as Written
     const material = written.document.materials[0]!
     expect(material.extensions?.UV_game_material).not.toHaveProperty('blendMode')
-    expect(material.extras?.modkit?.material?.fields).toMatchObject({ blendMode: 'add-alpha' })
+    expect(material.extras?.modkit?.material?.fields).toMatchObject({ blendMode: 'add-signed' })
   })
 })

@@ -30,6 +30,11 @@ it('draws an additive UV_game_material as a simple effect that writes no depth',
       .doubleSided,
     true,
   )
+  // Kane's Wrath's add-alpha: SrcAlpha, One
+  assert.equal(
+    uvmMaterialBlendEffect(gameMaterial({ blendMode: 'add-alpha' }), repeat).blend,
+    'add-alpha',
+  )
 })
 
 it('leaves glTF alphaMode, and a material program with its own blend, to their routes', () => {

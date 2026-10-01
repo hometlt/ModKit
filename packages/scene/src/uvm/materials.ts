@@ -45,7 +45,8 @@ function layerList(material: JsonObject): { label: string; path: string }[] {
 
 /**
  * The blend equation `UV_game_material.blendMode` states (SPEC_UVM_EXTENSIONS), for the equations
- * glTF's alphaMode cannot say: `additive`, `modulate`, `modulate2x`. The base-colour route draws
+ * glTF's alphaMode cannot say: `additive`, `add-alpha` (SrcAlpha, One — Kane's Wrath), `modulate`,
+ * `modulate2x`. The base-colour route draws
  * them as a simple effect over the material's own texture, without writing depth. A material with
  * its own render model draws through that program, which states its blend itself.
  *
@@ -61,7 +62,9 @@ export function uvmMaterialBlendEffect(
   const data = object(extension, 'game material')
   const mode = data['blendMode']
   const blend =
-    mode === 'additive' || mode === 'modulate' || mode === 'modulate2x' ? mode : undefined
+    mode === 'additive' || mode === 'add-alpha' || mode === 'modulate' || mode === 'modulate2x'
+      ? mode
+      : undefined
   if (blend === undefined) return undefined
   const renderModel = field(object(data['params'] ?? {}, 'game material parameters'), 'renderModel')
   if (
