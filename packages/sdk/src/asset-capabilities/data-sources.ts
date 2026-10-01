@@ -178,11 +178,17 @@ export interface Lease<T> {
   release(): Promise<void>
 }
 
+/**
+ * One page of a paged listing. `limit` is the most items the caller wants: a source with a smaller
+ * page of its own answers at most that many and a `nextCursor`, and never refuses a positive `limit`
+ * only for being larger than its page (a graph walk asks for 1024, a provider's page may be 1000).
+ */
 export interface PageRequest {
   readonly cursor?: string
   readonly limit: number
 }
 
+/** A page may hold fewer than `limit` items: only an absent `nextCursor` ends the listing. */
 export interface Page<T> {
   readonly items: readonly T[]
   readonly nextCursor?: string
