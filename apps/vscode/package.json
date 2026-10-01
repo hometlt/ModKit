@@ -1225,7 +1225,7 @@
     },
     "viewsContainers": {
       "activitybar": [
-        { "id": "modkit", "title": "%viewContainer.modkit%", "icon": "media/icon-128.png" }
+        { "id": "modkit", "title": "%viewContainer.modkit%", "icon": "media/modkit.svg" }
       ]
     },
     "viewsWelcome": [
