@@ -22,6 +22,7 @@ import pvrManifest from '../contributions/codec-pvr.json' with { type: 'json' }
 import tgaManifest from '../contributions/codec-tga.json' with { type: 'json' }
 import tiffManifest from '../contributions/codec-tiff.json' with { type: 'json' }
 import webpManifest from '../contributions/codec-webp.json' with { type: 'json' }
+import ddsWriterManifest from '../contributions/writer-dds.json' with { type: 'json' }
 import pngWriterManifest from '../contributions/writer-png.json' with { type: 'json' }
 import packageJson from '../package.json' with { type: 'json' }
 import * as ani from './ani/codec.js'
@@ -46,6 +47,7 @@ import * as pvr from './pvr/codec.js'
 import * as tga from './tga/codec.js'
 import * as tiff from './tiff/codec.js'
 import * as webp from './webp/codec.js'
+import * as ddsWriter from './writers/dds-encoder.js'
 import * as pngWriter from './writers/png-encoder.js'
 
 export const images = defineLinkedExtension({
@@ -74,6 +76,7 @@ export const images = defineLinkedExtension({
     { path: 'contributions/codec-tga.json', manifest: tgaManifest },
     { path: 'contributions/codec-tiff.json', manifest: tiffManifest },
     { path: 'contributions/codec-webp.json', manifest: webpManifest },
+    { path: 'contributions/writer-dds.json', manifest: ddsWriterManifest },
     { path: 'contributions/writer-png.json', manifest: pngWriterManifest },
   ],
   modules: {
@@ -99,6 +102,7 @@ export const images = defineLinkedExtension({
     './src/tga/codec.js': tga,
     './src/tiff/codec.js': tiff,
     './src/webp/codec.js': webp,
+    './src/writers/dds-encoder.js': ddsWriter,
     './src/writers/png-encoder.js': pngWriter,
   },
 })

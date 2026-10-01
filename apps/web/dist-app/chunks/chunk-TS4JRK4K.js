@@ -35712,7 +35712,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: "sha256:e5571c446de17448bc4739ea1e718479b5f063739907f82bb564530b5d557097",
+        artifactDigest: "sha256:d938d0ba220bc50b1b09d3daae34dc0143ec6fc82ba857ad883400552d75f08c",
         fileDigests: {
           "MIGRATION-NOTES-common-images.json": "sha256:44c30ea45aaceceff66d53f72e5e0d0ec8efb1a7f2afbc2f9913849720632e93",
           "README.md": "sha256:4f8426d4cb4a5a43b6b37cfb8d3262b2ce94a8ec1436d6d339e7f64dc3adadeb",
@@ -35763,7 +35763,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
           "src/jpeg/codec.js": "sha256:e2808cecb133e6f1eb3a3c8b2807c3a34625fb596e0898386430f2608f585e10",
           "src/ktx/codec.js": "sha256:111154eea1f7a17553118d25f426135418c3b523a37a1d260296dcf7cbfe9765",
           "src/ktx2/codec.js": "sha256:7cbc220b6cb32a16343266f9db517599a705a450ebed76aa65d5c3b8fb31d7ed",
-          "src/linked.js": "sha256:bbe85af6cdf6da5544829b2bd7ad09a733ca00edc56e2229659247eba5cf8975",
+          "src/linked.js": "sha256:553ac6011610bd891665622b8741a9648ede55617c6357cf6bf8ff5ef17651d4",
           "src/ops/raster-transforms.js": "sha256:4150cf69752d72d6d7cc5b64e2bd8cec6b68695012f8b0ea4f361b19c8490f5d",
           "src/pal/codec.js": "sha256:e4f579ba15795cdbf009a49adb2eb6ae1ec8ae30382eae4ca0e24b7740bccf01",
           "src/pcx/codec.js": "sha256:0b1cdf74a35726d0c0b50d293a82a8b08bce7d739e36a934b04519e651eaa036",
@@ -35795,7 +35795,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
           "vendor/texture2ddecoder/texture2ddecoder.js": "sha256:0a2b33ff735566fd3184e0421ff38fb7578d1348b3cc44fc4646cce29d001110",
           "vendor/texture2ddecoder/texture2ddecoder.wasm": "sha256:8b819b0622cce57f809b369081bdd6eca09d1c1793da7f82192db39229356c1d"
         },
-        inventoryRecordId: "artifact:sha256:e5571c446de17448bc4739ea1e718479b5f063739907f82bb564530b5d557097"
+        inventoryRecordId: "artifact:sha256:d938d0ba220bc50b1b09d3daae34dc0143ec6fc82ba857ad883400552d75f08c"
       },
       artifactRoot: "extensions/images/",
       containers: {
