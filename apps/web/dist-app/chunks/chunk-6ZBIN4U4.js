@@ -6,7 +6,7 @@ import {
   setState,
   uiPreference,
   withEnglishUiFallback
-} from "./chunk-763L25CS.js";
+} from "./chunk-N6RN7GYG.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunk-BLWUC7LO.js";

@@ -17,11 +17,11 @@ import {
   invokeRefusalMessage,
   isRejected,
   mountFieldEditor
-} from "./chunk-UNTTKTWI.js";
+} from "./chunk-XPBYY73R.js";
 import {
   createMediaShell,
   mountContributedSections
-} from "./chunk-T3OMRXCG.js";
+} from "./chunk-6ZBIN4U4.js";
 import {
   MODEL_FALLBACK_MESSAGES,
   MODEL_GIZMO_FALLBACK_MESSAGES,
@@ -36,7 +36,7 @@ import {
   setViewerText,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-763L25CS.js";
+} from "./chunk-N6RN7GYG.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunk-BLWUC7LO.js";
@@ -598,6 +598,9 @@ async function mountInlineField(container, options) {
       async commit() {
         return false;
       },
+      read() {
+        return void 0;
+      },
       async unmount() {
         root.remove();
       }
@@ -609,17 +612,22 @@ async function mountInlineField(container, options) {
   const write = options.editable?.write;
   const operationId = write !== void 0 && "operation" in write ? write.operation : void 0;
   const operation = options.descriptor.operations.find((candidate) => candidate.id === operationId);
+  const read = () => {
+    const problem = control.validate();
+    if (problem === void 0)
+      return { value: control.read() };
+    setViewerText(status, problem, 512);
+    return void 0;
+  };
   const commit = async () => {
     if (operation === void 0) {
       setViewerText(status, "no route to save this change", 512);
       return false;
     }
-    const problem = control.validate();
-    if (problem !== void 0) {
-      setViewerText(status, problem, 512);
+    const typed = read();
+    if (typed === void 0)
       return false;
-    }
-    const value = control.read();
+    const value = typed.value;
     const request = {
       groupId: options.target.groupId,
       key: options.target.key,
@@ -639,6 +647,7 @@ async function mountInlineField(container, options) {
   return {
     root,
     commit,
+    read,
     async unmount() {
       await control.unmount?.();
       root.remove();

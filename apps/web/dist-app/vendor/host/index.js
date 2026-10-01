@@ -20179,14 +20179,45 @@ function numericPair(value) {
   return parts.length >= 2 && Number.isFinite(parts[0]) && Number.isFinite(parts[1]) ? Object.freeze({ x: parts[0], y: parts[1] }) : void 0;
 }
 function regionShape(shape) {
-  const center = numericPair(shape.parameters["center"]);
-  const radiusValue = shape.parameters["radius"];
+  const { parameters } = shape;
+  const type = shape.type.toLowerCase();
+  const center = numericPair(parameters["center"]);
+  const radiusValue = parameters["radius"];
   const radius = radiusValue === void 0 ? void 0 : Number(radiusValue);
+  const corner = (short, long) => numericPair(parameters[short] ?? parameters[long]);
+  const first = corner("min", "minimum");
+  const second = corner("max", "maximum");
+  const box = first === void 0 || second === void 0 ? void 0 : {
+    minimum: Object.freeze({ x: Math.min(first.x, second.x), y: Math.min(first.y, second.y) }),
+    maximum: Object.freeze({ x: Math.max(first.x, second.x), y: Math.max(first.y, second.y) })
+  };
+  if ((type === "rect" || type === "rectangle") && box !== void 0)
+    return Object.freeze({ kind: "rectangle", ...box, rawParameters: parameters });
+  if (type === "diamond" && box !== void 0) {
+    const middle = { x: (box.minimum.x + box.maximum.x) / 2, y: (box.minimum.y + box.maximum.y) / 2 };
+    return Object.freeze({
+      kind: "polygon",
+      points: Object.freeze([
+        Object.freeze({ x: middle.x, y: box.minimum.y }),
+        Object.freeze({ x: box.maximum.x, y: middle.y }),
+        Object.freeze({ x: middle.x, y: box.maximum.y }),
+        Object.freeze({ x: box.minimum.x, y: middle.y })
+      ]),
+      rawParameters: parameters
+    });
+  }
+  const points = parameters["points"]?.split(/[\s;]+/u).filter((item) => item !== "").map(numericPair);
+  if (type === "polygon" && points !== void 0 && points.length >= 3 && points.every(Boolean))
+    return Object.freeze({
+      kind: "polygon",
+      points: Object.freeze(points),
+      rawParameters: parameters
+    });
   return Object.freeze({
     kind: shape.type,
     ...center === void 0 ? {} : { center },
     ...radius !== void 0 && Number.isFinite(radius) ? { radius } : {},
-    rawParameters: shape.parameters
+    rawParameters: parameters
   });
 }
 function pageItems(items, request, snapshotId, maximum) {
@@ -20354,16 +20385,80 @@ function admittedTerrainTransform(snapshot2, terrain, exact) {
 }
 function admittedWorldCanonicalTransform(snapshot2, terrainTransform) {
   const transform = snapshot2.uvwTransform;
-  if (transform === void 0 || terrainTransform === void 0)
-    return void 0;
+  if (transform === void 0)
+    return {};
+  if (terrainTransform === void 0) {
+    return { refusal: "the terrain has no admitted exact native transform to qualify it against" };
+  }
   const finite = (value) => Number.isFinite(value);
   const positive = (value) => finite(value) && value > 0;
-  const basis = transform.basis;
+  const sha2562 = (value) => /^sha256:[0-9a-f]{64}$/u.test(value);
+  const { basis, heightfield, bounds, proof } = transform;
   const axes = Object.values(transform.axes);
-  const sourceAxes = axes.map((item) => item.sourceAxis);
-  if (transform.schemaVersion !== 1 || transform.snapshotId !== snapshot2.snapshotId || transform.sourceCoordinateSpaceId !== "map-native" || transform.targetCoordinateSpaceId !== "uvw-canonical" || basis.handedness !== "right" || basis.upAxis !== "y" || basis.forwardAxis !== "+z" || basis.unit !== "meter" && basis.unit !== "source-unit" || basis.unit === "source-unit" && (basis.sourceUnit === void 0 || basis.sourceUnit.length === 0 || basis.metersPerUnit !== void 0) || basis.unitsPerCell !== void 0 && !positive(basis.unitsPerCell) || axes.some((item) => !finite(item.scale) || item.scale === 0 || !finite(item.offset)) || new Set(sourceAxes).size !== 3 || !Number.isSafeInteger(transform.heightfield.columns) || !Number.isSafeInteger(transform.heightfield.rows) || transform.heightfield.columns !== terrainTransform.heightMap.dim[0] || transform.heightfield.rows !== terrainTransform.heightMap.dim[1] || !positive(transform.heightfield.cellSize) || basis.unitsPerCell !== void 0 && basis.unitsPerCell !== transform.heightfield.cellSize || transform.heightfield.origin.length !== 3 || !transform.heightfield.origin.every(finite) || transform.heightfield.sourceRowOrder !== "reverse" || transform.bounds.coordinateSpaceId !== "uvw-canonical" || !Object.values(transform.bounds.minimum).every(finite) || !Object.values(transform.bounds.maximum).every(finite) || !["x", "y", "z"].every((axis) => transform.bounds.minimum[axis] <= transform.bounds.maximum[axis]) || !Number.isSafeInteger(transform.proof.tupleCount) || transform.proof.tupleCount <= 0 || transform.proof.kind !== "adapter-qualification" || transform.proof.oracle.length === 0 || transform.proof.corpus.length === 0 || Object.keys(transform.proof.sourceDigests).length === 0 || !Object.values(transform.proof.sourceDigests).every((value) => /^sha256:[0-9a-f]{64}$/u.test(value)) || !/^sha256:[0-9a-f]{64}$/u.test(transform.proof.nativeTupleDigest) || transform.proof.presentationTupleDigest !== void 0 && !/^sha256:[0-9a-f]{64}$/u.test(transform.proof.presentationTupleDigest) || !/^sha256:[0-9a-f]{64}$/u.test(transform.proof.canonicalTupleDigest) || transform.proof.comparison !== "ieee-754-binary64-exact") {
-    return void 0;
-  }
+  const [columns, rows] = terrainTransform.heightMap.dim;
+  const checks = [
+    ["its schemaVersion is not 1", () => transform.schemaVersion !== 1],
+    ["it belongs to another snapshot", () => transform.snapshotId !== snapshot2.snapshotId],
+    [
+      "it does not map map-native to uvw-canonical",
+      () => transform.sourceCoordinateSpaceId !== "map-native" || transform.targetCoordinateSpaceId !== "uvw-canonical"
+    ],
+    [
+      "its basis is not right-handed with y up and +z forward",
+      () => basis.handedness !== "right" || basis.upAxis !== "y" || basis.forwardAxis !== "+z"
+    ],
+    [
+      "its unit is neither meter nor a named source unit without metersPerUnit",
+      () => basis.unit !== "meter" && basis.unit !== "source-unit" || basis.unit === "source-unit" && (basis.sourceUnit === void 0 || basis.sourceUnit.length === 0 || basis.metersPerUnit !== void 0)
+    ],
+    [
+      "an axis scale is zero or not finite, or an offset is not finite",
+      () => axes.some((item) => !finite(item.scale) || item.scale === 0 || !finite(item.offset))
+    ],
+    [
+      "its axes do not take three distinct source axes",
+      () => new Set(axes.map((item) => item.sourceAxis)).size !== 3
+    ],
+    [
+      `its heightfield ${String(heightfield.columns)}x${String(heightfield.rows)} is not the terrain grid ${String(columns)}x${String(rows)}`,
+      () => !Number.isSafeInteger(heightfield.columns) || !Number.isSafeInteger(heightfield.rows) || heightfield.columns !== columns || heightfield.rows !== rows
+    ],
+    [
+      "its cellSize is not positive or unitsPerCell differs from it",
+      () => !positive(heightfield.cellSize) || basis.unitsPerCell !== void 0 && basis.unitsPerCell !== heightfield.cellSize
+    ],
+    [
+      "its heightfield origin is not three finite numbers",
+      () => heightfield.origin.length !== 3 || !heightfield.origin.every(finite)
+    ],
+    [
+      `its sourceRowOrder ${String(heightfield.sourceRowOrder)} is neither forward nor reverse`,
+      () => heightfield.sourceRowOrder !== "forward" && heightfield.sourceRowOrder !== "reverse"
+    ],
+    [
+      "its bounds are not finite uvw-canonical bounds with minimum <= maximum",
+      () => bounds.coordinateSpaceId !== "uvw-canonical" || !["x", "y", "z"].every((axis) => finite(bounds.minimum[axis]) && finite(bounds.maximum[axis]) && bounds.minimum[axis] <= bounds.maximum[axis])
+    ],
+    [
+      "its proof is not an adapter qualification over a positive tuple count",
+      () => proof.kind !== "adapter-qualification" || !Number.isSafeInteger(proof.tupleCount) || proof.tupleCount <= 0
+    ],
+    [
+      "its proof names no oracle, corpus or sha256 source digests",
+      () => proof.oracle.length === 0 || proof.corpus.length === 0 || Object.keys(proof.sourceDigests).length === 0 || !Object.values(proof.sourceDigests).every(sha2562)
+    ],
+    [
+      "a tuple digest of its proof is not sha256",
+      () => !sha2562(proof.nativeTupleDigest) || proof.presentationTupleDigest !== void 0 && !sha2562(proof.presentationTupleDigest) || !sha2562(proof.canonicalTupleDigest)
+    ],
+    [
+      "its proof comparison is not ieee-754-binary64-exact",
+      () => proof.comparison !== "ieee-754-binary64-exact"
+    ]
+  ];
+  const failed2 = checks.find(([, fails]) => fails());
+  if (failed2 !== void 0)
+    return { refusal: failed2[0] };
   const nativeBounds = terrainTransform.bounds;
   const corners = [nativeBounds.minimum.x, nativeBounds.maximum.x].flatMap((x) => [nativeBounds.minimum.y, nativeBounds.maximum.y].flatMap((y) => [nativeBounds.minimum.z, nativeBounds.maximum.z].map((z) => ({ x, y, z }))));
   let minimum = { x: Infinity, y: Infinity, z: Infinity };
@@ -20381,7 +20476,7 @@ function admittedWorldCanonicalTransform(snapshot2, terrainTransform) {
       z: Math.max(maximum.z, value.z)
     };
   }
-  return ["x", "y", "z"].every((axis) => transform.bounds.minimum[axis] === minimum[axis] && transform.bounds.maximum[axis] === maximum[axis]) ? transform : void 0;
+  return ["x", "y", "z"].every((axis) => transform.bounds.minimum[axis] === minimum[axis] && transform.bounds.maximum[axis] === maximum[axis]) ? { transform } : { refusal: "its bounds are not the canonical image of the terrain bounds" };
 }
 function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize, modelResources, releaseModelResources, rasterResources) {
   positiveLimit(maxPageSize, Number.MAX_SAFE_INTEGER);
@@ -20401,7 +20496,7 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize, mode
   const terrainSummary = semantic.terrain;
   const terrainExact = hasExactTerrainGrid(terrainSummary);
   const terrainTransform = admittedTerrainTransform(snapshot2, terrainSummary, terrainExact);
-  const uvwTransform = admittedWorldCanonicalTransform(snapshot2, terrainTransform);
+  const { transform: uvwTransform, refusal: uvwTransformRefusal } = admittedWorldCanonicalTransform(snapshot2, terrainTransform);
   const terrainLod = terrainExact ? "exact" : "sampled";
   const terrainMaterialExact = snapshot2.terrainMaterials?.exact === true && (uvwTransform === void 0 || snapshot2.terrainMaterials.width === uvwTransform.heightfield.columns && snapshot2.terrainMaterials.height === uvwTransform.heightfield.rows);
   const terrainWeightRasterExact = (snapshot2.terrainMaterials?.weightRasters?.length ?? 0) > 0 && snapshot2.terrainMaterials.weightRasters.every((raster) => Number.isSafeInteger(raster.width) && raster.width > 0 && Number.isSafeInteger(raster.height) && raster.height > 0 && raster.materialIds.length > 0 && raster.materialIds.length <= 4 && raster.rgba?.byteLength === raster.width * raster.height * 4);
@@ -20994,6 +21089,7 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize, mode
     ]),
     ...terrainTransform === void 0 ? {} : { terrainTransform },
     ...uvwTransform === void 0 ? {} : { uvwTransform },
+    ...uvwTransformRefusal === void 0 ? {} : { uvwTransformRefusal },
     facets,
     provenance: Object.freeze(provenance.map((item) => Object.freeze({ ...item }))),
     unknownFacets: snapshot2.worldCandidate.unknownFacets,

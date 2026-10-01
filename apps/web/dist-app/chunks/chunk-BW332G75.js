@@ -1,12 +1,12 @@
 import {
   createVideoViewer
-} from "./chunk-TIOGNGDQ.js";
+} from "./chunk-5LC2A4JD.js";
 import {
   createAudioViewer
-} from "./chunk-R3G76J7H.js";
+} from "./chunk-JKDWXZ6Y.js";
 import {
   createRelationGraphViewer
-} from "./chunk-KTRK3BPX.js";
+} from "./chunk-ARQIWJ3D.js";
 import {
   Box3,
   BufferBuilder,
@@ -79,7 +79,7 @@ import {
   fieldWriteRefusal,
   mountFieldEditTarget,
   mountInlineField
-} from "./chunk-5M3EB3OH.js";
+} from "./chunk-XTJKPG2K.js";
 import {
   DEFAULT_MODEL_ANIMATION_BUDGET,
   DEFAULT_MODEL_SKELETON_BUDGET,
@@ -100,13 +100,13 @@ import {
   createImageViewer,
   createNamespaceViewer,
   invokeRefusalMessage
-} from "./chunk-UNTTKTWI.js";
+} from "./chunk-XPBYY73R.js";
 import {
   compileMatcher,
   compilePattern,
   createMediaShell,
   textMatches
-} from "./chunk-T3OMRXCG.js";
+} from "./chunk-6ZBIN4U4.js";
 import {
   CALCULATIONS_FALLBACK_MESSAGES,
   CARD_FALLBACK_MESSAGES,
@@ -152,7 +152,7 @@ import {
   uiPreference,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-763L25CS.js";
+} from "./chunk-N6RN7GYG.js";
 import {
   A1_SPEC_SCHEMA_ENTRIES,
   AUXILIARY_DATA_SOURCE_SURFACES,
@@ -20178,14 +20178,45 @@ function numericPair(value) {
   return parts.length >= 2 && Number.isFinite(parts[0]) && Number.isFinite(parts[1]) ? Object.freeze({ x: parts[0], y: parts[1] }) : void 0;
 }
 function regionShape(shape) {
-  const center = numericPair(shape.parameters["center"]);
-  const radiusValue = shape.parameters["radius"];
+  const { parameters } = shape;
+  const type = shape.type.toLowerCase();
+  const center = numericPair(parameters["center"]);
+  const radiusValue = parameters["radius"];
   const radius = radiusValue === void 0 ? void 0 : Number(radiusValue);
+  const corner = (short, long) => numericPair(parameters[short] ?? parameters[long]);
+  const first = corner("min", "minimum");
+  const second = corner("max", "maximum");
+  const box = first === void 0 || second === void 0 ? void 0 : {
+    minimum: Object.freeze({ x: Math.min(first.x, second.x), y: Math.min(first.y, second.y) }),
+    maximum: Object.freeze({ x: Math.max(first.x, second.x), y: Math.max(first.y, second.y) })
+  };
+  if ((type === "rect" || type === "rectangle") && box !== void 0)
+    return Object.freeze({ kind: "rectangle", ...box, rawParameters: parameters });
+  if (type === "diamond" && box !== void 0) {
+    const middle = { x: (box.minimum.x + box.maximum.x) / 2, y: (box.minimum.y + box.maximum.y) / 2 };
+    return Object.freeze({
+      kind: "polygon",
+      points: Object.freeze([
+        Object.freeze({ x: middle.x, y: box.minimum.y }),
+        Object.freeze({ x: box.maximum.x, y: middle.y }),
+        Object.freeze({ x: middle.x, y: box.maximum.y }),
+        Object.freeze({ x: box.minimum.x, y: middle.y })
+      ]),
+      rawParameters: parameters
+    });
+  }
+  const points = parameters["points"]?.split(/[\s;]+/u).filter((item) => item !== "").map(numericPair);
+  if (type === "polygon" && points !== void 0 && points.length >= 3 && points.every(Boolean))
+    return Object.freeze({
+      kind: "polygon",
+      points: Object.freeze(points),
+      rawParameters: parameters
+    });
   return Object.freeze({
     kind: shape.type,
     ...center === void 0 ? {} : { center },
     ...radius !== void 0 && Number.isFinite(radius) ? { radius } : {},
-    rawParameters: shape.parameters
+    rawParameters: parameters
   });
 }
 function pageItems(items, request, snapshotId, maximum) {
@@ -20353,16 +20384,80 @@ function admittedTerrainTransform(snapshot3, terrain, exact) {
 }
 function admittedWorldCanonicalTransform(snapshot3, terrainTransform) {
   const transform = snapshot3.uvwTransform;
-  if (transform === void 0 || terrainTransform === void 0)
-    return void 0;
+  if (transform === void 0)
+    return {};
+  if (terrainTransform === void 0) {
+    return { refusal: "the terrain has no admitted exact native transform to qualify it against" };
+  }
   const finite3 = (value) => Number.isFinite(value);
   const positive2 = (value) => finite3(value) && value > 0;
-  const basis2 = transform.basis;
+  const sha2565 = (value) => /^sha256:[0-9a-f]{64}$/u.test(value);
+  const { basis: basis2, heightfield, bounds: bounds2, proof } = transform;
   const axes = Object.values(transform.axes);
-  const sourceAxes = axes.map((item) => item.sourceAxis);
-  if (transform.schemaVersion !== 1 || transform.snapshotId !== snapshot3.snapshotId || transform.sourceCoordinateSpaceId !== "map-native" || transform.targetCoordinateSpaceId !== "uvw-canonical" || basis2.handedness !== "right" || basis2.upAxis !== "y" || basis2.forwardAxis !== "+z" || basis2.unit !== "meter" && basis2.unit !== "source-unit" || basis2.unit === "source-unit" && (basis2.sourceUnit === void 0 || basis2.sourceUnit.length === 0 || basis2.metersPerUnit !== void 0) || basis2.unitsPerCell !== void 0 && !positive2(basis2.unitsPerCell) || axes.some((item) => !finite3(item.scale) || item.scale === 0 || !finite3(item.offset)) || new Set(sourceAxes).size !== 3 || !Number.isSafeInteger(transform.heightfield.columns) || !Number.isSafeInteger(transform.heightfield.rows) || transform.heightfield.columns !== terrainTransform.heightMap.dim[0] || transform.heightfield.rows !== terrainTransform.heightMap.dim[1] || !positive2(transform.heightfield.cellSize) || basis2.unitsPerCell !== void 0 && basis2.unitsPerCell !== transform.heightfield.cellSize || transform.heightfield.origin.length !== 3 || !transform.heightfield.origin.every(finite3) || transform.heightfield.sourceRowOrder !== "reverse" || transform.bounds.coordinateSpaceId !== "uvw-canonical" || !Object.values(transform.bounds.minimum).every(finite3) || !Object.values(transform.bounds.maximum).every(finite3) || !["x", "y", "z"].every((axis) => transform.bounds.minimum[axis] <= transform.bounds.maximum[axis]) || !Number.isSafeInteger(transform.proof.tupleCount) || transform.proof.tupleCount <= 0 || transform.proof.kind !== "adapter-qualification" || transform.proof.oracle.length === 0 || transform.proof.corpus.length === 0 || Object.keys(transform.proof.sourceDigests).length === 0 || !Object.values(transform.proof.sourceDigests).every((value) => /^sha256:[0-9a-f]{64}$/u.test(value)) || !/^sha256:[0-9a-f]{64}$/u.test(transform.proof.nativeTupleDigest) || transform.proof.presentationTupleDigest !== void 0 && !/^sha256:[0-9a-f]{64}$/u.test(transform.proof.presentationTupleDigest) || !/^sha256:[0-9a-f]{64}$/u.test(transform.proof.canonicalTupleDigest) || transform.proof.comparison !== "ieee-754-binary64-exact") {
-    return void 0;
-  }
+  const [columns, rows] = terrainTransform.heightMap.dim;
+  const checks = [
+    ["its schemaVersion is not 1", () => transform.schemaVersion !== 1],
+    ["it belongs to another snapshot", () => transform.snapshotId !== snapshot3.snapshotId],
+    [
+      "it does not map map-native to uvw-canonical",
+      () => transform.sourceCoordinateSpaceId !== "map-native" || transform.targetCoordinateSpaceId !== "uvw-canonical"
+    ],
+    [
+      "its basis is not right-handed with y up and +z forward",
+      () => basis2.handedness !== "right" || basis2.upAxis !== "y" || basis2.forwardAxis !== "+z"
+    ],
+    [
+      "its unit is neither meter nor a named source unit without metersPerUnit",
+      () => basis2.unit !== "meter" && basis2.unit !== "source-unit" || basis2.unit === "source-unit" && (basis2.sourceUnit === void 0 || basis2.sourceUnit.length === 0 || basis2.metersPerUnit !== void 0)
+    ],
+    [
+      "an axis scale is zero or not finite, or an offset is not finite",
+      () => axes.some((item) => !finite3(item.scale) || item.scale === 0 || !finite3(item.offset))
+    ],
+    [
+      "its axes do not take three distinct source axes",
+      () => new Set(axes.map((item) => item.sourceAxis)).size !== 3
+    ],
+    [
+      `its heightfield ${String(heightfield.columns)}x${String(heightfield.rows)} is not the terrain grid ${String(columns)}x${String(rows)}`,
+      () => !Number.isSafeInteger(heightfield.columns) || !Number.isSafeInteger(heightfield.rows) || heightfield.columns !== columns || heightfield.rows !== rows
+    ],
+    [
+      "its cellSize is not positive or unitsPerCell differs from it",
+      () => !positive2(heightfield.cellSize) || basis2.unitsPerCell !== void 0 && basis2.unitsPerCell !== heightfield.cellSize
+    ],
+    [
+      "its heightfield origin is not three finite numbers",
+      () => heightfield.origin.length !== 3 || !heightfield.origin.every(finite3)
+    ],
+    [
+      `its sourceRowOrder ${String(heightfield.sourceRowOrder)} is neither forward nor reverse`,
+      () => heightfield.sourceRowOrder !== "forward" && heightfield.sourceRowOrder !== "reverse"
+    ],
+    [
+      "its bounds are not finite uvw-canonical bounds with minimum <= maximum",
+      () => bounds2.coordinateSpaceId !== "uvw-canonical" || !["x", "y", "z"].every((axis) => finite3(bounds2.minimum[axis]) && finite3(bounds2.maximum[axis]) && bounds2.minimum[axis] <= bounds2.maximum[axis])
+    ],
+    [
+      "its proof is not an adapter qualification over a positive tuple count",
+      () => proof.kind !== "adapter-qualification" || !Number.isSafeInteger(proof.tupleCount) || proof.tupleCount <= 0
+    ],
+    [
+      "its proof names no oracle, corpus or sha256 source digests",
+      () => proof.oracle.length === 0 || proof.corpus.length === 0 || Object.keys(proof.sourceDigests).length === 0 || !Object.values(proof.sourceDigests).every(sha2565)
+    ],
+    [
+      "a tuple digest of its proof is not sha256",
+      () => !sha2565(proof.nativeTupleDigest) || proof.presentationTupleDigest !== void 0 && !sha2565(proof.presentationTupleDigest) || !sha2565(proof.canonicalTupleDigest)
+    ],
+    [
+      "its proof comparison is not ieee-754-binary64-exact",
+      () => proof.comparison !== "ieee-754-binary64-exact"
+    ]
+  ];
+  const failed2 = checks.find(([, fails]) => fails());
+  if (failed2 !== void 0)
+    return { refusal: failed2[0] };
   const nativeBounds = terrainTransform.bounds;
   const corners = [nativeBounds.minimum.x, nativeBounds.maximum.x].flatMap((x) => [nativeBounds.minimum.y, nativeBounds.maximum.y].flatMap((y) => [nativeBounds.minimum.z, nativeBounds.maximum.z].map((z) => ({ x, y, z }))));
   let minimum = { x: Infinity, y: Infinity, z: Infinity };
@@ -20380,7 +20475,7 @@ function admittedWorldCanonicalTransform(snapshot3, terrainTransform) {
       z: Math.max(maximum.z, value.z)
     };
   }
-  return ["x", "y", "z"].every((axis) => transform.bounds.minimum[axis] === minimum[axis] && transform.bounds.maximum[axis] === maximum[axis]) ? transform : void 0;
+  return ["x", "y", "z"].every((axis) => transform.bounds.minimum[axis] === minimum[axis] && transform.bounds.maximum[axis] === maximum[axis]) ? { transform } : { refusal: "its bounds are not the canonical image of the terrain bounds" };
 }
 function createCandidateWorldSceneLease(snapshot3, provenance, maxPageSize, modelResources, releaseModelResources, rasterResources) {
   positiveLimit(maxPageSize, Number.MAX_SAFE_INTEGER);
@@ -20400,7 +20495,7 @@ function createCandidateWorldSceneLease(snapshot3, provenance, maxPageSize, mode
   const terrainSummary = semantic.terrain;
   const terrainExact = hasExactTerrainGrid(terrainSummary);
   const terrainTransform = admittedTerrainTransform(snapshot3, terrainSummary, terrainExact);
-  const uvwTransform = admittedWorldCanonicalTransform(snapshot3, terrainTransform);
+  const { transform: uvwTransform, refusal: uvwTransformRefusal } = admittedWorldCanonicalTransform(snapshot3, terrainTransform);
   const terrainLod = terrainExact ? "exact" : "sampled";
   const terrainMaterialExact = snapshot3.terrainMaterials?.exact === true && (uvwTransform === void 0 || snapshot3.terrainMaterials.width === uvwTransform.heightfield.columns && snapshot3.terrainMaterials.height === uvwTransform.heightfield.rows);
   const terrainWeightRasterExact = (snapshot3.terrainMaterials?.weightRasters?.length ?? 0) > 0 && snapshot3.terrainMaterials.weightRasters.every((raster) => Number.isSafeInteger(raster.width) && raster.width > 0 && Number.isSafeInteger(raster.height) && raster.height > 0 && raster.materialIds.length > 0 && raster.materialIds.length <= 4 && raster.rgba?.byteLength === raster.width * raster.height * 4);
@@ -20993,6 +21088,7 @@ function createCandidateWorldSceneLease(snapshot3, provenance, maxPageSize, mode
     ]),
     ...terrainTransform === void 0 ? {} : { terrainTransform },
     ...uvwTransform === void 0 ? {} : { uvwTransform },
+    ...uvwTransformRefusal === void 0 ? {} : { uvwTransformRefusal },
     facets,
     provenance: Object.freeze(provenance.map((item) => Object.freeze({ ...item }))),
     unknownFacets: snapshot3.worldCandidate.unknownFacets,
@@ -35616,7 +35712,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: "sha256:f841965ca8ee216f7e6cfea0932c145c2ff67f3cbfce5b0b9354ec0de7c14592",
+        artifactDigest: "sha256:e5571c446de17448bc4739ea1e718479b5f063739907f82bb564530b5d557097",
         fileDigests: {
           "MIGRATION-NOTES-common-images.json": "sha256:44c30ea45aaceceff66d53f72e5e0d0ec8efb1a7f2afbc2f9913849720632e93",
           "README.md": "sha256:4f8426d4cb4a5a43b6b37cfb8d3262b2ce94a8ec1436d6d339e7f64dc3adadeb",
@@ -35664,7 +35760,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
           "src/ico/container.js": "sha256:c49b5460a36051ac34a202681488a946a4930bac3e87f5d6f1eb77a8653e801f",
           "src/ico/encode.js": "sha256:e1922a8c7f1c6ea0cd1cdb8101ae4610aaf7b00af7ef6679ce7188ff7cebe1b8",
           "src/index.js": "sha256:bcbc40812fa5dcdb2937b0ff5b617c1483725570302b99f569249ac3c441ce41",
-          "src/jpeg/codec.js": "sha256:92f1265e5790c4e36ab3de69ec9c695d7d0395ee37a43b880edb5483bd605d7a",
+          "src/jpeg/codec.js": "sha256:e2808cecb133e6f1eb3a3c8b2807c3a34625fb596e0898386430f2608f585e10",
           "src/ktx/codec.js": "sha256:111154eea1f7a17553118d25f426135418c3b523a37a1d260296dcf7cbfe9765",
           "src/ktx2/codec.js": "sha256:7cbc220b6cb32a16343266f9db517599a705a450ebed76aa65d5c3b8fb31d7ed",
           "src/linked.js": "sha256:bbe85af6cdf6da5544829b2bd7ad09a733ca00edc56e2229659247eba5cf8975",
@@ -35699,7 +35795,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
           "vendor/texture2ddecoder/texture2ddecoder.js": "sha256:0a2b33ff735566fd3184e0421ff38fb7578d1348b3cc44fc4646cce29d001110",
           "vendor/texture2ddecoder/texture2ddecoder.wasm": "sha256:8b819b0622cce57f809b369081bdd6eca09d1c1793da7f82192db39229356c1d"
         },
-        inventoryRecordId: "artifact:sha256:f841965ca8ee216f7e6cfea0932c145c2ff67f3cbfce5b0b9354ec0de7c14592"
+        inventoryRecordId: "artifact:sha256:e5571c446de17448bc4739ea1e718479b5f063739907f82bb564530b5d557097"
       },
       artifactRoot: "extensions/images/",
       containers: {
@@ -55037,6 +55133,7 @@ function createUvwWorldSceneSource(input, options) {
         ...material.label === void 0 ? {} : { label: material.label },
         ...material.classification === void 0 ? {} : { classification: material.classification },
         ...material.sourceIndex === void 0 ? {} : { sourceIndex: material.sourceIndex },
+        ...material.baseColorFactor === void 0 ? {} : { baseColorFactor: material.baseColorFactor },
         ...material.baseColorResourceId === void 0 ? {} : {
           baseColorResourceId: worldResourceId(record6.space.id, material.baseColorResourceId)
         },
@@ -55618,11 +55715,15 @@ function terrainMaterialsLayer(value, path, state, depth) {
       "label",
       "classification",
       "sourceIndex",
+      "baseColorFactor",
       "baseColorResourceId",
       "normalResourceId",
       "specularResourceId",
       "uvTransform"
     ], ["id"], materialPath);
+    const baseColorFactor = material["baseColorFactor"] === void 0 ? void 0 : vec4(material["baseColorFactor"], `${materialPath}.baseColorFactor`, state, depth + 3);
+    if (baseColorFactor?.some((component) => component < 0 || component > 1))
+      fail8("terrain material baseColorFactor components must lie in [0, 1]", `${materialPath}.baseColorFactor`);
     const materialId = layerId2(material["id"], `${materialPath}.id`, state, depth + 3);
     const sourceIndex = material["sourceIndex"] === void 0 ? void 0 : integerAtLeast(material["sourceIndex"], 0, `${materialPath}.sourceIndex`, state, depth + 3);
     const optionalId = (key3) => material[key3] === void 0 ? void 0 : layerId2(material[key3], `${materialPath}.${key3}`, state, depth + 3);
@@ -55633,6 +55734,7 @@ function terrainMaterialsLayer(value, path, state, depth) {
         classification: string2(material["classification"], `${materialPath}.classification`, state, depth + 3)
       },
       ...sourceIndex === void 0 ? {} : { sourceIndex },
+      ...baseColorFactor === void 0 ? {} : { baseColorFactor },
       ...optionalId("baseColorResourceId") === void 0 ? {} : { baseColorResourceId: optionalId("baseColorResourceId") },
       ...optionalId("normalResourceId") === void 0 ? {} : { normalResourceId: optionalId("normalResourceId") },
       ...optionalId("specularResourceId") === void 0 ? {} : { specularResourceId: optionalId("specularResourceId") },
@@ -63207,6 +63309,16 @@ function wikiKinds(summary) {
   const kinds = summary.kinds?.filter((item) => item.count > 0) ?? [];
   return kinds.length > 0 ? kinds : [{ count: summary.totalSubjects }];
 }
+function wikiSubjectId(subjectId) {
+  if (!subjectId.includes("://"))
+    return subjectId;
+  const tail = subjectId.split("/").filter(Boolean).at(-1) ?? subjectId;
+  try {
+    return decodeURIComponent(tail);
+  } catch {
+    return tail;
+  }
+}
 function createSubjectWikiViewer(options) {
   const localizer = withEnglishUiFallback(options.localizer, CARD_WIKI_FALLBACK_MESSAGES);
   return defineViewerModule({
@@ -63365,7 +63477,7 @@ function createSubjectWikiViewer(options) {
             if (subject.portrait !== void 0)
               icons.push({ portrait: subject.portrait, canvas: icon });
             element(row, "span", { text: subject.label });
-            element(row, "small", { part: "wiki.id", text: subject.subjectId });
+            element(row, "small", { part: "wiki.id", text: wikiSubjectId(subject.subjectId) });
             row.addEventListener("click", () => void openCard(subject, row), {
               signal: scope.signal
             });
@@ -63872,15 +63984,31 @@ function cardRefAction(item, onNavigate, onOpenSource) {
     return () => onOpenSource(location);
   return onNavigate !== void 0 && item.href !== void 0 ? () => onNavigate(item) : void 0;
 }
+function cardRefLabel(item) {
+  const label = item.label;
+  if (!/^[a-z][\w+.-]*:\/\//iu.test(label))
+    return label;
+  const tail = label.replace(/[?#].*$/u, "").split("/").filter(Boolean).at(-1) ?? label;
+  let name = tail;
+  try {
+    name = decodeURIComponent(tail);
+  } catch {
+  }
+  const line = item.location?.line;
+  return line === void 0 ? name : `${name}:${line + 1}`;
+}
 function ref(document, item, onNavigate, onOpenSource) {
   const open = cardRefAction(item, onNavigate, onOpenSource);
   const navigable = open !== void 0;
   const node = document.createElement(navigable ? "button" : "span");
   node.className = "modkit-card__ref";
   setPart(node, "card.ref");
-  node.textContent = safeViewerText(item.label, 256);
+  const label = cardRefLabel(item);
+  node.textContent = safeViewerText(label, 256);
   if (item.title !== void 0)
     node.title = item.title;
+  else if (label !== item.label)
+    node.title = item.label;
   if (item.dead === true) {
     node.setAttribute("aria-disabled", "true");
     setState(node, ["disabled"]);
@@ -64564,13 +64692,13 @@ var PREVIEW_STAGES = [
 async function defaultPreviewStage(kind, localizer) {
   switch (kind) {
     case "model":
-      return (await import("./model-G4PGY4HA.js")).createModelViewer({ localizer });
+      return (await import("./model-GVJPP2B5.js")).createModelViewer({ localizer });
     case "image":
-      return (await import("./image-KJKITAK4.js")).createImageViewer({ localizer });
+      return (await import("./image-OXKS76F6.js")).createImageViewer({ localizer });
     case "video":
-      return (await import("./video-PMIRCVEL.js")).createVideoViewer({ localizer });
+      return (await import("./video-VYY5INLA.js")).createVideoViewer({ localizer });
     case "audio":
-      return (await import("./audio-UBD375KI.js")).createAudioViewer({ localizer });
+      return (await import("./audio-YSBIH7RR.js")).createAudioViewer({ localizer });
   }
 }
 function embedPreview(sections, args, scope, localizer, previews) {
@@ -64609,7 +64737,7 @@ function embedRelationGraph(sections, args, scope, localizer, graph) {
   return [
     ...sections,
     stageSection({ id: "relations-graph", title: localizer.text("card.relationGraph"), expanded: false }, scope, localizer, "card.relationGraphUnavailable", async (host) => {
-      const module = graph ?? (await import("./graph-RBSNJBOX.js")).createRelationGraphViewer({ localizer });
+      const module = graph ?? (await import("./graph-Y4EWAINM.js")).createRelationGraphViewer({ localizer });
       return scope.signal.aborted ? void 0 : module.mount({ ...args, container: host, signal: scope.signal });
     })
   ];
@@ -65317,10 +65445,11 @@ async function mountVariantTable(args) {
       break;
   }
   const changed = /* @__PURE__ */ new Set();
+  let draftedRows = /* @__PURE__ */ new Set();
   const selected = /* @__PURE__ */ new Set();
   const statusOf = (row) => [
     ...statusColumn < 0 ? [] : (row.cells[statusColumn] ?? "").split(" ").filter(Boolean),
-    ...changed.has(row.index) ? ["changed"] : []
+    ...changed.has(row.index) || draftedRows.has(row.index) ? ["changed"] : []
   ];
   const state = remembered.get(args.descriptor.subjectUri) ?? {
     search: "",
@@ -65510,6 +65639,21 @@ async function mountVariantTable(args) {
     });
   });
   columns.hidden = header.length < 3;
+  const drafting = actions.addRow !== void 0;
+  const draftButton = (label, action, run) => {
+    const button = element(bar, "button", {
+      part: "toolbar.action",
+      text: label
+    });
+    button.type = "button";
+    button.disabled = true;
+    button.hidden = !drafting;
+    button.dataset["modkitAction"] = action;
+    button.addEventListener("click", run);
+    return button;
+  };
+  const saveButton = draftButton(text3("table.save"), "save", () => void saveDraft(true));
+  const revertButton = draftButton(text3("table.revert"), "revert", () => revertDraft());
   const more = element(args.root, "button", {
     part: "table.next",
     text: text3("table.more")
@@ -65607,19 +65751,19 @@ async function mountVariantTable(args) {
         onInput: (value) => {
           state.find.replace = value;
         },
-        onSubmit: () => void replaceNext()
+        onSubmit: () => replaceNext()
       },
       {
         kind: "action",
         id: "replace-one",
         label: text3("table.replaceOne"),
-        onActivate: () => void replaceNext()
+        onActivate: () => replaceNext()
       },
       {
         kind: "action",
         id: "replace-all",
         label: text3("table.replaceAll"),
-        onActivate: () => void replaceAll()
+        onActivate: () => replaceAll()
       }
     ]
   });
@@ -65734,6 +65878,12 @@ async function mountVariantTable(args) {
           selected.delete(row.index);
       });
       cell.append(box);
+      for (const column of variants) {
+        const valueCell = tr.cells[column.index + 1];
+        if (valueCell !== void 0 && draft.has(`${row.index}:${column.index}`)) {
+          setState(valueCell, ["mutating"]);
+        }
+      }
     });
     drawnRows = drawn;
     showColumns();
@@ -65836,7 +65986,7 @@ async function mountVariantTable(args) {
     ...args.authorization === void 0 ? {} : { authorization: args.authorization }
   };
   let writing = false;
-  const write = async (operation, input, hint) => {
+  const write = async (operation, input, reopen = true) => {
     if (writing || args.signal.aborted)
       return false;
     const stale = args.writeRefusal?.();
@@ -65845,7 +65995,7 @@ async function mountVariantTable(args) {
       return false;
     }
     const refused3 = (reason) => {
-      say(text3("table.refused", { reason: hint === void 0 ? reason : `${reason} ${hint}` }));
+      say(text3("table.refused", { reason }));
       return false;
     };
     writing = true;
@@ -65855,7 +66005,8 @@ async function mountVariantTable(args) {
       if (refusal !== void 0)
         return refused3(refusal);
       say(text3("table.saved"));
-      await args.committed();
+      if (reopen)
+        await args.committed();
       return true;
     } catch (error5) {
       return refused3(error5 instanceof Error ? error5.message : String(error5));
@@ -65877,7 +66028,113 @@ async function mountVariantTable(args) {
     const next = replaced(value);
     return next === value ? [] : [{ row, column, value: next }];
   });
-  const replaceNext = async () => {
+  const draft = /* @__PURE__ */ new Map();
+  const undoSteps = [];
+  const redoSteps = [];
+  let flushing = false;
+  const put = (row, column, value) => {
+    const id = `${row.index}:${column.index}`;
+    const saved = draft.get(id)?.saved ?? row.cells[column.index] ?? "";
+    if (value === saved)
+      draft.delete(id);
+    else if (!draft.has(id))
+      draft.set(id, { row, column, saved });
+    row.cells[column.index] = value;
+  };
+  const afterDraft = () => {
+    draftedRows = new Set([...draft.values()].map((entry2) => entry2.row.index));
+    saveButton.disabled = draft.size === 0;
+    revertButton.disabled = draft.size === 0;
+    setViewerText(saveButton, draft.size === 0 ? text3("table.save") : text3("table.saveCount", { count: draft.size }));
+    for (const id of statuses) {
+      toolbar.setCount(id, rows.filter((row) => statusOf(row).includes(id)).length);
+    }
+    recount();
+    draw();
+  };
+  const edit = (changes) => {
+    if (writing) {
+      say(text3("table.working"));
+      return false;
+    }
+    const step2 = changes.flatMap(({ row, column, value }) => {
+      const from = row.cells[column.index] ?? "";
+      return from === value ? [] : [{ row, column, from, to: value }];
+    });
+    if (step2.length === 0)
+      return false;
+    for (const change of step2)
+      put(change.row, change.column, change.to);
+    undoSteps.push(step2);
+    redoSteps.length = 0;
+    if (!flushing)
+      announceEditorEdit(args.root);
+    afterDraft();
+    return true;
+  };
+  const stepDraft = (from, into, forward) => {
+    const step2 = writing ? void 0 : from.pop();
+    if (step2 === void 0)
+      return false;
+    for (const change of step2)
+      put(change.row, change.column, forward ? change.to : change.from);
+    into.push(step2);
+    afterDraft();
+    return true;
+  };
+  const revertDraft = () => {
+    if (writing)
+      return;
+    for (const { row, column, saved } of draft.values()) {
+      ;
+      row.cells[column.index] = saved;
+    }
+    draft.clear();
+    undoSteps.length = 0;
+    redoSteps.length = 0;
+    afterDraft();
+  };
+  const saveDraft = async (reopen) => {
+    flushing = true;
+    try {
+      await args.flush?.();
+    } finally {
+      flushing = false;
+    }
+    const operation = actions.addRow;
+    if (draft.size === 0 || operation === void 0)
+      return true;
+    const cells = [...draft.values()].sort((left, right) => left.row.index - right.row.index || left.column.index - right.column.index);
+    const entries = cells.map(({ row, column }) => ({
+      key: row.cells[keyColumn] ?? "",
+      variant: column.variant ?? "",
+      value: row.cells[column.index] ?? ""
+    }));
+    const locales = new Set(entries.map((entry2) => entry2.variant));
+    const [only] = locales;
+    const request = locales.size === 1 ? {
+      action: "set-many",
+      variant: only ?? "",
+      entries: entries.map(({ key: key3, value }) => ({ key: key3, value }))
+    } : { action: "set-variants", entries };
+    if (!await write(operation, request, reopen))
+      return false;
+    for (const { row } of cells)
+      changed.add(row.index);
+    draft.clear();
+    undoSteps.length = 0;
+    redoSteps.length = 0;
+    afterDraft();
+    say(text3("table.saved"));
+    return true;
+  };
+  const unsaved = () => {
+    if (draft.size === 0)
+      return false;
+    say(text3("table.refused", { reason: text3("table.draftFirst") }));
+    return true;
+  };
+  const replaceNext = () => {
     for (let offset = 0; offset < findRows.length; offset += 1) {
       const at2 = (state.find.at + offset) % findRows.length;
       const row = visible[findRows[at2] ?? -1];
@@ -65885,12 +66142,12 @@ async function mountVariantTable(args) {
       if (change === void 0)
         continue;
       state.find.at = at2;
-      await replace([change]);
+      replace([change]);
       return;
     }
     say(text3("table.replaceNothing"));
   };
-  const replaceAll = async () => {
+  const replaceAll = () => {
     const changes = findRows.flatMap((position) => {
       const row = visible[position];
       return row === void 0 ? [] : changesIn(row);
@@ -65898,39 +66155,14 @@ async function mountVariantTable(args) {
     if (changes.length === 0)
       say(text3("table.replaceNothing"));
     else
-      await replace(changes);
+      replace(changes);
   };
-  const replace = async (changes) => {
-    const operation = actions.addRow;
-    if (operation === void 0)
-      return;
-    const keyOf = (change) => change.row.cells[keyColumn] ?? "";
-    const locales = new Set(changes.map((change) => change.column.variant ?? ""));
-    const [only] = locales;
-    const done = locales.size === 1 ? await write(operation, {
-      action: "set-many",
-      variant: only ?? "",
-      entries: changes.map((change) => ({ key: keyOf(change), value: change.value }))
-    }) : await write(operation, {
-      action: "set-variants",
-      entries: changes.map((change) => ({
-        key: keyOf(change),
-        variant: change.column.variant ?? "",
-        value: change.value
-      }))
-    }, text3("table.replaceLocalesHint"));
-    if (!done)
-      return;
-    for (const change of changes) {
-      ;
-      change.row.cells[change.column.index] = change.value;
-      changed.add(change.row.index);
-    }
-    refresh();
-    say(text3("table.replaced", { count: changes.length }));
+  const replace = (changes) => {
+    if (edit(changes))
+      say(text3("table.replaced", { count: changes.length }));
   };
   const showAdd = () => {
-    if (actions.addRow === void 0 || base === void 0)
+    if (actions.addRow === void 0 || base === void 0 || unsaved())
       return;
     panel.hidden = false;
     panel.replaceChildren();
@@ -65981,6 +66213,8 @@ async function mountVariantTable(args) {
     return void 0;
   };
   const showRename = () => {
+    if (unsaved())
+      return;
     const row = oneSelected();
     if (row === void 0 || actions.addRow === void 0)
       return;
@@ -66021,6 +66255,8 @@ async function mountVariantTable(args) {
     key3.select();
   };
   const showDelete = () => {
+    if (unsaved())
+      return;
     const row = oneSelected();
     if (row === void 0 || actions.addRow === void 0)
       return;
@@ -66169,23 +66405,12 @@ async function mountVariantTable(args) {
       });
       apply.type = "button";
       apply.addEventListener("click", () => {
-        void write(actions.addRow, {
-          action: "set-many",
-          variant: column.variant ?? "",
-          entries: ready
-        }).then((done) => {
-          if (!done)
-            return;
-          for (const entry2 of ready) {
-            const row = rows.find((item) => item.cells[keyColumn] === entry2.key);
-            if (row === void 0)
-              continue;
-            row.cells[column.index] = entry2.value;
-            changed.add(row.index);
-          }
-          panel.hidden = true;
-          refresh();
+        const changes = ready.flatMap((entry2) => {
+          const row = rows.find((item) => item.cells[keyColumn] === entry2.key);
+          return row === void 0 ? [] : [{ row, column, value: entry2.value }];
         });
+        if (edit(changes))
+          panel.hidden = true;
       });
     } catch (error5) {
       say(text3("table.refused", { reason: error5 instanceof Error ? error5.message : String(error5) }));
@@ -66195,8 +66420,21 @@ async function mountVariantTable(args) {
         toolbar.setDisabled("translate", false);
     }
   };
+  if (drafting) {
+    args.root.dataset["modkitEditor"] = "table";
+    const removeSave = handleEditorSaveRequest(args.root, () => saveDraft(false));
+    const removeHistory = handleEditorHistoryRequest(args.root, {
+      undo: () => stepDraft(undoSteps, redoSteps, false),
+      redo: () => stepDraft(redoSteps, undoSteps, true)
+    });
+    args.signal.addEventListener("abort", () => {
+      removeSave();
+      removeHistory();
+    }, { once: true });
+  }
   showFind();
   refresh();
+  const variantAt = (column) => variants.find((item) => item.index === column);
   return {
     written(row, column, value) {
       const entry2 = rows.find((item) => item.index === row);
@@ -66205,6 +66443,18 @@ async function mountVariantTable(args) {
       entry2.cells[column] = value;
       changed.add(row);
       refresh();
+    },
+    drafts: (column) => drafting && variantAt(column) !== void 0,
+    value: (row, column) => rows.find((item) => item.index === row)?.cells[column],
+    draft(row, column, value) {
+      const entry2 = rows.find((item) => item.index === row);
+      const target2 = variantAt(column);
+      return entry2 !== void 0 && target2 !== void 0 && edit([{ row: entry2, column: target2, value }]);
+    },
+    refusal(column) {
+      if (writing)
+        return text3("table.working");
+      return draft.size > 0 && !(drafting && variantAt(column) !== void 0) ? text3("table.draftFirst") : void 0;
     }
   };
 }
@@ -66298,6 +66548,7 @@ function createTableViewer(options = {}) {
       let variants;
       let stale;
       const activeEdits = /* @__PURE__ */ new Set();
+      const openDrafts = /* @__PURE__ */ new Set();
       scope.cleanup(async () => {
         for (const dispose of activeEdits)
           await dispose();
@@ -66406,9 +66657,18 @@ function createTableViewer(options = {}) {
           }
         })();
       };
+      const drawnCell = (coord) => body.querySelector(`tr[data-row="${coord.row}"] > td:nth-child(${coord.column + 2})`);
       const beginEdit = async (cell, coord) => {
         if (cell.dataset["editing"] === "true")
           return;
+        if (openDrafts.size > 0 && variants?.drafts(coord.column) === true) {
+          for (const keep2 of [...openDrafts])
+            await keep2();
+          const drawn = drawnCell(coord);
+          if (drawn === null)
+            return;
+          cell = drawn;
+        }
         const facts = await model.cell(coord, scope.signal);
         if (scope.signal.aborted || !body.contains(cell) || cell.dataset["editing"] === "true")
           return;
@@ -66421,11 +66681,12 @@ function createTableViewer(options = {}) {
         const refusal = fieldWriteRefusal(args.descriptor, facts.editable, {
           ...args.commit === void 0 ? {} : { commit: args.commit },
           ...args.authorization === void 0 ? {} : { authorization: args.authorization }
-        });
+        }) ?? variants?.refusal(coord.column);
         if (refusal !== void 0) {
           cell.title = refusal;
           return;
         }
+        const drafting = variants?.drafts(coord.column) === true;
         const previous = [...cell.childNodes];
         let written;
         cell.dataset["editing"] = "true";
@@ -66434,7 +66695,7 @@ function createTableViewer(options = {}) {
         const mount = await mountInlineField(cell, {
           label: header ?? String(coord.column),
           type: facts.type,
-          value: facts.typedValue ?? facts.value,
+          value: (drafting ? variants?.value(coord.row, coord.column) : void 0) ?? facts.typedValue ?? facts.value,
           ...facts.unit === void 0 ? {} : { unit: facts.unit },
           ...facts.editable === void 0 ? {} : { editable: facts.editable },
           target: {
@@ -66481,6 +66742,7 @@ function createTableViewer(options = {}) {
           finished = true;
           assist?.dispose();
           activeEdits.delete(dispose);
+          openDrafts.delete(keep);
           cell.removeEventListener("keydown", onKey);
           delete cell.dataset["editing"];
           await mount.unmount();
@@ -66490,6 +66752,19 @@ function createTableViewer(options = {}) {
             return;
           finishing = true;
           try {
+            if (write && drafting) {
+              const typed = mount.read();
+              if (typed === void 0)
+                return;
+              await dispose();
+              const value = typed.value === null ? "" : String(typed.value);
+              if (variants?.draft(coord.row, coord.column, value) === true) {
+                drawnCell(coord)?.focus();
+              } else {
+                cell.replaceChildren(...previous);
+              }
+              return;
+            }
             const accepted = write ? await mount.commit() : false;
             if (!accepted && write)
               return;
@@ -66507,6 +66782,7 @@ function createTableViewer(options = {}) {
             finishing = false;
           }
         };
+        const keep = () => finish(true);
         const onKey = (event) => {
           if (event.key === "Enter") {
             event.preventDefault();
@@ -66522,6 +66798,8 @@ function createTableViewer(options = {}) {
           return;
         }
         activeEdits.add(dispose);
+        if (drafting)
+          openDrafts.add(keep);
         cell.addEventListener("keydown", onKey);
         cell.querySelector("input, textarea, select")?.focus();
       };
@@ -66598,7 +66876,11 @@ function createTableViewer(options = {}) {
           render,
           committed,
           writeRefusal: () => stale,
-          before: table
+          before: table,
+          flush: async () => {
+            for (const keep of [...openDrafts])
+              await keep();
+          }
         });
         return createViewerMount(root, scope, args, ({ descriptor }) => {
           cancelLookup("viewer-updated");

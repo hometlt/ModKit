@@ -358,8 +358,10 @@ const definition = Object.freeze({
   async inspect(bytes, context) {
     const jpeg = parseJpeg(bytes, context.budget.maxNodes)
     // Baseline sequential frames decode here; progressive and arithmetic ones stay metadata-only,
-    // which the shared decoder refuses by name rather than approximating.
+    // which the shared decoder refuses by name rather than approximating. A thumbnail starts no
+    // decoder, as with PNG.
     const decodable =
+      context.intent !== 'thumbnail' &&
       !jpeg.frame.progressive &&
       jpeg.frame.bitDepth === 8 &&
       [1, 3].includes(jpeg.frame.components) &&

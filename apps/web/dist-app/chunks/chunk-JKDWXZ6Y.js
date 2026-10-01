@@ -2,7 +2,7 @@ import {
   collectEncodedMedia,
   createMediaShell,
   mountContributedSections
-} from "./chunk-T3OMRXCG.js";
+} from "./chunk-6ZBIN4U4.js";
 import {
   AUDIO_FALLBACK_MESSAGES,
   ViewerMountScope,
@@ -14,7 +14,7 @@ import {
   setViewerText,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-763L25CS.js";
+} from "./chunk-N6RN7GYG.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunk-BLWUC7LO.js";
