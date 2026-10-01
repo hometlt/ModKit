@@ -67076,6 +67076,9 @@ function systemSubjectLabel(localizer, subjectKind, keys, id, fallback) {
   const key3 = keys[id];
   return key3 === void 0 ? fallback : localizer.text(key3);
 }
+function setViewerTextNode(node, text4) {
+  node.replaceChildren(node.ownerDocument.createTextNode(safeViewerText(text4, 2048)));
+}
 function provenanceRef(item) {
   if (item.source === void 0)
     return { label: item.label };
@@ -67089,7 +67092,7 @@ function provenanceRef(item) {
     }
   };
 }
-function factField(fact4, subjectKind, localizer) {
+function factField(fact4, subjectKind, localizer, groupId) {
   const keys = subjectKind === EXTENSION_SUBJECT_KIND2 ? EXTENSION_FACT_MESSAGE_KEYS : subjectKind === CONTRIBUTION_SUBJECT_KIND2 ? CONTRIBUTION_FACT_MESSAGE_KEYS : isRepositorySubjectKind(subjectKind) ? REPOSITORY_SUBJECT_FACT_MESSAGE_KEYS : NO_FACT_MESSAGE_KEYS;
   return {
     name: systemSubjectLabel(localizer, subjectKind, keys, fact4.id, fact4.label),
@@ -67097,7 +67100,17 @@ function factField(fact4, subjectKind, localizer) {
     ...fact4.provenance.length === 0 ? {} : { sources: fact4.provenance.map(provenanceRef) },
     ...fact4.note === void 0 ? {} : { note: fact4.note },
     ...fact4.knowledgeTarget === void 0 ? {} : { knowledgeTarget: fact4.knowledgeTarget },
-    ...fact4.editTarget === void 0 ? {} : { editTarget: fact4.editTarget }
+    ...fact4.editTarget === void 0 ? {} : { editTarget: fact4.editTarget },
+    // the same write a tree node or a table cell makes: the codec's operation, keyed by group and fact
+    ...fact4.editable === void 0 || fact4.type === void 0 ? {} : {
+      edit: {
+        type: fact4.type,
+        ...fact4.unit === void 0 ? {} : { unit: fact4.unit },
+        editable: fact4.editable,
+        value: fact4.value,
+        target: { groupId, key: fact4.id }
+      }
+    }
   };
 }
 function repositoryResourceRef(value2) {
@@ -67262,7 +67275,7 @@ async function loadSubjectCardSections(source2, options = {}) {
       kind: "fields",
       id: group2.id,
       title: page2.capped || page2.items.length < group2.factCount ? localizer.text("card.capped", { label: groupLabel }) : groupLabel,
-      fields: page2.items.map((fact4) => factField(fact4, summary.identity.kind, localizer)),
+      fields: page2.items.map((fact4) => factField(fact4, summary.identity.kind, localizer, group2.id)),
       expanded: true
     });
   }
@@ -67452,7 +67465,7 @@ function renderHeader(document2, host, section, localizer, signal, onNavigate, r
   if (header.childElementCount > 0)
     host.append(header);
 }
-function renderFields(document2, host, fields, inspectKnowledge, onNavigate, onOpenSource) {
+function renderFields(document2, host, fields, inspectKnowledge, onNavigate, onOpenSource, onEditField) {
   const list = document2.createElement("div");
   list.className = "modkit-card__fields";
   list.setAttribute("role", "table");
@@ -67478,6 +67491,17 @@ function renderFields(document2, host, fields, inspectKnowledge, onNavigate, onO
       value2.append(note);
     }
     row.append(name, value2);
+    if (field3.edit !== void 0 && onEditField !== void 0) {
+      const begin = () => onEditField(field3, value2);
+      value2.dataset["editable"] = "true";
+      value2.addEventListener("dblclick", begin);
+      row.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" || value2.dataset["editing"] === "true")
+          return;
+        event.preventDefault();
+        begin();
+      });
+    }
     if (field3.badge !== void 0) {
       const badge = document2.createElement("span");
       badge.className = "modkit-card__chip";
@@ -67607,7 +67631,7 @@ function createSubjectCard(document2, options) {
         setPart(panel.parentElement ?? panel, "accordion.section");
         switch (section.kind) {
           case "fields":
-            renderFields(document2, panel, section.fields, options.knowledge === void 0 ? void 0 : inspectKnowledge, options.onNavigate, options.onOpenSource);
+            renderFields(document2, panel, section.fields, options.knowledge === void 0 ? void 0 : inspectKnowledge, options.onNavigate, options.onOpenSource, options.onEditField);
             return;
           case "links": {
             const list = document2.createElement("div");
@@ -67742,6 +67766,58 @@ function createSubjectCardViewer(options = {}) {
       const scope = new ViewerMountScope(args.signal);
       const root = createSurface(args.container, localizer.text("card.subject"));
       try {
+        let editField2 = function(field3, host) {
+          const edit = field3.edit;
+          if (edit === void 0 || host.dataset["editing"] === "true")
+            return;
+          host.dataset["editing"] = "true";
+          const previous = [...host.childNodes];
+          host.replaceChildren();
+          let written;
+          const close = () => {
+            delete host.dataset["editing"];
+            if (written === void 0)
+              host.replaceChildren(...previous);
+            else
+              setViewerTextNode(host, factValue(written));
+          };
+          void mountInlineField(host, {
+            label: field3.name,
+            type: edit.type,
+            value: edit.value,
+            ...edit.unit === void 0 ? {} : { unit: edit.unit },
+            editable: edit.editable,
+            target: edit.target,
+            descriptor: args.descriptor,
+            operations: args.operations,
+            ...args.commit === void 0 ? {} : { commit: args.commit },
+            ...args.authorization === void 0 ? {} : { authorization: args.authorization },
+            signal: scope.signal,
+            onWritten: (value2) => {
+              written = value2;
+            }
+          }).then((mount) => {
+            const finish = async (save) => {
+              if (save && !await mount.commit())
+                return;
+              host.removeEventListener("keydown", onKey);
+              await mount.unmount();
+              close();
+              if (save)
+                options.onCommitted?.(args.descriptor);
+            };
+            const onKey = (event) => {
+              if (event.key !== "Enter" && event.key !== "Escape")
+                return;
+              event.preventDefault();
+              event.stopPropagation();
+              void finish(event.key === "Enter");
+            };
+            host.addEventListener("keydown", onKey);
+            host.querySelector("input, textarea, select")?.focus();
+          }, () => close());
+        };
+        var editField = editField2;
         const lease2 = await unknownSourceLease(args.sources, args.slot, "common.view/subject-facts-source");
         if (lease2 === void 0)
           throw new TypeError("subject facts binding is unavailable");
@@ -67823,6 +67899,8 @@ function createSubjectCardViewer(options = {}) {
               // subjects; without either it stays text rather than a button that does nothing.
               ...args.subjectNavigation === void 0 && selector === void 0 ? {} : { onNavigate: navigate },
               ...options.openSource === void 0 ? {} : { onOpenSource: options.openSource },
+              // only the subject this card was opened on writes through this session's ports
+              ...address === ownId ? { onEditField: editField2 } : {},
               ...resolveImage === void 0 ? {} : { resolveImage }
             });
             commit?.();

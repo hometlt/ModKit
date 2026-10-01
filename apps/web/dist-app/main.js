@@ -50,7 +50,7 @@ import {
   subjectFactsSourceFromWire,
   webExtensionSubjectCardBundle,
   withoutHiddenEntries
-} from "./chunks/chunk-RFTCQXHB.js";
+} from "./chunks/chunk-M6AHE3ZR.js";
 import "./chunks/chunk-ASPZNQTQ.js";
 import "./chunks/chunk-34ZFSIL2.js";
 import "./chunks/chunk-XPBF7FM6.js";
