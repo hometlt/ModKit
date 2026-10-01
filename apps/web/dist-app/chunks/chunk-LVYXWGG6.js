@@ -1,6 +1,6 @@
 import {
   crc32Range
-} from "./chunk-Q27WXNQ4.js";
+} from "./chunk-R3U752LL.js";
 import {
   compressPortable
 } from "./chunk-QQJVD7VT.js";
@@ -1003,6 +1003,32 @@ function snapshotModelAnimations(value, budget = DEFAULT_MODEL_ANIMATION_BUDGET,
     }
   }
   return clips;
+}
+var MAX_EVENT_OCCURRENCES = 4096;
+function clipEventsBetween(clip, fromSeconds, toSeconds) {
+  if (!Number.isFinite(fromSeconds) || !Number.isFinite(toSeconds))
+    throw new TypeError("event window must be finite");
+  if ((clip.events?.length ?? 0) === 0 || !(toSeconds > fromSeconds))
+    return [];
+  const mode = clip.loop ?? (clip.looping === true ? "loop" : "once");
+  const duration = clip.durationSeconds ?? 0;
+  const period = mode === "loop" ? duration : mode === "ping-pong" ? 2 * duration : 0;
+  const found = [];
+  for (const event of clip.events ?? []) {
+    const back = 2 * duration - event.timeSeconds;
+    const times = mode === "ping-pong" && back !== event.timeSeconds ? [event.timeSeconds, back] : [event.timeSeconds];
+    for (const time of times) {
+      if (!(period > 0)) {
+        if (fromSeconds < time && time <= toSeconds)
+          found.push({ event, atSeconds: time });
+        continue;
+      }
+      for (let at2 = time + (Math.floor((fromSeconds - time) / period) + 1) * period; at2 <= toSeconds && found.length < MAX_EVENT_OCCURRENCES; at2 += period)
+        if (at2 > fromSeconds)
+          found.push({ event, atSeconds: at2 });
+    }
+  }
+  return found.sort((left, right) => left.atSeconds - right.atSeconds);
 }
 function createModelAnimationSampler(clip, budget, signal) {
   const owned = snapshotModelAnimations([clip], budget, signal)[0];
@@ -2027,6 +2053,8 @@ function createModelSceneSampler(projection, options = {}) {
   }
   return Object.freeze({
     diagnostics: Object.freeze(diagnostics),
+    /** The clip's events passed after `fromSeconds` up to `toSeconds` (see clipEventsBetween). */
+    eventsBetween: (fromSeconds, toSeconds) => clip === void 0 ? [] : clipEventsBetween(clip, fromSeconds, toSeconds),
     sample(timeSeconds, requestSignal, camera) {
       if (!Number.isFinite(timeSeconds))
         throw new TypeError("scene time must be finite");
@@ -2037,13 +2065,21 @@ function createModelSceneSampler(projection, options = {}) {
       const poses = /* @__PURE__ */ new Map();
       const animatedWorlds = /* @__PURE__ */ new Map();
       const hiddenPrimitives = new Set(projection.primitives.filter((primitive) => primitive.hidden === true).map((primitive) => primitive.id));
+      const fades = /* @__PURE__ */ new Map();
       for (const value of visibilitySampler?.sample(timeSeconds, requestSignal) ?? [])
         if (primitiveIds.has(value.target)) {
-          if ((value.value[0] ?? 0) > 0)
+          const visibility2 = value.value[0] ?? 0;
+          if (visibility2 > 0)
             hiddenPrimitives.delete(value.target);
           else
             hiddenPrimitives.add(value.target);
+          if (visibility2 > 0 && visibility2 < 1)
+            fades.set(value.target, visibility2);
         }
+      const faded = (primitive) => {
+        const fade = fades.get(primitive.id);
+        return fade === void 0 ? {} : { tint: [1, 1, 1, fade] };
+      };
       const nodeWeights = /* @__PURE__ */ new Map();
       for (const value of morphSampler?.sample(timeSeconds, requestSignal) ?? [])
         if (value.value.length === morphTargetCounts.get(value.target))
@@ -2123,7 +2159,8 @@ function createModelSceneSampler(projection, options = {}) {
             const posed = {
               ...drawn(skin === void 0 ? present(deformed, "deformed skin") : gpu.bindPose),
               ...transformed ? { transform: new Float32Array(frame) } : {},
-              ...skin === void 0 ? {} : { skin }
+              ...skin === void 0 ? {} : { skin },
+              ...faded(primitive)
             };
             primitives.push(posed);
           }
@@ -2136,7 +2173,8 @@ function createModelSceneSampler(projection, options = {}) {
             const shaped = targets > 0 && weights !== void 0 && weights.some((weight) => weight !== 0) ? morphPrimitive(primitive, weights) : primitive;
             primitives.push({
               ...drawn(shaped),
-              ...transform === void 0 ? {} : { transform: new Float32Array(transform) }
+              ...transform === void 0 ? {} : { transform: new Float32Array(transform) },
+              ...faded(primitive)
             });
           }
         }

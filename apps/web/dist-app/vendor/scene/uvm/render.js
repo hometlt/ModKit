@@ -4,7 +4,7 @@ import {
   readUvmModel,
   uvmImageFilters,
   uvmImageTexels
-} from "../../../chunks/chunk-RTPGOLLU.js";
+} from "../../../chunks/chunk-N565EHNO.js";
 import {
   IDENTITY_MATERIAL_FRAME,
   MATERIAL_LAYERS_SHADER,
@@ -22,7 +22,7 @@ import {
   snapshotEnvironment,
   snapshotEyePosition,
   snapshotModelBillboards
-} from "../../../chunks/chunk-QXYENN4V.js";
+} from "../../../chunks/chunk-3RFEOXBM.js";
 import {
   array,
   field,
@@ -42,11 +42,11 @@ import {
   readUvmAccessor,
   readUvmTextureColorKeys,
   validateUvmDocument
-} from "../../../chunks/chunk-5DT7SGOU.js";
+} from "../../../chunks/chunk-VWR4X3UB.js";
 import {
   readUvmAnimationClips,
   readUvmPrimitiveVisibility
-} from "../../../chunks/chunk-CTXZR5MG.js";
+} from "../../../chunks/chunk-I43233HX.js";
 import {
   modelPrimitiveByteLength
 } from "../../../chunks/chunk-IBG4CEKN.js";
@@ -68,7 +68,7 @@ import {
 } from "../../../chunks/chunk-4A3BDPFP.js";
 import {
   encodePng
-} from "../../../chunks/chunk-P3KDCCMI.js";
+} from "../../../chunks/chunk-KXX5ID6M.js";
 import {
   applyColorKeyTransparency,
   linearToSrgb,
@@ -79,10 +79,11 @@ import {
   createModelPoseBlendSampler,
   createModelPoseSampler,
   snapshotModelSkeleton
-} from "../../../chunks/chunk-D6GLIKYJ.js";
+} from "../../../chunks/chunk-PERFFDVA.js";
 import {
+  clipEventsBetween,
   createModelAnimationSampler
-} from "../../../chunks/chunk-IJPXHLGV.js";
+} from "../../../chunks/chunk-RUAJQ7WQ.js";
 import {
   snapshotJson
 } from "../../../chunks/chunk-ZSDVUSRM.js";
@@ -99,7 +100,8 @@ import {
 import "../../../chunks/chunk-TKIPZ6HV.js";
 import "../../../chunks/chunk-NUFRM6SI.js";
 import "../../../chunks/chunk-W2UBWFML.js";
-import "../../../chunks/chunk-TWH75SBL.js";
+import "../../../chunks/chunk-6S2P23EL.js";
+import "../../../chunks/chunk-NMYA52EI.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 
 // ../MODDING/modkit-core/packages/scene/dist/uvm/pose-samples.js
@@ -16881,6 +16883,8 @@ function createModelSceneSampler(projection2, options = {}) {
   }
   return Object.freeze({
     diagnostics: Object.freeze(diagnostics),
+    /** The clip's events passed after `fromSeconds` up to `toSeconds` (see clipEventsBetween). */
+    eventsBetween: (fromSeconds, toSeconds) => clip === void 0 ? [] : clipEventsBetween(clip, fromSeconds, toSeconds),
     sample(timeSeconds, requestSignal, camera) {
       if (!Number.isFinite(timeSeconds))
         throw new TypeError("scene time must be finite");
@@ -16891,13 +16895,21 @@ function createModelSceneSampler(projection2, options = {}) {
       const poses = /* @__PURE__ */ new Map();
       const animatedWorlds = /* @__PURE__ */ new Map();
       const hiddenPrimitives = new Set(projection2.primitives.filter((primitive) => primitive.hidden === true).map((primitive) => primitive.id));
+      const fades = /* @__PURE__ */ new Map();
       for (const value of visibilitySampler?.sample(timeSeconds, requestSignal) ?? [])
         if (primitiveIds.has(value.target)) {
-          if ((value.value[0] ?? 0) > 0)
+          const visibility2 = value.value[0] ?? 0;
+          if (visibility2 > 0)
             hiddenPrimitives.delete(value.target);
           else
             hiddenPrimitives.add(value.target);
+          if (visibility2 > 0 && visibility2 < 1)
+            fades.set(value.target, visibility2);
         }
+      const faded = (primitive) => {
+        const fade = fades.get(primitive.id);
+        return fade === void 0 ? {} : { tint: [1, 1, 1, fade] };
+      };
       const nodeWeights = /* @__PURE__ */ new Map();
       for (const value of morphSampler?.sample(timeSeconds, requestSignal) ?? [])
         if (value.value.length === morphTargetCounts.get(value.target))
@@ -16977,7 +16989,8 @@ function createModelSceneSampler(projection2, options = {}) {
             const posed = {
               ...drawn(skin === void 0 ? present(deformed, "deformed skin") : gpu.bindPose),
               ...transformed ? { transform: new Float32Array(frame) } : {},
-              ...skin === void 0 ? {} : { skin }
+              ...skin === void 0 ? {} : { skin },
+              ...faded(primitive)
             };
             primitives.push(posed);
           }
@@ -16990,7 +17003,8 @@ function createModelSceneSampler(projection2, options = {}) {
             const shaped = targets > 0 && weights !== void 0 && weights.some((weight) => weight !== 0) ? morphPrimitive(primitive, weights) : primitive;
             primitives.push({
               ...drawn(shaped),
-              ...transform2 === void 0 ? {} : { transform: new Float32Array(transform2) }
+              ...transform2 === void 0 ? {} : { transform: new Float32Array(transform2) },
+              ...faded(primitive)
             });
           }
         }
@@ -21540,10 +21554,17 @@ async function prepareNestedUvmRender(bytes, value, options, depth, cache) {
   const activeMeshes = new Set(scene.nodes.filter((node) => activeNodes.has(node.id)).flatMap((node) => node.meshIds));
   const meshes = scene.meshes.filter((mesh) => activeMeshes.has(mesh.id));
   const activePrimitives = new Set(meshes.flatMap((mesh) => mesh.primitiveIds));
-  const clip = clipId === void 0 ? void 0 : rig.clips.find((candidate) => candidate.id === clipId);
+  const catalogIds = new Map((readUvmAnimationClips(document2, signal) ?? []).flatMap((entry) => entry.sourceId === void 0 ? [] : [[entry.sourceId, entry.id]]));
+  const clipOf = (id) => rig.clips.find((candidate) => candidate.id === id) ?? rig.clips.find((candidate) => candidate.id === catalogIds.get(id));
+  const clip = clipId === void 0 ? void 0 : clipOf(clipId);
   if (clipId !== void 0 && clip === void 0)
     throw new TypeError(`unknown UVM animation clip: ${clipId}`);
-  const poseSamples = readUvmPoseSamples(input["poseSamples"], rig.clips);
+  const requestedPoses = input["poseSamples"];
+  const poseSamples = readUvmPoseSamples(Array.isArray(requestedPoses) ? requestedPoses.map((sample2) => {
+    const id = field(sample2, "clipId");
+    const canonical = typeof id === "string" ? clipOf(id)?.id : void 0;
+    return canonical === void 0 || canonical === id ? sample2 : { ...object(sample2, "pose sample"), clipId: canonical };
+  }) : requestedPoses, rig.clips);
   const visible = new Map(readUvmPrimitiveVisibility(document2, signal).map((item) => [
     "node" in item ? `node-${item.node}` : `mesh-${item.mesh}-primitive-${item.primitive}`,
     item.value > 0

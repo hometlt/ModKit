@@ -48,7 +48,7 @@ import {
   validateUvmDocument,
   vector3,
   vector4
-} from "./chunk-ZNIKBHDN.js";
+} from "./chunk-INSSLGBI.js";
 import {
   applyColorKeyTransparency,
   billboardCameraRotation,
@@ -58,11 +58,11 @@ import {
   modelPrimitiveByteLength,
   snapshotJson,
   snapshotModelBillboards
-} from "./chunk-EOJHBJMF.js";
+} from "./chunk-LVYXWGG6.js";
 import {
   SCENE_RENDERER_CONTRACT
 } from "./chunk-OZX7B633.js";
-import "./chunk-Q27WXNQ4.js";
+import "./chunk-R3U752LL.js";
 import "./chunk-QQJVD7VT.js";
 import {
   diagnostic
@@ -2268,10 +2268,17 @@ async function prepareNestedUvmRender(bytes, value, options, depth, cache) {
   const activeMeshes = new Set(scene.nodes.filter((node) => activeNodes.has(node.id)).flatMap((node) => node.meshIds));
   const meshes = scene.meshes.filter((mesh) => activeMeshes.has(mesh.id));
   const activePrimitives = new Set(meshes.flatMap((mesh) => mesh.primitiveIds));
-  const clip = clipId === void 0 ? void 0 : rig.clips.find((candidate) => candidate.id === clipId);
+  const catalogIds = new Map((readUvmAnimationClips(document, signal) ?? []).flatMap((entry) => entry.sourceId === void 0 ? [] : [[entry.sourceId, entry.id]]));
+  const clipOf = (id) => rig.clips.find((candidate) => candidate.id === id) ?? rig.clips.find((candidate) => candidate.id === catalogIds.get(id));
+  const clip = clipId === void 0 ? void 0 : clipOf(clipId);
   if (clipId !== void 0 && clip === void 0)
     throw new TypeError(`unknown UVM animation clip: ${clipId}`);
-  const poseSamples = readUvmPoseSamples(input["poseSamples"], rig.clips);
+  const requestedPoses = input["poseSamples"];
+  const poseSamples = readUvmPoseSamples(Array.isArray(requestedPoses) ? requestedPoses.map((sample2) => {
+    const id = field(sample2, "clipId");
+    const canonical = typeof id === "string" ? clipOf(id)?.id : void 0;
+    return canonical === void 0 || canonical === id ? sample2 : { ...object(sample2, "pose sample"), clipId: canonical };
+  }) : requestedPoses, rig.clips);
   const visible = new Map(readUvmPrimitiveVisibility(document, signal).map((item) => [
     "node" in item ? `node-${item.node}` : `mesh-${item.mesh}-primitive-${item.primitive}`,
     item.value > 0

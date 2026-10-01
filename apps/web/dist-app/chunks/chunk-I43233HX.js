@@ -204,6 +204,44 @@ function materializeUvmAnimationMaterialTargets(source, budget = { maxDepth: 128
 }
 
 // ../MODDING/modkit-core/packages/uv/dist/model/animation-clips.js
+var LOOP_MODES = ["once", "loop", "ping-pong", "hold"];
+function uvmAnimationPlayback(value) {
+  if (value === void 0)
+    return {};
+  const record = object(value, "UV_game_animation_clips of an animation");
+  const { loop, priority, speedScale, blendInSeconds, blendOutSeconds } = record;
+  const seconds = (item) => item === void 0 || typeof item === "number" && Number.isFinite(item) && item >= 0;
+  if (loop !== void 0 && !LOOP_MODES.includes(loop) || priority !== void 0 && !integer(priority) || speedScale !== void 0 && (typeof speedScale !== "number" || !Number.isFinite(speedScale) || speedScale <= 0) || !seconds(blendInSeconds) || !seconds(blendOutSeconds))
+    throw new TypeError("UVM animation playback is invalid");
+  return Object.freeze({
+    ...loop === void 0 ? {} : { loop },
+    ...priority === void 0 ? {} : { priority },
+    ...speedScale === void 0 ? {} : { speedScale },
+    ...blendInSeconds === void 0 ? {} : { blendInSeconds },
+    ...blendOutSeconds === void 0 ? {} : { blendOutSeconds }
+  });
+}
+var EVENT_KEYS = /* @__PURE__ */ new Set(["t", "name", "socket", "payload", "duration"]);
+function uvmAnimationEvents(value, nodeCount) {
+  if (value === void 0)
+    return [];
+  const events = object(value, "UV_game_animation_events")["events"];
+  if (!Array.isArray(events))
+    throw new TypeError("UV_game_animation_events requires events");
+  return Object.freeze(events.map((item) => {
+    const record = object(item, "UVM animation event");
+    const { t, name, socket, payload, duration } = record;
+    if (Object.keys(record).some((key) => !EVENT_KEYS.has(key)) || typeof t !== "number" || !Number.isFinite(t) || t < 0 || typeof name !== "string" || !name || socket !== void 0 && (!integer(socket) || socket < 0 || socket >= nodeCount) || payload !== void 0 && (payload === null || typeof payload !== "object" || Array.isArray(payload)) || duration !== void 0 && (typeof duration !== "number" || !Number.isFinite(duration) || duration < 0))
+      throw new TypeError("UVM animation event is invalid");
+    return Object.freeze({
+      t,
+      name,
+      ...socket === void 0 ? {} : { socket },
+      ...payload === void 0 ? {} : { payload },
+      ...duration === void 0 ? {} : { duration }
+    });
+  }));
+}
 function readUvmPrimitiveVisibility(document, signal) {
   const value = field(field(document["extensions"], "UV_game_variants"), "visibility");
   if (value === void 0)
@@ -271,6 +309,8 @@ function readUvmAnimationClips(document, signal) {
       if (linked.has(animation))
         throw new TypeError("UVM animation is linked by multiple clips");
       const target = object(animations[animation], "clip animation");
+      uvmAnimationPlayback(field(target["extensions"], "UV_game_animation_clips"));
+      uvmAnimationEvents(field(target["extensions"], "UV_game_animation_events"), array(document, "nodes").length);
       if (array(target, "channels").length === 0 || array(target, "samplers").length === 0)
         throw new TypeError("UVM catalog must not link an empty glTF animation");
       const declared = field(field(target["extras"], "uv"), "sourceSequenceIndex");
@@ -352,6 +392,8 @@ export {
   isStandardLayerSlot,
   readUvmAnimationMaterialTargets,
   materializeUvmAnimationMaterialTargets,
+  uvmAnimationPlayback,
+  uvmAnimationEvents,
   readUvmPrimitiveVisibility,
   uvmVisibilityPointer,
   uvmVisibilityTarget,

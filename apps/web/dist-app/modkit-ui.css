@@ -1775,6 +1775,30 @@
     box-shadow: inset 3px 0 0 var(--mk-status-warn);
   }
 
+  /* Letters of a script the locale does not write in, marked as a spelling checker marks a word. */
+  [data-mk-part='table.cell'][data-mk-state~='invalid'] {
+    text-decoration: underline wavy var(--mk-status-error);
+  }
+
+  /* A header's edge, dragged to size its column (MK2's column grips). */
+  [data-mk-part='table.head'] > th {
+    position: relative;
+  }
+
+  [data-mk-part='table.resize'] {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-end: -3px;
+    width: 6px;
+    cursor: col-resize;
+    touch-action: none;
+  }
+
+  [data-mk-part='table.resize']:hover,
+  [data-mk-part='table.resize']:focus-visible {
+    background: var(--mk-color-accent);
+  }
+
   /* «Wrap»: long values break inside their cells. */
   [data-wrap='true'] [data-mk-part='table.cell'] {
     white-space: pre-wrap;
@@ -1821,6 +1845,13 @@
   }
 
   [data-mk-part='table.group'] {
+    height: var(--mk-size-control);
+    font-size: var(--mk-font-size-sm);
+  }
+
+  /* What the translator should know about the text. */
+  [data-mk-part='table.context'] {
+    width: 16em;
     height: var(--mk-size-control);
     font-size: var(--mk-font-size-sm);
   }
@@ -2816,6 +2847,58 @@
     position: relative;
     z-index: 1;
     pointer-events: none;
+  }
+
+  /* A font set in text down MK2's sizes, the sample on one line per size. */
+  [data-mk-part='font'] {
+    overflow: auto;
+    padding: var(--mk-space-3);
+  }
+
+  [data-mk-part='font.toolbar'] {
+    display: flex;
+    margin-block-end: var(--mk-space-3);
+  }
+
+  [data-mk-part='font.text'] {
+    flex: 1 1 auto;
+    height: var(--mk-size-control);
+  }
+
+  [data-mk-part='font.row'] {
+    display: flex;
+    align-items: baseline;
+    gap: var(--mk-space-3);
+    padding-block: var(--mk-space-2);
+    border-block-end: 1px solid var(--mk-color-separator);
+  }
+
+  [data-mk-part='font.size'] {
+    flex: none;
+    width: 4em;
+    color: var(--mk-color-fg-muted);
+    font-size: var(--mk-font-size-xs);
+    font-variant-numeric: tabular-nums;
+  }
+
+  [data-mk-part='font.sample'] {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  [data-mk-part='font.heading'] {
+    margin-block: var(--mk-space-3) var(--mk-space-1);
+    color: var(--mk-color-fg-muted);
+    font-size: var(--mk-font-size-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  [data-mk-part='font.set'] {
+    font-size: 22px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
   }
 
   [data-mk-part='video.options'] {
@@ -4787,6 +4870,12 @@
     background: var(--mk-color-surface);
     font: inherit;
     font-size: var(--mk-font-size-xs);
+  }
+
+  /* What an edge's arrow means, beside the counts. */
+  [data-mk-part='graph.legend'] {
+    color: var(--mk-color-fg-subtle);
+    font-size: var(--mk-font-size-sm);
   }
 
   [data-mk-part='graph.status'] {

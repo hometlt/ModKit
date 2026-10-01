@@ -5,6 +5,9 @@ import {
   CUBIC_SPLINE_LINE_TYPE,
   sampleTrackValue
 } from "./chunk-5SBJANAJ.js";
+import {
+  xxHash32
+} from "./chunk-NMYA52EI.js";
 
 // ../MODDING/modkit-core/packages/codec-kit/dist/model/animation.js
 var DEFAULT_MODEL_ANIMATION_BUDGET = Object.freeze({
@@ -121,6 +124,93 @@ function snapshotModelAnimations(value, budget = DEFAULT_MODEL_ANIMATION_BUDGET,
   }
   return clips;
 }
+var MAX_LAYERED_PERIOD = 60;
+function layeredClip(clips) {
+  const first = clips[0];
+  if (first === void 0)
+    throw new TypeError("layeredClip needs a clip");
+  if (clips.length === 1)
+    return first;
+  const ranked = clips.map((clip, order) => ({ clip, order })).sort((a, b) => (a.clip.priority ?? 0) - (b.clip.priority ?? 0) || a.order - b.order);
+  const channels = /* @__PURE__ */ new Map();
+  const periods = [];
+  let longest = 0;
+  for (const { clip } of ranked) {
+    const speed = clip.speedScale ?? 1;
+    if (!(speed > 0) || !Number.isFinite(speed))
+      throw new TypeError("clip speed must be positive");
+    const lastKey = clip.channels.reduce((end, channel) => (channel.samples ?? []).reduce((last, key) => Math.max(last, key.timeSeconds ?? 0), end), 0);
+    const length = (clip.durationSeconds ?? lastKey) / speed;
+    longest = Math.max(longest, length);
+    const looping = (clip.loop ?? (clip.looping === true ? "loop" : "once")) === "loop";
+    if (looping && length > 0)
+      periods.push(Math.max(1, Math.round(length * 1e3)));
+    for (const channel of clip.channels)
+      channels.set(`${channel.target}/${channel.kind}/${channel.axis ?? ""}`, {
+        ...channel,
+        ...speed === 1 || channel.samples === void 0 ? {} : {
+          samples: channel.samples.map((key) => ({
+            ...key,
+            timeSeconds: (key.timeSeconds ?? 0) / speed,
+            ...key.inTangent === void 0 ? {} : { inTangent: key.inTangent.map((value) => value * speed) },
+            ...key.outTangent === void 0 ? {} : { outTangent: key.outTangent.map((value) => value * speed) }
+          }))
+        },
+        ...looping && length > 0 && channel.concurrent !== true ? { concurrent: true, wrapSeconds: length } : {}
+      });
+  }
+  const gcd = (a, b) => b === 0 ? a : gcd(b, a % b);
+  const common = periods.reduce((period2, next) => period2 / gcd(period2, next) * next, 1);
+  const period = periods.length > 0 && common / 1e3 <= MAX_LAYERED_PERIOD ? common / 1e3 : longest;
+  return {
+    id: clips.map((clip) => clip.id).join("+"),
+    name: clips.map((clip) => clip.name).join(" + "),
+    kind: "animation",
+    provenance: clips.every((clip) => clip.provenance === "companion") ? "companion" : "direct",
+    frames: Math.max(...clips.map((clip) => clip.frames)),
+    durationSeconds: period,
+    ...periods.length > 0 ? { looping: true } : {},
+    channels: [...channels.values()]
+  };
+}
+function chooseByWeight(candidates, seed) {
+  const total = candidates.reduce((sum, item) => sum + Math.max(0, item.weight), 0);
+  if (!(total > 0))
+    throw new TypeError("chooseByWeight needs a positive weight");
+  let point = xxHash32(new TextEncoder().encode(seed)) / 2 ** 32 * total;
+  for (const item of candidates) {
+    point -= Math.max(0, item.weight);
+    if (point < 0)
+      return item.value;
+  }
+  return candidates.findLast((item) => item.weight > 0).value;
+}
+var MAX_EVENT_OCCURRENCES = 4096;
+function clipEventsBetween(clip, fromSeconds, toSeconds) {
+  if (!Number.isFinite(fromSeconds) || !Number.isFinite(toSeconds))
+    throw new TypeError("event window must be finite");
+  if ((clip.events?.length ?? 0) === 0 || !(toSeconds > fromSeconds))
+    return [];
+  const mode = clip.loop ?? (clip.looping === true ? "loop" : "once");
+  const duration = clip.durationSeconds ?? 0;
+  const period = mode === "loop" ? duration : mode === "ping-pong" ? 2 * duration : 0;
+  const found = [];
+  for (const event of clip.events ?? []) {
+    const back = 2 * duration - event.timeSeconds;
+    const times = mode === "ping-pong" && back !== event.timeSeconds ? [event.timeSeconds, back] : [event.timeSeconds];
+    for (const time of times) {
+      if (!(period > 0)) {
+        if (fromSeconds < time && time <= toSeconds)
+          found.push({ event, atSeconds: time });
+        continue;
+      }
+      for (let at = time + (Math.floor((fromSeconds - time) / period) + 1) * period; at <= toSeconds && found.length < MAX_EVENT_OCCURRENCES; at += period)
+        if (at > fromSeconds)
+          found.push({ event, atSeconds: at });
+    }
+  }
+  return found.sort((left, right) => left.atSeconds - right.atSeconds);
+}
 function createModelAnimationSampler(clip, budget, signal) {
   const owned = snapshotModelAnimations([clip], budget, signal)[0];
   const tracks = owned.channels.map((channel) => {
@@ -165,5 +255,8 @@ export {
   withoutHeldSamples,
   animationSnapshotBudget,
   snapshotModelAnimations,
+  layeredClip,
+  chooseByWeight,
+  clipEventsBetween,
   createModelAnimationSampler
 };

@@ -135,6 +135,11 @@
         "id": "vector.paths",
         "representation": "source",
         "presence": "may-expose"
+      },
+      {
+        "id": "content.fonts",
+        "representation": "source",
+        "presence": "will-expose"
       }
     ],
     "implementationTier": {

@@ -11,9 +11,11 @@ import {
 } from "../../../chunks/chunk-OAFBQXD6.js";
 import {
   materializeUvmAnimationMaterialTargets,
+  uvmAnimationEvents,
+  uvmAnimationPlayback,
   uvmKeyTimesMetadata,
   uvmVisibilityPointer
-} from "../../../chunks/chunk-CTXZR5MG.js";
+} from "../../../chunks/chunk-I43233HX.js";
 import {
   DEFAULT_MODEL_MATERIAL_BUDGET,
   snapshotModelMaterials
@@ -25,11 +27,11 @@ import {
   DEFAULT_MODEL_SKELETON_BUDGET,
   createModelSkeletonNodes,
   snapshotModelSkeleton
-} from "../../../chunks/chunk-D6GLIKYJ.js";
+} from "../../../chunks/chunk-PERFFDVA.js";
 import {
   DEFAULT_MODEL_ANIMATION_BUDGET,
   snapshotModelAnimations
-} from "../../../chunks/chunk-IJPXHLGV.js";
+} from "../../../chunks/chunk-RUAJQ7WQ.js";
 import "../../../chunks/chunk-ZSDVUSRM.js";
 import {
   composeTrsMatrix
@@ -37,6 +39,7 @@ import {
 import "../../../chunks/chunk-TKIPZ6HV.js";
 import "../../../chunks/chunk-NUFRM6SI.js";
 import "../../../chunks/chunk-W2UBWFML.js";
+import "../../../chunks/chunk-NMYA52EI.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 
 // ../MODDING/modkit-core/packages/uv/dist/model/rig.js
@@ -417,12 +420,41 @@ function writeUvmAnimations(source, nodeIndices, boneByNode, storage, budget, si
       ...clip.looping === void 0 ? {} : { looping: clip.looping },
       ...clip.repeatCount === void 0 ? {} : { repeatCount: clip.repeatCount }
     });
-    if (animationIndex === void 0)
+    if (animationIndex === void 0) {
+      if ((clip.events?.length ?? 0) > 0)
+        losses.push({ clipId: clip.id, reason: "events of a clip without motion are not written" });
       continue;
+    }
+    const events = (clip.events ?? []).map((event) => {
+      const socket = event.nodeId === void 0 ? void 0 : nodeIndices.get(event.nodeId);
+      if (event.nodeId !== void 0 && socket === void 0)
+        refuse(`clip ${clip.id} names event node ${event.nodeId}, not a scene node`);
+      return {
+        t: event.timeSeconds,
+        name: event.name,
+        ...socket === void 0 ? {} : { socket },
+        ...event.payload === void 0 ? {} : { payload: event.payload },
+        ...event.durationSeconds === void 0 ? {} : { duration: event.durationSeconds }
+      };
+    });
+    uvmAnimationEvents({ events }, Number.MAX_SAFE_INTEGER);
+    const playback = uvmAnimationPlayback({
+      ...clip.loop === void 0 ? {} : { loop: clip.loop },
+      ...clip.priority === void 0 ? {} : { priority: clip.priority },
+      ...clip.speedScale === void 0 ? {} : { speedScale: clip.speedScale },
+      ...clip.blendInSeconds === void 0 ? {} : { blendInSeconds: clip.blendInSeconds },
+      ...clip.blendOutSeconds === void 0 ? {} : { blendOutSeconds: clip.blendOutSeconds }
+    });
     animations.push({
       name: clip.name,
       samplers,
       channels,
+      ...Object.keys(playback).length === 0 && events.length === 0 ? {} : {
+        extensions: {
+          ...Object.keys(playback).length === 0 ? {} : { UV_game_animation_clips: { ...playback } },
+          ...events.length === 0 ? {} : { UV_game_animation_events: { events } }
+        }
+      },
       extras: {
         uv: {
           sourceSequenceIndex: sequenceIndex,
@@ -1314,6 +1346,16 @@ function materializeUvmCore(projection, request, { digest, materialBudget = DEFA
     note("uv.model/structure@1", "value-differs", "/nodes", `${groups.length} LOD levels are grouped under one node each (MSFT_lod)`);
   }
   const materialTargets = projection.materials === void 0 ? [] : materializeUvmAnimationMaterialTargets(projection.materials, materialBudget, signal);
+  if (info.handedness === "left") {
+    const root = documentNodes.length;
+    documentNodes.push({
+      name: "uv:handedness",
+      scale: info.upAxis === "+z" ? [1, -1, 1] : [1, 1, -1],
+      children: [...rootIndices]
+    });
+    rootIndices = [root];
+    note("uv.model/structure@1", "value-differs", "/nodes", "one mirror node makes the left-handed source right-handed");
+  }
   if (info.upAxis === "+z") {
     const root = documentNodes.length;
     documentNodes.push({
@@ -1402,6 +1444,7 @@ function materializeUvmCore(projection, request, { digest, materialBudget = DEFA
       ...materials.some((material) => material.extensions?.UV_game_material_team_color !== void 0) ? ["UV_game_material_team_color"] : [],
       ...materials.some((material) => material.extensions?.KHR_materials_unlit !== void 0) ? ["KHR_materials_unlit"] : [],
       ...animation === void 0 || animation.catalog.length === 0 ? [] : ["UV_game_animation_clips"],
+      ...animation?.animations.some((clip) => clip["extensions"]?.["UV_game_animation_events"]) ? ["UV_game_animation_events"] : [],
       ...visibility.length === 0 ? [] : ["UV_game_variants"],
       ...animatesPointers ? ["KHR_animation_pointer"] : [],
       ...imageColorKeys.some((key) => key !== void 0) ? ["UV_texture_color_key"] : [],

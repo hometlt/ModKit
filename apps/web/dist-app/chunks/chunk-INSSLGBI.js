@@ -5,7 +5,7 @@ import {
   sampleTrackValue,
   snapshotJson,
   srgbToLinear
-} from "./chunk-EOJHBJMF.js";
+} from "./chunk-LVYXWGG6.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunk-BLWUC7LO.js";
@@ -589,6 +589,44 @@ function materializeUvmAnimationMaterialTargets(source, budget = { maxDepth: 128
 }
 
 // ../MODDING/modkit-core/packages/uv/dist/model/animation-clips.js
+var LOOP_MODES = ["once", "loop", "ping-pong", "hold"];
+function uvmAnimationPlayback(value2) {
+  if (value2 === void 0)
+    return {};
+  const record4 = object2(value2, "UV_game_animation_clips of an animation");
+  const { loop, priority, speedScale, blendInSeconds, blendOutSeconds } = record4;
+  const seconds = (item) => item === void 0 || typeof item === "number" && Number.isFinite(item) && item >= 0;
+  if (loop !== void 0 && !LOOP_MODES.includes(loop) || priority !== void 0 && !integer(priority) || speedScale !== void 0 && (typeof speedScale !== "number" || !Number.isFinite(speedScale) || speedScale <= 0) || !seconds(blendInSeconds) || !seconds(blendOutSeconds))
+    throw new TypeError("UVM animation playback is invalid");
+  return Object.freeze({
+    ...loop === void 0 ? {} : { loop },
+    ...priority === void 0 ? {} : { priority },
+    ...speedScale === void 0 ? {} : { speedScale },
+    ...blendInSeconds === void 0 ? {} : { blendInSeconds },
+    ...blendOutSeconds === void 0 ? {} : { blendOutSeconds }
+  });
+}
+var EVENT_KEYS = /* @__PURE__ */ new Set(["t", "name", "socket", "payload", "duration"]);
+function uvmAnimationEvents(value2, nodeCount) {
+  if (value2 === void 0)
+    return [];
+  const events = object2(value2, "UV_game_animation_events")["events"];
+  if (!Array.isArray(events))
+    throw new TypeError("UV_game_animation_events requires events");
+  return Object.freeze(events.map((item) => {
+    const record4 = object2(item, "UVM animation event");
+    const { t, name, socket, payload, duration } = record4;
+    if (Object.keys(record4).some((key) => !EVENT_KEYS.has(key)) || typeof t !== "number" || !Number.isFinite(t) || t < 0 || typeof name !== "string" || !name || socket !== void 0 && (!integer(socket) || socket < 0 || socket >= nodeCount) || payload !== void 0 && (payload === null || typeof payload !== "object" || Array.isArray(payload)) || duration !== void 0 && (typeof duration !== "number" || !Number.isFinite(duration) || duration < 0))
+      throw new TypeError("UVM animation event is invalid");
+    return Object.freeze({
+      t,
+      name,
+      ...socket === void 0 ? {} : { socket },
+      ...payload === void 0 ? {} : { payload },
+      ...duration === void 0 ? {} : { duration }
+    });
+  }));
+}
 function readUvmPrimitiveVisibility(document2, signal) {
   const value2 = field2(field2(document2["extensions"], "UV_game_variants"), "visibility");
   if (value2 === void 0)
@@ -656,6 +694,8 @@ function readUvmAnimationClips(document2, signal) {
       if (linked.has(animation))
         throw new TypeError("UVM animation is linked by multiple clips");
       const target = object2(animations[animation], "clip animation");
+      uvmAnimationPlayback(field2(target["extensions"], "UV_game_animation_clips"));
+      uvmAnimationEvents(field2(target["extensions"], "UV_game_animation_events"), array2(document2, "nodes").length);
       if (array2(target, "channels").length === 0 || array2(target, "samplers").length === 0)
         throw new TypeError("UVM catalog must not link an empty glTF animation");
       const declared = field2(field2(target["extras"], "uv"), "sourceSequenceIndex");
@@ -6507,6 +6547,18 @@ init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 // ../MODDING/modkit-core/packages/scene/dist/uvm/rig.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var identity = () => [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
+function clipEvents(animation, nodeCount) {
+  const events = uvmAnimationEvents(field(animation["extensions"], "UV_game_animation_events"), nodeCount);
+  return events.length === 0 ? {} : {
+    events: events.map((event) => ({
+      timeSeconds: event.t,
+      name: event.name,
+      ...event.socket === void 0 ? {} : { nodeId: `node-${event.socket}` },
+      ...event.payload === void 0 ? {} : { payload: event.payload },
+      ...event.duration === void 0 ? {} : { durationSeconds: event.duration }
+    }))
+  };
+}
 function uvMetadata(value2) {
   const extras = value2["extras"];
   if (extras === void 0)
@@ -6746,6 +6798,8 @@ function decodeUvmRig(document2, readAccessor, maxScalarBytes, sceneNodes, signa
       channels,
       ...metadata["looping"] === void 0 ? {} : { looping: metadata["looping"] },
       ...metadata["repeatCount"] === void 0 ? {} : { repeatCount: metadata["repeatCount"] },
+      ...uvmAnimationPlayback(field(animation["extensions"], "UV_game_animation_clips")),
+      ...clipEvents(animation, nodes.length),
       ...unsupportedChannels === 0 ? {} : { unsupportedChannels },
       ...sequenceIndex === void 0 ? {} : { sequenceIndex }
     });
@@ -23893,6 +23947,9 @@ init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 function primitiveVertexTints(primitive) {
   return primitive.vertexTints;
 }
+function primitiveFade(primitive) {
+  return primitive.tint?.[3] ?? 1;
+}
 function primitiveTint(primitive) {
   const value2 = primitive.tint ?? [1, 1, 1, 1];
   if (!Array.isArray(value2) || value2.length !== 4 || value2.some((x) => !Number.isFinite(x) || x < 0) || value2[3] > 1)
@@ -24246,6 +24303,8 @@ function prepareMaterialGeometry(primitive, maxBytes, options) {
     ...primitive.materialId === void 0 ? {} : { materialId: primitive.materialId },
     ...primitive.transform === void 0 ? {} : { transform: primitive.transform },
     ...primitive.depthBias === void 0 ? {} : { depthBias: primitive.depthBias },
+    // the instance's colour and fade stay with the expanded triangles
+    ...primitive.tint === void 0 ? {} : { tint: primitive.tint },
     ...primitive.colors === void 0 ? {} : { colors: expand(primitive.colors, 4) },
     ...primitive.textureCoordinates === void 0 ? {} : { textureCoordinates: expand(primitive.textureCoordinates, 2) },
     ...primitive.textureCoordinateSets === void 0 ? {} : {
@@ -25154,6 +25213,8 @@ export {
   DEFAULT_MODEL_MATERIAL_BUDGET,
   snapshotModelMaterials,
   materializeUvmAnimationMaterialTargets,
+  uvmAnimationPlayback,
+  uvmAnimationEvents,
   readUvmPrimitiveVisibility,
   uvmVisibilityPointer,
   readUvmAnimationClips,
@@ -25231,6 +25292,7 @@ export {
   materialPosedPositions,
   materialPosedPrimitive,
   primitiveVertexTints,
+  primitiveFade,
   primitiveTint,
   dot4 as dot,
   unit4 as unit,

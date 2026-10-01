@@ -5,7 +5,7 @@ import {
   readCollisionMesh,
   readUvmModel,
   uvmImageResourceId
-} from "../../../chunks/chunk-RTPGOLLU.js";
+} from "../../../chunks/chunk-N565EHNO.js";
 import {
   createJsonTreeSource
 } from "../../../chunks/chunk-KA3J6DLB.js";
@@ -22,8 +22,8 @@ import {
 import "../../../chunks/chunk-OAFBQXD6.js";
 import {
   validateUvmDocument
-} from "../../../chunks/chunk-5DT7SGOU.js";
-import "../../../chunks/chunk-CTXZR5MG.js";
+} from "../../../chunks/chunk-VWR4X3UB.js";
+import "../../../chunks/chunk-I43233HX.js";
 import {
   createModelAnimationSource,
   createModelCollisionSource,
@@ -31,18 +31,19 @@ import {
   createModelSceneSource,
   createModelSkeletonSource,
   createModelSocketSource
-} from "../../../chunks/chunk-FUAGPPGY.js";
+} from "../../../chunks/chunk-T342XO7K.js";
 import "../../../chunks/chunk-IBG4CEKN.js";
 import "../../../chunks/chunk-I675VFQQ.js";
-import "../../../chunks/chunk-D6GLIKYJ.js";
+import "../../../chunks/chunk-PERFFDVA.js";
 import {
   animationSnapshotBudget
-} from "../../../chunks/chunk-IJPXHLGV.js";
+} from "../../../chunks/chunk-RUAJQ7WQ.js";
 import "../../../chunks/chunk-ZSDVUSRM.js";
 import "../../../chunks/chunk-5SBJANAJ.js";
 import "../../../chunks/chunk-TKIPZ6HV.js";
 import "../../../chunks/chunk-NUFRM6SI.js";
 import "../../../chunks/chunk-W2UBWFML.js";
+import "../../../chunks/chunk-NMYA52EI.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 
 // ../MODDING/modkit-core/packages/scene/dist/uvm/facets.js

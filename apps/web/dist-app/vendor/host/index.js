@@ -1255,7 +1255,8 @@ var SUBJECT_COMMAND_TARGETS = defineSubjectCommandTargets({
       "model.export-native",
       "model.write"
     ],
-    dataSourceContracts: [],
+    // a map world converts to UVW from the world it publishes (target `uvw`)
+    dataSourceContracts: ["common.view/world-scene-source"],
     hostCallers: ["automation", "cli", "electron", "pwa", "server", "vscode"]
   },
   preview: {
@@ -1278,6 +1279,7 @@ var CONTAINER_EXTRACT_OPERATION_ID2 = SUBJECT_COMMAND_TARGETS.extract.operationI
 var NAMESPACE_ENTRY_SOURCE = SUBJECT_COMMAND_TARGETS.extract.dataSourceContracts[0];
 var CONVERT_COMMAND = SUBJECT_COMMAND_TARGETS.convert.commandId;
 var CONVERT = SUBJECT_COMMAND_TARGETS.convert.operationIds[0];
+var WORLD_SCENE_SOURCE = SUBJECT_COMMAND_TARGETS.convert.dataSourceContracts[0];
 var PREVIEW_COMMAND = SUBJECT_COMMAND_TARGETS.preview.commandId;
 var THUMBNAIL = SUBJECT_COMMAND_TARGETS.preview.operationIds[0];
 function availableOperation(descriptor, id) {
@@ -1542,6 +1544,35 @@ var convertCommand = {
     return withCommandSubject(CONVERT_COMMAND, context, String(input.subject), async (subject, session, descriptor, diagnostics) => {
       if (input["operation"] !== void 0 && typeof input["operation"] !== "string")
         return failed(CONVERT_COMMAND, COMMAND_INPUT_INVALID, "operation must be an operation id", diagnostics);
+      if (input["target"] === "uvw" && input["operation"] === void 0 && descriptor.dataSources?.some((offer) => offer.contract === WORLD_SCENE_SOURCE && offer.major === 1)) {
+        if (context.worldToUvw === void 0)
+          return unavailable(CONVERT_COMMAND, "this application has no UV module to write UVW", "convert with the CLI or the desktop application", diagnostics);
+        context.progress?.({ step: "convert", message: "materializing the map world as UVW" });
+        const lease2 = await session.dataSource(WORLD_SCENE_SOURCE, 1);
+        try {
+          const world = await context.worldToUvw(lease2.value, context.signal);
+          if (world.state === "refused")
+            return failed(CONVERT_COMMAND, "x3.host/world-uvw-refused", world.refusals.map((refusal) => `${refusal.code}: ${refusal.message}`).join("; "), diagnostics);
+          const wroteTo2 = context.writeOutput === void 0 ? void 0 : await context.writeOutput("world.uvw", world.bytes, context.signal);
+          return ok(CONVERT_COMMAND, {
+            ref: subject.ref,
+            via: WORLD_SCENE_SOURCE,
+            outputKind: "bytes",
+            byteLength: world.bytes.byteLength,
+            wroteTo: wroteTo2 ?? null,
+            receipt: {
+              artifactDigest: world.artifactDigest,
+              excludedFacetIds: [...world.excludedFacetIds],
+              omittedObjects: world.omittedObjects,
+              lostFields: world.lostFields.map((field) => ({ ...field }))
+            }
+          }, diagnostics);
+        } finally {
+          await lease2.release();
+        }
+      }
+      if (input["target"] === "uvw" && input["operation"] === void 0)
+        return unavailable(CONVERT_COMMAND, "this subject publishes no map world to write as UVW", "open the map itself, or a package naming one map; name an operation to run it instead", diagnostics);
       const operation = selectedOperation(descriptor, SUBJECT_COMMAND_TARGETS.convert.operationIds, input["operation"]);
       if (operation === void 0) {
         return unavailable(CONVERT_COMMAND, `the requested export is unavailable \u2014 ${publishedOperations(descriptor)}`, "run subject.inspect to see which data sources it does publish; a universal projection is the route for formats with no native export", diagnostics);
@@ -20981,6 +21012,8 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize, mode
       id: `${lightingLayerId}:environment`,
       layerId: lightingLayerId,
       coordinateSpaceId: snapshot2.lighting.coordinateSpaceId,
+      ...snapshot2.lighting.model === void 0 ? {} : { model: snapshot2.lighting.model },
+      ...snapshot2.lighting.unlitColor === void 0 ? {} : { unlitColor: snapshot2.lighting.unlitColor },
       ambientColor: snapshot2.lighting.ambientColor,
       ambientIntensity: snapshot2.lighting.ambientIntensity,
       directional: snapshot2.lighting.directional,
@@ -22220,7 +22253,9 @@ async function analyzeResolvedMapWorkspace(request) {
       documents,
       ...catalog === void 0 ? {} : { catalog },
       ...request.subjectOperationIds === void 0 ? {} : { subjectOperationIds: request.subjectOperationIds },
-      maxDocuments: limits.maxRequirements,
+      // the documents this request carries, not the caller's budget: a provider's own ceiling (SC2
+      // maps take 16) never refuses a map because an application allows more (32, for Warzone)
+      maxDocuments: Math.max(1, documents.length),
       maxDocumentBytes: limits.maxDocumentBytes,
       maxTotalBytes: limits.maxTotalBytes,
       maxObjects: limits.maxObjects,
@@ -22500,6 +22535,74 @@ async function openMapPreviewAssetSession(request) {
     ]);
     throw error3;
   }
+}
+var MAP_PREVIEW_COORDINATOR_LIMITS = Object.freeze({
+  // Pinned mp.wz publishes 39 map candidates; 64 is the bounded product ceiling above that corpus.
+  maxCandidates: 64,
+  maxSubjectEntries: 4096,
+  maxSubjectPages: 64,
+  maxRoots: 64,
+  maxDepth: 16,
+  catalogEnrichment: Object.freeze({
+    locales: Object.freeze(["enUS"]),
+    limits: Object.freeze({
+      // Full catalog planning over the installed StarCraft II stock chain asks for 555 reads.
+      maxRequirements: 512,
+      maxDocumentBytes: 16777216,
+      maxTextBytes: 268435456,
+      maxEntities: 1e5,
+      maxDepth: 128,
+      maxPageSize: 1e3
+    })
+  }),
+  limits: Object.freeze({
+    // Warzone 2100 reads 22 map documents (level.json and each tileset's ground and decal files).
+    maxRequirements: 32,
+    maxDocumentBytes: 33554432,
+    maxTotalBytes: 67108864,
+    maxObjects: 1e5,
+    maxRegions: 1e4,
+    maxTerrainCells: 1e5,
+    maxTerrainSamples: 1e5,
+    maxDepth: 64,
+    maxPageSize: 4096,
+    maxDiagnostics: 100
+  })
+});
+function withMapPreviewSources(codec, preview2) {
+  const key3 = (offer) => `${offer.contract}@${offer.major}`;
+  const descriptor = async () => {
+    const [own, previewed] = await Promise.all([codec.descriptor(), preview2.descriptor()]);
+    const owned = new Set(own.dataSources.map(key3));
+    const added = previewed.dataSources.filter((offer) => !owned.has(key3(offer)));
+    const ownTraits = new Set(own.traits.map((trait) => trait.id));
+    const traits = previewed.traits.filter((trait) => !ownTraits.has(trait.id));
+    const cited = new Set(traits.flatMap((trait) => trait.diagnosticIds ?? []));
+    const ownDiagnostics = new Set(own.diagnostics.map((item) => item.id));
+    const diagnostics = previewed.diagnostics.filter((item) => cited.has(item.id) && !ownDiagnostics.has(item.id));
+    return {
+      added,
+      merged: Object.freeze({
+        ...own,
+        traits: Object.freeze([...own.traits, ...traits]),
+        dataSources: Object.freeze([...own.dataSources, ...added]),
+        diagnostics: Object.freeze([...own.diagnostics, ...diagnostics])
+      })
+    };
+  };
+  return Object.freeze({
+    revision: codec.revision,
+    state: () => codec.state(),
+    descriptor: async () => (await descriptor()).merged,
+    dataSource: (async (contract, major, ...rest) => {
+      const { added } = await descriptor();
+      const from = added.some((offer) => offer.contract === contract && offer.major === major) ? preview2 : codec;
+      return from.dataSource(contract, major, ...rest);
+    }),
+    operations: () => codec.operations(),
+    events: (signal) => codec.events(signal),
+    dispose: () => preview2.dispose()
+  });
 }
 var PREVIEW_DIAGNOSTIC_SEVERITIES = /* @__PURE__ */ new Set(["error", "warning", "information", "hint"]);
 var MAX_PREVIEW_NAMESPACE_SEARCHES = 8;
@@ -26089,6 +26192,30 @@ var COMMON_PRESENTATION_CATALOG = Object.freeze([
       consumesDataSources: [{ contract: "common.view/subject-selector-source", major: 1 }],
       optionalDataSources: [{ contract: "common.view/subject-facts-source", major: 1 }],
       priority: 385,
+      singletonGroup: "center-stage"
+    })
+  }),
+  Object.freeze({
+    slot: Object.freeze({
+      slotId: "font",
+      kind: "stage",
+      contributionId: "modkit.ui/font-stage",
+      extensionId: "modkit/ui",
+      priority: 360,
+      singletonGroup: "center-stage",
+      bindings: Object.freeze([
+        Object.freeze({
+          bindingId: "font-content",
+          contract: "common.view/byte-range-source",
+          major: 1
+        })
+      ])
+    }),
+    spec: Object.freeze({
+      kind: "stage",
+      requiresTraits: [{ id: "content.fonts", states: ["available"] }],
+      consumesDataSources: [{ contract: "common.view/byte-range-source", major: 1 }],
+      priority: 360,
       singletonGroup: "center-stage"
     })
   })
@@ -29896,6 +30023,7 @@ export {
   LANGUAGE_WORKSPACE_SHUT_DOWN,
   LOCALIZATION_CATALOG_MAXIMUM_JSON_BYTES,
   LoadedModResourceSessions,
+  MAP_PREVIEW_COORDINATOR_LIMITS,
   MAP_PREVIEW_PREPARATION_CONTRACT_DEFINITION,
   MAP_PREVIEW_PREPARATION_MATCHER,
   MAP_SEMANTIC_CONTRACT_DEFINITION,
@@ -30160,6 +30288,7 @@ export {
   validGameLaunchPlan,
   validateServiceOperationProvider,
   validateServiceOperationResult,
+  withMapPreviewSources,
   withNativeTextModules,
   withoutHiddenEntries,
   worldSceneModel,

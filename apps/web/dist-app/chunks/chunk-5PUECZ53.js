@@ -7,12 +7,12 @@ import {
   invokeRefusalMessage,
   isRejected,
   mountFieldEditor
-} from "./chunk-HWMMUAOT.js";
+} from "./chunk-K2SS7OVY.js";
 import {
   canvasPng,
   createMediaShell,
   mountContributedSections
-} from "./chunk-DBS2ISXT.js";
+} from "./chunk-BJ2R5ZZC.js";
 import {
   MODEL_FALLBACK_MESSAGES,
   MODEL_GIZMO_FALLBACK_MESSAGES,
@@ -27,7 +27,7 @@ import {
   setViewerText,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-7RXWLRMX.js";
+} from "./chunk-CNISMXJW.js";
 import {
   applyColorKeyTransparency,
   billboardCameraRotation,
@@ -35,7 +35,7 @@ import {
   createModelSkeletonNodes,
   modelPrimitiveByteLength,
   snapshotJson
-} from "./chunk-EOJHBJMF.js";
+} from "./chunk-LVYXWGG6.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunk-BLWUC7LO.js";
@@ -136,6 +136,26 @@ async function loadModelStage(source, signal) {
     ...primitives[0] === void 0 ? {} : { primitive: primitives[0] }
   };
 }
+function modelLodPrimitives(levels, model) {
+  const nodes = new Map(model.nodes.map((node) => [node.id, node]));
+  const meshes = new Map(model.meshes.map((mesh) => [mesh.id, mesh]));
+  return [...levels].sort((a, b) => a.order - b.order).map((level) => {
+    const primitiveIds = /* @__PURE__ */ new Set();
+    const seen = /* @__PURE__ */ new Set();
+    const pending = [...level.nodeIds];
+    for (let id = pending.pop(); id !== void 0; id = pending.pop()) {
+      const node = seen.has(id) ? void 0 : nodes.get(id);
+      seen.add(id);
+      if (node === void 0)
+        continue;
+      for (const meshId of node.meshIds)
+        for (const primitiveId of meshes.get(meshId)?.primitiveIds ?? [])
+          primitiveIds.add(primitiveId);
+      pending.push(...node.childIds);
+    }
+    return { id: level.id, order: level.order, primitiveIds };
+  }).filter((level) => level.primitiveIds.size > 0);
+}
 
 // ../MODDING/modkit-core/packages/ui/dist/model/scene.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
@@ -147,10 +167,11 @@ var MODEL_KEY_LIGHT = Object.freeze({
   color: Object.freeze([1, 1, 1, 1]),
   ambient: 0.28
 });
-function upAxisCorrection(upAxis) {
-  if (upAxis !== "+z")
-    return void 0;
-  return Float32Array.from([1, 0, 0, 0, 0, 0, -1, 0, 0, 1, 0, 0, 0, 0, 0, 1]);
+function upAxisCorrection(upAxis, handedness) {
+  const left = handedness === "left";
+  if (upAxis === "+z")
+    return Float32Array.from([1, 0, 0, 0, 0, 0, left ? 1 : -1, 0, 0, 1, 0, 0, 0, 0, 0, 1]);
+  return left ? Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1]) : void 0;
 }
 function orientPrimitive(primitive, correction) {
   if (correction === void 0)
@@ -894,7 +915,8 @@ var MODEL_FACET_CONTRACTS = Object.freeze([
   "common.view/model-light-source",
   "common.view/model-camera-source",
   "common.view/model-physics-source",
-  "common.view/model-node-behaviour-source"
+  "common.view/model-node-behaviour-source",
+  "common.view/model-lod-source"
 ]);
 var FACET_READOUT = Object.freeze({
   "common.view/model-resource-refs-source": {
@@ -913,7 +935,8 @@ var FACET_READOUT = Object.freeze({
   "common.view/model-node-behaviour-source": {
     labelKey: "viewer.modelBehaviours",
     key: "behaviours"
-  }
+  },
+  "common.view/model-lod-source": { labelKey: "viewer.modelLods", key: "levels" }
 });
 var MODEL_PANEL_SECTIONS = Object.freeze([
   {
@@ -1191,6 +1214,10 @@ function facetItem(contract, value, localizer) {
     const item2 = value;
     return `${short(item2.name ?? item2.id)} \xB7 ${item2.kind} \xB7 ${item2.nodeId ?? "\u2014"} \xB7 ${localizer.text("viewer.modelEffectProperties", { count: item2.properties?.length ?? 0 })}`;
   }
+  if (contract === "common.view/model-lod-source") {
+    const item2 = value;
+    return `${short(item2.id)} \xB7 ${localizer.text("viewer.modelLodLevel", { order: item2.order })} \xB7 ${String(item2.nodeIds.length)}`;
+  }
   const item = value;
   return `${short(item.sourceName ?? item.id)} \xB7 ${item.role} \xB7 ${item.nodeId}`;
 }
@@ -1205,7 +1232,8 @@ var FACET_PAGE_METHOD = Object.freeze({
   "common.view/model-light-source": "lights",
   "common.view/model-camera-source": "cameras",
   "common.view/model-physics-source": "bodies",
-  "common.view/model-node-behaviour-source": "behaviours"
+  "common.view/model-node-behaviour-source": "behaviours",
+  "common.view/model-lod-source": "levels"
 });
 async function readModelFacetPages(sources, slot, scope, signal) {
   const pages = /* @__PURE__ */ new Map();
@@ -1314,6 +1342,36 @@ function drawPrimitive(canvas, primitive, viewProjection) {
 }
 var MODEL_STAGE_WIDTH = 720;
 var MODEL_STAGE_HEIGHT = 480;
+function drawNormals(context, primitive, viewProjection, viewport, length, stroke) {
+  const { positions, normals } = primitive;
+  if (normals === void 0 || normals.length !== positions.length)
+    return 0;
+  const matrix = primitive.transform === void 0 ? viewProjection : multiply4x4(viewProjection, primitive.transform);
+  context.save();
+  context.strokeStyle = stroke;
+  context.lineWidth = 1;
+  context.beginPath();
+  let drawn = 0;
+  for (let index = 0; index + 2 < positions.length; index += 3) {
+    const x = positions[index];
+    const y = positions[index + 1];
+    const z = positions[index + 2];
+    const from = projectPoint(matrix, [x, y, z], viewport);
+    const to = projectPoint(matrix, [
+      x + normals[index] * length,
+      y + normals[index + 1] * length,
+      z + normals[index + 2] * length
+    ], viewport);
+    if (from === void 0 || to === void 0)
+      continue;
+    context.moveTo(from[0], from[1]);
+    context.lineTo(to[0], to[1]);
+    drawn += 1;
+  }
+  context.stroke();
+  context.restore();
+  return drawn;
+}
 function drawSkeleton(context, joints, viewProjection, viewport, stroke) {
   const projected = joints.map((joint) => projectPoint(viewProjection, joint.position, viewport));
   context.save();
@@ -1791,7 +1849,7 @@ function createModelViewer(options = {}) {
           const boneBindings = facetPages.get("common.view/model-skeleton-source")?.items ?? [];
           const clips = facetPages.get("common.view/model-animation-source")?.items ?? [];
           const projection = { ...model, skeleton: boneBindings };
-          const correction = upAxisCorrection(model.info.upAxis);
+          const correction = upAxisCorrection(model.info.upAxis, model.info.handedness);
           const orient = (sampled) => correction === void 0 ? sampled : {
             ...sampled,
             primitives: sampled.primitives.map((one) => orientPrimitive(one, correction))
@@ -1802,6 +1860,22 @@ function createModelViewer(options = {}) {
           });
           let scene = orient(player.sample(0, scope.signal));
           const hiddenPrimitives = /* @__PURE__ */ new Set();
+          const lodLevels = modelLodPrimitives(facetPages.get("common.view/model-lod-source")?.items ?? [], model);
+          const showLod = (chosen) => {
+            for (const level of lodLevels)
+              for (const id of level.primitiveIds)
+                if (chosen === void 0 || chosen.primitiveIds.has(id))
+                  hiddenPrimitives.delete(id);
+                else
+                  hiddenPrimitives.add(id);
+          };
+          if (lodLevels.length > 1)
+            showLod(lodLevels[0]);
+          const primitiveBoxes = /* @__PURE__ */ new Map();
+          const syncPrimitiveBoxes = () => {
+            for (const [id, box] of primitiveBoxes)
+              box.checked = !hiddenPrimitives.has(id);
+          };
           let activeClip;
           let timeSeconds = 0;
           let teamColor = [0.851, 0.078, 0.059];
@@ -1822,6 +1896,18 @@ function createModelViewer(options = {}) {
           diagnosticRow(localizer.text("viewer.modelTextureStatus"), `${surfaces.textures.length} / ${resourceRefs.filter((item) => item.role === "texture").length}`);
           canvas.setAttribute("data-model-skeleton", String(scene.joints.length));
           let skeletonVisible = scene.joints.length > 0;
+          let wireframeVisible = false;
+          let normalsVisible = false;
+          const overlay = (context, primitives, viewProjection, size, shaded) => {
+            if (wireframeVisible && shaded)
+              for (const primitive of primitives)
+                drawPrimitive(canvas, primitive, viewProjection);
+            if (!normalsVisible)
+              return;
+            const stroke = themeColor(canvas, "--mk-chart-categorical-2", "#7ec27e");
+            for (const primitive of primitives)
+              drawNormals(context, primitive, viewProjection, size, framing().radius * 0.04, stroke);
+          };
           const framing = () => restFraming;
           const effectRefs = facetPages.get("common.view/model-effect-source")?.items ?? [];
           const uvmExport = args.descriptor.operations.find((item) => item.id === MODEL_UVM_OPERATION && item.state === "available" && !item.mutatesSource);
@@ -1858,7 +1944,7 @@ function createModelViewer(options = {}) {
               const output = result.output;
               if (output.kind !== "bytes" || !(output.value instanceof Uint8Array))
                 throw new Error(`the codec answered ${output.kind}, not bytes`);
-              const { createUvmFramePreparer } = await import("./render-O5ACW2ZU.js");
+              const { createUvmFramePreparer } = await import("./render-PDZGN2F7.js");
               const raster = options.rasterResources?.(args.descriptor);
               const preparer = createUvmFramePreparer(output.value, {
                 budget: MODEL_EFFECT_BUDGET,
@@ -1923,6 +2009,8 @@ function createModelViewer(options = {}) {
               if (!hiddenPrimitives.has(primitive.id))
                 drawPrimitive(canvas, primitive, placement.viewProjection);
             const context = canvas.getContext("2d");
+            if (context !== null)
+              overlay(context, scene.primitives.filter((item) => !hiddenPrimitives.has(item.id)), placement.viewProjection, viewport, false);
             if (context !== null && skeletonVisible)
               drawSkeleton(context, scene.joints, placement.viewProjection, viewport, themeColor(canvas, "--mk-chart-categorical-3", "#f0a04b"));
             canvas.setAttribute("data-model-animation-time", String(timeSeconds));
@@ -2002,6 +2090,7 @@ function createModelViewer(options = {}) {
                 pixels.set(frame.rgba);
                 context.putImageData(new ImageData(pixels, frame.width, frame.height), 0, 0);
                 canvas.setAttribute("data-model-animation-time", String(drawnTime));
+                overlay(context, primitives, placement.viewProjection, frame, true);
                 if (skeletonVisible && joints.length > 0) {
                   drawSkeleton(context, joints, placement.viewProjection, { width: frame.width, height: frame.height }, themeColor(canvas, "--mk-chart-categorical-3", "#f0a04b"));
                 }
@@ -2051,6 +2140,21 @@ function createModelViewer(options = {}) {
             toggle.setAttribute("aria-pressed", String(skeletonVisible));
             canvas.setAttribute("data-model-skeleton-visible", String(skeletonVisible));
           }
+          const overlayToggle = (label, title, flip) => {
+            const toggle = button(viewRow, localizer.text(label), localizer.text(title), () => {
+              toggle.setAttribute("aria-pressed", String(flip()));
+              redraw();
+            });
+            toggle.setAttribute("aria-pressed", "false");
+          };
+          overlayToggle("viewer.modelWireframe", "viewer.modelWireframeOverlay", () => {
+            wireframeVisible = !wireframeVisible;
+            return wireframeVisible;
+          });
+          overlayToggle("viewer.modelNormals", "viewer.modelNormalsOverlay", () => {
+            normalsVisible = !normalsVisible;
+            return normalsVisible;
+          });
           if (effectsOffered) {
             const effectsField = controlRow(panel.rendering, localizer.text("viewer.modelEffectsLabel")).field;
             const effectsLabel = element(effectsField, "label");
@@ -2104,12 +2208,36 @@ function createModelViewer(options = {}) {
             }
             canvas.setAttribute("data-model-team-color", "#d9140f");
           }
+          const [detailed] = lodLevels;
+          if (detailed !== void 0 && lodLevels.length > 1) {
+            const field = controlRow(panel.rendering, localizer.text("viewer.modelLod")).field;
+            const selector = element(field, "select");
+            selector.setAttribute("aria-label", localizer.text("viewer.modelLod"));
+            const all = element(selector, "option", {
+              text: localizer.text("viewer.modelLodAll")
+            });
+            all.value = "";
+            for (const level of lodLevels) {
+              const option = element(selector, "option", {
+                text: localizer.text("viewer.modelLodLevel", { order: level.order })
+              });
+              option.value = level.id;
+            }
+            selector.value = detailed.id;
+            canvas.setAttribute("data-model-lod", selector.value);
+            selector.addEventListener("change", () => {
+              showLod(lodLevels.find((level) => level.id === selector.value));
+              canvas.setAttribute("data-model-lod", selector.value);
+              syncPrimitiveBoxes();
+              generation++;
+              redraw();
+            }, { signal: scope.signal });
+          }
           if (model.primitiveIds.length > 1) {
             const field = controlRow(panel.rendering, localizer.text("viewer.modelPrimitive")).field;
-            const boxes = /* @__PURE__ */ new Map();
+            const boxes = primitiveBoxes;
             const apply = () => {
-              for (const [id, box] of boxes)
-                box.checked = !hiddenPrimitives.has(id);
+              syncPrimitiveBoxes();
               generation++;
               redraw();
             };
@@ -2130,7 +2258,7 @@ function createModelViewer(options = {}) {
               const line = element(list2, "label");
               const box = element(line, "input");
               box.type = "checkbox";
-              box.checked = true;
+              box.checked = !hiddenPrimitives.has(id);
               line.append(" ", id);
               boxes.set(id, box);
               box.addEventListener("change", () => {

@@ -8,7 +8,7 @@ import {
   readUvmBillboards,
   readUvmModelStates,
   readUvmShadowMeshBindings
-} from "../../../chunks/chunk-QXYENN4V.js";
+} from "../../../chunks/chunk-3RFEOXBM.js";
 import {
   array,
   field,
@@ -26,14 +26,14 @@ import {
 import {
   readUvmAccessor,
   validateUvmDocument
-} from "../../../chunks/chunk-5DT7SGOU.js";
+} from "../../../chunks/chunk-VWR4X3UB.js";
 import {
   readUvmAnimationClips,
   readUvmAnimationMaterialTargets,
   readUvmPrimitiveVisibility,
   uvmVisibilityPointer,
   uvmVisibilityTarget
-} from "../../../chunks/chunk-CTXZR5MG.js";
+} from "../../../chunks/chunk-I43233HX.js";
 import "../../../chunks/chunk-I675VFQQ.js";
 import "../../../chunks/chunk-MUN4JEOH.js";
 import {
@@ -678,12 +678,36 @@ async function composeUvmAnimationBundle(base, bundle, request, options = {}) {
   const appended = [];
   const appendedRecords = [];
   let pointerUsed = false;
+  let eventsUsed = false;
   for (const { clip, id: clipId, sequenceIndex } of selected) {
     signal?.throwIfAborted();
     let animationIndex;
     if (clip.animation !== void 0) {
-      const animation = object(array(source, "animations")[clip.animation], "source animation");
-      noIndexedExtensions(animation, "animation");
+      const sourceAnimation = object(array(source, "animations")[clip.animation], "source animation");
+      const { extensions: animationExtensions, ...withoutExtensions } = sourceAnimation;
+      const { UV_game_animation_clips: playback, UV_game_animation_events: events, ...others } = object(animationExtensions ?? {}, "source animation extensions");
+      noIndexedExtensions({ extensions: others }, "animation");
+      const mappedEvents = events === void 0 ? void 0 : {
+        events: array(events, "events").map((value) => {
+          const event = object(value, "source animation event");
+          const socket = event["socket"];
+          return socket === void 0 ? event : {
+            ...event,
+            socket: required(nodeMap.get(safeIndex(socket, array(source, "nodes").length, "event node")), `explicit node mapping for ${String(socket)}`)
+          };
+        })
+      };
+      if (mappedEvents !== void 0)
+        eventsUsed = true;
+      const animation = {
+        ...withoutExtensions,
+        ...playback === void 0 && mappedEvents === void 0 ? {} : {
+          extensions: {
+            ...playback === void 0 ? {} : { UV_game_animation_clips: playback },
+            ...mappedEvents === void 0 ? {} : { UV_game_animation_events: mappedEvents }
+          }
+        }
+      };
       const samplers = array(animation, "samplers").map((value) => {
         const sampler = object(value, "source sampler");
         noIndexedExtensions(sampler, "animation sampler");
@@ -829,6 +853,8 @@ async function composeUvmAnimationBundle(base, bundle, request, options = {}) {
   const extensions = object(document["extensions"], "base extensions");
   const used = new Set(array(document, "extensionsUsed"));
   used.add("UV_game_animation_clips");
+  if (eventsUsed)
+    used.add("UV_game_animation_events");
   if (pointerUsed)
     used.add("KHR_animation_pointer");
   if (visibility.length > 0)

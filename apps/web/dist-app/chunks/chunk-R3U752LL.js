@@ -1,4 +1,12 @@
+import {
+  init_define_MODKIT_EMBED_EXTENSION_ORIGINS
+} from "./chunk-BLWUC7LO.js";
+
+// ../MODDING/modkit-core/packages/codec-kit/dist/checksum/index.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
 // ../MODDING/modkit-core/packages/codec-kit/dist/crypto/mpq.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var encryptionTable = (() => {
   let seed1 = 1048577;
   const table = [];
@@ -35,6 +43,7 @@ function crc32(data) {
 }
 
 // ../MODDING/modkit-core/packages/codec-kit/dist/compression/adler32.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 function createAdler32() {
   let a = 1;
   let b = 0;
@@ -59,6 +68,7 @@ function adler32(bytes) {
 }
 
 // ../MODDING/modkit-core/packages/codec-kit/dist/checksum/xxhash32.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var PRIME1 = 2654435761;
 var PRIME2 = 2246822519;
 var PRIME3 = 3266489917;
@@ -155,10 +165,10 @@ function createCrc32Msb({ init = 4294967295, xorOut = 4294967295 } = {}) {
 }
 
 export {
+  xxHash32,
   crc32,
   createAdler32,
   adler32,
-  xxHash32,
   crc32Range,
   crc32c,
   cdRomEdc,

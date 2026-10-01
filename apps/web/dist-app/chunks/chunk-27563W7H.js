@@ -15,7 +15,7 @@ import {
   setState,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-7RXWLRMX.js";
+} from "./chunk-CNISMXJW.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunk-BLWUC7LO.js";
@@ -284,6 +284,26 @@ function loadedCountReason(nodeCount, totalNodes, edgeCount, totalEdges, localiz
     totalEdges: totalEdges.toLocaleString(localizer.locale)
   });
 }
+function arrowhead(context, from, to, inset, size) {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const length = Math.hypot(dx, dy);
+  if (length <= inset + size)
+    return;
+  const ux = dx / length;
+  const uy = dy / length;
+  const tipX = to.x - ux * inset;
+  const tipY = to.y - uy * inset;
+  const baseX = tipX - ux * size;
+  const baseY = tipY - uy * size;
+  const half = size * 0.45;
+  context.beginPath();
+  context.moveTo(tipX, tipY);
+  context.lineTo(baseX - uy * half, baseY + ux * half);
+  context.lineTo(baseX + uy * half, baseY - ux * half);
+  context.closePath();
+  context.fill();
+}
 async function loadRelationGraphOptions(source, options) {
   const localizer = withEnglishUiFallback(options.localizer, GRAPH_FALLBACK_MESSAGES);
   const nodeLimit = positiveLimit(options.nodeLimit ?? 500, "nodeLimit");
@@ -472,7 +492,10 @@ function createRelationGraph(document, options) {
   const status = document.createElement("output");
   status.className = "modkit-graph__status";
   setPart(status, "graph.status");
-  controls.append(status);
+  const legend = document.createElement("span");
+  legend.textContent = localizer.text("graph.directionLegend");
+  setPart(legend, "graph.legend");
+  controls.append(status, legend);
   const search = document.createElement("input");
   search.type = "search";
   search.className = "modkit-graph__search";
@@ -754,11 +777,13 @@ function createRelationGraph(document, options) {
       if (from === void 0 || to === void 0)
         continue;
       context2.strokeStyle = edgeColour(token, edge);
+      context2.fillStyle = context2.strokeStyle;
       context2.globalAlpha = edge.dead === true ? 0.9 : 0.45;
       context2.beginPath();
       context2.moveTo(from.x, from.y);
       context2.lineTo(to.x, to.y);
       context2.stroke();
+      arrowhead(context2, from, to, 4 / zoom + 1, 6 / zoom);
       drawnEdges += 1;
     }
     context2.globalAlpha = 1;
@@ -804,6 +829,14 @@ function createRelationGraph(document, options) {
     }
     const index = new Map(placed.map((item, position) => [item.node.id, position]));
     const selectedId = placed[selected]?.node.id;
+    const radiusAt = (position) => {
+      const point = projected[position];
+      const item = placed[position];
+      if (point === void 0 || item === void 0)
+        return 0;
+      const size = item.node.id === rootId ? 9 : 4.5 + Math.min(4, Math.log2((degree.get(item.node.id) ?? 0) + 1));
+      return Math.max(2.5, Math.min(24, size * point.scale * 1.5));
+    };
     let drawnEdges = 0;
     context2.lineWidth = 1;
     for (const edge of options.edges) {
@@ -820,12 +853,14 @@ function createRelationGraph(document, options) {
       const incident = selectedId !== void 0 && (edge.from === selectedId || edge.to === selectedId);
       const fade = depthFade((from.depth + to.depth) / 2, near, far);
       context2.strokeStyle = edgeColour(token, edge);
+      context2.fillStyle = context2.strokeStyle;
       context2.globalAlpha = (edge.dead === true ? 0.9 : 0.45) * fade * (selectedId === void 0 || incident ? 1 : 0.35);
       context2.lineWidth = incident ? 2 : 1;
       context2.beginPath();
       context2.moveTo(from.x, from.y);
       context2.lineTo(to.x, to.y);
       context2.stroke();
+      arrowhead(context2, from, to, radiusAt(toIndex), incident ? 9 : 7);
       drawnEdges += 1;
     }
     const order = placed.map((_item, position) => position);
@@ -839,8 +874,7 @@ function createRelationGraph(document, options) {
       if (point === void 0 || item === void 0)
         continue;
       const isRoot = item.node.id === rootId;
-      const size = isRoot ? 9 : 4.5 + Math.min(4, Math.log2((degree.get(item.node.id) ?? 0) + 1));
-      const radius = Math.max(2.5, Math.min(24, size * point.scale * 1.5));
+      const radius = radiusAt(position);
       const match = matches(item.node);
       const fade = depthFade(point.depth, near, far);
       hits[position] = { x: point.x, y: point.y, radius, depth: point.depth };
@@ -1168,6 +1202,7 @@ function createRelationGraph(document, options) {
     }
   };
 }
+var GRAPH_MORE_FACTOR = 16;
 function createRelationGraphViewer(options = {}) {
   const localizer = withEnglishUiFallback(options.localizer, GRAPH_FALLBACK_MESSAGES);
   const firstDepth = Math.min(4, Math.max(1, Math.trunc(options.depth ?? 2)));
@@ -1228,19 +1263,37 @@ function createRelationGraphViewer(options = {}) {
           directionSelect.disabled = whole;
           rootLine.textContent = whole ? "" : localizer.text("graph.root", { label: rootLabel });
         };
+        const firstNodes = positiveLimit(options.nodeLimit ?? 500, "nodeLimit");
+        const firstEdges = positiveLimit(options.edgeLimit ?? 5e3, "edgeLimit");
+        let factor = 1;
+        const more = document.createElement("button");
+        more.type = "button";
+        more.hidden = true;
+        more.addEventListener("click", () => {
+          factor *= 2;
+          void show().catch(() => void 0);
+        });
+        bar.append(more);
         const navigation = args.subjectNavigation;
         let graph;
         let pass = 0;
         const show = async () => {
           const current = ++pass;
           syncBar();
-          const loaded = whole || walk === void 0 ? await loadRelationGraphOptions(source, { label, localizer, signal: scope.signal }) : await loadRelationNeighbourhoodOptions(source, walk, {
+          const limits = {
             label,
             localizer,
+            nodeLimit: firstNodes * factor,
+            edgeLimit: firstEdges * factor,
             signal: scope.signal
-          });
+          };
+          const loaded = whole || walk === void 0 ? await loadRelationGraphOptions(source, limits) : await loadRelationNeighbourhoodOptions(source, walk, limits);
           if (current !== pass || scope.signal.aborted)
             return;
+          more.hidden = loaded.consumerCompleteness !== "capped" || factor >= GRAPH_MORE_FACTOR;
+          more.textContent = localizer.text("graph.loadMore", {
+            nodes: (firstNodes * factor * 2).toLocaleString(localizer.locale)
+          });
           graph?.destroy();
           graph = createRelationGraph(document, {
             ...loaded,

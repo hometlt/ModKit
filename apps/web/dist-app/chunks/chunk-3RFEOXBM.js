@@ -16,12 +16,12 @@ import {
 import {
   uvmAccessorWidth,
   validateUvmDocument
-} from "./chunk-5DT7SGOU.js";
+} from "./chunk-VWR4X3UB.js";
 import {
   array,
   isStandardLayerSlot,
   object
-} from "./chunk-CTXZR5MG.js";
+} from "./chunk-I43233HX.js";
 import {
   decomposeMatrix4,
   normalizeQuat,

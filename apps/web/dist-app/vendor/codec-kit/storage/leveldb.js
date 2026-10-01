@@ -1,6 +1,7 @@
 import {
   crc32c
-} from "../../../chunks/chunk-TWH75SBL.js";
+} from "../../../chunks/chunk-6S2P23EL.js";
+import "../../../chunks/chunk-NMYA52EI.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 
 // ../MODDING/modkit-core/packages/codec-kit/dist/storage/leveldb.js

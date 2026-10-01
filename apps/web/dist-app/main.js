@@ -1,6 +1,7 @@
 import {
   EXPLORER_MAXIMUM_BYTES,
   EXTENSION_ROOT_FAILURE_CODES,
+  MAP_PREVIEW_COORDINATOR_LIMITS,
   SubjectNavigationHistory,
   WEB_EXTENSION_CATALOG,
   WEB_SOURCE_FACILITY_UNAVAILABLE,
@@ -50,13 +51,13 @@ import {
   subjectFactsSourceFromWire,
   webExtensionSubjectCardBundle,
   withoutHiddenEntries
-} from "./chunks/chunk-2XLLI3GE.js";
-import "./chunks/chunk-BQ7JEYJN.js";
-import "./chunks/chunk-I7RSGSTR.js";
-import "./chunks/chunk-37DORWOX.js";
+} from "./chunks/chunk-OEF6GXCM.js";
+import "./chunks/chunk-6FK5CZ3A.js";
+import "./chunks/chunk-AKFVSFT7.js";
+import "./chunks/chunk-27563W7H.js";
 import {
   resolveModelViewerTextures
-} from "./chunks/chunk-B7S7GMGG.js";
+} from "./chunks/chunk-5PUECZ53.js";
 import "./chunks/chunk-O2DY4UGD.js";
 import "./chunks/chunk-CW2HIMYV.js";
 import {
@@ -71,8 +72,8 @@ import {
   isRejected,
   mountFieldEditor,
   subjectCandidateProviderLease
-} from "./chunks/chunk-HWMMUAOT.js";
-import "./chunks/chunk-DBS2ISXT.js";
+} from "./chunks/chunk-K2SS7OVY.js";
+import "./chunks/chunk-BJ2R5ZZC.js";
 import {
   DEFAULT_UI_LOCALIZER,
   PANELS_FALLBACK_MESSAGES,
@@ -90,15 +91,15 @@ import {
   setState,
   setViewerText,
   withEnglishUiFallback
-} from "./chunks/chunk-7RXWLRMX.js";
+} from "./chunks/chunk-CNISMXJW.js";
 import "./chunks/chunk-5MQCQKKD.js";
 import {
   revisionId
 } from "./chunks/chunk-U4VIZDRF.js";
-import "./chunks/chunk-ZNIKBHDN.js";
-import "./chunks/chunk-EOJHBJMF.js";
+import "./chunks/chunk-INSSLGBI.js";
+import "./chunks/chunk-LVYXWGG6.js";
 import "./chunks/chunk-OZX7B633.js";
-import "./chunks/chunk-Q27WXNQ4.js";
+import "./chunks/chunk-R3U752LL.js";
 import "./chunks/chunk-QQJVD7VT.js";
 import {
   CONTAINER_EXTRACT_OPERATION_ID,
@@ -736,40 +737,6 @@ function createSettingsUi(document2, options) {
 
 // apps/web/src/map-preview.ts
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-var MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY = Object.freeze({
-  locales: Object.freeze(["enUS"]),
-  limits: Object.freeze({
-    // A multi-root workspace may need hundreds of bounded reads across catalog families and locale.
-    maxRequirements: 512,
-    maxDocumentBytes: 16777216,
-    maxTextBytes: 268435456,
-    maxEntities: 1e5,
-    maxDepth: 128,
-    maxPageSize: 1e3
-  })
-});
-var COORDINATOR_LIMITS = Object.freeze({
-  // Pinned mp.wz publishes 39 map candidates; 64 is the bounded product ceiling above that corpus.
-  maxCandidates: 64,
-  maxSubjectEntries: 4096,
-  maxSubjectPages: 64,
-  maxRoots: 64,
-  maxDepth: 16,
-  catalogEnrichment: MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY,
-  limits: Object.freeze({
-    // Warzone 2100 reads 22 map documents (level.json and each tileset's ground and decal files).
-    maxRequirements: 32,
-    maxDocumentBytes: 33554432,
-    maxTotalBytes: 67108864,
-    maxObjects: 1e5,
-    maxRegions: 1e4,
-    maxTerrainCells: 1e5,
-    maxTerrainSamples: 1e5,
-    maxDepth: 64,
-    maxPageSize: 4096,
-    maxDiagnostics: 100
-  })
-});
 var selectionDiagnostic = (localizer) => diagnostic(
   "information",
   "x3.app/map-preview-selection-required",
@@ -790,7 +757,7 @@ async function prepareWebMapPreview(request) {
       budgets: request.budgets,
       original: request.opened.session,
       ...request.selectionId === void 0 ? {} : { selectionId: request.selectionId },
-      ...COORDINATOR_LIMITS,
+      ...MAP_PREVIEW_COORDINATOR_LIMITS,
       ...request.catalog === void 0 ? {} : { catalog: request.catalog },
       ...request.signal === void 0 ? {} : { signal: request.signal }
     });

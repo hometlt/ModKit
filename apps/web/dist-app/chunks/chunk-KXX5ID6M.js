@@ -4,7 +4,7 @@ import {
 } from "./chunk-GDKG5J25.js";
 import {
   crc32Range
-} from "./chunk-TWH75SBL.js";
+} from "./chunk-6S2P23EL.js";
 
 // ../MODDING/modkit-core/packages/codec-kit/dist/raster/encoders.js
 var at = (pixels, index) => pixels[index];

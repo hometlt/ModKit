@@ -1,12 +1,12 @@
 import {
   createVideoViewer
-} from "./chunk-BQ7JEYJN.js";
+} from "./chunk-6FK5CZ3A.js";
 import {
   createAudioViewer
-} from "./chunk-I7RSGSTR.js";
+} from "./chunk-AKFVSFT7.js";
 import {
   createRelationGraphViewer
-} from "./chunk-37DORWOX.js";
+} from "./chunk-27563W7H.js";
 import {
   MODEL_FACET_CONTRACTS,
   commitOperationWrite,
@@ -15,7 +15,7 @@ import {
   modelMaterialTeamColor,
   mountFieldEditTarget,
   mountInlineField
-} from "./chunk-B7S7GMGG.js";
+} from "./chunk-5PUECZ53.js";
 import {
   metadataFieldProjections
 } from "./chunk-CW2HIMYV.js";
@@ -110,7 +110,7 @@ import {
   createImageViewer,
   createNamespaceViewer,
   invokeRefusalMessage
-} from "./chunk-HWMMUAOT.js";
+} from "./chunk-K2SS7OVY.js";
 import {
   MEDIA_ZOOM_CHOICES,
   canvasPng,
@@ -119,7 +119,7 @@ import {
   createMediaShell,
   mediaFacts,
   textMatches
-} from "./chunk-DBS2ISXT.js";
+} from "./chunk-BJ2R5ZZC.js";
 import {
   CALCULATIONS_FALLBACK_MESSAGES,
   CARD_FALLBACK_MESSAGES,
@@ -130,6 +130,7 @@ import {
   EXPLORER_EDITORS_FALLBACK_MESSAGES,
   EXPLORER_FALLBACK_MESSAGES,
   EXPLORER_PREVIEW_FALLBACK_MESSAGES,
+  FONT_FALLBACK_MESSAGES,
   HEX_EDITOR_FALLBACK_MESSAGES,
   HEX_FALLBACK_MESSAGES,
   METADATA_FALLBACK_MESSAGES,
@@ -165,7 +166,7 @@ import {
   uiPreference,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-7RXWLRMX.js";
+} from "./chunk-CNISMXJW.js";
 import {
   PERMISSION_CLASSES,
   contributionId,
@@ -229,6 +230,7 @@ import {
   packUvmGlb,
   planarLocalUvCpu,
   prepareMaterialGeometry,
+  primitiveFade,
   primitiveTint,
   primitiveVertexTints,
   projectedSplatLayer,
@@ -246,12 +248,14 @@ import {
   sphericalEnvironmentUvCpu,
   textureNormalFormat,
   unit,
+  uvmAnimationEvents,
+  uvmAnimationPlayback,
   uvmImageColorKeys,
   uvmImageFilters,
   uvmImageUri,
   uvmKeyTimesMetadata,
   uvmVisibilityPointer
-} from "./chunk-ZNIKBHDN.js";
+} from "./chunk-INSSLGBI.js";
 import {
   DEFAULT_MODEL_ANIMATION_BUDGET,
   DEFAULT_MODEL_SKELETON_BUDGET,
@@ -264,7 +268,7 @@ import {
   snapshotModelAnimations,
   snapshotModelSkeleton,
   srgbToLinear
-} from "./chunk-EOJHBJMF.js";
+} from "./chunk-LVYXWGG6.js";
 import {
   SCENE_RENDERER_CONTRACT,
   SCENE_RENDERER_MATCHER_PROFILE
@@ -15790,6 +15794,30 @@ var COMMON_PRESENTATION_CATALOG = Object.freeze([
       priority: 385,
       singletonGroup: "center-stage"
     })
+  }),
+  Object.freeze({
+    slot: Object.freeze({
+      slotId: "font",
+      kind: "stage",
+      contributionId: "modkit.ui/font-stage",
+      extensionId: "modkit/ui",
+      priority: 360,
+      singletonGroup: "center-stage",
+      bindings: Object.freeze([
+        Object.freeze({
+          bindingId: "font-content",
+          contract: "common.view/byte-range-source",
+          major: 1
+        })
+      ])
+    }),
+    spec: Object.freeze({
+      kind: "stage",
+      requiresTraits: [{ id: "content.fonts", states: ["available"] }],
+      consumesDataSources: [{ contract: "common.view/byte-range-source", major: 1 }],
+      priority: 360,
+      singletonGroup: "center-stage"
+    })
   })
 ]);
 
@@ -16535,7 +16563,8 @@ var SUBJECT_COMMAND_TARGETS = defineSubjectCommandTargets({
       "model.export-native",
       "model.write"
     ],
-    dataSourceContracts: [],
+    // a map world converts to UVW from the world it publishes (target `uvw`)
+    dataSourceContracts: ["common.view/world-scene-source"],
     hostCallers: ["automation", "cli", "electron", "pwa", "server", "vscode"]
   },
   preview: {
@@ -16558,6 +16587,7 @@ var CONTAINER_EXTRACT_OPERATION_ID2 = SUBJECT_COMMAND_TARGETS.extract.operationI
 var NAMESPACE_ENTRY_SOURCE3 = SUBJECT_COMMAND_TARGETS.extract.dataSourceContracts[0];
 var CONVERT_COMMAND = SUBJECT_COMMAND_TARGETS.convert.commandId;
 var CONVERT = SUBJECT_COMMAND_TARGETS.convert.operationIds[0];
+var WORLD_SCENE_SOURCE = SUBJECT_COMMAND_TARGETS.convert.dataSourceContracts[0];
 var PREVIEW_COMMAND = SUBJECT_COMMAND_TARGETS.preview.commandId;
 var THUMBNAIL = SUBJECT_COMMAND_TARGETS.preview.operationIds[0];
 function availableOperation(descriptor, id) {
@@ -16822,6 +16852,35 @@ var convertCommand = {
     return withCommandSubject(CONVERT_COMMAND, context, String(input.subject), async (subject, session, descriptor, diagnostics) => {
       if (input["operation"] !== void 0 && typeof input["operation"] !== "string")
         return failed(CONVERT_COMMAND, COMMAND_INPUT_INVALID, "operation must be an operation id", diagnostics);
+      if (input["target"] === "uvw" && input["operation"] === void 0 && descriptor.dataSources?.some((offer) => offer.contract === WORLD_SCENE_SOURCE && offer.major === 1)) {
+        if (context.worldToUvw === void 0)
+          return unavailable(CONVERT_COMMAND, "this application has no UV module to write UVW", "convert with the CLI or the desktop application", diagnostics);
+        context.progress?.({ step: "convert", message: "materializing the map world as UVW" });
+        const lease2 = await session.dataSource(WORLD_SCENE_SOURCE, 1);
+        try {
+          const world = await context.worldToUvw(lease2.value, context.signal);
+          if (world.state === "refused")
+            return failed(CONVERT_COMMAND, "x3.host/world-uvw-refused", world.refusals.map((refusal) => `${refusal.code}: ${refusal.message}`).join("; "), diagnostics);
+          const wroteTo2 = context.writeOutput === void 0 ? void 0 : await context.writeOutput("world.uvw", world.bytes, context.signal);
+          return ok(CONVERT_COMMAND, {
+            ref: subject.ref,
+            via: WORLD_SCENE_SOURCE,
+            outputKind: "bytes",
+            byteLength: world.bytes.byteLength,
+            wroteTo: wroteTo2 ?? null,
+            receipt: {
+              artifactDigest: world.artifactDigest,
+              excludedFacetIds: [...world.excludedFacetIds],
+              omittedObjects: world.omittedObjects,
+              lostFields: world.lostFields.map((field2) => ({ ...field2 }))
+            }
+          }, diagnostics);
+        } finally {
+          await lease2.release();
+        }
+      }
+      if (input["target"] === "uvw" && input["operation"] === void 0)
+        return unavailable(CONVERT_COMMAND, "this subject publishes no map world to write as UVW", "open the map itself, or a package naming one map; name an operation to run it instead", diagnostics);
       const operation = selectedOperation(descriptor, SUBJECT_COMMAND_TARGETS.convert.operationIds, input["operation"]);
       if (operation === void 0) {
         return unavailable(CONVERT_COMMAND, `the requested export is unavailable \u2014 ${publishedOperations(descriptor)}`, "run subject.inspect to see which data sources it does publish; a universal projection is the route for formats with no native export", diagnostics);
@@ -20924,6 +20983,8 @@ function createCandidateWorldSceneLease(snapshot3, provenance, maxPageSize, mode
       id: `${lightingLayerId}:environment`,
       layerId: lightingLayerId,
       coordinateSpaceId: snapshot3.lighting.coordinateSpaceId,
+      ...snapshot3.lighting.model === void 0 ? {} : { model: snapshot3.lighting.model },
+      ...snapshot3.lighting.unlitColor === void 0 ? {} : { unlitColor: snapshot3.lighting.unlitColor },
       ambientColor: snapshot3.lighting.ambientColor,
       ambientIntensity: snapshot3.lighting.ambientIntensity,
       directional: snapshot3.lighting.directional,
@@ -22103,7 +22164,9 @@ async function analyzeResolvedMapWorkspace(request) {
       documents,
       ...catalog === void 0 ? {} : { catalog },
       ...request.subjectOperationIds === void 0 ? {} : { subjectOperationIds: request.subjectOperationIds },
-      maxDocuments: limits.maxRequirements,
+      // the documents this request carries, not the caller's budget: a provider's own ceiling (SC2
+      // maps take 16) never refuses a map because an application allows more (32, for Warzone)
+      maxDocuments: Math.max(1, documents.length),
       maxDocumentBytes: limits.maxDocumentBytes,
       maxTotalBytes: limits.maxTotalBytes,
       maxObjects: limits.maxObjects,
@@ -22384,6 +22447,39 @@ async function openMapPreviewAssetSession(request) {
     throw error5;
   }
 }
+var MAP_PREVIEW_COORDINATOR_LIMITS = Object.freeze({
+  // Pinned mp.wz publishes 39 map candidates; 64 is the bounded product ceiling above that corpus.
+  maxCandidates: 64,
+  maxSubjectEntries: 4096,
+  maxSubjectPages: 64,
+  maxRoots: 64,
+  maxDepth: 16,
+  catalogEnrichment: Object.freeze({
+    locales: Object.freeze(["enUS"]),
+    limits: Object.freeze({
+      // Full catalog planning over the installed StarCraft II stock chain asks for 555 reads.
+      maxRequirements: 512,
+      maxDocumentBytes: 16777216,
+      maxTextBytes: 268435456,
+      maxEntities: 1e5,
+      maxDepth: 128,
+      maxPageSize: 1e3
+    })
+  }),
+  limits: Object.freeze({
+    // Warzone 2100 reads 22 map documents (level.json and each tileset's ground and decal files).
+    maxRequirements: 32,
+    maxDocumentBytes: 33554432,
+    maxTotalBytes: 67108864,
+    maxObjects: 1e5,
+    maxRegions: 1e4,
+    maxTerrainCells: 1e5,
+    maxTerrainSamples: 1e5,
+    maxDepth: 64,
+    maxPageSize: 4096,
+    maxDiagnostics: 100
+  })
+});
 var PREVIEW_DIAGNOSTIC_SEVERITIES = /* @__PURE__ */ new Set(["error", "warning", "information", "hint"]);
 var MAX_PREVIEW_NAMESPACE_SEARCHES = 8;
 var MAX_PREVIEW_NAMESPACE_SEARCH_BASENAMES = 16;
@@ -41649,25 +41745,25 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: "sha256:104db82904699682061f555a686e25ca37427956c18886c80ed9c8776d8bf2d6",
+        artifactDigest: "sha256:882cd7b8a2d3609276c20b50428af5553a4e164531aa181cf243ee93f6ffef0b",
         fileDigests: {
           "MIGRATION-NOTES-common-vector.json": "sha256:76e47ea6385d042f14075f379848628612d27d2c63d0038ee67ca818210aaba8",
           "README.md": "sha256:d77c6d61152adf760e489baade6b3421012ed8520e215797295eafbfe9db6979",
           "contributions/codec-emf.json": "sha256:0d196b6736562daa810ae0bd54485bedffc517c7be39a48e6b2215d22c2996a3",
-          "contributions/codec-font.json": "sha256:c9d88b9d3fc10d4cdb44994b7c0ab95ca2f3892b861f7b448ed1f72a19bbadb6",
+          "contributions/codec-font.json": "sha256:4c8bf6aec177ed25982558670c360c0f97ca38cdea95de2996a0ffcea05312c0",
           "contributions/codec-svg.json": "sha256:596c58a8118c261a02149081225e0551a5eb86f0903078ae1a1c2a618016c972",
           "contributions/codec-wmf.json": "sha256:dd9fbf5c11b9b6c7fd3c8fcc22dc789e90ba77fbd7bf4e4d839a21d876682b10",
           "package.json": "sha256:15b510767b33a2cc3c2109f272937e8cc3ee4baa236e0bca78144e7fc1d368b0",
           "src/emf/codec.js": "sha256:6d5cefb8afb9903a197aaec92997b263e1b7ce7c377954ee2c456b09d3d0186b",
-          "src/font/codec.js": "sha256:e288d99416fe8c415c482a47a2325e8f87da77517d21bf39347fe0162954d73e",
+          "src/font/codec.js": "sha256:b3ecfffe3475858cefdd0a55b688e10700822ddae3d45141ebcf81bc5732c649",
           "src/index.js": "sha256:904e9a577bfa759ce7ab355a01d2431961c7f7d3551a8b627a2eb56406948360",
           "src/linked.js": "sha256:1e605ad3eabcb7a41588dfaf196eef273984c8f644a3a6a6deb6bc1238af9db1",
           "src/svg/codec.js": "sha256:71a8327060f905452ed0b4a53cab1f58d79b60c9bf6ba25d4676ecf39a26f740",
           "src/wmf/codec.js": "sha256:8ee3ba99b0d0f8f0f00cd37e329008eb5247dbae684495f3b947c1bef6000aca",
           "test/codec-session.ts": "sha256:c2c0dd0f73ab028035bb4c798a9703bbed78500b29343de2906e7c6c2de39591",
-          "test/font-codec.test.ts": "sha256:3545bef7d7d838dcb253c8aaea4a0f831b823478cb5637cb9d6c3c43972d928c"
+          "test/font-codec.test.ts": "sha256:0cd27d08a9cab5c41eafb1d7e719a73afc27e7cd49ee46b6cafd0866c4c10afd"
         },
-        inventoryRecordId: "artifact:sha256:104db82904699682061f555a686e25ca37427956c18886c80ed9c8776d8bf2d6"
+        inventoryRecordId: "artifact:sha256:882cd7b8a2d3609276c20b50428af5553a4e164531aa181cf243ee93f6ffef0b"
       },
       artifactRoot: "extensions/vector/",
       containers: {
@@ -41723,7 +41819,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
         ],
         [
           "contributions/codec-font.json",
-          "sha256:c9d88b9d3fc10d4cdb44994b7c0ab95ca2f3892b861f7b448ed1f72a19bbadb6"
+          "sha256:4c8bf6aec177ed25982558670c360c0f97ca38cdea95de2996a0ffcea05312c0"
         ],
         [
           "contributions/codec-svg.json",
@@ -42014,6 +42110,11 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
                 {
                   id: "vector.paths",
                   presence: "may-expose",
+                  representation: "source"
+                },
+                {
+                  id: "content.fonts",
+                  presence: "will-expose",
                   representation: "source"
                 }
               ]
@@ -46504,6 +46605,7 @@ var EN = parseUiCatalogDocument(
       "web.view.code": "Code",
       "web.view.video": "Video",
       "web.view.image": "Image",
+      "web.view.font": "Font",
       "web.view.audio": "Audio",
       "web.view.world": "World",
       "web.view.playback": "Player",
@@ -46686,6 +46788,7 @@ var RU = parseUiCatalogDocument(
       "web.view.code": "\u041A\u043E\u0434",
       "web.view.video": "\u0412\u0438\u0434\u0435\u043E",
       "web.view.image": "\u0418\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435",
+      "web.view.font": "\u0428\u0440\u0438\u0444\u0442",
       "web.view.audio": "\u0410\u0443\u0434\u0438\u043E",
       "web.view.world": "\u041C\u0438\u0440",
       "web.view.playback": "\u041F\u043B\u0435\u0435\u0440",
@@ -47565,7 +47668,7 @@ function alphaDrawOrder(primitives, alphaFor, viewProjection) {
   const opaque = [];
   const blending = [];
   for (const primitive of primitives)
-    if (alphaFor(primitive.materialId).mode !== "blend")
+    if (alphaFor(primitive.materialId).mode !== "blend" && primitiveFade(primitive) >= 1)
       opaque.push(primitive);
     else
       blending.push(primitive);
@@ -48302,14 +48405,15 @@ function sceneMaterialDraws(primitives, materials, programs, viewProjection, dia
   });
   return [...prepasses, ...draws];
 }
-function blendMaterialPixel(frame, offset, rgba, program) {
-  const clamp3 = (value) => Math.max(0, Math.min(1, value)), a2 = clamp3(rgba[3]), mode = program.blend;
+function blendMaterialPixel(frame, offset, rgba, program, fade = 1) {
+  const fading = fade < 1 && materialIsSolid(program);
+  const clamp3 = (value) => Math.max(0, Math.min(1, value)), a2 = clamp3(fading ? fade : rgba[3]), mode = fading ? "blend" : program.blend;
   for (let channel = 0; channel < 3; channel++) {
     const source2 = clamp3(rgba[channel] ?? 0), dest = (frame[offset + channel] ?? 0) / 255;
     const value = mode === "blend" ? source2 * a2 + dest * (1 - a2) : mode === "premultiplied" ? source2 + dest * (1 - a2) : mode === "additive" ? source2 + dest : mode === "add-alpha" ? source2 * a2 + dest : mode === "modulate" ? source2 * dest : mode === "modulate2x" ? 2 * source2 * dest : source2;
     frame[offset + channel] = Math.round(clamp3(value) * 255);
   }
-  if (materialIsSolid(program))
+  if (materialIsSolid(program) && !fading)
     frame[offset + 3] = 255;
   else if (mode === "blend" || mode === "premultiplied")
     frame[offset + 3] = Math.round((a2 + (frame[offset + 3] ?? 0) / 255 * (1 - a2)) * 255);
@@ -49043,7 +49147,8 @@ function materialWebGlDraws(gl, textures, options = {}) {
         gl.disable(gl.CULL_FACE);
       state.cull = cull;
     }
-    const blend = materialIsSolid(source2) || depthOnly ? "none" : source2.blend;
+    const fading = materialIsSolid(source2) && primitiveFade(primitive) < 1;
+    const blend = depthOnly || materialIsSolid(source2) && !fading ? "none" : fading ? "blend" : source2.blend;
     if (state.blend === blend)
       return;
     state.blend = blend;
@@ -49052,7 +49157,7 @@ function materialWebGlDraws(gl, textures, options = {}) {
     else {
       gl.enable(gl.BLEND);
       gl.blendEquation(gl.FUNC_ADD);
-      switch (source2.blend) {
+      switch (blend) {
         case "blend":
           gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
           break;
@@ -49465,7 +49570,8 @@ ${declarations.join("\n")}`);
   // colour here, as the material's own fade already did (modAlpha).
   (source2.defines.modAlpha === true ? stages.tinted ? "materialColor.rgb*=u_instanceTint.a*v_vertexTint.a;" : "materialColor.rgb*=u_instanceTint.a;" : "") + // A solid pass covers its pixel whole: an alpha-tested leaf that survives the test is opaque.
   // Multiplying its colour by the texel alpha drew SC2 foliage (alpha 0.3-0.7) dark with black rims.
-  (materialIsSolid(source2) ? (source2.defines.sceneLighting ? "" : "materialColor.rgb=clamp(materialColor.rgb,0.0,1.0);") + "materialColor.a=1.0;" : "") + "}\n";
+  // A fading solid pass (tint alpha below 1) covers by its fade instead.
+  (materialIsSolid(source2) ? (source2.defines.sceneLighting ? "" : "materialColor.rgb=clamp(materialColor.rgb,0.0,1.0);") + "materialColor.a=u_instanceTint.a;" : "") + "}\n";
   const vertexSource = sceneMaterialVertexSource(source2.defines, source2.environment !== void 0, worldShading, true, stages.skinned, stages.tinted);
   return { vertexSource, fragmentSource, filters };
 }
@@ -49864,14 +49970,17 @@ void main() {
       base.rgb *= lambert * lightColor.rgb;
     }
   }
-  base *= instanceTint;
+  base.rgb *= instanceTint.rgb;
   if (coverageMode > 2.5) {
+    base.a *= instanceTint.a;
     if (alphaCutoff > 0.0 && base.a < alphaCutoff) discard;
     outColor = coverageMode > 3.5 ? vec4(base.rgb * base.a, base.a) : base;
     return;
   }
   if (coverageMode > 0.5 && coverageMode < 1.5 && base.a < alphaCutoff) discard;
   if (coverageMode < 1.5) base.a = 1.0;
+  // the primitive's fade scales its coverage after the material's own rule
+  base.a *= instanceTint.a;
   outColor = vec4(base.rgb * base.a, base.a);
 }`;
 function programFor(gl) {
@@ -50176,7 +50285,7 @@ async function renderBrowser(request) {
       if (alphaCutoff !== null)
         gl.uniform1f(alphaCutoff, alpha.cutoff);
       gl.depthMask(alpha.depthWrite);
-      if (alpha.mode === "blend") {
+      if (alpha.mode === "blend" || primitiveFade(primitive) < 1) {
         gl.enable(gl.BLEND);
         gl.blendEquation(gl.FUNC_ADD);
         gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
@@ -50797,7 +50906,7 @@ function rasterizeTriangle(context, vertices, surface, uvs, normals, materialDra
             shaded2.rgba[1] * multiplier[1],
             shaded2.rgba[2] * multiplier[2],
             shaded2.rgba[3] * multiplier[3]
-          ], draw.program);
+          ], draw.program, multiplier[3]);
         }
         fragments++;
         continue;
@@ -50900,9 +51009,9 @@ function rasterizeTriangle(context, vertices, surface, uvs, normals, materialDra
       red *= tint[0];
       green *= tint[1];
       blue *= tint[2];
-      alpha *= tint[3];
       const offset = pixel * 4;
       if (effect !== void 0) {
+        alpha *= tint[3];
         if (effect.alphaCutoff > 0 && alpha < effect.alphaCutoff)
           continue;
         if (effect.depthTest && effect.depthWrite)
@@ -50915,6 +51024,7 @@ function rasterizeTriangle(context, vertices, surface, uvs, normals, materialDra
         continue;
       if (surface.alpha.mode !== "blend")
         alpha = 1;
+      alpha *= tint[3];
       if (surface.alpha.depthWrite)
         context.depth[pixel] = sampleDepth;
       const remaining = 1 - alpha;
@@ -52294,12 +52404,41 @@ function writeUvmAnimations(source2, nodeIndices, boneByNode, storage, budget2, 
       ...clip.looping === void 0 ? {} : { looping: clip.looping },
       ...clip.repeatCount === void 0 ? {} : { repeatCount: clip.repeatCount }
     });
-    if (animationIndex === void 0)
+    if (animationIndex === void 0) {
+      if ((clip.events?.length ?? 0) > 0)
+        losses.push({ clipId: clip.id, reason: "events of a clip without motion are not written" });
       continue;
+    }
+    const events = (clip.events ?? []).map((event) => {
+      const socket = event.nodeId === void 0 ? void 0 : nodeIndices.get(event.nodeId);
+      if (event.nodeId !== void 0 && socket === void 0)
+        refuse4(`clip ${clip.id} names event node ${event.nodeId}, not a scene node`);
+      return {
+        t: event.timeSeconds,
+        name: event.name,
+        ...socket === void 0 ? {} : { socket },
+        ...event.payload === void 0 ? {} : { payload: event.payload },
+        ...event.durationSeconds === void 0 ? {} : { duration: event.durationSeconds }
+      };
+    });
+    uvmAnimationEvents({ events }, Number.MAX_SAFE_INTEGER);
+    const playback = uvmAnimationPlayback({
+      ...clip.loop === void 0 ? {} : { loop: clip.loop },
+      ...clip.priority === void 0 ? {} : { priority: clip.priority },
+      ...clip.speedScale === void 0 ? {} : { speedScale: clip.speedScale },
+      ...clip.blendInSeconds === void 0 ? {} : { blendInSeconds: clip.blendInSeconds },
+      ...clip.blendOutSeconds === void 0 ? {} : { blendOutSeconds: clip.blendOutSeconds }
+    });
     animations.push({
       name: clip.name,
       samplers,
       channels,
+      ...Object.keys(playback).length === 0 && events.length === 0 ? {} : {
+        extensions: {
+          ...Object.keys(playback).length === 0 ? {} : { UV_game_animation_clips: { ...playback } },
+          ...events.length === 0 ? {} : { UV_game_animation_events: { events } }
+        }
+      },
       extras: {
         uv: {
           sourceSequenceIndex: sequenceIndex,
@@ -53191,6 +53330,16 @@ function materializeUvmCore(projection2, request, { digest, materialBudget = DEF
     note("uv.model/structure@1", "value-differs", "/nodes", `${groups.length} LOD levels are grouped under one node each (MSFT_lod)`);
   }
   const materialTargets = projection2.materials === void 0 ? [] : materializeUvmAnimationMaterialTargets(projection2.materials, materialBudget, signal);
+  if (info.handedness === "left") {
+    const root = documentNodes.length;
+    documentNodes.push({
+      name: "uv:handedness",
+      scale: info.upAxis === "+z" ? [1, -1, 1] : [1, 1, -1],
+      children: [...rootIndices]
+    });
+    rootIndices = [root];
+    note("uv.model/structure@1", "value-differs", "/nodes", "one mirror node makes the left-handed source right-handed");
+  }
   if (info.upAxis === "+z") {
     const root = documentNodes.length;
     documentNodes.push({
@@ -53279,6 +53428,7 @@ function materializeUvmCore(projection2, request, { digest, materialBudget = DEF
       ...materials.some((material) => material.extensions?.UV_game_material_team_color !== void 0) ? ["UV_game_material_team_color"] : [],
       ...materials.some((material) => material.extensions?.KHR_materials_unlit !== void 0) ? ["KHR_materials_unlit"] : [],
       ...animation === void 0 || animation.catalog.length === 0 ? [] : ["UV_game_animation_clips"],
+      ...animation?.animations.some((clip) => clip["extensions"]?.["UV_game_animation_events"]) ? ["UV_game_animation_events"] : [],
       ...visibility.length === 0 ? [] : ["UV_game_variants"],
       ...animatesPointers ? ["KHR_animation_pointer"] : [],
       ...imageColorKeys.some((key3) => key3 !== void 0) ? ["UV_texture_color_key"] : [],
@@ -54265,7 +54415,7 @@ async function decodeContainerEntry(entry2, maximum, readRange, signal) {
     throw new RangeError(`container entry ${entry2.path} decoded to ${bytes.byteLength} bytes, not ${size}`);
   }
   if (entry2.checksum?.algorithm === "crc-32") {
-    const { crc32 } = await import("./checksum-2EQCFKBI.js");
+    const { crc32 } = await import("./checksum-IEKURWEO.js");
     const actual = (crc32(bytes) >>> 0).toString(16).padStart(8, "0");
     if (actual !== entry2.checksum.value.toLowerCase().padStart(8, "0"))
       throw new RangeError(`container entry ${entry2.path} fails its CRC-32 (${actual}, the container says ${entry2.checksum.value})`);
@@ -56032,6 +56182,49 @@ init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
 // ../MODDING/modkit-core/packages/uv/dist/world/reconstruct.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var KEPT_FIELDS = Object.freeze({
+  terrain: /* @__PURE__ */ new Set(["x", "y", "heightBase", "heightAdjustment", "uvwPosition"]),
+  "terrain-materials": /* @__PURE__ */ new Set(["x", "y", "uvwPosition", "weights", "textureIndex", "uvTransform"]),
+  cliffs: /* @__PURE__ */ new Set(["x", "y", "uvwPosition", "level", "authored"]),
+  water: /* @__PURE__ */ new Set([
+    "minimum",
+    "maximum",
+    "elevation",
+    "uvwMinimum",
+    "uvwMaximum",
+    "uvwElevation",
+    "materialId"
+  ]),
+  regions: /* @__PURE__ */ new Set(["regionId", "name", "color", "shapes", "uvwShapes"]),
+  navigation: /* @__PURE__ */ new Set(["x", "y", "flags", "uvwPosition"]),
+  gateways: /* @__PURE__ */ new Set(["x1", "y1", "x2", "y2", "uvwStart", "uvwEnd"]),
+  lighting: /* @__PURE__ */ new Set(["ambientColor", "ambientIntensity", "toneMapping", "terrain", "directional"]),
+  objects: /* @__PURE__ */ new Set([
+    "kind",
+    "objectId",
+    "sourceObjectId",
+    "sourceKey",
+    "position",
+    "sourcePositionDimensions",
+    "heightReference",
+    "rotation",
+    "nativeRotationUnit",
+    "nativeRotationSense",
+    "presentationRotation",
+    "scale",
+    "mapNativePresentationPosition",
+    "uvwPosition",
+    "uvwRotation",
+    "uvwScale",
+    "derivedFrom",
+    "typeId",
+    "player",
+    "variation",
+    "name",
+    "resourceIds",
+    "modelComponents"
+  ])
+});
 
 // ../MODDING/modkit-core/packages/uv/dist/world/package.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
@@ -65527,13 +65720,13 @@ var PREVIEW_STAGES = [
 async function defaultPreviewStage(kind, localizer) {
   switch (kind) {
     case "model":
-      return (await import("./model-HIVWVAOI.js")).createModelViewer({ localizer });
+      return (await import("./model-TOFH6WBH.js")).createModelViewer({ localizer });
     case "image":
-      return (await import("./image-UQ7YYYDB.js")).createImageViewer({ localizer });
+      return (await import("./image-TD6ZXQ24.js")).createImageViewer({ localizer });
     case "video":
-      return (await import("./video-T6C3653X.js")).createVideoViewer({ localizer });
+      return (await import("./video-DGBKTXPL.js")).createVideoViewer({ localizer });
     case "audio":
-      return (await import("./audio-522T3ABE.js")).createAudioViewer({ localizer });
+      return (await import("./audio-RKFFYZ35.js")).createAudioViewer({ localizer });
   }
 }
 function embedPreview(sections, args, scope, localizer, previews) {
@@ -65572,7 +65765,7 @@ function embedRelationGraph(sections, args, scope, localizer, graph) {
   return [
     ...sections,
     stageSection({ id: "relations-graph", title: localizer.text("card.relationGraph"), expanded: false }, scope, localizer, "card.relationGraphUnavailable", async (host) => {
-      const module = graph ?? (await import("./graph-FV4BWR72.js")).createRelationGraphViewer({ localizer });
+      const module = graph ?? (await import("./graph-T2WIVXXX.js")).createRelationGraphViewer({ localizer });
       return scope.signal.aborted ? void 0 : module.mount({ ...args, container: host, signal: scope.signal });
     })
   ];
@@ -66234,6 +66427,24 @@ function found(value, pattern) {
   pattern.lastIndex = 0;
   return pattern.test(value);
 }
+function foreignScript(locale, value) {
+  if (value === "")
+    return false;
+  const cyrillic = /[\u0400-\u04FF]/u.test(value);
+  const han = /[\u3400-\u9FFF]/u.test(value);
+  const hangul = /[\uAC00-\uD7AF\u1100-\u11FF]/u.test(value);
+  const kana = /[\u3040-\u30FF]/u.test(value);
+  const code = locale.toLowerCase();
+  if (code.startsWith("ru"))
+    return han || hangul || kana;
+  if (code.startsWith("zh"))
+    return cyrillic || hangul || kana;
+  if (code.startsWith("ko"))
+    return cyrillic || kana;
+  if (code.startsWith("ja"))
+    return cyrillic || hangul;
+  return cyrillic || han || hangul || kana;
+}
 function markMatches(cell, pattern) {
   const document = cell.ownerDocument;
   const walker = document.createTreeWalker(cell, NodeFilter.SHOW_TEXT);
@@ -66265,6 +66476,15 @@ function markMatches(cell, pattern) {
   return marked;
 }
 var remembered = /* @__PURE__ */ new Map();
+var MIN_COLUMN_WIDTH = 48;
+function sizeCell(cell, width) {
+  const pixels = width === void 0 ? "" : `${String(width)}px`;
+  cell.style.width = pixels;
+  cell.style.minWidth = pixels;
+  cell.style.maxWidth = pixels;
+  cell.style.overflow = width === void 0 ? "" : "hidden";
+  cell.style.textOverflow = width === void 0 ? "" : "ellipsis";
+}
 async function mountVariantTable(args) {
   const text3 = withEnglishUiFallback(args.localizer, TABLE_VARIANTS_FALLBACK_MESSAGES).text;
   const info = args.shape.columnInfo ?? [];
@@ -66285,10 +66505,12 @@ async function mountVariantTable(args) {
   const changed = /* @__PURE__ */ new Set();
   let draftedRows = /* @__PURE__ */ new Set();
   const selected = /* @__PURE__ */ new Set();
+  const foreignIn = (row, column) => foreignScript(column.language ?? column.variant ?? "", row.cells[column.index] ?? "");
   const statusOf = (row) => [
     ...statusColumn < 0 ? [] : (row.cells[statusColumn] ?? "").split(" ").filter(Boolean),
     // a locale without a value, missing or blank (MK2's «empty» filter)
     ...variants.some((column) => (row.cells[column.index] ?? "") === "") ? ["empty"] : [],
+    ...variants.some((column) => foreignIn(row, column)) ? ["error"] : [],
     ...changed.has(row.index) || draftedRows.has(row.index) ? ["changed"] : []
   ];
   const state = remembered.get(args.descriptor.subjectUri) ?? {
@@ -66466,6 +66688,18 @@ async function mountVariantTable(args) {
     target.append(node);
   }
   target.hidden = actions.translateVariant === void 0 || variants.length < 2;
+  const translateContext = element(bar, "input", { part: "table.context" });
+  translateContext.type = "text";
+  translateContext.placeholder = text3("table.translateContext");
+  translateContext.setAttribute("aria-label", text3("table.translateContext"));
+  translateContext.hidden = target.hidden;
+  const translateService = element(bar, "select", { part: "table.group" });
+  translateService.setAttribute("aria-label", text3("table.translateService"));
+  const automatic = translateService.ownerDocument.createElement("option");
+  automatic.value = "";
+  automatic.textContent = text3("table.translateServiceAuto");
+  translateService.append(automatic);
+  translateService.hidden = true;
   const columns = element(bar, "details", { part: "table.columns" });
   element(columns, "summary", { text: text3("table.columns") });
   const choices = element(columns, "div", {});
@@ -66473,13 +66707,54 @@ async function mountVariantTable(args) {
   const showColumns = () => {
     const head = args.before.tHead?.rows[0];
     for (const tr of [...head === void 0 ? [] : [head], ...drawnRows]) {
-      header.forEach((_, column) => {
+      header.forEach((label, column) => {
         const cell = tr.cells[column + 1];
-        if (cell !== void 0)
-          cell.hidden = isHidden(column);
+        if (cell === void 0)
+          return;
+        cell.hidden = isHidden(column);
+        sizeCell(cell, state.widths?.[label]);
       });
     }
   };
+  header.forEach((label, column) => {
+    const th = args.before.tHead?.rows[0]?.cells[column + 1];
+    if (th === void 0)
+      return;
+    const grip = element(th, "span", { part: "table.resize" });
+    grip.tabIndex = 0;
+    grip.setAttribute("role", "separator");
+    grip.setAttribute("aria-orientation", "vertical");
+    grip.setAttribute("aria-label", text3("table.resizeColumn", { column: label }));
+    const resize = (width) => {
+      const widths = Object.fromEntries(Object.entries(state.widths ?? {}).filter(([key3]) => key3 !== label));
+      if (width !== void 0)
+        widths[label] = Math.max(MIN_COLUMN_WIDTH, Math.round(width));
+      state.widths = widths;
+      showColumns();
+    };
+    grip.addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+      grip.setPointerCapture(event.pointerId);
+      const from = event.clientX;
+      const start = th.getBoundingClientRect().width;
+      const move = (next) => resize(start + next.clientX - from);
+      const end = () => {
+        grip.removeEventListener("pointermove", move);
+        grip.removeEventListener("pointerup", end);
+        grip.removeEventListener("pointercancel", end);
+      };
+      grip.addEventListener("pointermove", move);
+      grip.addEventListener("pointerup", end);
+      grip.addEventListener("pointercancel", end);
+    });
+    grip.addEventListener("dblclick", () => resize(void 0));
+    grip.addEventListener("keydown", (event) => {
+      if (event.key !== "ArrowLeft" && event.key !== "ArrowRight")
+        return;
+      event.preventDefault();
+      resize(th.getBoundingClientRect().width + (event.key === "ArrowRight" ? 16 : -16));
+    });
+  });
   header.forEach((label, column) => {
     if (column === keyColumn)
       return;
@@ -66747,13 +67022,17 @@ async function mountVariantTable(args) {
           continue;
         const value = row.cells[column.index] ?? "";
         const state2 = value === "" ? "empty" : base !== void 0 && column.index !== base.index && value === row.cells[base.index] ? "stale" : void 0;
+        const foreign = foreignIn(row, column);
         const states = [
           ...draft.has(`${row.index}:${column.index}`) ? ["mutating"] : [],
-          ...state2 === void 0 ? [] : [state2]
+          ...state2 === void 0 ? [] : [state2],
+          ...foreign ? ["invalid"] : []
         ];
         if (states.length > 0)
           setState(valueCell, states);
-        if (state2 !== void 0) {
+        if (foreign) {
+          valueCell.title = text3("table.cellForeignScript", { locale: column.variant ?? "" });
+        } else if (state2 !== void 0) {
           const key3 = state2 === "empty" ? "table.cellMissing" : "table.cellUntranslated";
           valueCell.title = text3(key3, { locale: column.variant ?? "" });
         }
@@ -66853,6 +67132,20 @@ async function mountVariantTable(args) {
     shown += VARIANT_PAGE_ROWS;
     draw();
   });
+  if (typeof IntersectionObserver === "function") {
+    const onward = new IntersectionObserver((entries) => {
+      if (!entries.some((entry2) => entry2.isIntersecting) || more.hidden)
+        return;
+      if (args.root.querySelector('[data-editing="true"]') !== null)
+        return;
+      shown += VARIANT_PAGE_ROWS;
+      draw();
+      onward.unobserve(more);
+      onward.observe(more);
+    });
+    onward.observe(more);
+    args.signal.addEventListener("abort", () => onward.disconnect(), { once: true });
+  }
   const route = {
     descriptor: args.descriptor,
     operations: args.operations,
@@ -67216,6 +67509,18 @@ async function mountVariantTable(args) {
     const answer = probe.state === "ok" && probe.output.kind === "json" ? probe.output.value : void 0;
     const reason = probe.state !== "ok" ? invokeRefusalMessage(probe) : answer?.available === true ? void 0 : answer?.reason ?? "unavailable";
     toolbar.setDisabled("translate", reason !== void 0);
+    const backends = (Array.isArray(answer?.backends) ? answer.backends : []).filter((backend) => typeof backend?.id === "string" && backend.id !== "");
+    if (reason === void 0 && backends.length > 1) {
+      for (const backend of backends) {
+        const option2 = translateService.ownerDocument.createElement("option");
+        option2.value = String(backend.id);
+        const label = String(backend.label ?? backend.id);
+        option2.disabled = backend.available !== true;
+        option2.textContent = option2.disabled ? text3("table.translateServiceOff", { service: label }) : label;
+        translateService.append(option2);
+      }
+      translateService.hidden = target.hidden;
+    }
     if (reason !== void 0) {
       const message = text3("table.translateUnavailable", { reason });
       const button = [...toolbar.root.querySelectorAll("button")].find((node) => node.getAttribute("aria-label") === text3("table.translate"));
@@ -67245,20 +67550,36 @@ async function mountVariantTable(args) {
     }
     translating = true;
     toolbar.setDisabled("translate", true);
+    const stopping = new AbortController();
+    const stop = element(panel, "button", {
+      part: "toolbar.action",
+      text: text3("table.translateStop")
+    });
+    stop.type = "button";
+    stop.addEventListener("click", () => stopping.abort(), { once: true });
+    const signal = AbortSignal.any([args.signal, stopping.signal]);
+    const context = translateContext.value.trim();
+    const backend = translateService.value;
     try {
       const ready = [];
       say(text3("table.working"));
       for (const row of empty.slice(0, TRANSLATE_BATCH)) {
         if (args.signal.aborted)
           return;
+        if (stopping.signal.aborted) {
+          setViewerText(element(panel, "p", {}), text3("table.translateStopped"));
+          break;
+        }
         const key3 = row.cells[keyColumn] ?? "";
         const result = await invokeOperation(args.descriptor, args.operations, actions.translateVariant, {
           key: key3,
           sourceVariant: base.variant ?? "",
           targetVariant: column.variant ?? "",
           sourceLanguage: base.language ?? base.variant ?? "",
-          targetLanguage: column.language ?? column.variant ?? ""
-        }, { signal: args.signal });
+          targetLanguage: column.language ?? column.variant ?? "",
+          ...context === "" ? {} : { context },
+          ...backend === "" ? {} : { backend }
+        }, { signal });
         const value = result.state === "ok" && result.output.kind === "json" ? result.output.value : void 0;
         const refused3 = result.state !== "ok" ? invokeRefusalMessage(result) : value?.refused;
         const line = element(panel, "p", { part: "table.compare" });
@@ -67270,6 +67591,7 @@ async function mountVariantTable(args) {
         if (value.changed !== false)
           ready.push({ key: key3, value: value.translated });
       }
+      stop.remove();
       say(text3("table.translateReady", { count: ready.length, variant: column.variant ?? "" }));
       if (ready.length === 0 || actions.addRow === void 0)
         return;
@@ -67287,8 +67609,13 @@ async function mountVariantTable(args) {
           panel.hidden = true;
       });
     } catch (error5) {
-      say(text3("table.refused", { reason: error5 instanceof Error ? error5.message : String(error5) }));
+      if (stopping.signal.aborted && !args.signal.aborted) {
+        setViewerText(element(panel, "p", {}), text3("table.translateStopped"));
+      } else {
+        say(text3("table.refused", { reason: error5 instanceof Error ? error5.message : String(error5) }));
+      }
     } finally {
+      stop.remove();
       translating = false;
       if (!args.signal.aborted)
         toolbar.setDisabled("translate", false);
@@ -69034,6 +69361,83 @@ function createVectorViewer(options = {}) {
   });
 }
 var vectorViewer = createVectorViewer();
+
+// ../MODDING/modkit-core/packages/ui/dist/font/index.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var FONT_MAXIMUM_BYTES = 32 * 1024 * 1024;
+var FONT_SPECIMEN_SIZES = Object.freeze([12, 16, 20, 28, 40, 56, 80]);
+var FONT_SETS = Object.freeze([
+  ["viewer.fontLatin", "ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz"],
+  ["viewer.fontCyrillic", "\u0410\u0411\u0412\u0413\u0414\u0415\u0401\u0416\u0417\u0418\u0419\u041A\u041B\u041C\u041D\u041E\u041F\u0420\u0421\u0422\u0423\u0424\u0425\u0426\u0427\u0428\u0429\u042A\u042B\u042C\u042D\u042E\u042F \u0430\u0431\u0432\u0433\u0434\u0435\u0451\u0436\u0437\u0438\u0439\u043A\u043B\u043C\u043D\u043E\u043F\u0440\u0441\u0442\u0443\u0444\u0445\u0446\u0447\u0448\u0449\u044A\u044B\u044C\u044D\u044E\u044F"],
+  ["viewer.fontDigits", "0123456789 !@#$%^&*()_+-=[]{}|;:,.<>?"]
+]);
+var faces = 0;
+function createFontViewer(options = {}) {
+  const localizer = withEnglishUiFallback(options.localizer, FONT_FALLBACK_MESSAGES);
+  return defineViewerModule({
+    abiVersion: 1,
+    async mount(args) {
+      const scope = new ViewerMountScope(args.signal);
+      const root = createSurface(args.container, localizer.text("viewer.font"));
+      const lease2 = await unknownSourceLease(args.sources, args.slot, "common.view/byte-range-source");
+      if (lease2 === void 0)
+        throw new TypeError("font binding is unavailable");
+      scope.lease(lease2);
+      const source2 = lease2.value;
+      const status = element(root, "output", { part: "viewer.status" });
+      const mounted = () => createViewerMount(root, scope, args, ({ descriptor }) => {
+        root.dataset["revision"] = descriptor.revision;
+      });
+      const size = await source2.size();
+      if (size > BigInt(FONT_MAXIMUM_BYTES)) {
+        setViewerText(status, localizer.text("viewer.fontTooLarge", { limit: FONT_MAXIMUM_BYTES / 1024 / 1024 }));
+        return mounted();
+      }
+      const face = new FontFace(`modkit-font-${String(++faces)}`, new Uint8Array(await source2.read(0n, Number(size), scope.signal)));
+      try {
+        await face.load();
+      } catch (error5) {
+        setViewerText(status, localizer.text("viewer.fontRefused", {
+          reason: error5 instanceof Error ? error5.message : String(error5)
+        }), 1024);
+        return mounted();
+      }
+      const fonts = root.ownerDocument.fonts;
+      fonts.add(face);
+      scope.cleanup(() => {
+        fonts.delete(face);
+      });
+      const family = `"${face.family}"`;
+      const specimen = element(root, "div", { part: "font" });
+      const toolbar = element(specimen, "div", { part: "font.toolbar" });
+      const text3 = element(toolbar, "input", { part: "font.text" });
+      text3.type = "text";
+      text3.value = localizer.text("viewer.fontSample");
+      text3.setAttribute("aria-label", localizer.text("viewer.fontText"));
+      const samples = [];
+      for (const pixels of FONT_SPECIMEN_SIZES) {
+        const row = element(specimen, "div", { part: "font.row" });
+        element(row, "span", { part: "font.size", text: `${String(pixels)}px` });
+        const sample = element(row, "span", { part: "font.sample", text: text3.value });
+        sample.style.fontFamily = family;
+        sample.style.fontSize = `${String(pixels)}px`;
+        samples.push(sample);
+      }
+      for (const [label, characters] of FONT_SETS) {
+        element(specimen, "h2", { part: "font.heading", text: localizer.text(label) });
+        element(specimen, "div", { part: "font.set", text: characters }).style.fontFamily = family;
+      }
+      const retype = () => {
+        for (const sample of samples)
+          sample.textContent = text3.value;
+      };
+      text3.addEventListener("input", retype);
+      scope.cleanup(() => text3.removeEventListener("input", retype));
+      return mounted();
+    }
+  });
+}
+var fontViewer = createFontViewer();
 
 // ../MODDING/modkit-core/packages/ui/dist/world/index.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
@@ -72962,7 +73366,7 @@ function createWorldWebGlPlan(input, previousPlan) {
         const normalTexture = normalLayer?.resourceId === void 0 || (normalLayer.uvSource ?? 0) !== requestedUv ? void 0 : result.textures?.find((candidate) => candidate.id === normalLayer.resourceId);
         const textureCoordinates = primitive.textureCoordinateSets?.find((candidate) => candidate.set === requestedUv)?.coordinates ?? (requestedUv === 0 ? primitive.textureCoordinates : void 0);
         const factor2 = material?.baseColorFactor ?? (texture === void 0 && primitive.colors === void 0 ? colorHash(primitive.materialId ?? item.kind) : [1, 1, 1, 1]);
-        const unlit = material?.unlit === true;
+        const unlit2 = material?.unlit === true;
         const priority = blendMode === void 0 ? 0 : material?.priority ?? 0;
         const tint = item.presentationTint ?? [1, 1, 1];
         const albedo = team !== void 0 && team.mask === void 0 && texture === void 0 ? [
@@ -72992,7 +73396,7 @@ function createWorldWebGlPlan(input, previousPlan) {
           if (texture !== void 0 && textureCoordinates !== void 0 && textureCoordinates.length >= primitive.positions.length / 3 * 2) {
             if (texturedWrite === void 0) {
               const teamKey = team === void 0 ? "" : `${team.mask?.id ?? "whole"}:${String(team.channel)}:${String(team.blend)}:${team.color.join(",")}`;
-              const key3 = `${result.sourceKey}\0${texture.id}\0${normalTexture?.id ?? ""}\0${blendMode ?? "opaque"}\0${String(coverage.cutoff)}\0${String(shadowPolicy.castShadows)}\0${String(shadowPolicy.receiveShadows)}\0${String(unlit)}\0${String(priority)}\0${teamKey}`;
+              const key3 = `${result.sourceKey}\0${texture.id}\0${normalTexture?.id ?? ""}\0${blendMode ?? "opaque"}\0${String(coverage.cutoff)}\0${String(shadowPolicy.castShadows)}\0${String(shadowPolicy.receiveShadows)}\0${String(unlit2)}\0${String(priority)}\0${teamKey}`;
               const collection = blendMode === void 0 ? textured : transparentTextured;
               const target = collection.get(key3) ?? {
                 ...batch(),
@@ -73003,7 +73407,7 @@ function createWorldWebGlPlan(input, previousPlan) {
                 castShadows: shadowPolicy.castShadows,
                 receiveShadows: shadowPolicy.receiveShadows,
                 ...coverage.cutoff === 0 ? {} : { alphaCutoff: coverage.cutoff },
-                ...unlit ? { unlit } : {},
+                ...unlit2 ? { unlit: unlit2 } : {},
                 ...priority === 0 ? {} : { priority },
                 ...team === void 0 ? {} : { team }
               };
@@ -73344,8 +73748,9 @@ function createWorldWebGlPlan(input, previousPlan) {
     maximum.fill(0.5);
   }
   const lighting = worldFacetItems(preparation, input.items, "lighting")[0];
-  const directional = lighting?.directional[0];
-  const ambient = lighting?.ambientColor ?? [1, 1, 1];
+  const unlit = lighting?.model === "unlit";
+  const directional = unlit ? void 0 : lighting?.directional[0];
+  const ambient = unlit ? lighting?.unlitColor ?? [1, 1, 1] : lighting?.ambientColor ?? [1, 1, 1];
   const stated = directional?.direction;
   const direction = stated === void 0 ? [-0.45, -1, -0.35] : lighting?.coordinateSpaceId === "map-native" ? [stated[0], stated[2], stated[1]] : stated;
   const lightColor = directional?.color ?? [1, 0.97, 0.9];
@@ -73407,18 +73812,18 @@ function createWorldWebGlPlan(input, previousPlan) {
     bounds: Object.freeze({ minimum: Object.freeze(minimum), maximum: Object.freeze(maximum) }),
     light: Object.freeze({
       ...lighting?.toneMapping === void 0 ? {} : { toneMapping: lighting.toneMapping },
-      ...lighting?.terrain === void 0 ? {} : { terrain: lighting.terrain },
+      ...lighting?.terrain === void 0 || unlit ? {} : { terrain: lighting.terrain },
       ...lighting?.shadowRange === void 0 ? {} : { shadowRange: lighting.shadowRange },
       ...lighting?.fog === void 0 ? {} : { fog: lighting.fog },
       specularColor: directional?.specularColor ?? lightColor,
-      specularIntensity: directional?.specularIntensity ?? directional?.intensity ?? 0.9,
-      useAmbientOcclusion: directional?.useAmbientOcclusion ?? true,
+      specularIntensity: unlit ? 0 : directional?.specularIntensity ?? directional?.intensity ?? 0.9,
+      useAmbientOcclusion: !unlit && (directional?.useAmbientOcclusion ?? true),
       ambient,
-      ambientIntensity: lighting?.ambientIntensity ?? 0.36,
+      ambientIntensity: unlit ? 1 : lighting?.ambientIntensity ?? 0.36,
       direction,
       color: lightColor,
-      intensity: directional?.intensity ?? 0.9,
-      fills: Object.freeze((lighting?.directional ?? []).slice(1, 1 + MAXIMUM_FILL_LIGHTS).map((light) => Object.freeze({
+      intensity: unlit ? 0 : directional?.intensity ?? 0.9,
+      fills: Object.freeze((unlit ? [] : lighting?.directional ?? []).slice(1, 1 + MAXIMUM_FILL_LIGHTS).map((light) => Object.freeze({
         direction: light.direction,
         color: light.color,
         intensity: light.intensity,
@@ -78646,6 +79051,13 @@ function createWebPreviewStages(context) {
       module: createImageViewer({ localizer })
     },
     {
+      id: "font",
+      label: text3("web.view.font"),
+      contract: "common.view/byte-range-source",
+      trait: "content.fonts",
+      module: createFontViewer({ localizer })
+    },
+    {
       id: "vector",
       label: text3("web.view.vector"),
       contract: "common.view/vector-scene-source",
@@ -78820,6 +79232,7 @@ export {
   nestedSubjectServices,
   openNestedSubjectRef,
   openNestedSubject,
+  MAP_PREVIEW_COORDINATOR_LIMITS,
   coordinateMapPreviewAssetSession,
   createScopedViewerSubjectNavigation,
   withoutHiddenEntries,

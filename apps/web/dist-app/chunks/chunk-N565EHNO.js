@@ -14,19 +14,33 @@ import {
 } from "./chunk-OAFBQXD6.js";
 import {
   readUvmAccessor
-} from "./chunk-5DT7SGOU.js";
+} from "./chunk-VWR4X3UB.js";
 import {
   readUvmAnimationClips,
   readUvmKeyTimes,
   readUvmPrimitiveVisibility,
+  uvmAnimationEvents,
+  uvmAnimationPlayback,
   uvmVisibilityTarget
-} from "./chunk-CTXZR5MG.js";
+} from "./chunk-I43233HX.js";
 import {
   composeTrsMatrix
 } from "./chunk-5SBJANAJ.js";
 
 // ../MODDING/modkit-core/packages/scene/dist/uvm/rig.js
 var identity = () => [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
+function clipEvents(animation, nodeCount) {
+  const events = uvmAnimationEvents(field(animation["extensions"], "UV_game_animation_events"), nodeCount);
+  return events.length === 0 ? {} : {
+    events: events.map((event) => ({
+      timeSeconds: event.t,
+      name: event.name,
+      ...event.socket === void 0 ? {} : { nodeId: `node-${event.socket}` },
+      ...event.payload === void 0 ? {} : { payload: event.payload },
+      ...event.duration === void 0 ? {} : { durationSeconds: event.duration }
+    }))
+  };
+}
 function uvMetadata(value) {
   const extras = value["extras"];
   if (extras === void 0)
@@ -266,6 +280,8 @@ function decodeUvmRig(document, readAccessor, maxScalarBytes, sceneNodes, signal
       channels,
       ...metadata["looping"] === void 0 ? {} : { looping: metadata["looping"] },
       ...metadata["repeatCount"] === void 0 ? {} : { repeatCount: metadata["repeatCount"] },
+      ...uvmAnimationPlayback(field(animation["extensions"], "UV_game_animation_clips")),
+      ...clipEvents(animation, nodes.length),
       ...unsupportedChannels === 0 ? {} : { unsupportedChannels },
       ...sequenceIndex === void 0 ? {} : { sequenceIndex }
     });
