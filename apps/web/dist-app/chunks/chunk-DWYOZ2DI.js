@@ -15,7 +15,7 @@ import {
   setState,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-S34VKIDA.js";
+} from "./chunk-2TTGFQVJ.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunk-BLWUC7LO.js";

@@ -727,6 +727,7 @@ function snapshotMethod(name, raw, surface) {
   const arity = raw.arity;
   const optional = raw.optional;
   const batchItems = raw.batchItems;
+  const deadlineMs = raw.deadlineMs;
   const validateArgs = raw.validateArgs;
   const validateReturn = raw.validateReturn;
   if (kind !== "value" && kind !== "lease" && kind !== "leased-value" && kind !== "iterable" && kind !== "events") {
@@ -740,6 +741,9 @@ function snapshotMethod(name, raw, surface) {
   }
   if (batchItems !== void 0 && (kind !== "iterable" || !Number.isSafeInteger(batchItems) || batchItems < 1)) {
     return invalidSurface(`method \xAB${name}\xBB has an invalid batchItems`, { surface });
+  }
+  if (deadlineMs !== void 0 && (!Number.isSafeInteger(deadlineMs) || deadlineMs < 0)) {
+    return invalidSurface(`method \xAB${name}\xBB has an invalid deadline`, { surface });
   }
   if (resultFromArgs !== void 0 && (typeof resultFromArgs !== "object" || resultFromArgs === null || !isArgRef(resultFromArgs.contract) || !isArgRef(resultFromArgs.major) || argRefKey(resultFromArgs.contract) === argRefKey(resultFromArgs.major))) {
     return invalidSurface(`method \xAB${name}\xBB has invalid resultFromArgs positions`, { surface });
@@ -796,6 +800,7 @@ function snapshotMethod(name, raw, surface) {
     ...arity === void 0 ? {} : { arity },
     ...optional === void 0 ? {} : { optional },
     ...batchItems === void 0 ? {} : { batchItems },
+    ...deadlineMs === void 0 ? {} : { deadlineMs },
     ...validateArgs === void 0 ? {} : { validateArgs },
     ...validateReturn === void 0 ? {} : { validateReturn }
   });
@@ -1530,7 +1535,8 @@ var EndpointImpl = class _EndpointImpl {
         }
         const outcome = await remote.call(name, args, {
           ...signal === void 0 ? {} : { signal },
-          ...onProgress === void 0 ? {} : { onProgress }
+          ...onProgress === void 0 ? {} : { onProgress },
+          ...method.deadlineMs === void 0 ? {} : { deadlineMs: method.deadlineMs }
         });
         switch (outcome.kind) {
           case "value":

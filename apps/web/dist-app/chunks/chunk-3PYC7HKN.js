@@ -5,7 +5,7 @@ import {
   createMediaShell,
   mediaFacts,
   mountContributedSections
-} from "./chunk-6CRNUBVW.js";
+} from "./chunk-GRQ2DAQD.js";
 import {
   IMAGE_EDITING_FALLBACK_MESSAGES,
   IMAGE_FALLBACK_MESSAGES,
@@ -22,7 +22,7 @@ import {
   uiPreference,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-S34VKIDA.js";
+} from "./chunk-2TTGFQVJ.js";
 import {
   createSubjectCandidateProvider,
   isKnowledgeTarget,

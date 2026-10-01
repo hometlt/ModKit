@@ -1825,6 +1825,7 @@
   }
 
   [data-mk-part='table.badge'][data-status='error'],
+  [data-mk-part='table.badge'][data-status='broken-ref'],
   [data-mk-part='table.badge'][data-status='missing'],
   [data-mk-part='table.badge'][data-status='empty'] {
     color: var(--mk-status-error);

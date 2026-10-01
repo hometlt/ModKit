@@ -1,12 +1,12 @@
 import {
   createVideoViewer
-} from "./chunk-RM2A3HIE.js";
+} from "./chunk-YHDKYGJK.js";
 import {
   createAudioViewer
-} from "./chunk-2G743M23.js";
+} from "./chunk-BBPEOGNI.js";
 import {
   createRelationGraphViewer
-} from "./chunk-B5NKOS45.js";
+} from "./chunk-DWYOZ2DI.js";
 import {
   MODEL_FACET_CONTRACTS,
   commitOperationWrite,
@@ -15,7 +15,7 @@ import {
   modelMaterialTeamColor,
   mountFieldEditTarget,
   mountInlineField
-} from "./chunk-BGGILURI.js";
+} from "./chunk-5LQ2RDC2.js";
 import {
   metadataFieldProjections
 } from "./chunk-CW2HIMYV.js";
@@ -110,7 +110,7 @@ import {
   createImageViewer,
   createNamespaceViewer,
   invokeRefusalMessage
-} from "./chunk-GP37WETK.js";
+} from "./chunk-3PYC7HKN.js";
 import {
   MEDIA_ZOOM_CHOICES,
   canvasPng,
@@ -119,7 +119,7 @@ import {
   createMediaShell,
   mediaFacts,
   textMatches
-} from "./chunk-6CRNUBVW.js";
+} from "./chunk-GRQ2DAQD.js";
 import {
   CALCULATIONS_FALLBACK_MESSAGES,
   CARD_FALLBACK_MESSAGES,
@@ -166,7 +166,7 @@ import {
   uiPreference,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-S34VKIDA.js";
+} from "./chunk-2TTGFQVJ.js";
 import {
   PERMISSION_CLASSES,
   contributionId,
@@ -8076,6 +8076,10 @@ var NAMESPACE_SCOPES = Object.freeze([
   "enclosing-container"
 ]);
 var NESTED_ENTRY_NOT_FOUND = "x3.host/nested-entry-not-found";
+var BYTE_RANGE_SOURCE = "common.view/byte-range-source";
+function storedEntrySource(session, descriptor) {
+  return descriptor.dataSources.some((item) => item.contract === BYTE_RANGE_SOURCE && item.major === 1) ? () => session.dataSource(BYTE_RANGE_SOURCE, 1) : void 0;
+}
 function createNamespaceCompanionOrigin(options) {
   const pageLimit = options.pageLimit ?? 256;
   const caseSensitivity = options.caseSensitivity ?? "insensitive";
@@ -8114,6 +8118,7 @@ function createNamespaceCompanionOrigin(options) {
               path: entry2.path,
               ...entry2.size === void 0 ? {} : { size: entry2.size },
               ...entry2.rangeAccess === true ? { rangeAccess: true } : {},
+              ...entry2.storedRange === void 0 ? {} : { storedRange: entry2.storedRange },
               revision: entry2.revision
             };
             built.set(key3, value);
@@ -8164,8 +8169,9 @@ function createNamespaceCompanionOrigin(options) {
           context: { logicalId }
         });
       }
-      if (entry2.rangeAccess === true && options.namespace.openEntrySource !== void 0)
-        return rangeEntryLease(options.namespace, entry2.entryId, options.containerRevision, signal);
+      const ranged = rangeEntryLease(options.namespace, entry2, options.containerRevision, options.openStoredSource, signal);
+      if (ranged !== void 0)
+        return ranged;
       if (options.maxSourceBytes !== void 0 && entry2.size !== void 0 && entry2.size > options.maxSourceBytes)
         throw new ModkitError({
           code: COMPANION_BUDGET_EXCEEDED,
@@ -8196,7 +8202,8 @@ function createWorkspaceNamespaceCompanionOrigin(options) {
       ...root,
       namespace: options.namespace,
       containerRevision: options.containerRevision,
-      extract: options.extract
+      extract: options.extract,
+      ...options.openStoredSource === void 0 ? {} : { openStoredSource: options.openStoredSource }
     })),
     ...options.caseSensitivity === void 0 ? {} : { caseSensitivity: options.caseSensitivity },
     ...options.pageLimit === void 0 ? {} : { pageLimit: options.pageLimit },
@@ -8223,6 +8230,7 @@ function createCompositeWorkspaceNamespaceCompanionOrigin(options) {
       namespace: root.namespace,
       containerRevision: root.containerRevision,
       extract: root.extract,
+      ...root.openStoredSource === void 0 ? {} : { openStoredSource: root.openStoredSource },
       ...root.assetRoots === void 0 ? {} : {
         assetRoots: Object.freeze(root.assetRoots.map((pattern) => pattern === "" ? "" : normalizeCompanionLogicalId(pattern).replace(/\/$/u, "")))
       }
@@ -8312,10 +8320,12 @@ function createCompositeWorkspaceNamespaceCompanionOrigin(options) {
         path: entry2.path,
         ...entry2.size === void 0 ? {} : { size: entry2.size },
         ...entry2.rangeAccess === true ? { rangeAccess: true } : {},
+        ...entry2.storedRange === void 0 ? {} : { storedRange: entry2.storedRange },
         revision: entry2.revision,
         namespace: root.namespace,
         containerRevision: root.containerRevision,
-        extract: root.extract
+        extract: root.extract,
+        ...root.openStoredSource === void 0 ? {} : { openStoredSource: root.openStoredSource }
       });
     }
     return logicalId;
@@ -8441,8 +8451,9 @@ function createCompositeWorkspaceNamespaceCompanionOrigin(options) {
           context: { logicalId }
         });
       }
-      if (entry2.rangeAccess === true && entry2.namespace.openEntrySource !== void 0)
-        return rangeEntryLease(entry2.namespace, entry2.entryId, entry2.containerRevision, signal);
+      const ranged = rangeEntryLease(entry2.namespace, entry2, entry2.containerRevision, entry2.openStoredSource, signal);
+      if (ranged !== void 0)
+        return ranged;
       const refLease = await entry2.namespace.openEntry(entry2.entryId, signal);
       let bytes;
       try {
@@ -8677,19 +8688,28 @@ function containerEntryRangeSource(ref2, revision, parent, range) {
     }
   });
 }
-async function rangeEntryLease(namespace, entryId, containerRevision, signal) {
+function rangeEntryLease(namespace, entry2, containerRevision, openStoredSource, signal) {
+  const { entryId, storedRange } = entry2;
+  if (entry2.rangeAccess === true && namespace.openEntrySource !== void 0)
+    return entryRangeLease(namespace, entryId, containerRevision, signal, () => namespace.openEntrySource(entryId, signal));
+  if (storedRange !== void 0 && openStoredSource !== void 0)
+    return entryRangeLease(namespace, entryId, containerRevision, signal, openStoredSource, storedRange);
+  return void 0;
+}
+async function entryRangeLease(namespace, entryId, containerRevision, signal, openSource, storedRange) {
   const refLease = await namespace.openEntry(entryId, signal);
   let sourceLease;
   try {
-    sourceLease = await namespace.openEntrySource(entryId, signal);
+    throwIfAborted(signal);
+    sourceLease = await openSource();
   } catch (error5) {
     await refLease.release();
     throw error5;
   }
   try {
-    const size = await sourceLease.value.size();
+    const range = storedRange ?? { offset: 0n, length: await sourceLease.value.size() };
     return Object.freeze({
-      value: containerEntryRangeSource(refLease.value, containerEntryRevision(containerRevision, entryId, size), sourceLease.value, { offset: 0n, length: size }),
+      value: containerEntryRangeSource(refLease.value, containerEntryRevision(containerRevision, entryId, range.length), sourceLease.value, range),
       release: async () => {
         await sourceLease.release();
         await refLease.release();
@@ -8987,6 +9007,7 @@ async function createContainerNamespaceComposition(options) {
     throw error5;
   }
   const namespace = namespaceLease.value;
+  const openStoredSource = storedEntrySource(options.parent, descriptor);
   const parentOperations = options.parent.operations();
   const bindings = /* @__PURE__ */ new Map();
   const outstanding = /* @__PURE__ */ new Set();
@@ -9293,6 +9314,7 @@ async function createContainerNamespaceComposition(options) {
           containerRevision: options.revision,
           maxPages: options.budget.maxNodes,
           maxSourceBytes,
+          ...openStoredSource === void 0 ? {} : { openStoredSource },
           async extract(entryId, signal) {
             ensureLive(signal);
             const result = await parentOperations.invoke(extractHandlerId, { entryId }, signal === void 0 ? {} : { signal });
@@ -12297,7 +12319,6 @@ var NESTED_SUBJECT_UNSUPPORTED = "x3.host/nested-subject-unsupported";
 var NESTED_ENTRY_UNREADABLE = "x3.host/nested-entry-unreadable";
 var CONTAINER_EXTRACT2 = "container.extract";
 var NAMESPACE_ENTRY_SOURCE2 = "common.view/namespace-entry-source";
-var BYTE_RANGE_SOURCE = "common.view/byte-range-source";
 function nestedSubjectServices(services) {
   return {
     inventory: services.inventory,
@@ -12465,8 +12486,9 @@ async function openNestedSubject(options) {
       return invoked.output.value;
     };
     const refLease = await namespace.openEntry(entry2.id, options.signal);
+    const openStoredSource = storedEntrySource(options.parent, descriptor);
     const entrySourceLease = entry2.rangeAccess === true && namespace.openEntrySource !== void 0 ? await namespace.openEntrySource(entry2.id, options.signal) : void 0;
-    const rangeLease = entrySourceLease === void 0 && entry2.storedRange !== void 0 && descriptor.dataSources.some((item) => item.contract === BYTE_RANGE_SOURCE && item.major === 1) ? await options.parent.dataSource(BYTE_RANGE_SOURCE, 1) : void 0;
+    const rangeLease = entrySourceLease === void 0 && entry2.storedRange !== void 0 && openStoredSource !== void 0 ? await openStoredSource() : void 0;
     const previousRelease = release;
     let refReleased = false;
     const releaseAll2 = async () => {
@@ -12494,6 +12516,7 @@ async function openNestedSubject(options) {
         primaryLogicalId,
         containerRevision: descriptor.revision,
         extract,
+        ...openStoredSource === void 0 ? {} : { openStoredSource },
         ...caseSensitivity === void 0 ? {} : { caseSensitivity },
         pageLimit
       };
@@ -13128,6 +13151,7 @@ function snapshotMethod(name, raw, surface) {
   const arity = raw.arity;
   const optional = raw.optional;
   const batchItems = raw.batchItems;
+  const deadlineMs = raw.deadlineMs;
   const validateArgs = raw.validateArgs;
   const validateReturn = raw.validateReturn;
   if (kind !== "value" && kind !== "lease" && kind !== "leased-value" && kind !== "iterable" && kind !== "events") {
@@ -13141,6 +13165,9 @@ function snapshotMethod(name, raw, surface) {
   }
   if (batchItems !== void 0 && (kind !== "iterable" || !Number.isSafeInteger(batchItems) || batchItems < 1)) {
     return invalidSurface(`method \xAB${name}\xBB has an invalid batchItems`, { surface });
+  }
+  if (deadlineMs !== void 0 && (!Number.isSafeInteger(deadlineMs) || deadlineMs < 0)) {
+    return invalidSurface(`method \xAB${name}\xBB has an invalid deadline`, { surface });
   }
   if (resultFromArgs !== void 0 && (typeof resultFromArgs !== "object" || resultFromArgs === null || !isArgRef(resultFromArgs.contract) || !isArgRef(resultFromArgs.major) || argRefKey(resultFromArgs.contract) === argRefKey(resultFromArgs.major))) {
     return invalidSurface(`method \xAB${name}\xBB has invalid resultFromArgs positions`, { surface });
@@ -13197,6 +13224,7 @@ function snapshotMethod(name, raw, surface) {
     ...arity === void 0 ? {} : { arity },
     ...optional === void 0 ? {} : { optional },
     ...batchItems === void 0 ? {} : { batchItems },
+    ...deadlineMs === void 0 ? {} : { deadlineMs },
     ...validateArgs === void 0 ? {} : { validateArgs },
     ...validateReturn === void 0 ? {} : { validateReturn }
   });
@@ -13579,7 +13607,8 @@ var EndpointImpl = class _EndpointImpl {
         }
         const outcome = await remote.call(name, args, {
           ...signal === void 0 ? {} : { signal },
-          ...onProgress === void 0 ? {} : { onProgress }
+          ...onProgress === void 0 ? {} : { onProgress },
+          ...method.deadlineMs === void 0 ? {} : { deadlineMs: method.deadlineMs }
         });
         switch (outcome.kind) {
           case "value":
@@ -15124,15 +15153,16 @@ function createStandardSurfaceRegistry(options = {}) {
 // ../MODDING/modkit-core/packages/host/dist/subject-rpc.js
 var SUBJECT_SERVICES = Object.freeze({ contract: "x3.app/subject-services", major: 1 });
 var SUBJECT_EDITING = Object.freeze({ contract: "x3.app/subject-editing", major: 1 });
+var SUBJECT_OPEN_DEADLINE_MS = 6e5;
 var subjectServicesSurface = {
   ...SUBJECT_SERVICES,
   methods: {
     /** `open(path)` → an inert snapshot (opened carries a `sessionId` to attach). */
-    open: { kind: "value", signal: "last" },
+    open: { kind: "value", signal: "last", deadlineMs: SUBJECT_OPEN_DEADLINE_MS },
     /** `attach(sessionId)` → the live session under `x3.abi/asset-session@1`. */
     attach: { kind: "lease", result: ABI_ASSET_SESSION, wrapper: "bare" },
     /** `navigate(sessionId, target)` resolves a target from that exact live parent session. */
-    navigate: { kind: "value", signal: "last", arity: 2 },
+    navigate: { kind: "value", signal: "last", arity: 2, deadlineMs: SUBJECT_OPEN_DEADLINE_MS },
     /** `edit(sessionId)` → the editing arm, when this host can write this subject. */
     edit: { kind: "lease", result: SUBJECT_EDITING, wrapper: "bare" },
     /** Decode one bounded image through the attached subject's confined resource origin. */
@@ -23120,6 +23150,7 @@ async function resolveSubjectNamespacePreviewResources(request) {
       pathPrefix: namespacePrefixes.get(root.rootId) ?? "",
       logicalPrefix: root.sourcePath
     }));
+    const openStoredSource = storedEntrySource(request.original, request.descriptor);
     return Object.freeze({
       state: "resolved",
       origin: createWorkspaceNamespaceCompanionOrigin({
@@ -23127,7 +23158,8 @@ async function resolveSubjectNamespacePreviewResources(request) {
         primaryLogicalId: request.activeSourcePath,
         logicalRoots,
         containerRevision: request.descriptor.revision,
-        extract
+        extract,
+        ...openStoredSource === void 0 ? {} : { openStoredSource }
       }),
       revision: request.descriptor.revision,
       diagnostics: Object.freeze([
@@ -65811,13 +65843,13 @@ var PREVIEW_STAGES = [
 async function defaultPreviewStage(kind, localizer) {
   switch (kind) {
     case "model":
-      return (await import("./model-MWTXTAR2.js")).createModelViewer({ localizer });
+      return (await import("./model-QSXGNKAJ.js")).createModelViewer({ localizer });
     case "image":
-      return (await import("./image-XZVDR5QH.js")).createImageViewer({ localizer });
+      return (await import("./image-3KATOXWA.js")).createImageViewer({ localizer });
     case "video":
-      return (await import("./video-KR6DCCKK.js")).createVideoViewer({ localizer });
+      return (await import("./video-36HGRJJM.js")).createVideoViewer({ localizer });
     case "audio":
-      return (await import("./audio-B3UL65JS.js")).createAudioViewer({ localizer });
+      return (await import("./audio-NFLU37ES.js")).createAudioViewer({ localizer });
   }
 }
 function embedPreview(sections, args, scope, localizer, previews) {
@@ -65856,7 +65888,7 @@ function embedRelationGraph(sections, args, scope, localizer, graph) {
   return [
     ...sections,
     stageSection({ id: "relations-graph", title: localizer.text("card.relationGraph"), expanded: false }, scope, localizer, "card.relationGraphUnavailable", async (host) => {
-      const module = graph ?? (await import("./graph-LRUW625X.js")).createRelationGraphViewer({ localizer });
+      const module = graph ?? (await import("./graph-ETUNU4Y5.js")).createRelationGraphViewer({ localizer });
       return scope.signal.aborted ? void 0 : module.mount({ ...args, container: host, signal: scope.signal });
     })
   ];
@@ -66462,7 +66494,9 @@ var FILTER_LABELS = {
   // a value the codec's checks refuse in some locale (SC2: markup, a hotkey)
   error: "table.filterErrors",
   changed: "table.filterChanged",
-  review: "table.filterReview"
+  review: "table.filterReview",
+  // a reference in a value naming an entity the mod does not have (SC2: `<d ref>`, `<s ref>`)
+  "broken-ref": "table.filterBrokenRef"
 };
 var BADGE_LABELS = {
   missing: "table.badgeMissing",
@@ -66471,7 +66505,8 @@ var BADGE_LABELS = {
   empty: "table.badgeEmpty",
   error: "table.badgeError",
   changed: "table.badgeChanged",
-  review: "table.badgeReview"
+  review: "table.badgeReview",
+  "broken-ref": "table.badgeBrokenRef"
 };
 var COMPARE_LABELS = {
   missing: "table.filterMissing",
@@ -66665,6 +66700,7 @@ async function mountVariantTable(args) {
     "duplicate",
     "empty",
     "error",
+    "broken-ref",
     "changed",
     ...args.baseline === void 0 ? [] : ["review"]
   ];
@@ -77767,7 +77803,7 @@ var WORLD_VIEWER_MAX_BYTES_PER_MODEL = 24 * 1024 * 1024;
 var WORLD_VIEWER_TEXTURE_BYTES_PER_MODEL = 2 * 1024 * 1024;
 var WORLD_VIEWER_SPENT_TEXTURE_BYTES_PER_MODEL = 256 * 1024;
 var WORLD_VIEWER_MAX_CONCURRENT_MODEL_ACQUISITIONS = 4;
-var WORLD_VIEWER_MAX_TERRAIN_TEXTURES = 256;
+var WORLD_VIEWER_MAX_TERRAIN_TEXTURES = 4096;
 function worldModelAssetStatus(model) {
   const ids = new Set(model.layers.flatMap(({ page: page2 }) => page2.items.flatMap((item) => item.facet === "resources" && item.modelResource !== void 0 ? [item.id] : [])));
   let converted = 0;
@@ -78040,7 +78076,7 @@ async function inspectCandidateWorld(source2, options) {
   };
   const terrainTextures = /* @__PURE__ */ new Map();
   const terrainTextureDiagnostics = [];
-  const terrainTextureIds = [
+  const allTerrainTextureIds = [
     ...new Set(inspected.flatMap(({ layer: layer2 }) => [
       ...(layer2.materials ?? []).flatMap((material) => [
         material.baseColorResourceId,
@@ -78058,7 +78094,10 @@ async function inspectCandidateWorld(source2, options) {
       ].filter((resourceId2) => resourceId2 !== void 0)),
       ...(layer2.weightRasters ?? []).map((raster) => raster.resourceId)
     ]))
-  ].slice(0, WORLD_VIEWER_MAX_TERRAIN_TEXTURES);
+  ];
+  const terrainTextureIds = allTerrainTextureIds.slice(0, WORLD_VIEWER_MAX_TERRAIN_TEXTURES);
+  if (allTerrainTextureIds.length > terrainTextureIds.length)
+    terrainTextureDiagnostics.push(diagnostic("warning", "x3.ui/world-terrain-textures-capped", `the terrain names ${allTerrainTextureIds.length} textures; the first ${terrainTextureIds.length} are loaded.`));
   if (options.previous?.snapshotId === identity.snapshotId) {
     for (const resourceId2 of terrainTextureIds) {
       const previous = options.previous.terrainTextures?.get(resourceId2);
