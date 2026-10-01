@@ -5,7 +5,7 @@ import {
   createMediaShell,
   mediaFacts,
   mountContributedSections
-} from "./chunk-KWS6AF3F.js";
+} from "./chunk-PTYGPWW5.js";
 import {
   IMAGE_EDITING_FALLBACK_MESSAGES,
   IMAGE_FALLBACK_MESSAGES,
@@ -22,7 +22,7 @@ import {
   uiPreference,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-MC4F5UWG.js";
+} from "./chunk-6YIXCJUM.js";
 import {
   createSubjectCandidateProvider,
   isKnowledgeTarget,
@@ -2785,10 +2785,38 @@ function createImageViewer(options = {}) {
                 next.data.set(outcome.image.rgba.subarray(0, next.data.length));
                 editing?.applyImage(next);
                 note = "";
+                if (copy !== void 0)
+                  copy.hidden = false;
                 paint();
               })();
             });
             run.textContent = localizer.text("viewer.imageOperationRun");
+            const copyPresetId = operation.copyPresetId;
+            const write = options.exportBytes;
+            const copy = copyPresetId === void 0 || write === void 0 || options.savePixels === void 0 ? void 0 : button(row, "", "", () => {
+              const path = descriptor.subjectUri.split(/[?#]/u)[0] ?? "";
+              const extension = /\.([A-Za-z0-9]+)$/u.exec(path)?.[1] ?? "dds";
+              const name = convertedFileName(exportSafeName(options.exportBaseName?.(descriptor) ?? "image"), copyPresetId, extension);
+              void (async () => {
+                try {
+                  const outcome = await write([
+                    {
+                      name,
+                      mediaType: "application/octet-stream",
+                      bytes: await encodeEdits()
+                    }
+                  ], scope.signal);
+                  note = outcome.state === "written" ? localizer.text("viewer.imageCopyWritten", { name }) : outcome.reason ?? outcome.state;
+                } catch (error) {
+                  note = error instanceof Error ? error.message : String(error);
+                }
+                paint();
+              })();
+            });
+            if (copy !== void 0 && copyPresetId !== void 0) {
+              copy.textContent = localizer.text("viewer.imageWriteCopy", { preset: copyPresetId });
+              copy.hidden = true;
+            }
           }
         }
       };

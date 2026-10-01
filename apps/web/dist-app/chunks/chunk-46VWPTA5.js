@@ -7,12 +7,12 @@ import {
   invokeRefusalMessage,
   isRejected,
   mountFieldEditor
-} from "./chunk-L7SNTLK7.js";
+} from "./chunk-M727HE4V.js";
 import {
   canvasPng,
   createMediaShell,
   mountContributedSections
-} from "./chunk-KWS6AF3F.js";
+} from "./chunk-PTYGPWW5.js";
 import {
   MODEL_FALLBACK_MESSAGES,
   MODEL_GIZMO_FALLBACK_MESSAGES,
@@ -27,7 +27,7 @@ import {
   setViewerText,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-MC4F5UWG.js";
+} from "./chunk-6YIXCJUM.js";
 import {
   applyColorKeyTransparency,
   billboardCameraRotation,
@@ -35,7 +35,7 @@ import {
   createModelSkeletonNodes,
   modelPrimitiveByteLength,
   snapshotJson
-} from "./chunk-7IPDRXA2.js";
+} from "./chunk-EOJHBJMF.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunk-BLWUC7LO.js";
@@ -339,6 +339,37 @@ function baseColorResourceOf(material) {
   }
   return void 0;
 }
+var PBR_SLOTS = {
+  metallicroughness: "metallicRoughness",
+  occlusion: "occlusion",
+  ao: "occlusion",
+  ambientocclusion: "occlusion",
+  emissive: "emissive",
+  emission: "emissive",
+  normal: "normal"
+};
+function materialPbr(ref, textures, uvSource) {
+  const texture = (role) => {
+    const layer = (ref.layers ?? []).find((item) => PBR_SLOTS[slotKey2(item.slot)] === role && item.resourceId !== void 0);
+    if (layer?.resourceId === void 0 || (layer.uvSource ?? 0) !== uvSource)
+      return void 0;
+    return textures.get(layer.resourceId)?.id;
+  };
+  const metallicRoughnessTexture = texture("metallicRoughness");
+  const occlusionTexture = texture("occlusion");
+  const emissiveTexture = texture("emissive");
+  const normalTexture = texture("normal");
+  const emissive = ref.emissiveFactor ?? (emissiveTexture === void 0 ? void 0 : [1, 1, 1]);
+  return {
+    metallic: ref.metallicFactor ?? 0,
+    roughness: ref.roughnessFactor ?? 1,
+    ...metallicRoughnessTexture === void 0 ? {} : { metallicRoughnessTexture },
+    ...occlusionTexture === void 0 ? {} : { occlusionTexture },
+    ...emissive === void 0 ? {} : { emissive },
+    ...emissiveTexture === void 0 ? {} : { emissiveTexture },
+    ...normalTexture === void 0 ? {} : { normalTexture }
+  };
+}
 function sceneMaterials(refs, textures, shaded) {
   const used = /* @__PURE__ */ new Map();
   const materials = refs.map((ref) => {
@@ -370,7 +401,8 @@ function sceneMaterials(refs, textures, shaded) {
       // A stated factor multiplies the texture, or is the colour itself without one (glTF).
       baseColor: ref.baseColorFactor ?? (texture === void 0 ? materialColorFor(ref.id) : MODEL_TEXTURED_BASE_COLOR),
       ...texture === void 0 ? {} : { baseColorTexture: texture.id },
-      shading: shaded && ref.unlit !== true ? "lambert" : "unlit",
+      // lit by its own glTF material (П11); an unlit one, or the flat view, draws its colour as is
+      ...shaded && ref.unlit !== true ? { shading: "pbr", pbr: materialPbr(ref, textures, base?.uvSource ?? 0) } : { shading: "unlit" },
       ...ref.doubleSided === void 0 ? {} : { doubleSided: ref.doubleSided },
       ...ref.depthWrite === void 0 ? {} : { depthWrite: ref.depthWrite },
       ...ref.priority === void 0 ? {} : { priority: ref.priority },
@@ -1826,7 +1858,7 @@ function createModelViewer(options = {}) {
               const output = result.output;
               if (output.kind !== "bytes" || !(output.value instanceof Uint8Array))
                 throw new Error(`the codec answered ${output.kind}, not bytes`);
-              const { createUvmFramePreparer } = await import("./render-2KFXE673.js");
+              const { createUvmFramePreparer } = await import("./render-OJKTY5EE.js");
               const raster = options.rasterResources?.(args.descriptor);
               const preparer = createUvmFramePreparer(output.value, {
                 budget: MODEL_EFFECT_BUDGET,

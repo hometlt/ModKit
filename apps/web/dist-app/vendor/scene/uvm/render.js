@@ -20952,6 +20952,56 @@ function uvmMaterialDrawOrder(material) {
     ...typeof priority === "number" && Number.isFinite(priority) ? { priority } : {}
   };
 }
+function uvmMaterialPbr(material, baseTexCoord) {
+  const pbr = object(material["pbrMetallicRoughness"] ?? {}, "PBR material");
+  const unrendered = [];
+  const unit5 = (value, fallback, label) => {
+    const result = value ?? fallback;
+    if (typeof result !== "number" || !Number.isFinite(result) || result < 0 || result > 1)
+      throw new TypeError(`material ${label} must be in 0..1`);
+    return result;
+  };
+  const texture = (reference, label) => {
+    if (reference === void 0)
+      return void 0;
+    const binding = object(reference, `${label} texture`);
+    const index = binding["index"];
+    if (typeof index !== "number" || !Number.isSafeInteger(index) || index < 0)
+      throw new TypeError(`material ${label} texture index is invalid`);
+    if ((binding["texCoord"] ?? 0) !== baseTexCoord) {
+      unrendered.push(`reads its ${label} texture from other UVs than its base colour`);
+      return void 0;
+    }
+    return `uvm-texture-${String(index)}`;
+  };
+  const emissive = material["emissiveFactor"];
+  if (emissive !== void 0 && (!Array.isArray(emissive) || emissive.length !== 3 || !emissive.every((item) => typeof item === "number" && item >= 0 && item <= 1)))
+    throw new TypeError("material emissiveFactor must be three components in 0..1");
+  const occlusion = material["occlusionTexture"];
+  const metallicRoughnessTexture = texture(pbr["metallicRoughnessTexture"], "metallic-roughness");
+  const occlusionTexture = texture(occlusion, "occlusion");
+  const emissiveTexture = texture(material["emissiveTexture"], "emissive");
+  const normal = material["normalTexture"];
+  const normalTexture = texture(normal, "normal");
+  const normalScale = field(normal, "scale") ?? 1;
+  if (typeof normalScale !== "number" || !Number.isFinite(normalScale))
+    throw new TypeError("material normal texture scale must be finite");
+  return {
+    pbr: {
+      metallic: unit5(pbr["metallicFactor"], 1, "metallicFactor"),
+      roughness: unit5(pbr["roughnessFactor"], 1, "roughnessFactor"),
+      ...metallicRoughnessTexture === void 0 ? {} : { metallicRoughnessTexture },
+      ...occlusionTexture === void 0 ? {} : {
+        occlusionTexture,
+        occlusionStrength: unit5(field(occlusion, "strength"), 1, "occlusion strength")
+      },
+      ...emissive === void 0 ? {} : { emissive: [emissive[0], emissive[1], emissive[2]] },
+      ...emissiveTexture === void 0 ? {} : { emissiveTexture },
+      ...normalTexture === void 0 ? {} : { normalTexture, ...normalScale === 1 ? {} : { normalScale } }
+    },
+    unrendered
+  };
+}
 var TEAM_BLENDS = /* @__PURE__ */ new Set(["multiply", "add", "replace", "overlay", "lerp"]);
 var TEAM_CHANNELS = /* @__PURE__ */ new Set(["r", "g", "b", "a", "rgb"]);
 function uvmMaterialTeamColor(material, baseTexCoord) {
@@ -21213,7 +21263,8 @@ async function prepareNestedUvmRender(bytes, value, options, depth, cache) {
     "rendererId",
     "sceneIndex",
     "modelState",
-    "materialContext"
+    "materialContext",
+    "lighting"
   ].includes(key)))
     throw new TypeError("unsupported UVM render request");
   const viewport = object(input["viewport"], "render viewport");
@@ -21221,6 +21272,9 @@ async function prepareNestedUvmRender(bytes, value, options, depth, cache) {
   const width = viewport["width"], height = viewport["height"];
   if (Object.keys(viewport).some((key) => !["width", "height"].includes(key)) || typeof width !== "number" || typeof height !== "number" || !Number.isSafeInteger(width) || !Number.isSafeInteger(height) || width <= 0 || height <= 0 || width > 4096 || height > 4096)
     throw new TypeError("UVM render dimensions must be integers in 1..4096");
+  const lighting = input["lighting"] ?? "unlit";
+  if (lighting !== "unlit" && lighting !== "material")
+    throw new TypeError("UVM render lighting must be unlit or material");
   const materialInput = object(input["materialContext"] ?? {}, "material context");
   const environment = snapshotEnvironment(materialInput["environment"]);
   if (Object.keys(materialInput).some((key) => !["teamColor", "teamColorIntensity", "ambient", "environment"].includes(key)))
@@ -21495,9 +21549,14 @@ async function prepareNestedUvmRender(bytes, value, options, depth, cache) {
     if (texture !== void 0 && field(texture["extensions"], "KHR_texture_transform") !== void 0)
       warn("common.uvm/texture-transform-unrendered", `Material ${index} texture transform is preserved but not rendered.`);
     const shader = uvmMaterialShader(material);
-    if (shader === void 0 && field(material["extensions"], "KHR_materials_unlit") === void 0)
+    const unlit = field(material["extensions"], "KHR_materials_unlit") !== void 0;
+    const lit = lighting === "material" && !unlit ? uvmMaterialPbr(material, texCoord) : void 0;
+    if (lit === void 0 && shader === void 0 && !unlit)
       warn("common.uvm/pbr-lighting-unrendered", `Material ${index} is rendered without PBR lighting by the current base-color scene route.`);
-    if (material["normalTexture"] !== void 0 || material["emissiveTexture"] !== void 0 || pbr["metallicRoughnessTexture"] !== void 0)
+    if (lit !== void 0)
+      for (const reason of lit.unrendered)
+        warn("common.uvm/material-features-unrendered", `Material ${index} ${reason}.`);
+    else if (material["normalTexture"] !== void 0 || material["emissiveTexture"] !== void 0 || pbr["metallicRoughnessTexture"] !== void 0)
       warn("common.uvm/material-features-unrendered", `Material ${index} uses shading features beyond the current base-color scene contract.`);
     const team2 = uvmMaterialTeamColor(material, texCoord);
     if (team2.unrendered !== void 0)
@@ -21511,7 +21570,8 @@ async function prepareNestedUvmRender(bytes, value, options, depth, cache) {
       baseColor,
       alphaMode: alphaMode === "OPAQUE" ? "opaque" : alphaMode === "MASK" ? "mask" : "blend",
       alphaCutoff,
-      shading: "unlit",
+      shading: lit !== void 0 && simpleEffect === void 0 ? "pbr" : "unlit",
+      ...lit === void 0 || simpleEffect !== void 0 ? {} : { pbr: lit.pbr },
       ...textureIndex === void 0 ? {} : { baseColorTexture: `uvm-texture-${textureIndex}` },
       doubleSided: material["doubleSided"] === true,
       ...uvmMaterialDrawOrder(material),
@@ -21642,7 +21702,11 @@ async function prepareNestedUvmRender(bytes, value, options, depth, cache) {
     const mask = material?.teamColor?.mask;
     return [
       materialTextures.get(materialId ?? "") ?? documentTextureIndex(material?.baseColorTexture),
-      mask === void 0 || mask === "whole" ? void 0 : documentTextureIndex(mask.texture)
+      mask === void 0 || mask === "whole" ? void 0 : documentTextureIndex(mask.texture),
+      documentTextureIndex(material?.pbr?.metallicRoughnessTexture),
+      documentTextureIndex(material?.pbr?.occlusionTexture),
+      documentTextureIndex(material?.pbr?.emissiveTexture),
+      documentTextureIndex(material?.pbr?.normalTexture)
     ].filter((index) => index !== void 0);
   };
   const usedTextures = new Set(primitives.flatMap((primitive) => drawnTextures(primitive.materialId)));

@@ -18002,7 +18002,14 @@ var DESCRIPTOR_KEYS = Object.freeze([
   "surface"
 ]);
 var REQUIRED_DESCRIPTOR_KEYS = Object.freeze(DESCRIPTOR_KEYS.filter((key3) => key3 !== "surface"));
-var SURFACE_KEYS = Object.freeze(["target", "sectionId", "title", "icon", "forms"]);
+var SURFACE_KEYS = Object.freeze([
+  "target",
+  "sectionId",
+  "title",
+  "icon",
+  "forms",
+  "copyPresetId"
+]);
 var REQUIRED_SURFACE_KEYS = Object.freeze(["target", "sectionId", "title"]);
 var SURFACE_TARGETS = /* @__PURE__ */ new Set(["viewer.image"]);
 var BUDGET_KEYS2 = Object.freeze(["maxInputBytes", "maxOutputBytes", "maxWallTimeMs"]);
@@ -18059,7 +18066,7 @@ function validateServiceOperationProvider(value, requestedOperationId) {
       return { valid: false, reason: "operation descriptor is malformed or duplicated" };
     }
     const surface = descriptor["surface"] === void 0 ? void 0 : recordOf5(descriptor["surface"]);
-    if (descriptor["surface"] !== void 0 && (surface === void 0 || !allowedKeys(surface, SURFACE_KEYS, REQUIRED_SURFACE_KEYS) || !SURFACE_TARGETS.has(surface["target"]) || !nonEmpty2(surface["sectionId"]) || !nonEmpty2(surface["title"]) || surface["icon"] !== void 0 && !nonEmpty2(surface["icon"]))) {
+    if (descriptor["surface"] !== void 0 && (surface === void 0 || !allowedKeys(surface, SURFACE_KEYS, REQUIRED_SURFACE_KEYS) || !SURFACE_TARGETS.has(surface["target"]) || !nonEmpty2(surface["sectionId"]) || !nonEmpty2(surface["title"]) || surface["icon"] !== void 0 && !nonEmpty2(surface["icon"]) || surface["copyPresetId"] !== void 0 && (typeof surface["copyPresetId"] !== "string" || !/^[a-z0-9-]{1,32}$/u.test(surface["copyPresetId"])))) {
       return { valid: false, reason: "operation descriptor declares an unusable viewer surface" };
     }
     const inputSchema = createServiceOperationSchemaValidator(descriptor["inputSchema"]);

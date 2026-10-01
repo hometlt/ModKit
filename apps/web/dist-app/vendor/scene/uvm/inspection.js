@@ -198,7 +198,9 @@ function decodeMaterialRefs(document) {
         "doubleSided",
         "baseColorFactor",
         "emissiveFactor",
-        "unlit"
+        "unlit",
+        "metallicFactor",
+        "roughnessFactor"
       ]) {
         if (Object.hasOwn(fields, key))
           throw new TypeError(`material ${index} metadata shadows ${key}`);
@@ -220,6 +222,13 @@ function decodeMaterialRefs(document) {
     };
     const baseColorFactor = factor(field(material["pbrMetallicRoughness"], "baseColorFactor"), 4, "baseColorFactor");
     const emissiveFactor = factor(material["emissiveFactor"], 3, "emissiveFactor");
+    const metallicStated = field(material["pbrMetallicRoughness"], "metallicFactor");
+    const roughnessStated = field(material["pbrMetallicRoughness"], "roughnessFactor");
+    const metallic = metallicStated ?? 1;
+    const roughness = roughnessStated ?? 1;
+    if (typeof metallic !== "number" || typeof roughness !== "number" || !(metallic >= 0 && metallic <= 1 && roughness >= 0 && roughness <= 1))
+      throw new TypeError(`material ${index} metallic and roughness factors must be in 0..1`);
+    const stated = (metallicStated !== void 0 || roughnessStated !== void 0) && (metallic !== 0 || roughness !== 1);
     const gameMaterial = field(material["extensions"], "UV_game_material");
     const depthWrite = field(gameMaterial, "depthWrite");
     const sortPriority = field(gameMaterial, "sortPriority");
@@ -231,6 +240,7 @@ function decodeMaterialRefs(document) {
       ...material["doubleSided"] === true ? { doubleSided: true } : {},
       ...baseColorFactor === void 0 ? {} : { baseColorFactor },
       ...emissiveFactor === void 0 ? {} : { emissiveFactor },
+      ...stated ? { metallicFactor: metallic, roughnessFactor: roughness } : {},
       ...field(material["extensions"], "KHR_materials_unlit") === void 0 ? {} : { unlit: true },
       // the identity the artifact binding fixes, so a primitive and its material can be joined
       id: `material-${index}`,

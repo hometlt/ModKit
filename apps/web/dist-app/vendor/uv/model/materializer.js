@@ -910,7 +910,7 @@ function materializeUvmCore(projection, request, { digest, materialBudget = DEFA
   for (const definition of definitions ?? []) {
     const index = materialIndexById.get(definition.id);
     const target = materials[index];
-    const { id: _id, name, shader, contracts, alphaMode, alphaCutoff, doubleSided, baseColorFactor, emissiveFactor, unlit, ...fields } = definition;
+    const { id: _id, name, shader, contracts, alphaMode, alphaCutoff, doubleSided, baseColorFactor, emissiveFactor, unlit, metallicFactor, roughnessFactor, ...fields } = definition;
     if (name !== void 0)
       target.name = name;
     if (alphaMode !== void 0)
@@ -919,6 +919,10 @@ function materializeUvmCore(projection, request, { digest, materialBudget = DEFA
       target.alphaCutoff = alphaCutoff;
     if (doubleSided === true)
       target.doubleSided = true;
+    if (metallicFactor !== void 0)
+      target.pbrMetallicRoughness.metallicFactor = colorFactor([metallicFactor], 1, `material ${definition.id} metallicFactor`)[0];
+    if (roughnessFactor !== void 0)
+      target.pbrMetallicRoughness.roughnessFactor = colorFactor([roughnessFactor], 1, `material ${definition.id} roughnessFactor`)[0];
     if (baseColorFactor !== void 0)
       target.pbrMetallicRoughness.baseColorFactor = colorFactor(baseColorFactor, 4, `material ${definition.id} baseColorFactor`);
     if (emissiveFactor !== void 0)
