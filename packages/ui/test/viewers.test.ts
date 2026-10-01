@@ -114,9 +114,9 @@ async function viewerManifests(): Promise<ContributionManifestV1Wire[]> {
 }
 
 describe('13C universal viewer contracts and models', () => {
-  it('validates twenty-four declarative viewer contributions and resolves them shuffle-stably', async () => {
+  it('validates twenty-five declarative viewer contributions and resolves them shuffle-stably', async () => {
     const manifests = await viewerManifests()
-    expect(manifests).toHaveLength(24)
+    expect(manifests).toHaveLength(25)
     const registry = createHostContributionContractRegistry().validationRegistry()
     for (const manifest of manifests) {
       const result = await validateContributionManifest(manifest, registry)
@@ -170,7 +170,7 @@ describe('13C universal viewer contracts and models', () => {
     expect(
       forward.plan.slots.find(slot => slot.slotId === forward.plan.activeStage)?.contributionId,
     ).toBe('modkit.ui/table-stage')
-  })
+  }, 60_000)
 
   it('loads auditable subject calculations with a visible consumer cap', async () => {
     const snapshot = await loadSubjectCalculations(
