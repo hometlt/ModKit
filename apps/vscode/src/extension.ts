@@ -130,6 +130,7 @@ useArtifactDigestCache,
 watchGameLaunchLogs,
 type CachedContentIndex,
 type GameLaunchLogWatch,
+type InstallationFolderSearch,
 type NodeGameLaunchReceipt,
 } from '@modkit/host/node'
 import { configuredIndexCaches } from './contribution-settings.js'
@@ -786,6 +787,32 @@ async function activateModkit(
    * layer from those mounts. A subject that names none, or a window with no source catalogue,
    * keeps the installation locator path.
    */
+  /*
+   * The folder search (owner decision 2026-09-28), walked once per window: every game's markers,
+   * the folders `modkit.installationSearchFolders` names. A map preview's installation discovery
+   * reads this answer; the Games command searches again, with progress and cancel, and replaces it.
+   */
+  let installationFolderSearch: Promise<InstallationFolderSearch | undefined> | undefined
+  const searchedInstallationFolders = (): Promise<InstallationFolderSearch | undefined> =>
+    (installationFolderSearch ??= (async () => {
+      const wanted = gameInstallationSearchOf(host.services.host.inventory)
+      if (wanted.markers.length === 0) return undefined
+      const configured = installationSearchFolders(
+        vscode.workspace.getConfiguration('modkit').get('installationSearchFolders'),
+        process.env,
+      )
+      return searchInstallationFolders({
+        markers: wanted.markers,
+        commonFolders: configured.driveFolders,
+        searchFolders: wanted.searchFolders,
+        folders: configured.folders,
+      }).catch((error: unknown) => {
+        log(
+          `[installation] error folder search: ${error instanceof Error ? error.message : String(error)}`,
+        )
+        return undefined
+      })
+    })())
   const mapPreviewResourcePlanResolver = createContentSourceMapPreviewResourcePlanResolver({
     contentSources: () => requireContentSources().catch(() => undefined),
     fallback: createNodeMapPreviewResourcePlanResolver({
@@ -797,6 +824,8 @@ async function activateModkit(
           selectedSources.map(source => [source.gameId, [source.installPath]] as const),
         )
       },
+      // and the folders the folder search found, which the game's provider still confirms
+      searchPaths: async gameId => (await searchedInstallationFolders())?.found[gameId],
       // Same classes the explicit discovery commands pass; without them the installed game is never
       // located and a map opens as its archive entry list instead of the world view.
       installationDiscoveryGrant: {
@@ -11741,6 +11770,7 @@ async function activateModkit(
                   }
                 },
               )
+        if (searched !== undefined) installationFolderSearch = Promise.resolve(searched)
         const discover = async (gameId: string, configuredPaths: readonly string[]) => {
           const searchPaths = searched?.found[gameId] ?? []
           const discovery = await discoverGameInstallations({
