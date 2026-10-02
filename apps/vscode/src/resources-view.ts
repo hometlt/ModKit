@@ -120,15 +120,21 @@ export class ResourcesView implements vscode.TreeDataProvider<ResourceTreeNode>,
      * the whole union: a bound of 200 on the first mods' answers left the Unit SCV of Liberty
      * behind Core's matches.
      */
-    const find = async (pattern: string): Promise<Item[]> => {
+    const find = async (
+      pattern: string,
+      shown: (items: readonly Item[]) => void,
+      stale: () => boolean,
+    ): Promise<Item[]> => {
       if (pattern === '') return []
       const refs: TreeNodeRef[] = []
       for await (const ref of tree.search({ pattern })) {
+        if (stale()) return []
         refs.push(ref)
         if (refs.length >= 1000) break
       }
       const found: Item[] = []
       for (let start = 0; start < refs.length; start += 32) {
+        if (stale()) return []
         const batch = refs.slice(start, start + 32)
         const facts = await Promise.all(batch.map(ref => tree.facts(ref)))
         facts.forEach((fact, index) => {
@@ -142,38 +148,56 @@ export class ResourcesView implements vscode.TreeDataProvider<ResourceTreeNode>,
             node: Object.freeze({ kind: 'resource' as const, ref, facts: fact }),
           })
         })
+        // what is read so far, while the rest is: a word like «void» matches thousands
+        shown(found.slice())
       }
       return found
     }
     try {
       const query = initial.trim()
-      const first = await find(query)
-      const exact = first.filter(item => item.label === query)
-      if (exact.length === 1) return exact[0]?.node
       return await new Promise<ResourceTreeNode | undefined>(done => {
         const picker = vscode.window.createQuickPick<Item>()
         picker.title = title
         picker.placeholder = placeholder
         picker.value = query
-        picker.items = first
         let generation = 0
         let timer: ReturnType<typeof setTimeout> | undefined
-        picker.onDidChangeValue(value => {
+        /*
+         * The search runs inside the shown picker. It ran before the picker was shown, so a common
+         * word at the cursor kept the command silent for minutes (v87: «void», 1000 matches). The
+         * first search still opens a single node of exactly that id without asking, unless the
+         * reader typed meanwhile.
+         */
+        const search = (value: string, first: boolean): void => {
           const current = ++generation
+          const stale = () => current !== generation
+          picker.busy = true
+          void find(
+            value.trim(),
+            items => {
+              if (!stale()) picker.items = items
+            },
+            stale,
+          )
+            .then(
+              items => {
+                if (stale()) return
+                picker.items = items
+                const exact = items.filter(item => item.label === value.trim())
+                if (first && exact.length === 1) {
+                  done(exact[0]?.node)
+                  picker.hide()
+                }
+              },
+              () => undefined,
+            )
+            .finally(() => {
+              if (!stale()) picker.busy = false
+            })
+        }
+        picker.onDidChangeValue(value => {
           clearTimeout(timer)
-          timer = setTimeout(() => {
-            picker.busy = true
-            void find(value.trim())
-              .then(
-                items => {
-                  if (current === generation) picker.items = items
-                },
-                () => undefined,
-              )
-              .finally(() => {
-                if (current === generation) picker.busy = false
-              })
-          }, 250)
+          timer = setTimeout(() => search(value, false), 250)
         })
         picker.onDidAccept(() => {
           done(picker.selectedItems[0]?.node)
@@ -181,10 +205,12 @@ export class ResourcesView implements vscode.TreeDataProvider<ResourceTreeNode>,
         })
         picker.onDidHide(() => {
           clearTimeout(timer)
+          generation += 1
           done(undefined)
           picker.dispose()
         })
         picker.show()
+        search(query, true)
       })
     } finally {
       await lease.release()
