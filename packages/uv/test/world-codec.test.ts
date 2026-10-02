@@ -462,3 +462,27 @@ describe('UVW written as a game map (WT10)', () => {
     await session.dispose()
   })
 })
+
+describe('UVW probe of a large world', () => {
+  it('finds the profile marker the canonical writer puts last, past the head, in the end window', async () => {
+    const read = async (path: string) =>
+      JSON.parse(await readFile(fileURLToPath(new URL(path, import.meta.url)), 'utf8')) as never
+    const { uv, ...rest }: { uv: unknown } = await read(
+      '../../../vendor/multiverse-specs/specs/world/fixtures/uvw-profile-single-space.uvw.json',
+    )
+    // `uv` sorts last: in a large world it lies past the probe's 64 KiB head
+    const bytes = new TextEncoder().encode(
+      `${JSON.stringify(rest).slice(0, -1)},${' '.repeat(70_000)}"uv":${JSON.stringify(uv)}}`,
+    )
+    const manifest: { spec: { probe: { ranges: { from: string }[] } } } = await read(
+      '../contributions/codec-uvw.json',
+    )
+    const probe = (plan: unknown) =>
+      createCodec(context).probe({ source: source(bytes), plan: plan as never })
+    expect(manifest.spec.probe.ranges.map(range => range.from)).toEqual(['start', 'end'])
+    expect(await probe(manifest.spec.probe)).toMatchObject({ confidence: 0.995 })
+    expect(
+      await probe({ kind: 'bytes', ranges: [{ from: 'start', length: 65_536 }], maxBytes: 65_536 }),
+    ).toMatchObject({ confidence: 0.45 })
+  })
+})

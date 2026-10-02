@@ -43,8 +43,12 @@ import {
 
 const decoder = new TextDecoder('utf-8', { fatal: false })
 
-function looksLikeUvw(bytes: Uint8Array): boolean {
-  const text = decoder.decode(bytes)
+/**
+ * The profile marker and `spaces` in the probe's head or tail: the canonical writer sorts keys, so
+ * `uv` closes the document — past the head of a large world, inside the declared end window.
+ */
+function looksLikeUvw(bytes: Uint8Array, tail?: Uint8Array): boolean {
+  const text = decoder.decode(bytes) + (tail === undefined ? '' : ` ${decoder.decode(tail)}`)
   return (
     /"format"\s*:\s*"UVW"/u.test(text) &&
     /"version"\s*:\s*"1\.0"/u.test(text) &&
@@ -608,8 +612,8 @@ const definition = Object.freeze({
     label: 'Universal Verse World 1.0',
     mediaType: 'application/vnd.modkit.uvw+json; profile=uvw-1.0',
   }),
-  async detect(bytes: Uint8Array, uri: string) {
-    const structure = looksLikeUvw(bytes)
+  async detect(bytes: Uint8Array, uri: string, tail?: Uint8Array) {
+    const structure = looksLikeUvw(bytes, tail)
     const named = /\.uvw(?:\.json)?(?:[?#]|$)/iu.test(uri)
     return structure
       ? { confidence: named ? 0.995 : 0.985, kind: 'structure' as const, note: 'uvw-profile-1.0' }
