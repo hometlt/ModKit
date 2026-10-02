@@ -402,6 +402,8 @@ function heightGridEdits(
   return Object.freeze(edits)
 }
 
+const NATIVE_EXPORT_OPERATION = operationId('map.export-native', { contributionId: 'modkit/world-uvw' })
+
 /** The native export's form: the target map format and the encoder's own options. */
 const NATIVE_MAP_EXPORT_INPUT_SCHEMA = Object.freeze({
   $ref: 'modkit://schemas/uvw/native-map-export.v1',
@@ -476,7 +478,7 @@ function nativeExportHandler(bytes: Uint8Array, context: InspectionContext) {
       contract: NATIVE_MAP_ENCODER_CONTRACT,
       major: 1,
       facet: { formatId },
-      operation: 'map.export-native',
+      operation: NATIVE_EXPORT_OPERATION,
       ...(signal === undefined ? {} : { signal }),
     })
     try {
@@ -535,7 +537,7 @@ const definition = Object.freeze({
       outputKinds: Object.freeze(['bytes'] as const),
     }),
     Object.freeze({
-      id: operationId('map.export-native', { contributionId: 'modkit/world-uvw' }),
+      id: NATIVE_EXPORT_OPERATION,
       handlerId: 'export-uvw-native',
       inputSchema: NATIVE_MAP_EXPORT_INPUT_SCHEMA,
       mutatesSource: false,
