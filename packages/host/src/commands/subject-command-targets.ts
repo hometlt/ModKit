@@ -51,6 +51,7 @@ export const SUBJECT_COMMAND_TARGETS = defineSubjectCommandTargets({
       'export.raw',
       'model.export-uvm',
       'model.export-native',
+      'map.export-native',
       'model.write',
     ],
     // a map world converts to UVW from the world it publishes (target `uvw`)

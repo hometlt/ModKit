@@ -505,7 +505,13 @@ function nativeExportHandler(bytes: Uint8Array, context: InspectionContext) {
       )
         throw new TypeError(`native map encoder returned an invalid ${formatId} result`)
       for (const item of encoded.diagnostics ?? []) operationContext.reportDiagnostic?.(item)
-      return { kind: 'bytes' as const, value: encoded.bytes }
+      // the encoder's extension and media type name the file the application writes
+      return {
+        kind: 'bytes' as const,
+        value: encoded.bytes,
+        extension: encoded.extension,
+        ...(encoded.mediaType === undefined ? {} : { mediaType: encoded.mediaType }),
+      }
     } finally {
       await lease.release()
     }

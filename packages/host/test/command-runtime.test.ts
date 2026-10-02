@@ -142,6 +142,7 @@ describe('the command runtime answers rather than throws', () => {
           'export.raw',
           'model.export-uvm',
           'model.export-native',
+          'map.export-native',
           'model.write',
         ],
       },

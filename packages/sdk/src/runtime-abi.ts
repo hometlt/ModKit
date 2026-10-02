@@ -462,7 +462,13 @@ export interface ByteStreamSource {
 /** Open registry; editing/conversion packages may augment it before A-5 freezes the seam. */
 export interface OperationOutputMap {
   json: { readonly kind: 'json'; readonly value: JsonValue }
-  bytes: { readonly kind: 'bytes'; readonly value: Uint8Array }
+  bytes: {
+    readonly kind: 'bytes'
+    readonly value: Uint8Array
+    /** The file extension the bytes are, without its dot (`m3`, `map`), when the producer knows it. */
+    readonly extension?: string
+    readonly mediaType?: string
+  }
   stream: { readonly kind: 'stream'; readonly stream: Lease<ByteStreamSource> }
   source: { readonly kind: 'source'; readonly source: AssetSourceRef }
   artifact: {

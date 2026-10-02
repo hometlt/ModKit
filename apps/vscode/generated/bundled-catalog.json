@@ -155,7 +155,7 @@
         "modkit/ply",
         "modkit/stl"
       ],
-      "digest": "sha256:11154e06ea1ac131aefc5d5b43cbb3ac81b28238e2a8df9aae039995ce12e0ce"
+      "digest": "sha256:bf6e76f13dc2dc25fef08a484447f26708d9119c7b92360fd31604c150267748"
     },
     {
       "name": "translation",

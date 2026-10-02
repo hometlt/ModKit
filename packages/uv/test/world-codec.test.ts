@@ -389,7 +389,7 @@ describe('UVW written as a game map (WT10)', () => {
       .invoke('export-uvw-native', { schemaVersion: 1, formatId: 'ra2-map' })
     expect(result).toMatchObject({
       state: 'ok',
-      output: { kind: 'bytes', value: Uint8Array.of(1, 2, 3) },
+      output: { kind: 'bytes', value: Uint8Array.of(1, 2, 3), extension: 'map' },
     })
     expect(result.diagnostics.map(item => item.code)).toContain('westwood/uvw-object-untyped')
     // the encoder gets the document as the file holds it, and only it

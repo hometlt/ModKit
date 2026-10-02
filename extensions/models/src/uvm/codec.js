@@ -184,7 +184,13 @@ function nativeExportHandler(bytes, context) {
         !(encoded.bytes instanceof Uint8Array)
       )
         throw new TypeError(`native model encoder returned an invalid ${request.formatId} result`)
-      return { kind: 'bytes', value: encoded.bytes }
+      // the encoder's extension and media type name the file the application writes
+      return {
+        kind: 'bytes',
+        value: encoded.bytes,
+        ...(typeof encoded.extension === 'string' ? { extension: encoded.extension } : {}),
+        ...(typeof encoded.mediaType === 'string' ? { mediaType: encoded.mediaType } : {}),
+      }
     } finally {
       await lease.release()
     }

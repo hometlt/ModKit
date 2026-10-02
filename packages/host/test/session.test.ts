@@ -169,6 +169,33 @@ describe('operation diagnostics accompanying binary output', () => {
   })
 })
 
+describe('the file a binary output is', () => {
+  it('keeps a plausible extension and media type with the bytes, and drops others', async () => {
+    const answer = (extension: string, mediaType: string) =>
+      diagnosticSession(async () => ({
+        kind: 'bytes',
+        value: Uint8Array.of(1, 2),
+        extension,
+        mediaType,
+      }))
+    const named = await answer('m3', 'application/vnd.blizzard.m3')
+    const odd = await answer('../m3', 'not a media type')
+    try {
+      expect(await named.operations().invoke('good', null)).toMatchObject({
+        output: { kind: 'bytes', extension: 'm3', mediaType: 'application/vnd.blizzard.m3' },
+      })
+      const dropped = await odd.operations().invoke('good', null)
+      expect(dropped.state === 'ok' ? dropped.output : undefined).toEqual({
+        kind: 'bytes',
+        value: Uint8Array.of(1, 2),
+      })
+    } finally {
+      await named.dispose()
+      await odd.dispose()
+    }
+  })
+})
+
 describe('A-3 asset and operation sessions', () => {
   it('makes all eight operation rejection reasons reachable and dispatches owned JSON', async () => {
     const { managed } = await fixture()

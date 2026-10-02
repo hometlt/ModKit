@@ -95,6 +95,17 @@ function selectedOperation(
   return undefined
 }
 
+/** The subject's file name without its extension, `export` when its reference names none. */
+function subjectStem(ref: string): string {
+  const name =
+    ref
+      .replace(/[?#].*$/u, '')
+      .split(/[\\/]/u)
+      .at(-1) ?? ''
+  const stem = name.replace(/\.[^.]*$/u, '')
+  return stem === '' ? 'export' : stem
+}
+
 /** What a subject publishes, named for a refusal message that helps rather than scolds. */
 const publishedOperations = (descriptor: DescriptorLike): string =>
   (descriptor.operations ?? []).length === 0
@@ -594,11 +605,25 @@ const convertCommand: CommandDescriptor = {
             'open the map itself, or a package naming one map; name an operation to run it instead',
             diagnostics,
           )
-        const operation = selectedOperation(
-          descriptor,
-          SUBJECT_COMMAND_TARGETS.convert.operationIds,
-          input['operation'],
-        )
+        // a named target picks the export that makes it: UVM by the model's own export, any other
+        // format by an installed native encoder or the codec's own convert; the first published
+        // export only without one (`--target m3` of a UVM wrote the UVM under that name)
+        const target = typeof input['target'] === 'string' ? input['target'] : undefined
+        const operation =
+          (input['operation'] === undefined && target !== undefined
+            ? selectedOperation(
+                descriptor,
+                target === 'uvm'
+                  ? ['model.export-uvm']
+                  : ['model.export-native', 'map.export-native', 'export.convert'],
+                undefined,
+              )
+            : undefined) ??
+          selectedOperation(
+            descriptor,
+            SUBJECT_COMMAND_TARGETS.convert.operationIds,
+            input['operation'],
+          )
         if (operation === undefined) {
           return unavailable(
             CONVERT_COMMAND,
@@ -609,12 +634,14 @@ const convertCommand: CommandDescriptor = {
           )
         }
         context.progress?.({ step: 'convert', message: 'running the codec’s export' })
+        const native =
+          operation.id === 'model.export-native' || operation.id === 'map.export-native'
         const request: JsonValue =
           input['operationInput'] === undefined
-            ? typeof input['target'] === 'string'
-              ? operation.id === 'model.export-native'
-                ? { schemaVersion: 1, formatId: input['target'] }
-                : { target: input['target'] }
+            ? target !== undefined
+              ? native
+                ? { schemaVersion: 1, formatId: target }
+                : { target }
               : {}
             : input['operationInput']
         const answer = await invokeSubjectOperation(
@@ -626,13 +653,25 @@ const convertCommand: CommandDescriptor = {
           diagnostics,
         )
         if (answer.state === 'failed') return answer.result
-        const bytes =
-          answer.output.kind === 'bytes' ? (answer.output.value as Uint8Array) : undefined
+        const output = answer.output as {
+          readonly kind: string
+          readonly value?: unknown
+          readonly extension?: unknown
+          readonly mediaType?: unknown
+        }
+        const bytes = output.kind === 'bytes' ? (output.value as Uint8Array) : undefined
+        // the producer's own extension names the file after the subject (`world.map`)
+        const extension =
+          bytes !== undefined && typeof output.extension === 'string' ? output.extension : undefined
+        const mediaType =
+          bytes !== undefined && typeof output.mediaType === 'string' ? output.mediaType : undefined
         const wroteTo =
           bytes === undefined || context.writeOutput === undefined
             ? undefined
             : await context.writeOutput(
-                `${(input['target'] as string | undefined) ?? 'export'}`,
+                extension === undefined
+                  ? (target ?? 'export')
+                  : `${subjectStem(subject.ref)}.${extension}`,
                 bytes,
                 context.signal,
               )
@@ -641,8 +680,10 @@ const convertCommand: CommandDescriptor = {
           {
             ref: subject.ref,
             via: operation.id,
-            outputKind: answer.output.kind,
+            outputKind: output.kind,
             ...(bytes === undefined ? {} : { byteLength: bytes.byteLength }),
+            ...(extension === undefined ? {} : { extension }),
+            ...(mediaType === undefined ? {} : { mediaType }),
             ...(wroteTo === undefined ? { wroteTo: null } : { wroteTo }),
           },
           answer.diagnostics,
