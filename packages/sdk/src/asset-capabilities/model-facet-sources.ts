@@ -302,6 +302,35 @@ export interface ModelCollisionVolume {
   readonly meshId?: string
   /** Publisher-qualified collision types, where the native format distinguishes them. */
   readonly types?: readonly string[]
+  /**
+   * The node a declared volume rides on: the materializer writes the volume as its own child of
+   * that node, carrying `UV_game_collision` (SPEC_UVM_EXTENSIONS) with `role` and `shape`.
+   */
+  readonly nodeId?: string
+  /** What the volume is for, default `physics`. */
+  readonly role?: 'physics' | 'hit' | 'selection' | 'footprint' | 'effect' | 'vision'
+  /** Its shape in the frame of `nodeId`. */
+  readonly shape?: ModelCollisionShape
+}
+
+/**
+ * A collision shape in the terms of `UV_game_collision` (SPEC_UVM_EXTENSIONS): `size` full extents
+ * of a `box`; `radius` of a `sphere`, `capsule` or `cylinder`, which also take `height` and an `axis`
+ * (default `y`); `normal` of a `plane`; the vertices of a `convex-hull` or `mesh` (with its triangle
+ * `indices`), which the materializer writes to accessors. `matrix` places it, column-major.
+ */
+export interface ModelCollisionShape {
+  readonly kind: 'box' | 'sphere' | 'capsule' | 'cylinder' | 'convex-hull' | 'mesh' | 'plane'
+  readonly matrix?: readonly number[]
+  readonly size?: readonly [number, number, number]
+  readonly radius?: number
+  readonly height?: number
+  readonly axis?: 'x' | 'y' | 'z'
+  readonly normal?: readonly [number, number, number]
+  readonly positions?: Float32Array
+  readonly indices?: Uint32Array
+  /** Effect collision channel bitmask. */
+  readonly collisionMask?: number
 }
 
 export interface ModelCollisionInfo {

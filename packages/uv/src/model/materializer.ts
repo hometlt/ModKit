@@ -10,6 +10,7 @@ import type {
   ModelMaterialLayerRef,
   ModelMaterialRef,
   ModelBoneBinding,
+  ModelCollisionVolume,
   ModelAnimationClip,
   MaterializationRequest,
   MaterializationDiffEntry,
@@ -91,6 +92,12 @@ export interface ModelProjection {
    * material by `materialId` (projection ids) where the wire form has the `node` and `material`
    * indices, which the materializer writes. A model of effects alone is a model.
    */
+  /**
+   * Declared collision volumes (ModelCollisionVolume with `nodeId` and `shape`): each written as
+   * its own child of its node, carrying `UV_game_collision`; a volume without a node or shape (a
+   * render mesh's role) is the collision facet's, not a node of the document.
+   */
+  readonly collisions?: readonly ModelCollisionVolume[]
   readonly effects?: {
     readonly profile?: 'common' | 'm3' | 'mdx' | 'w3d'
     readonly trackTimeUnit?: 'seconds' | 'milliseconds'
@@ -585,7 +592,10 @@ const MATERIALIZER_GAME_EXTENSIONS = new Set([
   'UV_game_animation_clips',
   'UV_game_variants',
   'UV_game_effects',
+  'UV_game_collision',
 ])
+
+const COLLISION_ROLES = new Set(['physics', 'hit', 'selection', 'footprint', 'effect', 'vision'])
 
 /** Emitter families of `UV_game_effects`, and whether each names a material besides its node. */
 const EFFECT_FAMILIES = [
@@ -1669,6 +1679,112 @@ export function materializeUvmCore(
     return entry
   })
   documentNodes.push(...meshChildren)
+  // each declared collision volume, a child of its node carrying UV_game_collision
+  let collisionNodes = 0
+  const collisionIds = new Set<string>()
+  for (const volume of projection.collisions ?? []) {
+    if (volume.nodeId === undefined || volume.shape === undefined) continue
+    const label = `collision «${volume.id}»`
+    if (collisionIds.has(volume.id)) fail(`${label} is declared twice`)
+    collisionIds.add(volume.id)
+    const parent = nodeIndexById.get(volume.nodeId)
+    if (parent === undefined) fail(`${label} rides on the unknown node ${volume.nodeId}`)
+    if (volume.role !== undefined && !COLLISION_ROLES.has(volume.role))
+      fail(`${label} has an unknown role`)
+    const shape = volume.shape
+    const positive = (value: unknown) =>
+      typeof value === 'number' && Number.isFinite(value) && value > 0
+    const triple = (value: unknown) =>
+      Array.isArray(value) &&
+      value.length === 3 &&
+      value.every(item => typeof item === 'number' && Number.isFinite(item))
+    const written: UvmJsonObject = { kind: shape.kind }
+    if (shape.matrix !== undefined) {
+      const matrix = finite([...shape.matrix], `${label} matrix`)
+      if (matrix.length !== 16) fail(`${label} matrix must carry 16 numbers`)
+      written['matrix'] = matrix
+    }
+    if (shape.kind === 'box') {
+      if (!triple(shape.size) || !shape.size!.every(positive)) fail(`${label} box needs a size`)
+      written['size'] = [...shape.size!]
+    } else if (shape.kind === 'sphere' || shape.kind === 'capsule' || shape.kind === 'cylinder') {
+      if (!positive(shape.radius)) fail(`${label} needs a positive radius`)
+      written['radius'] = shape.radius!
+      if (shape.kind !== 'sphere') {
+        if (!(
+          typeof shape.height === 'number' &&
+          Number.isFinite(shape.height) &&
+          shape.height >= 0
+        ))
+          fail(`${label} needs a height`)
+        written['height'] = shape.height
+        if (shape.axis !== undefined) {
+          if (!['x', 'y', 'z'].includes(shape.axis)) fail(`${label} axis is x, y or z`)
+          written['axis'] = shape.axis
+        }
+      }
+    } else if (shape.kind === 'plane') {
+      if (!triple(shape.normal) || shape.normal!.every(value => value === 0))
+        fail(`${label} plane needs a nonzero normal`)
+      written['normal'] = [...shape.normal!]
+    } else if (shape.kind === 'convex-hull' || shape.kind === 'mesh') {
+      const positions = shape.positions
+      if (
+        !(positions instanceof Float32Array) ||
+        positions.length === 0 ||
+        positions.length % 3 !== 0 ||
+        !positions.every(Number.isFinite)
+      )
+        fail(`${label} needs finite VEC3 positions`)
+      const bounds = boundsOf(positions)
+      written['positions'] = accessors.length
+      accessors.push({
+        bufferView: buffers.push(Float32Array.from(positions)),
+        componentType: FLOAT,
+        count: positions.length / 3,
+        type: 'VEC3',
+        min: bounds.min,
+        max: bounds.max,
+      })
+      if (shape.kind === 'mesh') {
+        const indices = shape.indices
+        if (
+          !(indices instanceof Uint32Array) ||
+          indices.length === 0 ||
+          indices.length % 3 !== 0 ||
+          indices.some(index => index >= positions.length / 3)
+        )
+          fail(`${label} mesh needs triangle indices within its positions`)
+        written['indices'] = accessors.length
+        accessors.push({
+          bufferView: buffers.push(Uint32Array.from(indices)),
+          componentType: UINT32,
+          count: indices.length,
+          type: 'SCALAR',
+        })
+      }
+    } else {
+      fail(`${label} has an unknown shape kind`)
+    }
+    if (shape.collisionMask !== undefined) {
+      if (!Number.isSafeInteger(shape.collisionMask) || shape.collisionMask < 0)
+        fail(`${label} collision mask is a nonnegative integer`)
+      written['collisionMask'] = shape.collisionMask
+    }
+    const node = documentNodes.length
+    documentNodes.push({
+      extensions: {
+        UV_game_collision: {
+          ...(volume.role === undefined ? {} : { role: volume.role }),
+          shapes: [written],
+          extras: { modkit: { id: volume.id } },
+        },
+      },
+    })
+    const owner = documentNodes[parent]!
+    owner.children = [...(owner.children ?? []), node]
+    collisionNodes += 1
+  }
 
   const documentMeshes = emittedMeshes.map(({ mesh, primitives: entries }) => {
     const value: {
@@ -1980,6 +2096,7 @@ export function materializeUvmCore(
       ...(projection.lods !== undefined && projection.lods.length > 0 ? ['MSFT_lod'] : []),
       ...(lodSelection === undefined ? [] : ['MODKITX_lod_selection']),
       ...(sceneLights === undefined ? [] : ['UV_scene_lights']),
+      ...(collisionNodes === 0 ? [] : ['UV_game_collision']),
       ...(effects === undefined ? [] : ['UV_game_effects']),
       ...gameExtensions.map(([name]) => name),
     ],
@@ -2003,6 +2120,7 @@ export function materializeUvmCore(
         class: (request.options as { assetClass?: string } | undefined)?.assetClass ?? 'prop',
         coreRenderable: emittedPrimitives > 0,
         ...(socketByNodeId.size === 0 ? {} : { sockets: socketByNodeId.size }),
+        ...(collisionNodes === 0 ? {} : { collision: true }),
       },
       UV_provenance: {
         source: { format: sourceFormat },

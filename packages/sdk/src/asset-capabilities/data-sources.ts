@@ -104,6 +104,7 @@ export {
   type ModelResourceRefsSource,
   type ModelResourceRole,
   type ModelTeamColorRule,
+  type ModelCollisionShape,
   type ModelTextureColorKey,
   type ModelSkeletonInfo,
   type ModelSkeletonSource,
