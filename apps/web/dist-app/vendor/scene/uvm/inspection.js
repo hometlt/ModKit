@@ -5,10 +5,7 @@ import {
   readCollisionMesh,
   readUvmModel,
   uvmImageResourceId
-} from "../../../chunks/chunk-E5MNFFI7.js";
-import {
-  createJsonTreeSource
-} from "../../../chunks/chunk-KA3J6DLB.js";
+} from "../../../chunks/chunk-MIYZSSZM.js";
 import {
   array,
   field,
@@ -19,11 +16,13 @@ import {
   safeIndex,
   string
 } from "../../../chunks/chunk-I4Z5J3HX.js";
-import "../../../chunks/chunk-OAFBQXD6.js";
 import {
   validateUvmDocument
-} from "../../../chunks/chunk-KURLZAFQ.js";
-import "../../../chunks/chunk-I43233HX.js";
+} from "../../../chunks/chunk-PRU56TPQ.js";
+import "../../../chunks/chunk-NONHW3HK.js";
+import {
+  createJsonTreeSource
+} from "../../../chunks/chunk-KA3J6DLB.js";
 import {
   createModelAnimationSource,
   createModelCollisionSource,
@@ -40,9 +39,7 @@ import {
 } from "../../../chunks/chunk-RUAJQ7WQ.js";
 import "../../../chunks/chunk-ZSDVUSRM.js";
 import "../../../chunks/chunk-5SBJANAJ.js";
-import "../../../chunks/chunk-TKIPZ6HV.js";
-import "../../../chunks/chunk-NUFRM6SI.js";
-import "../../../chunks/chunk-W2UBWFML.js";
+import "../../../chunks/chunk-TSKCLN7F.js";
 import "../../../chunks/chunk-NMYA52EI.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 

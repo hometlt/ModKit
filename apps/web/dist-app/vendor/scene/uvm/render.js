@@ -1,12 +1,4 @@
 import {
-  opaqueTexels,
-  prepareUvmTextureImages,
-  readCollisionMesh,
-  readUvmModel,
-  uvmImageFilters,
-  uvmImageTexels
-} from "../../../chunks/chunk-E5MNFFI7.js";
-import {
   IDENTITY_MATERIAL_FRAME,
   MATERIAL_LAYERS_SHADER,
   RENDER_MATERIAL_SHADER,
@@ -23,7 +15,16 @@ import {
   snapshotEnvironment,
   snapshotEyePosition,
   snapshotModelBillboards
-} from "../../../chunks/chunk-I3F2EMHG.js";
+} from "../../../chunks/chunk-JUDJKTM5.js";
+import "../../../chunks/chunk-WGWMBNZ4.js";
+import {
+  opaqueTexels,
+  prepareUvmTextureImages,
+  readCollisionMesh,
+  readUvmModel,
+  uvmImageFilters,
+  uvmImageTexels
+} from "../../../chunks/chunk-MIYZSSZM.js";
 import {
   array,
   field,
@@ -35,27 +36,25 @@ import {
   vector3,
   vector4
 } from "../../../chunks/chunk-I4Z5J3HX.js";
-import "../../../chunks/chunk-QONSPCLP.js";
-import {
-  readUvmContainer
-} from "../../../chunks/chunk-OAFBQXD6.js";
+import "../../../chunks/chunk-HV5G5VS5.js";
 import {
   readUvmAccessor,
+  readUvmAnimationClips,
+  readUvmPrimitiveVisibility,
   readUvmTextureAlpha,
   readUvmTextureColorKeys,
   validateUvmDocument
-} from "../../../chunks/chunk-KURLZAFQ.js";
+} from "../../../chunks/chunk-PRU56TPQ.js";
 import {
-  readUvmAnimationClips,
-  readUvmPrimitiveVisibility
-} from "../../../chunks/chunk-I43233HX.js";
+  readUvmContainer
+} from "../../../chunks/chunk-NONHW3HK.js";
 import {
   modelPrimitiveByteLength
 } from "../../../chunks/chunk-IBG4CEKN.js";
 import "../../../chunks/chunk-I675VFQQ.js";
 import {
   createModelSkinDeformer
-} from "../../../chunks/chunk-L2VMGJ76.js";
+} from "../../../chunks/chunk-LOHAIAXF.js";
 import {
   DEFAULT_EFFECT_SIMULATION_OPTIONS,
   MAX_EFFECT_SPLINE_DIVISIONS,
@@ -70,13 +69,13 @@ import {
 } from "../../../chunks/chunk-4A3BDPFP.js";
 import {
   encodePng
-} from "../../../chunks/chunk-KXX5ID6M.js";
+} from "../../../chunks/chunk-77IXXCWQ.js";
 import {
   applyColorKeyTransparency,
   linearToSrgb,
   srgbToLinear
 } from "../../../chunks/chunk-SNT2IRUT.js";
-import "../../../chunks/chunk-MUN4JEOH.js";
+import "../../../chunks/chunk-YOJ4JJ3G.js";
 import {
   createModelPoseBlendSampler,
   createModelPoseSampler,
@@ -99,10 +98,8 @@ import {
 import {
   diagnostic
 } from "../../../chunks/chunk-V3DESLW4.js";
-import "../../../chunks/chunk-TKIPZ6HV.js";
-import "../../../chunks/chunk-NUFRM6SI.js";
-import "../../../chunks/chunk-W2UBWFML.js";
-import "../../../chunks/chunk-6S2P23EL.js";
+import "../../../chunks/chunk-TSKCLN7F.js";
+import "../../../chunks/chunk-F3ZZXQRO.js";
 import "../../../chunks/chunk-NMYA52EI.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 
@@ -130,7 +127,7 @@ function readUvmPoseSamples(value, clips) {
 }
 
 // ../MODDING/modkit-core/packages/scene/dist/uvm/model-particles.js
-var multiplyAffine = (a, b) => Float32Array.from(multiplyMaterialFrames(Array.from(a), Array.from(b)));
+var multiplyFrames = (a, b) => Float32Array.from(multiplyMaterialFrames(Array.from(a), Array.from(b)));
 var multiplyMatrix4 = (a, b) => {
   if (a.length !== 16 || b.length !== 16)
     throw new TypeError("model particle camera matrices must contain 16 components");
@@ -178,7 +175,7 @@ function modelParticleMatrix(instance) {
       1
     ]);
   }
-  const matrix = multiplyAffine(instance.transform, local);
+  const matrix = multiplyFrames(instance.transform, local);
   if (!matrix.every(Number.isFinite))
     throw new RangeError("model particle matrix exceeds finite range");
   return matrix;
@@ -259,7 +256,7 @@ async function composeModelParticles(instances, parent, options, depth, maxBytes
       const matrix = modelParticleMatrix(instance);
       const camera = {
         viewProjection: Array.from(multiplyMatrix4(parent.camera.viewProjection, matrix)),
-        ...parent.camera.viewMatrix === void 0 ? {} : { viewMatrix: Array.from(multiplyAffine(parent.camera.viewMatrix, matrix)) }
+        ...parent.camera.viewMatrix === void 0 ? {} : { viewMatrix: Array.from(multiplyFrames(parent.camera.viewMatrix, matrix)) }
       };
       const eye = parent.camera.eyePosition;
       const childEye = eye === void 0 ? void 0 : (() => {
@@ -301,7 +298,7 @@ async function composeModelParticles(instances, parent, options, depth, maxBytes
           ...primitive,
           id: prefix + primitive.id,
           ...primitive.materialId === void 0 ? {} : { materialId: materialId(primitive.materialId) },
-          transform: multiplyAffine(matrix, primitive.transform ?? IDENTITY_MATERIAL_FRAME),
+          transform: multiplyFrames(matrix, primitive.transform ?? IDENTITY_MATERIAL_FRAME),
           tint: instance.color.map((component2, axis) => component2 * (primitive.tint?.[axis] ?? 1))
         });
       for (const material of scene.materials ?? [])

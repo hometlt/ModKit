@@ -13,7 +13,7 @@ import {
   createStandardSurfaceRegistry,
   framePortFromMessagePort,
   protocolLimits
-} from "../../chunks/chunk-GDGVKHET.js";
+} from "../../chunks/chunk-L4YF4HMV.js";
 import {
   assembleSubjectDescriptor,
   createAssetSession,
@@ -8098,6 +8098,7 @@ function createLanguageWorkspace(options) {
 var DEPENDENCY_SCOPE = Object.freeze(["workspace-dependency-layer"]);
 var KNOWLEDGE_FILE_MAX_BYTES = 8 * 1024 * 1024;
 var KNOWLEDGE_TOTAL_MAX_BYTES = 32 * 1024 * 1024;
+var FILES_PAGE = 4096;
 function nonEmpty(value, name) {
   if (typeof value !== "string" || value.length === 0 || value.length > 4096 || value.includes("\0")) {
     throw new TypeError(`${name} must be a bounded non-empty string`);
@@ -8286,7 +8287,13 @@ function createContentDependencyLanguageDocumentSource(options) {
   const maxDocumentBytes = options.maxDocumentBytes ?? 4194304;
   const maxWorkspaceBytes = options.maxWorkspaceBytes ?? 16777216;
   const maxEntries = options.maxEntries ?? 16384;
-  for (const [name, value] of Object.entries({ maxDocumentBytes, maxWorkspaceBytes, maxEntries })) {
+  const maxIndexedPaths = options.maxIndexedPaths ?? 1048576;
+  for (const [name, value] of Object.entries({
+    maxDocumentBytes,
+    maxWorkspaceBytes,
+    maxEntries,
+    maxIndexedPaths
+  })) {
     if (!Number.isSafeInteger(value) || value <= 0)
       throw new TypeError(`${name} must be a positive safe integer`);
   }
@@ -8320,12 +8327,47 @@ function createContentDependencyLanguageDocumentSource(options) {
       const contentPaths = /* @__PURE__ */ new Map();
       const wantedKnowledge = new Set((request.knowledgeFileNames ?? []).map((name) => name.toLowerCase()));
       const knowledge = [];
-      let visited = 0;
+      let claimed = 0;
+      let indexed = 0;
       let complete = options.resolution.complete && mounts.every((mount) => mount.fingerprint !== void 0 && isRevisionId(mount.fingerprint));
       let pathIndexComplete = options.resolution.complete;
+      const visit2 = (mount, path) => {
+        indexed += 1;
+        if (indexed > maxIndexedPaths) {
+          complete = false;
+          pathIndexComplete = false;
+          return false;
+        }
+        const relative = relativeEntry(mount, { path });
+        if (relative === void 0) {
+          complete = false;
+          pathIndexComplete = false;
+          return true;
+        }
+        contentPaths.set(relative, mounts.indexOf(mount));
+        if (!relative.includes("/") && wantedKnowledge.has(relative.toLowerCase())) {
+          knowledge.push({ mount, path, fileName: relative });
+          return true;
+        }
+        const { languageId, candidates: claimants } = classifyLanguageFile(options.routes, relative);
+        if (languageId === void 0) {
+          if (claimants.some((id) => accepted.has(id)))
+            complete = false;
+          return true;
+        }
+        if (!accepted.has(languageId))
+          return true;
+        claimed += 1;
+        const uri = contentSourceUri(mount.sourceId, path);
+        if (openUris.has(uri))
+          return true;
+        if (claimed <= maxEntries && candidates.length < request.maxDocuments)
+          candidates.push({ mount, path, relative });
+        else
+          complete = false;
+        return true;
+      };
       const walk = async (mount, path) => {
-        if (visited > maxEntries)
-          return;
         request.signal.throwIfAborted();
         let entries;
         try {
@@ -8333,52 +8375,53 @@ function createContentDependencyLanguageDocumentSource(options) {
         } catch {
           complete = false;
           pathIndexComplete = false;
-          return;
+          return true;
         }
         for (const entry2 of entries) {
           request.signal.throwIfAborted();
-          visited += 1;
-          if (visited > maxEntries) {
+          if (!entry2.directory) {
+            if (!visit2(mount, entry2.path))
+              return false;
+          } else if (relativeEntry(mount, entry2) === void 0) {
             complete = false;
             pathIndexComplete = false;
-            return;
-          }
-          const relative = relativeEntry(mount, entry2);
-          if (relative === void 0) {
-            complete = false;
-            pathIndexComplete = false;
-            continue;
-          }
-          if (entry2.directory) {
-            await walk(mount, entry2.path);
-            continue;
-          }
-          contentPaths.set(relative, mounts.indexOf(mount));
-          if (path === mount.sourcePath && wantedKnowledge.has(relative.toLowerCase())) {
-            knowledge.push({ mount, path: entry2.path, fileName: relative });
-            continue;
-          }
-          const { languageId, candidates: claimants } = classifyLanguageFile(options.routes, relative);
-          if (languageId === void 0) {
-            if (claimants.some((id) => accepted.has(id)))
-              complete = false;
-            continue;
-          }
-          if (!accepted.has(languageId))
-            continue;
-          const uri = contentSourceUri(mount.sourceId, entry2.path);
-          if (!openUris.has(uri) && candidates.length < request.maxDocuments) {
-            candidates.push({ mount, path: entry2.path, relative });
-          } else if (!openUris.has(uri)) {
-            complete = false;
-          }
+          } else if (!await walk(mount, entry2.path))
+            return false;
         }
+        return true;
       };
-      for (const mount of mounts) {
-        if (visited > maxEntries)
+      const layer = async (mount) => {
+        let cursor2;
+        do {
+          request.signal.throwIfAborted();
+          let page;
+          try {
+            page = await options.contentSources.files?.(mount.sourceId, mount.sourcePath, {
+              limit: FILES_PAGE,
+              ...cursor2 === void 0 ? {} : { cursor: cursor2 }
+            });
+          } catch {
+            complete = false;
+            pathIndexComplete = false;
+            return true;
+          }
+          if (page === void 0) {
+            if (cursor2 === void 0)
+              return walk(mount, mount.sourcePath);
+            complete = false;
+            pathIndexComplete = false;
+            return true;
+          }
+          for (const file of page.items)
+            if (!visit2(mount, file.path))
+              return false;
+          cursor2 = page.nextCursor;
+        } while (cursor2 !== void 0);
+        return true;
+      };
+      for (const mount of mounts)
+        if (!await layer(mount))
           break;
-        await walk(mount, mount.sourcePath);
-      }
       const indexedPaths = Object.freeze([...contentPaths.keys()].sort(compareUtf8));
       const pathLayers = Object.freeze(indexedPaths.map((path) => contentPaths.get(path)));
       const pathIndexRevision = languageWorkspaceContextToken({
@@ -8722,13 +8765,13 @@ function createContentAssetOrigin(request) {
     async *enumerate(scope, options, signal) {
       const origin = await resolved();
       const path = options.prefix.endsWith("/") ? "" : normalizeCompanionLogicalId(options.prefix);
-      let named = false;
+      let answered = false;
       if (origin !== void 0)
         for await (const entry2 of origin.enumerate(scope, options, signal)) {
-          named ||= entry2.logicalId.toLowerCase() === path.toLowerCase();
+          answered = true;
           yield entry2;
         }
-      if (named || path === "" || options.namePrefix !== void 0)
+      if (answered || path === "" || options.namePrefix !== void 0)
         return;
       const asset = await locate(path);
       if (asset !== void 0)
@@ -16589,7 +16632,7 @@ function createContentSourceInputResolver(options) {
 // ../MODDING/modkit-core/packages/host/dist/content-source-root-session.js
 var NAMESPACE = "common.view/namespace-entry-source";
 var EXTRACT_HANDLER = "x3.host/content-source-root-extract";
-var FILES_PAGE = 1e3;
+var FILES_PAGE2 = 1e3;
 var hostPath = (path) => path.replaceAll("\\", "/").replace(/\/+$/u, "").toLowerCase();
 var sourcePath = (path) => path.replaceAll("\\", "/").replace(/^\/+|\/+$/gu, "");
 var fold3 = (path) => sourcePath(path).toLowerCase();
@@ -16648,7 +16691,7 @@ async function openContentSourceRootSession(options) {
       signal?.throwIfAborted();
       const folder = sourcePath(prefix);
       const files = await sources.files?.(root.id, folder, {
-        limit: Math.min(request.limit, FILES_PAGE),
+        limit: Math.min(request.limit, FILES_PAGE2),
         ...request.cursor === void 0 ? {} : { cursor: request.cursor },
         ...hidden
       });

@@ -1,3 +1,4 @@
+import "../../../chunks/chunk-5RD46IWG.js";
 import {
   decode_astc,
   decode_atc_rgb4,
@@ -20,10 +21,9 @@ import {
   initializeGpuTextureWasmBrowser,
   unpack_crunch,
   unpack_unity_crunch
-} from "../../../chunks/chunk-JTINH3FQ.js";
+} from "../../../chunks/chunk-YGHQTXS7.js";
 import {
   DEFAULT_MAX_RGBA8_DECODE_BYTES,
-  IMAGE_COMPRESSED_READ_OPERATION,
   ascii,
   assertRgba8DecodeWithinLimit,
   astcBlockFromGl,
@@ -35,14 +35,12 @@ import {
   decodeGpuPayload,
   halfFloatToNumber,
   normalizedSampleToByte,
-  validateCompressedTextureDescriptor,
   wrapDx10Dds
-} from "../../../chunks/chunk-UKNXZNYU.js";
-import "../../../chunks/chunk-W2UBWFML.js";
+} from "../../../chunks/chunk-MTFTXR2W.js";
+import "../../../chunks/chunk-V3DESLW4.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 export {
   DEFAULT_MAX_RGBA8_DECODE_BYTES,
-  IMAGE_COMPRESSED_READ_OPERATION,
   ascii,
   assertRgba8DecodeWithinLimit,
   astcBlockFromGl,
@@ -75,6 +73,5 @@ export {
   normalizedSampleToByte,
   unpack_crunch,
   unpack_unity_crunch,
-  validateCompressedTextureDescriptor,
   wrapDx10Dds
 };

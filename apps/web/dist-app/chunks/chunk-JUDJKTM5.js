@@ -1,32 +1,33 @@
 import {
+  BufferBuilder,
+  addAccessor
+} from "./chunk-WGWMBNZ4.js";
+import {
   array as array2,
   field,
   object as object2,
   safeIndex
 } from "./chunk-I4Z5J3HX.js";
 import {
-  BufferBuilder,
-  addAccessor
-} from "./chunk-QONSPCLP.js";
+  WORLD_PROJECTION_UV_SOURCES
+} from "./chunk-HV5G5VS5.js";
+import {
+  array,
+  isStandardLayerSlot,
+  object,
+  uvmAccessorWidth,
+  validateUvmDocument
+} from "./chunk-PRU56TPQ.js";
 import {
   DEFAULT_UVM_CONTAINER_BUDGET,
   checkUvmContainerBudget,
   writeUvmContainer
-} from "./chunk-OAFBQXD6.js";
-import {
-  uvmAccessorWidth,
-  validateUvmDocument
-} from "./chunk-KURLZAFQ.js";
-import {
-  array,
-  isStandardLayerSlot,
-  object
-} from "./chunk-I43233HX.js";
+} from "./chunk-NONHW3HK.js";
 import {
   decomposeMatrix4,
   normalizeQuat,
   quaternionFromRotationMatrix
-} from "./chunk-MUN4JEOH.js";
+} from "./chunk-YOJ4JJ3G.js";
 import {
   snapshotJson
 } from "./chunk-ZSDVUSRM.js";
@@ -445,7 +446,7 @@ function createRenderMaterialSampler(parameters, budget, signal) {
     ...worldToMaterial === void 0 ? {} : { worldToMaterial },
     usesWorldProjection: passes.some((pass) => (
       // Rebasing preserves authored coordinates even for a layer that may be enabled later.
-      Object.values(pass.material.layers).some((layer) => layer.texturePath !== null && [5, 13, 14, 17, 18].includes(layer.uvSource))
+      Object.values(pass.material.layers).some((layer) => layer.texturePath !== null && WORLD_PROJECTION_UV_SOURCES.includes(layer.uvSource))
     )),
     sample(time, sampleSignal) {
       if (!Number.isFinite(time.time) || time.time < 0)

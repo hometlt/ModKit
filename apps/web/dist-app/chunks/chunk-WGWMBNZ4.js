@@ -1,6 +1,6 @@
 import {
   ModkitError
-} from "./chunk-W2UBWFML.js";
+} from "./chunk-TSKCLN7F.js";
 
 // ../MODDING/modkit-core/packages/uv/dist/model/legacy/rig-kernels.js
 var BufferBuilder = class {

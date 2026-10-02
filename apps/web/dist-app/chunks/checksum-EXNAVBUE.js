@@ -7,8 +7,8 @@ import {
   createAdler32,
   createCrc32Msb,
   xxHash32
-} from "./chunk-BCCCTFYJ.js";
-import "./chunk-CQ52GEHY.js";
+} from "./chunk-XCBYGC7H.js";
+import "./chunk-BLWUC7LO.js";
 export {
   adler32,
   cdRomEdc,

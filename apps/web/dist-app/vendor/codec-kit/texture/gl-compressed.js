@@ -1,12 +1,12 @@
 import {
+  decodeBcSurface
+} from "../../../chunks/chunk-H37RD4QF.js";
+import {
   astcBlockFromGl,
   bgraToRgba,
   decodeGpuPayload
-} from "../../../chunks/chunk-UKNXZNYU.js";
-import {
-  decodeBcSurface
-} from "../../../chunks/chunk-H37RD4QF.js";
-import "../../../chunks/chunk-W2UBWFML.js";
+} from "../../../chunks/chunk-MTFTXR2W.js";
+import "../../../chunks/chunk-V3DESLW4.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 
 // ../MODDING/modkit-core/packages/codec-kit/dist/texture/gl-compressed.js
@@ -102,7 +102,7 @@ async function decodeGlCompressed(payload, internalFormat, width, height) {
       throw new RangeError("truncated GL BC block payload");
     return { width, height, pixels: decodeBcSurface(payload, 0, width, height, bc[0], bc[1]) };
   }
-  const wasm = await import("../../../chunks/gpu-texture-wasm-2Q2CDSF4.js");
+  const wasm = await import("../../../chunks/gpu-texture-wasm-Z7G7RHGL.js");
   const bgra = await (found.dxgiFormat === 98 ? wasm.decode_bc7 : wasm.decode_bc6)(payload, width, height);
   if (bgra === null)
     throw new Error("GL BPTC decode failed");

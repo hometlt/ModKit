@@ -3,7 +3,7 @@ import {
 } from "./chunk-ZSDVUSRM.js";
 import {
   ModkitError
-} from "./chunk-W2UBWFML.js";
+} from "./chunk-TSKCLN7F.js";
 
 // ../MODDING/modkit-core/packages/uv/dist/model/legacy/container-kernels.js
 var GLB_MAGIC = 1179937895;

@@ -80,7 +80,7 @@ const DECODED_DXGI_FORMATS = new Map([
   [87, { format: 'rgba-mask', bits: 32, masks: BGRA8_MASKS }],
   [91, { format: 'rgba-mask', bits: 32, masks: BGRA8_MASKS, srgb: true }],
   /*
-   * BPTC. The blocks are decoded by the vendored texture2ddecoder runtime through `bptc.js`, the
+   * BPTC. The blocks are decoded by codec-kit's Texture2DDecoder runtime through `bptc.js`, the
    * same implementation the legacy MK2 codec called. BC6H_TYPELESS carries no signedness of its
    * own; legacy read it as the unsigned profile and so does this.
    */
@@ -305,7 +305,7 @@ function decodeUncompressed(bytes, info, surface, output) {
 /**
  * Decode one already-resolved surface (a single mip/layer/face/slice) to rgba8.
  *
- * BC6H and BC7 leave through `bptc.js` to the vendored runtime, which is why this is async: every
+ * BC6H and BC7 leave through `bptc.js` to codec-kit's runtime, which is why this is async: every
  * other format is decoded inline here and returns without ever awaiting.
  */
 async function decodeSurface(bytes, info, surface) {

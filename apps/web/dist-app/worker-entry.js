@@ -6,7 +6,12 @@ import {
   framePortFromMessagePort,
   logicalResourcesFromWire,
   protocolLimits
-} from "./chunks/chunk-GDGVKHET.js";
+} from "./chunks/chunk-L4YF4HMV.js";
+import "./chunks/chunk-5RD46IWG.js";
+import {
+  initializeGpuTextureWasmBrowser
+} from "./chunks/chunk-YGHQTXS7.js";
+import "./chunks/chunk-MTFTXR2W.js";
 import "./chunks/chunk-ZUZRIHWF.js";
 import "./chunks/chunk-MT2JUZZJ.js";
 import "./chunks/chunk-R2P56FTH.js";
@@ -157,6 +162,8 @@ var workerScope = globalThis.self;
 if (workerScope !== void 0 && typeof globalThis.WorkerGlobalScope === "function" && typeof workerScope.addEventListener === "function" && typeof workerScope.close === "function") {
   installBrowserWorkerEntry(workerScope);
 }
-export {
-  installBrowserWorkerEntry
-};
+
+// apps/web/src/worker-entry.ts
+void initializeGpuTextureWasmBrowser({
+  assetBaseUrl: new URL("./vendor/texture2ddecoder-wasm/", import.meta.url)
+}).catch(() => void 0);

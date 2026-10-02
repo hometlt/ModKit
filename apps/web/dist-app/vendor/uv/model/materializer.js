@@ -4,18 +4,22 @@ import {
   addJointAttribute,
   encodeAnimationChannel,
   encodeSkeleton
-} from "../../../chunks/chunk-QONSPCLP.js";
+} from "../../../chunks/chunk-WGWMBNZ4.js";
 import {
-  packUvmGlb,
-  uvmImageUri
-} from "../../../chunks/chunk-OAFBQXD6.js";
+  uvmSceneFrameInverse,
+  withMaterialFrame
+} from "../../../chunks/chunk-HV5G5VS5.js";
 import {
   materializeUvmAnimationMaterialTargets,
   uvmAnimationEvents,
   uvmAnimationPlayback,
   uvmKeyTimesMetadata,
   uvmVisibilityPointer
-} from "../../../chunks/chunk-I43233HX.js";
+} from "../../../chunks/chunk-PRU56TPQ.js";
+import {
+  packUvmGlb,
+  uvmImageUri
+} from "../../../chunks/chunk-NONHW3HK.js";
 import {
   DEFAULT_MODEL_MATERIAL_BUDGET,
   snapshotModelMaterials
@@ -23,6 +27,7 @@ import {
 import {
   boundsOf
 } from "../../../chunks/chunk-3YDZHAZL.js";
+import "../../../chunks/chunk-YOJ4JJ3G.js";
 import {
   DEFAULT_MODEL_SKELETON_BUDGET,
   createModelSkeletonNodes,
@@ -44,9 +49,7 @@ import {
   isJsonValue
 } from "../../../chunks/chunk-2LRUXON6.js";
 import "../../../chunks/chunk-V3DESLW4.js";
-import "../../../chunks/chunk-TKIPZ6HV.js";
-import "../../../chunks/chunk-NUFRM6SI.js";
-import "../../../chunks/chunk-W2UBWFML.js";
+import "../../../chunks/chunk-TSKCLN7F.js";
 import "../../../chunks/chunk-NMYA52EI.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 
@@ -690,7 +693,45 @@ var EFFECT_FAMILIES = [
   ["warps", false],
   ["projectors", true]
 ];
-function effectsOf(projection, nodeIndexById, materialIndexById) {
+function withNodeIndices(value, label, nodeIndexById) {
+  if (Array.isArray(value))
+    return value.map((item) => withNodeIndices(item, label, nodeIndexById));
+  if (value === null || typeof value !== "object")
+    return value;
+  const written = {};
+  for (const [key, child] of Object.entries(value)) {
+    if (child === void 0)
+      continue;
+    if (key === "node")
+      fail(`${label} names a node by index, not by id`);
+    if (key !== "nodeId") {
+      written[key] = withNodeIndices(child, label, nodeIndexById);
+      continue;
+    }
+    const node = typeof child === "string" ? nodeIndexById.get(child) : void 0;
+    if (node === void 0)
+      fail(`${label} names the unknown node ${String(child)}`);
+    written["node"] = node;
+  }
+  return written;
+}
+function emissionMeshesOf(value, label, addAccessor2) {
+  if (!Array.isArray(value) || value.length === 0)
+    fail(`${label} emission meshes are a nonempty list`);
+  return value.map((mesh, at) => {
+    const which = `${label} emission mesh ${String(at)}`;
+    const { positions, indices } = mesh ?? {};
+    if (!Array.isArray(positions) || positions.length === 0 || positions.length % 3 !== 0 || !positions.every((item) => typeof item === "number" && Number.isFinite(Math.fround(item))))
+      fail(`${which} needs finite (x, y, z) positions`);
+    if (!Array.isArray(indices) || indices.length === 0 || indices.length % 3 !== 0 || !indices.every((item) => Number.isSafeInteger(item) && item >= 0 && item < positions.length / 3))
+      fail(`${which} needs triangle indices within its positions`);
+    return {
+      positions: addAccessor2(Float32Array.from(positions), "VEC3"),
+      indices: addAccessor2(Uint32Array.from(indices), "SCALAR")
+    };
+  });
+}
+function effectsOf(projection, nodeIndexById, materialIndexById, addAccessor2) {
   const given = projection.effects;
   if (given === void 0)
     return void 0;
@@ -706,21 +747,28 @@ function effectsOf(projection, nodeIndexById, materialIndexById) {
         const json = entry;
         if (!isJsonValue(json) || typeof entry["name"] !== "string")
           fail(`${label} is not a named JSON object`);
-        const { nodeId, materialId, ...rest } = entry;
+        const { nodeId, materialId, emitShapeMeshes, ...rest } = entry;
         if (rest["node"] !== void 0 || rest["material"] !== void 0)
           fail(`${label} names its node and material by id, not by index`);
         const node = typeof nodeId === "string" ? nodeIndexById.get(nodeId) : void 0;
         if (node === void 0)
           fail(`${label} names the unknown node ${String(nodeId)}`);
+        if (emitShapeMeshes !== void 0 && family !== "particles")
+          fail(`${label} has emission meshes only a particle emitter has`);
+        const written = {
+          ...withNodeIndices(rest, label, nodeIndexById),
+          ...emitShapeMeshes === void 0 ? {} : { emitShapeMeshes: emissionMeshesOf(emitShapeMeshes, label, addAccessor2) },
+          node
+        };
         if (!withMaterial) {
           if (materialId !== void 0)
             fail(`${label} names a material its family has not`);
-          return { ...structuredClone(rest), node };
+          return written;
         }
         const material = typeof materialId === "string" ? materialIndexById.get(materialId) : void 0;
         if (material === void 0)
           fail(`${label} names the unknown material ${String(materialId)}`);
-        return { ...structuredClone(rest), node, material };
+        return { ...written, material };
       })
     ]);
   }
@@ -1632,6 +1680,16 @@ function materializeUvmCore(projection, request, { digest, materialBudget = DEFA
     rootIndices = [root];
     note("uv.model/structure@1", "value-differs", "/nodes", "one scale node brings the source units to metres (UV_units)");
   }
+  const frame = {
+    metersPerSourceUnit: unitsExtension?.metersPerSourceUnit ?? 1,
+    upAxis: info.upAxis === "+z" ? "+z" : "+y",
+    handedness: info.handedness === "left" ? "left" : "right"
+  };
+  if (frame.metersPerSourceUnit !== 1 || frame.upAxis === "+z" || frame.handedness === "left") {
+    const inverse = uvmSceneFrameInverse(frame);
+    for (const [index, material] of materials.entries())
+      materials[index] = withMaterialFrame(material, inverse);
+  }
   const hiddenPrimitives = (primitives ?? []).filter((primitive) => primitive.hidden === true).flatMap((primitive) => {
     const target = primitiveIndices.get(primitive.id);
     return target === void 0 ? [] : [target];
@@ -1681,10 +1739,30 @@ function materializeUvmCore(projection, request, { digest, materialBudget = DEFA
   }
   if (animation !== void 0 && animation.animations.length > 0)
     note("common.view/model-animation-source@1", "value-differs", void 0, "clip and target identities are positional; native frame indices, provenance, bounds and movement speed are not glTF TRS fields");
+  const effects = effectsOf(projection, nodeIndexById, materialIndexById, (values, type) => {
+    const index = accessors.length;
+    if (type === "VEC3") {
+      const bounds = boundsOf(values);
+      accessors.push({
+        bufferView: buffers.push(values),
+        componentType: FLOAT,
+        count: values.length / 3,
+        type,
+        min: bounds.min,
+        max: bounds.max
+      });
+    } else
+      accessors.push({
+        bufferView: buffers.push(values),
+        componentType: UINT32,
+        count: values.length,
+        type
+      });
+    return index;
+  });
   const binary = buffers.build();
   const gameExtensions = gameExtensionsOf(projection);
   const sceneLights = sceneLightsOf(projection, nodeIndexById);
-  const effects = effectsOf(projection, nodeIndexById, materialIndexById);
   const document = {
     asset: {
       version: "2.0",

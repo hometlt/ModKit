@@ -32,7 +32,7 @@ import {
   resolveModelViewerTextures,
   sceneMaterials,
   skeletonJoints
-} from "./chunk-2BJIIJSO.js";
+} from "./chunk-IOGAUHEU.js";
 import {
   createOrbitController
 } from "./chunk-O2DY4UGD.js";
@@ -41,8 +41,8 @@ import "./chunk-PGJ3E3MZ.js";
 import "./chunk-ID5URMAQ.js";
 import "./chunk-5MQCQKKD.js";
 import "./chunk-V2OFYISD.js";
-import "./chunk-AVBKEDCB.js";
-import "./chunk-R3U752LL.js";
+import "./chunk-OFFINWD7.js";
+import "./chunk-XCBYGC7H.js";
 import "./chunk-QQJVD7VT.js";
 import "./chunk-33VOQNJR.js";
 import "./chunk-BLWUC7LO.js";

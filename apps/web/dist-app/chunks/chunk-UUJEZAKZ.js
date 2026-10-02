@@ -1,11 +1,13 @@
 import {
   composeTrsMatrix,
+  invertAffine,
   linearToSrgb,
+  multiplyAffine,
   multiplyMat4,
   sampleTrackValue,
   snapshotJson,
   srgbToLinear
-} from "./chunk-AVBKEDCB.js";
+} from "./chunk-OFFINWD7.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunk-BLWUC7LO.js";
@@ -89,12 +91,6 @@ var ModkitError = class _ModkitError extends Error {
     Object.setPrototypeOf(this, _ModkitError.prototype);
   }
 };
-
-// ../MODDING/modkit-core/packages/codec-kit/dist/legacy/core/logger.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-
-// ../MODDING/modkit-core/packages/codec-kit/dist/logging.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
 // ../MODDING/modkit-core/packages/uv/dist/model/legacy/container-kernels.js
 var GLB_MAGIC = 1179937895;
@@ -593,8 +589,8 @@ var LOOP_MODES = ["once", "loop", "ping-pong", "hold"];
 function uvmAnimationPlayback(value2) {
   if (value2 === void 0)
     return {};
-  const record4 = object2(value2, "UV_game_animation_clips of an animation");
-  const { loop, priority, speedScale, blendInSeconds, blendOutSeconds } = record4;
+  const record5 = object2(value2, "UV_game_animation_clips of an animation");
+  const { loop, priority, speedScale, blendInSeconds, blendOutSeconds } = record5;
   const seconds = (item) => item === void 0 || typeof item === "number" && Number.isFinite(item) && item >= 0;
   if (loop !== void 0 && !LOOP_MODES.includes(loop) || priority !== void 0 && !integer(priority) || speedScale !== void 0 && (typeof speedScale !== "number" || !Number.isFinite(speedScale) || speedScale <= 0) || !seconds(blendInSeconds) || !seconds(blendOutSeconds))
     throw new TypeError("UVM animation playback is invalid");
@@ -614,9 +610,9 @@ function uvmAnimationEvents(value2, nodeCount) {
   if (!Array.isArray(events))
     throw new TypeError("UV_game_animation_events requires events");
   return Object.freeze(events.map((item) => {
-    const record4 = object2(item, "UVM animation event");
-    const { t, name, socket, payload, duration } = record4;
-    if (Object.keys(record4).some((key) => !EVENT_KEYS.has(key)) || typeof t !== "number" || !Number.isFinite(t) || t < 0 || typeof name !== "string" || !name || socket !== void 0 && (!integer(socket) || socket < 0 || socket >= nodeCount) || payload !== void 0 && (payload === null || typeof payload !== "object" || Array.isArray(payload)) || duration !== void 0 && (typeof duration !== "number" || !Number.isFinite(duration) || duration < 0))
+    const record5 = object2(item, "UVM animation event");
+    const { t, name, socket, payload, duration } = record5;
+    if (Object.keys(record5).some((key) => !EVENT_KEYS.has(key)) || typeof t !== "number" || !Number.isFinite(t) || t < 0 || typeof name !== "string" || !name || socket !== void 0 && (!integer(socket) || socket < 0 || socket >= nodeCount) || payload !== void 0 && (payload === null || typeof payload !== "object" || Array.isArray(payload)) || duration !== void 0 && (typeof duration !== "number" || !Number.isFinite(duration) || duration < 0))
       throw new TypeError("UVM animation event is invalid");
     return Object.freeze({
       t,
@@ -682,14 +678,14 @@ function readUvmAnimationClips(document2, signal) {
   const clips = [];
   for (const item of catalog["clips"]) {
     signal?.throwIfAborted();
-    const record4 = object2(item, "UVM clip catalog entry");
-    const id = record4["id"], name = record4["name"], duration = record4["durationSeconds"], sequence = record4["sourceSequenceIndex"];
+    const record5 = object2(item, "UVM clip catalog entry");
+    const id = record5["id"], name = record5["name"], duration = record5["durationSeconds"], sequence = record5["sourceSequenceIndex"];
     if (typeof id !== "string" || !id.trim() || ids.has(id) || typeof name !== "string" || typeof duration !== "number" || !Number.isFinite(duration) || duration < 0 || !integer(sequence) || sequence < 0 || sequences.has(sequence))
       throw new TypeError("UVM clip catalog identity, duration or sequence is invalid");
-    const sourceId = record4["sourceId"], looping = record4["looping"], repeatCount = record4["repeatCount"], kind = record4["kind"], frames = record4["frames"];
+    const sourceId = record5["sourceId"], looping = record5["looping"], repeatCount = record5["repeatCount"], kind = record5["kind"], frames = record5["frames"];
     if (sourceId !== void 0 && (typeof sourceId !== "string" || !sourceId) || looping !== void 0 && typeof looping !== "boolean" || repeatCount !== void 0 && (!integer(repeatCount) || repeatCount < 0) || kind !== void 0 && kind !== "animation" && kind !== "rest-pose" || frames !== void 0 && (!integer(frames) || frames < 0))
       throw new TypeError("UVM clip catalog optional metadata is invalid");
-    const animation = record4["animation"] === void 0 ? void 0 : safeIndex2(record4["animation"], animations.length, "clip animation");
+    const animation = record5["animation"] === void 0 ? void 0 : safeIndex2(record5["animation"], animations.length, "clip animation");
     if (animation !== void 0) {
       if (linked.has(animation))
         throw new TypeError("UVM animation is linked by multiple clips");
@@ -1068,10 +1064,10 @@ function readUvmKeyTimes(value2, input, signal) {
     return void 0;
   if (value2 === null || typeof value2 !== "object" || Array.isArray(value2))
     throw new TypeError("invalid UVM keyTimes metadata");
-  const record4 = value2;
-  if (record4["version"] !== 1 || Object.keys(record4).some((key) => !["version", "seconds"].includes(key)) || !Array.isArray(record4["seconds"]) || !record4["seconds"].length)
+  const record5 = value2;
+  if (record5["version"] !== 1 || Object.keys(record5).some((key) => !["version", "seconds"].includes(key)) || !Array.isArray(record5["seconds"]) || !record5["seconds"].length)
     throw new TypeError("UVM keyTimes requires version 1 and seconds");
-  const seconds = record4["seconds"];
+  const seconds = record5["seconds"];
   if (input !== void 0 && (seconds.length !== input.values.length || seconds.length * 8 > input.maxScalarBytes))
     throw new RangeError("UVM keyTimes count or scalar budget mismatch");
   let previous = -Infinity;
@@ -1440,6 +1436,58 @@ function environmentVector(environment, value2) {
 // ../MODDING/modkit-core/packages/scene/dist/materials/render-model.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
+// ../MODDING/modkit-core/packages/uv/dist/model/frame.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var WORLD_PROJECTION_UV_SOURCES = Object.freeze([5, 13, 14, 17, 18]);
+var IDENTITY = Object.freeze([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+var UP_AXIS_ROTATION = Object.freeze([-Math.SQRT1_2, 0, 0, Math.SQRT1_2]);
+var record3 = (value2) => value2 !== null && typeof value2 === "object" && !Array.isArray(value2) ? value2 : void 0;
+function renderMaterialFollowsSceneFrame(params) {
+  const model = record3(record3(params)?.["renderModel"]);
+  if (model === void 0 || model["version"] !== 1)
+    return false;
+  if (model["worldToMaterial"] !== void 0)
+    return true;
+  const composite = record3(model["composite"]);
+  const materials = composite === void 0 ? [model["standard"]] : array2(composite, "passes").map((pass) => record3(pass)?.["material"]);
+  return materials.some((material) => Object.values(record3(record3(material)?.["layers"]) ?? {}).some((layer) => {
+    const value2 = record3(layer);
+    return typeof value2?.["texturePath"] === "string" && typeof value2["uvSource"] === "number" && WORLD_PROJECTION_UV_SOURCES.includes(value2["uvSource"]);
+  }));
+}
+function withMaterialFrame(material, frame) {
+  const extensions = record3(field2(material, "extensions"));
+  const game = record3(extensions?.["UV_game_material"]);
+  const params = record3(game?.["params"]);
+  if (extensions === void 0 || game === void 0 || params === void 0)
+    return material;
+  if (!renderMaterialFollowsSceneFrame(params))
+    return material;
+  const model = object2(params["renderModel"], "render model");
+  const current = model["worldToMaterial"];
+  const worldToMaterial = multiplyAffine(Array.isArray(current) ? current : IDENTITY, frame);
+  return {
+    ...material,
+    extensions: {
+      ...extensions,
+      UV_game_material: {
+        ...game,
+        params: { ...params, renderModel: { ...model, worldToMaterial } }
+      }
+    }
+  };
+}
+function uvmSceneFrameMatrix(frame) {
+  const scale = frame.metersPerSourceUnit;
+  const units = [scale, 0, 0, 0, 0, scale, 0, 0, 0, 0, scale, 0, 0, 0, 0, 1];
+  const upAxis = frame.upAxis === "+z" ? [1, 0, 0, 0, 0, 0, -1, 0, 0, 1, 0, 0, 0, 0, 0, 1] : IDENTITY;
+  const mirror = frame.handedness !== "left" ? IDENTITY : frame.upAxis === "+z" ? [1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1] : [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1];
+  return multiplyAffine(units, multiplyAffine(upAxis, mirror));
+}
+function uvmSceneFrameInverse(frame) {
+  return invertAffine(uvmSceneFrameMatrix(frame));
+}
+
 // ../MODDING/modkit-core/packages/scene/dist/materials/frame.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 function materialFrame(value2) {
@@ -1533,7 +1581,7 @@ function activeLayers(material) {
   return Object.values(material.layers).filter((layer) => layer.slot !== "normalBlend2Mask" || material.normalBlendPolicy?.secondMask !== false);
 }
 var PRESENTATIONS = ["surface", "screen-distortion", "terrain-projection"];
-var record3 = (value2, path) => {
+var record4 = (value2, path) => {
   if (value2 === null || typeof value2 !== "object" || Array.isArray(value2))
     throw new TypeError(`${path} must be an object`);
   return value2;
@@ -1561,7 +1609,7 @@ var flags = (value2, path, names, optional = false) => {
       throw new TypeError(`${path}.${key} must be boolean`);
 };
 function validateTrack(value2, path, size, signal) {
-  const track = record3(value2, path);
+  const track = record4(value2, path);
   integer2(track["lineType"], `${path}.lineType`, 0, 1);
   if (track["globalSeqId"] !== null)
     throw new TypeError(`${path}.globalSeqId requires an explicit global sequence timeline`);
@@ -1571,7 +1619,7 @@ function validateTrack(value2, path, size, signal) {
   let previous = -Infinity;
   for (const [index2, item] of keys.entries()) {
     signal?.throwIfAborted();
-    const keyPath = `${path}.keys[${index2}]`, key = record3(item, keyPath);
+    const keyPath = `${path}.keys[${index2}]`, key = record4(item, keyPath);
     const frame = finite2(key["frame"], `${keyPath}.frame`);
     if (frame < previous)
       throw new TypeError(`${path} keys must be ordered by frame`);
@@ -1583,7 +1631,7 @@ function validateTrack(value2, path, size, signal) {
   }
 }
 function animated(value2, path, size, signal) {
-  const property = record3(value2, path);
+  const property = record4(value2, path);
   if (size === 1)
     finite2(property["value"], `${path}.value`);
   else
@@ -1597,7 +1645,7 @@ function animated(value2, path, size, signal) {
     throw new TypeError(`${path}.sequenceTracks must be an array`);
   const seen = /* @__PURE__ */ new Set();
   for (const [index2, entry] of sequences.entries()) {
-    const trackPath = `${path}.sequenceTracks[${index2}]`, track = record3(entry, trackPath);
+    const trackPath = `${path}.sequenceTracks[${index2}]`, track = record4(entry, trackPath);
     const sequence = integer2(track["sequenceIndex"], `${trackPath}.sequenceIndex`, 0, 4294967295);
     if (seen.has(sequence))
       throw new TypeError(`${path} has duplicate sequence ${sequence}`);
@@ -1622,7 +1670,7 @@ var LAYER_ANIMATIONS = [
   ["uvTriplanarScale", 3]
 ];
 function validateLayer(value2, slot, path, signal) {
-  const layer = record3(value2, path);
+  const layer = record4(value2, path);
   if (layer["slot"] !== slot)
     throw new TypeError(`${path}.slot does not match its layer key`);
   if (layer["texturePath"] !== null && (typeof layer["texturePath"] !== "string" || layer["texturePath"].trim() === ""))
@@ -1641,7 +1689,7 @@ function validateLayer(value2, slot, path, signal) {
     if (layer[key] !== void 0)
       animated(layer[key], `${path}.${key}`, size, signal);
   if (layer["flipbook"] !== void 0) {
-    const flip = record3(layer["flipbook"], `${path}.flipbook`);
+    const flip = record4(layer["flipbook"], `${path}.flipbook`);
     integer2(flip["rows"], `${path}.flipbook.rows`, 1, 65535);
     integer2(flip["cols"], `${path}.flipbook.cols`, 1, 65535);
     if (flip["frameSize"] !== void 0) {
@@ -1652,7 +1700,7 @@ function validateLayer(value2, slot, path, signal) {
     animated(flip["frame"], `${path}.flipbook.frame`, 1, signal);
   }
   if (layer["fresnel"] !== void 0) {
-    const fresnel = record3(layer["fresnel"], `${path}.fresnel`);
+    const fresnel = record4(layer["fresnel"], `${path}.fresnel`);
     integer2(fresnel["mode"], `${path}.fresnel.mode`, 1, 2);
     integer2(fresnel["transformMode"], `${path}.fresnel.transformMode`, 0, 2);
     for (const key of ["exponent", "min", "maxOffset"])
@@ -1664,9 +1712,9 @@ function validateLayer(value2, slot, path, signal) {
   }
 }
 function validateStandard(value2, path, signal) {
-  const material = record3(value2, path);
+  const material = record4(value2, path);
   if (material["tangentGeneration"] !== void 0) {
-    const generation = record3(material["tangentGeneration"], `${path}.tangentGeneration`);
+    const generation = record4(material["tangentGeneration"], `${path}.tangentGeneration`);
     if (Object.keys(generation).some((key) => key !== "texCoord"))
       throw new TypeError(`${path}.tangentGeneration has unsupported properties`);
     integer2(generation["texCoord"], `${path}.tangentGeneration.texCoord`, 0, 4);
@@ -1732,11 +1780,11 @@ function validateStandard(value2, path, signal) {
   }
   if (material["normalMapSpace"] !== "object" && material["normalMapTransform"] !== void 0)
     throw new TypeError(`${path}.normalMapTransform requires object-space normals`);
-  const layers = record3(material["layers"], `${path}.layers`);
+  const layers = record4(material["layers"], `${path}.layers`);
   if (material["normalMapSpace"] === "object" && (layers["normal"] === void 0 || ["normalBlend1", "normalBlend2", "normalBlend1Mask", "normalBlend2Mask"].some((slot) => layers[slot] !== void 0)))
     throw new TypeError(`${path}.normalMapSpace object requires one primary normal layer`);
   if (material["normalBlendPolicy"] !== void 0) {
-    const policy = record3(material["normalBlendPolicy"], `${path}.normalBlendPolicy`);
+    const policy = record4(material["normalBlendPolicy"], `${path}.normalBlendPolicy`);
     if (policy["mode"] !== "signed-two-detail" || typeof policy["secondMask"] !== "boolean" || Object.keys(policy).some((key) => key !== "mode" && key !== "secondMask"))
       throw new TypeError(`${path}.normalBlendPolicy is unsupported`);
     if (layers["normalBlend1"] === void 0 || layers["normalBlend2"] === void 0)
@@ -1749,8 +1797,8 @@ function validateStandard(value2, path, signal) {
   }
 }
 function createRenderMaterialSampler(parameters, budget, signal) {
-  const params = record3(snapshotJson(parameters, budget, signal), "material params");
-  const model = record3(params["renderModel"], "material params.renderModel");
+  const params = record4(snapshotJson(parameters, budget, signal), "material params");
+  const model = record4(params["renderModel"], "material params.renderModel");
   if (model["version"] !== 1)
     throw new TypeError("unsupported render material version");
   const presentation = model["presentation"] ?? "surface";
@@ -1761,12 +1809,12 @@ function createRenderMaterialSampler(parameters, budget, signal) {
   let priority;
   let passes;
   if (model["composite"] !== void 0) {
-    const composite = record3(model["composite"], "composite material");
+    const composite = record4(model["composite"], "composite material");
     priority = finite2(composite["priority"], "composite material.priority");
     if (!Array.isArray(composite["passes"]) || composite["passes"].length === 0)
       throw new TypeError("composite material.passes must be nonempty");
     for (const [index2, value2] of composite["passes"].entries()) {
-      const pass = record3(value2, `material pass ${index2}`);
+      const pass = record4(value2, `material pass ${index2}`);
       validateStandard(pass["material"], `material pass ${index2}`, signal);
       animated(pass["alphaFactor"], `material pass ${index2}.alphaFactor`, 1, signal);
     }
@@ -1795,7 +1843,7 @@ function createRenderMaterialSampler(parameters, budget, signal) {
     ...worldToMaterial === void 0 ? {} : { worldToMaterial },
     usesWorldProjection: passes.some((pass) => (
       // Rebasing preserves authored coordinates even for a layer that may be enabled later.
-      Object.values(pass.material.layers).some((layer) => layer.texturePath !== null && [5, 13, 14, 17, 18].includes(layer.uvSource))
+      Object.values(pass.material.layers).some((layer) => layer.texturePath !== null && WORLD_PROJECTION_UV_SOURCES.includes(layer.uvSource))
     )),
     sample(time, sampleSignal) {
       if (!Number.isFinite(time.time) || time.time < 0)
@@ -3777,13 +3825,13 @@ function readUvmEffectAnimation(value2, sequence, timeUnit, maxKeys, signal) {
   const output = {};
   let keysRead = 0;
   const track = (input) => {
-    const record4 = object(input, "effect track");
-    if (Object.keys(record4).some((key) => !["keys", "lineType", "globalSeqId"].includes(key)))
+    const record5 = object(input, "effect track");
+    if (Object.keys(record5).some((key) => !["keys", "lineType", "globalSeqId"].includes(key)))
       throw new TypeError("unknown effect track field");
-    const lineType = record4["lineType"], globalSeqId = record4["globalSeqId"] ?? null;
+    const lineType = record5["lineType"], globalSeqId = record5["globalSeqId"] ?? null;
     if (typeof lineType !== "number" || ![0, 1, 2, 3].includes(lineType) || globalSeqId !== null && (typeof globalSeqId !== "number" || !Number.isSafeInteger(globalSeqId) || globalSeqId < 0))
       throw new TypeError("invalid effect track interpolation or global sequence");
-    const rawKeys = record4["keys"];
+    const rawKeys = record5["keys"];
     if (!Array.isArray(rawKeys))
       throw new TypeError("effect track keys must be an array");
     keysRead += rawKeys.length;
@@ -8481,15 +8529,15 @@ function selectUvmEffectSquirt(emitter, sequenceIndex, maxNodes, signal) {
   return selected;
 }
 function uvmEffectSquirtKeyed(emitter, sequenceIndex) {
-  const record4 = (value2) => value2 !== null && typeof value2 === "object" && !Array.isArray(value2) ? value2 : void 0;
-  const sequence = record4(emitter["sequenceAnimation"]);
+  const record5 = (value2) => value2 !== null && typeof value2 === "object" && !Array.isArray(value2) ? value2 : void 0;
+  const sequence = record5(emitter["sequenceAnimation"]);
   const counted = emitter["emitCount"] !== void 0 || sequence?.["emitCount"] !== void 0;
   const tracks2 = sequence?.[counted ? "emitCount" : "emissionRate"];
-  if (Array.isArray(tracks2) && tracks2.some((entry) => record4(entry)?.["sequenceIndex"] === sequenceIndex))
+  if (Array.isArray(tracks2) && tracks2.some((entry) => record5(entry)?.["sequenceIndex"] === sequenceIndex))
     return true;
   if (counted)
     return false;
-  const legacy = record4(record4(emitter["animation"])?.["emissionRate"])?.["keys"];
+  const legacy = record5(record5(emitter["animation"])?.["emissionRate"])?.["keys"];
   return Array.isArray(legacy) && legacy.length > 0;
 }
 
@@ -24052,7 +24100,7 @@ function primitiveTint(primitive) {
 }
 
 // ../MODDING/modkit-core/packages/scene/dist/render/material-geometry.js
-var IDENTITY = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+var IDENTITY2 = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
 var value = (array3, index2) => {
   const result = array3[index2];
   if (result === void 0 || !Number.isFinite(result))
@@ -24088,7 +24136,7 @@ function point(matrix, vector10, w) {
 }
 var xyz = (v) => [v[0], v[1], v[2]];
 function affine(matrix, name) {
-  const result = matrix ?? IDENTITY;
+  const result = matrix ?? IDENTITY2;
   if (!(result instanceof Float32Array) || result.length !== 16 || !result.every(Number.isFinite) || result[3] !== 0 || result[7] !== 0 || result[11] !== 0 || result[15] !== 1)
     throw new TypeError(`${name} must be a finite affine matrix`);
   return result;
@@ -24158,7 +24206,7 @@ function materialGeometry(primitive, camera, light, worldToMaterial, environment
   if (!modelView.every(Number.isFinite))
     throw new TypeError("model/view transform exceeds float32");
   const materialWorld = new Float32Array(16);
-  multiplyMat4(materialWorld, 0, worldToMaterial === void 0 ? IDENTITY : Float32Array.from(worldToMaterial), 0, model, 0);
+  multiplyMat4(materialWorld, 0, worldToMaterial === void 0 ? IDENTITY2 : Float32Array.from(worldToMaterial), 0, model, 0);
   if (!materialWorld.every(Number.isFinite))
     throw new TypeError("material world transform exceeds float32");
   const worldNormal = normalMatrix(materialWorld), viewNormal = normalMatrix(modelView);
@@ -25338,6 +25386,8 @@ export {
   computeTriPlanarWeightsCpu,
   sphericalEnvironmentUvCpu,
   planarLocalUvCpu,
+  withMaterialFrame,
+  uvmSceneFrameInverse,
   snapshotEnvironment,
   snapshotEyePosition,
   SCENE_ENVIRONMENT_RESOURCE,

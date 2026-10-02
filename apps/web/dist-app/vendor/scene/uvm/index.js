@@ -8,7 +8,8 @@ import {
   readUvmBillboards,
   readUvmModelStates,
   readUvmShadowMeshBindings
-} from "../../../chunks/chunk-I3F2EMHG.js";
+} from "../../../chunks/chunk-JUDJKTM5.js";
+import "../../../chunks/chunk-WGWMBNZ4.js";
 import {
   array,
   field,
@@ -16,33 +17,29 @@ import {
   required,
   safeIndex
 } from "../../../chunks/chunk-I4Z5J3HX.js";
-import "../../../chunks/chunk-QONSPCLP.js";
+import "../../../chunks/chunk-HV5G5VS5.js";
+import {
+  readUvmAccessor,
+  readUvmAnimationClips,
+  readUvmAnimationMaterialTargets,
+  readUvmPrimitiveVisibility,
+  uvmVisibilityPointer,
+  uvmVisibilityTarget,
+  validateUvmDocument
+} from "../../../chunks/chunk-PRU56TPQ.js";
 import {
   DEFAULT_UVM_CONTAINER_BUDGET,
   checkUvmContainerBudget,
   readUvmContainer,
   writeUvmContainer
-} from "../../../chunks/chunk-OAFBQXD6.js";
-import {
-  readUvmAccessor,
-  validateUvmDocument
-} from "../../../chunks/chunk-KURLZAFQ.js";
-import {
-  readUvmAnimationClips,
-  readUvmAnimationMaterialTargets,
-  readUvmPrimitiveVisibility,
-  uvmVisibilityPointer,
-  uvmVisibilityTarget
-} from "../../../chunks/chunk-I43233HX.js";
+} from "../../../chunks/chunk-NONHW3HK.js";
 import "../../../chunks/chunk-I675VFQQ.js";
-import "../../../chunks/chunk-MUN4JEOH.js";
+import "../../../chunks/chunk-YOJ4JJ3G.js";
 import {
   snapshotJson
 } from "../../../chunks/chunk-ZSDVUSRM.js";
 import "../../../chunks/chunk-5SBJANAJ.js";
-import "../../../chunks/chunk-TKIPZ6HV.js";
-import "../../../chunks/chunk-NUFRM6SI.js";
-import "../../../chunks/chunk-W2UBWFML.js";
+import "../../../chunks/chunk-TSKCLN7F.js";
 import {
   applyJsonEdit
 } from "../../../chunks/chunk-UDFSUVGJ.js";

@@ -11,32 +11,6 @@ import {
   isSegment
 } from "./chunk-V3DESLW4.js";
 
-// ../MODDING/modkit-core/packages/host/dist/execution/message-port.js
-function framePortFromMessagePort(port, options = {}) {
-  const style = options.listener ?? (typeof port.addEventListener === "function" ? "event-target" : "emitter-value");
-  const moves = (options.transfer ?? (style === "emitter-event" ? "copy" : "move")) === "move";
-  return {
-    post(frame, transfer) {
-      if (moves)
-        port.postMessage(frame, [...transfer]);
-      else
-        port.postMessage(frame);
-    },
-    onFrame(handler) {
-      if (style === "event-target") {
-        const listener2 = (event) => handler("data" in event ? event.data : void 0);
-        port.addEventListener?.("message", listener2);
-        port.start?.();
-        return () => port.removeEventListener?.("message", listener2);
-      }
-      const listener = style === "emitter-value" ? (payload) => handler(payload) : (payload) => handler(typeof payload === "object" && payload !== null && "data" in payload ? payload.data : payload);
-      port.on?.("message", listener);
-      port.start?.();
-      return () => port.off?.("message", listener);
-    }
-  };
-}
-
 // ../MODDING/modkit-core/packages/host/dist/execution/protocol.js
 var CAPABILITY_RPC_DOMAIN = "x3.host/rpc";
 var CAPABILITY_RPC_VERSION = 1;
@@ -689,206 +663,6 @@ function validateFrame(input, limits, expect) {
   return { ok: true, value: record };
 }
 
-// ../MODDING/modkit-core/packages/host/dist/execution/surface.js
-function surfaceKey(contract, major) {
-  return `${contract}@${major}`;
-}
-function isKeyRef(value) {
-  return typeof value === "object" && value !== null && Number.isSafeInteger(value.arg) && value.arg >= 0 && typeof value.key === "string" && isMethodName(value.key);
-}
-function isArgRef(value) {
-  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0 || isKeyRef(value);
-}
-var argRefKey = (ref) => typeof ref === "number" ? `${ref}` : `${ref.arg}.${ref.key}`;
-var freezeArgRef = (ref) => typeof ref === "number" ? ref : Object.freeze({ ...ref });
-function readArgRef(args, ref) {
-  if (typeof ref === "number")
-    return args[ref];
-  const holder = args[ref.arg];
-  return typeof holder === "object" && holder !== null ? holder[ref.key] : void 0;
-}
-function invalidSurface(message, context) {
-  throw new ModkitError({
-    code: "x3.host/rpc-invalid-surface",
-    message,
-    ...context === void 0 ? {} : { context }
-  });
-}
-function snapshotMethod(name, raw, surface) {
-  if (raw === void 0 || typeof raw !== "object") {
-    return invalidSurface(`method \xAB${name}\xBB has no declaration`, { surface });
-  }
-  const kind = raw.kind;
-  const result = raw.result;
-  const resultFromArgs = raw.resultFromArgs;
-  const wrapper = raw.wrapper;
-  const signal = raw.signal;
-  const progress = raw.progress;
-  const arity = raw.arity;
-  const optional = raw.optional;
-  const batchItems = raw.batchItems;
-  const deadlineMs = raw.deadlineMs;
-  const validateArgs = raw.validateArgs;
-  const validateReturn = raw.validateReturn;
-  if (kind !== "value" && kind !== "lease" && kind !== "leased-value" && kind !== "iterable" && kind !== "events") {
-    return invalidSurface(`method \xAB${name}\xBB has an invalid kind`, { surface });
-  }
-  if (arity !== void 0 && (!Number.isSafeInteger(arity) || arity < 0 || arity > 16)) {
-    return invalidSurface(`method \xAB${name}\xBB has an invalid arity`, { surface });
-  }
-  if (optional !== void 0 && typeof optional !== "boolean") {
-    return invalidSurface(`method \xAB${name}\xBB has a non-boolean optional flag`, { surface });
-  }
-  if (batchItems !== void 0 && (kind !== "iterable" || !Number.isSafeInteger(batchItems) || batchItems < 1)) {
-    return invalidSurface(`method \xAB${name}\xBB has an invalid batchItems`, { surface });
-  }
-  if (deadlineMs !== void 0 && (!Number.isSafeInteger(deadlineMs) || deadlineMs < 0)) {
-    return invalidSurface(`method \xAB${name}\xBB has an invalid deadline`, { surface });
-  }
-  if (resultFromArgs !== void 0 && (typeof resultFromArgs !== "object" || resultFromArgs === null || !isArgRef(resultFromArgs.contract) || !isArgRef(resultFromArgs.major) || argRefKey(resultFromArgs.contract) === argRefKey(resultFromArgs.major))) {
-    return invalidSurface(`method \xAB${name}\xBB has invalid resultFromArgs positions`, { surface });
-  }
-  if (wrapper !== void 0 && wrapper !== "lease" && wrapper !== "bare") {
-    return invalidSurface(`method \xAB${name}\xBB has an invalid wrapper`, { surface });
-  }
-  if (wrapper !== void 0 && kind !== "lease") {
-    return invalidSurface(`only lease method \xAB${name}\xBB may declare a wrapper`, { surface });
-  }
-  if (signal !== void 0 && signal !== "last" && signal !== "none" && !isKeyRef(signal)) {
-    return invalidSurface(`method \xAB${name}\xBB has an invalid signal placement`, { surface });
-  }
-  if (progress !== void 0 && !isKeyRef(progress)) {
-    return invalidSurface(`method \xAB${name}\xBB has an invalid progress placement`, { surface });
-  }
-  if (isKeyRef(signal) && progress !== void 0 && signal.arg === progress.arg && signal.key === progress.key) {
-    return invalidSurface(`method \xAB${name}\xBB places signal and progress on the same key`, {
-      surface
-    });
-  }
-  if (validateArgs !== void 0 && typeof validateArgs !== "function") {
-    return invalidSurface(`method \xAB${name}\xBB has a non-function argument validator`, { surface });
-  }
-  if (validateReturn !== void 0 && typeof validateReturn !== "function") {
-    return invalidSurface(`method \xAB${name}\xBB has a non-function return validator`, { surface });
-  }
-  if (kind === "lease") {
-    if (result === void 0 === (resultFromArgs === void 0)) {
-      return invalidSurface(`lease method \xAB${name}\xBB must name the surface of its result (result or resultFromArgs)`, { surface });
-    }
-    if (result !== void 0 && (!isQualifiedId(result.contract) || !Number.isSafeInteger(result.major) || result.major < 0)) {
-      return invalidSurface(`lease method \xAB${name}\xBB must name the surface of its result`, {
-        surface
-      });
-    }
-  } else if (result !== void 0 || resultFromArgs !== void 0) {
-    return invalidSurface(`${kind} method \xAB${name}\xBB must not declare a result surface`, {
-      surface
-    });
-  }
-  return Object.freeze({
-    kind,
-    ...result === void 0 ? {} : { result: Object.freeze({ contract: result.contract, major: result.major }) },
-    ...resultFromArgs === void 0 ? {} : {
-      resultFromArgs: Object.freeze({
-        contract: freezeArgRef(resultFromArgs.contract),
-        major: freezeArgRef(resultFromArgs.major)
-      })
-    },
-    ...wrapper === void 0 ? {} : { wrapper },
-    ...signal === void 0 ? {} : { signal: typeof signal === "string" ? signal : Object.freeze({ ...signal }) },
-    ...progress === void 0 ? {} : { progress: Object.freeze({ ...progress }) },
-    ...arity === void 0 ? {} : { arity },
-    ...optional === void 0 ? {} : { optional },
-    ...batchItems === void 0 ? {} : { batchItems },
-    ...deadlineMs === void 0 ? {} : { deadlineMs },
-    ...validateArgs === void 0 ? {} : { validateArgs },
-    ...validateReturn === void 0 ? {} : { validateReturn }
-  });
-}
-function assertSurface(surface) {
-  if (!isQualifiedId(surface.contract) || !Number.isSafeInteger(surface.major) || surface.major < 0) {
-    return invalidSurface(`surface contract must be a qualified id with a non-negative major: ${surface.contract}@${String(surface.major)}`);
-  }
-  const names = Object.keys(surface.methods);
-  if (surface.releaseVia !== void 0 && surface.methods[surface.releaseVia]?.kind !== "value") {
-    return invalidSurface(`releaseVia \xAB${surface.releaseVia}\xBB must name a declared value method`, {
-      surface: surfaceKey(surface.contract, surface.major)
-    });
-  }
-  if (names.length === 0) {
-    return invalidSurface(`surface ${surfaceKey(surface.contract, surface.major)} declares no methods`);
-  }
-  for (const name of names) {
-    const method = surface.methods[name];
-    if (!isMethodName(name) || method === void 0) {
-      return invalidSurface(`method name \xAB${name}\xBB is not lowerCamel or has no declaration`, {
-        surface: surfaceKey(surface.contract, surface.major)
-      });
-    }
-  }
-  if (surface.fields !== void 0) {
-    if (!Array.isArray(surface.fields) || surface.fields.length > 64) {
-      return invalidSurface("fields must be an array of at most 64 names", {
-        surface: surfaceKey(surface.contract, surface.major)
-      });
-    }
-    const seen = /* @__PURE__ */ new Set();
-    for (const field of surface.fields) {
-      if (typeof field !== "string" || !isMethodName(field) || seen.has(field)) {
-        return invalidSurface(`field name \xAB${String(field)}\xBB is not lowerCamel or repeats`, {
-          surface: surfaceKey(surface.contract, surface.major)
-        });
-      }
-      if (Object.hasOwn(surface.methods, field)) {
-        return invalidSurface(`\xAB${field}\xBB cannot be both a field and a method`, {
-          surface: surfaceKey(surface.contract, surface.major)
-        });
-      }
-      seen.add(field);
-    }
-  }
-}
-function createSurfaceRegistry(surfaces) {
-  const byKey = /* @__PURE__ */ new Map();
-  for (const surface of surfaces) {
-    assertSurface(surface);
-    const key = surfaceKey(surface.contract, surface.major);
-    if (byKey.has(key)) {
-      throw new ModkitError({
-        code: "x3.host/rpc-duplicate-surface",
-        message: `surface ${key} is registered twice`
-      });
-    }
-    const methods = {};
-    for (const [name, method] of Object.entries(surface.methods)) {
-      methods[name] = snapshotMethod(name, method, key);
-    }
-    const snapshot = Object.freeze({
-      contract: surface.contract,
-      major: surface.major,
-      methods: Object.freeze(methods),
-      ...surface.releaseVia === void 0 ? {} : { releaseVia: surface.releaseVia },
-      ...surface.fields === void 0 ? {} : { fields: Object.freeze([...surface.fields]) }
-    });
-    byKey.set(key, snapshot);
-  }
-  for (const surface of byKey.values()) {
-    for (const [name, method] of Object.entries(surface.methods)) {
-      if (method.kind === "lease" && method.result !== void 0 && !byKey.has(surfaceKey(method.result.contract, method.result.major))) {
-        throw new ModkitError({
-          code: "x3.host/rpc-unknown-result-surface",
-          message: `lease method \xAB${name}\xBB of ${surfaceKey(surface.contract, surface.major)} names unregistered surface ${surfaceKey(method.result.contract, method.result.major)}`
-        });
-      }
-    }
-  }
-  return Object.freeze({
-    surfaceFor(contract, major) {
-      return byKey.get(surfaceKey(contract, major));
-    }
-  });
-}
-
 // ../MODDING/modkit-core/packages/host/dist/execution/handles.js
 var HandleTable = class {
   owner;
@@ -1240,6 +1014,206 @@ var Subscriptions = class {
       this.close(id, error);
   }
 };
+
+// ../MODDING/modkit-core/packages/host/dist/execution/surface.js
+function surfaceKey(contract, major) {
+  return `${contract}@${major}`;
+}
+function isKeyRef(value) {
+  return typeof value === "object" && value !== null && Number.isSafeInteger(value.arg) && value.arg >= 0 && typeof value.key === "string" && isMethodName(value.key);
+}
+function isArgRef(value) {
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0 || isKeyRef(value);
+}
+var argRefKey = (ref) => typeof ref === "number" ? `${ref}` : `${ref.arg}.${ref.key}`;
+var freezeArgRef = (ref) => typeof ref === "number" ? ref : Object.freeze({ ...ref });
+function readArgRef(args, ref) {
+  if (typeof ref === "number")
+    return args[ref];
+  const holder = args[ref.arg];
+  return typeof holder === "object" && holder !== null ? holder[ref.key] : void 0;
+}
+function invalidSurface(message, context) {
+  throw new ModkitError({
+    code: "x3.host/rpc-invalid-surface",
+    message,
+    ...context === void 0 ? {} : { context }
+  });
+}
+function snapshotMethod(name, raw, surface) {
+  if (raw === void 0 || typeof raw !== "object") {
+    return invalidSurface(`method \xAB${name}\xBB has no declaration`, { surface });
+  }
+  const kind = raw.kind;
+  const result = raw.result;
+  const resultFromArgs = raw.resultFromArgs;
+  const wrapper = raw.wrapper;
+  const signal = raw.signal;
+  const progress = raw.progress;
+  const arity = raw.arity;
+  const optional = raw.optional;
+  const batchItems = raw.batchItems;
+  const deadlineMs = raw.deadlineMs;
+  const validateArgs = raw.validateArgs;
+  const validateReturn = raw.validateReturn;
+  if (kind !== "value" && kind !== "lease" && kind !== "leased-value" && kind !== "iterable" && kind !== "events") {
+    return invalidSurface(`method \xAB${name}\xBB has an invalid kind`, { surface });
+  }
+  if (arity !== void 0 && (!Number.isSafeInteger(arity) || arity < 0 || arity > 16)) {
+    return invalidSurface(`method \xAB${name}\xBB has an invalid arity`, { surface });
+  }
+  if (optional !== void 0 && typeof optional !== "boolean") {
+    return invalidSurface(`method \xAB${name}\xBB has a non-boolean optional flag`, { surface });
+  }
+  if (batchItems !== void 0 && (kind !== "iterable" || !Number.isSafeInteger(batchItems) || batchItems < 1)) {
+    return invalidSurface(`method \xAB${name}\xBB has an invalid batchItems`, { surface });
+  }
+  if (deadlineMs !== void 0 && (!Number.isSafeInteger(deadlineMs) || deadlineMs < 0)) {
+    return invalidSurface(`method \xAB${name}\xBB has an invalid deadline`, { surface });
+  }
+  if (resultFromArgs !== void 0 && (typeof resultFromArgs !== "object" || resultFromArgs === null || !isArgRef(resultFromArgs.contract) || !isArgRef(resultFromArgs.major) || argRefKey(resultFromArgs.contract) === argRefKey(resultFromArgs.major))) {
+    return invalidSurface(`method \xAB${name}\xBB has invalid resultFromArgs positions`, { surface });
+  }
+  if (wrapper !== void 0 && wrapper !== "lease" && wrapper !== "bare") {
+    return invalidSurface(`method \xAB${name}\xBB has an invalid wrapper`, { surface });
+  }
+  if (wrapper !== void 0 && kind !== "lease") {
+    return invalidSurface(`only lease method \xAB${name}\xBB may declare a wrapper`, { surface });
+  }
+  if (signal !== void 0 && signal !== "last" && signal !== "none" && !isKeyRef(signal)) {
+    return invalidSurface(`method \xAB${name}\xBB has an invalid signal placement`, { surface });
+  }
+  if (progress !== void 0 && !isKeyRef(progress)) {
+    return invalidSurface(`method \xAB${name}\xBB has an invalid progress placement`, { surface });
+  }
+  if (isKeyRef(signal) && progress !== void 0 && signal.arg === progress.arg && signal.key === progress.key) {
+    return invalidSurface(`method \xAB${name}\xBB places signal and progress on the same key`, {
+      surface
+    });
+  }
+  if (validateArgs !== void 0 && typeof validateArgs !== "function") {
+    return invalidSurface(`method \xAB${name}\xBB has a non-function argument validator`, { surface });
+  }
+  if (validateReturn !== void 0 && typeof validateReturn !== "function") {
+    return invalidSurface(`method \xAB${name}\xBB has a non-function return validator`, { surface });
+  }
+  if (kind === "lease") {
+    if (result === void 0 === (resultFromArgs === void 0)) {
+      return invalidSurface(`lease method \xAB${name}\xBB must name the surface of its result (result or resultFromArgs)`, { surface });
+    }
+    if (result !== void 0 && (!isQualifiedId(result.contract) || !Number.isSafeInteger(result.major) || result.major < 0)) {
+      return invalidSurface(`lease method \xAB${name}\xBB must name the surface of its result`, {
+        surface
+      });
+    }
+  } else if (result !== void 0 || resultFromArgs !== void 0) {
+    return invalidSurface(`${kind} method \xAB${name}\xBB must not declare a result surface`, {
+      surface
+    });
+  }
+  return Object.freeze({
+    kind,
+    ...result === void 0 ? {} : { result: Object.freeze({ contract: result.contract, major: result.major }) },
+    ...resultFromArgs === void 0 ? {} : {
+      resultFromArgs: Object.freeze({
+        contract: freezeArgRef(resultFromArgs.contract),
+        major: freezeArgRef(resultFromArgs.major)
+      })
+    },
+    ...wrapper === void 0 ? {} : { wrapper },
+    ...signal === void 0 ? {} : { signal: typeof signal === "string" ? signal : Object.freeze({ ...signal }) },
+    ...progress === void 0 ? {} : { progress: Object.freeze({ ...progress }) },
+    ...arity === void 0 ? {} : { arity },
+    ...optional === void 0 ? {} : { optional },
+    ...batchItems === void 0 ? {} : { batchItems },
+    ...deadlineMs === void 0 ? {} : { deadlineMs },
+    ...validateArgs === void 0 ? {} : { validateArgs },
+    ...validateReturn === void 0 ? {} : { validateReturn }
+  });
+}
+function assertSurface(surface) {
+  if (!isQualifiedId(surface.contract) || !Number.isSafeInteger(surface.major) || surface.major < 0) {
+    return invalidSurface(`surface contract must be a qualified id with a non-negative major: ${surface.contract}@${String(surface.major)}`);
+  }
+  const names = Object.keys(surface.methods);
+  if (surface.releaseVia !== void 0 && surface.methods[surface.releaseVia]?.kind !== "value") {
+    return invalidSurface(`releaseVia \xAB${surface.releaseVia}\xBB must name a declared value method`, {
+      surface: surfaceKey(surface.contract, surface.major)
+    });
+  }
+  if (names.length === 0) {
+    return invalidSurface(`surface ${surfaceKey(surface.contract, surface.major)} declares no methods`);
+  }
+  for (const name of names) {
+    const method = surface.methods[name];
+    if (!isMethodName(name) || method === void 0) {
+      return invalidSurface(`method name \xAB${name}\xBB is not lowerCamel or has no declaration`, {
+        surface: surfaceKey(surface.contract, surface.major)
+      });
+    }
+  }
+  if (surface.fields !== void 0) {
+    if (!Array.isArray(surface.fields) || surface.fields.length > 64) {
+      return invalidSurface("fields must be an array of at most 64 names", {
+        surface: surfaceKey(surface.contract, surface.major)
+      });
+    }
+    const seen = /* @__PURE__ */ new Set();
+    for (const field of surface.fields) {
+      if (typeof field !== "string" || !isMethodName(field) || seen.has(field)) {
+        return invalidSurface(`field name \xAB${String(field)}\xBB is not lowerCamel or repeats`, {
+          surface: surfaceKey(surface.contract, surface.major)
+        });
+      }
+      if (Object.hasOwn(surface.methods, field)) {
+        return invalidSurface(`\xAB${field}\xBB cannot be both a field and a method`, {
+          surface: surfaceKey(surface.contract, surface.major)
+        });
+      }
+      seen.add(field);
+    }
+  }
+}
+function createSurfaceRegistry(surfaces) {
+  const byKey = /* @__PURE__ */ new Map();
+  for (const surface of surfaces) {
+    assertSurface(surface);
+    const key = surfaceKey(surface.contract, surface.major);
+    if (byKey.has(key)) {
+      throw new ModkitError({
+        code: "x3.host/rpc-duplicate-surface",
+        message: `surface ${key} is registered twice`
+      });
+    }
+    const methods = {};
+    for (const [name, method] of Object.entries(surface.methods)) {
+      methods[name] = snapshotMethod(name, method, key);
+    }
+    const snapshot = Object.freeze({
+      contract: surface.contract,
+      major: surface.major,
+      methods: Object.freeze(methods),
+      ...surface.releaseVia === void 0 ? {} : { releaseVia: surface.releaseVia },
+      ...surface.fields === void 0 ? {} : { fields: Object.freeze([...surface.fields]) }
+    });
+    byKey.set(key, snapshot);
+  }
+  for (const surface of byKey.values()) {
+    for (const [name, method] of Object.entries(surface.methods)) {
+      if (method.kind === "lease" && method.result !== void 0 && !byKey.has(surfaceKey(method.result.contract, method.result.major))) {
+        throw new ModkitError({
+          code: "x3.host/rpc-unknown-result-surface",
+          message: `lease method \xAB${name}\xBB of ${surfaceKey(surface.contract, surface.major)} names unregistered surface ${surfaceKey(method.result.contract, method.result.major)}`
+        });
+      }
+    }
+  }
+  return Object.freeze({
+    surfaceFor(contract, major) {
+      return byKey.get(surfaceKey(contract, major));
+    }
+  });
+}
 
 // ../MODDING/modkit-core/packages/host/dist/execution/endpoint.js
 var CAPABILITY_OF = /* @__PURE__ */ Symbol.for("x3.host/rpc/proxied-remote");
@@ -2920,6 +2894,32 @@ var EndpointImpl = class _EndpointImpl {
 };
 function createEndpoint(options) {
   return new EndpointImpl(options);
+}
+
+// ../MODDING/modkit-core/packages/host/dist/execution/message-port.js
+function framePortFromMessagePort(port, options = {}) {
+  const style = options.listener ?? (typeof port.addEventListener === "function" ? "event-target" : "emitter-value");
+  const moves = (options.transfer ?? (style === "emitter-event" ? "copy" : "move")) === "move";
+  return {
+    post(frame, transfer) {
+      if (moves)
+        port.postMessage(frame, [...transfer]);
+      else
+        port.postMessage(frame);
+    },
+    onFrame(handler) {
+      if (style === "event-target") {
+        const listener2 = (event) => handler("data" in event ? event.data : void 0);
+        port.addEventListener?.("message", listener2);
+        port.start?.();
+        return () => port.removeEventListener?.("message", listener2);
+      }
+      const listener = style === "emitter-value" ? (payload) => handler(payload) : (payload) => handler(typeof payload === "object" && payload !== null && "data" in payload ? payload.data : payload);
+      port.on?.("message", listener);
+      port.start?.();
+      return () => port.off?.("message", listener);
+    }
+  };
 }
 
 // ../MODDING/modkit-core/packages/host/dist/execution/frame-json.js

@@ -50,7 +50,7 @@ import {
   validateUvmDocument,
   vector3,
   vector4
-} from "./chunk-FOSDVZCZ.js";
+} from "./chunk-UUJEZAKZ.js";
 import {
   applyColorKeyTransparency,
   billboardCameraRotation,
@@ -60,11 +60,11 @@ import {
   modelPrimitiveByteLength,
   snapshotJson,
   snapshotModelBillboards
-} from "./chunk-AVBKEDCB.js";
+} from "./chunk-OFFINWD7.js";
 import {
   SCENE_RENDERER_CONTRACT
 } from "./chunk-OZX7B633.js";
-import "./chunk-R3U752LL.js";
+import "./chunk-XCBYGC7H.js";
 import "./chunk-QQJVD7VT.js";
 import {
   diagnostic
@@ -102,7 +102,7 @@ function readUvmPoseSamples(value, clips) {
 
 // ../MODDING/modkit-core/packages/scene/dist/uvm/model-particles.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-var multiplyAffine = (a, b) => Float32Array.from(multiplyMaterialFrames(Array.from(a), Array.from(b)));
+var multiplyFrames = (a, b) => Float32Array.from(multiplyMaterialFrames(Array.from(a), Array.from(b)));
 var multiplyMatrix4 = (a, b) => {
   if (a.length !== 16 || b.length !== 16)
     throw new TypeError("model particle camera matrices must contain 16 components");
@@ -150,7 +150,7 @@ function modelParticleMatrix(instance) {
       1
     ]);
   }
-  const matrix = multiplyAffine(instance.transform, local);
+  const matrix = multiplyFrames(instance.transform, local);
   if (!matrix.every(Number.isFinite))
     throw new RangeError("model particle matrix exceeds finite range");
   return matrix;
@@ -231,7 +231,7 @@ async function composeModelParticles(instances, parent, options, depth, maxBytes
       const matrix = modelParticleMatrix(instance);
       const camera = {
         viewProjection: Array.from(multiplyMatrix4(parent.camera.viewProjection, matrix)),
-        ...parent.camera.viewMatrix === void 0 ? {} : { viewMatrix: Array.from(multiplyAffine(parent.camera.viewMatrix, matrix)) }
+        ...parent.camera.viewMatrix === void 0 ? {} : { viewMatrix: Array.from(multiplyFrames(parent.camera.viewMatrix, matrix)) }
       };
       const eye = parent.camera.eyePosition;
       const childEye = eye === void 0 ? void 0 : (() => {
@@ -273,7 +273,7 @@ async function composeModelParticles(instances, parent, options, depth, maxBytes
           ...primitive,
           id: prefix + primitive.id,
           ...primitive.materialId === void 0 ? {} : { materialId: materialId(primitive.materialId) },
-          transform: multiplyAffine(matrix, primitive.transform ?? IDENTITY_MATERIAL_FRAME),
+          transform: multiplyFrames(matrix, primitive.transform ?? IDENTITY_MATERIAL_FRAME),
           tint: instance.color.map((component, axis) => component * (primitive.tint?.[axis] ?? 1))
         });
       for (const material of scene.materials ?? [])

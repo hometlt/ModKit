@@ -1,6 +1,6 @@
 import {
   ModkitError
-} from "./chunk-W2UBWFML.js";
+} from "./chunk-V3DESLW4.js";
 
 // ../MODDING/modkit-core/packages/codec-kit/dist/texture/gpu-texture-wasm.js
 var runtimePromise;
@@ -10,17 +10,13 @@ function cacheRuntime(pending, message, hint) {
     if (cause instanceof ModkitError)
       throw cause;
     throw new ModkitError({
-      code: "CODEC_RUNTIME_LOAD_FAILED",
+      code: "codec-kit/texture-runtime-unavailable",
       message,
       cause,
-      ...hint === void 0 ? {} : { hint }
+      ...hint === void 0 ? {} : { context: { hint } }
     });
   });
   return runtimePromise;
-}
-function runtimeExports(module) {
-  const exports = module;
-  return exports.default ?? exports;
 }
 function isNodeRuntime() {
   const processValue = globalThis.process;
@@ -38,7 +34,7 @@ function wasmOutputToUint8Array(output) {
     output.delete?.();
   }
 }
-function browserRuntime(native) {
+function nativeRuntime(native) {
   const decode = (name) => async (...args) => wasmOutputToUint8Array(native[name](...args));
   return {
     decode_bc1: decode("decode_bc1"),
@@ -69,37 +65,47 @@ function initializeGpuTextureWasmBrowser(options) {
     const base = new URL(baseText.endsWith("/") ? baseText : `${baseText}/`, import.meta.url);
     const wasmPath = new URL("wasm/", base).href;
     const moduleUrl = new URL("texture2ddecoder.js", wasmPath).href;
-    runtimePromise = cacheRuntime(import(
-      /* @vite-ignore @modkitx-external-runtime */
-      moduleUrl
-    ).then(async (module) => {
-      const createModule = module.default;
-      if (typeof createModule !== "function") {
-        throw new Error("Texture2DDecoder browser runtime does not export an Emscripten factory");
-      }
-      const native = await createModule({
-        locateFile: (path) => new URL(path, wasmPath).href
-      });
-      return browserRuntime(native);
+    runtimePromise = cacheRuntime(emscriptenRuntime(moduleUrl, {
+      locateFile: (path) => new URL(path, wasmPath).href
     }), "Texture2DDecoder browser runtime failed to initialize", "Verify assetBaseUrl and that both texture2ddecoder.js and texture2ddecoder.wasm are deployed.");
   }
   const initializedRuntime = runtimePromise;
   return initializedRuntime.then(() => void 0);
 }
+async function emscriptenRuntime(moduleUrl, options) {
+  const module = await import(
+    /* @vite-ignore @modkitx-external-runtime */
+    moduleUrl
+  );
+  const createModule = module.default;
+  if (typeof createModule !== "function")
+    throw new Error("Texture2DDecoder runtime does not export an Emscripten factory");
+  return nativeRuntime(await createModule(options));
+}
 async function decoder() {
   if (!runtimePromise) {
     if (!isNodeRuntime()) {
       throw new ModkitError({
-        code: "CODEC_RUNTIME_LOAD_FAILED",
+        code: "codec-kit/texture-runtime-unavailable",
         message: "Software GPU texture decoding is not initialized in this browser host",
-        hint: "Call initializeGpuTextureWasmBrowser({ assetBaseUrl }) before decoding."
+        context: {
+          hint: "Call initializeGpuTextureWasmBrowser({ assetBaseUrl }) before decoding."
+        }
       });
     }
     const packageName = ["texture2ddecoder", "wasm"].join("-");
-    runtimePromise = cacheRuntime(import(
-      /* @modkitx-external-runtime */
-      packageName
-    ).then(runtimeExports), "Texture2DDecoder Node runtime failed to load", "Install the optional texture2ddecoder-wasm dependency for software GPU texture decode.");
+    runtimePromise = cacheRuntime((async () => {
+      const { createRequire } = await import(
+        /* @modkitx-external-runtime */
+        ["node", "module"].join(":")
+      );
+      const { pathToFileURL } = await import(
+        /* @modkitx-external-runtime */
+        ["node", "url"].join(":")
+      );
+      const entry = pathToFileURL(createRequire(import.meta.url).resolve(packageName));
+      return emscriptenRuntime(new URL("../wasm/texture2ddecoder.js", entry).href, {});
+    })(), "Texture2DDecoder Node runtime failed to load", "Install the optional texture2ddecoder-wasm dependency for software GPU texture decode.");
   }
   const initializedRuntime = runtimePromise;
   return initializedRuntime;

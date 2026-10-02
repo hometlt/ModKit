@@ -1,39 +1,3 @@
-// ../MODDING/modkit-core/packages/codec-kit/dist/crypto/mpq.js
-var encryptionTable = (() => {
-  let seed1 = 1048577;
-  const table = [];
-  for (let i = 0; i < 256; i++) {
-    let index = i;
-    for (let j = 0; j < 5; j++) {
-      seed1 = (seed1 * 125 + 3) % 2796203 >>> 0;
-      const temp1 = (seed1 & 65535) << 16;
-      seed1 = (seed1 * 125 + 3) % 2796203 >>> 0;
-      const temp2 = seed1 & 65535;
-      table[index] = (temp1 | temp2) >>> 0;
-      index += 256;
-    }
-  }
-  return table;
-})();
-var crcTable = (() => {
-  const table = new Uint32Array(256);
-  for (let n = 0; n < 256; n++) {
-    let c = n;
-    for (let k = 0; k < 8; k++) {
-      c = c & 1 ? 3988292384 ^ c >>> 1 : c >>> 1;
-    }
-    table[n] = c >>> 0;
-  }
-  return table;
-})();
-function crc32(data) {
-  let crc = 4294967295;
-  for (let i = 0; i < data.length; i++) {
-    crc = (crcTable[(crc ^ data[i]) & 255] ^ crc >>> 8) >>> 0;
-  }
-  return (crc ^ 4294967295) >>> 0;
-}
-
 // ../MODDING/modkit-core/packages/codec-kit/dist/compression/adler32.js
 function createAdler32() {
   let a = 1;
@@ -59,6 +23,24 @@ function adler32(bytes) {
 }
 
 // ../MODDING/modkit-core/packages/codec-kit/dist/checksum/index.js
+var crcTable = (() => {
+  const table = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) {
+      c = c & 1 ? 3988292384 ^ c >>> 1 : c >>> 1;
+    }
+    table[n] = c >>> 0;
+  }
+  return table;
+})();
+function crc32(data) {
+  let crc = 4294967295;
+  for (let i = 0; i < data.length; i++) {
+    crc = (crcTable[(crc ^ data[i]) & 255] ^ crc >>> 8) >>> 0;
+  }
+  return (crc ^ 4294967295) >>> 0;
+}
 function crc32Range(bytes, start, end) {
   return crc32(bytes.subarray(start, end));
 }
@@ -117,9 +99,9 @@ function createCrc32Msb({ init = 4294967295, xorOut = 4294967295 } = {}) {
 }
 
 export {
-  crc32,
   createAdler32,
   adler32,
+  crc32,
   crc32Range,
   crc32c,
   cdRomEdc,

@@ -1,4 +1,4 @@
-import "../../chunks/chunk-BCCCTFYJ.js";
+import "../../chunks/chunk-H6MFHEBP.js";
 import {
   createTableDataSource
 } from "../../chunks/chunk-XYU4XXWE.js";
@@ -661,7 +661,7 @@ async function decodeContainerEntry(entry, maximum, readRange, signal) {
     );
   }
   if (entry.checksum?.algorithm === "crc-32") {
-    const { crc32 } = await import("../../chunks/checksum-KWCYS6NV.js");
+    const { crc32 } = await import("../../chunks/checksum-PNIR2HFT.js");
     const actual = (crc32(bytes) >>> 0).toString(16).padStart(8, "0");
     if (actual !== entry.checksum.value.toLowerCase().padStart(8, "0"))
       throw new RangeError(

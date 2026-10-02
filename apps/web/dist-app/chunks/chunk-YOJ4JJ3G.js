@@ -131,10 +131,22 @@ function invertAffine(matrix) {
     1
   ];
 }
+function multiplyAffine(left, right) {
+  const product = new Array(16);
+  for (let column = 0; column < 4; column++)
+    for (let row = 0; row < 4; row++) {
+      let sum = 0;
+      for (let k = 0; k < 4; k++)
+        sum += (left[k * 4 + row] ?? 0) * (right[column * 4 + k] ?? 0);
+      product[column * 4 + row] = sum;
+    }
+  return product;
+}
 
 export {
   normalizeQuat,
   decomposeMatrix4,
   quaternionFromRotationMatrix,
-  invertAffine
+  invertAffine,
+  multiplyAffine
 };

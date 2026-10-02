@@ -15,7 +15,7 @@ import {
   modelMaterialTeamColor,
   mountFieldEditTarget,
   mountInlineField
-} from "./chunk-2BJIIJSO.js";
+} from "./chunk-IOGAUHEU.js";
 import {
   metadataFieldProjections
 } from "./chunk-ZFIQVDW4.js";
@@ -258,8 +258,10 @@ import {
   uvmImageUri,
   uvmImagesIgnoringAlpha,
   uvmKeyTimesMetadata,
-  uvmVisibilityPointer
-} from "./chunk-FOSDVZCZ.js";
+  uvmSceneFrameInverse,
+  uvmVisibilityPointer,
+  withMaterialFrame
+} from "./chunk-UUJEZAKZ.js";
 import {
   DEFAULT_MODEL_ANIMATION_BUDGET,
   DEFAULT_MODEL_SKELETON_BUDGET,
@@ -278,7 +280,7 @@ import {
   snapshotModelAnimations,
   snapshotModelSkeleton,
   srgbToLinear
-} from "./chunk-AVBKEDCB.js";
+} from "./chunk-OFFINWD7.js";
 import {
   SCENE_RENDERER_CONTRACT,
   SCENE_RENDERER_MATCHER_PROFILE
@@ -36419,7 +36421,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: "sha256:d938d0ba220bc50b1b09d3daae34dc0143ec6fc82ba857ad883400552d75f08c",
+        artifactDigest: "sha256:1ebe842c452ee4ece061fb315afd53d04dffb52e2986fa88a356dc59d22df639",
         fileDigests: {
           "MIGRATION-NOTES-common-images.json": "sha256:44c30ea45aaceceff66d53f72e5e0d0ec8efb1a7f2afbc2f9913849720632e93",
           "README.md": "sha256:4f8426d4cb4a5a43b6b37cfb8d3262b2ce94a8ec1436d6d339e7f64dc3adadeb",
@@ -36429,7 +36431,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
           "contributions/codec-basis.json": "sha256:184ba7dd544a576e53ced752789b435a8d45dbf01b87c248a2e4cfbc3b03547c",
           "contributions/codec-bmp.json": "sha256:51e2e65724d780a313dfeb1072929d9cb9fc3c5230b7597e0a3384dc77523326",
           "contributions/codec-cur.json": "sha256:1096814c71e3466f1b21c4f1c9357b0495ec369c667d54d2c664b398ab25a1d6",
-          "contributions/codec-dds.json": "sha256:39c2a992ec9a105bca546d472b62a80fb5f6de9f60f42ff019d78217bfd6fa54",
+          "contributions/codec-dds.json": "sha256:4b46b39cca5489e15d8e25b36dd85b73ea4a75a995cf5b3eaf0808e5f168d3c3",
           "contributions/codec-exr.json": "sha256:377eb43959c01dff23c3117a6a1263a9797e91503b79e65a718d049336e6cca7",
           "contributions/codec-gif.json": "sha256:1e0055534bec3b25f02fb42204637d11c4d24447ff87474fbb8460c8703342f4",
           "contributions/codec-hdr.json": "sha256:f9a3809a8285db81095accabea92d22fec03a7aab43d17466f2ffd89a77581b8",
@@ -36447,7 +36449,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
           "contributions/codec-webp.json": "sha256:0bba481e6804a0854bcfa8b4d44d2211df0bbdde6f34c1c19a181b19148512c5",
           "contributions/writer-dds.json": "sha256:811f3e474aa56eb4317369fdb2e628be861ed9e26a4be5660fce16fe75f3b448",
           "contributions/writer-png.json": "sha256:49583a58d35f864423155eae81992ed56764d4efe6c82c6931491f1b3157ee13",
-          "package.json": "sha256:0ea4eea14c29a97316e5ce3281cd4d272db2221d0e6c85386035250ea34c7aef",
+          "package.json": "sha256:e383db09ac36b8eca4390bb855896b6f71c639bc0781ab6e5901911967fd0773",
           "src/ani/codec.js": "sha256:18bf84dd6807f2caf4d7bf3d5bb497cfba746f92b0e6bb3e459a0b09563f3c00",
           "src/astc/codec.js": "sha256:e838232902d024f2e4c9d9538f6ee6e69259b23654b9bffb7e15110298af62b3",
           "src/astc/ldr.js": "sha256:c5bf2a524fb9ab25d51f8351192e30859463e6d14b0b0da94295aa4350d6f402",
@@ -36455,8 +36457,8 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
           "src/basis/codec.js": "sha256:467f93b3b49ec4d0a3e7bdb23782949d6ec1126839cebdcde2cfbf25a11d7293",
           "src/bmp/codec.js": "sha256:5b53995e0429115ea6020430dc80c5bd70b208c6666392b7b0f57f9eef25917d",
           "src/cur/codec.js": "sha256:daf34dd18dd2ed3f13ea0d74668fc9c40bdda171899ee0667cd558c9f7fe24a9",
-          "src/dds/bptc.js": "sha256:f3a0636b0f5dde9b7f7ccc2e6874425bfef0f5e86f6a1801a8032885f61a39b4",
-          "src/dds/codec.js": "sha256:775ff38a7dc60705ec7fe7c4fd27bad5186da73e72ba047a7284140fdb890a64",
+          "src/dds/bptc.js": "sha256:76b8dd3cc2d5737a1d30991b6a21f3fd06ec1ccbbe52c8dcd730ac3097abbce3",
+          "src/dds/codec.js": "sha256:e89bf2af3bed4bda31a80ca20a1dca3f067a255eb0fe8ca6bbdd41f25a3e58d9",
           "src/dds/compressed.js": "sha256:af63c9438834ec0618e5ce3a207d45195cc603dcf4376c7964dfd3e939f7823e",
           "src/dds/encode.js": "sha256:81eb1f075f2dd85d4004ca6674a43662dc3e0b136b7c8dd7c7a3bf79438c29f0",
           "src/dds/layout.js": "sha256:ad84d000700f52fb29f3fb4a6ea7cf421f9a9d1e9335fa5c247d1e70fc13b6b0",
@@ -36487,7 +36489,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
           "test/astc-ordinary-ldr.test.ts": "sha256:d2fac9ba212cdebcb662337bad84d9ed32f5f94d578e7c727e11e0a17a593ae2",
           "test/astc-void-extent.test.ts": "sha256:ed0f8d41d2c64a3276ae4f53276ed49846354bf28cc03fd77adecab1931a3bd1",
           "test/codec-session.ts": "sha256:fa6bcdf1bc58315268af02ca9b02076ec655a28bee8a327cf6664f1f0ea163e6",
-          "test/dds-subresources.test.ts": "sha256:1d01aaba1656d12e22dc41853b1d5fcf1bcfbcb732a87e5b624fe2f6085e8bd5",
+          "test/dds-subresources.test.ts": "sha256:ea9b83fea4ab57169fb98f73cc9f1099419f5a0d12f8e001c12f72506b0bd64e",
           "test/dds-transform.test.ts": "sha256:104de000cee52f895247c882aa74c54ba6c19a7ad763e830c285644a8fe40da9",
           "test/eac-r11-decode.test.ts": "sha256:2a0d83d3152224ce7ea530605bb9441912aa9be68b3b4ec60d1e51cb0e5beed4",
           "test/ktx1-compressed.test.ts": "sha256:1653111d042a80b970f424082842314ae9d24dc8137bb2e3540ea7edc21cf993",
@@ -36496,13 +36498,9 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
           "test/png-palette-decode.test.ts": "sha256:4f08bebd6d3d670eb0a307e4063265e41b16b3e81a505ab9cb04a580b63c7adb",
           "test/png-sample-depths.test.ts": "sha256:8cbecaf70005597b55a75aec26c1fc9d727459dae9d0833f2472e35ea141fc3d",
           "test/raster-edit-content.test.ts": "sha256:6673c3bc7aaff3b1581346327013b57715eb0455b4ee78b1db82b134b30058af",
-          "test/raster-export.test.ts": "sha256:bff7ffa4f5b905a98c6800fcefed8fe7a7f693df6f7fe78b4264dc53ba4cd8f5",
-          "vendor/texture2ddecoder/LICENSE": "sha256:49e3169a509b9a5311fe50957a334e9e1975164f27da6004358c22e91e10747c",
-          "vendor/texture2ddecoder/README.md": "sha256:62e287f319c051b451df4516dd94c0a14d1a3d95dc52690ee4f477e07921ab85",
-          "vendor/texture2ddecoder/texture2ddecoder.js": "sha256:0a2b33ff735566fd3184e0421ff38fb7578d1348b3cc44fc4646cce29d001110",
-          "vendor/texture2ddecoder/texture2ddecoder.wasm": "sha256:8b819b0622cce57f809b369081bdd6eca09d1c1793da7f82192db39229356c1d"
+          "test/raster-export.test.ts": "sha256:bff7ffa4f5b905a98c6800fcefed8fe7a7f693df6f7fe78b4264dc53ba4cd8f5"
         },
-        inventoryRecordId: "artifact:sha256:d938d0ba220bc50b1b09d3daae34dc0143ec6fc82ba857ad883400552d75f08c"
+        inventoryRecordId: "artifact:sha256:1ebe842c452ee4ece061fb315afd53d04dffb52e2986fa88a356dc59d22df639"
       },
       artifactRoot: "extensions/images/",
       containers: {
@@ -36523,7 +36521,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
             "./writers/dds-encoder": "./src/writers/dds-encoder.js",
             "./writers/png-encoder": "./src/writers/png-encoder.js"
           },
-          files: ["contributions", "src", "vendor", "README.md"],
+          files: ["contributions", "src", "README.md"],
           license: "MIT",
           modkit: {
             contributionManifests: ["./contributions/*.json"],
@@ -36583,7 +36581,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
         ],
         [
           "contributions/codec-dds.json",
-          "sha256:39c2a992ec9a105bca546d472b62a80fb5f6de9f60f42ff019d78217bfd6fa54"
+          "sha256:4b46b39cca5489e15d8e25b36dd85b73ea4a75a995cf5b3eaf0808e5f168d3c3"
         ],
         [
           "contributions/codec-exr.json",
@@ -37546,8 +37544,8 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
             limitations: [
               "Decoded to pixels: BC1/BC2/BC3 (FourCC DXT1-DXT5 and DXGI 70-78), BC4 and BC5 including the signed spellings (ATI1/ATI2/BC4U/BC5U/BC4S/BC5S and DXGI 79-84 minus the two typeless numbers), BC6H and BC7 (DXGI 94-99), and uncompressed RGB, luminance and alpha-only masks at 8, 16, 24 or 32 bits.",
               "NOT decoded: DXGI 79 (BC4_TYPELESS) and 82 (BC5_TYPELESS), refused by name. The legacy MK2 codec refused them too.",
-              "BC6H and BC7 blocks are decoded by the vendored third-party texture2ddecoder runtime under vendor/texture2ddecoder/ (MIT), which is the implementation the legacy MK2 codec called. Every other format is pure JavaScript inside the codec runtime. The runtime resolves its .wasm next to its own module; nothing is deployed separately by a host.",
-              "BC6H_UF16 and BC6H_SF16 decode through the same entry point, so the unsigned and signed profiles produce the same pixels. That is what the vendored runtime does and what legacy therefore did; the compressed-texture descriptor still reports the two profiles apart.",
+              "BC6H and BC7 blocks are decoded by codec-kit's Texture2DDecoder runtime (the third-party texture2ddecoder-wasm package, MIT), which is the implementation the legacy MK2 codec called. Every other format is pure JavaScript inside the codec runtime. Node loads the installed package; a browser host deploys its wasm/ folder and initializes the runtime once.",
+              "BC6H_UF16 and BC6H_SF16 decode through the same entry point, so the unsigned and signed profiles produce the same pixels. That is what the runtime does and what legacy therefore did; the compressed-texture descriptor still reports the two profiles apart.",
               "Mip, array-layer, cubemap-face and volume-slice selection is implemented: readRegion resolves any subresource the header declares and refuses out-of-range coordinates by name.",
               "Writing is a separate contribution: modkit/dds-encoder-writer (common.edit/writer@1) encodes RGBA8 pixels as rgba8, dxt1, dxt3 or dxt5.",
               "The compressed-texture view of a DDS (GPU blocks handed over undecoded, with block geometry, colour space, alpha mode and per-subresource byte ranges) is implemented in src/dds/compressed.js but is not published: MK3 has no common.view contract for compressed textures yet.",
@@ -40872,11 +40870,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
         "test/png-palette-decode.test.ts",
         "test/png-sample-depths.test.ts",
         "test/raster-edit-content.test.ts",
-        "test/raster-export.test.ts",
-        "vendor/texture2ddecoder/LICENSE",
-        "vendor/texture2ddecoder/README.md",
-        "vendor/texture2ddecoder/texture2ddecoder.js",
-        "vendor/texture2ddecoder/texture2ddecoder.wasm"
+        "test/raster-export.test.ts"
       ],
       name: "images",
       source: "extensions/images"
@@ -52462,6 +52456,10 @@ var package_default3 = {
       types: "./dist/model/container.d.ts",
       default: "./dist/model/container.js"
     },
+    "./model/frame": {
+      types: "./dist/model/frame.d.ts",
+      default: "./dist/model/frame.js"
+    },
     "./model/format-residual": {
       types: "./dist/model/format-residual.d.ts",
       default: "./dist/model/format-residual.js"
@@ -53262,7 +53260,45 @@ var EFFECT_FAMILIES = [
   ["warps", false],
   ["projectors", true]
 ];
-function effectsOf(projection2, nodeIndexById, materialIndexById) {
+function withNodeIndices(value, label, nodeIndexById) {
+  if (Array.isArray(value))
+    return value.map((item) => withNodeIndices(item, label, nodeIndexById));
+  if (value === null || typeof value !== "object")
+    return value;
+  const written = {};
+  for (const [key3, child] of Object.entries(value)) {
+    if (child === void 0)
+      continue;
+    if (key3 === "node")
+      fail6(`${label} names a node by index, not by id`);
+    if (key3 !== "nodeId") {
+      written[key3] = withNodeIndices(child, label, nodeIndexById);
+      continue;
+    }
+    const node = typeof child === "string" ? nodeIndexById.get(child) : void 0;
+    if (node === void 0)
+      fail6(`${label} names the unknown node ${String(child)}`);
+    written["node"] = node;
+  }
+  return written;
+}
+function emissionMeshesOf(value, label, addAccessor2) {
+  if (!Array.isArray(value) || value.length === 0)
+    fail6(`${label} emission meshes are a nonempty list`);
+  return value.map((mesh, at2) => {
+    const which = `${label} emission mesh ${String(at2)}`;
+    const { positions, indices } = mesh ?? {};
+    if (!Array.isArray(positions) || positions.length === 0 || positions.length % 3 !== 0 || !positions.every((item) => typeof item === "number" && Number.isFinite(Math.fround(item))))
+      fail6(`${which} needs finite (x, y, z) positions`);
+    if (!Array.isArray(indices) || indices.length === 0 || indices.length % 3 !== 0 || !indices.every((item) => Number.isSafeInteger(item) && item >= 0 && item < positions.length / 3))
+      fail6(`${which} needs triangle indices within its positions`);
+    return {
+      positions: addAccessor2(Float32Array.from(positions), "VEC3"),
+      indices: addAccessor2(Uint32Array.from(indices), "SCALAR")
+    };
+  });
+}
+function effectsOf(projection2, nodeIndexById, materialIndexById, addAccessor2) {
   const given = projection2.effects;
   if (given === void 0)
     return void 0;
@@ -53278,21 +53314,28 @@ function effectsOf(projection2, nodeIndexById, materialIndexById) {
         const json2 = entry2;
         if (!isJsonValue(json2) || typeof entry2["name"] !== "string")
           fail6(`${label} is not a named JSON object`);
-        const { nodeId, materialId, ...rest } = entry2;
+        const { nodeId, materialId, emitShapeMeshes, ...rest } = entry2;
         if (rest["node"] !== void 0 || rest["material"] !== void 0)
           fail6(`${label} names its node and material by id, not by index`);
         const node = typeof nodeId === "string" ? nodeIndexById.get(nodeId) : void 0;
         if (node === void 0)
           fail6(`${label} names the unknown node ${String(nodeId)}`);
+        if (emitShapeMeshes !== void 0 && family !== "particles")
+          fail6(`${label} has emission meshes only a particle emitter has`);
+        const written = {
+          ...withNodeIndices(rest, label, nodeIndexById),
+          ...emitShapeMeshes === void 0 ? {} : { emitShapeMeshes: emissionMeshesOf(emitShapeMeshes, label, addAccessor2) },
+          node
+        };
         if (!withMaterial) {
           if (materialId !== void 0)
             fail6(`${label} names a material its family has not`);
-          return { ...structuredClone(rest), node };
+          return written;
         }
         const material = typeof materialId === "string" ? materialIndexById.get(materialId) : void 0;
         if (material === void 0)
           fail6(`${label} names the unknown material ${String(materialId)}`);
-        return { ...structuredClone(rest), node, material };
+        return { ...written, material };
       })
     ]);
   }
@@ -54204,6 +54247,16 @@ function materializeUvmCore(projection2, request, { digest, materialBudget = DEF
     rootIndices = [root];
     note("uv.model/structure@1", "value-differs", "/nodes", "one scale node brings the source units to metres (UV_units)");
   }
+  const frame = {
+    metersPerSourceUnit: unitsExtension?.metersPerSourceUnit ?? 1,
+    upAxis: info.upAxis === "+z" ? "+z" : "+y",
+    handedness: info.handedness === "left" ? "left" : "right"
+  };
+  if (frame.metersPerSourceUnit !== 1 || frame.upAxis === "+z" || frame.handedness === "left") {
+    const inverse = uvmSceneFrameInverse(frame);
+    for (const [index, material] of materials.entries())
+      materials[index] = withMaterialFrame(material, inverse);
+  }
   const hiddenPrimitives = (primitives ?? []).filter((primitive) => primitive.hidden === true).flatMap((primitive) => {
     const target = primitiveIndices.get(primitive.id);
     return target === void 0 ? [] : [target];
@@ -54253,10 +54306,30 @@ function materializeUvmCore(projection2, request, { digest, materialBudget = DEF
   }
   if (animation !== void 0 && animation.animations.length > 0)
     note("common.view/model-animation-source@1", "value-differs", void 0, "clip and target identities are positional; native frame indices, provenance, bounds and movement speed are not glTF TRS fields");
+  const effects = effectsOf(projection2, nodeIndexById, materialIndexById, (values, type) => {
+    const index = accessors.length;
+    if (type === "VEC3") {
+      const bounds2 = boundsOf(values);
+      accessors.push({
+        bufferView: buffers.push(values),
+        componentType: FLOAT,
+        count: values.length / 3,
+        type,
+        min: bounds2.min,
+        max: bounds2.max
+      });
+    } else
+      accessors.push({
+        bufferView: buffers.push(values),
+        componentType: UINT32,
+        count: values.length,
+        type
+      });
+    return index;
+  });
   const binary = buffers.build();
   const gameExtensions = gameExtensionsOf(projection2);
   const sceneLights = sceneLightsOf(projection2, nodeIndexById);
-  const effects = effectsOf(projection2, nodeIndexById, materialIndexById);
   const document = {
     asset: {
       version: "2.0",
@@ -55266,7 +55339,7 @@ async function decodeContainerEntry(entry2, maximum, readRange, signal) {
     throw new RangeError(`container entry ${entry2.path} decoded to ${bytes.byteLength} bytes, not ${size}`);
   }
   if (entry2.checksum?.algorithm === "crc-32") {
-    const { crc32 } = await import("./checksum-IEKURWEO.js");
+    const { crc32 } = await import("./checksum-EXNAVBUE.js");
     const actual = (crc32(bytes) >>> 0).toString(16).padStart(8, "0");
     if (actual !== entry2.checksum.value.toLowerCase().padStart(8, "0"))
       throw new RangeError(`container entry ${entry2.path} fails its CRC-32 (${actual}, the container says ${entry2.checksum.value})`);
@@ -55392,6 +55465,9 @@ function applyJsonEdit(root, edit, maxDepth) {
 }
 
 // ../MODDING/modkit-core/packages/codec-kit/dist/json.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// ../MODDING/modkit-core/packages/codec-kit/dist/logging.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
 // ../MODDING/modkit-core/packages/host/dist/codec.js
@@ -63041,6 +63117,7 @@ var WEB_WORKER_MODULE_MAP = Object.freeze({
   "@modkit/codec-kit/model-math/effects-sim": "vendor/codec-kit/model-math/effects-sim.js",
   "@modkit/codec-kit/raster": "vendor/codec-kit/raster/index.js",
   "@modkit/codec-kit/raster/palette": "vendor/codec-kit/raster/palette.js",
+  "@modkit/codec-kit/xml/positional": "vendor/codec-kit/xml/positional.js",
   "@modkit/codec-kit/texture": "vendor/codec-kit/texture/index.js",
   "@modkit/codec-kit/texture/bc": "vendor/codec-kit/texture/bc.js",
   "@modkit/codec-kit/texture/gl-compressed": "vendor/codec-kit/texture/gl-compressed.js",
@@ -63057,6 +63134,7 @@ var WEB_WORKER_MODULE_MAP = Object.freeze({
   "@modkit/sdk/model-encoding": "vendor/sdk/model-encoding.js",
   "@modkit/sdk/templates": "vendor/sdk/templates/index.js",
   "@modkit/uv/model/container": "vendor/uv/model/container.js",
+  "@modkit/uv/model/frame": "vendor/uv/model/frame.js",
   "@modkit/uv/model/materializer": "vendor/uv/model/materializer.js",
   "@modkit/uv/model/validation": "vendor/uv/model/validation.js",
   "@rgrove/parse-xml": "vendor/parse-xml/index.js",
@@ -66537,7 +66615,8 @@ function createSubjectCardViewer(options = {}) {
             trail.append(crumb, " \u203A ");
           });
         };
-        const resolveImage = options.textures === void 0 ? void 0 : async (id, signal) => {
+        let reading = Promise.resolve();
+        const readImage = options.textures === void 0 ? void 0 : async (id, signal) => {
           let reason;
           const textures = await options.textures?.(args.descriptor, [
             {
@@ -66559,6 +66638,11 @@ function createSubjectCardViewer(options = {}) {
             height: texture.height,
             rgba: texture.rgba.subarray(0, texture.width * texture.height * 4)
           };
+        };
+        const resolveImage = readImage === void 0 ? void 0 : (id, signal) => {
+          const turn = reading.then(() => readImage(id, signal));
+          reading = turn.catch(() => void 0);
+          return turn;
         };
         let locale = options.locale;
         let page2;
@@ -66680,7 +66764,7 @@ var PREVIEW_STAGES = [
 async function defaultPreviewStage(kind, localizer) {
   switch (kind) {
     case "model":
-      return (await import("./model-S2QWKZL2.js")).createModelViewer({ localizer });
+      return (await import("./model-PJWIRIOC.js")).createModelViewer({ localizer });
     case "image":
       return (await import("./image-WWIWP4RV.js")).createImageViewer({ localizer });
     case "video":

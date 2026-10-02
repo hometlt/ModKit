@@ -10,19 +10,17 @@ import {
   vector4
 } from "./chunk-I4Z5J3HX.js";
 import {
-  uvmImageLogicalId
-} from "./chunk-OAFBQXD6.js";
-import {
-  readUvmAccessor
-} from "./chunk-KURLZAFQ.js";
-import {
+  readUvmAccessor,
   readUvmAnimationClips,
   readUvmKeyTimes,
   readUvmPrimitiveVisibility,
   uvmAnimationEvents,
   uvmAnimationPlayback,
   uvmVisibilityTarget
-} from "./chunk-I43233HX.js";
+} from "./chunk-PRU56TPQ.js";
+import {
+  uvmImageLogicalId
+} from "./chunk-NONHW3HK.js";
 import {
   composeTrsMatrix
 } from "./chunk-5SBJANAJ.js";

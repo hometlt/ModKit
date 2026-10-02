@@ -314,8 +314,8 @@ describe('DDS subresource selection', () => {
 })
 
 /*
- * BC6H and BC7 arrived with the port of MK2's decoder, which reaches them through the same vendored
- * `texture2ddecoder` runtime MK2 loaded. This block used to assert that all four were refused, and
+ * BC6H and BC7 arrived with the port of MK2's decoder, which reaches them through the same
+ * `texture2ddecoder` runtime MK2 loaded, now codec-kit's. This block used to assert that all four were refused, and
  * it went on asserting it after they started working — a stale expectation is worse than a missing
  * one, because the suite keeps reporting a capability the product has as absent.
  */

@@ -20,8 +20,8 @@ import {
   initializeGpuTextureWasmBrowser,
   unpack_crunch,
   unpack_unity_crunch
-} from "./chunk-JTINH3FQ.js";
-import "./chunk-W2UBWFML.js";
+} from "./chunk-YGHQTXS7.js";
+import "./chunk-V3DESLW4.js";
 import "./chunk-CQ52GEHY.js";
 export {
   decode_astc,

@@ -19,7 +19,6 @@
   "files": [
     "contributions",
     "src",
-    "vendor",
     "README.md"
   ],
   "modkit": {

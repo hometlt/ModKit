@@ -20,7 +20,7 @@ import {
   plausibleTgaHeader,
   readJpegFrameInfo,
   surfaceRegionReader
-} from "../../../chunks/chunk-KXX5ID6M.js";
+} from "../../../chunks/chunk-77IXXCWQ.js";
 import {
   applyColorKeyTransparency,
   applyRoundedAlpha,
@@ -32,7 +32,7 @@ import {
   srgbToLinear
 } from "../../../chunks/chunk-SNT2IRUT.js";
 import "../../../chunks/chunk-GDKG5J25.js";
-import "../../../chunks/chunk-6S2P23EL.js";
+import "../../../chunks/chunk-F3ZZXQRO.js";
 import "../../../chunks/chunk-NMYA52EI.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 export {
