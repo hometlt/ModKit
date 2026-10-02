@@ -371,13 +371,15 @@ export function createContentAssetOrigin(request: ContentAssetOriginRequest): Co
     async *enumerate(scope, options, signal) {
       const origin = await resolved()
       const path = options.prefix.endsWith('/') ? '' : normalizeCompanionLogicalId(options.prefix)
-      let named = false
+      // a prefix the layers answer (the path itself, or a partial name of a listed file) needs no
+      // locate; only a path no layer lists at all is asked where the game keeps it
+      let answered = false
       if (origin !== undefined)
         for await (const entry of origin.enumerate(scope, options, signal)) {
-          named ||= entry.logicalId.toLowerCase() === path.toLowerCase()
+          answered = true
           yield entry
         }
-      if (named || path === '' || options.namePrefix !== undefined) return
+      if (answered || path === '' || options.namePrefix !== undefined) return
       const asset = await locate(path)
       if (asset !== undefined) yield Object.freeze({ logicalId: path })
     },
