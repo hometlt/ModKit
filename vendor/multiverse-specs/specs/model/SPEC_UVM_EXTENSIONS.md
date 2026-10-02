@@ -15,8 +15,8 @@ consumer that ignores it loses.
 - `node`, `material`, `texture`, `accessor`, `bufferView`, `skin`, `mesh` properties are
   **integer indices** into the corresponding top-level glTF array, matching glTF's own
   convention. They are never names.
-- Every extension object MAY carry `extras`. Consumers **MUST** preserve `extras` on
-  round-trip.
+- Extension schemas specify whether `extras` is admitted. When present, consumers
+  **MUST** preserve it on round-trip; a closed extension is not widened implicitly.
 
 ## Extension index
 
@@ -29,6 +29,10 @@ consumer that ignores it loses.
 | [`UV_retarget`](#uv_retarget)                                               | skin                     | Animation cannot be shared with other rigs                            |
 | [`UV_game_material_team_color`](#uv_game_material_team_color)               | material                 | Unit renders in its neutral colour                                    |
 | [`UV_game_material`](#uv_game_material)                                     | material                 | PBR approximation is used                                             |
+| [`UV_texture_alpha`](#uv_texture_alpha) | texture | Stored alpha remains visible instead of being ignored |
+| [`UV_node_billboard`](#uv_node_billboard) | node | Authored static node orientation |
+| [`UV_scene_camera`](#uv_scene_camera) | glTF camera | Authored static glTF lens; clip lens tracks unavailable |
+| [`UV_scene_lights`](#uv_scene_lights) | root | Native scene lighting and its animation unavailable |
 | [`UV_texture_color_key`](#uv_texture_color_key)                             | texture                  | The key colour is drawn where the game drew nothing                   |
 | [`UV_game_animation_clips`](#uv_game_animation_clips)                       | root and animation       | glTF clips play; catalog-only selection and binding slots unavailable |
 | [`UV_game_animation_events`](#uv_game_animation_events)                     | animation                | No gameplay events fire                                               |
@@ -169,8 +173,8 @@ Attaches to: material.
 
 | Property        | Type       | Required    | Default         | Description                                                                |
 | --------------- | ---------- | ----------- | --------------- | -------------------------------------------------------------------------- |
-| `maskSource`    | string     | yes         | —               | `texture`, `vertexColor`, `paletteRange`, `whole`                          |
-| `maskTexture`   | object     | conditional | —               | `{ index, texCoord, channel }` — required when `maskSource` is `texture`   |
+| `maskSource`    | string     | yes         | —               | `texture`, `vertexColor`, `paletteRange`, `whole`, `channelKey`                          |
+| `maskTexture`   | object     | conditional | —               | `{ index, texCoord, channel, extensions? }` — required for `texture`; see below   |
 | `range`         | integer[2] | conditional | —               | Palette index range, required when `maskSource` is `paletteRange`          |
 | `vertexChannel` | string     | conditional | `a`             | `r`/`g`/`b`/`a`, when `maskSource` is `vertexColor`                        |
 | `targets`       | string[]   | no          | `["baseColor"]` | Which PBR slots the colour applies to: `baseColor`, `emissive`, `specular` |
@@ -184,6 +188,91 @@ Attaches to: material.
 The `glow` sub-object covers Warcraft 3's replaceable ID 2 (team glow), which is a separate
 mask from team colour and behaves as emissive rather than albedo.
 
+The following additions are common presentation semantics, not game-specific flags.
+The sole shape owner is `uvm.material.schema.json#teamColor`.
+
+| Property | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `keyChannels` | unique RGB channel names, 1–3 | `["r","g"]` | Stored channels tested by `channelKey` |
+| `keyThreshold` | integer 0–255 | `0` | Each selected stored 8-bit channel must be ≤ this value |
+| `intensityChannel` | `r`, `g`, `b`, `a` | `b` | Channel data multiplying the replacement colour |
+| `colorSource` | `team`, `object-tint` | `team` | Select contextual team colour or UVW `presentationTint` |
+| `tint` | `none`, `mask-rgb` | `none` | Multiply selected colour by RGB of `maskTexture` |
+| `secondaryMaskTexture` | textureRef | absent | Additional scalar coverage, independent UV/transform |
+| `ramp` | N linear RGB triples | absent | Exact ordered shades for indexed `paletteRange` |
+| `paletteIndexScale` | integer 1–65535 | `255` | Convert sampled normalized index data to integer index |
+
+For `channelKey`, the source is `maskTexture` when present, otherwise the material's
+PBR `baseColorTexture`. A source texture is required. The comparison uses stored
+8-bit RGB before colour conversion, filtering and mip generation. The key coverage
+is binary: one only when every key channel matches. The intensity is separately the
+normalized data channel (stored byte / 255), not a colour decoded from sRGB. With
+default channels this gives the blue-key replacement `teamRGB * B`. A writer MUST
+explicitly set `blend: "replace"`; using B again as blend coverage would square
+intensity. Texels outside the key retain their loaded original RGB and alpha. No blue-pixel,
+file-name or game-id inference is permitted. The native format owner declares intent.
+
+For an exact indexed ramp, `maskSource` MUST be `paletteRange`, `blend` MUST be
+explicit `replace`, and `maskTexture`, `range`, and `ramp` MUST be present. The scalar
+mask channel stores normalized palette-index data, independently of the decoded
+palette RGB. Reconstruct `i = floor(sample * paletteIndexScale + 0.5)`. Index reads
+use nearest sampling; integer indices MUST NOT be interpolated. The inclusive
+range is ascending, bounded by the scale, and N equals `range[1]-range[0]+1`.
+For an index in range, the replacement colour is `ramp[i-range[0]]`; other indices
+leave the original colour unchanged. A contextual player ramp may override all N
+entries only with an exact same-length array; missing shade data is a loss/refusal,
+never permission to generate a gradient or recover an index from decoded RGB.
+SC1 eight-shade, Dune sixteen-shade and RA2/TS sixteen-shade ramps use this same
+representation. Their palettes and any native gradient computation remain with the
+native format owner. The earlier range-only form remains preserved metadata; it
+does not alone provide an executable recolouring oracle.
+
+Let C be the original target RGB and T the selected colour or indexed-ramp shade.
+For `tint: "mask-rgb"`, T is multiplied component-wise by colour-decoded mask RGB;
+mask alpha/data-channel coverage is still separate. For `colorSource: "object-tint"`,
+the renderer takes T from object `presentationTint`; when absent it uses
+`defaultColor.rgb`. That object's tint MUST NOT also be applied a second time to
+this material. The team source uses the contextual team colour, otherwise
+`defaultColor.rgb`. This does not change the object's player/gameplay identity.
+
+Primary coverage m is 1 for `whole`, the selected data channel for `texture` or
+`vertexColor`, and the key/range predicate for `channelKey` or indexed ramps.
+The earlier `texture` channel `rgb` is component-wise data coverage; the following
+weight/blend equations apply per component. It is not RGB-mask tint; tint instead
+multiplies T by colour-decoded RGB while a scalar channel supplies coverage.
+`secondaryMaskTexture` multiplies m by its own scalar channel (r/g/b/a, default a).
+It is a coverage factor, not the separate `glow` emissive mask. Effective weight
+w is m times nonnegative `strength`; add permits gain above one, other blend modes
+use clamp(w,0,1). Replace and lerp give `mix(C,T,w)`; multiply gives
+`mix(C,C*T,w)`; add gives `C+T*w`. Overlay uses per-component
+`C<=0.5 ? 2*C*T : 1-2*(1-C)*(1-T)`, mixed with C by clamped w.
+None of these RGB operations changes alpha. Key intensity multiplies T once;
+secondary coverage and strength are then applied once. This admits the SAGE
+specular-channel recolour, additive colour, scrolling second-mask and RGB-mask
+forms without game-specific branches.
+
+Each mask textureRef carries its own `texCoord` and optional
+`extensions.KHR_texture_transform`. It references the shared glTF texture-transform
+schema; the standard origin is (0,0), with `uv'=offset+R*S*uv`. A legacy transform
+about centre c is converted using `offset_gltf=offset_c+c-R*S*c`, not copied.
+See the primary [KHR_texture_transform definition](https://raw.githubusercontent.com/KhronosGroup/glTF/main/extensions/2.0/Khronos/KHR_texture_transform/README.md).
+
+Animated strength and mask transforms use existing glTF animation samplers and
+[KHR_animation_pointer](https://raw.githubusercontent.com/KhronosGroup/glTF/main/extensions/2.0/Khronos/KHR_animation_pointer/README.md), not another clock or VM.
+Supported mutable paths, relative to `/materials/M/extensions/UV_game_material_team_color/`,
+are `strength`, `glow/strength`, and
+`{maskTexture|secondaryMaskTexture}/extensions/KHR_texture_transform/{offset|scale|rotation}`.
+Offset/scale are VEC2, rotation/strength SCALAR; individual offset/scale components
+0/1 are SCALAR. Targets MUST be authored explicitly (including default values) and
+extensions declared in `extensionsUsed`. Whole-vector/component overlaps and
+duplicate paths within one animation refuse; input accessors are SCALAR FLOAT and
+output width/count follows the standard sampler, including CUBICSPLINE's 3 values
+per key. Strength is nonnegative at use; any interpolation overshoot is clamped
+at zero. Texture indices, mask source, key channels and ramps are static bindings.
+The renderer samples these tracks with the selected presentation clip. Gameplay
+State, tick/RNG and traversal do not depend on presentation animation.
+
+
 ---
 
 ## `UV_game_material`
@@ -193,7 +282,7 @@ Attaches to: material.
 | Property          | Type     | Required | Default  | Description                                                                                                    |
 | ----------------- | -------- | -------- | -------- | -------------------------------------------------------------------------------------------------------------- |
 | `shader`          | string   | yes      | —        | Namespaced shader identity, e.g. `sc2.standard`, `mdx.layer`, `w3d.vertex-material`                            |
-| `blendMode`       | string   | no       | `opaque` | `opaque`, `alpha-blend`, `alpha-test`, `additive`, `modulate`, `modulate2x`, `alpha-key`, `screen`, `subtract` |
+| `blendMode`       | string   | no       | `opaque` | `opaque`, `alpha-blend`, `alpha-test`, `additive`, `add-alpha`, `modulate`, `modulate2x`, `alpha-key`, `screen`, `subtract` |
 | `alphaCutoff`     | number   | no       | `0.5`    | For `alpha-test`                                                                                               |
 | `cull`            | string   | no       | `back`   | `back`, `front`, `none`                                                                                        |
 | `depthTest`       | boolean  | no       | `true`   |                                                                                                                |
@@ -246,6 +335,17 @@ When `passes` is present, `layers` **MUST** describe pass 0 as well, so single-p
 have something to render.
 
 ---
+
+### `add-alpha` blend state
+
+`blendMode: "add-alpha"` is admitted on both `UV_game_material` and each pass.
+With straight (unpremultiplied) source colour, RGB is
+`SrcRGB * SrcAlpha + DstRGB`; destination alpha is preserved. The corresponding
+separate factors are `(SRC_ALPHA, ONE, ZERO, ONE)`. Source alpha is applied once.
+This differs from both alpha-blend (which attenuates destination RGB) and additive
+`(ONE, ONE, ZERO, ONE)`. UV-unaware glTF falls back to its usable PBR material;
+alphaMode alone cannot faithfully express this blend state.
+
 
 ## `UV_texture_color_key`
 
@@ -704,4 +804,106 @@ Attaches to: document root. See
 `chain` matters for multi-hop conversion. An S3O imported to UVM and then exported to M3 and
 re-imported has two entries, and the second importer can see that the first conversion
 already lost the Spring piece names.
+
+
+---
+
+## `UV_texture_alpha`
+
+Attaches to: glTF texture. Schema: `uvm.texture.schema.json#alpha`.
+
+Required boolean `ignoreStoredAlpha` explicitly requests alpha := 1 for every
+source texel; false keeps the stored alpha. Defaults are interpreted, not inserted
+into authored bytes. Optional `extras` retains provenance. This is a binding policy,
+not a rewrite of image bytes: two glTF textures may share an image and use different
+alpha policies. It is never inferred from TGA depth, an all-zero alpha plane or
+another game's convention.
+
+Apply in this order: decode source texel; override stored alpha when requested;
+apply `UV_texture_color_key` against stored RGB (matched texels become transparent
+black); generate/filter mipmaps with that resulting alpha; apply material/factor
+alpha. Thus a keyed texel stays transparent even when the source alpha is ignored.
+An exporter to a format without the policy must bake the projection into a new
+image or report loss; it must not modify the shared original image silently.
+
+## `UV_node_billboard`
+
+Attaches to: node. Schema: `uvm.scene.schema.json#billboard`. The existing Core
+wire form is preserved: `schemaVersion: 1`, with one of three closed modes.
+
+| mode | Required fields | Optional fields | Meaning |
+| --- | --- | --- | --- |
+| `inverse-camera` | `basisRotations` (0–4 XYZW quaternions) | none | Inverse camera orientation followed by the ordered post-camera basis rotations |
+| `face-camera` | `rotationAxes: z|xz`, local `pivot` vec3 | none | Local +Y faces the camera; z preserves local Z, xz pitches local X then rolls Z |
+| `aim` | `aim: view|eye`, `lock: free|frame-x|frame-y|frame-z|own-x|own-y` | `correction`, `rootCorrection` XYZW | Explicit joint aim/axis-lock rule retained by the shared Core billboard owner |
+
+Quaternion values are finite nonzero and normalized when read; authored bytes are
+preserved. No native flags or bone-name inference is involved. The constraint affects
+the presentation pose after ordinary node/skin animation; it does not rewrite the
+bind pose or the gameplay orientation. Ignoring it retains the authored static pose.
+
+## `UV_scene_lights`
+
+Attaches to: document root. Schema: `uvm.scene.schema.json#sceneLights`.
+The existing Core wire form is preserved: required `version: 1`, valid node index
+`spaceNode`, and `lights`; optional unit RGB `ambient` defaults to [0,0,0].
+
+Each light has `type: directional|point|spot`, nonzero `direction`, and nonnegative
+RGB `color`. Point/spot require `position`. Optional nonnegative values are `range`,
+`attenuationStart`, `attenuationEnd`, `decayExponent`, `innerConeAngle`, and
+`outerConeAngle`. Positions/distances are in the `spaceNode` frame. Direction is
+surface-to-light for directional lights and emitted-ray direction for spot lights.
+Cone angles are FULL angles in radians, unlike KHR_lights_punctual half-angles.
+The frame must be affine, orthogonal, uniformly scaled and nonsingular; positions
+and distance values transform together, directions transform and normalize. If
+`spaceNode` is inactive, its lights are inactive. The common format does not limit
+scenes to the preview renderer's four-light budget; consumers enforce their declared
+capacity and report loss/refusal rather than discard lights silently.
+
+Optional `sequenceAnimation` maps `color`, `intensity`, `attenuationStart`,
+`decayExponent`, `innerConeAngle`, `outerConeAngle` to existing effect sequence-track
+arrays. Their shape references existing `uvm.effects.schema.json#sequenceTracks`,
+not another model. Entries have unique nonnegative `sequenceIndex`, `track`, optional
+`concurrent`/positive `wrapSeconds`; tracks have lineType 0–3, explicit nullable
+`globalSeqId`, ordered finite seconds `frame` keys, `vector` and optional tangents.
+Widths are 3 for color and 1 for scalars. `animationDefaults` is required for animated
+lights, includes color and intensity, and a default for every animated property.
+Sampled RGB is color * nonnegative intensity once. The same Core scene/effect-track
+sampler owns interpolation and clocks; native shader-light values are not declared
+SI candela/lux by this extension.
+
+For genuinely physical punctual lights, use the standard
+[KHR_lights_punctual](https://raw.githubusercontent.com/KhronosGroup/glTF/main/extensions/2.0/Khronos/KHR_lights_punctual/README.md)
+representation with KHR animation pointers. Converting legacy lights to it requires
+explicit unit and cone-angle conversion; do not duplicate one light in both paths.
+
+## `UV_scene_camera`
+
+Attaches to the **glTF camera object** (`cameras[i].extensions`), not its node.
+Schema: `uvm.scene.schema.json#sceneCamera`. A glTF node selects it with `camera: i`;
+the node's usual transform/animation supplies pose. This registers the existing
+Core wire form unchanged: required `version: 1`, `sequenceAnimation` mapping only
+`yfov`, `znear`, `zfar` to `uvm.effects.schema.json#sequenceTracks`.
+
+Only a perspective lens may carry this version. Defaults are its explicitly
+authored `perspective` fields, not another defaults object. An animated `zfar`
+therefore needs a finite authored `zfar`; absent glTF `zfar` retains its infinite
+far meaning and is not replaced with a guessed distance by the format.
+`yfov` is vertical radians strictly between 0 and pi; `znear` is positive and
+finite; finite `zfar` exceeds near. Distances use the model's glTF metre frame.
+The camera's node scale does not scale clip distances.
+
+Tracks use the existing scene/effect sampler and selected presentation clock:
+finite key `frame` values are **seconds**, width 1, ordered in each track,
+unique nonnegative sequence indices per property, lineType 0–3, nullable
+`globalSeqId`, optional concurrent flag and positive `wrapSeconds`. Tangents
+are signed finite scalars. Native frame numbers are converted to seconds by
+the native adapter once. No new clock or animation VM is defined here.
+
+Authored lens keys must be in their individual domains. Consumers validate the
+sampled lens too (including near/far ordering), since cubic interpolation may
+overshoot and independently animated planes may cross. They refuse an invalid
+lens explicitly instead of clamping or substituting a different camera. Preview
+budgets and an infinite-far renderer limitation are consumer limits, not new
+fields or a restriction on ordinary glTF cameras without this extension.
 

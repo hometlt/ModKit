@@ -10,6 +10,8 @@ import { composeVerifiedReceipt, verifiedCompositionDocuments, verifiedCompositi
   verifiedCompositionWorldSpaces } from './uv-composition.mjs'
 import { packGlb, readGltfFixture } from './uvm-core.mjs'
 import { fileURLToPath } from 'node:url'
+import { runBrowserWorker } from '../../runtime/test/browser-runner.ts'
+import { assertTerrainAtlas, assertDerivedCliffObject } from './uvw-terrain-atlas.ts'
 
 const read = name => readFile(new URL(name, import.meta.url), 'utf8').then(JSON.parse)
 const fixture = await read('../world/fixtures/uvw-gltf-spatial.uvw.gltf')
@@ -292,6 +294,202 @@ const resourceMappings = [
   ] },
   { spaceId: 'main', layerId: 'resources', resourceId: 'model', outputs: [] },
 ]
+
+function atlasSource() {
+  const source = resourceSource(), layer = source.spaces[0].layers[0]
+  layer.materials[0].atlas = { rows: 2 }
+  layer.samples = layer.samples.map(row => row.map(() => ({ layers: [
+    { materialId: 'grass', tile: { column: 1, row: 1 } },
+    { materialId: 'grass', tile: { column: 0, row: 0 } },
+  ] })))
+  return source
+}
+
+const terrainCorners = await read('../world/fixtures/uvw-terrain-corners.json')
+function cornerSource() {
+  const source = atlasSource(), layer = source.spaces[0].layers[0]
+  layer.materials[0].atlas = structuredClone(terrainCorners.material.atlas)
+  layer.samples[0][0] = structuredClone(terrainCorners.sample)
+  layer.samples[0][1] = structuredClone(terrainCorners.weightedSample)
+  return source
+}
+
+test('terrain corner coverage, UVs and tile orientation migrate exactly into glTF', async () => {
+  const source = cornerSource(), before = jcsStringify(source)
+  const prepared = prepareUvwGltfMigration(source, { materialPolicies, resourceMappings,
+    sourcePath: 'worlds/source.uvw.json', targetPath: 'worlds/target.uvw.gltf' })
+  const layer = prepared.document.extensions.UV_world_graph.spaces[0].layers[0]
+  assert.deepEqual(layer.samples, source.spaces[0].layers[0].samples)
+  assert.deepEqual(layer.materials[0].atlas, terrainCorners.material.atlas)
+  // The existing spatial-only reverse converter must not silently drop glTF materials.
+  assert.throws(() => restoreUvwProfileDocument(prepared.document),
+    error => error.rule === 'uvw-gltf-restore-material')
+  assert.equal(jcsStringify(source), before)
+  const hash = await uvpJsonArtifactDigest('uvw', prepared.document)
+  for (const mutate of [
+    row => { row.samples[0][0].layers[1].cornerAlpha.reverse() },
+    row => { row.samples[0][0].cornerUv.reverse() },
+    row => { row.materials[0].atlas.tileTop = 'local-y-1' },
+  ]) {
+    const changed = structuredClone(prepared.document)
+    mutate(changed.extensions.UV_world_graph.spaces[0].layers[0])
+    assert.doesNotThrow(() => assertUvwProfile(changed))
+    assert.notEqual(await uvpJsonArtifactDigest('uvw', changed), hash)
+  }
+  // Omission retains the original profile bytes; defaults are never materialized.
+  const old = atlasSource(), migrated = prepareUvwGltfMigration(old, { materialPolicies, resourceMappings,
+    sourcePath: 'worlds/source.uvw.json', targetPath: 'worlds/target.uvw.gltf' }).document
+  const oldLayer = migrated.extensions.UV_world_graph.spaces[0].layers[0]
+  assert.deepEqual(oldLayer.samples, old.spaces[0].layers[0].samples)
+  assert.deepEqual(oldLayer.materials[0].atlas, { rows: 2 })
+})
+
+test('terrain corner validators reject malformed values in both envelopes without repair', () => {
+  const source = cornerSource()
+  const target = prepareUvwGltfMigration(source, { materialPolicies, resourceMappings,
+    sourcePath: 'worlds/source.uvw.json', targetPath: 'worlds/target.uvw.gltf' }).document
+  for (const mutate of [
+    row => { row.materials[0].atlas.tileTop = 'north' },
+    row => { row.samples[0][0].cornerUv.pop() },
+    row => { row.samples[0][1].cornerUv[0].push(2) },
+    row => { row.samples[0][1].cornerUv[0][0] = Infinity },
+    row => { delete row.samples[0][1].cornerUv[0][0] },
+    row => { row.samples[0][0].layers[1].cornerAlpha.pop() },
+    row => { row.samples[0][0].layers[1].cornerAlpha[0] = -0.01 },
+    row => { row.samples[0][0].layers[1].cornerAlpha[0] = 1.01 },
+    row => { row.samples[0][0].layers[1].cornerAlpha[0] = NaN },
+    row => { row.samples[0][0].layers[1].cornerAlpha[0] = true },
+    row => { delete row.samples[0][0].layers[1].cornerAlpha[0] },
+  ]) {
+    for (const original of [source, target]) {
+      const invalid = structuredClone(original)
+      const layer = invalid.spaces?.[0].layers[0] ?? invalid.extensions.UV_world_graph.spaces[0].layers[0]
+      mutate(layer)
+      const before = structuredClone(invalid)
+      assert.throws(() => assertUvwProfile(invalid), /terrain-atlas|terrain-corner/)
+      assert.deepEqual(invalid, before)
+    }
+  }
+})
+
+test('atlas-only terrain migrates without changing tile order or duplicating material schema', () => {
+  const source = atlasSource(), before = jcsStringify(source)
+  const prepared = prepareUvwGltfMigration(source, { materialPolicies, resourceMappings,
+    sourcePath: 'worlds/source.uvw.json', targetPath: 'worlds/target.uvw.gltf' })
+  const layer = prepared.document.extensions.UV_world_graph.spaces[0].layers[0]
+  assert.deepEqual(layer.materials[0].atlas, { rows: 2 })
+  assert.deepEqual(layer.samples, source.spaces[0].layers[0].samples)
+  assert.equal(layer.samples[0][0].weights, undefined)
+  assert.ok(prepared.document.materials[0].pbrMetallicRoughness.baseColorTexture)
+  assert.equal(prepared.document.materials[0].atlas, undefined)
+  assert.equal(jcsStringify(source), before)
+  assert.equal(assertUvwProfile(prepared.document), prepared.document)
+})
+
+test('atlas sample order can use sixteen materials while references and rows stay checked', async () => {
+  const document = await read('../world/fixtures/uvw-gltf-textured.uvw.gltf')
+  const layer = document.extensions.UV_world_graph.spaces[0].layers.find(row => row.kind === 'terrain-materials')
+  layer.materials = Array.from({ length: 16 }, (_, index) => ({
+    id: `tiles-${String(index).padStart(2, '0')}`, material: 0, atlas: { rows: 2 },
+  }))
+  const entries = layer.materials.map((material, index) => ({
+    materialId: material.id, tile: { column: index % 2, row: index % 2 },
+  })).reverse()
+  layer.samples = layer.samples.map(row => row.map(() => ({ layers: structuredClone(entries) })))
+  const before = jcsStringify(document), hash = await uvpJsonArtifactDigest('uvw', document)
+  assert.equal(uvwGltfGraph(document), document.extensions.UV_world_graph)
+  assert.equal(jcsStringify(document), before)
+  const changed = structuredClone(document)
+  changed.extensions.UV_world_graph.spaces[0].layers[0].samples[0][0].layers.reverse()
+  assert.notEqual(await uvpJsonArtifactDigest('uvw', changed), hash)
+})
+
+test('atlas source and glTF validators refuse malformed joins without repairing input', () => {
+  const valid = prepareUvwGltfMigration(atlasSource(), { materialPolicies, resourceMappings,
+    sourcePath: 'worlds/source.uvw.json', targetPath: 'worlds/target.uvw.gltf' }).document
+  for (const mutate of [
+    layer => { layer.materials[0].atlas.rows = 0 },
+    layer => { layer.materials[0].atlas.extra = true },
+    (layer, document) => {
+      if (document) delete document.materials[layer.materials[0].material].pbrMetallicRoughness.baseColorTexture
+      else delete layer.materials[0].baseColorResourceId
+    },
+    layer => { delete layer.materials[0].atlas },
+    layer => { layer.samples[0][0].layers = [] },
+    layer => { layer.samples[0][0].layers[0].materialId = 'missing' },
+    layer => { layer.samples[0][0].layers[0].tile.row = 2 },
+    layer => { layer.samples[0][0].layers[0].tile.column = -1 },
+    layer => { layer.samples[0][0].layers[0].tile.row = 0.5 },
+    layer => { layer.samples[0][0].layers[0].tile.column = 2 ** 53 },
+    layer => { layer.samples[0][0].weights = [{ materialId: 'grass', weight: 0.2 }] },
+  ]) {
+    const source = atlasSource(); mutate(source.spaces[0].layers[0])
+    const before = jcsStringify(source)
+    assert.throws(() => assertUvwProfile(source), /terrain-atlas|material-weight/)
+    assert.equal(jcsStringify(source), before)
+    const target = structuredClone(valid)
+    mutate(target.extensions.UV_world_graph.spaces[0].layers[0], target)
+    const targetBefore = jcsStringify(target)
+    assert.throws(() => assertUvwProfile(target), /terrain-atlas|material-weight/)
+    assert.equal(jcsStringify(target), targetBefore)
+  }
+  const source = atlasSource()
+  source.spaces[0].layers[0].samples[0][0].weights = [{ materialId: 'grass', weight: 1 }]
+  assert.doesNotThrow(() => assertUvwProfile(source))
+})
+
+test('derived cliff pieces retain their marker and reject ordinary unit placements', async () => {
+  const source = resourceSource()
+  const fixture = await read('../world/fixtures/uvw-gltf-objects.uvw.gltf')
+  const objects = structuredClone(fixture.extensions.UV_world_graph.spaces[0].layers[0])
+  source.spaces[0].layers.unshift(objects)
+  const instance = source.spaces[0].layers[0].instances[0]
+  instance.objectKind = 'doodad'; instance.derivedFrom = 'cliffs'
+  const document = prepareUvwGltfMigration(source, { materialPolicies, resourceMappings,
+    sourcePath: 'worlds/source.uvw.json', targetPath: 'worlds/target.uvw.gltf' }).document
+  assert.deepEqual(document.extensions.UV_world_graph.spaces[0].layers[0], objects)
+  assert.equal(assertUvwProfile(document), document)
+  const withoutMarker = structuredClone(document)
+  delete withoutMarker.extensions.UV_world_graph.spaces[0].layers[0].instances[0].derivedFrom
+  assert.notEqual(await uvpJsonArtifactDigest('uvw', document), await uvpJsonArtifactDigest('uvw', withoutMarker))
+  for (const value of ['unit', 'structure']) {
+    const invalid = structuredClone(document)
+    invalid.extensions.UV_world_graph.spaces[0].layers[0].instances[0].objectKind = value
+    assert.throws(() => assertUvwProfile(invalid), error => error.rule === 'objects-derived-from')
+  }
+  instance.derivedFrom = 'terrain'
+  assert.throws(() => assertUvwProfile(source), error => error.rule === 'objects-derived-from')
+})
+
+test('atlas and derived-piece validation gives identical results in Node and Chrome', {
+  skip: process.env.MULTIVERSE_TEST_REAL_BROWSER !== '1',
+}, async () => {
+  const good = atlasSource().spaces[0].layers[0]
+  const bad = structuredClone(good); bad.samples[0][0].layers[0].tile.row = 2
+  const inputs = [{ layer: good }, { layer: bad }, { layer: good,
+    object: { objectKind: 'doodad', derivedFrom: 'cliffs' } }, { layer: good,
+    object: { objectKind: 'unit', derivedFrom: 'cliffs' } }]
+  const corners = cornerSource().spaces[0].layers[0]
+  inputs.push({ layer: corners })
+  for (const mutate of [
+    row => { row.samples[0][1].cornerUv[0][0] = Infinity },
+    row => { row.samples[0][0].layers[1].cornerAlpha[0] = NaN },
+    row => { row.samples[0][0].layers[1].cornerAlpha[0] = true },
+    row => { row.materials[0].atlas.tileTop = 'north' },
+  ]) {
+    const invalid = structuredClone(corners); mutate(invalid)
+    inputs.push({ layer: invalid })
+  }
+  const expected = inputs.map(input => {
+    try {
+      assertTerrainAtlas(input.layer, input.document)
+      if (input.object !== undefined) assertDerivedCliffObject(input.object)
+      return { accepted: true }
+    } catch (error) { return { message: error.message, rule: error.rule } }
+  })
+  const browser = await runBrowserWorker(new URL('./uvw-atlas-browser.ts', import.meta.url), inputs)
+  assert.deepEqual(browser.result, { result: expected })
+})
 
 test('placed objects retain compound model links through the addressed resource catalog', () => {
   const source = resourceSource()
@@ -645,7 +843,7 @@ test('mixed inline/raster source needs byte-proved preview equivalence before mi
 })
 
 test('composition closes every original, including unused media, and rejects a false image MIME', async () => {
-  const source = resourceSource(), options = { materialPolicies, resourceMappings,
+  const source = cornerSource(), options = { materialPolicies, resourceMappings,
     sourcePath: 'worlds/source.uvw.json', targetPath: 'worlds/target.uvw.gltf' }
   const document = prepareUvwGltfMigration(source, options).document
   const bytes = new Uint8Array(await readFile(new URL('../world/fixtures/media/checker.png', import.meta.url)))
@@ -662,7 +860,13 @@ test('composition closes every original, including unused media, and rejects a f
   const read = async ({ content }) => content.family === 'uvw'
     ? { digest: content.hash, document }
     : content.family === 'media' ? { digest: content.hash, bytes } : content.hash
-  assert.equal((await composeVerifiedReceipt(manifest.id, [manifest], { intrinsics: [] }, [], read)).refusal, undefined)
+  const result = await composeVerifiedReceipt(manifest.id, [manifest], { intrinsics: [] }, [], read)
+  assert.equal(result.refusal, undefined)
+  const captured = (await verifiedCompositionDocuments(result.receipt)).documents[0].document
+  const capturedLayer = captured.extensions.UV_world_graph.spaces[0].layers[0]
+  assert.deepEqual(capturedLayer.samples[0][0], terrainCorners.sample)
+  assert.deepEqual(capturedLayer.materials[0].atlas, terrainCorners.material.atlas)
+  assert.throws(() => { capturedLayer.samples[0][0].cornerUv[0][0] = 9 }, TypeError)
   const missing = structuredClone(manifest)
   missing.contents = missing.contents.filter(row => row.path !== 'media/unused.png')
   assert.equal((await composeVerifiedReceipt(missing.id, [missing], { intrinsics: [] }, [], read)).refusal?.rule,

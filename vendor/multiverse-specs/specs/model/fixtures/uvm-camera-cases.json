@@ -1,0 +1,18 @@
+{
+  "camera": {
+    "type": "perspective",
+    "perspective": { "yfov": 1.2, "znear": 0.1, "zfar": 100 },
+    "extensions": {
+      "UV_scene_camera": {
+        "version": 1,
+        "sequenceAnimation": {
+          "yfov": [{ "sequenceIndex": 0, "track": { "lineType": 1, "globalSeqId": null, "keys": [{ "frame": 0, "vector": [1.2] }, { "frame": 1, "vector": [0.8] }] } }],
+          "znear": [{ "sequenceIndex": 0, "track": { "lineType": 1, "globalSeqId": null, "keys": [{ "frame": 0, "vector": [0.1] }, { "frame": 1, "vector": [0.2] }] } }],
+          "zfar": [{ "sequenceIndex": 0, "track": { "lineType": 1, "globalSeqId": null, "keys": [{ "frame": 0, "vector": [100] }, { "frame": 1, "vector": [90] }] } }]
+        }
+      }
+    }
+  },
+  "orthographicPreset": { "projection": "orthographic", "azimuthDegrees": 45, "elevationDegrees": 30 },
+  "perspectivePreset": { "projection": "perspective", "fieldOfViewDegrees": 70, "drawDistance": 1024 }
+}

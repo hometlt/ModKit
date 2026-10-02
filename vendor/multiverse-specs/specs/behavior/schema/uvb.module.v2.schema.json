@@ -84,7 +84,7 @@
           "returns": {
             "description": "`void`, a value type, or result<T> — errors are values, obligatory to handle; exceptions do not exist.",
             "type": "string",
-            "pattern": "^(void|value|bool|i64|fixed64|strref|ref<[a-z][a-z0-9-]*>|list<[A-Za-z0-9<>-]+>|[A-Z][A-Za-z0-9]*|result<[A-Za-z0-9<>-]+>)$"
+            "pattern": "^(void|value|bool|i64|fixed64|strref|ref<[a-z][a-z0-9-]*>\\??|list<[A-Za-z0-9<>?-]+>|[A-Z][A-Za-z0-9]*|result<[A-Za-z0-9<>?-]+>)$"
           },
           "registers": {
             "type": "integer",
@@ -192,7 +192,7 @@
   "$defs": {
     "valueType": {
       "type": "string",
-      "pattern": "^(value|bool|i64|fixed64|strref|ref<[a-z][a-z0-9-]*>|list<[A-Za-z0-9<>-]+>|[A-Z][A-Za-z0-9]*)$",
+      "pattern": "^(value|bool|i64|fixed64|strref|ref<[a-z][a-z0-9-]*>\\??|list<[A-Za-z0-9<>-]+>|[A-Z][A-Za-z0-9]*)$",
       "description": "Scalar, typed reference, list, or a NOMINAL RECORD named in the module `types` section (capitalised, e.g. Pos, Filter — structurally identical to the intrinsic table declaration)."
     },
     "instruction": {
@@ -244,7 +244,10 @@
             "fixed.parse-decimal",
             "result.value-or",
             "pos.make",
-            "value.expect"
+            "value.expect",
+            "option.none",
+            "option.some",
+            "result.expect"
           ]
         },
         "dst": {
@@ -417,34 +420,166 @@
         {
           "if": {
             "properties": {
-              "op": { "const": "result.value-or-false" }
+              "op": {
+                "enum": [
+                  "result.value-or-false",
+                  "result.expect"
+                ]
+              }
             }
           },
-          "then": { "required": ["dst", "a"] }
+          "then": {
+            "required": [
+              "dst",
+              "a"
+            ]
+          }
         },
         {
-          "if": { "properties": { "op": { "const": "list.empty" } } },
-          "then": { "required": ["dst", "type"] }
+          "if": {
+            "properties": {
+              "op": {
+                "const": "list.empty"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "dst",
+              "type"
+            ]
+          }
         },
         {
-          "if": { "properties": { "op": { "const": "option.unwrap-or-branch" } } },
-          "then": { "required": ["dst", "a", "target"] }
+          "if": {
+            "properties": {
+              "op": {
+                "const": "option.unwrap-or-branch"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "dst",
+              "a",
+              "target"
+            ]
+          }
         },
         {
-          "if": { "properties": { "op": { "const": "fixed.parse-decimal" } } },
-          "then": { "required": ["dst", "a"] }
+          "if": {
+            "properties": {
+              "op": {
+                "const": "fixed.parse-decimal"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "dst",
+              "a"
+            ]
+          }
         },
         {
-          "if": { "properties": { "op": { "const": "result.value-or" } } },
-          "then": { "required": ["dst", "a", "b"] }
+          "if": {
+            "properties": {
+              "op": {
+                "const": "result.value-or"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "dst",
+              "a",
+              "b"
+            ]
+          }
         },
         {
-          "if": { "properties": { "op": { "const": "pos.make" } } },
-          "then": { "required": ["dst", "type", "args"] }
+          "if": {
+            "properties": {
+              "op": {
+                "const": "pos.make"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "dst",
+              "type",
+              "args"
+            ]
+          }
         },
         {
-          "if": { "properties": { "op": { "const": "list.append" } } },
-          "then": { "required": ["dst", "a", "b"] }
+          "if": {
+            "properties": {
+              "op": {
+                "const": "list.append"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "dst",
+              "a",
+              "b"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "op": {
+                "const": "option.none"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "dst",
+              "type"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "op": {
+                "const": "option.some"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "dst",
+              "a",
+              "type"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "op": {
+                "const": "result.expect"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "b": false,
+              "value": false,
+              "type": false,
+              "target": false,
+              "budget": false,
+              "function": false,
+              "intrinsicIndex": false,
+              "args": false
+            }
+          }
         }
       ]
     }

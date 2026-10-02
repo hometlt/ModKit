@@ -55,6 +55,7 @@ function concreteType(name, declarations, depth = 0) {
     throw new RangeError('value type exceeds its grammar or depth budget')
   if (['bool', 'i64', 'fixed64', 'strref'].includes(name)) return { name, kind: name }
   if (/^ref<[a-z][a-z0-9-]*>$/.test(name)) return { name, kind: 'ref' }
+  if (/^ref<[a-z][a-z0-9-]*>\?$/.test(name)) return { name, kind: 'optional-ref' }
   if (name.startsWith('list<') && name.endsWith('>'))
     return { name, kind: 'list', item: concreteType(name.slice(5, -1), declarations, depth + 1) }
   if (/^[A-Z][A-Za-z0-9]*$/.test(name) && declarations.has(name))
@@ -62,7 +63,7 @@ function concreteType(name, declarations, depth = 0) {
   throw new TypeError(`value type ${name} is not a concrete declared type`)
 }
 
-const tag = { bool: 0, i64: 1, fixed64: 2, strref: 3, ref: 4, list: 5, record: 6 }
+const tag = { bool: 0, i64: 1, fixed64: 2, strref: 3, ref: 4, list: 5, record: 6, 'optional-ref': 7 }
 
 class Writer {
   chunks = []
@@ -146,6 +147,10 @@ function encodePayload(writer, type, value, declarations, budget, depth) {
     case 'i64': case 'fixed64': writer.i64(integer(value, true)); break
     case 'strref': writer.text(value, MAX_STRING_BYTES); break
     case 'ref': writer.u64(integer(value, false)); break
+    case 'optional-ref':
+      writer.u8(value === null ? 0 : 1)
+      if (value !== null) writer.u64(integer(value, false))
+      break
     case 'list':
       if (!Array.isArray(value) || value.length > MAX_NODES)
         throw new TypeError('value list exceeds its element budget')
@@ -203,6 +208,14 @@ function decodePayload(reader, type, declarations, budget, depth) {
       for (let index = 0; index < count; index++)
         result.push(decodePayload(reader, type.item, declarations, budget, depth + 1))
       return result
+    }
+    case 'optional-ref': {
+      const present = reader.u8()
+      if (present === 0) return null
+      if (present !== 1) throw new TypeError('noncanonical optional reference presence')
+      const value = reader.u64()
+      if (value === '0') throw new TypeError('zero is not a present typed reference')
+      return value
     }
     case 'record': {
       const result = {}

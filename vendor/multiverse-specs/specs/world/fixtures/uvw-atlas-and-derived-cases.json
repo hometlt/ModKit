@@ -1,0 +1,13 @@
+{
+  "material": { "id": "grass", "baseColorResourceId": "color", "atlas": { "rows": 2 } },
+  "sample": { "layers": [
+    { "materialId": "grass", "tile": { "column": 1, "row": 1 } },
+    { "materialId": "grass", "tile": { "column": 0, "row": 0 } }
+  ] },
+  "mixedSample": { "weights": [{ "materialId": "grass", "weight": 1 }], "layers": [
+    { "materialId": "grass", "tile": { "column": 1, "row": 1 } }
+  ] },
+  "object": { "id": "cliff-piece", "objectKind": "doodad", "derivedFrom": "cliffs",
+    "position": [0,0,0], "rotation": [0,0,0,1], "scale": [1,1,1], "resourceIds": [] },
+  "materialFlags": { "shader": "example.standard", "castShadows": false, "receiveShadows": false }
+}

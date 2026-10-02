@@ -21,6 +21,10 @@ import { uvwDocumentGraph, uvwGltfGraph, UVW_GLTF_EXTENSION, UVW_GLTF_MARKER } f
 import { projectUvwMaterial } from './uvw-materials.mjs'
 import { jcsStringify } from './uv-canonical-form.mjs'
 import { assertUvpArtifactPath, resolveUvpResourceUri } from './uvp-resource-paths.mjs'
+import { assertTerrainAtlas, assertDerivedCliffObject } from './uvw-terrain-atlas.ts'
+import { assertUnlitLighting } from './uvw-unlit.ts'
+import { assertUvwObjectPresentation, assertUvwCamera } from './uvm-presentation.ts'
+import { assertUvwPlayers } from './uvw-players.ts'
 
 /** One violated rule, named by the id the vectors use. */
 export class UvwRuleError extends TypeError {
@@ -68,7 +72,7 @@ export function assertUvwProfile(document) {
       if (space?.topology !== 'heightfield') {
         refuse('topology-not-admitted', 'UVW profile 1 admits only heightfield spaces')
       }
-      assertUvwBody(space, true)
+      assertUvwBody(space, true, source === document ? undefined : source)
     }
     return source
   }
@@ -276,7 +280,7 @@ function migrateMaterials(spaces, policies, resources, preserveSource) {
   for (const [spaceIndex, space] of spaces.entries()) for (const [layerIndex, layer] of space.layers.entries()) {
     if (!['terrain-materials', 'water'].includes(layer.kind)) continue
     const kind = layer.kind === 'water' ? 'water' : 'terrain'
-    const metadata = kind === 'water' ? ['classification', 'shorelineMode'] : ['classification', 'sourceIndex']
+    const metadata = kind === 'water' ? ['classification', 'shorelineMode'] : ['classification', 'sourceIndex', 'atlas']
     const allowed = ['id', 'label', kind === 'water' ? 'color' : 'baseColorFactor', ...metadata]
     for (let i = 0; i < (layer.materials?.length ?? 0); i++) {
       const source = layer.materials[i]
@@ -340,7 +344,13 @@ export function restoreUvwProfileDocument(document) {
   })
 }
 
-function assertUvwBody(document, profile) {
+function assertUvwBody(document, profile, gltf) {
+  if (!profile && (Object.hasOwn(document, 'players') || Object.hasOwn(document, 'startPositions')))
+    refuse('uvw-players-profile-only', 'player tables and starts require the spatial profile envelope')
+  assertUvwPlayers(document)
+  if (!profile && Object.hasOwn(document, 'camera'))
+    refuse('uvw-camera-profile-only', 'game-view presets require the spatial profile envelope')
+  assertUvwCamera(document.camera)
   const layers = document.layers
   if (!Array.isArray(layers) || layers.length === 0) {
     refuse('document-shape', 'a UVW document must carry at least one layer')
@@ -375,6 +385,7 @@ function assertUvwBody(document, profile) {
     if (layer.kind === 'heightfield') assertHeightfield(layer, document.bounds)
     if (layer.kind === 'cliffs') assertCliffs(layer, document.bounds)
     if (layer.kind === 'objects') assertObjects(layer, layers)
+    if (layer.kind === 'terrain-materials') assertTerrainAtlas(layer, gltf)
     if (layer.kind === 'regions') assertRegions(layer)
     if (layer.kind === 'gateways') assertGateways(layer)
     if (layer.kind === 'lighting') assertLighting(layer)
@@ -443,7 +454,7 @@ function assertObjects(layer, layers) {
   const instances = []
   for (const instance of layer.instances) {
     if (!keys(instance, ['id', 'objectKind', 'position', 'rotation', 'scale', 'resourceIds'],
-      ['modelComponents', 'typeId', 'player', 'variation', 'name'])
+      ['modelComponents', 'typeId', 'player', 'variation', 'name', 'derivedFrom', 'presentationTint', 'presentationAnimation'])
       || !id(instance.id)
       || !['unit', 'structure', 'feature', 'doodad', 'point', 'camera'].includes(instance.objectKind)
       || !vector(instance.position, 3) || !quaternion(instance.rotation)
@@ -456,6 +467,8 @@ function assertObjects(layer, layers) {
         && (!Number.isSafeInteger(instance.variation) || instance.variation < 0))
       || (instance.name !== undefined && typeof instance.name !== 'string'))
       refuse('objects-instance', 'Invalid transform, ordering or metadata in an object instance')
+    assertDerivedCliffObject(instance)
+    assertUvwObjectPresentation(instance)
     instances.push(instance.id)
     for (const resourceId of instance.resourceIds)
       if (catalog.get(resourceId)?.length !== 1)
@@ -559,7 +572,9 @@ function assertGateways(layer) {
 function assertLighting(layer) {
   const id = assertVisualLayer(layer, 'lighting',
     ['schemaVersion', 'id', 'kind', 'ambientColor', 'ambientIntensity', 'directional'],
-    ['label', 'toneMapping', 'terrain'])
+    ['label', 'toneMapping', 'terrain', 'model', 'unlitColor'])
+  try { assertUnlitLighting(layer) }
+  catch (error) { refuse('lighting-value', error.message) }
   const vec3 = value => Array.isArray(value) && value.length === 3 && value.every(Number.isFinite)
   const color = value => vec3(value) && value.every(item => item >= 0 && item <= 1)
   const numeric = (value, keys) => {

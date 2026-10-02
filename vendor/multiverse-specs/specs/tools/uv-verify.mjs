@@ -1,30 +1,19 @@
+import { isFoundationValueType } from './uv-executable-values.ts'
 /**
  * Reference verifier for UVB modules and UVS charts against the intrinsic and event registries.
  *
  * This is the executable form of the verifier half of `../conformance/uvs-uvb/vectors.json`
  * (SPEC_UVB §3, SPEC_UVS §2). The kernel half (firing order, budgets at runtime, save/restore)
- * stays declared until a kernel exists. Dependency-free and replaceable, like every tool here.
+ * stays declared until UVS reactions execute in the common kernel. No second scenario VM.
  *
  * Every failure is a typed refusal `{ rule, message }`; the first refusal stops verification.
  */
 
 import { classifyUvbConstant } from './uvb-constant.mjs'
-
-const intrinsicKey = row => `${row.id}@${row.version}`
-
-const indexRegistry = registry => {
-  const byKey = new Map()
-  for (const row of registry.intrinsics) byKey.set(intrinsicKey(row), row)
-  return byKey
-}
+import { intrinsicKey, indexRegistry, opaqueValueType, opaqueSignature, opaqueRefusal } from './uv-contract-verifier.ts'
+export { verifyCharts } from './uv-contract-verifier.ts'
 
 const resultType = returns => typeof returns === 'string' && returns.startsWith('result<')
-const opaqueValueType = type => typeof type === 'string' && /(^|[<,])value(?=[>,]|$)/.test(type)
-const opaqueSignature = row => opaqueValueType(row.returns) || row.params?.some(param => opaqueValueType(param.type))
-const opaqueRefusal = context => ({ refusal: {
-  rule: 'unrepresentable-value',
-  message: `${context}: generic value has no UVB 1.1 register or canonical binary representation; a typed amendment is required`,
-} })
 
 const successors = (instruction, index) => {
   if (instruction.op === 'ret') return []
@@ -124,6 +113,7 @@ function verifyResultObligations(fn, bound, functions) {
         || instruction.op === 'result.unwrap-or-branch'
         || instruction.op === 'option.unwrap-or-branch'
         || instruction.op === 'result.value-or-false'
+        || instruction.op === 'result.expect'
         || instruction.op === 'result.value-or')) {
         state.delete(register)
       } else if (register === instruction.a && instruction.op === 'move') {
@@ -222,9 +212,9 @@ function verifyTypedRegisters(fn, bound, functions, major) {
         else error = dst(`result<${instruction.type}>`)
         break
       case 'value.expect':
-        if (major !== 2 || !['bool', 'i64', 'fixed64', 'strref'].includes(instruction.type)
+        if (major !== 2 || !isFoundationValueType(instruction.type)
           || !expect(instruction.a, 'value'))
-          error = refusal(index, 'expect needs value and an admitted scalar target type in UVB 2')
+          error = refusal(index, 'expect needs value and an admitted concrete target type in UVB 2')
         else error = dst(instruction.type)
         break
       case 'fixed.parse-decimal':
@@ -240,9 +230,9 @@ function verifyTypedRegisters(fn, bound, functions, major) {
         break
       case 'result.value-or': {
         const fallback = typeAt(instruction.b)
-        if (major !== 2 || !['bool', 'i64', 'fixed64', 'strref'].includes(fallback)
+        if (major !== 2 || !isFoundationValueType(fallback)
           || !expect(instruction.a, `result<${fallback}>`))
-          error = refusal(index, 'value-or needs a matching scalar result and fallback in UVB 2')
+          error = refusal(index, 'value-or needs a matching concrete result and fallback in UVB 2')
         else {
           state.delete(instruction.a)
           error = dst(fallback)
@@ -311,7 +301,8 @@ function verifyTypedRegisters(fn, bound, functions, major) {
         if (type === undefined || type !== typeAt(instruction.b))
           error = refusal(index, 'eq operands must have the same type')
         else if (!['bool', 'i64', 'fixed64', 'strref'].includes(type)
-          && !/^ref<[a-z][a-z0-9-]*>$/.test(type)) {
+          && !/^ref<[a-z][a-z0-9-]*>$/.test(type)
+          && !(major === 2 && /^ref<[a-z][a-z0-9-]*>\?$/.test(type))) {
           error = { rule: 'type-rule-unavailable',
             message: `${fn.name}[${index}]: equality for ${type} has no admitted rule` }
         } else error = dst('bool')
@@ -365,6 +356,28 @@ function verifyTypedRegisters(fn, bound, functions, major) {
         errorBranchState = new Map(before)
         state.delete(instruction.a)
         error = dst(type.slice(7, -1))
+        break
+      }
+      case 'result.expect': {
+        const type = typeAt(instruction.a)
+        if (major !== 2 || typeof type !== 'string' || !/^result<.+>$/.test(type)
+            || Object.keys(instruction).some(key => !['op', 'dst', 'a', 'source'].includes(key))) {
+          error = refusal(index, 'result.expect needs a result operand in UVB 2')
+          break
+        }
+        state.delete(instruction.a)
+        error = dst(type.slice(7, -1))
+        break
+      }
+      case 'option.none':
+      case 'option.some': {
+        const type = instruction.type
+        if (major !== 2 || typeof type !== 'string' || !/^ref<[a-z][a-z0-9-]*>$/.test(type)
+          || instruction.op === 'option.some' && !expect(instruction.a, type)) {
+          error = refusal(index, 'option construction needs a concrete reference type in UVB 2')
+          break
+        }
+        error = dst(type + '?')
         break
       }
       case 'option.unwrap-or-branch': {
@@ -605,117 +618,4 @@ export function verifyModule(module, registry, options = {}) {
   return { verified: true, bound: bound.map(intrinsicKey) }
 }
 
-/** Executable subset of UVB 2. Structural validity alone never authorizes VM admission. */
-export function verifyExecutableModuleProfile(module) {
-  if (module?.uv?.version === '1.0') return { admitted: true }
-  const refuse = message => ({ refusal: { rule: 'behavior-profile-unavailable', message } })
-  if (module?.uv?.version === '2.0'
-    && module.functions?.some(fn => fn.body.some(item =>
-      ['result.value-or-false', 'list.empty', 'list.append', 'list.len', 'list.get',
-        'pos.make'].includes(item.op)))
-    && module.functions.every(fn => fn.body.every(item =>
-      item.op !== 'value.box' && item.op !== 'value.unbox')
-      && !fn.params.some(opaqueValueType) && !opaqueValueType(fn.returns))
-    && !module.types?.some(type => type.fields.some(field =>
-      field.optional === true || opaqueValueType(field.type))))
-    return { admitted: true }
-  if (module?.uv?.version !== '2.0' || module.requires?.intrinsics?.some(name =>
-    name !== 'scenario.var@1' && name !== 'scenario.set-var@1'
-      && name !== 'query.def-field@1' && name !== 'query.def-flag@1'
-      && name !== 'query.def@1' && name !== 'rng.roll@1'
-      && name !== 'rng.roll-fixed@1'))
-    return refuse('This UVB 2 intrinsic is not admitted by the scalar value VM profile.')
-  const scalar = new Set(['bool', 'i64', 'fixed64'])
-  const boxable = new Set([...scalar, 'strref'])
-  const admitted = new Set(['const', 'move', 'add.i64', 'sub.i64', 'mul.i64', 'div.i64',
-    'add.fx', 'sub.fx', 'mul.fx', 'div.fx', 'eq', 'lt', 'le', 'and', 'or', 'not',
-    'br', 'br_if', 'loop', 'ret', 'call', 'call.intrinsic', 'value.box', 'value.unbox', 'value.expect',
-    'result.value-or-false', 'result.unwrap-or-branch', 'option.unwrap-or-branch', 'fixed.parse-decimal',
-    'result.value-or'])
-  for (const fn of module.functions ?? []) {
-    if (fn.effects.reads.some(area => area !== 'scenario' && area !== 'defs')
-      || fn.effects.writes.some(area => area !== 'scenario' && area !== 'rng')
-      || fn.params.some(type => !scalar.has(type) && type !== 'strref'
-        && type !== 'ref<def>' && type !== 'ref<def>?')
-      || !(boxable.has(fn.returns) || fn.returns === 'void' || fn.returns === 'value'
-        || fn.returns === 'ref<def>' || fn.returns === 'ref<def>?'
-        || /^result<(bool|i64|fixed64|strref)>$/.test(fn.returns)))
-      return refuse(`${module.namespace}/${fn.name} needs an unimplemented UVB 2 type or effect.`)
-    for (const instruction of fn.body) {
-      if (!admitted.has(instruction.op)
-        || (instruction.op.startsWith('value.') && !boxable.has(instruction.type)))
-        return refuse(`${module.namespace}/${fn.name}: ${instruction.op} needs an unimplemented UVB 2 operation.`)
-    }
-  }
-  return { admitted: true }
-}
-
-// --- UVS ---------------------------------------------------------------------------------------
-
-const walkExpr = (expr, visit) => {
-  visit(expr)
-  for (const arg of expr.args ?? []) walkExpr(arg, visit)
-}
-
-/**
- * Verify one UVS document.
- *   registry: runtime/intrinsics.v1.json; events: runtime/events.v1.json
- *   options.modules: map namespace -> structural UVB module, for `uvb` actions (undefined = skip)
- */
-export function verifyCharts(document, registry, events, options = {}) {
-  const table = indexRegistry(registry)
-  const eventById = new Map(events.events.map(e => [e.id, e]))
-  for (const chart of document.charts) {
-    const states = new Set(chart.states.map(s => s.name))
-    if (!states.has(chart.initialState)) {
-      return { refusal: { rule: 'references-resolve', message: `chart ${chart.name}: initialState ${chart.initialState} is not a state` } }
-    }
-    const variables = new Set((chart.variables ?? []).map(v => v.name))
-    for (const state of chart.states) {
-      for (const handler of state.on) {
-        const event = eventById.get(handler.event)
-        if (event === undefined) {
-          return { refusal: { rule: 'references-resolve', message: `chart ${chart.name}: unknown event ${handler.event}` } }
-        }
-        if (event.status === 'reserved') {
-          return { refusal: { rule: 'event-reserved', message: `${handler.event} is reserved for amendment ${event.amendment}` } }
-        }
-        if (event.payload.some(field => opaqueValueType(field.type))) return opaqueRefusal(handler.event)
-        if (handler.condition !== undefined) {
-          let impure
-          walkExpr(handler.condition, expr => {
-            if (expr.kind === 'call') {
-              const row = table.get(expr.intrinsic)
-              if (row === undefined) impure ??= { rule: 'references-resolve', message: `chart ${chart.name}: condition calls unknown ${expr.intrinsic}` }
-              else if (opaqueSignature(row)) impure ??= opaqueRefusal(expr.intrinsic).refusal
-              else if (row.capability !== 'read') impure ??= { rule: 'conditions-are-pure', message: `chart ${chart.name}: condition calls ${expr.intrinsic} of class ${row.capability}` }
-            }
-            if (expr.kind === 'var' && !variables.has(expr.name)) {
-              impure ??= { rule: 'references-resolve', message: `chart ${chart.name}: condition reads undeclared variable ${expr.name}` }
-            }
-          })
-          if (impure !== undefined) return { refusal: impure }
-        }
-        for (const action of handler.actions) {
-          if (action.kind === 'intrinsic') {
-            const row = table.get(action.intrinsic)
-            if (row === undefined) return { refusal: { rule: 'references-resolve', message: `chart ${chart.name}: action calls unknown ${action.intrinsic}` } }
-            if (row.status === 'reserved') return { refusal: { rule: 'intrinsic-reserved', message: `${action.intrinsic} is reserved for amendment ${row.amendment}` } }
-            if (opaqueSignature(row)) return opaqueRefusal(action.intrinsic)
-          } else if (action.kind === 'set-var' && !variables.has(action.name)) {
-            return { refusal: { rule: 'references-resolve', message: `chart ${chart.name}: set-var on undeclared ${action.name}` } }
-          } else if (action.kind === 'uvb' && options.modules !== undefined) {
-            const module = options.modules[action.module]
-            if (module === undefined || !module.functions.some(fn => fn.name === action.function)) {
-              return { refusal: { rule: 'references-resolve', message: `chart ${chart.name}: uvb action names missing ${action.module}.${action.function}` } }
-            }
-          }
-        }
-        if (handler.goto !== undefined && !states.has(handler.goto)) {
-          return { refusal: { rule: 'references-resolve', message: `chart ${chart.name}: goto ${handler.goto} is not a state` } }
-        }
-      }
-    }
-  }
-  return { verified: true }
-}
+export { verifyExecutableModuleProfile } from './uv-executable-profile.ts'

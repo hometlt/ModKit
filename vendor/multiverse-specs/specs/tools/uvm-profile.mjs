@@ -1,5 +1,7 @@
 /** Browser-safe UVM/core marker admission shared by UVM and UVP composition. */
 import { assertGltfMaterialReferences } from './gltf-materials.mjs'
+import { assertUvmVariants } from './uvm-variants.ts'
+import { assertUvmScenePresentation } from './uvm-presentation.ts'
 
 export function assertUvmCore(document) {
   const asset = document.asset
@@ -31,5 +33,7 @@ export function assertUvmCore(document) {
     throw new TypeError('UV_provenance requires source format and importer coordinate')
   }
   assertGltfMaterialReferences(document)
+  assertUvmVariants(document)
+  assertUvmScenePresentation(document)
   return document
 }

@@ -2,6 +2,7 @@
 import schema from '../world/schema/uvw.gltf.v1.schema.json' with { type: 'json' }
 import { assertGltfMaterialReferences, gltfMaterialTextureInfos } from './gltf-materials.mjs'
 import { assertUvpArtifactPath, resolveUvpResourceUri } from './uvp-resource-paths.mjs'
+import { assertTerrainAtlas, assertTerrainBlend } from './uvw-terrain-atlas.ts'
 
 export const UVW_GLTF_EXTENSION = schema.properties.extensions.required[0]
 export const UVW_GLTF_MARKER = Object.freeze(schema.properties.asset.properties.extras.properties.uv.const)
@@ -91,6 +92,7 @@ export function uvwGltfGraph(document) {
       }
       assertIdOrder([...ids], `material catalog ${layer.id}`)
       if (kind === 'terrain') {
+        assertTerrainAtlas(layer, document)
         if (layer.samples !== undefined && layer.weightRasters === undefined)
           assertBlendGrid(layer, ids, space.bounds)
         else if (layer.samples === undefined && layer.weightRasters !== undefined)
@@ -238,16 +240,7 @@ function assertBlendGrid(layer, ids, bounds) {
     || origin[2] + (rows - 1) * cellSize > bounds.max[2] + 1e-9)
     refuse('uvw-gltf-material-grid', `Blend grid ${layer.id} lies outside its space`)
   for (const row of samples) for (const sample of row) {
-    if (!Array.isArray(sample.weights) || !sample.weights.length)
-      refuse('uvw-gltf-material-weight', 'Every blend sample needs weights')
-    const seen = new Set(); let total = 0
-    for (const { materialId, weight } of sample.weights) {
-      if (!ids.has(materialId) || seen.has(materialId) || !Number.isFinite(weight) || weight <= 0 || weight > 1)
-        refuse('uvw-gltf-material-weight', `Invalid, repeated or unresolved blend ${materialId}`)
-      seen.add(materialId); total += weight
-    }
-    assertIdOrder([...seen], `blend sample ${layer.id}`)
-    if (Math.abs(total - 1) > 1e-6) refuse('uvw-gltf-material-weight', 'Blend weights must sum to one')
+    assertTerrainBlend(sample, ids, layer.id)
   }
 }
 

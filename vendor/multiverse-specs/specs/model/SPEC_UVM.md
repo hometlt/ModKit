@@ -176,6 +176,10 @@ migration notes.
 | `UV_retarget`                 | skin                     | Humanoid / vehicle rig profile mapping                                          |
 | `UV_game_material_team_color` | material                 | Team, house and player colour                                                   |
 | `UV_game_material`            | material                 | Legacy fixed-function and game-shader parameters                                |
+| `UV_texture_alpha` | texture | Explicit stored-alpha policy applied before colour key |
+| `UV_node_billboard` | node | Camera-facing node constraint, existing Core forms |
+| `UV_scene_lights` | document root | Native scene light rig and per-clip property tracks |
+| `UV_scene_camera` | glTF camera | Sparse per-sequence perspective lens tracks, version 1 |
 | `UV_texture_color_key`        | texture                  | A stored colour the source game loads as transparent (colour key)               |
 | `UV_game_animation_clips`     | root and animation       | Complete selectable clip catalog; clip name, priority, loop, blend, concurrency |
 | `UV_game_animation_events`    | animation                | Timestamped gameplay events                                                     |
@@ -749,11 +753,17 @@ combined":
 }
 ```
 
-`maskSource` is `texture`, `vertexColor`, `paletteRange` or `whole` (the entire material is
+`maskSource` is `texture`, `vertexColor`, `paletteRange`, `channelKey` or `whole` (the entire material is
 tinted). `paletteRange` covers indexed-colour formats:
 `{"maskSource":"paletteRange","range":[176,191]}`.
 
 `blend` is `multiply`, `add`, `replace`, `overlay` or `lerp`.
+
+Channel-key replacement, exact N-shade indexed ramps, object tint, RGB-mask tint,
+independently transformed secondary coverage and animated strength are normative in
+[the extension registry](SPEC_UVM_EXTENSIONS.md#uv_game_material_team_color).
+A range-only palette declaration cannot reconstruct indices/shades. Blue-key B
+intensity is applied once with explicit replace; no colour-key inference is allowed.
 
 Any consumer can implement this. The result is that a Warcraft 3 model imported to UVM and
 exported to Spring keeps its team colour, which no pairwise converter does today.
@@ -793,8 +803,20 @@ exponents, fresnel terms, per-layer operations. This is the serialisation of the
 ```
 
 `shader` namespaces the parameter vocabulary. A consumer that does not know `sc2.standard`
-ignores the extension entirely and uses the PBR core — which is why the PBR core is
-mandatory.
+ignores its shader-specific parameters and uses the PBR core — which is why the PBR core is
+mandatory. A UV-aware consumer still honors common material flags independently of the shader.
+
+`castShadows` and `receiveShadows` are optional booleans on `UV_game_material`.
+Both default to true by interpretation; writers do not inject omitted defaults
+into canonical bytes. `castShadows: false` excludes this material from shadow
+casting; `receiveShadows: false` gates reception, including shader-specific water
+settings. A shader can further disable reception but cannot override the common
+false flag. These are presentation policies, not collision, visibility or gameplay
+state. Core materialization/read/render owns their consumption (relay §11).
+
+`blendMode: "add-alpha"` computes straight SrcRGB * SrcAlpha + DstRGB and
+preserves destination alpha. It applies to the material or individual pass; see the
+[exact blend factors](SPEC_UVM_EXTENSIONS.md#add-alpha-blend-state).
 
 ### 11.4 Composite passes
 
@@ -813,6 +835,10 @@ is recorded as an explicit loss. Native texture containers are never retained as
 and are never replaced with a guessed image.
 
 ### 11.6 Colour keys
+
+An optional `UV_texture_alpha: { "ignoreStoredAlpha": true }` on the texture
+sets source alpha to one **before** the colour key. It never edits shared image bytes
+and is not inferred from file format; see [the registry](SPEC_UVM_EXTENSIONS.md#uv_texture_alpha).
 
 Games of the fixed-function era mark transparency in textures that have no alpha channel with a
 reserved colour, most often magenta: Direct3D and DirectDraw loaders replaced every texel of that
@@ -1303,9 +1329,15 @@ authoring.
 For scalar primitive visibility, `UV_game_variants` MAY contain
 `"visibility": [{"mesh": 0, "primitive": 1, "value": 1}]`, independently of named variants.
 Each pair names an actual glTF mesh primitive and MUST be unique. The finite numeric value is
-visible exactly when greater than zero, for every scene instance of that primitive. Values are
-not clamped to `0..1`: imported native scalar tracks may use other finite magnitudes, while their
-visibility predicate stays explicit. An omitted record leaves the primitive visible. A channel
+visible exactly when greater than zero, for every scene instance of that primitive. The stored
+value is never normalized: imported native tracks may use other finite magnitudes. Its presentation
+opacity multiplier is `clamp(value, 0, 1)`, multiplied by the material/vertex/instance alpha once;
+values in `(0,1)` fade the primitive even when its base material is OPAQUE. Zero and negative
+values do not draw; values at least one add no transparency. The renderer enables alpha blending
+when the multiplier is fractional, retaining material alpha-mask coverage and normal depth policy.
+A publisher whose native track is only a threshold switch MUST map it to 0/1 and report any lost
+source magnitude; it must not reinterpret it as a fade. An omitted record leaves the primitive
+visible with multiplier one. A channel
 animates `/extensions/UV_game_variants/visibility/N/value` using `KHR_animation_pointer` (§12.5).
 No synthetic scene nodes or dummy materials are needed. Selecting a clip samples its property;
 with no clip selected the stored value applies. A primitive the source game never draws until a state
@@ -1313,6 +1345,46 @@ or a clip shows it — authoring helper geometry, or an overlay such as a status
 stored value `0`, and a clip that shows it animates the value above zero; the geometry is kept, not
 dropped. Stage playback time remains caller-controlled,
 with explicitly concurrent channels using their own declared wrap duration.
+
+#### Independent slots and socket attachments (candidate contract)
+
+`variants[].slot` names a group with at most one selected variant and at most one `default: true`.
+Omitting `slot` selects the single legacy group, distinct from every named group. Variant names
+remain globally unique so existing transitions keep their meaning. Slots combine independently;
+an unselected slot with no default adds no override. Selection derives from the authored base,
+never from the last rendered selection. `showPrimitives` and `hidePrimitives` are arrays of exact
+`{mesh,primitive}` glTF targets; node lists still apply to glTF nodes. Targets must be in range,
+unique in each list and disjoint within one variant. A selected show override makes its target
+eligible for drawing but does not erase the scalar fade. Selecting variants that contradict one
+another's visibility, material mapping, or whole-model replacement MUST refuse explicitly; slot
+order never decides a winner. Transitions resolve two existing names in the same slot and replace
+only that slot. Trigger strings are presentation declarations, not executable gameplay scripts.
+
+`modelState` references one exact name in root `UV_game_model_states`. That extension is
+`{schemaVersion:1,states:[{state,model,modelSha256?}]}`, described by
+[`schema/uvm.model-states.schema.json`](schema/uvm.model-states.schema.json). State names are
+unique; `base` is reserved for the original asset. `model` is a document-relative model URI.
+The existing Warzone EVENT projection uses this table; native event interpretation remains in
+its adapter. Native `.pie` names are authoring references until translated into captured UVM.
+`modelState` and `asset` are mutually exclusive whole-model replacements, not a merge order.
+
+`attachments` is a list of `{socket,asset,assetSha256?}`. `socket` is an exact `UV_game_socket.id`
+in the selected host model (replacement/state when present, otherwise the original asset),
+not a node index, display name or sourceName. Each selected host socket accepts at most one
+variant attachment. Child placement uses the host socket transform and the child's authored
+root; no second coordinate convention or model parser is introduced. `alignSocket` on the
+existing whole-asset replacement names its exact child socket. Placement/switching are viewer
+operations; these declarations do not create Runtime entities or grant assembly capabilities.
+
+Every possible state, replacement and attachment is part of the resource closure, including
+unselected variants. URIs resolve relative to the containing document through the same confined
+UVP resolver; immutable packages require `assetSha256`/`modelSha256` (raw GLB SHA-256, lowercase
+hex without prefix), matching captured `.uvm.glb` content in the same package. No URI grants I/O
+authority and no native or media entry can masquerade as a model. Attachment sockets are checked
+on the captured host. Recursive attachment graphs refuse, including cycles through inactive
+variants; the admitted profile caps nesting at 16, attachment rows per variant at 256, and named
+variants/states at 4096. This contract and admission do not themselves implement slot selection
+in a renderer; consumers must report unsupported presentation explicitly.
 
 ## 16. Gameplay metadata
 
@@ -1622,3 +1694,11 @@ UVM files are untrusted input. Implementations **MUST**:
   with `name: "script"` carries a _name_, never a script body.
 - Bound `KHR_animation_pointer` JSON pointer resolution to the document, and reject
   pointers into binary storage or outside the document root.
+
+### Presentation scene constraints
+
+`UV_node_billboard` (node) and `UV_scene_lights` (root) are registered with their
+existing Core wire shapes in [SPEC_UVM_EXTENSIONS](SPEC_UVM_EXTENSIONS.md#uv_node_billboard)
+and `uvm.scene.schema.json`. Native lights keep full cone angles and per-clip
+effect-property tracks; physical punctual lights use KHR_lights_punctual. These
+constraints are presentation-only and do not change Runtime transforms or RNG.

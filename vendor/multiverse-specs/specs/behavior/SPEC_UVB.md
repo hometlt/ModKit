@@ -7,8 +7,11 @@ producing identical journals on Node and browser hosts of the same wasm kernel.
 Generic `value` in the intrinsic/event registries is outside UVB 1.1's representable types;
 the verifier refuses such bindings. See the proposed, unadmitted
 [`typed value amendment`](AMENDMENT_TYPED_VALUE.md). Its UVB 2.0 schema, reference binary
-and static verifier vectors cover checked box/unbox and optional record declarations;
-there is no UVB 2 runtime admission or tagged State implementation yet.
+and static verifier vectors cover checked box/unbox and optional record declarations.
+The foundation admits bool/i64/fixed64/strref and the five concrete non-null reference
+kinds, `list<ref<entity>>` and `ref<entity>?` through canonical boxed values and
+scenario State. Other list/record/optional boxed values and full native-game
+execution remain outside that executable subset.
 Normative artifacts: [`schema/uvb.module.v1.schema.json`](schema/uvb.module.v1.schema.json)
 (the structural form both the binary and the `.uvbt` text projection encode), fixture
 under [`fixtures/`](fixtures/), executable assertions in
@@ -46,6 +49,13 @@ the result on every path: `Ok(value)` writes `value`, `Err(_)` writes `false`.
 This explicit lossy conversion is suitable when a source language exposes only
 a boolean acceptance result. It does not alter UVB 1.1 bytes or implicitly
 discard errors in other instructions.
+UVB 2.0 `result.expect dst,a` explicitly consumes `result<T>`: `Ok(value)`
+writes `T` to `dst`, including `Ok(false)`; `Err(_)` terminates the invocation
+with typed VM failure `behavior-result-failed`. It has no success substitute
+or error branch. The invocation's existing transactional boundary rolls back
+all prior effects, including nested calls, allocations, RNG and queued events.
+An ordinary returned `Result` and `result.unwrap-or-branch` retain their value/
+propagation semantics; neither becomes an implicit exception.
 The executable UVB 2.0 entity-list profile admits `list.empty dst,type` only
 with `type: ref<entity>`, plus the existing `list.append dst,a,b`, `list.len`
 and `list.get` opcodes for `list<ref<entity>>`. Append produces a new ordered
@@ -60,6 +70,13 @@ required; operations that consume a position validate the space against the
 verified composition. Game adapters that turn source object IDs into positions
 must resolve those IDs against verified UVW; literal or computed coordinates
 retain their source-language semantics.
+
+UVB 2.0 `option.none dst,type` and `option.some dst,a,type` construct explicitly
+typed nullable references. Their canonical appended opcodes, operand rules and
+admitted entity/definition subset are specified in AMENDMENT_TYPED_VALUE. A
+nullable entity can be boxed into the same State value as UVS 1.5; Some identities
+must already be allocated. Optional equality requires matching reference kinds,
+compares presence/identity and never equates absence with an integer zero.
 
 ## 2a. Canonical binary encoding (binary 1.1, frozen 2026-09-01)
 
@@ -105,6 +122,15 @@ version, never a fix.
   the `scenario.var` and `scenario.set-var` generic signatures. Optional **value
   presence** in State remains a separate contract.
 
+The shared Luau frontend names the existing `ref<def>?` register type
+`OptionalDefRef`. `mv.query.def(address: StrRef)` uses the canonical
+`query.def@1` signature. `mv.option.hasDef(value)` returns presence as a boolean;
+`mv.option.defOr(value, fallback)` returns the present `DefRef` or evaluates its
+fallback only on absence. Both lower to the existing option branch. Unwrap uses
+a temporary register so that the source variable remains reusable. This type is
+admitted in function parameters, returns and locals, never as a boxed UVS State
+value. No nil/zero literal, implicit conversion or native initializer is inferred.
+
 `fixed.parse-decimal dst,a` is a UVB 2 pure conversion from `strref` to Q32.32
 `fixed64`. The decimal grammar, 256-byte input bound, 128 significant-digit bound,
 absolute exponent bound 256, and half-even rounding follow the reference decimal
@@ -121,13 +147,14 @@ instruction, not a new runtime conversion; adapters may use it when a verified w
 projection has already produced an exact quantum.
 
 `result.value-or dst,a,b` consumes `a: result<T>` and chooses its successful
-scalar value or the explicit fallback `b: T`, writing `dst: T`. The admitted
-UVB 2 scalar types are bool, i64, fixed64 and strref. The fallback is a caller
+concrete value or the explicit fallback `b: T`, writing `dst: T`. The admitted
+UVB 2 types are bool, i64, fixed64, strref and ref<entity/def/player/job/timer>.
+Each ref spelling denotes a separate concrete kind. The fallback is a caller
 decision; an error cannot be silently discarded or coerced to an implicit
 default. This instruction does not change State.
 
 `value.expect dst,a,type` reads a boxed `value`, requires exactly the declared
-scalar type (`bool`, `i64`, `fixed64`, or `strref`), and writes that scalar to
+concrete type (the same nine types as `result.value-or`), and writes that value to
 `dst`. A mismatch raises `type-mismatch` and rolls back the current execution.
 Unlike `value.unbox`, it does not produce a recoverable result; use it only when
 the source language requires a declared variable type without a fallback.

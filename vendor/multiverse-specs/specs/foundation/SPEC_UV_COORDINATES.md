@@ -69,8 +69,8 @@ canonical ones, plus a scalar. Two rules keep conversions checkable:
 - **Scale is one scalar, applied after orientation.** Non-uniform scale is not a frame conversion;
   it belongs to the node transform that carries it.
 
-Round-tripping is exact when the conversion is its own inverse — every entry in the machine form
-below is, which is what makes `projectionSemanticHash` equality achievable across a conversion.
+Round-tripping uses the stated inverse, which need not equal the forward map. Invertible
+orientation alone proves no terrain encoding, gameplay facing or rendering equivalence.
 
 ## 4. Bounds
 
@@ -98,8 +98,9 @@ never silently dropped.
 
 ## 6. Measured world source frames
 
-World-frame entries are accepted only with a numeric mapping, a numeric origin rule and an
-executable oracle. The first accepted entry is StarCraft II map-native terrain, recorded by
+World-frame qualification is accepted only with a numeric mapping, a numeric origin rule and an
+executable oracle. A frame definition may precede it under §8. The first qualified entry is
+StarCraft II map-native terrain, recorded by
 [`../world/ADR-WORLD-001-sc2-map-native-to-uvw.md`](../world/ADR-WORLD-001-sc2-map-native-to-uvw.md).
 Its right-handed Z-up frame maps to the canonical frame as `(x, y, z) -> (x, z, -y)`. Because a
 heightfield advances rows along canonical `+Z`, an SC2 HMAP is serialized with its source rows in
@@ -109,6 +110,9 @@ The independent second entry is Warzone 2100 `game.map`, recorded by
 [`../world/ADR-WORLD-002-warzone-map-native-to-uvw.md`](../world/ADR-WORLD-002-warzone-map-native-to-uvw.md).
 It uses the same right-handed Z-up axis mapping but a different direct-height tile encoding and a
 fixed `128` world-unit grid relationship. Its physical metre scale is likewise not invented.
+That historical renderer-coordinate comparison did not account for the game's mirrored
+projection. The game-facing correction has a separate ID and qualification boundary in
+[`../world/ADR-WORLD-008-game-facing-world-frame-qualification.md`](../world/ADR-WORLD-008-game-facing-world-frame-qualification.md).
 
 ## 7. Machine form
 
@@ -120,5 +124,36 @@ correction does not change their forward conversion or any measured native axis.
 `uv-coordinates.v1.json` beside this file carries the canonical basis and one entry per known
 source frame. A converter reads it rather than this prose; a reviewer checks the prose against it.
 Where the two disagree, this document is normative and the JSON is stale — with one exception:
-the per-source entries are the authority for their own numbers, because they were measured against
-real files and this text was not.
+the per-source entries are the authority for their own numbers and stated evidence scope.
+Definition-only entries below do not acquire a measured status from their presence here.
+
+## 8. Frame definitions and adapter qualification are separate
+
+A registry ID names a coordinate contract; it is not a receipt or a permission to publish a
+verified world. New source records marked `qualification: "required"` define the agreed axes,
+units, origin and row rules so a game role can construct its qualification. They **MUST NOT** be
+reported as measured converters. Records without this marker retain only their historical
+evidence scope. A `supersededBy` link retains the old contract and hashes for existing artifacts;
+it does not rewrite them as evidence for the replacement.
+
+Before native-world admission, the adapter still supplies its own `MapWorldCanonicalTransform`
+proof: exact source digests, named corpus/oracle and positive tuple count, with IEEE-754 binary64
+XYZ tuple streams hashed in their declared order. Tuples are world positions, not column/row
+indices. The exact oracle comparison and structural transform checks are distinct. A screenshot,
+water coverage percentage or approximate mesh intersection can establish one claim (for example
+orientation); it cannot certify exact elevations or physical metres. Third-party code is an
+oracle/specification, never copied into an unrelated implementation.
+
+`worldForm` resolves an entry in the same document's `worldForms`; source-specific fields
+override only declared grid parameters. `planar-pixel-grid-v1` is the sole common form for flat
+integer-pixel maps: x east, y south, z up, mapping `(x,y,z) → (x,z,y)`, forward rows. It is a
+left-to-right frame conversion (determinant −1); winding/normals and model orientation must
+be handled by their existing owners. Dune and SC1 retain their separate qualification receipts.
+Their 32-pixel cells do not establish a metre scale. Cell-centre objects keep their centre;
+building corner anchors are not moved to centres by the coordinate transform.
+
+Sources under `unmeasuredWorldSources` have incomplete numeric contracts. They reserve identity
+for evidence gathering and **MUST NOT** be admitted by filling absent axes, heights or scale from
+another game. Earth 2150/2160 are currently in this state: a game top-view can qualify the horizontal
+orientation, but not the unknown height decoding. Models and map frames are qualified separately;
+the new Warcraft III map record does not remove MDX from `unmeasured`.

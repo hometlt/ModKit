@@ -1,0 +1,123 @@
+{
+  "uv": {
+    "format": "UVS",
+    "version": "1.1"
+  },
+  "namespace": "example",
+  "charts": [
+    {
+      "name": "main",
+      "initialState": "idle",
+      "variables": [
+        {
+          "name": "ready",
+          "type": "bool",
+          "initial": false
+        },
+        {
+          "name": "job",
+          "type": "strref",
+          "initial": ""
+        }
+      ],
+      "states": [
+        {
+          "name": "idle",
+          "on": [
+            {
+              "event": "entity.created",
+              "condition": {
+                "kind": "and",
+                "args": [
+                  {
+                    "kind": "not",
+                    "args": [
+                      {
+                        "kind": "var",
+                        "name": "ready"
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "call",
+                    "intrinsic": "entity.exists@1",
+                    "args": [
+                      {
+                        "kind": "event",
+                        "name": "entity"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "actions": [
+                {
+                  "kind": "set-var",
+                  "name": "ready",
+                  "value": {
+                    "kind": "const",
+                    "value": true
+                  }
+                }
+              ]
+            },
+            {
+              "event": "timer.fired",
+              "condition": {
+                "kind": "cmp",
+                "op": "eq",
+                "args": [
+                  {
+                    "kind": "event",
+                    "name": "timer"
+                  },
+                  {
+                    "kind": "event",
+                    "name": "timer"
+                  }
+                ]
+              },
+              "actions": []
+            },
+            {
+              "event": "assembly.installation-completed",
+              "actions": [
+                {
+                  "kind": "set-var",
+                  "name": "job",
+                  "value": {
+                    "kind": "event",
+                    "name": "job"
+                  }
+                }
+              ]
+            },
+            {
+              "event": "order.arrived",
+              "condition": {
+                "kind": "call",
+                "intrinsic": "entity.exists@1",
+                "args": [
+                  {
+                    "kind": "event",
+                    "name": "entity"
+                  }
+                ]
+              },
+              "actions": [
+                {
+                  "kind": "set-var",
+                  "name": "ready",
+                  "value": {
+                    "kind": "const",
+                    "value": true
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

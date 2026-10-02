@@ -88,7 +88,7 @@ extensions are refused. Texture infos may use `KHR_texture_transform`, declared 
 define a second UV set or establish native-game texture orientation. Unknown
 extensions cannot hide a resource dependency.
 
-A terrain catalog entry is `{id, material, classification?, sourceIndex?}`;
+A terrain catalog entry is `{id, material, classification?, sourceIndex?, atlas?}`;
 a water entry is `{id, material, classification?, shorelineMode?}`.
 `material` is a nonnegative index into the root table, not a persistent ID.
 Display names live in `materials[index].name`. Color/PBR values MUST NOT also
@@ -98,8 +98,18 @@ including currently unreferenced entries. Editing a material creates a new
 world/composition identity even though Runtime ignores its visual values.
 
 Terrain keeps exact JSON `samples`, including per-sample UV transforms under
-the existing centre-pivot rule. Each sample has nonempty, unique, ordered local
-`materialId` weights in `(0,1]` summing to one within `1e-6`. The grid must match
+the existing centre-pivot rule. A blend sample has nonempty, unique, ordered local
+`materialId` weights in `(0,1]` summing to one within `1e-6`. Alternatively, a sample
+uses the ordered atlas `layers` from SPEC_UVW_PROFILE §5; its `atlas` layout stays
+on the terrain reference while base-colour pixels use the standard glTF texture.
+Authored tile order/repetition is retained exactly, never sorted by material id.
+`layers[].cornerAlpha`, sample `cornerUv`, and `atlas.tileTop` use the same
+definitions and corner order from SPEC_UVW_PROFILE §5. Their arrays and authored
+defaults remain exact JSON source data, covered by the composition digest.
+The glTF schema references that one spatial schema; a reader must preserve
+inactive sample transforms when corner UVs replace them. These fields neither
+authorize gameplay movement nor prove matching native rendering.
+Retained weights do not add a second rendered pass. The grid must match
 its declared rows/columns and fit the space in x/z (spatial tolerance `1e-9`).
 No renormalization or sample resizing occurs on read. Raster weights require
 an explicit migration policy. The simple legacy migrator
@@ -249,6 +259,13 @@ replacement for that boundary or for a full glTF validator.
 
 ## Identity and Runtime
 
+Optional `players` and `startPositions` on `extensions.UV_world_graph.spaces[]`
+use the shared spatial definitions and joins in SPEC_UVW_PROFILE.md. Their native
+slots, portable player addresses, exact colours/ramps and local starts survive
+migration and reconstruction. Captured player tables own Runtime identity setup;
+slot numbers are not private handles. World instances qualify spaces while an
+explicit repeated player address retains one global simulation identity.
+
 `family` remains `uvw`. The recommended file name is `*.uvw.gltf`; identity and
 admission are determined by the document, never guessed from its suffix.
 
@@ -319,9 +336,9 @@ format owner and renderer. This byte-integrity check is not an image decoder.
 Runtime preparers may provide `media: [{path, bytes}]` alongside their projected
 definitions/world/scripts. The existing selected-subject composition and source
 snapshot route carries them to this same verifier. No game-specific resource
-loader or second media schema is introduced. Core's present portable texture
-writer emits TGA; those bytes cannot be relabelled PNG/JPEG. The texture owner
-must explicitly produce a supported encoding before switching a real writer.
+loader or second media schema is introduced. Core's portable package writer now
+emits PNG (Core `4a0bcdfc`, relay §12). Original TGA bytes still cannot be relabelled
+PNG/JPEG; any required transcoding belongs to the existing texture owner.
 
 The existing binder takes the verified spatial graph, applies its existing
 decimal-to-Q32.32 lowering and emits the existing private binding. There is no
@@ -355,3 +372,7 @@ terrain weight rasters, preserving all other current layers;
 provide a declared visual fallback and nodes/meshes with their resource closure; admit exact
 binary pages and GLB separately. Core and game writers switch only after their
 full-world preservation and product checks, not after this spatial fixture.
+
+Object instances preserve `presentationTint` and `presentationAnimation` from the
+one shared spatial schema; see [initial presentation](SPEC_UVW_PROFILE.md#initial-object-presentation-core-relay-0210).
+These fields are not glTF node animation channels or new gameplay state.

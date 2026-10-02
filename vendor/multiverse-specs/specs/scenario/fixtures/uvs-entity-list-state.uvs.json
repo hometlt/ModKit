@@ -1,0 +1,53 @@
+{
+  "uv": {
+    "format": "UVS",
+    "version": "1.2"
+  },
+  "namespace": "sample",
+  "charts": [
+    {
+      "name": "groups",
+      "initialState": "idle",
+      "variables": [
+        {
+          "name": "members",
+          "type": "list<ref<entity>>",
+          "initial": []
+        }
+      ],
+      "states": [
+        {
+          "name": "idle",
+          "on": [
+            {
+              "event": "entity.created",
+              "actions": [
+                {
+                  "kind": "set-var",
+                  "name": "members",
+                  "value": {
+                    "kind": "var",
+                    "name": "members"
+                  }
+                }
+              ]
+            },
+            {
+              "event": "timer.fired",
+              "actions": [
+                {
+                  "kind": "set-var",
+                  "name": "members",
+                  "value": {
+                    "kind": "const",
+                    "value": []
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

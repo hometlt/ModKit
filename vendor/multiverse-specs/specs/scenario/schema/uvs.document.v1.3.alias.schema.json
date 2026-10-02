@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modkitx.org/uvs/1.3/uvs.document.schema.json",
+  "$comment": "Version selector only. All structure is owned by uvs.document.v1.schema.json.",
+  "$ref": "https://modkitx.org/uvs/1/uvs.document.schema.json",
+  "properties": {
+    "uv": {
+      "properties": {
+        "version": {
+          "const": "1.3"
+        }
+      }
+    }
+  }
+}

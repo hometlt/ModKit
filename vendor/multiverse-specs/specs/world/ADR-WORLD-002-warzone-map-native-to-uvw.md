@@ -1,5 +1,12 @@
 # ADR-WORLD-002 — Warzone 2100 map-native terrain to UVW
 
+**Historical orientation, superseded 02.10.2026:** the proof below covers the
+renderer-coordinate stream, not the game's projection mirror. The replacement
+game-facing contract is [ADR-WORLD-008](ADR-WORLD-008-game-facing-world-frame-qualification.md),
+ID `warzone-map-native-game-view`, `(x,y,z) → (x,z,y)`, forward rows.
+The old map/tuple digests remain evidence only for this historical mapping.
+Native provider/PIE/inverse/rotation migration and new qualification are pending.
+
 **Status:** accepted for the UVW candidate, 2026-08-28
 **Admission effect:** closes the independent second-game-family coordinate, unit, origin and exact
 terrain differential; does not mint `world-interchange-v1`, whose descriptor and vectors are still

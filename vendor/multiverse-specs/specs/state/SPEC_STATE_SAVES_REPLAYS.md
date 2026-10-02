@@ -42,6 +42,11 @@ once in [ADR-RUNTIME-006](../runtime/ADR-RUNTIME-006-entity-orientation.md).
 Earlier binding profiles keep their original save bytes; they cannot admit these
 intrinsics while omitting their State from the hash.
 
+The executable bounded player accounts use the same State and a `players` save
+section v1; exact balances, zero omission, profile-based section presence and
+atomic restore rules are specified in `../runtime/SPEC_PLAYER_RESOURCES.md`.
+This does not yet define native resource policy or a complete economy.
+
 **One vocabulary.** The intrinsic table's writable state areas (`entities, orders, players,
 timers, rng, scenario, space`) are the normative list; save sections are derived from it
 (`space` → `space-deltas`) plus the event queue and campaign state. `defs` is composition,

@@ -1,0 +1,344 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modkitx.org/uvm/1.0/uvm.scene.schema.json",
+  "title": "UVM presentation scene extensions",
+  "description": "Existing Core billboard and scene-light wire forms. These are presentation constraints, never gameplay transforms. Track shapes reference the existing effects track owner.",
+  "$defs": {
+    "sceneCamera": {
+      "$anchor": "sceneCamera",
+      "title": "UV_scene_camera",
+      "description": "Version 1 on a glTF perspective camera object (not a node). Scalar lens tracks use the existing presentation-seconds sequence-track ABI; defaults are the authored perspective lens fields.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "sequenceAnimation"],
+      "properties": {
+        "version": { "const": 1 },
+        "sequenceAnimation": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "yfov": { "$ref": "uvm.effects.schema.json#sequenceTracks" },
+            "znear": { "$ref": "uvm.effects.schema.json#sequenceTracks" },
+            "zfar": { "$ref": "uvm.effects.schema.json#sequenceTracks" }
+          }
+        }
+      }
+    },
+    "quaternion": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "number"
+      },
+      "description": "Finite nonzero XYZW quaternion, normalized by the consumer without editing authored bytes."
+    },
+    "billboard": {
+      "$anchor": "billboard",
+      "title": "UV_node_billboard",
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "schemaVersion",
+            "mode",
+            "basisRotations"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "schemaVersion": {
+              "const": 1
+            },
+            "mode": {
+              "const": "inverse-camera"
+            },
+            "basisRotations": {
+              "type": "array",
+              "maxItems": 4,
+              "items": {
+                "$ref": "#/$defs/quaternion"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "schemaVersion",
+            "mode",
+            "rotationAxes",
+            "pivot"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "schemaVersion": {
+              "const": 1
+            },
+            "mode": {
+              "const": "face-camera"
+            },
+            "rotationAxes": {
+              "enum": [
+                "z",
+                "xz"
+              ]
+            },
+            "pivot": {
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 3,
+              "items": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "schemaVersion",
+            "mode",
+            "aim",
+            "lock"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "schemaVersion": {
+              "const": 1
+            },
+            "mode": {
+              "const": "aim"
+            },
+            "aim": {
+              "enum": [
+                "view",
+                "eye"
+              ]
+            },
+            "lock": {
+              "enum": [
+                "free",
+                "frame-x",
+                "frame-y",
+                "frame-z",
+                "own-x",
+                "own-y"
+              ]
+            },
+            "correction": {
+              "$ref": "#/$defs/quaternion"
+            },
+            "rootCorrection": {
+              "$ref": "#/$defs/quaternion"
+            }
+          }
+        }
+      ]
+    },
+    "light": {
+      "type": "object",
+      "required": [
+        "type",
+        "direction",
+        "color"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": [
+            "directional",
+            "point",
+            "spot"
+          ]
+        },
+        "direction": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": {
+            "type": "number"
+          }
+        },
+        "position": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": {
+            "type": "number"
+          }
+        },
+        "color": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": {
+            "type": "number",
+            "minimum": 0
+          }
+        },
+        "range": {
+          "type": "number",
+          "minimum": 0
+        },
+        "attenuationStart": {
+          "type": "number",
+          "minimum": 0
+        },
+        "attenuationEnd": {
+          "type": "number",
+          "minimum": 0
+        },
+        "decayExponent": {
+          "type": "number",
+          "minimum": 0
+        },
+        "innerConeAngle": {
+          "type": "number",
+          "minimum": 0
+        },
+        "outerConeAngle": {
+          "type": "number",
+          "minimum": 0
+        },
+        "animationDefaults": {
+          "type": "object",
+          "required": [
+            "color",
+            "intensity"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "color": {
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 3,
+              "items": {
+                "type": "number",
+                "minimum": 0
+              }
+            },
+            "intensity": {
+              "type": "number",
+              "minimum": 0
+            },
+            "attenuationStart": {
+              "type": "number",
+              "minimum": 0
+            },
+            "decayExponent": {
+              "type": "number",
+              "minimum": 0
+            },
+            "innerConeAngle": {
+              "type": "number",
+              "minimum": 0
+            },
+            "outerConeAngle": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        "sequenceAnimation": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "color": {
+              "$ref": "uvm.effects.schema.json#sequenceTracks"
+            },
+            "intensity": {
+              "$ref": "uvm.effects.schema.json#sequenceTracks"
+            },
+            "attenuationStart": {
+              "$ref": "uvm.effects.schema.json#sequenceTracks"
+            },
+            "decayExponent": {
+              "$ref": "uvm.effects.schema.json#sequenceTracks"
+            },
+            "innerConeAngle": {
+              "$ref": "uvm.effects.schema.json#sequenceTracks"
+            },
+            "outerConeAngle": {
+              "$ref": "uvm.effects.schema.json#sequenceTracks"
+            }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "enum": [
+                  "point",
+                  "spot"
+                ]
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "required": [
+              "position"
+            ]
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "sequenceAnimation"
+            ]
+          },
+          "then": {
+            "required": [
+              "animationDefaults"
+            ]
+          }
+        }
+      ]
+    },
+    "sceneLights": {
+      "$anchor": "sceneLights",
+      "title": "UV_scene_lights",
+      "type": "object",
+      "required": [
+        "version",
+        "spaceNode",
+        "lights"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "spaceNode": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "lights": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/light"
+          }
+        },
+        "ambient": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "default": [
+            0,
+            0,
+            0
+          ]
+        }
+      }
+    }
+  }
+}

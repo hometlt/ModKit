@@ -1,0 +1,162 @@
+{
+  "uv": {
+    "format": "UVB",
+    "version": "2.0"
+  },
+  "namespace": "example.references",
+  "requires": {
+    "intrinsics": []
+  },
+  "functions": [
+    {
+      "name": "checkedentity",
+      "params": [
+        "ref<entity>"
+      ],
+      "returns": "result<ref<entity>>",
+      "registers": 3,
+      "effects": {
+        "reads": [],
+        "writes": []
+      },
+      "body": [
+        {
+          "op": "value.box",
+          "dst": 1,
+          "a": 0,
+          "type": "ref<entity>"
+        },
+        {
+          "op": "value.unbox",
+          "dst": 2,
+          "a": 1,
+          "type": "ref<entity>"
+        },
+        {
+          "op": "ret",
+          "a": 2
+        }
+      ]
+    },
+    {
+      "name": "checkeddef",
+      "params": [
+        "ref<def>"
+      ],
+      "returns": "result<ref<def>>",
+      "registers": 3,
+      "effects": {
+        "reads": [],
+        "writes": []
+      },
+      "body": [
+        {
+          "op": "value.box",
+          "dst": 1,
+          "a": 0,
+          "type": "ref<def>"
+        },
+        {
+          "op": "value.unbox",
+          "dst": 2,
+          "a": 1,
+          "type": "ref<def>"
+        },
+        {
+          "op": "ret",
+          "a": 2
+        }
+      ]
+    },
+    {
+      "name": "checkedplayer",
+      "params": [
+        "ref<player>"
+      ],
+      "returns": "result<ref<player>>",
+      "registers": 3,
+      "effects": {
+        "reads": [],
+        "writes": []
+      },
+      "body": [
+        {
+          "op": "value.box",
+          "dst": 1,
+          "a": 0,
+          "type": "ref<player>"
+        },
+        {
+          "op": "value.unbox",
+          "dst": 2,
+          "a": 1,
+          "type": "ref<player>"
+        },
+        {
+          "op": "ret",
+          "a": 2
+        }
+      ]
+    },
+    {
+      "name": "checkedjob",
+      "params": [
+        "ref<job>"
+      ],
+      "returns": "result<ref<job>>",
+      "registers": 3,
+      "effects": {
+        "reads": [],
+        "writes": []
+      },
+      "body": [
+        {
+          "op": "value.box",
+          "dst": 1,
+          "a": 0,
+          "type": "ref<job>"
+        },
+        {
+          "op": "value.unbox",
+          "dst": 2,
+          "a": 1,
+          "type": "ref<job>"
+        },
+        {
+          "op": "ret",
+          "a": 2
+        }
+      ]
+    },
+    {
+      "name": "checkedtimer",
+      "params": [
+        "ref<timer>"
+      ],
+      "returns": "result<ref<timer>>",
+      "registers": 3,
+      "effects": {
+        "reads": [],
+        "writes": []
+      },
+      "body": [
+        {
+          "op": "value.box",
+          "dst": 1,
+          "a": 0,
+          "type": "ref<timer>"
+        },
+        {
+          "op": "value.unbox",
+          "dst": 2,
+          "a": 1,
+          "type": "ref<timer>"
+        },
+        {
+          "op": "ret",
+          "a": 2
+        }
+      ]
+    }
+  ]
+}

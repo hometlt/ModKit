@@ -1,0 +1,24 @@
+{
+  "uv": { "format": "UVW", "version": "1.0", "status": "profile" },
+  "spaces": [{
+    "id": "main", "topology": "heightfield",
+    "basis": { "handedness": "right", "upAxis": "y", "forwardAxis": "+z", "unit": "meter", "metersPerUnit": 1, "unitsPerCell": 1 },
+    "bounds": { "min": [0, 0, 0], "max": [8, 3, 6] },
+    "players": [
+      { "slot": 0, "address": "sample/player/neutral", "name": "Neutral" },
+      { "slot": 1, "address": "sample/player/one", "name": "Player One", "color": [1, 0, 0], "ramp": [[0.25, 0, 0], [1, 0, 0]] }
+    ],
+    "startPositions": [
+      { "id": "home", "position": [2, 0.75, 2], "player": 1 },
+      { "id": "unassigned", "position": [4, 1.25, 2] }
+    ],
+    "layers": [
+      { "id": "objects", "kind": "objects", "schemaVersion": 1, "instances": [
+        { "id": "placed-unit", "objectKind": "unit", "position": [2, 0.75, 2], "rotation": [0, 0, 0, 1], "scale": [1, 1, 1], "resourceIds": [], "player": 1 }
+      ] },
+      { "id": "terrain", "kind": "heightfield", "columns": 5, "rows": 4, "cellSize": 2, "origin": [0, 0, 0], "noDataValue": -9999,
+        "samples": [[0, 0.5, 1, 1.5, 2], [0.25, 0.75, 1.25, 1.75, 2.25], [0.5, 1, 1.5, -9999, 2.5], [0.75, 1.25, 1.75, 2.25, 2.75]] }
+    ]
+  }],
+  "connections": []
+}

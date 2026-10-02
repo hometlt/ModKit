@@ -1,0 +1,29 @@
+{
+  "uv": { "format": "UVB", "version": "2.0" },
+  "namespace": "example.result-expect",
+  "requires": { "intrinsics": [] },
+  "functions": [
+    {
+      "name": "checkedFalse",
+      "params": ["bool"], "returns": "bool", "registers": 4,
+      "effects": { "reads": [], "writes": [] },
+      "body": [
+        { "op": "value.box", "dst": 1, "a": 0, "type": "bool" },
+        { "op": "value.unbox", "dst": 2, "a": 1, "type": "bool" },
+        { "op": "result.expect", "dst": 3, "a": 2 },
+        { "op": "ret", "a": 3 }
+      ]
+    },
+    {
+      "name": "checkedMismatch",
+      "params": ["i64"], "returns": "bool", "registers": 4,
+      "effects": { "reads": [], "writes": [] },
+      "body": [
+        { "op": "value.box", "dst": 1, "a": 0, "type": "i64" },
+        { "op": "value.unbox", "dst": 2, "a": 1, "type": "bool" },
+        { "op": "result.expect", "dst": 3, "a": 2 },
+        { "op": "ret", "a": 3 }
+      ]
+    }
+  ]
+}

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://modkitx.org/uvm/1.0/uvm.variants.schema.json",
   "title": "UV_game_variants",
-  "description": "Geometry, visibility and whole-asset variants. Runtime packages additionally require assetSha256 for every external asset URI.",
+  "description": "Named variants in independent slots, scalar fades and socket model attachments. Runtime packages require verified model hashes.",
   "type": "object",
   "anyOf": [{ "required": ["variants"] }, { "required": ["visibility"] }],
   "properties": {
@@ -16,7 +16,7 @@
           "primitive": { "type": "integer", "minimum": 0 },
           "value": {
             "type": "number",
-            "description": "Finite scalar; visible iff > 0, for every instance. Mesh/primitive targets must be unique and in range."
+            "description": "Finite authored scalar; hidden at <=0, opacity multiplier clamp(value,0,1) otherwise. Preserve without normalization. Targets must be unique and in range."
           }
         },
         "additionalProperties": false
@@ -25,11 +25,13 @@
     "variants": {
       "type": "array",
       "minItems": 1,
+      "maxItems": 4096,
       "items": {
         "type": "object",
         "required": ["name"],
         "properties": {
           "name": { "type": "string", "minLength": 1 },
+          "slot": { "type": "string", "minLength": 1, "description": "One selected variant per slot; omission selects the legacy group." },
           "default": { "type": "boolean", "default": false },
           "showNodes": {
             "type": "array",
@@ -39,6 +41,10 @@
             "type": "array",
             "items": { "type": "integer", "minimum": 0 }
           },
+          "showPrimitives": { "type": "array", "maxItems": 4096, "uniqueItems": true, "items": { "$ref": "#/$defs/primitive" } },
+          "hidePrimitives": { "type": "array", "maxItems": 4096, "uniqueItems": true, "items": { "$ref": "#/$defs/primitive" } },
+          "modelState": { "type": "string", "minLength": 1 },
+          "attachments": { "type": "array", "maxItems": 256, "items": { "$ref": "#/$defs/attachment" } },
           "materialVariant": { "type": "integer", "minimum": 0 },
           "asset": { "type": "string", "minLength": 1 },
           "assetSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
@@ -49,6 +55,11 @@
           },
           "extras": {}
         },
+        "allOf": [
+          { "not": { "required": ["asset", "modelState"] } },
+          { "if": { "required": ["assetSha256"] }, "then": { "required": ["asset"] } },
+          { "if": { "required": ["alignSocket"] }, "then": { "required": ["asset"] } }
+        ],
         "additionalProperties": false
       }
     },
@@ -67,6 +78,64 @@
       }
     },
     "extras": {}
+  },
+  "$defs": {
+    "primitive": {
+      "type": "object",
+      "required": [
+        "mesh",
+        "primitive"
+      ],
+      "properties": {
+        "mesh": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "primitive": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "attachment": {
+      "type": "object",
+      "required": [
+        "socket",
+        "asset"
+      ],
+      "properties": {
+        "socket": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Exact UV_game_socket.id in the selected host model."
+        },
+        "asset": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Model URI relative to the containing document."
+        },
+        "assetSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "assetSha256"
+            ]
+          },
+          "then": {
+            "required": [
+              "asset"
+            ]
+          }
+        }
+      ]
+    }
   },
   "additionalProperties": false
 }

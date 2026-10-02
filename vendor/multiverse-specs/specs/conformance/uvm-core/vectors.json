@@ -122,6 +122,86 @@
         }
       ],
       "reason": "UV_asset requires a non-empty id"
+    },
+    {
+      "id": "uvm-core-presentation/pack",
+      "expect": "accept",
+      "fixture": "uvm-core-presentation.uvm.gltf",
+      "mutations": [],
+      "glbByteLength": 2876,
+      "glbDigest": "sha256:898443b6c98a3227caf2da7539c405cf750c98c9c2a6207399fb2667985481d0"
+    },
+    {
+      "id": "presentation-key-intensity-squared",
+      "expect": "reject",
+      "fixture": "uvm-core-presentation.uvm.gltf",
+      "reason": "model-presentation",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "materials.0.extensions.UV_game_material_team_color.blend",
+          "value": "multiply"
+        }
+      ]
+    },
+    {
+      "id": "presentation-second-mask-missing",
+      "expect": "reject",
+      "fixture": "uvm-core-presentation.uvm.gltf",
+      "reason": "material-reference",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "materials.0.extensions.UV_game_material_team_color.secondaryMaskTexture.index",
+          "value": 999
+        }
+      ]
+    },
+    {
+      "id": "presentation-billboard-zero",
+      "expect": "reject",
+      "fixture": "uvm-core-presentation.uvm.gltf",
+      "reason": "model-presentation",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "nodes.0.extensions.UV_node_billboard.basisRotations",
+          "value": [
+            [
+              0,
+              0,
+              0,
+              0
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "presentation-scene-frame-missing",
+      "expect": "reject",
+      "fixture": "uvm-core-presentation.uvm.gltf",
+      "reason": "model-presentation",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "extensions.UV_scene_lights.spaceNode",
+          "value": 999
+        }
+      ]
+    },
+    {
+      "id": "presentation-alpha-boolean",
+      "expect": "reject",
+      "fixture": "uvm-core-presentation.uvm.gltf",
+      "reason": "model-presentation",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "textures.0.extensions.UV_texture_alpha.ignoreStoredAlpha",
+          "value": 1
+        }
+      ]
     }
   ]
 }

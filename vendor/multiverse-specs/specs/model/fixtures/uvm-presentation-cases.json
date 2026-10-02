@@ -1,0 +1,340 @@
+{
+  "channelKey": {
+    "maskSource": "channelKey",
+    "blend": "replace",
+    "keyChannels": [
+      "r",
+      "g"
+    ],
+    "keyThreshold": 0,
+    "intensityChannel": "b",
+    "strength": 1,
+    "colorSource": "team",
+    "secondaryMaskTexture": {
+      "index": 1,
+      "channel": "r",
+      "extensions": {
+        "KHR_texture_transform": {
+          "offset": [
+            0,
+            0
+          ],
+          "scale": [
+            2,
+            2
+          ],
+          "rotation": 0
+        }
+      }
+    }
+  },
+  "ramp8": {
+    "maskSource": "paletteRange",
+    "range": [
+      8,
+      15
+    ],
+    "maskTexture": {
+      "index": 0,
+      "channel": "r"
+    },
+    "blend": "replace",
+    "ramp": [
+      [
+        0.0,
+        0.25,
+        0.75
+      ],
+      [
+        0.14285714285714285,
+        0.25,
+        0.75
+      ],
+      [
+        0.2857142857142857,
+        0.25,
+        0.75
+      ],
+      [
+        0.42857142857142855,
+        0.25,
+        0.75
+      ],
+      [
+        0.5714285714285714,
+        0.25,
+        0.75
+      ],
+      [
+        0.7142857142857143,
+        0.25,
+        0.75
+      ],
+      [
+        0.8571428571428571,
+        0.25,
+        0.75
+      ],
+      [
+        1.0,
+        0.25,
+        0.75
+      ]
+    ]
+  },
+  "ramp16": {
+    "maskSource": "paletteRange",
+    "range": [
+      8,
+      23
+    ],
+    "maskTexture": {
+      "index": 0,
+      "channel": "r"
+    },
+    "blend": "replace",
+    "ramp": [
+      [
+        0.0,
+        0.25,
+        0.75
+      ],
+      [
+        0.06666666666666667,
+        0.25,
+        0.75
+      ],
+      [
+        0.13333333333333333,
+        0.25,
+        0.75
+      ],
+      [
+        0.2,
+        0.25,
+        0.75
+      ],
+      [
+        0.26666666666666666,
+        0.25,
+        0.75
+      ],
+      [
+        0.3333333333333333,
+        0.25,
+        0.75
+      ],
+      [
+        0.4,
+        0.25,
+        0.75
+      ],
+      [
+        0.4666666666666667,
+        0.25,
+        0.75
+      ],
+      [
+        0.5333333333333333,
+        0.25,
+        0.75
+      ],
+      [
+        0.6,
+        0.25,
+        0.75
+      ],
+      [
+        0.6666666666666666,
+        0.25,
+        0.75
+      ],
+      [
+        0.7333333333333333,
+        0.25,
+        0.75
+      ],
+      [
+        0.8,
+        0.25,
+        0.75
+      ],
+      [
+        0.8666666666666667,
+        0.25,
+        0.75
+      ],
+      [
+        0.9333333333333333,
+        0.25,
+        0.75
+      ],
+      [
+        1.0,
+        0.25,
+        0.75
+      ]
+    ]
+  },
+  "maskRgb": {
+    "maskSource": "texture",
+    "maskTexture": {
+      "index": 0,
+      "channel": "a"
+    },
+    "tint": "mask-rgb",
+    "colorSource": "object-tint",
+    "blend": "lerp"
+  },
+  "textureAlpha": {
+    "ignoreStoredAlpha": true
+  },
+  "textureKey": {
+    "color": [
+      0,
+      0,
+      0
+    ],
+    "tolerance": 0
+  },
+  "billboards": [
+    {
+      "schemaVersion": 1,
+      "mode": "inverse-camera",
+      "basisRotations": [
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "mode": "face-camera",
+      "rotationAxes": "xz",
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "mode": "aim",
+      "aim": "eye",
+      "lock": "frame-z"
+    }
+  ],
+  "sceneLights": {
+    "version": 1,
+    "spaceNode": 0,
+    "ambient": [
+      0.1,
+      0.1,
+      0.1
+    ],
+    "lights": [
+      {
+        "type": "spot",
+        "direction": [
+          0,
+          0,
+          -1
+        ],
+        "color": [
+          1,
+          0.5,
+          0.25
+        ],
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "innerConeAngle": 0.5,
+        "outerConeAngle": 1,
+        "animationDefaults": {
+          "color": [
+            1,
+            0.5,
+            0.25
+          ],
+          "intensity": 1
+        },
+        "sequenceAnimation": {
+          "intensity": [
+            {
+              "sequenceIndex": 0,
+              "track": {
+                "lineType": 1,
+                "globalSeqId": null,
+                "keys": [
+                  {
+                    "frame": 0,
+                    "vector": [
+                      1
+                    ]
+                  },
+                  {
+                    "frame": 1,
+                    "vector": [
+                      0.25
+                    ]
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "object": {
+    "id": "colored-unit",
+    "objectKind": "unit",
+    "position": [
+      0,
+      0,
+      0
+    ],
+    "rotation": [
+      0,
+      0,
+      0,
+      1
+    ],
+    "scale": [
+      1,
+      1,
+      1
+    ],
+    "resourceIds": [],
+    "presentationTint": [
+      0.25,
+      0.5,
+      0.75
+    ],
+    "presentationAnimation": {
+      "name": "Stand",
+      "groups": [
+        "Work"
+      ],
+      "loop": true,
+      "speed": 1,
+      "randomStart": true
+    }
+  },
+  "addAlpha": {
+    "shader": "example.standard",
+    "blendMode": "add-alpha",
+    "passes": [
+      {
+        "blendMode": "add-alpha",
+        "layers": []
+      }
+    ],
+    "layers": []
+  }
+}

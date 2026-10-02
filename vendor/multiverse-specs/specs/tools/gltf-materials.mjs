@@ -1,5 +1,7 @@
 /** Shared reference checks for schema-valid glTF materials. No image reads or renderer. */
 import gameSchema from '../model/schema/uvm.material.schema.json' with { type: 'json' }
+import { assertGltfShadowFlags } from './gltf-material-flags.ts'
+import { assertUvmTeamColor, assertUvmTexturePresentation, assertUvmTeamColorAnimations } from './uvm-presentation.ts'
 
 const reject = (rule, message) => { throw new TypeError(`${rule}: ${message}`) }
 const finite = value => typeof value === 'number' && Number.isFinite(value)
@@ -53,11 +55,14 @@ function assertWaterSurface(game) {
 export function* gltfMaterialTextureInfos(material) {
   const pbr = material.pbrMetallicRoughness ?? {}
   const specular = material.extensions?.KHR_materials_specular ?? {}
+  const team = material.extensions?.UV_game_material_team_color ?? {}
   for (const [slot, info] of Object.entries({
     baseColorTexture: pbr.baseColorTexture, metallicRoughnessTexture: pbr.metallicRoughnessTexture,
     normalTexture: material.normalTexture, occlusionTexture: material.occlusionTexture,
     emissiveTexture: material.emissiveTexture, specularTexture: specular.specularTexture,
     specularColorTexture: specular.specularColorTexture,
+    teamMaskTexture: team.maskTexture, teamSecondaryMaskTexture: team.secondaryMaskTexture,
+    teamGlowMaskTexture: team.glow?.maskTexture,
   })) if (info !== undefined) yield { slot, info }
 }
 
@@ -74,10 +79,15 @@ export function assertGltfMaterialReferences(document) {
   const extension = name => {
     if (!extensionsUsed.includes(name)) reject('material-extension-undeclared', name)
   }
+  for (const texture of textures) {
+    for (const name of Object.keys(texture.extensions ?? {})) extension(name)
+    assertUvmTexturePresentation(texture.extensions)
+  }
   for (const material of materials) {
     if (material === null || typeof material !== 'object' || Array.isArray(material))
       reject('material-shape', 'A material must be an object')
     for (const name of Object.keys(material.extensions ?? {})) extension(name)
+    assertUvmTeamColor(material.extensions?.UV_game_material_team_color, material.pbrMetallicRoughness?.baseColorTexture)
     if (material.extensions?.KHR_materials_specular !== undefined) {
       extension('KHR_materials_specular')
       if (material.extensions.KHR_materials_unlit !== undefined
@@ -103,6 +113,7 @@ export function assertGltfMaterialReferences(document) {
     }
     const game = material.extensions?.UV_game_material
     if (game !== undefined) {
+      assertGltfShadowFlags(game)
       if (game.shader === 'uv.water.surface@1') assertWaterSurface(game)
       const layers = [...(game.layers ?? []), ...(game.passes ?? []).flatMap(pass => pass.layers ?? [])]
       for (const layer of layers) {
@@ -117,5 +128,6 @@ export function assertGltfMaterialReferences(document) {
       }
     }
   }
+  assertUvmTeamColorAnimations(document)
   return document
 }

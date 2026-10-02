@@ -768,6 +768,7 @@
                   "type": "object",
                   "properties": {
                     "velocity": {
+                      "$anchor": "sequenceTracks",
                       "type": "array",
                       "items": {
                         "type": "object",

@@ -1,5 +1,7 @@
 /** UVS 1 chart-local initializers projected from verified documents. Not reaction admission. */
 import { encodeCanonicalValue } from './uv-value.mjs'
+import { scenarioVersion } from './uv-scenario-version.ts'
+import { scenarioInitialReferenceAddress } from './uv-scenario-reference.ts'
 
 const namespaceName = /^[a-z0-9][a-z0-9-]*(?:\.[a-z0-9][a-z0-9-]*)*$/
 const chartName = /^[a-z][a-z0-9-]*$/
@@ -16,7 +18,7 @@ export function projectScenarioVariables(documents) {
   for (const entry of documents) {
     const doc = entry?.document
     const source = `${entry?.packageId}/${entry?.path}`
-    if (doc?.uv?.format !== 'UVS' || doc.uv.version !== '1.0'
+    if (scenarioVersion(doc?.uv) === undefined
       || typeof doc.namespace !== 'string' || !namespaceName.test(doc.namespace)
       || !Array.isArray(doc.charts) || doc.charts.length === 0)
       return reject('scenario-document-invalid', `${source} has no UVS 1 namespace and charts.`)
@@ -42,11 +44,21 @@ export function projectScenarioVariables(documents) {
           return reject('scenario-variable-id-budget', `${id.slice(0, 80)} exceeds the strref ID budget.`)
         const type = variable.type === 'ref' && refKind.test(variable.refKind ?? '')
           ? `ref<${variable.refKind}>` : variable.type
-        if (variable.type === 'ref' ? type === 'ref' : !['bool', 'i64', 'fixed64', 'strref'].includes(type))
+        if (type === 'ref<entity>?' && scenarioVersion(doc.uv) !== '1.5')
+          return reject('scenario-version-unavailable', `${id}: nullable entity variables require UVS 1.5.`)
+        if (type === 'ref<entity>?' && (Object.hasOwn(variable, 'refKind') || variable.initial !== null))
+          return reject('scenario-variable-initial', `${id}: fresh nullable entity initial must be null, without refKind.`)
+        if (type === 'list<ref<entity>>' && ['1.0', '1.1'].includes(scenarioVersion(doc.uv)))
+          return reject('scenario-version-unavailable', `${id}: entity-list variables require UVS 1.2.`)
+        if (type === 'list<ref<entity>>' && Object.hasOwn(variable, 'refKind'))
+          return reject('scenario-variable-type', `${id}: entity-list type must not declare refKind.`)
+        if (variable.type === 'ref' ? type === 'ref' : !['bool', 'i64', 'fixed64', 'strref', 'list<ref<entity>>', 'ref<entity>?'].includes(type))
           return reject('scenario-variable-type', `${chartId}/${variable.name} has an unsupported type.`)
         try {
+          const initialAddress = scenarioInitialReferenceAddress(type, variable.initial, scenarioVersion(doc.uv))
           variables.push({ id, type,
-            initialHex: hex(encodeCanonicalValue({ type, value: variable.initial })),
+            ...(initialAddress === undefined ? { initialHex: hex(encodeCanonicalValue({ type, value: variable.initial })) }
+              : { initialAddress }),
             packageId: entry.packageId, path: entry.path })
         } catch (error) {
           return reject('scenario-variable-initial', `${chartId}/${variable.name}: ${error.message}`)

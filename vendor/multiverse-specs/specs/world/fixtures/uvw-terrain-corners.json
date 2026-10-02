@@ -1,0 +1,89 @@
+{
+  "material": {
+    "id": "grass",
+    "baseColorResourceId": "color",
+    "atlas": {
+      "rows": 2,
+      "tileTop": "local-y-0"
+    }
+  },
+  "sample": {
+    "cornerUv": [
+      [
+        0,
+        0
+      ],
+      [
+        2,
+        0
+      ],
+      [
+        1,
+        1
+      ],
+      [
+        -0.5,
+        1
+      ]
+    ],
+    "uvTransform": {
+      "offset": [
+        0.25,
+        0
+      ],
+      "scale": [
+        1,
+        1
+      ],
+      "rotation": 0
+    },
+    "layers": [
+      {
+        "materialId": "grass",
+        "tile": {
+          "column": 1,
+          "row": 1
+        }
+      },
+      {
+        "materialId": "grass",
+        "tile": {
+          "column": 0,
+          "row": 0
+        },
+        "cornerAlpha": [
+          0,
+          1,
+          1,
+          1
+        ]
+      }
+    ]
+  },
+  "weightedSample": {
+    "weights": [
+      {
+        "materialId": "grass",
+        "weight": 1
+      }
+    ],
+    "cornerUv": [
+      [
+        0,
+        0
+      ],
+      [
+        1,
+        0
+      ],
+      [
+        1,
+        1
+      ],
+      [
+        0,
+        1
+      ]
+    ]
+  }
+}

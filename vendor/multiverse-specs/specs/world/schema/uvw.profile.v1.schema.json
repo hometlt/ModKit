@@ -34,6 +34,124 @@
     }
   },
   "$defs": {
+    "camera": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["projection"],
+      "description": "Optional authored game-view preset in the space's UVW frame. A preset is not a camera object, node transform, gameplay constraint or default lens inferred by the viewer.",
+      "properties": {
+        "projection": { "enum": ["orthographic", "perspective"] },
+        "azimuthDegrees": { "type": "number", "description": "Eye direction from target, seen from above: +X toward +Z. Finite authored degrees are retained without wrapping." },
+        "elevationDegrees": { "type": "number", "minimum": 0, "maximum": 90 },
+        "fieldOfViewDegrees": { "type": "number", "exclusiveMinimum": 0, "exclusiveMaximum": 180 },
+        "drawDistance": { "type": "number", "exclusiveMinimum": 0, "description": "Distance in space basis units; metres when the space is metre-normalized. No physical scale is inferred for source-unit spaces." }
+      },
+      "allOf": [{ "if": { "required": ["fieldOfViewDegrees"] }, "then": { "properties": { "projection": { "const": "perspective" } } } }]
+    },
+    "playerSlot": {
+      "type": "integer",
+      "minimum": -2147483648,
+      "maximum": 2147483647,
+      "description": "Authored native slot, never a private Runtime handle. Zero and negative neutral slots are not rewritten."
+    },
+    "linearRgb": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": { "type": "number", "minimum": 0, "maximum": 1 }
+    },
+    "player": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["slot", "address"],
+      "properties": {
+        "slot": { "$ref": "#/$defs/playerSlot" },
+        "address": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024,
+          "description": "Explicit global portable player identity; the canonical strref codec bounds UTF-8 bytes. No inferred namespace or numeric handle."
+        },
+        "name": { "type": "string", "minLength": 1 },
+        "color": { "$ref": "#/$defs/linearRgb" },
+        "ramp": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 65536,
+          "items": { "$ref": "#/$defs/linearRgb" },
+          "description": "Exact ordered linear RGB shades. A material override needs the complete material ramp length, never a generated gradient."
+        }
+      }
+    },
+    "playerTable": {
+      "type": "array",
+      "maxItems": 65536,
+      "items": { "$ref": "#/$defs/player" },
+      "description": "Optional authoritative slot-to-address table. Slots and addresses are unique within a space; an empty table declares no players."
+    },
+    "startPosition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "position"],
+      "properties": {
+        "id": { "$ref": "#/$defs/localId" },
+        "position": { "$ref": "#/$defs/vec3" },
+        "player": { "$ref": "#/$defs/playerSlot" }
+      },
+      "description": "Authored start in local coordinates. Optional player names a declared slot. No clipping, inferred height or automatic spawning."
+    },
+    "startPositions": {
+      "type": "array",
+      "maxItems": 65536,
+      "items": { "$ref": "#/$defs/startPosition" },
+      "description": "Start IDs are unique within the space; unassigned starts do not invent players."
+    },
+    "presentationTint": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1
+      },
+      "description": "Per-object RGB multiplication factors, default [1,1,1]. Not opacity or player color. Preserved through UVW conversion."
+    },
+    "presentationAnimation": {
+      "type": "object",
+      "required": [
+        "name",
+        "groups",
+        "loop",
+        "speed"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "groups": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "loop": {
+          "type": "boolean"
+        },
+        "speed": {
+          "type": "number",
+          "description": "Signed presentation-time multiplier; zero pauses."
+        },
+        "randomStart": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "description": "Explicit initial presentation clip request. Stable per-object visual phase does not consume gameplay RNG."
+    },
     "space": {
       "$comment": "topology names the whole catalog so the day a publisher lands the name is already taken by the right thing (the candidate's own reservation pattern); only heightfield is admitted by this version — the oneOf below is the single gate to widen.",
       "type": "object",
@@ -65,6 +183,9 @@
             "max": { "$ref": "#/$defs/vec3" }
           }
         },
+        "players": { "$ref": "#/$defs/playerTable" },
+        "startPositions": { "$ref": "#/$defs/startPositions" },
+        "camera": { "$ref": "#/$defs/camera" },
         "layers": {
           "type": "array",
           "minItems": 1,
@@ -271,6 +392,7 @@
         "label": { "type": "string" },
         "classification": { "type": "string" },
         "sourceIndex": { "type": "integer", "minimum": 0 },
+        "atlas": { "$ref": "#/$defs/terrainAtlas" },
         "baseColorFactor": {
           "description": "glTF pbrMetallicRoughness.baseColorFactor semantics: linear, straight RGBA in [0,1]. Multiplies the linear base-color texture sample; without a base-color texture, this factor is the base color. Omission means [1,1,1,1]; this default is interpreted, never injected into canonical authored bytes. Alpha coverage is separate from terrain blend weights and does not itself select a transparency mode.",
           "$ref": "https://modkitx.org/gltf/2.0/material.profile.schema.json#/$defs/baseColorFactor"
@@ -279,6 +401,41 @@
         "normalResourceId": { "$ref": "#/$defs/localId" },
         "specularResourceId": { "$ref": "#/$defs/localId" },
         "uvTransform": { "$ref": "#/$defs/uvTransform" }
+      }
+    },
+    "terrainAtlas": {
+      "description": "Square base-colour tiles in this many rows. Image row/column zero is top left; columns = image width * rows / image height and must be integral. Pixel dimensions and tile columns are checked when the texture owner resolves the image, not guessed by composition.",
+      "type": "object", "additionalProperties": false, "required": ["rows"],
+      "properties": {
+        "rows": { "type": "integer", "minimum": 1 },
+        "tileTop": {
+          "description": "The cell edge containing the selected tile's top image row: local-y-1 when absent, or local-y-0. These names match the common terrain SDK; local y is the space-local z coordinate. Omitted defaults are interpreted, never inserted into authored bytes.",
+          "enum": ["local-y-1", "local-y-0"]
+        }
+      }
+    },
+    "terrainCornerUv": {
+      "description": "Four finite cell-local UV pairs, at (0,0), (1,0), (1,1), (0,1). Replaces the sample uvTransform for presentation; any retained sample transform is inactive source data. Values may extend outside 0..1 for wrapping. The material transform applies afterward; glTF KHR_texture_transform remains material-local.",
+      "type": "array", "minItems": 4, "maxItems": 4,
+      "items": { "$ref": "#/$defs/vec2" }
+    },
+    "terrainCornerAlpha": {
+      "description": "Four linear coverage factors at cell corners (0,0), (1,0), (1,1), (0,1). Upper tile layers multiply their tile's own alpha by triangle-interpolated coverage. Absent means one at every corner. The first layer remains opaque; its authored factors are preserved inactive. No gameplay or traversal semantics.",
+      "type": "array", "minItems": 4, "maxItems": 4,
+      "items": { "type": "number", "minimum": 0, "maximum": 1 }
+    },
+    "terrainTileLayer": {
+      "type": "object", "additionalProperties": false, "required": ["materialId", "tile"],
+      "properties": {
+        "materialId": { "$ref": "#/$defs/localId" },
+        "cornerAlpha": { "$ref": "#/$defs/terrainCornerAlpha" },
+        "tile": {
+          "type": "object", "additionalProperties": false, "required": ["column", "row"],
+          "properties": {
+            "column": { "type": "integer", "minimum": 0 },
+            "row": { "type": "integer", "minimum": 0 }
+          }
+        }
       }
     },
     "materialWeight": {
@@ -299,14 +456,20 @@
         "items": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["weights"],
+          "anyOf": [{ "required": ["weights"] }, { "required": ["layers"] }],
           "properties": {
             "weights": {
               "type": "array",
               "minItems": 1,
               "items": { "$ref": "#/$defs/materialWeight" }
             },
-            "uvTransform": { "$ref": "#/$defs/uvTransform" }
+            "layers": {
+              "description": "Authored bottom-to-top order: first tile opaque, subsequent tiles blend by their own alpha and optional cornerAlpha coverage. Replaces weights for drawing this sample; any retained weights remain source data, not additional blend passes. The material's atlas.tileTop selects the cell edge containing the tile's top row, local-y-1 when omitted. Do not sort or deduplicate this array.",
+              "type": "array", "minItems": 1, "maxItems": 256,
+              "items": { "$ref": "#/$defs/terrainTileLayer" }
+            },
+            "uvTransform": { "$ref": "#/$defs/uvTransform" },
+            "cornerUv": { "$ref": "#/$defs/terrainCornerUv" }
           }
         }
       }
@@ -503,27 +666,81 @@
         "resourceIds"
       ],
       "properties": {
-        "id": { "$ref": "#/$defs/localId" },
-        "objectKind": {
-          "enum": ["unit", "structure", "feature", "doodad", "point", "camera"]
+        "id": {
+          "$ref": "#/$defs/localId"
         },
-        "position": { "$ref": "#/$defs/vec3" },
-        "rotation": { "$ref": "#/$defs/vec4" },
-        "scale": { "$ref": "#/$defs/vec3" },
+        "objectKind": {
+          "enum": [
+            "unit",
+            "structure",
+            "feature",
+            "doodad",
+            "point",
+            "camera"
+          ]
+        },
+        "derivedFrom": {
+          "description": "A presentation piece generated from the authored cliffs facet, not a second editable placement. A native map writer regenerates it from cliff data and must not also emit it as an authored doodad. Missing source cliff data is a conversion loss/refusal, never permission to invent it.",
+          "const": "cliffs"
+        },
+        "position": {
+          "$ref": "#/$defs/vec3"
+        },
+        "rotation": {
+          "$ref": "#/$defs/vec4"
+        },
+        "scale": {
+          "$ref": "#/$defs/vec3"
+        },
         "resourceIds": {
           "type": "array",
-          "items": { "$ref": "#/$defs/localId" },
+          "items": {
+            "$ref": "#/$defs/localId"
+          },
           "uniqueItems": true
         },
         "modelComponents": {
           "type": "array",
-          "items": { "$ref": "#/$defs/modelComponent" }
+          "items": {
+            "$ref": "#/$defs/modelComponent"
+          }
         },
-        "typeId": { "type": "string" },
-        "player": { "type": "integer" },
-        "variation": { "type": "integer", "minimum": 0 },
-        "name": { "type": "string" }
-      }
+        "typeId": {
+          "type": "string"
+        },
+        "player": {
+          "type": "integer"
+        },
+        "variation": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "name": {
+          "type": "string"
+        },
+        "presentationTint": {
+          "$ref": "#/$defs/presentationTint"
+        },
+        "presentationAnimation": {
+          "$ref": "#/$defs/presentationAnimation"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "derivedFrom"
+            ]
+          },
+          "then": {
+            "properties": {
+              "objectKind": {
+                "const": "doodad"
+              }
+            }
+          }
+        }
+      ]
     },
     "objectsLayer": {
       "type": "object",
@@ -734,6 +951,17 @@
         },
         "label": {
           "type": "string"
+        },
+        "model": {
+          "enum": ["lit", "unlit"],
+          "default": "lit",
+          "description": "Initial presentation policy; unlit ignores ambient/directional light, shadows and highlights."
+        },
+        "unlitColor": {
+          "type": "array", "minItems": 3, "maxItems": 3,
+          "items": {"type": "number", "minimum": 0, "maximum": 1},
+          "default": [1, 1, 1],
+          "description": "Linear RGB multiplier in unlit, after texture color-space decoding. Omitted white is interpreted without rewriting bytes."
         },
         "ambientColor": {
           "$ref": "#/$defs/vec3"

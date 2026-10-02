@@ -1,5 +1,5 @@
 {
-  "$comment": "Machine form of SPEC_UV_COORDINATES.md. A converter reads this instead of the prose; a reviewer checks the prose against it. Source entries carry only conversions that were measured against real files — a frame nobody has verified is absent from this list rather than guessed at, because a plausible-looking basis is indistinguishable from a measured one once it is written down.",
+  "$comment": "Machine form of SPEC_UV_COORDINATES.md. A source record defines a frame, not an adapter admission certificate. Records with qualification=required have an explicit numeric contract but still require native corpus/oracle receipts. Historical records without qualification retain their original evidence scope. Incomplete frames are listed under unmeasuredWorldSources, never guessed.",
   "schemaVersion": "uv-coordinates-1",
   "formId": "uv.foundation/coordinates@1",
   "appliesTo": ["model plane", "world plane"],
@@ -44,6 +44,20 @@
     "boundsFromCorners": "an axis-aligned bound is recomputed from the converted corner set, never by converting min and max individually",
     "emptyHasNoBounds": "an empty subject has no bounds; it does not have a zero-volume box at the origin"
   },
+  "worldForms": {
+    "planar-pixel-grid-v1": {
+      "from": { "handedness": "left", "upAxis": "z", "forwardAxis": "+y" },
+      "map": "(x, y, z) -> (x, z, y)",
+      "inverseMap": "(x, y, z) -> (x, z, y)",
+      "selfInverse": true,
+      "sourceUnit": "pixel",
+      "sourceRowOrder": "forward",
+      "origin": "[0, 0, 0] for a top-left-origin flat grid; any authored offset is transformed by the same map",
+      "height": "0 only when the native format actually has no height; no height is inferred for a 3D source",
+      "unit": "gridRelationshipWithoutPhysicalScale",
+      "note": "x east, y south, z up; one shared definition for integer-pixel maps. Cell size belongs to the source record. Pixel count supplies no physical metre factor."
+    }
+  },
   "sources": [
     {
       "id": "m3",
@@ -80,7 +94,118 @@
       "sourceUnit": "warzone-world-unit",
       "unitsPerCell": 128,
       "origin": "heightfield origin = (0, 0, -((rows - 1) * 128)); source rows are reversed so serialized rows advance along canonical +Z",
-      "measuredIn": "../world/ADR-WORLD-002-warzone-map-native-to-uvw.md"
+      "measuredIn": "../world/ADR-WORLD-002-warzone-map-native-to-uvw.md",
+      "supersededBy": "warzone-map-native-game-view",
+      "note": "Historical renderer-coordinate differential; it did not account for the game's mirrored projection. Its hashes remain historical, not evidence for the replacement."
+    },
+    {
+      "id": "warzone-map-native-game-view",
+      "label": "Warzone 2100 game-facing map frame",
+      "qualification": "required",
+      "from": { "handedness": "left", "upAxis": "z", "forwardAxis": "+y" },
+      "map": "(x, y, z) -> (x, z, y)",
+      "inverseMap": "(x, y, z) -> (x, z, y)",
+      "selfInverse": true,
+      "unit": "gridRelationshipWithoutPhysicalScale",
+      "sourceUnit": "warzone-world-unit",
+      "unitsPerCell": 128,
+      "sourceRowOrder": "forward",
+      "origin": "[0, 0, 0]",
+      "definedIn": "../world/ADR-WORLD-008-game-facing-world-frame-qualification.md",
+      "requires": "Atomic map/PIE/inverse/rotation migration, new receipts and comparison to game/minimap; old ADR-WORLD-002 digests cannot qualify this frame."
+    },
+    {
+      "id": "warcraft3-map-native",
+      "label": "Warcraft III W3E terrain",
+      "qualification": "required",
+      "from": { "handedness": "right", "upAxis": "z", "forwardAxis": "+y" },
+      "map": "(x, y, z) -> (x, z, -y)",
+      "inverseMap": "(x, y, z) -> (x, -z, y)",
+      "selfInverse": false,
+      "unit": "gridRelationshipWithoutPhysicalScale",
+      "sourceUnit": "warcraft3-world-unit",
+      "unitsPerCell": 128,
+      "sourceRowOrder": "reverse",
+      "origin": "[centerOffset.x, 0, -(centerOffset.y + (rows - 1) * 128)]",
+      "definedIn": "../world/ADR-WORLD-003-warcraft3-map-native-to-uvw.md"
+    },
+    {
+      "id": "ea/dune-2000",
+      "label": "Dune 2000 top-left pixel grid",
+      "qualification": "required",
+      "worldForm": "planar-pixel-grid-v1",
+      "unitsPerCell": 32,
+      "definedIn": "../world/ADR-WORLD-004-planar-pixel-maps-to-uvw.md"
+    },
+    {
+      "id": "starcraft1-map-native",
+      "label": "StarCraft 1 CHK pixel grid",
+      "qualification": "required",
+      "worldForm": "planar-pixel-grid-v1",
+      "unitsPerCell": 32,
+      "unitsPerMiniCell": 8,
+      "definedIn": "../world/ADR-WORLD-004-planar-pixel-maps-to-uvw.md",
+      "requires": "Independent native/game-view qualification; Dune's receipt is not an SC1 oracle."
+    },
+    {
+      "id": "ea/red-alert-2",
+      "label": "Red Alert 2 isometric map coordinates",
+      "qualification": "required",
+      "from": { "handedness": "left", "upAxis": "z", "forwardAxis": "+y" },
+      "map": "(x, y, z) -> (x, z, y)",
+      "inverseMap": "(x, y, z) -> (x, z, y)",
+      "selfInverse": true,
+      "unit": "gridRelationshipWithoutPhysicalScale",
+      "sourceUnit": "lepton",
+      "unitsPerCell": 256,
+      "sourceRowOrder": "forward",
+      "origin": "Transformed native grid minimum; sparse diamond occupancy is noData, not a rotated heightfield or zero-height fill.",
+      "definedIn": "../world/ADR-WORLD-005-westwood-isometric-maps-to-uvw.md"
+    },
+    {
+      "id": "ea/tiberian-sun",
+      "label": "Tiberian Sun isometric map coordinates",
+      "qualification": "required",
+      "from": { "handedness": "left", "upAxis": "z", "forwardAxis": "+y" },
+      "map": "(x, y, z) -> (x, z, y)",
+      "inverseMap": "(x, y, z) -> (x, z, y)",
+      "selfInverse": true,
+      "unit": "gridRelationshipWithoutPhysicalScale",
+      "sourceUnit": "lepton",
+      "unitsPerCell": 256,
+      "sourceRowOrder": "forward",
+      "origin": "Transformed native grid minimum; sparse diamond occupancy is noData, not a rotated heightfield or zero-height fill.",
+      "definedIn": "../world/ADR-WORLD-005-westwood-isometric-maps-to-uvw.md"
+    },
+    {
+      "id": "sage-map-native",
+      "label": "SAGE map-native terrain (qualified separately per game/version)",
+      "qualification": "required",
+      "from": { "handedness": "right", "upAxis": "z", "forwardAxis": "+y" },
+      "map": "(x, y, z) -> (x, z, -y)",
+      "inverseMap": "(x, y, z) -> (x, -z, y)",
+      "selfInverse": false,
+      "unit": "gridRelationshipWithoutPhysicalScale",
+      "sourceUnit": "sage-world-unit",
+      "unitsPerCell": 10,
+      "sourceRowOrder": "reverse",
+      "origin": "[-border * 10, 0, -((rows - 1 - border) * 10)] for the full stored grid; an explicitly cropped grid recomputes origin from its transformed first corner.",
+      "definedIn": "../world/ADR-WORLD-006-sage-map-native-to-uvw.md"
+    },
+    {
+      "id": "diablo3-scene-native",
+      "label": "Diablo III scene-native coordinates",
+      "qualification": "required",
+      "from": { "handedness": "right", "upAxis": "z", "forwardAxis": "+y" },
+      "map": "(x, y, z) -> (x, z, -y)",
+      "inverseMap": "(x, y, z) -> (x, -z, y)",
+      "selfInverse": false,
+      "unit": "absent",
+      "sourceUnit": "diablo3-world-unit",
+      "sourceRowOrder": "reverse",
+      "origin": "Navigation samples retain their authored cell-center origin, transformed once; a mesh scene has no invented heightfield origin.",
+      "definedIn": "../world/ADR-WORLD-007-diablo3-and-earth-evidence-boundaries.md",
+      "requires": "Scene-frame oracle and independently qualified navigation cell spacing; the adapter's fallback 2.5 and model-estimated metre scale are not measured facts."
     },
     {
       "id": "s3o",
@@ -104,6 +229,22 @@
       "sourceUnit": "centimeter",
       "metersPerUnit": 0.01,
       "measuredIn": "SPEC_UVM_CONVERSION.md#6.3"
+    }
+  ],
+  "unmeasuredWorldSources": [
+    {
+      "id": "earth2150-map-native",
+      "sourceUnit": "earth2150-cell",
+      "unitsPerCell": 1,
+      "missing": ["game-facing handedness/orientation proof", "vertical encoding and scale"],
+      "definedIn": "../world/ADR-WORLD-007-diablo3-and-earth-evidence-boundaries.md"
+    },
+    {
+      "id": "earth2160-map-native",
+      "sourceUnit": "earth2160-coordinate-unit",
+      "unitsPerCell": 256,
+      "missing": ["game-facing handedness/orientation proof", "vertical encoding and scale"],
+      "definedIn": "../world/ADR-WORLD-007-diablo3-and-earth-evidence-boundaries.md"
     }
   ],
   "unmeasured": {

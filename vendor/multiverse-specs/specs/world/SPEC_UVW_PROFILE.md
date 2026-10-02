@@ -74,13 +74,35 @@ document is exactly a profile document with its body wrapped as that single spac
   lands with the RA/SC1 adapters; connections amendment with the first
   multi-space consumer.
 
+### Authored game-view camera preset
+
+Optional `spaces[].camera` (and `UV_world_graph.spaces[].camera` in glTF) carries
+one `camera` definition from `uvw.profile.v1.schema.json`. It adopts SDK
+`MapWorldCamera`: required `projection: orthographic|perspective`; optional
+finite `azimuthDegrees`, `elevationDegrees` in [0,90], perspective-only vertical
+`fieldOfViewDegrees` strictly between 0 and 180, and positive `drawDistance`.
+Azimuth is the eye's direction from its target, seen from above, from canonical
++X toward +Z. Authored degrees are retained, not wrapped or inferred.
+
+This is a view preset, separate from a placed `objectKind: camera` and a glTF
+camera node. It supplies no eye/target position, aspect, orthographic scale,
+scroll limit or gameplay rule. The consumer retains its ordinary controls and
+states any derived values. Omission writes no defaults. A preset survives
+spatial↔glTF round-trip and participates in the world artifact digest.
+
+Distances use the space's declared basis units: metres for a normalized metre
+space; native source units remain native until a physical scale is established.
+Neither field names nor the SDK's metre wording authorize an invented scale.
+The legacy candidate envelope does not gain this profile-only field.
+
 ## 5. Heightfield-space layer rules
 
 1. Every space contains at least one scalar heightfield. `columns` and `rows` count
    samples, not quads; grids are row-major in the space-local canonical `(x,z)` frame.
    A height equal to `noDataValue` is missing ground, not an extremely low vertex.
-2. `terrain-materials` stores either a normalized non-empty sparse weight list per sample,
-   one or two compact `rgba8-unorm` weight rasters, or both. A raster declares one to four
+2. `terrain-materials` stores normalized non-empty sparse weights, ordered atlas tile
+   layers per sample, one or two compact `rgba8-unorm` weight rasters, or retained combinations
+   of these source facets. A raster declares one to four
    material ids in RGBA channel order; consumers divide all declared channel values by their
    sum, with the first channel as the deterministic all-zero fallback. The glTF profile
    instead requires an explicit zero-sum policy: refusal or a named material. Raster dimensions are
@@ -102,6 +124,41 @@ document is exactly a profile document with its body wrapped as that single spac
    factor rather than write the interpreted default into canonical bytes.
    This optional field does not yet introduce the nested glTF material object;
    the migration must not admit both spellings with implicit precedence.
+   A textured material may declare `atlas: {rows,tileTop?}` for square base-colour tiles.
+   Columns equal `imageWidth * rows / imageHeight`, an exact positive integer;
+   texture resolution must also prove an integral tile size and in-range columns.
+   Tile `(column:0,row:0)` starts at the image's top left. A sample may carry
+   `layers: [{materialId,tile:{column,row}}]`, with 1..256 entries in authored
+   bottom-to-top order. The first tile draws opaque, each later tile blends with
+   its own alpha. `atlas.tileTop` names the cell edge that receives the top image
+   row: `local-y-1` by default, or `local-y-0`. These SDK names use local y for
+   the second horizontal coordinate (the canonical space's z), never world height.
+   Missing defaults are interpreted without writing them into authored bytes.
+   These layers select
+   the ground instead of `weights`. Any retained weights remain source data,
+   must still be valid, and never draw another ground pass. References must name
+   atlas materials, rows must fit `atlas.rows`, and texture owners check columns
+   against resolved images. Repeated materials/tiles are meaningful; never sort
+   or deduplicate the layer list. An optional layer `cornerAlpha` contains exactly
+   four finite linear coverage factors in `[0,1]`, ordered at local corners
+   `(0,0),(1,0),(1,1),(0,1)`. Upper layers multiply their tile's own alpha by
+   coverage interpolated linearly over the cell's terrain triangles; omission
+   means one at each corner. The first layer stays opaque; its authored coverage,
+   if present, is retained inactive. The first upper layer in authored order with
+   one corner different from three equal corners chooses the diagonal between
+   that corner's neighbours. Otherwise the terrain uses the diagonal with the
+   smaller absolute height difference; a tie joins `(0,0)` to `(1,1)`. This is a
+   presentation triangulation policy, not a traversal or surface-height query.
+   A sample `cornerUv` contains exactly four finite UV pairs in that same corner
+   order; values may extend outside `[0,1]` for wrapping. This applies to both
+   weighted and atlas ground. It replaces the sample's `uvTransform` for drawing;
+   a retained sample transform remains inactive source data. The material's own
+   transform applies afterward, through the existing material mapping to glTF
+   `KHR_texture_transform`; no new pivot or native UV flags are introduced.
+   Corner arrays and layer order are never sorted, clamped or quantized by
+   composition or migration. Atlas layouts, corner UVs and coverage are
+   presentation data, not traversal or gameplay classification. The glTF
+   `UV_world_graph` references these same sample/atlas definitions.
 3. `cliffs` keeps exact synchronized levels and an equally sized authored mask. It
    does not claim a generated cliff/ramp mesh; that requires a later geometry family.
    Levels are integer classifications, not elevations in the space's length unit. Its
@@ -127,10 +184,24 @@ document is exactly a profile document with its body wrapped as that single spac
    parent socket (or directly for a root). This represents compound models without making a native body/turret convention
    part of UVW. Animation time, doors, deaths and other changing state are runtime world state,
    never initial object fields.
+   A `doodad` may carry `derivedFrom: "cliffs"` for a generated presentation
+   piece (including ramps). It remains visible with its model/resource joins,
+   but is not an independently authored/editable placement. A native map writer
+   must regenerate pieces from the authored cliffs facet instead of also writing
+   them as doodads. Missing source geometry is an explicit conversion loss/refusal;
+   the marker alone neither reconstructs cliffs nor authorizes collision/pathing.
 6. Regions admit circles, rectangles and polygons. Navigation retains non-negative
    publisher-defined flags; portable flag meaning requires a separately named mapping.
    Gateways are directed-independent line segments in the local `(x,z)` plane. Lighting is
-   only the initial ambient/directional environment. Optional directional `specularColor`,
+   only the initial ambient/directional environment. Optional `model: "lit" | "unlit"`
+   defaults to lit. Unlit draws texture/base color times `unlitColor`, a linear RGB multiplier
+   in `0..1` defaulting to white, after texture color-space decoding. Ambient/directional light,
+   shadows and highlights do not apply in unlit; other authored light settings remain valid,
+   preserved inactive data. This layer policy covers the world's presentation, including objects
+   and water, and does not modify gameplay, traversal, alpha coverage or texture bytes. Display
+   transfer/color management still applies. Missing defaults are interpreted, never serialized
+   into canonical bytes. The glTF `UV_world_graph` uses this same lighting layer definition.
+   Optional directional `specularColor`,
    `specularIntensity`, and `useAmbientOcclusion`, layer `terrain` multipliers, and `toneMapping`
    preserve the common Core world presentation contract. Tone mapping names its operator
    (`reinhard`, `exponential`, `logarithmic`, `linear`, or `filmic`), positive exposure,
@@ -140,7 +211,7 @@ document is exactly a profile document with its body wrapped as that single spac
 7. IDs are unique in their family and references must resolve inside the same space.
    Canonical serialization sorts spaces, layers, resources, terrain and water materials, blend entries,
    zones, instances, model components, regions and lights by UTF-8 id; authored grid and polygon order is
-   never reordered.
+   never reordered. Ordered atlas tile layers are likewise never sorted.
 8. A navigation layer has exactly `rows × columns` non-negative integer native flags and its
    sample positions fit within the enclosing space bounds. Cross-field validation refuses a
    partial or displaced grid before any consumer maps publisher flags to a traversal policy.
@@ -186,3 +257,75 @@ target game/artifact, refusals, verification evidence and losses. Each loss name
 the reason and replacement, plus a numeric error measurement or an explicit statement that the error
 is not applicable or was not measured. A successful archive reopen proves container integrity only;
 it is not target editor/game load evidence.
+
+
+## Initial object presentation (Core relay 02.10)
+
+`objectInstance` admits optional `presentationTint` and `presentationAnimation`.
+They are shared metadata in the same object schema for both legacy profile and the
+glTF envelope. Migration and reconstruction preserve them exactly; missing consumer
+support is reported as conversion loss, not silent removal.
+
+`presentationTint` is three unit RGB multiplication factors (default white). It is
+an object tint, not player identity, team ramp or opacity. Multiplication factors
+are used directly, without treating them as sRGB-encoded colour samples. UVM
+`colorSource: "object-tint"` consumes them as its masked colour; such a material
+must not receive the same whole-object tint twice.
+
+`presentationAnimation` is the existing Core request shape: required nonempty
+`name`, ordered nonempty-string `groups`, boolean `loop`, finite signed `speed`,
+optional boolean `randomStart` (default false). Speed zero pauses; negative speed
+reverses presentation time. Name/groups retain authored animation-property intent;
+clip matching remains with the common Core clip owner, including its existing
+property-set selection. Explicit unresolved requests must not fall back to an
+unrelated clip. Random start is a stable per-object presentation phase for looping
+clips; it consumes no simulation RNG and affects no gameplay event. No numeric
+phase algorithm is frozen by this metadata contract.
+
+Gameplay animation requests/actions remain UVD/UVB/UVS mechanics and cannot be
+inferred from this visual initial-state request.
+
+## Players and start positions (Core relay 02.10)
+
+Each space admits optional `players` and `startPositions`. The glTF envelope uses
+the same definitions under `extensions.UV_world_graph.spaces[]`; conversion and
+reconstruction preserve these tables exactly.
+
+`players[]` has required `slot` (signed 32-bit integer) and `address` (portable
+canonical `strref`, nonempty, trimmed, no NUL, valid UTF-8, at most 1024 bytes).
+Optional `name` is nonempty text. Slots and addresses must be unique within one
+space. A slot is an authored native-game identifier, including zero or negative
+values where that game's rules allow them. It is never a private Runtime handle.
+An address identifies a simulation role; authenticated accounts and human, AI or
+network control are separate bindings.
+
+Optional `color` is linear RGB in 0..1; optional `ramp` contains 1..65536 exact
+linear RGB shades. No alpha or implicit gradient is added. UVM contextual player
+colour uses the owning player's row. A material ramp override must contain the
+same number of shades as that material's authored ramp. Object `presentationTint`
+keeps its separate meaning and must not be applied twice.
+
+When `players` is present, every object instance's optional integer `player`
+resolves to a declared slot in that space. An empty table is authoritative.
+Legacy spaces without a table retain their previous integer metadata; launch
+requires explicit player setup where identities are needed. Missing tables do
+not authorize guessing a player address from a slot number.
+
+`startPositions[]` has required unique nonempty `id` and finite local `position`
+vec3, plus optional `player` referencing a declared slot. Unassigned starts are
+allowed without a player table. Starts preserve authored positions, including
+height: they do not clamp to terrain, create units, allocate players or select
+game rules. Those actions belong to the native adapter and gameplay definitions.
+
+Verified compositions collect player addresses from captured selected spaces.
+The same explicit address across spaces or world instances denotes the same
+simulation player; instancing a world does not clone its player identities.
+Space bindings remain qualified by world instance. Runtime setup may reorder an
+authored roster but cannot replace or extend its identity set. A native adapter
+also checks its own slot-to-address mapping. Worlds intended to have independent
+players must publish different addresses.
+
+The current bounded executor accepts at most 256 identities and 128 UTF-8 bytes
+per address. The format's wider budgets are intentional: consumers exceeding
+their supported profile return a typed refusal and never truncate the table.
+No UVB, save or kernel ABI change is implied by these optional metadata fields.

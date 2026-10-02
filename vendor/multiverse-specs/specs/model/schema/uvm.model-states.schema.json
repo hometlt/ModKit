@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modkitx.org/uvm/1.0/uvm.model-states.schema.json",
+  "title": "UV_game_model_states",
+  "description": "Named whole-model states. Native event mapping stays with the game adapter; immutable packages require modelSha256 and captured UVM resources.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "states"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "states": {
+      "type": "array",
+      "maxItems": 4096,
+      "items": {
+        "type": "object",
+        "required": [
+          "state",
+          "model"
+        ],
+        "properties": {
+          "state": {
+            "type": "string",
+            "minLength": 1,
+            "not": {
+              "const": "base"
+            }
+          },
+          "model": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Model URI relative to the containing document; native asset names are authoring-only until translated to UVM."
+          },
+          "modelSha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

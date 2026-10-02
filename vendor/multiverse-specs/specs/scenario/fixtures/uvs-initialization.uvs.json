@@ -1,0 +1,124 @@
+{
+  "uv": {
+    "format": "UVS",
+    "version": "1.3"
+  },
+  "namespace": "sample",
+  "charts": [
+    {
+      "name": "b-second",
+      "initialState": "idle",
+      "variables": [],
+      "initialize": [
+        {
+          "kind": "uvb",
+          "module": "sample.bootstrap",
+          "function": "second",
+          "args": []
+        }
+      ],
+      "states": [
+        {
+          "name": "idle",
+          "on": []
+        }
+      ]
+    },
+    {
+      "name": "a-first",
+      "initialState": "idle",
+      "variables": [],
+      "initialize": [
+        {
+          "kind": "uvb",
+          "module": "sample.bootstrap",
+          "function": "voidProbe",
+          "args": []
+        },
+        {
+          "kind": "uvb",
+          "module": "sample.bootstrap",
+          "function": "falseProbe",
+          "args": []
+        },
+        {
+          "kind": "uvb",
+          "module": "sample.bootstrap",
+          "function": "first",
+          "args": []
+        },
+        {
+          "kind": "uvb",
+          "module": "sample.bootstrap",
+          "function": "third",
+          "args": []
+        }
+      ],
+      "states": [
+        {
+          "name": "idle",
+          "on": []
+        }
+      ]
+    },
+    {
+      "name": "z-values",
+      "initialState": "idle",
+      "initialize": [
+        {
+          "kind": "uvb",
+          "module": "sample.bootstrap",
+          "function": "spawn",
+          "args": []
+        }
+      ],
+      "variables": [
+        {
+          "name": "count",
+          "type": "i64",
+          "initial": "0"
+        },
+        {
+          "name": "ready",
+          "type": "bool",
+          "initial": false
+        },
+        {
+          "name": "members",
+          "type": "list<ref<entity>>",
+          "initial": []
+        },
+        {
+          "name": "definition",
+          "type": "ref",
+          "refKind": "def",
+          "initial": "1"
+        },
+        {
+          "name": "player",
+          "type": "ref",
+          "refKind": "player",
+          "initial": "1"
+        }
+      ],
+      "states": [
+        {
+          "name": "idle",
+          "on": [
+            {
+              "event": "entity.created",
+              "actions": [
+                {
+                  "kind": "uvb",
+                  "module": "sample.bootstrap",
+                  "function": "onCreated",
+                  "args": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

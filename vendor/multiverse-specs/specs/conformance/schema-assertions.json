@@ -21,6 +21,123 @@
     "world/schema"
   ],
   "assertions": [
+    {"id":"result-expect-accept","document":"behavior/fixtures/uvb-module-result-expect.uvb.json","pointer":"","schemaId":"https://modkitx.org/uvb/2.0/uvb.module.schema.json","expect":"valid"},
+    {"id":"result-expect-missing-dst","document":"behavior/fixtures/uvb-module-result-expect.uvb.json","pointer":"","schemaId":"https://modkitx.org/uvb/2.0/uvb.module.schema.json","expect":"invalid","mutations":[{"op":"delete","path":"functions.0.body.2.dst"}]},
+    {"id":"result-expect-missing-a","document":"behavior/fixtures/uvb-module-result-expect.uvb.json","pointer":"","schemaId":"https://modkitx.org/uvb/2.0/uvb.module.schema.json","expect":"invalid","mutations":[{"op":"delete","path":"functions.0.body.2.a"}]},
+    {"id":"result-expect-extra-target","document":"behavior/fixtures/uvb-module-result-expect.uvb.json","pointer":"","schemaId":"https://modkitx.org/uvb/2.0/uvb.module.schema.json","expect":"invalid","mutations":[{"op":"set","path":"functions.0.body.2.target","value":3}]},
+    {"id": "uvs-nullable-major", "document": "scenario/fixtures/uvs-nullable-entity.uvs.json", "pointer": "", "schemaId": "https://modkitx.org/uvs/1/uvs.document.schema.json", "expect": "valid"},
+    {"id": "uvs-nullable-minor", "document": "scenario/fixtures/uvs-nullable-entity.uvs.json", "pointer": "", "schemaId": "https://modkitx.org/uvs/1.5/uvs.document.schema.json", "expect": "valid"},
+    {"id": "uvs-nullable-old-1.0", "document": "scenario/fixtures/uvs-nullable-entity.uvs.json", "pointer": "", "schemaId": "https://modkitx.org/uvs/1/uvs.document.schema.json", "expect": "invalid", "mutations": [{"op": "set", "path": "uv.version", "value": "1.0"}]},
+    {"id": "uvs-nullable-old-1.1", "document": "scenario/fixtures/uvs-nullable-entity.uvs.json", "pointer": "", "schemaId": "https://modkitx.org/uvs/1/uvs.document.schema.json", "expect": "invalid", "mutations": [{"op": "set", "path": "uv.version", "value": "1.1"}]},
+    {"id": "uvs-nullable-old-1.2", "document": "scenario/fixtures/uvs-nullable-entity.uvs.json", "pointer": "", "schemaId": "https://modkitx.org/uvs/1/uvs.document.schema.json", "expect": "invalid", "mutations": [{"op": "set", "path": "uv.version", "value": "1.2"}]},
+    {"id": "uvs-nullable-old-1.3", "document": "scenario/fixtures/uvs-nullable-entity.uvs.json", "pointer": "", "schemaId": "https://modkitx.org/uvs/1/uvs.document.schema.json", "expect": "invalid", "mutations": [{"op": "set", "path": "uv.version", "value": "1.3"}]},
+    {"id": "uvs-nullable-old-1.4", "document": "scenario/fixtures/uvs-nullable-entity.uvs.json", "pointer": "", "schemaId": "https://modkitx.org/uvs/1/uvs.document.schema.json", "expect": "invalid", "mutations": [{"op": "set", "path": "uv.version", "value": "1.4"}]},
+    {"id": "uvs-nullable-initial-some", "document": "scenario/fixtures/uvs-nullable-entity.uvs.json", "pointer": "", "schemaId": "https://modkitx.org/uvs/1/uvs.document.schema.json", "expect": "invalid", "mutations": [{"op": "set", "path": "charts.2.variables.5.initial", "value": "2"}]},
+    {"id": "uvs-nullable-initial-zero", "document": "scenario/fixtures/uvs-nullable-entity.uvs.json", "pointer": "", "schemaId": "https://modkitx.org/uvs/1/uvs.document.schema.json", "expect": "invalid", "mutations": [{"op": "set", "path": "charts.2.variables.5.initial", "value": 0}]},
+    {"id": "uvs-nullable-initial-string-zero", "document": "scenario/fixtures/uvs-nullable-entity.uvs.json", "pointer": "", "schemaId": "https://modkitx.org/uvs/1/uvs.document.schema.json", "expect": "invalid", "mutations": [{"op": "set", "path": "charts.2.variables.5.initial", "value": "0"}]},
+    {"id": "uvs-nullable-initial-object", "document": "scenario/fixtures/uvs-nullable-entity.uvs.json", "pointer": "", "schemaId": "https://modkitx.org/uvs/1/uvs.document.schema.json", "expect": "invalid", "mutations": [{"op": "set", "path": "charts.2.variables.5.initial", "value": {}}]},
+    {"id": "uvs-nullable-initial-list", "document": "scenario/fixtures/uvs-nullable-entity.uvs.json", "pointer": "", "schemaId": "https://modkitx.org/uvs/1/uvs.document.schema.json", "expect": "invalid", "mutations": [{"op": "set", "path": "charts.2.variables.5.initial", "value": []}]},
+    {"id": "uvs-nullable-initial-bool", "document": "scenario/fixtures/uvs-nullable-entity.uvs.json", "pointer": "", "schemaId": "https://modkitx.org/uvs/1/uvs.document.schema.json", "expect": "invalid", "mutations": [{"op": "set", "path": "charts.2.variables.5.initial", "value": false}]},
+    {"id": "uvs-nullable-refkind", "document": "scenario/fixtures/uvs-nullable-entity.uvs.json", "pointer": "", "schemaId": "https://modkitx.org/uvs/1/uvs.document.schema.json", "expect": "invalid", "mutations": [{"op": "set", "path": "charts.2.variables.5.refKind", "value": "entity"}]},
+    {"id": "uvs-nullable-address-required", "document": "scenario/fixtures/uvs-nullable-entity.uvs.json", "pointer": "", "schemaId": "https://modkitx.org/uvs/1/uvs.document.schema.json", "expect": "invalid", "mutations": [{"op": "set", "path": "charts.2.variables.3.initial", "value": "2"}]},
+    {"id": "uvb-nullable-module", "document": "behavior/fixtures/uvb-module-nullable-entity.uvb.json", "pointer": "", "schemaId": "https://modkitx.org/uvb/2.0/uvb.module.schema.json", "expect": "valid"},
+    {"id": "uvb-nullable-double-optional", "document": "behavior/fixtures/uvb-module-nullable-entity.uvb.json", "pointer": "", "schemaId": "https://modkitx.org/uvb/2.0/uvb.module.schema.json", "expect": "invalid", "mutations": [{"op": "set", "path": "functions.2.params.0", "value": "ref<entity>??"}]},
+    {"id": "uvb-nullable-some-no-source", "document": "behavior/fixtures/uvb-module-nullable-entity.uvb.json", "pointer": "", "schemaId": "https://modkitx.org/uvb/2.0/uvb.module.schema.json", "expect": "invalid", "mutations": [{"op": "delete", "path": "functions.1.body.0.a"}]},
+    {"id": "uvb-nullable-none-no-type", "document": "behavior/fixtures/uvb-module-nullable-entity.uvb.json", "pointer": "", "schemaId": "https://modkitx.org/uvb/2.0/uvb.module.schema.json", "expect": "invalid", "mutations": [{"op": "delete", "path": "functions.0.body.0.type"}]},
+
+    {"id": "terrain-corners-tile-top", "document": "world/fixtures/uvw-terrain-corners.json", "pointer": "/material", "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/terrainMaterial", "expect": "valid"},
+    {"id": "terrain-corners-tile-top-invalid", "document": "world/fixtures/uvw-terrain-corners.json", "pointer": "/material", "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/terrainMaterial", "expect": "invalid", "mutations": [{"op": "set", "path": "atlas.tileTop", "value": "north"}]},
+    {"id": "terrain-corners-sample", "document": "world/fixtures/uvw-terrain-corners.json", "pointer": "/sample", "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/materialWeightGrid/items/items", "expect": "valid"},
+    {"id": "terrain-corners-weighted-sample", "document": "world/fixtures/uvw-terrain-corners.json", "pointer": "/weightedSample", "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/materialWeightGrid/items/items", "expect": "valid"},
+    {"id": "terrain-corners-uv-short", "document": "world/fixtures/uvw-terrain-corners.json", "pointer": "/sample", "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/materialWeightGrid/items/items", "expect": "invalid", "mutations": [{"op": "set", "path": "cornerUv", "value": [[0, 0], [0, 0], [0, 0]]}]},
+    {"id": "terrain-corners-uv-pair", "document": "world/fixtures/uvw-terrain-corners.json", "pointer": "/sample", "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/materialWeightGrid/items/items", "expect": "invalid", "mutations": [{"op": "set", "path": "cornerUv.0", "value": [0, 0, 0]}]},
+    {"id": "terrain-corners-uv-nonnumeric", "document": "world/fixtures/uvw-terrain-corners.json", "pointer": "/sample", "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/materialWeightGrid/items/items", "expect": "invalid", "mutations": [{"op": "set", "path": "cornerUv.0.0", "value": "0"}]},
+    {"id": "terrain-corners-alpha-short", "document": "world/fixtures/uvw-terrain-corners.json", "pointer": "/sample", "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/materialWeightGrid/items/items", "expect": "invalid", "mutations": [{"op": "set", "path": "layers.1.cornerAlpha", "value": [1, 1, 1]}]},
+    {"id": "terrain-corners-alpha-high", "document": "world/fixtures/uvw-terrain-corners.json", "pointer": "/sample", "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/materialWeightGrid/items/items", "expect": "invalid", "mutations": [{"op": "set", "path": "layers.1.cornerAlpha.0", "value": 1.01}]},
+    {"id": "terrain-corners-alpha-low", "document": "world/fixtures/uvw-terrain-corners.json", "pointer": "/sample", "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/materialWeightGrid/items/items", "expect": "invalid", "mutations": [{"op": "set", "path": "layers.1.cornerAlpha.0", "value": -0.01}]},
+    {"id": "terrain-corners-alpha-bool", "document": "world/fixtures/uvw-terrain-corners.json", "pointer": "/sample", "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/materialWeightGrid/items/items", "expect": "invalid", "mutations": [{"op": "set", "path": "layers.1.cornerAlpha.0", "value": true}]},
+    {"document": "scenario/fixtures/uvs-address-references.uvs.json", "pointer": "", "schemaId": "https://modkitx.org/uvs/1/uvs.document.schema.json", "id": "uvs-address-private-handle", "expect": "invalid", "mutations": [{"op": "set", "path": "charts.2.variables.3.initial", "value": "1"}]},
+    {"document": "scenario/fixtures/uvs-address-references.uvs.json", "pointer": "", "schemaId": "https://modkitx.org/uvs/1/uvs.document.schema.json", "id": "uvs-address-major", "expect": "valid"},
+    {"document": "scenario/fixtures/uvs-address-references.uvs.json", "pointer": "", "schemaId": "https://modkitx.org/uvs/1.4/uvs.document.schema.json", "id": "uvs-address-minor", "expect": "valid"},
+    {"document": "scenario/fixtures/uvs-address-references.uvs.json", "pointer": "", "schemaId": "https://modkitx.org/uvs/1/uvs.document.schema.json", "id": "uvs-address-old-1.0", "expect": "invalid", "mutations": [{"op": "set", "path": "uv.version", "value": "1.0"}]},
+    {"document": "scenario/fixtures/uvs-address-references.uvs.json", "pointer": "", "schemaId": "https://modkitx.org/uvs/1/uvs.document.schema.json", "id": "uvs-address-old-1.1", "expect": "invalid", "mutations": [{"op": "set", "path": "uv.version", "value": "1.1"}]},
+    {"document": "scenario/fixtures/uvs-address-references.uvs.json", "pointer": "", "schemaId": "https://modkitx.org/uvs/1/uvs.document.schema.json", "id": "uvs-address-old-1.2", "expect": "invalid", "mutations": [{"op": "set", "path": "uv.version", "value": "1.2"}]},
+    {"document": "scenario/fixtures/uvs-address-references.uvs.json", "pointer": "", "schemaId": "https://modkitx.org/uvs/1/uvs.document.schema.json", "id": "uvs-address-old-1.3", "expect": "invalid", "mutations": [{"op": "set", "path": "uv.version", "value": "1.3"}]},
+    {"document": "scenario/fixtures/uvs-address-references.uvs.json", "pointer": "", "schemaId": "https://modkitx.org/uvs/1/uvs.document.schema.json", "id": "uvs-address-empty", "expect": "invalid", "mutations": [{"op": "set", "path": "charts.2.variables.3.initial.address", "value": ""}]},
+    {"document": "scenario/fixtures/uvs-address-references.uvs.json", "pointer": "", "schemaId": "https://modkitx.org/uvs/1/uvs.document.schema.json", "id": "uvs-address-nul", "expect": "invalid", "mutations": [{"op": "set", "path": "charts.2.variables.3.initial.address", "value": "bad\u0000id"}]},
+    {"document": "scenario/fixtures/uvs-address-references.uvs.json", "pointer": "", "schemaId": "https://modkitx.org/uvs/1/uvs.document.schema.json", "id": "uvs-address-extra", "expect": "invalid", "mutations": [{"op": "set", "path": "charts.2.variables.3.initial.extra", "value": true}]},
+    {"document": "scenario/fixtures/uvs-address-references.uvs.json", "pointer": "", "schemaId": "https://modkitx.org/uvs/1/uvs.document.schema.json", "id": "uvs-address-entity", "expect": "invalid", "mutations": [{"op": "set", "path": "charts.2.variables.3.refKind", "value": "entity"}]},
+    {"document": "scenario/fixtures/uvs-address-references.uvs.json", "pointer": "", "schemaId": "https://modkitx.org/uvs/1/uvs.document.schema.json", "id": "uvs-address-scalar", "expect": "invalid", "mutations": [{"op": "set", "path": "charts.2.variables.3.type", "value": "strref"}]},
+    {"document": "scenario/fixtures/uvs-initialization.uvs.json", "pointer": "", "schemaId": "https://modkitx.org/uvs/1/uvs.document.schema.json", "id": "uvs-initialize-major", "expect": "valid"},
+    {"document": "scenario/fixtures/uvs-initialization.uvs.json", "pointer": "", "schemaId": "https://modkitx.org/uvs/1.3/uvs.document.schema.json", "id": "uvs-initialize-minor", "expect": "valid"},
+    {"document": "scenario/fixtures/uvs-initialization.uvs.json", "pointer": "", "schemaId": "https://modkitx.org/uvs/1/uvs.document.schema.json", "id": "uvs-initialize-old-1.0", "expect": "invalid", "mutations": [{"op": "set", "path": "uv.version", "value": "1.0"}]},
+    {"document": "scenario/fixtures/uvs-initialization.uvs.json", "pointer": "", "schemaId": "https://modkitx.org/uvs/1/uvs.document.schema.json", "id": "uvs-initialize-old-1.1", "expect": "invalid", "mutations": [{"op": "set", "path": "uv.version", "value": "1.1"}]},
+    {"document": "scenario/fixtures/uvs-initialization.uvs.json", "pointer": "", "schemaId": "https://modkitx.org/uvs/1/uvs.document.schema.json", "id": "uvs-initialize-old-1.2", "expect": "invalid", "mutations": [{"op": "set", "path": "uv.version", "value": "1.2"}]},
+    {"document": "scenario/fixtures/uvs-initialization.uvs.json", "pointer": "", "schemaId": "https://modkitx.org/uvs/1/uvs.document.schema.json", "id": "uvs-initialize-args", "expect": "invalid", "mutations": [{"op": "set", "path": "charts.0.initialize.0.args", "value": [{"kind": "const", "value": 1}]}]},
+    {"document": "scenario/fixtures/uvs-initialization.uvs.json", "pointer": "", "schemaId": "https://modkitx.org/uvs/1/uvs.document.schema.json", "id": "uvs-initialize-extra", "expect": "invalid", "mutations": [{"op": "set", "path": "charts.0.initialize.0.event", "value": "entity.created"}]},
+    {"document": "scenario/fixtures/uvs-initialization.uvs.json", "pointer": "", "schemaId": "https://modkitx.org/uvs/1/uvs.document.schema.json", "id": "uvs-initialize-action", "expect": "invalid", "mutations": [{"op": "set", "path": "charts.0.initialize.0", "value": {"kind": "intrinsic", "name": "entity.destroy@1", "args": []}}]},
+    {"document": "scenario/fixtures/uvs-entity-list-state.uvs.json", "pointer": "", "schemaId": "https://modkitx.org/uvs/1/uvs.document.schema.json", "id": "uvs-list-major", "expect": "valid"},
+    {"document": "scenario/fixtures/uvs-entity-list-state.uvs.json", "pointer": "", "schemaId": "https://modkitx.org/uvs/1.2/uvs.document.schema.json", "id": "uvs-list-minor", "expect": "valid"},
+    {"document": "scenario/fixtures/uvs-entity-list-state.uvs.json", "pointer": "", "schemaId": "https://modkitx.org/uvs/1.1/uvs.document.schema.json", "id": "uvs-list-old-selector", "expect": "invalid"},
+    {"document": "scenario/fixtures/uvs-entity-list-state.uvs.json", "pointer": "", "schemaId": "https://modkitx.org/uvs/1/uvs.document.schema.json", "id": "uvs-list-old-version", "expect": "invalid", "mutations": [{"op": "set", "path": "uv.version", "value": "1.1"}]},
+    {"document": "scenario/fixtures/uvs-entity-list-state.uvs.json", "pointer": "", "schemaId": "https://modkitx.org/uvs/1/uvs.document.schema.json", "id": "uvs-list-zero", "expect": "invalid", "mutations": [{"op": "set", "path": "charts.0.variables.0.initial", "value": ["0"]}]},
+    {"document": "scenario/fixtures/uvs-entity-list-state.uvs.json", "pointer": "", "schemaId": "https://modkitx.org/uvs/1/uvs.document.schema.json", "id": "uvs-list-number", "expect": "invalid", "mutations": [{"op": "set", "path": "charts.0.variables.0.initial", "value": [1]}]},
+    {"document": "scenario/fixtures/uvs-entity-list-state.uvs.json", "pointer": "", "schemaId": "https://modkitx.org/uvs/1/uvs.document.schema.json", "id": "uvs-list-wrong-kind", "expect": "invalid", "mutations": [{"op": "set", "path": "charts.0.variables.0.refKind", "value": "entity"}]},
+    {"document": "scenario/fixtures/uvs-event-payloads.uvs.json", "pointer": "", "schemaId": "https://modkitx.org/uvs/1/uvs.document.schema.json", "id": "uvs-payload-major", "expect": "valid"},
+    {"document": "scenario/fixtures/uvs-event-payloads.uvs.json", "pointer": "", "schemaId": "https://modkitx.org/uvs/1.1/uvs.document.schema.json", "id": "uvs-payload-minor", "expect": "valid"},
+    {"document": "scenario/fixtures/uvs-event-payloads.uvs.json", "pointer": "", "schemaId": "https://modkitx.org/uvs/1.0/uvs.document.schema.json", "id": "uvs-payload-legacy-selector", "expect": "invalid"},
+    {"document": "scenario/fixtures/uvs-event-payloads.uvs.json", "pointer": "", "schemaId": "https://modkitx.org/uvs/1.1/uvs.document.schema.json", "id": "uvs-payload-minor-selector", "expect": "invalid", "mutations": [{"op": "set", "path": "uv.version", "value": "1.0"}]},
+    {"document": "scenario/fixtures/uvs-event-payloads.uvs.json", "pointer": "", "schemaId": "https://modkitx.org/uvs/1/uvs.document.schema.json", "id": "uvs-payload-legacy-nested", "expect": "invalid", "mutations": [{"op": "set", "path": "uv.version", "value": "1.0"}]},
+    {"document": "scenario/fixtures/uvs-event-payloads.uvs.json", "pointer": "", "schemaId": "https://modkitx.org/uvs/1/uvs.document.schema.json", "id": "uvs-payload-unknown-minor", "expect": "invalid", "mutations": [{"op": "set", "path": "uv.version", "value": "1.6"}]},
+    {"document": "scenario/fixtures/uvs-event-payloads.uvs.json", "pointer": "", "schemaId": "https://modkitx.org/uvs/1/uvs.document.schema.json", "id": "uvs-payload-extra", "expect": "invalid", "mutations": [{"op": "set", "path": "charts.0.states.0.on.0.condition.args.1.args.0.extra", "value": true}]},
+    {"document": "scenario/fixtures/uvs-event-payloads.uvs.json", "pointer": "", "schemaId": "https://modkitx.org/uvs/1/uvs.document.schema.json", "id": "uvs-payload-args", "expect": "invalid", "mutations": [{"op": "set", "path": "charts.0.states.0.on.0.condition.args.1.args.0.args", "value": []}]},
+    {"document": "scenario/fixtures/uvs-event-payloads.uvs.json", "pointer": "", "schemaId": "https://modkitx.org/uvs/1/uvs.document.schema.json", "id": "uvs-payload-value", "expect": "invalid", "mutations": [{"op": "set", "path": "charts.0.states.0.on.0.condition.args.1.args.0.value", "value": "1"}]},
+    {"document": "scenario/fixtures/uvs-event-payloads.uvs.json", "pointer": "", "schemaId": "https://modkitx.org/uvs/1/uvs.document.schema.json", "id": "uvs-payload-missing-name", "expect": "invalid", "mutations": [{"op": "delete", "path": "charts.0.states.0.on.0.condition.args.1.args.0.name"}]},
+    {
+      "id": "atlas-material", "document": "world/fixtures/uvw-atlas-and-derived-cases.json", "pointer": "/material",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/terrainMaterial", "expect": "valid"
+    },
+    {
+      "id": "atlas-no-extra-columns", "document": "world/fixtures/uvw-atlas-and-derived-cases.json", "pointer": "/material",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/terrainMaterial", "expect": "invalid",
+      "mutations": [{ "op": "set", "path": "atlas.columns", "value": 2 }]
+    },
+    {
+      "id": "atlas-only-sample", "document": "world/fixtures/uvw-atlas-and-derived-cases.json", "pointer": "/sample",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/materialWeightGrid/items/items", "expect": "valid"
+    },
+    {
+      "id": "atlas-retained-weights", "document": "world/fixtures/uvw-atlas-and-derived-cases.json", "pointer": "/mixedSample",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/materialWeightGrid/items/items", "expect": "valid"
+    },
+    {
+      "id": "atlas-negative-column", "document": "world/fixtures/uvw-atlas-and-derived-cases.json", "pointer": "/sample",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/materialWeightGrid/items/items", "expect": "invalid",
+      "mutations": [{ "op": "set", "path": "layers.0.tile.column", "value": -1 }]
+    },
+    {
+      "id": "atlas-empty-stack", "document": "world/fixtures/uvw-atlas-and-derived-cases.json", "pointer": "/sample",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/materialWeightGrid/items/items", "expect": "invalid",
+      "mutations": [{ "op": "set", "path": "layers", "value": [] }]
+    },
+    {
+      "id": "derived-cliff-doodad", "document": "world/fixtures/uvw-atlas-and-derived-cases.json", "pointer": "/object",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/objectInstance", "expect": "valid"
+    },
+    {
+      "id": "derived-cliff-unit-refused", "document": "world/fixtures/uvw-atlas-and-derived-cases.json", "pointer": "/object",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/objectInstance", "expect": "invalid",
+      "mutations": [{ "op": "set", "path": "objectKind", "value": "unit" }]
+    },
+    {
+      "id": "game-material-shadow-flags", "document": "world/fixtures/uvw-atlas-and-derived-cases.json", "pointer": "/materialFlags",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.material.schema.json#gameMaterial", "expect": "valid"
+    },
+    {
+      "id": "game-material-shadow-flags-boolean-only", "document": "world/fixtures/uvw-atlas-and-derived-cases.json", "pointer": "/materialFlags",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.material.schema.json#gameMaterial", "expect": "invalid",
+      "mutations": [{ "op": "set", "path": "receiveShadows", "value": 0 }]
+    },
     {
       "document": "world/fixtures/uvw-exact-pages.json",
       "pointer": "/f64",
@@ -1878,6 +1995,96 @@
           "value": 1
         }
       ]
-    }
+    },
+    {
+      "document": "model/fixtures/uvm-variants.profile.json",
+      "pointer": "/slots",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.variants.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "model/fixtures/uvm-variants.profile.json",
+      "pointer": "/states",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.model-states.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "model/fixtures/uvm-variants.profile.json",
+      "pointer": "/invalidBoth",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.variants.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "model/fixtures/uvm-variants.profile.json",
+      "pointer": "/invalidPrimitive",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.variants.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "model/fixtures/uvm-variants.profile.json",
+      "pointer": "/invalidAttachment",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.variants.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "model/fixtures/uvm-variants.profile.json",
+      "pointer": "/invalidState",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.model-states.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "model/fixtures/uvm-variants.profile.json",
+      "pointer": "/lighting",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/lightingLayer",
+      "expect": "valid"
+    },
+    {
+      "document": "model/fixtures/uvm-variants.profile.json",
+      "pointer": "/invalidLighting",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/lightingLayer",
+      "expect": "invalid"
+    },
+    {"id": "team-channel-key", "document": "model/fixtures/uvm-presentation-cases.json", "pointer": "/channelKey", "schemaId": "https://modkitx.org/uvm/1.0/uvm.material.schema.json#teamColor", "expect": "valid"},
+    {"id": "team-key-multiply", "document": "model/fixtures/uvm-presentation-cases.json", "pointer": "/channelKey", "schemaId": "https://modkitx.org/uvm/1.0/uvm.material.schema.json#teamColor", "expect": "invalid", "mutations": [{"op": "set", "path": "blend", "value": "multiply"}]},
+    {"id": "team-ramp8", "document": "model/fixtures/uvm-presentation-cases.json", "pointer": "/ramp8", "schemaId": "https://modkitx.org/uvm/1.0/uvm.material.schema.json#teamColor", "expect": "valid"},
+    {"id": "team-ramp16", "document": "model/fixtures/uvm-presentation-cases.json", "pointer": "/ramp16", "schemaId": "https://modkitx.org/uvm/1.0/uvm.material.schema.json#teamColor", "expect": "valid"},
+    {"id": "team-ramp-missing-index-source", "document": "model/fixtures/uvm-presentation-cases.json", "pointer": "/ramp8", "schemaId": "https://modkitx.org/uvm/1.0/uvm.material.schema.json#teamColor", "expect": "invalid", "mutations": [{"op": "delete", "path": "maskTexture"}]},
+    {"id": "team-mask-rgb", "document": "model/fixtures/uvm-presentation-cases.json", "pointer": "/maskRgb", "schemaId": "https://modkitx.org/uvm/1.0/uvm.material.schema.json#teamColor", "expect": "valid"},
+    {"id": "team-secondary-uv", "document": "model/fixtures/uvm-presentation-cases.json", "pointer": "/channelKey", "schemaId": "https://modkitx.org/uvm/1.0/uvm.material.schema.json#teamColor", "expect": "invalid", "mutations": [{"op": "set", "path": "secondaryMaskTexture.extensions.KHR_texture_transform.pivot", "value": [0.5, 0.5]}]},
+    {"id": "alpha-before-key", "document": "model/fixtures/uvm-presentation-cases.json", "pointer": "/textureAlpha", "schemaId": "https://modkitx.org/uvm/1.0/uvm.texture.schema.json#alpha", "expect": "valid"},
+    {"id": "alpha-required", "document": "model/fixtures/uvm-presentation-cases.json", "pointer": "/textureAlpha", "schemaId": "https://modkitx.org/uvm/1.0/uvm.texture.schema.json#alpha", "expect": "invalid", "mutations": [{"op": "delete", "path": "ignoreStoredAlpha"}]},
+    {"id": "billboard-inverse", "document": "model/fixtures/uvm-presentation-cases.json", "pointer": "/billboards/0", "schemaId": "https://modkitx.org/uvm/1.0/uvm.scene.schema.json#billboard", "expect": "valid"},
+    {"id": "billboard-face", "document": "model/fixtures/uvm-presentation-cases.json", "pointer": "/billboards/1", "schemaId": "https://modkitx.org/uvm/1.0/uvm.scene.schema.json#billboard", "expect": "valid"},
+    {"id": "billboard-aim", "document": "model/fixtures/uvm-presentation-cases.json", "pointer": "/billboards/2", "schemaId": "https://modkitx.org/uvm/1.0/uvm.scene.schema.json#billboard", "expect": "valid"},
+    {"id": "billboard-version", "document": "model/fixtures/uvm-presentation-cases.json", "pointer": "/billboards/0", "schemaId": "https://modkitx.org/uvm/1.0/uvm.scene.schema.json#billboard", "expect": "invalid", "mutations": [{"op": "set", "path": "schemaVersion", "value": 2}]},
+    {"id": "scene-animated-lights", "document": "model/fixtures/uvm-presentation-cases.json", "pointer": "/sceneLights", "schemaId": "https://modkitx.org/uvm/1.0/uvm.scene.schema.json#sceneLights", "expect": "valid"},
+    {"id": "scene-no-position", "document": "model/fixtures/uvm-presentation-cases.json", "pointer": "/sceneLights", "schemaId": "https://modkitx.org/uvm/1.0/uvm.scene.schema.json#sceneLights", "expect": "invalid", "mutations": [{"op": "delete", "path": "lights.0.position"}]},
+    {"id": "world-initial-presentation", "document": "model/fixtures/uvm-presentation-cases.json", "pointer": "/object", "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/objectInstance", "expect": "valid"},
+    {"id": "world-tint-range", "document": "model/fixtures/uvm-presentation-cases.json", "pointer": "/object", "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/objectInstance", "expect": "invalid", "mutations": [{"op": "set", "path": "presentationTint.0", "value": 2}]},
+    {"id": "world-clip-loop", "document": "model/fixtures/uvm-presentation-cases.json", "pointer": "/object", "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/objectInstance", "expect": "invalid", "mutations": [{"op": "set", "path": "presentationAnimation.loop", "value": 1}]},
+    {"id": "add-alpha-and-pass", "document": "model/fixtures/uvm-presentation-cases.json", "pointer": "/addAlpha", "schemaId": "https://modkitx.org/uvm/1.0/uvm.material.schema.json#gameMaterial", "expect": "valid"},
+    {"id": "pass-shares-blend-vocabulary", "document": "model/fixtures/uvm-presentation-cases.json", "pointer": "/addAlpha", "schemaId": "https://modkitx.org/uvm/1.0/uvm.material.schema.json#gameMaterial", "expect": "invalid", "mutations": [{"op": "set", "path": "passes.0.blendMode", "value": "addalpah"}]},
+    {"id": "world-players-and-starts", "document": "world/fixtures/uvw-players.uvw.json", "pointer": "", "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json", "expect": "valid"},
+    {"id": "world-player-slot-fraction", "document": "world/fixtures/uvw-players.uvw.json", "pointer": "", "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json", "expect": "invalid", "mutations": [{"op": "set", "path": "spaces.0.players.0.slot", "value": 0.5}]},
+    {"id": "world-player-color-range", "document": "world/fixtures/uvw-players.uvw.json", "pointer": "", "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json", "expect": "invalid", "mutations": [{"op": "set", "path": "spaces.0.players.1.color.0", "value": 2}]},
+    {"id": "world-player-ramp-width", "document": "world/fixtures/uvw-players.uvw.json", "pointer": "", "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json", "expect": "invalid", "mutations": [{"op": "set", "path": "spaces.0.players.1.ramp.0", "value": [0,0]}]},
+    {"id": "world-player-no-private-handle", "document": "world/fixtures/uvw-players.uvw.json", "pointer": "", "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json", "expect": "invalid", "mutations": [{"op": "set", "path": "spaces.0.players.1.handle", "value": 1}]},
+    {"id": "world-start-vec3", "document": "world/fixtures/uvw-players.uvw.json", "pointer": "", "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json", "expect": "invalid", "mutations": [{"op": "set", "path": "spaces.0.startPositions.0.position", "value": [0,0]}]},
+    {"id": "gltf-player-table", "document": "world/fixtures/uvw-gltf-spatial.uvw.gltf", "pointer": "", "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json", "expect": "valid", "mutations": [{"op": "set", "path": "extensions.UV_world_graph.spaces.0.players", "value": [{"slot":0,"address":"sample/player/neutral"}]}]},
+    {"id": "gltf-starts-use-spatial-owner", "document": "world/fixtures/uvw-gltf-spatial.uvw.gltf", "pointer": "", "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json", "expect": "valid", "mutations": [{"op": "set", "path": "extensions.UV_world_graph.spaces.0.players", "value": [{"slot":0,"address":"sample/player/neutral"}]}, {"op": "set", "path": "extensions.UV_world_graph.spaces.0.startPositions", "value": [{"id":"start","position":[0,0,0],"player":0}]}]},
+    {"id": "gltf-players-use-spatial-owner", "document": "world/fixtures/uvw-gltf-spatial.uvw.gltf", "pointer": "", "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json", "expect": "invalid", "mutations": [{"op": "set", "path": "extensions.UV_world_graph.spaces.0.players", "value": [{"slot":0,"address":1}]}]},
+    {"id": "scene-camera-v1", "document": "model/fixtures/uvm-camera-cases.json", "pointer": "/camera/extensions/UV_scene_camera", "schemaId": "https://modkitx.org/uvm/1.0/uvm.scene.schema.json#sceneCamera", "expect": "valid"},
+    {"id": "scene-camera-version", "document": "model/fixtures/uvm-camera-cases.json", "pointer": "/camera/extensions/UV_scene_camera", "schemaId": "https://modkitx.org/uvm/1.0/uvm.scene.schema.json#sceneCamera", "expect": "invalid", "mutations": [{"op":"set","path":"version","value":2}]},
+    {"id": "scene-camera-no-second-defaults", "document": "model/fixtures/uvm-camera-cases.json", "pointer": "/camera/extensions/UV_scene_camera", "schemaId": "https://modkitx.org/uvm/1.0/uvm.scene.schema.json#sceneCamera", "expect": "invalid", "mutations": [{"op":"set","path":"animationDefaults","value":{}}]},
+    {"id": "scene-camera-lens-only", "document": "model/fixtures/uvm-camera-cases.json", "pointer": "/camera/extensions/UV_scene_camera", "schemaId": "https://modkitx.org/uvm/1.0/uvm.scene.schema.json#sceneCamera", "expect": "invalid", "mutations": [{"op":"set","path":"sequenceAnimation.aspectRatio","value":[]}]},
+    {"id": "world-camera-orthographic", "document": "model/fixtures/uvm-camera-cases.json", "pointer": "/orthographicPreset", "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/camera", "expect": "valid"},
+    {"id": "world-camera-perspective", "document": "model/fixtures/uvm-camera-cases.json", "pointer": "/perspectivePreset", "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/camera", "expect": "valid"},
+    {"id": "world-camera-fov-domain", "document": "model/fixtures/uvm-camera-cases.json", "pointer": "/perspectivePreset", "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/camera", "expect": "invalid", "mutations": [{"op":"set","path":"fieldOfViewDegrees","value":180}]},
+    {"id": "world-camera-distance-domain", "document": "model/fixtures/uvm-camera-cases.json", "pointer": "/perspectivePreset", "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/camera", "expect": "invalid", "mutations": [{"op":"set","path":"drawDistance","value":0}]},
+    {"id": "world-camera-elevation-domain", "document": "model/fixtures/uvm-camera-cases.json", "pointer": "/orthographicPreset", "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/camera", "expect": "invalid", "mutations": [{"op":"set","path":"elevationDegrees","value":91}]},
+    {"id": "world-camera-orthographic-no-fov", "document": "model/fixtures/uvm-camera-cases.json", "pointer": "/orthographicPreset", "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/camera", "expect": "invalid", "mutations": [{"op":"set","path":"fieldOfViewDegrees","value":70}]},
+    {"id": "gltf-camera-use-spatial-owner", "document": "world/fixtures/uvw-gltf-spatial.uvw.gltf", "pointer": "", "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json", "expect": "valid", "mutations": [{"op":"set","path":"extensions.UV_world_graph.spaces.0.camera","value":{"projection":"orthographic","azimuthDegrees":45,"elevationDegrees":30}}]},
+    {"id": "gltf-camera-invalid-domain", "document": "world/fixtures/uvw-gltf-spatial.uvw.gltf", "pointer": "", "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json", "expect": "invalid", "mutations": [{"op":"set","path":"extensions.UV_world_graph.spaces.0.camera","value":{"projection":"perspective","drawDistance":-1}}]},
+    {"id": "spatial-camera-preserved", "document": "world/fixtures/uvw-players.uvw.json", "pointer": "", "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json", "expect": "valid", "mutations": [{"op":"set","path":"spaces.0.camera","value":{"projection":"perspective","fieldOfViewDegrees":70}}]}
   ]
 }

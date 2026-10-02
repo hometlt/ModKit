@@ -17,6 +17,7 @@
   ],
   "vectors": [
     { "id": "real-uvb-bytes", "expect": "accept", "actualFixture": "behavior/fixtures/uvb-module-verified.uvb.json", "receiptFixture": "receipts/fixtures/composition-verified-uvb.receipt.json", "reads": 1 },
+    {"id":"uvb-v2-five-reference-values","expect":"accept","actualFixture":"behavior/fixtures/uvb-module-reference-values.uvb.json","manifestMutations":[{"op":"set","path":"0.contents.0.hash","value":"sha256:995a081eb40ff53bb87328d8368b99801b9d4520e375e50adb1b353d78242a69"}],"receiptFixture":"receipts/fixtures/composition-verified-reference-values.receipt.json","reads":1},
     { "id": "different-canonical-uvb", "expect": "refuse", "actualFixture": "behavior/fixtures/uvb-module-verified.uvb.json",
       "mutations": [{ "op": "set", "path": "functions.0.body.0.value", "value": "armor" }],
       "rule": "artifact-digest-mismatch", "reads": 1 },
@@ -33,11 +34,11 @@
     { "id": "uvb-requirement-outside-manifest", "expect": "refuse", "actualFixture": "behavior/fixtures/uvb-module-verified.uvb.json",
       "manifestMutations": [{ "op": "set", "path": "0.requires.intrinsics", "value": [] }],
       "rule": "behavior-requirement-undeclared", "reads": 1 },
-    { "id": "uvb-v2-reference-box-unavailable", "expect": "refuse", "actualFixture": "behavior/fixtures/uvb-module-typed-value.uvb.json",
-      "mutations": [{ "op": "set", "path": "functions.0.params.0", "value": "ref<entity>" },
-        { "op": "set", "path": "functions.0.returns", "value": "result<ref<entity>>" },
-        { "op": "set", "path": "functions.0.body.0.type", "value": "ref<entity>" },
-        { "op": "set", "path": "functions.0.body.1.type", "value": "ref<entity>" }],
+    { "id": "uvb-v2-unsupported-reference-box-unavailable", "expect": "refuse", "actualFixture": "behavior/fixtures/uvb-module-typed-value.uvb.json",
+      "mutations": [{ "op": "set", "path": "functions.0.params.0", "value": "ref<team>" },
+        { "op": "set", "path": "functions.0.returns", "value": "result<ref<team>>" },
+        { "op": "set", "path": "functions.0.body.0.type", "value": "ref<team>" },
+        { "op": "set", "path": "functions.0.body.1.type", "value": "ref<team>" }],
       "rule": "behavior-profile-unavailable", "reads": 1 },
     { "id": "capability-refused-before-content", "expect": "refuse", "actualFixture": "behavior/fixtures/uvb-module-verified.uvb.json", "granted": [], "rule": "capabilities-granted", "reads": 0 }
   ]

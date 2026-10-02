@@ -1,0 +1,136 @@
+{
+  "uv": {
+    "format": "UVB",
+    "version": "2.0"
+  },
+  "namespace": "sample.nullable",
+  "requires": {
+    "intrinsics": []
+  },
+  "functions": [
+    {
+      "name": "empty",
+      "params": [],
+      "returns": "ref<entity>?",
+      "registers": 1,
+      "effects": {
+        "reads": [],
+        "writes": []
+      },
+      "body": [
+        {
+          "op": "option.none",
+          "dst": 0,
+          "type": "ref<entity>",
+          "source": {
+            "file": "scripts/nullable.luau",
+            "line": 1
+          }
+        },
+        {
+          "op": "ret",
+          "a": 0,
+          "source": {
+            "file": "scripts/nullable.luau",
+            "line": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "wrap",
+      "params": [
+        "ref<entity>"
+      ],
+      "returns": "ref<entity>?",
+      "registers": 2,
+      "effects": {
+        "reads": [],
+        "writes": []
+      },
+      "body": [
+        {
+          "op": "option.some",
+          "dst": 1,
+          "a": 0,
+          "type": "ref<entity>",
+          "source": {
+            "file": "scripts/nullable.luau",
+            "line": 2
+          }
+        },
+        {
+          "op": "ret",
+          "a": 1,
+          "source": {
+            "file": "scripts/nullable.luau",
+            "line": 2
+          }
+        }
+      ]
+    },
+    {
+      "name": "echo",
+      "params": [
+        "ref<entity>?"
+      ],
+      "returns": "ref<entity>?",
+      "registers": 1,
+      "effects": {
+        "reads": [],
+        "writes": []
+      },
+      "body": [
+        {
+          "op": "ret",
+          "a": 0,
+          "source": {
+            "file": "scripts/nullable.luau",
+            "line": 3
+          }
+        }
+      ]
+    },
+    {
+      "name": "absent",
+      "params": [
+        "ref<entity>?"
+      ],
+      "returns": "bool",
+      "registers": 3,
+      "effects": {
+        "reads": [],
+        "writes": []
+      },
+      "body": [
+        {
+          "op": "option.none",
+          "dst": 1,
+          "type": "ref<entity>",
+          "source": {
+            "file": "scripts/nullable.luau",
+            "line": 4
+          }
+        },
+        {
+          "op": "eq",
+          "dst": 2,
+          "a": 0,
+          "b": 1,
+          "source": {
+            "file": "scripts/nullable.luau",
+            "line": 4
+          }
+        },
+        {
+          "op": "ret",
+          "a": 2,
+          "source": {
+            "file": "scripts/nullable.luau",
+            "line": 4
+          }
+        }
+      ]
+    }
+  ]
+}

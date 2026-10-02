@@ -1,0 +1,192 @@
+{
+  "uv": {
+    "format": "UVS",
+    "version": "1.5"
+  },
+  "namespace": "sample",
+  "charts": [
+    {
+      "name": "b-second",
+      "initialState": "idle",
+      "variables": [],
+      "initialize": [
+        {
+          "kind": "uvb",
+          "module": "sample.bootstrap",
+          "function": "second",
+          "args": []
+        }
+      ],
+      "states": [
+        {
+          "name": "idle",
+          "on": []
+        }
+      ]
+    },
+    {
+      "name": "a-first",
+      "initialState": "idle",
+      "variables": [],
+      "initialize": [
+        {
+          "kind": "uvb",
+          "module": "sample.bootstrap",
+          "function": "voidProbe",
+          "args": []
+        },
+        {
+          "kind": "uvb",
+          "module": "sample.bootstrap",
+          "function": "falseProbe",
+          "args": []
+        },
+        {
+          "kind": "uvb",
+          "module": "sample.bootstrap",
+          "function": "first",
+          "args": []
+        },
+        {
+          "kind": "uvb",
+          "module": "sample.bootstrap",
+          "function": "third",
+          "args": []
+        }
+      ],
+      "states": [
+        {
+          "name": "idle",
+          "on": []
+        }
+      ]
+    },
+    {
+      "name": "z-values",
+      "initialState": "idle",
+      "initialize": [
+        {
+          "kind": "uvb",
+          "module": "sample.bootstrap",
+          "function": "spawn",
+          "args": []
+        }
+      ],
+      "variables": [
+        {
+          "name": "count",
+          "type": "i64",
+          "initial": "0"
+        },
+        {
+          "name": "ready",
+          "type": "bool",
+          "initial": false
+        },
+        {
+          "name": "members",
+          "type": "list<ref<entity>>",
+          "initial": []
+        },
+        {
+          "name": "definition",
+          "type": "ref",
+          "refKind": "def",
+          "initial": {
+            "address": "sample/unit/child"
+          }
+        },
+        {
+          "name": "player",
+          "type": "ref",
+          "refKind": "player",
+          "initial": {
+            "address": "sample/player/one"
+          }
+        },
+        {
+          "name": "last",
+          "type": "ref<entity>?",
+          "initial": null
+        },
+        {
+          "name": "copy",
+          "type": "ref<entity>?",
+          "initial": null
+        }
+      ],
+      "states": [
+        {
+          "name": "idle",
+          "on": [
+            {
+              "event": "entity.created",
+              "actions": [
+                {
+                  "kind": "uvb",
+                  "module": "sample.bootstrap",
+                  "function": "onCreated",
+                  "args": []
+                },
+                {
+                  "kind": "uvb",
+                  "module": "sample.bootstrap",
+                  "function": "onRemember",
+                  "args": [
+                    {
+                      "kind": "event",
+                      "name": "entity"
+                    }
+                  ]
+                },
+                {
+                  "kind": "set-var",
+                  "name": "copy",
+                  "value": {
+                    "kind": "var",
+                    "name": "last"
+                  }
+                }
+              ]
+            },
+            {
+              "event": "timer.fired",
+              "condition": {
+                "kind": "cmp",
+                "op": "ne",
+                "args": [
+                  {
+                    "kind": "var",
+                    "name": "last"
+                  },
+                  {
+                    "kind": "const",
+                    "value": null
+                  }
+                ]
+              },
+              "actions": [
+                {
+                  "kind": "set-var",
+                  "name": "last",
+                  "value": {
+                    "kind": "const",
+                    "value": null
+                  }
+                },
+                {
+                  "kind": "set-var",
+                  "name": "copy",
+                  "value": {
+                    "kind": "var",
+                    "name": "last"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

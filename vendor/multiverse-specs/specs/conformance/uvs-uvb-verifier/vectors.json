@@ -4,6 +4,12 @@
   "suite": "uvs-uvb-verifier",
   "spec": "../../scenario/SPEC_UVS.md ../../behavior/SPEC_UVB.md",
   "vectors": [
+    {"id": "module/nullable-entity-constructors-and-equality", "expect": "accept", "kind": "module", "fixture": "../../behavior/fixtures/uvb-module-nullable-entity.uvb.json"},
+    {"id": "module/nullable-none-scalar", "expect": "reject", "kind": "module", "fixture": "../../behavior/fixtures/uvb-module-nullable-entity.uvb.json", "rule": "register-type-mismatch", "mutations": [{"op": "set", "path": "functions.0.body.0.type", "value": "i64"}]},
+    {"id": "module/nullable-none-already-nullable", "expect": "reject", "kind": "module", "fixture": "../../behavior/fixtures/uvb-module-nullable-entity.uvb.json", "rule": "register-type-mismatch", "mutations": [{"op": "set", "path": "functions.0.body.0.type", "value": "ref<entity>?"}]},
+    {"id": "module/nullable-some-wrong-kind", "expect": "reject", "kind": "module", "fixture": "../../behavior/fixtures/uvb-module-nullable-entity.uvb.json", "rule": "register-type-mismatch", "mutations": [{"op": "set", "path": "functions.1.body.0.type", "value": "ref<def>"}]},
+    {"id": "module/nullable-nullable-wrong-return", "expect": "reject", "kind": "module", "fixture": "../../behavior/fixtures/uvb-module-nullable-entity.uvb.json", "rule": "register-type-mismatch", "mutations": [{"op": "set", "path": "functions.2.returns", "value": "ref<entity>"}]},
+
     {
       "id": "module/v2-list-of-nominal-record-is-a-concrete-type",
       "expect": "accept", "kind": "module",
@@ -589,11 +595,21 @@
       "mutations": [{ "op": "set", "path": "requires.intrinsics.1", "value": "scenario.set-var@1" }]
     },
     {
-      "id": "chart/fixture-verifies",
-      "expect": "accept",
+      "id": "chart/staging-fixture-drops-objective-results",
+      "expect": "reject", "rule": "results-are-handled",
       "kind": "chart",
       "fixture": "../../scenario/fixtures/uvs-chart-minimal.uvs.json",
-      "note": "the shipped chart: known events, a pure condition over player.resource (read class), declared variable, existing goto"
+      "note": "the staging fixture has valid declarations but direct objective calls discard result<bool>; UVS 1 has no consumption syntax"
+    },
+    {
+      "id": "chart/non-result-actions-verify",
+      "expect": "accept", "kind": "chart",
+      "fixture": "../../scenario/fixtures/uvs-chart-minimal.uvs.json",
+      "mutations": [
+        { "op": "set", "path": "charts.0.states.0.on.0.actions.0.intrinsic", "value": "ui.print@1" },
+        { "op": "set", "path": "charts.0.states.1.on.0.actions.0.intrinsic", "value": "ui.print@1" }
+      ],
+      "note": "known events, pure condition, explicit typed set-var, void presentation calls and source refusal remain valid declarations; not execution admission"
     },
     {
       "id": "chart/condition-impure",

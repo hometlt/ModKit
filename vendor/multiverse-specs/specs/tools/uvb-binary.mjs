@@ -37,7 +37,7 @@
  * Binary 2.0 retains the envelope and section order, uses version bytes 02 00, appends
  * one 0/1 optionality byte to each record field in section 4, and appends value.box/unbox
  * and result.value-or-false/list.empty/option.unwrap-or-branch/fixed.parse-decimal/
- * result.value-or/pos.make/value.expect to the
+ * result.value-or/pos.make/value.expect/option.none/option.some/result.expect to the
  * version-2-only opcode table.
  *
  * Dependency-free and browser-portable: the identity digest uses Web Crypto.
@@ -58,7 +58,7 @@ export const OPCODES = [
 ]
 const V2_OPCODES = [...OPCODES, 'value.box', 'value.unbox', 'result.value-or-false',
   'list.empty', 'option.unwrap-or-branch', 'fixed.parse-decimal', 'result.value-or', 'pos.make',
-  'value.expect']
+  'value.expect', 'option.none', 'option.some', 'result.expect']
 
 const FIELDS = ['dst', 'a', 'b', 'value', 'type', 'target', 'budget', 'function', 'intrinsicIndex', 'args']
 const MAGIC = [0x55, 0x56, 0x42, 0x00]

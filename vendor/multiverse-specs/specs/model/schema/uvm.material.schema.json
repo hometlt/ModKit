@@ -4,9 +4,21 @@
   "title": "UVM material extensions",
   "description": "UV_game_material_team_color and UV_game_material. Both attach to a glTF material's `extensions`. A conforming material ALWAYS carries a usable pbrMetallicRoughness block regardless of these.",
   "$defs": {
+    "rgb": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1
+      }
+    },
     "textureRef": {
       "type": "object",
-      "required": ["index"],
+      "required": [
+        "index"
+      ],
       "properties": {
         "index": {
           "type": "integer",
@@ -20,8 +32,23 @@
         },
         "channel": {
           "type": "string",
-          "enum": ["r", "g", "b", "a", "rgb"],
+          "enum": [
+            "r",
+            "g",
+            "b",
+            "a",
+            "rgb"
+          ],
           "default": "a"
+        },
+        "extensions": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "KHR_texture_transform": {
+              "$ref": "https://modkitx.org/gltf/2.0/material.profile.schema.json#/$defs/textureTransform"
+            }
+          }
         }
       },
       "additionalProperties": false
@@ -30,11 +57,19 @@
       "$anchor": "teamColor",
       "title": "UV_game_material_team_color",
       "type": "object",
-      "required": ["maskSource"],
+      "required": [
+        "maskSource"
+      ],
       "properties": {
         "maskSource": {
           "type": "string",
-          "enum": ["texture", "vertexColor", "paletteRange", "whole"]
+          "enum": [
+            "texture",
+            "vertexColor",
+            "paletteRange",
+            "whole",
+            "channelKey"
+          ]
         },
         "maskTexture": {
           "$ref": "#/$defs/textureRef"
@@ -51,20 +86,37 @@
         },
         "vertexChannel": {
           "type": "string",
-          "enum": ["r", "g", "b", "a"],
+          "enum": [
+            "r",
+            "g",
+            "b",
+            "a"
+          ],
           "default": "a"
         },
         "targets": {
           "type": "array",
           "items": {
             "type": "string",
-            "enum": ["baseColor", "emissive", "specular"]
+            "enum": [
+              "baseColor",
+              "emissive",
+              "specular"
+            ]
           },
-          "default": ["baseColor"]
+          "default": [
+            "baseColor"
+          ]
         },
         "blend": {
           "type": "string",
-          "enum": ["multiply", "add", "replace", "overlay", "lerp"],
+          "enum": [
+            "multiply",
+            "add",
+            "replace",
+            "overlay",
+            "lerp"
+          ],
           "default": "multiply"
         },
         "strength": {
@@ -81,7 +133,12 @@
           },
           "minItems": 4,
           "maxItems": 4,
-          "default": [1, 1, 1, 1]
+          "default": [
+            1,
+            1,
+            1,
+            1
+          ]
         },
         "glow": {
           "type": "object",
@@ -92,7 +149,11 @@
             },
             "blend": {
               "type": "string",
-              "enum": ["add", "multiply", "replace"],
+              "enum": [
+                "add",
+                "multiply",
+                "replace"
+              ],
               "default": "add"
             },
             "strength": {
@@ -103,7 +164,75 @@
           },
           "additionalProperties": false
         },
-        "extras": {}
+        "extras": {},
+        "keyChannels": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 3,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "r",
+              "g",
+              "b"
+            ]
+          },
+          "default": [
+            "r",
+            "g"
+          ]
+        },
+        "keyThreshold": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255,
+          "default": 0,
+          "description": "Maximum stored 8-bit channel value that matches channelKey, before sRGB conversion, filtering or mipmaps."
+        },
+        "intensityChannel": {
+          "enum": [
+            "r",
+            "g",
+            "b",
+            "a"
+          ],
+          "default": "b",
+          "description": "Data channel multiplying the replacement color; independent of binary key coverage."
+        },
+        "colorSource": {
+          "enum": [
+            "team",
+            "object-tint"
+          ],
+          "default": "team"
+        },
+        "tint": {
+          "enum": [
+            "none",
+            "mask-rgb"
+          ],
+          "default": "none"
+        },
+        "secondaryMaskTexture": {
+          "$ref": "#/$defs/textureRef",
+          "description": "Additional scalar coverage factor with independent UV set and KHR_texture_transform. Not the emissive glow mask."
+        },
+        "ramp": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 65536,
+          "items": {
+            "$ref": "#/$defs/rgb"
+          },
+          "description": "Exact ordered N shades for paletteRange. N must equal inclusive range size. No generated gradient."
+        },
+        "paletteIndexScale": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535,
+          "default": 255,
+          "description": "Integer index = round(mask data channel * scale); samples use nearest filtering. This is index data, not decoded palette RGB."
+        }
       },
       "additionalProperties": false,
       "allOf": [
@@ -114,10 +243,14 @@
                 "const": "texture"
               }
             },
-            "required": ["maskSource"]
+            "required": [
+              "maskSource"
+            ]
           },
           "then": {
-            "required": ["maskTexture"]
+            "required": [
+              "maskTexture"
+            ]
           }
         },
         {
@@ -127,10 +260,129 @@
                 "const": "paletteRange"
               }
             },
-            "required": ["maskSource"]
+            "required": [
+              "maskSource"
+            ]
           },
           "then": {
-            "required": ["range"]
+            "required": [
+              "range"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "maskSource": {
+                "const": "channelKey"
+              }
+            },
+            "required": [
+              "maskSource"
+            ]
+          },
+          "then": {
+            "required": [
+              "blend"
+            ],
+            "properties": {
+              "blend": {
+                "const": "replace"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "ramp"
+            ]
+          },
+          "then": {
+            "required": [
+              "range",
+              "maskTexture",
+              "blend"
+            ],
+            "properties": {
+              "maskSource": {
+                "const": "paletteRange"
+              },
+              "blend": {
+                "const": "replace"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "tint"
+            ],
+            "properties": {
+              "tint": {
+                "const": "mask-rgb"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "maskTexture"
+            ]
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "keyChannels"
+            ]
+          },
+          "then": {
+            "properties": {
+              "maskSource": {
+                "const": "channelKey"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "keyThreshold"
+            ]
+          },
+          "then": {
+            "properties": {
+              "maskSource": {
+                "const": "channelKey"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "intensityChannel"
+            ]
+          },
+          "then": {
+            "properties": {
+              "maskSource": {
+                "const": "channelKey"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "paletteIndexScale"
+            ]
+          },
+          "then": {
+            "required": [
+              "ramp"
+            ]
           }
         }
       ]
@@ -317,6 +569,7 @@
             "alpha-blend",
             "alpha-test",
             "additive",
+            "add-alpha",
             "modulate",
             "modulate2x",
             "alpha-key",
@@ -344,6 +597,14 @@
           "type": "boolean",
           "default": true
         },
+        "castShadows": {
+          "type": "boolean", "default": true,
+          "description": "Whether this material participates in shadow casting. Omission means true without injecting default bytes. Presentation only."
+        },
+        "receiveShadows": {
+          "type": "boolean", "default": true,
+          "description": "Whether this material receives shadows. Omission means true without injecting default bytes. False gates any shader-specific shadow reception, including water. Presentation only."
+        },
         "sortPriority": {
           "type": "integer",
           "default": 0
@@ -370,7 +631,7 @@
             "type": "object",
             "properties": {
               "blendMode": {
-                "type": "string"
+                "$ref": "#/$defs/gameMaterial/properties/blendMode"
               },
               "layers": {
                 "type": "array",

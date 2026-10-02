@@ -36,6 +36,33 @@ actually bundle content. UVW itself stays pure world.
    `universe` is reserved for a later connected-world package profile. Fixed world
    instances are selected independently of package kind, as specified below.
 
+### Portable physical packing (candidate profile 1)
+
+A directory UVP has `uvp.manifest.json` at its root. Its single-file `.uvp` form is a ZIP
+containing that same root file and the manifest's content paths, without a wrapper directory.
+Dependencies remain separate UVP packages identified by the manifest, not embedded packages
+with an implicit load order. UTF-8 JSON is used for the manifest; writers use canonical JCS,
+while readers may accept other valid whitespace without changing semantic identity.
+
+ZIP entry names are UTF-8, package-relative forward-slash paths accepted by the existing UVP
+resource-path owner. Absolute paths, traversal, backslashes, ambiguous encoded URI segments,
+duplicate names and names colliding after Unicode NFC plus case folding MUST refuse. File entries
+must equal `{uvp.manifest.json} ∪ contents[].path`; directory entries are optional, cannot shadow
+a file, and do not contribute to identity. The manifest must not list itself as content.
+Entries use STORE or DEFLATE. Encryption, split archives and symbolic links are not admitted.
+Unsupported ZIP features, malformed framing and mismatched checksums are explicit container
+refusals. The host's existing archive codec owns central/local header validation, bounded
+decompression, CRC and any ZIP64 support; UVP introduces no ZIP parser or second archive writer.
+
+Archive order, timestamps, compression and directory records do not enter composition identity.
+Read each content witness through the archive codec/resource session and apply the same family
+hashes and verified compositor as directory content. Never hash the whole `.uvp` as its semantic
+package identity or infer permissions from its filename. Readers enforce their declared entry,
+compressed/decompressed byte, and total-content limits before allocation, honor cancellation,
+and expose bounded virtual resources without extracting paths into the host filesystem.
+This fixes the physical contract for Core's export/import; product `.uvp` I/O is not claimed
+implemented by the specification tool.
+
 ### Immutable match rules (candidate runtime profile 1)
 
 A root may select `runtimeRules: { schemaVersion: 1, worldMutation: "none" | "cell-blockers" }`.

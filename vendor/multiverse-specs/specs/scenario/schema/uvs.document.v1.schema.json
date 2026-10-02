@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://modkitx.org/uvs/1.0/uvs.document.schema.json",
-  "title": "UVS document",
-  "description": "Status: candidate (SPEC_UVS.md). One Universal Scenario document: flat automata reacting to engine events with pure conditions and a bounded action set. Chart state (current state, variables, armed timers, unfinished reactions) is world state: saved, hashed, replayed. Firing order on one event is (composition rank, chart name) — fixed by the spec, never by the implementation. A non-portable source construct stays visible as a refusal action carrying the original fragment; silent loss is forbidden.",
+  "$id": "https://modkitx.org/uvs/1/uvs.document.schema.json",
+  "title": "UVS major 1 document (1.0 / 1.1 / 1.2 / 1.3 / 1.4)",
+  "description": "Status: candidate (SPEC_UVS.md). One Universal Scenario document: flat automata reacting to engine events with pure conditions and a bounded action set. Chart state (current state, variables, armed timers, unfinished reactions) is world state: saved, hashed, replayed. Firing order on one event is (composition rank, chart name) \u2014 fixed by the spec, never by the implementation. A non-portable source construct stays visible as a refusal action carrying the original fragment; silent loss is forbidden.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -23,7 +23,14 @@
           "const": "UVS"
         },
         "version": {
-          "const": "1.0"
+          "enum": [
+            "1.0",
+            "1.1",
+            "1.2",
+            "1.3",
+            "1.4",
+            "1.5"
+          ]
         }
       }
     },
@@ -73,7 +80,9 @@
                     "i64",
                     "fixed64",
                     "strref",
-                    "ref"
+                    "ref",
+                    "list<ref<entity>>",
+                    "ref<entity>?"
                   ]
                 },
                 "refKind": {
@@ -95,15 +104,138 @@
                     "required": [
                       "refKind"
                     ],
-                    "properties": { "initial": { "type": "string", "pattern": "^[1-9][0-9]*$" } }
+                    "properties": {
+                      "initial": {
+                        "oneOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^[1-9][0-9]*$"
+                          },
+                          {
+                            "$ref": "#/$defs/referenceInitial"
+                          }
+                        ]
+                      }
+                    }
                   }
                 },
-                { "if": { "properties": { "type": { "const": "bool" } } },
-                  "then": { "properties": { "initial": { "type": "boolean" } } } },
-                { "if": { "properties": { "type": { "enum": ["i64", "fixed64"] } } },
-                  "then": { "properties": { "initial": { "type": "string", "pattern": "^(0|-[1-9][0-9]*|[1-9][0-9]*)$" } } } },
-                { "if": { "properties": { "type": { "const": "strref" } } },
-                  "then": { "properties": { "initial": { "type": "string", "maxLength": 1024 } } } }
+                {
+                  "if": {
+                    "properties": {
+                      "type": {
+                        "const": "bool"
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "initial": {
+                        "type": "boolean"
+                      }
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "type": {
+                        "enum": [
+                          "i64",
+                          "fixed64"
+                        ]
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "initial": {
+                        "type": "string",
+                        "pattern": "^(0|-[1-9][0-9]*|[1-9][0-9]*)$"
+                      }
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "type": {
+                        "const": "strref"
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "initial": {
+                        "type": "string",
+                        "maxLength": 1024
+                      }
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "type": {
+                        "const": "list<ref<entity>>"
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "refKind": false,
+                      "initial": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "pattern": "^[1-9][0-9]*$"
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "initial": {
+                        "type": "object"
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "type": {
+                        "const": "ref"
+                      },
+                      "refKind": {
+                        "enum": [
+                          "def",
+                          "player"
+                        ]
+                      }
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "type": {
+                        "const": "ref<entity>?"
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "initial": {
+                        "type": "null"
+                      }
+                    },
+                    "not": {
+                      "required": [
+                        "refKind"
+                      ]
+                    }
+                  }
+                }
               ]
             }
           },
@@ -156,6 +288,34 @@
                 }
               }
             }
+          },
+          "initialize": {
+            "description": "UVS 1.3: ordered zero-argument shipped UVB initialization calls. Run atomically on fresh State after variable creation and before exposure/ticks. Returns void, bool or handled result<bool>; restore never reruns this list.",
+            "type": "array",
+            "maxItems": 4096,
+            "items": {
+              "allOf": [
+                {
+                  "$ref": "#/$defs/action"
+                },
+                {
+                  "properties": {
+                    "kind": {
+                      "const": "uvb"
+                    },
+                    "args": {
+                      "maxItems": 0
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "module",
+                    "function",
+                    "args"
+                  ]
+                }
+              ]
+            }
           }
         }
       }
@@ -167,7 +327,7 @@
   },
   "$defs": {
     "expr": {
-      "description": "Pure expression tree. `call` may only name read-class intrinsics; the composition verifier checks the class against the intrinsic table — a condition with side effects is refused there. Waits do not exist in expressions: delay is a timer plus a timer.fired handler.",
+      "description": "Pure expression tree. `call` may only name read-class intrinsics; the composition verifier checks the class against the intrinsic table \u2014 a condition with side effects is refused there. Waits do not exist in expressions: delay is a timer plus a timer.fired handler.",
       "type": "object",
       "additionalProperties": false,
       "required": [
@@ -182,7 +342,8 @@
             "and",
             "or",
             "not",
-            "cmp"
+            "cmp",
+            "event"
           ]
         },
         "value": {},
@@ -284,6 +445,26 @@
             "required": [
               "args"
             ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "event"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "args": false,
+              "value": false,
+              "intrinsic": false,
+              "op": false
+            }
           }
         }
       ]
@@ -411,6 +592,299 @@
           }
         }
       ]
+    },
+    "legacyExpr": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/expr"
+        },
+        {
+          "properties": {
+            "kind": {
+              "not": {
+                "const": "event"
+              }
+            },
+            "args": {
+              "items": {
+                "$ref": "#/$defs/legacyExpr"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "referenceInitial": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "address"
+      ],
+      "properties": {
+        "address": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024,
+          "pattern": "^[^\\u0000]+$",
+          "description": "Exact, nonempty authored definition/player identity; no leading/trailing whitespace. Canonical UTF-8 bound is 1024 bytes. Binding must resolve it through the existing verified definition index or explicit player setup, never mint an identity."
+        }
+      }
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "uv": {
+            "properties": {
+              "version": {
+                "const": "1.0"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "charts": {
+            "items": {
+              "properties": {
+                "states": {
+                  "items": {
+                    "properties": {
+                      "on": {
+                        "items": {
+                          "properties": {
+                            "condition": {
+                              "$ref": "#/$defs/legacyExpr"
+                            },
+                            "actions": {
+                              "items": {
+                                "properties": {
+                                  "args": {
+                                    "items": {
+                                      "$ref": "#/$defs/legacyExpr"
+                                    }
+                                  },
+                                  "value": {
+                                    "$ref": "#/$defs/legacyExpr"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "uv": {
+            "properties": {
+              "version": {
+                "enum": [
+                  "1.0",
+                  "1.1"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "charts": {
+            "items": {
+              "properties": {
+                "variables": {
+                  "items": {
+                    "properties": {
+                      "type": {
+                        "not": {
+                          "const": "list<ref<entity>>"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "uv": {
+            "properties": {
+              "version": {
+                "enum": [
+                  "1.0",
+                  "1.1",
+                  "1.2"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "charts": {
+            "items": {
+              "properties": {
+                "initialize": false
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "uv": {
+            "properties": {
+              "version": {
+                "enum": [
+                  "1.0",
+                  "1.1",
+                  "1.2",
+                  "1.3"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "charts": {
+            "items": {
+              "properties": {
+                "variables": {
+                  "items": {
+                    "properties": {
+                      "initial": {
+                        "not": {
+                          "type": "object"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "uv": {
+            "properties": {
+              "version": {
+                "enum": [
+                  "1.4",
+                  "1.5"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "charts": {
+            "items": {
+              "properties": {
+                "variables": {
+                  "items": {
+                    "allOf": [
+                      {
+                        "if": {
+                          "properties": {
+                            "type": {
+                              "const": "ref"
+                            },
+                            "refKind": {
+                              "enum": [
+                                "def",
+                                "player"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "refKind"
+                          ]
+                        },
+                        "then": {
+                          "properties": {
+                            "initial": {
+                              "$ref": "#/$defs/referenceInitial"
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "uv": {
+            "properties": {
+              "version": {
+                "enum": [
+                  "1.0",
+                  "1.1",
+                  "1.2",
+                  "1.3",
+                  "1.4"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "charts": {
+            "items": {
+              "properties": {
+                "variables": {
+                  "items": {
+                    "properties": {
+                      "type": {
+                        "not": {
+                          "const": "ref<entity>?"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
 }

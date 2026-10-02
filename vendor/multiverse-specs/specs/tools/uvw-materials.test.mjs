@@ -18,6 +18,25 @@ const resources = {
 }
 const read = name => readFile(new URL(name, import.meta.url), 'utf8').then(JSON.parse)
 
+test('shared UVM material validation preserves boolean shadow flags and omitted defaults', async () => {
+  const document = await read('../model/fixtures/uvm-core-textured.uvm.gltf')
+  document.extensionsUsed.push('UV_game_material')
+  document.materials[0].extensions = { UV_game_material: {
+    shader: 'example.standard', castShadows: false, receiveShadows: false,
+  } }
+  const before = JSON.stringify(document)
+  assert.equal(assertUvmCore(document), document)
+  assert.equal(JSON.stringify(document), before)
+  for (const name of ['castShadows', 'receiveShadows']) {
+    const invalid = structuredClone(document)
+    invalid.materials[0].extensions.UV_game_material[name] = 0
+    assert.throws(() => assertUvmCore(invalid), /material-shadow-flags/)
+    delete document.materials[0].extensions.UV_game_material[name]
+  }
+  assert.equal(assertUvmCore(document), document)
+  assert.deepEqual(document.materials[0].extensions.UV_game_material, { shader: 'example.standard' })
+})
+
 test('explicit terrain projection preserves authored bytes, IDs and omitted defaults', async () => {
   const world = await read('../world/fixtures/uvw-profile-renderable-world.uvw.json')
   const before = await uvpJsonArtifactDigest('uvw', world)

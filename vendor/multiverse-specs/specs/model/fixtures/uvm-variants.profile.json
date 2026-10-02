@@ -1,0 +1,122 @@
+{
+  "slots": {
+    "variants": [
+      {
+        "name": "gun",
+        "slot": "equipment",
+        "showPrimitives": [
+          {
+            "mesh": 0,
+            "primitive": 0
+          }
+        ],
+        "modelState": "damage",
+        "attachments": [
+          {
+            "socket": "weapon",
+            "asset": "gun.uvm.glb",
+            "assetSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        ]
+      }
+    ],
+    "visibility": [
+      {
+        "mesh": 0,
+        "primitive": 0,
+        "value": 0.4
+      }
+    ]
+  },
+  "states": {
+    "schemaVersion": 1,
+    "states": [
+      {
+        "state": "damage",
+        "model": "damage.uvm.glb",
+        "modelSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      }
+    ]
+  },
+  "invalidBoth": {
+    "variants": [
+      {
+        "name": "bad",
+        "asset": "gun.uvm.glb",
+        "modelState": "damage"
+      }
+    ]
+  },
+  "invalidPrimitive": {
+    "variants": [
+      {
+        "name": "bad",
+        "showPrimitives": [
+          {
+            "mesh": 0,
+            "primitive": -1
+          }
+        ]
+      }
+    ]
+  },
+  "invalidAttachment": {
+    "variants": [
+      {
+        "name": "bad",
+        "attachments": [
+          {
+            "socket": "weapon",
+            "asset": "gun.uvm.glb",
+            "assetSha256": "oops"
+          }
+        ]
+      }
+    ]
+  },
+  "invalidState": {
+    "schemaVersion": 1,
+    "states": [
+      {
+        "state": "base",
+        "model": "body.uvm.glb"
+      }
+    ]
+  },
+  "lighting": {
+    "schemaVersion": 1,
+    "id": "lighting",
+    "kind": "lighting",
+    "ambientColor": [
+      0,
+      0,
+      0
+    ],
+    "ambientIntensity": 0,
+    "directional": [],
+    "model": "unlit",
+    "unlitColor": [
+      0.5,
+      1,
+      0.25
+    ]
+  },
+  "invalidLighting": {
+    "schemaVersion": 1,
+    "id": "lighting",
+    "kind": "lighting",
+    "ambientColor": [
+      0,
+      0,
+      0
+    ],
+    "ambientIntensity": 0,
+    "directional": [],
+    "model": "unlit",
+    "unlitColor": [
+      1,
+      1,
+      1.1
+    ]
+  }
+}

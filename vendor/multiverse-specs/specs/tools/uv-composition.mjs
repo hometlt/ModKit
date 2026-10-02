@@ -15,10 +15,13 @@ import { uvwGltfImageReferences, uvwGltfOriginalReferences, uvwGltfMediaOutputRe
 import { uvwGltfPagedBufferReferences, verifyUvwGltfPagedArtifact } from './uvw-gltf-pages.mjs'
 import { unpackStrictGlb, unpackBoundedGlb } from './gltf-container.mjs'
 import { assertUvmCore } from './uvm-profile.mjs'
+import { assertUvmVariantClosure } from './uvm-variants.ts'
 import { decodeUvb, encodeUvb, uvbIdentityDigest } from './uvb-binary.mjs'
 import { verifyModule, verifyExecutableModuleProfile } from './uv-verify.mjs'
+import { verifyScenarioComposition } from './uv-contract-verifier.ts'
 import { projectScenarioVariables } from './uv-scenario-variables.mjs'
 import { verifyWorldInstanceSelections, projectWorldSpaces } from './uv-world-instances.mjs'
+import { projectUvwPlayers } from './uvw-players.ts'
 
 async function semanticDigest(domain, value) {
   const subtle = globalThis.crypto?.subtle
@@ -98,7 +101,8 @@ export async function verifiedCompositionDocuments(receipt) {
   const checked = await verifyProducedCompositionReceipt(receipt)
   if (checked.refusal !== undefined) return checked
   const artifacts = verifiedArtifacts.get(receipt)
-  return { documents: artifacts?.documents ?? [], contents: artifacts?.contents ?? [] }
+  return { documents: artifacts?.documents ?? [], contents: artifacts?.contents ?? [],
+    lowering: structuredClone(artifacts.lowering) }
 }
 
 /** Verified UVB bytes remain private to this receipt; every caller gets an independent copy. */
@@ -158,6 +162,13 @@ export async function verifiedCompositionWorldSpaces(receipt) {
   return { spaces: artifacts.worldSpaces }
 }
 
+/** Public identities come from the selected captured worlds, never a private numeric handle. */
+export async function verifiedCompositionWorldPlayers(receipt) {
+  const world = await verifiedCompositionWorldSpaces(receipt)
+  if (world.refusal !== undefined) return world
+  return projectUvwPlayers(world.spaces)
+}
+
 function freezeDocument(value) {
   if (value !== null && typeof value === 'object') {
     if (!Array.isArray(value) && Object.getPrototypeOf(value) !== Object.prototype
@@ -183,7 +194,7 @@ export async function composeVerifiedReceipt(rootId, manifests, registry, grante
     || granted.some(cap => !capabilities.includes(cap)) || typeof artifactDigest !== 'function')
     return reject('verification-input-missing', 'Registry, grants and a canonical artifact digest owner are required.')
   let ownedManifests
-  try { ownedManifests = structuredClone(manifests) }
+  try { ownedManifests = structuredClone(manifests); registry = structuredClone(registry) }
   catch { return reject('invalid-package-content', 'Package manifests must be cloneable JSON.') }
   const grants = [...granted]
   const order = composePackages(rootId, ownedManifests, registry, grants)
@@ -208,6 +219,7 @@ export async function composeVerifiedReceipt(rootId, manifests, registry, grante
   const layers = []
   const documents = []
   const bytecode = []
+  const scenarioModules = []
   const media = []
   const models = []
   const pagedWorlds = []
@@ -297,6 +309,7 @@ export async function composeVerifiedReceipt(rootId, manifests, registry, grante
         const profile = verifyExecutableModuleProfile(module)
         if (profile.refusal !== undefined)
           return reject(profile.refusal.rule, `${layer.id}/${content.path}: ${profile.refusal.message}`)
+        scenarioModules.push(module)
         actual = await uvbIdentityDigest(bytes)
         if (reported !== actual)
           return reject('artifact-digest-mismatch', `${layer.id}/${content.path} witness digest differs from its UVB bytes.`)
@@ -443,8 +456,13 @@ export async function composeVerifiedReceipt(rootId, manifests, registry, grante
       }
     }
   }
-  const scenario = projectScenarioVariables(documents.filter(entry => entry.family === 'uvs'))
+  const scenarioDocuments = documents.filter(entry => entry.family === 'uvs')
+  try { assertUvmVariantClosure(models) }
+  catch (error) { return reject('model-variant-resource', error.message) }
+  const scenario = projectScenarioVariables(scenarioDocuments)
   if (scenario.refusal !== undefined) return scenario
+  const scenarioCheck = verifyScenarioComposition(scenarioDocuments, scenarioModules, registry, ownedManifests, grants)
+  if (scenarioCheck.refusal !== undefined) return scenarioCheck
   const worldProjection = worldSelection.selection === undefined ? undefined
     : projectWorldSpaces(worldSelection.selection, documents)
   if (worldProjection?.refusal !== undefined) return worldProjection
@@ -465,7 +483,7 @@ export async function composeVerifiedReceipt(rootId, manifests, registry, grante
   Object.freeze(receipt.requirements)
   Object.freeze(receipt)
   verifiedReceipts.add(receipt)
-  verifiedArtifacts.set(receipt, { documents: Object.freeze(documents),
+  verifiedArtifacts.set(receipt, { lowering: { registry, manifests: ownedManifests, granted: grants }, documents: Object.freeze(documents),
     bytecode: Object.freeze(bytecode), media: Object.freeze(media), models: Object.freeze(models),
     contents: Object.freeze(verifiedContents),
     runtimeRules,

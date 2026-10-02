@@ -80,6 +80,16 @@
   ],
   "intrinsics": [
     {
+      "id": "math.sin-turns", "version": 1,
+      "params": [{ "name": "turns", "type": "fixed64" }],
+      "returns": "fixed64", "reads": [], "writes": [], "capability": "read"
+    },
+    {
+      "id": "math.cos-turns", "version": 1,
+      "params": [{ "name": "turns", "type": "fixed64" }],
+      "returns": "fixed64", "reads": [], "writes": [], "capability": "read"
+    },
+    {
       "id": "entity.create",
       "version": 1,
       "params": [

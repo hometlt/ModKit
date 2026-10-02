@@ -5,6 +5,29 @@
   "spec": "../../behavior/SPEC_UVB.md",
   "vectors": [
     {
+      "id": "bijection/result-expect-v2",
+      "expect": "accept",
+      "fixture": "../../behavior/fixtures/uvb-module-result-expect.uvb.json",
+      "identityDigest": "sha256:1c1eabae0d156b81af0a914cce8b29f6e8a7b9efc776b9fc8336fe88a0a0d44c",
+      "byteLength": 280
+    },
+    {
+      "id": "reject/v1-result-expect",
+      "expect": "reject-encode",
+      "fixture": "../../behavior/fixtures/uvb-module-result-expect.uvb.json",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "uv.version",
+          "value": "1.0"
+        },
+        { "op": "set", "path": "functions.0.body", "value": [
+          { "op": "result.expect", "dst": 1, "a": 0 }, { "op": "ret", "a": 1 }
+        ] }
+      ],
+      "reason": "unknown op"
+    },
+    {
       "id": "bijection/value-expect-v2",
       "expect": "accept",
       "fixture": "../../behavior/fixtures/uvb-module-value-expect.uvb.json",

@@ -1,4 +1,6 @@
 /** Type surface of the canonical UVD resolver, shared by runtime adapters. */
+import type { ScenarioVariableInitializer } from './uv-scenario-variables.mjs'
+import type { projectUvwPlayers } from './uvw-players.ts'
 export interface ResolvedDefinition {
   readonly kind: string
   readonly fields: Readonly<Record<string, { readonly value: unknown; readonly provenance: unknown }>>
@@ -64,6 +66,7 @@ export function verifyProducedCompositionReceipt(receipt: unknown):
   | { readonly refusal: { readonly rule: string; readonly message: string } }>
 export function verifiedCompositionDocuments(receipt: unknown):
   Promise<{ readonly documents: readonly { readonly packageId: string; readonly family: 'uvd' | 'uvw' | 'uvs'; readonly path: string; readonly layer?: number; readonly document: unknown }[];
+    readonly lowering: Readonly<{ registry: unknown; manifests: readonly unknown[]; granted: readonly string[] }>;
     readonly contents: readonly { readonly packageId: string; readonly family: string; readonly path: string; readonly hash: string }[] }
   | { readonly refusal: { readonly rule: string; readonly message: string } }>
 export function verifiedCompositionBytecode(receipt: unknown):
@@ -79,14 +82,16 @@ export function verifiedCompositionModels(receipt: unknown):
     readonly digest: string; readonly document: unknown; readonly bytes: Uint8Array }[] }
   | { readonly refusal: { readonly rule: string; readonly message: string } }>
 export function verifiedCompositionScenarioVariables(receipt: unknown):
-  Promise<{ readonly variables: readonly { readonly id: string; readonly type: string;
-    readonly initialHex: string; readonly packageId: string; readonly path: string }[] }
+  Promise<{ readonly variables: readonly ScenarioVariableInitializer[] }
   | { readonly refusal: { readonly rule: string; readonly message: string } }>
 export function verifiedCompositionRuntimeRules(receipt: unknown):
   Promise<{ readonly rules: RuntimeRules | undefined }
   | { readonly refusal: { readonly rule: string; readonly message: string } }>
 export function verifiedCompositionWorldSpaces(receipt: unknown):
   Promise<{ readonly spaces: readonly VerifiedWorldSpace[] }
+  | { readonly refusal: { readonly rule: string; readonly message: string } }>
+export function verifiedCompositionWorldPlayers(receipt: unknown):
+  Promise<ReturnType<typeof projectUvwPlayers>
   | { readonly refusal: { readonly rule: string; readonly message: string } }>
 export function composeVerifiedReceipt(
   rootId: string,

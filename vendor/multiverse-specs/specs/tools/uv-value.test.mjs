@@ -47,6 +47,26 @@ test('nominal identity, list order and optional presence survive canonical round
     hex(encodeCanonicalValue(list, types)))
 })
 
+test('nullable references distinguish absent from present and reject noncanonical identity bytes', () => {
+  const absent = { type: 'ref<entity>?', value: null }
+  const present = { type: 'ref<entity>?', value: '1' }
+  for (const [value, bytes] of [
+    [absent, '070c0000007265663c656e746974793e3f00'],
+    [present, '070c0000007265663c656e746974793e3f010100000000000000'],
+  ]) {
+    assert.equal(hex(encodeCanonicalValue(value)), bytes)
+    assert.deepEqual(decodeCanonicalValue(encodeCanonicalValue(value)), value)
+  }
+  for (const value of ['0', 0, undefined, {}, false, '01', '18446744073709551616'])
+    assert.throws(() => encodeCanonicalValue({ type: 'ref<entity>?', value }))
+  for (const bytes of [
+    '070c0000007265663c656e746974793e3f02',
+    '070c0000007265663c656e746974793e3f010000000000000000',
+    '070c0000007265663c656e746974793e3f0101000000',
+    '070c0000007265663c656e746974793e3f0000',
+  ]) assert.throws(() => decodeCanonicalValue(Uint8Array.from(Buffer.from(bytes, 'hex'))))
+})
+
 test('invalid values and noncanonical bytes refuse before entering State', () => {
   for (const value of [
     { type: 'i64', value: '01' }, { type: 'i64', value: '9223372036854775808' },
