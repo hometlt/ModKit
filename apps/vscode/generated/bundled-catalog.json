@@ -140,7 +140,7 @@
       "declared": true,
       "coordinate": "modkit/lua",
       "contributions": ["modkit/lua-language"],
-      "digest": "sha256:d48cb543c44cd753ae2aa7feacd21a603fb221ee83798101acb333956f42b865"
+      "digest": "sha256:f6a0d5f69558fb601329e30cb4d64045560c37c8e453db6b1a0ff9f9e6f4ceee"
     },
     {
       "name": "models",
