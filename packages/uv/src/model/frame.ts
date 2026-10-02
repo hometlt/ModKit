@@ -126,6 +126,10 @@ const sameNumbers = (value: unknown, expected: readonly number[]): boolean =>
  * geometry is in metres) goes with the `uv:units` node and is returned. Writers whose format is in
  * the source frame call this instead of walking the wrappers. A document without them is returned
  * as it is; a node that has a wrapper's name but not exactly the materializer's form is refused.
+ * Effects and lights in the source frame name the innermost wrapper `spaceNode`; without the
+ * wrappers the document's own frame is the source frame, so that `spaceNode` goes, as
+ * `removeUvmSceneFrame` drops one naming its frame node. Any other reference to a wrapper is
+ * refused.
  */
 export function removeUvmFrameWrappers(
   source: UvmContainer,
@@ -211,14 +215,26 @@ export function removeUvmFrameWrappers(
   for (const animation of array(document, 'animations'))
     for (const channel of array(animation, 'channels'))
       outside(field(field(channel, 'target'), 'node'), 'an animation target')
-  for (const name of ['UV_game_effects', 'UV_scene_lights'])
-    outside(field(extensions[name], 'spaceNode'), `${name} spaceNode`)
+  const sourceFrame = removed.at(-1)
+  const spaced = ['UV_game_effects', 'UV_scene_lights']
+  for (const name of spaced) {
+    const space = field(extensions[name], 'spaceNode')
+    if (space !== sourceFrame) outside(space, `${name} spaceNode`)
+  }
   const matrix = uvmSceneFrameMatrix({ metersPerSourceUnit, upAxis, handedness })
   const unframed = (value: JsonValue): JsonValue => withMaterialFrame(value, matrix)
   // without its scale node the geometry is in source units: UV_units no longer describes it
   const unitsRemoved = removed.some(index => record(nodes[index])?.['name'] === 'uv:units')
   const kept = Object.fromEntries(
-    Object.entries(extensions).filter(([name]) => !(unitsRemoved && name === 'UV_units')),
+    Object.entries(extensions)
+      .filter(([name]) => !(unitsRemoved && name === 'UV_units'))
+      .map(([name, value]) => {
+        const extension = record(value)
+        if (!spaced.includes(name) || extension === undefined) return [name, value]
+        if (extension['spaceNode'] !== sourceFrame) return [name, value]
+        const { spaceNode: _spaceNode, ...rest } = extension
+        return [name, rest]
+      }),
   )
   const used = array(document, 'extensionsUsed').filter(
     name => !(unitsRemoved && name === 'UV_units'),

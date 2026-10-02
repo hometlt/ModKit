@@ -77,13 +77,14 @@ export interface ModelProjection {
   readonly gameExtensions?: Readonly<Record<string, UvmJsonObject>>
   /**
    * The model's own lights, written on the root as `UV_scene_lights` (SPEC_UVM_EXTENSIONS):
-   * positions and directions in the frame of the node `spaceNodeId` names, each light in the wire
-   * form (`type`, `direction`, `color`, `position` for point and spot lights, cone angles full, an
-   * animated light's `sequenceAnimation` with its `animationDefaults`). How many a renderer draws
-   * is its budget to report, not the format's.
+   * positions and directions in the frame of the node `spaceNodeId` names — without one, in the
+   * source frame, the innermost frame node the materializer writes (refused for a scene it does not
+   * frame) — each light in the wire form (`type`, `direction`, `color`, `position` for point and
+   * spot lights, cone angles full, an animated light's `sequenceAnimation` with its
+   * `animationDefaults`). How many a renderer draws is its budget to report, not the format's.
    */
   readonly lights?: {
-    readonly spaceNodeId: string
+    readonly spaceNodeId?: string
     readonly ambient?: readonly [number, number, number]
     readonly lights: readonly UvmJsonObject[]
   }
@@ -94,7 +95,8 @@ export interface ModelProjection {
    * indices, which the materializer writes; a record below the entry (a ribbon's spline endpoint)
    * names its node by `nodeId` the same way. A particle emitter's `emitShapeMeshes` give
    * `positions` and triangle `indices` as number lists, which the materializer writes to
-   * accessors. A model of effects alone is a model.
+   * accessors. A model of effects alone is a model. Simulation values (gravity, speeds) are in the
+   * source frame, like the geometry: the materializer names its innermost frame node `spaceNode`.
    */
   /**
    * Declared collision volumes (ModelCollisionVolume with `nodeId` and `shape`): each written as
@@ -112,6 +114,18 @@ export interface ModelProjection {
     readonly projectors?: readonly UvmJsonObject[]
     readonly extras?: UvmJsonObject
   }
+  /**
+   * Cameras, each on a projection node (glTF `node.camera`) that places it looking down its local
+   * −z with +y up. `camera` is the glTF camera object; its clip distances, and an orthographic
+   * camera's magnification, are in metres, since glTF views through a camera without its node's
+   * scale. A perspective camera's `sequenceAnimation` (`yfov`, `znear`, `zfar` tracks by sequence)
+   * is written as `UV_scene_camera`.
+   */
+  readonly cameras?: readonly {
+    readonly nodeId: string
+    readonly camera: UvmJsonObject
+    readonly sequenceAnimation?: UvmJsonObject
+  }[]
 }
 /**
  * The one table from a publisher's material layer slot to the glTF slot a consumer that knows only
@@ -404,6 +418,7 @@ export interface DocumentNode {
   mesh?: number | undefined
   matrix?: number[]
   skin?: number
+  camera?: number
   translation?: number[]
   rotation?: number[]
   scale?: number[]
@@ -676,11 +691,13 @@ function emissionMeshesOf(
  * The projection's emitters as `UV_game_effects`: each family's entries with their node and
  * material ids turned into the document's indices, refused when an id names nothing written or an
  * entry already carries an index of its own (an index from another ordering would point elsewhere).
+ * `spaceNode` is the source frame, when the materializer framed the scene.
  */
 function effectsOf(
   projection: ModelProjection,
   nodeIndexById: ReadonlyMap<string, number>,
   materialIndexById: ReadonlyMap<string, number>,
+  sourceFrameNode: number | undefined,
   addAccessor: (values: Float32Array | Uint32Array, type: 'VEC3' | 'SCALAR') => number,
 ): UvmJsonObject | undefined {
   const given = projection.effects
@@ -728,6 +745,7 @@ function effectsOf(
   return {
     ...(given.profile === undefined ? {} : { profile: given.profile }),
     ...(given.trackTimeUnit === undefined ? {} : { trackTimeUnit: given.trackTimeUnit }),
+    ...(sourceFrameNode === undefined ? {} : { spaceNode: sourceFrameNode }),
     ...Object.fromEntries(families),
     ...(given.extras === undefined ? {} : { extras: structuredClone(given.extras) }),
   }
@@ -772,11 +790,18 @@ const ANIMATED_LIGHT_KEYS = new Set([
 function sceneLightsOf(
   projection: ModelProjection,
   nodeIndexById: ReadonlyMap<string, number>,
+  sourceFrameNode: number | undefined,
 ): UvmJsonObject | undefined {
   const given = projection.lights
   if (given === undefined || given.lights.length === 0) return undefined
-  const spaceNode = nodeIndexById.get(given.spaceNodeId)
-  if (spaceNode === undefined) fail(`scene lights name the unknown frame node ${given.spaceNodeId}`)
+  const spaceNode =
+    given.spaceNodeId === undefined ? sourceFrameNode : nodeIndexById.get(given.spaceNodeId)
+  if (spaceNode === undefined)
+    fail(
+      given.spaceNodeId === undefined
+        ? 'scene lights without spaceNodeId are in the source frame, and this scene has no frame node: name the node they are in'
+        : `scene lights name the unknown frame node ${given.spaceNodeId}`,
+    )
   const vector = (value: unknown, minimum = -Infinity): value is number[] =>
     Array.isArray(value) &&
     value.length === 3 &&
@@ -830,6 +855,84 @@ function sceneLightsOf(
     ...(given.ambient === undefined ? {} : { ambient: [...given.ambient] }),
     lights: given.lights.map(light => structuredClone(light)),
   }
+}
+
+const PERSPECTIVE_LENS_KEYS = new Set(['yfov', 'znear', 'zfar', 'aspectRatio'])
+const ORTHOGRAPHIC_LENS_KEYS = new Set(['xmag', 'ymag', 'znear', 'zfar'])
+const ANIMATED_CAMERA_KEYS = new Set(['yfov', 'znear', 'zfar'])
+
+/**
+ * The projection's cameras as glTF `cameras`, each set on its node, checked as the scene's camera
+ * reader will: a lens in its domain, one camera per node, tracks only for a perspective lens. A
+ * left-handed source is refused: under its mirror a camera would view the scene reflected.
+ */
+function camerasOf(
+  projection: ModelProjection,
+  nodeIndexById: ReadonlyMap<string, number>,
+  documentNodes: DocumentNode[],
+): UvmJsonObject[] {
+  return (projection.cameras ?? []).map((given, index) => {
+    const label = `camera ${String(index)}`
+    const node = nodeIndexById.get(given.nodeId)
+    if (node === undefined) fail(`${label} names the unknown node ${given.nodeId}`)
+    if (projection.info.handedness === 'left')
+      fail(`${label} would view reflected under the mirror of a left-handed source`)
+    if (documentNodes[node]!.camera !== undefined)
+      fail(`${label} is a second camera on node ${given.nodeId}`)
+    const { camera, sequenceAnimation } = given
+    const json: unknown = [camera, sequenceAnimation ?? null]
+    if (!isJsonValue(json)) fail(`${label} is not JSON`)
+    const type = camera['type']
+    const lens = camera[type === 'perspective' ? 'perspective' : 'orthographic']
+    const keys = type === 'perspective' ? PERSPECTIVE_LENS_KEYS : ORTHOGRAPHIC_LENS_KEYS
+    if (
+      (type !== 'perspective' && type !== 'orthographic') ||
+      Object.keys(camera).some(key => !['type', type, 'name'].includes(key)) ||
+      typeof lens !== 'object' ||
+      lens === null ||
+      Array.isArray(lens) ||
+      Object.keys(lens).some(key => !keys.has(key))
+    )
+      fail(`${label} is not a perspective or orthographic glTF camera`)
+    const positive = (value: unknown): value is number =>
+      typeof value === 'number' && Number.isFinite(value) && value > 0
+    const { znear, zfar } = lens
+    const inDomain =
+      type === 'perspective'
+        ? positive(lens['yfov']) &&
+          lens['yfov'] < Math.PI &&
+          positive(znear) &&
+          (zfar === undefined || (positive(zfar) && zfar > znear)) &&
+          (lens['aspectRatio'] === undefined || positive(lens['aspectRatio']))
+        : [lens['xmag'], lens['ymag']].every(
+            value => typeof value === 'number' && Number.isFinite(value) && value !== 0,
+          ) &&
+          typeof znear === 'number' &&
+          znear >= 0 &&
+          positive(zfar) &&
+          zfar > znear
+    if (!inDomain) fail(`${label} lens is outside its domain`)
+    if (
+      sequenceAnimation !== undefined &&
+      (type !== 'perspective' ||
+        Object.keys(sequenceAnimation).some(key => !ANIMATED_CAMERA_KEYS.has(key)))
+    )
+      fail(`${label} animates more than a perspective lens's yfov, znear and zfar`)
+    documentNodes[node]!.camera = index
+    return {
+      ...structuredClone(camera),
+      ...(sequenceAnimation === undefined
+        ? {}
+        : {
+            extensions: {
+              UV_scene_camera: {
+                version: 1,
+                sequenceAnimation: structuredClone(sequenceAnimation),
+              },
+            },
+          }),
+    }
+  })
 }
 
 /** The projection's game records, checked and in name order. */
@@ -1987,6 +2090,9 @@ export function materializeUvmCore(
   // (x, y, z) → (x, z, -y) the model viewer applies — so the geometry itself stays as published.
   // A left-handed source is mirrored first, in its own frame (ModelSceneInfo.handedness): glTF draws
   // a node of negative determinant with its faces wound the other way, so nothing else changes.
+  // The innermost frame node is the source frame: lights and effects without a node of their own
+  // are in it.
+  let sourceFrameNode: number | undefined
   if (info.handedness === 'left') {
     const root = documentNodes.length
     documentNodes.push({
@@ -1995,6 +2101,7 @@ export function materializeUvmCore(
       children: [...rootIndices],
     })
     rootIndices = [root]
+    sourceFrameNode ??= root
     note(
       'uv.model/structure@1',
       'value-differs',
@@ -2010,6 +2117,7 @@ export function materializeUvmCore(
       children: [...rootIndices],
     })
     rootIndices = [root]
+    sourceFrameNode ??= root
     note(
       'uv.model/structure@1',
       'value-differs',
@@ -2030,6 +2138,7 @@ export function materializeUvmCore(
       children: [...rootIndices],
     })
     rootIndices = [root]
+    sourceFrameNode ??= root
     note(
       'uv.model/structure@1',
       'value-differs',
@@ -2146,30 +2255,37 @@ export function materializeUvmCore(
       'clip and target identities are positional; native frame indices, provenance, bounds and movement speed are not glTF TRS fields',
     )
   // emission meshes take accessors, so the effects are written before the buffer is closed
-  const effects = effectsOf(projection, nodeIndexById, materialIndexById, (values, type) => {
-    const index = accessors.length
-    if (type === 'VEC3') {
-      const bounds = boundsOf(values)
-      accessors.push({
-        bufferView: buffers.push(values),
-        componentType: FLOAT,
-        count: values.length / 3,
-        type,
-        min: bounds.min,
-        max: bounds.max,
-      })
-    } else
-      accessors.push({
-        bufferView: buffers.push(values),
-        componentType: UINT32,
-        count: values.length,
-        type,
-      })
-    return index
-  })
+  const effects = effectsOf(
+    projection,
+    nodeIndexById,
+    materialIndexById,
+    sourceFrameNode,
+    (values, type) => {
+      const index = accessors.length
+      if (type === 'VEC3') {
+        const bounds = boundsOf(values)
+        accessors.push({
+          bufferView: buffers.push(values),
+          componentType: FLOAT,
+          count: values.length / 3,
+          type,
+          min: bounds.min,
+          max: bounds.max,
+        })
+      } else
+        accessors.push({
+          bufferView: buffers.push(values),
+          componentType: UINT32,
+          count: values.length,
+          type,
+        })
+      return index
+    },
+  )
   const binary = buffers.build()
   const gameExtensions = gameExtensionsOf(projection)
-  const sceneLights = sceneLightsOf(projection, nodeIndexById)
+  const sceneLights = sceneLightsOf(projection, nodeIndexById, sourceFrameNode)
+  const cameras = camerasOf(projection, nodeIndexById, documentNodes)
   const document = {
     asset: {
       version: '2.0',
@@ -2206,6 +2322,7 @@ export function materializeUvmCore(
       ...(projection.lods !== undefined && projection.lods.length > 0 ? ['MSFT_lod'] : []),
       ...(lodSelection === undefined ? [] : ['MODKITX_lod_selection']),
       ...(sceneLights === undefined ? [] : ['UV_scene_lights']),
+      ...(cameras.some(camera => camera['extensions'] !== undefined) ? ['UV_scene_camera'] : []),
       ...(collisionNodes === 0 ? [] : ['UV_game_collision']),
       ...(effects === undefined ? [] : ['UV_game_effects']),
       ...gameExtensions.map(([name]) => name),
@@ -2241,6 +2358,7 @@ export function materializeUvmCore(
     scene: 0,
     scenes: [{ nodes: rootIndices }],
     nodes: documentNodes,
+    ...(cameras.length === 0 ? {} : { cameras }),
     ...(documentMeshes.length === 0 ? {} : { meshes: documentMeshes }),
     ...(materials.length === 0 ? {} : { materials }),
     ...(skeleton === undefined || skeleton.skins.length === 0 ? {} : { skins: skeleton.skins }),

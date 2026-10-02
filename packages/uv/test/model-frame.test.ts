@@ -273,3 +273,130 @@ describe('the frame around the scene', () => {
     )
   })
 })
+
+describe('lights, effects and cameras in the source frame', () => {
+  const lamp = { type: 'point', direction: [0, 0, -1], position: [0, 0, 2], color: [1, 1, 1] }
+  const sparks = { particles: [{ name: 'Sparks', nodeId: 'body', materialId: 'plain' }] }
+  const lens = { type: 'perspective', perspective: { yfov: 0.8, znear: 0.1, zfar: 100 } }
+  const spaceOf = (document: Document, name: string) =>
+    (document.extensions[name] as { spaceNode?: number }).spaceNode
+  const nodeIndex = (written: unknown, id: string) =>
+    (written as { bindings: { nodes: Record<string, number> } }).bindings.nodes[id]!
+  type WithCameras = Document & {
+    readonly nodes: readonly { readonly camera?: number }[]
+    readonly cameras?: readonly unknown[]
+  }
+
+  it('names the innermost frame node the space of effects, and of lights without a node', () => {
+    for (const [upAxis, handedness, innermost] of [
+      ['+z', undefined, 'uv:up-axis'],
+      ['+z', 'left', 'uv:handedness'],
+      [undefined, undefined, 'uv:units'],
+    ] as const) {
+      const document = documentOf(
+        materializeUvmCore(
+          projection({ effects: sparks, lights: { lights: [lamp] } }, upAxis, handedness),
+          request({ units: { metersPerSourceUnit: 0.5 } }),
+        ),
+      )
+      expect(document.nodes[spaceOf(document, 'UV_game_effects')!]!.name).toBe(innermost)
+      expect(document.nodes[spaceOf(document, 'UV_scene_lights')!]!.name).toBe(innermost)
+    }
+    // a scene the materializer does not frame: effects are in the document's own frame
+    const bare = documentOf(materializeUvmCore(projection({ effects: sparks }), request()))
+    expect(spaceOf(bare, 'UV_game_effects')).toBeUndefined()
+    expect(() => materializeUvmCore(projection({ lights: { lights: [lamp] } }), request())).toThrow(
+      /no frame node/,
+    )
+  })
+
+  it('takes the source-frame space off with the wrappers and refuses a space on an outer one', () => {
+    const written = materializeUvmCore(
+      projection({ effects: sparks, lights: { lights: [lamp] } }, '+z'),
+      request({ units: { metersPerSourceUnit: 0.5 } }),
+    )
+    const framed = readUvmContainer(written.bytes)
+    const document = removeUvmFrameWrappers(framed).container.document as unknown as Document
+    expect(document.extensions['UV_game_effects']).not.toHaveProperty('spaceNode')
+    expect(document.extensions['UV_scene_lights']).toEqual({ version: 1, lights: [lamp] })
+    // the outer wrapper scales without turning: a space no source frame names
+    const nodes = framed.document['nodes'] as unknown[]
+    const extensions = framed.document['extensions'] as Record<string, Record<string, unknown>>
+    const outer = {
+      ...framed,
+      document: {
+        ...framed.document,
+        extensions: {
+          ...extensions,
+          UV_game_effects: { ...extensions['UV_game_effects'], spaceNode: nodes.length - 1 },
+        },
+      },
+    }
+    expect(() => removeUvmFrameWrappers(outer as never)).toThrow(
+      /spaceNode names a frame node of the materializer/,
+    )
+  })
+
+  it('writes a camera on its node, before the frame nodes a writer takes off', () => {
+    const written = materializeUvmCore(
+      projection(
+        {
+          cameras: [
+            {
+              nodeId: 'tip',
+              camera: { ...lens, name: 'Portrait' },
+              sequenceAnimation: { yfov: [] },
+            },
+          ],
+        },
+        '+z',
+      ),
+      request(),
+    )
+    const document = documentOf(written) as WithCameras
+    const tip = nodeIndex(written, 'tip')
+    expect(document.nodes[tip]!.camera).toBe(0)
+    expect(document.cameras).toEqual([
+      {
+        ...lens,
+        name: 'Portrait',
+        extensions: { UV_scene_camera: { version: 1, sequenceAnimation: { yfov: [] } } },
+      },
+    ])
+    expect(document.extensionsUsed).toContain('UV_scene_camera')
+    const unwrapped = removeUvmFrameWrappers(readUvmContainer(written.bytes)).container
+      .document as unknown as WithCameras
+    expect(unwrapped.nodes[tip]!.camera).toBe(0)
+    const still = documentOf(
+      materializeUvmCore(projection({ cameras: [{ nodeId: 'tip', camera: lens }] }), request()),
+    )
+    expect(still.extensionsUsed).not.toContain('UV_scene_camera')
+  })
+
+  it('refuses a camera the scene would refuse', () => {
+    for (const cameras of [
+      [{ nodeId: 'nowhere', camera: lens }],
+      [
+        { nodeId: 'tip', camera: lens },
+        { nodeId: 'tip', camera: lens },
+      ],
+      [{ nodeId: 'tip', camera: { ...lens, perspective: { yfov: 0, znear: 0.1 } } }],
+      [{ nodeId: 'tip', camera: { ...lens, perspective: { yfov: 1, znear: 1, zfar: 0.5 } } }],
+      [
+        {
+          nodeId: 'tip',
+          camera: { type: 'orthographic', orthographic: { xmag: 0, ymag: 1, znear: 0, zfar: 1 } },
+        },
+      ],
+      [{ nodeId: 'tip', camera: lens, sequenceAnimation: { focus: [] } }],
+      [{ nodeId: 'tip', camera: { ...lens, extras: {} } }],
+    ])
+      expect(() => materializeUvmCore(projection({ cameras }), request())).toThrow(TypeError)
+    expect(() =>
+      materializeUvmCore(
+        projection({ cameras: [{ nodeId: 'tip', camera: lens }] }, '+z', 'left'),
+        request(),
+      ),
+    ).toThrow(/reflected/)
+  })
+})
