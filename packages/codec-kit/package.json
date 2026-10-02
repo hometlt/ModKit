@@ -243,7 +243,8 @@
     "dist",
     "MK2-SKINNING-KERNELS.json",
     "MK2-DIGEST-KERNELS.json",
-    "README.md"
+    "README.md",
+    "src/lib/brotli/LICENSE"
   ],
   "dependencies": {
     "draco3d": "1.5.7",

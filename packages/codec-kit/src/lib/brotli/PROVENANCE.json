@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "library": "Brotli JavaScript decoder (Google)",
+  "license": "MIT",
+  "licenseFile": "LICENSE",
+  "source": {
+    "repository": "https://github.com/google/brotli",
+    "commit": "42a2ed4355bc6287da6bb6319f090b499cba4550",
+    "committed": "2026-09-30"
+  },
+  "decision": "Owner decision 2026-10-01 (question 40 (a), AGENTS.md section 5): the web build decodes Brotli with Google's MIT decoder, vendored here; the download was approved by the user in the Core session on 2026-10-02.",
+  "consumer": "src/compression/brotli.ts loads it only in a realm without node:zlib (a browser, a web worker).",
+  "files": [
+    {
+      "path": "decode.ts",
+      "source": "js/decode.js",
+      "sourceGitBlob": "3a92bf59eb6a9b993d2d4c0c15a3e23a646f8284",
+      "sourceSha256": "7fd3ecb658c9c7e389eaf0aaf7e0adcc8ba47e043c21bdefb8c3caa83d893d35",
+      "sha256": "8295eec7c9542aa0efe222a9d3d192bb0b692c4680340bc88f6125ed9dd8669f",
+      "edit": "ts-nocheck-and-output-bound"
+    },
+    {
+      "path": "LICENSE",
+      "source": "LICENSE",
+      "sourceGitBlob": "33b7cdd2dbaeddce1e35aa1a13f63d71154dc42f",
+      "sourceSha256": "3d180008e36922a4e8daec11c34c7af264fed5962d07924aea928c38e8663c94",
+      "sha256": "3d180008e36922a4e8daec11c34c7af264fed5962d07924aea928c38e8663c94",
+      "edit": "none"
+    }
+  ],
+  "edits": [
+    {
+      "file": "decode.ts",
+      "change": "renamed from decode.js, with a `// @ts-nocheck` line after the copyright header, so the package's tsc (src/**/*.ts) emits the JavaScript into dist as it is"
+    },
+    {
+      "file": "decode.ts",
+      "change": "decode() throws RangeError('Brotli output exceeds maxOutputLength') once its output passes options.maxOutputLength, checked after each 16 KiB chunk, so a stream that expands without end stops near its bound instead of filling memory"
+    }
+  ]
+}

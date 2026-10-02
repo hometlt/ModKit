@@ -16,6 +16,8 @@ migration/generated/port-requirements.json
 packages/sdk/src/manifest/validators.generated.ts
 packages/sdk/src/manifest/validators.generated/
 packages/sdk/src/host-facilities.generated.ts
+# Vendored third-party source: its PROVENANCE.json pins the bytes.
+packages/codec-kit/src/lib/brotli/
 dist/
 dist-app/
 node_modules/
