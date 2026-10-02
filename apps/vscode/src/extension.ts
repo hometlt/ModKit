@@ -826,7 +826,7 @@ async function activateModkit(
       // resolve through its installation (Dune 2000, Warzone) opens the one chosen in Games.
       get configuredPaths() {
         return Object.fromEntries(
-          selectedSources.map(source => [source.gameId, [source.installPath]] as const),
+          presentSources().map(source => [source.gameId, [source.installPath]] as const),
         )
       },
       // and the folders the folder search found, which the game's provider still confirms
@@ -895,8 +895,15 @@ async function activateModkit(
     context.globalState.get<unknown>(SELECTED_SOURCES_KEY) ??
       context.workspaceState.get<unknown>(SELECTED_SOURCES_KEY),
   )
+  /**
+   * The chosen installations whose folders are still there. One moved or deleted is no choice: its
+   * game's sources and the discovery take the installation found instead (02.10: SC2 moved from
+   * C:Apps to F:GAMES kept the old folder chosen, and no SC2 chain loaded).
+   */
+  const presentSources = (): readonly SelectedContentSource[] =>
+    selectedSources.filter(source => existsSync(source.installPath))
   selectedInstallationOf = gameId =>
-    selectedSources.find(source => source.gameId === gameId)?.installPath
+    presentSources().find(source => source.gameId === gameId)?.installPath
   /**
    * Mounts in flight, by the id the Sources row carries — a provider root id or an installation's
    * normalized path. A mount adds its folder first and reads afterwards, so this is what lets the
@@ -1230,7 +1237,7 @@ async function activateModkit(
     readonly installations: readonly SelectedContentSource[]
     readonly anchors: readonly string[]
   }> => {
-    const chosen = new Set(selectedSources.map(source => source.gameId))
+    const chosen = new Set(presentSources().map(source => source.gameId))
     const games = installationGameIds(host.services.host.inventory).filter(id => !chosen.has(id))
     const searched = await searchedInstallationFolders()
     const found = await Promise.all(
@@ -1304,7 +1311,7 @@ async function activateModkit(
           moduleOptions: extension => {
             const installationDirectory = selectedInstallationDirectory(
               host.services.host.inventory,
-              selectedSources,
+              presentSources(),
               extension,
               found,
             )
@@ -10183,7 +10190,8 @@ async function activateModkit(
                 item => item.normalizedPath === source.normalizedPath,
               )
             : undefined
-        if (installation === undefined) continue
+        // a provider that names no version leaves nothing to add: no new selection to store
+        if (installation?.version === undefined) continue
         enriched = withSelectedContentSource(enriched, {
           ...source,
           ...(installation.version === undefined ? {} : { version: installation.version }),
@@ -10199,7 +10207,15 @@ async function activateModkit(
       }
     }
     if (enriched !== selectedSources) {
-      await publishSelectedSources(enriched)
+      /*
+       * A version is a label: the folders, and so the composed sources, stay the same. Publishing
+       * it as a new selection recomposed every extension's sources at each start, and the first
+       * composition closed under the accounts move (v95: "Content sources closed").
+       */
+      selectedSources = enriched
+      await context.globalState.update(SELECTED_SOURCES_KEY, enriched)
+      hostView.refresh()
+      sourcesView.refresh()
       await synchronizeContainerWorkspaceFolders()
     }
   }

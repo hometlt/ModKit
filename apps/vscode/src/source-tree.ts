@@ -29,6 +29,8 @@ export interface SourceTreeText {
   readonly providerUnavailable: string
   readonly connected: string
   readonly selected: string
+  /** A selected installation whose folder is gone (moved or deleted). */
+  readonly missing: string
   readonly mounted: string
   readonly mounting: string
   readonly available: string
@@ -67,6 +69,8 @@ export interface SourceTreeNode {
 export interface SourceTreeInput {
   readonly workspaceFolders: readonly SourceTreeWorkspaceFolder[]
   readonly selectedInstallations: readonly SelectedContentSource[]
+  /** Normalized paths of selected installations whose folder no longer exists. */
+  readonly missingInstallationPaths?: ReadonlySet<string>
   readonly mountedProviderRootIds: ReadonlySet<string>
   /** Normalized installation paths already mounted as a container folder in this window. */
   readonly mountedInstallationPaths?: ReadonlySet<string>
@@ -164,18 +168,22 @@ export function createSourceTree(input: SourceTreeInput): readonly SourceTreeNod
         includesPath(input.mountedInstallationPaths, source.normalizedPath) ||
         includesPath(input.mountedInstallationPaths, source.installPath) ||
         (servedBy !== undefined && input.mountedProviderRootIds.has(servedBy.id))
+      // a folder moved away (02.10: SC2 from C:Apps to F:GAMES) is said, not shown as chosen
+      const missing = includesPath(input.missingInstallationPaths, source.normalizedPath)
       const state = mounting
         ? input.text.mounting
-        : mounted
-          ? input.text.mounted
-          : input.text.selected
+        : missing
+          ? input.text.missing
+          : mounted
+            ? input.text.mounted
+            : input.text.selected
       return Object.freeze({
         kind: 'installation' as const,
         id: `installation:${source.normalizedPath}`,
         label,
         description: `${source.gameId} · ${state}`,
         tooltip: build === '' ? source.installPath : `${source.installPath}\n${build}`,
-        icon: mounting ? 'sync~spin' : 'database',
+        icon: mounting ? 'sync~spin' : missing ? 'warning' : 'database',
         contextValue: `modkitSource.installation${mounting ? '.mounting' : mounted ? '.mounted' : ''}`,
         uri: source.installPath,
         normalizedPath: source.normalizedPath,

@@ -1,4 +1,5 @@
 /** The Sources tree view. */
+import { existsSync } from 'node:fs'
 import * as vscode from 'vscode'
 import { type ContentSources } from '@modkit/vfs/content-sources'
 import { type UiLocalizer } from '@modkit/ui/localization'
@@ -183,6 +184,11 @@ export class SourcesView implements vscode.TreeDataProvider<SourceTreeNode>, vsc
       ...createSourceTree({
         workspaceFolders: this.workspaceFolders(),
         selectedInstallations: this.selectedInstallations(),
+        missingInstallationPaths: new Set(
+          this.selectedInstallations()
+            .filter(source => !existsSync(source.installPath))
+            .map(source => source.normalizedPath),
+        ),
         mountedProviderRootIds: this.mountedProviderRootIds(),
         mountedInstallationPaths: this.mountedInstallationPaths(),
         mountingIds: this.mountingIds(),
@@ -203,6 +209,7 @@ export class SourcesView implements vscode.TreeDataProvider<SourceTreeNode>, vsc
           providerUnavailable: this.localizer.text('vscode.sources.providerUnavailable'),
           connected: this.localizer.text('vscode.sources.connected'),
           selected: this.localizer.text('vscode.sources.selected'),
+          missing: this.localizer.text('vscode.sources.missing'),
           mounted: this.localizer.text('vscode.sources.mounted'),
           mounting: this.localizer.text('vscode.sources.mounting'),
           available: this.localizer.text('vscode.sources.available'),

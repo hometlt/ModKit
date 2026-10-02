@@ -14,6 +14,7 @@ const text: SourceTreeText = {
   providerUnavailable: 'Provider unavailable',
   connected: 'connected',
   selected: 'selected',
+  missing: 'folder not found',
   mounted: 'mounted',
   mounting: 'mounting…',
   available: 'available',
@@ -168,6 +169,22 @@ describe('VS Code Sources tree', () => {
     expect(installationRow(new Set(['local:casc']))).toMatchObject({
       description: 'blizzard.starcraft2 · mounted',
       contextValue: 'modkitSource.installation.mounted',
+    })
+  })
+
+  it('says a selected installation whose folder is gone, and keeps its row to unload it', () => {
+    const row = createSourceTree({
+      workspaceFolders: [],
+      selectedInstallations: [installation],
+      missingInstallationPaths: new Set([installation.normalizedPath]),
+      mountedProviderRootIds: new Set(),
+      providerSnapshot,
+      text,
+    })[1]?.children?.[0]?.children?.[0]
+    expect(row).toMatchObject({
+      description: 'blizzard.starcraft2 · folder not found',
+      icon: 'warning',
+      contextValue: 'modkitSource.installation',
     })
   })
 
