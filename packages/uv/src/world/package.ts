@@ -1,4 +1,5 @@
-import { canonicalJsonStringify, ModkitError } from '@modkit/core'
+import { canonicalJsonStringify, compareUtf8, ModkitError } from '@modkit/core'
+import { createZipArchive, type ZipWriteBudget } from '@modkit/codec-kit/container/zip'
 import { sha256Hex } from '@modkit/codec-kit/crypto/digest'
 import { encodePng } from '@modkit/codec-kit/raster'
 import type { RasterResourcePort, SceneRendererTexture } from '@modkit/sdk'
@@ -105,6 +106,9 @@ export type WorldUvpMaterializationResult =
       /** Images of packaged models that came without decoded texels: kept by their logical id. */
       readonly unpackagedModelTextureIds: readonly string[]
       readonly excludedFacetIds: readonly string[]
+      /** The UVW's own receipt: objects it left out and item fields it does not carry. */
+      readonly omittedObjects: number
+      readonly lostFields: readonly { readonly path: string; readonly count: number }[]
       readonly refusalCodes: readonly []
       readonly refusals: readonly []
     }>
@@ -1419,6 +1423,8 @@ export async function materializeWorldToUvpMap(
           : ['world.object-model-resources']),
         ...(unpackagedWaterResourceIds.size === 0 ? [] : ['world.water-material-resources']),
       ]),
+      omittedObjects: materialized.omittedObjects,
+      lostFields: materialized.lostFields,
       refusalCodes: Object.freeze([]) as readonly [],
       refusals: Object.freeze([]) as readonly [],
     })
@@ -1430,6 +1436,26 @@ export async function materializeWorldToUvpMap(
       error instanceof Error ? error.message : String(error),
     )
   }
+}
+
+/**
+ * The single-file UVP (SPEC_UVP §2): a ZIP of uvp.manifest.json and the manifest's content paths,
+ * stored, without a wrapper directory, written by the archive codec's own writer (codec-kit
+ * container/zip). The manifest comes first and the contents in path order, so the same package
+ * writes the same bytes; neither order nor timestamps enter its identity.
+ */
+export function packUvpArchive(
+  entries: ReadonlyMap<string, Uint8Array>,
+  budget: ZipWriteBudget,
+): Uint8Array {
+  const manifest = entries.get(MANIFEST_PATH)
+  if (manifest === undefined)
+    fail('x3.uv/uvp-entry-missing', `UVP bundle is missing ${MANIFEST_PATH}`)
+  const contents = [...entries.keys()]
+    .filter(path => path !== MANIFEST_PATH)
+    .sort(compareUtf8)
+    .map(path => [packagePath(path, 'entries'), entries.get(path)!] as const)
+  return createZipArchive([[MANIFEST_PATH, manifest], ...contents], budget)
 }
 
 export async function openUvpMapBundle(

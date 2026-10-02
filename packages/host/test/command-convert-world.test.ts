@@ -40,6 +40,7 @@ async function convert(
   input: Readonly<Record<string, string>>,
   worldToUvw?: CommandContext['worldToUvw'],
   world = true,
+  worldToUvp?: CommandContext['worldToUvp'],
 ) {
   const released: string[] = []
   const written: string[] = []
@@ -53,6 +54,7 @@ async function convert(
         return `out/${name}`
       },
       ...(worldToUvw === undefined ? {} : { worldToUvw }),
+      ...(worldToUvp === undefined ? {} : { worldToUvp }),
     },
   )
   return { result: receipt.result, released, written }
@@ -124,5 +126,26 @@ describe('subject.convert to UVW', () => {
     expect(named.result).toMatchObject({ state: 'ok', data: { via: 'export.convert' } })
     const other = await convert({ target: 'json' }, world)
     expect(other.result).toMatchObject({ state: 'ok', data: { via: 'export.convert' } })
+  })
+})
+
+describe('subject.convert to a single-file UVP', () => {
+  it('writes the world with its models and textures through its own hook, as a .uvp', async () => {
+    const uvw = async (): Promise<CommandWorldExport> => {
+      throw new Error('a UVP is not a UVW')
+    }
+    const run = await convert({ target: 'uvp' }, uvw, true, async () => materialized)
+    expect(run.result).toMatchObject({
+      state: 'ok',
+      data: { wroteTo: 'out/world.uvp', receipt: { artifactDigest: 'sha256:00' } },
+    })
+    expect(run.released).toEqual(['common.view/world-scene-source'])
+    const refused = await convert({ target: 'uvp' }, uvw, true, async () => ({
+      state: 'refused',
+      refusals: [{ code: 'x3.uv/invalid-package-options', message: 'bad id' }],
+    }))
+    expect(refused.result).toMatchObject({ state: 'failed', code: 'x3.host/world-uvp-refused' })
+    // an application that writes UVW only has no UVP to offer
+    expect((await convert({ target: 'uvp' }, uvw)).result).toMatchObject({ state: 'unavailable' })
   })
 })

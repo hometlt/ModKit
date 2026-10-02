@@ -135,6 +135,15 @@ export interface CommandContext {
     signal?: AbortSignal,
   ) => Promise<CommandWorldExport>
   /**
+   * The same world as a single-file UVP (SPEC_UVP §2: the UVW with its models and textures, a ZIP
+   * of uvp.manifest.json and its contents) — `@modkit/uv` materializeWorldToUvpMap and
+   * packUvpArchive: `subject.convert` with target `uvp` uses it.
+   */
+  readonly worldToUvp?: (
+    source: CandidateWorldSceneSource,
+    signal?: AbortSignal,
+  ) => Promise<CommandWorldExport>
+  /**
    * Opens the mod context of the installation or mod a conversion writes for (`targetContext`):
    * a map encoder's catalog questions are answered from the target game there (owner decision,
    * question 67) — the CLI from its content sources, VS Code from the installation chosen in Games.

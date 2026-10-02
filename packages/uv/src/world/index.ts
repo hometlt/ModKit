@@ -2322,6 +2322,7 @@ export {
 export {
   materializeWorldToUvpMap,
   openUvpMapBundle,
+  packUvpArchive,
   type OpenedUvpMapBundle,
   type OpenUvpMapBundleOptions,
   type UvpMapManifest,

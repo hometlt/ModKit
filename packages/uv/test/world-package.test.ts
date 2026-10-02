@@ -11,8 +11,14 @@ import {
   createUvwWorldSceneSource,
   materializeWorldToUvpMap,
   openUvpMapBundle,
+  packUvpArchive,
   type UvwProfileDocument,
 } from '../src/world/index.js'
+// the host's ZIP codec reads what packUvpArchive writes: the reader is the oracle
+import {
+  extractZipArchiveEntry,
+  parseZipArchive,
+} from '../../../extensions/archives/src/zip/codec.js'
 
 const rgba = Uint8Array.of(255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 255, 255, 0, 128)
 
@@ -613,6 +619,32 @@ describe('portable UVP map bundle', () => {
       .document['images'] as { uri: string }[]
     expect(images.map(image => image.uri).sort()).toEqual(
       ['!fire', 'media/models/object-model-0000-texture-0000.png'].sort(),
+    )
+  })
+})
+
+describe('single-file UVP', () => {
+  it('packs the bundle as one ZIP the archive codec reads back and the bundle reopens from', async () => {
+    const packed = await materializeWorldToUvpMap(source(), options)
+    if (packed.state !== 'materialized') throw new Error(JSON.stringify(packed.refusals))
+    const budget = { maxNodes: 100, maxInputBytes: 1n << 24n }
+    const archive = packUvpArchive(packed.entries, budget)
+    // the manifest leads, the contents follow in path order, stored (SPEC_UVP §2)
+    const listed = parseZipArchive(archive, 100)
+    expect(listed.map(entry => [entry.name, entry.method])).toEqual([
+      ['uvp.manifest.json', 0],
+      ['media/terrain/terrain-media-0000.png', 0],
+      ['world/main.uvw.json', 0],
+    ])
+    const read = new Map<string, Uint8Array>()
+    for (const entry of listed) read.set(entry.name, await extractZipArchiveEntry(archive, entry))
+    const reopened = await openUvpMapBundle(read, { snapshotId: 'single-file', rasterResources })
+    expect(reopened.embeddedResources.size).toBe(1)
+    // the entries' order never reaches the bytes
+    expect(packUvpArchive(new Map([...packed.entries].reverse()), budget)).toEqual(archive)
+    const headless = new Map([...packed.entries].filter(([path]) => path !== 'uvp.manifest.json'))
+    expect(() => packUvpArchive(headless, budget)).toThrow(
+      expect.objectContaining({ code: 'x3.uv/uvp-entry-missing' }),
     )
   })
 })

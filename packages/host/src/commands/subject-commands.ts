@@ -547,40 +547,46 @@ const convertCommand: CommandDescriptor = {
             'operation must be an operation id',
             diagnostics,
           )
-        // a map world becomes UVW from the world it publishes, with the receipt of what UVW lacks;
-        // an operation the caller names still runs instead
-        if (
-          input['target'] === 'uvw' &&
+        // a map world becomes UVW, or a single-file UVP with its models and textures, from the
+        // world it publishes, with the receipt of what UVW lacks; a named operation runs instead
+        const worldFormat =
           input['operation'] === undefined &&
+          (input['target'] === 'uvw' || input['target'] === 'uvp')
+            ? input['target']
+            : undefined
+        if (
+          worldFormat !== undefined &&
           descriptor.dataSources?.some(
             offer => offer.contract === WORLD_SCENE_SOURCE && offer.major === 1,
           )
         ) {
-          if (context.worldToUvw === undefined)
+          const write = worldFormat === 'uvw' ? context.worldToUvw : context.worldToUvp
+          const name = worldFormat.toUpperCase()
+          if (write === undefined)
             return unavailable(
               CONVERT_COMMAND,
-              'this application has no UV module to write UVW',
+              `this application has no UV module to write ${name}`,
               'convert with the CLI or the desktop application',
               diagnostics,
             )
-          context.progress?.({ step: 'convert', message: 'materializing the map world as UVW' })
+          context.progress?.({ step: 'convert', message: `materializing the map world as ${name}` })
           const lease = await session.dataSource(WORLD_SCENE_SOURCE, 1)
           try {
-            const world = await context.worldToUvw(
+            const world = await write(
               lease.value as unknown as CandidateWorldSceneSource,
               context.signal,
             )
             if (world.state === 'refused')
               return failed(
                 CONVERT_COMMAND,
-                'x3.host/world-uvw-refused',
+                `x3.host/world-${worldFormat}-refused`,
                 world.refusals.map(refusal => `${refusal.code}: ${refusal.message}`).join('; '),
                 diagnostics,
               )
             const wroteTo =
               context.writeOutput === undefined
                 ? undefined
-                : await context.writeOutput('world.uvw', world.bytes, context.signal)
+                : await context.writeOutput(`world.${worldFormat}`, world.bytes, context.signal)
             return ok(
               CONVERT_COMMAND,
               {
@@ -603,10 +609,10 @@ const convertCommand: CommandDescriptor = {
           }
         }
         // without a world, the codec's raw or model export would be written under a `.uvw` name
-        if (input['target'] === 'uvw' && input['operation'] === undefined)
+        if (worldFormat !== undefined)
           return unavailable(
             CONVERT_COMMAND,
-            'this subject publishes no map world to write as UVW',
+            `this subject publishes no map world to write as ${worldFormat.toUpperCase()}`,
             'open the map itself, or a package naming one map; name an operation to run it instead',
             diagnostics,
           )

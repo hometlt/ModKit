@@ -14,7 +14,7 @@
  * is the same operation reached through the shared surface.
  */
 
-import { dirname, resolve } from 'node:path'
+import { basename, dirname, resolve } from 'node:path'
 import { open, writeFile } from 'node:fs/promises'
 import process from 'node:process'
 import {
@@ -80,6 +80,24 @@ const WORLD_UVW_LIMITS = Object.freeze({
   maxFacetItems: 4096 * 1024,
   maxOutputBytes: 256 * 1024 * 1024,
 })
+
+/** What a single-file UVP may hold beside its UVW: textures, models, and the archive as a whole. */
+const WORLD_UVP_LIMITS = Object.freeze({
+  maxTextureBytes: 64 * 1024 * 1024,
+  maxMediaBytes: 1024 * 1024 * 1024,
+  maxModelBytes: 1024 * 1024 * 1024,
+  maxArchiveBytes: 4 * 1024 * 1024 * 1024 - 1,
+})
+
+/** A package name from a file name: lower-case letters, digits and dashes, `world` without any. */
+function packageName(file: string): string {
+  const stem = basename(file).replace(/\.[^.]*$/u, '')
+  const name = stem
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/gu, '-')
+    .replace(/^-+|-+$/gu, '')
+  return /^[a-z0-9]/u.test(name) ? name : 'world'
+}
 
 /**
  * Opens a map together with the world its preview builds (MCP opens maps the same way), so that
@@ -396,7 +414,8 @@ export async function runCommand(
     })
     // A native map publishes its world through the host's map preview, as VS Code and MCP open it.
     const opener =
-      arguments_.command === 'subject.convert' && arguments_.target === 'uvw'
+      arguments_.command === 'subject.convert' &&
+      (arguments_.target === 'uvw' || arguments_.target === 'uvp')
         ? withMapWorld(pathOpener, services, budget, arguments_.entry)
         : pathOpener
     const input: CommandInput = {
@@ -464,6 +483,31 @@ export async function runCommand(
             throw new TypeError(`the mod context of ${target} answers no catalog questions`)
           }
           return { entities, dispose }
+        },
+        // `subject.convert --target uvp`: the world with its models and textures, in one file
+        worldToUvp: async (source, signal) => {
+          const { materializeWorldToUvpMap, packUvpArchive } = await import('@modkit/uv/world')
+          const packed = await materializeWorldToUvpMap(source, {
+            ...WORLD_UVW_LIMITS,
+            maxTextureBytes: WORLD_UVP_LIMITS.maxTextureBytes,
+            maxMediaBytes: WORLD_UVP_LIMITS.maxMediaBytes,
+            maxModelBytes: WORLD_UVP_LIMITS.maxModelBytes,
+            packageId: `modkit.local/${packageName(file)}`,
+            packageVersion: '1.0.0',
+            ...(signal === undefined ? {} : { signal }),
+          })
+          if (packed.state === 'refused') return packed
+          return {
+            state: 'materialized',
+            bytes: packUvpArchive(packed.entries, {
+              maxNodes: 1_000_000,
+              maxInputBytes: BigInt(WORLD_UVP_LIMITS.maxArchiveBytes),
+            }),
+            artifactDigest: packed.artifactDigest,
+            excludedFacetIds: packed.excludedFacetIds,
+            omittedObjects: packed.omittedObjects,
+            lostFields: packed.lostFields,
+          }
         },
         // `subject.convert --target uvw` of a map: the world it publishes, as one UVW document
         worldToUvw: async (source, signal) => {
