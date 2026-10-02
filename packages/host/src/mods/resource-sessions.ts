@@ -14,6 +14,9 @@ const ROOT = 'loaded-mods'
 const MOD = 'mod/'
 const NODE = 'node/'
 const ref = (id: string, hasChildren = true): TreeNodeRef => ({ id, hasChildren })
+/** A package layer's id among the loaded mods. */
+const packageId = (gameId: string, layer: { readonly sourceId: string; readonly sourcePath: string }): string =>
+  `${gameId}|${layer.sourceId}|${layer.sourcePath.toLowerCase()}`
 const nodeId = (id: string, inner: string): string => `${NODE}${encodeURIComponent(id)}/${encodeURIComponent(inner)}`
 
 function childOf(id: string): { mod: string; inner: string } | undefined {
@@ -73,7 +76,7 @@ export class LoadedModResourceSessions {
       let changed = false
       for (const layer of context.layers.slice(0, -1)) {
         if (layer.kind !== 'package') continue
-        const id = `${context.gameId}|${layer.sourceId}|${layer.sourcePath.toLowerCase()}`
+        const id = packageId(context.gameId, layer)
         if (this.mods.has(id)) continue
         const dependencyTarget: ModContextTarget = layer.sourceId === 'host'
           ? layer.sourcePath : { sourceId: layer.sourceId, path: layer.sourcePath }
@@ -98,7 +101,7 @@ export class LoadedModResourceSessions {
       await context.dispose()
       return false
     }
-    const id = `${context.gameId}|${primary.sourceId}|${primary.sourcePath.toLowerCase()}`
+    const id = packageId(context.gameId, primary)
     const previous = this.mods.get(id)
     if (previous?.context.contextId === context.contextId) {
       await context.dispose()
@@ -114,11 +117,19 @@ export class LoadedModResourceSessions {
     return true
   }
 
+  /** Unload a mod and the dependencies only it loaded; one another opened mod stands on stays. */
   async unload(id: string): Promise<void> {
     const current = this.mods.get(id)
     if (current === undefined) return
     this.mods.delete(id)
+    const needed = new Set<string>()
+    for (const mod of this.mods.values())
+      if (mod.opened)
+        for (const layer of mod.context.layers) if (layer.kind === 'package') needed.add(packageId(mod.context.gameId, layer))
+    const orphans = [...this.mods.values()].filter(mod => !mod.opened && !needed.has(mod.id))
+    for (const orphan of orphans) this.mods.delete(orphan.id)
     await current.context.dispose()
+    await Promise.allSettled(orphans.map(mod => mod.context.dispose()))
   }
 
   /** Reopen all loaded contexts after their shared content source invalidated a package. */
@@ -200,12 +211,13 @@ export class LoadedModResourceSessions {
       async root() { return ref(ROOT) },
       async children(node, request, signal) {
         signal?.throwIfAborted()
+        // a mod that publishes no semantic resources (a plain folder layer) is listed without children
         if (node.id === ROOT) return page([...thisSessions.mods.values()]
           .filter(mod => includeDependencies || mod.opened)
-          .map(mod => ref(MOD + encodeURIComponent(mod.id))), request)
+          .map(mod => ref(MOD + encodeURIComponent(mod.id), mod.context.query !== undefined)), request)
         if (node.id.startsWith(MOD)) {
           const mod = thisSessions.mods.get(decodeURIComponent(node.id.slice(MOD.length)))
-          if (mod === undefined) return page([], request)
+          if (mod === undefined || mod.context.query === undefined) return page([], request)
           const root = treeRef(await query(mod, 'root', {}, signal))
           const answer = await query(mod, 'children', { node: root, page: request }, signal) as { items?: unknown[]; nextCursor?: string }
           return { items: (answer.items ?? []).map(item => {
@@ -237,7 +249,7 @@ export class LoadedModResourceSessions {
       },
       async *search(search: TreeQuery, signal?: AbortSignal) {
         for (const mod of thisSessions.mods.values()) {
-          if (!includeDependencies && !mod.opened) continue
+          if ((!includeDependencies && !mod.opened) || mod.context.query === undefined) continue
           signal?.throwIfAborted()
           const answer = await query(mod, 'search', { node: ref('root'), pattern: search.pattern }, signal) as { items?: unknown[] }
           for (const item of answer.items ?? []) {

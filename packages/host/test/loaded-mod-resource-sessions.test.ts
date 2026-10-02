@@ -108,4 +108,46 @@ describe('loaded mod resources', () => {
     expect(await sessions.reloadHolding('host', 'C:/Elsewhere/readme.txt')).toBe(false)
     await sessions.dispose()
   })
+
+  it('lists a mod without semantic resources without failing the tree, and unloads what only it loaded', async () => {
+    const released: string[] = []
+    const layer = (path: string, role: 'dependency' | 'primary') => ({ id: path, displayName: path, sourceId: 'local:beyond-all-reason',
+      sourcePath: path, role, provenance: role === 'primary' ? 'opened' as const : 'implicit' as const, kind: 'package' as const })
+    // a game and its dependencies: plain folder layers that answer no resource questions
+    const chains: Record<string, readonly string[]> = {
+      'games/bar.sdd': ['base/springbitmaps.sdz', 'base/springcontent.sdz', 'games/bar.sdd'],
+      'maps/rosetta.sd7': ['base/springcontent.sdz', 'maps/rosetta.sd7'],
+      'base/springbitmaps.sdz': ['base/springbitmaps.sdz'],
+      'base/springcontent.sdz': ['base/springcontent.sdz'],
+    }
+    const source = { openModContext: async (request: { target: ModContextTarget }) => {
+      const path = typeof request.target === 'string' ? request.target : request.target.path
+      const chain = chains[path]!
+      return { schemaVersion: 1, gameId: 'spring/beyond-all-reason', contextId: path,
+        layers: chain.map((item, index) => layer(item, index === chain.length - 1 ? 'primary' : 'dependency')),
+        unresolved: [], diagnostics: [], files: async () => ({ items: [] }), read: async () => new Uint8Array(),
+        locate: async () => undefined,
+        ...(path === 'games/bar.sdd' ? { query: async () => ({ items: [{ id: 'unit/armcom', hasChildren: false }] }) } : {}),
+        dispose: async () => void released.push(path) } satisfies ModContext
+    } } as ContentSources
+    const sessions = new LoadedModResourceSessions(source)
+    const target = (path: string) => ({ sourceId: 'local:beyond-all-reason', path })
+    await sessions.load(target('games/bar.sdd'))
+    await sessions.load(target('maps/rosetta.sd7'))
+    const tree = sessions.tree()
+    const mods = (await tree.children(await tree.root(), { limit: 10 })).items
+    expect(mods).toHaveLength(4)
+    // the folder layers have no children; search asks only the mod that answers
+    const bitmaps = mods.find(item => item.id.includes('springbitmaps'))!
+    expect(bitmaps.hasChildren).toBe(false)
+    expect((await tree.children(bitmaps, { limit: 10 })).items).toEqual([])
+    const found = []
+    for await (const item of tree.search!({ pattern: 'armcom' })) found.push(item)
+    expect(found).toHaveLength(1)
+    // unloading the game unloads the dependency only it loaded, not the one the map stands on too
+    await sessions.unload('spring/beyond-all-reason|local:beyond-all-reason|games/bar.sdd')
+    expect(released.sort()).toEqual(['base/springbitmaps.sdz', 'games/bar.sdd'])
+    expect(sessions.list().map(mod => mod.id.split('|')[2]).sort()).toEqual(['base/springcontent.sdz', 'maps/rosetta.sd7'])
+    await sessions.dispose()
+  })
 })
