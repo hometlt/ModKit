@@ -1211,7 +1211,9 @@ export function createVsCodeCommandOpener(options: {
 async function modResources(
   catalog: SubjectCatalogOptions | undefined,
   path: string,
-): Promise<Pick<PathSubjectOpenerOptions, 'contentSources' | 'baseMods'>> {
+): Promise<
+  Pick<PathSubjectOpenerOptions, 'baseMods'> & { readonly contentSources?: ContentSources }
+> {
   const contentSources = await catalog?.contentSources()
   if (contentSources === undefined) return {}
   const target = resolve(path)
