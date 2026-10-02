@@ -128,3 +128,69 @@ it('renders a world plan without a GPU: its ground and its models as the plan pl
   // the model stands where the plan placed it, over the centre of the ground
   assert.ok(Math.abs(redX / red - 32) < 6, `the model drawn around x ${redX / red}`)
 })
+
+it("carries a batch's team colour and additive blending into the headless scene", async () => {
+  const plan = createWorldWebGlPlan({ items: terrain })
+  // a texture and a mask that share an id and not their texels
+  const white = { id: 'surface', width: 1, height: 1, rgba: Uint8Array.of(255, 255, 255, 255) }
+  const mask = { id: 'surface', width: 1, height: 1, rgba: Uint8Array.of(255, 0, 0, 255) }
+  // a quad over the middle of the ground, facing up
+  const quad = height => ({
+    positions: Float32Array.from([
+      1,
+      height,
+      1,
+      3,
+      height,
+      3,
+      3,
+      height,
+      1,
+      1,
+      height,
+      1,
+      1,
+      height,
+      3,
+      3,
+      height,
+      3,
+    ]),
+    normals: Float32Array.from(Array.from({ length: 6 }, () => [0, 1, 0]).flat()),
+    colors: new Float32Array(24).fill(1),
+    textureCoordinates: new Float32Array(12),
+  })
+  const team = {
+    mask,
+    channel: 0,
+    blend: 2,
+    strength: 1,
+    color: [0, 0, 1],
+    rule: { mode: 'data', channel: 0 },
+  }
+  const teamed = { ...plan, texturedTriangles: [{ ...quad(0.5), texture: white, team }] }
+  const { scene } = worldHeadlessScene({
+    ...teamed,
+    transparentTexturedTriangles: [
+      { ...quad(0.6), texture: white, blendMode: 'additive', receiveShadows: false },
+    ],
+  })
+  const material = scene.materials.find(item => item.id === 'world/textured-0')
+  assert.notEqual(material.baseColorTexture, material.teamColor.mask.texture)
+  assert.deepEqual(material.teamColor, {
+    mask: { texture: material.teamColor.mask.texture, channel: 'r' },
+    blend: 'replace',
+    strength: 1,
+    defaultColor: [0, 0, 1],
+  })
+  const glow = scene.materials.find(item => item.id === 'world/transparent-textured-0')
+  assert.equal(glow.simpleEffect.blend, 'additive')
+  // the masked white quad takes the batch's blue, seen from above
+  const frame = await renderWorldHeadless(teamed, {
+    width: 32,
+    height: 32,
+    camera: { azimuth: Math.PI / 2, elevation: 1.5, zoom: 1, target: [0, 0, 0] },
+  })
+  const [r, g, b] = frame.rgba.subarray((16 * 32 + 16) * 4, (16 * 32 + 16) * 4 + 3)
+  assert.ok(b > 100 && r < 60 && g < 60, `the middle is ${[r, g, b]}`)
+})

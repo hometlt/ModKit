@@ -47,6 +47,7 @@ import {
 } from './material-geometry.js'
 import { shadeMaterial, interpolateMaterialVertex } from './material-sampling.js'
 import { sceneTextureBytes } from '../textures/cube.js'
+import { sceneTexturePixels } from './compressed-textures.js'
 import { requiresEnvironmentEye, snapshotEyePosition } from '../materials/environment.js'
 type Vec3 = readonly [number, number, number]
 type Vec4 = readonly [number, number, number, number]
@@ -725,6 +726,13 @@ function renderMaterialDraw(
   }
 }
 
+/** A texture the CPU draws: stored GPU blocks as their decoded first level, as a GPU without them. */
+function drawnTexture(texture: SceneRendererTexture): SceneRendererTexture {
+  if (texture.compressed === undefined) return texture
+  const { compressed: _blocks, ...texels } = texture
+  return Object.freeze({ ...texels, rgba: sceneTexturePixels(texture) })
+}
+
 function textureTable(textures: readonly SceneRendererTexture[] | undefined) {
   const table = new Map<string, SceneRendererTexture>()
   for (const texture of textures ?? []) {
@@ -733,8 +741,9 @@ function textureTable(textures: readonly SceneRendererTexture[] | undefined) {
     }
     dimension(texture.width, `texture ${texture.id} width`)
     dimension(texture.height, `texture ${texture.id} height`)
-    sceneTextureBytes(texture)
-    table.set(texture.id, texture)
+    const drawn = drawnTexture(texture)
+    sceneTextureBytes(drawn)
+    table.set(texture.id, drawn)
   }
   return table
 }

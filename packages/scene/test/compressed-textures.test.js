@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { it } from 'node:test'
 import { decodeBcSurface } from '@modkit/codec-kit/texture/bc'
 
+import { renderHeadless } from '../src/render/headless.js'
 import {
   SCENE_COMPRESSED_TEXTURE_FORMATS,
   sceneTextureByteLength,
@@ -163,4 +164,31 @@ it('builds a layer array from every layer at the smallest size, level by level',
     undefined,
   )
   assert.deepEqual(none.calls, [])
+})
+
+it('draws stored blocks on the CPU from their decoded first level, as a GPU without them', async () => {
+  // one DXT1 block of pure red: red and black endpoints, every index the first
+  const red = Uint8Array.from([0x00, 0xf8, 0x00, 0x00, 0, 0, 0, 0])
+  const frame = await renderHeadless({
+    outputKind: 'rgba8',
+    viewport: { width: 4, height: 4 },
+    camera: { viewProjection: Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]) },
+    scene: {
+      materials: [
+        { id: 'tile', baseColor: [1, 1, 1, 1], baseColorTexture: 'tile', shading: 'unlit' },
+      ],
+      textures: [texture([level(4, red)])],
+      primitives: [
+        {
+          id: 'quad',
+          topology: 'triangles',
+          materialId: 'tile',
+          positions: Float32Array.from([-1, -1, 0, 1, -1, 0, 1, 1, 0, -1, 1, 0]),
+          textureCoordinates: Float32Array.from([0, 0, 1, 0, 1, 1, 0, 1]),
+          indices: Uint32Array.from([0, 1, 2, 0, 2, 3]),
+        },
+      ],
+    },
+  })
+  assert.deepEqual([...frame.rgba.subarray(20, 24)], [255, 0, 0, 255])
 })
