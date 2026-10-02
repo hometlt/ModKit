@@ -6425,6 +6425,13 @@ async function activateModkit(
   let loadedSessionSource: ContentSources | undefined
   const activeModLoads = new ActiveModLoads()
   const forgetResourcePaths = (): void => activeModLoads.forget()
+  /*
+   * Host files belong to no one module of the composed sources, which refuse a refresh of «host»
+   * («no content source module owns «host»»); the refusal stopped every reload after it, so an edited
+   * mod file never reopened its mod (v87). The contexts read host files afresh when they reopen.
+   */
+  const refreshHostFiles = (source: ContentSources): Promise<void> =>
+    Promise.resolve(source.refresh('host')).catch(() => undefined)
   const resourceSessions = async (): Promise<LoadedModResourceSessions> => {
     const source = await requireContentSources()
     if (loadedSessions === undefined || loadedSessionSource !== source) {
@@ -12123,7 +12130,7 @@ async function activateModkit(
       if (sessions !== undefined && sessions.list().length > 0) {
         const source = await requireContentSources()
         forgetResourcePaths()
-        await source.refresh('host')
+        await refreshHostFiles(source)
         await sessions.reloadAll()
       }
       resourcesView.refresh()
@@ -13332,7 +13339,7 @@ async function activateModkit(
             const placement = await source.locateModPackage?.(path)
             if (placement?.kind !== 'package') return
             forgetResourcePaths()
-            await source.refresh('host')
+            await refreshHostFiles(source)
             if (await sessions.reloadHolding('host', path)) resourcesView.refresh()
           })
           .catch(error =>
