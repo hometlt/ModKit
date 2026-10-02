@@ -1,12 +1,12 @@
 import {
   createVideoViewer
-} from "./chunk-IHYY36PH.js";
+} from "./chunk-BHEHLB5K.js";
 import {
   createAudioViewer
-} from "./chunk-KA2ONSZB.js";
+} from "./chunk-4FRIXXEO.js";
 import {
   createRelationGraphViewer
-} from "./chunk-YPHNB6F3.js";
+} from "./chunk-ESKBP3WL.js";
 import {
   MODEL_FACET_CONTRACTS,
   commitOperationWrite,
@@ -15,7 +15,7 @@ import {
   modelMaterialTeamColor,
   mountFieldEditTarget,
   mountInlineField
-} from "./chunk-IOGAUHEU.js";
+} from "./chunk-EL7U5PD5.js";
 import {
   metadataFieldProjections
 } from "./chunk-ZFIQVDW4.js";
@@ -111,7 +111,7 @@ import {
   createImageViewer,
   createNamespaceViewer,
   invokeRefusalMessage
-} from "./chunk-67O2CQUM.js";
+} from "./chunk-53F3LCKT.js";
 import {
   MEDIA_ZOOM_CHOICES,
   canvasPng,
@@ -120,7 +120,7 @@ import {
   createMediaShell,
   mediaFacts,
   textMatches
-} from "./chunk-PGJ3E3MZ.js";
+} from "./chunk-VIK5OGEB.js";
 import {
   CALCULATIONS_FALLBACK_MESSAGES,
   CARD_FALLBACK_MESSAGES,
@@ -167,7 +167,7 @@ import {
   uiPreference,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-ID5URMAQ.js";
+} from "./chunk-NQFZC763.js";
 import {
   PERMISSION_CLASSES,
   contributionId,
@@ -194,6 +194,7 @@ import {
   OrthographicCamera,
   PBR_GLSL,
   PREVIEW_LIGHT_GLSL,
+  PerspectiveCamera,
   RENDER_MATERIAL_SHADER,
   Raycaster,
   SCENE_ENVIRONMENT_RESOURCE,
@@ -20454,6 +20455,12 @@ var PROOF_METHODS = /* @__PURE__ */ new Set([
   "third-party-reference-differential",
   "game-data-reference-differential"
 ]);
+function worldCamera(camera) {
+  if (camera === void 0)
+    return void 0;
+  const within = (value, low, high) => value === void 0 || Number.isFinite(value) && value >= low && value <= high;
+  return (camera.projection === "orthographic" || camera.projection === "perspective") && within(camera.azimuthDegrees, -360, 360) && within(camera.elevationDegrees, 0, 90) && within(camera.fieldOfViewDegrees, 1, 170) && within(camera.drawDistance, Number.MIN_VALUE, Number.MAX_VALUE) ? Object.freeze({ ...camera }) : void 0;
+}
 function resourceId(namespace, entityId) {
   return `resource:${encodeURIComponent(namespace)}/${encodeURIComponent(entityId)}`;
 }
@@ -21524,6 +21531,7 @@ function createCandidateWorldSceneLease(snapshot3, provenance, maxPageSize, mode
     ...uvwTransform === void 0 ? {} : { uvwTransform },
     ...uvwTransformRefusal === void 0 ? {} : { uvwTransformRefusal },
     ...semantic.players === void 0 ? {} : { players: Object.freeze(semantic.players.map((player) => Object.freeze({ ...player }))) },
+    ...worldCamera(snapshot3.camera) === void 0 ? {} : { camera: worldCamera(snapshot3.camera) },
     facets,
     provenance: Object.freeze(provenance.map((item) => Object.freeze({ ...item }))),
     unknownFacets: snapshot3.worldCandidate.unknownFacets,
@@ -66764,13 +66772,13 @@ var PREVIEW_STAGES = [
 async function defaultPreviewStage(kind, localizer) {
   switch (kind) {
     case "model":
-      return (await import("./model-PJWIRIOC.js")).createModelViewer({ localizer });
+      return (await import("./model-3MVYT5ZG.js")).createModelViewer({ localizer });
     case "image":
-      return (await import("./image-WWIWP4RV.js")).createImageViewer({ localizer });
+      return (await import("./image-UCBTTMLG.js")).createImageViewer({ localizer });
     case "video":
-      return (await import("./video-KCVKW25Q.js")).createVideoViewer({ localizer });
+      return (await import("./video-2OOXNO7Y.js")).createVideoViewer({ localizer });
     case "audio":
-      return (await import("./audio-FCSJ6AH3.js")).createAudioViewer({ localizer });
+      return (await import("./audio-AVLLGIOZ.js")).createAudioViewer({ localizer });
   }
 }
 function embedPreview(sections, args, scope, localizer, previews) {
@@ -66809,7 +66817,7 @@ function embedRelationGraph(sections, args, scope, localizer, graph) {
   return [
     ...sections,
     stageSection({ id: "relations-graph", title: localizer.text("card.relationGraph"), expanded: false }, scope, localizer, "card.relationGraphUnavailable", async (host) => {
-      const module = graph ?? (await import("./graph-4SSK32LB.js")).createRelationGraphViewer({ localizer });
+      const module = graph ?? (await import("./graph-WKPQLHVR.js")).createRelationGraphViewer({ localizer });
       return scope.signal.aborted ? void 0 : module.mount({ ...args, container: host, signal: scope.signal });
     })
   ];
@@ -75382,6 +75390,16 @@ uniform sampler2D sceneDepthMap;
 uniform vec2 waterDepthScale;
 uniform float waterFalloff;
 uniform float waterShoreFade;
+// near, far, and 1 for a perspective camera: its window depth is not linear along the ray.
+uniform vec3 waterDepthLens;
+// World units along the view ray between two window depths.
+float waterAlongRay(float sceneDepth, float fragmentDepth) {
+  if (waterDepthLens.z < 0.5) return (sceneDepth - fragmentDepth) * waterDepthScale.x;
+  float lensNear = waterDepthLens.x;
+  float lensFar = waterDepthLens.y;
+  return lensNear * lensFar / (lensFar - sceneDepth * (lensFar - lensNear)) -
+    lensNear * lensFar / (lensFar - fragmentDepth * (lensFar - lensNear));
+}
 uniform float causticsMode;
 uniform sampler2D causticsMap;
 uniform vec2 causticsScale;
@@ -75557,7 +75575,7 @@ void main() {
     vec2 wave1 = texture(waterNormalMap, waveUv + waterWaveScroll.zw * waterTime).zw * 2.0 - 1.0;
     vec3 waves = vec3(wave0, sqrt(max(0.0, 1.0 - dot(wave0, wave0)))) + vec3(wave1, sqrt(max(0.0, 1.0 - dot(wave1, wave1))));
     // Smaller at the shore: the game leans it back to straight up by saturate(depth).
-    float waveDepth = (texelFetch(sceneDepthMap, ivec2(gl_FragCoord.xy), 0).r - gl_FragCoord.z) * waterDepthScale.x;
+    float waveDepth = waterAlongRay(texelFetch(sceneDepthMap, ivec2(gl_FragCoord.xy), 0).r, gl_FragCoord.z);
     resolvedNormal = normalize(mix(vec3(0.0, 1.0, 0.0), normalize(vec3(waves.x, waves.z, -waves.y)), clamp(waveDepth, 0.0, 1.0)));
   }
   if (normalTextured > 0.5) {
@@ -75668,7 +75686,7 @@ void main() {
     // the colour deepens with the water over whatever lies under the pixel - SC2 water reads the
     // scene depth the same way. Same saturation and shore fade as the per-vertex water colour.
     float sceneDepth = texelFetch(sceneDepthMap, ivec2(gl_FragCoord.xy), 0).r;
-    float waterDepth = (sceneDepth - gl_FragCoord.z) * waterDepthScale.x * waterDepthScale.y;
+    float waterDepth = waterAlongRay(sceneDepth, gl_FragCoord.z) * waterDepthScale.y;
     if (waterDepth <= 0.0) discard;
     float saturation = 1.0 - exp(-waterDepth * waterFalloff);
     surface = vec4(
@@ -75678,7 +75696,7 @@ void main() {
     if (causticsMode > 0.5) {
       // SC2 Water.fx: the bottom under the pixel, along the view ray; the flip-book frame by its map
       // position (v flipped as the game does), shadowed, stronger with depth up to 1.
-      float along = (sceneDepth - gl_FragCoord.z) * waterDepthScale.x;
+      float along = waterAlongRay(sceneDepth, gl_FragCoord.z);
       vec3 bottom = worldPosition + waterViewForward * along;
       vec2 causticsUv = causticsScale * vec2(bottom.x, -bottom.z);
       causticsUv.y = 1.0 - causticsUv.y;
@@ -77094,7 +77112,8 @@ function isWebGl2(value) {
 }
 function cameraState(value) {
   const source2 = value ?? DEFAULT_WORLD_WEBGL_CAMERA;
-  if (!Number.isFinite(source2.azimuth) || !Number.isFinite(source2.elevation) || source2.elevation <= 0.03 || source2.elevation >= Math.PI / 2 - 0.03 || !Number.isFinite(source2.zoom) || source2.zoom < 0.125 || source2.zoom > 16 || source2.target.length !== 3 || !source2.target.every(Number.isFinite) || source2.frame !== void 0 && !(source2.frame.center.length === 3 && source2.frame.center.every(Number.isFinite) && Number.isFinite(source2.frame.radius) && source2.frame.radius > 0)) {
+  const perspective = source2.projection === "perspective";
+  if (source2.projection !== void 0 && source2.projection !== "orthographic" && !perspective || !Number.isFinite(source2.azimuth) || !Number.isFinite(source2.elevation) || source2.elevation <= (perspective ? 0.03 - Math.PI / 2 : 0.03) || source2.elevation >= Math.PI / 2 - 0.03 || source2.fieldOfView !== void 0 && !(source2.fieldOfView >= 0.1 && source2.fieldOfView <= 2.8) || source2.far !== void 0 && !(Number.isFinite(source2.far) && source2.far > 0) || !Number.isFinite(source2.zoom) || source2.zoom < 0.125 || source2.zoom > 16 || source2.target.length !== 3 || !source2.target.every(Number.isFinite) || source2.frame !== void 0 && !(source2.frame.center.length === 3 && source2.frame.center.every(Number.isFinite) && Number.isFinite(source2.frame.radius) && source2.frame.radius > 0)) {
     throw new TypeError("world WebGL camera is outside its finite orbit/zoom domain");
   }
   return source2;
@@ -77306,6 +77325,8 @@ function worldViewPlaneBasis(view) {
 }
 function worldViewRectangle(plan, view, aspect) {
   if (!(aspect > 0) || !Number.isFinite(aspect))
+    return void 0;
+  if (view.projection === "perspective")
     return void 0;
   const frame = view.frame ?? plan.stats.frame;
   const center = [0, 1, 2].map((axis) => frame.center[axis] + view.target[axis]);
@@ -77581,8 +77602,87 @@ function orbitWorldWebGlCamera(source2, delta) {
   return Object.freeze({
     ...source2,
     azimuth: source2.azimuth - delta.x * 8e-3,
-    elevation: Math.max(0.04, Math.min(Math.PI / 2 - 0.04, source2.elevation + delta.y * 8e-3))
+    elevation: clampElevation(source2, source2.elevation + delta.y * 8e-3)
   });
+}
+function clampElevation(view, elevation) {
+  const lowest = view.projection === "perspective" ? 0.04 - Math.PI / 2 : 0.04;
+  return Math.max(lowest, Math.min(Math.PI / 2 - 0.04, elevation));
+}
+function lookWorldWebGlCamera(input, source2, delta) {
+  const view = cameraState(source2);
+  if (view.projection !== "perspective")
+    return orbitWorldWebGlCamera(view, delta);
+  if (![delta.x, delta.y].every(Number.isFinite))
+    throw new TypeError("world WebGL look delta must be finite");
+  const frame = view.frame ?? createWorldWebGlPlan(input).stats.frame;
+  const pose = cameraPose(frame, view);
+  const eye = pose.center.clone().addScaledVector(pose.toEye, pose.distance);
+  const turned = Object.freeze({
+    ...view,
+    azimuth: view.azimuth + delta.x * 8e-3,
+    elevation: clampElevation(view, view.elevation + delta.y * 8e-3)
+  });
+  const target = eye.addScaledVector(cameraPose(frame, turned).toEye, -pose.distance).sub(new Vector3(...frame.center));
+  return Object.freeze({
+    ...turned,
+    target: Object.freeze([target.x, target.y, target.z])
+  });
+}
+function flyWorldWebGlCamera(source2, move) {
+  const view = cameraState(source2);
+  if (![move.forward, move.right, move.up].every(Number.isFinite))
+    throw new TypeError("world WebGL flight must be finite");
+  const horizontal = Math.cos(view.elevation);
+  const forward = [
+    -Math.cos(view.azimuth) * horizontal,
+    -Math.sin(view.elevation),
+    -Math.sin(view.azimuth) * horizontal
+  ];
+  const right = [Math.sin(view.azimuth), 0, -Math.cos(view.azimuth)];
+  return Object.freeze({
+    ...view,
+    target: Object.freeze([
+      view.target[0] + forward[0] * move.forward + right[0] * move.right,
+      view.target[1] + forward[1] * move.forward + move.up,
+      view.target[2] + forward[2] * move.forward + right[2] * move.right
+    ])
+  });
+}
+var WORLD_FIELD_OF_VIEW = Math.PI / 3;
+function worldWebGlCameraFromMap(camera, base = DEFAULT_WORLD_WEBGL_CAMERA) {
+  if (camera === void 0)
+    return base;
+  const radians = (degrees) => degrees * Math.PI / 180;
+  const view = {
+    ...base,
+    projection: camera.projection,
+    ...camera.azimuthDegrees === void 0 ? {} : { azimuth: radians(camera.azimuthDegrees) },
+    ...camera.fieldOfViewDegrees === void 0 ? {} : { fieldOfView: Math.max(0.1, Math.min(2.8, radians(camera.fieldOfViewDegrees))) },
+    ...camera.drawDistance === void 0 ? {} : { far: camera.drawDistance }
+  };
+  return Object.freeze({
+    ...view,
+    elevation: clampElevation(view, camera.elevationDegrees === void 0 ? view.elevation : radians(camera.elevationDegrees))
+  });
+}
+function cameraPose(frame, view) {
+  const center = new Vector3(...frame.center).add(new Vector3(...view.target));
+  const horizontal = Math.cos(view.elevation);
+  const toEye = new Vector3(Math.cos(view.azimuth) * horizontal, Math.sin(view.elevation), Math.sin(view.azimuth) * horizontal);
+  const halfHeight = frame.radius / view.zoom;
+  const perspective = view.projection === "perspective";
+  const fieldOfView = view.fieldOfView ?? WORLD_FIELD_OF_VIEW;
+  const distance = perspective ? halfHeight / Math.tan(fieldOfView / 2) : frame.radius * 3;
+  return {
+    center,
+    toEye,
+    halfHeight,
+    perspective,
+    fieldOfView,
+    distance,
+    far: perspective ? view.far ?? distance + frame.radius * 10 : frame.radius * 10
+  };
 }
 function zoomWorldWebGlCamera(source2, wheelDelta) {
   cameraState(source2);
@@ -77605,9 +77705,8 @@ function worldViewGroundWindow(frame, requested, aspect) {
   const view = cameraState(requested);
   if (!(aspect > 0) || !Number.isFinite(aspect))
     throw new TypeError("a world view aspect is positive and finite");
-  const center = new Vector3(...frame.center).add(new Vector3(...view.target));
-  const halfHeight = frame.radius / view.zoom;
-  const toEye = new Vector3(Math.cos(view.azimuth) * Math.cos(view.elevation), Math.sin(view.elevation), Math.sin(view.azimuth) * Math.cos(view.elevation));
+  const pose = cameraPose(frame, view);
+  const { center, toEye, halfHeight } = pose;
   const right = new Vector3(0, 1, 0).cross(toEye).normalize();
   const up = toEye.clone().cross(right);
   const ground = frame.center[1];
@@ -77615,6 +77714,21 @@ function worldViewGroundWindow(frame, requested, aspect) {
   let minimumZ = Infinity;
   let maximumX = -Infinity;
   let maximumZ = -Infinity;
+  if (pose.perspective) {
+    const eye = center.clone().addScaledVector(toEye, pose.distance);
+    const slope = Math.tan(pose.fieldOfView / 2);
+    for (const across of [-1, 1])
+      for (const along of [-1, 1]) {
+        const ray = toEye.clone().negate().addScaledVector(right, across * slope * aspect).addScaledVector(up, along * slope).normalize();
+        const reach = ray.y < 0 ? Math.min(pose.far, (ground - eye.y) / ray.y) : pose.far;
+        const met = eye.clone().addScaledVector(ray, Math.max(0, reach));
+        minimumX = Math.min(minimumX, met.x);
+        minimumZ = Math.min(minimumZ, met.z);
+        maximumX = Math.max(maximumX, met.x);
+        maximumZ = Math.max(maximumZ, met.z);
+      }
+    return Object.freeze({ minimumX, minimumZ, maximumX, maximumZ });
+  }
   for (const across of [-1, 1])
     for (const along of [-1, 1]) {
       const corner = center.clone().addScaledVector(right, across * halfHeight * aspect).addScaledVector(up, along * halfHeight);
@@ -77634,6 +77748,16 @@ function cameraFor(plan, width, height, requested) {
   const radius = frame.radius;
   const visibleRadius = radius / view.zoom;
   const aspect = width / height;
+  const pose = cameraPose(frame, view);
+  if (pose.perspective) {
+    const lens = new PerspectiveCamera(pose.fieldOfView * 180 / Math.PI, aspect, Math.max(0.01, pose.far / 1e5), pose.far);
+    lens.position.copy(center).addScaledVector(pose.toEye, pose.distance);
+    lens.up.set(0, 1, 0);
+    lens.lookAt(center);
+    lens.updateMatrixWorld(true);
+    lens.updateProjectionMatrix();
+    return Object.freeze({ camera: lens, radius });
+  }
   const camera = new OrthographicCamera(-visibleRadius * aspect, visibleRadius * aspect, visibleRadius, -visibleRadius, 0.01, radius * 10);
   const horizontal = Math.cos(view.elevation);
   camera.position.copy(center).add(new Vector3(Math.cos(view.azimuth) * horizontal, Math.sin(view.elevation), Math.sin(view.azimuth) * horizontal).multiplyScalar(radius * 3));
@@ -77648,6 +77772,12 @@ function worldShadowRangeEye(plan, width, height, requested) {
   if (range === void 0 || !(range.distance > 0) || !(range.fieldOfViewDegrees > 0))
     return void 0;
   const { camera, radius } = cameraFor(plan, width, height, requested);
+  if (camera instanceof PerspectiveCamera)
+    return Object.freeze({
+      eye: [camera.position.x, camera.position.y, camera.position.z],
+      distance: range.distance,
+      reachable: true
+    });
   const forward = camera.getWorldDirection(new Vector3());
   const center = camera.position.clone().addScaledVector(forward, radius * 3);
   const halfHeight = camera.top;
@@ -78302,6 +78432,7 @@ function drawWorldWebGlWithResources(canvas, input, resources) {
       const { camera } = cameraFor(plan, canvas.width, canvas.height, input.camera);
       const forward = camera.getWorldDirection(new Vector3());
       gl.uniform2f(uniformLocation(gl, program, "waterDepthScale"), camera.far - camera.near, Math.abs(forward.y));
+      gl.uniform3f(uniformLocation(gl, program, "waterDepthLens"), camera.near, camera.far, camera instanceof PerspectiveCamera ? 1 : 0);
       worldUniform1f(gl, program, "waterShoreFade", WATER_SHORE_FADE);
       worldUniform1f(gl, program, "waterDepthMode", 1);
       worldUniform1f(gl, program, "textured", 0);
@@ -79285,6 +79416,14 @@ async function inspectCandidateWorld(source2, options) {
   return snapshot3();
 }
 var WORLD_FOCUS_SETTLE_MS = 400;
+var WORLD_FLIGHT_KEYS = {
+  w: [1, 0, 0],
+  s: [-1, 0, 0],
+  d: [0, 1, 0],
+  a: [0, -1, 0],
+  e: [0, 0, 1],
+  q: [0, 0, -1]
+};
 function createWorldEditState(sourceRevision) {
   return Object.freeze({ sourceRevision, status: "idle" });
 }
@@ -79867,6 +80006,13 @@ function createWorldViewer(options = {}) {
       latticeButton.type = sceneButton.type = "button";
       latticeButton.dataset["worldView"] = "lattice";
       sceneButton.dataset["worldView"] = "3d";
+      const perspectiveButton = element(toolbar, "button", {
+        text: localizer.text("viewer.worldPerspective")
+      });
+      perspectiveButton.type = "button";
+      perspectiveButton.dataset["worldProjection"] = "perspective";
+      perspectiveButton.title = localizer.text("viewer.worldPerspectiveHint");
+      perspectiveButton.setAttribute("aria-pressed", "false");
       const hiddenOverlays = /* @__PURE__ */ new Set();
       const overlayLabels = {
         regions: localizer.text("viewer.worldRegions"),
@@ -79942,6 +80088,12 @@ function createWorldViewer(options = {}) {
       };
       let edit = createWorldEditState(descriptor.revision);
       let camera = DEFAULT_WORLD_WEBGL_CAMERA;
+      const takeGameCamera = (model) => {
+        if (camera !== DEFAULT_WORLD_WEBGL_CAMERA || model.info.camera === void 0)
+          return;
+        camera = worldWebGlCameraFromMap(model.info.camera);
+        perspectiveButton.setAttribute("aria-pressed", String(camera.projection === "perspective"));
+      };
       const animationEpochs = /* @__PURE__ */ new Map();
       const view = canvas.ownerDocument.defaultView;
       let webGlRenderer;
@@ -80045,6 +80197,7 @@ function createWorldViewer(options = {}) {
               if (revision !== renderRevision || scope.signal.aborted)
                 return;
               currentModel = model2;
+              takeGameCamera(model2);
               stage.dataset["worldLoadingPhase"] = progress.phase;
               setViewerText(readout, `${localizer.text(phaseKeys[progress.phase])} \xB7 ${progress.completed}/${progress.total}`);
               redraw();
@@ -80064,6 +80217,7 @@ function createWorldViewer(options = {}) {
           return;
         loading = false;
         currentModel = model;
+        takeGameCamera(model);
         if (edit.selectedObjectId !== void 0) {
           const refreshed = model.layers.flatMap((layer2) => layer2.page.items).find((item) => item.facet === "objects" && item.objectId === edit.selectedObjectId);
           edit = selectWorldObject(createWorldEditState(descriptor.revision), refreshed);
@@ -80185,16 +80339,18 @@ function createWorldViewer(options = {}) {
         const delta = { x: event.clientX - drag.x, y: event.clientY - drag.y };
         drag.x = event.clientX;
         drag.y = event.clientY;
+        const worldInput = {
+          items: currentModel.layers.flatMap((layer2) => layer2.page.items),
+          ...currentModel.models === void 0 ? {} : { models: currentModel.models },
+          camera
+        };
         if (drag.mode === "orbit")
-          camera = orbitWorldWebGlCamera(camera, delta);
-        else {
-          const worldItems = currentModel.layers.flatMap((layer2) => layer2.page.items);
-          camera = panWorldWebGlCamera({
-            items: worldItems,
-            ...currentModel.models === void 0 ? {} : { models: currentModel.models },
-            camera
-          }, camera, { ...delta, viewportHeight: canvas.height });
-        }
+          camera = camera.projection === "perspective" ? lookWorldWebGlCamera(worldInput, camera, delta) : orbitWorldWebGlCamera(camera, delta);
+        else
+          camera = panWorldWebGlCamera(worldInput, camera, {
+            ...delta,
+            viewportHeight: canvas.height
+          });
         redraw();
       };
       const focusView = async () => {
@@ -80257,7 +80413,32 @@ function createWorldViewer(options = {}) {
         focusSoon();
       };
       const onContextMenu = (event) => event.preventDefault();
+      const onPerspective = () => {
+        const perspective = camera.projection !== "perspective";
+        camera = Object.freeze({
+          ...camera,
+          projection: perspective ? "perspective" : "orthographic",
+          // the orbit looks only down: an eye that looked up comes back above its target
+          elevation: Math.max(0.04, Math.min(Math.PI / 2 - 0.04, Math.abs(camera.elevation)))
+        });
+        perspectiveButton.setAttribute("aria-pressed", String(perspective));
+        redraw();
+        focusSoon();
+      };
       const onKey = (event) => {
+        const flight = camera.projection === "perspective" ? WORLD_FLIGHT_KEYS[event.key.toLowerCase()] : void 0;
+        if (flight !== void 0) {
+          event.preventDefault();
+          const step = ((camera.frame ?? lastFrame)?.radius ?? 1) / camera.zoom / 10;
+          camera = flyWorldWebGlCamera(camera, {
+            forward: flight[0] * step,
+            right: flight[1] * step,
+            up: flight[2] * step
+          });
+          redraw();
+          focusSoon();
+          return;
+        }
         const delta = event.key === "ArrowLeft" ? { x: -1, y: 0 } : event.key === "ArrowRight" ? { x: 1, y: 0 } : event.key === "ArrowUp" ? { x: 0, y: 1 } : event.key === "ArrowDown" ? { x: 0, y: -1 } : void 0;
         if (delta === void 0)
           return;
@@ -80291,6 +80472,7 @@ function createWorldViewer(options = {}) {
       canvas.addEventListener("wheel", onWheel, { passive: false });
       canvas.addEventListener("contextmenu", onContextMenu);
       canvas.addEventListener("keydown", onKey);
+      perspectiveButton.addEventListener("click", onPerspective);
       saveMove.addEventListener("click", onSave);
       scope.cleanup(() => {
         latticeButton.removeEventListener("click", onLattice);
@@ -80307,6 +80489,7 @@ function createWorldViewer(options = {}) {
         canvas.removeEventListener("wheel", onWheel);
         canvas.removeEventListener("contextmenu", onContextMenu);
         canvas.removeEventListener("keydown", onKey);
+        perspectiveButton.removeEventListener("click", onPerspective);
         saveMove.removeEventListener("click", onSave);
       });
       void render().then(async () => {

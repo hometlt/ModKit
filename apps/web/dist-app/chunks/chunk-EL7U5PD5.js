@@ -7,12 +7,12 @@ import {
   invokeRefusalMessage,
   isRejected,
   mountFieldEditor
-} from "./chunk-67O2CQUM.js";
+} from "./chunk-53F3LCKT.js";
 import {
   canvasPng,
   createMediaShell,
   mountContributedSections
-} from "./chunk-PGJ3E3MZ.js";
+} from "./chunk-VIK5OGEB.js";
 import {
   MODEL_FALLBACK_MESSAGES,
   MODEL_GIZMO_FALLBACK_MESSAGES,
@@ -27,7 +27,7 @@ import {
   setViewerText,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-ID5URMAQ.js";
+} from "./chunk-NQFZC763.js";
 import {
   applyColorKeyTransparency,
   billboardCameraRotation,

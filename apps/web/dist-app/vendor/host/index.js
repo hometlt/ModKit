@@ -20729,6 +20729,12 @@ var PROOF_METHODS = /* @__PURE__ */ new Set([
   "third-party-reference-differential",
   "game-data-reference-differential"
 ]);
+function worldCamera(camera) {
+  if (camera === void 0)
+    return void 0;
+  const within = (value, low, high) => value === void 0 || Number.isFinite(value) && value >= low && value <= high;
+  return (camera.projection === "orthographic" || camera.projection === "perspective") && within(camera.azimuthDegrees, -360, 360) && within(camera.elevationDegrees, 0, 90) && within(camera.fieldOfViewDegrees, 1, 170) && within(camera.drawDistance, Number.MIN_VALUE, Number.MAX_VALUE) ? Object.freeze({ ...camera }) : void 0;
+}
 function resourceId(namespace, entityId) {
   return `resource:${encodeURIComponent(namespace)}/${encodeURIComponent(entityId)}`;
 }
@@ -21799,6 +21805,7 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize, mode
     ...uvwTransform === void 0 ? {} : { uvwTransform },
     ...uvwTransformRefusal === void 0 ? {} : { uvwTransformRefusal },
     ...semantic.players === void 0 ? {} : { players: Object.freeze(semantic.players.map((player) => Object.freeze({ ...player }))) },
+    ...worldCamera(snapshot2.camera) === void 0 ? {} : { camera: worldCamera(snapshot2.camera) },
     facets,
     provenance: Object.freeze(provenance.map((item) => Object.freeze({ ...item }))),
     unknownFacets: snapshot2.worldCandidate.unknownFacets,
