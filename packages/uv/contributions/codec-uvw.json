@@ -7,7 +7,8 @@
   "id": "modkit/world-uvw",
   "displayName": "Universal Verse World 1.0",
   "limitations": [
-    "UVW 1.0 admits heightfield spaces only; connections and non-heightfield topologies remain reserved and fail explicitly."
+    "UVW 1.0 admits heightfield spaces only; connections and non-heightfield topologies remain reserved and fail explicitly.",
+    "map.export-native resolves common.map/native-encoder by formatId; the UVW codec selects and checks the encoder and writes no game's map itself."
   ],
   "runtimeVariants": [
     {
@@ -124,6 +125,13 @@
         "mutatesSource": true,
         "requiredPermissions": ["read-source", "write-source"],
         "outputKinds": ["edit-plan"]
+      },
+      {
+        "id": "map.export-native",
+        "handlerId": "export-uvw-native",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
       },
       {
         "id": "map.layers",

@@ -68,6 +68,7 @@ import {
 } from './data/index.js'
 import {
   MAP_PREVIEW_PREPARATION_MATCHER,
+  NATIVE_MAP_ENCODER_MATCHER,
   MAP_SEMANTIC_MATCHER,
   registerStandardMapDefinitions,
 } from './maps/index.js'
@@ -307,6 +308,7 @@ export function createBundledServiceDefinitionRegistry(
       RESOLVED_DATA_WORKSPACE_MATCHER,
       MAP_SEMANTIC_MATCHER,
       MAP_PREVIEW_PREPARATION_MATCHER,
+      NATIVE_MAP_ENCODER_MATCHER,
       ...(options.matcherProfiles ?? []),
     ]),
     isNamespaceOwner: () => true,

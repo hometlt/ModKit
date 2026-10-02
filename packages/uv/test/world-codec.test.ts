@@ -10,7 +10,12 @@ import {
   type ResourceBudget,
   type WorldSceneSource,
 } from '@modkit/sdk'
-import { MAP_LAYER_WRITE_INPUT_SCHEMA, type MapLayerDescriptor, type MapLayerGrid } from '@modkit/sdk/maps'
+import {
+  MAP_LAYER_WRITE_INPUT_SCHEMA,
+  NATIVE_MAP_ENCODER_CONTRACT,
+  type MapLayerDescriptor,
+  type MapLayerGrid,
+} from '@modkit/sdk/maps'
 import { createCodec } from '../src/world/codec.js'
 import { parseUvwProfile } from '../src/world/index.js'
 
@@ -326,4 +331,95 @@ describe('UVW height as a map layer', () => {
       .rejects.toThrow(/read-only/u)
     await session.dispose()
   }, 20_000)
+})
+
+describe('UVW written as a game map (WT10)', () => {
+  const fixture = () =>
+    readFile(
+      fileURLToPath(
+        new URL(
+          '../../../vendor/multiverse-specs/specs/world/fixtures/uvw-profile-single-space.uvw.json',
+          import.meta.url,
+        ),
+      ),
+    )
+  // the host's contract port, handing out the one encoder it was given
+  const encoding = (encoder: unknown, requests: unknown[]): ContributionContext => ({
+    ...context,
+    contracts: {
+      async resolve(request) {
+        requests.push(request)
+        return { value: encoder as never, async release() {} }
+      },
+      async resolveUnknown() {
+        throw new TypeError('UVW codec has no foreign service dependency')
+      },
+    },
+  })
+
+  it('writes the world with the encoder of the asked format and reports its losses', async () => {
+    const bytes = await fixture()
+    const requests: unknown[] = []
+    let received: Uint8Array | undefined
+    const encoder = {
+      contract: NATIVE_MAP_ENCODER_CONTRACT,
+      formatId: 'ra2-map',
+      extension: 'map',
+      async encode(request: { readonly uvw: Uint8Array }) {
+        received = request.uvw
+        return {
+          formatId: 'ra2-map',
+          extension: 'map',
+          bytes: Uint8Array.of(1, 2, 3),
+          diagnostics: [
+            { severity: 'warning', code: 'westwood/uvw-object-untyped', message: 'no rules type' },
+          ],
+        }
+      },
+    }
+    const session = await createCodec(encoding(encoder, requests)).open(
+      inputFor(source(bytes)),
+      'full',
+      budget,
+    )
+    const descriptor = await session.descriptor()
+    expect(descriptor.operations.map(item => item.id)).toContain('map.export-native')
+    const result = await session
+      .operations()
+      .invoke('export-uvw-native', { schemaVersion: 1, formatId: 'ra2-map' })
+    expect(result).toMatchObject({
+      state: 'ok',
+      output: { kind: 'bytes', value: Uint8Array.of(1, 2, 3) },
+    })
+    expect(result.diagnostics.map(item => item.code)).toContain('westwood/uvw-object-untyped')
+    // the encoder gets the document as the file holds it, and only it
+    expect(received).toEqual(new Uint8Array(bytes))
+    expect(requests).toMatchObject([
+      { contract: NATIVE_MAP_ENCODER_CONTRACT, major: 1, facet: { formatId: 'ra2-map' } },
+    ])
+    await session.dispose()
+  })
+
+  it('refuses an encoder of another format and a request without its version', async () => {
+    const other = {
+      contract: NATIVE_MAP_ENCODER_CONTRACT,
+      formatId: 'ts-map',
+      extension: 'map',
+      async encode() {
+        throw new Error('not reached')
+      },
+    }
+    const session = await createCodec(encoding(other, [])).open(
+      inputFor(source(await fixture())),
+      'full',
+      budget,
+    )
+    await expect(
+      session.operations().invoke('export-uvw-native', { schemaVersion: 1, formatId: 'ra2-map' }),
+    ).rejects.toThrow(/not a ra2-map native map encoder/u)
+    await expect(
+      session.operations().invoke('export-uvw-native', { formatId: 'ra2-map' }),
+    ).rejects.toThrow(/schemaVersion/u)
+    await session.dispose()
+  })
 })

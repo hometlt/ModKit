@@ -51,31 +51,45 @@ function parseRequest(value: unknown): NativeModelEncoderRequestFacet | undefine
   return { formatId: record['formatId'] }
 }
 
-function matchNativeModelEncoder(context: ServiceFacetMatchContext): ServiceFacetMatchResult {
-  const offer = parseOffer(context.offerFacet)
-  const request = parseRequest(context.requestFacet)
-  if (offer === undefined || request === undefined) {
-    return {
-      state: 'invalid',
-      diagnostics: [
-        diagnostic(
-          'error',
-          'x3.host/native-model-encoder-facet-invalid',
-          `${context.contract}@${context.major}: native model encoder route is malformed`,
-        ),
-      ],
-    }
-  }
-  return offer.formatIds.includes(request.formatId)
-    ? { state: 'match', selectionKey: `format=${request.formatId}` }
-    : { state: 'no-match' }
+/**
+ * A matcher routing an encoder by its target format: the offer's distinct `formatIds` must include
+ * the request's `formatId`. Models and maps (common.map/native-encoder) route the same way.
+ */
+export function createFormatRouteMatcher(
+  profile: string,
+  invalidCode: string,
+  route: string,
+): ServiceFacetMatcherProfile {
+  return Object.freeze({
+    profile: contractId(profile),
+    major: 1,
+    match(context: ServiceFacetMatchContext): ServiceFacetMatchResult {
+      const offer = parseOffer(context.offerFacet)
+      const request = parseRequest(context.requestFacet)
+      if (offer === undefined || request === undefined) {
+        return {
+          state: 'invalid',
+          diagnostics: [
+            diagnostic(
+              'error',
+              invalidCode,
+              `${context.contract}@${context.major}: ${route} route is malformed`,
+            ),
+          ],
+        }
+      }
+      return offer.formatIds.includes(request.formatId)
+        ? { state: 'match', selectionKey: `format=${request.formatId}` }
+        : { state: 'no-match' }
+    },
+  })
 }
 
-export const NATIVE_MODEL_ENCODER_MATCHER: ServiceFacetMatcherProfile = Object.freeze({
-  profile: contractId(NATIVE_MODEL_ENCODER_MATCHER_PROFILE),
-  major: 1,
-  match: matchNativeModelEncoder,
-})
+export const NATIVE_MODEL_ENCODER_MATCHER: ServiceFacetMatcherProfile = createFormatRouteMatcher(
+  NATIVE_MODEL_ENCODER_MATCHER_PROFILE,
+  'x3.host/native-model-encoder-facet-invalid',
+  'native model encoder',
+)
 
 export const NATIVE_MODEL_ENCODER_CONTRACT_DEFINITION: ServiceContractDefinitionSpecV1Wire =
   Object.freeze({

@@ -11,6 +11,8 @@ import {
 import {
   MAP_PREVIEW_PREPARATION_CONTRACT,
   MAP_PREVIEW_PREPARATION_MATCHER_PROFILE,
+  NATIVE_MAP_ENCODER_CONTRACT,
+  NATIVE_MAP_ENCODER_MATCHER_PROFILE,
   MAP_SEMANTIC_ANALYSIS_CONTRACT,
   MAP_SEMANTIC_MATCHER_PROFILE,
   RESOLVED_MAP_WORKSPACE_CONTRACT,
@@ -91,6 +93,7 @@ import { createResourceSession } from '../resource-session.js'
 import { createHostServiceResolver } from '../service-leases.js'
 import { assembleSubjectDescriptor, createAssetSession } from '../session.js'
 import { createSubjectModelResources, type ModelResourceProfile } from '../model-resources.js'
+import { createFormatRouteMatcher } from '../model-encoding.js'
 import { openSubject, type SubjectInputResolver } from '../subject-open.js'
 import {
   createSubjectRasterResources,
@@ -338,6 +341,45 @@ export const MAP_PREVIEW_PREPARATION_CONTRACT_DEFINITION: ServiceContractDefinit
     }),
   }) as ServiceContractDefinitionSpecV1Wire
 
+/** Routes a native map encoder by its target format, as model encoders are routed (WT10). */
+export const NATIVE_MAP_ENCODER_MATCHER: ServiceFacetMatcherProfile = createFormatRouteMatcher(
+  NATIVE_MAP_ENCODER_MATCHER_PROFILE,
+  'x3.host/native-map-encoder-facet-invalid',
+  'native map encoder',
+)
+
+/** A UVW document written as a game's map file (sdk NativeMapEncoder); one archive for a folder format. */
+export const NATIVE_MAP_ENCODER_CONTRACT_DEFINITION: ServiceContractDefinitionSpecV1Wire =
+  Object.freeze({
+    schemaVersion: 1,
+    kind: 'service',
+    contract: NATIVE_MAP_ENCODER_CONTRACT,
+    major: 1,
+    offerFacet: Object.freeze({
+      presence: 'required',
+      schema: Object.freeze({
+        $ref: 'https://schemas.modkit.org/x3/native-map-encoder-offer.v1.schema.json',
+      }),
+    }),
+    requestFacet: Object.freeze({
+      presence: 'required',
+      schema: Object.freeze({
+        $ref: 'https://schemas.modkit.org/x3/native-map-encoder-request.v1.schema.json',
+      }),
+    }),
+    matching: Object.freeze({ profile: NATIVE_MAP_ENCODER_MATCHER_PROFILE, major: 1 }),
+    conformanceProfile: 'common.map/native-encoder-v1',
+    surface: Object.freeze({
+      fields: Object.freeze(['contract', 'formatId', 'extension', 'mediaType']),
+      methods: Object.freeze({
+        encode: Object.freeze({
+          kind: 'value',
+          signal: Object.freeze({ arg: 0, key: 'signal' }),
+        }),
+      }),
+    }),
+  }) as ServiceContractDefinitionSpecV1Wire
+
 /** Register the platform definition before extension-owned definitions are inventoried. */
 export function registerStandardMapDefinitions(
   definitions: ServiceContractDefinitionRegistry,
@@ -346,6 +388,7 @@ export function registerStandardMapDefinitions(
     MAP_SEMANTIC_CONTRACT_DEFINITION,
     RESOLVED_MAP_WORKSPACE_CONTRACT_DEFINITION,
     MAP_PREVIEW_PREPARATION_CONTRACT_DEFINITION,
+    NATIVE_MAP_ENCODER_CONTRACT_DEFINITION,
   ]
   return definitions.replaceOwnerInventory(
     STANDARD_MAPS_OWNER,

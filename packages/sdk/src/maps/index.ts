@@ -34,6 +34,13 @@ export const RESOLVED_MAP_WORKSPACE_CONTRACT = 'common.map/resolved-workspace' a
 export const MAP_PREVIEW_PREPARATION_CONTRACT = 'common.map/preview-preparation' as const
 
 /**
+ * The way back from a world to a game's map (WT10), as `common.model/native-encoder` is for models:
+ * a game extension writes a UVW document as a map file of its own format. The map's world is the way
+ * there; this is the only way back.
+ */
+export const NATIVE_MAP_ENCODER_CONTRACT = 'common.map/native-encoder' as const
+
+/**
  * Standard candidate coordinate for a bounded, game-neutral world scene.
  *
  * The callable SDK coordinate is additive. It does not freeze `world-interchange-v1` or promote
@@ -293,6 +300,46 @@ export const MAP_SEMANTIC_MATCHER_PROFILE = 'modkit/map-semantic-matcher' as con
 /** Host-owned exact matcher for preparation providers advertising subject format ids. */
 export const MAP_PREVIEW_PREPARATION_MATCHER_PROFILE =
   'modkit/map-preview-preparation-matcher' as const
+
+/** Host-owned exact matcher routing a native map encoder by its target format id. */
+export const NATIVE_MAP_ENCODER_MATCHER_PROFILE = 'modkit/native-map-encoder-matcher' as const
+
+/** The map formats an encoder writes (its game's ids, `ra2-map`, `minecraft-anvil`, …). */
+export interface NativeMapEncoderOfferFacet {
+  readonly formatIds: readonly string[]
+}
+
+/** The one map format a consumer asks for. */
+export interface NativeMapEncoderRequestFacet {
+  readonly formatId: string
+}
+
+export interface NativeMapEncodeRequest {
+  /** The complete UVW document, as its file's bytes. The encoder never receives another map format. */
+  readonly uvw: Uint8Array
+  readonly options?: JsonValue
+  readonly signal?: AbortSignal
+}
+
+export interface NativeMapEncodeResult {
+  readonly formatId: string
+  readonly extension: string
+  readonly mediaType?: string
+  readonly bytes: Uint8Array
+  /**
+   * What the game's map does not carry of the world, one diagnostic per kind of loss
+   * (SPEC_UVM_CONVERSION §5): a layer the format has no place for, objects without a game type.
+   */
+  readonly diagnostics?: readonly Diagnostic[]
+}
+
+export interface NativeMapEncoder {
+  readonly contract: typeof NATIVE_MAP_ENCODER_CONTRACT
+  readonly formatId: string
+  readonly extension: string
+  readonly mediaType?: string
+  encode(request: NativeMapEncodeRequest): Promise<NativeMapEncodeResult>
+}
 
 /** One bounded namespace fact; entry ids and open/extract capabilities intentionally stay hidden. */
 export interface MapPreviewPreparationNamespaceEntry {
@@ -2008,6 +2055,7 @@ declare module '../service-contracts.js' {
     'common.map/semantic-analysis': { 1: MapSemanticAnalysis }
     'common.map/resolved-workspace': { 1: ResolvedMapWorkspaceAnalysis }
     'common.map/preview-preparation': { 1: MapPreviewPreparationPort }
+    'common.map/native-encoder': { 1: NativeMapEncoder }
   }
 
   interface ContractRequestMap {
@@ -2020,6 +2068,9 @@ declare module '../service-contracts.js' {
     'common.map/preview-preparation': {
       1: { presence: 'required'; facet: MapPreviewPreparationRequestFacet }
     }
+    'common.map/native-encoder': {
+      1: { presence: 'required'; facet: NativeMapEncoderRequestFacet }
+    }
   }
 
   interface ContractOfferMap {
@@ -2031,6 +2082,9 @@ declare module '../service-contracts.js' {
     }
     'common.map/preview-preparation': {
       1: { presence: 'required'; facet: MapPreviewPreparationOfferFacet }
+    }
+    'common.map/native-encoder': {
+      1: { presence: 'required'; facet: NativeMapEncoderOfferFacet }
     }
   }
 }
@@ -2047,5 +2101,10 @@ export type ResolvedMapWorkspaceProviderModule = ServiceProviderModule<
 
 export type MapPreviewPreparationProviderModule = ServiceProviderModule<
   typeof MAP_PREVIEW_PREPARATION_CONTRACT,
+  1
+>
+
+export type NativeMapEncoderProviderModule = ServiceProviderModule<
+  typeof NATIVE_MAP_ENCODER_CONTRACT,
   1
 >
