@@ -6,7 +6,11 @@
     grid-template-columns: minmax(12rem, 18rem) minmax(0, 1fr) minmax(14rem, 22rem);
     gap: var(--mk-space-3);
     align-items: start;
-    min-block-size: 0;
+    /*
+     * Its own height in the viewer's column, which scrolls. Shrunk to the viewport (v88), its rows
+     * fell below the tree and the element view, and those overlapped the stage and the diagnostics.
+     */
+    flex: none;
   }
 
   @media (width < 900px) {
