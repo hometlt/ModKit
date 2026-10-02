@@ -6924,7 +6924,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:d938d0ba220bc50b1b09d3daae34dc0143ec6fc82ba857ad883400552d75f08c',
+        artifactDigest: 'sha256:1ebe842c452ee4ece061fb315afd53d04dffb52e2986fa88a356dc59d22df639',
         fileDigests: {
           'MIGRATION-NOTES-common-images.json':
             'sha256:44c30ea45aaceceff66d53f72e5e0d0ec8efb1a7f2afbc2f9913849720632e93',
@@ -6942,7 +6942,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-cur.json':
             'sha256:1096814c71e3466f1b21c4f1c9357b0495ec369c667d54d2c664b398ab25a1d6',
           'contributions/codec-dds.json':
-            'sha256:39c2a992ec9a105bca546d472b62a80fb5f6de9f60f42ff019d78217bfd6fa54',
+            'sha256:4b46b39cca5489e15d8e25b36dd85b73ea4a75a995cf5b3eaf0808e5f168d3c3',
           'contributions/codec-exr.json':
             'sha256:377eb43959c01dff23c3117a6a1263a9797e91503b79e65a718d049336e6cca7',
           'contributions/codec-gif.json':
@@ -6977,7 +6977,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:811f3e474aa56eb4317369fdb2e628be861ed9e26a4be5660fce16fe75f3b448',
           'contributions/writer-png.json':
             'sha256:49583a58d35f864423155eae81992ed56764d4efe6c82c6931491f1b3157ee13',
-          'package.json': 'sha256:0ea4eea14c29a97316e5ce3281cd4d272db2221d0e6c85386035250ea34c7aef',
+          'package.json': 'sha256:e383db09ac36b8eca4390bb855896b6f71c639bc0781ab6e5901911967fd0773',
           'src/ani/codec.js':
             'sha256:18bf84dd6807f2caf4d7bf3d5bb497cfba746f92b0e6bb3e459a0b09563f3c00',
           'src/astc/codec.js':
@@ -6993,9 +6993,9 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/cur/codec.js':
             'sha256:daf34dd18dd2ed3f13ea0d74668fc9c40bdda171899ee0667cd558c9f7fe24a9',
           'src/dds/bptc.js':
-            'sha256:f3a0636b0f5dde9b7f7ccc2e6874425bfef0f5e86f6a1801a8032885f61a39b4',
+            'sha256:76b8dd3cc2d5737a1d30991b6a21f3fd06ec1ccbbe52c8dcd730ac3097abbce3',
           'src/dds/codec.js':
-            'sha256:775ff38a7dc60705ec7fe7c4fd27bad5186da73e72ba047a7284140fdb890a64',
+            'sha256:e89bf2af3bed4bda31a80ca20a1dca3f067a255eb0fe8ca6bbdd41f25a3e58d9',
           'src/dds/compressed.js':
             'sha256:af63c9438834ec0618e5ce3a207d45195cc603dcf4376c7964dfd3e939f7823e',
           'src/dds/encode.js':
@@ -7056,7 +7056,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'test/codec-session.ts':
             'sha256:fa6bcdf1bc58315268af02ca9b02076ec655a28bee8a327cf6664f1f0ea163e6',
           'test/dds-subresources.test.ts':
-            'sha256:1d01aaba1656d12e22dc41853b1d5fcf1bcfbcb732a87e5b624fe2f6085e8bd5',
+            'sha256:ea9b83fea4ab57169fb98f73cc9f1099419f5a0d12f8e001c12f72506b0bd64e',
           'test/dds-transform.test.ts':
             'sha256:104de000cee52f895247c882aa74c54ba6c19a7ad763e830c285644a8fe40da9',
           'test/eac-r11-decode.test.ts':
@@ -7075,17 +7075,9 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:6673c3bc7aaff3b1581346327013b57715eb0455b4ee78b1db82b134b30058af',
           'test/raster-export.test.ts':
             'sha256:bff7ffa4f5b905a98c6800fcefed8fe7a7f693df6f7fe78b4264dc53ba4cd8f5',
-          'vendor/texture2ddecoder/LICENSE':
-            'sha256:49e3169a509b9a5311fe50957a334e9e1975164f27da6004358c22e91e10747c',
-          'vendor/texture2ddecoder/README.md':
-            'sha256:62e287f319c051b451df4516dd94c0a14d1a3d95dc52690ee4f477e07921ab85',
-          'vendor/texture2ddecoder/texture2ddecoder.js':
-            'sha256:0a2b33ff735566fd3184e0421ff38fb7578d1348b3cc44fc4646cce29d001110',
-          'vendor/texture2ddecoder/texture2ddecoder.wasm':
-            'sha256:8b819b0622cce57f809b369081bdd6eca09d1c1793da7f82192db39229356c1d',
         },
         inventoryRecordId:
-          'artifact:sha256:d938d0ba220bc50b1b09d3daae34dc0143ec6fc82ba857ad883400552d75f08c',
+          'artifact:sha256:1ebe842c452ee4ece061fb315afd53d04dffb52e2986fa88a356dc59d22df639',
       },
       artifactRoot: 'extensions/images/',
       containers: {
@@ -7106,7 +7098,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             './writers/dds-encoder': './src/writers/dds-encoder.js',
             './writers/png-encoder': './src/writers/png-encoder.js',
           },
-          files: ['contributions', 'src', 'vendor', 'README.md'],
+          files: ['contributions', 'src', 'README.md'],
           license: 'MIT',
           modkit: {
             contributionManifests: ['./contributions/*.json'],
@@ -7166,7 +7158,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         ],
         [
           'contributions/codec-dds.json',
-          'sha256:39c2a992ec9a105bca546d472b62a80fb5f6de9f60f42ff019d78217bfd6fa54',
+          'sha256:4b46b39cca5489e15d8e25b36dd85b73ea4a75a995cf5b3eaf0808e5f168d3c3',
         ],
         [
           'contributions/codec-exr.json',
@@ -8130,8 +8122,8 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             limitations: [
               'Decoded to pixels: BC1/BC2/BC3 (FourCC DXT1-DXT5 and DXGI 70-78), BC4 and BC5 including the signed spellings (ATI1/ATI2/BC4U/BC5U/BC4S/BC5S and DXGI 79-84 minus the two typeless numbers), BC6H and BC7 (DXGI 94-99), and uncompressed RGB, luminance and alpha-only masks at 8, 16, 24 or 32 bits.',
               'NOT decoded: DXGI 79 (BC4_TYPELESS) and 82 (BC5_TYPELESS), refused by name. The legacy MK2 codec refused them too.',
-              'BC6H and BC7 blocks are decoded by the vendored third-party texture2ddecoder runtime under vendor/texture2ddecoder/ (MIT), which is the implementation the legacy MK2 codec called. Every other format is pure JavaScript inside the codec runtime. The runtime resolves its .wasm next to its own module; nothing is deployed separately by a host.',
-              'BC6H_UF16 and BC6H_SF16 decode through the same entry point, so the unsigned and signed profiles produce the same pixels. That is what the vendored runtime does and what legacy therefore did; the compressed-texture descriptor still reports the two profiles apart.',
+              "BC6H and BC7 blocks are decoded by codec-kit's Texture2DDecoder runtime (the third-party texture2ddecoder-wasm package, MIT), which is the implementation the legacy MK2 codec called. Every other format is pure JavaScript inside the codec runtime. Node loads the installed package; a browser host deploys its wasm/ folder and initializes the runtime once.",
+              'BC6H_UF16 and BC6H_SF16 decode through the same entry point, so the unsigned and signed profiles produce the same pixels. That is what the runtime does and what legacy therefore did; the compressed-texture descriptor still reports the two profiles apart.',
               'Mip, array-layer, cubemap-face and volume-slice selection is implemented: readRegion resolves any subresource the header declares and refuses out-of-range coordinates by name.',
               'Writing is a separate contribution: modkit/dds-encoder-writer (common.edit/writer@1) encodes RGBA8 pixels as rgba8, dxt1, dxt3 or dxt5.',
               'The compressed-texture view of a DDS (GPU blocks handed over undecoded, with block geometry, colour space, alpha mode and per-subresource byte ranges) is implemented in src/dds/compressed.js but is not published: MK3 has no common.view contract for compressed textures yet.',
@@ -11467,10 +11459,6 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         'test/png-sample-depths.test.ts',
         'test/raster-edit-content.test.ts',
         'test/raster-export.test.ts',
-        'vendor/texture2ddecoder/LICENSE',
-        'vendor/texture2ddecoder/README.md',
-        'vendor/texture2ddecoder/texture2ddecoder.js',
-        'vendor/texture2ddecoder/texture2ddecoder.wasm',
       ],
       name: 'images',
       source: 'extensions/images',
