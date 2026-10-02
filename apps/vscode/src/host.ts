@@ -1768,76 +1768,102 @@ function serveVsCode(
     }
   }
 
-  const exposure = exposeSubjectRpc({
-    framePort: bridge.framePort,
-    session: options.session,
-    open: openSubject,
-    confirm: async plan => {
-      if (!(await options.confirmLossyWrite?.(plan.fidelity.notes ?? []))) return undefined
-      const token = randomUUID()
-      lossyConfirmations.set(token, plan.planId)
-      return token
-    },
-    navigate: async ({ parent, target }, signal) => {
-      const diagnostics: Diagnostic[] = []
-      const nested = await openNestedSubjectRef({
-        parent,
-        targetSubject: target,
-        ...nestedSubjectServices(services),
-        grant: options.grant ?? DEFAULT_OPEN_GRANT,
-        budget: options.budget ?? DEFAULT_OPEN_BUDGET,
-        onDiagnostic: item => {
-          diagnostics.push(item)
-          options.onDiagnostic?.(item)
-        },
-        ...(signal === undefined ? {} : { signal }),
-      })
-      if (nested === undefined) return undefined
-      const carried = [...nested.result.diagnostics, ...diagnostics].map(item => ({
-        code: item.code,
-        message: item.message,
-        severity: item.severity,
-      }))
-      if (nested.result.state === 'unresolved') {
-        return {
-          snapshot: subjectOpenSnapshot({
-            result: nested.result,
-            sessionId: () => '',
-            diagnostics: carried,
-          }),
+  /*
+   * The page's RPC endpoint, over a gate the host can shut. A page that loads again in its panel
+   * («Developer: Reload Webviews», the editor moved to another window) numbers its frames from the
+   * start; the endpoint of the page before took them for a protocol violation, and the new page
+   * waited out its 60 s load deadline. Its next `page-listening` gets a new endpoint, and the old one
+   * closes behind a shut gate, so its `terminate` never reaches the page that replaced it.
+   */
+  const exposeToPage = (): { readonly exposure: SubjectRpcExposure; readonly shut: () => void } => {
+    let open = true
+    const framePort: Bridge['framePort'] = {
+      post: (frame, transfer) => {
+        if (open) bridge.framePort.post(frame, transfer)
+      },
+      onFrame: handler =>
+        bridge.framePort.onFrame(frame => {
+          if (open) handler(frame)
+        }),
+    }
+    const exposure = exposeSubjectRpc({
+      framePort,
+      session: options.session,
+      open: openSubject,
+      confirm: async plan => {
+        if (!(await options.confirmLossyWrite?.(plan.fidelity.notes ?? []))) return undefined
+        const token = randomUUID()
+        lossyConfirmations.set(token, plan.planId)
+        return token
+      },
+      navigate: async ({ parent, target }, signal) => {
+        const diagnostics: Diagnostic[] = []
+        const nested = await openNestedSubjectRef({
+          parent,
+          targetSubject: target,
+          ...nestedSubjectServices(services),
+          grant: options.grant ?? DEFAULT_OPEN_GRANT,
+          budget: options.budget ?? DEFAULT_OPEN_BUDGET,
+          onDiagnostic: item => {
+            diagnostics.push(item)
+            options.onDiagnostic?.(item)
+          },
+          ...(signal === undefined ? {} : { signal }),
+        })
+        if (nested === undefined) return undefined
+        const carried = [...nested.result.diagnostics, ...diagnostics].map(item => ({
+          code: item.code,
+          message: item.message,
+          severity: item.severity,
+        }))
+        if (nested.result.state === 'unresolved') {
+          return {
+            snapshot: subjectOpenSnapshot({
+              result: nested.result,
+              sessionId: () => '',
+              diagnostics: carried,
+            }),
+          }
         }
-      }
-      navigationSequence += 1
-      const sessionId = `navigate:${options.session}:${navigationSequence}`
-      const baseSnapshot = subjectOpenSnapshot({
-        result: nested.result,
-        sessionId: () => sessionId,
-        diagnostics: carried,
-      })
-      const presentation = await resolveCommonPresentationPlan(
-        nested.result.descriptor,
-        {
-          sessionId,
-          providerId: nested.result.selected.contributionId,
-          variantId: nested.result.selected.variantId,
-        },
-        { availableStageIds: STAGE_ORDER },
-      )
-      return {
-        snapshot:
-          presentation === undefined
-            ? baseSnapshot
-            : { ...baseSnapshot, presentation: presentation.plan },
-        session: nested.result.session,
-        ...(nested.result.rasterResources === undefined
-          ? {}
-          : { rasterResources: nested.result.rasterResources }),
-      }
-    },
-    editing: sessionId => editingBySession.get(sessionId),
-    moduleUrl: VSCODE_SUBJECT_SERVICES_URL,
-    ...(options.onDiagnostic === undefined ? {} : { onDiagnostic: options.onDiagnostic }),
-  })
+        navigationSequence += 1
+        const sessionId = `navigate:${options.session}:${navigationSequence}`
+        const baseSnapshot = subjectOpenSnapshot({
+          result: nested.result,
+          sessionId: () => sessionId,
+          diagnostics: carried,
+        })
+        const presentation = await resolveCommonPresentationPlan(
+          nested.result.descriptor,
+          {
+            sessionId,
+            providerId: nested.result.selected.contributionId,
+            variantId: nested.result.selected.variantId,
+          },
+          { availableStageIds: STAGE_ORDER },
+        )
+        return {
+          snapshot:
+            presentation === undefined
+              ? baseSnapshot
+              : { ...baseSnapshot, presentation: presentation.plan },
+          session: nested.result.session,
+          ...(nested.result.rasterResources === undefined
+            ? {}
+            : { rasterResources: nested.result.rasterResources }),
+        }
+      },
+      editing: sessionId => editingBySession.get(sessionId),
+      moduleUrl: VSCODE_SUBJECT_SERVICES_URL,
+      ...(options.onDiagnostic === undefined ? {} : { onDiagnostic: options.onDiagnostic }),
+    })
+    return {
+      exposure,
+      shut: () => {
+        open = false
+      },
+    }
+  }
+  let pageRpc = exposeToPage()
 
   // ------------------------------------------------------------------ settings traffic
   /**
@@ -2342,6 +2368,13 @@ function serveVsCode(
     } else if (event.op === 'timing') {
       options.timing?.mark(`page ${event.name}`, event.milliseconds)
     } else if (event.op === 'page-listening') {
+      if (listening) {
+        // the page loaded again in this panel: a new endpoint for its frames
+        const before = pageRpc
+        before.shut()
+        pageRpc = exposeToPage()
+        void before.exposure.close('the page loaded again').catch(() => undefined)
+      }
       listening = true
       for (const held of heldForPage.splice(0)) bridge.emit(held)
     }
@@ -2349,7 +2382,9 @@ function serveVsCode(
 
   return {
     bridge,
-    exposure,
+    get exposure() {
+      return pageRpc.exposure
+    },
     open(path: string) {
       toPage({ op: 'open', path: subjectKey(path), name: subjectLabel(path) })
     },
@@ -2561,7 +2596,7 @@ function serveVsCode(
         releases.map(release => Promise.resolve().then(() => release?.())),
       )
       const [exposureResult] = await Promise.allSettled([
-        Promise.resolve().then(() => exposure.close(reason)),
+        Promise.resolve().then(() => pageRpc.exposure.close(reason)),
       ])
       if (bridgeDisposeError !== undefined) throw bridgeDisposeError
       const rejectedRelease = releaseResults.find(result => result.status === 'rejected')

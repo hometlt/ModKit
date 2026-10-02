@@ -92,6 +92,7 @@ interface Wired {
   readonly served: VsCodeServed
   readonly client: SubjectRpcClient
   readonly page: ReturnType<typeof createBridge>
+  readonly channels: ReturnType<typeof channelPair>
   readonly workspace: string
 }
 
@@ -140,10 +141,34 @@ async function wire(
     page.dispose()
     await served.close('test finished').catch(() => undefined)
   })
-  return { host, served, client, page, workspace }
+  return { host, served, client, page, channels, workspace }
 }
 
 describe('the VS Code subject bridge', () => {
+  // v88: after «Developer: Reload Webviews» a panel waited out «load #1 exceeded its 60000 ms deadline»
+  it('serves a page that loads again in its panel', async () => {
+    const { page, channels, workspace } = await wire({ 'asset.json': '{"a":1}' })
+    page.emit({ op: 'page-listening' })
+    // the page reloads: its bridge goes, the panel and the host stay
+    page.dispose()
+    const again = createBridge({ channel: channels.page, idPrefix: 'page' })
+    again.emit({ op: 'page-listening' })
+    const client = await connectSubjectRpc({
+      framePort: again.framePort,
+      session: 'vscode-test',
+      moduleUrl: VSCODE_SUBJECT_SERVICES_URL,
+      contributionId: VSCODE_SUBJECT_CONTRIBUTION_ID,
+    })
+    try {
+      const opened = await client.open(join(workspace, 'asset.json'))
+      expect(opened.state).toBe('opened')
+      if (opened.state === 'opened') await opened.session.dispose()
+    } finally {
+      await client.close('test finished').catch(() => undefined)
+      again.dispose()
+    }
+  }, 30_000)
+
   it('carries native custom-document dirty, save, and revert lifecycle over the shell channel', async () => {
     const dirty: [string, boolean][] = []
     const saveRequested: string[] = []
