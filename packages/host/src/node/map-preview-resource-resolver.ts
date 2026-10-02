@@ -319,6 +319,15 @@ function missingPathError(value: unknown): boolean {
   return code === 'ENOENT' || code === 'ENOTDIR'
 }
 
+/** A file VFS listing refused because its directory is not there, or is a file. */
+function absentDirectory(error: unknown): boolean {
+  const code = recordOf(error)?.['code']
+  return (
+    code === 'x3.vfs/not-a-directory' ||
+    (code === 'x3.vfs/file-path-unavailable' && missingPathError(recordOf(error)?.['cause']))
+  )
+}
+
 async function exactArchivePath(
   installation: GameInstallation,
   locator: Pick<GameInstallationArchiveLocator, 'archiveRelativePaths'>,
@@ -395,9 +404,14 @@ async function folderNamespaceMount(
     const directory = prefix.slice(0, prefix.lastIndexOf('/') + 1).replace(/\/$/u, '')
     const folded = prefix.toLowerCase()
     const files: NamespaceEntry[] = []
-    for await (const item of namespace.list(directory, signal))
-      if (item.kind === 'file' && item.path.toLowerCase().startsWith(folded))
-        files.push(entryOf(item))
+    try {
+      for await (const item of namespace.list(directory, signal))
+        if (item.kind === 'file' && item.path.toLowerCase().startsWith(folded))
+          files.push(entryOf(item))
+    } catch (error) {
+      // a directory the folder has not holds no files: the next root is asked, the world stands
+      if (!absentDirectory(error)) throw error
+    }
     return files.sort((left, right) =>
       left.path < right.path ? -1 : left.path > right.path ? 1 : 0,
     )

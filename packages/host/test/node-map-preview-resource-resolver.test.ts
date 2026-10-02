@@ -571,6 +571,56 @@ describe('Node game-installation map-preview resource resolver', () => {
     await result.release()
   })
 
+  it('asks the next root for a file whose folder the map folder has not (DN7)', async () => {
+    const root = await installationRoot()
+    const basePath = join(root, 'data', 'base.wz')
+    await writeFile(basePath, 'base')
+    const desktop = await mkdtemp(join(tmpdir(), 'modkit-preview-siblings-'))
+    temporaryRoots.push(desktop)
+    const mapPath = join(desktop, 'demo.map')
+    await writeFile(mapPath, 'map')
+    mocks.discover.mockResolvedValue({
+      state: 'discovered',
+      result: discovery(root),
+      diagnostics: [],
+    })
+    const original = await namespaceSession(
+      pathToFileURL(mapPath).href,
+      new Map([['multiplay/maps/demo/game.map', new Uint8Array([1])]]),
+    )
+    const base = await namespaceSession(
+      pathToFileURL(basePath).href,
+      new Map([['data/bin/tiledata.bin', new Uint8Array([7])]]),
+    )
+    const resolver = createNodeMapPreviewResourcePlanResolver({
+      installationRetentionMs: 0,
+      subjects: {
+        open: vi.fn(async () => ({ state: 'opened', session: base.session, diagnostics: [] })),
+      } as unknown as Pick<SubjectServices, 'open'>,
+      configuredPaths: { [GAME_ID]: [root] },
+    })
+    const result = await resolver.resolve(
+      await requestFixture(
+        plan([
+          {
+            rootId: 'mp',
+            locator: { schemaVersion: 1, kind: 'subject-siblings', gameId: GAME_ID },
+          },
+          { rootId: 'base', locator: locator(['data/base.wz'], 'installation-only') },
+        ]),
+        mapPath,
+        original.session,
+      ),
+    )
+    if (result.state !== 'resolved') throw new Error(JSON.stringify(result.diagnostics))
+    // the folder beside the map has no data/bin: no such file there, so the installation answers
+    const source = await result.origin.open('data/bin/tiledata.bin')
+    if (source.value.kind !== 'bytes') throw new Error('not bytes')
+    expect([...(await source.value.read(0n, 1))]).toEqual([7])
+    await source.release()
+    await result.release()
+  })
+
   it('keeps a released installation for its retention so the next pass reuses it', async () => {
     const root = await installationRoot()
     const mpPath = join(root, 'data', 'mp.wz')
