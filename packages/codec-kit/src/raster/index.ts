@@ -30,7 +30,7 @@ export {
   type JpegDecodeOptions,
   type JpegFrameInfo,
 } from './jpeg.js'
-export type { RgbaImage } from '../texture/types.js'
+export type { RgbaImage } from './image.js'
 export { surfaceRegionReader, type RasterSurfaceAddress } from './surfaces.js'
 export { findEmbeddedImage, type EmbeddedImage } from './embedded.js'
 export { decodeTga, decodeTgaPixels, parseTga, plausibleTgaHeader, type TgaHeader } from './tga.js'

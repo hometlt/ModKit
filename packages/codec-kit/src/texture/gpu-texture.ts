@@ -1,4 +1,4 @@
-import type { EmbeddedImageDecoderAsync, RgbaImage } from './types.js'
+import type { EmbeddedImageDecoderAsync, RgbaImage } from '../raster/image.js'
 import { assertRgba8DecodeWithinLimit, compressedTextureByteLength } from './compressed-texture.js'
 import { byteView } from './binary.js'
 

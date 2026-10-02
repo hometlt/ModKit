@@ -5,7 +5,7 @@
  * PCX (StarCraft's `game/tunit.pcx`: palette indices of the player colours) reads them with the
  * same code.
  */
-import type { RgbaImage } from '../texture/types.js'
+import type { RgbaImage } from './image.js'
 
 const HEADER_BYTES = 128
 

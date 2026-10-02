@@ -11,7 +11,7 @@
  * Only the blocks live here. The file around them — a DDS header, a KTX level table, a game's
  * texture wrapper — belongs to the codec that owns that container.
  */
-import type { RgbaImage } from './types.js'
+import type { RgbaImage } from '../raster/image.js'
 
 export type DxtEncoding = 'dxt1' | 'dxt3' | 'dxt5'
 

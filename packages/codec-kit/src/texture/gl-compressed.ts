@@ -11,7 +11,7 @@ import {
   decodeGpuPayload,
   type GpuBlockLayout,
 } from './gpu-texture.js'
-import type { RgbaImage } from './types.js'
+import type { RgbaImage } from '../raster/image.js'
 
 const layout = (
   kind: GpuBlockLayout['kind'],

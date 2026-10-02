@@ -9,7 +9,7 @@
  * approximation would be harder to check against the specification, and an image codec that is
  * subtly wrong is worse than one that is a little slower.
  */
-import type { RgbaImage } from '../texture/types.js'
+import type { RgbaImage } from './image.js'
 
 export interface JpegDecodeOptions {
   /** Hard ceiling on the decoded RGBA byte count. */

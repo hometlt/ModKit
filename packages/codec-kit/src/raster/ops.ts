@@ -6,7 +6,7 @@
  * way of MK3's `extensions/images/src/ops/raster-ops.js`. Every one takes and returns
  * `{ width, height, pixels }` in top-left-first RGBA8 order, and none of them mutates its input.
  */
-import type { RgbaImage } from '../texture/types.js'
+import type { RgbaImage } from './image.js'
 
 const at = (pixels: Uint8Array, index: number): number => pixels[index] as number
 

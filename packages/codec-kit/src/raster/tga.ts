@@ -5,7 +5,7 @@
  * icons are uncompressed 32-bit TGA) decodes it with the same code. Colour-mapped pixels are not
  * decoded (`decodedAccess` false). The writer is `encodeTga` in encoders.ts.
  */
-import type { RgbaImage } from '../texture/types.js'
+import type { RgbaImage } from './image.js'
 
 const FOOTER = [
   0x54, 0x52, 0x55, 0x45, 0x56, 0x49, 0x53, 0x49, 0x4f, 0x4e, 0x2d, 0x58, 0x46, 0x49, 0x4c, 0x45,

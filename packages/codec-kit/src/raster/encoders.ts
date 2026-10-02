@@ -9,7 +9,7 @@
  */
 import { crc32Range } from '../checksum/index.js'
 import { compressPortable } from '../compression/bounded.js'
-import type { RgbaImage } from '../texture/types.js'
+import type { RgbaImage } from './image.js'
 
 const at = (pixels: Uint8Array, index: number): number => pixels[index] as number
 
