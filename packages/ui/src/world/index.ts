@@ -6,8 +6,11 @@ import {
   createWorldWebGlRenderer,
   DEFAULT_WORLD_WEBGL_CAMERA,
   drawWorldWebGl,
+  flyWorldWebGlCamera,
+  lookWorldWebGlCamera,
   presentWorldModelTextures,
   orbitWorldWebGlCamera,
+  worldWebGlCameraFromMap,
   panWorldWebGlCamera,
   pickWorldWebGl,
   SCENE_COMPRESSED_TEXTURE_FORMATS,
@@ -768,6 +771,15 @@ export interface WorldRenderStats {
 
 /** How long a camera rests before the viewer asks a growing world for what it shows (MW5). */
 const WORLD_FOCUS_SETTLE_MS = 400
+/** Free flight of a perspective eye (MW6): forward, right and up, per key. */
+const WORLD_FLIGHT_KEYS: Readonly<Record<string, readonly [number, number, number]>> = {
+  w: [1, 0, 0],
+  s: [-1, 0, 0],
+  d: [0, 1, 0],
+  a: [0, -1, 0],
+  e: [0, 0, 1],
+  q: [0, 0, -1],
+}
 
 export type WorldEditStatus = 'idle' | 'preview' | 'committing' | 'stale' | 'error'
 
@@ -1607,6 +1619,14 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
       latticeButton.type = sceneButton.type = 'button'
       latticeButton.dataset['worldView'] = 'lattice'
       sceneButton.dataset['worldView'] = '3d'
+      // MW6: a perspective eye that looks around and flies; the orthographic orbit otherwise
+      const perspectiveButton = element(toolbar, 'button', {
+        text: localizer.text('viewer.worldPerspective'),
+      }) as HTMLButtonElement
+      perspectiveButton.type = 'button'
+      perspectiveButton.dataset['worldProjection'] = 'perspective'
+      perspectiveButton.title = localizer.text('viewer.worldPerspectiveHint')
+      perspectiveButton.setAttribute('aria-pressed', 'false')
       // Overlays the 3D view can hide; each button shows once the map publishes that facet.
       const hiddenOverlays = new Set<WorldOverlayFacet>()
       const overlayLabels: Readonly<Record<WorldOverlayFacet, string>> = {
@@ -1687,6 +1707,12 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
       } as const
       let edit = createWorldEditState(descriptor.revision)
       let camera = DEFAULT_WORLD_WEBGL_CAMERA
+      // The game's view of the world (WT3, MW6), taken once, while the viewer has not been moved.
+      const takeGameCamera = (model: CandidateWorldViewerModel) => {
+        if (camera !== DEFAULT_WORLD_WEBGL_CAMERA || model.info.camera === undefined) return
+        camera = worldWebGlCameraFromMap(model.info.camera)
+        perspectiveButton.setAttribute('aria-pressed', String(camera.projection === 'perspective'))
+      }
       const animationEpochs = new Map<number, number>()
       const view = canvas.ownerDocument.defaultView
       let webGlRenderer: WorldWebGlRenderer | undefined
@@ -1819,6 +1845,7 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
             onProgress(model, progress) {
               if (revision !== renderRevision || scope.signal.aborted) return
               currentModel = model
+              takeGameCamera(model)
               stage.dataset['worldLoadingPhase'] = progress.phase
               setViewerText(
                 readout,
@@ -1842,6 +1869,7 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
         if (revision !== renderRevision || scope.signal.aborted) return
         loading = false
         currentModel = model
+        takeGameCamera(model)
         if (edit.selectedObjectId !== undefined) {
           const refreshed = model.layers
             .flatMap(layer => layer.page.items)
@@ -2014,19 +2042,22 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
         const delta = { x: event.clientX - drag.x, y: event.clientY - drag.y }
         drag.x = event.clientX
         drag.y = event.clientY
-        if (drag.mode === 'orbit') camera = orbitWorldWebGlCamera(camera, delta)
-        else {
-          const worldItems = currentModel.layers.flatMap(layer => layer.page.items)
-          camera = panWorldWebGlCamera(
-            {
-              items: worldItems,
-              ...(currentModel.models === undefined ? {} : { models: currentModel.models }),
-              camera,
-            },
-            camera,
-            { ...delta, viewportHeight: canvas.height },
-          )
+        const worldInput = {
+          items: currentModel.layers.flatMap(layer => layer.page.items),
+          ...(currentModel.models === undefined ? {} : { models: currentModel.models }),
+          camera,
         }
+        // a perspective eye looks around from where it stands; the orbit turns about its target
+        if (drag.mode === 'orbit')
+          camera =
+            camera.projection === 'perspective'
+              ? lookWorldWebGlCamera(worldInput, camera, delta)
+              : orbitWorldWebGlCamera(camera, delta)
+        else
+          camera = panWorldWebGlCamera(worldInput, camera, {
+            ...delta,
+            viewportHeight: canvas.height,
+          })
         redraw()
       }
       // A world larger than it holds (MW5) moves to the ground in view once the camera rests; the
@@ -2094,7 +2125,36 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
         focusSoon()
       }
       const onContextMenu = (event: Event) => event.preventDefault()
+      const onPerspective = () => {
+        const perspective = camera.projection !== 'perspective'
+        camera = Object.freeze({
+          ...camera,
+          projection: perspective ? ('perspective' as const) : ('orthographic' as const),
+          // the orbit looks only down: an eye that looked up comes back above its target
+          elevation: Math.max(0.04, Math.min(Math.PI / 2 - 0.04, Math.abs(camera.elevation))),
+        })
+        perspectiveButton.setAttribute('aria-pressed', String(perspective))
+        redraw()
+        focusSoon()
+      }
       const onKey = (event: KeyboardEvent) => {
+        const flight =
+          camera.projection === 'perspective'
+            ? WORLD_FLIGHT_KEYS[event.key.toLowerCase()]
+            : undefined
+        if (flight !== undefined) {
+          event.preventDefault()
+          // a tenth of the height in view per key press: slow up close, fast over the whole map
+          const step = ((camera.frame ?? lastFrame)?.radius ?? 1) / camera.zoom / 10
+          camera = flyWorldWebGlCamera(camera, {
+            forward: flight[0] * step,
+            right: flight[1] * step,
+            up: flight[2] * step,
+          })
+          redraw()
+          focusSoon()
+          return
+        }
         const delta =
           event.key === 'ArrowLeft'
             ? { x: -1, y: 0 }
@@ -2144,6 +2204,7 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
       canvas.addEventListener('wheel', onWheel, { passive: false })
       canvas.addEventListener('contextmenu', onContextMenu)
       canvas.addEventListener('keydown', onKey)
+      perspectiveButton.addEventListener('click', onPerspective)
       saveMove.addEventListener('click', onSave)
       scope.cleanup(() => {
         latticeButton.removeEventListener('click', onLattice)
@@ -2159,6 +2220,7 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
         canvas.removeEventListener('wheel', onWheel)
         canvas.removeEventListener('contextmenu', onContextMenu)
         canvas.removeEventListener('keydown', onKey)
+        perspectiveButton.removeEventListener('click', onPerspective)
         saveMove.removeEventListener('click', onSave)
       })
 

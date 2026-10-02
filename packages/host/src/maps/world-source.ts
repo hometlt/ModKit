@@ -21,6 +21,7 @@ import type {
   MapTerrainSample,
   MapPlacedObject,
   MapTerrainWeightRaster,
+  MapWorldCamera,
   MapWorldCanonicalTransform,
   MapWorldWindow,
   ModelResourcePort,
@@ -51,6 +52,20 @@ const PROOF_METHODS: ReadonlySet<string> = new Set([
   'third-party-reference-differential',
   'game-data-reference-differential',
 ])
+
+/** The publisher's view of its world when every stated angle and distance is in range; else none. */
+function worldCamera(camera: MapWorldCamera | undefined): MapWorldCamera | undefined {
+  if (camera === undefined) return undefined
+  const within = (value: number | undefined, low: number, high: number) =>
+    value === undefined || (Number.isFinite(value) && value >= low && value <= high)
+  return (camera.projection === 'orthographic' || camera.projection === 'perspective') &&
+    within(camera.azimuthDegrees, -360, 360) &&
+    within(camera.elevationDegrees, 0, 90) &&
+    within(camera.fieldOfViewDegrees, 1, 170) &&
+    within(camera.drawDistance, Number.MIN_VALUE, Number.MAX_VALUE)
+    ? Object.freeze({ ...camera })
+    : undefined
+}
 
 function resourceId(namespace: string, entityId: string): string {
   return `resource:${encodeURIComponent(namespace)}/${encodeURIComponent(entityId)}`
@@ -1762,6 +1777,9 @@ export function createCandidateWorldSceneLease(
     ...(semantic.players === undefined
       ? {}
       : { players: Object.freeze(semantic.players.map(player => Object.freeze({ ...player }))) }),
+    ...(worldCamera(snapshot.camera) === undefined
+      ? {}
+      : { camera: worldCamera(snapshot.camera)! }),
     facets,
     provenance: Object.freeze(provenance.map(item => Object.freeze({ ...item }))),
     unknownFacets: snapshot.worldCandidate.unknownFacets,

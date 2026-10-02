@@ -1,4 +1,12 @@
-import { Box3, OrthographicCamera, Raycaster, Sphere, Vector2, Vector3 } from 'three'
+import {
+  Box3,
+  OrthographicCamera,
+  PerspectiveCamera,
+  Raycaster,
+  Sphere,
+  Vector2,
+  Vector3,
+} from 'three'
 import type {
   MapModelComponentPlacement,
   MapTerrainMaterialDefinition,
@@ -13,6 +21,7 @@ import type {
   WorldTerrainLighting,
   WorldShadowRange,
   WorldHeightFog,
+  MapWorldCamera,
 } from '@modkit/sdk/maps'
 import { transformTerrainUv, type MapTerrainUvTransform } from '@modkit/sdk/maps'
 import type {
@@ -118,6 +127,17 @@ export interface WorldWebGlCamera {
   readonly elevation: number
   readonly zoom: number
   readonly target: readonly [number, number, number]
+  /**
+   * `perspective` (MW6): the eye stands where a lens of `fieldOfView` frames the height the
+   * orthographic view shows at the target at this zoom, the view reaches `far`, and the elevation may
+   * look up (below 0). Absent or `orthographic`: the orbit camera of a map editor.
+   */
+  readonly projection?: 'orthographic' | 'perspective'
+  /** Vertical field of view of a perspective camera, radians (default 60°). */
+  readonly fieldOfView?: number
+  /** How far a perspective camera draws, in world units (the game's draw distance); absent, ten
+   * frame radii beyond the target. */
+  readonly far?: number
   /**
    * What `target` and `zoom` are measured in; absent, the plan's own (WorldWebGlStats.frame). A
    * viewer pins the frame it showed before its world moves to another part (MW5), so the view stays.
@@ -7340,6 +7360,16 @@ uniform sampler2D sceneDepthMap;
 uniform vec2 waterDepthScale;
 uniform float waterFalloff;
 uniform float waterShoreFade;
+// near, far, and 1 for a perspective camera: its window depth is not linear along the ray.
+uniform vec3 waterDepthLens;
+// World units along the view ray between two window depths.
+float waterAlongRay(float sceneDepth, float fragmentDepth) {
+  if (waterDepthLens.z < 0.5) return (sceneDepth - fragmentDepth) * waterDepthScale.x;
+  float lensNear = waterDepthLens.x;
+  float lensFar = waterDepthLens.y;
+  return lensNear * lensFar / (lensFar - sceneDepth * (lensFar - lensNear)) -
+    lensNear * lensFar / (lensFar - fragmentDepth * (lensFar - lensNear));
+}
 uniform float causticsMode;
 uniform sampler2D causticsMap;
 uniform vec2 causticsScale;
@@ -7515,7 +7545,7 @@ void main() {
     vec2 wave1 = texture(waterNormalMap, waveUv + waterWaveScroll.zw * waterTime).zw * 2.0 - 1.0;
     vec3 waves = vec3(wave0, sqrt(max(0.0, 1.0 - dot(wave0, wave0)))) + vec3(wave1, sqrt(max(0.0, 1.0 - dot(wave1, wave1))));
     // Smaller at the shore: the game leans it back to straight up by saturate(depth).
-    float waveDepth = (texelFetch(sceneDepthMap, ivec2(gl_FragCoord.xy), 0).r - gl_FragCoord.z) * waterDepthScale.x;
+    float waveDepth = waterAlongRay(texelFetch(sceneDepthMap, ivec2(gl_FragCoord.xy), 0).r, gl_FragCoord.z);
     resolvedNormal = normalize(mix(vec3(0.0, 1.0, 0.0), normalize(vec3(waves.x, waves.z, -waves.y)), clamp(waveDepth, 0.0, 1.0)));
   }
   if (normalTextured > 0.5) {
@@ -7626,7 +7656,7 @@ void main() {
     // the colour deepens with the water over whatever lies under the pixel - SC2 water reads the
     // scene depth the same way. Same saturation and shore fade as the per-vertex water colour.
     float sceneDepth = texelFetch(sceneDepthMap, ivec2(gl_FragCoord.xy), 0).r;
-    float waterDepth = (sceneDepth - gl_FragCoord.z) * waterDepthScale.x * waterDepthScale.y;
+    float waterDepth = waterAlongRay(sceneDepth, gl_FragCoord.z) * waterDepthScale.y;
     if (waterDepth <= 0.0) discard;
     float saturation = 1.0 - exp(-waterDepth * waterFalloff);
     surface = vec4(
@@ -7636,7 +7666,7 @@ void main() {
     if (causticsMode > 0.5) {
       // SC2 Water.fx: the bottom under the pixel, along the view ray; the flip-book frame by its map
       // position (v flipped as the game does), shadowed, stronger with depth up to 1.
-      float along = (sceneDepth - gl_FragCoord.z) * waterDepthScale.x;
+      float along = waterAlongRay(sceneDepth, gl_FragCoord.z);
       vec3 bottom = worldPosition + waterViewForward * along;
       vec2 causticsUv = causticsScale * vec2(bottom.x, -bottom.z);
       causticsUv.y = 1.0 - causticsUv.y;
@@ -9540,11 +9570,16 @@ function isWebGl2(value: unknown): value is WebGL2RenderingContext {
 
 function cameraState(value: WorldWebGlCamera | undefined): WorldWebGlCamera {
   const source = value ?? DEFAULT_WORLD_WEBGL_CAMERA
+  const perspective = source.projection === 'perspective'
   if (
+    (source.projection !== undefined && source.projection !== 'orthographic' && !perspective) ||
     !Number.isFinite(source.azimuth) ||
     !Number.isFinite(source.elevation) ||
-    source.elevation <= 0.03 ||
+    source.elevation <= (perspective ? 0.03 - Math.PI / 2 : 0.03) ||
     source.elevation >= Math.PI / 2 - 0.03 ||
+    (source.fieldOfView !== undefined &&
+      !(source.fieldOfView >= 0.1 && source.fieldOfView <= 2.8)) ||
+    (source.far !== undefined && !(Number.isFinite(source.far) && source.far > 0)) ||
     !Number.isFinite(source.zoom) ||
     source.zoom < 0.125 ||
     source.zoom > 16 ||
@@ -9926,6 +9961,9 @@ function worldViewRectangle(
   aspect: number,
 ): Readonly<{ u: number; v: number; halfWidth: number; halfHeight: number }> | undefined {
   if (!(aspect > 0) || !Number.isFinite(aspect)) return undefined
+  // ponytail: a perspective view culls nothing on the CPU (its far plane still clips); a frustum test
+  // belongs here when a first-person world draws too much
+  if (view.projection === 'perspective') return undefined
   const frame = view.frame ?? plan.stats.frame
   const center = [0, 1, 2].map(axis => frame.center[axis]! + view.target[axis]!) as [
     number,
@@ -10278,8 +10316,132 @@ export function orbitWorldWebGlCamera(
   return Object.freeze({
     ...source,
     azimuth: source.azimuth - delta.x * 0.008,
-    elevation: Math.max(0.04, Math.min(Math.PI / 2 - 0.04, source.elevation + delta.y * 0.008)),
+    elevation: clampElevation(source, source.elevation + delta.y * 0.008),
   })
+}
+
+/** An elevation within the camera's range: a perspective eye may look up, an orbit only down. */
+function clampElevation(view: WorldWebGlCamera, elevation: number): number {
+  const lowest = view.projection === 'perspective' ? 0.04 - Math.PI / 2 : 0.04
+  return Math.max(lowest, Math.min(Math.PI / 2 - 0.04, elevation))
+}
+
+/**
+ * A perspective camera looking around from where its eye stands (first person, MW6): the view turns
+ * with the drag and the target moves so the eye stays. An orthographic camera orbits instead.
+ */
+export function lookWorldWebGlCamera(
+  input: WorldWebGlInput,
+  source: WorldWebGlCamera,
+  delta: Readonly<{ x: number; y: number }>,
+): WorldWebGlCamera {
+  const view = cameraState(source)
+  if (view.projection !== 'perspective') return orbitWorldWebGlCamera(view, delta)
+  if (![delta.x, delta.y].every(Number.isFinite))
+    throw new TypeError('world WebGL look delta must be finite')
+  const frame = view.frame ?? createWorldWebGlPlan(input).stats.frame
+  const pose = cameraPose(frame, view)
+  const eye = pose.center.clone().addScaledVector(pose.toEye, pose.distance)
+  const turned = Object.freeze({
+    ...view,
+    azimuth: view.azimuth + delta.x * 0.008,
+    elevation: clampElevation(view, view.elevation + delta.y * 0.008),
+  })
+  const target = eye
+    .addScaledVector(cameraPose(frame, turned).toEye, -pose.distance)
+    .sub(new Vector3(...frame.center))
+  return Object.freeze({
+    ...turned,
+    target: Object.freeze([target.x, target.y, target.z] as const),
+  })
+}
+
+/**
+ * The camera flown by `forward` along its view, `right` across it and `up` the world's up axis, in
+ * world units: the eye and the target move together (free flight, MW6).
+ */
+export function flyWorldWebGlCamera(
+  source: WorldWebGlCamera,
+  move: Readonly<{ forward: number; right: number; up: number }>,
+): WorldWebGlCamera {
+  const view = cameraState(source)
+  if (![move.forward, move.right, move.up].every(Number.isFinite))
+    throw new TypeError('world WebGL flight must be finite')
+  const horizontal = Math.cos(view.elevation)
+  const forward = [
+    -Math.cos(view.azimuth) * horizontal,
+    -Math.sin(view.elevation),
+    -Math.sin(view.azimuth) * horizontal,
+  ]
+  const right = [Math.sin(view.azimuth), 0, -Math.cos(view.azimuth)]
+  return Object.freeze({
+    ...view,
+    target: Object.freeze([
+      view.target[0] + forward[0]! * move.forward + right[0]! * move.right,
+      view.target[1] + forward[1]! * move.forward + move.up,
+      view.target[2] + forward[2]! * move.forward + right[2]! * move.right,
+    ] as const),
+  })
+}
+
+/** The default lens of a perspective camera: 60° vertically. */
+const WORLD_FIELD_OF_VIEW = Math.PI / 3
+
+/**
+ * The camera a world opens on, from the game's view of it (MapWorldCamera, WT3/MW6): its
+ * projection, angles, lens and draw distance over `base`; an angle outside what the projection can
+ * take is brought within it.
+ */
+export function worldWebGlCameraFromMap(
+  camera: MapWorldCamera | undefined,
+  base: WorldWebGlCamera = DEFAULT_WORLD_WEBGL_CAMERA,
+): WorldWebGlCamera {
+  if (camera === undefined) return base
+  const radians = (degrees: number) => (degrees * Math.PI) / 180
+  const view: WorldWebGlCamera = {
+    ...base,
+    projection: camera.projection,
+    ...(camera.azimuthDegrees === undefined ? {} : { azimuth: radians(camera.azimuthDegrees) }),
+    ...(camera.fieldOfViewDegrees === undefined
+      ? {}
+      : { fieldOfView: Math.max(0.1, Math.min(2.8, radians(camera.fieldOfViewDegrees))) }),
+    ...(camera.drawDistance === undefined ? {} : { far: camera.drawDistance }),
+  }
+  return Object.freeze({
+    ...view,
+    elevation: clampElevation(
+      view,
+      camera.elevationDegrees === undefined ? view.elevation : radians(camera.elevationDegrees),
+    ),
+  })
+}
+
+/**
+ * Where a view's eye stands: the target in its frame, the unit vector from the target to the eye,
+ * the height the view shows at the target, and the eye's distance - three frame radii for the
+ * orthographic view, the distance at which a perspective lens frames that height.
+ */
+function cameraPose(frame: WorldWebGlFrame, view: WorldWebGlCamera) {
+  const center = new Vector3(...frame.center).add(new Vector3(...view.target))
+  const horizontal = Math.cos(view.elevation)
+  const toEye = new Vector3(
+    Math.cos(view.azimuth) * horizontal,
+    Math.sin(view.elevation),
+    Math.sin(view.azimuth) * horizontal,
+  )
+  const halfHeight = frame.radius / view.zoom
+  const perspective = view.projection === 'perspective'
+  const fieldOfView = view.fieldOfView ?? WORLD_FIELD_OF_VIEW
+  const distance = perspective ? halfHeight / Math.tan(fieldOfView / 2) : frame.radius * 3
+  return {
+    center,
+    toEye,
+    halfHeight,
+    perspective,
+    fieldOfView,
+    distance,
+    far: perspective ? (view.far ?? distance + frame.radius * 10) : frame.radius * 10,
+  }
 }
 
 export function zoomWorldWebGlCamera(
@@ -10317,13 +10479,8 @@ export function worldViewGroundWindow(
   const view = cameraState(requested)
   if (!(aspect > 0) || !Number.isFinite(aspect))
     throw new TypeError('a world view aspect is positive and finite')
-  const center = new Vector3(...frame.center).add(new Vector3(...view.target))
-  const halfHeight = frame.radius / view.zoom
-  const toEye = new Vector3(
-    Math.cos(view.azimuth) * Math.cos(view.elevation),
-    Math.sin(view.elevation),
-    Math.sin(view.azimuth) * Math.cos(view.elevation),
-  )
+  const pose = cameraPose(frame, view)
+  const { center, toEye, halfHeight } = pose
   // the camera's own axes as lookAt with +Y up makes them
   const right = new Vector3(0, 1, 0).cross(toEye).normalize()
   const up = toEye.clone().cross(right)
@@ -10332,6 +10489,27 @@ export function worldViewGroundWindow(
   let minimumZ = Infinity
   let maximumX = -Infinity
   let maximumZ = -Infinity
+  if (pose.perspective) {
+    // each corner ray from the eye meets the ground, or stops at the far plane when it does not
+    const eye = center.clone().addScaledVector(toEye, pose.distance)
+    const slope = Math.tan(pose.fieldOfView / 2)
+    for (const across of [-1, 1])
+      for (const along of [-1, 1]) {
+        const ray = toEye
+          .clone()
+          .negate()
+          .addScaledVector(right, across * slope * aspect)
+          .addScaledVector(up, along * slope)
+          .normalize()
+        const reach = ray.y < 0 ? Math.min(pose.far, (ground - eye.y) / ray.y) : pose.far
+        const met = eye.clone().addScaledVector(ray, Math.max(0, reach))
+        minimumX = Math.min(minimumX, met.x)
+        minimumZ = Math.min(minimumZ, met.z)
+        maximumX = Math.max(maximumX, met.x)
+        maximumZ = Math.max(maximumZ, met.z)
+      }
+    return Object.freeze({ minimumX, minimumZ, maximumX, maximumZ })
+  }
   for (const across of [-1, 1])
     for (const along of [-1, 1]) {
       const corner = center
@@ -10364,6 +10542,21 @@ function cameraFor(
   const radius = frame.radius
   const visibleRadius = radius / view.zoom
   const aspect = width / height
+  const pose = cameraPose(frame, view)
+  if (pose.perspective) {
+    const lens = new PerspectiveCamera(
+      (pose.fieldOfView * 180) / Math.PI,
+      aspect,
+      Math.max(0.01, pose.far / 100_000),
+      pose.far,
+    )
+    lens.position.copy(center).addScaledVector(pose.toEye, pose.distance)
+    lens.up.set(0, 1, 0)
+    lens.lookAt(center)
+    lens.updateMatrixWorld(true)
+    lens.updateProjectionMatrix()
+    return Object.freeze({ camera: lens, radius })
+  }
   const camera = new OrthographicCamera(
     -visibleRadius * aspect,
     visibleRadius * aspect,
@@ -10404,6 +10597,12 @@ export function worldShadowRangeEye(
   const range = plan.light.shadowRange
   if (range === undefined || !(range.distance > 0) || !(range.fieldOfViewDegrees > 0)) return undefined
   const { camera, radius } = cameraFor(plan, width, height, requested)
+  if (camera instanceof PerspectiveCamera)
+    return Object.freeze({
+      eye: [camera.position.x, camera.position.y, camera.position.z] as const,
+      distance: range.distance,
+      reachable: true,
+    })
   const forward = camera.getWorldDirection(new Vector3())
   const center = camera.position.clone().addScaledVector(forward, radius * 3)
   const halfHeight = camera.top
@@ -11462,6 +11661,12 @@ function drawWorldWebGlWithResources(
         uniformLocation(gl, program, 'waterDepthScale'),
         camera.far - camera.near,
         Math.abs(forward.y),
+      )
+      gl.uniform3f(
+        uniformLocation(gl, program, 'waterDepthLens'),
+        camera.near,
+        camera.far,
+        camera instanceof PerspectiveCamera ? 1 : 0,
       )
       worldUniform1f(gl, program, 'waterShoreFade', WATER_SHORE_FADE)
       worldUniform1f(gl, program, 'waterDepthMode', 1)

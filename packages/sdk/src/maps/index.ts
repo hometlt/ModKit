@@ -1430,6 +1430,22 @@ export interface MapWorldLightingSummary {
   }>[]
 }
 
+/**
+ * How the game shows its world (WT3, MW6), which a world viewer opens on. Angles are degrees in the
+ * UVW frame (+y up): `azimuthDegrees` is the eye's direction from what it looks at, seen from above,
+ * from +x toward +z; `elevationDegrees` how far above the ground plane the eye stands (0..90).
+ */
+export interface MapWorldCamera {
+  /** `orthographic`: the game draws without perspective (an isometric or editor view). */
+  readonly projection: 'orthographic' | 'perspective'
+  readonly azimuthDegrees?: number
+  readonly elevationDegrees?: number
+  /** A perspective lens: its vertical field of view. */
+  readonly fieldOfViewDegrees?: number
+  /** How far the game draws, in UVW units (metres): a perspective view's far plane. */
+  readonly drawDistance?: number
+}
+
 /** Additive result; `semantic` is the untouched authoritative semantic-analysis@1 snapshot. */
 export interface ResolvedMapWorkspaceSnapshot {
   readonly schemaVersion: 1
@@ -1447,6 +1463,8 @@ export interface ResolvedMapWorkspaceSnapshot {
   readonly terrainTransform?: MapTerrainNativeTransform
   readonly uvwTransform?: MapWorldCanonicalTransform
   readonly lighting?: MapWorldLightingSummary
+  /** The game's view of the world, when the publisher knows it. */
+  readonly camera?: MapWorldCamera
   readonly worldCandidate: MapWorldCandidateDescriptor
   readonly unresolvedRequirementIds: readonly string[]
   readonly diagnostics: readonly MapSemanticDiagnostic[]
@@ -1505,6 +1523,8 @@ interface WorldSceneInfoBase {
   readonly uvwTransformRefusal?: string
   /** The map's player slots (MapSemanticSnapshot.players): a viewer colours objects by them. */
   readonly players?: readonly MapPlayer[]
+  /** The game's view of the world (ResolvedMapWorkspaceSnapshot.camera): a viewer opens on it. */
+  readonly camera?: MapWorldCamera
   readonly facets: readonly WorldSceneFacetState[]
   readonly provenance: readonly ResourceProvenanceRecord[]
   readonly unknownFacets: readonly string[]

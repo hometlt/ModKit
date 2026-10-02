@@ -713,6 +713,25 @@ describe('common world source native visual facets', () => {
     }
   })
 
+  it("publishes the game's view of its world, and none out of range (П59)", async () => {
+    const camera = { projection: 'orthographic', azimuthDegrees: 45, elevationDegrees: 30 } as const
+    const info = async (value: unknown) => {
+      const lease = createSourceWorldSceneLease(
+        { ...snapshot, camera: value } as ResolvedMapWorkspaceSnapshot,
+        [],
+        64,
+      )
+      try {
+        return await lease.value.info()
+      } finally {
+        await lease.release()
+      }
+    }
+    expect((await info(camera)).camera).toEqual(camera)
+    expect((await info({ ...camera, elevationDegrees: 120 })).camera).toBeUndefined()
+    expect((await info({ projection: 'fisheye' })).camera).toBeUndefined()
+  })
+
   it('reads rectangles, diamonds and polygons of regions as geometry', async () => {
     const region = (regionId: number, type: string, parameters: Record<string, string>) => ({
       regionId,

@@ -244,6 +244,9 @@ const EN_MESSAGES = Object.freeze({
   'viewer.worldView': 'Map view',
   'viewer.worldLattice': 'Lattice 2D',
   'viewer.world3d': '3D preview',
+  'viewer.worldPerspective': 'Perspective',
+  'viewer.worldPerspectiveHint':
+    'Look around with the right mouse button; fly with W, A, S, D, Q and E',
   'viewer.worldSaveMove': 'Save selected move',
   'viewer.worldLoadingGeometry': 'Loading terrain geometry',
   'viewer.worldLoadingTextures': 'Loading terrain textures',
@@ -1314,6 +1317,8 @@ const RU_MESSAGES: Readonly<Record<CoreUiMessageKey, string>> = Object.freeze({
   'viewer.worldView': 'Вид карты',
   'viewer.worldLattice': 'Сетка высот 2D',
   'viewer.world3d': '3D-превью',
+  'viewer.worldPerspective': 'Перспектива',
+  'viewer.worldPerspectiveHint': 'Осмотреться — правой кнопкой мыши; лететь — W, A, S, D, Q и E',
   'viewer.worldSaveMove': 'Сохранить перемещение',
   'viewer.worldLoadingGeometry': 'Загрузка геометрии ландшафта',
   'viewer.worldLoadingTextures': 'Загрузка текстур ландшафта',

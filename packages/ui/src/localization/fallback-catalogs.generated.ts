@@ -982,6 +982,9 @@ export const WORLD_FALLBACK_MESSAGES = {
   'viewer.worldLoadingTextures': 'Loading terrain textures',
   'viewer.worldNavigation': 'Navigation',
   'viewer.worldOverlays': 'Overlays',
+  'viewer.worldPerspective': 'Perspective',
+  'viewer.worldPerspectiveHint':
+    'Look around with the right mouse button; fly with W, A, S, D, Q and E',
   'viewer.worldPreview': 'Top-down world preview',
   'viewer.worldRamp': 'Ramps',
   'viewer.worldRegions': 'Regions',
