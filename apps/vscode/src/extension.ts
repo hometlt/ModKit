@@ -12930,6 +12930,22 @@ async function activateModkit(
       }),
     )
   }
+  /*
+   * The active subject follows the tab in front. A panel restored with the focus says it is active
+   * and, when the reader then clicks a text editor in another group, never says it is not (v89):
+   * «Entity Card…» sent the SCV to that panel, a layout preview, which refused it.
+   */
+  const followActiveTab = (): void => {
+    const input = vscode.window.tabGroups.activeTabGroup.activeTab?.input
+    if (input instanceof vscode.TabInputCustom && MODKIT_VIEW_TYPES.includes(input.viewType)) return
+    if (activeSubject === undefined) return
+    activeSubject = undefined
+    viewerStatusBar.setActive(undefined)
+  }
+  context.subscriptions.push(
+    vscode.window.tabGroups.onDidChangeTabGroups(followActiveTab),
+    vscode.window.tabGroups.onDidChangeTabs(followActiveTab),
+  )
 
   // ------------------------------------------------- per-codec «open by default» (owner decision)
   /*
