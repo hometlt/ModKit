@@ -1,6 +1,7 @@
 /** Generic structural adapter from authoritative map semantics to a paged publisher candidate. */
 
 import { diagnostic } from '@modkit/core'
+import { mapQualificationTupleBytes } from '@modkit/sdk'
 import {
   MODEL_FACET_ITEM_CAP,
   positiveLimit,
@@ -40,6 +41,14 @@ import type {
   WorldScenePageRequest,
   WorldSceneRegionShape,
 } from '@modkit/sdk'
+
+/** The proof methods sdk names (MapWorldCanonicalTransform.proof.method). */
+const PROOF_METHODS: ReadonlySet<string> = new Set([
+  'sealed-legacy-differential',
+  'official-reference-differential',
+  'third-party-reference-differential',
+  'game-data-reference-differential',
+])
 
 function resourceId(namespace: string, entityId: string): string {
   return `resource:${encodeURIComponent(namespace)}/${encodeURIComponent(entityId)}`
@@ -553,6 +562,10 @@ function admittedWorldCanonicalTransform(
         proof.tupleCount <= 0,
     ],
     [
+      `its proof method ${String(proof.method)} is none sdk names`,
+      () => !PROOF_METHODS.has(proof.method),
+    ],
+    [
       'its proof names no oracle, corpus or sha256 source digests',
       () =>
         proof.oracle.length === 0 ||
@@ -606,6 +619,58 @@ function admittedWorldCanonicalTransform(
     : { refusal: 'its bounds are not the canonical image of the terrain bounds' }
 }
 
+/**
+ * Why a transform's proof fails on the map it was qualified on (С12), or undefined. When every
+ * document its `sourceDigests` names by file name was read with that digest, this map is the
+ * proof's corpus, and its terrain must give the proof's tuples: map-native positions in sample order
+ * and canonical ones in heightfield order, each tuple three little-endian binary64 values
+ * (mapQualificationTupleBytes, ADR-WORLD-001 and -002). On any other map the proof qualifies the
+ * adapter, not the map, and nothing is recomputed. `readDigests` maps the file names of the
+ * documents the analysis read, in lower case, to their `sha256:` digests.
+ */
+export async function worldTransformCorpusRefusal(
+  snapshot: ResolvedMapWorkspaceSnapshot,
+  readDigests: ReadonlyMap<string, string>,
+): Promise<string | undefined> {
+  const transform = snapshot.uvwTransform
+  const terrain = snapshot.semantic.terrain
+  const native =
+    terrain === undefined
+      ? undefined
+      : admittedTerrainTransform(snapshot, terrain, hasExactTerrainGrid(terrain))
+  if (transform === undefined || terrain === undefined || native === undefined) return undefined
+  const { proof } = transform
+  const named = Object.entries(proof.sourceDigests).flatMap(([name, digest]) => {
+    const read = readDigests.get(name.toLowerCase())
+    return read === undefined ? [] : [{ digest, read }]
+  })
+  if (named.length === 0 || named.some(item => item.digest !== item.read)) return undefined
+  if (terrain.samples.length !== proof.tupleCount)
+    return `its proof counts ${String(proof.tupleCount)} tuples; its corpus terrain has ${String(terrain.samples.length)}`
+  const positions = terrain.samples.map(sample => terrainMapNativePosition(sample, native))
+  const { columns, rows, sourceRowOrder } = transform.heightfield
+  const canonical: [number, number, number][] = []
+  for (let row = 0; row < rows; row += 1) {
+    const sourceRow = sourceRowOrder === 'reverse' ? rows - 1 - row : row
+    for (let column = 0; column < columns; column += 1) {
+      const value = canonicalPosition(positions[sourceRow * columns + column]!, transform)
+      canonical.push([value.x, value.y, value.z])
+    }
+  }
+  const digest = async (bytes: Uint8Array): Promise<string> => {
+    const hash = new Uint8Array(await globalThis.crypto.subtle.digest('SHA-256', bytes))
+    return `sha256:${[...hash].map(byte => byte.toString(16).padStart(2, '0')).join('')}`
+  }
+  if (
+    (await digest(mapQualificationTupleBytes(positions.map(item => [item.x, item.y, item.z])))) !==
+    proof.nativeTupleDigest
+  )
+    return 'its native tuple digest is not that of its corpus terrain'
+  if ((await digest(mapQualificationTupleBytes(canonical))) !== proof.canonicalTupleDigest)
+    return 'its canonical tuple digest is not that of its corpus terrain'
+  return undefined
+}
+
 /** Creates a lease whose release makes every page/cursor stale immediately. */
 export function createCandidateWorldSceneLease(
   snapshot: ResolvedMapWorkspaceSnapshot,
@@ -614,6 +679,8 @@ export function createCandidateWorldSceneLease(
   modelResources?: ModelResourcePort,
   releaseModelResources?: () => Promise<void>,
   rasterResources?: RasterResourcePort,
+  /** Why the transform's proof failed on its own corpus (worldTransformCorpusRefusal). */
+  corpusRefusal?: string,
 ): Lease<CandidateWorldSceneSource> {
   positiveLimit(maxPageSize, Number.MAX_SAFE_INTEGER)
   // One material model skins hundreds of piece models; convert it once per lease.
@@ -633,11 +700,15 @@ export function createCandidateWorldSceneLease(
   const terrainSummary = semantic.terrain
   const terrainExact = hasExactTerrainGrid(terrainSummary)
   const terrainTransform = admittedTerrainTransform(snapshot, terrainSummary, terrainExact)
-  const { transform: uvwTransform, refusal: uvwTransformRefusal } = admittedWorldCanonicalTransform(
+  const admitted = admittedWorldCanonicalTransform(
     snapshot,
     terrainTransform,
     terrainSummary !== undefined,
   )
+  const { transform: uvwTransform, refusal: uvwTransformRefusal } =
+    admitted.transform !== undefined && corpusRefusal !== undefined
+      ? { transform: undefined, refusal: corpusRefusal }
+      : admitted
   const terrainLod = terrainExact ? ('exact' as const) : ('sampled' as const)
   const terrainMaterialExact =
     snapshot.terrainMaterials?.exact === true &&

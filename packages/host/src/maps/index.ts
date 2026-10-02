@@ -100,7 +100,7 @@ import {
   type ResolvedDataWorkspaceLimits,
 } from '../data/index.js'
 import { singleFileAsContainer } from './single-file-namespace.js'
-import { createCandidateWorldSceneLease } from './world-source.js'
+import { createCandidateWorldSceneLease, worldTransformCorpusRefusal } from './world-source.js'
 
 export { createCandidateWorldSceneLease } from './world-source.js'
 export {
@@ -1068,6 +1068,8 @@ export async function analyzeResolvedMapWorkspace(
     const provenanceOffset = request.resources.provenance().length
     const documents: MapSemanticDocument[] = []
     const revisions: string[] = []
+    // the read documents by file name: a transform proof names its corpus documents so
+    const readDigests = new Map<string, string>()
     const unresolvedRequirementIds: string[] = []
     let totalBytes = 0
     for (const requirement of plan.requirements) {
@@ -1089,6 +1091,10 @@ export async function analyzeResolvedMapWorkspace(
         throw new TypeError(`workspace map documents exceed maxTotalBytes ${limits.maxTotalBytes}`)
       }
       documents.push(loaded.document)
+      readDigests.set(
+        requirement.path.slice(requirement.path.lastIndexOf('/') + 1).toLowerCase(),
+        loaded.contentFingerprint,
+      )
       revisions.push(
         `${requirement.requirementId}:${requirement.path}@${String(loaded.revision)}#${loaded.contentFingerprint}`,
       )
@@ -1229,7 +1235,11 @@ export async function analyzeResolvedMapWorkspace(
           ...(signal === undefined ? {} : { signal }),
         }),
     })
-    const worldOf = (analyzed: ResolvedMapWorkspaceSnapshot, release?: () => Promise<void>) =>
+    const worldOf = (
+      analyzed: ResolvedMapWorkspaceSnapshot,
+      corpusRefusal: string | undefined,
+      release?: () => Promise<void>,
+    ) =>
       createCandidateWorldSceneLease(
         analyzed,
         request.resources.provenance().slice(provenanceOffset),
@@ -1237,11 +1247,13 @@ export async function analyzeResolvedMapWorkspace(
         modelResources,
         release,
         rasterResources,
+        corpusRefusal,
       )
+    const corpusRefusal = await worldTransformCorpusRefusal(snapshot, readDigests)
     const world = !progressive
-      ? worldOf(snapshot, releaseModelResources)
+      ? worldOf(snapshot, corpusRefusal, releaseModelResources)
       : refinableWorldLease(
-          worldOf(snapshot),
+          worldOf(snapshot, corpusRefusal),
           analyzeWithCatalogEntities({
             workspace: request.workspace,
             analyze: (catalog, round) =>
@@ -1253,7 +1265,10 @@ export async function analyzeResolvedMapWorkspace(
             initial: snapshot,
             signal: backgroundSignal,
           }).then(
-            answered => (answered === snapshot ? undefined : worldOf(answered)),
+            async answered =>
+              answered === snapshot
+                ? undefined
+                : worldOf(answered, await worldTransformCorpusRefusal(answered, readDigests)),
             () => undefined,
           ),
           () => background.abort(),

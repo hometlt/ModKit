@@ -1187,13 +1187,15 @@ export interface MapWorldCanonicalTransform {
     readonly kind: 'adapter-qualification'
     /**
      * The oracle compared against: the sealed legacy (MK2) adapter, the publisher's own reference,
-     * or an open third-party reference the owner accepted (`references/mdx-m3-viewer`, MIT, for
-     * Warcraft III terrain); `oracle` names which.
+     * an open third-party reference the owner accepted (`references/mdx-m3-viewer`, MIT, for
+     * Warcraft III terrain; D2kEditor for Dune 2000), or the game's own data that shows the same
+     * ground (Emperor's terrain mesh `test.xbf`, a top view the game ships); `oracle` names which.
      */
     readonly method:
       | 'sealed-legacy-differential'
       | 'official-reference-differential'
       | 'third-party-reference-differential'
+      | 'game-data-reference-differential'
     readonly oracle: string
     readonly corpus: string
     readonly sourceDigests: Readonly<Record<string, `sha256:${string}`>>
