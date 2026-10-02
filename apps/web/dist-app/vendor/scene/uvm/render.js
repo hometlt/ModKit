@@ -15,7 +15,7 @@ import {
   snapshotEnvironment,
   snapshotEyePosition,
   snapshotModelBillboards
-} from "../../../chunks/chunk-JUDJKTM5.js";
+} from "../../../chunks/chunk-7TJMLD5J.js";
 import "../../../chunks/chunk-WGWMBNZ4.js";
 import {
   opaqueTexels,
@@ -36,7 +36,7 @@ import {
   vector3,
   vector4
 } from "../../../chunks/chunk-I4Z5J3HX.js";
-import "../../../chunks/chunk-HV5G5VS5.js";
+import "../../../chunks/chunk-JFFRYNZJ.js";
 import {
   readUvmAccessor,
   readUvmAnimationClips,

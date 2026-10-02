@@ -5,7 +5,7 @@ import {
   uvmSceneFrameInverse,
   uvmSceneFrameMatrix,
   withMaterialFrame
-} from "../../../chunks/chunk-HV5G5VS5.js";
+} from "../../../chunks/chunk-JFFRYNZJ.js";
 import "../../../chunks/chunk-PRU56TPQ.js";
 import "../../../chunks/chunk-NONHW3HK.js";
 import "../../../chunks/chunk-I675VFQQ.js";

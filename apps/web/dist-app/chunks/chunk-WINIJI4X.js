@@ -53306,7 +53306,7 @@ function emissionMeshesOf(value, label, addAccessor2) {
     };
   });
 }
-function effectsOf(projection2, nodeIndexById, materialIndexById, addAccessor2) {
+function effectsOf(projection2, nodeIndexById, materialIndexById, sourceFrameNode, addAccessor2) {
   const given = projection2.effects;
   if (given === void 0)
     return void 0;
@@ -53354,6 +53354,7 @@ function effectsOf(projection2, nodeIndexById, materialIndexById, addAccessor2) 
   return {
     ...given.profile === void 0 ? {} : { profile: given.profile },
     ...given.trackTimeUnit === void 0 ? {} : { trackTimeUnit: given.trackTimeUnit },
+    ...sourceFrameNode === void 0 ? {} : { spaceNode: sourceFrameNode },
     ...Object.fromEntries(families),
     ...given.extras === void 0 ? {} : { extras: structuredClone(given.extras) }
   };
@@ -53388,13 +53389,13 @@ var ANIMATED_LIGHT_KEYS = /* @__PURE__ */ new Set([
   "innerConeAngle",
   "outerConeAngle"
 ]);
-function sceneLightsOf(projection2, nodeIndexById) {
+function sceneLightsOf(projection2, nodeIndexById, sourceFrameNode) {
   const given = projection2.lights;
   if (given === void 0 || given.lights.length === 0)
     return void 0;
-  const spaceNode = nodeIndexById.get(given.spaceNodeId);
+  const spaceNode = given.spaceNodeId === void 0 ? sourceFrameNode : nodeIndexById.get(given.spaceNodeId);
   if (spaceNode === void 0)
-    fail6(`scene lights name the unknown frame node ${given.spaceNodeId}`);
+    fail6(given.spaceNodeId === void 0 ? "scene lights without spaceNodeId are in the source frame, and this scene has no frame node: name the node they are in" : `scene lights name the unknown frame node ${given.spaceNodeId}`);
   const vector2 = (value, minimum = -Infinity) => Array.isArray(value) && value.length === 3 && value.every((item) => typeof item === "number" && Number.isFinite(item) && item >= minimum);
   if (given.ambient !== void 0 && !(vector2(given.ambient, 0) && given.ambient.every((c3) => c3 <= 1)))
     fail6("scene light ambient is three components in 0..1");
@@ -53429,6 +53430,49 @@ function sceneLightsOf(projection2, nodeIndexById) {
     ...given.ambient === void 0 ? {} : { ambient: [...given.ambient] },
     lights: given.lights.map((light) => structuredClone(light))
   };
+}
+var PERSPECTIVE_LENS_KEYS = /* @__PURE__ */ new Set(["yfov", "znear", "zfar", "aspectRatio"]);
+var ORTHOGRAPHIC_LENS_KEYS = /* @__PURE__ */ new Set(["xmag", "ymag", "znear", "zfar"]);
+var ANIMATED_CAMERA_KEYS = /* @__PURE__ */ new Set(["yfov", "znear", "zfar"]);
+function camerasOf(projection2, nodeIndexById, documentNodes) {
+  return (projection2.cameras ?? []).map((given, index) => {
+    const label = `camera ${String(index)}`;
+    const node = nodeIndexById.get(given.nodeId);
+    if (node === void 0)
+      fail6(`${label} names the unknown node ${given.nodeId}`);
+    if (projection2.info.handedness === "left")
+      fail6(`${label} would view reflected under the mirror of a left-handed source`);
+    if (documentNodes[node].camera !== void 0)
+      fail6(`${label} is a second camera on node ${given.nodeId}`);
+    const { camera, sequenceAnimation } = given;
+    const json2 = [camera, sequenceAnimation ?? null];
+    if (!isJsonValue(json2))
+      fail6(`${label} is not JSON`);
+    const type = camera["type"];
+    const lens = camera[type === "perspective" ? "perspective" : "orthographic"];
+    const keys = type === "perspective" ? PERSPECTIVE_LENS_KEYS : ORTHOGRAPHIC_LENS_KEYS;
+    if (type !== "perspective" && type !== "orthographic" || Object.keys(camera).some((key3) => !["type", type, "name"].includes(key3)) || typeof lens !== "object" || lens === null || Array.isArray(lens) || Object.keys(lens).some((key3) => !keys.has(key3)))
+      fail6(`${label} is not a perspective or orthographic glTF camera`);
+    const positive2 = (value) => typeof value === "number" && Number.isFinite(value) && value > 0;
+    const { znear, zfar } = lens;
+    const inDomain = type === "perspective" ? positive2(lens["yfov"]) && lens["yfov"] < Math.PI && positive2(znear) && (zfar === void 0 || positive2(zfar) && zfar > znear) && (lens["aspectRatio"] === void 0 || positive2(lens["aspectRatio"])) : [lens["xmag"], lens["ymag"]].every((value) => typeof value === "number" && Number.isFinite(value) && value !== 0) && typeof znear === "number" && znear >= 0 && positive2(zfar) && zfar > znear;
+    if (!inDomain)
+      fail6(`${label} lens is outside its domain`);
+    if (sequenceAnimation !== void 0 && (type !== "perspective" || Object.keys(sequenceAnimation).some((key3) => !ANIMATED_CAMERA_KEYS.has(key3))))
+      fail6(`${label} animates more than a perspective lens's yfov, znear and zfar`);
+    documentNodes[node].camera = index;
+    return {
+      ...structuredClone(camera),
+      ...sequenceAnimation === void 0 ? {} : {
+        extensions: {
+          UV_scene_camera: {
+            version: 1,
+            sequenceAnimation: structuredClone(sequenceAnimation)
+          }
+        }
+      }
+    };
+  });
 }
 function gameExtensionsOf(projection2) {
   const entries = Object.entries(projection2.gameExtensions ?? {});
@@ -54223,6 +54267,7 @@ function materializeUvmCore(projection2, request, { digest, materialBudget = DEF
     note("uv.model/structure@1", "value-differs", "/nodes", `${groups.length} LOD levels are grouped under one node each (MSFT_lod)`);
   }
   const materialTargets = projection2.materials === void 0 ? [] : materializeUvmAnimationMaterialTargets(projection2.materials, materialBudget, signal);
+  let sourceFrameNode;
   if (info.handedness === "left") {
     const root = documentNodes.length;
     documentNodes.push({
@@ -54231,6 +54276,7 @@ function materializeUvmCore(projection2, request, { digest, materialBudget = DEF
       children: [...rootIndices]
     });
     rootIndices = [root];
+    sourceFrameNode ??= root;
     note("uv.model/structure@1", "value-differs", "/nodes", "one mirror node makes the left-handed source right-handed");
   }
   if (info.upAxis === "+z") {
@@ -54241,6 +54287,7 @@ function materializeUvmCore(projection2, request, { digest, materialBudget = DEF
       children: [...rootIndices]
     });
     rootIndices = [root];
+    sourceFrameNode ??= root;
     note("uv.model/structure@1", "value-differs", "/nodes", "one rotation node turns the +z-up source to +y-up");
   }
   const unitsExtension = uvUnits(request.options?.units);
@@ -54253,6 +54300,7 @@ function materializeUvmCore(projection2, request, { digest, materialBudget = DEF
       children: [...rootIndices]
     });
     rootIndices = [root];
+    sourceFrameNode ??= root;
     note("uv.model/structure@1", "value-differs", "/nodes", "one scale node brings the source units to metres (UV_units)");
   }
   const frame = {
@@ -54314,7 +54362,7 @@ function materializeUvmCore(projection2, request, { digest, materialBudget = DEF
   }
   if (animation !== void 0 && animation.animations.length > 0)
     note("common.view/model-animation-source@1", "value-differs", void 0, "clip and target identities are positional; native frame indices, provenance, bounds and movement speed are not glTF TRS fields");
-  const effects = effectsOf(projection2, nodeIndexById, materialIndexById, (values, type) => {
+  const effects = effectsOf(projection2, nodeIndexById, materialIndexById, sourceFrameNode, (values, type) => {
     const index = accessors.length;
     if (type === "VEC3") {
       const bounds2 = boundsOf(values);
@@ -54337,7 +54385,8 @@ function materializeUvmCore(projection2, request, { digest, materialBudget = DEF
   });
   const binary = buffers.build();
   const gameExtensions = gameExtensionsOf(projection2);
-  const sceneLights = sceneLightsOf(projection2, nodeIndexById);
+  const sceneLights = sceneLightsOf(projection2, nodeIndexById, sourceFrameNode);
+  const cameras = camerasOf(projection2, nodeIndexById, documentNodes);
   const document = {
     asset: {
       version: "2.0",
@@ -54362,6 +54411,7 @@ function materializeUvmCore(projection2, request, { digest, materialBudget = DEF
       ...projection2.lods !== void 0 && projection2.lods.length > 0 ? ["MSFT_lod"] : [],
       ...lodSelection === void 0 ? [] : ["MODKITX_lod_selection"],
       ...sceneLights === void 0 ? [] : ["UV_scene_lights"],
+      ...cameras.some((camera) => camera["extensions"] !== void 0) ? ["UV_scene_camera"] : [],
       ...collisionNodes === 0 ? [] : ["UV_game_collision"],
       ...effects === void 0 ? [] : ["UV_game_effects"],
       ...gameExtensions.map(([name]) => name)
@@ -54395,6 +54445,7 @@ function materializeUvmCore(projection2, request, { digest, materialBudget = DEF
     scene: 0,
     scenes: [{ nodes: rootIndices }],
     nodes: documentNodes,
+    ...cameras.length === 0 ? {} : { cameras },
     ...documentMeshes.length === 0 ? {} : { meshes: documentMeshes },
     ...materials.length === 0 ? {} : { materials },
     ...skeleton === void 0 || skeleton.skins.length === 0 ? {} : { skins: skeleton.skins },

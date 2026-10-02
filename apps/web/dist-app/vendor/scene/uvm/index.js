@@ -8,7 +8,7 @@ import {
   readUvmBillboards,
   readUvmModelStates,
   readUvmShadowMeshBindings
-} from "../../../chunks/chunk-JUDJKTM5.js";
+} from "../../../chunks/chunk-7TJMLD5J.js";
 import "../../../chunks/chunk-WGWMBNZ4.js";
 import {
   array,
@@ -17,7 +17,7 @@ import {
   required,
   safeIndex
 } from "../../../chunks/chunk-I4Z5J3HX.js";
-import "../../../chunks/chunk-HV5G5VS5.js";
+import "../../../chunks/chunk-JFFRYNZJ.js";
 import {
   readUvmAccessor,
   readUvmAnimationClips,

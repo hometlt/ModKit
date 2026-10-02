@@ -139,12 +139,25 @@ function removeUvmFrameWrappers(source, budget = DEFAULT_UVM_CONTAINER_BUDGET, s
   for (const animation of array(document, "animations"))
     for (const channel of array(animation, "channels"))
       outside(field(field(channel, "target"), "node"), "an animation target");
-  for (const name of ["UV_game_effects", "UV_scene_lights"])
-    outside(field(extensions[name], "spaceNode"), `${name} spaceNode`);
+  const sourceFrame = removed.at(-1);
+  const spaced = ["UV_game_effects", "UV_scene_lights"];
+  for (const name of spaced) {
+    const space = field(extensions[name], "spaceNode");
+    if (space !== sourceFrame)
+      outside(space, `${name} spaceNode`);
+  }
   const matrix = uvmSceneFrameMatrix({ metersPerSourceUnit, upAxis, handedness });
   const unframed = (value) => withMaterialFrame(value, matrix);
   const unitsRemoved = removed.some((index) => record(nodes[index])?.["name"] === "uv:units");
-  const kept = Object.fromEntries(Object.entries(extensions).filter(([name]) => !(unitsRemoved && name === "UV_units")));
+  const kept = Object.fromEntries(Object.entries(extensions).filter(([name]) => !(unitsRemoved && name === "UV_units")).map(([name, value]) => {
+    const extension = record(value);
+    if (!spaced.includes(name) || extension === void 0)
+      return [name, value];
+    if (extension["spaceNode"] !== sourceFrame)
+      return [name, value];
+    const { spaceNode: _spaceNode, ...rest } = extension;
+    return [name, rest];
+  }));
   const used = array(document, "extensionsUsed").filter((name) => !(unitsRemoved && name === "UV_units"));
   const result = snapshotJson({
     ...document,

@@ -10,7 +10,7 @@ import {
 } from "./chunk-I4Z5J3HX.js";
 import {
   WORLD_PROJECTION_UV_SOURCES
-} from "./chunk-HV5G5VS5.js";
+} from "./chunk-JFFRYNZJ.js";
 import {
   array,
   isStandardLayerSlot,
