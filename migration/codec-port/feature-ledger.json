@@ -7315,14 +7315,38 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-10-01",
+        "path": "modkit-core/reports/parity/owner-decisions/spring-vfs-mount-resolve-superseded-2026-10-01.json",
+        "reason": "Owner decision 2026-10-01 (question 18, relayed by [MK] Integrator, recorded in AGENTS.md §10): MK2's spring-vfs content.mount and content.resolve-dependencies are superseded by the MK3 design. A subject of Beyond All Reason reaches its dependencies through the mod context of the BAR content source (openModContext and locateModPackage of local:beyond-all-reason, spring 49b4b0a), built over the installation's archives as one tree by createLayeredArchiveContentSources — the one way a subject reaches its dependencies in MK3, as for every other game. No operation mounts or resolves on a codec. MK3 is the reference, no MK2 comparison is run.",
+        "sha256": "729f63cd2a001a9817dbd4c5a6f8e1f4250de69f345499bd8ceee7e516cd119e"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/spring-vfs-mount-resolve-superseded-2026-10-01.json",
+          "sha256": "729f63cd2a001a9817dbd4c5a6f8e1f4250de69f345499bd8ceee7e516cd119e"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/spring-vfs/operation/content.mount",
-      "status": "pending"
+      "status": "superseded"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-10-01",
+        "path": "modkit-core/reports/parity/owner-decisions/spring-vfs-mount-resolve-superseded-2026-10-01.json",
+        "reason": "Owner decision 2026-10-01 (question 18, relayed by [MK] Integrator, recorded in AGENTS.md §10): MK2's spring-vfs content.mount and content.resolve-dependencies are superseded by the MK3 design. A subject of Beyond All Reason reaches its dependencies through the mod context of the BAR content source (openModContext and locateModPackage of local:beyond-all-reason, spring 49b4b0a), built over the installation's archives as one tree by createLayeredArchiveContentSources — the one way a subject reaches its dependencies in MK3, as for every other game. No operation mounts or resolves on a codec. MK3 is the reference, no MK2 comparison is run.",
+        "sha256": "729f63cd2a001a9817dbd4c5a6f8e1f4250de69f345499bd8ceee7e516cd119e"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/spring-vfs-mount-resolve-superseded-2026-10-01.json",
+          "sha256": "729f63cd2a001a9817dbd4c5a6f8e1f4250de69f345499bd8ceee7e516cd119e"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/spring-vfs/operation/content.resolve-dependencies",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "evidence": [

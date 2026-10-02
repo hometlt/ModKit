@@ -2607,14 +2607,14 @@
       "contribution": null,
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/spring-vfs/operation/content.mount",
-      "status": "pending",
+      "status": "superseded",
       "targetOperation": null
     },
     {
       "contribution": null,
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/spring-vfs/operation/content.resolve-dependencies",
-      "status": "pending",
+      "status": "superseded",
       "targetOperation": null
     },
     {

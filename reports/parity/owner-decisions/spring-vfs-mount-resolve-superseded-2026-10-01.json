@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "kind": "owner-decision/superseded",
+  "date": "2026-10-01",
+  "reason": "Owner decision 2026-10-01 (question 18, relayed by [MK] Integrator, recorded in AGENTS.md §10): MK2's spring-vfs content.mount and content.resolve-dependencies are superseded by the MK3 design. A subject of Beyond All Reason reaches its dependencies through the mod context of the BAR content source (openModContext and locateModPackage of local:beyond-all-reason, spring 49b4b0a), built over the installation's archives as one tree by createLayeredArchiveContentSources — the one way a subject reaches its dependencies in MK3, as for every other game. No operation mounts or resolves on a codec. MK3 is the reference, no MK2 comparison is run.",
+  "rows": [
+    {
+      "id": "legacy/codec-manifest/modkit/spring-vfs/operation/content.mount",
+      "class": "replaced",
+      "where": "modkit-extensions-spring src/game/content-sources.ts (openModContext) + @modkit/vfs createLayeredArchiveContentSources",
+      "label": "Mount a Spring archive with the archives it depends on",
+      "evidence": [
+        {
+          "path": "modkit-extensions-spring/src/game/content-sources.ts",
+          "sha256": "c31a9f7947acd814110f6d3a7944df122cd3426ef00b3d136cc644964a2a7b66"
+        },
+        {
+          "path": "modkit-extensions-spring/test/content-sources.test.ts",
+          "sha256": "4b93737e930c454a9831dbb670f83a4b4688ff77efb9c4eec8913aa7e60e3957"
+        },
+        {
+          "path": "modkit-core/packages/vfs/src/layered-archive-sources.ts",
+          "sha256": "5eeaa9a86c94d52bc62a30628b18a0722de70b3b29b889affa799801ac0854ae"
+        },
+        {
+          "path": "modkit-core/packages/vfs/test/layered-archive-sources.test.ts",
+          "sha256": "17cb2c9232fbeecec7688f1645b14fdd84c4e786f78a0d2f1896bc60c3ad0ed1"
+        }
+      ]
+    },
+    {
+      "id": "legacy/codec-manifest/modkit/spring-vfs/operation/content.resolve-dependencies",
+      "class": "replaced",
+      "where": "modkit-extensions-spring src/game/content-sources.ts (locateModPackage, openModContext layers)",
+      "label": "Resolve the dependencies a Spring package declares",
+      "evidence": [
+        {
+          "path": "modkit-extensions-spring/src/game/content-sources.ts",
+          "sha256": "c31a9f7947acd814110f6d3a7944df122cd3426ef00b3d136cc644964a2a7b66"
+        },
+        {
+          "path": "modkit-extensions-spring/test/content-sources.test.ts",
+          "sha256": "4b93737e930c454a9831dbb670f83a4b4688ff77efb9c4eec8913aa7e60e3957"
+        }
+      ]
+    }
+  ]
+}
