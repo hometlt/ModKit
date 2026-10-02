@@ -52,10 +52,10 @@ import {
   webExtensionSubjectCardBundle,
   withMapPreviewSources,
   withoutHiddenEntries
-} from "./chunks/chunk-3BJNRQOR.js";
+} from "./chunks/chunk-H4K4DPSC.js";
 import "./chunks/chunk-IHYY36PH.js";
 import "./chunks/chunk-KA2ONSZB.js";
-import "./chunks/chunk-67RSNK4Q.js";
+import "./chunks/chunk-YPHNB6F3.js";
 import {
   resolveModelViewerTextures
 } from "./chunks/chunk-OWROJOZ7.js";
@@ -64,7 +64,7 @@ import "./chunks/chunk-ZFIQVDW4.js";
 import {
   normalizeModkitIdentifier,
   presentationSlotId
-} from "./chunks/chunk-UY6ABBXF.js";
+} from "./chunks/chunk-HZSU4OTK.js";
 import {
   declaredMutatingOperations,
   editOffer,

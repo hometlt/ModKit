@@ -13,14 +13,14 @@ import {
   createStandardSurfaceRegistry,
   framePortFromMessagePort,
   protocolLimits
-} from "../../chunks/chunk-AKRCN2XH.js";
+} from "../../chunks/chunk-GDGVKHET.js";
 import {
   assembleSubjectDescriptor,
   createAssetSession,
   createByteRangeSource,
   createLazyTableDataSource,
   createUtf8TextDataSource
-} from "../../chunks/chunk-ZB3HR2LB.js";
+} from "../../chunks/chunk-7GSPY7OK.js";
 import {
   metadataFieldProjections
 } from "../../chunks/chunk-5GGWVEQJ.js";
@@ -91,7 +91,7 @@ import {
   validateContributionManifest,
   writerOfferSatisfies,
   writerSelectionKey
-} from "../../chunks/chunk-TN2P55EN.js";
+} from "../../chunks/chunk-ZUZRIHWF.js";
 import {
   SCENE_RENDERER_CONTRACT,
   SCENE_RENDERER_MATCHER_PROFILE
@@ -20683,6 +20683,32 @@ function terrainHeightAt(position, terrain, transform) {
   const upper = height(x0, y1) * (1 - tx) + height(x1, y1) * tx;
   return lower2 * (1 - ty) + upper * ty;
 }
+function nativeWorldWindow(view, transform) {
+  const corners = [view.minimumX, view.minimumZ, view.maximumX, view.maximumZ];
+  if (!corners.every(Number.isFinite) || view.minimumX > view.maximumX || view.minimumZ > view.maximumZ)
+    throw new TypeError("a world view window has finite ordered minimum/maximum x and z");
+  if (transform === void 0)
+    return Object.freeze({
+      minimumX: view.minimumX,
+      minimumY: view.minimumZ,
+      maximumX: view.maximumX,
+      maximumY: view.maximumZ
+    });
+  const native = {};
+  for (const [axis, low, high] of [
+    ["x", view.minimumX, view.maximumX],
+    ["z", view.minimumZ, view.maximumZ]
+  ]) {
+    const { sourceAxis, scale, offset } = transform.axes[axis];
+    const a = (low - offset) / scale;
+    const b = (high - offset) / scale;
+    native[sourceAxis] = [Math.min(a, b), Math.max(a, b)];
+  }
+  const { x, y } = native;
+  if (x === void 0 || y === void 0 || ![...x, ...y].every(Number.isFinite))
+    return void 0;
+  return Object.freeze({ minimumX: x[0], minimumY: y[0], maximumX: x[1], maximumY: y[1] });
+}
 function canonicalPosition(position, transform) {
   const axis = (output) => {
     const mapping = transform.axes[output];
@@ -22299,6 +22325,12 @@ function validateWorkspacePlan2(plan, workspace, maxRequirements) {
     ids.add(requirement.requirementId);
     paths.add(path.toLowerCase());
   }
+  const window = plan.window;
+  if (window !== void 0 && !([window.minimumX, window.minimumY, window.maximumX, window.maximumY].every(Number.isFinite) && window.minimumX <= window.maximumX && window.minimumY <= window.maximumY))
+    throw new TypeError("workspace map plan names a window that is not finite and ordered");
+}
+function windowCovers(outer, inner) {
+  return outer.minimumX <= inner.minimumX && outer.minimumY <= inner.minimumY && outer.maximumX >= inner.maximumX && outer.maximumY >= inner.maximumY;
 }
 async function readResourceBytes(resources, requirement, maxDocumentBytes, remainingTotalBytes, signal) {
   if (remainingTotalBytes <= 0) {
@@ -22411,76 +22443,86 @@ async function analyzeResolvedMapWorkspace(request) {
     return resolution;
   const diagnostics = [...resolution.diagnostics];
   try {
-    const plan = await resolution.workspace.plan({
-      workspace: request.workspace,
-      maxRequirements: limits.maxRequirements,
-      ...request.signal === void 0 ? {} : { signal: request.signal }
-    });
-    validateWorkspacePlan2(plan, request.workspace, limits.maxRequirements);
-    diagnostics.push(...plan.diagnostics.map((item) => diagnostic(item.severity, item.code, item.message, void 0, {
-      analyzerId: plan.analyzerId
-    })));
-    if (!plan.complete) {
+    const provenanceOffset = request.resources.provenance().length;
+    const readWindow = async (window, signal, holds) => {
+      const plan2 = await resolution.workspace.plan({
+        workspace: request.workspace,
+        maxRequirements: limits.maxRequirements,
+        ...window === void 0 ? {} : { window },
+        ...signal === void 0 ? {} : { signal }
+      });
+      validateWorkspacePlan2(plan2, request.workspace, limits.maxRequirements);
+      const found = plan2.diagnostics.map((item) => diagnostic(item.severity, item.code, item.message, void 0, {
+        analyzerId: plan2.analyzerId
+      }));
+      if (!plan2.complete || holds !== void 0 && plan2.window !== void 0 && windowCovers(holds, plan2.window))
+        return { complete: false, diagnostics: found };
+      const documents = [];
+      const revisions = [];
+      const readDigests2 = /* @__PURE__ */ new Map();
+      const unresolvedRequirementIds = [];
+      let totalBytes = 0;
+      for (const requirement of plan2.requirements) {
+        signal?.throwIfAborted();
+        const loaded = await readResourceBytes(request.resources, requirement, limits.maxDocumentBytes, limits.maxTotalBytes - totalBytes, signal);
+        totalBytes += loaded.consumedBytes;
+        if (loaded.state === "unresolved") {
+          found.push(loaded.diagnostic);
+          unresolvedRequirementIds.push(requirement.requirementId);
+          continue;
+        }
+        if (totalBytes > limits.maxTotalBytes) {
+          throw new TypeError(`workspace map documents exceed maxTotalBytes ${limits.maxTotalBytes}`);
+        }
+        documents.push(loaded.document);
+        readDigests2.set(requirement.path.slice(requirement.path.lastIndexOf("/") + 1).toLowerCase(), loaded.contentFingerprint);
+        revisions.push(`${requirement.requirementId}:${requirement.path}@${String(loaded.revision)}#${loaded.contentFingerprint}`);
+      }
+      if (request.resources.state() !== "live") {
+        throw new Error("resource session was disposed while workspace map documents were loading");
+      }
+      const snapshotId = [
+        `session=${String(request.resources.revision)}`,
+        `workspace=${encodeURIComponent(request.workspace.workspaceId)}`,
+        `map=${encodeURIComponent(plan2.mapId)}`,
+        ...revisions
+      ].join("|");
+      const analyze2 = (catalog, round) => resolution.workspace.analyze({
+        workspaceId: request.workspace.workspaceId,
+        gameId: request.workspace.gameId,
+        mapId: plan2.mapId,
+        documents,
+        ...catalog === void 0 ? {} : { catalog },
+        ...request.subjectOperationIds === void 0 ? {} : { subjectOperationIds: request.subjectOperationIds },
+        ...plan2.window === void 0 ? {} : { window: plan2.window },
+        // the documents this request carries, not the caller's budget: a provider's own ceiling
+        // (SC2 maps take 16) never refuses a map because an application allows more (32, Warzone)
+        maxDocuments: Math.max(1, documents.length),
+        maxDocumentBytes: limits.maxDocumentBytes,
+        maxTotalBytes: limits.maxTotalBytes,
+        maxObjects: limits.maxObjects,
+        maxRegions: limits.maxRegions,
+        maxTerrainCells: limits.maxTerrainCells,
+        maxTerrainSamples: limits.maxTerrainSamples,
+        maxDepth: limits.maxDepth,
+        maxDiagnostics: limits.maxDiagnostics,
+        snapshotId: round === 0 ? snapshotId : `${snapshotId}|catalog-round=${round}`,
+        unresolvedRequirementIds,
+        requiredRequirementIds: plan2.requirements.filter((item) => item.required).map((item) => item.requirementId),
+        ...signal === void 0 ? {} : { signal }
+      });
+      return { complete: true, plan: plan2, readDigests: readDigests2, analyze: analyze2, diagnostics: found };
+    };
+    const first = await readWindow(void 0, request.signal);
+    diagnostics.push(...first.diagnostics);
+    if (!first.complete) {
       await resolution.release();
       return {
         state: "unresolved",
         diagnostics: boundedDiagnostics(diagnostics, limits.maxDiagnostics)
       };
     }
-    const provenanceOffset = request.resources.provenance().length;
-    const documents = [];
-    const revisions = [];
-    const readDigests = /* @__PURE__ */ new Map();
-    const unresolvedRequirementIds = [];
-    let totalBytes = 0;
-    for (const requirement of plan.requirements) {
-      request.signal?.throwIfAborted();
-      const loaded = await readResourceBytes(request.resources, requirement, limits.maxDocumentBytes, limits.maxTotalBytes - totalBytes, request.signal);
-      totalBytes += loaded.consumedBytes;
-      if (loaded.state === "unresolved") {
-        diagnostics.push(loaded.diagnostic);
-        unresolvedRequirementIds.push(requirement.requirementId);
-        continue;
-      }
-      if (totalBytes > limits.maxTotalBytes) {
-        throw new TypeError(`workspace map documents exceed maxTotalBytes ${limits.maxTotalBytes}`);
-      }
-      documents.push(loaded.document);
-      readDigests.set(requirement.path.slice(requirement.path.lastIndexOf("/") + 1).toLowerCase(), loaded.contentFingerprint);
-      revisions.push(`${requirement.requirementId}:${requirement.path}@${String(loaded.revision)}#${loaded.contentFingerprint}`);
-    }
-    if (request.resources.state() !== "live") {
-      throw new Error("resource session was disposed while workspace map documents were loading");
-    }
-    const snapshotId = [
-      `session=${String(request.resources.revision)}`,
-      `workspace=${encodeURIComponent(request.workspace.workspaceId)}`,
-      `map=${encodeURIComponent(plan.mapId)}`,
-      ...revisions
-    ].join("|");
-    const analyze = (catalog, round) => resolution.workspace.analyze({
-      workspaceId: request.workspace.workspaceId,
-      gameId: request.workspace.gameId,
-      mapId: plan.mapId,
-      documents,
-      ...catalog === void 0 ? {} : { catalog },
-      ...request.subjectOperationIds === void 0 ? {} : { subjectOperationIds: request.subjectOperationIds },
-      // the documents this request carries, not the caller's budget: a provider's own ceiling (SC2
-      // maps take 16) never refuses a map because an application allows more (32, for Warzone)
-      maxDocuments: Math.max(1, documents.length),
-      maxDocumentBytes: limits.maxDocumentBytes,
-      maxTotalBytes: limits.maxTotalBytes,
-      maxObjects: limits.maxObjects,
-      maxRegions: limits.maxRegions,
-      maxTerrainCells: limits.maxTerrainCells,
-      maxTerrainSamples: limits.maxTerrainSamples,
-      maxDepth: limits.maxDepth,
-      maxDiagnostics: limits.maxDiagnostics,
-      snapshotId: round === 0 ? snapshotId : `${snapshotId}|catalog-round=${round}`,
-      unresolvedRequirementIds,
-      requiredRequirementIds: plan.requirements.filter((item) => item.required).map((item) => item.requirementId),
-      ...request.signal === void 0 ? {} : { signal: request.signal }
-    });
+    const { plan, readDigests, analyze } = first;
     const asking = request.catalog === void 0 ? request.catalogEntities : void 0;
     const progressive = asking !== void 0 && request.progressiveCatalog === true;
     const background = new AbortController();
@@ -22558,7 +22600,8 @@ async function analyzeResolvedMapWorkspace(request) {
     });
     const worldOf = (analyzed, corpusRefusal2, release) => createCandidateWorldSceneLease(analyzed, request.resources.provenance().slice(provenanceOffset), limits.maxPageSize, modelResources, release, rasterResources, corpusRefusal2);
     const corpusRefusal = await worldTransformCorpusRefusal(snapshot2, readDigests);
-    const world = !progressive ? worldOf(snapshot2, corpusRefusal, releaseModelResources) : refinableWorldLease(worldOf(snapshot2, corpusRefusal), analyzeWithCatalogEntities({
+    const covered = plan.window;
+    const shownWorld = !progressive ? worldOf(snapshot2, corpusRefusal, covered === void 0 ? releaseModelResources : void 0) : refinableWorldLease(worldOf(snapshot2, corpusRefusal), analyzeWithCatalogEntities({
       workspace: request.workspace,
       analyze: (catalog, round) => analyze(catalog, round).then((result) => {
         backgroundSignal.throwIfAborted();
@@ -22567,7 +22610,24 @@ async function analyzeResolvedMapWorkspace(request) {
       catalogEntities: asking,
       initial: snapshot2,
       signal: backgroundSignal
-    }).then(async (answered) => answered === snapshot2 ? void 0 : worldOf(answered, await worldTransformCorpusRefusal(answered, readDigests)), () => void 0), () => background.abort(), releaseModelResources);
+    }).then(async (answered) => answered === snapshot2 ? void 0 : worldOf(answered, await worldTransformCorpusRefusal(answered, readDigests)), () => void 0), () => background.abort(), covered === void 0 ? releaseModelResources : async () => void 0);
+    const lifetime = new AbortController();
+    const world = covered === void 0 ? shownWorld : growingWorldLease(shownWorld, covered, async (window, holds, signal) => {
+      const scoped = signal === void 0 ? lifetime.signal : AbortSignal.any([signal, lifetime.signal]);
+      const read = await readWindow(window, scoped, holds);
+      if (!read.complete || read.plan.window === void 0)
+        return void 0;
+      const grown = asking === void 0 ? await read.analyze(request.catalog, 0) : await analyzeWithCatalogEntities({
+        workspace: request.workspace,
+        analyze: read.analyze,
+        catalogEntities: asking,
+        signal: scoped
+      });
+      return {
+        lease: worldOf(grown, await worldTransformCorpusRefusal(grown, read.readDigests)),
+        covered: read.plan.window
+      };
+    }, () => lifetime.abort(), releaseModelResources);
     let released = false;
     return Object.freeze({
       state: "resolved",
@@ -22627,6 +22687,12 @@ function borrowCommonWorldScene(candidate) {
       async refined(signal) {
         assertLive(signal);
         return candidate.refined(signal);
+      }
+    },
+    ...candidate.focus === void 0 ? {} : {
+      async focus(window, signal) {
+        assertLive(signal);
+        return candidate.focus(window, signal);
       }
     },
     async info(signal) {
@@ -23452,6 +23518,67 @@ function refinableWorldLease(initial, refinement, abort, releaseShared) {
       await current.release();
       if (!swapped)
         await (await refinement)?.release();
+      await releaseShared();
+    }
+  });
+}
+function growingWorldLease(initial, covered, grow, abort, releaseShared) {
+  let current = initial;
+  let holds = covered;
+  let released = false;
+  let queue = Promise.resolve();
+  const value = Object.freeze({
+    contract: initial.value.contract,
+    major: 1,
+    get snapshotId() {
+      return current.value.snapshotId;
+    },
+    info: (signal) => current.value.info(signal),
+    page: (request, signal) => current.value.page(request, signal),
+    ...initial.value.model === void 0 ? {} : {
+      model: (resourceId2, request, signal) => current.value.model(resourceId2, request, signal)
+    },
+    ...initial.value.texture === void 0 ? {} : {
+      texture: (resourceId2, request, signal) => current.value.texture(resourceId2, request, signal)
+    },
+    ...initial.value.refined === void 0 ? {} : {
+      refined: async (signal) => current === initial ? initial.value.refined(signal) : false
+    },
+    focus(window, signal) {
+      const asked = queue.then(async () => {
+        signal?.throwIfAborted();
+        if (released)
+          return false;
+        const info = await current.value.info(signal);
+        const wanted = nativeWorldWindow(window, info.uvwTransform);
+        if (wanted === void 0 || windowCovers(holds, wanted))
+          return false;
+        const grown = await grow(wanted, holds, signal);
+        if (grown === void 0)
+          return false;
+        if (released) {
+          await grown.lease.release();
+          return false;
+        }
+        const replaced = current;
+        current = grown.lease;
+        holds = grown.covered;
+        await replaced.release();
+        return true;
+      });
+      queue = asked.catch(() => void 0);
+      return asked;
+    }
+  });
+  return Object.freeze({
+    value,
+    async release() {
+      if (released)
+        return;
+      released = true;
+      abort();
+      await queue;
+      await current.release();
       await releaseShared();
     }
   });
@@ -30502,6 +30629,7 @@ export {
   exposeSubjectRpc,
   gameInstallationSearchOf,
   gameLaunchOptionsOf,
+  growingWorldLease,
   interpretGameLaunchLog,
   inventoryHasErrors,
   invokeContainerPack,
@@ -30523,6 +30651,7 @@ export {
   modContextCatalogEntities,
   modContextCatalogStrings,
   modContextResolution,
+  nativeWorldWindow,
   nestedSubjectServices,
   offersFromInventory,
   openContentIndex,

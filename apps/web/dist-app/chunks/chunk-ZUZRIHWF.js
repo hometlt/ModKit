@@ -3002,7 +3002,8 @@ var worldSceneSourceSurface = {
     page: cancellableValue,
     model: { kind: "value", optional: true, ...sig },
     texture: { kind: "value", optional: true, ...sig },
-    refined: { kind: "value", optional: true, ...sig }
+    refined: { kind: "value", optional: true, ...sig },
+    focus: { kind: "value", optional: true, ...sig }
   }
 };
 var modelResourceRefsSourceSurface = {

@@ -6,9 +6,9 @@ import {
   loadRelationGraphOptions,
   loadRelationNeighbourhoodOptions,
   relationGraphViewer
-} from "./chunk-67RSNK4Q.js";
+} from "./chunk-YPHNB6F3.js";
 import "./chunk-O2DY4UGD.js";
-import "./chunk-UY6ABBXF.js";
+import "./chunk-HZSU4OTK.js";
 import "./chunk-ID5URMAQ.js";
 import "./chunk-V2OFYISD.js";
 import "./chunk-OZX7B633.js";

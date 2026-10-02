@@ -6,7 +6,7 @@ import {
 } from "./chunk-KA2ONSZB.js";
 import {
   createRelationGraphViewer
-} from "./chunk-67RSNK4Q.js";
+} from "./chunk-YPHNB6F3.js";
 import {
   MODEL_FACET_CONTRACTS,
   commitOperationWrite,
@@ -106,7 +106,7 @@ import {
   validateContributionManifest,
   writerOfferSatisfies,
   writerSelectionKey
-} from "./chunk-UY6ABBXF.js";
+} from "./chunk-HZSU4OTK.js";
 import {
   createImageViewer,
   createNamespaceViewer,
@@ -6253,7 +6253,7 @@ function sessionAdapter(realm, session, exposedInput, watch, openingSignal) {
 
 // ../MODDING/modkit-core/packages/host/dist/session.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-var projection = () => import("./subject-projection-JU3YSFX6.js");
+var projection = () => import("./subject-projection-GAXHAADE.js");
 function rejected(reason, message) {
   return {
     state: "rejected",
@@ -20620,6 +20620,32 @@ function terrainHeightAt(position, terrain, transform) {
   const upper = height(x0, y1) * (1 - tx) + height(x1, y1) * tx;
   return lower * (1 - ty) + upper * ty;
 }
+function nativeWorldWindow(view, transform) {
+  const corners = [view.minimumX, view.minimumZ, view.maximumX, view.maximumZ];
+  if (!corners.every(Number.isFinite) || view.minimumX > view.maximumX || view.minimumZ > view.maximumZ)
+    throw new TypeError("a world view window has finite ordered minimum/maximum x and z");
+  if (transform === void 0)
+    return Object.freeze({
+      minimumX: view.minimumX,
+      minimumY: view.minimumZ,
+      maximumX: view.maximumX,
+      maximumY: view.maximumZ
+    });
+  const native = {};
+  for (const [axis, low, high] of [
+    ["x", view.minimumX, view.maximumX],
+    ["z", view.minimumZ, view.maximumZ]
+  ]) {
+    const { sourceAxis, scale, offset } = transform.axes[axis];
+    const a2 = (low - offset) / scale;
+    const b2 = (high - offset) / scale;
+    native[sourceAxis] = [Math.min(a2, b2), Math.max(a2, b2)];
+  }
+  const { x, y } = native;
+  if (x === void 0 || y === void 0 || ![...x, ...y].every(Number.isFinite))
+    return void 0;
+  return Object.freeze({ minimumX: x[0], minimumY: y[0], maximumX: x[1], maximumY: y[1] });
+}
 function canonicalPosition(position, transform) {
   const axis = (output) => {
     const mapping = transform.axes[output];
@@ -22176,6 +22202,12 @@ function validateWorkspacePlan2(plan, workspace, maxRequirements) {
     ids.add(requirement.requirementId);
     paths.add(path.toLowerCase());
   }
+  const window = plan.window;
+  if (window !== void 0 && !([window.minimumX, window.minimumY, window.maximumX, window.maximumY].every(Number.isFinite) && window.minimumX <= window.maximumX && window.minimumY <= window.maximumY))
+    throw new TypeError("workspace map plan names a window that is not finite and ordered");
+}
+function windowCovers(outer, inner) {
+  return outer.minimumX <= inner.minimumX && outer.minimumY <= inner.minimumY && outer.maximumX >= inner.maximumX && outer.maximumY >= inner.maximumY;
 }
 async function readResourceBytes(resources, requirement, maxDocumentBytes, remainingTotalBytes, signal) {
   if (remainingTotalBytes <= 0) {
@@ -22288,76 +22320,86 @@ async function analyzeResolvedMapWorkspace(request) {
     return resolution;
   const diagnostics = [...resolution.diagnostics];
   try {
-    const plan = await resolution.workspace.plan({
-      workspace: request.workspace,
-      maxRequirements: limits.maxRequirements,
-      ...request.signal === void 0 ? {} : { signal: request.signal }
-    });
-    validateWorkspacePlan2(plan, request.workspace, limits.maxRequirements);
-    diagnostics.push(...plan.diagnostics.map((item) => diagnostic(item.severity, item.code, item.message, void 0, {
-      analyzerId: plan.analyzerId
-    })));
-    if (!plan.complete) {
+    const provenanceOffset = request.resources.provenance().length;
+    const readWindow = async (window, signal, holds) => {
+      const plan2 = await resolution.workspace.plan({
+        workspace: request.workspace,
+        maxRequirements: limits.maxRequirements,
+        ...window === void 0 ? {} : { window },
+        ...signal === void 0 ? {} : { signal }
+      });
+      validateWorkspacePlan2(plan2, request.workspace, limits.maxRequirements);
+      const found2 = plan2.diagnostics.map((item) => diagnostic(item.severity, item.code, item.message, void 0, {
+        analyzerId: plan2.analyzerId
+      }));
+      if (!plan2.complete || holds !== void 0 && plan2.window !== void 0 && windowCovers(holds, plan2.window))
+        return { complete: false, diagnostics: found2 };
+      const documents = [];
+      const revisions = [];
+      const readDigests2 = /* @__PURE__ */ new Map();
+      const unresolvedRequirementIds = [];
+      let totalBytes = 0;
+      for (const requirement of plan2.requirements) {
+        signal?.throwIfAborted();
+        const loaded = await readResourceBytes(request.resources, requirement, limits.maxDocumentBytes, limits.maxTotalBytes - totalBytes, signal);
+        totalBytes += loaded.consumedBytes;
+        if (loaded.state === "unresolved") {
+          found2.push(loaded.diagnostic);
+          unresolvedRequirementIds.push(requirement.requirementId);
+          continue;
+        }
+        if (totalBytes > limits.maxTotalBytes) {
+          throw new TypeError(`workspace map documents exceed maxTotalBytes ${limits.maxTotalBytes}`);
+        }
+        documents.push(loaded.document);
+        readDigests2.set(requirement.path.slice(requirement.path.lastIndexOf("/") + 1).toLowerCase(), loaded.contentFingerprint);
+        revisions.push(`${requirement.requirementId}:${requirement.path}@${String(loaded.revision)}#${loaded.contentFingerprint}`);
+      }
+      if (request.resources.state() !== "live") {
+        throw new Error("resource session was disposed while workspace map documents were loading");
+      }
+      const snapshotId = [
+        `session=${String(request.resources.revision)}`,
+        `workspace=${encodeURIComponent(request.workspace.workspaceId)}`,
+        `map=${encodeURIComponent(plan2.mapId)}`,
+        ...revisions
+      ].join("|");
+      const analyze2 = (catalog, round) => resolution.workspace.analyze({
+        workspaceId: request.workspace.workspaceId,
+        gameId: request.workspace.gameId,
+        mapId: plan2.mapId,
+        documents,
+        ...catalog === void 0 ? {} : { catalog },
+        ...request.subjectOperationIds === void 0 ? {} : { subjectOperationIds: request.subjectOperationIds },
+        ...plan2.window === void 0 ? {} : { window: plan2.window },
+        // the documents this request carries, not the caller's budget: a provider's own ceiling
+        // (SC2 maps take 16) never refuses a map because an application allows more (32, Warzone)
+        maxDocuments: Math.max(1, documents.length),
+        maxDocumentBytes: limits.maxDocumentBytes,
+        maxTotalBytes: limits.maxTotalBytes,
+        maxObjects: limits.maxObjects,
+        maxRegions: limits.maxRegions,
+        maxTerrainCells: limits.maxTerrainCells,
+        maxTerrainSamples: limits.maxTerrainSamples,
+        maxDepth: limits.maxDepth,
+        maxDiagnostics: limits.maxDiagnostics,
+        snapshotId: round === 0 ? snapshotId : `${snapshotId}|catalog-round=${round}`,
+        unresolvedRequirementIds,
+        requiredRequirementIds: plan2.requirements.filter((item) => item.required).map((item) => item.requirementId),
+        ...signal === void 0 ? {} : { signal }
+      });
+      return { complete: true, plan: plan2, readDigests: readDigests2, analyze: analyze2, diagnostics: found2 };
+    };
+    const first = await readWindow(void 0, request.signal);
+    diagnostics.push(...first.diagnostics);
+    if (!first.complete) {
       await resolution.release();
       return {
         state: "unresolved",
         diagnostics: boundedDiagnostics(diagnostics, limits.maxDiagnostics)
       };
     }
-    const provenanceOffset = request.resources.provenance().length;
-    const documents = [];
-    const revisions = [];
-    const readDigests = /* @__PURE__ */ new Map();
-    const unresolvedRequirementIds = [];
-    let totalBytes = 0;
-    for (const requirement of plan.requirements) {
-      request.signal?.throwIfAborted();
-      const loaded = await readResourceBytes(request.resources, requirement, limits.maxDocumentBytes, limits.maxTotalBytes - totalBytes, request.signal);
-      totalBytes += loaded.consumedBytes;
-      if (loaded.state === "unresolved") {
-        diagnostics.push(loaded.diagnostic);
-        unresolvedRequirementIds.push(requirement.requirementId);
-        continue;
-      }
-      if (totalBytes > limits.maxTotalBytes) {
-        throw new TypeError(`workspace map documents exceed maxTotalBytes ${limits.maxTotalBytes}`);
-      }
-      documents.push(loaded.document);
-      readDigests.set(requirement.path.slice(requirement.path.lastIndexOf("/") + 1).toLowerCase(), loaded.contentFingerprint);
-      revisions.push(`${requirement.requirementId}:${requirement.path}@${String(loaded.revision)}#${loaded.contentFingerprint}`);
-    }
-    if (request.resources.state() !== "live") {
-      throw new Error("resource session was disposed while workspace map documents were loading");
-    }
-    const snapshotId = [
-      `session=${String(request.resources.revision)}`,
-      `workspace=${encodeURIComponent(request.workspace.workspaceId)}`,
-      `map=${encodeURIComponent(plan.mapId)}`,
-      ...revisions
-    ].join("|");
-    const analyze = (catalog, round) => resolution.workspace.analyze({
-      workspaceId: request.workspace.workspaceId,
-      gameId: request.workspace.gameId,
-      mapId: plan.mapId,
-      documents,
-      ...catalog === void 0 ? {} : { catalog },
-      ...request.subjectOperationIds === void 0 ? {} : { subjectOperationIds: request.subjectOperationIds },
-      // the documents this request carries, not the caller's budget: a provider's own ceiling (SC2
-      // maps take 16) never refuses a map because an application allows more (32, for Warzone)
-      maxDocuments: Math.max(1, documents.length),
-      maxDocumentBytes: limits.maxDocumentBytes,
-      maxTotalBytes: limits.maxTotalBytes,
-      maxObjects: limits.maxObjects,
-      maxRegions: limits.maxRegions,
-      maxTerrainCells: limits.maxTerrainCells,
-      maxTerrainSamples: limits.maxTerrainSamples,
-      maxDepth: limits.maxDepth,
-      maxDiagnostics: limits.maxDiagnostics,
-      snapshotId: round === 0 ? snapshotId : `${snapshotId}|catalog-round=${round}`,
-      unresolvedRequirementIds,
-      requiredRequirementIds: plan.requirements.filter((item) => item.required).map((item) => item.requirementId),
-      ...request.signal === void 0 ? {} : { signal: request.signal }
-    });
+    const { plan, readDigests, analyze } = first;
     const asking = request.catalog === void 0 ? request.catalogEntities : void 0;
     const progressive = asking !== void 0 && request.progressiveCatalog === true;
     const background = new AbortController();
@@ -22435,7 +22477,8 @@ async function analyzeResolvedMapWorkspace(request) {
     });
     const worldOf = (analyzed, corpusRefusal2, release) => createCandidateWorldSceneLease(analyzed, request.resources.provenance().slice(provenanceOffset), limits.maxPageSize, modelResources, release, rasterResources, corpusRefusal2);
     const corpusRefusal = await worldTransformCorpusRefusal(snapshot3, readDigests);
-    const world = !progressive ? worldOf(snapshot3, corpusRefusal, releaseModelResources) : refinableWorldLease(worldOf(snapshot3, corpusRefusal), analyzeWithCatalogEntities({
+    const covered = plan.window;
+    const shownWorld = !progressive ? worldOf(snapshot3, corpusRefusal, covered === void 0 ? releaseModelResources : void 0) : refinableWorldLease(worldOf(snapshot3, corpusRefusal), analyzeWithCatalogEntities({
       workspace: request.workspace,
       analyze: (catalog, round) => analyze(catalog, round).then((result) => {
         backgroundSignal.throwIfAborted();
@@ -22444,7 +22487,24 @@ async function analyzeResolvedMapWorkspace(request) {
       catalogEntities: asking,
       initial: snapshot3,
       signal: backgroundSignal
-    }).then(async (answered) => answered === snapshot3 ? void 0 : worldOf(answered, await worldTransformCorpusRefusal(answered, readDigests)), () => void 0), () => background.abort(), releaseModelResources);
+    }).then(async (answered) => answered === snapshot3 ? void 0 : worldOf(answered, await worldTransformCorpusRefusal(answered, readDigests)), () => void 0), () => background.abort(), covered === void 0 ? releaseModelResources : async () => void 0);
+    const lifetime = new AbortController();
+    const world = covered === void 0 ? shownWorld : growingWorldLease(shownWorld, covered, async (window, holds, signal) => {
+      const scoped = signal === void 0 ? lifetime.signal : AbortSignal.any([signal, lifetime.signal]);
+      const read = await readWindow(window, scoped, holds);
+      if (!read.complete || read.plan.window === void 0)
+        return void 0;
+      const grown = asking === void 0 ? await read.analyze(request.catalog, 0) : await analyzeWithCatalogEntities({
+        workspace: request.workspace,
+        analyze: read.analyze,
+        catalogEntities: asking,
+        signal: scoped
+      });
+      return {
+        lease: worldOf(grown, await worldTransformCorpusRefusal(grown, read.readDigests)),
+        covered: read.plan.window
+      };
+    }, () => lifetime.abort(), releaseModelResources);
     let released = false;
     return Object.freeze({
       state: "resolved",
@@ -22504,6 +22564,12 @@ function borrowCommonWorldScene(candidate) {
       async refined(signal) {
         assertLive(signal);
         return candidate.refined(signal);
+      }
+    },
+    ...candidate.focus === void 0 ? {} : {
+      async focus(window, signal) {
+        assertLive(signal);
+        return candidate.focus(window, signal);
       }
     },
     async info(signal) {
@@ -23329,6 +23395,67 @@ function refinableWorldLease(initial, refinement, abort, releaseShared) {
       await current.release();
       if (!swapped)
         await (await refinement)?.release();
+      await releaseShared();
+    }
+  });
+}
+function growingWorldLease(initial, covered, grow, abort, releaseShared) {
+  let current = initial;
+  let holds = covered;
+  let released = false;
+  let queue = Promise.resolve();
+  const value = Object.freeze({
+    contract: initial.value.contract,
+    major: 1,
+    get snapshotId() {
+      return current.value.snapshotId;
+    },
+    info: (signal) => current.value.info(signal),
+    page: (request, signal) => current.value.page(request, signal),
+    ...initial.value.model === void 0 ? {} : {
+      model: (resourceId2, request, signal) => current.value.model(resourceId2, request, signal)
+    },
+    ...initial.value.texture === void 0 ? {} : {
+      texture: (resourceId2, request, signal) => current.value.texture(resourceId2, request, signal)
+    },
+    ...initial.value.refined === void 0 ? {} : {
+      refined: async (signal) => current === initial ? initial.value.refined(signal) : false
+    },
+    focus(window, signal) {
+      const asked = queue.then(async () => {
+        signal?.throwIfAborted();
+        if (released)
+          return false;
+        const info = await current.value.info(signal);
+        const wanted = nativeWorldWindow(window, info.uvwTransform);
+        if (wanted === void 0 || windowCovers(holds, wanted))
+          return false;
+        const grown = await grow(wanted, holds, signal);
+        if (grown === void 0)
+          return false;
+        if (released) {
+          await grown.lease.release();
+          return false;
+        }
+        const replaced = current;
+        current = grown.lease;
+        holds = grown.covered;
+        await replaced.release();
+        return true;
+      });
+      queue = asked.catch(() => void 0);
+      return asked;
+    }
+  });
+  return Object.freeze({
+    value,
+    async release() {
+      if (released)
+        return;
+      released = true;
+      abort();
+      await queue;
+      await current.release();
       await releaseShared();
     }
   });
@@ -28348,7 +28475,9 @@ function createEditorArea(document, options) {
       report2({
         path: tab.entry.id,
         view: handle.views.find((view) => view.id === handle.activeView)?.label ?? "",
-        detail: formatBytes(bytes.length),
+        // no copy of the bytes is no size to state: a host that opens by ranges gave none (v85:
+        // «Models.wd · Entries · 0 B» for 122 MiB)
+        detail: bytes.length === 0 ? "" : formatBytes(bytes.length),
         severity: "info"
       });
     } catch (error5) {
@@ -51560,6 +51689,12 @@ function renderMaterialDraw(context, draw, request) {
     }
   }
 }
+function drawnTexture(texture) {
+  if (texture.compressed === void 0)
+    return texture;
+  const { compressed: _blocks, ...texels } = texture;
+  return Object.freeze({ ...texels, rgba: sceneTexturePixels(texture) });
+}
 function textureTable(textures) {
   const table = /* @__PURE__ */ new Map();
   for (const texture of textures ?? []) {
@@ -51568,8 +51703,9 @@ function textureTable(textures) {
     }
     dimension(texture.width, `texture ${texture.id} width`);
     dimension(texture.height, `texture ${texture.id} height`);
-    sceneTextureBytes(texture);
-    table.set(texture.id, texture);
+    const drawn = drawnTexture(texture);
+    sceneTextureBytes(drawn);
+    table.set(texture.id, drawn);
   }
   return table;
 }
@@ -65762,7 +65898,14 @@ function drawCardImage(canvas, id, resolveImage, signal) {
     pixels.data.set(image.rgba);
     context.putImageData(pixels, 0, 0);
     canvas.hidden = false;
-  }).catch(() => void 0);
+  }).catch((error5) => {
+    const host = canvas.parentElement;
+    const reason = `${id}: ${error5 instanceof Error ? error5.message : String(error5)}`;
+    if (host === null || signal.aborted || host.title.includes(reason))
+      return;
+    host.title = host.title === "" ? reason : `${host.title}
+${reason}`;
+  });
 }
 function renderGrid(document, panel, section, localizer, signal, onNavigate, resolveImage) {
   const pages = section.pages ?? [];
@@ -66392,16 +66535,22 @@ function createSubjectCardViewer(options = {}) {
           });
         };
         const resolveImage = options.textures === void 0 ? void 0 : async (id, signal) => {
+          let reason;
           const textures = await options.textures?.(args.descriptor, [
             {
               id,
               role: "texture",
               provenance: "reference-only"
             }
-          ], signal);
+          ], signal, (_id, why) => {
+            reason = why;
+          });
           const texture = textures?.get(id);
-          if (texture === void 0 || texture.dimension === "cube")
+          if (texture === void 0 || texture.dimension === "cube") {
+            if (reason !== void 0)
+              throw new Error(reason);
             return void 0;
+          }
           return {
             width: texture.width,
             height: texture.height,
@@ -66573,7 +66722,7 @@ function embedRelationGraph(sections, args, scope, localizer, graph) {
   return [
     ...sections,
     stageSection({ id: "relations-graph", title: localizer.text("card.relationGraph"), expanded: false }, scope, localizer, "card.relationGraphUnavailable", async (host) => {
-      const module = graph ?? (await import("./graph-ZTAADXPU.js")).createRelationGraphViewer({ localizer });
+      const module = graph ?? (await import("./graph-4SSK32LB.js")).createRelationGraphViewer({ localizer });
       return scope.signal.aborted ? void 0 : module.mount({ ...args, container: host, signal: scope.signal });
     })
   ];
@@ -74954,7 +75103,8 @@ function createWorldWebGlPlan(input, previousPlan) {
       regionShapes,
       diagnosticPlaceholders,
       shadowCasterTriangles,
-      shadowMapSize: 0
+      shadowMapSize: 0,
+      frame: worldPlanFrame(minimum, maximum)
     })
   });
   worldStaticPreparations.set(plan, {
@@ -76380,9 +76530,10 @@ function renderWorldShadowMap(gl, plan, input, resources) {
   const maximum = new Vector3(...plan.bounds.maximum);
   const extent = maximum.clone().sub(minimum);
   const view = cameraState(input.camera);
-  const center = minimum.clone().add(maximum).multiplyScalar(0.5).add(new Vector3(...view.target));
+  const frame = view.frame ?? plan.stats.frame;
+  const center = new Vector3(...frame.center).add(new Vector3(...view.target));
   const aspect = gl.drawingBufferWidth / Math.max(1, gl.drawingBufferHeight);
-  const footprint = Math.max(1, extent.length() * 0.65) / view.zoom * Math.max(1, aspect) / Math.max(0.25, Math.sin(view.elevation));
+  const footprint = frame.radius / view.zoom * Math.max(1, aspect) / Math.max(0.25, Math.sin(view.elevation));
   const radius = Math.max(0.5, Math.min(extent.length() * 0.5, footprint * 1.25 + extent.y));
   const rayDirection = new Vector3(...plan.light.direction).normalize();
   const lightCamera = new OrthographicCamera(-radius, radius, radius, -radius, 0.01, radius * 4 + 2);
@@ -76856,7 +77007,7 @@ function isWebGl2(value) {
 }
 function cameraState(value) {
   const source2 = value ?? DEFAULT_WORLD_WEBGL_CAMERA;
-  if (!Number.isFinite(source2.azimuth) || !Number.isFinite(source2.elevation) || source2.elevation <= 0.03 || source2.elevation >= Math.PI / 2 - 0.03 || !Number.isFinite(source2.zoom) || source2.zoom < 0.125 || source2.zoom > 16 || source2.target.length !== 3 || !source2.target.every(Number.isFinite)) {
+  if (!Number.isFinite(source2.azimuth) || !Number.isFinite(source2.elevation) || source2.elevation <= 0.03 || source2.elevation >= Math.PI / 2 - 0.03 || !Number.isFinite(source2.zoom) || source2.zoom < 0.125 || source2.zoom > 16 || source2.target.length !== 3 || !source2.target.every(Number.isFinite) || source2.frame !== void 0 && !(source2.frame.center.length === 3 && source2.frame.center.every(Number.isFinite) && Number.isFinite(source2.frame.radius) && source2.frame.radius > 0)) {
     throw new TypeError("world WebGL camera is outside its finite orbit/zoom domain");
   }
   return source2;
@@ -77069,10 +77220,9 @@ function worldViewPlaneBasis(view) {
 function worldViewRectangle(plan, view, aspect) {
   if (!(aspect > 0) || !Number.isFinite(aspect))
     return void 0;
-  const { minimum, maximum } = plan.bounds;
-  const center = [0, 1, 2].map((axis) => (minimum[axis] + maximum[axis]) / 2 + view.target[axis]);
-  const radius = Math.max(1, Math.hypot(maximum[0] - minimum[0], maximum[1] - minimum[1], maximum[2] - minimum[2]) * 0.65);
-  const halfHeight = radius / view.zoom;
+  const frame = view.frame ?? plan.stats.frame;
+  const center = [0, 1, 2].map((axis) => frame.center[axis] + view.target[axis]);
+  const halfHeight = frame.radius / view.zoom;
   const { right, up } = worldViewPlaneBasis(view);
   const rectangle = {
     u: center[0] * right[0] + center[1] * right[1] + center[2] * right[2],
@@ -77356,11 +77506,45 @@ function zoomWorldWebGlCamera(source2, wheelDelta) {
     zoom: Math.max(0.125, Math.min(16, source2.zoom * Math.exp(-wheelDelta * 15e-4)))
   });
 }
+function worldPlanFrame(minimum, maximum) {
+  const center = [0, 1, 2].map((axis) => (minimum[axis] + maximum[axis]) / 2);
+  const radius = Math.hypot(...[0, 1, 2].map((axis) => maximum[axis] - minimum[axis])) * 0.65;
+  return Object.freeze({
+    center: Object.freeze(center),
+    radius: Math.max(1, radius)
+  });
+}
+function worldViewGroundWindow(frame, requested, aspect) {
+  const view = cameraState(requested);
+  if (!(aspect > 0) || !Number.isFinite(aspect))
+    throw new TypeError("a world view aspect is positive and finite");
+  const center = new Vector3(...frame.center).add(new Vector3(...view.target));
+  const halfHeight = frame.radius / view.zoom;
+  const toEye = new Vector3(Math.cos(view.azimuth) * Math.cos(view.elevation), Math.sin(view.elevation), Math.sin(view.azimuth) * Math.cos(view.elevation));
+  const right = new Vector3(0, 1, 0).cross(toEye).normalize();
+  const up = toEye.clone().cross(right);
+  const ground = frame.center[1];
+  let minimumX = Infinity;
+  let minimumZ = Infinity;
+  let maximumX = -Infinity;
+  let maximumZ = -Infinity;
+  for (const across of [-1, 1])
+    for (const along of [-1, 1]) {
+      const corner = center.clone().addScaledVector(right, across * halfHeight * aspect).addScaledVector(up, along * halfHeight);
+      const reach = Math.max(-3 * frame.radius, Math.min(7 * frame.radius, (corner.y - ground) / toEye.y));
+      const met = corner.addScaledVector(toEye, -reach);
+      minimumX = Math.min(minimumX, met.x);
+      minimumZ = Math.min(minimumZ, met.z);
+      maximumX = Math.max(maximumX, met.x);
+      maximumZ = Math.max(maximumZ, met.z);
+    }
+  return Object.freeze({ minimumX, minimumZ, maximumX, maximumZ });
+}
 function cameraFor(plan, width, height, requested) {
   const view = cameraState(requested);
-  const center = new Vector3((plan.bounds.minimum[0] + plan.bounds.maximum[0]) / 2, (plan.bounds.minimum[1] + plan.bounds.maximum[1]) / 2, (plan.bounds.minimum[2] + plan.bounds.maximum[2]) / 2).add(new Vector3(...view.target));
-  const extent = new Vector3(plan.bounds.maximum[0] - plan.bounds.minimum[0], plan.bounds.maximum[1] - plan.bounds.minimum[1], plan.bounds.maximum[2] - plan.bounds.minimum[2]);
-  const radius = Math.max(1, extent.length() * 0.65);
+  const frame = view.frame ?? plan.stats.frame;
+  const center = new Vector3(...frame.center).add(new Vector3(...view.target));
+  const radius = frame.radius;
   const visibleRadius = radius / view.zoom;
   const aspect = width / height;
   const camera = new OrthographicCamera(-visibleRadius * aspect, visibleRadius * aspect, visibleRadius, -visibleRadius, 0.01, radius * 10);
@@ -79013,6 +79197,7 @@ async function inspectCandidateWorld(source2, options) {
   publish("complete", admittedResources.length, requestedResources.length);
   return snapshot3();
 }
+var WORLD_FOCUS_SETTLE_MS = 400;
 function createWorldEditState(sourceRevision) {
   return Object.freeze({ sourceRevision, status: "idle" });
 }
@@ -79223,21 +79408,25 @@ function worldTeamRampsOf(info) {
   }
   return ramps;
 }
-function drawCandidateWorld(canvas, model, selection, camera, animationTimes, timeSeconds = 0, renderer, hiddenOverlays) {
+function candidateWorldWebGlInput(model, hiddenOverlays) {
   const flattened = flattenedWorldLayersOf(model.layers);
-  const worldItems = shownWorldItems(flattened.items, hiddenOverlays);
-  const selectedObjectId = typeof selection === "number" ? selection : selection?.selectedObjectId;
   const teamColors = worldTeamColorsOf(model.info);
   const teamRamps = worldTeamRampsOf(model.info);
-  const webGlInput = {
-    items: worldItems,
+  return {
+    items: shownWorldItems(flattened.items, hiddenOverlays),
     ...teamColors.size === 0 ? {} : { teamColors },
     ...teamRamps.size === 0 ? {} : { teamRamps },
     ...model.models === void 0 ? {} : { models: model.models },
     terrainMaterials: flattened.terrainMaterials,
     waterMaterials: flattened.waterMaterials,
     terrainWeightRasters: flattened.terrainWeightRasters,
-    ...model.terrainTextures === void 0 ? {} : { terrainTextures: model.terrainTextures },
+    ...model.terrainTextures === void 0 ? {} : { terrainTextures: model.terrainTextures }
+  };
+}
+function drawCandidateWorld(canvas, model, selection, camera, animationTimes, timeSeconds = 0, renderer, hiddenOverlays) {
+  const selectedObjectId = typeof selection === "number" ? selection : selection?.selectedObjectId;
+  const webGlInput = {
+    ...candidateWorldWebGlInput(model, hiddenOverlays),
     ...selectedObjectId === void 0 ? {} : { selectedObjectId },
     ...typeof selection !== "object" || selection.preview === void 0 ? {} : { previewPosition: selection.preview },
     ...camera === void 0 ? {} : { camera },
@@ -79654,6 +79843,9 @@ function createWorldViewer(options = {}) {
       let latticePlan;
       let latticeLayers;
       let loading = false;
+      let lastFrame;
+      let focusTimer;
+      let focusing = false;
       const phaseKeys = {
         geometry: "viewer.worldLoadingGeometry",
         textures: "viewer.worldLoadingTextures",
@@ -79721,6 +79913,7 @@ function createWorldViewer(options = {}) {
             webGlRenderer ??= createWorldWebGlRenderer(canvas);
             const stats = drawCandidateWorld(canvas, currentModel, edit, camera, currentAnimationTimes(), currentWorldTime(), webGlRenderer, hiddenOverlays);
             canvas.dataset["worldRenderer"] = webGlRenderer === void 0 ? "isometric-2d" : "webgl";
+            lastFrame = stats.frame;
             canvas.dataset["worldModelTriangles"] = String(stats.modelTriangles);
             canvas.dataset["worldPlaceholders"] = String(stats.diagnosticPlaceholders);
           }
@@ -79917,16 +80110,64 @@ function createWorldViewer(options = {}) {
         }
         redraw();
       };
+      const focusView = async () => {
+        const source2 = lease2.value;
+        const frame = camera.frame ?? lastFrame;
+        if (source2.focus === void 0 || frame === void 0)
+          return;
+        if (loading || focusing || viewMode !== "3d" || scope.signal.aborted)
+          return;
+        focusing = true;
+        canvas.dataset["worldFocus"] = "asking";
+        try {
+          const window = worldViewGroundWindow(frame, camera, canvas.width / Math.max(1, canvas.height));
+          let moved;
+          while (moved === void 0 && !scope.signal.aborted)
+            moved = await source2.focus(window, scope.signal).catch((error5) => error5?.code === "x3.host/rpc-deadline-exceeded" ? void 0 : false);
+          if (scope.signal.aborted)
+            return;
+          const shown = (await source2.info(scope.signal)).snapshotId;
+          canvas.dataset["worldFocus"] = moved === true ? "moved" : "stayed";
+          if (moved === true || shown !== currentModel?.snapshotId) {
+            if (camera.frame === void 0)
+              camera = Object.freeze({ ...camera, frame });
+            await render();
+          }
+        } catch (error5) {
+          if (scope.signal.aborted)
+            return;
+          canvas.dataset["worldFocus"] = "failed";
+          canvas.dataset["worldFocusError"] = error5 instanceof Error ? error5.message : String(error5);
+        } finally {
+          focusing = false;
+        }
+      };
+      const focusSoon = () => {
+        if (lease2.value.focus === void 0)
+          return;
+        if (focusTimer !== void 0)
+          clearTimeout(focusTimer);
+        focusTimer = setTimeout(() => {
+          focusTimer = void 0;
+          void focusView();
+        }, WORLD_FOCUS_SETTLE_MS);
+      };
+      scope.cleanup(() => {
+        if (focusTimer !== void 0)
+          clearTimeout(focusTimer);
+      });
       const onCameraPointerUp = (event) => {
         if (drag?.pointerId !== event.pointerId)
           return;
         drag = void 0;
         canvas.releasePointerCapture(event.pointerId);
+        focusSoon();
       };
       const onWheel = (event) => {
         event.preventDefault();
         camera = zoomWorldWebGlCamera(camera, event.deltaY);
         redraw();
+        focusSoon();
       };
       const onContextMenu = (event) => event.preventDefault();
       const onKey = (event) => {

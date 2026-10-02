@@ -6,7 +6,7 @@ import {
   assembleSubjectDescriptor,
   createAssetSession,
   createUtf8TextDataSource
-} from "../../../chunks/chunk-ZB3HR2LB.js";
+} from "../../../chunks/chunk-7GSPY7OK.js";
 import "../../../chunks/chunk-5GGWVEQJ.js";
 import {
   revisionId

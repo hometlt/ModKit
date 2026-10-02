@@ -120,7 +120,7 @@ import {
   worldModelRequiredBytes,
   writerOfferSatisfies,
   writerSelectionKey
-} from "../../chunks/chunk-TN2P55EN.js";
+} from "../../chunks/chunk-ZUZRIHWF.js";
 import {
   SCENE_RENDERER_CONTRACT,
   SCENE_RENDERER_MATCHER_PROFILE

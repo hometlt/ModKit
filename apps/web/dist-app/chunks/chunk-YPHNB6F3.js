@@ -3,7 +3,7 @@ import {
 } from "./chunk-O2DY4UGD.js";
 import {
   relationGraphNeighbourhood
-} from "./chunk-UY6ABBXF.js";
+} from "./chunk-HZSU4OTK.js";
 import {
   GRAPH_FALLBACK_MESSAGES,
   ViewerMountScope,
