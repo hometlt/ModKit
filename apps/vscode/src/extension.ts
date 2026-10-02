@@ -84,6 +84,7 @@ discoverServiceOperations,
 invokeServiceOperation,
 SERVICE_OPERATION_CATALOG_MAX_PAGE_ITEMS,
 loadLocalizationCatalogs,
+modContextCatalogEntities,
 offersFromInventory,
 resolveContentLanguageSources,
 subjectTarget,
@@ -261,6 +262,7 @@ regionsToConnect,
 selectedContentSource,
 selectedContentSources,
 selectedInstallationDirectory,
+encoderTargetInstallations,
 withSelectedContentSource,
 withoutSelectedContentSource,
 type SelectedContentSource,
@@ -9922,6 +9924,8 @@ async function activateModkit(
       readonly target?: string
       /** The operation a conversion runs (`map.export-native`), not the first the subject offers. */
       readonly operation?: string
+      /** The installation a converted map is written for: its catalog answers the encoder (WT10). */
+      readonly targetContext?: string
       readonly operationId?: string
       readonly operationInput?: CommandInput[string]
     },
@@ -9949,6 +9953,9 @@ async function activateModkit(
               ...(request.entry === undefined ? {} : { entry: request.entry }),
               ...(request.target === undefined ? {} : { target: request.target }),
               ...(request.operation === undefined ? {} : { operation: request.operation }),
+              ...(request.targetContext === undefined
+                ? {}
+                : { targetContext: request.targetContext }),
               ...(request.operationId === undefined ? {} : { operationId: request.operationId }),
               ...(request.operationInput === undefined
                 ? {}
@@ -9991,6 +9998,41 @@ async function activateModkit(
                 }
                 await vscode.workspace.fs.writeFile(target, bytes)
                 return target.fsPath
+              },
+              /*
+               * A map encoder's catalog questions are answered from the installation it writes for
+               * (question 67): the sources composed for that installation alone, as the CLI's
+               * --target-context composes them, and disposed with its mod context.
+               */
+              openTargetCatalog: async target => {
+                const sources = await resolveContentSources({
+                  extensionRoots: extensionRootPaths(),
+                  storage: join(context.globalStorageUri.fsPath, 'content-sources'),
+                  indexCacheDirectory,
+                  moduleOptions: () => ({ installationDirectory: target }),
+                })
+                if (sources?.openModContext === undefined) {
+                  await sources?.dispose()
+                  throw new TypeError(
+                    `no extension opens the installation ${target} for its catalog`,
+                  )
+                }
+                const modContext = await sources
+                  .openModContext({ schemaVersion: 1, target })
+                  .catch(async (error: unknown) => {
+                    await sources.dispose()
+                    throw error
+                  })
+                const dispose = async (): Promise<void> => {
+                  await modContext.dispose()
+                  await sources.dispose()
+                }
+                const entities = modContextCatalogEntities(modContext)
+                if (entities === undefined) {
+                  await dispose()
+                  throw new TypeError(`the mod context of ${target} answers no catalog questions`)
+                }
+                return { entities, dispose }
               },
               serviceOperations: {
                 catalog: request =>
@@ -11592,15 +11634,35 @@ async function activateModkit(
         formats.map(format => ({
           label: format.formatId,
           description: format.extensions.join(', '),
+          extensions: format.extensions,
         })),
         { title: localizer.text('vscode.world.chooseMapFormat') },
       )
       if (picked === undefined) return undefined
+      // the encoder may ask its game's catalog (question 67): the installations of the games its
+      // extension discovers, the chosen ones first; with several, the person says which
+      const targets = encoderTargetInstallations(host.services.host.inventory, picked.extensions, [
+        ...presentSources(),
+        ...(await foundInstallations()).installations,
+      ])
+      const target =
+        targets.length > 1
+          ? await vscode.window.showQuickPick(
+              targets.map(source => ({
+                label: source.displayName,
+                description: source.installPath,
+                installPath: source.installPath,
+              })),
+              { title: localizer.text('vscode.world.chooseMapTarget') },
+            )
+          : targets.map(source => ({ installPath: source.installPath }))[0]
+      if (targets.length > 1 && target === undefined) return undefined
       return runSharedCommand({
         command: 'subject.convert',
         subject,
         target: picked.label,
         operation: MAP_EXPORT_NATIVE,
+        ...(target === undefined ? {} : { targetContext: target.installPath }),
       })
     }),
 

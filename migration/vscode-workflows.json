@@ -1652,6 +1652,13 @@
       "state": "observed-only"
     },
     {
+      "factId": "x3:vscode-menu-item:explorer%2Fcontext/modkit.exportWorldNative//!explorerResourceIsFolder%20%26%26%20resourceExtname%20%3D%3D%20.uvw/navigation%4019",
+      "kind": "vscode-menu-item",
+      "key": "explorer%2Fcontext/modkit.exportWorldNative//!explorerResourceIsFolder%20%26%26%20resourceExtname%20%3D%3D%20.uvw/navigation%4019",
+      "workflowId": "vscode/asset-inspect-preview-convert",
+      "state": "observed-only"
+    },
+    {
       "factId": "x3:vscode-menu-item:explorer%2Fcontext/modkit.convertFolder//explorerResourceIsFolder%20%26%26%20resourceScheme%20%3D%3D%20file/navigation%4019",
       "kind": "vscode-menu-item",
       "key": "explorer%2Fcontext/modkit.convertFolder//explorerResourceIsFolder%20%26%26%20resourceScheme%20%3D%3D%20file/navigation%4019",

@@ -409,6 +409,7 @@ const EN_MESSAGES = Object.freeze({
   'vscode.world.saveAsMapNoSubject': 'Open a UVW world in Modkit to save it as a game map.',
   'vscode.world.noMapEncoders': 'No installed extension writes a game map from a world.',
   'vscode.world.chooseMapFormat': 'Save the world as a map of which format?',
+  'vscode.world.chooseMapTarget': 'Write the map for which installation?',
   'vscode.world.savedAsMap': 'World saved as {file}.',
   'vscode.world.savedAsMapLosses':
     'World saved as {file}. Not carried by the map: {count} — see the report.',
@@ -1001,6 +1002,7 @@ const RU_MESSAGES: Readonly<Record<keyof typeof EN_MESSAGES, string>> = Object.f
   'vscode.world.noMapEncoders':
     'Ни одно установленное расширение не записывает карту игры из мира.',
   'vscode.world.chooseMapFormat': 'В каком формате карты сохранить мир?',
+  'vscode.world.chooseMapTarget': 'Для какой установки записать карту?',
   'vscode.world.savedAsMap': 'Мир сохранён как {file}.',
   'vscode.world.savedAsMapLosses':
     'Мир сохранён как {file}. Не вошло в карту: {count} — см. отчёт.',

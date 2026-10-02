@@ -143,7 +143,7 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
       releaseCandidateGaps: 5,
       // the 1 October surface: accounts, sources, resources, maps, languages, the mod wiki,
       // launch options, translation gaps, layout templates, file conversion, a world as UVW
-      currentX3ObservedFacts: 262,
+      currentX3ObservedFacts: 263,
     })
     expect(ledger.counts.byKind).toEqual({
       'cli-command': 5,
@@ -263,7 +263,7 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
         fileSystemSchemes: 2,
         keybindings: 0,
         languages: 20,
-        menus: 110,
+        menus: 111,
         runtimeOnlyCommands: 4,
         viewContainers: 1,
         views: 4,
@@ -288,7 +288,7 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
       'Доказанные callers: Automation, CLI, Electron, PWA, `server`, VS Code.',
     )
     expect(status).not.toContain('PWA не заявлен')
-    expect(ledger.currentX3Facts).toHaveLength(262)
+    expect(ledger.currentX3Facts).toHaveLength(263)
     expect(
       ledger.currentX3Facts.every((row: { state: string }) => row.state === 'observed-only'),
     ).toBe(true)
@@ -621,7 +621,7 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
       ],
       externalOrBuiltinCommands: [],
       legacyKeybindings: 0,
-      currentX3Menus: 110,
+      currentX3Menus: 111,
       currentX3Keybindings: 0,
     })
     expect(ledger.ownerBlockers).toEqual([])

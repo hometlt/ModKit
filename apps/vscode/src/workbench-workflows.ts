@@ -215,6 +215,28 @@ export function selectedInstallationDirectory(
 }
 
 /**
+ * The installations a game's map can be written for (a map encoder's catalog questions, WT10): those
+ * of the games the encoding extensions discover, once each, in the order given (the chosen first).
+ * The offer names formats, not games; with several games of one extension the person picks.
+ */
+export function encoderTargetInstallations(
+  inventory: unknown,
+  extensions: readonly string[],
+  installations: readonly SelectedContentSource[],
+): readonly SelectedContentSource[] {
+  const byExtension = installationGameIdsByExtension(inventory)
+  const games = new Set(extensions.flatMap(extension => byExtension.get(extension) ?? []))
+  const seen = new Set<string>()
+  return Object.freeze(
+    installations.filter(source => {
+      if (!games.has(source.gameId) || seen.has(source.normalizedPath)) return false
+      seen.add(source.normalizedPath)
+      return true
+    }),
+  )
+}
+
+/**
  * The regions a reference download signs in to first: those of the roots it downloads from that
  * declare a credential and are not connected yet. A region no download needs is left alone.
  */

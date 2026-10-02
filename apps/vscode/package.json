@@ -925,6 +925,11 @@
           "group": "navigation@19"
         },
         {
+          "command": "modkit.exportWorldNative",
+          "when": "!explorerResourceIsFolder && resourceExtname == .uvw",
+          "group": "navigation@19"
+        },
+        {
           "command": "modkit.game.launchActiveMap",
           "when": "resourceExtname =~ /^\\.(sc2map|s2ma)$/i",
           "group": "navigation@90"

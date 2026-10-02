@@ -18,6 +18,7 @@ import {
   searchContainerIndex,
   selectedContentSources,
   selectedInstallationDirectory,
+  encoderTargetInstallations,
   withSelectedContentSource,
   withoutSelectedContentSource,
 } from '../src/workbench-workflows.js'
@@ -221,6 +222,37 @@ describe('generic source lifecycle', () => {
     expect(gameLocales('dede', 'ru')).toEqual(['deDE', 'enUS'])
     expect(gameLocales(' enUS ', 'ru')).toEqual(['enUS'])
     expect(gameLocales('xxYY', 'ru')).toEqual(['xxYY', 'enUS'])
+  })
+
+  it('offers a map encoder the installations of the games its extension discovers, once each', () => {
+    const inventory = {
+      extensions: [
+        {
+          manifest: { publisher: 'org.example', id: 'westwood' },
+          contributions: [
+            {
+              manifest: {
+                spec: {
+                  provides: [
+                    {
+                      contract: 'common.game/installation-discovery',
+                      major: 1,
+                      facet: { gameIds: [alpha.gameId, beta.gameId] },
+                    },
+                  ],
+                },
+              },
+            },
+          ],
+        },
+      ],
+    }
+    const other = { ...alpha, gameId: 'org.example/game-other', normalizedPath: 'c:/other' }
+    // chosen first, then found; the same folder chosen and found is offered once
+    expect(
+      encoderTargetInstallations(inventory, ['org.example/westwood'], [beta, other, alpha, beta]),
+    ).toEqual([beta, alpha])
+    expect(encoderTargetInstallations(inventory, ['org.example/images'], [alpha, beta])).toEqual([])
   })
 
   it('hands each extension the selected installation of the game its own discovery names', () => {
