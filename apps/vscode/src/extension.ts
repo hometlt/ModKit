@@ -9339,8 +9339,13 @@ async function activateModkit(
      */
     const packageUri = subjectUriOf(root)
     const uri = (await anchoredUri(packageUri).catch(() => undefined)) ?? packageUri
+    // The package the reader is looking at stays where it is; beside it went to a new group (v84).
+    const active = vscode.window.tabGroups.activeTabGroup
+    const looking =
+      active.activeTab?.input instanceof vscode.TabInputCustom &&
+      active.activeTab.input.uri.toString() === uri.toString()
     await vscode.commands.executeCommand('vscode.openWith', uri, CUSTOM_EDITOR_TYPE, {
-      viewColumn: vscode.ViewColumn.Beside,
+      viewColumn: looking ? active.viewColumn : vscode.ViewColumn.Beside,
       preserveFocus: false,
     })
     const opened = new Set([subjectKey(root), subjectKey(subjectPathOf(uri))])
