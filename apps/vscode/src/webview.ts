@@ -716,7 +716,18 @@ async function mount(
     },
     async read(entryId, maxBytes) {
       if (preopenedSubjects.has(entryId)) return new Uint8Array()
-      const answer = await bridge.request({ op: 'read', path: entryId, maxBytes })
+      let answer: unknown
+      try {
+        answer = await bridge.request({ op: 'read', path: entryId, maxBytes })
+      } catch (error) {
+        /*
+         * The tab's own file opens through the host by path, which reads it by ranges at any size;
+         * the page's copy only feeds the raw-bytes views. A file too large to copy (v84: Earth
+         * 2160's Models.wd, 122 MiB) still opens, and a real failure is the host open's to report.
+         */
+        if (entryId === snapshot.openPath) return new Uint8Array()
+        throw error
+      }
       if (!(answer instanceof Uint8Array)) {
         throw new Error(localizer.text('vscode.webview.noBytes'))
       }
