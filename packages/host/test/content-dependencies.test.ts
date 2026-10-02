@@ -290,4 +290,67 @@ describe('content dependency language documents', () => {
     expect(missingFingerprint.isComplete).toBe(false)
     expect(missingFingerprint.workspaceContext?.semanticComplete).toBe(false)
   })
+
+  it("reads every layer's language files past a layer of textures, from the bulk listing", async () => {
+    // a layer that is mostly textures, as Liberty is: only the workspace's language files count
+    const textures = Array.from(
+      { length: 40 },
+      (_, at) => `cache/base/Base.SC2Assets/Textures/t${String(at)}.dds`,
+    )
+    const all = new Map<string, Uint8Array>([
+      ...textures.map(path => [path, encoder.encode('DDS ')] as const),
+      ['cache/base/Base.SC2Data/GameData/Units.xml', encoder.encode('<Base/>')],
+      ['cache/override/Base.SC2Data/GameData/Units.xml', encoder.encode('<Override/>')],
+    ])
+    let walked = 0
+    const sources: ContentSources = {
+      ...contentSources(),
+      async list() {
+        walked += 1
+        return []
+      },
+      async files(_sourceId, path, query) {
+        const under = [...all.keys()].filter(file => file.startsWith(`${path}/`)).sort()
+        const start = query.cursor === undefined ? 0 : Number(query.cursor)
+        const end = Math.min(under.length, start + Math.min(query.limit, 16))
+        return {
+          items: under.slice(start, end).map(file => ({ path: file })),
+          ...(end < under.length ? { nextCursor: String(end) } : {}),
+        }
+      },
+      async read(_sourceId, path, maximum) {
+        const bytes = all.get(path)
+        if (bytes === undefined || bytes.byteLength > maximum) throw new RangeError('unavailable')
+        return bytes.slice()
+      },
+    }
+    const snapshot = (maxIndexedPaths?: number) =>
+      createContentDependencyLanguageDocumentSource({
+        contentSources: sources,
+        resolution,
+        routes: [{ languageId: 'sc2-data', extension: 'xml' }],
+        maxEntries: 4,
+        ...(maxIndexedPaths === undefined ? {} : { maxIndexedPaths }),
+      }).snapshot({
+        document: { uri: 'file:///active.xml', languageId: 'sc2-data', version: 1, text: '<A/>' },
+        workspaceDocuments: [],
+        workspaceDocumentOrigins: [],
+        workspaceLanguageIds: ['sc2-data'],
+        maxDocuments: 8,
+        signal: new AbortController().signal,
+      })
+    const pathIndex = (result: Awaited<ReturnType<typeof snapshot>>) =>
+      result.workspaceContext?.semanticInputs?.find(input => input.kind === 'content-path-index')
+        ?.payload as { readonly isComplete: boolean; readonly paths: readonly string[] }
+    const full = await snapshot()
+    expect(full.documents.map(document => document.text)).toEqual(['<Base/>', '<Override/>'])
+    expect(full.isComplete).toBe(true)
+    expect(walked).toBe(0)
+    expect(pathIndex(full)).toMatchObject({ isComplete: true })
+    expect(pathIndex(full).paths).toHaveLength(41)
+    // past the path index's own bound, the index and the snapshot say they are incomplete
+    const capped = await snapshot(10)
+    expect(capped.isComplete).toBe(false)
+    expect(pathIndex(capped).isComplete).toBe(false)
+  })
 })

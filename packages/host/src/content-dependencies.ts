@@ -20,6 +20,7 @@ import type {
   ContentDependencyMount,
   ContentDependencyResolution,
   ContentSourceEntry,
+  ContentSourceFilesPage,
   ContentSources,
 } from '@modkit/vfs/content-sources'
 import type {
@@ -48,8 +49,17 @@ export interface ContentDependencyLanguageDocumentSourceOptions {
   readonly routes: readonly LanguageProviderRoute[]
   readonly maxDocumentBytes?: number
   readonly maxWorkspaceBytes?: number
+  /** Files of the workspace's languages one snapshot considers (default 16 384). */
   readonly maxEntries?: number
+  /**
+   * Files of all layers the path index holds (default 1 048 576): every texture and model counts,
+   * Liberty alone has some 180 000; past it the index and the snapshot are incomplete.
+   */
+  readonly maxIndexedPaths?: number
 }
+
+/** Files one page of a layer's bulk listing asks for. */
+const FILES_PAGE = 4096
 
 interface IndexedMount extends ContentDependencyMount {
   readonly rootId: string
@@ -77,7 +87,7 @@ function joinPath(prefix: string, path: string): string {
   return prefix === '' ? path : path === '' ? prefix : `${prefix}/${path}`
 }
 
-function relativeEntry(mount: IndexedMount, entry: ContentSourceEntry): string | undefined {
+function relativeEntry(mount: IndexedMount, entry: { readonly path: string }): string | undefined {
   const path = normalizeOpaquePath(entry.path)
   if (mount.sourcePath === '') return path
   const prefix = `${mount.sourcePath}/`
@@ -326,7 +336,13 @@ export function createContentDependencyLanguageDocumentSource(
   const maxDocumentBytes = options.maxDocumentBytes ?? 4_194_304
   const maxWorkspaceBytes = options.maxWorkspaceBytes ?? 16_777_216
   const maxEntries = options.maxEntries ?? 16_384
-  for (const [name, value] of Object.entries({ maxDocumentBytes, maxWorkspaceBytes, maxEntries })) {
+  const maxIndexedPaths = options.maxIndexedPaths ?? 1_048_576
+  for (const [name, value] of Object.entries({
+    maxDocumentBytes,
+    maxWorkspaceBytes,
+    maxEntries,
+    maxIndexedPaths,
+  })) {
     if (!Number.isSafeInteger(value) || value <= 0)
       throw new TypeError(`${name} must be a positive safe integer`)
   }
@@ -372,7 +388,8 @@ export function createContentDependencyLanguageDocumentSource(
         readonly path: string
         readonly fileName: string
       }[] = []
-      let visited = 0
+      let claimed = 0
+      let indexed = 0
       // Without a provider-authored content fingerprint, bytes may change while the mount identity
       // stays the same. Keep the documents usable, but never claim a complete/stable semantic
       // snapshot that could be cached or globally renamed.
@@ -380,8 +397,45 @@ export function createContentDependencyLanguageDocumentSource(
         options.resolution.complete &&
         mounts.every(mount => mount.fingerprint !== undefined && isRevisionId(mount.fingerprint))
       let pathIndexComplete = options.resolution.complete
-      const walk = async (mount: IndexedMount, path: string): Promise<void> => {
-        if (visited > maxEntries) return
+      /**
+       * One file of a layer: into the path index, and a candidate document when a route of the
+       * workspace's languages claims it. Only those count against `maxEntries` (a layer's textures
+       * and models are most of its files); false once the path index is full.
+       */
+      const visit = (mount: IndexedMount, path: string): boolean => {
+        indexed += 1
+        if (indexed > maxIndexedPaths) {
+          complete = false
+          pathIndexComplete = false
+          return false
+        }
+        const relative = relativeEntry(mount, { path })
+        if (relative === undefined) {
+          complete = false
+          pathIndexComplete = false
+          return true
+        }
+        contentPaths.set(relative, mounts.indexOf(mount))
+        if (!relative.includes('/') && wantedKnowledge.has(relative.toLowerCase())) {
+          knowledge.push({ mount, path, fileName: relative })
+          return true
+        }
+        const { languageId, candidates: claimants } = classifyLanguageFile(options.routes, relative)
+        if (languageId === undefined) {
+          if (claimants.some(id => accepted.has(id))) complete = false
+          return true
+        }
+        if (!accepted.has(languageId)) return true
+        claimed += 1
+        const uri = contentSourceUri(mount.sourceId, path)
+        if (openUris.has(uri)) return true
+        if (claimed <= maxEntries && candidates.length < request.maxDocuments)
+          candidates.push({ mount, path, relative })
+        else complete = false
+        return true
+      }
+      /** A layer that cannot list its files in bulk, folder after folder. */
+      const walk = async (mount: IndexedMount, path: string): Promise<boolean> => {
         request.signal.throwIfAborted()
         let entries: readonly ContentSourceEntry[]
         try {
@@ -389,52 +443,47 @@ export function createContentDependencyLanguageDocumentSource(
         } catch {
           complete = false
           pathIndexComplete = false
-          return
+          return true
         }
         for (const entry of entries) {
           request.signal.throwIfAborted()
-          visited += 1
-          if (visited > maxEntries) {
+          if (!entry.directory) {
+            if (!visit(mount, entry.path)) return false
+          } else if (relativeEntry(mount, entry) === undefined) {
             complete = false
             pathIndexComplete = false
-            return
-          }
-          const relative = relativeEntry(mount, entry)
-          if (relative === undefined) {
-            complete = false
-            pathIndexComplete = false
-            continue
-          }
-          if (entry.directory) {
-            await walk(mount, entry.path)
-            continue
-          }
-          contentPaths.set(relative, mounts.indexOf(mount))
-          if (path === mount.sourcePath && wantedKnowledge.has(relative.toLowerCase())) {
-            knowledge.push({ mount, path: entry.path, fileName: relative })
-            continue
-          }
-          const { languageId, candidates: claimants } = classifyLanguageFile(
-            options.routes,
-            relative,
-          )
-          if (languageId === undefined) {
-            if (claimants.some(id => accepted.has(id))) complete = false
-            continue
-          }
-          if (!accepted.has(languageId)) continue
-          const uri = contentSourceUri(mount.sourceId, entry.path)
-          if (!openUris.has(uri) && candidates.length < request.maxDocuments) {
-            candidates.push({ mount, path: entry.path, relative })
-          } else if (!openUris.has(uri)) {
-            complete = false
-          }
+          } else if (!(await walk(mount, entry.path))) return false
         }
+        return true
       }
-      for (const mount of mounts) {
-        if (visited > maxEntries) break
-        await walk(mount, mount.sourcePath)
+      /** A layer's files in pages from the source's own index where it has one (CASC, folders). */
+      const layer = async (mount: IndexedMount): Promise<boolean> => {
+        let cursor: string | undefined
+        do {
+          request.signal.throwIfAborted()
+          let page: ContentSourceFilesPage | undefined
+          try {
+            page = await options.contentSources.files?.(mount.sourceId, mount.sourcePath, {
+              limit: FILES_PAGE,
+              ...(cursor === undefined ? {} : { cursor }),
+            })
+          } catch {
+            complete = false
+            pathIndexComplete = false
+            return true
+          }
+          if (page === undefined) {
+            if (cursor === undefined) return walk(mount, mount.sourcePath)
+            complete = false
+            pathIndexComplete = false
+            return true
+          }
+          for (const file of page.items) if (!visit(mount, file.path)) return false
+          cursor = page.nextCursor
+        } while (cursor !== undefined)
+        return true
       }
+      for (const mount of mounts) if (!(await layer(mount))) break
       const indexedPaths = Object.freeze([...contentPaths.keys()].sort(compareUtf8))
       const pathLayers = Object.freeze(indexedPaths.map(path => contentPaths.get(path)!))
       const pathIndexRevision = languageWorkspaceContextToken({
