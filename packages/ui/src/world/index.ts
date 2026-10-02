@@ -2079,10 +2079,21 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
       // Return the mount immediately: closing/switching views must be able to cancel asset loading.
       void render()
         .then(async () => {
-          // a world shown before its catalog answered: the answered world, read over the shown one
+          // a world shown before its catalog answered: the answered world, read over the shown one.
+          // The answers may take longer than one call may wait (a cold catalog takes minutes): a call
+          // past its deadline asks again; a refinement that fails keeps the world shown.
           const source = lease.value as WorldSceneSource
-          if (source.refined !== undefined && !scope.signal.aborted)
-            if ((await source.refined(scope.signal)) && !scope.signal.aborted) await render()
+          let refined: boolean | undefined
+          while (source.refined !== undefined && refined === undefined && !scope.signal.aborted)
+            refined = await source
+              .refined(scope.signal)
+              .catch((error: unknown) =>
+                (error as { readonly code?: unknown } | null)?.code ===
+                'x3.host/rpc-deadline-exceeded'
+                  ? undefined
+                  : false,
+              )
+          if (refined === true && !scope.signal.aborted) await render()
           if (transportLease === undefined || scope.signal.aborted) return
           await watchTransportedWorld(transportLease.value as TransportSource, render, scope.signal)
         })
