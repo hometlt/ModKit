@@ -11,7 +11,13 @@ import {
   createContentDependencyLanguageDocumentSource,
 } from './content-dependencies.js'
 import { createContentDependencyAssetOrigin } from './content-dependencies.js'
-import { createLayeredCompanionOrigin, type CompanionOrigin } from './input-resolution.js'
+import {
+  createLayeredCompanionOrigin,
+  normalizeCompanionLogicalId,
+  type CompanionOrigin,
+} from './input-resolution.js'
+import { artifactByteSourceFromBytes } from './source-bridge.js'
+import { revisionIdFromRef } from '@modkit/sdk'
 
 import type {
   LanguageDocument,
@@ -310,16 +316,83 @@ export function createContentAssetOrigin(request: ContentAssetOriginRequest): Co
       for (const item of result.diagnostics) request.onDiagnostic?.(item)
       return result.origins.length === 0 ? undefined : createLayeredCompanionOrigin(result.origins)
     }))
+  const maximumEntryBytes = request.maximumEntryBytes ?? 64 * 1024 * 1024
+  /**
+   * A path in the game's own spelling that no layer holds as spelled (StarCraft II's
+   * `Assets/Textures/btn-x.dds`, kept under `Base.SC2Assets` or a locale component): the mod
+   * context's `locate` knows where the game keeps it. Read once, a context opened for the question
+   * alone; an answer, or none, is kept for this open.
+   */
+  const located = new Map<
+    string,
+    Promise<Readonly<{ uri: string; revision: string; bytes: Uint8Array }> | undefined>
+  >()
+  const locate = (path: string) => {
+    const key = path.toLowerCase()
+    let found = located.get(key)
+    if (found === undefined) {
+      found = (async () => {
+        if (request.contentSources.openModContext === undefined) return undefined
+        const baseMods = baseModsFor(
+          typeof request.target === 'string' ? request.target : '',
+          request.baseMods,
+        )
+        const context = await request.contentSources.openModContext({
+          schemaVersion: 1,
+          target: request.target,
+          ...(baseMods === undefined ? {} : { baseMods }),
+        })
+        try {
+          const place = await context.locate(path)
+          if (place === undefined) return undefined
+          const layer = context.layers.find(item => item.id === place.layerId)
+          const bytes = await context.read(place.layerId, place.path, maximumEntryBytes)
+          const at = `${layer?.sourcePath ?? place.layerId}/${place.path}`
+          return Object.freeze({
+            uri:
+              layer === undefined || layer.sourceId === HOST_LAYER_SOURCE_ID
+                ? `mod-context-layer:${encodeURIComponent(place.layerId)}/${place.path.split('/').map(encodeURIComponent).join('/')}`
+                : `content-source://${encodeURIComponent(layer.sourceId)}/${at.split('/').map(encodeURIComponent).join('/')}`,
+            revision: layer?.fingerprint ?? `${context.contextId}\0${at}`,
+            bytes,
+          })
+        } finally {
+          await context.dispose()
+        }
+      })().catch(() => undefined)
+      located.set(key, found)
+    }
+    return found
+  }
   return Object.freeze({
     primaryLogicalId: '__content_dependency_workspace__',
     caseSensitivity: 'insensitive' as const,
     scopes: Object.freeze(['workspace-dependency-layer'] as const),
     async *enumerate(scope, options, signal) {
       const origin = await resolved()
-      if (origin !== undefined) yield* origin.enumerate(scope, options, signal)
+      const path = options.prefix.endsWith('/') ? '' : normalizeCompanionLogicalId(options.prefix)
+      let named = false
+      if (origin !== undefined)
+        for await (const entry of origin.enumerate(scope, options, signal)) {
+          named ||= entry.logicalId.toLowerCase() === path.toLowerCase()
+          yield entry
+        }
+      if (named || path === '' || options.namePrefix !== undefined) return
+      const asset = await locate(path)
+      if (asset !== undefined) yield Object.freeze({ logicalId: path })
     },
     async open(logicalId, signal) {
       const origin = await resolved()
+      const path = normalizeCompanionLogicalId(logicalId)
+      const asset = located.has(path.toLowerCase()) ? await locate(path) : undefined
+      if (asset !== undefined) {
+        const source = artifactByteSourceFromBytes(
+          Object.freeze({ id: `mod-context:${path}`, uri: asset.uri }),
+          revisionIdFromRef({ kind: 'provider-token', value: asset.revision }),
+          asset.bytes,
+        )
+        return Object.freeze({ value: source, release: async () => undefined })
+      }
       if (origin === undefined) throw new TypeError(`no mod layer holds «${logicalId}»`)
       return origin.open(logicalId, signal)
     },
