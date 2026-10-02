@@ -14,6 +14,7 @@ import type {
   MaterializationRequest,
   MaterializationDiffEntry,
 } from '@modkit/sdk'
+import { isJsonValue } from '@modkit/sdk'
 import {
   snapshotModelMaterials,
   DEFAULT_MODEL_MATERIAL_BUDGET,
@@ -557,22 +558,13 @@ const MATERIALIZER_GAME_EXTENSIONS = new Set([
   'UV_game_variants',
 ])
 
-function isJsonValue(value: unknown, depth: number): boolean {
-  if (depth > 64) return false
-  if (value === null || typeof value === 'string' || typeof value === 'boolean') return true
-  if (typeof value === 'number') return Number.isFinite(value)
-  if (Array.isArray(value)) return value.every(item => isJsonValue(item, depth + 1))
-  if (typeof value !== 'object' || Object.getPrototypeOf(value) !== Object.prototype) return false
-  return Object.values(value).every(item => isJsonValue(item, depth + 1))
-}
-
 /** The projection's game records, checked and in name order. */
 function gameExtensionsOf(projection: ModelProjection): [string, UvmJsonObject][] {
   const entries = Object.entries(projection.gameExtensions ?? {})
   for (const [name, value] of entries) {
     if (!/^UV_game_[a-z0-9]+(?:_[a-z0-9]+)*$/u.test(name) || MATERIALIZER_GAME_EXTENSIONS.has(name))
       throw new TypeError(`game extension ${name} is not a UV_game_<id> record a projection writes`)
-    if (typeof value !== 'object' || Array.isArray(value) || !isJsonValue(value, 0))
+    if (typeof value !== 'object' || Array.isArray(value) || !isJsonValue(value))
       throw new TypeError(`game extension ${name} is not a JSON object`)
   }
   return entries.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))

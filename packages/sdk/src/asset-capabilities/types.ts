@@ -31,6 +31,22 @@ import {
 export type JsonPrimitive = null | boolean | number | string
 export type JsonValue = JsonPrimitive | readonly JsonValue[] | { readonly [key: string]: JsonValue }
 
+/**
+ * Whether `value` is JSON data: null, booleans, strings, finite numbers, and arrays and plain
+ * objects of them, nested at most `maxDepth` levels below it. The one check for every package
+ * that takes JSON from a provider or a publisher.
+ */
+export function isJsonValue(value: unknown, maxDepth = 64): value is JsonValue {
+  if (maxDepth < 0) return false
+  if (value === null || typeof value === 'string' || typeof value === 'boolean') return true
+  if (typeof value === 'number') return Number.isFinite(value)
+  if (Array.isArray(value)) return value.every(item => isJsonValue(item, maxDepth - 1))
+  if (typeof value !== 'object') return false
+  const prototype: unknown = Object.getPrototypeOf(value)
+  if (prototype !== Object.prototype && prototype !== null) return false
+  return Object.values(value).every(item => isJsonValue(item, maxDepth - 1))
+}
+
 export type AssetOperationId = OperationId
 
 declare const CONTRIBUTION_ID_BRAND: unique symbol

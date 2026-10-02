@@ -1,12 +1,8 @@
 import { ExtensionManagerError } from './schema.js'
-import type { ExtensionPresentation } from '@modkit/sdk'
+import type { ExtensionPresentation, JsonValue } from '@modkit/sdk'
 import type { ExtensionCatalogIssue, ExtensionRegistryCatalog } from './public-types.js'
 
-type JsonPrimitive = string | number | boolean | null
-interface JsonObject {
-  readonly [key: string]: JsonValue
-}
-type JsonValue = JsonPrimitive | readonly JsonValue[] | JsonObject
+type JsonObject = Extract<JsonValue, { readonly [key: string]: JsonValue }>
 interface CatalogRecord extends Record<string, unknown> {
   algorithm?: unknown
   keyId?: unknown

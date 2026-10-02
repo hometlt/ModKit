@@ -44,7 +44,7 @@ import {
   type WorldSceneSource,
   type WorldSceneTextureRequest,
 } from '@modkit/sdk/maps'
-import { resolveModWorkspaceGraph } from '@modkit/sdk'
+import { isJsonValue, resolveModWorkspaceGraph } from '@modkit/sdk'
 import type {
   AnyDescriptor,
   AssetDiagnosticWire,
@@ -1800,7 +1800,7 @@ function validPreparationDiagnostic(value: unknown): value is MapPreviewPreparat
     (!Object.hasOwn(record, 'path') ||
       (Array.isArray(record['path']) &&
         record['path'].every(item => typeof item === 'string' || Number.isSafeInteger(item)))) &&
-    (!Object.hasOwn(record, 'data') || jsonSafeValue(record['data']))
+    (!Object.hasOwn(record, 'data') || isJsonValue(record['data']))
   )
 }
 
@@ -1907,15 +1907,6 @@ function validateDocumentReadRequests(
   return value as readonly MapPreviewPreparationDocumentReadRequest[]
 }
 
-function jsonSafeValue(value: unknown, depth = 0): boolean {
-  if (depth > 64) return false
-  if (value === null || typeof value === 'string' || typeof value === 'boolean') return true
-  if (typeof value === 'number') return Number.isFinite(value)
-  if (Array.isArray(value)) return value.every(item => jsonSafeValue(item, depth + 1))
-  const record = recordOf(value)
-  return record !== undefined && Object.values(record).every(item => jsonSafeValue(item, depth + 1))
-}
-
 function validHostResourceRoot(value: unknown): value is MapPreviewHostResourceRoot {
   const record = recordOf(value)
   return (
@@ -1923,7 +1914,7 @@ function validHostResourceRoot(value: unknown): value is MapPreviewHostResourceR
     Object.keys(record).every(key => key === 'rootId' || key === 'locator' || key === 'optional') &&
     nonEmptyString(record['rootId']) &&
     Object.hasOwn(record, 'locator') &&
-    jsonSafeValue(record['locator']) &&
+    isJsonValue(record['locator']) &&
     (record['optional'] === undefined || typeof record['optional'] === 'boolean')
   )
 }
@@ -2069,7 +2060,7 @@ function validatePreparationResult(
       ) ||
       plan?.['schemaVersion'] !== 1 ||
       recordOf(plan['workspace']) === undefined ||
-      !jsonSafeValue(plan['workspace']) ||
+      !isJsonValue(plan['workspace']) ||
       !Object.keys(plan).every(
         key => key === 'schemaVersion' || key === 'workspace' || key === 'resources',
       )

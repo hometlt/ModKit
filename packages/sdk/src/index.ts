@@ -728,6 +728,7 @@ export type {
 export {
   assetSourceRefFromSourceRef,
   contributionId,
+  isJsonValue,
   isRevisionId,
   revisionId,
   revisionIdFromRef,
