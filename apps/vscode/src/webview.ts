@@ -566,6 +566,8 @@ async function mount(
         .catch((error: unknown) => say(describe(error)))
     }
   })
+  // from here on the host's requests reach this page; it holds back what it sent before
+  bridge.emit({ op: 'page-listening' })
   /*
    * Viewer preferences (the media shell's layout, recent colours) are kept by the extension host:
    * this page's storage is its own origin's and ends with the tab. Read from the bootstrap, each

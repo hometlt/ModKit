@@ -330,6 +330,11 @@ export type ShellEvent =
   | { readonly op: 'document-edited'; readonly path: string }
   /** One phase the page measured (bundle evaluated, workbench mounted, stage mounted). */
   | { readonly op: 'timing'; readonly name: string; readonly milliseconds: number }
+  /**
+   * The page's bridge listens. A panel restored unseen loads only when it is shown, and what the
+   * host sent before this — a card to open on — was lost (v87: «Entity Card…» showed the package).
+   */
+  | { readonly op: 'page-listening' }
   /** An in-page Save button delegates to VS Code so the provider, title marker and Ctrl+S agree. */
   | { readonly op: 'document-save-requested'; readonly path: string }
   /** An in-page Revert button, delegated the same way: the editor's dirty state and Undo follow. */

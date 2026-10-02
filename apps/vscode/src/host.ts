@@ -2312,6 +2312,17 @@ function serveVsCode(
     }
   })
 
+  /*
+   * What the host asks of the page waits until the page listens: a panel restored unseen loads
+   * only when shown, and an entity sent to it before then was lost (v87, «Entity Card…»).
+   */
+  let listening = false
+  const heldForPage: Parameters<typeof bridge.emit>[0][] = []
+  const toPage = (event: Parameters<typeof bridge.emit>[0]): void => {
+    if (listening) bridge.emit(event)
+    else heldForPage.push(event)
+  }
+
   // The page's own status line, mirrored so the output channel records what the user saw.
   bridge.onEvent(event => {
     if (event.op === 'status') {
@@ -2328,6 +2339,9 @@ function serveVsCode(
       options.onDocumentEdited?.(event.path)
     } else if (event.op === 'timing') {
       options.timing?.mark(`page ${event.name}`, event.milliseconds)
+    } else if (event.op === 'page-listening') {
+      listening = true
+      for (const held of heldForPage.splice(0)) bridge.emit(held)
     }
   })
 
@@ -2335,13 +2349,13 @@ function serveVsCode(
     bridge,
     exposure,
     open(path: string) {
-      bridge.emit({ op: 'open', path: subjectKey(path), name: subjectLabel(path) })
+      toPage({ op: 'open', path: subjectKey(path), name: subjectLabel(path) })
     },
     navigate(subjectId: string, stage?: string) {
-      bridge.emit({ op: 'navigate-subject', subjectId, ...(stage === undefined ? {} : { stage }) })
+      toPage({ op: 'navigate-subject', subjectId, ...(stage === undefined ? {} : { stage }) })
     },
     revealTemplate(uri: string, offset: number) {
-      bridge.emit({ op: 'reveal-template', uri, offset })
+      toPage({ op: 'reveal-template', uri, offset })
     },
     warm(path: string) {
       if (warmed.has(subjectKey(path))) return
