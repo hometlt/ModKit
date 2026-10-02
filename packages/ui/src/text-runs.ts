@@ -2,8 +2,8 @@ import { isGameTemplateTextRun, type GameTemplateTextRun } from '@modkit/sdk/tem
 import { setPart, type PartName } from './parts.js'
 import { setViewerText } from './viewer/index.js'
 
-/** A run's colour reaches CSS only as `#rrggbb`. */
-const RUN_COLOR = /^#[0-9a-f]{6}$/iu
+/** A run's colour reaches CSS only as hex: `#rrggbb`, or `#rrggbbaa` for a translucent one. */
+const RUN_COLOR = /^#[0-9a-f]{6}(?:[0-9a-f]{2})?$/iu
 
 /** The runs a value holds — text a producer already styled — or `undefined` for any other value. */
 export function textRunsOf(value: unknown): readonly GameTemplateTextRun[] | undefined {
@@ -14,8 +14,8 @@ export function textRunsOf(value: unknown): readonly GameTemplateTextRun[] | und
 
 /**
  * Text a producer already styled, appended to `target`: a table cell, a card value. Text goes in
- * through `textContent` and a colour only as `#rrggbb`; an image is a named slot (its name in a
- * span) that the host's pixels may fill, and an unresolved run is marked with why.
+ * through `textContent` and a colour only as hex (`#rrggbb`, `#rrggbbaa`); an image is a named slot
+ * (its name in a span) that the host's pixels may fill, and an unresolved run is marked with why.
  */
 export function appendTextRuns(
   target: HTMLElement,

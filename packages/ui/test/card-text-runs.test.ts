@@ -91,6 +91,7 @@ describe('a styled card value', () => {
                 value: 'Builds structures. ?',
                 runs: [
                   { text: 'Builds ', color: '#ff0000' },
+                  { text: 'half ', color: '#00ff0080' },
                   { text: 'structures', bold: true },
                   { text: '', asset: 'Assets/Textures/btn-unit-terran-scv.dds' },
                   { text: '?', unresolved: 'no catalog at hand' },
@@ -113,6 +114,7 @@ describe('a styled card value', () => {
       ) as HTMLElement | null
       return {
         red: spans.find(span => span.textContent === 'Builds ')?.style.color,
+        translucent: spans.find(span => span.textContent === 'half ')?.style.color,
         bold: spans.find(span => span.textContent === 'structures')?.style.fontWeight,
         icon: canvas !== null && !canvas.hidden && canvas.width === 2,
         nameShown: name === null ? 'none' : getComputedStyle(name).display,
@@ -121,6 +123,8 @@ describe('a styled card value', () => {
     })
     expect(drawn).toEqual({
       red: 'rgb(255, 0, 0)',
+      // SC2 writes a translucent colour as #rrggbbaa (blizzard 9fd8860d)
+      translucent: 'rgba(0, 255, 0, 0.5)',
       bold: 'bold',
       icon: true,
       nameShown: 'none',
