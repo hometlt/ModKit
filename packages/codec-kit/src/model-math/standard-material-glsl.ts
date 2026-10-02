@@ -121,6 +121,8 @@ export interface StandardMaterialDefines {
   /** sRGB textures, linear light, then tonemap (when `tonemap`) or clamp, and sRGB out. */
   linearColor?: boolean
   tonemap?: boolean
+  /** The environment value is multiplied by the base colour before its op (StandardMaterialModel). */
+  environmentTintByBase?: boolean
 }
 
 const TEXTURE_FALLBACK_PRIORITY: readonly StandardLayerSlot[] = [
@@ -260,6 +262,7 @@ export function buildMaterialDefines(
     !material.unshaded
       ? { linearColor: true, ...(material.tonemap === undefined ? {} : { tonemap: true }) }
       : {}),
+    ...(material.environmentTintByBase === true ? { environmentTintByBase: true } : {}),
   }
 }
 
@@ -281,7 +284,8 @@ export function canonicalDefineKey(defines: StandardMaterialDefines): string {
     `${defines.usesVertexColor ? 'vc' : ''}${defines.usesVertexAlpha ? 'va' : ''}${defines.modAlpha ? 'ma' : ''}${defines.alphaTest ? 'at' : ''}${defines.specularEnergyConservation ? 'ec' : ''}` +
     `;uv=${defines.uvSetCount};${defines.gpuSkinning ? 'skin' : ''}${defines.hardwareInstancing ? 'inst' : ''}${defines.bakedPoseInstancing ? 'baked' : ''}` +
     `${defines.sceneLighting ? ';scene' : ''}` +
-    `${defines.pbr ? ';pbr' : ''}${defines.linearColor ? ';linear' : ''}${defines.tonemap ? ';tonemap' : ''}`
+    `${defines.pbr ? ';pbr' : ''}${defines.linearColor ? ';linear' : ''}${defines.tonemap ? ';tonemap' : ''}` +
+    `${defines.environmentTintByBase ? ';envbase' : ''}`
   )
 }
 
@@ -503,6 +507,8 @@ export interface CpuPixelInput {
   emisMult: number
   emissiveTint?: Vec3
   environmentMultipliers?: Vec3
+  /** The environment value is multiplied by the base colour before its op. */
+  environmentTintByBase?: boolean
   specMode: 0 | 1
   /** FakeEnergyConservingSpec, as the GLSL define of the same name. */
   specularEnergyConservation?: boolean
@@ -736,12 +742,19 @@ export function composeStandardPixelCpu(input: CpuPixelInput): CpuPixelResult {
       mask = [environment[3], environment[3], environment[3], environment[3]]
     }
     const multipliers = input.environmentMultipliers ?? [1, 0, 0]
+    // the base colour in the light's space, as the PBR branch takes it
+    const tint = input.environmentTintByBase
+      ? inPipeline([color[0], color[1], color[2], 1])
+      : [1, 1, 1]
     const environmentValue: [number, number, number] = [
       environment[0] *
+        tint[0]! *
         (multipliers[0] + diffuseLight * multipliers[1] + specularLight[0] * multipliers[2]),
       environment[1] *
+        tint[1]! *
         (multipliers[0] + diffuseLight * multipliers[1] + specularLight[1] * multipliers[2]),
       environment[2] *
+        tint[2]! *
         (multipliers[0] + diffuseLight * multipliers[1] + specularLight[2] * multipliers[2]),
     ]
     if (layers.envi.op === 0) {
@@ -1379,6 +1392,7 @@ export function buildStandardFragmentSource(
     target: string,
     diffuseLight: string,
     specularLight: string,
+    base = 'color',
   ): string[] => {
     const environment = layerBySlot.get('envi')
     if (!environment || (environment.op !== 0 && environment.op !== 2 && environment.op !== 3)) {
@@ -1400,6 +1414,7 @@ export function buildStandardFragmentSource(
       `${indent}vec3 environmentLight = vec3(u_environmentMultipliers.x + (${diffuseLight}) * u_environmentMultipliers.y) + (${specularLight}) * u_environmentMultipliers.z;`,
     )
     lines.push(`${indent}vec3 environmentValue = environmentColor.rgb * environmentLight;`)
+    if (defines.environmentTintByBase) lines.push(`${indent}environmentValue *= ${base};`)
     if (environment.op === 0) {
       lines.push(`${indent}${target} *= environmentValue * environmentMask.rgb;`)
     } else if (environment.op === 2) {
@@ -1454,7 +1469,13 @@ export function buildStandardFragmentSource(
       `  vec3 shaded = modkitPbr(pbrBase, pbrMetallic, pbrRoughness, 1.0, vec3(0.0), pbrNormal, pbrView, pbrLight, ${light}, ${ambient});`,
     )
     body.push(
-      ...environmentBlock('  ', 'shaded', 'max(dot(pbrNormal, pbrLight), 0.0)', 'vec3(0.0)'),
+      ...environmentBlock(
+        '  ',
+        'shaded',
+        'max(dot(pbrNormal, pbrLight), 0.0)',
+        'vec3(0.0)',
+        'pbrBase',
+      ),
     )
     body.push(...emissiveBlock('  ', 'shaded'))
     if (defines.linearColor)

@@ -170,6 +170,12 @@ export interface StandardMaterialModel {
   emisMult: number
   /** MAT_ v20 environment constant/diffuse/specular multipliers. */
   environmentMultipliers?: readonly [number, number, number]
+  /**
+   * The environment is multiplied by the base colour (diffuse and decal) before its layer op: with
+   * op 2 the reflection tints by the surface, `base × env × mask × k` added (Supreme Commander's
+   * metal; k is the constant multiplier). Absent: the environment as sampled.
+   */
+  environmentTintByBase?: boolean
   /** RGB multiplier applied to accumulated emissive light. Defaults to white. */
   emissiveTint?: readonly [number, number, number]
   /** Signed parallax displacement applied when the height layer is active. */

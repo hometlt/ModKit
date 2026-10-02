@@ -551,6 +551,7 @@ function shade(
     ...(material.environmentMultipliers === undefined
       ? {}
       : { environmentMultipliers: material.environmentMultipliers }),
+    ...(material.environmentTintByBase === true ? { environmentTintByBase: true } : {}),
     ...(material.emissiveTint === undefined ? {} : { emissiveTint: material.emissiveTint }),
     ...(material.normalBlendFactors === undefined
       ? {}
