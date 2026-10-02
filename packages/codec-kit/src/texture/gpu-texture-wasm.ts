@@ -1,4 +1,4 @@
-import { ModkitError } from '../legacy/core/errors.js'
+import { ModkitError } from '@modkit/core'
 
 /**
  * Lazy runtime boundary for the optional Texture2DDecoder WASM implementation.
@@ -68,10 +68,10 @@ function cacheRuntime(
     runtimePromise = undefined
     if (cause instanceof ModkitError) throw cause
     throw new ModkitError({
-      code: 'CODEC_RUNTIME_LOAD_FAILED',
+      code: 'codec-kit/texture-runtime-unavailable',
       message,
       cause,
-      ...(hint === undefined ? {} : { hint }),
+      ...(hint === undefined ? {} : { context: { hint } }),
     })
   })
   return runtimePromise
@@ -166,9 +166,9 @@ async function decoder(): Promise<Texture2DDecoderRuntime> {
   if (!runtimePromise) {
     if (!isNodeRuntime()) {
       throw new ModkitError({
-        code: 'CODEC_RUNTIME_LOAD_FAILED',
+        code: 'codec-kit/texture-runtime-unavailable',
         message: 'Software GPU texture decoding is not initialized in this browser host',
-        hint: 'Call initializeGpuTextureWasmBrowser({ assetBaseUrl }) before decoding.',
+        context: { hint: 'Call initializeGpuTextureWasmBrowser({ assetBaseUrl }) before decoding.' },
       })
     }
     // Keep the bare specifier runtime-computed. Browser bundlers must not crawl the dependency's

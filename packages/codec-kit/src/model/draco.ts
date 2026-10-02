@@ -116,7 +116,12 @@ function cache(
   runtime = pending.catch(cause => {
     runtime = undefined
     if (cause instanceof ModkitError) throw cause
-    throw new ModkitError({ code: 'CODEC_RUNTIME_LOAD_FAILED', message, cause, context: { hint } })
+    throw new ModkitError({
+      code: 'codec-kit/draco-runtime-unavailable',
+      message,
+      cause,
+      context: { hint },
+    })
   })
   return runtime
 }
@@ -156,7 +161,7 @@ function decoderModule(): Promise<DracoDecoderModule> {
   if (runtime === undefined) {
     if (!isNodeRuntime()) {
       throw new ModkitError({
-        code: 'CODEC_RUNTIME_LOAD_FAILED',
+        code: 'codec-kit/draco-runtime-unavailable',
         message: 'Draco decoding is not initialized in this browser host',
         context: { hint: 'Call initializeDracoBrowser({ assetBaseUrl }) before decoding.' },
       })

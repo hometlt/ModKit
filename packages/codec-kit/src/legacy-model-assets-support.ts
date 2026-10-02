@@ -6,4 +6,4 @@ export {
   normalizeFormatExtension,
   type FormatRegistration,
 } from './legacy/assets/format-registry.js'
-export type { CompressedTextureDescriptorV1 } from './legacy/assets/profiles/image-texture.js'
+export type { CompressedTextureDescriptorV1 } from '@modkit/sdk'

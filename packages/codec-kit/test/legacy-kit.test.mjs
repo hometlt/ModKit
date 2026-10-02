@@ -418,7 +418,7 @@ test('texture CPU footprint and allocation guards preserve pinned behavior', () 
   assert.equal(assertRgba8DecodeWithinLimit(4, 4), 64)
   assert.throws(
     () => assertRgba8DecodeWithinLimit(4, 4, 1, 63),
-    error => error.code === 'ASSET_LIMIT_EXCEEDED',
+    error => error.code === 'codec-kit/texture-size-limit',
   )
   assert.equal(
     compressedTextureByteLength(5, 5, 1, { width: 4, height: 4, depth: 1, bytes: 8 }),
@@ -438,14 +438,14 @@ test('real Texture2DDecoder WASM Node and explicit browser entrypoint produce eq
     globalThis.process = undefined
     await assert.rejects(
       browser.decode_bc1(block, 4, 4),
-      error => error.code === 'CODEC_RUNTIME_LOAD_FAILED',
+      error => error.code === 'codec-kit/texture-runtime-unavailable',
     )
   } finally {
     globalThis.process = processValue
   }
   await assert.rejects(
     browser.initializeGpuTextureWasmBrowser({ assetBaseUrl: 'file:///missing-fixture/' }),
-    error => error.code === 'CODEC_RUNTIME_LOAD_FAILED',
+    error => error.code === 'codec-kit/texture-runtime-unavailable',
   )
   const require = createRequire(import.meta.url)
   const packageEntry = require.resolve('texture2ddecoder-wasm')
