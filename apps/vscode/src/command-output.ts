@@ -35,6 +35,41 @@ export function commandOutputLeaf(
   return `${stem.replace(/[\\/:*?"<>|]+/gu, '-') || 'export'}.${extension}`
 }
 
+/** An installed provider offer, as far as a format picker reads it (`offersFromInventory`). */
+interface EncoderOffer {
+  readonly extensionId: string
+  readonly provides: readonly {
+    readonly contract: string
+    readonly major: number
+    readonly facet?: unknown
+  }[]
+}
+
+/**
+ * The formats installed native encoders of `contract` write (`common.map/native-encoder`), each
+ * with the extensions that offer it: what a "save as a game's map" picker lists, before anything
+ * is activated.
+ */
+export function nativeEncoderFormats(
+  offers: readonly EncoderOffer[],
+  contract: string,
+): readonly { readonly formatId: string; readonly extensions: readonly string[] }[] {
+  const byFormat = new Map<string, Set<string>>()
+  for (const offer of offers) {
+    for (const provided of offer.provides) {
+      if (provided.contract !== contract || provided.major !== 1) continue
+      const formatIds = (provided.facet as { readonly formatIds?: unknown } | undefined)?.formatIds
+      for (const formatId of Array.isArray(formatIds) ? formatIds : []) {
+        if (typeof formatId !== 'string' || formatId === '') continue
+        byFormat.set(formatId, (byFormat.get(formatId) ?? new Set()).add(offer.extensionId))
+      }
+    }
+  }
+  return [...byFormat]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([formatId, extensions]) => ({ formatId, extensions: [...extensions].sort() }))
+}
+
 export interface WorldUvwReceipt {
   readonly artifactDigest: string
   readonly excludedFacetIds: readonly string[]

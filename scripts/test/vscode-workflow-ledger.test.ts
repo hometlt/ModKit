@@ -143,7 +143,7 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
       releaseCandidateGaps: 5,
       // the 1 October surface: accounts, sources, resources, maps, languages, the mod wiki,
       // launch options, translation gaps, layout templates, file conversion, a world as UVW
-      currentX3ObservedFacts: 261,
+      currentX3ObservedFacts: 262,
     })
     expect(ledger.counts.byKind).toEqual({
       'cli-command': 5,
@@ -257,7 +257,7 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
         // 1 October: accounts, sources, resources, map and world editors, the game languages, the
         // mod wiki, folder and file conversion, launch options, translation gaps, layout templates,
         // a map's world exported to UVW
-        commands: 88,
+        commands: 89,
         configurationProperties: 23,
         customEditors: 9,
         fileSystemSchemes: 2,
@@ -288,7 +288,7 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
       'Доказанные callers: Automation, CLI, Electron, PWA, `server`, VS Code.',
     )
     expect(status).not.toContain('PWA не заявлен')
-    expect(ledger.currentX3Facts).toHaveLength(261)
+    expect(ledger.currentX3Facts).toHaveLength(262)
     expect(
       ledger.currentX3Facts.every((row: { state: string }) => row.state === 'observed-only'),
     ).toBe(true)
@@ -440,6 +440,7 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
         'modkit.convertFolder',
         'modkit.explainResolution',
         'modkit.exportDiagnostics',
+        'modkit.exportWorldNative',
         'modkit.exportWorldUvw',
         'modkit.extensions.completeGameSupport',
         'modkit.extensions.disable',
@@ -530,6 +531,7 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
         'modkit.convertFolder',
         'modkit.explainResolution',
         'modkit.exportDiagnostics',
+        'modkit.exportWorldNative',
         'modkit.exportWorldUvw',
         'modkit.extensions.completeGameSupport',
         'modkit.extensions.disable',

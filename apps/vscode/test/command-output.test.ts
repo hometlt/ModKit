@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { commandOutputLeaf, worldUvwReceiptOf } from '../src/command-output.js'
+import {
+  commandOutputLeaf,
+  nativeEncoderFormats,
+  worldUvwReceiptOf,
+} from '../src/command-output.js'
 import { withVsCodeMapWorld } from '../src/map-preview.js'
 
 describe('command output', () => {
@@ -17,6 +21,30 @@ describe('command output', () => {
     expect(commandOutputLeaf('subject.extract', 'C:\\mp.wz', 'multiplay/maps/rush.gam')).toBe(
       'rush.gam',
     )
+  })
+
+  it('lists the formats installed encoders of one contract write, once each', () => {
+    const offer = (extensionId: string, contract: string, formatIds: unknown) => ({
+      extensionId,
+      provides: [{ contract, major: 1, facet: { formatIds } }],
+    })
+    expect(
+      nativeEncoderFormats(
+        [
+          offer('ea/westwood', 'common.map/native-encoder', ['ts-map', 'ra2-map']),
+          // a second runtime variant of the same provider offers the same formats
+          offer('ea/westwood', 'common.map/native-encoder', ['ra2-map']),
+          offer('mojang/minecraft', 'common.map/native-encoder', ['minecraft-anvil', 7]),
+          offer('blizzard/models', 'common.model/native-encoder', ['m3']),
+          { extensionId: 'x/y', provides: [{ contract: 'common.map/native-encoder', major: 2 }] },
+        ],
+        'common.map/native-encoder',
+      ),
+    ).toEqual([
+      { formatId: 'minecraft-anvil', extensions: ['mojang/minecraft'] },
+      { formatId: 'ra2-map', extensions: ['ea/westwood'] },
+      { formatId: 'ts-map', extensions: ['ea/westwood'] },
+    ])
   })
 
   it('reads the receipt of a world exported as UVW, and nothing else', () => {

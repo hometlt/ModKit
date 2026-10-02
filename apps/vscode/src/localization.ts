@@ -405,6 +405,12 @@ const EN_MESSAGES = Object.freeze({
   'vscode.world.exportNoSubject': 'Open a map in Modkit to export its world to UVW.',
   'vscode.world.exported':
     'World exported to {file}. Left out of UVW: {facets} facets, {objects} objects, {fields} fields.',
+  'vscode.world.saveAsMapNoSubject': 'Open a UVW world in Modkit to save it as a game map.',
+  'vscode.world.noMapEncoders': 'No installed extension writes a game map from a world.',
+  'vscode.world.chooseMapFormat': 'Save the world as a map of which format?',
+  'vscode.world.savedAsMap': 'World saved as {file}.',
+  'vscode.world.savedAsMapLosses':
+    'World saved as {file}. Not carried by the map: {count} — see the report.',
   'vscode.modContext.building': 'Modkit: building the mod context…',
   'vscode.modContext.ready': 'Modkit: the mod context is ready, {layers} layers',
   'vscode.batch.filesOnDisk': 'Only files on disk can be converted.',
@@ -988,6 +994,14 @@ const RU_MESSAGES: Readonly<Record<keyof typeof EN_MESSAGES, string>> = Object.f
   'vscode.world.exportNoSubject': 'Откройте карту в Modkit, чтобы экспортировать её мир в UVW.',
   'vscode.world.exported':
     'Мир экспортирован в {file}. Не вошло в UVW: фасетов {facets}, объектов {objects}, полей {fields}.',
+  'vscode.world.saveAsMapNoSubject':
+    'Откройте мир UVW в Modkit, чтобы сохранить его как карту игры.',
+  'vscode.world.noMapEncoders':
+    'Ни одно установленное расширение не записывает карту игры из мира.',
+  'vscode.world.chooseMapFormat': 'В каком формате карты сохранить мир?',
+  'vscode.world.savedAsMap': 'Мир сохранён как {file}.',
+  'vscode.world.savedAsMapLosses':
+    'Мир сохранён как {file}. Не вошло в карту: {count} — см. отчёт.',
   'vscode.modContext.building': 'Modkit: строится контекст мода…',
   'vscode.modContext.ready': 'Modkit: контекст мода готов, слоёв: {layers}',
   'vscode.batch.filesOnDisk': 'Конвертировать можно только файлы на диске.',

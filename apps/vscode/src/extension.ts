@@ -84,6 +84,7 @@ discoverServiceOperations,
 invokeServiceOperation,
 SERVICE_OPERATION_CATALOG_MAX_PAGE_ITEMS,
 loadLocalizationCatalogs,
+offersFromInventory,
 resolveContentLanguageSources,
 subjectTarget,
 baseModsFor,
@@ -150,6 +151,7 @@ TreeDataSource,
 TreeNodeFacts
 } from '@modkit/sdk'
 import { createSubjectCandidateProvider, indexCacheEnabled } from '@modkit/sdk'
+import { NATIVE_MAP_ENCODER_CONTRACT } from '@modkit/sdk/maps'
 import { isModkitError } from '@modkit/core'
 import {
 CONTAINER_ENTRY_EXISTS,
@@ -350,6 +352,7 @@ import { readPackagedManagedRegistry } from './managed-registry.js'
 import { announceModContexts } from './mod-context-progress.js'
 import {
   commandOutputLeaf,
+  nativeEncoderFormats,
   WORLD_UVW_LIMITS,
   worldUvwReceiptOf,
   type WorldUvwReceipt,
@@ -9168,6 +9171,28 @@ async function activateModkit(
     })
   }
 
+  /** The UVW codec's way back to a game's map (WT10), run by `subject.convert`. */
+  const MAP_EXPORT_NATIVE = 'map.export-native'
+  /** A world saved as a game's map: where it went, and what the map does not carry (WT10). */
+  const reportNativeMapExport = (
+    diagnostics: CommandResult['diagnostics'],
+    wroteTo: unknown,
+  ): void => {
+    const file = typeof wroteTo === 'string' ? basename(wroteTo) : '—'
+    log(`[world-export] ${typeof wroteTo === 'string' ? wroteTo : '(not written)'}`)
+    for (const item of diagnostics) log(`[world-export] ${item.code}: ${item.message}`)
+    const show = localizer.text('vscode.batch.showReport')
+    const summary =
+      diagnostics.length === 0
+        ? localizer.text('vscode.world.savedAsMap', { file })
+        : localizer.text('vscode.world.savedAsMapLosses', { file, count: diagnostics.length })
+    void vscode.window
+      .showInformationMessage(`Modkit: ${summary}`, ...(diagnostics.length === 0 ? [] : [show]))
+      .then(choice => {
+        if (choice === show) output.show(true)
+      })
+  }
+
   /** A file of a conversion run opened as a subject, or the reason it could not be. */
   const openForConversion = async (path: string, signal: AbortSignal): Promise<BatchSubject> => {
     const subject = await commandOpener(path, signal)
@@ -9888,11 +9913,15 @@ async function activateModkit(
       readonly subject?: string
       readonly entry?: string
       readonly target?: string
+      /** The operation a conversion runs (`map.export-native`), not the first the subject offers. */
+      readonly operation?: string
       readonly operationId?: string
       readonly operationInput?: CommandInput[string]
     },
     opener = commandOpener,
   ): Promise<CommandResult> => {
+    // a map chosen in an earlier run names nothing of this one
+    chosenMapName = undefined
     const descriptor = commandRuntime.get(request.command)
     const title = `Modkit: ${descriptor?.title ?? request.command}`
     const result = await vscode.window.withProgress(
@@ -9912,6 +9941,7 @@ async function activateModkit(
               ...(request.subject === undefined ? {} : { subject: request.subject }),
               ...(request.entry === undefined ? {} : { entry: request.entry }),
               ...(request.target === undefined ? {} : { target: request.target }),
+              ...(request.operation === undefined ? {} : { operation: request.operation }),
               ...(request.operationId === undefined ? {} : { operationId: request.operationId }),
               ...(request.operationInput === undefined
                 ? {}
@@ -10005,6 +10035,12 @@ async function activateModkit(
         reportWorldExport(receipt, (result.data as { readonly wroteTo?: unknown }).wroteTo)
         return result
       }
+      // a world saved as a game's map (WT10): what the map does not carry is its diagnostics
+      const converted = result.data as { readonly via?: unknown; readonly wroteTo?: unknown } | null
+      if (converted?.via === MAP_EXPORT_NATIVE) {
+        reportNativeMapExport(result.diagnostics, converted.wroteTo)
+        return result
+      }
       /*
        * An answer that is a document opens as one. A converted catalog or a merged declaration is
        * read, not acknowledged, and a notification saying "completed" hides what was produced.
@@ -10052,6 +10088,13 @@ async function activateModkit(
   }
 
   // ---------------------------------------------------------------- commands
+  /** The subject a command runs on: the resource a menu passed, else the Modkit tab on show. */
+  const commandSubjectOf = (argument: unknown): string | undefined =>
+    argument instanceof vscode.Uri
+      ? argument.scheme === 'file'
+        ? argument.fsPath
+        : argument.toString()
+      : activeSubject
   const containerFrom = (argument: unknown): string | undefined => {
     if (argument instanceof vscode.Uri) {
       return argument.scheme === CONTAINER_SCHEME
@@ -11502,18 +11545,47 @@ async function activateModkit(
      * receipt of what UVW left out reported like a conversion.
      */
     vscode.commands.registerCommand('modkit.exportWorldUvw', (argument: unknown) => {
-      const subject =
-        argument instanceof vscode.Uri
-          ? argument.scheme === 'file'
-            ? argument.fsPath
-            : argument.toString()
-          : activeSubject
+      const subject = commandSubjectOf(argument)
       if (subject === undefined) {
         void vscode.window.showWarningMessage(localizer.text('vscode.world.exportNoSubject'))
         return undefined
       }
-      chosenMapName = undefined
       return runSharedCommand({ command: 'subject.convert', subject, target: 'uvw' }, worldOpener)
+    }),
+
+    /*
+     * A UVW world saved as a game's map (WT10): the shared `subject.convert` running the world's
+     * `map.export-native` with a format an installed encoder writes; the encoder's diagnostics —
+     * what the map does not carry — are reported like a conversion's.
+     */
+    vscode.commands.registerCommand('modkit.exportWorldNative', async (argument: unknown) => {
+      const subject = commandSubjectOf(argument)
+      if (subject === undefined) {
+        void vscode.window.showWarningMessage(localizer.text('vscode.world.saveAsMapNoSubject'))
+        return undefined
+      }
+      const formats = nativeEncoderFormats(
+        offersFromInventory(host.services.inventory),
+        NATIVE_MAP_ENCODER_CONTRACT,
+      )
+      if (formats.length === 0) {
+        void vscode.window.showWarningMessage(localizer.text('vscode.world.noMapEncoders'))
+        return undefined
+      }
+      const picked = await vscode.window.showQuickPick(
+        formats.map(format => ({
+          label: format.formatId,
+          description: format.extensions.join(', '),
+        })),
+        { title: localizer.text('vscode.world.chooseMapFormat') },
+      )
+      if (picked === undefined) return undefined
+      return runSharedCommand({
+        command: 'subject.convert',
+        subject,
+        target: picked.label,
+        operation: MAP_EXPORT_NATIVE,
+      })
     }),
 
     vscode.commands.registerCommand('modkit.convertFiles', (uri: unknown, uris: unknown) => {

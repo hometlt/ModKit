@@ -32,6 +32,7 @@
   "command.convertFolder": "Modkit: Convert Folder…",
   "command.convertFiles": "Modkit: Convert…",
   "command.exportWorldUvw": "Modkit: Export World to UVW…",
+  "command.exportWorldNative": "Modkit: Save World as Game Map…",
   "view.loading": "Loading Modkit…",
   "command.controlRuntime": "Modkit: Control Runtime Session…",
   "command.disableExtension": "Modkit: Disable Extension…",

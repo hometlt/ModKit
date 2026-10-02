@@ -153,6 +153,10 @@
       "title": "%command.exportWorldUvw%"
     },
     {
+      "command": "modkit.exportWorldNative",
+      "title": "%command.exportWorldNative%"
+    },
+    {
       "command": "modkit.showHostProfile",
       "title": "%command.openWorkbench%"
     },

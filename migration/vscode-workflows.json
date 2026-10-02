@@ -434,6 +434,13 @@
       "state": "observed-only"
     },
     {
+      "factId": "x3:vscode-command:modkit.exportWorldNative",
+      "kind": "vscode-command",
+      "key": "modkit.exportWorldNative",
+      "workflowId": "vscode/asset-inspect-preview-convert",
+      "state": "observed-only"
+    },
+    {
       "factId": "x3:vscode-command:modkit.convertFolder",
       "kind": "vscode-command",
       "key": "modkit.convertFolder",
