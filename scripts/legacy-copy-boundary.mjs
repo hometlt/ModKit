@@ -52,8 +52,8 @@ export async function legacyCopyExclusions(root) {
     await readFile(join(scriptRoot, 'migration/mk2-divergence/sc2.json'), 'utf8'),
   )
   const selected = declaration.scopes?.['m1-libs']
-  if (declaration.oracleCommit !== MK2_PIN || selected?.requiredSources?.length !== 50)
-    throw new Error('Legacy vocabulary boundary requires the pinned 50-file M1 closure')
+  if (declaration.oracleCommit !== MK2_PIN || selected?.requiredSources?.length !== 37)
+    throw new Error('Legacy vocabulary boundary requires the pinned 37-file M1 closure')
   const required = new Set(selected.requiredSources)
   const canonicalSources = new Map(
     declaration.copies
@@ -67,7 +67,7 @@ export async function legacyCopyExclusions(root) {
     workspaceRoot: resolve(root, '..'),
     repoRoot: resolve(scriptRoot, '../references/modkitmk2'),
   })
-  if (prepared.records.length !== 50 || canonicalSources.size !== 50)
-    throw new Error('Legacy vocabulary boundary requires exactly 50 canonical records')
+  if (prepared.records.length !== 37 || canonicalSources.size !== 37)
+    throw new Error('Legacy vocabulary boundary requires exactly 37 canonical records')
   return verifiedLegacyPaths(prepared, root, canonicalSources)
 }

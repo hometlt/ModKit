@@ -16,9 +16,7 @@
         "packages/assets/src/diagnostics.ts",
         "packages/assets/src/capabilities.ts",
         "packages/assets/src/cancellation.ts",
-        "packages/assets/src/json.ts",
         "packages/assets/src/editing.ts",
-        "packages/assets/src/profiles/image-texture.ts",
         "packages/assets/src/content.ts",
         "packages/assets/src/contributions.ts",
         "packages/assets/src/companions.ts",
@@ -26,19 +24,12 @@
         "packages/assets/src/codec-matching.ts",
         "packages/assets/src/codec-manifest.ts",
         "packages/core/src/errors.ts",
-        "packages/core/src/logger.ts",
         "packages/games/src/types.ts",
         "packages/world/src/contracts.ts",
         "packages/runtime/src/contracts.ts",
         "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/sha1.ts",
-        "packages/archives-processing/src/lib/crypto/index.ts",
         "packages/archives-processing/src/lib/compression/index.ts",
-        "packages/archives-processing/src/lib/compression/pako.d.ts",
-        "packages/image-processing/src/core/gpu-texture.ts",
-        "packages/image-processing/src/core/gpu-texture-wasm.ts",
-        "packages/image-processing/src/core/compressed-texture.ts",
         "packages/image-processing/src/core/binary.ts",
-        "packages/image-processing/src/core/types.ts",
         "packages/semantic/src/data.ts",
         "packages/semantic/src/documents.ts",
         "packages/semantic/src/layouts.ts",
@@ -48,10 +39,6 @@
         "packages/semantic/src/replays.ts",
         "packages/semantic/src/saves.ts",
         "packages/semantic/src/scripts.ts",
-        "packages/language-contracts/src/module.ts",
-        "packages/language-contracts/src/document-kind.ts",
-        "packages/language-contracts/src/contributions.ts",
-        "packages/language-contracts/src/index.ts",
         "packages/entity-cards/src/model.ts",
         "packages/entity-cards/src/graph.ts",
         "packages/entity-cards/src/providers.ts",
@@ -62,8 +49,8 @@
       "adapters": [
         {
           "destination": "modkit-core/packages/codec-kit/src/legacy/assets/index.ts",
-          "reason": "Narrow barrel over pinned neutral assets contracts and explicit registry compatibility boundary; replaces MK2 assets package import.",
-          "sha256": "2731197de24355038bf97d4d89646031b1558cbb2ff551f7ba2b0f765aa84cdc"
+          "reason": "Narrow barrel over pinned neutral assets contracts and explicit registry compatibility boundary; replaces MK2 assets package import. JSON types are the sdk's (decision 49).",
+          "sha256": "7e5ca2bc9a30f37f14d1397dfa32ca4f1afdfff3e4f47f51d02f9bc2110c673c"
         },
         {
           "destination": "modkit-core/packages/codec-kit/src/legacy/assets/registry-compat.ts",
@@ -72,8 +59,8 @@
         },
         {
           "destination": "modkit-core/packages/codec-kit/src/legacy/core/index.ts",
-          "reason": "Narrow barrel over the uniquely copied MK2 errors and logger contracts; replaces MK2 core package imports.",
-          "sha256": "c218e8286f4e245f4a39ca8f2601a711db65395ed9bcb8bf03babde3860e9c58"
+          "reason": "Narrow barrel over the uniquely copied MK2 errors contract; replaces MK2 core package imports.",
+          "sha256": "c05bc0e46416331db808862835c353f7d1465c33cc3bd4d70209aac4bfac2a01"
         }
       ],
       "dependencies": [
@@ -137,26 +124,50 @@
           "reason": "MK3 ModkitError in the explicit registry compatibility adapter."
         },
         {
+          "specifier": "@modkit/sdk",
+          "package": "@modkit/sdk",
+          "manifest": "modkit-core/node_modules/@modkit/sdk/package.json",
+          "version": "0.1.0",
+          "reason": "JSON types of the assets barrel are the sdk's (decision 49)."
+        },
+        {
           "specifier": "crypto",
           "kind": "node-builtin",
           "reason": "Pinned SHA1 Node hash boundary."
         }
       ],
-      "dynamicImports": [
+      "dynamicImports": [],
+      "importDispositions": [
         {
-          "source": "packages/image-processing/src/core/gpu-texture-wasm.ts",
-          "expression": "moduleUrl",
-          "specifier": "texture2ddecoder-wasm",
-          "reason": "Browser caller supplies assetBaseUrl; loader resolves wasm/texture2ddecoder.js and its companion .wasm. Required package assets are hashed in dependencies."
+          "source": "packages/assets/src/artifact-session.ts",
+          "specifier": "./json.js",
+          "kind": "copied-unwired",
+          "reason": "Owner decision 49 (2026-10-01, AGENTS.md §10): legacy/assets/json.ts is MK3 code — the sdk JSON types and the MK2 serializability check these copies still make — not a canonical copy; the import resolves to it as is.",
+          "count": 1
         },
         {
-          "source": "packages/image-processing/src/core/gpu-texture-wasm.ts",
-          "expression": "packageName",
-          "specifier": "texture2ddecoder-wasm",
-          "reason": "Pinned Node fallback constructs texture2ddecoder-wasm from two literal words."
+          "source": "packages/assets/src/descriptor.ts",
+          "specifier": "./json.js",
+          "kind": "copied-unwired",
+          "reason": "Owner decision 49 (2026-10-01, AGENTS.md §10): legacy/assets/json.ts is MK3 code — the sdk JSON types and the MK2 serializability check these copies still make — not a canonical copy; the import resolves to it as is.",
+          "count": 1
+        },
+        {
+          "source": "packages/assets/src/diagnostics.ts",
+          "specifier": "./json.js",
+          "kind": "copied-unwired",
+          "reason": "Owner decision 49 (2026-10-01, AGENTS.md §10): legacy/assets/json.ts is MK3 code — the sdk JSON types and the MK2 serializability check these copies still make — not a canonical copy; the import resolves to it as is.",
+          "count": 1
+        },
+        {
+          "source": "packages/archives-processing/src/lib/compression/index.ts",
+          "specifier": "./pako.d.ts",
+          "kind": "copied-unwired",
+          "reason": "Owner decision 49 (2026-10-01, AGENTS.md §10): compression/pako.d.ts is MK3 code (the ambient pako typing), not a canonical copy; the triple-slash reference resolves to it as is.",
+          "count": 1
         }
       ],
-      "acceptancePin": "sc2-m1-libs-2026-09-04"
+      "acceptancePin": "sc2-m1-libs-2026-10-02"
     },
     "sc2-bank": {
       "status": "ready",

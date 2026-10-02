@@ -26,6 +26,16 @@ const acceptedScopePins = new Map([
     },
   ],
   [
+    'sc2-m1-libs-2026-10-02',
+    {
+      family: 'sc2',
+      scopeName: 'm1-libs',
+      oracleCommit: MK2_PIN,
+      scopeDigest: '2f8200d15d6aa78fac6b11a09aebd27bfc72c5ad43adf1ddd381ed357dc909f6',
+      legacyDeclarationDigest: '2f8200d15d6aa78fac6b11a09aebd27bfc72c5ad43adf1ddd381ed357dc909f6',
+    },
+  ],
+  [
     'sc2-bank-2026-09-04',
     {
       family: 'sc2',

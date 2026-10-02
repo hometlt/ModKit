@@ -3,14 +3,14 @@
   "family": "sc2",
   "scope": "m1-libs",
   "oracleCommit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
-  "declarationDigest": "31029f8d7333d3d676ad2e8b58be5e80e9f28f64658c640eeea84519d3fa6875",
+  "declarationDigest": "2f8200d15d6aa78fac6b11a09aebd27bfc72c5ad43adf1ddd381ed357dc909f6",
   "divergenceDigest": "f79bad3f8c844bbdc65e02ed1aa018e806c950aeefb9d4f3cc77ff38e3da49bf",
   "copiedAt": "2026-09-04",
   "adapters": [
     {
       "destination": "modkit-core/packages/codec-kit/src/legacy/assets/index.ts",
-      "reason": "Narrow barrel over pinned neutral assets contracts and explicit registry compatibility boundary; replaces MK2 assets package import.",
-      "sha256": "2731197de24355038bf97d4d89646031b1558cbb2ff551f7ba2b0f765aa84cdc"
+      "reason": "Narrow barrel over pinned neutral assets contracts and explicit registry compatibility boundary; replaces MK2 assets package import. JSON types are the sdk's (decision 49).",
+      "sha256": "7e5ca2bc9a30f37f14d1397dfa32ca4f1afdfff3e4f47f51d02f9bc2110c673c"
     },
     {
       "destination": "modkit-core/packages/codec-kit/src/legacy/assets/registry-compat.ts",
@@ -19,8 +19,8 @@
     },
     {
       "destination": "modkit-core/packages/codec-kit/src/legacy/core/index.ts",
-      "reason": "Narrow barrel over the uniquely copied MK2 errors and logger contracts; replaces MK2 core package imports.",
-      "sha256": "c218e8286f4e245f4a39ca8f2601a711db65395ed9bcb8bf03babde3860e9c58"
+      "reason": "Narrow barrel over the uniquely copied MK2 errors contract; replaces MK2 core package imports.",
+      "sha256": "c05bc0e46416331db808862835c353f7d1465c33cc3bd4d70209aac4bfac2a01"
     }
   ],
   "dependencies": [
@@ -84,23 +84,47 @@
       "reason": "MK3 ModkitError in the explicit registry compatibility adapter."
     },
     {
+      "specifier": "@modkit/sdk",
+      "package": "@modkit/sdk",
+      "manifest": "modkit-core/node_modules/@modkit/sdk/package.json",
+      "version": "0.1.0",
+      "reason": "JSON types of the assets barrel are the sdk's (decision 49)."
+    },
+    {
       "specifier": "crypto",
       "kind": "node-builtin",
       "reason": "Pinned SHA1 Node hash boundary."
     }
   ],
-  "dynamicImports": [
+  "dynamicImports": [],
+  "importDispositions": [
     {
-      "source": "packages/image-processing/src/core/gpu-texture-wasm.ts",
-      "expression": "moduleUrl",
-      "specifier": "texture2ddecoder-wasm",
-      "reason": "Browser caller supplies assetBaseUrl; loader resolves wasm/texture2ddecoder.js and its companion .wasm. Required package assets are hashed in dependencies."
+      "source": "packages/assets/src/artifact-session.ts",
+      "specifier": "./json.js",
+      "kind": "copied-unwired",
+      "reason": "Owner decision 49 (2026-10-01, AGENTS.md §10): legacy/assets/json.ts is MK3 code — the sdk JSON types and the MK2 serializability check these copies still make — not a canonical copy; the import resolves to it as is.",
+      "count": 1
     },
     {
-      "source": "packages/image-processing/src/core/gpu-texture-wasm.ts",
-      "expression": "packageName",
-      "specifier": "texture2ddecoder-wasm",
-      "reason": "Pinned Node fallback constructs texture2ddecoder-wasm from two literal words."
+      "source": "packages/assets/src/descriptor.ts",
+      "specifier": "./json.js",
+      "kind": "copied-unwired",
+      "reason": "Owner decision 49 (2026-10-01, AGENTS.md §10): legacy/assets/json.ts is MK3 code — the sdk JSON types and the MK2 serializability check these copies still make — not a canonical copy; the import resolves to it as is.",
+      "count": 1
+    },
+    {
+      "source": "packages/assets/src/diagnostics.ts",
+      "specifier": "./json.js",
+      "kind": "copied-unwired",
+      "reason": "Owner decision 49 (2026-10-01, AGENTS.md §10): legacy/assets/json.ts is MK3 code — the sdk JSON types and the MK2 serializability check these copies still make — not a canonical copy; the import resolves to it as is.",
+      "count": 1
+    },
+    {
+      "source": "packages/archives-processing/src/lib/compression/index.ts",
+      "specifier": "./pako.d.ts",
+      "kind": "copied-unwired",
+      "reason": "Owner decision 49 (2026-10-01, AGENTS.md §10): compression/pako.d.ts is MK3 code (the ambient pako typing), not a canonical copy; the triple-slash reference resolves to it as is.",
+      "count": 1
     }
   ],
   "closure": [
@@ -193,7 +217,14 @@
       "sourceSpecifier": "./json.js",
       "destinationSpecifier": "./json.js",
       "sourceTarget": "packages/assets/src/json.ts",
-      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/json.ts"
+      "destinationTarget": "copied-unwired:./json.js",
+      "disposition": {
+        "source": "packages/assets/src/artifact-session.ts",
+        "specifier": "./json.js",
+        "kind": "copied-unwired",
+        "reason": "Owner decision 49 (2026-10-01, AGENTS.md §10): legacy/assets/json.ts is MK3 code — the sdk JSON types and the MK2 serializability check these copies still make — not a canonical copy; the import resolves to it as is.",
+        "count": 1
+      }
     },
     {
       "importer": "packages/assets/src/artifact-session.ts",
@@ -256,7 +287,14 @@
       "sourceSpecifier": "./json.js",
       "destinationSpecifier": "./json.js",
       "sourceTarget": "packages/assets/src/json.ts",
-      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/json.ts"
+      "destinationTarget": "copied-unwired:./json.js",
+      "disposition": {
+        "source": "packages/assets/src/descriptor.ts",
+        "specifier": "./json.js",
+        "kind": "copied-unwired",
+        "reason": "Owner decision 49 (2026-10-01, AGENTS.md §10): legacy/assets/json.ts is MK3 code — the sdk JSON types and the MK2 serializability check these copies still make — not a canonical copy; the import resolves to it as is.",
+        "count": 1
+      }
     },
     {
       "importer": "packages/assets/src/descriptor.ts",
@@ -291,7 +329,14 @@
       "sourceSpecifier": "./json.js",
       "destinationSpecifier": "./json.js",
       "sourceTarget": "packages/assets/src/json.ts",
-      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/json.ts"
+      "destinationTarget": "copied-unwired:./json.js",
+      "disposition": {
+        "source": "packages/assets/src/diagnostics.ts",
+        "specifier": "./json.js",
+        "kind": "copied-unwired",
+        "reason": "Owner decision 49 (2026-10-01, AGENTS.md §10): legacy/assets/json.ts is MK3 code — the sdk JSON types and the MK2 serializability check these copies still make — not a canonical copy; the import resolves to it as is.",
+        "count": 1
+      }
     },
     {
       "importer": "packages/assets/src/diagnostics.ts",
@@ -378,25 +423,11 @@
       "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/source.ts"
     },
     {
-      "importer": "packages/core/src/logger.ts",
-      "sourceSpecifier": "@logtape/logtape",
-      "destinationSpecifier": "@logtape/logtape",
-      "sourceTarget": null,
-      "destinationTarget": "dependency:@logtape/logtape"
-    },
-    {
       "importer": "packages/runtime/src/contracts.ts",
       "sourceSpecifier": "@modkitx/assets",
       "destinationSpecifier": "../assets/index.js",
       "sourceTarget": null,
       "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/index.ts"
-    },
-    {
-      "importer": "packages/archives-processing/src/lib/crypto/index.ts",
-      "sourceSpecifier": "crypto",
-      "destinationSpecifier": "crypto",
-      "sourceTarget": null,
-      "destinationTarget": "dependency:crypto"
     },
     {
       "importer": "packages/archives-processing/src/lib/compression/index.ts",
@@ -410,98 +441,14 @@
       "sourceSpecifier": "./pako.d.ts",
       "destinationSpecifier": "./pako.d.ts",
       "sourceTarget": "packages/archives-processing/src/lib/compression/pako.d.ts",
-      "destinationTarget": "modkit-core/packages/codec-kit/src/compression/pako.d.ts"
-    },
-    {
-      "importer": "packages/image-processing/src/core/gpu-texture.ts",
-      "sourceSpecifier": "./types.js",
-      "destinationSpecifier": "./types.js",
-      "sourceTarget": "packages/image-processing/src/core/types.ts",
-      "destinationTarget": "modkit-core/packages/codec-kit/src/texture/types.ts"
-    },
-    {
-      "importer": "packages/image-processing/src/core/gpu-texture.ts",
-      "sourceSpecifier": "./compressed-texture.js",
-      "destinationSpecifier": "./compressed-texture.js",
-      "sourceTarget": "packages/image-processing/src/core/compressed-texture.ts",
-      "destinationTarget": "modkit-core/packages/codec-kit/src/texture/compressed-texture.ts"
-    },
-    {
-      "importer": "packages/image-processing/src/core/gpu-texture.ts",
-      "sourceSpecifier": "./binary.js",
-      "destinationSpecifier": "./binary.js",
-      "sourceTarget": "packages/image-processing/src/core/binary.ts",
-      "destinationTarget": "modkit-core/packages/codec-kit/src/texture/binary.ts"
-    },
-    {
-      "importer": "packages/image-processing/src/core/gpu-texture.ts",
-      "sourceSpecifier": "./gpu-texture-wasm.js",
-      "destinationSpecifier": "./gpu-texture-wasm.js",
-      "sourceTarget": "packages/image-processing/src/core/gpu-texture-wasm.ts",
-      "destinationTarget": "modkit-core/packages/codec-kit/src/texture/gpu-texture-wasm.ts"
-    },
-    {
-      "importer": "packages/image-processing/src/core/gpu-texture-wasm.ts",
-      "sourceSpecifier": "@modkitx/core/errors",
-      "destinationSpecifier": "../legacy/core/errors.js",
-      "sourceTarget": null,
-      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/core/errors.ts"
-    },
-    {
-      "importer": "packages/image-processing/src/core/gpu-texture-wasm.ts",
-      "sourceSpecifier": "texture2ddecoder-wasm",
-      "destinationSpecifier": "texture2ddecoder-wasm",
-      "sourceTarget": null,
-      "destinationTarget": "dependency:texture2ddecoder-wasm"
-    },
-    {
-      "importer": "packages/image-processing/src/core/gpu-texture-wasm.ts",
-      "sourceSpecifier": "texture2ddecoder-wasm",
-      "destinationSpecifier": "texture2ddecoder-wasm",
-      "sourceTarget": null,
-      "destinationTarget": "dependency:texture2ddecoder-wasm"
-    },
-    {
-      "importer": "packages/image-processing/src/core/compressed-texture.ts",
-      "sourceSpecifier": "@modkitx/core/errors",
-      "destinationSpecifier": "../legacy/core/errors.js",
-      "sourceTarget": null,
-      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/core/errors.ts"
-    },
-    {
-      "importer": "packages/image-processing/src/core/compressed-texture.ts",
-      "sourceSpecifier": "@modkitx/assets/profiles/image-texture",
-      "destinationSpecifier": "../legacy/assets/profiles/image-texture.js",
-      "sourceTarget": null,
-      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/profiles/image-texture.ts"
-    },
-    {
-      "importer": "packages/image-processing/src/core/compressed-texture.ts",
-      "sourceSpecifier": "@modkitx/assets/profiles/image-texture",
-      "destinationSpecifier": "../legacy/assets/profiles/image-texture.js",
-      "sourceTarget": null,
-      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/profiles/image-texture.ts"
-    },
-    {
-      "importer": "packages/image-processing/src/core/compressed-texture.ts",
-      "sourceSpecifier": "@modkitx/assets/profiles/image-texture",
-      "destinationSpecifier": "../legacy/assets/profiles/image-texture.js",
-      "sourceTarget": null,
-      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/profiles/image-texture.ts"
-    },
-    {
-      "importer": "packages/image-processing/src/core/types.ts",
-      "sourceSpecifier": "@modkitx/assets",
-      "destinationSpecifier": "../legacy/assets/index.js",
-      "sourceTarget": null,
-      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/index.ts"
-    },
-    {
-      "importer": "packages/image-processing/src/core/types.ts",
-      "sourceSpecifier": "./compressed-texture.js",
-      "destinationSpecifier": "./compressed-texture.js",
-      "sourceTarget": "packages/image-processing/src/core/compressed-texture.ts",
-      "destinationTarget": "modkit-core/packages/codec-kit/src/texture/compressed-texture.ts"
+      "destinationTarget": "copied-unwired:./pako.d.ts",
+      "disposition": {
+        "source": "packages/archives-processing/src/lib/compression/index.ts",
+        "specifier": "./pako.d.ts",
+        "kind": "copied-unwired",
+        "reason": "Owner decision 49 (2026-10-01, AGENTS.md §10): compression/pako.d.ts is MK3 code (the ambient pako typing), not a canonical copy; the triple-slash reference resolves to it as is.",
+        "count": 1
+      }
     },
     {
       "importer": "packages/semantic/src/data.ts",
@@ -628,97 +575,6 @@
       "destinationSpecifier": "../assets/index.js",
       "sourceTarget": null,
       "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/index.ts"
-    },
-    {
-      "importer": "packages/language-contracts/src/module.ts",
-      "sourceSpecifier": "vscode-languageserver/node",
-      "destinationSpecifier": "vscode-languageserver/node",
-      "sourceTarget": null,
-      "destinationTarget": "dependency:vscode-languageserver/node"
-    },
-    {
-      "importer": "packages/language-contracts/src/module.ts",
-      "sourceSpecifier": "vscode-languageserver-textdocument",
-      "destinationSpecifier": "vscode-languageserver-textdocument",
-      "sourceTarget": null,
-      "destinationTarget": "dependency:vscode-languageserver-textdocument"
-    },
-    {
-      "importer": "packages/language-contracts/src/document-kind.ts",
-      "sourceSpecifier": "./module.js",
-      "destinationSpecifier": "./module.js",
-      "sourceTarget": "packages/language-contracts/src/module.ts",
-      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/language-contracts/module.ts"
-    },
-    {
-      "importer": "packages/language-contracts/src/contributions.ts",
-      "sourceSpecifier": "@modkitx/core",
-      "destinationSpecifier": "../core/index.js",
-      "sourceTarget": null,
-      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/core/index.ts"
-    },
-    {
-      "importer": "packages/language-contracts/src/contributions.ts",
-      "sourceSpecifier": "./document-kind.js",
-      "destinationSpecifier": "./document-kind.js",
-      "sourceTarget": "packages/language-contracts/src/document-kind.ts",
-      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/language-contracts/document-kind.ts"
-    },
-    {
-      "importer": "packages/language-contracts/src/contributions.ts",
-      "sourceSpecifier": "./document-kind.js",
-      "destinationSpecifier": "./document-kind.js",
-      "sourceTarget": "packages/language-contracts/src/document-kind.ts",
-      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/language-contracts/document-kind.ts"
-    },
-    {
-      "importer": "packages/language-contracts/src/contributions.ts",
-      "sourceSpecifier": "./module.js",
-      "destinationSpecifier": "./module.js",
-      "sourceTarget": "packages/language-contracts/src/module.ts",
-      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/language-contracts/module.ts"
-    },
-    {
-      "importer": "packages/language-contracts/src/index.ts",
-      "sourceSpecifier": "./module.js",
-      "destinationSpecifier": "./module.js",
-      "sourceTarget": "packages/language-contracts/src/module.ts",
-      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/language-contracts/module.ts"
-    },
-    {
-      "importer": "packages/language-contracts/src/index.ts",
-      "sourceSpecifier": "./module.js",
-      "destinationSpecifier": "./module.js",
-      "sourceTarget": "packages/language-contracts/src/module.ts",
-      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/language-contracts/module.ts"
-    },
-    {
-      "importer": "packages/language-contracts/src/index.ts",
-      "sourceSpecifier": "./document-kind.js",
-      "destinationSpecifier": "./document-kind.js",
-      "sourceTarget": "packages/language-contracts/src/document-kind.ts",
-      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/language-contracts/document-kind.ts"
-    },
-    {
-      "importer": "packages/language-contracts/src/index.ts",
-      "sourceSpecifier": "./document-kind.js",
-      "destinationSpecifier": "./document-kind.js",
-      "sourceTarget": "packages/language-contracts/src/document-kind.ts",
-      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/language-contracts/document-kind.ts"
-    },
-    {
-      "importer": "packages/language-contracts/src/index.ts",
-      "sourceSpecifier": "./contributions.js",
-      "destinationSpecifier": "./contributions.js",
-      "sourceTarget": "packages/language-contracts/src/contributions.ts",
-      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/language-contracts/contributions.ts"
-    },
-    {
-      "importer": "packages/language-contracts/src/index.ts",
-      "sourceSpecifier": "./contributions.js",
-      "destinationSpecifier": "./contributions.js",
-      "sourceTarget": "packages/language-contracts/src/contributions.ts",
-      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/language-contracts/contributions.ts"
     },
     {
       "importer": "packages/entity-cards/src/model.ts",
@@ -876,29 +732,11 @@
       "divergence": null
     },
     {
-      "mk2Path": "packages/assets/src/json.ts",
-      "destination": "modkit-core/packages/codec-kit/src/legacy/assets/json.ts",
-      "sha256Mk2": "f044a80c402d72142fdf2c0f5345882cbcba828050b90704a022e4e01b00f4c5",
-      "sha256Mk3": "f044a80c402d72142fdf2c0f5345882cbcba828050b90704a022e4e01b00f4c5",
-      "gitBlob": "c81b98081f92c116056e2c86632259d54353721c",
-      "rewrites": [],
-      "divergence": null
-    },
-    {
       "mk2Path": "packages/assets/src/editing.ts",
       "destination": "modkit-core/packages/codec-kit/src/legacy/assets/editing.ts",
       "sha256Mk2": "331d2cd15839ab62339dc3dabd14a7ea0152af2fc9a0893015dffa004213c707",
       "sha256Mk3": "331d2cd15839ab62339dc3dabd14a7ea0152af2fc9a0893015dffa004213c707",
       "gitBlob": "1102c8383fd141fa66bc6de63ab5ca5fbe1e8a06",
-      "rewrites": [],
-      "divergence": null
-    },
-    {
-      "mk2Path": "packages/assets/src/profiles/image-texture.ts",
-      "destination": "modkit-core/packages/codec-kit/src/legacy/assets/profiles/image-texture.ts",
-      "sha256Mk2": "b4d972f883cb9cfec292c880d76ccec22a9e18d292a12dfb70df48cfcc20e48e",
-      "sha256Mk3": "b4d972f883cb9cfec292c880d76ccec22a9e18d292a12dfb70df48cfcc20e48e",
-      "gitBlob": "ead1e656603608f07fb9c4c35ba0e92356356e81",
       "rewrites": [],
       "divergence": null
     },
@@ -966,15 +804,6 @@
       "divergence": null
     },
     {
-      "mk2Path": "packages/core/src/logger.ts",
-      "destination": "modkit-core/packages/codec-kit/src/legacy/core/logger.ts",
-      "sha256Mk2": "67aec5c576ae89d0a06e64b8e8b8c8898b83a28276f923f7722931ce56f6b485",
-      "sha256Mk3": "67aec5c576ae89d0a06e64b8e8b8c8898b83a28276f923f7722931ce56f6b485",
-      "gitBlob": "2250e8a54bb6a37664a7730c077aca2a8e7d066e",
-      "rewrites": [],
-      "divergence": null
-    },
-    {
       "mk2Path": "packages/games/src/types.ts",
       "destination": "modkit-core/packages/codec-kit/src/legacy/games/types.ts",
       "sha256Mk2": "041dc18bb56f2c9babe4068f58ccc4af6c97a6451b6ff645212bf45488db4be5",
@@ -1020,15 +849,6 @@
       "divergence": null
     },
     {
-      "mk2Path": "packages/archives-processing/src/lib/crypto/index.ts",
-      "destination": "modkit-core/packages/codec-kit/src/crypto/mpq.ts",
-      "sha256Mk2": "596dfa5f7f152d494bd5bf0cb59b76f5d5159ff4680197340247689a212b104e",
-      "sha256Mk3": "596dfa5f7f152d494bd5bf0cb59b76f5d5159ff4680197340247689a212b104e",
-      "gitBlob": "027c39d88dcf9fa3479d8b6fb557b54d36ed0b66",
-      "rewrites": [],
-      "divergence": null
-    },
-    {
       "mk2Path": "packages/archives-processing/src/lib/compression/index.ts",
       "destination": "modkit-core/packages/codec-kit/src/compression/legacy-original.ts",
       "sha256Mk2": "935ca7040412c316276f56a3f75247ac4020955c6f6be5be601be2a421ff0eba",
@@ -1038,92 +858,12 @@
       "divergence": null
     },
     {
-      "mk2Path": "packages/archives-processing/src/lib/compression/pako.d.ts",
-      "destination": "modkit-core/packages/codec-kit/src/compression/pako.d.ts",
-      "sha256Mk2": "e72f0906129420465336b2c9b974bdfe25f2a858e385f159928db2293386c33e",
-      "sha256Mk3": "e72f0906129420465336b2c9b974bdfe25f2a858e385f159928db2293386c33e",
-      "gitBlob": "38a7317f0e895ac3ef05ace8c3880eb4a9474a03",
-      "rewrites": [],
-      "divergence": null
-    },
-    {
-      "mk2Path": "packages/image-processing/src/core/gpu-texture.ts",
-      "destination": "modkit-core/packages/codec-kit/src/texture/gpu-texture.ts",
-      "sha256Mk2": "cd2a3c4418083a1701905cc5955bb4469d95e70702fa9467a2d15565525302d6",
-      "sha256Mk3": "cd2a3c4418083a1701905cc5955bb4469d95e70702fa9467a2d15565525302d6",
-      "gitBlob": "dc827026b97adfece895ca382288c4cc6585d492",
-      "rewrites": [],
-      "divergence": null
-    },
-    {
-      "mk2Path": "packages/image-processing/src/core/gpu-texture-wasm.ts",
-      "destination": "modkit-core/packages/codec-kit/src/texture/gpu-texture-wasm.ts",
-      "sha256Mk2": "acd1d88e84688a78399e8d099df5d660e8a86585752b7fc758064fe335e0ebe0",
-      "sha256Mk3": "9bbf5b9d1db0eb03f0fb800a4240766010365dfa4a5202a61961486c129f9bdb",
-      "gitBlob": "68be4c67f2b62db36e017ca13f2c1282729bfdb1",
-      "rewrites": [
-        {
-          "kind": "import",
-          "from": "'@modkitx/core/errors'",
-          "to": "'../legacy/core/errors.js'",
-          "count": 1,
-          "sha256Before": "acd1d88e84688a78399e8d099df5d660e8a86585752b7fc758064fe335e0ebe0",
-          "sha256After": "9bbf5b9d1db0eb03f0fb800a4240766010365dfa4a5202a61961486c129f9bdb"
-        }
-      ],
-      "divergence": null
-    },
-    {
-      "mk2Path": "packages/image-processing/src/core/compressed-texture.ts",
-      "destination": "modkit-core/packages/codec-kit/src/texture/compressed-texture.ts",
-      "sha256Mk2": "9599b48a1dfdc29d50ec2e9b9c588589f23ae4d0bb4d38e9ab686f634a299435",
-      "sha256Mk3": "b58583611f262489ce6e6d58feb48c965c09f734d642dfe53c27ec8ed1247c04",
-      "gitBlob": "f6cfa1b6cb40534ccd4782a534f56c0be4f5aea5",
-      "rewrites": [
-        {
-          "kind": "import",
-          "from": "'@modkitx/core/errors'",
-          "to": "'../legacy/core/errors.js'",
-          "count": 1,
-          "sha256Before": "9599b48a1dfdc29d50ec2e9b9c588589f23ae4d0bb4d38e9ab686f634a299435",
-          "sha256After": "4bac20b259eca0e7e4b7d9f4480d3056606c135f86b0a453a74470cb69a95f98"
-        },
-        {
-          "kind": "import",
-          "from": "'@modkitx/assets/profiles/image-texture'",
-          "to": "'../legacy/assets/profiles/image-texture.js'",
-          "count": 3,
-          "sha256Before": "4bac20b259eca0e7e4b7d9f4480d3056606c135f86b0a453a74470cb69a95f98",
-          "sha256After": "b58583611f262489ce6e6d58feb48c965c09f734d642dfe53c27ec8ed1247c04"
-        }
-      ],
-      "divergence": null
-    },
-    {
       "mk2Path": "packages/image-processing/src/core/binary.ts",
       "destination": "modkit-core/packages/codec-kit/src/texture/binary.ts",
       "sha256Mk2": "26533516ef6d7846bff3577b10bb86dbaad4c4eff3c3a04dc9d965b8554e0b1c",
       "sha256Mk3": "26533516ef6d7846bff3577b10bb86dbaad4c4eff3c3a04dc9d965b8554e0b1c",
       "gitBlob": "e033c57b6e2a6088413296fe3dbeb123bf5263e3",
       "rewrites": [],
-      "divergence": null
-    },
-    {
-      "mk2Path": "packages/image-processing/src/core/types.ts",
-      "destination": "modkit-core/packages/codec-kit/src/texture/types.ts",
-      "sha256Mk2": "d0e58e8fb64841636eea5bdc4ddb16bd92d7034e53b9767b14c8877e1393f842",
-      "sha256Mk3": "0054971112318a8e4b866e33a9102a688dc7d7bda19990177bbd403081619540",
-      "gitBlob": "97963f8387d961da4d2f72191bd11081e5c3d710",
-      "rewrites": [
-        {
-          "kind": "import",
-          "from": "'@modkitx/assets'",
-          "to": "'../legacy/assets/index.js'",
-          "count": 1,
-          "sha256Before": "d0e58e8fb64841636eea5bdc4ddb16bd92d7034e53b9767b14c8877e1393f842",
-          "sha256After": "0054971112318a8e4b866e33a9102a688dc7d7bda19990177bbd403081619540"
-        }
-      ],
       "divergence": null
     },
     {
@@ -1286,51 +1026,6 @@
           "sha256After": "fcf1cb5b3486ec1ca8979247303d69305c13b5b32a9e95ffed02b2f6eae6cb1c"
         }
       ],
-      "divergence": null
-    },
-    {
-      "mk2Path": "packages/language-contracts/src/module.ts",
-      "destination": "modkit-core/packages/codec-kit/src/legacy/language-contracts/module.ts",
-      "sha256Mk2": "34686cf244e430e03c736bd6bd82da54c16529738d487a9e56bfb83f56df5eb6",
-      "sha256Mk3": "34686cf244e430e03c736bd6bd82da54c16529738d487a9e56bfb83f56df5eb6",
-      "gitBlob": "6d7cd2ec870ce135a10e8e61e7003e05baf90bd9",
-      "rewrites": [],
-      "divergence": null
-    },
-    {
-      "mk2Path": "packages/language-contracts/src/document-kind.ts",
-      "destination": "modkit-core/packages/codec-kit/src/legacy/language-contracts/document-kind.ts",
-      "sha256Mk2": "97acbdfb4becbcda955eac79a3acc4aef08efe2a85b3f7bad229ef065e3709cb",
-      "sha256Mk3": "97acbdfb4becbcda955eac79a3acc4aef08efe2a85b3f7bad229ef065e3709cb",
-      "gitBlob": "23de4b07c542a2658af298d3fe50fc3b305f1b66",
-      "rewrites": [],
-      "divergence": null
-    },
-    {
-      "mk2Path": "packages/language-contracts/src/contributions.ts",
-      "destination": "modkit-core/packages/codec-kit/src/legacy/language-contracts/contributions.ts",
-      "sha256Mk2": "9af65bc91a0e88458978999f12a3dda73c2d746d2f5975d78d38793385f836d6",
-      "sha256Mk3": "259b51df2522d71ad8112896570203270c8ecc902822bd5c1f4d88a5a165da80",
-      "gitBlob": "420022696fe0990f4f58cfd249d84c6695cdb2b7",
-      "rewrites": [
-        {
-          "kind": "import",
-          "from": "'@modkitx/core'",
-          "to": "'../core/index.js'",
-          "count": 1,
-          "sha256Before": "9af65bc91a0e88458978999f12a3dda73c2d746d2f5975d78d38793385f836d6",
-          "sha256After": "259b51df2522d71ad8112896570203270c8ecc902822bd5c1f4d88a5a165da80"
-        }
-      ],
-      "divergence": null
-    },
-    {
-      "mk2Path": "packages/language-contracts/src/index.ts",
-      "destination": "modkit-core/packages/codec-kit/src/legacy/language-contracts/index.ts",
-      "sha256Mk2": "d5b7b051fd1aa057af39ea5d751f3f6f0befa91a066bb44726c9dd943b48ca2c",
-      "sha256Mk3": "d5b7b051fd1aa057af39ea5d751f3f6f0befa91a066bb44726c9dd943b48ca2c",
-      "gitBlob": "ffa2cd56c95cea457cef145a873ffd001eeb05d5",
-      "rewrites": [],
       "divergence": null
     },
     {
