@@ -1698,7 +1698,13 @@ export function createSubjectCardViewer(options: SubjectCardViewerOptions = {}):
           })
         }
 
-        const resolveImage =
+        /*
+         * One image read at a time, as the model viewer reads its textures. Each read lets the host
+         * fit it to the subject's whole budget and keeps only what its image needs; read together,
+         * the first held all of it and the command card's other icons were refused (v89, 5.12).
+         */
+        let reading: Promise<unknown> = Promise.resolve()
+        const readImage =
           options.textures === undefined
             ? undefined
             : async (id: string, signal: AbortSignal): Promise<CardImage | undefined> => {
@@ -1728,6 +1734,14 @@ export function createSubjectCardViewer(options: SubjectCardViewerOptions = {}):
                   height: texture.height,
                   rgba: texture.rgba.subarray(0, texture.width * texture.height * 4),
                 }
+              }
+        const resolveImage =
+          readImage === undefined
+            ? undefined
+            : (id: string, signal: AbortSignal): Promise<CardImage | undefined> => {
+                const turn = reading.then(() => readImage(id, signal))
+                reading = turn.catch(() => undefined)
+                return turn
               }
 
         let locale = options.locale
