@@ -6,9 +6,12 @@ import {
   framePortFromMessagePort,
   logicalResourcesFromWire,
   protocolLimits
-} from "./chunks/chunk-R2L4UUN4.js";
-import "./chunks/chunk-QTXQMQHW.js";
-import "./chunks/chunk-LCIKLYUH.js";
+} from "./chunks/chunk-AKRCN2XH.js";
+import "./chunks/chunk-TN2P55EN.js";
+import "./chunks/chunk-MT2JUZZJ.js";
+import "./chunks/chunk-R2P56FTH.js";
+import "./chunks/chunk-5A3JGV66.js";
+import "./chunks/chunk-2LRUXON6.js";
 import {
   ModkitError
 } from "./chunks/chunk-V3DESLW4.js";

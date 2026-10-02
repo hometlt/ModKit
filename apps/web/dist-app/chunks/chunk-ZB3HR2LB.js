@@ -4,7 +4,7 @@ import {
 import {
   grantValidity,
   validateSubjectDescriptorV2
-} from "./chunk-LCIKLYUH.js";
+} from "./chunk-2LRUXON6.js";
 import {
   ModkitError,
   canonicalJsonStringify,
@@ -15,7 +15,7 @@ import {
 } from "./chunk-V3DESLW4.js";
 
 // ../MODDING/modkit-core/packages/host/dist/session.js
-var projection = () => import("./subject-projection-EYOUAFIY.js");
+var projection = () => import("./subject-projection-KJQNTKGK.js");
 function rejected(reason, message) {
   return {
     state: "rejected",

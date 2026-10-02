@@ -10,11 +10,14 @@ import {
   parseSemver,
   sourceSpanSchema,
   traitId,
-  uint64,
-  uniqueSortedUtf8
-} from "./chunk-V3DESLW4.js";
+  uint64
+} from "./chunk-33VOQNJR.js";
+import {
+  init_define_MODKIT_EMBED_EXTENSION_ORIGINS
+} from "./chunk-BLWUC7LO.js";
 
-// ../MKTEMP/core-session/sdk-pkg/dist/subjects/refs.js
+// ../MODDING/modkit-core/packages/sdk/dist/subjects/refs.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var REVISION_KINDS = Object.freeze([
   "content-hash",
   "git-object",
@@ -180,7 +183,43 @@ function parseSubjectRef(uri, workspace) {
   }
 }
 
-// ../MKTEMP/core-session/sdk-pkg/dist/schemas/patterns.js
+// ../MODDING/modkit-core/packages/sdk/dist/asset-capabilities/types.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+function isJsonValue(value, maxDepth = 64) {
+  if (maxDepth < 0)
+    return false;
+  if (value === null || typeof value === "string" || typeof value === "boolean")
+    return true;
+  if (typeof value === "number")
+    return Number.isFinite(value);
+  if (Array.isArray(value))
+    return value.every((item) => isJsonValue(item, maxDepth - 1));
+  if (typeof value !== "object")
+    return false;
+  const prototype = Object.getPrototypeOf(value);
+  if (prototype !== Object.prototype && prototype !== null)
+    return false;
+  return Object.values(value).every((item) => isJsonValue(item, maxDepth - 1));
+}
+function contributionId(value) {
+  if (!isQualifiedId(value))
+    throw new TypeError(`invalid contribution id: ${value}`);
+  return value;
+}
+function isRevisionId(value) {
+  return parseRevisionRef(value) !== void 0;
+}
+function revisionId(value) {
+  if (!isRevisionId(value))
+    throw new TypeError("revision id must be a canonical kind-tagged value");
+  return value;
+}
+function revisionIdFromRef(ref) {
+  return revisionId(serializeRevisionRef(ref));
+}
+
+// ../MODDING/modkit-core/packages/sdk/dist/schemas/patterns.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var DOTTED_PATTERN = "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$";
 var NAMESPACED_DOTTED_PATTERN = "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$";
 var OPERATION_PATTERN = "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$";
@@ -198,7 +237,8 @@ var VERSION_RANGE_PATTERN = `^(?:\\*|x|${RANGE_ATOM}(?: ${RANGE_ATOM})*)$`;
 var RELATIVE_ENTRYPOINT_PATTERN = "^(?![a-zA-Z][a-zA-Z0-9+.-]*:)(?!/)(?!\\\\)(?:(?!\\.\\.(?:/|$))[^\\\\/\\u0000-\\u001f]+/)*(?!\\.\\.$)[^\\\\/\\u0000-\\u001f]+$";
 var METHOD_NAME_PATTERN = "^[a-z][a-zA-Z0-9]{0,63}$";
 
-// ../MKTEMP/core-session/sdk-pkg/dist/schemas/extension-manifest.js
+// ../MODDING/modkit-core/packages/sdk/dist/schemas/extension-manifest.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var REQUIREMENT_SCOPE_KINDS = Object.freeze([
   "contribution",
   "offer",
@@ -441,7 +481,8 @@ deepFreeze(extensionPresentationSchema);
 deepFreeze(extensionManifestSchema);
 deepFreeze(modkitBlockSchema);
 
-// ../MKTEMP/core-session/sdk-pkg/dist/schemas/contribution-manifest.js
+// ../MODDING/modkit-core/packages/sdk/dist/schemas/contribution-manifest.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var EXECUTION_PROFILES = Object.freeze([
   "browser-sandbox",
   "worker-brokered",
@@ -560,7 +601,8 @@ deepFreeze(runtimeVariantDeclarationSchema);
 deepFreeze(scopedContractRequirementSchema);
 deepFreeze(contributionManifestSchema);
 
-// ../MKTEMP/core-session/sdk-pkg/dist/asset-capabilities/data-source-ids.js
+// ../MODDING/modkit-core/packages/sdk/dist/asset-capabilities/data-source-ids.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var STANDARD_DATA_SOURCE_CONTRACTS = Object.freeze([
   "common.view/text-data-source",
   "common.view/byte-range-source",
@@ -626,11 +668,10 @@ var DATA_SOURCE_MATURITY = Object.freeze({
 });
 var ADMITTED_DATA_SOURCE_CONTRACTS = Object.freeze(STANDARD_DATA_SOURCE_CONTRACTS.filter((contract) => DATA_SOURCE_MATURITY[contract] === "admitted"));
 
-// ../MKTEMP/core-session/sdk-pkg/dist/knowledge/index.js
+// ../MODDING/modkit-core/packages/sdk/dist/knowledge/index.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var KNOWLEDGE_LOCALE_PATTERN = "^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$";
 var knowledgeLocalePattern = new RegExp(KNOWLEDGE_LOCALE_PATTERN, "u");
-var isKnowledgeLocaleTag = (value) => typeof value === "string" && value.length <= 64 && knowledgeLocalePattern.test(value);
-var localeKey = (locale) => locale.toLowerCase();
 var isBoundedString = (value, maximum) => typeof value === "string" && value.length > 0 && value.length <= maximum;
 var isRecord = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
 var hasOnlyKeys = (value, allowed) => {
@@ -664,40 +705,14 @@ function isKnowledgeTarget(value) {
     return false;
   }
 }
-function knowledgeLocaleFallbacks(requested, userFallbacks, sourceLocale) {
-  const candidates = [];
-  const append = (locale) => {
-    const trimmed = locale.trim();
-    if (trimmed === "")
-      return;
-    const subtags = trimmed.split("-");
-    while (subtags.length > 0) {
-      candidates.push(subtags.join("-"));
-      subtags.pop();
-      if (subtags.length > 1 && subtags[subtags.length - 1]?.length === 1)
-        subtags.pop();
-    }
-  };
-  append(requested);
-  for (const locale of userFallbacks)
-    append(locale);
-  append(sourceLocale);
-  const seen = /* @__PURE__ */ new Set();
-  return Object.freeze(candidates.filter((locale) => {
-    const key = localeKey(locale);
-    if (seen.has(key))
-      return false;
-    seen.add(key);
-    return true;
-  }));
-}
 function knowledgeTargetKey(target) {
   if (!isKnowledgeTarget(target))
     throw new TypeError("knowledge target is malformed or unbounded");
   return canonicalJsonStringify(target);
 }
 
-// ../MKTEMP/core-session/sdk-pkg/dist/schemas/contribution-specs.js
+// ../MODDING/modkit-core/packages/sdk/dist/schemas/contribution-specs.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var nonEmptyString = { type: "string", minLength: 1 };
 var qualifiedId = { type: "string", pattern: QUALIFIED_PATTERN };
 var namespacedDottedId = { type: "string", pattern: NAMESPACED_DOTTED_PATTERN };
@@ -1798,41 +1813,67 @@ deepFreeze(dataSourceSurfaceV1Schema);
 deepFreeze(dataSourceContractDefinitionSpecV1Schema);
 deepFreeze(contractDefinitionSpecV1Schema);
 
-// ../MKTEMP/core-session/sdk-pkg/dist/asset-capabilities/types.js
-function isJsonValue(value, maxDepth = 64) {
-  if (maxDepth < 0)
-    return false;
-  if (value === null || typeof value === "string" || typeof value === "boolean")
-    return true;
-  if (typeof value === "number")
-    return Number.isFinite(value);
-  if (Array.isArray(value))
-    return value.every((item) => isJsonValue(item, maxDepth - 1));
-  if (typeof value !== "object")
-    return false;
-  const prototype = Object.getPrototypeOf(value);
-  if (prototype !== Object.prototype && prototype !== null)
-    return false;
-  return Object.values(value).every((item) => isJsonValue(item, maxDepth - 1));
+// ../MODDING/modkit-core/packages/sdk/dist/subjects/candidates.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var nonEmptyStrings = (value) => value === void 0 || value.every((item) => typeof item === "string" && item.length > 0) && new Set(value).size === value.length;
+function validCandidate(candidate) {
+  return typeof candidate === "object" && candidate !== null && typeof candidate.subjectId === "string" && candidate.subjectId.length > 0 && typeof candidate.label === "string" && candidate.label.length > 0 && typeof candidate.kind === "string" && candidate.kind.length > 0 && (candidate.type === void 0 || typeof candidate.type === "string" && candidate.type.length > 0) && nonEmptyStrings(candidate.tags) && (candidate.portrait === void 0 || typeof candidate.portrait === "string" && candidate.portrait.length > 0) && (candidate.asset === void 0 || typeof candidate.asset === "object" && candidate.asset !== null && typeof candidate.asset.formatId === "string" && candidate.asset.formatId.length > 0 && nonEmptyStrings(candidate.asset.traits));
 }
-function contributionId(value) {
-  if (!isQualifiedId(value))
-    throw new TypeError(`invalid contribution id: ${value}`);
-  return value;
+function validSummary(summary) {
+  return typeof summary === "object" && summary !== null && typeof summary.snapshotId === "string" && summary.snapshotId.length > 0 && Number.isSafeInteger(summary.totalSubjects) && summary.totalSubjects >= 0 && (summary.completeness === "complete" || summary.completeness === "partial" || summary.completeness === "capped") && (summary.reason === void 0 || typeof summary.reason === "string") && (summary.kinds === void 0 || Array.isArray(summary.kinds) && summary.kinds.every((item) => typeof item?.kind === "string" && item.kind.length > 0 && Number.isSafeInteger(item.count) && item.count >= 0));
 }
-function isRevisionId(value) {
-  return parseRevisionRef(value) !== void 0;
+function validateQuery(query) {
+  if (!Number.isSafeInteger(query.limit) || query.limit < 1) {
+    throw new RangeError("subject candidate limit must be a positive safe integer");
+  }
+  if (query.text !== void 0 && typeof query.text !== "string") {
+    throw new TypeError("subject candidate text must be a string");
+  }
+  if (query.cursor !== void 0 && (typeof query.cursor !== "string" || query.cursor.length === 0)) {
+    throw new TypeError("subject candidate cursor must be a non-empty string");
+  }
+  if (query.target.kind === "subject-ref" && (typeof query.target.subjectKind !== "string" || query.target.subjectKind.length === 0)) {
+    throw new TypeError("subject candidate kind must be a non-empty string");
+  }
+  if (query.target.kind === "asset-ref" && (!nonEmptyStrings(query.target.accepts.formatIds) || !nonEmptyStrings(query.target.accepts.traits))) {
+    throw new TypeError("asset candidate constraints must contain unique non-empty strings");
+  }
 }
-function revisionId(value) {
-  if (!isRevisionId(value))
-    throw new TypeError("revision id must be a canonical kind-tagged value");
-  return value;
+async function loadSubjectCandidatePage(provider, query, signal) {
+  signal?.throwIfAborted();
+  validateQuery(query);
+  const [summary, page] = await Promise.all([
+    provider.summary(signal),
+    provider.candidates(query, signal)
+  ]);
+  signal?.throwIfAborted();
+  if (!validSummary(summary))
+    throw new TypeError("subject candidate summary is malformed");
+  if (typeof page !== "object" || page === null || !Array.isArray(page.items) || page.items.length > query.limit || !page.items.every(validCandidate) || new Set(page.items.map((item) => item.subjectId)).size !== page.items.length || page.nextCursor !== void 0 && (typeof page.nextCursor !== "string" || page.nextCursor.length === 0)) {
+    throw new TypeError("subject candidate page is malformed or exceeds its requested limit");
+  }
+  return Object.freeze({ summary, page });
 }
-function revisionIdFromRef(ref) {
-  return revisionId(serializeRevisionRef(ref));
+function createSubjectCandidateProvider(source) {
+  return Object.freeze({
+    summary: (signal) => source.summary(signal),
+    candidates(query, signal) {
+      const page = {
+        ...query.cursor === void 0 ? {} : { cursor: query.cursor },
+        limit: query.limit,
+        ...query.text === void 0 ? {} : { text: query.text },
+        ...query.target.kind === "subject-ref" ? {
+          kind: query.target.subjectKind,
+          ...query.target.filter === void 0 ? {} : { filter: query.target.filter }
+        } : { asset: query.target.accepts }
+      };
+      return source.subjects(page, signal);
+    }
+  });
 }
 
-// ../MKTEMP/core-session/sdk-pkg/dist/schemas/fields.js
+// ../MODDING/modkit-core/packages/sdk/dist/schemas/fields.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var text = { type: "string" };
 var id = { type: "string", minLength: 1 };
 var strings = { type: "array", items: id };
@@ -2188,7 +2229,8 @@ deepFreeze(subjectKindDefinitionSpecV1Schema);
 deepFreeze(fieldEditInputSchemaV1Schema);
 deepFreeze(fieldEditorContributionSpecV1Schema);
 
-// ../MKTEMP/core-session/sdk-pkg/dist/schemas/subject-descriptor.js
+// ../MODDING/modkit-core/packages/sdk/dist/schemas/subject-descriptor.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var sourceSpanValueSchema = { oneOf: sourceSpanSchema.oneOf };
 var nonEmptyString2 = { type: "string", minLength: 1 };
 var nonWhitespaceString = { type: "string", pattern: "\\S" };
@@ -2706,10 +2748,11 @@ var subjectDescriptorV2InferenceSchema = {
 deepFreeze(subjectDescriptorV2Schema);
 deepFreeze(subjectDescriptorV2InferenceSchema);
 
-// ../MKTEMP/core-session/sdk-pkg/dist/manifest/validate.js
+// ../MODDING/modkit-core/packages/sdk/dist/manifest/validate.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var platformValidatorsPromise;
 function platformValidators() {
-  platformValidatorsPromise ??= import("./validators.generated-4RFS2THH.js").then((module) => module.PRECOMPILED_SCHEMA_VALIDATORS);
+  platformValidatorsPromise ??= import("./validators.generated-2NRGRFD4.js").then((module) => module.PRECOMPILED_SCHEMA_VALIDATORS);
   return platformValidatorsPromise;
 }
 function toPath(error) {
@@ -2934,7 +2977,8 @@ async function validateWithSchema(schema, value, code = "x3.sdk/schema-violation
   ];
 }
 
-// ../MKTEMP/core-session/sdk-pkg/dist/asset-capabilities/standard-traits.js
+// ../MODDING/modkit-core/packages/sdk/dist/asset-capabilities/standard-traits.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var TRAIT_IDS = Object.freeze([
   "content.metadata",
   "content.binary",
@@ -3017,79 +3061,8 @@ function isStandardTraitId(value) {
   return STANDARD_TRAIT_SET.has(value);
 }
 
-// ../MKTEMP/core-session/sdk-pkg/dist/security/grant.js
-function grantValidity(grant, now = Date.now()) {
-  if (grant.expiresAt === void 0)
-    return { state: "valid" };
-  const parsed = Date.parse(grant.expiresAt);
-  if (Number.isNaN(parsed))
-    return { state: "malformed", value: grant.expiresAt };
-  return parsed > now ? { state: "valid" } : { state: "expired", at: grant.expiresAt };
-}
-function intersectClasses(a, b) {
-  return uniqueSortedUtf8(a.filter((cls) => b.includes(cls)));
-}
-function intersectStrings(a, b) {
-  if (a === void 0)
-    return b === void 0 ? void 0 : [...b];
-  if (b === void 0)
-    return [...a];
-  return uniqueSortedUtf8(a.filter((item) => b.includes(item)));
-}
-function narrowPaths(parent, requestedRoots) {
-  if (parent === void 0)
-    return void 0;
-  if (requestedRoots === void 0)
-    return [...parent];
-  return parent.filter((scope) => requestedRoots.includes(scope.root));
-}
-function narrowNetwork(parent, requestedOrigins) {
-  if (parent === void 0)
-    return void 0;
-  if (requestedOrigins === void 0)
-    return [...parent];
-  return parent.map((scope) => ({
-    ...scope,
-    origins: scope.origins.filter((origin) => requestedOrigins.includes(origin))
-  })).filter((scope) => scope.origins.length > 0);
-}
-function narrowGrant(parent, request) {
-  const validity = grantValidity(parent);
-  if (validity.state !== "valid") {
-    return {
-      child: { id: request.childId, classes: [], parentGrant: parent.id },
-      missing: uniqueSortedUtf8(request.requestedClasses)
-    };
-  }
-  let allowed = intersectClasses(request.requestedClasses, parent.classes);
-  const policy = request.policy;
-  if (policy?.allowedClasses !== void 0) {
-    allowed = intersectClasses(allowed, policy.allowedClasses);
-  }
-  if (request.operation !== void 0 && policy?.operationClasses !== void 0) {
-    const ceiling = policy.operationClasses[request.operation];
-    if (ceiling !== void 0)
-      allowed = intersectClasses(allowed, ceiling);
-  }
-  const missing = uniqueSortedUtf8(request.requestedClasses.filter((cls) => !allowed.includes(cls)));
-  const sourceScope = intersectStrings(parent.sourceScope, request.requestedSourceRoots);
-  const filesystem = narrowPaths(parent.filesystem, request.requestedSourceRoots);
-  const network = narrowNetwork(parent.network, request.requestedOrigins);
-  const child = {
-    id: request.childId,
-    classes: allowed,
-    parentGrant: parent.id,
-    ...parent.subjectScope === void 0 ? {} : { subjectScope: [...parent.subjectScope] },
-    ...sourceScope === void 0 ? {} : { sourceScope },
-    ...filesystem === void 0 ? {} : { filesystem },
-    ...network === void 0 ? {} : { network },
-    ...parent.credentials === void 0 ? {} : { credentials: [...parent.credentials] },
-    ...parent.expiresAt === void 0 ? {} : { expiresAt: parent.expiresAt }
-  };
-  return { child, missing };
-}
-
-// ../MKTEMP/core-session/sdk-pkg/dist/asset-capabilities/data-sources.js
+// ../MODDING/modkit-core/packages/sdk/dist/asset-capabilities/data-sources.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 function dataSourceRefFromWire(ref) {
   if (!isQualifiedId(ref.contract) || !Number.isSafeInteger(ref.major) || ref.major < 0) {
     throw new TypeError(`invalid data-source reference: ${ref.contract}@${ref.major}`);
@@ -3106,7 +3079,8 @@ function dataSourceRefFromWire(ref) {
   return Object.freeze({ ...ref });
 }
 
-// ../MKTEMP/core-session/sdk-pkg/dist/asset-capabilities/validate-descriptor.js
+// ../MODDING/modkit-core/packages/sdk/dist/asset-capabilities/validate-descriptor.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 function normalizeSourceSpan(span) {
   if (typeof span.byteOffset === "string" && typeof span.byteLength === "string") {
     return Object.freeze({
@@ -3460,9 +3434,7 @@ export {
   OPERATING_SYSTEMS,
   ARCHITECTURES,
   contributionManifestSchema,
-  isKnowledgeLocaleTag,
   isKnowledgeTarget,
-  knowledgeLocaleFallbacks,
   knowledgeTargetKey,
   codecContributionSpecV1Schema,
   serviceProviderContributionSpecV1Schema,
@@ -3473,6 +3445,7 @@ export {
   traitDefinitionSpecV1Schema,
   contractDefinitionSpecV1Schema,
   rootSubject,
+  nestedSubject,
   subjectRefEquals,
   serializeSubjectRef,
   parseSubjectRef,
@@ -3481,13 +3454,13 @@ export {
   isRevisionId,
   revisionId,
   revisionIdFromRef,
+  loadSubjectCandidatePage,
+  createSubjectCandidateProvider,
   subjectKindDefinitionSpecV1Schema,
   fieldEditorContributionSpecV1Schema,
   snapshotJsonWireData,
   snapshotJsonWireObject,
   validateWithSchema,
   isStandardTraitId,
-  grantValidity,
-  narrowGrant,
   validateSubjectDescriptorV2
 };

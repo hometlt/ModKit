@@ -5,33 +5,184 @@ import {
   createAudioViewer
 } from "./chunk-KA2ONSZB.js";
 import {
+  createRelationGraphViewer
+} from "./chunk-67RSNK4Q.js";
+import {
+  MODEL_FACET_CONTRACTS,
+  commitOperationWrite,
+  createModelViewer,
+  fieldWriteRefusal,
+  modelMaterialTeamColor,
+  mountFieldEditTarget,
+  mountInlineField
+} from "./chunk-OWROJOZ7.js";
+import {
+  metadataFieldProjections
+} from "./chunk-ZFIQVDW4.js";
+import {
+  A1_SPEC_SCHEMA_ENTRIES,
+  AUXILIARY_DATA_SOURCE_SURFACES,
+  CODEC_CONTRIBUTION_CONTRACT,
+  CONTRACT_DEFINITION_CONTRIBUTION_CONTRACT,
+  CONTRACT_DEFINITION_FACT,
+  DATA_CATALOG_ANALYSIS_CONTRACT,
+  DATA_CATALOG_ENTITIES_INPUT,
+  DATA_CATALOG_MATCHER_PROFILE,
+  DATA_CATALOG_QUERIES_OUTPUT,
+  EDITOR_CONTRIBUTION_CONTRACT,
+  EDITOR_CONTRIBUTION_FACT,
+  FIELD_EDITOR_CONTRIBUTION_CONTRACT,
+  FIELD_EDITOR_CONTRIBUTION_FACT,
+  GAME_INSTALLATION_DISCOVERY_CONTRACT,
+  GAME_INSTALLATION_MATCHER_PROFILE,
+  GAME_LAUNCH_PLAN_CONTRACT,
   GAME_TEMPLATE_PREVIEW_OPERATION_ID,
   GAME_TEMPLATE_WORKSPACE_INPUT,
+  KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT,
+  LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT,
+  LANGUAGE_DOCUMENT_MATCHER_PROFILE,
+  LOCALIZATION_CONTRIBUTION_CONTRACT,
   MAP_LAYERS_INPUT_SCHEMA,
   MAP_LAYERS_OPERATION,
   MAP_LAYER_READ_INPUT_SCHEMA,
   MAP_LAYER_READ_OPERATION,
   MAP_LAYER_WRITE_INPUT_SCHEMA,
   MAP_LAYER_WRITE_OPERATION,
+  MAP_PREVIEW_PREPARATION_CONTRACT,
+  MAP_PREVIEW_PREPARATION_MATCHER_PROFILE,
+  MAP_SEMANTIC_ANALYSIS_CONTRACT,
+  MAP_SEMANTIC_MATCHER_PROFILE,
+  MOD_WORKSPACE_COMPOSITION_CONTRACT,
+  MOD_WORKSPACE_MATCHER_PROFILE,
+  NATIVE_MODEL_ENCODER_CONTRACT,
+  NATIVE_MODEL_ENCODER_MATCHER_PROFILE,
+  RESOLVED_DATA_WORKSPACE_CONTRACT,
+  RESOLVED_DATA_WORKSPACE_MATCHER_PROFILE,
+  RESOLVED_MAP_WORKSPACE_CONTRACT,
+  RUNTIME_PROVIDER_CONTRACT,
+  RUNTIME_PROVIDER_MATCHER_PROFILE,
+  RUNTIME_SESSION_CONTRACT,
+  SERVICE_OPERATION_MATCHER_PROFILE,
+  SERVICE_OPERATION_PROVIDER_CONTRACT,
+  SERVICE_PROVIDER_CONTRIBUTION_CONTRACT,
+  STANDARD_DATA_SOURCE_SURFACES,
+  STANDARD_EDITING_SURFACES,
+  SUBJECT_KIND_DEFINITION_CONTRIBUTION_CONTRACT,
+  TRAIT_DEFINITION_CONTRIBUTION_CONTRACT,
+  TRANSLATION_CONTRACT,
+  TRANSLATION_MATCHER_PROFILE,
+  VIEWER_CONTRIBUTION_CONTRACT,
   WORLD_SCENE_SOURCE_CONTRACT,
+  WRITER_CONTRACT_ID,
+  WRITER_FACET_MATCHER_PROFILE,
+  WRITER_SURFACE,
+  activationRequiredPermissionClasses,
   bindingId,
   containerEntryRevision,
   contributionSettingsFor,
+  createContributionContractRegistry,
   createHostTopology,
-  createRelationGraphViewer,
+  definePresentationPlan,
   expandContributionManifests,
   gameTemplateTextRuns,
+  grantValidity,
+  hostRealmCacheKey,
   isGameTemplateDisplayItem,
   isGameTemplatePreviewResult,
   isGameTemplateTextRun,
   isGameTemplateTreeNode,
   mapLayerWindow,
+  mapQualificationTupleBytes,
+  namespaceEntryEditTarget,
+  narrowGrant,
   normalizeExtensionManifest,
   normalizeModkitIdentifier,
+  operationScopedPermissionClasses,
   presentationSlotId,
+  resolveModWorkspaceGraph,
+  runtimeTargetForHostRealm,
   toPortableProjectionReceipt,
-  transformTerrainUv
-} from "./chunk-EEPXOM6F.js";
+  transformTerrainUv,
+  validateContributionManifest,
+  writerOfferSatisfies,
+  writerSelectionKey
+} from "./chunk-UY6ABBXF.js";
+import {
+  createImageViewer,
+  createNamespaceViewer,
+  invokeRefusalMessage
+} from "./chunk-67O2CQUM.js";
+import {
+  MEDIA_ZOOM_CHOICES,
+  canvasPng,
+  compileMatcher,
+  compilePattern,
+  createMediaShell,
+  mediaFacts,
+  textMatches
+} from "./chunk-PGJ3E3MZ.js";
+import {
+  CALCULATIONS_FALLBACK_MESSAGES,
+  CARD_FALLBACK_MESSAGES,
+  CARD_WIKI_FALLBACK_MESSAGES,
+  CODE_FALLBACK_MESSAGES,
+  DEFAULT_UI_LOCALIZER,
+  EDITOR_FALLBACK_MESSAGES,
+  EXPLORER_EDITORS_FALLBACK_MESSAGES,
+  EXPLORER_FALLBACK_MESSAGES,
+  EXPLORER_PREVIEW_FALLBACK_MESSAGES,
+  FONT_FALLBACK_MESSAGES,
+  HEX_EDITOR_FALLBACK_MESSAGES,
+  HEX_FALLBACK_MESSAGES,
+  METADATA_FALLBACK_MESSAGES,
+  PRIMITIVES_FILE_TREE_FALLBACK_MESSAGES,
+  PRIMITIVES_SEARCH_FIELD_FALLBACK_MESSAGES,
+  TABLE_FALLBACK_MESSAGES,
+  TABLE_VARIANTS_FALLBACK_MESSAGES,
+  TEMPLATE_FALLBACK_MESSAGES,
+  TEXT_VIRTUAL_FALLBACK_MESSAGES,
+  TRANSPORT_FALLBACK_MESSAGES,
+  TRANSPORT_PLAYBACK_FALLBACK_MESSAGES,
+  TREE_FALLBACK_MESSAGES,
+  UI_MESSAGES,
+  VECTOR_FALLBACK_MESSAGES,
+  ViewerMountScope,
+  WORKBENCH_FALLBACK_MESSAGES,
+  WORLD_FALLBACK_MESSAGES,
+  bindingFor,
+  createSurface,
+  createUiLocalizer,
+  createViewerMount,
+  defineViewerModule,
+  element,
+  invokeOperation,
+  parseUiCatalogDocument,
+  rememberUiPreference,
+  requireContainer,
+  resolveUiLocale,
+  safeViewerText,
+  setPart,
+  setState,
+  setViewerText,
+  uiPreference,
+  unknownSourceLease,
+  withEnglishUiFallback
+} from "./chunk-ID5URMAQ.js";
+import {
+  PERMISSION_CLASSES,
+  contributionId,
+  isJsonValue,
+  isRevisionId,
+  isStandardTraitId,
+  nestedSubject,
+  parseSubjectRef,
+  revisionId,
+  revisionIdFromRef,
+  rootSubject,
+  serializeSubjectRef,
+  subjectRefEquals,
+  validateSubjectDescriptorV2
+} from "./chunk-V2OFYISD.js";
 import {
   Box3,
   BufferBuilder,
@@ -110,18 +261,6 @@ import {
   uvmVisibilityPointer
 } from "./chunk-JNRHQTGH.js";
 import {
-  SCENE_RENDERER_CONTRACT
-} from "./chunk-7L3EMAAL.js";
-import {
-  MODEL_FACET_CONTRACTS,
-  commitOperationWrite,
-  createModelViewer,
-  fieldWriteRefusal,
-  modelMaterialTeamColor,
-  mountFieldEditTarget,
-  mountInlineField
-} from "./chunk-WG5AX3VE.js";
-import {
   DEFAULT_MODEL_ANIMATION_BUDGET,
   DEFAULT_MODEL_SKELETON_BUDGET,
   applyColorKeyTransparency,
@@ -141,158 +280,9 @@ import {
   srgbToLinear
 } from "./chunk-AVBKEDCB.js";
 import {
-  A1_SPEC_SCHEMA_ENTRIES,
-  AUXILIARY_DATA_SOURCE_SURFACES,
-  CODEC_CONTRIBUTION_CONTRACT,
-  CONTRACT_DEFINITION_CONTRIBUTION_CONTRACT,
-  CONTRACT_DEFINITION_FACT,
-  DATA_CATALOG_ANALYSIS_CONTRACT,
-  DATA_CATALOG_ENTITIES_INPUT,
-  DATA_CATALOG_MATCHER_PROFILE,
-  DATA_CATALOG_QUERIES_OUTPUT,
-  EDITOR_CONTRIBUTION_CONTRACT,
-  EDITOR_CONTRIBUTION_FACT,
-  FIELD_EDITOR_CONTRIBUTION_CONTRACT,
-  FIELD_EDITOR_CONTRIBUTION_FACT,
-  GAME_INSTALLATION_DISCOVERY_CONTRACT,
-  GAME_INSTALLATION_MATCHER_PROFILE,
-  GAME_LAUNCH_PLAN_CONTRACT,
-  KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT,
-  LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT,
-  LANGUAGE_DOCUMENT_MATCHER_PROFILE,
-  LOCALIZATION_CONTRIBUTION_CONTRACT,
-  MAP_PREVIEW_PREPARATION_CONTRACT,
-  MAP_PREVIEW_PREPARATION_MATCHER_PROFILE,
-  MAP_SEMANTIC_ANALYSIS_CONTRACT,
-  MAP_SEMANTIC_MATCHER_PROFILE,
-  MOD_WORKSPACE_COMPOSITION_CONTRACT,
-  MOD_WORKSPACE_MATCHER_PROFILE,
-  NATIVE_MODEL_ENCODER_CONTRACT,
-  NATIVE_MODEL_ENCODER_MATCHER_PROFILE,
-  PERMISSION_CLASSES,
-  RESOLVED_DATA_WORKSPACE_CONTRACT,
-  RESOLVED_DATA_WORKSPACE_MATCHER_PROFILE,
-  RESOLVED_MAP_WORKSPACE_CONTRACT,
-  RUNTIME_PROVIDER_CONTRACT,
-  RUNTIME_PROVIDER_MATCHER_PROFILE,
-  RUNTIME_SESSION_CONTRACT,
-  SCENE_RENDERER_CONTRACT as SCENE_RENDERER_CONTRACT2,
-  SCENE_RENDERER_MATCHER_PROFILE,
-  SERVICE_OPERATION_MATCHER_PROFILE,
-  SERVICE_OPERATION_PROVIDER_CONTRACT,
-  SERVICE_PROVIDER_CONTRIBUTION_CONTRACT,
-  STANDARD_DATA_SOURCE_SURFACES,
-  STANDARD_EDITING_SURFACES,
-  SUBJECT_KIND_DEFINITION_CONTRIBUTION_CONTRACT,
-  TRAIT_DEFINITION_CONTRIBUTION_CONTRACT,
-  TRANSLATION_CONTRACT,
-  TRANSLATION_MATCHER_PROFILE,
-  VIEWER_CONTRIBUTION_CONTRACT,
-  WORLD_SCENE_SOURCE_CONTRACT as WORLD_SCENE_SOURCE_CONTRACT2,
-  WRITER_CONTRACT_ID,
-  WRITER_FACET_MATCHER_PROFILE,
-  WRITER_SURFACE,
-  activationRequiredPermissionClasses,
-  containerEntryRevision as containerEntryRevision2,
-  contributionId,
-  createContributionContractRegistry,
-  createHostTopology as createHostTopology2,
-  definePresentationPlan,
-  expandContributionManifests as expandContributionManifests2,
-  grantValidity,
-  hostRealmCacheKey,
-  isJsonValue as isJsonValue2,
-  isRevisionId,
-  isStandardTraitId,
-  mapQualificationTupleBytes,
-  metadataFieldProjections,
-  namespaceEntryEditTarget,
-  narrowGrant,
-  normalizeExtensionManifest as normalizeExtensionManifest2,
-  normalizeModkitIdentifier as normalizeModkitIdentifier2,
-  operationScopedPermissionClasses,
-  parseSubjectRef,
-  resolveModWorkspaceGraph,
-  revisionId as revisionId2,
-  revisionIdFromRef as revisionIdFromRef2,
-  rootSubject as rootSubject2,
-  runtimeTargetForHostRealm,
-  serializeSubjectRef as serializeSubjectRef2,
-  subjectRefEquals,
-  validateContributionManifest,
-  validateSubjectDescriptorV2,
-  writerOfferSatisfies,
-  writerSelectionKey
-} from "./chunk-AQDBCF23.js";
-import {
-  createImageViewer,
-  createNamespaceViewer,
-  invokeRefusalMessage
-} from "./chunk-73FNGVMG.js";
-import {
-  MEDIA_ZOOM_CHOICES,
-  canvasPng,
-  compileMatcher,
-  compilePattern,
-  createMediaShell,
-  mediaFacts,
-  textMatches
-} from "./chunk-PGJ3E3MZ.js";
-import {
-  isJsonValue,
-  nestedSubject,
-  revisionId,
-  revisionIdFromRef,
-  rootSubject,
-  serializeSubjectRef
-} from "./chunk-SD54DXIF.js";
-import {
-  CALCULATIONS_FALLBACK_MESSAGES,
-  CARD_FALLBACK_MESSAGES,
-  CARD_WIKI_FALLBACK_MESSAGES,
-  CODE_FALLBACK_MESSAGES,
-  DEFAULT_UI_LOCALIZER,
-  EDITOR_FALLBACK_MESSAGES,
-  EXPLORER_EDITORS_FALLBACK_MESSAGES,
-  EXPLORER_FALLBACK_MESSAGES,
-  EXPLORER_PREVIEW_FALLBACK_MESSAGES,
-  FONT_FALLBACK_MESSAGES,
-  HEX_EDITOR_FALLBACK_MESSAGES,
-  HEX_FALLBACK_MESSAGES,
-  METADATA_FALLBACK_MESSAGES,
-  PRIMITIVES_FILE_TREE_FALLBACK_MESSAGES,
-  PRIMITIVES_SEARCH_FIELD_FALLBACK_MESSAGES,
-  TABLE_FALLBACK_MESSAGES,
-  TABLE_VARIANTS_FALLBACK_MESSAGES,
-  TEMPLATE_FALLBACK_MESSAGES,
-  TEXT_VIRTUAL_FALLBACK_MESSAGES,
-  TRANSPORT_FALLBACK_MESSAGES,
-  TRANSPORT_PLAYBACK_FALLBACK_MESSAGES,
-  TREE_FALLBACK_MESSAGES,
-  UI_MESSAGES,
-  VECTOR_FALLBACK_MESSAGES,
-  ViewerMountScope,
-  WORKBENCH_FALLBACK_MESSAGES,
-  WORLD_FALLBACK_MESSAGES,
-  bindingFor,
-  createSurface,
-  createUiLocalizer,
-  createViewerMount,
-  defineViewerModule,
-  element,
-  invokeOperation,
-  parseUiCatalogDocument,
-  rememberUiPreference,
-  requireContainer,
-  resolveUiLocale,
-  safeViewerText,
-  setPart,
-  setState,
-  setViewerText,
-  uiPreference,
-  unknownSourceLease,
-  withEnglishUiFallback
-} from "./chunk-ID5URMAQ.js";
+  SCENE_RENDERER_CONTRACT,
+  SCENE_RENDERER_MATCHER_PROFILE
+} from "./chunk-OZX7B633.js";
 import {
   CONTAINER_EXTRACT_OPERATION_ID,
   ModkitError,
@@ -1777,8 +1767,8 @@ function snapshotExecutionPolicy(value) {
   };
 }
 async function buildInventory(inputs, registry, options = {}) {
-  const disabled = new Set((options.disabledContributions ?? []).map(normalizeModkitIdentifier2));
-  const disabledExtensions = new Set((options.disabledExtensions ?? []).map(normalizeModkitIdentifier2));
+  const disabled = new Set((options.disabledContributions ?? []).map(normalizeModkitIdentifier));
+  const disabledExtensions = new Set((options.disabledExtensions ?? []).map(normalizeModkitIdentifier));
   const diagnostics = [];
   const extensions = [];
   for (const input of inputs) {
@@ -1786,13 +1776,13 @@ async function buildInventory(inputs, registry, options = {}) {
     if (!execution.valid) {
       diagnostics.push(diagnostic("error", "x3.host/invalid-extension-execution-policy", "the host loader supplied malformed extension execution provenance; activation is disabled", [input.source]));
     }
-    const normalized = await normalizeExtensionManifest2(input.containers);
+    const normalized = await normalizeExtensionManifest(input.containers);
     diagnostics.push(...normalized.diagnostics.map((d) => ({ ...d, path: [input.source, ...d.path ?? []] })));
     if (!normalized.manifest || !normalized.container)
       continue;
     const extensionCoordinate3 = coordinate(normalized.manifest);
     const extensionDisabled = disabledExtensions.has(extensionCoordinate3);
-    const expansion = expandContributionManifests2(normalized.manifest.contributionManifests, input.files);
+    const expansion = expandContributionManifests(normalized.manifest.contributionManifests, input.files);
     diagnostics.push(...expansion.diagnostics.map((d) => ({ ...d, path: [input.source, ...d.path ?? []] })));
     const fileDigests = input.artifact.fileDigests === void 0 ? void 0 : Object.freeze({ ...input.artifact.fileDigests });
     const contributions = [];
@@ -5092,7 +5082,7 @@ function contentSourceUri(sourceId, path) {
   return `content-source://${encodeURIComponent(sourceId)}/${path.split("/").map(encodeURIComponent).join("/")}`;
 }
 function entryRevision(mount) {
-  return mount.fingerprint !== void 0 && isRevisionId(mount.fingerprint) ? revisionId2(mount.fingerprint) : revisionIdFromRef2({
+  return mount.fingerprint !== void 0 && isRevisionId(mount.fingerprint) ? revisionId(mount.fingerprint) : revisionIdFromRef({
     kind: "provider-token",
     value: `${mount.sourceId}\0${mount.sourcePath}\0${mount.dependencyId}`
   });
@@ -5569,7 +5559,7 @@ function normalize(value) {
   if (root["schemaVersion"] !== 1) {
     return fail("x3.host/invalid-detection-selection", "selection schemaVersion is unsupported");
   }
-  const sourceRevision = revisionId2(nonBlank(root["sourceRevision"], "selection.sourceRevision"));
+  const sourceRevision = revisionId(nonBlank(root["sourceRevision"], "selection.sourceRevision"));
   const selected = exactObject(root["selected"], [
     "extensionId",
     "contributionId",
@@ -6263,7 +6253,7 @@ function sessionAdapter(realm, session, exposedInput, watch, openingSignal) {
 
 // ../MODDING/modkit-core/packages/host/dist/session.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-var projection = () => import("./subject-projection-5H4YBELB.js");
+var projection = () => import("./subject-projection-JU3YSFX6.js");
 function rejected(reason, message) {
   return {
     state: "rejected",
@@ -7280,7 +7270,7 @@ function createSubjectRasterResources(options) {
           releases.push(() => owned.dispose());
           source2 = await artifactByteSourceFromRandomAccess(owned, {
             ref: { id, uri: id },
-            revision: revisionId2(`provider-token:${encodeURIComponent(id)}`),
+            revision: revisionId(`provider-token:${encodeURIComponent(id)}`),
             ...signal === void 0 ? {} : { signal }
           });
         } else
@@ -8248,7 +8238,7 @@ function createNamespaceCompanionOrigin(options) {
         await refLease.release();
         throw error5;
       }
-      const source2 = containerEntrySource(refLease.value, containerEntryRevision2(options.containerRevision, entry2.entryId, bytes.byteLength), bytes);
+      const source2 = containerEntrySource(refLease.value, containerEntryRevision(options.containerRevision, entry2.entryId, bytes.byteLength), bytes);
       return Object.freeze({ value: source2, release: () => refLease.release() });
     }
   });
@@ -8521,7 +8511,7 @@ function createCompositeWorkspaceNamespaceCompanionOrigin(options) {
         throw error5;
       }
       return Object.freeze({
-        value: containerEntrySource(refLease.value, containerEntryRevision2(entry2.containerRevision, entry2.entryId, bytes.byteLength), bytes),
+        value: containerEntrySource(refLease.value, containerEntryRevision(entry2.containerRevision, entry2.entryId, bytes.byteLength), bytes),
         release: () => refLease.release()
       });
     }
@@ -8685,7 +8675,7 @@ function createWorkspaceNamespaceCandidateDiscovery(options) {
               bytes += entry2.size;
               candidates.set(key3, Object.freeze({
                 logicalId,
-                expectedRevision: containerEntryRevision2(containerRevision, entry2.id, Number(entry2.size)),
+                expectedRevision: containerEntryRevision(containerRevision, entry2.id, Number(entry2.size)),
                 size: entry2.size,
                 rootId: search.root.rootId,
                 rootRank: search.root.rank,
@@ -8767,7 +8757,7 @@ async function entryRangeLease(namespace, entryId, containerRevision, signal, op
   try {
     const range = storedRange ?? { offset: 0n, length: await sourceLease.value.size() };
     return Object.freeze({
-      value: containerEntryRangeSource(refLease.value, containerEntryRevision2(containerRevision, entryId, range.length), sourceLease.value, range),
+      value: containerEntryRangeSource(refLease.value, containerEntryRevision(containerRevision, entryId, range.length), sourceLease.value, range),
       release: async () => {
         await sourceLease.release();
         await refLease.release();
@@ -9221,7 +9211,7 @@ async function createContainerNamespaceComposition(options) {
           const refForEntry = childRef(options.root, absolutePath);
           if (found2.kind === "directory") {
             return Object.freeze({
-              value: sourceAt(absolutePath, refForEntry, revisionIdFromRef2({
+              value: sourceAt(absolutePath, refForEntry, revisionIdFromRef({
                 kind: "provider-token",
                 value: `${String(options.revision)}!directory:${absolutePath}`
               })),
@@ -9248,7 +9238,7 @@ async function createContainerNamespaceComposition(options) {
                 });
               }
             }
-            const sourceRevision = containerEntryRevision2(options.revision, found2.entry.id, found2.entry.size ?? 0n);
+            const sourceRevision = containerEntryRevision(options.revision, found2.entry.id, found2.entry.size ?? 0n);
             const ref3 = refLease.value;
             const prior = bindings.get(ref3.id);
             if (prior !== void 0 && (prior.entryId !== found2.entry.id || prior.providerRevision !== found2.entry.revision || prior.sourceRevision !== sourceRevision)) {
@@ -9632,7 +9622,7 @@ function uvmArtifactSource(source2, bytes, conversionKey) {
       id: `${source2.ref.id}#model.export-uvm`,
       uri: `memory+uvm:${encodeURIComponent(source2.ref.uri)}`
     }),
-    revision: revisionIdFromRef2({
+    revision: revisionIdFromRef({
       kind: "provider-token",
       value: conversionKey
     }),
@@ -12451,7 +12441,7 @@ async function openNestedSubjectRef(options) {
         const refLease = await namespace.openEntry(entry2.id, options.signal);
         let matches2 = false;
         try {
-          matches2 = subjectRefEquals(rootSubject2({ id: refLease.value.uri }, options.targetSubject.workspace), options.targetSubject);
+          matches2 = subjectRefEquals(rootSubject({ id: refLease.value.uri }, options.targetSubject.workspace), options.targetSubject);
         } finally {
           await refLease.release();
         }
@@ -12562,12 +12552,12 @@ async function openNestedSubject(options) {
       let source2;
       if (entrySourceLease !== void 0) {
         const size = await entrySourceLease.value.size();
-        source2 = containerEntryRangeSource(refLease.value, containerEntryRevision2(descriptor.revision, entry2.id, size), entrySourceLease.value, { offset: 0n, length: size });
+        source2 = containerEntryRangeSource(refLease.value, containerEntryRevision(descriptor.revision, entry2.id, size), entrySourceLease.value, { offset: 0n, length: size });
       } else if (rangeLease !== void 0 && entry2.storedRange !== void 0) {
-        source2 = containerEntryRangeSource(refLease.value, containerEntryRevision2(descriptor.revision, entry2.id, entry2.storedRange.length), rangeLease.value, entry2.storedRange);
+        source2 = containerEntryRangeSource(refLease.value, containerEntryRevision(descriptor.revision, entry2.id, entry2.storedRange.length), rangeLease.value, entry2.storedRange);
       } else {
         const bytes = await extract(entry2.id, options.signal);
-        source2 = containerEntrySource(refLease.value, containerEntryRevision2(descriptor.revision, entry2.id, bytes.byteLength), bytes);
+        source2 = containerEntrySource(refLease.value, containerEntryRevision(descriptor.revision, entry2.id, bytes.byteLength), bytes);
       }
       const originOptions = {
         namespace,
@@ -12726,7 +12716,7 @@ function canonicalSubject(value) {
     return void 0;
   try {
     const subject = parseSubjectRef(value);
-    return serializeSubjectRef2(subject) === value ? subject : void 0;
+    return serializeSubjectRef(subject) === value ? subject : void 0;
   } catch {
     return void 0;
   }
@@ -19439,7 +19429,7 @@ var SCENE_RENDERER_MATCHER = Object.freeze({
 var SCENE_RENDERER_CONTRACT_DEFINITION = Object.freeze({
   schemaVersion: 1,
   kind: "service",
-  contract: SCENE_RENDERER_CONTRACT2,
+  contract: SCENE_RENDERER_CONTRACT,
   major: 1,
   offerFacet: Object.freeze({
     presence: "required",
@@ -19484,7 +19474,7 @@ function registerStandardRendererDefinitions(definitions) {
 }
 function isSceneRenderer(value) {
   const record6 = recordOf5(value);
-  return record6?.["contract"] === SCENE_RENDERER_CONTRACT2 && nonEmptyString3(record6["rendererId"]) && outputKindList(record6["outputKinds"]) !== void 0 && typeof record6["render"] === "function";
+  return record6?.["contract"] === SCENE_RENDERER_CONTRACT && nonEmptyString3(record6["rendererId"]) && outputKindList(record6["outputKinds"]) !== void 0 && typeof record6["render"] === "function";
 }
 async function resolveSceneRenderer(request) {
   const definitions = request.services.serviceDefinitions;
@@ -19511,7 +19501,7 @@ async function resolveSceneRenderer(request) {
   };
   try {
     const lease2 = await resolver.port.resolve({
-      contract: SCENE_RENDERER_CONTRACT2,
+      contract: SCENE_RENDERER_CONTRACT,
       major: 1,
       facet,
       ...request.signal === void 0 ? {} : { signal: request.signal }
@@ -19522,7 +19512,7 @@ async function resolveSceneRenderer(request) {
         state: "unresolved",
         diagnostics: [
           ...resolver.diagnostics,
-          diagnostic("error", "x3.host/renderer-invalid", `the selected provider does not implement ${SCENE_RENDERER_CONTRACT2}@1 for ${request.outputKind}`)
+          diagnostic("error", "x3.host/renderer-invalid", `the selected provider does not implement ${SCENE_RENDERER_CONTRACT}@1 for ${request.outputKind}`)
         ]
       };
     }
@@ -22504,7 +22494,7 @@ function borrowCommonWorldScene(candidate) {
       throw new TypeError("world scene data-source lease has been released");
   };
   const source2 = Object.freeze({
-    contract: WORLD_SCENE_SOURCE_CONTRACT2,
+    contract: WORLD_SCENE_SOURCE_CONTRACT,
     major: 1,
     // a refinable world names a new snapshot once refined
     get snapshotId() {
@@ -22520,7 +22510,7 @@ function borrowCommonWorldScene(candidate) {
       assertLive(signal);
       const info = await candidate.info(signal);
       assertLive(signal);
-      return Object.freeze({ ...info, contract: WORLD_SCENE_SOURCE_CONTRACT2 });
+      return Object.freeze({ ...info, contract: WORLD_SCENE_SOURCE_CONTRACT });
     },
     async page(request, signal) {
       assertLive(signal);
@@ -22609,7 +22599,7 @@ async function openMapPreviewAssetSession(request) {
         trusted: false
       },
       dataSources: [
-        { contract: WORLD_SCENE_SOURCE_CONTRACT2, major: 1 },
+        { contract: WORLD_SCENE_SOURCE_CONTRACT, major: 1 },
         ...catalogSources === void 0 ? [] : [{ contract: contractId("common.view/relation-graph-source"), major: 1 }],
         ...catalogSources?.selector === void 0 ? [] : [{ contract: contractId("common.view/subject-selector-source"), major: 1 }]
       ],
@@ -22624,7 +22614,7 @@ async function openMapPreviewAssetSession(request) {
       handlers: /* @__PURE__ */ new Map(),
       async openDataSource(contract, major) {
         if (major === 1) {
-          if (contract === WORLD_SCENE_SOURCE_CONTRACT2) {
+          if (contract === WORLD_SCENE_SOURCE_CONTRACT) {
             return borrowCommonWorldScene(analyzed.world.value);
           }
           if (contract === "common.view/relation-graph-source" && catalogSources !== void 0) {
@@ -22758,7 +22748,7 @@ function boundedCoordinatorLimit(value, label, maximum) {
 }
 function validPreparationDiagnostic(value) {
   const record6 = recordOf9(value);
-  return record6 !== void 0 && Object.keys(record6).every((key3) => ["code", "severity", "message", "path", "data"].includes(key3)) && nonEmptyString7(record6["code"]) && PREVIEW_DIAGNOSTIC_SEVERITIES.has(String(record6["severity"])) && nonEmptyString7(record6["message"]) && (!Object.hasOwn(record6, "path") || Array.isArray(record6["path"]) && record6["path"].every((item) => typeof item === "string" || Number.isSafeInteger(item))) && (!Object.hasOwn(record6, "data") || isJsonValue2(record6["data"]));
+  return record6 !== void 0 && Object.keys(record6).every((key3) => ["code", "severity", "message", "path", "data"].includes(key3)) && nonEmptyString7(record6["code"]) && PREVIEW_DIAGNOSTIC_SEVERITIES.has(String(record6["severity"])) && nonEmptyString7(record6["message"]) && (!Object.hasOwn(record6, "path") || Array.isArray(record6["path"]) && record6["path"].every((item) => typeof item === "string" || Number.isSafeInteger(item))) && (!Object.hasOwn(record6, "data") || isJsonValue(record6["data"]));
 }
 function validNamespaceSearchQuery(value) {
   const query2 = recordOf9(value);
@@ -22805,7 +22795,7 @@ function validateDocumentReadRequests(value) {
 }
 function validHostResourceRoot(value) {
   const record6 = recordOf9(value);
-  return record6 !== void 0 && Object.keys(record6).every((key3) => key3 === "rootId" || key3 === "locator" || key3 === "optional") && nonEmptyString7(record6["rootId"]) && Object.hasOwn(record6, "locator") && isJsonValue2(record6["locator"]) && (record6["optional"] === void 0 || typeof record6["optional"] === "boolean");
+  return record6 !== void 0 && Object.keys(record6).every((key3) => key3 === "rootId" || key3 === "locator" || key3 === "optional") && nonEmptyString7(record6["rootId"]) && Object.hasOwn(record6, "locator") && isJsonValue(record6["locator"]) && (record6["optional"] === void 0 || typeof record6["optional"] === "boolean");
 }
 function validSubjectNamespaceRoot(value) {
   const record6 = recordOf9(value);
@@ -22870,7 +22860,7 @@ function validatePreparationResult(value, maxCandidates, maxRoots) {
   }
   if (record6["state"] === "prepared") {
     const plan = recordOf9(record6["plan"]);
-    if (!Object.keys(record6).every((key3) => key3 === "state" || key3 === "plan" || key3 === "diagnostics") || plan?.["schemaVersion"] !== 1 || recordOf9(plan["workspace"]) === void 0 || !isJsonValue2(plan["workspace"]) || !Object.keys(plan).every((key3) => key3 === "schemaVersion" || key3 === "workspace" || key3 === "resources")) {
+    if (!Object.keys(record6).every((key3) => key3 === "state" || key3 === "plan" || key3 === "diagnostics") || plan?.["schemaVersion"] !== 1 || recordOf9(plan["workspace"]) === void 0 || !isJsonValue(plan["workspace"]) || !Object.keys(plan).every((key3) => key3 === "schemaVersion" || key3 === "workspace" || key3 === "resources")) {
       throw new TypeError("map preview preparation returned an invalid prepared plan");
     }
     validateResourcePlan(plan["resources"], maxRoots);
@@ -25638,7 +25628,7 @@ function createTextCodec(definition2, context) {
         ]
       ]);
       return createAssetSession({
-        revision: revisionId2(input.revisions.revision),
+        revision: revisionId(input.revisions.revision),
         descriptor,
         operationDeclarations: OPERATIONS,
         permissionGrant: { id: `text-${definition2.format}-session`, classes: ["read-source"] },
@@ -27254,7 +27244,7 @@ var createCodec3 = () => Object.freeze({
       ["export-raw", async () => ({ kind: "bytes", value: raw })]
     ]);
     const managed = createAssetSession({
-      revision: revisionId2(input.revisions.revision),
+      revision: revisionId(input.revisions.revision),
       descriptor,
       operationDeclarations: OPERATION_DECLARATIONS,
       permissionGrant: { id: "plain-text-session", classes: ["read-source"] },
@@ -27577,7 +27567,7 @@ function withNativeTextModules(linked = /* @__PURE__ */ new Map()) {
 
 // ../MODDING/modkit-core/packages/host/dist/composition.js
 async function createHostComposition(options) {
-  const topology2 = createHostTopology2(options.topology);
+  const topology2 = createHostTopology(options.topology);
   const profile3 = topology2.realms.find((candidate) => candidate.realmId === options.realmId);
   if (profile3 === void 0) {
     throw new ModkitError({
@@ -47520,7 +47510,7 @@ var lazyEditor = Object.freeze({
   abiVersion: 1,
   default: Object.freeze({
     async mount(args) {
-      const { monacoEditor } = await import("./editor-LFCBJC6W.js");
+      const { monacoEditor } = await import("./editor-YXRHL67O.js");
       return monacoEditor.mount(args);
     }
   })
@@ -61085,7 +61075,7 @@ function bindingIdOf(expected) {
   return ids[0];
 }
 function revisionFor(bindingId2, source2, token, namespaceRevision) {
-  const revision = revisionId2(token);
+  const revision = revisionId(token);
   return Object.freeze({
     bindings: Object.freeze({ [bindingId2]: revision }),
     ...namespaceRevision === void 0 ? {} : { namespaceRevision },
@@ -66538,9 +66528,9 @@ var PREVIEW_STAGES = [
 async function defaultPreviewStage(kind, localizer) {
   switch (kind) {
     case "model":
-      return (await import("./model-UDVV5CA5.js")).createModelViewer({ localizer });
+      return (await import("./model-CGIPKHCG.js")).createModelViewer({ localizer });
     case "image":
-      return (await import("./image-JY4J23NQ.js")).createImageViewer({ localizer });
+      return (await import("./image-WWIWP4RV.js")).createImageViewer({ localizer });
     case "video":
       return (await import("./video-KCVKW25Q.js")).createVideoViewer({ localizer });
     case "audio":
@@ -66583,7 +66573,7 @@ function embedRelationGraph(sections, args, scope, localizer, graph) {
   return [
     ...sections,
     stageSection({ id: "relations-graph", title: localizer.text("card.relationGraph"), expanded: false }, scope, localizer, "card.relationGraphUnavailable", async (host) => {
-      const module = graph ?? (await import("./graph-KRS2W2N3.js")).createRelationGraphViewer({ localizer });
+      const module = graph ?? (await import("./graph-ZTAADXPU.js")).createRelationGraphViewer({ localizer });
       return scope.signal.aborted ? void 0 : module.mount({ ...args, container: host, signal: scope.signal });
     })
   ];

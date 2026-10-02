@@ -52,23 +52,19 @@ import {
   webExtensionSubjectCardBundle,
   withMapPreviewSources,
   withoutHiddenEntries
-} from "./chunks/chunk-KT7EZLO7.js";
+} from "./chunks/chunk-3BJNRQOR.js";
 import "./chunks/chunk-IHYY36PH.js";
 import "./chunks/chunk-KA2ONSZB.js";
+import "./chunks/chunk-67RSNK4Q.js";
+import {
+  resolveModelViewerTextures
+} from "./chunks/chunk-OWROJOZ7.js";
+import "./chunks/chunk-O2DY4UGD.js";
+import "./chunks/chunk-ZFIQVDW4.js";
 import {
   normalizeModkitIdentifier,
   presentationSlotId
-} from "./chunks/chunk-EEPXOM6F.js";
-import "./chunks/chunk-JNRHQTGH.js";
-import "./chunks/chunk-7L3EMAAL.js";
-import {
-  resolveModelViewerTextures
-} from "./chunks/chunk-WG5AX3VE.js";
-import "./chunks/chunk-O2DY4UGD.js";
-import "./chunks/chunk-AVBKEDCB.js";
-import "./chunks/chunk-AQDBCF23.js";
-import "./chunks/chunk-R3U752LL.js";
-import "./chunks/chunk-QQJVD7VT.js";
+} from "./chunks/chunk-UY6ABBXF.js";
 import {
   declaredMutatingOperations,
   editOffer,
@@ -77,11 +73,8 @@ import {
   isRejected,
   mountFieldEditor,
   subjectCandidateProviderLease
-} from "./chunks/chunk-73FNGVMG.js";
+} from "./chunks/chunk-67O2CQUM.js";
 import "./chunks/chunk-PGJ3E3MZ.js";
-import {
-  revisionId
-} from "./chunks/chunk-SD54DXIF.js";
 import {
   DEFAULT_UI_LOCALIZER,
   PANELS_FALLBACK_MESSAGES,
@@ -100,6 +93,15 @@ import {
   setViewerText,
   withEnglishUiFallback
 } from "./chunks/chunk-ID5URMAQ.js";
+import "./chunks/chunk-5MQCQKKD.js";
+import {
+  revisionId
+} from "./chunks/chunk-V2OFYISD.js";
+import "./chunks/chunk-JNRHQTGH.js";
+import "./chunks/chunk-AVBKEDCB.js";
+import "./chunks/chunk-OZX7B633.js";
+import "./chunks/chunk-R3U752LL.js";
+import "./chunks/chunk-QQJVD7VT.js";
 import {
   CONTAINER_EXTRACT_OPERATION_ID,
   compareUtf8,

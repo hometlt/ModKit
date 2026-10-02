@@ -5,7 +5,7 @@ import {
   createDescriptorFallbackSubjectFactsSource,
   createFieldRelationGraphSource,
   descriptorSubjectRef
-} from "../../chunks/chunk-NCLAIULB.js";
+} from "../../chunks/chunk-L2QMC2R5.js";
 import {
   ABI_ASSET_SESSION,
   base64Of,
@@ -13,7 +13,17 @@ import {
   createStandardSurfaceRegistry,
   framePortFromMessagePort,
   protocolLimits
-} from "../../chunks/chunk-R2L4UUN4.js";
+} from "../../chunks/chunk-AKRCN2XH.js";
+import {
+  assembleSubjectDescriptor,
+  createAssetSession,
+  createByteRangeSource,
+  createLazyTableDataSource,
+  createUtf8TextDataSource
+} from "../../chunks/chunk-ZB3HR2LB.js";
+import {
+  metadataFieldProjections
+} from "../../chunks/chunk-5GGWVEQJ.js";
 import {
   A1_SPEC_SCHEMA_ENTRIES,
   CODEC_CONTRIBUTION_CONTRACT,
@@ -41,8 +51,6 @@ import {
   MAP_SEMANTIC_MATCHER_PROFILE,
   MOD_WORKSPACE_COMPOSITION_CONTRACT,
   MOD_WORKSPACE_MATCHER_PROFILE,
-  NATIVE_MODEL_ENCODER_CONTRACT,
-  NATIVE_MODEL_ENCODER_MATCHER_PROFILE,
   RESOLVED_DATA_AUTHORING_INDEX_KIND,
   RESOLVED_DATA_WORKSPACE_CONTRACT,
   RESOLVED_DATA_WORKSPACE_MATCHER_PROFILE,
@@ -50,8 +58,6 @@ import {
   RUNTIME_PROVIDER_CONTRACT,
   RUNTIME_PROVIDER_MATCHER_PROFILE,
   RUNTIME_SESSION_CONTRACT,
-  SCENE_RENDERER_CONTRACT,
-  SCENE_RENDERER_MATCHER_PROFILE,
   SERVICE_OPERATION_MATCHER_PROFILE,
   SERVICE_OPERATION_PROVIDER_CONTRACT,
   SERVICE_PROVIDER_CONTRIBUTION_CONTRACT,
@@ -66,7 +72,6 @@ import {
   WRITER_FACET_MATCHER_PROFILE,
   WRITER_SURFACE,
   activationRequiredPermissionClasses,
-  algorithmQualifiedDigest,
   containerEntryRevision,
   createContributionContractRegistry,
   createHostTopology,
@@ -86,19 +91,19 @@ import {
   validateContributionManifest,
   writerOfferSatisfies,
   writerSelectionKey
-} from "../../chunks/chunk-QTXQMQHW.js";
+} from "../../chunks/chunk-TN2P55EN.js";
 import {
-  assembleSubjectDescriptor,
-  createAssetSession,
-  createByteRangeSource,
-  createLazyTableDataSource,
-  createUtf8TextDataSource
-} from "../../chunks/chunk-3B2ORCWT.js";
+  SCENE_RENDERER_CONTRACT,
+  SCENE_RENDERER_MATCHER_PROFILE
+} from "../../chunks/chunk-MT2JUZZJ.js";
 import {
-  metadataFieldProjections
-} from "../../chunks/chunk-5GGWVEQJ.js";
+  NATIVE_MODEL_ENCODER_CONTRACT,
+  NATIVE_MODEL_ENCODER_MATCHER_PROFILE
+} from "../../chunks/chunk-R2P56FTH.js";
+import "../../chunks/chunk-5A3JGV66.js";
 import {
   PERMISSION_CLASSES,
+  algorithmQualifiedDigest,
   contributionId,
   grantValidity,
   isJsonValue,
@@ -116,7 +121,7 @@ import {
   serializeSubjectRef,
   snapshotJsonWireData,
   subjectRefEquals
-} from "../../chunks/chunk-LCIKLYUH.js";
+} from "../../chunks/chunk-2LRUXON6.js";
 import {
   CONTAINER_EXTRACT_OPERATION_ID,
   ModkitError,

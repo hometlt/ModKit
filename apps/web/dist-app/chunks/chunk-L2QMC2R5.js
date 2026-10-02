@@ -5,7 +5,7 @@ import {
   parseSubjectRef,
   rootSubject,
   serializeSubjectRef
-} from "./chunk-LCIKLYUH.js";
+} from "./chunk-2LRUXON6.js";
 import {
   compareUtf8
 } from "./chunk-V3DESLW4.js";

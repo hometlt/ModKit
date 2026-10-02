@@ -2,7 +2,7 @@ import {
   AUXILIARY_DATA_SOURCE_SURFACES,
   STANDARD_DATA_SOURCE_SURFACES,
   STANDARD_EDITING_SURFACES
-} from "./chunk-QTXQMQHW.js";
+} from "./chunk-TN2P55EN.js";
 import {
   ModkitError,
   OperationCancelledError,

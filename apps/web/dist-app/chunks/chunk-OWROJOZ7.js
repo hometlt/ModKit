@@ -2,20 +2,12 @@ import {
   createOrbitController
 } from "./chunk-O2DY4UGD.js";
 import {
-  applyColorKeyTransparency,
-  billboardCameraRotation,
-  createModelSceneSampler,
-  createModelSkeletonNodes,
-  modelPrimitiveByteLength,
-  snapshotJson
-} from "./chunk-AVBKEDCB.js";
-import {
   convertedFileName,
   exportOffer,
   invokeRefusalMessage,
   isRejected,
   mountFieldEditor
-} from "./chunk-73FNGVMG.js";
+} from "./chunk-67O2CQUM.js";
 import {
   canvasPng,
   createMediaShell,
@@ -36,6 +28,14 @@ import {
   unknownSourceLease,
   withEnglishUiFallback
 } from "./chunk-ID5URMAQ.js";
+import {
+  applyColorKeyTransparency,
+  billboardCameraRotation,
+  createModelSceneSampler,
+  createModelSkeletonNodes,
+  modelPrimitiveByteLength,
+  snapshotJson
+} from "./chunk-AVBKEDCB.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunk-BLWUC7LO.js";
@@ -2004,7 +2004,7 @@ function createModelViewer(options = {}) {
               const output = result.output;
               if (output.kind !== "bytes" || !(output.value instanceof Uint8Array))
                 throw new Error(`the codec answered ${output.kind}, not bytes`);
-              const { createUvmFramePreparer } = await import("./render-6PWY6RIV.js");
+              const { createUvmFramePreparer } = await import("./render-46LQMWDP.js");
               const raster = options.rasterResources?.(args.descriptor);
               const preparer = createUvmFramePreparer(output.value, {
                 budget: MODEL_EFFECT_BUDGET,
