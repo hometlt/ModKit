@@ -3,7 +3,8 @@
  *
  * - `mpqHash()` — MPQ hash function for filenames
  * - `mpqEncrypt()` / `mpqDecrypt()` — XOR stream cipher for tables
- * - `crc32()` — CRC-32 checksum
+ *
+ * CRC-32 is not MPQ cryptography; it lives in `checksum`.
  */
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -173,51 +174,4 @@ export function mpqDecrypt(data: Uint8Array, key: number): Uint8Array {
   }
 
   return result
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// CRC-32
-// ─────────────────────────────────────────────────────────────────────────────
-
-// CRC-32 lookup table
-const crcTable = (() => {
-  const table = new Uint32Array(256)
-  for (let n = 0; n < 256; n++) {
-    let c = n
-    for (let k = 0; k < 8; k++) {
-      c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1
-    }
-    table[n] = c >>> 0
-  }
-  return table
-})()
-
-/**
- * Calculate CRC-32 checksum.
- *
- * @param data Data to checksum
- * @returns 32-bit CRC value
- *
- * @example
- * ```ts
- * const crc = crc32(Buffer.from('hello world'));
- * console.log(crc.toString(16));
- * ```
- */
-export function crc32(data: Uint8Array): number {
-  let crc = 0xffffffff
-
-  for (let i = 0; i < data.length; i++) {
-    crc = (crcTable[(crc ^ data[i]!) & 0xff]! ^ (crc >>> 8)) >>> 0
-  }
-
-  return (crc ^ 0xffffffff) >>> 0
-}
-
-export default {
-  mpqHash,
-  mpqEncrypt,
-  mpqDecrypt,
-  crc32,
-  HASH_TYPE,
 }

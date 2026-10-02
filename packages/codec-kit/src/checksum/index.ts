@@ -2,14 +2,34 @@
  * The checksums formats carry, reached from one place.
  *
  * CRC-32 was written out fifteen times across MK3 — in PNG, ZIP, GZip, XZ, 7z, RAR, ODF and the
- * scene's PNG writer — each with its own table. The canonical CRC-32 is the MK2 library copy in
- * `crypto/mpq.ts` (hash-checked by `mk2-copy:check`); this module gives it a name codecs can find,
- * a range form, and the one variant that is genuinely different (BZip2's). Narrow on purpose:
+ * scene's PNG writer — each with its own table. The canonical CRC-32 is the one below (it came from
+ * the MK2 library with the MPQ hashes); this module gives it a name codecs can find, a range form,
+ * and the one variant that is genuinely different (BZip2's). Narrow on purpose:
  * importing it costs a codec no compression code. `algorithms:check` counts any new copy as debt.
  */
-import { crc32 } from '../crypto/mpq.js'
+/** The CRC-32 table: reflected polynomial 0xEDB88320 (PNG, ZIP, GZip, XZ, 7z). */
+const crcTable = (() => {
+  const table = new Uint32Array(256)
+  for (let n = 0; n < 256; n++) {
+    let c = n
+    for (let k = 0; k < 8; k++) {
+      c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1
+    }
+    table[n] = c >>> 0
+  }
+  return table
+})()
 
-export { crc32 }
+/** CRC-32 of `data`; `crc32('123456789')` is 0xCBF43926. */
+export function crc32(data: Uint8Array): number {
+  let crc = 0xffffffff
+
+  for (let i = 0; i < data.length; i++) {
+    crc = (crcTable[(crc ^ data[i]!) & 0xff]! ^ (crc >>> 8)) >>> 0
+  }
+
+  return (crc ^ 0xffffffff) >>> 0
+}
 export { adler32, createAdler32, type Adler32Accumulator } from '../compression/adler32.js'
 export { xxHash32 } from './xxhash32.js'
 
