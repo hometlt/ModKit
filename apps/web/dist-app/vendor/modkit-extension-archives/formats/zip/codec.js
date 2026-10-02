@@ -23,7 +23,7 @@ import {
   assembleSubjectDescriptor,
   createAssetSession,
   createUtf8TextDataSource
-} from "../../../../chunks/chunk-6YZP4SAK.js";
+} from "../../../../chunks/chunk-W52PQZEN.js";
 import "../../../../chunks/chunk-5GGWVEQJ.js";
 import {
   containerEntryRevision,

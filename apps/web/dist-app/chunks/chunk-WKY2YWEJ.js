@@ -6300,7 +6300,12 @@ function snapshotOutput(output) {
       return Object.freeze({ kind: "json", value });
     }
     case "bytes":
-      return Object.freeze({ kind: "bytes", value: output.value.slice() });
+      return Object.freeze({
+        kind: "bytes",
+        value: output.value.slice(),
+        ...typeof output.extension === "string" && /^[A-Za-z0-9][A-Za-z0-9._-]{0,31}$/u.test(output.extension) ? { extension: output.extension } : {},
+        ...typeof output.mediaType === "string" && /^[\w.+-]+\/[\w.+-]+(?:;.{0,200})?$/u.test(output.mediaType) ? { mediaType: output.mediaType } : {}
+      });
     case "source":
       return Object.freeze({
         kind: "source",
@@ -16688,6 +16693,7 @@ var SUBJECT_COMMAND_TARGETS = defineSubjectCommandTargets({
       "export.raw",
       "model.export-uvm",
       "model.export-native",
+      "map.export-native",
       "model.write"
     ],
     // a map world converts to UVW from the world it publishes (target `uvw`)
@@ -16731,6 +16737,11 @@ function selectedOperation(descriptor, allowed2, requested) {
       return { id, ...operation };
   }
   return void 0;
+}
+function subjectStem(ref2) {
+  const name = ref2.replace(/[?#].*$/u, "").split(/[\\/]/u).at(-1) ?? "";
+  const stem = name.replace(/\.[^.]*$/u, "");
+  return stem === "" ? "export" : stem;
 }
 var publishedOperations = (descriptor) => (descriptor.operations ?? []).length === 0 ? "it publishes no operations at all" : `it publishes ${(descriptor.operations ?? []).map((item) => item.id).join(", ")}`;
 async function withCommandSubject(command, context, ref2, body) {
@@ -17008,22 +17019,29 @@ var convertCommand = {
       }
       if (input["target"] === "uvw" && input["operation"] === void 0)
         return unavailable(CONVERT_COMMAND, "this subject publishes no map world to write as UVW", "open the map itself, or a package naming one map; name an operation to run it instead", diagnostics);
-      const operation = selectedOperation(descriptor, SUBJECT_COMMAND_TARGETS.convert.operationIds, input["operation"]);
+      const target = typeof input["target"] === "string" ? input["target"] : void 0;
+      const operation = (input["operation"] === void 0 && target !== void 0 ? selectedOperation(descriptor, target === "uvm" ? ["model.export-uvm"] : ["model.export-native", "map.export-native", "export.convert"], void 0) : void 0) ?? selectedOperation(descriptor, SUBJECT_COMMAND_TARGETS.convert.operationIds, input["operation"]);
       if (operation === void 0) {
         return unavailable(CONVERT_COMMAND, `the requested export is unavailable \u2014 ${publishedOperations(descriptor)}`, "run subject.inspect to see which data sources it does publish; a universal projection is the route for formats with no native export", diagnostics);
       }
       context.progress?.({ step: "convert", message: "running the codec\u2019s export" });
-      const request = input["operationInput"] === void 0 ? typeof input["target"] === "string" ? operation.id === "model.export-native" ? { schemaVersion: 1, formatId: input["target"] } : { target: input["target"] } : {} : input["operationInput"];
+      const native = operation.id === "model.export-native" || operation.id === "map.export-native";
+      const request = input["operationInput"] === void 0 ? target !== void 0 ? native ? { schemaVersion: 1, formatId: target } : { target } : {} : input["operationInput"];
       const answer = await invokeSubjectOperation(CONVERT_COMMAND, context, session, operation.handlerId, request, diagnostics);
       if (answer.state === "failed")
         return answer.result;
-      const bytes = answer.output.kind === "bytes" ? answer.output.value : void 0;
-      const wroteTo = bytes === void 0 || context.writeOutput === void 0 ? void 0 : await context.writeOutput(`${input["target"] ?? "export"}`, bytes, context.signal);
+      const output = answer.output;
+      const bytes = output.kind === "bytes" ? output.value : void 0;
+      const extension = bytes !== void 0 && typeof output.extension === "string" ? output.extension : void 0;
+      const mediaType = bytes !== void 0 && typeof output.mediaType === "string" ? output.mediaType : void 0;
+      const wroteTo = bytes === void 0 || context.writeOutput === void 0 ? void 0 : await context.writeOutput(extension === void 0 ? target ?? "export" : `${subjectStem(subject.ref)}.${extension}`, bytes, context.signal);
       return ok(CONVERT_COMMAND, {
         ref: subject.ref,
         via: operation.id,
-        outputKind: answer.output.kind,
+        outputKind: output.kind,
         ...bytes === void 0 ? {} : { byteLength: bytes.byteLength },
+        ...extension === void 0 ? {} : { extension },
+        ...mediaType === void 0 ? {} : { mediaType },
         ...wroteTo === void 0 ? { wroteTo: null } : { wroteTo }
       }, answer.diagnostics);
     });
@@ -41166,7 +41184,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: "sha256:11154e06ea1ac131aefc5d5b43cbb3ac81b28238e2a8df9aae039995ce12e0ce",
+        artifactDigest: "sha256:bf6e76f13dc2dc25fef08a484447f26708d9119c7b92360fd31604c150267748",
         fileDigests: {
           "MIGRATION-NOTES-common-models.json": "sha256:99f5fd00c6f523fa5591fe3d91906d7ba9f87b6ed7023f02ac6cc26bf1abd646",
           "README.md": "sha256:75155a6c4960c9ccc0a0a79906ed7bd62d321d52fedbe8ae6e73a1f6e7801f10",
@@ -41185,9 +41203,9 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
           "src/obj/codec.js": "sha256:42c82a2f8f9b1fc6c58c63fe931e5d355436c85f608b45ed73a40837a13bcd4b",
           "src/ply/codec.js": "sha256:d6cf85f1a51b55d51bb3a45edf80a19fb59509f44d75627fedd79602c1689425",
           "src/stl/codec.js": "sha256:5c74085a052421bf16206674a3d67a639904f03f4af924c6235e8e719b4f2691",
-          "src/uvm/codec.js": "sha256:eacaf86780266f449f43442dc5b3edf93087040ff9cc46f3c0e165fd356c4cfa"
+          "src/uvm/codec.js": "sha256:7c437479a2b8d3cd3731029bf3f62ac1558fcc6a0e857612a06d0419cf4fe90a"
         },
-        inventoryRecordId: "artifact:sha256:11154e06ea1ac131aefc5d5b43cbb3ac81b28238e2a8df9aae039995ce12e0ce"
+        inventoryRecordId: "artifact:sha256:bf6e76f13dc2dc25fef08a484447f26708d9119c7b92360fd31604c150267748"
       },
       artifactRoot: "extensions/models/",
       containers: {
@@ -58838,7 +58856,12 @@ function nativeExportHandler(bytes, context) {
         throw new TypeError(`native map encoder returned an invalid ${formatId} result`);
       for (const item of encoded.diagnostics ?? [])
         operationContext.reportDiagnostic?.(item);
-      return { kind: "bytes", value: encoded.bytes };
+      return {
+        kind: "bytes",
+        value: encoded.bytes,
+        extension: encoded.extension,
+        ...encoded.mediaType === void 0 ? {} : { mediaType: encoded.mediaType }
+      };
     } finally {
       await lease2.release();
     }

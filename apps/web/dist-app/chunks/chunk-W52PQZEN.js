@@ -56,7 +56,12 @@ function snapshotOutput(output) {
       return Object.freeze({ kind: "json", value });
     }
     case "bytes":
-      return Object.freeze({ kind: "bytes", value: output.value.slice() });
+      return Object.freeze({
+        kind: "bytes",
+        value: output.value.slice(),
+        ...typeof output.extension === "string" && /^[A-Za-z0-9][A-Za-z0-9._-]{0,31}$/u.test(output.extension) ? { extension: output.extension } : {},
+        ...typeof output.mediaType === "string" && /^[\w.+-]+\/[\w.+-]+(?:;.{0,200})?$/u.test(output.mediaType) ? { mediaType: output.mediaType } : {}
+      });
     case "source":
       return Object.freeze({
         kind: "source",

@@ -20,7 +20,7 @@ import {
   createByteRangeSource,
   createLazyTableDataSource,
   createUtf8TextDataSource
-} from "../../chunks/chunk-6YZP4SAK.js";
+} from "../../chunks/chunk-W52PQZEN.js";
 import {
   metadataFieldProjections
 } from "../../chunks/chunk-5GGWVEQJ.js";
@@ -1257,6 +1257,7 @@ var SUBJECT_COMMAND_TARGETS = defineSubjectCommandTargets({
       "export.raw",
       "model.export-uvm",
       "model.export-native",
+      "map.export-native",
       "model.write"
     ],
     // a map world converts to UVW from the world it publishes (target `uvw`)
@@ -1300,6 +1301,11 @@ function selectedOperation(descriptor, allowed2, requested) {
       return { id, ...operation };
   }
   return void 0;
+}
+function subjectStem(ref2) {
+  const name = ref2.replace(/[?#].*$/u, "").split(/[\\/]/u).at(-1) ?? "";
+  const stem = name.replace(/\.[^.]*$/u, "");
+  return stem === "" ? "export" : stem;
 }
 var publishedOperations = (descriptor) => (descriptor.operations ?? []).length === 0 ? "it publishes no operations at all" : `it publishes ${(descriptor.operations ?? []).map((item) => item.id).join(", ")}`;
 async function withCommandSubject(command, context, ref2, body) {
@@ -1577,22 +1583,29 @@ var convertCommand = {
       }
       if (input["target"] === "uvw" && input["operation"] === void 0)
         return unavailable(CONVERT_COMMAND, "this subject publishes no map world to write as UVW", "open the map itself, or a package naming one map; name an operation to run it instead", diagnostics);
-      const operation = selectedOperation(descriptor, SUBJECT_COMMAND_TARGETS.convert.operationIds, input["operation"]);
+      const target = typeof input["target"] === "string" ? input["target"] : void 0;
+      const operation = (input["operation"] === void 0 && target !== void 0 ? selectedOperation(descriptor, target === "uvm" ? ["model.export-uvm"] : ["model.export-native", "map.export-native", "export.convert"], void 0) : void 0) ?? selectedOperation(descriptor, SUBJECT_COMMAND_TARGETS.convert.operationIds, input["operation"]);
       if (operation === void 0) {
         return unavailable(CONVERT_COMMAND, `the requested export is unavailable \u2014 ${publishedOperations(descriptor)}`, "run subject.inspect to see which data sources it does publish; a universal projection is the route for formats with no native export", diagnostics);
       }
       context.progress?.({ step: "convert", message: "running the codec\u2019s export" });
-      const request = input["operationInput"] === void 0 ? typeof input["target"] === "string" ? operation.id === "model.export-native" ? { schemaVersion: 1, formatId: input["target"] } : { target: input["target"] } : {} : input["operationInput"];
+      const native = operation.id === "model.export-native" || operation.id === "map.export-native";
+      const request = input["operationInput"] === void 0 ? target !== void 0 ? native ? { schemaVersion: 1, formatId: target } : { target } : {} : input["operationInput"];
       const answer = await invokeSubjectOperation(CONVERT_COMMAND, context, session, operation.handlerId, request, diagnostics);
       if (answer.state === "failed")
         return answer.result;
-      const bytes = answer.output.kind === "bytes" ? answer.output.value : void 0;
-      const wroteTo = bytes === void 0 || context.writeOutput === void 0 ? void 0 : await context.writeOutput(`${input["target"] ?? "export"}`, bytes, context.signal);
+      const output = answer.output;
+      const bytes = output.kind === "bytes" ? output.value : void 0;
+      const extension = bytes !== void 0 && typeof output.extension === "string" ? output.extension : void 0;
+      const mediaType = bytes !== void 0 && typeof output.mediaType === "string" ? output.mediaType : void 0;
+      const wroteTo = bytes === void 0 || context.writeOutput === void 0 ? void 0 : await context.writeOutput(extension === void 0 ? target ?? "export" : `${subjectStem(subject.ref)}.${extension}`, bytes, context.signal);
       return ok(CONVERT_COMMAND, {
         ref: subject.ref,
         via: operation.id,
-        outputKind: answer.output.kind,
+        outputKind: output.kind,
         ...bytes === void 0 ? {} : { byteLength: bytes.byteLength },
+        ...extension === void 0 ? {} : { extension },
+        ...mediaType === void 0 ? {} : { mediaType },
         ...wroteTo === void 0 ? { wroteTo: null } : { wroteTo }
       }, answer.diagnostics);
     });
