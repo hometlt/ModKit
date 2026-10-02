@@ -9,7 +9,7 @@ import { getLogger } from '../../logging.js'
 
 const log = getLogger(['xml', 'positional-scanner'])
 
-export const enum CharacterCodes {
+export enum CharacterCodes {
   nullCharacter = 0,
   maxAsciiCharacter = 0x7f,
 

@@ -1,6 +1,6 @@
 import { findFirst } from './utils.js'
 
-export const enum XMLNodeKind {
+export enum XMLNodeKind {
   Document,
   Element,
 }
