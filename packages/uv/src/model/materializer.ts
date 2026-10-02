@@ -85,6 +85,22 @@ export interface ModelProjection {
     readonly ambient?: readonly [number, number, number]
     readonly lights: readonly UvmJsonObject[]
   }
+  /**
+   * The model's emitters, written on the root as `UV_game_effects` (schema
+   * `uvm.effects.schema.json`): each in that wire form, but naming its node by `nodeId` and its
+   * material by `materialId` (projection ids) where the wire form has the `node` and `material`
+   * indices, which the materializer writes. A model of effects alone is a model.
+   */
+  readonly effects?: {
+    readonly profile?: 'common' | 'm3' | 'mdx' | 'w3d'
+    readonly trackTimeUnit?: 'seconds' | 'milliseconds'
+    readonly particles?: readonly UvmJsonObject[]
+    readonly ribbons?: readonly UvmJsonObject[]
+    readonly forces?: readonly UvmJsonObject[]
+    readonly warps?: readonly UvmJsonObject[]
+    readonly projectors?: readonly UvmJsonObject[]
+    readonly extras?: UvmJsonObject
+  }
 }
 /**
  * The one table from a publisher's material layer slot to the glTF slot a consumer that knows only
@@ -568,7 +584,68 @@ const MATERIALIZER_GAME_EXTENSIONS = new Set([
   'UV_game_material_team_color',
   'UV_game_animation_clips',
   'UV_game_variants',
+  'UV_game_effects',
 ])
+
+/** Emitter families of `UV_game_effects`, and whether each names a material besides its node. */
+const EFFECT_FAMILIES = [
+  ['particles', true],
+  ['ribbons', true],
+  ['forces', false],
+  ['warps', false],
+  ['projectors', true],
+] as const
+
+/**
+ * The projection's emitters as `UV_game_effects`: each family's entries with their node and
+ * material ids turned into the document's indices, refused when an id names nothing written or an
+ * entry already carries an index of its own (an index from another ordering would point elsewhere).
+ */
+function effectsOf(
+  projection: ModelProjection,
+  nodeIndexById: ReadonlyMap<string, number>,
+  materialIndexById: ReadonlyMap<string, number>,
+): UvmJsonObject | undefined {
+  const given = projection.effects
+  if (given === undefined) return undefined
+  const families: [string, UvmJsonObject[]][] = []
+  for (const [family, withMaterial] of EFFECT_FAMILIES) {
+    const entries = given[family]
+    if (entries === undefined || entries.length === 0) continue
+    families.push([
+      family,
+      entries.map((entry, index) => {
+        const label = `effect ${family}[${String(index)}]`
+        const json: unknown = entry
+        if (!isJsonValue(json) || typeof entry['name'] !== 'string')
+          fail(`${label} is not a named JSON object`)
+        const { nodeId, materialId, ...rest } = entry
+        if (rest['node'] !== undefined || rest['material'] !== undefined)
+          fail(`${label} names its node and material by id, not by index`)
+        const node = typeof nodeId === 'string' ? nodeIndexById.get(nodeId) : undefined
+        if (node === undefined) fail(`${label} names the unknown node ${String(nodeId)}`)
+        if (!withMaterial) {
+          if (materialId !== undefined) fail(`${label} names a material its family has not`)
+          return { ...structuredClone(rest), node }
+        }
+        const material =
+          typeof materialId === 'string' ? materialIndexById.get(materialId) : undefined
+        if (material === undefined)
+          fail(`${label} names the unknown material ${String(materialId)}`)
+        return { ...structuredClone(rest), node, material }
+      }),
+    ])
+  }
+  if (given.extras !== undefined && !isJsonValue(given.extras))
+    fail('effect extras are not a JSON object')
+  if (families.length === 0) return undefined
+  return {
+    ...(given.profile === undefined ? {} : { profile: given.profile }),
+    ...(given.trackTimeUnit === undefined ? {} : { trackTimeUnit: given.trackTimeUnit }),
+    ...Object.fromEntries(families),
+    ...(given.extras === undefined ? {} : { extras: structuredClone(given.extras) }),
+  }
+}
 
 const LIGHT_KEYS = new Set([
   'type',
@@ -1866,6 +1943,7 @@ export function materializeUvmCore(
   const binary = buffers.build()
   const gameExtensions = gameExtensionsOf(projection)
   const sceneLights = sceneLightsOf(projection, nodeIndexById)
+  const effects = effectsOf(projection, nodeIndexById, materialIndexById)
   const document = {
     asset: {
       version: '2.0',
@@ -1902,11 +1980,13 @@ export function materializeUvmCore(
       ...(projection.lods !== undefined && projection.lods.length > 0 ? ['MSFT_lod'] : []),
       ...(lodSelection === undefined ? [] : ['MODKITX_lod_selection']),
       ...(sceneLights === undefined ? [] : ['UV_scene_lights']),
+      ...(effects === undefined ? [] : ['UV_game_effects']),
       ...gameExtensions.map(([name]) => name),
     ],
     extensions: {
       ...Object.fromEntries(gameExtensions),
       ...(sceneLights === undefined ? {} : { UV_scene_lights: sceneLights }),
+      ...(effects === undefined ? {} : { UV_game_effects: effects }),
       ...(unitsExtension === undefined ? {} : { UV_units: unitsExtension }),
       ...(lodSelection === undefined ? {} : { MODKITX_lod_selection: lodSelection }),
       ...(visibility.length === 0 ? {} : { UV_game_variants: { visibility } }),
