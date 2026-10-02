@@ -329,6 +329,8 @@ describe('the Explorer can be answered from inside a container', () => {
       operations: [],
     }
     let modDisposed = false
+    // the port a package's card reads its pictures through, handed on with the package
+    const modPictures = { read: vi.fn() }
     const modSession = {
       revision: revisionId('provider-token:directory-container-mod-session'),
       state: () => (modDisposed ? 'disposed' : 'live'),
@@ -360,6 +362,7 @@ describe('the Explorer can be answered from inside a container', () => {
             state: 'opened',
             session: modSession,
             descriptor: modDescriptor,
+            rasterResources: modPictures,
             selected: {
               extensionId: 'fixture/sc2-mod',
               contributionId: 'fixture/sc2-mod',
@@ -444,6 +447,7 @@ describe('the Explorer can be answered from inside a container', () => {
     await expect(openedMod.session?.descriptor()).resolves.toMatchObject({
       identity: { formatId: 'sc2-mod' },
     })
+    expect(openedMod.rasterResources).toBe(modPictures)
     await openedMod.session?.dispose()
     expect(modSession.dispose).toHaveBeenCalledOnce()
     expect(openNamespaceSubject).toHaveBeenCalledTimes(2)

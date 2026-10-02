@@ -1013,6 +1013,10 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
         answer: {
           snapshot: selectedRoute.length === 0 ? snapshot : { ...snapshot, selectedRoute },
           session: opened.session,
+          // a package's card draws its pictures through it (an SC2 mod inside the game's storage)
+          ...(opened.rasterResources === undefined
+            ? {}
+            : { rasterResources: opened.rasterResources }),
         },
         releaseResources,
       }
