@@ -28,7 +28,7 @@
     },
     {
       "command": "modkit.extensions.disableContribution",
-      "title": "%command.disableCodec%",
+      "title": "%command.disableContribution%",
       "icon": "$(circle-slash)"
     },
     {
@@ -42,7 +42,7 @@
     },
     {
       "command": "modkit.extensions.enableContribution",
-      "title": "%command.enableCodec%",
+      "title": "%command.enableContribution%",
       "icon": "$(check)"
     },
     {

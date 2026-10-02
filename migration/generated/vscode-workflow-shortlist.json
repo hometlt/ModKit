@@ -5,7 +5,7 @@
   "inputs": {
     "sourceInventorySha256": "0447c03c102be0f4b098cfa175a3706fee51c757216f1a42314e7ca7aefeb3bb",
     "decisionsSha256": "4dd4bfcea55a45335b8e058dbc7e3708276300db51d3ba2f7b9f5918536b30e7",
-    "vscodeManifestSha256": "b4996e424ddef40b7d91657ab10d5cfbfdd1577891b7f0df599b79d4aa82b24e",
+    "vscodeManifestSha256": "e2fb30d52fb97534adfaa5444ac50799a61c7d2adab62a0249529f4e7063a380",
     "vscodeExtensionSourceSha256": "32d40f65512ab4ec178af2d1580855f6cc1a33fd61489473bb99695e00cde7c4",
     "vscodeCatalogSha256": "bc7167c92d94902c49a64622ec7d99b5b1f5222125438050eecf6453476b25a8",
     "vscodePublicationInventorySha256": "91d22805850cbac55ce8df3fbd4a2d195ccb58af14908f5bcfa9b6684f7463a7",

@@ -99,7 +99,7 @@
       },
       {
         "command": "modkit.extensions.disableContribution",
-        "title": "%command.disableCodec%",
+        "title": "%command.disableContribution%",
         "icon": "$(circle-slash)"
       },
       { "command": "modkit.extensions.enable", "title": "%command.enableExtension%" },
@@ -110,7 +110,7 @@
       },
       {
         "command": "modkit.extensions.enableContribution",
-        "title": "%command.enableCodec%",
+        "title": "%command.enableContribution%",
         "icon": "$(check)"
       },
       { "command": "modkit.extensions.install", "title": "%command.installExtension%" },
