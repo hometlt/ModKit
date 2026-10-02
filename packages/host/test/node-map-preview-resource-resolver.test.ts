@@ -531,6 +531,46 @@ describe('Node game-installation map-preview resource resolver', () => {
     await result.release()
   })
 
+  it('reads the files beside a map opened from disk for a subject-siblings root (DN7)', async () => {
+    const root = await installationRoot()
+    const desktop = await mkdtemp(join(tmpdir(), 'modkit-preview-siblings-'))
+    temporaryRoots.push(desktop)
+    const mapPath = join(desktop, 'demo.map')
+    await writeFile(mapPath, 'map')
+    await writeFile(join(desktop, '_demo.mis'), 'mission')
+    mocks.discover.mockResolvedValue({
+      state: 'discovered',
+      result: discovery(root),
+      diagnostics: [],
+    })
+    const original = await namespaceSession(
+      pathToFileURL(mapPath).href,
+      new Map([['multiplay/maps/demo/game.map', new Uint8Array([1])]]),
+    )
+    const siblings = { schemaVersion: 1, kind: 'subject-siblings', gameId: GAME_ID } as const
+    const resolver = createNodeMapPreviewResourcePlanResolver({
+      installationRetentionMs: 0,
+      subjects: { open: vi.fn() } as unknown as Pick<SubjectServices, 'open'>,
+      configuredPaths: { [GAME_ID]: [root] },
+    })
+    const result = await resolver.resolve(
+      await requestFixture(
+        plan([
+          { rootId: 'mp', locator: siblings },
+          { rootId: 'base', locator: siblings },
+        ]),
+        mapPath,
+        original.session,
+      ),
+    )
+    if (result.state !== 'resolved') throw new Error(JSON.stringify(result.diagnostics))
+    const source = await result.origin.open('base/_demo.mis')
+    if (source.value.kind !== 'bytes') throw new Error('not bytes')
+    expect(new TextDecoder().decode(await source.value.read(0n, 16))).toBe('mission')
+    await source.release()
+    await result.release()
+  })
+
   it('keeps a released installation for its retention so the next pass reuses it', async () => {
     const root = await installationRoot()
     const mpPath = join(root, 'data', 'mp.wz')

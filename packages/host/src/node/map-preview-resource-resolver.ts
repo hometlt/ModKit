@@ -1,7 +1,7 @@
 /** Node-only resolver for generic installed-game archive locators in map-preview plans. */
 
 import { realpath, stat } from 'node:fs/promises'
-import { isAbsolute, relative, resolve } from 'node:path'
+import { dirname, isAbsolute, relative, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import {
   CONTAINER_EXTRACT_OPERATION_ID,
@@ -60,6 +60,8 @@ class ArchiveOpenFailure extends Error {
 
 const LOCATOR_KIND = 'game-installation-archive'
 const SUBJECT_LOCATOR_KIND = 'game-installation-subject'
+/** The files beside a map that is one file on disk (DN7: a Dune 2000 map's `_A1V1.MIS`). */
+const SIBLINGS_LOCATOR_KIND = 'subject-siblings'
 export const NODE_GAME_INSTALLATION_ARCHIVE_MAP_PREVIEW_RESOLVER_ID =
   'modkit.node/game-installation-archive-map-preview'
 export const NODE_GAME_INSTALLATION_RESOURCE_MAP_PREVIEW_RESOLVER_ID =
@@ -104,8 +106,15 @@ interface GameInstallationSubjectLocator {
   readonly openedSubjectPolicy: OpenedSubjectPolicy
 }
 
+/** The folder of the opened map file, read by the host as a plain folder. */
+interface SubjectSiblingsLocator {
+  readonly schemaVersion: 1
+  readonly kind: typeof SIBLINGS_LOCATOR_KIND
+  readonly gameId: string
+}
+
 type GameInstallationResourceLocator =
-  GameInstallationArchiveLocator | GameInstallationSubjectLocator
+  GameInstallationArchiveLocator | GameInstallationSubjectLocator | SubjectSiblingsLocator
 
 export interface NamespaceMount {
   /** The container's session; absent for a plain folder read by the host itself. */
@@ -276,9 +285,24 @@ function parseSubjectLocator(root: MapPreviewHostResourceRoot): GameInstallation
 }
 
 function parseResourceLocator(root: MapPreviewHostResourceRoot): GameInstallationResourceLocator {
-  return recordOf(root.locator)?.['kind'] === SUBJECT_LOCATOR_KIND
-    ? parseSubjectLocator(root)
-    : parseLocator(root)
+  const kind = recordOf(root.locator)?.['kind']
+  if (kind === SIBLINGS_LOCATOR_KIND) {
+    const value = recordOf(root.locator)!
+    if (
+      Object.keys(value).some(key => !['schemaVersion', 'kind', 'gameId'].includes(key)) ||
+      value['schemaVersion'] !== 1 ||
+      !nonEmptyString(value['gameId'])
+    )
+      throw new TypeError(
+        `resource root ${root.rootId} has an invalid ${SIBLINGS_LOCATOR_KIND} locator`,
+      )
+    return Object.freeze({
+      schemaVersion: 1,
+      kind: SIBLINGS_LOCATOR_KIND,
+      gameId: value['gameId'],
+    })
+  }
+  return kind === SUBJECT_LOCATOR_KIND ? parseSubjectLocator(root) : parseLocator(root)
 }
 
 function inside(root: string, candidate: string): boolean {
@@ -824,6 +848,58 @@ export function createNodeMapPreviewResourcePlanResolver(
             `external resource root ${item.root.rootId} is not mapped exactly once`,
             findings,
           )
+        }
+        if (item.locator.kind === SIBLINGS_LOCATOR_KIND) {
+          if (openedSubjectPath === undefined) {
+            if (item.root.optional === true) {
+              absentOptionalRoots.add(item.root.rootId)
+              findings.push(
+                diagnostic(
+                  'information',
+                  'x3.host/map-preview-optional-root-absent',
+                  `${item.root.rootId} names the files beside the opened map, which is no file on disk`,
+                ),
+              )
+              continue
+            }
+            return fail(
+              'x3.host/map-preview-subject-siblings-unavailable',
+              `${item.root.rootId} names the files beside the opened map, which is no file on disk`,
+              findings,
+            )
+          }
+          const vfs = new VirtualFileSystem().registerProvider(createFileVfsProvider())
+          let siblings: NamespaceMount
+          try {
+            const folder = await vfs.openMount(
+              pathToFileURL(dirname(openedSubjectPath)).href,
+              request.signal === undefined ? {} : { signal: request.signal },
+            )
+            siblings = await folderNamespaceMount(
+              artifactNamespaceSourceFromVfsMount(folder),
+              request.budgets.maxInputBytes,
+            )
+          } catch (error) {
+            await vfs.dispose()
+            return fail(
+              'x3.host/map-preview-subject-siblings-unreadable',
+              error instanceof Error ? error.message : String(error),
+              findings,
+            )
+          }
+          releases.push(() => releaseAll([async () => vfs.dispose(), siblings.namespaceRelease]))
+          rootsById.set(
+            item.root.rootId,
+            Object.freeze({
+              rootId: item.root.rootId,
+              pathPrefix: '',
+              logicalPrefix: workspaceRoot.sourcePath,
+              namespace: siblings.namespace,
+              containerRevision: siblings.revision,
+              extract: siblings.extract,
+            }),
+          )
+          continue
         }
         let resource: Awaited<ReturnType<typeof exactArchivePath>>
         try {
