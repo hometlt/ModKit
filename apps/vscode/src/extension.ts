@@ -78,6 +78,7 @@ import { advertisesSubjectCandidates, SUBJECT_SELECTOR_SOURCE } from './subject-
 import {
 commandSubjectsFrom,
 composeLanguageDocumentSources,
+contentSourceRootServing,
 createModkitCommandRuntime,
 discoverServiceOperations,
 invokeServiceOperation,
@@ -226,6 +227,7 @@ caseInsensitiveNamePattern,
 createLanguageSessionController,
 LANGUAGE_TOKEN_MODIFIERS,
 LANGUAGE_TOKEN_TYPES,
+oneBuildPerKey,
 plainLanguagePosition,
 type EditorDocumentSymbol,
 type EditorLanguageDiagnostic,
@@ -1749,15 +1751,10 @@ async function activateModkit(
     },
   }
   /** The content-source root that reads `directory`'s storage (`storageOf`), if one does. */
-  const sourceServingInstallation = async (directory: string) => {
-    const snapshot = await requireContentSources()
-      .then(sources => sources.snapshot())
+  const sourceServingInstallation = (directory: string) =>
+    requireContentSources()
+      .then(sources => contentSourceRootServing(sources, directory))
       .catch(() => undefined)
-    const wanted = normalizedSourcePath(directory)
-    return snapshot?.roots.find(
-      root => root.storageOf !== undefined && normalizedSourcePath(root.storageOf) === wanted,
-    )
-  }
   const openContentSourceRoot = async (source: {
     readonly id: string
     readonly label: string
@@ -6595,9 +6592,12 @@ async function activateModkit(
     readonly value: LanguageWorkspaceDocumentSourceResult
   }
   const languageDocumentSnapshots = new Map<string, CachedLanguageDocumentSnapshot>()
+  /** Snapshots being built, by key: the requests a shown editor sends at once wait for one. */
+  const languageSnapshotBuilds = new Map<string, Promise<unknown>>()
   const clearLanguageCaches = (): void => {
     languageContentPathIndexes.clear()
     languageDocumentSnapshots.clear()
+    languageSnapshotBuilds.clear()
     disposeAutomaticLanguageScopes()
   }
   context.subscriptions.push(
@@ -7134,6 +7134,64 @@ async function activateModkit(
     })
 
   const dependencyFailureNotices = new Set<string>()
+  /** The snapshot one key stands for, built once and remembered; callers rebase it on their request. */
+  const buildLanguageSnapshot = async (
+    request: LanguageSnapshotRequest,
+    scope: LiveLanguageScope | undefined,
+    loose: string | undefined,
+    baseMods: BaseModSetting | undefined,
+    snapshotKey: string,
+  ): Promise<LanguageWorkspaceDocumentSourceResult> => {
+    if (scope === undefined && loose === undefined) {
+      const snapshot = await workspaceLanguageDocumentSource(undefined, false).snapshot(request)
+      rememberLanguageSnapshot(snapshotKey, snapshot)
+      return snapshot
+    }
+    let projected: Awaited<ReturnType<typeof resolveContentLanguageSources>> | undefined
+    try {
+      const targetPath = scope?.path ?? loose
+      const target = targetPath === undefined ? undefined : modContextTargetOf(targetPath)
+      projected = await resolveContentLanguageSources({
+        contentSources: await requireContentSources(),
+        routes: languageRoutes,
+        limits: {
+          maxDocumentBytes: 4_194_304,
+          maxWorkspaceBytes: 67_108_864,
+          maxEntries: 65_536,
+        },
+        subjects:
+          target === undefined
+            ? []
+            : [{ descriptor: scope?.descriptor ?? Object.freeze({}), target }],
+        ...(baseMods === undefined ? {} : { baseMods }),
+        signal: request.signal,
+      })
+      for (const item of projected.diagnostics) {
+        log(`[language-context] ${item.severity} ${item.code}: ${item.message}`)
+      }
+    } catch (error) {
+      request.signal.throwIfAborted()
+      const message = error instanceof Error ? error.message : String(error)
+      const notice = `${scope?.contextId ?? loose}:${message}`
+      if (!dependencyFailureNotices.has(notice)) {
+        dependencyFailureNotices.add(notice)
+        log(
+          `[language-context] dependency context unavailable for ${scope?.path ?? loose}: ${message}`,
+        )
+      }
+    }
+    const local = workspaceLanguageDocumentSource(scope, projected?.dependenciesComplete === true)
+    const composed =
+      composeLanguageDocumentSources([...(projected?.sources ?? []).map(withEditorUris), local]) ??
+      local
+    const snapshot = await composed.snapshot(request)
+    rememberLanguageSnapshot(snapshotKey, snapshot)
+    log(
+      `[language-context] workspace snapshot for ${request.document.uri}: accepted=${request.workspaceLanguageIds.join(',')} open=${request.workspaceDocuments.map(document => `${document.languageId}:${document.uri}`).join(',')} additional=${snapshot.documents.map(document => `${document.languageId}:${document.uri}`).join(',')} origins=${snapshot.workspaceContext?.documentOrigins.map(origin => `${origin.logicalId}:${origin.uri}`).join(',') ?? ''}`,
+    )
+    return snapshot
+  }
+
   const languageDocumentSource: LanguageWorkspaceDocumentSource = Object.freeze({
     async snapshot(request: Parameters<LanguageWorkspaceDocumentSource['snapshot']>[0]) {
       let uri: vscode.Uri
@@ -7154,56 +7212,22 @@ async function activateModkit(
         ...(loose === undefined ? {} : { loose }),
         ...(baseMods === undefined ? {} : { baseMods }),
       })
-      const cached = cachedLanguageSnapshot(snapshotKey, request)
-      if (cached !== undefined) return cached
-      if (scope === undefined && loose === undefined) {
-        const snapshot = await workspaceLanguageDocumentSource(undefined, false).snapshot(request)
-        rememberLanguageSnapshot(snapshotKey, snapshot)
-        return rebaseLanguageSnapshot(snapshot, request)
-      }
-      let projected: Awaited<ReturnType<typeof resolveContentLanguageSources>> | undefined
-      try {
-        const targetPath = scope?.path ?? loose
-        const target = targetPath === undefined ? undefined : modContextTargetOf(targetPath)
-        projected = await resolveContentLanguageSources({
-          contentSources: await requireContentSources(),
-          routes: languageRoutes,
-          limits: {
-            maxDocumentBytes: 4_194_304,
-            maxWorkspaceBytes: 67_108_864,
-            maxEntries: 65_536,
-          },
-          subjects:
-            target === undefined
-              ? []
-              : [{ descriptor: scope?.descriptor ?? Object.freeze({}), target }],
-          ...(baseMods === undefined ? {} : { baseMods }),
-          signal: request.signal,
-        })
-        for (const item of projected.diagnostics) {
-          log(`[language-context] ${item.severity} ${item.code}: ${item.message}`)
-        }
-      } catch (error) {
-        request.signal.throwIfAborted()
-        const message = error instanceof Error ? error.message : String(error)
-        const notice = `${scope?.contextId ?? loose}:${message}`
-        if (!dependencyFailureNotices.has(notice)) {
-          dependencyFailureNotices.add(notice)
-          log(
-            `[language-context] dependency context unavailable for ${scope?.path ?? loose}: ${message}`,
-          )
-        }
-      }
-      const local = workspaceLanguageDocumentSource(scope, projected?.dependenciesComplete === true)
-      const composed =
-        composeLanguageDocumentSources([...(projected?.sources ?? []).map(withEditorUris), local]) ??
-        local
-      const snapshot = await composed.snapshot(request)
-      rememberLanguageSnapshot(snapshotKey, snapshot)
-      log(
-        `[language-context] workspace snapshot for ${request.document.uri}: accepted=${request.workspaceLanguageIds.join(',')} open=${request.workspaceDocuments.map(document => `${document.languageId}:${document.uri}`).join(',')} additional=${snapshot.documents.map(document => `${document.languageId}:${document.uri}`).join(',')} origins=${snapshot.workspaceContext?.documentOrigins.map(origin => `${origin.logicalId}:${origin.uri}`).join(',') ?? ''}`,
+      /*
+       * One build per key at a time. A shown editor asks for tokens, highlights, inlays and a
+       * definition at once; each missed the cache while the first was still building and built its
+       * own (v88: eight builds of a second each, one after another, before F12 was answered).
+       */
+      return oneBuildPerKey(
+        languageSnapshotBuilds,
+        snapshotKey,
+        () => cachedLanguageSnapshot(snapshotKey, request),
+        async () =>
+          rebaseLanguageSnapshot(
+            await buildLanguageSnapshot(request, scope, loose, baseMods, snapshotKey),
+            request,
+          ),
+        request.signal,
       )
-      return rebaseLanguageSnapshot(snapshot, request)
     },
   })
 

@@ -11,9 +11,52 @@ import {
   applyEditorOnTypeEditResult,
   caseInsensitiveExtensionPattern,
   createLanguageSessionController,
+  oneBuildPerKey,
   plainLanguagePosition,
   type EditorLanguageDocument,
 } from '../src/language-session.js'
+
+// v88: a shown editor's tokens, highlights, inlays and F12 each built the same workspace snapshot
+it('builds once for the requests that come while a build runs, and again after a failed one', async () => {
+  const builds = new Map<string, Promise<unknown>>()
+  const signal = new AbortController().signal
+  let remembered: string | undefined
+  let count = 0
+  let release = (): void => undefined
+  const gate = new Promise<void>(resolve => {
+    release = resolve
+  })
+  const build = async (): Promise<string> => {
+    count += 1
+    await gate
+    remembered = 'snapshot'
+    return remembered
+  }
+  const first = oneBuildPerKey(builds, 'key', () => remembered, build, signal)
+  const second = oneBuildPerKey(builds, 'key', () => remembered, build, signal)
+  release()
+  expect(await Promise.all([first, second])).toEqual(['snapshot', 'snapshot'])
+  expect(count).toBe(1)
+  expect(builds.size).toBe(0)
+  // the builder's request was cancelled: the request that waited on it builds on its own
+  remembered = undefined
+  const cancelled = oneBuildPerKey(
+    builds,
+    'key',
+    () => remembered,
+    () => Promise.reject(new Error('cancelled')),
+    signal,
+  )
+  const waiting = oneBuildPerKey(
+    builds,
+    'key',
+    () => remembered,
+    async () => 'own',
+    signal,
+  )
+  await expect(cancelled).rejects.toThrow('cancelled')
+  expect(await waiting).toBe('own')
+})
 
 it('builds case-insensitive suffix globs for mixed-case SC2 files', () => {
   expect(caseInsensitiveExtensionPattern('.sc2style')).toBe('[sS][cC]2[sS][tT][yY][lL][eE]')

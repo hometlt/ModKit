@@ -335,6 +335,35 @@ interface TrackedDocument {
 
 const normalizedExtension = (value: string): string => value.replace(/^\./u, '').toLowerCase()
 
+/**
+ * One build per key at a time. A caller that finds its key's build running waits for it and takes
+ * what it left (`settled`); when that build failed — a cancelled request's does — the caller builds
+ * on its own instead of failing with it.
+ */
+export async function oneBuildPerKey<T>(
+  builds: Map<string, Promise<unknown>>,
+  key: string,
+  settled: () => T | undefined,
+  build: () => Promise<T>,
+  signal: AbortSignal,
+): Promise<T> {
+  for (;;) {
+    const done = settled()
+    if (done !== undefined) return done
+    const running = builds.get(key)
+    if (running === undefined) break
+    await running.catch(() => undefined)
+    signal.throwIfAborted()
+  }
+  const own = build()
+  builds.set(key, own)
+  try {
+    return await own
+  } finally {
+    if (builds.get(key) === own) builds.delete(key)
+  }
+}
+
 /** VS Code glob matching is case-sensitive even on Windows; SC2 uses mixed-case suffixes. */
 export function caseInsensitiveExtensionPattern(extension: string): string {
   return caseInsensitiveNamePattern(extension.replace(/^\./u, ''))
