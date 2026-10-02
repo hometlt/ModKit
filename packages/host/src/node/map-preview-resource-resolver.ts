@@ -234,7 +234,9 @@ function parseSubjectLocator(root: MapPreviewHostResourceRoot): GameInstallation
     !Array.isArray(value['relativePaths']) ||
     value['relativePaths'].length === 0 ||
     value['relativePaths'].length > MAXIMUM_ARCHIVE_PATHS ||
+    // '' is the whole installation namespace, as an empty data root is its whole source
     (value['namespaceFallbackPrefix'] !== undefined &&
+      value['namespaceFallbackPrefix'] !== '' &&
       !nonEmptyString(value['namespaceFallbackPrefix'])) ||
     !['installation-only', 'prefer-matching-opened-subject'].includes(
       String(value['openedSubjectPolicy']),
@@ -261,10 +263,13 @@ function parseSubjectLocator(root: MapPreviewHostResourceRoot): GameInstallation
     ...(value['namespaceFallbackPrefix'] === undefined
       ? {}
       : {
-          namespaceFallbackPrefix: confinedRelativePath(
-            value['namespaceFallbackPrefix'],
-            `${root.rootId}.namespaceFallbackPrefix`,
-          ),
+          namespaceFallbackPrefix:
+            value['namespaceFallbackPrefix'] === ''
+              ? ''
+              : confinedRelativePath(
+                  value['namespaceFallbackPrefix'],
+                  `${root.rootId}.namespaceFallbackPrefix`,
+                ),
         }),
     openedSubjectPolicy: value['openedSubjectPolicy'] as OpenedSubjectPolicy,
   })
