@@ -945,6 +945,8 @@ export interface ModelViewerOptions {
     descriptor: import('@modkit/sdk').AnyDescriptor,
     references: readonly ModelResourceRef[],
     signal?: AbortSignal,
+    /** Why a texture did not come back: the host's diagnostic codes, or what the viewer refused. */
+    report?: (id: string, reason: string) => void,
   ) => Promise<ReadonlyMap<string, SceneRendererTexture>>
   /**
    * The subject-bound raster port the model's effects read their textures through (plan WC6),
@@ -963,6 +965,7 @@ export async function resolveModelViewerTextures(
   port: RasterResourcePort,
   references: readonly ModelResourceRef[],
   signal?: AbortSignal,
+  report?: (id: string, reason: string) => void,
 ): Promise<ReadonlyMap<string, SceneRendererTexture>> {
   const maximumBytes = 64 * 1024 * 1024
   let remaining = maximumBytes
@@ -976,7 +979,11 @@ export async function resolveModelViewerTextures(
   const share = Math.max(4 * 1024 * 1024, Math.floor(maximumBytes / Math.max(1, wanted.size)))
   for (const reference of references) {
     signal?.throwIfAborted()
-    if (reference.role !== 'texture' || textures.has(reference.id) || remaining <= 0) continue
+    if (reference.role !== 'texture' || textures.has(reference.id)) continue
+    if (remaining <= 0) {
+      report?.(reference.id, `over the ${maximumBytes / (1024 * 1024)} MiB the viewer reads`)
+      continue
+    }
     const textureId = `model-texture-${index++}`
     const result = await port.read(
       {
@@ -999,10 +1006,17 @@ export async function resolveModelViewerTextures(
     )
     signal?.throwIfAborted()
     // Blocks come only for `compressedFormats`, which this reader does not ask for.
-    if (result.state === 'unresolved' || result.state === 'compressed') continue
+    if (result.state === 'unresolved' || result.state === 'compressed') {
+      // what the host said, so an untextured model names its cause (v84: BAR's two maps, 0 / 2)
+      const codes = [...new Set(result.diagnostics.map(item => item.code))].join(', ')
+      report?.(reference.id, codes === '' ? result.state : codes)
+      continue
+    }
     const faces = result.info.faces ?? 1
-    if (faces !== 1 && faces !== 6) continue
-    if (faces === 6 && result.info.width !== result.info.height) continue
+    if ((faces !== 1 && faces !== 6) || (faces === 6 && result.info.width !== result.info.height)) {
+      report?.(reference.id, `${faces} faces of ${result.info.width}×${result.info.height}`)
+      continue
+    }
     const surfaces =
       result.state === 'decoded-surfaces'
         ? result.surfaces
@@ -1020,12 +1034,18 @@ export async function resolveModelViewerTextures(
           ]
     // The mip the host chose: every face is that one level, of that level's size.
     const chosen = surfaces[0]
-    if (chosen === undefined) continue
+    if (chosen === undefined) {
+      report?.(reference.id, 'no surface')
+      continue
+    }
     const { width, height } = chosen.region
     const mipLevel = chosen.subresource.mipLevel
     const faceBytes = width * height * 4
     const byteLength = faceBytes * faces
-    if (surfaces.length !== faces || byteLength > remaining) continue
+    if (surfaces.length !== faces || byteLength > remaining) {
+      report?.(reference.id, `${width}×${height}: over what is left of the viewer's budget`)
+      continue
+    }
     const rgba = new Uint8Array(byteLength)
     let valid = true
     for (const [face, surface] of surfaces.entries()) {
@@ -1055,7 +1075,10 @@ export async function resolveModelViewerTextures(
         )
       }
     }
-    if (!valid) continue
+    if (!valid) {
+      report?.(reference.id, 'a surface the viewer cannot read')
+      continue
+    }
     remaining -= byteLength
     // a texture the game reads without its stored alpha is opaque first (UV_texture_alpha); the
     // buffer is this texture's own copy, so the texels are set in place
@@ -1739,10 +1762,17 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
           }
           showDiagnostics()
           let texels: ReadonlyMap<string, SceneRendererTexture> = new Map()
+          const unresolved = new Map<string, string>()
           if (options.textures !== undefined && provider !== undefined && resourceRefs.length > 0) {
             texels = await options
-              .textures(args.descriptor, resourceRefs, scope.signal)
-              .catch(() => new Map<string, SceneRendererTexture>())
+              .textures(args.descriptor, resourceRefs, scope.signal, (id, reason) =>
+                unresolved.set(id, reason),
+              )
+              .catch((error: unknown) => {
+                const reason = error instanceof Error ? error.message : String(error)
+                for (const item of resourceRefs) unresolved.set(item.id, reason)
+                return new Map<string, SceneRendererTexture>()
+              })
           }
           const surfaces = sceneMaterials(materialRefs, texels, true)
           canvas.setAttribute('data-model-textures', String(surfaces.textures.length))
@@ -1755,9 +1785,22 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
             localizer.text('viewer.modelRendererLabel'),
             `${canvas.getAttribute('data-model-renderer') ?? ''} · ${canvas.getAttribute('data-model-renderer-status') ?? ''}${provider === undefined ? '' : ` · ${provider.rendererId}`}`,
           )
+          // and for each texture that does not draw, why: not found (with the host's codes) or
+          // found and named by no material, two different defects
+          const drawn = new Set(surfaces.textures.map(texture => texture.id))
+          const expected = resourceRefs.filter(item => item.role === 'texture')
+          const undrawn = expected.flatMap(item => {
+            const texel = texels.get(item.id)
+            if (texel !== undefined && drawn.has(texel.id)) return []
+            const reason =
+              texel !== undefined
+                ? localizer.text('viewer.modelTextureUnbound')
+                : (unresolved.get(item.id) ?? localizer.text('viewer.modelTextureUnresolved'))
+            return [`${item.id}: ${reason}`]
+          })
           diagnosticRow(
             localizer.text('viewer.modelTextureStatus'),
-            `${surfaces.textures.length} / ${resourceRefs.filter(item => item.role === 'texture').length}`,
+            [`${surfaces.textures.length} / ${expected.length}`, ...undrawn].join(' · '),
           )
           canvas.setAttribute('data-model-skeleton', String(scene.joints.length))
           let skeletonVisible = scene.joints.length > 0

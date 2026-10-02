@@ -610,6 +610,8 @@ export const MODEL_FALLBACK_MESSAGES = {
   'viewer.modelTeamColorPresets': 'Team color presets',
   'viewer.modelTextureCount': 'Textures',
   'viewer.modelTextureStatus': 'Textures',
+  'viewer.modelTextureUnbound': 'came back, but no material names it',
+  'viewer.modelTextureUnresolved': 'not found',
   'viewer.modelUnnamed': '(unnamed)',
   'viewer.modelUpAxis': 'Up axis',
   'viewer.modelView': 'Model view',

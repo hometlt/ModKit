@@ -850,7 +850,7 @@ async function mount(
          * model stage reports rather than hides.
          */
         ...(rendererPort === undefined ? {} : { renderer: rendererPort }),
-        async textures(descriptor, references, signal) {
+        async textures(descriptor, references, signal, report) {
           const record = recordForDescriptor(descriptor as unknown as Record<string, unknown>)
           const readRaster = record?.session.readRasterResource
           if (readRaster === undefined) return new Map()
@@ -858,6 +858,7 @@ async function mount(
             { read: (request, abort) => readRaster(request, abort) },
             references,
             signal,
+            report,
           )
         },
         // The textures a model's effects name, through the same subject-bound port.

@@ -145,4 +145,30 @@ describe('model viewer textures', () => {
     )
     expect([...(textures.get('hk_wall.tga')?.rgba ?? [])]).toEqual([0, 0, 0, 0, 10, 20, 30, 255])
   })
+
+  // v84: BAR's two maps drew as «0 / 2» with nothing to say whether the host found them
+  it('reports why a texture did not come back: the codes the host gave', async () => {
+    const reasons = new Map<string, string>()
+    const textures = await resolveModelViewerTextures(
+      {
+        async read() {
+          return {
+            state: 'unresolved',
+            diagnostics: [
+              {
+                severity: 'error',
+                code: 'x3.host/resource-not-found',
+                message: 'not in any scope',
+              },
+            ],
+          }
+        },
+      },
+      [{ id: 'unittextures/Arm_color.dds', role: 'texture', provenance: 'reference-only' }],
+      undefined,
+      (id, reason) => reasons.set(id, reason),
+    )
+    expect(textures.size).toBe(0)
+    expect(reasons.get('unittextures/Arm_color.dds')).toBe('x3.host/resource-not-found')
+  })
 })

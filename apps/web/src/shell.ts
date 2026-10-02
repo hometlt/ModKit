@@ -772,11 +772,11 @@ async function boot(): Promise<void> {
     localizer,
     renderer: services.renderer,
     operationsFor: descriptor => operationSessions.get(descriptorKey(descriptor)),
-    textures: (descriptor, references, signal) => {
+    textures: (descriptor, references, signal, report) => {
       const raster = rasterResources.get(descriptorKey(descriptor))
       return raster === undefined
         ? Promise.resolve(new Map())
-        : resolveModelViewerTextures(raster, references, signal)
+        : resolveModelViewerTextures(raster, references, signal, report)
     },
     rasterResources: descriptor => rasterResources.get(descriptorKey(descriptor)),
     /*

@@ -38,8 +38,6 @@ import {
   type PresentationSlot,
   type RasterResourcePort,
   type SceneRendererPort,
-  type ModelResourceRef,
-  type SceneRendererTexture,
   type ViewerModule,
   type ViewerMount,
 } from '@modkit/sdk'
@@ -50,7 +48,7 @@ import { createHexViewer, hexViewer } from '@modkit/ui/hex'
 import { createHexEditor } from '@modkit/ui/hex-editor'
 import { createImageViewer } from '@modkit/ui/image'
 import { metadataPanel } from '@modkit/ui/metadata'
-import { createModelViewer, MODEL_FACET_CONTRACTS } from '@modkit/ui/model'
+import { createModelViewer, MODEL_FACET_CONTRACTS, type ModelViewerOptions } from '@modkit/ui/model'
 import { createNamespaceViewer } from '@modkit/ui/namespace'
 import { createRelationGraphViewer } from '@modkit/ui/graph'
 import { createSubjectCalculationsViewer } from '@modkit/ui/calculations'
@@ -103,11 +101,7 @@ export interface WebViewContext {
    */
   readonly renderer?: SceneRendererPort
   /** Host-decoded model textures, keyed by the logical ids published by the model. */
-  readonly textures?: (
-    descriptor: AnyDescriptor,
-    references: readonly ModelResourceRef[],
-    signal?: AbortSignal,
-  ) => Promise<ReadonlyMap<string, SceneRendererTexture>>
+  readonly textures?: ModelViewerOptions['textures']
   /** The subject-bound raster port the textures a model's effects name are read through. */
   readonly rasterResources?: (descriptor: AnyDescriptor) => RasterResourcePort | undefined
   operationsFor(descriptor: AnyDescriptor): OperationSession | undefined
