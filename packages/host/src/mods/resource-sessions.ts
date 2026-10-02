@@ -199,6 +199,11 @@ export class LoadedModResourceSessions {
       if (mod.context.query === undefined) throw new Error(`${mod.label} does not publish semantic resources`)
       return mod.context.query({ kind: 'resources.tree', action, ...extra }, signal)
     }
+    /**
+     * A question a context does not answer (a Westwood context answers `data.entities` only) is
+     * refused with a RangeError: such a mod has no resources here, which is no failure of the rest.
+     */
+    const unanswered = (error: unknown): boolean => error instanceof RangeError
     const page = (items: readonly TreeNodeRef[], request: PageRequest) => {
       const start = request.cursor === undefined ? 0 : Number(request.cursor)
       if (!Number.isSafeInteger(start) || start < 0 || start > items.length) throw new RangeError('invalid resource cursor')
@@ -218,7 +223,13 @@ export class LoadedModResourceSessions {
         if (node.id.startsWith(MOD)) {
           const mod = thisSessions.mods.get(decodeURIComponent(node.id.slice(MOD.length)))
           if (mod === undefined || mod.context.query === undefined) return page([], request)
-          const root = treeRef(await query(mod, 'root', {}, signal))
+          let root: TreeNodeRef
+          try {
+            root = treeRef(await query(mod, 'root', {}, signal))
+          } catch (error) {
+            if (unanswered(error)) return page([], request)
+            throw error
+          }
           const answer = await query(mod, 'children', { node: root, page: request }, signal) as { items?: unknown[]; nextCursor?: string }
           return { items: (answer.items ?? []).map(item => {
             const inner = treeRef(item)
@@ -251,7 +262,13 @@ export class LoadedModResourceSessions {
         for (const mod of thisSessions.mods.values()) {
           if ((!includeDependencies && !mod.opened) || mod.context.query === undefined) continue
           signal?.throwIfAborted()
-          const answer = await query(mod, 'search', { node: ref('root'), pattern: search.pattern }, signal) as { items?: unknown[] }
+          let answer: { items?: unknown[] }
+          try {
+            answer = await query(mod, 'search', { node: ref('root'), pattern: search.pattern }, signal) as { items?: unknown[] }
+          } catch (error) {
+            if (unanswered(error)) continue
+            throw error
+          }
           for (const item of answer.items ?? []) {
             const inner = treeRef(item)
             yield ref(nodeId(mod.id, inner.id), inner.hasChildren)

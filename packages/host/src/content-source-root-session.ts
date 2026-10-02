@@ -35,16 +35,18 @@ const hostPath = (path: string): string =>
 const sourcePath = (path: string): string => path.replaceAll('\\', '/').replace(/^\/+|\/+$/gu, '')
 const fold = (path: string): string => sourcePath(path).toLowerCase()
 
+/** Whether `root` reads the storage of `directory` (a host path): its `storageOf`, without case. */
+export function contentSourceRootServes(root: ContentSourceRoot, directory: string): boolean {
+  return root.storageOf !== undefined && hostPath(root.storageOf) === hostPath(directory)
+}
+
 /** The root of `sources` that reads the storage of `directory` (a host path), if one does. */
 export async function contentSourceRootServing(
   sources: Pick<ContentSources, 'snapshot'>,
   directory: string,
 ): Promise<ContentSourceRoot | undefined> {
-  const wanted = hostPath(directory)
   const snapshot = await sources.snapshot()
-  return snapshot.roots.find(
-    root => root.storageOf !== undefined && hostPath(root.storageOf) === wanted,
-  )
+  return snapshot.roots.find(root => contentSourceRootServes(root, directory))
 }
 
 export interface ContentSourceRootSessionOptions {

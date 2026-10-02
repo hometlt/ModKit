@@ -208,30 +208,38 @@ export function createPathSubjectOpener(options: PathSubjectOpenerOptions): Subj
      * handle, no roots list and no way to name a file the host did not select for it.
      */
     const companionDiagnostics: Diagnostic[] = []
-    // A granted root opened as a subject (a mod folder) has no granted directory around it to
-    // search, so it opens without companions instead of being refused.
+    const assetOrigins = [
+      ...(options.assetOrigins ?? []),
+      ...(contentSources === undefined
+        ? []
+        : [
+            createContentAssetOrigin({
+              contentSources,
+              target: path,
+              ...(options.baseMods === undefined ? {} : { baseMods: options.baseMods }),
+              onDiagnostic: item => companionDiagnostics.push(item),
+            }),
+          ]),
+    ]
+    // A granted root opened as a subject (a mod folder opened as the workspace) has no granted
+    // directory around it to search, so its directory is not; its mod's layers and the product's
+    // origins still answer (the icons of its cards), and without any it opens without companions.
     const resolveInput = inside(roots, dirname(path))
       ? createFilesystemInputResolver({
           primaryPath: path,
           roots,
           inventory: options.subjects.inventory,
           onDiagnostic: item => companionDiagnostics.push(item),
-          assetOrigins: [
-            ...(options.assetOrigins ?? []),
-            ...(contentSources === undefined
-              ? []
-              : [
-                  createContentAssetOrigin({
-                    contentSources,
-                    target: path,
-                    ...(options.baseMods === undefined ? {} : { baseMods: options.baseMods }),
-                    onDiagnostic: item => companionDiagnostics.push(item),
-                  }),
-                ]),
-          ],
+          assetOrigins,
           ...(budget.deadlineMs === undefined ? {} : { deadlineMs: budget.deadlineMs }),
         })
-      : undefined
+      : assetOrigins.length === 0
+        ? undefined
+        : createCompanionInputResolver(createLayeredCompanionOrigin(assetOrigins), {
+            traitProbe: createSignatureTraitProbe(options.subjects.inventory),
+            onDiagnostic: item => companionDiagnostics.push(item),
+            ...(budget.deadlineMs === undefined ? {} : { deadlineMs: budget.deadlineMs }),
+          })
     const result = await options.subjects.open({
       source,
       path,

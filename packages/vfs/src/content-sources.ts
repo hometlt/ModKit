@@ -751,6 +751,14 @@ export function composeContentSources(given: readonly ContentSources[]): Content
       return (await bySource(sourceId)).remove(sourceId, path)
     },
     async refresh(sourceId) {
+      // the host's own files (a mod folder on disk) belong to no part: each part that read them
+      // forgets them; a part that never did refuses, and only all refusing is a failure
+      if (sourceId === HOST_LAYER_SOURCE_ID) {
+        const outcomes = await Promise.allSettled(parts.map(part => part.refresh(sourceId)))
+        const refused = outcomes.filter(outcome => outcome.status === 'rejected')
+        if (refused.length === outcomes.length && refused[0] !== undefined) throw refused[0].reason
+        return
+      }
       return (await bySource(sourceId)).refresh(sourceId)
     },
     async list(sourceId, path, options) {

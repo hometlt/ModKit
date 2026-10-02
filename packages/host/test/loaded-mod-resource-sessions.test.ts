@@ -150,4 +150,34 @@ describe('loaded mod resources', () => {
     expect(sessions.list().map(mod => mod.id.split('|')[2]).sort()).toEqual(['base/springcontent.sdz', 'maps/rosetta.sd7'])
     await sessions.dispose()
   })
+
+  it('skips a mod whose context answers no resource questions, in its children and in search', async () => {
+    const layer = (path: string) => ({ id: path, displayName: path, sourceId: 'local:game', sourcePath: path,
+      role: 'primary' as const, provenance: 'opened' as const, kind: 'package' as const })
+    const source = { openModContext: async (request: { target: ModContextTarget }) => {
+      const path = typeof request.target === 'string' ? request.target : request.target.path
+      return { schemaVersion: 1, gameId: path === 'westwood' ? 'ea/red-alert-2' : 'blizzard/starcraft-2', contextId: path,
+        layers: [layer(path)], unresolved: [], diagnostics: [], files: async () => ({ items: [] }),
+        read: async () => new Uint8Array(), locate: async () => undefined,
+        // Westwood answers data.entities only, and refuses every other question
+        query: async (question: unknown) => {
+          if (path === 'westwood') throw new RangeError('a Westwood context answers { kind: "data.entities", refs } only')
+          const action = (question as { action: string }).action
+          if (action === 'root') return { id: 'root', hasChildren: true }
+          return { items: [{ id: 'unit/marine', hasChildren: false }] }
+        },
+        dispose: async () => {} } satisfies ModContext
+    } } as ContentSources
+    const sessions = new LoadedModResourceSessions(source)
+    await sessions.load({ sourceId: 'local:game', path: 'westwood' })
+    await sessions.load({ sourceId: 'local:game', path: 'liberty' })
+    const tree = sessions.tree()
+    const mods = (await tree.children(await tree.root(), { limit: 10 })).items
+    const westwood = mods.find(item => item.id.includes('westwood'))!
+    expect((await tree.children(westwood, { limit: 10 })).items).toEqual([])
+    const found = []
+    for await (const item of tree.search!({ pattern: 'marine' })) found.push(item)
+    expect(found).toHaveLength(1)
+    await sessions.dispose()
+  })
 })

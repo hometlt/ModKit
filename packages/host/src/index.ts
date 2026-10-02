@@ -182,6 +182,7 @@ export {
   type ContentSourceInputResolverOptions,
 } from './content-source-companion.js'
 export {
+  contentSourceRootServes,
   contentSourceRootServing,
   openContentSourceRootSession,
   type ContentSourceRootSessionOptions,

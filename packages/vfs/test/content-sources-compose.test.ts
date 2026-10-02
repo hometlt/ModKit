@@ -262,4 +262,29 @@ describe('the entry at an exact path', () => {
     })
     expect(await composed.lookup?.('sc2:root', 'x')).toBeUndefined()
   })
+
+  it('refreshes the host files in every part that read them, failing only when all refuse', async () => {
+    const refreshed: string[] = []
+    const reading = (name: string) =>
+      part(name, {
+        async refresh(sourceId) {
+          refreshed.push(`${name}:${sourceId}`)
+        },
+      })
+    const refusing = (name: string) =>
+      part(name, {
+        async refresh(sourceId) {
+          throw new RangeError(`${name} owns no ${sourceId}`)
+        },
+      })
+    // a mod folder on disk (HOST_LAYER_SOURCE_ID) belongs to no part's snapshot
+    await composeContentSources([refusing('roblox'), reading('sc2')]).refresh('host')
+    expect(refreshed).toEqual(['sc2:host'])
+    await expect(
+      composeContentSources([refusing('a'), refusing('b')]).refresh('host'),
+    ).rejects.toThrow(/owns no host/)
+    // any other id still goes to its one part
+    await composeContentSources([reading('sc2'), reading('roblox')]).refresh('roblox:root')
+    expect(refreshed).toEqual(['sc2:host', 'roblox:roblox:root'])
+  })
 })
