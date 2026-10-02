@@ -244,3 +244,22 @@ describe('hidden path rules', () => {
     expect(hiddenPathMatcher(['**'])('anything')).toBe(false)
   })
 })
+
+describe('the entry at an exact path', () => {
+  it('is asked of the part that owns the source, and of nobody when it cannot answer', async () => {
+    const composed = composeContentSources([
+      part('sc2'),
+      part('roblox', {
+        async lookup(sourceId, path) {
+          return { path: `${sourceId}/${path}`, name: path, directory: false }
+        },
+      }),
+    ])
+    expect(await composed.lookup?.('roblox:root', 'mesh/123')).toEqual({
+      path: 'roblox:root/mesh/123',
+      name: 'mesh/123',
+      directory: false,
+    })
+    expect(await composed.lookup?.('sc2:root', 'x')).toBeUndefined()
+  })
+})

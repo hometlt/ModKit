@@ -257,6 +257,21 @@ function createContentDependencyOrigin(
           ? joinPath(candidate.logicalPrefix, normalized)
           : normalized
       let mount = locations.get(fold(normalized))
+      // the exact path first: a source that fetches on demand names an asset no listing holds yet
+      if (mount === undefined && contentSources.lookup !== undefined) {
+        for (const candidate of overlay) {
+          const relative = relativeRequest(candidate, qualifiedIn(candidate))
+          if (relative === undefined || relative === '') continue
+          const entry = await contentSources
+            .lookup(candidate.sourceId, joinPath(candidate.sourcePath, relative))
+            .catch(() => undefined)
+          throwIfAborted(signal)
+          if (entry !== undefined && !entry.directory) {
+            mount = candidate
+            break
+          }
+        }
+      }
       if (mount === undefined) {
         for (const candidate of overlay) {
           const qualified = qualifiedIn(candidate)

@@ -288,6 +288,13 @@ export interface ContentSources {
   ): Promise<readonly ContentSourceEntry[]>
   read(sourceId: string, path: string, maxBytes: number): Promise<Uint8Array>
   /**
+   * The entry at exactly `path`, also one no listing names yet: a source that fetches on demand
+   * (Roblox assets from the CDN) answers for an asset it has not downloaded, which `read` then
+   * fetches. Undefined when there is no such entry; absent when the source answers only by `list`.
+   * Like a read, it finds hidden entries.
+   */
+  lookup?(sourceId: string, path: string): Promise<ContentSourceEntry | undefined>
+  /**
    * Every file beneath `path`, in pages, narrowed inside the source: what a workspace search walks
    * instead of listing folder after folder. The installed StarCraft II storage names 666k files in
    * 37k folders; a source that holds them indexed scans the index and makes no string for a file
@@ -622,6 +629,8 @@ export async function callContentSources(
     }
     case 'list':
       return source.list(string(0), path(1), listOptions(args[2]))
+    case 'lookup':
+      return source.lookup === undefined ? undefined : source.lookup(string(0), path(1))
     case 'files': {
       if (!source.files) return undefined
       return source.files(string(0), path(1), filesQuery(args[2]))
@@ -749,6 +758,10 @@ export function composeContentSources(given: readonly ContentSources[]): Content
     },
     async read(sourceId, path, maxBytes) {
       return (await bySource(sourceId)).read(sourceId, path, maxBytes)
+    },
+    async lookup(sourceId, path) {
+      const part = await bySource(sourceId)
+      return part.lookup === undefined ? undefined : part.lookup(sourceId, path)
     },
     async files(sourceId, path, query) {
       const part = await bySource(sourceId)

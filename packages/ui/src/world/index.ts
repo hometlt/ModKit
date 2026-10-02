@@ -481,38 +481,45 @@ export async function inspectCandidateWorld(
     textureBytes: number,
   ): Promise<WorldSceneModelResult> => {
     modelRequests += 1
-    try {
-      return await source.model!(
-        item.id,
-        {
-          maxBytes,
-          maxNodes: Math.min(1_024, maxItemsPerLayer),
-          maxMeshes: Math.min(256, maxItemsPerLayer),
-          maxPrimitives: Math.min(512, maxItemsPerLayer),
-          maxPrimitiveBytes: Math.min(16 * 1024 * 1024, maxBytes),
-          maxResources: Math.min(64, maxItemsPerLayer),
-          maxTextureBytes: textureBytes,
-          maxTextureTotalBytes: textureBytes,
-          // The world renderer uploads S3TC blocks as stored: no decode, a quarter to an eighth of
-          // the bytes, and the budget buys a more detailed level.
-          compressedTextureFormats: SCENE_COMPRESSED_TEXTURE_FORMATS,
-        },
-        options.signal,
-      )
-    } catch (error) {
-      // One model that cannot be read must not cost the map all the others.
-      options.signal?.throwIfAborted()
-      return Object.freeze({
-        state: 'unresolved' as const,
-        diagnostics: Object.freeze([
-          diagnostic(
-            'warning',
-            'x3.ui/world-model-failed',
-            `World preview could not load ${item.id}: ${error instanceof Error ? error.message : String(error)}`,
-          ),
-        ]),
-      })
-    }
+    for (let attempt = 0; ; attempt += 1)
+      try {
+        return await source.model!(
+          item.id,
+          {
+            maxBytes,
+            maxNodes: Math.min(1_024, maxItemsPerLayer),
+            maxMeshes: Math.min(256, maxItemsPerLayer),
+            maxPrimitives: Math.min(512, maxItemsPerLayer),
+            maxPrimitiveBytes: Math.min(16 * 1024 * 1024, maxBytes),
+            maxResources: Math.min(64, maxItemsPerLayer),
+            maxTextureBytes: textureBytes,
+            maxTextureTotalBytes: textureBytes,
+            // The world renderer uploads S3TC blocks as stored: no decode, a quarter to an eighth of
+            // the bytes, and the budget buys a more detailed level.
+            compressedTextureFormats: SCENE_COMPRESSED_TEXTURE_FORMATS,
+          },
+          options.signal,
+        )
+      } catch (error) {
+        options.signal?.throwIfAborted()
+        // a model whose source is still downloading it may outlast one call: asked twice more
+        if (
+          attempt < 2 &&
+          (error as { readonly code?: unknown } | null)?.code === 'x3.host/rpc-deadline-exceeded'
+        )
+          continue
+        // One model that cannot be read must not cost the map all the others.
+        return Object.freeze({
+          state: 'unresolved' as const,
+          diagnostics: Object.freeze([
+            diagnostic(
+              'warning',
+              'x3.ui/world-model-failed',
+              `World preview could not load ${item.id}: ${error instanceof Error ? error.message : String(error)}`,
+            ),
+          ]),
+        })
+      }
   }
   const largestModelBytes = Math.min(WORLD_VIEWER_MAX_BYTES_PER_MODEL, maxModelBytes)
   /**

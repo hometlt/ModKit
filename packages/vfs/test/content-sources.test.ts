@@ -37,6 +37,18 @@ describe('desktop source IPC boundary', () => {
     expect(await callContentSources(source, 'read', ['public:us', 'x', 1])).toEqual(
       new Uint8Array([1]),
     )
+    // an exact-path lookup: none from a source that cannot answer, a checked path otherwise
+    expect(await callContentSources(source, 'lookup', ['public:us', 'x'])).toBeUndefined()
+    const fetching = {
+      ...source,
+      lookup: async (_sourceId: string, path: string) => ({ path, name: path, directory: false }),
+    } as unknown as ContentSources
+    expect(await callContentSources(fetching, 'lookup', ['public:us', 'mesh/1'])).toMatchObject({
+      path: 'mesh/1',
+    })
+    await expect(callContentSources(fetching, 'lookup', ['public:us', 'x\0'])).rejects.toThrow(
+      'identifier',
+    )
   })
   it('forwards a well-formed bulk file query, and none to a source that cannot list in bulk', async () => {
     const asked: unknown[] = []
