@@ -12,7 +12,6 @@ import {
   invokeLegacyOperation,
   adaptOperationId,
   adaptRuntimeProvider,
-  adaptLanguageModule,
 } from '../dist/legacy/index.js'
 import {
   createMemoryAssetSource,
@@ -21,7 +20,8 @@ import {
 } from '../dist/legacy/assets/index.js'
 import { ModkitError as LegacyError } from '../dist/legacy/core/index.js'
 import { adaptByteSource } from '../dist/legacy/vfs/index.js'
-import { sha1Hex, crc32 } from '../dist/crypto/index.js'
+import { sha1Hex } from '../dist/crypto/index.js'
+import { crc32 } from '../dist/checksum/index.js'
 import { deflate, inflate, bzip2Decompress, adpcmDecompress } from '../dist/compression/index.js'
 import {
   assertRgba8DecodeWithinLimit,
@@ -377,40 +377,6 @@ test('runtime bridge reserves before execution and preserves result, refusal and
       budget: { maxTicks: 1, maxWallTimeMs: 1, maxMemoryBytes: 1 },
     }),
     error => error.context.legacyCode === 'CONFIG_INVALID' && error.cause instanceof LegacyError,
-  )
-})
-
-test('language bridge returns actual projection, rejects wrong snapshots and cancellation', async () => {
-  const module = { languageId: 'fixture' }
-  const document = { uri: 'memory:fixture', version: 1, languageId: 'fixture', text: 'actual' }
-  const provider = adaptLanguageModule(module, {
-    analyze: async (selected, request) => {
-      assert.equal(selected, module)
-      return {
-        documentUri: request.document.uri,
-        documentVersion: request.document.version,
-        tokens: [
-          {
-            kind: 'keyword',
-            range: { start: { line: 0, character: 0 }, end: { line: 0, character: 6 } },
-          },
-        ],
-        diagnostics: [],
-        symbols: [],
-      }
-    },
-  })
-  assert.equal((await provider.analyze({ document })).tokens.length, 1)
-  await assert.rejects(
-    provider.analyze({ document: { ...document, languageId: 'wrong' } }),
-    /selected/,
-  )
-  await assert.rejects(provider.analyze({ document, signal: AbortSignal.abort() }))
-  await assert.rejects(
-    adaptLanguageModule(module, {
-      analyze: async () => ({ documentUri: 'wrong', documentVersion: 1 }),
-    }).analyze({ document }),
-    /snapshot/,
   )
 })
 

@@ -134,10 +134,6 @@
       "types": "./dist/raster/index.d.ts",
       "default": "./dist/raster/index.js"
     },
-    "./legacy/language-contracts": {
-      "types": "./dist/legacy/language-contracts/index.d.ts",
-      "default": "./dist/legacy/language-contracts/index.js"
-    },
     "./legacy/entity-cards": {
       "types": "./dist/legacy/entity-cards/index.d.ts",
       "default": "./dist/legacy/entity-cards/index.js"
