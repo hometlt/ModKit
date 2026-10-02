@@ -200,6 +200,27 @@ function validateLayer(value: JsonValue, slot: string, path: string, signal?: Ab
     }
     animated(flip['frame'], `${path}.flipbook.frame`, 1, signal)
   }
+  if (layer['angleLookup'] !== undefined) {
+    // StandardLayerAngleLookup: a texture read at angle coordinates in place of its uv source
+    const lookup = record(layer['angleLookup'], `${path}.angleLookup`)
+    if (
+      layer['texturePath'] === null ||
+      (lookup['u'] !== 'edge' && lookup['u'] !== 'reflection') ||
+      (lookup['v'] !== 'row' && lookup['v'] !== 'light') ||
+      Object.keys(lookup).some(key => !['u', 'v', 'exponent', 'row'].includes(key)) ||
+      (lookup['exponent'] !== undefined && lookup['u'] !== 'edge') ||
+      (lookup['v'] === 'row') !== (lookup['row'] !== undefined)
+    )
+      throw new TypeError(
+        `${path}.angleLookup is a textured layer's { u: edge|reflection, v: row|light }, an exponent only for edge, a row exactly for row`,
+      )
+    if (
+      lookup['exponent'] !== undefined &&
+      !(finite(lookup['exponent'], `${path}.angleLookup.exponent`) > 0)
+    )
+      throw new TypeError(`${path}.angleLookup.exponent must be positive`)
+    if (lookup['row'] !== undefined) finite(lookup['row'], `${path}.angleLookup.row`)
+  }
   if (layer['fresnel'] !== undefined) {
     const fresnel = record(layer['fresnel'], `${path}.fresnel`)
     integer(fresnel['mode'], `${path}.fresnel.mode`, 1, 2)

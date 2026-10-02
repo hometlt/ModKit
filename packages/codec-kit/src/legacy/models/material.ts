@@ -121,6 +121,11 @@ export interface StandardMaterialLayer {
   alphaFactor?: AnimatedScalar
   /** Static LAYR Fresnel modulation applied after color operations and clamping. */
   fresnel?: StandardLayerFresnel
+  /**
+   * The texture is read at coordinates of the view and light angles, in place of the uv source: a
+   * ramp by how edge-on the surface is, or a lighting table (StandardLayerAngleLookup).
+   */
+  angleLookup?: StandardLayerAngleLookup
   uvOffset?: AnimatedVec2
   /** M3 stores this as a Vector3 animation reference, not a scalar/vec2 angle. */
   uvAngle?: AnimatedVec3
@@ -152,6 +157,20 @@ export interface StandardLayerFresnel {
   translation: readonly [number, number, number]
   invertMask: readonly [number, number, number]
   rotation: readonly [number, number]
+}
+
+/**
+ * Texture coordinates from angles at the surface, on its geometric normal, cosines clamped to 0..1:
+ * u is `edge`, (1 − |N·V|) to `exponent` (default 1), or `reflection`, R·V with R the light
+ * reflected about N; v is the fixed `row` or `light`, N·L. Supreme Commander's Seraphim ramp is
+ * { u: 'edge', exponent: 0.6, v: 'row' }, its Cybran and Metal tables { u: 'reflection', v: 'light' }.
+ * The layer's uv transform still applies.
+ */
+export interface StandardLayerAngleLookup {
+  u: 'edge' | 'reflection'
+  v: 'row' | 'light'
+  exponent?: number
+  row?: number
 }
 
 export interface StandardMaterialModel {

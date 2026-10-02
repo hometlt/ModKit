@@ -2,6 +2,7 @@ import type {
   LayerChannelSelect,
   LayerColorOp,
   NormalMapFormat,
+  StandardLayerAngleLookup,
   StandardLayerFresnel,
   StandardLayerSlot,
   StandardMaterialModel,
@@ -72,6 +73,8 @@ export interface StandardLayerDefines {
   hasColorAdd: boolean
   hasAlphaFactor: boolean
   fresnel?: StandardLayerFresnel
+  /** Coordinates from view and light angles in place of the uv source (StandardLayerAngleLookup). */
+  angleLookup?: StandardLayerAngleLookup
   /** uv offset/tiling uniforms emitted (animated by P5-S9). */
   hasUvTransform: boolean
 }
@@ -210,7 +213,8 @@ export function buildMaterialDefines(
     const layer = material.layers[slot]
     if (!layer) continue
     const source = uvSourceKind(layer.uvSource)
-    if (source.kind === 'explicit') maxUvSet = Math.max(maxUvSet, source.set)
+    if (source.kind === 'explicit' && layer.angleLookup === undefined)
+      maxUvSet = Math.max(maxUvSet, source.set)
     layers.push({
       slot,
       hasTexture: layer.texturePath !== null && texturedSlots.has(slot),
@@ -224,6 +228,7 @@ export function buildMaterialDefines(
       hasColorAdd: layer.colorAdd !== undefined,
       hasAlphaFactor: layer.alphaFactor !== undefined,
       ...(layer.fresnel ? { fresnel: layer.fresnel } : {}),
+      ...(layer.angleLookup ? { angleLookup: layer.angleLookup } : {}),
       hasUvTransform:
         layer.uvOffset !== undefined ||
         layer.uvAngle !== undefined ||
@@ -274,7 +279,8 @@ export function canonicalDefineKey(defines: StandardMaterialDefines): string {
         `${layer.slot}:${layer.hasTexture ? 't' : 'c'}${layer.uvSource}.${layer.channels}.${layer.op}.${layer.teamColorMode}` +
         `${layer.invert ? 'i' : ''}${layer.clampResult ? 'k' : ''}${layer.hasColorMultiply ? 'm' : ''}` +
         `${layer.hasColorAdd ? 'a' : ''}${layer.hasAlphaFactor ? 'f' : ''}${layer.hasUvTransform ? 'u' : ''}` +
-        `${layer.fresnel ? `;fr=${layer.fresnel.mode},${layer.fresnel.exponent},${layer.fresnel.min},${layer.fresnel.maxOffset},${layer.fresnel.transformMode},${layer.fresnel.localTransform ? 1 : 0},${layer.fresnel.doNotMirror ? 1 : 0},${layer.fresnel.translation.join(',')},${layer.fresnel.invertMask.join(',')},${layer.fresnel.rotation.join(',')}` : ''}`,
+        `${layer.fresnel ? `;fr=${layer.fresnel.mode},${layer.fresnel.exponent},${layer.fresnel.min},${layer.fresnel.maxOffset},${layer.fresnel.transformMode},${layer.fresnel.localTransform ? 1 : 0},${layer.fresnel.doNotMirror ? 1 : 0},${layer.fresnel.translation.join(',')},${layer.fresnel.invertMask.join(',')},${layer.fresnel.rotation.join(',')}` : ''}` +
+        `${layer.angleLookup ? `;al=${layer.angleLookup.u},${layer.angleLookup.v},${layer.angleLookup.exponent ?? 1},${layer.angleLookup.row ?? 0}` : ''}`,
     )
     .join('|')
   return (
@@ -585,6 +591,25 @@ export function sphericalEnvironmentUvCpu(
 }
 
 /** Exact VSUVMapping.fx local-planar basis, including its fixed density and V flip. */
+/**
+ * StandardLayerAngleLookup on the CPU, from tangent-space light and view directions (the geometric
+ * normal is +z), as the fragment shader computes it.
+ */
+export function angleLookupUvCpu(
+  lookup: StandardLayerAngleLookup,
+  lightDirection: Vec3,
+  viewDirection: Vec3,
+): [number, number] {
+  const l = normalize3(lightDirection),
+    v = normalize3(viewDirection)
+  const u =
+    lookup.u === 'edge'
+      ? Math.pow(clamp01(1 - Math.abs(v[2])), lookup.exponent ?? 1)
+      : // R = reflect(-L, +z) = (-lx, -ly, lz)
+        clamp01(-l[0] * v[0] - l[1] * v[1] + l[2] * v[2])
+  return [u, lookup.v === 'light' ? clamp01(l[2]) : (lookup.row ?? 0)]
+}
+
 export function planarLocalUvCpu(position: Vec3, axis: 0 | 1 | 2): [number, number] {
   const projected: Vec2 =
     axis === 0
@@ -929,6 +954,8 @@ function glslFloat(value: number): string {
 
 /** Per-layer uv expression from the baked uv source (1.4). */
 function uvExpression(layer: StandardLayerDefines): string {
+  if (layer.angleLookup !== undefined)
+    return transformUvExpression(layer, angleLookupUvExpression(layer.angleLookup), 'z', false)
   const source = uvSourceKind(layer.uvSource)
   let base = 'v_uv0'
   let angleComponent: 'x' | 'y' | 'z' = 'z'
@@ -947,6 +974,21 @@ function uvExpression(layer: StandardLayerDefines): string {
     base = '(v_clipPosition.xy / max(abs(v_clipPosition.w), 0.0001) * vec2(0.5, -0.5) + 0.5)'
   } else base = 'v_uv0' // Unknown future source value.
   return transformUvExpression(layer, base, angleComponent, layer.slot !== 'height')
+}
+
+/**
+ * StandardLayerAngleLookup in the fragment: the light and view directions are tangent-space varyings,
+ * so the geometric normal is +z.
+ */
+function angleLookupUvExpression(lookup: StandardLayerAngleLookup): string {
+  const light = 'normalize(v_lightDir)',
+    view = 'normalize(v_viewDir)'
+  const u =
+    lookup.u === 'edge'
+      ? `pow(clamp(1.0 - abs(${view}.z), 0.0, 1.0), ${glslFloat(lookup.exponent ?? 1)})`
+      : `clamp(dot(reflect(-${light}, vec3(0.0, 0.0, 1.0)), ${view}), 0.0, 1.0)`
+  const v = lookup.v === 'light' ? `clamp(${light}.z, 0.0, 1.0)` : glslFloat(lookup.row ?? 0)
+  return `vec2(${u}, ${v})`
 }
 
 function axisComponent(axis: 0 | 1 | 2): 'x' | 'y' | 'z' {

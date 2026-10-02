@@ -1,6 +1,7 @@
 import type { SceneRendererTexture } from '@modkit/sdk/renderer'
 import type { StandardLayerSlot } from '@modkit/codec-kit/legacy/models/material'
 import {
+  angleLookupUvCpu,
   computeLayerColorCpu,
   computeTriPlanarWeightsCpu,
   planarLocalUvCpu,
@@ -97,6 +98,17 @@ function layerTexel(
   if (binding === undefined) throw new TypeError(`missing material sampler ${layer.slot}`)
   const sample = (uv: Vec2, axis = 2) => {
     const mapped = transformUv(program, layer, uv, axis, parallax)
+    return sampleMaterialTexture(texture, mapped[0], mapped[1], binding.wrapU, binding.wrapV)
+  }
+  if (layer.angleLookup !== undefined) {
+    // angle coordinates take no parallax, as in the shader
+    const mapped = transformUv(
+      program,
+      layer,
+      angleLookupUvCpu(layer.angleLookup, vertex.lightDirection, vertex.viewDirection),
+      2,
+      [0, 0],
+    )
     return sampleMaterialTexture(texture, mapped[0], mapped[1], binding.wrapU, binding.wrapV)
   }
   const source = layer.uvSource
