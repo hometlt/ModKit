@@ -7,6 +7,14 @@ import {
 import { containerEntryRevision, revisionId } from '@modkit/sdk'
 import { crc32 } from '@modkit/codec-kit/checksum'
 import { decompressBounded } from '@modkit/codec-kit/compression/bounded'
+import {
+  assembleZipArchive,
+  zipCentralRecord,
+  zipEntryName,
+  zipLocalHeader,
+  zipNeedsUtf8Flag,
+  zipStoredEntry,
+} from '@modkit/codec-kit/container/zip'
 
 const ZIP_LOCAL = 0x04034b50
 const ZIP_CENTRAL = 0x02014b50
@@ -23,15 +31,10 @@ const EXTRA_ZIP64 = 0x0001
 const EXTRA_UNICODE_PATH = 0x7075
 const MAX_U16 = 0xffff
 const MAX_U32 = 0xffffffff
-/** 1980-01-01, the DOS epoch: new entries carry a deterministic timestamp, never a clock read. */
-const DOS_EPOCH_DATE = 0x0021
 const STORED = 0
-const VERSION_STORED = 10
-const VERSION_MADE_BY = 20
 const EMPTY = new Uint8Array(0)
 const utf8 = new TextDecoder('utf-8', { fatal: true })
 const legacy = new TextDecoder('latin1')
-const encoder = new TextEncoder()
 
 function u16(bytes, offset) {
   if (offset < 0 || offset + 2 > bytes.byteLength) throw new RangeError('truncated ZIP u16')
@@ -488,64 +491,6 @@ function extraFieldIds(extra) {
   return ids
 }
 
-function localHeaderFor(fields) {
-  const header = new Uint8Array(30 + fields.nameBytes.byteLength + fields.extraBytes.byteLength)
-  const view = new DataView(header.buffer)
-  view.setUint32(0, ZIP_LOCAL, true)
-  view.setUint16(4, fields.versionNeeded, true)
-  view.setUint16(6, fields.flags, true)
-  view.setUint16(8, fields.method, true)
-  view.setUint16(10, fields.dosTime, true)
-  view.setUint16(12, fields.dosDate, true)
-  view.setUint32(14, fields.crc, true)
-  view.setUint32(18, fields.compressedSize, true)
-  view.setUint32(22, fields.size, true)
-  view.setUint16(26, fields.nameBytes.byteLength, true)
-  view.setUint16(28, fields.extraBytes.byteLength, true)
-  header.set(fields.nameBytes, 30)
-  header.set(fields.extraBytes, 30 + fields.nameBytes.byteLength)
-  return header
-}
-
-/** The local-header offset (bytes 42..46) stays zero here; `assembleArchive` patches it. */
-function centralRecordFor(fields) {
-  const nameLength = fields.nameBytes.byteLength
-  const extraLength = fields.extraBytes.byteLength
-  const commentLength = fields.commentBytes.byteLength
-  const record = new Uint8Array(46 + nameLength + extraLength + commentLength)
-  const view = new DataView(record.buffer)
-  view.setUint32(0, ZIP_CENTRAL, true)
-  view.setUint16(4, fields.versionMadeBy, true)
-  view.setUint16(6, fields.versionNeeded, true)
-  view.setUint16(8, fields.flags, true)
-  view.setUint16(10, fields.method, true)
-  view.setUint16(12, fields.dosTime, true)
-  view.setUint16(14, fields.dosDate, true)
-  view.setUint32(16, fields.crc, true)
-  view.setUint32(20, fields.compressedSize, true)
-  view.setUint32(24, fields.size, true)
-  view.setUint16(28, nameLength, true)
-  view.setUint16(30, extraLength, true)
-  view.setUint16(32, commentLength, true)
-  view.setUint16(34, fields.diskStart, true)
-  view.setUint16(36, fields.internalAttributes, true)
-  view.setUint32(38, fields.externalAttributes, true)
-  record.set(fields.nameBytes, 46)
-  record.set(fields.extraBytes, 46 + nameLength)
-  record.set(fields.commentBytes, 46 + nameLength + extraLength)
-  return record
-}
-
-function encodedName(name) {
-  const nameBytes = encoder.encode(name)
-  if (nameBytes.byteLength === 0) throw new TypeError('a ZIP entry path cannot be empty')
-  if (nameBytes.byteLength > MAX_U16)
-    throw new RangeError(`the ZIP entry path «${name}» is too long`)
-  return nameBytes
-}
-
-const needsUtf8Flag = nameBytes => nameBytes.some(byte => byte >= 0x80)
-
 /** An untouched entry: local block and central record copied verbatim. */
 function verbatimEntry(bytes, entry, range) {
   return Object.freeze({
@@ -557,7 +502,7 @@ function verbatimEntry(bytes, entry, range) {
 
 /** A renamed entry: data verbatim, name bytes rewritten in both headers, everything else kept. */
 function renamedEntry(bytes, entry, range, newName) {
-  const nameBytes = encodedName(newName)
+  const nameBytes = zipEntryName(newName)
   const fields = centralFieldsOf(bytes, entry)
   const localExtra = bytes.subarray(range.start + 30 + range.nameLength, range.dataOffset)
   if (
@@ -568,14 +513,14 @@ function renamedEntry(bytes, entry, range, newName) {
       `«${entry.name}» carries an Info-ZIP Unicode Path extra field; renaming it would leave stale metadata behind`,
     )
   }
-  const utf8Needed = needsUtf8Flag(nameBytes)
+  const utf8Needed = zipNeedsUtf8Flag(nameBytes)
   if (utf8Needed && (entry.flags & FLAG_UTF8_NAMES) === 0 && fields.commentBytes.byteLength > 0) {
     throw new TypeError(
       `renaming «${entry.name}» to a non-ASCII path would reinterpret its entry comment as UTF-8`,
     )
   }
   const flags = utf8Needed ? entry.flags | FLAG_UTF8_NAMES : entry.flags
-  const header = localHeaderFor({
+  const header = zipLocalHeader({
     versionNeeded: u16(bytes, range.start + 4),
     flags,
     method: u16(bytes, range.start + 8),
@@ -590,7 +535,7 @@ function renamedEntry(bytes, entry, range, newName) {
   return Object.freeze({
     name: newName,
     local: Object.freeze([header, bytes.subarray(range.dataOffset, range.end)]),
-    central: centralRecordFor({ ...fields, flags, nameBytes }),
+    central: zipCentralRecord({ ...fields, flags, nameBytes }),
   })
 }
 
@@ -599,7 +544,7 @@ function restoredEntry(bytes, entry, range, data) {
   const fields = centralFieldsOf(bytes, entry)
   const flags = entry.flags & ~(FLAG_DESCRIPTOR | FLAG_COMPRESSION_OPTIONS)
   const crc = crc32(data)
-  const header = localHeaderFor({
+  const header = zipLocalHeader({
     versionNeeded: u16(bytes, range.start + 4),
     flags,
     method: STORED,
@@ -614,7 +559,7 @@ function restoredEntry(bytes, entry, range, data) {
   return Object.freeze({
     name: entry.name,
     local: Object.freeze([header, data]),
-    central: centralRecordFor({
+    central: zipCentralRecord({
       ...fields,
       flags,
       method: STORED,
@@ -623,89 +568,6 @@ function restoredEntry(bytes, entry, range, data) {
       size: data.byteLength,
     }),
   })
-}
-
-/** A new entry: stored (method 0), CRC-32 over the payload, DOS-epoch timestamp. */
-function storedEntry(name, data) {
-  const directory = name.endsWith('/')
-  if (directory && data.byteLength > 0)
-    throw new TypeError(`«${name}» is a directory entry and carries no bytes`)
-  const nameBytes = encodedName(name)
-  const shared = {
-    versionNeeded: VERSION_STORED,
-    flags: needsUtf8Flag(nameBytes) ? FLAG_UTF8_NAMES : 0,
-    method: STORED,
-    dosTime: 0,
-    dosDate: DOS_EPOCH_DATE,
-    crc: directory ? 0 : crc32(data),
-    compressedSize: data.byteLength,
-    size: data.byteLength,
-    nameBytes,
-    extraBytes: EMPTY,
-  }
-  return Object.freeze({
-    name,
-    local: Object.freeze([localHeaderFor(shared), data]),
-    central: centralRecordFor({
-      ...shared,
-      versionMadeBy: VERSION_MADE_BY,
-      diskStart: 0,
-      internalAttributes: 0,
-      externalAttributes: directory ? 0x10 : 0,
-      commentBytes: EMPTY,
-    }),
-  })
-}
-
-function assembleArchive(planned, comment, budget) {
-  if (planned.length > MAX_U16) {
-    throw new RangeError('the edited archive would need ZIP64: more than 65535 entries')
-  }
-  if (planned.length > budget.maxNodes) {
-    throw new RangeError('the edited archive exceeds the maxNodes budget')
-  }
-  let localTotal = 0
-  let centralTotal = 0
-  for (const item of planned) {
-    for (const part of item.local) localTotal += part.byteLength
-    centralTotal += item.central.byteLength
-  }
-  const total = localTotal + centralTotal + 22 + comment.byteLength
-  if (total > MAX_U32) {
-    throw new RangeError('the edited archive would need ZIP64: more than 4 GiB of output')
-  }
-  if (BigInt(total) > budget.maxInputBytes) {
-    throw new RangeError('the edited archive exceeds the maxInputBytes budget')
-  }
-  const out = new Uint8Array(total)
-  let cursor = 0
-  for (const item of planned) {
-    new DataView(item.central.buffer, item.central.byteOffset, item.central.byteLength).setUint32(
-      42,
-      cursor,
-      true,
-    )
-    for (const part of item.local) {
-      out.set(part, cursor)
-      cursor += part.byteLength
-    }
-  }
-  const centralStart = cursor
-  for (const item of planned) {
-    out.set(item.central, cursor)
-    cursor += item.central.byteLength
-  }
-  const view = new DataView(out.buffer)
-  view.setUint32(cursor, ZIP_EOCD, true)
-  view.setUint16(cursor + 4, 0, true)
-  view.setUint16(cursor + 6, 0, true)
-  view.setUint16(cursor + 8, planned.length, true)
-  view.setUint16(cursor + 10, planned.length, true)
-  view.setUint32(cursor + 12, centralTotal, true)
-  view.setUint32(cursor + 16, centralStart, true)
-  view.setUint16(cursor + 20, comment.byteLength, true)
-  out.set(comment, cursor + 22)
-  return out
 }
 
 const refusal = (code, message) => Object.freeze({ code, message })
@@ -1051,10 +913,10 @@ function editStructureHandler(bytes, entries, model, budget, input) {
     }
     for (const item of added) {
       claim(item.path)
-      planned.push(storedEntry(item.path, item.bytes))
+      planned.push(zipStoredEntry(item.path, item.bytes))
     }
     if (planned.length === 0) throw new TypeError('edit.structure would leave an empty archive')
-    const assembled = assembleArchive(planned, usableModel.comment, budget)
+    const assembled = assembleZipArchive(planned, usableModel.comment, budget)
     return editPlanOutput(
       input,
       assembled,
@@ -1086,7 +948,7 @@ function editContentHandler(bytes, entries, model, budget, input) {
         ? restoredEntry(bytes, entry, range, data)
         : verbatimEntry(bytes, entry, range)
     })
-    const assembled = assembleArchive(planned, usableModel.comment, budget)
+    const assembled = assembleZipArchive(planned, usableModel.comment, budget)
     return editPlanOutput(
       input,
       assembled,
@@ -1201,7 +1063,7 @@ function containerPackHandler(bytes, entries, model, budget, input, source) {
     }
     for (const item of added) {
       claim(item.name)
-      planned.push(storedEntry(item.name, item.bytes))
+      planned.push(zipStoredEntry(item.name, item.bytes))
     }
     if (planned.length === 0) throw new TypeError('container.pack would leave an empty archive')
     const summary = [
@@ -1212,7 +1074,7 @@ function containerPackHandler(bytes, entries, model, budget, input, source) {
     ]
     return editPlanOutput(
       input,
-      assembleArchive(planned, usableModel.comment, budget),
+      assembleZipArchive(planned, usableModel.comment, budget),
       usableModel,
       `zip-container-pack:${summary.join(';')}`,
       summary.join(', '),
