@@ -52,6 +52,9 @@ import {
   vector4
 } from "./chunk-JNRHQTGH.js";
 import {
+  SCENE_RENDERER_CONTRACT
+} from "./chunk-7L3EMAAL.js";
+import {
   applyColorKeyTransparency,
   billboardCameraRotation,
   createModelAnimationSampler,
@@ -61,9 +64,6 @@ import {
   snapshotJson,
   snapshotModelBillboards
 } from "./chunk-AVBKEDCB.js";
-import {
-  SCENE_RENDERER_CONTRACT
-} from "./chunk-OZX7B633.js";
 import "./chunk-R3U752LL.js";
 import "./chunk-QQJVD7VT.js";
 import {

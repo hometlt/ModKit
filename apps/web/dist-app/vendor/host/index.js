@@ -5,7 +5,7 @@ import {
   createDescriptorFallbackSubjectFactsSource,
   createFieldRelationGraphSource,
   descriptorSubjectRef
-} from "../../chunks/chunk-JYZH2GF4.js";
+} from "../../chunks/chunk-NCLAIULB.js";
 import {
   ABI_ASSET_SESSION,
   base64Of,
@@ -13,17 +13,7 @@ import {
   createStandardSurfaceRegistry,
   framePortFromMessagePort,
   protocolLimits
-} from "../../chunks/chunk-2XPNTW3Y.js";
-import {
-  assembleSubjectDescriptor,
-  createAssetSession,
-  createByteRangeSource,
-  createLazyTableDataSource,
-  createUtf8TextDataSource
-} from "../../chunks/chunk-X52F4B5G.js";
-import {
-  metadataFieldProjections
-} from "../../chunks/chunk-5GGWVEQJ.js";
+} from "../../chunks/chunk-R2L4UUN4.js";
 import {
   A1_SPEC_SCHEMA_ENTRIES,
   CODEC_CONTRIBUTION_CONTRACT,
@@ -51,6 +41,8 @@ import {
   MAP_SEMANTIC_MATCHER_PROFILE,
   MOD_WORKSPACE_COMPOSITION_CONTRACT,
   MOD_WORKSPACE_MATCHER_PROFILE,
+  NATIVE_MODEL_ENCODER_CONTRACT,
+  NATIVE_MODEL_ENCODER_MATCHER_PROFILE,
   RESOLVED_DATA_AUTHORING_INDEX_KIND,
   RESOLVED_DATA_WORKSPACE_CONTRACT,
   RESOLVED_DATA_WORKSPACE_MATCHER_PROFILE,
@@ -58,6 +50,8 @@ import {
   RUNTIME_PROVIDER_CONTRACT,
   RUNTIME_PROVIDER_MATCHER_PROFILE,
   RUNTIME_SESSION_CONTRACT,
+  SCENE_RENDERER_CONTRACT,
+  SCENE_RENDERER_MATCHER_PROFILE,
   SERVICE_OPERATION_MATCHER_PROFILE,
   SERVICE_OPERATION_PROVIDER_CONTRACT,
   SERVICE_PROVIDER_CONTRIBUTION_CONTRACT,
@@ -72,6 +66,7 @@ import {
   WRITER_FACET_MATCHER_PROFILE,
   WRITER_SURFACE,
   activationRequiredPermissionClasses,
+  algorithmQualifiedDigest,
   containerEntryRevision,
   createContributionContractRegistry,
   createHostTopology,
@@ -91,21 +86,22 @@ import {
   validateContributionManifest,
   writerOfferSatisfies,
   writerSelectionKey
-} from "../../chunks/chunk-M7ZGWVBJ.js";
+} from "../../chunks/chunk-QTXQMQHW.js";
 import {
-  SCENE_RENDERER_CONTRACT,
-  SCENE_RENDERER_MATCHER_PROFILE
-} from "../../chunks/chunk-MT2JUZZJ.js";
+  assembleSubjectDescriptor,
+  createAssetSession,
+  createByteRangeSource,
+  createLazyTableDataSource,
+  createUtf8TextDataSource
+} from "../../chunks/chunk-3B2ORCWT.js";
 import {
-  NATIVE_MODEL_ENCODER_CONTRACT,
-  NATIVE_MODEL_ENCODER_MATCHER_PROFILE
-} from "../../chunks/chunk-R2P56FTH.js";
-import "../../chunks/chunk-5A3JGV66.js";
+  metadataFieldProjections
+} from "../../chunks/chunk-5GGWVEQJ.js";
 import {
   PERMISSION_CLASSES,
-  algorithmQualifiedDigest,
   contributionId,
   grantValidity,
+  isJsonValue,
   isKnowledgeLocaleTag,
   isKnowledgeTarget,
   isRevisionId,
@@ -120,7 +116,7 @@ import {
   serializeSubjectRef,
   snapshotJsonWireData,
   subjectRefEquals
-} from "../../chunks/chunk-3PXCW2IQ.js";
+} from "../../chunks/chunk-LCIKLYUH.js";
 import {
   CONTAINER_EXTRACT_OPERATION_ID,
   ModkitError,
@@ -8116,6 +8112,9 @@ function relativeEntry(mount, entry2) {
   const prefix = `${mount.sourcePath}/`;
   return path.toLowerCase().startsWith(prefix.toLowerCase()) ? path.slice(prefix.length) : void 0;
 }
+function contentSourceUri(sourceId, path) {
+  return `content-source://${encodeURIComponent(sourceId)}/${path.split("/").map(encodeURIComponent).join("/")}`;
+}
 function entryRevision(mount) {
   return mount.fingerprint !== void 0 && isRevisionId(mount.fingerprint) ? revisionId(mount.fingerprint) : revisionIdFromRef({
     kind: "provider-token",
@@ -8242,6 +8241,19 @@ function createContentDependencyOrigin(contentSources, mounts, maximumEntryBytes
       const normalized2 = normalizeCompanionLogicalId(logicalId);
       const qualifiedIn = (candidate) => relativeRequest(candidate, normalized2) === void 0 ? joinPath(candidate.logicalPrefix, normalized2) : normalized2;
       let mount = locations.get(fold3(normalized2));
+      if (mount === void 0 && contentSources.lookup !== void 0) {
+        for (const candidate of overlay) {
+          const relative2 = relativeRequest(candidate, qualifiedIn(candidate));
+          if (relative2 === void 0 || relative2 === "")
+            continue;
+          const entry2 = await contentSources.lookup(candidate.sourceId, joinPath(candidate.sourcePath, relative2)).catch(() => void 0);
+          throwIfAborted(signal);
+          if (entry2 !== void 0 && !entry2.directory) {
+            mount = candidate;
+            break;
+          }
+        }
+      }
       if (mount === void 0) {
         for (const candidate of overlay) {
           const qualified = qualifiedIn(candidate);
@@ -8258,7 +8270,7 @@ function createContentDependencyOrigin(contentSources, mounts, maximumEntryBytes
       if (relative === void 0 || relative === "")
         throw new RangeError(`content dependency has no file ${normalized2}`);
       const bytes = await contentSources.read(mount.sourceId, joinPath(mount.sourcePath, relative), maximumEntryBytes);
-      const uri = `content-source://${encodeURIComponent(mount.sourceId)}/${normalized2.split("/").map(encodeURIComponent).join("/")}`;
+      const uri = contentSourceUri(mount.sourceId, joinPath(mount.sourcePath, relative));
       const source = artifactByteSourceFromBytes(Object.freeze({ id: `${mount.rootId}:${normalized2}`, uri }), mount.revision, bytes);
       return Object.freeze({ value: source, release: async () => void 0 });
     }
@@ -8349,8 +8361,7 @@ function createContentDependencyLanguageDocumentSource(options) {
           }
           if (!accepted.has(languageId))
             continue;
-          const logicalId = joinPath(mount.logicalPrefix, relative);
-          const uri = `content-source://${encodeURIComponent(mount.sourceId)}/${logicalId.split("/").map(encodeURIComponent).join("/")}`;
+          const uri = contentSourceUri(mount.sourceId, entry2.path);
           if (!openUris.has(uri) && candidates.length < request.maxDocuments) {
             candidates.push({ mount, path: entry2.path, relative });
           } else if (!openUris.has(uri)) {
@@ -8397,8 +8408,7 @@ function createContentDependencyLanguageDocumentSource(options) {
           continue;
         }
         totalBytes += bytes.byteLength;
-        const logicalId = joinPath(candidate.mount.logicalPrefix, candidate.relative);
-        const uri = `content-source://${encodeURIComponent(candidate.mount.sourceId)}/${logicalId.split("/").map(encodeURIComponent).join("/")}`;
+        const uri = contentSourceUri(candidate.mount.sourceId, candidate.path);
         const signature = String(candidate.mount.revision);
         const previous = revisions.get(uri);
         const version = previous === void 0 ? 1 : previous.signature === signature ? previous.version : previous.version + 1;
@@ -8665,17 +8675,68 @@ function createContentAssetOrigin(request) {
       request.onDiagnostic?.(item);
     return result.origins.length === 0 ? void 0 : createLayeredCompanionOrigin(result.origins);
   });
+  const maximumEntryBytes = request.maximumEntryBytes ?? 64 * 1024 * 1024;
+  const located = /* @__PURE__ */ new Map();
+  const locate = (path) => {
+    const key3 = path.toLowerCase();
+    let found = located.get(key3);
+    if (found === void 0) {
+      found = (async () => {
+        if (request.contentSources.openModContext === void 0)
+          return void 0;
+        const baseMods = baseModsFor(typeof request.target === "string" ? request.target : "", request.baseMods);
+        const context = await request.contentSources.openModContext({
+          schemaVersion: 1,
+          target: request.target,
+          ...baseMods === void 0 ? {} : { baseMods }
+        });
+        try {
+          const place = await context.locate(path);
+          if (place === void 0)
+            return void 0;
+          const layer = context.layers.find((item) => item.id === place.layerId);
+          const bytes = await context.read(place.layerId, place.path, maximumEntryBytes);
+          const at = `${layer?.sourcePath ?? place.layerId}/${place.path}`;
+          return Object.freeze({
+            uri: layer === void 0 || layer.sourceId === HOST_LAYER_SOURCE_ID ? `mod-context-layer:${encodeURIComponent(place.layerId)}/${place.path.split("/").map(encodeURIComponent).join("/")}` : `content-source://${encodeURIComponent(layer.sourceId)}/${at.split("/").map(encodeURIComponent).join("/")}`,
+            revision: layer?.fingerprint ?? `${context.contextId}\0${at}`,
+            bytes
+          });
+        } finally {
+          await context.dispose();
+        }
+      })().catch(() => void 0);
+      located.set(key3, found);
+    }
+    return found;
+  };
   return Object.freeze({
     primaryLogicalId: "__content_dependency_workspace__",
     caseSensitivity: "insensitive",
     scopes: Object.freeze(["workspace-dependency-layer"]),
     async *enumerate(scope, options, signal) {
       const origin = await resolved();
+      const path = options.prefix.endsWith("/") ? "" : normalizeCompanionLogicalId(options.prefix);
+      let named = false;
       if (origin !== void 0)
-        yield* origin.enumerate(scope, options, signal);
+        for await (const entry2 of origin.enumerate(scope, options, signal)) {
+          named ||= entry2.logicalId.toLowerCase() === path.toLowerCase();
+          yield entry2;
+        }
+      if (named || path === "" || options.namePrefix !== void 0)
+        return;
+      const asset = await locate(path);
+      if (asset !== void 0)
+        yield Object.freeze({ logicalId: path });
     },
     async open(logicalId, signal) {
       const origin = await resolved();
+      const path = normalizeCompanionLogicalId(logicalId);
+      const asset = located.has(path.toLowerCase()) ? await locate(path) : void 0;
+      if (asset !== void 0) {
+        const source = artifactByteSourceFromBytes(Object.freeze({ id: `mod-context:${path}`, uri: asset.uri }), revisionIdFromRef({ kind: "provider-token", value: asset.revision }), asset.bytes);
+        return Object.freeze({ value: source, release: async () => void 0 });
+      }
       if (origin === void 0)
         throw new TypeError(`no mod layer holds \xAB${logicalId}\xBB`);
       return origin.open(logicalId, signal);
@@ -22805,7 +22866,7 @@ function boundedCoordinatorLimit(value, label, maximum) {
 }
 function validPreparationDiagnostic(value) {
   const record3 = recordOf10(value);
-  return record3 !== void 0 && Object.keys(record3).every((key3) => ["code", "severity", "message", "path", "data"].includes(key3)) && nonEmptyString7(record3["code"]) && PREVIEW_DIAGNOSTIC_SEVERITIES.has(String(record3["severity"])) && nonEmptyString7(record3["message"]) && (!Object.hasOwn(record3, "path") || Array.isArray(record3["path"]) && record3["path"].every((item) => typeof item === "string" || Number.isSafeInteger(item))) && (!Object.hasOwn(record3, "data") || jsonSafeValue(record3["data"]));
+  return record3 !== void 0 && Object.keys(record3).every((key3) => ["code", "severity", "message", "path", "data"].includes(key3)) && nonEmptyString7(record3["code"]) && PREVIEW_DIAGNOSTIC_SEVERITIES.has(String(record3["severity"])) && nonEmptyString7(record3["message"]) && (!Object.hasOwn(record3, "path") || Array.isArray(record3["path"]) && record3["path"].every((item) => typeof item === "string" || Number.isSafeInteger(item))) && (!Object.hasOwn(record3, "data") || isJsonValue(record3["data"]));
 }
 function validNamespaceSearchQuery(value) {
   const query = recordOf10(value);
@@ -22850,21 +22911,9 @@ function validateDocumentReadRequests(value) {
   }
   return value;
 }
-function jsonSafeValue(value, depth = 0) {
-  if (depth > 64)
-    return false;
-  if (value === null || typeof value === "string" || typeof value === "boolean")
-    return true;
-  if (typeof value === "number")
-    return Number.isFinite(value);
-  if (Array.isArray(value))
-    return value.every((item) => jsonSafeValue(item, depth + 1));
-  const record3 = recordOf10(value);
-  return record3 !== void 0 && Object.values(record3).every((item) => jsonSafeValue(item, depth + 1));
-}
 function validHostResourceRoot(value) {
   const record3 = recordOf10(value);
-  return record3 !== void 0 && Object.keys(record3).every((key3) => key3 === "rootId" || key3 === "locator" || key3 === "optional") && nonEmptyString7(record3["rootId"]) && Object.hasOwn(record3, "locator") && jsonSafeValue(record3["locator"]) && (record3["optional"] === void 0 || typeof record3["optional"] === "boolean");
+  return record3 !== void 0 && Object.keys(record3).every((key3) => key3 === "rootId" || key3 === "locator" || key3 === "optional") && nonEmptyString7(record3["rootId"]) && Object.hasOwn(record3, "locator") && isJsonValue(record3["locator"]) && (record3["optional"] === void 0 || typeof record3["optional"] === "boolean");
 }
 function validSubjectNamespaceRoot(value) {
   const record3 = recordOf10(value);
@@ -22929,7 +22978,7 @@ function validatePreparationResult(value, maxCandidates, maxRoots) {
   }
   if (record3["state"] === "prepared") {
     const plan = recordOf10(record3["plan"]);
-    if (!Object.keys(record3).every((key3) => key3 === "state" || key3 === "plan" || key3 === "diagnostics") || plan?.["schemaVersion"] !== 1 || recordOf10(plan["workspace"]) === void 0 || !jsonSafeValue(plan["workspace"]) || !Object.keys(plan).every((key3) => key3 === "schemaVersion" || key3 === "workspace" || key3 === "resources")) {
+    if (!Object.keys(record3).every((key3) => key3 === "state" || key3 === "plan" || key3 === "diagnostics") || plan?.["schemaVersion"] !== 1 || recordOf10(plan["workspace"]) === void 0 || !isJsonValue(plan["workspace"]) || !Object.keys(plan).every((key3) => key3 === "schemaVersion" || key3 === "workspace" || key3 === "resources")) {
       throw new TypeError("map preview preparation returned an invalid prepared plan");
     }
     validateResourcePlan(plan["resources"], maxRoots);

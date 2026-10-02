@@ -8,7 +8,7 @@ import {
   setViewerText,
   uiPreference,
   withEnglishUiFallback
-} from "./chunk-CHRQ2G2C.js";
+} from "./chunk-ID5URMAQ.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunk-BLWUC7LO.js";

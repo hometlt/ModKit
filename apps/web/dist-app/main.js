@@ -52,19 +52,23 @@ import {
   webExtensionSubjectCardBundle,
   withMapPreviewSources,
   withoutHiddenEntries
-} from "./chunks/chunk-GPQATKHX.js";
-import "./chunks/chunk-KIBEJZQD.js";
-import "./chunks/chunk-ZWUREWCO.js";
-import "./chunks/chunk-CBL3CHHQ.js";
-import {
-  resolveModelViewerTextures
-} from "./chunks/chunk-UDXENWSE.js";
-import "./chunks/chunk-O2DY4UGD.js";
-import "./chunks/chunk-CW2HIMYV.js";
+} from "./chunks/chunk-KT7EZLO7.js";
+import "./chunks/chunk-IHYY36PH.js";
+import "./chunks/chunk-KA2ONSZB.js";
 import {
   normalizeModkitIdentifier,
   presentationSlotId
-} from "./chunks/chunk-VQE4FT4Q.js";
+} from "./chunks/chunk-EEPXOM6F.js";
+import "./chunks/chunk-JNRHQTGH.js";
+import "./chunks/chunk-7L3EMAAL.js";
+import {
+  resolveModelViewerTextures
+} from "./chunks/chunk-WG5AX3VE.js";
+import "./chunks/chunk-O2DY4UGD.js";
+import "./chunks/chunk-AVBKEDCB.js";
+import "./chunks/chunk-AQDBCF23.js";
+import "./chunks/chunk-R3U752LL.js";
+import "./chunks/chunk-QQJVD7VT.js";
 import {
   declaredMutatingOperations,
   editOffer,
@@ -73,8 +77,11 @@ import {
   isRejected,
   mountFieldEditor,
   subjectCandidateProviderLease
-} from "./chunks/chunk-GDWA6M5G.js";
-import "./chunks/chunk-QYDJX5KH.js";
+} from "./chunks/chunk-73FNGVMG.js";
+import "./chunks/chunk-PGJ3E3MZ.js";
+import {
+  revisionId
+} from "./chunks/chunk-SD54DXIF.js";
 import {
   DEFAULT_UI_LOCALIZER,
   PANELS_FALLBACK_MESSAGES,
@@ -92,16 +99,7 @@ import {
   setState,
   setViewerText,
   withEnglishUiFallback
-} from "./chunks/chunk-CHRQ2G2C.js";
-import "./chunks/chunk-5MQCQKKD.js";
-import {
-  revisionId
-} from "./chunks/chunk-U4VIZDRF.js";
-import "./chunks/chunk-JNRHQTGH.js";
-import "./chunks/chunk-AVBKEDCB.js";
-import "./chunks/chunk-OZX7B633.js";
-import "./chunks/chunk-R3U752LL.js";
-import "./chunks/chunk-QQJVD7VT.js";
+} from "./chunks/chunk-ID5URMAQ.js";
 import {
   CONTAINER_EXTRACT_OPERATION_ID,
   compareUtf8,
@@ -2748,9 +2746,9 @@ async function boot() {
     localizer,
     renderer: services.renderer,
     operationsFor: (descriptor) => operationSessions.get(descriptorKey(descriptor)),
-    textures: (descriptor, references, signal) => {
+    textures: (descriptor, references, signal, report) => {
       const raster = rasterResources.get(descriptorKey(descriptor));
-      return raster === void 0 ? Promise.resolve(/* @__PURE__ */ new Map()) : resolveModelViewerTextures(raster, references, signal);
+      return raster === void 0 ? Promise.resolve(/* @__PURE__ */ new Map()) : resolveModelViewerTextures(raster, references, signal, report);
     },
     rasterResources: (descriptor) => rasterResources.get(descriptorKey(descriptor)),
     /*

@@ -2,17 +2,25 @@ import {
   createOrbitController
 } from "./chunk-O2DY4UGD.js";
 import {
+  applyColorKeyTransparency,
+  billboardCameraRotation,
+  createModelSceneSampler,
+  createModelSkeletonNodes,
+  modelPrimitiveByteLength,
+  snapshotJson
+} from "./chunk-AVBKEDCB.js";
+import {
   convertedFileName,
   exportOffer,
   invokeRefusalMessage,
   isRejected,
   mountFieldEditor
-} from "./chunk-GDWA6M5G.js";
+} from "./chunk-73FNGVMG.js";
 import {
   canvasPng,
   createMediaShell,
   mountContributedSections
-} from "./chunk-QYDJX5KH.js";
+} from "./chunk-PGJ3E3MZ.js";
 import {
   MODEL_FALLBACK_MESSAGES,
   MODEL_GIZMO_FALLBACK_MESSAGES,
@@ -27,15 +35,7 @@ import {
   setViewerText,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-CHRQ2G2C.js";
-import {
-  applyColorKeyTransparency,
-  billboardCameraRotation,
-  createModelSceneSampler,
-  createModelSkeletonNodes,
-  modelPrimitiveByteLength,
-  snapshotJson
-} from "./chunk-AVBKEDCB.js";
+} from "./chunk-ID5URMAQ.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunk-BLWUC7LO.js";
@@ -1429,7 +1429,7 @@ function drawSkeleton(context, joints, viewProjection, viewport, stroke) {
 function themeColor(canvas, token, fallback) {
   return getComputedStyle(canvas).getPropertyValue(token).trim() || fallback;
 }
-async function resolveModelViewerTextures(port, references, signal) {
+async function resolveModelViewerTextures(port, references, signal, report) {
   const maximumBytes = 64 * 1024 * 1024;
   let remaining = maximumBytes;
   let index = 0;
@@ -1438,8 +1438,12 @@ async function resolveModelViewerTextures(port, references, signal) {
   const share = Math.max(4 * 1024 * 1024, Math.floor(maximumBytes / Math.max(1, wanted.size)));
   for (const reference of references) {
     signal?.throwIfAborted();
-    if (reference.role !== "texture" || textures.has(reference.id) || remaining <= 0)
+    if (reference.role !== "texture" || textures.has(reference.id))
       continue;
+    if (remaining <= 0) {
+      report?.(reference.id, `over the ${maximumBytes / (1024 * 1024)} MiB the viewer reads`);
+      continue;
+    }
     const textureId = `model-texture-${index++}`;
     const result = await port.read({
       kind: "logical",
@@ -1458,13 +1462,16 @@ async function resolveModelViewerTextures(port, references, signal) {
       selection: { face: "all", mipLevel: "fit" }
     }, signal);
     signal?.throwIfAborted();
-    if (result.state === "unresolved" || result.state === "compressed")
+    if (result.state === "unresolved" || result.state === "compressed") {
+      const codes = [...new Set(result.diagnostics.map((item) => item.code))].join(", ");
+      report?.(reference.id, codes === "" ? result.state : codes);
       continue;
+    }
     const faces = result.info.faces ?? 1;
-    if (faces !== 1 && faces !== 6)
+    if (faces !== 1 && faces !== 6 || faces === 6 && result.info.width !== result.info.height) {
+      report?.(reference.id, `${faces} faces of ${result.info.width}\xD7${result.info.height}`);
       continue;
-    if (faces === 6 && result.info.width !== result.info.height)
-      continue;
+    }
     const surfaces = result.state === "decoded-surfaces" ? result.surfaces : [
       {
         subresource: result.subresource ?? {
@@ -1478,14 +1485,18 @@ async function resolveModelViewerTextures(port, references, signal) {
       }
     ];
     const chosen = surfaces[0];
-    if (chosen === void 0)
+    if (chosen === void 0) {
+      report?.(reference.id, "no surface");
       continue;
+    }
     const { width, height } = chosen.region;
     const mipLevel = chosen.subresource.mipLevel;
     const faceBytes = width * height * 4;
     const byteLength = faceBytes * faces;
-    if (surfaces.length !== faces || byteLength > remaining)
+    if (surfaces.length !== faces || byteLength > remaining) {
+      report?.(reference.id, `${width}\xD7${height}: over what is left of the viewer's budget`);
       continue;
+    }
     const rgba = new Uint8Array(byteLength);
     let valid = true;
     for (const [face, surface] of surfaces.entries()) {
@@ -1501,8 +1512,10 @@ async function resolveModelViewerTextures(port, references, signal) {
         rgba.set(region.pixels.subarray(sourceOffset, sourceOffset + region.width * 4), targetOffset);
       }
     }
-    if (!valid)
+    if (!valid) {
+      report?.(reference.id, "a surface the viewer cannot read");
       continue;
+    }
     remaining -= byteLength;
     if (reference.ignoreStoredAlpha === true) {
       for (let alpha = 3; alpha < rgba.length; alpha += 4)
@@ -1919,13 +1932,28 @@ function createModelViewer(options = {}) {
           };
           showDiagnostics();
           let texels = /* @__PURE__ */ new Map();
+          const unresolved = /* @__PURE__ */ new Map();
           if (options.textures !== void 0 && provider !== void 0 && resourceRefs.length > 0) {
-            texels = await options.textures(args.descriptor, resourceRefs, scope.signal).catch(() => /* @__PURE__ */ new Map());
+            texels = await options.textures(args.descriptor, resourceRefs, scope.signal, (id, reason) => unresolved.set(id, reason)).catch((error) => {
+              const reason = error instanceof Error ? error.message : String(error);
+              for (const item of resourceRefs)
+                unresolved.set(item.id, reason);
+              return /* @__PURE__ */ new Map();
+            });
           }
           const surfaces = sceneMaterials(materialRefs, texels, true);
           canvas.setAttribute("data-model-textures", String(surfaces.textures.length));
           diagnosticRow(localizer.text("viewer.modelRendererLabel"), `${canvas.getAttribute("data-model-renderer") ?? ""} \xB7 ${canvas.getAttribute("data-model-renderer-status") ?? ""}${provider === void 0 ? "" : ` \xB7 ${provider.rendererId}`}`);
-          diagnosticRow(localizer.text("viewer.modelTextureStatus"), `${surfaces.textures.length} / ${resourceRefs.filter((item) => item.role === "texture").length}`);
+          const drawn = new Set(surfaces.textures.map((texture) => texture.id));
+          const expected = resourceRefs.filter((item) => item.role === "texture");
+          const undrawn = expected.flatMap((item) => {
+            const texel = texels.get(item.id);
+            if (texel !== void 0 && drawn.has(texel.id))
+              return [];
+            const reason = texel !== void 0 ? localizer.text("viewer.modelTextureUnbound") : unresolved.get(item.id) ?? localizer.text("viewer.modelTextureUnresolved");
+            return [`${item.id}: ${reason}`];
+          });
+          diagnosticRow(localizer.text("viewer.modelTextureStatus"), [`${surfaces.textures.length} / ${expected.length}`, ...undrawn].join(" \xB7 "));
           canvas.setAttribute("data-model-skeleton", String(scene.joints.length));
           let skeletonVisible = scene.joints.length > 0;
           let wireframeVisible = false;
@@ -1976,7 +2004,7 @@ function createModelViewer(options = {}) {
               const output = result.output;
               if (output.kind !== "bytes" || !(output.value instanceof Uint8Array))
                 throw new Error(`the codec answered ${output.kind}, not bytes`);
-              const { createUvmFramePreparer } = await import("./render-46LQMWDP.js");
+              const { createUvmFramePreparer } = await import("./render-6PWY6RIV.js");
               const raster = options.rasterResources?.(args.descriptor);
               const preparer = createUvmFramePreparer(output.value, {
                 budget: MODEL_EFFECT_BUDGET,
@@ -2112,13 +2140,13 @@ function createModelViewer(options = {}) {
                 const context = canvas.getContext("2d");
                 if (context === null)
                   throw new TypeError("2d canvas context is unavailable");
-                const expected = frame.width * frame.height * 4;
-                if (frame.rgba.length !== expected) {
+                const expected2 = frame.width * frame.height * 4;
+                if (frame.rgba.length !== expected2) {
                   throw new TypeError(`renderer returned ${frame.rgba.length} bytes for a ${frame.width}x${frame.height} frame`);
                 }
                 canvas.width = frame.width;
                 canvas.height = frame.height;
-                const pixels = new Uint8ClampedArray(expected);
+                const pixels = new Uint8ClampedArray(expected2);
                 pixels.set(frame.rgba);
                 context.putImageData(new ImageData(pixels, frame.width, frame.height), 0, 0);
                 canvas.setAttribute("data-model-animation-time", String(drawnTime));

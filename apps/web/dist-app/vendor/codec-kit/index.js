@@ -1,26 +1,27 @@
 import "../../chunks/chunk-BCCCTFYJ.js";
 import {
-  createTableDataSource
-} from "../../chunks/chunk-XYU4XXWE.js";
-import "../../chunks/chunk-BFR65BLC.js";
-import {
-  assembleSubjectDescriptor,
-  createAssetSession,
-  createUtf8TextDataSource
-} from "../../chunks/chunk-X52F4B5G.js";
-import "../../chunks/chunk-5GGWVEQJ.js";
-import {
   RESOLVED_DATA_WORKSPACE_CONTRACT,
   containerEntryRevision,
   contributionSettingsFor
-} from "../../chunks/chunk-M7ZGWVBJ.js";
+} from "../../chunks/chunk-ISN6SLGD.js";
 import "../../chunks/chunk-MT2JUZZJ.js";
 import "../../chunks/chunk-R2P56FTH.js";
 import "../../chunks/chunk-5A3JGV66.js";
 import {
+  createTableDataSource
+} from "../../chunks/chunk-XYU4XXWE.js";
+import "../../chunks/chunk-BFR65BLC.js";
+import {
   revisionId,
   toPortableProjectionReceipt
-} from "../../chunks/chunk-3PXCW2IQ.js";
+} from "../../chunks/chunk-SIU4RWCM.js";
+import {
+  assembleSubjectDescriptor,
+  createAssetSession,
+  createUtf8TextDataSource
+} from "../../chunks/chunk-3B2ORCWT.js";
+import "../../chunks/chunk-5GGWVEQJ.js";
+import "../../chunks/chunk-LCIKLYUH.js";
 import {
   ModkitError,
   canonicalJsonStringify,

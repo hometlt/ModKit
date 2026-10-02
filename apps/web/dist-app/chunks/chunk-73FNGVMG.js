@@ -5,7 +5,12 @@ import {
   createMediaShell,
   mediaFacts,
   mountContributedSections
-} from "./chunk-QYDJX5KH.js";
+} from "./chunk-PGJ3E3MZ.js";
+import {
+  createSubjectCandidateProvider,
+  isKnowledgeTarget,
+  loadSubjectCandidatePage
+} from "./chunk-SD54DXIF.js";
 import {
   IMAGE_EDITING_FALLBACK_MESSAGES,
   IMAGE_FALLBACK_MESSAGES,
@@ -22,12 +27,7 @@ import {
   uiPreference,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-CHRQ2G2C.js";
-import {
-  createSubjectCandidateProvider,
-  isKnowledgeTarget,
-  loadSubjectCandidatePage
-} from "./chunk-U4VIZDRF.js";
+} from "./chunk-ID5URMAQ.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunk-BLWUC7LO.js";
@@ -966,6 +966,11 @@ init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
 // ../MODDING/modkit-core/packages/ui/dist/selector/index.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// ../MODDING/modkit-core/packages/sdk/dist/subjects/index.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// ../MODDING/modkit-core/packages/ui/dist/selector/index.js
 function candidateTargetForField(type) {
   if (type.kind === "subject-ref") {
     return Object.freeze({

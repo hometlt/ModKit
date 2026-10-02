@@ -36,6 +36,14 @@ import "../../../chunks/chunk-ZSDVUSRM.js";
 import {
   composeTrsMatrix
 } from "../../../chunks/chunk-5SBJANAJ.js";
+import "../../../chunks/chunk-ISN6SLGD.js";
+import "../../../chunks/chunk-MT2JUZZJ.js";
+import "../../../chunks/chunk-R2P56FTH.js";
+import "../../../chunks/chunk-5A3JGV66.js";
+import {
+  isJsonValue
+} from "../../../chunks/chunk-SIU4RWCM.js";
+import "../../../chunks/chunk-V3DESLW4.js";
 import "../../../chunks/chunk-TKIPZ6HV.js";
 import "../../../chunks/chunk-NUFRM6SI.js";
 import "../../../chunks/chunk-W2UBWFML.js";
@@ -670,27 +678,141 @@ var MATERIALIZER_GAME_EXTENSIONS = /* @__PURE__ */ new Set([
   "UV_game_material",
   "UV_game_material_team_color",
   "UV_game_animation_clips",
-  "UV_game_variants"
+  "UV_game_variants",
+  "UV_game_effects",
+  "UV_game_collision"
 ]);
-function isJsonValue(value, depth) {
-  if (depth > 64)
-    return false;
-  if (value === null || typeof value === "string" || typeof value === "boolean")
-    return true;
-  if (typeof value === "number")
-    return Number.isFinite(value);
-  if (Array.isArray(value))
-    return value.every((item) => isJsonValue(item, depth + 1));
-  if (typeof value !== "object" || Object.getPrototypeOf(value) !== Object.prototype)
-    return false;
-  return Object.values(value).every((item) => isJsonValue(item, depth + 1));
+var COLLISION_ROLES = /* @__PURE__ */ new Set(["physics", "hit", "selection", "footprint", "effect", "vision"]);
+var EFFECT_FAMILIES = [
+  ["particles", true],
+  ["ribbons", true],
+  ["forces", false],
+  ["warps", false],
+  ["projectors", true]
+];
+function effectsOf(projection, nodeIndexById, materialIndexById) {
+  const given = projection.effects;
+  if (given === void 0)
+    return void 0;
+  const families = [];
+  for (const [family, withMaterial] of EFFECT_FAMILIES) {
+    const entries = given[family];
+    if (entries === void 0 || entries.length === 0)
+      continue;
+    families.push([
+      family,
+      entries.map((entry, index) => {
+        const label = `effect ${family}[${String(index)}]`;
+        const json = entry;
+        if (!isJsonValue(json) || typeof entry["name"] !== "string")
+          fail(`${label} is not a named JSON object`);
+        const { nodeId, materialId, ...rest } = entry;
+        if (rest["node"] !== void 0 || rest["material"] !== void 0)
+          fail(`${label} names its node and material by id, not by index`);
+        const node = typeof nodeId === "string" ? nodeIndexById.get(nodeId) : void 0;
+        if (node === void 0)
+          fail(`${label} names the unknown node ${String(nodeId)}`);
+        if (!withMaterial) {
+          if (materialId !== void 0)
+            fail(`${label} names a material its family has not`);
+          return { ...structuredClone(rest), node };
+        }
+        const material = typeof materialId === "string" ? materialIndexById.get(materialId) : void 0;
+        if (material === void 0)
+          fail(`${label} names the unknown material ${String(materialId)}`);
+        return { ...structuredClone(rest), node, material };
+      })
+    ]);
+  }
+  if (given.extras !== void 0 && !isJsonValue(given.extras))
+    fail("effect extras are not a JSON object");
+  if (families.length === 0)
+    return void 0;
+  return {
+    ...given.profile === void 0 ? {} : { profile: given.profile },
+    ...given.trackTimeUnit === void 0 ? {} : { trackTimeUnit: given.trackTimeUnit },
+    ...Object.fromEntries(families),
+    ...given.extras === void 0 ? {} : { extras: structuredClone(given.extras) }
+  };
+}
+var LIGHT_KEYS = /* @__PURE__ */ new Set([
+  "type",
+  "direction",
+  "position",
+  "color",
+  "range",
+  "attenuationStart",
+  "attenuationEnd",
+  "decayExponent",
+  "innerConeAngle",
+  "outerConeAngle",
+  "animationDefaults",
+  "sequenceAnimation"
+]);
+var LIGHT_DISTANCES = [
+  "range",
+  "attenuationStart",
+  "attenuationEnd",
+  "decayExponent",
+  "innerConeAngle",
+  "outerConeAngle"
+];
+var ANIMATED_LIGHT_KEYS = /* @__PURE__ */ new Set([
+  "color",
+  "intensity",
+  "attenuationStart",
+  "decayExponent",
+  "innerConeAngle",
+  "outerConeAngle"
+]);
+function sceneLightsOf(projection, nodeIndexById) {
+  const given = projection.lights;
+  if (given === void 0 || given.lights.length === 0)
+    return void 0;
+  const spaceNode = nodeIndexById.get(given.spaceNodeId);
+  if (spaceNode === void 0)
+    fail(`scene lights name the unknown frame node ${given.spaceNodeId}`);
+  const vector = (value, minimum = -Infinity) => Array.isArray(value) && value.length === 3 && value.every((item) => typeof item === "number" && Number.isFinite(item) && item >= minimum);
+  if (given.ambient !== void 0 && !(vector(given.ambient, 0) && given.ambient.every((c) => c <= 1)))
+    fail("scene light ambient is three components in 0..1");
+  given.lights.forEach((light, index) => {
+    const label = `scene light ${String(index)}`;
+    if (!isJsonValue(light) || Object.keys(light).some((key) => !LIGHT_KEYS.has(key)))
+      fail(`${label} is not a UV_scene_lights light`);
+    if (!["directional", "point", "spot"].includes(String(light["type"])))
+      fail(`${label} is not directional, point or spot`);
+    const direction = light["direction"];
+    if (!vector(direction) || direction.every((value) => value === 0))
+      fail(`${label} needs a nonzero direction`);
+    if (!vector(light["color"], 0))
+      fail(`${label} colour is three nonnegative components`);
+    if (light["type"] !== "directional" && !vector(light["position"]))
+      fail(`${label} is a ${String(light["type"])} light without a position`);
+    for (const key of LIGHT_DISTANCES) {
+      const value = light[key];
+      if (value !== void 0 && !(typeof value === "number" && Number.isFinite(value) && value >= 0))
+        fail(`${label} ${key} is a nonnegative number`);
+    }
+    const animation = light["sequenceAnimation"];
+    if (animation !== void 0) {
+      const defaults = light["animationDefaults"];
+      if (typeof animation !== "object" || animation === null || Array.isArray(animation) || Object.keys(animation).some((key) => !ANIMATED_LIGHT_KEYS.has(key)) || typeof defaults !== "object" || defaults === null || Array.isArray(defaults) || !vector(defaults["color"], 0) || !(typeof defaults["intensity"] === "number" && defaults["intensity"] >= 0) || Object.keys(animation).some((key) => defaults[key] === void 0))
+        fail(`${label} animates without a default for each animated property`);
+    }
+  });
+  return {
+    version: 1,
+    spaceNode,
+    ...given.ambient === void 0 ? {} : { ambient: [...given.ambient] },
+    lights: given.lights.map((light) => structuredClone(light))
+  };
 }
 function gameExtensionsOf(projection) {
   const entries = Object.entries(projection.gameExtensions ?? {});
   for (const [name, value] of entries) {
     if (!/^UV_game_[a-z0-9]+(?:_[a-z0-9]+)*$/u.test(name) || MATERIALIZER_GAME_EXTENSIONS.has(name))
       throw new TypeError(`game extension ${name} is not a UV_game_<id> record a projection writes`);
-    if (typeof value !== "object" || Array.isArray(value) || !isJsonValue(value, 0))
+    if (typeof value !== "object" || Array.isArray(value) || !isJsonValue(value))
       throw new TypeError(`game extension ${name} is not a JSON object`);
   }
   return entries.sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0);
@@ -1302,6 +1424,100 @@ function materializeUvmCore(projection, request, { digest, materialBudget = DEFA
     return entry;
   });
   documentNodes.push(...meshChildren);
+  let collisionNodes = 0;
+  const collisionIds = /* @__PURE__ */ new Set();
+  for (const volume of projection.collisions ?? []) {
+    if (volume.nodeId === void 0 || volume.shape === void 0)
+      continue;
+    const label = `collision \xAB${volume.id}\xBB`;
+    if (collisionIds.has(volume.id))
+      fail(`${label} is declared twice`);
+    collisionIds.add(volume.id);
+    const parent = nodeIndexById.get(volume.nodeId);
+    if (parent === void 0)
+      fail(`${label} rides on the unknown node ${volume.nodeId}`);
+    if (volume.role !== void 0 && !COLLISION_ROLES.has(volume.role))
+      fail(`${label} has an unknown role`);
+    const shape = volume.shape;
+    const positive = (value) => typeof value === "number" && Number.isFinite(value) && value > 0;
+    const triple = (value) => Array.isArray(value) && value.length === 3 && value.every((item) => typeof item === "number" && Number.isFinite(item));
+    const written = { kind: shape.kind };
+    if (shape.matrix !== void 0) {
+      const matrix = finite([...shape.matrix], `${label} matrix`);
+      if (matrix.length !== 16)
+        fail(`${label} matrix must carry 16 numbers`);
+      written["matrix"] = matrix;
+    }
+    if (shape.kind === "box") {
+      if (!triple(shape.size) || !shape.size.every(positive))
+        fail(`${label} box needs a size`);
+      written["size"] = [...shape.size];
+    } else if (shape.kind === "sphere" || shape.kind === "capsule" || shape.kind === "cylinder") {
+      if (!positive(shape.radius))
+        fail(`${label} needs a positive radius`);
+      written["radius"] = shape.radius;
+      if (shape.kind !== "sphere") {
+        if (!(typeof shape.height === "number" && Number.isFinite(shape.height) && shape.height >= 0))
+          fail(`${label} needs a height`);
+        written["height"] = shape.height;
+        if (shape.axis !== void 0) {
+          if (!["x", "y", "z"].includes(shape.axis))
+            fail(`${label} axis is x, y or z`);
+          written["axis"] = shape.axis;
+        }
+      }
+    } else if (shape.kind === "plane") {
+      if (!triple(shape.normal) || shape.normal.every((value) => value === 0))
+        fail(`${label} plane needs a nonzero normal`);
+      written["normal"] = [...shape.normal];
+    } else if (shape.kind === "convex-hull" || shape.kind === "mesh") {
+      const positions = shape.positions;
+      if (!(positions instanceof Float32Array) || positions.length === 0 || positions.length % 3 !== 0 || !positions.every(Number.isFinite))
+        fail(`${label} needs finite VEC3 positions`);
+      const bounds = boundsOf(positions);
+      written["positions"] = accessors.length;
+      accessors.push({
+        bufferView: buffers.push(Float32Array.from(positions)),
+        componentType: FLOAT,
+        count: positions.length / 3,
+        type: "VEC3",
+        min: bounds.min,
+        max: bounds.max
+      });
+      if (shape.kind === "mesh") {
+        const indices = shape.indices;
+        if (!(indices instanceof Uint32Array) || indices.length === 0 || indices.length % 3 !== 0 || indices.some((index) => index >= positions.length / 3))
+          fail(`${label} mesh needs triangle indices within its positions`);
+        written["indices"] = accessors.length;
+        accessors.push({
+          bufferView: buffers.push(Uint32Array.from(indices)),
+          componentType: UINT32,
+          count: indices.length,
+          type: "SCALAR"
+        });
+      }
+    } else {
+      fail(`${label} has an unknown shape kind`);
+    }
+    if (shape.collisionMask !== void 0) {
+      if (!Number.isSafeInteger(shape.collisionMask) || shape.collisionMask < 0)
+        fail(`${label} collision mask is a nonnegative integer`);
+      written["collisionMask"] = shape.collisionMask;
+    }
+    const node = documentNodes.length;
+    documentNodes.push({
+      extensions: {
+        UV_game_collision: {
+          ...volume.role === void 0 ? {} : { role: volume.role },
+          shapes: [written],
+          extras: { modkit: { id: volume.id } }
+        }
+      }
+    });
+    const owner = documentNodes[parent];
+    owner.children = [...owner.children ?? [], node];
+    collisionNodes += 1;
+  }
   const documentMeshes = emittedMeshes.map(({ mesh, primitives: entries }) => {
     const value = {};
     if (typeof mesh.name === "string")
@@ -1467,6 +1683,8 @@ function materializeUvmCore(projection, request, { digest, materialBudget = DEFA
     note("common.view/model-animation-source@1", "value-differs", void 0, "clip and target identities are positional; native frame indices, provenance, bounds and movement speed are not glTF TRS fields");
   const binary = buffers.build();
   const gameExtensions = gameExtensionsOf(projection);
+  const sceneLights = sceneLightsOf(projection, nodeIndexById);
+  const effects = effectsOf(projection, nodeIndexById, materialIndexById);
   const document = {
     asset: {
       version: "2.0",
@@ -1490,10 +1708,15 @@ function materializeUvmCore(projection, request, { digest, materialBudget = DEFA
       ...unitsExtension === void 0 ? [] : ["UV_units"],
       ...projection.lods !== void 0 && projection.lods.length > 0 ? ["MSFT_lod"] : [],
       ...lodSelection === void 0 ? [] : ["MODKITX_lod_selection"],
+      ...sceneLights === void 0 ? [] : ["UV_scene_lights"],
+      ...collisionNodes === 0 ? [] : ["UV_game_collision"],
+      ...effects === void 0 ? [] : ["UV_game_effects"],
       ...gameExtensions.map(([name]) => name)
     ],
     extensions: {
       ...Object.fromEntries(gameExtensions),
+      ...sceneLights === void 0 ? {} : { UV_scene_lights: sceneLights },
+      ...effects === void 0 ? {} : { UV_game_effects: effects },
       ...unitsExtension === void 0 ? {} : { UV_units: unitsExtension },
       ...lodSelection === void 0 ? {} : { MODKITX_lod_selection: lodSelection },
       ...visibility.length === 0 ? {} : { UV_game_variants: { visibility } },
@@ -1507,7 +1730,8 @@ function materializeUvmCore(projection, request, { digest, materialBudget = DEFA
         id: assetId,
         class: request.options?.assetClass ?? "prop",
         coreRenderable: emittedPrimitives > 0,
-        ...socketByNodeId.size === 0 ? {} : { sockets: socketByNodeId.size }
+        ...socketByNodeId.size === 0 ? {} : { sockets: socketByNodeId.size },
+        ...collisionNodes === 0 ? {} : { collision: true }
       },
       UV_provenance: {
         source: { format: sourceFormat },

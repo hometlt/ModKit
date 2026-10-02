@@ -17,24 +17,25 @@ import "../../../../chunks/chunk-RA3ZVI6J.js";
 import {
   decompressBounded
 } from "../../../../chunks/chunk-GDKG5J25.js";
+import {
+  containerEntryRevision,
+  contributionSettingsFor
+} from "../../../../chunks/chunk-ISN6SLGD.js";
+import "../../../../chunks/chunk-MT2JUZZJ.js";
+import "../../../../chunks/chunk-R2P56FTH.js";
+import "../../../../chunks/chunk-5A3JGV66.js";
 import "../../../../chunks/chunk-BFR65BLC.js";
+import {
+  revisionId,
+  toPortableProjectionReceipt
+} from "../../../../chunks/chunk-SIU4RWCM.js";
 import {
   assembleSubjectDescriptor,
   createAssetSession,
   createUtf8TextDataSource
-} from "../../../../chunks/chunk-X52F4B5G.js";
+} from "../../../../chunks/chunk-3B2ORCWT.js";
 import "../../../../chunks/chunk-5GGWVEQJ.js";
-import {
-  containerEntryRevision,
-  contributionSettingsFor
-} from "../../../../chunks/chunk-M7ZGWVBJ.js";
-import "../../../../chunks/chunk-MT2JUZZJ.js";
-import "../../../../chunks/chunk-R2P56FTH.js";
-import "../../../../chunks/chunk-5A3JGV66.js";
-import {
-  revisionId,
-  toPortableProjectionReceipt
-} from "../../../../chunks/chunk-3PXCW2IQ.js";
+import "../../../../chunks/chunk-LCIKLYUH.js";
 import {
   ModkitError,
   canonicalJsonStringify,
