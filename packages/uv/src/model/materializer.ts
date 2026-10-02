@@ -73,6 +73,18 @@ export interface ModelProjection {
    * the materializer writes itself (sockets, materials, clips, variants) are not among them.
    */
   readonly gameExtensions?: Readonly<Record<string, UvmJsonObject>>
+  /**
+   * The model's own lights, written on the root as `UV_scene_lights` (SPEC_UVM_EXTENSIONS):
+   * positions and directions in the frame of the node `spaceNodeId` names, each light in the wire
+   * form (`type`, `direction`, `color`, `position` for point and spot lights, cone angles full, an
+   * animated light's `sequenceAnimation` with its `animationDefaults`). How many a renderer draws
+   * is its budget to report, not the format's.
+   */
+  readonly lights?: {
+    readonly spaceNodeId: string
+    readonly ambient?: readonly [number, number, number]
+    readonly lights: readonly UvmJsonObject[]
+  }
 }
 /**
  * The one table from a publisher's material layer slot to the glTF slot a consumer that knows only
@@ -557,6 +569,105 @@ const MATERIALIZER_GAME_EXTENSIONS = new Set([
   'UV_game_animation_clips',
   'UV_game_variants',
 ])
+
+const LIGHT_KEYS = new Set([
+  'type',
+  'direction',
+  'position',
+  'color',
+  'range',
+  'attenuationStart',
+  'attenuationEnd',
+  'decayExponent',
+  'innerConeAngle',
+  'outerConeAngle',
+  'animationDefaults',
+  'sequenceAnimation',
+])
+const LIGHT_DISTANCES = [
+  'range',
+  'attenuationStart',
+  'attenuationEnd',
+  'decayExponent',
+  'innerConeAngle',
+  'outerConeAngle',
+] as const
+const ANIMATED_LIGHT_KEYS = new Set([
+  'color',
+  'intensity',
+  'attenuationStart',
+  'decayExponent',
+  'innerConeAngle',
+  'outerConeAngle',
+])
+
+/**
+ * The projection's lights as `UV_scene_lights` (schema `uvm.scene.schema.json#sceneLights`),
+ * checked as a reader will: a known frame node, three-component vectors, nonnegative colour and
+ * distances, a position for a point or spot light, defaults for whatever is animated.
+ */
+function sceneLightsOf(
+  projection: ModelProjection,
+  nodeIndexById: ReadonlyMap<string, number>,
+): UvmJsonObject | undefined {
+  const given = projection.lights
+  if (given === undefined || given.lights.length === 0) return undefined
+  const spaceNode = nodeIndexById.get(given.spaceNodeId)
+  if (spaceNode === undefined) fail(`scene lights name the unknown frame node ${given.spaceNodeId}`)
+  const vector = (value: unknown, minimum = -Infinity): value is number[] =>
+    Array.isArray(value) &&
+    value.length === 3 &&
+    value.every(item => typeof item === 'number' && Number.isFinite(item) && item >= minimum)
+  if (
+    given.ambient !== undefined &&
+    !(vector(given.ambient, 0) && given.ambient.every(c => c <= 1))
+  )
+    fail('scene light ambient is three components in 0..1')
+  given.lights.forEach((light, index) => {
+    const label = `scene light ${String(index)}`
+    if (!isJsonValue(light) || Object.keys(light).some(key => !LIGHT_KEYS.has(key)))
+      fail(`${label} is not a UV_scene_lights light`)
+    if (!['directional', 'point', 'spot'].includes(String(light['type'])))
+      fail(`${label} is not directional, point or spot`)
+    const direction = light['direction']
+    if (!vector(direction) || direction.every(value => value === 0))
+      fail(`${label} needs a nonzero direction`)
+    if (!vector(light['color'], 0)) fail(`${label} colour is three nonnegative components`)
+    if (light['type'] !== 'directional' && !vector(light['position']))
+      fail(`${label} is a ${String(light['type'])} light without a position`)
+    for (const key of LIGHT_DISTANCES) {
+      const value = light[key]
+      if (
+        value !== undefined &&
+        !(typeof value === 'number' && Number.isFinite(value) && value >= 0)
+      )
+        fail(`${label} ${key} is a nonnegative number`)
+    }
+    const animation = light['sequenceAnimation']
+    if (animation !== undefined) {
+      const defaults = light['animationDefaults']
+      if (
+        typeof animation !== 'object' ||
+        animation === null ||
+        Array.isArray(animation) ||
+        Object.keys(animation).some(key => !ANIMATED_LIGHT_KEYS.has(key)) ||
+        typeof defaults !== 'object' ||
+        defaults === null ||
+        Array.isArray(defaults) ||
+        !vector(defaults['color'], 0) ||
+        !(typeof defaults['intensity'] === 'number' && defaults['intensity'] >= 0) ||
+        Object.keys(animation).some(key => defaults[key] === undefined)
+      )
+        fail(`${label} animates without a default for each animated property`)
+    }
+  })
+  return {
+    version: 1,
+    spaceNode,
+    ...(given.ambient === undefined ? {} : { ambient: [...given.ambient] }),
+    lights: given.lights.map(light => structuredClone(light)),
+  }
+}
 
 /** The projection's game records, checked and in name order. */
 function gameExtensionsOf(projection: ModelProjection): [string, UvmJsonObject][] {
@@ -1754,6 +1865,7 @@ export function materializeUvmCore(
     )
   const binary = buffers.build()
   const gameExtensions = gameExtensionsOf(projection)
+  const sceneLights = sceneLightsOf(projection, nodeIndexById)
   const document = {
     asset: {
       version: '2.0',
@@ -1789,10 +1901,12 @@ export function materializeUvmCore(
       ...(unitsExtension === undefined ? [] : ['UV_units']),
       ...(projection.lods !== undefined && projection.lods.length > 0 ? ['MSFT_lod'] : []),
       ...(lodSelection === undefined ? [] : ['MODKITX_lod_selection']),
+      ...(sceneLights === undefined ? [] : ['UV_scene_lights']),
       ...gameExtensions.map(([name]) => name),
     ],
     extensions: {
       ...Object.fromEntries(gameExtensions),
+      ...(sceneLights === undefined ? {} : { UV_scene_lights: sceneLights }),
       ...(unitsExtension === undefined ? {} : { UV_units: unitsExtension }),
       ...(lodSelection === undefined ? {} : { MODKITX_lod_selection: lodSelection }),
       ...(visibility.length === 0 ? {} : { UV_game_variants: { visibility } }),
