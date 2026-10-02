@@ -7,7 +7,7 @@
  * their results into native pickers, documents and workspace writes.
  */
 
-import { relative, resolve } from 'node:path'
+import { isAbsolute, relative, resolve } from 'node:path'
 
 import type { GameInstallation } from '@modkit/sdk/games'
 
@@ -186,14 +186,32 @@ export function installationGameIds(inventory: unknown): readonly string[] {
 /**
  * The installation an extension's content sources read: the selected one of a game that extension's
  * own installation discovery names. The offer facts say which game is whose; there is no game list.
+ *
+ * With none selected, a confirmed installation `found` without a choice: the one holding one of
+ * `anchors` (a workspace folder, an open file), else the only one, as a map preview takes it (Core
+ * `66a4733f`). v85: Arena.mmx inside RA2 with no installation chosen — no mod context, 0/36 resources.
  */
 export function selectedInstallationDirectory(
   inventory: unknown,
   selected: readonly SelectedContentSource[],
   extension: string,
+  found: {
+    readonly installations: readonly SelectedContentSource[]
+    readonly anchors: readonly string[]
+  } = { installations: [], anchors: [] },
 ): string | undefined {
   const gameIds = installationGameIdsByExtension(inventory).get(extension) ?? []
-  return selected.find(source => gameIds.includes(source.gameId))?.installPath
+  const chosen = selected.find(source => gameIds.includes(source.gameId))
+  if (chosen !== undefined) return chosen.installPath
+  const candidates = found.installations.filter(source => gameIds.includes(source.gameId))
+  const holding = candidates.filter(source =>
+    found.anchors.some(anchor => {
+      const path = relative(resolve(source.installPath), resolve(anchor))
+      return path === '' || (!path.startsWith('..') && !isAbsolute(path))
+    }),
+  )
+  return (holding.length === 1 ? holding : candidates.length === 1 ? candidates : [])[0]
+    ?.installPath
 }
 
 /**

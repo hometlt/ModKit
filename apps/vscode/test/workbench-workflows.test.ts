@@ -256,6 +256,27 @@ describe('generic source lifecycle', () => {
       undefined,
     )
     expect(selectedInstallationDirectory(inventory, [alpha], 'org.example/beta')).toBe(undefined)
+
+    // none selected: the found one holding a workspace folder or an open file, else the only one
+    // found (v85: Arena.mmx inside an RA2 nobody had chosen read no installation)
+    const betaCopy = { ...beta, installPath: 'D:\\Other\\Example Game Beta' }
+    const found = (installations: readonly (typeof beta)[], anchors: readonly string[]) =>
+      selectedInstallationDirectory(inventory, [alpha], 'org.example/beta', {
+        installations,
+        anchors,
+      })
+    expect(found([beta], [])).toBe(beta.installPath)
+    expect(found([beta, betaCopy], ['D:\\Other\\Example Game Beta\\maps\\one.map'])).toBe(
+      betaCopy.installPath,
+    )
+    expect(found([beta, betaCopy], ['C:\\Projects'])).toBe(undefined)
+    // a choice still wins over what was found
+    expect(
+      selectedInstallationDirectory(inventory, [alpha], 'org.example/alpha', {
+        installations: [{ ...alpha, installPath: 'D:\\Elsewhere' }],
+        anchors: ['D:\\Elsewhere'],
+      }),
+    ).toBe(alpha.installPath)
   })
 })
 

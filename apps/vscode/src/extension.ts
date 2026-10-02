@@ -1214,6 +1214,58 @@ async function activateModkit(
     contentSources = undefined
     void previous?.then(source => source?.dispose()).catch(() => undefined)
   }
+  /*
+   * The confirmed installations of every game none is selected for, and where this window works:
+   * such a game's sources read the one that holds a workspace folder or an open file, else the only
+   * one found (`selectedInstallationDirectory`). Taken when the sources compose; a selection resets
+   * them. ponytail: a file opened later in another installation keeps the composed one until the
+   * sources are composed again; choosing it in «Select Game Installation» does that.
+   */
+  const foundInstallations = async (): Promise<{
+    readonly installations: readonly SelectedContentSource[]
+    readonly anchors: readonly string[]
+  }> => {
+    const chosen = new Set(selectedSources.map(source => source.gameId))
+    const games = installationGameIds(host.services.host.inventory).filter(id => !chosen.has(id))
+    const searched = await searchedInstallationFolders()
+    const found = await Promise.all(
+      games.map(async gameId => {
+        const searchPaths = searched?.found[gameId] ?? []
+        const discovery = await discoverGameInstallations({
+          services: host.services,
+          gameId,
+          ...(searchPaths.length === 0 ? {} : { searchPaths }),
+          maxCandidates: 32,
+          grant: {
+            id: 'vscode-content-source-installations',
+            classes:
+              process.platform === 'win32'
+                ? ['filesystem-read', 'process-launch']
+                : ['filesystem-read'],
+          },
+          budgets: GAME_DISCOVERY_BUDGET,
+        }).catch(() => undefined)
+        return discovery?.state === 'discovered'
+          ? discovery.result.installations.map(selectedContentSource)
+          : []
+      }),
+    )
+    const tabs = vscode.window.tabGroups.all.flatMap(group => group.tabs)
+    const anchors = [
+      ...(vscode.workspace.workspaceFolders ?? []).map(folder => folder.uri),
+      ...tabs.flatMap(({ input }) =>
+        input instanceof vscode.TabInputText || input instanceof vscode.TabInputCustom
+          ? [input.uri]
+          : [],
+      ),
+    ].flatMap(uri => (uri.scheme === 'file' ? [uri.fsPath] : []))
+    const installations = found.flat()
+    if (installations.length > 0)
+      log(
+        `[installation] found with none selected: ${installations.map(item => `${item.gameId} ${item.installPath}`).join(', ')}`,
+      )
+    return { installations, anchors }
+  }
   const requireContentSources = async (): Promise<ContentSources> => {
     if (!vscode.workspace.isTrusted) throw new Error('Content sources require a trusted workspace')
     const storage = join(context.globalStorageUri.fsPath, 'content-sources')
@@ -1234,62 +1286,65 @@ async function activateModkit(
       (existsSync(defaultConfig) ? defaultConfig : undefined)
     if (contentSources === undefined) {
       const finished = timing.phase('content sources (every extension that declares them)')
-      contentSources = resolveContentSources({
-        extensionRoots: extensionRootPaths(),
-        ...(configured === undefined ? {} : { configPath: configured }),
-        storage,
-        indexCacheDirectory,
-        // the user's per-product switches: a module keeps no name index its product turned off
-        indexCaches: configuredIndexCaches(
-          vscode.workspace.getConfiguration('modkit').get('indexCaches'),
-        ).switches,
-        moduleOptions: extension => {
-          const installationDirectory = selectedInstallationDirectory(
-            host.services.host.inventory,
-            selectedSources,
-            extension,
-          )
-          // the settings a team commits (plan 8.9) win over the installation one user picked here
-          const configured = contentSourceOptionsFor(
-            vscode.workspace.getConfiguration('modkit').inspect('contentSourceOptions') ?? {},
-            extension,
-            {
-              workspaceFolders: (vscode.workspace.workspaceFolders ?? []).map(folder => ({
-                name: folder.name,
-                path: folder.uri.fsPath,
-              })),
-              env: process.env,
-              userHome: homedir(),
-            },
-          )
-          if (installationDirectory === undefined && configured === undefined) return undefined
-          return {
-            ...(installationDirectory === undefined ? {} : { installationDirectory }),
-            ...configured,
-          }
-        },
-        // each extension's module reaches only the credentials that extension declared
-        credentials: extension => host.services.credentials?.portFor(extension),
-      }).then(created =>
-        created === undefined
-          ? undefined
-          : // a context that takes a while says so in the status bar, as MK2's did (plan 0.8)
-            announceModContexts(created, {
-              delayMs: MOD_CONTEXT_PROGRESS_DELAY_MS,
-              building: opening =>
-                void vscode.window.withProgress(
-                  {
-                    location: vscode.ProgressLocation.Window,
-                    title: localizer.text('vscode.modContext.building'),
-                  },
-                  () => opening,
-                ),
-              ready: layers =>
-                vscode.window.setStatusBarMessage(
-                  localizer.text('vscode.modContext.ready', { layers }),
-                  4_000,
-                ),
-            }),
+      contentSources = foundInstallations().then(found =>
+        resolveContentSources({
+          extensionRoots: extensionRootPaths(),
+          ...(configured === undefined ? {} : { configPath: configured }),
+          storage,
+          indexCacheDirectory,
+          // the user's per-product switches: a module keeps no name index its product turned off
+          indexCaches: configuredIndexCaches(
+            vscode.workspace.getConfiguration('modkit').get('indexCaches'),
+          ).switches,
+          moduleOptions: extension => {
+            const installationDirectory = selectedInstallationDirectory(
+              host.services.host.inventory,
+              selectedSources,
+              extension,
+              found,
+            )
+            // the settings a team commits (plan 8.9) win over the installation one user picked here
+            const configured = contentSourceOptionsFor(
+              vscode.workspace.getConfiguration('modkit').inspect('contentSourceOptions') ?? {},
+              extension,
+              {
+                workspaceFolders: (vscode.workspace.workspaceFolders ?? []).map(folder => ({
+                  name: folder.name,
+                  path: folder.uri.fsPath,
+                })),
+                env: process.env,
+                userHome: homedir(),
+              },
+            )
+            if (installationDirectory === undefined && configured === undefined) return undefined
+            return {
+              ...(installationDirectory === undefined ? {} : { installationDirectory }),
+              ...configured,
+            }
+          },
+          // each extension's module reaches only the credentials that extension declared
+          credentials: extension => host.services.credentials?.portFor(extension),
+        }).then(created =>
+          created === undefined
+            ? undefined
+            : // a context that takes a while says so in the status bar, as MK2's did (plan 0.8)
+              announceModContexts(created, {
+                delayMs: MOD_CONTEXT_PROGRESS_DELAY_MS,
+                building: opening =>
+                  void vscode.window.withProgress(
+                    {
+                      location: vscode.ProgressLocation.Window,
+                      title: localizer.text('vscode.modContext.building'),
+                    },
+                    () => opening,
+                  ),
+                ready: layers =>
+                  vscode.window.setStatusBarMessage(
+                    localizer.text('vscode.modContext.ready', { layers }),
+                    4_000,
+                  ),
+              }),
+        ),
       )
       void contentSources.finally(finished).catch(() => undefined)
       // Tickets and keys kept before the broker move into it once the sources say whose they are.
