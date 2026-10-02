@@ -1896,6 +1896,23 @@ function instanceNormal(
     : undefined
 }
 
+/**
+ * The turn of an object the world places without its UVW rotation (2D Westwood placements, a world
+ * with no UVW transform), in radians about +Y: its drawn rotation in its native unit and sense
+ * (MapPlacedObject.nativeRotationUnit, nativeRotationSense — clockwise seen from above turns the
+ * other way), radians when it names no unit.
+ */
+function objectYaw(item: WorldSceneObjectItem): number {
+  const value = item.presentationRotation ?? item.rotation ?? 0
+  const radians =
+    item.nativeRotationUnit === 'degrees'
+      ? (value * Math.PI) / 180
+      : item.nativeRotationUnit === 'uint16-turn'
+        ? (value * Math.PI * 2) / 65_536
+        : value
+  return item.nativeRotationSense === 'clockwise' ? -radians : radians
+}
+
 function instanceVertex(
   point: readonly [number, number, number],
   item: WorldSceneObjectItem,
@@ -1910,13 +1927,14 @@ function instanceVertex(
   let rotated: readonly [number, number, number]
   if (item.uvwRotation !== undefined) rotated = rotateQuaternion(scaled, item.uvwRotation)
   else {
-    const yaw = item.rotation ?? 0
+    // a right-handed turn about +Y, as worldObjectTransform turns the same object
+    const yaw = objectYaw(item)
     const cosine = Math.cos(yaw)
     const sine = Math.sin(yaw)
     rotated = [
-      cosine * scaled[0] - sine * scaled[2],
+      cosine * scaled[0] + sine * scaled[2],
       scaled[1],
-      sine * scaled[0] + cosine * scaled[2],
+      cosine * scaled[2] - sine * scaled[0],
     ]
   }
   return [translation[0] + rotated[0], translation[1] + rotated[1], translation[2] + rotated[2]]
@@ -2565,7 +2583,7 @@ function worldObjectTransform(
       ? componentLocalTransform({
           id: 'world-object',
           resourceId: 'world-object',
-          rotation: [0, Math.sin((item.rotation ?? 0) / 2), 0, Math.cos((item.rotation ?? 0) / 2)],
+          rotation: [0, Math.sin(objectYaw(item) / 2), 0, Math.cos(objectYaw(item) / 2)],
         })
       : componentLocalTransform({
           id: 'world-object',
