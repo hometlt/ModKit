@@ -191,7 +191,8 @@ const shellBuild = await build({
  */
 const workerBuild = await build({
   entryPoints: {
-    'worker-entry': join(repoRoot, 'packages', 'host', 'dist', 'browser', 'worker-entry.js'),
+    // the host's worker entry, and the texture decoder codec-kit runs in a browser (src/worker-entry.ts)
+    'worker-entry': join(appRoot, 'src', 'worker-entry.ts'),
     'vendor/codec-kit/index': join(repoRoot, 'packages', 'codec-kit', 'src', 'index.js'),
     'vendor/codec-kit/crypto/blowfish': join(
       repoRoot,
@@ -588,6 +589,13 @@ for (const entry of WEB_EXTENSION_CATALOG.extensions) {
     cpSync(join(sourceRoot, file), target)
   }
 }
+// Texture2DDecoder's browser runtime, where src/worker-entry.ts tells codec-kit to find it.
+const codecKitRequire = createRequire(join(repoRoot, 'packages', 'codec-kit', 'package.json'))
+cpSync(
+  join(dirname(dirname(codecKitRequire.resolve('texture2ddecoder-wasm'))), 'wasm'),
+  join(dist, 'vendor', 'texture2ddecoder-wasm', 'wasm'),
+  { recursive: true },
+)
 cpSync(offlineReleaseSource, join(dist, 'managed-packages'), { recursive: true })
 verifyOfflineReleaseDirectory(join(dist, 'managed-packages'))
 // The installed PWA acceptance reads the same generated authority as VS Code, byte for byte.
