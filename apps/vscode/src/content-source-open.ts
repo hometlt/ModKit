@@ -121,6 +121,11 @@ export function contentSourceOpener(
           ...(presentation === undefined ? {} : { presentation: presentation.plan }),
         },
         session: result.session,
+        // the port a model's textures are read through: without it every texture of a file from a
+        // content source was refused before any lookup (v84/v85: BAR's armcom.s3o, 0 / 2)
+        ...(result.rasterResources === undefined
+          ? {}
+          : { rasterResources: result.rasterResources }),
       }
     } catch (error) {
       await result.session.dispose()
