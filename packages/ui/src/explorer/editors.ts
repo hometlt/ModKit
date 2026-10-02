@@ -270,7 +270,9 @@ export function createEditorArea(document: Document, options: EditorAreaOptions)
       report({
         path: tab.entry.id,
         view: handle.views.find(view => view.id === handle.activeView)?.label ?? '',
-        detail: formatBytes(bytes.length),
+        // no copy of the bytes is no size to state: a host that opens by ranges gave none (v85:
+        // «Models.wd · Entries · 0 B» for 122 MiB)
+        detail: bytes.length === 0 ? '' : formatBytes(bytes.length),
         severity: 'info',
       })
     } catch (error) {
