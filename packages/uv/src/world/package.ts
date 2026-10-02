@@ -153,6 +153,8 @@ function packagePath(value: unknown, path: string): string {
     value.includes('\\') ||
     value.startsWith('/') ||
     /^[A-Za-z]:/u.test(value) ||
+    // an encoded segment reads one way as a ZIP name and another as a URI (SPEC_UVP §2)
+    /%[0-9A-Fa-f]{2}/u.test(value) ||
     value.split('/').some(segment => segment.length === 0 || segment === '.' || segment === '..')
   ) {
     fail('x3.uv/uvp-path-invalid', 'UVP paths must be confined forward-slash package paths', path)
@@ -1467,8 +1469,15 @@ export async function openUvpMapBundle(
     fail('x3.uv/uvp-entry-missing', `UVP bundle is missing ${MANIFEST_PATH}`)
   const manifest = parseManifest(manifestBytes, options.maxManifestBytes ?? 1024 * 1024)
   const declared = new Set(manifest.contents.map(content => content.path))
+  // names that differ only by Unicode form or case collide on most file systems (SPEC_UVP §2)
+  const folded = new Map<string, string>()
   for (const path of entries.keys()) {
     packagePath(path, 'entries')
+    const key = path.normalize('NFC').toUpperCase().toLowerCase()
+    const prior = folded.get(key)
+    if (prior !== undefined)
+      fail('x3.uv/uvp-path-collision', `UVP entries ${prior} and ${path} collide`, path)
+    folded.set(key, path)
     if (path !== MANIFEST_PATH && !declared.has(path))
       fail('x3.uv/uvp-entry-undeclared', `UVP bundle contains undeclared entry ${path}`)
   }

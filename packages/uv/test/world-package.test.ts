@@ -647,4 +647,18 @@ describe('single-file UVP', () => {
       expect.objectContaining({ code: 'x3.uv/uvp-entry-missing' }),
     )
   })
+
+  it('refuses entry names that collide by case or Unicode form, and encoded segments', async () => {
+    const packed = await materializeWorldToUvpMap(source(), options)
+    if (packed.state !== 'materialized') throw new Error(JSON.stringify(packed.refusals))
+    const refusal = (path: string) =>
+      openUvpMapBundle(new Map([...packed.entries, [path, new Uint8Array(1)]]), {
+        snapshotId: 'names',
+      }).then(
+        () => 'opened',
+        (error: unknown) => (isModkitError(error) ? error.code : String(error)),
+      )
+    expect(await refusal('World/Main.uvw.json')).toBe('x3.uv/uvp-path-collision')
+    expect(await refusal('media/a%2Fb.png')).toBe('x3.uv/uvp-path-invalid')
+  })
 })

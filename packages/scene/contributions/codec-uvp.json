@@ -1,0 +1,112 @@
+{
+  "schemaVersion": 1,
+  "contract": {
+    "id": "modkit/codec-contribution",
+    "major": 1
+  },
+  "id": "modkit/world-uvp",
+  "displayName": "Universal Verse Package",
+  "limitations": [
+    "Opens map packages in the single-file form (SPEC_UVP §2, a ZIP read by the core archive codec); the package is read whole within the budget.",
+    "A .uvp is not edited in place: subject.convert --target uvp writes a new package from a map's world."
+  ],
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-node",
+      "entrypoint": "./dist/uvp/codec.js",
+      "target": {
+        "environments": ["node"]
+      },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": ["read-source"]
+    },
+    {
+      "variantId": "portable",
+      "entrypoint": "./dist/uvp/codec.js",
+      "target": {
+        "environments": ["browser-worker", "node-worker"]
+      },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": ["read-source"]
+    }
+  ],
+  "spec": {
+    "formatRefs": [
+      {
+        "formatId": "uvp",
+        "label": "Universal Verse Package"
+      }
+    ],
+    "roles": ["semantic"],
+    "container": {
+      "formatId": "zip",
+      "assetRoots": [""]
+    },
+    "sourceTopology": "namespace",
+    "artifactStages": ["authored", "compiled", "runtime"],
+    "openIntents": ["probe", "inspect", "full", "export"],
+    "match": {
+      "extensions": ["uvp"]
+    },
+    "probe": {
+      "kind": "namespace",
+      "markers": ["uvp.manifest.json"],
+      "maxEntries": 1,
+      "maxBytes": 65536,
+      "maxDepth": 1,
+      "maxPathBytes": 4096
+    },
+    "representations": [
+      {
+        "id": "uvp-world",
+        "contract": "common.view/world-scene-source",
+        "major": 1,
+        "stage": "runtime",
+        "lossy": false
+      }
+    ],
+    "publishesDataSources": [
+      {
+        "contract": "common.view/world-scene-source",
+        "major": 1
+      },
+      {
+        "contract": "common.view/tree-data-source",
+        "major": 1
+      }
+    ],
+    "operations": [
+      {
+        "id": "view.inspect",
+        "handlerId": "inspect",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["json"]
+      },
+      {
+        "id": "asset.validate",
+        "handlerId": "validate",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["none"]
+      }
+    ],
+    "traitDeclarations": [
+      {
+        "id": "structure.hierarchy",
+        "representation": "runtime",
+        "presence": "will-expose"
+      }
+    ],
+    "implementationTier": {
+      "claimed": 1
+    },
+    "budgets": {
+      "maxInputBytes": "4294967296",
+      "maxDepth": 64,
+      "maxNodes": 100000,
+      "maxScalarBytes": 1073741824,
+      "maxDiagnostics": 1000
+    }
+  }
+}

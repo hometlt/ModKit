@@ -9,10 +9,10 @@ describe('built-in scene module', () => {
     assert.equal(sceneModule.coordinate, 'modkit/scene')
     assert.deepEqual(
       [...sceneModule.input.documents.values()].map(manifest => manifest.id).sort(),
-      ['modkit/browser-webgl-renderer', 'modkit/headless-renderer'],
+      ['modkit/browser-webgl-renderer', 'modkit/headless-renderer', 'modkit/world-uvp'],
     )
     assert.deepEqual(sceneModule.excluded, [])
-    assert.equal(new Set(sceneModule.moduleEntries.map(([entrypoint]) => entrypoint)).size, 2)
+    assert.equal(new Set(sceneModule.moduleEntries.map(([entrypoint]) => entrypoint)).size, 3)
     const headless = [...sceneModule.input.documents.values()].find(
       manifest => manifest.id === 'modkit/headless-renderer',
     )
