@@ -7769,8 +7769,9 @@ function createUvmParticleGeometry(state, emitters, options) {
           swapYZ: emitter.swapModelParticleYZ === true
         }));
       }
-      right = scaleVec3(axes.right, size[0] / 2);
-      up = scaleVec3(axes.up, size[1] / 2);
+      const half = anchor.lifecycleSize === null && anchor.particleScaling != null ? 1 : 0.5;
+      right = scaleVec3(axes.right, size[0] * half);
+      up = scaleVec3(axes.up, size[1] * half);
     } else {
       const speed = lengthVec3(velocity), direction = speed > 0 ? velocity : anchor.localZ, normal2 = normalizeVec3(direction);
       if (anchor.orientationMode === "tail" || anchor.orientationMode === "trail") {
@@ -7968,7 +7969,8 @@ function particleUvRect(anchor, phase, tail) {
   const frames = tail ? firstHalf ? anchor.tailUvAnim : anchor.tailDecayUvAnim : firstHalf ? anchor.lifeSpanUvAnim : anchor.decayUvAnim;
   const start = frames?.[0] ?? 0;
   const end = frames?.[1] ?? start;
-  const frame = Math.max(0, Math.round(lerpNumber(start, end, t)));
+  const repeat = frames?.[2] ?? 0;
+  const frame = repeat > 0 ? end > start ? Math.min(start + Math.floor((end - start) * repeat * t) % (end - start), columns * rows - 1) : start : Math.max(0, Math.round(lerpNumber(start, end, t)));
   const cellWidth = 1 / columns;
   const cellHeight = 1 / rows;
   const column = frame % columns;

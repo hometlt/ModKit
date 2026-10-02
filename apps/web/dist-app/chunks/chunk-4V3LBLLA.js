@@ -15,7 +15,7 @@ import {
   modelMaterialTeamColor,
   mountFieldEditTarget,
   mountInlineField
-} from "./chunk-OWROJOZ7.js";
+} from "./chunk-2BJIIJSO.js";
 import {
   metadataFieldProjections
 } from "./chunk-ZFIQVDW4.js";
@@ -259,7 +259,7 @@ import {
   uvmImagesIgnoringAlpha,
   uvmKeyTimesMetadata,
   uvmVisibilityPointer
-} from "./chunk-JNRHQTGH.js";
+} from "./chunk-FOSDVZCZ.js";
 import {
   DEFAULT_MODEL_ANIMATION_BUDGET,
   DEFAULT_MODEL_SKELETON_BUDGET,
@@ -18723,6 +18723,9 @@ function createSubjectEditing(options) {
 }
 
 // ../MODDING/modkit-core/packages/host/dist/content-source-companion.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// ../MODDING/modkit-core/packages/host/dist/content-source-root-session.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
 // ../MODDING/modkit-core/packages/host/dist/mod-context-layer-source.js
@@ -66677,7 +66680,7 @@ var PREVIEW_STAGES = [
 async function defaultPreviewStage(kind, localizer) {
   switch (kind) {
     case "model":
-      return (await import("./model-CGIPKHCG.js")).createModelViewer({ localizer });
+      return (await import("./model-S2QWKZL2.js")).createModelViewer({ localizer });
     case "image":
       return (await import("./image-WWIWP4RV.js")).createImageViewer({ localizer });
     case "video":

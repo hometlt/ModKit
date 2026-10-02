@@ -8176,14 +8176,14 @@ function contentDependencyDiagnostics(values) {
 function createContentDependencyOrigin(contentSources, mounts, maximumEntryBytes) {
   const overlay = Object.freeze([...mounts].reverse());
   const locations = /* @__PURE__ */ new Map();
-  const fold3 = (value) => value.toLowerCase();
+  const fold4 = (value) => value.toLowerCase();
   const relativeRequest = (mount, logicalId) => {
     if (logicalId === "")
       return "";
-    if (fold3(logicalId) === fold3(mount.logicalPrefix))
+    if (fold4(logicalId) === fold4(mount.logicalPrefix))
       return "";
     const prefix = `${mount.logicalPrefix}/`;
-    return fold3(logicalId).startsWith(fold3(prefix)) ? logicalId.slice(prefix.length) : void 0;
+    return fold4(logicalId).startsWith(fold4(prefix)) ? logicalId.slice(prefix.length) : void 0;
   };
   const findEntries = async (mount, logicalPrefix, signal) => {
     throwIfAborted(signal);
@@ -8203,10 +8203,10 @@ function createContentDependencyOrigin(contentSources, mounts, maximumEntryBytes
       if (entry2.directory)
         continue;
       const relative = relativeEntry(mount, entry2);
-      if (relative === void 0 || !fold3(relative).startsWith(fold3(relativePrefix)))
+      if (relative === void 0 || !fold4(relative).startsWith(fold4(relativePrefix)))
         continue;
       const logicalId = joinPath(mount.logicalPrefix, relative);
-      locations.set(fold3(logicalId), mount);
+      locations.set(fold4(logicalId), mount);
       output.push(Object.freeze({
         logicalId,
         ...entry2.size === void 0 ? {} : { size: BigInt(entry2.size) }
@@ -8231,7 +8231,7 @@ function createContentDependencyOrigin(contentSources, mounts, maximumEntryBytes
             ...found,
             logicalId: found.logicalId.slice(mount.logicalPrefix.length + 1)
           });
-          const key3 = fold3(entry2.logicalId);
+          const key3 = fold4(entry2.logicalId);
           if (emitted.has(key3))
             continue;
           emitted.add(key3);
@@ -8245,7 +8245,7 @@ function createContentDependencyOrigin(contentSources, mounts, maximumEntryBytes
       throwIfAborted(signal);
       const normalized2 = normalizeCompanionLogicalId(logicalId);
       const qualifiedIn = (candidate) => relativeRequest(candidate, normalized2) === void 0 ? joinPath(candidate.logicalPrefix, normalized2) : normalized2;
-      let mount = locations.get(fold3(normalized2));
+      let mount = locations.get(fold4(normalized2));
       if (mount === void 0 && contentSources.lookup !== void 0) {
         for (const candidate of overlay) {
           const relative2 = relativeRequest(candidate, qualifiedIn(candidate));
@@ -8263,7 +8263,7 @@ function createContentDependencyOrigin(contentSources, mounts, maximumEntryBytes
         for (const candidate of overlay) {
           const qualified = qualifiedIn(candidate);
           const found = await findEntries(candidate, qualified, signal);
-          if (found.some((entry2) => fold3(entry2.logicalId) === fold3(qualified))) {
+          if (found.some((entry2) => fold4(entry2.logicalId) === fold4(qualified))) {
             mount = candidate;
             break;
           }
@@ -10143,7 +10143,7 @@ function storedEntrySource(session, descriptor) {
 function createNamespaceCompanionOrigin(options) {
   const pageLimit2 = options.pageLimit ?? 256;
   const caseSensitivity = options.caseSensitivity ?? "insensitive";
-  const fold3 = (value) => caseSensitivity === "insensitive" ? value.toLowerCase() : value;
+  const fold4 = (value) => caseSensitivity === "insensitive" ? value.toLowerCase() : value;
   const index = /* @__PURE__ */ new Map();
   const observed = /* @__PURE__ */ new Map();
   const listing = async function* (prefix, signal) {
@@ -10153,7 +10153,7 @@ function createNamespaceCompanionOrigin(options) {
       return;
     }
     const built = /* @__PURE__ */ new Map();
-    const spellings = [...new Set(prefix === "" ? [""] : [prefix, fold3(prefix)])];
+    const spellings = [...new Set(prefix === "" ? [""] : [prefix, fold4(prefix)])];
     let pages = 0;
     for (const spelling of spellings) {
       let cursor2;
@@ -10171,7 +10171,7 @@ function createNamespaceCompanionOrigin(options) {
         for (const entry2 of page.items) {
           if (entry2.kind !== "file")
             continue;
-          const key3 = fold3(entry2.path);
+          const key3 = fold4(entry2.path);
           if (!built.has(key3)) {
             const value = {
               entryId: entry2.id,
@@ -10200,10 +10200,10 @@ function createNamespaceCompanionOrigin(options) {
       throwIfAborted(signal);
       if (scope !== "current-mount" && scope !== "enclosing-container")
         return;
-      const namePrefix = enumeration.namePrefix === void 0 ? "" : fold3(enumeration.prefix + enumeration.namePrefix);
+      const namePrefix = enumeration.namePrefix === void 0 ? "" : fold4(enumeration.prefix + enumeration.namePrefix);
       for await (const entry2 of listing(enumeration.prefix, signal)) {
         throwIfAborted(signal);
-        if (namePrefix !== "" && !fold3(entry2.path).startsWith(namePrefix))
+        if (namePrefix !== "" && !fold4(entry2.path).startsWith(namePrefix))
           continue;
         yield Object.freeze({
           logicalId: entry2.path,
@@ -10213,10 +10213,10 @@ function createNamespaceCompanionOrigin(options) {
     },
     async open(logicalId, signal) {
       throwIfAborted(signal);
-      let entry2 = observed.get(fold3(logicalId));
+      let entry2 = observed.get(fold4(logicalId));
       if (entry2 === void 0) {
         for await (const candidate of listing(logicalId, signal)) {
-          if (fold3(candidate.path) === fold3(logicalId)) {
+          if (fold4(candidate.path) === fold4(logicalId)) {
             entry2 = candidate;
             break;
           }
@@ -10279,7 +10279,7 @@ function createCompositeWorkspaceNamespaceCompanionOrigin(options) {
   const pageLimit2 = options.pageLimit ?? 256;
   const maxPages = options.maxPages ?? 4096;
   const caseSensitivity = options.caseSensitivity ?? "insensitive";
-  const fold3 = (value) => caseSensitivity === "insensitive" ? value.toLowerCase() : value;
+  const fold4 = (value) => caseSensitivity === "insensitive" ? value.toLowerCase() : value;
   const roots = options.roots.map((root) => {
     const pathPrefix = root.pathPrefix === "" ? "" : normalizeCompanionLogicalId(root.pathPrefix).replace(/\/$/u, "");
     const logicalPrefix = root.logicalPrefix === void 0 || root.logicalPrefix === "" ? "" : normalizeCompanionLogicalId(root.logicalPrefix).replace(/\/$/u, "");
@@ -10303,7 +10303,7 @@ function createCompositeWorkspaceNamespaceCompanionOrigin(options) {
   }
   const byLogicalId = /* @__PURE__ */ new Map();
   const pages = async function* (root, prefix, signal) {
-    const spellings = [...new Set(prefix === "" ? [""] : [prefix, fold3(prefix)])];
+    const spellings = [...new Set(prefix === "" ? [""] : [prefix, fold4(prefix)])];
     for (const spelling of spellings) {
       let cursor2;
       let pageCount = 0;
@@ -10330,7 +10330,7 @@ function createCompositeWorkspaceNamespaceCompanionOrigin(options) {
   const isQualifiedRequest = (logicalId) => roots.some((root) => {
     if (root.logicalPrefix === "")
       return false;
-    return fold3(logicalId) === fold3(root.logicalPrefix) || fold3(logicalId).startsWith(fold3(`${root.logicalPrefix}/`));
+    return fold4(logicalId) === fold4(root.logicalPrefix) || fold4(logicalId).startsWith(fold4(`${root.logicalPrefix}/`));
   });
   const relativeRequest = (root, logicalId) => {
     if (logicalId === "")
@@ -10339,18 +10339,18 @@ function createCompositeWorkspaceNamespaceCompanionOrigin(options) {
       return logicalId;
     if (!isQualifiedRequest(logicalId))
       return logicalId;
-    if (fold3(logicalId) === fold3(root.logicalPrefix))
+    if (fold4(logicalId) === fold4(root.logicalPrefix))
       return "";
     const prefix = `${root.logicalPrefix}/`;
-    return fold3(logicalId).startsWith(fold3(prefix)) ? logicalId.slice(prefix.length) : void 0;
+    return fold4(logicalId).startsWith(fold4(prefix)) ? logicalId.slice(prefix.length) : void 0;
   };
   const assetSpellings = (root, relative) => {
     const slash = relative.indexOf("/");
     if (root.assetRoots === void 0 || slash <= 0)
       return [relative];
-    const first = fold3(relative.slice(0, slash));
+    const first = fold4(relative.slice(0, slash));
     const rest = relative.slice(slash + 1);
-    const named = root.assetRoots.some((pattern) => pattern.startsWith("*") ? first.endsWith(fold3(pattern.slice(1))) : pattern !== "" && first === fold3(pattern));
+    const named = root.assetRoots.some((pattern) => pattern.startsWith("*") ? first.endsWith(fold4(pattern.slice(1))) : pattern !== "" && first === fold4(pattern));
     if (!named)
       return [relative];
     const spellings = [relative];
@@ -10358,7 +10358,7 @@ function createCompositeWorkspaceNamespaceCompanionOrigin(options) {
       if (pattern.startsWith("*"))
         continue;
       const spelling = pattern === "" ? rest : `${pattern}/${rest}`;
-      if (!spellings.some((known) => fold3(known) === fold3(spelling)))
+      if (!spellings.some((known) => fold4(known) === fold4(spelling)))
         spellings.push(spelling);
     }
     return spellings;
@@ -10367,13 +10367,13 @@ function createCompositeWorkspaceNamespaceCompanionOrigin(options) {
     if (entry2.kind !== "file")
       return void 0;
     const prefix = root.pathPrefix === "" ? "" : `${root.pathPrefix}/`;
-    if (prefix !== "" && !fold3(entry2.path).startsWith(fold3(prefix)))
+    if (prefix !== "" && !fold4(entry2.path).startsWith(fold4(prefix)))
       return void 0;
     const relative = prefix === "" ? entry2.path : entry2.path.slice(prefix.length);
     if (relative === "")
       return void 0;
     const logicalId = joinPrefix(root.logicalPrefix, relative);
-    const key3 = fold3(logicalId);
+    const key3 = fold4(logicalId);
     if (!byLogicalId.has(key3)) {
       byLogicalId.set(key3, {
         entryId: entry2.id,
@@ -10394,13 +10394,13 @@ function createCompositeWorkspaceNamespaceCompanionOrigin(options) {
     if (entry2.kind !== "file")
       return void 0;
     const prefix = root.pathPrefix === "" ? "" : `${root.pathPrefix}/`;
-    if (prefix !== "" && !fold3(entry2.path).startsWith(fold3(prefix)))
+    if (prefix !== "" && !fold4(entry2.path).startsWith(fold4(prefix)))
       return void 0;
     const relative = prefix === "" ? entry2.path : entry2.path.slice(prefix.length);
     return relative === "" ? void 0 : relative;
   };
   const find = async (logicalId, signal) => {
-    const key3 = fold3(logicalId);
+    const key3 = fold4(logicalId);
     const cached = byLogicalId.get(key3);
     if (cached !== void 0)
       return cached;
@@ -10410,14 +10410,14 @@ function createCompositeWorkspaceNamespaceCompanionOrigin(options) {
       if (relative === void 0)
         continue;
       for (const spelling of qualified ? [relative] : assetSpellings(root, relative)) {
-        const wanted = qualified ? key3 : fold3(spelling);
+        const wanted = qualified ? key3 : fold4(spelling);
         for await (const entry2 of pages(root, joinPrefix(root.pathPrefix, spelling), signal)) {
           const remembered = remember2(root, entry2);
           if (remembered === void 0)
             continue;
           const exposed = qualified ? remembered : relativeEntryPath(root, entry2);
-          if (exposed !== void 0 && fold3(exposed) === wanted) {
-            const bound = byLogicalId.get(fold3(remembered));
+          if (exposed !== void 0 && fold4(exposed) === wanted) {
+            const bound = byLogicalId.get(fold4(remembered));
             if (bound !== void 0)
               byLogicalId.set(key3, bound);
             return bound;
@@ -10444,13 +10444,13 @@ function createCompositeWorkspaceNamespaceCompanionOrigin(options) {
         if (remembered === void 0)
           continue;
         const logicalId = qualified ? remembered : relativeEntryPath(root, entry2);
-        if (logicalId === void 0 || seen.has(entry2.id) || yielded.has(fold3(logicalId)))
+        if (logicalId === void 0 || seen.has(entry2.id) || yielded.has(fold4(logicalId)))
           continue;
         seen.add(entry2.id);
-        yielded.add(fold3(logicalId));
-        const bound = byLogicalId.get(fold3(remembered));
+        yielded.add(fold4(logicalId));
+        const bound = byLogicalId.get(fold4(remembered));
         if (bound !== void 0)
-          byLogicalId.set(fold3(logicalId), bound);
+          byLogicalId.set(fold4(logicalId), bound);
         yield Object.freeze({
           logicalId,
           rootId: root.rootId,
@@ -10485,13 +10485,13 @@ function createCompositeWorkspaceNamespaceCompanionOrigin(options) {
             if (remembered === void 0)
               continue;
             const exposed = qualified ? remembered : relativeEntryPath(root, entry2);
-            const logicalId = exposed === void 0 || qualified || spelling === relative ? exposed : fold3(exposed).startsWith(fold3(spelling)) ? `${relative}${exposed.slice(spelling.length)}` : void 0;
-            if (logicalId === void 0 || yielded.has(fold3(logicalId)))
+            const logicalId = exposed === void 0 || qualified || spelling === relative ? exposed : fold4(exposed).startsWith(fold4(spelling)) ? `${relative}${exposed.slice(spelling.length)}` : void 0;
+            if (logicalId === void 0 || yielded.has(fold4(logicalId)))
               continue;
-            const bound = byLogicalId.get(fold3(remembered));
+            const bound = byLogicalId.get(fold4(remembered));
             if (bound !== void 0)
-              byLogicalId.set(fold3(logicalId), bound);
-            yielded.add(fold3(logicalId));
+              byLogicalId.set(fold4(logicalId), bound);
+            yielded.add(fold4(logicalId));
             yield Object.freeze({
               logicalId,
               rootId: root.rootId,
@@ -10550,8 +10550,8 @@ function createWorkspaceNamespaceCandidateDiscovery(options) {
     throw new TypeError("candidate extension must be an exact dotted suffix without glob syntax");
   }
   const caseSensitivity = options.caseSensitivity ?? "insensitive";
-  const fold3 = (value) => caseSensitivity === "insensitive" ? value.toLowerCase() : value;
-  const extension = fold3(options.extension);
+  const fold4 = (value) => caseSensitivity === "insensitive" ? value.toLowerCase() : value;
+  const extension = fold4(options.extension);
   const roots = options.logicalRoots.map((root, index) => {
     if (typeof root.rootId !== "string" || root.rootId.trim() === "") {
       throw new TypeError(`logicalRoots[${index}].rootId must be a non-empty string`);
@@ -10569,12 +10569,12 @@ function createWorkspaceNamespaceCandidateDiscovery(options) {
     throw new TypeError("candidate discovery requires an explicit search root");
   }
   const relativeRequest = (root, logicalId) => {
-    if (logicalId === "" || fold3(logicalId) === fold3(root.logicalPrefix))
+    if (logicalId === "" || fold4(logicalId) === fold4(root.logicalPrefix))
       return "";
     if (root.logicalPrefix === "")
       return logicalId;
     const prefix = `${root.logicalPrefix}/`;
-    return fold3(logicalId).startsWith(fold3(prefix)) ? logicalId.slice(prefix.length) : void 0;
+    return fold4(logicalId).startsWith(fold4(prefix)) ? logicalId.slice(prefix.length) : void 0;
   };
   const joinPrefix = (prefix, suffix) => prefix === "" ? suffix : suffix === "" ? prefix : `${prefix}/${suffix}`;
   const searches = options.searches.map((search, index) => {
@@ -10620,7 +10620,7 @@ function createWorkspaceNamespaceCandidateDiscovery(options) {
         const subtree = joinPrefix(search.root.pathPrefix, search.relative);
         const namespacePrefix = subtree === "" ? "" : `${subtree}/`;
         const spellings = [
-          ...new Set(caseSensitivity === "insensitive" ? [namespacePrefix, fold3(namespacePrefix)] : [namespacePrefix])
+          ...new Set(caseSensitivity === "insensitive" ? [namespacePrefix, fold4(namespacePrefix)] : [namespacePrefix])
         ];
         for (const spelling of spellings) {
           let cursor2;
@@ -10660,19 +10660,19 @@ function createWorkspaceNamespaceCandidateDiscovery(options) {
               } catch {
                 return refused4("namespace-invalid", "candidate discovery received an invalid entry path");
               }
-              if (entry2.kind === "file" && path !== entry2.path || namespacePrefix !== "" && !fold3(path).startsWith(fold3(namespacePrefix)) && !(entry2.kind !== "file" && fold3(path) === fold3(subtree))) {
+              if (entry2.kind === "file" && path !== entry2.path || namespacePrefix !== "" && !fold4(path).startsWith(fold4(namespacePrefix)) && !(entry2.kind !== "file" && fold4(path) === fold4(subtree))) {
                 return refused4("namespace-invalid", `namespace entry \xAB${entry2.path}\xBB escaped or changed requested subtree \xAB${subtree}\xBB of logical root \xAB${search.root.rootId}\xBB`);
               }
-              if (entry2.kind !== "file" || !fold3(path).endsWith(extension))
+              if (entry2.kind !== "file" || !fold4(path).endsWith(extension))
                 continue;
               const relative = path.slice(rootPrefix.length);
               if (relative === "")
                 continue;
               const logicalId = joinPrefix(search.root.logicalPrefix, relative);
-              const key3 = fold3(logicalId);
+              const key3 = fold4(logicalId);
               if (candidates.has(key3))
                 continue;
-              const uncovered = roots.find((root) => root.rank < search.root.rank && (relativeRequest(root, logicalId)?.length ?? 0) > 0 && !searches.some((higher) => higher.root.rank === root.rank && (higher.logicalPrefix === "" || key3.startsWith(fold3(`${higher.logicalPrefix}/`)))));
+              const uncovered = roots.find((root) => root.rank < search.root.rank && (relativeRequest(root, logicalId)?.length ?? 0) > 0 && !searches.some((higher) => higher.root.rank === root.rank && (higher.logicalPrefix === "" || key3.startsWith(fold4(`${higher.logicalPrefix}/`)))));
               if (uncovered !== void 0)
                 return refused4("namespace-invalid", `candidate \xAB${logicalId}\xBB has incomplete precedence coverage for logical root \xAB${uncovered.rootId}\xBB; that root may serve the same logical id`);
               if (entry2.size === void 0 || typeof entry2.size !== "bigint" || entry2.size < 0n || entry2.size > BigInt(Number.MAX_SAFE_INTEGER)) {
@@ -13920,11 +13920,11 @@ function enumerationNamePrefix(patterns, caseSensitivity) {
   const directory = enumerationPrefix(patterns);
   if (directory === "")
     return "";
-  const fold3 = (value) => caseSensitivity === "insensitive" ? value.toLowerCase() : value;
+  const fold4 = (value) => caseSensitivity === "insensitive" ? value.toLowerCase() : value;
   const starts = patterns.map((pattern) => {
     const normalized2 = pattern.replaceAll("\\", "/");
     const wildcard = normalized2.search(/[*?]/u);
-    if (wildcard === -1 || !fold3(normalized2).startsWith(fold3(directory)))
+    if (wildcard === -1 || !fold4(normalized2).startsWith(fold4(directory)))
       return void 0;
     const literal = normalized2.slice(directory.length, wildcard);
     return literal.includes("/") ? void 0 : literal;
@@ -13934,7 +13934,7 @@ function enumerationNamePrefix(patterns, caseSensitivity) {
   let common = starts[0];
   for (const start of starts.slice(1)) {
     let length = 0;
-    while (length < common.length && length < start.length && fold3(common[length]) === fold3(start[length]))
+    while (length < common.length && length < start.length && fold4(common[length]) === fold4(start[length]))
       length += 1;
     common = common.slice(0, length);
   }
@@ -14003,7 +14003,7 @@ function createLayeredCompanionOrigin(origins) {
   const first = origins[0];
   if (first === void 0)
     throw new TypeError("a layered companion origin needs a backend");
-  const fold3 = (value) => first.caseSensitivity === "insensitive" ? value.toLowerCase() : value;
+  const fold4 = (value) => first.caseSensitivity === "insensitive" ? value.toLowerCase() : value;
   const producedBy = /* @__PURE__ */ new Map();
   return Object.freeze({
     primaryLogicalId: first.primaryLogicalId,
@@ -14015,7 +14015,7 @@ function createLayeredCompanionOrigin(origins) {
         if (!origin.scopes.includes(scope))
           continue;
         for await (const entry2 of origin.enumerate(scope, options, signal)) {
-          const key3 = fold3(entry2.logicalId);
+          const key3 = fold4(entry2.logicalId);
           if (seen.has(key3))
             continue;
           seen.add(key3);
@@ -14025,7 +14025,7 @@ function createLayeredCompanionOrigin(origins) {
       }
     },
     async open(logicalId, signal) {
-      const remembered = producedBy.get(fold3(logicalId));
+      const remembered = producedBy.get(fold4(logicalId));
       if (remembered !== void 0)
         return remembered.open(logicalId, signal);
       let failure3;
@@ -14119,8 +14119,8 @@ function createCompanionInputResolver(origin, options = {}) {
       enumerated.set(key3, frozen);
       return frozen;
     };
-    const fold3 = (value) => origin.caseSensitivity === "insensitive" ? value.toLowerCase() : value;
-    const primaryKey = fold3(normalizeCompanionLogicalId(origin.primaryLogicalId));
+    const fold4 = (value) => origin.caseSensitivity === "insensitive" ? value.toLowerCase() : value;
+    const primaryKey = fold4(normalizeCompanionLogicalId(origin.primaryLogicalId));
     const selected = [];
     const usedBindingIds = /* @__PURE__ */ new Set();
     const pinned = /* @__PURE__ */ new Map();
@@ -14148,10 +14148,10 @@ function createCompanionInputResolver(origin, options = {}) {
         for (const prefix of patterns.prefixes) {
           const namePrefix = patterns.prefixes.length === 1 ? patterns.namePrefix : "";
           for (const logicalId of await enumerateScope(scope, prefix, namePrefix)) {
-            if (scope === "explicit-user-selection" && !(explicit?.[requirement.id] ?? []).some((value) => fold3(normalizeCompanionLogicalId(value)) === fold3(logicalId))) {
+            if (scope === "explicit-user-selection" && !(explicit?.[requirement.id] ?? []).some((value) => fold4(normalizeCompanionLogicalId(value)) === fold4(logicalId))) {
               continue;
             }
-            if (fold3(logicalId) === primaryKey)
+            if (fold4(logicalId) === primaryKey)
               continue;
             if (!patterns.test(logicalId))
               continue;
@@ -14163,7 +14163,7 @@ function createCompanionInputResolver(origin, options = {}) {
       const unique = [];
       const seenKeys = /* @__PURE__ */ new Set();
       for (const { logicalId } of matched) {
-        const key3 = fold3(logicalId);
+        const key3 = fold4(logicalId);
         if (seenKeys.has(key3))
           continue;
         seenKeys.add(key3);
@@ -16296,8 +16296,8 @@ async function openNestedSubject(options) {
           const result2 = await discovery.discover(context.signal);
           if (result2.state === "refused")
             return result2;
-          const fold3 = (id) => caseSensitivity === "sensitive" ? id : id.toLowerCase();
-          const candidates = result2.candidates.filter((candidate) => fold3(candidate.logicalId) !== fold3(primaryLogicalId));
+          const fold4 = (id) => caseSensitivity === "sensitive" ? id : id.toLowerCase();
+          const candidates = result2.candidates.filter((candidate) => fold4(candidate.logicalId) !== fold4(primaryLogicalId));
           return Object.freeze({
             state: "complete",
             context: Object.freeze({ primaryLogicalId }),
@@ -16361,10 +16361,10 @@ async function openNestedSubject(options) {
 }
 function logicalEntryPath(entryPath, roots, caseSensitivity = "insensitive") {
   const normalized2 = normalizeCompanionLogicalId(entryPath);
-  const fold3 = (value) => caseSensitivity === "insensitive" ? value.toLowerCase() : value;
+  const fold4 = (value) => caseSensitivity === "insensitive" ? value.toLowerCase() : value;
   for (const root of roots) {
     const prefix = root.pathPrefix === "" ? "" : `${root.pathPrefix}/`;
-    if (!fold3(normalized2).startsWith(fold3(prefix)))
+    if (!fold4(normalized2).startsWith(fold4(prefix)))
       continue;
     const relative = normalized2.slice(prefix.length);
     if (relative === "")
@@ -16586,6 +16586,152 @@ function createContentSourceInputResolver(options) {
   });
 }
 
+// ../MODDING/modkit-core/packages/host/dist/content-source-root-session.js
+var NAMESPACE = "common.view/namespace-entry-source";
+var EXTRACT_HANDLER = "x3.host/content-source-root-extract";
+var FILES_PAGE = 1e3;
+var hostPath = (path) => path.replaceAll("\\", "/").replace(/\/+$/u, "").toLowerCase();
+var sourcePath = (path) => path.replaceAll("\\", "/").replace(/^\/+|\/+$/gu, "");
+var fold3 = (path) => sourcePath(path).toLowerCase();
+function contentSourceRootServes(root, directory) {
+  return root.storageOf !== void 0 && hostPath(root.storageOf) === hostPath(directory);
+}
+async function contentSourceRootServing(sources, directory) {
+  const snapshot2 = await sources.snapshot();
+  return snapshot2.roots.find((root) => contentSourceRootServes(root, directory));
+}
+async function openContentSourceRootSession(options) {
+  const { sources, root, budget } = options;
+  const subjectUri = contentSourceUri(root.id, "");
+  const revision = revisionIdFromRef({
+    kind: "provider-token",
+    value: `${root.id}:${root.revision ?? "-"}`
+  });
+  const hidden = options.includeHidden === true ? { includeHidden: true } : {};
+  const entryOf = (path, kind, size) => Object.freeze({
+    id: path,
+    path,
+    name: path.slice(path.lastIndexOf("/") + 1),
+    kind,
+    revision,
+    ...size === void 0 ? {} : { size: BigInt(size) }
+  });
+  const fromListing = (item) => entryOf(sourcePath(item.path), item.directory ? "directory" : "file", item.size);
+  const page = (items, cursor2, limit) => {
+    const start = cursor2 === void 0 ? 0 : Number(cursor2);
+    if (!Number.isSafeInteger(start) || start < 0 || start > items.length)
+      throw new RangeError("content source root cursor is invalid");
+    const end = Math.min(items.length, start + limit);
+    return Object.freeze({
+      items: Object.freeze(items.slice(start, end)),
+      ...end < items.length ? { nextCursor: String(end) } : {}
+    });
+  };
+  const walk = async (folder, signal) => {
+    const files = [];
+    const pending = [folder];
+    while (pending.length > 0) {
+      signal?.throwIfAborted();
+      for (const item of await sources.list(root.id, pending.pop(), hidden)) {
+        if (item.directory)
+          pending.push(item.path);
+        else
+          files.push(fromListing(item));
+        if (files.length > budget.maxNodes)
+          throw new RangeError(`${root.label} holds more than ${budget.maxNodes} files below ${folder}`);
+      }
+    }
+    return files;
+  };
+  const namespace = {
+    async list(prefix, request, signal) {
+      signal?.throwIfAborted();
+      const folder = sourcePath(prefix);
+      const files = await sources.files?.(root.id, folder, {
+        limit: Math.min(request.limit, FILES_PAGE),
+        ...request.cursor === void 0 ? {} : { cursor: request.cursor },
+        ...hidden
+      });
+      if (files !== void 0) {
+        return Object.freeze({
+          items: Object.freeze(files.items.map((file) => entryOf(sourcePath(file.path), "file", file.size))),
+          ...files.nextCursor === void 0 ? {} : { nextCursor: files.nextCursor }
+        });
+      }
+      return page(await walk(folder, signal), request.cursor, request.limit);
+    },
+    async children(path, request, signal) {
+      signal?.throwIfAborted();
+      const items = await sources.list(root.id, sourcePath(path), hidden);
+      return page(items.map(fromListing), request.cursor, request.limit);
+    },
+    async lookup(path, signal) {
+      signal?.throwIfAborted();
+      const wanted = fold3(path);
+      const parent = wanted.includes("/") ? sourcePath(path).slice(0, sourcePath(path).lastIndexOf("/")) : "";
+      const items = await sources.list(root.id, parent, { includeHidden: true }).catch(() => []);
+      const found = items.find((item) => !item.directory && fold3(item.path) === wanted);
+      return found === void 0 ? void 0 : fromListing(found);
+    },
+    async openEntry(entryId) {
+      const uri = contentSourceUri(root.id, sourcePath(entryId));
+      return { value: Object.freeze({ id: uri, uri }), release: async () => void 0 };
+    }
+  };
+  const descriptor = await assembleSubjectDescriptor({
+    schemaVersion: 2,
+    subjectUri,
+    origin: { kind: "namespace", root: { id: subjectUri, uri: subjectUri }, revision },
+    interpretation: "none",
+    candidates: [],
+    traits: [{ id: "container.directories", descriptorVersion: 1, state: "available" }],
+    operations: [
+      {
+        id: CONTAINER_EXTRACT_OPERATION_ID,
+        handlerId: EXTRACT_HANDLER,
+        state: "available",
+        mutatesSource: false
+      }
+    ],
+    constraints: { readOnly: true, seekable: false, randomAccess: true, trusted: false },
+    dataSources: [{ contract: NAMESPACE, major: 1 }],
+    diagnostics: [],
+    revision
+  });
+  const declarations = descriptor.operations.map((operation) => ({
+    id: operation.id,
+    handlerId: operation.handlerId,
+    mutatesSource: false,
+    outputKinds: ["bytes"]
+  }));
+  const maxBytes = Number(budget.maxInputBytes > BigInt(Number.MAX_SAFE_INTEGER) ? BigInt(Number.MAX_SAFE_INTEGER) : budget.maxInputBytes);
+  const extract = async (input) => {
+    const entryId = typeof input === "object" && input !== null && !Array.isArray(input) ? input["entryId"] : void 0;
+    if (typeof entryId !== "string" || entryId === "")
+      throw new ModkitError({
+        code: "x3.host/content-source-root-entry-required",
+        message: "container.extract of a content-source root names its entry by path"
+      });
+    return { kind: "bytes", value: await sources.read(root.id, sourcePath(entryId), maxBytes) };
+  };
+  const managed = createAssetSession({
+    revision,
+    descriptor,
+    operationDeclarations: declarations,
+    permissionGrant: options.grant,
+    handlers: /* @__PURE__ */ new Map([[EXTRACT_HANDLER, extract]]),
+    async openDataSource(contract, major) {
+      if (contract === NAMESPACE && major === 1)
+        return { value: namespace, release: async () => void 0 };
+      throw new ModkitError({
+        code: "x3.host/content-source-root-data-source-unavailable",
+        message: `a content-source root publishes no ${contract}@${String(major)}`
+      });
+    }
+  });
+  return Object.freeze({ session: managed.session, descriptor });
+}
+
 // ../MODDING/modkit-core/packages/host/dist/mod-context-layer-source.js
 var LIST_PAGE = 4096;
 var MAX_ENTRY_BYTES = 64 * 1024 * 1024;
@@ -16708,15 +16854,15 @@ function createModContextDataWorkspaceInputs(context, options) {
     if (ids.has(layer.id))
       throw new TypeError(`duplicate ModContext layer ${layer.id}`);
     ids.add(layer.id);
-    const hostPath = layer.sourcePath !== "" && /^[a-z]:[\\/]|^[\\/]/iu.test(layer.sourcePath);
-    const rawPrefix = layer.sourcePath === "" || hostPath ? `context-layers/${index}` : layer.sourcePath;
+    const hostPath2 = layer.sourcePath !== "" && /^[a-z]:[\\/]|^[\\/]/iu.test(layer.sourcePath);
+    const rawPrefix = layer.sourcePath === "" || hostPath2 ? `context-layers/${index}` : layer.sourcePath;
     const prefix = normalizeCompanionLogicalId(rawPrefix);
     if (prefixes.has(prefix.toLowerCase())) {
       throw new TypeError(`ambiguous ModContext layer path ${prefix}`);
     }
     prefixes.add(prefix.toLowerCase());
     const revision = layer.fingerprint !== void 0 && isRevisionId(layer.fingerprint) ? revisionId(layer.fingerprint) : revisionId(`provider-token:${encodeURIComponent(`${context.contextId}/${layer.id}`)}`);
-    const location = hostPath ? layer.sourcePath : void 0;
+    const location = hostPath2 ? layer.sourcePath : void 0;
     return { layer, prefix, location, revision, readLayerId: layer.id, readPrefix: "" };
   });
   if (options?.nestedRoot !== void 0) {
@@ -19664,6 +19810,7 @@ var ROOT = "loaded-mods";
 var MOD = "mod/";
 var NODE = "node/";
 var ref = (id, hasChildren = true) => ({ id, hasChildren });
+var packageId = (gameId, layer) => `${gameId}|${layer.sourceId}|${layer.sourcePath.toLowerCase()}`;
 var nodeId = (id, inner) => `${NODE}${encodeURIComponent(id)}/${encodeURIComponent(inner)}`;
 function childOf(id) {
   if (!id.startsWith(NODE))
@@ -19718,7 +19865,7 @@ var LoadedModResourceSessions = class _LoadedModResourceSessions {
       for (const layer of context.layers.slice(0, -1)) {
         if (layer.kind !== "package")
           continue;
-        const id = `${context.gameId}|${layer.sourceId}|${layer.sourcePath.toLowerCase()}`;
+        const id = packageId(context.gameId, layer);
         if (this.mods.has(id))
           continue;
         const dependencyTarget = layer.sourceId === "host" ? layer.sourcePath : { sourceId: layer.sourceId, path: layer.sourcePath };
@@ -19741,7 +19888,7 @@ var LoadedModResourceSessions = class _LoadedModResourceSessions {
       await context.dispose();
       return false;
     }
-    const id = `${context.gameId}|${primary.sourceId}|${primary.sourcePath.toLowerCase()}`;
+    const id = packageId(context.gameId, primary);
     const previous = this.mods.get(id);
     if (previous?.context.contextId === context.contextId) {
       await context.dispose();
@@ -19756,12 +19903,24 @@ var LoadedModResourceSessions = class _LoadedModResourceSessions {
     await previous?.context.dispose();
     return true;
   }
+  /** Unload a mod and the dependencies only it loaded; one another opened mod stands on stays. */
   async unload(id) {
     const current = this.mods.get(id);
     if (current === void 0)
       return;
     this.mods.delete(id);
+    const needed = /* @__PURE__ */ new Set();
+    for (const mod of this.mods.values())
+      if (mod.opened) {
+        for (const layer of mod.context.layers)
+          if (layer.kind === "package")
+            needed.add(packageId(mod.context.gameId, layer));
+      }
+    const orphans = [...this.mods.values()].filter((mod) => !mod.opened && !needed.has(mod.id));
+    for (const orphan of orphans)
+      this.mods.delete(orphan.id);
     await current.context.dispose();
+    await Promise.allSettled(orphans.map((mod) => mod.context.dispose()));
   }
   /** Reopen all loaded contexts after their shared content source invalidated a package. */
   async reloadAll() {
@@ -19834,6 +19993,7 @@ var LoadedModResourceSessions = class _LoadedModResourceSessions {
         throw new Error(`${mod.label} does not publish semantic resources`);
       return mod.context.query({ kind: "resources.tree", action, ...extra }, signal);
     };
+    const unanswered = (error3) => error3 instanceof RangeError;
     const page = (items, request) => {
       const start = request.cursor === void 0 ? 0 : Number(request.cursor);
       if (!Number.isSafeInteger(start) || start < 0 || start > items.length)
@@ -19850,12 +20010,19 @@ var LoadedModResourceSessions = class _LoadedModResourceSessions {
       async children(node, request, signal) {
         signal?.throwIfAborted();
         if (node.id === ROOT)
-          return page([...thisSessions.mods.values()].filter((mod2) => includeDependencies || mod2.opened).map((mod2) => ref(MOD + encodeURIComponent(mod2.id))), request);
+          return page([...thisSessions.mods.values()].filter((mod2) => includeDependencies || mod2.opened).map((mod2) => ref(MOD + encodeURIComponent(mod2.id), mod2.context.query !== void 0)), request);
         if (node.id.startsWith(MOD)) {
           const mod2 = thisSessions.mods.get(decodeURIComponent(node.id.slice(MOD.length)));
-          if (mod2 === void 0)
+          if (mod2 === void 0 || mod2.context.query === void 0)
             return page([], request);
-          const root = treeRef(await query(mod2, "root", {}, signal));
+          let root;
+          try {
+            root = treeRef(await query(mod2, "root", {}, signal));
+          } catch (error3) {
+            if (unanswered(error3))
+              return page([], request);
+            throw error3;
+          }
           const answer2 = await query(mod2, "children", { node: root, page: request }, signal);
           return { items: (answer2.items ?? []).map((item) => {
             const inner = treeRef(item);
@@ -19893,10 +20060,17 @@ var LoadedModResourceSessions = class _LoadedModResourceSessions {
       },
       async *search(search, signal) {
         for (const mod of thisSessions.mods.values()) {
-          if (!includeDependencies && !mod.opened)
+          if (!includeDependencies && !mod.opened || mod.context.query === void 0)
             continue;
           signal?.throwIfAborted();
-          const answer = await query(mod, "search", { node: ref("root"), pattern: search.pattern }, signal);
+          let answer;
+          try {
+            answer = await query(mod, "search", { node: ref("root"), pattern: search.pattern }, signal);
+          } catch (error3) {
+            if (unanswered(error3))
+              continue;
+            throw error3;
+          }
           for (const item of answer.items ?? []) {
             const inner = treeRef(item);
             yield ref(nodeId(mod.id, inner.id), inner.hasChildren);
@@ -20065,9 +20239,9 @@ async function resolveModWorkspaceComposition(request) {
 }
 
 // ../MODDING/modkit-core/packages/host/dist/maps/single-file-namespace.js
-var NAMESPACE = "common.view/namespace-entry-source";
+var NAMESPACE2 = "common.view/namespace-entry-source";
 var BYTE_RANGE = "common.view/byte-range-source";
-var EXTRACT_HANDLER = "x3.host/single-file-extract";
+var EXTRACT_HANDLER2 = "x3.host/single-file-extract";
 var ENTRY_ID = "subject";
 function fileNameOf(subjectUri) {
   const path = subjectUri.replace(/[?#].*$/u, "");
@@ -20081,7 +20255,7 @@ function fileNameOf(subjectUri) {
 async function singleFileAsContainer(session, maxBytes) {
   const descriptor = await session.descriptor();
   const has = (contract) => descriptor.dataSources.some((item) => item.contract === contract && item.major === 1);
-  if (descriptor.interpretation === "none" || has(NAMESPACE) || !has(BYTE_RANGE))
+  if (descriptor.interpretation === "none" || has(NAMESPACE2) || !has(BYTE_RANGE))
     return session;
   const name = fileNameOf(descriptor.subjectUri);
   const entry2 = Object.freeze({
@@ -20133,13 +20307,13 @@ async function singleFileAsContainer(session, maxBytes) {
     ...descriptor,
     dataSources: Object.freeze([
       ...descriptor.dataSources,
-      Object.freeze({ contract: NAMESPACE, major: 1 })
+      Object.freeze({ contract: NAMESPACE2, major: 1 })
     ]),
     operations: Object.freeze([
       ...descriptor.operations,
       Object.freeze({
         id: "container.extract",
-        handlerId: EXTRACT_HANDLER,
+        handlerId: EXTRACT_HANDLER2,
         mutatesSource: false,
         state: "available"
       })
@@ -20149,7 +20323,7 @@ async function singleFileAsContainer(session, maxBytes) {
     const inner = session.operations();
     return Object.freeze({
       async invoke(handlerId, input, options) {
-        if (handlerId !== EXTRACT_HANDLER)
+        if (handlerId !== EXTRACT_HANDLER2)
           return inner.invoke(handlerId, input, options);
         const entryId = input?.entryId;
         if (entryId !== ENTRY_ID)
@@ -20170,7 +20344,7 @@ async function singleFileAsContainer(session, maxBytes) {
     state: () => session.state(),
     descriptor: async () => extended,
     async dataSource(contract, major) {
-      if (contract === NAMESPACE && major === 1)
+      if (contract === NAMESPACE2 && major === 1)
         return { value: namespace, release: async () => void 0 };
       return session.dataSource(contract, major);
     },
@@ -30556,6 +30730,8 @@ export {
   composeLanguageDocumentSources,
   connectSubjectRpc,
   contentDependencyDiagnostics,
+  contentSourceRootServes,
+  contentSourceRootServing,
   coordinateMapPreviewAssetSession,
   createAssetSession,
   createBundledServiceDefinitionRegistry,
@@ -30655,6 +30831,7 @@ export {
   nestedSubjectServices,
   offersFromInventory,
   openContentIndex,
+  openContentSourceRootSession,
   openMapPreviewAssetSession,
   openModContextLayerSource,
   openNestedSubject,
