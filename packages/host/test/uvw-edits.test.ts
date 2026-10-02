@@ -17,6 +17,8 @@ import {
   createFileEditingBackend,
   createNodeSubjectServices,
   nodeRuntimeTargetBase,
+  nodeWorkerLinks,
+  nodeWorkerRealmProfile,
   openFileArtifactSource,
   type NodeSubjectServices,
 } from '@modkit/host/node'
@@ -465,5 +467,40 @@ describe('UVW codec edit → host commit/history', () => {
 
     await opened.session.dispose()
     await backend.dispose()
+  }, 30_000)
+})
+
+describe('UVW codec under a worker target', () => {
+  it('opens in-process as its linked module ships only that variant, as the CLI and VS Code open it', async () => {
+    const WORKER = 'org.modkit.test/uvw-worker'
+    const workerServices = await createNodeSubjectServices({
+      topology: createHostTopology({
+        schemaVersion: 1,
+        topologyId: 'org.modkit.test/uvw-worker-target',
+        realms: [
+          ...topology.realms,
+          nodeWorkerRealmProfile({
+            realmId: WORKER,
+            budgets: topology.realms[0]!.budgets,
+            policy: { id: 'org.modkit.test/uvw-worker-policy', revision: '1' },
+          }),
+        ],
+        links: [...nodeWorkerLinks(HOST, WORKER)],
+      }),
+      realms: { host: HOST, workers: WORKER },
+      extensions: linked.inputs,
+      linkedModules: linked.modules,
+    })
+    const opened = await workerServices.open({
+      source: await openFileArtifactSource(fixturePath),
+      path: fixturePath,
+      intent: 'full',
+      grant: WRITE,
+      budget,
+    })
+    expect(opened.state === 'opened' ? opened.selected.contributionId : opened).toBe(
+      'modkit/world-uvw',
+    )
+    if (opened.state === 'opened') await opened.session.dispose()
   }, 30_000)
 })

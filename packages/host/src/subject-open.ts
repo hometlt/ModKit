@@ -1487,13 +1487,22 @@ async function openSubjectDirectWith(
         })
         continue
       }
+      // a codec with no variant in the requested target runs in-process when it may, as its
+      // services do: a linked module (uv in the CLI and VS Code) keeps only that variant
+      const runsInTarget = (candidate.contribution.manifest?.runtimeVariants ?? []).some(
+        item =>
+          item.target.environments === undefined ||
+          item.target.environments.includes(target.environment),
+      )
       const request: ProviderRequest = {
         contract: {
           contract: candidate.logicalOffer.contract,
           major: candidate.logicalOffer.major,
           range: '*',
         },
-        target,
+        target: runsInTarget
+          ? target
+          : serviceTargetFor(executionBackends, candidate.offer, target),
         pin: {
           providerId: candidate.offer.providerId,
           runtimeVariant: candidate.offer.runtimeVariant,
