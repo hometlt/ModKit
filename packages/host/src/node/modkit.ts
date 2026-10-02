@@ -317,6 +317,10 @@ export async function createModkit(options: ModkitOptions): Promise<Modkit> {
     onOpened: opened => {
       lastOpened.value = opened
     },
+    // the window's content sources: an installation folder opens as the root that reads it
+    ...(options.subjectCatalog === undefined
+      ? {}
+      : { contentSources: options.subjectCatalog.contentSources }),
   })
 
   return Object.freeze({

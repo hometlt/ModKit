@@ -182,6 +182,11 @@ export {
   type ContentSourceInputResolverOptions,
 } from './content-source-companion.js'
 export {
+  contentSourceRootServing,
+  openContentSourceRootSession,
+  type ContentSourceRootSessionOptions,
+} from './content-source-root-session.js'
+export {
   createWorkspaceNamespaceCandidateDiscovery,
   type WorkspaceNamespaceCandidateDiscovery,
   type WorkspaceNamespaceCandidateDiscoveryLimits,

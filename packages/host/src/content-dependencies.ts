@@ -88,7 +88,8 @@ function relativeEntry(mount: IndexedMount, entry: ContentSourceEntry): string |
  * Where a dependency file lives: `content-source://<sourceId>/<path in the source>`, so a link to it
  * opens the file itself (the layer's own path, not the closure's synthetic `content-dependencies/N`).
  */
-function contentSourceUri(sourceId: string, path: string): string {
+/** The URI of a path of a content source, as documents and companions name it. */
+export function contentSourceUri(sourceId: string, path: string): string {
   return `content-source://${encodeURIComponent(sourceId)}/${path.split('/').map(encodeURIComponent).join('/')}`
 }
 

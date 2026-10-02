@@ -34,6 +34,10 @@ import {
   containerMarkersOf,
 } from '../content-source-companion.js'
 import { openPathArtifactSource } from './directory-artifact-source.js'
+import {
+  contentSourceRootServing,
+  openContentSourceRootSession,
+} from '../content-source-root-session.js'
 import type {
   FileArtifactReadTelemetry,
   FileArtifactStreamTelemetry,
@@ -61,9 +65,11 @@ export interface PathSubjectOpenerOptions {
   /**
    * The games' content sources: behind everything else, each opened file reaches the layers of the
    * mod it belongs to (`createContentAssetOrigin`) — a map on disk its tileset in the installation,
-   * a model in a resource pack its textures in the game. Resolved only when a codec asks.
+   * a model in a resource pack its textures in the game. Resolved only when a codec asks. An opened
+   * folder that one of their roots reads opens as that root (`storageOf`). A host that has them
+   * only later, or only for some paths, gives a function, asked at each open.
    */
-  readonly contentSources?: ContentSources
+  readonly contentSources?: ContentSources | ((path: string) => Promise<ContentSources | undefined>)
   /** Packages a file outside any package opens inside, per host path. */
   readonly baseMods?: BaseModSetting
 }
@@ -152,6 +158,41 @@ export function createPathSubjectOpener(options: PathSubjectOpenerOptions): Subj
     if (roots.length === 0 || !inside(roots, path)) {
       throw new TypeError(`path is outside the granted roots`)
     }
+    const contentSources =
+      typeof options.contentSources === 'function'
+        ? await options.contentSources(path)
+        : options.contentSources
+    // An installation folder a content-source root reads opens as that root (storageOf): its tree
+    // through the root's one reader, not a second reader of the storage through a folder codec.
+    const served =
+      contentSources === undefined
+        ? undefined
+        : await contentSourceRootServing(contentSources, path).catch(() => undefined)
+    if (served !== undefined) {
+      const opened = await openContentSourceRootSession({
+        sources: contentSources!,
+        root: served,
+        grant: { ...grant, id: `${grant.id}:${nextId()}` },
+        budget,
+      })
+      return {
+        snapshot: subjectOpenSnapshot({
+          result: {
+            state: 'opened',
+            descriptor: opened.descriptor,
+            selected: {
+              contributionId: 'x3.host/content-source-root',
+              variantId: 'host',
+              confidence: 1,
+            },
+            candidates: [],
+          },
+          sessionId: nextId,
+          diagnostics: [],
+        }),
+        session: opened.session,
+      }
+    }
     const source = await openPathArtifactSource(path, {
       maxEntries: budget.maxNodes,
       maxDepth: budget.maxDepth,
@@ -177,11 +218,11 @@ export function createPathSubjectOpener(options: PathSubjectOpenerOptions): Subj
           onDiagnostic: item => companionDiagnostics.push(item),
           assetOrigins: [
             ...(options.assetOrigins ?? []),
-            ...(options.contentSources === undefined
+            ...(contentSources === undefined
               ? []
               : [
                   createContentAssetOrigin({
-                    contentSources: options.contentSources,
+                    contentSources,
                     target: path,
                     ...(options.baseMods === undefined ? {} : { baseMods: options.baseMods }),
                     onDiagnostic: item => companionDiagnostics.push(item),

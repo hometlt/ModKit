@@ -21,10 +21,12 @@ import process from 'node:process'
 import { isQualifiedId } from '@modkit/core'
 import { type OpenIntent, type ProviderOffer, type ProviderRequest } from '@modkit/sdk'
 import {
+  contentSourceRootServing,
   createSubjectCommandRuntime,
   describeSubjectCommandContracts,
   explainProviderResolution,
   inventoryHasErrors,
+  openContentSourceRootSession,
   renderProviderResolutionExplanation,
   type ExtensionInput,
   type Inventory,
@@ -40,6 +42,7 @@ import {
   createModkitCliComposition,
   createModkitCliSubjectServices,
   createModkitCliTopology,
+  modkitCliInstallationSources,
 } from './profile.js'
 import { parseByteSize, parseRunArguments, runCommand } from './commands.js'
 import { parseProjectValidationArguments, validateProject } from './project-validation.js'
@@ -195,6 +198,48 @@ async function openCommand(arguments_: OpenArguments): Promise<number> {
       return 1
     }
     const file = resolve(arguments_.file)
+    // an installation folder opens as the content-source root that reads it (storageOf)
+    const sources = await modkitCliInstallationSources(
+      arguments_.roots.map(root => resolve(root)),
+      file,
+    )
+    try {
+      const served =
+        sources === undefined ? undefined : await contentSourceRootServing(sources, file)
+      if (served !== undefined) {
+        const opened = await openContentSourceRootSession({
+          sources: sources!,
+          root: served,
+          grant: { id: `cli:${randomUUID()}`, classes: ['read-source'] },
+          budget: DEFAULT_SUBJECT_OPEN_BUDGET,
+        })
+        try {
+          // the render reads only the selection, the descriptor, candidates and diagnostics
+          process.stdout.write(
+            renderOpen(
+              {
+                state: 'opened',
+                selected: {
+                  contributionId: 'x3.host/content-source-root',
+                  variantId: 'host',
+                  confidence: 1,
+                },
+                descriptor: opened.descriptor,
+                candidates: [],
+                diagnostics: [],
+              } as unknown as OpenSubjectResult,
+              file,
+              arguments_.json,
+            ),
+          )
+        } finally {
+          await opened.session.dispose()
+        }
+        return 0
+      }
+    } finally {
+      await sources?.dispose()
+    }
     const source = await openPathArtifactSource(file)
     // the same grant as `run`: the named file and its companions beside it (a .utoc and its .ucas)
     const resolveInput = createFilesystemInputResolver({

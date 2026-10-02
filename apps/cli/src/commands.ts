@@ -46,7 +46,11 @@ import {
 } from '@modkit/host/node'
 import { sceneModule } from '@modkit/scene/module'
 import { uvModule } from '@modkit/uv/module'
-import { createModkitCliSubjectServices, modkitCliCredentials } from './profile.js'
+import {
+  createModkitCliSubjectServices,
+  modkitCliCredentials,
+  modkitCliInstallationSources,
+} from './profile.js'
 import { snapshotJson } from '@modkit/codec-kit/json-snapshot'
 import type { JsonValue, ResourceBudget } from '@modkit/sdk'
 
@@ -333,6 +337,8 @@ export async function runCommand(
     )
     return 2
   }
+  // what the run opened beside its subject (an installation's content sources), closed at its end
+  let disposeAfterRun = async (): Promise<void> => undefined
   try {
     const operationInput =
       arguments_.inputFile === undefined
@@ -362,6 +368,9 @@ export async function runCommand(
       arguments_.maxInputBytes === undefined
         ? DEFAULT_SUBJECT_OPEN_BUDGET
         : { ...DEFAULT_SUBJECT_OPEN_BUDGET, maxInputBytes: arguments_.maxInputBytes }
+    // a named installation folder opens as the content-source root that reads it (storageOf)
+    let installation: ReturnType<typeof modkitCliInstallationSources> | undefined
+    disposeAfterRun = async () => void (await (await installation)?.dispose())
     const pathOpener = createPathSubjectOpener({
       subjects: services,
       // A named file is the CLI's whole grant: it opens what argv points at, and its companions
@@ -369,6 +378,11 @@ export async function runCommand(
       roots: [dirname(file)],
       grant: { id: 'modkit-cli', classes: ['read-source'] },
       budget,
+      contentSources: path =>
+        (installation ??= modkitCliInstallationSources(
+          arguments_.roots.map(root => resolve(root)),
+          path,
+        )),
     })
     // A native map publishes its world through the host's map preview, as VS Code and MCP open it.
     const opener =
@@ -429,6 +443,8 @@ export async function runCommand(
   } catch (error) {
     writeStderr(`modkit run: ${(error as Error).message}\n`)
     return 2
+  } finally {
+    await disposeAfterRun()
   }
 }
 

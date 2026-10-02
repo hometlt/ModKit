@@ -6,6 +6,7 @@ import {
   type ContributionSettings,
   type HostTopology,
 } from '@modkit/sdk'
+import { stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { uvModule } from '@modkit/uv/module'
@@ -24,6 +25,7 @@ import {
   nodeRuntimeTargetBase,
   nodeWorkerLinks,
   nodeWorkerRealmProfile,
+  resolveContentSources,
   workerBackendPolicy,
   type NodeSubjectServices,
   type WorkerBackendPolicy,
@@ -143,6 +145,28 @@ export function modkitCliIndexCacheDirectory(environment = process.env): string 
     environment['MODKIT_INDEX_CACHE_DIRECTORY'] ??
     join(environment['LOCALAPPDATA'] ?? join(homedir(), '.cache'), 'modkit', 'index-caches')
   )
+}
+
+/**
+ * The content sources the loaded extensions declare, for a folder a run opens: the root that reads
+ * the folder (`storageOf`) serves it as the installation tree, as VS Code mounts it (§4.4). Resolved
+ * only for a folder, which the module takes as the installation chosen; a file opens without. The
+ * caller disposes them.
+ */
+export async function modkitCliInstallationSources(
+  extensionRoots: readonly string[],
+  path: string,
+  environment = process.env,
+): ReturnType<typeof resolveContentSources> {
+  if ((await stat(path).catch(() => undefined))?.isDirectory() !== true) return undefined
+  return resolveContentSources({
+    extensionRoots,
+    storage:
+      environment['MODKIT_CONTENT_SOURCE_STORAGE'] ??
+      join(environment['LOCALAPPDATA'] ?? join(homedir(), '.cache'), 'modkit', 'content-sources'),
+    moduleOptions: () => ({ installationDirectory: path }),
+    indexCacheDirectory: modkitCliIndexCacheDirectory(environment),
+  })
 }
 
 /** Every contribution is told where the shared index caches live, as VS Code tells it. */
