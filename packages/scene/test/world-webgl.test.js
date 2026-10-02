@@ -142,6 +142,7 @@ describe('common world WebGL plan', () => {
         ],
       ]),
     })
+    const { minimum, maximum } = plan.bounds
     assert.deepEqual(plan.stats, {
       terrainTriangles: 2,
       terrainTexturedTriangles: 0,
@@ -158,6 +159,11 @@ describe('common world WebGL plan', () => {
       diagnosticPlaceholders: 0,
       shadowCasterTriangles: 5,
       shadowMapSize: 0,
+      // the camera frame: the middle of the bounds and 0.65 of their diagonal
+      frame: {
+        center: [0, 1, 2].map(axis => (minimum[axis] + maximum[axis]) / 2),
+        radius: Math.hypot(...[0, 1, 2].map(axis => maximum[axis] - minimum[axis])) * 0.65,
+      },
     })
     assert.equal(plan.opaqueTriangles.positions.length / 9, 5)
     assert.equal(plan.transparentTriangles.positions.length / 9, 2)

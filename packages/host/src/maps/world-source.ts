@@ -22,6 +22,7 @@ import type {
   MapPlacedObject,
   MapTerrainWeightRaster,
   MapWorldCanonicalTransform,
+  MapWorldWindow,
   ModelResourcePort,
   RasterResourcePort,
   RasterResourceResult,
@@ -40,6 +41,7 @@ import type {
   WorldScenePage,
   WorldScenePageRequest,
   WorldSceneRegionShape,
+  WorldSceneViewWindow,
 } from '@modkit/sdk'
 
 /** The proof methods sdk names (MapWorldCanonicalTransform.proof.method). */
@@ -301,6 +303,44 @@ function terrainHeightAt(
   const lower = height(x0, y0) * (1 - tx) + height(x1, y0) * tx
   const upper = height(x0, y1) * (1 - tx) + height(x1, y1) * tx
   return lower * (1 - ty) + upper * ty
+}
+
+/**
+ * The map-native window under a viewer's window (MW5): through the world's canonical transform, each
+ * uvw ground axis a scaled native one, or as the plan draws a world without it (native x and y as x
+ * and z). Undefined when the ground's axes are not native x and y.
+ */
+export function nativeWorldWindow(
+  view: WorldSceneViewWindow,
+  transform: MapWorldCanonicalTransform | undefined,
+): MapWorldWindow | undefined {
+  const corners = [view.minimumX, view.minimumZ, view.maximumX, view.maximumZ]
+  if (
+    !corners.every(Number.isFinite) ||
+    view.minimumX > view.maximumX ||
+    view.minimumZ > view.maximumZ
+  )
+    throw new TypeError('a world view window has finite ordered minimum/maximum x and z')
+  if (transform === undefined)
+    return Object.freeze({
+      minimumX: view.minimumX,
+      minimumY: view.minimumZ,
+      maximumX: view.maximumX,
+      maximumY: view.maximumZ,
+    })
+  const native: Partial<Record<'x' | 'y' | 'z', readonly [number, number]>> = {}
+  for (const [axis, low, high] of [
+    ['x', view.minimumX, view.maximumX],
+    ['z', view.minimumZ, view.maximumZ],
+  ] as const) {
+    const { sourceAxis, scale, offset } = transform.axes[axis]
+    const a = (low - offset) / scale
+    const b = (high - offset) / scale
+    native[sourceAxis] = [Math.min(a, b), Math.max(a, b)]
+  }
+  const { x, y } = native
+  if (x === undefined || y === undefined || ![...x, ...y].every(Number.isFinite)) return undefined
+  return Object.freeze({ minimumX: x[0], minimumY: y[0], maximumX: x[1], maximumY: y[1] })
 }
 
 function canonicalPosition(

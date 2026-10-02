@@ -13,8 +13,10 @@ import {
   SCENE_COMPRESSED_TEXTURE_FORMATS,
   WORLD_MAX_TERRAIN_WEIGHT_RASTERS,
   worldObjectModelResources,
+  worldViewGroundWindow,
   zoomWorldWebGlCamera,
   type WorldWebGlCamera,
+  type WorldWebGlFrame,
   type WorldWebGlInput,
   type WorldWebGlRenderer,
 } from '@modkit/scene/world'
@@ -760,7 +762,12 @@ export interface WorldRenderStats {
   readonly diagnosticPlaceholders: number
   readonly shadowCasterTriangles: number
   readonly shadowMapSize: number
+  /** The drawn plan's camera frame; absent from the 2D fallback. */
+  readonly frame?: WorldWebGlFrame
 }
+
+/** How long a camera rests before the viewer asks a growing world for what it shows (MW5). */
+const WORLD_FOCUS_SETTLE_MS = 400
 
 export type WorldEditStatus = 'idle' | 'preview' | 'committing' | 'stale' | 'error'
 
@@ -1667,6 +1674,10 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
       let latticePlan: WorldLatticePlan | undefined
       let latticeLayers: CandidateWorldViewerModel['layers'] | undefined
       let loading = false
+      // the frame the last 3D draw measured its camera in, and a pending ask for the ground in view
+      let lastFrame: WorldWebGlFrame | undefined
+      let focusTimer: ReturnType<typeof setTimeout> | undefined
+      let focusing = false
       const phaseKeys = {
         geometry: 'viewer.worldLoadingGeometry',
         textures: 'viewer.worldLoadingTextures',
@@ -1762,6 +1773,7 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
               hiddenOverlays,
             )
             canvas.dataset['worldRenderer'] = webGlRenderer === undefined ? 'isometric-2d' : 'webgl'
+            lastFrame = stats.frame
             canvas.dataset['worldModelTriangles'] = String(stats.modelTriangles)
             canvas.dataset['worldPlaceholders'] = String(stats.diagnosticPlaceholders)
           }
@@ -2017,15 +2029,69 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
         }
         redraw()
       }
+      // A world larger than it holds (MW5) moves to the ground in view once the camera rests; the
+      // camera keeps the frame it was measured in, so the view stays while the world under it changes.
+      const focusView = async () => {
+        const source = lease.value as WorldSceneSource
+        const frame = camera.frame ?? lastFrame
+        if (source.focus === undefined || frame === undefined) return
+        if (loading || focusing || viewMode !== '3d' || scope.signal.aborted) return
+        focusing = true
+        canvas.dataset['worldFocus'] = 'asking'
+        try {
+          const window = worldViewGroundWindow(
+            frame,
+            camera,
+            canvas.width / Math.max(1, canvas.height),
+          )
+          // a move takes a new analysis, longer than one call may wait: past its deadline, ask again
+          let moved: boolean | undefined
+          while (moved === undefined && !scope.signal.aborted)
+            moved = await source
+              .focus(window, scope.signal)
+              .catch((error: unknown) =>
+                (error as { readonly code?: unknown } | null)?.code ===
+                'x3.host/rpc-deadline-exceeded'
+                  ? undefined
+                  : false,
+              )
+          if (scope.signal.aborted) return
+          const shown = (await source.info(scope.signal)).snapshotId
+          canvas.dataset['worldFocus'] = moved === true ? 'moved' : 'stayed'
+          if (moved === true || shown !== currentModel?.snapshotId) {
+            if (camera.frame === undefined) camera = Object.freeze({ ...camera, frame })
+            await render()
+          }
+        } catch (error) {
+          if (scope.signal.aborted) return
+          canvas.dataset['worldFocus'] = 'failed'
+          canvas.dataset['worldFocusError'] = error instanceof Error ? error.message : String(error)
+        } finally {
+          focusing = false
+        }
+      }
+      const focusSoon = () => {
+        if ((lease.value as WorldSceneSource).focus === undefined) return
+        if (focusTimer !== undefined) clearTimeout(focusTimer)
+        focusTimer = setTimeout(() => {
+          focusTimer = undefined
+          void focusView()
+        }, WORLD_FOCUS_SETTLE_MS)
+      }
+      scope.cleanup(() => {
+        if (focusTimer !== undefined) clearTimeout(focusTimer)
+      })
       const onCameraPointerUp = (event: PointerEvent) => {
         if (drag?.pointerId !== event.pointerId) return
         drag = undefined
         canvas.releasePointerCapture(event.pointerId)
+        focusSoon()
       }
       const onWheel = (event: WheelEvent) => {
         event.preventDefault()
         camera = zoomWorldWebGlCamera(camera, event.deltaY)
         redraw()
+        focusSoon()
       }
       const onContextMenu = (event: Event) => event.preventDefault()
       const onKey = (event: KeyboardEvent) => {

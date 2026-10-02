@@ -36,6 +36,7 @@ import {
   type MapSemanticAnalysis,
   type MapSemanticOfferFacet,
   type MapSemanticRequestFacet,
+  type MapWorldWindow,
   type ResolvedMapWorkspaceAnalysis,
   type ResolvedMapWorkspacePlan,
   type ResolvedMapWorkspaceSnapshot,
@@ -43,6 +44,7 @@ import {
   type WorldScenePageRequest,
   type WorldSceneSource,
   type WorldSceneTextureRequest,
+  type WorldSceneViewWindow,
 } from '@modkit/sdk/maps'
 import { isJsonValue, resolveModWorkspaceGraph } from '@modkit/sdk'
 import type {
@@ -100,9 +102,13 @@ import {
   type ResolvedDataWorkspaceLimits,
 } from '../data/index.js'
 import { singleFileAsContainer } from './single-file-namespace.js'
-import { createCandidateWorldSceneLease, worldTransformCorpusRefusal } from './world-source.js'
+import {
+  createCandidateWorldSceneLease,
+  nativeWorldWindow,
+  worldTransformCorpusRefusal,
+} from './world-source.js'
 
-export { createCandidateWorldSceneLease } from './world-source.js'
+export { createCandidateWorldSceneLease, nativeWorldWindow } from './world-source.js'
 export {
   worldSceneModel,
   worldSceneModelLimits,
@@ -866,6 +872,26 @@ function validateWorkspacePlan(
     ids.add(requirement.requirementId)
     paths.add(path.toLowerCase())
   }
+  const window = plan.window
+  if (
+    window !== undefined &&
+    !(
+      [window.minimumX, window.minimumY, window.maximumX, window.maximumY].every(Number.isFinite) &&
+      window.minimumX <= window.maximumX &&
+      window.minimumY <= window.maximumY
+    )
+  )
+    throw new TypeError('workspace map plan names a window that is not finite and ordered')
+}
+
+/** Whether `outer` holds all of `inner`. */
+function windowCovers(outer: MapWorldWindow, inner: MapWorldWindow): boolean {
+  return (
+    outer.minimumX <= inner.minimumX &&
+    outer.minimumY <= inner.minimumY &&
+    outer.maximumX >= inner.maximumX &&
+    outer.maximumY >= inner.maximumY
+  )
 }
 
 async function readResourceBytes(
@@ -1045,97 +1071,117 @@ export async function analyzeResolvedMapWorkspace(
   if (resolution.state === 'unresolved') return resolution
   const diagnostics: Diagnostic[] = [...resolution.diagnostics]
   try {
-    const plan = await resolution.workspace.plan({
-      workspace: request.workspace,
-      maxRequirements: limits.maxRequirements,
-      ...(request.signal === undefined ? {} : { signal: request.signal }),
-    })
-    validateWorkspacePlan(plan, request.workspace, limits.maxRequirements)
-    diagnostics.push(
-      ...plan.diagnostics.map(item =>
+    const provenanceOffset = request.resources.provenance().length
+    // One plan and its reads: the provider's first part of the world, or the part a viewer asks
+    // for (`window`, MW5) of a world larger than one plan reads.
+    // `holds`: the part a world shows now; a plan for that same part again reads nothing.
+    const readWindow = async (
+      window: MapWorldWindow | undefined,
+      signal?: AbortSignal,
+      holds?: MapWorldWindow,
+    ) => {
+      const plan = await resolution.workspace.plan({
+        workspace: request.workspace,
+        maxRequirements: limits.maxRequirements,
+        ...(window === undefined ? {} : { window }),
+        ...(signal === undefined ? {} : { signal }),
+      })
+      validateWorkspacePlan(plan, request.workspace, limits.maxRequirements)
+      const found = plan.diagnostics.map(item =>
         diagnostic(item.severity, item.code, item.message, undefined, {
           analyzerId: plan.analyzerId,
         }),
-      ),
-    )
-    if (!plan.complete) {
+      )
+      if (
+        !plan.complete ||
+        (holds !== undefined && plan.window !== undefined && windowCovers(holds, plan.window))
+      )
+        return { complete: false as const, diagnostics: found }
+      const documents: MapSemanticDocument[] = []
+      const revisions: string[] = []
+      // the read documents by file name: a transform proof names its corpus documents so
+      const readDigests = new Map<string, string>()
+      const unresolvedRequirementIds: string[] = []
+      let totalBytes = 0
+      for (const requirement of plan.requirements) {
+        signal?.throwIfAborted()
+        const loaded = await readResourceBytes(
+          request.resources,
+          requirement,
+          limits.maxDocumentBytes,
+          limits.maxTotalBytes - totalBytes,
+          signal,
+        )
+        totalBytes += loaded.consumedBytes
+        if (loaded.state === 'unresolved') {
+          found.push(loaded.diagnostic)
+          unresolvedRequirementIds.push(requirement.requirementId)
+          continue
+        }
+        if (totalBytes > limits.maxTotalBytes) {
+          throw new TypeError(
+            `workspace map documents exceed maxTotalBytes ${limits.maxTotalBytes}`,
+          )
+        }
+        documents.push(loaded.document)
+        readDigests.set(
+          requirement.path.slice(requirement.path.lastIndexOf('/') + 1).toLowerCase(),
+          loaded.contentFingerprint,
+        )
+        revisions.push(
+          `${requirement.requirementId}:${requirement.path}@${String(loaded.revision)}#${loaded.contentFingerprint}`,
+        )
+      }
+      if (request.resources.state() !== 'live') {
+        throw new Error('resource session was disposed while workspace map documents were loading')
+      }
+      const snapshotId = [
+        `session=${String(request.resources.revision)}`,
+        `workspace=${encodeURIComponent(request.workspace.workspaceId)}`,
+        `map=${encodeURIComponent(plan.mapId)}`,
+        ...revisions,
+      ].join('|')
+      const analyze = (catalog: DataCatalogSnapshot | undefined, round: number) =>
+        resolution.workspace.analyze({
+          workspaceId: request.workspace.workspaceId,
+          gameId: request.workspace.gameId,
+          mapId: plan.mapId,
+          documents,
+          ...(catalog === undefined ? {} : { catalog }),
+          ...(request.subjectOperationIds === undefined
+            ? {}
+            : { subjectOperationIds: request.subjectOperationIds }),
+          ...(plan.window === undefined ? {} : { window: plan.window }),
+          // the documents this request carries, not the caller's budget: a provider's own ceiling
+          // (SC2 maps take 16) never refuses a map because an application allows more (32, Warzone)
+          maxDocuments: Math.max(1, documents.length),
+          maxDocumentBytes: limits.maxDocumentBytes,
+          maxTotalBytes: limits.maxTotalBytes,
+          maxObjects: limits.maxObjects,
+          maxRegions: limits.maxRegions,
+          maxTerrainCells: limits.maxTerrainCells,
+          maxTerrainSamples: limits.maxTerrainSamples,
+          maxDepth: limits.maxDepth,
+          maxDiagnostics: limits.maxDiagnostics,
+          snapshotId: round === 0 ? snapshotId : `${snapshotId}|catalog-round=${round}`,
+          unresolvedRequirementIds,
+          requiredRequirementIds: plan.requirements
+            .filter(item => item.required)
+            .map(item => item.requirementId),
+          ...(signal === undefined ? {} : { signal }),
+        })
+      return { complete: true as const, plan, readDigests, analyze, diagnostics: found }
+    }
+    const first = await readWindow(undefined, request.signal)
+    diagnostics.push(...first.diagnostics)
+    if (!first.complete) {
       await resolution.release()
       return {
         state: 'unresolved',
         diagnostics: boundedDiagnostics(diagnostics, limits.maxDiagnostics),
       }
     }
-    const provenanceOffset = request.resources.provenance().length
-    const documents: MapSemanticDocument[] = []
-    const revisions: string[] = []
-    // the read documents by file name: a transform proof names its corpus documents so
-    const readDigests = new Map<string, string>()
-    const unresolvedRequirementIds: string[] = []
-    let totalBytes = 0
-    for (const requirement of plan.requirements) {
-      request.signal?.throwIfAborted()
-      const loaded = await readResourceBytes(
-        request.resources,
-        requirement,
-        limits.maxDocumentBytes,
-        limits.maxTotalBytes - totalBytes,
-        request.signal,
-      )
-      totalBytes += loaded.consumedBytes
-      if (loaded.state === 'unresolved') {
-        diagnostics.push(loaded.diagnostic)
-        unresolvedRequirementIds.push(requirement.requirementId)
-        continue
-      }
-      if (totalBytes > limits.maxTotalBytes) {
-        throw new TypeError(`workspace map documents exceed maxTotalBytes ${limits.maxTotalBytes}`)
-      }
-      documents.push(loaded.document)
-      readDigests.set(
-        requirement.path.slice(requirement.path.lastIndexOf('/') + 1).toLowerCase(),
-        loaded.contentFingerprint,
-      )
-      revisions.push(
-        `${requirement.requirementId}:${requirement.path}@${String(loaded.revision)}#${loaded.contentFingerprint}`,
-      )
-    }
-    if (request.resources.state() !== 'live') {
-      throw new Error('resource session was disposed while workspace map documents were loading')
-    }
-    const snapshotId = [
-      `session=${String(request.resources.revision)}`,
-      `workspace=${encodeURIComponent(request.workspace.workspaceId)}`,
-      `map=${encodeURIComponent(plan.mapId)}`,
-      ...revisions,
-    ].join('|')
-    const analyze = (catalog: DataCatalogSnapshot | undefined, round: number) =>
-      resolution.workspace.analyze({
-      workspaceId: request.workspace.workspaceId,
-      gameId: request.workspace.gameId,
-      mapId: plan.mapId,
-      documents,
-      ...(catalog === undefined ? {} : { catalog }),
-      ...(request.subjectOperationIds === undefined
-        ? {}
-        : { subjectOperationIds: request.subjectOperationIds }),
-      // the documents this request carries, not the caller's budget: a provider's own ceiling (SC2
-      // maps take 16) never refuses a map because an application allows more (32, for Warzone)
-      maxDocuments: Math.max(1, documents.length),
-      maxDocumentBytes: limits.maxDocumentBytes,
-      maxTotalBytes: limits.maxTotalBytes,
-      maxObjects: limits.maxObjects,
-      maxRegions: limits.maxRegions,
-      maxTerrainCells: limits.maxTerrainCells,
-      maxTerrainSamples: limits.maxTerrainSamples,
-      maxDepth: limits.maxDepth,
-      maxDiagnostics: limits.maxDiagnostics,
-      snapshotId: round === 0 ? snapshotId : `${snapshotId}|catalog-round=${round}`,
-      unresolvedRequirementIds,
-      requiredRequirementIds: plan.requirements
-        .filter(item => item.required)
-        .map(item => item.requirementId),
-      ...(request.signal === undefined ? {} : { signal: request.signal }),
-    })
+    const { plan, readDigests, analyze } = first
     const asking = request.catalog === undefined ? request.catalogEntities : undefined
     const progressive = asking !== undefined && request.progressiveCatalog === true
     // ends the background rounds of a progressive world when its lease is released
@@ -1250,8 +1296,10 @@ export async function analyzeResolvedMapWorkspace(
         corpusRefusal,
       )
     const corpusRefusal = await worldTransformCorpusRefusal(snapshot, readDigests)
-    const world = !progressive
-      ? worldOf(snapshot, corpusRefusal, releaseModelResources)
+    // a world that grows (MW5) shares its model resources across the parts it moves to
+    const covered = plan.window
+    const shownWorld = !progressive
+      ? worldOf(snapshot, corpusRefusal, covered === undefined ? releaseModelResources : undefined)
       : refinableWorldLease(
           worldOf(snapshot, corpusRefusal),
           analyzeWithCatalogEntities({
@@ -1272,8 +1320,38 @@ export async function analyzeResolvedMapWorkspace(
             () => undefined,
           ),
           () => background.abort(),
-          releaseModelResources,
+          covered === undefined ? releaseModelResources : async () => undefined,
         )
+    // the parts a viewer moves to, analysed with the catalog answered before they are shown
+    const lifetime = new AbortController()
+    const world =
+      covered === undefined
+        ? shownWorld
+        : growingWorldLease(
+            shownWorld,
+            covered,
+            async (window, holds, signal) => {
+              const scoped =
+                signal === undefined ? lifetime.signal : AbortSignal.any([signal, lifetime.signal])
+              const read = await readWindow(window, scoped, holds)
+              if (!read.complete || read.plan.window === undefined) return undefined
+              const grown =
+                asking === undefined
+                  ? await read.analyze(request.catalog, 0)
+                  : await analyzeWithCatalogEntities({
+                      workspace: request.workspace,
+                      analyze: read.analyze,
+                      catalogEntities: asking,
+                      signal: scoped,
+                    })
+              return {
+                lease: worldOf(grown, await worldTransformCorpusRefusal(grown, read.readDigests)),
+                covered: read.plan.window,
+              }
+            },
+            () => lifetime.abort(),
+            releaseModelResources,
+          )
     let released = false
     return Object.freeze({
       state: 'resolved',
@@ -1374,6 +1452,14 @@ function borrowCommonWorldScene(candidate: CandidateWorldSceneSource): Lease<Wor
           async refined(signal?: AbortSignal) {
             assertLive(signal)
             return candidate.refined!(signal)
+          },
+        }),
+    ...(candidate.focus === undefined
+      ? {}
+      : {
+          async focus(window: WorldSceneViewWindow, signal?: AbortSignal) {
+            assertLive(signal)
+            return candidate.focus!(window, signal)
           },
         }),
     async info(signal?: AbortSignal) {
@@ -2743,6 +2829,94 @@ export function refinableWorldLease(
       abort()
       await current.release()
       if (!swapped) await (await refinement)?.release()
+      await releaseShared()
+    },
+  })
+}
+
+/**
+ * A world larger than one analysis reads (MW5): `initial` holds the part `covered`; `focus` asks for
+ * the part in a viewer's window and, unless that is covered already, swaps in the world `grow`
+ * analysed for it, releasing the one it replaces; `grow` answers nothing when its provider would
+ * cover no more than the part `holds` (a window past what one plan reads, asked again). Asks run one
+ * at a time, so a later one sees what an earlier one covered. `abort` ends a running one at the release; `releaseShared` (the model
+ * resources every part shares) comes last. A refinement of the first part stays the first part's.
+ */
+export function growingWorldLease(
+  initial: Lease<CandidateWorldSceneSource>,
+  covered: MapWorldWindow,
+  grow: (
+    window: MapWorldWindow,
+    holds: MapWorldWindow,
+    signal?: AbortSignal,
+  ) => Promise<
+    Readonly<{ lease: Lease<CandidateWorldSceneSource>; covered: MapWorldWindow }> | undefined
+  >,
+  abort: () => void,
+  releaseShared: () => Promise<void>,
+): Lease<CandidateWorldSceneSource> {
+  let current = initial
+  let holds = covered
+  let released = false
+  let queue: Promise<unknown> = Promise.resolve()
+  const value: CandidateWorldSceneSource = Object.freeze({
+    contract: initial.value.contract,
+    major: 1,
+    get snapshotId() {
+      return current.value.snapshotId
+    },
+    info: (signal?: AbortSignal) => current.value.info(signal),
+    page: (request: WorldScenePageRequest, signal?: AbortSignal) =>
+      current.value.page(request, signal),
+    ...(initial.value.model === undefined
+      ? {}
+      : {
+          model: (resourceId: string, request: WorldSceneModelRequest, signal?: AbortSignal) =>
+            current.value.model!(resourceId, request, signal),
+        }),
+    ...(initial.value.texture === undefined
+      ? {}
+      : {
+          texture: (resourceId: string, request: WorldSceneTextureRequest, signal?: AbortSignal) =>
+            current.value.texture!(resourceId, request, signal),
+        }),
+    ...(initial.value.refined === undefined
+      ? {}
+      : {
+          refined: async (signal?: AbortSignal) =>
+            current === initial ? initial.value.refined!(signal) : false,
+        }),
+    focus(window: WorldSceneViewWindow, signal?: AbortSignal) {
+      const asked = queue.then(async () => {
+        signal?.throwIfAborted()
+        if (released) return false
+        const info = await current.value.info(signal)
+        const wanted = nativeWorldWindow(window, info.uvwTransform)
+        if (wanted === undefined || windowCovers(holds, wanted)) return false
+        const grown = await grow(wanted, holds, signal)
+        if (grown === undefined) return false
+        if (released) {
+          await grown.lease.release()
+          return false
+        }
+        const replaced = current
+        current = grown.lease
+        holds = grown.covered
+        await replaced.release()
+        return true
+      })
+      queue = asked.catch(() => undefined)
+      return asked
+    },
+  })
+  return Object.freeze({
+    value,
+    async release() {
+      if (released) return
+      released = true
+      abort()
+      await queue
+      await current.release()
       await releaseShared()
     },
   })

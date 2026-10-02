@@ -229,6 +229,7 @@ const worldSceneSourceSurface = {
     model: { kind: 'value', optional: true, ...sig },
     texture: { kind: 'value', optional: true, ...sig },
     refined: { kind: 'value', optional: true, ...sig },
+    focus: { kind: 'value', optional: true, ...sig },
   },
 } as const satisfies SurfaceOf<WorldSceneSource>
 

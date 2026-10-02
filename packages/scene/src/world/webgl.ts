@@ -118,6 +118,18 @@ export interface WorldWebGlCamera {
   readonly elevation: number
   readonly zoom: number
   readonly target: readonly [number, number, number]
+  /**
+   * What `target` and `zoom` are measured in; absent, the plan's own (WorldWebGlStats.frame). A
+   * viewer pins the frame it showed before its world moves to another part (MW5), so the view stays.
+   */
+  readonly frame?: WorldWebGlFrame
+}
+
+/** The point a camera's target offsets and the radius its zoom divides: a plan's middle and 0.65 of
+ * its diagonal (at least 1). */
+export interface WorldWebGlFrame {
+  readonly center: readonly [number, number, number]
+  readonly radius: number
 }
 
 export interface WorldWebGlCameraFrame {
@@ -150,6 +162,8 @@ export interface WorldWebGlStats {
   readonly diagnosticPlaceholders: number
   readonly shadowCasterTriangles: number
   readonly shadowMapSize: number
+  /** The plan's own camera frame (WorldWebGlCamera.frame). */
+  readonly frame: WorldWebGlFrame
 }
 
 /** Observable retained-resource counters used by the UI and performance receipts. */
@@ -7127,6 +7141,7 @@ export function createWorldWebGlPlan(
       diagnosticPlaceholders,
       shadowCasterTriangles,
       shadowMapSize: 0,
+      frame: worldPlanFrame(minimum, maximum),
     }),
   })
   worldStaticPreparations.set(plan, {
@@ -8913,18 +8928,14 @@ function renderWorldShadowMap(
   const maximum = new Vector3(...plan.bounds.maximum)
   const extent = maximum.clone().sub(minimum)
   const view = cameraState(input.camera)
+  const frame = view.frame ?? plan.stats.frame
   // Spend the depth map on what the camera sees: the orbit target and the ground footprint of the
   // orthographic view (stretched by a low elevation), plus the world height for casters that lean
   // in. A whole-map map at close zoom turns each texel into a visible block.
-  const center = minimum
-    .clone()
-    .add(maximum)
-    .multiplyScalar(0.5)
-    .add(new Vector3(...view.target))
+  const center = new Vector3(...frame.center).add(new Vector3(...view.target))
   const aspect = gl.drawingBufferWidth / Math.max(1, gl.drawingBufferHeight)
   const footprint =
-    ((Math.max(1, extent.length() * 0.65) / view.zoom) * Math.max(1, aspect)) /
-    Math.max(0.25, Math.sin(view.elevation))
+    ((frame.radius / view.zoom) * Math.max(1, aspect)) / Math.max(0.25, Math.sin(view.elevation))
   const radius = Math.max(0.5, Math.min(extent.length() * 0.5, footprint * 1.25 + extent.y))
   const rayDirection = new Vector3(...plan.light.direction).normalize()
   const lightCamera = new OrthographicCamera(-radius, radius, radius, -radius, 0.01, radius * 4 + 2)
@@ -9538,7 +9549,14 @@ function cameraState(value: WorldWebGlCamera | undefined): WorldWebGlCamera {
     source.zoom < 0.125 ||
     source.zoom > 16 ||
     source.target.length !== 3 ||
-    !source.target.every(Number.isFinite)
+    !source.target.every(Number.isFinite) ||
+    (source.frame !== undefined &&
+      !(
+        source.frame.center.length === 3 &&
+        source.frame.center.every(Number.isFinite) &&
+        Number.isFinite(source.frame.radius) &&
+        source.frame.radius > 0
+      ))
   ) {
     throw new TypeError('world WebGL camera is outside its finite orbit/zoom domain')
   }
@@ -9908,15 +9926,13 @@ function worldViewRectangle(
   aspect: number,
 ): Readonly<{ u: number; v: number; halfWidth: number; halfHeight: number }> | undefined {
   if (!(aspect > 0) || !Number.isFinite(aspect)) return undefined
-  const { minimum, maximum } = plan.bounds
-  const center = [0, 1, 2].map(
-    axis => (minimum[axis]! + maximum[axis]!) / 2 + view.target[axis]!,
-  ) as [number, number, number]
-  const radius = Math.max(
-    1,
-    Math.hypot(maximum[0] - minimum[0], maximum[1] - minimum[1], maximum[2] - minimum[2]) * 0.65,
-  )
-  const halfHeight = radius / view.zoom
+  const frame = view.frame ?? plan.stats.frame
+  const center = [0, 1, 2].map(axis => frame.center[axis]! + view.target[axis]!) as [
+    number,
+    number,
+    number,
+  ]
+  const halfHeight = frame.radius / view.zoom
   const { right, up } = worldViewPlaneBasis(view)
   const rectangle = {
     u: center[0] * right[0] + center[1] * right[1] + center[2] * right[2],
@@ -10278,6 +10294,64 @@ export function zoomWorldWebGlCamera(
   })
 }
 
+/** A plan's own camera frame: the middle of its bounds and 0.65 of their diagonal, at least 1. */
+function worldPlanFrame(minimum: readonly number[], maximum: readonly number[]): WorldWebGlFrame {
+  const center = [0, 1, 2].map(axis => (minimum[axis]! + maximum[axis]!) / 2)
+  const radius = Math.hypot(...[0, 1, 2].map(axis => maximum[axis]! - minimum[axis]!)) * 0.65
+  return Object.freeze({
+    center: Object.freeze(center) as unknown as readonly [number, number, number],
+    radius: Math.max(1, radius),
+  })
+}
+
+/**
+ * The ground a camera shows (MW5): where the rays through the corners of its orthographic view meet
+ * the plane at the height of its frame's centre, within the near and far planes, as the box of their
+ * x and z. A viewer asks a growing world for it (WorldSceneSource.focus).
+ */
+export function worldViewGroundWindow(
+  frame: WorldWebGlFrame,
+  requested: WorldWebGlCamera,
+  aspect: number,
+): Readonly<{ minimumX: number; minimumZ: number; maximumX: number; maximumZ: number }> {
+  const view = cameraState(requested)
+  if (!(aspect > 0) || !Number.isFinite(aspect))
+    throw new TypeError('a world view aspect is positive and finite')
+  const center = new Vector3(...frame.center).add(new Vector3(...view.target))
+  const halfHeight = frame.radius / view.zoom
+  const toEye = new Vector3(
+    Math.cos(view.azimuth) * Math.cos(view.elevation),
+    Math.sin(view.elevation),
+    Math.sin(view.azimuth) * Math.cos(view.elevation),
+  )
+  // the camera's own axes as lookAt with +Y up makes them
+  const right = new Vector3(0, 1, 0).cross(toEye).normalize()
+  const up = toEye.clone().cross(right)
+  const ground = frame.center[1]
+  let minimumX = Infinity
+  let minimumZ = Infinity
+  let maximumX = -Infinity
+  let maximumZ = -Infinity
+  for (const across of [-1, 1])
+    for (const along of [-1, 1]) {
+      const corner = center
+        .clone()
+        .addScaledVector(right, across * halfHeight * aspect)
+        .addScaledVector(up, along * halfHeight)
+      // the eye stands 3 radii before the centre, its far plane 10 radii beyond the eye
+      const reach = Math.max(
+        -3 * frame.radius,
+        Math.min(7 * frame.radius, (corner.y - ground) / toEye.y),
+      )
+      const met = corner.addScaledVector(toEye, -reach)
+      minimumX = Math.min(minimumX, met.x)
+      minimumZ = Math.min(minimumZ, met.z)
+      maximumX = Math.max(maximumX, met.x)
+      maximumZ = Math.max(maximumZ, met.z)
+    }
+  return Object.freeze({ minimumX, minimumZ, maximumX, maximumZ })
+}
+
 function cameraFor(
   plan: WorldWebGlPlan,
   width: number,
@@ -10285,17 +10359,9 @@ function cameraFor(
   requested?: WorldWebGlCamera,
 ) {
   const view = cameraState(requested)
-  const center = new Vector3(
-    (plan.bounds.minimum[0] + plan.bounds.maximum[0]) / 2,
-    (plan.bounds.minimum[1] + plan.bounds.maximum[1]) / 2,
-    (plan.bounds.minimum[2] + plan.bounds.maximum[2]) / 2,
-  ).add(new Vector3(...view.target))
-  const extent = new Vector3(
-    plan.bounds.maximum[0] - plan.bounds.minimum[0],
-    plan.bounds.maximum[1] - plan.bounds.minimum[1],
-    plan.bounds.maximum[2] - plan.bounds.minimum[2],
-  )
-  const radius = Math.max(1, extent.length() * 0.65)
+  const frame = view.frame ?? plan.stats.frame
+  const center = new Vector3(...frame.center).add(new Vector3(...view.target))
+  const radius = frame.radius
   const visibleRadius = radius / view.zoom
   const aspect = width / height
   const camera = new OrthographicCamera(

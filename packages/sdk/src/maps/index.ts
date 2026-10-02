@@ -502,6 +502,8 @@ export interface MapSemanticAnalysisRequest {
    * Absent when the caller analyzes documents without an opened subject.
    */
   readonly subjectOperationIds?: readonly string[]
+  /** The part of the world these documents were read for (ResolvedMapWorkspacePlan.window). */
+  readonly window?: MapWorldWindow
   readonly maxDocuments: number
   readonly maxDocumentBytes: number
   readonly maxTotalBytes: number
@@ -535,9 +537,25 @@ export interface MapSemanticDocumentRequirement {
   readonly scope?: MapSemanticDocumentScope
 }
 
+/**
+ * A rectangle of a map's world in map-native x and y (the units of `MapPlacedObject.position`), for
+ * a world larger than one analysis reads (MW5: a Minecraft dimension). Inclusive, minimum ≤ maximum.
+ */
+export interface MapWorldWindow {
+  readonly minimumX: number
+  readonly minimumY: number
+  readonly maximumX: number
+  readonly maximumY: number
+}
+
 export interface ResolvedMapWorkspacePlanRequest {
   readonly workspace: ModWorkspaceLock
   readonly maxRequirements: number
+  /**
+   * The part of the world a viewer looks at (CandidateWorldSceneSource.focus), for a provider whose
+   * plans name a `window`; absent, the provider's own first part (around the spawn or origin).
+   */
+  readonly window?: MapWorldWindow
   readonly signal?: AbortSignal
 }
 
@@ -550,6 +568,13 @@ export interface ResolvedMapWorkspacePlan {
   readonly requirements: readonly MapSemanticDocumentRequirement[]
   readonly diagnostics: readonly MapSemanticDiagnostic[]
   readonly complete: boolean
+  /**
+   * The part of the world these documents cover, when the world is larger than one plan reads: its
+   * world source can then move to another part (CandidateWorldSceneSource.focus) by a plan for a
+   * requested window. A provider covers at least the part of a requested window its limits allow.
+   * Absent: the plan covers the whole world.
+   */
+  readonly window?: MapWorldWindow
 }
 
 export interface MapPosition {
@@ -1766,12 +1791,18 @@ export interface WorldScenePageRequest {
   readonly lod?: string
   readonly cursor?: string
   readonly limit: number
-  readonly bounds?: Readonly<{
-    minimumX: number
-    minimumY: number
-    maximumX: number
-    maximumY: number
-  }>
+  readonly bounds?: MapWorldWindow
+}
+
+/**
+ * A rectangle of a world as its viewer draws it: uvw-canonical x and z, its ground plane (the world
+ * plan's own x and z where an object has no canonical position).
+ */
+export interface WorldSceneViewWindow {
+  readonly minimumX: number
+  readonly minimumZ: number
+  readonly maximumX: number
+  readonly maximumZ: number
 }
 
 export interface WorldSceneModelRequest extends Omit<ModelResourceRequest, 'requirement'> {
@@ -1888,6 +1919,12 @@ export interface CandidateWorldSceneSource {
    * false when no refinement will come. Absent: the world is final when opened.
    */
   refined?(signal?: AbortSignal): Promise<boolean>
+  /**
+   * Asks a world larger than it holds to hold `window`, what a viewer looks at (MW5): resolves true
+   * once a world covering it has replaced this one (a new snapshot, read again as after `refined`),
+   * false when this one already covers it or cannot move there. Absent: the world is whole.
+   */
+  focus?(window: WorldSceneViewWindow, signal?: AbortSignal): Promise<boolean>
 }
 
 /**
@@ -1915,6 +1952,8 @@ export interface WorldSceneSource {
   ): Promise<WorldSceneTextureResult>
   /** See CandidateWorldSceneSource.refined. */
   refined?(signal?: AbortSignal): Promise<boolean>
+  /** See CandidateWorldSceneSource.focus. */
+  focus?(window: WorldSceneViewWindow, signal?: AbortSignal): Promise<boolean>
 }
 
 /** Activated game-specific semantic map analyzer. */
