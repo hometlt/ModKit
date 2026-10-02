@@ -107,7 +107,11 @@ they never make a partial workspace complete.
   an object), one bounded page of the `layers`, `objects` or `regions` facet of a `layerId` from
   `info.facets`, or `image`: the world drawn from above, north up, with models as placeholders,
   returned as an image block and each object's pixel box in `data.objects`. Objects carry a stable
-  `id` and the `objectId` an edit names.
+  `id` and the `objectId` an edit names. `render` draws the world as the world viewer shows it,
+  models and textures included, on the CPU (`renderWorldHeadless` of `@modkit/scene/world`): an
+  image block of `width` × `height` from the viewer's orbit camera (`azimuth`, `elevation` in
+  radians, `zoom`, `target` offset from the world centre). `export` writes the world as one UVW
+  document, a retained output resource, with what the UVW leaves out.
 - `modkit.invoke_readonly` invokes an exact operation ID only when the current descriptor marks it
   available and `mutatesSource: false`. A byte output whose signature is an image (PNG, JPEG, GIF,
   WebP, at most 4 MiB) also comes back as an MCP image block. `render: "image"` draws a

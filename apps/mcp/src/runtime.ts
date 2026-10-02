@@ -31,11 +31,18 @@ import {
   type WorldSceneSource,
 } from '@modkit/sdk/maps'
 import { encodePng, greyGridToPng } from '@modkit/codec-kit/raster'
-import { createWorldWebGlPlan, renderWorldTopDown } from '@modkit/scene/world'
+import {
+  DEFAULT_WORLD_WEBGL_CAMERA,
+  createWorldWebGlPlan,
+  renderWorldHeadless,
+  renderWorldTopDown,
+} from '@modkit/scene/world'
 import {
   WORLD_VIEWER_MAX_ITEMS_PER_LAYER,
   WORLD_VIEWER_MAX_LAYERS,
+  candidateWorldWebGlInput,
   inspectCandidateWorld,
+  worldModelAssetStatus,
 } from '@modkit/ui/world'
 import type {
   McpLanguageRequest,
@@ -194,6 +201,15 @@ export type CalculationsQuery =
 export type WorldSceneQuery =
   | { readonly view: 'info' }
   | { readonly view: 'image'; readonly maxSize: number }
+  | {
+      readonly view: 'render'
+      readonly width: number
+      readonly height: number
+      readonly azimuth?: number
+      readonly elevation?: number
+      readonly zoom?: number
+      readonly target?: readonly [number, number, number]
+    }
   | { readonly view: 'export' }
   | {
       readonly view: 'page'
@@ -1387,6 +1403,70 @@ export class ModkitMcpRuntime {
                     },
                   ],
             data: { width: image.width, height: image.height, world: image.world, objects: image.objects },
+            images: [shown],
+          })
+        }
+        if (query.view === 'render') {
+          // the world as its viewer shows it, models included, drawn without a GPU (MW7); the
+          // regions, navigation and gateway overlays stay off, as the game draws none of them
+          const model = await inspectCandidateWorld(source, {
+            maxLayers: WORLD_VIEWER_MAX_LAYERS,
+            maxItemsPerLayer: WORLD_VIEWER_MAX_ITEMS_PER_LAYER,
+            maxPageItems: MCP_MAX_WORLD_PAGE_ITEMS,
+            signal: scopedSignal,
+          })
+          const camera = {
+            azimuth: query.azimuth ?? DEFAULT_WORLD_WEBGL_CAMERA.azimuth,
+            elevation: query.elevation ?? DEFAULT_WORLD_WEBGL_CAMERA.elevation,
+            zoom: query.zoom ?? DEFAULT_WORLD_WEBGL_CAMERA.zoom,
+            target: query.target ?? DEFAULT_WORLD_WEBGL_CAMERA.target,
+          }
+          const plan = createWorldWebGlPlan({
+            ...candidateWorldWebGlInput(model, new Set(['regions', 'navigation', 'gateways'])),
+            camera,
+          })
+          const frame = await renderWorldHeadless(plan, {
+            width: query.width,
+            height: query.height,
+            camera,
+            signal: scopedSignal,
+          })
+          const shown = mcpImage(
+            await encodePng(frame.width, frame.height, frame.rgba, scopedSignal),
+          )
+          if (shown === undefined)
+            throw new McpOperationError(
+              'x3.mcp/render-too-large',
+              'The drawn world exceeds the MCP image limit.',
+            )
+          const cut = model.layers
+            .filter(
+              layer => layer.page.state !== 'available' || layer.page.nextCursor !== undefined,
+            )
+            .map(layer => layer.layer.layerId)
+          const models = worldModelAssetStatus(model)
+          return envelope({
+            snapshotId: model.snapshotId,
+            completeness:
+              model.info.complete && cut.length === 0 && !models.partial ? 'complete' : 'partial',
+            diagnostics: [
+              ...frame.diagnostics,
+              ...(cut.length === 0
+                ? []
+                : [
+                    {
+                      code: 'x3.mcp/world-image-partial',
+                      message: `Drawn without the whole of these layers: ${cut.join(', ')}.`,
+                      severity: 'information',
+                    },
+                  ]),
+            ],
+            data: {
+              width: frame.width,
+              height: frame.height,
+              camera,
+              models: { total: models.total, converted: models.converted },
+            },
             images: [shown],
           })
         }

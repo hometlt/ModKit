@@ -1105,6 +1105,31 @@ function worldTeamRampsOf(
   return ramps
 }
 
+/**
+ * The world renderer's input for an inspected world, without the viewer's selection, camera and
+ * clock: its shown items, player colours, models and ground. The same model gives the same arrays,
+ * so a renderer keeps its plan between frames; a headless render (MCP) draws from the same input.
+ */
+export function candidateWorldWebGlInput(
+  model: CandidateWorldViewerModel,
+  hiddenOverlays?: ReadonlySet<WorldOverlayFacet>,
+): WorldWebGlInput {
+  const flattened = flattenedWorldLayersOf(model.layers)
+  // objects of a player slot take its colour (an object's own presentationTeamColor still wins)
+  const teamColors = worldTeamColorsOf(model.info)
+  const teamRamps = worldTeamRampsOf(model.info)
+  return {
+    items: shownWorldItems(flattened.items, hiddenOverlays),
+    ...(teamColors.size === 0 ? {} : { teamColors }),
+    ...(teamRamps.size === 0 ? {} : { teamRamps }),
+    ...(model.models === undefined ? {} : { models: model.models }),
+    terrainMaterials: flattened.terrainMaterials,
+    waterMaterials: flattened.waterMaterials,
+    terrainWeightRasters: flattened.terrainWeightRasters,
+    ...(model.terrainTextures === undefined ? {} : { terrainTextures: model.terrainTextures }),
+  }
+}
+
 export function drawCandidateWorld(
   canvas: HTMLCanvasElement,
   model: CandidateWorldViewerModel,
@@ -1115,21 +1140,9 @@ export function drawCandidateWorld(
   renderer?: WorldWebGlRenderer,
   hiddenOverlays?: ReadonlySet<WorldOverlayFacet>,
 ): WorldRenderStats {
-  const flattened = flattenedWorldLayersOf(model.layers)
-  const worldItems = shownWorldItems(flattened.items, hiddenOverlays)
   const selectedObjectId = typeof selection === 'number' ? selection : selection?.selectedObjectId
-  // objects of a player slot take its colour (an object's own presentationTeamColor still wins)
-  const teamColors = worldTeamColorsOf(model.info)
-  const teamRamps = worldTeamRampsOf(model.info)
   const webGlInput = {
-    items: worldItems,
-    ...(teamColors.size === 0 ? {} : { teamColors }),
-    ...(teamRamps.size === 0 ? {} : { teamRamps }),
-    ...(model.models === undefined ? {} : { models: model.models }),
-    terrainMaterials: flattened.terrainMaterials,
-    waterMaterials: flattened.waterMaterials,
-    terrainWeightRasters: flattened.terrainWeightRasters,
-    ...(model.terrainTextures === undefined ? {} : { terrainTextures: model.terrainTextures }),
+    ...candidateWorldWebGlInput(model, hiddenOverlays),
     ...(selectedObjectId === undefined ? {} : { selectedObjectId }),
     ...(typeof selection !== 'object' || selection.preview === undefined
       ? {}

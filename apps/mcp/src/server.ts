@@ -428,6 +428,23 @@ const worldSceneInput = z.discriminatedUnion('view', [
   z
     .object({
       handle: handleSchema,
+      view: z.literal('render'),
+      width: z.number().int().min(16).max(2_048).default(1_024),
+      height: z.number().int().min(16).max(2_048).default(768),
+      // the world viewer's orbit: above the horizon, short of straight down
+      azimuth: z.number().finite().optional(),
+      elevation: z
+        .number()
+        .gt(0.03)
+        .lt(Math.PI / 2 - 0.03)
+        .optional(),
+      zoom: z.number().min(0.125).max(16).optional(),
+      target: z.tuple([z.number().finite(), z.number().finite(), z.number().finite()]).optional(),
+    })
+    .strict(),
+  z
+    .object({
+      handle: handleSchema,
       view: z.literal('page'),
       facet: z.enum(['layers', 'objects', 'regions']),
       layerId: z.string().min(1).max(256).optional(),
@@ -989,7 +1006,7 @@ export function createModkitMcpServer(host: ModkitMcpHostPort): ModkitMcpServerR
     {
       title: 'Read a map world',
       description:
-        'Read the map world a subject publishes: info (coordinate spaces, facets and edit — the operationId and moveObjectKind that modkit.propose_edit takes to change an object, with expectedSourceRevision and edits [{ kind, objectId, patch }]), one bounded page of the layers, objects or regions facet, or image: the world drawn from above, north up, as an image block with each objectId\'s pixel box in data.objects (models drawn as placeholders), or export: the world as one UVW document, kept as a retained output resource (data.outputArtifact), with the receipt of what the UVW leaves out (excludedFacetIds, omittedObjects, lostFields).',
+        "Read the map world a subject publishes: info (coordinate spaces, facets and edit — the operationId and moveObjectKind that modkit.propose_edit takes to change an object, with expectedSourceRevision and edits [{ kind, objectId, patch }]), one bounded page of the layers, objects or regions facet, or image: the world drawn from above, north up, as an image block with each objectId's pixel box in data.objects (models drawn as placeholders), render: the world as the world viewer shows it, models and textures included, drawn on the CPU as an image block of width x height (azimuth and elevation in radians, zoom, target an offset from the world centre in world units; the default camera of the viewer when absent), or export: the world as one UVW document, kept as a retained output resource (data.outputArtifact), with the receipt of what the UVW leaves out (excludedFacetIds, omittedObjects, lostFields).",
       inputSchema: worldSceneInput,
       outputSchema: envelopeSchema,
       annotations: { ...readOnlyAnnotations, idempotentHint: true },
