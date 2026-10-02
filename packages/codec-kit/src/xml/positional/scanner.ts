@@ -1,5 +1,11 @@
-import { TokenType, ScannerState, type Scanner, type DiagnosticReport, DiagnosticCategory } from './types.js'
-import { getLogger } from '@modkit/codec-kit/legacy/core'
+import {
+  TokenType,
+  ScannerState,
+  type Scanner,
+  type DiagnosticReport,
+  DiagnosticCategory,
+} from './types.js'
+import { getLogger } from '../../logging.js'
 
 const log = getLogger(['xml', 'positional-scanner'])
 

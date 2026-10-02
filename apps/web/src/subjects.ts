@@ -192,6 +192,7 @@ export const WEB_WORKER_MODULE_MAP: Readonly<Record<string, string>> = Object.fr
   '@modkit/codec-kit/model-math/effects-sim': 'vendor/codec-kit/model-math/effects-sim.js',
   '@modkit/codec-kit/raster': 'vendor/codec-kit/raster/index.js',
   '@modkit/codec-kit/raster/palette': 'vendor/codec-kit/raster/palette.js',
+  '@modkit/codec-kit/xml/positional': 'vendor/codec-kit/xml/positional.js',
   '@modkit/codec-kit/texture': 'vendor/codec-kit/texture/index.js',
   '@modkit/codec-kit/texture/bc': 'vendor/codec-kit/texture/bc.js',
   '@modkit/codec-kit/texture/gl-compressed': 'vendor/codec-kit/texture/gl-compressed.js',

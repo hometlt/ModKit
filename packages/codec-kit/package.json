@@ -150,9 +150,9 @@
       "types": "./dist/legacy/xml/index.d.ts",
       "default": "./dist/legacy/xml/index.js"
     },
-    "./legacy/xml/positional": {
-      "types": "./dist/legacy/xml/positional/index.d.ts",
-      "default": "./dist/legacy/xml/positional/index.js"
+    "./xml/positional": {
+      "types": "./dist/xml/positional/index.d.ts",
+      "default": "./dist/xml/positional/index.js"
     },
     "./legacy/models": {
       "types": "./dist/legacy-model-support.d.ts",

@@ -203,6 +203,9 @@ const nodeModuleMap = {
   '@modkit/codec-kit/raster/palette': pathToFileURL(
     join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'raster', 'palette.js'),
   ).href,
+  '@modkit/codec-kit/xml/positional': pathToFileURL(
+    join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'xml', 'positional', 'index.js'),
+  ).href,
   '@modkit/codec-kit/texture': pathToFileURL(
     join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'texture', 'index.js'),
   ).href,

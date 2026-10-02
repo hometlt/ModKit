@@ -410,6 +410,15 @@ const workerBuild = await build({
       'raster',
       'palette.js',
     ),
+    'vendor/codec-kit/xml/positional': join(
+      repoRoot,
+      'packages',
+      'codec-kit',
+      'dist',
+      'xml',
+      'positional',
+      'index.js',
+    ),
     'vendor/codec-kit/texture/index': join(
       repoRoot,
       'packages',

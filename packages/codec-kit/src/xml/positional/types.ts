@@ -184,4 +184,6 @@ export interface DiagnosticReport {
   end: number
   category: DiagnosticCategory
   message: string
+  /** The rule that found it (a language's schema rule id), when the reporter names one. */
+  code?: string
 }
