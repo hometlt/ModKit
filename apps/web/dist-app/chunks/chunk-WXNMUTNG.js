@@ -434,6 +434,11 @@ function resolvePointer(root, pointer) {
 // ../MODDING/modkit-core/packages/codec-kit/dist/legacy/models/material.js
 var LAYER_SLOTS = [
   "diffuse",
+  "diffuse2",
+  "diffuse3",
+  "diffuse4",
+  "diffuse5",
+  "diffuseWeights",
   "decal",
   "specular",
   "gloss",

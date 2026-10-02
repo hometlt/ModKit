@@ -4,7 +4,7 @@ import {
   object,
   safeIndex,
   validateUvmDocument
-} from "./chunk-PRU56TPQ.js";
+} from "./chunk-WXNMUTNG.js";
 import {
   DEFAULT_UVM_CONTAINER_BUDGET,
   writeUvmContainer

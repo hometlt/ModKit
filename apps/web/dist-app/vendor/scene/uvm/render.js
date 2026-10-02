@@ -15,7 +15,7 @@ import {
   snapshotEnvironment,
   snapshotEyePosition,
   snapshotModelBillboards
-} from "../../../chunks/chunk-7TJMLD5J.js";
+} from "../../../chunks/chunk-W6WJ2KXN.js";
 import "../../../chunks/chunk-WGWMBNZ4.js";
 import {
   opaqueTexels,
@@ -24,7 +24,7 @@ import {
   readUvmModel,
   uvmImageFilters,
   uvmImageTexels
-} from "../../../chunks/chunk-MIYZSSZM.js";
+} from "../../../chunks/chunk-YEK43IWS.js";
 import {
   array,
   field,
@@ -36,7 +36,7 @@ import {
   vector3,
   vector4
 } from "../../../chunks/chunk-I4Z5J3HX.js";
-import "../../../chunks/chunk-JFFRYNZJ.js";
+import "../../../chunks/chunk-YOXPMEYX.js";
 import {
   readUvmAccessor,
   readUvmAnimationClips,
@@ -44,7 +44,7 @@ import {
   readUvmTextureAlpha,
   readUvmTextureColorKeys,
   validateUvmDocument
-} from "../../../chunks/chunk-PRU56TPQ.js";
+} from "../../../chunks/chunk-WXNMUTNG.js";
 import {
   readUvmContainer
 } from "../../../chunks/chunk-NONHW3HK.js";
@@ -826,6 +826,11 @@ var PBR_GLSL = `vec3 modkitPbr(vec3 baseColor, float metallic, float roughness, 
 // ../MODDING/modkit-core/packages/codec-kit/dist/model-math/standard-material-glsl.js
 var FRAGMENT_LAYER_SLOTS = [
   "diffuse",
+  "diffuse2",
+  "diffuse3",
+  "diffuse4",
+  "diffuse5",
+  "diffuseWeights",
   "decal",
   "specular",
   "gloss",
@@ -848,8 +853,14 @@ var FRAGMENT_LAYER_SLOTS = [
   "metalness",
   "roughness"
 ];
+var DIFFUSE_STACK = ["diffuse2", "diffuse3", "diffuse4", "diffuse5"];
 var TEXTURE_FALLBACK_PRIORITY = [
   "diffuse",
+  "diffuseWeights",
+  "diffuse2",
+  "diffuse3",
+  "diffuse4",
+  "diffuse5",
   "alpha1",
   "alpha2",
   "normal",
@@ -923,7 +934,7 @@ function buildMaterialDefines(material, options = {}) {
     if (!layer)
       continue;
     const source = uvSourceKind(layer.uvSource);
-    if (source.kind === "explicit")
+    if (source.kind === "explicit" && layer.angleLookup === void 0)
       maxUvSet = Math.max(maxUvSet, source.set);
     layers.push({
       slot,
@@ -938,6 +949,7 @@ function buildMaterialDefines(material, options = {}) {
       hasColorAdd: layer.colorAdd !== void 0,
       hasAlphaFactor: layer.alphaFactor !== void 0,
       ...layer.fresnel ? { fresnel: layer.fresnel } : {},
+      ...layer.angleLookup ? { angleLookup: layer.angleLookup } : {},
       hasUvTransform: layer.uvOffset !== void 0 || layer.uvAngle !== void 0 || layer.uvTiling !== void 0 || layer.uvTriplanarOffset !== void 0 || layer.uvTriplanarScale !== void 0 || layer.flipbook !== void 0
     });
   }
@@ -961,12 +973,14 @@ function buildMaterialDefines(material, options = {}) {
     ...options.sceneLighting === true ? { sceneLighting: true } : {},
     ...material.lightingModel === "pbr-metallic-roughness" ? { pbr: true } : {},
     // an unshaded material is drawn as stored, without light to sum linearly
-    ...material.lightingModel === "pbr-metallic-roughness" && material.colorPipeline === "linear-srgb" && !material.unshaded ? { linearColor: true, ...material.tonemap === void 0 ? {} : { tonemap: true } } : {}
+    ...material.lightingModel === "pbr-metallic-roughness" && material.colorPipeline === "linear-srgb" && !material.unshaded ? { linearColor: true, ...material.tonemap === void 0 ? {} : { tonemap: true } } : {},
+    ...material.environmentTintByBase === true ? { environmentTintByBase: true } : {},
+    ...material.edgeFadeOut === void 0 ? {} : { edgeFadeOut: material.edgeFadeOut }
   };
 }
 function canonicalDefineKey(defines) {
-  const layerKeys = defines.layers.map((layer) => `${layer.slot}:${layer.hasTexture ? "t" : "c"}${layer.uvSource}.${layer.channels}.${layer.op}.${layer.teamColorMode}${layer.invert ? "i" : ""}${layer.clampResult ? "k" : ""}${layer.hasColorMultiply ? "m" : ""}${layer.hasColorAdd ? "a" : ""}${layer.hasAlphaFactor ? "f" : ""}${layer.hasUvTransform ? "u" : ""}${layer.fresnel ? `;fr=${layer.fresnel.mode},${layer.fresnel.exponent},${layer.fresnel.min},${layer.fresnel.maxOffset},${layer.fresnel.transformMode},${layer.fresnel.localTransform ? 1 : 0},${layer.fresnel.doNotMirror ? 1 : 0},${layer.fresnel.translation.join(",")},${layer.fresnel.invertMask.join(",")},${layer.fresnel.rotation.join(",")}` : ""}`).join("|");
-  return `layers[${layerKeys}];n=${defines.normalMapFormat}.${defines.normalMapSpace};spec=${defines.specMode};${defines.unshaded ? "U" : ""}${defines.doubleLambert ? "D" : ""}${defines.clampOutput ? "C" : ""}${defines.usesVertexColor ? "vc" : ""}${defines.usesVertexAlpha ? "va" : ""}${defines.modAlpha ? "ma" : ""}${defines.alphaTest ? "at" : ""}${defines.specularEnergyConservation ? "ec" : ""};uv=${defines.uvSetCount};${defines.gpuSkinning ? "skin" : ""}${defines.hardwareInstancing ? "inst" : ""}${defines.bakedPoseInstancing ? "baked" : ""}${defines.sceneLighting ? ";scene" : ""}${defines.pbr ? ";pbr" : ""}${defines.linearColor ? ";linear" : ""}${defines.tonemap ? ";tonemap" : ""}`;
+  const layerKeys = defines.layers.map((layer) => `${layer.slot}:${layer.hasTexture ? "t" : "c"}${layer.uvSource}.${layer.channels}.${layer.op}.${layer.teamColorMode}${layer.invert ? "i" : ""}${layer.clampResult ? "k" : ""}${layer.hasColorMultiply ? "m" : ""}${layer.hasColorAdd ? "a" : ""}${layer.hasAlphaFactor ? "f" : ""}${layer.hasUvTransform ? "u" : ""}${layer.fresnel ? `;fr=${layer.fresnel.mode},${layer.fresnel.exponent},${layer.fresnel.min},${layer.fresnel.maxOffset},${layer.fresnel.transformMode},${layer.fresnel.localTransform ? 1 : 0},${layer.fresnel.doNotMirror ? 1 : 0},${layer.fresnel.translation.join(",")},${layer.fresnel.invertMask.join(",")},${layer.fresnel.rotation.join(",")}` : ""}${layer.angleLookup ? `;al=${layer.angleLookup.u},${layer.angleLookup.v},${layer.angleLookup.exponent ?? 1},${layer.angleLookup.row ?? 0}` : ""}`).join("|");
+  return `layers[${layerKeys}];n=${defines.normalMapFormat}.${defines.normalMapSpace};spec=${defines.specMode};${defines.unshaded ? "U" : ""}${defines.doubleLambert ? "D" : ""}${defines.clampOutput ? "C" : ""}${defines.usesVertexColor ? "vc" : ""}${defines.usesVertexAlpha ? "va" : ""}${defines.modAlpha ? "ma" : ""}${defines.alphaTest ? "at" : ""}${defines.specularEnergyConservation ? "ec" : ""};uv=${defines.uvSetCount};${defines.gpuSkinning ? "skin" : ""}${defines.hardwareInstancing ? "inst" : ""}${defines.bakedPoseInstancing ? "baked" : ""}${defines.sceneLighting ? ";scene" : ""}${defines.pbr ? ";pbr" : ""}${defines.linearColor ? ";linear" : ""}${defines.tonemap ? ";tonemap" : ""}${defines.environmentTintByBase ? ";envbase" : ""}${defines.edgeFadeOut === void 0 ? "" : `;edge=${defines.edgeFadeOut}`}`;
 }
 function standardBlendModeName(blendMode, alphaTestThreshold) {
   switch (blendMode) {
@@ -1137,6 +1151,21 @@ function composeStandardPixelCpu(input) {
   if (layers.diffuse) {
     color = combineLayerColorCpu(layers.diffuse.op, computeLayerColorCpu(layers.diffuse, teamColor), color, teamColor);
   }
+  if (layers.diffuseWeights) {
+    const weights = computeLayerColorCpu(layers.diffuseWeights, teamColor);
+    for (const [index, slot] of DIFFUSE_STACK.entries()) {
+      const layer = layers[slot];
+      if (layer === void 0)
+        continue;
+      const value = computeLayerColorCpu(layer, teamColor);
+      const weight = weights[index];
+      color = [
+        color[0] + (value[0] - color[0]) * weight,
+        color[1] + (value[1] - color[1]) * weight,
+        color[2] + (value[2] - color[2]) * weight
+      ];
+    }
+  }
   if (layers.decal) {
     color = combineLayerColorCpu(layers.decal.op, computeLayerColorCpu(layers.decal, teamColor), color, teamColor);
   }
@@ -1208,10 +1237,11 @@ function composeStandardPixelCpu(input) {
       mask = [environment[3], environment[3], environment[3], environment[3]];
     }
     const multipliers = input.environmentMultipliers ?? [1, 0, 0];
+    const tint = input.environmentTintByBase ? inPipeline([color[0], color[1], color[2], 1]) : [1, 1, 1];
     const environmentValue = [
-      environment[0] * (multipliers[0] + diffuseLight * multipliers[1] + specularLight[0] * multipliers[2]),
-      environment[1] * (multipliers[0] + diffuseLight * multipliers[1] + specularLight[1] * multipliers[2]),
-      environment[2] * (multipliers[0] + diffuseLight * multipliers[1] + specularLight[2] * multipliers[2])
+      environment[0] * tint[0] * (multipliers[0] + diffuseLight * multipliers[1] + specularLight[0] * multipliers[2]),
+      environment[1] * tint[1] * (multipliers[0] + diffuseLight * multipliers[1] + specularLight[1] * multipliers[2]),
+      environment[2] * tint[2] * (multipliers[0] + diffuseLight * multipliers[1] + specularLight[2] * multipliers[2])
     ];
     if (layers.envi.op === 0) {
       return [
@@ -1305,6 +1335,14 @@ function composeStandardPixelCpu(input) {
   if (layers.alpha2)
     alpha *= computeLayerColorCpu(layers.alpha2, teamColor)[3];
   final[3] = alpha * (input.materialAlpha ?? 1);
+  if (input.edgeFadeOut !== void 0) {
+    const t = clamp012(Math.abs(normalize3(input.viewDir ?? [0, 0, 1])[2]) / input.edgeFadeOut);
+    const edge = t * t * (3 - 2 * t);
+    if (input.modAlpha === true)
+      fade *= edge;
+    else
+      final[3] *= edge;
+  }
   if (layers.teamColorMask) {
     const mask = computeLayerColorCpu(layers.teamColorMask, teamColor)[0];
     final = [
@@ -1345,6 +1383,8 @@ function glslFloat(value) {
   return Number.isInteger(value) ? `${value}.0` : `${value}`;
 }
 function uvExpression(layer) {
+  if (layer.angleLookup !== void 0)
+    return transformUvExpression(layer, angleLookupUvExpression(layer.angleLookup), "z", false);
   const source = uvSourceKind(layer.uvSource);
   let base = "v_uv0";
   let angleComponent = "z";
@@ -1369,6 +1409,12 @@ function uvExpression(layer) {
   } else
     base = "v_uv0";
   return transformUvExpression(layer, base, angleComponent, layer.slot !== "height");
+}
+function angleLookupUvExpression(lookup) {
+  const light = "normalize(v_lightDir)", view = "normalize(v_viewDir)";
+  const u = lookup.u === "edge" ? `pow(clamp(1.0 - abs(${view}.z), 0.0, 1.0), ${glslFloat(lookup.exponent ?? 1)})` : `clamp(dot(reflect(-${light}, vec3(0.0, 0.0, 1.0)), ${view}), 0.0, 1.0)`;
+  const v = lookup.v === "light" ? `clamp(${light}.z, 0.0, 1.0)` : glslFloat(lookup.row ?? 0);
+  return `vec2(${u}, ${v})`;
 }
 function axisComponent(axis) {
   return axis === 0 ? "x" : axis === 1 ? "y" : "z";
@@ -1703,6 +1749,13 @@ function buildStandardFragmentSource(defines, options = {}) {
     body.push("  vec4 diffuseColor = computeLayer_diffuse();");
     body.push(`  ${combineExpression(diffuse.op, "diffuseColor", "color")}`);
   }
+  if (layerBySlot.has("diffuseWeights")) {
+    body.push("  vec4 diffuseWeights = computeLayer_diffuseWeights();");
+    DIFFUSE_STACK.forEach((slot, index) => {
+      if (layerBySlot.has(slot))
+        body.push(`  color = mix(color, computeLayer_${slot}().rgb, diffuseWeights.${"rgba"[index]});`);
+    });
+  }
   const decal = layerBySlot.get("decal");
   if (decal) {
     body.push("  vec4 decalColor = computeLayer_decal();");
@@ -1749,7 +1802,7 @@ function buildStandardFragmentSource(defines, options = {}) {
     lines.push(`${indent}if (addEmissive) { ${target} += emissive * u_emissiveTint * u_emisMult * ${mask}; }`);
     return lines;
   };
-  const environmentBlock = (indent, target, diffuseLight, specularLight) => {
+  const environmentBlock = (indent, target, diffuseLight, specularLight, base = "color") => {
     const environment = layerBySlot.get("envi");
     if (!environment || environment.op !== 0 && environment.op !== 2 && environment.op !== 3) {
       return [];
@@ -1769,6 +1822,8 @@ function buildStandardFragmentSource(defines, options = {}) {
     }
     lines.push(`${indent}vec3 environmentLight = vec3(u_environmentMultipliers.x + (${diffuseLight}) * u_environmentMultipliers.y) + (${specularLight}) * u_environmentMultipliers.z;`);
     lines.push(`${indent}vec3 environmentValue = environmentColor.rgb * environmentLight;`);
+    if (defines.environmentTintByBase)
+      lines.push(`${indent}environmentValue *= ${base};`);
     if (environment.op === 0) {
       lines.push(`${indent}${target} *= environmentValue * environmentMask.rgb;`);
     } else if (environment.op === 2) {
@@ -1802,7 +1857,7 @@ function buildStandardFragmentSource(defines, options = {}) {
     const light = defines.sceneLighting ? "u_sceneLightColor" : vector7(PBR_VIEWER_LIGHT);
     const ambient = defines.sceneLighting ? "u_sceneAmbientColor" : vector7(PBR_VIEWER_AMBIENT);
     body.push(`  vec3 pbrBase = ${defines.linearColor ? "modkitSrgbToLinear(clamp(color, 0.0, 1.0))" : "color"};`, `  float pbrMetallic = u_metallicFactor${channel("metalness")};`, `  float pbrRoughness = u_roughnessFactor${channel("roughness")};`, "  vec3 pbrNormal = normalize(normal);", "  vec3 pbrLight = normalize(v_lightDir);", "  vec3 pbrView = normalize(v_viewDir);", `  vec3 shaded = modkitPbr(pbrBase, pbrMetallic, pbrRoughness, 1.0, vec3(0.0), pbrNormal, pbrView, pbrLight, ${light}, ${ambient});`);
-    body.push(...environmentBlock("  ", "shaded", "max(dot(pbrNormal, pbrLight), 0.0)", "vec3(0.0)"));
+    body.push(...environmentBlock("  ", "shaded", "max(dot(pbrNormal, pbrLight), 0.0)", "vec3(0.0)", "pbrBase"));
     body.push(...emissiveBlock("  ", "shaded"));
     if (defines.linearColor)
       body.push(defines.tonemap ? "  shaded = modkitLinearToSrgb(modkitTonemap(shaded, u_tonemapCurve, u_tonemapE));" : "  shaded = modkitLinearToSrgb(clamp(shaded, 0.0, 1.0));");
@@ -1841,6 +1896,8 @@ function buildStandardFragmentSource(defines, options = {}) {
   if (layerBySlot.has("alpha2"))
     body.push("  alpha *= computeLayer_alpha2().a;");
   body.push("  final.a = alpha * u_materialAlpha;");
+  if (defines.edgeFadeOut !== void 0)
+    body.push(`  float edgeFade = smoothstep(0.0, ${glslFloat(defines.edgeFadeOut)}, abs(normalize(v_viewDir).z));`, defines.modAlpha ? "  fade *= edgeFade;" : "  final.a *= edgeFade;");
   if (layerBySlot.has("teamColorMask")) {
     body.push("  float teamColorMask = computeLayer_teamColorMask().r;");
     body.push("  final.rgb += (u_teamColor - vec3(0.5)) * teamColorMask;");
@@ -20932,6 +20989,8 @@ function shade(material, alpha, lighting, pixel, normalFormats, sceneLighting = 
     ...material.blendMode === 2 ? { modAlpha: true } : {},
     ...normalFormats === void 0 && material.normalMapFormat === void 0 ? {} : { normalMapFormat: normalFormats === void 0 ? material.normalMapFormat : "rgb8" },
     ...material.environmentMultipliers === void 0 ? {} : { environmentMultipliers: material.environmentMultipliers },
+    ...material.environmentTintByBase === true ? { environmentTintByBase: true } : {},
+    ...material.edgeFadeOut === void 0 ? {} : { edgeFadeOut: material.edgeFadeOut },
     ...material.emissiveTint === void 0 ? {} : { emissiveTint: material.emissiveTint },
     ...material.normalBlendFactors === void 0 ? {} : {
       normalBlendFactors: material.normalBlendFactors.map((factor) => factor.value)

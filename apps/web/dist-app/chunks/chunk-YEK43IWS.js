@@ -17,7 +17,7 @@ import {
   uvmAnimationEvents,
   uvmAnimationPlayback,
   uvmVisibilityTarget
-} from "./chunk-PRU56TPQ.js";
+} from "./chunk-WXNMUTNG.js";
 import {
   uvmImageLogicalId
 } from "./chunk-NONHW3HK.js";

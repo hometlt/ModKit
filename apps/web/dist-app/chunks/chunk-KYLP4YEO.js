@@ -6,7 +6,7 @@ import {
 } from "./chunk-4FRIXXEO.js";
 import {
   createRelationGraphViewer
-} from "./chunk-ESKBP3WL.js";
+} from "./chunk-PZ3DR6DI.js";
 import {
   MODEL_FACET_CONTRACTS,
   commitOperationWrite,
@@ -15,7 +15,7 @@ import {
   modelMaterialTeamColor,
   mountFieldEditTarget,
   mountInlineField
-} from "./chunk-EL7U5PD5.js";
+} from "./chunk-YRG5GQHH.js";
 import {
   metadataFieldProjections
 } from "./chunk-ZFIQVDW4.js";
@@ -54,6 +54,8 @@ import {
   MAP_SEMANTIC_MATCHER_PROFILE,
   MOD_WORKSPACE_COMPOSITION_CONTRACT,
   MOD_WORKSPACE_MATCHER_PROFILE,
+  NATIVE_MAP_ENCODER_CONTRACT,
+  NATIVE_MAP_ENCODER_MATCHER_PROFILE,
   NATIVE_MODEL_ENCODER_CONTRACT,
   NATIVE_MODEL_ENCODER_MATCHER_PROFILE,
   RESOLVED_DATA_WORKSPACE_CONTRACT,
@@ -106,7 +108,7 @@ import {
   validateContributionManifest,
   writerOfferSatisfies,
   writerSelectionKey
-} from "./chunk-HZSU4OTK.js";
+} from "./chunk-4J534F76.js";
 import {
   createImageViewer,
   createNamespaceViewer,
@@ -206,6 +208,7 @@ import {
   Vector3,
   addAccessor,
   addJointAttribute,
+  angleLookupUvCpu,
   bindPreviewLighting,
   computeLayerColorCpu,
   computeTriPlanarWeightsCpu,
@@ -262,7 +265,7 @@ import {
   uvmSceneFrameInverse,
   uvmVisibilityPointer,
   withMaterialFrame
-} from "./chunk-UUJEZAKZ.js";
+} from "./chunk-UQHLRBPA.js";
 import {
   DEFAULT_MODEL_ANIMATION_BUDGET,
   DEFAULT_MODEL_SKELETON_BUDGET,
@@ -6256,7 +6259,7 @@ function sessionAdapter(realm, session, exposedInput, watch, openingSignal) {
 
 // ../MODDING/modkit-core/packages/host/dist/session.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-var projection = () => import("./subject-projection-GAXHAADE.js");
+var projection = () => import("./subject-projection-VC5TQFTK.js");
 function rejected(reason, message) {
   return {
     state: "rejected",
@@ -19596,24 +19599,26 @@ function parseRequest6(value) {
     return void 0;
   return { formatId: record6["formatId"] };
 }
-function matchNativeModelEncoder(context) {
-  const offer = parseOffer6(context.offerFacet);
-  const request = parseRequest6(context.requestFacet);
-  if (offer === void 0 || request === void 0) {
-    return {
-      state: "invalid",
-      diagnostics: [
-        diagnostic("error", "x3.host/native-model-encoder-facet-invalid", `${context.contract}@${context.major}: native model encoder route is malformed`)
-      ]
-    };
-  }
-  return offer.formatIds.includes(request.formatId) ? { state: "match", selectionKey: `format=${request.formatId}` } : { state: "no-match" };
+function createFormatRouteMatcher(profile3, invalidCode, route) {
+  return Object.freeze({
+    profile: contractId(profile3),
+    major: 1,
+    match(context) {
+      const offer = parseOffer6(context.offerFacet);
+      const request = parseRequest6(context.requestFacet);
+      if (offer === void 0 || request === void 0) {
+        return {
+          state: "invalid",
+          diagnostics: [
+            diagnostic("error", invalidCode, `${context.contract}@${context.major}: ${route} route is malformed`)
+          ]
+        };
+      }
+      return offer.formatIds.includes(request.formatId) ? { state: "match", selectionKey: `format=${request.formatId}` } : { state: "no-match" };
+    }
+  });
 }
-var NATIVE_MODEL_ENCODER_MATCHER = Object.freeze({
-  profile: contractId(NATIVE_MODEL_ENCODER_MATCHER_PROFILE),
-  major: 1,
-  match: matchNativeModelEncoder
-});
+var NATIVE_MODEL_ENCODER_MATCHER = createFormatRouteMatcher(NATIVE_MODEL_ENCODER_MATCHER_PROFILE, "x3.host/native-model-encoder-facet-invalid", "native model encoder");
 var NATIVE_MODEL_ENCODER_CONTRACT_DEFINITION = Object.freeze({
   schemaVersion: 1,
   kind: "service",
@@ -21993,11 +21998,42 @@ var MAP_PREVIEW_PREPARATION_CONTRACT_DEFINITION = Object.freeze({
     })
   })
 });
+var NATIVE_MAP_ENCODER_MATCHER = createFormatRouteMatcher(NATIVE_MAP_ENCODER_MATCHER_PROFILE, "x3.host/native-map-encoder-facet-invalid", "native map encoder");
+var NATIVE_MAP_ENCODER_CONTRACT_DEFINITION = Object.freeze({
+  schemaVersion: 1,
+  kind: "service",
+  contract: NATIVE_MAP_ENCODER_CONTRACT,
+  major: 1,
+  offerFacet: Object.freeze({
+    presence: "required",
+    schema: Object.freeze({
+      $ref: "https://schemas.modkit.org/x3/native-map-encoder-offer.v1.schema.json"
+    })
+  }),
+  requestFacet: Object.freeze({
+    presence: "required",
+    schema: Object.freeze({
+      $ref: "https://schemas.modkit.org/x3/native-map-encoder-request.v1.schema.json"
+    })
+  }),
+  matching: Object.freeze({ profile: NATIVE_MAP_ENCODER_MATCHER_PROFILE, major: 1 }),
+  conformanceProfile: "common.map/native-encoder-v1",
+  surface: Object.freeze({
+    fields: Object.freeze(["contract", "formatId", "extension", "mediaType"]),
+    methods: Object.freeze({
+      encode: Object.freeze({
+        kind: "value",
+        signal: Object.freeze({ arg: 0, key: "signal" })
+      })
+    })
+  })
+});
 function registerStandardMapDefinitions(definitions) {
   const registered = [
     MAP_SEMANTIC_CONTRACT_DEFINITION,
     RESOLVED_MAP_WORKSPACE_CONTRACT_DEFINITION,
-    MAP_PREVIEW_PREPARATION_CONTRACT_DEFINITION
+    MAP_PREVIEW_PREPARATION_CONTRACT_DEFINITION,
+    NATIVE_MAP_ENCODER_CONTRACT_DEFINITION
   ];
   return definitions.replaceOwnerInventory(STANDARD_MAPS_OWNER, registered.map((definition2) => ({
     definition: definition2,
@@ -23856,6 +23892,7 @@ function createBundledServiceDefinitionRegistry(options = {}) {
       RESOLVED_DATA_WORKSPACE_MATCHER,
       MAP_SEMANTIC_MATCHER,
       MAP_PREVIEW_PREPARATION_MATCHER,
+      NATIVE_MAP_ENCODER_MATCHER,
       ...options.matcherProfiles ?? []
     ]),
     isNamespaceOwner: () => true,
@@ -51102,6 +51139,10 @@ function layerTexel(program, layer2, texture, vertex, parallax, worldNormal) {
     const mapped = transformUv(program, layer2, uv, axis, parallax);
     return sampleMaterialTexture(texture, mapped[0], mapped[1], binding.wrapU, binding.wrapV);
   };
+  if (layer2.angleLookup !== void 0) {
+    const mapped = transformUv(program, layer2, angleLookupUvCpu(layer2.angleLookup, vertex.lightDirection, vertex.viewDirection), 2, [0, 0]);
+    return sampleMaterialTexture(texture, mapped[0], mapped[1], binding.wrapU, binding.wrapV);
+  }
   const source2 = layer2.uvSource;
   if (source2 >= 16 && source2 <= 18) {
     const local = source2 === 16, hybrid = source2 === 18;
@@ -52255,7 +52296,8 @@ var codec_uvw_default = {
   id: "modkit/world-uvw",
   displayName: "Universal Verse World 1.0",
   limitations: [
-    "UVW 1.0 admits heightfield spaces only; connections and non-heightfield topologies remain reserved and fail explicitly."
+    "UVW 1.0 admits heightfield spaces only; connections and non-heightfield topologies remain reserved and fail explicitly.",
+    "map.export-native resolves common.map/native-encoder by formatId; the UVW codec selects and checks the encoder and writes no game's map itself."
   ],
   runtimeVariants: [
     {
@@ -52372,6 +52414,13 @@ var codec_uvw_default = {
         mutatesSource: true,
         requiredPermissions: ["read-source", "write-source"],
         outputKinds: ["edit-plan"]
+      },
+      {
+        id: "map.export-native",
+        handlerId: "export-uvw-native",
+        mutatesSource: false,
+        requiredPermissions: ["read-source"],
+        outputKinds: ["bytes"]
       },
       {
         id: "map.layers",
@@ -58722,6 +58771,79 @@ function heightGridEdits(grids, input, context) {
   }
   return Object.freeze(edits);
 }
+var NATIVE_EXPORT_OPERATION = operationId("map.export-native", { contributionId: "modkit/world-uvw" });
+var NATIVE_MAP_EXPORT_INPUT_SCHEMA = Object.freeze({
+  $ref: "modkit://schemas/uvw/native-map-export.v1",
+  document: Object.freeze({
+    schemaVersion: 1,
+    forms: Object.freeze([
+      Object.freeze({
+        id: "uvw-native-map-export",
+        label: "Save as a game map",
+        summary: "Write this world with an installed game's map encoder.",
+        baseInput: Object.freeze({ schemaVersion: 1 }),
+        fields: Object.freeze([
+          Object.freeze({
+            key: "formatId",
+            label: "Target format",
+            type: Object.freeze({ kind: "text" }),
+            inputPath: Object.freeze(["formatId"]),
+            required: true,
+            description: "Installed native map format id, for example ra2-map or minecraft-anvil."
+          }),
+          Object.freeze({
+            key: "options",
+            label: "Encoder options",
+            type: Object.freeze({ kind: "json" }),
+            inputPath: Object.freeze(["options"]),
+            initial: Object.freeze({})
+          })
+        ])
+      })
+    ])
+  })
+});
+function nativeExportHandler(bytes, context) {
+  return async (input, operationContext = {}) => {
+    if (context.contracts === void 0)
+      throw new TypeError("host native map encoder capability is absent");
+    const request = editObject(snapshotJson(input, {
+      maxBytes: context.budget.maxScalarBytes,
+      maxNodes: context.budget.maxNodes,
+      maxDepth: context.budget.maxDepth + 2
+    }, operationContext.signal), "native map export request");
+    const formatId = request["formatId"];
+    if (request["schemaVersion"] !== 1 || typeof formatId !== "string" || formatId.trim().length === 0 || Object.keys(request).some((key3) => !["schemaVersion", "formatId", "options"].includes(key3)))
+      throw new TypeError("native map export requires {schemaVersion: 1, formatId}");
+    const signal = operationContext.signal;
+    signal?.throwIfAborted();
+    const lease2 = await context.contracts.resolve({
+      contract: NATIVE_MAP_ENCODER_CONTRACT,
+      major: 1,
+      facet: { formatId },
+      operation: NATIVE_EXPORT_OPERATION,
+      ...signal === void 0 ? {} : { signal }
+    });
+    try {
+      const encoder9 = lease2.value;
+      const candidate = encoder9;
+      if (candidate === null || typeof candidate !== "object" || candidate.contract !== NATIVE_MAP_ENCODER_CONTRACT || candidate.formatId !== formatId || typeof candidate.encode !== "function")
+        throw new TypeError(`resolved provider is not a ${formatId} native map encoder`);
+      const encoded = await candidate.encode({
+        uvw: bytes.slice(),
+        ...request["options"] === void 0 ? {} : { options: request["options"] },
+        ...signal === void 0 ? {} : { signal }
+      });
+      if (encoded === null || typeof encoded !== "object" || encoded.formatId !== formatId || !(encoded.bytes instanceof Uint8Array))
+        throw new TypeError(`native map encoder returned an invalid ${formatId} result`);
+      for (const item of encoded.diagnostics ?? [])
+        operationContext.reportDiagnostic?.(item);
+      return { kind: "bytes", value: encoded.bytes };
+    } finally {
+      await lease2.release();
+    }
+  };
+}
 var definition = Object.freeze({
   id: "modkit/world-uvw",
   operations: Object.freeze([
@@ -58742,6 +58864,14 @@ var definition = Object.freeze({
     Object.freeze({
       id: operationId("map.export-uvw", { contributionId: "modkit/world-uvw" }),
       handlerId: "export-canonical-uvw",
+      mutatesSource: false,
+      requiredPermissions: Object.freeze(["read-source"]),
+      outputKinds: Object.freeze(["bytes"])
+    }),
+    Object.freeze({
+      id: NATIVE_EXPORT_OPERATION,
+      handlerId: "export-uvw-native",
+      inputSchema: NATIVE_MAP_EXPORT_INPUT_SCHEMA,
       mutatesSource: false,
       requiredPermissions: Object.freeze(["read-source"]),
       outputKinds: Object.freeze(["bytes"])
@@ -58860,6 +58990,7 @@ var definition = Object.freeze({
             ...context.signal === void 0 ? {} : { signal: context.signal }
           })
         }),
+        "export-uvw-native": nativeExportHandler(bytes, context),
         "map-layers": async () => ({
           kind: "json",
           value: { layers: [...grids.values()].map((grid) => grid.descriptor) }
@@ -66823,7 +66954,7 @@ var PREVIEW_STAGES = [
 async function defaultPreviewStage(kind, localizer) {
   switch (kind) {
     case "model":
-      return (await import("./model-3MVYT5ZG.js")).createModelViewer({ localizer });
+      return (await import("./model-VXNFB73A.js")).createModelViewer({ localizer });
     case "image":
       return (await import("./image-UCBTTMLG.js")).createImageViewer({ localizer });
     case "video":
@@ -66868,7 +66999,7 @@ function embedRelationGraph(sections, args, scope, localizer, graph) {
   return [
     ...sections,
     stageSection({ id: "relations-graph", title: localizer.text("card.relationGraph"), expanded: false }, scope, localizer, "card.relationGraphUnavailable", async (host) => {
-      const module = graph ?? (await import("./graph-WKPQLHVR.js")).createRelationGraphViewer({ localizer });
+      const module = graph ?? (await import("./graph-6YR3SWNL.js")).createRelationGraphViewer({ localizer });
       return scope.signal.aborted ? void 0 : module.mount({ ...args, container: host, signal: scope.signal });
     })
   ];

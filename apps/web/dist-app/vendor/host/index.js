@@ -13,14 +13,14 @@ import {
   createStandardSurfaceRegistry,
   framePortFromMessagePort,
   protocolLimits
-} from "../../chunks/chunk-L4YF4HMV.js";
+} from "../../chunks/chunk-RTJEOMKS.js";
 import {
   assembleSubjectDescriptor,
   createAssetSession,
   createByteRangeSource,
   createLazyTableDataSource,
   createUtf8TextDataSource
-} from "../../chunks/chunk-7GSPY7OK.js";
+} from "../../chunks/chunk-6YZP4SAK.js";
 import {
   metadataFieldProjections
 } from "../../chunks/chunk-5GGWVEQJ.js";
@@ -51,6 +51,8 @@ import {
   MAP_SEMANTIC_MATCHER_PROFILE,
   MOD_WORKSPACE_COMPOSITION_CONTRACT,
   MOD_WORKSPACE_MATCHER_PROFILE,
+  NATIVE_MAP_ENCODER_CONTRACT,
+  NATIVE_MAP_ENCODER_MATCHER_PROFILE,
   RESOLVED_DATA_AUTHORING_INDEX_KIND,
   RESOLVED_DATA_WORKSPACE_CONTRACT,
   RESOLVED_DATA_WORKSPACE_MATCHER_PROFILE,
@@ -91,7 +93,7 @@ import {
   validateContributionManifest,
   writerOfferSatisfies,
   writerSelectionKey
-} from "../../chunks/chunk-ZUZRIHWF.js";
+} from "../../chunks/chunk-2244C2XL.js";
 import {
   SCENE_RENDERER_CONTRACT,
   SCENE_RENDERER_MATCHER_PROFILE
@@ -19211,24 +19213,26 @@ function parseRequest6(value) {
     return void 0;
   return { formatId: record3["formatId"] };
 }
-function matchNativeModelEncoder(context) {
-  const offer = parseOffer6(context.offerFacet);
-  const request = parseRequest6(context.requestFacet);
-  if (offer === void 0 || request === void 0) {
-    return {
-      state: "invalid",
-      diagnostics: [
-        diagnostic("error", "x3.host/native-model-encoder-facet-invalid", `${context.contract}@${context.major}: native model encoder route is malformed`)
-      ]
-    };
-  }
-  return offer.formatIds.includes(request.formatId) ? { state: "match", selectionKey: `format=${request.formatId}` } : { state: "no-match" };
+function createFormatRouteMatcher(profile3, invalidCode, route) {
+  return Object.freeze({
+    profile: contractId(profile3),
+    major: 1,
+    match(context) {
+      const offer = parseOffer6(context.offerFacet);
+      const request = parseRequest6(context.requestFacet);
+      if (offer === void 0 || request === void 0) {
+        return {
+          state: "invalid",
+          diagnostics: [
+            diagnostic("error", invalidCode, `${context.contract}@${context.major}: ${route} route is malformed`)
+          ]
+        };
+      }
+      return offer.formatIds.includes(request.formatId) ? { state: "match", selectionKey: `format=${request.formatId}` } : { state: "no-match" };
+    }
+  });
 }
-var NATIVE_MODEL_ENCODER_MATCHER = Object.freeze({
-  profile: contractId(NATIVE_MODEL_ENCODER_MATCHER_PROFILE),
-  major: 1,
-  match: matchNativeModelEncoder
-});
+var NATIVE_MODEL_ENCODER_MATCHER = createFormatRouteMatcher(NATIVE_MODEL_ENCODER_MATCHER_PROFILE, "x3.host/native-model-encoder-facet-invalid", "native model encoder");
 var NATIVE_MODEL_ENCODER_CONTRACT_DEFINITION = Object.freeze({
   schemaVersion: 1,
   kind: "service",
@@ -22267,11 +22271,42 @@ var MAP_PREVIEW_PREPARATION_CONTRACT_DEFINITION = Object.freeze({
     })
   })
 });
+var NATIVE_MAP_ENCODER_MATCHER = createFormatRouteMatcher(NATIVE_MAP_ENCODER_MATCHER_PROFILE, "x3.host/native-map-encoder-facet-invalid", "native map encoder");
+var NATIVE_MAP_ENCODER_CONTRACT_DEFINITION = Object.freeze({
+  schemaVersion: 1,
+  kind: "service",
+  contract: NATIVE_MAP_ENCODER_CONTRACT,
+  major: 1,
+  offerFacet: Object.freeze({
+    presence: "required",
+    schema: Object.freeze({
+      $ref: "https://schemas.modkit.org/x3/native-map-encoder-offer.v1.schema.json"
+    })
+  }),
+  requestFacet: Object.freeze({
+    presence: "required",
+    schema: Object.freeze({
+      $ref: "https://schemas.modkit.org/x3/native-map-encoder-request.v1.schema.json"
+    })
+  }),
+  matching: Object.freeze({ profile: NATIVE_MAP_ENCODER_MATCHER_PROFILE, major: 1 }),
+  conformanceProfile: "common.map/native-encoder-v1",
+  surface: Object.freeze({
+    fields: Object.freeze(["contract", "formatId", "extension", "mediaType"]),
+    methods: Object.freeze({
+      encode: Object.freeze({
+        kind: "value",
+        signal: Object.freeze({ arg: 0, key: "signal" })
+      })
+    })
+  })
+});
 function registerStandardMapDefinitions(definitions) {
   const registered = [
     MAP_SEMANTIC_CONTRACT_DEFINITION,
     RESOLVED_MAP_WORKSPACE_CONTRACT_DEFINITION,
-    MAP_PREVIEW_PREPARATION_CONTRACT_DEFINITION
+    MAP_PREVIEW_PREPARATION_CONTRACT_DEFINITION,
+    NATIVE_MAP_ENCODER_CONTRACT_DEFINITION
   ];
   return definitions.replaceOwnerInventory(STANDARD_MAPS_OWNER, registered.map((definition) => ({
     definition,
@@ -24213,6 +24248,7 @@ function createBundledServiceDefinitionRegistry(options = {}) {
       RESOLVED_DATA_WORKSPACE_MATCHER,
       MAP_SEMANTIC_MATCHER,
       MAP_PREVIEW_PREPARATION_MATCHER,
+      NATIVE_MAP_ENCODER_MATCHER,
       ...options.matcherProfiles ?? []
     ]),
     isNamespaceOwner: () => true,
@@ -30690,6 +30726,8 @@ export {
   MAP_SEMANTIC_MATCHER,
   MOD_WORKSPACE_CONTRACT_DEFINITION,
   MOD_WORKSPACE_MATCHER,
+  NATIVE_MAP_ENCODER_CONTRACT_DEFINITION,
+  NATIVE_MAP_ENCODER_MATCHER,
   NATIVE_MODEL_ENCODER_CONTRACT_DEFINITION,
   NATIVE_MODEL_ENCODER_MATCHER,
   NATIVE_TEXT_INPUT,
@@ -30806,6 +30844,7 @@ export {
   createEvidenceRegistry,
   createExecutionBackendRegistry,
   createFieldRelationGraphSource,
+  createFormatRouteMatcher,
   createGrantSnapshot,
   createHostComposition,
   createHostContributionContractRegistry,

@@ -8,14 +8,14 @@ import {
 import {
   uvmSceneFrameInverse,
   withMaterialFrame
-} from "../../../chunks/chunk-JFFRYNZJ.js";
+} from "../../../chunks/chunk-YOXPMEYX.js";
 import {
   materializeUvmAnimationMaterialTargets,
   uvmAnimationEvents,
   uvmAnimationPlayback,
   uvmKeyTimesMetadata,
   uvmVisibilityPointer
-} from "../../../chunks/chunk-PRU56TPQ.js";
+} from "../../../chunks/chunk-WXNMUTNG.js";
 import {
   packUvmGlb,
   uvmImageUri
@@ -41,7 +41,7 @@ import "../../../chunks/chunk-ZSDVUSRM.js";
 import {
   composeTrsMatrix
 } from "../../../chunks/chunk-5SBJANAJ.js";
-import "../../../chunks/chunk-ZUZRIHWF.js";
+import "../../../chunks/chunk-2244C2XL.js";
 import "../../../chunks/chunk-MT2JUZZJ.js";
 import "../../../chunks/chunk-R2P56FTH.js";
 import "../../../chunks/chunk-5A3JGV66.js";

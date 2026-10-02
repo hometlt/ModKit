@@ -10,14 +10,14 @@ import {
 } from "./chunk-I4Z5J3HX.js";
 import {
   WORLD_PROJECTION_UV_SOURCES
-} from "./chunk-JFFRYNZJ.js";
+} from "./chunk-YOXPMEYX.js";
 import {
   array,
   isStandardLayerSlot,
   object,
   uvmAccessorWidth,
   validateUvmDocument
-} from "./chunk-PRU56TPQ.js";
+} from "./chunk-WXNMUTNG.js";
 import {
   DEFAULT_UVM_CONTAINER_BUDGET,
   checkUvmContainerBudget,
@@ -302,6 +302,15 @@ function validateLayer(value, slot, path, signal) {
     }
     animated(flip["frame"], `${path}.flipbook.frame`, 1, signal);
   }
+  if (layer["angleLookup"] !== void 0) {
+    const lookup = record(layer["angleLookup"], `${path}.angleLookup`);
+    if (layer["texturePath"] === null || lookup["u"] !== "edge" && lookup["u"] !== "reflection" || lookup["v"] !== "row" && lookup["v"] !== "light" || Object.keys(lookup).some((key) => !["u", "v", "exponent", "row"].includes(key)) || lookup["exponent"] !== void 0 && lookup["u"] !== "edge" || lookup["v"] === "row" !== (lookup["row"] !== void 0))
+      throw new TypeError(`${path}.angleLookup is a textured layer's { u: edge|reflection, v: row|light }, an exponent only for edge, a row exactly for row`);
+    if (lookup["exponent"] !== void 0 && !(finite(lookup["exponent"], `${path}.angleLookup.exponent`) > 0))
+      throw new TypeError(`${path}.angleLookup.exponent must be positive`);
+    if (lookup["row"] !== void 0)
+      finite(lookup["row"], `${path}.angleLookup.row`);
+  }
   if (layer["fresnel"] !== void 0) {
     const fresnel = record(layer["fresnel"], `${path}.fresnel`);
     integer(fresnel["mode"], `${path}.fresnel.mode`, 1, 2);
@@ -337,13 +346,15 @@ function validateStandard(value, path, signal) {
     "usesVertexColor",
     "usesVertexAlpha"
   ]);
-  flags(material, path, ["depthPrepass", "specularEnergyConservation"], true);
+  flags(material, path, ["depthPrepass", "specularEnergyConservation", "environmentTintByBase"], true);
   for (const key of ["sourceFlags", "sourceAdditionalFlags", "materialClass"])
     if (material[key] !== void 0)
       integer(material[key], `${path}.${key}`, 0, 4294967295);
   for (const key of ["environmentMultipliers", "emissiveTint"])
     if (material[key] !== void 0)
       vector2(material[key], `${path}.${key}`, 3);
+  if (material["edgeFadeOut"] !== void 0 && !(finite(material["edgeFadeOut"], `${path}.edgeFadeOut`) > 0))
+    throw new TypeError(`${path}.edgeFadeOut must be positive`);
   if (material["parallaxHeight"] !== void 0)
     animated(material["parallaxHeight"], `${path}.parallaxHeight`, 1, signal);
   const factors = material["normalBlendFactors"];
@@ -398,6 +409,8 @@ function validateStandard(value, path, signal) {
       throw new TypeError(`${path} has unknown layer ${slot}`);
     validateLayer(layer, slot, `${path}.layers.${slot}`, signal);
   }
+  if (["diffuse2", "diffuse3", "diffuse4", "diffuse5"].some((slot) => layers[slot] !== void 0) && layers["diffuseWeights"] === void 0)
+    throw new TypeError(`${path} stacks diffuse layers without diffuseWeights`);
 }
 function createRenderMaterialSampler(parameters, budget, signal) {
   const params = record(snapshotJson(parameters, budget, signal), "material params");

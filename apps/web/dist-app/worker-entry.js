@@ -6,13 +6,13 @@ import {
   framePortFromMessagePort,
   logicalResourcesFromWire,
   protocolLimits
-} from "./chunks/chunk-L4YF4HMV.js";
+} from "./chunks/chunk-RTJEOMKS.js";
 import "./chunks/chunk-5RD46IWG.js";
 import {
   initializeGpuTextureWasmBrowser
 } from "./chunks/chunk-YGHQTXS7.js";
 import "./chunks/chunk-MTFTXR2W.js";
-import "./chunks/chunk-ZUZRIHWF.js";
+import "./chunks/chunk-2244C2XL.js";
 import "./chunks/chunk-MT2JUZZJ.js";
 import "./chunks/chunk-R2P56FTH.js";
 import "./chunks/chunk-5A3JGV66.js";

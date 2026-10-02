@@ -8,7 +8,7 @@ import {
   readUvmBillboards,
   readUvmModelStates,
   readUvmShadowMeshBindings
-} from "../../../chunks/chunk-7TJMLD5J.js";
+} from "../../../chunks/chunk-W6WJ2KXN.js";
 import "../../../chunks/chunk-WGWMBNZ4.js";
 import {
   array,
@@ -17,7 +17,7 @@ import {
   required,
   safeIndex
 } from "../../../chunks/chunk-I4Z5J3HX.js";
-import "../../../chunks/chunk-JFFRYNZJ.js";
+import "../../../chunks/chunk-YOXPMEYX.js";
 import {
   readUvmAccessor,
   readUvmAnimationClips,
@@ -26,7 +26,7 @@ import {
   uvmVisibilityPointer,
   uvmVisibilityTarget,
   validateUvmDocument
-} from "../../../chunks/chunk-PRU56TPQ.js";
+} from "../../../chunks/chunk-WXNMUTNG.js";
 import {
   DEFAULT_UVM_CONTAINER_BUDGET,
   checkUvmContainerBudget,
