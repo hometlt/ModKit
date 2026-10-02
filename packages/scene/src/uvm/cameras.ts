@@ -77,6 +77,77 @@ export function previewCameraNodeMatrix(position: Vec3, target: Vec3, up: Vec3):
   return [...matrix.elements]
 }
 
+export interface SpriteCameraOptions {
+  /** Round the up axis (+y) from the +z side toward +x: the facing a sprite frame shows. */
+  readonly azimuthDegrees: number
+  /** Above the ground: 90 looks straight down (StarCraft), 30 is Red Alert 2's view. */
+  readonly elevationDegrees: number
+  /** Pixels per document unit (a metre under UV_units). */
+  readonly pixelsPerUnit: number
+  readonly width: number
+  readonly height: number
+  /** The pixel the target lands on, from the top-left; the frame's centre by default. */
+  readonly anchor?: readonly [number, number]
+  /** The point looked at; the origin by default. */
+  readonly target?: Vec3
+  /** Units the frame reaches toward and away from the eye; 1000 by default. */
+  readonly depth?: number
+}
+
+/**
+ * The orthographic camera a sprite encoder draws a UVM's frames with (V7): an ordinary `renderUvm`
+ * request camera, so a frame and its coverage (the frame's alpha) come from the scene renderer, and
+ * the encoder only quantizes and packs. The screen's up is the view's own, so a camera straight
+ * down keeps the facing's direction at the top of the frame.
+ */
+export function spriteCamera(options: SpriteCameraOptions): {
+  readonly viewProjection: number[]
+  readonly viewMatrix: number[]
+  readonly eyePosition: Vec3
+} {
+  const azimuth = MathUtils.degToRad(numbers([options.azimuthDegrees], 1, 'sprite azimuth')[0]!)
+  const elevation = MathUtils.degToRad(
+    numbers([options.elevationDegrees], 1, 'sprite elevation')[0]!,
+  )
+  const scale = positive(options.pixelsPerUnit, 'sprite pixels per unit')
+  const width = positive(options.width, 'sprite width')
+  const height = positive(options.height, 'sprite height')
+  const depth = positive(options.depth ?? 1000, 'sprite depth')
+  const [anchorX, anchorY] = numbers(options.anchor ?? [width / 2, height / 2], 2, 'sprite anchor')
+  const target = new Vector3().fromArray(numbers(options.target ?? [0, 0, 0], 3, 'sprite target'))
+  if (Math.abs(elevation) > Math.PI / 2) throw new RangeError('sprite elevation is -90..90 degrees')
+  const toEye = new Vector3(
+    Math.sin(azimuth) * Math.cos(elevation),
+    Math.sin(elevation),
+    Math.cos(azimuth) * Math.cos(elevation),
+  )
+  // d(toEye)/d(elevation): the view's up, defined straight down too
+  const up = new Vector3(
+    -Math.sin(azimuth) * Math.sin(elevation),
+    Math.cos(elevation),
+    -Math.cos(azimuth) * Math.sin(elevation),
+  )
+  const camera = new OrthographicCamera(
+    -anchorX! / scale,
+    (width - anchorX!) / scale,
+    anchorY! / scale,
+    -(height - anchorY!) / scale,
+    0,
+    2 * depth,
+  )
+  camera.position.copy(target).addScaledVector(toEye, depth)
+  camera.up.copy(up)
+  camera.lookAt(target)
+  camera.updateMatrixWorld(true)
+  const view = camera.matrixWorldInverse
+  const viewProjection = new Matrix4().multiplyMatrices(camera.projectionMatrix, view)
+  return {
+    viewProjection: [...ownedMatrix(viewProjection)],
+    viewMatrix: [...ownedMatrix(view)],
+    eyePosition: xyz(camera.position),
+  }
+}
+
 export interface UvmCameraOptions {
   readonly aspect: number
   /** Already sampled by the existing common scene sampler; this helper evaluates no animation. */

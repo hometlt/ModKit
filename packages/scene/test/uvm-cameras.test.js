@@ -4,6 +4,7 @@ import {
   resolveUvmCamera,
   previewFrameFromInverseBind,
   previewCameraNodeMatrix,
+  spriteCamera,
 } from '../src/uvm/cameras.js'
 
 const identity = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
@@ -153,4 +154,59 @@ it('derives native-independent bind position/forward and an exact look-at node w
   assert.equal(inverse[12], -3)
   assert.throws(() => previewFrameFromInverseBind(Array(16).fill(0)), /affine|singular/)
   assert.throws(() => previewCameraNodeMatrix([0, 0, 0], [0, 0, 0], [0, 1, 0]), /singular/)
+})
+
+it('draws sprite frames with an orthographic camera at a facing, a pitch and a pixel scale (V7)', () => {
+  // a point to its pixel, from the top-left, as the renderer rasterizes the request's camera
+  const pixel = (camera, point, width, height) => {
+    const m = camera.viewProjection
+    const x = m[0] * point[0] + m[4] * point[1] + m[8] * point[2] + m[12]
+    const y = m[1] * point[0] + m[5] * point[1] + m[9] * point[2] + m[13]
+    const w = m[3] * point[0] + m[7] * point[1] + m[11] * point[2] + m[15]
+    return [((x / w + 1) / 2) * width, ((1 - y / w) / 2) * height]
+  }
+  const close = (actual, expected) =>
+    actual.forEach((value, index) =>
+      assert.ok(Math.abs(value - expected[index]) < 1e-3, `${actual}`),
+    )
+  const front = spriteCamera({
+    azimuthDegrees: 0,
+    elevationDegrees: 30,
+    pixelsPerUnit: 10,
+    width: 64,
+    height: 48,
+  })
+  close(pixel(front, [0, 0, 0], 64, 48), [32, 24])
+  // facing 0 looks along -z: +x is the frame's right, ten pixels per unit
+  close(pixel(front, [1, 0, 0], 64, 48), [42, 24])
+  // straight down (StarCraft) the facing's far side is the frame's top
+  const down = spriteCamera({
+    azimuthDegrees: 0,
+    elevationDegrees: 90,
+    pixelsPerUnit: 10,
+    width: 64,
+    height: 48,
+  })
+  close(pixel(down, [0, 0, -1], 64, 48), [32, 14])
+  // a quarter turn shows the model's +x side; the target lands on its anchor
+  const side = spriteCamera({
+    azimuthDegrees: 90,
+    elevationDegrees: 0,
+    pixelsPerUnit: 4,
+    width: 32,
+    height: 32,
+    anchor: [10, 30],
+  })
+  close(pixel(side, [0, 0, 0], 32, 32), [10, 30])
+  close(pixel(side, [0, 0, -1], 32, 32), [14, 30])
+  assert.deepEqual(side.eyePosition.map(Math.round), [1000, 0, 0])
+  assert.throws(() =>
+    spriteCamera({
+      azimuthDegrees: 0,
+      elevationDegrees: 30,
+      pixelsPerUnit: 0,
+      width: 8,
+      height: 8,
+    }),
+  )
 })
