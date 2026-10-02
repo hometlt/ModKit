@@ -736,3 +736,63 @@ describe('production world to UVW materializer', () => {
     expect(one.excludedFacetIds).toEqual([])
   })
 })
+
+describe('the game-view preset of a world (spaces[].camera)', () => {
+  const camera = { projection: 'orthographic', azimuthDegrees: 45, elevationDegrees: 30 } as const
+
+  it('writes the publisher preset, reads it back and keeps it through a reopened world', async () => {
+    const written = await materializeWorldToUvw(source(4, { ...info, camera }), options)
+    expect(written.state).toBe('materialized')
+    if (written.state !== 'materialized') return
+    expect(written.document.spaces[0]?.camera).toEqual(camera)
+    expect(parseUvwProfile(written.bytes).spaces[0]?.camera).toEqual(camera)
+    const reopened = createUvwWorldSceneSource(written.document, {
+      snapshotId: 'camera',
+      maxPageSize: 64,
+    })
+    const reopenedInfo = await reopened.info()
+    expect(reopenedInfo.camera).toEqual(camera)
+    expect(reopenedInfo.canonicalArtifact?.spaces[0]?.camera).toEqual(camera)
+    // a reopened world rebuilt as UVW keeps its preset, byte for byte
+    const again = await materializeWorldToUvw(reopened as never, { ...options, maxFacetItems: 64 })
+    expect(again.state).toBe('materialized')
+    if (again.state === 'materialized') {
+      expect(again.document.spaces[0]?.camera).toEqual(camera)
+      expect(again.artifactDigest).toBe(written.artifactDigest)
+    }
+    // no preset, no camera: nothing is defaulted
+    const plain = await materializeWorldToUvw(source(4), options)
+    if (plain.state === 'materialized')
+      expect(plain.document.spaces[0]).not.toHaveProperty('camera')
+  })
+
+  it('refuses a preset the profile does not admit', async () => {
+    const written = await materializeWorldToUvw(source(4), options)
+    if (written.state !== 'materialized') throw new Error('no fixture world')
+    const withCamera = (value: unknown) =>
+      new TextEncoder().encode(
+        JSON.stringify({
+          ...written.document,
+          spaces: [{ ...written.document.spaces[0], camera: value }],
+        }),
+      )
+    expect(
+      parseUvwProfile(
+        withCamera({ projection: 'perspective', fieldOfViewDegrees: 70, drawDistance: 192 }),
+      ).spaces[0]?.camera,
+    ).toEqual({
+      projection: 'perspective',
+      fieldOfViewDegrees: 70,
+      drawDistance: 192,
+    })
+    for (const value of [
+      { projection: 'orthographic', fieldOfViewDegrees: 60 },
+      { projection: 'orthographic', elevationDegrees: 95 },
+      { projection: 'perspective', drawDistance: 0 },
+      { projection: 'isometric' },
+      { projection: 'orthographic', zoom: 2 },
+      { azimuthDegrees: 45 },
+    ])
+      expect(() => parseUvwProfile(withCamera(value)), JSON.stringify(value)).toThrow()
+  })
+})

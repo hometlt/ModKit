@@ -848,10 +848,15 @@ export function createUvwWorldSceneSource(
             ...(space.label === undefined ? {} : { label: space.label }),
             basis: space.basis,
             bounds: space.bounds,
+            ...(space.camera === undefined ? {} : { camera: space.camera }),
           }),
         ),
       ),
     }),
+    // the viewer opens on the game's view of the world: the first space's preset
+    ...(document.spaces.find(space => space.camera !== undefined)?.camera === undefined
+      ? {}
+      : { camera: document.spaces.find(space => space.camera !== undefined)!.camera! }),
   })
 
   return Object.freeze<WorldSceneSource>({

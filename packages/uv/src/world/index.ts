@@ -2,7 +2,7 @@
 
 import { canonicalJsonStringify, compareUtf8, ModkitError } from '@modkit/core'
 import type { MapModelComponentPlacement } from '@modkit/sdk'
-import type { WorldToneMapping, WorldTerrainLighting } from '@modkit/sdk/maps'
+import type { MapWorldCamera, WorldToneMapping, WorldTerrainLighting } from '@modkit/sdk/maps'
 
 export const UVW_PROFILE_FORMAT = 'UVW' as const
 export const UVW_PROFILE_VERSION = '1.0' as const
@@ -304,6 +304,11 @@ export interface UvwHeightfieldSpace {
   readonly basis: UvwBasis
   readonly bounds: UvwBounds
   readonly layers: readonly UvwHeightfieldSpaceLayer[]
+  /**
+   * The authored game-view preset (SPEC_UVW_PROFILE, `spaces[].camera`): sdk MapWorldCamera, its
+   * distances in the space's basis units. A view, not a camera object; omitted fields stay omitted.
+   */
+  readonly camera?: MapWorldCamera
 }
 
 export interface UvwProfileDocument {
@@ -1926,7 +1931,7 @@ function space(
     )
   exactKeys(
     item,
-    ['id', 'topology', 'label', 'basis', 'bounds', 'layers'],
+    ['id', 'topology', 'label', 'basis', 'bounds', 'layers', 'camera'],
     ['id', 'topology', 'basis', 'bounds', 'layers'],
     path,
   )
@@ -2029,7 +2034,44 @@ function space(
     basis: basis(item['basis'], `${path}.basis`, state, depth + 1),
     bounds: bounds(item['bounds'], `${path}.bounds`, state, depth + 1),
     layers: Object.freeze(layers),
+    ...(item['camera'] === undefined
+      ? {}
+      : { camera: spaceCamera(item['camera'], `${path}.camera`, state, depth + 1) }),
   })
+}
+
+/** `spaces[].camera`: a projection, finite azimuth, elevation 0..90, a perspective lens, a draw distance. */
+function spaceCamera(
+  value: unknown,
+  path: string,
+  state: ValidationBudget,
+  depth: number,
+): MapWorldCamera {
+  const item = record(value, path, state, depth)
+  exactKeys(
+    item,
+    ['projection', 'azimuthDegrees', 'elevationDegrees', 'fieldOfViewDegrees', 'drawDistance'],
+    ['projection'],
+    path,
+  )
+  const projection = string(item['projection'], `${path}.projection`, state, depth + 1)
+  if (projection !== 'orthographic' && projection !== 'perspective')
+    fail('camera projection is orthographic or perspective', `${path}.projection`)
+  const optional = (key: string, check: (value: number) => boolean, rule: string) => {
+    if (item[key] === undefined) return {}
+    const number = finite(item[key], `${path}.${key}`, state, depth + 1)
+    if (!check(number)) fail(`camera ${key} ${rule}`, `${path}.${key}`)
+    return { [key]: number }
+  }
+  if (item['fieldOfViewDegrees'] !== undefined && projection !== 'perspective')
+    fail('camera fieldOfViewDegrees belongs to a perspective camera', `${path}.fieldOfViewDegrees`)
+  return Object.freeze({
+    projection,
+    ...optional('azimuthDegrees', () => true, 'is finite'),
+    ...optional('elevationDegrees', number => number >= 0 && number <= 90, 'is 0..90'),
+    ...optional('fieldOfViewDegrees', number => number > 0 && number < 180, 'is between 0 and 180'),
+    ...optional('drawDistance', number => number > 0, 'is positive'),
+  }) as MapWorldCamera
 }
 
 /** Validate and take an immutable, owned copy of an already-decoded UVW value. */

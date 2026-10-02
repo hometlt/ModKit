@@ -1608,6 +1608,8 @@ interface WorldSceneInfoBase {
         readonly min: readonly [number, number, number]
         readonly max: readonly [number, number, number]
       }>
+      /** The space's authored game-view preset (UVW `spaces[].camera`). */
+      readonly camera?: MapWorldCamera
     }>[]
   }>
 }

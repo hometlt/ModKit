@@ -522,6 +522,8 @@ export async function materializeWorldToUvw(
           }),
           ...additional.layers,
         ]),
+        // the publisher's game-view preset, as its snapshot states it (spaces[].camera)
+        ...(info.camera === undefined ? {} : { camera: info.camera }),
       }),
     ]),
     connections: Object.freeze([]) as readonly [],

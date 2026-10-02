@@ -912,6 +912,7 @@ export async function reconstructCanonicalUvw(
         basis,
         bounds: space.bounds,
         layers: Object.freeze(reconstructed),
+        ...(space.camera === undefined ? {} : { camera: space.camera }),
       }),
     )
   }
