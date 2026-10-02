@@ -120,6 +120,22 @@ describe('VS Code Sources tree', () => {
       'Dune 2000',
       'StarCraft II',
     ])
+    // a version that already names its game is not prefixed with the name again (v85, BAR)
+    const bar = createSourceTree({
+      workspaceFolders: [],
+      selectedInstallations: [
+        {
+          gameId: 'beyond-all-reason/beyond-all-reason',
+          displayName: 'Beyond All Reason',
+          version: 'Beyond All Reason test-30891-c6b9114',
+          installPath: 'F:/Games/Beyond All Reason',
+          normalizedPath: 'f:/games/beyond all reason',
+        },
+      ],
+      mountedProviderRootIds: new Set(),
+      text,
+    })
+    expect(bar[1]?.children?.[0]?.children?.[0]?.label).toBe('Beyond All Reason test-30891-c6b9114')
   })
 
   /**

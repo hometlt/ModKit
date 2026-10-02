@@ -139,8 +139,15 @@ export function createSourceTree(input: SourceTreeInput): readonly SourceTreeNod
         compareText(left.normalizedPath, right.normalizedPath),
     )
     .map(source => {
-      // an installation, of whichever game: what reads its storage is the provider's business
-      const label = `${source.displayName}${source.version === undefined ? '' : ` · ${source.version}`}`
+      // an installation, of whichever game: what reads its storage is the provider's business; a
+      // version that already names the game (BAR's «Beyond All Reason test-30891-…») stands alone
+      const version = source.version
+      const label =
+        version === undefined
+          ? source.displayName
+          : version.startsWith(source.displayName)
+            ? version
+            : `${source.displayName} · ${version}`
       const build = [source.buildName, source.buildUid].filter(Boolean).join(' · ')
       const mounting =
         includesPath(input.mountingIds, source.normalizedPath) ||
