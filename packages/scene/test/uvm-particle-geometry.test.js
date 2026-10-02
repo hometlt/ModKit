@@ -78,7 +78,7 @@ it('reuses stable size/color/alpha/rotation factors and variation in full quad a
     rotationVariation: { shape: 'square', amplitude: Math.PI / 4, frequency: 1 },
     rows: 2,
     columns: 4,
-    lifeSpanUvAnim: [0, 3, 1],
+    lifeSpanUvAnim: [0, 3, 0],
   }
   const { state } = fixture(emitter)
   state.sizeRandomFactors[0] = 0.5
@@ -151,7 +151,7 @@ it('uses birth origin for pinned tails and the preceding segment for trail tails
       tailLength: 2,
       rows: 2,
       columns: 4,
-      tailUvAnim: [4, 5, 1],
+      tailUvAnim: [4, 5, 0],
     }
     const { state } = fixture(emitter)
     state.types[0] = 1
@@ -325,8 +325,8 @@ it('uses decay atlas intervals and wraps cells independently for heads and tails
     ...base,
     rows: 2,
     columns: 4,
-    decayUvAnim: [5, 7, 1],
-    tailDecayUvAnim: [8, 11, 1],
+    decayUvAnim: [5, 7, 0],
+    tailDecayUvAnim: [8, 11, 0],
   }
   const { state } = fixture(emitter)
   state.ages[0] = 0.75
@@ -340,6 +340,36 @@ it('uses decay atlas intervals and wraps cells independently for heads and tails
     createUvmParticleGeometry(state, [emitter], options).entries[0],
     [-0.7, 0, -2, -0.7, 0, 0, 0.7, 0, 0, 0.7, 0, -2],
     [0.5, 0.5, 0.5, 0, 0.75, 0, 0.75, 0.5],
+  )
+})
+
+it('runs a Warcraft III sprite interval its repeat times, short of its end', () => {
+  // [start, end, repeat]: four sprites twice over the first half of the life (mdx-m3-viewer getCell)
+  const emitter = { ...base, rows: 2, columns: 4, lifeSpanUvAnim: [0, 4, 2] }
+  const { state } = fixture(emitter)
+  state.ages[0] = 0.2
+  // two fifths of the half: sprite floor(4 × 2 × 0.4) = 3, the last of the row
+  full(
+    createUvmParticleGeometry(state, [emitter], options).entries[0],
+    [-1, -1, 0, -1, 1, 0, 1, 1, 0, 1, -1, 0],
+    [0.75, 0.5, 0.75, 0, 1, 0, 1, 0.5],
+  )
+  state.ages[0] = 0.25
+  // halfway through the half the sprites start over, never showing sprite 4
+  full(
+    createUvmParticleGeometry(state, [emitter], options).entries[0],
+    [-1, -1, 0, -1, 1, 0, 1, 1, 0, 1, -1, 0],
+    [0, 0.5, 0, 0, 0.25, 0, 0.25, 0.5],
+  )
+})
+
+it('draws a Warcraft III segment scaling as the half side of its quad', () => {
+  // ParticleScaling 3 throughout the life: corners at ±1 × 3 (mdx-m3-viewer particles.vert)
+  const emitter = { ...base, width: undefined, length: undefined, particleScaling: [3, 3, 3] }
+  const { state } = fixture(emitter)
+  full(
+    createUvmParticleGeometry(state, [emitter], options).entries[0],
+    [-3, -3, 0, -3, 3, 0, 3, 3, 0, 3, -3, 0],
   )
 })
 

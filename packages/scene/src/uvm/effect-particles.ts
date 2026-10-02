@@ -601,8 +601,11 @@ export function createUvmParticleGeometry(
           }),
         )
       }
-      right = scaleVec3(axes.right, size[0] / 2)
-      up = scaleVec3(axes.up, size[1] / 2)
+      // A Warcraft III segment scaling is the quad's half side (mdx-m3-viewer: corners ±1 × scale);
+      // a lifecycle or authored size is its whole side.
+      const half = anchor.lifecycleSize === null && anchor.particleScaling != null ? 1 : 0.5
+      right = scaleVec3(axes.right, size[0] * half)
+      up = scaleVec3(axes.up, size[1] * half)
     } else {
       const speed = lengthVec3(velocity),
         direction = speed > 0 ? velocity : anchor.localZ,
@@ -992,7 +995,18 @@ function particleUvRect(
       : anchor.decayUvAnim
   const start = frames?.[0] ?? 0
   const end = frames?.[1] ?? start
-  const frame = Math.max(0, Math.round(lerpNumber(start, end, t)))
+  const repeat = frames?.[2] ?? 0
+  // A Warcraft III interval [start, end, repeat] runs its sprites `repeat` times over the half,
+  // short of `end` (mdx-m3-viewer getCell); without a repeat (M3) it runs start to end once.
+  const frame =
+    repeat > 0
+      ? end > start
+        ? Math.min(
+            start + (Math.floor((end - start) * repeat * t) % (end - start)),
+            columns * rows - 1,
+          )
+        : start
+      : Math.max(0, Math.round(lerpNumber(start, end, t)))
   const cellWidth = 1 / columns
   const cellHeight = 1 / rows
   const column = frame % columns
