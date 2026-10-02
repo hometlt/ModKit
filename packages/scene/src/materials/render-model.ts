@@ -267,6 +267,11 @@ function validateStandard(value: unknown, path: string, signal?: AbortSignal) {
     if (material[key] !== undefined) integer(material[key], `${path}.${key}`, 0, 0xffffffff)
   for (const key of ['environmentMultipliers', 'emissiveTint'])
     if (material[key] !== undefined) vector(material[key], `${path}.${key}`, 3)
+  if (
+    material['edgeFadeOut'] !== undefined &&
+    !(finite(material['edgeFadeOut'], `${path}.edgeFadeOut`) > 0)
+  )
+    throw new TypeError(`${path}.edgeFadeOut must be positive`)
   if (material['parallaxHeight'] !== undefined)
     animated(material['parallaxHeight'], `${path}.parallaxHeight`, 1, signal)
   const factors = material['normalBlendFactors']

@@ -195,6 +195,12 @@ export interface StandardMaterialModel {
    * metal; k is the constant multiplier). Absent: the environment as sampled.
    */
   environmentTintByBase?: boolean
+  /**
+   * Fade at grazing angles: smoothstep(0, edgeFadeOut, |N·V|) on the geometric normal multiplies an
+   * additive material's colour (its fade) and any other material's alpha (Kane's Wrath DefaultW3D
+   * `EdgeFadeOut`). A layer's fresnel cannot state it: its curve is a power, and it scales the layer.
+   */
+  edgeFadeOut?: number
   /** RGB multiplier applied to accumulated emissive light. Defaults to white. */
   emissiveTint?: readonly [number, number, number]
   /** Signed parallax displacement applied when the height layer is active. */

@@ -5,6 +5,7 @@ import {
   buildMaterialDefines,
   buildStandardFragmentSource,
   canonicalDefineKey,
+  composeStandardPixelCpu,
 } from '../src/model-math/standard-material-glsl.js'
 
 const material = (angleLookup?: object): StandardMaterialModel =>
@@ -81,5 +82,44 @@ describe('a layer read at angle coordinates', () => {
     const plain = buildMaterialDefines(material())
     expect(plain.uvSetCount).toBe(2)
     expect(canonicalDefineKey(table)).not.toBe(canonicalDefineKey(plain))
+  })
+})
+
+describe("the fade at grazing angles (Kane's Wrath EdgeFadeOut)", () => {
+  // smoothstep(0, 0.5, |N·V|): |N·V| = 0.25 is half way, so the fade is 0.5
+  const shade = (z: number, modAlpha: boolean) =>
+    composeStandardPixelCpu({
+      layers: {},
+      ambient: [0.5, 0.5, 0.5, 0],
+      viewDir: [Math.sqrt(1 - z * z), 0, z],
+      edgeFadeOut: 0.5,
+      ...(modAlpha ? { modAlpha: true } : {}),
+      specularity: 0,
+      specMult: 0,
+      emisMult: 0,
+      specMode: 0,
+      unshaded: true,
+      doubleLambert: false,
+      clampOutput: false,
+      alphaTestThreshold: 0,
+    }).rgba
+
+  it("fades a material's alpha, an additive material's colour", () => {
+    expect(shade(1, false)[3]).toBeCloseTo(1, 12)
+    expect(shade(0.25, false)[3]).toBeCloseTo(0.5, 12)
+    expect(shade(0.25, false)[0]).toBeCloseTo(0.5, 12)
+    const additive = shade(0.25, true)
+    expect(additive[0]).toBeCloseTo(0.25, 12)
+    expect(additive[3]).toBeCloseTo(1, 12)
+  })
+
+  it('fades in the shader by the same step', () => {
+    const faded = buildMaterialDefines({ ...material(), edgeFadeOut: 0.5 })
+    const source = buildStandardFragmentSource(faded)
+    expect(source).toContain('smoothstep(0.0, 0.5, abs(normalize(v_viewDir).z))')
+    expect(source).toContain('final.a *= edgeFade;')
+    const additive = buildMaterialDefines({ ...material(), edgeFadeOut: 0.5, blendMode: 2 })
+    expect(buildStandardFragmentSource(additive)).toContain('fade *= edgeFade;')
+    expect(canonicalDefineKey(faded)).not.toBe(canonicalDefineKey(buildMaterialDefines(material())))
   })
 })

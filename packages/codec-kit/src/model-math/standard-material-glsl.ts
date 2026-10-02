@@ -126,6 +126,8 @@ export interface StandardMaterialDefines {
   tonemap?: boolean
   /** The environment value is multiplied by the base colour before its op (StandardMaterialModel). */
   environmentTintByBase?: boolean
+  /** The grazing fade of StandardMaterialModel.edgeFadeOut, a compile-time constant. */
+  edgeFadeOut?: number
 }
 
 const TEXTURE_FALLBACK_PRIORITY: readonly StandardLayerSlot[] = [
@@ -268,6 +270,7 @@ export function buildMaterialDefines(
       ? { linearColor: true, ...(material.tonemap === undefined ? {} : { tonemap: true }) }
       : {}),
     ...(material.environmentTintByBase === true ? { environmentTintByBase: true } : {}),
+    ...(material.edgeFadeOut === undefined ? {} : { edgeFadeOut: material.edgeFadeOut }),
   }
 }
 
@@ -291,7 +294,8 @@ export function canonicalDefineKey(defines: StandardMaterialDefines): string {
     `;uv=${defines.uvSetCount};${defines.gpuSkinning ? 'skin' : ''}${defines.hardwareInstancing ? 'inst' : ''}${defines.bakedPoseInstancing ? 'baked' : ''}` +
     `${defines.sceneLighting ? ';scene' : ''}` +
     `${defines.pbr ? ';pbr' : ''}${defines.linearColor ? ';linear' : ''}${defines.tonemap ? ';tonemap' : ''}` +
-    `${defines.environmentTintByBase ? ';envbase' : ''}`
+    `${defines.environmentTintByBase ? ';envbase' : ''}` +
+    `${defines.edgeFadeOut === undefined ? '' : `;edge=${defines.edgeFadeOut}`}`
   )
 }
 
@@ -515,6 +519,8 @@ export interface CpuPixelInput {
   environmentMultipliers?: Vec3
   /** The environment value is multiplied by the base colour before its op. */
   environmentTintByBase?: boolean
+  /** StandardMaterialModel.edgeFadeOut, on `viewDir`. */
+  edgeFadeOut?: number
   specMode: 0 | 1
   /** FakeEnergyConservingSpec, as the GLSL define of the same name. */
   specularEnergyConservation?: boolean
@@ -904,6 +910,13 @@ export function composeStandardPixelCpu(input: CpuPixelInput): CpuPixelResult {
   if (layers.alpha1) alpha *= computeLayerColorCpu(layers.alpha1, teamColor)[3]
   if (layers.alpha2) alpha *= computeLayerColorCpu(layers.alpha2, teamColor)[3]
   final[3] = alpha * (input.materialAlpha ?? 1)
+  if (input.edgeFadeOut !== undefined) {
+    // smoothstep(0, E, |N·V|) on the geometric normal (+z of the tangent-space view)
+    const t = clamp01(Math.abs(normalize3(input.viewDir ?? [0, 0, 1])[2]) / input.edgeFadeOut)
+    const edge = t * t * (3 - 2 * t)
+    if (input.modAlpha === true) fade *= edge
+    else final[3] *= edge
+  }
 
   // Common masked team-colour operation. Unlike M3's per-layer teamColorMode, the red-channel
   // mask performs grain merge after lighting.
@@ -1568,6 +1581,11 @@ export function buildStandardFragmentSource(
   if (layerBySlot.has('alpha1')) body.push('  alpha *= computeLayer_alpha1().a;')
   if (layerBySlot.has('alpha2')) body.push('  alpha *= computeLayer_alpha2().a;')
   body.push('  final.a = alpha * u_materialAlpha;')
+  if (defines.edgeFadeOut !== undefined)
+    body.push(
+      `  float edgeFade = smoothstep(0.0, ${glslFloat(defines.edgeFadeOut)}, abs(normalize(v_viewDir).z));`,
+      defines.modAlpha ? '  fade *= edgeFade;' : '  final.a *= edgeFade;',
+    )
   if (layerBySlot.has('teamColorMask')) {
     body.push('  float teamColorMask = computeLayer_teamColorMask().r;')
     body.push('  final.rgb += (u_teamColor - vec3(0.5)) * teamColorMask;')

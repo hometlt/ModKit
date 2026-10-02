@@ -552,6 +552,7 @@ function shade(
       ? {}
       : { environmentMultipliers: material.environmentMultipliers }),
     ...(material.environmentTintByBase === true ? { environmentTintByBase: true } : {}),
+    ...(material.edgeFadeOut === undefined ? {} : { edgeFadeOut: material.edgeFadeOut }),
     ...(material.emissiveTint === undefined ? {} : { emissiveTint: material.emissiveTint }),
     ...(material.normalBlendFactors === undefined
       ? {}
