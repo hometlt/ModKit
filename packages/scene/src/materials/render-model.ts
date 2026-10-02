@@ -343,6 +343,12 @@ function validateStandard(value: unknown, path: string, signal?: AbortSignal) {
     if (!isStandardLayerSlot(slot)) throw new TypeError(`${path} has unknown layer ${slot}`)
     validateLayer(layer, slot, `${path}.layers.${slot}`, signal)
   }
+  // the diffuse stack mixes by the channels of its weights: without them it has no mix
+  if (
+    ['diffuse2', 'diffuse3', 'diffuse4', 'diffuse5'].some(slot => layers[slot] !== undefined) &&
+    layers['diffuseWeights'] === undefined
+  )
+    throw new TypeError(`${path} stacks diffuse layers without diffuseWeights`)
 }
 
 /** Own and validate inert material JSON before any renderer is allowed to execute it. */

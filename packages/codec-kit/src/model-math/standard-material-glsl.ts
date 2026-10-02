@@ -34,6 +34,11 @@ export type Vec4 = readonly [number, number, number, number]
 /** All SC2 standard-material layers consumed by the shared fragment composition. */
 export const FRAGMENT_LAYER_SLOTS: readonly StandardLayerSlot[] = [
   'diffuse',
+  'diffuse2',
+  'diffuse3',
+  'diffuse4',
+  'diffuse5',
+  'diffuseWeights',
   'decal',
   'specular',
   'gloss',
@@ -130,8 +135,16 @@ export interface StandardMaterialDefines {
   edgeFadeOut?: number
 }
 
+/** The diffuse stack's layers, each mixed in by the next channel (r, g, b, a) of `diffuseWeights`. */
+const DIFFUSE_STACK = ['diffuse2', 'diffuse3', 'diffuse4', 'diffuse5'] as const
+
 const TEXTURE_FALLBACK_PRIORITY: readonly StandardLayerSlot[] = [
   'diffuse',
+  'diffuseWeights',
+  'diffuse2',
+  'diffuse3',
+  'diffuse4',
+  'diffuse5',
   'alpha1',
   'alpha2',
   'normal',
@@ -685,6 +698,21 @@ export function composeStandardPixelCpu(input: CpuPixelInput): CpuPixelResult {
       color,
       teamColor,
     )
+  }
+  // the diffuse stack (diffuse2..5 over diffuse by the channels of diffuseWeights)
+  if (layers.diffuseWeights) {
+    const weights = computeLayerColorCpu(layers.diffuseWeights, teamColor)
+    for (const [index, slot] of DIFFUSE_STACK.entries()) {
+      const layer = layers[slot]
+      if (layer === undefined) continue
+      const value = computeLayerColorCpu(layer, teamColor)
+      const weight = weights[index]!
+      color = [
+        color[0] + (value[0] - color[0]) * weight,
+        color[1] + (value[1] - color[1]) * weight,
+        color[2] + (value[2] - color[2]) * weight,
+      ]
+    }
   }
   if (layers.decal) {
     color = combineLayerColorCpu(
@@ -1389,6 +1417,15 @@ export function buildStandardFragmentSource(
   if (diffuse) {
     body.push('  vec4 diffuseColor = computeLayer_diffuse();')
     body.push(`  ${combineExpression(diffuse.op, 'diffuseColor', 'color')}`)
+  }
+  if (layerBySlot.has('diffuseWeights')) {
+    body.push('  vec4 diffuseWeights = computeLayer_diffuseWeights();')
+    DIFFUSE_STACK.forEach((slot, index) => {
+      if (layerBySlot.has(slot))
+        body.push(
+          `  color = mix(color, computeLayer_${slot}().rgb, diffuseWeights.${'rgba'[index]});`,
+        )
+    })
   }
   const decal = layerBySlot.get('decal')
   if (decal) {

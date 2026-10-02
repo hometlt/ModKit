@@ -12,6 +12,16 @@ export type NormalMapFormat = 'dxt5nm' | 'bc5' | 'rgb8' | 'luminance-alpha'
 
 export type StandardLayerSlot =
   | 'diffuse'
+  /**
+   * A stack over `diffuse`: each `diffuseN` (N 2..5) mixed over the colour by channel N − 2 (r, g,
+   * b, a) of `diffuseWeights`, in order — Diablo III's multi-layer ground,
+   * lerp(lerp(lerp(lerp(L1, L2, w.r), L3, w.g), L4, w.b), L5, w.a).
+   */
+  | 'diffuse2'
+  | 'diffuse3'
+  | 'diffuse4'
+  | 'diffuse5'
+  | 'diffuseWeights'
   | 'decal'
   | 'specular'
   | 'gloss'
@@ -267,6 +277,11 @@ export interface MaterialValidationIssue {
 
 const LAYER_SLOTS: readonly StandardLayerSlot[] = [
   'diffuse',
+  'diffuse2',
+  'diffuse3',
+  'diffuse4',
+  'diffuse5',
+  'diffuseWeights',
   'decal',
   'specular',
   'gloss',
