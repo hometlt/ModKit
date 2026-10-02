@@ -1,5 +1,5 @@
 import { Emitter, type Disposable, type Event } from './legacy/support/events.js'
-import { getLogger } from './legacy/core/logger.js'
+import { getLogger } from './logging.js'
 
 export { Emitter, type Disposable, type Event }
 
