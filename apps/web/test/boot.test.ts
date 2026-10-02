@@ -38,6 +38,7 @@ const MIME: Readonly<Record<string, string>> = {
   '.json': 'application/json; charset=utf-8',
   '.png': 'image/png',
   '.svg': 'image/svg+xml',
+  '.wasm': 'application/wasm',
   '.webmanifest': 'application/manifest+json',
   '.woff2': 'font/woff2',
 }

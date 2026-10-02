@@ -52,6 +52,7 @@ const MIME: Readonly<Record<string, string>> = {
   '.mp3': 'audio/mpeg',
   '.png': 'image/png',
   '.svg': 'image/svg+xml',
+  '.wasm': 'application/wasm',
   '.webmanifest': 'application/manifest+json',
   '.woff2': 'font/woff2',
   '.zip': 'application/zip',
