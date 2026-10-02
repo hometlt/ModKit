@@ -763,6 +763,8 @@ describe('a member is a subject in its own right', () => {
       answer.snapshot.selectedRoute?.[1]?.extensionId,
     )
     expect(JSON.stringify(answer.snapshot.selectedRoute)).not.toContain(archive)
+    // a member reads its resources (a model's textures) through its own raster port
+    expect(answer.rasterResources).toBeDefined()
     const session = answer.session
     expect(session).toBeDefined()
 

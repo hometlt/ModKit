@@ -898,6 +898,8 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
     return {
       snapshot: selectedRoute.length === 0 ? snapshot : { ...snapshot, selectedRoute },
       session: opened.session,
+      // the port a member's textures are read through, as a file's are (v85: Earth .kfr in a WD)
+      ...(opened.rasterResources === undefined ? {} : { rasterResources: opened.rasterResources }),
     }
   }
 
@@ -1315,7 +1317,13 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
         childToDispose = undefined
         releaseResources = async () => undefined
         retainerTransferredToChild = true
-        return { snapshot: answer.snapshot, session }
+        return {
+          snapshot: answer.snapshot,
+          session,
+          ...(answer.rasterResources === undefined
+            ? {}
+            : { rasterResources: answer.rasterResources }),
+        }
       } catch (error) {
         await childToDispose?.dispose().catch(() => undefined)
         throw error
