@@ -84,6 +84,14 @@ function relativeEntry(mount: IndexedMount, entry: ContentSourceEntry): string |
   return path.toLowerCase().startsWith(prefix.toLowerCase()) ? path.slice(prefix.length) : undefined
 }
 
+/**
+ * Where a dependency file lives: `content-source://<sourceId>/<path in the source>`, so a link to it
+ * opens the file itself (the layer's own path, not the closure's synthetic `content-dependencies/N`).
+ */
+function contentSourceUri(sourceId: string, path: string): string {
+  return `content-source://${encodeURIComponent(sourceId)}/${path.split('/').map(encodeURIComponent).join('/')}`
+}
+
 export function entryRevision(mount: ContentDependencyMount): RevisionId {
   return mount.fingerprint !== undefined && isRevisionId(mount.fingerprint)
     ? revisionId(mount.fingerprint)
@@ -291,7 +299,7 @@ function createContentDependencyOrigin(
         joinPath(mount.sourcePath, relative),
         maximumEntryBytes,
       )
-      const uri = `content-source://${encodeURIComponent(mount.sourceId)}/${normalized.split('/').map(encodeURIComponent).join('/')}`
+      const uri = contentSourceUri(mount.sourceId, joinPath(mount.sourcePath, relative))
       const source = artifactByteSourceFromBytes(
         Object.freeze({ id: `${mount.rootId}:${normalized}`, uri }),
         mount.revision,
@@ -414,8 +422,7 @@ export function createContentDependencyLanguageDocumentSource(
             continue
           }
           if (!accepted.has(languageId)) continue
-          const logicalId = joinPath(mount.logicalPrefix, relative)
-          const uri = `content-source://${encodeURIComponent(mount.sourceId)}/${logicalId.split('/').map(encodeURIComponent).join('/')}`
+          const uri = contentSourceUri(mount.sourceId, entry.path)
           if (!openUris.has(uri) && candidates.length < request.maxDocuments) {
             candidates.push({ mount, path: entry.path, relative })
           } else if (!openUris.has(uri)) {
@@ -471,8 +478,7 @@ export function createContentDependencyLanguageDocumentSource(
           continue
         }
         totalBytes += bytes.byteLength
-        const logicalId = joinPath(candidate.mount.logicalPrefix, candidate.relative)
-        const uri = `content-source://${encodeURIComponent(candidate.mount.sourceId)}/${logicalId.split('/').map(encodeURIComponent).join('/')}`
+        const uri = contentSourceUri(candidate.mount.sourceId, candidate.path)
         const signature = String(candidate.mount.revision)
         const previous = revisions.get(uri)
         const version =

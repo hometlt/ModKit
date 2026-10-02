@@ -86,7 +86,7 @@ describe('language knowledge files from the subject context', () => {
     ])
     expect(inputs.every(input => (input.payload as { fileName: string }).fileName === KNOWLEDGE)).toBe(true)
     expect(result.documents.map(document => document.uri)).toEqual([
-      'content-source://roblox%3Aenvironment/content-dependencies/1/src/util.lua',
+      'content-source://roblox%3Aenvironment/project/src/util.lua',
     ])
   })
 

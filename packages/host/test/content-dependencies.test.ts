@@ -232,13 +232,9 @@ describe('content dependency language documents', () => {
     expect(
       result.documents.map(document => [document.uri, document.languageId, document.text]),
     ).toEqual([
+      ['content-source://cache/cache/base/Base.SC2Data/GameData/Units.xml', 'sc2-data', '<Base/>'],
       [
-        'content-source://cache/content-dependencies/0/Base.SC2Data/GameData/Units.xml',
-        'sc2-data',
-        '<Base/>',
-      ],
-      [
-        'content-source://cache/content-dependencies/1/Base.SC2Data/GameData/Units.xml',
+        'content-source://cache/cache/override/Base.SC2Data/GameData/Units.xml',
         'sc2-data',
         '<Override/>',
       ],
