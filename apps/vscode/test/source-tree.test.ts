@@ -6,6 +6,7 @@ const text: SourceTreeText = {
   workspace: 'Workspace',
   selectedInstallations: 'Selected installations',
   providerSources: 'Provider sources',
+  games: 'Games',
   connections: 'Connections',
   roots: 'Roots',
   noWorkspaceFolders: 'No workspace folders',
@@ -71,7 +72,7 @@ describe('VS Code Sources tree', () => {
     expect(game?.children?.[0]?.children?.[0]).toMatchObject({
       kind: 'installation',
       normalizedPath: 'c:\\games\\starcraft ii',
-      label: 'CASC: StarCraft II · 5.0.16.97563',
+      label: 'StarCraft II · 5.0.16.97563',
     })
 
     // Roots are grouped by what they answer: my publications, a region's public catalogue, and
@@ -95,6 +96,30 @@ describe('VS Code Sources tree', () => {
       // A public catalogue is one server's row, and carries the search that adds a mod to it.
       contextValue: 'modkitSource.publicRoot.mounted',
     })
+  })
+
+  // v84: Dune 2000 was listed as «CASC: Dune 2000» under a group named «StarCraft II».
+  it('names no one game for installations of several, nor their storage', () => {
+    const tree = createSourceTree({
+      workspaceFolders: [],
+      selectedInstallations: [
+        installation,
+        {
+          gameId: 'ea/dune-2000',
+          displayName: 'Dune 2000',
+          installPath: 'F:\\Games\\Dune 2000',
+          normalizedPath: 'f:\\games\\dune 2000',
+        },
+      ],
+      mountedProviderRootIds: new Set(),
+      providerSnapshot,
+      text,
+    })
+    expect(tree[1]?.label).toBe('Games')
+    expect(tree[1]?.children?.[0]?.children?.map(node => node.label)).toEqual([
+      'Dune 2000',
+      'StarCraft II',
+    ])
   })
 
   /**

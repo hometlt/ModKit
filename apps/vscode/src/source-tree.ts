@@ -19,6 +19,8 @@ export interface SourceTreeText {
   readonly workspace: string
   readonly selectedInstallations: string
   readonly providerSources: string
+  /** The group's name when installations of several games are selected. */
+  readonly games: string
   readonly connections: string
   readonly roots: string
   readonly noWorkspaceFolders: string
@@ -137,9 +139,8 @@ export function createSourceTree(input: SourceTreeInput): readonly SourceTreeNod
         compareText(left.normalizedPath, right.normalizedPath),
     )
     .map(source => {
-      const label = `CASC: ${source.displayName}${
-        source.version === undefined ? '' : ` · ${source.version}`
-      }`
+      // an installation, of whichever game: what reads its storage is the provider's business
+      const label = `${source.displayName}${source.version === undefined ? '' : ` · ${source.version}`}`
       const build = [source.buildName, source.buildUid].filter(Boolean).join(' · ')
       const mounting =
         includesPath(input.mountingIds, source.normalizedPath) ||
@@ -355,12 +356,15 @@ export function createSourceTree(input: SourceTreeInput): readonly SourceTreeNod
    * An installation and the publisher's online catalogue are two doors into the same title, and
    * listing them as unrelated top-level sections made the reader hold that connection in their
    * head. The game's own name comes from discovery; without an installation the provider still
-   * names itself.
+   * names itself. Installations of several games share the group, which then names none of them
+   * (v84: Dune 2000 listed under «StarCraft II»).
    */
   const gameLabel =
-    input.selectedInstallations[0]?.displayName ??
-    input.providerSnapshot?.label ??
-    input.text.providerSources
+    new Set(input.selectedInstallations.map(source => source.gameId)).size > 1
+      ? input.text.games
+      : (input.selectedInstallations[0]?.displayName ??
+        input.providerSnapshot?.label ??
+        input.text.providerSources)
   const gameChildren: SourceTreeNode[] = [
     Object.freeze({
       kind: 'group',

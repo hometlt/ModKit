@@ -195,6 +195,7 @@ export class SourcesView implements vscode.TreeDataProvider<SourceTreeNode>, vsc
           workspace: this.localizer.text('vscode.sources.workspace'),
           selectedInstallations: this.localizer.text('vscode.sources.selectedInstallations'),
           providerSources: this.localizer.text('vscode.sources.providerSources'),
+          games: this.localizer.text('vscode.sources.games'),
           connections: this.localizer.text('vscode.sources.connections'),
           roots: this.localizer.text('vscode.sources.roots'),
           noWorkspaceFolders: this.localizer.text('vscode.sources.noWorkspaceFolders'),
