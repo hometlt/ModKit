@@ -3,10 +3,11 @@ import { ModkitError } from '@modkit/core'
 /**
  * Lazy runtime boundary for the optional Texture2DDecoder WASM implementation.
  *
- * Node can resolve the installed package automatically. Browser main threads and module workers
- * deliberately require an explicit asset URL so bundlers never traverse the dependency's Node
- * fallback (`import("module")`). The package build publishes the required browser assets under
- * `browser/texture2ddecoder/`.
+ * Node loads the installed package's own Emscripten module. Browser main threads and module
+ * workers deliberately require an explicit asset URL so bundlers never traverse the dependency's
+ * Node fallback (`import("module")`). Either way every output vector is copied out of Wasm memory
+ * and freed (`nativeRuntime`); the package's own wrapper copies but never frees, which a
+ * long-lived host would feel on every decode.
  */
 
 export interface GpuTextureWasmBrowserOptions {
@@ -23,7 +24,6 @@ interface WasmByteVector {
 type NativeTexture2DDecoder = Record<string, (...args: unknown[]) => WasmByteVector | null>
 
 interface Texture2DDecoderRuntime {
-  initialize?(options?: { wasmPath?: string }): Promise<void>
   decode_bc1(data: Uint8Array, width: number, height: number): Promise<Uint8Array | null>
   decode_bc3(data: Uint8Array, width: number, height: number): Promise<Uint8Array | null>
   decode_bc4(data: Uint8Array, width: number, height: number): Promise<Uint8Array | null>
@@ -77,11 +77,6 @@ function cacheRuntime(
   return runtimePromise
 }
 
-function runtimeExports(module: unknown): Texture2DDecoderRuntime {
-  const exports = module as Texture2DDecoderRuntime & { default?: Texture2DDecoderRuntime }
-  return exports.default ?? exports
-}
-
 function isNodeRuntime(): boolean {
   const processValue = (globalThis as { process?: { versions?: { node?: string } } }).process
   return typeof processValue?.versions?.node === 'string'
@@ -98,7 +93,7 @@ function wasmOutputToUint8Array(output: WasmByteVector | null): Uint8Array | nul
   }
 }
 
-function browserRuntime(native: NativeTexture2DDecoder): Texture2DDecoderRuntime {
+function nativeRuntime(native: NativeTexture2DDecoder): Texture2DDecoderRuntime {
   const decode =
     (name: string) =>
     async (...args: unknown[]): Promise<Uint8Array | null> =>
@@ -140,20 +135,9 @@ export function initializeGpuTextureWasmBrowser(
     const wasmPath = new URL('wasm/', base).href
     const moduleUrl = new URL('texture2ddecoder.js', wasmPath).href
     runtimePromise = cacheRuntime(
-      import(/* @vite-ignore @modkitx-external-runtime */ moduleUrl).then(
-        async (module: unknown) => {
-          const createModule = (module as { default?: unknown }).default
-          if (typeof createModule !== 'function') {
-            throw new Error(
-              'Texture2DDecoder browser runtime does not export an Emscripten factory',
-            )
-          }
-          const native = (await createModule({
-            locateFile: (path: string) => new URL(path, wasmPath).href,
-          })) as NativeTexture2DDecoder
-          return browserRuntime(native)
-        },
-      ),
+      emscriptenRuntime(moduleUrl, {
+        locateFile: (path: string) => new URL(path, wasmPath).href,
+      }),
       'Texture2DDecoder browser runtime failed to initialize',
       'Verify assetBaseUrl and that both texture2ddecoder.js and texture2ddecoder.wasm are deployed.',
     )
@@ -162,20 +146,43 @@ export function initializeGpuTextureWasmBrowser(
   return initializedRuntime.then(() => undefined)
 }
 
+/** The Texture2DDecoder Emscripten factory at `moduleUrl`, instantiated with `options`. */
+async function emscriptenRuntime(
+  moduleUrl: string,
+  options: Readonly<Record<string, unknown>>,
+): Promise<Texture2DDecoderRuntime> {
+  const module: unknown = await import(/* @vite-ignore @modkitx-external-runtime */ moduleUrl)
+  const createModule = (module as { default?: unknown }).default
+  if (typeof createModule !== 'function')
+    throw new Error('Texture2DDecoder runtime does not export an Emscripten factory')
+  return nativeRuntime((await createModule(options)) as NativeTexture2DDecoder)
+}
+
 async function decoder(): Promise<Texture2DDecoderRuntime> {
   if (!runtimePromise) {
     if (!isNodeRuntime()) {
       throw new ModkitError({
         code: 'codec-kit/texture-runtime-unavailable',
         message: 'Software GPU texture decoding is not initialized in this browser host',
-        context: { hint: 'Call initializeGpuTextureWasmBrowser({ assetBaseUrl }) before decoding.' },
+        context: {
+          hint: 'Call initializeGpuTextureWasmBrowser({ assetBaseUrl }) before decoding.',
+        },
       })
     }
-    // Keep the bare specifier runtime-computed. Browser bundlers must not crawl the dependency's
-    // Node fallback; Node still resolves the ordinary installed package at runtime.
+    // Keep the specifiers runtime-computed. Browser bundlers must not crawl the dependency's Node
+    // fallback; Node resolves the ordinary installed package at runtime and loads its wasm/ module.
     const packageName = ['texture2ddecoder', 'wasm'].join('-')
     runtimePromise = cacheRuntime(
-      import(/* @modkitx-external-runtime */ packageName).then(runtimeExports),
+      (async () => {
+        const { createRequire } = (await import(
+          /* @modkitx-external-runtime */ ['node', 'module'].join(':')
+        )) as { createRequire(from: string): { resolve(id: string): string } }
+        const { pathToFileURL } = (await import(
+          /* @modkitx-external-runtime */ ['node', 'url'].join(':')
+        )) as { pathToFileURL(path: string): URL }
+        const entry = pathToFileURL(createRequire(import.meta.url).resolve(packageName))
+        return emscriptenRuntime(new URL('../wasm/texture2ddecoder.js', entry).href, {})
+      })(),
       'Texture2DDecoder Node runtime failed to load',
       'Install the optional texture2ddecoder-wasm dependency for software GPU texture decode.',
     )
