@@ -21,6 +21,18 @@ export {
 } from './literal.js'
 export { loadLuaSyntax, luaSyntax, type LuaSyntax } from './syntax.js'
 export {
+  evaluateLuaChunk,
+  LuaFunction,
+  LuaRuntimeError,
+  LuaTable,
+  luaType,
+  luaValueToStatic,
+  type LuaEvaluationLimits,
+  type LuaEvaluationOptions,
+  type LuaEvaluationResult,
+  type LuaValue,
+} from './evaluate.js'
+export {
   luaEnvironmentFromAnnotations,
   readLuaAnnotationType,
   type LuaAnnotationFile,

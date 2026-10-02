@@ -13,6 +13,15 @@ The Lua-family language of MK3: Lua 5.1–5.4, LuaJIT, Luau and CfxLua through o
   Luau; `lua` documents are Lua 5.4 unless Luau parses them with fewer errors (Roblox keeps Luau
   in `.lua` files). The LSP transport is the shared `apps/lsp` adapter.
 
+- `src/literal.ts` — static reading of data modules without running them (`readLuaModule`).
+- `src/evaluate.ts` (`./evaluate`) — a bounded evaluator of data scripts (decision 30 (b)): loops,
+  local functions, closures, metatables, the pure Lua 5.1 library with `string` patterns and
+  `format`, `math` (seeded `random`, reported) and `table`; no files, clock or environment. Every
+  step counts against `maxSteps`, calls against `maxDepth`, tables and strings against their limits;
+  past one the script is refused. A game passes its environment as `globals` (Recoil's `VFS`,
+  `lowerkeys`), or runs its own library files first and passes their `globals` table on
+  (`globalTable`); `luaValueToStatic` gives the static reader's tree.
+
 Games add knowledge of their environment (Roblox API, WC3 natives, Spring unitdefs) in their own
 extensions; a second Lua parser is not written anywhere. A game whose API ships as LuaLS
 annotation files (`---@meta` libraries with `---@class`, `---@field`, `---@param`, `---@return`,

@@ -33,6 +33,10 @@
       "types": "./dist/luals.d.ts",
       "default": "./dist/luals.js"
     },
+    "./evaluate": {
+      "types": "./dist/evaluate.d.ts",
+      "default": "./dist/evaluate.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [
