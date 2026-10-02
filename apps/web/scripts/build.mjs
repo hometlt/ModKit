@@ -497,6 +497,7 @@ const workerBuild = await build({
       'index.js',
     ),
     'vendor/uv/model/container': join(repoRoot, 'packages', 'uv', 'dist', 'model', 'container.js'),
+    'vendor/uv/model/frame': join(repoRoot, 'packages', 'uv', 'dist', 'model', 'frame.js'),
     'vendor/uv/model/materializer': join(
       repoRoot,
       'packages',

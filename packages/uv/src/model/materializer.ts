@@ -25,9 +25,10 @@ import { DEFAULT_MODEL_ANIMATION_BUDGET } from '@modkit/codec-kit/model/animatio
 import { boundsOf } from '@modkit/codec-kit/model/bounds'
 import { composeTrsMatrix } from '@modkit/codec-kit/model-math/sequence-pose'
 import { BufferBuilder as RigBufferBuilder } from './legacy/rig-kernels.js'
-import type { UvmJsonObject } from './legacy/rig-types.js'
+import type { UvmJsonObject, UvmJsonValue } from './legacy/rig-types.js'
 import { prepareUvmSkeleton, writeUvmSkinAttributes, writeUvmAnimations } from './rig.js'
 import { materializeUvmAnimationMaterialTargets } from './animation-materials.js'
+import { uvmSceneFrameInverse, withMaterialFrame } from './frame.js'
 export interface ModelProjection {
   readonly info: ModelSceneInfo
   readonly nodes?: readonly ModelNode[]
@@ -90,7 +91,10 @@ export interface ModelProjection {
    * The model's emitters, written on the root as `UV_game_effects` (schema
    * `uvm.effects.schema.json`): each in that wire form, but naming its node by `nodeId` and its
    * material by `materialId` (projection ids) where the wire form has the `node` and `material`
-   * indices, which the materializer writes. A model of effects alone is a model.
+   * indices, which the materializer writes; a record below the entry (a ribbon's spline endpoint)
+   * names its node by `nodeId` the same way. A particle emitter's `emitShapeMeshes` give
+   * `positions` and triangle `indices` as number lists, which the materializer writes to
+   * accessors. A model of effects alone is a model.
    */
   /**
    * Declared collision volumes (ModelCollisionVolume with `nodeId` and `shape`): each written as
@@ -607,6 +611,68 @@ const EFFECT_FAMILIES = [
 ] as const
 
 /**
+ * `nodeId` anywhere below an effect entry as the document's node index (`node`): an M3 ribbon's
+ * spline endpoints name their bones there. A `node` index of the publisher's own is refused, as on
+ * the entry itself.
+ */
+function withNodeIndices(
+  value: UvmJsonValue,
+  label: string,
+  nodeIndexById: ReadonlyMap<string, number>,
+): UvmJsonValue {
+  if (Array.isArray(value)) return value.map(item => withNodeIndices(item, label, nodeIndexById))
+  if (value === null || typeof value !== 'object') return value
+  const written: UvmJsonObject = {}
+  for (const [key, child] of Object.entries(value)) {
+    if (child === undefined) continue
+    if (key === 'node') fail(`${label} names a node by index, not by id`)
+    if (key !== 'nodeId') {
+      written[key] = withNodeIndices(child, label, nodeIndexById)
+      continue
+    }
+    const node = typeof child === 'string' ? nodeIndexById.get(child) : undefined
+    if (node === undefined) fail(`${label} names the unknown node ${String(child)}`)
+    written['node'] = node
+  }
+  return written
+}
+
+/**
+ * A particle emitter's emission meshes, given as `positions` (x, y, z) and triangle `indices`
+ * number lists, written to accessors as the readers of `emitShapeMeshes` take them.
+ */
+function emissionMeshesOf(
+  value: unknown,
+  label: string,
+  addAccessor: (values: Float32Array | Uint32Array, type: 'VEC3' | 'SCALAR') => number,
+): UvmJsonObject[] {
+  if (!Array.isArray(value) || value.length === 0)
+    fail(`${label} emission meshes are a nonempty list`)
+  return value.map((mesh: unknown, at) => {
+    const which = `${label} emission mesh ${String(at)}`
+    const { positions, indices } = (mesh ?? {}) as { positions?: unknown; indices?: unknown }
+    if (
+      !Array.isArray(positions) ||
+      positions.length === 0 ||
+      positions.length % 3 !== 0 ||
+      !positions.every(item => typeof item === 'number' && Number.isFinite(Math.fround(item)))
+    )
+      fail(`${which} needs finite (x, y, z) positions`)
+    if (
+      !Array.isArray(indices) ||
+      indices.length === 0 ||
+      indices.length % 3 !== 0 ||
+      !indices.every(item => Number.isSafeInteger(item) && item >= 0 && item < positions.length / 3)
+    )
+      fail(`${which} needs triangle indices within its positions`)
+    return {
+      positions: addAccessor(Float32Array.from(positions as number[]), 'VEC3'),
+      indices: addAccessor(Uint32Array.from(indices as number[]), 'SCALAR'),
+    }
+  })
+}
+
+/**
  * The projection's emitters as `UV_game_effects`: each family's entries with their node and
  * material ids turned into the document's indices, refused when an id names nothing written or an
  * entry already carries an index of its own (an index from another ordering would point elsewhere).
@@ -615,6 +681,7 @@ function effectsOf(
   projection: ModelProjection,
   nodeIndexById: ReadonlyMap<string, number>,
   materialIndexById: ReadonlyMap<string, number>,
+  addAccessor: (values: Float32Array | Uint32Array, type: 'VEC3' | 'SCALAR') => number,
 ): UvmJsonObject | undefined {
   const given = projection.effects
   if (given === undefined) return undefined
@@ -629,20 +696,29 @@ function effectsOf(
         const json: unknown = entry
         if (!isJsonValue(json) || typeof entry['name'] !== 'string')
           fail(`${label} is not a named JSON object`)
-        const { nodeId, materialId, ...rest } = entry
+        const { nodeId, materialId, emitShapeMeshes, ...rest } = entry
         if (rest['node'] !== undefined || rest['material'] !== undefined)
           fail(`${label} names its node and material by id, not by index`)
         const node = typeof nodeId === 'string' ? nodeIndexById.get(nodeId) : undefined
         if (node === undefined) fail(`${label} names the unknown node ${String(nodeId)}`)
+        if (emitShapeMeshes !== undefined && family !== 'particles')
+          fail(`${label} has emission meshes only a particle emitter has`)
+        const written = {
+          ...(withNodeIndices(rest, label, nodeIndexById) as UvmJsonObject),
+          ...(emitShapeMeshes === undefined
+            ? {}
+            : { emitShapeMeshes: emissionMeshesOf(emitShapeMeshes, label, addAccessor) }),
+          node,
+        }
         if (!withMaterial) {
           if (materialId !== undefined) fail(`${label} names a material its family has not`)
-          return { ...structuredClone(rest), node }
+          return written
         }
         const material =
           typeof materialId === 'string' ? materialIndexById.get(materialId) : undefined
         if (material === undefined)
           fail(`${label} names the unknown material ${String(materialId)}`)
-        return { ...structuredClone(rest), node, material }
+        return { ...written, material }
       }),
     ])
   }
@@ -1962,6 +2038,19 @@ export function materializeUvmCore(
     )
   }
 
+  // A material that places a texture by world position keeps its source worldToMaterial: the
+  // frame the nodes above apply is folded into it, as rebaseUvmScene does for its own frame node.
+  const frame = {
+    metersPerSourceUnit: unitsExtension?.metersPerSourceUnit ?? 1,
+    upAxis: info.upAxis === '+z' ? ('+z' as const) : ('+y' as const),
+    handedness: info.handedness === 'left' ? ('left' as const) : ('right' as const),
+  }
+  if (frame.metersPerSourceUnit !== 1 || frame.upAxis === '+z' || frame.handedness === 'left') {
+    const inverse = uvmSceneFrameInverse(frame)
+    for (const [index, material] of materials.entries())
+      materials[index] = withMaterialFrame(material, inverse)
+  }
+
   // Primitives the game draws only when a clip shows them: stored visibility 0 (SPEC_UVM §15.2).
   const hiddenPrimitives = (primitives ?? [])
     .filter(primitive => primitive.hidden === true)
@@ -2056,10 +2145,31 @@ export function materializeUvmCore(
       undefined,
       'clip and target identities are positional; native frame indices, provenance, bounds and movement speed are not glTF TRS fields',
     )
+  // emission meshes take accessors, so the effects are written before the buffer is closed
+  const effects = effectsOf(projection, nodeIndexById, materialIndexById, (values, type) => {
+    const index = accessors.length
+    if (type === 'VEC3') {
+      const bounds = boundsOf(values)
+      accessors.push({
+        bufferView: buffers.push(values),
+        componentType: FLOAT,
+        count: values.length / 3,
+        type,
+        min: bounds.min,
+        max: bounds.max,
+      })
+    } else
+      accessors.push({
+        bufferView: buffers.push(values),
+        componentType: UINT32,
+        count: values.length,
+        type,
+      })
+    return index
+  })
   const binary = buffers.build()
   const gameExtensions = gameExtensionsOf(projection)
   const sceneLights = sceneLightsOf(projection, nodeIndexById)
-  const effects = effectsOf(projection, nodeIndexById, materialIndexById)
   const document = {
     asset: {
       version: '2.0',

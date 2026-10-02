@@ -163,3 +163,15 @@ export function invertAffine(matrix: readonly number[]): number[] {
     moved[0]!, moved[1]!, moved[2]!, 1,
   ]
 }
+
+/** Column-major 4x4 product `left × right` in doubles: `right` applies first. */
+export function multiplyAffine(left: readonly number[], right: readonly number[]): number[] {
+  const product = new Array<number>(16)
+  for (let column = 0; column < 4; column++)
+    for (let row = 0; row < 4; row++) {
+      let sum = 0
+      for (let k = 0; k < 4; k++) sum += (left[k * 4 + row] ?? 0) * (right[column * 4 + k] ?? 0)
+      product[column * 4 + row] = sum
+    }
+  return product
+}

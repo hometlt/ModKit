@@ -8,6 +8,7 @@ import type {
 import { isStandardLayerSlot } from '@modkit/codec-kit/legacy/models/material'
 import type { RenderScalarAnimationTrack } from '@modkit/codec-kit/legacy/models'
 import { sampleTrackValue } from '@modkit/codec-kit/model-math/sequence-pose'
+import { WORLD_PROJECTION_UV_SOURCES } from '@modkit/uv/model/frame'
 import { materialFrame } from './frame.js'
 import type { NormalBlendPolicy } from './normal-blending.js'
 import { SCENE_ENVIRONMENT_RESOURCE } from './environment.js'
@@ -386,7 +387,7 @@ export function createRenderMaterialSampler(
     usesWorldProjection: passes.some(pass =>
       // Rebasing preserves authored coordinates even for a layer that may be enabled later.
       Object.values(pass.material.layers).some(
-        layer => layer.texturePath !== null && [5, 13, 14, 17, 18].includes(layer.uvSource),
+        layer => layer.texturePath !== null && WORLD_PROJECTION_UV_SOURCES.includes(layer.uvSource),
       ),
     ),
     sample(time: MaterialSampleTime, sampleSignal?: AbortSignal): readonly RenderMaterialPass[] {

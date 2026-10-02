@@ -18,7 +18,7 @@ import type { UvmModelParticleDraw } from './effect-particles.js'
 import type { UvmFrameOptions, PreparedUvmRender } from './render.js'
 
 export type ModelParticleInstance = UvmModelParticleDraw & { readonly transform: readonly number[] }
-const multiplyAffine = (a: ArrayLike<number>, b: ArrayLike<number>) =>
+const multiplyFrames = (a: ArrayLike<number>, b: ArrayLike<number>) =>
   Float32Array.from(multiplyMaterialFrames(Array.from(a), Array.from(b)))
 
 /** Column-major product for camera projection chains. Unlike material frames, the left operand
@@ -73,7 +73,7 @@ export function modelParticleMatrix(instance: ModelParticleInstance): Float32Arr
       1,
     ])
   }
-  const matrix = multiplyAffine(instance.transform, local)
+  const matrix = multiplyFrames(instance.transform, local)
   if (!matrix.every(Number.isFinite))
     throw new RangeError('model particle matrix exceeds finite range')
   return matrix
@@ -191,7 +191,7 @@ export async function composeModelParticles(
         viewProjection: Array.from(multiplyMatrix4(parent.camera.viewProjection, matrix)),
         ...(parent.camera.viewMatrix === undefined
           ? {}
-          : { viewMatrix: Array.from(multiplyAffine(parent.camera.viewMatrix, matrix)) }),
+          : { viewMatrix: Array.from(multiplyFrames(parent.camera.viewMatrix, matrix)) }),
       }
       const eye = parent.camera.eyePosition
       const childEye =
@@ -266,7 +266,7 @@ export async function composeModelParticles(
           ...(primitive.materialId === undefined
             ? {}
             : { materialId: materialId(primitive.materialId) }),
-          transform: multiplyAffine(matrix, primitive.transform ?? IDENTITY_MATERIAL_FRAME),
+          transform: multiplyFrames(matrix, primitive.transform ?? IDENTITY_MATERIAL_FRAME),
           tint: instance.color.map(
             (component, axis) => component * (primitive.tint?.[axis] ?? 1),
           ) as [number, number, number, number],

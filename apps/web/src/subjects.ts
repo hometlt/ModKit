@@ -209,6 +209,7 @@ export const WEB_WORKER_MODULE_MAP: Readonly<Record<string, string>> = Object.fr
   '@modkit/sdk/model-encoding': 'vendor/sdk/model-encoding.js',
   '@modkit/sdk/templates': 'vendor/sdk/templates/index.js',
   '@modkit/uv/model/container': 'vendor/uv/model/container.js',
+  '@modkit/uv/model/frame': 'vendor/uv/model/frame.js',
   '@modkit/uv/model/materializer': 'vendor/uv/model/materializer.js',
   '@modkit/uv/model/validation': 'vendor/uv/model/validation.js',
   '@rgrove/parse-xml': 'vendor/parse-xml/index.js',

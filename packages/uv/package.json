@@ -25,6 +25,10 @@
       "types": "./dist/model/container.d.ts",
       "default": "./dist/model/container.js"
     },
+    "./model/frame": {
+      "types": "./dist/model/frame.d.ts",
+      "default": "./dist/model/frame.js"
+    },
     "./model/format-residual": {
       "types": "./dist/model/format-residual.d.ts",
       "default": "./dist/model/format-residual.js"
