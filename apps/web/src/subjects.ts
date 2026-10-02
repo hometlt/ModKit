@@ -178,6 +178,7 @@ export const WEB_WORKER_MODULE_MAP: Readonly<Record<string, string>> = Object.fr
   '@modkit/codec-kit/compression/lcw': 'vendor/codec-kit/compression/lcw.js',
   '@modkit/codec-kit/compression/lzo': 'vendor/codec-kit/compression/lzo.js',
   '@modkit/codec-kit/compression/brotli': 'vendor/codec-kit/compression/brotli.js',
+  '@modkit/codec-kit/container/zip': 'vendor/codec-kit/container/zip.js',
   '@modkit/codec-kit/storage/leveldb': 'vendor/codec-kit/storage/leveldb.js',
   '@modkit/codec-kit/compression/refpack': 'vendor/codec-kit/compression/refpack.js',
   '@modkit/codec-kit/compression/zstd': 'vendor/codec-kit/compression/zstd.js',

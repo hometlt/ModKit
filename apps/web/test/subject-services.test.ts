@@ -161,6 +161,9 @@ const nodeModuleMap = {
   '@modkit/codec-kit/compression/brotli': pathToFileURL(
     join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'compression', 'brotli.js'),
   ).href,
+  '@modkit/codec-kit/container/zip': pathToFileURL(
+    join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'container', 'zip.js'),
+  ).href,
   '@modkit/codec-kit/storage/leveldb': pathToFileURL(
     join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'storage', 'leveldb.js'),
   ).href,

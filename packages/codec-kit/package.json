@@ -198,6 +198,10 @@
       "types": "./dist/compression/brotli.d.ts",
       "default": "./dist/compression/brotli.js"
     },
+    "./container/zip": {
+      "types": "./dist/container/zip.d.ts",
+      "default": "./dist/container/zip.js"
+    },
     "./storage/leveldb": {
       "types": "./dist/storage/leveldb.d.ts",
       "default": "./dist/storage/leveldb.js"

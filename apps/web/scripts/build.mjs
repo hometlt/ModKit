@@ -299,6 +299,14 @@ const workerBuild = await build({
       'compression',
       'brotli.js',
     ),
+    'vendor/codec-kit/container/zip': join(
+      repoRoot,
+      'packages',
+      'codec-kit',
+      'dist',
+      'container',
+      'zip.js',
+    ),
     'vendor/codec-kit/storage/leveldb': join(
       repoRoot,
       'packages',
