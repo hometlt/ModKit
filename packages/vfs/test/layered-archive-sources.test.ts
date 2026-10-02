@@ -309,6 +309,44 @@ describe('the mod context of a layered installation', () => {
     ).rejects.toThrow(/names no game/u)
   })
 
+  it('opens a host path inside the installation folder, an archive member as the file the tree serves', async () => {
+    const log: Log = { closed: [], lookups: [] }
+    const sources = createLayeredArchiveContentSources(
+      'Game',
+      [
+        {
+          root: { ...root('local:game'), storageOf: 'F:\\Games\\The Game\\' },
+          open: async () => chain(log),
+        },
+      ],
+      { modContext: { gameId: 'test/game' } },
+    )
+    // a member of an archive opened from disk (a model inside expansion.big, its textures beside)
+    const member = 'f:/games/THE GAME/expansion.big/Art/Unit.dds'
+    expect(await sources.locateModPackage!(member)).toEqual({ kind: 'loose' })
+    expect(await sources.locateModPackage!('F:/Games/Another Game/unit.dds')).toEqual({
+      kind: 'foreign',
+    })
+    const context = await sources.openModContext!({ schemaVersion: 1, target: member })
+    expect(context.layers.map(layer => [layer.id, layer.role, layer.sourcePath])).toEqual([
+      ['installation', 'dependency', ''],
+      ['opened', 'primary', 'Art/Unit.dds'],
+    ])
+    // the rest of the installation is there for it: a file of another archive by its path
+    expect(await context.locate('data/ini/gamedata.ini')).toEqual({
+      layerId: 'installation',
+      path: 'data/ini/gamedata.ini',
+    })
+    await context.dispose()
+    // a loose file of the folder opens at its path under it
+    const loose = await sources.openModContext!({
+      schemaVersion: 1,
+      target: 'F:/Games/The Game/readme.txt',
+    })
+    expect(loose.layers.at(-1)?.sourcePath).toBe('readme.txt')
+    await loose.dispose()
+  })
+
   it('reads an opened archive over the installation, without its hidden entries, and closes it', async () => {
     const log: Log = { closed: [], lookups: [] }
     const sources = createLayeredArchiveContentSources('Game', [

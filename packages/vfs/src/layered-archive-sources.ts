@@ -298,7 +298,9 @@ export function createLayeredArchiveContentSources(
   options: {
     /**
      * Open a game's files in a context of their own (model textures, scripts): a path inside a
-     * root opens as one file over the whole installation. Host paths stay another module's.
+     * root opens as one file over the whole installation, and so does a host path inside the
+     * folder a root reads (`storageOf`) — a member of one of its archives (`WDFiles/Models.wd/…`)
+     * as the file the tree serves at the member's path. Other host paths stay another module's.
      */
     readonly modContext?: LayeredModContextOptions
   } = {},
@@ -342,19 +344,42 @@ export function createLayeredArchiveContentSources(
   }
   const rootOf = (target: ModContextTarget) =>
     typeof target === 'string' ? undefined : roots.find(plan => plan.root.id === target.sourceId)
+  /** The root whose installation folder holds a host path, and the path under that folder. */
+  const storageHolding = (target: ModContextTarget) => {
+    if (typeof target !== 'string') return undefined
+    const path = normalized(target)
+    for (const plan of roots) {
+      const storage = plan.root.storageOf === undefined ? '' : normalized(plan.root.storageOf)
+      if (storage !== '' && keyOf(path).startsWith(`${keyOf(storage)}/`))
+        return { plan, path: path.slice(storage.length + 1) }
+    }
+    return undefined
+  }
   const modContext = options.modContext
   const contexts =
     modContext === undefined
       ? {}
       : {
           async locateModPackage(target: ModContextTarget): Promise<ModPackagePlacement> {
-            return rootOf(target) === undefined ? { kind: 'foreign' } : { kind: 'loose' }
+            return rootOf(target) === undefined && storageHolding(target) === undefined
+              ? { kind: 'foreign' }
+              : { kind: 'loose' }
           },
           async openModContext(request: ModContextRequest): Promise<ModContext> {
-            const plan = rootOf(request.target)
-            if (plan === undefined || typeof request.target === 'string')
+            const held = storageHolding(request.target)
+            const plan = held?.plan ?? rootOf(request.target)
+            if (plan === undefined)
               throw new TypeError(`${label} opens only paths inside its own content sources`)
-            const path = normalized(request.target.path)
+            let path = typeof request.target === 'string' ? '' : normalized(request.target.path)
+            if (held !== undefined) {
+              // a member of one of the root's archives is the file the tree serves at its path
+              path = held.path
+              for (const archive of (await open(plan.root.id)).layers.archives)
+                if (keyOf(path).startsWith(`${keyOf(archive)}/`)) {
+                  path = path.slice(normalized(archive).length + 1)
+                  break
+                }
+            }
             const { root } = plan
             const gameId = modContext.gameId ?? root.game
             if (gameId === undefined)
