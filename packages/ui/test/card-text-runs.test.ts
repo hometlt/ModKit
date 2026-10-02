@@ -76,7 +76,9 @@ describe('a styled card value', () => {
       const card = probe.createSubjectCard(document, {
         label: 'SCV',
         header: false,
-        async resolveImage() {
+        async resolveImage(id: string) {
+          // the host refuses one icon and says why (v87: SC2 command card icons)
+          if (id.endsWith('missing.dds')) throw new Error('x3.host/resource-not-found')
           return { width: 2, height: 2, rgba: new Uint8Array(16).fill(200) }
         },
         sections: [
@@ -94,6 +96,7 @@ describe('a styled card value', () => {
                   { text: 'half ', color: '#00ff0080' },
                   { text: 'structures', bold: true },
                   { text: '', asset: 'Assets/Textures/btn-unit-terran-scv.dds' },
+                  { text: '', asset: 'Assets/Textures/missing.dds' },
                   { text: '?', unresolved: 'no catalog at hand' },
                 ],
               },
@@ -119,6 +122,9 @@ describe('a styled card value', () => {
         icon: canvas !== null && !canvas.hidden && canvas.width === 2,
         nameShown: name === null ? 'none' : getComputedStyle(name).display,
         unresolved: unresolved?.title,
+        refused: [...(value?.querySelectorAll('[data-mk-part="card.asset"]') ?? [])]
+          .map(slot => (slot as HTMLElement).title)
+          .find(title => title.includes('missing.dds:')),
       }
     })
     expect(drawn).toEqual({
@@ -129,6 +135,8 @@ describe('a styled card value', () => {
       icon: true,
       nameShown: 'none',
       unresolved: 'no catalog at hand',
+      refused:
+        'Assets/Textures/missing.dds\nAssets/Textures/missing.dds: x3.host/resource-not-found',
     })
   })
 })

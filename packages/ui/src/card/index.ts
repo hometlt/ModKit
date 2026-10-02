@@ -964,7 +964,13 @@ function drawCardImage(
       context.putImageData(pixels, 0, 0)
       canvas.hidden = false
     })
-    .catch(() => undefined)
+    .catch((error: unknown) => {
+      // why a picture did not come, on the element that holds it: its tooltip names it
+      const host = canvas.parentElement
+      const reason = `${id}: ${error instanceof Error ? error.message : String(error)}`
+      if (host === null || signal.aborted || host.title.includes(reason)) return
+      host.title = host.title === '' ? reason : `${host.title}\n${reason}`
+    })
 }
 
 /**
@@ -1696,6 +1702,7 @@ export function createSubjectCardViewer(options: SubjectCardViewerOptions = {}):
           options.textures === undefined
             ? undefined
             : async (id: string, signal: AbortSignal): Promise<CardImage | undefined> => {
+                let reason: string | undefined
                 const textures = await options.textures?.(
                   args.descriptor,
                   [
@@ -1706,9 +1713,16 @@ export function createSubjectCardViewer(options: SubjectCardViewerOptions = {}):
                     } satisfies ModelResourceRef,
                   ],
                   signal,
+                  (_id, why) => {
+                    reason = why
+                  },
                 )
                 const texture = textures?.get(id)
-                if (texture === undefined || texture.dimension === 'cube') return undefined
+                if (texture === undefined || texture.dimension === 'cube') {
+                  // the host's reason goes with the refusal, so the cell can name it (v87: 5.12)
+                  if (reason !== undefined) throw new Error(reason)
+                  return undefined
+                }
                 return {
                   width: texture.width,
                   height: texture.height,
