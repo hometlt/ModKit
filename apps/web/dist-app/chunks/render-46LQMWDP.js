@@ -50,7 +50,7 @@ import {
   validateUvmDocument,
   vector3,
   vector4
-} from "./chunk-QXP2LEJM.js";
+} from "./chunk-JNRHQTGH.js";
 import {
   applyColorKeyTransparency,
   billboardCameraRotation,
@@ -60,7 +60,7 @@ import {
   modelPrimitiveByteLength,
   snapshotJson,
   snapshotModelBillboards
-} from "./chunk-S3XCLL57.js";
+} from "./chunk-AVBKEDCB.js";
 import {
   SCENE_RENDERER_CONTRACT
 } from "./chunk-OZX7B633.js";

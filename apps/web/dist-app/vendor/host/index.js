@@ -80,6 +80,7 @@ import {
   hostRealmCacheKey,
   languageWorkspaceIsSemanticallyIncomplete,
   loadSubjectCandidatePage,
+  mapQualificationTupleBytes,
   namespaceEntryEditTarget,
   normalizeExtensionManifest,
   normalizeModkitIdentifier,
@@ -4705,11 +4706,11 @@ function validateWorkspacePlan(plan, workspace, locales, maximum) {
     if (root === void 0) {
       throw new TypeError(`workspace data requirement ${requirement.requirementId} names unknown root`);
     }
-    const rootPath = confinedPath(root.root.sourcePath, `${requirement.requirementId}.root`);
+    const rootPath = root.root.sourcePath === "" ? "" : confinedPath(root.root.sourcePath, `${requirement.requirementId}.root`);
     const path = confinedPath(requirement.path, `${requirement.requirementId}.path`);
     const foldedRoot = rootPath.toLocaleLowerCase();
     const foldedPath = path.toLocaleLowerCase();
-    if (foldedPath !== foldedRoot && !foldedPath.startsWith(`${foldedRoot}/`)) {
+    if (rootPath !== "" && foldedPath !== foldedRoot && !foldedPath.startsWith(`${foldedRoot}/`)) {
       throw new TypeError(`workspace data requirement ${requirement.requirementId} escapes its root`);
     }
     if (requirement.kind === "usage")
@@ -20439,6 +20440,12 @@ async function worldSceneModel(asset, request, options, signal) {
 }
 
 // ../MODDING/modkit-core/packages/host/dist/maps/world-source.js
+var PROOF_METHODS = /* @__PURE__ */ new Set([
+  "sealed-legacy-differential",
+  "official-reference-differential",
+  "third-party-reference-differential",
+  "game-data-reference-differential"
+]);
 function resourceId(namespace, entityId) {
   return `resource:${encodeURIComponent(namespace)}/${encodeURIComponent(entityId)}`;
 }
@@ -20783,6 +20790,10 @@ function admittedWorldCanonicalTransform(snapshot2, terrainTransform, hasTerrain
       () => proof.kind !== "adapter-qualification" || !Number.isSafeInteger(proof.tupleCount) || proof.tupleCount <= 0
     ],
     [
+      `its proof method ${String(proof.method)} is none sdk names`,
+      () => !PROOF_METHODS.has(proof.method)
+    ],
+    [
       "its proof names no oracle, corpus or sha256 source digests",
       () => proof.oracle.length === 0 || proof.corpus.length === 0 || Object.keys(proof.sourceDigests).length === 0 || !Object.values(proof.sourceDigests).every(sha2562)
     ],
@@ -20819,7 +20830,42 @@ function admittedWorldCanonicalTransform(snapshot2, terrainTransform, hasTerrain
   }
   return ["x", "y", "z"].every((axis) => transform.bounds.minimum[axis] === minimum[axis] && transform.bounds.maximum[axis] === maximum[axis]) ? { transform } : { refusal: "its bounds are not the canonical image of the terrain bounds" };
 }
-function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize, modelResources, releaseModelResources, rasterResources) {
+async function worldTransformCorpusRefusal(snapshot2, readDigests) {
+  const transform = snapshot2.uvwTransform;
+  const terrain = snapshot2.semantic.terrain;
+  const native = terrain === void 0 ? void 0 : admittedTerrainTransform(snapshot2, terrain, hasExactTerrainGrid(terrain));
+  if (transform === void 0 || terrain === void 0 || native === void 0)
+    return void 0;
+  const { proof } = transform;
+  const named = Object.entries(proof.sourceDigests).flatMap(([name, digest2]) => {
+    const read = readDigests.get(name.toLowerCase());
+    return read === void 0 ? [] : [{ digest: digest2, read }];
+  });
+  if (named.length === 0 || named.some((item) => item.digest !== item.read))
+    return void 0;
+  if (terrain.samples.length !== proof.tupleCount)
+    return `its proof counts ${String(proof.tupleCount)} tuples; its corpus terrain has ${String(terrain.samples.length)}`;
+  const positions = terrain.samples.map((sample) => terrainMapNativePosition(sample, native));
+  const { columns, rows, sourceRowOrder } = transform.heightfield;
+  const canonical = [];
+  for (let row = 0; row < rows; row += 1) {
+    const sourceRow = sourceRowOrder === "reverse" ? rows - 1 - row : row;
+    for (let column = 0; column < columns; column += 1) {
+      const value = canonicalPosition(positions[sourceRow * columns + column], transform);
+      canonical.push([value.x, value.y, value.z]);
+    }
+  }
+  const digest = async (bytes) => {
+    const hash = new Uint8Array(await globalThis.crypto.subtle.digest("SHA-256", bytes));
+    return `sha256:${[...hash].map((byte) => byte.toString(16).padStart(2, "0")).join("")}`;
+  };
+  if (await digest(mapQualificationTupleBytes(positions.map((item) => [item.x, item.y, item.z]))) !== proof.nativeTupleDigest)
+    return "its native tuple digest is not that of its corpus terrain";
+  if (await digest(mapQualificationTupleBytes(canonical)) !== proof.canonicalTupleDigest)
+    return "its canonical tuple digest is not that of its corpus terrain";
+  return void 0;
+}
+function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize, modelResources, releaseModelResources, rasterResources, corpusRefusal) {
   positiveLimit(maxPageSize, Number.MAX_SAFE_INTEGER);
   const materialModelCache = /* @__PURE__ */ new Map();
   const modelTextureCache = /* @__PURE__ */ new Map();
@@ -20837,7 +20883,8 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize, mode
   const terrainSummary = semantic.terrain;
   const terrainExact = hasExactTerrainGrid(terrainSummary);
   const terrainTransform = admittedTerrainTransform(snapshot2, terrainSummary, terrainExact);
-  const { transform: uvwTransform, refusal: uvwTransformRefusal } = admittedWorldCanonicalTransform(snapshot2, terrainTransform, terrainSummary !== void 0);
+  const admitted = admittedWorldCanonicalTransform(snapshot2, terrainTransform, terrainSummary !== void 0);
+  const { transform: uvwTransform, refusal: uvwTransformRefusal } = admitted.transform !== void 0 && corpusRefusal !== void 0 ? { transform: void 0, refusal: corpusRefusal } : admitted;
   const terrainLod = terrainExact ? "exact" : "sampled";
   const terrainMaterialExact = snapshot2.terrainMaterials?.exact === true && (uvwTransform === void 0 || snapshot2.terrainMaterials.width === uvwTransform.heightfield.columns && snapshot2.terrainMaterials.height === uvwTransform.heightfield.rows);
   const terrainWeightRasterExact = (snapshot2.terrainMaterials?.weightRasters?.length ?? 0) > 0 && snapshot2.terrainMaterials.weightRasters.every((raster) => Number.isSafeInteger(raster.width) && raster.width > 0 && Number.isSafeInteger(raster.height) && raster.height > 0 && raster.materialIds.length > 0 && raster.materialIds.length <= 4 && raster.rgba?.byteLength === raster.width * raster.height * 4);
@@ -21135,7 +21182,8 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize, mode
     height: raster.height,
     materialIds: raster.materialIds,
     encoding: raster.encoding,
-    normalization: raster.normalization
+    normalization: raster.normalization,
+    ...raster.derivation === void 0 ? {} : { derivation: raster.derivation }
   })));
   const terrainWeightTextures = new Map((snapshot2.terrainMaterials?.weightRasters ?? []).flatMap((raster) => raster.rgba === void 0 ? [] : [
     [
@@ -22316,6 +22364,7 @@ async function analyzeResolvedMapWorkspace(request) {
     const provenanceOffset = request.resources.provenance().length;
     const documents = [];
     const revisions = [];
+    const readDigests = /* @__PURE__ */ new Map();
     const unresolvedRequirementIds = [];
     let totalBytes = 0;
     for (const requirement of plan.requirements) {
@@ -22331,6 +22380,7 @@ async function analyzeResolvedMapWorkspace(request) {
         throw new TypeError(`workspace map documents exceed maxTotalBytes ${limits.maxTotalBytes}`);
       }
       documents.push(loaded.document);
+      readDigests.set(requirement.path.slice(requirement.path.lastIndexOf("/") + 1).toLowerCase(), loaded.contentFingerprint);
       revisions.push(`${requirement.requirementId}:${requirement.path}@${String(loaded.revision)}#${loaded.contentFingerprint}`);
     }
     if (request.resources.state() !== "live") {
@@ -22440,8 +22490,9 @@ async function analyzeResolvedMapWorkspace(request) {
         ...signal === void 0 ? {} : { signal }
       })
     });
-    const worldOf = (analyzed, release) => createCandidateWorldSceneLease(analyzed, request.resources.provenance().slice(provenanceOffset), limits.maxPageSize, modelResources, release, rasterResources);
-    const world = !progressive ? worldOf(snapshot2, releaseModelResources) : refinableWorldLease(worldOf(snapshot2), analyzeWithCatalogEntities({
+    const worldOf = (analyzed, corpusRefusal2, release) => createCandidateWorldSceneLease(analyzed, request.resources.provenance().slice(provenanceOffset), limits.maxPageSize, modelResources, release, rasterResources, corpusRefusal2);
+    const corpusRefusal = await worldTransformCorpusRefusal(snapshot2, readDigests);
+    const world = !progressive ? worldOf(snapshot2, corpusRefusal, releaseModelResources) : refinableWorldLease(worldOf(snapshot2, corpusRefusal), analyzeWithCatalogEntities({
       workspace: request.workspace,
       analyze: (catalog, round) => analyze(catalog, round).then((result) => {
         backgroundSignal.throwIfAborted();
@@ -22450,7 +22501,7 @@ async function analyzeResolvedMapWorkspace(request) {
       catalogEntities: asking,
       initial: snapshot2,
       signal: backgroundSignal
-    }).then((answered) => answered === snapshot2 ? void 0 : worldOf(answered), () => void 0), () => background.abort(), releaseModelResources);
+    }).then(async (answered) => answered === snapshot2 ? void 0 : worldOf(answered, await worldTransformCorpusRefusal(answered, readDigests)), () => void 0), () => background.abort(), releaseModelResources);
     let released = false;
     return Object.freeze({
       state: "resolved",

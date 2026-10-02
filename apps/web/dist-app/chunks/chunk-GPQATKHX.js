@@ -1,12 +1,12 @@
 import {
   createVideoViewer
-} from "./chunk-YHDKYGJK.js";
+} from "./chunk-KIBEJZQD.js";
 import {
   createAudioViewer
-} from "./chunk-BBPEOGNI.js";
+} from "./chunk-ZWUREWCO.js";
 import {
   createRelationGraphViewer
-} from "./chunk-JLL7IGH4.js";
+} from "./chunk-CBL3CHHQ.js";
 import {
   MODEL_FACET_CONTRACTS,
   commitOperationWrite,
@@ -15,7 +15,7 @@ import {
   modelMaterialTeamColor,
   mountFieldEditTarget,
   mountInlineField
-} from "./chunk-VBIE4P5V.js";
+} from "./chunk-UDXENWSE.js";
 import {
   metadataFieldProjections
 } from "./chunk-CW2HIMYV.js";
@@ -92,6 +92,7 @@ import {
   isGameTemplateTextRun,
   isGameTemplateTreeNode,
   mapLayerWindow,
+  mapQualificationTupleBytes,
   namespaceEntryEditTarget,
   narrowGrant,
   normalizeExtensionManifest,
@@ -105,12 +106,12 @@ import {
   validateContributionManifest,
   writerOfferSatisfies,
   writerSelectionKey
-} from "./chunk-QDBJZAOT.js";
+} from "./chunk-VQE4FT4Q.js";
 import {
   createImageViewer,
   createNamespaceViewer,
   invokeRefusalMessage
-} from "./chunk-3PYC7HKN.js";
+} from "./chunk-GDWA6M5G.js";
 import {
   MEDIA_ZOOM_CHOICES,
   canvasPng,
@@ -119,7 +120,7 @@ import {
   createMediaShell,
   mediaFacts,
   textMatches
-} from "./chunk-GRQ2DAQD.js";
+} from "./chunk-QYDJX5KH.js";
 import {
   CALCULATIONS_FALLBACK_MESSAGES,
   CARD_FALLBACK_MESSAGES,
@@ -166,7 +167,7 @@ import {
   uiPreference,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-2TTGFQVJ.js";
+} from "./chunk-CHRQ2G2C.js";
 import {
   PERMISSION_CLASSES,
   contributionId,
@@ -257,7 +258,7 @@ import {
   uvmImagesIgnoringAlpha,
   uvmKeyTimesMetadata,
   uvmVisibilityPointer
-} from "./chunk-QXP2LEJM.js";
+} from "./chunk-JNRHQTGH.js";
 import {
   DEFAULT_MODEL_ANIMATION_BUDGET,
   DEFAULT_MODEL_SKELETON_BUDGET,
@@ -266,15 +267,17 @@ import {
   createModelSceneSampler,
   createModelSkeletonNodes,
   decomposeMatrix4,
+  invertAffine,
   invertQuat,
   linearToSrgb,
+  multiplyMatrix4,
   multiplyQuat,
   quaternionFromRotationMatrix,
   snapshotJson,
   snapshotModelAnimations,
   snapshotModelSkeleton,
   srgbToLinear
-} from "./chunk-S3XCLL57.js";
+} from "./chunk-AVBKEDCB.js";
 import {
   SCENE_RENDERER_CONTRACT,
   SCENE_RENDERER_MATCHER_PROFILE
@@ -3963,11 +3966,11 @@ function validateWorkspacePlan(plan, workspace, locales, maximum) {
     if (root === void 0) {
       throw new TypeError(`workspace data requirement ${requirement.requirementId} names unknown root`);
     }
-    const rootPath = confinedPath(root.root.sourcePath, `${requirement.requirementId}.root`);
+    const rootPath = root.root.sourcePath === "" ? "" : confinedPath(root.root.sourcePath, `${requirement.requirementId}.root`);
     const path = confinedPath(requirement.path, `${requirement.requirementId}.path`);
     const foldedRoot = rootPath.toLocaleLowerCase();
     const foldedPath = path.toLocaleLowerCase();
-    if (foldedPath !== foldedRoot && !foldedPath.startsWith(`${foldedRoot}/`)) {
+    if (rootPath !== "" && foldedPath !== foldedRoot && !foldedPath.startsWith(`${foldedRoot}/`)) {
       throw new TypeError(`workspace data requirement ${requirement.requirementId} escapes its root`);
     }
     if (requirement.kind === "usage")
@@ -6233,7 +6236,7 @@ function sessionAdapter(realm, session, exposedInput, watch, openingSignal) {
 
 // ../MODDING/modkit-core/packages/host/dist/session.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-var projection = () => import("./subject-projection-K4LNSP5G.js");
+var projection = () => import("./subject-projection-H3RQ5B3S.js");
 function rejected(reason, message) {
   return {
     state: "rejected",
@@ -20423,6 +20426,12 @@ async function worldSceneModel(asset, request, options, signal) {
 }
 
 // ../MODDING/modkit-core/packages/host/dist/maps/world-source.js
+var PROOF_METHODS = /* @__PURE__ */ new Set([
+  "sealed-legacy-differential",
+  "official-reference-differential",
+  "third-party-reference-differential",
+  "game-data-reference-differential"
+]);
 function resourceId(namespace, entityId) {
   return `resource:${encodeURIComponent(namespace)}/${encodeURIComponent(entityId)}`;
 }
@@ -20767,6 +20776,10 @@ function admittedWorldCanonicalTransform(snapshot3, terrainTransform, hasTerrain
       () => proof.kind !== "adapter-qualification" || !Number.isSafeInteger(proof.tupleCount) || proof.tupleCount <= 0
     ],
     [
+      `its proof method ${String(proof.method)} is none sdk names`,
+      () => !PROOF_METHODS.has(proof.method)
+    ],
+    [
       "its proof names no oracle, corpus or sha256 source digests",
       () => proof.oracle.length === 0 || proof.corpus.length === 0 || Object.keys(proof.sourceDigests).length === 0 || !Object.values(proof.sourceDigests).every(sha2565)
     ],
@@ -20803,7 +20816,42 @@ function admittedWorldCanonicalTransform(snapshot3, terrainTransform, hasTerrain
   }
   return ["x", "y", "z"].every((axis) => transform.bounds.minimum[axis] === minimum[axis] && transform.bounds.maximum[axis] === maximum[axis]) ? { transform } : { refusal: "its bounds are not the canonical image of the terrain bounds" };
 }
-function createCandidateWorldSceneLease(snapshot3, provenance, maxPageSize, modelResources, releaseModelResources, rasterResources) {
+async function worldTransformCorpusRefusal(snapshot3, readDigests) {
+  const transform = snapshot3.uvwTransform;
+  const terrain = snapshot3.semantic.terrain;
+  const native = terrain === void 0 ? void 0 : admittedTerrainTransform(snapshot3, terrain, hasExactTerrainGrid(terrain));
+  if (transform === void 0 || terrain === void 0 || native === void 0)
+    return void 0;
+  const { proof } = transform;
+  const named = Object.entries(proof.sourceDigests).flatMap(([name, digest2]) => {
+    const read = readDigests.get(name.toLowerCase());
+    return read === void 0 ? [] : [{ digest: digest2, read }];
+  });
+  if (named.length === 0 || named.some((item) => item.digest !== item.read))
+    return void 0;
+  if (terrain.samples.length !== proof.tupleCount)
+    return `its proof counts ${String(proof.tupleCount)} tuples; its corpus terrain has ${String(terrain.samples.length)}`;
+  const positions = terrain.samples.map((sample) => terrainMapNativePosition(sample, native));
+  const { columns, rows, sourceRowOrder } = transform.heightfield;
+  const canonical = [];
+  for (let row = 0; row < rows; row += 1) {
+    const sourceRow = sourceRowOrder === "reverse" ? rows - 1 - row : row;
+    for (let column = 0; column < columns; column += 1) {
+      const value = canonicalPosition(positions[sourceRow * columns + column], transform);
+      canonical.push([value.x, value.y, value.z]);
+    }
+  }
+  const digest = async (bytes) => {
+    const hash = new Uint8Array(await globalThis.crypto.subtle.digest("SHA-256", bytes));
+    return `sha256:${[...hash].map((byte2) => byte2.toString(16).padStart(2, "0")).join("")}`;
+  };
+  if (await digest(mapQualificationTupleBytes(positions.map((item) => [item.x, item.y, item.z]))) !== proof.nativeTupleDigest)
+    return "its native tuple digest is not that of its corpus terrain";
+  if (await digest(mapQualificationTupleBytes(canonical)) !== proof.canonicalTupleDigest)
+    return "its canonical tuple digest is not that of its corpus terrain";
+  return void 0;
+}
+function createCandidateWorldSceneLease(snapshot3, provenance, maxPageSize, modelResources, releaseModelResources, rasterResources, corpusRefusal) {
   positiveLimit(maxPageSize, Number.MAX_SAFE_INTEGER);
   const materialModelCache = /* @__PURE__ */ new Map();
   const modelTextureCache = /* @__PURE__ */ new Map();
@@ -20821,7 +20869,8 @@ function createCandidateWorldSceneLease(snapshot3, provenance, maxPageSize, mode
   const terrainSummary = semantic.terrain;
   const terrainExact = hasExactTerrainGrid(terrainSummary);
   const terrainTransform = admittedTerrainTransform(snapshot3, terrainSummary, terrainExact);
-  const { transform: uvwTransform, refusal: uvwTransformRefusal } = admittedWorldCanonicalTransform(snapshot3, terrainTransform, terrainSummary !== void 0);
+  const admitted = admittedWorldCanonicalTransform(snapshot3, terrainTransform, terrainSummary !== void 0);
+  const { transform: uvwTransform, refusal: uvwTransformRefusal } = admitted.transform !== void 0 && corpusRefusal !== void 0 ? { transform: void 0, refusal: corpusRefusal } : admitted;
   const terrainLod = terrainExact ? "exact" : "sampled";
   const terrainMaterialExact = snapshot3.terrainMaterials?.exact === true && (uvwTransform === void 0 || snapshot3.terrainMaterials.width === uvwTransform.heightfield.columns && snapshot3.terrainMaterials.height === uvwTransform.heightfield.rows);
   const terrainWeightRasterExact = (snapshot3.terrainMaterials?.weightRasters?.length ?? 0) > 0 && snapshot3.terrainMaterials.weightRasters.every((raster) => Number.isSafeInteger(raster.width) && raster.width > 0 && Number.isSafeInteger(raster.height) && raster.height > 0 && raster.materialIds.length > 0 && raster.materialIds.length <= 4 && raster.rgba?.byteLength === raster.width * raster.height * 4);
@@ -21119,7 +21168,8 @@ function createCandidateWorldSceneLease(snapshot3, provenance, maxPageSize, mode
     height: raster.height,
     materialIds: raster.materialIds,
     encoding: raster.encoding,
-    normalization: raster.normalization
+    normalization: raster.normalization,
+    ...raster.derivation === void 0 ? {} : { derivation: raster.derivation }
   })));
   const terrainWeightTextures = new Map((snapshot3.terrainMaterials?.weightRasters ?? []).flatMap((raster) => raster.rgba === void 0 ? [] : [
     [
@@ -22240,6 +22290,7 @@ async function analyzeResolvedMapWorkspace(request) {
     const provenanceOffset = request.resources.provenance().length;
     const documents = [];
     const revisions = [];
+    const readDigests = /* @__PURE__ */ new Map();
     const unresolvedRequirementIds = [];
     let totalBytes = 0;
     for (const requirement of plan.requirements) {
@@ -22255,6 +22306,7 @@ async function analyzeResolvedMapWorkspace(request) {
         throw new TypeError(`workspace map documents exceed maxTotalBytes ${limits.maxTotalBytes}`);
       }
       documents.push(loaded.document);
+      readDigests.set(requirement.path.slice(requirement.path.lastIndexOf("/") + 1).toLowerCase(), loaded.contentFingerprint);
       revisions.push(`${requirement.requirementId}:${requirement.path}@${String(loaded.revision)}#${loaded.contentFingerprint}`);
     }
     if (request.resources.state() !== "live") {
@@ -22364,8 +22416,9 @@ async function analyzeResolvedMapWorkspace(request) {
         ...signal === void 0 ? {} : { signal }
       })
     });
-    const worldOf = (analyzed, release) => createCandidateWorldSceneLease(analyzed, request.resources.provenance().slice(provenanceOffset), limits.maxPageSize, modelResources, release, rasterResources);
-    const world = !progressive ? worldOf(snapshot3, releaseModelResources) : refinableWorldLease(worldOf(snapshot3), analyzeWithCatalogEntities({
+    const worldOf = (analyzed, corpusRefusal2, release) => createCandidateWorldSceneLease(analyzed, request.resources.provenance().slice(provenanceOffset), limits.maxPageSize, modelResources, release, rasterResources, corpusRefusal2);
+    const corpusRefusal = await worldTransformCorpusRefusal(snapshot3, readDigests);
+    const world = !progressive ? worldOf(snapshot3, corpusRefusal, releaseModelResources) : refinableWorldLease(worldOf(snapshot3, corpusRefusal), analyzeWithCatalogEntities({
       workspace: request.workspace,
       analyze: (catalog, round) => analyze(catalog, round).then((result) => {
         backgroundSignal.throwIfAborted();
@@ -22374,7 +22427,7 @@ async function analyzeResolvedMapWorkspace(request) {
       catalogEntities: asking,
       initial: snapshot3,
       signal: backgroundSignal
-    }).then((answered) => answered === snapshot3 ? void 0 : worldOf(answered), () => void 0), () => background.abort(), releaseModelResources);
+    }).then(async (answered) => answered === snapshot3 ? void 0 : worldOf(answered, await worldTransformCorpusRefusal(answered, readDigests)), () => void 0), () => background.abort(), releaseModelResources);
     let released = false;
     return Object.freeze({
       state: "resolved",
@@ -47947,6 +48000,46 @@ function alphaDrawOrder(primitives, alphaFor, viewProjection) {
   blended.sort((a2, b2) => a2.priority - b2.priority || b2.depth - a2.depth || a2.order - b2.order);
   return [...opaque, ...blended.map((item) => item.primitive)];
 }
+var sortedTriangles = /* @__PURE__ */ new WeakMap();
+function depthSortedTriangles(primitive, viewProjection) {
+  const order = primitive.indices;
+  const length = order?.length ?? Math.floor(primitive.positions.length / 3);
+  const corners = [];
+  const at2 = (index) => order?.[index] ?? index;
+  if (primitive.topology === "triangles")
+    for (let index = 0; index + 2 < length; index += 3)
+      corners.push(at2(index), at2(index + 1), at2(index + 2));
+  else if (primitive.topology === "triangle-strip")
+    for (let index = 0; index + 2 < length; index += 1)
+      if (index % 2 === 0)
+        corners.push(at2(index), at2(index + 1), at2(index + 2));
+      else
+        corners.push(at2(index + 1), at2(index), at2(index + 2));
+  else if (primitive.topology === "triangle-fan")
+    for (let index = 1; index + 1 < length; index += 1)
+      corners.push(at2(0), at2(index), at2(index + 1));
+  const count = corners.length / 3;
+  if (count < 2)
+    return primitive;
+  const matrix2 = primitive.transform === void 0 ? viewProjection : multiplyMatrix4(viewProjection, primitive.transform);
+  const kept = sortedTriangles.get(primitive.positions);
+  let sorted = kept?.sorted;
+  if (kept === void 0 || kept.indices !== order || kept.matrix.some((value, index) => value !== matrix2[index])) {
+    const positions = materialPosedPositions(primitive);
+    const depth = (vertex) => {
+      const x = positions[vertex * 3] ?? 0, y = positions[vertex * 3 + 1] ?? 0, z = positions[vertex * 3 + 2] ?? 0;
+      const clipZ = matrix2[2] * x + matrix2[6] * y + matrix2[10] * z + matrix2[14];
+      const clipW = matrix2[3] * x + matrix2[7] * y + matrix2[11] * z + matrix2[15];
+      return clipW === 0 ? clipZ : clipZ / clipW;
+    };
+    const depths = Array.from({ length: count }, (_, triangle) => depth(corners[triangle * 3]) + depth(corners[triangle * 3 + 1]) + depth(corners[triangle * 3 + 2]));
+    const triangles = Array.from({ length: count }, (_, triangle) => triangle).sort((left, right) => depths[right] - depths[left] || left - right);
+    sorted = new Uint32Array(count * 3);
+    triangles.forEach((triangle, index) => sorted.set(corners.slice(triangle * 3, triangle * 3 + 3), index * 3));
+    sortedTriangles.set(primitive.positions, Object.freeze({ indices: order, matrix: Float32Array.from(matrix2), sorted }));
+  }
+  return Object.freeze({ ...primitive, topology: "triangles", indices: sorted });
+}
 function straightenAlpha(rgba) {
   for (let i2 = 0; i2 < rgba.length; i2 += 4) {
     const alpha = rgba[i2 + 3] ?? 0;
@@ -48654,7 +48747,7 @@ function sceneMaterialDraws(primitives, materials, programs, viewProjection, dia
     const original = originals[Number(key3.materialId)], entry2 = original === void 0 ? void 0 : entries.get(original);
     if (entry2 === void 0)
       throw new TypeError("invalid material draw");
-    return entry2;
+    return alpha(original).mode === "blend" || primitiveFade(entry2.primitive) < 1 ? { ...entry2, primitive: depthSortedTriangles(entry2.primitive, viewProjection) } : entry2;
   });
   return [...prepasses, ...draws];
 }
@@ -64630,6 +64723,53 @@ function createAccordion(document, options) {
   };
 }
 
+// ../MODDING/modkit-core/packages/ui/dist/text-runs.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var RUN_COLOR = /^#[0-9a-f]{6}$/iu;
+function textRunsOf(value) {
+  return Array.isArray(value) && value.length > 0 && value.every(isGameTemplateTextRun) ? value : void 0;
+}
+function appendTextRuns(target, runs, parts) {
+  const document = target.ownerDocument;
+  for (const run of runs) {
+    if (run.asset !== void 0) {
+      const slot = document.createElement("span");
+      setPart(slot, parts.asset);
+      slot.dataset["asset"] = run.asset;
+      slot.title = run.asset;
+      const name = document.createElement("span");
+      setViewerText(name, run.asset.split(/[\\/]/u).pop() ?? run.asset);
+      slot.append(name);
+      target.append(slot);
+      continue;
+    }
+    run.text.split("\n").forEach((line, index) => {
+      if (index > 0)
+        target.append(document.createElement("br"));
+      if (line === "")
+        return;
+      const span2 = document.createElement("span");
+      setViewerText(span2, line);
+      if (run.color !== void 0 && RUN_COLOR.test(run.color))
+        span2.style.color = run.color;
+      if (run.bold === true)
+        span2.style.fontWeight = "bold";
+      if (run.italic === true)
+        span2.style.fontStyle = "italic";
+      if (run.underline === true)
+        span2.style.textDecoration = "underline";
+      if (run.size !== void 0) {
+        span2.style.fontSize = `${Math.min(2, Math.max(0.75, run.size / 16))}em`;
+      }
+      if (run.unresolved !== void 0) {
+        setPart(span2, parts.unresolved);
+        span2.title = run.unresolved;
+      }
+      target.append(span2);
+    });
+  }
+}
+
 // ../MODDING/modkit-core/packages/ui/dist/card/wiki.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var WIKI_PAGE_SIZE = 200;
@@ -65088,9 +65228,11 @@ function provenanceRef(item) {
 }
 function factField(fact4, subjectKind, localizer, groupId) {
   const keys = subjectKind === EXTENSION_SUBJECT_KIND2 ? EXTENSION_FACT_MESSAGE_KEYS : subjectKind === CONTRIBUTION_SUBJECT_KIND2 ? CONTRIBUTION_FACT_MESSAGE_KEYS : isRepositorySubjectKind(subjectKind) ? REPOSITORY_SUBJECT_FACT_MESSAGE_KEYS : NO_FACT_MESSAGE_KEYS;
+  const runs = fact4.type?.kind === "text-runs" ? textRunsOf(fact4.value) : void 0;
   return {
     name: systemSubjectLabel(localizer, subjectKind, keys, fact4.id, fact4.label),
-    value: factValue(fact4.value),
+    value: runs === void 0 ? factValue(fact4.value) : runs.map((run) => run.text).join(""),
+    ...runs === void 0 ? {} : { runs },
     ...fact4.provenance.length === 0 ? {} : { sources: fact4.provenance.map(provenanceRef) },
     ...fact4.note === void 0 ? {} : { note: fact4.note },
     ...fact4.knowledgeTarget === void 0 ? {} : { knowledgeTarget: fact4.knowledgeTarget },
@@ -65638,7 +65780,7 @@ function renderHeader(document, host, section, localizer, signal, onNavigate, re
   if (header.childElementCount > 0)
     host.append(header);
 }
-function renderFields(document, host, fields, inspectKnowledge, onNavigate, onOpenSource, onEditField) {
+function renderFields(document, host, fields, inspectKnowledge, onNavigate, onOpenSource, onEditField, pictures) {
   const list = document.createElement("div");
   list.className = "modkit-card__fields";
   list.setAttribute("role", "table");
@@ -65655,7 +65797,19 @@ function renderFields(document, host, fields, inspectKnowledge, onNavigate, onOp
       name.textContent = safeViewerText(field2.name, 128);
     setPart(name, "card.field-name");
     const value = document.createElement("span");
-    value.textContent = safeViewerText(field2.value, 2048);
+    if (field2.runs === void 0)
+      value.textContent = safeViewerText(field2.value, 2048);
+    else {
+      appendTextRuns(value, field2.runs, { asset: "card.asset", unresolved: "card.unresolved" });
+      for (const slot of value.querySelectorAll("[data-asset]")) {
+        if (pictures === void 0)
+          break;
+        const canvas = document.createElement("canvas");
+        setPart(canvas, "card.asset-image");
+        slot.prepend(canvas);
+        drawCardImage(canvas, slot.dataset["asset"] ?? "", pictures.resolve, pictures.signal);
+      }
+    }
     setPart(value, "card.field-value");
     if (field2.note !== void 0) {
       const note = document.createElement("small");
@@ -65804,7 +65958,7 @@ function createSubjectCard(document, options) {
         setPart(panel.parentElement ?? panel, "accordion.section");
         switch (section.kind) {
           case "fields":
-            renderFields(document, panel, section.fields, options.knowledge === void 0 ? void 0 : inspectKnowledge, options.onNavigate, options.onOpenSource, options.onEditField);
+            renderFields(document, panel, section.fields, options.knowledge === void 0 ? void 0 : inspectKnowledge, options.onNavigate, options.onOpenSource, options.onEditField, options.resolveImage === void 0 ? void 0 : { resolve: options.resolveImage, signal: images.signal });
             return;
           case "links": {
             const list = document.createElement("div");
@@ -66153,13 +66307,13 @@ var PREVIEW_STAGES = [
 async function defaultPreviewStage(kind, localizer) {
   switch (kind) {
     case "model":
-      return (await import("./model-P6TDG36V.js")).createModelViewer({ localizer });
+      return (await import("./model-GOPOWISM.js")).createModelViewer({ localizer });
     case "image":
-      return (await import("./image-3KATOXWA.js")).createImageViewer({ localizer });
+      return (await import("./image-ERIVOJOI.js")).createImageViewer({ localizer });
     case "video":
-      return (await import("./video-36HGRJJM.js")).createVideoViewer({ localizer });
+      return (await import("./video-Q52GAA6S.js")).createVideoViewer({ localizer });
     case "audio":
-      return (await import("./audio-NFLU37ES.js")).createAudioViewer({ localizer });
+      return (await import("./audio-GOJOQJQO.js")).createAudioViewer({ localizer });
   }
 }
 function embedPreview(sections, args, scope, localizer, previews) {
@@ -66198,7 +66352,7 @@ function embedRelationGraph(sections, args, scope, localizer, graph) {
   return [
     ...sections,
     stageSection({ id: "relations-graph", title: localizer.text("card.relationGraph"), expanded: false }, scope, localizer, "card.relationGraphUnavailable", async (host) => {
-      const module = graph ?? (await import("./graph-2CFZZHMJ.js")).createRelationGraphViewer({ localizer });
+      const module = graph ?? (await import("./graph-PAH7QVDD.js")).createRelationGraphViewer({ localizer });
       return scope.signal.aborted ? void 0 : module.mount({ ...args, container: host, signal: scope.signal });
     })
   ];
@@ -66795,7 +66949,6 @@ var VARIANT_PAGE_ROWS = 200;
 var LOAD_PAGE_ROWS = 1e3;
 var TRANSLATE_BATCH = 50;
 var RENDER_BATCH = 400;
-var RUN_COLOR = /^#[0-9a-f]{6}$/iu;
 var FILTER_LABELS = {
   missing: "table.filterMissing",
   untranslated: "table.filterUntranslated",
@@ -66830,44 +66983,9 @@ var MATCH_TOGGLES = [
   ["regex", ".*", "filter.regex", "regex"]
 ];
 function drawRuns(cell, runs) {
-  const document = cell.ownerDocument;
   cell.dataset["rendered"] = "true";
   cell.replaceChildren();
-  for (const run of runs) {
-    if (run.asset !== void 0) {
-      const slot = document.createElement("span");
-      setPart(slot, "table.asset");
-      slot.dataset["asset"] = run.asset;
-      slot.title = run.asset;
-      setViewerText(slot, run.asset.split(/[\\/]/u).pop() ?? run.asset);
-      cell.append(slot);
-      continue;
-    }
-    run.text.split("\n").forEach((line, index) => {
-      if (index > 0)
-        cell.append(document.createElement("br"));
-      if (line === "")
-        return;
-      const span2 = document.createElement("span");
-      setViewerText(span2, line);
-      if (run.color !== void 0 && RUN_COLOR.test(run.color))
-        span2.style.color = run.color;
-      if (run.bold === true)
-        span2.style.fontWeight = "bold";
-      if (run.italic === true)
-        span2.style.fontStyle = "italic";
-      if (run.underline === true)
-        span2.style.textDecoration = "underline";
-      if (run.size !== void 0) {
-        span2.style.fontSize = `${Math.min(2, Math.max(0.75, run.size / 16))}em`;
-      }
-      if (run.unresolved !== void 0) {
-        setPart(span2, "table.unresolved");
-        span2.title = run.unresolved;
-      }
-      cell.append(span2);
-    });
-  }
+  appendTextRuns(cell, runs, { asset: "table.asset", unresolved: "table.unresolved" });
 }
 function found(value, pattern) {
   pattern.lastIndex = 0;
@@ -71134,7 +71252,8 @@ function objectPosition(item, input) {
     return [preview2.x, preview2.z, preview2.y];
   if (item.uvwPosition !== void 0)
     return [item.uvwPosition.x, item.uvwPosition.y, item.uvwPosition.z];
-  return [item.position.x, item.position.z, item.position.y];
+  const position = item.mapNativePresentationPosition ?? item.position;
+  return [position.x, position.z, position.y];
 }
 function faceNormal2(a2, b2, c3) {
   const ab = [b2[0] - a2[0], b2[1] - a2[1], b2[2] - a2[2]];
@@ -71392,7 +71511,7 @@ function pushSplatTriangle(target, vertices, textureCoordinates, weights, normal
     target.textureWeights1.push(weights[4] ?? 0, weights[5] ?? 0, weights[6] ?? 0, weights[7] ?? 0);
   }
 }
-var MAX_TERRAIN_WEIGHT_RASTERS = 4;
+var WORLD_MAX_TERRAIN_WEIGHT_RASTERS = 16;
 var MISSING_TERRAIN_LAYER_TEXTURE = Object.freeze({
   id: "modkit.world/missing-terrain-layer",
   width: 1,
@@ -72148,6 +72267,32 @@ function restWorldModelSample(result) {
 }
 var worldRestPickPrimitives = /* @__PURE__ */ new WeakMap();
 var worldPosedPrimitives = /* @__PURE__ */ new WeakMap();
+function foundationStretched(primitive, component, instance, stretch) {
+  if (stretch === void 0 || !(stretch > 0))
+    return primitive;
+  const own = "transform" in primitive ? primitive.transform : void 0;
+  const local = multiplyComponentTransforms(component, own ?? IDENTITY_COMPONENT_TRANSFORM);
+  let inverse;
+  try {
+    inverse = invertAffine(Array.from(multiplyComponentTransforms(instance, own ?? IDENTITY_COMPONENT_TRANSFORM)));
+  } catch {
+    return primitive;
+  }
+  const down = [inverse[4] * -stretch, inverse[5] * -stretch, inverse[6] * -stretch];
+  const source2 = primitive.positions;
+  const positions = Float32Array.from(source2);
+  for (let index = 0; index + 2 < source2.length; index += 3) {
+    const x = source2[index];
+    const y = source2[index + 1];
+    const z = source2[index + 2];
+    if (local[1] * x + local[5] * y + local[9] * z + local[13] > 1e-6)
+      continue;
+    positions[index] = x + down[0];
+    positions[index + 1] = y + down[1];
+    positions[index + 2] = z + down[2];
+  }
+  return Object.freeze({ ...primitive, positions });
+}
 function worldPosedPrimitive(primitive) {
   if (materialSkinOf(primitive) === void 0)
     return primitive;
@@ -72955,7 +73100,7 @@ function prepareWorldStaticTerrain(input, sampleSharedModel) {
     });
   };
   const weightRasters = input.terrainWeightRasters ?? [];
-  const rasterGroups = weightRasters.length > 0 && weightRasters.length <= MAX_TERRAIN_WEIGHT_RASTERS && terrainMaximumX > terrainMinimumX && terrainMaximumY > terrainMinimumY ? Array.from({ length: Math.ceil(weightRasters.length / 2) }, (_, index) => rasterSplatGroup(weightRasters.slice(index * 2, index * 2 + 2))) : [];
+  const rasterGroups = weightRasters.length > 0 && weightRasters.length <= WORLD_MAX_TERRAIN_WEIGHT_RASTERS && terrainMaximumX > terrainMinimumX && terrainMaximumY > terrainMinimumY ? Array.from({ length: Math.ceil(weightRasters.length / 2) }, (_, index) => rasterSplatGroup(weightRasters.slice(index * 2, index * 2 + 2))) : [];
   const exactRasterSplat = rasterGroups.every((group2) => group2 !== void 0) ? rasterGroups[0] : void 0;
   const rasterSplatOverlays = exactRasterSplat === void 0 ? [] : rasterGroups.slice(1);
   const rasterSplatGroupKey = (prefix, group2) => [
@@ -74058,8 +74203,9 @@ function createWorldWebGlPlan(input, previousPlan) {
         }
       }
       let primitiveIndex = -1;
-      for (const drawn of primitives) {
+      for (const sampledPrimitive of primitives) {
         primitiveIndex += 1;
+        const drawn = foundationStretched(sampledPrimitive, componentTransform, instanceTransform, item.presentationFoundationStretch);
         const prepared = programs.get(drawn.materialId ?? "");
         const primitive = prepared === void 0 ? worldPosedPrimitive(drawn) : drawn;
         const material = modelMaterialById(presented, primitive.materialId);
@@ -78450,29 +78596,32 @@ async function inspectCandidateWorld(source2, options) {
   }
   const requestModel = async (item, maxBytes, textureBytes) => {
     modelRequests += 1;
-    try {
-      return await source2.model(item.id, {
-        maxBytes,
-        maxNodes: Math.min(1024, maxItemsPerLayer),
-        maxMeshes: Math.min(256, maxItemsPerLayer),
-        maxPrimitives: Math.min(512, maxItemsPerLayer),
-        maxPrimitiveBytes: Math.min(16 * 1024 * 1024, maxBytes),
-        maxResources: Math.min(64, maxItemsPerLayer),
-        maxTextureBytes: textureBytes,
-        maxTextureTotalBytes: textureBytes,
-        // The world renderer uploads S3TC blocks as stored: no decode, a quarter to an eighth of
-        // the bytes, and the budget buys a more detailed level.
-        compressedTextureFormats: SCENE_COMPRESSED_TEXTURE_FORMATS
-      }, options.signal);
-    } catch (error5) {
-      options.signal?.throwIfAborted();
-      return Object.freeze({
-        state: "unresolved",
-        diagnostics: Object.freeze([
-          diagnostic("warning", "x3.ui/world-model-failed", `World preview could not load ${item.id}: ${error5 instanceof Error ? error5.message : String(error5)}`)
-        ])
-      });
-    }
+    for (let attempt = 0; ; attempt += 1)
+      try {
+        return await source2.model(item.id, {
+          maxBytes,
+          maxNodes: Math.min(1024, maxItemsPerLayer),
+          maxMeshes: Math.min(256, maxItemsPerLayer),
+          maxPrimitives: Math.min(512, maxItemsPerLayer),
+          maxPrimitiveBytes: Math.min(16 * 1024 * 1024, maxBytes),
+          maxResources: Math.min(64, maxItemsPerLayer),
+          maxTextureBytes: textureBytes,
+          maxTextureTotalBytes: textureBytes,
+          // The world renderer uploads S3TC blocks as stored: no decode, a quarter to an eighth of
+          // the bytes, and the budget buys a more detailed level.
+          compressedTextureFormats: SCENE_COMPRESSED_TEXTURE_FORMATS
+        }, options.signal);
+      } catch (error5) {
+        options.signal?.throwIfAborted();
+        if (attempt < 2 && error5?.code === "x3.host/rpc-deadline-exceeded")
+          continue;
+        return Object.freeze({
+          state: "unresolved",
+          diagnostics: Object.freeze([
+            diagnostic("warning", "x3.ui/world-model-failed", `World preview could not load ${item.id}: ${error5 instanceof Error ? error5.message : String(error5)}`)
+          ])
+        });
+      }
   };
   const largestModelBytes = Math.min(WORLD_VIEWER_MAX_BYTES_PER_MODEL, maxModelBytes);
   const retryBytes = (result, textureBytes) => {
@@ -78533,6 +78682,9 @@ async function inspectCandidateWorld(source2, options) {
       ...(layer2.weightRasters ?? []).map((raster) => raster.resourceId)
     ]))
   ];
+  const weightRasters = inspected.flatMap(({ layer: layer2 }) => layer2.weightRasters ?? []).length;
+  if (weightRasters > WORLD_MAX_TERRAIN_WEIGHT_RASTERS)
+    terrainTextureDiagnostics.push(diagnostic("warning", "x3.ui/world-terrain-weight-rasters-capped", `the terrain blends ${String(weightRasters)} weight rasters; the world draws at most ${String(WORLD_MAX_TERRAIN_WEIGHT_RASTERS)}, so each cell shows its own weights instead.`));
   const terrainTextureIds = allTerrainTextureIds.slice(0, WORLD_VIEWER_MAX_TERRAIN_TEXTURES);
   if (allTerrainTextureIds.length > terrainTextureIds.length)
     terrainTextureDiagnostics.push(diagnostic("warning", "x3.ui/world-terrain-textures-capped", `the terrain names ${allTerrainTextureIds.length} textures; the first ${terrainTextureIds.length} are loaded.`));
@@ -79605,10 +79757,11 @@ function createWorldViewer(options = {}) {
       });
       void render().then(async () => {
         const source2 = lease2.value;
-        if (source2.refined !== void 0 && !scope.signal.aborted) {
-          if (await source2.refined(scope.signal) && !scope.signal.aborted)
-            await render();
-        }
+        let refined;
+        while (source2.refined !== void 0 && refined === void 0 && !scope.signal.aborted)
+          refined = await source2.refined(scope.signal).catch((error5) => error5?.code === "x3.host/rpc-deadline-exceeded" ? void 0 : false);
+        if (refined === true && !scope.signal.aborted)
+          await render();
         if (transportLease === void 0 || scope.signal.aborted)
           return;
         await watchTransportedWorld(transportLease.value, render, scope.signal);

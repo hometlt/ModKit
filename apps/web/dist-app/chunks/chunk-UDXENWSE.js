@@ -7,12 +7,12 @@ import {
   invokeRefusalMessage,
   isRejected,
   mountFieldEditor
-} from "./chunk-3PYC7HKN.js";
+} from "./chunk-GDWA6M5G.js";
 import {
   canvasPng,
   createMediaShell,
   mountContributedSections
-} from "./chunk-GRQ2DAQD.js";
+} from "./chunk-QYDJX5KH.js";
 import {
   MODEL_FALLBACK_MESSAGES,
   MODEL_GIZMO_FALLBACK_MESSAGES,
@@ -27,7 +27,7 @@ import {
   setViewerText,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-2TTGFQVJ.js";
+} from "./chunk-CHRQ2G2C.js";
 import {
   applyColorKeyTransparency,
   billboardCameraRotation,
@@ -35,7 +35,7 @@ import {
   createModelSkeletonNodes,
   modelPrimitiveByteLength,
   snapshotJson
-} from "./chunk-S3XCLL57.js";
+} from "./chunk-AVBKEDCB.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunk-BLWUC7LO.js";
@@ -1976,7 +1976,7 @@ function createModelViewer(options = {}) {
               const output = result.output;
               if (output.kind !== "bytes" || !(output.value instanceof Uint8Array))
                 throw new Error(`the codec answered ${output.kind}, not bytes`);
-              const { createUvmFramePreparer } = await import("./render-WRHCC5J3.js");
+              const { createUvmFramePreparer } = await import("./render-46LQMWDP.js");
               const raster = options.rasterResources?.(args.descriptor);
               const preparer = createUvmFramePreparer(output.value, {
                 budget: MODEL_EFFECT_BUDGET,

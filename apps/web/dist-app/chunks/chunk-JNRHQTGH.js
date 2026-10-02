@@ -5,7 +5,7 @@ import {
   sampleTrackValue,
   snapshotJson,
   srgbToLinear
-} from "./chunk-S3XCLL57.js";
+} from "./chunk-AVBKEDCB.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunk-BLWUC7LO.js";

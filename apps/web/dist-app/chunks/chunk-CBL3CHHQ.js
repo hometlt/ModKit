@@ -3,7 +3,7 @@ import {
 } from "./chunk-O2DY4UGD.js";
 import {
   relationGraphNeighbourhood
-} from "./chunk-QDBJZAOT.js";
+} from "./chunk-VQE4FT4Q.js";
 import {
   GRAPH_FALLBACK_MESSAGES,
   ViewerMountScope,
@@ -15,7 +15,7 @@ import {
   setState,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-2TTGFQVJ.js";
+} from "./chunk-CHRQ2G2C.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunk-BLWUC7LO.js";

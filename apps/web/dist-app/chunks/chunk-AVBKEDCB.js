@@ -185,6 +185,57 @@ function quaternionFromRotationMatrix(matrix2) {
   const s = Math.sqrt(1 + m22 - m00 - m11) * 2;
   return normalizeQuat([(m02 + m20) / s, (m12 + m21) / s, 0.25 * s, (m10 - m01) / s]);
 }
+function invertAffine(matrix2) {
+  const value = (index) => {
+    const one = matrix2[index];
+    return typeof one === "number" && Number.isFinite(one) ? one : 0;
+  };
+  const basis = [
+    value(0),
+    value(1),
+    value(2),
+    value(4),
+    value(5),
+    value(6),
+    value(8),
+    value(9),
+    value(10)
+  ];
+  const determinant = basis[0] * (basis[4] * basis[8] - basis[5] * basis[7]) - basis[3] * (basis[1] * basis[8] - basis[2] * basis[7]) + basis[6] * (basis[1] * basis[5] - basis[2] * basis[4]);
+  if (!Number.isFinite(determinant) || Math.abs(determinant) < 1e-12)
+    throw new RangeError("a bind matrix with no inverse cannot place a baked part");
+  const inverse = [
+    (basis[4] * basis[8] - basis[5] * basis[7]) / determinant,
+    (basis[2] * basis[7] - basis[1] * basis[8]) / determinant,
+    (basis[1] * basis[5] - basis[2] * basis[4]) / determinant,
+    (basis[5] * basis[6] - basis[3] * basis[8]) / determinant,
+    (basis[0] * basis[8] - basis[2] * basis[6]) / determinant,
+    (basis[2] * basis[3] - basis[0] * basis[5]) / determinant,
+    (basis[3] * basis[7] - basis[4] * basis[6]) / determinant,
+    (basis[1] * basis[6] - basis[0] * basis[7]) / determinant,
+    (basis[0] * basis[4] - basis[1] * basis[3]) / determinant
+  ];
+  const translation2 = [value(12), value(13), value(14)];
+  const moved = [0, 1, 2].map((row) => -(inverse[row] * translation2[0] + inverse[row + 3] * translation2[1] + inverse[row + 6] * translation2[2]));
+  return [
+    inverse[0],
+    inverse[1],
+    inverse[2],
+    0,
+    inverse[3],
+    inverse[4],
+    inverse[5],
+    0,
+    inverse[6],
+    inverse[7],
+    inverse[8],
+    0,
+    moved[0],
+    moved[1],
+    moved[2],
+    1
+  ];
+}
 
 // ../MODDING/modkit-core/packages/scene/dist/model/billboard-math.js
 function invertQuat(rotation2) {
@@ -2378,8 +2429,10 @@ export {
   snapshotJson,
   decomposeMatrix4,
   quaternionFromRotationMatrix,
+  invertAffine,
   invertQuat,
   multiplyQuat,
+  multiplyMatrix4,
   snapshotModelBillboards,
   billboardCameraRotation,
   sampleTrackValue,

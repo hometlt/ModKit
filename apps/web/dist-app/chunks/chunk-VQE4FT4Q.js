@@ -1883,6 +1883,14 @@ function transformTerrainUv(uv, transform) {
     0.5 + x * sine + y * cosine + transform.offset[1]
   ];
 }
+function mapQualificationTupleBytes(tuples) {
+  const view = new DataView(new ArrayBuffer(tuples.length * 24));
+  tuples.forEach((tuple, index) => {
+    for (let axis = 0; axis < 3; axis += 1)
+      view.setFloat64(index * 24 + axis * 8, tuple[axis] ?? Number.NaN, true);
+  });
+  return new Uint8Array(view.buffer);
+}
 
 // ../MODDING/modkit-core/packages/sdk/dist/runtime-abi.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
@@ -2685,6 +2693,7 @@ export {
   MAP_SEMANTIC_MATCHER_PROFILE,
   MAP_PREVIEW_PREPARATION_MATCHER_PROFILE,
   transformTerrainUv,
+  mapQualificationTupleBytes,
   contributionSettingsFor,
   expandContributionManifests,
   normalizeExtensionManifest,
