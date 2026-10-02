@@ -97,3 +97,79 @@ describe('subject.convert by target', () => {
     expect((await convert({}, uvm)).calls[0]?.handler).toBe('run:export.raw')
   })
 })
+
+describe('subject.convert answering a map encoder from the target game (question 67)', () => {
+  const uvw: CommandSubject = {
+    ref: 'file:///worlds/dune.uvw',
+    snapshot: { state: 'opened', diagnostics: [] } as unknown as CommandSubject['snapshot'],
+    session: {
+      async descriptor() {
+        return {
+          operations: [{ id: 'map.export-native', handlerId: 'native', state: 'available' }],
+          dataSources: [],
+        }
+      },
+      operations: () => ({
+        // the encoder asks for the unit type until it is answered, then writes
+        async invoke(_handler: string, input: { readonly catalogEntities?: unknown[] }) {
+          return {
+            state: 'ok',
+            diagnostics: [],
+            output:
+              input.catalogEntities === undefined
+                ? {
+                    kind: 'json',
+                    value: { catalogQueries: [{ namespace: 'vehicle', entityId: 'HTNK' }] },
+                  }
+                : { kind: 'bytes', value: Uint8Array.of(9), extension: 'map' },
+          }
+        },
+      }),
+    } as unknown as AssetSession,
+    dispose: async () => undefined,
+  }
+  const run = async (input: Readonly<Record<string, string>>, catalog = true) => {
+    const opened: string[] = []
+    const asked: unknown[] = []
+    const receipt = await executeCommandRequest(
+      createSubjectCommandRuntime(),
+      commandRequest('subject.convert', { subject: 'dune.uvw', target: 'ra2-map', ...input }),
+      {
+        openSubject: async () => uvw,
+        writeOutput: async name => `out/${name}`,
+        ...(catalog
+          ? {
+              openTargetCatalog: async (target: string) => {
+                opened.push(target)
+                return {
+                  entities: async refs => {
+                    asked.push(...refs)
+                    return refs.map(ref => ({ ...ref, typeId: 'vehicle', fields: {} }) as never)
+                  },
+                  dispose: async () => void opened.push(`closed ${target}`),
+                }
+              },
+            }
+          : {}),
+      },
+    )
+    return { result: receipt.result, opened, asked }
+  }
+
+  it('asks the target context and writes the map with the answers', async () => {
+    const answered = await run({ targetContext: 'F:/GAMES/Red Alert 2' })
+    expect(answered.asked).toEqual([{ namespace: 'vehicle', entityId: 'HTNK' }])
+    expect(answered.opened).toEqual(['F:/GAMES/Red Alert 2', 'closed F:/GAMES/Red Alert 2'])
+    expect(answered.result).toMatchObject({
+      state: 'ok',
+      data: { via: 'map.export-native', extension: 'map', wroteTo: 'out/dune.map' },
+    })
+  })
+
+  it('is unavailable without a target context to answer from', async () => {
+    expect((await run({})).result).toMatchObject({ state: 'unavailable' })
+    expect((await run({ targetContext: 'F:/GAMES/RA2' }, false)).result).toMatchObject({
+      state: 'unavailable',
+    })
+  })
+})

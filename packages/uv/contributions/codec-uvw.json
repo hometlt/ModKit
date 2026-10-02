@@ -131,7 +131,7 @@
         "handlerId": "export-uvw-native",
         "mutatesSource": false,
         "requiredPermissions": ["read-source"],
-        "outputKinds": ["bytes"]
+        "outputKinds": ["bytes", "json"]
       },
       {
         "id": "map.layers",

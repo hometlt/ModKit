@@ -400,6 +400,45 @@ describe('UVW written as a game map (WT10)', () => {
     await session.dispose()
   })
 
+  it("passes the encoder's catalog questions on, and its answers back", async () => {
+    const seen: unknown[] = []
+    const encoder = {
+      contract: NATIVE_MAP_ENCODER_CONTRACT,
+      formatId: 'ra2-map',
+      extension: 'map',
+      async encode(request: { readonly catalogEntities?: readonly unknown[] }) {
+        seen.push(request.catalogEntities)
+        return request.catalogEntities === undefined
+          ? { formatId: 'ra2-map', catalogQueries: [{ namespace: 'vehicle', entityId: 'HTNK' }] }
+          : { formatId: 'ra2-map', extension: 'map', bytes: Uint8Array.of(7) }
+      },
+    }
+    const session = await createCodec(encoding(encoder, [])).open(
+      inputFor(source(await fixture())),
+      'full',
+      budget,
+    )
+    const asked = await session
+      .operations()
+      .invoke('export-uvw-native', { schemaVersion: 1, formatId: 'ra2-map' })
+    expect(asked).toMatchObject({
+      state: 'ok',
+      output: {
+        kind: 'json',
+        value: { catalogQueries: [{ namespace: 'vehicle', entityId: 'HTNK' }] },
+      },
+    })
+    const entity = { namespace: 'vehicle', entityId: 'HTNK', typeId: 'vehicle', fields: {} }
+    const written = await session.operations().invoke('export-uvw-native', {
+      schemaVersion: 1,
+      formatId: 'ra2-map',
+      catalogEntities: [entity],
+    })
+    expect(written).toMatchObject({ state: 'ok', output: { kind: 'bytes', extension: 'map' } })
+    expect(seen).toEqual([undefined, [entity]])
+    await session.dispose()
+  })
+
   it('refuses an encoder of another format and a request without its version', async () => {
     const other = {
       contract: NATIVE_MAP_ENCODER_CONTRACT,

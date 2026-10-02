@@ -25,6 +25,7 @@ import {
   SUBJECT_EDIT_COMMAND,
   SUBJECT_EDIT_COMMANDS,
   executeCommandRequest,
+  modContextCatalogEntities,
   type CommandInput,
   type CommandReceipt,
   type CommandResult,
@@ -137,6 +138,8 @@ export interface RunArguments {
   readonly roots: readonly string[]
   readonly entry?: string
   readonly target?: string
+  /** `subject.convert` only: the installation or mod a map is written for (its catalog answers). */
+  readonly targetContext?: string
   readonly out?: string
   readonly operation?: string
   readonly inputFile?: string
@@ -167,6 +170,7 @@ export function parseRunArguments(
   const roots: string[] = []
   let entry: string | undefined
   let convertTarget: string | undefined
+  let targetContext: string | undefined
   let out: string | undefined
   let operation: string | undefined
   let inputFile: string | undefined
@@ -192,6 +196,10 @@ export function parseRunArguments(
     } else if (argument === '--target') {
       convertTarget = value(index + 1)
       if (convertTarget === undefined) return undefined
+      index += 1
+    } else if (argument === '--target-context') {
+      targetContext = value(index + 1)
+      if (targetContext === undefined) return undefined
       index += 1
     } else if (argument === '--operation') {
       operation = value(index + 1)
@@ -228,6 +236,7 @@ export function parseRunArguments(
   )
     return undefined
   if (commit && command !== SUBJECT_EDIT_COMMAND) return undefined
+  if (targetContext !== undefined && command !== 'subject.convert') return undefined
   // `subject.edit` opens through its own editing host; a budget flag there would be silently ignored.
   if (maxInputBytes !== undefined && command === SUBJECT_EDIT_COMMAND) return undefined
   return {
@@ -236,6 +245,7 @@ export function parseRunArguments(
     roots,
     ...(entry === undefined ? {} : { entry }),
     ...(convertTarget === undefined ? {} : { target: convertTarget }),
+    ...(targetContext === undefined ? {} : { targetContext }),
     ...(out === undefined ? {} : { out }),
     ...(operation === undefined ? {} : { operation }),
     ...(inputFile === undefined ? {} : { inputFile }),
@@ -393,6 +403,9 @@ export async function runCommand(
       subject: file,
       ...(arguments_.entry === undefined ? {} : { entry: arguments_.entry }),
       ...(arguments_.target === undefined ? {} : { target: arguments_.target }),
+      ...(arguments_.targetContext === undefined
+        ? {}
+        : { targetContext: resolve(arguments_.targetContext) }),
       ...(arguments_.operation === undefined ? {} : { operation: arguments_.operation }),
       ...(operationInput === undefined ? {} : { operationInput }),
     }
@@ -424,6 +437,34 @@ export async function runCommand(
           ? { progress: step => writeStderr(`… ${step.message}\n`) }
           : {}),
         ...(options.signal === undefined ? {} : { signal: options.signal }),
+        // `--target-context <installation>`: a map encoder's catalog questions are answered from
+        // the target game's mod context (owner decision, question 67)
+        openTargetCatalog: async target => {
+          const sources = await modkitCliInstallationSources(
+            arguments_.roots.map(root => resolve(root)),
+            target,
+          )
+          if (sources?.openModContext === undefined) {
+            await sources?.dispose()
+            throw new TypeError(`no extension opens the installation ${target} for its catalog`)
+          }
+          const context = await sources
+            .openModContext({ schemaVersion: 1, target })
+            .catch(async (error: unknown) => {
+              await sources.dispose()
+              throw error
+            })
+          const dispose = async () => {
+            await context.dispose()
+            await sources.dispose()
+          }
+          const entities = modContextCatalogEntities(context)
+          if (entities === undefined) {
+            await dispose()
+            throw new TypeError(`the mod context of ${target} answers no catalog questions`)
+          }
+          return { entities, dispose }
+        },
         // `subject.convert --target uvw` of a map: the world it publishes, as one UVW document
         worldToUvw: async (source, signal) => {
           const { materializeWorldToUvw } = await import('@modkit/uv/world')

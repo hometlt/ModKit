@@ -318,10 +318,16 @@ export interface NativeMapEncodeRequest {
   /** The complete UVW document, as its file's bytes. The encoder never receives another map format. */
   readonly uvw: Uint8Array
   readonly options?: JsonValue
+  /**
+   * The target game's entities the encoder asked for (NativeMapCatalogQuestions), answered from the
+   * mod context of the installation or mod the caller writes for; absent on the first call.
+   */
+  readonly catalogEntities?: readonly DataResolvedEntity[]
   readonly signal?: AbortSignal
 }
 
-export interface NativeMapEncodeResult {
+/** The map written. */
+export interface NativeMapEncoding {
   readonly formatId: string
   readonly extension: string
   readonly mediaType?: string
@@ -332,6 +338,18 @@ export interface NativeMapEncodeResult {
    */
   readonly diagnostics?: readonly Diagnostic[]
 }
+
+/**
+ * The encoder needs the target game's catalog first, as an operation's catalog questions (owner
+ * decision, question 67): the sections its objects' types live in, the tile sets of a theater. The
+ * caller answers from the target's mod context and calls again with `catalogEntities`.
+ */
+export interface NativeMapCatalogQuestions {
+  readonly formatId: string
+  readonly catalogQueries: readonly DataEntityRef[]
+}
+
+export type NativeMapEncodeResult = NativeMapEncoding | NativeMapCatalogQuestions
 
 export interface NativeMapEncoder {
   readonly contract: typeof NATIVE_MAP_ENCODER_CONTRACT

@@ -31,6 +31,25 @@ test('CLI keeps the operation request separate from its command and subject', ()
   ).toBeUndefined()
 })
 
+test('CLI names the installation a map is written for, on subject.convert only', () => {
+  expect(
+    parseRunArguments('subject.convert', 'world.uvw', [
+      '--ext',
+      'westwood',
+      '--target',
+      'ra2-map',
+      '--target-context',
+      'F:/GAMES/Red Alert 2',
+    ]),
+  ).toMatchObject({ target: 'ra2-map', targetContext: 'F:/GAMES/Red Alert 2' })
+  expect(
+    parseRunArguments('subject.inspect', 'world.uvw', ['--ext', 'w', '--target-context', 'x']),
+  ).toBeUndefined()
+  expect(
+    parseRunArguments('subject.convert', 'world.uvw', ['--ext', 'w', '--target-context']),
+  ).toBeUndefined()
+})
+
 test('operation JSON owns finite bounded input, including explicit null, and honors cancellation', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'modkit-cli-input-'))
   try {

@@ -32,6 +32,7 @@ import type { CandidateWorldSceneSource } from '@modkit/sdk/maps'
 import type { SubjectOpenSnapshot } from '../subject-rpc.js'
 import type { SubjectEditing } from '../subject-editing.js'
 import type { ServiceOperationCatalog, ServiceOperationInvocation } from '../service-operations.js'
+import type { CatalogEntities } from '../catalog-questions.js'
 
 /** The run was asked to stop. Reported, never thrown past the runtime. */
 export const COMMAND_CANCELLED = 'x3.command/cancelled'
@@ -133,6 +134,15 @@ export interface CommandContext {
     source: CandidateWorldSceneSource,
     signal?: AbortSignal,
   ) => Promise<CommandWorldExport>
+  /**
+   * Opens the mod context of the installation or mod a conversion writes for (`targetContext`):
+   * a map encoder's catalog questions are answered from the target game there (owner decision,
+   * question 67) — the CLI from its content sources, VS Code from the installation chosen in Games.
+   */
+  readonly openTargetCatalog?: (
+    target: string,
+    signal?: AbortSignal,
+  ) => Promise<{ readonly entities: CatalogEntities; dispose(): Promise<void> }>
   /** Where produced bytes go. Absent means this host cannot write; commands say so structurally. */
   readonly writeOutput?: CommandOutputSink
   readonly writeOutputStream?: CommandOutputStreamSink

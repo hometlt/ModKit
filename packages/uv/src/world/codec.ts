@@ -9,7 +9,14 @@ import { sha256Hex } from '@modkit/codec-kit/crypto/digest'
 import { applyJsonEdit, type JsonEdit } from '@modkit/codec-kit/json-edit'
 import { snapshotJson } from '@modkit/codec-kit/json-snapshot'
 import { operationId, type Diagnostic } from '@modkit/core'
-import type { JsonObject, JsonValue } from '@modkit/sdk'
+import {
+  DATA_CATALOG_ENTITIES_INPUT,
+  DATA_CATALOG_QUERIES_OUTPUT,
+  type DataEntityRef,
+  type DataResolvedEntity,
+  type JsonObject,
+  type JsonValue,
+} from '@modkit/sdk'
 import {
   MAP_LAYERS_INPUT_SCHEMA,
   MAP_LAYERS_OPERATION,
@@ -469,9 +476,15 @@ function nativeExportHandler(bytes: Uint8Array, context: InspectionContext) {
       request['schemaVersion'] !== 1 ||
       typeof formatId !== 'string' ||
       formatId.trim().length === 0 ||
-      Object.keys(request).some(key => !['schemaVersion', 'formatId', 'options'].includes(key))
+      Object.keys(request).some(
+        key => !['schemaVersion', 'formatId', 'options', DATA_CATALOG_ENTITIES_INPUT].includes(key),
+      )
     )
       throw new TypeError('native map export requires {schemaVersion: 1, formatId}')
+    // the answers to the encoder's catalog questions, when the host calls again with them
+    const answered = request[DATA_CATALOG_ENTITIES_INPUT]
+    if (answered !== undefined && !Array.isArray(answered))
+      throw new TypeError(`native map export ${DATA_CATALOG_ENTITIES_INPUT} must be a list`)
     const signal = operationContext.signal
     signal?.throwIfAborted()
     const lease = await context.contracts.resolve({
@@ -495,14 +508,29 @@ function nativeExportHandler(bytes: Uint8Array, context: InspectionContext) {
       const encoded = await candidate.encode({
         uvw: bytes.slice(),
         ...(request['options'] === undefined ? {} : { options: request['options'] as JsonValue }),
+        ...(answered === undefined
+          ? {}
+          : { catalogEntities: answered as unknown as readonly DataResolvedEntity[] }),
         ...(signal === undefined ? {} : { signal }),
       })
-      if (
-        encoded === null ||
-        typeof encoded !== 'object' ||
-        encoded.formatId !== formatId ||
-        !(encoded.bytes instanceof Uint8Array)
-      )
+      if (encoded === null || typeof encoded !== 'object' || encoded.formatId !== formatId)
+        throw new TypeError(`native map encoder returned an invalid ${formatId} result`)
+      // the target game's catalog first: the host answers from the target's mod context and calls again
+      if ('catalogQueries' in encoded) {
+        if (!Array.isArray(encoded.catalogQueries))
+          throw new TypeError(
+            `native map encoder asked ${formatId} catalog questions without a list`,
+          )
+        const queries: DataEntityRef[] = encoded.catalogQueries.map(ref => ({
+          namespace: ref.namespace,
+          entityId: ref.entityId,
+        }))
+        return {
+          kind: 'json' as const,
+          value: { [DATA_CATALOG_QUERIES_OUTPUT]: queries } as unknown as JsonValue,
+        }
+      }
+      if (!(encoded.bytes instanceof Uint8Array))
         throw new TypeError(`native map encoder returned an invalid ${formatId} result`)
       for (const item of encoded.diagnostics ?? []) operationContext.reportDiagnostic?.(item)
       // the encoder's extension and media type name the file the application writes
@@ -548,7 +576,7 @@ const definition = Object.freeze({
       inputSchema: NATIVE_MAP_EXPORT_INPUT_SCHEMA,
       mutatesSource: false,
       requiredPermissions: Object.freeze(['read-source'] as const),
-      outputKinds: Object.freeze(['bytes'] as const),
+      outputKinds: Object.freeze(['bytes', 'json'] as const),
     }),
     Object.freeze({
       id: operationId(MAP_LAYERS_OPERATION, { contributionId: 'modkit/world-uvw' }),

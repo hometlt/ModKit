@@ -15,15 +15,20 @@
  * described as such rather than special-cased.
  */
 
-import type {
-  AssetSession,
-  ByteRangeSource,
-  JsonValue,
-  Lease,
-  NamespaceEntry,
-  NamespaceEntrySource,
+import {
+  DATA_CATALOG_ENTITIES_INPUT,
+  type AssetSession,
+  type ByteRangeSource,
+  type DataResolvedEntity,
+  type JsonObject,
+  type JsonValue,
+  type Lease,
+  type NamespaceEntry,
+  type NamespaceEntrySource,
+  type OperationResult,
 } from '@modkit/sdk'
 import type { CandidateWorldSceneSource } from '@modkit/sdk/maps'
+import { answerCatalogQueries, operationCatalogQueries } from '../catalog-questions.js'
 import { SUBJECT_COMMAND_TARGETS } from './subject-command-targets.js'
 import {
   commandDiagnostic,
@@ -644,14 +649,57 @@ const convertCommand: CommandDescriptor = {
                 : { target }
               : {}
             : input['operationInput']
-        const answer = await invokeSubjectOperation(
-          CONVERT_COMMAND,
-          context,
-          session,
-          operation.handlerId,
-          request,
-          diagnostics,
-        )
+        const run = (entities: readonly DataResolvedEntity[] | undefined) =>
+          invokeSubjectOperation(
+            CONVERT_COMMAND,
+            context,
+            session,
+            operation.handlerId,
+            entities === undefined
+              ? request
+              : ({
+                  ...(request as JsonObject),
+                  [DATA_CATALOG_ENTITIES_INPUT]: entities,
+                } as unknown as JsonValue),
+            diagnostics,
+          )
+        const questions = (result: Awaited<ReturnType<typeof run>>) =>
+          result.state === 'ok' ? operationCatalogQueries(result as unknown as OperationResult) : []
+        let answer = await run(undefined)
+        // a map encoder asks for the target game's catalog first (owner decision, question 67): the
+        // mod context of the installation or mod the caller writes for answers, through the one loop
+        if (operation.id === 'map.export-native' && questions(answer).length > 0) {
+          const targetContext =
+            typeof input['targetContext'] === 'string' ? input['targetContext'] : undefined
+          if (targetContext === undefined || context.openTargetCatalog === undefined)
+            return unavailable(
+              CONVERT_COMMAND,
+              `the ${target ?? 'map'} encoder needs the target game's catalog`,
+              'name the installation or mod to write for (targetContext; --target-context in the CLI)',
+              answer.state === 'ok' ? answer.diagnostics : diagnostics,
+            )
+          const catalog = await context.openTargetCatalog(targetContext, context.signal)
+          try {
+            answer = await answerCatalogQueries({
+              run: entities => run(entities),
+              queriesOf: questions,
+              catalogEntities: catalog.entities,
+              rounds: 4,
+              initial: answer,
+              ...(context.signal === undefined ? {} : { signal: context.signal }),
+            })
+          } finally {
+            await catalog.dispose()
+          }
+          const unanswered = questions(answer)
+          if (unanswered.length > 0)
+            return failed(
+              CONVERT_COMMAND,
+              'x3.host/native-map-catalog-unanswered',
+              `the ${target ?? 'map'} encoder still asks for ${String(unanswered.length)} entities ${targetContext} does not answer`,
+              answer.state === 'ok' ? answer.diagnostics : diagnostics,
+            )
+        }
         if (answer.state === 'failed') return answer.result
         const output = answer.output as {
           readonly kind: string
