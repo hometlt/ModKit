@@ -6,6 +6,7 @@
  * configured `ContentSources` provider. The extension-host adapter only turns these rows into
  * `TreeItem`s and commands.
  */
+import { contentSourceRootServes } from '@modkit/host'
 import type { ContentSourceSnapshot } from '@modkit/vfs/content-sources'
 
 import type { SelectedContentSource } from './workbench-workflows.js'
@@ -156,9 +157,8 @@ export function createSourceTree(input: SourceTreeInput): readonly SourceTreeNod
       // does (`storageOf`); that root being mounted is this installation being mounted.
       const servedBy = input.providerSnapshot?.roots.find(
         root =>
-          root.storageOf !== undefined &&
-          (samePath(root.storageOf, source.installPath) ||
-            samePath(root.storageOf, source.normalizedPath)),
+          contentSourceRootServes(root, source.installPath) ||
+          contentSourceRootServes(root, source.normalizedPath),
       )
       const mounted =
         includesPath(input.mountedInstallationPaths, source.normalizedPath) ||
