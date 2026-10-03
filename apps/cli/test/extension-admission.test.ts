@@ -124,7 +124,9 @@ describe('CLI admission uses every explicit root before any command executes', (
       const result = run(args)
       const diagnostics = result.diagnostics ?? result.result?.diagnostics
       expect(diagnostics?.some(item => item.severity === 'error')).toBe(true)
-      expect(diagnostics?.map(item => item.message).join('\n')).toContain(broken)
+      expect(diagnostics?.map(item => item.message.replaceAll('\\', '/')).join('\n')).toContain(
+        broken.replaceAll('\\', '/'),
+      )
       expect(JSON.stringify(diagnostics)).toContain('greeter.json')
       if (verb === 'open')
         expect(result.extensions?.some(item => item.extension.id === 'broken')).toBe(true)
