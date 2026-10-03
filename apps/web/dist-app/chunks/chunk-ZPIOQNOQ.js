@@ -54158,6 +54158,7 @@ function createUvwWorldSceneSource(input, options) {
       })))
     } : {}
   })));
+  const singleSpacePlayers = document.spaces.length === 1 ? document.spaces[0]?.players : void 0;
   const info = Object.freeze({
     contract: WORLD_SCENE_SOURCE_CONTRACT,
     major: 1,
@@ -54219,9 +54220,20 @@ function createUvwWorldSceneSource(input, options) {
         ...space2.label === void 0 ? {} : { label: space2.label },
         basis: space2.basis,
         bounds: space2.bounds,
+        ...space2.players === void 0 ? {} : { players: space2.players },
+        ...space2.startPositions === void 0 ? {} : { startPositions: space2.startPositions },
         ...space2.camera === void 0 ? {} : { camera: space2.camera }
       })))
     }),
+    // A single space can use the viewer's native slot palette without merging unrelated rosters.
+    ...singleSpacePlayers === void 0 ? {} : {
+      players: Object.freeze(singleSpacePlayers.map((player) => Object.freeze({
+        id: player.slot,
+        ...player.name === void 0 ? {} : { name: player.name },
+        ...player.color === void 0 ? {} : { color: player.color },
+        ...player.ramp === void 0 ? {} : { colorRamp: player.ramp }
+      })))
+    },
     // the viewer opens on the game's view of the world: the first space's preset
     ...document.spaces.find((space2) => space2.camera !== void 0)?.camera === void 0 ? {} : { camera: document.spaces.find((space2) => space2.camera !== void 0).camera }
   });
@@ -55702,12 +55714,87 @@ function layer(value, path, state, depth) {
       fail7(`layer kind ${JSON.stringify(kind)} is reserved but unsupported by UVW 1.0`, `${path}.kind`, "x3.uv/uvw-feature-unsupported");
   }
 }
+function playerSlot(value, path, state, depth) {
+  const slot = safeInteger(value, path, state, depth);
+  if (slot < -2147483648 || slot > 2147483647)
+    fail7("expected a signed 32-bit player slot", path);
+  return slot;
+}
+function linearRgb(value, path, state, depth) {
+  const color2 = vec3(value, path, state, depth);
+  if (color2.some((channel) => channel < 0 || channel > 1))
+    fail7("expected linear RGB in 0..1", path);
+  return color2;
+}
+function playerTable(value, path, state, depth) {
+  const values = array3(value, path, state, depth);
+  if (values.length > 65536)
+    fail7("player table exceeds 65536 entries", path);
+  const slots = /* @__PURE__ */ new Set();
+  const addresses = /* @__PURE__ */ new Set();
+  return Object.freeze(values.map((value2, index) => {
+    const rowPath = `${path}[${String(index)}]`;
+    const row = record5(value2, rowPath, state, depth + 1);
+    exactKeys3(row, ["slot", "address", "name", "color", "ramp"], ["slot", "address"], rowPath);
+    const slot = playerSlot(row["slot"], `${rowPath}.slot`, state, depth + 2);
+    const address = string3(row["address"], `${rowPath}.address`, state, depth + 2);
+    if (!address || address.length > 1024 || address.trim() !== address || address.includes("\0")) {
+      fail7("expected a canonical player address of 1..1024 UTF-8 bytes without NUL", `${rowPath}.address`);
+    }
+    const bytes = new TextEncoder().encode(address);
+    if (bytes.length > 1024 || new TextDecoder().decode(bytes) !== address) {
+      fail7("expected a canonical player address of 1..1024 UTF-8 bytes without NUL", `${rowPath}.address`);
+    }
+    if (slots.has(slot))
+      fail7("duplicate player slot", `${rowPath}.slot`);
+    if (addresses.has(address))
+      fail7("duplicate player address", `${rowPath}.address`);
+    slots.add(slot);
+    addresses.add(address);
+    const name = row["name"] === void 0 ? void 0 : string3(row["name"], `${rowPath}.name`, state, depth + 2);
+    if (name === "")
+      fail7("player name must be nonempty", `${rowPath}.name`);
+    const ramp = row["ramp"] === void 0 ? void 0 : array3(row["ramp"], `${rowPath}.ramp`, state, depth + 2);
+    if (ramp !== void 0 && (ramp.length === 0 || ramp.length > 65536)) {
+      fail7("player ramp must contain 1..65536 exact shades", `${rowPath}.ramp`);
+    }
+    return Object.freeze({
+      slot,
+      address,
+      ...name === void 0 ? {} : { name },
+      ...row["color"] === void 0 ? {} : { color: linearRgb(row["color"], `${rowPath}.color`, state, depth + 2) },
+      ...ramp === void 0 ? {} : {
+        ramp: Object.freeze(ramp.map((shade, shadeIndex) => linearRgb(shade, `${rowPath}.ramp[${String(shadeIndex)}]`, state, depth + 3)))
+      }
+    });
+  }));
+}
+function startPositionTable(value, path, state, depth) {
+  const values = array3(value, path, state, depth);
+  if (values.length > 65536)
+    fail7("start position table exceeds 65536 entries", path);
+  const ids = /* @__PURE__ */ new Set();
+  return Object.freeze(values.map((value2, index) => {
+    const rowPath = `${path}[${String(index)}]`;
+    const row = record5(value2, rowPath, state, depth + 1);
+    exactKeys3(row, ["id", "position", "player"], ["id", "position"], rowPath);
+    const id = string3(row["id"], `${rowPath}.id`, state, depth + 2);
+    if (!id || ids.has(id))
+      fail7("start position IDs must be nonempty and unique", `${rowPath}.id`);
+    ids.add(id);
+    return Object.freeze({
+      id,
+      position: vec3(row["position"], `${rowPath}.position`, state, depth + 2),
+      ...row["player"] === void 0 ? {} : { player: playerSlot(row["player"], `${rowPath}.player`, state, depth + 2) }
+    });
+  }));
+}
 function space(value, path, state, depth) {
   const item = record5(value, path, state, depth);
   const topology2 = string3(item["topology"], `${path}.topology`, state, depth + 1);
   if (topology2 !== "heightfield")
     fail7(`space topology ${JSON.stringify(topology2)} is reserved but unsupported by UVW 1.0`, `${path}.topology`, "x3.uv/uvw-feature-unsupported");
-  exactKeys3(item, ["id", "topology", "label", "basis", "bounds", "layers", "camera"], ["id", "topology", "basis", "bounds", "layers"], path);
+  exactKeys3(item, ["id", "topology", "label", "basis", "bounds", "layers", "camera", "players", "startPositions"], ["id", "topology", "basis", "bounds", "layers"], path);
   const id = string3(item["id"], `${path}.id`, state, depth + 1);
   if (!ID_PATTERN.test(id))
     fail7("space id must match ^[a-z][a-z0-9-]*$", `${path}.id`);
@@ -55725,11 +55812,22 @@ function space(value, path, state, depth) {
   if (!layers.some((entry2) => entry2.kind === "heightfield")) {
     fail7("heightfield space must contain at least one heightfield layer", `${path}.layers`);
   }
+  const players = item["players"] === void 0 ? void 0 : playerTable(item["players"], `${path}.players`, state, depth + 1);
+  const startPositions = item["startPositions"] === void 0 ? void 0 : startPositionTable(item["startPositions"], `${path}.startPositions`, state, depth + 1);
+  const slots = new Set(players?.map((player) => player.slot));
+  for (const start of startPositions ?? []) {
+    if (start.player !== void 0 && !slots.has(start.player)) {
+      fail7("start position references an undeclared player slot", `${path}.startPositions.${start.id}.player`);
+    }
+  }
   const resourceIds = new Set(layers.flatMap((entry2) => entry2.kind === "resources" ? entry2.resources.map((resource) => resource.id) : []));
   const materialIds = new Set(layers.flatMap((entry2) => entry2.kind === "terrain-materials" ? entry2.materials.map((material) => material.id) : []));
   for (const entry2 of layers) {
     if (entry2.kind === "objects") {
       for (const instance of entry2.instances) {
+        if (players !== void 0 && instance.player !== void 0 && !slots.has(instance.player)) {
+          fail7("object references an undeclared player slot", `${path}.layers.${entry2.id}.instances.${instance.id}.player`);
+        }
         for (const resourceId2 of instance.resourceIds) {
           if (!resourceIds.has(resourceId2))
             fail7(`object references unknown resource ${JSON.stringify(resourceId2)}`, `${path}.layers.${entry2.id}.instances.${instance.id}.resourceIds`);
@@ -55777,6 +55875,8 @@ function space(value, path, state, depth) {
     basis: basis(item["basis"], `${path}.basis`, state, depth + 1),
     bounds: bounds(item["bounds"], `${path}.bounds`, state, depth + 1),
     layers: Object.freeze(layers),
+    ...players === void 0 ? {} : { players },
+    ...startPositions === void 0 ? {} : { startPositions },
     ...item["camera"] === void 0 ? {} : { camera: spaceCamera(item["camera"], `${path}.camera`, state, depth + 1) }
   });
 }
