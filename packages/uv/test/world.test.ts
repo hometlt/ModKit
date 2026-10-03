@@ -6,6 +6,7 @@ import { isModkitError } from '@modkit/core'
 import {
   canonicalizeUvwProfile,
   createUvwWorldSceneSource,
+  materializeWorldToUvw,
   parseUvwProfile,
   serializeUvwProfile,
   validateUvwProfile,
@@ -29,6 +30,165 @@ function errorCode(run: () => unknown): string | undefined {
 }
 
 describe('UVW 1.0 production document', () => {
+  it('preserves the published player roster and exact starts through source materialization', async () => {
+    const document = parseUvwProfile(await fixture('uvw-players.uvw.json'))
+    const originalSpace = document.spaces[0]
+    if (originalSpace === undefined) throw new Error('fixture has no space')
+    const source = createUvwWorldSceneSource(document, {
+      snapshotId: 'players-fixture',
+      maxPageSize: 3,
+    })
+    const info = await source.info()
+    expect(info.canonicalArtifact?.spaces[0]).toMatchObject({
+      players: originalSpace.players,
+      startPositions: originalSpace.startPositions,
+    })
+    expect(info.players).toEqual([
+      { id: 0, name: 'Neutral' },
+      {
+        id: 1,
+        name: 'Player One',
+        color: [1, 0, 0],
+        colorRamp: [
+          [0.25, 0, 0],
+          [1, 0, 0],
+        ],
+      },
+    ])
+    const result = await materializeWorldToUvw(source, {
+      maxPageItems: 3,
+      maxTerrainItems: 64,
+      maxFacetItems: 128,
+      maxOutputBytes: 64_000,
+    })
+    expect(result.state).toBe('materialized')
+    if (result.state !== 'materialized') throw new Error('published player fixture was refused')
+    const reopened = parseUvwProfile(result.bytes)
+    expect(reopened.spaces[0]?.players).toEqual(originalSpace.players)
+    expect(reopened.spaces[0]?.startPositions).toEqual(originalSpace.startPositions)
+    expect(reopened.spaces[0]?.startPositions?.[0]?.position).toEqual([2, 0.75, 2])
+    expect(serializeUvwProfile(reopened)).toEqual(serializeUvwProfile(document))
+    expect(result.lostFields).toEqual([])
+  })
+
+  it('keeps legacy players unbound, empty tables authoritative and unassigned starts valid', async () => {
+    const document = parseUvwProfile(await fixture('uvw-players.uvw.json'))
+    const originalSpace = document.spaces[0]
+    if (originalSpace === undefined) throw new Error('fixture has no space')
+    const legacySpace = { ...originalSpace }
+    delete legacySpace.players
+    delete legacySpace.startPositions
+    expect(
+      validateUvwProfile({ ...document, spaces: [legacySpace] }).spaces[0]?.players,
+    ).toBeUndefined()
+    expect(() =>
+      validateUvwProfile({ ...document, spaces: [{ ...legacySpace, players: [] }] }),
+    ).toThrow(/undeclared player/)
+    const unassigned = validateUvwProfile({
+      ...document,
+      spaces: [
+        {
+          ...legacySpace,
+          startPositions: [{ id: 'above-ground', position: [2, 37, 2] }],
+        },
+      ],
+    })
+    expect(unassigned.spaces[0]?.startPositions?.[0]?.position).toEqual([2, 37, 2])
+    expect(() =>
+      validateUvwProfile({
+        ...document,
+        spaces: [
+          {
+            ...legacySpace,
+            startPositions: [{ id: 'bound', position: [2, 37, 2], player: 1 }],
+          },
+        ],
+      }),
+    ).toThrow(/undeclared player/)
+  })
+
+  it('rejects ambiguous identities, invalid string/color budgets and undeclared slots', async () => {
+    const document = parseUvwProfile(await fixture('uvw-players.uvw.json'))
+    const space = document.spaces[0]
+    const player = space?.players?.[1]
+    const start = space?.startPositions?.[0]
+    if (space === undefined || player === undefined || start === undefined)
+      throw new Error('fixture has no player or start')
+    const check = (changes: Readonly<Record<string, unknown>>) =>
+      validateUvwProfile({ ...document, spaces: [{ ...space, ...changes }] })
+    for (const bad of [
+      { ...player, slot: 2147483648 },
+      { ...player, address: '' },
+      { ...player, address: ' trailing ' },
+      { ...player, address: 'nul\0address' },
+      { ...player, address: '\ud800' },
+      { ...player, address: 'ё'.repeat(513) },
+      { ...player, color: [1, 0, -0.1] },
+      { ...player, ramp: [] },
+      { ...player, name: '' },
+      { ...player, unknown: 1 },
+    ])
+      expect(() => check({ players: [bad] })).toThrow()
+    expect(() => check({ players: [player, player] })).toThrow(/duplicate player slot/)
+    expect(() => check({ players: [player, { ...player, slot: 2 }] })).toThrow(
+      /duplicate player address/,
+    )
+    expect(() =>
+      check({ startPositions: [{ id: 'home', position: [0, 0, 0], player: 2 }] }),
+    ).toThrow(/undeclared player/)
+    expect(() =>
+      check({ startPositions: [start, start] }),
+    ).toThrow(/unique/)
+  })
+
+  it('retains signed native slots and the full format string budget without inventing a roster', async () => {
+    const document = parseUvwProfile(await fixture('uvw-players.uvw.json'))
+    const space = document.spaces[0]
+    if (space === undefined) throw new Error('fixture has no space')
+    const terrain = space.layers.filter(layer => layer.kind !== 'objects')
+    const boundary = validateUvwProfile({
+      ...document,
+      spaces: [
+        {
+          ...space,
+          layers: terrain,
+          startPositions: [],
+          players: [
+            { slot: -2147483648, address: 'ё'.repeat(512) },
+            { slot: 2147483647, address: 'other/player' },
+          ],
+        },
+      ],
+    })
+    expect(boundary.spaces[0]?.players?.[0]?.slot).toBe(-2147483648)
+    expect(boundary.spaces[0]?.players?.[0]?.address).toBe('ё'.repeat(512))
+  })
+
+  it('preserves separate space rosters without merging equal native slots', async () => {
+    const base = parseUvwProfile(await fixture('uvw-players.uvw.json'))
+    const space = base.spaces[0]
+    if (space === undefined) throw new Error('fixture has no space')
+    const document = validateUvwProfile({
+      ...base,
+      spaces: [space, {
+        ...space,
+        id: 'second-world',
+        players: space.players?.map(player => ({ ...player, address: `other/${player.address}` })),
+      }],
+    })
+    const source = createUvwWorldSceneSource(document, { snapshotId: 'two-rosters' })
+    expect((await source.info()).players).toBeUndefined()
+    const result = await materializeWorldToUvw(source, {
+      maxPageItems: 3,
+      maxTerrainItems: 64,
+      maxFacetItems: 128,
+      maxOutputBytes: 64_000,
+    })
+    if (result.state !== 'materialized') throw new Error('space rosters were refused')
+    expect(serializeUvwProfile(parseUvwProfile(result.bytes))).toEqual(serializeUvwProfile(document))
+    expect(result.lostFields).toEqual([])
+  })
+
   it('round-trips authored terrain, specular, colorization and AO lighting settings', async () => {
     const base = JSON.parse(
       new TextDecoder().decode(await fixture('uvw-profile-renderable-world.uvw.json')),

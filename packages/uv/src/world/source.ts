@@ -766,6 +766,7 @@ export function createUvwWorldSceneSource(
       }),
     ),
   )
+  const singleSpacePlayers = document.spaces.length === 1 ? document.spaces[0]?.players : undefined
   const info = Object.freeze<WorldSceneInfo>({
     contract: WORLD_SCENE_SOURCE_CONTRACT,
     major: 1,
@@ -848,11 +849,28 @@ export function createUvwWorldSceneSource(
             ...(space.label === undefined ? {} : { label: space.label }),
             basis: space.basis,
             bounds: space.bounds,
+            ...(space.players === undefined ? {} : { players: space.players }),
+            ...(space.startPositions === undefined ? {} : { startPositions: space.startPositions }),
             ...(space.camera === undefined ? {} : { camera: space.camera }),
           }),
         ),
       ),
     }),
+    // A single space can use the viewer's native slot palette without merging unrelated rosters.
+    ...(singleSpacePlayers === undefined
+      ? {}
+      : {
+          players: Object.freeze(
+            singleSpacePlayers.map(player =>
+              Object.freeze({
+                id: player.slot,
+                ...(player.name === undefined ? {} : { name: player.name }),
+                ...(player.color === undefined ? {} : { color: player.color }),
+                ...(player.ramp === undefined ? {} : { colorRamp: player.ramp }),
+              }),
+            ),
+          ),
+        }),
     // the viewer opens on the game's view of the world: the first space's preset
     ...(document.spaces.find(space => space.camera !== undefined)?.camera === undefined
       ? {}

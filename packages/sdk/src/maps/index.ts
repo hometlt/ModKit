@@ -1574,6 +1574,27 @@ export interface WorldSceneFacetState {
   readonly reason?: string
 }
 
+/** Explicit portable player identity from SPEC_UVW_PROFILE; a native slot is never a runtime handle. */
+export interface WorldPlayer {
+  /** Authored signed 32-bit slot; neutral zero/negative slots retain their native identity. */
+  readonly slot: number
+  /** Trimmed, nonempty canonical UTF-8 strref, no NUL, at most 1024 bytes. */
+  readonly address: string
+  readonly name?: string
+  /** Linear RGB 0..1, separate from per-object presentation tint. */
+  readonly color?: readonly [number, number, number]
+  /** Exact ordered linear RGB shades; no generated gradient or alpha. */
+  readonly ramp?: readonly (readonly [number, number, number])[]
+}
+
+/** Authored local start position; no terrain clamp, spawning or inferred player binding. */
+export interface WorldStartPosition {
+  readonly id: string
+  readonly position: readonly [number, number, number]
+  /** Must resolve to a declared player slot in the same space. */
+  readonly player?: number
+}
+
 interface WorldSceneInfoBase {
   readonly major: 1
   readonly maturity: 'publisher-candidate'
@@ -1610,6 +1631,9 @@ interface WorldSceneInfoBase {
       }>
       /** The space's authored game-view preset (UVW `spaces[].camera`). */
       readonly camera?: MapWorldCamera
+      /** Optional authoritative roster. An empty table declares no players. */
+      readonly players?: readonly WorldPlayer[]
+      readonly startPositions?: readonly WorldStartPosition[]
     }>[]
   }>
 }

@@ -19,7 +19,7 @@ export interface ResolveContentSourcesOptions {
   readonly configPath?: string
   /** Host storage; modules get `<storage>/cache` and `<storage>/state`. */
   readonly storage: string
-  /** Options for one extension's module (`publisher/id`), e.g. the installation the user chose. */
+  /** Host options for one extension (`publisher/id`), overriding its configured defaults. */
   readonly moduleOptions?: (extension: string) => Readonly<Record<string, unknown>> | undefined
   /** Platform probes handed to every module; defaults to this host's `createNodeInstallationProbes()`. */
   readonly installationProbes?: InstallationProbes
@@ -61,7 +61,7 @@ export async function resolveContentSources(
       parts.push(
         await loadContentSourceModule(
           config.module,
-          config.options,
+          { ...config.options, ...options.moduleOptions?.(config.extension) },
           options.storage,
           contextOf(config.extension),
         ),

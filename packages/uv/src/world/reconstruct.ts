@@ -913,6 +913,8 @@ export async function reconstructCanonicalUvw(
         bounds: space.bounds,
         layers: Object.freeze(reconstructed),
         ...(space.camera === undefined ? {} : { camera: space.camera }),
+        ...(space.players === undefined ? {} : { players: space.players }),
+        ...(space.startPositions === undefined ? {} : { startPositions: space.startPositions }),
       }),
     )
   }

@@ -35,7 +35,7 @@ async function extension(name: string, contentSources: string | undefined): Prom
       roots: [{ id: ${JSON.stringify(`${name}:root`)}, label: JSON.stringify(options.installationDirectory ?? null), region: 'local', kind: 'local',
         probes: context?.installationProbes?.name ?? typeof context?.installationProbes,
         credentials: context?.credentials?.name ?? null,
-        names: context?.indexCaches?.s2?.names ?? null }] }),
+        names: context?.indexCaches?.s2?.names ?? null, options }] }),
     connect: noop, disconnect: noop, search: async () => [], add: noop, remove: noop, refresh: noop,
     list: async () => [], read: async () => new Uint8Array(), dispose: noop,
   }
@@ -151,5 +151,37 @@ describe('the content sources extensions declare', () => {
     })
     expect((await sources?.snapshot())?.roots.map(root => root.id)).toEqual(['configured:root'])
     await sources?.dispose()
+  })
+
+  it('passes a newly selected installation to a configured extension without losing its defaults', async () => {
+    const configured = await extension('selected-config', undefined)
+    const configPath = join(work, 'selected-provider.json')
+    await writeFile(
+      configPath,
+      JSON.stringify({
+        module: join(configured, 'dist', 'sources.mjs'),
+        extension: 'example/selected',
+        options: { installationDirectory: 'C:/old-game', locale: 'ruRU' },
+      }),
+    )
+    for (const installationDirectory of ['F:/Games/game-one', 'F:/Games/game-two']) {
+      const sources = await resolveContentSources({
+        extensionRoots: [],
+        configPath,
+        storage: join(work, 'storage'),
+        moduleOptions: extension =>
+          extension === 'example/selected'
+            ? { installationDirectory }
+            : { installationDirectory: 'wrong extension' },
+      })
+      try {
+        expect((await sources?.snapshot())?.roots[0]).toMatchObject({
+          label: JSON.stringify(installationDirectory),
+          options: { installationDirectory, locale: 'ruRU' },
+        })
+      } finally {
+        await sources?.dispose()
+      }
+    }
   })
 })

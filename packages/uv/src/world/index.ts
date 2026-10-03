@@ -2,7 +2,13 @@
 
 import { canonicalJsonStringify, compareUtf8, ModkitError } from '@modkit/core'
 import type { MapModelComponentPlacement } from '@modkit/sdk'
-import type { MapWorldCamera, WorldToneMapping, WorldTerrainLighting } from '@modkit/sdk/maps'
+import type {
+  MapWorldCamera,
+  WorldPlayer,
+  WorldStartPosition,
+  WorldToneMapping,
+  WorldTerrainLighting,
+} from '@modkit/sdk/maps'
 
 export const UVW_PROFILE_FORMAT = 'UVW' as const
 export const UVW_PROFILE_VERSION = '1.0' as const
@@ -309,7 +315,12 @@ export interface UvwHeightfieldSpace {
    * distances in the space's basis units. A view, not a camera object; omitted fields stay omitted.
    */
   readonly camera?: MapWorldCamera
+  readonly players?: readonly WorldPlayer[]
+  readonly startPositions?: readonly WorldStartPosition[]
 }
+
+export type UvwPlayer = WorldPlayer
+export type UvwStartPosition = WorldStartPosition
 
 export interface UvwProfileDocument {
   readonly $comment?: string
@@ -1915,6 +1926,119 @@ function layer(
   }
 }
 
+function playerSlot(value: unknown, path: string, state: ValidationBudget, depth: number): number {
+  const slot = safeInteger(value, path, state, depth)
+  if (slot < -2147483648 || slot > 2147483647) fail('expected a signed 32-bit player slot', path)
+  return slot
+}
+
+function linearRgb(value: unknown, path: string, state: ValidationBudget, depth: number) {
+  const color = vec3(value, path, state, depth)
+  if (color.some(channel => channel < 0 || channel > 1)) fail('expected linear RGB in 0..1', path)
+  return color
+}
+
+function playerTable(
+  value: unknown,
+  path: string,
+  state: ValidationBudget,
+  depth: number,
+): readonly WorldPlayer[] {
+  const values = array(value, path, state, depth)
+  if (values.length > 65536) fail('player table exceeds 65536 entries', path)
+  const slots = new Set<number>()
+  const addresses = new Set<string>()
+  return Object.freeze(
+    values.map((value, index) => {
+      const rowPath = `${path}[${String(index)}]`
+      const row = record(value, rowPath, state, depth + 1)
+      exactKeys(row, ['slot', 'address', 'name', 'color', 'ramp'], ['slot', 'address'], rowPath)
+      const slot = playerSlot(row['slot'], `${rowPath}.slot`, state, depth + 2)
+      const address = string(row['address'], `${rowPath}.address`, state, depth + 2)
+      if (
+        !address ||
+        address.length > 1024 ||
+        address.trim() !== address ||
+        address.includes('\0')
+      ) {
+        fail(
+          'expected a canonical player address of 1..1024 UTF-8 bytes without NUL',
+          `${rowPath}.address`,
+        )
+      }
+      const bytes = new TextEncoder().encode(address)
+      if (bytes.length > 1024 || new TextDecoder().decode(bytes) !== address) {
+        fail(
+          'expected a canonical player address of 1..1024 UTF-8 bytes without NUL',
+          `${rowPath}.address`,
+        )
+      }
+      if (slots.has(slot)) fail('duplicate player slot', `${rowPath}.slot`)
+      if (addresses.has(address)) fail('duplicate player address', `${rowPath}.address`)
+      slots.add(slot)
+      addresses.add(address)
+      const name =
+        row['name'] === undefined
+          ? undefined
+          : string(row['name'], `${rowPath}.name`, state, depth + 2)
+      if (name === '') fail('player name must be nonempty', `${rowPath}.name`)
+      const ramp =
+        row['ramp'] === undefined
+          ? undefined
+          : array(row['ramp'], `${rowPath}.ramp`, state, depth + 2)
+      if (ramp !== undefined && (ramp.length === 0 || ramp.length > 65536)) {
+        fail('player ramp must contain 1..65536 exact shades', `${rowPath}.ramp`)
+      }
+      return Object.freeze({
+        slot,
+        address,
+        ...(name === undefined ? {} : { name }),
+        ...(row['color'] === undefined
+          ? {}
+          : { color: linearRgb(row['color'], `${rowPath}.color`, state, depth + 2) }),
+        ...(ramp === undefined
+          ? {}
+          : {
+              ramp: Object.freeze(
+                ramp.map((shade, shadeIndex) =>
+                  linearRgb(shade, `${rowPath}.ramp[${String(shadeIndex)}]`, state, depth + 3),
+                ),
+              ),
+            }),
+      })
+    }),
+  )
+}
+
+function startPositionTable(
+  value: unknown,
+  path: string,
+  state: ValidationBudget,
+  depth: number,
+): readonly WorldStartPosition[] {
+  const values = array(value, path, state, depth)
+  if (values.length > 65536) fail('start position table exceeds 65536 entries', path)
+  const ids = new Set<string>()
+  return Object.freeze(
+    values.map((value, index) => {
+      const rowPath = `${path}[${String(index)}]`
+      const row = record(value, rowPath, state, depth + 1)
+      exactKeys(row, ['id', 'position', 'player'], ['id', 'position'], rowPath)
+      const id = string(row['id'], `${rowPath}.id`, state, depth + 2)
+      if (!id || ids.has(id))
+        fail('start position IDs must be nonempty and unique', `${rowPath}.id`)
+      ids.add(id)
+      return Object.freeze({
+        id,
+        position: vec3(row['position'], `${rowPath}.position`, state, depth + 2),
+        ...(row['player'] === undefined
+          ? {}
+          : { player: playerSlot(row['player'], `${rowPath}.player`, state, depth + 2) }),
+      })
+    }),
+  )
+}
+
 function space(
   value: unknown,
   path: string,
@@ -1931,7 +2055,7 @@ function space(
     )
   exactKeys(
     item,
-    ['id', 'topology', 'label', 'basis', 'bounds', 'layers', 'camera'],
+    ['id', 'topology', 'label', 'basis', 'bounds', 'layers', 'camera', 'players', 'startPositions'],
     ['id', 'topology', 'basis', 'bounds', 'layers'],
     path,
   )
@@ -1954,6 +2078,23 @@ function space(
   if (!layers.some(entry => entry.kind === 'heightfield')) {
     fail('heightfield space must contain at least one heightfield layer', `${path}.layers`)
   }
+  const players =
+    item['players'] === undefined
+      ? undefined
+      : playerTable(item['players'], `${path}.players`, state, depth + 1)
+  const startPositions =
+    item['startPositions'] === undefined
+      ? undefined
+      : startPositionTable(item['startPositions'], `${path}.startPositions`, state, depth + 1)
+  const slots = new Set(players?.map(player => player.slot))
+  for (const start of startPositions ?? []) {
+    if (start.player !== undefined && !slots.has(start.player)) {
+      fail(
+        'start position references an undeclared player slot',
+        `${path}.startPositions.${start.id}.player`,
+      )
+    }
+  }
   const resourceIds = new Set(
     layers.flatMap(entry =>
       entry.kind === 'resources' ? entry.resources.map(resource => resource.id) : [],
@@ -1967,6 +2108,12 @@ function space(
   for (const entry of layers) {
     if (entry.kind === 'objects') {
       for (const instance of entry.instances) {
+        if (players !== undefined && instance.player !== undefined && !slots.has(instance.player)) {
+          fail(
+            'object references an undeclared player slot',
+            `${path}.layers.${entry.id}.instances.${instance.id}.player`,
+          )
+        }
         for (const resourceId of instance.resourceIds) {
           if (!resourceIds.has(resourceId))
             fail(
@@ -2034,6 +2181,8 @@ function space(
     basis: basis(item['basis'], `${path}.basis`, state, depth + 1),
     bounds: bounds(item['bounds'], `${path}.bounds`, state, depth + 1),
     layers: Object.freeze(layers),
+    ...(players === undefined ? {} : { players }),
+    ...(startPositions === undefined ? {} : { startPositions }),
     ...(item['camera'] === undefined
       ? {}
       : { camera: spaceCamera(item['camera'], `${path}.camera`, state, depth + 1) }),
