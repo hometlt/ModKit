@@ -58,7 +58,7 @@ function checkEvidenceSnapshots(references, fail) {
   for (const reference of references)
     if (
       reference?.snapshotPath !== undefined &&
-      !references.some(item => item?.path === reference.path && item.snapshotPath === undefined)
+      !references.some(item => item?.path === reference.path && item?.snapshotPath === undefined)
     )
       fail(`archived proof needs current evidence: ${reference.path}`)
 }

@@ -168,6 +168,8 @@ test('archiving accepted evidence requires a verified current proof and keeps th
     (await checkLedger({ ...state, previous })).join('\n'),
     /accepted requirement proof removed/u,
   )
+  state.ledger.entries[0].evidence = [{ snapshotPath: 'before.json', sha256: hash(before) }, null]
+  assert.match((await checkLedger(state)).join('\n'), /evidence needs a path and sha256/u)
 })
 
 test('publication identity survives an isolated repository snapshot path', async t => {
