@@ -40,7 +40,11 @@ afterAll(async () => {
 })
 
 interface Reply {
-  readonly diagnostics?: readonly { readonly code: string; readonly severity: string }[]
+  readonly diagnostics?: readonly {
+    readonly code: string
+    readonly severity: string
+    readonly message: string
+  }[]
   readonly result?: {
     readonly diagnostics?: Reply['diagnostics']
     readonly summary?: { readonly discovered: number }
@@ -99,7 +103,7 @@ describe('CLI admission uses every explicit root before any command executes', (
           expect.objectContaining({ code: 'x3.host/extension-not-an-extension' }),
         ]),
       )
-      expect(JSON.stringify(diagnostics)).toContain(inert)
+      expect(diagnostics?.map(item => item.message).join('\n')).toContain(inert)
       if (verb === 'project.validate') expect(result.result?.summary?.discovered).toBe(0)
     },
   )
@@ -120,7 +124,7 @@ describe('CLI admission uses every explicit root before any command executes', (
       const result = run(args)
       const diagnostics = result.diagnostics ?? result.result?.diagnostics
       expect(diagnostics?.some(item => item.severity === 'error')).toBe(true)
-      expect(JSON.stringify(diagnostics)).toContain(broken)
+      expect(diagnostics?.map(item => item.message).join('\n')).toContain(broken)
       expect(JSON.stringify(diagnostics)).toContain('greeter.json')
       if (verb === 'open')
         expect(result.extensions?.some(item => item.extension.id === 'broken')).toBe(true)
