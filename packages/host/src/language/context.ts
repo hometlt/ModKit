@@ -77,6 +77,67 @@ function cloneSemanticPayload(
   return Object.freeze(clone)
 }
 
+// Only copies created here are trusted. Frozen objects supplied by callers still cross validation.
+const validatedInputCopies = new WeakMap<
+  object,
+  Readonly<{
+    input: LanguageWorkspaceSemanticInput
+    payloadBytes: number
+  }>
+>()
+
+function copySemanticInput(item: unknown): Readonly<{
+  input: LanguageWorkspaceSemanticInput
+  payloadBytes: number
+}> {
+  const cached =
+    typeof item === 'object' && item !== null ? validatedInputCopies.get(item) : undefined
+  if (cached !== undefined) return cached
+  let payloadBytes = 0
+  const keys = typeof item === 'object' && item !== null ? Reflect.ownKeys(item) : []
+  if (
+    typeof item !== 'object' ||
+    item === null ||
+    Array.isArray(item) ||
+    (Object.getPrototypeOf(item) !== Object.prototype && Object.getPrototypeOf(item) !== null) ||
+    keys.some(
+      key => typeof key !== 'string' || !['kind', 'id', 'revision', 'payload'].includes(key),
+    )
+  ) {
+    throw new TypeError('language workspace semantic input is invalid')
+  }
+  const descriptors = Object.getOwnPropertyDescriptors(item)
+  if (
+    keys.some(key => {
+      if (typeof key !== 'string') return true
+      const descriptor = descriptors[key]
+      return descriptor === undefined || !descriptor.enumerable || !('value' in descriptor)
+    })
+  ) {
+    throw new TypeError('language workspace semantic input is invalid')
+  }
+  const kind = descriptors['kind']?.value
+  const id = descriptors['id']?.value
+  const revision = descriptors['revision']?.value
+  if (!boundedContextText(kind) || !boundedContextText(id) || !boundedContextText(revision)) {
+    throw new TypeError('language workspace semantic input is invalid')
+  }
+  const hasPayload = Object.prototype.hasOwnProperty.call(item, 'payload')
+  const payload = hasPayload ? cloneSemanticPayload(descriptors['payload']?.value) : undefined
+  if (payload !== undefined) {
+    payloadBytes = encoder.encode(JSON.stringify(payload)).byteLength
+  }
+  const copy = Object.freeze({
+    kind,
+    id,
+    revision,
+    ...(payload === undefined ? {} : { payload }),
+  })
+  const result = Object.freeze({ input: copy, payloadBytes })
+  validatedInputCopies.set(copy, result)
+  return result
+}
+
 /** Validate, deduplicate and defensively copy semantic inputs crossing a host boundary. */
 export function validatedLanguageWorkspaceSemanticInputs(
   value: unknown,
@@ -87,52 +148,17 @@ export function validatedLanguageWorkspaceSemanticInputs(
   let payloadBytes = 0
   const byKey = new Map<string, LanguageWorkspaceSemanticInput>()
   for (const item of value) {
-    const keys = typeof item === 'object' && item !== null ? Reflect.ownKeys(item) : []
-    if (
-      typeof item !== 'object' ||
-      item === null ||
-      Array.isArray(item) ||
-      (Object.getPrototypeOf(item) !== Object.prototype && Object.getPrototypeOf(item) !== null) ||
-      keys.some(
-        key => typeof key !== 'string' || !['kind', 'id', 'revision', 'payload'].includes(key),
-      )
-    ) {
-      throw new TypeError('language workspace semantic input is invalid')
+    const validated = copySemanticInput(item)
+    const copy = validated.input
+    payloadBytes += validated.payloadBytes
+    if (payloadBytes > LANGUAGE_WORKSPACE_SEMANTIC_PAYLOAD_MAX_BYTES) {
+      throw new TypeError('language workspace semantic payload exceeds maximum bytes')
     }
-    const descriptors = Object.getOwnPropertyDescriptors(item)
-    if (
-      keys.some(key => {
-        if (typeof key !== 'string') return true
-        const descriptor = descriptors[key]
-        return descriptor === undefined || !descriptor.enumerable || !('value' in descriptor)
-      })
-    ) {
-      throw new TypeError('language workspace semantic input is invalid')
-    }
-    const kind = descriptors['kind']?.value
-    const id = descriptors['id']?.value
-    const revision = descriptors['revision']?.value
-    if (!boundedContextText(kind) || !boundedContextText(id) || !boundedContextText(revision)) {
-      throw new TypeError('language workspace semantic input is invalid')
-    }
-    const hasPayload = Object.prototype.hasOwnProperty.call(item, 'payload')
-    const payload = hasPayload ? cloneSemanticPayload(descriptors['payload']?.value) : undefined
-    if (payload !== undefined) {
-      payloadBytes += encoder.encode(JSON.stringify(payload)).byteLength
-      if (payloadBytes > LANGUAGE_WORKSPACE_SEMANTIC_PAYLOAD_MAX_BYTES) {
-        throw new TypeError('language workspace semantic payload exceeds maximum bytes')
-      }
-    }
-    const copy = Object.freeze({
-      kind,
-      id,
-      revision,
-      ...(hasPayload ? { payload: payload! } : {}),
-    })
     const key = `${copy.kind}\0${copy.id}`
     const previous = byKey.get(key)
     if (
       previous !== undefined &&
+      previous !== copy &&
       (previous.revision !== copy.revision ||
         canonicalJsonStringify(previous) !== canonicalJsonStringify(copy))
     ) {
@@ -147,19 +173,22 @@ export function validatedLanguageWorkspaceSemanticInputs(
   )
 }
 
-const fnv64 = (value: string, seed: bigint, reverse: boolean): string => {
-  const bytes = new TextEncoder().encode(value)
-  let hash = seed
+const fnv64 = (bytes: Uint8Array, low: number, high: number, reverse: boolean): string => {
   for (let index = 0; index < bytes.length; index += 1) {
     const offset = reverse ? bytes.length - index - 1 : index
-    hash ^= BigInt(bytes[offset]!)
-    hash = BigInt.asUintN(64, hash * 0x100000001b3n)
+    low = (low ^ (bytes[offset] as number)) >>> 0
+    // The FNV prime is 0x100000001b3. Keep its exact 64-bit product in two words;
+    // low * 0x1b3 fits in Number's integer precision, including its carry.
+    const product = low * 0x1b3
+    high =
+      (Math.imul(high, 0x1b3) + Math.imul(low, 0x100) + Math.floor(product / 0x100000000)) >>> 0
+    low = product >>> 0
   }
-  return hash.toString(16).padStart(16, '0')
+  return high.toString(16).padStart(8, '0') + low.toString(16).padStart(8, '0')
 }
 
 /** Compact deterministic identity for a canonical host-owned language context description. */
 export const languageWorkspaceContextToken = (value: unknown): string => {
-  const canonical = canonicalJsonStringify(value)
-  return `language-context-v1:${fnv64(canonical, 0xcbf29ce484222325n, false)}${fnv64(canonical, 0x84222325cbf29ce4n, true)}`
+  const bytes = encoder.encode(canonicalJsonStringify(value))
+  return `language-context-v1:${fnv64(bytes, 0x84222325, 0xcbf29ce4, false)}${fnv64(bytes, 0xcbf29ce4, 0x84222325, true)}`
 }

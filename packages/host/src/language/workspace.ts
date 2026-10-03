@@ -349,13 +349,22 @@ export function languageFileAssociationFor(
 }
 
 /** Whether a route serves this file: by its exact name, else by its extension. */
+function languageRouteServesName(
+  route: LanguageProviderRequestFacet,
+  name: string,
+  extension: string | undefined,
+): boolean {
+  return route.fileName !== undefined
+    ? route.fileName.toLowerCase() === name
+    : route.extension !== undefined && route.extension === extension
+}
+
 export function languageRouteServesFile(
   route: LanguageProviderRequestFacet,
   path: string,
 ): boolean {
-  if (route.fileName !== undefined)
-    return route.fileName.toLowerCase() === baseNameOf(path).toLowerCase()
-  return route.extension !== undefined && route.extension === languageFileExtension(path)
+  const name = baseNameOf(path)
+  return languageRouteServesName(route, name.toLowerCase(), languageFileExtension(name))
 }
 
 /**
@@ -367,13 +376,19 @@ export function classifyLanguageFile(
   routes: readonly LanguageProviderRoute[],
   path: string,
 ): Readonly<{ languageId?: string; dialect?: string; candidates: readonly string[] }> {
+  const name = baseNameOf(path)
+  const extension = languageFileExtension(name)
+  const lowerName = name.toLowerCase()
   const named = routes.filter(
-    route => route.fileName !== undefined && languageRouteServesFile(route, path),
+    route => route.fileName !== undefined && languageRouteServesName(route, lowerName, extension),
   )
   const matching =
     named.length > 0
       ? named
-      : routes.filter(route => route.fileName === undefined && languageRouteServesFile(route, path))
+      : routes.filter(
+          route =>
+            route.fileName === undefined && languageRouteServesName(route, lowerName, extension),
+        )
   const candidates = [...new Set(matching.map(route => route.languageId))].sort(compareUtf8)
   const dialects = [
     ...new Set(matching.flatMap(route => (route.dialect === undefined ? [] : [route.dialect]))),
