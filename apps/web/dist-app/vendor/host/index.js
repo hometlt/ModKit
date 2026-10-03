@@ -21218,7 +21218,7 @@ async function worldTransformCorpusRefusal(snapshot2, readDigests) {
     }
   }
   const digest = async (bytes) => {
-    const hash = new Uint8Array(await globalThis.crypto.subtle.digest("SHA-256", bytes));
+    const hash = new Uint8Array(await globalThis.crypto.subtle.digest("SHA-256", bytes.slice()));
     return `sha256:${[...hash].map((byte) => byte.toString(16).padStart(2, "0")).join("")}`;
   };
   if (await digest(mapQualificationTupleBytes(positions.map((item) => [item.x, item.y, item.z]))) !== proof.nativeTupleDigest)
