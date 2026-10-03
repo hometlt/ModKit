@@ -12488,8 +12488,6 @@ function createLanguageWorkspace(options) {
       const entry2 = documents.get(uri);
       if (entry2 === void 0)
         return void 0;
-      if (entry2.pending !== void 0)
-        await waitWithSignal(entry2.pending, signal);
       throwIfAborted(signal);
       const provider = entry2.resolution.provider;
       const optional = [
