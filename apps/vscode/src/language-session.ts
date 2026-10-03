@@ -884,6 +884,9 @@ export function createLanguageSessionController(
   > => {
     const tracked = stage(document, true)
     if (tracked === undefined) return undefined
+    if (tracked.document.version !== document.version) {
+      throw new OperationCancelledError('stale editor document')
+    }
     if (tracked.analysis !== undefined) return tracked.analysis
     if (tracked.task === undefined) void execute(tracked)
     tracked.requestAnalysis?.()
@@ -917,6 +920,9 @@ export function createLanguageSessionController(
   ): Promise<boolean> => {
     const tracked = stage(document, true)
     if (tracked === undefined) return false
+    if (tracked.document.version !== document.version) {
+      throw new OperationCancelledError('stale editor document')
+    }
     if (tracked.opened && tracked.task === undefined) return true
     if (tracked.task === undefined) void execute(tracked)
     const synchronized = tracked.synchronized ?? tracked.task

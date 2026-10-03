@@ -1110,6 +1110,24 @@ describe('VS Code-free language session controller', () => {
     }
   })
 
+  it('rejects stale semantic tokens even when the newer analysis is already cached', async () => {
+    const controller = createLanguageSessionController({
+      workspace: fakeWorkspace(),
+      routes: [ROUTE],
+      debounceMs: 0,
+      publishDiagnostics: () => undefined,
+    })
+    await controller.initialize()
+    await controller.semanticTokens(editorDocument(2, 'newer text'))
+    try {
+      await expect(controller.semanticTokens(editorDocument(1, 'old'))).rejects.toBeInstanceOf(
+        OperationCancelledError,
+      )
+    } finally {
+      await controller.shutdown()
+    }
+  })
+
   it('maps UTF-16 positions directly, recurses symbols, and splits multiline tokens', async () => {
     const document = editorDocument(1, 'a😀\nxyz')
     const workspace = fakeWorkspace({
