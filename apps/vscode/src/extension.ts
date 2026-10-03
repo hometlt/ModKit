@@ -97,6 +97,7 @@ type SubjectCatalogOptions,
 import {
 classifyLanguageFile,
 createLanguageWorkspace,
+contentPathIndexSemanticInputs,
 languageFileAssociations,
 languageFileExtension,
 languageWorkspaceContextToken,
@@ -7012,15 +7013,11 @@ async function activateModkit(
             revision: languageWorkspaceContextToken(locales),
             payload: Object.freeze({ locales: [...locales] }),
           }),
-          Object.freeze({
-            kind: 'content-path-index',
+          ...contentPathIndexSemanticInputs({
             id: `${contextId}:local`,
             revision: pathIndex.revision,
-            payload: Object.freeze({
-              schemaVersion: 1,
-              isComplete: pathIndex.complete,
-              paths: pathIndex.paths,
-            }),
+            isComplete: pathIndex.complete,
+            paths: pathIndex.paths,
           }),
           ...(scope === undefined
             ? []

@@ -748,3 +748,4 @@ export {
 } from './workspace.js'
 export { expandSubjectReferenceCompletions } from './subject-completion.js'
 export { languageWorkspaceContextToken } from './context.js'
+export { contentPathIndexSemanticInputs } from './content-path-index.js'

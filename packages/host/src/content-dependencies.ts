@@ -29,6 +29,7 @@ import type {
   LanguageWorkspaceDocumentSourceRequest,
 } from './language/workspace.js'
 import { languageWorkspaceContextToken } from './language/context.js'
+import { contentPathIndexSemanticInputs } from './language/content-path-index.js'
 import { artifactByteSourceFromBytes } from './source-bridge.js'
 import { classifyLanguageFile } from './language/workspace.js'
 import {
@@ -638,17 +639,13 @@ export function createContentDependencyLanguageDocumentSource(
                 ),
               }),
             }),
-            Object.freeze({
-              kind: 'content-path-index',
+            ...contentPathIndexSemanticInputs({
               id: `${options.resolution.gameId}:${contextId}`,
               revision: pathIndexRevision,
-              payload: Object.freeze({
-                schemaVersion: 1,
-                isComplete: pathIndexComplete,
-                paths: indexedPaths,
-                // the dependency-closure layer each path is read from (its strongest)
-                layers: pathLayers,
-              }),
+              isComplete: pathIndexComplete,
+              paths: indexedPaths,
+              // The dependency-closure layer each path is read from (its strongest).
+              layers: pathLayers,
             }),
           ]),
         }),
