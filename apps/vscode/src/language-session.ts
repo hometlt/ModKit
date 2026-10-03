@@ -327,6 +327,8 @@ interface TrackedDocument {
   controller?: AbortController
   /** Resolves as soon as the live document version is accepted, before provider analysis. */
   synchronized?: Promise<void>
+  /** The exact editor generation accepted by Host, independent of background analysis. */
+  synchronizedGeneration?: number
   /** Resolves after provider analysis, before resolved-workspace semantic diagnostics. */
   ready?: Promise<void>
   /** Explicit tokens/hover/Verify requests bypass only the automatic diagnostics idle delay. */
@@ -623,6 +625,7 @@ export function createLanguageSessionController(
   let relatedTimer: ReturnType<typeof setTimeout> | undefined
   let relatedController: AbortController | undefined
   const relatedTasks = new Set<Promise<void>>()
+  const retirements = new Set<Promise<void>>()
   const refreshRelated = async (
     changed: ReadonlySet<string>,
     signal: AbortSignal,
@@ -681,6 +684,7 @@ export function createLanguageSessionController(
     const document = tracked.document
     const route = tracked.route
     const predecessor = tracked.task
+    const closing = [...retirements]
     const controller = new AbortController()
     tracked.controller = controller
     let markSynchronized = (): void => undefined
@@ -706,6 +710,7 @@ export function createLanguageSessionController(
         }
       }
       try {
+        await Promise.all(closing)
         if (
           controller.signal.aborted ||
           documents.get(document.uri) !== tracked ||
@@ -721,6 +726,12 @@ export function createLanguageSessionController(
         const refreshSemanticDiagnostics = tracked.opened || tracked.editorOpened === true
         const request = requestOf(document, route, controller.signal)
         const synchronizedResult = await options.workspace.synchronize(request)
+        // Even an activation superseded just after acceptance must be closed when retired.
+        if (synchronizedResult.state === 'resolved') tracked.opened = true
+        throwIfAborted(controller.signal)
+        if (documents.get(document.uri) !== tracked || tracked.generation !== generation) {
+          throw new OperationCancelledError('stale editor synchronization')
+        }
         if (synchronizedResult.state === 'unresolved') {
           options.reportHostDiagnostics?.(document.uri, synchronizedResult.hostDiagnostics)
           options.publishDiagnostics(document.uri, [])
@@ -728,7 +739,7 @@ export function createLanguageSessionController(
           markReady()
           return
         }
-        tracked.opened = true
+        tracked.synchronizedGeneration = generation
         markSynchronized()
         // Analysis is intentionally idle-delayed. Completion and on-type formatting only need the
         // synchronized live snapshot and should enter the provider worker before background work.
@@ -793,16 +804,24 @@ export function createLanguageSessionController(
     return task
   }
 
-  const retire = async (tracked: TrackedDocument): Promise<void> => {
+  const retire = (tracked: TrackedDocument): Promise<void> => {
     clearTimer(tracked)
     tracked.controller?.abort('editor document retired')
-    try {
-      await tracked.task
-    } catch {
-      // Cancellation is expected; provider failures were already reported by `execute`.
-    }
-    if (tracked.opened) await options.workspace.close(tracked.document.uri)
-    options.publishDiagnostics(tracked.document.uri, [])
+    const task = (async (): Promise<void> => {
+      try {
+        await tracked.task
+      } catch {
+        // Cancellation is expected; provider failures were already reported by `execute`.
+      }
+      if (tracked.opened) await options.workspace.close(tracked.document.uri)
+      options.publishDiagnostics(tracked.document.uri, [])
+    })()
+    retirements.add(task)
+    void task.then(
+      () => retirements.delete(task),
+      () => retirements.delete(task),
+    )
+    return task
   }
 
   const stage = (
@@ -876,6 +895,42 @@ export function createLanguageSessionController(
     return tracked
   }
 
+  /** Flush editor snapshots across languages, without waiting for idle analysis/diagnostics. */
+  const synchronizeWorkspace = async (signal?: AbortSignal): Promise<boolean> => {
+    for (;;) {
+      throwIfAborted(signal)
+      requireReady()
+      const pending = [...documents.values()]
+        .filter(tracked => tracked.synchronizedGeneration !== tracked.generation)
+        .map(tracked => ({ tracked, generation: tracked.generation }))
+      if (pending.length === 0 && retirements.size === 0) return true
+      for (const { tracked } of pending) {
+        if (tracked.task === undefined || tracked.taskGeneration !== tracked.generation) {
+          void execute(tracked)
+        }
+      }
+      await waitWithSignal(
+        Promise.all([
+          ...retirements,
+          ...pending.map(({ tracked }) => tracked.synchronized ?? tracked.task),
+        ]),
+        signal,
+      )
+      throwIfAborted(signal)
+      // A failed current synchronization must never expose its predecessor's old Host buffer.
+      if (
+        pending.some(
+          ({ tracked, generation }) =>
+            documents.get(tracked.document.uri) === tracked &&
+            tracked.generation === generation &&
+            tracked.synchronizedGeneration !== generation,
+        )
+      )
+        return false
+      // Edits/open/close received during activation belong to the next pass of this same barrier.
+    }
+  }
+
   const ensure = async (
     document: EditorLanguageDocument,
     signal?: AbortSignal,
@@ -887,10 +942,13 @@ export function createLanguageSessionController(
     if (tracked.document.version !== document.version) {
       throw new OperationCancelledError('stale editor document')
     }
-    if (tracked.analysis !== undefined) return tracked.analysis
-    if (tracked.task === undefined) void execute(tracked)
-    tracked.requestAnalysis?.()
     const ready = tracked.ready ?? tracked.task
+    if (!(await synchronizeWorkspace(signal))) return undefined
+    if (documents.get(document.uri) !== tracked || tracked.document.version !== document.version) {
+      throw new OperationCancelledError('stale editor document')
+    }
+    if (tracked.analysis !== undefined) return tracked.analysis
+    tracked.requestAnalysis?.()
     const abort = (): void => tracked.controller?.abort(signal?.reason)
     signal?.addEventListener('abort', abort, { once: true })
     try {
@@ -923,17 +981,7 @@ export function createLanguageSessionController(
     if (tracked.document.version !== document.version) {
       throw new OperationCancelledError('stale editor document')
     }
-    if (tracked.opened && tracked.task === undefined) return true
-    if (tracked.task === undefined) void execute(tracked)
-    const synchronized = tracked.synchronized ?? tracked.task
-    const abort = (): void => tracked.controller?.abort(signal?.reason)
-    signal?.addEventListener('abort', abort, { once: true })
-    try {
-      if (synchronized !== undefined) await waitWithSignal(synchronized, signal)
-    } finally {
-      signal?.removeEventListener('abort', abort)
-    }
-    throwIfAborted(signal)
+    if (!(await synchronizeWorkspace(signal))) return false
     if (documents.get(document.uri) !== tracked || tracked.document.version !== document.version) {
       throw new OperationCancelledError('stale editor document')
     }
@@ -1384,6 +1432,7 @@ export function createLanguageSessionController(
           document.controller?.abort('VS Code language controller shut down')
         }
         await Promise.all(tracked.map(retire))
+        await Promise.all(retirements)
         await Promise.all(relatedTasks)
         await options.workspace.shutdown()
       })()

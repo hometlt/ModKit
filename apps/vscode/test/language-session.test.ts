@@ -1128,6 +1128,356 @@ describe('VS Code-free language session controller', () => {
     }
   })
 
+  it.each([
+    'completion',
+    'resolveCompletion',
+    'onTypeFormatting',
+    'hover',
+    'rename',
+    'verify',
+  ] as const)(
+    'synchronizes another debounced document before %s even with cached primary analysis',
+    async feature => {
+      vi.useFakeTimers()
+      const workspace = fakeWorkspace()
+      const primary = editorDocument(1)
+      const other = {
+        ...primary,
+        uri: 'file:///workspace/other.fixture',
+        fileName: 'other.fixture',
+        text: 'old',
+      }
+      const accepted = new Map<string, string>()
+      const synchronize = vi.spyOn(workspace, 'synchronize').mockImplementation(async request => {
+        accepted.set(request.document.uri, request.document.text)
+        return { state: 'resolved', hostDiagnostics: [] }
+      })
+      const reads: (string | undefined)[] = []
+      const read = async () => {
+        reads.push(accepted.get(other.uri))
+        return undefined
+      }
+      vi.spyOn(workspace, 'completion').mockImplementation(read)
+      vi.spyOn(workspace, 'resolveCompletion').mockImplementation(read)
+      vi.spyOn(workspace, 'onTypeFormatting').mockImplementation(read)
+      vi.spyOn(workspace, 'hover').mockImplementation(read)
+      vi.spyOn(workspace, 'rename').mockImplementation(read)
+      vi.spyOn(workspace, 'diagnostics').mockImplementation(read)
+      const controller = createLanguageSessionController({
+        workspace,
+        routes: [ROUTE],
+        debounceMs: 150,
+        semanticDiagnosticsDelayMs: 2_500,
+        publishDiagnostics: () => undefined,
+      })
+      await controller.initialize()
+      controller.open(primary)
+      controller.open(other)
+      await vi.advanceTimersByTimeAsync(2_700)
+      reads.length = 0
+      const analyze = vi.spyOn(workspace, 'analyze')
+      controller.change({ ...other, version: 2, text: 'new unsaved value' })
+      const position = { line: 0, character: 0 }
+      const invoke = {
+        completion: () => controller.completion(primary, position),
+        resolveCompletion: () =>
+          controller.resolveCompletion(primary, position, { label: 'field', kind: 'field' }),
+        onTypeFormatting: () =>
+          controller.onTypeFormatting(primary, position, '=', { tabSize: 2, insertSpaces: true }),
+        hover: () => controller.hover(primary, position),
+        rename: () => controller.rename(primary, position, 'New'),
+        verify: () => controller.verify(primary),
+      }
+      try {
+        await invoke[feature]()
+        expect(reads).toEqual(['new unsaved value'])
+        expect(
+          synchronize.mock.calls.map(([request]) => [
+            request.document.uri,
+            request.document.version,
+          ]),
+        ).toEqual([
+          [primary.uri, 1],
+          [other.uri, 1],
+          [other.uri, 2],
+        ])
+        expect(analyze).not.toHaveBeenCalled()
+      } finally {
+        await controller.shutdown()
+      }
+    },
+  )
+
+  it('waits for another document activation and observes a superseding edit without analyzing it', async () => {
+    vi.useFakeTimers()
+    const workspace = fakeWorkspace()
+    const primary = editorDocument(1)
+    const other = {
+      ...primary,
+      uri: 'file:///workspace/other.fixture',
+      fileName: 'other.fixture',
+      text: 'first',
+    }
+    let release = (): void => undefined
+    const gate = new Promise<void>(resolve => {
+      release = resolve
+    })
+    let accepted = ''
+    const synchronize = vi.spyOn(workspace, 'synchronize').mockImplementation(async request => {
+      if (request.document.uri === other.uri) {
+        if (request.document.version === 1) await gate
+        accepted = request.document.text
+      }
+      return { state: 'resolved', hostDiagnostics: [] }
+    })
+    const completion = vi.spyOn(workspace, 'completion').mockImplementation(async () => ({
+      items: [{ label: accepted, kind: 'field' }],
+      isIncomplete: false,
+    }))
+    const controller = createLanguageSessionController({
+      workspace,
+      routes: [ROUTE],
+      debounceMs: 150,
+      semanticDiagnosticsDelayMs: 2_500,
+      publishDiagnostics: () => undefined,
+    })
+    await controller.initialize()
+    await controller.semanticTokens(primary)
+    controller.open(other)
+    const pending = controller.completion(primary, { line: 0, character: 0 })
+    try {
+      await vi.advanceTimersByTimeAsync(0)
+      expect(completion).not.toHaveBeenCalled()
+      controller.change({ ...other, version: 2, text: 'latest' })
+      release()
+      await expect(pending).resolves.toMatchObject({ items: [{ label: 'latest' }] })
+      expect(
+        synchronize.mock.calls
+          .filter(([request]) => request.document.uri === other.uri)
+          .map(([request]) => request.document.version),
+      ).toEqual([1, 2])
+    } finally {
+      release()
+      await pending
+      await controller.shutdown()
+    }
+  })
+
+  it('refuses features after a neighbouring synchronization failure instead of using its old buffer', async () => {
+    vi.useFakeTimers()
+    const workspace = fakeWorkspace()
+    const primary = editorDocument(1)
+    const other = { ...primary, uri: 'file:///workspace/other.fixture', fileName: 'other.fixture' }
+    vi.spyOn(workspace, 'synchronize').mockImplementation(async request => {
+      return request.document.uri === other.uri && request.document.version === 2
+        ? { state: 'unresolved', hostDiagnostics: [] }
+        : { state: 'resolved', hostDiagnostics: [] }
+    })
+    const completion = vi.spyOn(workspace, 'completion')
+    const controller = createLanguageSessionController({
+      workspace,
+      routes: [ROUTE],
+      debounceMs: 150,
+      semanticDiagnosticsDelayMs: 2_500,
+      publishDiagnostics: () => undefined,
+    })
+    await controller.initialize()
+    controller.open(primary)
+    controller.open(other)
+    await vi.advanceTimersByTimeAsync(2_700)
+    controller.change({ ...other, version: 2, text: 'failed' })
+    try {
+      await expect(
+        controller.completion(primary, { line: 0, character: 0 }),
+      ).resolves.toBeUndefined()
+      expect(completion).not.toHaveBeenCalled()
+    } finally {
+      await controller.shutdown()
+    }
+  })
+
+  it('waits for a pending close before reopening version one and requesting a feature', async () => {
+    vi.useFakeTimers()
+    const workspace = fakeWorkspace()
+    const primary = editorDocument(1)
+    const other = { ...primary, uri: 'file:///workspace/other.fixture', fileName: 'other.fixture' }
+    let release = (): void => undefined
+    const gate = new Promise<void>(resolve => {
+      release = resolve
+    })
+    const accepted = new Map<string, string>()
+    const events: string[] = []
+    vi.spyOn(workspace, 'synchronize').mockImplementation(async request => {
+      accepted.set(request.document.uri, request.document.text)
+      events.push(`sync:${request.document.uri}`)
+      return { state: 'resolved', hostDiagnostics: [] }
+    })
+    vi.spyOn(workspace, 'close').mockImplementation(async uri => {
+      if (uri === other.uri) await gate
+      accepted.delete(uri)
+      events.push(`close:${uri}`)
+    })
+    const completion = vi.spyOn(workspace, 'completion').mockImplementation(async () => ({
+      items: [{ label: accepted.get(other.uri) ?? 'missing', kind: 'field' }],
+      isIncomplete: false,
+    }))
+    const controller = createLanguageSessionController({
+      workspace,
+      routes: [ROUTE],
+      debounceMs: 150,
+      semanticDiagnosticsDelayMs: 2_500,
+      publishDiagnostics: () => undefined,
+    })
+    await controller.initialize()
+    controller.open(primary)
+    controller.open(other)
+    await vi.advanceTimersByTimeAsync(2_700)
+    events.length = 0
+    const closing = controller.close(other.uri)
+    await vi.advanceTimersByTimeAsync(0)
+    controller.open({ ...other, version: 1, text: 'reopened' })
+    const pending = controller.completion(primary, { line: 0, character: 0 })
+    try {
+      await vi.advanceTimersByTimeAsync(0)
+      expect(completion).not.toHaveBeenCalled()
+      release()
+      await closing
+      await expect(pending).resolves.toMatchObject({ items: [{ label: 'reopened' }] })
+      expect(events).toEqual([`close:${other.uri}`, `sync:${other.uri}`])
+    } finally {
+      release()
+      await Promise.all([closing, pending])
+      await controller.shutdown()
+    }
+  })
+
+  it('cancels a waiting feature without cancelling a neighbouring editor activation', async () => {
+    vi.useFakeTimers()
+    const workspace = fakeWorkspace()
+    const primary = editorDocument(1)
+    const other = { ...primary, uri: 'file:///workspace/other.fixture', fileName: 'other.fixture' }
+    let release = (): void => undefined
+    const gate = new Promise<void>(resolve => {
+      release = resolve
+    })
+    let activationSignal: AbortSignal | undefined
+    const synchronize = vi.spyOn(workspace, 'synchronize').mockImplementation(async request => {
+      if (request.document.uri === other.uri) {
+        activationSignal = request.signal
+        await gate
+      }
+      return { state: 'resolved', hostDiagnostics: [] }
+    })
+    const completion = vi.spyOn(workspace, 'completion')
+    const controller = createLanguageSessionController({
+      workspace,
+      routes: [ROUTE],
+      debounceMs: 150,
+      semanticDiagnosticsDelayMs: 2_500,
+      publishDiagnostics: () => undefined,
+    })
+    await controller.initialize()
+    await controller.semanticTokens(primary)
+    controller.open(other)
+    const abort = new AbortController()
+    const pending = controller.completion(primary, { line: 0, character: 0 }, abort.signal)
+    const rejected = expect(pending).rejects.toBeInstanceOf(OperationCancelledError)
+    try {
+      await vi.advanceTimersByTimeAsync(0)
+      expect(activationSignal).toBeDefined()
+      abort.abort('cancel this completion')
+      await rejected
+      expect(activationSignal?.aborted).toBe(false)
+      expect(completion).not.toHaveBeenCalled()
+      release()
+      await controller.completion(primary, { line: 0, character: 0 })
+      expect(
+        synchronize.mock.calls.filter(([request]) => request.document.uri === other.uri),
+      ).toHaveLength(1)
+      expect(completion).toHaveBeenCalledOnce()
+    } finally {
+      release()
+      await controller.shutdown()
+    }
+  })
+
+  it('shares neighbouring synchronization across overlapping completions', async () => {
+    vi.useFakeTimers()
+    const workspace = fakeWorkspace()
+    const primary = editorDocument(1)
+    const other = { ...primary, uri: 'file:///workspace/other.fixture', fileName: 'other.fixture' }
+    let release = (): void => undefined
+    const gate = new Promise<void>(resolve => {
+      release = resolve
+    })
+    const synchronize = vi.spyOn(workspace, 'synchronize').mockImplementation(async request => {
+      if (request.document.uri === other.uri) await gate
+      return { state: 'resolved', hostDiagnostics: [] }
+    })
+    const analyze = vi.spyOn(workspace, 'analyze')
+    const completion = vi.spyOn(workspace, 'completion')
+    const controller = createLanguageSessionController({
+      workspace,
+      routes: [ROUTE],
+      debounceMs: 150,
+      semanticDiagnosticsDelayMs: 2_500,
+      publishDiagnostics: () => undefined,
+    })
+    await controller.initialize()
+    await controller.semanticTokens(primary)
+    analyze.mockClear()
+    controller.open(other)
+    const a = controller.completion(primary, { line: 0, character: 0 })
+    const b = controller.completion(primary, { line: 0, character: 0 })
+    try {
+      await vi.advanceTimersByTimeAsync(0)
+      expect(completion).not.toHaveBeenCalled()
+      release()
+      await Promise.all([a, b])
+      expect(
+        synchronize.mock.calls.filter(([request]) => request.document.uri === other.uri),
+      ).toHaveLength(1)
+      expect(completion).toHaveBeenCalledTimes(2)
+      expect(analyze).not.toHaveBeenCalled()
+    } finally {
+      release()
+      await Promise.all([a, b])
+      await controller.shutdown()
+    }
+  })
+
+  it('closes an accepted activation that finishes after its editor was retired', async () => {
+    vi.useFakeTimers()
+    const workspace = fakeWorkspace()
+    let release = (): void => undefined
+    const gate = new Promise<void>(resolve => {
+      release = resolve
+    })
+    vi.spyOn(workspace, 'synchronize').mockImplementation(async () => {
+      await gate
+      return { state: 'resolved', hostDiagnostics: [] }
+    })
+    const controller = createLanguageSessionController({
+      workspace,
+      routes: [ROUTE],
+      debounceMs: 0,
+      publishDiagnostics: () => undefined,
+    })
+    await controller.initialize()
+    const document = editorDocument(1)
+    controller.open(document)
+    await vi.advanceTimersByTimeAsync(0)
+    const closing = controller.close(document.uri)
+    try {
+      release()
+      await closing
+      expect(workspace.closes).toEqual([document.uri])
+    } finally {
+      release()
+      await controller.shutdown()
+    }
+  })
+
   it('maps UTF-16 positions directly, recurses symbols, and splits multiline tokens', async () => {
     const document = editorDocument(1, 'a😀\nxyz')
     const workspace = fakeWorkspace({
