@@ -190,10 +190,9 @@ function copyWorkspacePackage(source, destination, manifest, skip = () => false)
       typeof entry !== 'string' ||
       entry.length === 0 ||
       entry.includes('*') ||
-      entry.includes('/') ||
       entry.includes('\\') ||
-      entry === '.' ||
-      entry === '..'
+      entry.includes(':') ||
+      entry.split('/').some(segment => segment === '' || segment === '.' || segment === '..')
     ) {
       throw new Error(
         `workspace production files whitelist has an unsupported entry: ${manifest.name}/${entry}`,
@@ -205,6 +204,15 @@ function copyWorkspacePackage(source, destination, manifest, skip = () => false)
         `workspace production files whitelist entry is missing: ${manifest.name}/${entry}`,
       )
     }
+    // A nested whitelist entry must not reach through a linked parent directory.
+    const segments = entry.split('/')
+    for (let index = 1; index < segments.length; index++) {
+      const parent = join(source, ...segments.slice(0, index))
+      if (lstatSync(parent).isSymbolicLink()) {
+        throw new Error(`production package input must not be a symlink or junction: ${parent}`)
+      }
+    }
+    mkdirSync(dirname(join(destination, entry)), { recursive: true })
     copyPhysicalTree(input, join(destination, entry), skip)
   }
 }
