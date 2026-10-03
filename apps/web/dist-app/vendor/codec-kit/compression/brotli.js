@@ -1,9 +1,9 @@
 import {
   COMPRESSION_OUTPUT_LIMIT
-} from "../../../chunks/chunk-GDKG5J25.js";
+} from "../../../chunks/chunk-WI3JMRPW.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 
-// ../MODDING/modkit-core/packages/codec-kit/dist/compression/brotli.js
+// ../../MODDING/modkit-core/packages/codec-kit/dist/compression/brotli.js
 var BROTLI_UNSUPPORTED = "codec-kit/brotli-unsupported";
 var NODE_ZLIB = "node:zlib";
 var PORTABLE_LIMIT_MESSAGE = "Brotli output exceeds maxOutputLength";
@@ -40,7 +40,7 @@ function loadBrotliSync() {
 }
 function loadPortableBrotliSync() {
   portable ??= (async () => {
-    const decoder = await import("../../../chunks/decode-TNOCU2UH.js").catch(() => void 0);
+    const decoder = await import("../../../chunks/decode-EQQIMI4S.js").catch(() => void 0);
     if (decoder === void 0)
       return () => {
         throw coded(new Error("this realm has no Brotli decoder"), BROTLI_UNSUPPORTED);

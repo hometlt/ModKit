@@ -1,6 +1,6 @@
 import "../../../chunks/chunk-CQ52GEHY.js";
 
-// ../MODDING/modkit-core/packages/codec-kit/dist/texture/uastc.js
+// ../../MODDING/modkit-core/packages/codec-kit/dist/texture/uastc.js
 var MODE_CODES = [
   [1, 4],
   [53, 6],

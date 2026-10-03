@@ -1,21 +1,21 @@
 import {
   createTableDataSource
 } from "../../../chunks/chunk-XYU4XXWE.js";
-import "../../../chunks/chunk-BFR65BLC.js";
+import "../../../chunks/chunk-VR2R2AUW.js";
 import {
   assembleSubjectDescriptor,
   createAssetSession,
   createUtf8TextDataSource
-} from "../../../chunks/chunk-W52PQZEN.js";
-import "../../../chunks/chunk-5GGWVEQJ.js";
+} from "../../../chunks/chunk-EGZBVMPN.js";
+import "../../../chunks/chunk-4R7GDKBA.js";
 import {
   revisionId
-} from "../../../chunks/chunk-2LRUXON6.js";
+} from "../../../chunks/chunk-U33RYHWC.js";
 import {
   diagnostic,
   throwIfAborted,
   uint64
-} from "../../../chunks/chunk-V3DESLW4.js";
+} from "../../../chunks/chunk-AMCLMQ4O.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 
 // packages/codec-kit/src/text/codec-runtime.ts

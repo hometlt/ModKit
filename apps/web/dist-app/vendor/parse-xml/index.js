@@ -3,9 +3,9 @@ import {
   __toESM
 } from "../../chunks/chunk-CQ52GEHY.js";
 
-// ../MODDING/modkit-core/node_modules/.pnpm/@rgrove+parse-xml@4.2.3/node_modules/@rgrove/parse-xml/dist/browser.js
+// ../../MODDING/modkit-core/node_modules/.pnpm/@rgrove+parse-xml@4.2.3/node_modules/@rgrove/parse-xml/dist/browser.js
 var require_browser = __commonJS({
-  "../MODDING/modkit-core/node_modules/.pnpm/@rgrove+parse-xml@4.2.3/node_modules/@rgrove/parse-xml/dist/browser.js"(exports, module) {
+  "../../MODDING/modkit-core/node_modules/.pnpm/@rgrove+parse-xml@4.2.3/node_modules/@rgrove/parse-xml/dist/browser.js"(exports, module) {
     "use strict";
     var __defProp = Object.defineProperty;
     var __getOwnPropDesc = Object.getOwnPropertyDescriptor;

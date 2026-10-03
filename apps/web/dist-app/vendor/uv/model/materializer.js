@@ -4,56 +4,56 @@ import {
   addJointAttribute,
   encodeAnimationChannel,
   encodeSkeleton
-} from "../../../chunks/chunk-WGWMBNZ4.js";
+} from "../../../chunks/chunk-2KUQCSGH.js";
 import {
   uvmSceneFrameInverse,
   withMaterialFrame
-} from "../../../chunks/chunk-YOXPMEYX.js";
+} from "../../../chunks/chunk-RSNP6TR4.js";
 import {
   materializeUvmAnimationMaterialTargets,
   uvmAnimationEvents,
   uvmAnimationPlayback,
   uvmKeyTimesMetadata,
   uvmVisibilityPointer
-} from "../../../chunks/chunk-WXNMUTNG.js";
+} from "../../../chunks/chunk-MAXFIZMW.js";
 import {
   packUvmGlb,
   uvmImageUri
-} from "../../../chunks/chunk-NONHW3HK.js";
+} from "../../../chunks/chunk-J5YW7BHE.js";
 import {
   DEFAULT_MODEL_MATERIAL_BUDGET,
   snapshotModelMaterials
-} from "../../../chunks/chunk-I675VFQQ.js";
-import {
-  boundsOf
-} from "../../../chunks/chunk-3YDZHAZL.js";
-import "../../../chunks/chunk-YOJ4JJ3G.js";
+} from "../../../chunks/chunk-GZUQICAY.js";
 import {
   DEFAULT_MODEL_SKELETON_BUDGET,
   createModelSkeletonNodes,
   snapshotModelSkeleton
-} from "../../../chunks/chunk-PERFFDVA.js";
+} from "../../../chunks/chunk-73NZYGA2.js";
 import {
   DEFAULT_MODEL_ANIMATION_BUDGET,
   snapshotModelAnimations
-} from "../../../chunks/chunk-RUAJQ7WQ.js";
-import "../../../chunks/chunk-ZSDVUSRM.js";
+} from "../../../chunks/chunk-BOT7ULFL.js";
+import "../../../chunks/chunk-QG2MBCY3.js";
 import {
   composeTrsMatrix
-} from "../../../chunks/chunk-5SBJANAJ.js";
-import "../../../chunks/chunk-2244C2XL.js";
-import "../../../chunks/chunk-MT2JUZZJ.js";
-import "../../../chunks/chunk-R2P56FTH.js";
-import "../../../chunks/chunk-5A3JGV66.js";
+} from "../../../chunks/chunk-KABH7BZW.js";
+import {
+  boundsOf
+} from "../../../chunks/chunk-PS5O2PBP.js";
+import "../../../chunks/chunk-6IAOZQVP.js";
+import "../../../chunks/chunk-CISZOJYD.js";
+import "../../../chunks/chunk-T37HPLGC.js";
+import "../../../chunks/chunk-7ANCWU7V.js";
+import "../../../chunks/chunk-NWKRHJA2.js";
 import {
   isJsonValue
-} from "../../../chunks/chunk-2LRUXON6.js";
-import "../../../chunks/chunk-V3DESLW4.js";
-import "../../../chunks/chunk-TSKCLN7F.js";
-import "../../../chunks/chunk-NMYA52EI.js";
+} from "../../../chunks/chunk-U33RYHWC.js";
+import "../../../chunks/chunk-AMCLMQ4O.js";
+import "../../../chunks/chunk-XYIUXPQM.js";
+import "../../../chunks/chunk-I5QAQFCV.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 
-// ../MODDING/modkit-core/packages/uv/dist/model/rig.js
+// ../../MODDING/modkit-core/packages/uv/dist/model/rig.js
 function refuse(message) {
   throw new TypeError(`UVM rig refused: ${message}`);
 }
@@ -479,7 +479,7 @@ function writeUvmAnimations(source, nodeIndices, boneByNode, storage, budget, si
   return { animations, catalog, visibility, losses };
 }
 
-// ../MODDING/modkit-core/packages/uv/dist/model/materializer.js
+// ../../MODDING/modkit-core/packages/uv/dist/model/materializer.js
 var GLTF_LAYER_SLOTS = Object.freeze({
   diffuse: "baseColor",
   basecolor: "baseColor",

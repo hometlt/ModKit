@@ -1,9 +1,9 @@
 import {
   COMPRESSION_OUTPUT_LIMIT
-} from "../../../chunks/chunk-GDKG5J25.js";
+} from "../../../chunks/chunk-WI3JMRPW.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 
-// ../MODDING/modkit-core/packages/codec-kit/dist/compression/pkware-dcl.js
+// ../../MODDING/modkit-core/packages/codec-kit/dist/compression/pkware-dcl.js
 var PKWARE_DCL_MALFORMED = "codec-kit/pkware-dcl-malformed";
 function malformed(message) {
   const error = new RangeError(`PKWARE DCL stream ${message}`);

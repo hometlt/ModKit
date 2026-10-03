@@ -1,9 +1,9 @@
 import {
   ModkitError
-} from "../../../chunks/chunk-TSKCLN7F.js";
+} from "../../../chunks/chunk-XYIUXPQM.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 
-// ../MODDING/modkit-core/packages/codec-kit/dist/crypto/digest.js
+// ../../MODDING/modkit-core/packages/codec-kit/dist/crypto/digest.js
 async function sha256Hex(bytes) {
   const subtle = globalThis.crypto?.subtle;
   if (!subtle) {

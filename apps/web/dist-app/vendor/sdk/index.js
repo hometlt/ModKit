@@ -122,20 +122,20 @@ import {
   worldModelRequiredBytes,
   writerOfferSatisfies,
   writerSelectionKey
-} from "../../chunks/chunk-2244C2XL.js";
+} from "../../chunks/chunk-CISZOJYD.js";
 import {
   SCENE_RENDERER_CONTRACT,
   SCENE_RENDERER_MATCHER_PROFILE
-} from "../../chunks/chunk-MT2JUZZJ.js";
+} from "../../chunks/chunk-T37HPLGC.js";
 import {
   NATIVE_MODEL_ENCODER_CONTRACT,
   NATIVE_MODEL_ENCODER_MATCHER_PROFILE
-} from "../../chunks/chunk-R2P56FTH.js";
+} from "../../chunks/chunk-7ANCWU7V.js";
 import {
   GAME_TEMPLATE_PREVIEW_OPERATION_ID,
   GAME_TEMPLATE_PREVIEW_SCHEMA_VERSION,
   isGameTemplatePreviewResult
-} from "../../chunks/chunk-5A3JGV66.js";
+} from "../../chunks/chunk-NWKRHJA2.js";
 import {
   ADMITTED_DATA_SOURCE_CONTRACTS,
   ARCHITECTURES,
@@ -222,8 +222,8 @@ import {
   viewerContributionSpecV1Schema,
   writerOfferV1Schema,
   writerRequirementV1Schema
-} from "../../chunks/chunk-2LRUXON6.js";
-import "../../chunks/chunk-V3DESLW4.js";
+} from "../../chunks/chunk-U33RYHWC.js";
+import "../../chunks/chunk-AMCLMQ4O.js";
 import "../../chunks/chunk-CQ52GEHY.js";
 export {
   A1_SPEC_SCHEMA_ENTRIES,

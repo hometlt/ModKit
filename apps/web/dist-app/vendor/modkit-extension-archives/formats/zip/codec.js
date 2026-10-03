@@ -1,54 +1,62 @@
 import {
   PROJECTION_RECEIPT_METADATA_ID
-} from "../../../../chunks/chunk-ZC6AMIVY.js";
+} from "../../../../chunks/chunk-GY7GURF6.js";
 import {
   pageStart
-} from "../../../../chunks/chunk-T342XO7K.js";
-import "../../../../chunks/chunk-IBG4CEKN.js";
-import "../../../../chunks/chunk-I675VFQQ.js";
-import "../../../../chunks/chunk-QJH6SCHV.js";
-import "../../../../chunks/chunk-SNT2IRUT.js";
-import "../../../../chunks/chunk-PERFFDVA.js";
-import "../../../../chunks/chunk-RUAJQ7WQ.js";
+} from "../../../../chunks/chunk-ZZQB5TXT.js";
+import "../../../../chunks/chunk-CZF52HU6.js";
+import "../../../../chunks/chunk-GZUQICAY.js";
+import "../../../../chunks/chunk-73NZYGA2.js";
+import "../../../../chunks/chunk-BOT7ULFL.js";
 import {
   snapshotJson
-} from "../../../../chunks/chunk-ZSDVUSRM.js";
-import "../../../../chunks/chunk-5SBJANAJ.js";
-import "../../../../chunks/chunk-PCSI25OM.js";
+} from "../../../../chunks/chunk-QG2MBCY3.js";
+import "../../../../chunks/chunk-KABH7BZW.js";
+import "../../../../chunks/chunk-SVFHCCEQ.js";
+import {
+  assembleZipArchive,
+  zipCentralRecord,
+  zipEntryName,
+  zipLocalHeader,
+  zipNeedsUtf8Flag,
+  zipStoredEntry
+} from "../../../../chunks/chunk-YPEX2RSE.js";
+import "../../../../chunks/chunk-5R33N3JO.js";
+import "../../../../chunks/chunk-TSDOUDTM.js";
 import {
   decompressBounded
-} from "../../../../chunks/chunk-GDKG5J25.js";
-import "../../../../chunks/chunk-BFR65BLC.js";
+} from "../../../../chunks/chunk-WI3JMRPW.js";
+import "../../../../chunks/chunk-VR2R2AUW.js";
 import {
   assembleSubjectDescriptor,
   createAssetSession,
   createUtf8TextDataSource
-} from "../../../../chunks/chunk-W52PQZEN.js";
-import "../../../../chunks/chunk-5GGWVEQJ.js";
+} from "../../../../chunks/chunk-EGZBVMPN.js";
+import "../../../../chunks/chunk-4R7GDKBA.js";
 import {
   containerEntryRevision,
   contributionSettingsFor
-} from "../../../../chunks/chunk-2244C2XL.js";
-import "../../../../chunks/chunk-MT2JUZZJ.js";
-import "../../../../chunks/chunk-R2P56FTH.js";
-import "../../../../chunks/chunk-5A3JGV66.js";
+} from "../../../../chunks/chunk-CISZOJYD.js";
+import "../../../../chunks/chunk-T37HPLGC.js";
+import "../../../../chunks/chunk-7ANCWU7V.js";
+import "../../../../chunks/chunk-NWKRHJA2.js";
 import {
   revisionId,
   toPortableProjectionReceipt
-} from "../../../../chunks/chunk-2LRUXON6.js";
+} from "../../../../chunks/chunk-U33RYHWC.js";
 import {
   ModkitError,
   canonicalJsonStringify,
   diagnostic
-} from "../../../../chunks/chunk-V3DESLW4.js";
-import "../../../../chunks/chunk-UDFSUVGJ.js";
+} from "../../../../chunks/chunk-AMCLMQ4O.js";
+import "../../../../chunks/chunk-VJ2XT5KE.js";
 import {
   crc32
-} from "../../../../chunks/chunk-F3ZZXQRO.js";
-import "../../../../chunks/chunk-NMYA52EI.js";
+} from "../../../../chunks/chunk-SITZA5RP.js";
+import "../../../../chunks/chunk-I5QAQFCV.js";
 import "../../../../chunks/chunk-CQ52GEHY.js";
 
-// ../MODDING/modkit-core/packages/codec-kit/dist/deferred-session.js
+// ../../MODDING/modkit-core/packages/codec-kit/dist/deferred-session.js
 function deferAssetSession(revision, initialize, budget, openingSignal) {
   const controller = new AbortController();
   const signal = openingSignal === void 0 ? controller.signal : AbortSignal.any([openingSignal, controller.signal]);
@@ -190,7 +198,7 @@ function deferAssetSession(revision, initialize, budget, openingSignal) {
   });
 }
 
-// ../MODDING/modkit-core/packages/codec-kit/dist/container-entries.js
+// ../../MODDING/modkit-core/packages/codec-kit/dist/container-entries.js
 var CONTAINER_EXTRACT_HANDLER_ID = "extract-entry";
 function throwIfCancelled(signal) {
   if (signal?.aborted)
@@ -484,7 +492,7 @@ async function decodeContainerEntry(entry, maximum, readRange, signal) {
   return bytes;
 }
 
-// ../MODDING/modkit-core/packages/codec-kit/dist/editing.js
+// ../../MODDING/modkit-core/packages/codec-kit/dist/editing.js
 function assetRevisionFromInput(input) {
   if (input.originKind !== "single" || input.revisions.topology !== "single") {
     throw new TypeError("assetRevisionFromInput: single-source subjects only");
@@ -527,7 +535,7 @@ function editPlanFromInput(input, { planId, edits, fidelity, guarantee = "atomic
   });
 }
 
-// ../MODDING/modkit-core/packages/codec-kit/dist/audio/pcm-audio.js
+// ../../MODDING/modkit-core/packages/codec-kit/dist/audio/pcm-audio.js
 function convertToWav(summary = "Writes the decoded sound as a 16-bit PCM WAV file.") {
   return Object.freeze({
     id: "export.convert",
@@ -559,7 +567,7 @@ function convertToWav(summary = "Writes the decoded sound as a 16-bit PCM WAV fi
 }
 var CONVERT_TO_WAV = convertToWav();
 
-// ../MODDING/modkit-core/packages/codec-kit/dist/xml-scan.js
+// ../../MODDING/modkit-core/packages/codec-kit/dist/xml-scan.js
 var NAMED_ENTITIES = Object.freeze({
   amp: "&",
   apos: "'",
@@ -568,7 +576,7 @@ var NAMED_ENTITIES = Object.freeze({
   quot: '"'
 });
 
-// ../MODDING/modkit-core/packages/codec-kit/dist/index.js
+// ../../MODDING/modkit-core/packages/codec-kit/dist/index.js
 var INSPECTION_OPERATIONS = Object.freeze([
   Object.freeze({
     id: "view.inspect",
@@ -1292,14 +1300,10 @@ var EXTRA_ZIP64 = 1;
 var EXTRA_UNICODE_PATH = 28789;
 var MAX_U16 = 65535;
 var MAX_U32 = 4294967295;
-var DOS_EPOCH_DATE = 33;
 var STORED = 0;
-var VERSION_STORED = 10;
-var VERSION_MADE_BY = 20;
 var EMPTY = new Uint8Array(0);
 var utf8 = new TextDecoder("utf-8", { fatal: true });
 var legacy = new TextDecoder("latin1");
-var encoder = new TextEncoder();
 function u16(bytes, offset) {
   if (offset < 0 || offset + 2 > bytes.byteLength) throw new RangeError("truncated ZIP u16");
   return new DataView(bytes.buffer, bytes.byteOffset + offset, 2).getUint16(0, true);
@@ -1635,59 +1639,6 @@ function extraFieldIds(extra) {
   if (cursor !== extra.byteLength) throw new TypeError("a ZIP extra field is malformed");
   return ids;
 }
-function localHeaderFor(fields) {
-  const header = new Uint8Array(30 + fields.nameBytes.byteLength + fields.extraBytes.byteLength);
-  const view = new DataView(header.buffer);
-  view.setUint32(0, ZIP_LOCAL, true);
-  view.setUint16(4, fields.versionNeeded, true);
-  view.setUint16(6, fields.flags, true);
-  view.setUint16(8, fields.method, true);
-  view.setUint16(10, fields.dosTime, true);
-  view.setUint16(12, fields.dosDate, true);
-  view.setUint32(14, fields.crc, true);
-  view.setUint32(18, fields.compressedSize, true);
-  view.setUint32(22, fields.size, true);
-  view.setUint16(26, fields.nameBytes.byteLength, true);
-  view.setUint16(28, fields.extraBytes.byteLength, true);
-  header.set(fields.nameBytes, 30);
-  header.set(fields.extraBytes, 30 + fields.nameBytes.byteLength);
-  return header;
-}
-function centralRecordFor(fields) {
-  const nameLength = fields.nameBytes.byteLength;
-  const extraLength = fields.extraBytes.byteLength;
-  const commentLength = fields.commentBytes.byteLength;
-  const record = new Uint8Array(46 + nameLength + extraLength + commentLength);
-  const view = new DataView(record.buffer);
-  view.setUint32(0, ZIP_CENTRAL, true);
-  view.setUint16(4, fields.versionMadeBy, true);
-  view.setUint16(6, fields.versionNeeded, true);
-  view.setUint16(8, fields.flags, true);
-  view.setUint16(10, fields.method, true);
-  view.setUint16(12, fields.dosTime, true);
-  view.setUint16(14, fields.dosDate, true);
-  view.setUint32(16, fields.crc, true);
-  view.setUint32(20, fields.compressedSize, true);
-  view.setUint32(24, fields.size, true);
-  view.setUint16(28, nameLength, true);
-  view.setUint16(30, extraLength, true);
-  view.setUint16(32, commentLength, true);
-  view.setUint16(34, fields.diskStart, true);
-  view.setUint16(36, fields.internalAttributes, true);
-  view.setUint32(38, fields.externalAttributes, true);
-  record.set(fields.nameBytes, 46);
-  record.set(fields.extraBytes, 46 + nameLength);
-  record.set(fields.commentBytes, 46 + nameLength + extraLength);
-  return record;
-}
-function encodedName(name) {
-  const nameBytes = encoder.encode(name);
-  if (nameBytes.byteLength === 0) throw new TypeError("a ZIP entry path cannot be empty");
-  if (nameBytes.byteLength > MAX_U16)
-    throw new RangeError(`the ZIP entry path \xAB${name}\xBB is too long`);
-  return nameBytes;
-}
-var needsUtf8Flag = (nameBytes) => nameBytes.some((byte) => byte >= 128);
 function verbatimEntry(bytes, entry, range) {
   return Object.freeze({
     name: entry.name,
@@ -1696,7 +1647,7 @@ function verbatimEntry(bytes, entry, range) {
   });
 }
 function renamedEntry(bytes, entry, range, newName) {
-  const nameBytes = encodedName(newName);
+  const nameBytes = zipEntryName(newName);
   const fields = centralFieldsOf(bytes, entry);
   const localExtra = bytes.subarray(range.start + 30 + range.nameLength, range.dataOffset);
   if (extraFieldIds(fields.extraBytes).includes(EXTRA_UNICODE_PATH) || extraFieldIds(localExtra).includes(EXTRA_UNICODE_PATH)) {
@@ -1704,14 +1655,14 @@ function renamedEntry(bytes, entry, range, newName) {
       `\xAB${entry.name}\xBB carries an Info-ZIP Unicode Path extra field; renaming it would leave stale metadata behind`
     );
   }
-  const utf8Needed = needsUtf8Flag(nameBytes);
+  const utf8Needed = zipNeedsUtf8Flag(nameBytes);
   if (utf8Needed && (entry.flags & FLAG_UTF8_NAMES) === 0 && fields.commentBytes.byteLength > 0) {
     throw new TypeError(
       `renaming \xAB${entry.name}\xBB to a non-ASCII path would reinterpret its entry comment as UTF-8`
     );
   }
   const flags = utf8Needed ? entry.flags | FLAG_UTF8_NAMES : entry.flags;
-  const header = localHeaderFor({
+  const header = zipLocalHeader({
     versionNeeded: u16(bytes, range.start + 4),
     flags,
     method: u16(bytes, range.start + 8),
@@ -1726,14 +1677,14 @@ function renamedEntry(bytes, entry, range, newName) {
   return Object.freeze({
     name: newName,
     local: Object.freeze([header, bytes.subarray(range.dataOffset, range.end)]),
-    central: centralRecordFor({ ...fields, flags, nameBytes })
+    central: zipCentralRecord({ ...fields, flags, nameBytes })
   });
 }
 function restoredEntry(bytes, entry, range, data) {
   const fields = centralFieldsOf(bytes, entry);
   const flags = entry.flags & ~(FLAG_DESCRIPTOR | FLAG_COMPRESSION_OPTIONS);
   const crc = crc32(data);
-  const header = localHeaderFor({
+  const header = zipLocalHeader({
     versionNeeded: u16(bytes, range.start + 4),
     flags,
     method: STORED,
@@ -1748,7 +1699,7 @@ function restoredEntry(bytes, entry, range, data) {
   return Object.freeze({
     name: entry.name,
     local: Object.freeze([header, data]),
-    central: centralRecordFor({
+    central: zipCentralRecord({
       ...fields,
       flags,
       method: STORED,
@@ -1757,86 +1708,6 @@ function restoredEntry(bytes, entry, range, data) {
       size: data.byteLength
     })
   });
-}
-function storedEntry(name, data) {
-  const directory = name.endsWith("/");
-  if (directory && data.byteLength > 0)
-    throw new TypeError(`\xAB${name}\xBB is a directory entry and carries no bytes`);
-  const nameBytes = encodedName(name);
-  const shared = {
-    versionNeeded: VERSION_STORED,
-    flags: needsUtf8Flag(nameBytes) ? FLAG_UTF8_NAMES : 0,
-    method: STORED,
-    dosTime: 0,
-    dosDate: DOS_EPOCH_DATE,
-    crc: directory ? 0 : crc32(data),
-    compressedSize: data.byteLength,
-    size: data.byteLength,
-    nameBytes,
-    extraBytes: EMPTY
-  };
-  return Object.freeze({
-    name,
-    local: Object.freeze([localHeaderFor(shared), data]),
-    central: centralRecordFor({
-      ...shared,
-      versionMadeBy: VERSION_MADE_BY,
-      diskStart: 0,
-      internalAttributes: 0,
-      externalAttributes: directory ? 16 : 0,
-      commentBytes: EMPTY
-    })
-  });
-}
-function assembleArchive(planned, comment, budget) {
-  if (planned.length > MAX_U16) {
-    throw new RangeError("the edited archive would need ZIP64: more than 65535 entries");
-  }
-  if (planned.length > budget.maxNodes) {
-    throw new RangeError("the edited archive exceeds the maxNodes budget");
-  }
-  let localTotal = 0;
-  let centralTotal = 0;
-  for (const item of planned) {
-    for (const part of item.local) localTotal += part.byteLength;
-    centralTotal += item.central.byteLength;
-  }
-  const total = localTotal + centralTotal + 22 + comment.byteLength;
-  if (total > MAX_U32) {
-    throw new RangeError("the edited archive would need ZIP64: more than 4 GiB of output");
-  }
-  if (BigInt(total) > budget.maxInputBytes) {
-    throw new RangeError("the edited archive exceeds the maxInputBytes budget");
-  }
-  const out = new Uint8Array(total);
-  let cursor = 0;
-  for (const item of planned) {
-    new DataView(item.central.buffer, item.central.byteOffset, item.central.byteLength).setUint32(
-      42,
-      cursor,
-      true
-    );
-    for (const part of item.local) {
-      out.set(part, cursor);
-      cursor += part.byteLength;
-    }
-  }
-  const centralStart = cursor;
-  for (const item of planned) {
-    out.set(item.central, cursor);
-    cursor += item.central.byteLength;
-  }
-  const view = new DataView(out.buffer);
-  view.setUint32(cursor, ZIP_EOCD, true);
-  view.setUint16(cursor + 4, 0, true);
-  view.setUint16(cursor + 6, 0, true);
-  view.setUint16(cursor + 8, planned.length, true);
-  view.setUint16(cursor + 10, planned.length, true);
-  view.setUint32(cursor + 12, centralTotal, true);
-  view.setUint32(cursor + 16, centralStart, true);
-  view.setUint16(cursor + 20, comment.byteLength, true);
-  out.set(comment, cursor + 22);
-  return out;
 }
 var refusal = (code, message) => Object.freeze({ code, message });
 var messageOf = (error) => error instanceof Error ? error.message : String(error);
@@ -2147,10 +2018,10 @@ function editStructureHandler(bytes, entries, model, budget, input) {
     }
     for (const item of added) {
       claim(item.path);
-      planned.push(storedEntry(item.path, item.bytes));
+      planned.push(zipStoredEntry(item.path, item.bytes));
     }
     if (planned.length === 0) throw new TypeError("edit.structure would leave an empty archive");
-    const assembled = assembleArchive(planned, usableModel.comment, budget);
+    const assembled = assembleZipArchive(planned, usableModel.comment, budget);
     return editPlanOutput(
       input,
       assembled,
@@ -2178,7 +2049,7 @@ function editContentHandler(bytes, entries, model, budget, input) {
       if (range === void 0) throw new TypeError(`\xAB${entry.name}\xBB has no readable local block`);
       return entry.id === target.id ? restoredEntry(bytes, entry, range, data) : verbatimEntry(bytes, entry, range);
     });
-    const assembled = assembleArchive(planned, usableModel.comment, budget);
+    const assembled = assembleZipArchive(planned, usableModel.comment, budget);
     return editPlanOutput(
       input,
       assembled,
@@ -2274,7 +2145,7 @@ function containerPackHandler(bytes, entries, model, budget, input, source) {
     }
     for (const item of added) {
       claim(item.name);
-      planned.push(storedEntry(item.name, item.bytes));
+      planned.push(zipStoredEntry(item.name, item.bytes));
     }
     if (planned.length === 0) throw new TypeError("container.pack would leave an empty archive");
     const summary = [
@@ -2285,7 +2156,7 @@ function containerPackHandler(bytes, entries, model, budget, input, source) {
     ];
     return editPlanOutput(
       input,
-      assembleArchive(planned, usableModel.comment, budget),
+      assembleZipArchive(planned, usableModel.comment, budget),
       usableModel,
       `zip-container-pack:${summary.join(";")}`,
       summary.join(", ")

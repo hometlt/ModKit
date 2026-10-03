@@ -1,11 +1,11 @@
 import {
   createProjectionReceipt
-} from "../../../chunks/chunk-ZC6AMIVY.js";
+} from "../../../chunks/chunk-GY7GURF6.js";
 import {
   readCollisionMesh,
   readUvmModel,
   uvmImageResourceId
-} from "../../../chunks/chunk-YEK43IWS.js";
+} from "../../../chunks/chunk-MXDVI2QS.js";
 import {
   array,
   field,
@@ -15,14 +15,14 @@ import {
   required,
   safeIndex,
   string
-} from "../../../chunks/chunk-I4Z5J3HX.js";
+} from "../../../chunks/chunk-WYPBCJ5R.js";
 import {
   validateUvmDocument
-} from "../../../chunks/chunk-WXNMUTNG.js";
-import "../../../chunks/chunk-NONHW3HK.js";
+} from "../../../chunks/chunk-MAXFIZMW.js";
+import "../../../chunks/chunk-J5YW7BHE.js";
 import {
   createJsonTreeSource
-} from "../../../chunks/chunk-KA3J6DLB.js";
+} from "../../../chunks/chunk-T7JYCPGB.js";
 import {
   createModelAnimationSource,
   createModelCollisionSource,
@@ -30,20 +30,20 @@ import {
   createModelSceneSource,
   createModelSkeletonSource,
   createModelSocketSource
-} from "../../../chunks/chunk-T342XO7K.js";
-import "../../../chunks/chunk-IBG4CEKN.js";
-import "../../../chunks/chunk-I675VFQQ.js";
-import "../../../chunks/chunk-PERFFDVA.js";
+} from "../../../chunks/chunk-ZZQB5TXT.js";
+import "../../../chunks/chunk-CZF52HU6.js";
+import "../../../chunks/chunk-GZUQICAY.js";
+import "../../../chunks/chunk-73NZYGA2.js";
 import {
   animationSnapshotBudget
-} from "../../../chunks/chunk-RUAJQ7WQ.js";
-import "../../../chunks/chunk-ZSDVUSRM.js";
-import "../../../chunks/chunk-5SBJANAJ.js";
-import "../../../chunks/chunk-TSKCLN7F.js";
-import "../../../chunks/chunk-NMYA52EI.js";
+} from "../../../chunks/chunk-BOT7ULFL.js";
+import "../../../chunks/chunk-QG2MBCY3.js";
+import "../../../chunks/chunk-KABH7BZW.js";
+import "../../../chunks/chunk-XYIUXPQM.js";
+import "../../../chunks/chunk-I5QAQFCV.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 
-// ../MODDING/modkit-core/packages/scene/dist/uvm/facets.js
+// ../../MODDING/modkit-core/packages/scene/dist/uvm/facets.js
 function axis(value) {
   if (value === "+x" || value === "-x" || value === "+y" || value === "-y" || value === "+z" || value === "-z")
     return value;
@@ -350,7 +350,7 @@ function decodeEffects(document) {
   });
 }
 
-// ../MODDING/modkit-core/packages/scene/dist/uvm/inspection.js
+// ../../MODDING/modkit-core/packages/scene/dist/uvm/inspection.js
 var UVM_BASIS = Object.freeze({
   handedness: "right",
   upAxis: "y",

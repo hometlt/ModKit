@@ -1,9 +1,9 @@
 import {
   COMPRESSION_OUTPUT_LIMIT
-} from "../../../chunks/chunk-GDKG5J25.js";
+} from "../../../chunks/chunk-WI3JMRPW.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 
-// ../MODDING/modkit-core/packages/codec-kit/dist/compression/inflate.js
+// ../../MODDING/modkit-core/packages/codec-kit/dist/compression/inflate.js
 var Z_SYNC_FLUSH = 2;
 var NODE_ZLIB = "node:zlib";
 var loaded = /* @__PURE__ */ new Map();
@@ -42,7 +42,7 @@ async function resolveInflate(format) {
   return loadPortableInflateSync(format);
 }
 async function loadPortableInflateSync(format = "zlib") {
-  const pako = await import("../../../chunks/pako.esm-Y7NP6GQR.js");
+  const pako = await import("../../../chunks/pako.esm-2KRXVPUI.js");
   return (payload, maximum) => {
     const chunks = [];
     let total = 0;

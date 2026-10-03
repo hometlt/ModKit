@@ -23,9 +23,9 @@ import {
   vorbisPacketsToOgg,
   wavEntrySource,
   wavHeader
-} from "../../../chunks/chunk-PCSI25OM.js";
-import "../../../chunks/chunk-F3ZZXQRO.js";
-import "../../../chunks/chunk-NMYA52EI.js";
+} from "../../../chunks/chunk-TSDOUDTM.js";
+import "../../../chunks/chunk-SITZA5RP.js";
+import "../../../chunks/chunk-I5QAQFCV.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 export {
   EA_XAS_FRAME_BYTES,

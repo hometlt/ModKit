@@ -15,8 +15,9 @@ import {
   snapshotEnvironment,
   snapshotEyePosition,
   snapshotModelBillboards
-} from "../../../chunks/chunk-W6WJ2KXN.js";
-import "../../../chunks/chunk-WGWMBNZ4.js";
+} from "../../../chunks/chunk-O7LZVC5W.js";
+import "../../../chunks/chunk-2KUQCSGH.js";
+import "../../../chunks/chunk-RSNP6TR4.js";
 import {
   opaqueTexels,
   prepareUvmTextureImages,
@@ -24,7 +25,7 @@ import {
   readUvmModel,
   uvmImageFilters,
   uvmImageTexels
-} from "../../../chunks/chunk-YEK43IWS.js";
+} from "../../../chunks/chunk-MXDVI2QS.js";
 import {
   array,
   field,
@@ -35,8 +36,7 @@ import {
   string,
   vector3,
   vector4
-} from "../../../chunks/chunk-I4Z5J3HX.js";
-import "../../../chunks/chunk-YOXPMEYX.js";
+} from "../../../chunks/chunk-WYPBCJ5R.js";
 import {
   readUvmAccessor,
   readUvmAnimationClips,
@@ -44,17 +44,32 @@ import {
   readUvmTextureAlpha,
   readUvmTextureColorKeys,
   validateUvmDocument
-} from "../../../chunks/chunk-WXNMUTNG.js";
+} from "../../../chunks/chunk-MAXFIZMW.js";
 import {
   readUvmContainer
-} from "../../../chunks/chunk-NONHW3HK.js";
+} from "../../../chunks/chunk-J5YW7BHE.js";
 import {
   modelPrimitiveByteLength
-} from "../../../chunks/chunk-IBG4CEKN.js";
-import "../../../chunks/chunk-I675VFQQ.js";
+} from "../../../chunks/chunk-CZF52HU6.js";
+import "../../../chunks/chunk-GZUQICAY.js";
+import {
+  createModelPoseBlendSampler,
+  createModelPoseSampler,
+  snapshotModelSkeleton
+} from "../../../chunks/chunk-73NZYGA2.js";
+import {
+  clipEventsBetween,
+  createModelAnimationSampler
+} from "../../../chunks/chunk-BOT7ULFL.js";
+import {
+  snapshotJson
+} from "../../../chunks/chunk-QG2MBCY3.js";
 import {
   createModelSkinDeformer
-} from "../../../chunks/chunk-LOHAIAXF.js";
+} from "../../../chunks/chunk-W75I6TS2.js";
+import {
+  multiplyMat4
+} from "../../../chunks/chunk-KABH7BZW.js";
 import {
   DEFAULT_EFFECT_SIMULATION_OPTIONS,
   MAX_EFFECT_SPLINE_DIVISIONS,
@@ -66,44 +81,29 @@ import {
   writeEffectParticleRenderOrigin,
   writeEffectParticleRenderPosition,
   writeEffectRibbonRingPositions
-} from "../../../chunks/chunk-4A3BDPFP.js";
+} from "../../../chunks/chunk-NWKAH25I.js";
 import {
   encodePng
-} from "../../../chunks/chunk-77IXXCWQ.js";
+} from "../../../chunks/chunk-AJGOGUXB.js";
 import {
   applyColorKeyTransparency,
   linearToSrgb,
   srgbToLinear
-} from "../../../chunks/chunk-SNT2IRUT.js";
-import "../../../chunks/chunk-YOJ4JJ3G.js";
-import {
-  createModelPoseBlendSampler,
-  createModelPoseSampler,
-  snapshotModelSkeleton
-} from "../../../chunks/chunk-PERFFDVA.js";
-import {
-  clipEventsBetween,
-  createModelAnimationSampler
-} from "../../../chunks/chunk-RUAJQ7WQ.js";
-import {
-  snapshotJson
-} from "../../../chunks/chunk-ZSDVUSRM.js";
-import {
-  multiplyMat4
-} from "../../../chunks/chunk-5SBJANAJ.js";
-import "../../../chunks/chunk-GDKG5J25.js";
+} from "../../../chunks/chunk-5R33N3JO.js";
+import "../../../chunks/chunk-6IAOZQVP.js";
+import "../../../chunks/chunk-WI3JMRPW.js";
 import {
   SCENE_RENDERER_CONTRACT
-} from "../../../chunks/chunk-MT2JUZZJ.js";
+} from "../../../chunks/chunk-T37HPLGC.js";
 import {
   diagnostic
-} from "../../../chunks/chunk-V3DESLW4.js";
-import "../../../chunks/chunk-TSKCLN7F.js";
-import "../../../chunks/chunk-F3ZZXQRO.js";
-import "../../../chunks/chunk-NMYA52EI.js";
+} from "../../../chunks/chunk-AMCLMQ4O.js";
+import "../../../chunks/chunk-XYIUXPQM.js";
+import "../../../chunks/chunk-SITZA5RP.js";
+import "../../../chunks/chunk-I5QAQFCV.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 
-// ../MODDING/modkit-core/packages/scene/dist/uvm/pose-samples.js
+// ../../MODDING/modkit-core/packages/scene/dist/uvm/pose-samples.js
 function readUvmPoseSamples(value, clips) {
   if (value === void 0)
     return void 0;
@@ -126,7 +126,7 @@ function readUvmPoseSamples(value, clips) {
   return Object.freeze(samples);
 }
 
-// ../MODDING/modkit-core/packages/scene/dist/uvm/model-particles.js
+// ../../MODDING/modkit-core/packages/scene/dist/uvm/model-particles.js
 var multiplyFrames = (a, b) => Float32Array.from(multiplyMaterialFrames(Array.from(a), Array.from(b)));
 var multiplyMatrix4 = (a, b) => {
   if (a.length !== 16 || b.length !== 16)
@@ -334,7 +334,7 @@ async function composeModelParticles(instances, parent, options, depth, maxBytes
   }
 }
 
-// ../MODDING/modkit-core/packages/scene/dist/render/preview-lighting.js
+// ../../MODDING/modkit-core/packages/scene/dist/render/preview-lighting.js
 var vector = (value, label) => {
   if (!Array.isArray(value) || value.length !== 3 || !value.every((x) => typeof x === "number" && Number.isFinite(Math.fround(x))))
     throw new TypeError(`invalid preview light ${label}`);
@@ -395,7 +395,7 @@ function readPreviewLighting(lights, ambient) {
   };
 }
 
-// ../MODDING/modkit-core/packages/scene/dist/uvm/effect-tracks.js
+// ../../MODDING/modkit-core/packages/scene/dist/uvm/effect-tracks.js
 function readUvmEffectAnimation(value, sequence, timeUnit, maxKeys, signal) {
   const output = {};
   let keysRead = 0;
@@ -469,7 +469,7 @@ function readUvmEffectAnimation(value, sequence, timeUnit, maxKeys, signal) {
   return output;
 }
 
-// ../MODDING/modkit-core/packages/scene/dist/uvm/scene-properties.js
+// ../../MODDING/modkit-core/packages/scene/dist/uvm/scene-properties.js
 function sampleUvmSceneProperties(source, defaults, options) {
   if (!Number.isFinite(options.time))
     throw new TypeError("scene property time must be finite");
@@ -500,7 +500,7 @@ function sampleUvmSceneProperties(source, defaults, options) {
   return Object.freeze(output);
 }
 
-// ../MODDING/modkit-core/packages/scene/dist/uvm/lights.js
+// ../../MODDING/modkit-core/packages/scene/dist/uvm/lights.js
 function readUvmSceneLights(document2, transforms, activeNodes, options) {
   const source = field(document2["extensions"], "UV_scene_lights");
   if (source === void 0)
@@ -584,7 +584,7 @@ function readUvmSceneLights(document2, transforms, activeNodes, options) {
   return { lights: result.lights, ambientLight: result.ambient };
 }
 
-// ../MODDING/modkit-core/packages/scene/dist/uvm/collision-splats.js
+// ../../MODDING/modkit-core/packages/scene/dist/uvm/collision-splats.js
 var finite = (value) => {
   if (value === void 0 || !Number.isFinite(value))
     throw new TypeError("invalid collision splat scalar");
@@ -673,7 +673,7 @@ function collisionSplatFrame(splat, projector) {
   };
 }
 
-// ../MODDING/modkit-core/packages/scene/dist/uvm/effect-projectors.js
+// ../../MODDING/modkit-core/packages/scene/dist/uvm/effect-projectors.js
 function readEffectProjectors(document2, maxNodes, maxBytes, signal) {
   if (!Number.isSafeInteger(maxNodes) || maxNodes < 0 || !Number.isSafeInteger(maxBytes) || maxBytes < 0)
     throw new RangeError("invalid projector template budget");
@@ -742,7 +742,7 @@ function readEffectProjectors(document2, maxNodes, maxBytes, signal) {
   });
 }
 
-// ../MODDING/modkit-core/packages/codec-kit/dist/model-math/pbr.js
+// ../../MODDING/modkit-core/packages/codec-kit/dist/model-math/pbr.js
 var dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 var clamp01 = (value) => Math.min(1, Math.max(0, value));
 function shadePbr(surface, normal, view, light, ambient) {
@@ -823,7 +823,7 @@ var PBR_GLSL = `vec3 modkitPbr(vec3 baseColor, float metallic, float roughness, 
   return direct + environment + emissive;
 }`;
 
-// ../MODDING/modkit-core/packages/codec-kit/dist/model-math/standard-material-glsl.js
+// ../../MODDING/modkit-core/packages/codec-kit/dist/model-math/standard-material-glsl.js
 var FRAGMENT_LAYER_SLOTS = [
   "diffuse",
   "diffuse2",
@@ -2061,7 +2061,7 @@ void main() {
   return parts.join("\n");
 }
 
-// ../MODDING/modkit-core/packages/scene/dist/uvm/projector-material.js
+// ../../MODDING/modkit-core/packages/scene/dist/uvm/projector-material.js
 function effectSurfaceMaterial(base, id, maxNodes, maxBytes, texturePath, signal) {
   const simple = () => {
     const material = simpleEffectMaterial(base, id, 1, maxNodes, maxBytes, signal);
@@ -2198,7 +2198,7 @@ function layerListTexture(shader) {
   return (diffuse ?? entries[0])?.path;
 }
 
-// ../MODDING/modkit-core/packages/scene/dist/uvm/projector-receivers.js
+// ../../MODDING/modkit-core/packages/scene/dist/uvm/projector-receivers.js
 var component = (values, index) => {
   const value = values[index];
   if (value === void 0 || !Number.isFinite(value))
@@ -2498,7 +2498,7 @@ function clipProjectorReceivers(frame, receivers, options) {
   return { positions, textureCoordinates, indices, triangles, byteLength: vertices * 24 };
 }
 
-// ../MODDING/modkit-core/packages/scene/dist/uvm/projectors.js
+// ../../MODDING/modkit-core/packages/scene/dist/uvm/projectors.js
 var TERRAIN_BAKE_DEPTH = 256;
 var TERRAIN_RECEIVER_ID = "world-terrain-receiver";
 function joinedClips(first, second) {
@@ -2830,7 +2830,7 @@ function createUvmProjectorFrame(document2, options) {
   return { primitives, materials };
 }
 
-// ../MODDING/modkit-core/node_modules/.pnpm/three@0.180.0/node_modules/three/build/three.core.js
+// ../../MODDING/modkit-core/node_modules/.pnpm/three@0.180.0/node_modules/three/build/three.core.js
 var REVISION = "180";
 var NeverDepth = 0;
 var AlwaysDepth = 1;
@@ -15594,7 +15594,7 @@ if (typeof window !== "undefined") {
   }
 }
 
-// ../MODDING/modkit-core/node_modules/.pnpm/three@0.180.0/node_modules/three/build/three.module.js
+// ../../MODDING/modkit-core/node_modules/.pnpm/three@0.180.0/node_modules/three/build/three.module.js
 var alphahash_fragment = "#ifdef USE_ALPHAHASH\n	if ( diffuseColor.a < getAlphaHashThreshold( vPosition ) ) discard;\n#endif";
 var alphahash_pars_fragment = "#ifdef USE_ALPHAHASH\n	const float ALPHA_HASH_SCALE = 0.05;\n	float hash2D( vec2 value ) {\n		return fract( 1.0e4 * sin( 17.0 * value.x + 0.1 * value.y ) * ( 0.1 + abs( sin( 13.0 * value.y + value.x ) ) ) );\n	}\n	float hash3D( vec3 value ) {\n		return hash2D( vec2( hash2D( value.xy ), value.z ) );\n	}\n	float getAlphaHashThreshold( vec3 position ) {\n		float maxDeriv = max(\n			length( dFdx( position.xyz ) ),\n			length( dFdy( position.xyz ) )\n		);\n		float pixScale = 1.0 / ( ALPHA_HASH_SCALE * maxDeriv );\n		vec2 pixScales = vec2(\n			exp2( floor( log2( pixScale ) ) ),\n			exp2( ceil( log2( pixScale ) ) )\n		);\n		vec2 alpha = vec2(\n			hash3D( floor( pixScales.x * position.xyz ) ),\n			hash3D( floor( pixScales.y * position.xyz ) )\n		);\n		float lerpFactor = fract( log2( pixScale ) );\n		float x = ( 1.0 - lerpFactor ) * alpha.x + lerpFactor * alpha.y;\n		float a = min( lerpFactor, 1.0 - lerpFactor );\n		vec3 cases = vec3(\n			x * x / ( 2.0 * a * ( 1.0 - a ) ),\n			( x - 0.5 * a ) / ( 1.0 - a ),\n			1.0 - ( ( 1.0 - x ) * ( 1.0 - x ) / ( 2.0 * a * ( 1.0 - a ) ) )\n		);\n		float threshold = ( x < ( 1.0 - a ) )\n			? ( ( x < a ) ? cases.x : cases.y )\n			: cases.z;\n		return clamp( threshold , 1.0e-6, 1.0 );\n	}\n#endif";
 var alphamap_fragment = "#ifdef USE_ALPHAMAP\n	diffuseColor.a *= texture2D( alphaMap, vAlphaMapUv ).g;\n#endif";
@@ -16346,7 +16346,7 @@ var reversedFuncs = {
   [GreaterEqualDepth]: LessEqualDepth
 };
 
-// ../MODDING/modkit-core/packages/scene/dist/uvm/cameras.js
+// ../../MODDING/modkit-core/packages/scene/dist/uvm/cameras.js
 function numbers(value, count, label) {
   if (!Array.isArray(value) && !(value instanceof Float32Array) || value.length !== count || !Array.from(value).every((component2) => typeof component2 === "number" && Number.isFinite(component2)))
     throw new TypeError(`${label} must contain ${count} finite numbers`);
@@ -16465,7 +16465,7 @@ function resolveUvmCamera(document2, input, options) {
   return result;
 }
 
-// ../MODDING/modkit-core/packages/scene/dist/model/node-pose.js
+// ../../MODDING/modkit-core/packages/scene/dist/model/node-pose.js
 function createNodePoseSampler(nodes, options) {
   const hierarchyId = "scene-local-pose";
   const targets = new Set(nodes.map((node) => node.nodeId));
@@ -16505,7 +16505,7 @@ function createNodePoseSampler(nodes, options) {
   };
 }
 
-// ../MODDING/modkit-core/packages/scene/dist/model/sampler.js
+// ../../MODDING/modkit-core/packages/scene/dist/model/sampler.js
 var IDENTITY = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
 function skinVertices(primitive, slots) {
   const authored = present(primitive.boneIndices, "skin indices");
@@ -17087,7 +17087,7 @@ function samplePosition(value) {
   return [value[0], value[1], value[2]];
 }
 
-// ../MODDING/modkit-core/packages/scene/dist/output/png.js
+// ../../MODDING/modkit-core/packages/scene/dist/output/png.js
 async function encodeRgbaPng(frame, signal) {
   if (!Number.isSafeInteger(frame.width) || frame.width <= 0 || !Number.isSafeInteger(frame.height) || frame.height <= 0 || !(frame.rgba instanceof Uint8Array) || frame.rgba.byteLength !== frame.width * frame.height * 4) {
     throw new TypeError("PNG input must be a tightly packed positive RGBA8 frame");
@@ -17095,7 +17095,7 @@ async function encodeRgbaPng(frame, signal) {
   return encodePng(frame.width, frame.height, frame.rgba, signal);
 }
 
-// ../MODDING/modkit-core/node_modules/.pnpm/three@0.180.0/node_modules/three/examples/jsm/math/ConvexHull.js
+// ../../MODDING/modkit-core/node_modules/.pnpm/three@0.180.0/node_modules/three/examples/jsm/math/ConvexHull.js
 var Visible = 0;
 var Deleted = 1;
 var _v1 = new Vector3();
@@ -17988,7 +17988,7 @@ var VertexList = class {
   }
 };
 
-// ../MODDING/modkit-core/node_modules/.pnpm/three@0.180.0/node_modules/three/examples/jsm/geometries/ConvexGeometry.js
+// ../../MODDING/modkit-core/node_modules/.pnpm/three@0.180.0/node_modules/three/examples/jsm/geometries/ConvexGeometry.js
 var ConvexGeometry = class extends BufferGeometry {
   /**
    * Constructs a new convex geometry.
@@ -18016,7 +18016,7 @@ var ConvexGeometry = class extends BufferGeometry {
   }
 };
 
-// ../MODDING/modkit-core/packages/scene/dist/uvm/collision-overlay.js
+// ../../MODDING/modkit-core/packages/scene/dist/uvm/collision-overlay.js
 var IDENTITY2 = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
 var WORKING_BYTES_PER_SHAPE = 65536;
 function createUvmCollisionOverlay(document2, binary, budget, signal) {
@@ -18184,7 +18184,7 @@ function createUvmCollisionOverlay(document2, binary, budget, signal) {
   });
 }
 
-// ../MODDING/modkit-core/packages/scene/dist/uvm/effect-splines.js
+// ../../MODDING/modkit-core/packages/scene/dist/uvm/effect-splines.js
 var particleFields = [
   "emitShapePoints",
   "emitShapePointSequenceAnimations",
@@ -18381,7 +18381,7 @@ function assertUvmEffectSplineWork(particleWork, ribbonWork, time, spawnPerStep)
     throw new RangeError("effect spline sampling exceeds bounded frame work");
 }
 
-// ../MODDING/modkit-core/packages/scene/dist/uvm/effect-particles.js
+// ../../MODDING/modkit-core/packages/scene/dist/uvm/effect-particles.js
 var required2 = (value) => {
   if (value === void 0 || value === null)
     throw new TypeError("particle preview value absent");
@@ -19049,7 +19049,7 @@ function normalizeVec3(value) {
   return length > 0 ? [value[0] / length, value[1] / length, value[2] / length] : [0, 0, 0];
 }
 
-// ../MODDING/modkit-core/packages/scene/dist/uvm/ribbon-geometry.js
+// ../../MODDING/modkit-core/packages/scene/dist/uvm/ribbon-geometry.js
 var finite4 = (value) => {
   if (value === void 0 || !Number.isFinite(value))
     throw new TypeError("invalid live ribbon scalar");
@@ -19157,7 +19157,7 @@ function createUvmRibbonGeometry(state, emitters, options) {
   return { entries, bytes, nodes };
 }
 
-// ../MODDING/modkit-core/packages/scene/dist/uvm/effect-links.js
+// ../../MODDING/modkit-core/packages/scene/dist/uvm/effect-links.js
 function bindUvmEffectLinks(particles, particleOrdinals, ribbonOrdinals, sourceParticleCount, sourceRibbonCount, maxBytes, maxNodes, signal) {
   const count = particleOrdinals.length + ribbonOrdinals.length, maxLinks = particles.length * 3, bytes = count * 96 + maxLinks * 64, nodes = count + maxLinks;
   if (!Number.isSafeInteger(maxBytes) || maxBytes < 0 || !Number.isSafeInteger(maxNodes) || maxNodes < 0 || nodes > maxNodes || bytes > maxBytes)
@@ -19201,7 +19201,7 @@ function bindUvmEffectLinks(particles, particleOrdinals, ribbonOrdinals, sourceP
   return { bytes, nodes };
 }
 
-// ../MODDING/modkit-core/packages/scene/dist/uvm/effect-collisions.js
+// ../../MODDING/modkit-core/packages/scene/dist/uvm/effect-collisions.js
 function readEffectCollisionShapes(document2, binary, options) {
   if (!Number.isSafeInteger(options.maxNodes) || options.maxNodes < 0 || !Number.isSafeInteger(options.maxBytes) || options.maxBytes < 0)
     throw new RangeError("invalid effect collision budget");
@@ -19279,7 +19279,7 @@ function readEffectCollisionShapes(document2, binary, options) {
   return { shapes, bytes, nodes };
 }
 
-// ../MODDING/modkit-core/packages/scene/dist/uvm/effect-fields.js
+// ../../MODDING/modkit-core/packages/scene/dist/uvm/effect-fields.js
 function scalar3(value, name) {
   if (typeof value !== "number" || !Number.isFinite(value))
     throw new TypeError(`invalid effect field ${name}`);
@@ -19410,7 +19410,7 @@ function readUvmEffectFields(effect, options) {
   };
 }
 
-// ../MODDING/modkit-core/packages/scene/dist/uvm/effect-modes.js
+// ../../MODDING/modkit-core/packages/scene/dist/uvm/effect-modes.js
 function object2(value) {
   if (value === null || typeof value !== "object" || Array.isArray(value))
     throw new TypeError("effect sequence mode must use a constant boolean STEP track");
@@ -19458,7 +19458,7 @@ function uvmEffectSquirtKeyed(emitter, sequenceIndex) {
   return Array.isArray(legacy) && legacy.length > 0;
 }
 
-// ../MODDING/modkit-core/packages/scene/dist/uvm/effect-mesh.js
+// ../../MODDING/modkit-core/packages/scene/dist/uvm/effect-mesh.js
 function readUvmEffectMeshes(document2, binary, value, budget, signal) {
   signal?.throwIfAborted();
   if (![budget.maxBytes, budget.maxNodes].every((limit) => Number.isSafeInteger(limit) && limit >= 0))
@@ -19521,7 +19521,7 @@ function readUvmEffectMeshes(document2, binary, value, budget, signal) {
   return Object.freeze({ meshes: Object.freeze(meshes), bytes, nodes });
 }
 
-// ../MODDING/modkit-core/packages/scene/dist/uvm/effects.js
+// ../../MODDING/modkit-core/packages/scene/dist/uvm/effects.js
 var numeric = /* @__PURE__ */ new Set([
   "collisionEmitterIndex",
   "collisionEmitMin",
@@ -20427,7 +20427,7 @@ function emitterMaterial(base, id, texturePath, uv, maxNodes, maxBytes, signal) 
   return material;
 }
 
-// ../MODDING/modkit-core/packages/scene/dist/materials/normal-maps.js
+// ../../MODDING/modkit-core/packages/scene/dist/materials/normal-maps.js
 var NORMAL_SLOTS = ["normal", "normalBlend1", "normalBlend2"];
 var FORMATS = ["dxt5nm", "bc5", "rgb8", "luminance-alpha"];
 function snapshotNormalFormats(formats) {
@@ -20475,7 +20475,7 @@ function normalLayerShader(source, formats) {
 void main() {`);
 }
 
-// ../MODDING/modkit-core/packages/scene/dist/materials/cube-maps.js
+// ../../MODDING/modkit-core/packages/scene/dist/materials/cube-maps.js
 var UnsupportedCubeCoordinatesError = class extends TypeError {
 };
 function cubeLayerShader(source, defines, bindings, worldEnvironment = false, worldNormalReady = false) {
@@ -20529,7 +20529,7 @@ ${marker}`);
   return source;
 }
 
-// ../MODDING/modkit-core/packages/scene/dist/render/material-geometry.js
+// ../../MODDING/modkit-core/packages/scene/dist/render/material-geometry.js
 var IDENTITY3 = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
 var HIGH_HALF = new Uint8Array(Uint16Array.of(1).buffer)[0] === 1 ? 1 : 0;
 var PLACEMENT_DECLARATIONS = `uniform mat4 u_view, u_worldToMaterial;
@@ -20620,7 +20620,7 @@ ${worldGeometry ? `  vec3 sceneN=unit(${name.objectNormal}*${normal},vec3(0.0,0.
 }`;
 }
 
-// ../MODDING/modkit-core/packages/scene/dist/materials/normal-blending.js
+// ../../MODDING/modkit-core/packages/scene/dist/materials/normal-blending.js
 var WORLD_NORMAL_VARYINGS = "in vec3 v_sceneWorldPosition, v_sceneWorldNormal, v_sceneWorldTangent, v_sceneWorldBitangent;";
 function objectSpaceNormalLayerShader(source) {
   const main = source.indexOf("void main() {");
@@ -20725,7 +20725,7 @@ vec3 sceneSignedHalfVector() {
 }`);
 }
 
-// ../MODDING/modkit-core/packages/scene/dist/materials/standard-program.js
+// ../../MODDING/modkit-core/packages/scene/dist/materials/standard-program.js
 function withoutDiffuseTeamColor(material) {
   if (!Object.values(material.layers).some((layer) => layer.teamColorMode === 1))
     return material;
@@ -21106,7 +21106,7 @@ function sampleNormal(material, lighting, pixel, formats, basis) {
   return basis === void 0 ? normal : normalInBasis(normal, basis);
 }
 
-// ../MODDING/modkit-core/packages/scene/dist/uvm/materials.js
+// ../../MODDING/modkit-core/packages/scene/dist/uvm/materials.js
 function layerList(material) {
   const extras = field(material["extras"], "modkit");
   const native = extras === void 0 ? void 0 : field(extras, "material");
@@ -21426,7 +21426,7 @@ async function acquireUvmMaterialTextures(resources, port, maxBytes, diagnostics
   };
 }
 
-// ../MODDING/modkit-core/packages/scene/dist/uvm/render.js
+// ../../MODDING/modkit-core/packages/scene/dist/uvm/render.js
 function prepareUvmRender(bytes, value, options) {
   return prepareNestedUvmRender(bytes, value, options, 0);
 }

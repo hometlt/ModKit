@@ -2,31 +2,31 @@ import "../../chunks/chunk-H6MFHEBP.js";
 import {
   createTableDataSource
 } from "../../chunks/chunk-XYU4XXWE.js";
-import "../../chunks/chunk-BFR65BLC.js";
+import "../../chunks/chunk-VR2R2AUW.js";
 import {
   assembleSubjectDescriptor,
   createAssetSession,
   createUtf8TextDataSource
-} from "../../chunks/chunk-W52PQZEN.js";
-import "../../chunks/chunk-5GGWVEQJ.js";
+} from "../../chunks/chunk-EGZBVMPN.js";
+import "../../chunks/chunk-4R7GDKBA.js";
 import {
   RESOLVED_DATA_WORKSPACE_CONTRACT,
   containerEntryRevision,
   contributionSettingsFor
-} from "../../chunks/chunk-2244C2XL.js";
-import "../../chunks/chunk-MT2JUZZJ.js";
-import "../../chunks/chunk-R2P56FTH.js";
-import "../../chunks/chunk-5A3JGV66.js";
+} from "../../chunks/chunk-CISZOJYD.js";
+import "../../chunks/chunk-T37HPLGC.js";
+import "../../chunks/chunk-7ANCWU7V.js";
+import "../../chunks/chunk-NWKRHJA2.js";
 import {
   revisionId,
   toPortableProjectionReceipt
-} from "../../chunks/chunk-2LRUXON6.js";
+} from "../../chunks/chunk-U33RYHWC.js";
 import {
   ModkitError,
   canonicalJsonStringify,
   createReferenceIndex,
   diagnostic
-} from "../../chunks/chunk-V3DESLW4.js";
+} from "../../chunks/chunk-AMCLMQ4O.js";
 import "../../chunks/chunk-CQ52GEHY.js";
 
 // packages/codec-kit/src/paging.ts
@@ -590,7 +590,7 @@ async function decodeContainerEntry(entry, maximum, readRange, signal) {
       break;
     }
     case "zstd": {
-      const { decodeZstd } = await import("../../chunks/zstd-RIMCNZKY.js");
+      const { decodeZstd } = await import("../../chunks/zstd-6QSLTKP7.js");
       bytes = decodeZstd(
         await readRange(
           await offsetOf(storage, signal),

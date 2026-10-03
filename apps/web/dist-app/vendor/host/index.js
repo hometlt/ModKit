@@ -5,7 +5,7 @@ import {
   createDescriptorFallbackSubjectFactsSource,
   createFieldRelationGraphSource,
   descriptorSubjectRef
-} from "../../chunks/chunk-L2QMC2R5.js";
+} from "../../chunks/chunk-CXONP3UL.js";
 import {
   ABI_ASSET_SESSION,
   base64Of,
@@ -13,17 +13,17 @@ import {
   createStandardSurfaceRegistry,
   framePortFromMessagePort,
   protocolLimits
-} from "../../chunks/chunk-RTJEOMKS.js";
+} from "../../chunks/chunk-24TBM674.js";
 import {
   assembleSubjectDescriptor,
   createAssetSession,
   createByteRangeSource,
   createLazyTableDataSource,
   createUtf8TextDataSource
-} from "../../chunks/chunk-W52PQZEN.js";
+} from "../../chunks/chunk-EGZBVMPN.js";
 import {
   metadataFieldProjections
-} from "../../chunks/chunk-5GGWVEQJ.js";
+} from "../../chunks/chunk-4R7GDKBA.js";
 import {
   A1_SPEC_SCHEMA_ENTRIES,
   CODEC_CONTRIBUTION_CONTRACT,
@@ -93,16 +93,16 @@ import {
   validateContributionManifest,
   writerOfferSatisfies,
   writerSelectionKey
-} from "../../chunks/chunk-2244C2XL.js";
+} from "../../chunks/chunk-CISZOJYD.js";
 import {
   SCENE_RENDERER_CONTRACT,
   SCENE_RENDERER_MATCHER_PROFILE
-} from "../../chunks/chunk-MT2JUZZJ.js";
+} from "../../chunks/chunk-T37HPLGC.js";
 import {
   NATIVE_MODEL_ENCODER_CONTRACT,
   NATIVE_MODEL_ENCODER_MATCHER_PROFILE
-} from "../../chunks/chunk-R2P56FTH.js";
-import "../../chunks/chunk-5A3JGV66.js";
+} from "../../chunks/chunk-7ANCWU7V.js";
+import "../../chunks/chunk-NWKRHJA2.js";
 import {
   PERMISSION_CLASSES,
   algorithmQualifiedDigest,
@@ -123,7 +123,7 @@ import {
   serializeSubjectRef,
   snapshotJsonWireData,
   subjectRefEquals
-} from "../../chunks/chunk-2LRUXON6.js";
+} from "../../chunks/chunk-U33RYHWC.js";
 import {
   CONTAINER_EXTRACT_OPERATION_ID,
   ModkitError,
@@ -146,12 +146,12 @@ import {
   satisfiesRange,
   throwIfAborted,
   uint64
-} from "../../chunks/chunk-V3DESLW4.js";
+} from "../../chunks/chunk-AMCLMQ4O.js";
 import {
   __export
 } from "../../chunks/chunk-CQ52GEHY.js";
 
-// ../MODDING/modkit-core/packages/host/dist/inventory.js
+// ../../MODDING/modkit-core/packages/host/dist/inventory.js
 var validatedManifests = /* @__PURE__ */ new Map();
 var VALIDATED_MANIFEST_CACHE_LIMIT = 512;
 var registryFingerprints = /* @__PURE__ */ new WeakMap();
@@ -398,7 +398,7 @@ function inventoryHasErrors(inventory) {
   return hasErrors(inventory.diagnostics) || inventory.extensions.some((extension) => extension.contributions.some((contribution) => hasErrors(contribution.diagnostics)));
 }
 
-// ../MODDING/modkit-core/packages/host/dist/contribution-registry.js
+// ../../MODDING/modkit-core/packages/host/dist/contribution-registry.js
 var PROVIDER_OFFER_INVENTORY_FACT = contractId("modkit.inventory/provider-offer");
 var VIEWER_CONTRIBUTION_INVENTORY_FACT = contractId("modkit.inventory/viewer-contribution");
 function fact(contract, value, context) {
@@ -585,7 +585,7 @@ function createHostContributionContractRegistry(additional = []) {
   return createContributionContractRegistry([...builtins(), ...additional]);
 }
 
-// ../MODDING/modkit-core/packages/host/dist/offers.js
+// ../../MODDING/modkit-core/packages/host/dist/offers.js
 var offerBindings = /* @__PURE__ */ new WeakMap();
 function inventoryBindingForOffer(offer) {
   return offerBindings.get(offer);
@@ -738,7 +738,7 @@ function offersFromInventory(inventory) {
   return sorted;
 }
 
-// ../MODDING/modkit-core/packages/vfs/dist/source.js
+// ../../MODDING/modkit-core/packages/vfs/dist/source.js
 function rangeError(id, offset, length, size) {
   return new ModkitError({
     code: "x3.vfs/read-out-of-range",
@@ -793,7 +793,7 @@ function createMemorySource(id, bytes) {
   };
 }
 
-// ../MODDING/modkit-core/packages/vfs/dist/vfs.js
+// ../../MODDING/modkit-core/packages/vfs/dist/vfs.js
 var DEFAULT_VFS_LIMITS = Object.freeze({
   // Large installed-game indexes are normal inputs (the pinned BAR rapid package has 18,413
   // records). Providers still count before exposing an entry; this ceiling merely lets a caller
@@ -834,7 +834,7 @@ function normalizeVfsPath(path) {
   return parts.join("/");
 }
 
-// ../MODDING/modkit-core/packages/host/dist/security/entrypoint.js
+// ../../MODDING/modkit-core/packages/host/dist/security/entrypoint.js
 var SCHEME = /^[a-zA-Z][a-zA-Z0-9+.-]*:/;
 var WINDOWS_DRIVE = /^[a-zA-Z]:/;
 function refuse(entrypoint, why) {
@@ -876,7 +876,7 @@ function resolveContainedEntrypoint(baseUrl, entrypoint) {
   return resolved;
 }
 
-// ../MODDING/modkit-core/packages/host/dist/artifact-files.js
+// ../../MODDING/modkit-core/packages/host/dist/artifact-files.js
 var encoder = new TextEncoder();
 function confinedArtifactPath(authored, artifactRoot, label) {
   if (authored.startsWith("/") || authored.startsWith("\\") || authored.includes("\\")) {
@@ -949,7 +949,7 @@ async function readAttestedArtifactFile(contribution, authoredPath, options) {
   }
 }
 
-// ../MODDING/modkit-core/packages/host/dist/localization.js
+// ../../MODDING/modkit-core/packages/host/dist/localization.js
 var LOCALIZATION_CATALOG_MAXIMUM_JSON_BYTES = 8 * 1024 * 1024;
 var decoder = new TextDecoder("utf-8", { fatal: true });
 function extensionCoordinate(extension) {
@@ -1075,7 +1075,7 @@ async function loadLocalizationCatalogs(inventory, options) {
   });
 }
 
-// ../MODDING/modkit-core/packages/host/dist/commands/runtime.js
+// ../../MODDING/modkit-core/packages/host/dist/commands/runtime.js
 var COMMAND_CANCELLED = "x3.command/cancelled";
 var COMMAND_SUBJECT_UNRESOLVED = "x3.command/subject-unresolved";
 var COMMAND_INPUT_INVALID = "x3.command/input-invalid";
@@ -1124,7 +1124,7 @@ function isAbort(error3) {
   return error3 instanceof Error && (error3.name === "AbortError" || error3.name === "TimeoutError");
 }
 
-// ../MODDING/modkit-core/packages/host/dist/commands/protocol.js
+// ../../MODDING/modkit-core/packages/host/dist/commands/protocol.js
 var COMMAND_PROTOCOL_SCHEMA_VERSION = "modkit-command-protocol-1";
 var RESULT_STATES = Object.freeze(["ok", "unavailable", "failed"]);
 var immutableJson = (value) => {
@@ -1201,999 +1201,129 @@ async function executeCommandRequest(runtime, request, context) {
   });
 }
 
-// ../MODDING/modkit-core/packages/host/dist/commands/immutable-command-targets.js
-function deepFreeze(value) {
-  if (value !== null && typeof value === "object" && !Object.isFrozen(value)) {
-    for (const nested of Object.values(value))
-      deepFreeze(nested);
-    Object.freeze(value);
-  }
-  return value;
-}
-function defineSubjectCommandTargets(targets) {
-  return deepFreeze(targets);
-}
+// ../../MODDING/modkit-core/packages/vfs/dist/content-sources.js
+var HOST_LAYER_SOURCE_ID = "host";
+var MOD_CONTEXT_MAX_QUERY_REFS = 1024;
 
-// ../MODDING/modkit-core/packages/host/dist/commands/subject-command-targets.js
-var SUBJECT_COMMAND_TARGETS = defineSubjectCommandTargets({
-  open: {
-    commandId: "subject.open",
-    needsSubject: true,
-    mutatesSource: false,
-    operationIds: [],
-    dataSourceContracts: [],
-    hostCallers: ["automation", "cli", "electron", "pwa", "server", "vscode"]
-  },
-  inspect: {
-    commandId: "subject.inspect",
-    needsSubject: true,
-    mutatesSource: false,
-    operationIds: [],
-    dataSourceContracts: [],
-    hostCallers: ["automation", "cli", "electron", "pwa", "server", "vscode"]
-  },
-  validate: {
-    commandId: "subject.validate",
-    needsSubject: true,
-    mutatesSource: false,
-    operationIds: ["asset.validate"],
-    dataSourceContracts: [],
-    hostCallers: ["automation", "cli", "electron", "pwa", "server", "vscode"]
-  },
-  extract: {
-    commandId: "subject.extract",
-    needsSubject: true,
-    mutatesSource: false,
-    operationIds: ["container.extract"],
-    dataSourceContracts: ["common.view/namespace-entry-source"],
-    hostCallers: ["automation", "cli", "electron", "pwa", "server", "vscode"]
-  },
-  convert: {
-    commandId: "subject.convert",
-    needsSubject: true,
-    mutatesSource: false,
-    operationIds: [
-      "export.convert",
-      "export.raw",
-      "model.export-uvm",
-      "model.export-native",
-      "map.export-native",
-      "model.write"
-    ],
-    // a map world converts to UVW from the world it publishes (target `uvw`)
-    dataSourceContracts: ["common.view/world-scene-source"],
-    hostCallers: ["automation", "cli", "electron", "pwa", "server", "vscode"]
-  },
-  preview: {
-    commandId: "subject.preview",
-    needsSubject: true,
-    mutatesSource: false,
-    operationIds: ["view.thumbnail", "view.render", "model.render"],
-    dataSourceContracts: [],
-    hostCallers: ["automation", "cli", "electron", "pwa", "server", "vscode"]
+// ../../MODDING/modkit-core/packages/host/dist/language/context.js
+var LANGUAGE_WORKSPACE_SEMANTIC_PAYLOAD_MAX_DEPTH = 64;
+var LANGUAGE_WORKSPACE_SEMANTIC_PAYLOAD_MAX_BYTES = 64 * 1024 * 1024;
+var LANGUAGE_WORKSPACE_SEMANTIC_INPUTS_MAX = 256;
+var encoder2 = new TextEncoder();
+var boundedContextText = (value) => typeof value === "string" && value.length > 0 && value.length <= 8192 && !value.includes("\0");
+function cloneSemanticPayload(value, depth = 0, ancestors = /* @__PURE__ */ new Set()) {
+  if (depth > LANGUAGE_WORKSPACE_SEMANTIC_PAYLOAD_MAX_DEPTH) {
+    throw new TypeError("language workspace semantic payload exceeds maximum depth");
   }
-});
-
-// ../MODDING/modkit-core/packages/host/dist/commands/subject-commands.js
-var OPEN_COMMAND = SUBJECT_COMMAND_TARGETS.open.commandId;
-var INSPECT_COMMAND = SUBJECT_COMMAND_TARGETS.inspect.commandId;
-var VALIDATE_COMMAND = SUBJECT_COMMAND_TARGETS.validate.commandId;
-var VALIDATE = SUBJECT_COMMAND_TARGETS.validate.operationIds[0];
-var EXTRACT_COMMAND = SUBJECT_COMMAND_TARGETS.extract.commandId;
-var CONTAINER_EXTRACT_OPERATION_ID2 = SUBJECT_COMMAND_TARGETS.extract.operationIds[0];
-var NAMESPACE_ENTRY_SOURCE = SUBJECT_COMMAND_TARGETS.extract.dataSourceContracts[0];
-var CONVERT_COMMAND = SUBJECT_COMMAND_TARGETS.convert.commandId;
-var CONVERT = SUBJECT_COMMAND_TARGETS.convert.operationIds[0];
-var WORLD_SCENE_SOURCE = SUBJECT_COMMAND_TARGETS.convert.dataSourceContracts[0];
-var PREVIEW_COMMAND = SUBJECT_COMMAND_TARGETS.preview.commandId;
-var THUMBNAIL = SUBJECT_COMMAND_TARGETS.preview.operationIds[0];
-function availableOperation(descriptor, id) {
-  const found = (descriptor.operations ?? []).find((item) => item.id === id && item.state === "available" && item.mutatesSource !== true);
-  return found === void 0 ? void 0 : { handlerId: found.handlerId };
-}
-function selectedOperation(descriptor, allowed2, requested) {
-  const candidates = requested === void 0 ? allowed2 : typeof requested === "string" ? [requested] : [];
-  for (const id of candidates) {
-    if (!allowed2.includes(id))
-      continue;
-    const operation = availableOperation(descriptor, id);
-    if (operation !== void 0)
-      return { id, ...operation };
+  if (value === null || typeof value === "string" || typeof value === "boolean" || typeof value === "number" && Number.isFinite(value)) {
+    return value;
   }
-  return void 0;
-}
-function subjectStem(ref2) {
-  const name = ref2.replace(/[?#].*$/u, "").split(/[\\/]/u).at(-1) ?? "";
-  const stem = name.replace(/\.[^.]*$/u, "");
-  return stem === "" ? "export" : stem;
-}
-var publishedOperations = (descriptor) => (descriptor.operations ?? []).length === 0 ? "it publishes no operations at all" : `it publishes ${(descriptor.operations ?? []).map((item) => item.id).join(", ")}`;
-async function withCommandSubject(command, context, ref2, body) {
-  context.progress?.({ step: "open", message: `opening ${ref2}` });
-  const subject = await context.openSubject(ref2, context.signal);
-  const diagnostics = subject.snapshot.diagnostics.map((item) => ({
-    code: item.code,
-    message: item.message,
-    ...item.severity === void 0 ? {} : { severity: item.severity }
-  }));
-  try {
-    if (subject.snapshot.state !== "opened" || subject.session === void 0) {
-      return failed(command, COMMAND_SUBJECT_UNRESOLVED, subject.snapshot.state === "opened" ? "the subject opened without a session" : `no contribution claimed this subject: ${subject.snapshot.reason}`, diagnostics);
+  if (typeof value !== "object" || ancestors.has(value)) {
+    throw new TypeError("language workspace semantic payload is not strict JSON");
+  }
+  ancestors.add(value);
+  const keys = Reflect.ownKeys(value);
+  if (keys.some((key3) => typeof key3 !== "string")) {
+    throw new TypeError("language workspace semantic payload is not strict JSON");
+  }
+  if (Array.isArray(value)) {
+    const expectedKeys = /* @__PURE__ */ new Set(["length"]);
+    for (let index = 0; index < value.length; index += 1)
+      expectedKeys.add(String(index));
+    if (keys.length !== expectedKeys.size || keys.some((key3) => typeof key3 !== "string" || !expectedKeys.has(key3))) {
+      throw new TypeError("language workspace semantic payload is not strict JSON");
     }
-    const descriptor = await subject.session.descriptor();
-    return await body(subject, subject.session, descriptor, diagnostics);
-  } finally {
-    await subject.dispose();
+    const clone2 = [];
+    for (let index = 0; index < value.length; index += 1) {
+      const descriptor = Object.getOwnPropertyDescriptor(value, String(index));
+      if (descriptor === void 0 || !descriptor.enumerable || !("value" in descriptor)) {
+        throw new TypeError("language workspace semantic payload is not strict JSON");
+      }
+      clone2.push(cloneSemanticPayload(descriptor.value, depth + 1, ancestors));
+    }
+    ancestors.delete(value);
+    return Object.freeze(clone2);
   }
-}
-async function invokeSubjectOperation(command, context, session, handlerId, input, diagnostics) {
-  const answer = await session.operations().invoke(handlerId, input, context.signal === void 0 ? {} : { signal: context.signal });
-  const carried = [...diagnostics, ...answer.diagnostics.map(commandDiagnostic)];
-  if (answer.state !== "ok") {
-    return {
-      state: "failed",
-      result: failed(command, `x3.command/operation-${answer.reason}`, `the subject refused ${handlerId}: ${answer.reason}`, carried)
-    };
+  const prototype = Object.getPrototypeOf(value);
+  if (prototype !== Object.prototype && prototype !== null) {
+    throw new TypeError("language workspace semantic payload is not strict JSON");
   }
-  return {
-    state: "ok",
-    output: answer.output,
-    diagnostics: carried
-  };
+  const clone = {};
+  for (const key3 of keys) {
+    const descriptor = Object.getOwnPropertyDescriptor(value, key3);
+    if (key3 === "__proto__" || key3 === "prototype" || key3 === "constructor" || descriptor === void 0 || !descriptor.enumerable || !("value" in descriptor)) {
+      throw new TypeError("language workspace semantic payload is not strict JSON");
+    }
+    clone[key3] = cloneSemanticPayload(descriptor.value, depth + 1, ancestors);
+  }
+  ancestors.delete(value);
+  return Object.freeze(clone);
 }
-var openCommand = {
-  id: OPEN_COMMAND,
-  title: "Open",
-  summary: "Open a subject and report which contribution claimed it, and under which boundary.",
-  needsSubject: true,
-  mutatesSource: false,
-  async run(context, input) {
-    return withCommandSubject(OPEN_COMMAND, context, String(input.subject), async (subject, _session, descriptor, diagnostics) => {
-      const snapshot2 = subject.snapshot;
-      if (snapshot2.state !== "opened")
-        return failed(OPEN_COMMAND, COMMAND_SUBJECT_UNRESOLVED, "unreachable", diagnostics);
-      return ok(OPEN_COMMAND, {
-        ref: subject.ref,
-        state: "opened",
-        selected: {
-          contributionId: snapshot2.selected.contributionId,
-          variantId: snapshot2.selected.variantId,
-          confidence: snapshot2.selected.confidence
-        },
-        formatId: descriptor.identity?.formatId ?? null,
-        formatLabel: descriptor.identity?.formatLabel ?? null,
-        candidates: snapshot2.candidates.length,
-        operations: (descriptor.operations ?? []).map((item) => item.id)
-      }, diagnostics);
+function validatedLanguageWorkspaceSemanticInputs(value) {
+  if (!Array.isArray(value) || value.length > LANGUAGE_WORKSPACE_SEMANTIC_INPUTS_MAX) {
+    throw new TypeError("language workspace semantic inputs are invalid");
+  }
+  let payloadBytes2 = 0;
+  const byKey = /* @__PURE__ */ new Map();
+  for (const item of value) {
+    const keys = typeof item === "object" && item !== null ? Reflect.ownKeys(item) : [];
+    if (typeof item !== "object" || item === null || Array.isArray(item) || Object.getPrototypeOf(item) !== Object.prototype && Object.getPrototypeOf(item) !== null || keys.some((key4) => typeof key4 !== "string" || !["kind", "id", "revision", "payload"].includes(key4))) {
+      throw new TypeError("language workspace semantic input is invalid");
+    }
+    const descriptors = Object.getOwnPropertyDescriptors(item);
+    if (keys.some((key4) => {
+      if (typeof key4 !== "string")
+        return true;
+      const descriptor = descriptors[key4];
+      return descriptor === void 0 || !descriptor.enumerable || !("value" in descriptor);
+    })) {
+      throw new TypeError("language workspace semantic input is invalid");
+    }
+    const kind = descriptors["kind"]?.value;
+    const id = descriptors["id"]?.value;
+    const revision = descriptors["revision"]?.value;
+    if (!boundedContextText(kind) || !boundedContextText(id) || !boundedContextText(revision)) {
+      throw new TypeError("language workspace semantic input is invalid");
+    }
+    const hasPayload = Object.prototype.hasOwnProperty.call(item, "payload");
+    const payload = hasPayload ? cloneSemanticPayload(descriptors["payload"]?.value) : void 0;
+    if (payload !== void 0) {
+      payloadBytes2 += encoder2.encode(JSON.stringify(payload)).byteLength;
+      if (payloadBytes2 > LANGUAGE_WORKSPACE_SEMANTIC_PAYLOAD_MAX_BYTES) {
+        throw new TypeError("language workspace semantic payload exceeds maximum bytes");
+      }
+    }
+    const copy = Object.freeze({
+      kind,
+      id,
+      revision,
+      ...hasPayload ? { payload } : {}
     });
+    const key3 = `${copy.kind}\0${copy.id}`;
+    const previous = byKey.get(key3);
+    if (previous !== void 0 && (previous.revision !== copy.revision || canonicalJsonStringify(previous) !== canonicalJsonStringify(copy))) {
+      throw new TypeError(`language workspace semantic input ${copy.kind}/${copy.id} conflicts`);
+    }
+    byKey.set(key3, copy);
   }
+  return Object.freeze([...byKey.values()].sort((left, right) => compareUtf8(left.kind, right.kind) || compareUtf8(left.id, right.id)));
+}
+var fnv64 = (value, seed, reverse) => {
+  const bytes = new TextEncoder().encode(value);
+  let hash = seed;
+  for (let index = 0; index < bytes.length; index += 1) {
+    const offset = reverse ? bytes.length - index - 1 : index;
+    hash ^= BigInt(bytes[offset]);
+    hash = BigInt.asUintN(64, hash * 0x100000001b3n);
+  }
+  return hash.toString(16).padStart(16, "0");
 };
-var inspectCommand = {
-  id: INSPECT_COMMAND,
-  title: "Inspect",
-  summary: "Report the full descriptor of a subject: identity, traits, operations, data sources.",
-  needsSubject: true,
-  mutatesSource: false,
-  async run(context, input) {
-    return withCommandSubject(INSPECT_COMMAND, context, String(input.subject), async (subject, _session, descriptor, diagnostics) => {
-      context.progress?.({ step: "describe", message: "reading the descriptor" });
-      return ok(INSPECT_COMMAND, {
-        ref: subject.ref,
-        identity: {
-          formatId: descriptor.identity?.formatId ?? null,
-          formatLabel: descriptor.identity?.formatLabel ?? null
-        },
-        traits: (descriptor.traits ?? []).map((item) => ({ id: item.id, state: item.state })),
-        operations: (descriptor.operations ?? []).map((item) => ({
-          id: item.id,
-          state: item.state,
-          ...item.reason === void 0 ? {} : { reason: item.reason }
-        })),
-        dataSources: (descriptor.dataSources ?? []).map((item) => `${item.contract}@${item.major}`),
-        metadataGroups: (descriptor.metadata ?? []).map((group) => ({
-          id: group.id,
-          entries: group.entries.length
-        }))
-      }, diagnostics);
-    });
-  }
+var languageWorkspaceContextToken = (value) => {
+  const canonical = canonicalJsonStringify(value);
+  return `language-context-v1:${fnv64(canonical, 0xcbf29ce484222325n, false)}${fnv64(canonical, 0x84222325cbf29ce4n, true)}`;
 };
-var validateCommand = {
-  id: VALIDATE_COMMAND,
-  title: "Validate",
-  summary: "Run the subject\u2019s own validation, when the codec publishes one.",
-  needsSubject: true,
-  mutatesSource: false,
-  operationId: VALIDATE,
-  async run(context, input) {
-    return withCommandSubject(VALIDATE_COMMAND, context, String(input.subject), async (subject, session, descriptor, diagnostics) => {
-      const operation = availableOperation(descriptor, VALIDATE);
-      if (operation === void 0) {
-        return unavailable(VALIDATE_COMMAND, `this subject publishes no available \xAB${VALIDATE}\xBB \u2014 ${publishedOperations(descriptor)}`, "run subject.inspect: it reports every trait and diagnostic the codec did produce, which is what validation would have been reading", diagnostics);
-      }
-      context.progress?.({ step: "validate", message: "running the codec\u2019s validation" });
-      const answer = await invokeSubjectOperation(VALIDATE_COMMAND, context, session, operation.handlerId, {}, diagnostics);
-      if (answer.state === "failed")
-        return answer.result;
-      return ok(VALIDATE_COMMAND, {
-        ref: subject.ref,
-        outputKind: answer.output.kind,
-        report: answer.output.value ?? null
-      }, diagnostics);
-    });
-  }
-};
-async function entryFor(session, wanted, signal) {
-  const lease2 = await session.dataSource(NAMESPACE_ENTRY_SOURCE, 1);
-  try {
-    const namespace = lease2.value;
-    if (namespace.lookup !== void 0) {
-      const entry2 = await namespace.lookup(wanted, signal);
-      if (entry2 !== void 0)
-        return entry2;
-    }
-    const scope = namespace.lookup === void 0 ? "" : wanted;
-    let cursor2;
-    do {
-      const page = await namespace.list(scope, cursor2 === void 0 ? { limit: 512 } : { cursor: cursor2, limit: 512 }, signal);
-      const found = page.items.find((item) => item.path === wanted || item.id === wanted);
-      if (found !== void 0)
-        return found;
-      cursor2 = page.nextCursor;
-    } while (cursor2 !== void 0);
-    return void 0;
-  } finally {
-    await lease2.release();
-  }
-}
-var extractCommand = {
-  id: EXTRACT_COMMAND,
-  title: "Extract",
-  summary: "Read one member out of a container, through the container\u2019s own bounded extraction.",
-  needsSubject: true,
-  mutatesSource: false,
-  operationId: CONTAINER_EXTRACT_OPERATION_ID2,
-  async run(context, input) {
-    const entry2 = typeof input["entry"] === "string" ? input["entry"] : "";
-    if (entry2 === "") {
-      return failed(EXTRACT_COMMAND, "x3.command/input-invalid", "subject.extract needs an \xABentry\xBB");
-    }
-    return withCommandSubject(EXTRACT_COMMAND, context, String(input.subject), async (subject, session, descriptor, diagnostics) => {
-      const operation = availableOperation(descriptor, CONTAINER_EXTRACT_OPERATION_ID2);
-      const listing = (descriptor.dataSources ?? []).some((item) => item.contract === NAMESPACE_ENTRY_SOURCE);
-      if (operation === void 0 || !listing) {
-        return unavailable(EXTRACT_COMMAND, `this subject is not a container this host can read into \u2014 ${publishedOperations(descriptor)}`, `run subject.inspect to see what it does publish; extraction needs both \xAB${CONTAINER_EXTRACT_OPERATION_ID2}\xBB and \xAB${NAMESPACE_ENTRY_SOURCE}\xBB`, diagnostics);
-      }
-      context.progress?.({ step: "locate", message: `locating ${entry2}` });
-      const found = await entryFor(session, entry2, context.signal);
-      if (found === void 0) {
-        return failed(EXTRACT_COMMAND, "x3.command/entry-not-found", `this container lists no \xAB${entry2}\xBB`, diagnostics);
-      }
-      const name = entry2.slice(entry2.lastIndexOf("/") + 1);
-      const streamed = await streamEntry(session, descriptor, found, name, context);
-      if (streamed !== void 0) {
-        return ok(EXTRACT_COMMAND, { ref: subject.ref, entry: entry2, ...streamed }, diagnostics);
-      }
-      context.progress?.({ step: "extract", message: `extracting ${entry2}` });
-      const answer = await invokeSubjectOperation(EXTRACT_COMMAND, context, session, operation.handlerId, { entryId: found.id }, diagnostics);
-      if (answer.state === "failed")
-        return answer.result;
-      if (answer.output.kind !== "bytes") {
-        return failed(EXTRACT_COMMAND, "x3.command/unexpected-output", `the container answered ${answer.output.kind}, not bytes`, diagnostics);
-      }
-      const bytes = answer.output.value;
-      const wroteTo = context.writeOutput === void 0 ? void 0 : await context.writeOutput(name, bytes, context.signal);
-      return ok(EXTRACT_COMMAND, {
-        ref: subject.ref,
-        entry: entry2,
-        byteLength: bytes.byteLength,
-        ...wroteTo === void 0 ? { wroteTo: null } : { wroteTo }
-      }, diagnostics);
-    });
-  }
-};
-var BYTE_RANGE_SOURCE = "common.view/byte-range-source";
-var STREAM_CHUNK_BYTES = 4n * 1024n * 1024n;
-async function streamEntry(session, descriptor, entry2, name, context) {
-  const sink = context.writeOutputStream;
-  if (sink === void 0)
-    return void 0;
-  const stored = entry2.storedRange !== void 0 && (descriptor.dataSources ?? []).some((item) => item.contract === BYTE_RANGE_SOURCE && item.major === 1);
-  if (!stored && entry2.rangeAccess !== true)
-    return void 0;
-  const signal = context.signal;
-  const leases = [];
-  try {
-    let source;
-    let start = 0n;
-    let length;
-    if (stored && entry2.storedRange !== void 0) {
-      const lease2 = await session.dataSource(BYTE_RANGE_SOURCE, 1);
-      leases.push(lease2);
-      source = lease2.value;
-      start = entry2.storedRange.offset;
-      length = entry2.storedRange.length;
-    } else {
-      const lease2 = await session.dataSource(NAMESPACE_ENTRY_SOURCE, 1);
-      leases.push(lease2);
-      const namespace = lease2.value;
-      if (namespace.openEntrySource === void 0)
-        return void 0;
-      const entryLease = await namespace.openEntrySource(entry2.id, signal);
-      leases.push(entryLease);
-      source = entryLease.value;
-      length = await source.size();
-    }
-    context.progress?.({ step: "extract", message: `streaming ${entry2.path}` });
-    async function* chunks() {
-      for (let at = 0n; at < length; ) {
-        const want = Number(length - at < STREAM_CHUNK_BYTES ? length - at : STREAM_CHUNK_BYTES);
-        const bytes = await source.read(start + at, want, signal);
-        if (bytes.byteLength !== want) {
-          throw new RangeError(`the container gave ${bytes.byteLength} of ${want} bytes at ${at} of ${entry2.path}`);
-        }
-        yield bytes;
-        at += BigInt(want);
-      }
-    }
-    const wroteTo = await sink(name, chunks(), signal);
-    return { byteLength: Number(length), wroteTo };
-  } finally {
-    for (const lease2 of leases.reverse())
-      await lease2.release();
-  }
-}
-var convertCommand = {
-  id: CONVERT_COMMAND,
-  title: "Convert",
-  summary: "Export a subject through the codec\u2019s own conversion, when it publishes one.",
-  needsSubject: true,
-  mutatesSource: false,
-  operationId: CONVERT,
-  async run(context, input) {
-    return withCommandSubject(CONVERT_COMMAND, context, String(input.subject), async (subject, session, descriptor, diagnostics) => {
-      if (input["operation"] !== void 0 && typeof input["operation"] !== "string")
-        return failed(CONVERT_COMMAND, COMMAND_INPUT_INVALID, "operation must be an operation id", diagnostics);
-      if (input["target"] === "uvw" && input["operation"] === void 0 && descriptor.dataSources?.some((offer) => offer.contract === WORLD_SCENE_SOURCE && offer.major === 1)) {
-        if (context.worldToUvw === void 0)
-          return unavailable(CONVERT_COMMAND, "this application has no UV module to write UVW", "convert with the CLI or the desktop application", diagnostics);
-        context.progress?.({ step: "convert", message: "materializing the map world as UVW" });
-        const lease2 = await session.dataSource(WORLD_SCENE_SOURCE, 1);
-        try {
-          const world = await context.worldToUvw(lease2.value, context.signal);
-          if (world.state === "refused")
-            return failed(CONVERT_COMMAND, "x3.host/world-uvw-refused", world.refusals.map((refusal) => `${refusal.code}: ${refusal.message}`).join("; "), diagnostics);
-          const wroteTo2 = context.writeOutput === void 0 ? void 0 : await context.writeOutput("world.uvw", world.bytes, context.signal);
-          return ok(CONVERT_COMMAND, {
-            ref: subject.ref,
-            via: WORLD_SCENE_SOURCE,
-            outputKind: "bytes",
-            byteLength: world.bytes.byteLength,
-            wroteTo: wroteTo2 ?? null,
-            receipt: {
-              artifactDigest: world.artifactDigest,
-              excludedFacetIds: [...world.excludedFacetIds],
-              omittedObjects: world.omittedObjects,
-              lostFields: world.lostFields.map((field) => ({ ...field }))
-            }
-          }, diagnostics);
-        } finally {
-          await lease2.release();
-        }
-      }
-      if (input["target"] === "uvw" && input["operation"] === void 0)
-        return unavailable(CONVERT_COMMAND, "this subject publishes no map world to write as UVW", "open the map itself, or a package naming one map; name an operation to run it instead", diagnostics);
-      const target = typeof input["target"] === "string" ? input["target"] : void 0;
-      const operation = (input["operation"] === void 0 && target !== void 0 ? selectedOperation(descriptor, target === "uvm" ? ["model.export-uvm"] : ["model.export-native", "map.export-native", "export.convert"], void 0) : void 0) ?? selectedOperation(descriptor, SUBJECT_COMMAND_TARGETS.convert.operationIds, input["operation"]);
-      if (operation === void 0) {
-        return unavailable(CONVERT_COMMAND, `the requested export is unavailable \u2014 ${publishedOperations(descriptor)}`, "run subject.inspect to see which data sources it does publish; a universal projection is the route for formats with no native export", diagnostics);
-      }
-      context.progress?.({ step: "convert", message: "running the codec\u2019s export" });
-      const native = operation.id === "model.export-native" || operation.id === "map.export-native";
-      const request = input["operationInput"] === void 0 ? target !== void 0 ? native ? { schemaVersion: 1, formatId: target } : { target } : {} : input["operationInput"];
-      const answer = await invokeSubjectOperation(CONVERT_COMMAND, context, session, operation.handlerId, request, diagnostics);
-      if (answer.state === "failed")
-        return answer.result;
-      const output = answer.output;
-      const bytes = output.kind === "bytes" ? output.value : void 0;
-      const extension = bytes !== void 0 && typeof output.extension === "string" ? output.extension : void 0;
-      const mediaType = bytes !== void 0 && typeof output.mediaType === "string" ? output.mediaType : void 0;
-      const wroteTo = bytes === void 0 || context.writeOutput === void 0 ? void 0 : await context.writeOutput(extension === void 0 ? target ?? "export" : `${subjectStem(subject.ref)}.${extension}`, bytes, context.signal);
-      return ok(CONVERT_COMMAND, {
-        ref: subject.ref,
-        via: operation.id,
-        outputKind: output.kind,
-        ...bytes === void 0 ? {} : { byteLength: bytes.byteLength },
-        ...extension === void 0 ? {} : { extension },
-        ...mediaType === void 0 ? {} : { mediaType },
-        ...wroteTo === void 0 ? { wroteTo: null } : { wroteTo }
-      }, answer.diagnostics);
-    });
-  }
-};
-var previewCommand = {
-  id: PREVIEW_COMMAND,
-  title: "Preview",
-  summary: "Produce the subject\u2019s own preview \u2014 a thumbnail if it has one, a render otherwise.",
-  needsSubject: true,
-  mutatesSource: false,
-  operationId: THUMBNAIL,
-  async run(context, input) {
-    return withCommandSubject(PREVIEW_COMMAND, context, String(input.subject), async (subject, session, descriptor, diagnostics) => {
-      if (input["operation"] !== void 0 && typeof input["operation"] !== "string")
-        return failed(PREVIEW_COMMAND, COMMAND_INPUT_INVALID, "operation must be an operation id", diagnostics);
-      const operation = selectedOperation(descriptor, SUBJECT_COMMAND_TARGETS.preview.operationIds, input["operation"]);
-      if (operation === void 0) {
-        return unavailable(PREVIEW_COMMAND, `the requested preview is unavailable \u2014 ${publishedOperations(descriptor)}`, `mount a viewer over one of its data sources instead: ${(descriptor.dataSources ?? []).map((item) => item.contract).join(", ") || "it publishes none"}`, diagnostics);
-      }
-      context.progress?.({ step: "preview", message: "rendering the preview" });
-      const answer = await invokeSubjectOperation(PREVIEW_COMMAND, context, session, operation.handlerId, input["operationInput"] === void 0 ? {} : input["operationInput"], diagnostics);
-      if (answer.state === "failed")
-        return answer.result;
-      const bytes = answer.output.kind === "bytes" ? answer.output.value : void 0;
-      const wroteTo = bytes === void 0 || context.writeOutput === void 0 ? void 0 : await context.writeOutput("preview.png", bytes, context.signal);
-      return ok(PREVIEW_COMMAND, {
-        ref: subject.ref,
-        via: operation.id,
-        outputKind: answer.output.kind,
-        ...bytes === void 0 ? {} : { byteLength: bytes.byteLength },
-        ...wroteTo === void 0 ? {} : { wroteTo }
-      }, answer.diagnostics);
-    });
-  }
-};
-var SUBJECT_COMMANDS = Object.freeze([
-  openCommand,
-  inspectCommand,
-  validateCommand,
-  extractCommand,
-  convertCommand,
-  previewCommand
-]);
 
-// ../MODDING/modkit-core/packages/host/dist/commands/service-operation-commands.js
-var SERVICE_OPERATIONS_COMMAND = "service.operations";
-var SERVICE_OPERATION_INVOKE_COMMAND = "service.invoke";
-var json = (value) => value;
-var integer = (value, fallback) => {
-  const selected = value ?? fallback;
-  return Number.isSafeInteger(selected) && Number(selected) >= 0 ? Number(selected) : void 0;
-};
-var catalogCommand = Object.freeze({
-  id: SERVICE_OPERATIONS_COMMAND,
-  title: "Extension operations",
-  summary: "List bounded subject-independent extension operations and their activation state.",
-  needsSubject: false,
-  mutatesSource: false,
-  async run(context, input) {
-    if (context.serviceOperations === void 0) {
-      return unavailable(SERVICE_OPERATIONS_COMMAND, "this host does not expose the extension operation catalog", "use a host configured with service-operation authority");
-    }
-    const offset = integer(input["offset"], 0);
-    const limit = integer(input["limit"], 50);
-    const activate = input["activate"] ?? true;
-    if (offset === void 0 || limit === void 0 || limit < 1 || limit > 100 || typeof activate !== "boolean") {
-      return failed(SERVICE_OPERATIONS_COMMAND, COMMAND_INPUT_INVALID, "offset must be non-negative, limit must be 1..100, and activate must be boolean");
-    }
-    const result = await context.serviceOperations.catalog({
-      offset,
-      limit,
-      activate,
-      ...context.signal === void 0 ? {} : { signal: context.signal }
-    });
-    return ok(SERVICE_OPERATIONS_COMMAND, json(result), result.entries.flatMap((entry2) => entry2.diagnostics).map(commandDiagnostic));
-  }
-});
-var invokeCommand = Object.freeze({
-  id: SERVICE_OPERATION_INVOKE_COMMAND,
-  title: "Invoke extension operation",
-  summary: "Invoke one exact subject-independent extension operation through the common host route.",
-  needsSubject: false,
-  mutatesSource: true,
-  async run(context, input) {
-    if (context.serviceOperations === void 0) {
-      return unavailable(SERVICE_OPERATION_INVOKE_COMMAND, "this host does not expose extension operation invocation", `inspect ${SERVICE_OPERATIONS_COMMAND} in an operation-capable host`);
-    }
-    const operationId = input["operationId"];
-    const operationInput = input["operationInput"];
-    if (typeof operationId !== "string" || operationId.trim().length === 0 || operationInput === void 0) {
-      return failed(SERVICE_OPERATION_INVOKE_COMMAND, COMMAND_INPUT_INVALID, "operationId and operationInput are required");
-    }
-    const result = await context.serviceOperations.invoke({
-      operationId,
-      input: operationInput,
-      ...context.signal === void 0 ? {} : { signal: context.signal }
-    });
-    const diagnostics = result.diagnostics.map(commandDiagnostic);
-    if (result.state === "invoked") {
-      return ok(SERVICE_OPERATION_INVOKE_COMMAND, json(result), diagnostics);
-    }
-    if (result.state === "failed") {
-      return failed(SERVICE_OPERATION_INVOKE_COMMAND, result.diagnostics.at(-1)?.code ?? "x3.command/service-operation-failed", result.diagnostics.at(-1)?.message ?? `${operationId} failed`, diagnostics);
-    }
-    return unavailable(SERVICE_OPERATION_INVOKE_COMMAND, result.diagnostics.at(-1)?.message ?? `${operationId} is unavailable`, `inspect ${SERVICE_OPERATIONS_COMMAND} with activation enabled`, diagnostics, result.diagnostics.at(-1)?.code);
-  }
-});
-var SERVICE_OPERATION_COMMANDS = Object.freeze([
-  catalogCommand,
-  invokeCommand
-]);
-var SERVICE_OPERATION_COMMAND_TARGETS = Object.freeze([
-  Object.freeze({
-    commandId: SERVICE_OPERATIONS_COMMAND,
-    operationIds: Object.freeze([]),
-    dataSourceContracts: Object.freeze([]),
-    hostCallers: Object.freeze(["cli", "mcp", "electron", "pwa", "server", "vscode"])
-  }),
-  Object.freeze({
-    commandId: SERVICE_OPERATION_INVOKE_COMMAND,
-    operationIds: Object.freeze(["common.runtime/operation-provider@1"]),
-    dataSourceContracts: Object.freeze([]),
-    hostCallers: Object.freeze(["cli", "mcp", "electron", "pwa", "server", "vscode"])
-  })
-]);
-
-// ../MODDING/modkit-core/packages/host/dist/commands/edit-commands.js
-var SUBJECT_EDIT_COMMAND = "subject.edit";
-var SUBJECT_EDIT_OPERATION_IDS = Object.freeze([
-  "edit.field",
-  "edit.content",
-  "edit.structure"
-]);
-function summarizeEditPlan(plan) {
-  const encoder5 = new TextEncoder();
-  return {
-    planId: plan.planId,
-    fidelity: plan.fidelity,
-    edits: plan.edits.map((edit) => {
-      const payload = "payload" in edit ? edit.payload : void 0;
-      const replacementBytes = payload === void 0 ? null : payload.kind === "inline" ? payload.bytes.byteLength : payload.kind === "text" ? encoder5.encode(payload.text).byteLength : String(payload.ref.bytes);
-      return {
-        operation: edit.operation,
-        targetId: edit.targetId,
-        label: edit.label ?? null,
-        ..."range" in edit && edit.range !== void 0 ? { offset: String(edit.range.offset), length: String(edit.range.length) } : {},
-        ..."newPath" in edit ? { newPath: edit.newPath } : {},
-        replacementBytes
-      };
-    }),
-    diagnostics: plan.diagnostics.map(commandDiagnostic)
-  };
-}
-var jsonSafe = (value) => JSON.parse(JSON.stringify(value, (_key, item) => typeof item === "bigint" ? String(item) : item));
-var editCommand = Object.freeze({
-  id: SUBJECT_EDIT_COMMAND,
-  title: "Edit",
-  summary: "Preview, or with commit=true apply, one standard edit operation (set field, add/remove entry, rename) of a subject.",
-  needsSubject: true,
-  mutatesSource: true,
-  async run(context, input) {
-    const operationId = input["operation"];
-    const operationInput = input["operationInput"];
-    const commit = input["commit"] ?? false;
-    if (typeof operationId !== "string" || !SUBJECT_EDIT_OPERATION_IDS.includes(operationId) || operationInput === void 0 || typeof commit !== "boolean") {
-      return failed(SUBJECT_EDIT_COMMAND, COMMAND_INPUT_INVALID, `operation must be one of ${SUBJECT_EDIT_OPERATION_IDS.join(", ")}, operationInput is required and commit must be boolean`);
-    }
-    return withCommandSubject(SUBJECT_EDIT_COMMAND, context, String(input.subject), async (subject, session, descriptor, diagnostics) => {
-      const operation = (descriptor.operations ?? []).find((item) => item.id === operationId);
-      if (operation?.state !== "available" || operation.mutatesSource !== true) {
-        return unavailable(SUBJECT_EDIT_COMMAND, operation === void 0 ? `the subject publishes no ${operationId}` : `${operationId} is not an available mutating operation here${operation.reason === void 0 ? "" : `: ${operation.reason}`}`, "run subject.inspect to see which edit operations this subject publishes", diagnostics);
-      }
-      context.progress?.({ step: "plan", message: `planning ${operationId}` });
-      const answer = await invokeSubjectOperation(SUBJECT_EDIT_COMMAND, context, session, operation.handlerId, operationInput, diagnostics);
-      if (answer.state === "failed")
-        return answer.result;
-      if (answer.output.kind !== "edit-plan") {
-        return failed(SUBJECT_EDIT_COMMAND, "x3.command/not-an-edit-plan", `${operationId} answered with ${answer.output.kind}, not an edit plan`, answer.diagnostics);
-      }
-      const output = answer.output;
-      if (!commit) {
-        return ok(SUBJECT_EDIT_COMMAND, {
-          ref: subject.ref,
-          operation: operationId,
-          committed: false,
-          plan: summarizeEditPlan(output.plan)
-        }, answer.diagnostics);
-      }
-      const editing = subject.editing;
-      if (editing === void 0) {
-        return unavailable(SUBJECT_EDIT_COMMAND, "this host opened the subject without an editing surface (it is outside the writable roots, or the host is read-only)", "run with commit=false to preview, or open the subject in a host configured with writable roots", answer.diagnostics);
-      }
-      const signal = context.signal;
-      const plan = await editing.stagePlan(editing.planFromOperation(answer.output), signal);
-      let committed = false;
-      try {
-        context.progress?.({
-          step: "prepare",
-          message: "validating revisions, permissions and fidelity"
-        });
-        const prepared = await editing.coordinator.prepare(plan, {
-          grant: editing.grantSnapshot,
-          ...signal === void 0 ? {} : { signal }
-        });
-        if (prepared.state === "conflict") {
-          return failed(SUBJECT_EDIT_COMMAND, "x3.command/edit-stale-revision", `the source changed after the plan was made: ${prepared.conflicts.map((item) => item.targetId).join(", ")}`, answer.diagnostics);
-        }
-        if (prepared.state !== "ready") {
-          return failed(SUBJECT_EDIT_COMMAND, `x3.command/edit-${prepared.reason}`, `the host refused the edit plan: ${prepared.reason}`, [...answer.diagnostics, ...prepared.diagnostics.map(commandDiagnostic)]);
-        }
-        context.progress?.({ step: "commit", message: "committing" });
-        const result = await editing.coordinator.commit(prepared.prepared, {
-          grant: editing.grantSnapshot,
-          ...signal === void 0 ? {} : { signal }
-        });
-        if (result.state === "not-applied") {
-          return failed(SUBJECT_EDIT_COMMAND, `x3.command/edit-${result.reason}`, `the edit was not applied: ${result.reason}`, [...answer.diagnostics, ...result.diagnostics.map(commandDiagnostic)]);
-        }
-        committed = true;
-        return ok(SUBJECT_EDIT_COMMAND, {
-          ref: subject.ref,
-          operation: operationId,
-          committed: result.state === "committed",
-          state: result.state,
-          plan: summarizeEditPlan(plan),
-          receipt: jsonSafe(result.receipt)
-        }, answer.diagnostics);
-      } finally {
-        if (!committed)
-          await editing.releasePlan(plan);
-      }
-    });
-  }
-});
-var SUBJECT_EDIT_COMMANDS = Object.freeze([editCommand]);
-var SUBJECT_EDIT_COMMAND_TARGETS = Object.freeze([
-  Object.freeze({
-    commandId: SUBJECT_EDIT_COMMAND,
-    operationIds: Object.freeze([...SUBJECT_EDIT_OPERATION_IDS]),
-    dataSourceContracts: Object.freeze([]),
-    hostCallers: Object.freeze(["cli", "mcp", "electron", "pwa", "server", "vscode"])
-  })
-]);
-
-// ../MODDING/modkit-core/packages/host/dist/commands/subject-opener.js
-function commandSubjectsFrom(open) {
-  return async (ref2, signal) => {
-    const answer = await open(ref2, signal);
-    let disposed = false;
-    return {
-      ref: ref2,
-      snapshot: answer.snapshot,
-      ...answer.session === void 0 ? {} : { session: answer.session },
-      async dispose() {
-        if (disposed)
-          return;
-        disposed = true;
-        await answer.session?.dispose();
-      }
-    };
-  };
-}
-
-// ../MODDING/modkit-core/packages/host/dist/commands/endpoint.js
-var DEFAULT_COMMAND_MAX_CONCURRENT_RUNS = 32;
-function createSubjectCommandEndpoint(options) {
-  const maximum = options.maxConcurrentRuns ?? DEFAULT_COMMAND_MAX_CONCURRENT_RUNS;
-  if (!Number.isSafeInteger(maximum) || maximum < 1) {
-    throw new TypeError("maxConcurrentRuns must be a positive safe integer");
-  }
-  const runtime = createCommandRuntime(SUBJECT_COMMANDS);
-  const opener = commandSubjectsFrom(options.openSubject);
-  const active = /* @__PURE__ */ new Set();
-  const tasks = /* @__PURE__ */ new Set();
-  const byRunId = /* @__PURE__ */ new Map();
-  let closed = false;
-  let disposing;
-  return Object.freeze({
-    catalog: describeCommandContracts(runtime, Object.values(SUBJECT_COMMAND_TARGETS)),
-    async execute(request, runOptions = {}) {
-      if (closed)
-        throw new Error("the command endpoint is closed");
-      if (active.size >= maximum) {
-        throw new RangeError(`the command endpoint already has its ${maximum} permitted runs`);
-      }
-      const runId = runOptions.runId;
-      if (runId !== void 0) {
-        if (runId === "")
-          throw new TypeError("a command run id must not be empty");
-        if (byRunId.has(runId))
-          throw new TypeError(`command run \xAB${runId}\xBB is already active`);
-      }
-      const controller = new AbortController();
-      const abort = () => controller.abort();
-      if (runOptions.signal?.aborted === true)
-        controller.abort();
-      else
-        runOptions.signal?.addEventListener("abort", abort, { once: true });
-      active.add(controller);
-      if (runId !== void 0)
-        byRunId.set(runId, controller);
-      const task = executeCommandRequest(runtime, request, {
-        openSubject: opener,
-        signal: controller.signal,
-        ...runOptions.progress === void 0 ? {} : { progress: runOptions.progress },
-        ...runOptions.writeOutput === void 0 ? {} : { writeOutput: runOptions.writeOutput }
-      });
-      tasks.add(task);
-      try {
-        return await task;
-      } finally {
-        tasks.delete(task);
-        active.delete(controller);
-        if (runId !== void 0)
-          byRunId.delete(runId);
-        runOptions.signal?.removeEventListener("abort", abort);
-      }
-    },
-    cancel(runId) {
-      const controller = byRunId.get(runId);
-      controller?.abort();
-      return controller !== void 0;
-    },
-    dispose() {
-      if (disposing !== void 0)
-        return disposing;
-      closed = true;
-      for (const controller of active)
-        controller.abort();
-      disposing = Promise.allSettled([...tasks]).then(() => void 0);
-      return disposing;
-    },
-    get activeRuns() {
-      return active.size;
-    },
-    get closed() {
-      return closed;
-    }
-  });
-}
-
-// ../MODDING/modkit-core/packages/host/dist/commands/index.js
-function createSubjectCommandRuntime() {
-  return createCommandRuntime(SUBJECT_COMMANDS);
-}
-function createModkitCommandRuntime() {
-  return createCommandRuntime([
-    ...SUBJECT_COMMANDS,
-    ...SUBJECT_EDIT_COMMANDS,
-    ...SERVICE_OPERATION_COMMANDS
-  ]);
-}
-function describeModkitCommandContracts() {
-  return describeCommandContracts(createModkitCommandRuntime(), [
-    ...Object.values(SUBJECT_COMMAND_TARGETS),
-    ...SUBJECT_EDIT_COMMAND_TARGETS,
-    ...SERVICE_OPERATION_COMMAND_TARGETS
-  ]);
-}
-function describeSubjectCommandContracts() {
-  return describeCommandContracts(createSubjectCommandRuntime(), Object.values(SUBJECT_COMMAND_TARGETS));
-}
-
-// ../MODDING/modkit-core/packages/host/dist/detection-selection.js
-var EVIDENCE_KINDS = Object.freeze([
-  "magic",
-  "structure",
-  "companion",
-  "context",
-  "extension",
-  "user-override"
-]);
-function fail(code, message) {
-  throw new ModkitError({ code, message });
-}
-function exactObject(value, required, optional, label) {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    return fail("x3.host/invalid-detection-selection", `${label} must be an object`);
-  }
-  const record3 = value;
-  const allowed2 = /* @__PURE__ */ new Set([...required, ...optional]);
-  if (required.some((key3) => !(key3 in record3)) || Object.keys(record3).some((key3) => !allowed2.has(key3))) {
-    return fail("x3.host/invalid-detection-selection", `${label} has missing or unknown fields`);
-  }
-  return record3;
-}
-function nonBlank(value, label) {
-  if (typeof value !== "string" || value.trim().length === 0) {
-    return fail("x3.host/invalid-detection-selection", `${label} must be a non-blank string`);
-  }
-  return value;
-}
-function evidence(value, label) {
-  if (!Array.isArray(value)) {
-    return fail("x3.host/invalid-detection-selection", `${label} must be an array`);
-  }
-  return Object.freeze(value.map((raw, index) => {
-    const item = exactObject(raw, ["kind", "weight"], ["note"], `${label}[${index}]`);
-    if (!EVIDENCE_KINDS.includes(item["kind"])) {
-      return fail("x3.host/invalid-detection-selection", `${label}[${index}].kind is invalid`);
-    }
-    if (typeof item["weight"] !== "number" || !Number.isFinite(item["weight"])) {
-      return fail("x3.host/invalid-detection-selection", `${label}[${index}].weight must be finite`);
-    }
-    if (item["note"] !== void 0 && typeof item["note"] !== "string") {
-      return fail("x3.host/invalid-detection-selection", `${label}[${index}].note must be a string`);
-    }
-    return Object.freeze({
-      kind: item["kind"],
-      weight: item["weight"],
-      ...item["note"] === void 0 ? {} : { note: item["note"] }
-    });
-  }));
-}
-function normalize(value) {
-  const root = exactObject(value, ["schemaVersion", "sourceRevision", "selected"], [], "selection");
-  if (root["schemaVersion"] !== 1) {
-    return fail("x3.host/invalid-detection-selection", "selection schemaVersion is unsupported");
-  }
-  const sourceRevision = revisionId(nonBlank(root["sourceRevision"], "selection.sourceRevision"));
-  const selected = exactObject(root["selected"], [
-    "extensionId",
-    "contributionId",
-    "variantId",
-    "offerId",
-    "artifactDigest",
-    "manifestDigest",
-    "sourceTopology",
-    "confidence",
-    "evidence"
-  ], [], "selection.selected");
-  const extensionId = nonBlank(selected["extensionId"], "selection.selected.extensionId");
-  const contributionText = nonBlank(selected["contributionId"], "selection.selected.contributionId");
-  if (!isQualifiedId(extensionId) || !isQualifiedId(contributionText)) {
-    return fail("x3.host/invalid-detection-selection", "selection extension and contribution coordinates must be qualified");
-  }
-  const topology = selected["sourceTopology"];
-  if (!["single", "bundle", "namespace", "derived"].includes(String(topology))) {
-    return fail("x3.host/invalid-detection-selection", "selection sourceTopology is invalid");
-  }
-  const confidence = selected["confidence"];
-  if (typeof confidence !== "number" || !Number.isFinite(confidence) || confidence < 0 || confidence > 1) {
-    return fail("x3.host/invalid-detection-selection", "selection confidence is invalid");
-  }
-  return Object.freeze({
-    schemaVersion: 1,
-    sourceRevision,
-    selected: Object.freeze({
-      extensionId,
-      contributionId: contributionId(contributionText),
-      variantId: nonBlank(selected["variantId"], "selection.selected.variantId"),
-      offerId: nonBlank(selected["offerId"], "selection.selected.offerId"),
-      artifactDigest: nonBlank(selected["artifactDigest"], "selection.selected.artifactDigest"),
-      manifestDigest: nonBlank(selected["manifestDigest"], "selection.selected.manifestDigest"),
-      sourceTopology: topology,
-      confidence,
-      evidence: evidence(selected["evidence"], "selection.selected.evidence")
-    })
-  });
-}
-function buildCodecDetectionSelection(input) {
-  if (input.detection.codecId !== input.contributionId) {
-    return fail("x3.host/detection-selection-mismatch", "detection codecId does not match the selected contribution");
-  }
-  return normalize({
-    schemaVersion: 1,
-    sourceRevision: input.sourceRevision,
-    selected: {
-      extensionId: input.extensionId,
-      contributionId: input.contributionId,
-      variantId: input.variantId,
-      offerId: input.offerId,
-      artifactDigest: input.artifactDigest,
-      manifestDigest: input.manifestDigest,
-      sourceTopology: input.sourceTopology,
-      confidence: input.detection.confidence,
-      evidence: input.detection.evidence
-    }
-  });
-}
-function serializeCodecDetectionSelection(selection) {
-  return canonicalJsonStringify(normalize(selection));
-}
-function parseCodecDetectionSelection(text) {
-  let raw;
-  try {
-    raw = JSON.parse(text);
-  } catch {
-    return fail("x3.host/invalid-detection-selection", "detection selection is not valid JSON");
-  }
-  const selection = normalize(raw);
-  if (canonicalJsonStringify(selection) !== text) {
-    return fail("x3.host/invalid-detection-selection", "detection selection bytes are not canonical");
-  }
-  return selection;
-}
-function replayCodecDetectionSelection(inventory, sourceRevision, text) {
-  const selection = parseCodecDetectionSelection(text);
-  if (selection.sourceRevision !== sourceRevision) {
-    return fail("x3.host/detection-source-mismatch", "codec detection selection belongs to a different source revision");
-  }
-  const matches = offersFromInventory(inventory).filter((offer) => {
-    if (offer.extensionId !== selection.selected.extensionId || offer.providerId !== selection.selected.contributionId || offer.runtimeVariant !== selection.selected.variantId || !offer.provides.some((logical) => logical.offerId === selection.selected.offerId)) {
-      return false;
-    }
-    const binding = inventoryBindingForOffer(offer);
-    if (binding === void 0 || binding.record.artifactDigest !== selection.selected.artifactDigest || binding.record.manifestDigest !== selection.selected.manifestDigest) {
-      return false;
-    }
-    const spec = binding.contribution.manifest?.spec;
-    return spec?.sourceTopology === selection.selected.sourceTopology;
-  });
-  if (matches.length !== 1) {
-    return fail("x3.host/detection-selection-unavailable", `current inventory has ${matches.length} exact matches for the codec detection selection`);
-  }
-  return selection;
-}
-
-// ../MODDING/modkit-core/packages/host/dist/detection-rules.js
-var DETECTION_EVIDENCE_LADDER = Object.freeze([
-  "name-only",
-  "generic-syntax",
-  "carrier-magic",
-  "generic-syntax-and-format-marker",
-  "carrier-magic-and-format-structure",
-  "format-magic",
-  "format-magic-and-second-signal"
-]);
-function compareDetectionEvidence(left, right) {
-  const a = DETECTION_EVIDENCE_LADDER.indexOf(left);
-  const b = DETECTION_EVIDENCE_LADDER.indexOf(right);
-  if (a < 0 || b < 0)
-    throw new TypeError(`unknown detection evidence rung: ${left} / ${right}`);
-  return a === b ? 0 : a < b ? -1 : 1;
-}
-var DETECTION_UNTIE_RULES = Object.freeze([
-  Object.freeze({
-    id: "strictly-highest-confidence-wins",
-    rule: "Among candidates at or above the host confidence floor, the one with the strictly highest confidence is selected. There is no secondary ranking by extension id, contribution status, implementation tier or load order.",
-    enforcedBy: "packages/host/src/subject-open.ts"
-  }),
-  Object.freeze({
-    id: "an-exact-tie-is-ambiguous",
-    rule: "Two or more candidates sharing the top confidence resolve to `unresolved` with reason `ambiguous`. The host never breaks a tie by sort order: a stable sort would make the winner depend on which extension happened to load first, which is a coin toss wearing a rule.",
-    enforcedBy: "packages/host/src/subject-open.ts"
-  }),
-  Object.freeze({
-    id: "below-the-floor-is-no-match",
-    rule: "A candidate under the host confidence floor is not eligible at all, so a lone weak guess produces `no-match` rather than an open nobody can justify.",
-    enforcedBy: "packages/host/src/subject-open.ts"
-  }),
-  Object.freeze({
-    id: "a-carrier-ranks-below-its-passengers",
-    rule: "A codec that matched only a carrier magic (ZIP, RIFF) or only a general syntax (UTF-8 text, XML, JSON) must score below a codec that matched the same bytes *and* a structure specific to its own format. The generic route is the fallback for bytes nobody claimed, never the winner over a format that read more.",
-    enforcedBy: "the detecting codecs; the ordering is proved in packages/testkit/test/detection-collisions.test.ts"
-  }),
-  Object.freeze({
-    id: "a-second-signal-breaks-a-would-be-tie",
-    rule: "Where two routes read the same evidence, the one that also reads an independent second signal \u2014 typically the declared extension \u2014 ranks above it. This is how a relocated port beats the staging route it replaces without either of them inventing evidence.",
-    enforcedBy: "the detecting codecs; proved in packages/testkit/test/common-documents-rtf.test.ts"
-  }),
-  Object.freeze({
-    id: "an-extension-alone-never-decides",
-    rule: "The file name may add margin to a candidate that already read the bytes; it may never carry one over the confidence floor by itself. A renamed file is decided by its content, and a correctly named file whose content disagrees is refused.",
-    enforcedBy: "the detecting codecs; proved in packages/testkit/test/detection-collisions.test.ts"
-  }),
-  Object.freeze({
-    id: "a-foreign-format-scores-zero-not-low",
-    rule: "Bytes that positively declare a *different* format are a refusal, not a weak match: an ODP renamed to `.odt` scores zero rather than a hedged number, so it can never win by being the only candidate left.",
-    enforcedBy: "extensions/documents/src/odf/package.js and its peers"
-  }),
-  Object.freeze({
-    id: "a-declaration-scopes-a-generic",
-    rule: "A contribution is put in front of the probe only for bytes its own declaration matches by name or signature, and that \u2014 not confidence \u2014 is what keeps a generic away from another format\u2019s body. `text-ini` scores `Key=Value` lines happily but declares only `.ini`, so it never sees a publisher-specific text file; `text-csv` declares `.csv` and `.tsv`, so it never sees an unrelated atlas index. A generic that widens its declaration to every path gives this protection up and must then win every collision on confidence alone.",
-    enforcedBy: "matchesSpec in packages/host/src/subject-open.ts (an empty rule set is not a wildcard); proved in packages/testkit/test/detection-collisions.test.ts"
-  }),
-  Object.freeze({
-    id: "a-signature-shortlists-but-does-not-select",
-    rule: "A declared byte signature only puts a contribution in front of the probe \u2014 a renamed `.dat` PNG reaches the PNG probe. Selection is still decided by the probe result, so a signature can never open a subject on its own.",
-    enforcedBy: "packages/host/src/detection-index.ts"
-  })
-]);
-function isDetectionUntieRule(id) {
-  return DETECTION_UNTIE_RULES.some((rule) => rule.id === id);
-}
-
-// ../MODDING/modkit-core/packages/host/dist/source-bridge.js
+// ../../MODDING/modkit-core/packages/host/dist/source-bridge.js
 function invalidRange(sourceId, offset, length, size, message) {
   return new ModkitError({
     code: "x3.host/source-range-unrepresentable",
@@ -2329,7 +1459,1120 @@ function artifactByteSourceFromBytes(ref2, revision, bytes) {
   });
 }
 
-// ../MODDING/modkit-core/packages/host/dist/detection-index.js
+// ../../MODDING/modkit-core/packages/host/dist/resolution/resolver.js
+var RESOLVER_VERSION = 1;
+var resolverProducts = /* @__PURE__ */ new WeakMap();
+function requestProvenanceKey(request) {
+  return canonicalJsonStringify(request);
+}
+function isResolverProduct(result) {
+  const provenance = resolverProducts.get(result);
+  return provenance !== void 0 && provenance.resultKey === canonicalJsonStringify(result);
+}
+function isResolutionForRequest(result, request) {
+  const provenance = resolverProducts.get(result);
+  return provenance !== void 0 && provenance.requestKey === requestProvenanceKey(request) && provenance.resultKey === canonicalJsonStringify(result);
+}
+function remember(result, request) {
+  resolverProducts.set(result, {
+    requestKey: requestProvenanceKey(request),
+    resultKey: canonicalJsonStringify(result)
+  });
+  return result;
+}
+function candidateSortKey(candidate) {
+  return canonicalJsonStringify({
+    providerId: candidate.offer.providerId,
+    runtimeVariant: candidate.offer.runtimeVariant,
+    offerId: candidate.contractOffer.offerId,
+    version: candidate.contractOffer.version
+  });
+}
+function isSubset(needed, have) {
+  return (needed ?? []).every((item) => have.includes(item));
+}
+function traitOfferMatches(requirement, offer) {
+  if (requirement.id !== offer.id)
+    return false;
+  if (isStandardTraitId(requirement.id)) {
+    return requirement.definitionRange === void 0 && offer.definitionVersion === void 0;
+  }
+  if (requirement.definitionRange === void 0 || offer.definitionVersion === void 0)
+    return false;
+  const range = parseVersionRange(requirement.definitionRange);
+  const version = parseSemver(offer.definitionVersion);
+  return range !== void 0 && version !== void 0 && satisfiesRange(version, range);
+}
+function hasTraitOutputs(needed, offered) {
+  return (needed ?? []).every((requirement) => offered.some((offer) => traitOfferMatches(requirement, offer)));
+}
+function uniqueTraitRequirements(values) {
+  const unique = /* @__PURE__ */ new Map();
+  for (const value of values ?? []) {
+    const range = value.definitionRange === void 0 ? void 0 : parseVersionRange(value.definitionRange);
+    const normalized2 = {
+      id: value.id,
+      ...value.definitionRange === void 0 ? {} : { definitionRange: range?.normalized ?? value.definitionRange }
+    };
+    unique.set(canonicalJsonStringify(normalized2), normalized2);
+  }
+  return [...unique.values()];
+}
+function traitRequirementsAreValid(values) {
+  return (values ?? []).every((value) => isStandardTraitId(value.id) ? value.definitionRange === void 0 : value.definitionRange !== void 0 && parseVersionRange(value.definitionRange) !== void 0);
+}
+function resolveProvider(request, offers, preparation) {
+  if (!traitRequirementsAreValid(request.requiredOutputs) || !traitRequirementsAreValid(request.preferredOutputs)) {
+    return remember({ state: "unresolved", reason: "output-missing", rejected: [] }, request);
+  }
+  const requiredOutputs = uniqueTraitRequirements(request.requiredOutputs);
+  const preferredOutputs = uniqueTraitRequirements(request.preferredOutputs);
+  const rejected2 = [];
+  const reject = (offer, reason, detail, offerId) => rejected2.push({
+    providerId: offer.providerId,
+    runtimeVariant: offer.runtimeVariant,
+    ...offerId === void 0 ? {} : { offerId },
+    reason,
+    ...detail === void 0 ? {} : { detail }
+  });
+  const candidates = [];
+  for (const offer of offers) {
+    const contractMatches = offer.provides.filter((p) => {
+      if (p.contract !== request.contract.contract || p.major !== request.contract.major) {
+        return false;
+      }
+      const version = parseSemver(p.version);
+      return version !== void 0 && version.major === p.major && (preparation?.accepts?.(offer, p) ?? true);
+    });
+    if (contractMatches.length === 0) {
+      reject(offer, "no-offer", `does not provide ${request.contract.contract}@${request.contract.major}`);
+      continue;
+    }
+    if (offer.kind !== "primary" && offer.kind !== "replacement") {
+      reject(offer, "unsupported-kind", `resolver v1 executes only primary/replacement, got ${offer.kind}`);
+      continue;
+    }
+    for (const match of contractMatches) {
+      const selectionKey = preparation?.selectionKey?.(offer, match);
+      candidates.push({
+        offer,
+        contractOffer: match,
+        ...selectionKey === void 0 ? {} : { contractSelectionKey: selectionKey }
+      });
+    }
+  }
+  if (candidates.length === 0) {
+    return remember({ state: "unresolved", reason: "no-offer", rejected: sortRejected(rejected2) }, request);
+  }
+  const range = parseVersionRange(request.contract.range ?? "*");
+  const versionOk = candidates.filter((candidate) => {
+    const version = parseSemver(candidate.contractOffer.version);
+    if (version === void 0 || range === void 0 || !satisfiesRange(version, range)) {
+      reject(candidate.offer, "version-incompatible", `${candidate.contractOffer.version} \u2209 ${request.contract.range ?? "*"}`, candidate.contractOffer.offerId);
+      return false;
+    }
+    return true;
+  });
+  if (versionOk.length === 0) {
+    return remember({
+      state: "unresolved",
+      reason: "version-incompatible",
+      rejected: sortRejected(rejected2)
+    }, request);
+  }
+  let sawToolReject = false;
+  const targetOf = (offer) => preparation?.targetFor?.(offer) ?? request.target;
+  const targetOk = versionOk.filter((candidate) => {
+    const constraint = candidate.offer.target;
+    const target = targetOf(candidate.offer);
+    const envOk = constraint.environments === void 0 || constraint.environments.includes(target.environment);
+    const osOk = constraint.operatingSystems === void 0 || constraint.operatingSystems.includes("any") || constraint.operatingSystems.includes(target.operatingSystem);
+    const archOk = constraint.architectures === void 0 || constraint.architectures.includes("any") || constraint.architectures.includes(target.architecture);
+    const capsOk = isSubset(constraint.requiredHostCapabilities, [
+      ...target.hostCapabilities ?? []
+    ]);
+    const apisOk = isSubset(constraint.requiredWebApis, [...target.webApis ?? []]);
+    if (!envOk || !osOk || !archOk || !capsOk || !apisOk) {
+      reject(candidate.offer, "target-incompatible", void 0, candidate.contractOffer.offerId);
+      return false;
+    }
+    if (!isSubset(constraint.externalTools, [...target.externalTools ?? []])) {
+      reject(candidate.offer, "external-tool-required", void 0, candidate.contractOffer.offerId);
+      sawToolReject = true;
+      return false;
+    }
+    return true;
+  });
+  if (targetOk.length === 0) {
+    const onlyToolRejects = sawToolReject && !rejected2.some((r) => r.reason === "target-incompatible");
+    return remember({
+      state: "unresolved",
+      reason: onlyToolRejects ? "external-tool-required" : "target-incompatible",
+      rejected: sortRejected(rejected2)
+    }, request);
+  }
+  let sawPermissionReject = false;
+  const permitted = targetOk.filter((candidate) => {
+    const granted = targetOf(candidate.offer).grantedPermissions ?? [];
+    if (!isSubset(candidate.offer.requiredPermissions, [...granted])) {
+      reject(candidate.offer, "permission-required", void 0, candidate.contractOffer.offerId);
+      sawPermissionReject = true;
+      return false;
+    }
+    if (!hasTraitOutputs(requiredOutputs, candidate.offer.outputs ?? [])) {
+      reject(candidate.offer, "output-missing", void 0, candidate.contractOffer.offerId);
+      return false;
+    }
+    return true;
+  });
+  if (permitted.length === 0) {
+    return remember({
+      state: "unresolved",
+      reason: sawPermissionReject ? "permission-required" : "output-missing",
+      rejected: sortRejected(rejected2)
+    }, request);
+  }
+  let pool = permitted;
+  if (request.pin) {
+    const pin = request.pin;
+    pool = permitted.filter((candidate) => {
+      const hit = candidate.offer.providerId === pin.providerId && (pin.runtimeVariant === void 0 || candidate.offer.runtimeVariant === pin.runtimeVariant) && (pin.offerId === void 0 || candidate.contractOffer.offerId === pin.offerId);
+      if (!hit) {
+        reject(candidate.offer, "pin-unsatisfied", void 0, candidate.contractOffer.offerId);
+      }
+      return hit;
+    });
+    if (pool.length === 0) {
+      return remember({
+        state: "unresolved",
+        reason: "pin-unsatisfied",
+        rejected: sortRejected(rejected2)
+      }, request);
+    }
+  }
+  const score = (candidate) => [
+    request.operation !== void 0 && (candidate.offer.operations ?? []).includes(request.operation) ? 1 : 0,
+    preferredOutputs.filter((requirement) => (candidate.offer.outputs ?? []).some((offer) => traitOfferMatches(requirement, offer))).length,
+    targetOf(candidate.offer) === request.target ? 1 : 0
+  ];
+  const compareTuple = (a, b) => {
+    for (let i = 0; i < a.length; i += 1) {
+      if (a[i] !== b[i])
+        return a[i] < b[i] ? 1 : -1;
+    }
+    return 0;
+  };
+  const ranked = [...pool].sort((a, b) => compareTuple(score(a), score(b)) || compareUtf8(candidateSortKey(a), candidateSortKey(b)));
+  const best = ranked[0];
+  const tied = ranked.filter((c) => compareTuple(score(c), score(best)) === 0);
+  if (tied.length > 1) {
+    for (const candidate of tied) {
+      reject(candidate.offer, "ambiguous", "preference tuple tie", candidate.contractOffer.offerId);
+    }
+    return remember({ state: "unresolved", reason: "ambiguous", rejected: sortRejected(rejected2) }, request);
+  }
+  const toResolved = (candidate) => ({
+    offer: candidate.offer,
+    resolvedContract: candidate.contractOffer,
+    ...candidate.contractSelectionKey === void 0 ? {} : { contractSelectionKey: candidate.contractSelectionKey }
+  });
+  return remember({
+    state: "resolved",
+    selected: toResolved(best),
+    alternatives: ranked.slice(1).map(toResolved),
+    rejected: sortRejected(rejected2)
+  }, request);
+}
+function sortRejected(rejected2) {
+  const keyed = rejected2.map((candidate) => ({ candidate, key: canonicalJsonStringify(candidate) }));
+  keyed.sort((a, b) => compareUtf8(a.key, b.key));
+  return keyed.map((entry2) => entry2.candidate);
+}
+
+// ../../MODDING/modkit-core/packages/host/dist/resolution/lock.js
+function normalizeTraitRequirements(values) {
+  const normalized2 = /* @__PURE__ */ new Map();
+  for (const value of values ?? []) {
+    let item;
+    if (isStandardTraitId(value.id)) {
+      if (value.definitionRange !== void 0) {
+        throw new ModkitError({
+          code: "x3.host/invalid-trait-range",
+          message: `standard trait ${value.id} must not declare a definition range`
+        });
+      }
+      item = { id: value.id };
+    } else {
+      const range = value.definitionRange === void 0 ? void 0 : parseVersionRange(value.definitionRange);
+      if (range === void 0) {
+        throw new ModkitError({
+          code: "x3.host/invalid-trait-range",
+          message: `custom trait ${value.id} requires a parseable definition range`
+        });
+      }
+      item = { id: value.id, definitionRange: range.normalized };
+    }
+    normalized2.set(canonicalJsonStringify(item), item);
+  }
+  return [...normalized2.entries()].sort(([left], [right]) => compareUtf8(left, right)).map(([, item]) => item);
+}
+function buildLockKey(request) {
+  const range = parseVersionRange(request.contract.range ?? "*");
+  if (range === void 0) {
+    throw new ModkitError({
+      code: "x3.host/invalid-range",
+      message: `unparseable range \xAB${request.contract.range ?? ""}\xBB`
+    });
+  }
+  return {
+    contract: request.contract.contract,
+    major: request.contract.major,
+    normalizedRange: range.normalized,
+    ...request.operation === void 0 ? {} : { operation: request.operation },
+    requiredOutputs: normalizeTraitRequirements(request.requiredOutputs),
+    preferredOutputs: normalizeTraitRequirements(request.preferredOutputs),
+    ...request.workload === void 0 ? {} : { workload: request.workload }
+  };
+}
+function buildLockEntry(request, result) {
+  if (result.state !== "resolved") {
+    throw new ModkitError({
+      code: "x3.host/lock-of-unresolved",
+      message: `cannot lock an unresolved result (${result.reason})`
+    });
+  }
+  if (!isResolutionForRequest(result, request)) {
+    throw new ModkitError({
+      code: "x3.host/lock-request-mismatch",
+      message: "resolution result was not produced for this exact request"
+    });
+  }
+  const offer = result.selected.offer;
+  return {
+    key: {
+      ...buildLockKey(request),
+      ...result.selected.contractSelectionKey === void 0 ? {} : { contractSelectionKey: result.selected.contractSelectionKey }
+    },
+    primary: {
+      extension: offer.extensionId,
+      contributionId: offer.providerId,
+      contractMajor: result.selected.resolvedContract.major,
+      offerId: result.selected.resolvedContract.offerId
+    },
+    resolverVersion: RESOLVER_VERSION
+  };
+}
+function lockKeyString(key3) {
+  return canonicalJsonStringify(key3);
+}
+function serializePolicyLock(entries) {
+  const seen = /* @__PURE__ */ new Map();
+  for (const entry2 of entries) {
+    const key3 = lockKeyString(entry2.key);
+    const rendered = canonicalJsonStringify(entry2);
+    const prior = seen.get(key3);
+    if (prior !== void 0 && prior !== rendered) {
+      throw new ModkitError({
+        code: "x3.host/conflicting-lock-entries",
+        message: "two policy-lock entries share one key but select differently \u2014 one request cannot have two answers",
+        context: { key: key3 }
+      });
+    }
+    seen.set(key3, rendered);
+  }
+  const sorted = [...entries].sort((a, b) => {
+    const byKey = compareUtf8(lockKeyString(a.key), lockKeyString(b.key));
+    return byKey !== 0 ? byKey : compareUtf8(canonicalJsonStringify(a), canonicalJsonStringify(b));
+  });
+  return canonicalJsonStringify({ schemaVersion: 1, entries: sorted });
+}
+function failLock(message, context) {
+  throw new ModkitError({
+    code: "x3.host/invalid-policy-lock",
+    message,
+    ...context === void 0 ? {} : { context }
+  });
+}
+function exactKeys(value, required, optional, label) {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return failLock(`${label} must be an object`);
+  }
+  const record3 = value;
+  const allowed2 = /* @__PURE__ */ new Set([...required, ...optional]);
+  if (required.some((key3) => !(key3 in record3)) || Object.keys(record3).some((key3) => !allowed2.has(key3))) {
+    return failLock(`${label} has missing or unknown fields`);
+  }
+  return record3;
+}
+function lockString(value, label) {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    return failLock(`${label} must be a non-blank string`);
+  }
+  return value;
+}
+function lockMajor(value, label) {
+  if (!Number.isSafeInteger(value) || value < 0) {
+    return failLock(`${label} must be a safe non-negative integer`);
+  }
+  return value;
+}
+function parseLockedTrait(value, label) {
+  const record3 = exactKeys(value, ["id"], ["definitionRange"], label);
+  const idText = lockString(record3["id"], `${label}.id`);
+  if (!isTraitId(idText))
+    return failLock(`${label}.id must be a trait id`);
+  if (isStandardTraitId(idText)) {
+    if (record3["definitionRange"] !== void 0) {
+      return failLock(`${label}: a standard trait cannot carry definitionRange`);
+    }
+    return Object.freeze({ id: idText });
+  }
+  const rangeText = lockString(record3["definitionRange"], `${label}.definitionRange`);
+  const range = parseVersionRange(rangeText);
+  if (range === void 0 || range.normalized !== rangeText) {
+    return failLock(`${label}.definitionRange is not canonical`);
+  }
+  return Object.freeze({ id: idText, definitionRange: rangeText });
+}
+function parseLockedTraits(value, label) {
+  if (!Array.isArray(value))
+    return failLock(`${label} must be an array`);
+  const parsed = value.map((item, index) => parseLockedTrait(item, `${label}[${index}]`));
+  const normalized2 = normalizeTraitRequirements(parsed);
+  if (canonicalJsonStringify(parsed) !== canonicalJsonStringify(normalized2)) {
+    return failLock(`${label} must be unique and canonically sorted`);
+  }
+  return normalized2;
+}
+function parseLockKey(value, label) {
+  const record3 = exactKeys(value, ["contract", "major", "normalizedRange", "requiredOutputs", "preferredOutputs"], ["contractSelectionKey", "operation", "workload"], label);
+  const contractText = lockString(record3["contract"], `${label}.contract`);
+  if (!isQualifiedId(contractText))
+    return failLock(`${label}.contract must be qualified`);
+  const rangeText = lockString(record3["normalizedRange"], `${label}.normalizedRange`);
+  const range = parseVersionRange(rangeText);
+  if (range === void 0 || range.normalized !== rangeText) {
+    return failLock(`${label}.normalizedRange is not canonical`);
+  }
+  const workload = record3["workload"];
+  if (workload !== void 0 && !["thumbnail", "interactive", "batch", "lossless-edit", "simulation", "archival"].includes(String(workload))) {
+    return failLock(`${label}.workload is invalid`);
+  }
+  return Object.freeze({
+    contract: contractId(contractText),
+    major: lockMajor(record3["major"], `${label}.major`),
+    normalizedRange: rangeText,
+    ...record3["contractSelectionKey"] === void 0 ? {} : {
+      contractSelectionKey: lockString(record3["contractSelectionKey"], `${label}.contractSelectionKey`)
+    },
+    ...record3["operation"] === void 0 ? {} : {
+      operation: lockString(record3["operation"], `${label}.operation`)
+    },
+    requiredOutputs: parseLockedTraits(record3["requiredOutputs"], `${label}.requiredOutputs`),
+    preferredOutputs: parseLockedTraits(record3["preferredOutputs"], `${label}.preferredOutputs`),
+    ...workload === void 0 ? {} : { workload }
+  });
+}
+function parseSelection(value, label) {
+  const record3 = exactKeys(value, ["extension", "contributionId", "contractMajor", "offerId"], ["releaseRange"], label);
+  const extension = lockString(record3["extension"], `${label}.extension`);
+  const contributionId2 = lockString(record3["contributionId"], `${label}.contributionId`);
+  if (!isQualifiedId(extension) || !isQualifiedId(contributionId2)) {
+    return failLock(`${label} coordinates must be qualified`);
+  }
+  let releaseRange;
+  if (record3["releaseRange"] !== void 0) {
+    releaseRange = lockString(record3["releaseRange"], `${label}.releaseRange`);
+    const parsed = parseVersionRange(releaseRange);
+    if (parsed === void 0 || parsed.normalized !== releaseRange) {
+      return failLock(`${label}.releaseRange is not canonical`);
+    }
+  }
+  return Object.freeze({
+    extension,
+    ...releaseRange === void 0 ? {} : { releaseRange },
+    contributionId: contributionId2,
+    contractMajor: lockMajor(record3["contractMajor"], `${label}.contractMajor`),
+    offerId: lockString(record3["offerId"], `${label}.offerId`)
+  });
+}
+function parsePolicyLock(text) {
+  let value;
+  try {
+    value = JSON.parse(text);
+  } catch {
+    return failLock("policy lock is not valid JSON");
+  }
+  const root = exactKeys(value, ["schemaVersion", "entries"], [], "policy lock");
+  if (root["schemaVersion"] !== 1 || !Array.isArray(root["entries"])) {
+    return failLock("policy lock schemaVersion/entries are invalid");
+  }
+  const entries = root["entries"].map((raw, index) => {
+    const item = exactKeys(raw, ["key", "primary", "resolverVersion"], ["allowedFallbacks"], `entries[${index}]`);
+    if (item["resolverVersion"] !== RESOLVER_VERSION) {
+      return failLock(`entries[${index}].resolverVersion is unsupported`);
+    }
+    if (item["allowedFallbacks"] !== void 0 && !Array.isArray(item["allowedFallbacks"])) {
+      return failLock(`entries[${index}].allowedFallbacks must be an array`);
+    }
+    return Object.freeze({
+      key: parseLockKey(item["key"], `entries[${index}].key`),
+      primary: parseSelection(item["primary"], `entries[${index}].primary`),
+      ...item["allowedFallbacks"] === void 0 ? {} : {
+        allowedFallbacks: Object.freeze(item["allowedFallbacks"].map((entry2, fallbackIndex) => parseSelection(entry2, `entries[${index}].allowedFallbacks[${fallbackIndex}]`)))
+      },
+      resolverVersion: RESOLVER_VERSION
+    });
+  });
+  const canonical = serializePolicyLock(entries);
+  if (canonical !== text)
+    return failLock("policy lock bytes are not canonical");
+  return Object.freeze({ schemaVersion: 1, entries: Object.freeze(entries) });
+}
+function replayPolicyLock(request, offers, text) {
+  const lock = parsePolicyLock(text);
+  const requestKey = buildLockKey(request);
+  const candidates = lock.entries.filter((entry2) => {
+    const portable = Object.fromEntries(Object.entries(entry2.key).filter(([field]) => field !== "contractSelectionKey"));
+    return canonicalJsonStringify(portable) === canonicalJsonStringify(requestKey);
+  });
+  if (candidates.length !== 1) {
+    throw new ModkitError({
+      code: "x3.host/lock-key-unresolved",
+      message: `policy lock contains ${candidates.length} entries for the request key`
+    });
+  }
+  const locked = candidates[0];
+  const available = offers.filter((offer) => {
+    if (offer.extensionId !== locked.primary.extension || offer.providerId !== locked.primary.contributionId) {
+      return false;
+    }
+    if (locked.primary.releaseRange !== void 0) {
+      const version = parseSemver(offer.extensionVersion);
+      const range = parseVersionRange(locked.primary.releaseRange);
+      if (version === void 0 || range === void 0 || !satisfiesRange(version, range))
+        return false;
+    }
+    return offer.provides.some((provided) => provided.major === locked.primary.contractMajor && provided.offerId === locked.primary.offerId);
+  });
+  return resolveProvider({
+    ...request,
+    pin: {
+      providerId: locked.primary.contributionId,
+      offerId: locked.primary.offerId
+    }
+  }, available);
+}
+
+// ../../MODDING/modkit-core/packages/host/dist/resolution/service-resolver.js
+async function resolveServiceProvider(request, offers, definitions, targetFor) {
+  const accepted = /* @__PURE__ */ new Set();
+  const selectionKeys = /* @__PURE__ */ new Map();
+  for (const offer of offers) {
+    for (const logical of offer.provides) {
+      if (logical.contract !== request.contract.contract || logical.major !== request.contract.major) {
+        continue;
+      }
+      const result = await definitions.matchFacets({
+        contract: logical.contract,
+        major: logical.major,
+        ownerExtensionId: offer.extensionId,
+        offerFacet: logical.facet,
+        requestFacet: request.requestFacet
+      });
+      if (result.state === "match") {
+        accepted.add(logical);
+        selectionKeys.set(logical, result.selectionKey);
+      }
+    }
+  }
+  return resolveProvider(request, offers, {
+    accepts: (_offer, logical) => accepted.has(logical),
+    selectionKey: (_offer, logical) => selectionKeys.get(logical),
+    ...targetFor === void 0 ? {} : { targetFor }
+  });
+}
+function createContractResolverPort(options) {
+  const resolve = async (request) => {
+    const contract = contractId(request.contract);
+    if (options.definitions.lookup(contract, request.major) === void 0) {
+      throw new ModkitError({
+        code: "x3.host/service-contract-unregistered",
+        message: `service contract ${request.contract}@${request.major} is not registered`
+      });
+    }
+    const providerRequest = {
+      contract: { contract, major: request.major },
+      target: options.target,
+      ...request.facet === void 0 ? {} : { requestFacet: request.facet },
+      ...request.requiredOutputs === void 0 ? {} : { requiredOutputs: request.requiredOutputs },
+      ...request.operation === void 0 ? {} : { operation: request.operation }
+    };
+    const result = await resolveServiceProvider(providerRequest, options.offers, options.definitions, options.targetFor);
+    if (result.state !== "resolved") {
+      throw new ModkitError({
+        code: "x3.host/service-contract-unresolved",
+        message: `service contract resolution failed: ${result.reason}`,
+        context: { reason: result.reason }
+      });
+    }
+    const selection = {
+      offerId: result.selected.resolvedContract.offerId,
+      contract: result.selected.resolvedContract.contract,
+      major: result.selected.resolvedContract.major,
+      ...result.selected.contractSelectionKey === void 0 ? {} : { contractSelectionKey: result.selected.contractSelectionKey }
+    };
+    await options.onResolved?.(providerRequest, result);
+    return options.activate(selection, result, request.signal);
+  };
+  return {
+    async resolve(request) {
+      return await resolve(request);
+    },
+    async resolveUnknown(request) {
+      return resolve(request);
+    }
+  };
+}
+
+// ../../MODDING/modkit-core/packages/host/dist/execution/backend.js
+var PROFILE_VALUES = Object.freeze([
+  "browser-sandbox",
+  "worker-brokered",
+  "process-brokered",
+  "wasm-brokered",
+  "trusted-in-process",
+  "remote-provider"
+]);
+var REGISTRY_BINDINGS = /* @__PURE__ */ Symbol.for("x3.host/execution-backend-registry-bindings");
+function bindingsOf(registry) {
+  const value = registry[REGISTRY_BINDINGS];
+  return value instanceof Map ? value : void 0;
+}
+function invalid(message) {
+  return new ModkitError({ code: "x3.host/invalid-execution-backend", message });
+}
+function createExecutionBackendRegistry(backends, options = {}) {
+  const bindings = /* @__PURE__ */ new Map();
+  for (const [index, backend] of backends.entries()) {
+    if (typeof backend !== "object" || backend === null) {
+      throw invalid(`execution backend[${index}] must be an object`);
+    }
+    const profile3 = backend.profile;
+    const supports = backend.supports;
+    const activate = backend.activate;
+    if (!PROFILE_VALUES.includes(profile3)) {
+      throw invalid(`execution backend[${index}] has an invalid profile`);
+    }
+    if (typeof supports !== "function" || typeof activate !== "function") {
+      throw invalid(`execution backend ${profile3} must provide supports and activate callbacks`);
+    }
+    if (bindings.has(profile3)) {
+      throw invalid(`execution backend profile ${profile3} is registered more than once`);
+    }
+    bindings.set(profile3, Object.freeze({ profile: profile3, supports, activate }));
+  }
+  const profiles = Object.freeze([...bindings.keys()].sort());
+  const registry = {
+    profiles,
+    ...options.inProcessTarget === void 0 ? {} : { inProcessTarget: options.inProcessTarget },
+    supports(profile3, target, variant) {
+      try {
+        const binding = bindings.get(profile3);
+        if (binding === void 0 || variant.executionProfile !== profile3)
+          return false;
+        return binding.supports(target, variant) === true;
+      } catch {
+        return false;
+      }
+    }
+  };
+  Object.defineProperty(registry, REGISTRY_BINDINGS, {
+    value: bindings,
+    enumerable: false,
+    writable: false,
+    configurable: false
+  });
+  return Object.freeze(registry);
+}
+async function activateExecutionBackend(registry, context) {
+  throwIfAborted(context.signal);
+  const bindings = bindingsOf(registry);
+  if (bindings === void 0) {
+    throw invalid("execution backend registry was not created by this host");
+  }
+  const profile3 = context.variant.executionProfile;
+  const binding = bindings.get(profile3);
+  if (binding === void 0 || !registry.supports(profile3, context.target, context.variant)) {
+    throw new ModkitError({
+      code: "x3.host/execution-backend-unavailable",
+      message: `no execution backend can honour ${profile3} for ${context.target.environment}`,
+      context: { profile: profile3, environment: context.target.environment }
+    });
+  }
+  const raw = await binding.activate({
+    ...context,
+    entrypoint: new URL(context.entrypoint.href),
+    artifactRoot: new URL(context.artifactRoot.href)
+  });
+  if (typeof raw !== "object" || raw === null || typeof raw.module !== "object" || raw.module === null || Array.isArray(raw.module) || typeof raw.release !== "function") {
+    if (typeof raw === "object" && raw !== null && typeof raw.release === "function") {
+      try {
+        await raw.release();
+      } catch {
+      }
+    }
+    throw invalid(`execution backend ${profile3} returned an invalid module lease`);
+  }
+  let released = false;
+  return Object.freeze({
+    module: raw.module,
+    async release() {
+      if (released)
+        return;
+      released = true;
+      await raw.release();
+    }
+  });
+}
+var TRUSTED_IN_PROCESS_EXECUTION_BACKEND = /* @__PURE__ */ Object.freeze({
+  profile: "trusted-in-process",
+  supports: (_target, variant) => variant.executionProfile === "trusted-in-process",
+  async activate(context) {
+    throwIfAborted(context.signal);
+    const module = await import(context.entrypoint.href);
+    return Object.freeze({ module, release: async () => void 0 });
+  }
+});
+function linkedInProcessBackend(linked) {
+  return Object.freeze({
+    profile: "trusted-in-process",
+    supports: (_target, variant) => variant.executionProfile === "trusted-in-process",
+    async activate(context) {
+      throwIfAborted(context.signal);
+      const preLinked = linked.get(context.entrypoint.href);
+      if (preLinked !== void 0) {
+        return Object.freeze({ module: preLinked, release: async () => void 0 });
+      }
+      if (context.entrypoint.protocol === "modkit-linked:") {
+        throw new ModkitError({
+          code: "x3.host/linked-module-missing",
+          message: `no linked module was registered for ${context.entrypoint.href}`,
+          context: { entrypoint: context.entrypoint.href }
+        });
+      }
+      const module = await import(context.entrypoint.href);
+      return Object.freeze({ module, release: async () => void 0 });
+    }
+  });
+}
+var DEFAULT_EXECUTION_BACKENDS = /* @__PURE__ */ createExecutionBackendRegistry([TRUSTED_IN_PROCESS_EXECUTION_BACKEND]);
+
+// ../../MODDING/modkit-core/packages/host/dist/security/gate.js
+var issuedTickets = /* @__PURE__ */ new WeakSet();
+var ticketBindings = /* @__PURE__ */ new WeakMap();
+function resolveForActivation(request, offers, operation) {
+  const result = resolveProvider(request, offers);
+  if (result.state !== "resolved")
+    return { result };
+  const binding = inventoryBindingForOffer(result.selected.offer);
+  if (binding === void 0)
+    return { result };
+  return { result, ticket: issueActivationTicket(result, request.target, operation) };
+}
+function issueActivationTicket(result, target, operation) {
+  if (!isResolverProduct(result)) {
+    throw new ModkitError({
+      code: "x3.host/foreign-resolution-result",
+      message: "this object was not produced by the host resolver \u2014 a ticket can only be issued for a real resolution"
+    });
+  }
+  if (result.state !== "resolved") {
+    throw new ModkitError({
+      code: "x3.host/no-ticket-for-unresolved",
+      message: `cannot issue an activation ticket for an unresolved result (${result.reason})`,
+      context: { reason: result.reason }
+    });
+  }
+  const offer = result.selected.offer;
+  const inventoryBinding = inventoryBindingForOffer(offer);
+  if (inventoryBinding === void 0) {
+    throw new ModkitError({
+      code: "x3.host/offer-not-in-inventory",
+      message: "activation tickets can only be issued for production inventory offers"
+    });
+  }
+  const privateRecord = inventoryRecordFor(inventoryBinding.contribution);
+  if (privateRecord === void 0 || inventoryBinding.contribution.manifest === void 0) {
+    throw new ModkitError({
+      code: "x3.host/inventory-record-unavailable",
+      message: "the selected provider no longer has an attested inventory record"
+    });
+  }
+  const manifest = inventoryBinding.contribution.manifest;
+  const ticket = Object.freeze({
+    contributionContract: Object.freeze({
+      id: manifest.contract.id,
+      major: manifest.contract.major
+    }),
+    offeredContract: Object.freeze({
+      id: result.selected.resolvedContract.contract,
+      version: result.selected.resolvedContract.version
+    }),
+    inventoryRecordId: privateRecord.publicRecord.inventoryRecordId,
+    manifestDigest: privateRecord.publicRecord.manifestDigest,
+    artifactDigest: privateRecord.publicRecord.artifactDigest,
+    artifactRoot: new URL(privateRecord.publicRecord.artifactRoot),
+    extensionId: offer.extensionId,
+    contributionId: offer.providerId,
+    offerId: result.selected.resolvedContract.offerId,
+    offerFingerprint: inventoryBinding.offerFingerprint,
+    ...result.selected.contractSelectionKey === void 0 ? {} : { contractSelectionKey: result.selected.contractSelectionKey },
+    variantId: offer.runtimeVariant,
+    target: JSON.parse(canonicalJsonStringify(target)),
+    ...operation === void 0 ? {} : { operation }
+  });
+  issuedTickets.add(ticket);
+  ticketBindings.set(ticket, {
+    contribution: inventoryBinding.contribution,
+    ticketFingerprint: ticketFingerprint(ticket)
+  });
+  return ticket;
+}
+function ticketFingerprint(ticket) {
+  return canonicalJsonStringify({
+    contributionContract: ticket.contributionContract,
+    offeredContract: ticket.offeredContract,
+    inventoryRecordId: ticket.inventoryRecordId,
+    manifestDigest: ticket.manifestDigest,
+    artifactDigest: ticket.artifactDigest,
+    artifactRoot: ticket.artifactRoot.href,
+    extensionId: ticket.extensionId,
+    contributionId: ticket.contributionId,
+    offerId: ticket.offerId,
+    offerFingerprint: ticket.offerFingerprint,
+    ...ticket.contractSelectionKey === void 0 ? {} : { contractSelectionKey: ticket.contractSelectionKey },
+    variantId: ticket.variantId,
+    target: ticket.target,
+    ...ticket.operation === void 0 ? {} : { operation: ticket.operation }
+  });
+}
+var PERMISSION_DEGRADED_DIAGNOSTIC = "x3.host/permission-degraded";
+function permissionDegradedDiagnostic(contributionId2, degraded) {
+  return diagnostic("information", PERMISSION_DEGRADED_DIAGNOSTIC, `\xAB${contributionId2}\xBB runs without ${degraded.join(", ")}: the grant does not cover these classes, so the operations that need them are disabled (ADR-HOST-002 \xA72)`, [contributionId2], { degraded });
+}
+function operationScopedClasses(manifest) {
+  const spec = manifest.spec;
+  return operationScopedPermissionClasses(spec?.operations);
+}
+var PROBE_OPERATION = "probe";
+var PROBE_PERMISSION_CLASSES = Object.freeze(["read-source"]);
+function deny(code, message, context) {
+  return new ModkitError({
+    code,
+    message,
+    ...context === void 0 ? {} : { context }
+  });
+}
+function targetSatisfies(variant, target) {
+  const c = variant.target;
+  const problems = [];
+  const has = (list, value, anyAllowed = false) => list === void 0 || anyAllowed && list.includes("any") || list.includes(value);
+  if (!has(c.environments, target.environment))
+    problems.push(`environment ${target.environment}`);
+  if (!has(c.operatingSystems, target.operatingSystem, true)) {
+    problems.push(`operatingSystem ${target.operatingSystem}`);
+  }
+  if (!has(c.architectures, target.architecture, true)) {
+    problems.push(`architecture ${target.architecture}`);
+  }
+  for (const cap of c.requiredHostCapabilities ?? []) {
+    if (!(target.hostCapabilities ?? []).includes(cap))
+      problems.push(`hostCapability ${cap}`);
+  }
+  for (const api of c.requiredWebApis ?? []) {
+    if (!(target.webApis ?? []).includes(api))
+      problems.push(`webApi ${api}`);
+  }
+  for (const tool of c.externalTools ?? []) {
+    if (!(target.externalTools ?? []).includes(tool))
+      problems.push(`externalTool ${tool}`);
+  }
+  return problems;
+}
+async function activateContribution(request) {
+  throwIfAborted(request.signal);
+  const { ticket } = request;
+  const ticketBinding = ticketBindings.get(ticket);
+  if (!issuedTickets.has(ticket) || ticketBinding === void 0 || ticketBinding.ticketFingerprint !== ticketFingerprint(ticket)) {
+    throw deny("x3.host/invalid-ticket", "activation requires a ticket issued by this host from a real resolution");
+  }
+  const privateRecord = inventoryRecordFor(ticketBinding.contribution);
+  const manifest = ticketBinding.contribution.manifest;
+  if (privateRecord === void 0 || manifest === void 0) {
+    throw deny("x3.host/inventory-record-unavailable", "the ticket inventory record is unavailable");
+  }
+  const mismatches = [];
+  if (ticket.inventoryRecordId !== privateRecord.publicRecord.inventoryRecordId)
+    mismatches.push("inventory record");
+  if (ticket.manifestDigest !== privateRecord.publicRecord.manifestDigest)
+    mismatches.push("manifest digest");
+  if (ticket.artifactDigest !== privateRecord.publicRecord.artifactDigest)
+    mismatches.push("artifact digest");
+  if (ticket.artifactRoot.href !== privateRecord.publicRecord.artifactRoot)
+    mismatches.push("artifact root");
+  if (ticket.contributionId !== manifest.id)
+    mismatches.push("contribution");
+  if (ticket.contributionContract.id !== manifest.contract.id)
+    mismatches.push("contract");
+  if (ticket.contributionContract.major !== manifest.contract.major)
+    mismatches.push("contract major");
+  if (mismatches.length > 0) {
+    throw deny("x3.host/ticket-manifest-mismatch", `the ticket does not describe this contribution (${mismatches.join(", ")})`, { mismatches, ticketContribution: ticket.contributionId, manifestId: manifest.id });
+  }
+  if (!await privateRecord.verifyArtifactDigest(ticket.artifactDigest)) {
+    throw deny("x3.host/artifact-digest-mismatch", "the selected artifact changed after inventory and will not be imported", { inventoryRecordId: ticket.inventoryRecordId });
+  }
+  const variant = (manifest.runtimeVariants ?? []).find((v) => v.variantId === ticket.variantId);
+  if (!variant) {
+    throw deny("x3.host/unknown-variant", `contribution \xAB${manifest.id}\xBB has no runtime variant \xAB${ticket.variantId}\xBB`);
+  }
+  const targetProblems = targetSatisfies(variant, ticket.target);
+  if (targetProblems.length > 0) {
+    throw deny("x3.host/target-incompatible", `variant \xAB${variant.variantId}\xBB does not support this target: ${targetProblems.join(", ")}`, { problems: targetProblems });
+  }
+  const executionBackends = request.executionBackends ?? DEFAULT_EXECUTION_BACKENDS;
+  if (!executionBackends.supports(variant.executionProfile, ticket.target, variant)) {
+    throw deny("x3.host/execution-backend-unavailable", `profile \xAB${variant.executionProfile}\xBB has no backend for ${ticket.target.environment} \u2014 refusing rather than running under a weaker boundary (24 \xA76.1 rule 1)`, { profile: variant.executionProfile, environment: ticket.target.environment });
+  }
+  if (variant.executionProfile === "trusted-in-process" && privateRecord.execution.allowTrustedInProcess !== true) {
+    throw deny("x3.host/trusted-in-process-not-authorized", `extension \xAB${ticket.extensionId}\xBB came from ${privateRecord.execution.origin} inventory without an explicit host decision allowing full process authority`, { extensionId: ticket.extensionId, origin: privateRecord.execution.origin });
+  }
+  const validity = grantValidity(request.grant);
+  if (validity.state !== "valid") {
+    throw deny("x3.host/grant-not-live", validity.state === "malformed" ? `grant \xAB${request.grant.id}\xBB has an unparseable expiresAt (\xAB${validity.value}\xBB) \u2014 treated as expired` : `grant \xAB${request.grant.id}\xBB expired at ${validity.at}`, { grant: request.grant.id, validity: validity.state });
+  }
+  const probeScoped = ticket.operation === PROBE_OPERATION;
+  const requestedClasses = probeScoped ? variant.requestedPermissionClasses.filter((item) => PROBE_PERMISSION_CLASSES.includes(item)) : variant.requestedPermissionClasses;
+  const callerProbeCeiling = request.policy?.operationClasses?.[PROBE_OPERATION];
+  const policy = probeScoped ? {
+    ...request.policy,
+    operationClasses: {
+      ...request.policy?.operationClasses,
+      [PROBE_OPERATION]: callerProbeCeiling === void 0 ? PROBE_PERMISSION_CLASSES : callerProbeCeiling.filter((item) => PROBE_PERMISSION_CLASSES.includes(item))
+    }
+  } : request.policy;
+  const { child, missing } = narrowGrant(request.grant, {
+    requestedClasses,
+    childId: `${request.grant.id}/${manifest.id}#${variant.variantId}${probeScoped ? "#probe" : ""}`,
+    ...ticket.operation === void 0 ? {} : { operation: ticket.operation },
+    ...policy === void 0 ? {} : { policy }
+  });
+  const operationScoped = operationScopedClasses(manifest);
+  const hardMissing = missing.filter((item) => !operationScoped.has(item));
+  if (hardMissing.length > 0) {
+    throw deny("x3.host/permission-denied", `grant \xAB${request.grant.id}\xBB does not cover: ${hardMissing.join(", ")}`, { missing: hardMissing });
+  }
+  const degraded = missing.filter((item) => operationScoped.has(item));
+  const entryUrl = resolveContainedEntrypoint(privateRecord.artifactRoot, variant.entrypoint);
+  throwIfAborted(request.signal);
+  const backendLease = await activateExecutionBackend(executionBackends, {
+    ticket,
+    entrypoint: entryUrl,
+    artifactRoot: privateRecord.artifactRoot,
+    ...privateRecord.fileDigests === void 0 ? {} : { fileDigests: privateRecord.fileDigests },
+    variant,
+    target: ticket.target,
+    grant: child,
+    ...request.signal === void 0 ? {} : { signal: request.signal }
+  });
+  const diagnostics = [];
+  if (degraded.length > 0)
+    diagnostics.push(permissionDegradedDiagnostic(manifest.id, degraded));
+  if (variant.executionProfile === "worker-brokered") {
+    diagnostics.push(diagnostic("information", "x3.host/worker-shared-process", `\xAB${manifest.id}\xBB runs worker-brokered: a crash, hang or protocol violation of this code is isolated from the host, but the worker shares the process \u2014 it is not a security sandbox (24 \xA76.1 SB-1).`, [manifest.id], { grant: child.id, classes: child.classes }));
+  }
+  if (variant.executionProfile === "trusted-in-process") {
+    diagnostics.push(diagnostic("warning", "x3.host/full-process-authority", `\xAB${manifest.id}\xBB runs as trusted-in-process: the host checks grants at dispatch and brokers what it owns, but it cannot technically prevent this code from reaching Node.js filesystem/network built-ins or the process itself. This is an audit/policy boundary, not a sandbox (24 \xA75.1).`, [manifest.id], { grant: child.id, classes: child.classes }));
+  }
+  return {
+    module: backendLease.module,
+    variant,
+    effectiveGrant: child,
+    diagnostics,
+    release: backendLease.release
+  };
+}
+
+// ../../MODDING/modkit-core/packages/host/dist/service-leases.js
+function serviceTargetFor(executionBackends, offer, target) {
+  const inProcess = executionBackends.inProcessTarget;
+  if (inProcess === void 0)
+    return target;
+  const contribution = inventoryBindingForOffer(offer)?.contribution;
+  const variant = contribution?.manifest?.runtimeVariants?.find((item) => item.variantId === offer.runtimeVariant);
+  if (contribution === void 0 || variant?.executionProfile !== "trusted-in-process" || inventoryRecordFor(contribution)?.execution.allowTrustedInProcess !== true) {
+    return target;
+  }
+  return Object.freeze({
+    ...inProcess,
+    ...target.grantedPermissions === void 0 ? {} : { grantedPermissions: target.grantedPermissions }
+  });
+}
+async function activateServiceProvider(options) {
+  const ticket = issueActivationTicket(options.result, serviceTargetFor(options.executionBackends, options.result.selected.offer, options.target));
+  const activation = await activateContribution({
+    ticket,
+    grant: options.grant,
+    executionBackends: options.executionBackends,
+    ...options.policy === void 0 ? {} : { policy: options.policy },
+    ...options.signal === void 0 ? {} : { signal: options.signal }
+  });
+  options.diagnostics?.push(...activation.diagnostics);
+  const providerId = options.result.selected.offer.providerId;
+  const fail2 = async (code, message) => {
+    await activation.release();
+    throw new ModkitError({ code, message });
+  };
+  if (activation.module["abiVersion"] !== 1 || typeof activation.module["createProvider"] !== "function") {
+    return fail2("x3.host/invalid-service-provider-module", `provider ${providerId} does not implement ServiceProviderModule ABI v1`);
+  }
+  const createProvider5 = activation.module["createProvider"];
+  let lease2;
+  try {
+    const baseContext = options.contextFor(activation.effectiveGrant);
+    const context = Object.freeze({
+      ...baseContext,
+      providerIdentity: Object.freeze({
+        providerId,
+        providerVersion: options.result.selected.offer.extensionVersion,
+        artifactDigest: ticket.artifactDigest
+      })
+    });
+    lease2 = await createProvider5(options.selection, context);
+  } catch (error3) {
+    await activation.release();
+    throw error3;
+  }
+  if (typeof lease2 !== "object" || lease2 === null || !("value" in lease2) || typeof lease2.release !== "function") {
+    return fail2("x3.host/invalid-service-provider-lease", `provider ${providerId} returned an invalid lease`);
+  }
+  let released = false;
+  return Object.freeze({
+    lease: lease2,
+    effectiveGrant: activation.effectiveGrant,
+    executionProfile: activation.variant.executionProfile,
+    attestation: Object.freeze({
+      manifestDigest: ticket.manifestDigest,
+      artifactDigest: ticket.artifactDigest,
+      offerFingerprint: ticket.offerFingerprint
+    }),
+    async release() {
+      if (released)
+        return;
+      released = true;
+      try {
+        await lease2.release();
+      } finally {
+        await activation.release();
+      }
+    }
+  });
+}
+function createHostServiceResolver(options) {
+  const offers = options.offers ?? offersFromInventory(options.inventory);
+  const target = Object.freeze({
+    ...options.target,
+    grantedPermissions: [
+      .../* @__PURE__ */ new Set([...options.target.grantedPermissions ?? [], ...options.grant.classes])
+    ].sort()
+  });
+  const activations = [];
+  const locks = [];
+  const diagnostics = [];
+  const activationFacts = [];
+  const makePort = (grant, chain) => createContractResolverPort({
+    offers,
+    definitions: options.definitions,
+    target,
+    targetFor: (offer) => serviceTargetFor(options.executionBackends, offer, target),
+    onResolved(request, result) {
+      locks.push(buildLockEntry(request, result));
+    },
+    async activate(selection, result, signal) {
+      const key3 = `${selection.contract}@${selection.major}:${result.selected.offer.providerId}:${selection.offerId}`;
+      if (chain.includes(key3)) {
+        throw new ModkitError({
+          code: "x3.host/service-dependency-cycle",
+          message: `service activation cycle detected at ${key3}`
+        });
+      }
+      const activation = await activateServiceProvider({
+        selection,
+        result,
+        target,
+        grant,
+        executionBackends: options.executionBackends,
+        ...options.policy === void 0 ? {} : { policy: options.policy },
+        ...signal === void 0 ? {} : { signal },
+        diagnostics,
+        contextFor: (effectiveGrant) => {
+          const settings = options.contributionSettings?.(result.selected.offer.providerId);
+          return Object.freeze({
+            contracts: makePort(effectiveGrant, [...chain, key3]),
+            budgets: options.budgets,
+            ...chain.length !== 0 || options.logicalResourcesFor === void 0 ? {} : { logicalResources: options.logicalResourcesFor(effectiveGrant) },
+            ...chain.length !== 0 || options.installationProbes === void 0 ? {} : { installationProbes: options.installationProbes },
+            diagnostics: {
+              report(item) {
+                diagnostics.push(item);
+              }
+            },
+            ...settings === void 0 ? {} : { settings },
+            ...options.signal === void 0 ? {} : { signal: options.signal }
+          });
+        }
+      });
+      activations.push(activation);
+      activationFacts.push(Object.freeze({
+        providerId: result.selected.offer.providerId,
+        contract: selection.contract,
+        major: selection.major,
+        offerId: selection.offerId,
+        runtimeVariant: result.selected.offer.runtimeVariant,
+        executionProfile: activation.executionProfile,
+        manifestDigest: activation.attestation.manifestDigest,
+        artifactDigest: activation.attestation.artifactDigest,
+        offerFingerprint: activation.attestation.offerFingerprint,
+        effectiveGrant: activation.effectiveGrant
+      }));
+      return Object.freeze({ value: activation.lease.value, release: () => activation.release() });
+    }
+  });
+  const port = makePort(options.grant, []);
+  return Object.freeze({
+    port,
+    locks,
+    diagnostics,
+    get activationFacts() {
+      return Object.freeze([...activationFacts]);
+    },
+    async release() {
+      let firstError;
+      for (const activation of activations.splice(0).reverse()) {
+        try {
+          await activation.release();
+        } catch (error3) {
+          firstError ??= error3;
+        }
+      }
+      if (firstError !== void 0)
+        throw firstError;
+    }
+  });
+}
+
+// ../../MODDING/modkit-core/packages/host/dist/detection-index.js
 var MAX_SIGNATURE_WINDOW_BYTES = 4096 + 64;
 var clamp = (value) => Math.min(value, MAX_SIGNATURE_WINDOW_BYTES);
 function signatureNeeds(ruleSets) {
@@ -2385,7 +2628,7 @@ function matchesSignatures(rules, windows) {
   return false;
 }
 
-// ../MODDING/modkit-core/packages/host/dist/resource-session.js
+// ../../MODDING/modkit-core/packages/host/dist/resource-session.js
 var RESOURCE_NOT_FOUND = "x3.host/resource-not-found";
 var RESOURCE_NOT_ALLOWLISTED = "x3.host/resource-not-allowlisted";
 var RESOURCE_PATH_REFUSED = "x3.host/resource-path-refused";
@@ -2706,1231 +2949,3373 @@ function createResourceSession(options) {
   };
 }
 
-// ../MODDING/modkit-core/packages/vfs/dist/content-sources.js
-var HOST_LAYER_SOURCE_ID = "host";
-var MOD_CONTEXT_MAX_QUERY_REFS = 1024;
-
-// ../MODDING/modkit-core/packages/host/dist/language/context.js
-var LANGUAGE_WORKSPACE_SEMANTIC_PAYLOAD_MAX_DEPTH = 64;
-var LANGUAGE_WORKSPACE_SEMANTIC_PAYLOAD_MAX_BYTES = 64 * 1024 * 1024;
-var LANGUAGE_WORKSPACE_SEMANTIC_INPUTS_MAX = 256;
-var encoder2 = new TextEncoder();
-var boundedContextText = (value) => typeof value === "string" && value.length > 0 && value.length <= 8192 && !value.includes("\0");
-function cloneSemanticPayload(value, depth = 0, ancestors = /* @__PURE__ */ new Set()) {
-  if (depth > LANGUAGE_WORKSPACE_SEMANTIC_PAYLOAD_MAX_DEPTH) {
-    throw new TypeError("language workspace semantic payload exceeds maximum depth");
-  }
-  if (value === null || typeof value === "string" || typeof value === "boolean" || typeof value === "number" && Number.isFinite(value)) {
-    return value;
-  }
-  if (typeof value !== "object" || ancestors.has(value)) {
-    throw new TypeError("language workspace semantic payload is not strict JSON");
-  }
-  ancestors.add(value);
-  const keys = Reflect.ownKeys(value);
-  if (keys.some((key3) => typeof key3 !== "string")) {
-    throw new TypeError("language workspace semantic payload is not strict JSON");
-  }
-  if (Array.isArray(value)) {
-    const expectedKeys = /* @__PURE__ */ new Set(["length"]);
-    for (let index = 0; index < value.length; index += 1)
-      expectedKeys.add(String(index));
-    if (keys.length !== expectedKeys.size || keys.some((key3) => typeof key3 !== "string" || !expectedKeys.has(key3))) {
-      throw new TypeError("language workspace semantic payload is not strict JSON");
-    }
-    const clone2 = [];
-    for (let index = 0; index < value.length; index += 1) {
-      const descriptor = Object.getOwnPropertyDescriptor(value, String(index));
-      if (descriptor === void 0 || !descriptor.enumerable || !("value" in descriptor)) {
-        throw new TypeError("language workspace semantic payload is not strict JSON");
-      }
-      clone2.push(cloneSemanticPayload(descriptor.value, depth + 1, ancestors));
-    }
-    ancestors.delete(value);
-    return Object.freeze(clone2);
-  }
-  const prototype = Object.getPrototypeOf(value);
-  if (prototype !== Object.prototype && prototype !== null) {
-    throw new TypeError("language workspace semantic payload is not strict JSON");
-  }
-  const clone = {};
-  for (const key3 of keys) {
-    const descriptor = Object.getOwnPropertyDescriptor(value, key3);
-    if (key3 === "__proto__" || key3 === "prototype" || key3 === "constructor" || descriptor === void 0 || !descriptor.enumerable || !("value" in descriptor)) {
-      throw new TypeError("language workspace semantic payload is not strict JSON");
-    }
-    clone[key3] = cloneSemanticPayload(descriptor.value, depth + 1, ancestors);
-  }
-  ancestors.delete(value);
-  return Object.freeze(clone);
+// ../../MODDING/modkit-core/packages/host/dist/detection-selection.js
+var EVIDENCE_KINDS = Object.freeze([
+  "magic",
+  "structure",
+  "companion",
+  "context",
+  "extension",
+  "user-override"
+]);
+function fail(code, message) {
+  throw new ModkitError({ code, message });
 }
-function validatedLanguageWorkspaceSemanticInputs(value) {
-  if (!Array.isArray(value) || value.length > LANGUAGE_WORKSPACE_SEMANTIC_INPUTS_MAX) {
-    throw new TypeError("language workspace semantic inputs are invalid");
-  }
-  let payloadBytes2 = 0;
-  const byKey = /* @__PURE__ */ new Map();
-  for (const item of value) {
-    const keys = typeof item === "object" && item !== null ? Reflect.ownKeys(item) : [];
-    if (typeof item !== "object" || item === null || Array.isArray(item) || Object.getPrototypeOf(item) !== Object.prototype && Object.getPrototypeOf(item) !== null || keys.some((key4) => typeof key4 !== "string" || !["kind", "id", "revision", "payload"].includes(key4))) {
-      throw new TypeError("language workspace semantic input is invalid");
-    }
-    const descriptors = Object.getOwnPropertyDescriptors(item);
-    if (keys.some((key4) => {
-      if (typeof key4 !== "string")
-        return true;
-      const descriptor = descriptors[key4];
-      return descriptor === void 0 || !descriptor.enumerable || !("value" in descriptor);
-    })) {
-      throw new TypeError("language workspace semantic input is invalid");
-    }
-    const kind = descriptors["kind"]?.value;
-    const id = descriptors["id"]?.value;
-    const revision = descriptors["revision"]?.value;
-    if (!boundedContextText(kind) || !boundedContextText(id) || !boundedContextText(revision)) {
-      throw new TypeError("language workspace semantic input is invalid");
-    }
-    const hasPayload = Object.prototype.hasOwnProperty.call(item, "payload");
-    const payload = hasPayload ? cloneSemanticPayload(descriptors["payload"]?.value) : void 0;
-    if (payload !== void 0) {
-      payloadBytes2 += encoder2.encode(JSON.stringify(payload)).byteLength;
-      if (payloadBytes2 > LANGUAGE_WORKSPACE_SEMANTIC_PAYLOAD_MAX_BYTES) {
-        throw new TypeError("language workspace semantic payload exceeds maximum bytes");
-      }
-    }
-    const copy = Object.freeze({
-      kind,
-      id,
-      revision,
-      ...hasPayload ? { payload } : {}
-    });
-    const key3 = `${copy.kind}\0${copy.id}`;
-    const previous = byKey.get(key3);
-    if (previous !== void 0 && (previous.revision !== copy.revision || canonicalJsonStringify(previous) !== canonicalJsonStringify(copy))) {
-      throw new TypeError(`language workspace semantic input ${copy.kind}/${copy.id} conflicts`);
-    }
-    byKey.set(key3, copy);
-  }
-  return Object.freeze([...byKey.values()].sort((left, right) => compareUtf8(left.kind, right.kind) || compareUtf8(left.id, right.id)));
-}
-var fnv64 = (value, seed, reverse) => {
-  const bytes = new TextEncoder().encode(value);
-  let hash = seed;
-  for (let index = 0; index < bytes.length; index += 1) {
-    const offset = reverse ? bytes.length - index - 1 : index;
-    hash ^= BigInt(bytes[offset]);
-    hash = BigInt.asUintN(64, hash * 0x100000001b3n);
-  }
-  return hash.toString(16).padStart(16, "0");
-};
-var languageWorkspaceContextToken = (value) => {
-  const canonical = canonicalJsonStringify(value);
-  return `language-context-v1:${fnv64(canonical, 0xcbf29ce484222325n, false)}${fnv64(canonical, 0x84222325cbf29ce4n, true)}`;
-};
-
-// ../MODDING/modkit-core/packages/host/dist/resolution/resolver.js
-var RESOLVER_VERSION = 1;
-var resolverProducts = /* @__PURE__ */ new WeakMap();
-function requestProvenanceKey(request) {
-  return canonicalJsonStringify(request);
-}
-function isResolverProduct(result) {
-  const provenance = resolverProducts.get(result);
-  return provenance !== void 0 && provenance.resultKey === canonicalJsonStringify(result);
-}
-function isResolutionForRequest(result, request) {
-  const provenance = resolverProducts.get(result);
-  return provenance !== void 0 && provenance.requestKey === requestProvenanceKey(request) && provenance.resultKey === canonicalJsonStringify(result);
-}
-function remember(result, request) {
-  resolverProducts.set(result, {
-    requestKey: requestProvenanceKey(request),
-    resultKey: canonicalJsonStringify(result)
-  });
-  return result;
-}
-function candidateSortKey(candidate) {
-  return canonicalJsonStringify({
-    providerId: candidate.offer.providerId,
-    runtimeVariant: candidate.offer.runtimeVariant,
-    offerId: candidate.contractOffer.offerId,
-    version: candidate.contractOffer.version
-  });
-}
-function isSubset(needed, have) {
-  return (needed ?? []).every((item) => have.includes(item));
-}
-function traitOfferMatches(requirement, offer) {
-  if (requirement.id !== offer.id)
-    return false;
-  if (isStandardTraitId(requirement.id)) {
-    return requirement.definitionRange === void 0 && offer.definitionVersion === void 0;
-  }
-  if (requirement.definitionRange === void 0 || offer.definitionVersion === void 0)
-    return false;
-  const range = parseVersionRange(requirement.definitionRange);
-  const version = parseSemver(offer.definitionVersion);
-  return range !== void 0 && version !== void 0 && satisfiesRange(version, range);
-}
-function hasTraitOutputs(needed, offered) {
-  return (needed ?? []).every((requirement) => offered.some((offer) => traitOfferMatches(requirement, offer)));
-}
-function uniqueTraitRequirements(values) {
-  const unique = /* @__PURE__ */ new Map();
-  for (const value of values ?? []) {
-    const range = value.definitionRange === void 0 ? void 0 : parseVersionRange(value.definitionRange);
-    const normalized2 = {
-      id: value.id,
-      ...value.definitionRange === void 0 ? {} : { definitionRange: range?.normalized ?? value.definitionRange }
-    };
-    unique.set(canonicalJsonStringify(normalized2), normalized2);
-  }
-  return [...unique.values()];
-}
-function traitRequirementsAreValid(values) {
-  return (values ?? []).every((value) => isStandardTraitId(value.id) ? value.definitionRange === void 0 : value.definitionRange !== void 0 && parseVersionRange(value.definitionRange) !== void 0);
-}
-function resolveProvider(request, offers, preparation) {
-  if (!traitRequirementsAreValid(request.requiredOutputs) || !traitRequirementsAreValid(request.preferredOutputs)) {
-    return remember({ state: "unresolved", reason: "output-missing", rejected: [] }, request);
-  }
-  const requiredOutputs = uniqueTraitRequirements(request.requiredOutputs);
-  const preferredOutputs = uniqueTraitRequirements(request.preferredOutputs);
-  const rejected2 = [];
-  const reject = (offer, reason, detail, offerId) => rejected2.push({
-    providerId: offer.providerId,
-    runtimeVariant: offer.runtimeVariant,
-    ...offerId === void 0 ? {} : { offerId },
-    reason,
-    ...detail === void 0 ? {} : { detail }
-  });
-  const candidates = [];
-  for (const offer of offers) {
-    const contractMatches = offer.provides.filter((p) => {
-      if (p.contract !== request.contract.contract || p.major !== request.contract.major) {
-        return false;
-      }
-      const version = parseSemver(p.version);
-      return version !== void 0 && version.major === p.major && (preparation?.accepts?.(offer, p) ?? true);
-    });
-    if (contractMatches.length === 0) {
-      reject(offer, "no-offer", `does not provide ${request.contract.contract}@${request.contract.major}`);
-      continue;
-    }
-    if (offer.kind !== "primary" && offer.kind !== "replacement") {
-      reject(offer, "unsupported-kind", `resolver v1 executes only primary/replacement, got ${offer.kind}`);
-      continue;
-    }
-    for (const match of contractMatches) {
-      const selectionKey = preparation?.selectionKey?.(offer, match);
-      candidates.push({
-        offer,
-        contractOffer: match,
-        ...selectionKey === void 0 ? {} : { contractSelectionKey: selectionKey }
-      });
-    }
-  }
-  if (candidates.length === 0) {
-    return remember({ state: "unresolved", reason: "no-offer", rejected: sortRejected(rejected2) }, request);
-  }
-  const range = parseVersionRange(request.contract.range ?? "*");
-  const versionOk = candidates.filter((candidate) => {
-    const version = parseSemver(candidate.contractOffer.version);
-    if (version === void 0 || range === void 0 || !satisfiesRange(version, range)) {
-      reject(candidate.offer, "version-incompatible", `${candidate.contractOffer.version} \u2209 ${request.contract.range ?? "*"}`, candidate.contractOffer.offerId);
-      return false;
-    }
-    return true;
-  });
-  if (versionOk.length === 0) {
-    return remember({
-      state: "unresolved",
-      reason: "version-incompatible",
-      rejected: sortRejected(rejected2)
-    }, request);
-  }
-  let sawToolReject = false;
-  const targetOf = (offer) => preparation?.targetFor?.(offer) ?? request.target;
-  const targetOk = versionOk.filter((candidate) => {
-    const constraint = candidate.offer.target;
-    const target = targetOf(candidate.offer);
-    const envOk = constraint.environments === void 0 || constraint.environments.includes(target.environment);
-    const osOk = constraint.operatingSystems === void 0 || constraint.operatingSystems.includes("any") || constraint.operatingSystems.includes(target.operatingSystem);
-    const archOk = constraint.architectures === void 0 || constraint.architectures.includes("any") || constraint.architectures.includes(target.architecture);
-    const capsOk = isSubset(constraint.requiredHostCapabilities, [
-      ...target.hostCapabilities ?? []
-    ]);
-    const apisOk = isSubset(constraint.requiredWebApis, [...target.webApis ?? []]);
-    if (!envOk || !osOk || !archOk || !capsOk || !apisOk) {
-      reject(candidate.offer, "target-incompatible", void 0, candidate.contractOffer.offerId);
-      return false;
-    }
-    if (!isSubset(constraint.externalTools, [...target.externalTools ?? []])) {
-      reject(candidate.offer, "external-tool-required", void 0, candidate.contractOffer.offerId);
-      sawToolReject = true;
-      return false;
-    }
-    return true;
-  });
-  if (targetOk.length === 0) {
-    const onlyToolRejects = sawToolReject && !rejected2.some((r) => r.reason === "target-incompatible");
-    return remember({
-      state: "unresolved",
-      reason: onlyToolRejects ? "external-tool-required" : "target-incompatible",
-      rejected: sortRejected(rejected2)
-    }, request);
-  }
-  let sawPermissionReject = false;
-  const permitted = targetOk.filter((candidate) => {
-    const granted = targetOf(candidate.offer).grantedPermissions ?? [];
-    if (!isSubset(candidate.offer.requiredPermissions, [...granted])) {
-      reject(candidate.offer, "permission-required", void 0, candidate.contractOffer.offerId);
-      sawPermissionReject = true;
-      return false;
-    }
-    if (!hasTraitOutputs(requiredOutputs, candidate.offer.outputs ?? [])) {
-      reject(candidate.offer, "output-missing", void 0, candidate.contractOffer.offerId);
-      return false;
-    }
-    return true;
-  });
-  if (permitted.length === 0) {
-    return remember({
-      state: "unresolved",
-      reason: sawPermissionReject ? "permission-required" : "output-missing",
-      rejected: sortRejected(rejected2)
-    }, request);
-  }
-  let pool = permitted;
-  if (request.pin) {
-    const pin = request.pin;
-    pool = permitted.filter((candidate) => {
-      const hit = candidate.offer.providerId === pin.providerId && (pin.runtimeVariant === void 0 || candidate.offer.runtimeVariant === pin.runtimeVariant) && (pin.offerId === void 0 || candidate.contractOffer.offerId === pin.offerId);
-      if (!hit) {
-        reject(candidate.offer, "pin-unsatisfied", void 0, candidate.contractOffer.offerId);
-      }
-      return hit;
-    });
-    if (pool.length === 0) {
-      return remember({
-        state: "unresolved",
-        reason: "pin-unsatisfied",
-        rejected: sortRejected(rejected2)
-      }, request);
-    }
-  }
-  const score = (candidate) => [
-    request.operation !== void 0 && (candidate.offer.operations ?? []).includes(request.operation) ? 1 : 0,
-    preferredOutputs.filter((requirement) => (candidate.offer.outputs ?? []).some((offer) => traitOfferMatches(requirement, offer))).length,
-    targetOf(candidate.offer) === request.target ? 1 : 0
-  ];
-  const compareTuple = (a, b) => {
-    for (let i = 0; i < a.length; i += 1) {
-      if (a[i] !== b[i])
-        return a[i] < b[i] ? 1 : -1;
-    }
-    return 0;
-  };
-  const ranked = [...pool].sort((a, b) => compareTuple(score(a), score(b)) || compareUtf8(candidateSortKey(a), candidateSortKey(b)));
-  const best = ranked[0];
-  const tied = ranked.filter((c) => compareTuple(score(c), score(best)) === 0);
-  if (tied.length > 1) {
-    for (const candidate of tied) {
-      reject(candidate.offer, "ambiguous", "preference tuple tie", candidate.contractOffer.offerId);
-    }
-    return remember({ state: "unresolved", reason: "ambiguous", rejected: sortRejected(rejected2) }, request);
-  }
-  const toResolved = (candidate) => ({
-    offer: candidate.offer,
-    resolvedContract: candidate.contractOffer,
-    ...candidate.contractSelectionKey === void 0 ? {} : { contractSelectionKey: candidate.contractSelectionKey }
-  });
-  return remember({
-    state: "resolved",
-    selected: toResolved(best),
-    alternatives: ranked.slice(1).map(toResolved),
-    rejected: sortRejected(rejected2)
-  }, request);
-}
-function sortRejected(rejected2) {
-  const keyed = rejected2.map((candidate) => ({ candidate, key: canonicalJsonStringify(candidate) }));
-  keyed.sort((a, b) => compareUtf8(a.key, b.key));
-  return keyed.map((entry2) => entry2.candidate);
-}
-
-// ../MODDING/modkit-core/packages/host/dist/resolution/lock.js
-function normalizeTraitRequirements(values) {
-  const normalized2 = /* @__PURE__ */ new Map();
-  for (const value of values ?? []) {
-    let item;
-    if (isStandardTraitId(value.id)) {
-      if (value.definitionRange !== void 0) {
-        throw new ModkitError({
-          code: "x3.host/invalid-trait-range",
-          message: `standard trait ${value.id} must not declare a definition range`
-        });
-      }
-      item = { id: value.id };
-    } else {
-      const range = value.definitionRange === void 0 ? void 0 : parseVersionRange(value.definitionRange);
-      if (range === void 0) {
-        throw new ModkitError({
-          code: "x3.host/invalid-trait-range",
-          message: `custom trait ${value.id} requires a parseable definition range`
-        });
-      }
-      item = { id: value.id, definitionRange: range.normalized };
-    }
-    normalized2.set(canonicalJsonStringify(item), item);
-  }
-  return [...normalized2.entries()].sort(([left], [right]) => compareUtf8(left, right)).map(([, item]) => item);
-}
-function buildLockKey(request) {
-  const range = parseVersionRange(request.contract.range ?? "*");
-  if (range === void 0) {
-    throw new ModkitError({
-      code: "x3.host/invalid-range",
-      message: `unparseable range \xAB${request.contract.range ?? ""}\xBB`
-    });
-  }
-  return {
-    contract: request.contract.contract,
-    major: request.contract.major,
-    normalizedRange: range.normalized,
-    ...request.operation === void 0 ? {} : { operation: request.operation },
-    requiredOutputs: normalizeTraitRequirements(request.requiredOutputs),
-    preferredOutputs: normalizeTraitRequirements(request.preferredOutputs),
-    ...request.workload === void 0 ? {} : { workload: request.workload }
-  };
-}
-function buildLockEntry(request, result) {
-  if (result.state !== "resolved") {
-    throw new ModkitError({
-      code: "x3.host/lock-of-unresolved",
-      message: `cannot lock an unresolved result (${result.reason})`
-    });
-  }
-  if (!isResolutionForRequest(result, request)) {
-    throw new ModkitError({
-      code: "x3.host/lock-request-mismatch",
-      message: "resolution result was not produced for this exact request"
-    });
-  }
-  const offer = result.selected.offer;
-  return {
-    key: {
-      ...buildLockKey(request),
-      ...result.selected.contractSelectionKey === void 0 ? {} : { contractSelectionKey: result.selected.contractSelectionKey }
-    },
-    primary: {
-      extension: offer.extensionId,
-      contributionId: offer.providerId,
-      contractMajor: result.selected.resolvedContract.major,
-      offerId: result.selected.resolvedContract.offerId
-    },
-    resolverVersion: RESOLVER_VERSION
-  };
-}
-function lockKeyString(key3) {
-  return canonicalJsonStringify(key3);
-}
-function serializePolicyLock(entries) {
-  const seen = /* @__PURE__ */ new Map();
-  for (const entry2 of entries) {
-    const key3 = lockKeyString(entry2.key);
-    const rendered = canonicalJsonStringify(entry2);
-    const prior = seen.get(key3);
-    if (prior !== void 0 && prior !== rendered) {
-      throw new ModkitError({
-        code: "x3.host/conflicting-lock-entries",
-        message: "two policy-lock entries share one key but select differently \u2014 one request cannot have two answers",
-        context: { key: key3 }
-      });
-    }
-    seen.set(key3, rendered);
-  }
-  const sorted = [...entries].sort((a, b) => {
-    const byKey = compareUtf8(lockKeyString(a.key), lockKeyString(b.key));
-    return byKey !== 0 ? byKey : compareUtf8(canonicalJsonStringify(a), canonicalJsonStringify(b));
-  });
-  return canonicalJsonStringify({ schemaVersion: 1, entries: sorted });
-}
-function failLock(message, context) {
-  throw new ModkitError({
-    code: "x3.host/invalid-policy-lock",
-    message,
-    ...context === void 0 ? {} : { context }
-  });
-}
-function exactKeys(value, required, optional, label) {
+function exactObject(value, required, optional, label) {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    return failLock(`${label} must be an object`);
+    return fail("x3.host/invalid-detection-selection", `${label} must be an object`);
   }
   const record3 = value;
   const allowed2 = /* @__PURE__ */ new Set([...required, ...optional]);
   if (required.some((key3) => !(key3 in record3)) || Object.keys(record3).some((key3) => !allowed2.has(key3))) {
-    return failLock(`${label} has missing or unknown fields`);
+    return fail("x3.host/invalid-detection-selection", `${label} has missing or unknown fields`);
   }
   return record3;
 }
-function lockString(value, label) {
+function nonBlank(value, label) {
   if (typeof value !== "string" || value.trim().length === 0) {
-    return failLock(`${label} must be a non-blank string`);
+    return fail("x3.host/invalid-detection-selection", `${label} must be a non-blank string`);
   }
   return value;
 }
-function lockMajor(value, label) {
-  if (!Number.isSafeInteger(value) || value < 0) {
-    return failLock(`${label} must be a safe non-negative integer`);
+function evidence(value, label) {
+  if (!Array.isArray(value)) {
+    return fail("x3.host/invalid-detection-selection", `${label} must be an array`);
   }
-  return value;
-}
-function parseLockedTrait(value, label) {
-  const record3 = exactKeys(value, ["id"], ["definitionRange"], label);
-  const idText = lockString(record3["id"], `${label}.id`);
-  if (!isTraitId(idText))
-    return failLock(`${label}.id must be a trait id`);
-  if (isStandardTraitId(idText)) {
-    if (record3["definitionRange"] !== void 0) {
-      return failLock(`${label}: a standard trait cannot carry definitionRange`);
+  return Object.freeze(value.map((raw, index) => {
+    const item = exactObject(raw, ["kind", "weight"], ["note"], `${label}[${index}]`);
+    if (!EVIDENCE_KINDS.includes(item["kind"])) {
+      return fail("x3.host/invalid-detection-selection", `${label}[${index}].kind is invalid`);
     }
-    return Object.freeze({ id: idText });
-  }
-  const rangeText = lockString(record3["definitionRange"], `${label}.definitionRange`);
-  const range = parseVersionRange(rangeText);
-  if (range === void 0 || range.normalized !== rangeText) {
-    return failLock(`${label}.definitionRange is not canonical`);
-  }
-  return Object.freeze({ id: idText, definitionRange: rangeText });
-}
-function parseLockedTraits(value, label) {
-  if (!Array.isArray(value))
-    return failLock(`${label} must be an array`);
-  const parsed = value.map((item, index) => parseLockedTrait(item, `${label}[${index}]`));
-  const normalized2 = normalizeTraitRequirements(parsed);
-  if (canonicalJsonStringify(parsed) !== canonicalJsonStringify(normalized2)) {
-    return failLock(`${label} must be unique and canonically sorted`);
-  }
-  return normalized2;
-}
-function parseLockKey(value, label) {
-  const record3 = exactKeys(value, ["contract", "major", "normalizedRange", "requiredOutputs", "preferredOutputs"], ["contractSelectionKey", "operation", "workload"], label);
-  const contractText = lockString(record3["contract"], `${label}.contract`);
-  if (!isQualifiedId(contractText))
-    return failLock(`${label}.contract must be qualified`);
-  const rangeText = lockString(record3["normalizedRange"], `${label}.normalizedRange`);
-  const range = parseVersionRange(rangeText);
-  if (range === void 0 || range.normalized !== rangeText) {
-    return failLock(`${label}.normalizedRange is not canonical`);
-  }
-  const workload = record3["workload"];
-  if (workload !== void 0 && !["thumbnail", "interactive", "batch", "lossless-edit", "simulation", "archival"].includes(String(workload))) {
-    return failLock(`${label}.workload is invalid`);
-  }
-  return Object.freeze({
-    contract: contractId(contractText),
-    major: lockMajor(record3["major"], `${label}.major`),
-    normalizedRange: rangeText,
-    ...record3["contractSelectionKey"] === void 0 ? {} : {
-      contractSelectionKey: lockString(record3["contractSelectionKey"], `${label}.contractSelectionKey`)
-    },
-    ...record3["operation"] === void 0 ? {} : {
-      operation: lockString(record3["operation"], `${label}.operation`)
-    },
-    requiredOutputs: parseLockedTraits(record3["requiredOutputs"], `${label}.requiredOutputs`),
-    preferredOutputs: parseLockedTraits(record3["preferredOutputs"], `${label}.preferredOutputs`),
-    ...workload === void 0 ? {} : { workload }
-  });
-}
-function parseSelection(value, label) {
-  const record3 = exactKeys(value, ["extension", "contributionId", "contractMajor", "offerId"], ["releaseRange"], label);
-  const extension = lockString(record3["extension"], `${label}.extension`);
-  const contributionId2 = lockString(record3["contributionId"], `${label}.contributionId`);
-  if (!isQualifiedId(extension) || !isQualifiedId(contributionId2)) {
-    return failLock(`${label} coordinates must be qualified`);
-  }
-  let releaseRange;
-  if (record3["releaseRange"] !== void 0) {
-    releaseRange = lockString(record3["releaseRange"], `${label}.releaseRange`);
-    const parsed = parseVersionRange(releaseRange);
-    if (parsed === void 0 || parsed.normalized !== releaseRange) {
-      return failLock(`${label}.releaseRange is not canonical`);
+    if (typeof item["weight"] !== "number" || !Number.isFinite(item["weight"])) {
+      return fail("x3.host/invalid-detection-selection", `${label}[${index}].weight must be finite`);
     }
-  }
-  return Object.freeze({
-    extension,
-    ...releaseRange === void 0 ? {} : { releaseRange },
-    contributionId: contributionId2,
-    contractMajor: lockMajor(record3["contractMajor"], `${label}.contractMajor`),
-    offerId: lockString(record3["offerId"], `${label}.offerId`)
-  });
-}
-function parsePolicyLock(text) {
-  let value;
-  try {
-    value = JSON.parse(text);
-  } catch {
-    return failLock("policy lock is not valid JSON");
-  }
-  const root = exactKeys(value, ["schemaVersion", "entries"], [], "policy lock");
-  if (root["schemaVersion"] !== 1 || !Array.isArray(root["entries"])) {
-    return failLock("policy lock schemaVersion/entries are invalid");
-  }
-  const entries = root["entries"].map((raw, index) => {
-    const item = exactKeys(raw, ["key", "primary", "resolverVersion"], ["allowedFallbacks"], `entries[${index}]`);
-    if (item["resolverVersion"] !== RESOLVER_VERSION) {
-      return failLock(`entries[${index}].resolverVersion is unsupported`);
-    }
-    if (item["allowedFallbacks"] !== void 0 && !Array.isArray(item["allowedFallbacks"])) {
-      return failLock(`entries[${index}].allowedFallbacks must be an array`);
+    if (item["note"] !== void 0 && typeof item["note"] !== "string") {
+      return fail("x3.host/invalid-detection-selection", `${label}[${index}].note must be a string`);
     }
     return Object.freeze({
-      key: parseLockKey(item["key"], `entries[${index}].key`),
-      primary: parseSelection(item["primary"], `entries[${index}].primary`),
-      ...item["allowedFallbacks"] === void 0 ? {} : {
-        allowedFallbacks: Object.freeze(item["allowedFallbacks"].map((entry2, fallbackIndex) => parseSelection(entry2, `entries[${index}].allowedFallbacks[${fallbackIndex}]`)))
-      },
-      resolverVersion: RESOLVER_VERSION
+      kind: item["kind"],
+      weight: item["weight"],
+      ...item["note"] === void 0 ? {} : { note: item["note"] }
     });
-  });
-  const canonical = serializePolicyLock(entries);
-  if (canonical !== text)
-    return failLock("policy lock bytes are not canonical");
-  return Object.freeze({ schemaVersion: 1, entries: Object.freeze(entries) });
+  }));
 }
-function replayPolicyLock(request, offers, text) {
-  const lock = parsePolicyLock(text);
-  const requestKey = buildLockKey(request);
-  const candidates = lock.entries.filter((entry2) => {
-    const portable = Object.fromEntries(Object.entries(entry2.key).filter(([field]) => field !== "contractSelectionKey"));
-    return canonicalJsonStringify(portable) === canonicalJsonStringify(requestKey);
-  });
-  if (candidates.length !== 1) {
-    throw new ModkitError({
-      code: "x3.host/lock-key-unresolved",
-      message: `policy lock contains ${candidates.length} entries for the request key`
-    });
+function normalize(value) {
+  const root = exactObject(value, ["schemaVersion", "sourceRevision", "selected"], [], "selection");
+  if (root["schemaVersion"] !== 1) {
+    return fail("x3.host/invalid-detection-selection", "selection schemaVersion is unsupported");
   }
-  const locked = candidates[0];
-  const available = offers.filter((offer) => {
-    if (offer.extensionId !== locked.primary.extension || offer.providerId !== locked.primary.contributionId) {
+  const sourceRevision = revisionId(nonBlank(root["sourceRevision"], "selection.sourceRevision"));
+  const selected = exactObject(root["selected"], [
+    "extensionId",
+    "contributionId",
+    "variantId",
+    "offerId",
+    "artifactDigest",
+    "manifestDigest",
+    "sourceTopology",
+    "confidence",
+    "evidence"
+  ], [], "selection.selected");
+  const extensionId = nonBlank(selected["extensionId"], "selection.selected.extensionId");
+  const contributionText = nonBlank(selected["contributionId"], "selection.selected.contributionId");
+  if (!isQualifiedId(extensionId) || !isQualifiedId(contributionText)) {
+    return fail("x3.host/invalid-detection-selection", "selection extension and contribution coordinates must be qualified");
+  }
+  const topology = selected["sourceTopology"];
+  if (!["single", "bundle", "namespace", "derived"].includes(String(topology))) {
+    return fail("x3.host/invalid-detection-selection", "selection sourceTopology is invalid");
+  }
+  const confidence = selected["confidence"];
+  if (typeof confidence !== "number" || !Number.isFinite(confidence) || confidence < 0 || confidence > 1) {
+    return fail("x3.host/invalid-detection-selection", "selection confidence is invalid");
+  }
+  return Object.freeze({
+    schemaVersion: 1,
+    sourceRevision,
+    selected: Object.freeze({
+      extensionId,
+      contributionId: contributionId(contributionText),
+      variantId: nonBlank(selected["variantId"], "selection.selected.variantId"),
+      offerId: nonBlank(selected["offerId"], "selection.selected.offerId"),
+      artifactDigest: nonBlank(selected["artifactDigest"], "selection.selected.artifactDigest"),
+      manifestDigest: nonBlank(selected["manifestDigest"], "selection.selected.manifestDigest"),
+      sourceTopology: topology,
+      confidence,
+      evidence: evidence(selected["evidence"], "selection.selected.evidence")
+    })
+  });
+}
+function buildCodecDetectionSelection(input) {
+  if (input.detection.codecId !== input.contributionId) {
+    return fail("x3.host/detection-selection-mismatch", "detection codecId does not match the selected contribution");
+  }
+  return normalize({
+    schemaVersion: 1,
+    sourceRevision: input.sourceRevision,
+    selected: {
+      extensionId: input.extensionId,
+      contributionId: input.contributionId,
+      variantId: input.variantId,
+      offerId: input.offerId,
+      artifactDigest: input.artifactDigest,
+      manifestDigest: input.manifestDigest,
+      sourceTopology: input.sourceTopology,
+      confidence: input.detection.confidence,
+      evidence: input.detection.evidence
+    }
+  });
+}
+function serializeCodecDetectionSelection(selection) {
+  return canonicalJsonStringify(normalize(selection));
+}
+function parseCodecDetectionSelection(text) {
+  let raw;
+  try {
+    raw = JSON.parse(text);
+  } catch {
+    return fail("x3.host/invalid-detection-selection", "detection selection is not valid JSON");
+  }
+  const selection = normalize(raw);
+  if (canonicalJsonStringify(selection) !== text) {
+    return fail("x3.host/invalid-detection-selection", "detection selection bytes are not canonical");
+  }
+  return selection;
+}
+function replayCodecDetectionSelection(inventory, sourceRevision, text) {
+  const selection = parseCodecDetectionSelection(text);
+  if (selection.sourceRevision !== sourceRevision) {
+    return fail("x3.host/detection-source-mismatch", "codec detection selection belongs to a different source revision");
+  }
+  const matches = offersFromInventory(inventory).filter((offer) => {
+    if (offer.extensionId !== selection.selected.extensionId || offer.providerId !== selection.selected.contributionId || offer.runtimeVariant !== selection.selected.variantId || !offer.provides.some((logical) => logical.offerId === selection.selected.offerId)) {
       return false;
     }
-    if (locked.primary.releaseRange !== void 0) {
-      const version = parseSemver(offer.extensionVersion);
-      const range = parseVersionRange(locked.primary.releaseRange);
-      if (version === void 0 || range === void 0 || !satisfiesRange(version, range))
-        return false;
+    const binding = inventoryBindingForOffer(offer);
+    if (binding === void 0 || binding.record.artifactDigest !== selection.selected.artifactDigest || binding.record.manifestDigest !== selection.selected.manifestDigest) {
+      return false;
     }
-    return offer.provides.some((provided) => provided.major === locked.primary.contractMajor && provided.offerId === locked.primary.offerId);
+    const spec = binding.contribution.manifest?.spec;
+    return spec?.sourceTopology === selection.selected.sourceTopology;
   });
-  return resolveProvider({
-    ...request,
-    pin: {
-      providerId: locked.primary.contributionId,
-      offerId: locked.primary.offerId
-    }
-  }, available);
+  if (matches.length !== 1) {
+    return fail("x3.host/detection-selection-unavailable", `current inventory has ${matches.length} exact matches for the codec detection selection`);
+  }
+  return selection;
 }
 
-// ../MODDING/modkit-core/packages/host/dist/resolution/service-resolver.js
-async function resolveServiceProvider(request, offers, definitions, targetFor) {
-  const accepted = /* @__PURE__ */ new Set();
-  const selectionKeys = /* @__PURE__ */ new Map();
-  for (const offer of offers) {
-    for (const logical of offer.provides) {
-      if (logical.contract !== request.contract.contract || logical.major !== request.contract.major) {
-        continue;
-      }
-      const result = await definitions.matchFacets({
-        contract: logical.contract,
-        major: logical.major,
-        ownerExtensionId: offer.extensionId,
-        offerFacet: logical.facet,
-        requestFacet: request.requestFacet
-      });
-      if (result.state === "match") {
-        accepted.add(logical);
-        selectionKeys.set(logical, result.selectionKey);
-      }
-    }
-  }
-  return resolveProvider(request, offers, {
-    accepts: (_offer, logical) => accepted.has(logical),
-    selectionKey: (_offer, logical) => selectionKeys.get(logical),
-    ...targetFor === void 0 ? {} : { targetFor }
-  });
-}
-function createContractResolverPort(options) {
-  const resolve = async (request) => {
-    const contract = contractId(request.contract);
-    if (options.definitions.lookup(contract, request.major) === void 0) {
-      throw new ModkitError({
-        code: "x3.host/service-contract-unregistered",
-        message: `service contract ${request.contract}@${request.major} is not registered`
-      });
-    }
-    const providerRequest = {
-      contract: { contract, major: request.major },
-      target: options.target,
-      ...request.facet === void 0 ? {} : { requestFacet: request.facet },
-      ...request.requiredOutputs === void 0 ? {} : { requiredOutputs: request.requiredOutputs },
-      ...request.operation === void 0 ? {} : { operation: request.operation }
-    };
-    const result = await resolveServiceProvider(providerRequest, options.offers, options.definitions, options.targetFor);
-    if (result.state !== "resolved") {
-      throw new ModkitError({
-        code: "x3.host/service-contract-unresolved",
-        message: `service contract resolution failed: ${result.reason}`,
-        context: { reason: result.reason }
-      });
-    }
-    const selection = {
-      offerId: result.selected.resolvedContract.offerId,
-      contract: result.selected.resolvedContract.contract,
-      major: result.selected.resolvedContract.major,
-      ...result.selected.contractSelectionKey === void 0 ? {} : { contractSelectionKey: result.selected.contractSelectionKey }
-    };
-    await options.onResolved?.(providerRequest, result);
-    return options.activate(selection, result, request.signal);
-  };
-  return {
-    async resolve(request) {
-      return await resolve(request);
-    },
-    async resolveUnknown(request) {
-      return resolve(request);
-    }
-  };
+// ../../MODDING/modkit-core/packages/host/dist/execution/consumer-adapters.js
+var codecReleases = /* @__PURE__ */ new WeakMap();
+async function releaseCodec(codec) {
+  const release = codecReleases.get(codec);
+  codecReleases.delete(codec);
+  await release?.();
 }
 
-// ../MODDING/modkit-core/packages/host/dist/execution/backend.js
-var PROFILE_VALUES = Object.freeze([
-  "browser-sandbox",
-  "worker-brokered",
-  "process-brokered",
-  "wasm-brokered",
-  "trusted-in-process",
-  "remote-provider"
-]);
-var REGISTRY_BINDINGS = /* @__PURE__ */ Symbol.for("x3.host/execution-backend-registry-bindings");
-function bindingsOf(registry) {
-  const value = registry[REGISTRY_BINDINGS];
-  return value instanceof Map ? value : void 0;
-}
-function invalid(message) {
-  return new ModkitError({ code: "x3.host/invalid-execution-backend", message });
-}
-function createExecutionBackendRegistry(backends, options = {}) {
-  const bindings = /* @__PURE__ */ new Map();
-  for (const [index, backend] of backends.entries()) {
-    if (typeof backend !== "object" || backend === null) {
-      throw invalid(`execution backend[${index}] must be an object`);
+// ../../MODDING/modkit-core/packages/host/dist/resource-id.js
+function resourceIdParameters(logicalId) {
+  const none = Object.freeze({ name: logicalId, parameters: Object.freeze({}) });
+  const hash = logicalId.lastIndexOf("#");
+  if (hash < 0)
+    return none;
+  const parameters = {};
+  for (const part of logicalId.slice(hash + 1).split("&")) {
+    const equals = part.indexOf("=");
+    const key3 = part.slice(0, Math.max(equals, 0));
+    if (equals <= 0 || !/^[A-Za-z][A-Za-z0-9_.-]*$/u.test(key3) || Object.hasOwn(parameters, key3))
+      return none;
+    try {
+      parameters[key3] = decodeURIComponent(part.slice(equals + 1));
+    } catch {
+      return none;
     }
-    const profile3 = backend.profile;
-    const supports = backend.supports;
-    const activate = backend.activate;
-    if (!PROFILE_VALUES.includes(profile3)) {
-      throw invalid(`execution backend[${index}] has an invalid profile`);
-    }
-    if (typeof supports !== "function" || typeof activate !== "function") {
-      throw invalid(`execution backend ${profile3} must provide supports and activate callbacks`);
-    }
-    if (bindings.has(profile3)) {
-      throw invalid(`execution backend profile ${profile3} is registered more than once`);
-    }
-    bindings.set(profile3, Object.freeze({ profile: profile3, supports, activate }));
   }
-  const profiles = Object.freeze([...bindings.keys()].sort());
-  const registry = {
-    profiles,
-    ...options.inProcessTarget === void 0 ? {} : { inProcessTarget: options.inProcessTarget },
-    supports(profile3, target, variant) {
-      try {
-        const binding = bindings.get(profile3);
-        if (binding === void 0 || variant.executionProfile !== profile3)
-          return false;
-        return binding.supports(target, variant) === true;
-      } catch {
-        return false;
-      }
+  return Object.freeze({ name: logicalId.slice(0, hash), parameters: Object.freeze(parameters) });
+}
+
+// ../../MODDING/modkit-core/packages/host/dist/raster-selection.js
+var coordinates = ["frame", "mipLevel", "layer", "face", "slice"];
+function captureRasterSelection(value) {
+  if (value === void 0)
+    return Object.freeze({});
+  if (value === null || typeof value !== "object" || Array.isArray(value) || Object.keys(value).some((key3) => !coordinates.some((coordinate2) => coordinate2 === key3)))
+    throw new TypeError("invalid raster subresource selection");
+  const owned = {};
+  for (const key3 of coordinates) {
+    const item = value[key3];
+    if (item === void 0)
+      continue;
+    if (key3 === "face" && item === "all") {
+      owned[key3] = item;
+      continue;
     }
+    if (key3 === "mipLevel" && item === "fit") {
+      owned[key3] = item;
+      continue;
+    }
+    if (typeof item !== "number" || !Number.isSafeInteger(item) || item < 0)
+      throw new TypeError(`raster ${key3} must be a nonnegative safe integer`);
+    owned[key3] = item;
+  }
+  return Object.freeze(owned);
+}
+function captureCompressedFormats(value) {
+  if (value === void 0)
+    return /* @__PURE__ */ new Set();
+  if (!Array.isArray(value) || value.length > 64 || value.some((item) => typeof item !== "string" || item.length === 0 || item.length > 64))
+    throw new TypeError("invalid compressed texture formats");
+  return new Set(value);
+}
+function blockBytes(compression) {
+  if (compression === "bc1" || compression === "bc4")
+    return 8;
+  if (compression === "bc2" || compression === "bc3" || compression === "bc5")
+    return 16;
+  if (compression === "bc6h" || compression === "bc7")
+    return 16;
+  return void 0;
+}
+function compressedSelectionPlan(info, selection, maxBytes) {
+  const block = blockBytes(info.compression);
+  if (block === void 0 || selection.face === "all" || info.depth !== 1)
+    return void 0;
+  const stored = info.storedMipLevels ?? info.mipLevels;
+  const chain = (level) => {
+    let bytes2 = 0;
+    for (let index = level; index < stored; index++)
+      bytes2 += Math.ceil(Math.max(1, Math.floor(info.width / 2 ** index)) / 4) * Math.ceil(Math.max(1, Math.floor(info.height / 2 ** index)) / 4) * block;
+    return bytes2;
   };
-  Object.defineProperty(registry, REGISTRY_BINDINGS, {
-    value: bindings,
-    enumerable: false,
-    writable: false,
-    configurable: false
-  });
-  return Object.freeze(registry);
+  const selected = selection.mipLevel ?? 0;
+  const mipLevel = selected === "fit" ? Array.from({ length: stored }, (_, index) => index).find((level) => chain(level) <= maxBytes) : selected;
+  if (mipLevel === void 0 || mipLevel >= stored)
+    return void 0;
+  const bytes = chain(mipLevel);
+  return bytes <= maxBytes ? Object.freeze({ mipLevel, bytes }) : void 0;
 }
-async function activateExecutionBackend(registry, context) {
-  throwIfAborted(context.signal);
-  const bindings = bindingsOf(registry);
-  if (bindings === void 0) {
-    throw invalid("execution backend registry was not created by this host");
-  }
-  const profile3 = context.variant.executionProfile;
-  const binding = bindings.get(profile3);
-  if (binding === void 0 || !registry.supports(profile3, context.target, context.variant)) {
+function rasterSelectionPlan(info, selection, maxBytes) {
+  for (const key3 of ["width", "height", "depth", "layers", "faces", "mipLevels", "frames"])
+    if (!Number.isSafeInteger(info[key3]) || info[key3] <= 0)
+      throw new TypeError(`invalid raster ${key3}`);
+  const face = selection.face ?? 0;
+  if (face !== "all" && face >= info.faces)
+    throw new RangeError("raster face is out of range");
+  const count = face === "all" ? info.faces : 1;
+  const selectedMipLevel = selection.mipLevel ?? 0;
+  const mipLevel = selectedMipLevel === "fit" ? Array.from({ length: info.mipLevels }, (_, index) => index).find((level) => {
+    const width2 = Math.max(1, Math.floor(info.width / 2 ** level));
+    const height2 = Math.max(1, Math.floor(info.height / 2 ** level));
+    const bytes2 = width2 * height2 * 4 * count;
+    return Number.isSafeInteger(bytes2) && bytes2 <= maxBytes;
+  }) : selectedMipLevel;
+  if (mipLevel === void 0)
     throw new ModkitError({
-      code: "x3.host/execution-backend-unavailable",
-      message: `no execution backend can honour ${profile3} for ${context.target.environment}`,
-      context: { profile: profile3, environment: context.target.environment }
+      code: "x3.host/resource-budget-exceeded",
+      message: "no raster mip fits the decoded byte budget"
     });
-  }
-  const raw = await binding.activate({
-    ...context,
-    entrypoint: new URL(context.entrypoint.href),
-    artifactRoot: new URL(context.artifactRoot.href)
-  });
-  if (typeof raw !== "object" || raw === null || typeof raw.module !== "object" || raw.module === null || Array.isArray(raw.module) || typeof raw.release !== "function") {
-    if (typeof raw === "object" && raw !== null && typeof raw.release === "function") {
-      try {
-        await raw.release();
-      } catch {
-      }
+  if (mipLevel >= info.mipLevels)
+    throw new RangeError("raster mip level is out of range");
+  const width = Math.max(1, Math.floor(info.width / 2 ** mipLevel));
+  const height = Math.max(1, Math.floor(info.height / 2 ** mipLevel));
+  const depth = Math.max(1, Math.floor(info.depth / 2 ** mipLevel));
+  const base = {
+    frame: selection.frame ?? 0,
+    mipLevel,
+    layer: selection.layer ?? 0,
+    slice: selection.slice ?? 0
+  };
+  if (base.frame >= info.frames || base.layer >= info.layers || base.slice >= depth)
+    throw new RangeError("raster frame, layer or slice is out of range");
+  const bytes = width * height * 4 * count;
+  if (!Number.isSafeInteger(bytes) || bytes > maxBytes)
+    throw new ModkitError({
+      code: "x3.host/resource-budget-exceeded",
+      message: "selected raster surfaces exceed the decoded byte budget"
+    });
+  const subresources = Object.freeze(Array.from({ length: count }, (_, index) => Object.freeze({ ...base, face: face === "all" ? index : face })));
+  return { width, height, subresources };
+}
+
+// ../../MODDING/modkit-core/packages/host/dist/raster-resources.js
+function rasterSpellings(logicalId, rule) {
+  const spellings = [logicalId];
+  if (rule === void 0)
+    return spellings;
+  const name = logicalId.replaceAll("\\", "/").split("/").at(-1) ?? logicalId;
+  const stem = name.replace(/\.[^.]*$/u, "");
+  const names = [
+    name,
+    ...(rule.extensions ?? []).map((extension) => `${stem}${extension}`).filter((other) => other.toLowerCase() !== name.toLowerCase())
+  ];
+  for (const candidate of names)
+    for (const directory of rule.directories) {
+      const spelling = directory === "" ? candidate : `${directory}/${candidate}`;
+      if (!spellings.includes(spelling))
+        spellings.push(spelling);
     }
-    throw invalid(`execution backend ${profile3} returned an invalid module lease`);
+  return spellings;
+}
+function ownedCompressedTexture(texture, info, plan, maxBytes) {
+  const levels = texture?.subresources;
+  const block = texture?.block;
+  if (!Array.isArray(levels) || levels.length === 0 || typeof texture.format !== "string" || block === null || typeof block !== "object" || block.width !== 4 || block.height !== 4 || block.depth !== 1 || block.bytes !== 8 && block.bytes !== 16)
+    return void 0;
+  let total = 0;
+  const owned = [];
+  for (const [index, level] of levels.entries()) {
+    const width = Math.max(1, Math.floor(info.width / 2 ** (plan.mipLevel + index)));
+    const height = Math.max(1, Math.floor(info.height / 2 ** (plan.mipLevel + index)));
+    const bytes = Math.ceil(width / 4) * Math.ceil(height / 4) * block.bytes;
+    if (level === null || typeof level !== "object" || level.mipLevel !== index || level.layer !== 0 || level.face !== 0 || level.width !== width || level.height !== height || !(level.data instanceof Uint8Array) || level.data.byteLength !== bytes)
+      return void 0;
+    total += bytes;
+    if (total > maxBytes)
+      return void 0;
+    owned.push(Object.freeze({
+      mipLevel: index,
+      layer: 0,
+      face: 0,
+      depthSlice: 0,
+      width,
+      height,
+      depth: 1,
+      data: level.data.slice()
+    }));
   }
-  let released = false;
   return Object.freeze({
-    module: raw.module,
-    async release() {
-      if (released)
-        return;
-      released = true;
-      await raw.release();
+    schemaVersion: 1,
+    format: texture.format,
+    dimensions: Object.freeze({ width: owned[0].width, height: owned[0].height, depth: 1 }),
+    mipLevelCount: owned.length,
+    layerCount: 1,
+    faceCount: 1,
+    colorSpace: texture.colorSpace,
+    alphaMode: texture.alphaMode,
+    block: Object.freeze({ width: 4, height: 4, depth: 1, bytes: block.bytes }),
+    subresources: Object.freeze(owned),
+    source: Object.freeze({ ...texture.source })
+  });
+}
+function rasterIdParameters(logicalId) {
+  const { name, parameters } = resourceIdParameters(logicalId);
+  const keys = Object.keys(parameters);
+  if (keys.length === 0 || keys.some((key3) => key3 !== "region" && key3 !== "frame" && key3 !== "plane"))
+    return { name: logicalId };
+  const { region, frame, plane } = parameters;
+  if (plane !== void 0 && plane !== "indices")
+    throw new TypeError("raster id plane must be indices");
+  if (region !== void 0 && region.length === 0)
+    throw new TypeError("raster id region must name an area");
+  if (frame !== void 0 && !(/^(?:0|[1-9][0-9]*)$/u.test(frame) && Number.isSafeInteger(Number(frame))))
+    throw new TypeError("raster id frame must be a nonnegative integer");
+  return {
+    name,
+    ...region === void 0 ? {} : { region },
+    ...frame === void 0 ? {} : { frame: Number(frame) },
+    ...plane === void 0 ? {} : { plane: "indices" }
+  };
+}
+function indexPlaneRgba(region, width, height) {
+  if (region.width !== width || region.height !== height || region.pixelFormat !== "gray8" || !Number.isSafeInteger(region.rowStride) || region.rowStride < width || !(region.pixels instanceof Uint8Array) || region.rowStride * (height - 1) + width > region.pixels.length)
+    return void 0;
+  const rgba = new Uint8Array(width * height * 4);
+  for (let y = 0; y < height; y += 1)
+    for (let x = 0; x < width; x += 1) {
+      const index = region.pixels[y * region.rowStride + x];
+      rgba.set([index, index, index, 255], (y * width + x) * 4);
+    }
+  return Object.freeze({ width, height, rowStride: width * 4, pixelFormat: "rgba8", pixels: rgba });
+}
+function createSubjectRasterResources(options) {
+  const refusal = (code, message, provenance) => ({
+    state: "unresolved",
+    diagnostics: [diagnostic("warning", code, message)],
+    ...provenance === void 0 ? {} : { provenance }
+  });
+  return Object.freeze({
+    async read(request, signal) {
+      signal?.throwIfAborted();
+      if (!options.state.live)
+        return refusal("x3.host/raster-context-unavailable", "Raster resources require a live opened subject.");
+      if (!options.isAuthorized())
+        return refusal("x3.host/resource-permission-missing", "The subject grant does not permit raster resource reads.");
+      if (request === null || typeof request !== "object")
+        return refusal("x3.host/raster-request-invalid", "A raster resource request is required.");
+      const requestedBytes = request.maxBytes;
+      let selection;
+      let compressedFormats;
+      const explicitSelection = request.selection !== void 0;
+      try {
+        selection = captureRasterSelection(request.selection);
+        compressedFormats = captureCompressedFormats(request.compressedFormats);
+      } catch (error3) {
+        return refusal("x3.host/raster-request-invalid", error3 instanceof Error ? error3.message : "Invalid raster selection");
+      }
+      const available = options.budget.maxScalarBytes - options.state.reservedBytes;
+      const maxBytes = selection.mipLevel === "fit" && Number.isSafeInteger(requestedBytes) && requestedBytes > available ? available : requestedBytes;
+      if (!Number.isSafeInteger(maxBytes) || maxBytes <= 0 || options.state.reservedBytes + maxBytes > options.budget.maxScalarBytes)
+        return refusal("x3.host/resource-budget-exceeded", "Raster reads exceed the subject decoded byte budget.");
+      options.state.reservedBytes += maxBytes;
+      const releases = [];
+      let provenance;
+      let atlasRegion;
+      let frameOnly;
+      let indices = false;
+      try {
+        let source;
+        let hint = {};
+        if (request.kind === "logical") {
+          const resources = options.state.resources;
+          if (resources === void 0)
+            return refusal("x3.host/raster-origin-unavailable", "The subject has no resource origin.");
+          const rule = options.companionRule?.(request.requirement.role);
+          let parameters;
+          try {
+            parameters = rasterIdParameters(request.requirement.logicalId);
+          } catch (error3) {
+            return refusal("x3.host/raster-request-invalid", error3 instanceof Error ? error3.message : "Invalid raster id parameters.");
+          }
+          atlasRegion = parameters.region;
+          frameOnly = parameters.frame;
+          indices = parameters.plane === "indices";
+          if (indices)
+            selection = { ...selection, mipLevel: 0 };
+          if (frameOnly !== void 0 && (selection.frame ?? 0) !== 0)
+            return refusal("x3.host/raster-selection-invalid", "The resource names one frame of its image: it has no other frame to select.");
+          const asked = parameters.name === request.requirement.logicalId ? request.requirement : { ...request.requirement, logicalId: parameters.name };
+          const requirement = rule === void 0 ? asked : { ...asked, scopes: rule.scopes };
+          const spellings = rasterSpellings(requirement.logicalId, rule);
+          let resolution = await resources.resolve(requirement, signal);
+          for (const spelling of spellings.slice(1)) {
+            if (resolution.state === "resolved")
+              break;
+            signal?.throwIfAborted();
+            resolution = await resources.resolve({ ...requirement, logicalId: spelling }, signal);
+          }
+          provenance = resolution.provenance;
+          if (resolution.state === "unresolved")
+            return { state: "unresolved", diagnostics: [resolution.diagnostic], provenance };
+          releases.push(() => resolution.lease.release());
+          if (resolution.lease.value.kind !== "bytes")
+            return refusal("x3.host/raster-source-unsupported", "The resource is not a byte source.", provenance);
+          source = resolution.lease.value;
+          hint = { path: provenance.logicalId };
+        } else if (request.kind === "embedded") {
+          if (!(request.bytes instanceof Uint8Array) || BigInt(request.bytes.length) > options.budget.maxInputBytes)
+            return refusal("x3.host/resource-budget-exceeded", "Embedded raster bytes exceed the subject input budget.");
+          if (request.mediaType !== void 0 && (typeof request.mediaType !== "string" || request.mediaType.length > 256))
+            return refusal("x3.host/raster-request-invalid", "Invalid embedded raster media type.");
+          const id = `modkit-inline://raster/${globalThis.crypto.randomUUID()}`;
+          const owned = createMemorySource(id, request.bytes.slice());
+          hint = request.mediaType === void 0 ? {} : { mediaType: request.mediaType };
+          releases.push(() => owned.dispose());
+          source = await artifactByteSourceFromRandomAccess(owned, {
+            ref: { id, uri: id },
+            revision: revisionId(`provider-token:${encodeURIComponent(id)}`),
+            ...signal === void 0 ? {} : { signal }
+          });
+        } else
+          return refusal("x3.host/raster-request-invalid", "Unknown raster resource request.");
+        signal?.throwIfAborted();
+        if (!options.state.live || !options.isAuthorized())
+          return refusal("x3.host/raster-context-unavailable", "The raster context is no longer readable.", provenance);
+        const opened = await options.open(source, hint, signal);
+        if (opened.state !== "opened")
+          return {
+            state: "unresolved",
+            diagnostics: [
+              ...opened.diagnostics,
+              diagnostic("warning", "x3.host/raster-codec-unavailable", "No image codec could open the resource.")
+            ],
+            ...provenance === void 0 ? {} : { provenance }
+          };
+        releases.push(() => opened.session.dispose());
+        if (!opened.descriptor.dataSources.some((ref2) => ref2.contract === "common.view/raster-image-source" && ref2.major === 1))
+          return refusal("x3.host/raster-source-unsupported", "The selected codec does not publish raster pixels.", provenance);
+        const raster = await opened.session.dataSource("common.view/raster-image-source", 1);
+        releases.push(() => raster.release());
+        const info = Object.freeze({ ...await raster.value.info(signal) });
+        if (indices && info.indexed !== true)
+          return refusal("x3.host/raster-plane-missing", "The image stores no palette indices to read.", provenance);
+        const compressedPlan = compressedFormats.size === 0 || indices || atlasRegion !== void 0 || frameOnly !== void 0 || raster.value.readCompressed === void 0 || ![...compressedFormats].some((format2) => format2.startsWith(`${info.compression}-`)) ? void 0 : compressedSelectionPlan(info, selection, maxBytes);
+        if (compressedPlan !== void 0) {
+          const subresource = Object.freeze({
+            frame: selection.frame ?? 0,
+            mipLevel: compressedPlan.mipLevel,
+            layer: selection.layer ?? 0,
+            face: typeof selection.face === "number" ? selection.face : 0,
+            slice: 0
+          });
+          let texture;
+          try {
+            texture = await raster.value.readCompressed({
+              mipLevel: subresource.mipLevel,
+              layer: subresource.layer,
+              face: subresource.face,
+              maxBytes
+            }, signal);
+          } catch (error3) {
+            if (signal?.aborted)
+              throw error3;
+          }
+          const owned = texture === void 0 ? void 0 : ownedCompressedTexture(texture, info, compressedPlan, maxBytes);
+          if (owned !== void 0 && compressedFormats.has(owned.format))
+            return {
+              state: "compressed",
+              info,
+              texture: owned,
+              subresource,
+              diagnostics: Object.freeze([...opened.diagnostics]),
+              ...provenance === void 0 ? {} : { provenance }
+            };
+        }
+        if (!info.decodedAccess || raster.value.readRegion === void 0)
+          return refusal("x3.host/raster-decode-unavailable", "The selected image codec does not decode pixel regions.", provenance);
+        if (frameOnly !== void 0 && frameOnly >= info.frames)
+          return refusal("x3.host/raster-frame-missing", `The image has no frame ${String(frameOnly)}; it has ${String(info.frames)}.`, provenance);
+        if (atlasRegion !== void 0) {
+          const area = info.atlasRegions?.find((item) => item.name === atlasRegion);
+          if (area === void 0)
+            return refusal("x3.host/raster-atlas-region-missing", `The image has no atlas region named ${atlasRegion}.`, provenance);
+          const read = await raster.value.readRegion({
+            x: area.x,
+            y: area.y,
+            width: area.width,
+            height: area.height,
+            ...frameOnly === void 0 ? {} : { frame: frameOnly },
+            ...indices ? { pixelFormat: "gray8", plane: "indices" } : { pixelFormat: "rgba8" },
+            maxBytes
+          }, signal);
+          const region = indices ? indexPlaneRgba(read, area.width, area.height) ?? read : read;
+          if (region.width !== area.width || region.height !== area.height || region.pixelFormat !== "rgba8" || !(region.pixels instanceof Uint8Array) || region.pixels.length > maxBytes)
+            return refusal("x3.host/raster-region-invalid", "The image codec returned an invalid bounded RGBA region.", provenance);
+          const { atlasRegions: _atlas, ...rest } = info;
+          return {
+            info: Object.freeze({
+              ...rest,
+              width: area.width,
+              height: area.height,
+              mipLevels: 1,
+              ...frameOnly === void 0 ? {} : { frames: 1 }
+            }),
+            diagnostics: Object.freeze([...opened.diagnostics]),
+            ...provenance === void 0 ? {} : { provenance },
+            state: "decoded",
+            region: Object.freeze({ ...region, pixels: region.pixels.slice() })
+          };
+        }
+        let plan;
+        try {
+          plan = rasterSelectionPlan(info, frameOnly === void 0 ? selection : { ...selection, frame: frameOnly }, maxBytes);
+        } catch (error3) {
+          return refusal(isModkitError(error3) ? error3.code : "x3.host/raster-selection-invalid", error3 instanceof Error ? error3.message : "Invalid raster selection", provenance);
+        }
+        const surfaces = [];
+        let remaining = maxBytes;
+        for (const subresource of plan.subresources) {
+          signal?.throwIfAborted();
+          if (!options.state.live || !options.isAuthorized())
+            return refusal("x3.host/raster-context-unavailable", "The raster context is no longer readable.", provenance);
+          const read = await raster.value.readRegion({
+            x: 0,
+            y: 0,
+            width: plan.width,
+            height: plan.height,
+            ...subresource,
+            ...indices ? { pixelFormat: "gray8", plane: "indices" } : { pixelFormat: "rgba8" },
+            maxBytes: remaining
+          }, signal);
+          const region = indices ? indexPlaneRgba(read, plan.width, plan.height) ?? read : read;
+          signal?.throwIfAborted();
+          if (!options.state.live || !options.isAuthorized())
+            return refusal("x3.host/raster-context-unavailable", "The raster context is no longer readable.", provenance);
+          if (region.width !== plan.width || region.height !== plan.height || region.pixelFormat !== "rgba8" || !Number.isSafeInteger(region.rowStride) || region.rowStride < plan.width * 4 || !(region.pixels instanceof Uint8Array) || region.pixels.length > remaining || region.rowStride * (plan.height - 1) + plan.width * 4 > region.pixels.length)
+            return refusal("x3.host/raster-region-invalid", "The image codec returned an invalid bounded RGBA region.", provenance);
+          remaining -= region.pixels.length;
+          surfaces.push(Object.freeze({
+            // a named frame is frame 0 of the one-frame image the resource is
+            subresource: frameOnly === void 0 ? subresource : Object.freeze({ ...subresource, frame: 0 }),
+            region: Object.freeze({ ...region, pixels: region.pixels.slice() })
+          }));
+        }
+        const common = {
+          info: Object.freeze(frameOnly === void 0 ? { ...info } : { ...info, frames: 1 }),
+          diagnostics: Object.freeze([...opened.diagnostics]),
+          ...provenance === void 0 ? {} : { provenance }
+        };
+        if (selection.face === "all")
+          return { ...common, state: "decoded-surfaces", surfaces: Object.freeze(surfaces) };
+        const first = surfaces[0];
+        if (first === void 0)
+          throw new TypeError("raster selection produced no surfaces");
+        return {
+          ...common,
+          state: "decoded",
+          region: first.region,
+          ...explicitSelection ? { subresource: first.subresource } : {}
+        };
+      } catch (error3) {
+        if (signal?.aborted || error3 instanceof Error && error3.name === "AbortError")
+          throw error3;
+        return refusal("x3.host/raster-resource-failed", error3 instanceof Error ? error3.message : "Raster resource read failed.", provenance);
+      } finally {
+        try {
+          const failures = [];
+          for (const release of releases.reverse()) {
+            try {
+              await release();
+            } catch (error3) {
+              failures.push(error3);
+            }
+          }
+          if (failures.length > 0)
+            throw failures[0];
+        } finally {
+          options.state.reservedBytes -= maxBytes;
+        }
+      }
     }
   });
 }
-var TRUSTED_IN_PROCESS_EXECUTION_BACKEND = /* @__PURE__ */ Object.freeze({
-  profile: "trusted-in-process",
-  supports: (_target, variant) => variant.executionProfile === "trusted-in-process",
-  async activate(context) {
-    throwIfAborted(context.signal);
-    const module = await import(context.entrypoint.href);
-    return Object.freeze({ module, release: async () => void 0 });
-  }
-});
-function linkedInProcessBackend(linked) {
+
+// ../../MODDING/modkit-core/packages/host/dist/logical-resource-deadline.js
+function logicalResourceDeadline(task, timeoutMs, parent) {
+  parent?.throwIfAborted();
+  if (timeoutMs <= 0)
+    return Promise.resolve({ state: "deadline-exceeded" });
+  const controller = new AbortController();
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const clear = () => {
+      if (settled)
+        return false;
+      settled = true;
+      clearTimeout(timer);
+      parent?.removeEventListener("abort", abort);
+      return true;
+    };
+    const abort = () => {
+      if (!clear())
+        return;
+      controller.abort(parent?.reason);
+      reject(parent?.reason);
+    };
+    const timer = setTimeout(() => {
+      if (!clear())
+        return;
+      controller.abort(new DOMException("Logical resource deadline exceeded.", "TimeoutError"));
+      resolve({ state: "deadline-exceeded" });
+    }, timeoutMs);
+    parent?.addEventListener("abort", abort, { once: true });
+    if (parent?.aborted)
+      abort();
+    void Promise.resolve().then(() => {
+      controller.signal.throwIfAborted();
+      return task(controller.signal);
+    }).then((value) => {
+      if (clear())
+        resolve({ state: "complete", value });
+    }, (error3) => {
+      if (clear())
+        reject(error3);
+    });
+  });
+}
+
+// ../../MODDING/modkit-core/packages/host/dist/logical-resource-batch.js
+function refused(reason, message) {
   return Object.freeze({
-    profile: "trusted-in-process",
-    supports: (_target, variant) => variant.executionProfile === "trusted-in-process",
-    async activate(context) {
-      throwIfAborted(context.signal);
-      const preLinked = linked.get(context.entrypoint.href);
-      if (preLinked !== void 0) {
-        return Object.freeze({ module: preLinked, release: async () => void 0 });
+    state: "refused",
+    reason,
+    message,
+    items: Object.freeze([]),
+    bytes: 0n
+  });
+}
+function deadlineOutcome(message) {
+  return Object.freeze({ state: "unresolved", reason: "deadline-exceeded", message });
+}
+function capture(request, context) {
+  if (request === null || typeof request !== "object")
+    throw new TypeError("A read batch is required.");
+  const { items, concurrency, readTimeoutMs, totalTimeoutMs, maxBytes } = request;
+  if (Object.keys(request).some((key3) => !["items", "concurrency", "readTimeoutMs", "totalTimeoutMs", "maxBytes"].includes(key3)) || !Array.isArray(items) || items.length > context.budget.maxNodes || ![concurrency, readTimeoutMs, totalTimeoutMs].every((value) => Number.isSafeInteger(value) && value > 0) || typeof maxBytes !== "bigint" || maxBytes < 0n)
+    throw new TypeError("Invalid bounded read batch.");
+  const length = items.length;
+  const selected = [];
+  let textBytes = 0;
+  for (let index = 0; index < length; index += 1) {
+    const item = items[index];
+    if (item === null || typeof item !== "object" || Object.keys(item).some((key3) => !["requirement", "expectedRevision", "size"].includes(key3)))
+      throw new TypeError("Invalid batch item.");
+    const { requirement: raw, expectedRevision, size } = item;
+    if (expectedRevision !== void 0 && !isRevisionId(expectedRevision) || size !== void 0 && (typeof size !== "bigint" || size < 0n))
+      throw new TypeError("Invalid batch revision or extent.");
+    const requirement = context.captureRequirement(raw);
+    textBytes += new TextEncoder().encode(requirement.id + requirement.logicalId + (requirement.parentResourceId ?? "") + (requirement.alternatives ?? []).join("") + (expectedRevision ?? "") + requirement.scopes.join("")).length;
+    if (textBytes > context.budget.maxScalarBytes)
+      throw new TypeError("Batch metadata exceeds the subject budget.");
+    selected.push(Object.freeze({
+      requirement,
+      ...expectedRevision === void 0 ? {} : { expectedRevision },
+      ...size === void 0 ? {} : { size }
+    }));
+  }
+  const ceiling = context.budget.maxInputBytes < BigInt(context.budget.maxScalarBytes) ? context.budget.maxInputBytes : BigInt(context.budget.maxScalarBytes);
+  return Object.freeze({
+    items: Object.freeze(selected),
+    concurrency: Math.min(concurrency, 4, context.budget.maxNodes),
+    readTimeoutMs: Math.min(readTimeoutMs, 8e3, context.budget.deadlineMs ?? Infinity),
+    totalTimeoutMs: Math.min(totalTimeoutMs, 1e4, context.budget.deadlineMs ?? Infinity),
+    maxBytes: maxBytes < ceiling ? maxBytes : ceiling
+  });
+}
+async function readLogicalResourceBatch(request, context, signal) {
+  signal?.throwIfAborted();
+  const unavailable4 = context.unavailable();
+  if (unavailable4 !== void 0)
+    return refused(unavailable4, "A live readable subject is required.");
+  let captured;
+  try {
+    captured = capture(request, context);
+  } catch (error3) {
+    return refused("request-invalid", error3 instanceof Error ? error3.message : "Invalid read batch.");
+  }
+  const declaredBytes = captured.items.reduce((total, item) => total + (item.size ?? 0n), 0n);
+  if (declaredBytes > captured.maxBytes)
+    return refused("budget-exceeded", "Batch extents exceed the combined byte budget.");
+  if (captured.items.length === 0)
+    return Object.freeze({ state: "complete", items: Object.freeze([]), bytes: 0n });
+  const results = Array.from({
+    length: captured.items.length
+  });
+  const controller = new AbortController();
+  let fatal;
+  let reservedBytes = 0n;
+  const hostByteCeiling = context.budget.maxInputBytes < BigInt(context.budget.maxScalarBytes) ? context.budget.maxInputBytes : BigInt(context.budget.maxScalarBytes);
+  const reservations = /* @__PURE__ */ new Set();
+  let closed = false;
+  const releaseReservation = (reservation) => {
+    if (!reservations.delete(reservation))
+      return;
+    context.state.reservedBytes -= reservation.bytes;
+  };
+  let cursor2 = 0;
+  const fail2 = (reason, message) => {
+    if (fatal !== void 0)
+      return;
+    fatal = refused(reason, message);
+    controller.abort(new DOMException(message, "AbortError"));
+  };
+  const readResolved = async (item, itemSignal, reservation) => {
+    const resolution = await context.resolve(item.requirement, itemSignal);
+    if (resolution.state === "unresolved") {
+      itemSignal.throwIfAborted();
+      if ([
+        "budget-exceeded",
+        "source-revision-changed",
+        "permission-missing",
+        "session-disposed"
+      ].includes(resolution.reason))
+        fail2(resolution.reason, resolution.diagnostic.message);
+      return Object.freeze({
+        state: "unresolved",
+        reason: resolution.reason,
+        message: resolution.diagnostic.message,
+        provenance: resolution.provenance
+      });
+    }
+    try {
+      itemSignal.throwIfAborted();
+      const source = resolution.lease.value;
+      if (item.expectedRevision !== void 0 && resolution.revision !== item.expectedRevision) {
+        fail2("source-revision-changed", "A resource changed after candidate discovery.");
+        itemSignal.throwIfAborted();
       }
-      if (context.entrypoint.protocol === "modkit-linked:") {
+      if (source.kind !== "bytes" || source.size === void 0)
+        return Object.freeze({
+          state: "unresolved",
+          reason: "size-mismatch",
+          message: "A bounded byte source is required.",
+          provenance: resolution.provenance
+        });
+      const size = source.size;
+      if (item.size !== void 0 && item.size !== size) {
+        fail2("source-revision-changed", "A resource extent changed after candidate discovery.");
+        itemSignal.throwIfAborted();
+      }
+      if (size < 0n || size > BigInt(Number.MAX_SAFE_INTEGER) || reservedBytes + size > captured.maxBytes || context.state.reservedBytes + size > hostByteCeiling) {
+        fail2("budget-exceeded", "Resolved extents exceed the combined batch byte budget.");
+        itemSignal.throwIfAborted();
+      }
+      reservedBytes += size;
+      reservation.bytes = size;
+      context.state.reservedBytes += size;
+      const bytes = await source.read(0n, Number(size), itemSignal);
+      itemSignal.throwIfAborted();
+      const after = context.unavailable();
+      if (after !== void 0) {
+        fail2(after, "The read context is no longer authorized.");
+        itemSignal.throwIfAborted();
+      }
+      if (bytes.length !== Number(size))
+        return Object.freeze({
+          state: "unresolved",
+          reason: "size-mismatch",
+          message: "The resource ended before its declared extent.",
+          provenance: resolution.provenance
+        });
+      return Object.freeze({
+        state: "read",
+        bytes,
+        revision: resolution.revision,
+        provenance: resolution.provenance
+      });
+    } finally {
+      await resolution.lease.release();
+    }
+  };
+  const read = async (item, itemSignal) => {
+    if (context.state.activeReads >= 4) {
+      fail2("budget-exceeded", "The subject has no free resource read slots.");
+      itemSignal.throwIfAborted();
+    }
+    context.state.activeReads += 1;
+    const reservation = { bytes: 0n, settled: false };
+    reservations.add(reservation);
+    try {
+      return await readResolved(item, itemSignal, reservation);
+    } finally {
+      context.state.activeReads -= 1;
+      reservation.settled = true;
+      if (closed)
+        releaseReservation(reservation);
+    }
+  };
+  const onAbort = () => controller.abort(signal?.reason);
+  signal?.addEventListener("abort", onAbort, { once: true });
+  if (signal?.aborted)
+    onAbort();
+  try {
+    const completion = await logicalResourceDeadline(async (batchSignal) => {
+      const worker = async () => {
+        while (cursor2 < captured.items.length) {
+          batchSignal.throwIfAborted();
+          const index = cursor2++;
+          const item = captured.items[index];
+          if (item === void 0)
+            throw new TypeError("Captured batch item is absent.");
+          try {
+            const result = await logicalResourceDeadline((itemSignal) => read(item, itemSignal), captured.readTimeoutMs, batchSignal);
+            if (result.state === "deadline-exceeded") {
+              results[index] = deadlineOutcome("The resource read exceeded its duration ceiling.");
+              return;
+            }
+            results[index] = result.value;
+          } catch (error3) {
+            batchSignal.throwIfAborted();
+            const after2 = context.unavailable();
+            if (after2 !== void 0) {
+              fail2(after2, "The read context is no longer authorized.");
+              return;
+            }
+            const code = error3 !== null && typeof error3 === "object" && "code" in error3 ? error3.code : void 0;
+            if (typeof code === "string" && (code.includes("budget-exceeded") || code.includes("revision-changed"))) {
+              fail2(code.includes("revision-changed") ? "source-revision-changed" : "budget-exceeded", "The host refused a staged resource read.");
+              return;
+            }
+            results[index] = Object.freeze({
+              state: "unresolved",
+              reason: "read-failed",
+              message: "The resource could not be read."
+            });
+          }
+        }
+      };
+      await Promise.all(Array.from({ length: Math.min(captured.concurrency, captured.items.length) }, worker));
+    }, captured.totalTimeoutMs, controller.signal);
+    signal?.throwIfAborted();
+    if (fatal !== void 0)
+      return fatal;
+    if (completion.state === "deadline-exceeded")
+      return refused("deadline-exceeded", "The complete batch exceeded its duration ceiling.");
+    const after = context.unavailable();
+    if (after !== void 0)
+      return refused(after, "The read context is no longer authorized.");
+    const items = Object.freeze(results.map((item) => item ?? deadlineOutcome("No read slot remained after timed-out backend calls.")));
+    return Object.freeze({
+      state: "complete",
+      items,
+      bytes: items.reduce((sum, item) => sum + (item.state === "read" ? BigInt(item.bytes.length) : 0n), 0n)
+    });
+  } catch (error3) {
+    signal?.throwIfAborted();
+    if (fatal !== void 0)
+      return fatal;
+    throw error3;
+  } finally {
+    signal?.removeEventListener("abort", onAbort);
+    closed = true;
+    for (const reservation of reservations) {
+      if (reservation.settled)
+        releaseReservation(reservation);
+    }
+  }
+}
+
+// ../../MODDING/modkit-core/packages/host/dist/logical-resources.js
+var ROLES = ["texture", "sidecar", "buffer"];
+var MAXIMUM_ALTERNATIVES = 8;
+var SCOPES = [
+  "sibling-directory",
+  "current-mount",
+  "enclosing-container",
+  "workspace-dependency-layer",
+  "explicit-user-selection"
+];
+var REASONS = [
+  "budget-exceeded",
+  "namespace-invalid",
+  "size-unavailable",
+  "request-invalid",
+  "request-unsupported",
+  "context-unavailable",
+  "permission-missing",
+  "deadline-exceeded"
+];
+var EMPTY_RECEIPT = Object.freeze({
+  complete: false,
+  pages: 0,
+  entries: 0,
+  candidates: 0,
+  bytes: 0n
+});
+function refuseDiscovery(reason, message, receipt = EMPTY_RECEIPT) {
+  return Object.freeze({
+    state: "refused",
+    reason,
+    message,
+    candidates: Object.freeze([]),
+    receipt
+  });
+}
+function captureRequest(request) {
+  if (request === null || typeof request !== "object" || Object.keys(request).some((key3) => !["role", "extension", "timeoutMs"].includes(key3)))
+    throw new TypeError("Discovery accepts only role, extension and timeoutMs.");
+  const { role, extension, timeoutMs } = request;
+  if (!ROLES.includes(role) || typeof extension !== "string" || !/^\.[a-z0-9][a-z0-9_-]{0,31}$/i.test(extension) || timeoutMs !== void 0 && (!Number.isSafeInteger(timeoutMs) || timeoutMs <= 0))
+    throw new TypeError("Discovery requires a known resource role and literal extension.");
+  return Object.freeze({
+    role,
+    extension: extension.toLowerCase(),
+    ...timeoutMs === void 0 ? {} : { timeoutMs }
+  });
+}
+function snapshotLogicalResourceDiscoveryPolicies(policies) {
+  const seen = /* @__PURE__ */ new Set();
+  return Object.freeze(Array.from(policies, (policy) => {
+    const { role, extension, timeoutMs, discover } = policy;
+    const request = captureRequest({
+      role,
+      extension,
+      ...timeoutMs === void 0 ? {} : { timeoutMs }
+    });
+    const key3 = `${request.role}:${request.extension}`;
+    if (seen.has(key3) || typeof discover !== "function")
+      throw new TypeError("Logical resource policies require unique role/extension pairs and a discover callback.");
+    seen.add(key3);
+    return Object.freeze({ ...request, discover: discover.bind(policy) });
+  }));
+}
+function captureRequirement(request, maxLength) {
+  if (request === null || typeof request !== "object")
+    throw new TypeError("A logical requirement is required.");
+  const { id, logicalId, role, scopes, parentResourceId, alternatives } = request;
+  const scopeCount = Array.isArray(scopes) ? scopes.length : -1;
+  if (Object.keys(request).some((key3) => !["id", "logicalId", "role", "scopes", "parentResourceId", "alternatives"].includes(key3)) || alternatives !== void 0 && (!Array.isArray(alternatives) || alternatives.length > MAXIMUM_ALTERNATIVES || !alternatives.every((value) => typeof value === "string" && value.length > 0 && value.length <= maxLength)) || ![id, logicalId].every((value) => typeof value === "string" && value.length > 0 && value.length <= maxLength) || !ROLES.includes(role) || !Array.isArray(scopes) || !Number.isSafeInteger(scopeCount) || scopeCount < 0 || scopeCount > SCOPES.length || parentResourceId !== void 0 && (typeof parentResourceId !== "string" || parentResourceId.length === 0 || parentResourceId.length > maxLength))
+    throw new TypeError("Invalid bounded logical requirement.");
+  const capturedScopes = [];
+  for (let index = 0; index < scopeCount; index += 1) {
+    const scope = scopes[index];
+    if (scope === void 0 || !SCOPES.includes(scope))
+      throw new TypeError("Unknown resource scope.");
+    capturedScopes.push(scope);
+  }
+  return Object.freeze({
+    id,
+    logicalId,
+    role,
+    scopes: Object.freeze(capturedScopes),
+    ...parentResourceId === void 0 ? {} : { parentResourceId },
+    ...alternatives === void 0 ? {} : { alternatives: Object.freeze([...alternatives]) }
+  });
+}
+function copyProvenance(record3) {
+  return Object.freeze({ ...record3, scopes: Object.freeze([...record3.scopes]) });
+}
+function snapshotLogicalResourceRequirements(inputs, budget) {
+  if (!Array.isArray(inputs) || inputs.length > budget.maxNodes)
+    throw new TypeError("Logical inputs exceed the host resource budget.");
+  const count = inputs.length;
+  const captured = Array.from({ length: count }, (_, index) => {
+    const input = inputs[index];
+    if (input === void 0)
+      throw new TypeError("Logical inputs cannot contain empty entries.");
+    return captureRequirement(input, budget.maxScalarBytes);
+  });
+  if (new Set(captured.map((input) => input.id)).size !== captured.length)
+    throw new TypeError("Logical input ids must be unique.");
+  let textBytes = 0;
+  const encoder5 = new TextEncoder();
+  for (const input of captured) {
+    normalizeCompanionLogicalId(input.logicalId);
+    for (const alternative of input.alternatives ?? [])
+      normalizeCompanionLogicalId(alternative);
+    textBytes += encoder5.encode(input.id + input.logicalId + (input.parentResourceId ?? "") + (input.alternatives ?? []).join("")).length;
+    if (textBytes > budget.maxScalarBytes)
+      throw new TypeError("Logical input descriptors exceed the host scalar budget.");
+  }
+  return Object.freeze(captured);
+}
+function captureCandidateScopes(scopes) {
+  if (scopes === void 0)
+    return void 0;
+  if (!Array.isArray(scopes))
+    throw new TypeError("Invalid discovery candidate scopes.");
+  const length = scopes.length;
+  if (!Number.isSafeInteger(length) || length < 1 || length > SCOPES.length)
+    throw new TypeError("Discovery candidate scopes require one to five entries.");
+  const selected = Array.from({ length }, (_, index) => scopes[index]);
+  const captured = [];
+  const seen = /* @__PURE__ */ new Set();
+  for (const scope of selected) {
+    if (scope === void 0 || !SCOPES.includes(scope) || seen.has(scope))
+      throw new TypeError("Discovery candidate scopes must be known and unique.");
+    seen.add(scope);
+    captured.push(scope);
+  }
+  return Object.freeze(captured);
+}
+function unresolved(requirement, reason, message) {
+  return Object.freeze({
+    state: "unresolved",
+    reason,
+    diagnostic: diagnostic("warning", resourceDiagnosticCode(reason), message),
+    provenance: Object.freeze({
+      requirementId: requirement.id,
+      logicalId: requirement.logicalId,
+      role: requirement.role,
+      state: "unresolved",
+      reason,
+      cached: false,
+      scopes: Object.freeze([...requirement.scopes])
+    })
+  });
+}
+function createSubjectLogicalResources(options) {
+  const budget = Object.freeze({ ...options.budget });
+  const batchState = { activeReads: 0, reservedBytes: 0n };
+  const maxBytes = budget.maxInputBytes < BigInt(budget.maxScalarBytes) ? budget.maxInputBytes : BigInt(budget.maxScalarBytes);
+  const policies = /* @__PURE__ */ new Map();
+  for (const policy of snapshotLogicalResourceDiscoveryPolicies(options.policies ?? [])) {
+    policies.set(`${policy.role}:${policy.extension}`, policy);
+  }
+  const unavailable4 = () => !options.state.live || options.state.resources?.state() !== "live" ? "context-unavailable" : !options.isAuthorized() ? "permission-missing" : void 0;
+  const assertLive = (signal) => {
+    signal?.throwIfAborted();
+    const reason = unavailable4();
+    if (reason !== void 0)
+      throw new ModkitError({
+        code: `x3.host/logical-resource-${reason}`,
+        message: "Logical resources require a live readable subject."
+      });
+  };
+  const captureDiscovery = (value) => {
+    if (value === null || typeof value !== "object")
+      throw new TypeError("Invalid discovery result.");
+    const { state, candidates, receipt: raw } = value;
+    if (raw === null || typeof raw !== "object")
+      throw new TypeError("Invalid discovery receipt.");
+    const { complete, pages, entries, candidates: count, bytes } = raw;
+    if (typeof complete !== "boolean" || ![pages, entries, count].every((n) => Number.isSafeInteger(n) && n >= 0) || typeof bytes !== "bigint" || bytes < 0n || count > entries || !Array.isArray(candidates))
+      throw new TypeError("Invalid discovery receipt counts.");
+    if (pages > budget.maxNodes || entries > budget.maxNodes || count > budget.maxNodes || candidates.length > budget.maxNodes || bytes > maxBytes)
+      return refuseDiscovery("budget-exceeded", "Discovery exceeds the subject budget.");
+    const receipt = Object.freeze({ complete, pages, entries, candidates: count, bytes });
+    if (state === "refused") {
+      const { reason, message } = value;
+      if (complete || candidates.length !== 0 || !REASONS.includes(reason) || typeof message !== "string" || message.length > budget.maxScalarBytes)
+        throw new TypeError("Invalid discovery refusal.");
+      return refuseDiscovery(reason, message, receipt);
+    }
+    if (state !== "complete" || !complete || count !== candidates.length)
+      throw new TypeError("Discovery did not publish a complete consistent receipt.");
+    let context;
+    let contextBytes = 0;
+    const rawContext = value.context;
+    if (rawContext !== void 0) {
+      if (rawContext === null || typeof rawContext !== "object" || Object.keys(rawContext).some((key3) => key3 !== "primaryLogicalId" && key3 !== "rootId"))
+        throw new TypeError("Invalid discovery naming context.");
+      const { primaryLogicalId, rootId } = rawContext;
+      if (typeof primaryLogicalId !== "string" || primaryLogicalId.length === 0 || primaryLogicalId.length > budget.maxScalarBytes || rootId !== void 0 && (typeof rootId !== "string" || rootId.length === 0 || rootId.length > budget.maxScalarBytes))
+        throw new TypeError("Invalid bounded discovery identity.");
+      normalizeCompanionLogicalId(primaryLogicalId);
+      contextBytes = new TextEncoder().encode(primaryLogicalId + (rootId ?? "")).length;
+      context = Object.freeze({ primaryLogicalId, ...rootId === void 0 ? {} : { rootId } });
+    }
+    const copied = [];
+    const seen = /* @__PURE__ */ new Set();
+    let total = 0n;
+    let textBytes = contextBytes;
+    if (textBytes > budget.maxScalarBytes)
+      return refuseDiscovery("budget-exceeded", "Discovery context exceeds the subject budget.");
+    const selected = Array.from({ length: count }, (_, index) => candidates[index]);
+    for (const candidate of selected) {
+      if (candidate === null || typeof candidate !== "object")
+        throw new TypeError("Invalid discovery candidate.");
+      const { logicalId, expectedRevision, size, rootId, scopes: rawScopes } = candidate;
+      if (![logicalId, expectedRevision, rootId].every((s) => typeof s === "string" && s.length > 0 && s.length <= budget.maxScalarBytes) || !isRevisionId(expectedRevision) || typeof size !== "bigint" || size < 0n || seen.has(logicalId))
+        throw new TypeError("Invalid or duplicate discovery candidate.");
+      const scopes = captureCandidateScopes(rawScopes);
+      normalizeCompanionLogicalId(logicalId);
+      seen.add(logicalId);
+      total += size;
+      textBytes += new TextEncoder().encode(logicalId + expectedRevision + rootId).length;
+      if (scopes !== void 0)
+        textBytes += new TextEncoder().encode(scopes.join("")).length;
+      if (total > maxBytes || textBytes > budget.maxScalarBytes)
+        return refuseDiscovery("budget-exceeded", "Discovery candidates exceed the subject budget.");
+      copied.push(Object.freeze({
+        logicalId,
+        expectedRevision,
+        size,
+        rootId,
+        ...scopes === void 0 ? {} : { scopes }
+      }));
+    }
+    if (total !== bytes)
+      throw new TypeError("Discovery candidate bytes disagree with the receipt.");
+    return Object.freeze({
+      state: "complete",
+      candidates: Object.freeze(copied),
+      receipt,
+      ...context === void 0 ? {} : { context }
+    });
+  };
+  const port = {
+    readBatch(request, signal) {
+      return readLogicalResourceBatch(request, {
+        budget,
+        state: batchState,
+        resolve: port.resolve,
+        captureRequirement: (requirement) => captureRequirement(requirement, budget.maxScalarBytes),
+        unavailable: unavailable4
+      }, signal);
+    },
+    async discover(request, signal) {
+      signal?.throwIfAborted();
+      const reason = unavailable4();
+      if (reason !== void 0)
+        return refuseDiscovery(reason, "Logical discovery requires a live readable subject.");
+      let captured;
+      try {
+        captured = captureRequest(request);
+      } catch (error3) {
+        return refuseDiscovery("request-invalid", error3 instanceof Error ? error3.message : "Invalid discovery request.");
+      }
+      if (options.state.discoveryCalls >= budget.maxNodes)
+        return refuseDiscovery("budget-exceeded", "Logical discovery request count exceeds the subject budget.");
+      options.state.discoveryCalls += 1;
+      const policy = policies.get(`${captured.role}:${captured.extension}`);
+      if (policy === void 0)
+        return refuseDiscovery("request-unsupported", "The host has no registered policy for this request.");
+      try {
+        const timeoutMs = Math.min(captured.timeoutMs ?? 5e3, policy.timeoutMs ?? 5e3, budget.deadlineMs ?? Infinity);
+        const result = await logicalResourceDeadline((discoverySignal) => policy.discover({ budget, signal: discoverySignal }), timeoutMs, signal);
+        signal?.throwIfAborted();
+        const after = unavailable4();
+        if (after !== void 0)
+          return refuseDiscovery(after, "The discovery context is no longer readable.");
+        if (result.state === "deadline-exceeded")
+          return refuseDiscovery("deadline-exceeded", "Logical discovery exceeded its duration ceiling.");
+        return captureDiscovery(result.value);
+      } catch (error3) {
+        if (signal?.aborted || error3 instanceof Error && error3.name === "AbortError")
+          throw error3;
+        return refuseDiscovery("namespace-invalid", "The host discovery policy returned an invalid or unavailable result.");
+      }
+    },
+    async resolve(request, signal) {
+      signal?.throwIfAborted();
+      let requirement;
+      try {
+        requirement = captureRequirement(request, budget.maxScalarBytes);
+      } catch {
+        return unresolved({ id: "invalid", logicalId: "invalid", role: "buffer", scopes: [] }, "path-refused", "Invalid bounded logical requirement.");
+      }
+      const reason = unavailable4();
+      if (reason !== void 0)
+        return unresolved(requirement, reason === "permission-missing" ? reason : "session-disposed", "Logical resolution requires a live readable subject.");
+      const resources = options.state.resources;
+      if (resources === void 0)
+        return unresolved(requirement, "session-disposed", "The subject has no resource origin.");
+      if (options.state.resolveCalls >= budget.maxNodes)
+        return unresolved(requirement, "budget-exceeded", "Logical resolution request count exceeds the subject budget.");
+      options.state.resolveCalls += 1;
+      const resolution = await resources.resolve(requirement, signal);
+      if (resolution.state === "unresolved") {
+        assertLive(signal);
+        return Object.freeze({ ...resolution, provenance: copyProvenance(resolution.provenance) });
+      }
+      let released = false;
+      const release = async () => {
+        if (released)
+          return;
+        released = true;
+        await resolution.lease.release();
+      };
+      try {
+        assertLive(signal);
+        const source = resolution.lease.value;
+        if (source.kind !== "bytes") {
+          await release();
+          return unresolved(requirement, "scope-unsupported", "Logical consumer resources expose byte sources only.");
+        }
+        const { size, revision } = source;
+        if (typeof size !== "bigint" || size < 0n || size > budget.maxInputBytes || !isRevisionId(revision) || revision !== resolution.revision) {
+          await release();
+          return unresolved(requirement, "budget-exceeded", "The resource has no valid bounded pinned byte extent.");
+        }
+        const live = (readSignal) => {
+          assertLive(readSignal);
+          if (released)
+            throw new ModkitError({
+              code: "x3.host/resource-session-disposed",
+              message: "The logical resource lease was released."
+            });
+        };
+        const read = async (offset, length, readSignal) => {
+          live(readSignal);
+          if (typeof offset !== "bigint" || offset < 0n || !Number.isSafeInteger(length) || length < 0 || offset + BigInt(length) > size || options.state.reservedBytes + length > budget.maxScalarBytes)
+            throw new ModkitError({
+              code: "x3.host/resource-budget-exceeded",
+              message: "The logical byte read exceeds its bounded extent or byte budget."
+            });
+          options.state.reservedBytes += length;
+          try {
+            const bytes = await source.read(offset, length, readSignal);
+            live(readSignal);
+            if (!(bytes instanceof Uint8Array) || bytes.length > length)
+              throw new ModkitError({
+                code: "x3.host/resource-budget-exceeded",
+                message: "The resource returned more bytes than requested."
+              });
+            return Uint8Array.from(bytes);
+          } finally {
+            options.state.reservedBytes -= length;
+          }
+        };
+        const bounded2 = Object.freeze({
+          kind: "bytes",
+          ref: Object.freeze({ ...source.ref }),
+          revision,
+          size,
+          read,
+          async *stream(range, readSignal) {
+            live(readSignal);
+            const offset = range?.offset ?? 0n;
+            const length = range?.length ?? size - offset;
+            if (typeof offset !== "bigint" || typeof length !== "bigint" || offset < 0n || length < 0n || offset + length > size)
+              throw new TypeError("Invalid logical resource stream range.");
+            const chunkSize = Math.min(65536, budget.maxScalarBytes);
+            if (length > 0n && chunkSize < 1)
+              throw new TypeError("The subject has no byte-read budget.");
+            let cursor2 = offset;
+            const end = offset + length;
+            while (cursor2 < end) {
+              const remaining = end - cursor2;
+              const bytes = await read(cursor2, Number(remaining < BigInt(chunkSize) ? remaining : BigInt(chunkSize)), readSignal);
+              if (bytes.length === 0)
+                throw new TypeError("The logical resource ended before its declared extent.");
+              cursor2 += BigInt(bytes.length);
+              yield bytes;
+            }
+          }
+        });
+        return Object.freeze({
+          state: "resolved",
+          revision,
+          provenance: copyProvenance(resolution.provenance),
+          lease: Object.freeze({ value: bounded2, release })
+        });
+      } catch (error3) {
+        await release();
+        throw error3;
+      }
+    },
+    async identity(signal) {
+      signal?.throwIfAborted();
+      if (unavailable4() !== void 0)
+        return void 0;
+      const primaryLogicalId = options.state.resources?.primaryLogicalId;
+      return primaryLogicalId === void 0 || primaryLogicalId.length === 0 ? void 0 : Object.freeze({ primaryLogicalId });
+    },
+    async provenance(signal) {
+      assertLive(signal);
+      const records = options.state.resources?.provenance() ?? [];
+      if (records.length > budget.maxNodes)
         throw new ModkitError({
-          code: "x3.host/linked-module-missing",
-          message: `no linked module was registered for ${context.entrypoint.href}`,
-          context: { entrypoint: context.entrypoint.href }
+          code: "x3.host/resource-budget-exceeded",
+          message: "Logical provenance exceeds the subject record budget."
+        });
+      return Object.freeze(records.map(copyProvenance));
+    }
+  };
+  return Object.freeze(port);
+}
+
+// ../../MODDING/modkit-core/packages/host/dist/namespace-origin.js
+var NAMESPACE_SCOPES = Object.freeze([
+  "current-mount",
+  "enclosing-container"
+]);
+var NESTED_ENTRY_NOT_FOUND = "x3.host/nested-entry-not-found";
+var BYTE_RANGE_SOURCE = "common.view/byte-range-source";
+function storedEntrySource(session, descriptor) {
+  return descriptor.dataSources.some((item) => item.contract === BYTE_RANGE_SOURCE && item.major === 1) ? () => session.dataSource(BYTE_RANGE_SOURCE, 1) : void 0;
+}
+function createNamespaceCompanionOrigin(options) {
+  const pageLimit2 = options.pageLimit ?? 256;
+  const caseSensitivity = options.caseSensitivity ?? "insensitive";
+  const fold4 = (value) => caseSensitivity === "insensitive" ? value.toLowerCase() : value;
+  const index = /* @__PURE__ */ new Map();
+  const observed = /* @__PURE__ */ new Map();
+  const listing = async function* (prefix, signal) {
+    const cached = index.get(prefix);
+    if (cached !== void 0) {
+      yield* cached.values();
+      return;
+    }
+    const built = /* @__PURE__ */ new Map();
+    const spellings = [...new Set(prefix === "" ? [""] : [prefix, fold4(prefix)])];
+    let pages = 0;
+    for (const spelling of spellings) {
+      let cursor2;
+      const cursors = /* @__PURE__ */ new Set();
+      do {
+        throwIfAborted(signal);
+        if (++pages > (options.maxPages ?? 4096) || cursor2 !== void 0 && cursors.has(cursor2))
+          throw new ModkitError({
+            code: COMPANION_BUDGET_EXCEEDED,
+            message: "namespace listing did not terminate within its page budget"
+          });
+        if (cursor2 !== void 0)
+          cursors.add(cursor2);
+        const page = await options.namespace.list(spelling, cursor2 === void 0 ? { limit: pageLimit2 } : { cursor: cursor2, limit: pageLimit2 }, signal);
+        for (const entry2 of page.items) {
+          if (entry2.kind !== "file")
+            continue;
+          const key3 = fold4(entry2.path);
+          if (!built.has(key3)) {
+            const value = {
+              entryId: entry2.id,
+              path: entry2.path,
+              ...entry2.size === void 0 ? {} : { size: entry2.size },
+              ...entry2.rangeAccess === true ? { rangeAccess: true } : {},
+              ...entry2.storedRange === void 0 ? {} : { storedRange: entry2.storedRange },
+              revision: entry2.revision
+            };
+            built.set(key3, value);
+            if (!observed.has(key3))
+              observed.set(key3, value);
+            yield value;
+          }
+        }
+        cursor2 = page.nextCursor;
+      } while (cursor2 !== void 0);
+    }
+    index.set(prefix, built);
+  };
+  return Object.freeze({
+    primaryLogicalId: options.primaryLogicalId,
+    caseSensitivity,
+    scopes: NAMESPACE_SCOPES,
+    async *enumerate(scope, enumeration, signal) {
+      throwIfAborted(signal);
+      if (scope !== "current-mount" && scope !== "enclosing-container")
+        return;
+      const namePrefix = enumeration.namePrefix === void 0 ? "" : fold4(enumeration.prefix + enumeration.namePrefix);
+      for await (const entry2 of listing(enumeration.prefix, signal)) {
+        throwIfAborted(signal);
+        if (namePrefix !== "" && !fold4(entry2.path).startsWith(namePrefix))
+          continue;
+        yield Object.freeze({
+          logicalId: entry2.path,
+          ...entry2.size === void 0 ? {} : { size: entry2.size }
         });
       }
-      const module = await import(context.entrypoint.href);
-      return Object.freeze({ module, release: async () => void 0 });
+    },
+    async open(logicalId, signal) {
+      throwIfAborted(signal);
+      let entry2 = observed.get(fold4(logicalId));
+      if (entry2 === void 0) {
+        for await (const candidate of listing(logicalId, signal)) {
+          if (fold4(candidate.path) === fold4(logicalId)) {
+            entry2 = candidate;
+            break;
+          }
+        }
+      }
+      if (entry2 === void 0) {
+        throw new ModkitError({
+          code: NESTED_ENTRY_NOT_FOUND,
+          message: `container has no entry \xAB${logicalId}\xBB`,
+          context: { logicalId }
+        });
+      }
+      const ranged = rangeEntryLease(options.namespace, entry2, options.containerRevision, options.openStoredSource, signal);
+      if (ranged !== void 0)
+        return ranged;
+      if (options.maxSourceBytes !== void 0 && entry2.size !== void 0 && entry2.size > options.maxSourceBytes)
+        throw new ModkitError({
+          code: COMPANION_BUDGET_EXCEEDED,
+          message: `resource \xAB${logicalId}\xBB exceeds the extraction byte budget`
+        });
+      const refLease = await options.namespace.openEntry(entry2.entryId, signal);
+      let bytes;
+      try {
+        bytes = await options.extract(entry2.entryId, signal);
+        if (options.maxSourceBytes !== void 0 && BigInt(bytes.byteLength) > options.maxSourceBytes)
+          throw new ModkitError({
+            code: COMPANION_BUDGET_EXCEEDED,
+            message: `resource \xAB${logicalId}\xBB exceeds the extraction byte budget`
+          });
+      } catch (error3) {
+        await refLease.release();
+        throw error3;
+      }
+      const source = containerEntrySource(refLease.value, containerEntryRevision(options.containerRevision, entry2.entryId, bytes.byteLength), bytes);
+      return Object.freeze({ value: source, release: () => refLease.release() });
     }
   });
 }
-var DEFAULT_EXECUTION_BACKENDS = /* @__PURE__ */ createExecutionBackendRegistry([TRUSTED_IN_PROCESS_EXECUTION_BACKEND]);
+function createWorkspaceNamespaceCompanionOrigin(options) {
+  return createCompositeWorkspaceNamespaceCompanionOrigin({
+    primaryLogicalId: options.primaryLogicalId,
+    roots: options.logicalRoots.map((root) => ({
+      ...root,
+      namespace: options.namespace,
+      containerRevision: options.containerRevision,
+      extract: options.extract,
+      ...options.openStoredSource === void 0 ? {} : { openStoredSource: options.openStoredSource }
+    })),
+    ...options.caseSensitivity === void 0 ? {} : { caseSensitivity: options.caseSensitivity },
+    ...options.pageLimit === void 0 ? {} : { pageLimit: options.pageLimit },
+    ...options.maxPages === void 0 ? {} : { maxPages: options.maxPages }
+  });
+}
+var WORKSPACE_SCOPES = Object.freeze([
+  "workspace-dependency-layer",
+  "current-mount",
+  "enclosing-container"
+]);
+function createCompositeWorkspaceNamespaceCompanionOrigin(options) {
+  const pageLimit2 = options.pageLimit ?? 256;
+  const maxPages = options.maxPages ?? 4096;
+  const caseSensitivity = options.caseSensitivity ?? "insensitive";
+  const fold4 = (value) => caseSensitivity === "insensitive" ? value.toLowerCase() : value;
+  const roots = options.roots.map((root) => {
+    const pathPrefix = root.pathPrefix === "" ? "" : normalizeCompanionLogicalId(root.pathPrefix).replace(/\/$/u, "");
+    const logicalPrefix = root.logicalPrefix === void 0 || root.logicalPrefix === "" ? "" : normalizeCompanionLogicalId(root.logicalPrefix).replace(/\/$/u, "");
+    return Object.freeze({
+      rootId: root.rootId,
+      pathPrefix,
+      logicalPrefix,
+      namespace: root.namespace,
+      containerRevision: root.containerRevision,
+      extract: root.extract,
+      ...root.openStoredSource === void 0 ? {} : { openStoredSource: root.openStoredSource },
+      ...root.assetRoots === void 0 ? {} : {
+        assetRoots: Object.freeze(root.assetRoots.map((pattern) => pattern === "" ? "" : normalizeCompanionLogicalId(pattern).replace(/\/$/u, "")))
+      }
+    });
+  });
+  if (roots.length === 0)
+    throw new TypeError("workspace namespace origin requires a logical root");
+  if (new Set(roots.map((root) => root.rootId)).size !== roots.length) {
+    throw new TypeError("workspace namespace origin root ids must differ");
+  }
+  const byLogicalId = /* @__PURE__ */ new Map();
+  const pages = async function* (root, prefix, signal) {
+    const spellings = [...new Set(prefix === "" ? [""] : [prefix, fold4(prefix)])];
+    for (const spelling of spellings) {
+      let cursor2;
+      let pageCount = 0;
+      const seenCursors = /* @__PURE__ */ new Set();
+      do {
+        throwIfAborted(signal);
+        if (pageCount >= maxPages) {
+          throw new RangeError(`workspace namespace prefix exceeds ${maxPages} pages`);
+        }
+        if (cursor2 !== void 0) {
+          if (seenCursors.has(cursor2)) {
+            throw new RangeError("workspace namespace paging cursor repeated");
+          }
+          seenCursors.add(cursor2);
+        }
+        const page = await root.namespace.list(spelling, cursor2 === void 0 ? { limit: pageLimit2 } : { cursor: cursor2, limit: pageLimit2 }, signal);
+        yield* page.items;
+        pageCount += 1;
+        cursor2 = page.nextCursor;
+      } while (cursor2 !== void 0);
+    }
+  };
+  const joinPrefix = (prefix, suffix) => prefix === "" ? suffix : suffix === "" ? prefix : `${prefix}/${suffix}`;
+  const isQualifiedRequest = (logicalId) => roots.some((root) => {
+    if (root.logicalPrefix === "")
+      return false;
+    return fold4(logicalId) === fold4(root.logicalPrefix) || fold4(logicalId).startsWith(fold4(`${root.logicalPrefix}/`));
+  });
+  const relativeRequest = (root, logicalId) => {
+    if (logicalId === "")
+      return "";
+    if (root.logicalPrefix === "")
+      return logicalId;
+    if (!isQualifiedRequest(logicalId))
+      return logicalId;
+    if (fold4(logicalId) === fold4(root.logicalPrefix))
+      return "";
+    const prefix = `${root.logicalPrefix}/`;
+    return fold4(logicalId).startsWith(fold4(prefix)) ? logicalId.slice(prefix.length) : void 0;
+  };
+  const assetSpellings = (root, relative) => {
+    const slash = relative.indexOf("/");
+    if (root.assetRoots === void 0 || slash <= 0)
+      return [relative];
+    const first = fold4(relative.slice(0, slash));
+    const rest = relative.slice(slash + 1);
+    const named = root.assetRoots.some((pattern) => pattern.startsWith("*") ? first.endsWith(fold4(pattern.slice(1))) : pattern !== "" && first === fold4(pattern));
+    if (!named)
+      return [relative];
+    const spellings = [relative];
+    for (const pattern of root.assetRoots) {
+      if (pattern.startsWith("*"))
+        continue;
+      const spelling = pattern === "" ? rest : `${pattern}/${rest}`;
+      if (!spellings.some((known) => fold4(known) === fold4(spelling)))
+        spellings.push(spelling);
+    }
+    return spellings;
+  };
+  const remember2 = (root, entry2) => {
+    if (entry2.kind !== "file")
+      return void 0;
+    const prefix = root.pathPrefix === "" ? "" : `${root.pathPrefix}/`;
+    if (prefix !== "" && !fold4(entry2.path).startsWith(fold4(prefix)))
+      return void 0;
+    const relative = prefix === "" ? entry2.path : entry2.path.slice(prefix.length);
+    if (relative === "")
+      return void 0;
+    const logicalId = joinPrefix(root.logicalPrefix, relative);
+    const key3 = fold4(logicalId);
+    if (!byLogicalId.has(key3)) {
+      byLogicalId.set(key3, {
+        entryId: entry2.id,
+        path: entry2.path,
+        ...entry2.size === void 0 ? {} : { size: entry2.size },
+        ...entry2.rangeAccess === true ? { rangeAccess: true } : {},
+        ...entry2.storedRange === void 0 ? {} : { storedRange: entry2.storedRange },
+        revision: entry2.revision,
+        namespace: root.namespace,
+        containerRevision: root.containerRevision,
+        extract: root.extract,
+        ...root.openStoredSource === void 0 ? {} : { openStoredSource: root.openStoredSource }
+      });
+    }
+    return logicalId;
+  };
+  const relativeEntryPath = (root, entry2) => {
+    if (entry2.kind !== "file")
+      return void 0;
+    const prefix = root.pathPrefix === "" ? "" : `${root.pathPrefix}/`;
+    if (prefix !== "" && !fold4(entry2.path).startsWith(fold4(prefix)))
+      return void 0;
+    const relative = prefix === "" ? entry2.path : entry2.path.slice(prefix.length);
+    return relative === "" ? void 0 : relative;
+  };
+  const find = async (logicalId, signal) => {
+    const key3 = fold4(logicalId);
+    const cached = byLogicalId.get(key3);
+    if (cached !== void 0)
+      return cached;
+    const qualified = isQualifiedRequest(logicalId);
+    for (const root of roots) {
+      const relative = relativeRequest(root, logicalId);
+      if (relative === void 0)
+        continue;
+      for (const spelling of qualified ? [relative] : assetSpellings(root, relative)) {
+        const wanted = qualified ? key3 : fold4(spelling);
+        for await (const entry2 of pages(root, joinPrefix(root.pathPrefix, spelling), signal)) {
+          const remembered = remember2(root, entry2);
+          if (remembered === void 0)
+            continue;
+          const exposed = qualified ? remembered : relativeEntryPath(root, entry2);
+          if (exposed !== void 0 && fold4(exposed) === wanted) {
+            const bound = byLogicalId.get(fold4(remembered));
+            if (bound !== void 0)
+              byLogicalId.set(key3, bound);
+            return bound;
+          }
+        }
+      }
+    }
+    return void 0;
+  };
+  async function* containerEntries(prefix, signal) {
+    const qualified = isQualifiedRequest(prefix);
+    const entriesSeen = /* @__PURE__ */ new Map();
+    const yielded = /* @__PURE__ */ new Set();
+    for (const root of roots) {
+      const relative = relativeRequest(root, prefix);
+      if (relative === void 0)
+        continue;
+      let seen = entriesSeen.get(root.namespace);
+      if (seen === void 0)
+        entriesSeen.set(root.namespace, seen = /* @__PURE__ */ new Set());
+      for await (const entry2 of pages(root, joinPrefix(root.pathPrefix, relative), signal)) {
+        throwIfAborted(signal);
+        const remembered = remember2(root, entry2);
+        if (remembered === void 0)
+          continue;
+        const logicalId = qualified ? remembered : relativeEntryPath(root, entry2);
+        if (logicalId === void 0 || seen.has(entry2.id) || yielded.has(fold4(logicalId)))
+          continue;
+        seen.add(entry2.id);
+        yielded.add(fold4(logicalId));
+        const bound = byLogicalId.get(fold4(remembered));
+        if (bound !== void 0)
+          byLogicalId.set(fold4(logicalId), bound);
+        yield Object.freeze({
+          logicalId,
+          rootId: root.rootId,
+          ...entry2.size === void 0 ? {} : { size: entry2.size }
+        });
+      }
+    }
+  }
+  return Object.freeze({
+    primaryLogicalId: options.primaryLogicalId,
+    caseSensitivity,
+    // a resource opened out of the workspace (a map's terrain raster) finds its own companions in
+    // the mount it lives in: the workspace's containers are that mount
+    scopes: WORKSPACE_SCOPES,
+    async *enumerate(scope, enumeration, signal) {
+      if (!WORKSPACE_SCOPES.includes(scope))
+        return;
+      if (scope !== "workspace-dependency-layer") {
+        yield* containerEntries(enumeration.prefix, signal);
+        return;
+      }
+      const yielded = /* @__PURE__ */ new Set();
+      const qualified = isQualifiedRequest(enumeration.prefix);
+      for (const root of roots) {
+        const relative = relativeRequest(root, enumeration.prefix);
+        if (relative === void 0)
+          continue;
+        for (const spelling of qualified ? [relative] : assetSpellings(root, relative)) {
+          for await (const entry2 of pages(root, joinPrefix(root.pathPrefix, spelling), signal)) {
+            throwIfAborted(signal);
+            const remembered = remember2(root, entry2);
+            if (remembered === void 0)
+              continue;
+            const exposed = qualified ? remembered : relativeEntryPath(root, entry2);
+            const logicalId = exposed === void 0 || qualified || spelling === relative ? exposed : fold4(exposed).startsWith(fold4(spelling)) ? `${relative}${exposed.slice(spelling.length)}` : void 0;
+            if (logicalId === void 0 || yielded.has(fold4(logicalId)))
+              continue;
+            const bound = byLogicalId.get(fold4(remembered));
+            if (bound !== void 0)
+              byLogicalId.set(fold4(logicalId), bound);
+            yielded.add(fold4(logicalId));
+            yield Object.freeze({
+              logicalId,
+              rootId: root.rootId,
+              ...entry2.size === void 0 ? {} : { size: entry2.size }
+            });
+          }
+        }
+      }
+    },
+    async open(logicalId, signal) {
+      throwIfAborted(signal);
+      const entry2 = await find(logicalId, signal);
+      if (entry2 === void 0) {
+        throw new ModkitError({
+          code: NESTED_ENTRY_NOT_FOUND,
+          message: `workspace namespace has no entry \xAB${logicalId}\xBB`,
+          context: { logicalId }
+        });
+      }
+      const ranged = rangeEntryLease(entry2.namespace, entry2, entry2.containerRevision, entry2.openStoredSource, signal);
+      if (ranged !== void 0)
+        return ranged;
+      const refLease = await entry2.namespace.openEntry(entry2.entryId, signal);
+      let bytes;
+      try {
+        bytes = await entry2.extract(entry2.entryId, signal);
+      } catch (error3) {
+        await refLease.release();
+        throw error3;
+      }
+      return Object.freeze({
+        value: containerEntrySource(refLease.value, containerEntryRevision(entry2.containerRevision, entry2.entryId, bytes.byteLength), bytes),
+        release: () => refLease.release()
+      });
+    }
+  });
+}
+function positiveDiscoveryLimit(value, label) {
+  if (!Number.isSafeInteger(value) || value <= 0) {
+    throw new TypeError(`${label} must be a positive safe integer`);
+  }
+  return value;
+}
+function createWorkspaceNamespaceCandidateDiscovery(options) {
+  const pageItems2 = positiveDiscoveryLimit(options.limits.pageItems, "pageItems");
+  const maxPages = positiveDiscoveryLimit(options.limits.maxPages, "maxPages");
+  const maxEntries = positiveDiscoveryLimit(options.limits.maxEntries, "maxEntries");
+  const maxCandidates = positiveDiscoveryLimit(options.limits.maxCandidates, "maxCandidates");
+  const maxBytes = options.limits.maxBytes;
+  const namespace = options.namespace;
+  const containerRevision = options.containerRevision;
+  if (typeof maxBytes !== "bigint" || maxBytes < 0n) {
+    throw new TypeError("maxBytes must be a non-negative bigint");
+  }
+  if (!/^\.[a-z0-9][a-z0-9_-]*$/iu.test(options.extension)) {
+    throw new TypeError("candidate extension must be an exact dotted suffix without glob syntax");
+  }
+  const caseSensitivity = options.caseSensitivity ?? "insensitive";
+  const fold4 = (value) => caseSensitivity === "insensitive" ? value.toLowerCase() : value;
+  const extension = fold4(options.extension);
+  const roots = options.logicalRoots.map((root, index) => {
+    if (typeof root.rootId !== "string" || root.rootId.trim() === "") {
+      throw new TypeError(`logicalRoots[${index}].rootId must be a non-empty string`);
+    }
+    const pathPrefix = root.pathPrefix === "" ? "" : normalizeCompanionLogicalId(root.pathPrefix).replace(/\/$/u, "");
+    const logicalPrefix = root.logicalPrefix === void 0 || root.logicalPrefix === "" ? "" : normalizeCompanionLogicalId(root.logicalPrefix).replace(/\/$/u, "");
+    return Object.freeze({ rootId: root.rootId, pathPrefix, logicalPrefix, rank: index });
+  });
+  if (roots.length === 0)
+    throw new TypeError("candidate discovery requires a logical root");
+  const rootsById = new Map(roots.map((root) => [root.rootId, root]));
+  if (rootsById.size !== roots.length)
+    throw new TypeError("candidate discovery root ids must differ");
+  if (options.searches.length === 0) {
+    throw new TypeError("candidate discovery requires an explicit search root");
+  }
+  const relativeRequest = (root, logicalId) => {
+    if (logicalId === "" || fold4(logicalId) === fold4(root.logicalPrefix))
+      return "";
+    if (root.logicalPrefix === "")
+      return logicalId;
+    const prefix = `${root.logicalPrefix}/`;
+    return fold4(logicalId).startsWith(fold4(prefix)) ? logicalId.slice(prefix.length) : void 0;
+  };
+  const joinPrefix = (prefix, suffix) => prefix === "" ? suffix : suffix === "" ? prefix : `${prefix}/${suffix}`;
+  const searches = options.searches.map((search, index) => {
+    const root = rootsById.get(search.rootId);
+    if (root === void 0) {
+      throw new TypeError(`searches[${index}] names unknown logical root \xAB${search.rootId}\xBB`);
+    }
+    if (typeof search.logicalPrefix !== "string") {
+      throw new TypeError(`searches[${index}].logicalPrefix must be a string`);
+    }
+    const logicalPrefix = search.logicalPrefix.trim() === "" ? "" : normalizeCompanionLogicalId(search.logicalPrefix).replace(/\/$/u, "");
+    const relative = relativeRequest(root, logicalPrefix);
+    if (relative === void 0)
+      throw new TypeError(`searches[${index}] is outside logical root \xAB${root.rootId}\xBB`);
+    return Object.freeze({ root, logicalPrefix, relative, rank: index });
+  });
+  const receiptSearches = Object.freeze(searches.map((search) => Object.freeze({ rootId: search.root.rootId, logicalPrefix: search.logicalPrefix })));
+  const orderedSearches = [...searches].sort((left, right) => left.root.rank - right.root.rank || left.rank - right.rank);
+  return Object.freeze({
+    async discover(signal) {
+      throwIfAborted(signal);
+      let pages = 0;
+      let entries = 0;
+      let bytes = 0n;
+      const candidates = /* @__PURE__ */ new Map();
+      const receipt = (complete) => Object.freeze({
+        complete,
+        pages,
+        entries,
+        candidates: complete ? candidates.size : 0,
+        bytes: complete ? bytes : 0n,
+        searches: receiptSearches
+      });
+      const refused4 = (reason, message) => Object.freeze({
+        state: "refused",
+        reason,
+        message,
+        candidates: Object.freeze([]),
+        receipt: receipt(false)
+      });
+      for (const search of orderedSearches) {
+        const rootPrefix = search.root.pathPrefix === "" ? "" : `${search.root.pathPrefix}/`;
+        const subtree = joinPrefix(search.root.pathPrefix, search.relative);
+        const namespacePrefix = subtree === "" ? "" : `${subtree}/`;
+        const spellings = [
+          ...new Set(caseSensitivity === "insensitive" ? [namespacePrefix, fold4(namespacePrefix)] : [namespacePrefix])
+        ];
+        for (const spelling of spellings) {
+          let cursor2;
+          const seenCursors = /* @__PURE__ */ new Set();
+          do {
+            throwIfAborted(signal);
+            if (pages >= maxPages) {
+              return refused4("budget-exceeded", `candidate discovery exceeded its ${maxPages}-page budget`);
+            }
+            if (cursor2 !== void 0) {
+              if (seenCursors.has(cursor2)) {
+                return refused4("namespace-invalid", "candidate discovery cursor repeated");
+              }
+              seenCursors.add(cursor2);
+            }
+            const page = await namespace.list(spelling, cursor2 === void 0 ? { limit: pageItems2 } : { cursor: cursor2, limit: pageItems2 }, signal);
+            pages += 1;
+            throwIfAborted(signal);
+            if (page === null || typeof page !== "object" || !Array.isArray(page.items) || page.nextCursor !== void 0 && (typeof page.nextCursor !== "string" || page.nextCursor === "")) {
+              return refused4("namespace-invalid", "candidate discovery received a malformed page");
+            }
+            if (page.items.length > pageItems2) {
+              return refused4("namespace-invalid", `candidate discovery page exceeded its requested ${pageItems2}-entry limit`);
+            }
+            for (const entry2 of page.items) {
+              throwIfAborted(signal);
+              if (entry2 === null || typeof entry2 !== "object" || typeof entry2.id !== "string" || entry2.id === "" || typeof entry2.path !== "string" || entry2.path === "" || typeof entry2.kind !== "string") {
+                return refused4("namespace-invalid", "candidate discovery received a malformed namespace entry");
+              }
+              entries += 1;
+              if (entries > maxEntries) {
+                return refused4("budget-exceeded", `candidate discovery exceeded its ${maxEntries}-entry budget`);
+              }
+              let path;
+              try {
+                path = normalizeCompanionLogicalId(entry2.path);
+              } catch {
+                return refused4("namespace-invalid", "candidate discovery received an invalid entry path");
+              }
+              if (entry2.kind === "file" && path !== entry2.path || namespacePrefix !== "" && !fold4(path).startsWith(fold4(namespacePrefix)) && !(entry2.kind !== "file" && fold4(path) === fold4(subtree))) {
+                return refused4("namespace-invalid", `namespace entry \xAB${entry2.path}\xBB escaped or changed requested subtree \xAB${subtree}\xBB of logical root \xAB${search.root.rootId}\xBB`);
+              }
+              if (entry2.kind !== "file" || !fold4(path).endsWith(extension))
+                continue;
+              const relative = path.slice(rootPrefix.length);
+              if (relative === "")
+                continue;
+              const logicalId = joinPrefix(search.root.logicalPrefix, relative);
+              const key3 = fold4(logicalId);
+              if (candidates.has(key3))
+                continue;
+              const uncovered = roots.find((root) => root.rank < search.root.rank && (relativeRequest(root, logicalId)?.length ?? 0) > 0 && !searches.some((higher) => higher.root.rank === root.rank && (higher.logicalPrefix === "" || key3.startsWith(fold4(`${higher.logicalPrefix}/`)))));
+              if (uncovered !== void 0)
+                return refused4("namespace-invalid", `candidate \xAB${logicalId}\xBB has incomplete precedence coverage for logical root \xAB${uncovered.rootId}\xBB; that root may serve the same logical id`);
+              if (entry2.size === void 0 || typeof entry2.size !== "bigint" || entry2.size < 0n || entry2.size > BigInt(Number.MAX_SAFE_INTEGER)) {
+                return refused4("size-unavailable", `candidate \xAB${logicalId}\xBB has no bounded revision-safe size`);
+              }
+              if (candidates.size >= maxCandidates) {
+                return refused4("budget-exceeded", `candidate discovery exceeded its ${maxCandidates}-candidate budget`);
+              }
+              if (bytes + entry2.size > maxBytes) {
+                return refused4("budget-exceeded", `candidate discovery exceeded its ${maxBytes}-byte budget`);
+              }
+              bytes += entry2.size;
+              candidates.set(key3, Object.freeze({
+                logicalId,
+                expectedRevision: containerEntryRevision(containerRevision, entry2.id, Number(entry2.size)),
+                size: entry2.size,
+                rootId: search.root.rootId,
+                rootRank: search.root.rank,
+                searchRank: search.rank
+              }));
+            }
+            cursor2 = page.nextCursor;
+          } while (cursor2 !== void 0);
+        }
+      }
+      const ordered = [...candidates.values()].sort((left, right) => left.rootRank - right.rootRank || left.searchRank - right.searchRank || (left.logicalId < right.logicalId ? -1 : left.logicalId > right.logicalId ? 1 : 0)).map(({ logicalId, expectedRevision, size, rootId }) => Object.freeze({ logicalId, expectedRevision, size, rootId }));
+      return Object.freeze({
+        state: "complete",
+        candidates: Object.freeze(ordered),
+        receipt: receipt(true)
+      });
+    }
+  });
+}
+function containerEntryRangeSource(ref2, revision, parent, range) {
+  const invalid2 = (message, context) => new ModkitError({ code: "x3.host/invalid-source-range", message, context: { uri: ref2.uri, ...context } });
+  if (range.offset < 0n || range.length < 0n)
+    throw invalid2(`entry range of \xAB${ref2.uri}\xBB is negative`, {});
+  const read = async (offset, length, signal) => {
+    throwIfAborted(signal);
+    if (offset < 0n || !Number.isSafeInteger(length) || length < 0) {
+      throw invalid2(`container entry read of \xAB${ref2.uri}\xBB must use a non-negative exact range`, {
+        offset: String(offset),
+        length
+      });
+    }
+    if (offset > range.length) {
+      throw invalid2(`container entry read of \xAB${ref2.uri}\xBB starts beyond the entry size`, {
+        offset: String(offset),
+        size: String(range.length)
+      });
+    }
+    const available = range.length - offset;
+    const wanted = BigInt(length) < available ? length : Number(available);
+    return wanted === 0 ? new Uint8Array() : parent.read(range.offset + offset, wanted, signal);
+  };
+  return Object.freeze({
+    kind: "bytes",
+    ref: ref2,
+    revision,
+    size: range.length,
+    read,
+    async *stream(window, signal) {
+      const start = window?.offset ?? 0n;
+      const end = window?.length === void 0 ? range.length : start + window.length;
+      for (let at = start; at < end && at < range.length; ) {
+        const chunk = await read(at, Number(end - at < 1048576n ? end - at : 1048576n), signal);
+        if (chunk.byteLength === 0)
+          return;
+        at += BigInt(chunk.byteLength);
+        yield chunk;
+      }
+    }
+  });
+}
+function rangeEntryLease(namespace, entry2, containerRevision, openStoredSource, signal) {
+  const { entryId, storedRange } = entry2;
+  if (entry2.rangeAccess === true && namespace.openEntrySource !== void 0)
+    return entryRangeLease(namespace, entryId, containerRevision, signal, () => namespace.openEntrySource(entryId, signal));
+  if (storedRange !== void 0 && openStoredSource !== void 0)
+    return entryRangeLease(namespace, entryId, containerRevision, signal, openStoredSource, storedRange);
+  return void 0;
+}
+async function entryRangeLease(namespace, entryId, containerRevision, signal, openSource, storedRange) {
+  const refLease = await namespace.openEntry(entryId, signal);
+  let sourceLease;
+  try {
+    throwIfAborted(signal);
+    sourceLease = await openSource();
+  } catch (error3) {
+    await refLease.release();
+    throw error3;
+  }
+  try {
+    const range = storedRange ?? { offset: 0n, length: await sourceLease.value.size() };
+    return Object.freeze({
+      value: containerEntryRangeSource(refLease.value, containerEntryRevision(containerRevision, entryId, range.length), sourceLease.value, range),
+      release: async () => {
+        await sourceLease.release();
+        await refLease.release();
+      }
+    });
+  } catch (error3) {
+    await sourceLease.release();
+    await refLease.release();
+    throw error3;
+  }
+}
+function containerEntrySource(ref2, revision, bytes) {
+  return Object.freeze({
+    kind: "bytes",
+    ref: ref2,
+    revision,
+    size: BigInt(bytes.byteLength),
+    async read(offset, length, signal) {
+      throwIfAborted(signal);
+      if (offset < 0n || !Number.isSafeInteger(length) || length < 0) {
+        throw new ModkitError({
+          code: "x3.host/invalid-source-range",
+          message: `container entry read of \xAB${ref2.uri}\xBB must use a non-negative exact range`,
+          context: { uri: ref2.uri, offset: String(offset), length }
+        });
+      }
+      if (offset > BigInt(bytes.byteLength)) {
+        throw new ModkitError({
+          code: "x3.host/invalid-source-range",
+          message: `container entry read of \xAB${ref2.uri}\xBB starts beyond the entry size`,
+          context: { uri: ref2.uri, offset: String(offset), size: bytes.byteLength }
+        });
+      }
+      const start = Number(offset);
+      return bytes.slice(start, Math.min(bytes.byteLength, start + length));
+    },
+    async *stream(range, signal) {
+      throwIfAborted(signal);
+      const start = Number(range?.offset ?? 0n);
+      const end = range?.length === void 0 ? bytes.byteLength : start + Number(range.length);
+      yield bytes.slice(start, Math.min(bytes.byteLength, end));
+    }
+  });
+}
 
-// ../MODDING/modkit-core/packages/host/dist/security/gate.js
-var issuedTickets = /* @__PURE__ */ new WeakSet();
-var ticketBindings = /* @__PURE__ */ new WeakMap();
-function resolveForActivation(request, offers, operation) {
-  const result = resolveProvider(request, offers);
-  if (result.state !== "resolved")
-    return { result };
-  const binding = inventoryBindingForOffer(result.selected.offer);
-  if (binding === void 0)
-    return { result };
-  return { result, ticket: issueActivationTicket(result, request.target, operation) };
+// ../../MODDING/modkit-core/packages/host/dist/container-composition.js
+var NAMESPACE_ENTRY_SOURCE = "common.view/namespace-entry-source";
+var CONTAINER_EXTRACT = "container.extract";
+var CONTAINER_PACK = "container.pack";
+var EXPORT_RAW = "export.raw";
+var VIEW_INSPECT = "view.inspect";
+var CARRIER_EXTRACT_HANDLER = "x3.host/carrier-container-extract";
+var ENTRY_NOT_FOUND = "x3.host/namespace-entry-not-found";
+var PAGE_LIMIT = 256;
+var BASE64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+function operationHandler(descriptor, id) {
+  const operation = descriptor.operations.find((item) => item.id === id && item.state === "available");
+  return operation?.handlerId;
 }
-function issueActivationTicket(result, target, operation) {
-  if (!isResolverProduct(result)) {
+function normalizePath(path, allowEmpty) {
+  if (path.includes("\0") || path.includes("\\") || path.startsWith("/")) {
     throw new ModkitError({
-      code: "x3.host/foreign-resolution-result",
-      message: "this object was not produced by the host resolver \u2014 a ticket can only be issued for a real resolution"
+      code: "x3.host/namespace-path-refused",
+      message: `container namespace path \xAB${path}\xBB is not a confined POSIX path`,
+      context: { path }
     });
   }
-  if (result.state !== "resolved") {
+  const parts = path.split("/").filter((part) => part !== "" && part !== ".");
+  if (parts.some((part) => part === "..") || !allowEmpty && parts.length === 0) {
     throw new ModkitError({
-      code: "x3.host/no-ticket-for-unresolved",
-      message: `cannot issue an activation ticket for an unresolved result (${result.reason})`,
-      context: { reason: result.reason }
+      code: "x3.host/namespace-path-refused",
+      message: `container namespace path \xAB${path}\xBB escapes or does not name an entry`,
+      context: { path }
     });
   }
-  const offer = result.selected.offer;
-  const inventoryBinding = inventoryBindingForOffer(offer);
-  if (inventoryBinding === void 0) {
-    throw new ModkitError({
-      code: "x3.host/offer-not-in-inventory",
-      message: "activation tickets can only be issued for production inventory offers"
-    });
+  return parts.join("/");
+}
+var sameNamespacePath = (left, right) => left === right || left.toLowerCase() === right.toLowerCase();
+var insideNamespacePath = (path, prefix) => sameNamespacePath(path, prefix) || path.toLowerCase().startsWith(`${prefix.toLowerCase()}/`);
+function childRef(root, path) {
+  const parentIds = Object.freeze([...root.parentIds ?? [], root.id]);
+  return Object.freeze({
+    id: `${root.id}!/${path}`,
+    uri: `container-entry:${encodeURIComponent(root.uri)}!/${path.split("/").map(encodeURIComponent).join("/")}`,
+    parentIds
+  });
+}
+function encodeBase64(bytes) {
+  let encoded = "";
+  for (let index = 0; index < bytes.byteLength; index += 3) {
+    const first = bytes[index] ?? 0;
+    const second = bytes[index + 1] ?? 0;
+    const third = bytes[index + 2] ?? 0;
+    const value = first << 16 | second << 8 | third;
+    encoded += BASE64[value >>> 18 & 63];
+    encoded += BASE64[value >>> 12 & 63];
+    encoded += index + 1 < bytes.byteLength ? BASE64[value >>> 6 & 63] : "=";
+    encoded += index + 2 < bytes.byteLength ? BASE64[value & 63] : "=";
   }
-  const privateRecord = inventoryRecordFor(inventoryBinding.contribution);
-  if (privateRecord === void 0 || inventoryBinding.contribution.manifest === void 0) {
-    throw new ModkitError({
-      code: "x3.host/inventory-record-unavailable",
-      message: "the selected provider no longer has an attested inventory record"
-    });
+  return encoded;
+}
+function sameRef(left, right) {
+  return left.id === right.id && left.uri === right.uri && JSON.stringify(left.parentIds ?? []) === JSON.stringify(right.parentIds ?? []);
+}
+function isRecord(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+function mergeInspectionResults(carrier, semantic) {
+  if (carrier.state !== "ok" || carrier.output.kind !== "json" || semantic.state !== "ok" || semantic.output.kind !== "json" || !isRecord(carrier.output.value) || !isRecord(semantic.output.value)) {
+    return semantic;
   }
-  const manifest = inventoryBinding.contribution.manifest;
-  const ticket = Object.freeze({
-    contributionContract: Object.freeze({
-      id: manifest.contract.id,
-      major: manifest.contract.major
+  return Object.freeze({
+    ...semantic,
+    output: Object.freeze({
+      kind: "json",
+      // Carrier facts fill fields the semantic summary does not own. The semantic interpretation
+      // remains authoritative on collisions, and the semantic realm never receives carrier data.
+      value: Object.freeze({ ...carrier.output.value, ...semantic.output.value })
     }),
-    offeredContract: Object.freeze({
-      id: result.selected.resolvedContract.contract,
-      version: result.selected.resolvedContract.version
-    }),
-    inventoryRecordId: privateRecord.publicRecord.inventoryRecordId,
-    manifestDigest: privateRecord.publicRecord.manifestDigest,
-    artifactDigest: privateRecord.publicRecord.artifactDigest,
-    artifactRoot: new URL(privateRecord.publicRecord.artifactRoot),
-    extensionId: offer.extensionId,
-    contributionId: offer.providerId,
-    offerId: result.selected.resolvedContract.offerId,
-    offerFingerprint: inventoryBinding.offerFingerprint,
-    ...result.selected.contractSelectionKey === void 0 ? {} : { contractSelectionKey: result.selected.contractSelectionKey },
-    variantId: offer.runtimeVariant,
-    target: JSON.parse(canonicalJsonStringify(target)),
-    ...operation === void 0 ? {} : { operation }
-  });
-  issuedTickets.add(ticket);
-  ticketBindings.set(ticket, {
-    contribution: inventoryBinding.contribution,
-    ticketFingerprint: ticketFingerprint(ticket)
-  });
-  return ticket;
-}
-function ticketFingerprint(ticket) {
-  return canonicalJsonStringify({
-    contributionContract: ticket.contributionContract,
-    offeredContract: ticket.offeredContract,
-    inventoryRecordId: ticket.inventoryRecordId,
-    manifestDigest: ticket.manifestDigest,
-    artifactDigest: ticket.artifactDigest,
-    artifactRoot: ticket.artifactRoot.href,
-    extensionId: ticket.extensionId,
-    contributionId: ticket.contributionId,
-    offerId: ticket.offerId,
-    offerFingerprint: ticket.offerFingerprint,
-    ...ticket.contractSelectionKey === void 0 ? {} : { contractSelectionKey: ticket.contractSelectionKey },
-    variantId: ticket.variantId,
-    target: ticket.target,
-    ...ticket.operation === void 0 ? {} : { operation: ticket.operation }
+    diagnostics: Object.freeze([...carrier.diagnostics, ...semantic.diagnostics])
   });
 }
-var PERMISSION_DEGRADED_DIAGNOSTIC = "x3.host/permission-degraded";
-function permissionDegradedDiagnostic(contributionId2, degraded) {
-  return diagnostic("information", PERMISSION_DEGRADED_DIAGNOSTIC, `\xAB${contributionId2}\xBB runs without ${degraded.join(", ")}: the grant does not cover these classes, so the operations that need them are disabled (ADR-HOST-002 \xA72)`, [contributionId2], { degraded });
+function isNonBlank(value) {
+  return typeof value === "string" && value.trim() !== "";
 }
-function operationScopedClasses(manifest) {
-  const spec = manifest.spec;
-  return operationScopedPermissionClasses(spec?.operations);
+function isSourceRef(value) {
+  return isRecord(value) && isNonBlank(value["id"]) && isNonBlank(value["uri"]) && (value["parentIds"] === void 0 || Array.isArray(value["parentIds"]) && value["parentIds"].every(isNonBlank));
 }
-var PROBE_OPERATION = "probe";
-var PROBE_PERMISSION_CLASSES = Object.freeze(["read-source"]);
-function deny(code, message, context) {
-  return new ModkitError({
-    code,
+function isEntryTarget(value) {
+  if (!isRecord(value) || !isSourceRef(value["ownerSource"]))
+    return false;
+  const revision = value["expectedRevision"];
+  return isNonBlank(value["targetId"]) && isNonBlank(value["subjectUri"]) && value["subjectUri"] === value["ownerSource"].uri && Array.isArray(value["semanticPath"]) && value["semanticPath"].every(isNonBlank) && isRecord(revision) && isNonBlank(revision["compositionFingerprint"]) && isRecord(revision["bindings"]) && Object.keys(revision["bindings"]).length > 0 && Object.entries(revision["bindings"]).every(([bindingId, bindingRevision]) => isNonBlank(bindingId) && isNonBlank(bindingRevision)) && (revision["namespaceRevision"] === void 0 || isNonBlank(revision["namespaceRevision"]));
+}
+function revisionMatches(target, binding) {
+  return Object.values(target.expectedRevision.bindings).some((revision) => revision === binding.sourceRevision);
+}
+function invalidEntryPlan(message, context) {
+  throw new ModkitError({
+    code: "x3.host/container-entry-edit-plan-invalid",
     message,
     ...context === void 0 ? {} : { context }
   });
 }
-function targetSatisfies(variant, target) {
-  const c = variant.target;
-  const problems = [];
-  const has = (list, value, anyAllowed = false) => list === void 0 || anyAllowed && list.includes("any") || list.includes(value);
-  if (!has(c.environments, target.environment))
-    problems.push(`environment ${target.environment}`);
-  if (!has(c.operatingSystems, target.operatingSystem, true)) {
-    problems.push(`operatingSystem ${target.operatingSystem}`);
+function replacementsFromPlan(plan, bindings, budget) {
+  if (!isRecord(plan) || !Array.isArray(plan.targets) || plan.targets.length === 0 || plan.targets.length > budget.maxNodes || !Array.isArray(plan.edits) || plan.edits.length === 0 || plan.edits.length > budget.maxNodes) {
+    return invalidEntryPlan("a composed container edit plan must contain a bounded non-empty edit set");
   }
-  if (!has(c.architectures, target.architecture, true)) {
-    problems.push(`architecture ${target.architecture}`);
-  }
-  for (const cap of c.requiredHostCapabilities ?? []) {
-    if (!(target.hostCapabilities ?? []).includes(cap))
-      problems.push(`hostCapability ${cap}`);
-  }
-  for (const api of c.requiredWebApis ?? []) {
-    if (!(target.webApis ?? []).includes(api))
-      problems.push(`webApi ${api}`);
-  }
-  for (const tool of c.externalTools ?? []) {
-    if (!(target.externalTools ?? []).includes(tool))
-      problems.push(`externalTool ${tool}`);
-  }
-  return problems;
-}
-async function activateContribution(request) {
-  throwIfAborted(request.signal);
-  const { ticket } = request;
-  const ticketBinding = ticketBindings.get(ticket);
-  if (!issuedTickets.has(ticket) || ticketBinding === void 0 || ticketBinding.ticketFingerprint !== ticketFingerprint(ticket)) {
-    throw deny("x3.host/invalid-ticket", "activation requires a ticket issued by this host from a real resolution");
-  }
-  const privateRecord = inventoryRecordFor(ticketBinding.contribution);
-  const manifest = ticketBinding.contribution.manifest;
-  if (privateRecord === void 0 || manifest === void 0) {
-    throw deny("x3.host/inventory-record-unavailable", "the ticket inventory record is unavailable");
-  }
-  const mismatches = [];
-  if (ticket.inventoryRecordId !== privateRecord.publicRecord.inventoryRecordId)
-    mismatches.push("inventory record");
-  if (ticket.manifestDigest !== privateRecord.publicRecord.manifestDigest)
-    mismatches.push("manifest digest");
-  if (ticket.artifactDigest !== privateRecord.publicRecord.artifactDigest)
-    mismatches.push("artifact digest");
-  if (ticket.artifactRoot.href !== privateRecord.publicRecord.artifactRoot)
-    mismatches.push("artifact root");
-  if (ticket.contributionId !== manifest.id)
-    mismatches.push("contribution");
-  if (ticket.contributionContract.id !== manifest.contract.id)
-    mismatches.push("contract");
-  if (ticket.contributionContract.major !== manifest.contract.major)
-    mismatches.push("contract major");
-  if (mismatches.length > 0) {
-    throw deny("x3.host/ticket-manifest-mismatch", `the ticket does not describe this contribution (${mismatches.join(", ")})`, { mismatches, ticketContribution: ticket.contributionId, manifestId: manifest.id });
-  }
-  if (!await privateRecord.verifyArtifactDigest(ticket.artifactDigest)) {
-    throw deny("x3.host/artifact-digest-mismatch", "the selected artifact changed after inventory and will not be imported", { inventoryRecordId: ticket.inventoryRecordId });
-  }
-  const variant = (manifest.runtimeVariants ?? []).find((v) => v.variantId === ticket.variantId);
-  if (!variant) {
-    throw deny("x3.host/unknown-variant", `contribution \xAB${manifest.id}\xBB has no runtime variant \xAB${ticket.variantId}\xBB`);
-  }
-  const targetProblems = targetSatisfies(variant, ticket.target);
-  if (targetProblems.length > 0) {
-    throw deny("x3.host/target-incompatible", `variant \xAB${variant.variantId}\xBB does not support this target: ${targetProblems.join(", ")}`, { problems: targetProblems });
-  }
-  const executionBackends = request.executionBackends ?? DEFAULT_EXECUTION_BACKENDS;
-  if (!executionBackends.supports(variant.executionProfile, ticket.target, variant)) {
-    throw deny("x3.host/execution-backend-unavailable", `profile \xAB${variant.executionProfile}\xBB has no backend for ${ticket.target.environment} \u2014 refusing rather than running under a weaker boundary (24 \xA76.1 rule 1)`, { profile: variant.executionProfile, environment: ticket.target.environment });
-  }
-  if (variant.executionProfile === "trusted-in-process" && privateRecord.execution.allowTrustedInProcess !== true) {
-    throw deny("x3.host/trusted-in-process-not-authorized", `extension \xAB${ticket.extensionId}\xBB came from ${privateRecord.execution.origin} inventory without an explicit host decision allowing full process authority`, { extensionId: ticket.extensionId, origin: privateRecord.execution.origin });
-  }
-  const validity = grantValidity(request.grant);
-  if (validity.state !== "valid") {
-    throw deny("x3.host/grant-not-live", validity.state === "malformed" ? `grant \xAB${request.grant.id}\xBB has an unparseable expiresAt (\xAB${validity.value}\xBB) \u2014 treated as expired` : `grant \xAB${request.grant.id}\xBB expired at ${validity.at}`, { grant: request.grant.id, validity: validity.state });
-  }
-  const probeScoped = ticket.operation === PROBE_OPERATION;
-  const requestedClasses = probeScoped ? variant.requestedPermissionClasses.filter((item) => PROBE_PERMISSION_CLASSES.includes(item)) : variant.requestedPermissionClasses;
-  const callerProbeCeiling = request.policy?.operationClasses?.[PROBE_OPERATION];
-  const policy = probeScoped ? {
-    ...request.policy,
-    operationClasses: {
-      ...request.policy?.operationClasses,
-      [PROBE_OPERATION]: callerProbeCeiling === void 0 ? PROBE_PERMISSION_CLASSES : callerProbeCeiling.filter((item) => PROBE_PERMISSION_CLASSES.includes(item))
+  const targets = /* @__PURE__ */ new Map();
+  for (const target of plan.targets) {
+    if (!isEntryTarget(target) || targets.has(target.targetId)) {
+      return invalidEntryPlan("container entry edit plan contains a malformed or duplicate target");
     }
-  } : request.policy;
-  const { child, missing } = narrowGrant(request.grant, {
-    requestedClasses,
-    childId: `${request.grant.id}/${manifest.id}#${variant.variantId}${probeScoped ? "#probe" : ""}`,
-    ...ticket.operation === void 0 ? {} : { operation: ticket.operation },
-    ...policy === void 0 ? {} : { policy }
+    targets.set(target.targetId, target);
+  }
+  const usedEntries = /* @__PURE__ */ new Set();
+  const usedTargets = /* @__PURE__ */ new Set();
+  let total = 0n;
+  const replacements = Object.freeze(plan.edits.map((edit) => {
+    if (!isRecord(edit) || edit.operation !== "replace" || edit.range !== void 0 || !isSourceRef(edit.source) || !isRecord(edit.payload) || edit.payload.kind !== "inline" || !(edit.payload.bytes instanceof Uint8Array)) {
+      return invalidEntryPlan("M4 container composition accepts only full-file inline replacements of issued entries");
+    }
+    const target = targets.get(edit.targetId);
+    const binding = bindings.get(edit.source.id);
+    if (target === void 0 || binding === void 0 || !sameRef(edit.source, binding.ref) || !sameRef(target.ownerSource, binding.ref) || !revisionMatches(target, binding)) {
+      return invalidEntryPlan("container entry edit does not match an adapter-issued ref/revision", {
+        targetId: edit.targetId,
+        sourceId: edit.source.id
+      });
+    }
+    usedTargets.add(edit.targetId);
+    if (usedEntries.has(binding.entryId)) {
+      return invalidEntryPlan(`container entry ${binding.entryId} is replaced more than once`);
+    }
+    usedEntries.add(binding.entryId);
+    const length = BigInt(edit.payload.bytes.byteLength);
+    if (edit.payload.bytes.byteLength > budget.maxScalarBytes) {
+      return invalidEntryPlan("a container entry replacement exceeds maxScalarBytes");
+    }
+    total += length;
+    if (total > budget.maxInputBytes) {
+      return invalidEntryPlan("container entry replacements exceed maxInputBytes");
+    }
+    return Object.freeze({
+      entryId: binding.entryId,
+      expectedRevision: binding.providerRevision,
+      bytesBase64: encodeBase64(edit.payload.bytes)
+    });
+  }));
+  if (usedTargets.size !== targets.size) {
+    return invalidEntryPlan("container entry edit plan contains an unreferenced target");
+  }
+  return replacements;
+}
+function composedOperations(options) {
+  const operationByHandler = new Map(options.semanticSpec.operations.map((operation) => [operation.handlerId, operation]));
+  let disposed = false;
+  return Object.freeze({
+    async invoke(handlerId, input, invokeOptions) {
+      if (disposed) {
+        return Object.freeze({
+          state: "rejected",
+          reason: "cancelled",
+          diagnostics: Object.freeze([
+            Object.freeze({
+              code: "x3.host/container-operation-session-disposed",
+              severity: "error",
+              message: "the composed container operation session has been disposed"
+            })
+          ])
+        });
+      }
+      throwIfAborted(invokeOptions?.signal);
+      if (handlerId === CARRIER_EXTRACT_HANDLER && options.carrierExtractHandlerId !== void 0)
+        return options.parent.invoke(options.carrierExtractHandlerId, input, invokeOptions);
+      const declaration = operationByHandler.get(handlerId);
+      if (declaration?.id === EXPORT_RAW) {
+        if (options.exportRawHandlerId === void 0) {
+          throw new ModkitError({
+            code: "x3.host/container-export-raw-unavailable",
+            message: "the retained container session publishes no available export.raw operation"
+          });
+        }
+        return options.parent.invoke(options.exportRawHandlerId, input, invokeOptions);
+      }
+      const result = await options.semantic.invoke(handlerId, input, invokeOptions);
+      throwIfAborted(invokeOptions?.signal);
+      if (handlerId === options.semanticInspectHandlerId && options.parentInspectHandlerId !== void 0 && result.state === "ok") {
+        const carrier = await options.parent.invoke(options.parentInspectHandlerId, input, invokeOptions);
+        throwIfAborted(invokeOptions?.signal);
+        if (carrier.state !== "ok")
+          return carrier;
+        return mergeInspectionResults(carrier, result);
+      }
+      if (result.state !== "ok" || result.output.kind !== "edit-plan")
+        return result;
+      if (declaration === void 0 || !declaration.mutatesSource || !declaration.outputKinds?.includes("edit-plan")) {
+        return invalidEntryPlan(`handler ${handlerId} returned an edit plan without a declared mutating edit-plan operation`);
+      }
+      if (options.packHandlerId === void 0) {
+        throw new ModkitError({
+          code: "x3.host/container-pack-unavailable",
+          message: "the retained container session publishes no available container.pack operation"
+        });
+      }
+      const replacements = replacementsFromPlan(result.output.plan, options.bindings, options.budget);
+      const request = Object.freeze({
+        schemaVersion: 1,
+        expectedContainerRevision: options.parentRevision,
+        replacements,
+        intent: Object.freeze({
+          operation: declaration?.id ?? handlerId,
+          input,
+          semanticPlanId: result.output.plan.planId
+        })
+      });
+      throwIfAborted(invokeOptions?.signal);
+      const packed = await options.parent.invoke(options.packHandlerId, request, invokeOptions);
+      throwIfAborted(invokeOptions?.signal);
+      if (packed.state === "ok" && packed.output.kind !== "edit-plan") {
+        throw new ModkitError({
+          code: "x3.host/container-pack-result-invalid",
+          message: "container.pack must return the outer container as an edit-plan"
+        });
+      }
+      return packed;
+    },
+    async dispose() {
+      disposed = true;
+    }
   });
-  const operationScoped = operationScopedClasses(manifest);
-  const hardMissing = missing.filter((item) => !operationScoped.has(item));
-  if (hardMissing.length > 0) {
-    throw deny("x3.host/permission-denied", `grant \xAB${request.grant.id}\xBB does not cover: ${hardMissing.join(", ")}`, { missing: hardMissing });
+}
+async function createContainerNamespaceComposition(options) {
+  throwIfAborted(options.signal);
+  const descriptor = await options.parent.descriptor();
+  throwIfAborted(options.signal);
+  const extractHandlerId = operationHandler(descriptor, CONTAINER_EXTRACT);
+  if (extractHandlerId === void 0) {
+    throw new ModkitError({
+      code: "x3.host/container-extract-unavailable",
+      message: "a composed container must publish an available container.extract operation"
+    });
   }
-  const degraded = missing.filter((item) => operationScoped.has(item));
-  const entryUrl = resolveContainedEntrypoint(privateRecord.artifactRoot, variant.entrypoint);
-  throwIfAborted(request.signal);
-  const backendLease = await activateExecutionBackend(executionBackends, {
-    ticket,
-    entrypoint: entryUrl,
-    artifactRoot: privateRecord.artifactRoot,
-    ...privateRecord.fileDigests === void 0 ? {} : { fileDigests: privateRecord.fileDigests },
-    variant,
-    target: ticket.target,
-    grant: child,
-    ...request.signal === void 0 ? {} : { signal: request.signal }
+  if (!descriptor.dataSources.some((item) => item.contract === NAMESPACE_ENTRY_SOURCE && item.major === 1)) {
+    throw new ModkitError({
+      code: "x3.host/container-namespace-unavailable",
+      message: `a composed container must publish ${NAMESPACE_ENTRY_SOURCE}@1`
+    });
+  }
+  const namespaceLease = await options.parent.dataSource(NAMESPACE_ENTRY_SOURCE, 1);
+  try {
+    throwIfAborted(options.signal);
+  } catch (error3) {
+    await namespaceLease.release();
+    throw error3;
+  }
+  const namespace = namespaceLease.value;
+  const openStoredSource = storedEntrySource(options.parent, descriptor);
+  const parentOperations = options.parent.operations();
+  const bindings = /* @__PURE__ */ new Map();
+  const outstanding = /* @__PURE__ */ new Set();
+  let disposed = false;
+  let exposedEntries = 0;
+  let extractedBytes = 0n;
+  const ensureLive = (signal) => {
+    throwIfAborted(signal);
+    if (disposed) {
+      throw new ModkitError({
+        code: "x3.host/container-composition-disposed",
+        message: "container namespace composition is disposed"
+      });
+    }
+  };
+  const validateEntry = (entry2) => {
+    if (entry2 === null || typeof entry2 !== "object" || typeof entry2.id !== "string" || entry2.id === "" || typeof entry2.path !== "string" || typeof entry2.name !== "string" || entry2.name === "" || typeof entry2.revision !== "string" || entry2.revision === "" || entry2.size !== void 0 && (typeof entry2.size !== "bigint" || entry2.size < 0n) || entry2.kind !== "file" && entry2.kind !== "directory") {
+      throw new ModkitError({
+        code: "x3.host/container-namespace-invalid",
+        message: "container namespace returned a malformed entry"
+      });
+    }
+    const normalized2 = normalizePath(entry2.path, false);
+    exposedEntries += 1;
+    if (exposedEntries > options.budget.maxNodes) {
+      throw new ModkitError({
+        code: "x3.host/container-namespace-entry-budget-exceeded",
+        message: `container namespace exceeded its ${options.budget.maxNodes}-entry budget`
+      });
+    }
+    return normalized2 === entry2.path ? entry2 : Object.freeze({ ...entry2, path: normalized2 });
+  };
+  const pages = async function* (prefix, signal) {
+    let cursor2;
+    const seenCursors = /* @__PURE__ */ new Set();
+    do {
+      ensureLive(signal);
+      if (cursor2 !== void 0) {
+        if (seenCursors.has(cursor2)) {
+          throw new ModkitError({
+            code: "x3.host/container-namespace-cursor-repeated",
+            message: "container namespace repeated a paging cursor"
+          });
+        }
+        seenCursors.add(cursor2);
+      }
+      const page = await namespace.list(prefix, cursor2 === void 0 ? { limit: PAGE_LIMIT } : { cursor: cursor2, limit: PAGE_LIMIT }, signal);
+      ensureLive(signal);
+      if (page === null || typeof page !== "object" || !Array.isArray(page.items) || page.items.length > PAGE_LIMIT || page.nextCursor !== void 0 && (typeof page.nextCursor !== "string" || page.nextCursor === "")) {
+        throw new ModkitError({
+          code: "x3.host/container-namespace-page-invalid",
+          message: "container namespace returned a malformed or over-limit page"
+        });
+      }
+      for (const entry2 of page.items) {
+        ensureLive(signal);
+        const validated = validateEntry(entry2);
+        if (prefix !== "" && !insideNamespacePath(validated.path, prefix))
+          continue;
+        yield validated;
+      }
+      cursor2 = page.nextCursor;
+    } while (cursor2 !== void 0);
+  };
+  const lookup = async (path, signal) => {
+    ensureLive(signal);
+    for await (const entry2 of pages(path, signal)) {
+      if (sameNamespacePath(entry2.path, path)) {
+        return entry2.kind === "file" ? { kind: "file", entry: entry2 } : { kind: "directory" };
+      }
+      return { kind: "directory" };
+    }
+    const found = await namespace.lookup?.(path, signal);
+    ensureLive(signal);
+    if (found !== void 0 && found !== null) {
+      const validated = validateEntry(found);
+      if (sameNamespacePath(validated.path, path) && validated.kind === "file")
+        return { kind: "file", entry: validated };
+    }
+    throw new ModkitError({
+      code: ENTRY_NOT_FOUND,
+      message: `namespace entry \xAB${path}\xBB does not exist`,
+      context: { path }
+    });
+  };
+  const sourceAt = (prefix, ref2, revision) => Object.freeze({
+    kind: "namespace",
+    ref: ref2,
+    revision,
+    async openNamespace(signal) {
+      ensureLive(signal);
+      const assetNamespace = Object.freeze({
+        revision,
+        ...prefix === "" && namespace.readPreamble !== void 0 ? {
+          async readPreamble(maxBytes, preambleSignal) {
+            ensureLive(preambleSignal);
+            if (!Number.isSafeInteger(maxBytes) || maxBytes < 0) {
+              throw new ModkitError({
+                code: "x3.host/container-preamble-bound-invalid",
+                message: "container preamble maxBytes must be a non-negative safe integer"
+              });
+            }
+            const limit = Math.min(maxBytes, options.budget.maxScalarBytes);
+            const value = await namespace.readPreamble(limit, preambleSignal);
+            ensureLive(preambleSignal);
+            if (!(value instanceof Uint8Array) || value.byteLength > limit) {
+              throw new ModkitError({
+                code: "x3.host/container-preamble-invalid",
+                message: "container returned an invalid or over-budget preamble"
+              });
+            }
+            return value;
+          }
+        } : {},
+        async *list(requestedPrefix, listSignal) {
+          ensureLive(listSignal);
+          const relativePrefix = normalizePath(requestedPrefix, true);
+          const absolutePrefix = prefix === "" ? relativePrefix : relativePrefix === "" ? prefix : `${prefix}/${relativePrefix}`;
+          const children = /* @__PURE__ */ new Map();
+          for await (const entry2 of pages(absolutePrefix, listSignal)) {
+            const suffix = absolutePrefix === "" ? entry2.path : sameNamespacePath(entry2.path, absolutePrefix) ? "" : entry2.path.slice(absolutePrefix.length + 1);
+            if (suffix === "")
+              continue;
+            const [name] = suffix.split("/");
+            if (name === void 0 || name === "")
+              continue;
+            const childPath = relativePrefix === "" ? name : `${relativePrefix}/${name}`;
+            const nested = suffix.includes("/");
+            const value = Object.freeze({
+              path: childPath,
+              kind: nested ? "directory" : entry2.kind,
+              ...!nested && entry2.kind === "file" && entry2.size !== void 0 ? { size: entry2.size } : {}
+            });
+            const prior = children.get(childPath);
+            if (prior !== void 0 && prior.kind !== value.kind) {
+              throw new ModkitError({
+                code: "x3.host/container-namespace-invalid",
+                message: `container namespace path \xAB${childPath}\xBB is both a file and a directory`
+              });
+            }
+            children.set(childPath, value);
+          }
+          for (const child of [...children.values()].sort((left, right) => left.path < right.path ? -1 : left.path > right.path ? 1 : 0)) {
+            ensureLive(listSignal);
+            yield child;
+          }
+        },
+        async open(requestedPath, openSignal) {
+          ensureLive(openSignal);
+          const relativePath2 = normalizePath(requestedPath, false);
+          const absolutePath = prefix === "" ? relativePath2 : `${prefix}/${relativePath2}`;
+          const found = await lookup(absolutePath, openSignal);
+          const refForEntry = childRef(options.root, absolutePath);
+          if (found.kind === "directory") {
+            return Object.freeze({
+              value: sourceAt(absolutePath, refForEntry, revisionIdFromRef({
+                kind: "provider-token",
+                value: `${String(options.revision)}!directory:${absolutePath}`
+              })),
+              release: async () => void 0
+            });
+          }
+          const refLease = await namespace.openEntry(found.entry.id, openSignal);
+          let released = false;
+          const release = async () => {
+            if (released)
+              return;
+            released = true;
+            outstanding.delete(release);
+            await refLease.release();
+          };
+          outstanding.add(release);
+          try {
+            ensureLive(openSignal);
+            if (!sameRef(refLease.value, refForEntry)) {
+              if (refLease.value.parentIds === void 0 || !refLease.value.parentIds.includes(options.root.id)) {
+                throw new ModkitError({
+                  code: "x3.host/container-entry-ref-invalid",
+                  message: `container entry \xAB${absolutePath}\xBB is not parented by the outer source`
+                });
+              }
+            }
+            const sourceRevision = containerEntryRevision(options.revision, found.entry.id, found.entry.size ?? 0n);
+            const ref3 = refLease.value;
+            const prior = bindings.get(ref3.id);
+            if (prior !== void 0 && (prior.entryId !== found.entry.id || prior.providerRevision !== found.entry.revision || prior.sourceRevision !== sourceRevision)) {
+              throw new ModkitError({
+                code: "x3.host/container-entry-ref-collision",
+                message: `container reused entry ref ${ref3.id} for different content`
+              });
+            }
+            bindings.set(ref3.id, Object.freeze({
+              entryId: found.entry.id,
+              path: absolutePath,
+              ref: ref3,
+              providerRevision: found.entry.revision,
+              sourceRevision
+            }));
+            let extracted;
+            let extraction;
+            const ensureEntryLive = (signal2) => {
+              ensureLive(signal2);
+              if (released) {
+                throw new ModkitError({
+                  code: "x3.host/container-entry-source-released",
+                  message: `container entry source \xAB${absolutePath}\xBB has been released`
+                });
+              }
+            };
+            const loadBytes = async (signal2) => {
+              ensureEntryLive(signal2);
+              if (extracted !== void 0)
+                return extracted;
+              if (found.entry.size !== void 0 && found.entry.size > BigInt(options.budget.maxScalarBytes)) {
+                throw new ModkitError({
+                  code: "x3.host/container-entry-scalar-budget-exceeded",
+                  message: `container entry \xAB${absolutePath}\xBB exceeds maxScalarBytes`
+                });
+              }
+              extraction ??= (async () => {
+                const invoked = await parentOperations.invoke(extractHandlerId, { entryId: found.entry.id }, signal2 === void 0 ? {} : { signal: signal2 });
+                if (invoked.state !== "ok" || invoked.output.kind !== "bytes") {
+                  throwIfAborted(signal2);
+                  throw new ModkitError({
+                    code: "x3.host/container-entry-unreadable",
+                    message: `container refused to extract entry \xAB${absolutePath}\xBB`
+                  });
+                }
+                const bytes = invoked.output.value;
+                if (bytes.byteLength > options.budget.maxScalarBytes) {
+                  throw new ModkitError({
+                    code: "x3.host/container-entry-scalar-budget-exceeded",
+                    message: `container entry \xAB${absolutePath}\xBB exceeds maxScalarBytes`
+                  });
+                }
+                if (found.entry.size !== void 0 && found.entry.size !== BigInt(bytes.byteLength)) {
+                  throw new ModkitError({
+                    code: "x3.host/container-entry-size-mismatch",
+                    message: `container extracted ${bytes.byteLength} bytes for entry \xAB${absolutePath}\xBB, expected ${found.entry.size}`
+                  });
+                }
+                const total = extractedBytes + BigInt(bytes.byteLength);
+                if (total > options.budget.maxInputBytes) {
+                  throw new ModkitError({
+                    code: "x3.host/container-entry-byte-budget-exceeded",
+                    message: "container composition exceeded maxInputBytes while extracting entries"
+                  });
+                }
+                extractedBytes = total;
+                extracted = bytes.slice();
+                return extracted;
+              })();
+              try {
+                const bytes = await extraction;
+                ensureEntryLive(signal2);
+                return bytes;
+              } catch (error3) {
+                if (extracted === void 0)
+                  extraction = void 0;
+                throw error3;
+              }
+            };
+            const byteSource = Object.freeze({
+              kind: "bytes",
+              ref: ref3,
+              revision: sourceRevision,
+              ...found.entry.size === void 0 ? {} : { size: found.entry.size },
+              async read(offset, length, signal2) {
+                const bytes = await loadBytes(signal2);
+                return containerEntrySource(ref3, sourceRevision, bytes).read(offset, length, signal2);
+              },
+              async *stream(range, signal2) {
+                const bytes = await loadBytes(signal2);
+                yield* containerEntrySource(ref3, sourceRevision, bytes).stream(range, signal2);
+              }
+            });
+            return Object.freeze({
+              value: byteSource,
+              release
+            });
+          } catch (error3) {
+            await release();
+            throw error3;
+          }
+        }
+      });
+      return Object.freeze({ value: assetNamespace, release: async () => void 0 });
+    }
   });
-  const diagnostics = [];
-  if (degraded.length > 0)
-    diagnostics.push(permissionDegradedDiagnostic(manifest.id, degraded));
-  if (variant.executionProfile === "worker-brokered") {
-    diagnostics.push(diagnostic("information", "x3.host/worker-shared-process", `\xAB${manifest.id}\xBB runs worker-brokered: a crash, hang or protocol violation of this code is isolated from the host, but the worker shares the process \u2014 it is not a security sandbox (24 \xA76.1 SB-1).`, [manifest.id], { grant: child.id, classes: child.classes }));
-  }
-  if (variant.executionProfile === "trusted-in-process") {
-    diagnostics.push(diagnostic("warning", "x3.host/full-process-authority", `\xAB${manifest.id}\xBB runs as trusted-in-process: the host checks grants at dispatch and brokers what it owns, but it cannot technically prevent this code from reaching Node.js filesystem/network built-ins or the process itself. This is an audit/policy boundary, not a sandbox (24 \xA75.1).`, [manifest.id], { grant: child.id, classes: child.classes }));
-  }
+  const source = sourceAt("", options.root, options.revision);
+  const packHandlerId = operationHandler(descriptor, CONTAINER_PACK);
+  const exportRawHandlerId = operationHandler(descriptor, EXPORT_RAW);
+  const composition = Object.freeze({
+    source,
+    descriptor,
+    openResources(request) {
+      const requestedBytes = request.limits?.maxBytes ?? options.budget.maxInputBytes;
+      const maxSourceBytes = requestedBytes < BigInt(options.budget.maxScalarBytes) ? requestedBytes : BigInt(options.budget.maxScalarBytes);
+      return createResourceSession({
+        ...request,
+        origin: createNamespaceCompanionOrigin({
+          namespace,
+          primaryLogicalId: "",
+          containerRevision: options.revision,
+          maxPages: options.budget.maxNodes,
+          maxSourceBytes,
+          ...openStoredSource === void 0 ? {} : { openStoredSource },
+          async extract(entryId, signal) {
+            ensureLive(signal);
+            const result = await parentOperations.invoke(extractHandlerId, { entryId }, signal === void 0 ? {} : { signal });
+            ensureLive(signal);
+            if (result.state !== "ok" || result.output.kind !== "bytes")
+              throw new ModkitError({
+                code: "x3.host/container-entry-unreadable",
+                message: `container refused to extract entry \xAB${entryId}\xBB`
+              });
+            return result.output.value;
+          }
+        })
+      });
+    },
+    ...packHandlerId === void 0 ? {} : { packHandlerId },
+    ...exportRawHandlerId === void 0 ? {} : { exportRawHandlerId },
+    wrapSession(semantic, semanticDescriptor, semanticSpec, parent) {
+      let sessionDisposed = false;
+      const dispose = async () => {
+        if (sessionDisposed)
+          return;
+        sessionDisposed = true;
+        let firstError;
+        try {
+          await semantic.dispose();
+        } catch (error3) {
+          firstError = error3;
+        }
+        try {
+          await composition.dispose();
+        } catch (error3) {
+          firstError ??= error3;
+        }
+        try {
+          await parent.dispose();
+        } catch (error3) {
+          firstError ??= error3;
+        }
+        if (firstError !== void 0)
+          throw firstError;
+      };
+      const parentInspectHandlerId = operationHandler(descriptor, VIEW_INSPECT);
+      const semanticInspectHandlerId = operationHandler(semanticDescriptor, VIEW_INSPECT);
+      const namespaceOf = (item) => item.dataSources.some((entry2) => entry2.contract === NAMESPACE_ENTRY_SOURCE && entry2.major === 1);
+      const carrierExtract = descriptor.operations.find((item) => item.id === CONTAINER_EXTRACT && item.state === "available");
+      const lendsNamespace = !namespaceOf(semanticDescriptor) && namespaceOf(descriptor) && carrierExtract !== void 0;
+      const lend = (item) => !lendsNamespace || namespaceOf(item) ? item : Object.freeze({
+        ...item,
+        dataSources: Object.freeze([
+          ...item.dataSources,
+          Object.freeze({ contract: NAMESPACE_ENTRY_SOURCE, major: 1 })
+        ]),
+        operations: Object.freeze([
+          ...item.operations.filter((operation) => operation.id !== CONTAINER_EXTRACT),
+          Object.freeze({ ...carrierExtract, handlerId: CARRIER_EXTRACT_HANDLER })
+        ])
+      });
+      const operations = composedOperations({
+        semantic: semantic.operations(),
+        semanticSpec,
+        parent: parent.operations(),
+        parentRevision: parent.revision,
+        bindings,
+        budget: options.budget,
+        ...packHandlerId === void 0 ? {} : { packHandlerId },
+        ...exportRawHandlerId === void 0 ? {} : { exportRawHandlerId },
+        ...parentInspectHandlerId === void 0 ? {} : { parentInspectHandlerId },
+        ...semanticInspectHandlerId === void 0 ? {} : { semanticInspectHandlerId },
+        ...lendsNamespace ? { carrierExtractHandlerId: carrierExtract.handlerId } : {}
+      });
+      return Object.freeze({
+        revision: semantic.revision,
+        state: () => semantic.state(),
+        descriptor: async () => lend(await semantic.descriptor()),
+        dataSource: ((contract, major) => lendsNamespace && contract === NAMESPACE_ENTRY_SOURCE && major === 1 ? parent.dataSource(NAMESPACE_ENTRY_SOURCE, 1) : semantic.dataSource(contract, major)),
+        operations: () => operations,
+        events: (signal) => semantic.events(signal),
+        dispose
+      });
+    },
+    async dispose() {
+      if (disposed)
+        return;
+      disposed = true;
+      let firstError;
+      for (const release of [...outstanding].reverse()) {
+        try {
+          await release();
+        } catch (error3) {
+          firstError ??= error3;
+        }
+      }
+      try {
+        await namespaceLease.release();
+      } catch (error3) {
+        firstError ??= error3;
+      }
+      if (firstError !== void 0)
+        throw firstError;
+    }
+  });
+  return composition;
+}
+
+// ../../MODDING/modkit-core/packages/host/dist/model-projection-cache.js
+function modelProjectionKey(opened, source, sourceKey, logicalId) {
+  const descriptor = opened.descriptor;
+  if (descriptor.interpretation !== "codec")
+    return void 0;
+  const bindings = descriptor.origin.kind === "bundle" ? descriptor.origin.bindings : descriptor.origin.kind === "single" ? [descriptor.origin.binding] : [];
+  const receipt = descriptor.metadata.find((group) => group.id === "uv-projection-receipt")?.entries.find((entry2) => entry2.key === "receipt")?.value;
+  if (receipt === null || typeof receipt !== "object" || Array.isArray(receipt) || !("confidence" in receipt) || !["partial", "high", "exact"].includes(String(receipt["confidence"])) || receipt["subjectRevision"] !== descriptor.revision || !Array.isArray(receipt["companions"]) || receipt["companions"].some((companion) => companion === null || typeof companion !== "object" || Array.isArray(companion) || companion["state"] === "bound" && typeof companion["revision"] !== "string" && !bindings.some((binding) => binding.id === companion["bindingId"] && typeof binding.revision === "string") || companion["state"] === "refused") || !Array.isArray(receipt["evidence"]) || !opened.detectionSelectionText || !opened.lockText)
+    return void 0;
+  return canonicalJsonStringify([
+    sourceKey,
+    source.ref,
+    source.revision,
+    logicalId,
+    descriptor.origin,
+    receipt,
+    opened.detectionSelectionText,
+    opened.lockText
+  ]);
+}
+function waitForProjection(done, signal) {
+  signal?.throwIfAborted();
+  if (signal === void 0)
+    return done;
+  return new Promise((resolve, reject) => {
+    const abort = () => reject(signal.reason);
+    signal.addEventListener("abort", abort, { once: true });
+    void done.then(() => {
+      signal.removeEventListener("abort", abort);
+      resolve();
+    });
+  });
+}
+function createModelProjectionCache(state, maxScalarBytes) {
+  const maxBytes = Math.min(64 * 1024 * 1024, Math.floor(maxScalarBytes / 8));
+  const entries = /* @__PURE__ */ new Map();
+  const pending = /* @__PURE__ */ new Map();
+  let retainedBytes = 0;
+  let pendingBytes = 0;
+  let generation = 0;
+  const cost = (key3, bytes) => key3.length * 2 + bytes.byteLength;
+  const evictOne = () => {
+    const first = entries.entries().next().value;
+    if (first === void 0)
+      return false;
+    entries.delete(first[0]);
+    const bytes = cost(first[0], first[1]);
+    retainedBytes -= bytes;
+    state.reservedBytes -= bytes;
+    return true;
+  };
   return {
-    module: backendLease.module,
-    variant,
-    effectiveGrant: child,
-    diagnostics,
-    release: backendLease.release
+    get retainedBytes() {
+      return retainedBytes;
+    },
+    trimForReservation(bytes) {
+      while (state.reservedBytes + bytes > maxScalarBytes && evictOne()) {
+      }
+    },
+    clear() {
+      generation++;
+      state.reservedBytes -= pendingBytes;
+      pendingBytes = 0;
+      for (const flight of pending.values())
+        flight.wake();
+      pending.clear();
+      while (evictOne()) {
+      }
+    },
+    async claim(key3, signal) {
+      let waited = false;
+      const claimGeneration = generation;
+      while (key3 !== void 0) {
+        signal?.throwIfAborted();
+        if (generation !== claimGeneration)
+          break;
+        const bytes = entries.get(key3);
+        if (bytes !== void 0) {
+          entries.delete(key3);
+          entries.set(key3, bytes);
+          return { state: waited ? "shared-hit" : "hit", bytes };
+        }
+        const flight = pending.get(key3);
+        if (flight !== void 0) {
+          waited = true;
+          await waitForProjection(flight.done, signal);
+          continue;
+        }
+        const keyBytes = key3.length * 2;
+        if (keyBytes >= maxBytes || pending.size >= 256 || pendingBytes + keyBytes > maxBytes)
+          break;
+        while ((state.reservedBytes + keyBytes > maxScalarBytes || retainedBytes + pendingBytes + keyBytes > maxBytes || entries.size + pending.size >= 256) && evictOne()) {
+        }
+        if (state.reservedBytes + keyBytes > maxScalarBytes)
+          break;
+        const epoch = generation;
+        let wake;
+        const done = new Promise((resolve) => {
+          wake = resolve;
+        });
+        pending.set(key3, { done, wake });
+        pendingBytes += keyBytes;
+        state.reservedBytes += keyBytes;
+        let finished = false;
+        return {
+          state: "miss",
+          finish(bytes2) {
+            if (finished)
+              return;
+            finished = true;
+            if (epoch === generation) {
+              pending.delete(key3);
+              pendingBytes -= keyBytes;
+              state.reservedBytes -= keyBytes;
+              if (bytes2 !== void 0 && cost(key3, bytes2) <= maxBytes) {
+                const charge = cost(key3, bytes2);
+                while ((retainedBytes + pendingBytes + charge > maxBytes || entries.size + pending.size >= 256 || state.reservedBytes + charge > maxScalarBytes) && evictOne()) {
+                }
+                if (state.reservedBytes + charge <= maxScalarBytes && retainedBytes + pendingBytes + charge <= maxBytes) {
+                  entries.set(key3, bytes2);
+                  retainedBytes += charge;
+                  state.reservedBytes += charge;
+                }
+              }
+            }
+            wake();
+          }
+        };
+      }
+      return { state: "bypass" };
+    }
   };
 }
 
-// ../MODDING/modkit-core/packages/host/dist/service-leases.js
-function serviceTargetFor(executionBackends, offer, target) {
-  const inProcess = executionBackends.inProcessTarget;
-  if (inProcess === void 0)
-    return target;
-  const contribution = inventoryBindingForOffer(offer)?.contribution;
-  const variant = contribution?.manifest?.runtimeVariants?.find((item) => item.variantId === offer.runtimeVariant);
-  if (contribution === void 0 || variant?.executionProfile !== "trusted-in-process" || inventoryRecordFor(contribution)?.execution.allowTrustedInProcess !== true) {
-    return target;
-  }
+// ../../MODDING/modkit-core/packages/host/dist/model-resources.js
+function uvmArtifactSource(source, bytes, conversionKey) {
+  const owned = bytes;
+  const size = BigInt(owned.byteLength);
+  const range = (offset, length) => {
+    if (offset < 0n || length < 0n || offset > size) {
+      throw new RangeError("UVM artifact reads require a non-negative range inside the source");
+    }
+    const end = offset + length;
+    return owned.slice(Number(offset), Number(end > size ? size : end));
+  };
   return Object.freeze({
-    ...inProcess,
-    ...target.grantedPermissions === void 0 ? {} : { grantedPermissions: target.grantedPermissions }
+    kind: "bytes",
+    ref: Object.freeze({
+      id: `${source.ref.id}#model.export-uvm`,
+      uri: `memory+uvm:${encodeURIComponent(source.ref.uri)}`
+    }),
+    revision: revisionIdFromRef({
+      kind: "provider-token",
+      value: conversionKey
+    }),
+    size,
+    async read(offset, length, signal) {
+      signal?.throwIfAborted();
+      if (!Number.isSafeInteger(length) || length < 0) {
+        throw new RangeError("UVM artifact read length must be a non-negative safe integer");
+      }
+      return range(offset, BigInt(length));
+    },
+    async *stream(requested, signal) {
+      signal?.throwIfAborted();
+      const offset = requested?.offset ?? 0n;
+      const length = requested?.length ?? size - offset;
+      yield range(offset, length);
+    }
   });
 }
-async function activateServiceProvider(options) {
-  const ticket = issueActivationTicket(options.result, serviceTargetFor(options.executionBackends, options.result.selected.offer, options.target));
-  const activation = await activateContribution({
-    ticket,
-    grant: options.grant,
-    executionBackends: options.executionBackends,
-    ...options.policy === void 0 ? {} : { policy: options.policy },
-    ...options.signal === void 0 ? {} : { signal: options.signal }
-  });
-  options.diagnostics?.push(...activation.diagnostics);
-  const providerId = options.result.selected.offer.providerId;
-  const fail2 = async (code, message) => {
-    await activation.release();
-    throw new ModkitError({ code, message });
+function createSubjectModelResources(options) {
+  const projections = createModelProjectionCache(options.state, options.budget.maxScalarBytes);
+  let projectionResources = options.state.resources;
+  let closed = false;
+  const outstanding = /* @__PURE__ */ new Set();
+  const reservationWaiters = /* @__PURE__ */ new Set();
+  let reservedByModels = 0;
+  const wakeReservationWaiters = () => {
+    for (const wake of [...reservationWaiters])
+      wake();
   };
-  if (activation.module["abiVersion"] !== 1 || typeof activation.module["createProvider"] !== "function") {
-    return fail2("x3.host/invalid-service-provider-module", `provider ${providerId} does not implement ServiceProviderModule ABI v1`);
-  }
-  const createProvider5 = activation.module["createProvider"];
-  let lease2;
-  try {
-    const baseContext = options.contextFor(activation.effectiveGrant);
-    const context = Object.freeze({
-      ...baseContext,
-      providerIdentity: Object.freeze({
-        providerId,
-        providerVersion: options.result.selected.offer.extensionVersion,
-        artifactDigest: ticket.artifactDigest
+  const reserve = async (maxBytes, signal) => {
+    if (maxBytes > options.budget.maxScalarBytes)
+      return false;
+    projections.trimForReservation(maxBytes);
+    while (options.state.reservedBytes + maxBytes > options.budget.maxScalarBytes) {
+      signal?.throwIfAborted();
+      if (!available() || reservedByModels === 0)
+        return false;
+      await new Promise((resolve) => {
+        const wake = () => {
+          reservationWaiters.delete(wake);
+          signal?.removeEventListener("abort", wake);
+          resolve();
+        };
+        reservationWaiters.add(wake);
+        signal?.addEventListener("abort", wake, { once: true });
+      });
+      projections.trimForReservation(maxBytes);
+    }
+    signal?.throwIfAborted();
+    if (!available())
+      return false;
+    options.state.reservedBytes += maxBytes;
+    reservedByModels += maxBytes;
+    return true;
+  };
+  options.own(async () => {
+    closed = true;
+    projections.clear();
+    wakeReservationWaiters();
+    const results = await Promise.allSettled([...outstanding].map((release) => release()));
+    const failed2 = results.find((result) => result.status === "rejected");
+    if (failed2?.status === "rejected")
+      throw failed2.reason;
+  });
+  const available = () => !closed && options.state.live && options.isAuthorized();
+  const refuse3 = (message, code = "x3.host/model-resource-unavailable", data) => ({
+    value: {
+      result: {
+        state: "unresolved",
+        diagnostics: [diagnostic("warning", code, message, void 0, data)]
+      },
+      async acquire() {
+        throw new TypeError("model resource is unavailable");
+      },
+      async readRaster() {
+        throw new TypeError("model resource is unavailable");
+      }
+    },
+    async release() {
+      return void 0;
+    }
+  });
+  return {
+    async acquire(request, signal) {
+      signal?.throwIfAborted();
+      const started = performance.now();
+      if (!available())
+        return refuse3("Model resources require a live read-source subject.");
+      if (options.ancestors.length >= Math.min(8, options.budget.maxDepth))
+        return refuse3("Nested models exceed the depth limit.");
+      const maxBytes = request?.maxBytes, units = request?.metersPerSourceUnit;
+      if (!Number.isSafeInteger(maxBytes) || maxBytes <= 0)
+        return refuse3("Model conversion maxBytes must be a positive safe integer.");
+      if (maxBytes > options.budget.maxScalarBytes)
+        return refuse3(`Model conversion requires ${String(maxBytes)} bytes, exceeding the ${String(options.budget.maxScalarBytes)} byte subject limit.`);
+      if (units !== void 0 && (!Number.isFinite(units) || units <= 0))
+        return refuse3("Model conversion metersPerSourceUnit must be positive and finite.");
+      const resources = options.state.resources;
+      if (resources === void 0)
+        return refuse3("The subject has no model resource origin.");
+      if (resources !== projectionResources) {
+        projections.clear();
+        projectionResources = resources;
+      }
+      const reservationStarted = performance.now();
+      if (!await reserve(maxBytes, signal))
+        return refuse3(`Model conversion requires ${String(maxBytes)} bytes with ${String(options.state.reservedBytes)} bytes already reserved, exceeding the ${String(options.budget.maxScalarBytes)} byte subject limit.`);
+      const releases = [];
+      let released = false;
+      const profile3 = {
+        state: "unresolved",
+        cache: "bypass",
+        reserveMs: performance.now() - reservationStarted,
+        resolveMs: 0,
+        nativeOpenMs: 0,
+        projectionWaitMs: 0,
+        exportUvmMs: 0,
+        reopenUvmMs: 0,
+        acquireFacetsMs: 0,
+        exportInvocations: 0,
+        uvmBytes: 0
+      };
+      let rootId;
+      const timed = async (phase, work) => {
+        const start = performance.now();
+        try {
+          return await work();
+        } finally {
+          profile3[phase] += performance.now() - start;
+        }
+      };
+      let projection;
+      const release = async () => {
+        if (released)
+          return;
+        released = true;
+        outstanding.delete(release);
+        let failure3;
+        try {
+          for (const dispose of releases.reverse()) {
+            try {
+              await dispose();
+            } catch (error3) {
+              failure3 ??= error3;
+            }
+          }
+        } finally {
+          options.state.reservedBytes -= maxBytes;
+          reservedByModels -= maxBytes;
+          wakeReservationWaiters();
+        }
+        if (failure3 !== void 0)
+          throw failure3;
+      };
+      try {
+        const { name, parameters } = resourceIdParameters(request.requirement.logicalId);
+        const parameterised = Object.keys(parameters).length > 0;
+        const requirement = parameterised ? { ...request.requirement, logicalId: name } : request.requirement;
+        const resolution = await timed("resolveMs", () => resources.resolve(requirement, signal));
+        if (resolution.state !== "resolved") {
+          await release();
+          return refuse3(resolution.diagnostic.message);
+        }
+        rootId = resolution.provenance.rootId;
+        releases.push(() => resolution.lease.release());
+        const source = resolution.lease.value;
+        if (source.kind !== "bytes")
+          throw new TypeError("model resource needs a byte source");
+        const sourceIdentityKey = `${source.ref.id}@${source.revision}`;
+        if (options.ancestors.includes(sourceIdentityKey))
+          throw new TypeError("model resource cycle");
+        if (!available())
+          throw new TypeError("model resource authority expired");
+        const opened = await timed("nativeOpenMs", () => options.open(source, resolution.provenance.logicalId, signal));
+        if (opened.state !== "opened") {
+          const details = [
+            ...opened.diagnostics,
+            ...opened.candidates.flatMap((candidate) => candidate.diagnostics)
+          ].map((item) => `${item.code}: ${item.message}`).join("; ");
+          throw new TypeError(details.length === 0 ? "no model codec opened the resource" : `no model codec opened the resource (${details})`);
+        }
+        releases.push(() => opened.session.dispose());
+        const operation = opened.descriptor.operations.find((item) => item.id === "model.export-uvm" && item.state === "available" && !item.mutatesSource);
+        if (operation === void 0)
+          throw new TypeError("the resource does not publish model.export-uvm");
+        const sourceKey = [
+          source.ref.id,
+          opened.descriptor.revision,
+          operation.id,
+          operation.handlerId,
+          "schemaVersion=1",
+          `metersPerSourceUnit=${units === void 0 ? "source-unit" : String(units)}`,
+          // each parameter set is a model of its own
+          ...parameterised ? [`parameters=${canonicalJsonStringify(parameters)}`] : []
+        ].join("|");
+        projection = await timed("projectionWaitMs", () => projections.claim(resources === options.state.resources ? modelProjectionKey(opened, source, sourceKey, resolution.provenance.logicalId) : void 0, signal));
+        profile3.cache = projection.state;
+        signal?.throwIfAborted();
+        if (!available())
+          throw new TypeError("model resource authority expired");
+        let conversionDiagnostics = [];
+        let uvmBytes;
+        if ("bytes" in projection) {
+          uvmBytes = projection.bytes;
+        } else {
+          profile3.exportInvocations++;
+          const converted = await timed("exportUvmMs", () => opened.session.operations().invoke(operation.handlerId, {
+            schemaVersion: 1,
+            ...units === void 0 ? {} : { metersPerSourceUnit: units },
+            ...parameterised ? { parameters } : {}
+          }, signal === void 0 ? {} : { signal }));
+          if (converted.state !== "ok" || converted.output.kind !== "bytes" || !(converted.output.value instanceof Uint8Array))
+            throw new RangeError("model resource conversion did not return UVM bytes");
+          uvmBytes = converted.output.value.slice();
+          conversionDiagnostics = converted.diagnostics;
+        }
+        signal?.throwIfAborted();
+        if (!available())
+          throw new TypeError("model resource authority expired");
+        if (uvmBytes.length > maxBytes) {
+          await release();
+          return refuse3(`Model conversion needs ${String(uvmBytes.length)} bytes; ${String(maxBytes)} were requested.`, "x3.host/model-resource-too-large", { maxBytes, requiredBytes: uvmBytes.length });
+        }
+        profile3.uvmBytes = uvmBytes.byteLength;
+        let scene;
+        let skeleton;
+        let animations;
+        let materials;
+        let resourceReferences;
+        let sockets;
+        let sceneDiagnostic;
+        let sceneResources = opened.resources;
+        try {
+          const uvmPath = resolution.provenance.logicalId.replace(/(?:\.[^./]+)?$/u, ".uvm");
+          const uvmOpened = await timed("reopenUvmMs", () => options.open(uvmArtifactSource(source, uvmBytes, sourceKey), uvmPath, signal));
+          if (uvmOpened.state !== "opened") {
+            const details = [
+              ...uvmOpened.diagnostics,
+              ...uvmOpened.candidates.flatMap((candidate) => candidate.diagnostics)
+            ].map((item) => `${item.code}: ${item.message}`).join("; ");
+            throw new TypeError(details.length === 0 ? "the exported UVM could not be reopened by a UVM codec" : `the exported UVM could not be reopened by a UVM codec (${details})`);
+          }
+          releases.push(() => uvmOpened.session.dispose());
+          sceneResources = sceneResources ?? uvmOpened.resources;
+          const facetsStarted = performance.now();
+          try {
+            const acquiredScene = await uvmOpened.session.dataSource("common.view/model-scene-source", 1);
+            scene = acquiredScene;
+            releases.push(() => acquiredScene.release());
+            const advertised = new Set((uvmOpened.descriptor.dataSources ?? []).filter((item) => item.major === 1).map((item) => item.contract));
+            if (advertised.has("common.view/model-skeleton-source")) {
+              skeleton = await uvmOpened.session.dataSource("common.view/model-skeleton-source", 1);
+              releases.push(() => skeleton.release());
+            }
+            if (advertised.has("common.view/model-animation-source")) {
+              animations = await uvmOpened.session.dataSource("common.view/model-animation-source", 1);
+              releases.push(() => animations.release());
+            }
+            if (advertised.has("common.view/model-material-source")) {
+              materials = await uvmOpened.session.dataSource("common.view/model-material-source", 1);
+              releases.push(() => materials.release());
+            }
+            if (advertised.has("common.view/model-resource-refs-source")) {
+              resourceReferences = await uvmOpened.session.dataSource("common.view/model-resource-refs-source", 1);
+              releases.push(() => resourceReferences.release());
+            }
+            if (advertised.has("common.view/model-socket-source")) {
+              sockets = await uvmOpened.session.dataSource("common.view/model-socket-source", 1);
+              releases.push(() => sockets.release());
+            }
+          } finally {
+            profile3.acquireFacetsMs += performance.now() - facetsStarted;
+          }
+        } catch (error3) {
+          sceneDiagnostic = diagnostic("warning", "x3.host/model-resource-uvm-scene-unavailable", error3 instanceof Error ? `The exported UVM has no renderable scene: ${error3.message}` : "The exported UVM has no renderable scene.");
+        }
+        signal?.throwIfAborted();
+        if (!available())
+          throw new TypeError("model resource authority expired");
+        const result = {
+          state: "converted",
+          bytes: uvmBytes.slice(),
+          sourceKey,
+          diagnostics: [
+            ...opened.diagnostics,
+            ...conversionDiagnostics,
+            ...sceneDiagnostic === void 0 ? [] : [sceneDiagnostic]
+          ]
+        };
+        const childState = {
+          live: true,
+          reservedBytes: result.bytes.byteLength,
+          ...sceneResources === void 0 ? {} : { resources: sceneResources }
+        };
+        releases.push(async () => {
+          childState.live = false;
+        });
+        const childOptions = {
+          ...options,
+          state: childState,
+          budget: { ...options.budget, maxScalarBytes: maxBytes },
+          isAuthorized: () => !released && available(),
+          ancestors: [...options.ancestors, sourceIdentityKey],
+          own: (dispose) => {
+            releases.push(dispose);
+          }
+        };
+        const models = createSubjectModelResources(childOptions);
+        const rasters = createSubjectRasterResources({
+          ...childOptions,
+          open: (bytes, hint, abort) => options.open(bytes, hint.path ?? "", abort)
+        });
+        outstanding.add(release);
+        if (projection.state === "miss" && sceneDiagnostic === void 0 && conversionDiagnostics.length === 0)
+          projection.finish(uvmBytes);
+        profile3.state = "converted";
+        return {
+          value: {
+            result,
+            acquire: models.acquire,
+            readRaster: rasters.read,
+            ...scene === void 0 ? {} : {
+              sceneInfo: scene.value.info.bind(scene.value),
+              nodes: scene.value.nodes.bind(scene.value),
+              meshes: scene.value.meshes.bind(scene.value),
+              ...scene.value.primitive === void 0 ? {} : { primitive: scene.value.primitive.bind(scene.value) },
+              ...skeleton === void 0 ? {} : { skeletonBindings: skeleton.value.bindings.bind(skeleton.value) },
+              ...animations === void 0 ? {} : { animationClips: animations.value.clips.bind(animations.value) },
+              ...materials === void 0 ? {} : { materials: materials.value.materials.bind(materials.value) },
+              ...resourceReferences === void 0 ? {} : {
+                resourceReferences: resourceReferences.value.references.bind(resourceReferences.value)
+              },
+              ...sockets === void 0 ? {} : { sockets: sockets.value.sockets.bind(sockets.value) }
+            }
+          },
+          release
+        };
+      } catch (error3) {
+        await release();
+        if (signal?.aborted)
+          throw error3;
+        return refuse3(error3 instanceof Error ? error3.message : "Model acquisition failed.");
+      } finally {
+        if (projection?.state === "miss")
+          projection.finish();
+        if (signal?.aborted)
+          profile3.state = "aborted";
+        try {
+          options.onProfile?.(Object.freeze({
+            ...profile3,
+            totalMs: performance.now() - started,
+            cacheRetainedBytes: projections.retainedBytes,
+            ...rootId === void 0 ? {} : { rootId }
+          }));
+        } catch {
+        }
+      }
+    }
+  };
+}
+
+// ../../MODDING/modkit-core/packages/host/dist/subject-models.js
+var FACTS = "common.view/subject-facts-source";
+var SELECTOR = "common.view/subject-selector-source";
+var MODEL_PREVIEW_BYTES = 64 * 1024 * 1024;
+var FACET_RECORDS = 4096;
+function withModel(facts, port) {
+  let shared;
+  const acquire = async (signal) => {
+    const { model: logicalId, modelMetersPerSourceUnit } = (await facts.summary(signal)).identity;
+    if (logicalId === void 0 || logicalId.length === 0) {
+      throw new TypeError("this subject names no model");
+    }
+    const entry2 = shared ??= {
+      users: 0,
+      lease: port.acquire({
+        requirement: {
+          id: "subject-model",
+          logicalId,
+          role: "sidecar",
+          scopes: [
+            "sibling-directory",
+            "current-mount",
+            "enclosing-container",
+            "workspace-dependency-layer"
+          ]
+        },
+        maxBytes: MODEL_PREVIEW_BYTES,
+        ...modelMetersPerSourceUnit === void 0 ? {} : { metersPerSourceUnit: modelMetersPerSourceUnit }
       })
-    });
-    lease2 = await createProvider5(options.selection, context);
-  } catch (error3) {
-    await activation.release();
-    throw error3;
-  }
-  if (typeof lease2 !== "object" || lease2 === null || !("value" in lease2) || typeof lease2.release !== "function") {
-    return fail2("x3.host/invalid-service-provider-lease", `provider ${providerId} returned an invalid lease`);
-  }
-  let released = false;
+    };
+    entry2.users += 1;
+    let released = false;
+    const release = async () => {
+      if (released)
+        return;
+      released = true;
+      entry2.users -= 1;
+      if (entry2.users > 0)
+        return;
+      if (shared === entry2)
+        shared = void 0;
+      await (await entry2.lease).release();
+    };
+    try {
+      const { value: asset } = await entry2.lease;
+      if (asset.result.state !== "converted") {
+        throw new TypeError(asset.result.diagnostics.map((item) => item.message).join("; ") || `model ${logicalId} did not resolve`);
+      }
+      return { asset, release };
+    } catch (error3) {
+      if (shared === entry2)
+        shared = void 0;
+      await release().catch(() => void 0);
+      throw error3;
+    }
+  };
+  const facet = async (signal, build) => {
+    const { asset, release } = await acquire(signal);
+    const value = build(asset);
+    if (value === void 0) {
+      await release();
+      throw new TypeError("the converted model does not publish this facet");
+    }
+    return Object.freeze({ value, release });
+  };
+  const count = async (read, signal) => {
+    let items = 0;
+    let cursor2;
+    do {
+      const page = await read({ limit: 256, ...cursor2 === void 0 ? {} : { cursor: cursor2 } }, signal);
+      items += page.items.length;
+      cursor2 = page.nextCursor;
+    } while (cursor2 !== void 0 && items < FACET_RECORDS);
+    return { items, truncated: cursor2 !== void 0 };
+  };
   return Object.freeze({
-    lease: lease2,
-    effectiveGrant: activation.effectiveGrant,
-    executionProfile: activation.variant.executionProfile,
-    attestation: Object.freeze({
-      manifestDigest: ticket.manifestDigest,
-      artifactDigest: ticket.artifactDigest,
-      offerFingerprint: ticket.offerFingerprint
+    summary: (signal) => facts.summary(signal),
+    groups: (page, signal) => facts.groups(page, signal),
+    facts: (groupId, page, signal) => facts.facts(groupId, page, signal),
+    relations: (page, signal) => facts.relations(page, signal),
+    openModel: (signal) => facet(signal, (asset) => {
+      const { sceneInfo, nodes, meshes, primitive } = asset;
+      if (sceneInfo === void 0 || nodes === void 0 || meshes === void 0)
+        return void 0;
+      return Object.freeze({
+        info: sceneInfo,
+        nodes,
+        meshes,
+        ...primitive === void 0 ? {} : { primitive }
+      });
     }),
+    openModelMaterials: (signal) => facet(signal, (asset) => {
+      const materials = asset.materials;
+      if (materials === void 0)
+        return void 0;
+      return Object.freeze({
+        materials,
+        info: async (abort) => ({
+          materials: (await count(materials, abort)).items
+        })
+      });
+    }),
+    openModelResources: (signal) => facet(signal, (asset) => {
+      const references = asset.resourceReferences;
+      if (references === void 0)
+        return void 0;
+      return Object.freeze({
+        references,
+        info: async (abort) => {
+          const counted = await count(references, abort);
+          return { references: counted.items, bound: 0, truncated: counted.truncated };
+        }
+      });
+    })
+  });
+}
+function withModelSelector(selector, port) {
+  return Object.freeze({
+    summary: (signal) => selector.summary(signal),
+    subjects: (query, signal) => selector.subjects(query, signal),
+    openFacts: async (subjectId, signal) => {
+      const lease2 = await selector.openFacts(subjectId, signal);
+      return Object.freeze({ value: withModel(lease2.value, port), release: () => lease2.release() });
+    },
+    openCalculations: (subjectId, signal) => selector.openCalculations(subjectId, signal),
+    ...selector.editTarget === void 0 ? {} : { editTarget: selector.editTarget.bind(selector) },
+    ...selector.isolation === void 0 ? {} : { isolation: selector.isolation.bind(selector) },
+    ...selector.isolationPlan === void 0 ? {} : { isolationPlan: selector.isolationPlan.bind(selector) }
+  });
+}
+function subjectModelDataSources(dataSource, port) {
+  return (async (contract, major) => {
+    const lease2 = await dataSource(contract, major);
+    if (major !== 1 || contract !== FACTS && contract !== SELECTOR)
+      return lease2;
+    const value = contract === FACTS ? withModel(lease2.value, port) : withModelSelector(lease2.value, port);
+    return Object.freeze({ value, release: () => lease2.release() });
+  });
+}
+
+// ../../MODDING/modkit-core/packages/host/dist/subject-open.js
+var DEFAULT_MINIMUM_CONFIDENCE = 0.5;
+var DEFAULT_MAX_CANDIDATES = 64;
+var WORKER_REFUSAL_CODES = /* @__PURE__ */ new Set([
+  "x3.host/artifact-digest-mismatch",
+  "x3.host/rpc-deadline-exceeded",
+  "x3.host/rpc-peer-exited",
+  "x3.host/worker-crashed",
+  "x3.host/worker-restart-limit"
+]);
+function workerRefusals(explanations) {
+  return explanations.flatMap((explanation) => explanation.state !== "rejected" ? [] : explanation.diagnostics.filter((item) => WORKER_REFUSAL_CODES.has(item.code)).map((item) => ({
+    code: "x3.host/subject-open-worker-refused",
+    severity: "error",
+    message: `${explanation.contributionId} could not examine this subject in its worker: ${item.message}`,
+    data: { contributionId: explanation.contributionId, cause: item.code }
+  })));
+}
+function createReleaseScope() {
+  const releases = [];
+  let released = false;
+  return {
+    add(release) {
+      if (released) {
+        throw new ModkitError({
+          code: "x3.host/resource-scope-closed",
+          message: "cannot retain a resource after its host scope was released"
+        });
+      }
+      releases.push(release);
+    },
     async release() {
       if (released)
         return;
       released = true;
-      try {
-        await lease2.release();
-      } finally {
-        await activation.release();
-      }
-    }
-  });
-}
-function createHostServiceResolver(options) {
-  const offers = options.offers ?? offersFromInventory(options.inventory);
-  const target = Object.freeze({
-    ...options.target,
-    grantedPermissions: [
-      .../* @__PURE__ */ new Set([...options.target.grantedPermissions ?? [], ...options.grant.classes])
-    ].sort()
-  });
-  const activations = [];
-  const locks = [];
-  const diagnostics = [];
-  const activationFacts = [];
-  const makePort = (grant, chain) => createContractResolverPort({
-    offers,
-    definitions: options.definitions,
-    target,
-    targetFor: (offer) => serviceTargetFor(options.executionBackends, offer, target),
-    onResolved(request, result) {
-      locks.push(buildLockEntry(request, result));
-    },
-    async activate(selection, result, signal) {
-      const key3 = `${selection.contract}@${selection.major}:${result.selected.offer.providerId}:${selection.offerId}`;
-      if (chain.includes(key3)) {
-        throw new ModkitError({
-          code: "x3.host/service-dependency-cycle",
-          message: `service activation cycle detected at ${key3}`
-        });
-      }
-      const activation = await activateServiceProvider({
-        selection,
-        result,
-        target,
-        grant,
-        executionBackends: options.executionBackends,
-        ...options.policy === void 0 ? {} : { policy: options.policy },
-        ...signal === void 0 ? {} : { signal },
-        diagnostics,
-        contextFor: (effectiveGrant) => {
-          const settings = options.contributionSettings?.(result.selected.offer.providerId);
-          return Object.freeze({
-            contracts: makePort(effectiveGrant, [...chain, key3]),
-            budgets: options.budgets,
-            ...chain.length !== 0 || options.logicalResourcesFor === void 0 ? {} : { logicalResources: options.logicalResourcesFor(effectiveGrant) },
-            ...chain.length !== 0 || options.installationProbes === void 0 ? {} : { installationProbes: options.installationProbes },
-            diagnostics: {
-              report(item) {
-                diagnostics.push(item);
-              }
-            },
-            ...settings === void 0 ? {} : { settings },
-            ...options.signal === void 0 ? {} : { signal: options.signal }
-          });
-        }
-      });
-      activations.push(activation);
-      activationFacts.push(Object.freeze({
-        providerId: result.selected.offer.providerId,
-        contract: selection.contract,
-        major: selection.major,
-        offerId: selection.offerId,
-        runtimeVariant: result.selected.offer.runtimeVariant,
-        executionProfile: activation.executionProfile,
-        manifestDigest: activation.attestation.manifestDigest,
-        artifactDigest: activation.attestation.artifactDigest,
-        offerFingerprint: activation.attestation.offerFingerprint,
-        effectiveGrant: activation.effectiveGrant
-      }));
-      return Object.freeze({ value: activation.lease.value, release: () => activation.release() });
-    }
-  });
-  const port = makePort(options.grant, []);
-  return Object.freeze({
-    port,
-    locks,
-    diagnostics,
-    get activationFacts() {
-      return Object.freeze([...activationFacts]);
-    },
-    async release() {
       let firstError;
-      for (const activation of activations.splice(0).reverse()) {
+      for (const release of releases.reverse()) {
         try {
-          await activation.release();
+          await release();
         } catch (error3) {
           firstError ??= error3;
         }
@@ -3938,10 +6323,2261 @@ function createHostServiceResolver(options) {
       if (firstError !== void 0)
         throw firstError;
     }
+  };
+}
+async function releaseCandidate(candidate, diagnostics) {
+  try {
+    await candidate.resources.release();
+  } catch (error3) {
+    diagnostics.push(caughtDiagnostic("cleanup", error3));
+  }
+}
+function gatedOperations(session, spec, grant, catalog) {
+  const inner = session.operations();
+  const required = /* @__PURE__ */ new Map();
+  for (const operation of spec.operations) {
+    required.set(operation.handlerId, [
+      ...operation.requiredPermissions ?? [],
+      ...operation.mutatesSource ? ["write-source"] : []
+    ]);
+  }
+  const gated = {
+    async invoke(handlerId, input, invokeOptions) {
+      const needed = required.get(handlerId) ?? [];
+      const validity = grantValidity(grant);
+      const missing = needed.filter((item) => !grant.classes.includes(item));
+      if (validity.state !== "valid" || missing.length > 0) {
+        return {
+          state: "rejected",
+          reason: "permission-missing",
+          diagnostics: [
+            diagnostic("error", "x3.host/permission-missing", validity.state === "valid" ? `operation ${handlerId} requires classes the grant does not hold: ${missing.join(", ")}` : "the grant the codec runs under is not valid", [handlerId], { missing })
+          ]
+        };
+      }
+      const first = await inner.invoke(handlerId, input, invokeOptions);
+      const options = input === null || input === void 0 ? {} : input;
+      if (catalog === void 0 || typeof options !== "object" || Array.isArray(options) || operationCatalogQueries(first).length === 0) {
+        return first;
+      }
+      try {
+        return await answerCatalogQueries({
+          run: (entities, round) => round === 0 || entities === void 0 ? Promise.resolve(first) : inner.invoke(handlerId, { ...options, [DATA_CATALOG_ENTITIES_INPUT]: entities }, invokeOptions),
+          queriesOf: operationCatalogQueries,
+          catalogEntities: catalog,
+          rounds: OPERATION_CATALOG_ROUNDS,
+          ...invokeOptions?.signal === void 0 ? {} : { signal: invokeOptions.signal }
+        });
+      } catch (error3) {
+        invokeOptions?.signal?.throwIfAborted();
+        return {
+          ...first,
+          diagnostics: [
+            ...first.diagnostics,
+            diagnostic("warning", "x3.host/subject-catalog-unavailable", `the subject's catalog could not answer ${handlerId}: ${error3 instanceof Error ? error3.message : String(error3)}`, [handlerId])
+          ]
+        };
+      }
+    },
+    dispose: () => inner.dispose()
+  };
+  return Object.freeze(gated);
+}
+var OPERATION_CATALOG_ROUNDS = 4;
+function sessionWithResources(session, resources, gating, beforeDispose, models) {
+  let disposed = false;
+  const operations = gating === void 0 ? void 0 : gatedOperations(session, gating.spec, gating.grant, gating.catalog);
+  return Object.freeze({
+    revision: session.revision,
+    state: () => session.state(),
+    descriptor: () => session.descriptor(),
+    dataSource: models === void 0 ? session.dataSource.bind(session) : subjectModelDataSources(session.dataSource.bind(session), models),
+    operations: () => operations ?? session.operations(),
+    events: (signal) => session.events(signal),
+    async dispose() {
+      if (disposed)
+        return;
+      disposed = true;
+      beforeDispose?.();
+      let firstError;
+      try {
+        await session.dispose();
+      } catch (error3) {
+        firstError = error3;
+      }
+      try {
+        await resources.release();
+      } catch (error3) {
+        firstError ??= error3;
+      }
+      if (firstError !== void 0)
+        throw firstError;
+    }
+  });
+}
+function errorDiagnostic(code, message, error3) {
+  return diagnostic("error", code, message, [], {
+    ...error3 === void 0 ? {} : { error: error3 instanceof Error ? error3.message : String(error3) },
+    // Typed errors carry JSON context (e.g. descriptor validation findings); dropping it hides the cause.
+    ...isModkitError(error3) && error3.context !== void 0 ? { context: error3.context } : {}
+  });
+}
+function caughtDiagnostic(stage, error3) {
+  const detail = error3 instanceof Error ? error3.message : String(error3);
+  const typed = isModkitError(error3) && error3.code !== "x3.host/rpc-foreign-error";
+  return errorDiagnostic(typed ? error3.code : `x3.host/subject-${stage}-failed`, typed ? error3.message : `subject ${stage} failed closed: ${detail}`, error3);
+}
+function normalizeTarget(target, grant) {
+  return JSON.parse(canonicalJsonStringify({
+    ...target,
+    grantedPermissions: [
+      .../* @__PURE__ */ new Set([...target.grantedPermissions ?? [], ...grant.classes])
+    ].sort(compareUtf8)
+  }));
+}
+function matchesGlob(path, glob) {
+  let pattern = "^";
+  for (let index = 0; index < glob.length; index += 1) {
+    const character = glob[index];
+    if (character === "*") {
+      if (glob[index + 1] === "*") {
+        if (glob[index + 2] === "/") {
+          pattern += "(?:.*/)?";
+          index += 2;
+        } else {
+          pattern += ".*";
+          index += 1;
+        }
+      } else {
+        pattern += "[^/]*";
+      }
+    } else if (character === "?") {
+      pattern += "[^/]";
+    } else {
+      pattern += character?.replace(/[\\^$.*+?()[\]{}|]/gu, "\\$&") ?? "";
+    }
+  }
+  return new RegExp(`${pattern}$`, "u").test(path);
+}
+function matchesSpec(spec, path, mediaType) {
+  const uri = /^[a-z][a-z0-9+.-]+:/iu.test(path);
+  const normalizedPath2 = (uri ? path.split(/[?#]/u, 1)[0] ?? "" : path).replaceAll("\\", "/").toLocaleLowerCase();
+  const extensionMatch = (spec.match.extensions ?? []).some((extension) => {
+    const suffix = extension.toLocaleLowerCase().replace(/^\.+/u, "");
+    return normalizedPath2.endsWith(`.${suffix}`) || normalizedPath2 === suffix;
+  });
+  const mediaMatch = mediaType !== void 0 && (spec.match.mediaTypes ?? []).some((candidate) => candidate === mediaType);
+  const pathMatch = (spec.match.pathGlobs ?? []).some((glob) => matchesGlob(normalizedPath2, glob.toLocaleLowerCase()));
+  const declaresMatch = (spec.match.extensions?.length ?? 0) > 0 || (spec.match.mediaTypes?.length ?? 0) > 0 || (spec.match.pathGlobs?.length ?? 0) > 0;
+  return declaresMatch && (extensionMatch || mediaMatch || pathMatch);
+}
+function variantRequestsBeyondProbe(requested, callerGrant) {
+  return requested.some((item) => !PROBE_PERMISSION_CLASSES.includes(item) && (callerGrant === void 0 || callerGrant.classes.includes(item)));
+}
+async function readSignatureWindows(options) {
+  if (options.source.kind !== "bytes")
+    return void 0;
+  const ruleSets = [];
+  for (const extension of options.inventory.extensions) {
+    for (const contribution of extension.contributions) {
+      const manifest = contribution.manifest;
+      if (!contribution.activationEligible || manifest?.contract.id !== CODEC_CONTRIBUTION_CONTRACT || manifest.contract.major !== 1) {
+        continue;
+      }
+      const signatures = manifest.spec.match.signatures;
+      if (signatures !== void 0 && signatures.length > 0)
+        ruleSets.push(signatures);
+    }
+  }
+  const needs = signatureNeeds(ruleSets);
+  if (needs.prefix === 0 && needs.suffix === 0)
+    return void 0;
+  const size = options.source.size;
+  if (size === void 0)
+    return void 0;
+  const headLength = Number(size < BigInt(needs.prefix) ? size : BigInt(needs.prefix));
+  const head = headLength === 0 ? new Uint8Array(0) : await options.source.read(0n, headLength, options.signal);
+  const tailLength = Number(size < BigInt(needs.suffix) ? size : BigInt(needs.suffix));
+  const tail = tailLength === 0 ? new Uint8Array(0) : await options.source.read(size - BigInt(tailLength), tailLength, options.signal);
+  return { head, tail, size };
+}
+function runtimeBudget(host, spec) {
+  const deadline = host.deadlineMs === void 0 ? spec.budgets.deadlineMs : spec.budgets.deadlineMs === void 0 ? host.deadlineMs : Math.min(host.deadlineMs, spec.budgets.deadlineMs);
+  return Object.freeze({
+    maxInputBytes: host.maxInputBytes < BigInt(spec.budgets.maxInputBytes) ? host.maxInputBytes : BigInt(spec.budgets.maxInputBytes),
+    maxDepth: Math.min(host.maxDepth, spec.budgets.maxDepth),
+    maxNodes: Math.min(host.maxNodes, spec.budgets.maxNodes),
+    maxScalarBytes: Math.min(host.maxScalarBytes, spec.budgets.maxScalarBytes),
+    maxDiagnostics: Math.min(host.maxDiagnostics, spec.budgets.maxDiagnostics),
+    ...deadline === void 0 ? {} : { deadlineMs: deadline }
+  });
+}
+function boundedProbeSource(source, plan) {
+  let consumed = 0n;
+  const maximum = BigInt(plan.maxBytes);
+  const ranges = plan.ranges.map((range) => {
+    const length = BigInt(range.length);
+    if (range.from === "start")
+      return { start: 0n, end: length };
+    if (source.size === void 0) {
+      throw new ModkitError({
+        code: "x3.host/end-relative-probe-requires-size",
+        message: "an end-relative probe range requires a sized source"
+      });
+    }
+    return { start: source.size > length ? source.size - length : 0n, end: source.size };
+  });
+  const authorize = (offset, length) => {
+    if (offset < 0n || length < 0n) {
+      throw new ModkitError({
+        code: "x3.host/probe-range-violation",
+        message: "codec requested a negative probe range"
+      });
+    }
+    const end = offset + length;
+    if (!ranges.some((range) => offset >= range.start && end <= range.end)) {
+      throw new ModkitError({
+        code: "x3.host/probe-range-violation",
+        message: "codec read outside its declared probe ranges",
+        context: { offset: offset.toString(), length: length.toString() }
+      });
+    }
+    if (consumed + length > maximum) {
+      throw new ModkitError({
+        code: "x3.host/probe-budget-exceeded",
+        message: `codec exceeded its declared ${plan.maxBytes}-byte probe budget`
+      });
+    }
+    consumed += length;
+  };
+  return Object.freeze({
+    ...source,
+    async read(offset, length, signal) {
+      if (!Number.isSafeInteger(length) || length < 0) {
+        throw new ModkitError({
+          code: "x3.host/probe-range-violation",
+          message: "codec requested a non-safe probe length"
+        });
+      }
+      authorize(offset, BigInt(length));
+      return source.read(offset, length, signal);
+    },
+    async *stream(range, signal) {
+      if (range?.length === void 0) {
+        throw new ModkitError({
+          code: "x3.host/unbounded-probe-stream",
+          message: "codec probe streams require an explicit bounded range"
+        });
+      }
+      authorize(range.offset, range.length);
+      let received = 0n;
+      for await (const chunk of source.stream(range, signal)) {
+        received += BigInt(chunk.byteLength);
+        if (received > range.length) {
+          throw new ModkitError({
+            code: "x3.host/probe-stream-overrun",
+            message: "probe source returned more bytes than the requested range"
+          });
+        }
+        yield chunk;
+      }
+    }
+  });
+}
+var NAMESPACE_PATH_ENCODER = new TextEncoder();
+function normalizeNamespaceProbePath(path, plan) {
+  if (path.includes("\0")) {
+    throw new ModkitError({
+      code: "x3.host/namespace-probe-path-refused",
+      message: "namespace probe paths may not contain NUL bytes",
+      context: { path }
+    });
+  }
+  const parts = [];
+  for (const part of path.replaceAll("\\", "/").split("/")) {
+    if (part === "" || part === ".")
+      continue;
+    if (part === "..") {
+      throw new ModkitError({
+        code: "x3.host/namespace-probe-path-refused",
+        message: "namespace probe paths may not escape their subject root",
+        context: { path }
+      });
+    }
+    parts.push(part);
+  }
+  const normalized2 = parts.join("/");
+  const pathBytes = NAMESPACE_PATH_ENCODER.encode(normalized2).byteLength;
+  if (normalized2 === "" || parts.length > plan.maxDepth || pathBytes > plan.maxPathBytes) {
+    throw new ModkitError({
+      code: "x3.host/namespace-probe-path-budget-exceeded",
+      message: "namespace probe marker exceeds its declared path budget",
+      context: {
+        path,
+        depth: parts.length,
+        maxDepth: plan.maxDepth,
+        pathBytes,
+        maxPathBytes: plan.maxPathBytes
+      }
+    });
+  }
+  return normalized2;
+}
+function boundedNamespaceProbeSource(source, plan) {
+  if (plan.markers.length > plan.maxEntries) {
+    throw new ModkitError({
+      code: "x3.host/namespace-probe-entry-budget-exceeded",
+      message: "namespace probe declares more markers than its entry budget permits",
+      context: { markers: plan.markers.length, maxEntries: plan.maxEntries }
+    });
+  }
+  const markers = new Set(plan.markers.map((path) => normalizeNamespaceProbePath(path, plan)));
+  if (markers.size !== plan.markers.length) {
+    throw new ModkitError({
+      code: "x3.host/namespace-probe-marker-duplicate",
+      message: "namespace probe marker paths must be unique after normalization"
+    });
+  }
+  const prefixes = new Set((plan.prefixes ?? []).map((path) => normalizeNamespaceProbePath(path, plan)));
+  if (prefixes.size !== (plan.prefixes?.length ?? 0)) {
+    throw new ModkitError({
+      code: "x3.host/namespace-probe-prefix-duplicate",
+      message: "namespace probe prefixes must be unique after normalization"
+    });
+  }
+  let consumedEntries = 0;
+  let consumedBytes = 0n;
+  const maximumBytes = BigInt(plan.maxBytes);
+  const consume = (length) => {
+    if (length < 0n || consumedBytes + length > maximumBytes) {
+      throw new ModkitError({
+        code: "x3.host/namespace-probe-byte-budget-exceeded",
+        message: `namespace probe exceeded its declared ${plan.maxBytes}-byte budget`,
+        context: { consumedBytes: String(consumedBytes), requestedBytes: String(length) }
+      });
+    }
+    consumedBytes += length;
+  };
+  const guardMarkerSource = (marker, value) => {
+    if (value.kind === "namespace") {
+      return Object.freeze({
+        ...value,
+        async openNamespace() {
+          throw new ModkitError({
+            code: "x3.host/namespace-probe-traversal-refused",
+            message: `namespace probe marker \xAB${marker}\xBB is opaque; traversal is forbidden`,
+            context: { marker }
+          });
+        }
+      });
+    }
+    return Object.freeze({
+      ...value,
+      async read(offset, length, signal) {
+        if (!Number.isSafeInteger(length) || length < 0) {
+          throw new ModkitError({
+            code: "x3.host/namespace-probe-range-refused",
+            message: "namespace probe marker reads require a non-negative safe length",
+            context: { marker, offset: String(offset), length }
+          });
+        }
+        consume(BigInt(length));
+        return value.read(offset, length, signal);
+      },
+      async *stream(range, signal) {
+        if (range?.length === void 0) {
+          throw new ModkitError({
+            code: "x3.host/namespace-probe-unbounded-stream-refused",
+            message: "namespace probe marker streams require an explicit length",
+            context: { marker }
+          });
+        }
+        consume(range.length);
+        yield* value.stream(range, signal);
+      }
+    });
+  };
+  return Object.freeze({
+    ...source,
+    async openNamespace(signal) {
+      const lease2 = await source.openNamespace(signal);
+      const guarded = Object.freeze({
+        revision: lease2.value.revision,
+        async *list(prefix, listSignal) {
+          throwIfAborted(listSignal);
+          if (prefixes.size === 0) {
+            throw new ModkitError({
+              code: "x3.host/namespace-probe-traversal-refused",
+              message: "namespace enumeration is forbidden unless the codec declares probe prefixes"
+            });
+          }
+          const normalized2 = normalizeNamespaceProbePath(prefix, plan);
+          if (!prefixes.has(normalized2)) {
+            throw new ModkitError({
+              code: "x3.host/namespace-probe-prefix-refused",
+              message: `codec attempted to enumerate undeclared namespace prefix \xAB${normalized2}\xBB`,
+              context: { prefix: normalized2, prefixes: [...prefixes] }
+            });
+          }
+          for await (const entry2 of lease2.value.list(normalized2, listSignal)) {
+            throwIfAborted(listSignal);
+            const entryPath = normalizeNamespaceProbePath(entry2.path, plan);
+            if (entryPath !== normalized2 && !entryPath.startsWith(`${normalized2}/`)) {
+              throw new ModkitError({
+                code: "x3.host/namespace-probe-prefix-escape",
+                message: `namespace probe entry \xAB${entryPath}\xBB escaped prefix \xAB${normalized2}\xBB`,
+                context: { prefix: normalized2, path: entryPath }
+              });
+            }
+            consumedEntries += 1;
+            if (consumedEntries > plan.maxEntries) {
+              throw new ModkitError({
+                code: "x3.host/namespace-probe-entry-budget-exceeded",
+                message: `namespace probe exceeded its declared ${plan.maxEntries}-entry budget`
+              });
+            }
+            yield Object.freeze({ ...entry2, path: entryPath });
+          }
+        },
+        async open(path, openSignal) {
+          const normalized2 = normalizeNamespaceProbePath(path, plan);
+          if (!markers.has(normalized2)) {
+            throw new ModkitError({
+              code: "x3.host/namespace-probe-path-refused",
+              message: `codec attempted to inspect undeclared namespace marker \xAB${normalized2}\xBB`,
+              context: { path: normalized2, markers: [...markers] }
+            });
+          }
+          consumedEntries += 1;
+          if (consumedEntries > plan.maxEntries) {
+            throw new ModkitError({
+              code: "x3.host/namespace-probe-entry-budget-exceeded",
+              message: `namespace probe exceeded its declared ${plan.maxEntries}-entry budget`
+            });
+          }
+          const opened = await lease2.value.open(normalized2, openSignal);
+          return Object.freeze({
+            value: guardMarkerSource(normalized2, opened.value),
+            release: () => opened.release()
+          });
+        }
+      });
+      return Object.freeze({ value: guarded, release: () => lease2.release() });
+    }
+  });
+}
+async function probeCodec(codec, source, probe, signal) {
+  if (source.kind === "bytes" && probe.kind === "bytes") {
+    return codec.probe({ source: boundedProbeSource(source, probe), plan: probe }, signal);
+  }
+  if (source.kind === "namespace" && probe.kind === "namespace") {
+    return codec.probe({ source: boundedNamespaceProbeSource(source, probe), plan: probe }, signal);
+  }
+  throw new ModkitError({
+    code: "x3.host/probe-topology-mismatch",
+    message: `codec probe ${probe.kind} cannot inspect a ${source.kind} subject`
+  });
+}
+function snapshotDetection(value, contributionId2) {
+  const owned = JSON.parse(canonicalJsonStringify(value));
+  if (owned.codecId !== contributionId2 || typeof owned.confidence !== "number" || !Number.isFinite(owned.confidence) || owned.confidence < 0 || owned.confidence > 1 || !Array.isArray(owned.evidence) || !Array.isArray(owned.requiredRanges)) {
+    throw new ModkitError({
+      code: "x3.host/invalid-detection-result",
+      message: `codec ${contributionId2} returned a malformed or mismatched detection result`
+    });
+  }
+  return Object.freeze(owned);
+}
+function snapshotPlan(value) {
+  return Object.freeze(JSON.parse(canonicalJsonStringify(value)));
+}
+function defaultResolveInput(context) {
+  const plan = context.plan;
+  if (plan.originKind === "namespace" && plan.requirements.length === 0) {
+    if (context.source.kind !== "namespace") {
+      throw new ModkitError({
+        code: "x3.host/input-topology-mismatch",
+        message: "a namespace input plan requires a namespace subject source"
+      });
+    }
+    const source2 = context.source;
+    const compositionFingerprint2 = canonicalJsonStringify({
+      topology: "namespace",
+      root: source2.ref,
+      revision: source2.revision
+    });
+    return Object.freeze({
+      originKind: "namespace",
+      root: source2.ref,
+      bindings: Object.freeze([]),
+      revisions: Object.freeze({
+        topology: "namespace",
+        revision: source2.revision,
+        namespaceRevision: source2.revision,
+        bindings: Object.freeze([]),
+        compositionFingerprint: compositionFingerprint2
+      }),
+      bindingsFor: () => Object.freeze([]),
+      async openBinding(bindingId) {
+        throw new ModkitError({
+          code: "x3.host/unknown-asset-input-binding",
+          message: `namespace asset input has no binding ${bindingId}`
+        });
+      },
+      async openNamespace(signal) {
+        throwIfAborted(signal);
+        return source2.openNamespace(signal);
+      }
+    });
+  }
+  const loneBundle = plan.originKind === "bundle" && plan.requirements.every((requirement) => !requirement.required);
+  if (!loneBundle && (plan.originKind !== "single" || plan.requirements.length !== 0)) {
+    throw new ModkitError({
+      code: "x3.host/input-resolver-required",
+      message: `the default subject input resolver cannot satisfy ${plan.originKind} topology`
+    });
+  }
+  if (context.source.kind !== "bytes") {
+    throw new ModkitError({
+      code: "x3.host/input-topology-mismatch",
+      message: "a single-file input plan requires a byte subject source"
+    });
+  }
+  const source = context.source;
+  const candidate = plan.candidate;
+  if (candidate.bindingId.trim().length === 0 || candidate.role.trim().length === 0 || candidate.ownership !== "owned" && candidate.ownership !== "external") {
+    throw new ModkitError({
+      code: "x3.host/invalid-asset-input-plan",
+      message: "codec returned an invalid single-file candidate binding"
+    });
+  }
+  const binding = Object.freeze({
+    sourceKind: "candidate",
+    bindingId: candidate.bindingId,
+    role: candidate.role,
+    ownership: candidate.ownership,
+    source: source.ref,
+    revision: source.revision
+  });
+  const compositionFingerprint = canonicalJsonStringify({
+    topology: "single",
+    bindingId: binding.bindingId,
+    source: binding.source,
+    revision: binding.revision
+  });
+  return Object.freeze({
+    originKind: "single",
+    bindings: Object.freeze([binding]),
+    primaryBindingId: binding.bindingId,
+    revisions: Object.freeze({
+      topology: "single",
+      revision: source.revision,
+      bindings: Object.freeze([
+        Object.freeze({ bindingId: binding.bindingId, revision: binding.revision })
+      ]),
+      compositionFingerprint
+    }),
+    bindingsFor: () => Object.freeze([]),
+    async openBinding(bindingId, signal) {
+      throwIfAborted(signal);
+      if (bindingId !== binding.bindingId) {
+        throw new ModkitError({
+          code: "x3.host/unknown-asset-input-binding",
+          message: `asset input has no binding ${bindingId}`
+        });
+      }
+      return Object.freeze({ value: source, release: async () => void 0 });
+    }
+  });
+}
+function codecModule(module, contributionId2) {
+  if (module["abiVersion"] !== 1 || typeof module["createCodec"] !== "function") {
+    throw new ModkitError({
+      code: "x3.host/invalid-codec-module",
+      message: `activated contribution ${contributionId2} does not implement CodecModule ABI v1`
+    });
+  }
+  return module;
+}
+function assertCodec(value, contributionId2) {
+  if (typeof value !== "object" || value === null || typeof value.probe !== "function" || typeof value.open !== "function") {
+    throw new ModkitError({
+      code: "x3.host/invalid-codec-instance",
+      message: `contribution ${contributionId2} returned an invalid codec instance`
+    });
+  }
+  return value;
+}
+function noServiceResolver() {
+  const unavailable4 = (contract, major) => {
+    throw new ModkitError({
+      code: "x3.host/service-contract-unregistered",
+      message: `service contract ${contract}@${major} is unavailable in this composition`
+    });
+  };
+  return {
+    async resolve(request) {
+      return unavailable4(request.contract, request.major);
+    },
+    async resolveUnknown(request) {
+      return unavailable4(request.contract, request.major);
+    }
+  };
+}
+function runnableCandidates(options, offers, signatureWindows, suppressed = [], route = {}) {
+  const candidates = [];
+  const path = options.path ?? options.source.ref.uri;
+  for (const extension of options.inventory.extensions) {
+    for (const contribution of extension.contributions) {
+      const manifest = contribution.manifest;
+      if (manifest?.contract.id !== CODEC_CONTRIBUTION_CONTRACT || manifest.contract.major !== 1) {
+        continue;
+      }
+      if (!contribution.activationEligible) {
+        const spec2 = manifest.spec;
+        const claimsSource = spec2 !== void 0 && spec2.match !== void 0 && (options.source.kind === "namespace" ? spec2.sourceTopology === "namespace" && spec2.probe?.kind === "namespace" : (
+          // a packed file a semantic container alias would have claimed (e.g. an .SC2Map
+          // whose codec failed validation) must not open as the bare carrier silently
+          (spec2.probe?.kind === "bytes" || spec2.container !== void 0) && matchesSpec(spec2, path, options.mediaType)
+        ));
+        if (claimsSource) {
+          suppressed.push({
+            contributionId: manifest.id,
+            extensionId: extension.manifest?.id ?? extension.source,
+            reasons: contribution.diagnostics.map((item) => item.code)
+          });
+        }
+        continue;
+      }
+      const spec = manifest.spec;
+      if (!spec.openIntents.includes(options.intent))
+        continue;
+      let viaSignature = false;
+      if (options.source.kind === "namespace") {
+        if (spec.sourceTopology !== "namespace" || spec.probe.kind !== "namespace")
+          continue;
+        if (route.containerAliasFormatId === void 0) {
+          if (spec.container !== void 0 && (spec.container.markers?.length ?? 0) === 0)
+            continue;
+        } else if (spec.container?.formatId !== route.containerAliasFormatId || !route.containerAliasContributionIds?.has(manifest.id)) {
+          continue;
+        }
+      } else {
+        if (route.containerAliasFormatId !== void 0)
+          continue;
+        if (route.containerProviderFormatId !== void 0 && (!spec.roles.includes("container") || !spec.formatRefs.some((item) => item.formatId === route.containerProviderFormatId) || spec.container !== void 0)) {
+          continue;
+        }
+        if (spec.sourceTopology !== "single" && spec.sourceTopology !== "bundle" || spec.probe.kind !== "bytes") {
+          continue;
+        }
+        const byName = matchesSpec(spec, path, options.mediaType);
+        viaSignature = !byName && signatureWindows !== void 0 && matchesSignatures(spec.match.signatures, signatureWindows);
+        if (!byName && !viaSignature)
+          continue;
+      }
+      for (const offer of offers) {
+        if (offer.providerId !== manifest.id)
+          continue;
+        const logicalOffer = [...offer.provides].sort((left, right) => compareUtf8(canonicalJsonStringify(left), canonicalJsonStringify(right)))[0];
+        if (logicalOffer === void 0)
+          continue;
+        candidates.push({
+          contribution,
+          extensionId: offer.extensionId,
+          contributionId: manifest.id,
+          spec,
+          offer,
+          logicalOffer,
+          viaSignature
+        });
+      }
+    }
+  }
+  return Object.freeze(candidates.sort((left, right) => compareUtf8(left.contributionId, right.contributionId) || compareUtf8(left.offer.runtimeVariant, right.offer.runtimeVariant) || compareUtf8(left.logicalOffer.offerId, right.logicalOffer.offerId)));
+}
+async function unresolvedDescriptor(options, detections) {
+  if (options.source.kind === "namespace") {
+    return assembleSubjectDescriptor({
+      schemaVersion: 2,
+      subjectUri: options.source.ref.uri,
+      origin: {
+        kind: "namespace",
+        root: options.source.ref,
+        revision: options.source.revision
+      },
+      interpretation: "none",
+      candidates: detections,
+      traits: [{ id: "container.directories", descriptorVersion: 1, state: "available" }],
+      operations: [],
+      constraints: {
+        readOnly: true,
+        seekable: false,
+        randomAccess: false,
+        trusted: false
+      },
+      dataSources: [],
+      diagnostics: [],
+      revision: options.source.revision
+    });
+  }
+  return assembleSubjectDescriptor({
+    schemaVersion: 2,
+    subjectUri: options.source.ref.uri,
+    origin: {
+      kind: "single",
+      binding: {
+        id: "content",
+        role: "content",
+        source: options.source.ref,
+        required: true,
+        ownership: "owned",
+        revision: options.source.revision,
+        ...options.mediaType === void 0 ? {} : { mediaType: options.mediaType }
+      }
+    },
+    interpretation: "none",
+    candidates: detections,
+    traits: [
+      {
+        id: "content.binary",
+        descriptorVersion: 1,
+        state: "available",
+        ...options.source.size === void 0 ? {} : { parameters: { bytes: options.source.size.toString(10) } }
+      }
+    ],
+    operations: [],
+    constraints: {
+      readOnly: true,
+      seekable: true,
+      randomAccess: true,
+      trusted: false,
+      ...options.source.size === void 0 ? {} : { maxDecodedBytes: options.source.size.toString(10) }
+    },
+    dataSources: [{ contract: "common.view/byte-range-source", major: 1 }],
+    diagnostics: [],
+    revision: options.source.revision
+  });
+}
+async function textFallbackAvailable(source, signal) {
+  if (source.kind !== "bytes")
+    return false;
+  if (source.size === void 0)
+    return false;
+  const length = Number(source.size > 65536n ? 65536n : source.size);
+  try {
+    const bytes = await source.read(0n, length, signal);
+    new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+    return true;
+  } catch {
+    return false;
+  }
+}
+async function unresolvedFallback(source, signal) {
+  if (source.kind === "namespace") {
+    return Object.freeze({ preferred: "none", available: Object.freeze([]) });
+  }
+  const text = await textFallbackAvailable(source, signal);
+  return Object.freeze({
+    preferred: text ? "text" : "hex",
+    available: Object.freeze(text ? ["text", "hex"] : ["hex"])
+  });
+}
+async function openSubjectDirect(options, route = {}) {
+  const catalog = options.subjectCatalog === void 0 ? void 0 : subjectCatalogEntities(options.subjectCatalog, async () => options.source.ref.uri);
+  try {
+    const result = await openSubjectDirectWith(options, route, catalog);
+    if (result.state !== "opened")
+      await catalog?.release();
+    return result;
+  } catch (error3) {
+    await catalog?.release();
+    throw error3;
+  }
+}
+async function openSubjectDirectWith(options, route, catalog) {
+  throwIfAborted(options.signal);
+  const minimumConfidence = options.minimumConfidence ?? DEFAULT_MINIMUM_CONFIDENCE;
+  const maxCandidates = options.maxCandidates ?? DEFAULT_MAX_CANDIDATES;
+  if (!Number.isFinite(minimumConfidence) || minimumConfidence < 0 || minimumConfidence > 1 || !Number.isSafeInteger(maxCandidates) || maxCandidates <= 0) {
+    throw new ModkitError({
+      code: "x3.host/invalid-subject-open-policy",
+      message: "subject-open confidence and candidate limits are invalid"
+    });
+  }
+  const diagnostics = [];
+  const explanations = [];
+  const detected = [];
+  const offers = offersFromInventory(options.inventory);
+  const executionBackends = options.executionBackends ?? DEFAULT_EXECUTION_BACKENDS;
+  const signatureWindows = await readSignatureWindows(options);
+  const suppressed = [];
+  const candidates = runnableCandidates(options, offers, signatureWindows, suppressed, route);
+  for (const item of suppressed) {
+    const switchedOff = item.reasons.every((code) => code === "x3.host/contribution-disabled" || code === "x3.host/extension-disabled");
+    diagnostics.push(diagnostic(switchedOff ? "information" : "warning", "x3.host/candidate-suppressed", `\xAB${item.contributionId}\xBB matches this file but cannot run${item.reasons.length === 0 ? "" : `: ${[...new Set(item.reasons)].join(", ")}`}`, [item.extensionId, item.contributionId]));
+  }
+  if (candidates.length > maxCandidates) {
+    diagnostics.push(errorDiagnostic("x3.host/subject-candidate-limit", `subject matched ${candidates.length} codecs, exceeding the host limit ${maxCandidates}`));
+  } else {
+    const target = normalizeTarget(options.target, options.grant);
+    for (const candidate of candidates) {
+      const local = [];
+      const resources = createReleaseScope();
+      const privateRecord = inventoryRecordFor(candidate.contribution);
+      const variant = candidate.contribution.manifest?.runtimeVariants?.find((item) => item.variantId === candidate.offer.runtimeVariant);
+      if (privateRecord === void 0 || variant === void 0 || !executionBackends.supports(variant.executionProfile, target, variant) || variant.executionProfile === "trusted-in-process" && privateRecord.execution.allowTrustedInProcess !== true) {
+        local.push(errorDiagnostic("x3.host/codec-execution-unavailable", `codec ${candidate.contributionId}#${candidate.offer.runtimeVariant} has no executable boundary in this host`));
+        explanations.push({
+          contributionId: candidate.contributionId,
+          extensionId: candidate.extensionId,
+          variantId: candidate.offer.runtimeVariant,
+          formatIds: Object.freeze(candidate.spec.formatRefs.map((item) => item.formatId)),
+          offerId: candidate.logicalOffer.offerId,
+          state: "rejected",
+          diagnostics: Object.freeze(local)
+        });
+        continue;
+      }
+      const runsInTarget = (candidate.contribution.manifest?.runtimeVariants ?? []).some((item) => item.target.environments === void 0 || item.target.environments.includes(target.environment));
+      const request = {
+        contract: {
+          contract: candidate.logicalOffer.contract,
+          major: candidate.logicalOffer.major,
+          range: "*"
+        },
+        target: runsInTarget ? target : serviceTargetFor(executionBackends, candidate.offer, target),
+        pin: {
+          providerId: candidate.offer.providerId,
+          runtimeVariant: candidate.offer.runtimeVariant,
+          offerId: candidate.logicalOffer.offerId
+        }
+      };
+      if (candidate.viaSignature) {
+        local.push({
+          code: "x3.host/signature-match",
+          severity: "information",
+          message: `${candidate.contributionId} matched by its declared byte signature; name/media/path rules did not match this subject`
+        });
+      }
+      const resolved = resolveForActivation(request, offers, PROBE_OPERATION);
+      if (resolved.result.state !== "resolved" || resolved.ticket === void 0) {
+        local.push(errorDiagnostic("x3.host/codec-resolution-unresolved", `codec candidate did not resolve: ${resolved.result.state === "resolved" ? "ticket unavailable" : resolved.result.reason}`));
+        explanations.push({
+          contributionId: candidate.contributionId,
+          extensionId: candidate.extensionId,
+          variantId: candidate.offer.runtimeVariant,
+          formatIds: Object.freeze(candidate.spec.formatRefs.map((item) => item.formatId)),
+          offerId: candidate.logicalOffer.offerId,
+          state: "rejected",
+          diagnostics: Object.freeze(local)
+        });
+        continue;
+      }
+      const record3 = {
+        resources,
+        rasterState: { live: false, reservedBytes: 0 },
+        logicalState: {
+          live: false,
+          reservedBytes: 0,
+          resolveCalls: 0,
+          discoveryCalls: 0
+        },
+        nestedLocks: [],
+        ...route.includeSelectionLock ? { selectionLock: buildLockEntry(request, resolved.result) } : {}
+      };
+      try {
+        const activation = await activateContribution({
+          ticket: resolved.ticket,
+          grant: options.grant,
+          executionBackends,
+          ...options.policy === void 0 ? {} : { policy: options.policy },
+          ...options.signal === void 0 ? {} : { signal: options.signal }
+        });
+        record3.resources.add(activation.release);
+        local.push(...activation.diagnostics);
+        {
+          const requested = candidate.contribution.manifest?.runtimeVariants?.find((item) => item.variantId === candidate.offer.runtimeVariant)?.requestedPermissionClasses ?? [];
+          const degraded = requested.filter((item) => !PROBE_PERMISSION_CLASSES.includes(item) && !options.grant.classes.includes(item));
+          if (degraded.length > 0) {
+            local.push(permissionDegradedDiagnostic(candidate.contributionId, degraded));
+          }
+        }
+        const effectiveBudget = runtimeBudget(options.budget, candidate.spec);
+        const nestedLocks = record3.nestedLocks;
+        const makeContext = (grant, chain, contributionId2) => {
+          const settings = contributionId2 === void 0 ? void 0 : options.contributionSettings?.(contributionId2);
+          const owner = contributionId2 === void 0 ? void 0 : offers.find((offer) => offer.providerId === contributionId2)?.extensionId;
+          const credentials = owner === void 0 ? void 0 : options.credentials?.portFor(owner);
+          const contracts = options.serviceDefinitions === void 0 ? noServiceResolver() : createContractResolverPort({
+            offers,
+            definitions: options.serviceDefinitions,
+            target,
+            targetFor: (offer) => serviceTargetFor(executionBackends, offer, target),
+            onResolved(request2, result) {
+              nestedLocks.push(buildLockEntry(request2, result));
+            },
+            async activate(selection, result, signal) {
+              const key3 = `${selection.contract}@${selection.major}:${result.selected.offer.providerId}:${selection.offerId}`;
+              if (chain.includes(key3)) {
+                throw new ModkitError({
+                  code: "x3.host/service-dependency-cycle",
+                  message: `service activation cycle detected at ${key3}`
+                });
+              }
+              const nested = await activateServiceProvider({
+                selection,
+                result,
+                target,
+                grant,
+                executionBackends,
+                ...options.policy === void 0 ? {} : { policy: options.policy },
+                ...signal === void 0 ? {} : { signal },
+                diagnostics,
+                contextFor: (effectiveGrant) => makeContext(effectiveGrant, [...chain, key3], result.selected.offer.providerId)
+              });
+              record3.resources.add(() => nested.release());
+              return Object.freeze({
+                value: nested.lease.value,
+                release: () => nested.release()
+              });
+            }
+          });
+          return Object.freeze({
+            contracts,
+            ...settings === void 0 ? {} : { settings },
+            ...options.videoFrames === void 0 ? {} : { videoFrames: options.videoFrames },
+            ...options.installationFiles === void 0 ? {} : { installationFiles: options.installationFiles },
+            ...catalog === void 0 ? {} : {
+              catalog: Object.freeze({ entities: catalog.entities, strings: catalog.strings })
+            },
+            ...credentials === void 0 ? {} : { credentials },
+            ...options.containerContext === void 0 ? {} : { containerContext: options.containerContext },
+            logicalResources: createSubjectLogicalResources({
+              state: record3.logicalState,
+              budget: effectiveBudget,
+              ...options.logicalResourceDiscovery === void 0 ? {} : { policies: options.logicalResourceDiscovery },
+              isAuthorized: () => grantValidity(grant).state === "valid" && grant.classes.includes("read-source")
+            }),
+            modelResources: createSubjectModelResources({
+              state: record3.rasterState,
+              budget: effectiveBudget,
+              isAuthorized: () => grantValidity(grant).state === "valid" && grant.classes.includes("read-source"),
+              ancestors: [`${options.source.ref.id}@${options.source.revision}`],
+              own: (release) => record3.resources.add(release),
+              open: (source, path, signal) => openSubject({
+                inventory: options.inventory,
+                source,
+                path,
+                target,
+                intent: "full",
+                grant: { ...grant, classes: ["read-source"] },
+                budget: effectiveBudget,
+                executionBackends,
+                ...record3.rasterState.resources === void 0 ? {} : { resourceSession: record3.rasterState.resources },
+                ...options.videoFrames === void 0 ? {} : { videoFrames: options.videoFrames },
+                ...options.credentials === void 0 ? {} : { credentials: options.credentials },
+                ...options.resolveInput === void 0 ? {} : { resolveInput: options.resolveInput },
+                ...options.serviceDefinitions === void 0 ? {} : { serviceDefinitions: options.serviceDefinitions },
+                ...options.policy === void 0 ? {} : { policy: options.policy },
+                ...signal === void 0 ? {} : { signal }
+              })
+            }),
+            ...options.provideRasterResources === false ? {} : {
+              rasterResources: createSubjectRasterResources({
+                state: record3.rasterState,
+                budget: effectiveBudget,
+                isAuthorized: () => grantValidity(grant).state === "valid" && grant.classes.includes("read-source"),
+                open: (source, hint, signal) => openSubject({
+                  inventory: options.inventory,
+                  source,
+                  ...hint,
+                  ...resourceInputFor(options.resolveInput, hint.path),
+                  target,
+                  intent: "full",
+                  grant: { ...grant, classes: ["read-source"] },
+                  budget: effectiveBudget,
+                  executionBackends,
+                  provideRasterResources: false,
+                  ...options.serviceDefinitions === void 0 ? {} : { serviceDefinitions: options.serviceDefinitions },
+                  ...options.policy === void 0 ? {} : { policy: options.policy },
+                  ...signal === void 0 ? {} : { signal }
+                })
+              })
+            },
+            budgets: effectiveBudget,
+            diagnostics: {
+              report(item) {
+                diagnostics.push(item);
+              }
+            },
+            ...options.signal === void 0 ? {} : { signal: options.signal }
+          });
+        };
+        const codec = assertCodec(codecModule(activation.module, candidate.contributionId).createCodec(makeContext(activation.effectiveGrant, [candidate.contributionId], candidate.contributionId)), candidate.contributionId);
+        record3.resources.add(() => releaseCodec(codec));
+        const detection = snapshotDetection(await probeCodec(codec, options.source, candidate.spec.probe, options.signal), candidate.contributionId);
+        detected.push(Object.assign(record3, {
+          ...candidate,
+          ticket: resolved.ticket,
+          codec,
+          detection,
+          effectiveBudget,
+          effectiveGrant: activation.effectiveGrant,
+          activationDiagnostics: Object.freeze(local),
+          request,
+          makeContext,
+          ...record3.selectionLock === void 0 ? {} : { selectionLock: record3.selectionLock },
+          probeScoped: variantRequestsBeyondProbe(candidate.contribution.manifest?.runtimeVariants?.find((item) => item.variantId === candidate.offer.runtimeVariant)?.requestedPermissionClasses ?? [], options.grant)
+        }));
+        explanations.push({
+          contributionId: candidate.contributionId,
+          extensionId: candidate.extensionId,
+          variantId: candidate.offer.runtimeVariant,
+          formatIds: Object.freeze(candidate.spec.formatRefs.map((item) => item.formatId)),
+          offerId: candidate.logicalOffer.offerId,
+          state: "detected",
+          confidence: detection.confidence,
+          diagnostics: Object.freeze(local)
+        });
+      } catch (error3) {
+        local.push(caughtDiagnostic("probe", error3));
+        try {
+          await record3.resources.release();
+        } catch (cleanupError) {
+          local.push(caughtDiagnostic("cleanup", cleanupError));
+        }
+        explanations.push({
+          contributionId: candidate.contributionId,
+          extensionId: candidate.extensionId,
+          variantId: candidate.offer.runtimeVariant,
+          formatIds: Object.freeze(candidate.spec.formatRefs.map((item) => item.formatId)),
+          offerId: candidate.logicalOffer.offerId,
+          state: "rejected",
+          diagnostics: Object.freeze(local)
+        });
+      }
+    }
+  }
+  const eligible = detected.filter((candidate) => candidate.detection.confidence >= minimumConfidence).sort((left, right) => right.detection.confidence - left.detection.confidence || compareUtf8(left.contributionId, right.contributionId) || compareUtf8(left.offer.runtimeVariant, right.offer.runtimeVariant));
+  const best = eligible[0];
+  const tied = best === void 0 ? [] : eligible.filter((candidate) => candidate.detection.confidence === best.detection.confidence);
+  if (best === void 0 || tied.length !== 1) {
+    for (const candidate of detected)
+      await releaseCandidate(candidate, diagnostics);
+    const descriptor = await unresolvedDescriptor(options, detected.map((candidate) => candidate.detection));
+    return Object.freeze({
+      state: "unresolved",
+      reason: candidates.length === 0 ? "no-candidate" : best === void 0 ? "no-match" : "ambiguous",
+      descriptor,
+      fallback: await unresolvedFallback(options.source, options.signal),
+      candidates: Object.freeze(explanations),
+      diagnostics: Object.freeze([...diagnostics, ...workerRefusals(explanations)])
+    });
+  }
+  for (const candidate of detected) {
+    if (candidate !== best)
+      await releaseCandidate(candidate, diagnostics);
+  }
+  let openedSession;
+  try {
+    if (best.probeScoped) {
+      const reResolved = resolveForActivation(best.request, offers);
+      if (reResolved.result.state !== "resolved" || reResolved.ticket === void 0) {
+        throw new ModkitError({
+          code: "x3.host/codec-resolution-unresolved",
+          message: "the selected codec did not re-resolve for open"
+        });
+      }
+      const openScope = createReleaseScope();
+      const probeScope = best.resources;
+      try {
+        const activation = await activateContribution({
+          ticket: reResolved.ticket,
+          grant: options.grant,
+          executionBackends,
+          ...options.policy === void 0 ? {} : { policy: options.policy },
+          ...options.signal === void 0 ? {} : { signal: options.signal }
+        });
+        openScope.add(activation.release);
+        best.resources = openScope;
+        const reopened = assertCodec(codecModule(activation.module, best.contributionId).createCodec(best.makeContext(activation.effectiveGrant, [best.contributionId], best.contributionId)), best.contributionId);
+        openScope.add(() => releaseCodec(reopened));
+        best.codec = reopened;
+        best.ticket = reResolved.ticket;
+        best.effectiveGrant = activation.effectiveGrant;
+        best.activationDiagnostics = Object.freeze([
+          ...best.activationDiagnostics,
+          ...activation.diagnostics
+        ]);
+      } catch (error3) {
+        best.resources = probeScope;
+        try {
+          await openScope.release();
+        } catch (cleanupError) {
+          diagnostics.push(caughtDiagnostic("cleanup", cleanupError));
+        }
+        throw error3;
+      }
+      try {
+        await probeScope.release();
+      } catch (cleanupError) {
+        diagnostics.push(caughtDiagnostic("cleanup", cleanupError));
+      }
+    }
+    const rawPlan = best.codec.planInput ? await best.codec.planInput(options.source, best.detection, options.signal) : options.source.kind === "namespace" ? { originKind: "namespace", requirements: [] } : {
+      originKind: "single",
+      candidate: { bindingId: "content", role: "content", ownership: "owned" },
+      requirements: []
+    };
+    const plan = snapshotPlan(rawPlan);
+    const companionRule = (role) => {
+      const requirement = ("requirements" in plan ? plan.requirements : []).find((item) => item.role === role);
+      if (requirement === void 0)
+        return void 0;
+      const directories = [""];
+      const extensions = [];
+      for (const pattern of requirement.patterns ?? []) {
+        const cut = pattern.replaceAll("\\", "/").lastIndexOf("/");
+        const directory = cut <= 0 ? "" : pattern.slice(0, cut);
+        if (!directories.includes(directory))
+          directories.push(directory);
+        const extension = /(\.[^.*?/]+)$/u.exec(pattern.slice(cut + 1))?.[1]?.toLowerCase();
+        if (extension !== void 0 && !extensions.includes(extension))
+          extensions.push(extension);
+      }
+      return Object.freeze({
+        scopes: requirement.scopes,
+        directories: Object.freeze(directories),
+        ...extensions.length === 0 ? {} : { extensions: Object.freeze(extensions) }
+      });
+    };
+    const input = await (options.resolveInput ?? defaultResolveInput)({
+      source: options.source,
+      plan,
+      detection: best.detection,
+      ...options.signal === void 0 ? {} : { signal: options.signal }
+    });
+    openedSession = await best.codec.open(input, options.intent, best.effectiveBudget, options.signal);
+    const session = openedSession;
+    throwIfAborted(options.signal);
+    if (session.revision !== options.source.revision) {
+      throw new ModkitError({
+        code: "x3.host/subject-session-identity-mismatch",
+        message: "opened codec session revision does not match the selected source"
+      });
+    }
+    if (session.state() === "disposed" || grantValidity(best.effectiveGrant).state !== "valid") {
+      throw new ModkitError({
+        code: "x3.host/subject-context-unavailable",
+        message: "The opened subject context is no longer live."
+      });
+    }
+    let postOpenResources = best.effectiveGrant.classes.includes("read-source") ? options.resourceSession : void 0;
+    const openResources = route.openResources ?? options.resolveInput?.openResources;
+    if (openResources !== void 0 && best.effectiveGrant.classes.includes("read-source")) {
+      const requested = { ...DEFAULT_RESOURCE_SESSION_LIMITS, ...options.resourceLimits };
+      const openedResources = openResources({
+        revision: session.revision,
+        revisionPolicy: "pin",
+        isAuthorized: () => grantValidity(best.effectiveGrant).state === "valid" && best.effectiveGrant.classes.includes("read-source"),
+        limits: {
+          maxResources: Math.min(requested.maxResources, best.effectiveBudget.maxNodes),
+          maxBytes: requested.maxBytes < best.effectiveBudget.maxInputBytes ? requested.maxBytes : best.effectiveBudget.maxInputBytes,
+          maxDepth: Math.min(requested.maxDepth, best.effectiveBudget.maxDepth),
+          maxEntries: Math.min(requested.maxEntries, best.effectiveBudget.maxNodes)
+        }
+      });
+      postOpenResources = openedResources;
+      best.resources.add(() => openedResources.dispose());
+      best.logicalState.resources = openedResources;
+    }
+    if (postOpenResources !== void 0)
+      best.logicalState.resources = postOpenResources;
+    best.logicalState.live = true;
+    best.resources.add(() => {
+      best.logicalState.live = false;
+    });
+    const descriptor = await assembleSubjectDescriptor(await session.descriptor());
+    throwIfAborted(options.signal);
+    if (session.state() === "disposed" || grantValidity(best.effectiveGrant).state !== "valid") {
+      throw new ModkitError({
+        code: "x3.host/subject-context-unavailable",
+        message: "The subject context stopped being live while its descriptor was initialized."
+      });
+    }
+    if (descriptor.interpretation !== "codec" || descriptor.identity.codecId !== best.contributionId || descriptor.subjectUri !== options.source.ref.uri || descriptor.revision !== options.source.revision) {
+      throw new ModkitError({
+        code: "x3.host/subject-session-identity-mismatch",
+        message: "opened codec session does not describe the selected source and codec"
+      });
+    }
+    const selectedExplanation = explanations.find((item) => item.contributionId === best.contributionId && item.variantId === best.offer.runtimeVariant && item.offerId === best.logicalOffer.offerId);
+    if (selectedExplanation !== void 0) {
+      const index = explanations.indexOf(selectedExplanation);
+      explanations[index] = Object.freeze({ ...selectedExplanation, state: "selected" });
+    }
+    const record3 = inventoryRecordFor(best.contribution)?.publicRecord;
+    if (record3 === void 0) {
+      throw new ModkitError({
+        code: "x3.host/detection-selection-unattested",
+        message: "selected codec has no attested inventory record"
+      });
+    }
+    const detectionSelectionText = serializeCodecDetectionSelection(buildCodecDetectionSelection({
+      sourceRevision: options.source.revision,
+      extensionId: best.extensionId,
+      contributionId: best.contributionId,
+      variantId: best.offer.runtimeVariant,
+      offerId: best.logicalOffer.offerId,
+      artifactDigest: record3.artifactDigest,
+      manifestDigest: record3.manifestDigest,
+      sourceTopology: best.spec.sourceTopology,
+      detection: best.detection
+    }));
+    const lockText = serializePolicyLock([
+      ...best.nestedLocks,
+      ...best.selectionLock === void 0 ? [] : [best.selectionLock]
+    ]);
+    const isReadAuthorized = () => grantValidity(best.effectiveGrant).state === "valid" && best.effectiveGrant.classes.includes("read-source");
+    const models = options.provideRasterResources === false ? void 0 : createSubjectModelResources({
+      state: best.rasterState,
+      budget: best.effectiveBudget,
+      isAuthorized: isReadAuthorized,
+      ancestors: [`${options.source.ref.id}@${options.source.revision}`],
+      own: (release) => best.resources.add(release),
+      open: (source, path, signal) => openSubject({
+        inventory: options.inventory,
+        source,
+        path,
+        target: options.target,
+        intent: "full",
+        grant: { ...best.effectiveGrant, classes: ["read-source"] },
+        budget: best.effectiveBudget,
+        executionBackends,
+        ...best.rasterState.resources === void 0 ? {} : { resourceSession: best.rasterState.resources },
+        ...options.resolveInput === void 0 ? {} : { resolveInput: options.resolveInput },
+        ...options.serviceDefinitions === void 0 ? {} : { serviceDefinitions: options.serviceDefinitions },
+        ...options.policy === void 0 ? {} : { policy: options.policy },
+        ...signal === void 0 ? {} : { signal }
+      })
+    });
+    if (catalog !== void 0)
+      best.resources.add(() => catalog.release());
+    const managedSession = sessionWithResources(session, best.resources, {
+      spec: best.spec,
+      grant: best.effectiveGrant,
+      ...catalog === void 0 ? {} : { catalog: catalog.entities }
+    }, () => {
+      best.logicalState.live = false;
+    }, models);
+    if (postOpenResources !== void 0)
+      best.rasterState.resources = postOpenResources;
+    best.rasterState.live = true;
+    best.resources.add(() => {
+      best.rasterState.live = false;
+    });
+    openedSession = void 0;
+    const rasterResources = options.provideRasterResources === false ? void 0 : createSubjectRasterResources({
+      state: best.rasterState,
+      budget: best.effectiveBudget,
+      companionRule,
+      isAuthorized: () => grantValidity(best.effectiveGrant).state === "valid" && best.effectiveGrant.classes.includes("read-source"),
+      open: (source, hint, signal) => openSubject({
+        inventory: options.inventory,
+        source,
+        ...hint,
+        ...resourceInputFor(options.resolveInput, hint.path),
+        target: options.target,
+        intent: "full",
+        grant: { ...best.effectiveGrant, classes: ["read-source"] },
+        budget: best.effectiveBudget,
+        executionBackends,
+        provideRasterResources: false,
+        ...options.serviceDefinitions === void 0 ? {} : { serviceDefinitions: options.serviceDefinitions },
+        ...options.policy === void 0 ? {} : { policy: options.policy },
+        ...signal === void 0 ? {} : { signal }
+      })
+    });
+    return Object.freeze({
+      state: "opened",
+      session: managedSession,
+      ...postOpenResources === void 0 ? {} : { resources: postOpenResources },
+      ...rasterResources === void 0 ? {} : { rasterResources },
+      descriptor,
+      ticket: best.ticket,
+      detectionSelectionText,
+      lockText,
+      selected: Object.freeze({
+        extensionId: best.extensionId,
+        contributionId: best.contributionId,
+        variantId: best.offer.runtimeVariant,
+        offerId: best.logicalOffer.offerId,
+        confidence: best.detection.confidence
+      }),
+      candidates: Object.freeze(explanations),
+      diagnostics: Object.freeze([...diagnostics, ...best.activationDiagnostics])
+    });
+  } catch (error3) {
+    best.logicalState.live = false;
+    if (openedSession !== void 0) {
+      try {
+        await openedSession.dispose();
+      } catch (disposeError) {
+        diagnostics.push(caughtDiagnostic("session-dispose", disposeError));
+      }
+    }
+    await releaseCandidate(best, diagnostics);
+    diagnostics.push(caughtDiagnostic("input-open", error3));
+    const descriptor = await unresolvedDescriptor(options, detected.map((candidate) => candidate.detection));
+    return Object.freeze({
+      state: "unresolved",
+      reason: "input-unresolved",
+      descriptor,
+      fallback: await unresolvedFallback(options.source, options.signal),
+      candidates: Object.freeze(explanations),
+      diagnostics: Object.freeze(diagnostics)
+    });
+  }
+}
+function scanContainerAliases(options) {
+  const empty = { aliases: Object.freeze([]), skipped: Object.freeze([]) };
+  if (options.source.kind !== "bytes") {
+    return Object.freeze({ ...empty, aliasShaped: 0, codecs: 0 });
+  }
+  const path = options.path ?? options.source.ref.uri;
+  const aliases = [];
+  const skipped = [];
+  let aliasShaped = 0;
+  let codecs = 0;
+  for (const extension of options.inventory.extensions) {
+    for (const contribution of extension.contributions) {
+      const manifest = contribution.manifest;
+      if (manifest?.contract.id !== CODEC_CONTRIBUTION_CONTRACT || manifest.contract.major !== 1) {
+        continue;
+      }
+      codecs += 1;
+      const spec = manifest.spec;
+      if (spec?.container === void 0 || spec.sourceTopology !== "namespace")
+        continue;
+      aliasShaped += 1;
+      if (!matchesSpec(spec, path, options.mediaType))
+        continue;
+      const entry2 = {
+        contributionId: manifest.id,
+        extensionId: extension.manifest?.id ?? extension.source
+      };
+      if (!contribution.activationEligible)
+        continue;
+      if (!spec.openIntents.includes(options.intent)) {
+        skipped.push(Object.freeze({
+          ...entry2,
+          reason: `open intent \xAB${options.intent}\xBB is not declared (${spec.openIntents.join(", ")})`
+        }));
+        continue;
+      }
+      aliases.push(Object.freeze({ contributionId: manifest.id, spec }));
+    }
+  }
+  return Object.freeze({
+    aliases: Object.freeze(aliases),
+    aliasShaped,
+    codecs,
+    skipped: Object.freeze(skipped)
+  });
+}
+function containerAliasAbsence(scan, options) {
+  const path = (options.path ?? options.source.ref.uri).split(/[\\/]/u).at(-1) ?? "";
+  const explained = scan.skipped.map((item) => diagnostic("warning", "x3.host/container-alias-skipped", `\xAB${item.contributionId}\xBB claims \xAB${path}\xBB but did not enter detection: ${item.reason}`, [item.extensionId, item.contributionId]));
+  if (scan.aliasShaped === 0 && options.source.kind === "bytes") {
+    explained.push(diagnostic("information", "x3.host/container-alias-none", `no container-alias codec was in the inventory when \xAB${path}\xBB was opened`, [path], { codecContributions: scan.codecs, extensions: options.inventory.extensions.length }));
+  }
+  return Object.freeze(explained);
+}
+function carrierShaped(result) {
+  if (result.state !== "opened")
+    return true;
+  const descriptor = result.descriptor;
+  return (descriptor.traits ?? []).some((trait) => typeof trait.id === "string" && trait.id.startsWith("container.")) || (descriptor.dataSources ?? []).some((source) => source.contract === "common.view/namespace-entry-source");
+}
+function withDiagnostics(result, extra) {
+  if (extra.length === 0)
+    return result;
+  const diagnostics = Object.freeze([...result.diagnostics, ...extra]);
+  if (result.state === "opened")
+    return Object.freeze({ ...result, diagnostics });
+  return Object.freeze({ ...result, diagnostics });
+}
+async function disposeOpened(result) {
+  if (result.state === "opened")
+    await result.session.dispose();
+}
+function resourceInputFor(resolveInput, logicalId) {
+  const nested = logicalId === void 0 ? void 0 : resolveInput?.forResource?.(logicalId);
+  return nested === void 0 ? {} : { resolveInput: nested };
+}
+async function openSubject(request) {
+  const policies = request.logicalResourceDiscovery;
+  const options = {
+    ...request,
+    ...policies === void 0 ? {} : { logicalResourceDiscovery: snapshotLogicalResourceDiscoveryPolicies(policies) }
+  };
+  const compositionStartedAt = Date.now();
+  const scan = scanContainerAliases(options);
+  const aliases = scan.aliases;
+  if (aliases.length === 0) {
+    const direct = await openSubjectDirect(options);
+    return withDiagnostics(direct, carrierShaped(direct) ? containerAliasAbsence(scan, options) : []);
+  }
+  const formats = [
+    ...new Set(aliases.map((alias) => alias.spec.container?.formatId).filter(Boolean))
+  ];
+  if (formats.length !== 1) {
+    throw new ModkitError({
+      code: "x3.host/container-alias-ambiguous",
+      message: `subject selectors name ${formats.length} different container formats`,
+      context: { formats: formats.sort(compareUtf8) }
+    });
+  }
+  if (options.budget.maxDepth < 1) {
+    throw new ModkitError({
+      code: "x3.host/container-composition-depth-exceeded",
+      message: "container composition requires one remaining subject depth"
+    });
+  }
+  const formatId = formats[0];
+  const parent = await openSubjectDirect(options, {
+    containerProviderFormatId: formatId,
+    includeSelectionLock: true
+  });
+  if (parent.state !== "opened") {
+    if (parent.reason === "no-match") {
+      return withDiagnostics(await openSubjectDirect(options), parent.diagnostics);
+    }
+    return Object.freeze({
+      ...parent,
+      reason: "input-unresolved",
+      diagnostics: Object.freeze([
+        ...parent.diagnostics,
+        diagnostic("error", "x3.host/container-provider-unavailable", `no unique runnable container provider opened format ${formatId}`, [formatId])
+      ])
+    });
+  }
+  let composition;
+  let semanticSession;
+  try {
+    throwIfAborted(options.signal);
+    composition = await createContainerNamespaceComposition({
+      parent: parent.session,
+      root: options.source.ref,
+      revision: options.source.revision,
+      budget: options.budget,
+      ...options.signal === void 0 ? {} : { signal: options.signal }
+    });
+    throwIfAborted(options.signal);
+    const elapsed = Date.now() - compositionStartedAt;
+    const remainingDeadline = options.budget.deadlineMs === void 0 ? void 0 : options.budget.deadlineMs - elapsed;
+    if (remainingDeadline !== void 0 && remainingDeadline <= 0) {
+      throw new ModkitError({
+        code: "x3.host/container-composition-deadline-exceeded",
+        message: "container composition exhausted the subject-open deadline before semantic probing"
+      });
+    }
+    const semanticBudget = Object.freeze({
+      ...options.budget,
+      maxDepth: options.budget.maxDepth - 1,
+      ...remainingDeadline === void 0 ? {} : { deadlineMs: remainingDeadline }
+    });
+    const semantic = await openSubjectDirect({ ...options, source: composition.source, budget: semanticBudget }, {
+      containerAliasFormatId: formatId,
+      openResources: composition.openResources,
+      containerAliasContributionIds: new Set(aliases.map((alias) => alias.contributionId))
+    });
+    if (semantic.state !== "opened") {
+      await composition.dispose();
+      composition = void 0;
+      if (semantic.reason === "no-candidate" || semantic.reason === "no-match") {
+        return withDiagnostics(parent, [
+          ...semantic.diagnostics,
+          diagnostic("warning", "x3.host/container-semantic-unclaimed", `no semantic alias claimed the ${formatId} namespace (${semantic.reason}); the carrier view wins`, aliases.map((alias) => alias.contributionId), {
+            reason: semantic.reason,
+            candidates: semantic.candidates.map((item) => ({
+              contributionId: item.contributionId,
+              state: item.state,
+              confidence: item.confidence,
+              diagnostics: item.diagnostics.map((entry2) => entry2.code)
+            }))
+          })
+        ]);
+      }
+      await parent.session.dispose();
+      return semantic;
+    }
+    semanticSession = semantic.session;
+    const selectedAlias = aliases.find((alias) => alias.contributionId === semantic.selected.contributionId);
+    if (selectedAlias === void 0) {
+      throw new ModkitError({
+        code: "x3.host/container-semantic-selection-invalid",
+        message: "selected semantic codec is not one of the matched container aliases"
+      });
+    }
+    const selectedSpec = selectedAlias.spec;
+    const needsPack = selectedSpec.operations.some((operation) => operation.mutatesSource && operation.outputKinds?.includes("edit-plan"));
+    if (needsPack && composition.packHandlerId === void 0) {
+      throw new ModkitError({
+        code: "x3.host/container-pack-unavailable",
+        message: `container provider for ${formatId} must publish container.pack for mutating semantic aliases`
+      });
+    }
+    if (selectedSpec.operations.some((operation) => operation.id === "export.raw") && composition.exportRawHandlerId === void 0) {
+      throw new ModkitError({
+        code: "x3.host/container-export-raw-unavailable",
+        message: `container provider for ${formatId} must publish export.raw for semantic raw export`
+      });
+    }
+    const session = composition.wrapSession(semanticSession, semantic.descriptor, selectedSpec, parent.session);
+    semanticSession = void 0;
+    composition = void 0;
+    const lockText = serializePolicyLock([
+      ...parsePolicyLock(parent.lockText).entries,
+      ...parsePolicyLock(semantic.lockText).entries
+    ]);
+    return Object.freeze({
+      ...semantic,
+      session,
+      lockText,
+      carrier: Object.freeze({ descriptor: parent.descriptor, selected: parent.selected }),
+      candidates: Object.freeze([...parent.candidates, ...semantic.candidates]),
+      diagnostics: Object.freeze([...parent.diagnostics, ...semantic.diagnostics])
+    });
+  } catch (error3) {
+    if (semanticSession !== void 0) {
+      try {
+        await semanticSession.dispose();
+      } catch {
+      }
+    }
+    if (composition !== void 0) {
+      try {
+        await composition.dispose();
+      } catch {
+      }
+    }
+    try {
+      await disposeOpened(parent);
+    } catch {
+    }
+    throw error3;
+  }
+}
+
+// ../../MODDING/modkit-core/packages/host/dist/input-resolution.js
+var COMPANION_REQUIRED_MISSING = "x3.host/companion-required-missing";
+var COMPANION_AMBIGUOUS = "x3.host/companion-ambiguous";
+var COMPANION_PATH_REFUSED = "x3.host/companion-path-refused";
+var COMPANION_PATTERN_INVALID = "x3.host/companion-pattern-invalid";
+var COMPANION_SCOPE_UNSUPPORTED = "x3.host/companion-scope-unsupported";
+var COMPANION_BUDGET_EXCEEDED = "x3.host/companion-budget-exceeded";
+var COMPANION_PLAN_INVALID = "x3.host/companion-plan-invalid";
+var COMPANION_TRAIT_PROBE_UNAVAILABLE = "x3.host/companion-trait-probe-unavailable";
+var COMPANION_UNAVAILABLE = "x3.host/companion-unavailable";
+function traitIdsOf(query, key3) {
+  return (query[key3] ?? []).map((item) => item.id);
+}
+function createSignatureTraitProbe(inventory) {
+  const entries = [];
+  for (const extension of inventory.extensions) {
+    for (const contribution of extension.contributions) {
+      const manifest = contribution.manifest;
+      if (manifest?.contract.id !== CODEC_CONTRIBUTION_CONTRACT || manifest.contract.major !== 1) {
+        continue;
+      }
+      const spec = manifest.spec;
+      const signatures = spec.match.signatures;
+      if (signatures === void 0 || signatures.length === 0)
+        continue;
+      entries.push({
+        signatures,
+        traits: (spec.traitDeclarations ?? []).map((item) => item.id)
+      });
+    }
+  }
+  const needs = signatureNeeds(entries.map((entry2) => entry2.signatures));
+  return async (request, signal) => {
+    for (const key3 of ["all", "any", "none"]) {
+      if ((request.expected[key3] ?? []).some((item) => item.states !== void 0)) {
+        throw new ModkitError({
+          code: COMPANION_TRAIT_PROBE_UNAVAILABLE,
+          message: "the signature trait probe proves declared traits, not observed trait states; a state-constrained companion query needs a probe this composition does not have",
+          context: { requirementId: request.requirementId, logicalId: request.logicalId }
+        });
+      }
+    }
+    if (request.source.kind !== "bytes")
+      return false;
+    const source = request.source;
+    const size = source.size;
+    if (size === void 0)
+      return false;
+    const budget = BigInt(request.maxBytes);
+    const headLength = Number([size, BigInt(needs.prefix), budget].reduce((left, right) => left < right ? left : right));
+    const head = headLength <= 0 ? new Uint8Array(0) : await source.read(0n, headLength, signal);
+    const tailLength = Number([size, BigInt(needs.suffix), budget - BigInt(headLength)].reduce((left, right) => left < right ? left : right));
+    const tail = tailLength <= 0 ? new Uint8Array(0) : await source.read(size - BigInt(tailLength), tailLength, signal);
+    const windows = { head, tail, size };
+    const declared = /* @__PURE__ */ new Set();
+    for (const entry2 of entries) {
+      if (!matchesSignatures(entry2.signatures, windows))
+        continue;
+      for (const trait of entry2.traits)
+        declared.add(trait);
+    }
+    const all = traitIdsOf(request.expected, "all");
+    const any = traitIdsOf(request.expected, "any");
+    const none = traitIdsOf(request.expected, "none");
+    if (!all.every((id) => declared.has(id)))
+      return false;
+    if (any.length > 0 && !any.some((id) => declared.has(id)))
+      return false;
+    if (none.some((id) => declared.has(id)))
+      return false;
+    return true;
+  };
+}
+var DEFAULT_COMPANION_LIMITS = Object.freeze({
+  // One scope of a game archive: a model's bare texture name is looked for in every folder of the
+  // enclosing container, and Emperor's 3DDATA0001.RFH holds 3 749 entries, Diablo III's anim/ 15 258.
+  maxEntries: 65536,
+  maxProbes: 64,
+  maxProbeBytes: 256 * 1024,
+  // A binding is a reference into a scope already bounded by maxEntries. Kane's Wrath's compiled
+  // containers bind their meshes and clips one by one: the MARV names 164 parts, the Eradicator
+  // Hexapod 175 plus 19 clips, and at 64 they did not open.
+  maxBindings: 1024
+});
+var DRIVE_PREFIX = /^[A-Za-z]:/u;
+function refusePath(value, why, context) {
+  throw new ModkitError({
+    code: COMPANION_PATH_REFUSED,
+    message: `companion logical id \xAB${value}\xBB is refused: ${why}`,
+    context: { ...context, logicalId: value }
+  });
+}
+function normalizeCompanionLogicalId(value, context = {}) {
+  if (value.includes("\0"))
+    refusePath(value, "it contains a NUL byte", context);
+  const slashed = value.replaceAll("\\", "/");
+  if (slashed.startsWith("//"))
+    refusePath(slashed, "it is a UNC path", context);
+  if (slashed.startsWith("/"))
+    refusePath(slashed, "it is an absolute path", context);
+  if (DRIVE_PREFIX.test(slashed))
+    refusePath(slashed, "it carries a drive prefix", context);
+  const parts = [];
+  for (const part of slashed.split("/")) {
+    if (part === "" || part === ".")
+      continue;
+    if (part === "..")
+      refusePath(slashed, "it escapes the confined origin root", context);
+    parts.push(part);
+  }
+  const normalized2 = parts.join("/");
+  if (normalized2 === "")
+    refusePath(value, "it names nothing", context);
+  return normalized2;
+}
+var WILDCARDS = /* @__PURE__ */ new Set(["*", "?"]);
+function compilePatterns(requirementId, patterns, caseSensitivity) {
+  if (patterns === void 0 || patterns.length === 0) {
+    throw new ModkitError({
+      code: COMPANION_PATTERN_INVALID,
+      message: `requirement \xAB${requirementId}\xBB declares no patterns; an unbounded companion scan is refused`,
+      context: { requirementId }
+    });
+  }
+  const bodies = patterns.map((pattern) => pattern.replace(/^\.[\\/]/u, ""));
+  const expressions = [];
+  for (const pattern of patterns) {
+    const invalid2 = (why) => {
+      throw new ModkitError({
+        code: COMPANION_PATTERN_INVALID,
+        message: `companion pattern \xAB${pattern}\xBB of requirement \xAB${requirementId}\xBB is refused: ${why}`,
+        context: { requirementId, pattern }
+      });
+    };
+    if (pattern.length === 0)
+      invalid2("it is empty");
+    if (pattern.includes("\0"))
+      invalid2("it contains a NUL byte");
+    if (pattern.includes("**"))
+      invalid2("recursive patterns are not a bounded companion search");
+    if (pattern.startsWith("/") || pattern.startsWith("\\"))
+      invalid2("it is an absolute path");
+    if (DRIVE_PREFIX.test(pattern))
+      invalid2("it carries a drive prefix");
+    if (pattern.replaceAll("\\", "/").split("/").includes("..")) {
+      invalid2("it escapes the confined origin root");
+    }
+    if (![...pattern].some((character) => !WILDCARDS.has(character))) {
+      invalid2("it has no literal part and would match every entry");
+    }
+    const slashed = pattern.replaceAll("\\", "/");
+    const rooted = slashed.startsWith("./");
+    const body = rooted ? slashed.slice(2) : slashed;
+    if (body.length === 0)
+      invalid2("it is empty");
+    let expression = "^";
+    for (const character of body) {
+      if (character === "*")
+        expression += "[^/]*";
+      else if (character === "?")
+        expression += "[^/]";
+      else
+        expression += character.replace(/[\\^$.*+?()[\]{}|]/gu, "\\$&");
+    }
+    expressions.push({
+      expression: new RegExp(`${expression}$`, caseSensitivity === "insensitive" ? "iu" : "u"),
+      whole: rooted || body.includes("/")
+    });
+  }
+  return {
+    test: (logicalId) => {
+      const name = logicalId.split("/").at(-1) ?? logicalId;
+      return expressions.some((item) => item.expression.test(item.whole ? logicalId : name));
+    },
+    prefixes: enumerationPrefixes(bodies, caseSensitivity),
+    namePrefix: enumerationNamePrefix(bodies, caseSensitivity)
+  };
+}
+function enumerationPrefixes(patterns, caseSensitivity) {
+  const paths = patterns.map((pattern) => pattern.replaceAll("\\", "/"));
+  if (paths.some((path) => !path.includes("/") || /[*?]/u.test(path)))
+    return [enumerationPrefix(patterns)];
+  const unique = /* @__PURE__ */ new Map();
+  for (const path of paths) {
+    const key3 = caseSensitivity === "insensitive" ? path.toLowerCase() : path;
+    if (!unique.has(key3))
+      unique.set(key3, path);
+  }
+  return [...unique.values()];
+}
+function enumerationNamePrefix(patterns, caseSensitivity) {
+  const directory = enumerationPrefix(patterns);
+  if (directory === "")
+    return "";
+  const fold4 = (value) => caseSensitivity === "insensitive" ? value.toLowerCase() : value;
+  const starts = patterns.map((pattern) => {
+    const normalized2 = pattern.replaceAll("\\", "/");
+    const wildcard = normalized2.search(/[*?]/u);
+    if (wildcard === -1 || !fold4(normalized2).startsWith(fold4(directory)))
+      return void 0;
+    const literal = normalized2.slice(directory.length, wildcard);
+    return literal.includes("/") ? void 0 : literal;
+  });
+  if (starts.some((start) => start === void 0))
+    return "";
+  let common = starts[0];
+  for (const start of starts.slice(1)) {
+    let length = 0;
+    while (length < common.length && length < start.length && fold4(common[length]) === fold4(start[length]))
+      length += 1;
+    common = common.slice(0, length);
+  }
+  return common;
+}
+function enumerationPrefix(patterns) {
+  const safe = patterns.map((pattern) => {
+    const normalized2 = pattern.replaceAll("\\", "/");
+    if (!normalized2.includes("/"))
+      return "";
+    const wildcard = normalized2.search(/[*?]/u);
+    if (wildcard === -1)
+      return normalized2;
+    const literal = normalized2.slice(0, wildcard);
+    const cut2 = literal.lastIndexOf("/");
+    return cut2 === -1 ? "" : literal.slice(0, cut2 + 1);
+  });
+  const first = safe[0];
+  if (first === void 0)
+    return "";
+  if (safe.every((value) => value === first))
+    return first;
+  let common = first;
+  for (const value of safe.slice(1)) {
+    let length = 0;
+    while (length < common.length && length < value.length && common[length] === value[length]) {
+      length += 1;
+    }
+    common = common.slice(0, length);
+  }
+  const cut = common.lastIndexOf("/");
+  return cut === -1 ? "" : common.slice(0, cut + 1);
+}
+function validateRequirements(requirements) {
+  const seen = /* @__PURE__ */ new Set();
+  for (const requirement of requirements) {
+    const invalid2 = (why) => {
+      throw new ModkitError({
+        code: COMPANION_PLAN_INVALID,
+        message: `companion requirement \xAB${requirement.id}\xBB is invalid: ${why}`,
+        context: { requirementId: requirement.id, role: requirement.role }
+      });
+    };
+    if (typeof requirement.id !== "string" || requirement.id.trim().length === 0) {
+      invalid2("its id is blank");
+    }
+    if (seen.has(requirement.id))
+      invalid2("its id is not unique within the plan");
+    seen.add(requirement.id);
+    if (typeof requirement.role !== "string" || requirement.role.trim().length === 0) {
+      invalid2("its role is blank");
+    }
+    if (!["owned", "companion", "external"].includes(requirement.ownership)) {
+      invalid2(`ownership \xAB${String(requirement.ownership)}\xBB is not a declared ownership`);
+    }
+    const required = requirement.cardinality === "one" || requirement.cardinality === "one-or-more";
+    if (requirement.required !== required) {
+      invalid2(`cardinality \xAB${requirement.cardinality}\xBB does not agree with required=${String(requirement.required)}`);
+    }
+    if (!Array.isArray(requirement.scopes) || requirement.scopes.length === 0) {
+      invalid2("it declares no search scope");
+    }
+  }
+}
+function createLayeredCompanionOrigin(origins) {
+  const first = origins[0];
+  if (first === void 0)
+    throw new TypeError("a layered companion origin needs a backend");
+  const fold4 = (value) => first.caseSensitivity === "insensitive" ? value.toLowerCase() : value;
+  const producedBy = /* @__PURE__ */ new Map();
+  return Object.freeze({
+    primaryLogicalId: first.primaryLogicalId,
+    caseSensitivity: first.caseSensitivity,
+    scopes: Object.freeze([...new Set(origins.flatMap((origin) => [...origin.scopes]))]),
+    async *enumerate(scope, options, signal) {
+      const seen = /* @__PURE__ */ new Set();
+      for (const origin of origins) {
+        if (!origin.scopes.includes(scope))
+          continue;
+        for await (const entry2 of origin.enumerate(scope, options, signal)) {
+          const key3 = fold4(entry2.logicalId);
+          if (seen.has(key3))
+            continue;
+          seen.add(key3);
+          producedBy.set(key3, origin);
+          yield entry2;
+        }
+      }
+    },
+    async open(logicalId, signal) {
+      const remembered = producedBy.get(fold4(logicalId));
+      if (remembered !== void 0)
+        return remembered.open(logicalId, signal);
+      let failure3;
+      for (const origin of origins) {
+        try {
+          return await origin.open(logicalId, signal);
+        } catch (error3) {
+          failure3 ??= error3;
+        }
+      }
+      throw failure3 ?? new TypeError(`no layered origin holds \xAB${logicalId}\xBB`);
+    }
+  });
+}
+function createCompanionInputResolver(origin, options = {}) {
+  const limits = Object.freeze({
+    ...DEFAULT_COMPANION_LIMITS,
+    ...options.limits
+  });
+  const now = options.now ?? (() => Date.now());
+  const report = options.onDiagnostic;
+  const explicit = options.explicitSelections;
+  const resolver = async (context) => {
+    const plan = context.plan;
+    if (plan.originKind === "derived" || plan.requirements.length === 0) {
+      return defaultResolveInput(context);
+    }
+    if (plan.originKind === "bundle" && context.source.kind !== "bytes") {
+      throw new ModkitError({
+        code: "x3.host/input-topology-mismatch",
+        message: "a bundle input plan requires a byte subject source"
+      });
+    }
+    if (plan.originKind === "namespace" && context.source.kind !== "namespace") {
+      throw new ModkitError({
+        code: "x3.host/input-topology-mismatch",
+        message: "a namespace input plan requires a namespace subject source"
+      });
+    }
+    const signal = context.signal;
+    const deadlineAt = options.deadlineMs === void 0 ? void 0 : now() + options.deadlineMs;
+    const budget = { entries: 0, probes: 0, probeBytes: 0, bindings: 0 };
+    const checkpoint = (stage) => {
+      throwIfAborted(signal);
+      if (deadlineAt !== void 0 && now() > deadlineAt) {
+        throw new ModkitError({
+          code: COMPANION_BUDGET_EXCEEDED,
+          message: `companion resolution exceeded its ${String(options.deadlineMs)}ms deadline`,
+          context: { limit: "deadline", stage, deadlineMs: options.deadlineMs }
+        });
+      }
+    };
+    const exceeded = (limit, value) => {
+      throw new ModkitError({
+        code: COMPANION_BUDGET_EXCEEDED,
+        message: `companion resolution exceeded its ${limit} limit of ${value}`,
+        context: { limit, value }
+      });
+    };
+    const refuse3 = (code, message, detail) => {
+      report?.(diagnostic("error", code, message, [String(detail["requirementId"])], detail));
+      throw new ModkitError({ code, message, context: detail });
+    };
+    validateRequirements(plan.requirements);
+    const enumerated = /* @__PURE__ */ new Map();
+    const served = new Set(origin.scopes);
+    if (explicit !== void 0)
+      served.add("explicit-user-selection");
+    const enumerateScope = async (scope, prefix, namePrefix = "") => {
+      const key3 = canonicalJsonStringify([scope, prefix, namePrefix]);
+      const cached = enumerated.get(key3);
+      if (cached !== void 0)
+        return cached;
+      const ids = [];
+      if (scope === "explicit-user-selection") {
+        for (const value of Object.values(explicit ?? {}).flat()) {
+          ids.push(normalizeCompanionLogicalId(value, { scope }));
+        }
+      } else {
+        let taken = 0;
+        for await (const entry2 of origin.enumerate(scope, namePrefix === "" ? { prefix } : { prefix, namePrefix }, signal)) {
+          checkpoint(`enumerate:${scope}`);
+          budget.entries += 1;
+          taken += 1;
+          if (taken > limits.maxEntries)
+            exceeded("entries", limits.maxEntries);
+          ids.push(normalizeCompanionLogicalId(entry2.logicalId, { scope }));
+        }
+      }
+      const frozen = Object.freeze(ids);
+      enumerated.set(key3, frozen);
+      return frozen;
+    };
+    const fold4 = (value) => origin.caseSensitivity === "insensitive" ? value.toLowerCase() : value;
+    const primaryKey = fold4(normalizeCompanionLogicalId(origin.primaryLogicalId));
+    const selected = [];
+    const usedBindingIds = /* @__PURE__ */ new Set();
+    const pinned = /* @__PURE__ */ new Map();
+    for (const requirement of plan.requirements) {
+      checkpoint(`requirement:${requirement.id}`);
+      const patterns = compilePatterns(requirement.id, requirement.patterns, origin.caseSensitivity);
+      const requested = [...new Set(requirement.scopes)];
+      const usable = requested.filter((scope) => served.has(scope));
+      if (usable.length === 0) {
+        const detail2 = {
+          requirementId: requirement.id,
+          role: requirement.role,
+          requestedScopes: requested,
+          servedScopes: [...served].sort(compareUtf8),
+          reason: requested.includes("explicit-user-selection") ? "no-product-selection" : requested.includes("workspace-dependency-layer") ? "no-provider" : "origin-cannot-serve-scope"
+        };
+        if (requirement.required) {
+          refuse3(COMPANION_SCOPE_UNSUPPORTED, `required companion \xAB${requirement.role}\xBB (requirement \xAB${requirement.id}\xBB) asks only for scopes this origin cannot serve: ${requested.join(", ")}`, detail2);
+        }
+        report?.(diagnostic("warning", COMPANION_SCOPE_UNSUPPORTED, `optional companion \xAB${requirement.role}\xBB is unavailable: none of its scopes can be served here`, [requirement.id], detail2));
+        continue;
+      }
+      const matched = [];
+      for (const [rank, scope] of usable.entries()) {
+        for (const prefix of patterns.prefixes) {
+          const namePrefix = patterns.prefixes.length === 1 ? patterns.namePrefix : "";
+          for (const logicalId of await enumerateScope(scope, prefix, namePrefix)) {
+            if (scope === "explicit-user-selection" && !(explicit?.[requirement.id] ?? []).some((value) => fold4(normalizeCompanionLogicalId(value)) === fold4(logicalId))) {
+              continue;
+            }
+            if (fold4(logicalId) === primaryKey)
+              continue;
+            if (!patterns.test(logicalId))
+              continue;
+            matched.push({ rank, logicalId });
+          }
+        }
+      }
+      matched.sort((left, right) => left.rank === right.rank ? compareUtf8(left.logicalId, right.logicalId) : left.rank - right.rank);
+      const unique = [];
+      const seenKeys = /* @__PURE__ */ new Set();
+      for (const { logicalId } of matched) {
+        const key3 = fold4(logicalId);
+        if (seenKeys.has(key3))
+          continue;
+        seenKeys.add(key3);
+        unique.push(logicalId);
+      }
+      const accepted = [];
+      const rejected2 = [];
+      for (const logicalId of unique) {
+        checkpoint(`validate:${requirement.id}`);
+        if (requirement.expected === void 0) {
+          accepted.push(logicalId);
+          continue;
+        }
+        if (options.traitProbe === void 0) {
+          throw new ModkitError({
+            code: COMPANION_TRAIT_PROBE_UNAVAILABLE,
+            message: `requirement \xAB${requirement.id}\xBB declares expected traits but this host wired no companion trait probe`,
+            context: { requirementId: requirement.id, role: requirement.role }
+          });
+        }
+        budget.probes += 1;
+        if (budget.probes > limits.maxProbes)
+          exceeded("probes", limits.maxProbes);
+        const remaining = limits.maxProbeBytes - budget.probeBytes;
+        if (remaining <= 0)
+          exceeded("probeBytes", limits.maxProbeBytes);
+        const lease2 = await origin.open(logicalId, signal);
+        let ok2 = false;
+        try {
+          pinned.set(logicalId, { ref: lease2.value.ref, revision: lease2.value.revision });
+          ok2 = await options.traitProbe({
+            requirementId: requirement.id,
+            logicalId,
+            // every byte the probe pulls is counted by the host, not reported by the probe
+            source: countingSource(lease2.value, (read) => {
+              budget.probeBytes += read;
+              if (budget.probeBytes > limits.maxProbeBytes) {
+                exceeded("probeBytes", limits.maxProbeBytes);
+              }
+            }),
+            expected: requirement.expected,
+            maxBytes: remaining
+          }, signal);
+        } finally {
+          await lease2.release();
+        }
+        ;
+        (ok2 ? accepted : rejected2).push(logicalId);
+      }
+      const detail = {
+        requirementId: requirement.id,
+        role: requirement.role,
+        cardinality: requirement.cardinality,
+        checkedScopes: usable,
+        requestedScopes: requested,
+        matched: unique.length,
+        rejectedByExpectedTraits: rejected2
+      };
+      const singular = requirement.cardinality === "one" || requirement.cardinality === "zero-or-one";
+      if (singular && accepted.length > 1) {
+        refuse3(COMPANION_AMBIGUOUS, `companion \xAB${requirement.role}\xBB (requirement \xAB${requirement.id}\xBB) admits at most one candidate but ${accepted.length} matched in ${usable.join(", ")}`, { ...detail, candidates: accepted });
+      }
+      if (requirement.required && accepted.length === 0) {
+        refuse3(COMPANION_REQUIRED_MISSING, `required companion \xAB${requirement.role}\xBB (requirement \xAB${requirement.id}\xBB) was not found in any checked scope: ${usable.join(", ")}`, detail);
+      }
+      if (accepted.length === 0) {
+        report?.(diagnostic("information", COMPANION_UNAVAILABLE, `optional companion \xAB${requirement.role}\xBB is absent; the dependent capability stays unavailable`, [requirement.id], {
+          ...detail,
+          reason: rejected2.length > 0 ? "expected-traits-rejected" : "no-candidate-matched"
+        }));
+        continue;
+      }
+      for (const logicalId of accepted) {
+        checkpoint(`bind:${requirement.id}`);
+        budget.bindings += 1;
+        if (budget.bindings > limits.maxBindings)
+          exceeded("bindings", limits.maxBindings);
+        const bindingId = `${requirement.id}#${logicalId}`;
+        if (usedBindingIds.has(bindingId)) {
+          throw new ModkitError({
+            code: COMPANION_PLAN_INVALID,
+            message: `companion binding id \xAB${bindingId}\xBB is not unique within the resolved input`,
+            context: { requirementId: requirement.id, bindingId }
+          });
+        }
+        usedBindingIds.add(bindingId);
+        let identity = pinned.get(logicalId);
+        if (identity === void 0) {
+          let lease2;
+          try {
+            lease2 = await origin.open(logicalId, signal);
+          } catch (error3) {
+            throwIfAborted(signal);
+            if (requirement.required)
+              throw error3;
+            report?.(diagnostic("information", COMPANION_UNAVAILABLE, `optional companion \xAB${requirement.role}\xBB (${logicalId}) could not be opened; the dependent capability stays unavailable`, [requirement.id], {
+              ...detail,
+              reason: "open-failed",
+              error: error3 instanceof Error ? error3.message : String(error3)
+            }));
+            usedBindingIds.delete(bindingId);
+            budget.bindings -= 1;
+            continue;
+          }
+          try {
+            identity = { ref: lease2.value.ref, revision: lease2.value.revision };
+            pinned.set(logicalId, identity);
+          } finally {
+            await lease2.release();
+          }
+        }
+        selected.push({
+          requirement,
+          logicalId,
+          bindingId,
+          ref: identity.ref,
+          revision: identity.revision
+        });
+      }
+    }
+    return buildAssetInput(context, plan, origin, selected, signal);
+  };
+  return Object.assign(resolver, {
+    openResources: (request) => createResourceSession({ ...request, origin }),
+    // a resource of this origin opened as a subject (a map's texture): its own companions are
+    // found in the same origin, with the resource as the primary
+    forResource: (logicalId) => createCompanionInputResolver(Object.freeze({
+      ...origin,
+      primaryLogicalId: logicalId,
+      enumerate: origin.enumerate.bind(origin),
+      open: origin.open.bind(origin)
+    }), options)
+  });
+}
+function countingSource(source, onBytes) {
+  if (source.kind !== "bytes")
+    return source;
+  const inner = source;
+  return Object.freeze({
+    ...inner,
+    async read(offset, length, signal) {
+      const bytes = await inner.read(offset, length, signal);
+      onBytes(bytes.byteLength);
+      return bytes;
+    },
+    async *stream(range, signal) {
+      for await (const chunk of inner.stream(range, signal)) {
+        onBytes(chunk.byteLength);
+        yield chunk;
+      }
+    }
+  });
+}
+function buildAssetInput(context, plan, origin, selected, signal) {
+  const requirementBindings = selected.map((item) => Object.freeze({
+    sourceKind: "requirement",
+    bindingId: item.bindingId,
+    requirementId: item.requirement.id,
+    role: item.requirement.role,
+    ownership: item.requirement.ownership,
+    source: item.ref,
+    revision: item.revision
+  }));
+  const openRequirement = async (bindingId, openSignal) => {
+    throwIfAborted(openSignal ?? signal);
+    const item = selected.find((candidate2) => candidate2.bindingId === bindingId);
+    if (item === void 0) {
+      throw new ModkitError({
+        code: "x3.host/unknown-asset-input-binding",
+        message: `asset input has no binding ${bindingId}`
+      });
+    }
+    const lease2 = await origin.open(item.logicalId, openSignal ?? signal);
+    if (lease2.value.revision !== item.revision) {
+      await lease2.release();
+      throw new ModkitError({
+        code: "x3.host/source-revision-changed",
+        message: `companion \xAB${item.logicalId}\xBB changed after it was bound (revision ${item.revision})`,
+        context: { bindingId, revision: item.revision, observed: lease2.value.revision }
+      });
+    }
+    return lease2;
+  };
+  const bindingsFor = (requirementId) => Object.freeze(requirementBindings.filter((item) => item.requirementId === requirementId));
+  if (plan.originKind === "namespace") {
+    const source2 = context.source;
+    const revisions2 = Object.freeze({
+      topology: "namespace",
+      revision: source2.revision,
+      namespaceRevision: source2.revision,
+      bindings: Object.freeze(requirementBindings.map((item) => Object.freeze({ bindingId: item.bindingId, revision: item.revision }))),
+      compositionFingerprint: canonicalJsonStringify({
+        topology: "namespace",
+        root: source2.ref,
+        revision: source2.revision,
+        bindings: requirementBindings.map((item) => ({
+          bindingId: item.bindingId,
+          source: item.source,
+          revision: item.revision
+        }))
+      })
+    });
+    return Object.freeze({
+      originKind: "namespace",
+      root: source2.ref,
+      bindings: Object.freeze(requirementBindings),
+      revisions: revisions2,
+      bindingsFor,
+      openBinding: openRequirement,
+      async openNamespace(openSignal) {
+        throwIfAborted(openSignal ?? signal);
+        return source2.openNamespace(openSignal ?? signal);
+      }
+    });
+  }
+  const source = context.source;
+  const candidatePlan = plan.candidate;
+  if (candidatePlan === void 0 || candidatePlan.bindingId.trim().length === 0 || candidatePlan.role.trim().length === 0 || candidatePlan.ownership !== "owned" && candidatePlan.ownership !== "external") {
+    throw new ModkitError({
+      code: "x3.host/invalid-asset-input-plan",
+      message: "codec returned an invalid bundle candidate binding"
+    });
+  }
+  const candidate = Object.freeze({
+    sourceKind: "candidate",
+    bindingId: candidatePlan.bindingId,
+    role: candidatePlan.role,
+    ownership: candidatePlan.ownership,
+    source: source.ref,
+    revision: source.revision
+  });
+  if (requirementBindings.some((item) => item.bindingId === candidate.bindingId)) {
+    throw new ModkitError({
+      code: COMPANION_PLAN_INVALID,
+      message: `companion binding id \xAB${candidate.bindingId}\xBB collides with the candidate binding`,
+      context: { bindingId: candidate.bindingId }
+    });
+  }
+  const bindings = Object.freeze([candidate, ...requirementBindings]);
+  const revisions = Object.freeze({
+    topology: "bundle",
+    revision: source.revision,
+    bindings: Object.freeze(bindings.map((item) => Object.freeze({ bindingId: item.bindingId, revision: item.revision }))),
+    compositionFingerprint: canonicalJsonStringify({
+      topology: "bundle",
+      bindings: bindings.map((item) => ({
+        bindingId: item.bindingId,
+        source: item.source,
+        revision: item.revision
+      }))
+    })
+  });
+  return Object.freeze({
+    originKind: "bundle",
+    bindings,
+    primaryBindingId: candidate.bindingId,
+    revisions,
+    bindingsFor,
+    async openBinding(bindingId, openSignal) {
+      throwIfAborted(openSignal ?? signal);
+      if (bindingId === candidate.bindingId) {
+        return Object.freeze({ value: source, release: async () => void 0 });
+      }
+      return openRequirement(bindingId, openSignal);
+    }
   });
 }
 
-// ../MODDING/modkit-core/packages/host/dist/data/index.js
+// ../../MODDING/modkit-core/packages/host/dist/data/index.js
 var STANDARD_DATA_OWNER = "modkit/platform-data";
 var OFFER_KEYS = /* @__PURE__ */ new Set(["gameIds"]);
 var REQUEST_KEYS = /* @__PURE__ */ new Set(["gameId"]);
@@ -5392,7 +10028,7 @@ async function analyzeResolvedDataWorkspace(request) {
   }
 }
 
-// ../MODDING/modkit-core/packages/host/dist/language/semantic-context.js
+// ../../MODDING/modkit-core/packages/host/dist/language/semantic-context.js
 var MAX_SEMANTIC_CONTEXT_REQUIREMENTS = 8;
 var MAX_LANGUAGE_RESOLVED_DATA_ENTITIES = 1e5;
 var MAX_LANGUAGE_AUTHORING_INDEX_BYTES = 48 * 1024 * 1024;
@@ -5671,7 +10307,7 @@ async function analyzeResolvedDataSemanticContext(request) {
   }
 }
 
-// ../MODDING/modkit-core/packages/host/dist/language/subject-completion.js
+// ../../MODDING/modkit-core/packages/host/dist/language/subject-completion.js
 var candidateCompletion = (candidate) => Object.freeze({
   label: candidate.label,
   kind: "text",
@@ -5716,7 +10352,7 @@ async function expandSubjectReferenceCompletions(list, candidates, maxResults, s
   return Object.freeze({ items: Object.freeze(items), isIncomplete });
 }
 
-// ../MODDING/modkit-core/packages/host/dist/language/index.js
+// ../../MODDING/modkit-core/packages/host/dist/language/index.js
 var STANDARD_LANGUAGE_OWNER = "modkit/language";
 var OFFER_KEYS2 = /* @__PURE__ */ new Set([
   "languageIds",
@@ -6217,7 +10853,7 @@ async function resolveLanguageProvider(request) {
   }
 }
 
-// ../MODDING/modkit-core/packages/host/dist/references.js
+// ../../MODDING/modkit-core/packages/host/dist/references.js
 var bounded = (value) => typeof value === "string" && value.length > 0 && value.length <= 8192 && !value.includes("\0");
 var validSpan = (span2) => {
   const value = span2;
@@ -6362,7 +10998,7 @@ function createWorkspaceReferenceIndex() {
   return Object.freeze(api);
 }
 
-// ../MODDING/modkit-core/packages/host/dist/language/workspace.js
+// ../../MODDING/modkit-core/packages/host/dist/language/workspace.js
 var LANGUAGE_WORKSPACE_NOT_INITIALIZED = "x3.host/language-workspace-not-initialized";
 var LANGUAGE_WORKSPACE_SHUT_DOWN = "x3.host/language-workspace-shut-down";
 var LANGUAGE_DOCUMENT_ALREADY_OPEN = "x3.host/language-document-already-open";
@@ -8109,7 +12745,7 @@ function createLanguageWorkspace(options) {
   });
 }
 
-// ../MODDING/modkit-core/packages/host/dist/content-dependencies.js
+// ../../MODDING/modkit-core/packages/host/dist/content-dependencies.js
 var DEPENDENCY_SCOPE = Object.freeze(["workspace-dependency-layer"]);
 var KNOWLEDGE_FILE_MAX_BYTES = 8 * 1024 * 1024;
 var KNOWLEDGE_TOTAL_MAX_BYTES = 32 * 1024 * 1024;
@@ -8584,7 +13220,7 @@ function createContentDependencyAssetOrigin(options) {
   return createContentDependencyOrigin(options.contentSources, mounts, maximumEntryBytes);
 }
 
-// ../MODDING/modkit-core/packages/host/dist/content-dependency-operations.js
+// ../../MODDING/modkit-core/packages/host/dist/content-dependency-operations.js
 var foldHostPath = (value) => value.replaceAll("\\", "/").replace(/\/+$/u, "").toLowerCase();
 function baseModsFor(target, setting) {
   if (setting === void 0)
@@ -8912,7 +13548,7 @@ function composeLanguageDocumentSources(sources, noteCompleteness) {
   });
 }
 
-// ../MODDING/modkit-core/packages/host/dist/catalog-questions.js
+// ../../MODDING/modkit-core/packages/host/dist/catalog-questions.js
 var key = (ref2) => JSON.stringify([ref2.namespace, ref2.entityId]);
 async function answerCatalogQueries(options) {
   const asked = /* @__PURE__ */ new Set();
@@ -9018,5479 +13654,873 @@ function operationCatalogQueries(result) {
   return queries.filter((ref2) => typeof ref2?.namespace === "string" && ref2.namespace !== "" && typeof ref2.entityId === "string" && ref2.entityId !== "");
 }
 
-// ../MODDING/modkit-core/packages/host/dist/execution/consumer-adapters.js
-var codecReleases = /* @__PURE__ */ new WeakMap();
-async function releaseCodec(codec) {
-  const release = codecReleases.get(codec);
-  codecReleases.delete(codec);
-  await release?.();
-}
-
-// ../MODDING/modkit-core/packages/host/dist/resource-id.js
-function resourceIdParameters(logicalId) {
-  const none = Object.freeze({ name: logicalId, parameters: Object.freeze({}) });
-  const hash = logicalId.lastIndexOf("#");
-  if (hash < 0)
-    return none;
-  const parameters = {};
-  for (const part of logicalId.slice(hash + 1).split("&")) {
-    const equals = part.indexOf("=");
-    const key3 = part.slice(0, Math.max(equals, 0));
-    if (equals <= 0 || !/^[A-Za-z][A-Za-z0-9_.-]*$/u.test(key3) || Object.hasOwn(parameters, key3))
-      return none;
-    try {
-      parameters[key3] = decodeURIComponent(part.slice(equals + 1));
-    } catch {
-      return none;
-    }
-  }
-  return Object.freeze({ name: logicalId.slice(0, hash), parameters: Object.freeze(parameters) });
-}
-
-// ../MODDING/modkit-core/packages/host/dist/raster-selection.js
-var coordinates = ["frame", "mipLevel", "layer", "face", "slice"];
-function captureRasterSelection(value) {
-  if (value === void 0)
-    return Object.freeze({});
-  if (value === null || typeof value !== "object" || Array.isArray(value) || Object.keys(value).some((key3) => !coordinates.some((coordinate2) => coordinate2 === key3)))
-    throw new TypeError("invalid raster subresource selection");
-  const owned = {};
-  for (const key3 of coordinates) {
-    const item = value[key3];
-    if (item === void 0)
-      continue;
-    if (key3 === "face" && item === "all") {
-      owned[key3] = item;
-      continue;
-    }
-    if (key3 === "mipLevel" && item === "fit") {
-      owned[key3] = item;
-      continue;
-    }
-    if (typeof item !== "number" || !Number.isSafeInteger(item) || item < 0)
-      throw new TypeError(`raster ${key3} must be a nonnegative safe integer`);
-    owned[key3] = item;
-  }
-  return Object.freeze(owned);
-}
-function captureCompressedFormats(value) {
-  if (value === void 0)
-    return /* @__PURE__ */ new Set();
-  if (!Array.isArray(value) || value.length > 64 || value.some((item) => typeof item !== "string" || item.length === 0 || item.length > 64))
-    throw new TypeError("invalid compressed texture formats");
-  return new Set(value);
-}
-function blockBytes(compression) {
-  if (compression === "bc1" || compression === "bc4")
-    return 8;
-  if (compression === "bc2" || compression === "bc3" || compression === "bc5")
-    return 16;
-  if (compression === "bc6h" || compression === "bc7")
-    return 16;
-  return void 0;
-}
-function compressedSelectionPlan(info, selection, maxBytes) {
-  const block = blockBytes(info.compression);
-  if (block === void 0 || selection.face === "all" || info.depth !== 1)
-    return void 0;
-  const stored = info.storedMipLevels ?? info.mipLevels;
-  const chain = (level) => {
-    let bytes2 = 0;
-    for (let index = level; index < stored; index++)
-      bytes2 += Math.ceil(Math.max(1, Math.floor(info.width / 2 ** index)) / 4) * Math.ceil(Math.max(1, Math.floor(info.height / 2 ** index)) / 4) * block;
-    return bytes2;
-  };
-  const selected = selection.mipLevel ?? 0;
-  const mipLevel = selected === "fit" ? Array.from({ length: stored }, (_, index) => index).find((level) => chain(level) <= maxBytes) : selected;
-  if (mipLevel === void 0 || mipLevel >= stored)
-    return void 0;
-  const bytes = chain(mipLevel);
-  return bytes <= maxBytes ? Object.freeze({ mipLevel, bytes }) : void 0;
-}
-function rasterSelectionPlan(info, selection, maxBytes) {
-  for (const key3 of ["width", "height", "depth", "layers", "faces", "mipLevels", "frames"])
-    if (!Number.isSafeInteger(info[key3]) || info[key3] <= 0)
-      throw new TypeError(`invalid raster ${key3}`);
-  const face = selection.face ?? 0;
-  if (face !== "all" && face >= info.faces)
-    throw new RangeError("raster face is out of range");
-  const count = face === "all" ? info.faces : 1;
-  const selectedMipLevel = selection.mipLevel ?? 0;
-  const mipLevel = selectedMipLevel === "fit" ? Array.from({ length: info.mipLevels }, (_, index) => index).find((level) => {
-    const width2 = Math.max(1, Math.floor(info.width / 2 ** level));
-    const height2 = Math.max(1, Math.floor(info.height / 2 ** level));
-    const bytes2 = width2 * height2 * 4 * count;
-    return Number.isSafeInteger(bytes2) && bytes2 <= maxBytes;
-  }) : selectedMipLevel;
-  if (mipLevel === void 0)
-    throw new ModkitError({
-      code: "x3.host/resource-budget-exceeded",
-      message: "no raster mip fits the decoded byte budget"
-    });
-  if (mipLevel >= info.mipLevels)
-    throw new RangeError("raster mip level is out of range");
-  const width = Math.max(1, Math.floor(info.width / 2 ** mipLevel));
-  const height = Math.max(1, Math.floor(info.height / 2 ** mipLevel));
-  const depth = Math.max(1, Math.floor(info.depth / 2 ** mipLevel));
-  const base = {
-    frame: selection.frame ?? 0,
-    mipLevel,
-    layer: selection.layer ?? 0,
-    slice: selection.slice ?? 0
-  };
-  if (base.frame >= info.frames || base.layer >= info.layers || base.slice >= depth)
-    throw new RangeError("raster frame, layer or slice is out of range");
-  const bytes = width * height * 4 * count;
-  if (!Number.isSafeInteger(bytes) || bytes > maxBytes)
-    throw new ModkitError({
-      code: "x3.host/resource-budget-exceeded",
-      message: "selected raster surfaces exceed the decoded byte budget"
-    });
-  const subresources = Object.freeze(Array.from({ length: count }, (_, index) => Object.freeze({ ...base, face: face === "all" ? index : face })));
-  return { width, height, subresources };
-}
-
-// ../MODDING/modkit-core/packages/host/dist/raster-resources.js
-function rasterSpellings(logicalId, rule) {
-  const spellings = [logicalId];
-  if (rule === void 0)
-    return spellings;
-  const name = logicalId.replaceAll("\\", "/").split("/").at(-1) ?? logicalId;
-  const stem = name.replace(/\.[^.]*$/u, "");
-  const names = [
-    name,
-    ...(rule.extensions ?? []).map((extension) => `${stem}${extension}`).filter((other) => other.toLowerCase() !== name.toLowerCase())
-  ];
-  for (const candidate of names)
-    for (const directory of rule.directories) {
-      const spelling = directory === "" ? candidate : `${directory}/${candidate}`;
-      if (!spellings.includes(spelling))
-        spellings.push(spelling);
-    }
-  return spellings;
-}
-function ownedCompressedTexture(texture, info, plan, maxBytes) {
-  const levels = texture?.subresources;
-  const block = texture?.block;
-  if (!Array.isArray(levels) || levels.length === 0 || typeof texture.format !== "string" || block === null || typeof block !== "object" || block.width !== 4 || block.height !== 4 || block.depth !== 1 || block.bytes !== 8 && block.bytes !== 16)
-    return void 0;
-  let total = 0;
-  const owned = [];
-  for (const [index, level] of levels.entries()) {
-    const width = Math.max(1, Math.floor(info.width / 2 ** (plan.mipLevel + index)));
-    const height = Math.max(1, Math.floor(info.height / 2 ** (plan.mipLevel + index)));
-    const bytes = Math.ceil(width / 4) * Math.ceil(height / 4) * block.bytes;
-    if (level === null || typeof level !== "object" || level.mipLevel !== index || level.layer !== 0 || level.face !== 0 || level.width !== width || level.height !== height || !(level.data instanceof Uint8Array) || level.data.byteLength !== bytes)
-      return void 0;
-    total += bytes;
-    if (total > maxBytes)
-      return void 0;
-    owned.push(Object.freeze({
-      mipLevel: index,
-      layer: 0,
-      face: 0,
-      depthSlice: 0,
-      width,
-      height,
-      depth: 1,
-      data: level.data.slice()
-    }));
-  }
-  return Object.freeze({
-    schemaVersion: 1,
-    format: texture.format,
-    dimensions: Object.freeze({ width: owned[0].width, height: owned[0].height, depth: 1 }),
-    mipLevelCount: owned.length,
-    layerCount: 1,
-    faceCount: 1,
-    colorSpace: texture.colorSpace,
-    alphaMode: texture.alphaMode,
-    block: Object.freeze({ width: 4, height: 4, depth: 1, bytes: block.bytes }),
-    subresources: Object.freeze(owned),
-    source: Object.freeze({ ...texture.source })
-  });
-}
-function rasterIdParameters(logicalId) {
-  const { name, parameters } = resourceIdParameters(logicalId);
-  const keys = Object.keys(parameters);
-  if (keys.length === 0 || keys.some((key3) => key3 !== "region" && key3 !== "frame" && key3 !== "plane"))
-    return { name: logicalId };
-  const { region, frame, plane } = parameters;
-  if (plane !== void 0 && plane !== "indices")
-    throw new TypeError("raster id plane must be indices");
-  if (region !== void 0 && region.length === 0)
-    throw new TypeError("raster id region must name an area");
-  if (frame !== void 0 && !(/^(?:0|[1-9][0-9]*)$/u.test(frame) && Number.isSafeInteger(Number(frame))))
-    throw new TypeError("raster id frame must be a nonnegative integer");
-  return {
-    name,
-    ...region === void 0 ? {} : { region },
-    ...frame === void 0 ? {} : { frame: Number(frame) },
-    ...plane === void 0 ? {} : { plane: "indices" }
-  };
-}
-function indexPlaneRgba(region, width, height) {
-  if (region.width !== width || region.height !== height || region.pixelFormat !== "gray8" || !Number.isSafeInteger(region.rowStride) || region.rowStride < width || !(region.pixels instanceof Uint8Array) || region.rowStride * (height - 1) + width > region.pixels.length)
-    return void 0;
-  const rgba = new Uint8Array(width * height * 4);
-  for (let y = 0; y < height; y += 1)
-    for (let x = 0; x < width; x += 1) {
-      const index = region.pixels[y * region.rowStride + x];
-      rgba.set([index, index, index, 255], (y * width + x) * 4);
-    }
-  return Object.freeze({ width, height, rowStride: width * 4, pixelFormat: "rgba8", pixels: rgba });
-}
-function createSubjectRasterResources(options) {
-  const refusal = (code, message, provenance) => ({
-    state: "unresolved",
-    diagnostics: [diagnostic("warning", code, message)],
-    ...provenance === void 0 ? {} : { provenance }
-  });
-  return Object.freeze({
-    async read(request, signal) {
-      signal?.throwIfAborted();
-      if (!options.state.live)
-        return refusal("x3.host/raster-context-unavailable", "Raster resources require a live opened subject.");
-      if (!options.isAuthorized())
-        return refusal("x3.host/resource-permission-missing", "The subject grant does not permit raster resource reads.");
-      if (request === null || typeof request !== "object")
-        return refusal("x3.host/raster-request-invalid", "A raster resource request is required.");
-      const requestedBytes = request.maxBytes;
-      let selection;
-      let compressedFormats;
-      const explicitSelection = request.selection !== void 0;
-      try {
-        selection = captureRasterSelection(request.selection);
-        compressedFormats = captureCompressedFormats(request.compressedFormats);
-      } catch (error3) {
-        return refusal("x3.host/raster-request-invalid", error3 instanceof Error ? error3.message : "Invalid raster selection");
-      }
-      const available = options.budget.maxScalarBytes - options.state.reservedBytes;
-      const maxBytes = selection.mipLevel === "fit" && Number.isSafeInteger(requestedBytes) && requestedBytes > available ? available : requestedBytes;
-      if (!Number.isSafeInteger(maxBytes) || maxBytes <= 0 || options.state.reservedBytes + maxBytes > options.budget.maxScalarBytes)
-        return refusal("x3.host/resource-budget-exceeded", "Raster reads exceed the subject decoded byte budget.");
-      options.state.reservedBytes += maxBytes;
-      const releases = [];
-      let provenance;
-      let atlasRegion;
-      let frameOnly;
-      let indices = false;
-      try {
-        let source;
-        let hint = {};
-        if (request.kind === "logical") {
-          const resources = options.state.resources;
-          if (resources === void 0)
-            return refusal("x3.host/raster-origin-unavailable", "The subject has no resource origin.");
-          const rule = options.companionRule?.(request.requirement.role);
-          let parameters;
-          try {
-            parameters = rasterIdParameters(request.requirement.logicalId);
-          } catch (error3) {
-            return refusal("x3.host/raster-request-invalid", error3 instanceof Error ? error3.message : "Invalid raster id parameters.");
-          }
-          atlasRegion = parameters.region;
-          frameOnly = parameters.frame;
-          indices = parameters.plane === "indices";
-          if (indices)
-            selection = { ...selection, mipLevel: 0 };
-          if (frameOnly !== void 0 && (selection.frame ?? 0) !== 0)
-            return refusal("x3.host/raster-selection-invalid", "The resource names one frame of its image: it has no other frame to select.");
-          const asked = parameters.name === request.requirement.logicalId ? request.requirement : { ...request.requirement, logicalId: parameters.name };
-          const requirement = rule === void 0 ? asked : { ...asked, scopes: rule.scopes };
-          const spellings = rasterSpellings(requirement.logicalId, rule);
-          let resolution = await resources.resolve(requirement, signal);
-          for (const spelling of spellings.slice(1)) {
-            if (resolution.state === "resolved")
-              break;
-            signal?.throwIfAborted();
-            resolution = await resources.resolve({ ...requirement, logicalId: spelling }, signal);
-          }
-          provenance = resolution.provenance;
-          if (resolution.state === "unresolved")
-            return { state: "unresolved", diagnostics: [resolution.diagnostic], provenance };
-          releases.push(() => resolution.lease.release());
-          if (resolution.lease.value.kind !== "bytes")
-            return refusal("x3.host/raster-source-unsupported", "The resource is not a byte source.", provenance);
-          source = resolution.lease.value;
-          hint = { path: provenance.logicalId };
-        } else if (request.kind === "embedded") {
-          if (!(request.bytes instanceof Uint8Array) || BigInt(request.bytes.length) > options.budget.maxInputBytes)
-            return refusal("x3.host/resource-budget-exceeded", "Embedded raster bytes exceed the subject input budget.");
-          if (request.mediaType !== void 0 && (typeof request.mediaType !== "string" || request.mediaType.length > 256))
-            return refusal("x3.host/raster-request-invalid", "Invalid embedded raster media type.");
-          const id = `modkit-inline://raster/${globalThis.crypto.randomUUID()}`;
-          const owned = createMemorySource(id, request.bytes.slice());
-          hint = request.mediaType === void 0 ? {} : { mediaType: request.mediaType };
-          releases.push(() => owned.dispose());
-          source = await artifactByteSourceFromRandomAccess(owned, {
-            ref: { id, uri: id },
-            revision: revisionId(`provider-token:${encodeURIComponent(id)}`),
-            ...signal === void 0 ? {} : { signal }
-          });
-        } else
-          return refusal("x3.host/raster-request-invalid", "Unknown raster resource request.");
-        signal?.throwIfAborted();
-        if (!options.state.live || !options.isAuthorized())
-          return refusal("x3.host/raster-context-unavailable", "The raster context is no longer readable.", provenance);
-        const opened = await options.open(source, hint, signal);
-        if (opened.state !== "opened")
-          return {
-            state: "unresolved",
-            diagnostics: [
-              ...opened.diagnostics,
-              diagnostic("warning", "x3.host/raster-codec-unavailable", "No image codec could open the resource.")
-            ],
-            ...provenance === void 0 ? {} : { provenance }
-          };
-        releases.push(() => opened.session.dispose());
-        if (!opened.descriptor.dataSources.some((ref2) => ref2.contract === "common.view/raster-image-source" && ref2.major === 1))
-          return refusal("x3.host/raster-source-unsupported", "The selected codec does not publish raster pixels.", provenance);
-        const raster = await opened.session.dataSource("common.view/raster-image-source", 1);
-        releases.push(() => raster.release());
-        const info = Object.freeze({ ...await raster.value.info(signal) });
-        if (indices && info.indexed !== true)
-          return refusal("x3.host/raster-plane-missing", "The image stores no palette indices to read.", provenance);
-        const compressedPlan = compressedFormats.size === 0 || indices || atlasRegion !== void 0 || frameOnly !== void 0 || raster.value.readCompressed === void 0 || ![...compressedFormats].some((format2) => format2.startsWith(`${info.compression}-`)) ? void 0 : compressedSelectionPlan(info, selection, maxBytes);
-        if (compressedPlan !== void 0) {
-          const subresource = Object.freeze({
-            frame: selection.frame ?? 0,
-            mipLevel: compressedPlan.mipLevel,
-            layer: selection.layer ?? 0,
-            face: typeof selection.face === "number" ? selection.face : 0,
-            slice: 0
-          });
-          let texture;
-          try {
-            texture = await raster.value.readCompressed({
-              mipLevel: subresource.mipLevel,
-              layer: subresource.layer,
-              face: subresource.face,
-              maxBytes
-            }, signal);
-          } catch (error3) {
-            if (signal?.aborted)
-              throw error3;
-          }
-          const owned = texture === void 0 ? void 0 : ownedCompressedTexture(texture, info, compressedPlan, maxBytes);
-          if (owned !== void 0 && compressedFormats.has(owned.format))
-            return {
-              state: "compressed",
-              info,
-              texture: owned,
-              subresource,
-              diagnostics: Object.freeze([...opened.diagnostics]),
-              ...provenance === void 0 ? {} : { provenance }
-            };
-        }
-        if (!info.decodedAccess || raster.value.readRegion === void 0)
-          return refusal("x3.host/raster-decode-unavailable", "The selected image codec does not decode pixel regions.", provenance);
-        if (frameOnly !== void 0 && frameOnly >= info.frames)
-          return refusal("x3.host/raster-frame-missing", `The image has no frame ${String(frameOnly)}; it has ${String(info.frames)}.`, provenance);
-        if (atlasRegion !== void 0) {
-          const area = info.atlasRegions?.find((item) => item.name === atlasRegion);
-          if (area === void 0)
-            return refusal("x3.host/raster-atlas-region-missing", `The image has no atlas region named ${atlasRegion}.`, provenance);
-          const read = await raster.value.readRegion({
-            x: area.x,
-            y: area.y,
-            width: area.width,
-            height: area.height,
-            ...frameOnly === void 0 ? {} : { frame: frameOnly },
-            ...indices ? { pixelFormat: "gray8", plane: "indices" } : { pixelFormat: "rgba8" },
-            maxBytes
-          }, signal);
-          const region = indices ? indexPlaneRgba(read, area.width, area.height) ?? read : read;
-          if (region.width !== area.width || region.height !== area.height || region.pixelFormat !== "rgba8" || !(region.pixels instanceof Uint8Array) || region.pixels.length > maxBytes)
-            return refusal("x3.host/raster-region-invalid", "The image codec returned an invalid bounded RGBA region.", provenance);
-          const { atlasRegions: _atlas, ...rest } = info;
-          return {
-            info: Object.freeze({
-              ...rest,
-              width: area.width,
-              height: area.height,
-              mipLevels: 1,
-              ...frameOnly === void 0 ? {} : { frames: 1 }
-            }),
-            diagnostics: Object.freeze([...opened.diagnostics]),
-            ...provenance === void 0 ? {} : { provenance },
-            state: "decoded",
-            region: Object.freeze({ ...region, pixels: region.pixels.slice() })
-          };
-        }
-        let plan;
-        try {
-          plan = rasterSelectionPlan(info, frameOnly === void 0 ? selection : { ...selection, frame: frameOnly }, maxBytes);
-        } catch (error3) {
-          return refusal(isModkitError(error3) ? error3.code : "x3.host/raster-selection-invalid", error3 instanceof Error ? error3.message : "Invalid raster selection", provenance);
-        }
-        const surfaces = [];
-        let remaining = maxBytes;
-        for (const subresource of plan.subresources) {
-          signal?.throwIfAborted();
-          if (!options.state.live || !options.isAuthorized())
-            return refusal("x3.host/raster-context-unavailable", "The raster context is no longer readable.", provenance);
-          const read = await raster.value.readRegion({
-            x: 0,
-            y: 0,
-            width: plan.width,
-            height: plan.height,
-            ...subresource,
-            ...indices ? { pixelFormat: "gray8", plane: "indices" } : { pixelFormat: "rgba8" },
-            maxBytes: remaining
-          }, signal);
-          const region = indices ? indexPlaneRgba(read, plan.width, plan.height) ?? read : read;
-          signal?.throwIfAborted();
-          if (!options.state.live || !options.isAuthorized())
-            return refusal("x3.host/raster-context-unavailable", "The raster context is no longer readable.", provenance);
-          if (region.width !== plan.width || region.height !== plan.height || region.pixelFormat !== "rgba8" || !Number.isSafeInteger(region.rowStride) || region.rowStride < plan.width * 4 || !(region.pixels instanceof Uint8Array) || region.pixels.length > remaining || region.rowStride * (plan.height - 1) + plan.width * 4 > region.pixels.length)
-            return refusal("x3.host/raster-region-invalid", "The image codec returned an invalid bounded RGBA region.", provenance);
-          remaining -= region.pixels.length;
-          surfaces.push(Object.freeze({
-            // a named frame is frame 0 of the one-frame image the resource is
-            subresource: frameOnly === void 0 ? subresource : Object.freeze({ ...subresource, frame: 0 }),
-            region: Object.freeze({ ...region, pixels: region.pixels.slice() })
-          }));
-        }
-        const common = {
-          info: Object.freeze(frameOnly === void 0 ? { ...info } : { ...info, frames: 1 }),
-          diagnostics: Object.freeze([...opened.diagnostics]),
-          ...provenance === void 0 ? {} : { provenance }
-        };
-        if (selection.face === "all")
-          return { ...common, state: "decoded-surfaces", surfaces: Object.freeze(surfaces) };
-        const first = surfaces[0];
-        if (first === void 0)
-          throw new TypeError("raster selection produced no surfaces");
-        return {
-          ...common,
-          state: "decoded",
-          region: first.region,
-          ...explicitSelection ? { subresource: first.subresource } : {}
-        };
-      } catch (error3) {
-        if (signal?.aborted || error3 instanceof Error && error3.name === "AbortError")
-          throw error3;
-        return refusal("x3.host/raster-resource-failed", error3 instanceof Error ? error3.message : "Raster resource read failed.", provenance);
-      } finally {
-        try {
-          const failures = [];
-          for (const release of releases.reverse()) {
-            try {
-              await release();
-            } catch (error3) {
-              failures.push(error3);
-            }
-          }
-          if (failures.length > 0)
-            throw failures[0];
-        } finally {
-          options.state.reservedBytes -= maxBytes;
-        }
-      }
-    }
-  });
-}
-
-// ../MODDING/modkit-core/packages/host/dist/logical-resource-deadline.js
-function logicalResourceDeadline(task, timeoutMs, parent) {
-  parent?.throwIfAborted();
-  if (timeoutMs <= 0)
-    return Promise.resolve({ state: "deadline-exceeded" });
-  const controller = new AbortController();
-  return new Promise((resolve, reject) => {
-    let settled = false;
-    const clear = () => {
-      if (settled)
-        return false;
-      settled = true;
-      clearTimeout(timer);
-      parent?.removeEventListener("abort", abort);
-      return true;
-    };
-    const abort = () => {
-      if (!clear())
-        return;
-      controller.abort(parent?.reason);
-      reject(parent?.reason);
-    };
-    const timer = setTimeout(() => {
-      if (!clear())
-        return;
-      controller.abort(new DOMException("Logical resource deadline exceeded.", "TimeoutError"));
-      resolve({ state: "deadline-exceeded" });
-    }, timeoutMs);
-    parent?.addEventListener("abort", abort, { once: true });
-    if (parent?.aborted)
-      abort();
-    void Promise.resolve().then(() => {
-      controller.signal.throwIfAborted();
-      return task(controller.signal);
-    }).then((value) => {
-      if (clear())
-        resolve({ state: "complete", value });
-    }, (error3) => {
-      if (clear())
-        reject(error3);
-    });
-  });
-}
-
-// ../MODDING/modkit-core/packages/host/dist/logical-resource-batch.js
-function refused(reason, message) {
-  return Object.freeze({
-    state: "refused",
-    reason,
-    message,
-    items: Object.freeze([]),
-    bytes: 0n
-  });
-}
-function deadlineOutcome(message) {
-  return Object.freeze({ state: "unresolved", reason: "deadline-exceeded", message });
-}
-function capture(request, context) {
-  if (request === null || typeof request !== "object")
-    throw new TypeError("A read batch is required.");
-  const { items, concurrency, readTimeoutMs, totalTimeoutMs, maxBytes } = request;
-  if (Object.keys(request).some((key3) => !["items", "concurrency", "readTimeoutMs", "totalTimeoutMs", "maxBytes"].includes(key3)) || !Array.isArray(items) || items.length > context.budget.maxNodes || ![concurrency, readTimeoutMs, totalTimeoutMs].every((value) => Number.isSafeInteger(value) && value > 0) || typeof maxBytes !== "bigint" || maxBytes < 0n)
-    throw new TypeError("Invalid bounded read batch.");
-  const length = items.length;
-  const selected = [];
-  let textBytes = 0;
-  for (let index = 0; index < length; index += 1) {
-    const item = items[index];
-    if (item === null || typeof item !== "object" || Object.keys(item).some((key3) => !["requirement", "expectedRevision", "size"].includes(key3)))
-      throw new TypeError("Invalid batch item.");
-    const { requirement: raw, expectedRevision, size } = item;
-    if (expectedRevision !== void 0 && !isRevisionId(expectedRevision) || size !== void 0 && (typeof size !== "bigint" || size < 0n))
-      throw new TypeError("Invalid batch revision or extent.");
-    const requirement = context.captureRequirement(raw);
-    textBytes += new TextEncoder().encode(requirement.id + requirement.logicalId + (requirement.parentResourceId ?? "") + (requirement.alternatives ?? []).join("") + (expectedRevision ?? "") + requirement.scopes.join("")).length;
-    if (textBytes > context.budget.maxScalarBytes)
-      throw new TypeError("Batch metadata exceeds the subject budget.");
-    selected.push(Object.freeze({
-      requirement,
-      ...expectedRevision === void 0 ? {} : { expectedRevision },
-      ...size === void 0 ? {} : { size }
-    }));
-  }
-  const ceiling = context.budget.maxInputBytes < BigInt(context.budget.maxScalarBytes) ? context.budget.maxInputBytes : BigInt(context.budget.maxScalarBytes);
-  return Object.freeze({
-    items: Object.freeze(selected),
-    concurrency: Math.min(concurrency, 4, context.budget.maxNodes),
-    readTimeoutMs: Math.min(readTimeoutMs, 8e3, context.budget.deadlineMs ?? Infinity),
-    totalTimeoutMs: Math.min(totalTimeoutMs, 1e4, context.budget.deadlineMs ?? Infinity),
-    maxBytes: maxBytes < ceiling ? maxBytes : ceiling
-  });
-}
-async function readLogicalResourceBatch(request, context, signal) {
-  signal?.throwIfAborted();
-  const unavailable4 = context.unavailable();
-  if (unavailable4 !== void 0)
-    return refused(unavailable4, "A live readable subject is required.");
-  let captured;
-  try {
-    captured = capture(request, context);
-  } catch (error3) {
-    return refused("request-invalid", error3 instanceof Error ? error3.message : "Invalid read batch.");
-  }
-  const declaredBytes = captured.items.reduce((total, item) => total + (item.size ?? 0n), 0n);
-  if (declaredBytes > captured.maxBytes)
-    return refused("budget-exceeded", "Batch extents exceed the combined byte budget.");
-  if (captured.items.length === 0)
-    return Object.freeze({ state: "complete", items: Object.freeze([]), bytes: 0n });
-  const results = Array.from({
-    length: captured.items.length
-  });
-  const controller = new AbortController();
-  let fatal;
-  let reservedBytes = 0n;
-  const hostByteCeiling = context.budget.maxInputBytes < BigInt(context.budget.maxScalarBytes) ? context.budget.maxInputBytes : BigInt(context.budget.maxScalarBytes);
-  const reservations = /* @__PURE__ */ new Set();
-  let closed = false;
-  const releaseReservation = (reservation) => {
-    if (!reservations.delete(reservation))
-      return;
-    context.state.reservedBytes -= reservation.bytes;
-  };
-  let cursor2 = 0;
-  const fail2 = (reason, message) => {
-    if (fatal !== void 0)
-      return;
-    fatal = refused(reason, message);
-    controller.abort(new DOMException(message, "AbortError"));
-  };
-  const readResolved = async (item, itemSignal, reservation) => {
-    const resolution = await context.resolve(item.requirement, itemSignal);
-    if (resolution.state === "unresolved") {
-      itemSignal.throwIfAborted();
-      if ([
-        "budget-exceeded",
-        "source-revision-changed",
-        "permission-missing",
-        "session-disposed"
-      ].includes(resolution.reason))
-        fail2(resolution.reason, resolution.diagnostic.message);
-      return Object.freeze({
-        state: "unresolved",
-        reason: resolution.reason,
-        message: resolution.diagnostic.message,
-        provenance: resolution.provenance
-      });
-    }
-    try {
-      itemSignal.throwIfAborted();
-      const source = resolution.lease.value;
-      if (item.expectedRevision !== void 0 && resolution.revision !== item.expectedRevision) {
-        fail2("source-revision-changed", "A resource changed after candidate discovery.");
-        itemSignal.throwIfAborted();
-      }
-      if (source.kind !== "bytes" || source.size === void 0)
-        return Object.freeze({
-          state: "unresolved",
-          reason: "size-mismatch",
-          message: "A bounded byte source is required.",
-          provenance: resolution.provenance
-        });
-      const size = source.size;
-      if (item.size !== void 0 && item.size !== size) {
-        fail2("source-revision-changed", "A resource extent changed after candidate discovery.");
-        itemSignal.throwIfAborted();
-      }
-      if (size < 0n || size > BigInt(Number.MAX_SAFE_INTEGER) || reservedBytes + size > captured.maxBytes || context.state.reservedBytes + size > hostByteCeiling) {
-        fail2("budget-exceeded", "Resolved extents exceed the combined batch byte budget.");
-        itemSignal.throwIfAborted();
-      }
-      reservedBytes += size;
-      reservation.bytes = size;
-      context.state.reservedBytes += size;
-      const bytes = await source.read(0n, Number(size), itemSignal);
-      itemSignal.throwIfAborted();
-      const after = context.unavailable();
-      if (after !== void 0) {
-        fail2(after, "The read context is no longer authorized.");
-        itemSignal.throwIfAborted();
-      }
-      if (bytes.length !== Number(size))
-        return Object.freeze({
-          state: "unresolved",
-          reason: "size-mismatch",
-          message: "The resource ended before its declared extent.",
-          provenance: resolution.provenance
-        });
-      return Object.freeze({
-        state: "read",
-        bytes,
-        revision: resolution.revision,
-        provenance: resolution.provenance
-      });
-    } finally {
-      await resolution.lease.release();
-    }
-  };
-  const read = async (item, itemSignal) => {
-    if (context.state.activeReads >= 4) {
-      fail2("budget-exceeded", "The subject has no free resource read slots.");
-      itemSignal.throwIfAborted();
-    }
-    context.state.activeReads += 1;
-    const reservation = { bytes: 0n, settled: false };
-    reservations.add(reservation);
-    try {
-      return await readResolved(item, itemSignal, reservation);
-    } finally {
-      context.state.activeReads -= 1;
-      reservation.settled = true;
-      if (closed)
-        releaseReservation(reservation);
-    }
-  };
-  const onAbort = () => controller.abort(signal?.reason);
-  signal?.addEventListener("abort", onAbort, { once: true });
-  if (signal?.aborted)
-    onAbort();
-  try {
-    const completion = await logicalResourceDeadline(async (batchSignal) => {
-      const worker = async () => {
-        while (cursor2 < captured.items.length) {
-          batchSignal.throwIfAborted();
-          const index = cursor2++;
-          const item = captured.items[index];
-          if (item === void 0)
-            throw new TypeError("Captured batch item is absent.");
-          try {
-            const result = await logicalResourceDeadline((itemSignal) => read(item, itemSignal), captured.readTimeoutMs, batchSignal);
-            if (result.state === "deadline-exceeded") {
-              results[index] = deadlineOutcome("The resource read exceeded its duration ceiling.");
-              return;
-            }
-            results[index] = result.value;
-          } catch (error3) {
-            batchSignal.throwIfAborted();
-            const after2 = context.unavailable();
-            if (after2 !== void 0) {
-              fail2(after2, "The read context is no longer authorized.");
-              return;
-            }
-            const code = error3 !== null && typeof error3 === "object" && "code" in error3 ? error3.code : void 0;
-            if (typeof code === "string" && (code.includes("budget-exceeded") || code.includes("revision-changed"))) {
-              fail2(code.includes("revision-changed") ? "source-revision-changed" : "budget-exceeded", "The host refused a staged resource read.");
-              return;
-            }
-            results[index] = Object.freeze({
-              state: "unresolved",
-              reason: "read-failed",
-              message: "The resource could not be read."
-            });
-          }
-        }
-      };
-      await Promise.all(Array.from({ length: Math.min(captured.concurrency, captured.items.length) }, worker));
-    }, captured.totalTimeoutMs, controller.signal);
-    signal?.throwIfAborted();
-    if (fatal !== void 0)
-      return fatal;
-    if (completion.state === "deadline-exceeded")
-      return refused("deadline-exceeded", "The complete batch exceeded its duration ceiling.");
-    const after = context.unavailable();
-    if (after !== void 0)
-      return refused(after, "The read context is no longer authorized.");
-    const items = Object.freeze(results.map((item) => item ?? deadlineOutcome("No read slot remained after timed-out backend calls.")));
-    return Object.freeze({
-      state: "complete",
-      items,
-      bytes: items.reduce((sum, item) => sum + (item.state === "read" ? BigInt(item.bytes.length) : 0n), 0n)
-    });
-  } catch (error3) {
-    signal?.throwIfAborted();
-    if (fatal !== void 0)
-      return fatal;
-    throw error3;
-  } finally {
-    signal?.removeEventListener("abort", onAbort);
-    closed = true;
-    for (const reservation of reservations) {
-      if (reservation.settled)
-        releaseReservation(reservation);
-    }
-  }
-}
-
-// ../MODDING/modkit-core/packages/host/dist/logical-resources.js
-var ROLES = ["texture", "sidecar", "buffer"];
-var MAXIMUM_ALTERNATIVES = 8;
-var SCOPES = [
-  "sibling-directory",
-  "current-mount",
-  "enclosing-container",
-  "workspace-dependency-layer",
-  "explicit-user-selection"
-];
-var REASONS = [
-  "budget-exceeded",
-  "namespace-invalid",
-  "size-unavailable",
-  "request-invalid",
-  "request-unsupported",
-  "context-unavailable",
-  "permission-missing",
-  "deadline-exceeded"
-];
-var EMPTY_RECEIPT = Object.freeze({
-  complete: false,
-  pages: 0,
-  entries: 0,
-  candidates: 0,
-  bytes: 0n
-});
-function refuseDiscovery(reason, message, receipt = EMPTY_RECEIPT) {
-  return Object.freeze({
-    state: "refused",
-    reason,
-    message,
-    candidates: Object.freeze([]),
-    receipt
-  });
-}
-function captureRequest(request) {
-  if (request === null || typeof request !== "object" || Object.keys(request).some((key3) => !["role", "extension", "timeoutMs"].includes(key3)))
-    throw new TypeError("Discovery accepts only role, extension and timeoutMs.");
-  const { role, extension, timeoutMs } = request;
-  if (!ROLES.includes(role) || typeof extension !== "string" || !/^\.[a-z0-9][a-z0-9_-]{0,31}$/i.test(extension) || timeoutMs !== void 0 && (!Number.isSafeInteger(timeoutMs) || timeoutMs <= 0))
-    throw new TypeError("Discovery requires a known resource role and literal extension.");
-  return Object.freeze({
-    role,
-    extension: extension.toLowerCase(),
-    ...timeoutMs === void 0 ? {} : { timeoutMs }
-  });
-}
-function snapshotLogicalResourceDiscoveryPolicies(policies) {
-  const seen = /* @__PURE__ */ new Set();
-  return Object.freeze(Array.from(policies, (policy) => {
-    const { role, extension, timeoutMs, discover } = policy;
-    const request = captureRequest({
-      role,
-      extension,
-      ...timeoutMs === void 0 ? {} : { timeoutMs }
-    });
-    const key3 = `${request.role}:${request.extension}`;
-    if (seen.has(key3) || typeof discover !== "function")
-      throw new TypeError("Logical resource policies require unique role/extension pairs and a discover callback.");
-    seen.add(key3);
-    return Object.freeze({ ...request, discover: discover.bind(policy) });
-  }));
-}
-function captureRequirement(request, maxLength) {
-  if (request === null || typeof request !== "object")
-    throw new TypeError("A logical requirement is required.");
-  const { id, logicalId, role, scopes, parentResourceId, alternatives } = request;
-  const scopeCount = Array.isArray(scopes) ? scopes.length : -1;
-  if (Object.keys(request).some((key3) => !["id", "logicalId", "role", "scopes", "parentResourceId", "alternatives"].includes(key3)) || alternatives !== void 0 && (!Array.isArray(alternatives) || alternatives.length > MAXIMUM_ALTERNATIVES || !alternatives.every((value) => typeof value === "string" && value.length > 0 && value.length <= maxLength)) || ![id, logicalId].every((value) => typeof value === "string" && value.length > 0 && value.length <= maxLength) || !ROLES.includes(role) || !Array.isArray(scopes) || !Number.isSafeInteger(scopeCount) || scopeCount < 0 || scopeCount > SCOPES.length || parentResourceId !== void 0 && (typeof parentResourceId !== "string" || parentResourceId.length === 0 || parentResourceId.length > maxLength))
-    throw new TypeError("Invalid bounded logical requirement.");
-  const capturedScopes = [];
-  for (let index = 0; index < scopeCount; index += 1) {
-    const scope = scopes[index];
-    if (scope === void 0 || !SCOPES.includes(scope))
-      throw new TypeError("Unknown resource scope.");
-    capturedScopes.push(scope);
-  }
-  return Object.freeze({
-    id,
-    logicalId,
-    role,
-    scopes: Object.freeze(capturedScopes),
-    ...parentResourceId === void 0 ? {} : { parentResourceId },
-    ...alternatives === void 0 ? {} : { alternatives: Object.freeze([...alternatives]) }
-  });
-}
-function copyProvenance(record3) {
-  return Object.freeze({ ...record3, scopes: Object.freeze([...record3.scopes]) });
-}
-function snapshotLogicalResourceRequirements(inputs, budget) {
-  if (!Array.isArray(inputs) || inputs.length > budget.maxNodes)
-    throw new TypeError("Logical inputs exceed the host resource budget.");
-  const count = inputs.length;
-  const captured = Array.from({ length: count }, (_, index) => {
-    const input = inputs[index];
-    if (input === void 0)
-      throw new TypeError("Logical inputs cannot contain empty entries.");
-    return captureRequirement(input, budget.maxScalarBytes);
-  });
-  if (new Set(captured.map((input) => input.id)).size !== captured.length)
-    throw new TypeError("Logical input ids must be unique.");
-  let textBytes = 0;
-  const encoder5 = new TextEncoder();
-  for (const input of captured) {
-    normalizeCompanionLogicalId(input.logicalId);
-    for (const alternative of input.alternatives ?? [])
-      normalizeCompanionLogicalId(alternative);
-    textBytes += encoder5.encode(input.id + input.logicalId + (input.parentResourceId ?? "") + (input.alternatives ?? []).join("")).length;
-    if (textBytes > budget.maxScalarBytes)
-      throw new TypeError("Logical input descriptors exceed the host scalar budget.");
-  }
-  return Object.freeze(captured);
-}
-function captureCandidateScopes(scopes) {
-  if (scopes === void 0)
-    return void 0;
-  if (!Array.isArray(scopes))
-    throw new TypeError("Invalid discovery candidate scopes.");
-  const length = scopes.length;
-  if (!Number.isSafeInteger(length) || length < 1 || length > SCOPES.length)
-    throw new TypeError("Discovery candidate scopes require one to five entries.");
-  const selected = Array.from({ length }, (_, index) => scopes[index]);
-  const captured = [];
-  const seen = /* @__PURE__ */ new Set();
-  for (const scope of selected) {
-    if (scope === void 0 || !SCOPES.includes(scope) || seen.has(scope))
-      throw new TypeError("Discovery candidate scopes must be known and unique.");
-    seen.add(scope);
-    captured.push(scope);
-  }
-  return Object.freeze(captured);
-}
-function unresolved(requirement, reason, message) {
-  return Object.freeze({
-    state: "unresolved",
-    reason,
-    diagnostic: diagnostic("warning", resourceDiagnosticCode(reason), message),
-    provenance: Object.freeze({
-      requirementId: requirement.id,
-      logicalId: requirement.logicalId,
-      role: requirement.role,
-      state: "unresolved",
-      reason,
-      cached: false,
-      scopes: Object.freeze([...requirement.scopes])
-    })
-  });
-}
-function createSubjectLogicalResources(options) {
-  const budget = Object.freeze({ ...options.budget });
-  const batchState = { activeReads: 0, reservedBytes: 0n };
-  const maxBytes = budget.maxInputBytes < BigInt(budget.maxScalarBytes) ? budget.maxInputBytes : BigInt(budget.maxScalarBytes);
-  const policies = /* @__PURE__ */ new Map();
-  for (const policy of snapshotLogicalResourceDiscoveryPolicies(options.policies ?? [])) {
-    policies.set(`${policy.role}:${policy.extension}`, policy);
-  }
-  const unavailable4 = () => !options.state.live || options.state.resources?.state() !== "live" ? "context-unavailable" : !options.isAuthorized() ? "permission-missing" : void 0;
-  const assertLive = (signal) => {
-    signal?.throwIfAborted();
-    const reason = unavailable4();
-    if (reason !== void 0)
-      throw new ModkitError({
-        code: `x3.host/logical-resource-${reason}`,
-        message: "Logical resources require a live readable subject."
-      });
-  };
-  const captureDiscovery = (value) => {
-    if (value === null || typeof value !== "object")
-      throw new TypeError("Invalid discovery result.");
-    const { state, candidates, receipt: raw } = value;
-    if (raw === null || typeof raw !== "object")
-      throw new TypeError("Invalid discovery receipt.");
-    const { complete, pages, entries, candidates: count, bytes } = raw;
-    if (typeof complete !== "boolean" || ![pages, entries, count].every((n) => Number.isSafeInteger(n) && n >= 0) || typeof bytes !== "bigint" || bytes < 0n || count > entries || !Array.isArray(candidates))
-      throw new TypeError("Invalid discovery receipt counts.");
-    if (pages > budget.maxNodes || entries > budget.maxNodes || count > budget.maxNodes || candidates.length > budget.maxNodes || bytes > maxBytes)
-      return refuseDiscovery("budget-exceeded", "Discovery exceeds the subject budget.");
-    const receipt = Object.freeze({ complete, pages, entries, candidates: count, bytes });
-    if (state === "refused") {
-      const { reason, message } = value;
-      if (complete || candidates.length !== 0 || !REASONS.includes(reason) || typeof message !== "string" || message.length > budget.maxScalarBytes)
-        throw new TypeError("Invalid discovery refusal.");
-      return refuseDiscovery(reason, message, receipt);
-    }
-    if (state !== "complete" || !complete || count !== candidates.length)
-      throw new TypeError("Discovery did not publish a complete consistent receipt.");
-    let context;
-    let contextBytes = 0;
-    const rawContext = value.context;
-    if (rawContext !== void 0) {
-      if (rawContext === null || typeof rawContext !== "object" || Object.keys(rawContext).some((key3) => key3 !== "primaryLogicalId" && key3 !== "rootId"))
-        throw new TypeError("Invalid discovery naming context.");
-      const { primaryLogicalId, rootId } = rawContext;
-      if (typeof primaryLogicalId !== "string" || primaryLogicalId.length === 0 || primaryLogicalId.length > budget.maxScalarBytes || rootId !== void 0 && (typeof rootId !== "string" || rootId.length === 0 || rootId.length > budget.maxScalarBytes))
-        throw new TypeError("Invalid bounded discovery identity.");
-      normalizeCompanionLogicalId(primaryLogicalId);
-      contextBytes = new TextEncoder().encode(primaryLogicalId + (rootId ?? "")).length;
-      context = Object.freeze({ primaryLogicalId, ...rootId === void 0 ? {} : { rootId } });
-    }
-    const copied = [];
-    const seen = /* @__PURE__ */ new Set();
-    let total = 0n;
-    let textBytes = contextBytes;
-    if (textBytes > budget.maxScalarBytes)
-      return refuseDiscovery("budget-exceeded", "Discovery context exceeds the subject budget.");
-    const selected = Array.from({ length: count }, (_, index) => candidates[index]);
-    for (const candidate of selected) {
-      if (candidate === null || typeof candidate !== "object")
-        throw new TypeError("Invalid discovery candidate.");
-      const { logicalId, expectedRevision, size, rootId, scopes: rawScopes } = candidate;
-      if (![logicalId, expectedRevision, rootId].every((s) => typeof s === "string" && s.length > 0 && s.length <= budget.maxScalarBytes) || !isRevisionId(expectedRevision) || typeof size !== "bigint" || size < 0n || seen.has(logicalId))
-        throw new TypeError("Invalid or duplicate discovery candidate.");
-      const scopes = captureCandidateScopes(rawScopes);
-      normalizeCompanionLogicalId(logicalId);
-      seen.add(logicalId);
-      total += size;
-      textBytes += new TextEncoder().encode(logicalId + expectedRevision + rootId).length;
-      if (scopes !== void 0)
-        textBytes += new TextEncoder().encode(scopes.join("")).length;
-      if (total > maxBytes || textBytes > budget.maxScalarBytes)
-        return refuseDiscovery("budget-exceeded", "Discovery candidates exceed the subject budget.");
-      copied.push(Object.freeze({
-        logicalId,
-        expectedRevision,
-        size,
-        rootId,
-        ...scopes === void 0 ? {} : { scopes }
-      }));
-    }
-    if (total !== bytes)
-      throw new TypeError("Discovery candidate bytes disagree with the receipt.");
-    return Object.freeze({
-      state: "complete",
-      candidates: Object.freeze(copied),
-      receipt,
-      ...context === void 0 ? {} : { context }
-    });
-  };
-  const port = {
-    readBatch(request, signal) {
-      return readLogicalResourceBatch(request, {
-        budget,
-        state: batchState,
-        resolve: port.resolve,
-        captureRequirement: (requirement) => captureRequirement(requirement, budget.maxScalarBytes),
-        unavailable: unavailable4
-      }, signal);
-    },
-    async discover(request, signal) {
-      signal?.throwIfAborted();
-      const reason = unavailable4();
-      if (reason !== void 0)
-        return refuseDiscovery(reason, "Logical discovery requires a live readable subject.");
-      let captured;
-      try {
-        captured = captureRequest(request);
-      } catch (error3) {
-        return refuseDiscovery("request-invalid", error3 instanceof Error ? error3.message : "Invalid discovery request.");
-      }
-      if (options.state.discoveryCalls >= budget.maxNodes)
-        return refuseDiscovery("budget-exceeded", "Logical discovery request count exceeds the subject budget.");
-      options.state.discoveryCalls += 1;
-      const policy = policies.get(`${captured.role}:${captured.extension}`);
-      if (policy === void 0)
-        return refuseDiscovery("request-unsupported", "The host has no registered policy for this request.");
-      try {
-        const timeoutMs = Math.min(captured.timeoutMs ?? 5e3, policy.timeoutMs ?? 5e3, budget.deadlineMs ?? Infinity);
-        const result = await logicalResourceDeadline((discoverySignal) => policy.discover({ budget, signal: discoverySignal }), timeoutMs, signal);
-        signal?.throwIfAborted();
-        const after = unavailable4();
-        if (after !== void 0)
-          return refuseDiscovery(after, "The discovery context is no longer readable.");
-        if (result.state === "deadline-exceeded")
-          return refuseDiscovery("deadline-exceeded", "Logical discovery exceeded its duration ceiling.");
-        return captureDiscovery(result.value);
-      } catch (error3) {
-        if (signal?.aborted || error3 instanceof Error && error3.name === "AbortError")
-          throw error3;
-        return refuseDiscovery("namespace-invalid", "The host discovery policy returned an invalid or unavailable result.");
-      }
-    },
-    async resolve(request, signal) {
-      signal?.throwIfAborted();
-      let requirement;
-      try {
-        requirement = captureRequirement(request, budget.maxScalarBytes);
-      } catch {
-        return unresolved({ id: "invalid", logicalId: "invalid", role: "buffer", scopes: [] }, "path-refused", "Invalid bounded logical requirement.");
-      }
-      const reason = unavailable4();
-      if (reason !== void 0)
-        return unresolved(requirement, reason === "permission-missing" ? reason : "session-disposed", "Logical resolution requires a live readable subject.");
-      const resources = options.state.resources;
-      if (resources === void 0)
-        return unresolved(requirement, "session-disposed", "The subject has no resource origin.");
-      if (options.state.resolveCalls >= budget.maxNodes)
-        return unresolved(requirement, "budget-exceeded", "Logical resolution request count exceeds the subject budget.");
-      options.state.resolveCalls += 1;
-      const resolution = await resources.resolve(requirement, signal);
-      if (resolution.state === "unresolved") {
-        assertLive(signal);
-        return Object.freeze({ ...resolution, provenance: copyProvenance(resolution.provenance) });
-      }
-      let released = false;
-      const release = async () => {
-        if (released)
-          return;
-        released = true;
-        await resolution.lease.release();
-      };
-      try {
-        assertLive(signal);
-        const source = resolution.lease.value;
-        if (source.kind !== "bytes") {
-          await release();
-          return unresolved(requirement, "scope-unsupported", "Logical consumer resources expose byte sources only.");
-        }
-        const { size, revision } = source;
-        if (typeof size !== "bigint" || size < 0n || size > budget.maxInputBytes || !isRevisionId(revision) || revision !== resolution.revision) {
-          await release();
-          return unresolved(requirement, "budget-exceeded", "The resource has no valid bounded pinned byte extent.");
-        }
-        const live = (readSignal) => {
-          assertLive(readSignal);
-          if (released)
-            throw new ModkitError({
-              code: "x3.host/resource-session-disposed",
-              message: "The logical resource lease was released."
-            });
-        };
-        const read = async (offset, length, readSignal) => {
-          live(readSignal);
-          if (typeof offset !== "bigint" || offset < 0n || !Number.isSafeInteger(length) || length < 0 || offset + BigInt(length) > size || options.state.reservedBytes + length > budget.maxScalarBytes)
-            throw new ModkitError({
-              code: "x3.host/resource-budget-exceeded",
-              message: "The logical byte read exceeds its bounded extent or byte budget."
-            });
-          options.state.reservedBytes += length;
-          try {
-            const bytes = await source.read(offset, length, readSignal);
-            live(readSignal);
-            if (!(bytes instanceof Uint8Array) || bytes.length > length)
-              throw new ModkitError({
-                code: "x3.host/resource-budget-exceeded",
-                message: "The resource returned more bytes than requested."
-              });
-            return Uint8Array.from(bytes);
-          } finally {
-            options.state.reservedBytes -= length;
-          }
-        };
-        const bounded2 = Object.freeze({
-          kind: "bytes",
-          ref: Object.freeze({ ...source.ref }),
-          revision,
-          size,
-          read,
-          async *stream(range, readSignal) {
-            live(readSignal);
-            const offset = range?.offset ?? 0n;
-            const length = range?.length ?? size - offset;
-            if (typeof offset !== "bigint" || typeof length !== "bigint" || offset < 0n || length < 0n || offset + length > size)
-              throw new TypeError("Invalid logical resource stream range.");
-            const chunkSize = Math.min(65536, budget.maxScalarBytes);
-            if (length > 0n && chunkSize < 1)
-              throw new TypeError("The subject has no byte-read budget.");
-            let cursor2 = offset;
-            const end = offset + length;
-            while (cursor2 < end) {
-              const remaining = end - cursor2;
-              const bytes = await read(cursor2, Number(remaining < BigInt(chunkSize) ? remaining : BigInt(chunkSize)), readSignal);
-              if (bytes.length === 0)
-                throw new TypeError("The logical resource ended before its declared extent.");
-              cursor2 += BigInt(bytes.length);
-              yield bytes;
-            }
-          }
-        });
-        return Object.freeze({
-          state: "resolved",
-          revision,
-          provenance: copyProvenance(resolution.provenance),
-          lease: Object.freeze({ value: bounded2, release })
-        });
-      } catch (error3) {
-        await release();
-        throw error3;
-      }
-    },
-    async identity(signal) {
-      signal?.throwIfAborted();
-      if (unavailable4() !== void 0)
-        return void 0;
-      const primaryLogicalId = options.state.resources?.primaryLogicalId;
-      return primaryLogicalId === void 0 || primaryLogicalId.length === 0 ? void 0 : Object.freeze({ primaryLogicalId });
-    },
-    async provenance(signal) {
-      assertLive(signal);
-      const records = options.state.resources?.provenance() ?? [];
-      if (records.length > budget.maxNodes)
-        throw new ModkitError({
-          code: "x3.host/resource-budget-exceeded",
-          message: "Logical provenance exceeds the subject record budget."
-        });
-      return Object.freeze(records.map(copyProvenance));
-    }
-  };
-  return Object.freeze(port);
-}
-
-// ../MODDING/modkit-core/packages/host/dist/namespace-origin.js
-var NAMESPACE_SCOPES = Object.freeze([
-  "current-mount",
-  "enclosing-container"
-]);
-var NESTED_ENTRY_NOT_FOUND = "x3.host/nested-entry-not-found";
-var BYTE_RANGE_SOURCE2 = "common.view/byte-range-source";
-function storedEntrySource(session, descriptor) {
-  return descriptor.dataSources.some((item) => item.contract === BYTE_RANGE_SOURCE2 && item.major === 1) ? () => session.dataSource(BYTE_RANGE_SOURCE2, 1) : void 0;
-}
-function createNamespaceCompanionOrigin(options) {
-  const pageLimit2 = options.pageLimit ?? 256;
-  const caseSensitivity = options.caseSensitivity ?? "insensitive";
-  const fold4 = (value) => caseSensitivity === "insensitive" ? value.toLowerCase() : value;
-  const index = /* @__PURE__ */ new Map();
-  const observed = /* @__PURE__ */ new Map();
-  const listing = async function* (prefix, signal) {
-    const cached = index.get(prefix);
-    if (cached !== void 0) {
-      yield* cached.values();
-      return;
-    }
-    const built = /* @__PURE__ */ new Map();
-    const spellings = [...new Set(prefix === "" ? [""] : [prefix, fold4(prefix)])];
-    let pages = 0;
-    for (const spelling of spellings) {
-      let cursor2;
-      const cursors = /* @__PURE__ */ new Set();
-      do {
-        throwIfAborted(signal);
-        if (++pages > (options.maxPages ?? 4096) || cursor2 !== void 0 && cursors.has(cursor2))
-          throw new ModkitError({
-            code: COMPANION_BUDGET_EXCEEDED,
-            message: "namespace listing did not terminate within its page budget"
-          });
-        if (cursor2 !== void 0)
-          cursors.add(cursor2);
-        const page = await options.namespace.list(spelling, cursor2 === void 0 ? { limit: pageLimit2 } : { cursor: cursor2, limit: pageLimit2 }, signal);
-        for (const entry2 of page.items) {
-          if (entry2.kind !== "file")
-            continue;
-          const key3 = fold4(entry2.path);
-          if (!built.has(key3)) {
-            const value = {
-              entryId: entry2.id,
-              path: entry2.path,
-              ...entry2.size === void 0 ? {} : { size: entry2.size },
-              ...entry2.rangeAccess === true ? { rangeAccess: true } : {},
-              ...entry2.storedRange === void 0 ? {} : { storedRange: entry2.storedRange },
-              revision: entry2.revision
-            };
-            built.set(key3, value);
-            if (!observed.has(key3))
-              observed.set(key3, value);
-            yield value;
-          }
-        }
-        cursor2 = page.nextCursor;
-      } while (cursor2 !== void 0);
-    }
-    index.set(prefix, built);
-  };
-  return Object.freeze({
-    primaryLogicalId: options.primaryLogicalId,
-    caseSensitivity,
-    scopes: NAMESPACE_SCOPES,
-    async *enumerate(scope, enumeration, signal) {
-      throwIfAborted(signal);
-      if (scope !== "current-mount" && scope !== "enclosing-container")
-        return;
-      const namePrefix = enumeration.namePrefix === void 0 ? "" : fold4(enumeration.prefix + enumeration.namePrefix);
-      for await (const entry2 of listing(enumeration.prefix, signal)) {
-        throwIfAborted(signal);
-        if (namePrefix !== "" && !fold4(entry2.path).startsWith(namePrefix))
-          continue;
-        yield Object.freeze({
-          logicalId: entry2.path,
-          ...entry2.size === void 0 ? {} : { size: entry2.size }
-        });
-      }
-    },
-    async open(logicalId, signal) {
-      throwIfAborted(signal);
-      let entry2 = observed.get(fold4(logicalId));
-      if (entry2 === void 0) {
-        for await (const candidate of listing(logicalId, signal)) {
-          if (fold4(candidate.path) === fold4(logicalId)) {
-            entry2 = candidate;
-            break;
-          }
-        }
-      }
-      if (entry2 === void 0) {
-        throw new ModkitError({
-          code: NESTED_ENTRY_NOT_FOUND,
-          message: `container has no entry \xAB${logicalId}\xBB`,
-          context: { logicalId }
-        });
-      }
-      const ranged = rangeEntryLease(options.namespace, entry2, options.containerRevision, options.openStoredSource, signal);
-      if (ranged !== void 0)
-        return ranged;
-      if (options.maxSourceBytes !== void 0 && entry2.size !== void 0 && entry2.size > options.maxSourceBytes)
-        throw new ModkitError({
-          code: COMPANION_BUDGET_EXCEEDED,
-          message: `resource \xAB${logicalId}\xBB exceeds the extraction byte budget`
-        });
-      const refLease = await options.namespace.openEntry(entry2.entryId, signal);
-      let bytes;
-      try {
-        bytes = await options.extract(entry2.entryId, signal);
-        if (options.maxSourceBytes !== void 0 && BigInt(bytes.byteLength) > options.maxSourceBytes)
-          throw new ModkitError({
-            code: COMPANION_BUDGET_EXCEEDED,
-            message: `resource \xAB${logicalId}\xBB exceeds the extraction byte budget`
-          });
-      } catch (error3) {
-        await refLease.release();
-        throw error3;
-      }
-      const source = containerEntrySource(refLease.value, containerEntryRevision(options.containerRevision, entry2.entryId, bytes.byteLength), bytes);
-      return Object.freeze({ value: source, release: () => refLease.release() });
-    }
-  });
-}
-function createWorkspaceNamespaceCompanionOrigin(options) {
-  return createCompositeWorkspaceNamespaceCompanionOrigin({
-    primaryLogicalId: options.primaryLogicalId,
-    roots: options.logicalRoots.map((root) => ({
-      ...root,
-      namespace: options.namespace,
-      containerRevision: options.containerRevision,
-      extract: options.extract,
-      ...options.openStoredSource === void 0 ? {} : { openStoredSource: options.openStoredSource }
-    })),
-    ...options.caseSensitivity === void 0 ? {} : { caseSensitivity: options.caseSensitivity },
-    ...options.pageLimit === void 0 ? {} : { pageLimit: options.pageLimit },
-    ...options.maxPages === void 0 ? {} : { maxPages: options.maxPages }
-  });
-}
-var WORKSPACE_SCOPES = Object.freeze([
-  "workspace-dependency-layer",
-  "current-mount",
-  "enclosing-container"
-]);
-function createCompositeWorkspaceNamespaceCompanionOrigin(options) {
-  const pageLimit2 = options.pageLimit ?? 256;
-  const maxPages = options.maxPages ?? 4096;
-  const caseSensitivity = options.caseSensitivity ?? "insensitive";
-  const fold4 = (value) => caseSensitivity === "insensitive" ? value.toLowerCase() : value;
-  const roots = options.roots.map((root) => {
-    const pathPrefix = root.pathPrefix === "" ? "" : normalizeCompanionLogicalId(root.pathPrefix).replace(/\/$/u, "");
-    const logicalPrefix = root.logicalPrefix === void 0 || root.logicalPrefix === "" ? "" : normalizeCompanionLogicalId(root.logicalPrefix).replace(/\/$/u, "");
-    return Object.freeze({
-      rootId: root.rootId,
-      pathPrefix,
-      logicalPrefix,
-      namespace: root.namespace,
-      containerRevision: root.containerRevision,
-      extract: root.extract,
-      ...root.openStoredSource === void 0 ? {} : { openStoredSource: root.openStoredSource },
-      ...root.assetRoots === void 0 ? {} : {
-        assetRoots: Object.freeze(root.assetRoots.map((pattern) => pattern === "" ? "" : normalizeCompanionLogicalId(pattern).replace(/\/$/u, "")))
-      }
-    });
-  });
-  if (roots.length === 0)
-    throw new TypeError("workspace namespace origin requires a logical root");
-  if (new Set(roots.map((root) => root.rootId)).size !== roots.length) {
-    throw new TypeError("workspace namespace origin root ids must differ");
-  }
-  const byLogicalId = /* @__PURE__ */ new Map();
-  const pages = async function* (root, prefix, signal) {
-    const spellings = [...new Set(prefix === "" ? [""] : [prefix, fold4(prefix)])];
-    for (const spelling of spellings) {
-      let cursor2;
-      let pageCount = 0;
-      const seenCursors = /* @__PURE__ */ new Set();
-      do {
-        throwIfAborted(signal);
-        if (pageCount >= maxPages) {
-          throw new RangeError(`workspace namespace prefix exceeds ${maxPages} pages`);
-        }
-        if (cursor2 !== void 0) {
-          if (seenCursors.has(cursor2)) {
-            throw new RangeError("workspace namespace paging cursor repeated");
-          }
-          seenCursors.add(cursor2);
-        }
-        const page = await root.namespace.list(spelling, cursor2 === void 0 ? { limit: pageLimit2 } : { cursor: cursor2, limit: pageLimit2 }, signal);
-        yield* page.items;
-        pageCount += 1;
-        cursor2 = page.nextCursor;
-      } while (cursor2 !== void 0);
-    }
-  };
-  const joinPrefix = (prefix, suffix) => prefix === "" ? suffix : suffix === "" ? prefix : `${prefix}/${suffix}`;
-  const isQualifiedRequest = (logicalId) => roots.some((root) => {
-    if (root.logicalPrefix === "")
-      return false;
-    return fold4(logicalId) === fold4(root.logicalPrefix) || fold4(logicalId).startsWith(fold4(`${root.logicalPrefix}/`));
-  });
-  const relativeRequest = (root, logicalId) => {
-    if (logicalId === "")
-      return "";
-    if (root.logicalPrefix === "")
-      return logicalId;
-    if (!isQualifiedRequest(logicalId))
-      return logicalId;
-    if (fold4(logicalId) === fold4(root.logicalPrefix))
-      return "";
-    const prefix = `${root.logicalPrefix}/`;
-    return fold4(logicalId).startsWith(fold4(prefix)) ? logicalId.slice(prefix.length) : void 0;
-  };
-  const assetSpellings = (root, relative) => {
-    const slash = relative.indexOf("/");
-    if (root.assetRoots === void 0 || slash <= 0)
-      return [relative];
-    const first = fold4(relative.slice(0, slash));
-    const rest = relative.slice(slash + 1);
-    const named = root.assetRoots.some((pattern) => pattern.startsWith("*") ? first.endsWith(fold4(pattern.slice(1))) : pattern !== "" && first === fold4(pattern));
-    if (!named)
-      return [relative];
-    const spellings = [relative];
-    for (const pattern of root.assetRoots) {
-      if (pattern.startsWith("*"))
-        continue;
-      const spelling = pattern === "" ? rest : `${pattern}/${rest}`;
-      if (!spellings.some((known) => fold4(known) === fold4(spelling)))
-        spellings.push(spelling);
-    }
-    return spellings;
-  };
-  const remember2 = (root, entry2) => {
-    if (entry2.kind !== "file")
-      return void 0;
-    const prefix = root.pathPrefix === "" ? "" : `${root.pathPrefix}/`;
-    if (prefix !== "" && !fold4(entry2.path).startsWith(fold4(prefix)))
-      return void 0;
-    const relative = prefix === "" ? entry2.path : entry2.path.slice(prefix.length);
-    if (relative === "")
-      return void 0;
-    const logicalId = joinPrefix(root.logicalPrefix, relative);
-    const key3 = fold4(logicalId);
-    if (!byLogicalId.has(key3)) {
-      byLogicalId.set(key3, {
-        entryId: entry2.id,
-        path: entry2.path,
-        ...entry2.size === void 0 ? {} : { size: entry2.size },
-        ...entry2.rangeAccess === true ? { rangeAccess: true } : {},
-        ...entry2.storedRange === void 0 ? {} : { storedRange: entry2.storedRange },
-        revision: entry2.revision,
-        namespace: root.namespace,
-        containerRevision: root.containerRevision,
-        extract: root.extract,
-        ...root.openStoredSource === void 0 ? {} : { openStoredSource: root.openStoredSource }
-      });
-    }
-    return logicalId;
-  };
-  const relativeEntryPath = (root, entry2) => {
-    if (entry2.kind !== "file")
-      return void 0;
-    const prefix = root.pathPrefix === "" ? "" : `${root.pathPrefix}/`;
-    if (prefix !== "" && !fold4(entry2.path).startsWith(fold4(prefix)))
-      return void 0;
-    const relative = prefix === "" ? entry2.path : entry2.path.slice(prefix.length);
-    return relative === "" ? void 0 : relative;
-  };
-  const find = async (logicalId, signal) => {
-    const key3 = fold4(logicalId);
-    const cached = byLogicalId.get(key3);
-    if (cached !== void 0)
-      return cached;
-    const qualified = isQualifiedRequest(logicalId);
-    for (const root of roots) {
-      const relative = relativeRequest(root, logicalId);
-      if (relative === void 0)
-        continue;
-      for (const spelling of qualified ? [relative] : assetSpellings(root, relative)) {
-        const wanted = qualified ? key3 : fold4(spelling);
-        for await (const entry2 of pages(root, joinPrefix(root.pathPrefix, spelling), signal)) {
-          const remembered = remember2(root, entry2);
-          if (remembered === void 0)
-            continue;
-          const exposed = qualified ? remembered : relativeEntryPath(root, entry2);
-          if (exposed !== void 0 && fold4(exposed) === wanted) {
-            const bound = byLogicalId.get(fold4(remembered));
-            if (bound !== void 0)
-              byLogicalId.set(key3, bound);
-            return bound;
-          }
-        }
-      }
-    }
-    return void 0;
-  };
-  async function* containerEntries(prefix, signal) {
-    const qualified = isQualifiedRequest(prefix);
-    const entriesSeen = /* @__PURE__ */ new Map();
-    const yielded = /* @__PURE__ */ new Set();
-    for (const root of roots) {
-      const relative = relativeRequest(root, prefix);
-      if (relative === void 0)
-        continue;
-      let seen = entriesSeen.get(root.namespace);
-      if (seen === void 0)
-        entriesSeen.set(root.namespace, seen = /* @__PURE__ */ new Set());
-      for await (const entry2 of pages(root, joinPrefix(root.pathPrefix, relative), signal)) {
-        throwIfAborted(signal);
-        const remembered = remember2(root, entry2);
-        if (remembered === void 0)
-          continue;
-        const logicalId = qualified ? remembered : relativeEntryPath(root, entry2);
-        if (logicalId === void 0 || seen.has(entry2.id) || yielded.has(fold4(logicalId)))
-          continue;
-        seen.add(entry2.id);
-        yielded.add(fold4(logicalId));
-        const bound = byLogicalId.get(fold4(remembered));
-        if (bound !== void 0)
-          byLogicalId.set(fold4(logicalId), bound);
-        yield Object.freeze({
-          logicalId,
-          rootId: root.rootId,
-          ...entry2.size === void 0 ? {} : { size: entry2.size }
-        });
-      }
-    }
-  }
-  return Object.freeze({
-    primaryLogicalId: options.primaryLogicalId,
-    caseSensitivity,
-    // a resource opened out of the workspace (a map's terrain raster) finds its own companions in
-    // the mount it lives in: the workspace's containers are that mount
-    scopes: WORKSPACE_SCOPES,
-    async *enumerate(scope, enumeration, signal) {
-      if (!WORKSPACE_SCOPES.includes(scope))
-        return;
-      if (scope !== "workspace-dependency-layer") {
-        yield* containerEntries(enumeration.prefix, signal);
-        return;
-      }
-      const yielded = /* @__PURE__ */ new Set();
-      const qualified = isQualifiedRequest(enumeration.prefix);
-      for (const root of roots) {
-        const relative = relativeRequest(root, enumeration.prefix);
-        if (relative === void 0)
-          continue;
-        for (const spelling of qualified ? [relative] : assetSpellings(root, relative)) {
-          for await (const entry2 of pages(root, joinPrefix(root.pathPrefix, spelling), signal)) {
-            throwIfAborted(signal);
-            const remembered = remember2(root, entry2);
-            if (remembered === void 0)
-              continue;
-            const exposed = qualified ? remembered : relativeEntryPath(root, entry2);
-            const logicalId = exposed === void 0 || qualified || spelling === relative ? exposed : fold4(exposed).startsWith(fold4(spelling)) ? `${relative}${exposed.slice(spelling.length)}` : void 0;
-            if (logicalId === void 0 || yielded.has(fold4(logicalId)))
-              continue;
-            const bound = byLogicalId.get(fold4(remembered));
-            if (bound !== void 0)
-              byLogicalId.set(fold4(logicalId), bound);
-            yielded.add(fold4(logicalId));
-            yield Object.freeze({
-              logicalId,
-              rootId: root.rootId,
-              ...entry2.size === void 0 ? {} : { size: entry2.size }
-            });
-          }
-        }
-      }
-    },
-    async open(logicalId, signal) {
-      throwIfAborted(signal);
-      const entry2 = await find(logicalId, signal);
-      if (entry2 === void 0) {
-        throw new ModkitError({
-          code: NESTED_ENTRY_NOT_FOUND,
-          message: `workspace namespace has no entry \xAB${logicalId}\xBB`,
-          context: { logicalId }
-        });
-      }
-      const ranged = rangeEntryLease(entry2.namespace, entry2, entry2.containerRevision, entry2.openStoredSource, signal);
-      if (ranged !== void 0)
-        return ranged;
-      const refLease = await entry2.namespace.openEntry(entry2.entryId, signal);
-      let bytes;
-      try {
-        bytes = await entry2.extract(entry2.entryId, signal);
-      } catch (error3) {
-        await refLease.release();
-        throw error3;
-      }
-      return Object.freeze({
-        value: containerEntrySource(refLease.value, containerEntryRevision(entry2.containerRevision, entry2.entryId, bytes.byteLength), bytes),
-        release: () => refLease.release()
-      });
-    }
-  });
-}
-function positiveDiscoveryLimit(value, label) {
-  if (!Number.isSafeInteger(value) || value <= 0) {
-    throw new TypeError(`${label} must be a positive safe integer`);
+// ../../MODDING/modkit-core/packages/host/dist/commands/immutable-command-targets.js
+function deepFreeze(value) {
+  if (value !== null && typeof value === "object" && !Object.isFrozen(value)) {
+    for (const nested of Object.values(value))
+      deepFreeze(nested);
+    Object.freeze(value);
   }
   return value;
 }
-function createWorkspaceNamespaceCandidateDiscovery(options) {
-  const pageItems2 = positiveDiscoveryLimit(options.limits.pageItems, "pageItems");
-  const maxPages = positiveDiscoveryLimit(options.limits.maxPages, "maxPages");
-  const maxEntries = positiveDiscoveryLimit(options.limits.maxEntries, "maxEntries");
-  const maxCandidates = positiveDiscoveryLimit(options.limits.maxCandidates, "maxCandidates");
-  const maxBytes = options.limits.maxBytes;
-  const namespace = options.namespace;
-  const containerRevision = options.containerRevision;
-  if (typeof maxBytes !== "bigint" || maxBytes < 0n) {
-    throw new TypeError("maxBytes must be a non-negative bigint");
-  }
-  if (!/^\.[a-z0-9][a-z0-9_-]*$/iu.test(options.extension)) {
-    throw new TypeError("candidate extension must be an exact dotted suffix without glob syntax");
-  }
-  const caseSensitivity = options.caseSensitivity ?? "insensitive";
-  const fold4 = (value) => caseSensitivity === "insensitive" ? value.toLowerCase() : value;
-  const extension = fold4(options.extension);
-  const roots = options.logicalRoots.map((root, index) => {
-    if (typeof root.rootId !== "string" || root.rootId.trim() === "") {
-      throw new TypeError(`logicalRoots[${index}].rootId must be a non-empty string`);
-    }
-    const pathPrefix = root.pathPrefix === "" ? "" : normalizeCompanionLogicalId(root.pathPrefix).replace(/\/$/u, "");
-    const logicalPrefix = root.logicalPrefix === void 0 || root.logicalPrefix === "" ? "" : normalizeCompanionLogicalId(root.logicalPrefix).replace(/\/$/u, "");
-    return Object.freeze({ rootId: root.rootId, pathPrefix, logicalPrefix, rank: index });
-  });
-  if (roots.length === 0)
-    throw new TypeError("candidate discovery requires a logical root");
-  const rootsById = new Map(roots.map((root) => [root.rootId, root]));
-  if (rootsById.size !== roots.length)
-    throw new TypeError("candidate discovery root ids must differ");
-  if (options.searches.length === 0) {
-    throw new TypeError("candidate discovery requires an explicit search root");
-  }
-  const relativeRequest = (root, logicalId) => {
-    if (logicalId === "" || fold4(logicalId) === fold4(root.logicalPrefix))
-      return "";
-    if (root.logicalPrefix === "")
-      return logicalId;
-    const prefix = `${root.logicalPrefix}/`;
-    return fold4(logicalId).startsWith(fold4(prefix)) ? logicalId.slice(prefix.length) : void 0;
-  };
-  const joinPrefix = (prefix, suffix) => prefix === "" ? suffix : suffix === "" ? prefix : `${prefix}/${suffix}`;
-  const searches = options.searches.map((search, index) => {
-    const root = rootsById.get(search.rootId);
-    if (root === void 0) {
-      throw new TypeError(`searches[${index}] names unknown logical root \xAB${search.rootId}\xBB`);
-    }
-    if (typeof search.logicalPrefix !== "string") {
-      throw new TypeError(`searches[${index}].logicalPrefix must be a string`);
-    }
-    const logicalPrefix = search.logicalPrefix.trim() === "" ? "" : normalizeCompanionLogicalId(search.logicalPrefix).replace(/\/$/u, "");
-    const relative = relativeRequest(root, logicalPrefix);
-    if (relative === void 0)
-      throw new TypeError(`searches[${index}] is outside logical root \xAB${root.rootId}\xBB`);
-    return Object.freeze({ root, logicalPrefix, relative, rank: index });
-  });
-  const receiptSearches = Object.freeze(searches.map((search) => Object.freeze({ rootId: search.root.rootId, logicalPrefix: search.logicalPrefix })));
-  const orderedSearches = [...searches].sort((left, right) => left.root.rank - right.root.rank || left.rank - right.rank);
-  return Object.freeze({
-    async discover(signal) {
-      throwIfAborted(signal);
-      let pages = 0;
-      let entries = 0;
-      let bytes = 0n;
-      const candidates = /* @__PURE__ */ new Map();
-      const receipt = (complete) => Object.freeze({
-        complete,
-        pages,
-        entries,
-        candidates: complete ? candidates.size : 0,
-        bytes: complete ? bytes : 0n,
-        searches: receiptSearches
-      });
-      const refused4 = (reason, message) => Object.freeze({
-        state: "refused",
-        reason,
-        message,
-        candidates: Object.freeze([]),
-        receipt: receipt(false)
-      });
-      for (const search of orderedSearches) {
-        const rootPrefix = search.root.pathPrefix === "" ? "" : `${search.root.pathPrefix}/`;
-        const subtree = joinPrefix(search.root.pathPrefix, search.relative);
-        const namespacePrefix = subtree === "" ? "" : `${subtree}/`;
-        const spellings = [
-          ...new Set(caseSensitivity === "insensitive" ? [namespacePrefix, fold4(namespacePrefix)] : [namespacePrefix])
-        ];
-        for (const spelling of spellings) {
-          let cursor2;
-          const seenCursors = /* @__PURE__ */ new Set();
-          do {
-            throwIfAborted(signal);
-            if (pages >= maxPages) {
-              return refused4("budget-exceeded", `candidate discovery exceeded its ${maxPages}-page budget`);
-            }
-            if (cursor2 !== void 0) {
-              if (seenCursors.has(cursor2)) {
-                return refused4("namespace-invalid", "candidate discovery cursor repeated");
-              }
-              seenCursors.add(cursor2);
-            }
-            const page = await namespace.list(spelling, cursor2 === void 0 ? { limit: pageItems2 } : { cursor: cursor2, limit: pageItems2 }, signal);
-            pages += 1;
-            throwIfAborted(signal);
-            if (page === null || typeof page !== "object" || !Array.isArray(page.items) || page.nextCursor !== void 0 && (typeof page.nextCursor !== "string" || page.nextCursor === "")) {
-              return refused4("namespace-invalid", "candidate discovery received a malformed page");
-            }
-            if (page.items.length > pageItems2) {
-              return refused4("namespace-invalid", `candidate discovery page exceeded its requested ${pageItems2}-entry limit`);
-            }
-            for (const entry2 of page.items) {
-              throwIfAborted(signal);
-              if (entry2 === null || typeof entry2 !== "object" || typeof entry2.id !== "string" || entry2.id === "" || typeof entry2.path !== "string" || entry2.path === "" || typeof entry2.kind !== "string") {
-                return refused4("namespace-invalid", "candidate discovery received a malformed namespace entry");
-              }
-              entries += 1;
-              if (entries > maxEntries) {
-                return refused4("budget-exceeded", `candidate discovery exceeded its ${maxEntries}-entry budget`);
-              }
-              let path;
-              try {
-                path = normalizeCompanionLogicalId(entry2.path);
-              } catch {
-                return refused4("namespace-invalid", "candidate discovery received an invalid entry path");
-              }
-              if (entry2.kind === "file" && path !== entry2.path || namespacePrefix !== "" && !fold4(path).startsWith(fold4(namespacePrefix)) && !(entry2.kind !== "file" && fold4(path) === fold4(subtree))) {
-                return refused4("namespace-invalid", `namespace entry \xAB${entry2.path}\xBB escaped or changed requested subtree \xAB${subtree}\xBB of logical root \xAB${search.root.rootId}\xBB`);
-              }
-              if (entry2.kind !== "file" || !fold4(path).endsWith(extension))
-                continue;
-              const relative = path.slice(rootPrefix.length);
-              if (relative === "")
-                continue;
-              const logicalId = joinPrefix(search.root.logicalPrefix, relative);
-              const key3 = fold4(logicalId);
-              if (candidates.has(key3))
-                continue;
-              const uncovered = roots.find((root) => root.rank < search.root.rank && (relativeRequest(root, logicalId)?.length ?? 0) > 0 && !searches.some((higher) => higher.root.rank === root.rank && (higher.logicalPrefix === "" || key3.startsWith(fold4(`${higher.logicalPrefix}/`)))));
-              if (uncovered !== void 0)
-                return refused4("namespace-invalid", `candidate \xAB${logicalId}\xBB has incomplete precedence coverage for logical root \xAB${uncovered.rootId}\xBB; that root may serve the same logical id`);
-              if (entry2.size === void 0 || typeof entry2.size !== "bigint" || entry2.size < 0n || entry2.size > BigInt(Number.MAX_SAFE_INTEGER)) {
-                return refused4("size-unavailable", `candidate \xAB${logicalId}\xBB has no bounded revision-safe size`);
-              }
-              if (candidates.size >= maxCandidates) {
-                return refused4("budget-exceeded", `candidate discovery exceeded its ${maxCandidates}-candidate budget`);
-              }
-              if (bytes + entry2.size > maxBytes) {
-                return refused4("budget-exceeded", `candidate discovery exceeded its ${maxBytes}-byte budget`);
-              }
-              bytes += entry2.size;
-              candidates.set(key3, Object.freeze({
-                logicalId,
-                expectedRevision: containerEntryRevision(containerRevision, entry2.id, Number(entry2.size)),
-                size: entry2.size,
-                rootId: search.root.rootId,
-                rootRank: search.root.rank,
-                searchRank: search.rank
-              }));
-            }
-            cursor2 = page.nextCursor;
-          } while (cursor2 !== void 0);
-        }
-      }
-      const ordered = [...candidates.values()].sort((left, right) => left.rootRank - right.rootRank || left.searchRank - right.searchRank || (left.logicalId < right.logicalId ? -1 : left.logicalId > right.logicalId ? 1 : 0)).map(({ logicalId, expectedRevision, size, rootId }) => Object.freeze({ logicalId, expectedRevision, size, rootId }));
-      return Object.freeze({
-        state: "complete",
-        candidates: Object.freeze(ordered),
-        receipt: receipt(true)
-      });
-    }
-  });
-}
-function containerEntryRangeSource(ref2, revision, parent, range) {
-  const invalid2 = (message, context) => new ModkitError({ code: "x3.host/invalid-source-range", message, context: { uri: ref2.uri, ...context } });
-  if (range.offset < 0n || range.length < 0n)
-    throw invalid2(`entry range of \xAB${ref2.uri}\xBB is negative`, {});
-  const read = async (offset, length, signal) => {
-    throwIfAborted(signal);
-    if (offset < 0n || !Number.isSafeInteger(length) || length < 0) {
-      throw invalid2(`container entry read of \xAB${ref2.uri}\xBB must use a non-negative exact range`, {
-        offset: String(offset),
-        length
-      });
-    }
-    if (offset > range.length) {
-      throw invalid2(`container entry read of \xAB${ref2.uri}\xBB starts beyond the entry size`, {
-        offset: String(offset),
-        size: String(range.length)
-      });
-    }
-    const available = range.length - offset;
-    const wanted = BigInt(length) < available ? length : Number(available);
-    return wanted === 0 ? new Uint8Array() : parent.read(range.offset + offset, wanted, signal);
-  };
-  return Object.freeze({
-    kind: "bytes",
-    ref: ref2,
-    revision,
-    size: range.length,
-    read,
-    async *stream(window, signal) {
-      const start = window?.offset ?? 0n;
-      const end = window?.length === void 0 ? range.length : start + window.length;
-      for (let at = start; at < end && at < range.length; ) {
-        const chunk = await read(at, Number(end - at < 1048576n ? end - at : 1048576n), signal);
-        if (chunk.byteLength === 0)
-          return;
-        at += BigInt(chunk.byteLength);
-        yield chunk;
-      }
-    }
-  });
-}
-function rangeEntryLease(namespace, entry2, containerRevision, openStoredSource, signal) {
-  const { entryId, storedRange } = entry2;
-  if (entry2.rangeAccess === true && namespace.openEntrySource !== void 0)
-    return entryRangeLease(namespace, entryId, containerRevision, signal, () => namespace.openEntrySource(entryId, signal));
-  if (storedRange !== void 0 && openStoredSource !== void 0)
-    return entryRangeLease(namespace, entryId, containerRevision, signal, openStoredSource, storedRange);
-  return void 0;
-}
-async function entryRangeLease(namespace, entryId, containerRevision, signal, openSource, storedRange) {
-  const refLease = await namespace.openEntry(entryId, signal);
-  let sourceLease;
-  try {
-    throwIfAborted(signal);
-    sourceLease = await openSource();
-  } catch (error3) {
-    await refLease.release();
-    throw error3;
-  }
-  try {
-    const range = storedRange ?? { offset: 0n, length: await sourceLease.value.size() };
-    return Object.freeze({
-      value: containerEntryRangeSource(refLease.value, containerEntryRevision(containerRevision, entryId, range.length), sourceLease.value, range),
-      release: async () => {
-        await sourceLease.release();
-        await refLease.release();
-      }
-    });
-  } catch (error3) {
-    await sourceLease.release();
-    await refLease.release();
-    throw error3;
-  }
-}
-function containerEntrySource(ref2, revision, bytes) {
-  return Object.freeze({
-    kind: "bytes",
-    ref: ref2,
-    revision,
-    size: BigInt(bytes.byteLength),
-    async read(offset, length, signal) {
-      throwIfAborted(signal);
-      if (offset < 0n || !Number.isSafeInteger(length) || length < 0) {
-        throw new ModkitError({
-          code: "x3.host/invalid-source-range",
-          message: `container entry read of \xAB${ref2.uri}\xBB must use a non-negative exact range`,
-          context: { uri: ref2.uri, offset: String(offset), length }
-        });
-      }
-      if (offset > BigInt(bytes.byteLength)) {
-        throw new ModkitError({
-          code: "x3.host/invalid-source-range",
-          message: `container entry read of \xAB${ref2.uri}\xBB starts beyond the entry size`,
-          context: { uri: ref2.uri, offset: String(offset), size: bytes.byteLength }
-        });
-      }
-      const start = Number(offset);
-      return bytes.slice(start, Math.min(bytes.byteLength, start + length));
-    },
-    async *stream(range, signal) {
-      throwIfAborted(signal);
-      const start = Number(range?.offset ?? 0n);
-      const end = range?.length === void 0 ? bytes.byteLength : start + Number(range.length);
-      yield bytes.slice(start, Math.min(bytes.byteLength, end));
-    }
-  });
+function defineSubjectCommandTargets(targets) {
+  return deepFreeze(targets);
 }
 
-// ../MODDING/modkit-core/packages/host/dist/container-composition.js
-var NAMESPACE_ENTRY_SOURCE2 = "common.view/namespace-entry-source";
-var CONTAINER_EXTRACT = "container.extract";
-var CONTAINER_PACK = "container.pack";
-var EXPORT_RAW = "export.raw";
-var VIEW_INSPECT = "view.inspect";
-var CARRIER_EXTRACT_HANDLER = "x3.host/carrier-container-extract";
-var ENTRY_NOT_FOUND = "x3.host/namespace-entry-not-found";
-var PAGE_LIMIT = 256;
-var BASE64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-function operationHandler(descriptor, id) {
-  const operation = descriptor.operations.find((item) => item.id === id && item.state === "available");
-  return operation?.handlerId;
-}
-function normalizePath(path, allowEmpty) {
-  if (path.includes("\0") || path.includes("\\") || path.startsWith("/")) {
-    throw new ModkitError({
-      code: "x3.host/namespace-path-refused",
-      message: `container namespace path \xAB${path}\xBB is not a confined POSIX path`,
-      context: { path }
-    });
+// ../../MODDING/modkit-core/packages/host/dist/commands/subject-command-targets.js
+var SUBJECT_COMMAND_TARGETS = defineSubjectCommandTargets({
+  open: {
+    commandId: "subject.open",
+    needsSubject: true,
+    mutatesSource: false,
+    operationIds: [],
+    dataSourceContracts: [],
+    hostCallers: ["automation", "cli", "electron", "pwa", "server", "vscode"]
+  },
+  inspect: {
+    commandId: "subject.inspect",
+    needsSubject: true,
+    mutatesSource: false,
+    operationIds: [],
+    dataSourceContracts: [],
+    hostCallers: ["automation", "cli", "electron", "pwa", "server", "vscode"]
+  },
+  validate: {
+    commandId: "subject.validate",
+    needsSubject: true,
+    mutatesSource: false,
+    operationIds: ["asset.validate"],
+    dataSourceContracts: [],
+    hostCallers: ["automation", "cli", "electron", "pwa", "server", "vscode"]
+  },
+  extract: {
+    commandId: "subject.extract",
+    needsSubject: true,
+    mutatesSource: false,
+    operationIds: ["container.extract"],
+    dataSourceContracts: ["common.view/namespace-entry-source"],
+    hostCallers: ["automation", "cli", "electron", "pwa", "server", "vscode"]
+  },
+  convert: {
+    commandId: "subject.convert",
+    needsSubject: true,
+    mutatesSource: false,
+    operationIds: [
+      "export.convert",
+      "export.raw",
+      "model.export-uvm",
+      "model.export-native",
+      "map.export-native",
+      "model.write"
+    ],
+    // a map world converts to UVW from the world it publishes (target `uvw`)
+    dataSourceContracts: ["common.view/world-scene-source"],
+    hostCallers: ["automation", "cli", "electron", "pwa", "server", "vscode"]
+  },
+  preview: {
+    commandId: "subject.preview",
+    needsSubject: true,
+    mutatesSource: false,
+    operationIds: ["view.thumbnail", "view.render", "model.render"],
+    dataSourceContracts: [],
+    hostCallers: ["automation", "cli", "electron", "pwa", "server", "vscode"]
   }
-  const parts = path.split("/").filter((part) => part !== "" && part !== ".");
-  if (parts.some((part) => part === "..") || !allowEmpty && parts.length === 0) {
-    throw new ModkitError({
-      code: "x3.host/namespace-path-refused",
-      message: `container namespace path \xAB${path}\xBB escapes or does not name an entry`,
-      context: { path }
-    });
+});
+
+// ../../MODDING/modkit-core/packages/host/dist/commands/subject-commands.js
+var OPEN_COMMAND = SUBJECT_COMMAND_TARGETS.open.commandId;
+var INSPECT_COMMAND = SUBJECT_COMMAND_TARGETS.inspect.commandId;
+var VALIDATE_COMMAND = SUBJECT_COMMAND_TARGETS.validate.commandId;
+var VALIDATE = SUBJECT_COMMAND_TARGETS.validate.operationIds[0];
+var EXTRACT_COMMAND = SUBJECT_COMMAND_TARGETS.extract.commandId;
+var CONTAINER_EXTRACT_OPERATION_ID2 = SUBJECT_COMMAND_TARGETS.extract.operationIds[0];
+var NAMESPACE_ENTRY_SOURCE2 = SUBJECT_COMMAND_TARGETS.extract.dataSourceContracts[0];
+var CONVERT_COMMAND = SUBJECT_COMMAND_TARGETS.convert.commandId;
+var CONVERT = SUBJECT_COMMAND_TARGETS.convert.operationIds[0];
+var WORLD_SCENE_SOURCE = SUBJECT_COMMAND_TARGETS.convert.dataSourceContracts[0];
+var PREVIEW_COMMAND = SUBJECT_COMMAND_TARGETS.preview.commandId;
+var THUMBNAIL = SUBJECT_COMMAND_TARGETS.preview.operationIds[0];
+function availableOperation(descriptor, id) {
+  const found = (descriptor.operations ?? []).find((item) => item.id === id && item.state === "available" && item.mutatesSource !== true);
+  return found === void 0 ? void 0 : { handlerId: found.handlerId };
+}
+function selectedOperation(descriptor, allowed2, requested) {
+  const candidates = requested === void 0 ? allowed2 : typeof requested === "string" ? [requested] : [];
+  for (const id of candidates) {
+    if (!allowed2.includes(id))
+      continue;
+    const operation = availableOperation(descriptor, id);
+    if (operation !== void 0)
+      return { id, ...operation };
   }
-  return parts.join("/");
+  return void 0;
 }
-var sameNamespacePath = (left, right) => left === right || left.toLowerCase() === right.toLowerCase();
-var insideNamespacePath = (path, prefix) => sameNamespacePath(path, prefix) || path.toLowerCase().startsWith(`${prefix.toLowerCase()}/`);
-function childRef(root, path) {
-  const parentIds = Object.freeze([...root.parentIds ?? [], root.id]);
-  return Object.freeze({
-    id: `${root.id}!/${path}`,
-    uri: `container-entry:${encodeURIComponent(root.uri)}!/${path.split("/").map(encodeURIComponent).join("/")}`,
-    parentIds
-  });
+function subjectStem(ref2) {
+  const name = ref2.replace(/[?#].*$/u, "").split(/[\\/]/u).at(-1) ?? "";
+  const stem = name.replace(/\.[^.]*$/u, "");
+  return stem === "" ? "export" : stem;
 }
-function encodeBase64(bytes) {
-  let encoded = "";
-  for (let index = 0; index < bytes.byteLength; index += 3) {
-    const first = bytes[index] ?? 0;
-    const second = bytes[index + 1] ?? 0;
-    const third = bytes[index + 2] ?? 0;
-    const value = first << 16 | second << 8 | third;
-    encoded += BASE64[value >>> 18 & 63];
-    encoded += BASE64[value >>> 12 & 63];
-    encoded += index + 1 < bytes.byteLength ? BASE64[value >>> 6 & 63] : "=";
-    encoded += index + 2 < bytes.byteLength ? BASE64[value & 63] : "=";
-  }
-  return encoded;
-}
-function sameRef(left, right) {
-  return left.id === right.id && left.uri === right.uri && JSON.stringify(left.parentIds ?? []) === JSON.stringify(right.parentIds ?? []);
-}
-function isRecord(value) {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-function mergeInspectionResults(carrier, semantic) {
-  if (carrier.state !== "ok" || carrier.output.kind !== "json" || semantic.state !== "ok" || semantic.output.kind !== "json" || !isRecord(carrier.output.value) || !isRecord(semantic.output.value)) {
-    return semantic;
-  }
-  return Object.freeze({
-    ...semantic,
-    output: Object.freeze({
-      kind: "json",
-      // Carrier facts fill fields the semantic summary does not own. The semantic interpretation
-      // remains authoritative on collisions, and the semantic realm never receives carrier data.
-      value: Object.freeze({ ...carrier.output.value, ...semantic.output.value })
-    }),
-    diagnostics: Object.freeze([...carrier.diagnostics, ...semantic.diagnostics])
-  });
-}
-function isNonBlank(value) {
-  return typeof value === "string" && value.trim() !== "";
-}
-function isSourceRef(value) {
-  return isRecord(value) && isNonBlank(value["id"]) && isNonBlank(value["uri"]) && (value["parentIds"] === void 0 || Array.isArray(value["parentIds"]) && value["parentIds"].every(isNonBlank));
-}
-function isEntryTarget(value) {
-  if (!isRecord(value) || !isSourceRef(value["ownerSource"]))
-    return false;
-  const revision = value["expectedRevision"];
-  return isNonBlank(value["targetId"]) && isNonBlank(value["subjectUri"]) && value["subjectUri"] === value["ownerSource"].uri && Array.isArray(value["semanticPath"]) && value["semanticPath"].every(isNonBlank) && isRecord(revision) && isNonBlank(revision["compositionFingerprint"]) && isRecord(revision["bindings"]) && Object.keys(revision["bindings"]).length > 0 && Object.entries(revision["bindings"]).every(([bindingId, bindingRevision]) => isNonBlank(bindingId) && isNonBlank(bindingRevision)) && (revision["namespaceRevision"] === void 0 || isNonBlank(revision["namespaceRevision"]));
-}
-function revisionMatches(target, binding) {
-  return Object.values(target.expectedRevision.bindings).some((revision) => revision === binding.sourceRevision);
-}
-function invalidEntryPlan(message, context) {
-  throw new ModkitError({
-    code: "x3.host/container-entry-edit-plan-invalid",
-    message,
-    ...context === void 0 ? {} : { context }
-  });
-}
-function replacementsFromPlan(plan, bindings, budget) {
-  if (!isRecord(plan) || !Array.isArray(plan.targets) || plan.targets.length === 0 || plan.targets.length > budget.maxNodes || !Array.isArray(plan.edits) || plan.edits.length === 0 || plan.edits.length > budget.maxNodes) {
-    return invalidEntryPlan("a composed container edit plan must contain a bounded non-empty edit set");
-  }
-  const targets = /* @__PURE__ */ new Map();
-  for (const target of plan.targets) {
-    if (!isEntryTarget(target) || targets.has(target.targetId)) {
-      return invalidEntryPlan("container entry edit plan contains a malformed or duplicate target");
-    }
-    targets.set(target.targetId, target);
-  }
-  const usedEntries = /* @__PURE__ */ new Set();
-  const usedTargets = /* @__PURE__ */ new Set();
-  let total = 0n;
-  const replacements = Object.freeze(plan.edits.map((edit) => {
-    if (!isRecord(edit) || edit.operation !== "replace" || edit.range !== void 0 || !isSourceRef(edit.source) || !isRecord(edit.payload) || edit.payload.kind !== "inline" || !(edit.payload.bytes instanceof Uint8Array)) {
-      return invalidEntryPlan("M4 container composition accepts only full-file inline replacements of issued entries");
-    }
-    const target = targets.get(edit.targetId);
-    const binding = bindings.get(edit.source.id);
-    if (target === void 0 || binding === void 0 || !sameRef(edit.source, binding.ref) || !sameRef(target.ownerSource, binding.ref) || !revisionMatches(target, binding)) {
-      return invalidEntryPlan("container entry edit does not match an adapter-issued ref/revision", {
-        targetId: edit.targetId,
-        sourceId: edit.source.id
-      });
-    }
-    usedTargets.add(edit.targetId);
-    if (usedEntries.has(binding.entryId)) {
-      return invalidEntryPlan(`container entry ${binding.entryId} is replaced more than once`);
-    }
-    usedEntries.add(binding.entryId);
-    const length = BigInt(edit.payload.bytes.byteLength);
-    if (edit.payload.bytes.byteLength > budget.maxScalarBytes) {
-      return invalidEntryPlan("a container entry replacement exceeds maxScalarBytes");
-    }
-    total += length;
-    if (total > budget.maxInputBytes) {
-      return invalidEntryPlan("container entry replacements exceed maxInputBytes");
-    }
-    return Object.freeze({
-      entryId: binding.entryId,
-      expectedRevision: binding.providerRevision,
-      bytesBase64: encodeBase64(edit.payload.bytes)
-    });
+var publishedOperations = (descriptor) => (descriptor.operations ?? []).length === 0 ? "it publishes no operations at all" : `it publishes ${(descriptor.operations ?? []).map((item) => item.id).join(", ")}`;
+async function withCommandSubject(command, context, ref2, body) {
+  context.progress?.({ step: "open", message: `opening ${ref2}` });
+  const subject = await context.openSubject(ref2, context.signal);
+  const diagnostics = subject.snapshot.diagnostics.map((item) => ({
+    code: item.code,
+    message: item.message,
+    ...item.severity === void 0 ? {} : { severity: item.severity }
   }));
-  if (usedTargets.size !== targets.size) {
-    return invalidEntryPlan("container entry edit plan contains an unreferenced target");
-  }
-  return replacements;
-}
-function composedOperations(options) {
-  const operationByHandler = new Map(options.semanticSpec.operations.map((operation) => [operation.handlerId, operation]));
-  let disposed = false;
-  return Object.freeze({
-    async invoke(handlerId, input, invokeOptions) {
-      if (disposed) {
-        return Object.freeze({
-          state: "rejected",
-          reason: "cancelled",
-          diagnostics: Object.freeze([
-            Object.freeze({
-              code: "x3.host/container-operation-session-disposed",
-              severity: "error",
-              message: "the composed container operation session has been disposed"
-            })
-          ])
-        });
-      }
-      throwIfAborted(invokeOptions?.signal);
-      if (handlerId === CARRIER_EXTRACT_HANDLER && options.carrierExtractHandlerId !== void 0)
-        return options.parent.invoke(options.carrierExtractHandlerId, input, invokeOptions);
-      const declaration = operationByHandler.get(handlerId);
-      if (declaration?.id === EXPORT_RAW) {
-        if (options.exportRawHandlerId === void 0) {
-          throw new ModkitError({
-            code: "x3.host/container-export-raw-unavailable",
-            message: "the retained container session publishes no available export.raw operation"
-          });
-        }
-        return options.parent.invoke(options.exportRawHandlerId, input, invokeOptions);
-      }
-      const result = await options.semantic.invoke(handlerId, input, invokeOptions);
-      throwIfAborted(invokeOptions?.signal);
-      if (handlerId === options.semanticInspectHandlerId && options.parentInspectHandlerId !== void 0 && result.state === "ok") {
-        const carrier = await options.parent.invoke(options.parentInspectHandlerId, input, invokeOptions);
-        throwIfAborted(invokeOptions?.signal);
-        if (carrier.state !== "ok")
-          return carrier;
-        return mergeInspectionResults(carrier, result);
-      }
-      if (result.state !== "ok" || result.output.kind !== "edit-plan")
-        return result;
-      if (declaration === void 0 || !declaration.mutatesSource || !declaration.outputKinds?.includes("edit-plan")) {
-        return invalidEntryPlan(`handler ${handlerId} returned an edit plan without a declared mutating edit-plan operation`);
-      }
-      if (options.packHandlerId === void 0) {
-        throw new ModkitError({
-          code: "x3.host/container-pack-unavailable",
-          message: "the retained container session publishes no available container.pack operation"
-        });
-      }
-      const replacements = replacementsFromPlan(result.output.plan, options.bindings, options.budget);
-      const request = Object.freeze({
-        schemaVersion: 1,
-        expectedContainerRevision: options.parentRevision,
-        replacements,
-        intent: Object.freeze({
-          operation: declaration?.id ?? handlerId,
-          input,
-          semanticPlanId: result.output.plan.planId
-        })
-      });
-      throwIfAborted(invokeOptions?.signal);
-      const packed = await options.parent.invoke(options.packHandlerId, request, invokeOptions);
-      throwIfAborted(invokeOptions?.signal);
-      if (packed.state === "ok" && packed.output.kind !== "edit-plan") {
-        throw new ModkitError({
-          code: "x3.host/container-pack-result-invalid",
-          message: "container.pack must return the outer container as an edit-plan"
-        });
-      }
-      return packed;
-    },
-    async dispose() {
-      disposed = true;
-    }
-  });
-}
-async function createContainerNamespaceComposition(options) {
-  throwIfAborted(options.signal);
-  const descriptor = await options.parent.descriptor();
-  throwIfAborted(options.signal);
-  const extractHandlerId = operationHandler(descriptor, CONTAINER_EXTRACT);
-  if (extractHandlerId === void 0) {
-    throw new ModkitError({
-      code: "x3.host/container-extract-unavailable",
-      message: "a composed container must publish an available container.extract operation"
-    });
-  }
-  if (!descriptor.dataSources.some((item) => item.contract === NAMESPACE_ENTRY_SOURCE2 && item.major === 1)) {
-    throw new ModkitError({
-      code: "x3.host/container-namespace-unavailable",
-      message: `a composed container must publish ${NAMESPACE_ENTRY_SOURCE2}@1`
-    });
-  }
-  const namespaceLease = await options.parent.dataSource(NAMESPACE_ENTRY_SOURCE2, 1);
   try {
-    throwIfAborted(options.signal);
-  } catch (error3) {
-    await namespaceLease.release();
-    throw error3;
+    if (subject.snapshot.state !== "opened" || subject.session === void 0) {
+      return failed(command, COMMAND_SUBJECT_UNRESOLVED, subject.snapshot.state === "opened" ? "the subject opened without a session" : `no contribution claimed this subject: ${subject.snapshot.reason}`, diagnostics);
+    }
+    const descriptor = await subject.session.descriptor();
+    return await body(subject, subject.session, descriptor, diagnostics);
+  } finally {
+    await subject.dispose();
   }
-  const namespace = namespaceLease.value;
-  const openStoredSource = storedEntrySource(options.parent, descriptor);
-  const parentOperations = options.parent.operations();
-  const bindings = /* @__PURE__ */ new Map();
-  const outstanding = /* @__PURE__ */ new Set();
-  let disposed = false;
-  let exposedEntries = 0;
-  let extractedBytes = 0n;
-  const ensureLive = (signal) => {
-    throwIfAborted(signal);
-    if (disposed) {
-      throw new ModkitError({
-        code: "x3.host/container-composition-disposed",
-        message: "container namespace composition is disposed"
-      });
-    }
+}
+async function invokeSubjectOperation(command, context, session, handlerId, input, diagnostics) {
+  const answer = await session.operations().invoke(handlerId, input, context.signal === void 0 ? {} : { signal: context.signal });
+  const carried = [...diagnostics, ...answer.diagnostics.map(commandDiagnostic)];
+  if (answer.state !== "ok") {
+    return {
+      state: "failed",
+      result: failed(command, `x3.command/operation-${answer.reason}`, `the subject refused ${handlerId}: ${answer.reason}`, carried)
+    };
+  }
+  return {
+    state: "ok",
+    output: answer.output,
+    diagnostics: carried
   };
-  const validateEntry = (entry2) => {
-    if (entry2 === null || typeof entry2 !== "object" || typeof entry2.id !== "string" || entry2.id === "" || typeof entry2.path !== "string" || typeof entry2.name !== "string" || entry2.name === "" || typeof entry2.revision !== "string" || entry2.revision === "" || entry2.size !== void 0 && (typeof entry2.size !== "bigint" || entry2.size < 0n) || entry2.kind !== "file" && entry2.kind !== "directory") {
-      throw new ModkitError({
-        code: "x3.host/container-namespace-invalid",
-        message: "container namespace returned a malformed entry"
-      });
+}
+var openCommand = {
+  id: OPEN_COMMAND,
+  title: "Open",
+  summary: "Open a subject and report which contribution claimed it, and under which boundary.",
+  needsSubject: true,
+  mutatesSource: false,
+  async run(context, input) {
+    return withCommandSubject(OPEN_COMMAND, context, String(input.subject), async (subject, _session, descriptor, diagnostics) => {
+      const snapshot2 = subject.snapshot;
+      if (snapshot2.state !== "opened")
+        return failed(OPEN_COMMAND, COMMAND_SUBJECT_UNRESOLVED, "unreachable", diagnostics);
+      return ok(OPEN_COMMAND, {
+        ref: subject.ref,
+        state: "opened",
+        selected: {
+          contributionId: snapshot2.selected.contributionId,
+          variantId: snapshot2.selected.variantId,
+          confidence: snapshot2.selected.confidence
+        },
+        formatId: descriptor.identity?.formatId ?? null,
+        formatLabel: descriptor.identity?.formatLabel ?? null,
+        candidates: snapshot2.candidates.length,
+        operations: (descriptor.operations ?? []).map((item) => item.id)
+      }, diagnostics);
+    });
+  }
+};
+var inspectCommand = {
+  id: INSPECT_COMMAND,
+  title: "Inspect",
+  summary: "Report the full descriptor of a subject: identity, traits, operations, data sources.",
+  needsSubject: true,
+  mutatesSource: false,
+  async run(context, input) {
+    return withCommandSubject(INSPECT_COMMAND, context, String(input.subject), async (subject, _session, descriptor, diagnostics) => {
+      context.progress?.({ step: "describe", message: "reading the descriptor" });
+      return ok(INSPECT_COMMAND, {
+        ref: subject.ref,
+        identity: {
+          formatId: descriptor.identity?.formatId ?? null,
+          formatLabel: descriptor.identity?.formatLabel ?? null
+        },
+        traits: (descriptor.traits ?? []).map((item) => ({ id: item.id, state: item.state })),
+        operations: (descriptor.operations ?? []).map((item) => ({
+          id: item.id,
+          state: item.state,
+          ...item.reason === void 0 ? {} : { reason: item.reason }
+        })),
+        dataSources: (descriptor.dataSources ?? []).map((item) => `${item.contract}@${item.major}`),
+        metadataGroups: (descriptor.metadata ?? []).map((group) => ({
+          id: group.id,
+          entries: group.entries.length
+        }))
+      }, diagnostics);
+    });
+  }
+};
+var validateCommand = {
+  id: VALIDATE_COMMAND,
+  title: "Validate",
+  summary: "Run the subject\u2019s own validation, when the codec publishes one.",
+  needsSubject: true,
+  mutatesSource: false,
+  operationId: VALIDATE,
+  async run(context, input) {
+    return withCommandSubject(VALIDATE_COMMAND, context, String(input.subject), async (subject, session, descriptor, diagnostics) => {
+      const operation = availableOperation(descriptor, VALIDATE);
+      if (operation === void 0) {
+        return unavailable(VALIDATE_COMMAND, `this subject publishes no available \xAB${VALIDATE}\xBB \u2014 ${publishedOperations(descriptor)}`, "run subject.inspect: it reports every trait and diagnostic the codec did produce, which is what validation would have been reading", diagnostics);
+      }
+      context.progress?.({ step: "validate", message: "running the codec\u2019s validation" });
+      const answer = await invokeSubjectOperation(VALIDATE_COMMAND, context, session, operation.handlerId, {}, diagnostics);
+      if (answer.state === "failed")
+        return answer.result;
+      return ok(VALIDATE_COMMAND, {
+        ref: subject.ref,
+        outputKind: answer.output.kind,
+        report: answer.output.value ?? null
+      }, diagnostics);
+    });
+  }
+};
+async function entryFor(session, wanted, signal) {
+  const lease2 = await session.dataSource(NAMESPACE_ENTRY_SOURCE2, 1);
+  try {
+    const namespace = lease2.value;
+    if (namespace.lookup !== void 0) {
+      const entry2 = await namespace.lookup(wanted, signal);
+      if (entry2 !== void 0)
+        return entry2;
     }
-    const normalized2 = normalizePath(entry2.path, false);
-    exposedEntries += 1;
-    if (exposedEntries > options.budget.maxNodes) {
-      throw new ModkitError({
-        code: "x3.host/container-namespace-entry-budget-exceeded",
-        message: `container namespace exceeded its ${options.budget.maxNodes}-entry budget`
-      });
-    }
-    return normalized2 === entry2.path ? entry2 : Object.freeze({ ...entry2, path: normalized2 });
-  };
-  const pages = async function* (prefix, signal) {
+    const scope = namespace.lookup === void 0 ? "" : wanted;
     let cursor2;
-    const seenCursors = /* @__PURE__ */ new Set();
     do {
-      ensureLive(signal);
-      if (cursor2 !== void 0) {
-        if (seenCursors.has(cursor2)) {
-          throw new ModkitError({
-            code: "x3.host/container-namespace-cursor-repeated",
-            message: "container namespace repeated a paging cursor"
-          });
-        }
-        seenCursors.add(cursor2);
-      }
-      const page = await namespace.list(prefix, cursor2 === void 0 ? { limit: PAGE_LIMIT } : { cursor: cursor2, limit: PAGE_LIMIT }, signal);
-      ensureLive(signal);
-      if (page === null || typeof page !== "object" || !Array.isArray(page.items) || page.items.length > PAGE_LIMIT || page.nextCursor !== void 0 && (typeof page.nextCursor !== "string" || page.nextCursor === "")) {
-        throw new ModkitError({
-          code: "x3.host/container-namespace-page-invalid",
-          message: "container namespace returned a malformed or over-limit page"
-        });
-      }
-      for (const entry2 of page.items) {
-        ensureLive(signal);
-        const validated = validateEntry(entry2);
-        if (prefix !== "" && !insideNamespacePath(validated.path, prefix))
-          continue;
-        yield validated;
-      }
+      const page = await namespace.list(scope, cursor2 === void 0 ? { limit: 512 } : { cursor: cursor2, limit: 512 }, signal);
+      const found = page.items.find((item) => item.path === wanted || item.id === wanted);
+      if (found !== void 0)
+        return found;
       cursor2 = page.nextCursor;
     } while (cursor2 !== void 0);
-  };
-  const lookup = async (path, signal) => {
-    ensureLive(signal);
-    for await (const entry2 of pages(path, signal)) {
-      if (sameNamespacePath(entry2.path, path)) {
-        return entry2.kind === "file" ? { kind: "file", entry: entry2 } : { kind: "directory" };
-      }
-      return { kind: "directory" };
-    }
-    const found = await namespace.lookup?.(path, signal);
-    ensureLive(signal);
-    if (found !== void 0 && found !== null) {
-      const validated = validateEntry(found);
-      if (sameNamespacePath(validated.path, path) && validated.kind === "file")
-        return { kind: "file", entry: validated };
-    }
-    throw new ModkitError({
-      code: ENTRY_NOT_FOUND,
-      message: `namespace entry \xAB${path}\xBB does not exist`,
-      context: { path }
-    });
-  };
-  const sourceAt = (prefix, ref2, revision) => Object.freeze({
-    kind: "namespace",
-    ref: ref2,
-    revision,
-    async openNamespace(signal) {
-      ensureLive(signal);
-      const assetNamespace = Object.freeze({
-        revision,
-        ...prefix === "" && namespace.readPreamble !== void 0 ? {
-          async readPreamble(maxBytes, preambleSignal) {
-            ensureLive(preambleSignal);
-            if (!Number.isSafeInteger(maxBytes) || maxBytes < 0) {
-              throw new ModkitError({
-                code: "x3.host/container-preamble-bound-invalid",
-                message: "container preamble maxBytes must be a non-negative safe integer"
-              });
-            }
-            const limit = Math.min(maxBytes, options.budget.maxScalarBytes);
-            const value = await namespace.readPreamble(limit, preambleSignal);
-            ensureLive(preambleSignal);
-            if (!(value instanceof Uint8Array) || value.byteLength > limit) {
-              throw new ModkitError({
-                code: "x3.host/container-preamble-invalid",
-                message: "container returned an invalid or over-budget preamble"
-              });
-            }
-            return value;
-          }
-        } : {},
-        async *list(requestedPrefix, listSignal) {
-          ensureLive(listSignal);
-          const relativePrefix = normalizePath(requestedPrefix, true);
-          const absolutePrefix = prefix === "" ? relativePrefix : relativePrefix === "" ? prefix : `${prefix}/${relativePrefix}`;
-          const children = /* @__PURE__ */ new Map();
-          for await (const entry2 of pages(absolutePrefix, listSignal)) {
-            const suffix = absolutePrefix === "" ? entry2.path : sameNamespacePath(entry2.path, absolutePrefix) ? "" : entry2.path.slice(absolutePrefix.length + 1);
-            if (suffix === "")
-              continue;
-            const [name] = suffix.split("/");
-            if (name === void 0 || name === "")
-              continue;
-            const childPath = relativePrefix === "" ? name : `${relativePrefix}/${name}`;
-            const nested = suffix.includes("/");
-            const value = Object.freeze({
-              path: childPath,
-              kind: nested ? "directory" : entry2.kind,
-              ...!nested && entry2.kind === "file" && entry2.size !== void 0 ? { size: entry2.size } : {}
-            });
-            const prior = children.get(childPath);
-            if (prior !== void 0 && prior.kind !== value.kind) {
-              throw new ModkitError({
-                code: "x3.host/container-namespace-invalid",
-                message: `container namespace path \xAB${childPath}\xBB is both a file and a directory`
-              });
-            }
-            children.set(childPath, value);
-          }
-          for (const child of [...children.values()].sort((left, right) => left.path < right.path ? -1 : left.path > right.path ? 1 : 0)) {
-            ensureLive(listSignal);
-            yield child;
-          }
-        },
-        async open(requestedPath, openSignal) {
-          ensureLive(openSignal);
-          const relativePath2 = normalizePath(requestedPath, false);
-          const absolutePath = prefix === "" ? relativePath2 : `${prefix}/${relativePath2}`;
-          const found = await lookup(absolutePath, openSignal);
-          const refForEntry = childRef(options.root, absolutePath);
-          if (found.kind === "directory") {
-            return Object.freeze({
-              value: sourceAt(absolutePath, refForEntry, revisionIdFromRef({
-                kind: "provider-token",
-                value: `${String(options.revision)}!directory:${absolutePath}`
-              })),
-              release: async () => void 0
-            });
-          }
-          const refLease = await namespace.openEntry(found.entry.id, openSignal);
-          let released = false;
-          const release = async () => {
-            if (released)
-              return;
-            released = true;
-            outstanding.delete(release);
-            await refLease.release();
-          };
-          outstanding.add(release);
-          try {
-            ensureLive(openSignal);
-            if (!sameRef(refLease.value, refForEntry)) {
-              if (refLease.value.parentIds === void 0 || !refLease.value.parentIds.includes(options.root.id)) {
-                throw new ModkitError({
-                  code: "x3.host/container-entry-ref-invalid",
-                  message: `container entry \xAB${absolutePath}\xBB is not parented by the outer source`
-                });
-              }
-            }
-            const sourceRevision = containerEntryRevision(options.revision, found.entry.id, found.entry.size ?? 0n);
-            const ref3 = refLease.value;
-            const prior = bindings.get(ref3.id);
-            if (prior !== void 0 && (prior.entryId !== found.entry.id || prior.providerRevision !== found.entry.revision || prior.sourceRevision !== sourceRevision)) {
-              throw new ModkitError({
-                code: "x3.host/container-entry-ref-collision",
-                message: `container reused entry ref ${ref3.id} for different content`
-              });
-            }
-            bindings.set(ref3.id, Object.freeze({
-              entryId: found.entry.id,
-              path: absolutePath,
-              ref: ref3,
-              providerRevision: found.entry.revision,
-              sourceRevision
-            }));
-            let extracted;
-            let extraction;
-            const ensureEntryLive = (signal2) => {
-              ensureLive(signal2);
-              if (released) {
-                throw new ModkitError({
-                  code: "x3.host/container-entry-source-released",
-                  message: `container entry source \xAB${absolutePath}\xBB has been released`
-                });
-              }
-            };
-            const loadBytes = async (signal2) => {
-              ensureEntryLive(signal2);
-              if (extracted !== void 0)
-                return extracted;
-              if (found.entry.size !== void 0 && found.entry.size > BigInt(options.budget.maxScalarBytes)) {
-                throw new ModkitError({
-                  code: "x3.host/container-entry-scalar-budget-exceeded",
-                  message: `container entry \xAB${absolutePath}\xBB exceeds maxScalarBytes`
-                });
-              }
-              extraction ??= (async () => {
-                const invoked = await parentOperations.invoke(extractHandlerId, { entryId: found.entry.id }, signal2 === void 0 ? {} : { signal: signal2 });
-                if (invoked.state !== "ok" || invoked.output.kind !== "bytes") {
-                  throwIfAborted(signal2);
-                  throw new ModkitError({
-                    code: "x3.host/container-entry-unreadable",
-                    message: `container refused to extract entry \xAB${absolutePath}\xBB`
-                  });
-                }
-                const bytes = invoked.output.value;
-                if (bytes.byteLength > options.budget.maxScalarBytes) {
-                  throw new ModkitError({
-                    code: "x3.host/container-entry-scalar-budget-exceeded",
-                    message: `container entry \xAB${absolutePath}\xBB exceeds maxScalarBytes`
-                  });
-                }
-                if (found.entry.size !== void 0 && found.entry.size !== BigInt(bytes.byteLength)) {
-                  throw new ModkitError({
-                    code: "x3.host/container-entry-size-mismatch",
-                    message: `container extracted ${bytes.byteLength} bytes for entry \xAB${absolutePath}\xBB, expected ${found.entry.size}`
-                  });
-                }
-                const total = extractedBytes + BigInt(bytes.byteLength);
-                if (total > options.budget.maxInputBytes) {
-                  throw new ModkitError({
-                    code: "x3.host/container-entry-byte-budget-exceeded",
-                    message: "container composition exceeded maxInputBytes while extracting entries"
-                  });
-                }
-                extractedBytes = total;
-                extracted = bytes.slice();
-                return extracted;
-              })();
-              try {
-                const bytes = await extraction;
-                ensureEntryLive(signal2);
-                return bytes;
-              } catch (error3) {
-                if (extracted === void 0)
-                  extraction = void 0;
-                throw error3;
-              }
-            };
-            const byteSource = Object.freeze({
-              kind: "bytes",
-              ref: ref3,
-              revision: sourceRevision,
-              ...found.entry.size === void 0 ? {} : { size: found.entry.size },
-              async read(offset, length, signal2) {
-                const bytes = await loadBytes(signal2);
-                return containerEntrySource(ref3, sourceRevision, bytes).read(offset, length, signal2);
-              },
-              async *stream(range, signal2) {
-                const bytes = await loadBytes(signal2);
-                yield* containerEntrySource(ref3, sourceRevision, bytes).stream(range, signal2);
-              }
-            });
-            return Object.freeze({
-              value: byteSource,
-              release
-            });
-          } catch (error3) {
-            await release();
-            throw error3;
-          }
-        }
-      });
-      return Object.freeze({ value: assetNamespace, release: async () => void 0 });
-    }
-  });
-  const source = sourceAt("", options.root, options.revision);
-  const packHandlerId = operationHandler(descriptor, CONTAINER_PACK);
-  const exportRawHandlerId = operationHandler(descriptor, EXPORT_RAW);
-  const composition = Object.freeze({
-    source,
-    descriptor,
-    openResources(request) {
-      const requestedBytes = request.limits?.maxBytes ?? options.budget.maxInputBytes;
-      const maxSourceBytes = requestedBytes < BigInt(options.budget.maxScalarBytes) ? requestedBytes : BigInt(options.budget.maxScalarBytes);
-      return createResourceSession({
-        ...request,
-        origin: createNamespaceCompanionOrigin({
-          namespace,
-          primaryLogicalId: "",
-          containerRevision: options.revision,
-          maxPages: options.budget.maxNodes,
-          maxSourceBytes,
-          ...openStoredSource === void 0 ? {} : { openStoredSource },
-          async extract(entryId, signal) {
-            ensureLive(signal);
-            const result = await parentOperations.invoke(extractHandlerId, { entryId }, signal === void 0 ? {} : { signal });
-            ensureLive(signal);
-            if (result.state !== "ok" || result.output.kind !== "bytes")
-              throw new ModkitError({
-                code: "x3.host/container-entry-unreadable",
-                message: `container refused to extract entry \xAB${entryId}\xBB`
-              });
-            return result.output.value;
-          }
-        })
-      });
-    },
-    ...packHandlerId === void 0 ? {} : { packHandlerId },
-    ...exportRawHandlerId === void 0 ? {} : { exportRawHandlerId },
-    wrapSession(semantic, semanticDescriptor, semanticSpec, parent) {
-      let sessionDisposed = false;
-      const dispose = async () => {
-        if (sessionDisposed)
-          return;
-        sessionDisposed = true;
-        let firstError;
-        try {
-          await semantic.dispose();
-        } catch (error3) {
-          firstError = error3;
-        }
-        try {
-          await composition.dispose();
-        } catch (error3) {
-          firstError ??= error3;
-        }
-        try {
-          await parent.dispose();
-        } catch (error3) {
-          firstError ??= error3;
-        }
-        if (firstError !== void 0)
-          throw firstError;
-      };
-      const parentInspectHandlerId = operationHandler(descriptor, VIEW_INSPECT);
-      const semanticInspectHandlerId = operationHandler(semanticDescriptor, VIEW_INSPECT);
-      const namespaceOf = (item) => item.dataSources.some((entry2) => entry2.contract === NAMESPACE_ENTRY_SOURCE2 && entry2.major === 1);
-      const carrierExtract = descriptor.operations.find((item) => item.id === CONTAINER_EXTRACT && item.state === "available");
-      const lendsNamespace = !namespaceOf(semanticDescriptor) && namespaceOf(descriptor) && carrierExtract !== void 0;
-      const lend = (item) => !lendsNamespace || namespaceOf(item) ? item : Object.freeze({
-        ...item,
-        dataSources: Object.freeze([
-          ...item.dataSources,
-          Object.freeze({ contract: NAMESPACE_ENTRY_SOURCE2, major: 1 })
-        ]),
-        operations: Object.freeze([
-          ...item.operations.filter((operation) => operation.id !== CONTAINER_EXTRACT),
-          Object.freeze({ ...carrierExtract, handlerId: CARRIER_EXTRACT_HANDLER })
-        ])
-      });
-      const operations = composedOperations({
-        semantic: semantic.operations(),
-        semanticSpec,
-        parent: parent.operations(),
-        parentRevision: parent.revision,
-        bindings,
-        budget: options.budget,
-        ...packHandlerId === void 0 ? {} : { packHandlerId },
-        ...exportRawHandlerId === void 0 ? {} : { exportRawHandlerId },
-        ...parentInspectHandlerId === void 0 ? {} : { parentInspectHandlerId },
-        ...semanticInspectHandlerId === void 0 ? {} : { semanticInspectHandlerId },
-        ...lendsNamespace ? { carrierExtractHandlerId: carrierExtract.handlerId } : {}
-      });
-      return Object.freeze({
-        revision: semantic.revision,
-        state: () => semantic.state(),
-        descriptor: async () => lend(await semantic.descriptor()),
-        dataSource: ((contract, major) => lendsNamespace && contract === NAMESPACE_ENTRY_SOURCE2 && major === 1 ? parent.dataSource(NAMESPACE_ENTRY_SOURCE2, 1) : semantic.dataSource(contract, major)),
-        operations: () => operations,
-        events: (signal) => semantic.events(signal),
-        dispose
-      });
-    },
-    async dispose() {
-      if (disposed)
-        return;
-      disposed = true;
-      let firstError;
-      for (const release of [...outstanding].reverse()) {
-        try {
-          await release();
-        } catch (error3) {
-          firstError ??= error3;
-        }
-      }
-      try {
-        await namespaceLease.release();
-      } catch (error3) {
-        firstError ??= error3;
-      }
-      if (firstError !== void 0)
-        throw firstError;
-    }
-  });
-  return composition;
-}
-
-// ../MODDING/modkit-core/packages/host/dist/model-projection-cache.js
-function modelProjectionKey(opened, source, sourceKey, logicalId) {
-  const descriptor = opened.descriptor;
-  if (descriptor.interpretation !== "codec")
     return void 0;
-  const bindings = descriptor.origin.kind === "bundle" ? descriptor.origin.bindings : descriptor.origin.kind === "single" ? [descriptor.origin.binding] : [];
-  const receipt = descriptor.metadata.find((group) => group.id === "uv-projection-receipt")?.entries.find((entry2) => entry2.key === "receipt")?.value;
-  if (receipt === null || typeof receipt !== "object" || Array.isArray(receipt) || !("confidence" in receipt) || !["partial", "high", "exact"].includes(String(receipt["confidence"])) || receipt["subjectRevision"] !== descriptor.revision || !Array.isArray(receipt["companions"]) || receipt["companions"].some((companion) => companion === null || typeof companion !== "object" || Array.isArray(companion) || companion["state"] === "bound" && typeof companion["revision"] !== "string" && !bindings.some((binding) => binding.id === companion["bindingId"] && typeof binding.revision === "string") || companion["state"] === "refused") || !Array.isArray(receipt["evidence"]) || !opened.detectionSelectionText || !opened.lockText)
-    return void 0;
-  return canonicalJsonStringify([
-    sourceKey,
-    source.ref,
-    source.revision,
-    logicalId,
-    descriptor.origin,
-    receipt,
-    opened.detectionSelectionText,
-    opened.lockText
-  ]);
+  } finally {
+    await lease2.release();
+  }
 }
-function waitForProjection(done, signal) {
-  signal?.throwIfAborted();
-  if (signal === void 0)
-    return done;
-  return new Promise((resolve, reject) => {
-    const abort = () => reject(signal.reason);
-    signal.addEventListener("abort", abort, { once: true });
-    void done.then(() => {
-      signal.removeEventListener("abort", abort);
-      resolve();
+var extractCommand = {
+  id: EXTRACT_COMMAND,
+  title: "Extract",
+  summary: "Read one member out of a container, through the container\u2019s own bounded extraction.",
+  needsSubject: true,
+  mutatesSource: false,
+  operationId: CONTAINER_EXTRACT_OPERATION_ID2,
+  async run(context, input) {
+    const entry2 = typeof input["entry"] === "string" ? input["entry"] : "";
+    if (entry2 === "") {
+      return failed(EXTRACT_COMMAND, "x3.command/input-invalid", "subject.extract needs an \xABentry\xBB");
+    }
+    return withCommandSubject(EXTRACT_COMMAND, context, String(input.subject), async (subject, session, descriptor, diagnostics) => {
+      const operation = availableOperation(descriptor, CONTAINER_EXTRACT_OPERATION_ID2);
+      const listing = (descriptor.dataSources ?? []).some((item) => item.contract === NAMESPACE_ENTRY_SOURCE2);
+      if (operation === void 0 || !listing) {
+        return unavailable(EXTRACT_COMMAND, `this subject is not a container this host can read into \u2014 ${publishedOperations(descriptor)}`, `run subject.inspect to see what it does publish; extraction needs both \xAB${CONTAINER_EXTRACT_OPERATION_ID2}\xBB and \xAB${NAMESPACE_ENTRY_SOURCE2}\xBB`, diagnostics);
+      }
+      context.progress?.({ step: "locate", message: `locating ${entry2}` });
+      const found = await entryFor(session, entry2, context.signal);
+      if (found === void 0) {
+        return failed(EXTRACT_COMMAND, "x3.command/entry-not-found", `this container lists no \xAB${entry2}\xBB`, diagnostics);
+      }
+      const name = entry2.slice(entry2.lastIndexOf("/") + 1);
+      const streamed = await streamEntry(session, descriptor, found, name, context);
+      if (streamed !== void 0) {
+        return ok(EXTRACT_COMMAND, { ref: subject.ref, entry: entry2, ...streamed }, diagnostics);
+      }
+      context.progress?.({ step: "extract", message: `extracting ${entry2}` });
+      const answer = await invokeSubjectOperation(EXTRACT_COMMAND, context, session, operation.handlerId, { entryId: found.id }, diagnostics);
+      if (answer.state === "failed")
+        return answer.result;
+      if (answer.output.kind !== "bytes") {
+        return failed(EXTRACT_COMMAND, "x3.command/unexpected-output", `the container answered ${answer.output.kind}, not bytes`, diagnostics);
+      }
+      const bytes = answer.output.value;
+      const wroteTo = context.writeOutput === void 0 ? void 0 : await context.writeOutput(name, bytes, context.signal);
+      return ok(EXTRACT_COMMAND, {
+        ref: subject.ref,
+        entry: entry2,
+        byteLength: bytes.byteLength,
+        ...wroteTo === void 0 ? { wroteTo: null } : { wroteTo }
+      }, diagnostics);
     });
-  });
-}
-function createModelProjectionCache(state, maxScalarBytes) {
-  const maxBytes = Math.min(64 * 1024 * 1024, Math.floor(maxScalarBytes / 8));
-  const entries = /* @__PURE__ */ new Map();
-  const pending = /* @__PURE__ */ new Map();
-  let retainedBytes = 0;
-  let pendingBytes = 0;
-  let generation = 0;
-  const cost = (key3, bytes) => key3.length * 2 + bytes.byteLength;
-  const evictOne = () => {
-    const first = entries.entries().next().value;
-    if (first === void 0)
-      return false;
-    entries.delete(first[0]);
-    const bytes = cost(first[0], first[1]);
-    retainedBytes -= bytes;
-    state.reservedBytes -= bytes;
-    return true;
-  };
-  return {
-    get retainedBytes() {
-      return retainedBytes;
-    },
-    trimForReservation(bytes) {
-      while (state.reservedBytes + bytes > maxScalarBytes && evictOne()) {
-      }
-    },
-    clear() {
-      generation++;
-      state.reservedBytes -= pendingBytes;
-      pendingBytes = 0;
-      for (const flight of pending.values())
-        flight.wake();
-      pending.clear();
-      while (evictOne()) {
-      }
-    },
-    async claim(key3, signal) {
-      let waited = false;
-      const claimGeneration = generation;
-      while (key3 !== void 0) {
-        signal?.throwIfAborted();
-        if (generation !== claimGeneration)
-          break;
-        const bytes = entries.get(key3);
-        if (bytes !== void 0) {
-          entries.delete(key3);
-          entries.set(key3, bytes);
-          return { state: waited ? "shared-hit" : "hit", bytes };
-        }
-        const flight = pending.get(key3);
-        if (flight !== void 0) {
-          waited = true;
-          await waitForProjection(flight.done, signal);
-          continue;
-        }
-        const keyBytes = key3.length * 2;
-        if (keyBytes >= maxBytes || pending.size >= 256 || pendingBytes + keyBytes > maxBytes)
-          break;
-        while ((state.reservedBytes + keyBytes > maxScalarBytes || retainedBytes + pendingBytes + keyBytes > maxBytes || entries.size + pending.size >= 256) && evictOne()) {
-        }
-        if (state.reservedBytes + keyBytes > maxScalarBytes)
-          break;
-        const epoch = generation;
-        let wake;
-        const done = new Promise((resolve) => {
-          wake = resolve;
-        });
-        pending.set(key3, { done, wake });
-        pendingBytes += keyBytes;
-        state.reservedBytes += keyBytes;
-        let finished = false;
-        return {
-          state: "miss",
-          finish(bytes2) {
-            if (finished)
-              return;
-            finished = true;
-            if (epoch === generation) {
-              pending.delete(key3);
-              pendingBytes -= keyBytes;
-              state.reservedBytes -= keyBytes;
-              if (bytes2 !== void 0 && cost(key3, bytes2) <= maxBytes) {
-                const charge = cost(key3, bytes2);
-                while ((retainedBytes + pendingBytes + charge > maxBytes || entries.size + pending.size >= 256 || state.reservedBytes + charge > maxScalarBytes) && evictOne()) {
-                }
-                if (state.reservedBytes + charge <= maxScalarBytes && retainedBytes + pendingBytes + charge <= maxBytes) {
-                  entries.set(key3, bytes2);
-                  retainedBytes += charge;
-                  state.reservedBytes += charge;
-                }
-              }
-            }
-            wake();
-          }
-        };
-      }
-      return { state: "bypass" };
-    }
-  };
-}
-
-// ../MODDING/modkit-core/packages/host/dist/model-resources.js
-function uvmArtifactSource(source, bytes, conversionKey) {
-  const owned = bytes;
-  const size = BigInt(owned.byteLength);
-  const range = (offset, length) => {
-    if (offset < 0n || length < 0n || offset > size) {
-      throw new RangeError("UVM artifact reads require a non-negative range inside the source");
-    }
-    const end = offset + length;
-    return owned.slice(Number(offset), Number(end > size ? size : end));
-  };
-  return Object.freeze({
-    kind: "bytes",
-    ref: Object.freeze({
-      id: `${source.ref.id}#model.export-uvm`,
-      uri: `memory+uvm:${encodeURIComponent(source.ref.uri)}`
-    }),
-    revision: revisionIdFromRef({
-      kind: "provider-token",
-      value: conversionKey
-    }),
-    size,
-    async read(offset, length, signal) {
-      signal?.throwIfAborted();
-      if (!Number.isSafeInteger(length) || length < 0) {
-        throw new RangeError("UVM artifact read length must be a non-negative safe integer");
-      }
-      return range(offset, BigInt(length));
-    },
-    async *stream(requested, signal) {
-      signal?.throwIfAborted();
-      const offset = requested?.offset ?? 0n;
-      const length = requested?.length ?? size - offset;
-      yield range(offset, length);
-    }
-  });
-}
-function createSubjectModelResources(options) {
-  const projections = createModelProjectionCache(options.state, options.budget.maxScalarBytes);
-  let projectionResources = options.state.resources;
-  let closed = false;
-  const outstanding = /* @__PURE__ */ new Set();
-  const reservationWaiters = /* @__PURE__ */ new Set();
-  let reservedByModels = 0;
-  const wakeReservationWaiters = () => {
-    for (const wake of [...reservationWaiters])
-      wake();
-  };
-  const reserve = async (maxBytes, signal) => {
-    if (maxBytes > options.budget.maxScalarBytes)
-      return false;
-    projections.trimForReservation(maxBytes);
-    while (options.state.reservedBytes + maxBytes > options.budget.maxScalarBytes) {
-      signal?.throwIfAborted();
-      if (!available() || reservedByModels === 0)
-        return false;
-      await new Promise((resolve) => {
-        const wake = () => {
-          reservationWaiters.delete(wake);
-          signal?.removeEventListener("abort", wake);
-          resolve();
-        };
-        reservationWaiters.add(wake);
-        signal?.addEventListener("abort", wake, { once: true });
-      });
-      projections.trimForReservation(maxBytes);
-    }
-    signal?.throwIfAborted();
-    if (!available())
-      return false;
-    options.state.reservedBytes += maxBytes;
-    reservedByModels += maxBytes;
-    return true;
-  };
-  options.own(async () => {
-    closed = true;
-    projections.clear();
-    wakeReservationWaiters();
-    const results = await Promise.allSettled([...outstanding].map((release) => release()));
-    const failed2 = results.find((result) => result.status === "rejected");
-    if (failed2?.status === "rejected")
-      throw failed2.reason;
-  });
-  const available = () => !closed && options.state.live && options.isAuthorized();
-  const refuse3 = (message, code = "x3.host/model-resource-unavailable", data) => ({
-    value: {
-      result: {
-        state: "unresolved",
-        diagnostics: [diagnostic("warning", code, message, void 0, data)]
-      },
-      async acquire() {
-        throw new TypeError("model resource is unavailable");
-      },
-      async readRaster() {
-        throw new TypeError("model resource is unavailable");
-      }
-    },
-    async release() {
-      return void 0;
-    }
-  });
-  return {
-    async acquire(request, signal) {
-      signal?.throwIfAborted();
-      const started = performance.now();
-      if (!available())
-        return refuse3("Model resources require a live read-source subject.");
-      if (options.ancestors.length >= Math.min(8, options.budget.maxDepth))
-        return refuse3("Nested models exceed the depth limit.");
-      const maxBytes = request?.maxBytes, units = request?.metersPerSourceUnit;
-      if (!Number.isSafeInteger(maxBytes) || maxBytes <= 0)
-        return refuse3("Model conversion maxBytes must be a positive safe integer.");
-      if (maxBytes > options.budget.maxScalarBytes)
-        return refuse3(`Model conversion requires ${String(maxBytes)} bytes, exceeding the ${String(options.budget.maxScalarBytes)} byte subject limit.`);
-      if (units !== void 0 && (!Number.isFinite(units) || units <= 0))
-        return refuse3("Model conversion metersPerSourceUnit must be positive and finite.");
-      const resources = options.state.resources;
-      if (resources === void 0)
-        return refuse3("The subject has no model resource origin.");
-      if (resources !== projectionResources) {
-        projections.clear();
-        projectionResources = resources;
-      }
-      const reservationStarted = performance.now();
-      if (!await reserve(maxBytes, signal))
-        return refuse3(`Model conversion requires ${String(maxBytes)} bytes with ${String(options.state.reservedBytes)} bytes already reserved, exceeding the ${String(options.budget.maxScalarBytes)} byte subject limit.`);
-      const releases = [];
-      let released = false;
-      const profile3 = {
-        state: "unresolved",
-        cache: "bypass",
-        reserveMs: performance.now() - reservationStarted,
-        resolveMs: 0,
-        nativeOpenMs: 0,
-        projectionWaitMs: 0,
-        exportUvmMs: 0,
-        reopenUvmMs: 0,
-        acquireFacetsMs: 0,
-        exportInvocations: 0,
-        uvmBytes: 0
-      };
-      let rootId;
-      const timed = async (phase, work) => {
-        const start = performance.now();
-        try {
-          return await work();
-        } finally {
-          profile3[phase] += performance.now() - start;
-        }
-      };
-      let projection;
-      const release = async () => {
-        if (released)
-          return;
-        released = true;
-        outstanding.delete(release);
-        let failure3;
-        try {
-          for (const dispose of releases.reverse()) {
-            try {
-              await dispose();
-            } catch (error3) {
-              failure3 ??= error3;
-            }
-          }
-        } finally {
-          options.state.reservedBytes -= maxBytes;
-          reservedByModels -= maxBytes;
-          wakeReservationWaiters();
-        }
-        if (failure3 !== void 0)
-          throw failure3;
-      };
-      try {
-        const { name, parameters } = resourceIdParameters(request.requirement.logicalId);
-        const parameterised = Object.keys(parameters).length > 0;
-        const requirement = parameterised ? { ...request.requirement, logicalId: name } : request.requirement;
-        const resolution = await timed("resolveMs", () => resources.resolve(requirement, signal));
-        if (resolution.state !== "resolved") {
-          await release();
-          return refuse3(resolution.diagnostic.message);
-        }
-        rootId = resolution.provenance.rootId;
-        releases.push(() => resolution.lease.release());
-        const source = resolution.lease.value;
-        if (source.kind !== "bytes")
-          throw new TypeError("model resource needs a byte source");
-        const sourceIdentityKey = `${source.ref.id}@${source.revision}`;
-        if (options.ancestors.includes(sourceIdentityKey))
-          throw new TypeError("model resource cycle");
-        if (!available())
-          throw new TypeError("model resource authority expired");
-        const opened = await timed("nativeOpenMs", () => options.open(source, resolution.provenance.logicalId, signal));
-        if (opened.state !== "opened") {
-          const details = [
-            ...opened.diagnostics,
-            ...opened.candidates.flatMap((candidate) => candidate.diagnostics)
-          ].map((item) => `${item.code}: ${item.message}`).join("; ");
-          throw new TypeError(details.length === 0 ? "no model codec opened the resource" : `no model codec opened the resource (${details})`);
-        }
-        releases.push(() => opened.session.dispose());
-        const operation = opened.descriptor.operations.find((item) => item.id === "model.export-uvm" && item.state === "available" && !item.mutatesSource);
-        if (operation === void 0)
-          throw new TypeError("the resource does not publish model.export-uvm");
-        const sourceKey = [
-          source.ref.id,
-          opened.descriptor.revision,
-          operation.id,
-          operation.handlerId,
-          "schemaVersion=1",
-          `metersPerSourceUnit=${units === void 0 ? "source-unit" : String(units)}`,
-          // each parameter set is a model of its own
-          ...parameterised ? [`parameters=${canonicalJsonStringify(parameters)}`] : []
-        ].join("|");
-        projection = await timed("projectionWaitMs", () => projections.claim(resources === options.state.resources ? modelProjectionKey(opened, source, sourceKey, resolution.provenance.logicalId) : void 0, signal));
-        profile3.cache = projection.state;
-        signal?.throwIfAborted();
-        if (!available())
-          throw new TypeError("model resource authority expired");
-        let conversionDiagnostics = [];
-        let uvmBytes;
-        if ("bytes" in projection) {
-          uvmBytes = projection.bytes;
-        } else {
-          profile3.exportInvocations++;
-          const converted = await timed("exportUvmMs", () => opened.session.operations().invoke(operation.handlerId, {
-            schemaVersion: 1,
-            ...units === void 0 ? {} : { metersPerSourceUnit: units },
-            ...parameterised ? { parameters } : {}
-          }, signal === void 0 ? {} : { signal }));
-          if (converted.state !== "ok" || converted.output.kind !== "bytes" || !(converted.output.value instanceof Uint8Array))
-            throw new RangeError("model resource conversion did not return UVM bytes");
-          uvmBytes = converted.output.value.slice();
-          conversionDiagnostics = converted.diagnostics;
-        }
-        signal?.throwIfAborted();
-        if (!available())
-          throw new TypeError("model resource authority expired");
-        if (uvmBytes.length > maxBytes) {
-          await release();
-          return refuse3(`Model conversion needs ${String(uvmBytes.length)} bytes; ${String(maxBytes)} were requested.`, "x3.host/model-resource-too-large", { maxBytes, requiredBytes: uvmBytes.length });
-        }
-        profile3.uvmBytes = uvmBytes.byteLength;
-        let scene;
-        let skeleton;
-        let animations;
-        let materials;
-        let resourceReferences;
-        let sockets;
-        let sceneDiagnostic;
-        let sceneResources = opened.resources;
-        try {
-          const uvmPath = resolution.provenance.logicalId.replace(/(?:\.[^./]+)?$/u, ".uvm");
-          const uvmOpened = await timed("reopenUvmMs", () => options.open(uvmArtifactSource(source, uvmBytes, sourceKey), uvmPath, signal));
-          if (uvmOpened.state !== "opened") {
-            const details = [
-              ...uvmOpened.diagnostics,
-              ...uvmOpened.candidates.flatMap((candidate) => candidate.diagnostics)
-            ].map((item) => `${item.code}: ${item.message}`).join("; ");
-            throw new TypeError(details.length === 0 ? "the exported UVM could not be reopened by a UVM codec" : `the exported UVM could not be reopened by a UVM codec (${details})`);
-          }
-          releases.push(() => uvmOpened.session.dispose());
-          sceneResources = sceneResources ?? uvmOpened.resources;
-          const facetsStarted = performance.now();
-          try {
-            const acquiredScene = await uvmOpened.session.dataSource("common.view/model-scene-source", 1);
-            scene = acquiredScene;
-            releases.push(() => acquiredScene.release());
-            const advertised = new Set((uvmOpened.descriptor.dataSources ?? []).filter((item) => item.major === 1).map((item) => item.contract));
-            if (advertised.has("common.view/model-skeleton-source")) {
-              skeleton = await uvmOpened.session.dataSource("common.view/model-skeleton-source", 1);
-              releases.push(() => skeleton.release());
-            }
-            if (advertised.has("common.view/model-animation-source")) {
-              animations = await uvmOpened.session.dataSource("common.view/model-animation-source", 1);
-              releases.push(() => animations.release());
-            }
-            if (advertised.has("common.view/model-material-source")) {
-              materials = await uvmOpened.session.dataSource("common.view/model-material-source", 1);
-              releases.push(() => materials.release());
-            }
-            if (advertised.has("common.view/model-resource-refs-source")) {
-              resourceReferences = await uvmOpened.session.dataSource("common.view/model-resource-refs-source", 1);
-              releases.push(() => resourceReferences.release());
-            }
-            if (advertised.has("common.view/model-socket-source")) {
-              sockets = await uvmOpened.session.dataSource("common.view/model-socket-source", 1);
-              releases.push(() => sockets.release());
-            }
-          } finally {
-            profile3.acquireFacetsMs += performance.now() - facetsStarted;
-          }
-        } catch (error3) {
-          sceneDiagnostic = diagnostic("warning", "x3.host/model-resource-uvm-scene-unavailable", error3 instanceof Error ? `The exported UVM has no renderable scene: ${error3.message}` : "The exported UVM has no renderable scene.");
-        }
-        signal?.throwIfAborted();
-        if (!available())
-          throw new TypeError("model resource authority expired");
-        const result = {
-          state: "converted",
-          bytes: uvmBytes.slice(),
-          sourceKey,
-          diagnostics: [
-            ...opened.diagnostics,
-            ...conversionDiagnostics,
-            ...sceneDiagnostic === void 0 ? [] : [sceneDiagnostic]
-          ]
-        };
-        const childState = {
-          live: true,
-          reservedBytes: result.bytes.byteLength,
-          ...sceneResources === void 0 ? {} : { resources: sceneResources }
-        };
-        releases.push(async () => {
-          childState.live = false;
-        });
-        const childOptions = {
-          ...options,
-          state: childState,
-          budget: { ...options.budget, maxScalarBytes: maxBytes },
-          isAuthorized: () => !released && available(),
-          ancestors: [...options.ancestors, sourceIdentityKey],
-          own: (dispose) => {
-            releases.push(dispose);
-          }
-        };
-        const models = createSubjectModelResources(childOptions);
-        const rasters = createSubjectRasterResources({
-          ...childOptions,
-          open: (bytes, hint, abort) => options.open(bytes, hint.path ?? "", abort)
-        });
-        outstanding.add(release);
-        if (projection.state === "miss" && sceneDiagnostic === void 0 && conversionDiagnostics.length === 0)
-          projection.finish(uvmBytes);
-        profile3.state = "converted";
-        return {
-          value: {
-            result,
-            acquire: models.acquire,
-            readRaster: rasters.read,
-            ...scene === void 0 ? {} : {
-              sceneInfo: scene.value.info.bind(scene.value),
-              nodes: scene.value.nodes.bind(scene.value),
-              meshes: scene.value.meshes.bind(scene.value),
-              ...scene.value.primitive === void 0 ? {} : { primitive: scene.value.primitive.bind(scene.value) },
-              ...skeleton === void 0 ? {} : { skeletonBindings: skeleton.value.bindings.bind(skeleton.value) },
-              ...animations === void 0 ? {} : { animationClips: animations.value.clips.bind(animations.value) },
-              ...materials === void 0 ? {} : { materials: materials.value.materials.bind(materials.value) },
-              ...resourceReferences === void 0 ? {} : {
-                resourceReferences: resourceReferences.value.references.bind(resourceReferences.value)
-              },
-              ...sockets === void 0 ? {} : { sockets: sockets.value.sockets.bind(sockets.value) }
-            }
-          },
-          release
-        };
-      } catch (error3) {
-        await release();
-        if (signal?.aborted)
-          throw error3;
-        return refuse3(error3 instanceof Error ? error3.message : "Model acquisition failed.");
-      } finally {
-        if (projection?.state === "miss")
-          projection.finish();
-        if (signal?.aborted)
-          profile3.state = "aborted";
-        try {
-          options.onProfile?.(Object.freeze({
-            ...profile3,
-            totalMs: performance.now() - started,
-            cacheRetainedBytes: projections.retainedBytes,
-            ...rootId === void 0 ? {} : { rootId }
-          }));
-        } catch {
-        }
-      }
-    }
-  };
-}
-
-// ../MODDING/modkit-core/packages/host/dist/subject-models.js
-var FACTS = "common.view/subject-facts-source";
-var SELECTOR = "common.view/subject-selector-source";
-var MODEL_PREVIEW_BYTES = 64 * 1024 * 1024;
-var FACET_RECORDS = 4096;
-function withModel(facts, port) {
-  let shared;
-  const acquire = async (signal) => {
-    const { model: logicalId, modelMetersPerSourceUnit } = (await facts.summary(signal)).identity;
-    if (logicalId === void 0 || logicalId.length === 0) {
-      throw new TypeError("this subject names no model");
-    }
-    const entry2 = shared ??= {
-      users: 0,
-      lease: port.acquire({
-        requirement: {
-          id: "subject-model",
-          logicalId,
-          role: "sidecar",
-          scopes: [
-            "sibling-directory",
-            "current-mount",
-            "enclosing-container",
-            "workspace-dependency-layer"
-          ]
-        },
-        maxBytes: MODEL_PREVIEW_BYTES,
-        ...modelMetersPerSourceUnit === void 0 ? {} : { metersPerSourceUnit: modelMetersPerSourceUnit }
-      })
-    };
-    entry2.users += 1;
-    let released = false;
-    const release = async () => {
-      if (released)
-        return;
-      released = true;
-      entry2.users -= 1;
-      if (entry2.users > 0)
-        return;
-      if (shared === entry2)
-        shared = void 0;
-      await (await entry2.lease).release();
-    };
-    try {
-      const { value: asset } = await entry2.lease;
-      if (asset.result.state !== "converted") {
-        throw new TypeError(asset.result.diagnostics.map((item) => item.message).join("; ") || `model ${logicalId} did not resolve`);
-      }
-      return { asset, release };
-    } catch (error3) {
-      if (shared === entry2)
-        shared = void 0;
-      await release().catch(() => void 0);
-      throw error3;
-    }
-  };
-  const facet = async (signal, build) => {
-    const { asset, release } = await acquire(signal);
-    const value = build(asset);
-    if (value === void 0) {
-      await release();
-      throw new TypeError("the converted model does not publish this facet");
-    }
-    return Object.freeze({ value, release });
-  };
-  const count = async (read, signal) => {
-    let items = 0;
-    let cursor2;
-    do {
-      const page = await read({ limit: 256, ...cursor2 === void 0 ? {} : { cursor: cursor2 } }, signal);
-      items += page.items.length;
-      cursor2 = page.nextCursor;
-    } while (cursor2 !== void 0 && items < FACET_RECORDS);
-    return { items, truncated: cursor2 !== void 0 };
-  };
-  return Object.freeze({
-    summary: (signal) => facts.summary(signal),
-    groups: (page, signal) => facts.groups(page, signal),
-    facts: (groupId, page, signal) => facts.facts(groupId, page, signal),
-    relations: (page, signal) => facts.relations(page, signal),
-    openModel: (signal) => facet(signal, (asset) => {
-      const { sceneInfo, nodes, meshes, primitive } = asset;
-      if (sceneInfo === void 0 || nodes === void 0 || meshes === void 0)
-        return void 0;
-      return Object.freeze({
-        info: sceneInfo,
-        nodes,
-        meshes,
-        ...primitive === void 0 ? {} : { primitive }
-      });
-    }),
-    openModelMaterials: (signal) => facet(signal, (asset) => {
-      const materials = asset.materials;
-      if (materials === void 0)
-        return void 0;
-      return Object.freeze({
-        materials,
-        info: async (abort) => ({
-          materials: (await count(materials, abort)).items
-        })
-      });
-    }),
-    openModelResources: (signal) => facet(signal, (asset) => {
-      const references = asset.resourceReferences;
-      if (references === void 0)
-        return void 0;
-      return Object.freeze({
-        references,
-        info: async (abort) => {
-          const counted = await count(references, abort);
-          return { references: counted.items, bound: 0, truncated: counted.truncated };
-        }
-      });
-    })
-  });
-}
-function withModelSelector(selector, port) {
-  return Object.freeze({
-    summary: (signal) => selector.summary(signal),
-    subjects: (query, signal) => selector.subjects(query, signal),
-    openFacts: async (subjectId, signal) => {
-      const lease2 = await selector.openFacts(subjectId, signal);
-      return Object.freeze({ value: withModel(lease2.value, port), release: () => lease2.release() });
-    },
-    openCalculations: (subjectId, signal) => selector.openCalculations(subjectId, signal),
-    ...selector.editTarget === void 0 ? {} : { editTarget: selector.editTarget.bind(selector) },
-    ...selector.isolation === void 0 ? {} : { isolation: selector.isolation.bind(selector) },
-    ...selector.isolationPlan === void 0 ? {} : { isolationPlan: selector.isolationPlan.bind(selector) }
-  });
-}
-function subjectModelDataSources(dataSource, port) {
-  return (async (contract, major) => {
-    const lease2 = await dataSource(contract, major);
-    if (major !== 1 || contract !== FACTS && contract !== SELECTOR)
-      return lease2;
-    const value = contract === FACTS ? withModel(lease2.value, port) : withModelSelector(lease2.value, port);
-    return Object.freeze({ value, release: () => lease2.release() });
-  });
-}
-
-// ../MODDING/modkit-core/packages/host/dist/subject-open.js
-var DEFAULT_MINIMUM_CONFIDENCE = 0.5;
-var DEFAULT_MAX_CANDIDATES = 64;
-var WORKER_REFUSAL_CODES = /* @__PURE__ */ new Set([
-  "x3.host/artifact-digest-mismatch",
-  "x3.host/rpc-deadline-exceeded",
-  "x3.host/rpc-peer-exited",
-  "x3.host/worker-crashed",
-  "x3.host/worker-restart-limit"
-]);
-function workerRefusals(explanations) {
-  return explanations.flatMap((explanation) => explanation.state !== "rejected" ? [] : explanation.diagnostics.filter((item) => WORKER_REFUSAL_CODES.has(item.code)).map((item) => ({
-    code: "x3.host/subject-open-worker-refused",
-    severity: "error",
-    message: `${explanation.contributionId} could not examine this subject in its worker: ${item.message}`,
-    data: { contributionId: explanation.contributionId, cause: item.code }
-  })));
-}
-function createReleaseScope() {
-  const releases = [];
-  let released = false;
-  return {
-    add(release) {
-      if (released) {
-        throw new ModkitError({
-          code: "x3.host/resource-scope-closed",
-          message: "cannot retain a resource after its host scope was released"
-        });
-      }
-      releases.push(release);
-    },
-    async release() {
-      if (released)
-        return;
-      released = true;
-      let firstError;
-      for (const release of releases.reverse()) {
-        try {
-          await release();
-        } catch (error3) {
-          firstError ??= error3;
-        }
-      }
-      if (firstError !== void 0)
-        throw firstError;
-    }
-  };
-}
-async function releaseCandidate(candidate, diagnostics) {
+  }
+};
+var BYTE_RANGE_SOURCE2 = "common.view/byte-range-source";
+var STREAM_CHUNK_BYTES = 4n * 1024n * 1024n;
+async function streamEntry(session, descriptor, entry2, name, context) {
+  const sink = context.writeOutputStream;
+  if (sink === void 0)
+    return void 0;
+  const stored = entry2.storedRange !== void 0 && (descriptor.dataSources ?? []).some((item) => item.contract === BYTE_RANGE_SOURCE2 && item.major === 1);
+  if (!stored && entry2.rangeAccess !== true)
+    return void 0;
+  const signal = context.signal;
+  const leases = [];
   try {
-    await candidate.resources.release();
-  } catch (error3) {
-    diagnostics.push(caughtDiagnostic("cleanup", error3));
-  }
-}
-function gatedOperations(session, spec, grant, catalog) {
-  const inner = session.operations();
-  const required = /* @__PURE__ */ new Map();
-  for (const operation of spec.operations) {
-    required.set(operation.handlerId, [
-      ...operation.requiredPermissions ?? [],
-      ...operation.mutatesSource ? ["write-source"] : []
-    ]);
-  }
-  const gated = {
-    async invoke(handlerId, input, invokeOptions) {
-      const needed = required.get(handlerId) ?? [];
-      const validity = grantValidity(grant);
-      const missing = needed.filter((item) => !grant.classes.includes(item));
-      if (validity.state !== "valid" || missing.length > 0) {
-        return {
-          state: "rejected",
-          reason: "permission-missing",
-          diagnostics: [
-            diagnostic("error", "x3.host/permission-missing", validity.state === "valid" ? `operation ${handlerId} requires classes the grant does not hold: ${missing.join(", ")}` : "the grant the codec runs under is not valid", [handlerId], { missing })
-          ]
-        };
-      }
-      const first = await inner.invoke(handlerId, input, invokeOptions);
-      const options = input === null || input === void 0 ? {} : input;
-      if (catalog === void 0 || typeof options !== "object" || Array.isArray(options) || operationCatalogQueries(first).length === 0) {
-        return first;
-      }
-      try {
-        return await answerCatalogQueries({
-          run: (entities, round) => round === 0 || entities === void 0 ? Promise.resolve(first) : inner.invoke(handlerId, { ...options, [DATA_CATALOG_ENTITIES_INPUT]: entities }, invokeOptions),
-          queriesOf: operationCatalogQueries,
-          catalogEntities: catalog,
-          rounds: OPERATION_CATALOG_ROUNDS,
-          ...invokeOptions?.signal === void 0 ? {} : { signal: invokeOptions.signal }
-        });
-      } catch (error3) {
-        invokeOptions?.signal?.throwIfAborted();
-        return {
-          ...first,
-          diagnostics: [
-            ...first.diagnostics,
-            diagnostic("warning", "x3.host/subject-catalog-unavailable", `the subject's catalog could not answer ${handlerId}: ${error3 instanceof Error ? error3.message : String(error3)}`, [handlerId])
-          ]
-        };
-      }
-    },
-    dispose: () => inner.dispose()
-  };
-  return Object.freeze(gated);
-}
-var OPERATION_CATALOG_ROUNDS = 4;
-function sessionWithResources(session, resources, gating, beforeDispose, models) {
-  let disposed = false;
-  const operations = gating === void 0 ? void 0 : gatedOperations(session, gating.spec, gating.grant, gating.catalog);
-  return Object.freeze({
-    revision: session.revision,
-    state: () => session.state(),
-    descriptor: () => session.descriptor(),
-    dataSource: models === void 0 ? session.dataSource.bind(session) : subjectModelDataSources(session.dataSource.bind(session), models),
-    operations: () => operations ?? session.operations(),
-    events: (signal) => session.events(signal),
-    async dispose() {
-      if (disposed)
-        return;
-      disposed = true;
-      beforeDispose?.();
-      let firstError;
-      try {
-        await session.dispose();
-      } catch (error3) {
-        firstError = error3;
-      }
-      try {
-        await resources.release();
-      } catch (error3) {
-        firstError ??= error3;
-      }
-      if (firstError !== void 0)
-        throw firstError;
-    }
-  });
-}
-function errorDiagnostic(code, message, error3) {
-  return diagnostic("error", code, message, [], {
-    ...error3 === void 0 ? {} : { error: error3 instanceof Error ? error3.message : String(error3) },
-    // Typed errors carry JSON context (e.g. descriptor validation findings); dropping it hides the cause.
-    ...isModkitError(error3) && error3.context !== void 0 ? { context: error3.context } : {}
-  });
-}
-function caughtDiagnostic(stage, error3) {
-  const detail = error3 instanceof Error ? error3.message : String(error3);
-  const typed = isModkitError(error3) && error3.code !== "x3.host/rpc-foreign-error";
-  return errorDiagnostic(typed ? error3.code : `x3.host/subject-${stage}-failed`, typed ? error3.message : `subject ${stage} failed closed: ${detail}`, error3);
-}
-function normalizeTarget(target, grant) {
-  return JSON.parse(canonicalJsonStringify({
-    ...target,
-    grantedPermissions: [
-      .../* @__PURE__ */ new Set([...target.grantedPermissions ?? [], ...grant.classes])
-    ].sort(compareUtf8)
-  }));
-}
-function matchesGlob(path, glob) {
-  let pattern = "^";
-  for (let index = 0; index < glob.length; index += 1) {
-    const character = glob[index];
-    if (character === "*") {
-      if (glob[index + 1] === "*") {
-        if (glob[index + 2] === "/") {
-          pattern += "(?:.*/)?";
-          index += 2;
-        } else {
-          pattern += ".*";
-          index += 1;
-        }
-      } else {
-        pattern += "[^/]*";
-      }
-    } else if (character === "?") {
-      pattern += "[^/]";
+    let source;
+    let start = 0n;
+    let length;
+    if (stored && entry2.storedRange !== void 0) {
+      const lease2 = await session.dataSource(BYTE_RANGE_SOURCE2, 1);
+      leases.push(lease2);
+      source = lease2.value;
+      start = entry2.storedRange.offset;
+      length = entry2.storedRange.length;
     } else {
-      pattern += character?.replace(/[\\^$.*+?()[\]{}|]/gu, "\\$&") ?? "";
-    }
-  }
-  return new RegExp(`${pattern}$`, "u").test(path);
-}
-function matchesSpec(spec, path, mediaType) {
-  const uri = /^[a-z][a-z0-9+.-]+:/iu.test(path);
-  const normalizedPath2 = (uri ? path.split(/[?#]/u, 1)[0] ?? "" : path).replaceAll("\\", "/").toLocaleLowerCase();
-  const extensionMatch = (spec.match.extensions ?? []).some((extension) => {
-    const suffix = extension.toLocaleLowerCase().replace(/^\.+/u, "");
-    return normalizedPath2.endsWith(`.${suffix}`) || normalizedPath2 === suffix;
-  });
-  const mediaMatch = mediaType !== void 0 && (spec.match.mediaTypes ?? []).some((candidate) => candidate === mediaType);
-  const pathMatch = (spec.match.pathGlobs ?? []).some((glob) => matchesGlob(normalizedPath2, glob.toLocaleLowerCase()));
-  const declaresMatch = (spec.match.extensions?.length ?? 0) > 0 || (spec.match.mediaTypes?.length ?? 0) > 0 || (spec.match.pathGlobs?.length ?? 0) > 0;
-  return declaresMatch && (extensionMatch || mediaMatch || pathMatch);
-}
-function variantRequestsBeyondProbe(requested, callerGrant) {
-  return requested.some((item) => !PROBE_PERMISSION_CLASSES.includes(item) && (callerGrant === void 0 || callerGrant.classes.includes(item)));
-}
-async function readSignatureWindows(options) {
-  if (options.source.kind !== "bytes")
-    return void 0;
-  const ruleSets = [];
-  for (const extension of options.inventory.extensions) {
-    for (const contribution of extension.contributions) {
-      const manifest = contribution.manifest;
-      if (!contribution.activationEligible || manifest?.contract.id !== CODEC_CONTRIBUTION_CONTRACT || manifest.contract.major !== 1) {
-        continue;
-      }
-      const signatures = manifest.spec.match.signatures;
-      if (signatures !== void 0 && signatures.length > 0)
-        ruleSets.push(signatures);
-    }
-  }
-  const needs = signatureNeeds(ruleSets);
-  if (needs.prefix === 0 && needs.suffix === 0)
-    return void 0;
-  const size = options.source.size;
-  if (size === void 0)
-    return void 0;
-  const headLength = Number(size < BigInt(needs.prefix) ? size : BigInt(needs.prefix));
-  const head = headLength === 0 ? new Uint8Array(0) : await options.source.read(0n, headLength, options.signal);
-  const tailLength = Number(size < BigInt(needs.suffix) ? size : BigInt(needs.suffix));
-  const tail = tailLength === 0 ? new Uint8Array(0) : await options.source.read(size - BigInt(tailLength), tailLength, options.signal);
-  return { head, tail, size };
-}
-function runtimeBudget(host, spec) {
-  const deadline = host.deadlineMs === void 0 ? spec.budgets.deadlineMs : spec.budgets.deadlineMs === void 0 ? host.deadlineMs : Math.min(host.deadlineMs, spec.budgets.deadlineMs);
-  return Object.freeze({
-    maxInputBytes: host.maxInputBytes < BigInt(spec.budgets.maxInputBytes) ? host.maxInputBytes : BigInt(spec.budgets.maxInputBytes),
-    maxDepth: Math.min(host.maxDepth, spec.budgets.maxDepth),
-    maxNodes: Math.min(host.maxNodes, spec.budgets.maxNodes),
-    maxScalarBytes: Math.min(host.maxScalarBytes, spec.budgets.maxScalarBytes),
-    maxDiagnostics: Math.min(host.maxDiagnostics, spec.budgets.maxDiagnostics),
-    ...deadline === void 0 ? {} : { deadlineMs: deadline }
-  });
-}
-function boundedProbeSource(source, plan) {
-  let consumed = 0n;
-  const maximum = BigInt(plan.maxBytes);
-  const ranges = plan.ranges.map((range) => {
-    const length = BigInt(range.length);
-    if (range.from === "start")
-      return { start: 0n, end: length };
-    if (source.size === void 0) {
-      throw new ModkitError({
-        code: "x3.host/end-relative-probe-requires-size",
-        message: "an end-relative probe range requires a sized source"
-      });
-    }
-    return { start: source.size > length ? source.size - length : 0n, end: source.size };
-  });
-  const authorize = (offset, length) => {
-    if (offset < 0n || length < 0n) {
-      throw new ModkitError({
-        code: "x3.host/probe-range-violation",
-        message: "codec requested a negative probe range"
-      });
-    }
-    const end = offset + length;
-    if (!ranges.some((range) => offset >= range.start && end <= range.end)) {
-      throw new ModkitError({
-        code: "x3.host/probe-range-violation",
-        message: "codec read outside its declared probe ranges",
-        context: { offset: offset.toString(), length: length.toString() }
-      });
-    }
-    if (consumed + length > maximum) {
-      throw new ModkitError({
-        code: "x3.host/probe-budget-exceeded",
-        message: `codec exceeded its declared ${plan.maxBytes}-byte probe budget`
-      });
-    }
-    consumed += length;
-  };
-  return Object.freeze({
-    ...source,
-    async read(offset, length, signal) {
-      if (!Number.isSafeInteger(length) || length < 0) {
-        throw new ModkitError({
-          code: "x3.host/probe-range-violation",
-          message: "codec requested a non-safe probe length"
-        });
-      }
-      authorize(offset, BigInt(length));
-      return source.read(offset, length, signal);
-    },
-    async *stream(range, signal) {
-      if (range?.length === void 0) {
-        throw new ModkitError({
-          code: "x3.host/unbounded-probe-stream",
-          message: "codec probe streams require an explicit bounded range"
-        });
-      }
-      authorize(range.offset, range.length);
-      let received = 0n;
-      for await (const chunk of source.stream(range, signal)) {
-        received += BigInt(chunk.byteLength);
-        if (received > range.length) {
-          throw new ModkitError({
-            code: "x3.host/probe-stream-overrun",
-            message: "probe source returned more bytes than the requested range"
-          });
-        }
-        yield chunk;
-      }
-    }
-  });
-}
-var NAMESPACE_PATH_ENCODER = new TextEncoder();
-function normalizeNamespaceProbePath(path, plan) {
-  if (path.includes("\0")) {
-    throw new ModkitError({
-      code: "x3.host/namespace-probe-path-refused",
-      message: "namespace probe paths may not contain NUL bytes",
-      context: { path }
-    });
-  }
-  const parts = [];
-  for (const part of path.replaceAll("\\", "/").split("/")) {
-    if (part === "" || part === ".")
-      continue;
-    if (part === "..") {
-      throw new ModkitError({
-        code: "x3.host/namespace-probe-path-refused",
-        message: "namespace probe paths may not escape their subject root",
-        context: { path }
-      });
-    }
-    parts.push(part);
-  }
-  const normalized2 = parts.join("/");
-  const pathBytes = NAMESPACE_PATH_ENCODER.encode(normalized2).byteLength;
-  if (normalized2 === "" || parts.length > plan.maxDepth || pathBytes > plan.maxPathBytes) {
-    throw new ModkitError({
-      code: "x3.host/namespace-probe-path-budget-exceeded",
-      message: "namespace probe marker exceeds its declared path budget",
-      context: {
-        path,
-        depth: parts.length,
-        maxDepth: plan.maxDepth,
-        pathBytes,
-        maxPathBytes: plan.maxPathBytes
-      }
-    });
-  }
-  return normalized2;
-}
-function boundedNamespaceProbeSource(source, plan) {
-  if (plan.markers.length > plan.maxEntries) {
-    throw new ModkitError({
-      code: "x3.host/namespace-probe-entry-budget-exceeded",
-      message: "namespace probe declares more markers than its entry budget permits",
-      context: { markers: plan.markers.length, maxEntries: plan.maxEntries }
-    });
-  }
-  const markers = new Set(plan.markers.map((path) => normalizeNamespaceProbePath(path, plan)));
-  if (markers.size !== plan.markers.length) {
-    throw new ModkitError({
-      code: "x3.host/namespace-probe-marker-duplicate",
-      message: "namespace probe marker paths must be unique after normalization"
-    });
-  }
-  const prefixes = new Set((plan.prefixes ?? []).map((path) => normalizeNamespaceProbePath(path, plan)));
-  if (prefixes.size !== (plan.prefixes?.length ?? 0)) {
-    throw new ModkitError({
-      code: "x3.host/namespace-probe-prefix-duplicate",
-      message: "namespace probe prefixes must be unique after normalization"
-    });
-  }
-  let consumedEntries = 0;
-  let consumedBytes = 0n;
-  const maximumBytes = BigInt(plan.maxBytes);
-  const consume = (length) => {
-    if (length < 0n || consumedBytes + length > maximumBytes) {
-      throw new ModkitError({
-        code: "x3.host/namespace-probe-byte-budget-exceeded",
-        message: `namespace probe exceeded its declared ${plan.maxBytes}-byte budget`,
-        context: { consumedBytes: String(consumedBytes), requestedBytes: String(length) }
-      });
-    }
-    consumedBytes += length;
-  };
-  const guardMarkerSource = (marker, value) => {
-    if (value.kind === "namespace") {
-      return Object.freeze({
-        ...value,
-        async openNamespace() {
-          throw new ModkitError({
-            code: "x3.host/namespace-probe-traversal-refused",
-            message: `namespace probe marker \xAB${marker}\xBB is opaque; traversal is forbidden`,
-            context: { marker }
-          });
-        }
-      });
-    }
-    return Object.freeze({
-      ...value,
-      async read(offset, length, signal) {
-        if (!Number.isSafeInteger(length) || length < 0) {
-          throw new ModkitError({
-            code: "x3.host/namespace-probe-range-refused",
-            message: "namespace probe marker reads require a non-negative safe length",
-            context: { marker, offset: String(offset), length }
-          });
-        }
-        consume(BigInt(length));
-        return value.read(offset, length, signal);
-      },
-      async *stream(range, signal) {
-        if (range?.length === void 0) {
-          throw new ModkitError({
-            code: "x3.host/namespace-probe-unbounded-stream-refused",
-            message: "namespace probe marker streams require an explicit length",
-            context: { marker }
-          });
-        }
-        consume(range.length);
-        yield* value.stream(range, signal);
-      }
-    });
-  };
-  return Object.freeze({
-    ...source,
-    async openNamespace(signal) {
-      const lease2 = await source.openNamespace(signal);
-      const guarded = Object.freeze({
-        revision: lease2.value.revision,
-        async *list(prefix, listSignal) {
-          throwIfAborted(listSignal);
-          if (prefixes.size === 0) {
-            throw new ModkitError({
-              code: "x3.host/namespace-probe-traversal-refused",
-              message: "namespace enumeration is forbidden unless the codec declares probe prefixes"
-            });
-          }
-          const normalized2 = normalizeNamespaceProbePath(prefix, plan);
-          if (!prefixes.has(normalized2)) {
-            throw new ModkitError({
-              code: "x3.host/namespace-probe-prefix-refused",
-              message: `codec attempted to enumerate undeclared namespace prefix \xAB${normalized2}\xBB`,
-              context: { prefix: normalized2, prefixes: [...prefixes] }
-            });
-          }
-          for await (const entry2 of lease2.value.list(normalized2, listSignal)) {
-            throwIfAborted(listSignal);
-            const entryPath = normalizeNamespaceProbePath(entry2.path, plan);
-            if (entryPath !== normalized2 && !entryPath.startsWith(`${normalized2}/`)) {
-              throw new ModkitError({
-                code: "x3.host/namespace-probe-prefix-escape",
-                message: `namespace probe entry \xAB${entryPath}\xBB escaped prefix \xAB${normalized2}\xBB`,
-                context: { prefix: normalized2, path: entryPath }
-              });
-            }
-            consumedEntries += 1;
-            if (consumedEntries > plan.maxEntries) {
-              throw new ModkitError({
-                code: "x3.host/namespace-probe-entry-budget-exceeded",
-                message: `namespace probe exceeded its declared ${plan.maxEntries}-entry budget`
-              });
-            }
-            yield Object.freeze({ ...entry2, path: entryPath });
-          }
-        },
-        async open(path, openSignal) {
-          const normalized2 = normalizeNamespaceProbePath(path, plan);
-          if (!markers.has(normalized2)) {
-            throw new ModkitError({
-              code: "x3.host/namespace-probe-path-refused",
-              message: `codec attempted to inspect undeclared namespace marker \xAB${normalized2}\xBB`,
-              context: { path: normalized2, markers: [...markers] }
-            });
-          }
-          consumedEntries += 1;
-          if (consumedEntries > plan.maxEntries) {
-            throw new ModkitError({
-              code: "x3.host/namespace-probe-entry-budget-exceeded",
-              message: `namespace probe exceeded its declared ${plan.maxEntries}-entry budget`
-            });
-          }
-          const opened = await lease2.value.open(normalized2, openSignal);
-          return Object.freeze({
-            value: guardMarkerSource(normalized2, opened.value),
-            release: () => opened.release()
-          });
-        }
-      });
-      return Object.freeze({ value: guarded, release: () => lease2.release() });
-    }
-  });
-}
-async function probeCodec(codec, source, probe, signal) {
-  if (source.kind === "bytes" && probe.kind === "bytes") {
-    return codec.probe({ source: boundedProbeSource(source, probe), plan: probe }, signal);
-  }
-  if (source.kind === "namespace" && probe.kind === "namespace") {
-    return codec.probe({ source: boundedNamespaceProbeSource(source, probe), plan: probe }, signal);
-  }
-  throw new ModkitError({
-    code: "x3.host/probe-topology-mismatch",
-    message: `codec probe ${probe.kind} cannot inspect a ${source.kind} subject`
-  });
-}
-function snapshotDetection(value, contributionId2) {
-  const owned = JSON.parse(canonicalJsonStringify(value));
-  if (owned.codecId !== contributionId2 || typeof owned.confidence !== "number" || !Number.isFinite(owned.confidence) || owned.confidence < 0 || owned.confidence > 1 || !Array.isArray(owned.evidence) || !Array.isArray(owned.requiredRanges)) {
-    throw new ModkitError({
-      code: "x3.host/invalid-detection-result",
-      message: `codec ${contributionId2} returned a malformed or mismatched detection result`
-    });
-  }
-  return Object.freeze(owned);
-}
-function snapshotPlan(value) {
-  return Object.freeze(JSON.parse(canonicalJsonStringify(value)));
-}
-function defaultResolveInput(context) {
-  const plan = context.plan;
-  if (plan.originKind === "namespace" && plan.requirements.length === 0) {
-    if (context.source.kind !== "namespace") {
-      throw new ModkitError({
-        code: "x3.host/input-topology-mismatch",
-        message: "a namespace input plan requires a namespace subject source"
-      });
-    }
-    const source2 = context.source;
-    const compositionFingerprint2 = canonicalJsonStringify({
-      topology: "namespace",
-      root: source2.ref,
-      revision: source2.revision
-    });
-    return Object.freeze({
-      originKind: "namespace",
-      root: source2.ref,
-      bindings: Object.freeze([]),
-      revisions: Object.freeze({
-        topology: "namespace",
-        revision: source2.revision,
-        namespaceRevision: source2.revision,
-        bindings: Object.freeze([]),
-        compositionFingerprint: compositionFingerprint2
-      }),
-      bindingsFor: () => Object.freeze([]),
-      async openBinding(bindingId) {
-        throw new ModkitError({
-          code: "x3.host/unknown-asset-input-binding",
-          message: `namespace asset input has no binding ${bindingId}`
-        });
-      },
-      async openNamespace(signal) {
-        throwIfAborted(signal);
-        return source2.openNamespace(signal);
-      }
-    });
-  }
-  const loneBundle = plan.originKind === "bundle" && plan.requirements.every((requirement) => !requirement.required);
-  if (!loneBundle && (plan.originKind !== "single" || plan.requirements.length !== 0)) {
-    throw new ModkitError({
-      code: "x3.host/input-resolver-required",
-      message: `the default subject input resolver cannot satisfy ${plan.originKind} topology`
-    });
-  }
-  if (context.source.kind !== "bytes") {
-    throw new ModkitError({
-      code: "x3.host/input-topology-mismatch",
-      message: "a single-file input plan requires a byte subject source"
-    });
-  }
-  const source = context.source;
-  const candidate = plan.candidate;
-  if (candidate.bindingId.trim().length === 0 || candidate.role.trim().length === 0 || candidate.ownership !== "owned" && candidate.ownership !== "external") {
-    throw new ModkitError({
-      code: "x3.host/invalid-asset-input-plan",
-      message: "codec returned an invalid single-file candidate binding"
-    });
-  }
-  const binding = Object.freeze({
-    sourceKind: "candidate",
-    bindingId: candidate.bindingId,
-    role: candidate.role,
-    ownership: candidate.ownership,
-    source: source.ref,
-    revision: source.revision
-  });
-  const compositionFingerprint = canonicalJsonStringify({
-    topology: "single",
-    bindingId: binding.bindingId,
-    source: binding.source,
-    revision: binding.revision
-  });
-  return Object.freeze({
-    originKind: "single",
-    bindings: Object.freeze([binding]),
-    primaryBindingId: binding.bindingId,
-    revisions: Object.freeze({
-      topology: "single",
-      revision: source.revision,
-      bindings: Object.freeze([
-        Object.freeze({ bindingId: binding.bindingId, revision: binding.revision })
-      ]),
-      compositionFingerprint
-    }),
-    bindingsFor: () => Object.freeze([]),
-    async openBinding(bindingId, signal) {
-      throwIfAborted(signal);
-      if (bindingId !== binding.bindingId) {
-        throw new ModkitError({
-          code: "x3.host/unknown-asset-input-binding",
-          message: `asset input has no binding ${bindingId}`
-        });
-      }
-      return Object.freeze({ value: source, release: async () => void 0 });
-    }
-  });
-}
-function codecModule(module, contributionId2) {
-  if (module["abiVersion"] !== 1 || typeof module["createCodec"] !== "function") {
-    throw new ModkitError({
-      code: "x3.host/invalid-codec-module",
-      message: `activated contribution ${contributionId2} does not implement CodecModule ABI v1`
-    });
-  }
-  return module;
-}
-function assertCodec(value, contributionId2) {
-  if (typeof value !== "object" || value === null || typeof value.probe !== "function" || typeof value.open !== "function") {
-    throw new ModkitError({
-      code: "x3.host/invalid-codec-instance",
-      message: `contribution ${contributionId2} returned an invalid codec instance`
-    });
-  }
-  return value;
-}
-function noServiceResolver() {
-  const unavailable4 = (contract, major) => {
-    throw new ModkitError({
-      code: "x3.host/service-contract-unregistered",
-      message: `service contract ${contract}@${major} is unavailable in this composition`
-    });
-  };
-  return {
-    async resolve(request) {
-      return unavailable4(request.contract, request.major);
-    },
-    async resolveUnknown(request) {
-      return unavailable4(request.contract, request.major);
-    }
-  };
-}
-function runnableCandidates(options, offers, signatureWindows, suppressed = [], route = {}) {
-  const candidates = [];
-  const path = options.path ?? options.source.ref.uri;
-  for (const extension of options.inventory.extensions) {
-    for (const contribution of extension.contributions) {
-      const manifest = contribution.manifest;
-      if (manifest?.contract.id !== CODEC_CONTRIBUTION_CONTRACT || manifest.contract.major !== 1) {
-        continue;
-      }
-      if (!contribution.activationEligible) {
-        const spec2 = manifest.spec;
-        const claimsSource = spec2 !== void 0 && spec2.match !== void 0 && (options.source.kind === "namespace" ? spec2.sourceTopology === "namespace" && spec2.probe?.kind === "namespace" : (
-          // a packed file a semantic container alias would have claimed (e.g. an .SC2Map
-          // whose codec failed validation) must not open as the bare carrier silently
-          (spec2.probe?.kind === "bytes" || spec2.container !== void 0) && matchesSpec(spec2, path, options.mediaType)
-        ));
-        if (claimsSource) {
-          suppressed.push({
-            contributionId: manifest.id,
-            extensionId: extension.manifest?.id ?? extension.source,
-            reasons: contribution.diagnostics.map((item) => item.code)
-          });
-        }
-        continue;
-      }
-      const spec = manifest.spec;
-      if (!spec.openIntents.includes(options.intent))
-        continue;
-      let viaSignature = false;
-      if (options.source.kind === "namespace") {
-        if (spec.sourceTopology !== "namespace" || spec.probe.kind !== "namespace")
-          continue;
-        if (route.containerAliasFormatId === void 0) {
-          if (spec.container !== void 0 && (spec.container.markers?.length ?? 0) === 0)
-            continue;
-        } else if (spec.container?.formatId !== route.containerAliasFormatId || !route.containerAliasContributionIds?.has(manifest.id)) {
-          continue;
-        }
-      } else {
-        if (route.containerAliasFormatId !== void 0)
-          continue;
-        if (route.containerProviderFormatId !== void 0 && (!spec.roles.includes("container") || !spec.formatRefs.some((item) => item.formatId === route.containerProviderFormatId) || spec.container !== void 0)) {
-          continue;
-        }
-        if (spec.sourceTopology !== "single" && spec.sourceTopology !== "bundle" || spec.probe.kind !== "bytes") {
-          continue;
-        }
-        const byName = matchesSpec(spec, path, options.mediaType);
-        viaSignature = !byName && signatureWindows !== void 0 && matchesSignatures(spec.match.signatures, signatureWindows);
-        if (!byName && !viaSignature)
-          continue;
-      }
-      for (const offer of offers) {
-        if (offer.providerId !== manifest.id)
-          continue;
-        const logicalOffer = [...offer.provides].sort((left, right) => compareUtf8(canonicalJsonStringify(left), canonicalJsonStringify(right)))[0];
-        if (logicalOffer === void 0)
-          continue;
-        candidates.push({
-          contribution,
-          extensionId: offer.extensionId,
-          contributionId: manifest.id,
-          spec,
-          offer,
-          logicalOffer,
-          viaSignature
-        });
-      }
-    }
-  }
-  return Object.freeze(candidates.sort((left, right) => compareUtf8(left.contributionId, right.contributionId) || compareUtf8(left.offer.runtimeVariant, right.offer.runtimeVariant) || compareUtf8(left.logicalOffer.offerId, right.logicalOffer.offerId)));
-}
-async function unresolvedDescriptor(options, detections) {
-  if (options.source.kind === "namespace") {
-    return assembleSubjectDescriptor({
-      schemaVersion: 2,
-      subjectUri: options.source.ref.uri,
-      origin: {
-        kind: "namespace",
-        root: options.source.ref,
-        revision: options.source.revision
-      },
-      interpretation: "none",
-      candidates: detections,
-      traits: [{ id: "container.directories", descriptorVersion: 1, state: "available" }],
-      operations: [],
-      constraints: {
-        readOnly: true,
-        seekable: false,
-        randomAccess: false,
-        trusted: false
-      },
-      dataSources: [],
-      diagnostics: [],
-      revision: options.source.revision
-    });
-  }
-  return assembleSubjectDescriptor({
-    schemaVersion: 2,
-    subjectUri: options.source.ref.uri,
-    origin: {
-      kind: "single",
-      binding: {
-        id: "content",
-        role: "content",
-        source: options.source.ref,
-        required: true,
-        ownership: "owned",
-        revision: options.source.revision,
-        ...options.mediaType === void 0 ? {} : { mediaType: options.mediaType }
-      }
-    },
-    interpretation: "none",
-    candidates: detections,
-    traits: [
-      {
-        id: "content.binary",
-        descriptorVersion: 1,
-        state: "available",
-        ...options.source.size === void 0 ? {} : { parameters: { bytes: options.source.size.toString(10) } }
-      }
-    ],
-    operations: [],
-    constraints: {
-      readOnly: true,
-      seekable: true,
-      randomAccess: true,
-      trusted: false,
-      ...options.source.size === void 0 ? {} : { maxDecodedBytes: options.source.size.toString(10) }
-    },
-    dataSources: [{ contract: "common.view/byte-range-source", major: 1 }],
-    diagnostics: [],
-    revision: options.source.revision
-  });
-}
-async function textFallbackAvailable(source, signal) {
-  if (source.kind !== "bytes")
-    return false;
-  if (source.size === void 0)
-    return false;
-  const length = Number(source.size > 65536n ? 65536n : source.size);
-  try {
-    const bytes = await source.read(0n, length, signal);
-    new TextDecoder("utf-8", { fatal: true }).decode(bytes);
-    return true;
-  } catch {
-    return false;
-  }
-}
-async function unresolvedFallback(source, signal) {
-  if (source.kind === "namespace") {
-    return Object.freeze({ preferred: "none", available: Object.freeze([]) });
-  }
-  const text = await textFallbackAvailable(source, signal);
-  return Object.freeze({
-    preferred: text ? "text" : "hex",
-    available: Object.freeze(text ? ["text", "hex"] : ["hex"])
-  });
-}
-async function openSubjectDirect(options, route = {}) {
-  const catalog = options.subjectCatalog === void 0 ? void 0 : subjectCatalogEntities(options.subjectCatalog, async () => options.source.ref.uri);
-  try {
-    const result = await openSubjectDirectWith(options, route, catalog);
-    if (result.state !== "opened")
-      await catalog?.release();
-    return result;
-  } catch (error3) {
-    await catalog?.release();
-    throw error3;
-  }
-}
-async function openSubjectDirectWith(options, route, catalog) {
-  throwIfAborted(options.signal);
-  const minimumConfidence = options.minimumConfidence ?? DEFAULT_MINIMUM_CONFIDENCE;
-  const maxCandidates = options.maxCandidates ?? DEFAULT_MAX_CANDIDATES;
-  if (!Number.isFinite(minimumConfidence) || minimumConfidence < 0 || minimumConfidence > 1 || !Number.isSafeInteger(maxCandidates) || maxCandidates <= 0) {
-    throw new ModkitError({
-      code: "x3.host/invalid-subject-open-policy",
-      message: "subject-open confidence and candidate limits are invalid"
-    });
-  }
-  const diagnostics = [];
-  const explanations = [];
-  const detected = [];
-  const offers = offersFromInventory(options.inventory);
-  const executionBackends = options.executionBackends ?? DEFAULT_EXECUTION_BACKENDS;
-  const signatureWindows = await readSignatureWindows(options);
-  const suppressed = [];
-  const candidates = runnableCandidates(options, offers, signatureWindows, suppressed, route);
-  for (const item of suppressed) {
-    const switchedOff = item.reasons.every((code) => code === "x3.host/contribution-disabled" || code === "x3.host/extension-disabled");
-    diagnostics.push(diagnostic(switchedOff ? "information" : "warning", "x3.host/candidate-suppressed", `\xAB${item.contributionId}\xBB matches this file but cannot run${item.reasons.length === 0 ? "" : `: ${[...new Set(item.reasons)].join(", ")}`}`, [item.extensionId, item.contributionId]));
-  }
-  if (candidates.length > maxCandidates) {
-    diagnostics.push(errorDiagnostic("x3.host/subject-candidate-limit", `subject matched ${candidates.length} codecs, exceeding the host limit ${maxCandidates}`));
-  } else {
-    const target = normalizeTarget(options.target, options.grant);
-    for (const candidate of candidates) {
-      const local = [];
-      const resources = createReleaseScope();
-      const privateRecord = inventoryRecordFor(candidate.contribution);
-      const variant = candidate.contribution.manifest?.runtimeVariants?.find((item) => item.variantId === candidate.offer.runtimeVariant);
-      if (privateRecord === void 0 || variant === void 0 || !executionBackends.supports(variant.executionProfile, target, variant) || variant.executionProfile === "trusted-in-process" && privateRecord.execution.allowTrustedInProcess !== true) {
-        local.push(errorDiagnostic("x3.host/codec-execution-unavailable", `codec ${candidate.contributionId}#${candidate.offer.runtimeVariant} has no executable boundary in this host`));
-        explanations.push({
-          contributionId: candidate.contributionId,
-          extensionId: candidate.extensionId,
-          variantId: candidate.offer.runtimeVariant,
-          formatIds: Object.freeze(candidate.spec.formatRefs.map((item) => item.formatId)),
-          offerId: candidate.logicalOffer.offerId,
-          state: "rejected",
-          diagnostics: Object.freeze(local)
-        });
-        continue;
-      }
-      const request = {
-        contract: {
-          contract: candidate.logicalOffer.contract,
-          major: candidate.logicalOffer.major,
-          range: "*"
-        },
-        target,
-        pin: {
-          providerId: candidate.offer.providerId,
-          runtimeVariant: candidate.offer.runtimeVariant,
-          offerId: candidate.logicalOffer.offerId
-        }
-      };
-      if (candidate.viaSignature) {
-        local.push({
-          code: "x3.host/signature-match",
-          severity: "information",
-          message: `${candidate.contributionId} matched by its declared byte signature; name/media/path rules did not match this subject`
-        });
-      }
-      const resolved = resolveForActivation(request, offers, PROBE_OPERATION);
-      if (resolved.result.state !== "resolved" || resolved.ticket === void 0) {
-        local.push(errorDiagnostic("x3.host/codec-resolution-unresolved", `codec candidate did not resolve: ${resolved.result.state === "resolved" ? "ticket unavailable" : resolved.result.reason}`));
-        explanations.push({
-          contributionId: candidate.contributionId,
-          extensionId: candidate.extensionId,
-          variantId: candidate.offer.runtimeVariant,
-          formatIds: Object.freeze(candidate.spec.formatRefs.map((item) => item.formatId)),
-          offerId: candidate.logicalOffer.offerId,
-          state: "rejected",
-          diagnostics: Object.freeze(local)
-        });
-        continue;
-      }
-      const record3 = {
-        resources,
-        rasterState: { live: false, reservedBytes: 0 },
-        logicalState: {
-          live: false,
-          reservedBytes: 0,
-          resolveCalls: 0,
-          discoveryCalls: 0
-        },
-        nestedLocks: [],
-        ...route.includeSelectionLock ? { selectionLock: buildLockEntry(request, resolved.result) } : {}
-      };
-      try {
-        const activation = await activateContribution({
-          ticket: resolved.ticket,
-          grant: options.grant,
-          executionBackends,
-          ...options.policy === void 0 ? {} : { policy: options.policy },
-          ...options.signal === void 0 ? {} : { signal: options.signal }
-        });
-        record3.resources.add(activation.release);
-        local.push(...activation.diagnostics);
-        {
-          const requested = candidate.contribution.manifest?.runtimeVariants?.find((item) => item.variantId === candidate.offer.runtimeVariant)?.requestedPermissionClasses ?? [];
-          const degraded = requested.filter((item) => !PROBE_PERMISSION_CLASSES.includes(item) && !options.grant.classes.includes(item));
-          if (degraded.length > 0) {
-            local.push(permissionDegradedDiagnostic(candidate.contributionId, degraded));
-          }
-        }
-        const effectiveBudget = runtimeBudget(options.budget, candidate.spec);
-        const nestedLocks = record3.nestedLocks;
-        const makeContext = (grant, chain, contributionId2) => {
-          const settings = contributionId2 === void 0 ? void 0 : options.contributionSettings?.(contributionId2);
-          const owner = contributionId2 === void 0 ? void 0 : offers.find((offer) => offer.providerId === contributionId2)?.extensionId;
-          const credentials = owner === void 0 ? void 0 : options.credentials?.portFor(owner);
-          const contracts = options.serviceDefinitions === void 0 ? noServiceResolver() : createContractResolverPort({
-            offers,
-            definitions: options.serviceDefinitions,
-            target,
-            targetFor: (offer) => serviceTargetFor(executionBackends, offer, target),
-            onResolved(request2, result) {
-              nestedLocks.push(buildLockEntry(request2, result));
-            },
-            async activate(selection, result, signal) {
-              const key3 = `${selection.contract}@${selection.major}:${result.selected.offer.providerId}:${selection.offerId}`;
-              if (chain.includes(key3)) {
-                throw new ModkitError({
-                  code: "x3.host/service-dependency-cycle",
-                  message: `service activation cycle detected at ${key3}`
-                });
-              }
-              const nested = await activateServiceProvider({
-                selection,
-                result,
-                target,
-                grant,
-                executionBackends,
-                ...options.policy === void 0 ? {} : { policy: options.policy },
-                ...signal === void 0 ? {} : { signal },
-                diagnostics,
-                contextFor: (effectiveGrant) => makeContext(effectiveGrant, [...chain, key3], result.selected.offer.providerId)
-              });
-              record3.resources.add(() => nested.release());
-              return Object.freeze({
-                value: nested.lease.value,
-                release: () => nested.release()
-              });
-            }
-          });
-          return Object.freeze({
-            contracts,
-            ...settings === void 0 ? {} : { settings },
-            ...options.videoFrames === void 0 ? {} : { videoFrames: options.videoFrames },
-            ...options.installationFiles === void 0 ? {} : { installationFiles: options.installationFiles },
-            ...catalog === void 0 ? {} : {
-              catalog: Object.freeze({ entities: catalog.entities, strings: catalog.strings })
-            },
-            ...credentials === void 0 ? {} : { credentials },
-            ...options.containerContext === void 0 ? {} : { containerContext: options.containerContext },
-            logicalResources: createSubjectLogicalResources({
-              state: record3.logicalState,
-              budget: effectiveBudget,
-              ...options.logicalResourceDiscovery === void 0 ? {} : { policies: options.logicalResourceDiscovery },
-              isAuthorized: () => grantValidity(grant).state === "valid" && grant.classes.includes("read-source")
-            }),
-            modelResources: createSubjectModelResources({
-              state: record3.rasterState,
-              budget: effectiveBudget,
-              isAuthorized: () => grantValidity(grant).state === "valid" && grant.classes.includes("read-source"),
-              ancestors: [`${options.source.ref.id}@${options.source.revision}`],
-              own: (release) => record3.resources.add(release),
-              open: (source, path, signal) => openSubject({
-                inventory: options.inventory,
-                source,
-                path,
-                target,
-                intent: "full",
-                grant: { ...grant, classes: ["read-source"] },
-                budget: effectiveBudget,
-                executionBackends,
-                ...record3.rasterState.resources === void 0 ? {} : { resourceSession: record3.rasterState.resources },
-                ...options.videoFrames === void 0 ? {} : { videoFrames: options.videoFrames },
-                ...options.credentials === void 0 ? {} : { credentials: options.credentials },
-                ...options.resolveInput === void 0 ? {} : { resolveInput: options.resolveInput },
-                ...options.serviceDefinitions === void 0 ? {} : { serviceDefinitions: options.serviceDefinitions },
-                ...options.policy === void 0 ? {} : { policy: options.policy },
-                ...signal === void 0 ? {} : { signal }
-              })
-            }),
-            ...options.provideRasterResources === false ? {} : {
-              rasterResources: createSubjectRasterResources({
-                state: record3.rasterState,
-                budget: effectiveBudget,
-                isAuthorized: () => grantValidity(grant).state === "valid" && grant.classes.includes("read-source"),
-                open: (source, hint, signal) => openSubject({
-                  inventory: options.inventory,
-                  source,
-                  ...hint,
-                  ...resourceInputFor(options.resolveInput, hint.path),
-                  target,
-                  intent: "full",
-                  grant: { ...grant, classes: ["read-source"] },
-                  budget: effectiveBudget,
-                  executionBackends,
-                  provideRasterResources: false,
-                  ...options.serviceDefinitions === void 0 ? {} : { serviceDefinitions: options.serviceDefinitions },
-                  ...options.policy === void 0 ? {} : { policy: options.policy },
-                  ...signal === void 0 ? {} : { signal }
-                })
-              })
-            },
-            budgets: effectiveBudget,
-            diagnostics: {
-              report(item) {
-                diagnostics.push(item);
-              }
-            },
-            ...options.signal === void 0 ? {} : { signal: options.signal }
-          });
-        };
-        const codec = assertCodec(codecModule(activation.module, candidate.contributionId).createCodec(makeContext(activation.effectiveGrant, [candidate.contributionId], candidate.contributionId)), candidate.contributionId);
-        record3.resources.add(() => releaseCodec(codec));
-        const detection = snapshotDetection(await probeCodec(codec, options.source, candidate.spec.probe, options.signal), candidate.contributionId);
-        detected.push(Object.assign(record3, {
-          ...candidate,
-          ticket: resolved.ticket,
-          codec,
-          detection,
-          effectiveBudget,
-          effectiveGrant: activation.effectiveGrant,
-          activationDiagnostics: Object.freeze(local),
-          request,
-          makeContext,
-          ...record3.selectionLock === void 0 ? {} : { selectionLock: record3.selectionLock },
-          probeScoped: variantRequestsBeyondProbe(candidate.contribution.manifest?.runtimeVariants?.find((item) => item.variantId === candidate.offer.runtimeVariant)?.requestedPermissionClasses ?? [], options.grant)
-        }));
-        explanations.push({
-          contributionId: candidate.contributionId,
-          extensionId: candidate.extensionId,
-          variantId: candidate.offer.runtimeVariant,
-          formatIds: Object.freeze(candidate.spec.formatRefs.map((item) => item.formatId)),
-          offerId: candidate.logicalOffer.offerId,
-          state: "detected",
-          confidence: detection.confidence,
-          diagnostics: Object.freeze(local)
-        });
-      } catch (error3) {
-        local.push(caughtDiagnostic("probe", error3));
-        try {
-          await record3.resources.release();
-        } catch (cleanupError) {
-          local.push(caughtDiagnostic("cleanup", cleanupError));
-        }
-        explanations.push({
-          contributionId: candidate.contributionId,
-          extensionId: candidate.extensionId,
-          variantId: candidate.offer.runtimeVariant,
-          formatIds: Object.freeze(candidate.spec.formatRefs.map((item) => item.formatId)),
-          offerId: candidate.logicalOffer.offerId,
-          state: "rejected",
-          diagnostics: Object.freeze(local)
-        });
-      }
-    }
-  }
-  const eligible = detected.filter((candidate) => candidate.detection.confidence >= minimumConfidence).sort((left, right) => right.detection.confidence - left.detection.confidence || compareUtf8(left.contributionId, right.contributionId) || compareUtf8(left.offer.runtimeVariant, right.offer.runtimeVariant));
-  const best = eligible[0];
-  const tied = best === void 0 ? [] : eligible.filter((candidate) => candidate.detection.confidence === best.detection.confidence);
-  if (best === void 0 || tied.length !== 1) {
-    for (const candidate of detected)
-      await releaseCandidate(candidate, diagnostics);
-    const descriptor = await unresolvedDescriptor(options, detected.map((candidate) => candidate.detection));
-    return Object.freeze({
-      state: "unresolved",
-      reason: candidates.length === 0 ? "no-candidate" : best === void 0 ? "no-match" : "ambiguous",
-      descriptor,
-      fallback: await unresolvedFallback(options.source, options.signal),
-      candidates: Object.freeze(explanations),
-      diagnostics: Object.freeze([...diagnostics, ...workerRefusals(explanations)])
-    });
-  }
-  for (const candidate of detected) {
-    if (candidate !== best)
-      await releaseCandidate(candidate, diagnostics);
-  }
-  let openedSession;
-  try {
-    if (best.probeScoped) {
-      const reResolved = resolveForActivation(best.request, offers);
-      if (reResolved.result.state !== "resolved" || reResolved.ticket === void 0) {
-        throw new ModkitError({
-          code: "x3.host/codec-resolution-unresolved",
-          message: "the selected codec did not re-resolve for open"
-        });
-      }
-      const openScope = createReleaseScope();
-      const probeScope = best.resources;
-      try {
-        const activation = await activateContribution({
-          ticket: reResolved.ticket,
-          grant: options.grant,
-          executionBackends,
-          ...options.policy === void 0 ? {} : { policy: options.policy },
-          ...options.signal === void 0 ? {} : { signal: options.signal }
-        });
-        openScope.add(activation.release);
-        best.resources = openScope;
-        const reopened = assertCodec(codecModule(activation.module, best.contributionId).createCodec(best.makeContext(activation.effectiveGrant, [best.contributionId], best.contributionId)), best.contributionId);
-        openScope.add(() => releaseCodec(reopened));
-        best.codec = reopened;
-        best.ticket = reResolved.ticket;
-        best.effectiveGrant = activation.effectiveGrant;
-        best.activationDiagnostics = Object.freeze([
-          ...best.activationDiagnostics,
-          ...activation.diagnostics
-        ]);
-      } catch (error3) {
-        best.resources = probeScope;
-        try {
-          await openScope.release();
-        } catch (cleanupError) {
-          diagnostics.push(caughtDiagnostic("cleanup", cleanupError));
-        }
-        throw error3;
-      }
-      try {
-        await probeScope.release();
-      } catch (cleanupError) {
-        diagnostics.push(caughtDiagnostic("cleanup", cleanupError));
-      }
-    }
-    const rawPlan = best.codec.planInput ? await best.codec.planInput(options.source, best.detection, options.signal) : options.source.kind === "namespace" ? { originKind: "namespace", requirements: [] } : {
-      originKind: "single",
-      candidate: { bindingId: "content", role: "content", ownership: "owned" },
-      requirements: []
-    };
-    const plan = snapshotPlan(rawPlan);
-    const companionRule = (role) => {
-      const requirement = ("requirements" in plan ? plan.requirements : []).find((item) => item.role === role);
-      if (requirement === void 0)
+      const lease2 = await session.dataSource(NAMESPACE_ENTRY_SOURCE2, 1);
+      leases.push(lease2);
+      const namespace = lease2.value;
+      if (namespace.openEntrySource === void 0)
         return void 0;
-      const directories = [""];
-      const extensions = [];
-      for (const pattern of requirement.patterns ?? []) {
-        const cut = pattern.replaceAll("\\", "/").lastIndexOf("/");
-        const directory = cut <= 0 ? "" : pattern.slice(0, cut);
-        if (!directories.includes(directory))
-          directories.push(directory);
-        const extension = /(\.[^.*?/]+)$/u.exec(pattern.slice(cut + 1))?.[1]?.toLowerCase();
-        if (extension !== void 0 && !extensions.includes(extension))
-          extensions.push(extension);
-      }
-      return Object.freeze({
-        scopes: requirement.scopes,
-        directories: Object.freeze(directories),
-        ...extensions.length === 0 ? {} : { extensions: Object.freeze(extensions) }
-      });
-    };
-    const input = await (options.resolveInput ?? defaultResolveInput)({
-      source: options.source,
-      plan,
-      detection: best.detection,
-      ...options.signal === void 0 ? {} : { signal: options.signal }
-    });
-    openedSession = await best.codec.open(input, options.intent, best.effectiveBudget, options.signal);
-    const session = openedSession;
-    throwIfAborted(options.signal);
-    if (session.revision !== options.source.revision) {
-      throw new ModkitError({
-        code: "x3.host/subject-session-identity-mismatch",
-        message: "opened codec session revision does not match the selected source"
-      });
+      const entryLease = await namespace.openEntrySource(entry2.id, signal);
+      leases.push(entryLease);
+      source = entryLease.value;
+      length = await source.size();
     }
-    if (session.state() === "disposed" || grantValidity(best.effectiveGrant).state !== "valid") {
-      throw new ModkitError({
-        code: "x3.host/subject-context-unavailable",
-        message: "The opened subject context is no longer live."
-      });
-    }
-    let postOpenResources = best.effectiveGrant.classes.includes("read-source") ? options.resourceSession : void 0;
-    const openResources = route.openResources ?? options.resolveInput?.openResources;
-    if (openResources !== void 0 && best.effectiveGrant.classes.includes("read-source")) {
-      const requested = { ...DEFAULT_RESOURCE_SESSION_LIMITS, ...options.resourceLimits };
-      const openedResources = openResources({
-        revision: session.revision,
-        revisionPolicy: "pin",
-        isAuthorized: () => grantValidity(best.effectiveGrant).state === "valid" && best.effectiveGrant.classes.includes("read-source"),
-        limits: {
-          maxResources: Math.min(requested.maxResources, best.effectiveBudget.maxNodes),
-          maxBytes: requested.maxBytes < best.effectiveBudget.maxInputBytes ? requested.maxBytes : best.effectiveBudget.maxInputBytes,
-          maxDepth: Math.min(requested.maxDepth, best.effectiveBudget.maxDepth),
-          maxEntries: Math.min(requested.maxEntries, best.effectiveBudget.maxNodes)
+    context.progress?.({ step: "extract", message: `streaming ${entry2.path}` });
+    async function* chunks() {
+      for (let at = 0n; at < length; ) {
+        const want = Number(length - at < STREAM_CHUNK_BYTES ? length - at : STREAM_CHUNK_BYTES);
+        const bytes = await source.read(start + at, want, signal);
+        if (bytes.byteLength !== want) {
+          throw new RangeError(`the container gave ${bytes.byteLength} of ${want} bytes at ${at} of ${entry2.path}`);
         }
-      });
-      postOpenResources = openedResources;
-      best.resources.add(() => openedResources.dispose());
-      best.logicalState.resources = openedResources;
-    }
-    if (postOpenResources !== void 0)
-      best.logicalState.resources = postOpenResources;
-    best.logicalState.live = true;
-    best.resources.add(() => {
-      best.logicalState.live = false;
-    });
-    const descriptor = await assembleSubjectDescriptor(await session.descriptor());
-    throwIfAborted(options.signal);
-    if (session.state() === "disposed" || grantValidity(best.effectiveGrant).state !== "valid") {
-      throw new ModkitError({
-        code: "x3.host/subject-context-unavailable",
-        message: "The subject context stopped being live while its descriptor was initialized."
-      });
-    }
-    if (descriptor.interpretation !== "codec" || descriptor.identity.codecId !== best.contributionId || descriptor.subjectUri !== options.source.ref.uri || descriptor.revision !== options.source.revision) {
-      throw new ModkitError({
-        code: "x3.host/subject-session-identity-mismatch",
-        message: "opened codec session does not describe the selected source and codec"
-      });
-    }
-    const selectedExplanation = explanations.find((item) => item.contributionId === best.contributionId && item.variantId === best.offer.runtimeVariant && item.offerId === best.logicalOffer.offerId);
-    if (selectedExplanation !== void 0) {
-      const index = explanations.indexOf(selectedExplanation);
-      explanations[index] = Object.freeze({ ...selectedExplanation, state: "selected" });
-    }
-    const record3 = inventoryRecordFor(best.contribution)?.publicRecord;
-    if (record3 === void 0) {
-      throw new ModkitError({
-        code: "x3.host/detection-selection-unattested",
-        message: "selected codec has no attested inventory record"
-      });
-    }
-    const detectionSelectionText = serializeCodecDetectionSelection(buildCodecDetectionSelection({
-      sourceRevision: options.source.revision,
-      extensionId: best.extensionId,
-      contributionId: best.contributionId,
-      variantId: best.offer.runtimeVariant,
-      offerId: best.logicalOffer.offerId,
-      artifactDigest: record3.artifactDigest,
-      manifestDigest: record3.manifestDigest,
-      sourceTopology: best.spec.sourceTopology,
-      detection: best.detection
-    }));
-    const lockText = serializePolicyLock([
-      ...best.nestedLocks,
-      ...best.selectionLock === void 0 ? [] : [best.selectionLock]
-    ]);
-    const isReadAuthorized = () => grantValidity(best.effectiveGrant).state === "valid" && best.effectiveGrant.classes.includes("read-source");
-    const models = options.provideRasterResources === false ? void 0 : createSubjectModelResources({
-      state: best.rasterState,
-      budget: best.effectiveBudget,
-      isAuthorized: isReadAuthorized,
-      ancestors: [`${options.source.ref.id}@${options.source.revision}`],
-      own: (release) => best.resources.add(release),
-      open: (source, path, signal) => openSubject({
-        inventory: options.inventory,
-        source,
-        path,
-        target: options.target,
-        intent: "full",
-        grant: { ...best.effectiveGrant, classes: ["read-source"] },
-        budget: best.effectiveBudget,
-        executionBackends,
-        ...best.rasterState.resources === void 0 ? {} : { resourceSession: best.rasterState.resources },
-        ...options.resolveInput === void 0 ? {} : { resolveInput: options.resolveInput },
-        ...options.serviceDefinitions === void 0 ? {} : { serviceDefinitions: options.serviceDefinitions },
-        ...options.policy === void 0 ? {} : { policy: options.policy },
-        ...signal === void 0 ? {} : { signal }
-      })
-    });
-    if (catalog !== void 0)
-      best.resources.add(() => catalog.release());
-    const managedSession = sessionWithResources(session, best.resources, {
-      spec: best.spec,
-      grant: best.effectiveGrant,
-      ...catalog === void 0 ? {} : { catalog: catalog.entities }
-    }, () => {
-      best.logicalState.live = false;
-    }, models);
-    if (postOpenResources !== void 0)
-      best.rasterState.resources = postOpenResources;
-    best.rasterState.live = true;
-    best.resources.add(() => {
-      best.rasterState.live = false;
-    });
-    openedSession = void 0;
-    const rasterResources = options.provideRasterResources === false ? void 0 : createSubjectRasterResources({
-      state: best.rasterState,
-      budget: best.effectiveBudget,
-      companionRule,
-      isAuthorized: () => grantValidity(best.effectiveGrant).state === "valid" && best.effectiveGrant.classes.includes("read-source"),
-      open: (source, hint, signal) => openSubject({
-        inventory: options.inventory,
-        source,
-        ...hint,
-        ...resourceInputFor(options.resolveInput, hint.path),
-        target: options.target,
-        intent: "full",
-        grant: { ...best.effectiveGrant, classes: ["read-source"] },
-        budget: best.effectiveBudget,
-        executionBackends,
-        provideRasterResources: false,
-        ...options.serviceDefinitions === void 0 ? {} : { serviceDefinitions: options.serviceDefinitions },
-        ...options.policy === void 0 ? {} : { policy: options.policy },
-        ...signal === void 0 ? {} : { signal }
-      })
-    });
-    return Object.freeze({
-      state: "opened",
-      session: managedSession,
-      ...postOpenResources === void 0 ? {} : { resources: postOpenResources },
-      ...rasterResources === void 0 ? {} : { rasterResources },
-      descriptor,
-      ticket: best.ticket,
-      detectionSelectionText,
-      lockText,
-      selected: Object.freeze({
-        extensionId: best.extensionId,
-        contributionId: best.contributionId,
-        variantId: best.offer.runtimeVariant,
-        offerId: best.logicalOffer.offerId,
-        confidence: best.detection.confidence
-      }),
-      candidates: Object.freeze(explanations),
-      diagnostics: Object.freeze([...diagnostics, ...best.activationDiagnostics])
-    });
-  } catch (error3) {
-    best.logicalState.live = false;
-    if (openedSession !== void 0) {
-      try {
-        await openedSession.dispose();
-      } catch (disposeError) {
-        diagnostics.push(caughtDiagnostic("session-dispose", disposeError));
+        yield bytes;
+        at += BigInt(want);
       }
     }
-    await releaseCandidate(best, diagnostics);
-    diagnostics.push(caughtDiagnostic("input-open", error3));
-    const descriptor = await unresolvedDescriptor(options, detected.map((candidate) => candidate.detection));
-    return Object.freeze({
-      state: "unresolved",
-      reason: "input-unresolved",
-      descriptor,
-      fallback: await unresolvedFallback(options.source, options.signal),
-      candidates: Object.freeze(explanations),
-      diagnostics: Object.freeze(diagnostics)
-    });
+    const wroteTo = await sink(name, chunks(), signal);
+    return { byteLength: Number(length), wroteTo };
+  } finally {
+    for (const lease2 of leases.reverse())
+      await lease2.release();
   }
 }
-function scanContainerAliases(options) {
-  const empty = { aliases: Object.freeze([]), skipped: Object.freeze([]) };
-  if (options.source.kind !== "bytes") {
-    return Object.freeze({ ...empty, aliasShaped: 0, codecs: 0 });
-  }
-  const path = options.path ?? options.source.ref.uri;
-  const aliases = [];
-  const skipped = [];
-  let aliasShaped = 0;
-  let codecs = 0;
-  for (const extension of options.inventory.extensions) {
-    for (const contribution of extension.contributions) {
-      const manifest = contribution.manifest;
-      if (manifest?.contract.id !== CODEC_CONTRIBUTION_CONTRACT || manifest.contract.major !== 1) {
-        continue;
-      }
-      codecs += 1;
-      const spec = manifest.spec;
-      if (spec?.container === void 0 || spec.sourceTopology !== "namespace")
-        continue;
-      aliasShaped += 1;
-      if (!matchesSpec(spec, path, options.mediaType))
-        continue;
-      const entry2 = {
-        contributionId: manifest.id,
-        extensionId: extension.manifest?.id ?? extension.source
-      };
-      if (!contribution.activationEligible)
-        continue;
-      if (!spec.openIntents.includes(options.intent)) {
-        skipped.push(Object.freeze({
-          ...entry2,
-          reason: `open intent \xAB${options.intent}\xBB is not declared (${spec.openIntents.join(", ")})`
-        }));
-        continue;
-      }
-      aliases.push(Object.freeze({ contributionId: manifest.id, spec }));
-    }
-  }
-  return Object.freeze({
-    aliases: Object.freeze(aliases),
-    aliasShaped,
-    codecs,
-    skipped: Object.freeze(skipped)
-  });
-}
-function containerAliasAbsence(scan, options) {
-  const path = (options.path ?? options.source.ref.uri).split(/[\\/]/u).at(-1) ?? "";
-  const explained = scan.skipped.map((item) => diagnostic("warning", "x3.host/container-alias-skipped", `\xAB${item.contributionId}\xBB claims \xAB${path}\xBB but did not enter detection: ${item.reason}`, [item.extensionId, item.contributionId]));
-  if (scan.aliasShaped === 0 && options.source.kind === "bytes") {
-    explained.push(diagnostic("information", "x3.host/container-alias-none", `no container-alias codec was in the inventory when \xAB${path}\xBB was opened`, [path], { codecContributions: scan.codecs, extensions: options.inventory.extensions.length }));
-  }
-  return Object.freeze(explained);
-}
-function carrierShaped(result) {
-  if (result.state !== "opened")
-    return true;
-  const descriptor = result.descriptor;
-  return (descriptor.traits ?? []).some((trait) => typeof trait.id === "string" && trait.id.startsWith("container.")) || (descriptor.dataSources ?? []).some((source) => source.contract === "common.view/namespace-entry-source");
-}
-function withDiagnostics(result, extra) {
-  if (extra.length === 0)
-    return result;
-  const diagnostics = Object.freeze([...result.diagnostics, ...extra]);
-  if (result.state === "opened")
-    return Object.freeze({ ...result, diagnostics });
-  return Object.freeze({ ...result, diagnostics });
-}
-async function disposeOpened(result) {
-  if (result.state === "opened")
-    await result.session.dispose();
-}
-function resourceInputFor(resolveInput, logicalId) {
-  const nested = logicalId === void 0 ? void 0 : resolveInput?.forResource?.(logicalId);
-  return nested === void 0 ? {} : { resolveInput: nested };
-}
-async function openSubject(request) {
-  const policies = request.logicalResourceDiscovery;
-  const options = {
-    ...request,
-    ...policies === void 0 ? {} : { logicalResourceDiscovery: snapshotLogicalResourceDiscoveryPolicies(policies) }
-  };
-  const compositionStartedAt = Date.now();
-  const scan = scanContainerAliases(options);
-  const aliases = scan.aliases;
-  if (aliases.length === 0) {
-    const direct = await openSubjectDirect(options);
-    return withDiagnostics(direct, carrierShaped(direct) ? containerAliasAbsence(scan, options) : []);
-  }
-  const formats = [
-    ...new Set(aliases.map((alias) => alias.spec.container?.formatId).filter(Boolean))
-  ];
-  if (formats.length !== 1) {
-    throw new ModkitError({
-      code: "x3.host/container-alias-ambiguous",
-      message: `subject selectors name ${formats.length} different container formats`,
-      context: { formats: formats.sort(compareUtf8) }
-    });
-  }
-  if (options.budget.maxDepth < 1) {
-    throw new ModkitError({
-      code: "x3.host/container-composition-depth-exceeded",
-      message: "container composition requires one remaining subject depth"
-    });
-  }
-  const formatId = formats[0];
-  const parent = await openSubjectDirect(options, {
-    containerProviderFormatId: formatId,
-    includeSelectionLock: true
-  });
-  if (parent.state !== "opened") {
-    if (parent.reason === "no-match") {
-      return withDiagnostics(await openSubjectDirect(options), parent.diagnostics);
-    }
-    return Object.freeze({
-      ...parent,
-      reason: "input-unresolved",
-      diagnostics: Object.freeze([
-        ...parent.diagnostics,
-        diagnostic("error", "x3.host/container-provider-unavailable", `no unique runnable container provider opened format ${formatId}`, [formatId])
-      ])
-    });
-  }
-  let composition;
-  let semanticSession;
-  try {
-    throwIfAborted(options.signal);
-    composition = await createContainerNamespaceComposition({
-      parent: parent.session,
-      root: options.source.ref,
-      revision: options.source.revision,
-      budget: options.budget,
-      ...options.signal === void 0 ? {} : { signal: options.signal }
-    });
-    throwIfAborted(options.signal);
-    const elapsed = Date.now() - compositionStartedAt;
-    const remainingDeadline = options.budget.deadlineMs === void 0 ? void 0 : options.budget.deadlineMs - elapsed;
-    if (remainingDeadline !== void 0 && remainingDeadline <= 0) {
-      throw new ModkitError({
-        code: "x3.host/container-composition-deadline-exceeded",
-        message: "container composition exhausted the subject-open deadline before semantic probing"
-      });
-    }
-    const semanticBudget = Object.freeze({
-      ...options.budget,
-      maxDepth: options.budget.maxDepth - 1,
-      ...remainingDeadline === void 0 ? {} : { deadlineMs: remainingDeadline }
-    });
-    const semantic = await openSubjectDirect({ ...options, source: composition.source, budget: semanticBudget }, {
-      containerAliasFormatId: formatId,
-      openResources: composition.openResources,
-      containerAliasContributionIds: new Set(aliases.map((alias) => alias.contributionId))
-    });
-    if (semantic.state !== "opened") {
-      await composition.dispose();
-      composition = void 0;
-      if (semantic.reason === "no-candidate" || semantic.reason === "no-match") {
-        return withDiagnostics(parent, [
-          ...semantic.diagnostics,
-          diagnostic("warning", "x3.host/container-semantic-unclaimed", `no semantic alias claimed the ${formatId} namespace (${semantic.reason}); the carrier view wins`, aliases.map((alias) => alias.contributionId), {
-            reason: semantic.reason,
-            candidates: semantic.candidates.map((item) => ({
-              contributionId: item.contributionId,
-              state: item.state,
-              confidence: item.confidence,
-              diagnostics: item.diagnostics.map((entry2) => entry2.code)
-            }))
-          })
-        ]);
-      }
-      await parent.session.dispose();
-      return semantic;
-    }
-    semanticSession = semantic.session;
-    const selectedAlias = aliases.find((alias) => alias.contributionId === semantic.selected.contributionId);
-    if (selectedAlias === void 0) {
-      throw new ModkitError({
-        code: "x3.host/container-semantic-selection-invalid",
-        message: "selected semantic codec is not one of the matched container aliases"
-      });
-    }
-    const selectedSpec = selectedAlias.spec;
-    const needsPack = selectedSpec.operations.some((operation) => operation.mutatesSource && operation.outputKinds?.includes("edit-plan"));
-    if (needsPack && composition.packHandlerId === void 0) {
-      throw new ModkitError({
-        code: "x3.host/container-pack-unavailable",
-        message: `container provider for ${formatId} must publish container.pack for mutating semantic aliases`
-      });
-    }
-    if (selectedSpec.operations.some((operation) => operation.id === "export.raw") && composition.exportRawHandlerId === void 0) {
-      throw new ModkitError({
-        code: "x3.host/container-export-raw-unavailable",
-        message: `container provider for ${formatId} must publish export.raw for semantic raw export`
-      });
-    }
-    const session = composition.wrapSession(semanticSession, semantic.descriptor, selectedSpec, parent.session);
-    semanticSession = void 0;
-    composition = void 0;
-    const lockText = serializePolicyLock([
-      ...parsePolicyLock(parent.lockText).entries,
-      ...parsePolicyLock(semantic.lockText).entries
-    ]);
-    return Object.freeze({
-      ...semantic,
-      session,
-      lockText,
-      carrier: Object.freeze({ descriptor: parent.descriptor, selected: parent.selected }),
-      candidates: Object.freeze([...parent.candidates, ...semantic.candidates]),
-      diagnostics: Object.freeze([...parent.diagnostics, ...semantic.diagnostics])
-    });
-  } catch (error3) {
-    if (semanticSession !== void 0) {
-      try {
-        await semanticSession.dispose();
-      } catch {
-      }
-    }
-    if (composition !== void 0) {
-      try {
-        await composition.dispose();
-      } catch {
-      }
-    }
-    try {
-      await disposeOpened(parent);
-    } catch {
-    }
-    throw error3;
-  }
-}
-
-// ../MODDING/modkit-core/packages/host/dist/input-resolution.js
-var COMPANION_REQUIRED_MISSING = "x3.host/companion-required-missing";
-var COMPANION_AMBIGUOUS = "x3.host/companion-ambiguous";
-var COMPANION_PATH_REFUSED = "x3.host/companion-path-refused";
-var COMPANION_PATTERN_INVALID = "x3.host/companion-pattern-invalid";
-var COMPANION_SCOPE_UNSUPPORTED = "x3.host/companion-scope-unsupported";
-var COMPANION_BUDGET_EXCEEDED = "x3.host/companion-budget-exceeded";
-var COMPANION_PLAN_INVALID = "x3.host/companion-plan-invalid";
-var COMPANION_TRAIT_PROBE_UNAVAILABLE = "x3.host/companion-trait-probe-unavailable";
-var COMPANION_UNAVAILABLE = "x3.host/companion-unavailable";
-function traitIdsOf(query, key3) {
-  return (query[key3] ?? []).map((item) => item.id);
-}
-function createSignatureTraitProbe(inventory) {
-  const entries = [];
-  for (const extension of inventory.extensions) {
-    for (const contribution of extension.contributions) {
-      const manifest = contribution.manifest;
-      if (manifest?.contract.id !== CODEC_CONTRIBUTION_CONTRACT || manifest.contract.major !== 1) {
-        continue;
-      }
-      const spec = manifest.spec;
-      const signatures = spec.match.signatures;
-      if (signatures === void 0 || signatures.length === 0)
-        continue;
-      entries.push({
-        signatures,
-        traits: (spec.traitDeclarations ?? []).map((item) => item.id)
-      });
-    }
-  }
-  const needs = signatureNeeds(entries.map((entry2) => entry2.signatures));
-  return async (request, signal) => {
-    for (const key3 of ["all", "any", "none"]) {
-      if ((request.expected[key3] ?? []).some((item) => item.states !== void 0)) {
-        throw new ModkitError({
-          code: COMPANION_TRAIT_PROBE_UNAVAILABLE,
-          message: "the signature trait probe proves declared traits, not observed trait states; a state-constrained companion query needs a probe this composition does not have",
-          context: { requirementId: request.requirementId, logicalId: request.logicalId }
-        });
-      }
-    }
-    if (request.source.kind !== "bytes")
-      return false;
-    const source = request.source;
-    const size = source.size;
-    if (size === void 0)
-      return false;
-    const budget = BigInt(request.maxBytes);
-    const headLength = Number([size, BigInt(needs.prefix), budget].reduce((left, right) => left < right ? left : right));
-    const head = headLength <= 0 ? new Uint8Array(0) : await source.read(0n, headLength, signal);
-    const tailLength = Number([size, BigInt(needs.suffix), budget - BigInt(headLength)].reduce((left, right) => left < right ? left : right));
-    const tail = tailLength <= 0 ? new Uint8Array(0) : await source.read(size - BigInt(tailLength), tailLength, signal);
-    const windows = { head, tail, size };
-    const declared = /* @__PURE__ */ new Set();
-    for (const entry2 of entries) {
-      if (!matchesSignatures(entry2.signatures, windows))
-        continue;
-      for (const trait of entry2.traits)
-        declared.add(trait);
-    }
-    const all = traitIdsOf(request.expected, "all");
-    const any = traitIdsOf(request.expected, "any");
-    const none = traitIdsOf(request.expected, "none");
-    if (!all.every((id) => declared.has(id)))
-      return false;
-    if (any.length > 0 && !any.some((id) => declared.has(id)))
-      return false;
-    if (none.some((id) => declared.has(id)))
-      return false;
-    return true;
-  };
-}
-var DEFAULT_COMPANION_LIMITS = Object.freeze({
-  // One scope of a game archive: a model's bare texture name is looked for in every folder of the
-  // enclosing container, and Emperor's 3DDATA0001.RFH holds 3 749 entries, Diablo III's anim/ 15 258.
-  maxEntries: 65536,
-  maxProbes: 64,
-  maxProbeBytes: 256 * 1024,
-  // A binding is a reference into a scope already bounded by maxEntries. Kane's Wrath's compiled
-  // containers bind their meshes and clips one by one: the MARV names 164 parts, the Eradicator
-  // Hexapod 175 plus 19 clips, and at 64 they did not open.
-  maxBindings: 1024
-});
-var DRIVE_PREFIX = /^[A-Za-z]:/u;
-function refusePath(value, why, context) {
-  throw new ModkitError({
-    code: COMPANION_PATH_REFUSED,
-    message: `companion logical id \xAB${value}\xBB is refused: ${why}`,
-    context: { ...context, logicalId: value }
-  });
-}
-function normalizeCompanionLogicalId(value, context = {}) {
-  if (value.includes("\0"))
-    refusePath(value, "it contains a NUL byte", context);
-  const slashed = value.replaceAll("\\", "/");
-  if (slashed.startsWith("//"))
-    refusePath(slashed, "it is a UNC path", context);
-  if (slashed.startsWith("/"))
-    refusePath(slashed, "it is an absolute path", context);
-  if (DRIVE_PREFIX.test(slashed))
-    refusePath(slashed, "it carries a drive prefix", context);
-  const parts = [];
-  for (const part of slashed.split("/")) {
-    if (part === "" || part === ".")
-      continue;
-    if (part === "..")
-      refusePath(slashed, "it escapes the confined origin root", context);
-    parts.push(part);
-  }
-  const normalized2 = parts.join("/");
-  if (normalized2 === "")
-    refusePath(value, "it names nothing", context);
-  return normalized2;
-}
-var WILDCARDS = /* @__PURE__ */ new Set(["*", "?"]);
-function compilePatterns(requirementId, patterns, caseSensitivity) {
-  if (patterns === void 0 || patterns.length === 0) {
-    throw new ModkitError({
-      code: COMPANION_PATTERN_INVALID,
-      message: `requirement \xAB${requirementId}\xBB declares no patterns; an unbounded companion scan is refused`,
-      context: { requirementId }
-    });
-  }
-  const bodies = patterns.map((pattern) => pattern.replace(/^\.[\\/]/u, ""));
-  const expressions = [];
-  for (const pattern of patterns) {
-    const invalid2 = (why) => {
-      throw new ModkitError({
-        code: COMPANION_PATTERN_INVALID,
-        message: `companion pattern \xAB${pattern}\xBB of requirement \xAB${requirementId}\xBB is refused: ${why}`,
-        context: { requirementId, pattern }
-      });
-    };
-    if (pattern.length === 0)
-      invalid2("it is empty");
-    if (pattern.includes("\0"))
-      invalid2("it contains a NUL byte");
-    if (pattern.includes("**"))
-      invalid2("recursive patterns are not a bounded companion search");
-    if (pattern.startsWith("/") || pattern.startsWith("\\"))
-      invalid2("it is an absolute path");
-    if (DRIVE_PREFIX.test(pattern))
-      invalid2("it carries a drive prefix");
-    if (pattern.replaceAll("\\", "/").split("/").includes("..")) {
-      invalid2("it escapes the confined origin root");
-    }
-    if (![...pattern].some((character) => !WILDCARDS.has(character))) {
-      invalid2("it has no literal part and would match every entry");
-    }
-    const slashed = pattern.replaceAll("\\", "/");
-    const rooted = slashed.startsWith("./");
-    const body = rooted ? slashed.slice(2) : slashed;
-    if (body.length === 0)
-      invalid2("it is empty");
-    let expression = "^";
-    for (const character of body) {
-      if (character === "*")
-        expression += "[^/]*";
-      else if (character === "?")
-        expression += "[^/]";
-      else
-        expression += character.replace(/[\\^$.*+?()[\]{}|]/gu, "\\$&");
-    }
-    expressions.push({
-      expression: new RegExp(`${expression}$`, caseSensitivity === "insensitive" ? "iu" : "u"),
-      whole: rooted || body.includes("/")
-    });
-  }
-  return {
-    test: (logicalId) => {
-      const name = logicalId.split("/").at(-1) ?? logicalId;
-      return expressions.some((item) => item.expression.test(item.whole ? logicalId : name));
-    },
-    prefixes: enumerationPrefixes(bodies, caseSensitivity),
-    namePrefix: enumerationNamePrefix(bodies, caseSensitivity)
-  };
-}
-function enumerationPrefixes(patterns, caseSensitivity) {
-  const paths = patterns.map((pattern) => pattern.replaceAll("\\", "/"));
-  if (paths.some((path) => !path.includes("/") || /[*?]/u.test(path)))
-    return [enumerationPrefix(patterns)];
-  const unique = /* @__PURE__ */ new Map();
-  for (const path of paths) {
-    const key3 = caseSensitivity === "insensitive" ? path.toLowerCase() : path;
-    if (!unique.has(key3))
-      unique.set(key3, path);
-  }
-  return [...unique.values()];
-}
-function enumerationNamePrefix(patterns, caseSensitivity) {
-  const directory = enumerationPrefix(patterns);
-  if (directory === "")
-    return "";
-  const fold4 = (value) => caseSensitivity === "insensitive" ? value.toLowerCase() : value;
-  const starts = patterns.map((pattern) => {
-    const normalized2 = pattern.replaceAll("\\", "/");
-    const wildcard = normalized2.search(/[*?]/u);
-    if (wildcard === -1 || !fold4(normalized2).startsWith(fold4(directory)))
-      return void 0;
-    const literal = normalized2.slice(directory.length, wildcard);
-    return literal.includes("/") ? void 0 : literal;
-  });
-  if (starts.some((start) => start === void 0))
-    return "";
-  let common = starts[0];
-  for (const start of starts.slice(1)) {
-    let length = 0;
-    while (length < common.length && length < start.length && fold4(common[length]) === fold4(start[length]))
-      length += 1;
-    common = common.slice(0, length);
-  }
-  return common;
-}
-function enumerationPrefix(patterns) {
-  const safe = patterns.map((pattern) => {
-    const normalized2 = pattern.replaceAll("\\", "/");
-    if (!normalized2.includes("/"))
-      return "";
-    const wildcard = normalized2.search(/[*?]/u);
-    if (wildcard === -1)
-      return normalized2;
-    const literal = normalized2.slice(0, wildcard);
-    const cut2 = literal.lastIndexOf("/");
-    return cut2 === -1 ? "" : literal.slice(0, cut2 + 1);
-  });
-  const first = safe[0];
-  if (first === void 0)
-    return "";
-  if (safe.every((value) => value === first))
-    return first;
-  let common = first;
-  for (const value of safe.slice(1)) {
-    let length = 0;
-    while (length < common.length && length < value.length && common[length] === value[length]) {
-      length += 1;
-    }
-    common = common.slice(0, length);
-  }
-  const cut = common.lastIndexOf("/");
-  return cut === -1 ? "" : common.slice(0, cut + 1);
-}
-function validateRequirements(requirements) {
-  const seen = /* @__PURE__ */ new Set();
-  for (const requirement of requirements) {
-    const invalid2 = (why) => {
-      throw new ModkitError({
-        code: COMPANION_PLAN_INVALID,
-        message: `companion requirement \xAB${requirement.id}\xBB is invalid: ${why}`,
-        context: { requirementId: requirement.id, role: requirement.role }
-      });
-    };
-    if (typeof requirement.id !== "string" || requirement.id.trim().length === 0) {
-      invalid2("its id is blank");
-    }
-    if (seen.has(requirement.id))
-      invalid2("its id is not unique within the plan");
-    seen.add(requirement.id);
-    if (typeof requirement.role !== "string" || requirement.role.trim().length === 0) {
-      invalid2("its role is blank");
-    }
-    if (!["owned", "companion", "external"].includes(requirement.ownership)) {
-      invalid2(`ownership \xAB${String(requirement.ownership)}\xBB is not a declared ownership`);
-    }
-    const required = requirement.cardinality === "one" || requirement.cardinality === "one-or-more";
-    if (requirement.required !== required) {
-      invalid2(`cardinality \xAB${requirement.cardinality}\xBB does not agree with required=${String(requirement.required)}`);
-    }
-    if (!Array.isArray(requirement.scopes) || requirement.scopes.length === 0) {
-      invalid2("it declares no search scope");
-    }
-  }
-}
-function createLayeredCompanionOrigin(origins) {
-  const first = origins[0];
-  if (first === void 0)
-    throw new TypeError("a layered companion origin needs a backend");
-  const fold4 = (value) => first.caseSensitivity === "insensitive" ? value.toLowerCase() : value;
-  const producedBy = /* @__PURE__ */ new Map();
-  return Object.freeze({
-    primaryLogicalId: first.primaryLogicalId,
-    caseSensitivity: first.caseSensitivity,
-    scopes: Object.freeze([...new Set(origins.flatMap((origin) => [...origin.scopes]))]),
-    async *enumerate(scope, options, signal) {
-      const seen = /* @__PURE__ */ new Set();
-      for (const origin of origins) {
-        if (!origin.scopes.includes(scope))
-          continue;
-        for await (const entry2 of origin.enumerate(scope, options, signal)) {
-          const key3 = fold4(entry2.logicalId);
-          if (seen.has(key3))
-            continue;
-          seen.add(key3);
-          producedBy.set(key3, origin);
-          yield entry2;
-        }
-      }
-    },
-    async open(logicalId, signal) {
-      const remembered = producedBy.get(fold4(logicalId));
-      if (remembered !== void 0)
-        return remembered.open(logicalId, signal);
-      let failure3;
-      for (const origin of origins) {
+var convertCommand = {
+  id: CONVERT_COMMAND,
+  title: "Convert",
+  summary: "Export a subject through the codec\u2019s own conversion, when it publishes one.",
+  needsSubject: true,
+  mutatesSource: false,
+  operationId: CONVERT,
+  async run(context, input) {
+    return withCommandSubject(CONVERT_COMMAND, context, String(input.subject), async (subject, session, descriptor, diagnostics) => {
+      if (input["operation"] !== void 0 && typeof input["operation"] !== "string")
+        return failed(CONVERT_COMMAND, COMMAND_INPUT_INVALID, "operation must be an operation id", diagnostics);
+      const worldFormat = input["operation"] === void 0 && (input["target"] === "uvw" || input["target"] === "uvp") ? input["target"] : void 0;
+      if (worldFormat !== void 0 && descriptor.dataSources?.some((offer) => offer.contract === WORLD_SCENE_SOURCE && offer.major === 1)) {
+        const write = worldFormat === "uvw" ? context.worldToUvw : context.worldToUvp;
+        const name = worldFormat.toUpperCase();
+        if (write === void 0)
+          return unavailable(CONVERT_COMMAND, `this application has no UV module to write ${name}`, "convert with the CLI or the desktop application", diagnostics);
+        context.progress?.({ step: "convert", message: `materializing the map world as ${name}` });
+        const lease2 = await session.dataSource(WORLD_SCENE_SOURCE, 1);
         try {
-          return await origin.open(logicalId, signal);
-        } catch (error3) {
-          failure3 ??= error3;
-        }
-      }
-      throw failure3 ?? new TypeError(`no layered origin holds \xAB${logicalId}\xBB`);
-    }
-  });
-}
-function createCompanionInputResolver(origin, options = {}) {
-  const limits = Object.freeze({
-    ...DEFAULT_COMPANION_LIMITS,
-    ...options.limits
-  });
-  const now = options.now ?? (() => Date.now());
-  const report = options.onDiagnostic;
-  const explicit = options.explicitSelections;
-  const resolver = async (context) => {
-    const plan = context.plan;
-    if (plan.originKind === "derived" || plan.requirements.length === 0) {
-      return defaultResolveInput(context);
-    }
-    if (plan.originKind === "bundle" && context.source.kind !== "bytes") {
-      throw new ModkitError({
-        code: "x3.host/input-topology-mismatch",
-        message: "a bundle input plan requires a byte subject source"
-      });
-    }
-    if (plan.originKind === "namespace" && context.source.kind !== "namespace") {
-      throw new ModkitError({
-        code: "x3.host/input-topology-mismatch",
-        message: "a namespace input plan requires a namespace subject source"
-      });
-    }
-    const signal = context.signal;
-    const deadlineAt = options.deadlineMs === void 0 ? void 0 : now() + options.deadlineMs;
-    const budget = { entries: 0, probes: 0, probeBytes: 0, bindings: 0 };
-    const checkpoint = (stage) => {
-      throwIfAborted(signal);
-      if (deadlineAt !== void 0 && now() > deadlineAt) {
-        throw new ModkitError({
-          code: COMPANION_BUDGET_EXCEEDED,
-          message: `companion resolution exceeded its ${String(options.deadlineMs)}ms deadline`,
-          context: { limit: "deadline", stage, deadlineMs: options.deadlineMs }
-        });
-      }
-    };
-    const exceeded = (limit, value) => {
-      throw new ModkitError({
-        code: COMPANION_BUDGET_EXCEEDED,
-        message: `companion resolution exceeded its ${limit} limit of ${value}`,
-        context: { limit, value }
-      });
-    };
-    const refuse3 = (code, message, detail) => {
-      report?.(diagnostic("error", code, message, [String(detail["requirementId"])], detail));
-      throw new ModkitError({ code, message, context: detail });
-    };
-    validateRequirements(plan.requirements);
-    const enumerated = /* @__PURE__ */ new Map();
-    const served = new Set(origin.scopes);
-    if (explicit !== void 0)
-      served.add("explicit-user-selection");
-    const enumerateScope = async (scope, prefix, namePrefix = "") => {
-      const key3 = canonicalJsonStringify([scope, prefix, namePrefix]);
-      const cached = enumerated.get(key3);
-      if (cached !== void 0)
-        return cached;
-      const ids = [];
-      if (scope === "explicit-user-selection") {
-        for (const value of Object.values(explicit ?? {}).flat()) {
-          ids.push(normalizeCompanionLogicalId(value, { scope }));
-        }
-      } else {
-        let taken = 0;
-        for await (const entry2 of origin.enumerate(scope, namePrefix === "" ? { prefix } : { prefix, namePrefix }, signal)) {
-          checkpoint(`enumerate:${scope}`);
-          budget.entries += 1;
-          taken += 1;
-          if (taken > limits.maxEntries)
-            exceeded("entries", limits.maxEntries);
-          ids.push(normalizeCompanionLogicalId(entry2.logicalId, { scope }));
-        }
-      }
-      const frozen = Object.freeze(ids);
-      enumerated.set(key3, frozen);
-      return frozen;
-    };
-    const fold4 = (value) => origin.caseSensitivity === "insensitive" ? value.toLowerCase() : value;
-    const primaryKey = fold4(normalizeCompanionLogicalId(origin.primaryLogicalId));
-    const selected = [];
-    const usedBindingIds = /* @__PURE__ */ new Set();
-    const pinned = /* @__PURE__ */ new Map();
-    for (const requirement of plan.requirements) {
-      checkpoint(`requirement:${requirement.id}`);
-      const patterns = compilePatterns(requirement.id, requirement.patterns, origin.caseSensitivity);
-      const requested = [...new Set(requirement.scopes)];
-      const usable = requested.filter((scope) => served.has(scope));
-      if (usable.length === 0) {
-        const detail2 = {
-          requirementId: requirement.id,
-          role: requirement.role,
-          requestedScopes: requested,
-          servedScopes: [...served].sort(compareUtf8),
-          reason: requested.includes("explicit-user-selection") ? "no-product-selection" : requested.includes("workspace-dependency-layer") ? "no-provider" : "origin-cannot-serve-scope"
-        };
-        if (requirement.required) {
-          refuse3(COMPANION_SCOPE_UNSUPPORTED, `required companion \xAB${requirement.role}\xBB (requirement \xAB${requirement.id}\xBB) asks only for scopes this origin cannot serve: ${requested.join(", ")}`, detail2);
-        }
-        report?.(diagnostic("warning", COMPANION_SCOPE_UNSUPPORTED, `optional companion \xAB${requirement.role}\xBB is unavailable: none of its scopes can be served here`, [requirement.id], detail2));
-        continue;
-      }
-      const matched = [];
-      for (const [rank, scope] of usable.entries()) {
-        for (const prefix of patterns.prefixes) {
-          const namePrefix = patterns.prefixes.length === 1 ? patterns.namePrefix : "";
-          for (const logicalId of await enumerateScope(scope, prefix, namePrefix)) {
-            if (scope === "explicit-user-selection" && !(explicit?.[requirement.id] ?? []).some((value) => fold4(normalizeCompanionLogicalId(value)) === fold4(logicalId))) {
-              continue;
+          const world = await write(lease2.value, context.signal);
+          if (world.state === "refused")
+            return failed(CONVERT_COMMAND, `x3.host/world-${worldFormat}-refused`, world.refusals.map((refusal) => `${refusal.code}: ${refusal.message}`).join("; "), diagnostics);
+          const wroteTo2 = context.writeOutput === void 0 ? void 0 : await context.writeOutput(`world.${worldFormat}`, world.bytes, context.signal);
+          return ok(CONVERT_COMMAND, {
+            ref: subject.ref,
+            via: WORLD_SCENE_SOURCE,
+            outputKind: "bytes",
+            byteLength: world.bytes.byteLength,
+            wroteTo: wroteTo2 ?? null,
+            receipt: {
+              artifactDigest: world.artifactDigest,
+              excludedFacetIds: [...world.excludedFacetIds],
+              omittedObjects: world.omittedObjects,
+              lostFields: world.lostFields.map((field) => ({ ...field }))
             }
-            if (fold4(logicalId) === primaryKey)
-              continue;
-            if (!patterns.test(logicalId))
-              continue;
-            matched.push({ rank, logicalId });
-          }
-        }
-      }
-      matched.sort((left, right) => left.rank === right.rank ? compareUtf8(left.logicalId, right.logicalId) : left.rank - right.rank);
-      const unique = [];
-      const seenKeys = /* @__PURE__ */ new Set();
-      for (const { logicalId } of matched) {
-        const key3 = fold4(logicalId);
-        if (seenKeys.has(key3))
-          continue;
-        seenKeys.add(key3);
-        unique.push(logicalId);
-      }
-      const accepted = [];
-      const rejected2 = [];
-      for (const logicalId of unique) {
-        checkpoint(`validate:${requirement.id}`);
-        if (requirement.expected === void 0) {
-          accepted.push(logicalId);
-          continue;
-        }
-        if (options.traitProbe === void 0) {
-          throw new ModkitError({
-            code: COMPANION_TRAIT_PROBE_UNAVAILABLE,
-            message: `requirement \xAB${requirement.id}\xBB declares expected traits but this host wired no companion trait probe`,
-            context: { requirementId: requirement.id, role: requirement.role }
-          });
-        }
-        budget.probes += 1;
-        if (budget.probes > limits.maxProbes)
-          exceeded("probes", limits.maxProbes);
-        const remaining = limits.maxProbeBytes - budget.probeBytes;
-        if (remaining <= 0)
-          exceeded("probeBytes", limits.maxProbeBytes);
-        const lease2 = await origin.open(logicalId, signal);
-        let ok2 = false;
-        try {
-          pinned.set(logicalId, { ref: lease2.value.ref, revision: lease2.value.revision });
-          ok2 = await options.traitProbe({
-            requirementId: requirement.id,
-            logicalId,
-            // every byte the probe pulls is counted by the host, not reported by the probe
-            source: countingSource(lease2.value, (read) => {
-              budget.probeBytes += read;
-              if (budget.probeBytes > limits.maxProbeBytes) {
-                exceeded("probeBytes", limits.maxProbeBytes);
-              }
-            }),
-            expected: requirement.expected,
-            maxBytes: remaining
-          }, signal);
+          }, diagnostics);
         } finally {
           await lease2.release();
         }
-        ;
-        (ok2 ? accepted : rejected2).push(logicalId);
       }
-      const detail = {
-        requirementId: requirement.id,
-        role: requirement.role,
-        cardinality: requirement.cardinality,
-        checkedScopes: usable,
-        requestedScopes: requested,
-        matched: unique.length,
-        rejectedByExpectedTraits: rejected2
-      };
-      const singular = requirement.cardinality === "one" || requirement.cardinality === "zero-or-one";
-      if (singular && accepted.length > 1) {
-        refuse3(COMPANION_AMBIGUOUS, `companion \xAB${requirement.role}\xBB (requirement \xAB${requirement.id}\xBB) admits at most one candidate but ${accepted.length} matched in ${usable.join(", ")}`, { ...detail, candidates: accepted });
+      if (worldFormat !== void 0)
+        return unavailable(CONVERT_COMMAND, `this subject publishes no map world to write as ${worldFormat.toUpperCase()}`, "open the map itself, or a package naming one map; name an operation to run it instead", diagnostics);
+      const target = typeof input["target"] === "string" ? input["target"] : void 0;
+      const operation = (input["operation"] === void 0 && target !== void 0 ? selectedOperation(descriptor, target === "uvm" ? ["model.export-uvm"] : ["model.export-native", "map.export-native", "export.convert"], void 0) : void 0) ?? selectedOperation(descriptor, SUBJECT_COMMAND_TARGETS.convert.operationIds, input["operation"]);
+      if (operation === void 0) {
+        return unavailable(CONVERT_COMMAND, `the requested export is unavailable \u2014 ${publishedOperations(descriptor)}`, "run subject.inspect to see which data sources it does publish; a universal projection is the route for formats with no native export", diagnostics);
       }
-      if (requirement.required && accepted.length === 0) {
-        refuse3(COMPANION_REQUIRED_MISSING, `required companion \xAB${requirement.role}\xBB (requirement \xAB${requirement.id}\xBB) was not found in any checked scope: ${usable.join(", ")}`, detail);
-      }
-      if (accepted.length === 0) {
-        report?.(diagnostic("information", COMPANION_UNAVAILABLE, `optional companion \xAB${requirement.role}\xBB is absent; the dependent capability stays unavailable`, [requirement.id], {
-          ...detail,
-          reason: rejected2.length > 0 ? "expected-traits-rejected" : "no-candidate-matched"
-        }));
-        continue;
-      }
-      for (const logicalId of accepted) {
-        checkpoint(`bind:${requirement.id}`);
-        budget.bindings += 1;
-        if (budget.bindings > limits.maxBindings)
-          exceeded("bindings", limits.maxBindings);
-        const bindingId = `${requirement.id}#${logicalId}`;
-        if (usedBindingIds.has(bindingId)) {
-          throw new ModkitError({
-            code: COMPANION_PLAN_INVALID,
-            message: `companion binding id \xAB${bindingId}\xBB is not unique within the resolved input`,
-            context: { requirementId: requirement.id, bindingId }
+      context.progress?.({ step: "convert", message: "running the codec\u2019s export" });
+      const native = operation.id === "model.export-native" || operation.id === "map.export-native";
+      const request = input["operationInput"] === void 0 ? target !== void 0 ? native ? { schemaVersion: 1, formatId: target } : { target } : {} : input["operationInput"];
+      const run = (entities) => invokeSubjectOperation(CONVERT_COMMAND, context, session, operation.handlerId, entities === void 0 ? request : {
+        ...request,
+        [DATA_CATALOG_ENTITIES_INPUT]: entities
+      }, diagnostics);
+      const questions = (result) => result.state === "ok" ? operationCatalogQueries(result) : [];
+      let answer = await run(void 0);
+      if (operation.id === "map.export-native" && questions(answer).length > 0) {
+        const targetContext = typeof input["targetContext"] === "string" ? input["targetContext"] : void 0;
+        if (targetContext === void 0 || context.openTargetCatalog === void 0)
+          return unavailable(CONVERT_COMMAND, `the ${target ?? "map"} encoder needs the target game's catalog`, "name the installation or mod to write for (targetContext; --target-context in the CLI)", answer.state === "ok" ? answer.diagnostics : diagnostics);
+        const catalog = await context.openTargetCatalog(targetContext, context.signal);
+        try {
+          answer = await answerCatalogQueries({
+            run: (entities) => run(entities),
+            queriesOf: questions,
+            catalogEntities: catalog.entities,
+            rounds: 4,
+            initial: answer,
+            ...context.signal === void 0 ? {} : { signal: context.signal }
           });
+        } finally {
+          await catalog.dispose();
         }
-        usedBindingIds.add(bindingId);
-        let identity = pinned.get(logicalId);
-        if (identity === void 0) {
-          let lease2;
-          try {
-            lease2 = await origin.open(logicalId, signal);
-          } catch (error3) {
-            throwIfAborted(signal);
-            if (requirement.required)
-              throw error3;
-            report?.(diagnostic("information", COMPANION_UNAVAILABLE, `optional companion \xAB${requirement.role}\xBB (${logicalId}) could not be opened; the dependent capability stays unavailable`, [requirement.id], {
-              ...detail,
-              reason: "open-failed",
-              error: error3 instanceof Error ? error3.message : String(error3)
-            }));
-            usedBindingIds.delete(bindingId);
-            budget.bindings -= 1;
-            continue;
-          }
-          try {
-            identity = { ref: lease2.value.ref, revision: lease2.value.revision };
-            pinned.set(logicalId, identity);
-          } finally {
-            await lease2.release();
-          }
-        }
-        selected.push({
-          requirement,
-          logicalId,
-          bindingId,
-          ref: identity.ref,
-          revision: identity.revision
+        const unanswered = questions(answer);
+        if (unanswered.length > 0)
+          return failed(CONVERT_COMMAND, "x3.host/native-map-catalog-unanswered", `the ${target ?? "map"} encoder still asks for ${String(unanswered.length)} entities ${targetContext} does not answer`, answer.state === "ok" ? answer.diagnostics : diagnostics);
+      }
+      if (answer.state === "failed")
+        return answer.result;
+      const output = answer.output;
+      const bytes = output.kind === "bytes" ? output.value : void 0;
+      const extension = bytes !== void 0 && typeof output.extension === "string" ? output.extension : void 0;
+      const mediaType = bytes !== void 0 && typeof output.mediaType === "string" ? output.mediaType : void 0;
+      const wroteTo = bytes === void 0 || context.writeOutput === void 0 ? void 0 : await context.writeOutput(extension === void 0 ? target ?? "export" : `${subjectStem(subject.ref)}.${extension}`, bytes, context.signal);
+      return ok(CONVERT_COMMAND, {
+        ref: subject.ref,
+        via: operation.id,
+        outputKind: output.kind,
+        ...bytes === void 0 ? {} : { byteLength: bytes.byteLength },
+        ...extension === void 0 ? {} : { extension },
+        ...mediaType === void 0 ? {} : { mediaType },
+        ...wroteTo === void 0 ? { wroteTo: null } : { wroteTo }
+      }, answer.diagnostics);
+    });
+  }
+};
+var previewCommand = {
+  id: PREVIEW_COMMAND,
+  title: "Preview",
+  summary: "Produce the subject\u2019s own preview \u2014 a thumbnail if it has one, a render otherwise.",
+  needsSubject: true,
+  mutatesSource: false,
+  operationId: THUMBNAIL,
+  async run(context, input) {
+    return withCommandSubject(PREVIEW_COMMAND, context, String(input.subject), async (subject, session, descriptor, diagnostics) => {
+      if (input["operation"] !== void 0 && typeof input["operation"] !== "string")
+        return failed(PREVIEW_COMMAND, COMMAND_INPUT_INVALID, "operation must be an operation id", diagnostics);
+      const operation = selectedOperation(descriptor, SUBJECT_COMMAND_TARGETS.preview.operationIds, input["operation"]);
+      if (operation === void 0) {
+        return unavailable(PREVIEW_COMMAND, `the requested preview is unavailable \u2014 ${publishedOperations(descriptor)}`, `mount a viewer over one of its data sources instead: ${(descriptor.dataSources ?? []).map((item) => item.contract).join(", ") || "it publishes none"}`, diagnostics);
+      }
+      context.progress?.({ step: "preview", message: "rendering the preview" });
+      const answer = await invokeSubjectOperation(PREVIEW_COMMAND, context, session, operation.handlerId, input["operationInput"] === void 0 ? {} : input["operationInput"], diagnostics);
+      if (answer.state === "failed")
+        return answer.result;
+      const bytes = answer.output.kind === "bytes" ? answer.output.value : void 0;
+      const wroteTo = bytes === void 0 || context.writeOutput === void 0 ? void 0 : await context.writeOutput("preview.png", bytes, context.signal);
+      return ok(PREVIEW_COMMAND, {
+        ref: subject.ref,
+        via: operation.id,
+        outputKind: answer.output.kind,
+        ...bytes === void 0 ? {} : { byteLength: bytes.byteLength },
+        ...wroteTo === void 0 ? {} : { wroteTo }
+      }, answer.diagnostics);
+    });
+  }
+};
+var SUBJECT_COMMANDS = Object.freeze([
+  openCommand,
+  inspectCommand,
+  validateCommand,
+  extractCommand,
+  convertCommand,
+  previewCommand
+]);
+
+// ../../MODDING/modkit-core/packages/host/dist/commands/service-operation-commands.js
+var SERVICE_OPERATIONS_COMMAND = "service.operations";
+var SERVICE_OPERATION_INVOKE_COMMAND = "service.invoke";
+var json = (value) => value;
+var integer = (value, fallback) => {
+  const selected = value ?? fallback;
+  return Number.isSafeInteger(selected) && Number(selected) >= 0 ? Number(selected) : void 0;
+};
+var catalogCommand = Object.freeze({
+  id: SERVICE_OPERATIONS_COMMAND,
+  title: "Extension operations",
+  summary: "List bounded subject-independent extension operations and their activation state.",
+  needsSubject: false,
+  mutatesSource: false,
+  async run(context, input) {
+    if (context.serviceOperations === void 0) {
+      return unavailable(SERVICE_OPERATIONS_COMMAND, "this host does not expose the extension operation catalog", "use a host configured with service-operation authority");
+    }
+    const offset = integer(input["offset"], 0);
+    const limit = integer(input["limit"], 50);
+    const activate = input["activate"] ?? true;
+    if (offset === void 0 || limit === void 0 || limit < 1 || limit > 100 || typeof activate !== "boolean") {
+      return failed(SERVICE_OPERATIONS_COMMAND, COMMAND_INPUT_INVALID, "offset must be non-negative, limit must be 1..100, and activate must be boolean");
+    }
+    const result = await context.serviceOperations.catalog({
+      offset,
+      limit,
+      activate,
+      ...context.signal === void 0 ? {} : { signal: context.signal }
+    });
+    return ok(SERVICE_OPERATIONS_COMMAND, json(result), result.entries.flatMap((entry2) => entry2.diagnostics).map(commandDiagnostic));
+  }
+});
+var invokeCommand = Object.freeze({
+  id: SERVICE_OPERATION_INVOKE_COMMAND,
+  title: "Invoke extension operation",
+  summary: "Invoke one exact subject-independent extension operation through the common host route.",
+  needsSubject: false,
+  mutatesSource: true,
+  async run(context, input) {
+    if (context.serviceOperations === void 0) {
+      return unavailable(SERVICE_OPERATION_INVOKE_COMMAND, "this host does not expose extension operation invocation", `inspect ${SERVICE_OPERATIONS_COMMAND} in an operation-capable host`);
+    }
+    const operationId = input["operationId"];
+    const operationInput = input["operationInput"];
+    if (typeof operationId !== "string" || operationId.trim().length === 0 || operationInput === void 0) {
+      return failed(SERVICE_OPERATION_INVOKE_COMMAND, COMMAND_INPUT_INVALID, "operationId and operationInput are required");
+    }
+    const result = await context.serviceOperations.invoke({
+      operationId,
+      input: operationInput,
+      ...context.signal === void 0 ? {} : { signal: context.signal }
+    });
+    const diagnostics = result.diagnostics.map(commandDiagnostic);
+    if (result.state === "invoked") {
+      return ok(SERVICE_OPERATION_INVOKE_COMMAND, json(result), diagnostics);
+    }
+    if (result.state === "failed") {
+      return failed(SERVICE_OPERATION_INVOKE_COMMAND, result.diagnostics.at(-1)?.code ?? "x3.command/service-operation-failed", result.diagnostics.at(-1)?.message ?? `${operationId} failed`, diagnostics);
+    }
+    return unavailable(SERVICE_OPERATION_INVOKE_COMMAND, result.diagnostics.at(-1)?.message ?? `${operationId} is unavailable`, `inspect ${SERVICE_OPERATIONS_COMMAND} with activation enabled`, diagnostics, result.diagnostics.at(-1)?.code);
+  }
+});
+var SERVICE_OPERATION_COMMANDS = Object.freeze([
+  catalogCommand,
+  invokeCommand
+]);
+var SERVICE_OPERATION_COMMAND_TARGETS = Object.freeze([
+  Object.freeze({
+    commandId: SERVICE_OPERATIONS_COMMAND,
+    operationIds: Object.freeze([]),
+    dataSourceContracts: Object.freeze([]),
+    hostCallers: Object.freeze(["cli", "mcp", "electron", "pwa", "server", "vscode"])
+  }),
+  Object.freeze({
+    commandId: SERVICE_OPERATION_INVOKE_COMMAND,
+    operationIds: Object.freeze(["common.runtime/operation-provider@1"]),
+    dataSourceContracts: Object.freeze([]),
+    hostCallers: Object.freeze(["cli", "mcp", "electron", "pwa", "server", "vscode"])
+  })
+]);
+
+// ../../MODDING/modkit-core/packages/host/dist/commands/edit-commands.js
+var SUBJECT_EDIT_COMMAND = "subject.edit";
+var SUBJECT_EDIT_OPERATION_IDS = Object.freeze([
+  "edit.field",
+  "edit.content",
+  "edit.structure"
+]);
+function summarizeEditPlan(plan) {
+  const encoder5 = new TextEncoder();
+  return {
+    planId: plan.planId,
+    fidelity: plan.fidelity,
+    edits: plan.edits.map((edit) => {
+      const payload = "payload" in edit ? edit.payload : void 0;
+      const replacementBytes = payload === void 0 ? null : payload.kind === "inline" ? payload.bytes.byteLength : payload.kind === "text" ? encoder5.encode(payload.text).byteLength : String(payload.ref.bytes);
+      return {
+        operation: edit.operation,
+        targetId: edit.targetId,
+        label: edit.label ?? null,
+        ..."range" in edit && edit.range !== void 0 ? { offset: String(edit.range.offset), length: String(edit.range.length) } : {},
+        ..."newPath" in edit ? { newPath: edit.newPath } : {},
+        replacementBytes
+      };
+    }),
+    diagnostics: plan.diagnostics.map(commandDiagnostic)
+  };
+}
+var jsonSafe = (value) => JSON.parse(JSON.stringify(value, (_key, item) => typeof item === "bigint" ? String(item) : item));
+var editCommand = Object.freeze({
+  id: SUBJECT_EDIT_COMMAND,
+  title: "Edit",
+  summary: "Preview, or with commit=true apply, one standard edit operation (set field, add/remove entry, rename) of a subject.",
+  needsSubject: true,
+  mutatesSource: true,
+  async run(context, input) {
+    const operationId = input["operation"];
+    const operationInput = input["operationInput"];
+    const commit = input["commit"] ?? false;
+    if (typeof operationId !== "string" || !SUBJECT_EDIT_OPERATION_IDS.includes(operationId) || operationInput === void 0 || typeof commit !== "boolean") {
+      return failed(SUBJECT_EDIT_COMMAND, COMMAND_INPUT_INVALID, `operation must be one of ${SUBJECT_EDIT_OPERATION_IDS.join(", ")}, operationInput is required and commit must be boolean`);
+    }
+    return withCommandSubject(SUBJECT_EDIT_COMMAND, context, String(input.subject), async (subject, session, descriptor, diagnostics) => {
+      const operation = (descriptor.operations ?? []).find((item) => item.id === operationId);
+      if (operation?.state !== "available" || operation.mutatesSource !== true) {
+        return unavailable(SUBJECT_EDIT_COMMAND, operation === void 0 ? `the subject publishes no ${operationId}` : `${operationId} is not an available mutating operation here${operation.reason === void 0 ? "" : `: ${operation.reason}`}`, "run subject.inspect to see which edit operations this subject publishes", diagnostics);
+      }
+      context.progress?.({ step: "plan", message: `planning ${operationId}` });
+      const answer = await invokeSubjectOperation(SUBJECT_EDIT_COMMAND, context, session, operation.handlerId, operationInput, diagnostics);
+      if (answer.state === "failed")
+        return answer.result;
+      if (answer.output.kind !== "edit-plan") {
+        return failed(SUBJECT_EDIT_COMMAND, "x3.command/not-an-edit-plan", `${operationId} answered with ${answer.output.kind}, not an edit plan`, answer.diagnostics);
+      }
+      const output = answer.output;
+      if (!commit) {
+        return ok(SUBJECT_EDIT_COMMAND, {
+          ref: subject.ref,
+          operation: operationId,
+          committed: false,
+          plan: summarizeEditPlan(output.plan)
+        }, answer.diagnostics);
+      }
+      const editing = subject.editing;
+      if (editing === void 0) {
+        return unavailable(SUBJECT_EDIT_COMMAND, "this host opened the subject without an editing surface (it is outside the writable roots, or the host is read-only)", "run with commit=false to preview, or open the subject in a host configured with writable roots", answer.diagnostics);
+      }
+      const signal = context.signal;
+      const plan = await editing.stagePlan(editing.planFromOperation(answer.output), signal);
+      let committed = false;
+      try {
+        context.progress?.({
+          step: "prepare",
+          message: "validating revisions, permissions and fidelity"
         });
+        const prepared = await editing.coordinator.prepare(plan, {
+          grant: editing.grantSnapshot,
+          ...signal === void 0 ? {} : { signal }
+        });
+        if (prepared.state === "conflict") {
+          return failed(SUBJECT_EDIT_COMMAND, "x3.command/edit-stale-revision", `the source changed after the plan was made: ${prepared.conflicts.map((item) => item.targetId).join(", ")}`, answer.diagnostics);
+        }
+        if (prepared.state !== "ready") {
+          return failed(SUBJECT_EDIT_COMMAND, `x3.command/edit-${prepared.reason}`, `the host refused the edit plan: ${prepared.reason}`, [...answer.diagnostics, ...prepared.diagnostics.map(commandDiagnostic)]);
+        }
+        context.progress?.({ step: "commit", message: "committing" });
+        const result = await editing.coordinator.commit(prepared.prepared, {
+          grant: editing.grantSnapshot,
+          ...signal === void 0 ? {} : { signal }
+        });
+        if (result.state === "not-applied") {
+          return failed(SUBJECT_EDIT_COMMAND, `x3.command/edit-${result.reason}`, `the edit was not applied: ${result.reason}`, [...answer.diagnostics, ...result.diagnostics.map(commandDiagnostic)]);
+        }
+        committed = true;
+        return ok(SUBJECT_EDIT_COMMAND, {
+          ref: subject.ref,
+          operation: operationId,
+          committed: result.state === "committed",
+          state: result.state,
+          plan: summarizeEditPlan(plan),
+          receipt: jsonSafe(result.receipt)
+        }, answer.diagnostics);
+      } finally {
+        if (!committed)
+          await editing.releasePlan(plan);
       }
-    }
-    return buildAssetInput(context, plan, origin, selected, signal);
+    });
+  }
+});
+var SUBJECT_EDIT_COMMANDS = Object.freeze([editCommand]);
+var SUBJECT_EDIT_COMMAND_TARGETS = Object.freeze([
+  Object.freeze({
+    commandId: SUBJECT_EDIT_COMMAND,
+    operationIds: Object.freeze([...SUBJECT_EDIT_OPERATION_IDS]),
+    dataSourceContracts: Object.freeze([]),
+    hostCallers: Object.freeze(["cli", "mcp", "electron", "pwa", "server", "vscode"])
+  })
+]);
+
+// ../../MODDING/modkit-core/packages/host/dist/commands/subject-opener.js
+function commandSubjectsFrom(open) {
+  return async (ref2, signal) => {
+    const answer = await open(ref2, signal);
+    let disposed = false;
+    return {
+      ref: ref2,
+      snapshot: answer.snapshot,
+      ...answer.session === void 0 ? {} : { session: answer.session },
+      async dispose() {
+        if (disposed)
+          return;
+        disposed = true;
+        await answer.session?.dispose();
+      }
+    };
   };
-  return Object.assign(resolver, {
-    openResources: (request) => createResourceSession({ ...request, origin }),
-    // a resource of this origin opened as a subject (a map's texture): its own companions are
-    // found in the same origin, with the resource as the primary
-    forResource: (logicalId) => createCompanionInputResolver(Object.freeze({
-      ...origin,
-      primaryLogicalId: logicalId,
-      enumerate: origin.enumerate.bind(origin),
-      open: origin.open.bind(origin)
-    }), options)
-  });
 }
-function countingSource(source, onBytes) {
-  if (source.kind !== "bytes")
-    return source;
-  const inner = source;
+
+// ../../MODDING/modkit-core/packages/host/dist/commands/endpoint.js
+var DEFAULT_COMMAND_MAX_CONCURRENT_RUNS = 32;
+function createSubjectCommandEndpoint(options) {
+  const maximum = options.maxConcurrentRuns ?? DEFAULT_COMMAND_MAX_CONCURRENT_RUNS;
+  if (!Number.isSafeInteger(maximum) || maximum < 1) {
+    throw new TypeError("maxConcurrentRuns must be a positive safe integer");
+  }
+  const runtime = createCommandRuntime(SUBJECT_COMMANDS);
+  const opener = commandSubjectsFrom(options.openSubject);
+  const active = /* @__PURE__ */ new Set();
+  const tasks = /* @__PURE__ */ new Set();
+  const byRunId = /* @__PURE__ */ new Map();
+  let closed = false;
+  let disposing;
   return Object.freeze({
-    ...inner,
-    async read(offset, length, signal) {
-      const bytes = await inner.read(offset, length, signal);
-      onBytes(bytes.byteLength);
-      return bytes;
+    catalog: describeCommandContracts(runtime, Object.values(SUBJECT_COMMAND_TARGETS)),
+    async execute(request, runOptions = {}) {
+      if (closed)
+        throw new Error("the command endpoint is closed");
+      if (active.size >= maximum) {
+        throw new RangeError(`the command endpoint already has its ${maximum} permitted runs`);
+      }
+      const runId = runOptions.runId;
+      if (runId !== void 0) {
+        if (runId === "")
+          throw new TypeError("a command run id must not be empty");
+        if (byRunId.has(runId))
+          throw new TypeError(`command run \xAB${runId}\xBB is already active`);
+      }
+      const controller = new AbortController();
+      const abort = () => controller.abort();
+      if (runOptions.signal?.aborted === true)
+        controller.abort();
+      else
+        runOptions.signal?.addEventListener("abort", abort, { once: true });
+      active.add(controller);
+      if (runId !== void 0)
+        byRunId.set(runId, controller);
+      const task = executeCommandRequest(runtime, request, {
+        openSubject: opener,
+        signal: controller.signal,
+        ...runOptions.progress === void 0 ? {} : { progress: runOptions.progress },
+        ...runOptions.writeOutput === void 0 ? {} : { writeOutput: runOptions.writeOutput }
+      });
+      tasks.add(task);
+      try {
+        return await task;
+      } finally {
+        tasks.delete(task);
+        active.delete(controller);
+        if (runId !== void 0)
+          byRunId.delete(runId);
+        runOptions.signal?.removeEventListener("abort", abort);
+      }
     },
-    async *stream(range, signal) {
-      for await (const chunk of inner.stream(range, signal)) {
-        onBytes(chunk.byteLength);
-        yield chunk;
-      }
-    }
-  });
-}
-function buildAssetInput(context, plan, origin, selected, signal) {
-  const requirementBindings = selected.map((item) => Object.freeze({
-    sourceKind: "requirement",
-    bindingId: item.bindingId,
-    requirementId: item.requirement.id,
-    role: item.requirement.role,
-    ownership: item.requirement.ownership,
-    source: item.ref,
-    revision: item.revision
-  }));
-  const openRequirement = async (bindingId, openSignal) => {
-    throwIfAborted(openSignal ?? signal);
-    const item = selected.find((candidate2) => candidate2.bindingId === bindingId);
-    if (item === void 0) {
-      throw new ModkitError({
-        code: "x3.host/unknown-asset-input-binding",
-        message: `asset input has no binding ${bindingId}`
-      });
-    }
-    const lease2 = await origin.open(item.logicalId, openSignal ?? signal);
-    if (lease2.value.revision !== item.revision) {
-      await lease2.release();
-      throw new ModkitError({
-        code: "x3.host/source-revision-changed",
-        message: `companion \xAB${item.logicalId}\xBB changed after it was bound (revision ${item.revision})`,
-        context: { bindingId, revision: item.revision, observed: lease2.value.revision }
-      });
-    }
-    return lease2;
-  };
-  const bindingsFor = (requirementId) => Object.freeze(requirementBindings.filter((item) => item.requirementId === requirementId));
-  if (plan.originKind === "namespace") {
-    const source2 = context.source;
-    const revisions2 = Object.freeze({
-      topology: "namespace",
-      revision: source2.revision,
-      namespaceRevision: source2.revision,
-      bindings: Object.freeze(requirementBindings.map((item) => Object.freeze({ bindingId: item.bindingId, revision: item.revision }))),
-      compositionFingerprint: canonicalJsonStringify({
-        topology: "namespace",
-        root: source2.ref,
-        revision: source2.revision,
-        bindings: requirementBindings.map((item) => ({
-          bindingId: item.bindingId,
-          source: item.source,
-          revision: item.revision
-        }))
-      })
-    });
-    return Object.freeze({
-      originKind: "namespace",
-      root: source2.ref,
-      bindings: Object.freeze(requirementBindings),
-      revisions: revisions2,
-      bindingsFor,
-      openBinding: openRequirement,
-      async openNamespace(openSignal) {
-        throwIfAborted(openSignal ?? signal);
-        return source2.openNamespace(openSignal ?? signal);
-      }
-    });
-  }
-  const source = context.source;
-  const candidatePlan = plan.candidate;
-  if (candidatePlan === void 0 || candidatePlan.bindingId.trim().length === 0 || candidatePlan.role.trim().length === 0 || candidatePlan.ownership !== "owned" && candidatePlan.ownership !== "external") {
-    throw new ModkitError({
-      code: "x3.host/invalid-asset-input-plan",
-      message: "codec returned an invalid bundle candidate binding"
-    });
-  }
-  const candidate = Object.freeze({
-    sourceKind: "candidate",
-    bindingId: candidatePlan.bindingId,
-    role: candidatePlan.role,
-    ownership: candidatePlan.ownership,
-    source: source.ref,
-    revision: source.revision
-  });
-  if (requirementBindings.some((item) => item.bindingId === candidate.bindingId)) {
-    throw new ModkitError({
-      code: COMPANION_PLAN_INVALID,
-      message: `companion binding id \xAB${candidate.bindingId}\xBB collides with the candidate binding`,
-      context: { bindingId: candidate.bindingId }
-    });
-  }
-  const bindings = Object.freeze([candidate, ...requirementBindings]);
-  const revisions = Object.freeze({
-    topology: "bundle",
-    revision: source.revision,
-    bindings: Object.freeze(bindings.map((item) => Object.freeze({ bindingId: item.bindingId, revision: item.revision }))),
-    compositionFingerprint: canonicalJsonStringify({
-      topology: "bundle",
-      bindings: bindings.map((item) => ({
-        bindingId: item.bindingId,
-        source: item.source,
-        revision: item.revision
-      }))
-    })
-  });
-  return Object.freeze({
-    originKind: "bundle",
-    bindings,
-    primaryBindingId: candidate.bindingId,
-    revisions,
-    bindingsFor,
-    async openBinding(bindingId, openSignal) {
-      throwIfAborted(openSignal ?? signal);
-      if (bindingId === candidate.bindingId) {
-        return Object.freeze({ value: source, release: async () => void 0 });
-      }
-      return openRequirement(bindingId, openSignal);
+    cancel(runId) {
+      const controller = byRunId.get(runId);
+      controller?.abort();
+      return controller !== void 0;
+    },
+    dispose() {
+      if (disposing !== void 0)
+        return disposing;
+      closed = true;
+      for (const controller of active)
+        controller.abort();
+      disposing = Promise.allSettled([...tasks]).then(() => void 0);
+      return disposing;
+    },
+    get activeRuns() {
+      return active.size;
+    },
+    get closed() {
+      return closed;
     }
   });
 }
 
-// ../MODDING/modkit-core/packages/host/dist/vfs-source.js
+// ../../MODDING/modkit-core/packages/host/dist/commands/index.js
+function createSubjectCommandRuntime() {
+  return createCommandRuntime(SUBJECT_COMMANDS);
+}
+function createModkitCommandRuntime() {
+  return createCommandRuntime([
+    ...SUBJECT_COMMANDS,
+    ...SUBJECT_EDIT_COMMANDS,
+    ...SERVICE_OPERATION_COMMANDS
+  ]);
+}
+function describeModkitCommandContracts() {
+  return describeCommandContracts(createModkitCommandRuntime(), [
+    ...Object.values(SUBJECT_COMMAND_TARGETS),
+    ...SUBJECT_EDIT_COMMAND_TARGETS,
+    ...SERVICE_OPERATION_COMMAND_TARGETS
+  ]);
+}
+function describeSubjectCommandContracts() {
+  return describeCommandContracts(createSubjectCommandRuntime(), Object.values(SUBJECT_COMMAND_TARGETS));
+}
+
+// ../../MODDING/modkit-core/packages/host/dist/detection-rules.js
+var DETECTION_EVIDENCE_LADDER = Object.freeze([
+  "name-only",
+  "generic-syntax",
+  "carrier-magic",
+  "generic-syntax-and-format-marker",
+  "carrier-magic-and-format-structure",
+  "format-magic",
+  "format-magic-and-second-signal"
+]);
+function compareDetectionEvidence(left, right) {
+  const a = DETECTION_EVIDENCE_LADDER.indexOf(left);
+  const b = DETECTION_EVIDENCE_LADDER.indexOf(right);
+  if (a < 0 || b < 0)
+    throw new TypeError(`unknown detection evidence rung: ${left} / ${right}`);
+  return a === b ? 0 : a < b ? -1 : 1;
+}
+var DETECTION_UNTIE_RULES = Object.freeze([
+  Object.freeze({
+    id: "strictly-highest-confidence-wins",
+    rule: "Among candidates at or above the host confidence floor, the one with the strictly highest confidence is selected. There is no secondary ranking by extension id, contribution status, implementation tier or load order.",
+    enforcedBy: "packages/host/src/subject-open.ts"
+  }),
+  Object.freeze({
+    id: "an-exact-tie-is-ambiguous",
+    rule: "Two or more candidates sharing the top confidence resolve to `unresolved` with reason `ambiguous`. The host never breaks a tie by sort order: a stable sort would make the winner depend on which extension happened to load first, which is a coin toss wearing a rule.",
+    enforcedBy: "packages/host/src/subject-open.ts"
+  }),
+  Object.freeze({
+    id: "below-the-floor-is-no-match",
+    rule: "A candidate under the host confidence floor is not eligible at all, so a lone weak guess produces `no-match` rather than an open nobody can justify.",
+    enforcedBy: "packages/host/src/subject-open.ts"
+  }),
+  Object.freeze({
+    id: "a-carrier-ranks-below-its-passengers",
+    rule: "A codec that matched only a carrier magic (ZIP, RIFF) or only a general syntax (UTF-8 text, XML, JSON) must score below a codec that matched the same bytes *and* a structure specific to its own format. The generic route is the fallback for bytes nobody claimed, never the winner over a format that read more.",
+    enforcedBy: "the detecting codecs; the ordering is proved in packages/testkit/test/detection-collisions.test.ts"
+  }),
+  Object.freeze({
+    id: "a-second-signal-breaks-a-would-be-tie",
+    rule: "Where two routes read the same evidence, the one that also reads an independent second signal \u2014 typically the declared extension \u2014 ranks above it. This is how a relocated port beats the staging route it replaces without either of them inventing evidence.",
+    enforcedBy: "the detecting codecs; proved in packages/testkit/test/common-documents-rtf.test.ts"
+  }),
+  Object.freeze({
+    id: "an-extension-alone-never-decides",
+    rule: "The file name may add margin to a candidate that already read the bytes; it may never carry one over the confidence floor by itself. A renamed file is decided by its content, and a correctly named file whose content disagrees is refused.",
+    enforcedBy: "the detecting codecs; proved in packages/testkit/test/detection-collisions.test.ts"
+  }),
+  Object.freeze({
+    id: "a-foreign-format-scores-zero-not-low",
+    rule: "Bytes that positively declare a *different* format are a refusal, not a weak match: an ODP renamed to `.odt` scores zero rather than a hedged number, so it can never win by being the only candidate left.",
+    enforcedBy: "extensions/documents/src/odf/package.js and its peers"
+  }),
+  Object.freeze({
+    id: "a-declaration-scopes-a-generic",
+    rule: "A contribution is put in front of the probe only for bytes its own declaration matches by name or signature, and that \u2014 not confidence \u2014 is what keeps a generic away from another format\u2019s body. `text-ini` scores `Key=Value` lines happily but declares only `.ini`, so it never sees a publisher-specific text file; `text-csv` declares `.csv` and `.tsv`, so it never sees an unrelated atlas index. A generic that widens its declaration to every path gives this protection up and must then win every collision on confidence alone.",
+    enforcedBy: "matchesSpec in packages/host/src/subject-open.ts (an empty rule set is not a wildcard); proved in packages/testkit/test/detection-collisions.test.ts"
+  }),
+  Object.freeze({
+    id: "a-signature-shortlists-but-does-not-select",
+    rule: "A declared byte signature only puts a contribution in front of the probe \u2014 a renamed `.dat` PNG reaches the PNG probe. Selection is still decided by the probe result, so a signature can never open a subject on its own.",
+    enforcedBy: "packages/host/src/detection-index.ts"
+  })
+]);
+function isDetectionUntieRule(id) {
+  return DETECTION_UNTIE_RULES.some((rule) => rule.id === id);
+}
+
+// ../../MODDING/modkit-core/packages/host/dist/vfs-source.js
 function scopedPath(root, path) {
   const normalized2 = normalizeVfsPath(path);
   return root === "" ? normalized2 : normalized2 === "" ? root : `${root}/${normalized2}`;
@@ -14686,7 +14716,7 @@ function artifactNamespaceSourceFromVfsMount(mount, options = {}) {
   return sourceAt(rootPath, rootRef, mount.revision);
 }
 
-// ../MODDING/modkit-core/packages/host/dist/editing.js
+// ../../MODDING/modkit-core/packages/host/dist/editing.js
 var GUARANTEE_STRENGTH = Object.freeze({
   "best-effort": 0,
   recoverable: 1,
@@ -15674,7 +15704,7 @@ function createEditSession(options) {
   });
 }
 
-// ../MODDING/modkit-core/packages/host/dist/subject-editing.js
+// ../../MODDING/modkit-core/packages/host/dist/subject-editing.js
 function unsupported(kind) {
   return new ModkitError({
     code: "x3.host/edit-topology-unsupported",
@@ -15973,7 +16003,7 @@ function createSubjectEditing(options) {
   return Object.freeze(editing);
 }
 
-// ../MODDING/modkit-core/packages/host/dist/container-pack.js
+// ../../MODDING/modkit-core/packages/host/dist/container-pack.js
 function invalidInput(message) {
   throw new ModkitError({ code: "x3.host/container-pack-input-invalid", message });
 }
@@ -16117,7 +16147,7 @@ async function invokeContainerPack(opened, input, options = {}) {
   return result;
 }
 
-// ../MODDING/modkit-core/packages/host/dist/nested-subject.js
+// ../../MODDING/modkit-core/packages/host/dist/nested-subject.js
 var NESTED_SUBJECT_UNSUPPORTED = "x3.host/nested-subject-unsupported";
 var NESTED_ENTRY_UNREADABLE = "x3.host/nested-entry-unreadable";
 var CONTAINER_EXTRACT2 = "container.extract";
@@ -16461,7 +16491,7 @@ function sessionHoldingContainer(session, release) {
   });
 }
 
-// ../MODDING/modkit-core/packages/host/dist/content-source-companion.js
+// ../../MODDING/modkit-core/packages/host/dist/content-source-companion.js
 function containerExtensionsOf(inventory) {
   const extensions = /* @__PURE__ */ new Set();
   for (const extension of inventory.extensions) {
@@ -16644,7 +16674,7 @@ function createContentSourceInputResolver(options) {
   });
 }
 
-// ../MODDING/modkit-core/packages/host/dist/content-source-root-session.js
+// ../../MODDING/modkit-core/packages/host/dist/content-source-root-session.js
 var NAMESPACE = "common.view/namespace-entry-source";
 var EXTRACT_HANDLER = "x3.host/content-source-root-extract";
 var FILES_PAGE2 = 1e3;
@@ -16790,7 +16820,7 @@ async function openContentSourceRootSession(options) {
   return Object.freeze({ session: managed.session, descriptor });
 }
 
-// ../MODDING/modkit-core/packages/host/dist/mod-context-layer-source.js
+// ../../MODDING/modkit-core/packages/host/dist/mod-context-layer-source.js
 var LIST_PAGE = 4096;
 var MAX_ENTRY_BYTES = 64 * 1024 * 1024;
 function nestedRef2(root, path) {
@@ -16899,7 +16929,7 @@ async function openModContextLayerSource(options) {
   return namespaceAt("", ref2);
 }
 
-// ../MODDING/modkit-core/packages/host/dist/mod-context-data-workspace.js
+// ../../MODDING/modkit-core/packages/host/dist/mod-context-data-workspace.js
 var PAGE_SIZE = 4096;
 var MAX_ENTRY_BYTES2 = 64 * 1024 * 1024;
 function createModContextDataWorkspaceInputs(context, options) {
@@ -17103,7 +17133,7 @@ function createModContextDataWorkspaceInputs(context, options) {
   });
 }
 
-// ../MODDING/modkit-core/packages/host/dist/service-definitions.js
+// ../../MODDING/modkit-core/packages/host/dist/service-definitions.js
 var FACETLESS_SERVICE_MATCHER_PROFILE = contractId("modkit/facetless-matcher");
 var facetlessMatcher = Object.freeze({
   profile: FACETLESS_SERVICE_MATCHER_PROFILE,
@@ -17337,7 +17367,7 @@ async function registerServiceContractDefinitionsFromInventory(inventory, regist
   return Object.freeze(results);
 }
 
-// ../MODDING/modkit-core/packages/host/dist/editing-definitions.js
+// ../../MODDING/modkit-core/packages/host/dist/editing-definitions.js
 var STANDARD_EDITING_OWNER = "modkit/editing";
 var REQUIREMENT_KEYS = ["formatId", "representationId", "mutationMode", "minimumRoundTrip"];
 var OFFER_KEYS3 = [...REQUIREMENT_KEYS, "providerId", "fidelityEvidenceId"];
@@ -17418,7 +17448,7 @@ function registerStandardEditingDefinitions(definitions) {
   })));
 }
 
-// ../MODDING/modkit-core/packages/host/dist/runtime/preparer.js
+// ../../MODDING/modkit-core/packages/host/dist/runtime/preparer.js
 var RUNTIME_PREPARER_MAJOR = 1;
 var ADAPTER_ID = /^[a-z0-9][a-z0-9-]*(?:\.[a-z0-9][a-z0-9-]*)*\/[a-z0-9][a-z0-9-]*$/u;
 var VERSION = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/u;
@@ -17454,7 +17484,7 @@ function resolveContentRuntimePreparer(contentSources, gameId) {
   return { state: "resolved", preparer: row };
 }
 
-// ../MODDING/modkit-core/packages/host/dist/runtime/source-snapshot.js
+// ../../MODDING/modkit-core/packages/host/dist/runtime/source-snapshot.js
 var MAX_FILES = 4096;
 var MAX_TOTAL_BYTES = 512 * 1024 * 1024;
 var MAX_PATH_LENGTH = 4096;
@@ -17668,7 +17698,7 @@ function captureRuntimeSourceReads(context) {
   };
 }
 
-// ../MODDING/modkit-core/packages/host/dist/runtime/index.js
+// ../../MODDING/modkit-core/packages/host/dist/runtime/index.js
 var STANDARD_RUNTIME_OWNER = "modkit/runtime";
 var OFFER_KEYS4 = /* @__PURE__ */ new Set(["runtimeIds"]);
 var REQUEST_KEYS3 = /* @__PURE__ */ new Set(["runtimeId"]);
@@ -18069,7 +18099,7 @@ async function resolveRuntimeSession(request, resourceState, inputs) {
   }
 }
 
-// ../MODDING/modkit-core/packages/host/dist/service-operation-schema.js
+// ../../MODDING/modkit-core/packages/host/dist/service-operation-schema.js
 var TYPES = /* @__PURE__ */ new Set(["null", "boolean", "object", "array", "number", "integer", "string"]);
 var KEYWORDS = /* @__PURE__ */ new Set([
   "$schema",
@@ -18321,7 +18351,7 @@ function createServiceOperationSchemaValidator(schema) {
   return Object.freeze(validator);
 }
 
-// ../MODDING/modkit-core/packages/host/dist/service-operations.js
+// ../../MODDING/modkit-core/packages/host/dist/service-operations.js
 var STANDARD_SERVICE_OPERATION_OWNER = "modkit/service-operations";
 var recordOf5 = (value) => typeof value === "object" && value !== null && !Array.isArray(value) ? value : void 0;
 var nonEmpty2 = (value) => typeof value === "string" && value.trim().length > 0;
@@ -18929,7 +18959,7 @@ async function invokeServiceOperation(request) {
   });
 }
 
-// ../MODDING/modkit-core/packages/host/dist/renderer/index.js
+// ../../MODDING/modkit-core/packages/host/dist/renderer/index.js
 var STANDARD_RENDERER_OWNER = "modkit/renderer";
 var OFFER_KEYS5 = /* @__PURE__ */ new Set(["rendererIds", "outputKinds"]);
 var REQUEST_KEYS4 = /* @__PURE__ */ new Set(["rendererId", "outputKind"]);
@@ -19207,7 +19237,7 @@ function createSceneRendererPort(options) {
   });
 }
 
-// ../MODDING/modkit-core/packages/host/dist/model-encoding.js
+// ../../MODDING/modkit-core/packages/host/dist/model-encoding.js
 var STANDARD_MODEL_ENCODING_OWNER = "modkit/model-encoding";
 var recordOf7 = (value) => typeof value === "object" && value !== null && !Array.isArray(value) ? value : void 0;
 var nonEmptyString4 = (value) => typeof value === "string" && value.trim().length > 0;
@@ -19293,7 +19323,7 @@ function registerStandardModelEncodingDefinitions(definitions) {
   ]);
 }
 
-// ../MODDING/modkit-core/packages/host/dist/compression-definitions.js
+// ../../MODDING/modkit-core/packages/host/dist/compression-definitions.js
 var STANDARD_COMPRESSION_OWNER = "modkit/compression";
 var OODLE_DECODER = "common.compression/oodle-decoder";
 var OODLE_DECODER_CONTRACT_DEFINITION = Object.freeze({
@@ -19333,7 +19363,7 @@ function registerStandardCompressionDefinitions(definitions) {
   ]);
 }
 
-// ../MODDING/modkit-core/packages/host/dist/games/index.js
+// ../../MODDING/modkit-core/packages/host/dist/games/index.js
 var STANDARD_GAMES_OWNER = "modkit/games";
 var OFFER_KEYS6 = /* @__PURE__ */ new Set(["gameIds", "markers", "searchFolders", "launchOptions"]);
 var OPTION_NAME = /^[A-Za-z][A-Za-z0-9]{0,63}$/u;
@@ -19865,7 +19895,7 @@ async function planGameLaunch(request) {
   }
 }
 
-// ../MODDING/modkit-core/packages/host/dist/mods/resource-sessions.js
+// ../../MODDING/modkit-core/packages/host/dist/mods/resource-sessions.js
 var ROOT = "loaded-mods";
 var MOD = "mod/";
 var NODE = "node/";
@@ -20141,7 +20171,7 @@ var LoadedModResourceSessions = class _LoadedModResourceSessions {
   }
 };
 
-// ../MODDING/modkit-core/packages/host/dist/mods/index.js
+// ../../MODDING/modkit-core/packages/host/dist/mods/index.js
 var STANDARD_MODS_OWNER = "modkit/mods";
 var OFFER_KEYS7 = /* @__PURE__ */ new Set(["gameIds"]);
 var REQUEST_KEYS6 = /* @__PURE__ */ new Set(["gameId"]);
@@ -20298,7 +20328,7 @@ async function resolveModWorkspaceComposition(request) {
   }
 }
 
-// ../MODDING/modkit-core/packages/host/dist/maps/single-file-namespace.js
+// ../../MODDING/modkit-core/packages/host/dist/maps/single-file-namespace.js
 var NAMESPACE2 = "common.view/namespace-entry-source";
 var BYTE_RANGE = "common.view/byte-range-source";
 var EXTRACT_HANDLER2 = "x3.host/single-file-extract";
@@ -20414,7 +20444,7 @@ async function singleFileAsContainer(session, maxBytes) {
   });
 }
 
-// ../MODDING/modkit-core/packages/host/dist/maps/world-model.js
+// ../../MODDING/modkit-core/packages/host/dist/maps/world-model.js
 function positiveLimit(value, maximum) {
   if (!Number.isSafeInteger(value) || value <= 0 || value > maximum) {
     throw new TypeError(`world page limit must be between 1 and ${maximum}`);
@@ -20739,7 +20769,7 @@ async function worldSceneModel(asset, request, options, signal) {
   });
 }
 
-// ../MODDING/modkit-core/packages/host/dist/maps/world-source.js
+// ../../MODDING/modkit-core/packages/host/dist/maps/world-source.js
 var PROOF_METHODS = /* @__PURE__ */ new Set([
   "sealed-legacy-differential",
   "official-reference-differential",
@@ -22102,7 +22132,7 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize, mode
   });
 }
 
-// ../MODDING/modkit-core/packages/host/dist/maps/index.js
+// ../../MODDING/modkit-core/packages/host/dist/maps/index.js
 var STANDARD_MAPS_OWNER = "modkit/maps";
 var OFFER_KEYS8 = /* @__PURE__ */ new Set(["gameIds"]);
 var REQUEST_KEYS7 = /* @__PURE__ */ new Set(["gameId"]);
@@ -24180,7 +24210,7 @@ async function coordinateMapPreviewAssetSession(request) {
   }
 }
 
-// ../MODDING/modkit-core/packages/host/dist/subject-services.js
+// ../../MODDING/modkit-core/packages/host/dist/subject-services.js
 function describeInventoryContributions(inventory) {
   const rows = inventory.extensions.flatMap((extension) => {
     const owner = `${extension.manifest.publisher}/${extension.manifest.id}`;
@@ -24315,7 +24345,7 @@ function serviceDefinitionSurfaces(definitions) {
   ]);
 }
 
-// ../MODDING/modkit-core/packages/host/dist/subject-navigation.js
+// ../../MODDING/modkit-core/packages/host/dist/subject-navigation.js
 var OPENED = Object.freeze({ state: "opened" });
 function rejected(reason) {
   return Object.freeze({ state: "rejected", reason });
@@ -24410,7 +24440,7 @@ function createScopedViewerSubjectNavigation(options) {
   });
 }
 
-// ../MODDING/modkit-core/packages/host/dist/subject-rpc.js
+// ../../MODDING/modkit-core/packages/host/dist/subject-rpc.js
 var SUBJECT_SERVICES = Object.freeze({ contract: "x3.app/subject-services", major: 1 });
 var SUBJECT_EDITING = Object.freeze({ contract: "x3.app/subject-editing", major: 1 });
 var SUBJECT_SERVICES_URL = "x3-app://subject-services";
@@ -24957,7 +24987,7 @@ async function connectSubjectRpc(options) {
   };
 }
 
-// ../MODDING/modkit-core/packages/host/dist/editing-evidence.js
+// ../../MODDING/modkit-core/packages/host/dist/editing-evidence.js
 var HOST_RAW_WRITER_IDENTITY = Object.freeze({
   providerId: "modkit.host/raw-writer",
   providerVersion: "1.0.0",
@@ -25188,7 +25218,7 @@ function createEvidenceRegistry(records = [HOST_RAW_WRITER_EVIDENCE_RECORD]) {
   return Object.freeze(registry);
 }
 
-// ../MODDING/modkit-core/packages/host/dist/knowledge/index.js
+// ../../MODDING/modkit-core/packages/host/dist/knowledge/index.js
 var DEFAULT_PAGE_LIMIT = 20;
 var MAXIMUM_PAGE_LIMIT = 100;
 var MAXIMUM_SEARCH_TEXT_LENGTH = 1024;
@@ -25690,7 +25720,7 @@ function createKnowledgeCatalog(inventory, requestedLimits = {}, entriesSource) 
   });
 }
 
-// ../MODDING/modkit-core/packages/host/dist/content-index.js
+// ../../MODDING/modkit-core/packages/host/dist/content-index.js
 var ALPHABET = 38;
 var TRIGRAMS = ALPHABET * ALPHABET * ALPHABET;
 var MAGIC = 1229146957;
@@ -25833,7 +25863,7 @@ async function openContentIndex(read) {
   });
 }
 
-// ../MODDING/modkit-core/packages/host/dist/credentials.js
+// ../../MODDING/modkit-core/packages/host/dist/credentials.js
 var DEFAULT_MAX_BYTES = 64 * 1024 * 1024;
 var REDIRECTS = /* @__PURE__ */ new Set([301, 302, 303, 307, 308]);
 var MAX_REDIRECTS = 5;
@@ -26186,7 +26216,7 @@ function createCredentialBroker(options) {
   });
 }
 
-// ../MODDING/modkit-core/packages/host/dist/resolution/explain.js
+// ../../MODDING/modkit-core/packages/host/dist/resolution/explain.js
 function sameCandidate(item, offer, contractOffer) {
   return item.providerId === offer.providerId && item.runtimeVariant === offer.runtimeVariant && (item.offerId === void 0 || item.offerId === contractOffer.offerId);
 }
@@ -26234,7 +26264,7 @@ function renderProviderResolutionExplanation(explanation, json2 = false) {
 `;
 }
 
-// ../MODDING/modkit-core/packages/host/dist/v1-projection.js
+// ../../MODDING/modkit-core/packages/host/dist/v1-projection.js
 function unavailable3(message) {
   const item = Object.freeze({
     id: "v1-projection-unavailable",
@@ -26284,7 +26314,7 @@ function createV1DescriptorProjectionPort() {
   });
 }
 
-// ../MODDING/modkit-core/packages/host/dist/presentation-catalog.generated.js
+// ../../MODDING/modkit-core/packages/host/dist/presentation-catalog.generated.js
 var COMMON_PRESENTATION_CATALOG = Object.freeze([
   Object.freeze({
     slot: Object.freeze({
@@ -26930,7 +26960,7 @@ var COMMON_PRESENTATION_CATALOG = Object.freeze([
   })
 ]);
 
-// ../MODDING/modkit-core/packages/host/dist/presentation.js
+// ../../MODDING/modkit-core/packages/host/dist/presentation.js
 function evaluateViewerApplicability(rule, facts) {
   const missing = [];
   if (rule?.interpretation !== void 0 && rule.interpretation !== "any" && rule.interpretation !== facts.interpretation) {
@@ -27269,7 +27299,7 @@ function createViewerSources(resolved, open) {
   });
 }
 
-// ../MODDING/modkit-core/packages/host/dist/presentation-semantic.js
+// ../../MODDING/modkit-core/packages/host/dist/presentation-semantic.js
 function jsonValue(value, path = "$") {
   if (value === null || typeof value === "string" || typeof value === "boolean")
     return value;
@@ -27337,7 +27367,7 @@ async function presentationSemanticHash(request) {
   });
 }
 
-// ../MODDING/modkit-core/packages/host/dist/editing-splice.js
+// ../../MODDING/modkit-core/packages/host/dist/editing-splice.js
 var STAGED_CHUNK = 1024 * 1024;
 function editingError(code, message, context) {
   return new ModkitError({ code, message, ...context === void 0 ? {} : { context } });
@@ -27406,7 +27436,7 @@ async function replacedBytes(edit, original, payloads, maxPayloadBytes, signal) 
   return spliceUtf16(original, edit.range.offset, edit.range.length, new TextDecoder("utf-8", { fatal: true }).decode(replacement));
 }
 
-// ../MODDING/modkit-core/packages/host/native-text/contributions/codec-json.json
+// ../../MODDING/modkit-core/packages/host/native-text/contributions/codec-json.json
 var codec_json_default = {
   schemaVersion: 1,
   contract: {
@@ -27565,7 +27595,7 @@ var codec_json_default = {
   }
 };
 
-// ../MODDING/modkit-core/packages/host/native-text/contributions/codec-jsonc.json
+// ../../MODDING/modkit-core/packages/host/native-text/contributions/codec-jsonc.json
 var codec_jsonc_default = {
   schemaVersion: 1,
   contract: {
@@ -27724,7 +27754,7 @@ var codec_jsonc_default = {
   }
 };
 
-// ../MODDING/modkit-core/packages/host/native-text/contributions/codec-txt.json
+// ../../MODDING/modkit-core/packages/host/native-text/contributions/codec-txt.json
 var codec_txt_default = {
   schemaVersion: 1,
   contract: { id: "modkit/codec-contribution", major: 1 },
@@ -27822,7 +27852,7 @@ var codec_txt_default = {
   }
 };
 
-// ../MODDING/modkit-core/packages/host/native-text/contributions/contract-json-syntax.json
+// ../../MODDING/modkit-core/packages/host/native-text/contributions/contract-json-syntax.json
 var contract_json_syntax_default = {
   schemaVersion: 1,
   contract: {
@@ -27881,7 +27911,7 @@ var contract_json_syntax_default = {
   }
 };
 
-// ../MODDING/modkit-core/packages/host/native-text/contributions/contract-jsonc-syntax.json
+// ../../MODDING/modkit-core/packages/host/native-text/contributions/contract-jsonc-syntax.json
 var contract_jsonc_syntax_default = {
   schemaVersion: 1,
   contract: {
@@ -27940,7 +27970,7 @@ var contract_jsonc_syntax_default = {
   }
 };
 
-// ../MODDING/modkit-core/packages/host/native-text/contributions/provider-json-default.json
+// ../../MODDING/modkit-core/packages/host/native-text/contributions/provider-json-default.json
 var provider_json_default_default = {
   schemaVersion: 1,
   contract: {
@@ -27989,7 +28019,7 @@ var provider_json_default_default = {
   }
 };
 
-// ../MODDING/modkit-core/packages/host/native-text/contributions/provider-jsonc-default.json
+// ../../MODDING/modkit-core/packages/host/native-text/contributions/provider-jsonc-default.json
 var provider_jsonc_default_default = {
   schemaVersion: 1,
   contract: {
@@ -28038,7 +28068,7 @@ var provider_jsonc_default_default = {
   }
 };
 
-// ../MODDING/modkit-core/packages/host/native-text/contributions/writer-json.json
+// ../../MODDING/modkit-core/packages/host/native-text/contributions/writer-json.json
 var writer_json_default = {
   schemaVersion: 1,
   contract: {
@@ -28093,7 +28123,7 @@ var writer_json_default = {
   }
 };
 
-// ../MODDING/modkit-core/packages/host/native-text/contributions/writer-plain-text.json
+// ../../MODDING/modkit-core/packages/host/native-text/contributions/writer-plain-text.json
 var writer_plain_text_default = {
   schemaVersion: 1,
   contract: {
@@ -28134,14 +28164,14 @@ var writer_plain_text_default = {
   }
 };
 
-// ../MODDING/modkit-core/packages/host/native-text/json/families/json/entrypoints/json-codec.js
+// ../../MODDING/modkit-core/packages/host/native-text/json/families/json/entrypoints/json-codec.js
 var json_codec_exports = {};
 __export(json_codec_exports, {
   abiVersion: () => abiVersion,
   createCodec: () => createCodec
 });
 
-// ../MODDING/modkit-core/packages/host/native-text/runtime/basic.js
+// ../../MODDING/modkit-core/packages/host/native-text/runtime/basic.js
 function lease(value) {
   let released = false;
   return Object.freeze({
@@ -28275,7 +28305,7 @@ function defineWriter({
   });
 }
 
-// ../MODDING/modkit-core/packages/host/native-text/runtime/text.js
+// ../../MODDING/modkit-core/packages/host/native-text/runtime/text.js
 function decodeInput(input) {
   if (typeof input.text === "string") {
     return {
@@ -28713,7 +28743,7 @@ function createTextCodec(definition, context) {
   });
 }
 
-// ../MODDING/modkit-core/packages/host/native-text/json/families/json/detect.js
+// ../../MODDING/modkit-core/packages/host/native-text/json/families/json/detect.js
 function markerOutsideString(text, marker) {
   let quote = false;
   let escaped = false;
@@ -28745,7 +28775,7 @@ function detectJson(dialect, text, uri) {
   };
 }
 
-// ../MODDING/modkit-core/packages/host/native-text/json/families/json/codec.js
+// ../../MODDING/modkit-core/packages/host/native-text/json/families/json/codec.js
 function createJsonCodec(profile3, context) {
   return createTextCodec(
     {
@@ -28756,7 +28786,7 @@ function createJsonCodec(profile3, context) {
   );
 }
 
-// ../MODDING/modkit-core/packages/host/native-text/json/families/json/profiles/json.js
+// ../../MODDING/modkit-core/packages/host/native-text/json/families/json/profiles/json.js
 var profile = Object.freeze({
   format: "json",
   extensions: Object.freeze(["json"]),
@@ -28767,11 +28797,11 @@ var profile = Object.freeze({
   implementationTier: 1
 });
 
-// ../MODDING/modkit-core/packages/host/native-text/json/families/json/entrypoints/json-codec.js
+// ../../MODDING/modkit-core/packages/host/native-text/json/families/json/entrypoints/json-codec.js
 var abiVersion = 1;
 var createCodec = (context) => createJsonCodec(profile, context);
 
-// ../MODDING/modkit-core/packages/host/native-text/json/families/json/entrypoints/json-provider.js
+// ../../MODDING/modkit-core/packages/host/native-text/json/families/json/entrypoints/json-provider.js
 var json_provider_exports = {};
 __export(json_provider_exports, {
   abiVersion: () => abiVersion2,
@@ -28780,7 +28810,7 @@ __export(json_provider_exports, {
   provides: () => provides
 });
 
-// ../MODDING/modkit-core/node_modules/.pnpm/jsonc-parser@3.3.1/node_modules/jsonc-parser/lib/esm/impl/scanner.js
+// ../../MODDING/modkit-core/node_modules/.pnpm/jsonc-parser@3.3.1/node_modules/jsonc-parser/lib/esm/impl/scanner.js
 function createScanner(text, ignoreTrivia = false) {
   const len = text.length;
   let pos = 0, value = "", tokenOffset = 0, token = 16, lineNumber = 0, lineStartOffset = 0, tokenLineStartOffset = 0, prevTokenLineStartOffset = 0, scanError = 0;
@@ -29201,7 +29231,7 @@ var CharacterCodes;
   CharacterCodes2[CharacterCodes2["tab"] = 9] = "tab";
 })(CharacterCodes || (CharacterCodes = {}));
 
-// ../MODDING/modkit-core/node_modules/.pnpm/jsonc-parser@3.3.1/node_modules/jsonc-parser/lib/esm/impl/string-intern.js
+// ../../MODDING/modkit-core/node_modules/.pnpm/jsonc-parser@3.3.1/node_modules/jsonc-parser/lib/esm/impl/string-intern.js
 var cachedSpaces = new Array(20).fill(0).map((_, index) => {
   return " ".repeat(index);
 });
@@ -29231,7 +29261,7 @@ var cachedBreakLinesWithSpaces = {
   }
 };
 
-// ../MODDING/modkit-core/node_modules/.pnpm/jsonc-parser@3.3.1/node_modules/jsonc-parser/lib/esm/impl/parser.js
+// ../../MODDING/modkit-core/node_modules/.pnpm/jsonc-parser@3.3.1/node_modules/jsonc-parser/lib/esm/impl/parser.js
 var ParseOptions;
 (function(ParseOptions2) {
   ParseOptions2.DEFAULT = {
@@ -29622,7 +29652,7 @@ function getNodeType(value) {
   }
 }
 
-// ../MODDING/modkit-core/node_modules/.pnpm/jsonc-parser@3.3.1/node_modules/jsonc-parser/lib/esm/main.js
+// ../../MODDING/modkit-core/node_modules/.pnpm/jsonc-parser@3.3.1/node_modules/jsonc-parser/lib/esm/main.js
 var ScanError;
 (function(ScanError2) {
   ScanError2[ScanError2["None"] = 0] = "None";
@@ -29711,7 +29741,7 @@ function printParseErrorCode(code) {
   return "<unknown ParseErrorCode>";
 }
 
-// ../MODDING/modkit-core/packages/host/native-text/json/families/json/provider.js
+// ../../MODDING/modkit-core/packages/host/native-text/json/families/json/provider.js
 function jsonNode(node, text, counters, depth = 0) {
   counters.nodes += 1;
   counters.depth = Math.max(counters.depth, depth);
@@ -29800,20 +29830,20 @@ function createJsonSyntaxProvider(definition) {
   });
 }
 
-// ../MODDING/modkit-core/packages/host/native-text/json/families/json/entrypoints/json-provider.js
+// ../../MODDING/modkit-core/packages/host/native-text/json/families/json/entrypoints/json-provider.js
 var abiVersion2 = 1;
 var provides = Object.freeze([profile.contract]);
 var createTextSyntaxProvider2 = () => createJsonSyntaxProvider(profile);
 var createProvider = (selection) => lease(createSelectedProvider(profile, selection, createJsonSyntaxProvider));
 
-// ../MODDING/modkit-core/packages/host/native-text/json/families/json/entrypoints/jsonc-codec.js
+// ../../MODDING/modkit-core/packages/host/native-text/json/families/json/entrypoints/jsonc-codec.js
 var jsonc_codec_exports = {};
 __export(jsonc_codec_exports, {
   abiVersion: () => abiVersion3,
   createCodec: () => createCodec2
 });
 
-// ../MODDING/modkit-core/packages/host/native-text/json/families/json/profiles/jsonc.js
+// ../../MODDING/modkit-core/packages/host/native-text/json/families/json/profiles/jsonc.js
 var profile2 = Object.freeze({
   format: "jsonc",
   extensions: Object.freeze(["jsonc"]),
@@ -29824,11 +29854,11 @@ var profile2 = Object.freeze({
   implementationTier: 1
 });
 
-// ../MODDING/modkit-core/packages/host/native-text/json/families/json/entrypoints/jsonc-codec.js
+// ../../MODDING/modkit-core/packages/host/native-text/json/families/json/entrypoints/jsonc-codec.js
 var abiVersion3 = 1;
 var createCodec2 = (context) => createJsonCodec(profile2, context);
 
-// ../MODDING/modkit-core/packages/host/native-text/json/families/json/entrypoints/jsonc-provider.js
+// ../../MODDING/modkit-core/packages/host/native-text/json/families/json/entrypoints/jsonc-provider.js
 var jsonc_provider_exports = {};
 __export(jsonc_provider_exports, {
   abiVersion: () => abiVersion4,
@@ -29841,7 +29871,7 @@ var provides2 = Object.freeze([profile2.contract]);
 var createTextSyntaxProvider3 = () => createJsonSyntaxProvider(profile2);
 var createProvider2 = (selection) => lease(createSelectedProvider(profile2, selection, createJsonSyntaxProvider));
 
-// ../MODDING/modkit-core/packages/host/native-text/json/editing/text-writer.js
+// ../../MODDING/modkit-core/packages/host/native-text/json/editing/text-writer.js
 var text_writer_exports = {};
 __export(text_writer_exports, {
   abiVersion: () => abiVersion5,
@@ -29966,7 +29996,7 @@ async function createProvider3(selection) {
   return offered.createProvider(selection);
 }
 
-// ../MODDING/modkit-core/packages/host/native-text/plain/txt/codec.js
+// ../../MODDING/modkit-core/packages/host/native-text/plain/txt/codec.js
 var codec_exports = {};
 __export(codec_exports, {
   abiVersion: () => abiVersion6,
@@ -30304,7 +30334,7 @@ var createCodec3 = () => Object.freeze({
   }
 });
 
-// ../MODDING/modkit-core/packages/host/native-text/plain/editing/text-writer.js
+// ../../MODDING/modkit-core/packages/host/native-text/plain/editing/text-writer.js
 var text_writer_exports2 = {};
 __export(text_writer_exports2, {
   abiVersion: () => abiVersion7,
@@ -30387,7 +30417,7 @@ var { abiVersion: abiVersion7, provides: provides4, createProvider: createProvid
   }
 });
 
-// ../MODDING/modkit-core/packages/host/dist/linked.js
+// ../../MODDING/modkit-core/packages/host/dist/linked.js
 var variantsOf = (manifest) => {
   const list = manifest.runtimeVariants;
   return Array.isArray(list) ? list : [];
@@ -30532,7 +30562,7 @@ function linkedExtensionInputs(linked) {
   });
 }
 
-// ../MODDING/modkit-core/packages/host/dist/native-text.js
+// ../../MODDING/modkit-core/packages/host/dist/native-text.js
 var NATIVE_ENVIRONMENTS = Object.freeze(["node", "node-worker", "browser-main", "browser-worker"]);
 var nativeExecutable = (manifest, entrypoint) => {
   const document = manifest;
@@ -30604,7 +30634,7 @@ function withNativeTextModules(linked = /* @__PURE__ */ new Map()) {
   return new Map([...NATIVE_TEXT_MODULES, ...linked]);
 }
 
-// ../MODDING/modkit-core/packages/host/dist/composition.js
+// ../../MODDING/modkit-core/packages/host/dist/composition.js
 async function createHostComposition(options) {
   const topology = createHostTopology(options.topology);
   const profile3 = topology.realms.find((candidate) => candidate.realmId === options.realmId);
@@ -30629,7 +30659,7 @@ async function createHostComposition(options) {
   });
 }
 
-// ../MODDING/modkit-core/packages/host/dist/format-writer.js
+// ../../MODDING/modkit-core/packages/host/dist/format-writer.js
 var diagnostic2 = (severity, code, message) => ({ severity, code, message, path: [] });
 async function resolveFormatWriter(request) {
   const identity = request.opened.descriptor.identity;

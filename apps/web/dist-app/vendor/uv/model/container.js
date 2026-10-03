@@ -6,9 +6,9 @@ import {
   uvmImageLogicalId,
   uvmImageUri,
   writeUvmContainer
-} from "../../../chunks/chunk-NONHW3HK.js";
-import "../../../chunks/chunk-ZSDVUSRM.js";
-import "../../../chunks/chunk-TSKCLN7F.js";
+} from "../../../chunks/chunk-J5YW7BHE.js";
+import "../../../chunks/chunk-QG2MBCY3.js";
+import "../../../chunks/chunk-XYIUXPQM.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 export {
   DEFAULT_UVM_CONTAINER_BUDGET,
