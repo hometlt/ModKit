@@ -105,7 +105,7 @@ describe('the locales of a resolved Data context', () => {
     }
     const prepare = () =>
       prepareResolvedDataSemanticContext({
-        requirement: requirement!,
+        requirement,
         documents,
         origins,
         complete: true,
