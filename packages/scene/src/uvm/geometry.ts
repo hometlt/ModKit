@@ -159,7 +159,7 @@ export function decodeUvmGeometry(
         if (attribute.componentType === 5126 && attribute.normalized)
           throw new TypeError(`UVM ${semantic} float accessor cannot use normalized`)
         const normalizedInteger =
-          (color || semantic === 'WEIGHTS_0' || semantic.startsWith('TEXCOORD_')) &&
+          (color || /^WEIGHTS_[01]$/u.test(semantic) || semantic.startsWith('TEXCOORD_')) &&
           attribute.normalized &&
           [5121, 5123].includes(attribute.componentType)
         if (
@@ -196,12 +196,26 @@ export function decodeUvmGeometry(
       const normals = vertexAttribute('NORMAL', 3)
       const tangents = vertexAttribute('TANGENT', 4)
       const colors = vertexAttribute('COLOR_0', 4)
-      const boneWeights = vertexAttribute('WEIGHTS_0', 4)
+      let boneWeights = vertexAttribute('WEIGHTS_0', 4)
+      const secondWeights = vertexAttribute('WEIGHTS_1', 4)
+      const boneInfluences = secondWeights === undefined ? 4 : 8
       let boneIndices: Uint32Array | undefined
       let hierarchyId: string | undefined
-      if (attributes['JOINTS_0'] !== undefined || boneWeights !== undefined) {
-        if (attributes['JOINTS_1'] !== undefined || attributes['WEIGHTS_1'] !== undefined)
-          throw new TypeError('UVM joint sets beyond four influences need a richer geometry facet')
+      if (
+        Object.keys(attributes).some(
+          semantic =>
+            /^(?:JOINTS|WEIGHTS)_/u.test(semantic) && !/^(?:JOINTS|WEIGHTS)_[01]$/u.test(semantic),
+        )
+      )
+        throw new TypeError('UVM supports at most eight skin influences')
+      if (
+        attributes['JOINTS_0'] !== undefined ||
+        boneWeights !== undefined ||
+        attributes['JOINTS_1'] !== undefined ||
+        secondWeights !== undefined
+      ) {
+        if ((attributes['JOINTS_1'] === undefined) !== (secondWeights === undefined))
+          throw new TypeError('UVM second joint and weight sets must be paired')
         const skin = meshSkins.get(meshIndex)
         if (
           skin === undefined ||
@@ -210,33 +224,49 @@ export function decodeUvmGeometry(
           attributes['JOINTS_0'] === undefined
         )
           throw new TypeError('UVM joint indices and weights need a paired mesh skin binding')
-        const joints = readUvmAccessor(
-          document,
-          binary,
-          attributes['JOINTS_0'],
-          remaining(),
-          'joint indices',
-          signal,
-        )
-        const jointCount = array(array(document, 'skins')[skin], 'joints').length
-        if (
-          joints.width !== 4 ||
-          joints.count !== position.count ||
-          joints.normalized ||
-          ![5121, 5123].includes(joints.componentType) ||
-          joints.values.some(value => value >= jointCount)
-        )
-          throw new TypeError('UVM joint indices must reference valid skin slots')
-        charge(joints.values.byteLength)
-        boneIndices = Uint32Array.from(joints.values)
+        const readJoints = (set: number) => {
+          const joints = readUvmAccessor(
+            document,
+            binary,
+            attributes[`JOINTS_${set}`],
+            remaining(),
+            'joint indices',
+            signal,
+          )
+          const jointCount = array(array(document, 'skins')[skin], 'joints').length
+          if (
+            joints.width !== 4 ||
+            joints.count !== position.count ||
+            joints.normalized ||
+            ![5121, 5123].includes(joints.componentType) ||
+            joints.values.some(value => value >= jointCount)
+          )
+            throw new TypeError('UVM joint indices must reference valid skin slots')
+          charge(joints.values.byteLength)
+          return Uint32Array.from(joints.values)
+        }
+        boneIndices = readJoints(0)
+        if (secondWeights !== undefined) {
+          const secondIndices = readJoints(1)
+          // Reserve the merged arrays in addition to the decoded source sets.
+          charge(position.count * 8 * 8)
+          const mergedIndices = new Uint32Array(position.count * 8)
+          const mergedWeights = new Float32Array(position.count * 8)
+          for (let vertex = 0; vertex < position.count; vertex++) {
+            mergedIndices.set(boneIndices.subarray(vertex * 4, vertex * 4 + 4), vertex * 8)
+            mergedIndices.set(secondIndices.subarray(vertex * 4, vertex * 4 + 4), vertex * 8 + 4)
+            mergedWeights.set(boneWeights.subarray(vertex * 4, vertex * 4 + 4), vertex * 8)
+            mergedWeights.set(secondWeights.subarray(vertex * 4, vertex * 4 + 4), vertex * 8 + 4)
+          }
+          boneIndices = mergedIndices
+          boneWeights = mergedWeights
+        }
         if (boneWeights.some(value => value < 0 || value > 1))
           throw new TypeError('UVM skin weights are outside zero to one')
-        for (let offset = 0; offset < boneWeights.length; offset += 4) {
-          const sum =
-            required(boneWeights[offset], 'skin weight') +
-            required(boneWeights[offset + 1], 'skin weight') +
-            required(boneWeights[offset + 2], 'skin weight') +
-            required(boneWeights[offset + 3], 'skin weight')
+        for (let offset = 0; offset < boneWeights.length; offset += boneInfluences) {
+          let sum = 0
+          for (let influence = 0; influence < boneInfluences; influence++)
+            sum += required(boneWeights[offset + influence], 'skin weight')
           if (Math.abs(sum - 1) > 0.0001) throw new TypeError('UVM skin weights must sum to one')
         }
         hierarchyId = `skin-${skin}`
@@ -321,6 +351,7 @@ export function decodeUvmGeometry(
           ? {}
           : {
               boneIndices,
+              ...(boneInfluences === 8 ? { boneInfluences: 8 as const } : {}),
               boneWeights: required(boneWeights, 'skin weights'),
               hierarchyId: required(hierarchyId, 'skin hierarchy'),
             }),

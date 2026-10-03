@@ -209,11 +209,43 @@ function createContentDependencyOrigin(
     if (relativePrefix === undefined) return Object.freeze([])
     const parent = relativePrefix.slice(0, relativePrefix.lastIndexOf('/') + 1).replace(/\/$/u, '')
     let entries: readonly ContentSourceEntry[]
-    try {
-      entries = await contentSources.list(mount.sourceId, joinPath(mount.sourcePath, parent))
-    } catch {
-      return Object.freeze([])
-    }
+    if (relativePrefix === '' && contentSources.files !== undefined) {
+      const files: ContentSourceEntry[] = []
+      const cursors = new Set<string>()
+      let cursor: string | undefined
+      do {
+        throwIfAborted(signal)
+        const page = await contentSources.files(mount.sourceId, mount.sourcePath, {
+          limit: FILES_PAGE,
+          ...(cursor === undefined ? {} : { cursor }),
+        })
+        if (page === undefined) {
+          if (cursor !== undefined)
+            throw new TypeError('content files paging stopped before completion')
+          files.push(...(await contentSources.list(mount.sourceId, mount.sourcePath)))
+          break
+        }
+        if (files.length + page.items.length > 1_048_576)
+          throw new RangeError('content companion namespace exceeds 1048576 files')
+        for (const file of page.items)
+          files.push({
+            ...file,
+            name: file.path.slice(file.path.lastIndexOf('/') + 1),
+            directory: false,
+          })
+        cursor = page.nextCursor
+        if (cursor !== undefined) {
+          if (cursors.has(cursor)) throw new TypeError('content files paging repeated a cursor')
+          cursors.add(cursor)
+        }
+      } while (cursor !== undefined)
+      entries = files
+    } else
+      try {
+        entries = await contentSources.list(mount.sourceId, joinPath(mount.sourcePath, parent))
+      } catch {
+        return Object.freeze([])
+      }
     const output: CompanionOriginEntry[] = []
     for (const entry of entries) {
       throwIfAborted(signal)

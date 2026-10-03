@@ -202,7 +202,9 @@ export async function resolveSubjectClosure(request: {
     }
   } catch (error) {
     signal?.throwIfAborted()
-    return Object.freeze({ diagnostics: Object.freeze([failure('x3.host/mod-context-failed', error)]) })
+    return Object.freeze({
+      diagnostics: Object.freeze([failure('x3.host/mod-context-failed', error)]),
+    })
   }
 }
 
@@ -370,7 +372,10 @@ export function createContentAssetOrigin(request: ContentAssetOriginRequest): Co
     scopes: Object.freeze(['workspace-dependency-layer'] as const),
     async *enumerate(scope, options, signal) {
       const origin = await resolved()
-      const path = options.prefix.endsWith('/') ? '' : normalizeCompanionLogicalId(options.prefix)
+      const path =
+        options.prefix === '' || options.prefix.endsWith('/')
+          ? ''
+          : normalizeCompanionLogicalId(options.prefix)
       // a prefix the layers answer (the path itself, or a partial name of a listed file) needs no
       // locate; only a path no layer lists at all is asked where the game keeps it
       let answered = false

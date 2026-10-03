@@ -146,3 +146,33 @@ it('keeps a skin without authored tangents on the CPU', () => {
   assert.equal(gpu.skin, undefined)
   assert.deepEqual([...gpu.positions], [...cpu.positions])
 })
+
+it('poses all eight influences on the CPU even when GPU skinning was requested', () => {
+  const original = primitive()
+  const source = {
+    ...original,
+    boneInfluences: 8,
+    boneIndices: new Uint32Array(32),
+    boneWeights: new Float32Array(32),
+  }
+  for (let vertex = 0; vertex < 4; vertex++) {
+    source.boneIndices.fill(9, vertex * 8, vertex * 8 + 8)
+    source.boneIndices[vertex * 8 + 7] = 3
+    source.boneWeights[vertex * 8] = 0.5
+    source.boneWeights[vertex * 8 + 7] = 0.5
+  }
+  const cpu = createModelSceneSampler(projection(source), { clip }).sample(0.5).primitives[0]
+  const gpu = createModelSceneSampler(projection(source), { clip, skinning: 'gpu' }).sample(0.5)
+    .primitives[0]
+  assert.equal(gpu.skin, undefined)
+  assert.deepEqual([...gpu.positions], [...cpu.positions])
+  assert.deepEqual([...gpu.normals], [...cpu.normals])
+  const truncated = {
+    ...source,
+    boneInfluences: 4,
+    boneIndices: Uint32Array.from({ length: 16 }, () => 9),
+    boneWeights: Float32Array.from({ length: 16 }, (_value, i) => (i % 4 === 0 ? 1 : 0)),
+  }
+  const lost = createModelSceneSampler(projection(truncated), { clip }).sample(0.5).primitives[0]
+  assert.notDeepEqual([...cpu.positions], [...lost.positions])
+})

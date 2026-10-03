@@ -464,9 +464,11 @@ export interface ModelPrimitive {
     readonly set: number
     readonly coordinates: Float32Array
   }[]
-  /** Four indices per vertex, resolved against ModelSkeletonSource boneIndex values. */
+  /** Skin buffer stride. Absent means four; eight retains the second UVM joint/weight set. */
+  readonly boneInfluences?: 4 | 8
+  /** boneInfluences (default four) indices per vertex, resolved against skeleton boneIndex. */
   readonly boneIndices?: Uint32Array
-  /** Four weights per vertex, paired with boneIndices. */
+  /** boneInfluences (default four) weights per vertex, paired with boneIndices. */
   readonly boneWeights?: Float32Array
   /** Exact hierarchy for boneIndices. Absence leaves the buffers without a portable skin binding. */
   readonly hierarchyId?: string

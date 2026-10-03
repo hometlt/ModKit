@@ -173,6 +173,7 @@ export function boundUvmRig(
   for (const id of byName.keys()) extentOf(id)
   let radius = 0
   for (const primitive of primitives) {
+    const influences = primitive.boneInfluences ?? 4
     const indices = primitive.boneIndices,
       weights = primitive.boneWeights
     if (
@@ -180,7 +181,8 @@ export function boundUvmRig(
       indices === undefined ||
       weights === undefined ||
       weights.length !== indices.length ||
-      indices.length !== (primitive.positions.length / 3) * 4
+      (influences !== 4 && influences !== 8) ||
+      indices.length !== (primitive.positions.length / 3) * influences
     )
       throw new TypeError('bounds require complete skin influences')
     for (let offset = 0; offset < primitive.positions.length; offset += 3) {
@@ -190,8 +192,8 @@ export function boundUvmRig(
       const distance = Math.hypot(...position) + spatialError
       let sum = 0,
         vertexRadius = 0
-      for (let slot = 0; slot < 4; slot++) {
-        const index = (offset / 3) * 4 + slot,
+      for (let slot = 0; slot < influences; slot++) {
+        const index = (offset / 3) * influences + slot,
           weight = weights[index],
           boneIndex = indices[index]
         if (

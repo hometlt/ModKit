@@ -63,12 +63,14 @@ export function preserveUnweightedVertices(
     const { boneIndices, boneWeights, hierarchyId } = primitive
     if (boneIndices === undefined && boneWeights === undefined) continue
     const count = primitive.positions.length / 3
+    const influences = primitive.boneInfluences ?? 4
     if (
       !Number.isSafeInteger(count) ||
-      boneIndices?.length !== count * 4 ||
-      boneWeights?.length !== count * 4
+      (influences !== 4 && influences !== 8) ||
+      boneIndices?.length !== count * influences ||
+      boneWeights?.length !== count * influences
     )
-      throw new TypeError('skin requires four indices and weights per vertex')
+      throw new TypeError('skin requires matching indices and weights per vertex')
     const indices = hierarchyId === undefined ? undefined : indicesByHierarchy.get(hierarchyId)
     if (indices === undefined || hierarchyId === undefined)
       throw new TypeError('skin hierarchy is absent')
@@ -76,9 +78,9 @@ export function preserveUnweightedVertices(
     for (let vertex = 0; vertex < count; vertex++) {
       if (vertex % 4096 === 0) signal?.throwIfAborted()
       let sum = 0
-      for (let slot = 0; slot < 4; slot++) {
-        const index = boneIndices[vertex * 4 + slot]
-        const weight = boneWeights[vertex * 4 + slot]
+      for (let slot = 0; slot < influences; slot++) {
+        const index = boneIndices[vertex * influences + slot]
+        const weight = boneWeights[vertex * influences + slot]
         // Even zero-weight references must be authored and valid; do not hide corrupt bindings.
         if (index === undefined || !indices.has(index)) throw new TypeError('skin joint is absent')
         if (weight === undefined || !Number.isFinite(weight) || weight < 0 || weight > 1)
@@ -144,15 +146,11 @@ export function preserveUnweightedVertices(
       throw new TypeError('skin buffers are absent')
     const boneIndices = new Uint32Array(primitive.boneIndices)
     const boneWeights = new Float32Array(primitive.boneWeights)
-    for (let offset = 0; offset < boneWeights.length; offset += 4) {
+    const influences = primitive.boneInfluences ?? 4
+    for (let offset = 0; offset < boneWeights.length; offset += influences) {
       if (offset % 16384 === 0) signal?.throwIfAborted()
-      if (
-        boneWeights[offset] === 0 &&
-        boneWeights[offset + 1] === 0 &&
-        boneWeights[offset + 2] === 0 &&
-        boneWeights[offset + 3] === 0
-      ) {
-        boneIndices.fill(index, offset, offset + 4)
+      if (boneWeights.subarray(offset, offset + influences).every(weight => weight === 0)) {
+        boneIndices.fill(index, offset, offset + influences)
         boneWeights[offset] = 1
       }
     }

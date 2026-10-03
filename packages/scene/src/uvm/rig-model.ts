@@ -106,6 +106,12 @@ export function projectUvmRigModel(
   const skin = object(skins[0], 'skin')
   only(skin, ['joints', 'inverseBindMatrices', 'skeleton'], 'skin')
   const parsed = readUvmModel(document, container.binary, budget, signal)
+  // Native authoring still targets a four-wide RenderMesh contract. Rendering is eight-wide,
+  // but native projection must never drop the second set or lose its stride metadata.
+  if (parsed.scene.primitives.some(primitive => primitive.boneInfluences === 8))
+    throw new TypeError(
+      'native rig authoring supports at most four influences; UVM rendering retains eight',
+    )
   if (parsed.rig.incompleteBindings || parsed.rig.bindings.length === 0)
     throw new TypeError('rig authoring requires complete TRS bindings')
   const bindings = parsed.rig.bindings
@@ -220,7 +226,9 @@ export function projectUvmRigModel(
         node['skin'] !== undefined ||
         array(node, 'children').length !== 0
       )
-        throw new TypeError('rig camera helper must reference one camera without geometry or children')
+        throw new TypeError(
+          'rig camera helper must reference one camera without geometry or children',
+        )
       // Static scene cameras are consumed by the calling format projection. Their frame is
       // intentionally independent from the native skeleton and need not be identity.
       continue
@@ -558,12 +566,18 @@ export function projectUvmRigModel(
       // draw toggles (M3: the batching of a bone its batch names).
       const meshIndex = channel.kind === 'visibility' ? primitiveIds.indexOf(channel.target) : -1
       const boneIndex =
-        meshIndex >= 0 ? undefined : required(nodeToBone.get(channel.target), 'animation bone target')
+        meshIndex >= 0
+          ? undefined
+          : required(nodeToBone.get(channel.target), 'animation bone target')
       const track =
         boneIndex === undefined
           ? (meshTracks.get(meshIndex) ?? { meshIndex })
           : (nodeTracks.get(boneIndex) ?? { boneIndex })
-      if (!['step', 'linear', 'spherical-linear', 'cubic-spline'].includes(channel.interpolation ?? ''))
+      if (
+        !['step', 'linear', 'spherical-linear', 'cubic-spline'].includes(
+          channel.interpolation ?? '',
+        )
+      )
         throw new TypeError('unsupported clip interpolation')
       const cubic = channel.interpolation === 'cubic-spline'
       track[channel.kind] = {
@@ -617,17 +631,27 @@ export function projectUvmRigModel(
     }
   })
   // A primitive the document keeps hidden until a clip shows it (UV_game_variants value 0).
-  const meshVisibility = readUvmPrimitiveVisibility(document, signal).flatMap(entry =>
-    'mesh' in entry && entry.value <= 0
-      ? [{ meshIndex: primitiveIds.indexOf(`mesh-${entry.mesh}-primitive-${entry.primitive}`), value: 0 }]
-      : [],
-  ).filter(entry => entry.meshIndex >= 0)
+  const meshVisibility = readUvmPrimitiveVisibility(document, signal)
+    .flatMap(entry =>
+      'mesh' in entry && entry.value <= 0
+        ? [
+            {
+              meshIndex: primitiveIds.indexOf(`mesh-${entry.mesh}-primitive-${entry.primitive}`),
+              value: 0,
+            },
+          ]
+        : [],
+    )
+    .filter(entry => entry.meshIndex >= 0)
   // Bounds are the joints' reach; a primitive shown or hidden moves nothing.
   const primitiveTargets = new Set(primitiveIds)
   const jointClips = rigClips.map(clip =>
     clip.channels === undefined
       ? clip
-      : { ...clip, channels: clip.channels.filter(channel => !primitiveTargets.has(channel.target)) },
+      : {
+          ...clip,
+          channels: clip.channels.filter(channel => !primitiveTargets.has(channel.target)),
+        },
   )
   const bounds = boundUvmRig(rigBindings, rigPrimitives, jointClips, budget, signal)
   // The joints' camera rules, in the frame the returned rest poses and tracks are in. A joint

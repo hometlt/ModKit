@@ -170,11 +170,13 @@ export function writeUvmSkinAttributes(
   const hierarchy = skeleton.hierarchies.get(primitive.hierarchyId ?? '')
   if (!hierarchy) refuse(`primitive ${primitive.id} has no matching skeleton hierarchy`)
   const vertexCount = primitive.positions.length / 3
+  const influences = primitive.boneInfluences ?? 4
   if (
-    primitive.boneIndices?.length !== vertexCount * 4 ||
-    primitive.boneWeights?.length !== vertexCount * 4
+    (influences !== 4 && influences !== 8) ||
+    primitive.boneIndices?.length !== vertexCount * influences ||
+    primitive.boneWeights?.length !== vertexCount * influences
   )
-    refuse(`primitive ${primitive.id} needs four joint indices and weights per vertex`)
+    refuse(`primitive ${primitive.id} needs matching joint indices and weights per vertex`)
   const indices = new Uint16Array(primitive.boneIndices.length)
   for (const [index, joint] of primitive.boneIndices.entries()) {
     const slot = hierarchy.slots.get(joint)
@@ -184,21 +186,33 @@ export function writeUvmSkinAttributes(
   const weights = Float32Array.from(primitive.boneWeights)
   if (weights.some(value => !Number.isFinite(value) || value < 0 || value > 1))
     refuse('skin weights must be finite values between zero and one')
-  for (let offset = 0; offset < weights.length; offset += 4) {
-    const sum =
-      weights[offset]! + weights[offset + 1]! + weights[offset + 2]! + weights[offset + 3]!
+  for (let offset = 0; offset < weights.length; offset += influences) {
+    let sum = 0
+    for (let influence = 0; influence < influences; influence++) sum += weights[offset + influence]!
     if (Math.abs(sum - 1) > 0.0001)
       refuse('skin weights must sum to one; no normalization is guessed')
   }
-  const mesh: RenderMesh = {
-    name: primitive.id,
-    materialIndex: -1,
-    positions: primitive.positions,
-    indices: new Uint32Array(),
-    boneIndices: indices,
-    boneWeights: weights,
+  for (let set = 0; set < influences / 4; set++) {
+    const setIndices = new Uint16Array(vertexCount * 4)
+    const setWeights = new Float32Array(vertexCount * 4)
+    for (let vertex = 0; vertex < vertexCount; vertex++) {
+      const offset = vertex * influences + set * 4
+      setIndices.set(indices.subarray(offset, offset + 4), vertex * 4)
+      setWeights.set(weights.subarray(offset, offset + 4), vertex * 4)
+    }
+    const mesh: RenderMesh = {
+      name: primitive.id,
+      materialIndex: -1,
+      positions: primitive.positions,
+      indices: new Uint32Array(),
+      boneIndices: setIndices,
+      boneWeights: setWeights,
+    }
+    const encoded: Record<string, number> = {}
+    addJointAttribute(encoded, mesh, vertexCount, storage.buffer, storage.views, storage.accessors)
+    attributes[`JOINTS_${set}`] = encoded['JOINTS_0']!
+    attributes[`WEIGHTS_${set}`] = encoded['WEIGHTS_0']!
   }
-  addJointAttribute(attributes, mesh, vertexCount, storage.buffer, storage.views, storage.accessors)
   return hierarchy.skin
 }
 

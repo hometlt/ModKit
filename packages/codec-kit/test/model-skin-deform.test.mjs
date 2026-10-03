@@ -24,6 +24,34 @@ const primitive = {
 }
 
 describe('skin deformer', () => {
+  it('retains the eighth influence and removes stride metadata after deformation', () => {
+    const source = {
+      ...primitive,
+      boneInfluences: 8,
+      boneIndices: Uint32Array.from([
+        0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1,
+      ]),
+      boneWeights: Float32Array.from([
+        0.5, 0, 0, 0, 0, 0, 0, 0.5, 0.5, 0, 0, 0, 0, 0, 0, 0.5, 0.5, 0, 0, 0, 0, 0, 0, 0.5,
+      ]),
+    }
+    const frame = createModelSkinDeformer(source, [0, 1]).deform(pose(0, 8))
+    assert.deepEqual([...frame.positions], [4, 0, 0, 5, 0, 0, 4, 1, 0])
+    assert.deepEqual([...frame.normals], [...primitive.normals])
+    assert.equal(frame.boneInfluences, undefined)
+    assert.throws(
+      () => createModelSkinDeformer({ ...source, boneInfluences: 7 }, [0, 1]),
+      /influence/,
+    )
+    assert.throws(
+      () =>
+        createModelSkinDeformer(
+          { ...source, boneIndices: source.boneIndices.subarray(0, 12) },
+          [0, 1],
+        ),
+      /matching/,
+    )
+  })
   it('places each vertex by its weighted bones and keeps the tangent handedness', () => {
     const frame = createModelSkinDeformer(primitive, [0, 1]).deform(pose(0, 2))
     assert.deepEqual([...frame.positions], [0, 0, 0, 3, 0, 0, 1, 1, 0])

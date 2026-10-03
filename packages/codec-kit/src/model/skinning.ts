@@ -18,10 +18,12 @@ export function createModelSkinDeformer(
 ) {
   if (signal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
   const count = primitive.positions.length / 3
+  const influences = primitive.boneInfluences ?? 4
+  if (influences !== 4 && influences !== 8) throw new TypeError('unsupported skin influence count')
   if (!Number.isSafeInteger(count) || !primitive.positions.every(Number.isFinite))
     throw new TypeError('invalid skin positions')
   // Source + kernel output + decoded attributes + remapped indices/weights, including pose buffers.
-  const workingBytes = count * 144 + boneIndices.length * 64
+  const workingBytes = count * (112 + influences * 8) + boneIndices.length * 64
   if (!Number.isSafeInteger(maxBytes) || maxBytes < 0 || workingBytes > maxBytes)
     throw new RangeError('skin deformation exceeds maxBytes')
   const slots = new Map<number, number>()
@@ -31,9 +33,13 @@ export function createModelSkinDeformer(
     slots.set(index, slot)
   }
   const { boneWeights, boneIndices: authored } = primitive
-  if (!primitive.hierarchyId || authored?.length !== count * 4 || boneWeights?.length !== count * 4)
+  if (
+    !primitive.hierarchyId ||
+    authored?.length !== count * influences ||
+    boneWeights?.length !== count * influences
+  )
     throw new TypeError(
-      'skin requires an explicit hierarchy and four indices and weights per vertex',
+      'skin requires an explicit hierarchy and matching indices and weights per vertex',
     )
   for (const [data, width, label] of [
     [primitive.normals, 3, 'normals'],
@@ -48,8 +54,8 @@ export function createModelSkinDeformer(
   let normalizedWeightVertices = 0
   for (let vertex = 0; vertex < count; vertex++) {
     let sum = 0
-    for (let influence = 0; influence < 4; influence++) {
-      const index = vertex * 4 + influence
+    for (let influence = 0; influence < influences; influence++) {
+      const index = vertex * influences + influence
       const weight = weights[index]!
       if (!Number.isFinite(weight) || weight < 0 || weight > 1)
         throw new TypeError('invalid skin weight')
@@ -80,7 +86,7 @@ export function createModelSkinDeformer(
       normalOffsetBytes: 12,
       tangentOffsetBytes: 24,
     },
-    skin: { maxInfluences: 4, boneIndices: indices, boneWeights: weights },
+    skin: { maxInfluences: influences, boneIndices: indices, boneWeights: weights },
   }
   return Object.freeze({
     workingBytes,
@@ -138,6 +144,7 @@ export function createModelSkinDeformer(
         bounds: _bounds,
         boneIndices: _indices,
         boneWeights: _weights,
+        boneInfluences: _influences,
         hierarchyId: _hierarchy,
         normals: _normals,
         tangents: _tangents,
@@ -199,7 +206,12 @@ export interface SkinBakeOptions {
   readonly signal?: AbortSignal
 }
 
-function applyPoint(matrix: readonly number[], x: number, y: number, z: number): [number, number, number] {
+function applyPoint(
+  matrix: readonly number[],
+  x: number,
+  y: number,
+  z: number,
+): [number, number, number] {
   const at = (index: number): number => {
     const one = matrix[index]
     return typeof one === 'number' && Number.isFinite(one) ? one : 0
@@ -211,7 +223,12 @@ function applyPoint(matrix: readonly number[], x: number, y: number, z: number):
   ]
 }
 
-function applyDirection(matrix: readonly number[], x: number, y: number, z: number): [number, number, number] {
+function applyDirection(
+  matrix: readonly number[],
+  x: number,
+  y: number,
+  z: number,
+): [number, number, number] {
   const at = (index: number): number => {
     const one = matrix[index]
     return typeof one === 'number' && Number.isFinite(one) ? one : 0
@@ -248,12 +265,16 @@ export function bakeSkinToRigidParts(
   const count = primitive.positions.length / 3
   if (!Number.isSafeInteger(count) || count === 0) throw new TypeError('invalid skin positions')
   const { boneIndices, boneWeights, indices } = primitive
-  if (boneIndices?.length !== count * 4 || boneWeights?.length !== count * 4)
-    throw new TypeError('baking a skin requires four indices and weights per vertex')
+  const influences = primitive.boneInfluences ?? 4
+  if (
+    (influences !== 4 && influences !== 8) ||
+    boneIndices?.length !== count * influences ||
+    boneWeights?.length !== count * influences
+  )
+    throw new TypeError('baking a skin requires matching indices and weights per vertex')
   if (indices === undefined) throw new TypeError('baking a skin requires an index buffer')
   const maxBytes = options.maxBytes ?? 134_217_728
-  if (count * 64 + indices.length * 8 > maxBytes)
-    throw new RangeError('skin bake exceeds maxBytes')
+  if (count * 64 + indices.length * 8 > maxBytes) throw new RangeError('skin bake exceeds maxBytes')
 
   // Strongest influence per vertex, and what that choice costs.
   const owner = new Int32Array(count)
@@ -264,9 +285,9 @@ export function bakeSkinToRigidParts(
     let best = -1
     let bestWeight = -1
     let secondWeight = 0
-    for (let influence = 0; influence < 4; influence += 1) {
-      const weight = boneWeights[vertex * 4 + influence] ?? 0
-      const slot = boneIndices[vertex * 4 + influence] ?? 0
+    for (let influence = 0; influence < influences; influence += 1) {
+      const weight = boneWeights[vertex * influences + influence] ?? 0
+      const slot = boneIndices[vertex * influences + influence] ?? 0
       if (weight > bestWeight) {
         secondWeight = Math.max(secondWeight, bestWeight)
         bestWeight = weight
@@ -287,7 +308,7 @@ export function bakeSkinToRigidParts(
     let slot = owner[vertices[0]!]!
     let bestWeight = -1
     for (const vertex of vertices) {
-      const weight = boneWeights[vertex * 4] ?? 0
+      const weight = boneWeights[vertex * influences] ?? 0
       if (weight > bestWeight) {
         bestWeight = weight
         slot = owner[vertex]!
@@ -302,7 +323,8 @@ export function bakeSkinToRigidParts(
   for (const [slot, vertexList] of [...triangleOwner.entries()].sort((a, b) => a[0] - b[0])) {
     signal?.throwIfAborted()
     const bind = bindMatrices[slot]
-    if (bind === undefined) throw new TypeError(`the skin names bone ${String(slot)} with no bind matrix`)
+    if (bind === undefined)
+      throw new TypeError(`the skin names bone ${String(slot)} with no bind matrix`)
     const toLocal = space === 'bone-local' ? invertAffine(bind) : undefined
     const remap = new Map<number, number>()
     const positions: number[] = []
@@ -323,7 +345,8 @@ export function bakeSkinToRigidParts(
           const nx = primitive.normals[vertex * 3] ?? 0
           const ny = primitive.normals[vertex * 3 + 1] ?? 0
           const nz = primitive.normals[vertex * 3 + 2] ?? 0
-          const direction = toLocal === undefined ? [nx, ny, nz] : applyDirection(toLocal, nx, ny, nz)
+          const direction =
+            toLocal === undefined ? [nx, ny, nz] : applyDirection(toLocal, nx, ny, nz)
           normals.push(direction[0]!, direction[1]!, direction[2]!)
         }
         if (primitive.textureCoordinates !== undefined)
@@ -346,7 +369,6 @@ export function bakeSkinToRigidParts(
   return { parts, blendedVertices, maxDroppedWeight }
 }
 
-
 /** One draw's worth of triangles, addressing at most the bone budget the caller stated. */
 export interface BoneLimitPart {
   /** The distinct bones this part uses, ascending. Its length never exceeds `maxBones`. */
@@ -358,6 +380,8 @@ export interface BoneLimitPart {
 }
 
 export interface BoneLimitOptions {
+  /** Skin stride; absent means four. */
+  readonly boneInfluences?: 4 | 8
   /** Most distinct bones one part may address. */
   readonly maxBones: number
   readonly maxBytes?: number
@@ -389,6 +413,8 @@ export function splitTrianglesByBoneLimit(
   options: BoneLimitOptions,
 ): readonly BoneLimitPart[] {
   const { maxBones, signal } = options
+  const influences = options.boneInfluences ?? 4
+  if (influences !== 4 && influences !== 8) throw new TypeError('unsupported skin influence count')
   signal?.throwIfAborted()
   if (!Number.isSafeInteger(maxBones) || maxBones < 1)
     throw new RangeError('a bone budget must be a positive whole number')
@@ -400,8 +426,8 @@ export function splitTrianglesByBoneLimit(
   const bonesOf = (vertex: number): number[] => {
     if (boneIndices === undefined || boneWeights === undefined) return []
     const out: number[] = []
-    for (let influence = 0; influence < 4; influence += 1) {
-      const at = vertex * 4 + influence
+    for (let influence = 0; influence < influences; influence += 1) {
+      const at = vertex * influences + influence
       if (at >= boneIndices.length) break
       const weight = boneWeights[at] ?? 0
       const bone = boneIndices[at] ?? 0
@@ -459,11 +485,7 @@ export function splitTrianglesByBoneLimit(
   }
   for (let triangle = 0; triangle + 2 < indices.length; triangle += 3) {
     signal?.throwIfAborted()
-    const corners = [
-      indices[triangle] ?? 0,
-      indices[triangle + 1] ?? 0,
-      indices[triangle + 2] ?? 0,
-    ]
+    const corners = [indices[triangle] ?? 0, indices[triangle + 1] ?? 0, indices[triangle + 2] ?? 0]
     const wanted = new Set<number>()
     for (const corner of corners) for (const bone of bonesOf(corner)) wanted.add(bone)
     if (wanted.size > maxBones)

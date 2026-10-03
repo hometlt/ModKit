@@ -247,11 +247,18 @@ export function createModelSceneSampler(
   if (
     billboardPosition !== undefined &&
     (billboardPosition.length !== 3 || !billboardPosition.every(Number.isFinite))
-  ) throw new TypeError('billboard camera position must contain three finite numbers')
+  )
+    throw new TypeError('billboard camera position must contain three finite numbers')
   for (const constraint of billboards)
-    if (constraint.mode === 'inverse-camera' && !bindings.some(bone => bone.nodeId === constraint.nodeId))
+    if (
+      constraint.mode === 'inverse-camera' &&
+      !bindings.some(bone => bone.nodeId === constraint.nodeId)
+    )
       throw new TypeError('billboard node has no explicit pose binding')
-    else if (constraint.mode === 'face-camera' && bindings.some(bone => bone.nodeId === constraint.nodeId))
+    else if (
+      constraint.mode === 'face-camera' &&
+      bindings.some(bone => bone.nodeId === constraint.nodeId)
+    )
       throw new TypeError('face-camera billboard currently requires a rigid scene node')
   const diagnostics: SceneRendererDiagnostic[] = []
   const report = (code: string, message: string, primitiveId?: string) => {
@@ -583,7 +590,13 @@ export function createModelSceneSampler(
       workingBytes += deformer.workingBytes
       // A skin without authored normals and tangents stays on the CPU: the renderer derives them
       // from the posed triangles.
-      if (gpuSkinning && primitive.normals !== undefined && primitive.tangents !== undefined) {
+      // Eight-influence skins use the same CPU kernel; the GPU vertex layout remains four-wide.
+      if (
+        gpuSkinning &&
+        (primitive.boneInfluences ?? 4) === 4 &&
+        primitive.normals !== undefined &&
+        primitive.tangents !== undefined
+      ) {
         // Slots and weights: a byte or two and four floats per influence.
         workingBytes += primitive.positions.length * 8
         if (workingBytes > maxBytes) throw new RangeError('skin deformation exceeds maxBytes')
@@ -597,6 +610,7 @@ export function createModelSceneSampler(
           bounds: _bounds,
           boneIndices: _indices,
           boneWeights: _weights,
+          boneInfluences: _influences,
           hierarchyId: _hierarchy,
           ...bindPose
         } = primitive
@@ -734,7 +748,9 @@ export function createModelSceneSampler(
           nodeWeights.set(value.target, value.value)
       const localPoses = nodeSampler?.sample(timeSeconds, requestSignal)
       const faceBillboards = new Map(
-        billboards.flatMap(item => item.mode === 'face-camera' ? [[item.nodeId, item] as const] : []),
+        billboards.flatMap(item =>
+          item.mode === 'face-camera' ? [[item.nodeId, item] as const] : [],
+        ),
       )
       const joints: ModelRenderJoint[] = []
       // Each hierarchy's palette of this sample, shared by its skins (see ModelSceneSkin).

@@ -67,6 +67,40 @@ const context = (request: ModContextRequest): ModContext =>
   }) as unknown as ModContext
 
 describe('the resources of the mod a subject belongs to, for an ordinary open', () => {
+  it('allows a bounded root enumeration without allowing an empty file identity', async () => {
+    const origin = createContentAssetOrigin({
+      contentSources: sources({
+        async openModContext(request) {
+          return context(request)
+        },
+        async files(_sourceId, path, query) {
+          expect(path).toBe('Mods/Core')
+          if (query.cursor === undefined)
+            return {
+              items: [{ path: 'Mods/Core/def/ai/monster.def', size: 4 }],
+              nextCursor: 'second',
+            }
+          return { items: [{ path: 'Mods/Core/materials/a.mtr', size: 2 }] }
+        },
+        async list(_sourceId, path) {
+          if (path === 'Mods/Core')
+            return [
+              { path: 'Mods/Core/monster.def', name: 'monster.def', directory: false, size: 4 },
+            ]
+          return []
+        },
+      }),
+      target: 'C:/Games/monster.md5mesh',
+    })
+    const found: string[] = []
+    for await (const entry of origin.enumerate('workspace-dependency-layer', { prefix: '' }))
+      found.push(entry.logicalId)
+    expect(found).toEqual([
+      'content-dependencies/0/def/ai/monster.def',
+      'content-dependencies/0/materials/a.mtr',
+    ])
+    await expect(origin.open('')).rejects.toThrow(/names nothing/)
+  })
   it('opens the mod only when a codec first asks, once, and lists a layer folder', async () => {
     const openModContext = vi.fn(async (request: ModContextRequest) => context(request))
     const listed: string[] = []
@@ -121,5 +155,33 @@ describe('the resources of the mod a subject belongs to, for an ordinary open', 
     expect(diagnostics).toEqual([
       expect.objectContaining({ code: 'x3.host/mod-context-unavailable' }),
     ])
+  })
+
+  it('refuses repeated paging cursors and cancels before reading a page', async () => {
+    const files = vi.fn(async () => ({ items: [], nextCursor: 'repeat' }))
+    const origin = createContentAssetOrigin({
+      contentSources: sources({
+        async openModContext(request) {
+          return context(request)
+        },
+        files,
+      }),
+      target: 'C:/Games/monster.md5mesh',
+    })
+    const collect = async (signal?: AbortSignal) => {
+      for await (const _entry of origin.enumerate(
+        'workspace-dependency-layer',
+        { prefix: '' },
+        signal,
+      )) {
+        // Exhaust the bounded namespace.
+      }
+    }
+    await expect(collect()).rejects.toThrow('repeated a cursor')
+    expect(files).toHaveBeenCalledTimes(2)
+    const controller = new AbortController()
+    controller.abort()
+    await expect(collect(controller.signal)).rejects.toThrow()
+    expect(files).toHaveBeenCalledTimes(2)
   })
 })
