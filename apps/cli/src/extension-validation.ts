@@ -2,6 +2,7 @@
 import { diagnostic, type Diagnostic } from '@modkit/core'
 import {
   commandRequest,
+  commandDiagnostic,
   COMMAND_PROTOCOL_SCHEMA_VERSION,
   inventoryHasErrors,
   type CommandInput,
@@ -46,7 +47,7 @@ export function cliExtensionFailure(
       command,
       code: 'x3.cli/invalid-extensions',
       message: 'Requested extension roots failed admission or inventory validation',
-      diagnostics: cliExtensionDiagnostics(inventory, failures),
+      diagnostics: cliExtensionDiagnostics(inventory, failures).map(commandDiagnostic),
     },
   }
 }
