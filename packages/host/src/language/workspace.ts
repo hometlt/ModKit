@@ -3048,7 +3048,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
       requireReady()
       const entry = documents.get(uri)
       if (entry === undefined) return undefined
-      if (entry.pending !== undefined) await waitWithSignal(entry.pending, signal)
+      // The activated provider owns this metadata; document analysis cannot change its methods.
       throwIfAborted(signal)
       const provider = entry.resolution.provider
       const optional: readonly [LanguageWorkspaceCapability, keyof LanguageProvider][] = [

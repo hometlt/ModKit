@@ -1,6 +1,6 @@
 import { extname, isAbsolute, relative } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import type { Diagnostic as HostDiagnostic } from '@modkit/core'
+import { isCancellation, type Diagnostic as HostDiagnostic } from '@modkit/core'
 import type {
   LanguageWorkspaceFeatureRequest,
   LanguageWorkspaceCapability,
@@ -272,6 +272,15 @@ export function createModkitLanguageServer(
   const acceptedDocuments = new Map<string, TextDocument>()
   let pending: Promise<void> = Promise.resolve()
   const workspaceUris = new Set<string>()
+  const dirtyDiagnostics = new Set<string>()
+  const diagnosticWork = new Set<Promise<void>>()
+  let workspaceGeneration = 0
+  let interactiveRequests = 0
+  let interactiveIdle: Promise<void> = Promise.resolve()
+  let finishInteractive = (): void => undefined
+  let diagnosticTimer: ReturnType<typeof setTimeout> | undefined
+  let diagnosticJob:
+    { readonly controller: AbortController; readonly task: Promise<void> } | undefined
   const diagnosticSnapshots = new Map<
     string,
     {
@@ -420,6 +429,124 @@ export function createModkitLanguageServer(
     })
     connection.sendDiagnostics({ uri, version, diagnostics: [...diagnostics] })
   }
+  const cancelDiagnostics = (): void => {
+    workspaceGeneration += 1
+    if (diagnosticTimer !== undefined) clearTimeout(diagnosticTimer)
+    diagnosticTimer = undefined
+    diagnosticJob?.controller.abort('language workspace changed')
+  }
+  const refreshDiagnostics = (): void => {
+    // A declaration changed in one file can invalidate diagnostics in every open file.
+    for (const uri of workspaceUris) {
+      dirtyDiagnostics.add(uri)
+      diagnosticSnapshots.delete(uri)
+    }
+  }
+  const scheduleDiagnostics = (): void => {
+    if (
+      shutDown ||
+      interactiveRequests > 0 ||
+      dirtyDiagnostics.size === 0 ||
+      diagnosticTimer !== undefined
+    )
+      return
+    diagnosticTimer = setTimeout(() => {
+      diagnosticTimer = undefined
+      void pending.then(() => {
+        startDiagnostics()
+      })
+    }, 150)
+  }
+  const startDiagnostics = (): Promise<void> => {
+    if (shutDown || dirtyDiagnostics.size === 0) return Promise.resolve()
+    if (interactiveRequests > 0) return interactiveIdle.then(startDiagnostics)
+    if (diagnosticJob !== undefined && !diagnosticJob.controller.signal.aborted)
+      return diagnosticJob.task
+    if (diagnosticTimer !== undefined) clearTimeout(diagnosticTimer)
+    diagnosticTimer = undefined
+    const controller = new AbortController()
+    const generation = workspaceGeneration
+    const task = (async (): Promise<void> => {
+      for (const uri of [...dirtyDiagnostics]) {
+        const document = acceptedDocuments.get(uri)
+        if (document === undefined || !workspaceUris.has(uri)) {
+          dirtyDiagnostics.delete(uri)
+          continue
+        }
+        try {
+          controller.signal.throwIfAborted()
+          const result = await options.workspace.analyze({
+            ...route(document),
+            signal: controller.signal,
+          })
+          const feature = await options.workspace.diagnostics(request(uri, controller.signal))
+          // Version alone is insufficient: a reopened file may start again at version 1.
+          if (
+            controller.signal.aborted ||
+            generation !== workspaceGeneration ||
+            acceptedDocuments.get(uri) !== document
+          )
+            return
+          setDiagnostics(
+            uri,
+            document.version,
+            feature?.diagnostics.map(diagnosticOf) ??
+              (result.state === 'resolved'
+                ? result.analysis.diagnostics.map(diagnosticOf)
+                : result.hostDiagnostics.map(hostDiagnosticOf)),
+          )
+          dirtyDiagnostics.delete(uri)
+        } catch (error) {
+          if (controller.signal.aborted || isCancellation(error)) return
+          dirtyDiagnostics.delete(uri)
+          connection.console.error(error instanceof Error ? error.message : String(error))
+        }
+      }
+    })().finally(() => {
+      diagnosticWork.delete(task)
+      if (diagnosticJob?.task === task) {
+        diagnosticJob = undefined
+        scheduleDiagnostics()
+      }
+    })
+    diagnosticJob = { controller, task }
+    diagnosticWork.add(task)
+    return task
+  }
+  const withInteractiveSignal = async <T>(
+    token: CancellationToken,
+    call: (signal: AbortSignal) => Promise<T>,
+  ): Promise<T> => {
+    if (interactiveRequests++ === 0)
+      interactiveIdle = new Promise(resolve => {
+        finishInteractive = resolve
+      })
+    cancelDiagnostics()
+    try {
+      return await withSignal(token, call)
+    } finally {
+      if (--interactiveRequests === 0) {
+        finishInteractive()
+        scheduleDiagnostics()
+      }
+    }
+  }
+  const awaitDiagnostics = async (signal: AbortSignal): Promise<void> => {
+    let abort = (): void => undefined
+    const cancelled = new Promise<never>((_, reject) => {
+      abort = () => reject(signal.reason)
+      signal.addEventListener('abort', abort, { once: true })
+    })
+    try {
+      do {
+        signal.throwIfAborted()
+        await Promise.race([awaitReady().then(startDiagnostics), cancelled])
+        signal.throwIfAborted()
+      } while (dirtyDiagnostics.size > 0 && !shutDown)
+    } finally {
+      signal.removeEventListener('abort', abort)
+    }
+  }
   const publish = async (
     document: TextDocument,
     mode: 'open' | 'change' | 'refresh',
@@ -465,6 +592,7 @@ export function createModkitLanguageServer(
               }
             : undefined
     if (limitDiagnostic !== undefined) {
+      dirtyDiagnostics.delete(document.uri)
       setDiagnostics(document.uri, accepted?.version ?? document.version, [
         {
           range: { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } },
@@ -477,34 +605,38 @@ export function createModkitLanguageServer(
     }
     if (mode === 'refresh' && workspaceUris.delete(document.uri))
       await options.workspace.close(document.uri)
-    const result =
-      mode === 'change' && workspaceUris.has(document.uri)
-        ? await options.workspace.change(route(document))
-        : await options.workspace.open(route(document))
+    const result = await options.workspace.synchronize(route(document))
     if (result.state === 'unresolved') {
       acceptDocument(document)
+      workspaceUris.delete(document.uri)
+      dirtyDiagnostics.delete(document.uri)
+      refreshDiagnostics()
       setDiagnostics(document.uri, document.version, result.hostDiagnostics.map(hostDiagnosticOf))
       return
     }
     acceptDocument(document)
     workspaceUris.add(document.uri)
-    const feature = await options.workspace.diagnostics(request(document.uri))
-    setDiagnostics(
-      document.uri,
-      document.version,
-      feature?.diagnostics.map(diagnosticOf) ?? result.analysis.diagnostics.map(diagnosticOf),
-    )
+    refreshDiagnostics()
   }
   const enqueue = (operation: () => Promise<void>): void => {
     if (shutDown) return
-    // Every mutation invalidates shared language state, including other documents' analyses.
-    pending = pending.then(operation).catch(error => {
+    cancelDiagnostics()
+    // Feature requests wait for ordered synchronization, never for background diagnostics.
+    pending = pending
+      .then(operation)
+      .catch(error => {
         connection.console.error(error instanceof Error ? error.message : String(error))
       })
+      .then(scheduleDiagnostics)
   }
   const schedule = (document: TextDocument, mode: 'open' | 'change' | 'refresh'): void => {
     // TextDocuments mutates its instances in place on the next notification.
-    const snapshot = TextDocument.create(document.uri, document.languageId, document.version, document.getText())
+    const snapshot = TextDocument.create(
+      document.uri,
+      document.languageId,
+      document.version,
+      document.getText(),
+    )
     enqueue(() => publish(snapshot, mode))
   }
 
@@ -512,7 +644,7 @@ export function createModkitLanguageServer(
     uri: string,
     signal: AbortSignal,
   ): Promise<SemanticTokens & { readonly resultId: string }> => {
-    await awaitReady()
+    await awaitDiagnostics(signal)
     const current = await options.workspace.current(uri, signal)
     const document = acceptedDocuments.get(uri)
     const data: number[] = []
@@ -642,7 +774,7 @@ export function createModkitLanguageServer(
   connection.languages.diagnostics.on(async (params, token): Promise<DocumentDiagnosticReport> =>
     withSignal(token, async signal => {
       signal.throwIfAborted()
-      await awaitReady()
+      await awaitDiagnostics(signal)
       signal.throwIfAborted()
       const snapshot = diagnosticSnapshots.get(params.textDocument.uri)
       if (snapshot === undefined) return { kind: 'full', items: [] }
@@ -663,14 +795,14 @@ export function createModkitLanguageServer(
       token: CancellationToken,
     ): Promise<WorkspaceDiagnosticReport> =>
       withSignal(token, async signal => {
-        await awaitReady()
+        await awaitDiagnostics(signal)
         const previous = new Map(params.previousResultIds.map(item => [item.uri, item.value]))
         const items = []
         for (const document of [...acceptedDocuments.values()].sort((a, b) =>
           a.uri.localeCompare(b.uri),
         )) {
           signal.throwIfAborted()
-          await awaitReady()
+          await awaitDiagnostics(signal)
           signal.throwIfAborted()
           const snapshot = diagnosticSnapshots.get(document.uri)
           if (snapshot === undefined) continue
@@ -740,7 +872,7 @@ export function createModkitLanguageServer(
       }),
   )
   connection.onCompletion((params, token) =>
-    withSignal(token, async signal => {
+    withInteractiveSignal(token, async signal => {
       await requireFeature(params.textDocument.uri, 'completion', signal)
       const value = await options.workspace.completion({
         ...positionRequest(params.textDocument.uri, params.position, signal),
@@ -928,11 +1060,12 @@ export function createModkitLanguageServer(
     }),
   )
   connection.onDocumentOnTypeFormatting((params: DocumentOnTypeFormattingParams, token) =>
-    withSignal(token, async signal => {
+    withInteractiveSignal(token, async signal => {
       await requireFeature(params.textDocument.uri, 'on-type-formatting', signal)
       const value = await options.workspace.onTypeFormatting({
         ...positionRequest(params.textDocument.uri, params.position, signal),
         ch: params.ch,
+        semanticContextPolicy: 'cached',
         options: {
           tabSize: params.options.tabSize,
           insertSpaces: params.options.insertSpaces,
@@ -949,12 +1082,13 @@ export function createModkitLanguageServer(
   connection.onRequest(
     'modkit/onTypeEdit',
     (params: DocumentOnTypeFormattingParams, token: CancellationToken) =>
-      withSignal(token, async signal => {
+      withInteractiveSignal(token, async signal => {
         await requireFeature(params.textDocument.uri, 'on-type-formatting', signal)
         return (
           (await options.workspace.onTypeFormatting({
             ...positionRequest(params.textDocument.uri, params.position, signal),
             ch: params.ch,
+            semanticContextPolicy: 'cached',
             options: {
               tabSize: params.options.tabSize,
               insertSpaces: params.options.insertSpaces,
@@ -1108,7 +1242,7 @@ export function createModkitLanguageServer(
   )
   connection.onDocumentSymbol((params, token) =>
     withSignal(token, async signal => {
-      await awaitReady()
+      await awaitDiagnostics(signal)
       const value = await options.workspace.documentSymbols(
         request(params.textDocument.uri, signal),
       )
@@ -1201,15 +1335,19 @@ export function createModkitLanguageServer(
         if (workspaceUris.delete(uri)) await options.workspace.close(uri)
       } finally {
         acceptedDocuments.delete(uri)
+        dirtyDiagnostics.delete(uri)
         diagnosticSnapshots.delete(uri)
         semanticTokenSnapshots.delete(uri)
         connection.sendDiagnostics({ uri, diagnostics: [] })
+        refreshDiagnostics()
       }
     })
   })
   connection.onShutdown(async () => {
     shutDown = true
+    cancelDiagnostics()
     await awaitReady()
+    await Promise.all(diagnosticWork)
     await options.workspace.shutdown()
     return undefined
   })
@@ -1225,7 +1363,9 @@ export function createModkitLanguageServer(
     },
     async close(): Promise<void> {
       shutDown = true
+      cancelDiagnostics()
       await awaitReady()
+      await Promise.all(diagnosticWork)
       await options.workspace.shutdown()
       connection.dispose()
     },

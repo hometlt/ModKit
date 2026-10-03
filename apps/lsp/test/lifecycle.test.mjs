@@ -7,10 +7,32 @@ const disposable = () => ({ dispose: noop })
 const token = { isCancellationRequested: false, onCancellationRequested: disposable }
 const uri = 'untitled:Main.fixturelang'
 
-function harness({ withCompletion = false } = {}) {
+function harness({
+  withCompletion = false,
+  blockDiagnostics = false,
+  blockCompletion = false,
+} = {}) {
   const handlers = new Map()
   const calls = []
   const current = new Map()
+  const publications = []
+  const diagnosticRequests = []
+  let diagnosticEntered
+  const diagnosticsStarted = new Promise(resolve => {
+    diagnosticEntered = resolve
+  })
+  let releaseDiagnostics
+  const diagnosticGate = new Promise(resolve => {
+    releaseDiagnostics = resolve
+  })
+  let completionEntered
+  const completionStarted = new Promise(resolve => {
+    completionEntered = resolve
+  })
+  let releaseCompletion
+  const completionGate = new Promise(resolve => {
+    releaseCompletion = resolve
+  })
   let release
   const gate = new Promise(resolve => {
     release = resolve
@@ -22,7 +44,7 @@ function harness({ withCompletion = false } = {}) {
         diagnostics: { on: handler => handlers.set('diagnostic', handler) },
         inlayHint: { on: handler => handlers.set('inlayHint', handler) },
       },
-      sendDiagnostics: noop,
+      sendDiagnostics: value => publications.push(value),
       listen: noop,
       dispose: noop,
     },
@@ -53,18 +75,47 @@ function harness({ withCompletion = false } = {}) {
   const workspace = {
     open: request => analyze('open', request),
     change: request => analyze('change', request),
-    diagnostics: async () => ({ diagnostics: [], isIncomplete: false }),
+    synchronize: request => analyze(current.has(request.document.uri) ? 'change' : 'open', request),
+    analyze: async () => ({
+      state: 'resolved',
+      hostDiagnostics: [],
+      analysis: { diagnostics: [], tokens: [], symbols: [] },
+    }),
+    diagnostics: async request => {
+      const text = calls
+        .filter(call => call[1] === request.uri && ['open', 'change'].includes(call[0]))
+        .at(-1)[3]
+      diagnosticRequests.push(request)
+      diagnosticEntered()
+      if (blockDiagnostics && diagnosticRequests.length === 1) await diagnosticGate
+      return {
+        diagnostics: blockDiagnostics
+          ? [
+              {
+                code: text,
+                message: text,
+                severity: 'error',
+                range: { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } },
+              },
+            ]
+          : [],
+        isIncomplete: false,
+      }
+    },
     capabilities: async uri =>
       current.has(uri)
         ? { features: ['hover', 'workspace-symbols', ...(withCompletion ? ['completion'] : [])] }
         : undefined,
     completion: async request => {
+      completionEntered()
+      if (blockCompletion) await completionGate
       calls.push([
         'completion',
         request.documentVersion,
         request.semanticContextPolicy,
         request.signal.aborted,
       ])
+      if (blockDiagnostics) calls.push(['completion-documents', [...current.keys()]])
       return { items: [], isIncomplete: false }
     },
     hover: async request => ({ markdown: String(request.documentVersion) }),
@@ -91,23 +142,29 @@ function harness({ withCompletion = false } = {}) {
   return {
     calls,
     release,
+    diagnosticsStarted,
+    releaseDiagnostics,
+    diagnosticRequests,
+    publications,
+    completionStarted,
+    releaseCompletion,
     server,
     open(version, text, documentUri = uri) {
       handlers.get('onDidOpenTextDocument')({
         textDocument: { uri: documentUri, languageId: 'fixture-language', version, text },
       })
     },
-    change(version, text) {
+    change(version, text, documentUri = uri) {
       handlers.get('onDidChangeTextDocument')({
-        textDocument: { uri, version },
+        textDocument: { uri: documentUri, version },
         contentChanges: [{ text }],
       })
     },
     close() {
       handlers.get('onDidCloseTextDocument')({ textDocument: { uri } })
     },
-    request(method, params) {
-      return handlers.get(method)(params, token)
+    request(method, params, requestToken = token) {
+      return handlers.get(method)(params, requestToken)
     },
   }
 }
@@ -134,6 +191,163 @@ test('queued notifications retain their own text/version and close before reopen
       ['open', uri, 1, 'reopened'],
     ])
   } finally {
+    await h.server.close()
+  }
+})
+
+test('completion sees all queued document versions while diagnostics remain blocked', async () => {
+  const h = harness({ withCompletion: true, blockDiagnostics: true })
+  const other = 'untitled:Other.fixturelang'
+  h.open(1, 'one')
+  h.release()
+  await h.diagnosticsStarted
+  h.open(1, 'other', other)
+  h.change(2, 'two')
+  const completion = h.request('onCompletion', {
+    textDocument: { uri },
+    position: { line: 0, character: 1 },
+  })
+  try {
+    const answer = await Promise.race([
+      completion,
+      new Promise(resolve => setImmediate(() => resolve('blocked'))),
+    ])
+    assert.deepEqual(answer, { items: [], isIncomplete: false })
+    assert.ok(h.calls.some(call => call[0] === 'completion' && call[1] === 2))
+    assert.deepEqual(h.calls.at(-1), ['completion-documents', [uri, other]])
+    assert.equal(h.diagnosticRequests[0].signal.aborted, true)
+  } finally {
+    h.releaseDiagnostics()
+    await completion
+    await h.server.close()
+  }
+})
+
+test('diagnostics from a closed document never overwrite its reopened version', async () => {
+  const h = harness({ withCompletion: true, blockDiagnostics: true })
+  h.open(1, 'old incarnation')
+  h.release()
+  await h.diagnosticsStarted
+  h.close()
+  h.open(1, 'new incarnation')
+  const completion = h.request('onCompletion', {
+    textDocument: { uri },
+    position: { line: 0, character: 1 },
+  })
+  try {
+    assert.deepEqual(
+      await Promise.race([
+        completion,
+        new Promise(resolve => setImmediate(() => resolve('blocked'))),
+      ]),
+      { items: [], isIncomplete: false },
+    )
+    h.releaseDiagnostics()
+    const report = await h.request('diagnostic', { textDocument: { uri } })
+    assert.equal(report.items[0].code, 'new incarnation')
+    assert.equal(
+      h.publications.some(item =>
+        item.diagnostics.some(diagnostic => diagnostic.code === 'old incarnation'),
+      ),
+      false,
+    )
+  } finally {
+    h.releaseDiagnostics()
+    await completion
+    await h.server.close()
+  }
+})
+
+test('a change refreshes diagnostics of other synchronized documents', async () => {
+  const h = harness()
+  const other = 'untitled:Other.fixturelang'
+  h.open(1, 'one')
+  h.open(1, 'other', other)
+  h.release()
+  try {
+    await h.request('workspace/diagnostic', { previousResultIds: [] })
+    const before = h.diagnosticRequests.filter(request => request.uri === other).length
+    h.change(2, 'two')
+    const report = await h.request('workspace/diagnostic', { previousResultIds: [] })
+    assert.equal(h.diagnosticRequests.filter(request => request.uri === other).length, before + 1)
+    assert.deepEqual(
+      report.items.map(item => [item.uri, item.version]),
+      [
+        [uri, 2],
+        [other, 1],
+      ],
+    )
+  } finally {
+    await h.server.close()
+  }
+})
+
+test('pull cancellation does not wait for or cancel shared background diagnostics', async () => {
+  const h = harness({ blockDiagnostics: true })
+  h.open(1, 'one')
+  h.release()
+  await h.diagnosticsStarted
+  let cancel
+  const cancellation = {
+    isCancellationRequested: false,
+    onCancellationRequested: callback => {
+      cancel = callback
+      return disposable()
+    },
+  }
+  try {
+    const report = h.request('diagnostic', { textDocument: { uri } }, cancellation)
+    cancel()
+    await assert.rejects(report, { code: -32800 })
+    assert.equal(h.diagnosticRequests[0].signal.aborted, false)
+    h.releaseDiagnostics()
+    assert.equal((await h.request('diagnostic', { textDocument: { uri } })).items[0].code, 'one')
+  } finally {
+    h.releaseDiagnostics()
+    await h.server.close()
+  }
+})
+
+test('shutdown cancels and drains background work before releasing the workspace', async () => {
+  const h = harness({ blockDiagnostics: true })
+  h.open(1, 'one')
+  h.release()
+  await h.diagnosticsStarted
+  const shutdown = h.request('onShutdown')
+  assert.equal(h.diagnosticRequests[0].signal.aborted, true)
+  assert.equal(
+    h.calls.some(call => call[0] === 'shutdown'),
+    false,
+  )
+  h.releaseDiagnostics()
+  await shutdown
+  assert.equal(h.calls.at(-1)[0], 'shutdown')
+  assert.equal(h.publications.length, 0)
+})
+
+test('background diagnostics wait until a long interactive request finishes', async () => {
+  const h = harness({ withCompletion: true, blockCompletion: true })
+  h.open(1, 'one')
+  h.release()
+  const completion = h.request('onCompletion', {
+    textDocument: { uri },
+    position: { line: 0, character: 1 },
+  })
+  await h.completionStarted
+  try {
+    await new Promise(resolve => setTimeout(resolve, 225))
+    assert.equal(h.diagnosticRequests.length, 0)
+    // An automatic pull must also leave the interactive request ahead of analysis.
+    const diagnostics = h.request('diagnostic', { textDocument: { uri } })
+    await new Promise(resolve => setImmediate(resolve))
+    assert.equal(h.diagnosticRequests.length, 0)
+    h.releaseCompletion()
+    await completion
+    await diagnostics
+    assert.equal(h.diagnosticRequests.length, 1)
+  } finally {
+    h.releaseCompletion()
+    await completion
     await h.server.close()
   }
 })

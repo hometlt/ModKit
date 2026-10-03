@@ -16,7 +16,10 @@ import {
   type LanguageWorkspaceDocumentSource,
 } from '../src/language/index.js'
 
-async function fixture(selector?: LanguageProvider['completionContext']) {
+async function fixture(
+  selector?: LanguageProvider['completionContext'],
+  analysis?: LanguageProvider['analyze'],
+) {
   const completion = vi.fn(async () => ({
     items: [{ label: 'schema-field', kind: 'field' as const }],
     isIncomplete: false,
@@ -24,13 +27,15 @@ async function fixture(selector?: LanguageProvider['completionContext']) {
   const provider: LanguageProvider = {
     contract: LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT,
     languageIds: ['fixture'],
-    analyze: async ({ document }) => ({
-      documentUri: document.uri,
-      documentVersion: document.version,
-      tokens: [],
-      diagnostics: [],
-      symbols: [],
-    }),
+    analyze:
+      analysis ??
+      (async ({ document }) => ({
+        documentUri: document.uri,
+        documentVersion: document.version,
+        tokens: [],
+        diagnostics: [],
+        symbols: [],
+      })),
     completion,
     ...(selector === undefined ? {} : { completionContext: selector }),
   }
@@ -104,8 +109,8 @@ async function fixture(selector?: LanguageProvider['completionContext']) {
           budgets: {
             maxConcurrentTasks: 2,
             maxWorkerCount: 0,
-          maxResidentBytes: uint64('134217728'),
-          maxTransferBytes: uint64('134217728'),
+            maxResidentBytes: uint64('134217728'),
+            maxTransferBytes: uint64('134217728'),
             defaultDeadlineMs: 10000,
           },
           policy: { id: 'org.modkit.test/context-policy', revision: '1' },
@@ -141,6 +146,40 @@ async function fixture(selector?: LanguageProvider['completionContext']) {
   const request = { uri: document.uri, documentVersion: 1, position: { line: 0, character: 1 } }
   return { workspace, snapshot, completion, request, document }
 }
+
+it('returns activated capabilities without waiting for background analysis', async () => {
+  let release = (): void => undefined
+  const gate = new Promise<void>(resolve => {
+    release = resolve
+  })
+  const f = await fixture(undefined, async ({ document }) => {
+    await gate
+    return {
+      documentUri: document.uri,
+      documentVersion: document.version,
+      tokens: [],
+      diagnostics: [],
+      symbols: [],
+    }
+  })
+  const analysis = f.workspace.analyze({ languageId: 'fixture', document: f.document })
+  try {
+    const capabilities = f.workspace.capabilities(f.document.uri)
+    const result = await Promise.race([
+      capabilities,
+      new Promise<'blocked'>(resolve => setImmediate(() => resolve('blocked'))),
+    ])
+    expect(result).toMatchObject({
+      documentVersion: 1,
+      features: expect.arrayContaining(['completion']),
+    })
+    expect(f.completion).not.toHaveBeenCalled()
+  } finally {
+    release()
+    await analysis
+    await f.workspace.shutdown()
+  }
+}, 15_000)
 
 it('skips the dependency source only for explicitly independent cached completion', async () => {
   const selector = vi.fn(async () => 'document' as const)
