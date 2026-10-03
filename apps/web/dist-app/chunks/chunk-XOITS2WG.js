@@ -4659,6 +4659,7 @@ async function analyzeResolvedDataWorkspace(request) {
 
 // packages/host/dist/language/semantic-context.js
 var MAX_LANGUAGE_AUTHORING_INDEX_BYTES = 48 * 1024 * 1024;
+var MAX_LANGUAGE_RESOLVED_DATA_INPUT_BYTES = 256 * 1024 * 1024;
 
 // packages/host/dist/language/subject-completion.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();

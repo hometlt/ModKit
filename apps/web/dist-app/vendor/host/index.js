@@ -1295,7 +1295,7 @@ function copySemanticInput(item) {
     revision,
     ...payload === void 0 ? {} : { payload }
   });
-  const result = Object.freeze({ input: copy, payloadBytes: payloadBytes2 });
+  const result = { input: copy, payloadBytes: payloadBytes2 };
   validatedInputCopies.set(copy, result);
   return result;
 }
@@ -1332,8 +1332,14 @@ var fnv64 = (bytes, low, high, reverse) => {
   return high.toString(16).padStart(8, "0") + low.toString(16).padStart(8, "0");
 };
 var languageWorkspaceContextToken = (value) => {
+  const validated = typeof value === "object" && value !== null ? validatedInputCopies.get(value) : void 0;
+  if (validated?.token !== void 0)
+    return validated.token;
   const bytes = encoder2.encode(canonicalJsonStringify(value));
-  return `language-context-v1:${fnv64(bytes, 2216829733, 3421674724, false)}${fnv64(bytes, 3421674724, 2216829733, true)}`;
+  const token = `language-context-v1:${fnv64(bytes, 2216829733, 3421674724, false)}${fnv64(bytes, 3421674724, 2216829733, true)}`;
+  if (validated !== void 0)
+    validated.token = token;
+  return token;
 };
 
 // packages/host/dist/language/content-path-index.js
@@ -10069,6 +10075,7 @@ async function analyzeResolvedDataWorkspace(request) {
 var MAX_SEMANTIC_CONTEXT_REQUIREMENTS = 8;
 var MAX_LANGUAGE_RESOLVED_DATA_ENTITIES = 1e5;
 var MAX_LANGUAGE_AUTHORING_INDEX_BYTES = 48 * 1024 * 1024;
+var MAX_LANGUAGE_RESOLVED_DATA_INPUT_BYTES = 256 * 1024 * 1024;
 var boundedText = (value) => typeof value === "string" && value.length > 0 && value.length <= 8192 && !value.includes("\0");
 function validatedLanguageSemanticContextRequirements(value) {
   if (!Array.isArray(value) || value.length > MAX_SEMANTIC_CONTEXT_REQUIREMENTS) {
@@ -10195,10 +10202,19 @@ function prepareResolvedDataSemanticContext(request) {
     documents: identities,
     locales,
     localization: localizationIdentities,
+    budgets: request.budgets === void 0 ? void 0 : {
+      ...request.budgets,
+      maxInputBytes: String(request.budgets.maxInputBytes)
+    },
     complete
   });
   const scopeKey = languageWorkspaceContextToken({
     requirement: request.requirement,
+    locales,
+    budgets: request.budgets === void 0 ? void 0 : {
+      ...request.budgets,
+      maxInputBytes: String(request.budgets.maxInputBytes)
+    },
     documents: identities.map((identity) => ({
       uri: identity.uri,
       languageId: identity.languageId,
@@ -10248,7 +10264,7 @@ async function analyzeResolvedDataSemanticContext(request) {
       return unavailable2("resolved Data context has no documents with the requested language ids");
     }
     const maximumInputBytes = Number(request.budgets.maxInputBytes > BigInt(Number.MAX_SAFE_INTEGER) ? BigInt(Number.MAX_SAFE_INTEGER) : request.budgets.maxInputBytes);
-    const maxTextBytes = Math.min(maximumInputBytes, LANGUAGE_WORKSPACE_SEMANTIC_PAYLOAD_MAX_BYTES);
+    const maxTextBytes = Math.min(maximumInputBytes, MAX_LANGUAGE_RESOLVED_DATA_INPUT_BYTES);
     const textBytes = [
       ...request.prepared.documents,
       ...request.prepared.localizationDocuments
@@ -11818,6 +11834,7 @@ function createLanguageWorkspace(options) {
     const requirements = validatedLanguageSemanticContextRequirements(provider.semanticContextRequirements ?? []).filter((requirement) => requirement.kind === "resolved-data-snapshot" && requirement.languageIds.includes(routeLanguageId));
     if (requirements.length === 0)
       return Object.freeze({ inputs: Object.freeze([]), complete: true });
+    const workspaceBudgets = Object.freeze({ ...options.workspaceBudgets ?? options.budgets });
     const inputs = [];
     let contextsComplete = true;
     for (const requirement of requirements) {
@@ -11826,7 +11843,8 @@ function createLanguageWorkspace(options) {
         documents: snapshotDocuments,
         origins: originsByUri,
         complete,
-        locales
+        locales,
+        budgets: workspaceBudgets
       });
       let resolved = cachedSemanticContext(prepared.key);
       let stale = false;
@@ -11851,7 +11869,7 @@ function createLanguageWorkspace(options) {
           pending = analyzeResolvedDataSemanticContext({
             services: options.services,
             grant: options.grant,
-            budgets: options.budgets,
+            budgets: workspaceBudgets,
             requirement,
             prepared,
             signal
@@ -12072,7 +12090,11 @@ function createLanguageWorkspace(options) {
         }),
         revision: languageWorkspaceContextToken({
           sourceRevision: sourceContext?.revision,
-          semanticInputs,
+          semanticInputs: semanticInputs.map((input) => ({
+            kind: input.kind,
+            id: input.id,
+            contentRevision: languageWorkspaceContextToken(input)
+          })),
           semanticComplete,
           documents: snapshotDocuments.map((document) => ({
             uri: document.uri,
