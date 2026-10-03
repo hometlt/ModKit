@@ -592,6 +592,14 @@ export interface LanguageProvider {
    */
   readonly workspaceLanguageIds?: readonly string[]
   analyze(request: LanguageAnalysisRequest): Promise<LanguageAnalysis>
+  /**
+   * Optional proof that completion at this position needs only the live document and provider
+   * schema. Omission means workspace. The host uses document mode only for interactive cached
+   * completion; fresh requests and all other features retain the full dependency context.
+   */
+  completionContext?(
+    request: Pick<LanguagePositionRequest, 'document' | 'position' | 'signal'>,
+  ): Promise<'document' | 'workspace'>
   completion?(request: LanguagePositionRequest): Promise<LanguageProviderCompletionList>
   /**
    * Fill in one item the editor focused, so the list itself stays cheap: documentation read on

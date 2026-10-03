@@ -2161,6 +2161,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
     validate: (value: unknown, request: LanguageFeatureRequest) => Value | Promise<Value>,
     additions: Readonly<Record<string, unknown>> = {},
     preferCachedSemanticContext = false,
+    discoverCompletionContext = false,
   ): Promise<Value | undefined> => {
     const entry = requireFeatureEntry(workspaceRequest, positioned)
     throwIfAborted(workspaceRequest.signal)
@@ -2201,7 +2202,26 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
     featureControllers.add(controller)
     const unlink = linkedSignal(controller, workspaceRequest.signal)
     try {
-      const snapshotDocuments = selected.map(candidate => candidate.document)
+      let documentOnly = false
+      if (
+        discoverCompletionContext &&
+        preferCachedSemanticContext &&
+        entry.resolution.provider.completionContext !== undefined
+      ) {
+        const context = await entry.resolution.provider.completionContext({
+          document: entry.document,
+          position: (workspaceRequest as LanguageWorkspacePositionRequest).position,
+          signal: controller.signal,
+        })
+        throwIfAborted(controller.signal)
+        if (context !== 'document' && context !== 'workspace') {
+          invalidFeature('language provider returned an invalid completion context mode', entry.uri)
+        }
+        documentOnly = context === 'document'
+      }
+      const snapshotDocuments = documentOnly
+        ? [entry.document]
+        : selected.map(candidate => candidate.document)
       const originsByUri = new Map<string, LanguageWorkspaceDocumentOrigin>()
       for (const document of snapshotDocuments) {
         const origin = options.documentOrigin?.(document)
@@ -2211,7 +2231,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
       let sourceIncomplete = false
       let hasReadOnlyContext = false
       let sourceContext: LanguageWorkspaceContext | undefined
-      if (options.documentSource !== undefined) {
+      if (!documentOnly && options.documentSource !== undefined) {
         let snapshot: LanguageWorkspaceDocumentSourceResult
         try {
           snapshot = await options.documentSource.snapshot(
@@ -2353,16 +2373,18 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
           ...(entry.resolution.provider.semanticInputs ?? []),
           ...hostInputs,
         ])
-        semanticContexts = await resolvedDataSemanticInputs(
-          entry.resolution.provider,
-          entry.route.languageId,
-          snapshotDocuments,
-          originsByUri,
-          baseSemanticComplete,
-          controller.signal,
-          preferCachedSemanticContext,
-          semanticInputLocales(baseSemanticInputs),
-        )
+        semanticContexts = documentOnly
+          ? { inputs: Object.freeze([]), complete: false }
+          : await resolvedDataSemanticInputs(
+              entry.resolution.provider,
+              entry.route.languageId,
+              snapshotDocuments,
+              originsByUri,
+              baseSemanticComplete,
+              controller.signal,
+              preferCachedSemanticContext,
+              semanticInputLocales(baseSemanticInputs),
+            )
         semanticContextsComplete = semanticContexts.complete
       } catch {
         throwIfAborted(controller.signal)
@@ -3112,6 +3134,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         },
         { position: request.position },
         request.semanticContextPolicy === 'cached',
+        true,
       )
     },
 
