@@ -1,10 +1,10 @@
 import {
   crc32c
-} from "../../../chunks/chunk-SITZA5RP.js";
-import "../../../chunks/chunk-I5QAQFCV.js";
+} from "../../../chunks/chunk-KSBE5J2R.js";
+import "../../../chunks/chunk-UCBII6KW.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 
-// ../../MODDING/modkit-core/packages/codec-kit/dist/storage/leveldb.js
+// packages/codec-kit/dist/storage/leveldb.js
 var TABLE_MAGIC = [87, 251, 128, 139, 36, 117, 71, 219];
 var FOOTER_BYTES = 48;
 var BLOCK_TRAILER_BYTES = 5;

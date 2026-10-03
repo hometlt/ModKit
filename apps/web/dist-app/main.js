@@ -52,19 +52,19 @@ import {
   webExtensionSubjectCardBundle,
   withMapPreviewSources,
   withoutHiddenEntries
-} from "./chunks/chunk-TOPWALEG.js";
-import "./chunks/chunk-3UWX4DNX.js";
-import "./chunks/chunk-G5WR4F4U.js";
-import "./chunks/chunk-WIVK24LJ.js";
+} from "./chunks/chunk-HRJKUH7W.js";
+import "./chunks/chunk-VYFJCYN7.js";
+import "./chunks/chunk-GG4FIPT2.js";
+import "./chunks/chunk-BBFWVOVG.js";
 import {
   resolveModelViewerTextures
-} from "./chunks/chunk-NG7QOONX.js";
-import "./chunks/chunk-T25I2P4X.js";
-import "./chunks/chunk-ZNN7CTDX.js";
+} from "./chunks/chunk-ERANLFM3.js";
+import "./chunks/chunk-S5HFHQEW.js";
+import "./chunks/chunk-XIDDMPVT.js";
 import {
   normalizeModkitIdentifier,
   presentationSlotId
-} from "./chunks/chunk-ZCN2DXFJ.js";
+} from "./chunks/chunk-XCAV2LUJ.js";
 import {
   declaredMutatingOperations,
   editOffer,
@@ -73,8 +73,8 @@ import {
   isRejected,
   mountFieldEditor,
   subjectCandidateProviderLease
-} from "./chunks/chunk-QNVJ5UMV.js";
-import "./chunks/chunk-XLYNRIQ3.js";
+} from "./chunks/chunk-2EEDA474.js";
+import "./chunks/chunk-7FYO6RSO.js";
 import {
   DEFAULT_UI_LOCALIZER,
   PANELS_FALLBACK_MESSAGES,
@@ -92,23 +92,23 @@ import {
   setState,
   setViewerText,
   withEnglishUiFallback
-} from "./chunks/chunk-2JPHRK2Q.js";
-import "./chunks/chunk-WMD7UVYX.js";
+} from "./chunks/chunk-HWKS7XZX.js";
+import "./chunks/chunk-XYTHVMJS.js";
 import {
   revisionId
-} from "./chunks/chunk-OXG6FDSY.js";
-import "./chunks/chunk-WBZQKTPY.js";
-import "./chunks/chunk-FV5I4X6U.js";
-import "./chunks/chunk-ATI6NQWV.js";
-import "./chunks/chunk-LIUCO4GO.js";
-import "./chunks/chunk-I2OSMP3G.js";
+} from "./chunks/chunk-IVTPINNZ.js";
+import "./chunks/chunk-MSNTNGNE.js";
+import "./chunks/chunk-4PVNK3EX.js";
+import "./chunks/chunk-FFGMY2G2.js";
+import "./chunks/chunk-VVYBZOBJ.js";
+import "./chunks/chunk-VSFYEBAW.js";
 import {
   CONTAINER_EXTRACT_OPERATION_ID,
   compareUtf8,
   diagnostic,
   isModkitError,
   isQualifiedId
-} from "./chunks/chunk-CEM4MPXO.js";
+} from "./chunks/chunk-VOFWEHM4.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunks/chunk-BLWUC7LO.js";
@@ -116,10 +116,10 @@ import {
 // apps/web/src/shell.ts
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
-// ../../MODDING/modkit-core/packages/ui/dist/settings/index.js
+// packages/ui/dist/settings/index.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
-// ../../MODDING/modkit-core/packages/ui/dist/settings/model.js
+// packages/ui/dist/settings/model.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var RECENT_LIMIT = 10;
 var GAME_INSTALLATION_PATH_LIMIT = 16;
@@ -326,7 +326,7 @@ function serializeSettings(document2) {
 `;
 }
 
-// ../../MODDING/modkit-core/packages/ui/dist/settings/index.js
+// packages/ui/dist/settings/index.js
 var APP_THEME_DOM_ID = "modkit-app-themes";
 var APP_THEME_ID = /^[a-z][a-z0-9-]{0,63}$/u;
 var APP_THEME_STYLESHEET = /^\.\/(?:modkit-ui|theme-[a-z][a-z0-9-]{0,63})\.css$/u;
@@ -1627,7 +1627,7 @@ function createEditPanel(options) {
 // apps/web/src/inspector.ts
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
-// ../../MODDING/modkit-core/packages/ui/dist/panels/index.js
+// packages/ui/dist/panels/index.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 function renderDiagnostics(root, descriptor) {
   root.replaceChildren();

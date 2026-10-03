@@ -6,23 +6,23 @@ import {
   framePortFromMessagePort,
   logicalResourcesFromWire,
   protocolLimits
-} from "./chunks/chunk-24TBM674.js";
-import "./chunks/chunk-KTN5FZYF.js";
+} from "./chunks/chunk-GZIYPA5P.js";
+import "./chunks/chunk-EGJJI5AO.js";
 import {
   initializeGpuTextureWasmBrowser
-} from "./chunks/chunk-VAQRGJ7U.js";
-import "./chunks/chunk-B5FYPFEF.js";
-import "./chunks/chunk-CISZOJYD.js";
-import "./chunks/chunk-T37HPLGC.js";
-import "./chunks/chunk-7ANCWU7V.js";
-import "./chunks/chunk-NWKRHJA2.js";
-import "./chunks/chunk-U33RYHWC.js";
+} from "./chunks/chunk-M5CW5L7C.js";
+import "./chunks/chunk-GPUJGK4E.js";
+import "./chunks/chunk-GXIKMRRL.js";
+import "./chunks/chunk-GGIVOOBZ.js";
+import "./chunks/chunk-YYQ3QKXM.js";
+import "./chunks/chunk-IKMEGZBP.js";
+import "./chunks/chunk-KNV6HMFY.js";
 import {
   ModkitError
-} from "./chunks/chunk-AMCLMQ4O.js";
+} from "./chunks/chunk-LX6GSJ3D.js";
 import "./chunks/chunk-CQ52GEHY.js";
 
-// ../../MODDING/modkit-core/packages/host/dist/execution/module-reassembly.js
+// packages/host/dist/execution/module-reassembly.js
 var unavailableResolver = {
   resolve: () => Promise.reject(new ModkitError({
     code: "x3.host/execution-backend-unavailable",
@@ -97,7 +97,7 @@ function wrapLoadedModule(module) {
   };
 }
 
-// ../../MODDING/modkit-core/packages/host/dist/browser/worker-bootstrap-core.js
+// packages/host/dist/browser/worker-bootstrap-core.js
 function runBrowserWorkerBootstrap(init) {
   let loads = 0;
   return createEndpoint({
@@ -132,7 +132,7 @@ function runBrowserWorkerBootstrap(init) {
   });
 }
 
-// ../../MODDING/modkit-core/packages/host/dist/browser/worker-entry.js
+// packages/host/dist/browser/worker-entry.js
 function isInit(value) {
   return typeof value === "object" && value !== null && value.type === "x3.host/worker-init" && typeof value.session === "string" && typeof value.moduleUrl === "string" && typeof value.port === "object";
 }

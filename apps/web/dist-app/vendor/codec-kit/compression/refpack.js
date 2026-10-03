@@ -1,9 +1,9 @@
 import {
   COMPRESSION_OUTPUT_LIMIT
-} from "../../../chunks/chunk-WI3JMRPW.js";
+} from "../../../chunks/chunk-JVAXQGJ2.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 
-// ../../MODDING/modkit-core/packages/codec-kit/dist/compression/refpack.js
+// packages/codec-kit/dist/compression/refpack.js
 var REFPACK_MALFORMED = "codec-kit/refpack-malformed";
 function malformed(message) {
   const error = new RangeError(`RefPack stream ${message}`);

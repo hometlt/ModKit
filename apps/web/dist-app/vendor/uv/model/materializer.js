@@ -4,56 +4,56 @@ import {
   addJointAttribute,
   encodeAnimationChannel,
   encodeSkeleton
-} from "../../../chunks/chunk-2KUQCSGH.js";
+} from "../../../chunks/chunk-X6TJ64VW.js";
 import {
   uvmSceneFrameInverse,
   withMaterialFrame
-} from "../../../chunks/chunk-RSNP6TR4.js";
+} from "../../../chunks/chunk-FZEAW5QD.js";
 import {
   materializeUvmAnimationMaterialTargets,
   uvmAnimationEvents,
   uvmAnimationPlayback,
   uvmKeyTimesMetadata,
   uvmVisibilityPointer
-} from "../../../chunks/chunk-MAXFIZMW.js";
+} from "../../../chunks/chunk-NHJ4I3HP.js";
 import {
   packUvmGlb,
   uvmImageUri
-} from "../../../chunks/chunk-J5YW7BHE.js";
+} from "../../../chunks/chunk-EK44GR2O.js";
 import {
   DEFAULT_MODEL_MATERIAL_BUDGET,
   snapshotModelMaterials
-} from "../../../chunks/chunk-GZUQICAY.js";
+} from "../../../chunks/chunk-C4KZWCMG.js";
 import {
   DEFAULT_MODEL_SKELETON_BUDGET,
   createModelSkeletonNodes,
   snapshotModelSkeleton
-} from "../../../chunks/chunk-73NZYGA2.js";
+} from "../../../chunks/chunk-DY2LR5H6.js";
 import {
   DEFAULT_MODEL_ANIMATION_BUDGET,
   snapshotModelAnimations
-} from "../../../chunks/chunk-BOT7ULFL.js";
-import "../../../chunks/chunk-QG2MBCY3.js";
+} from "../../../chunks/chunk-ZSMVBT5D.js";
+import "../../../chunks/chunk-3YDGNEY2.js";
 import {
   composeTrsMatrix
-} from "../../../chunks/chunk-KABH7BZW.js";
+} from "../../../chunks/chunk-WXUQLAQ3.js";
 import {
   boundsOf
-} from "../../../chunks/chunk-PS5O2PBP.js";
-import "../../../chunks/chunk-6IAOZQVP.js";
-import "../../../chunks/chunk-CISZOJYD.js";
-import "../../../chunks/chunk-T37HPLGC.js";
-import "../../../chunks/chunk-7ANCWU7V.js";
-import "../../../chunks/chunk-NWKRHJA2.js";
+} from "../../../chunks/chunk-IF5B6DHS.js";
+import "../../../chunks/chunk-EVR7SMKZ.js";
+import "../../../chunks/chunk-GXIKMRRL.js";
+import "../../../chunks/chunk-GGIVOOBZ.js";
+import "../../../chunks/chunk-YYQ3QKXM.js";
+import "../../../chunks/chunk-IKMEGZBP.js";
 import {
   isJsonValue
-} from "../../../chunks/chunk-U33RYHWC.js";
-import "../../../chunks/chunk-AMCLMQ4O.js";
-import "../../../chunks/chunk-XYIUXPQM.js";
-import "../../../chunks/chunk-I5QAQFCV.js";
+} from "../../../chunks/chunk-KNV6HMFY.js";
+import "../../../chunks/chunk-LX6GSJ3D.js";
+import "../../../chunks/chunk-NBEJVPOY.js";
+import "../../../chunks/chunk-UCBII6KW.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 
-// ../../MODDING/modkit-core/packages/uv/dist/model/rig.js
+// packages/uv/dist/model/rig.js
 function refuse(message) {
   throw new TypeError(`UVM rig refused: ${message}`);
 }
@@ -177,8 +177,9 @@ function writeUvmSkinAttributes(primitive, attributes, skeleton, storage) {
   if (!hierarchy)
     refuse(`primitive ${primitive.id} has no matching skeleton hierarchy`);
   const vertexCount = primitive.positions.length / 3;
-  if (primitive.boneIndices?.length !== vertexCount * 4 || primitive.boneWeights?.length !== vertexCount * 4)
-    refuse(`primitive ${primitive.id} needs four joint indices and weights per vertex`);
+  const influences = primitive.boneInfluences ?? 4;
+  if (influences !== 4 && influences !== 8 || primitive.boneIndices?.length !== vertexCount * influences || primitive.boneWeights?.length !== vertexCount * influences)
+    refuse(`primitive ${primitive.id} needs matching joint indices and weights per vertex`);
   const indices = new Uint16Array(primitive.boneIndices.length);
   for (const [index, joint] of primitive.boneIndices.entries()) {
     const slot = hierarchy.slots.get(joint);
@@ -189,20 +190,34 @@ function writeUvmSkinAttributes(primitive, attributes, skeleton, storage) {
   const weights = Float32Array.from(primitive.boneWeights);
   if (weights.some((value) => !Number.isFinite(value) || value < 0 || value > 1))
     refuse("skin weights must be finite values between zero and one");
-  for (let offset = 0; offset < weights.length; offset += 4) {
-    const sum = weights[offset] + weights[offset + 1] + weights[offset + 2] + weights[offset + 3];
+  for (let offset = 0; offset < weights.length; offset += influences) {
+    let sum = 0;
+    for (let influence = 0; influence < influences; influence++)
+      sum += weights[offset + influence];
     if (Math.abs(sum - 1) > 1e-4)
       refuse("skin weights must sum to one; no normalization is guessed");
   }
-  const mesh = {
-    name: primitive.id,
-    materialIndex: -1,
-    positions: primitive.positions,
-    indices: new Uint32Array(),
-    boneIndices: indices,
-    boneWeights: weights
-  };
-  addJointAttribute(attributes, mesh, vertexCount, storage.buffer, storage.views, storage.accessors);
+  for (let set = 0; set < influences / 4; set++) {
+    const setIndices = new Uint16Array(vertexCount * 4);
+    const setWeights = new Float32Array(vertexCount * 4);
+    for (let vertex = 0; vertex < vertexCount; vertex++) {
+      const offset = vertex * influences + set * 4;
+      setIndices.set(indices.subarray(offset, offset + 4), vertex * 4);
+      setWeights.set(weights.subarray(offset, offset + 4), vertex * 4);
+    }
+    const mesh = {
+      name: primitive.id,
+      materialIndex: -1,
+      positions: primitive.positions,
+      indices: new Uint32Array(),
+      boneIndices: setIndices,
+      boneWeights: setWeights
+    };
+    const encoded = {};
+    addJointAttribute(encoded, mesh, vertexCount, storage.buffer, storage.views, storage.accessors);
+    attributes[`JOINTS_${set}`] = encoded["JOINTS_0"];
+    attributes[`WEIGHTS_${set}`] = encoded["WEIGHTS_0"];
+  }
   return hierarchy.skin;
 }
 function writeUvmAnimations(source, nodeIndices, boneByNode, storage, budget, signal, primitiveIndices = /* @__PURE__ */ new Map(), rigidNodeIds = /* @__PURE__ */ new Set(), morphTargetCounts = /* @__PURE__ */ new Map(), hiddenPrimitives = []) {
@@ -479,7 +494,7 @@ function writeUvmAnimations(source, nodeIndices, boneByNode, storage, budget, si
   return { animations, catalog, visibility, losses };
 }
 
-// ../../MODDING/modkit-core/packages/uv/dist/model/materializer.js
+// packages/uv/dist/model/materializer.js
 var GLTF_LAYER_SLOTS = Object.freeze({
   diffuse: "baseColor",
   basecolor: "baseColor",

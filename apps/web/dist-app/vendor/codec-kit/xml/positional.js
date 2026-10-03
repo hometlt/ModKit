@@ -1,9 +1,9 @@
 import {
   getLogger
-} from "../../../chunks/chunk-SVFHCCEQ.js";
+} from "../../../chunks/chunk-EJGE47SQ.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 
-// ../../MODDING/modkit-core/packages/codec-kit/dist/xml/positional/utils.js
+// packages/codec-kit/dist/xml/positional/utils.js
 function findFirst(array, p) {
   let low = 0, high = array.length;
   if (high === 0) {
@@ -35,7 +35,7 @@ function binarySearch(array, key, comparator) {
   return -(low + 1);
 }
 
-// ../../MODDING/modkit-core/packages/codec-kit/dist/xml/positional/types.js
+// packages/codec-kit/dist/xml/positional/types.js
 var XMLNodeKind;
 (function(XMLNodeKind2) {
   XMLNodeKind2[XMLNodeKind2["Document"] = 0] = "Document";
@@ -187,7 +187,7 @@ var DiagnosticCategory;
   DiagnosticCategory2[DiagnosticCategory2["Hint"] = 4] = "Hint";
 })(DiagnosticCategory || (DiagnosticCategory = {}));
 
-// ../../MODDING/modkit-core/packages/codec-kit/dist/xml/positional/scanner.js
+// packages/codec-kit/dist/xml/positional/scanner.js
 var log = getLogger(["xml", "positional-scanner"]);
 var CharacterCodes;
 (function(CharacterCodes2) {
@@ -667,7 +667,7 @@ function buildLineMap(input) {
   return lineMap;
 }
 
-// ../../MODDING/modkit-core/packages/codec-kit/dist/xml/positional/parser.js
+// packages/codec-kit/dist/xml/positional/parser.js
 function parse(text, hooks) {
   const diagnostics = [];
   const scanner = createScanner(text, 0, ScannerState.WithinContent, (report) => diagnostics.push(report));

@@ -1,9 +1,9 @@
 import {
   ModkitError
-} from "../../../chunks/chunk-AMCLMQ4O.js";
+} from "../../../chunks/chunk-LX6GSJ3D.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 
-// ../../MODDING/modkit-core/packages/codec-kit/dist/model/draco.js
+// packages/codec-kit/dist/model/draco.js
 var DEFAULT_LIMITS = Object.freeze({
   maxPoints: 16e6,
   maxFaces: 32e6

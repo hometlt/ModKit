@@ -1,18 +1,18 @@
 import {
   PROJECTION_RECEIPT_METADATA_ID
-} from "../../../../chunks/chunk-GY7GURF6.js";
+} from "../../../../chunks/chunk-EBEE75BR.js";
 import {
   pageStart
-} from "../../../../chunks/chunk-ZZQB5TXT.js";
-import "../../../../chunks/chunk-CZF52HU6.js";
-import "../../../../chunks/chunk-GZUQICAY.js";
-import "../../../../chunks/chunk-73NZYGA2.js";
-import "../../../../chunks/chunk-BOT7ULFL.js";
+} from "../../../../chunks/chunk-QVBE5GHG.js";
+import "../../../../chunks/chunk-N7TDQTWE.js";
+import "../../../../chunks/chunk-C4KZWCMG.js";
+import "../../../../chunks/chunk-DY2LR5H6.js";
+import "../../../../chunks/chunk-ZSMVBT5D.js";
 import {
   snapshotJson
-} from "../../../../chunks/chunk-QG2MBCY3.js";
-import "../../../../chunks/chunk-KABH7BZW.js";
-import "../../../../chunks/chunk-SVFHCCEQ.js";
+} from "../../../../chunks/chunk-3YDGNEY2.js";
+import "../../../../chunks/chunk-WXUQLAQ3.js";
+import "../../../../chunks/chunk-EJGE47SQ.js";
 import {
   assembleZipArchive,
   zipCentralRecord,
@@ -20,43 +20,43 @@ import {
   zipLocalHeader,
   zipNeedsUtf8Flag,
   zipStoredEntry
-} from "../../../../chunks/chunk-YPEX2RSE.js";
-import "../../../../chunks/chunk-5R33N3JO.js";
-import "../../../../chunks/chunk-TSDOUDTM.js";
+} from "../../../../chunks/chunk-3QROJW6M.js";
+import "../../../../chunks/chunk-OX73FBBJ.js";
+import "../../../../chunks/chunk-IPABFL2T.js";
 import {
   decompressBounded
-} from "../../../../chunks/chunk-WI3JMRPW.js";
-import "../../../../chunks/chunk-VR2R2AUW.js";
+} from "../../../../chunks/chunk-JVAXQGJ2.js";
+import "../../../../chunks/chunk-OVW5EXOM.js";
 import {
   assembleSubjectDescriptor,
   createAssetSession,
   createUtf8TextDataSource
-} from "../../../../chunks/chunk-EGZBVMPN.js";
-import "../../../../chunks/chunk-4R7GDKBA.js";
+} from "../../../../chunks/chunk-XX72WYK3.js";
+import "../../../../chunks/chunk-JHPOUH6S.js";
 import {
   containerEntryRevision,
   contributionSettingsFor
-} from "../../../../chunks/chunk-CISZOJYD.js";
-import "../../../../chunks/chunk-T37HPLGC.js";
-import "../../../../chunks/chunk-7ANCWU7V.js";
-import "../../../../chunks/chunk-NWKRHJA2.js";
+} from "../../../../chunks/chunk-GXIKMRRL.js";
+import "../../../../chunks/chunk-GGIVOOBZ.js";
+import "../../../../chunks/chunk-YYQ3QKXM.js";
+import "../../../../chunks/chunk-IKMEGZBP.js";
 import {
   revisionId,
   toPortableProjectionReceipt
-} from "../../../../chunks/chunk-U33RYHWC.js";
+} from "../../../../chunks/chunk-KNV6HMFY.js";
 import {
   ModkitError,
   canonicalJsonStringify,
   diagnostic
-} from "../../../../chunks/chunk-AMCLMQ4O.js";
-import "../../../../chunks/chunk-VJ2XT5KE.js";
+} from "../../../../chunks/chunk-LX6GSJ3D.js";
+import "../../../../chunks/chunk-L5WKTLBK.js";
 import {
   crc32
-} from "../../../../chunks/chunk-SITZA5RP.js";
-import "../../../../chunks/chunk-I5QAQFCV.js";
+} from "../../../../chunks/chunk-KSBE5J2R.js";
+import "../../../../chunks/chunk-UCBII6KW.js";
 import "../../../../chunks/chunk-CQ52GEHY.js";
 
-// ../../MODDING/modkit-core/packages/codec-kit/dist/deferred-session.js
+// packages/codec-kit/dist/deferred-session.js
 function deferAssetSession(revision, initialize, budget, openingSignal) {
   const controller = new AbortController();
   const signal = openingSignal === void 0 ? controller.signal : AbortSignal.any([openingSignal, controller.signal]);
@@ -198,7 +198,7 @@ function deferAssetSession(revision, initialize, budget, openingSignal) {
   });
 }
 
-// ../../MODDING/modkit-core/packages/codec-kit/dist/container-entries.js
+// packages/codec-kit/dist/container-entries.js
 var CONTAINER_EXTRACT_HANDLER_ID = "extract-entry";
 function throwIfCancelled(signal) {
   if (signal?.aborted)
@@ -492,7 +492,7 @@ async function decodeContainerEntry(entry, maximum, readRange, signal) {
   return bytes;
 }
 
-// ../../MODDING/modkit-core/packages/codec-kit/dist/editing.js
+// packages/codec-kit/dist/editing.js
 function assetRevisionFromInput(input) {
   if (input.originKind !== "single" || input.revisions.topology !== "single") {
     throw new TypeError("assetRevisionFromInput: single-source subjects only");
@@ -535,7 +535,7 @@ function editPlanFromInput(input, { planId, edits, fidelity, guarantee = "atomic
   });
 }
 
-// ../../MODDING/modkit-core/packages/codec-kit/dist/audio/pcm-audio.js
+// packages/codec-kit/dist/audio/pcm-audio.js
 function convertToWav(summary = "Writes the decoded sound as a 16-bit PCM WAV file.") {
   return Object.freeze({
     id: "export.convert",
@@ -567,7 +567,7 @@ function convertToWav(summary = "Writes the decoded sound as a 16-bit PCM WAV fi
 }
 var CONVERT_TO_WAV = convertToWav();
 
-// ../../MODDING/modkit-core/packages/codec-kit/dist/xml-scan.js
+// packages/codec-kit/dist/xml-scan.js
 var NAMED_ENTITIES = Object.freeze({
   amp: "&",
   apos: "'",
@@ -576,7 +576,7 @@ var NAMED_ENTITIES = Object.freeze({
   quot: '"'
 });
 
-// ../../MODDING/modkit-core/packages/codec-kit/dist/index.js
+// packages/codec-kit/dist/index.js
 var INSPECTION_OPERATIONS = Object.freeze([
   Object.freeze({
     id: "view.inspect",

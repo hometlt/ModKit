@@ -1,6 +1,6 @@
 import "../../../chunks/chunk-CQ52GEHY.js";
 
-// ../../MODDING/modkit-core/packages/codec-kit/dist/crypto/sha1-digest.js
+// packages/codec-kit/dist/crypto/sha1-digest.js
 async function sha1Digest(bytes) {
   const subtle = globalThis.crypto?.subtle;
   if (subtle === void 0)

@@ -1,9 +1,9 @@
 import {
   COMPRESSION_OUTPUT_LIMIT
-} from "../../../chunks/chunk-WI3JMRPW.js";
+} from "../../../chunks/chunk-JVAXQGJ2.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 
-// ../../MODDING/modkit-core/packages/codec-kit/dist/compression/lzo.js
+// packages/codec-kit/dist/compression/lzo.js
 var LZO_MALFORMED = "codec-kit/lzo-malformed";
 function malformed(message) {
   const error = new RangeError(`LZO1X stream ${message}`);

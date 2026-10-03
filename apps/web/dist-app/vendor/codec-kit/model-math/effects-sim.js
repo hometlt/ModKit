@@ -14,7 +14,7 @@ import {
   writeEffectParticleRenderOrigin,
   writeEffectParticleRenderPosition,
   writeEffectRibbonRingPositions
-} from "../../../chunks/chunk-NWKAH25I.js";
+} from "../../../chunks/chunk-QHSSFB5M.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 export {
   DEFAULT_EFFECT_SIMULATION_OPTIONS,

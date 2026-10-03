@@ -1,6 +1,6 @@
 import "../../../chunks/chunk-CQ52GEHY.js";
 
-// ../../MODDING/modkit-core/packages/codec-kit/dist/crypto/blowfish.js
+// packages/codec-kit/dist/crypto/blowfish.js
 var PI_WORDS = new Uint32Array([
   608135816,
   2242054355,

@@ -6,10 +6,10 @@ import {
   crc32c,
   createAdler32,
   createCrc32Msb
-} from "../../../chunks/chunk-SITZA5RP.js";
+} from "../../../chunks/chunk-KSBE5J2R.js";
 import {
   xxHash32
-} from "../../../chunks/chunk-I5QAQFCV.js";
+} from "../../../chunks/chunk-UCBII6KW.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 export {
   adler32,
