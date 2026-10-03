@@ -21,6 +21,7 @@ import type {
   AssetSession,
   ChangeSet,
   CommitReceipt,
+  Lease,
   NamespaceEntry,
   NamespaceEntrySource,
   NamespacePageRequest,
@@ -858,7 +859,7 @@ export function exposeSubjectRpc(options: ExposeSubjectRpcOptions): SubjectRpcEx
 export interface SubjectPreviewSession {
   readonly presentation?: PresentationPlan
   descriptor(): Promise<Record<string, unknown>>
-  dataSource(contract: string, major: number): Promise<{ value: unknown }>
+  dataSource(contract: string, major: number): Promise<Lease<unknown>>
   /**
    * The subject's operation session, leased across the wire like any other ABI lease.
    *
@@ -993,7 +994,7 @@ export async function connectSubjectRpc(
     const proxy = (await services.attach(snapshot.sessionId)) as {
       operations(): Promise<OperationSession>
       descriptor(): Promise<Record<string, unknown>>
-      dataSource(contract: string, major: number): Promise<{ value: unknown }>
+      dataSource(contract: string, major: number): Promise<Lease<unknown>>
       dispose(): Promise<void>
     }
     let navigation: ReturnType<typeof createScopedViewerSubjectNavigation> | undefined

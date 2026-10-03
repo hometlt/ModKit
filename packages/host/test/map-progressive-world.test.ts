@@ -65,7 +65,7 @@ describe('a map world shown before its catalog answered', () => {
   })
 
   it('answers the rounds from an analysis the caller already ran', async () => {
-    const analyze = vi.fn(async () => ({ semantic: { catalogQueries: [] } }))
+    const analyze = vi.fn(async (_catalog: unknown, _round: number) => ({ semantic: { catalogQueries: [] } }))
     const initial = { semantic: { catalogQueries: [{ namespace: 'Unit', entityId: 'Marine' }] } }
     await analyzeWithCatalogEntities({
       workspace: { workspaceId: 'w', gameId: 'g' },

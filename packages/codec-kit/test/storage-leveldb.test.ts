@@ -47,7 +47,7 @@ function block(entries: readonly (readonly [Uint8Array, Uint8Array])[], interval
   const parts: Uint8Array[] = []
   const restarts: number[] = []
   let offset = 0
-  let previous = new Uint8Array(0)
+  let previous: Uint8Array = new Uint8Array(0)
   entries.forEach(([key, value], index) => {
     let shared = 0
     if (index % interval === 0) restarts.push(offset)
@@ -274,7 +274,7 @@ describe('LevelDB', () => {
   it('refuses a corrupt block, a missing live table, a foreign comparator and too many keys', async () => {
     const damaged = database()
     const level0 = damaged.get('000005.ldb')!.slice()
-    level0[10] ^= 0xff
+    level0[10] = level0[10]! ^ 0xff
     damaged.set('000005.ldb', level0)
     await expect(openLevelDb(directory(damaged))).rejects.toThrow(/CRC-32C/u)
     const missing = database()

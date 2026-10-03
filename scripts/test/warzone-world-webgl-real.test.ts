@@ -19,7 +19,6 @@ import {
 import { analyzeWarzoneMapWorkspace } from '../../../modkit-extensions-warzone/src/map-provider.js'
 // @ts-expect-error The cross-repository JavaScript integration entry has no declaration artifact.
 import { discoverWarzone2100Installations } from '../../../modkit-extensions-warzone/src/provider.js'
-// @ts-expect-error The JavaScript archive fixture is exercised through its runtime API.
 import { extractZipArchiveEntry, parseZipArchive } from '../../extensions/archives/src/zip/codec.js'
 import { importPieToUvm } from '../../../modkit-extensions-warzone/src/warzone-pie/uvm/converter.js'
 
@@ -68,7 +67,7 @@ describe('installed Warzone map in a real browser WebGL2 context', () => {
     const archiveEntries = new Map(
       parseZipArchive(archiveBytes, 20_000)
         .filter((entry: { kind: string }) => entry.kind === 'file')
-        .map((entry: { name: string }) => [entry.name.toLowerCase(), entry]),
+        .map(entry => [entry.name.toLowerCase(), entry]),
     )
     const workspaceDocuments = await Promise.all(
       documents.map(async name => {

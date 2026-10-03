@@ -8,9 +8,9 @@ import {
   createExecutionBackendRegistry,
   createHostContributionContractRegistry,
   invokeContainerPack,
-  openSubject,
   parsePolicyLock,
 } from '@modkit/host'
+import { openSubject } from '../src/subject-open.js'
 import { loadExtensionDirectory } from '@modkit/host/node'
 import { createCompanionInputResolver } from '../src/input-resolution.js'
 import { createSubjectEditing } from '../src/subject-editing.js'

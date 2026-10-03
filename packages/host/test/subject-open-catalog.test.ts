@@ -97,7 +97,8 @@ it('a codec asks the resolved catalog of its subject mod context, opened on the 
   })
   expect(result.state).toBe('opened')
   if (result.state !== 'opened') return
-  const catalog = holder.__x3SubjectCatalog
+  const readCatalog = (): SubjectCatalogPort | undefined => holder.__x3SubjectCatalog
+  const catalog = readCatalog()
   expect(catalog).toBeDefined()
   // nothing opens a mod context until the codec asks
   expect(requests).toEqual([])

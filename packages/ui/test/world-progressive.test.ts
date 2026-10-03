@@ -67,8 +67,9 @@ function fixture(log: string[] = []): CandidateWorldSceneSource {
       id,
       layerId: 'resources',
       kind: 'uvm' as const,
-      objectIds: id === 'tree' ? [2, 3, 4] : [1],
-      modelResource: { logicalId: id },
+      objectIds: id === 'tree' ? ['2', '3', '4'] : ['1'],
+      modelResource: { id, role: 'sidecar' as const, scopes: ['workspace-dependency-layer'] as const, logicalId: id },
+      resolved: false,
     })),
   ]
   const layers = ['terrain', 'cliffs', 'objects', 'resources'].map(kind => ({

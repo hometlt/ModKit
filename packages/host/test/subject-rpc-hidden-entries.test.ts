@@ -11,9 +11,9 @@ afterEach(async () => {
 
 const ref = rootSubject({ id: 'memory://archive.zip' }, 'workspace-a')
 const entries: NamespaceEntry[] = [
-  { id: 'readme.txt', path: 'readme.txt', kind: 'file' },
-  { id: '__MACOSX/', path: '__MACOSX/', kind: 'directory', hidden: true },
-  { id: '__MACOSX/._readme.txt', path: '__MACOSX/._readme.txt', kind: 'file', hidden: true },
+  { id: 'readme.txt', path: 'readme.txt', name: 'readme.txt', revision: revisionId('provider-token:hidden'), kind: 'file' },
+  { id: '__MACOSX/', path: '__MACOSX/', name: '__MACOSX', revision: revisionId('provider-token:hidden'), kind: 'directory', hidden: true },
+  { id: '__MACOSX/._readme.txt', path: '__MACOSX/._readme.txt', name: '._readme.txt', revision: revisionId('provider-token:hidden'), kind: 'file', hidden: true },
 ]
 
 const session: AssetSession = {
@@ -77,7 +77,7 @@ it('an application lists hidden container entries only when it asks for them', a
   )
   const opened = await client.open('archive.zip')
   if (opened.state !== 'opened') throw new Error('the archive did not open')
-  const lease = await opened.session.dataSource('common.view/namespace-entry-source' as never, 1)
+  const lease = await opened.session.dataSource('common.view/namespace-entry-source', 1)
   const namespace = lease.value as {
     list(prefix: string, page: object): Promise<{ items: NamespaceEntry[] }>
     lookup(path: string): Promise<NamespaceEntry | undefined>

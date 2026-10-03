@@ -19,7 +19,8 @@ const clip = (
   kind: 'animation',
   provenance: 'direct',
   frames: samples.length,
-  channels: [{ target: 'bone', kind: 'translation', interpolation, samples }],
+  channels: [{ target: 'bone', kind: 'translation', interpolation, samples,
+    firstFrame: samples[0]?.frame ?? 0, lastFrame: samples.at(-1)?.frame ?? 0 }],
 })
 
 describe('animation snapshot helpers', () => {

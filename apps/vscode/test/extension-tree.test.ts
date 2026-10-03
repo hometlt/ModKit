@@ -67,6 +67,8 @@ function contribution(
     disabled: false,
     path: `${id}.json`,
     fileExtensions: [],
+    anchorFileNames: [],
+    pathFileNames: [],
     ...overrides,
   })
 }
@@ -88,6 +90,8 @@ const contributions: readonly ContributionRow[] = Object.freeze([
     disabled: false,
     path: 'bad.json',
     fileExtensions: [],
+    anchorFileNames: [],
+    pathFileNames: [],
   }),
 ])
 

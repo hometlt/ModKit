@@ -81,7 +81,7 @@ describe('a folder its container alias marks by a file', () => {
       inventory,
       source: folder(['pack.mcmeta', 'Base.SC2Data', 'Base.SC2Data/world.bin']),
       path: 'pack',
-      intent: 'probe',
+      intent: 'inspect',
       target: { environment: 'node', operatingSystem: 'windows', architecture: 'x64' },
       grant: { id: 'marked-folder', classes: ['read-source'] },
       executionBackends,

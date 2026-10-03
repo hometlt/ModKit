@@ -1,6 +1,7 @@
 import { createHostServiceResolver } from '@modkit/host'
 import { DEFAULT_SUBJECT_OPEN_BUDGET } from '@modkit/host/node'
 import { describe, expect, it } from 'vitest'
+import { foreignServiceContractId } from '@modkit/sdk'
 import { createModkitCliSubjectServices } from '../src/profile.js'
 
 describe('built-in services of the CLI composition', () => {
@@ -17,7 +18,7 @@ describe('built-in services of the CLI composition', () => {
     })
     try {
       const lease = await resolver.port.resolveUnknown({
-        contract: 'common.uv/model-materializer',
+        contract: foreignServiceContractId('common.uv/model-materializer'),
         major: 1,
       })
       expect(typeof (lease.value as { materialize?: unknown }).materialize).toBe('function')

@@ -85,7 +85,7 @@ function open() {
         outputKinds: ['bytes'],
       },
     ],
-    detect: async prefix => ({
+    detect: async (prefix: Uint8Array) => ({
       confidence: String.fromCharCode(...prefix.subarray(0, 4)) === 'CNTR' ? 1 : 0,
       kind: 'magic',
     }),
@@ -176,7 +176,7 @@ describe('a container entry table gives listing and extraction for free', () => 
     const first = await lease.value.list('', { limit: 2 })
     expect(first.items.map(item => item.path)).toEqual(['docs/Stored.txt', 'docs/zlib.txt'])
     expect(first.nextCursor).toBe('2')
-    const rest = await lease.value.list('', { limit: 2, cursor: first.nextCursor })
+    const rest = await lease.value.list('', { limit: 2, ...(first.nextCursor === undefined ? {} : { cursor: first.nextCursor }) })
     expect(rest.items.map(item => item.path)).toEqual(['custom.bin', 'data/companion.bin'])
     expect(rest.items[0]?.mediaType).toBe('audio/x-example')
     // A custom decoder names its own compression; the host lists it without interpreting it.

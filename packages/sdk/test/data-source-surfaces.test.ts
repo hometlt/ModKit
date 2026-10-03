@@ -262,6 +262,8 @@ describe('NXT-103 — standard data-source surfaces', () => {
       page: { kind: 'value', signal: 'last' },
       model: { kind: 'value', optional: true, signal: 'last' },
       texture: { kind: 'value', optional: true, signal: 'last' },
+      refined: { kind: 'value', optional: true, signal: 'last' },
+      focus: { kind: 'value', optional: true, signal: 'last' },
     })
     expect(
       STANDARD_DATA_SOURCE_SURFACES['common.view/subject-calculations-source'].methods,

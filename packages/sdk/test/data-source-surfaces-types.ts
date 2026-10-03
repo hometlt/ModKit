@@ -52,6 +52,7 @@ export const rasterOk = {
     info: { kind: 'value', ...sig },
     encoded: { kind: 'lease', result: encoded, wrapper: 'bare', ...sig },
     readRegion: { kind: 'value', optional: true, ...sig },
+    readCompressed: { kind: 'value', optional: true, ...sig },
   },
 } as const satisfies SurfaceOf<RasterImageSource>
 

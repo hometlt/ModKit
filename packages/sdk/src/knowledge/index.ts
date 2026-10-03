@@ -112,21 +112,22 @@ export interface KnowledgeEntry {
   readonly sources: readonly KnowledgeSource[]
 }
 
-export interface KnowledgePackSpecV1 {
+interface KnowledgePackSpecV1Base {
   readonly schemaVersion: 1
   readonly sourceLocale: string
   /** Higher priority sorts first, but never silently erases another publisher's entry. */
   readonly priority: number
   readonly gameIds?: readonly string[]
-  /** Entries carried in the manifest itself. Exactly one of `entries` and `entriesPath` is set. */
-  readonly entries?: readonly KnowledgeEntry[]
-  /**
-   * A JSON file of this extension (`{ "entries": [...] }`, a portable relative path) that holds
-   * the entries instead. The host reads, attests and validates it when knowledge is first
-   * queried, so a large pack costs nothing while every window builds its inventory.
-   */
-  readonly entriesPath?: string
 }
+
+/** Exactly one source of entries, matching the published schema's oneOf. */
+export type KnowledgePackSpecV1 = KnowledgePackSpecV1Base &
+  /** Entries carried in the manifest itself. */
+  (
+    | { readonly entries: readonly KnowledgeEntry[]; readonly entriesPath?: never }
+    /** Portable JSON path, loaded and attested by the host when knowledge is first queried. */
+    | { readonly entries?: never; readonly entriesPath: string }
+  )
 
 /** The external entries file named by `KnowledgePackSpecV1.entriesPath`. */
 export interface KnowledgePackEntriesFileV1 {

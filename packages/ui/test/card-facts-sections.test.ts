@@ -197,16 +197,16 @@ describe('subject card projection of typed facts', () => {
   })
 
   it('marks a fact the codec declares writable with the write a table cell would make', async () => {
-    const editable = { write: { operation: 'edit.field' } } as unknown as SubjectFact['editable']
+    const editable = { write: { operation: 'edit.field' } } as unknown as NonNullable<SubjectFact['editable']>
     const sections = await loadSubjectCardSections(
       source({
         combat: [
           fact('life', 45, {
-            type: { kind: 'number' } as SubjectFact['type'],
+            type: { kind: 'number' } as NonNullable<SubjectFact['type']>,
             unit: 'hp',
             editable,
           }),
-          fact('armor', 0, { type: { kind: 'number' } as SubjectFact['type'] }),
+          fact('armor', 0, { type: { kind: 'number' } as NonNullable<SubjectFact['type']> }),
         ],
       }),
     )
@@ -231,12 +231,12 @@ describe('subject card projection of typed facts', () => {
   })
 
   it('writes a fact at the semantic path its source names, so the codec knows the entity', async () => {
-    const editable = { write: { operation: 'edit.field' } } as unknown as SubjectFact['editable']
+    const editable = { write: { operation: 'edit.field' } } as unknown as NonNullable<SubjectFact['editable']>
     const sections = await loadSubjectCardSections(
       source({
         combat: [
           fact('LifeMax', 45, {
-            type: { kind: 'number' } as SubjectFact['type'],
+            type: { kind: 'number' } as NonNullable<SubjectFact['type']>,
             editable,
             provenance: [
               { label: 'Liberty' },

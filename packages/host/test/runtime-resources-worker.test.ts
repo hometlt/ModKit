@@ -237,6 +237,8 @@ describe('Runtime inputs over the production worker resource broker', () => {
     expect(f.result.state, JSON.stringify(f.result.diagnostics)).toBe('resolved')
     if (f.result.state !== 'resolved') return
     try {
+      if (!('stateHash' in f.result.session) || typeof f.result.session.stateHash !== 'function')
+        throw new Error('expected runtime provider v3 state hashing')
       expect(await f.result.session.stateHash()).toMatchObject({
         outcome: 'hashed', stateHash: 'test:seed:18446744073709551615:00',
       })

@@ -30,6 +30,7 @@ describe('the locales of a resolved Data context', () => {
       localizationLanguageIds: ['sc2-strings'],
     },
   ])
+  if (requirement?.kind !== 'resolved-data-snapshot') throw new Error('expected resolved data requirement')
   const documents = [
     document('mod:/Base.SC2Data/GameData/UnitData.xml', 'sc2-data', '<Catalog/>'),
     document(

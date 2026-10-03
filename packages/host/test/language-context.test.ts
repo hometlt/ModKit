@@ -18,6 +18,7 @@ describe('language workspace semantic payloads', () => {
     const [requirement] = validatedLanguageSemanticContextRequirements([original])
     expect(requirement).toEqual(original)
     expect(requirement).not.toBe(original)
+    if (requirement?.kind !== 'resolved-data-snapshot') throw new Error('expected resolved data requirement')
     expect(Object.isFrozen(requirement?.languageIds)).toBe(true)
     expect(() => validatedLanguageSemanticContextRequirements([original, { ...original }])).toThrow(
       TypeError,

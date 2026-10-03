@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { CONTAINER_EXTRACT_OPERATION_ID } from '@modkit/core'
+import { CONTAINER_EXTRACT_OPERATION_ID, operationId } from '@modkit/core'
 import {
   resolveModWorkspaceGraph,
   revisionId,
@@ -45,7 +45,7 @@ async function mapSession(files: ReadonlyMap<string, Uint8Array>, subjectUri = M
     },
   })
   const operations = [
-    { id: CONTAINER_EXTRACT_OPERATION_ID, handlerId: 'extract', state: 'available' as const, mutatesSource: false },
+    { id: operationId(CONTAINER_EXTRACT_OPERATION_ID, { contributionId: 'fixture/map' }), handlerId: 'extract', state: 'available' as const, mutatesSource: false },
   ]
   const wire = resolvedDescriptorWire(operations)
   const descriptor = await assembleSubjectDescriptor({
@@ -125,7 +125,7 @@ function request(
     roots: [
       { rootId: 'base', sourceId: 'opened', sourcePath: 'mods/base.pkg', displayName: 'Base', kind: 'package', dependencies: [] },
       { rootId: 'mp', sourceId: 'opened', sourcePath: 'mods/mp.pkg', displayName: 'MP', kind: 'package',
-        dependencies: [{ targetRootId: 'base', ref: 'base', required: true, provenance: 'implicit' }] },
+        dependencies: [{ targetRootId: 'base', ref: 'base', required: true, provenance: 'implicit' as const }] },
       { rootId: 'lost', sourceId: 'opened', sourcePath: 'mods/lost.pkg', displayName: 'Lost', kind: 'package', dependencies: [] },
       { rootId: 'map', sourceId: 'opened', sourcePath: 'opened/demo.map', displayName: 'Demo', kind: 'map',
         dependencies: roots.map(rootId => ({ targetRootId: rootId, ref: rootId, required: true, provenance: 'declared' as const })) },

@@ -52,7 +52,7 @@ export class LoadedModResourceSessions {
   private disposed = false
 
   constructor(
-    private readonly sources: ContentSources,
+    private readonly sources: Pick<ContentSources, 'openModContext'>,
     /** `locales` is read at every open (reloads too): the string files the contexts load. */
     private readonly options: { readonly locales?: () => readonly string[] } = {},
   ) {}

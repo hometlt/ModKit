@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "scope": "SC2 stock package metadata projection through public ContentSources and one mod loader",
+  "sourceBase": {
+    "blizzard": "88e23fc6",
+    "core": "1968b58d"
+  },
+  "verdict": "pass",
+  "tests": [
+    {
+      "suite": "workspace, JsonMod, SC2 codecs and source projection",
+      "passed": 51,
+      "skipped": 1,
+      "failed": 0
+    },
+    {
+      "suite": "CASC source regression after metadata revision change",
+      "passed": 5,
+      "failed": 0
+    },
+    {
+      "suite": "public Host against installed SC2, Void and VoidStory",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "suite": "local and CASC source node tests",
+      "passed": 11,
+      "failed": 0
+    }
+  ],
+  "observations": [
+    "Missing stock DocumentInfo is exposed by folder, MPQ and CASC content sources; no disk metadata is written.",
+    "Real metadata wins. An existing empty dependency list is not replaced with a basename dependency chain.",
+    "Void resolves Core, Liberty and Swarm as declared metadata dependencies; Marine LifeMax resolves to 45.",
+    "VoidStory resolves its matching data mod with no unresolved dependencies.",
+    "Virtual metadata is visible in list, files and read, including in ModContext.locate.",
+    "CASC source revision includes the virtual metadata digest to invalidate persisted source indexes."
+  ],
+  "coverageLimits": [
+    "This receipt does not claim complete SC2 MK2 feature parity or release acceptance.",
+    "Public online Battle.net authorization, publishing and deletion are not exercised."
+  ],
+  "evidence": [
+    {
+      "path": "modkit-extensions-blizzard/starcraft2/modules/mod/test/workspace/mod-contexts.test.ts",
+      "sha256": "136f061676aef6572616a1d2ecd9d0db7767c800eb54871de2ca0ef48a1720f9"
+    },
+    {
+      "path": "modkit-extensions-blizzard/starcraft2/modules/game/test/sc2-casc-document-info.test.ts",
+      "sha256": "853543fdba166e5f0a8cd5cad4e9af51e662f0c98882e596cb0cf6ea19788989"
+    },
+    {
+      "path": "modkit-extensions-blizzard/test/integration/sc2-document-info-real.test.ts",
+      "sha256": "773a5b87d45edf86a73d0289bc418226acab4eab124c215dd2f95a4b46edbc64"
+    }
+  ]
+}

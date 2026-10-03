@@ -52,7 +52,7 @@ describe('a RefPack container entry', () => {
       },
     )
     const [item] = (await access.namespace.list('', { limit: 10 })).items
-    expect(item?.rangeAccess).toBe(true)
+    expect(item?.kind === 'file' ? item.rangeAccess : undefined).toBe(true)
     const lease = await access.namespace.openEntrySource!('static_common.bin')
     expect(await lease.value.size()).toBe(BigInt(plain.byteLength))
     const read = async (offset: number, length: number) =>

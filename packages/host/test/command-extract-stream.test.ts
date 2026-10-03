@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { AssetSession, ByteRangeSource, NamespaceEntry } from '@modkit/sdk'
+import { revisionId, type AssetSession, type ByteRangeSource, type NamespaceEntry } from '@modkit/sdk'
 import {
   commandRequest,
   createSubjectCommandRuntime,
@@ -13,16 +13,19 @@ const CARRIER = new Uint8Array(10 * 1024 * 1024).map((_, index) => index % 251)
 const stored: NamespaceEntry = {
   id: 'big.bin',
   path: 'big.bin',
+  name: 'big.bin', revision: revisionId('provider-token:extract'),
   kind: 'file',
   storedRange: { offset: 7n, length: BigInt(CARRIER.byteLength - 7) },
 }
 const decoded: NamespaceEntry = {
   id: 'packed.bin',
   path: 'packed.bin',
+  name: 'packed.bin', revision: revisionId('provider-token:extract'),
   kind: 'file',
   rangeAccess: true,
 }
-const small: NamespaceEntry = { id: 'small.txt', path: 'small.txt', kind: 'file' }
+const small: NamespaceEntry = { id: 'small.txt', path: 'small.txt', name: 'small.txt',
+  revision: revisionId('provider-token:extract'), kind: 'file' }
 
 const carrierSource: ByteRangeSource = {
   size: async () => BigInt(CARRIER.byteLength),

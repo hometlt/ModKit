@@ -57,6 +57,7 @@ it('opens an asset by its exact path before any listing names it', async () => {
     resolution,
   })
   const lease = await origin!.open('mesh/123')
+  if (lease.value.kind !== 'bytes') throw new Error('expected an asset byte source')
   expect(new TextDecoder().decode(await lease.value.read(0n, 4))).toBe('mesh')
   expect(lookups).toEqual(['assets/mesh/123'])
   await expect(origin!.open('mesh/404')).rejects.toThrow(/content dependency has no entry/)

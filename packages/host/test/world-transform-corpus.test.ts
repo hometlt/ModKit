@@ -6,7 +6,7 @@ import {
 } from '../src/maps/world-source.js'
 
 const sha256 = async (bytes: Uint8Array) =>
-  `sha256:${[...new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))]
+  `sha256:${[...new Uint8Array(await crypto.subtle.digest('SHA-256', bytes.slice()))]
     .map(byte => byte.toString(16).padStart(2, '0'))
     .join('')}` as const
 

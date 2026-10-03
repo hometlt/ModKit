@@ -9,6 +9,7 @@ import {
   discoverPublications,
   hash,
   initialState,
+  readEvidence,
   requirementsFor,
   stable,
   validateLedgerClaims,
@@ -114,6 +115,60 @@ async function acceptedFixture(t) {
   state.ledger.protectedEvidence = [evidence]
   return state
 }
+
+test('archived evidence preserves original bytes and still verifies digests and paths', async t => {
+  const { root } = await fixture(t)
+  const before = 'accepted proof\n'
+  await writeFile(path.join(root, 'proof.txt'), before)
+  const reference = { path: 'proof.txt', sha256: hash(before) }
+  await writeFile(path.join(root, 'proof.txt'), 'updated proof\n')
+  await assert.rejects(readEvidence(root, reference), /evidence digest changed/u)
+  await writeFile(path.join(root, 'before.txt'), before)
+  const archived = { ...reference, snapshotPath: 'before.txt' }
+  assert.equal((await readEvidence(root, archived)).toString(), before)
+  await assert.rejects(
+    readEvidence(root, { ...archived, snapshotPath: '../before.txt' }),
+    /unsafe relative path/u,
+  )
+  await assert.rejects(
+    readEvidence(root, { ...archived, path: '../proof.txt' }),
+    /unsafe relative path/u,
+  )
+  await writeFile(path.join(root, 'before.txt'), 'tampered proof\n')
+  await assert.rejects(readEvidence(root, archived), /evidence digest changed/u)
+})
+
+test('archiving accepted evidence requires a verified current proof and keeps the ratchet', async t => {
+  const state = await acceptedFixture(t)
+  const previous = structuredClone(state.ledger)
+  const before = await readFile(path.join(state.root, 'receipt.json'))
+  await writeFile(path.join(state.root, 'before.json'), before)
+  const receipt = JSON.parse(before)
+  receipt.inputs.revision = 'updated'
+  const after = stable(receipt)
+  await writeFile(path.join(state.root, 'receipt.json'), after)
+  const archived = { ...previous.protectedEvidence[0], snapshotPath: 'before.json' }
+  for (const entry of state.ledger.entries) entry.evidence = [archived]
+  state.ledger.protectedEvidence = [archived]
+  assert.match(
+    (await checkLedger({ ...state, previous })).join('\n'),
+    /archived proof needs current evidence/u,
+  )
+  const current = { path: 'receipt.json', sha256: hash(after) }
+  for (const entry of state.ledger.entries) entry.evidence.push(current)
+  state.ledger.protectedEvidence.push(current)
+  assert.deepEqual(await checkLedger({ ...state, previous }), [])
+  await writeFile(path.join(state.root, 'receipt.json'), '{}')
+  assert.match((await checkLedger({ ...state, previous })).join('\n'), /evidence digest changed/u)
+  await writeFile(path.join(state.root, 'receipt.json'), after)
+  for (const entry of state.ledger.entries) entry.evidence = [current]
+  state.ledger.protectedEvidence = [current]
+  assert.match((await checkLedger({ ...state, previous })).join('\n'), /accepted proof removed/u)
+  assert.match(
+    (await checkLedger({ ...state, previous })).join('\n'),
+    /accepted requirement proof removed/u,
+  )
+})
 
 test('publication identity survives an isolated repository snapshot path', async t => {
   const workspace = await mkdtemp(path.join(os.tmpdir(), 'modkit-publication-workspace-'))

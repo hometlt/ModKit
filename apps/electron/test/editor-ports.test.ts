@@ -104,6 +104,9 @@ function fakeArm(
     async dispose() {
       arm.disposed = true
     },
+    async undo() { throw new Error('history is not used by this fixture') },
+    async redo() { throw new Error('history is not used by this fixture') },
+    async discardHistory() { return false },
   }
   return arm
 }

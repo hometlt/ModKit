@@ -42,7 +42,9 @@ export async function readEvidence(root, reference) {
     !/^[a-f0-9]{64}$/u.test(reference.sha256 ?? '')
   )
     throw new Error('evidence needs a path and sha256')
-  const file = confined(root, reference.path)
+  const original = confined(root, reference.path)
+  const file =
+    reference.snapshotPath === undefined ? original : confined(root, reference.snapshotPath)
   const realRoot = await realpath(root)
   if (!(await realpath(file)).startsWith(realRoot + path.sep))
     throw new Error(`evidence symlink escapes root: ${reference.path}`)
@@ -50,6 +52,15 @@ export async function readEvidence(root, reference) {
   if (hash(bytes) !== reference.sha256)
     throw new Error(`evidence digest changed: ${reference.path}`)
   return bytes
+}
+
+function checkEvidenceSnapshots(references, fail) {
+  for (const reference of references)
+    if (
+      reference?.snapshotPath !== undefined &&
+      !references.some(item => item?.path === reference.path && item.snapshotPath === undefined)
+    )
+      fail(`archived proof needs current evidence: ${reference.path}`)
 }
 
 /** Contracts whose manifests a ledger row may name: codecs, and service providers for writer rows. */
@@ -406,6 +417,7 @@ export async function checkLedger({
       fail(`invalid evidence list: ${requirement.id}`)
       continue
     }
+    checkEvidenceSnapshots(entry.evidence, fail)
     const mapping = mappings.get(requirement.id)
     if (requirement.kind === 'operation' && !mapping)
       fail(`missing operation mapping: ${requirement.id}`)
@@ -509,6 +521,7 @@ export async function checkLedger({
       }
     }
   }
+  checkEvidenceSnapshots(ledger.protectedEvidence ?? [], fail)
   for (const reference of ledger.protectedEvidence ?? [])
     try {
       await readEvidence(root, reference)

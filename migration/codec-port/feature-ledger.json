@@ -5851,7 +5851,8 @@
       "evidence": [
         {
           "path": "modkit-extensions-blizzard/starcraft2/modules/mod/test/workspace/mod-contexts.test.ts",
-          "sha256": "b353e307d905364b732b002304a281d4fc826cc55839ea798b11bb881b3dae45"
+          "sha256": "b353e307d905364b732b002304a281d4fc826cc55839ea798b11bb881b3dae45",
+          "snapshotPath": "modkit-core/reports/parity/evidence/sc2-mod-contexts-2026-09-24.test.ts.snapshot"
         },
         {
           "path": "modkit-extensions-blizzard/starcraft2/modules/game/test/battlenet-local-sources.test.mjs",
@@ -5860,6 +5861,14 @@
         {
           "path": "modkit-core/packages/host/test/content-dependency-operations.test.ts",
           "sha256": "00b4a52bb3528d1a7e3f5ecdbf9424151a5cfb4f54e7cb26e9226380392480d4"
+        },
+        {
+          "path": "modkit-extensions-blizzard/starcraft2/modules/mod/test/workspace/mod-contexts.test.ts",
+          "sha256": "136f061676aef6572616a1d2ecd9d0db7767c800eb54871de2ca0ef48a1720f9"
+        },
+        {
+          "path": "modkit-core/reports/parity/sc2-document-info-2026-10-03.json",
+          "sha256": "35cd20429bf11e04aa0abaf67c3acd5a8e52ec9190ecdc3cdb8ae86e63761d7a"
         }
       ],
       "id": "legacy/codec-manifest/modkit/sc2-mod/operation/content.mount",
@@ -5880,7 +5889,8 @@
         },
         {
           "path": "modkit-extensions-blizzard/starcraft2/modules/mod/test/workspace/mod-contexts.test.ts",
-          "sha256": "b353e307d905364b732b002304a281d4fc826cc55839ea798b11bb881b3dae45"
+          "sha256": "b353e307d905364b732b002304a281d4fc826cc55839ea798b11bb881b3dae45",
+          "snapshotPath": "modkit-core/reports/parity/evidence/sc2-mod-contexts-2026-09-24.test.ts.snapshot"
         },
         {
           "path": "modkit-extensions-blizzard/starcraft2/modules/game/test/battlenet-local-sources.test.mjs",
@@ -5889,6 +5899,14 @@
         {
           "path": "modkit-core/packages/host/test/content-dependency-operations.test.ts",
           "sha256": "00b4a52bb3528d1a7e3f5ecdbf9424151a5cfb4f54e7cb26e9226380392480d4"
+        },
+        {
+          "path": "modkit-extensions-blizzard/starcraft2/modules/mod/test/workspace/mod-contexts.test.ts",
+          "sha256": "136f061676aef6572616a1d2ecd9d0db7767c800eb54871de2ca0ef48a1720f9"
+        },
+        {
+          "path": "modkit-core/reports/parity/sc2-document-info-2026-10-03.json",
+          "sha256": "35cd20429bf11e04aa0abaf67c3acd5a8e52ec9190ecdc3cdb8ae86e63761d7a"
         }
       ],
       "id": "legacy/codec-manifest/modkit/sc2-mod/operation/content.resolve-dependencies",

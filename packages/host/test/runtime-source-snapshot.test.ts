@@ -4,7 +4,7 @@ import type { ModContext } from '@modkit/vfs/content-sources'
 
 const encoder = new TextEncoder()
 const source = (files: Map<string, string>): ModContext =>
-  Object.freeze({
+  Object.freeze<ModContext>({
     schemaVersion: 1,
     gameId: 'test/game',
     contextId: 'same-context',

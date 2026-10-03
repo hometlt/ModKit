@@ -958,6 +958,7 @@ describe('MCP adapter lease and preparation regressions', () => {
             ...session,
             dataSource: (async (contract, major) => {
               const lease = await session.dataSource(contract, major)
+              if (typeof lease.value !== 'object' || lease.value === null) throw new TypeError('fixture data source must be an object')
               let released = false
               return {
                 value: new Proxy(lease.value, {
@@ -966,7 +967,9 @@ describe('MCP adapter lease and preparation regressions', () => {
                     return async (...input: unknown[]) => {
                       await new Promise(resolve => setTimeout(resolve, 0))
                       expect(released).toBe(false)
-                      return Reflect.apply(Reflect.get(target, key), target, input)
+                      const summary = Reflect.get(target, key)
+                      if (typeof summary !== 'function') throw new TypeError('fixture summary must be callable')
+                      return Reflect.apply(summary, target, input)
                     }
                   },
                 }),

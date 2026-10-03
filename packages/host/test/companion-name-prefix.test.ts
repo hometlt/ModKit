@@ -37,7 +37,7 @@ function namespace(): NamespaceEntrySource {
         release: async () => undefined,
       }
     },
-  } as unknown as NamespaceEntrySource
+  }
 }
 
 describe('companion listing narrowed by a name prefix', () => {

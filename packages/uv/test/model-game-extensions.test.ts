@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { materializeUvmCore } from '../src/model/materializer.js'
+import { materializeUvmCore, type ModelProjection } from '../src/model/materializer.js'
 import { validateSocketMetadata } from '../src/model/validation/spatial.js'
 
 const request = {
@@ -38,8 +38,8 @@ const projection = (gameExtensions?: unknown) =>
         indices: Uint32Array.from([0, 1, 2]),
       },
     ],
-    ...(gameExtensions === undefined ? {} : { gameExtensions }),
-  }) as never
+    ...(gameExtensions === undefined ? {} : { gameExtensions: gameExtensions as ModelProjection['gameExtensions'] & object }),
+  })
 
 interface Written {
   readonly document: {

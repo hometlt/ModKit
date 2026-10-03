@@ -34,7 +34,7 @@ describe.runIf(executablePath !== undefined)('progressive map render area in a b
       format: 'iife',
     })
     const browser = await chromium.launch({
-      executablePath,
+      ...(executablePath === undefined ? {} : { executablePath }),
       headless: true,
       args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'],
     })

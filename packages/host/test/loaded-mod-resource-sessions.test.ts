@@ -32,7 +32,7 @@ describe('loaded mod resources', () => {
       },
       dispose: async () => { released += 1 },
     })
-    const source = { openModContext: async (request: { target: ModContextTarget }) => context(request.target) } as ContentSources
+    const source = { openModContext: async (request: { target: ModContextTarget }) => context(request.target) } satisfies Pick<ContentSources, 'openModContext'>
     const sessions = new LoadedModResourceSessions(source)
     expect(await sessions.load({ sourceId: 'local:casc', path: 'Mods/Liberty.SC2Mod/Base.SC2Data/GameData/UnitData.xml' })).toBe(true)
     expect(await sessions.load({ sourceId: 'local:casc', path: 'Mods/Liberty.SC2Mod/Base.SC2Data/TriggerLibs/Liberty.galaxy' })).toBe(false)
@@ -65,7 +65,7 @@ describe('loaded mod resources', () => {
           : [layer('Mods/Core.SC2Mod', 'dependency'), layer('Mods/Liberty.SC2Mod', 'primary')],
         unresolved: [], diagnostics: [], files: async () => ({ items: [] }), read: async () => new Uint8Array(),
         locate: async () => undefined, dispose: async () => {} } satisfies ModContext
-    } } as ContentSources
+    } } satisfies Pick<ContentSources, 'openModContext'>
     const sessions = new LoadedModResourceSessions(source)
     const target = { sourceId: 'local:casc', path: 'Mods/Liberty.SC2Mod' }
     expect(await Promise.all([sessions.load(target), sessions.load({ ...target })])).toEqual([true, true])
@@ -89,7 +89,7 @@ describe('loaded mod resources', () => {
           : [layer('C:/Mods/Shared.SC2Mod', 'dependency'), layer(path, 'primary')],
         unresolved: [], diagnostics: [], files: async () => ({ items: [] }), read: async () => new Uint8Array(),
         locate: async () => undefined, dispose: async () => { released.push(id) } } satisfies ModContext
-    } } as ContentSources
+    } } satisfies Pick<ContentSources, 'openModContext'>
     const sessions = new LoadedModResourceSessions(source)
     await sessions.load('C:/Mods/Alpha.SC2Mod')
     await sessions.load('C:/Mods/Beta.SC2Mod')
@@ -129,7 +129,7 @@ describe('loaded mod resources', () => {
         locate: async () => undefined,
         ...(path === 'games/bar.sdd' ? { query: async () => ({ items: [{ id: 'unit/armcom', hasChildren: false }] }) } : {}),
         dispose: async () => void released.push(path) } satisfies ModContext
-    } } as ContentSources
+    } } satisfies Pick<ContentSources, 'openModContext'>
     const sessions = new LoadedModResourceSessions(source)
     const target = (path: string) => ({ sourceId: 'local:beyond-all-reason', path })
     await sessions.load(target('games/bar.sdd'))
@@ -167,7 +167,7 @@ describe('loaded mod resources', () => {
           return { items: [{ id: 'unit/marine', hasChildren: false }] }
         },
         dispose: async () => {} } satisfies ModContext
-    } } as ContentSources
+    } } satisfies Pick<ContentSources, 'openModContext'>
     const sessions = new LoadedModResourceSessions(source)
     await sessions.load({ sourceId: 'local:game', path: 'westwood' })
     await sessions.load({ sourceId: 'local:game', path: 'liberty' })

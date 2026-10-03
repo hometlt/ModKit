@@ -11,7 +11,7 @@ function namespace(paths: readonly string[]): NamespaceEntrySource {
       const items: NamespaceEntry[] = paths
         .filter(path => path.toLowerCase().startsWith(prefix.toLowerCase()))
         .map(
-          path => ({ id: path, path, kind: 'file', size: path.length, revision }) as NamespaceEntry,
+          path => ({ id: path, path, name: path.split('/').at(-1)!, kind: 'file', size: BigInt(path.length), revision }),
         )
       return { items }
     },
@@ -21,7 +21,7 @@ function namespace(paths: readonly string[]): NamespaceEntrySource {
         release: async () => undefined,
       }
     },
-  } as unknown as NamespaceEntrySource
+  }
 }
 
 function origin(mapAssetRoots?: readonly string[]) {
@@ -65,6 +65,7 @@ it('finds a map-imported asset at the map root under its game-logical base.sc2as
   expect(await located(source, wanted)).toEqual([`map:${wanted}`])
   // Opened by the same lookup: the bytes are the map root's file.
   const lease = await source.open(wanted)
+  if (lease.value.kind !== 'bytes') throw new Error('expected an asset byte source')
   expect(new TextDecoder().decode(await lease.value.read(0n, 64))).toBe(
     'Assets/Textures/imported.dds',
   )

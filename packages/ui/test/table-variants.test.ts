@@ -86,7 +86,7 @@ beforeAll(async () => {
       } = {},
     ) => {
       await mounted?.unmount()
-      let finishTranslation = () => undefined
+      let finishTranslation: () => void = () => undefined
       const translationGate =
         options.wait === true
           ? new Promise<void>(resolve => {
@@ -391,7 +391,7 @@ describe('variant table surface', () => {
     const ruRU = '[data-mk-part="table.columns"] label:has-text("ruRU") input'
     const visibleHead = () =>
       page.$$eval('[data-mk-part="table.head"] th', cells =>
-        cells.filter(cell => !cell.hidden).map(cell => cell.textContent),
+        cells.filter(cell => !cell.hasAttribute('hidden')).map(cell => cell.textContent),
       )
     const visibleCells = () =>
       page.$$eval('[data-mk-part="table.row"]', rows =>

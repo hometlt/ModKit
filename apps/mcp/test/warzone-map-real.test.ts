@@ -11,6 +11,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { MapLayerDescriptor, MapLayerGrid } from '@modkit/sdk/maps'
 import { createNodeInstallationProbes } from '@modkit/host/node'
 import { extractZipArchiveEntry, parseZipArchive } from '../../../extensions/archives/src/zip/codec.js'
+// @ts-expect-error External JavaScript installation provider has no published declaration.
 import { discoverWarzone2100Installations } from '../../../../modkit-extensions-warzone/src/provider.js'
 import { createHostMcpPort, createModkitMcpServer, type McpEnvelope, type ModkitMcpHostPort } from '../src/index.js'
 
@@ -35,7 +36,7 @@ beforeAll(async () => {
   )
   const archivePath = discovery.installations
     .flatMap((installation: { evidence: { kind: string; found: boolean; path?: string }[] }) => installation.evidence)
-    .find(item => item.kind === 'warzone-mp-archive' && item.found)?.path
+    .find((item: { kind: string; found: boolean; path?: string }) => item.kind === 'warzone-mp-archive' && item.found)?.path
   if (archivePath === undefined) throw new Error('installed Warzone mp.wz was not discovered')
   const archive = await readFile(archivePath)
   const entry = parseZipArchive(archive, 20_000).find(

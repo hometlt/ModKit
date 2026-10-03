@@ -262,7 +262,7 @@ describe('production world to UVW materializer', () => {
       coordinateSpaceId: 'map-native',
       kind: 'doodad' as const,
       objectId: 1,
-      position: { x: 0, y: 0 },
+      position: { x: 0, y: 0, z: 0 },
       ...(placed
         ? { uvwPosition: { x: 0.5, y: 1, z: -0.5 }, uvwRotation: [0, 0, 0, 1] as const }
         : {}),
@@ -344,7 +344,7 @@ describe('production world to UVW materializer', () => {
       coordinateSpaceId: 'map-native',
       kind: 'unit' as const,
       objectId: 1,
-      position: { x: 0, y: 0 },
+      position: { x: 0, y: 0, z: 0 },
       uvwPosition: { x: 0.5, y: 1, z: -0.5 },
       uvwRotation: [0, 0, 0, 1] as const,
       ...extra,

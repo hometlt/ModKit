@@ -77,6 +77,7 @@ it("finds an asset in the game's spelling where the mod context places it", asyn
     entries.push(entry.logicalId)
   expect(entries).toEqual(['Assets/Textures/btn-marine.dds'])
   const lease = await origin.open('Assets/Textures/btn-marine.dds')
+  if (lease.value.kind !== 'bytes') throw new Error('expected an asset byte source')
   expect([...(await lease.value.read(0n, 3))]).toEqual([...ICON])
   expect(lease.value.ref.uri).toBe(
     'content-source://casc/mods/liberty.sc2mod/Base.SC2Assets/Assets/Textures/btn-marine.dds',

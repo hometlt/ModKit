@@ -50,10 +50,10 @@ function installation(storageOf: string, bulk: boolean): ContentSources {
         roots: [{ id: 'local:game', label: 'The Game', region: 'local', kind: 'local', storageOf }],
       }
     },
-    async list(_sourceId, path, options) {
+    async list(_sourceId: string, path: string, options?: Parameters<ContentSources['list']>[2]) {
       return childrenOf(path, options?.includeHidden === true)
     },
-    async read(_sourceId, path, maxBytes) {
+    async read(_sourceId: string, path: string, maxBytes: number) {
       const value = all[path as keyof typeof all]
       if (value === undefined) throw new RangeError(`no ${path}`)
       if (value.length > maxBytes) throw new RangeError(`${path} is too large`)

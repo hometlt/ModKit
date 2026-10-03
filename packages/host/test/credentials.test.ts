@@ -260,7 +260,7 @@ describe('credential broker', () => {
     const oauth: OAuth2Engine = {
       authorize: vi.fn(
         () =>
-          new Promise(resolve => {
+          new Promise<Awaited<ReturnType<OAuth2Engine['authorize']>>>(resolve => {
             finish = () => resolve({ accessToken: 'access-0' })
           }),
       ),

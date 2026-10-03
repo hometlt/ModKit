@@ -127,28 +127,28 @@ describe('installation markers in discovery offers', () => {
       major: 1,
       offerFacet: facet,
       requestFacet: { gameId: 'blizzard/starcraft-2' },
-    } as never)
+    } as never, undefined)
 
-  it('are gathered from the inventory without activating a provider', () => {
+  it('are gathered from the inventory without activating a provider', async () => {
     const facet = {
       gameIds: ['blizzard/starcraft-2'],
       markers: [markers[0]],
       searchFolders: ['XboxGames', 'Battle.net Games'],
     }
-    expect(match(facet).state).toBe('match')
+    expect((await match(facet)).state).toBe('match')
     expect(gameInstallationSearchOf(offer(facet))).toEqual({
       markers: [markers[0]],
       searchFolders: ['XboxGames', 'Battle.net Games'],
     })
   })
 
-  it('make an offer invalid when they name another game or a path', () => {
+  it('make an offer invalid when they name another game or a path', async () => {
     for (const facet of [
       { gameIds: ['blizzard/starcraft-2'], markers: [markers[1]] },
       { gameIds: ['blizzard/starcraft-2'], markers: [{ ...markers[0], files: ['x/y.exe'] }] },
       { gameIds: ['blizzard/starcraft-2'], searchFolders: ['C:\\Games'] },
     ]) {
-      expect(match(facet).state).toBe('invalid')
+      expect((await match(facet)).state).toBe('invalid')
       expect(gameInstallationSearchOf(offer(facet))).toEqual({ markers: [], searchFolders: [] })
     }
   })
@@ -178,15 +178,15 @@ describe('launch options in launch-plan offers', () => {
     map: { type: 'string', path: true },
   }
 
-  it('are gathered by game from the inventory without activating a planner', () => {
+  it('are gathered by game from the inventory without activating a planner', async () => {
     const facet = { gameIds: ['blizzard/starcraft-2'], launchOptions: options }
     expect(
-      GAME_INSTALLATION_MATCHER.match({
+      (await GAME_INSTALLATION_MATCHER.match({
         contract: 'common.game/launch-plan',
         major: 1,
         offerFacet: facet,
         requestFacet: { gameId: 'blizzard/starcraft-2' },
-      } as never).state,
+      } as never, undefined)).state,
     ).toBe('match')
     expect(gameLaunchOptionsOf(launchOffer(facet)).get('blizzard/starcraft-2')).toEqual(options)
     // an offer without options adds none

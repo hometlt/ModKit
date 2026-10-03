@@ -126,9 +126,7 @@ describe('inspection session release', () => {
       await (lease.value as { nestedContext?: () => Promise<unknown> }).nestedContext?.(),
     ).toEqual({ names: ['A'] })
     // a prefix selects a path and what is under it, never a sibling that shares its start
-    const namespace = lease.value as {
-      list(prefix: string, page: { limit: number }): Promise<{ items: { path: string }[] }>
-    }
+    const namespace = lease.value
     for (const prefix of ['assets/crystal', 'Assets/Crystal/'])
       expect((await namespace.list(prefix, { limit: 10 })).items.map(item => item.path)).toEqual([
         'Assets/Crystal/model.m3',

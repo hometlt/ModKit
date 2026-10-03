@@ -228,6 +228,14 @@ function fakeWorkspace(
     async completion() {
       return undefined
     },
+    async resolveCompletion() { return undefined },
+    async codeLenses() { return undefined },
+    async foldingRanges() { return undefined },
+    async documentLinks() { return undefined },
+    async documentHighlights() { return undefined },
+    async inlayHints() { return undefined },
+    async projectDiagnostics() { return undefined },
+    invalidate() {},
     async hover() {
       return undefined
     },

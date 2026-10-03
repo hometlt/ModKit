@@ -187,9 +187,11 @@ export type EditorContributionSpecDriftGate = Expect<
 export type KnowledgePackSpecDriftGate = Expect<
   Equal<
     DeepMutable<KnowledgePackSpecV1Wire>,
-    FromSchema<
-      typeof knowledgePackSpecV1Schema,
-      { deserialize: [{ pattern: { title: 'JsonValue' }; output: DeepMutable<JsonValue> }] }
+    ExclusiveUnion<
+      FromSchema<
+        typeof knowledgePackSpecV1Schema,
+        { deserialize: [{ pattern: { title: 'JsonValue' }; output: DeepMutable<JsonValue> }] }
+      >
     >
   >
 >

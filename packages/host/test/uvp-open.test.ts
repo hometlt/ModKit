@@ -6,11 +6,10 @@ import { afterAll, describe, expect, it } from 'vitest'
 import { uint64 } from '@modkit/core'
 import {
   createHostTopology,
-  type ExtensionInput,
   type PermissionGrant,
   type WorldSceneSource,
 } from '@modkit/sdk'
-import { linkedExtensionInputs } from '@modkit/host'
+import { linkedExtensionInputs, type ExtensionInput } from '@modkit/host'
 import {
   createNodeSubjectServices,
   loadExtensionDirectory,

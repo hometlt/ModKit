@@ -21,6 +21,7 @@ function source(size: number) {
 describe('byte probe with a footer window', () => {
   it('hands detect the declared from-end window, and names it among the required ranges', async () => {
     let seen: Uint8Array | undefined
+    const seenSize = (): number | undefined => seen?.byteLength
     const codec = createInspectionCodec({
       id: 'example/pak',
       access: 'ranges',
@@ -97,8 +98,10 @@ describe('byte probe with a footer window', () => {
       },
     )
     try {
-      expect(seen?.byteLength).toBe(8)
-      expect((await session.descriptor()).identity.confidence).toBe(0.95)
+      expect(seenSize()).toBe(8)
+      const descriptor = await session.descriptor()
+      if (!('identity' in descriptor)) throw new Error('expected a resolved descriptor')
+      expect(descriptor.identity.confidence).toBe(0.95)
     } finally {
       await session.dispose()
     }

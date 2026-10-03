@@ -647,7 +647,8 @@ describe('language subject completion lifecycle', () => {
       })
       expect(open).not.toHaveBeenCalled()
     } finally {
-      provider.completion = original
+      if (original === undefined) delete provider.completion
+      else provider.completion = original
       await workspace.shutdown()
     }
   })
@@ -676,7 +677,8 @@ describe('language subject completion lifecycle', () => {
       })
       await expect(workspace.completion(completionRequest())).rejects.toThrow()
     } finally {
-      provider.completion = original
+      if (original === undefined) delete provider.completion
+      else provider.completion = original
       await workspace.shutdown()
     }
   })
