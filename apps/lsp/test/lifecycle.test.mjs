@@ -7,7 +7,7 @@ const disposable = () => ({ dispose: noop })
 const token = { isCancellationRequested: false, onCancellationRequested: disposable }
 const uri = 'untitled:Main.fixturelang'
 
-function harness() {
+function harness({ withCompletion = false } = {}) {
   const handlers = new Map()
   const calls = []
   const current = new Map()
@@ -55,7 +55,18 @@ function harness() {
     change: request => analyze('change', request),
     diagnostics: async () => ({ diagnostics: [], isIncomplete: false }),
     capabilities: async uri =>
-      current.has(uri) ? { features: ['hover', 'workspace-symbols'] } : undefined,
+      current.has(uri)
+        ? { features: ['hover', 'workspace-symbols', ...(withCompletion ? ['completion'] : [])] }
+        : undefined,
+    completion: async request => {
+      calls.push([
+        'completion',
+        request.documentVersion,
+        request.semanticContextPolicy,
+        request.signal.aborted,
+      ])
+      return { items: [], isIncomplete: false }
+    },
     hover: async request => ({ markdown: String(request.documentVersion) }),
     workspaceSymbols: async () => ({ symbols: [], isIncomplete: false }),
     close: async uri => {
@@ -152,4 +163,23 @@ test('shutdown drains pending document work before releasing the workspace', asy
     h.calls.map(call => call[0]),
     ['open', 'shutdown'],
   )
+})
+
+test('interactive LSP completion selects cached context after the queued document version', async () => {
+  const h = harness({ withCompletion: true })
+  h.open(1, 'one')
+  h.change(2, 'two')
+  h.release()
+  try {
+    assert.deepEqual(
+      await h.request('onCompletion', {
+        textDocument: { uri },
+        position: { line: 0, character: 1 },
+      }),
+      { items: [], isIncomplete: false },
+    )
+    assert.deepEqual(h.calls.at(-1), ['completion', 2, 'cached', false])
+  } finally {
+    await h.server.close()
+  }
 })

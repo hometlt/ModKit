@@ -742,9 +742,10 @@ export function createModkitLanguageServer(
   connection.onCompletion((params, token) =>
     withSignal(token, async signal => {
       await requireFeature(params.textDocument.uri, 'completion', signal)
-      const value = await options.workspace.completion(
-        positionRequest(params.textDocument.uri, params.position, signal),
-      )
+      const value = await options.workspace.completion({
+        ...positionRequest(params.textDocument.uri, params.position, signal),
+        semanticContextPolicy: 'cached',
+      })
       return value === undefined
         ? null
         : {
