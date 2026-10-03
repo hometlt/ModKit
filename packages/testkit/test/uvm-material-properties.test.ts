@@ -93,7 +93,7 @@ describe('publisher material properties', () => {
     expect(() => validateUvmDocument(json, { binaryByteLength: binary.byteLength })).not.toThrow()
     expect(document.extensionsUsed).toContain('UV_game_material_team_color')
     expect(
-      (document.materials![0] as unknown as { extensions: Record<string, unknown> }).extensions[
+      (document.materials?.[0] as unknown as { extensions: Record<string, unknown> }).extensions[
         'UV_game_material_team_color'
       ],
     ).toEqual({ maskSource: 'whole', targets: ['baseColor'], blend: 'multiply' })

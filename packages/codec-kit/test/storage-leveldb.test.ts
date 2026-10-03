@@ -273,8 +273,12 @@ describe('LevelDB', () => {
 
   it('refuses a corrupt block, a missing live table, a foreign comparator and too many keys', async () => {
     const damaged = database()
-    const level0 = damaged.get('000005.ldb')!.slice()
-    level0[10] = level0[10]! ^ 0xff
+    const table = damaged.get('000005.ldb')
+    if (table === undefined) throw new Error('Fixture table is missing')
+    const level0 = table.slice()
+    const byte = level0[10]
+    if (byte === undefined) throw new Error('Fixture block is too short')
+    level0[10] = byte ^ 0xff
     damaged.set('000005.ldb', level0)
     await expect(openLevelDb(directory(damaged))).rejects.toThrow(/CRC-32C/u)
     const missing = database()

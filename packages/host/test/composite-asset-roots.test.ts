@@ -11,7 +11,7 @@ function namespace(paths: readonly string[]): NamespaceEntrySource {
       const items: NamespaceEntry[] = paths
         .filter(path => path.toLowerCase().startsWith(prefix.toLowerCase()))
         .map(
-          path => ({ id: path, path, name: path.split('/').at(-1)!, kind: 'file', size: BigInt(path.length), revision }),
+          path => ({ id: path, path, name: path.split('/').at(-1) ?? path, kind: 'file', size: BigInt(path.length), revision }),
         )
       return { items }
     },

@@ -235,7 +235,7 @@ function fakeWorkspace(
     async documentHighlights() { return undefined },
     async inlayHints() { return undefined },
     async projectDiagnostics() { return undefined },
-    invalidate() {},
+    invalidate() { /* This fixture has no cached language state. */ },
     async hover() {
       return undefined
     },
