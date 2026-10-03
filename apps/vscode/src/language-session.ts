@@ -329,7 +329,10 @@ interface TrackedDocument {
   synchronized?: Promise<void>
   /** Resolves after provider analysis, before resolved-workspace semantic diagnostics. */
   ready?: Promise<void>
+  /** Explicit tokens/hover/Verify requests bypass only the automatic diagnostics idle delay. */
+  requestAnalysis?: () => void
   task?: Promise<void>
+  taskGeneration?: number
   analysis?: Extract<LanguageWorkspaceAnalysisResult, { readonly state: 'resolved' }>
 }
 
@@ -537,6 +540,35 @@ export function createLanguageSessionController(
   const relatedDiagnosticsDelayMs = options.relatedDiagnosticsDelayMs ?? 750
   let state: 'new' | 'ready' | 'shut-down' = 'new'
   let shutdownPromise: Promise<void> | undefined
+  let interactiveRequests = 0
+  let interactiveIdle: Promise<void> = Promise.resolve()
+  let markInteractiveIdle = (): void => undefined
+
+  const withInteractive = async <Value>(
+    operation: () => Promise<Value>,
+    signal?: AbortSignal,
+  ): Promise<Value> => {
+    throwIfAborted(signal)
+    if (interactiveRequests === 0) {
+      interactiveIdle = new Promise(resolve => {
+        markInteractiveIdle = resolve
+      })
+    }
+    interactiveRequests += 1
+    try {
+      return await waitWithSignal(operation(), signal)
+    } finally {
+      interactiveRequests -= 1
+      if (interactiveRequests === 0) markInteractiveIdle()
+    }
+  }
+
+  const waitForInteractive = async (signal: AbortSignal): Promise<void> => {
+    // An idle timer can expire while a slow worker request is still producing suggestions.
+    // Admission is workspace-wide: a second document's diagnostics use that same worker too.
+    while (interactiveRequests > 0) await waitWithSignal(interactiveIdle, signal)
+    throwIfAborted(signal)
+  }
 
   const requireReady = (): void => {
     if (state !== 'ready') {
@@ -589,7 +621,12 @@ export function createLanguageSessionController(
    */
   const changedSince = new Set<string>()
   let relatedTimer: ReturnType<typeof setTimeout> | undefined
-  const refreshRelated = async (changed: ReadonlySet<string>): Promise<void> => {
+  let relatedController: AbortController | undefined
+  const relatedTasks = new Set<Promise<void>>()
+  const refreshRelated = async (
+    changed: ReadonlySet<string>,
+    signal: AbortSignal,
+  ): Promise<void> => {
     let left = RELATED_DIAGNOSTICS_LIMIT
     for (const tracked of [...documents.values()]) {
       if (state !== 'ready' || left <= 0) return
@@ -598,12 +635,17 @@ export function createLanguageSessionController(
       if (tracked.task !== undefined) continue
       left -= 1
       try {
+        await waitForInteractive(signal)
+        if (state !== 'ready' || documents.get(document.uri) !== tracked) return
+        if (tracked.document !== document || tracked.task !== undefined) continue
         const answer = await options.workspace.diagnostics({
           uri: document.uri,
           documentVersion: document.version,
           maxResults: EDITOR_MAX_RESULTS,
           maxDocuments: EDITOR_MAX_DOCUMENTS,
+          signal,
         })
+        throwIfAborted(signal)
         // a newer version, or its own analysis, owns what is published now
         if (documents.get(document.uri) !== tracked || tracked.document !== document) continue
         if (tracked.task !== undefined || answer === undefined) continue
@@ -620,13 +662,22 @@ export function createLanguageSessionController(
       relatedTimer = undefined
       const changed = new Set(changedSince)
       changedSince.clear()
-      void refreshRelated(changed)
+      relatedController?.abort('new related diagnostics refresh')
+      const controller = new AbortController()
+      relatedController = controller
+      const task = refreshRelated(changed, controller.signal)
+      relatedTasks.add(task)
+      void task.finally(() => {
+        relatedTasks.delete(task)
+        if (relatedController === controller) relatedController = undefined
+      })
     }, relatedDiagnosticsDelayMs)
   }
 
   const execute = (tracked: TrackedDocument): Promise<void> => {
     clearTimer(tracked)
     const generation = tracked.generation
+    tracked.taskGeneration = generation
     const document = tracked.document
     const route = tracked.route
     const predecessor = tracked.task
@@ -642,6 +693,10 @@ export function createLanguageSessionController(
       markReady = resolve
     })
     tracked.ready = ready
+    const analysisRequested = new Promise<void>(resolve => {
+      tracked.requestAnalysis = resolve
+    })
+    let idleTimer: ReturnType<typeof setTimeout> | undefined
     const task = (async (): Promise<void> => {
       if (predecessor !== undefined) {
         try {
@@ -650,14 +705,14 @@ export function createLanguageSessionController(
           // The earlier version owns its report; this version must still get a chance to run.
         }
       }
-      if (
-        controller.signal.aborted ||
-        documents.get(document.uri) !== tracked ||
-        tracked.generation !== generation
-      ) {
-        throw new OperationCancelledError('stale editor document')
-      }
       try {
+        if (
+          controller.signal.aborted ||
+          documents.get(document.uri) !== tracked ||
+          tracked.generation !== generation
+        ) {
+          throw new OperationCancelledError('stale editor document')
+        }
         /*
          * A file an editor opens shows its broken references at once, not after the first edit. A
          * document staged only for a request (a hover, a verification with its own diagnostics
@@ -680,11 +735,16 @@ export function createLanguageSessionController(
         const idle = semanticDiagnosticsDelayMs()
         if (idle > 0) {
           await waitWithSignal(
-            new Promise<void>(resolve => setTimeout(resolve, idle)),
+            Promise.race([
+              analysisRequested,
+              new Promise<void>(resolve => {
+                idleTimer = setTimeout(resolve, idle)
+              }),
+            ]),
             controller.signal,
           )
         }
-        throwIfAborted(controller.signal)
+        await waitForInteractive(controller.signal)
         const result = await options.workspace.analyze(request)
         let semanticDiagnostics: readonly EditorLanguageDiagnostic[] | undefined
         if (result.state === 'resolved') {
@@ -694,6 +754,7 @@ export function createLanguageSessionController(
             if (!refreshSemanticDiagnostics) {
               return
             }
+            await waitForInteractive(controller.signal)
             semanticDiagnostics = (
               await options.workspace.diagnostics({
                 uri: document.uri,
@@ -715,13 +776,16 @@ export function createLanguageSessionController(
         if (isCancellation(error) || controller.signal.aborted) return
         options.reportNotice?.(noticeFor(error, document.uri))
       } finally {
+        if (idleTimer !== undefined) clearTimeout(idleTimer)
         markSynchronized()
         markReady()
         if (tracked.controller === controller) {
           delete tracked.controller
           delete tracked.synchronized
           delete tracked.ready
+          delete tracked.requestAnalysis
           delete tracked.task
+          delete tracked.taskGeneration
         }
       }
     })()
@@ -774,13 +838,18 @@ export function createLanguageSessionController(
     if (prior !== undefined && sameRoute(prior.route, selection.route)) {
       if (document.version < prior.document.version) return prior
       if (document.version === prior.document.version && document.text === prior.document.text) {
-        if (immediate && prior.analysis === undefined && prior.task === undefined) {
+        if (
+          immediate &&
+          prior.analysis === undefined &&
+          (prior.task === undefined || prior.taskGeneration !== prior.generation)
+        ) {
           void execute(prior)
         }
         return prior
       }
       prior.document = document
       prior.generation += 1
+      relatedController?.abort('editor document changed')
       delete prior.analysis
       prior.controller?.abort('editor document changed')
       clearTimer(prior)
@@ -817,6 +886,7 @@ export function createLanguageSessionController(
     if (tracked === undefined) return undefined
     if (tracked.analysis !== undefined) return tracked.analysis
     if (tracked.task === undefined) void execute(tracked)
+    tracked.requestAnalysis?.()
     const ready = tracked.ready ?? tracked.task
     const abort = (): void => tracked.controller?.abort(signal?.reason)
     signal?.addEventListener('abort', abort, { once: true })
@@ -939,6 +1009,7 @@ export function createLanguageSessionController(
         return
       }
       documents.delete(uri)
+      relatedController?.abort('editor document closed')
       refusals.delete(uri)
       await retire(tracked)
     },
@@ -965,16 +1036,18 @@ export function createLanguageSessionController(
       position: LanguagePosition,
       signal?: AbortSignal,
     ): Promise<LanguageCompletionList | undefined> {
-      if (!(await prepareInteractive(document, signal))) return undefined
-      return options.workspace.completion({
-        uri: document.uri,
-        documentVersion: document.version,
-        position,
-        maxResults: EDITOR_MAX_RESULTS,
-        maxDocuments: EDITOR_MAX_DOCUMENTS,
-        semanticContextPolicy: 'cached',
-        ...(signal === undefined ? {} : { signal }),
-      })
+      return withInteractive(async () => {
+        if (!(await prepareInteractive(document, signal))) return undefined
+        return options.workspace.completion({
+          uri: document.uri,
+          documentVersion: document.version,
+          position,
+          maxResults: EDITOR_MAX_RESULTS,
+          maxDocuments: EDITOR_MAX_DOCUMENTS,
+          semanticContextPolicy: 'cached',
+          ...(signal === undefined ? {} : { signal }),
+        })
+      }, signal)
     },
 
     async resolveCompletion(
@@ -983,12 +1056,14 @@ export function createLanguageSessionController(
       item: LanguageCompletionItem,
       signal?: AbortSignal,
     ): Promise<LanguageCompletionItem | undefined> {
-      if (!(await prepareInteractive(document, signal))) return undefined
-      return options.workspace.resolveCompletion({
-        ...featureRequest(document, signal),
-        position,
-        item,
-      })
+      return withInteractive(async () => {
+        if (!(await prepareInteractive(document, signal))) return undefined
+        return options.workspace.resolveCompletion({
+          ...featureRequest(document, signal),
+          position,
+          item,
+        })
+      }, signal)
     },
 
     async projectDiagnostics(
@@ -1130,18 +1205,20 @@ export function createLanguageSessionController(
       formatting: LanguageFormattingOptions,
       signal?: AbortSignal,
     ): Promise<LanguageOnTypeEditResult | undefined> {
-      if (!(await prepareInteractive(document, signal))) return undefined
-      return options.workspace.onTypeFormatting({
-        uri: document.uri,
-        documentVersion: document.version,
-        position,
-        ch,
-        options: formatting,
-        maxResults: EDITOR_MAX_RESULTS,
-        maxDocuments: EDITOR_MAX_DOCUMENTS,
-        semanticContextPolicy: 'cached',
-        ...(signal === undefined ? {} : { signal }),
-      })
+      return withInteractive(async () => {
+        if (!(await prepareInteractive(document, signal))) return undefined
+        return options.workspace.onTypeFormatting({
+          uri: document.uri,
+          documentVersion: document.version,
+          position,
+          ch,
+          options: formatting,
+          maxResults: EDITOR_MAX_RESULTS,
+          maxDocuments: EDITOR_MAX_DOCUMENTS,
+          semanticContextPolicy: 'cached',
+          ...(signal === undefined ? {} : { signal }),
+        })
+      }, signal)
     },
 
     async codeActions(
@@ -1290,6 +1367,7 @@ export function createLanguageSessionController(
       if (shutdownPromise !== undefined) return shutdownPromise
       state = 'shut-down'
       if (relatedTimer !== undefined) clearTimeout(relatedTimer)
+      relatedController?.abort('VS Code language controller shut down')
       changedSince.clear()
       shutdownPromise = (async () => {
         const tracked = [...documents.values()]
@@ -1300,6 +1378,7 @@ export function createLanguageSessionController(
           document.controller?.abort('VS Code language controller shut down')
         }
         await Promise.all(tracked.map(retire))
+        await Promise.all(relatedTasks)
         await options.workspace.shutdown()
       })()
       return shutdownPromise

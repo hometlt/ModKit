@@ -774,6 +774,342 @@ describe('VS Code-free language session controller', () => {
     await controller.shutdown()
   })
 
+  it.each(['completion', 'resolveCompletion', 'onTypeFormatting'] as const)(
+    'keeps background analysis idle for the full duration of %s',
+    async feature => {
+      vi.useFakeTimers()
+      const workspace = fakeWorkspace()
+      let finish = (): void => undefined
+      const gate = new Promise<void>(resolve => {
+        finish = resolve
+      })
+      const invoked = vi.spyOn(workspace, feature).mockImplementation(async () => {
+        await gate
+        return undefined
+      })
+      const analyze = vi.spyOn(workspace, 'analyze')
+      const diagnostics = vi.spyOn(workspace, 'diagnostics')
+      const controller = createLanguageSessionController({
+        workspace,
+        routes: [ROUTE],
+        debounceMs: 0,
+        semanticDiagnosticsDelayMs: 25,
+        publishDiagnostics: () => undefined,
+      })
+      await controller.initialize()
+      const document = editorDocument(1, '<')
+      controller.open(document)
+      const position = { line: 0, character: 1 }
+      const pending =
+        feature === 'completion'
+          ? controller.completion(document, position)
+          : feature === 'resolveCompletion'
+            ? controller.resolveCompletion(document, position, { label: 'Catalog', kind: 'class' })
+            : controller.onTypeFormatting(document, position, '=', {
+                tabSize: 2,
+                insertSpaces: true,
+              })
+      try {
+        await vi.advanceTimersByTimeAsync(100)
+        expect(invoked).toHaveBeenCalledOnce()
+        expect(analyze).not.toHaveBeenCalled()
+        expect(diagnostics).not.toHaveBeenCalled()
+      } finally {
+        finish()
+        await pending
+        await vi.advanceTimersByTimeAsync(30)
+        await controller.shutdown()
+      }
+      expect(analyze).toHaveBeenCalledOnce()
+      expect(diagnostics).toHaveBeenCalledOnce()
+    },
+  )
+
+  it('defers related-document diagnostics until all overlapping completions finish', async () => {
+    vi.useFakeTimers()
+    const workspace = fakeWorkspace()
+    const diagnostics = vi.spyOn(workspace, 'diagnostics')
+    const controller = createLanguageSessionController({
+      workspace,
+      routes: [ROUTE],
+      debounceMs: 0,
+      semanticDiagnosticsDelayMs: 25,
+      relatedDiagnosticsDelayMs: 50,
+      publishDiagnostics: () => undefined,
+    })
+    await controller.initialize()
+    const first = editorDocument(1)
+    const second = {
+      ...editorDocument(1),
+      uri: 'file:///workspace/other.fixture',
+      fileName: '/workspace/other.fixture',
+    }
+    controller.open(first)
+    controller.open(second)
+    await vi.advanceTimersByTimeAsync(30)
+    controller.change(editorDocument(2, 'changed'))
+    await vi.advanceTimersByTimeAsync(30)
+    diagnostics.mockClear()
+    let finishFirst = (): void => undefined
+    let finishSecond = (): void => undefined
+    const firstGate = new Promise<void>(resolve => {
+      finishFirst = resolve
+    })
+    const secondGate = new Promise<void>(resolve => {
+      finishSecond = resolve
+    })
+    vi.spyOn(workspace, 'completion')
+      .mockImplementationOnce(async () => {
+        await firstGate
+        return undefined
+      })
+      .mockImplementationOnce(async () => {
+        await secondGate
+        return undefined
+      })
+    const a = controller.completion(second, { line: 0, character: 1 })
+    const b = controller.completion(second, { line: 0, character: 1 })
+    try {
+      await vi.advanceTimersByTimeAsync(100)
+      expect(diagnostics).not.toHaveBeenCalled()
+      finishFirst()
+      await a
+      await vi.advanceTimersByTimeAsync(100)
+      expect(diagnostics).not.toHaveBeenCalled()
+    } finally {
+      finishFirst()
+      finishSecond()
+      await Promise.all([a, b])
+      await vi.advanceTimersByTimeAsync(1)
+      await controller.shutdown()
+    }
+    expect(diagnostics).toHaveBeenCalledOnce()
+    expect(diagnostics).toHaveBeenCalledWith(expect.objectContaining({ uri: second.uri }))
+  })
+
+  it.each(['semanticTokens', 'verify'] as const)(
+    'runs explicit %s without waiting for the background diagnostics setting',
+    async feature => {
+      vi.useFakeTimers()
+      const workspace = fakeWorkspace()
+      const analyze = vi.spyOn(workspace, 'analyze')
+      const controller = createLanguageSessionController({
+        workspace,
+        routes: [ROUTE],
+        debounceMs: 0,
+        semanticDiagnosticsDelayMs: 2_500,
+        publishDiagnostics: () => undefined,
+      })
+      await controller.initialize()
+      const document = editorDocument(1)
+      controller.open(document)
+      const pending = controller[feature](document)
+      try {
+        await vi.advanceTimersByTimeAsync(0)
+        expect(analyze).toHaveBeenCalledOnce()
+      } finally {
+        await vi.advanceTimersByTimeAsync(2_500)
+        await pending
+        await controller.shutdown()
+      }
+    },
+  )
+
+  it('cancels and drains related diagnostics before shutting the workspace down', async () => {
+    vi.useFakeTimers()
+    const workspace = fakeWorkspace()
+    let relatedSignal: AbortSignal | undefined
+    let finish = (): void => undefined
+    const late = {
+      severity: 'error' as const,
+      message: 'late result',
+      range: { start: { line: 0, character: 0 }, end: { line: 0, character: 1 } },
+    }
+    vi.spyOn(workspace, 'diagnostics').mockImplementation(async request => {
+      if (
+        request.uri.endsWith('other.fixture') &&
+        request.documentVersion === 1 &&
+        workspace.changes.length > 1
+      ) {
+        relatedSignal = request.signal
+        await new Promise<void>(resolve => {
+          finish = resolve
+        })
+        return { diagnostics: [late], isIncomplete: false }
+      }
+      return { diagnostics: [], isIncomplete: false }
+    })
+    const publish = vi.fn()
+    const controller = createLanguageSessionController({
+      workspace,
+      routes: [ROUTE],
+      debounceMs: 0,
+      semanticDiagnosticsDelayMs: 25,
+      relatedDiagnosticsDelayMs: 25,
+      publishDiagnostics: publish,
+    })
+    await controller.initialize()
+    controller.open(editorDocument(1))
+    controller.open({
+      ...editorDocument(1),
+      uri: 'file:///workspace/other.fixture',
+      fileName: '/workspace/other.fixture',
+    })
+    await vi.advanceTimersByTimeAsync(30)
+    controller.change(editorDocument(2, 'changed'))
+    await vi.advanceTimersByTimeAsync(60)
+    expect(relatedSignal).toBeDefined()
+    const closing = controller.shutdown()
+    try {
+      expect(relatedSignal?.aborted).toBe(true)
+      await vi.advanceTimersByTimeAsync(0)
+      expect(workspace.counts.shutdown).toBe(0)
+    } finally {
+      finish()
+      await closing
+    }
+    expect(workspace.counts.shutdown).toBe(1)
+    expect(publish.mock.calls.some(([, items]) => items.includes(late))).toBe(false)
+  })
+
+  it.each(['completion', 'semanticTokens'] as const)(
+    'synchronizes the new version for %s while old diagnostics are still settling',
+    async feature => {
+      vi.useFakeTimers()
+      const workspace = fakeWorkspace()
+      let acceptedVersion = 0
+      const synchronize = vi.spyOn(workspace, 'synchronize').mockImplementation(async request => {
+        acceptedVersion = request.document.version
+        return { state: 'resolved', hostDiagnostics: [] }
+      })
+      vi.spyOn(workspace, 'diagnostics').mockImplementation(async request => {
+        if (request.documentVersion === 1) {
+          await new Promise<void>(resolve => {
+            request.signal?.addEventListener('abort', () => resolve(), { once: true })
+          })
+        }
+        return { diagnostics: [], isIncomplete: false }
+      })
+      vi.spyOn(workspace, 'completion').mockImplementation(async request => {
+        if (request.documentVersion !== acceptedVersion)
+          throw new OperationCancelledError('wrong synchronized version')
+        return { items: [{ label: 'Catalog', kind: 'class' }], isIncomplete: false }
+      })
+      const controller = createLanguageSessionController({
+        workspace,
+        routes: [ROUTE],
+        debounceMs: 150,
+        semanticDiagnosticsDelayMs: 25,
+        publishDiagnostics: () => undefined,
+      })
+      await controller.initialize()
+      controller.open(editorDocument(1))
+      await vi.advanceTimersByTimeAsync(180)
+      const next = editorDocument(2, '<')
+      controller.change(next)
+      const pending =
+        feature === 'completion'
+          ? controller.completion(next, { line: 0, character: 1 })
+          : controller.semanticTokens(next)
+      // Attach before flushing the old task's cancellation, to observe the stale refusal too.
+      const outcome = pending.then(
+        value => ({ value }),
+        error => ({ error }),
+      )
+      try {
+        await vi.advanceTimersByTimeAsync(0)
+        const answer = await outcome
+        expect(answer).not.toHaveProperty('error')
+        expect(answer).toHaveProperty('value')
+        expect(acceptedVersion).toBe(2)
+        expect(synchronize.mock.calls.map(([request]) => request.document.version)).toEqual([1, 2])
+      } finally {
+        await controller.shutdown()
+      }
+    },
+  )
+
+  it('settles a superseded queued snapshot and still synchronizes the newest edit', async () => {
+    vi.useFakeTimers()
+    let release = (): void => undefined
+    const gate = new Promise<void>(resolve => {
+      release = resolve
+    })
+    const workspace = fakeWorkspace({
+      open: async request => {
+        await gate
+        return resolved(request)
+      },
+    })
+    const synchronize = vi.spyOn(workspace, 'synchronize')
+    vi.spyOn(workspace, 'completion').mockResolvedValue({
+      items: [{ label: 'Catalog', kind: 'class' }],
+      isIncomplete: false,
+    })
+    const notices = vi.fn()
+    const controller = createLanguageSessionController({
+      workspace,
+      routes: [ROUTE],
+      debounceMs: 0,
+      reportNotice: notices,
+      publishDiagnostics: () => undefined,
+    })
+    await controller.initialize()
+    controller.open(editorDocument(1))
+    await vi.advanceTimersByTimeAsync(0)
+    const older = editorDocument(2, '<')
+    controller.change(older)
+    const superseded = controller.completion(older, { line: 0, character: 1 })
+    const rejected = expect(superseded).rejects.toBeInstanceOf(OperationCancelledError)
+    const newest = editorDocument(3, '<Catalog>\n<')
+    controller.change(newest)
+    const latest = controller.completion(newest, { line: 1, character: 1 })
+    release()
+    await rejected
+    await expect(latest).resolves.toMatchObject({ items: [{ label: 'Catalog' }] })
+    expect(synchronize.mock.calls.map(([request]) => request.document.version)).toEqual([1, 3])
+    expect(notices).not.toHaveBeenCalled()
+    await controller.shutdown()
+  })
+
+  it('releases background admission when an interactive caller cancels', async () => {
+    vi.useFakeTimers()
+    const workspace = fakeWorkspace()
+    let release = (): void => undefined
+    const gate = new Promise<void>(resolve => {
+      release = resolve
+    })
+    vi.spyOn(workspace, 'completion').mockImplementation(async () => {
+      await gate
+      return undefined
+    })
+    const analyze = vi.spyOn(workspace, 'analyze')
+    const controller = createLanguageSessionController({
+      workspace,
+      routes: [ROUTE],
+      debounceMs: 0,
+      semanticDiagnosticsDelayMs: 25,
+      publishDiagnostics: () => undefined,
+    })
+    await controller.initialize()
+    const document = editorDocument(1, '<')
+    controller.open(document)
+    const abort = new AbortController()
+    const pending = controller.completion(document, { line: 0, character: 1 }, abort.signal)
+    const rejected = expect(pending).rejects.toBeInstanceOf(OperationCancelledError)
+    try {
+      await vi.advanceTimersByTimeAsync(100)
+      expect(analyze).not.toHaveBeenCalled()
+      abort.abort('editor cancelled')
+      await rejected
+      await vi.advanceTimersByTimeAsync(0)
+      expect(analyze).toHaveBeenCalledOnce()
+    } finally {
+      release()
+      await controller.shutdown()
+    }
+  })
+
   it('maps UTF-16 positions directly, recurses symbols, and splits multiline tokens', async () => {
     const document = editorDocument(1, 'a😀\nxyz')
     const workspace = fakeWorkspace({
