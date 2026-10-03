@@ -28,7 +28,6 @@ import {
   inventoryHasErrors,
   openContentSourceRootSession,
   renderProviderResolutionExplanation,
-  type ExtensionInput,
   type Inventory,
   type OpenSubjectResult,
 } from '@modkit/host'
@@ -42,11 +41,13 @@ import {
   createModkitCliComposition,
   createModkitCliSubjectServices,
   createModkitCliTopology,
+  loadModkitCliExtensions,
   modkitCliInstallationSources,
 } from './profile.js'
 import { parseByteSize, parseRunArguments, runCommand } from './commands.js'
 import { parseProjectValidationArguments, validateProject } from './project-validation.js'
 import { parseServiceOperationArguments, runServiceOperationCommand } from './service-operations.js'
+import { renderCliExtensionValidation as render } from './extension-validation.js'
 
 export {
   createModkitCliComposition,
@@ -179,22 +180,15 @@ function renderOpen(result: OpenSubjectResult, file: string, json: boolean): str
 async function openCommand(arguments_: OpenArguments): Promise<number> {
   const backendDiagnostics: string[] = []
   try {
-    const loaded = await Promise.all(
-      arguments_.roots.map(root => loadExtensionDirectory(resolve(root))),
-    )
-    // roots named on the command line are linked artifacts; `--trust` is the explicit in-process decision
-    const extensions: readonly ExtensionInput[] = loaded.map(input => ({
-      ...input,
-      execution: { origin: 'linked', allowTrustedInProcess: arguments_.trust },
-    }))
-    const services = await createModkitCliSubjectServices(extensions, {
+    const loaded = await loadModkitCliExtensions(arguments_.roots, arguments_.trust)
+    const services = await createModkitCliSubjectServices(loaded.inputs, {
       onDiagnostic: diagnostic =>
         void backendDiagnostics.push(
           `  ${diagnostic.severity} ${diagnostic.code} ${diagnostic.message}`,
         ),
     })
-    if (inventoryHasErrors(services.inventory)) {
-      process.stdout.write(render(services.inventory, arguments_.json))
+    if (loaded.failures.length > 0 || inventoryHasErrors(services.inventory)) {
+      process.stdout.write(render(services.inventory, arguments_.json, loaded.failures))
       return 1
     }
     const file = resolve(arguments_.file)
@@ -275,54 +269,6 @@ async function openCommand(arguments_: OpenArguments): Promise<number> {
     process.stderr.write(`modkit open: ${(error as Error).message}\n`)
     return 2
   }
-}
-
-function render(inventory: Inventory, json: boolean): string {
-  const extension = inventory.extensions[0]
-  const contributions = extension?.contributions ?? []
-  const ok = !inventoryHasErrors(inventory)
-  if (json) {
-    return `${JSON.stringify(
-      {
-        ok,
-        ...(extension === undefined
-          ? {}
-          : {
-              container: extension.container,
-              extension: {
-                publisher: extension.manifest.publisher,
-                id: extension.manifest.id,
-                version: extension.manifest.version,
-              },
-            }),
-        contributions: contributions.map(c => ({
-          path: c.path,
-          specState: c.specState,
-          ...(c.manifest === undefined ? {} : { id: c.manifest.id }),
-        })),
-        diagnostics: [
-          ...inventory.diagnostics,
-          ...contributions.flatMap(c =>
-            c.diagnostics.map(d => ({ ...d, path: [c.path, ...(d.path ?? [])] })),
-          ),
-        ],
-      },
-      null,
-      2,
-    )}\n`
-  }
-  const lines: string[] = []
-  const header = extension
-    ? ` ${extension.manifest.publisher}/${extension.manifest.id}@${extension.manifest.version}`
-    : ''
-  lines.push(`${ok ? 'VALID' : 'INVALID'}${header} (${contributions.length} contribution(s))`)
-  for (const c of contributions) {
-    lines.push(`  ${c.path}: ${c.specState}${c.manifest ? ` [${c.manifest.id}]` : ''}`)
-  }
-  for (const d of [...inventory.diagnostics, ...contributions.flatMap(c => c.diagnostics)]) {
-    lines.push(`  ${d.severity} ${d.code} ${d.message}${d.path ? ` @ ${d.path.join('/')}` : ''}`)
-  }
-  return `${lines.join('\n')}\n`
 }
 
 async function main(argv: readonly string[]): Promise<number> {
@@ -464,15 +410,17 @@ async function main(argv: readonly string[]): Promise<number> {
     return 2
   }
   let inventory: Inventory
+  let failures: Awaited<ReturnType<typeof loadModkitCliExtensions>>['failures']
   try {
-    const input = await loadExtensionDirectory(resolve(target))
-    inventory = (await createModkitCliComposition([input])).inventory
+    const loaded = await loadModkitCliExtensions([target])
+    failures = loaded.failures
+    inventory = (await createModkitCliComposition(loaded.inputs)).inventory
   } catch (error) {
     process.stderr.write(`modkit validate: ${(error as Error).message}\n`)
     return 2
   }
-  process.stdout.write(render(inventory, json))
-  return inventoryHasErrors(inventory) ? 1 : 0
+  process.stdout.write(render(inventory, json, failures))
+  return failures.length > 0 || inventoryHasErrors(inventory) ? 1 : 0
 }
 
 async function scaffoldCodec(root: string, contributionId: string): Promise<readonly string[]> {

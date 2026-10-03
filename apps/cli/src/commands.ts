@@ -29,7 +29,6 @@ import {
   type CommandInput,
   type CommandReceipt,
   type CommandResult,
-  type ExtensionInput,
   type SubjectOpener,
 } from '@modkit/host'
 import {
@@ -42,18 +41,19 @@ import {
   createNodeMapPreviewResourcePlanResolver,
   createPathSubjectOpener,
   DEFAULT_SUBJECT_OPEN_BUDGET,
-  loadExtensionDirectory,
   type NodeSubjectServices,
 } from '@modkit/host/node'
 import { sceneModule } from '@modkit/scene/module'
 import { uvModule } from '@modkit/uv/module'
 import {
   createModkitCliSubjectServices,
+  loadModkitCliExtensions,
   modkitCliCredentials,
   modkitCliInstallationSources,
 } from './profile.js'
 import { snapshotJson } from '@modkit/codec-kit/json-snapshot'
 import type { JsonValue, ResourceBudget } from '@modkit/sdk'
+import { cliExtensionFailure } from './extension-validation.js'
 
 export const RUN_USAGE =
   'usage: modkit run <command> <file> --ext <dir> [--ext <dir>...] [--entry <path>] ' +
@@ -384,14 +384,22 @@ export async function runCommand(
         options,
       )
     }
-    const loaded = await Promise.all(
-      arguments_.roots.map(root => loadExtensionDirectory(resolve(root))),
+    const loaded = await loadModkitCliExtensions(arguments_.roots, arguments_.trust, options.signal)
+    const services = await createModkitCliSubjectServices(loaded.inputs)
+    const admission = cliExtensionFailure(
+      arguments_.command,
+      { subject: file },
+      services.inventory,
+      loaded.failures,
     )
-    const extensions: readonly ExtensionInput[] = loaded.map(input => ({
-      ...input,
-      execution: { origin: 'linked', allowTrustedInProcess: arguments_.trust },
-    }))
-    const services = await createModkitCliSubjectServices(extensions)
+    if (admission !== undefined) {
+      writeStdout(
+        arguments_.format === 'protocol-json'
+          ? renderCommandReceipt(admission)
+          : renderCommandResult(admission.result, arguments_.format === 'json'),
+      )
+      return 1
+    }
     const budget =
       arguments_.maxInputBytes === undefined
         ? DEFAULT_SUBJECT_OPEN_BUDGET
@@ -560,11 +568,19 @@ async function runEditCommand(
     credentials: modkitCliCredentials(),
   })
   try {
-    if (modkit.extensionFailures.length > 0) {
-      writeStderr(
-        `modkit run: ${modkit.extensionFailures.length} extension root(s) failed to load\n`,
+    const admission = cliExtensionFailure(
+      arguments_.command,
+      { subject: file },
+      modkit.services.inventory,
+      modkit.extensionFailures,
+    )
+    if (admission !== undefined) {
+      writeStdout(
+        arguments_.format === 'protocol-json'
+          ? renderCommandReceipt(admission)
+          : renderCommandResult(admission.result, arguments_.format === 'json'),
       )
-      return 2
+      return 1
     }
     const receipt = await executeCommandRequest(
       runtime,

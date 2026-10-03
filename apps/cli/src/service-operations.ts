@@ -1,5 +1,4 @@
 import process from 'node:process'
-import { resolve } from 'node:path'
 import {
   commandRequest,
   createModkitCommandRuntime,
@@ -8,11 +7,10 @@ import {
   invokeServiceOperation,
   SERVICE_OPERATION_INVOKE_COMMAND,
   SERVICE_OPERATIONS_COMMAND,
-  type ExtensionInput,
 } from '@modkit/host'
-import { loadExtensionDirectory } from '@modkit/host/node'
 import { PERMISSION_CLASSES, type PermissionClass } from '@modkit/sdk'
-import { createModkitCliSubjectServices } from './profile.js'
+import { createModkitCliSubjectServices, loadModkitCliExtensions } from './profile.js'
+import { cliExtensionFailure } from './extension-validation.js'
 import { readOperationInput, renderCommandReceipt, renderCommandResult } from './commands.js'
 
 export const SERVICE_OPERATION_USAGE =
@@ -37,7 +35,8 @@ export function parseServiceOperationArguments(
   operationId: string | undefined,
   argv: readonly string[],
 ): ServiceOperationCliArguments | undefined {
-  if (mode === 'invoke' && (operationId === undefined || operationId.startsWith('--'))) return undefined
+  if (mode === 'invoke' && (operationId === undefined || operationId.startsWith('--')))
+    return undefined
   const roots: string[] = []
   const permissions: PermissionClass[] = []
   const knownPermissions = new Set<string>(PERMISSION_CLASSES)
@@ -79,12 +78,14 @@ export function parseServiceOperationArguments(
       index += 1
     } else if (option === '--format') {
       const selected = value(index + 1)
-      if (selected !== 'text' && selected !== 'json' && selected !== 'protocol-json') return undefined
+      if (selected !== 'text' && selected !== 'json' && selected !== 'protocol-json')
+        return undefined
       format = selected
       index += 1
     } else return undefined
   }
-  if (roots.length === 0 || limit < 1 || limit > 100 || !Number.isSafeInteger(offset)) return undefined
+  if (roots.length === 0 || limit < 1 || limit > 100 || !Number.isSafeInteger(offset))
+    return undefined
   if (mode === 'invoke' && inputFile === undefined) return undefined
   return Object.freeze({
     mode,
@@ -121,12 +122,22 @@ export async function runServiceOperationCommand(
   const stdout = options.writeStdout ?? (text => void process.stdout.write(text))
   const stderr = options.writeStderr ?? (text => void process.stderr.write(text))
   try {
-    const loaded = await Promise.all(arguments_.roots.map(root => loadExtensionDirectory(resolve(root))))
-    const extensions: readonly ExtensionInput[] = loaded.map(input => ({
-      ...input,
-      execution: { origin: 'linked', allowTrustedInProcess: arguments_.trust },
-    }))
-    const services = await createModkitCliSubjectServices(extensions)
+    const loaded = await loadModkitCliExtensions(arguments_.roots, arguments_.trust, options.signal)
+    const services = await createModkitCliSubjectServices(loaded.inputs)
+    const admission = cliExtensionFailure(
+      arguments_.mode === 'catalog' ? SERVICE_OPERATIONS_COMMAND : SERVICE_OPERATION_INVOKE_COMMAND,
+      arguments_.operationId === undefined ? {} : { operationId: arguments_.operationId },
+      services.inventory,
+      loaded.failures,
+    )
+    if (admission !== undefined) {
+      stdout(
+        arguments_.format === 'protocol-json'
+          ? renderCommandReceipt(admission)
+          : renderCommandResult(admission.result, arguments_.format === 'json'),
+      )
+      return 1
+    }
     // Subject codecs prefer the isolated worker realm. Host-state and external operations publish
     // Node variants deliberately, so their common resolver must target the CLI host realm.
     const operationServices = Object.freeze({ ...services, target: services.host.target })
@@ -137,7 +148,12 @@ export async function runServiceOperationCommand(
         throw new Error('service operation commands do not open subjects')
       },
       serviceOperations: {
-        catalog: (request: { offset: number; limit: number; activate: boolean; signal?: AbortSignal }) =>
+        catalog: (request: {
+          offset: number
+          limit: number
+          activate: boolean
+          signal?: AbortSignal
+        }) =>
           discoverServiceOperations({
             services: operationServices,
             alternateTargets: [services.target],
@@ -148,7 +164,11 @@ export async function runServiceOperationCommand(
             activate: request.activate,
             ...(request.signal === undefined ? {} : { signal: request.signal }),
           }),
-        invoke: (request: { operationId: string; input: import('@modkit/sdk').JsonValue; signal?: AbortSignal }) =>
+        invoke: (request: {
+          operationId: string
+          input: import('@modkit/sdk').JsonValue
+          signal?: AbortSignal
+        }) =>
           invokeServiceOperation({
             services: operationServices,
             alternateTargets: [services.target],
@@ -164,7 +184,8 @@ export async function runServiceOperationCommand(
       },
       ...(options.signal === undefined ? {} : { signal: options.signal }),
     }
-    const command = arguments_.mode === 'catalog' ? SERVICE_OPERATIONS_COMMAND : SERVICE_OPERATION_INVOKE_COMMAND
+    const command =
+      arguments_.mode === 'catalog' ? SERVICE_OPERATIONS_COMMAND : SERVICE_OPERATION_INVOKE_COMMAND
     const input =
       arguments_.mode === 'catalog'
         ? { offset: arguments_.offset, limit: arguments_.limit, activate: arguments_.activate }
@@ -180,7 +201,9 @@ export async function runServiceOperationCommand(
     )
     return receipt.result.state === 'ok' ? 0 : 1
   } catch (error) {
-    stderr(`modkit ${arguments_.mode === 'catalog' ? 'operations' : 'invoke'}: ${error instanceof Error ? error.message : String(error)}\n`)
+    stderr(
+      `modkit ${arguments_.mode === 'catalog' ? 'operations' : 'invoke'}: ${error instanceof Error ? error.message : String(error)}\n`,
+    )
     return 2
   }
 }

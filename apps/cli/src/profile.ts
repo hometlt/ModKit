@@ -8,7 +8,7 @@ import {
 } from '@modkit/sdk'
 import { stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 import { uvModule } from '@modkit/uv/module'
 import {
   createHostComposition,
@@ -22,16 +22,41 @@ import type { Diagnostic } from '@modkit/core'
 import {
   createNodeExecutionBackends,
   createNodeSubjectServices,
+  loadExtensionRoots,
   nodeRuntimeTargetBase,
   nodeWorkerLinks,
   nodeWorkerRealmProfile,
   resolveContentSources,
   workerBackendPolicy,
   type NodeSubjectServices,
+  type LoadedExtensionRoots,
   type WorkerBackendPolicy,
 } from '@modkit/host/node'
 
 const CLI_BUILTIN_MODULES = /* @__PURE__ */ linkedExtensionInputs([sceneModule, uvModule])
+
+/** The Host owns root admission; the CLI's explicit --trust remains its execution decision. */
+export async function loadModkitCliExtensions(
+  roots: readonly string[],
+  trust = false,
+  signal?: AbortSignal,
+): Promise<LoadedExtensionRoots> {
+  const loaded = await loadExtensionRoots(
+    roots.map(root => resolve(root)),
+    {
+      origin: 'linked',
+      claimed: CLI_BUILTIN_MODULES.coordinates,
+      ...(signal === undefined ? {} : { signal }),
+    },
+  )
+  return {
+    ...loaded,
+    inputs: loaded.inputs.map(input => ({
+      ...input,
+      execution: { origin: 'linked', allowTrustedInProcess: trust },
+    })),
+  }
+}
 
 export const MODKIT_CLI_REALM = 'modkit.app.cli/main'
 /** Worker threads of the CLI process: where portable (`worker-brokered`) variants run. */

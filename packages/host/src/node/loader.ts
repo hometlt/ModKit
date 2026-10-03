@@ -6,7 +6,7 @@
  */
 
 import { createHash, type Hash } from 'node:crypto'
-import { readdirSync, readFileSync, statSync, watch } from 'node:fs'
+import { existsSync, readdirSync, readFileSync, statSync, watch } from 'node:fs'
 import { readdir, readFile, stat } from 'node:fs/promises'
 import { join, relative, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -152,14 +152,19 @@ function watchArtifactRoot(root: string): void {
   if (watchedRoots.has(root)) return
   watchedRoots.add(root)
   try {
-    const watcher = watch(root, { recursive: true, persistent: false }, () =>
-      unchangedRoots.delete(root),
-    )
-    watcher.on('error', () => {
+    const stop = (): void => {
       unchangedRoots.delete(root)
       watchedRoots.delete(root)
+      verifiedDigests.delete(root)
       watcher.close()
+    }
+    const watcher = watch(root, { recursive: true, persistent: false }, () => {
+      unchangedRoots.delete(root)
+      // Windows keeps a removed recursive root alive even with persistent:false.
+      // Release it, and let a directory recreated at this path acquire a fresh watcher.
+      if (!existsSync(root)) stop()
     })
+    watcher.on('error', stop)
   } catch {
     // No recursive watching here: every verification keeps taking the stat fingerprint.
     watchedRoots.delete(root)

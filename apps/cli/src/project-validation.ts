@@ -18,10 +18,10 @@ import {
   createSubjectCommandRuntime,
   executeCommandRequest,
   type CommandReceipt,
-  type ExtensionInput,
 } from '@modkit/host'
-import { createPathSubjectOpener, loadExtensionDirectory } from '@modkit/host/node'
-import { createModkitCliSubjectServices } from './profile.js'
+import { createPathSubjectOpener } from '@modkit/host/node'
+import { createModkitCliSubjectServices, loadModkitCliExtensions } from './profile.js'
+import { cliExtensionFailure } from './extension-validation.js'
 import type { RunOutputFormat } from './commands.js'
 
 export const PROJECT_VALIDATION_SCHEMA_VERSION = 'modkit-project-validation-1' as const
@@ -62,6 +62,7 @@ export interface ProjectValidationReceipt {
       readonly failed: number
     }
     readonly files: readonly ProjectValidationFile[]
+    readonly diagnostics?: CommandReceipt['result']['diagnostics']
   }
 }
 
@@ -124,6 +125,9 @@ function renderProjectValidation(receipt: ProjectValidationReceipt, json: boolea
     `${receipt.result.state === 'ok' ? 'VALID' : 'INVALID'} PROJECT ${receipt.request.project}`,
     `  ${summary.validated} validated, ${summary.unclaimed} unclaimed, ${summary.failed} failed`,
     ...receipt.result.files.map(file => `  ${file.state.toUpperCase()} ${file.path}`),
+    ...(receipt.result.diagnostics ?? []).map(
+      item => `  ${item.severity} ${item.code} ${item.message}`,
+    ),
   ]
   return `${lines.join('\n')}\n`
 }
@@ -136,15 +140,33 @@ export async function validateProject(
   const writeStderr = options.writeStderr ?? (text => void process.stderr.write(text))
   try {
     const project = resolve(arguments_.directory)
-    const files = await regularFiles(project)
-    const loaded = await Promise.all(
-      arguments_.roots.map(root => loadExtensionDirectory(resolve(root))),
+    const loaded = await loadModkitCliExtensions(arguments_.roots, arguments_.trust, options.signal)
+    const services = await createModkitCliSubjectServices(loaded.inputs)
+    const admission = cliExtensionFailure(
+      'project.validate',
+      { subject: project },
+      services.inventory,
+      loaded.failures,
     )
-    const extensions: readonly ExtensionInput[] = loaded.map(input => ({
-      ...input,
-      execution: { origin: 'linked', allowTrustedInProcess: arguments_.trust },
-    }))
-    const services = await createModkitCliSubjectServices(extensions)
+    if (admission !== undefined) {
+      writeStdout(
+        renderProjectValidation(
+          {
+            schemaVersion: PROJECT_VALIDATION_SCHEMA_VERSION,
+            request: { command: 'project.validate', project },
+            result: {
+              state: 'failed',
+              summary: { discovered: 0, validated: 0, unclaimed: 0, failed: 0 },
+              files: [],
+              diagnostics: admission.result.diagnostics,
+            },
+          },
+          arguments_.format !== 'text',
+        ),
+      )
+      return 1
+    }
+    const files = await regularFiles(project)
     const opener = createPathSubjectOpener({
       subjects: services,
       roots: [project],

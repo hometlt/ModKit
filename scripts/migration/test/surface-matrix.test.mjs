@@ -94,16 +94,17 @@ test('CLI check covers both outputs and immutable Git snapshots ignore dirty wor
     markdown,
     '--quiet',
   ]
-  execFileSync(process.execPath, args, { cwd: repoRoot })
+  execFileSync(process.execPath, args, { cwd: repoRoot, timeout: 30_000 })
   const emitted = JSON.parse(readFileSync(json, 'utf8'))
   assert.equal(emitted.counts.rows, 1)
   assert.deepEqual(emitted.repositories, [{ label: 'fixture', kind: 'git-snapshot', commit }])
-  execFileSync(process.execPath, [...args, '--check'], { cwd: repoRoot })
+  execFileSync(process.execPath, [...args, '--check'], { cwd: repoRoot, timeout: 30_000 })
 
   writeFileSync(markdown, `${readFileSync(markdown, 'utf8')}stale\n`)
   const stale = spawnSync(process.execPath, [...args, '--check'], {
     cwd: repoRoot,
     encoding: 'utf8',
+    timeout: 30_000,
   })
   assert.equal(stale.status, 1)
   assert.match(stale.stderr, /matrix\.md is stale/u)
