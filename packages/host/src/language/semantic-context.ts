@@ -364,7 +364,9 @@ export async function analyzeResolvedDataSemanticContext(request: {
         localizationKeys: [],
         queries: [],
         plannedDocumentCount:
-          request.prepared.documents.length + (request.prepared.complete ? 0 : 1),
+          request.prepared.documents.length +
+          request.prepared.localizationDocuments.length +
+          (request.prepared.complete ? 0 : 1),
         unresolvedRequirementIds: request.prepared.complete
           ? []
           : ['language-workspace-incomplete'],

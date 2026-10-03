@@ -101,11 +101,13 @@ let observedWorkspaceContext: LanguageWorkspaceContext | undefined
 const provider: LanguageProvider = {
   contract: LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT,
   languageIds: ['fixture-language'],
+  workspaceLanguageIds: ['fixture-language', 'fixture-localization'],
   semanticContextRequirements: [
     {
       kind: 'resolved-data-snapshot',
       gameId: 'fixture-game',
       languageIds: ['fixture-language'],
+      localizationLanguageIds: ['fixture-localization'],
     },
   ],
   semanticInputs: [{ kind: 'schema', id: 'fixture/schema@1', revision: 'fixture-schema:1' }],
@@ -299,6 +301,14 @@ const dataProvider: ResolvedDataWorkspace = {
     complete: true,
   }),
   analyze: async request => {
+    if (
+      request.plannedDocumentCount !==
+      request.documents.length +
+        (request.localizationDocuments?.length ?? 0) +
+        request.unresolvedRequirementIds.length
+    ) {
+      throw new Error('resolved Data requires exact resource-plan accounting')
+    }
     dataAnalyzeRequests.push(request)
     if (dataAnalyzeWaitForAbort) {
       noteDataAnalyzeEntered()
@@ -1441,6 +1451,88 @@ describe('language subject completion lifecycle', () => {
       await workspace.shutdown()
     }
   })
+
+  it.each([false, true])(
+    'accounts for localized documents with a partial workspace of %s',
+    async partial => {
+      const baselineAnalyses = dataAnalyzeRequests.length
+      const localizedUri = 'file:///workspace/enUS/Names.lang'
+      const source: LanguageWorkspaceDocumentSource = {
+        snapshot: async () => ({
+          documents: [
+            {
+              uri: localizedUri,
+              languageId: 'fixture-localization',
+              version: 1,
+              text: 'Unit/Name/Marine=Marine',
+            },
+          ],
+          isComplete: true,
+          workspaceContext: {
+            id: 'localized-workspace',
+            revision: '1',
+            semanticComplete: true,
+            documentOrigins: [
+              {
+                uri: localizedUri,
+                layerId: 'selected-mod',
+                logicalId: 'enUS/Names.lang',
+                precedence: 0,
+                sourceRevision: '1',
+                readOnly: false,
+              },
+            ],
+          },
+        }),
+      }
+      const workspace = await openWorkspace(
+        { open: async () => undefined },
+        partial,
+        source,
+        document => ({
+          uri: document.uri,
+          layerId: 'selected-mod',
+          logicalId: 'GameData/Units.lang',
+          precedence: 0,
+          sourceRevision: String(document.version),
+          readOnly: false,
+          overlay: true,
+        }),
+        () => [
+          {
+            kind: 'locale-set',
+            id: 'selected-locales',
+            revision: '1',
+            payload: { locales: ['enUS'] },
+          },
+        ],
+      )
+      try {
+        await workspace.completion(completionRequest())
+        expect(dataAnalyzeRequests).toHaveLength(baselineAnalyses + 1)
+        expect(dataAnalyzeRequests.at(-1)).toMatchObject({
+          plannedDocumentCount: partial ? 3 : 2,
+          localizationDocuments: [
+            {
+              rootId: 'selected-mod',
+              path: 'enUS/Names.lang',
+              locale: 'enUS',
+              text: 'Unit/Name/Marine=Marine',
+            },
+          ],
+          unresolvedRequirementIds: partial ? ['language-workspace-incomplete'] : [],
+        })
+        expect(observedWorkspaceContext?.semanticComplete).toBe(!partial)
+        expect(
+          observedWorkspaceContext?.semanticInputs?.some(
+            input => input.kind === 'semantic-context-status',
+          ),
+        ).toBe(false)
+      } finally {
+        await workspace.shutdown()
+      }
+    },
+  )
 
   it('prefers a provider-owned bounded authoring index over the full snapshot', async () => {
     const baselineAnalyses = dataAnalyzeRequests.length

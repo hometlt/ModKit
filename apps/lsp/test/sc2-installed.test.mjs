@@ -5,7 +5,7 @@
  */
 import assert from 'node:assert/strict'
 import { existsSync } from 'node:fs'
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import test from 'node:test'
@@ -162,6 +162,14 @@ test(
       assert.equal(dataReferences.length, 2)
       const fields = await ok('textDocument/completion', at('data', 4, 9))
       assert.ok(fields.items.length > 0)
+      assert.equal(
+        await ok('textDocument/rename', {
+          ...at('data', 3, 19),
+          newName: 'Trooper',
+        }),
+        null,
+        'an unfinished catalog must refuse a potentially partial rename',
+      )
       // The open `<` above is for completion; the strict catalog parse refuses it and leaves the
       // authoring index partial, so the line goes before the rename (Marine moves to line 2).
       server.notify('textDocument/didChange', {
@@ -174,6 +182,11 @@ test(
         ...at('data', 2, 19),
         newName: 'Trooper',
       })
+      assert.ok(
+        dataRename,
+        'repairing the unsaved catalog must restore a complete localized context',
+      )
+      assert.equal(await readFile(paths.data, 'utf8'), DATA, 'the repair is only an editor overlay')
       // The declaration and the parent link, and the entity's string key in the other language.
       assert.deepEqual(
         dataRename.documentChanges.map(change => [
@@ -184,6 +197,10 @@ test(
           [uri('data'), [[2, 'Trooper'], [5, 'Trooper']]],
           [uri('strings'), [[0, 'Trooper']]],
         ],
+      )
+      assert.deepEqual(
+        dataRename.documentChanges.map(change => change.textDocument.version),
+        [2, 1],
       )
 
       // GameStrings.
@@ -398,19 +415,19 @@ test(
       })
       assert.equal(parent.error, undefined, server.stderr())
       const [location] = parent.result ?? []
-      // Dependency documents get host-owned URIs in load order: Core (loaded beneath Liberty) is 0.
-      const dependency = index =>
-        `content-source://local%3Ainstallation/content-dependencies/${index}/Base.SC2Data/GameData/UnitData.xml`
+      // Canonical paths keep the dependency's identity independent of layer ordering.
+      const dependency = modName =>
+        `content-source://local%3Ainstallation/Mods/${modName}.SC2Mod/Base.SC2Data/GameData/UnitData.xml`
       assert.equal(
         location?.uri,
-        dependency(1),
+        dependency('Liberty'),
         `definition must land in the packed Liberty dependency: ${JSON.stringify(parent.result)}\n${server.stderr()}`,
       )
       assert.equal(location.range.start.line, 2)
       const symbols = await server.request('workspace/symbol', { query: 'CoreUnit' })
       assert.equal(symbols.error, undefined)
       assert.ok(
-        symbols.result.some(item => item.location.uri === dependency(0)),
+        symbols.result.some(item => item.location.uri === dependency('Core')),
         `Core must join the snapshot beneath Liberty: ${JSON.stringify(symbols.result)}`,
       )
       assert.doesNotMatch(server.stderr(), /installation-dependency-missing/u)
@@ -473,11 +490,12 @@ test(
       })
       assert.equal(parent.error, undefined, server.stderr())
       const [location] = parent.result ?? []
-      assert.match(
-        location?.uri ?? '',
-        /^content-source:\/\/local%3Ainstallation\/content-dependencies\/\d+\/Base\.SC2Data\/GameData\/UnitData\.xml$/u,
+      assert.equal(
+        location?.uri,
+        'content-source://local%3Ainstallation/Mods/Liberty.SC2Mod/Base.SC2Data/GameData/UnitData.xml',
         `a loose folder must see Liberty through its base mod: ${JSON.stringify(parent.result)}\n${server.stderr()}`,
       )
+      assert.equal(location.range.start.line, 2)
       assert.equal(await server.shutdown(), 0)
     } finally {
       server.child.kill()
