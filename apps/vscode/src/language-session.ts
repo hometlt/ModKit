@@ -51,7 +51,7 @@ import type {
   LanguageWorkspaceAnalysisResult,
   LanguageWorkspaceDocumentRequest,
 } from '@modkit/host/language'
-import { languageRouteServesFile } from '@modkit/host/language'
+import { LANGUAGE_MAX_DOCUMENTS, languageRouteServesFile } from '@modkit/host/language'
 
 export const LANGUAGE_TOKEN_TYPES: readonly LanguageTokenKind[] = Object.freeze([
   'comment',
@@ -299,7 +299,7 @@ export interface LanguageSessionController {
 
 const EDITOR_MAX_RESULTS = 512
 // A mod is the unit these languages resolve against; the host's byte budget is the real bound.
-const EDITOR_MAX_DOCUMENTS = 1_024
+const EDITOR_MAX_DOCUMENTS = LANGUAGE_MAX_DOCUMENTS
 const EDITOR_MAX_EDITS = 4_096
 /** Most other open documents one edit asks diagnostics for again. */
 const RELATED_DIAGNOSTICS_LIMIT = 32

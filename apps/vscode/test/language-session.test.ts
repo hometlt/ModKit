@@ -502,7 +502,7 @@ describe('VS Code-free language session controller', () => {
         uri: 'file:///workspace/sample.fixture',
         documentVersion: 2,
         maxResults: 512,
-        maxDocuments: 1_024,
+        maxDocuments: 4_096,
         signal: expect.any(AbortSignal),
       }),
     )
@@ -1577,7 +1577,7 @@ describe('VS Code-free language session controller', () => {
       documentVersion: 4,
       position: { line: 0, character: 3 },
       maxResults: 512,
-      maxDocuments: 1_024,
+      maxDocuments: 4_096,
       semanticContextPolicy: 'cached',
     })
     const formatting = vi.spyOn(workspace, 'formatting').mockResolvedValue({
@@ -1592,7 +1592,7 @@ describe('VS Code-free language session controller', () => {
       documentVersion: 4,
       options: { tabSize: 2, insertSpaces: true },
       maxResults: 512,
-      maxDocuments: 1_024,
+      maxDocuments: 4_096,
     })
     const onTypeFormatting = vi.spyOn(workspace, 'onTypeFormatting').mockResolvedValue({
       edits: [
@@ -1625,7 +1625,7 @@ describe('VS Code-free language session controller', () => {
       ch: '=',
       options: { tabSize: 2, insertSpaces: true },
       maxResults: 512,
-      maxDocuments: 1_024,
+      maxDocuments: 4_096,
       semanticContextPolicy: 'cached',
     })
     await controller.shutdown()

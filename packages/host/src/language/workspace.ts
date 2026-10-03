@@ -556,6 +556,8 @@ export interface LanguageWorkspaceOptions {
   readonly services: LanguageHostServices
   readonly grant: PermissionGrant
   readonly budgets: ResourceBudget
+  /** Aggregate semantic analysis budget; document activation keeps using `budgets`. */
+  readonly workspaceBudgets?: ResourceBudget
   /** URI-scoped selector source shared with subject-ref field editors. */
   readonly subjectCandidates?: SubjectCandidateProviderSource
   /** True when the caller knows that documents outside this bounded workspace are omitted. */
@@ -2026,6 +2028,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
     )
     if (requirements.length === 0)
       return Object.freeze({ inputs: Object.freeze([]), complete: true })
+    const workspaceBudgets = Object.freeze({ ...(options.workspaceBudgets ?? options.budgets) })
     const inputs: LanguageWorkspaceSemanticInput[] = []
     let contextsComplete = true
     for (const requirement of requirements) {
@@ -2035,6 +2038,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         origins: originsByUri,
         complete,
         locales,
+        budgets: workspaceBudgets,
       })
       let resolved = cachedSemanticContext(prepared.key)
       let stale = false
@@ -2059,7 +2063,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
           pending = analyzeResolvedDataSemanticContext({
             services: options.services,
             grant: options.grant,
-            budgets: options.budgets,
+            budgets: workspaceBudgets,
             requirement,
             prepared,
             signal,
@@ -2423,7 +2427,11 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
               }),
               revision: languageWorkspaceContextToken({
                 sourceRevision: sourceContext?.revision,
-                semanticInputs,
+                semanticInputs: semanticInputs.map(input => ({
+                  kind: input.kind,
+                  id: input.id,
+                  contentRevision: languageWorkspaceContextToken(input),
+                })),
                 semanticComplete,
                 documents: snapshotDocuments.map(document => ({
                   uri: document.uri,

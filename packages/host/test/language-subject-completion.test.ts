@@ -582,11 +582,13 @@ async function openWorkspace(
   documentOrigin?: (document: LanguageDocument) => LanguageWorkspaceDocumentOrigin | undefined,
   semanticInputs?: () => readonly LanguageWorkspaceSemanticInput[],
   initialText = 'value',
+  workspaceBudgets?: typeof budgets,
 ) {
   const workspace = createLanguageWorkspace({
     services,
     grant: { id: 'subject-completion-test', classes: [] },
     budgets,
+    ...(workspaceBudgets === undefined ? {} : { workspaceBudgets }),
     subjectCandidates,
     workspaceIncomplete,
     ...(documentSource === undefined ? {} : { documentSource }),
@@ -1528,6 +1530,77 @@ describe('language subject completion lifecycle', () => {
             input => input.kind === 'semantic-context-status',
           ),
         ).toBe(false)
+      } finally {
+        await workspace.shutdown()
+      }
+    },
+  )
+
+  it.each([undefined, 1_000_000n, 2_000_000n])(
+    'bounds aggregate Data independently of document activation with %s bytes',
+    async maximumInputBytes => {
+      const baselineAnalyses = dataAnalyzeRequests.length
+      const documents = ['base', 'selected'].map(layer => ({
+        uri: `file:///workspace/${layer}/Units.lang`,
+        languageId: 'fixture-language',
+        version: 1,
+        text: 'x'.repeat(600_000),
+      }))
+      const origins = documents.map((document, precedence) => ({
+        uri: document.uri,
+        layerId: `dependency-${precedence}`,
+        logicalId: 'GameData/Units.lang',
+        precedence,
+        sourceRevision: '1',
+        readOnly: true,
+      }))
+      const source: LanguageWorkspaceDocumentSource = {
+        snapshot: async () => ({
+          documents,
+          isComplete: true,
+          workspaceContext: {
+            id: 'large-mod',
+            revision: '1',
+            semanticComplete: true,
+            documentOrigins: origins,
+          },
+        }),
+      }
+      const workspace = await openWorkspace(
+        { open: async () => undefined },
+        false,
+        source,
+        document => ({
+          uri: document.uri,
+          layerId: 'editor',
+          logicalId: 'GameData/UnitData.xml',
+          precedence: 2,
+          sourceRevision: '1',
+          readOnly: false,
+          overlay: true,
+        }),
+        undefined,
+        'value',
+        maximumInputBytes === undefined
+          ? undefined
+          : { ...budgets, maxInputBytes: maximumInputBytes },
+      )
+      try {
+        await workspace.completion(completionRequest())
+        const fits = maximumInputBytes === 2_000_000n
+        expect(dataAnalyzeRequests).toHaveLength(baselineAnalyses + (fits ? 1 : 0))
+        expect(observedWorkspaceContext?.semanticComplete).toBe(fits)
+        if (fits) {
+          expect(dataAnalyzeRequests.at(-1)).toMatchObject({
+            maxTextBytes: 2_000_000,
+            maxEntities: budgets.maxNodes,
+            maxDepth: budgets.maxDepth,
+          })
+        } else {
+          expect(observedWorkspaceContext?.semanticInputs).toEqual(
+            expect.arrayContaining([expect.objectContaining({ kind: 'semantic-context-status' })]),
+          )
+        }
       } finally {
         await workspace.shutdown()
       }

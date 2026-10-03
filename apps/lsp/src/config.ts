@@ -57,14 +57,13 @@ export function parseModkitLspConfiguration(argv: readonly string[]): ModkitLspC
   const extensions: string[] = []
   let trustExtensions = false
   // Cover a whole mod by default; the byte budgets below stay the real bound.
-  let maxDocuments = 1_024
+  let maxDocuments = 4_096
   let maxDocumentBytes = 4_194_304
   /*
-   * A mod, not a file, is what these languages resolve against, and Blizzard's core mod is 25 MiB of
-   * layouts, scripts, catalogs and string catalogs. At 16 MiB a string key's uses in the layouts fell
-   * outside the snapshot and a reference search answered with the catalog alone.
+   * A mod and its dependencies are the unit of meaning. Installed expansion chains can exceed
+   * 1,024 documents and 64 MiB, even while every individual document fits its separate bound.
    */
-  let maxWorkspaceBytes = 67_108_864
+  let maxWorkspaceBytes = 268_435_456
   const locales: string[] = []
   let contentSourceConfig: string | undefined
   let contentSourceStorage: string | undefined

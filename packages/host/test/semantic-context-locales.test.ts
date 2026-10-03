@@ -91,7 +91,34 @@ describe('the locales of a resolved Data context', () => {
       locales: ['enUS'],
     })
     expect(english.key).not.toBe(prepared.key)
+    expect(english.scopeKey).not.toBe(prepared.scopeKey)
     expect(english.localizationDocuments.map(item => item.locale)).toEqual(['enUS'])
+  })
+
+  it('does not share exact or stale contexts across aggregate budget changes', () => {
+    const budgets = {
+      maxInputBytes: 1_000_000n,
+      maxDepth: 64,
+      maxNodes: 100_000,
+      maxScalarBytes: 1_000_000,
+      maxDiagnostics: 100,
+    }
+    const prepare = () =>
+      prepareResolvedDataSemanticContext({
+        requirement: requirement!,
+        documents,
+        origins,
+        complete: true,
+        locales: ['enUS'],
+        budgets,
+      })
+    const original = prepare()
+    budgets.maxInputBytes = 2_000_000n
+    const changed = prepare()
+    expect(changed.key).not.toBe(original.key)
+    expect(changed.scopeKey).not.toBe(original.scopeKey)
+    budgets.maxInputBytes = 1_000_000n
+    expect(prepare().key).toBe(original.key)
   })
 
   it('pass no string file without locales, and refuse a malformed localization list', () => {

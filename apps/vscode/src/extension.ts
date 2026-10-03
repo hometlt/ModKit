@@ -97,6 +97,7 @@ type SubjectCatalogOptions,
 import {
 classifyLanguageFile,
 createLanguageWorkspace,
+LANGUAGE_MAX_DOCUMENTS,
 contentPathIndexSemanticInputs,
 languageFileAssociations,
 languageFileExtension,
@@ -315,6 +316,7 @@ import {
   STAGE_CUSTOM_EDITOR_TYPES,
   MODKIT_VIEW_TYPES,
   LANGUAGE_ACTIVATION_BUDGET,
+  LANGUAGE_WORKSPACE_BUDGET,
   RUNTIME_ACTIVATION_BUDGET,
   RUNTIME_SESSION_BUDGET,
   GAME_DISCOVERY_BUDGET,
@@ -7165,7 +7167,7 @@ async function activateModkit(
         routes: languageRoutes,
         limits: {
           maxDocumentBytes: 4_194_304,
-          maxWorkspaceBytes: 67_108_864,
+          maxWorkspaceBytes: Number(LANGUAGE_WORKSPACE_BUDGET.maxInputBytes),
           maxEntries: 65_536,
         },
         subjects:
@@ -7328,6 +7330,7 @@ async function activateModkit(
     assetImage,
     grant: { id: 'modkit.app.vscode/language', classes: [] },
     budgets: LANGUAGE_ACTIVATION_BUDGET,
+    workspaceBudgets: LANGUAGE_WORKSPACE_BUDGET,
     subjectCandidates: languageSubjectCandidates,
     documentSource: languageDocumentSource,
     documentOrigin: document => {
@@ -8929,7 +8932,7 @@ async function activateModkit(
           workspaceDocuments: [primary],
           workspaceDocumentOrigins: [],
           workspaceLanguageIds: languageIds,
-          maxDocuments: Math.min(request.maxDocuments ?? 1_024, 1_024),
+          maxDocuments: Math.min(request.maxDocuments ?? LANGUAGE_MAX_DOCUMENTS, LANGUAGE_MAX_DOCUMENTS),
           signal: controller.signal,
         })
         return { documents: snapshot.documents, isComplete: snapshot.isComplete }

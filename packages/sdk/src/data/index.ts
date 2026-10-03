@@ -319,7 +319,10 @@ export interface DataAuthoringFieldDelta {
   readonly source: number
   /** Entity whose declaration owns this value; defaults may materialize it on a child row. */
   readonly originEntityId: string
-  /** Exact winning origin for each leaf path relative to this top-level field. */
+  /**
+   * Exact winning origin for each leaf path relative to this top-level field. When omitted,
+   * every leaf has this field's `source` and `originEntityId` (uniform provenance).
+   */
   readonly origins?: readonly DataAuthoringValueOrigin[]
 }
 

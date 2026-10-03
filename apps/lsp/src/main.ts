@@ -131,6 +131,10 @@ export async function runModkitLsp(argv: readonly string[]) {
     services: modkit.services,
     grant: { id: 'modkit.app.lsp/language', classes: ['read-source'] },
     budgets: LANGUAGE_BUDGET,
+    workspaceBudgets: {
+      ...LANGUAGE_BUDGET,
+      maxInputBytes: BigInt(configuration.maxWorkspaceBytes),
+    },
     ...(documentSource === undefined ? {} : { documentSource }),
     semanticInputs: Object.freeze([
       Object.freeze({

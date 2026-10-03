@@ -25,6 +25,7 @@ import {
 const MAX_SEMANTIC_CONTEXT_REQUIREMENTS = 8
 const MAX_LANGUAGE_RESOLVED_DATA_ENTITIES = 100_000
 const MAX_LANGUAGE_AUTHORING_INDEX_BYTES = 48 * 1_024 * 1_024
+const MAX_LANGUAGE_RESOLVED_DATA_INPUT_BYTES = 256 * 1_024 * 1_024
 
 const boundedText = (value: unknown): value is string =>
   typeof value === 'string' && value.length > 0 && value.length <= 8_192 && !value.includes('\0')
@@ -41,7 +42,9 @@ export function validatedLanguageSemanticContextRequirements(
   for (const item of value) {
     const keys = typeof item === 'object' && item !== null ? Reflect.ownKeys(item) : []
     const knowledge =
-      typeof item === 'object' && item !== null && (item as { kind?: unknown }).kind === 'language-knowledge'
+      typeof item === 'object' &&
+      item !== null &&
+      (item as { kind?: unknown }).kind === 'language-knowledge'
     const allowed = knowledge
       ? ['kind', 'fileNames']
       : ['kind', 'gameId', 'languageIds', 'localizationLanguageIds']
@@ -63,14 +66,21 @@ export function validatedLanguageSemanticContextRequirements(
         fileNames.length === 0 ||
         fileNames.length > 8 ||
         !fileNames.every(
-          name => boundedText(name) && name.length <= 255 && !/[\\/:*?"<>|]/u.test(name) && name !== '.' && name !== '..',
+          name =>
+            boundedText(name) &&
+            name.length <= 255 &&
+            !/[\\/:*?"<>|]/u.test(name) &&
+            name !== '.' &&
+            name !== '..',
         ) ||
         new Set(fileNames.map(name => (name as string).toLowerCase())).size !== fileNames.length
       ) {
         throw new TypeError('language semantic context requirement is invalid')
       }
       seen.add('\0language-knowledge')
-      requirements.push(Object.freeze({ kind: 'language-knowledge', fileNames: Object.freeze([...fileNames]) }))
+      requirements.push(
+        Object.freeze({ kind: 'language-knowledge', fileNames: Object.freeze([...fileNames]) }),
+      )
       continue
     }
     const descriptors = Object.getOwnPropertyDescriptors(item)
@@ -150,9 +160,7 @@ export function semanticInputLocales(
 /** The first locale that begins one of the path's segments (`enUS.SC2Data/…` is enUS). */
 function localeOfPath(path: string, locales: readonly string[]): string | undefined {
   const segments = path.split('/').map(segment => segment.toLowerCase())
-  return locales.find(locale =>
-    segments.some(segment => segment.startsWith(locale.toLowerCase())),
-  )
+  return locales.find(locale => segments.some(segment => segment.startsWith(locale.toLowerCase())))
 }
 
 export function prepareResolvedDataSemanticContext(request: {
@@ -162,6 +170,7 @@ export function prepareResolvedDataSemanticContext(request: {
   readonly complete: boolean
   /** From `semanticInputLocales`; without locales no string file enters the analysis. */
   readonly locales?: readonly string[]
+  readonly budgets?: ResourceBudget
 }): PreparedResolvedDataSemanticContext {
   let complete = request.complete
   const locales = request.locales ?? []
@@ -234,10 +243,25 @@ export function prepareResolvedDataSemanticContext(request: {
     documents: identities,
     locales,
     localization: localizationIdentities,
+    budgets:
+      request.budgets === undefined
+        ? undefined
+        : {
+            ...request.budgets,
+            maxInputBytes: String(request.budgets.maxInputBytes),
+          },
     complete,
   })
   const scopeKey = languageWorkspaceContextToken({
     requirement: request.requirement,
+    locales,
+    budgets:
+      request.budgets === undefined
+        ? undefined
+        : {
+            ...request.budgets,
+            maxInputBytes: String(request.budgets.maxInputBytes),
+          },
     documents: identities.map(identity => ({
       uri: identity.uri,
       languageId: identity.languageId,
@@ -323,14 +347,11 @@ export async function analyzeResolvedDataSemanticContext(request: {
         ? BigInt(Number.MAX_SAFE_INTEGER)
         : request.budgets.maxInputBytes,
     )
-    const maxTextBytes = Math.min(maximumInputBytes, LANGUAGE_WORKSPACE_SEMANTIC_PAYLOAD_MAX_BYTES)
+    const maxTextBytes = Math.min(maximumInputBytes, MAX_LANGUAGE_RESOLVED_DATA_INPUT_BYTES)
     const textBytes = [
       ...request.prepared.documents,
       ...request.prepared.localizationDocuments,
-    ].reduce(
-      (total, document) => total + new TextEncoder().encode(document.text).byteLength,
-      0,
-    )
+    ].reduce((total, document) => total + new TextEncoder().encode(document.text).byteLength, 0)
     if (
       maxTextBytes <= 0 ||
       textBytes > maxTextBytes ||

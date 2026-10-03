@@ -4,6 +4,7 @@ import { composeLanguageDocumentSources } from '../src/content-dependency-operat
 import {
   LANGUAGE_WORKSPACE_SEMANTIC_PAYLOAD_MAX_BYTES,
   LANGUAGE_WORKSPACE_SEMANTIC_PAYLOAD_MAX_DEPTH,
+  languageWorkspaceContextToken,
   validatedLanguageWorkspaceSemanticInputs,
 } from '../src/language/context.js'
 import { validatedLanguageSemanticContextRequirements } from '../src/language/semantic-context.js'
@@ -42,6 +43,19 @@ describe('language workspace semantic payloads', () => {
 
     original.catalog.units[0] = 'Marauder'
     expect(input?.payload).toEqual({ catalog: { units: ['Marine'] } })
+  })
+
+  it('reuses only validated immutable input identities and still notices caller mutations', () => {
+    const caller = Object.freeze({ kind: 'catalog', id: 'effective', revision: '1', payload: { life: 45 } })
+    const [validated] = validatedLanguageWorkspaceSemanticInputs([caller])
+    const originalToken = languageWorkspaceContextToken(caller)
+    expect(languageWorkspaceContextToken(validated)).toBe(originalToken)
+    expect(languageWorkspaceContextToken(validated)).toBe(originalToken)
+    caller.payload.life = 100
+    expect(languageWorkspaceContextToken(caller)).not.toBe(originalToken)
+    expect(languageWorkspaceContextToken(validated)).toBe(originalToken)
+    const [changed] = validatedLanguageWorkspaceSemanticInputs([caller])
+    expect(languageWorkspaceContextToken(changed)).toBe(languageWorkspaceContextToken(caller))
   })
 
   it('rejects non-JSON, over-depth and conflicting payloads', () => {

@@ -42,6 +42,12 @@ export const LANGUAGE_ACTIVATION_BUDGET = Object.freeze({
   maxDiagnostics: 1_000,
 })
 
+export const LANGUAGE_WORKSPACE_BUDGET = Object.freeze({
+  ...LANGUAGE_ACTIVATION_BUDGET,
+  maxInputBytes: 268_435_456n,
+  deadlineMs: 120_000,
+})
+
 export const RUNTIME_ACTIVATION_BUDGET = Object.freeze({
   maxInputBytes: 16_777_216n,
   maxDepth: 64,

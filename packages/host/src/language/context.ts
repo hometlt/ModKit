@@ -80,10 +80,11 @@ function cloneSemanticPayload(
 // Only copies created here are trusted. Frozen objects supplied by callers still cross validation.
 const validatedInputCopies = new WeakMap<
   object,
-  Readonly<{
+  {
     input: LanguageWorkspaceSemanticInput
     payloadBytes: number
-  }>
+    token?: string
+  }
 >()
 
 function copySemanticInput(item: unknown): Readonly<{
@@ -133,7 +134,7 @@ function copySemanticInput(item: unknown): Readonly<{
     revision,
     ...(payload === undefined ? {} : { payload }),
   })
-  const result = Object.freeze({ input: copy, payloadBytes })
+  const result = { input: copy, payloadBytes }
   validatedInputCopies.set(copy, result)
   return result
 }
@@ -189,6 +190,11 @@ const fnv64 = (bytes: Uint8Array, low: number, high: number, reverse: boolean): 
 
 /** Compact deterministic identity for a canonical host-owned language context description. */
 export const languageWorkspaceContextToken = (value: unknown): string => {
+  const validated =
+    typeof value === 'object' && value !== null ? validatedInputCopies.get(value) : undefined
+  if (validated?.token !== undefined) return validated.token
   const bytes = encoder.encode(canonicalJsonStringify(value))
-  return `language-context-v1:${fnv64(bytes, 0x84222325, 0xcbf29ce4, false)}${fnv64(bytes, 0xcbf29ce4, 0x84222325, true)}`
+  const token = `language-context-v1:${fnv64(bytes, 0x84222325, 0xcbf29ce4, false)}${fnv64(bytes, 0xcbf29ce4, 0x84222325, true)}`
+  if (validated !== undefined) validated.token = token
+  return token
 }
