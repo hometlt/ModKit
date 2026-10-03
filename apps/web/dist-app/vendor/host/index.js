@@ -1323,6 +1323,30 @@ var languageWorkspaceContextToken = (value) => {
   return `language-context-v1:${fnv64(canonical, 0xcbf29ce484222325n, false)}${fnv64(canonical, 0x84222325cbf29ce4n, true)}`;
 };
 
+// ../../MODDING/modkit-core/packages/host/dist/language/content-path-index.js
+var PATHS_PER_INPUT = 16384;
+function contentPathIndexSemanticInputs(index) {
+  if (index.layers !== void 0 && index.layers.length !== index.paths.length)
+    throw new TypeError("content path owners must match the indexed paths");
+  const inputs = [];
+  for (let start = 0; start < Math.max(1, index.paths.length); start += PATHS_PER_INPUT) {
+    inputs.push(Object.freeze({
+      kind: "content-path-index",
+      id: start === 0 ? index.id : `${index.id}/paths/${start}`,
+      revision: index.revision,
+      payload: Object.freeze({
+        schemaVersion: 1,
+        isComplete: index.isComplete,
+        paths: Object.freeze(index.paths.slice(start, start + PATHS_PER_INPUT)),
+        ...index.layers === void 0 ? {} : {
+          layers: Object.freeze(index.layers.slice(start, start + PATHS_PER_INPUT))
+        }
+      })
+    }));
+  }
+  return Object.freeze(inputs);
+}
+
 // ../../MODDING/modkit-core/packages/host/dist/source-bridge.js
 function invalidRange(sourceId, offset, length, size, message) {
   return new ModkitError({
@@ -13191,17 +13215,13 @@ function createContentDependencyLanguageDocumentSource(options) {
                 })))
               })
             }),
-            Object.freeze({
-              kind: "content-path-index",
+            ...contentPathIndexSemanticInputs({
               id: `${options.resolution.gameId}:${contextId}`,
               revision: pathIndexRevision,
-              payload: Object.freeze({
-                schemaVersion: 1,
-                isComplete: pathIndexComplete,
-                paths: indexedPaths,
-                // the dependency-closure layer each path is read from (its strongest)
-                layers: pathLayers
-              })
+              isComplete: pathIndexComplete,
+              paths: indexedPaths,
+              // The dependency-closure layer each path is read from (its strongest).
+              layers: pathLayers
             })
           ])
         })
@@ -30861,6 +30881,7 @@ export {
   composeLanguageDocumentSources,
   connectSubjectRpc,
   contentDependencyDiagnostics,
+  contentPathIndexSemanticInputs,
   contentSourceRootServes,
   contentSourceRootServing,
   coordinateMapPreviewAssetSession,

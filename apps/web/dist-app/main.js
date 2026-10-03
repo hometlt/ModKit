@@ -52,7 +52,7 @@ import {
   webExtensionSubjectCardBundle,
   withMapPreviewSources,
   withoutHiddenEntries
-} from "./chunks/chunk-MFYXQAVO.js";
+} from "./chunks/chunk-TOPWALEG.js";
 import "./chunks/chunk-3UWX4DNX.js";
 import "./chunks/chunk-G5WR4F4U.js";
 import "./chunks/chunk-WIVK24LJ.js";

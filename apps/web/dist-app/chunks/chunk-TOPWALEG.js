@@ -734,6 +734,9 @@ init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var LANGUAGE_WORKSPACE_SEMANTIC_PAYLOAD_MAX_BYTES = 64 * 1024 * 1024;
 var encoder = new TextEncoder();
 
+// ../../MODDING/modkit-core/packages/host/dist/language/content-path-index.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
 // ../../MODDING/modkit-core/packages/host/dist/source-bridge.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 function invalidRange(sourceId, offset, length, size, message) {
