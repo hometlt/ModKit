@@ -57,7 +57,7 @@ export async function resolveContentSources(
   const seen = new Set<string>()
   const parts: ContentSources[] = []
   try {
-    if (config !== undefined) {
+    if (config !== undefined && config.extension !== undefined) {
       parts.push(
         await loadContentSourceModule(
           config.module,
