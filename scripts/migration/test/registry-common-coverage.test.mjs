@@ -20,7 +20,7 @@ test('SC2 document metadata support matches its partial contribution', () => {
   const blizzardRoot = externalRepositoryRoot(repoRoot, 'blizzard')
   const contribution = JSON.parse(
     readFileSync(
-      resolve(blizzardRoot, 'starcraft2/contributions/codec-sc2-document-metadata.json'),
+      resolve(blizzardRoot, 'starcraft2/modules/mod/codecs/document-metadata/codec.json'),
       'utf8',
     ),
   )
