@@ -12,7 +12,7 @@ import {
   RENDER_MATERIAL_SHADER,
 } from '../materials/index.js'
 import { field, object, string } from './values.js'
-import { uvmImageTexels } from './images.js'
+import { uvmImageTexels, type UvmImage } from './images.js'
 
 /**
  * A material whose only texture statement is its neutral layer list (MATERIAL_LAYERS_SHADER).
@@ -322,6 +322,8 @@ export async function acquireUvmMaterialTextures(
   diagnostics: SceneRendererDiagnostic[],
   signal?: AbortSignal,
   filters: ReadonlyMap<string, 'nearest' | 'linear'> = new Map(),
+  sources: ReadonlyMap<string, UvmImage['source']> = new Map(),
+  supplied: ReadonlyMap<string, SceneRendererTexture> = new Map(),
 ) {
   const textures: SceneRendererTexture[] = [],
     textureIds = new Map<string, string>()
@@ -335,22 +337,31 @@ export async function acquireUvmMaterialTextures(
   const share = Math.max(4 * 1024 * 1024, Math.floor(maxBytes / Math.max(1, paths.size)))
   for (const path of paths) {
     signal?.throwIfAborted()
+    const owned = supplied.get(path)
+    if (owned !== undefined) {
+      // Already snapshotted and charged by the frame preparer; reuse its scene identity.
+      textureIds.set(path, owned.id)
+      continue
+    }
     if (port === undefined) continue
     const id = `uvm-material-resource-${resourceIndex++}`
     const result = await port.read(
       {
-        kind: 'logical',
-        requirement: {
-          id,
-          logicalId: path,
-          role: 'texture',
-          scopes: [
-            'sibling-directory',
-            'workspace-dependency-layer',
-            'current-mount',
-            'enclosing-container',
-          ],
-        },
+        ...(sources.get(path) ??
+          ({
+            kind: 'logical',
+            requirement: {
+              id,
+              logicalId: path,
+              role: 'texture',
+              scopes: [
+                'sibling-directory',
+                'workspace-dependency-layer',
+                'current-mount',
+                'enclosing-container',
+              ],
+            },
+          } as const)),
         maxBytes: Math.min(remaining, share),
         selection: { face: 'all', mipLevel: 'fit' },
       },

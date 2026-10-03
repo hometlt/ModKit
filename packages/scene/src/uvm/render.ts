@@ -40,7 +40,15 @@ import { encodeRgbaPng } from '../output/png.js'
 import { readUvmModel } from './model.js'
 import { createUvmCollisionOverlay } from './collision-overlay.js'
 import { createUvmEffectFrame } from './effects.js'
-import { opaqueTexels, prepareUvmTextureImages, uvmImageFilters, uvmImageTexels } from './images.js'
+import {
+  opaqueTexels,
+  prepareUvmImages,
+  prepareUvmTextureImages,
+  uvmImageResourceId,
+  uvmImageFilters,
+  uvmImageTexels,
+  type UvmImage,
+} from './images.js'
 import { array, field, finiteArray, object, safeIndex, vector4 } from './values.js'
 import {
   uvmMaterialBlendEffect,
@@ -902,6 +910,49 @@ async function prepareNestedUvmRender(
     stageBytes,
     signal,
   )
+  const requestedResources = new Set([...materialResources.values()].flat())
+  const resourceImages = new Map<string, number>()
+  for (const [index] of array(document, 'images').entries()) {
+    const id = uvmImageResourceId(document, index)
+    if (!requestedResources.has(id)) continue
+    if (resourceImages.has(id)) throw new TypeError(`ambiguous UVM material image identity: ${id}`)
+    resourceImages.set(id, index)
+  }
+  const suppliedResources = new Map<string, SceneRendererTexture>()
+  for (const [index, texture] of textures) {
+    const source = object(array(document, 'textures')[index], 'texture')['source']
+    if (typeof source === 'number') {
+      const id = uvmImageResourceId(document, source)
+      if (requestedResources.has(id) && suppliedResources.has(id))
+        throw new TypeError(`ambiguous supplied UVM material texture identity: ${id}`)
+      suppliedResources.set(id, texture)
+    }
+  }
+  const capturedImages = new Map<number, UvmImage>(images.map(image => [image.image, image]))
+  const materialImageIndices = [...resourceImages].flatMap(([id, index]) =>
+    !suppliedResources.has(id) && !capturedImages.has(index) ? [index] : [],
+  )
+  const capturedBytes = [...capturedImages.values()].reduce(
+    (sum, image) => sum + (image.source.kind === 'embedded' ? image.source.bytes.length : 0),
+    0,
+  )
+  const materialImages =
+    rasterResources === undefined
+      ? []
+      : prepareUvmImages(
+          document,
+          binary,
+          materialImageIndices,
+          Math.floor(rasterBudget / 2) - capturedBytes,
+          signal,
+        )
+  for (const image of materialImages) capturedImages.set(image.image, image)
+  const materialImageSources = new Map(
+    [...resourceImages].flatMap(([id, index]) => {
+      const image = capturedImages.get(index)
+      return image === undefined ? [] : [[id, image.source] as const]
+    }),
+  )
   diagnostics.push(...samplerDiagnostics)
   // All scene arrays, image payloads and caller texels are owned before the first await.
   let remainingDecodedBytes = Math.floor(rasterBudget / 2)
@@ -917,6 +968,8 @@ async function prepareNestedUvmRender(
     diagnostics,
     signal,
     uvmImageFilters(document),
+    materialImageSources,
+    suppliedResources,
   )
   for (const texture of acquiredMaterials.textures) remainingDecodedBytes -= texture.rgba.length
   const drawnByShader = new Set(
