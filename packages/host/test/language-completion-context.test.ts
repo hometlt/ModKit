@@ -16,11 +16,12 @@ import {
   type LanguageWorkspaceDocumentSource,
 } from '../src/language/index.js'
 
+/** Activate a public language provider with a controllable source and observed feature requests. */
 async function fixture(
   selector?: LanguageProvider['completionContext'],
   analysis?: LanguageProvider['analyze'],
 ) {
-  const completion = vi.fn(async () => ({
+  const completion = vi.fn<NonNullable<LanguageProvider['completion']>>(async () => ({
     items: [{ label: 'schema-field', kind: 'field' as const }],
     isIncomplete: false,
   }))
@@ -146,6 +147,132 @@ async function fixture(
   const request = { uri: document.uri, documentVersion: 1, position: { line: 0, character: 1 } }
   return { workspace, snapshot, completion, request, document }
 }
+
+it('retains captured source documents while revalidating text, metadata and source authority', async () => {
+  const f = await fixture()
+  const closed = {
+    uri: 'memory://closed.fixture',
+    languageId: 'fixture',
+    version: 1,
+    text: 'before',
+    dialect: 'one',
+  }
+  let revision = '1',
+    complete = true,
+    present = true
+  f.snapshot.mockImplementation(async () => ({
+    documents: present ? [{ ...closed }] : [],
+    isComplete: complete,
+    workspaceContext: {
+      id: 'fixture-source',
+      revision,
+      semanticComplete: complete,
+      documentOrigins: [
+        {
+          uri: f.document.uri,
+          layerId: 'root',
+          logicalId: 'test.fixture',
+          precedence: 0,
+          sourceRevision: revision,
+          readOnly: false,
+        },
+        ...(present
+          ? [
+              {
+                uri: closed.uri,
+                layerId: 'root',
+                logicalId: 'closed.fixture',
+                precedence: 0,
+                sourceRevision: revision,
+                readOnly: true,
+              },
+            ]
+          : []),
+      ],
+      semanticInputs: [],
+    },
+  }))
+  /** Read the exact immutable source document that reached the provider. */
+  const captured = (call: number) =>
+    f.completion.mock.calls[call]?.[0].workspaceDocuments.find(
+      document => document.uri === closed.uri,
+    )
+  try {
+    await f.workspace.completion(f.request)
+    const first = captured(0)
+    expect(first).not.toBe(closed)
+    expect(Object.isFrozen(first)).toBe(true)
+    await f.workspace.completion(f.request)
+    expect(captured(1)).toBe(first)
+    expect(f.snapshot).toHaveBeenCalledTimes(2)
+
+    closed.text = 'after!'
+    await f.workspace.completion(f.request)
+    expect(captured(2)).not.toBe(first)
+    expect(captured(2)?.text).toBe('after!')
+    expect(first?.text).toBe('before')
+    closed.dialect = 'two'
+    await f.workspace.completion(f.request)
+    expect(captured(3)).not.toBe(captured(2))
+    expect(captured(3)?.dialect).toBe('two')
+
+    revision = '2'
+    complete = false
+    await f.workspace.completion(f.request)
+    expect(captured(4)).toBe(captured(3))
+    expect(f.completion.mock.calls[4]?.[0].workspaceContext?.revision).not.toBe(
+      f.completion.mock.calls[3]?.[0].workspaceContext?.revision,
+    )
+    expect(f.completion.mock.calls[4]?.[0].workspaceContext?.semanticComplete).toBe(false)
+    expect(
+      f.completion.mock.calls[4]?.[0].workspaceContext?.documentOrigins.every(
+        origin => origin.sourceRevision === revision,
+      ),
+    ).toBe(true)
+
+    closed.version = 2
+    await f.workspace.completion(f.request)
+    expect(captured(5)).not.toBe(captured(4))
+    expect(captured(5)?.version).toBe(2)
+    present = false
+    await f.workspace.completion(f.request)
+    expect(captured(6)).toBeUndefined()
+    present = true
+    await f.workspace.completion(f.request)
+    expect(captured(7)).not.toBe(captured(5))
+    expect(captured(7)?.text).toBe(closed.text)
+    expect(f.snapshot).toHaveBeenCalledTimes(8)
+  } finally {
+    await f.workspace.shutdown()
+  }
+})
+
+it('forwards full documents even when their conservative retention cost exceeds the workspace budget', async () => {
+  const f = await fixture()
+  const closed = {
+    uri: 'memory://large.fixture',
+    languageId: 'fixture',
+    version: 1,
+    text: 'x'.repeat(400000),
+  }
+  f.snapshot.mockImplementation(async () => ({ documents: [{ ...closed }], isComplete: true }))
+  try {
+    await f.workspace.completion(f.request)
+    await f.workspace.completion(f.request)
+    const first = f.completion.mock.calls[0]?.[0].workspaceDocuments.find(
+      document => document.uri === closed.uri,
+    )
+    const second = f.completion.mock.calls[1]?.[0].workspaceDocuments.find(
+      document => document.uri === closed.uri,
+    )
+    expect(first).not.toBe(second)
+    expect(first?.text).toBe(closed.text)
+    expect(second?.text).toBe(closed.text)
+    expect(f.snapshot).toHaveBeenCalledTimes(2)
+  } finally {
+    await f.workspace.shutdown()
+  }
+})
 
 it('returns activated capabilities without waiting for background analysis', async () => {
   let release = (): void => undefined

@@ -4,6 +4,9 @@
  * This is deliberately a coordinator over the existing service contract, not a second language
  * composition root. A successful `open` owns exactly one provider lease until `close`/`shutdown`;
  * `change` only replaces analysis work for that document and never re-resolves the provider.
+ * Source snapshots and provenance are revalidated for every workspace feature. Only unchanged
+ * immutable document captures may be retained within the caller's bounded workspace allowance;
+ * retention never changes the documents, authority or completeness forwarded to a provider.
  */
 
 import { base64Of } from '../execution/frame-json.js'
@@ -112,8 +115,8 @@ export const LANGUAGE_DEFAULT_MAX_DOCUMENTS = 32
 /*
  * A real mod is the unit of meaning for these languages: Blizzard's core mod alone holds 110 GameData
  * catalogs and 377 layouts, and a cross-file template or entity reference is unresolvable without
- * them. The real bound on a snapshot is bytes, which every document source enforces (4 MiB per
- * document, 16 MiB per snapshot); the count ceiling only has to stop an unbounded request.
+ * them. Document sources enforce their separately configured document and workspace byte limits;
+ * the count ceiling only has to stop an unbounded request.
  */
 export const LANGUAGE_MAX_DOCUMENTS = 4_096
 export const LANGUAGE_DEFAULT_MAX_EDITS = 1_024
@@ -1951,6 +1954,15 @@ function validatedWorkspaceContext(
 /** Create a single-provider v1 document lifecycle coordinator. */
 export function createLanguageWorkspace(options: LanguageWorkspaceOptions): LanguageWorkspace {
   const documents = new Map<string, OpenDocument>()
+  // Retain just the last validated source set, never provider leases or its source authority.
+  let sourceDocumentCaptures = new Map<string, LanguageDocument>()
+  const sourceCaptureMaxBytes = Math.max(
+    0,
+    Math.min(
+      256 * 1_024 * 1_024,
+      Number((options.workspaceBudgets ?? options.budgets).maxInputBytes),
+    ),
+  )
   const advertisedRoutes = languageProviderRoutes(options.services.inventory)
   const referenceIndex = createWorkspaceReferenceIndex()
   const featureControllers = new Set<AbortController>()
@@ -2333,6 +2345,8 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
             .filter(origin => origin.overlay === true && seenUris.has(origin.uri))
             .map(overlayKey),
         )
+        const nextSourceCaptures = new Map<string, LanguageDocument>()
+        let captureBytes = 0
         for (const document of snapshot.documents) {
           if (
             typeof document !== 'object' ||
@@ -2357,8 +2371,32 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
             originsByUri.delete(document.uri)
             continue
           }
-          snapshotDocuments.push(languageDocumentSnapshot(document))
+          let captured = languageDocumentSnapshot(document)
+          const previous = sourceDocumentCaptures.get(captured.uri)
+          if (
+            previous !== undefined &&
+            previous.languageId === captured.languageId &&
+            previous.version === captured.version &&
+            previous.dialect === captured.dialect &&
+            previous.text === captured.text
+          ) {
+            captured = previous
+          }
+          snapshotDocuments.push(captured)
+          // UTF-8 needs at most three bytes per UTF-16 code unit. Reserve metadata too.
+          const cost =
+            128 +
+            3 *
+              (captured.text.length +
+                captured.uri.length +
+                captured.languageId.length +
+                (captured.dialect?.length ?? 0))
+          if (cost <= sourceCaptureMaxBytes - captureBytes) {
+            nextSourceCaptures.set(captured.uri, captured)
+            captureBytes += cost
+          }
         }
+        sourceDocumentCaptures = nextSourceCaptures
         sourceIncomplete = !snapshot.isComplete
         hasReadOnlyContext = snapshot.documents.length > 0
       }
@@ -3732,6 +3770,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
       state = 'shut-down'
       shutdownPromise = (async () => {
         invalidateFeatures('language workspace shut down')
+        sourceDocumentCaptures.clear()
         semanticContextCache.clear()
         semanticContextCacheBytes = 0
         pendingSemanticContexts.clear()
