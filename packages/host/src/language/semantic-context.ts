@@ -19,6 +19,7 @@ import { resolveResolvedDataWorkspace, type DataHostServices } from '../data/ind
 import {
   LANGUAGE_WORKSPACE_SEMANTIC_PAYLOAD_MAX_BYTES,
   languageWorkspaceContextToken,
+  languageDocumentTextToken,
   validatedLanguageWorkspaceSemanticInputs,
 } from './context.js'
 
@@ -184,6 +185,7 @@ export function prepareResolvedDataSemanticContext(request: {
       : [
           {
             origin,
+            sourceDocument: document,
             document: Object.freeze({
               rootId: origin.layerId,
               path: origin.logicalId,
@@ -228,16 +230,18 @@ export function prepareResolvedDataSemanticContext(request: {
       uri: document.uri,
       languageId: document.languageId,
       version: document.version,
-      contentRevision: languageWorkspaceContextToken(document.text),
+      contentRevision: languageDocumentTextToken(document),
       origin,
     }
   })
-  const localizationIdentities = localizationDocuments.map(({ document, origin }) => ({
-    path: origin.logicalId,
-    layerId: origin.layerId,
-    locale: document.locale,
-    contentRevision: languageWorkspaceContextToken(document.text),
-  }))
+  const localizationIdentities = localizationDocuments.map(
+    ({ document, origin, sourceDocument }) => ({
+      path: origin.logicalId,
+      layerId: origin.layerId,
+      locale: document.locale,
+      contentRevision: languageDocumentTextToken(sourceDocument),
+    }),
+  )
   const key = languageWorkspaceContextToken({
     requirement: request.requirement,
     documents: identities,

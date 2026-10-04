@@ -109,14 +109,15 @@ describe('content dependency language documents', () => {
       },
       routes: [{ languageId: 'sc2-data', extension: 'xml' }],
     })
-    const result = await language.snapshot({
+    const request = {
       document: { uri: 'file:///active.xml', languageId: 'sc2-data', version: 1, text: '' },
       workspaceDocuments: [],
       workspaceDocumentOrigins: [],
       workspaceLanguageIds: ['sc2-data'],
       maxDocuments: 10,
       signal: new AbortController().signal,
-    })
+    }
+    const result = await language.snapshot(request)
     expect(result.documents).toHaveLength(1)
     expect(result.workspaceContext?.documentOrigins[0]?.logicalId).toBe(
       'base.sc2data/gamedata/unitdata.xml',
@@ -177,7 +178,7 @@ describe('content dependency language documents', () => {
         { languageId: 'sc2-strings', extension: 'txt' },
       ],
     })
-    const result = await language.snapshot({
+    const request = {
       document: {
         uri: 'file:///active.xml',
         languageId: 'sc2-data',
@@ -189,7 +190,8 @@ describe('content dependency language documents', () => {
       workspaceLanguageIds: ['sc2-data', 'sc2-strings'],
       maxDocuments: 8,
       signal: new AbortController().signal,
-    })
+    }
+    const result = await language.snapshot(request)
     expect(result.isComplete).toBe(false)
     expect(result.workspaceContext).toMatchObject({
       semanticComplete: false,
@@ -239,6 +241,16 @@ describe('content dependency language documents', () => {
         '<Override/>',
       ],
     ])
+    const repeated = await language.snapshot(request)
+    const changedPath = 'cache/base/Base.SC2Data/GameData/Units.xml'
+    sourceFiles.set(changedPath, encoder.encode('<Changed/>'))
+    const changed = await language.snapshot(request)
+    expect(changed.documents[0]?.version).toBe((result.documents[0]?.version ?? 0) + 1)
+    expect(changed.documents[0]?.text).toBe('<Changed/>')
+    expect(changed.workspaceContext?.documentOrigins[0]?.sourceRevision).not.toBe(
+      result.workspaceContext?.documentOrigins[0]?.sourceRevision,
+    )
+    expect(repeated.documents[0]).toBe(result.documents[0])
   })
 
   it('revisions dependency fingerprints and load order and refuses completeness without fingerprints', async () => {

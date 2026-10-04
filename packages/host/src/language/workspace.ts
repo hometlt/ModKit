@@ -82,6 +82,8 @@ import {
 import { expandSubjectReferenceCompletions } from './subject-completion.js'
 import {
   languageWorkspaceContextToken,
+  languageDocumentSnapshot,
+  languageDocumentTextToken,
   validatedLanguageWorkspaceSemanticInputs,
 } from './context.js'
 import { createWorkspaceReferenceIndex } from '../references.js'
@@ -2324,7 +2326,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
             originsByUri.delete(document.uri)
             continue
           }
-          snapshotDocuments.push(Object.freeze({ ...document }))
+          snapshotDocuments.push(languageDocumentSnapshot(document))
         }
         sourceIncomplete = !snapshot.isComplete
         hasReadOnlyContext = snapshot.documents.length > 0
@@ -2436,7 +2438,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
                 documents: snapshotDocuments.map(document => ({
                   uri: document.uri,
                   version: document.version,
-                  contentRevision: languageWorkspaceContextToken(document.text),
+                  contentRevision: languageDocumentTextToken(document),
                   origin: originsByUri.get(document.uri),
                 })),
               }),
@@ -2759,7 +2761,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
       route,
       resolution,
       version: request.document.version,
-      document: request.document,
+      document: languageDocumentSnapshot(request.document),
       released: false,
     }
     invalidateFeatures('language document opened')
@@ -2800,7 +2802,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
     invalidateFeatures('language document changed')
     entry.analysisController?.abort('superseded by a newer document version')
     entry.version = request.document.version
-    entry.document = request.document
+    entry.document = languageDocumentSnapshot(request.document)
     delete entry.current
     return entry
   }

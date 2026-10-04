@@ -1,6 +1,6 @@
 import { canonicalJsonStringify, compareUtf8 } from '@modkit/core'
 import type { JsonValue } from '@modkit/sdk'
-import type { LanguageWorkspaceSemanticInput } from '@modkit/sdk/language'
+import type { LanguageDocument, LanguageWorkspaceSemanticInput } from '@modkit/sdk/language'
 
 export const LANGUAGE_WORKSPACE_SEMANTIC_PAYLOAD_MAX_DEPTH = 64
 export const LANGUAGE_WORKSPACE_SEMANTIC_PAYLOAD_MAX_BYTES = 64 * 1024 * 1024
@@ -78,22 +78,46 @@ function cloneSemanticPayload(
 }
 
 // Only copies created here are trusted. Frozen objects supplied by callers still cross validation.
-const validatedInputCopies = new WeakMap<
+const validatedContextCopies = new WeakMap<
   object,
-  {
-    input: LanguageWorkspaceSemanticInput
-    payloadBytes: number
-    token?: string
-  }
+  | {
+      input: LanguageWorkspaceSemanticInput
+      payloadBytes: number
+      token?: string
+    }
+  | { document: LanguageDocument; textToken?: string }
 >()
+
+/** Capture primitive document fields; only copies made by this owner can reuse their text token. */
+export function languageDocumentSnapshot(document: LanguageDocument): LanguageDocument {
+  const metadata = validatedContextCopies.get(document)
+  if (metadata !== undefined && 'document' in metadata) return metadata.document
+  const copy = Object.freeze({
+    uri: document.uri,
+    languageId: document.languageId,
+    version: document.version,
+    text: document.text,
+    ...(document.dialect === undefined ? {} : { dialect: document.dialect }),
+  })
+  validatedContextCopies.set(copy, { document: copy })
+  return copy
+}
+
+export function languageDocumentTextToken(document: LanguageDocument): string {
+  const metadata = validatedContextCopies.get(document)
+  if (metadata !== undefined && 'document' in metadata) {
+    return (metadata.textToken ??= languageWorkspaceContextToken(metadata.document.text))
+  }
+  return languageWorkspaceContextToken(document.text)
+}
 
 function copySemanticInput(item: unknown): Readonly<{
   input: LanguageWorkspaceSemanticInput
   payloadBytes: number
 }> {
   const cached =
-    typeof item === 'object' && item !== null ? validatedInputCopies.get(item) : undefined
-  if (cached !== undefined) return cached
+    typeof item === 'object' && item !== null ? validatedContextCopies.get(item) : undefined
+  if (cached !== undefined && 'input' in cached) return cached
   let payloadBytes = 0
   const keys = typeof item === 'object' && item !== null ? Reflect.ownKeys(item) : []
   if (
@@ -135,7 +159,7 @@ function copySemanticInput(item: unknown): Readonly<{
     ...(payload === undefined ? {} : { payload }),
   })
   const result = { input: copy, payloadBytes }
-  validatedInputCopies.set(copy, result)
+  validatedContextCopies.set(copy, result)
   return result
 }
 
@@ -191,10 +215,11 @@ const fnv64 = (bytes: Uint8Array, low: number, high: number, reverse: boolean): 
 /** Compact deterministic identity for a canonical host-owned language context description. */
 export const languageWorkspaceContextToken = (value: unknown): string => {
   const validated =
-    typeof value === 'object' && value !== null ? validatedInputCopies.get(value) : undefined
-  if (validated?.token !== undefined) return validated.token
+    typeof value === 'object' && value !== null ? validatedContextCopies.get(value) : undefined
+  const semantic = validated !== undefined && 'input' in validated ? validated : undefined
+  if (semantic?.token !== undefined) return semantic.token
   const bytes = encoder.encode(canonicalJsonStringify(value))
   const token = `language-context-v1:${fnv64(bytes, 0x84222325, 0xcbf29ce4, false)}${fnv64(bytes, 0xcbf29ce4, 0x84222325, true)}`
-  if (validated !== undefined) validated.token = token
+  if (semantic !== undefined) semantic.token = token
   return token
 }

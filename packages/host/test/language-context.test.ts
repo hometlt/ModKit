@@ -5,11 +5,28 @@ import {
   LANGUAGE_WORKSPACE_SEMANTIC_PAYLOAD_MAX_BYTES,
   LANGUAGE_WORKSPACE_SEMANTIC_PAYLOAD_MAX_DEPTH,
   languageWorkspaceContextToken,
+  languageDocumentSnapshot,
+  languageDocumentTextToken,
   validatedLanguageWorkspaceSemanticInputs,
 } from '../src/language/context.js'
 import { validatedLanguageSemanticContextRequirements } from '../src/language/semantic-context.js'
 
 describe('language workspace semantic payloads', () => {
+  it('memoizes text identity only on captured document copies and notices same-version mutations', () => {
+    const caller = { uri: 'file:///fixture', languageId: 'fixture', version: 1, text: 'before' }
+    const captured = languageDocumentSnapshot(caller)
+    expect(captured).not.toBe(caller)
+    expect(Object.isFrozen(captured)).toBe(true)
+    expect(languageDocumentSnapshot(captured)).toBe(captured)
+    const token = languageDocumentTextToken(captured)
+    expect(token).toBe(languageWorkspaceContextToken('before'))
+    expect(languageDocumentTextToken(captured)).toBe(token)
+    caller.text = 'after!'
+    expect(languageDocumentTextToken(caller)).not.toBe(token)
+    expect(languageDocumentTextToken(captured)).toBe(token)
+    expect(languageDocumentTextToken(languageDocumentSnapshot(caller))).not.toBe(token)
+  })
+
   it('validates and copies resolved Data context declarations', () => {
     const original = {
       kind: 'resolved-data-snapshot',
@@ -19,7 +36,8 @@ describe('language workspace semantic payloads', () => {
     const [requirement] = validatedLanguageSemanticContextRequirements([original])
     expect(requirement).toEqual(original)
     expect(requirement).not.toBe(original)
-    if (requirement?.kind !== 'resolved-data-snapshot') throw new Error('expected resolved data requirement')
+    if (requirement?.kind !== 'resolved-data-snapshot')
+      throw new Error('expected resolved data requirement')
     expect(Object.isFrozen(requirement?.languageIds)).toBe(true)
     expect(() => validatedLanguageSemanticContextRequirements([original, { ...original }])).toThrow(
       TypeError,
@@ -46,7 +64,12 @@ describe('language workspace semantic payloads', () => {
   })
 
   it('reuses only validated immutable input identities and still notices caller mutations', () => {
-    const caller = Object.freeze({ kind: 'catalog', id: 'effective', revision: '1', payload: { life: 45 } })
+    const caller = Object.freeze({
+      kind: 'catalog',
+      id: 'effective',
+      revision: '1',
+      payload: { life: 45 },
+    })
     const [validated] = validatedLanguageWorkspaceSemanticInputs([caller])
     const originalToken = languageWorkspaceContextToken(caller)
     expect(languageWorkspaceContextToken(validated)).toBe(originalToken)

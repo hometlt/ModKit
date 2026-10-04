@@ -5,7 +5,7 @@ import {
   throwIfAborted,
   type Diagnostic,
 } from '@modkit/core'
-import type { LanguageWorkspaceSemanticInput } from '@modkit/sdk/language'
+import type { LanguageDocument, LanguageWorkspaceSemanticInput } from '@modkit/sdk/language'
 import {
   isRevisionId,
   revisionId,
@@ -28,7 +28,11 @@ import type {
   LanguageWorkspaceDocumentSource,
   LanguageWorkspaceDocumentSourceRequest,
 } from './language/workspace.js'
-import { languageWorkspaceContextToken } from './language/context.js'
+import {
+  languageDocumentSnapshot,
+  languageDocumentTextToken,
+  languageWorkspaceContextToken,
+} from './language/context.js'
 import { contentPathIndexSemanticInputs } from './language/content-path-index.js'
 import { artifactByteSourceFromBytes } from './source-bridge.js'
 import { classifyLanguageFile } from './language/workspace.js'
@@ -382,7 +386,16 @@ export function createContentDependencyLanguageDocumentSource(
   if (maxDocumentBytes > maxWorkspaceBytes) {
     throw new TypeError('maxDocumentBytes cannot exceed maxWorkspaceBytes')
   }
-  const revisions = new Map<string, { readonly signature: string; readonly version: number }>()
+  const revisions = new Map<
+    string,
+    {
+      readonly signature: string
+      readonly version: number
+      document?: LanguageDocument
+      bytes: number
+    }
+  >()
+  let retainedDocumentBytes = 0
   const contextId = languageWorkspaceContextToken({
     gameId: options.resolution.gameId,
     mounts: mounts.map(mount => ({
@@ -562,31 +575,56 @@ export function createContentDependencyLanguageDocumentSource(
         }
         totalBytes += bytes.byteLength
         const uri = contentSourceUri(candidate.mount.sourceId, candidate.path)
-        const signature = String(candidate.mount.revision)
         const previous = revisions.get(uri)
+        const captured =
+          previous?.document?.text === text &&
+          previous.document.languageId === languageId &&
+          previous.document.dialect === dialect
+            ? previous.document
+            : languageDocumentSnapshot({
+                uri,
+                languageId,
+                version: previous?.version ?? 1,
+                text,
+                ...(dialect === undefined ? {} : { dialect }),
+              })
+        const signature = languageWorkspaceContextToken({
+          mountRevision: String(candidate.mount.revision),
+          languageId,
+          dialect,
+          contentRevision: languageDocumentTextToken(captured),
+        })
         const version =
           previous === undefined
             ? 1
             : previous.signature === signature
               ? previous.version
               : previous.version + 1
-        revisions.set(uri, { signature, version })
-        documents.push(
-          Object.freeze({
-            uri,
-            languageId,
-            version,
-            text,
-            ...(dialect === undefined ? {} : { dialect }),
-          }),
-        )
+        const document =
+          version === captured.version
+            ? captured
+            : languageDocumentSnapshot({ ...captured, version })
+        const retainedBytes = Math.max(bytes.byteLength, text.length * 2)
+        retainedDocumentBytes -= previous?.bytes ?? 0
+        revisions.delete(uri)
+        revisions.set(uri, { signature, version, document, bytes: retainedBytes })
+        retainedDocumentBytes += retainedBytes
+        // The existing revision metadata owns these immutable copies; retain no more than the
+        // source's aggregate byte bound. Reads still check current bytes on every snapshot.
+        for (const entry of revisions.values()) {
+          if (retainedDocumentBytes <= maxWorkspaceBytes) break
+          retainedDocumentBytes -= entry.bytes
+          entry.bytes = 0
+          delete entry.document
+        }
+        documents.push(document)
         documentOrigins.push(
           Object.freeze({
             uri,
             layerId: `${contextId}:${candidate.mount.order}:${candidate.mount.dependencyId}`,
             logicalId: candidate.relative,
             precedence: candidate.mount.order,
-            sourceRevision: String(candidate.mount.revision),
+            sourceRevision: signature,
             readOnly: true,
           }),
         )
