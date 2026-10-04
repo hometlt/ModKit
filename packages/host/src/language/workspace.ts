@@ -3595,6 +3595,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
               .map(origin => origin.uri),
           )
           const found: LanguageProjectDiagnostics['documents'][number][] = []
+          let isIncomplete = languageWorkspaceIsSemanticallyIncomplete(feature)
           for (const document of feature.workspaceDocuments) {
             if (
               documents.has(document.uri) ||
@@ -3603,18 +3604,31 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
             )
               continue
             throwIfAborted(feature.signal)
-            const analysis = await provider.analyze({
-              document,
-              include: { diagnostics: true },
-              ...(feature.signal === undefined ? {} : { signal: feature.signal }),
-            })
+            // Closed files need the same semantic validation and workspace context as Verify.
+            const documentFeature = { ...feature, document }
+            const report = validateDiagnosticList(
+              provider.diagnostics === undefined
+                ? {
+                    diagnostics: (
+                      await provider.analyze({
+                        document,
+                        include: { diagnostics: true },
+                        ...(feature.signal === undefined ? {} : { signal: feature.signal }),
+                      })
+                    ).diagnostics,
+                    isIncomplete: false,
+                  }
+                : await provider.diagnostics(documentFeature),
+              documentFeature,
+            )
+            isIncomplete ||= report.isIncomplete
             found.push({
               uri: document.uri,
               version: document.version,
-              diagnostics: analysis.diagnostics,
+              diagnostics: report.diagnostics,
             })
           }
-          return { documents: found, isIncomplete: feature.workspaceIncomplete }
+          return { documents: found, isIncomplete }
         },
         (value, feature) => {
           const result = value as LanguageProjectDiagnostics

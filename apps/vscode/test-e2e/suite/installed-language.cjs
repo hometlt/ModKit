@@ -83,7 +83,7 @@ exports.run = async function run() {
   if (resultPath === undefined) throw new Error('MODKIT_INSTALLED_LANGUAGE_RESULT is not set')
   const receipt = {
     kind: 'modkit.vscode-installed-sc2-language',
-    version: 7,
+    version: 8,
     passed: false,
     vscodeVersion: vscode.version,
   }
@@ -1011,6 +1011,33 @@ exports.run = async function run() {
         isIncomplete: result.isIncomplete,
         publishedToProblems: true,
       }
+    }
+    const closedLayoutUri = vscode.Uri.joinPath(
+      folder.uri,
+      'Base.SC2Data/UI/Layout/ClosedInvalid.SC2Layout',
+    )
+    if (
+      vscode.workspace.textDocuments.some(document => sameDocument(document.uri, closedLayoutUri))
+    )
+      throw new Error('Project verification fixture must never have been opened')
+    await vscode.window.showTextDocument(documents.layout)
+    const projectVerified = await vscode.commands.executeCommand('modkit.verifyMod')
+    const closedReport = projectVerified?.documents.find(item =>
+      sameDocument(vscode.Uri.parse(item.uri), closedLayoutUri),
+    )
+    const schemaMessage = 'Expected fixed numeric value [Real32]'
+    if (!closedReport?.diagnostics.some(item => item.message === schemaMessage))
+      throw new Error('Verify Mod omitted the schema error in a closed Layout document')
+    if (
+      !vscode.languages.getDiagnostics(closedLayoutUri).some(item => item.message === schemaMessage)
+    )
+      throw new Error('Verify Mod did not publish the closed Layout finding to Problems')
+    receipt.projectVerification = {
+      command: 'modkit.verifyMod',
+      checkedNeverOpenedDocument: true,
+      schemaMessage,
+      publishedToProblems: true,
+      isIncomplete: projectVerified.isIncomplete,
     }
     await vscode.window.showTextDocument(documents.galaxy)
     await vscode.commands.executeCommand('undo')

@@ -189,6 +189,11 @@ async function main() {
       '    <Style val="@@Title"/>\n    <Text val="@UI/ScoreTitle"/>\n' +
       '  </Frame>\n</Desc>',
   )
+  writeFixture(
+    workspace,
+    'Base.SC2Data/UI/Layout/ClosedInvalid.SC2Layout',
+    '<Desc><!-- 🪐 -->\n<Frame type="Frame" name="ClosedInvalid"><Width val="invalid"/></Frame></Desc>',
+  )
   writeFileSync(
     join(harness, 'package.json'),
     JSON.stringify({

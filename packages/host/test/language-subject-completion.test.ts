@@ -697,7 +697,9 @@ describe('language subject completion lifecycle', () => {
 
   it('routes folding ranges, links, highlights and inlay hints, and checks each', async () => {
     const features = provider as {
-      -readonly [K in 'foldingRanges' | 'documentLinks' | 'documentHighlights' | 'inlayHints']?: unknown
+      -readonly [
+        K in 'foldingRanges' | 'documentLinks' | 'documentHighlights' | 'inlayHints'
+      ]?: unknown
     }
     const range = { start: { line: 0, character: 0 }, end: { line: 0, character: 3 } }
     features.foldingRanges = async () => ({
@@ -713,7 +715,10 @@ describe('language subject completion lifecycle', () => {
       isIncomplete: false,
     })
     features.inlayHints = async (request: { range: unknown }) => ({
-      hints: request.range === undefined ? [] : [{ position: { line: 1, character: 1 }, label: ': Unit', kind: 'type' }],
+      hints:
+        request.range === undefined
+          ? []
+          : [{ position: { line: 1, character: 1 }, label: ': Unit', kind: 'type' }],
       isIncomplete: false,
     })
     const workspace = await openWorkspace(
@@ -726,7 +731,12 @@ describe('language subject completion lifecycle', () => {
     )
     try {
       expect((await workspace.capabilities(DOCUMENT_URI))?.features).toEqual(
-        expect.arrayContaining(['folding-ranges', 'document-links', 'document-highlights', 'inlay-hints']),
+        expect.arrayContaining([
+          'folding-ranges',
+          'document-links',
+          'document-highlights',
+          'inlay-hints',
+        ]),
       )
       const request = completionRequest()
       expect((await workspace.foldingRanges(request))?.ranges).toEqual([
@@ -737,11 +747,18 @@ describe('language subject completion lifecycle', () => {
       )
       expect((await workspace.documentHighlights(request))?.highlights[0]?.kind).toBe('write')
       expect(
-        (await workspace.inlayHints({ ...request, range: { start: range.start, end: { line: 2, character: 3 } } }))
-          ?.hints[0]?.label,
+        (
+          await workspace.inlayHints({
+            ...request,
+            range: { start: range.start, end: { line: 2, character: 3 } },
+          })
+        )?.hints[0]?.label,
       ).toBe(': Unit')
       await expect(
-        workspace.inlayHints({ ...request, range: { start: range.start, end: { line: 9, character: 0 } } }),
+        workspace.inlayHints({
+          ...request,
+          range: { start: range.start, end: { line: 9, character: 0 } },
+        }),
       ).rejects.toThrow()
       features.foldingRanges = async () => ({
         ranges: [{ startLine: 1, endLine: 5 }],
@@ -813,73 +830,121 @@ describe('language subject completion lifecycle', () => {
     }
   })
 
-  it('checks the project documents nobody has open, and only those', async () => {
-    const project = (name: string) => `file:///workspace/${name}.lang`
-    const documents = [
-      { uri: project('units'), languageId: 'fixture-language', version: 3, text: 'bad unit' },
-      { uri: project('weapons'), languageId: 'fixture-language', version: 1, text: 'fine' },
-      { uri: 'file:///core/base.lang', languageId: 'fixture-language', version: 1, text: 'bad base' },
-    ]
-    const origin = (uri: string, readOnly: boolean, precedence: number) => ({
-      uri,
-      layerId: readOnly ? 'core' : 'project',
-      logicalId: uri.slice(uri.lastIndexOf('/') + 1),
-      precedence,
-      sourceRevision: `${uri}:1`,
-      readOnly,
-    })
-    const source: LanguageWorkspaceDocumentSource = {
-      snapshot: async () => ({
-        documents,
-        isComplete: true,
-        workspaceContext: {
-          id: 'project-context',
-          revision: 'project-context:1',
-          semanticComplete: true,
-          documentOrigins: [
-            origin(project('units'), false, 2),
-            origin(project('weapons'), false, 3),
-            origin('file:///core/base.lang', true, 0),
-            origin(DOCUMENT_URI, false, 4),
-          ],
+  it.each(['syntax', 'semantic', 'incomplete'])(
+    'checks only closed writable project documents with %s diagnostics',
+    async mode => {
+      const project = (name: string) => `file:///workspace/${name}.lang`
+      const documents = [
+        { uri: project('units'), languageId: 'fixture-language', version: 3, text: 'bad unit' },
+        { uri: project('weapons'), languageId: 'fixture-language', version: 1, text: 'fine' },
+        {
+          uri: 'file:///core/base.lang',
+          languageId: 'fixture-language',
+          version: 1,
+          text: 'bad base',
         },
-      }),
-    }
-    const analyzed: string[] = []
-    const originalAnalyze = provider.analyze
-    ;(provider as { analyze: LanguageProvider['analyze'] }).analyze = async request => {
-      analyzed.push(request.document.uri)
-      return {
-        ...analysisFor(request.document),
-        diagnostics: request.document.text.startsWith('bad')
-          ? [
-              {
-                range: { start: { line: 0, character: 0 }, end: { line: 0, character: 3 } },
-                severity: 'error',
-                message: 'bad entry',
-              },
-            ]
-          : [],
+      ]
+      const origin = (uri: string, readOnly: boolean, precedence: number) => ({
+        uri,
+        layerId: readOnly ? 'core' : 'project',
+        logicalId: uri.slice(uri.lastIndexOf('/') + 1),
+        precedence,
+        sourceRevision: `${uri}:1`,
+        readOnly,
+      })
+      const source: LanguageWorkspaceDocumentSource = {
+        snapshot: async () => ({
+          documents,
+          isComplete: true,
+          workspaceContext: {
+            id: 'project-context',
+            revision: 'project-context:1',
+            semanticComplete: true,
+            documentOrigins: [
+              origin(project('units'), false, 2),
+              origin(project('weapons'), false, 3),
+              origin('file:///core/base.lang', true, 0),
+              origin(DOCUMENT_URI, false, 4),
+            ],
+          },
+        }),
       }
-    }
-    const workspace = await openWorkspace({ open: async () => undefined }, false, source, document =>
-      origin(document.uri, false, 4),
-    )
-    try {
-      analyzed.length = 0
-      const report = await workspace.projectDiagnostics(completionRequest())
-      // the open document and the read-only core layer are not re-checked
-      expect(analyzed.sort()).toEqual([project('units'), project('weapons')])
-      expect(report?.documents.map(item => [item.uri, item.version, item.diagnostics.length])).toEqual([
-        [project('units'), 3, 1],
-        [project('weapons'), 1, 0],
-      ])
-      expect(report?.isIncomplete).toBe(false)
-    } finally {
-      ;(provider as { analyze: LanguageProvider['analyze'] }).analyze = originalAnalyze
-      await workspace.shutdown()
-    }
-  })
+      const analyzed: string[] = []
+      const checked: string[] = []
+      const features = provider as { -readonly [K in 'diagnostics']?: LanguageProvider[K] }
+      const originalDiagnostics = features.diagnostics
+      const originalAnalyze = provider.analyze
+      ;(provider as { analyze: LanguageProvider['analyze'] }).analyze = async request => {
+        analyzed.push(request.document.uri)
+        return {
+          ...analysisFor(request.document),
+          diagnostics: request.document.text.startsWith('bad')
+            ? [
+                {
+                  range: { start: { line: 0, character: 0 }, end: { line: 0, character: 3 } },
+                  severity: 'error',
+                  message: 'bad entry',
+                },
+              ]
+            : [],
+        }
+      }
+      if (mode !== 'syntax') {
+        features.diagnostics = async request => {
+          checked.push(request.document.uri)
+          expect(request.workspaceDocuments.map(item => item.uri)).toContain(project('units'))
+          expect(request.workspaceContext?.documentOrigins).toContainEqual(
+            origin(request.document.uri, false, request.document.uri === project('units') ? 2 : 3),
+          )
+          return {
+            diagnostics: request.document.text.startsWith('bad')
+              ? [
+                  {
+                    range: { start: { line: 0, character: 0 }, end: { line: 0, character: 3 } },
+                    severity: 'error',
+                    message: 'bad semantic entry',
+                  },
+                ]
+              : [],
+            // A later clean document can still have an incomplete semantic context.
+            isIncomplete: mode === 'incomplete' && request.document.uri === project('weapons'),
+          }
+        }
+      }
+      const workspace = await openWorkspace(
+        { open: async () => undefined },
+        false,
+        source,
+        document => origin(document.uri, false, 4),
+      )
+      try {
+        analyzed.length = 0
+        const report = await workspace.projectDiagnostics(completionRequest())
+        // the open document and the read-only core layer are not re-checked
+        expect(analyzed.sort()).toEqual(
+          mode === 'syntax' ? [project('units'), project('weapons')] : [],
+        )
+        expect(checked.sort()).toEqual(
+          mode === 'syntax' ? [] : [project('units'), project('weapons')],
+        )
+        expect(
+          report?.documents.map(item => [item.uri, item.version, item.diagnostics.length]),
+        ).toEqual([
+          [project('units'), 3, 1],
+          [project('weapons'), 1, 0],
+        ])
+        expect(report?.documents[0]?.diagnostics[0]?.message).toBe(
+          mode === 'syntax' ? 'bad entry' : 'bad semantic entry',
+        )
+        expect(report?.isIncomplete).toBe(mode === 'incomplete')
+      } finally {
+        ;(provider as { analyze: LanguageProvider['analyze'] }).analyze = originalAnalyze
+        if (originalDiagnostics === undefined) delete features.diagnostics
+        else features.diagnostics = originalDiagnostics
+        await workspace.shutdown()
+      }
+    },
+  )
 
   it('draws the assets a hover or a focused completion names, and keeps its links', async () => {
     const features = provider as {
@@ -914,9 +979,7 @@ describe('language subject completion lifecycle', () => {
     try {
       await workspace.open(languageRequest(1))
       const hover = await workspace.hover(completionRequest())
-      expect(hover?.markdown).toBe(
-        '**Marine**\n\n![Marine button](data:image/png;base64,iVBORw==)',
-      )
+      expect(hover?.markdown).toBe('**Marine**\n\n![Marine button](data:image/png;base64,iVBORw==)')
       expect(hover?.commands).toEqual([{ title: 'Card', command: card }])
       expect(drawn).toEqual([`${texture}@128`, 'missing.dds@128'])
       const item = { label: 'Marine', kind: 'class' as const }
@@ -1077,10 +1140,7 @@ describe('language subject completion lifecycle', () => {
         workspace.references({ ...completionRequest(), includeDeclaration: true }),
       ).resolves.toMatchObject({
         // the index knows the declaration, the provider the references it merges from other files
-        locations: [
-          { uri: DOCUMENT_URI },
-          { uri: 'file:///workspace/dependency.lang' },
-        ],
+        locations: [{ uri: DOCUMENT_URI }, { uri: 'file:///workspace/dependency.lang' }],
       })
     } finally {
       await workspace.shutdown()
@@ -2045,14 +2105,24 @@ describe('language subject completion lifecycle', () => {
       ...origin(document.uri, 'open.lang', false, 2),
       overlay: true,
     })
-    const project = await openWorkspace({ open: async () => undefined }, false, sourceWith(false), openDocument)
+    const project = await openWorkspace(
+      { open: async () => undefined },
+      false,
+      sourceWith(false),
+      openDocument,
+    )
     try {
       const edit = await project.rename({ ...completionRequest(), newName: 'renamed' })
       expect(edit?.documentChanges.map(change => change.uri)).toEqual([DOCUMENT_URI, projectUri])
     } finally {
       await project.shutdown()
     }
-    const installed = await openWorkspace({ open: async () => undefined }, false, sourceWith(true), openDocument)
+    const installed = await openWorkspace(
+      { open: async () => undefined },
+      false,
+      sourceWith(true),
+      openDocument,
+    )
     try {
       await expect(
         installed.rename({ ...completionRequest(), newName: 'renamed' }),
