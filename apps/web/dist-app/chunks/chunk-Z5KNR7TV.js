@@ -4,7 +4,7 @@ import {
 } from "./chunk-X6TJ64VW.js";
 import {
   WORLD_PROJECTION_UV_SOURCES
-} from "./chunk-FZEAW5QD.js";
+} from "./chunk-SPVJPG77.js";
 import {
   array as array2,
   field,
@@ -12,17 +12,17 @@ import {
   safeIndex
 } from "./chunk-B5TWMJRH.js";
 import {
+  DEFAULT_UVM_CONTAINER_BUDGET,
+  checkUvmContainerBudget,
+  writeUvmContainer
+} from "./chunk-EK44GR2O.js";
+import {
   array,
   isStandardLayerSlot,
   object,
   uvmAccessorWidth,
   validateUvmDocument
 } from "./chunk-NHJ4I3HP.js";
-import {
-  DEFAULT_UVM_CONTAINER_BUDGET,
-  checkUvmContainerBudget,
-  writeUvmContainer
-} from "./chunk-EK44GR2O.js";
 import {
   snapshotJson
 } from "./chunk-3YDGNEY2.js";

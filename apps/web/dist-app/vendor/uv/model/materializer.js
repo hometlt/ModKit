@@ -8,7 +8,11 @@ import {
 import {
   uvmSceneFrameInverse,
   withMaterialFrame
-} from "../../../chunks/chunk-FZEAW5QD.js";
+} from "../../../chunks/chunk-SPVJPG77.js";
+import {
+  packUvmGlb,
+  uvmImageUri
+} from "../../../chunks/chunk-EK44GR2O.js";
 import {
   materializeUvmAnimationMaterialTargets,
   uvmAnimationEvents,
@@ -16,10 +20,6 @@ import {
   uvmKeyTimesMetadata,
   uvmVisibilityPointer
 } from "../../../chunks/chunk-NHJ4I3HP.js";
-import {
-  packUvmGlb,
-  uvmImageUri
-} from "../../../chunks/chunk-EK44GR2O.js";
 import {
   DEFAULT_MODEL_MATERIAL_BUDGET,
   snapshotModelMaterials

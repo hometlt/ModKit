@@ -1,4 +1,7 @@
 import {
+  byteView
+} from "./chunk-JZRDO2QW.js";
+import {
   ModkitError
 } from "./chunk-LX6GSJ3D.js";
 
@@ -28,12 +31,6 @@ function assertRgba8DecodeWithinLimit(width, height, depth = 1, maxBytes = DEFAU
 }
 
 // packages/codec-kit/dist/texture/binary.js
-function byteView(bytes) {
-  return new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-}
-function ascii(bytes) {
-  return new TextDecoder("latin1").decode(bytes);
-}
 function clamp8(value) {
   if (!Number.isFinite(value))
     return 0;
@@ -193,8 +190,6 @@ export {
   DEFAULT_MAX_RGBA8_DECODE_BYTES,
   compressedTextureByteLength,
   assertRgba8DecodeWithinLimit,
-  byteView,
-  ascii,
   clamp8,
   normalizedSampleToByte,
   halfFloatToNumber,

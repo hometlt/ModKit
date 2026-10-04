@@ -20,7 +20,7 @@ import {
   plausibleTgaHeader,
   readJpegFrameInfo,
   surfaceRegionReader
-} from "../../../chunks/chunk-AJZANKSM.js";
+} from "../../../chunks/chunk-I5QDMBGN.js";
 import {
   applyColorKeyTransparency,
   applyRoundedAlpha,

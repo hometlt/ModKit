@@ -5,7 +5,7 @@ import {
   readCollisionMesh,
   readUvmModel,
   uvmImageResourceId
-} from "../../../chunks/chunk-AXMHVTSH.js";
+} from "../../../chunks/chunk-KFEXGIHH.js";
 import {
   array,
   field,
@@ -16,10 +16,10 @@ import {
   safeIndex,
   string
 } from "../../../chunks/chunk-B5TWMJRH.js";
+import "../../../chunks/chunk-EK44GR2O.js";
 import {
   validateUvmDocument
 } from "../../../chunks/chunk-NHJ4I3HP.js";
-import "../../../chunks/chunk-EK44GR2O.js";
 import {
   createJsonTreeSource
 } from "../../../chunks/chunk-LIDP4V2Q.js";

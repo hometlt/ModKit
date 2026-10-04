@@ -57227,6 +57227,10 @@ var package_default3 = {
     "./model/validation": {
       types: "./dist/model/validation/index.d.ts",
       default: "./dist/model/validation/index.js"
+    },
+    "./model/export-handler": {
+      types: "./dist/model/export-handler.d.ts",
+      default: "./dist/model/export-handler.js"
     }
   },
   files: [
@@ -64500,6 +64504,7 @@ var WEB_WORKER_MODULE_MAP = Object.freeze({
   "@modkit/codec-kit/model/skeleton": "vendor/codec-kit/model/skeleton.js",
   "@modkit/codec-kit/model/sources": "vendor/codec-kit/model/sources.js",
   "@modkit/codec-kit/model/animation": "vendor/codec-kit/model/animation.js",
+  "@modkit/codec-kit/binary": "vendor/codec-kit/binary.js",
   "@modkit/codec-kit/model/skinning": "vendor/codec-kit/model/skinning.js",
   "@modkit/codec-kit/model-math/sequence-pose": "vendor/codec-kit/model-math/sequence-pose.js",
   "@modkit/codec-kit/model-math/effects-sim": "vendor/codec-kit/model-math/effects-sim.js",
@@ -64524,6 +64529,7 @@ var WEB_WORKER_MODULE_MAP = Object.freeze({
   "@modkit/uv/model/container": "vendor/uv/model/container.js",
   "@modkit/uv/model/frame": "vendor/uv/model/frame.js",
   "@modkit/uv/model/materializer": "vendor/uv/model/materializer.js",
+  "@modkit/uv/model/export-handler": "vendor/uv/model/export-handler.js",
   "@modkit/uv/model/validation": "vendor/uv/model/validation.js",
   "@rgrove/parse-xml": "vendor/parse-xml/index.js",
   "modkit-extension-archives/formats/zip/codec": "vendor/modkit-extension-archives/formats/zip/codec.js",

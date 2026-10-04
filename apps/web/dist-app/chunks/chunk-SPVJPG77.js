@@ -1,14 +1,14 @@
 import {
+  DEFAULT_UVM_CONTAINER_BUDGET,
+  writeUvmContainer
+} from "./chunk-EK44GR2O.js";
+import {
   array,
   field,
   object,
   safeIndex,
   validateUvmDocument
 } from "./chunk-NHJ4I3HP.js";
-import {
-  DEFAULT_UVM_CONTAINER_BUDGET,
-  writeUvmContainer
-} from "./chunk-EK44GR2O.js";
 import {
   snapshotJson
 } from "./chunk-3YDGNEY2.js";

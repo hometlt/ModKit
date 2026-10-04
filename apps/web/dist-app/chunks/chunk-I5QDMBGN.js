@@ -1166,7 +1166,7 @@ function decodePcxPixels(bytes, pcx) {
       let red;
       let green;
       let blue;
-      if (pcx.paletteInfo !== 2 && pcx.bitsPerPlane === 8 && pcx.planes === 1 && vgaPalette) {
+      if (pcx.bitsPerPlane === 8 && pcx.planes === 1 && vgaPalette) {
         red = vgaPalette[index * 3] ?? 0;
         green = vgaPalette[index * 3 + 1] ?? 0;
         blue = vgaPalette[index * 3 + 2] ?? 0;

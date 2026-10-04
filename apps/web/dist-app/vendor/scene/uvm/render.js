@@ -15,9 +15,9 @@ import {
   snapshotEnvironment,
   snapshotEyePosition,
   snapshotModelBillboards
-} from "../../../chunks/chunk-NNHFETJM.js";
+} from "../../../chunks/chunk-Z5KNR7TV.js";
 import "../../../chunks/chunk-X6TJ64VW.js";
-import "../../../chunks/chunk-FZEAW5QD.js";
+import "../../../chunks/chunk-SPVJPG77.js";
 import {
   opaqueTexels,
   prepareUvmImages,
@@ -27,7 +27,7 @@ import {
   uvmImageFilters,
   uvmImageResourceId,
   uvmImageTexels
-} from "../../../chunks/chunk-AXMHVTSH.js";
+} from "../../../chunks/chunk-KFEXGIHH.js";
 import {
   array,
   field,
@@ -40,6 +40,9 @@ import {
   vector4
 } from "../../../chunks/chunk-B5TWMJRH.js";
 import {
+  readUvmContainer
+} from "../../../chunks/chunk-EK44GR2O.js";
+import {
   readUvmAccessor,
   readUvmAnimationClips,
   readUvmPrimitiveVisibility,
@@ -47,9 +50,6 @@ import {
   readUvmTextureColorKeys,
   validateUvmDocument
 } from "../../../chunks/chunk-NHJ4I3HP.js";
-import {
-  readUvmContainer
-} from "../../../chunks/chunk-EK44GR2O.js";
 import {
   modelPrimitiveByteLength
 } from "../../../chunks/chunk-N7TDQTWE.js";
@@ -86,7 +86,7 @@ import {
 } from "../../../chunks/chunk-QHSSFB5M.js";
 import {
   encodePng
-} from "../../../chunks/chunk-AJZANKSM.js";
+} from "../../../chunks/chunk-I5QDMBGN.js";
 import {
   applyColorKeyTransparency,
   linearToSrgb,

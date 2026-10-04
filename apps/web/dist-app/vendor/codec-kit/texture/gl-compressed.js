@@ -5,7 +5,8 @@ import {
   astcBlockFromGl,
   bgraToRgba,
   decodeGpuPayload
-} from "../../../chunks/chunk-GPUJGK4E.js";
+} from "../../../chunks/chunk-LT4MOYTL.js";
+import "../../../chunks/chunk-JZRDO2QW.js";
 import "../../../chunks/chunk-LX6GSJ3D.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 

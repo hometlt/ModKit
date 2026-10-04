@@ -336,6 +336,14 @@ function createProjectionReceipt(receipt) {
 
 // packages/codec-kit/src/container-entries.ts
 var CONTAINER_EXTRACT_HANDLER_ID = "extract-entry";
+async function openContainerEntryLayer(id, source, readTable, close) {
+  try {
+    return containerEntryLayer(id, await readTable(source), source, close);
+  } catch (error) {
+    await Promise.resolve().then(close).catch(() => void 0);
+    throw error;
+  }
+}
 function throwIfCancelled(signal) {
   if (signal?.aborted) throw new DOMException("operation cancelled", "AbortError");
 }
@@ -3757,6 +3765,7 @@ export {
   installLoggerFactory,
   isJsonSerializable,
   modelPrimitiveByteLength,
+  openContainerEntryLayer,
   pageOf,
   parseSubjectId,
   pcmAudio,

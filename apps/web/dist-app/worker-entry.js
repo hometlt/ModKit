@@ -11,7 +11,8 @@ import "./chunks/chunk-EGJJI5AO.js";
 import {
   initializeGpuTextureWasmBrowser
 } from "./chunks/chunk-M5CW5L7C.js";
-import "./chunks/chunk-GPUJGK4E.js";
+import "./chunks/chunk-LT4MOYTL.js";
+import "./chunks/chunk-JZRDO2QW.js";
 import "./chunks/chunk-GXIKMRRL.js";
 import "./chunks/chunk-GGIVOOBZ.js";
 import "./chunks/chunk-YYQ3QKXM.js";
