@@ -58,6 +58,8 @@ orchestration in a multi-extension repository root; never inherit another extens
 JS-only roots need no empty placeholder config. Preserve inherited `rootDir`, relative include/outDir
 paths, compiled entrypoints and shared-source inclusion. Compare effective TypeScript options/input
 files and update build discovery, catalog generation and packaging when moving an existing config.
+An independent support library may keep its own root build config; a repository name alone does not
+make it a registered extension. Check its manifest and inventory before inventing an extension root.
 Keep a repository Vitest config only for real root/include/setup/runtime needs; it is developer
 tooling, not an extension requirement. Run existing script commands after changing its placement.
 
