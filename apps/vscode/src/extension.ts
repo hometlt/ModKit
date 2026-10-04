@@ -7615,7 +7615,7 @@ async function activateModkit(
   })
   await languageController.initialize()
   context.subscriptions.push(
-    registerDocumentVerification(languageController, localizer, nativeDiagnostic),
+    registerDocumentVerification(languageController, localizer, nativeDiagnostic, log),
   )
 
   const selectorEntries = new Map<string, vscode.DocumentFilter>()

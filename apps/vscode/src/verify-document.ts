@@ -9,6 +9,7 @@ export function registerDocumentVerification(
   localizer: UiLocalizer,
   /** The same drawing of a provider diagnostic the live Problems entries get. */
   nativeDiagnostic: (item: EditorLanguageDiagnostic) => vscode.Diagnostic,
+  log?: (message: string) => void,
 ): vscode.Disposable {
   /*
    * «Verify Mod»: the files of the mod nobody has open, analyzed once when asked (core 57ce1bfc).
@@ -82,6 +83,9 @@ export function registerDocumentVerification(
         else void vscode.window.showInformationMessage(message)
         return result
       } catch (error) {
+        log?.(
+          `[language] Verify Mod ${snapshot.uri} failed: ${error instanceof Error ? error.message : String(error)}${error instanceof Error && error.cause !== undefined ? ` (${String(error.cause)})` : ''}`,
+        )
         if (!isCancellation(error)) {
           void vscode.window.showErrorMessage(
             localizer.text('vscode.verify.failed', {
@@ -132,6 +136,9 @@ export function registerDocumentVerification(
         else void vscode.window.showInformationMessage(message)
         return result
       } catch (error) {
+        log?.(
+          `[language] Verify ${snapshot.uri} failed: ${error instanceof Error ? error.message : String(error)}${error instanceof Error && error.cause !== undefined ? ` (${String(error.cause)})` : ''}`,
+        )
         if (!isCancellation(error)) {
           void vscode.window.showErrorMessage(
             localizer.text('vscode.verify.failed', {

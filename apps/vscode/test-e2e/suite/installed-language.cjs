@@ -986,7 +986,17 @@ exports.run = async function run() {
     receipt.explicitVerification.languages = {}
     for (const key of ['data', 'strings', 'style', 'layout']) {
       await vscode.window.showTextDocument(documents[key])
+      const activeBeforeVerify = vscode.window.activeTextEditor?.document
       const result = await vscode.commands.executeCommand('modkit.verifyDocument')
+      receipt.explicitVerification.languages[key] = {
+        requestedUri: documents[key].uri.toString(),
+        requestedClosed: documents[key].isClosed,
+        requestedVersion: documents[key].version,
+        activeUri: activeBeforeVerify?.uri.toString(),
+        activeVersion: activeBeforeVerify?.version,
+        activeLanguage: activeBeforeVerify?.languageId,
+        returned: result !== undefined,
+      }
       if (!Array.isArray(result?.diagnostics) || typeof result.isIncomplete !== 'boolean')
         throw new Error(`Verify did not return language diagnostics for ${key}`)
       const published = vscode.languages.getDiagnostics(uris[key])
