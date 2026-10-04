@@ -32,6 +32,10 @@ and Unity packed vectors belong with the publisher/engine, not Core. Reuse an ex
 adding any helper. Preserve identities and error/budget/cancellation semantics when replacing a copy.
 Adding a common export requires its consumers, package exports, worker maps and vendor compatibility
 checks under the actual integration process; an unavailable API is not fixed by a private import.
+Build and pack from committed inputs using the repository's package manager; pnpm pack resolves
+workspace dependency specifiers while npm pack may leave them in the archive. Before publishing a
+vendor update, verify frozen/offline installation, the complete consumer build and installed bytes
+against the candidate tarball. Preserve the dependency/lockfile pair and unrelated paused changes.
 
 ## Use simple, executable packaging
 
