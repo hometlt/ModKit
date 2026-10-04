@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "kind": "synthetic",
+  "cases": [
+    {
+      "id": "capabilities",
+      "input": {
+        "kind": "capabilities",
+        "files": { "Open.SC2Layout": "<Desc><Frame type=\"Frame\" name=\"Root\"/></Desc>" }
+      }
+    },
+    {
+      "id": "workspace-clean",
+      "input": {
+        "kind": "diagnostics",
+        "files": {
+          "Open.SC2Layout": "<Desc><Frame type=\"Frame\" name=\"Root\"/></Desc>",
+          "Closed.SC2Layout": "<Desc><Frame type=\"Frame\" name=\"Other\"><Width val=\"100\"/></Frame></Desc>"
+        }
+      }
+    },
+    {
+      "id": "closed-errors",
+      "input": {
+        "kind": "diagnostics",
+        "files": {
+          "Open.SC2Layout": "<Desc><Frame type=\"Frame\" name=\"Root\"/></Desc>",
+          "Closed.SC2Layout": "<Desc><!-- 🪐 -->\n<Frame type=\"Frame\" name=\"Other\"><Width val=\"invalid\"/></Frame></Desc>",
+          "Another.SC2Layout": "<Desc><Frame type=\"Frame\" name=\"Another\"/></Desc>"
+        }
+      }
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/sc2-layout/feature/f3b803a24538e2ef",
+      "kind": "feature",
+      "adapterOperation": "sc2-layout.capabilities-parity",
+      "caseIds": ["capabilities", "workspace-clean", "closed-errors"]
+    }
+  ]
+}

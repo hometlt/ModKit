@@ -4995,9 +4995,14 @@
     {
       "demotedOn": "2026-09-16",
       "demotionReason": "receipt absent: artifacts/legacy-parity-sc2/sc2-layout/evidence-apply-receipt.json",
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-layout-capabilities/evidence-apply-receipt.json",
+          "sha256": "713de7dc191a387adabbf7b3461211be59a5965e706bcd471187d5f8ef360022"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-layout/feature/f3b803a24538e2ef",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [

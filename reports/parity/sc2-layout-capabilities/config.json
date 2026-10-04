@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "legacy": "legacy.mjs",
+  "migrated": "native.mjs",
+  "corpus": "corpus.json",
+  "receipt": "evidence-apply-receipt.json",
+  "operation": "sc2-layout.capabilities-parity",
+  "outputs": "C:/MKTEMP/modkit-integrator-2026-10-04-v111/layout-capabilities-outputs.json"
+}
