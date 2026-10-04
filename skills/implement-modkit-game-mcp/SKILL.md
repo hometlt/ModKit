@@ -19,6 +19,15 @@ Record a small implementation matrix for the task: action → current operation/
 missing behavior → product-route check. Distinguish implemented, exposed, available on this machine,
 and verified. Do not count a declared operation or renderer projection as write support.
 
+## Repository conventions and documentation
+
+For package layout, shared-code extraction and documentation, read
+[repository-conventions.md](references/repository-conventions.md). Every new or substantively
+changed first-party codec/provider/support source needs a complete, factual capability header;
+every named function/adapter/method needs a role comment and applicable invariants. Describe
+implemented behavior and limitations, link the canonical manifest/schema, and keep source
+comments, public declarations and knowledge consistent. Do not duplicate registries in subjects.
+
 ## Choose the narrowest owner
 
 - Common action semantics and versioned public contracts: SDK. Extend the existing contract.
