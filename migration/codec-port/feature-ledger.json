@@ -4914,9 +4914,14 @@
       "status": "superseded"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-layout-tree/evidence-apply-receipt.json",
+          "sha256": "3bd00b04ed2b50275a669fca15b2cde72be3073416daa4cc96993e5c06913d40"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-layout/feature/b1388f61ccf518e2",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "decision": {

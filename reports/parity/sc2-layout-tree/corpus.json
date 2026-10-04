@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "kind": "synthetic",
+  "cases": [
+    { "id": "desc-and-schema", "input": { "name": "Console", "text": "<Desc>\n<Frame type=\"ConsolePanel\" name=\"Console\">\n<Animation name=\"Fade\"/>\n<StateGroup name=\"Visibility\"/>\n</Frame>\n</Desc>" } },
+    { "id": "nested-button", "input": { "name": "Buttons", "text": "<Desc><Frame type=\"Frame\" name=\"Root\"><Frame type=\"Button\" name=\"Action\"/></Frame></Desc>" } },
+    { "id": "unicode-offsets", "input": { "name": "Unicode", "text": "<Desc><!-- 🪐 Кириллица -->\n<Frame type=\"Frame\" name=\"Root\"><StateGroup name=\"Enabled\"/></Frame></Desc>" } }
+  ],
+  "proofs": [
+    { "requirement": "legacy/codec-manifest/modkit/sc2-layout/feature/b1388f61ccf518e2", "kind": "feature", "adapterOperation": "sc2-layout.structure-parity", "caseIds": ["desc-and-schema", "nested-button", "unicode-offsets"] }
+  ]
+}
