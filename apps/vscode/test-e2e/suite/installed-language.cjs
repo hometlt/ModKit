@@ -1,5 +1,7 @@
 'use strict'
 
+/** Native editor-command acceptance for Data, Galaxy, Layout, Strings, Style and Wizard owners. */
+
 const fs = require('node:fs')
 const vscode = require('vscode')
 
@@ -83,7 +85,7 @@ exports.run = async function run() {
   if (resultPath === undefined) throw new Error('MODKIT_INSTALLED_LANGUAGE_RESULT is not set')
   const receipt = {
     kind: 'modkit.vscode-installed-sc2-language',
-    version: 8,
+    version: 9,
     passed: false,
     vscodeVersion: vscode.version,
   }
@@ -99,7 +101,14 @@ exports.run = async function run() {
     receipt.extensionVersion = extension.packageJSON.version
     receipt.activationMode = 'full'
     receipt.languageRoutes = api.languageRoutes
-    const expectedRoutes = ['galaxy:', 'sc2-data:', 'sc2-strings:', 'sc2-style:', 'sc2-layout:']
+    const expectedRoutes = [
+      'galaxy:',
+      'sc2-data:',
+      'sc2-strings:',
+      'sc2-style:',
+      'sc2-layout:',
+      'sc2-wizard:',
+    ]
     const missingRoutes = expectedRoutes.filter(
       expected => !api.languageRoutes.some(route => route.startsWith(expected)),
     )
@@ -204,6 +213,7 @@ exports.run = async function run() {
       strings: 'enUS.SC2Data/LocalizedData/GameStrings.txt',
       style: 'Base.SC2Data/UI/FontStyles.SC2Style',
       layout: 'Base.SC2Data/UI/Layout/Hud.SC2Layout',
+      wizard: 'Base.SC2Data/Wizards/Native.BlizWiz',
     }
     const uris = Object.fromEntries(
       Object.entries(fixture).map(([key, relative]) => [
@@ -235,6 +245,7 @@ exports.run = async function run() {
       strings: 'sc2-strings',
       style: 'sc2-style',
       layout: 'sc2-layout',
+      wizard: 'sc2-wizard',
     }
     receipt.documentLanguages = Object.fromEntries(
       Object.entries(documents).map(([key, document]) => [key, document.languageId]),
@@ -938,6 +949,58 @@ exports.run = async function run() {
     })
     if (workspaceSymbols === undefined) throw new Error('Workspace symbols did not include Helper')
 
+    const wizardControl = await completionAt(
+      documents.wizard,
+      positionOf(documents.wizard, 'type="WizardText"', 'type="'.length),
+      'WizardCheckbox',
+    )
+    const wizardField = await completionAt(
+      documents.wizard,
+      positionOf(documents.wizard, 'field id="LifeMax"', 'field id="'.length),
+      'Acceleration',
+    )
+    const wizardToken = await completionAt(
+      documents.wizard,
+      positionOf(documents.wizard, 'value="^Scale^"', 'value="^'.length),
+      'Scale',
+      '^',
+    )
+    receipt.wizardCompletionProbe = {
+      control: wizardControl?.item.label,
+      field: wizardField?.item.label,
+      token: wizardToken?.item.label,
+      triggerCharacters: extensionApi.completionTriggerCharacters,
+    }
+    if (wizardControl === undefined || wizardField === undefined || wizardToken === undefined)
+      throw new Error(
+        'Wizard completion missed canonical control types, Data schema fields or macros',
+      )
+    const wizardDefinition = await waitFor(async () => {
+      const result = await locations(
+        'vscode.executeDefinitionProvider',
+        uris.wizard,
+        positionOf(documents.wizard, '^Scale^', 3),
+      )
+      return result.some(item => sameDocument(locationUri(item), uris.wizard)) ? result : undefined
+    })
+    const wizardHover = await waitFor(async () => {
+      const result = await vscode.commands.executeCommand(
+        'vscode.executeHoverProvider',
+        uris.wizard,
+        positionOf(documents.wizard, '^Scale^', 3),
+      )
+      return hoverText(result).includes('42') ? result : undefined
+    })
+    if (wizardDefinition === undefined || wizardHover === undefined)
+      throw new Error('Wizard macro definition or canonical value hover failed in native VS Code')
+    receipt.wizard = {
+      controls: wizardControl.item.label,
+      schemaField: wizardField.item.label,
+      token: wizardToken.item.label,
+      definitions: receiptLocations(folder, wizardDefinition),
+      hover: hoverText(wizardHover),
+    }
+
     const initialVersion = documents.galaxy.version
     const overlay = new vscode.WorkspaceEdit()
     overlay.replace(
@@ -984,7 +1047,7 @@ exports.run = async function run() {
       isIncomplete: verified.isIncomplete,
     }
     receipt.explicitVerification.languages = {}
-    for (const key of ['data', 'strings', 'style', 'layout']) {
+    for (const key of ['data', 'strings', 'style', 'layout', 'wizard']) {
       await vscode.window.showTextDocument(documents[key])
       const activeBeforeVerify = vscode.window.activeTextEditor?.document
       const result = await vscode.commands.executeCommand('modkit.verifyDocument')
@@ -1092,7 +1155,7 @@ exports.run = async function run() {
 
     Object.assign(receipt, {
       passed: true,
-      fixtureKinds: ['Galaxy', 'Data', 'Strings', 'Style', 'Layout'],
+      fixtureKinds: ['Galaxy', 'Data', 'Strings', 'Style', 'Layout', 'Wizard'],
       commands: [
         'vscode.executeCompletionItemProvider',
         'vscode.executeHoverProvider',

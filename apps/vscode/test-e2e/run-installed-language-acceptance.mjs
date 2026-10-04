@@ -1,3 +1,9 @@
+/**
+ * Install an official VSIX into an isolated native VS Code profile and exercise all six SC2
+ * language owners on a writable synthetic mod. Optional public manager receipts supply the
+ * complete installed extension closure; checks use editor commands, never private providers.
+ * This produces API/Problems/save-reopen evidence, not visual acceptance or real-CASC latency.
+ */
 import { createHash } from 'node:crypto'
 import { spawn } from 'node:child_process'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
@@ -9,10 +15,12 @@ import { downloadAndUnzipVSCode, runTests } from '@vscode/test-electron'
 const here = dirname(fileURLToPath(import.meta.url))
 const appRoot = resolve(here, '..')
 const repoRoot = resolve(appRoot, '..', '..')
+/** Read the value of an optional test-runner argument. */
 const argument = name => {
   const index = process.argv.indexOf(name)
   return index < 0 ? undefined : process.argv[index + 1]
 }
+/** Check a runner flag without changing its default workflow. */
 const has = name => process.argv.includes(name)
 const suppliedVsix = argument('--vsix')
 const artifact = resolve(
@@ -27,7 +35,19 @@ const reportPath = resolve(
   argument('--report') ??
     join(repoRoot, 'reports', 'vscode-smoke', 'installed-language-receipt.json'),
 )
+const rootsReceipt = argument('--extension-roots-receipt')
+const installedRoots =
+  rootsReceipt === undefined
+    ? [sc2Extension]
+    : JSON.parse(readFileSync(resolve(rootsReceipt), 'utf8')).roots?.map(item => item.root)
+if (
+  !Array.isArray(installedRoots) ||
+  installedRoots.some(root => typeof root !== 'string' || !existsSync(root)) ||
+  !installedRoots.some(root => resolve(root) === sc2Extension)
+)
+  throw new Error('extension roots receipt must include the selected installed SC2 extension')
 
+/** Capture the exit status/output of a structured build, install or test subprocess. */
 const run = (command, args, options = {}) =>
   new Promise(resolvePromise => {
     const child = spawn(command, args, {
@@ -42,12 +62,14 @@ const run = (command, args, options = {}) =>
     child.on('close', code => resolvePromise({ code: code ?? -1, output }))
   })
 
+/** Write a known native fixture beneath the isolated mod root. */
 const writeFixture = (root, relative, text) => {
   const path = join(root, ...relative.split('/'))
   mkdirSync(dirname(path), { recursive: true })
   writeFileSync(path, text)
 }
 
+/** Use a supplied official artifact, or build and package one through the existing owner. */
 async function buildVsix() {
   if (suppliedVsix !== undefined) {
     if (!existsSync(artifact)) throw new Error(`supplied VSIX does not exist: ${artifact}`)
@@ -66,6 +88,7 @@ async function buildVsix() {
     throw new Error(`VSIX packaging failed (${packaged.code}): ${packaged.output}`)
 }
 
+/** Compile each of the six owning language profiles when the caller has not already built them. */
 async function buildSc2Languages() {
   const extensionWorkspace = resolve(sc2Extension, '..')
   for (const config of [
@@ -74,6 +97,7 @@ async function buildSc2Languages() {
     'tsconfig.sc2-style.json',
     'tsconfig.sc2-strings.json',
     'tsconfig.sc2-layout-runtime.json',
+    'tsconfig.sc2-wizard.json',
   ]) {
     const built = await run('pnpm', ['exec', 'tsc', '-p', join('starcraft2', config)], {
       cwd: extensionWorkspace,
@@ -82,6 +106,7 @@ async function buildSc2Languages() {
   }
 }
 
+/** Own the isolated profile, native fixtures, test launch and final artifact-bound receipt. */
 async function main() {
   if (
     !existsSync(join(sc2Extension, 'modules', 'galaxy', 'providers', 'language', 'provider.json'))
@@ -103,7 +128,7 @@ async function main() {
   writeFixture(
     workspace,
     '.vscode/settings.json',
-    `${JSON.stringify({ 'modkit.extensions': [sc2Extension] }, null, 2)}\n`,
+    `${JSON.stringify({ 'modkit.extensions': installedRoots }, null, 2)}\n`,
   )
   writeFixture(
     workspace,
@@ -194,6 +219,15 @@ async function main() {
     'Base.SC2Data/UI/Layout/ClosedInvalid.SC2Layout',
     '<Desc><!-- 🪐 -->\n<Frame type="Frame" name="ClosedInvalid"><Width val="invalid"/></Frame></Desc>',
   )
+  writeFixture(
+    workspace,
+    'Base.SC2Data/Wizards/Native.BlizWiz',
+    '<wizardfile>\n  <wizard id="Native">\n    <name>Native wizard</name>\n' +
+      '    <input id="Amount" type="WizardText"><default value="^Scale^"/></input>\n' +
+      '    <macro id="Scale">42</macro>\n' +
+      '    <entry catalog="Unit" type="CUnit"><field id="LifeMax"/></entry>\n' +
+      '  </wizard>\n</wizardfile>\n',
+  )
   writeFileSync(
     join(harness, 'package.json'),
     JSON.stringify({
@@ -269,7 +303,7 @@ async function main() {
     mkdirSync(dirname(reportPath), { recursive: true })
     writeFileSync(
       reportPath,
-      `${JSON.stringify({ ...result, artifact, artifactSha256, sc2Extension }, null, 2)}\n`,
+      `${JSON.stringify({ ...result, artifact, artifactSha256, sc2Extension, installedRoots }, null, 2)}\n`,
     )
     if (result.passed !== true) throw new Error(result.error ?? 'installed language suite failed')
     if (testFailure !== undefined) throw testFailure
