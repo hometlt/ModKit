@@ -513,14 +513,22 @@ exports.run = async function run() {
       throw new Error('Data value attribute completion did not expose reference documentation')
 
     attributeEditor.selection = new vscode.Selection(valueRange.start, valueRange.end)
-    await vscode.commands.executeCommand('editor.action.insertSnippet', {
-      snippet: valueAttribute.item.insertText.value,
-    })
+    await attributeEditor.insertSnippet(valueAttribute.item.insertText, valueRange)
     const appliedValueAttribute = await waitFor(() =>
       documents.attributeData.getText().includes('<Mob value=""/>') ? true : undefined,
     )
     if (appliedValueAttribute === undefined)
-      throw new Error('VS Code did not apply the Data value attribute snippet')
+      throw new Error(
+        'VS Code did not apply the Data value attribute snippet: ' +
+          JSON.stringify({
+            text: documents.attributeData.getText(),
+            activeDocument: vscode.window.activeTextEditor?.document.uri.toString(),
+            expectedDocument: documents.attributeData.uri.toString(),
+            selection: attributeEditor.selection,
+            valueRange,
+            valueInsertText,
+          }),
+      )
     const valueCursor = attributeEditor.selection.active
     const quotedValueCompletion = await completionAt(
       documents.attributeData,
@@ -579,9 +587,7 @@ exports.run = async function run() {
     )
       throw new Error('Data Fidget completion did not expose its structure snippet and range')
     nestedEditor.selection = new vscode.Selection(fidgetRange.start, fidgetRange.end)
-    await vscode.commands.executeCommand('editor.action.insertSnippet', {
-      snippet: fidgetCompletion.item.insertText.value,
-    })
+    await nestedEditor.insertSnippet(fidgetCompletion.item.insertText, fidgetRange)
     const fidgetApplied = await waitFor(() =>
       documents.nestedData.getText().includes('<Fidget>') ? true : undefined,
     )
@@ -610,9 +616,7 @@ exports.run = async function run() {
     )
       throw new Error('Data nested array completion did not include index and value placeholders')
     nestedEditor.selection = new vscode.Selection(chanceRange.start, chanceRange.end)
-    await vscode.commands.executeCommand('editor.action.insertSnippet', {
-      snippet: chanceCompletion.item.insertText.value,
-    })
+    await nestedEditor.insertSnippet(chanceCompletion.item.insertText, chanceRange)
     const nestedArrayApplied = await waitFor(() =>
       documents.nestedData.getText().includes('<ChanceArray index="" value=""/>')
         ? true
@@ -780,9 +784,7 @@ exports.run = async function run() {
 
     const completionEditor = await vscode.window.showTextDocument(documents.emptyUnit)
     completionEditor.selection = new vscode.Selection(unitRange.start, unitRange.end)
-    await vscode.commands.executeCommand('editor.action.insertSnippet', {
-      snippet: unitItem.insertText.value,
-    })
+    await completionEditor.insertSnippet(unitItem.insertText, unitRange)
     const appliedCompletion = await waitFor(() => {
       const text = documents.emptyUnit.getText()
       return text.includes('<CUnit id="">') && text.includes('</CUnit>') && !text.includes('$')
@@ -791,7 +793,7 @@ exports.run = async function run() {
     }, 5_000)
     if (appliedCompletion === undefined)
       throw new Error('VS Code did not apply the CUnit SnippetString to the document')
-    receipt.emptyDataCompletion.appliedThroughSnippetCommand = true
+    receipt.emptyDataCompletion.appliedThroughTextEditorSnippetApi = true
     receipt.emptyDataCompletion.applicationBoundary =
       'VS Code exposes no command to accept a specific CompletionItem; acceptSelectedSuggestion is nondeterministic when the built-in XML provider competes.'
     receipt.emptyDataCompletion.appliedText = appliedCompletion

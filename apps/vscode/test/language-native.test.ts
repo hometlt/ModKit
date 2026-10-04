@@ -3,9 +3,55 @@ import {
   associatedLanguageOf,
   completionKindName,
   languageCommandTarget,
+  rebaseLanguageSnapshot,
 } from '../src/language-native.js'
 
 describe('the language adapter', () => {
+  it('keeps a complete cached closure when a closed file becomes an edited overlay', () => {
+    const document = (uri: string) => ({ uri, languageId: 'galaxy', version: 1, text: 'int x;' })
+    const origin = (uri: string, sourceRevision = 'disk:1') => ({
+      uri,
+      layerId: 'mod',
+      logicalId: uri,
+      precedence: 0,
+      sourceRevision,
+      readOnly: false,
+    })
+    const snapshot = {
+      documents: [document('file:///open'), document('file:///closed')],
+      isComplete: true,
+      workspaceContext: {
+        id: 'workspace',
+        revision: 'revision',
+        semanticComplete: true,
+        documentOrigins: [origin('file:///open'), origin('file:///closed')],
+      },
+    }
+    const request = {
+      document: { ...document('file:///open'), version: 2, text: 'int changed;' },
+      workspaceDocuments: [],
+      workspaceDocumentOrigins: [origin('file:///open', 'editor:2')],
+      workspaceLanguageIds: ['galaxy'],
+      maxDocuments: 1,
+      signal: new AbortController().signal,
+    }
+    const result = rebaseLanguageSnapshot(snapshot, request)
+    expect(result.isComplete).toBe(true)
+    expect(result.documents).toEqual([document('file:///closed')])
+    expect(result.workspaceContext?.documentOrigins).toContainEqual(
+      origin('file:///open', 'editor:2'),
+    )
+    expect(rebaseLanguageSnapshot(snapshot, { ...request, maxDocuments: 0 }).isComplete).toBe(false)
+    expect(rebaseLanguageSnapshot({ ...snapshot, isComplete: false }, request).isComplete).toBe(
+      false,
+    )
+    const later = rebaseLanguageSnapshot(snapshot, {
+      ...request,
+      workspaceDocumentOrigins: [origin('file:///open', 'editor:3')],
+    })
+    expect(later.workspaceContext?.revision).not.toBe(result.workspaceContext?.revision)
+  })
+
   it('draws each provider completion kind as its native kind', () => {
     expect(completionKindName('color')).toBe('Color')
     expect(completionKindName('file')).toBe('File')

@@ -3,7 +3,12 @@
  * tested: which native completion kind a provider's kind is drawn as, and where a provider's
  * command leads. `extension.ts` turns the answers into VS Code objects.
  */
-import { languageFileAssociationFor } from '@modkit/host/language'
+import {
+  languageFileAssociationFor,
+  languageWorkspaceContextToken,
+  type LanguageWorkspaceDocumentSourceRequest,
+  type LanguageWorkspaceDocumentSourceResult,
+} from '@modkit/host/language'
 import type { LanguageFileAssociation } from '@modkit/sdk'
 import type {
   LanguageCompletionItemKind,
@@ -16,6 +21,43 @@ import type {
  * argument — the same id the LSP server hands its clients (`apps/lsp` `LSP_LANGUAGE_COMMAND`).
  */
 export const LANGUAGE_COMMAND = 'modkit.runLanguageCommand'
+
+/** Reuse closed documents while the host supplies the current open editor overlays. */
+export function rebaseLanguageSnapshot(
+  snapshot: LanguageWorkspaceDocumentSourceResult,
+  request: LanguageWorkspaceDocumentSourceRequest,
+): LanguageWorkspaceDocumentSourceResult {
+  const context = snapshot.workspaceContext
+  if (context === undefined) return snapshot
+  const openUris = new Set([
+    request.document.uri,
+    ...request.workspaceDocuments.map(document => document.uri),
+  ])
+  const closed = snapshot.documents.filter(document => !openUris.has(document.uri))
+  const documents = Object.freeze(closed.slice(0, request.maxDocuments))
+  const allowedUris = new Set([...openUris, ...documents.map(document => document.uri)])
+  const documentOrigins = Object.freeze([
+    ...request.workspaceDocumentOrigins,
+    ...context.documentOrigins.filter(
+      origin => !openUris.has(origin.uri) && allowedUris.has(origin.uri),
+    ),
+  ])
+  return Object.freeze({
+    ...snapshot,
+    documents,
+    isComplete: snapshot.isComplete && documents.length === closed.length,
+    workspaceContext: Object.freeze({
+      ...context,
+      revision: languageWorkspaceContextToken({
+        snapshotRevision: context.revision,
+        openDocuments: documentOrigins
+          .filter(origin => openUris.has(origin.uri))
+          .map(origin => ({ uri: origin.uri, sourceRevision: origin.sourceRevision })),
+      }),
+      documentOrigins,
+    }),
+  })
+}
 
 /** Names of `vscode.CompletionItemKind` members. */
 export type CompletionKindName =

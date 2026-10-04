@@ -243,6 +243,7 @@ import {
   completionKindName,
   LANGUAGE_COMMAND,
   languageCommandTarget,
+  rebaseLanguageSnapshot,
 } from './language-native.js'
 import {
 createRuntimeDebugController,
@@ -6693,45 +6694,6 @@ async function activateModkit(
       languages: [...request.workspaceLanguageIds].sort(),
     })
 
-  const rebaseLanguageSnapshot = (
-    snapshot: LanguageWorkspaceDocumentSourceResult,
-    request: LanguageSnapshotRequest,
-  ): LanguageWorkspaceDocumentSourceResult => {
-    const context = snapshot.workspaceContext
-    if (context === undefined) return snapshot
-    const openUris = new Set([
-      request.document.uri,
-      ...request.workspaceDocuments.map(document => document.uri),
-    ])
-    const documents = Object.freeze(
-      snapshot.documents
-        .filter(document => !openUris.has(document.uri))
-        .slice(0, request.maxDocuments),
-    )
-    const allowedUris = new Set([...openUris, ...documents.map(document => document.uri)])
-    const documentOrigins = Object.freeze([
-      ...request.workspaceDocumentOrigins,
-      ...context.documentOrigins.filter(
-        origin => !openUris.has(origin.uri) && allowedUris.has(origin.uri),
-      ),
-    ])
-    return Object.freeze({
-      ...snapshot,
-      documents,
-      isComplete: snapshot.isComplete && documents.length === snapshot.documents.length,
-      workspaceContext: Object.freeze({
-        ...context,
-        revision: languageWorkspaceContextToken({
-          snapshotRevision: context.revision,
-          openDocuments: documentOrigins
-            .filter(origin => openUris.has(origin.uri))
-            .map(origin => ({ uri: origin.uri, sourceRevision: origin.sourceRevision })),
-        }),
-        documentOrigins,
-      }),
-    })
-  }
-
   const cachedLanguageSnapshot = (
     key: string,
     request: LanguageSnapshotRequest,
@@ -6931,7 +6893,10 @@ async function activateModkit(
             open?.getText() ??
             decodeText(await vscode.workspace.fs.readFile(candidate.uri), undefined)
           const bytes = new TextEncoder().encode(text).byteLength
-          if (bytes > 4_194_304 || totalTextBytes + bytes > 67_108_864) {
+          if (
+            bytes > 4_194_304 ||
+            BigInt(totalTextBytes + bytes) > LANGUAGE_WORKSPACE_BUDGET.maxInputBytes
+          ) {
             isComplete = false
             continue
           }
