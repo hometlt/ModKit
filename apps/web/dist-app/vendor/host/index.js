@@ -12764,22 +12764,28 @@ function createLanguageWorkspace(options) {
       return invokeFeature(request, false, async (provider, feature) => {
         const writable = new Set((feature.workspaceContext?.documentOrigins ?? []).filter((origin) => !origin.readOnly).map((origin) => origin.uri));
         const found = [];
+        let isIncomplete = languageWorkspaceIsSemanticallyIncomplete(feature);
         for (const document of feature.workspaceDocuments) {
           if (documents.has(document.uri) || !writable.has(document.uri) || !provider.languageIds.includes(document.languageId))
             continue;
           throwIfAborted(feature.signal);
-          const analysis = await provider.analyze({
-            document,
-            include: { diagnostics: true },
-            ...feature.signal === void 0 ? {} : { signal: feature.signal }
-          });
+          const documentFeature = { ...feature, document };
+          const report = validateDiagnosticList(provider.diagnostics === void 0 ? {
+            diagnostics: (await provider.analyze({
+              document,
+              include: { diagnostics: true },
+              ...feature.signal === void 0 ? {} : { signal: feature.signal }
+            })).diagnostics,
+            isIncomplete: false
+          } : await provider.diagnostics(documentFeature), documentFeature);
+          isIncomplete ||= report.isIncomplete;
           found.push({
             uri: document.uri,
             version: document.version,
-            diagnostics: analysis.diagnostics
+            diagnostics: report.diagnostics
           });
         }
-        return { documents: found, isIncomplete: feature.workspaceIncomplete };
+        return { documents: found, isIncomplete };
       }, (value, feature) => {
         const result = value;
         const texts = new Map(feature.workspaceDocuments.map((item) => [item.uri, item.text]));

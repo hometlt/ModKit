@@ -3593,7 +3593,7 @@ async function boot() {
   if (pageUrl.searchParams.has("format-smoke")) {
     const loaded = await loadPwaFormatSmokeAuthority(
       new URL("./format-smoke.v1.json", document.baseURI).href,
-      "sha256:7d26c4a16e08b6548c28f0db22c9eead34f3cc9b9780c7a203f503da4a844cf7"
+      "sha256:12566f83c72c8cebbce17f42c8e6b554d0790a683d0dba750ac24f896c1c06ac"
     );
     const control = createPwaFormatSmokeAcceptance({
       authority: loaded.authority,
