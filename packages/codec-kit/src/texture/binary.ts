@@ -1,10 +1,4 @@
-export function byteView(bytes: Uint8Array): DataView {
-  return new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
-}
-
-export function ascii(bytes: Uint8Array): string {
-  return new TextDecoder('latin1').decode(bytes)
-}
+export { byteView, ascii } from '../binary.js'
 
 export function clamp8(value: number): number {
   if (!Number.isFinite(value)) return 0

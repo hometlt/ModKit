@@ -154,6 +154,26 @@ async function closeAll(archives: readonly LayerArchive[]): Promise<void> {
   for (const archive of archives) await archive.close()
 }
 
+/** Open in native precedence order; on failure close every completed layer and retain the cause. */
+export async function openArchiveLayers(
+  openers: Iterable<() => Promise<LayerArchive>>,
+  signal?: AbortSignal,
+): Promise<readonly LayerArchive[]> {
+  const opened: LayerArchive[] = []
+  try {
+    signal?.throwIfAborted()
+    for (const open of openers) {
+      signal?.throwIfAborted()
+      opened.push(await open())
+    }
+    signal?.throwIfAborted()
+    return opened
+  } catch (error) {
+    await Promise.allSettled(opened.map(async archive => archive.close()))
+    throw error
+  }
+}
+
 function copyOf(
   archive: LayerArchive,
   rank: number,

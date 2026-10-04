@@ -4,12 +4,45 @@ import { CONTAINER_EXTRACT_HANDLER_ID, createInspectionCodec } from '../src/inde
 import {
   containerEntryAccess,
   containerEntryLayer,
+  openContainerEntryLayer,
   readContainerEntry,
 } from '../src/container-entries.js'
 
 // A tiny range container: a 4-byte magic, then three entries' bytes. The codec only maps its index
 // to a ContainerEntryTable; listing and extraction come from codec-kit (S3 stage 1).
 const encoder = new TextEncoder()
+describe('opening a container layer', () => {
+  it('releases an acquired source on parse failure and preserves the parser error', async () => {
+    const cause = new Error('invalid container table')
+    let closed = 0
+    const source = { size: async () => 0n, read: async () => new Uint8Array() }
+    await expect(
+      openContainerEntryLayer(
+        'broken',
+        source,
+        async () => {
+          throw cause
+        },
+        async () => {
+          closed += 1
+          throw new Error('cleanup failed')
+        },
+      ),
+    ).rejects.toBe(cause)
+    expect(closed).toBe(1)
+    const layer = await openContainerEntryLayer(
+      'empty',
+      source,
+      async () => ({ caseSensitivity: 'sensitive', complete: true, entries: [] }),
+      async () => {
+        closed += 1
+      },
+    )
+    expect(closed).toBe(1)
+    await layer.close()
+    expect(closed).toBe(2)
+  })
+})
 const stored = encoder.encode('hello, stored entry')
 const plain = encoder.encode('zlib entry '.repeat(40))
 const zlibbed = new Uint8Array(deflateSync(plain))
@@ -176,7 +209,10 @@ describe('a container entry table gives listing and extraction for free', () => 
     const first = await lease.value.list('', { limit: 2 })
     expect(first.items.map(item => item.path)).toEqual(['docs/Stored.txt', 'docs/zlib.txt'])
     expect(first.nextCursor).toBe('2')
-    const rest = await lease.value.list('', { limit: 2, ...(first.nextCursor === undefined ? {} : { cursor: first.nextCursor }) })
+    const rest = await lease.value.list('', {
+      limit: 2,
+      ...(first.nextCursor === undefined ? {} : { cursor: first.nextCursor }),
+    })
     expect(rest.items.map(item => item.path)).toEqual(['custom.bin', 'data/companion.bin'])
     expect(rest.items[0]?.mediaType).toBe('audio/x-example')
     // A custom decoder names its own compression; the host lists it without interpreting it.

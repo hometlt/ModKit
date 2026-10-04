@@ -875,6 +875,7 @@ const OPTIONAL_CONTENT_SOURCE_METHODS = [
 
 export {
   createLayeredArchiveContentSources,
+  openArchiveLayers,
   layeredModContext,
   type ArchiveLayers,
   type LayerArchive,

@@ -73,6 +73,10 @@
     "./model/validation": {
       "types": "./dist/model/validation/index.d.ts",
       "default": "./dist/model/validation/index.js"
+    },
+    "./model/export-handler": {
+      "types": "./dist/model/export-handler.d.ts",
+      "default": "./dist/model/export-handler.js"
     }
   },
   "files": [

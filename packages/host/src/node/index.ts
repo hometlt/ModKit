@@ -145,6 +145,12 @@ export {
 } from './video-frames.js'
 export { createNodeOAuth2Engine, type NodeOAuth2EngineOptions } from './oauth2-pkce.js'
 export {
+  collectInstallationCandidates,
+  installationPathKey,
+  normalizeInstallationPath,
+  type CollectedInstallationCandidates,
+} from './installation-candidates.js'
+export {
   listIndexCaches,
   openCachedContentIndex,
   removeIndexCache,

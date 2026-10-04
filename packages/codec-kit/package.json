@@ -241,6 +241,10 @@
     "./raster/palette": {
       "types": "./dist/raster/palette.d.ts",
       "default": "./dist/raster/palette.js"
+    },
+    "./binary": {
+      "types": "./dist/binary.d.ts",
+      "default": "./dist/binary.js"
     }
   },
   "files": [

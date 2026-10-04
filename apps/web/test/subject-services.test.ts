@@ -191,6 +191,9 @@ const nodeModuleMap = {
   '@modkit/codec-kit/model/animation': pathToFileURL(
     join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'model', 'animation.js'),
   ).href,
+  '@modkit/codec-kit/binary': pathToFileURL(
+    join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'binary.js'),
+  ).href,
   '@modkit/codec-kit/model/skinning': pathToFileURL(
     join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'model', 'skinning.js'),
   ).href,
@@ -252,6 +255,9 @@ const nodeModuleMap = {
   ).href,
   '@modkit/uv/model/materializer': pathToFileURL(
     join(repositoryRoot, 'packages', 'uv', 'dist', 'model', 'materializer.js'),
+  ).href,
+  '@modkit/uv/model/export-handler': pathToFileURL(
+    join(repositoryRoot, 'packages', 'uv', 'dist', 'model', 'export-handler.js'),
   ).href,
   '@modkit/uv/model/validation': pathToFileURL(
     join(repositoryRoot, 'packages', 'uv', 'dist', 'model', 'validation', 'index.js'),

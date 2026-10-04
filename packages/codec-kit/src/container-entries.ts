@@ -22,6 +22,23 @@ import {
 
 export const CONTAINER_EXTRACT_HANDLER_ID = 'extract-entry'
 
+/** Construct the existing layer, closing its byte source if its format-owned table reader fails. */
+export async function openContainerEntryLayer(
+  id: string,
+  source: ByteRangeSource,
+  readTable: (source: ByteRangeSource) => Promise<ContainerEntryTable>,
+  close: () => Promise<void>,
+): Promise<ContainerEntryLayer> {
+  try {
+    return containerEntryLayer(id, await readTable(source), source, close)
+  } catch (error) {
+    await Promise.resolve()
+      .then(close)
+      .catch(() => undefined)
+    throw error
+  }
+}
+
 function throwIfCancelled(signal: AbortSignal | undefined): void {
   if (signal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
 }

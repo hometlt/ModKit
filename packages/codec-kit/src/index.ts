@@ -6,6 +6,7 @@ import { CONTAINER_EXTRACT_HANDLER_ID, containerEntryAccess } from './container-
 export {
   CONTAINER_EXTRACT_HANDLER_ID,
   containerEntryLayer,
+  openContainerEntryLayer,
   readContainerEntry,
   type ContainerEntryLayer,
   type ContainerLayerEntry,
