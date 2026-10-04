@@ -7,6 +7,23 @@ test('configuration requires explicit absolute roots and extensions', () => {
   assert.throws(() => parseModkitLspConfiguration(['--root', '.', '--extension', 'x']), /absolute/)
 })
 
+test('default closure admits dependencies up to the primary activation bound', () => {
+  const root = process.platform === 'win32' ? 'C:\\workspace' : '/workspace'
+  const extension = process.platform === 'win32' ? 'C:\\extension' : '/extension'
+  const args = ['--root', root, '--extension', extension]
+  const defaults = parseModkitLspConfiguration(args)
+  assert.equal(defaults.maxDocumentBytes, 16_777_216)
+  assert.equal(defaults.maxWorkspaceBytes, 268_435_456)
+  assert.throws(
+    () => parseModkitLspConfiguration([...args, '--max-workspace-bytes', '4194304']),
+    /--max-document-bytes cannot exceed --max-workspace-bytes/,
+  )
+  assert.equal(
+    parseModkitLspConfiguration([...args, '--max-document-bytes', '4194304']).maxDocumentBytes,
+    4_194_304,
+  )
+})
+
 test('configuration deduplicates roots and enforces bounded snapshots', () => {
   const root = process.platform === 'win32' ? 'C:\\workspace' : '/workspace'
   const extension = process.platform === 'win32' ? 'C:\\extension' : '/extension'

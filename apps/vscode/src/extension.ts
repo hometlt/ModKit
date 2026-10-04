@@ -6894,7 +6894,7 @@ async function activateModkit(
             decodeText(await vscode.workspace.fs.readFile(candidate.uri), undefined)
           const bytes = new TextEncoder().encode(text).byteLength
           if (
-            bytes > 4_194_304 ||
+            BigInt(bytes) > LANGUAGE_ACTIVATION_BUDGET.maxInputBytes ||
             BigInt(totalTextBytes + bytes) > LANGUAGE_WORKSPACE_BUDGET.maxInputBytes
           ) {
             isComplete = false
@@ -7131,7 +7131,7 @@ async function activateModkit(
         contentSources: await requireContentSources(),
         routes: languageRoutes,
         limits: {
-          maxDocumentBytes: 4_194_304,
+          maxDocumentBytes: Number(LANGUAGE_ACTIVATION_BUDGET.maxInputBytes),
           maxWorkspaceBytes: Number(LANGUAGE_WORKSPACE_BUDGET.maxInputBytes),
           maxEntries: 65_536,
         },

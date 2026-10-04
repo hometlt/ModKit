@@ -58,7 +58,8 @@ export function parseModkitLspConfiguration(argv: readonly string[]): ModkitLspC
   let trustExtensions = false
   // Cover a whole mod by default; the byte budgets below stay the real bound.
   let maxDocuments = 4_096
-  let maxDocumentBytes = 4_194_304
+  // Dependencies such as SC2 NativeLib fit the 16 MiB primary activation bound but exceed 4 MiB.
+  let maxDocumentBytes = 16_777_216
   /*
    * A mod and its dependencies are the unit of meaning. Installed expansion chains can exceed
    * 1,024 documents and 64 MiB, even while every individual document fits its separate bound.
