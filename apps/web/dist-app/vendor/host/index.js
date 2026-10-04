@@ -1259,10 +1259,31 @@ function cloneSemanticPayload(value, depth = 0, ancestors = /* @__PURE__ */ new 
   ancestors.delete(value);
   return Object.freeze(clone);
 }
-var validatedInputCopies = /* @__PURE__ */ new WeakMap();
+var validatedContextCopies = /* @__PURE__ */ new WeakMap();
+function languageDocumentSnapshot(document) {
+  const metadata = validatedContextCopies.get(document);
+  if (metadata !== void 0 && "document" in metadata)
+    return metadata.document;
+  const copy = Object.freeze({
+    uri: document.uri,
+    languageId: document.languageId,
+    version: document.version,
+    text: document.text,
+    ...document.dialect === void 0 ? {} : { dialect: document.dialect }
+  });
+  validatedContextCopies.set(copy, { document: copy });
+  return copy;
+}
+function languageDocumentTextToken(document) {
+  const metadata = validatedContextCopies.get(document);
+  if (metadata !== void 0 && "document" in metadata) {
+    return metadata.textToken ??= languageWorkspaceContextToken(metadata.document.text);
+  }
+  return languageWorkspaceContextToken(document.text);
+}
 function copySemanticInput(item) {
-  const cached = typeof item === "object" && item !== null ? validatedInputCopies.get(item) : void 0;
-  if (cached !== void 0)
+  const cached = typeof item === "object" && item !== null ? validatedContextCopies.get(item) : void 0;
+  if (cached !== void 0 && "input" in cached)
     return cached;
   let payloadBytes2 = 0;
   const keys = typeof item === "object" && item !== null ? Reflect.ownKeys(item) : [];
@@ -1296,7 +1317,7 @@ function copySemanticInput(item) {
     ...payload === void 0 ? {} : { payload }
   });
   const result = { input: copy, payloadBytes: payloadBytes2 };
-  validatedInputCopies.set(copy, result);
+  validatedContextCopies.set(copy, result);
   return result;
 }
 function validatedLanguageWorkspaceSemanticInputs(value) {
@@ -1332,13 +1353,14 @@ var fnv64 = (bytes, low, high, reverse) => {
   return high.toString(16).padStart(8, "0") + low.toString(16).padStart(8, "0");
 };
 var languageWorkspaceContextToken = (value) => {
-  const validated = typeof value === "object" && value !== null ? validatedInputCopies.get(value) : void 0;
-  if (validated?.token !== void 0)
-    return validated.token;
+  const validated = typeof value === "object" && value !== null ? validatedContextCopies.get(value) : void 0;
+  const semantic = validated !== void 0 && "input" in validated ? validated : void 0;
+  if (semantic?.token !== void 0)
+    return semantic.token;
   const bytes = encoder2.encode(canonicalJsonStringify(value));
   const token = `language-context-v1:${fnv64(bytes, 2216829733, 3421674724, false)}${fnv64(bytes, 3421674724, 2216829733, true)}`;
-  if (validated !== void 0)
-    validated.token = token;
+  if (semantic !== void 0)
+    semantic.token = token;
   return token;
 };
 
@@ -10152,6 +10174,7 @@ function prepareResolvedDataSemanticContext(request) {
     return locale === void 0 ? [] : [
       {
         origin,
+        sourceDocument: document,
         document: Object.freeze({
           rootId: origin.layerId,
           path: origin.logicalId,
@@ -10187,15 +10210,15 @@ function prepareResolvedDataSemanticContext(request) {
       uri: document.uri,
       languageId: document.languageId,
       version: document.version,
-      contentRevision: languageWorkspaceContextToken(document.text),
+      contentRevision: languageDocumentTextToken(document),
       origin
     };
   });
-  const localizationIdentities = localizationDocuments.map(({ document, origin }) => ({
+  const localizationIdentities = localizationDocuments.map(({ document, origin, sourceDocument }) => ({
     path: origin.logicalId,
     layerId: origin.layerId,
     locale: document.locale,
-    contentRevision: languageWorkspaceContextToken(document.text)
+    contentRevision: languageDocumentTextToken(sourceDocument)
   }));
   const key3 = languageWorkspaceContextToken({
     requirement: request.requirement,
@@ -12027,7 +12050,7 @@ function createLanguageWorkspace(options) {
             originsByUri.delete(document.uri);
             continue;
           }
-          snapshotDocuments.push(Object.freeze({ ...document }));
+          snapshotDocuments.push(languageDocumentSnapshot(document));
         }
         sourceIncomplete = !snapshot2.isComplete;
         hasReadOnlyContext = snapshot2.documents.length > 0;
@@ -12099,7 +12122,7 @@ function createLanguageWorkspace(options) {
           documents: snapshotDocuments.map((document) => ({
             uri: document.uri,
             version: document.version,
-            contentRevision: languageWorkspaceContextToken(document.text),
+            contentRevision: languageDocumentTextToken(document),
             origin: originsByUri.get(document.uri)
           }))
         }),
@@ -12297,7 +12320,7 @@ function createLanguageWorkspace(options) {
       route,
       resolution,
       version: request.document.version,
-      document: request.document,
+      document: languageDocumentSnapshot(request.document),
       released: false
     };
     invalidateFeatures("language document opened");
@@ -12326,7 +12349,7 @@ function createLanguageWorkspace(options) {
     invalidateFeatures("language document changed");
     entry2.analysisController?.abort("superseded by a newer document version");
     entry2.version = request.document.version;
-    entry2.document = request.document;
+    entry2.document = languageDocumentSnapshot(request.document);
     delete entry2.current;
     return entry2;
   };
@@ -13065,6 +13088,7 @@ function createContentDependencyLanguageDocumentSource(options) {
     throw new TypeError("maxDocumentBytes cannot exceed maxWorkspaceBytes");
   }
   const revisions = /* @__PURE__ */ new Map();
+  let retainedDocumentBytes = 0;
   const contextId = languageWorkspaceContextToken({
     gameId: options.resolution.gameId,
     mounts: mounts.map((mount) => ({
@@ -13221,23 +13245,41 @@ function createContentDependencyLanguageDocumentSource(options) {
         }
         totalBytes += bytes.byteLength;
         const uri = contentSourceUri(candidate.mount.sourceId, candidate.path);
-        const signature = String(candidate.mount.revision);
         const previous = revisions.get(uri);
-        const version = previous === void 0 ? 1 : previous.signature === signature ? previous.version : previous.version + 1;
-        revisions.set(uri, { signature, version });
-        documents.push(Object.freeze({
+        const captured = previous?.document?.text === text && previous.document.languageId === languageId && previous.document.dialect === dialect ? previous.document : languageDocumentSnapshot({
           uri,
           languageId,
-          version,
+          version: previous?.version ?? 1,
           text,
           ...dialect === void 0 ? {} : { dialect }
-        }));
+        });
+        const signature = languageWorkspaceContextToken({
+          mountRevision: String(candidate.mount.revision),
+          languageId,
+          dialect,
+          contentRevision: languageDocumentTextToken(captured)
+        });
+        const version = previous === void 0 ? 1 : previous.signature === signature ? previous.version : previous.version + 1;
+        const document = version === captured.version ? captured : languageDocumentSnapshot({ ...captured, version });
+        const retainedBytes = Math.max(bytes.byteLength, text.length * 2);
+        retainedDocumentBytes -= previous?.bytes ?? 0;
+        revisions.delete(uri);
+        revisions.set(uri, { signature, version, document, bytes: retainedBytes });
+        retainedDocumentBytes += retainedBytes;
+        for (const entry2 of revisions.values()) {
+          if (retainedDocumentBytes <= maxWorkspaceBytes)
+            break;
+          retainedDocumentBytes -= entry2.bytes;
+          entry2.bytes = 0;
+          delete entry2.document;
+        }
+        documents.push(document);
         documentOrigins.push(Object.freeze({
           uri,
           layerId: `${contextId}:${candidate.mount.order}:${candidate.mount.dependencyId}`,
           logicalId: candidate.relative,
           precedence: candidate.mount.order,
-          sourceRevision: String(candidate.mount.revision),
+          sourceRevision: signature,
           readOnly: true
         }));
       }
