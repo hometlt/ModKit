@@ -639,42 +639,42 @@
       "targetOperation": null
     },
     {
-      "contribution": "modkit-extensions-other/extensions/realitypump-earth-2150/contributions/codec-earth-par.json",
+      "contribution": "modkit-extensions-realitypump/extensions/realitypump-earth-2150/contributions/codec-earth-par.json",
       "handlerId": "extract-entry",
       "id": "legacy/codec-manifest/modkit/earth-par/operation/archive.extract",
       "status": "adapted",
       "targetOperation": "container.extract"
     },
     {
-      "contribution": "modkit-extensions-other/extensions/realitypump-earth-2150/contributions/codec-earth-par.json",
+      "contribution": "modkit-extensions-realitypump/extensions/realitypump-earth-2150/contributions/codec-earth-par.json",
       "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/earth-par/operation/archive.inspect",
       "status": "adapted",
       "targetOperation": "view.inspect"
     },
     {
-      "contribution": "modkit-extensions-other/extensions/realitypump-earth-2150/contributions/codec-earth-res.json",
+      "contribution": "modkit-extensions-realitypump/extensions/realitypump-earth-2150/contributions/codec-earth-res.json",
       "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/earth-res/operation/archive.inspect",
       "status": "adapted",
       "targetOperation": "view.inspect"
     },
     {
-      "contribution": "modkit-extensions-other/extensions/realitypump-earth-2150/contributions/codec-earth-tex.json",
+      "contribution": "modkit-extensions-realitypump/extensions/realitypump-earth-2150/contributions/codec-earth-tex.json",
       "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/earth-tex/operation/image.inspect",
       "status": "adapted",
       "targetOperation": "view.inspect"
     },
     {
-      "contribution": "modkit-extensions-other/extensions/realitypump-earth-2150/contributions/codec-earth-tex.json",
+      "contribution": "modkit-extensions-realitypump/extensions/realitypump-earth-2150/contributions/codec-earth-tex.json",
       "handlerId": "extract-entry",
       "id": "legacy/codec-manifest/modkit/earth-tex/operation/image.read",
       "status": "adapted",
       "targetOperation": "container.extract"
     },
     {
-      "contribution": "modkit-extensions-other/extensions/realitypump-earth2160/contributions/codec-earth2160-model.json",
+      "contribution": "modkit-extensions-realitypump/extensions/realitypump-earth2160/contributions/codec-earth2160-model.json",
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/earth2160-model/operation/model.read",
       "status": "adapted",
@@ -3216,14 +3216,14 @@
       "targetOperation": null
     },
     {
-      "contribution": "modkit-extensions-other/extensions/realitypump-earth2160/contributions/codec-wd.json",
+      "contribution": "modkit-extensions-realitypump/extensions/realitypump-earth2160/contributions/codec-wd.json",
       "handlerId": "extract-entry",
       "id": "legacy/codec-manifest/modkit/wd/operation/archive.extract",
       "status": "adapted",
       "targetOperation": "container.extract"
     },
     {
-      "contribution": "modkit-extensions-other/extensions/realitypump-earth2160/contributions/codec-wd.json",
+      "contribution": "modkit-extensions-realitypump/extensions/realitypump-earth2160/contributions/codec-wd.json",
       "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/wd/operation/archive.inspect",
       "status": "adapted",

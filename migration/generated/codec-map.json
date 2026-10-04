@@ -752,7 +752,7 @@
         {
           "id": "modkit/earth-par",
           "path": "extensions/realitypump-earth-2150/contributions/codec-earth-par.json",
-          "repository": "other"
+          "repository": "realitypump"
         }
       ],
       "codec": "earth-par",
@@ -769,7 +769,7 @@
         {
           "id": "modkit/earth-res",
           "path": "extensions/realitypump-earth-2150/contributions/codec-earth-res.json",
-          "repository": "other"
+          "repository": "realitypump"
         }
       ],
       "codec": "earth-res",
@@ -786,7 +786,7 @@
         {
           "id": "modkit/earth-tex",
           "path": "extensions/realitypump-earth-2150/contributions/codec-earth-tex.json",
-          "repository": "other"
+          "repository": "realitypump"
         }
       ],
       "codec": "earth-tex",
@@ -803,7 +803,7 @@
         {
           "id": "modkit/earth2160-model",
           "path": "extensions/realitypump-earth2160/contributions/codec-earth2160-model.json",
-          "repository": "other"
+          "repository": "realitypump"
         }
       ],
       "codec": "earth2160-model",
@@ -3102,7 +3102,7 @@
         {
           "id": "modkit/wd",
           "path": "extensions/realitypump-earth2160/contributions/codec-wd.json",
-          "repository": "other"
+          "repository": "realitypump"
         }
       ],
       "codec": "wd",

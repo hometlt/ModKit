@@ -498,14 +498,15 @@ const OWNER_EXTERNAL_DIRECTORIES = [
   'extensions/new-world-computing-heroes-4',
   'extensions/petroglyph-glyphx',
   'extensions/rad-game-tools-video',
-  'extensions/realitypump-earth-2150',
-  'extensions/realitypump-earth2160',
   'extensions/relic-essence',
   'extensions/relic-models',
   'extensions/stainless-steel-studios-empire-earth',
   'extensions/ubisoft-heroes-6',
   'extensions/uncommon-documents',
   'extensions/unity-engine',
+  // modkit-extensions-realitypump: Earth moved from Other without changing logical owner IDs.
+  'extensions/realitypump-earth-2150',
+  'extensions/realitypump-earth2160',
 ]
 /*
  * Named non-path destinations. package-owners.json documents three legitimate non-package
@@ -733,10 +734,10 @@ function deriveX3Facts() {
     .trim()
     .split('\n')
     .filter(Boolean)
-  // modkit.workspace.json declares five sibling sources; the focused-ga profile only activates
+  // modkit.workspace.json declares these sibling sources; the focused-ga profile only activates
   // blizzard and warzone, but a source being outside the active profile does not mean its
   // repository is absent from disk or absent from the registry (compare: `other` is not in any
-  // profile either and is scanned below). All five must be read or the fact base is only ever as
+  // profile either and is scanned below). All must be read or the fact base is only ever as
   // complete as the launch profile of the day.
   const external = [
     ['blizzard', externalRepositoryRoot(repoRoot, 'blizzard')],
@@ -744,6 +745,7 @@ function deriveX3Facts() {
     ['ea', externalRepositoryRoot(repoRoot, 'ea')],
     ['spring', externalRepositoryRoot(repoRoot, 'spring')],
     ['other', externalRepositoryRoot(repoRoot, 'other')],
+    ['realitypump', externalRepositoryRoot(repoRoot, 'realitypump')],
   ].flatMap(([repository, root]) =>
     // Manifests sit at any depth (blizzard: starcraft2/modules/<area>/codecs/<name>/codec.json);
     // test fixtures may reuse real ids and are not contributions.

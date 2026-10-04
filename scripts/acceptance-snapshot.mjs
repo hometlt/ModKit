@@ -41,6 +41,7 @@ const REPOSITORIES = [
   'modkit-extensions-ea',
   'modkit-extensions-spring',
   'modkit-extensions-other',
+  'modkit-extensions-realitypump',
   'modkit-extensions-roblox',
   'modkit-extensions-minecraft',
   'modkit-extensions-dune2000',
