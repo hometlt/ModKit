@@ -9,12 +9,12 @@
     },
     "bundledCatalog": {
       "file": "generated/bundled-catalog.json",
-      "sha256": "sha256:90ce81d1f5b1b5b9e2d5552f180d15fda66e963355ecfd599c6e2c84be2ba5bb",
+      "sha256": "sha256:d5274b4117984d94be672e5457d1a1f33763c5367bd04fcbcee4fd3549a135be",
       "provenance": "checkout-physical-roots-verified-by-host-artifact-digest",
       "roots": [
         {
           "coordinate": "modkit/archives",
-          "digest": "sha256:30b477896e3a39f5f81e9a19af9f33662623fab356f1158aa1b9c6359db6baaa"
+          "digest": "sha256:9196634b88c4475fbed5e3924796a3d78f62e524ee39287b2ac8107736e1e991"
         },
         {
           "coordinate": "modkit/audio",
@@ -30,7 +30,7 @@
         },
         {
           "coordinate": "modkit/images",
-          "digest": "sha256:d938d0ba220bc50b1b09d3daae34dc0143ec6fc82ba857ad883400552d75f08c"
+          "digest": "sha256:1ebe842c452ee4ece061fb315afd53d04dffb52e2986fa88a356dc59d22df639"
         },
         {
           "coordinate": "modkit/java",
@@ -38,11 +38,11 @@
         },
         {
           "coordinate": "modkit/lua",
-          "digest": "sha256:9fca05506a86f6f23ac6520326dc268af43f450f44846cc7b79d1a756835bcd2"
+          "digest": "sha256:f6a0d5f69558fb601329e30cb4d64045560c37c8e453db6b1a0ff9f9e6f4ceee"
         },
         {
           "coordinate": "modkit/models",
-          "digest": "sha256:11154e06ea1ac131aefc5d5b43cbb3ac81b28238e2a8df9aae039995ce12e0ce"
+          "digest": "sha256:bf6e76f13dc2dc25fef08a484447f26708d9119c7b92360fd31604c150267748"
         },
         {
           "coordinate": "modkit/translation",
@@ -50,7 +50,7 @@
         },
         {
           "coordinate": "modkit/vector",
-          "digest": "sha256:104db82904699682061f555a686e25ca37427956c18886c80ed9c8776d8bf2d6"
+          "digest": "sha256:882cd7b8a2d3609276c20b50428af5553a4e164531aa181cf243ee93f6ffef0b"
         },
         {
           "coordinate": "modkit/video",

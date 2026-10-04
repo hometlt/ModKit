@@ -422,12 +422,18 @@ const dist = outFlag > 0 ? resolve(process.argv[outFlag + 1]) : generated
 
 async function buildInto(output, syncManifest) {
   mkdirSync(output, { recursive: true })
+  if (lstatSync(output).isSymbolicLink()) {
+    throw new Error(`generated output must be a physical directory: ${output}`)
+  }
   // The closure is a complete generated subtree. Remove only that owned subtree before copying so
   // a root's production files whitelist cannot leave stale tests or migration notes in dist-app.
   rmSync(join(output, 'extensions'), { recursive: true, force: true })
   // Split webview chunks are content-hashed. Keeping the previous build's directory leaves every
   // superseded hash in the VSIX and makes a clean reproducibility check report false source drift.
   rmSync(join(output, 'chunks'), { recursive: true, force: true })
+  // Builds before the package split embedded games here. Keeping that generated subtree makes
+  // an in-place build differ from a clean build and violates the current publication inventory.
+  rmSync(join(output, 'managed-packages'), { recursive: true, force: true })
 
   await build({
     entryPoints: [join(appRoot, 'src', 'extension.ts')],
