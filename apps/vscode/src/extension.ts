@@ -7697,7 +7697,8 @@ async function activateModkit(
     feature: 'completion' | 'signatureHelp',
     triggerCharacter: string | undefined,
   ): boolean =>
-    triggerCharacter !== undefined &&
+    typeof triggerCharacter === 'string' &&
+    triggerCharacter.length > 0 &&
     languageController
       .triggerCharacters(languageDocument(document), feature)
       ?.includes(triggerCharacter) !== true
