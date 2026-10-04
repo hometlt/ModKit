@@ -374,32 +374,63 @@ export function languageRouteServesFile(
  * file wins over extension routes; an extension more than one language claims decides nothing
  * (`candidates` lists them, so a snapshot that wanted one can report itself incomplete).
  */
+export function createLanguageFileClassifier(
+  routes: readonly LanguageProviderRoute[],
+): (
+  path: string,
+) => Readonly<{ languageId?: string; dialect?: string; candidates: readonly string[] }> {
+  const named = new Map<string, LanguageProviderRoute[]>()
+  const extensions = new Map<string, LanguageProviderRoute[]>()
+  for (const route of routes) {
+    const key = route.fileName?.toLowerCase() ?? route.extension
+    if (key === undefined) continue
+    const index = route.fileName === undefined ? extensions : named
+    const group = index.get(key) ?? []
+    group.push(route)
+    index.set(key, group)
+  }
+  /** Capture each advertised selector once; file contents and document revisions stay uncached. */
+  const collapse = (index: ReadonlyMap<string, readonly LanguageProviderRoute[]>) =>
+    new Map(
+      [...index].map(([key, matching]) => {
+        const candidates = [...new Set(matching.map(route => route.languageId))].sort(compareUtf8)
+        const dialects = [
+          ...new Set(
+            matching.flatMap(route => (route.dialect === undefined ? [] : [route.dialect])),
+          ),
+        ]
+        return [
+          key,
+          Object.freeze({
+            ...(candidates.length === 1 ? { languageId: candidates[0] as string } : {}),
+            ...(candidates.length === 1 && dialects.length === 1
+              ? { dialect: dialects[0] as string }
+              : {}),
+            candidates: Object.freeze(candidates),
+          }),
+        ] as const
+      }),
+    )
+  const byName = collapse(named)
+  const byExtension = collapse(extensions)
+  const absent = Object.freeze({ candidates: Object.freeze([] as string[]) })
+  return path => {
+    const name = baseNameOf(path)
+    const extension = languageFileExtension(name)
+    return (
+      byName.get(name.toLowerCase()) ??
+      (extension === undefined ? undefined : byExtension.get(extension)) ??
+      absent
+    )
+  }
+}
+
+/** Classify one path; sources that classify many paths retain the inventory-scoped classifier. */
 export function classifyLanguageFile(
   routes: readonly LanguageProviderRoute[],
   path: string,
 ): Readonly<{ languageId?: string; dialect?: string; candidates: readonly string[] }> {
-  const name = baseNameOf(path)
-  const extension = languageFileExtension(name)
-  const lowerName = name.toLowerCase()
-  const named = routes.filter(
-    route => route.fileName !== undefined && languageRouteServesName(route, lowerName, extension),
-  )
-  const matching =
-    named.length > 0
-      ? named
-      : routes.filter(
-          route =>
-            route.fileName === undefined && languageRouteServesName(route, lowerName, extension),
-        )
-  const candidates = [...new Set(matching.map(route => route.languageId))].sort(compareUtf8)
-  const dialects = [
-    ...new Set(matching.flatMap(route => (route.dialect === undefined ? [] : [route.dialect]))),
-  ]
-  return Object.freeze({
-    ...(candidates.length === 1 ? { languageId: candidates[0] as string } : {}),
-    ...(candidates.length === 1 && dialects.length === 1 ? { dialect: dialects[0] as string } : {}),
-    candidates: Object.freeze(candidates),
-  })
+  return createLanguageFileClassifier(routes)(path)
 }
 
 /**

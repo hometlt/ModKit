@@ -709,6 +709,7 @@ export {
   xmlRootElementName,
   createLanguageWorkspace,
   classifyLanguageFile,
+  createLanguageFileClassifier,
   languageFileExtension,
   languageProviderRoutes,
   languageRouteServesFile,

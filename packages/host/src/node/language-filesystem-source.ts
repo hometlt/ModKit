@@ -6,7 +6,7 @@ import type {
   LanguageWorkspaceDocumentSource,
   LanguageWorkspaceDocumentSourceRequest,
 } from '../language/index.js'
-import { classifyLanguageFile, languageWorkspaceContextToken } from '../language/index.js'
+import { createLanguageFileClassifier, languageWorkspaceContextToken } from '../language/index.js'
 import type { LanguageDocument, LanguageWorkspaceDocumentOrigin } from '@modkit/sdk/language'
 
 export interface FilesystemLanguageDocumentSourceOptions {
@@ -28,6 +28,7 @@ export function createFilesystemLanguageDocumentSource(
   options: FilesystemLanguageDocumentSourceOptions,
 ): FilesystemLanguageDocumentSource {
   const versions = new Map<string, { signature: string; version: number }>()
+  const classify = createLanguageFileClassifier(options.routes)
   const maxVisitedEntries = options.maxVisitedEntries ?? 16_384
   const roots = options.roots.map(root => resolve(root))
   const contextId = languageWorkspaceContextToken({
@@ -77,7 +78,7 @@ export function createFilesystemLanguageDocumentSource(
       // A file-name route (a game's `Objects`) wins over extension routes; an extension more than
       // one language claims decides nothing.
       const languageOf = (path: string): string | undefined => {
-        const { languageId } = classifyLanguageFile(options.routes, path)
+        const { languageId } = classify(path)
         return languageId !== undefined && accepted.has(languageId) ? languageId : undefined
       }
       const fileRoutes = options.routes.filter(
@@ -87,8 +88,7 @@ export function createFilesystemLanguageDocumentSource(
         route =>
           accepted.has(route.languageId) &&
           (route.fileName !== undefined ||
-            classifyLanguageFile(options.routes, `x.${route.extension}`).languageId ===
-              route.languageId),
+            classify(`x.${route.extension}`).languageId === route.languageId),
       )
       // Nothing this snapshot wants can be told apart: an honest empty snapshot, incomplete when
       // files of those kinds may exist.
@@ -211,7 +211,7 @@ export function createFilesystemLanguageDocumentSource(
               ? previous.version
               : previous.version + 1
         versions.set(uri, { signature, version })
-        const dialect = classifyLanguageFile(options.routes, path).dialect
+        const dialect = classify(path).dialect
         documents.push(
           Object.freeze({
             uri,

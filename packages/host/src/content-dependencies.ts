@@ -35,7 +35,7 @@ import {
 } from './language/context.js'
 import { contentPathIndexSemanticInputs } from './language/content-path-index.js'
 import { artifactByteSourceFromBytes } from './source-bridge.js'
-import { classifyLanguageFile } from './language/workspace.js'
+import { createLanguageFileClassifier } from './language/workspace.js'
 import {
   normalizeCompanionLogicalId,
   type CompanionEnumerationOptions,
@@ -370,6 +370,7 @@ export function createContentDependencyLanguageDocumentSource(
   options: ContentDependencyLanguageDocumentSourceOptions,
 ): LanguageWorkspaceDocumentSource {
   const mounts = validateMounts(options.resolution)
+  const classify = createLanguageFileClassifier(options.routes)
   const maxDocumentBytes = options.maxDocumentBytes ?? 4_194_304
   const maxWorkspaceBytes = options.maxWorkspaceBytes ?? 16_777_216
   const maxEntries = options.maxEntries ?? 16_384
@@ -466,7 +467,7 @@ export function createContentDependencyLanguageDocumentSource(
           knowledge.push({ mount, path, fileName: relative })
           return true
         }
-        const { languageId, candidates: claimants } = classifyLanguageFile(options.routes, relative)
+        const { languageId, candidates: claimants } = classify(relative)
         if (languageId === undefined) {
           if (claimants.some(id => accepted.has(id))) complete = false
           return true
@@ -543,10 +544,7 @@ export function createContentDependencyLanguageDocumentSource(
       let totalBytes = 0
       for (const candidate of candidates.slice(0, request.maxDocuments)) {
         request.signal.throwIfAborted()
-        const { languageId: classified, dialect } = classifyLanguageFile(
-          options.routes,
-          candidate.relative,
-        )
+        const { languageId: classified, dialect } = classify(candidate.relative)
         const languageId = classified!
         let bytes: Uint8Array
         try {
