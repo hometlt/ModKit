@@ -39,19 +39,34 @@ Native logic is strict TypeScript. A runtime entrypoint is compiled JS inside it
 An empty `codec.js`/`runtime.js` re-export is optional. Remove it only after callers and manifest paths
 are updated; verify the full compiled import closure and declared runtime dependencies.
 
-A repository can share one root `vendor/` and lockfile across several extension roots. Local tarballs
+A `vendor/` folder is not required for every package or repository. A repository can share one root
+`vendor/` and lockfile across several extension roots. Local tarballs
 are the current workspace integration mechanism, not a universal runtime manifest field. Do not
 copy the vendor folder into every extension. A standalone distribution must obtain/include its
 actual dependency closure without relying on a parent repository or sibling checkout.
+Keep currently required pinned `file:vendor/*.tgz` dependencies in Git until reproducible installation
+from immutable versioned artifacts is implemented and checked. Do not pack the entire workspace/Core
+to supply a single dependency. Vendored third-party sources (for example the pinned Luau VM) retain
+their provenance and license requirements; they are not disposable build output.
 The separate optional `presentation.vendor` identifies a product vendor; `publisher` identifies the
 extension publisher. Do not invent a vendor or misattribute another studio's game for completeness.
 
-Prefer an extension-owned `tsconfig.build.json` for emission and root shared compiler options/editor
-checks where needed. Preserve inherited `rootDir`, relative include/outDir paths, compiled entrypoints
-and shared-source inclusion. Do not mechanically move existing configs: root-glob build scripts,
-generated catalogs and packaging may depend on their location.
+Require emission configs inside their owning registered extension root, normally `tsconfig.build.json`
+with additional native/portable profiles where needed. A root `tsconfig.json` is valid when the repository
+itself is the registered extension root (`path: "."`). Keep only shared flags, editor `noEmit` checks and
+orchestration in a multi-extension repository root; never inherit another extension's emission config.
+JS-only roots need no empty placeholder config. Preserve inherited `rootDir`, relative include/outDir
+paths, compiled entrypoints and shared-source inclusion. Compare effective TypeScript options/input
+files and update build discovery, catalog generation and packaging when moving an existing config.
 Keep a repository Vitest config only for real root/include/setup/runtime needs; it is developer
 tooling, not an extension requirement. Run existing script commands after changing its placement.
+
+Do not add reproducible dist files, bundles, source maps or build caches to Git by default. Build them
+before tests and packing; verify that standalone distributions include the complete runtime closure.
+Canonical schema/data, golden fixtures, immutable migration receipts and explicitly approved checked-in
+PWA assets have different owners and are not automatically disposable. Moving already pinned release
+assets out of Git requires immutable storage, digest verification and reproducible hydration/builds
+first. Removing a large file from the current tree does not remove it from historical Git commits.
 
 `modkit.repository.json` currently owns the inventory of roots and vendor/game subject profiles.
 Root `package.json` owns npm/build metadata; each extension's `package.json.modkit` owns its extension
