@@ -37,6 +37,84 @@ describe('PCX in codec-kit raster', () => {
     expect([...image.pixels.subarray(12, 16)]).toEqual([7, 14, 21, 255])
   })
 
+  it('uses a valid VGA trailer even when paletteInfo declares grayscale', () => {
+    const color = pcx()
+    const grayscaleHint = color.slice()
+    new DataView(grayscaleHint.buffer).setUint16(68, 2, true)
+    const header = parsePcx(grayscaleHint, 1024)
+    expect([header.paletteInfo, header.hasVgaPalette]).toEqual([2, true])
+    expect(decodePcxIndices(grayscaleHint, header)).toEqual(
+      decodePcxIndices(color, parsePcx(color, 1024)),
+    )
+    expect(decodePcx(grayscaleHint).pixels).toEqual(decodePcx(color).pixels)
+    expect([...decodePcx(grayscaleHint).pixels.subarray(12, 16)]).toEqual([7, 14, 21, 255])
+  })
+
+  it('retains an authored grayscale trailer rather than replacing it with an index ramp', () => {
+    const bytes = pcx()
+    new DataView(bytes.buffer).setUint16(68, 2, true)
+    for (let index = 0; index < 256; index += 1) {
+      const shade = 255 - index
+      bytes.set([shade, shade, shade], bytes.length - 768 + index * 3)
+    }
+    expect([...decodePcx(bytes).pixels.subarray(0, 4)]).toEqual([254, 254, 254, 255])
+  })
+
+  it('keeps header-palette and grayscale fallback policy when there is no VGA trailer', () => {
+    const bytes = pcx().slice(0, -769)
+    bytes.set([32, 64, 96], 16 + 3)
+    expect(parsePcx(bytes, 1024).hasVgaPalette).toBe(false)
+    expect([...decodePcx(bytes).pixels.subarray(0, 4)]).toEqual([32, 64, 96, 255])
+    new DataView(bytes.buffer).setUint16(68, 2, true)
+    expect([...decodePcx(bytes).pixels.subarray(0, 4)]).toEqual([1, 1, 1, 255])
+  })
+
+  it.each([3, 4])('keeps %i-plane direct color independent of paletteInfo', planes => {
+    const header = pcx().slice(0, 128)
+    const view = new DataView(header.buffer)
+    header[2] = 0 // uncompressed
+    header[65] = planes
+    view.setUint16(8, 1, true) // 2x1
+    view.setUint16(10, 0, true)
+    view.setUint16(66, 2, true)
+    view.setUint16(68, 2, true)
+    const bytes = Uint8Array.from([
+      ...header,
+      12,
+      13, // red
+      24,
+      25, // green
+      36,
+      37, // blue
+      ...(planes === 4 ? [48, 49] : []),
+    ])
+    expect([...decodePcx(bytes).pixels]).toEqual([
+      12,
+      24,
+      36,
+      planes === 4 ? 48 : 255,
+      13,
+      25,
+      37,
+      planes === 4 ? 49 : 255,
+    ])
+  })
+
+  it('still refuses truncated RLE data, overlong runs and decode budgets with a VGA trailer', () => {
+    const bytes = pcx()
+    new DataView(bytes.buffer).setUint16(68, 2, true)
+    const truncated = Uint8Array.from([
+      ...bytes.subarray(0, 128),
+      0xc3, // run value is absent; the decoder must not consume the palette marker
+      ...bytes.subarray(-769),
+    ])
+    expect(() => decodePcx(truncated)).toThrow(/RLE/u)
+    const overlong = bytes.slice()
+    overlong[128] = 0xff // 63 samples exceed the declared eight row bytes
+    expect(() => decodePcx(overlong)).toThrow(/RLE/u)
+    expect(() => decodePcx(bytes, 8)).toThrow(/budget/u)
+  })
+
   it('refuses a truncated header and an image beyond the budget', () => {
     expect(() => parsePcx(new Uint8Array(64), 1024)).toThrow(/truncated/u)
     expect(() => decodePcx(pcx(), 8)).toThrow(/budget/u)

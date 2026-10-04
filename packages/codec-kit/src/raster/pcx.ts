@@ -197,7 +197,8 @@ export function decodePcxPixels(bytes: Uint8Array, pcx: PcxHeader): Uint8Array {
       let red: number
       let green: number
       let blue: number
-      if (pcx.paletteInfo !== 2 && pcx.bitsPerPlane === 8 && pcx.planes === 1 && vgaPalette) {
+      // A valid indexed VGA trailer is authoritative, even with a grayscale header hint.
+      if (pcx.bitsPerPlane === 8 && pcx.planes === 1 && vgaPalette) {
         red = vgaPalette[index * 3] ?? 0
         green = vgaPalette[index * 3 + 1] ?? 0
         blue = vgaPalette[index * 3 + 2] ?? 0
