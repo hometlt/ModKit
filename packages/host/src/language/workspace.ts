@@ -1970,7 +1970,14 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
     string,
     Readonly<{ value: ResolvedDataSemanticContextResult; bytes: number }>
   >()
-  const pendingSemanticContexts = new Map<string, Promise<ResolvedDataSemanticContextResult>>()
+  const pendingSemanticContexts = new Map<
+    string,
+    {
+      readonly promise: Promise<ResolvedDataSemanticContextResult>
+      readonly controller: AbortController
+      waiters: number
+    }
+  >()
   const latestSemanticContextKeys = new Map<string, string>()
   const semanticContextEncoder = new TextEncoder()
   let semanticContextCacheBytes = 0
@@ -2105,16 +2112,21 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
           if (pendingSemanticContexts.size >= SEMANTIC_CONTEXT_PENDING_MAX) {
             pendingSemanticContexts.delete(pendingSemanticContexts.keys().next().value as string)
           }
-          pending = analyzeResolvedDataSemanticContext({
-            services: options.services,
-            grant: options.grant,
-            budgets: workspaceBudgets,
-            requirement,
-            prepared,
-            signal,
-          })
+          const controller = new AbortController()
+          pending = {
+            controller,
+            waiters: 0,
+            promise: analyzeResolvedDataSemanticContext({
+              services: options.services,
+              grant: options.grant,
+              budgets: workspaceBudgets,
+              requirement,
+              prepared,
+              signal: controller.signal,
+            }),
+          }
           pendingSemanticContexts.set(prepared.key, pending)
-          void pending.then(
+          void pending.promise.then(
             value => {
               if (pendingSemanticContexts.get(prepared.key) !== pending) return
               pendingSemanticContexts.delete(prepared.key)
@@ -2128,7 +2140,18 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
             },
           )
         }
-        resolved = await waitWithSignal(pending, signal)
+        // The existing shared analysis belongs to every live waiter, not the first editor request.
+        pending.waiters += 1
+        try {
+          resolved = await waitWithSignal(pending.promise, signal)
+        } finally {
+          pending.waiters -= 1
+          if (pending.waiters === 0) {
+            if (pendingSemanticContexts.get(prepared.key) === pending)
+              pendingSemanticContexts.delete(prepared.key)
+            pending.controller.abort('no language features await the resolved Data analysis')
+          }
+        }
       }
       contextsComplete &&= resolved.complete && !stale
       if (resolved.input !== undefined) inputs.push(resolved.input)
@@ -2463,9 +2486,15 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
               semanticInputLocales(baseSemanticInputs),
             )
         semanticContextsComplete = semanticContexts.complete
-      } catch {
+      } catch (error) {
         throwIfAborted(controller.signal)
-        invalidFeature('language workspace semantic inputs are invalid or conflicting', entry.uri)
+        if (isCancellation(error)) throw error
+        const reason =
+          error instanceof Error ? error.message.replaceAll('\0', '').slice(0, 512) : ''
+        invalidFeature(
+          `language workspace semantic inputs are invalid or conflicting${reason === '' ? '' : `: ${reason}`}`,
+          entry.uri,
+        )
       }
       try {
         semanticInputs = validatedLanguageWorkspaceSemanticInputs([

@@ -2003,6 +2003,76 @@ describe('language subject completion lifecycle', () => {
     }
   }, 15_000)
 
+  it('keeps shared Data analysis alive when one feature waiter cancels', async () => {
+    let release = (): void => undefined
+    const gate = new Promise<void>(resolve => {
+      release = resolve
+    })
+    const analyze = dataProvider.analyze
+    const pendingAnalysis = vi.spyOn(dataProvider, 'analyze').mockImplementation(async request => {
+      await gate
+      if (request.signal?.aborted) throw new OperationCancelledError(request.signal.reason)
+      return analyze(request)
+    })
+    const snapshots = vi.fn(async () => ({ documents: [], isComplete: true }))
+    const workspace = await openWorkspace(
+      { open: async () => undefined },
+      false,
+      { snapshot: snapshots },
+      document => ({
+        uri: document.uri,
+        layerId: 'selected-mod',
+        logicalId: 'GameData/UnitData.xml',
+        precedence: 0,
+        sourceRevision: `open:${document.version}`,
+        readOnly: false,
+        overlay: true,
+      }),
+    )
+    const firstController = new AbortController()
+    const first = workspace.completion({ ...completionRequest(), signal: firstController.signal })
+    const firstCancelled = expect(first).rejects.toBeInstanceOf(OperationCancelledError)
+    const second = workspace.completion(completionRequest())
+    try {
+      await vi.waitFor(() => {
+        expect(snapshots).toHaveBeenCalledTimes(2)
+        expect(pendingAnalysis).toHaveBeenCalledTimes(1)
+      })
+      firstController.abort('first editor request superseded')
+      await firstCancelled
+      release()
+      await expect(second).resolves.toMatchObject({
+        items: [expect.objectContaining({ label: 'expanded' })],
+      })
+      expect(pendingAnalysis).toHaveBeenCalledTimes(1)
+      expect(observedWorkspaceContext?.semanticComplete).toBe(true)
+    } finally {
+      release()
+      await Promise.allSettled([first, second])
+      pendingAnalysis.mockRestore()
+      await workspace.shutdown()
+    }
+  })
+
+  it('preserves the bounded reason when semantic input validation fails', async () => {
+    const workspace = await openWorkspace(
+      { open: async () => undefined },
+      false,
+      undefined,
+      undefined,
+      () => [{ kind: 'schema', id: 'fixture/schema@1', revision: 'conflicting-schema' }],
+    )
+    try {
+      await expect(workspace.hover(completionRequest())).rejects.toMatchObject({
+        code: 'x3.host/language-feature-invalid',
+        message:
+          'language workspace semantic inputs are invalid or conflicting: language workspace semantic input schema/fixture/schema@1 conflicts',
+      })
+    } finally {
+      await workspace.shutdown()
+    }
+  })
+
   it('cancels resolved Data analysis and releases its service lease', async () => {
     let entered = (): void => undefined
     const analyzeEntered = new Promise<void>(resolve => {

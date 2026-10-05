@@ -31,6 +31,18 @@ const normalizedUriPath = uri =>
     ? uri.fsPath.replaceAll('\\', '/').toLowerCase()
     : uri?.toString().toLowerCase()
 const sameDocument = (left, right) => normalizedUriPath(left) === normalizedUriPath(right)
+/** Keep fixture tabs pinned and await the active editor before invoking native document commands. */
+async function showDocument(document) {
+  const editor = await vscode.window.showTextDocument(document, {
+    preview: false,
+    preserveFocus: false,
+  })
+  if (
+    !(await waitFor(() => sameDocument(vscode.window.activeTextEditor?.document.uri, document.uri)))
+  )
+    throw new Error(`Native fixture did not activate ${document.uri.toString()}`)
+  return editor
+}
 const receiptLocations = (folder, items) =>
   items.map(item => ({
     uri: relativeUri(folder, locationUri(item)),
@@ -81,7 +93,7 @@ async function locations(command, uri, position) {
 }
 
 /** Exercise real read-only CASC files via native commands and the existing public diagnostics export. */
-async function probeInstalledCasc(receipt, resultPath, gameRoot) {
+async function probeInstalledCasc(receipt, resultPath, gameRoot, extensionApi) {
   const reportUri = vscode.Uri.file(`${resultPath}.window-diagnostics.json`)
   const state = (receipt.casc = { gameRoot, samples: [], completed: false })
   /** Record one editor operation without treating a single sample as a latency SLA. */
@@ -113,7 +125,7 @@ async function probeInstalledCasc(receipt, resultPath, gameRoot) {
   state.libertyUri = libertyUri.toString()
   const voidDocument = await measured('open-Void-UnitData', async () => {
     const document = await vscode.workspace.openTextDocument(voidUri)
-    await vscode.window.showTextDocument(document)
+    await showDocument(document)
     return document
   })
   if (voidDocument.languageId !== 'sc2-data')
@@ -141,7 +153,7 @@ async function probeInstalledCasc(receipt, resultPath, gameRoot) {
   state.rootCompletion = root.labels
   const liberty = await measured('open-Liberty-Marine', async () => {
     const document = await vscode.workspace.openTextDocument(libertyUri)
-    await vscode.window.showTextDocument(document)
+    await showDocument(document)
     return document
   })
   const text = liberty.getText()
@@ -173,6 +185,14 @@ async function probeInstalledCasc(receipt, resultPath, gameRoot) {
   if (lifeHover === undefined)
     throw new Error('Native CASC Marine hover omitted the resolved LifeMax=45')
   state.lifeHover = lifeHover
+  state.resolvedDataContext = extensionApi
+    .diagnostics()
+    .filter(
+      line =>
+        line.includes('[language-context] resolved revision=') &&
+        line.includes('provider:blizzard/sc2-data-language'),
+    )
+    .at(-1)
   // These literals locate test cursors only; production classes/inheritance stay with the Data owner.
   const entityIds = [...text.matchAll(/<CUnit\s[^>]*\bid="([^"]+)"/gu)].map(match => match[1])
   const lastEntity = entityIds.at(-1)
@@ -189,9 +209,12 @@ async function probeInstalledCasc(receipt, resultPath, gameRoot) {
   )
   const commands = (lenses ?? []).map(lens => lens.command).filter(Boolean)
   state.codeLenses = { count: lenses?.length ?? 0, marine: [], last: [] }
-  const subjectIdsFor = view => new Set(commands
-    .filter(command => command.arguments?.[0]?.view === view)
-    .map(command => command.arguments[0].subjectId))
+  const subjectIdsFor = view =>
+    new Set(
+      commands
+        .filter(command => command.arguments?.[0]?.view === view)
+        .map(command => command.arguments[0].subjectId),
+    )
   const cardIds = subjectIdsFor('card')
   const graphIds = subjectIdsFor('graph')
   state.codeLenses.coverage = {
@@ -199,7 +222,10 @@ async function probeInstalledCasc(receipt, resultPath, gameRoot) {
     missingCards: entityIds.filter(id => !cardIds.has(`Unit/${id}`)),
     missingGraphs: entityIds.filter(id => !graphIds.has(`Unit/${id}`)),
   }
-  if (state.codeLenses.coverage.missingCards.length || state.codeLenses.coverage.missingGraphs.length)
+  if (
+    state.codeLenses.coverage.missingCards.length ||
+    state.codeLenses.coverage.missingGraphs.length
+  )
     throw new Error('Native CASC CodeLens omitted Card/Graph commands for a declared Unit')
   for (const [key, id] of [
     ['marine', 'Marine'],
@@ -224,21 +250,27 @@ async function probeInstalledCasc(receipt, resultPath, gameRoot) {
   state.cardCommandRouted = true
   // The common editor hosts entity cards in a file/package tab, without an entity-specific title.
   const packagePath = libertyUri.path.toLowerCase().split('/base.sc2data/')[0]
-  const cardTab = await waitFor(
-    () => {
-      const tabs = vscode.window.tabGroups.all.flatMap(group => group.tabs)
-      state.tabsAfterCard = tabs.map(tab => ({
-        label: tab.label, uri: tab.input.uri?.toString(), viewType: tab.input.viewType,
-      }))
-      return tabs.find(tab => tab.input instanceof vscode.TabInputCustom &&
+  const cardTab = await waitFor(() => {
+    const tabs = vscode.window.tabGroups.all.flatMap(group => group.tabs)
+    state.tabsAfterCard = tabs.map(tab => ({
+      label: tab.label,
+      uri: tab.input.uri?.toString(),
+      viewType: tab.input.viewType,
+    }))
+    return tabs.find(
+      tab =>
+        tab.input instanceof vscode.TabInputCustom &&
         tab.input.uri.scheme === libertyUri.scheme &&
-        tab.input.uri.path.toLowerCase().startsWith(`${packagePath}/`))
-    },
-    60_000,
-  )
+        tab.input.uri.path.toLowerCase().startsWith(`${packagePath}/`),
+    )
+  }, 60_000)
   if (cardTab === undefined)
     throw new Error('Native CASC Marine card command opened no subject tab')
-  state.cardTab = { label: cardTab.label, uri: cardTab.input.uri.toString(), viewType: cardTab.input.viewType }
+  state.cardTab = {
+    label: cardTab.label,
+    uri: cardTab.input.uri.toString(),
+    viewType: cardTab.input.viewType,
+  }
   await vscode.commands.executeCommand('workbench.action.closeAllEditors')
   const afterClose = await windowState()
   state.loadedModsAfterClose = afterClose.loadedMods
@@ -253,7 +285,7 @@ exports.run = async function run() {
   if (resultPath === undefined) throw new Error('MODKIT_INSTALLED_LANGUAGE_RESULT is not set')
   const receipt = {
     kind: 'modkit.vscode-installed-sc2-language',
-    version: 11,
+    version: 12,
     passed: false,
     vscodeVersion: vscode.version,
   }
@@ -367,7 +399,7 @@ exports.run = async function run() {
       const gameRoot = process.env.MODKIT_INSTALLED_CASC_ROOT
       if (gameRoot === undefined) throw new Error('CASC-only acceptance requires an installation')
       receipt.scope = 'installed CASC native API; six synthetic language fixtures not exercised'
-      await probeInstalledCasc(receipt, resultPath, gameRoot)
+      await probeInstalledCasc(receipt, resultPath, gameRoot, extensionApi)
       receipt.passed = true
       return
     }
@@ -443,7 +475,7 @@ exports.run = async function run() {
     ) {
       throw new Error('VS Code workspace discovery missed mixed-case SC2 Style/Layout suffixes')
     }
-    await vscode.window.showTextDocument(documents.galaxy)
+    await showDocument(documents.galaxy)
 
     const galaxyDefinition = await waitFor(async () => {
       const result = await locations(
@@ -529,6 +561,20 @@ exports.run = async function run() {
     if (resolvedDataContext === undefined)
       throw new Error('Data provider did not receive a canonical host Data semantic context')
     receipt.resolvedDataContext = resolvedDataContext
+    if (
+      !resolvedDataContext.includes('complete=false') ||
+      !resolvedDataContext.includes('semantic-context-status:') ||
+      !resolvedDataContext.includes('resolved Data analysis is incomplete:') ||
+      !resolvedDataContext.includes('Base.SC2Data/GameData/NestedData.xml:') ||
+      !resolvedDataContext.includes('Missing end tag for element CUnit')
+    )
+      throw new Error('Partial Data context omitted the intentional NestedData XML failure')
+    receipt.partialDataReason = {
+      availableAuthoringIndex: resolvedDataContext.includes('resolved-data-authoring-index:'),
+      incomplete: true,
+      malformedFixture: 'Base.SC2Data/GameData/NestedData.xml',
+      diagnostic: 'Missing end tag for element CUnit',
+    }
     const dataRootCompletion = await waitFor(async () => {
       const result = await vscode.commands.executeCommand(
         'vscode.executeCompletionItemProvider',
@@ -568,7 +614,7 @@ exports.run = async function run() {
       elapsedMs: documentRootMs,
     }
 
-    const editedUnitEditor = await vscode.window.showTextDocument(documents.editedUnit)
+    const editedUnitEditor = await showDocument(documents.editedUnit)
     const editedUnitStart = positionOf(
       documents.editedUnit,
       '<Catalog>\n    ',
@@ -611,7 +657,7 @@ exports.run = async function run() {
       insertText: completionInsertText(assetCompletion.item),
     }
 
-    const onTypeEditor = await vscode.window.showTextDocument(documents.onTypeData)
+    const onTypeEditor = await showDocument(documents.onTypeData)
     const beforeEquals = positionOf(documents.onTypeData, '<Mob value', '<Mob value'.length)
     const insertedEquals = await onTypeEditor.edit(builder => builder.insert(beforeEquals, '='))
     if (!insertedEquals) throw new Error('VS Code refused the Data on-type trigger edit')
@@ -632,7 +678,7 @@ exports.run = async function run() {
       completion: onTypeCompletion.item.label,
     }
 
-    const attributeEditor = await vscode.window.showTextDocument(documents.attributeData)
+    const attributeEditor = await showDocument(documents.attributeData)
     const entityAttributeStart = positionOf(
       documents.attributeData,
       '<CUnit id="AttributeProbe"',
@@ -736,7 +782,7 @@ exports.run = async function run() {
       referenceDocumentation: true,
     }
 
-    const nestedEditor = await vscode.window.showTextDocument(documents.nestedData)
+    const nestedEditor = await showDocument(documents.nestedData)
     const unitFieldCursor = positionOf(
       documents.nestedData,
       '<CUnit id="NestedProbe">\n        <',
@@ -821,7 +867,7 @@ exports.run = async function run() {
       nestedArrayAppliedByVsCode: true,
     }
 
-    const delimitedValueEditor = await vscode.window.showTextDocument(documents.onTypeData)
+    const delimitedValueEditor = await showDocument(documents.onTypeData)
     const firstFlagEnd = positionOf(documents.onTypeData, 'NoPlacement', 'NoPlacement'.length)
     const insertedComma = await delimitedValueEditor.edit(builder =>
       builder.insert(firstFlagEnd, ','),
@@ -969,7 +1015,7 @@ exports.run = async function run() {
       },
     }
 
-    const completionEditor = await vscode.window.showTextDocument(documents.emptyUnit)
+    const completionEditor = await showDocument(documents.emptyUnit)
     completionEditor.selection = new vscode.Selection(unitRange.start, unitRange.end)
     await completionEditor.insertSnippet(unitItem.insertText, unitRange)
     const appliedCompletion = await waitFor(() => {
@@ -984,7 +1030,7 @@ exports.run = async function run() {
     receipt.emptyDataCompletion.applicationBoundary =
       'VS Code exposes no command to accept a specific CompletionItem; acceptSelectedSuggestion is nondeterministic when the built-in XML provider competes.'
     receipt.emptyDataCompletion.appliedText = appliedCompletion
-    await vscode.window.showTextDocument(documents.galaxy)
+    await showDocument(documents.galaxy)
 
     const dataDefinition = await waitFor(async () => {
       const result = await locations(
@@ -1178,6 +1224,7 @@ exports.run = async function run() {
     }
 
     const initialVersion = documents.galaxy.version
+    const originalGalaxyText = documents.galaxy.getText()
     const overlay = new vscode.WorkspaceEdit()
     overlay.replace(
       uris.galaxy,
@@ -1204,7 +1251,7 @@ exports.run = async function run() {
       throw new Error('Galaxy diagnostics did not observe the unsaved Missing overlay')
     if (!documents.galaxy.isDirty || documents.galaxy.version <= initialVersion)
       throw new Error('VS Code did not retain the unsaved document revision')
-    await vscode.window.showTextDocument(documents.galaxy)
+    await showDocument(documents.galaxy)
     const verified = await vscode.commands.executeCommand('modkit.verifyDocument')
     if (!verified?.diagnostics.some(item => item.message.includes("Function 'Missing'")))
       throw new Error(
@@ -1224,7 +1271,7 @@ exports.run = async function run() {
     }
     receipt.explicitVerification.languages = {}
     for (const key of ['data', 'strings', 'style', 'layout', 'wizard']) {
-      await vscode.window.showTextDocument(documents[key])
+      await showDocument(documents[key])
       const activeBeforeVerify = vscode.window.activeTextEditor?.document
       const result = await vscode.commands.executeCommand('modkit.verifyDocument')
       receipt.explicitVerification.languages[key] = {
@@ -1259,7 +1306,7 @@ exports.run = async function run() {
       vscode.workspace.textDocuments.some(document => sameDocument(document.uri, closedLayoutUri))
     )
       throw new Error('Project verification fixture must never have been opened')
-    await vscode.window.showTextDocument(documents.layout)
+    await showDocument(documents.layout)
     const projectVerified = await vscode.commands.executeCommand('modkit.verifyMod')
     const closedReport = projectVerified?.documents.find(item =>
       sameDocument(vscode.Uri.parse(item.uri), closedLayoutUri),
@@ -1278,13 +1325,25 @@ exports.run = async function run() {
       publishedToProblems: true,
       isIncomplete: projectVerified.isIncomplete,
     }
-    await vscode.window.showTextDocument(documents.galaxy)
+    await showDocument(documents.galaxy)
+    // Verify Mod opens Problems; await editor focus before dispatching the focus-routed Undo.
+    await vscode.commands.executeCommand('workbench.action.focusActiveEditorGroup')
+    receipt.undoProbe = {
+      activeUri: vscode.window.activeTextEditor?.document.uri.toString(),
+      beforeVersion: documents.galaxy.version,
+      beforeText: documents.galaxy.getText(),
+    }
+    if (!sameDocument(vscode.window.activeTextEditor?.document.uri, uris.galaxy))
+      throw new Error('Undo fixture did not regain the Galaxy editor focus')
     await vscode.commands.executeCommand('undo')
-    if (await waitFor(() => documents.galaxy.getText().includes('Helper(2)'))) {
+    if (await waitFor(() => documents.galaxy.getText() === originalGalaxyText)) {
       // The undo restored the dependency call before any save.
     } else {
+      receipt.undoProbe.afterText = documents.galaxy.getText()
       throw new Error('undo did not restore the unsaved Galaxy overlay')
     }
+    receipt.undoProbe.afterVersion = documents.galaxy.version
+    receipt.undoProbe.restoredExactText = true
     if (
       !(await waitFor(
         () =>
@@ -1295,7 +1354,7 @@ exports.run = async function run() {
     )
       throw new Error('Galaxy diagnostics retained the undone document revision')
 
-    await vscode.window.showTextDocument(documents.galaxyDependency)
+    await showDocument(documents.galaxyDependency)
     const renamePreview = await waitFor(async () => {
       try {
         const result = await vscode.commands.executeCommand(
@@ -1330,7 +1389,12 @@ exports.run = async function run() {
       throw new Error('saved rename did not survive close and reopen')
 
     if (process.env.MODKIT_INSTALLED_CASC_ROOT !== undefined)
-      await probeInstalledCasc(receipt, resultPath, process.env.MODKIT_INSTALLED_CASC_ROOT)
+      await probeInstalledCasc(
+        receipt,
+        resultPath,
+        process.env.MODKIT_INSTALLED_CASC_ROOT,
+        extensionApi,
+      )
 
     Object.assign(receipt, {
       passed: true,

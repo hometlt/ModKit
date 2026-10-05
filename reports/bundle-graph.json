@@ -4,7 +4,7 @@
   "entryCount": 74,
   "totals": {
     "modules": 1042,
-    "bytes": 14055461
+    "bytes": 14056257
   },
   "entries": [
     {
@@ -138,7 +138,7 @@
       "entry": "packages/host/dist/language/index.js",
       "surface": "host/language",
       "modules": 42,
-      "bytes": 235988,
+      "bytes": 236784,
       "reachesUnits": [],
       "externalUnits": [
         "@modkit/core",
