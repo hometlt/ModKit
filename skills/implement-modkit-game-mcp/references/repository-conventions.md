@@ -36,6 +36,9 @@ Whole-document language projections (symbols, CodeLens, folding, links, colors) 
 bounded document result allowance; completion and search retain their smaller interactive allowance.
 Prove the last entity in a real large document is reachable through the installed editor, and keep
 overflow/malformed-result rejection tests. A truncated provider list is not complete coverage.
+Verify stateful owner reuse through the compiled publication entrypoints in the same realm:
+separately bundled copies of a WeakMap lose snapshot identity even when source tests pass.
+Do not replace boundary validation with trust in caller-frozen objects or a mutable global cache.
 Build and pack from committed inputs using the repository's package manager; pnpm pack resolves
 workspace dependency specifiers while npm pack may leave them in the archive. Before publishing a
 vendor update, verify frozen/offline installation, the complete consumer build and installed bytes
