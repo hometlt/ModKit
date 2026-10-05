@@ -189,6 +189,18 @@ async function probeInstalledCasc(receipt, resultPath, gameRoot) {
   )
   const commands = (lenses ?? []).map(lens => lens.command).filter(Boolean)
   state.codeLenses = { count: lenses?.length ?? 0, marine: [], last: [] }
+  const subjectIdsFor = view => new Set(commands
+    .filter(command => command.arguments?.[0]?.view === view)
+    .map(command => command.arguments[0].subjectId))
+  const cardIds = subjectIdsFor('card')
+  const graphIds = subjectIdsFor('graph')
+  state.codeLenses.coverage = {
+    declaredEntities: entityIds.length,
+    missingCards: entityIds.filter(id => !cardIds.has(`Unit/${id}`)),
+    missingGraphs: entityIds.filter(id => !graphIds.has(`Unit/${id}`)),
+  }
+  if (state.codeLenses.coverage.missingCards.length || state.codeLenses.coverage.missingGraphs.length)
+    throw new Error('Native CASC CodeLens omitted Card/Graph commands for a declared Unit')
   for (const [key, id] of [
     ['marine', 'Marine'],
     ['last', lastEntity],
@@ -210,7 +222,7 @@ async function probeInstalledCasc(receipt, resultPath, gameRoot) {
   )
     throw new Error('Native CASC Marine card command did not route to the subject owner')
   state.cardCommandRouted = true
-  // The common editor hosts entity cards inside their package tab, whose title remains DocumentInfo.
+  // The common editor hosts entity cards in a file/package tab, without an entity-specific title.
   const packagePath = libertyUri.path.toLowerCase().split('/base.sc2data/')[0]
   const cardTab = await waitFor(
     () => {
