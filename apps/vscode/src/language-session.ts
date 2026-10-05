@@ -51,7 +51,11 @@ import type {
   LanguageWorkspaceAnalysisResult,
   LanguageWorkspaceDocumentRequest,
 } from '@modkit/host/language'
-import { LANGUAGE_MAX_DOCUMENTS, languageRouteServesFile } from '@modkit/host/language'
+import {
+  LANGUAGE_MAX_DOCUMENTS,
+  LANGUAGE_MAX_DOCUMENT_RESULTS,
+  languageRouteServesFile,
+} from '@modkit/host/language'
 
 export const LANGUAGE_TOKEN_TYPES: readonly LanguageTokenKind[] = Object.freeze([
   'comment',
@@ -963,11 +967,15 @@ export function createLanguageSessionController(
     return tracked.analysis
   }
 
-  /** One document's feature request, bounded as every editor feature is. */
-  const featureRequest = (document: EditorLanguageDocument, signal?: AbortSignal) => ({
+  /** Exact-version request using the interactive or whole-document result ceiling. */
+  const featureRequest = (
+    document: EditorLanguageDocument,
+    signal?: AbortSignal,
+    maxResults = EDITOR_MAX_RESULTS,
+  ) => ({
     uri: document.uri,
     documentVersion: document.version,
-    maxResults: EDITOR_MAX_RESULTS,
+    maxResults,
     maxDocuments: EDITOR_MAX_DOCUMENTS,
     ...(signal === undefined ? {} : { signal }),
   })
@@ -1077,7 +1085,7 @@ export function createLanguageSessionController(
       const semantic = await options.workspace.documentSymbols({
         uri: document.uri,
         documentVersion: document.version,
-        maxResults: EDITOR_MAX_RESULTS,
+        maxResults: LANGUAGE_MAX_DOCUMENT_RESULTS,
         maxDocuments: EDITOR_MAX_DOCUMENTS,
         ...(signal === undefined ? {} : { signal }),
       })
@@ -1304,7 +1312,7 @@ export function createLanguageSessionController(
       return options.workspace.documentColors({
         uri: document.uri,
         documentVersion: document.version,
-        maxResults: EDITOR_MAX_RESULTS,
+        maxResults: LANGUAGE_MAX_DOCUMENT_RESULTS,
         maxDocuments: EDITOR_MAX_DOCUMENTS,
         ...(signal === undefined ? {} : { signal }),
       })
@@ -1334,7 +1342,7 @@ export function createLanguageSessionController(
       signal?: AbortSignal,
     ): Promise<LanguageCodeLensList | undefined> {
       if ((await ensure(document, signal)) === undefined) return undefined
-      return options.workspace.codeLenses(featureRequest(document, signal))
+      return options.workspace.codeLenses(featureRequest(document, signal, LANGUAGE_MAX_DOCUMENT_RESULTS))
     },
 
     async foldingRanges(
@@ -1342,7 +1350,7 @@ export function createLanguageSessionController(
       signal?: AbortSignal,
     ): Promise<LanguageFoldingRangeList | undefined> {
       if ((await ensure(document, signal)) === undefined) return undefined
-      return options.workspace.foldingRanges(featureRequest(document, signal))
+      return options.workspace.foldingRanges(featureRequest(document, signal, LANGUAGE_MAX_DOCUMENT_RESULTS))
     },
 
     async documentLinks(
@@ -1350,7 +1358,7 @@ export function createLanguageSessionController(
       signal?: AbortSignal,
     ): Promise<LanguageDocumentLinkList | undefined> {
       if ((await ensure(document, signal)) === undefined) return undefined
-      return options.workspace.documentLinks(featureRequest(document, signal))
+      return options.workspace.documentLinks(featureRequest(document, signal, LANGUAGE_MAX_DOCUMENT_RESULTS))
     },
 
     async documentHighlights(

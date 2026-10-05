@@ -1553,6 +1553,24 @@ describe('VS Code-free language session controller', () => {
     await controller.shutdown()
   })
 
+  it('gives document-wide features a separate result limit from interactive completion', async () => {
+    const workspace = fakeWorkspace()
+    const lenses = vi.spyOn(workspace, 'codeLenses')
+    const controller = createLanguageSessionController({
+      workspace, routes: [ROUTE], debounceMs: 0, publishDiagnostics: () => undefined,
+    })
+    await controller.initialize()
+    try {
+      await controller.codeLenses(editorDocument(4))
+      expect(lenses).toHaveBeenCalledWith({
+        uri: 'file:///workspace/sample.fixture', documentVersion: 4,
+        maxResults: 65_536, maxDocuments: 4_096,
+      })
+    } finally {
+      await controller.shutdown()
+    }
+  })
+
   it('forwards semantic requests as exact versioned bounded workspace calls', async () => {
     const workspace = fakeWorkspace()
     const completion = vi.spyOn(workspace, 'completion').mockResolvedValue({

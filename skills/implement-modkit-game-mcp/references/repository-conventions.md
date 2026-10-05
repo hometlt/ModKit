@@ -31,6 +31,10 @@ dependency rules stay with their format/game owner. Publisher formats such as Bl
 and Unity packed vectors belong with the publisher/engine, not Core. Reuse an existing owner before
 adding any helper. Preserve identities and error/budget/cancellation semantics when replacing a copy.
 Adding a common export requires its consumers, package exports, worker maps and vendor compatibility
+checks. Whole-document language projections (symbols, CodeLens, folding, links, colors) use Host's
+bounded document result allowance; completion and search retain their smaller interactive allowance.
+Prove the last entity in a real large document is reachable through the installed editor, and keep
+overflow/malformed-result rejection tests. A truncated provider list is not complete coverage.
 checks under the actual integration process; an unavailable API is not fixed by a private import.
 Build and pack from committed inputs using the repository's package manager; pnpm pack resolves
 workspace dependency specifiers while npm pack may leave them in the archive. Before publishing a

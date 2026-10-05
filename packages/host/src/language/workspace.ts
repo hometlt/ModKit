@@ -7,6 +7,8 @@
  * Source snapshots and provenance are revalidated for every workspace feature. Only unchanged
  * immutable document captures may be retained within the caller's bounded workspace allowance;
  * retention never changes the documents, authority or completeness forwarded to a provider.
+ * Whole-document projections use their own bounded result ceiling; interactive completion and
+ * searches retain the smaller ceiling. Providers still declare incomplete results explicitly.
  */
 
 import { base64Of } from '../execution/frame-json.js'
@@ -111,6 +113,8 @@ export const LANGUAGE_EDIT_READ_ONLY = 'x3.host/language-edit-read-only'
 
 export const LANGUAGE_DEFAULT_MAX_RESULTS = 256
 export const LANGUAGE_MAX_RESULTS = 2_048
+/** Whole-document projections need room for every symbol/lens/link, independent of interactive lists. */
+export const LANGUAGE_MAX_DOCUMENT_RESULTS = 65_536
 export const LANGUAGE_DEFAULT_MAX_DOCUMENTS = 32
 /*
  * A real mod is the unit of meaning for these languages: Blizzard's core mod alone holds 110 GameData
@@ -951,6 +955,7 @@ function validatedFormattingOptions(
 function validateFeatureRequest(
   request: LanguageWorkspaceFeatureRequest,
   positioned: boolean,
+  maxAllowedResults = LANGUAGE_MAX_RESULTS,
 ): void {
   if (
     typeof request.uri !== 'string' ||
@@ -967,7 +972,7 @@ function validateFeatureRequest(
   boundedInteger(
     request.maxResults,
     LANGUAGE_DEFAULT_MAX_RESULTS,
-    LANGUAGE_MAX_RESULTS,
+    maxAllowedResults,
     'maxResults',
   )
   boundedInteger(
@@ -2155,9 +2160,10 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
   const requireFeatureEntry = (
     request: LanguageWorkspaceFeatureRequest,
     positioned: boolean,
+    maxAllowedResults = LANGUAGE_MAX_RESULTS,
   ): OpenDocument => {
     requireReady()
-    validateFeatureRequest(request, positioned)
+    validateFeatureRequest(request, positioned, maxAllowedResults)
     const entry = documents.get(request.uri)
     if (entry === undefined) {
       throw workspaceError(
@@ -2211,13 +2217,14 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
     additions: Readonly<Record<string, unknown>> = {},
     preferCachedSemanticContext = false,
     discoverCompletionContext = false,
+    maxAllowedResults = LANGUAGE_MAX_RESULTS,
   ): Promise<Value | undefined> => {
-    const entry = requireFeatureEntry(workspaceRequest, positioned)
+    const entry = requireFeatureEntry(workspaceRequest, positioned, maxAllowedResults)
     throwIfAborted(workspaceRequest.signal)
     const maxResults = boundedInteger(
       workspaceRequest.maxResults,
       LANGUAGE_DEFAULT_MAX_RESULTS,
-      LANGUAGE_MAX_RESULTS,
+      maxAllowedResults,
       'maxResults',
     )
     const maxDocuments = boundedInteger(
@@ -3465,6 +3472,10 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         false,
         (provider, feature) => provider.documentColors?.(feature),
         validateColorList,
+        {},
+        false,
+        false,
+        LANGUAGE_MAX_DOCUMENT_RESULTS,
       )
     },
 
@@ -3476,6 +3487,10 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         false,
         (provider, feature) => provider.codeLenses?.(feature),
         validateCodeLenses,
+        {},
+        false,
+        false,
+        LANGUAGE_MAX_DOCUMENT_RESULTS,
       )
     },
 
@@ -3487,6 +3502,10 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         false,
         (provider, feature) => provider.foldingRanges?.(feature),
         validateFoldingRanges,
+        {},
+        false,
+        false,
+        LANGUAGE_MAX_DOCUMENT_RESULTS,
       )
     },
 
@@ -3498,6 +3517,10 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         false,
         (provider, feature) => provider.documentLinks?.(feature),
         validateDocumentLinks,
+        {},
+        false,
+        false,
+        LANGUAGE_MAX_DOCUMENT_RESULTS,
       )
     },
 
@@ -3612,7 +3635,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
     documentSymbols(
       request: LanguageWorkspaceFeatureRequest,
     ): Promise<LanguageDocumentSymbolList | undefined> {
-      const entry = requireFeatureEntry(request, false)
+      const entry = requireFeatureEntry(request, false, LANGUAGE_MAX_DOCUMENT_RESULTS)
       return invokeFeature(
         request,
         false,
@@ -3629,6 +3652,10 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
           }
         },
         validateDocumentSymbols,
+        {},
+        false,
+        false,
+        LANGUAGE_MAX_DOCUMENT_RESULTS,
       )
     },
 

@@ -1,3 +1,9 @@
+/**
+ * Protocol adapter for the common Host language workspace: versioned documents, completion,
+ * diagnostics, navigation, edits and document projections over registered providers.
+ * Host owns validation and separate interactive/document result ceilings; providers own language
+ * semantics. This adapter contains no game parser or independent dependency resolver.
+ */
 import { extname, isAbsolute, relative } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { isCancellation, type Diagnostic as HostDiagnostic } from '@modkit/core'
@@ -18,6 +24,7 @@ import type {
   LanguageWorkspace,
 } from '@modkit/host/language'
 import {
+  LANGUAGE_MAX_DOCUMENT_RESULTS,
   languageProviderTriggerCharacters,
   type LanguageProviderRoute,
 } from '@modkit/host/language'
@@ -254,6 +261,8 @@ export interface ModkitLanguageServerOptions {
   readonly maxDocumentBytes: number
   readonly maxWorkspaceBytes: number
   readonly maxResults?: number
+  /** Bounded whole-document projections, independent of completion/search lists. */
+  readonly maxDocumentResults?: number
   readonly connection?: Connection
 }
 
@@ -296,6 +305,7 @@ export function createModkitLanguageServer(
   let diagnosticRevision = 0
   let semanticTokenRevision = 0
   const maxResults = options.maxResults ?? 1_000
+  const maxDocumentResults = options.maxDocumentResults ?? LANGUAGE_MAX_DOCUMENT_RESULTS
   const encoder = new TextEncoder()
   let supportsDynamicWatchedFiles = false
   let shutDown = false
@@ -376,6 +386,10 @@ export function createModkitLanguageServer(
   ): LanguageWorkspacePositionRequest => ({
     ...request(uri, signal),
     position,
+  })
+  /** Preserve all bounded document projections without increasing interactive result lists. */
+  const documentRequest = (uri: string, signal?: AbortSignal): LanguageWorkspaceFeatureRequest => ({
+    ...request(uri, signal), maxResults: maxDocumentResults,
   })
   /*
    * LSP orders notifications before the requests that follow them, so a feature request must see
@@ -1103,14 +1117,14 @@ export function createModkitLanguageServer(
   connection.onDocumentColor((params, token) =>
     withSignal(token, async signal => {
       await requireFeature(params.textDocument.uri, 'document-colors', signal)
-      const value = await options.workspace.documentColors(request(params.textDocument.uri, signal))
+      const value = await options.workspace.documentColors(documentRequest(params.textDocument.uri, signal))
       return (value?.colors as ColorInformation[] | undefined) ?? []
     }),
   )
   connection.onCodeLens((params, token) =>
     withSignal(token, async signal => {
       await requireFeature(params.textDocument.uri, 'code-lenses', signal)
-      const value = await options.workspace.codeLenses(request(params.textDocument.uri, signal))
+      const value = await options.workspace.codeLenses(documentRequest(params.textDocument.uri, signal))
       return (
         value?.lenses.map(lens => ({
           range: lens.range,
@@ -1126,7 +1140,7 @@ export function createModkitLanguageServer(
   connection.onFoldingRanges((params, token) =>
     withSignal(token, async signal => {
       await requireFeature(params.textDocument.uri, 'folding-ranges', signal)
-      const value = await options.workspace.foldingRanges(request(params.textDocument.uri, signal))
+      const value = await options.workspace.foldingRanges(documentRequest(params.textDocument.uri, signal))
       return (
         value?.ranges.map(range => ({
           startLine: range.startLine,
@@ -1139,7 +1153,7 @@ export function createModkitLanguageServer(
   connection.onDocumentLinks((params, token) =>
     withSignal(token, async signal => {
       await requireFeature(params.textDocument.uri, 'document-links', signal)
-      const value = await options.workspace.documentLinks(request(params.textDocument.uri, signal))
+      const value = await options.workspace.documentLinks(documentRequest(params.textDocument.uri, signal))
       return (
         value?.links.map(link => ({
           range: link.range,
@@ -1244,7 +1258,7 @@ export function createModkitLanguageServer(
     withSignal(token, async signal => {
       await awaitDiagnostics(signal)
       const value = await options.workspace.documentSymbols(
-        request(params.textDocument.uri, signal),
+        documentRequest(params.textDocument.uri, signal),
       )
       return value?.symbols.map(documentSymbolOf) ?? []
     }),

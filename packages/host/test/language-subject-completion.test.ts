@@ -774,6 +774,29 @@ describe('language subject completion lifecycle', () => {
     }
   })
 
+  it('preserves document-wide lenses beyond the interactive limit without unbounding requests', async () => {
+    const features = provider as { -readonly [K in 'codeLenses']?: LanguageProvider[K] }
+    const range = { start: { line: 0, character: 0 }, end: { line: 0, character: 3 } }
+    const lenses = Array.from({ length: 3_000 }, (_, index) => ({
+      range, title: 'Card', command: { kind: 'open-subject' as const, subjectId: `Fixture/${index}`, view: 'card' },
+    }))
+    features.codeLenses = async () => ({ lenses, isIncomplete: false })
+    const workspace = await openWorkspace({ open: vi.fn(async () => undefined) })
+    try {
+      const request = { ...completionRequest(), maxResults: 65_536 }
+      const answer = await workspace.codeLenses(request)
+      expect(answer?.lenses).toHaveLength(3_000)
+      expect(answer?.lenses.at(-1)?.command).toEqual(lenses.at(-1)?.command)
+      await expect(workspace.codeLenses({ ...request, maxResults: 65_537 })).rejects.toThrow(/maxResults/u)
+      await expect(workspace.completion(request)).rejects.toThrow(/maxResults/u)
+      features.codeLenses = async () => ({ lenses: [{ range, title: 'Bad', command: { kind: 'open-subject', subjectId: '' } }], isIncomplete: false })
+      await expect(workspace.codeLenses(request)).rejects.toThrow(/code lenses/u)
+    } finally {
+      delete features.codeLenses
+      await workspace.shutdown()
+    }
+  })
+
   it('routes code lenses and commands, and diagnostics with tags and related places', async () => {
     const features = provider as {
       -readonly [K in 'codeLenses' | 'codeActions' | 'diagnostics']?: unknown

@@ -104,7 +104,7 @@ function harness({
     },
     capabilities: async uri =>
       current.has(uri)
-        ? { features: ['hover', 'workspace-symbols', ...(withCompletion ? ['completion'] : [])] }
+        ? { features: ['hover', 'workspace-symbols', 'code-lenses', ...(withCompletion ? ['completion'] : [])] }
         : undefined,
     completion: async request => {
       completionEntered()
@@ -119,6 +119,15 @@ function harness({
       return { items: [], isIncomplete: false }
     },
     hover: async request => ({ markdown: String(request.documentVersion) }),
+    codeLenses: async request => {
+      calls.push(['code-lenses-budget', request.maxResults])
+      const range = { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } }
+      return {
+        lenses: Array.from({ length: Math.min(3_000, request.maxResults) }, (_, index) => ({
+          range, title: `Card ${index}`, command: { kind: 'open-subject', subjectId: `Fixture/${index}`, view: 'card' },
+        })), isIncomplete: request.maxResults < 3_000,
+      }
+    },
     workspaceSymbols: async () => ({ symbols: [], isIncomplete: false }),
     close: async uri => {
       calls.push(['close', uri])
@@ -168,6 +177,20 @@ function harness({
     },
   }
 }
+
+test('document projections keep the last lens beyond the interactive result limit', async () => {
+  const h = harness()
+  h.open(1, 'one')
+  h.release()
+  try {
+    const lenses = await h.request('onCodeLens', { textDocument: { uri } })
+    assert.equal(lenses.length, 3_000)
+    assert.equal(lenses.at(-1).command.arguments[0].subjectId, 'Fixture/2999')
+    assert.ok(h.calls.some(call => call[0] === 'code-lenses-budget' && call[1] === 65_536))
+  } finally {
+    await h.server.close()
+  }
+})
 
 test('queued notifications retain their own text/version and close before reopening', async () => {
   const h = harness()
