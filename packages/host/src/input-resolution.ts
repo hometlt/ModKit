@@ -341,6 +341,9 @@ export function normalizeCompanionLogicalId(
   if (slashed.startsWith('//')) refusePath(slashed, 'it is a UNC path', context)
   if (slashed.startsWith('/')) refusePath(slashed, 'it is an absolute path', context)
   if (DRIVE_PREFIX.test(slashed)) refusePath(slashed, 'it carries a drive prefix', context)
+  // Ordinary confined paths already have their canonical spelling. Empty, dot and parent
+  // segments still take the validating normalization below, including trailing separators.
+  if (slashed !== '' && !/(?:^|\/)\.{0,2}(?:\/|$)/u.test(slashed)) return slashed
   const parts: string[] = []
   for (const part of slashed.split('/')) {
     if (part === '' || part === '.') continue

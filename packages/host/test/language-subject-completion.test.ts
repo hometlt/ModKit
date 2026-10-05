@@ -1623,7 +1623,7 @@ describe('language subject completion lifecycle', () => {
           observedWorkspaceContext?.semanticInputs?.some(
             input => input.kind === 'semantic-context-status',
           ),
-        ).toBe(false)
+        ).toBe(partial)
       } finally {
         await workspace.shutdown()
       }
@@ -1701,9 +1701,14 @@ describe('language subject completion lifecycle', () => {
     },
   )
 
-  it.each([1, 2])(
-    'prefers a provider-owned bounded authoring index v%s over the full snapshot',
-    async schemaVersion => {
+  it.each([
+    { schemaVersion: 1, complete: true },
+    { schemaVersion: 1, complete: false },
+    { schemaVersion: 2, complete: true },
+    { schemaVersion: 2, complete: false },
+  ])(
+    'keeps the provider-owned authoring index v$schemaVersion and explains complete=$complete',
+    async ({ schemaVersion, complete }) => {
       const baselineAnalyses = dataAnalyzeRequests.length
       const baselineReleases = dataProviderReleases
       const authoringRequests: unknown[] = []
@@ -1754,14 +1759,22 @@ describe('language subject completion lifecycle', () => {
               },
             ],
             diagnostics: {
-              errorCount: 0,
+              errorCount: complete ? 0 : 1,
               warningCount: 0,
               informationCount: 0,
-              items: [],
+              items: complete
+                ? []
+                : [
+                    {
+                      severity: 'error',
+                      code: 'fixture/unclosed-catalog',
+                      message: 'GameData/UnitData.xml: unclosed Catalog',
+                    },
+                  ],
               truncated: false,
             },
             ownerMetadata: dataOwnerMetadata,
-            complete: true,
+            complete,
             valuesComplete: true,
           }
         },
@@ -1810,7 +1823,17 @@ describe('language subject completion lifecycle', () => {
             ],
           },
         })
-        expect(observedWorkspaceContext?.semanticComplete).toBe(true)
+        expect(observedWorkspaceContext?.semanticComplete).toBe(complete)
+        const status = observedWorkspaceContext?.semanticInputs?.find(
+          input => input.kind === 'semantic-context-status',
+        )
+        if (complete) expect(status).toBeUndefined()
+        else
+          expect(status?.payload).toMatchObject({
+            state: 'incomplete',
+            message:
+              'resolved Data analysis is incomplete: GameData/UnitData.xml: unclosed Catalog',
+          })
         expect(dataProviderReleases).toBe(baselineReleases + 1)
       } finally {
         delete (dataProvider as { analyzeAuthoringIndex?: unknown }).analyzeAuthoringIndex

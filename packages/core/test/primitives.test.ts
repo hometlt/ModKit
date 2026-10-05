@@ -65,6 +65,37 @@ describe('deterministic ordering (MK3/23 §9.9)', () => {
     expect(compareUtf8('z', 'é')).toBeLessThan(0)
   })
 
+  it('matches byte ordering even when an ASCII decision precedes a Unicode suffix', () => {
+    const encoder = new TextEncoder()
+    const values = ['', 'a', 'aa', 'aé', 'b😀', 'a\ud800', 'a\ud801', 'a�', 'é', '😀', '�']
+    for (const left of values) {
+      for (const right of values) {
+        const a = encoder.encode(left)
+        const b = encoder.encode(right)
+        let expected = 0
+        for (let index = 0; index < Math.min(a.length, b.length); index += 1) {
+          if (a[index] !== b[index]) {
+            expected = (a[index] as number) < (b[index] as number) ? -1 : 1
+            break
+          }
+        }
+        if (expected === 0) {
+          expected =
+            a.length !== b.length
+              ? a.length < b.length
+                ? -1
+                : 1
+              : left < right
+                ? -1
+                : left > right
+                  ? 1
+                  : 0
+        }
+        expect(compareUtf8(left, right)).toBe(expected)
+      }
+    }
+  })
+
   it('is shuffle-stable and deduplicates', () => {
     const input = ['b.trait', 'a.trait', 'b.trait', 'z.trait']
     const shuffled = ['z.trait', 'b.trait', 'a.trait', 'b.trait']

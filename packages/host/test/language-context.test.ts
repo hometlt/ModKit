@@ -127,6 +127,28 @@ describe('language workspace semantic payloads', () => {
     ).toThrow(/maximum bytes/u)
   }, 15_000)
 
+  it('rejects array holes replaced by extra keys and never invokes array accessors', () => {
+    let reads = 0
+    const holeWithExtra = Object.assign(Array(1), { extra: 'Marine' })
+    const accessor = Object.defineProperty(['Marine'], '0', {
+      enumerable: true,
+      get: () => {
+        reads += 1
+        return 'Marine'
+      },
+    })
+    const hidden = Object.defineProperty(['Marine'], '0', { enumerable: false })
+    const symbolic = Object.assign(['Marine'], { [Symbol('extra')]: 'Marauder' })
+    for (const payload of [holeWithExtra, accessor, hidden, symbolic]) {
+      expect(() =>
+        validatedLanguageWorkspaceSemanticInputs([
+          { kind: 'catalog', id: 'effective', revision: '1', payload },
+        ]),
+      ).toThrow(TypeError)
+    }
+    expect(reads).toBe(0)
+  })
+
   it('defensively copies payloads while composing document sources', async () => {
     const payload = { assets: ['Assets/Marine.m3'] }
     const source: LanguageWorkspaceDocumentSource = {

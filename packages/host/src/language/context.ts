@@ -1,3 +1,8 @@
+/**
+ * Canonical Host language captures: strict immutable JSON inputs and primitive document snapshots,
+ * bounded aggregate bytes/depth and deterministic identity tokens. Only owner-created copies are
+ * memoized; caller objects, including frozen ones, must cross validation again.
+ */
 import { canonicalJsonStringify, compareUtf8 } from '@modkit/core'
 import type { JsonValue } from '@modkit/sdk'
 import type { LanguageDocument, LanguageWorkspaceSemanticInput } from '@modkit/sdk/language'
@@ -10,6 +15,7 @@ const encoder = new TextEncoder()
 const boundedContextText = (value: unknown): value is string =>
   typeof value === 'string' && value.length > 0 && value.length <= 8_192 && !value.includes('\0')
 
+/** Copy strict JSON without invoking accessors; reject cycles, extra array keys and unsafe keys. */
 function cloneSemanticPayload(
   value: unknown,
   depth = 0,
@@ -35,12 +41,9 @@ function cloneSemanticPayload(
     throw new TypeError('language workspace semantic payload is not strict JSON')
   }
   if (Array.isArray(value)) {
-    const expectedKeys = new Set(['length'])
-    for (let index = 0; index < value.length; index += 1) expectedKeys.add(String(index))
-    if (
-      keys.length !== expectedKeys.size ||
-      keys.some(key => typeof key !== 'string' || !expectedKeys.has(key))
-    ) {
+    // The count plus every own enumerable data index below proves a dense array with no
+    // extra properties. No second collection of all numeric keys is needed.
+    if (keys.length !== value.length + 1) {
       throw new TypeError('language workspace semantic payload is not strict JSON')
     }
     const clone: JsonValue[] = []

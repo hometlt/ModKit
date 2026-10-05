@@ -289,9 +289,9 @@ function languageOfferFacet(value: unknown): LanguageProviderOfferFacet {
 
 const normalizedExtension = (value: string): string => value.replace(/^\./u, '').toLowerCase()
 
+/** Read the last component under either separator without copying the entire resource path. */
 const baseNameOf = (path: string): string => {
-  const normalized = path.replaceAll('\\', '/')
-  return normalized.slice(normalized.lastIndexOf('/') + 1)
+  return path.slice(Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\')) + 1)
 }
 
 /** The extension of a file name or path, lower-case and without the dot; none for `Objects`. */
@@ -969,12 +969,7 @@ function validateFeatureRequest(
       { uri: request.uri, version: String(request.documentVersion) },
     )
   }
-  boundedInteger(
-    request.maxResults,
-    LANGUAGE_DEFAULT_MAX_RESULTS,
-    maxAllowedResults,
-    'maxResults',
-  )
+  boundedInteger(request.maxResults, LANGUAGE_DEFAULT_MAX_RESULTS, maxAllowedResults, 'maxResults')
   boundedInteger(
     request.maxDocuments,
     LANGUAGE_DEFAULT_MAX_DOCUMENTS,
@@ -2137,7 +2132,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
       }
       contextsComplete &&= resolved.complete && !stale
       if (resolved.input !== undefined) inputs.push(resolved.input)
-      else if (resolved.failure !== undefined) {
+      if (resolved.failure !== undefined) {
         inputs.push(
           ...validatedLanguageWorkspaceSemanticInputs([
             {
@@ -2145,7 +2140,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
               id: `resolved-data-snapshot:${requirement.gameId}`,
               revision: languageWorkspaceContextToken(resolved.failure),
               payload: {
-                state: 'unavailable',
+                state: resolved.input === undefined ? 'unavailable' : 'incomplete',
                 requirement: requirement.kind,
                 message: resolved.failure,
               },

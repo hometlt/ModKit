@@ -1,3 +1,9 @@
+/**
+ * Host-owned language semantic context: validate provider requirements, prepare ordered Data and
+ * localization inputs, invoke the canonical Data provider under workspace budgets and retain its
+ * full authoring values/provenance. Partial results carry bounded diagnostic reasons; cancellation
+ * propagates and every opened Data workspace releases through its normal lifecycle.
+ */
 import { compareUtf8, isCancellation, throwIfAborted } from '@modkit/core'
 import type { PermissionGrant, ResourceBudget } from '@modkit/sdk'
 import {
@@ -294,12 +300,45 @@ export function prepareResolvedDataSemanticContext(request: {
 export interface ResolvedDataSemanticContextResult {
   readonly input?: LanguageWorkspaceSemanticInput
   readonly complete: boolean
-  /** Bounded reason for an unavailable optional context; never a stack trace. */
+  /** Bounded reason for an unavailable or incomplete context; never a stack trace. */
   readonly failure?: string
 }
 
 const unavailable = (message: string): ResolvedDataSemanticContextResult =>
   Object.freeze({ complete: false, failure: message.replaceAll('\0', '').slice(0, 2_048) })
+
+/** Explain partial analysis while preserving the available index and its completeness flags. */
+function resolvedDataCompletenessFailure(
+  prepared: PreparedResolvedDataSemanticContext,
+  analysis: Readonly<{ complete: boolean; diagnostics: unknown }>,
+  valuesComplete = true,
+): string | undefined {
+  const reasons: string[] = []
+  if (!prepared.complete) reasons.push('language workspace inputs are incomplete')
+  if (!analysis.complete) {
+    const diagnostics = analysis.diagnostics
+    const items = Array.isArray(diagnostics)
+      ? diagnostics
+      : typeof diagnostics === 'object' && diagnostics !== null && 'items' in diagnostics
+        ? diagnostics.items
+        : []
+    const messages = Array.isArray(items)
+      ? items
+          .slice(0, 3)
+          .flatMap(item =>
+            typeof item === 'object' && item !== null && typeof item.message === 'string'
+              ? [item.message.replaceAll('\0', '').slice(0, 512)]
+              : [],
+          )
+      : []
+    reasons.push(
+      `resolved Data analysis is incomplete${messages.length === 0 ? '' : `: ${messages.join('; ')}`}`,
+    )
+  }
+  if (!valuesComplete)
+    reasons.push('resolved Data authoring values were omitted by the output budget')
+  return reasons.length === 0 ? undefined : reasons.join('; ').slice(0, 2_048)
+}
 
 const jsonSnapshotPayload = (snapshot: ResolvedDataWorkspaceSnapshot): unknown => ({
   schemaVersion: snapshot.schemaVersion,
@@ -428,9 +467,15 @@ export async function analyzeResolvedDataSemanticContext(request: {
             payload: index,
           },
         ])
+        const failure = resolvedDataCompletenessFailure(
+          request.prepared,
+          index,
+          index.valuesComplete,
+        )
         return Object.freeze({
           ...(input === undefined ? {} : { input }),
           complete: request.prepared.complete && index.complete && index.valuesComplete,
+          ...(failure === undefined ? {} : { failure }),
         })
       }
       const snapshot = await resolution.workspace.analyze(analysisRequest)
@@ -453,9 +498,11 @@ export async function analyzeResolvedDataSemanticContext(request: {
           payload: jsonSnapshotPayload(snapshot),
         },
       ])
+      const failure = resolvedDataCompletenessFailure(request.prepared, snapshot)
       return Object.freeze({
         ...(input === undefined ? {} : { input }),
         complete: request.prepared.complete && snapshot.complete,
+        ...(failure === undefined ? {} : { failure }),
       })
     } finally {
       await resolution.release()

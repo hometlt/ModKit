@@ -5,8 +5,11 @@
 
 const encoder = new TextEncoder()
 
+/** Compare UTF-8 bytes with a deterministic UTF-16 tie break for non-scalar JS strings. */
 export function compareUtf8(a: string, b: string): number {
-  // Fast path: ASCII-only strings order identically under code-unit comparison.
+  if (a === b) return 0
+  // An ASCII prefix decides byte order before either suffix matters. Avoid encoding or
+  // scanning the rest of resource paths and canonical keys once their order is known.
   let ascii = true
   const shorter = Math.min(a.length, b.length)
   for (let i = 0; i < shorter; i += 1) {
@@ -14,10 +17,9 @@ export function compareUtf8(a: string, b: string): number {
       ascii = false
       break
     }
+    if (a.charCodeAt(i) !== b.charCodeAt(i)) return a.charCodeAt(i) < b.charCodeAt(i) ? -1 : 1
   }
-  if (ascii && /^[\x00-\x7F]*$/.test(a) && /^[\x00-\x7F]*$/.test(b)) {
-    return a < b ? -1 : a > b ? 1 : 0
-  }
+  if (ascii) return a.length < b.length ? -1 : 1
   const ab = encoder.encode(a)
   const bb = encoder.encode(b)
   const length = Math.min(ab.length, bb.length)
