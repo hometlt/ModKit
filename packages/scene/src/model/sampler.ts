@@ -22,7 +22,11 @@ import {
   createModelPoseBlendSampler,
   snapshotModelSkeleton,
 } from '@modkit/codec-kit/model/skeleton'
-import { clipEventsBetween, createModelAnimationSampler } from '@modkit/codec-kit/model/animation'
+import {
+  animationSnapshotBudget,
+  clipEventsBetween,
+  createModelAnimationSampler,
+} from '@modkit/codec-kit/model/animation'
 import type { ModelBonePoseSample, ModelPoseBlendSample } from '@modkit/codec-kit/model/skeleton'
 import { createModelSkinDeformer } from '@modkit/codec-kit/model/skinning'
 import { modelPrimitiveByteLength } from '@modkit/codec-kit/model/geometry'
@@ -207,7 +211,14 @@ export function createModelSceneSampler(
   if (!Number.isFinite(poseTime)) throw new TypeError('pose reference time must be finite')
   const maxBytes = options.maxBytes ?? 134_217_728
   if (!Number.isSafeInteger(maxBytes) || maxBytes < 0) throw new TypeError('invalid scene maxBytes')
-  const budget = { maxDepth: 64, maxNodes: 1_000_000, maxBytes }
+  const budget = {
+    maxDepth: 64,
+    maxNodes: Math.max(
+      1_000_000,
+      clip === undefined ? 0 : animationSnapshotBudget([clip]).maxNodes,
+    ),
+    maxBytes,
+  }
   const owned = snapshotJson(
     { nodes: projection.nodes, meshes: projection.meshes },
     budget,

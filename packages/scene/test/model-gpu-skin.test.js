@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict'
 import { it } from 'node:test'
 import { createModelSkeletonNodes } from '@modkit/codec-kit/model/skeleton'
+import {
+  animationSnapshotBudget,
+  snapshotModelAnimations,
+} from '@modkit/codec-kit/model/animation'
 import { createModelSceneSampler } from '../src/model/sampler.js'
 
 const identity = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
@@ -175,4 +179,87 @@ it('poses all eight influences on the CPU even when GPU skinning was requested',
   }
   const lost = createModelSceneSampler(projection(truncated), { clip }).sample(0.5).primitives[0]
   assert.notDeepEqual([...cpu.positions], [...lost.positions])
+})
+
+it('poses a large channelled skin with a clip-sized node budget and a bounded byte budget', () => {
+  const jointCount = 96
+  const weightedCount = 50
+  const sampleCount = 700
+  const largeBindings = Array.from({ length: jointCount }, (_, index) =>
+    bone(index, null, [0, 0, 0], identity),
+  )
+  const largeNodes = createModelSkeletonNodes(largeBindings, 'rig').map(node => ({
+    ...node,
+    meshIds: node.id === 'node-0' ? ['mesh'] : [],
+  }))
+  const samples = kind =>
+    Array.from({ length: sampleCount }, (_, frame) => ({
+      frame,
+      timeSeconds: frame / (sampleCount - 1),
+      value:
+        kind === 'translation'
+          ? [frame / (sampleCount - 1), 0, 0]
+          : kind === 'rotation'
+            ? [0, 0, 0, 1]
+            : [1, 1, 1],
+    }))
+  const channelSamples = Object.fromEntries(
+    ['translation', 'rotation', 'scale'].map(kind => [kind, samples(kind)]),
+  )
+  const largeClip = {
+    id: 'large',
+    name: 'Large rig',
+    kind: 'animation',
+    provenance: 'direct',
+    frames: sampleCount,
+    durationSeconds: 1,
+    channels: largeBindings.flatMap(({ nodeId }) =>
+      ['translation', 'rotation', 'scale'].map(kind => ({
+        target: nodeId,
+        kind,
+        firstFrame: 0,
+        lastFrame: sampleCount - 1,
+        interpolation: kind === 'rotation' ? 'spherical-linear' : 'linear',
+        samples: channelSamples[kind],
+      })),
+    ),
+  }
+  assert.equal(largeClip.channels.length, 288)
+  assert.ok(animationSnapshotBudget([largeClip]).maxNodes > 1_000_000)
+  assert.throws(() => snapshotModelAnimations([largeClip]), /JSON snapshot exceeds maxNodes/)
+  const vertices = weightedCount * 3
+  const positions = new Float32Array(vertices * 3)
+  const indices = Uint32Array.from({ length: vertices }, (_, index) => index)
+  const boneIndices = new Uint32Array(vertices * 4)
+  const boneWeights = new Float32Array(vertices * 4)
+  for (let vertex = 0; vertex < vertices; vertex++) {
+    boneIndices[vertex * 4] = Math.floor(vertex / 3)
+    boneWeights[vertex * 4] = 1
+  }
+  const largeProjection = {
+    nodes: largeNodes,
+    meshes: [{ id: 'mesh', primitiveIds: ['triangles'] }],
+    primitives: [
+      {
+        id: 'triangles',
+        hierarchyId: 'rig',
+        topology: 'triangles',
+        positions,
+        indices,
+        boneIndices,
+        boneWeights,
+      },
+    ],
+    skeleton: largeBindings,
+  }
+  const sampler = createModelSceneSampler(largeProjection, { clip: largeClip })
+  assert.ok(!sampler.diagnostics.some(item => item.code === 'common.model/pose-unavailable'))
+  const first = sampler.sample(0).primitives[0].positions
+  const last = sampler.sample(1).primitives[0].positions
+  for (let joint = 0; joint < weightedCount; joint++)
+    assert.notEqual(first[joint * 9], last[joint * 9], `weighted joint ${joint} must move`)
+  assert.throws(
+    () => createModelSceneSampler(largeProjection, { clip: largeClip, maxBytes: 1024 }),
+    /exceeds maxBytes|exceeds byte budget/,
+  )
 })
