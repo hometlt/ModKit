@@ -778,7 +778,7 @@ describe('language subject completion lifecycle', () => {
     const features = provider as { -readonly [K in 'codeLenses']?: LanguageProvider[K] }
     const range = { start: { line: 0, character: 0 }, end: { line: 0, character: 3 } }
     const lenses = Array.from({ length: 3_000 }, (_, index) => ({
-      range, title: 'Card', command: { kind: 'open-subject' as const, subjectId: `Fixture/${index}`, view: 'card' },
+      range, title: 'Card', command: { kind: 'open-subject' as const, subjectId: `Fixture/${index}`, view: 'card' as const },
     }))
     features.codeLenses = async () => ({ lenses, isIncomplete: false })
     const workspace = await openWorkspace({ open: vi.fn(async () => undefined) })
