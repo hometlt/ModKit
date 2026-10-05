@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { revisionId } from '@modkit/sdk/codec'
 import {
   dataAuthoringSource,
   type ResolvedDataAuthoringIndexV1,
@@ -10,7 +11,7 @@ describe('canonical authoring declaration sources', () => {
     rootId: 'mod',
     path: 'GameData/UnitData.xml',
     documentIndex: 2,
-    revision: 'v1',
+    revision: revisionId('provider-token:v1'),
   }
   const range = { utf16Offset: 100, utf16Length: 20, line: 5, column: 4 }
   const metadata = {
