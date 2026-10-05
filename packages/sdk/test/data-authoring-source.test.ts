@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { uint64 } from '@modkit/core'
 import { revisionId } from '@modkit/sdk/codec'
 import {
   dataAuthoringSource,
@@ -70,5 +71,20 @@ describe('canonical authoring declaration sources', () => {
       } as unknown as ResolvedDataAuthoringIndexV2
       expect(dataAuthoringSource(index, 0)).toBeUndefined()
     }
+  })
+
+  it('preserves byte-only and combined spans without rounding u64 coordinates', () => {
+    const bytes = { byteOffset: uint64('18446744073709551614'), byteLength: uint64('1') }
+    const both = { ...bytes, ...range }
+    const index: ResolvedDataAuthoringIndexV2 = {
+      ...compact,
+      sourceTable: [
+        [0, bytes],
+        [0, both],
+      ],
+    }
+    expect(dataAuthoringSource(index, 0)).toEqual({ ...document, range: bytes })
+    expect(dataAuthoringSource(index, 1)).toEqual({ ...document, range: both })
+    expect(Object.isFrozen(dataAuthoringSource(index, 1)?.range)).toBe(true)
   })
 })

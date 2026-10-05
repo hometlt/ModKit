@@ -409,6 +409,7 @@ export interface ResolvedDataAuthoringIndexV1 extends DataAuthoringIndexMetadata
 /** A declaration location: document table index, followed by its complete optional SourceSpan. */
 export type DataAuthoringSourceLocation =
   | readonly [document: number]
+  | readonly [document: number, range: SourceSpan]
   | readonly [
       document: number,
       utf16Offset: number,
@@ -419,7 +420,8 @@ export type DataAuthoringSourceLocation =
 
 /**
  * Version 2 interns document identities independently of declaration locations. The tuple keeps
- * all four SourceSpan coordinates; entity, field, leaf and tombstone source indexes still address
+ * all four UTF-16 coordinates, or the full SourceSpan when it includes byte coordinates. Entity,
+ * field, leaf and tombstone source indexes still address
  * sourceTable. Empty field/tombstone arrays may be omitted when valuesComplete is true.
  */
 export interface ResolvedDataAuthoringIndexV2 extends DataAuthoringIndexMetadata {
@@ -438,14 +440,20 @@ export function dataAuthoringSource(
   if (!Number.isSafeInteger(source) || source < 0) return undefined
   if (index.schemaVersion === 1) return index.sourceTable[source]
   const location = index.sourceTable[source]
+  if (!Array.isArray(location) || !Number.isSafeInteger(location[0]) || location[0] < 0)
+    return undefined
+  const document = index.sourceDocuments?.[location[0]]
+  if (document === undefined) return undefined
+  if (location.length === 2) {
+    const range = location[1]
+    if (typeof range !== 'object' || range === null || Array.isArray(range)) return undefined
+    return Object.freeze({ ...document, range: Object.freeze({ ...range }) })
+  }
   if (
-    !Array.isArray(location) ||
     (location.length !== 1 && location.length !== 5) ||
     !location.every(value => Number.isSafeInteger(value) && value >= 0)
   )
     return undefined
-  const document = index.sourceDocuments?.[location[0]]
-  if (document === undefined) return undefined
   return Object.freeze({
     ...document,
     ...(location.length === 1
