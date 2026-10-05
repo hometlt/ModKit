@@ -80,12 +80,161 @@ async function locations(command, uri, position) {
   return Array.isArray(result) ? result : []
 }
 
+/** Exercise real read-only CASC files via native commands and the existing public diagnostics export. */
+async function probeInstalledCasc(receipt, resultPath, gameRoot) {
+  const reportUri = vscode.Uri.file(`${resultPath}.window-diagnostics.json`)
+  const state = (receipt.casc = { gameRoot, samples: [], completed: false })
+  /** Record one editor operation without treating a single sample as a latency SLA. */
+  async function measured(phase, action) {
+    console.log(`installed CASC probe: ${phase}`)
+    const start = Date.now()
+    const value = await action()
+    state.samples.push({ phase, ms: Date.now() - start })
+    return value
+  }
+  /** Read the same bounded, redacted report users can export; never inspect private extension state. */
+  async function windowState() {
+    const exported = await vscode.commands.executeCommand('modkit.exportDiagnostics', reportUri)
+    if (exported === undefined) throw new Error('Public diagnostics export failed')
+    return JSON.parse(fs.readFileSync(reportUri.fsPath, 'utf8'))
+  }
+  await vscode.workspace
+    .getConfiguration('modkit')
+    .update(
+      'contentSourceOptions',
+      { 'blizzard/starcraft2': { installationDirectory: gameRoot } },
+      vscode.ConfigurationTarget.Workspace,
+    )
+  /** Address the same provider-owned virtual file that Sources opens in the editor. */
+  const sourceUri = path => vscode.Uri.parse(`modkit-source://battlenet/local%3Acasc/${path}`)
+  const voidUri = sourceUri('mods/void.sc2mod/base.sc2data/gamedata/unitdata.xml')
+  const libertyUri = sourceUri('mods/liberty.sc2mod/base.sc2data/gamedata/unitdata.xml')
+  state.voidUri = voidUri.toString()
+  state.libertyUri = libertyUri.toString()
+  const voidDocument = await measured('open-Void-UnitData', async () => {
+    const document = await vscode.workspace.openTextDocument(voidUri)
+    await vscode.window.showTextDocument(document)
+    return document
+  })
+  if (voidDocument.languageId !== 'sc2-data')
+    throw new Error(`Native CASC UnitData used ${voidDocument.languageId}, expected sc2-data`)
+  const loaded = await measured('automatic-dependency-load', () =>
+    waitFor(async () => {
+      const report = await windowState()
+      const labels = new Set(report.loadedMods.map(mod => mod.label.toLowerCase()))
+      return ['core.sc2mod', 'liberty.sc2mod', 'swarm.sc2mod', 'void.sc2mod'].every(label =>
+        labels.has(label),
+      )
+        ? report
+        : undefined
+    }, 120_000),
+  )
+  if (loaded === undefined)
+    throw new Error('Opening CASC Void did not automatically retain its four dependency mods')
+  state.loadedMods = loaded.loadedMods
+  state.contentSources = loaded.contentSources
+  const root = await measured('Catalog-root-completion', () =>
+    completionAt(voidDocument, positionOf(voidDocument, '<Catalog', 1), 'Catalog', '<'),
+  )
+  if (root === undefined || root.labels.length !== 1)
+    throw new Error(`Native CASC root completion must offer only Catalog: ${root?.labels}`)
+  state.rootCompletion = root.labels
+  const liberty = await measured('open-Liberty-Marine', async () => {
+    const document = await vscode.workspace.openTextDocument(libertyUri)
+    await vscode.window.showTextDocument(document)
+    return document
+  })
+  const text = liberty.getText()
+  const marine = text.indexOf('<CUnit id="Marine"')
+  if (marine < 0) throw new Error('Installed Liberty fixture has no Marine declaration')
+  const end = text.indexOf('</CUnit>', marine)
+  const openEnd = text.indexOf('>', marine) + 1
+  const firstField = text.indexOf('<', openEnd)
+  const life = text.indexOf('<LifeMax', openEnd)
+  if (end < 0 || firstField >= end || life < 0 || life >= end)
+    throw new Error('Installed Marine fixture has no readable fields/LifeMax')
+  // Replace this field's name: another position correctly excludes the existing scalar LifeMax.
+  const fields = await measured('Marine-field-completion', () =>
+    completionAt(liberty, liberty.positionAt(life + 1), 'LifeMax', '<'),
+  )
+  if (fields === undefined) throw new Error('Native CASC nested Unit completion omitted LifeMax')
+  state.fieldCompletion = { count: fields.labels.length, matched: fields.item.label }
+  const lifeHover = await measured('Marine-resolved-value-hover', () =>
+    waitFor(async () => {
+      const result = await vscode.commands.executeCommand(
+        'vscode.executeHoverProvider',
+        libertyUri,
+        liberty.positionAt(life + 2),
+      )
+      const markdown = hoverText(result)
+      return markdown.includes('LifeMax') && markdown.includes('45') ? markdown : undefined
+    }, 60_000),
+  )
+  if (lifeHover === undefined)
+    throw new Error('Native CASC Marine hover omitted the resolved LifeMax=45')
+  state.lifeHover = lifeHover
+  // These literals locate test cursors only; production classes/inheritance stay with the Data owner.
+  const entityIds = [...text.matchAll(/<CUnit\s[^>]*\bid="([^"]+)"/gu)].map(match => match[1])
+  const lastEntity = entityIds.at(-1)
+  state.entityCount = entityIds.length
+  state.lastEntity = lastEntity
+  const lenses = await measured('Marine-and-document-tail-lenses', () =>
+    waitFor(async () => {
+      const result = await vscode.commands.executeCommand(
+        'vscode.executeCodeLensProvider',
+        libertyUri,
+      )
+      return result?.length > 0 ? result : undefined
+    }, 60_000),
+  )
+  const commands = (lenses ?? []).map(lens => lens.command).filter(Boolean)
+  state.codeLenses = { count: lenses?.length ?? 0, marine: [], last: [] }
+  for (const [key, id] of [
+    ['marine', 'Marine'],
+    ['last', lastEntity],
+  ]) {
+    state.codeLenses[key] = commands
+      .filter(command => command.arguments?.[0]?.subjectId === `Unit/${id}`)
+      .map(command => ({ title: command.title, view: command.arguments[0].view }))
+    if (!state.codeLenses[key].some(command => command.view === 'card'))
+      throw new Error(`Native CASC CodeLens omitted the card at Unit/${id}`)
+  }
+  const card = commands.find(
+    command =>
+      command.arguments?.[0]?.subjectId === 'Unit/Marine' && command.arguments[0].view === 'card',
+  )
+  if (
+    !(await measured('Marine-card-command', () =>
+      vscode.commands.executeCommand(card.command, ...card.arguments),
+    ))
+  )
+    throw new Error('Native CASC Marine card command did not route to the subject owner')
+  state.cardCommandRouted = true
+  const cardTab = await waitFor(
+    () =>
+      vscode.window.tabGroups.all
+        .flatMap(group => group.tabs)
+        .find(tab => tab.label.includes('Marine')),
+    60_000,
+  )
+  if (cardTab === undefined)
+    throw new Error('Native CASC Marine card command opened no subject tab')
+  state.cardTab = { label: cardTab.label, viewType: cardTab.input.viewType }
+  await vscode.commands.executeCommand('workbench.action.closeAllEditors')
+  const afterClose = await windowState()
+  state.loadedModsAfterClose = afterClose.loadedMods
+  const idsAfterClose = new Set(afterClose.loadedMods.map(mod => mod.id))
+  if (!loaded.loadedMods.every(mod => idsAfterClose.has(mod.id)))
+    throw new Error('Closing native CASC editors unloaded an existing resource mod')
+  state.completed = true
+}
+
 exports.run = async function run() {
   const resultPath = process.env.MODKIT_INSTALLED_LANGUAGE_RESULT
   if (resultPath === undefined) throw new Error('MODKIT_INSTALLED_LANGUAGE_RESULT is not set')
   const receipt = {
     kind: 'modkit.vscode-installed-sc2-language',
-    version: 9,
+    version: 10,
     passed: false,
     vscodeVersion: vscode.version,
   }
@@ -194,6 +343,14 @@ exports.run = async function run() {
       refreshCommand: 'modkit.resources.refresh',
       searchCommand: 'modkit.resources.search',
       openCommand: 'modkit.resources.open',
+    }
+    if (process.env.MODKIT_INSTALLED_CASC_ONLY === '1') {
+      const gameRoot = process.env.MODKIT_INSTALLED_CASC_ROOT
+      if (gameRoot === undefined) throw new Error('CASC-only acceptance requires an installation')
+      receipt.scope = 'installed CASC native API; six synthetic language fixtures not exercised'
+      await probeInstalledCasc(receipt, resultPath, gameRoot)
+      receipt.passed = true
+      return
     }
     const folder = vscode.workspace.workspaceFolders?.[0]
     if (folder === undefined) throw new Error('SC2 fixture workspace is not open')
@@ -1152,6 +1309,9 @@ exports.run = async function run() {
     const reopened = await vscode.workspace.openTextDocument(uris.galaxy)
     if (!reopened.getText().includes('Assist(2)') || reopened.isDirty)
       throw new Error('saved rename did not survive close and reopen')
+
+    if (process.env.MODKIT_INSTALLED_CASC_ROOT !== undefined)
+      await probeInstalledCasc(receipt, resultPath, process.env.MODKIT_INSTALLED_CASC_ROOT)
 
     Object.assign(receipt, {
       passed: true,

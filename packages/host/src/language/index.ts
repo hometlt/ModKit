@@ -255,6 +255,11 @@ export const LANGUAGE_DOCUMENT_CONTRACT_DEFINITION: ServiceContractDefinitionSpe
           optional: true,
           signal: Object.freeze({ arg: 0, key: 'signal' }),
         }),
+        resolveCompletion: Object.freeze({
+          kind: 'value',
+          optional: true,
+          signal: Object.freeze({ arg: 0, key: 'signal' }),
+        }),
         completionContext: Object.freeze({
           kind: 'value',
           optional: true,
@@ -331,6 +336,11 @@ export const LANGUAGE_DOCUMENT_CONTRACT_DEFINITION: ServiceContractDefinitionSpe
           signal: Object.freeze({ arg: 0, key: 'signal' }),
         }),
         codeActions: Object.freeze({
+          kind: 'value',
+          optional: true,
+          signal: Object.freeze({ arg: 0, key: 'signal' }),
+        }),
+        codeLenses: Object.freeze({
           kind: 'value',
           optional: true,
           signal: Object.freeze({ arg: 0, key: 'signal' }),

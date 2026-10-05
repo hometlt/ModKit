@@ -2,7 +2,9 @@
  * Install an official VSIX into an isolated native VS Code profile and exercise all six SC2
  * language owners on a writable synthetic mod. Optional public manager receipts supply the
  * complete installed extension closure; checks use editor commands, never private providers.
- * This produces API/Problems/save-reopen evidence, not visual acceptance or real-CASC latency.
+ * An optional installed CASC probe opens read-only game documents through the native filesystem
+ * provider and exports the public diagnostics report. This is API evidence, not visual acceptance;
+ * latency samples describe only the observed editor commands, not a benchmark median.
  */
 import { createHash } from 'node:crypto'
 import { spawn } from 'node:child_process'
@@ -36,6 +38,11 @@ const reportPath = resolve(
     join(repoRoot, 'reports', 'vscode-smoke', 'installed-language-receipt.json'),
 )
 const rootsReceipt = argument('--extension-roots-receipt')
+const cascRoot = argument('--casc-root')
+if (has('--casc-only') && cascRoot === undefined)
+  throw new Error('--casc-only requires --casc-root')
+if (cascRoot !== undefined && !existsSync(resolve(cascRoot)))
+  throw new Error(`installed CASC game directory does not exist: ${cascRoot}`)
 const installedRoots =
   rootsReceipt === undefined
     ? [sc2Extension]
@@ -292,6 +299,8 @@ async function main() {
         extensionTestsEnv: {
           MODKIT_INSTALLED_LANGUAGE_RESULT: resultPath,
           MODKIT_EXTENSION_REGISTRY: '',
+          ...(cascRoot === undefined ? {} : { MODKIT_INSTALLED_CASC_ROOT: resolve(cascRoot) }),
+          ...(has('--casc-only') ? { MODKIT_INSTALLED_CASC_ONLY: '1' } : {}),
         },
       })
     } catch (error) {

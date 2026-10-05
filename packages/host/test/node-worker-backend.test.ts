@@ -33,6 +33,8 @@ import {
 } from '../src/node/worker-backend.js'
 import type { ActivationTicket } from '../src/security/gate.js'
 import { loadExtensionDirectory } from '../src/node/loader.js'
+import { LANGUAGE_DOCUMENT_CONTRACT_DEFINITION } from '../src/language/index.js'
+import type { LanguageProvider } from '@modkit/sdk/language'
 
 // the bootstrap is a published entry: tests run the backend from source but the worker needs the
 // built file (pnpm build), exactly like the testkit demo-worker fixture
@@ -78,6 +80,96 @@ function activation(
 
 const leases: ExecutionModuleLease[] = []
 const tempDirs: string[] = []
+
+describe('node worker backend — standard language provider', () => {
+  it('carries entity commands and focused completion documentation through the public surface', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'modkit-language-worker-'))
+    tempDirs.push(root)
+    writeFileSync(
+      join(root, 'provider.mjs'),
+      `
+export const abiVersion = 1
+export const provides = ['common.language/document-analysis']
+/** Fixture exposes existing language methods; production owns their wire contract. */
+export function createProvider() {
+  return { value: {
+    contract: 'common.language/document-analysis', languageIds: ['fixture'],
+    async analyze({document}) { return {documentUri:document.uri,documentVersion:document.version,tokens:[],symbols:[],diagnostics:[]} },
+    async codeLenses({document,signal}) {
+      signal?.throwIfAborted()
+      return { lenses: [{ range: {start:{line:0,character:0},end:{line:0,character:0}}, title:document.uri,
+        command:{kind:'open-subject',subjectId:'Unit/Marine',view:'card'} }], isIncomplete:false }
+    },
+    async resolveCompletion({item,signal}) {
+      signal?.throwIfAborted()
+      return {...item,documentation:'Resolved field documentation'}
+    },
+  }, async release() {} }
+}
+`,
+    )
+    const definition = LANGUAGE_DOCUMENT_CONTRACT_DEFINITION
+    const b = createNodeWorkerBackend({
+      bootstrapUrl,
+      policy: workerBackendPolicy({ loadDeadlineMs: 10_000, graceMs: 300 }),
+      foreignSurfaces: [
+        { contract: definition.contract, major: definition.major, surface: definition.surface! },
+      ],
+    })
+    const artifactRoot = pathToFileURL(`${root}/`)
+    const lease = await activateExecutionBackend(
+      createExecutionBackendRegistry([b]),
+      activation(new URL('provider.mjs', artifactRoot), artifactRoot),
+    )
+    leases.push(lease)
+    const createProvider = lease.module['createProvider'] as (
+      selection: unknown,
+      context: ContributionContext,
+    ) => Promise<{
+      value: LanguageProvider
+      release(): Promise<void>
+    }>
+    const activated = await createProvider(
+      { contract: definition.contract, major: definition.major },
+      context([]),
+    )
+    try {
+      expect(typeof activated.value.codeLenses).toBe('function')
+      expect(typeof activated.value.resolveCompletion).toBe('function')
+      const request = {
+        document: {
+          uri: 'file:///workspace/unit.fixture',
+          languageId: 'fixture',
+          version: 7,
+          text: 'Marine',
+        },
+        workspaceDocuments: [],
+        maxResults: 8,
+        signal: new AbortController().signal,
+      }
+      expect(await activated.value.codeLenses!(request)).toEqual({
+        lenses: [
+          {
+            range: { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } },
+            title: request.document.uri,
+            command: { kind: 'open-subject', subjectId: 'Unit/Marine', view: 'card' },
+          },
+        ],
+        isIncomplete: false,
+      })
+      const item = { label: 'LifeMax', kind: 'field' as const }
+      expect(
+        await activated.value.resolveCompletion!({
+          ...request,
+          position: { line: 0, character: 0 },
+          item,
+        }),
+      ).toEqual({ ...item, documentation: 'Resolved field documentation' })
+    } finally {
+      await activated.release()
+    }
+  }, 30_000)
+})
 afterEach(async () => {
   for (const lease of leases.splice(0)) await lease.release().catch(() => undefined)
   for (const dir of tempDirs.splice(0)) rmSync(dir, { recursive: true, force: true })
