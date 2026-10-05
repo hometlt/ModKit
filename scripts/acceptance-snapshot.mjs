@@ -42,6 +42,7 @@ const REPOSITORIES = [
   'modkit-extensions-spring',
   'modkit-extensions-other',
   'modkit-extensions-realitypump',
+  'modkit-extensions-idsoftware',
   'modkit-extensions-roblox',
   'modkit-extensions-minecraft',
   'modkit-extensions-dune2000',
@@ -57,6 +58,8 @@ const argument = name => {
   return index < 0 ? undefined : process.argv[index + 1]
 }
 const only = argument('--repo')
+if (process.argv.includes('--repo') && !REPOSITORIES.includes(only))
+  throw new Error(`unknown acceptance repository: ${only}`)
 const rebuild = process.argv.includes('--rebuild')
 
 const run = (command, args, cwd, capture = false) => {
