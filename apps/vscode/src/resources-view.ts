@@ -47,7 +47,7 @@ export interface ResourceTreeHost extends Pick<VsCodeServed, 'openTreeDataSource
    * A resource opens at its declaration when the node carries one, on `stage` (the card, the
    * relations graph) when asked and the subject offers it.
    */
-  navigate(subjectId: string, range?: TreeNodeFacts['range'], stage?: string): void
+  navigate(subjectId: string, range?: TreeNodeFacts['range'], stage?: string): void | Promise<boolean>
 }
 
 /** Opens the tree a resource file publishes through its own codec, when it publishes one. */
@@ -96,8 +96,7 @@ export class ResourcesView implements vscode.TreeDataProvider<ResourceTreeNode>,
     if (node.facts.subjectId === undefined) return false
     const served = await this.loaded()
     if (served === undefined) return false
-    served.navigate(node.facts.subjectId, node.facts.range, stage)
-    return true
+    return (await served.navigate(node.facts.subjectId, node.facts.range, stage)) !== false
   }
 
   /**
@@ -222,8 +221,7 @@ export class ResourcesView implements vscode.TreeDataProvider<ResourceTreeNode>,
     if (node?.kind !== 'resource' || node.facts.declaration === undefined) return false
     const served = await this.loaded()
     if (served === undefined) return false
-    served.navigate(node.facts.declaration.subjectId, node.facts.declaration.range)
-    return true
+    return (await served.navigate(node.facts.declaration.subjectId, node.facts.declaration.range)) !== false
   }
 
   /** The file subject a resource node names, when that file has a codec that publishes a tree. */

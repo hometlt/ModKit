@@ -6504,10 +6504,15 @@ async function activateModkit(
     return Object.freeze({
       ...(failure === undefined ? {} : { failure }),
       openTreeDataSource: async () => Object.freeze({ value: sessions.tree(resourcesShowChain), release: async () => undefined }),
-      navigate(subjectId: string, range?: TreeNodeFacts['range'], stage?: string) {
-        void navigateWorkspaceResource(path ?? '', subjectId, range, stage).catch(error =>
-          vscode.window.showErrorMessage(`Modkit: ${error instanceof Error ? error.message : String(error)}`),
-        )
+      async navigate(subjectId: string, range?: TreeNodeFacts['range'], stage?: string) {
+        try {
+          return await navigateWorkspaceResource(path ?? '', subjectId, range, stage)
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error)
+          log(`[resources] navigation ${subjectId} failed: ${message}`)
+          void vscode.window.showErrorMessage(`Modkit: ${message}`)
+          return false
+        }
       },
     })
   }
@@ -8352,8 +8357,7 @@ async function activateModkit(
           )
           return false
         }
-        host.navigate(target.subjectId, undefined, target.stage)
-        return true
+        return (await host.navigate(target.subjectId, undefined, target.stage)) !== false
       }),
       vscode.workspace.onDidOpenTextDocument(document => {
         languageController.open(languageDocument(document))

@@ -210,16 +210,23 @@ async function probeInstalledCasc(receipt, resultPath, gameRoot) {
   )
     throw new Error('Native CASC Marine card command did not route to the subject owner')
   state.cardCommandRouted = true
+  // The common editor hosts entity cards inside their package tab, whose title remains DocumentInfo.
+  const packagePath = libertyUri.path.toLowerCase().split('/base.sc2data/')[0]
   const cardTab = await waitFor(
-    () =>
-      vscode.window.tabGroups.all
-        .flatMap(group => group.tabs)
-        .find(tab => tab.label.includes('Marine')),
+    () => {
+      const tabs = vscode.window.tabGroups.all.flatMap(group => group.tabs)
+      state.tabsAfterCard = tabs.map(tab => ({
+        label: tab.label, uri: tab.input.uri?.toString(), viewType: tab.input.viewType,
+      }))
+      return tabs.find(tab => tab.input instanceof vscode.TabInputCustom &&
+        tab.input.uri.scheme === libertyUri.scheme &&
+        tab.input.uri.path.toLowerCase().startsWith(`${packagePath}/`))
+    },
     60_000,
   )
   if (cardTab === undefined)
     throw new Error('Native CASC Marine card command opened no subject tab')
-  state.cardTab = { label: cardTab.label, viewType: cardTab.input.viewType }
+  state.cardTab = { label: cardTab.label, uri: cardTab.input.uri.toString(), viewType: cardTab.input.viewType }
   await vscode.commands.executeCommand('workbench.action.closeAllEditors')
   const afterClose = await windowState()
   state.loadedModsAfterClose = afterClose.loadedMods
@@ -234,7 +241,7 @@ exports.run = async function run() {
   if (resultPath === undefined) throw new Error('MODKIT_INSTALLED_LANGUAGE_RESULT is not set')
   const receipt = {
     kind: 'modkit.vscode-installed-sc2-language',
-    version: 10,
+    version: 11,
     passed: false,
     vscodeVersion: vscode.version,
   }
