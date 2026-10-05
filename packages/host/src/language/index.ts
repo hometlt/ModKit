@@ -1,4 +1,9 @@
-/** Host definition, routing matcher and activation adapter for the standard language contract. */
+/**
+ * Canonical language/translation service definitions, facet routing and secured activation.
+ * Language method surfaces carry SDK features across in-process and worker execution, including
+ * entity commands and focused completion documentation. Providers retain schemas and language
+ * semantics; this module owns neither game parsing nor editor UI. Workspace.ts owns feature budgets.
+ */
 
 import {
   contractId,
@@ -216,6 +221,17 @@ export const LANGUAGE_DOCUMENT_MATCHER: ServiceFacetMatcherProfile = Object.free
   match: matchLanguageFacets,
 })
 
+/** Require every SDK method in the wire surface; optional implementation still needs a declared ABI. */
+type LanguageMethodSurface = {
+  [
+    Key in keyof LanguageProvider as NonNullable<LanguageProvider[Key]> extends (
+      ...args: never[]
+    ) => unknown
+      ? Key
+      : never
+  ]-?: unknown
+}
+
 /** Standard protocol-neutral language analysis definition. */
 export const LANGUAGE_DOCUMENT_CONTRACT_DEFINITION: ServiceContractDefinitionSpecV1Wire =
   Object.freeze({
@@ -365,7 +381,7 @@ export const LANGUAGE_DOCUMENT_CONTRACT_DEFINITION: ServiceContractDefinitionSpe
           optional: true,
           signal: Object.freeze({ arg: 0, key: 'signal' }),
         }),
-      }),
+      } satisfies LanguageMethodSurface),
     }),
   }) as ServiceContractDefinitionSpecV1Wire
 

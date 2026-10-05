@@ -144,7 +144,9 @@ export function createProvider() {
           text: 'Marine',
         },
         workspaceDocuments: [],
+        workspaceIncomplete: false,
         maxResults: 8,
+        maxDocuments: 1,
         signal: new AbortController().signal,
       }
       expect(await activated.value.codeLenses!(request)).toEqual({
