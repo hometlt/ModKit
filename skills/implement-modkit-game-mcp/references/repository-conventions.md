@@ -42,6 +42,9 @@ Do not replace boundary validation with trust in caller-frozen objects or a muta
 Data provenance identifies a declaration, not only its document/revision. Intern the complete source
 identity, including its SourceSpan; preserve separate entity, field, leaf and removal locations for
 declarations in one file. Verify these positions through the published authoring index.
+For authoring index v2, intern documents separately from complete declaration span tuples. Expand
+source indexes through SDK `dataAuthoringSource`; consumers must not invent a second decoder.
+Omit only empty row arrays or genuinely uniform leaf origins; never collapse spans to fit a budget.
 Host context capture is published by `@modkit/host/language`. Host source consumers use relative
 imports of that owner; the production bundler preserves those as package self-references outside
 the language entry. Reuse the bundler's policy in graph reports, and verify native package resolution.
