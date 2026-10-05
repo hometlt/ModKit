@@ -40,6 +40,10 @@ Build and pack from committed inputs using the repository's package manager; pnp
 workspace dependency specifiers while npm pack may leave them in the archive. Before publishing a
 vendor update, verify frozen/offline installation, the complete consumer build and installed bytes
 against the candidate tarball. Preserve the dependency/lockfile pair and unrelated paused changes.
+Replacing a file tarball at the same path/version can leave installed files stale even after lock
+integrity changes. Re-materialize it in the isolated candidate (frozen/offline install with `--force`
+when needed), rebuild, and compare installed package files with archive members before publication.
+Do not treat a successful install/build or a matching lock digest alone as proof of installed bytes.
 Preserve published CommonJS/UMD code when materializing a runtime closure. Minifying its identifiers
 can erase the export names Node uses for native ESM imports, even when require() still works.
 Minify ESM only with an explicit module suffix/package scope, including nested package boundaries.
