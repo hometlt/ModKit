@@ -39,6 +39,9 @@ overflow/malformed-result rejection tests. A truncated provider list is not comp
 Verify stateful owner reuse through the compiled publication entrypoints in the same realm:
 separately bundled copies of a WeakMap lose snapshot identity even when source tests pass.
 Do not replace boundary validation with trust in caller-frozen objects or a mutable global cache.
+Host context capture is published by `@modkit/host/language`. Host source consumers use relative
+imports of that owner; the production bundler preserves those as package self-references outside
+the language entry. Reuse the bundler's policy in graph reports, and verify native package resolution.
 Build and pack from committed inputs using the repository's package manager; pnpm pack resolves
 workspace dependency specifiers while npm pack may leave them in the archive. Before publishing a
 vendor update, verify frozen/offline installation, the complete consumer build and installed bytes

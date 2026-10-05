@@ -1,9 +1,9 @@
 import { spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdtempSync, readFileSync, rmSync, symlinkSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 /**
@@ -33,6 +33,14 @@ beforeAll(() => {
     throw new Error(`isolated bundle staging failed:\n${result.stderr || result.stdout}`)
   }
   expect(repositoryDistHashes()).toEqual(repositoryBefore)
+  // Native package self-references must resolve against this staged publication, not live dist.
+  const host = join(stagedDist, 'packages', 'host')
+  copyFileSync(join(root, 'packages', 'host', 'package.json'), join(host, 'package.json'))
+  symlinkSync(
+    join(root, 'packages', 'host', 'node_modules'),
+    join(host, 'node_modules'),
+    'junction',
+  )
 })
 
 afterAll(() => rmSync(stagedDist, { recursive: true, force: true }))
@@ -165,6 +173,85 @@ describe('single-file production dist', () => {
     const testkit = readFileSync(bundlePath('packages/testkit/dist/index.js'), 'utf8')
     // testkit stays modular: its entry still re-exports its own files.
     expect(importSpecifiers(testkit).some(s => s.startsWith('.'))).toBe(true)
+  })
+
+  it('imports the shared build policy without executing the bundle command', () => {
+    const before = repositoryDistHashes()
+    const baseline = readFileSync(join(root, 'scripts', 'bundle-hashes.json'), 'utf8')
+    const result = spawnSync(
+      process.execPath,
+      [
+        '--input-type=module',
+        '--eval',
+        `import { externalPlugin } from ${JSON.stringify(pathToFileURL(join(root, 'scripts', 'bundle.mjs')).href)};
+       if (typeof externalPlugin !== 'function') throw new Error('missing shared policy');`,
+        '--',
+        '--manifest-only',
+      ],
+      { cwd: root, encoding: 'utf8' },
+    )
+    expect(result.status, result.stderr || result.stdout).toBe(0)
+    expect(repositoryDistHashes()).toEqual(before)
+    expect(readFileSync(join(root, 'scripts', 'bundle-hashes.json'), 'utf8')).toBe(baseline)
+  })
+
+  it('shares captured language context across native published Host entrypoints', () => {
+    const hostUrl = pathToFileURL(bundlePath('packages/host/dist/index.js')).href
+    const languageUrl = pathToFileURL(bundlePath('packages/host/dist/language/index.js')).href
+    const result = spawnSync(
+      process.execPath,
+      [
+        '--input-type=module',
+        '--eval',
+        `
+        import assert from 'node:assert/strict'
+        import * as host from ${JSON.stringify(hostUrl)}
+        import * as language from ${JSON.stringify(languageUrl)}
+        const caller = {kind: 'catalog', id: 'fixture', revision: '1', payload: {value: 45}}
+        const source = host.composeLanguageDocumentSources([
+          {snapshot: async () => ({documents: [], isComplete: true, workspaceContext: {
+            id: 'fixture', revision: '1', semanticComplete: true,
+            documentOrigins: [], semanticInputs: [caller],
+          }})},
+          {snapshot: async () => ({documents: [], isComplete: true})},
+        ])
+        const document = {uri: 'fixture:doc', languageId: 'fixture', version: 1, text: '<Catalog/>'}
+        const snapshot = await source.snapshot({document, workspaceDocuments: [],
+          workspaceDocumentOrigins: [], workspaceLanguageIds: ['fixture'], maxDocuments: 2,
+          signal: new AbortController().signal})
+        const captured = snapshot.workspaceContext.semanticInputs[0]
+        assert.notStrictEqual(captured, caller)
+        assert(Object.isFrozen(captured.payload))
+        assert.strictEqual(language.validatedLanguageWorkspaceSemanticInputs([captured])[0],
+          captured, 'the language entry must reuse the root entry owner capture')
+        const capturedDocument = host.languageDocumentSnapshot(document)
+        assert.strictEqual(language.languageDocumentSnapshot(capturedDocument), capturedDocument)
+        assert.equal(host.languageDocumentTextToken(capturedDocument),
+          language.languageDocumentTextToken(capturedDocument))
+        const token = language.languageWorkspaceContextToken(captured)
+        assert.equal(host.languageWorkspaceContextToken(captured), token)
+        caller.payload.value = 50
+        assert.equal(captured.payload.value, 45)
+        const callerFrozen = Object.freeze({...caller, payload: {value: 45}})
+        const first = host.validatedLanguageWorkspaceSemanticInputs([callerFrozen])[0]
+        assert.notStrictEqual(first, callerFrozen)
+        callerFrozen.payload.value = 50
+        const second = language.validatedLanguageWorkspaceSemanticInputs([callerFrozen])[0]
+        assert.equal(first.payload.value, 45)
+        assert.equal(second.payload.value, 50)
+        assert.notEqual(host.languageWorkspaceContextToken(first),
+          language.languageWorkspaceContextToken(second))
+        let getterCalls = 0
+        const invalid = Object.freeze({...caller, payload: Object.freeze({
+          get value() {getterCalls++; return 45},
+        })})
+        assert.throws(() => host.validatedLanguageWorkspaceSemanticInputs([invalid]), /strict JSON/)
+        assert.equal(getterCalls, 0)
+      `,
+      ],
+      { cwd: root, encoding: 'utf8' },
+    )
+    expect(result.status, result.stderr || result.stdout).toBe(0)
   })
 
   it('leaves the exports map and the .d.ts API in place', () => {

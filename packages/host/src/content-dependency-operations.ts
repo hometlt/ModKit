@@ -32,7 +32,7 @@ import type {
 import {
   languageWorkspaceContextToken,
   validatedLanguageWorkspaceSemanticInputs,
-} from './language/context.js'
+} from './language/index.js'
 
 /** A subject whose content closure a host projects. */
 export interface ContentSubject {

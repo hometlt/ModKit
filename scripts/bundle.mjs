@@ -36,39 +36,6 @@ import { fileURLToPath } from 'node:url'
 import process from 'node:process'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
-const check = process.argv.includes('--check')
-const manifestOnly = process.argv.includes('--manifest-only')
-const writeArtifacts = !check && !manifestOnly
-const artifactRootIndex = process.argv.indexOf('--artifact-root')
-if (artifactRootIndex !== -1 && process.argv[artifactRootIndex + 1] === undefined) {
-  console.error('bundle: --artifact-root requires a path')
-  process.exit(2)
-}
-const artifactRoot =
-  artifactRootIndex === -1 ? undefined : resolve(root, process.argv[artifactRootIndex + 1])
-const writesRepositoryDist = writeArtifacts && artifactRoot === undefined
-
-/**
- * Where the hash manifest is read from / written to. Defaults to the tracked baseline.
- *
- * `--out <path>` exists so a *test* can ask this script the question "are two consecutive builds
- * byte-identical?" without the asking changing anything a human tracks. The determinism suite used
- * to run the default write mode twice and diff the tracked baseline it had just overwritten, which
- * made an ordinary `pnpm test` mutate a reviewed file — the answer was right and the method was
- * not. It changes nothing about the normal modes: no flag, same file, same semantics.
- */
-const outIndex = process.argv.indexOf('--out')
-if (outIndex !== -1 && process.argv[outIndex + 1] === undefined) {
-  console.error('bundle: --out requires a path')
-  process.exit(2)
-}
-if (manifestOnly && outIndex === -1) {
-  console.error(
-    'bundle: --manifest-only requires --out so it cannot overwrite the reviewed baseline',
-  )
-  process.exit(2)
-}
-
 /** Packages whose published entries collapse to one file each. testkit is dev-only. */
 const BUNDLED_PACKAGES = ['core', 'sdk', 'vfs', 'host', 'ui']
 
@@ -98,6 +65,9 @@ function entriesOf(pkgDir) {
 
 /**
  * Bare specifiers stay external: sibling packages and real runtime dependencies alike.
+ * Other Host entries use its published language owner instead of duplicating captured context
+ * WeakMaps. Source imports stay relative so a clean TypeScript build never needs its own dist.
+ * The graph reporter uses this same policy; importing the script does not build or prune files.
  *
  * The generated validator entry is the deliberate exception. AJV's standalone emitter still
  * references its tiny `dist/runtime/*` helpers, even though it does not ship the compiler in the
@@ -106,13 +76,24 @@ function entriesOf(pkgDir) {
  * bundled SDK without AJV. Inline the complete dependency closure for that one generated entry;
  * it has no sibling-package imports and the bundle test pins that it remains import-free.
  */
-function externalPlugin({ selfContained = false } = {}) {
+export function externalPlugin({ selfContained = false, entryPoint } = {}) {
+  const hostSource = join(root, 'packages', 'host', 'src')
+  const languageSource = join(hostSource, 'language', 'index')
+  const shareLanguage =
+    entryPoint !== undefined &&
+    resolve(entryPoint).startsWith(`${hostSource}${sep}`) &&
+    resolve(entryPoint) !== `${languageSource}.ts`
   return {
     name: 'externalise-bare-specifiers',
     setup(b) {
       b.onResolve({ filter: /.*/ }, args => {
         if (args.kind === 'entry-point') return undefined
         const isRelative = args.path.startsWith('.') || args.path.startsWith('/')
+        if (isRelative && shareLanguage) {
+          const target = resolve(args.resolveDir, args.path)
+          if (target === `${languageSource}.js` || target === `${languageSource}.ts`)
+            return { path: '@modkit/host/language', external: true }
+        }
         if (isRelative || selfContained) return undefined
         return { path: args.path, external: true }
       })
@@ -133,7 +114,7 @@ async function bundleEntry(srcPath, outFile) {
     minify: false,
     sourcemap: false,
     legalComments: 'none',
-    plugins: [externalPlugin({ selfContained })],
+    plugins: [externalPlugin({ selfContained, entryPoint: srcPath })],
     logLevel: 'silent',
   })
   const file = result.outputFiles[0]
@@ -142,7 +123,7 @@ async function bundleEntry(srcPath, outFile) {
   return Buffer.from(file.text.replace(/\r\n/g, '\n'), 'utf8')
 }
 
-/** Modular .js files that are no longer reachable once entries are bundled. */
+/** Remove modular JS only after writing repository bundles; staged/check builds never call this. */
 function pruneUnreferenced(pkgDir, keep) {
   const distDir = join(pkgDir, 'dist')
   if (!existsSync(distDir)) return []
@@ -158,84 +139,124 @@ function pruneUnreferenced(pkgDir, keep) {
       const jsPath = path.replace(/\.map$/, '')
       if (keep.has(jsPath)) continue
       removed.push(relative(root, path).split(sep).join('/'))
-      if (writesRepositoryDist) rmSync(path)
+      rmSync(path)
     }
   }
   walk(distDir)
   return removed
 }
 
-const hashes = {}
-let bundled = 0
-let pruned = 0
+/** Run the production command; imports only expose the shared externalisation policy. */
+async function main() {
+  const check = process.argv.includes('--check')
+  const manifestOnly = process.argv.includes('--manifest-only')
+  const writeArtifacts = !check && !manifestOnly
+  const artifactRootIndex = process.argv.indexOf('--artifact-root')
+  if (artifactRootIndex !== -1 && process.argv[artifactRootIndex + 1] === undefined) {
+    console.error('bundle: --artifact-root requires a path')
+    process.exit(2)
+  }
+  const artifactRoot =
+    artifactRootIndex === -1 ? undefined : resolve(root, process.argv[artifactRootIndex + 1])
+  const writesRepositoryDist = writeArtifacts && artifactRoot === undefined
 
-for (const pkg of BUNDLED_PACKAGES) {
-  const pkgDir = join(root, 'packages', pkg)
-  const entries = entriesOf(pkgDir)
-  const keep = new Set(entries.map(e => e.outFile))
-  for (const { srcPath, outFile } of entries) {
-    const destination =
-      artifactRoot === undefined ? outFile : join(artifactRoot, relative(root, outFile))
-    const contents = await bundleEntry(srcPath, destination)
-    hashes[relative(root, outFile).split(sep).join('/')] = createHash('sha256')
-      .update(contents)
-      .digest('hex')
+  /**
+   * Where the hash manifest is read from / written to. Defaults to the tracked baseline.
+   *
+   * `--out <path>` exists so a *test* can ask this script the question "are two consecutive builds
+   * byte-identical?" without the asking changing anything a human tracks. The determinism suite used
+   * to run the default write mode twice and diff the tracked baseline it had just overwritten, which
+   * made an ordinary `pnpm test` mutate a reviewed file — the answer was right and the method was
+   * not. It changes nothing about the normal modes: no flag, same file, same semantics.
+   */
+  const outIndex = process.argv.indexOf('--out')
+  if (outIndex !== -1 && process.argv[outIndex + 1] === undefined) {
+    console.error('bundle: --out requires a path')
+    process.exit(2)
+  }
+  if (manifestOnly && outIndex === -1) {
+    console.error(
+      'bundle: --manifest-only requires --out so it cannot overwrite the reviewed baseline',
+    )
+    process.exit(2)
+  }
+
+  const hashes = {}
+  let bundled = 0
+  let pruned = 0
+
+  for (const pkg of BUNDLED_PACKAGES) {
+    const pkgDir = join(root, 'packages', pkg)
+    const entries = entriesOf(pkgDir)
+    const keep = new Set(entries.map(e => e.outFile))
+    for (const { srcPath, outFile } of entries) {
+      const destination =
+        artifactRoot === undefined ? outFile : join(artifactRoot, relative(root, outFile))
+      const contents = await bundleEntry(srcPath, destination)
+      hashes[relative(root, outFile).split(sep).join('/')] = createHash('sha256')
+        .update(contents)
+        .digest('hex')
+      if (writeArtifacts) {
+        mkdirSync(dirname(destination), { recursive: true })
+        writeFileSync(destination, contents)
+      }
+      bundled += 1
+    }
+    const removed = writesRepositoryDist ? pruneUnreferenced(pkgDir, keep) : []
+    pruned += removed.length
+    // Pruning invalidates tsc's incremental view of dist: with the .tsbuildinfo left in place a later
+    // `tsc -b` believes the modular files still exist and re-emits only changed ones, leaving a
+    // modular index.js that imports pruned siblings. Dropping the build info makes the next `tsc -b`
+    // re-emit the whole package (consistent modular dist), and `pnpm build` re-bundles on top.
+    if (writesRepositoryDist && removed.length > 0) {
+      const buildInfo = join(pkgDir, 'tsconfig.tsbuildinfo')
+      if (existsSync(buildInfo)) rmSync(buildInfo)
+    }
+  }
+
+  // The CLI is an application: its own modules are inlined, lab packages stay external so the
+  // external-extension proof still resolves them from the installed tarballs.
+  const cliMain = join(root, 'apps', 'cli', 'dist', 'main.js')
+  if (existsSync(join(root, 'apps', 'cli', 'src', 'main.ts'))) {
+    const cliDestination =
+      artifactRoot === undefined ? cliMain : join(artifactRoot, relative(root, cliMain))
+    const contents = await bundleEntry(join(root, 'apps', 'cli', 'src', 'main.ts'), cliDestination)
+    hashes['apps/cli/dist/main.js'] = createHash('sha256').update(contents).digest('hex')
     if (writeArtifacts) {
-      mkdirSync(dirname(destination), { recursive: true })
-      writeFileSync(destination, contents)
+      mkdirSync(dirname(cliDestination), { recursive: true })
+      writeFileSync(cliDestination, contents)
     }
     bundled += 1
   }
-  const removed = writesRepositoryDist ? pruneUnreferenced(pkgDir, keep) : []
-  pruned += removed.length
-  // Pruning invalidates tsc's incremental view of dist: with the .tsbuildinfo left in place a later
-  // `tsc -b` believes the modular files still exist and re-emits only changed ones, leaving a
-  // modular index.js that imports pruned siblings. Dropping the build info makes the next `tsc -b`
-  // re-emit the whole package (consistent modular dist), and `pnpm build` re-bundles on top.
-  if (writesRepositoryDist && removed.length > 0) {
-    const buildInfo = join(pkgDir, 'tsconfig.tsbuildinfo')
-    if (existsSync(buildInfo)) rmSync(buildInfo)
+
+  const hashPath =
+    outIndex === -1
+      ? join(root, 'scripts', 'bundle-hashes.json')
+      : resolve(root, process.argv[outIndex + 1])
+  const rendered = `${JSON.stringify(hashes, null, 2)}\n`
+  if (check) {
+    const previous = existsSync(hashPath) ? readFileSync(hashPath, 'utf8') : ''
+    if (previous !== rendered) {
+      console.error(
+        'bundle --check: output differs from the recorded hashes.\n' +
+          'Either the sources changed (run `pnpm bundle` and review) or the build is not deterministic.',
+      )
+      process.exit(1)
+    }
+    console.log(`bundle --check: ${Object.keys(hashes).length} entries byte-identical`)
+  } else {
+    writeFileSync(hashPath, rendered, 'utf8')
+    if (manifestOnly) {
+      console.log(`bundle --manifest-only: hashed ${bundled} entries without changing dist`)
+      process.exit(0)
+    }
+    const sizes = Object.keys(hashes)
+      .map(f => `${f} ${statSync(join(artifactRoot ?? root, f)).size}b`)
+      .join('\n  ')
+    console.log(`bundled ${bundled} entries, pruned ${pruned} modular files:\n  ${sizes}`)
   }
 }
 
-// The CLI is an application: its own modules are inlined, lab packages stay external so the
-// external-extension proof still resolves them from the installed tarballs.
-const cliMain = join(root, 'apps', 'cli', 'dist', 'main.js')
-if (existsSync(join(root, 'apps', 'cli', 'src', 'main.ts'))) {
-  const cliDestination =
-    artifactRoot === undefined ? cliMain : join(artifactRoot, relative(root, cliMain))
-  const contents = await bundleEntry(join(root, 'apps', 'cli', 'src', 'main.ts'), cliDestination)
-  hashes['apps/cli/dist/main.js'] = createHash('sha256').update(contents).digest('hex')
-  if (writeArtifacts) {
-    mkdirSync(dirname(cliDestination), { recursive: true })
-    writeFileSync(cliDestination, contents)
-  }
-  bundled += 1
-}
-
-const hashPath =
-  outIndex === -1
-    ? join(root, 'scripts', 'bundle-hashes.json')
-    : resolve(root, process.argv[outIndex + 1])
-const rendered = `${JSON.stringify(hashes, null, 2)}\n`
-if (check) {
-  const previous = existsSync(hashPath) ? readFileSync(hashPath, 'utf8') : ''
-  if (previous !== rendered) {
-    console.error(
-      'bundle --check: output differs from the recorded hashes.\n' +
-        'Either the sources changed (run `pnpm bundle` and review) or the build is not deterministic.',
-    )
-    process.exit(1)
-  }
-  console.log(`bundle --check: ${Object.keys(hashes).length} entries byte-identical`)
-} else {
-  writeFileSync(hashPath, rendered, 'utf8')
-  if (manifestOnly) {
-    console.log(`bundle --manifest-only: hashed ${bundled} entries without changing dist`)
-    process.exit(0)
-  }
-  const sizes = Object.keys(hashes)
-    .map(f => `${f} ${statSync(join(artifactRoot ?? root, f)).size}b`)
-    .join('\n  ')
-  console.log(`bundled ${bundled} entries, pruned ${pruned} modular files:\n  ${sizes}`)
+if (process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  await main()
 }

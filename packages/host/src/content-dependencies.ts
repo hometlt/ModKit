@@ -29,13 +29,13 @@ import type {
   LanguageWorkspaceDocumentSourceRequest,
 } from './language/workspace.js'
 import {
+  contentPathIndexSemanticInputs,
+  createLanguageFileClassifier,
   languageDocumentSnapshot,
   languageDocumentTextToken,
   languageWorkspaceContextToken,
-} from './language/context.js'
-import { contentPathIndexSemanticInputs } from './language/content-path-index.js'
+} from './language/index.js'
 import { artifactByteSourceFromBytes } from './source-bridge.js'
-import { createLanguageFileClassifier } from './language/workspace.js'
 import {
   normalizeCompanionLogicalId,
   type CompanionEnumerationOptions,

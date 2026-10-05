@@ -23,24 +23,12 @@ import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { build } from 'esbuild'
+import { externalPlugin } from './bundle.mjs'
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const check = process.argv.includes('--check')
 const reportPath = path.join(repoRoot, 'reports', 'bundle-graph.json')
 const readablePath = path.join(repoRoot, 'reports', 'bundle-graph.md')
-
-/** Same externalisation rule as the bundler: bare specifiers stay external, relatives are inlined. */
-const externalPlugin = {
-  name: 'externalise-bare',
-  setup(builder) {
-    // esbuild compiles this filter with Go's regexp engine, which rejects the `u` flag
-    builder.onResolve({ filter: /.*/ }, args => {
-      if (args.kind === 'entry-point') return undefined
-      const isRelative = args.path.startsWith('.') || args.path.startsWith('/')
-      return isRelative ? undefined : { path: args.path, external: true }
-    })
-  },
-}
 
 /** `packages/host/dist/runtime/index.js` → the source entry esbuild should read. */
 function sourceFor(entry) {
@@ -80,7 +68,12 @@ async function graphFor(entry) {
       sourcemap: false,
       legalComments: 'none',
       metafile: true,
-      plugins: [externalPlugin],
+      plugins: [
+        externalPlugin({
+          entryPoint: source,
+          selfContained: entry === 'packages/sdk/dist/manifest/validators.generated.js',
+        }),
+      ],
       logLevel: 'silent',
     })
   } catch {

@@ -3,6 +3,8 @@
  * Language method surfaces carry SDK features across in-process and worker execution, including
  * entity commands and focused completion documentation. Providers retain schemas and language
  * semantics; this module owns neither game parsing nor editor UI. Workspace.ts owns feature budgets.
+ * Other published Host entries reference this language entry so immutable context capture and its
+ * memoized tokens share one runtime owner; unknown inputs still cross defensive validation.
  */
 
 import {
@@ -782,5 +784,10 @@ export {
   type LanguageWorkspaceSymbolsRequest,
 } from './workspace.js'
 export { expandSubjectReferenceCompletions } from './subject-completion.js'
-export { languageWorkspaceContextToken } from './context.js'
+export {
+  languageDocumentSnapshot,
+  languageDocumentTextToken,
+  languageWorkspaceContextToken,
+  validatedLanguageWorkspaceSemanticInputs,
+} from './context.js'
 export { contentPathIndexSemanticInputs } from './content-path-index.js'
