@@ -611,8 +611,11 @@ export interface LanguageWorkspaceOptions {
   /** Host-selected locale, subject and other non-document semantic inputs. */
   readonly semanticInputs?:
     readonly LanguageWorkspaceSemanticInput[] | (() => readonly LanguageWorkspaceSemanticInput[])
-  /** Observe the exact immutable context sent to a provider, for transport snapshot identities. */
-  readonly observeWorkspaceContext?: (context: LanguageWorkspaceContext | undefined) => void
+  /** Observe the exact provider context and requesting URI; concurrent mods have separate scopes. */
+  readonly observeWorkspaceContext?: (
+    context: LanguageWorkspaceContext | undefined,
+    documentUri: string,
+  ) => void
 }
 
 export interface LanguageWorkspaceDocumentSourceRequest {
@@ -633,6 +636,10 @@ export interface LanguageWorkspaceDocumentSourceResult {
   readonly isComplete: boolean
   /** Present when the source can prove identity, precedence and revision of its snapshot. */
   readonly workspaceContext?: LanguageWorkspaceContext
+  /** When true, context origins admit open documents into this source's dependency scope.
+   * The requested document remains present without an origin, leaving the context incomplete.
+   * Omitted preserves the historical unscoped editor workspace. */
+  readonly scopeWorkspaceDocuments?: boolean
 }
 
 /**
@@ -2338,7 +2345,10 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
           snapshot === null ||
           !Array.isArray(snapshot.documents) ||
           snapshot.documents.length > Math.max(0, maxDocuments - snapshotDocuments.length) ||
-          typeof snapshot.isComplete !== 'boolean'
+          typeof snapshot.isComplete !== 'boolean' ||
+          (snapshot.scopeWorkspaceDocuments !== undefined &&
+            typeof snapshot.scopeWorkspaceDocuments !== 'boolean') ||
+          (snapshot.scopeWorkspaceDocuments === true && snapshot.workspaceContext === undefined)
         ) {
           invalidFeature(
             'language workspace document source returned an invalid snapshot',
@@ -2361,6 +2371,21 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
           // A composed source may rebase an open overlay after weaker dependency layers. Its
           // context is the host-owned final precedence authority for this request.
           for (const origin of sourceContext.documentOrigins) originsByUri.set(origin.uri, origin)
+          if (snapshot.scopeWorkspaceDocuments === true) {
+            const admitted = new Set(sourceContext.documentOrigins.map(origin => origin.uri))
+            for (let index = snapshotDocuments.length - 1; index >= 0; index -= 1) {
+              const document = snapshotDocuments[index]
+              if (
+                document !== undefined &&
+                document.uri !== entry.uri &&
+                !admitted.has(document.uri)
+              )
+                snapshotDocuments.splice(index, 1)
+            }
+            for (const uri of originsByUri.keys()) {
+              if (!admitted.has(uri)) originsByUri.delete(uri)
+            }
+          }
         }
         const seenUris = new Set(snapshotDocuments.map(document => document.uri))
         const overlayKey = (origin: LanguageWorkspaceDocumentOrigin): string =>
@@ -2565,7 +2590,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         ...additions,
         signal: controller.signal,
       }) as LanguageFeatureRequest
-      options.observeWorkspaceContext?.(workspaceContext)
+      options.observeWorkspaceContext?.(workspaceContext, entry.uri)
       const pending = call(entry.resolution.provider, providerRequest)
       if (pending === undefined) return undefined
       let candidate: unknown

@@ -483,6 +483,7 @@ export function composeLanguageDocumentSources(
       const documentIndex = new Map<string, number>()
       let complete = true
       let contextsComplete = true
+      let scopeWorkspaceDocuments = true
       let precedenceBase = 0
       for (const source of sources) {
         const remaining = request.maxDocuments - documents.length
@@ -492,6 +493,7 @@ export function composeLanguageDocumentSources(
         }
         const result = await source.snapshot({ ...request, maxDocuments: remaining })
         complete &&= result.isComplete
+        scopeWorkspaceDocuments &&= result.scopeWorkspaceDocuments === true
         if (result.workspaceContext === undefined) contextsComplete = false
         else contexts.push(result.workspaceContext)
         const origins = new Map(
@@ -578,6 +580,7 @@ export function composeLanguageDocumentSources(
       return Object.freeze({
         documents: Object.freeze(documents),
         isComplete: complete,
+        scopeWorkspaceDocuments: scopeWorkspaceDocuments && contexts.length === sources.length,
         ...(workspaceContext === undefined ? {} : { workspaceContext }),
       })
     },

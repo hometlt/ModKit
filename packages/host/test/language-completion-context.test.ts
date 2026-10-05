@@ -15,6 +15,7 @@ import {
   createLanguageWorkspace,
   type LanguageWorkspaceDocumentSource,
 } from '../src/language/index.js'
+import { composeLanguageDocumentSources } from '../src/content-dependency-operations.js'
 
 /** Activate a public language provider with a controllable source and observed feature requests. */
 async function fixture(
@@ -147,6 +148,84 @@ async function fixture(
   const request = { uri: document.uri, documentVersion: 1, position: { line: 0, character: 1 } }
   return { workspace, snapshot, completion, request, document }
 }
+
+it('scopes a feature to its mod and edited dependency while other open mods stay loaded', async () => {
+  const test = await fixture()
+  const dependency = {
+    ...test.document,
+    uri: 'memory://dependency.fixture',
+    text: 'unsaved dependency',
+  }
+  const foreign = {
+    ...test.document,
+    uri: 'memory://other-mod.fixture',
+    text: 'broken unrelated document',
+  }
+  const origin = (uri: string, layerId: string, readOnly: boolean) => ({
+    uri,
+    layerId,
+    logicalId: 'file.fixture',
+    precedence: readOnly ? 0 : 1,
+    sourceRevision: 'revision:1',
+    readOnly,
+  })
+  await test.workspace.synchronize({ languageId: 'fixture', document: dependency })
+  await test.workspace.synchronize({ languageId: 'fixture', document: foreign })
+  const scoped = composeLanguageDocumentSources(
+    [origin(dependency.uri, 'base', true), origin(test.document.uri, 'mod', false)].map(item => ({
+      async snapshot() {
+        return {
+          documents: [],
+          isComplete: true,
+          scopeWorkspaceDocuments: true,
+          workspaceContext: {
+            id: item.layerId,
+            revision: '1',
+            semanticComplete: true,
+            documentOrigins: [item],
+          },
+        }
+      },
+    })),
+  )
+  if (scoped === undefined) throw new Error('composed scope was not created')
+  test.snapshot.mockImplementation(scoped.snapshot)
+  try {
+    await test.workspace.completion(test.request)
+    const request = test.completion.mock.calls[0]?.[0]
+    if (request === undefined) throw new Error('completion request was not observed')
+    expect(request.workspaceDocuments).toEqual([dependency, test.document])
+    expect(request.workspaceContext?.semanticComplete).toBe(true)
+    expect(request.workspaceContext?.documentOrigins.map(item => item.uri)).not.toContain(
+      foreign.uri,
+    )
+    // Scope is per feature; it does not close or discard another mod's open document.
+    await test.workspace.completion({ ...test.request, uri: foreign.uri })
+    expect(test.completion.mock.calls[1]?.[0].document).toEqual(foreign)
+    expect(test.completion.mock.calls[1]?.[0].workspaceContext?.semanticComplete).toBe(false)
+    // Legacy sources that do not opt into scope retain their editor workspace.
+    test.snapshot.mockResolvedValue({ documents: [], isComplete: true })
+    await test.workspace.completion(test.request)
+    expect(test.completion.mock.calls[2]?.[0].workspaceDocuments).toContainEqual(foreign)
+  } finally {
+    await test.workspace.shutdown()
+  }
+})
+
+it('rejects a scoped source without context authority', async () => {
+  const test = await fixture()
+  test.snapshot.mockResolvedValue({
+    documents: [],
+    isComplete: true,
+    scopeWorkspaceDocuments: true,
+  })
+  try {
+    await expect(test.workspace.completion(test.request)).rejects.toThrow(/invalid snapshot/u)
+    expect(test.completion).not.toHaveBeenCalled()
+  } finally {
+    await test.workspace.shutdown()
+  }
+})
 
 it('retains captured source documents while revalidating text, metadata and source authority', async () => {
   const f = await fixture()

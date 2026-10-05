@@ -187,3 +187,49 @@ describe('language workspace semantic payloads', () => {
     expect(copied).toEqual({ assets: ['Assets/Marine.m3'] })
   })
 })
+
+it('composes byte-sensitive captured inputs and revalidates foreign same-revision payloads', async () => {
+  const payload = { name: 'Marine' }
+  const input = Object.freeze({ kind: 'test', id: 'subject', revision: 'same', payload })
+  const dependency: LanguageWorkspaceDocumentSource = {
+    async snapshot() {
+      return {
+        documents: [],
+        isComplete: true,
+        workspaceContext: {
+          id: 'test',
+          revision: 'same',
+          semanticComplete: true,
+          documentOrigins: [],
+          semanticInputs: [input],
+        },
+      }
+    },
+  }
+  const source = composeLanguageDocumentSources([
+    dependency,
+    {
+      async snapshot() {
+        return { documents: [], isComplete: true }
+      },
+    },
+  ])
+  if (source === undefined) throw new Error('composed source was not created')
+  const request = {
+    document: { uri: 'file:///test', languageId: 'test', version: 1, text: '' },
+    workspaceDocuments: [],
+    workspaceDocumentOrigins: [],
+    workspaceLanguageIds: ['test'],
+    maxDocuments: 8,
+    signal: new AbortController().signal,
+  }
+  const first = await source.snapshot(request)
+  expect((await source.snapshot(request)).workspaceContext?.revision).toBe(
+    first.workspaceContext?.revision,
+  )
+  payload.name = 'Marauder'
+  const changed = await source.snapshot(request)
+  expect(changed.workspaceContext?.revision).not.toBe(first.workspaceContext?.revision)
+  expect(first.workspaceContext?.semanticInputs?.[0]?.payload).toEqual({ name: 'Marine' })
+  expect(changed.workspaceContext?.semanticInputs?.[0]?.payload).toEqual({ name: 'Marauder' })
+})

@@ -70,6 +70,59 @@ const resolution: ContentDependencyResolution = {
 }
 
 describe('content dependency language documents', () => {
+  it('admits an edited open dependency by mount identity without reading its disk copy', async () => {
+    const source = createContentDependencyLanguageDocumentSource({
+      contentSources: {
+        ...contentSources(),
+        async list() {
+          return [{ path: 'cache/base/units.xml', name: 'units.xml', directory: false }]
+        },
+        async read() {
+          throw new Error('an open overlay must not be read from storage')
+        },
+      },
+      resolution: { ...resolution, mounts: resolution.mounts.slice(0, 1) },
+      routes: [{ languageId: 'sc2-data', extension: 'xml' }],
+    })
+    const open = {
+      uri: 'content-source://cache/cache/base/units.xml',
+      languageId: 'sc2-data',
+      version: 2,
+      text: '<Edited/>',
+    }
+    const foreign = { ...open, uri: 'content-source://cache/cache/other/units.xml' }
+    const snapshot = await source.snapshot({
+      document: open,
+      workspaceDocuments: [open, foreign],
+      workspaceDocumentOrigins: [],
+      workspaceLanguageIds: ['sc2-data'],
+      maxDocuments: 0,
+      signal: new AbortController().signal,
+    })
+    expect(snapshot.isComplete).toBe(true)
+    expect(snapshot.scopeWorkspaceDocuments).toBe(true)
+    expect(snapshot.documents).toEqual([])
+    expect(snapshot.workspaceContext?.documentOrigins).toEqual([
+      expect.objectContaining({
+        uri: open.uri,
+        logicalId: 'units.xml',
+        precedence: 0,
+        readOnly: true,
+      }),
+    ])
+    const changed = await source.snapshot({
+      document: { ...open, text: '<Changed/>' },
+      workspaceDocuments: [foreign],
+      workspaceDocumentOrigins: [],
+      workspaceLanguageIds: ['sc2-data'],
+      maxDocuments: 0,
+      signal: new AbortController().signal,
+    })
+    expect(changed.workspaceContext?.documentOrigins[0]?.sourceRevision).not.toBe(
+      snapshot.workspaceContext?.documentOrigins[0]?.sourceRevision,
+    )
+  })
+
   it('accepts provider-canonical casing beneath a case-insensitive dependency mount', async () => {
     const sources: ContentSources = {
       ...contentSources(),

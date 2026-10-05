@@ -190,9 +190,15 @@ async function probeInstalledCasc(receipt, resultPath, gameRoot, extensionApi) {
     .filter(
       line =>
         line.includes('[language-context] resolved revision=') &&
-        line.includes('provider:blizzard/sc2-data-language'),
+        line.includes('provider:blizzard/sc2-data-language') &&
+        line.includes(` document=${libertyUri.toString()} failures=`),
     )
     .at(-1)
+  if (
+    !state.resolvedDataContext?.includes(' complete=true inputs=') ||
+    state.resolvedDataContext.includes('semantic-context-status:')
+  )
+    throw new Error('Native CASC context included unrelated or incomplete workspace inputs')
   // These literals locate test cursors only; production classes/inheritance stay with the Data owner.
   const entityIds = [...text.matchAll(/<CUnit\s[^>]*\bid="([^"]+)"/gu)].map(match => match[1])
   const lastEntity = entityIds.at(-1)
@@ -285,7 +291,7 @@ exports.run = async function run() {
   if (resultPath === undefined) throw new Error('MODKIT_INSTALLED_LANGUAGE_RESULT is not set')
   const receipt = {
     kind: 'modkit.vscode-installed-sc2-language',
-    version: 12,
+    version: 15,
     passed: false,
     vscodeVersion: vscode.version,
   }
@@ -1368,8 +1374,14 @@ exports.run = async function run() {
           : undefined
       } catch (error) {
         // VS Code converts a transient undefined prepare/rename result to this error while a
-        // changed workspace snapshot is still settling. Retry that state; preserve real failures.
-        if (String(error?.message ?? error) === 'No result.') return undefined
+        // changed workspace snapshot is still settling. Rename is only a preview here; bounded
+        // retries do not apply edits. Record cancellation and preserve all other failures.
+        const message = String(error?.message ?? error)
+        if (message === 'No result.' || message === 'operation cancelled') {
+          receipt.renamePreviewRetries ??= []
+          receipt.renamePreviewRetries.push(message)
+          return undefined
+        }
         throw error
       }
     })

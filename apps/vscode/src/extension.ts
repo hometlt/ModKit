@@ -7009,6 +7009,7 @@ async function activateModkit(
         return {
           documents: Object.freeze(documents),
           isComplete,
+          scopeWorkspaceDocuments: true,
           workspaceContext: Object.freeze({
             id: contextId,
             revision: languageWorkspaceContextToken({
@@ -7048,14 +7049,15 @@ async function activateModkit(
   /*
    * The projection names a file of a content source `content-source://<source>/<path>`; this window
    * opens the same file as `modkit-source://battlenet/<source>/<path>`. One name per file: an open
-   * CASC document is the projected one rather than a second copy of it, and a reference into Core
-   * opens in the editor.
+   * CASC document keeps its open URI even when storage spells its path in another case. Source ids
+   * keep installations separate; a reference into Core opens in the editor.
    */
   const editorUriOfProjected = (uri: string, open: ReadonlyMap<string, string>): string => {
     const target = uri.startsWith('content-source:') ? subjectTarget(uri) : undefined
     return target === undefined || typeof target === 'string'
       ? uri
-      : (open.get(target.path.toLowerCase()) ??
+      : (open.get(`${target.sourceId}\0${target.path.toLowerCase()}`) ??
+          open.get(target.path.toLowerCase()) ??
           vscode.Uri.from({
             scheme: 'modkit-source',
             authority: 'battlenet',
@@ -7077,6 +7079,12 @@ async function activateModkit(
       try {
         parsed = vscode.Uri.parse(document.uri, true)
       } catch {
+        continue
+      }
+      if (parsed.scheme === 'modkit-source') {
+        const target = modContextTargetOf(document.uri)
+        if (target !== undefined && typeof target !== 'string')
+          members.set(`${target.sourceId}\0${target.path.toLowerCase()}`, document.uri)
         continue
       }
       if (parsed.scheme !== CONTAINER_SCHEME) continue
@@ -7129,6 +7137,8 @@ async function activateModkit(
       return snapshot
     }
     let projected: Awaited<ReturnType<typeof resolveContentLanguageSources>> | undefined
+    const includeLocalWorkspace =
+      scope?.root !== undefined || (scope === undefined && request.document.uri.startsWith('file:'))
     try {
       const targetPath = scope?.path ?? loose
       const target = targetPath === undefined ? undefined : modContextTargetOf(targetPath)
@@ -7161,11 +7171,18 @@ async function activateModkit(
         )
       }
     }
-    const local = workspaceLanguageDocumentSource(scope, projected?.dependenciesComplete === true)
-    const composed =
-      composeLanguageDocumentSources([...(projected?.sources ?? []).map(withEditorUris), local]) ??
-      local
-    const snapshot = await composed.snapshot(request)
+    // Content-source targets supply their own closure; local folder fallback would mix other mods.
+    const local = includeLocalWorkspace
+      ? workspaceLanguageDocumentSource(scope, projected?.dependenciesComplete === true)
+      : undefined
+    const composed = composeLanguageDocumentSources([
+      ...(projected?.sources ?? []).map(withEditorUris),
+      ...(local === undefined ? [] : [local]),
+    ])
+    const snapshot: LanguageWorkspaceDocumentSourceResult =
+      composed === undefined
+        ? Object.freeze({ documents: Object.freeze([]), isComplete: false })
+        : await composed.snapshot(request)
     rememberLanguageSnapshot(snapshotKey, snapshot)
     log(
       `[language-context] workspace snapshot for ${request.document.uri}: accepted=${request.workspaceLanguageIds.join(',')} open=${request.workspaceDocuments.map(document => `${document.languageId}:${document.uri}`).join(',')} additional=${snapshot.documents.map(document => `${document.languageId}:${document.uri}`).join(',')} origins=${snapshot.workspaceContext?.documentOrigins.map(origin => `${origin.logicalId}:${origin.uri}`).join(',') ?? ''}`,
@@ -7349,9 +7366,10 @@ async function activateModkit(
         overlay: true,
       })
     },
-    observeWorkspaceContext: context => {
-      if (context === undefined || observedLanguageContexts.has(context.revision)) return
-      observedLanguageContexts.add(context.revision)
+    observeWorkspaceContext: (context, documentUri) => {
+      const observedKey = `${documentUri}\0${context?.revision}`
+      if (context === undefined || observedLanguageContexts.has(observedKey)) return
+      observedLanguageContexts.add(observedKey)
       const inputs = context.semanticInputs?.map(input => `${input.kind}:${input.id}`).sort() ?? []
       const failures =
         context.semanticInputs?.flatMap(input => {
@@ -7367,7 +7385,7 @@ async function activateModkit(
           return typeof message === 'string' ? [message] : []
         }) ?? []
       log(
-        `[language-context] resolved revision=${context.revision} complete=${String(context.semanticComplete)} inputs=${inputs.join(',')} failures=${failures.join('; ')}`,
+        `[language-context] resolved revision=${context.revision} complete=${String(context.semanticComplete)} inputs=${inputs.join(',')} document=${documentUri} failures=${failures.join('; ')}`,
       )
     },
   })

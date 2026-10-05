@@ -7,6 +7,72 @@ import {
 } from '../src/language-native.js'
 
 describe('the language adapter', () => {
+  it('keeps dependency overlays and new owned files while excluding another mod on cache reuse', () => {
+    const document = (uri: string) => ({
+      uri,
+      languageId: 'galaxy',
+      version: 2,
+      text: 'int edited;',
+    })
+    const origin = (uri: string, layerId: string, readOnly = false) => ({
+      uri,
+      layerId,
+      logicalId: uri,
+      precedence: 0,
+      sourceRevision: 'editor:2',
+      readOnly,
+    })
+    const base = { ...origin('file:///base', 'dependency', true), sourceRevision: 'disk:1' }
+    const main = origin('file:///main', 'mod')
+    const added = origin('file:///new', 'mod')
+    const foreign = origin('file:///foreign', 'other-mod')
+    const snapshot = {
+      documents: [document(base.uri)],
+      isComplete: true,
+      scopeWorkspaceDocuments: true,
+      workspaceContext: {
+        id: 'mod-closure',
+        revision: '1',
+        semanticComplete: true,
+        documentOrigins: [main, base],
+      },
+    }
+    const result = rebaseLanguageSnapshot(snapshot, {
+      document: document(main.uri),
+      workspaceDocuments: [document(base.uri), document(added.uri), document(foreign.uri)],
+      workspaceDocumentOrigins: [main, origin(base.uri, 'different-editor-scope'), added, foreign],
+      workspaceLanguageIds: ['galaxy'],
+      maxDocuments: 10,
+      signal: new AbortController().signal,
+    })
+    expect(result.documents).toEqual([])
+    expect(result.workspaceContext?.documentOrigins).toEqual([
+      main,
+      { ...base, sourceRevision: 'editor:2' },
+      added,
+    ])
+    expect(result.isComplete).toBe(true)
+    const changedForeign = rebaseLanguageSnapshot(snapshot, {
+      document: document(main.uri),
+      workspaceDocuments: [document(foreign.uri)],
+      workspaceDocumentOrigins: [main, { ...foreign, sourceRevision: 'editor:3' }],
+      workspaceLanguageIds: ['galaxy'],
+      maxDocuments: 10,
+      signal: new AbortController().signal,
+    })
+    const initialForeign = rebaseLanguageSnapshot(snapshot, {
+      document: document(main.uri),
+      workspaceDocuments: [document(foreign.uri)],
+      workspaceDocumentOrigins: [main, foreign],
+      workspaceLanguageIds: ['galaxy'],
+      maxDocuments: 10,
+      signal: new AbortController().signal,
+    })
+    expect(changedForeign.workspaceContext?.revision).toBe(
+      initialForeign.workspaceContext?.revision,
+    )
+  })
+
   it('keeps a complete cached closure when a closed file becomes an edited overlay', () => {
     const document = (uri: string) => ({ uri, languageId: 'galaxy', version: 1, text: 'int x;' })
     const origin = (uri: string, sourceRevision = 'disk:1') => ({

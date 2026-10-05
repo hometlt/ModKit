@@ -12,7 +12,11 @@ import {
   throwIfAborted,
   type Diagnostic,
 } from '@modkit/core'
-import type { LanguageDocument, LanguageWorkspaceSemanticInput } from '@modkit/sdk/language'
+import type {
+  LanguageDocument,
+  LanguageWorkspaceDocumentOrigin,
+  LanguageWorkspaceSemanticInput,
+} from '@modkit/sdk/language'
 import {
   isRevisionId,
   revisionId,
@@ -463,7 +467,10 @@ export function createContentDependencyLanguageDocumentSource(
     async snapshot(request: LanguageWorkspaceDocumentSourceRequest) {
       request.signal.throwIfAborted()
       const accepted = new Set(request.workspaceLanguageIds)
-      const openUris = new Set(request.workspaceDocuments.map(document => document.uri))
+      const openDocuments = new Map(
+        [...request.workspaceDocuments, request.document].map(document => [document.uri, document]),
+      )
+      const documentOrigins: LanguageWorkspaceDocumentOrigin[] = []
       const candidates: {
         readonly mount: IndexedMount
         readonly path: string
@@ -512,7 +519,7 @@ export function createContentDependencyLanguageDocumentSource(
           knowledge.push({ mount, path, fileName: relative })
           return true
         }
-        const { languageId, candidates: claimants } = classify(relative)
+        const { languageId, dialect, candidates: claimants } = classify(relative)
         if (languageId === undefined) {
           if (claimants.some(id => accepted.has(id))) complete = false
           return true
@@ -520,7 +527,25 @@ export function createContentDependencyLanguageDocumentSource(
         if (!accepted.has(languageId)) return true
         claimed += 1
         const uri = contentSourceUri(mount.sourceId, path)
-        if (openUris.has(uri)) return true
+        const open = openDocuments.get(uri)
+        if (open !== undefined) {
+          documentOrigins.push(
+            Object.freeze({
+              uri,
+              layerId: `${contextId}:${mount.order}:${mount.dependencyId}`,
+              logicalId: relative,
+              precedence: mount.order,
+              sourceRevision: languageWorkspaceContextToken({
+                mountRevision: String(mount.revision),
+                languageId,
+                dialect,
+                contentRevision: languageDocumentTextToken(open),
+              }),
+              readOnly: true,
+            }),
+          )
+          return true
+        }
         if (claimed <= maxEntries && candidates.length < request.maxDocuments)
           candidates.push({ mount, path, relative })
         else complete = false
@@ -617,7 +642,6 @@ export function createContentDependencyLanguageDocumentSource(
       }
       trimDocumentCaptures()
       const documents = []
-      const documentOrigins = []
       let totalBytes = 0
       for (const candidate of candidates.slice(0, request.maxDocuments)) {
         request.signal.throwIfAborted()
@@ -753,6 +777,7 @@ export function createContentDependencyLanguageDocumentSource(
       return Object.freeze({
         documents: Object.freeze(documents),
         isComplete: complete,
+        scopeWorkspaceDocuments: true,
         workspaceContext: Object.freeze({
           id: contextId,
           revision: contextRevision,

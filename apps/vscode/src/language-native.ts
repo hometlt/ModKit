@@ -22,7 +22,7 @@ import type {
  */
 export const LANGUAGE_COMMAND = 'modkit.runLanguageCommand'
 
-/** Reuse closed documents while the host supplies the current open editor overlays. */
+/** Rebase current editor overlays within the captured scope, preserving dependency write protection. */
 export function rebaseLanguageSnapshot(
   snapshot: LanguageWorkspaceDocumentSourceResult,
   request: LanguageWorkspaceDocumentSourceRequest,
@@ -36,10 +36,21 @@ export function rebaseLanguageSnapshot(
   const closed = snapshot.documents.filter(document => !openUris.has(document.uri))
   const documents = Object.freeze(closed.slice(0, request.maxDocuments))
   const allowedUris = new Set([...openUris, ...documents.map(document => document.uri)])
+  const capturedOrigins = new Map(context.documentOrigins.map(origin => [origin.uri, origin]))
+  const layers = new Set(context.documentOrigins.map(origin => origin.layerId))
+  const openOrigins = new Map(request.workspaceDocumentOrigins.map(origin => [origin.uri, origin]))
   const documentOrigins = Object.freeze([
-    ...request.workspaceDocumentOrigins,
+    ...request.workspaceDocumentOrigins.flatMap(origin => {
+      const captured = capturedOrigins.get(origin.uri)
+      if (snapshot.scopeWorkspaceDocuments === true) {
+        if (captured !== undefined) return [{ ...captured, sourceRevision: origin.sourceRevision }]
+        if (!layers.has(origin.layerId)) return []
+      }
+      return [origin]
+    }),
     ...context.documentOrigins.filter(
-      origin => !openUris.has(origin.uri) && allowedUris.has(origin.uri),
+      origin =>
+        allowedUris.has(origin.uri) && (!openUris.has(origin.uri) || !openOrigins.has(origin.uri)),
     ),
   ])
   return Object.freeze({
