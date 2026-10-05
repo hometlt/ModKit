@@ -36,6 +36,12 @@ Build and pack from committed inputs using the repository's package manager; pnp
 workspace dependency specifiers while npm pack may leave them in the archive. Before publishing a
 vendor update, verify frozen/offline installation, the complete consumer build and installed bytes
 against the candidate tarball. Preserve the dependency/lockfile pair and unrelated paused changes.
+Preserve published CommonJS/UMD code when materializing a runtime closure. Minifying its identifiers
+can erase the export names Node uses for native ESM imports, even when require() still works.
+Minify ESM only with an explicit module suffix/package scope, including nested package boundaries.
+Verify native import/behavior from the materialized artifact, not only the source checkout.
+An activated language route or a successful fallback on a small fixture does not prove that its
+ContentSources/dependency context loaded; inspect public diagnostics and a real installed source.
 
 ## Use simple, executable packaging
 
