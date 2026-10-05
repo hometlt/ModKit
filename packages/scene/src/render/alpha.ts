@@ -135,31 +135,74 @@ const sortedTriangles = new WeakMap<
 >()
 
 /**
+ * The last sorted primitive each blended primitive came back as, with the view it was sorted for:
+ * the placements of one model share their positions but not their placement, so a kept primitive at a
+ * still camera finds its own order here whatever its siblings sorted in between.
+ */
+const sortedPrimitives = new WeakMap<
+  SceneRendererPrimitive,
+  Readonly<{ viewProjection: Float32Array; result: SceneRendererPrimitive }>
+>()
+
+const sameMatrix = (left: ArrayLike<number>, right: ArrayLike<number>) => {
+  for (let index = 0; index < 16; index++) if (left[index] !== right[index]) return false
+  return true
+}
+
+/**
+ * The corners of a primitive's triangles, three per triangle, as a triangle list: strips alternate
+ * their winding, fans share their first vertex.
+ */
+function triangleCorners(primitive: SceneRendererPrimitive): Uint32Array {
+  const order = primitive.indices
+  const length = order?.length ?? Math.floor(primitive.positions.length / 3)
+  const at = (index: number) => order?.[index] ?? index
+  if (primitive.topology === 'triangles') {
+    const count = Math.floor(length / 3)
+    const corners = new Uint32Array(count * 3)
+    for (let index = 0; index < count * 3; index++) corners[index] = at(index)
+    return corners
+  }
+  if (primitive.topology === 'triangle-strip') {
+    const count = Math.max(0, length - 2)
+    const corners = new Uint32Array(count * 3)
+    for (let index = 0; index < count; index += 1)
+      if (index % 2 === 0) corners.set([at(index), at(index + 1), at(index + 2)], index * 3)
+      else corners.set([at(index + 1), at(index), at(index + 2)], index * 3)
+    return corners
+  }
+  if (primitive.topology === 'triangle-fan') {
+    const count = Math.max(0, length - 2)
+    const corners = new Uint32Array(count * 3)
+    for (let index = 1; index + 1 < length; index += 1)
+      corners.set([at(0), at(index), at(index + 1)], (index - 1) * 3)
+    return corners
+  }
+  return new Uint32Array(0)
+}
+
+/**
  * A blended primitive's own triangles back to front under `viewProjection`: a chunk's water or glass
  * is one primitive across the chunk (Minecraft), so its triangles need the order `alphaDrawOrder`
  * gives primitives. Strips and fans come back as triangle lists. A primitive with fewer than two
- * triangles stays as it is, and a view that has not changed sorts nothing: the same index array
- * draws again.
+ * triangles stays as it is, and a view that has not changed sorts nothing: the same primitive comes
+ * back for the same primitive, and the same index array for the same positions and placement.
  */
 export function depthSortedTriangles<T extends SceneRendererPrimitive>(
   primitive: T,
   viewProjection: Float32Array,
 ): T {
+  const known = sortedPrimitives.get(primitive)
+  if (known !== undefined && sameMatrix(known.viewProjection, viewProjection))
+    return known.result as T
   const order = primitive.indices
   const length = order?.length ?? Math.floor(primitive.positions.length / 3)
-  const corners: number[] = []
-  const at = (index: number) => order?.[index] ?? index
-  if (primitive.topology === 'triangles')
-    for (let index = 0; index + 2 < length; index += 3)
-      corners.push(at(index), at(index + 1), at(index + 2))
-  else if (primitive.topology === 'triangle-strip')
-    for (let index = 0; index + 2 < length; index += 1)
-      if (index % 2 === 0) corners.push(at(index), at(index + 1), at(index + 2))
-      else corners.push(at(index + 1), at(index), at(index + 2))
-  else if (primitive.topology === 'triangle-fan')
-    for (let index = 1; index + 1 < length; index += 1)
-      corners.push(at(0), at(index), at(index + 1))
-  const count = corners.length / 3
+  const count =
+    primitive.topology === 'triangles'
+      ? Math.floor(length / 3)
+      : primitive.topology === 'triangle-strip' || primitive.topology === 'triangle-fan'
+        ? Math.max(0, length - 2)
+        : 0
   if (count < 2) return primitive
   const matrix =
     primitive.transform === undefined
@@ -167,11 +210,8 @@ export function depthSortedTriangles<T extends SceneRendererPrimitive>(
       : multiplyMatrix4(viewProjection, primitive.transform)
   const kept = sortedTriangles.get(primitive.positions)
   let sorted = kept?.sorted
-  if (
-    kept === undefined ||
-    kept.indices !== order ||
-    kept.matrix.some((value, index) => value !== matrix[index])
-  ) {
+  if (kept === undefined || kept.indices !== order || !sameMatrix(kept.matrix, matrix)) {
+    const corners = triangleCorners(primitive)
     const positions = materialPosedPositions(primitive)
     const depth = (vertex: number) => {
       const x = positions[vertex * 3] ?? 0,
@@ -181,26 +221,34 @@ export function depthSortedTriangles<T extends SceneRendererPrimitive>(
       const clipW = matrix[3]! * x + matrix[7]! * y + matrix[11]! * z + matrix[15]!
       return clipW === 0 ? clipZ : clipZ / clipW
     }
-    const depths = Array.from(
-      { length: count },
-      (_, triangle) =>
+    const depths = new Float64Array(count)
+    const triangles = new Uint32Array(count)
+    for (let triangle = 0; triangle < count; triangle++) {
+      depths[triangle] =
         depth(corners[triangle * 3]!) +
         depth(corners[triangle * 3 + 1]!) +
-        depth(corners[triangle * 3 + 2]!),
-    )
-    const triangles = Array.from({ length: count }, (_, triangle) => triangle).sort(
-      (left, right) => depths[right]! - depths[left]! || left - right,
-    )
+        depth(corners[triangle * 3 + 2]!)
+      triangles[triangle] = triangle
+    }
+    triangles.sort((left, right) => depths[right]! - depths[left]! || left - right)
     sorted = new Uint32Array(count * 3)
-    triangles.forEach((triangle, index) =>
-      sorted!.set(corners.slice(triangle * 3, triangle * 3 + 3), index * 3),
-    )
+    for (let index = 0; index < count; index++) {
+      const from = triangles[index]! * 3
+      sorted[index * 3] = corners[from]!
+      sorted[index * 3 + 1] = corners[from + 1]!
+      sorted[index * 3 + 2] = corners[from + 2]!
+    }
     sortedTriangles.set(
       primitive.positions,
       Object.freeze({ indices: order, matrix: Float32Array.from(matrix), sorted }),
     )
   }
-  return Object.freeze({ ...primitive, topology: 'triangles', indices: sorted! }) as T
+  const result = Object.freeze({ ...primitive, topology: 'triangles', indices: sorted! }) as T
+  sortedPrimitives.set(
+    primitive,
+    Object.freeze({ viewProjection: Float32Array.from(viewProjection), result }),
+  )
+  return result
 }
 
 /** Both backends accumulate premultiplied RGBA; the public frame is straight RGBA8. */

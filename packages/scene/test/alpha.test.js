@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { it } from 'node:test'
 import { renderHeadless } from '../src/render/headless.js'
-import { materialAlpha, alphaDrawOrder } from '../src/render/alpha.js'
+import { materialAlpha, alphaDrawOrder, depthSortedTriangles } from '../src/render/alpha.js'
 import { sceneMaterialDraws } from '../src/render/material-draws.js'
 
 const identity = Float32Array.of(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
@@ -204,4 +204,50 @@ it("draws a blended primitive's own triangles back to front, again while the vie
   assert.deepEqual([...draws(behind)], [0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7])
   // an opaque primitive keeps its own order
   assert.equal(draws(identity, 'opaque'), water.indices)
+})
+
+it('sorts each placement of a shared blended mesh once while the view stays', () => {
+  // two quads, z -0.5 nearer than z 0.5; a skin counts how often the triangles are posed to sort
+  const positions = Float32Array.of(
+    ...[-1, -1, 1, -1, 1, 1, -1, 1].flatMap((value, index) =>
+      index % 2 ? [value, -0.5] : [value],
+    ),
+    ...[-1, -1, 1, -1, 1, 1, -1, 1].flatMap((value, index) => (index % 2 ? [value, 0.5] : [value])),
+  )
+  let posed = 0
+  const skin = {
+    deformed: () => {
+      posed += 1
+      return { positions }
+    },
+  }
+  const placed = x => {
+    const transform = identity.slice()
+    transform[12] = x
+    return {
+      id: `water ${x}`,
+      materialId: 'water',
+      topology: 'triangles',
+      positions,
+      indices: Uint32Array.of(0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7),
+      skin,
+      transform,
+    }
+  }
+  const left = placed(-3)
+  const right = placed(3)
+  const first = depthSortedTriangles(left, identity)
+  assert.deepEqual([...first.indices], [4, 5, 6, 4, 6, 7, 0, 1, 2, 0, 2, 3])
+  // the placements share their vertices, not their placement: the second sorts for its own
+  depthSortedTriangles(right, identity)
+  // and the first, at the same view, comes back as it was, sorted no more
+  assert.equal(depthSortedTriangles(left, identity), first)
+  assert.equal(posed, 2)
+  // another view sorts again
+  const behind = Float32Array.of(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1)
+  assert.deepEqual(
+    [...depthSortedTriangles(left, behind).indices],
+    [0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7],
+  )
+  assert.equal(posed, 3)
 })
