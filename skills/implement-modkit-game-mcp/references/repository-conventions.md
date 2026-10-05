@@ -39,6 +39,9 @@ overflow/malformed-result rejection tests. A truncated provider list is not comp
 Verify stateful owner reuse through the compiled publication entrypoints in the same realm:
 separately bundled copies of a WeakMap lose snapshot identity even when source tests pass.
 Do not replace boundary validation with trust in caller-frozen objects or a mutable global cache.
+Data provenance identifies a declaration, not only its document/revision. Intern the complete source
+identity, including its SourceSpan; preserve separate entity, field, leaf and removal locations for
+declarations in one file. Verify these positions through the published authoring index.
 Host context capture is published by `@modkit/host/language`. Host source consumers use relative
 imports of that owner; the production bundler preserves those as package self-references outside
 the language entry. Reuse the bundler's policy in graph reports, and verify native package resolution.
