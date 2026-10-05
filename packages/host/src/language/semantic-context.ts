@@ -322,7 +322,8 @@ const jsonSnapshotPayload = (snapshot: ResolvedDataWorkspaceSnapshot): unknown =
 })
 
 const validAuthoringIndex = (value: ResolvedDataAuthoringIndex, gameId: string): boolean =>
-  value.schemaVersion === 1 &&
+  (value.schemaVersion === 1 ||
+    (value.schemaVersion === 2 && Array.isArray(value.sourceDocuments))) &&
   value.kind === RESOLVED_DATA_AUTHORING_INDEX_KIND &&
   value.gameId === gameId &&
   boundedText(value.snapshotId) &&

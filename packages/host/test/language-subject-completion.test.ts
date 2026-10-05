@@ -778,7 +778,13 @@ describe('language subject completion lifecycle', () => {
     const features = provider as { -readonly [K in 'codeLenses']?: LanguageProvider[K] }
     const range = { start: { line: 0, character: 0 }, end: { line: 0, character: 3 } }
     const lenses = Array.from({ length: 3_000 }, (_, index) => ({
-      range, title: 'Card', command: { kind: 'open-subject' as const, subjectId: `Fixture/${index}`, view: 'card' as const },
+      range,
+      title: 'Card',
+      command: {
+        kind: 'open-subject' as const,
+        subjectId: `Fixture/${index}`,
+        view: 'card' as const,
+      },
     }))
     features.codeLenses = async () => ({ lenses, isIncomplete: false })
     const workspace = await openWorkspace({ open: vi.fn(async () => undefined) })
@@ -787,9 +793,14 @@ describe('language subject completion lifecycle', () => {
       const answer = await workspace.codeLenses(request)
       expect(answer?.lenses).toHaveLength(3_000)
       expect(answer?.lenses.at(-1)?.command).toEqual(lenses.at(-1)?.command)
-      await expect(workspace.codeLenses({ ...request, maxResults: 65_537 })).rejects.toThrow(/maxResults/u)
+      await expect(workspace.codeLenses({ ...request, maxResults: 65_537 })).rejects.toThrow(
+        /maxResults/u,
+      )
       await expect(workspace.completion(request)).rejects.toThrow(/maxResults/u)
-      features.codeLenses = async () => ({ lenses: [{ range, title: 'Bad', command: { kind: 'open-subject', subjectId: '' } }], isIncomplete: false })
+      features.codeLenses = async () => ({
+        lenses: [{ range, title: 'Bad', command: { kind: 'open-subject', subjectId: '' } }],
+        isIncomplete: false,
+      })
       await expect(workspace.codeLenses(request)).rejects.toThrow(/code lenses/u)
     } finally {
       delete features.codeLenses
@@ -1690,110 +1701,123 @@ describe('language subject completion lifecycle', () => {
     },
   )
 
-  it('prefers a provider-owned bounded authoring index over the full snapshot', async () => {
-    const baselineAnalyses = dataAnalyzeRequests.length
-    const baselineReleases = dataProviderReleases
-    const authoringRequests: unknown[] = []
-    Object.defineProperty(dataProvider, 'analyzeAuthoringIndex', {
-      configurable: true,
-      value: async (request: { snapshotId?: string; maxOutputBytes: number }) => {
-        authoringRequests.push(request)
-        return {
-          schemaVersion: 1,
-          kind: 'resolved-data-authoring-index',
-          workspaceId: 'language:fixture',
-          gameId: 'fixture-game',
-          analyzerId: 'fixture-data',
-          snapshotId: request.snapshotId ?? 'fixture-authoring',
-          sourceTable: [
-            { rootId: 'selected-mod', path: 'GameData/UnitData.xml', documentIndex: 0 },
-          ],
-          namespaces: [{ namespace: 'Unit', entityCount: 1 }],
-          entityCount: 1,
-          patchCount: 1,
-          entities: [
-            {
-              identity: 'Unit\0Marine',
-              namespace: 'Unit',
-              typeId: 'CUnit',
-              entityId: 'Marine',
-              source: 0,
-              complete: true,
-              fields: [
-                {
-                  fieldId: 'LifeMax',
-                  value: 45,
-                  source: 0,
-                  originEntityId: 'Marine',
-                  origins: [{ path: [], source: 0, originEntityId: 'Marine' }],
-                },
-              ],
-              tombstones: [],
-            },
-          ],
-          diagnostics: {
-            errorCount: 0,
-            warningCount: 0,
-            informationCount: 0,
-            items: [],
-            truncated: false,
-          },
-          ownerMetadata: dataOwnerMetadata,
-          complete: true,
-          valuesComplete: true,
-        }
-      },
-    })
-    const workspace = await openWorkspace(
-      { open: async () => undefined },
-      false,
-      undefined,
-      document => ({
-        uri: document.uri,
-        layerId: 'selected-mod',
-        logicalId: 'GameData/UnitData.xml',
-        precedence: 0,
-        sourceRevision: `open:${document.version}`,
-        readOnly: false,
-        overlay: true,
-      }),
-    )
-    try {
-      await workspace.completion(completionRequest())
-      expect(dataAnalyzeRequests).toHaveLength(baselineAnalyses)
-      expect(authoringRequests).toEqual([
-        expect.objectContaining({ gameId: 'fixture-game', maxOutputBytes: 48 * 1_024 * 1_024 }),
-      ])
-      expect(
-        observedWorkspaceContext?.semanticInputs?.find(
-          input => input.kind === 'resolved-data-authoring-index',
-        ),
-      ).toMatchObject({
-        id: 'fixture-game',
-        payload: {
-          valuesComplete: true,
-          ownerMetadata: dataOwnerMetadata,
-          entities: [
-            expect.objectContaining({
-              identity: 'Unit\0Marine',
-              source: 0,
-              fields: [
-                expect.objectContaining({
-                  fieldId: 'LifeMax',
-                  origins: [{ path: [], source: 0, originEntityId: 'Marine' }],
+  it.each([1, 2])(
+    'prefers a provider-owned bounded authoring index v%s over the full snapshot',
+    async schemaVersion => {
+      const baselineAnalyses = dataAnalyzeRequests.length
+      const baselineReleases = dataProviderReleases
+      const authoringRequests: unknown[] = []
+      Object.defineProperty(dataProvider, 'analyzeAuthoringIndex', {
+        configurable: true,
+        value: async (request: { snapshotId?: string; maxOutputBytes: number }) => {
+          authoringRequests.push(request)
+          return {
+            schemaVersion,
+            kind: 'resolved-data-authoring-index',
+            workspaceId: 'language:fixture',
+            gameId: 'fixture-game',
+            analyzerId: 'fixture-data',
+            snapshotId: request.snapshotId ?? 'fixture-authoring',
+            ...(schemaVersion === 1
+              ? {
+                  sourceTable: [
+                    { rootId: 'selected-mod', path: 'GameData/UnitData.xml', documentIndex: 0 },
+                  ],
+                }
+              : {
+                  sourceDocuments: [
+                    { rootId: 'selected-mod', path: 'GameData/UnitData.xml', documentIndex: 0 },
+                  ],
+                  sourceTable: [[0, 100, 20, 5, 4]],
                 }),
-              ],
-            }),
-          ],
+            namespaces: [{ namespace: 'Unit', entityCount: 1 }],
+            entityCount: 1,
+            patchCount: 1,
+            entities: [
+              {
+                identity: 'Unit\0Marine',
+                namespace: 'Unit',
+                typeId: 'CUnit',
+                entityId: 'Marine',
+                source: 0,
+                complete: true,
+                fields: [
+                  {
+                    fieldId: 'LifeMax',
+                    value: 45,
+                    source: 0,
+                    originEntityId: 'Marine',
+                    origins: [{ path: [], source: 0, originEntityId: 'Marine' }],
+                  },
+                ],
+                tombstones: [],
+              },
+            ],
+            diagnostics: {
+              errorCount: 0,
+              warningCount: 0,
+              informationCount: 0,
+              items: [],
+              truncated: false,
+            },
+            ownerMetadata: dataOwnerMetadata,
+            complete: true,
+            valuesComplete: true,
+          }
         },
       })
-      expect(observedWorkspaceContext?.semanticComplete).toBe(true)
-      expect(dataProviderReleases).toBe(baselineReleases + 1)
-    } finally {
-      delete (dataProvider as { analyzeAuthoringIndex?: unknown }).analyzeAuthoringIndex
-      await workspace.shutdown()
-    }
-  })
+      const workspace = await openWorkspace(
+        { open: async () => undefined },
+        false,
+        undefined,
+        document => ({
+          uri: document.uri,
+          layerId: 'selected-mod',
+          logicalId: 'GameData/UnitData.xml',
+          precedence: 0,
+          sourceRevision: `open:${document.version}`,
+          readOnly: false,
+          overlay: true,
+        }),
+      )
+      try {
+        await workspace.completion(completionRequest())
+        expect(dataAnalyzeRequests).toHaveLength(baselineAnalyses)
+        expect(authoringRequests).toEqual([
+          expect.objectContaining({ gameId: 'fixture-game', maxOutputBytes: 48 * 1_024 * 1_024 }),
+        ])
+        expect(
+          observedWorkspaceContext?.semanticInputs?.find(
+            input => input.kind === 'resolved-data-authoring-index',
+          ),
+        ).toMatchObject({
+          id: 'fixture-game',
+          payload: {
+            schemaVersion,
+            valuesComplete: true,
+            ownerMetadata: dataOwnerMetadata,
+            entities: [
+              expect.objectContaining({
+                identity: 'Unit\0Marine',
+                source: 0,
+                fields: [
+                  expect.objectContaining({
+                    fieldId: 'LifeMax',
+                    origins: [{ path: [], source: 0, originEntityId: 'Marine' }],
+                  }),
+                ],
+              }),
+            ],
+          },
+        })
+        expect(observedWorkspaceContext?.semanticComplete).toBe(true)
+        expect(dataProviderReleases).toBe(baselineReleases + 1)
+      } finally {
+        delete (dataProvider as { analyzeAuthoringIndex?: unknown }).analyzeAuthoringIndex
+        await workspace.shutdown()
+      }
+    },
+  )
 
   it('evicts completed semantic contexts by encoded byte weight', async () => {
     const authoringRequests: string[] = []

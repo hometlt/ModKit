@@ -382,14 +382,12 @@ export interface DataAuthoringDiagnosticSummary {
  * the closest parent value with the canonical schema rules, so consumers only walk the parent
  * graph and never reimplement catalog merging.
  */
-export interface ResolvedDataAuthoringIndex {
-  readonly schemaVersion: 1
+interface DataAuthoringIndexMetadata {
   readonly kind: typeof RESOLVED_DATA_AUTHORING_INDEX_KIND
   readonly workspaceId: string
   readonly gameId: string
   readonly analyzerId: string
   readonly snapshotId: string
-  readonly sourceTable: readonly DataEntitySource[]
   readonly namespaces: readonly DataNamespaceSummary[]
   readonly entityCount: number
   readonly patchCount: number
@@ -400,6 +398,67 @@ export interface ResolvedDataAuthoringIndex {
   readonly complete: boolean
   /** False means all identity/source rows are present but value/tombstone arrays were omitted. */
   readonly valuesComplete: boolean
+}
+
+/** Version 1 carries the complete document identity on every declaration location. */
+export interface ResolvedDataAuthoringIndexV1 extends DataAuthoringIndexMetadata {
+  readonly schemaVersion: 1
+  readonly sourceTable: readonly DataEntitySource[]
+}
+
+/** A declaration location: document table index, followed by its complete optional SourceSpan. */
+export type DataAuthoringSourceLocation =
+  | readonly [document: number]
+  | readonly [
+      document: number,
+      utf16Offset: number,
+      utf16Length: number,
+      line: number,
+      column: number,
+    ]
+
+/**
+ * Version 2 interns document identities independently of declaration locations. The tuple keeps
+ * all four SourceSpan coordinates; entity, field, leaf and tombstone source indexes still address
+ * sourceTable. Empty field/tombstone arrays may be omitted when valuesComplete is true.
+ */
+export interface ResolvedDataAuthoringIndexV2 extends DataAuthoringIndexMetadata {
+  readonly schemaVersion: 2
+  readonly sourceDocuments: readonly Omit<DataEntitySource, 'range'>[]
+  readonly sourceTable: readonly DataAuthoringSourceLocation[]
+}
+
+export type ResolvedDataAuthoringIndex = ResolvedDataAuthoringIndexV1 | ResolvedDataAuthoringIndexV2
+
+/** Expand one canonical authoring source for navigation/provenance without changing its identity. */
+export function dataAuthoringSource(
+  index: ResolvedDataAuthoringIndex,
+  source: number,
+): DataEntitySource | undefined {
+  if (!Number.isSafeInteger(source) || source < 0) return undefined
+  if (index.schemaVersion === 1) return index.sourceTable[source]
+  const location = index.sourceTable[source]
+  if (
+    !Array.isArray(location) ||
+    (location.length !== 1 && location.length !== 5) ||
+    !location.every(value => Number.isSafeInteger(value) && value >= 0)
+  )
+    return undefined
+  const document = index.sourceDocuments?.[location[0]]
+  if (document === undefined) return undefined
+  return Object.freeze({
+    ...document,
+    ...(location.length === 1
+      ? {}
+      : {
+          range: Object.freeze({
+            utf16Offset: location[1],
+            utf16Length: location[2],
+            line: location[3],
+            column: location[4],
+          }),
+        }),
+  })
 }
 
 interface WorkingEntity {
