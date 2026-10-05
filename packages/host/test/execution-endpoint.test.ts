@@ -928,6 +928,66 @@ describe('capability-rpc endpoints — hostile frames fail closed', () => {
 })
 
 describe('capability-rpc endpoints — misuse is a local structured error, not a violation', () => {
+  it('reports exact nested paths for released local and materialized remote capabilities', async () => {
+    const p = pair()
+    const { session } = await openSession(p)
+    const capability = (session as unknown as Record<symbol, RemoteCapability>)[CAPABILITY_OF]
+    if (capability === undefined) throw new Error('capability missing')
+    const local = p.host.expose(
+      { size: async () => 1, read: async () => new Uint8Array(1) },
+      { contract: 'x3.demo/source', major: 1 },
+    )
+    const remote = await (
+      session['dataSource'] as (
+        contract: string,
+        major: number,
+      ) => Promise<{ value: Record<string, unknown>; release(): Promise<void> }>
+    )('x3.demo/text', 1)
+    await local.release()
+    await remote.release()
+    const sent = p.wire.log.length
+    for (const value of [local, remote.value]) {
+      await expect(
+        capability.call('descriptor', [{ branches: [{ value: 1 }, { source: value }] }]),
+      ).rejects.toMatchObject({
+        code: 'x3.host/rpc-released-handle',
+        message: 'argument args[0].branches[1].source is a released capability',
+      })
+      await expect(
+        capability.call('descriptor', [{ ignored: true }, [value]]),
+      ).rejects.toMatchObject({
+        code: 'x3.host/rpc-released-handle',
+        message: 'argument args[1][0] is a released capability',
+      })
+    }
+    expect(p.wire.log.length).toBe(sent)
+    expect(await capability.call('descriptor')).toMatchObject({ kind: 'value' })
+    expect(p.host.state).toBe('open')
+    await p.host.close('test completed')
+    await p.worker.close('test completed')
+  })
+
+  it('encodes current nested values again after an earlier call', async () => {
+    const p = pair()
+    const { session } = await openSession(p)
+    const capability = (session as unknown as Record<symbol, RemoteCapability>)[CAPABILITY_OF]
+    if (capability === undefined) throw new Error('capability missing')
+    const nested = { value: 1 }
+    const payload = Object.freeze({ nested: [nested] })
+    await capability.call('descriptor', [payload])
+    nested.value = 2
+    await capability.call('descriptor', [payload])
+    const calls = p.wire.log.filter(
+      item => item.from === 'a' && item.frame.t === 'call' && item.frame.method === 'descriptor',
+    )
+    expect(calls.map(item => (item.frame.t === 'call' ? item.frame.args : undefined))).toEqual([
+      [{ nested: [{ value: 1 }] }],
+      [{ nested: [{ value: 2 }] }],
+    ])
+    await p.host.close('test completed')
+    await p.worker.close('test completed')
+  })
+
   it('unknown surface on expose, unknown method on call, released capability as argument', async () => {
     const p = pair()
     expect(() => p.host.expose({}, { contract: 'x3.demo/nope', major: 1 })).toThrow(
@@ -1191,7 +1251,9 @@ describe('capability-rpc endpoints — owner revocation', () => {
     const loaded = await p.host.load(loadRequest)
     const created = await loaded.root.call('createCodec', [{ budgets: { maxNodes: 10 } }])
     if (created.kind !== 'lease') throw new Error('createCodec must lease')
-    const codec = p.host.materialize(created.remote) as { probe(request: unknown): Promise<unknown> }
+    const codec = p.host.materialize(created.remote) as {
+      probe(request: unknown): Promise<unknown>
+    }
     const before = p.worker.counters().remoteHandles
     // A realm kept warm across a map's models sees one exposed source per probe or open.
     for (let index = 0; index < 3; index += 1) {

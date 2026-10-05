@@ -4,7 +4,7 @@
   "entryCount": 74,
   "totals": {
     "modules": 1042,
-    "bytes": 14057987
+    "bytes": 14060491
   },
   "entries": [
     {
@@ -37,7 +37,7 @@
       "entry": "packages/host/dist/browser/index.js",
       "surface": "host/browser",
       "modules": 22,
-      "bytes": 165709,
+      "bytes": 166124,
       "reachesUnits": [],
       "externalUnits": [
         "@modkit/core",
@@ -50,7 +50,7 @@
       "entry": "packages/host/dist/browser/worker-entry.js",
       "surface": "host/browser/worker-entry",
       "modules": 13,
-      "bytes": 127822,
+      "bytes": 128237,
       "reachesUnits": [],
       "externalUnits": [
         "@modkit/core",
@@ -78,7 +78,7 @@
       "entry": "packages/host/dist/execution/index.js",
       "surface": "host/execution",
       "modules": 9,
-      "bytes": 128222,
+      "bytes": 128637,
       "reachesUnits": [],
       "externalUnits": [
         "@modkit/core",
@@ -101,7 +101,7 @@
       "entry": "packages/host/dist/index.js",
       "surface": "host",
       "modules": 124,
-      "bytes": 1377179,
+      "bytes": 1377601,
       "reachesUnits": [],
       "externalUnits": [
         "@modkit/core",
@@ -187,7 +187,7 @@
       "entry": "packages/host/dist/node/index.js",
       "surface": "host/node",
       "modules": 133,
-      "bytes": 1124176,
+      "bytes": 1124598,
       "reachesUnits": [],
       "externalUnits": [
         "@modkit/core",
@@ -214,7 +214,7 @@
       "entry": "packages/host/dist/node/worker-bootstrap.js",
       "surface": "host/node/worker-bootstrap",
       "modules": 11,
-      "bytes": 130319,
+      "bytes": 130734,
       "reachesUnits": [],
       "externalUnits": [
         "@modkit/core",

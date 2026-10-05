@@ -882,30 +882,44 @@ class EndpointImpl implements Endpoint {
     return surface
   }
 
+  /** Encode capabilities with a per-call path stack; format it only for released-handle errors. */
   private encodeArgs(args: readonly unknown[]): WireValue[] {
-    const encode = (value: unknown, path: string): WireValue => {
+    const path: (string | number)[] = []
+    /** A failed encode aborts this call, so no diagnostic path escapes to the next call. */
+    const child = (value: unknown, key: string | number): WireValue => {
+      path.push(key)
+      const encoded = encode(value)
+      path.pop()
+      return encoded
+    }
+    const encode = (value: unknown): WireValue => {
       if (value instanceof RemoteCapabilityImpl || value instanceof LocalCapabilityImpl) {
         if (value.isReleased) {
+          const location = path
+            .map((key, index) =>
+              index === 0 ? key : typeof key === 'number' ? `[${key}]` : `.${key}`,
+            )
+            .join('')
           throw new ModkitError({
             code: 'x3.host/rpc-released-handle',
-            message: `argument ${path} is a released capability`,
+            message: `argument ${location} is a released capability`,
           })
         }
         return value.ref as unknown as WireValue
       }
       if (typeof value === 'object' && value !== null && CAPABILITY_OF in value) {
-        return encode((value as Record<symbol, unknown>)[CAPABILITY_OF], path)
+        return encode((value as Record<symbol, unknown>)[CAPABILITY_OF])
       }
       if (isHandleRef(value)) return value as unknown as WireValue
-      if (Array.isArray(value)) return value.map((item, index) => encode(item, `${path}[${index}]`))
+      if (Array.isArray(value)) return value.map((item, index) => child(item, index))
       if (isPlainObject(value)) {
         const out: Record<string, WireValue> = {}
-        for (const [key, item] of Object.entries(value)) out[key] = encode(item, `${path}.${key}`)
+        for (const [key, item] of Object.entries(value)) out[key] = child(item, key)
         return out
       }
       return value as WireValue
     }
-    return args.map((arg, index) => encode(arg, `args[${index}]`))
+    return args.map((arg, index) => child(arg, `args[${index}]`))
   }
 
   async callRemote(
@@ -1395,7 +1409,10 @@ class EndpointImpl implements Endpoint {
       case 'revoke':
         // Only a handle this side holds as a proxy can be revoked; unknown ids are already gone.
         if (this.table.owns(frame.handle)) {
-          this.fail({ code: 'bad-handle', message: `peer revoked handle ${frame.handle} this side owns` })
+          this.fail({
+            code: 'bad-handle',
+            message: `peer revoked handle ${frame.handle} this side owns`,
+          })
           return
         }
         this.markRemoteReleased(frame.handle)
