@@ -27,6 +27,7 @@ import {
   mkdirSync,
   readdirSync,
   readFileSync,
+  realpathSync,
   rmSync,
   statSync,
   writeFileSync,
@@ -257,6 +258,11 @@ async function main() {
   }
 }
 
-if (process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+// Checkout junctions have a different invocation path but execute the same physical command.
+if (
+  process.argv[1] !== undefined &&
+  existsSync(process.argv[1]) &&
+  realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url))
+) {
   await main()
 }

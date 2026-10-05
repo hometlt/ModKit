@@ -195,6 +195,20 @@ describe('single-file production dist', () => {
     expect(readFileSync(join(root, 'scripts', 'bundle-hashes.json'), 'utf8')).toBe(baseline)
   })
 
+  it('runs the bundle command through a checkout junction', () => {
+    const alias = join(stagedDist, 'source-junction')
+    const manifest = join(stagedDist, 'junction-hashes.json')
+    symlinkSync(root, alias, 'junction')
+    const result = spawnSync(
+      process.execPath,
+      [join(alias, 'scripts', 'bundle.mjs'), '--manifest-only', '--out', manifest],
+      { cwd: root, encoding: 'utf8' },
+    )
+    expect(result.status, result.stderr || result.stdout).toBe(0)
+    expect(existsSync(manifest), 'the junction invocation must execute the command').toBe(true)
+    expect(readFileSync(manifest, 'utf8')).toBe(readFileSync(stagedManifest, 'utf8'))
+  })
+
   it('shares captured language context across native published Host entrypoints', () => {
     const hostUrl = pathToFileURL(bundlePath('packages/host/dist/index.js')).href
     const languageUrl = pathToFileURL(bundlePath('packages/host/dist/language/index.js')).href
