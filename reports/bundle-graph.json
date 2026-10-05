@@ -4,7 +4,7 @@
   "entryCount": 74,
   "totals": {
     "modules": 1042,
-    "bytes": 14051636
+    "bytes": 14053896
   },
   "entries": [
     {
@@ -138,7 +138,7 @@
       "entry": "packages/host/dist/language/index.js",
       "surface": "host/language",
       "modules": 42,
-      "bytes": 234824,
+      "bytes": 234895,
       "reachesUnits": [],
       "externalUnits": [
         "@modkit/core",
@@ -275,7 +275,7 @@
       "entry": "packages/sdk/dist/data/index.js",
       "surface": "sdk/data",
       "modules": 1,
-      "bytes": 27272,
+      "bytes": 28365,
       "reachesUnits": [],
       "externalUnits": []
     },
@@ -311,7 +311,7 @@
       "entry": "packages/sdk/dist/index.js",
       "surface": "sdk",
       "modules": 49,
-      "bytes": 305173,
+      "bytes": 306269,
       "reachesUnits": [],
       "externalUnits": [
         "@modkit/core",
