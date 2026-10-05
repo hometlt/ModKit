@@ -37,6 +37,34 @@ const label = (value: unknown): string =>
   JSON.stringify(value, (_key, item: unknown) => (typeof item === 'bigint' ? `${item}n` : item))
 
 describe('capability-rpc protocol v1 — wire values', () => {
+  it('reports exact nested paths after successful siblings and handle data without sharing caller paths', () => {
+    const path: (string | number)[] = ['args', 0]
+    const wideLimits = protocolLimits({ ...limits, maxDepth: 8, maxNodes: 100 })
+    const good = handleRef('w1-3', 'lease', undefined, { ok: [1, 2] })
+    const bad = handleRef('w1-4', 'lease', undefined, { values: [true, NaN] })
+    const checked = validateWireValue({ rows: [good, { ref: bad }] }, wideLimits, 'nested', path)
+    expect(checked.ok).toBe(false)
+    if (checked.ok) throw new Error('unexpected')
+    expect(checked.violation).toMatchObject({
+      code: 'bad-value',
+      path: ['args', 0, 'rows', 1, 'ref', '@x3.handle', 'data', 'values', 1],
+    })
+    expect(path).toEqual(['args', 0])
+    path.push('later')
+    expect(checked.violation.path?.at(-1)).toBe(1)
+    const top = validateWireValue(bad, wideLimits, 'top', ['result'])
+    expect(top.ok).toBe(false)
+    if (top.ok) throw new Error('unexpected')
+    expect(top.violation.path).toEqual(['result', '@x3.handle', 'data', 'values', 1])
+    const siblings = validateWireValue({ rows: [{ valid: [1, 2] }, { bad: NaN }] }, wideLimits)
+    expect(siblings.ok).toBe(false)
+    if (siblings.ok) throw new Error('unexpected')
+    expect(siblings.violation.path).toEqual(['rows', 1, 'bad'])
+    expect(validateWireValue({ rows: [good, { ok: [true, null] }] }, wideLimits, 'nested').ok).toBe(
+      true,
+    )
+  })
+
   it('accepts JSON-safe data, bigint and whole Uint8Arrays; measures nodes and transfer bytes', () => {
     const bytes = new Uint8Array([1, 2, 3, 4])
     const checked = validateWireValue({ a: 1n, b: [true, null, 'x'], c: bytes }, limits)

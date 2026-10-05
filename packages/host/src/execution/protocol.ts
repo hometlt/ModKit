@@ -13,7 +13,8 @@
  *    never a view over a larger/shared buffer) and opaque handle refs — nothing else; functions,
  *    class instances, prototypes, paths, credentials and `AbortSignal` never cross;
  *  - validators are exact-key and prototype-safe (`__proto__`, `constructor`, `prototype` are
- *    rejected as keys) and enforce depth/node/string/array/transfer limits;
+ *    rejected as keys) and enforce depth/node/string/array/transfer limits. Wire traversal uses
+ *    one request-local path; only a reported violation retains a copied diagnostic path;
  *  - a handle ref is only meaningful where the method surface says a handle is expected; the
  *    marker key is `@x3.handle` and any other object carrying that key is a violation;
  *  - errors travel as a bounded DTO built from `ModkitError.toJSON()`; cancellation stays a
@@ -406,6 +407,7 @@ interface Measure {
 
 const SHARED = typeof SharedArrayBuffer === 'function' ? SharedArrayBuffer : undefined
 
+/** Validate every wire node with one local path; a failure returns before any path unwinding. */
 function validateInner(
   value: unknown,
   limits: ProtocolLimits,
@@ -496,15 +498,10 @@ function validateInner(
       return { code: 'array-too-long', message: `array longer than ${limits.maxArrayLength}`, path }
     }
     for (let index = 0; index < value.length; index += 1) {
-      const found = validateInner(
-        value[index],
-        limits,
-        measure,
-        depth + 1,
-        [...path, index],
-        handles,
-      )
+      path.push(index)
+      const found = validateInner(value[index], limits, measure, depth + 1, path, handles)
       if (found !== undefined) return found
+      path.pop()
     }
     return undefined
   }
@@ -521,9 +518,12 @@ function validateInner(
     }
     if (!isHandleRef(value)) return { code: 'bad-handle', message: 'malformed handle ref', path }
     const data = value[HANDLE_MARKER].data
-    return data === undefined
-      ? undefined
-      : validateInner(data, limits, measure, depth + 1, [...path, HANDLE_MARKER, 'data'], 'forbid')
+    if (data === undefined) return undefined
+    path.push(HANDLE_MARKER, 'data')
+    const found = validateInner(data, limits, measure, depth + 1, path, 'forbid')
+    if (found !== undefined) return found
+    path.length -= 2
+    return undefined
   }
   const keys = Object.keys(value)
   if (keys.length > limits.maxObjectKeys) {
@@ -540,8 +540,10 @@ function validateInner(
     if (key.length > limits.maxStringLength) {
       return { code: 'string-too-long', message: 'object key too long', path: [...path, key] }
     }
-    const found = validateInner(value[key], limits, measure, depth + 1, [...path, key], handles)
+    path.push(key)
+    const found = validateInner(value[key], limits, measure, depth + 1, path, handles)
     if (found !== undefined) return found
+    path.pop()
   }
   return undefined
 }
@@ -566,7 +568,14 @@ export function validateWireValue(
       data === undefined
         ? undefined
         : validateInner(data, limits, measure, 1, [...path, HANDLE_MARKER, 'data'], 'forbid')
-    if (found !== undefined) return { ok: false, violation: Object.freeze(found) }
+    if (found !== undefined)
+      return {
+        ok: false,
+        violation: Object.freeze({
+          ...found,
+          ...(found.path === undefined ? {} : { path: Object.freeze([...found.path]) }),
+        }),
+      }
     return {
       ok: true,
       value: Object.freeze({
@@ -584,7 +593,14 @@ export function validateWireValue(
     [...path],
     handles === 'nested' ? 'allow' : 'forbid',
   )
-  if (found !== undefined) return { ok: false, violation: Object.freeze(found) }
+  if (found !== undefined)
+    return {
+      ok: false,
+      violation: Object.freeze({
+        ...found,
+        ...(found.path === undefined ? {} : { path: Object.freeze([...found.path]) }),
+      }),
+    }
   return {
     ok: true,
     value: Object.freeze({
