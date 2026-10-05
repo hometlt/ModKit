@@ -1,5 +1,6 @@
 import { expect, it } from 'vitest'
 import { contentPathIndexSemanticInputs } from '../src/language/content-path-index.js'
+import { validatedLanguageWorkspaceSemanticInputs } from '../src/language/context.js'
 import { DEFAULT_PROTOCOL_LIMITS, validateWireValue } from '../src/execution/protocol.js'
 
 it('keeps a small or empty index compatible with its existing semantic input', () => {
@@ -63,4 +64,25 @@ it('refuses mismatched path owners', () => {
       layers: [],
     }),
   ).toThrow('content path owners')
+})
+
+it('captures paths at the canonical context owner without trusting caller-owned arrays', () => {
+  const paths = ['one.dds']
+  const layers = [0]
+  const inputs = contentPathIndexSemanticInputs({
+    id: 'game:context',
+    revision: '1',
+    isComplete: true,
+    paths,
+    layers,
+  })
+  paths[0] = 'changed.dds'
+  layers[0] = 1
+  expect(inputs[0]?.payload).toEqual({
+    schemaVersion: 1,
+    isComplete: true,
+    paths: ['one.dds'],
+    layers: [0],
+  })
+  expect(validatedLanguageWorkspaceSemanticInputs(inputs)[0]).toBe(inputs[0])
 })

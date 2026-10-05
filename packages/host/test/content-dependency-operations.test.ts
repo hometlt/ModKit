@@ -40,7 +40,11 @@ function sources(openModContext?: ContentSources['openModContext']): ContentSour
 }
 
 /** A context whose layers are the given ones, then the opened subject. */
-function context(request: ModContextRequest, layers: readonly ModContextLayer[], dispose = vi.fn(async () => {})): ModContext {
+function context(
+  request: ModContextRequest,
+  layers: readonly ModContextLayer[],
+  dispose = vi.fn(async () => {}),
+): ModContext {
   const target = typeof request.target === 'string' ? request.target : request.target.path
   return {
     schemaVersion: 1,
@@ -48,7 +52,14 @@ function context(request: ModContextRequest, layers: readonly ModContextLayer[],
     contextId: 'context',
     layers: [
       ...layers,
-      { id: 'primary', displayName: 'subject', sourceId: 'host', sourcePath: target, role: 'primary', provenance: 'opened' },
+      {
+        id: 'primary',
+        displayName: 'subject',
+        sourceId: 'host',
+        sourcePath: target,
+        role: 'primary',
+        provenance: 'opened',
+      },
     ],
     unresolved: [],
     diagnostics: [],
@@ -59,18 +70,50 @@ function context(request: ModContextRequest, layers: readonly ModContextLayer[],
   }
 }
 
-const core: ModContextLayer = { id: 'l0', displayName: 'Core', sourceId: 'casc', sourcePath: 'Mods/Core', role: 'dependency', provenance: 'implicit' }
-const base: ModContextLayer = { id: 'l1', displayName: 'Base', sourceId: 'casc', sourcePath: 'Mods/Base', role: 'base', provenance: 'setting' }
-const wizards: ModContextLayer = { id: 'l2', displayName: 'wizards', sourceId: 'wizards', sourcePath: '', role: 'dependency', provenance: 'setting' }
-const sibling: ModContextLayer = { id: 'l3', displayName: 'Assets', sourceId: 'host', sourcePath: 'C:/Work/Assets.SC2Mod', role: 'dependency', provenance: 'declared' }
+const core: ModContextLayer = {
+  id: 'l0',
+  displayName: 'Core',
+  sourceId: 'casc',
+  sourcePath: 'Mods/Core',
+  role: 'dependency',
+  provenance: 'implicit',
+}
+const base: ModContextLayer = {
+  id: 'l1',
+  displayName: 'Base',
+  sourceId: 'casc',
+  sourcePath: 'Mods/Base',
+  role: 'base',
+  provenance: 'setting',
+}
+const wizards: ModContextLayer = {
+  id: 'l2',
+  displayName: 'wizards',
+  sourceId: 'wizards',
+  sourcePath: '',
+  role: 'dependency',
+  provenance: 'setting',
+}
+const sibling: ModContextLayer = {
+  id: 'l3',
+  displayName: 'Assets',
+  sourceId: 'host',
+  sourcePath: 'C:/Work/Assets.SC2Mod',
+  role: 'dependency',
+  provenance: 'declared',
+}
 
 describe('subject closures through mod contexts', () => {
   it('names a host path for file: URIs and a source path for content-source: URIs', () => {
-    expect(subjectTarget('file:///C:/Work/Scripts/My%20Script.galaxy')).toBe('C:/Work/Scripts/My Script.galaxy')
-    expect(subjectTarget('content-source://local%3Acasc/Mods/Liberty.SC2Mod/Base.SC2Data')).toEqual({
-      sourceId: 'local:casc',
-      path: 'Mods/Liberty.SC2Mod/Base.SC2Data',
-    })
+    expect(subjectTarget('file:///C:/Work/Scripts/My%20Script.galaxy')).toBe(
+      'C:/Work/Scripts/My Script.galaxy',
+    )
+    expect(subjectTarget('content-source://local%3Acasc/Mods/Liberty.SC2Mod/Base.SC2Data')).toEqual(
+      {
+        sourceId: 'local:casc',
+        path: 'Mods/Liberty.SC2Mod/Base.SC2Data',
+      },
+    )
     expect(subjectTarget('memory://subject')).toBeUndefined()
     expect(subjectTarget(undefined)).toBeUndefined()
   })
@@ -99,10 +142,16 @@ describe('subject closures through mod contexts', () => {
 
   it('reports a subject no source can open and a provider without contexts', async () => {
     await expect(
-      resolveSubjectClosure({ contentSources: sources(vi.fn()), subject: { descriptor: { subjectUri: 'memory://x' } } }),
+      resolveSubjectClosure({
+        contentSources: sources(vi.fn()),
+        subject: { descriptor: { subjectUri: 'memory://x' } },
+      }),
     ).resolves.toMatchObject({ diagnostics: [{ code: 'x3.host/mod-context-target-unavailable' }] })
     await expect(
-      resolveSubjectClosure({ contentSources: sources(), subject: { descriptor: {}, target: 'C:/x' } }),
+      resolveSubjectClosure({
+        contentSources: sources(),
+        subject: { descriptor: {}, target: 'C:/x' },
+      }),
     ).resolves.toMatchObject({ diagnostics: [{ code: 'x3.host/mod-context-unavailable' }] })
   })
 
@@ -170,6 +219,51 @@ describe('subject closures through mod contexts', () => {
     })
   })
 
+  it('composes byte-sensitive captured inputs and revalidates foreign same-revision payloads', async () => {
+    const payload = { name: 'Marine' }
+    const input = Object.freeze({ kind: 'test', id: 'subject', revision: 'same', payload })
+    const dependency: LanguageWorkspaceDocumentSource = {
+      async snapshot() {
+        return {
+          documents: [],
+          isComplete: true,
+          workspaceContext: {
+            id: 'test',
+            revision: 'same',
+            semanticComplete: true,
+            documentOrigins: [],
+            semanticInputs: [input],
+          },
+        }
+      },
+    }
+    const source = composeLanguageDocumentSources([
+      dependency,
+      {
+        async snapshot() {
+          return { documents: [], isComplete: true }
+        },
+      },
+    ])!
+    const request = {
+      document: { uri: 'file:///test', languageId: 'test', version: 1, text: '' },
+      workspaceDocuments: [],
+      workspaceDocumentOrigins: [],
+      workspaceLanguageIds: ['test'],
+      maxDocuments: 8,
+      signal: new AbortController().signal,
+    }
+    const first = await source.snapshot(request)
+    expect((await source.snapshot(request)).workspaceContext?.revision).toBe(
+      first.workspaceContext?.revision,
+    )
+    payload.name = 'Marauder'
+    const changed = await source.snapshot(request)
+    expect(changed.workspaceContext?.revision).not.toBe(first.workspaceContext?.revision)
+    expect(first.workspaceContext?.semanticInputs?.[0]?.payload).toEqual({ name: 'Marine' })
+    expect(changed.workspaceContext?.semanticInputs?.[0]?.payload).toEqual({ name: 'Marauder' })
+  })
+
   it('opens a file subject inside its mods, with the base the setting names for its path', async () => {
     const opened: ModContextRequest[] = []
     const dispose = vi.fn(async () => {})
@@ -177,7 +271,11 @@ describe('subject closures through mod contexts', () => {
       opened.push(request)
       return context(request, [core, base, wizards, sibling], dispose)
     })
-    const baseMods = { '*': ['Mods/Void'], 'C:\\Work\\Scripts': ['Mods/Base'], 'C:/Work/Scripts2': ['Mods/Other'] }
+    const baseMods = {
+      '*': ['Mods/Void'],
+      'C:\\Work\\Scripts': ['Mods/Base'],
+      'C:/Work/Scripts2': ['Mods/Other'],
+    }
     const origins = await resolveContentAssetOrigins({
       contentSources: sources(openModContext),
       subjects: [{ descriptor: { subjectUri: 'file:///C:/Work/Scripts/My%20Script.galaxy' } }],
@@ -192,7 +290,10 @@ describe('subject closures through mod contexts', () => {
     expect(origins.dependenciesComplete).toBe(true)
     const closure = await resolveSubjectClosure({
       contentSources: sources(openModContext),
-      subject: { descriptor: {}, target: { sourceId: 'local:documents', path: 'Scripts/Tool.galaxy' } },
+      subject: {
+        descriptor: {},
+        target: { sourceId: 'local:documents', path: 'Scripts/Tool.galaxy' },
+      },
       baseMods,
     })
     // a path inside a source takes only the '*' base; the subject and host layers are no mounts
@@ -201,7 +302,9 @@ describe('subject closures through mod contexts', () => {
       target: { sourceId: 'local:documents', path: 'Scripts/Tool.galaxy' },
       baseMods: ['Mods/Void'],
     })
-    expect(closure.resolution?.mounts.map(mount => [mount.sourceId, mount.sourcePath, mount.kind])).toEqual([
+    expect(
+      closure.resolution?.mounts.map(mount => [mount.sourceId, mount.sourcePath, mount.kind]),
+    ).toEqual([
       ['casc', 'Mods/Core', 'dependency'],
       ['casc', 'Mods/Base', 'base'],
       ['wizards', '', 'dependency'],

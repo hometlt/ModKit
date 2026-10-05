@@ -42,6 +42,10 @@ Do not replace boundary validation with trust in caller-frozen objects or a muta
 Host context capture is published by `@modkit/host/language`. Host source consumers use relative
 imports of that owner; the production bundler preserves those as package self-references outside
 the language entry. Reuse the bundler's policy in graph reports, and verify native package resolution.
+Content path projections use this owner too. Reuse a retained index only after comparing the current
+listing, strongest layer owners and completeness; re-read current document bytes. Bound retained
+indexes and documents together, and keep every returned path even when its capture cannot be retained.
+Composed revisions use byte-sensitive tokens of validated captures, never caller revision strings alone.
 Build and pack from committed inputs using the repository's package manager; pnpm pack resolves
 workspace dependency specifiers while npm pack may leave them in the archive. Before publishing a
 vendor update, verify frozen/offline installation, the complete consumer build and installed bytes

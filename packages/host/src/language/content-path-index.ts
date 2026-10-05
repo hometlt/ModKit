@@ -1,8 +1,15 @@
+/**
+ * Capture the complete content-path index in protocol-sized parts at the canonical context owner.
+ * Paths and layer owners are copied defensively; later Host validation/tokenization can reuse the
+ * immutable captures. This does not cache a listing, trust a caller revision or omit overflow paths.
+ */
 import type { LanguageWorkspaceSemanticInput } from '@modkit/sdk/language'
+import { validatedLanguageWorkspaceSemanticInputs } from './context.js'
 
 /** Keep each path array within the execution protocol's bounds without dropping any paths. */
 const PATHS_PER_INPUT = 16_384
 
+/** Preserve all paths and optional layer owners as validated immutable semantic inputs. */
 export function contentPathIndexSemanticInputs(index: {
   readonly id: string
   readonly revision: string
@@ -32,5 +39,5 @@ export function contentPathIndexSemanticInputs(index: {
       }),
     )
   }
-  return Object.freeze(inputs)
+  return validatedLanguageWorkspaceSemanticInputs(inputs)
 }

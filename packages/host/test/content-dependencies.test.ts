@@ -303,6 +303,116 @@ describe('content dependency language documents', () => {
     expect(missingFingerprint.workspaceContext?.semanticComplete).toBe(false)
   })
 
+  it('reuses only a revalidated path capture and refreshes changed owners, failures and document bytes', async () => {
+    const paths = new Map([
+      ['cache/base/a.dds', encoder.encode('texture')],
+      ['cache/base/units.xml', encoder.encode('<Unit/>')],
+    ])
+    let listingFailed = false
+    let listings = 0
+    let reads = 0
+    const source = createContentDependencyLanguageDocumentSource({
+      contentSources: {
+        ...contentSources(),
+        async list(_sourceId, path) {
+          listings += 1
+          if (listingFailed) throw new Error('source temporarily unavailable')
+          return [...paths.keys()]
+            .filter(file => file.startsWith(`${path}/`))
+            .map(file => ({
+              path: file,
+              name: file.slice(file.lastIndexOf('/') + 1),
+              directory: false,
+            }))
+        },
+        async read(_sourceId, path) {
+          reads += 1
+          return paths.get(path)!.slice()
+        },
+      },
+      resolution,
+      routes: [{ languageId: 'sc2-data', extension: 'xml' }],
+    })
+    const request = {
+      document: { uri: 'file:///active.xml', languageId: 'sc2-data', version: 1, text: '' },
+      workspaceDocuments: [],
+      workspaceDocumentOrigins: [],
+      workspaceLanguageIds: ['sc2-data'],
+      maxDocuments: 8,
+      signal: new AbortController().signal,
+    }
+    const indexOf = (result: Awaited<ReturnType<typeof source.snapshot>>) =>
+      result.workspaceContext?.semanticInputs?.find(input => input.kind === 'content-path-index')!
+    const first = await source.snapshot(request)
+    const repeated = await source.snapshot(request)
+    expect(indexOf(repeated)).toBe(indexOf(first))
+    expect(listings).toBe(4)
+    expect(reads).toBe(2)
+    paths.set('cache/base/units.xml', encoder.encode('<Changed/>'))
+    const changedDocument = await source.snapshot(request)
+    expect(changedDocument.documents[0]?.text).toBe('<Changed/>')
+    expect(changedDocument.documents[0]?.version).toBe(2)
+    expect(indexOf(changedDocument)).toBe(indexOf(first))
+    paths.set('cache/override/a.dds', encoder.encode('stronger texture'))
+    const changedOwner = await source.snapshot(request)
+    expect(indexOf(changedOwner).revision).not.toBe(indexOf(first).revision)
+    expect(indexOf(changedOwner).payload).toMatchObject({
+      paths: ['a.dds', 'units.xml'],
+      layers: [1, 0],
+    })
+    paths.set('cache/base/b.dds', encoder.encode('new texture'))
+    const addedPath = await source.snapshot(request)
+    expect(indexOf(addedPath).payload).toMatchObject({ paths: ['a.dds', 'b.dds', 'units.xml'] })
+    listingFailed = true
+    const unavailable = await source.snapshot(request)
+    expect(unavailable.isComplete).toBe(false)
+    expect(indexOf(unavailable).payload).toMatchObject({ isComplete: false, paths: [] })
+    listingFailed = false
+    const recovered = await source.snapshot(request)
+    expect(recovered.isComplete).toBe(true)
+    expect(indexOf(recovered).revision).toBe(indexOf(addedPath).revision)
+    paths.delete('cache/base/b.dds')
+    expect(indexOf(await source.snapshot(request)).revision).toBe(indexOf(changedOwner).revision)
+  })
+
+  it('does not retain an index beyond its allowance or trim its returned paths', async () => {
+    const paths = Array.from({ length: 100 }, (_, index) => `cache/base/${index}.dds`)
+    const source = createContentDependencyLanguageDocumentSource({
+      contentSources: {
+        ...contentSources(),
+        async list(_sourceId, path) {
+          return paths
+            .filter(file => file.startsWith(`${path}/`))
+            .map(file => ({
+              path: file,
+              name: file.slice(file.lastIndexOf('/') + 1),
+              directory: false,
+            }))
+        },
+      },
+      resolution,
+      routes: [{ languageId: 'sc2-data', extension: 'xml' }],
+      maxDocumentBytes: 16,
+      maxWorkspaceBytes: 16,
+    })
+    const request = {
+      document: { uri: 'file:///active.xml', languageId: 'sc2-data', version: 1, text: '' },
+      workspaceDocuments: [],
+      workspaceDocumentOrigins: [],
+      workspaceLanguageIds: ['sc2-data'],
+      maxDocuments: 8,
+      signal: new AbortController().signal,
+    }
+    const indexOf = (result: Awaited<ReturnType<typeof source.snapshot>>) =>
+      result.workspaceContext?.semanticInputs?.find(input => input.kind === 'content-path-index')!
+    const first = await source.snapshot(request)
+    const repeated = await source.snapshot(request)
+    expect(first.isComplete).toBe(true)
+    expect((indexOf(first).payload as { paths: readonly string[] }).paths).toHaveLength(100)
+    expect(indexOf(repeated)).toEqual(indexOf(first))
+    expect(indexOf(repeated)).not.toBe(indexOf(first))
+  })
+
   it("reads every layer's language files past a layer of textures, from the bulk listing", async () => {
     // a layer that is mostly textures, as Liberty is: only the workspace's language files count
     const textures = Array.from(

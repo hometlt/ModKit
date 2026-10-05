@@ -1,3 +1,10 @@
+/**
+ * Host adapters over provider-resolved dependency mounts: virtual source identity, read-only
+ * companion origins, bounded language documents, knowledge inputs and complete path/layer indexes.
+ * Access goes through ContentSources for loose and packed storage; no game parser or native writer
+ * lives here. Mount bounds, routes and revisions are preserved, current listings/bytes are checked
+ * on each language snapshot, and retained immutable captures share the source's byte allowance.
+ */
 import {
   compareUtf8,
   diagnostic,
@@ -34,6 +41,7 @@ import {
   languageDocumentSnapshot,
   languageDocumentTextToken,
   languageWorkspaceContextToken,
+  validatedLanguageWorkspaceSemanticInputs,
 } from './language/index.js'
 import { artifactByteSourceFromBytes } from './source-bridge.js'
 import {
@@ -365,6 +373,9 @@ function createContentDependencyOrigin(
  * path. Physical cache paths and credentials remain in the provider, while virtual URIs preserve
  * dependency load order and revision identity. Extension-only routing is admitted only when the
  * extension identifies one language across the whole active inventory.
+ * Every snapshot lists current paths and reads current document bytes. One exact immutable path
+ * capture may be retained alongside document captures within the aggregate retention allowance;
+ * changed ownership, listing failures or completeness replace it without dropping any output.
  */
 export function createContentDependencyLanguageDocumentSource(
   options: ContentDependencyLanguageDocumentSourceOptions,
@@ -397,6 +408,24 @@ export function createContentDependencyLanguageDocumentSource(
     }
   >()
   let retainedDocumentBytes = 0
+  let retainedPathIndex:
+    | Readonly<{
+        paths: readonly string[]
+        layers: readonly number[]
+        complete: boolean
+        inputs: readonly LanguageWorkspaceSemanticInput[]
+        bytes: number
+      }>
+    | undefined
+  /** Evict document captures until their bytes and the retained index fit the source allowance. */
+  const trimDocumentCaptures = (): void => {
+    for (const entry of revisions.values()) {
+      if (retainedDocumentBytes <= maxWorkspaceBytes - (retainedPathIndex?.bytes ?? 0)) break
+      retainedDocumentBytes -= entry.bytes
+      entry.bytes = 0
+      delete entry.document
+    }
+  }
   const contextId = languageWorkspaceContextToken({
     gameId: options.resolution.gameId,
     mounts: mounts.map(mount => ({
@@ -414,6 +443,22 @@ export function createContentDependencyLanguageDocumentSource(
       revision: mount.revision,
     })),
   })
+  const closureInputs = validatedLanguageWorkspaceSemanticInputs([
+    {
+      kind: 'dependency-closure',
+      id: `${options.resolution.gameId}:${contextId}`,
+      revision: contextRevision,
+      // Each listed path belongs to the strongest layer; the closure addresses every layer.
+      payload: {
+        schemaVersion: 1,
+        layers: mounts.map(mount => ({
+          layerId: `${contextId}:${mount.order}:${mount.dependencyId}`,
+          sourceId: mount.sourceId,
+          sourcePath: mount.sourcePath,
+        })),
+      },
+    },
+  ])
   return Object.freeze({
     async snapshot(request: LanguageWorkspaceDocumentSourceRequest) {
       request.signal.throwIfAborted()
@@ -531,14 +576,46 @@ export function createContentDependencyLanguageDocumentSource(
         return true
       }
       for (const mount of mounts) if (!(await layer(mount))) break
-      const indexedPaths = Object.freeze([...contentPaths.keys()].sort(compareUtf8))
-      const pathLayers = Object.freeze(indexedPaths.map(path => contentPaths.get(path)!))
-      const pathIndexRevision = languageWorkspaceContextToken({
-        contextRevision,
-        complete: pathIndexComplete,
-        paths: indexedPaths,
-        layers: pathLayers,
-      })
+      let pathInputs = retainedPathIndex?.inputs
+      if (
+        retainedPathIndex === undefined ||
+        retainedPathIndex.complete !== pathIndexComplete ||
+        retainedPathIndex.paths.length !== contentPaths.size ||
+        !retainedPathIndex.paths.every(
+          (path, index) => contentPaths.get(path) === retainedPathIndex!.layers[index],
+        )
+      ) {
+        const indexedPaths = Object.freeze([...contentPaths.keys()].sort(compareUtf8))
+        const pathLayers = Object.freeze(indexedPaths.map(path => contentPaths.get(path)!))
+        const pathIndexRevision = languageWorkspaceContextToken({
+          contextRevision,
+          complete: pathIndexComplete,
+          paths: indexedPaths,
+          layers: pathLayers,
+        })
+        pathInputs = contentPathIndexSemanticInputs({
+          id: `${options.resolution.gameId}:${contextId}`,
+          revision: pathIndexRevision,
+          isComplete: pathIndexComplete,
+          paths: indexedPaths,
+          layers: pathLayers,
+        })
+        // Conservative string/array allowance includes both the comparison and captured arrays.
+        const bytes =
+          indexedPaths.reduce((total, path) => total + path.length * 2 + 32, 0) +
+          pathInputs.length * 512
+        retainedPathIndex =
+          bytes <= maxWorkspaceBytes
+            ? {
+                paths: indexedPaths,
+                layers: pathLayers,
+                complete: pathIndexComplete,
+                inputs: pathInputs,
+                bytes,
+              }
+            : undefined
+      }
+      trimDocumentCaptures()
       const documents = []
       const documentOrigins = []
       let totalBytes = 0
@@ -609,12 +686,7 @@ export function createContentDependencyLanguageDocumentSource(
         retainedDocumentBytes += retainedBytes
         // The existing revision metadata owns these immutable copies; retain no more than the
         // source's aggregate byte bound. Reads still check current bytes on every snapshot.
-        for (const entry of revisions.values()) {
-          if (retainedDocumentBytes <= maxWorkspaceBytes) break
-          retainedDocumentBytes -= entry.bytes
-          entry.bytes = 0
-          delete entry.document
-        }
+        trimDocumentCaptures()
         documents.push(document)
         documentOrigins.push(
           Object.freeze({
@@ -688,33 +760,8 @@ export function createContentDependencyLanguageDocumentSource(
           documentOrigins: Object.freeze(documentOrigins),
           semanticInputs: Object.freeze([
             ...(knowledgeInputs as LanguageWorkspaceSemanticInput[]),
-            Object.freeze({
-              kind: 'dependency-closure',
-              id: `${options.resolution.gameId}:${contextId}`,
-              revision: contextRevision,
-              // Where each layer's files live: a file `path` of layer `layerId` is
-              // `content-source://<sourceId>/<sourcePath>/<path>`, open or not (weaker first).
-              payload: Object.freeze({
-                schemaVersion: 1,
-                layers: Object.freeze(
-                  mounts.map(mount =>
-                    Object.freeze({
-                      layerId: `${contextId}:${mount.order}:${mount.dependencyId}`,
-                      sourceId: mount.sourceId,
-                      sourcePath: mount.sourcePath,
-                    }),
-                  ),
-                ),
-              }),
-            }),
-            ...contentPathIndexSemanticInputs({
-              id: `${options.resolution.gameId}:${contextId}`,
-              revision: pathIndexRevision,
-              isComplete: pathIndexComplete,
-              paths: indexedPaths,
-              // The dependency-closure layer each path is read from (its strongest).
-              layers: pathLayers,
-            }),
+            ...closureInputs,
+            ...pathInputs!,
           ]),
         }),
       })

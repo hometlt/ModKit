@@ -1,3 +1,10 @@
+/**
+ * Host orchestration for subject dependency closures and their companion/language projections.
+ * ContentSources owns package detection and native dependency rules. These adapters select base
+ * mods, dispose opened contexts or transfer their leases, combine read-only resource origins and
+ * compose language snapshots by layer precedence. Unavailable sources remain diagnostic/incomplete;
+ * immutable semantic captures retain byte-sensitive identity without trusting caller revisions.
+ */
 import { diagnostic, type Diagnostic } from '@modkit/core'
 import {
   HOST_LAYER_SOURCE_ID,
@@ -542,7 +549,11 @@ export function composeLanguageDocumentSources(
                 contexts.map(context => ({
                   id: context.id,
                   revision: context.revision,
-                  semanticInputs: context.semanticInputs,
+                  // Captured inputs retain byte-sensitive tokens; composing them need not rehash
+                  // the complete immutable payload on every request. Foreign inputs still validate.
+                  semanticInputs: validatedLanguageWorkspaceSemanticInputs(
+                    context.semanticInputs ?? [],
+                  ).map(input => languageWorkspaceContextToken(input)),
                 })),
               ),
               semanticComplete:
