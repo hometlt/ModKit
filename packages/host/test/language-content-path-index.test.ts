@@ -24,7 +24,8 @@ it('keeps a small or empty index compatible with its existing semantic input', (
 })
 
 it('transports a full installation index without overflowing arrays or losing path owners', () => {
-  const paths = Array.from({ length: 100_005 }, (_, index) => `Assets/Textures/${index}.dds`)
+  // Past 114688, lexical chunk ids differ from their original numeric order.
+  const paths = Array.from({ length: 150_005 }, (_, index) => `Assets/Textures/${index}.dds`)
   const layers = paths.map((_, index) => index % 3)
   const inputs = contentPathIndexSemanticInputs({
     id: 'game:context',
@@ -35,8 +36,12 @@ it('transports a full installation index without overflowing arrays or losing pa
   })
   expect(validateWireValue(inputs, DEFAULT_PROTOCOL_LIMITS, 'forbid').ok).toBe(true)
   const payloads = inputs.map(input => input.payload as { paths: string[]; layers: number[] })
-  expect(payloads.flatMap(payload => payload.paths)).toEqual(paths)
-  expect(payloads.flatMap(payload => payload.layers)).toEqual(layers)
+  const capturedPaths = payloads.flatMap(payload => payload.paths)
+  const capturedLayers = payloads.flatMap(payload => payload.layers)
+  expect(capturedPaths).toHaveLength(paths.length)
+  expect(capturedLayers).toHaveLength(layers.length)
+  expect(capturedPaths.every((path, index) => path === paths[index])).toBe(true)
+  expect(capturedLayers.every((layer, index) => layer === layers[index])).toBe(true)
   expect(new Set(inputs.map(input => input.id)).size).toBe(inputs.length)
   expect(inputs[0]?.id).toBe('game:context')
 })

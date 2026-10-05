@@ -39,5 +39,9 @@ export function contentPathIndexSemanticInputs(index: {
       }),
     )
   }
-  return validatedLanguageWorkspaceSemanticInputs(inputs)
+  const captured = new Map(
+    validatedLanguageWorkspaceSemanticInputs(inputs).map(input => [input.id, input]),
+  )
+  // Semantic validation sorts identities; the producer preserves its numeric chunk order.
+  return Object.freeze(inputs.map(input => captured.get(input.id)!))
 }
