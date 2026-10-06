@@ -113,6 +113,18 @@ function finite(value: unknown): number {
 function tuple(value: ArrayLike<number>, offset = 0): Vec3 {
   return [finite(value[offset]), finite(value[offset + 1]), finite(value[offset + 2])]
 }
+/** Checks what tuple checks, without making the tuple. */
+function finiteTuple(value: ArrayLike<number>, offset: number): void {
+  finite(value[offset])
+  finite(value[offset + 1])
+  finite(value[offset + 2])
+}
+/** Whether every value is finite, as every(Number.isFinite) says. */
+function allFinite(values: Float32Array): boolean {
+  for (let index = 0; index < values.length; index++)
+    if (!Number.isFinite(values[index])) return false
+  return true
+}
 const previewFields = [
   'modelPaths',
   'swapModelParticleYZ',
@@ -328,13 +340,18 @@ function validatePreviewEmitter(emitter: RenderParticleEmitter): void {
     if (typeof value.shape !== 'string') finite(value.shape)
   }
 }
+/** Emitter snapshots checked already (validatePreviewEmitter): a snapshot is immutable, checked once. */
+const validPreviewEmitters = new WeakSet<RenderParticleEmitter>()
 function prepareAnchor(
   emitter: RenderParticleEmitter,
   index: number,
   options: UvmParticleGeometryOptions,
   scratch: MutableEffectEmitterAnchor,
 ): ParticlePreviewAnchor {
-  validatePreviewEmitter(emitter)
+  if (!validPreviewEmitters.has(emitter)) {
+    validatePreviewEmitter(emitter)
+    validPreviewEmitters.add(emitter)
+  }
   identityAnchor(scratch)
   options.anchorProvider('particle', index, finite(emitter.boneIndex), options.time, scratch)
   options.signal?.throwIfAborted()
@@ -449,24 +466,23 @@ export function createUvmParticleGeometry(
     if (!Number.isSafeInteger(index) || index < 0 || emitters[index] === undefined)
       throw new TypeError('particle emitter index absent')
     if (!used.has(index)) used.set(index, used.size)
-    for (const value of [
-      state.ages[slot],
-      state.lifeSpans[slot],
-      state.facings[slot],
-      state.sizeRandomFactors[slot],
-      state.colorRandomFactors[slot],
-      state.alphaRandomFactors[slot],
-      state.rotationRandomFactors[slot],
-      state.randomSeeds[slot],
-    ])
-      finite(value)
-    tuple(state.positions, slot * 3)
-    tuple(state.velocities, slot * 3)
-    tuple(state.spawnPositions, slot * 3)
-    if (
-      ![0, 1, 2].includes(required(state.spaces[slot])) ||
-      ![0, 1].includes(required(state.types[slot]))
-    )
+    // Every slot is checked before any geometry is made, each value as it was (no scratch arrays).
+    finite(state.ages[slot])
+    finite(state.lifeSpans[slot])
+    finite(state.facings[slot])
+    finite(state.sizeRandomFactors[slot])
+    finite(state.colorRandomFactors[slot])
+    finite(state.alphaRandomFactors[slot])
+    finite(state.rotationRandomFactors[slot])
+    finite(state.randomSeeds[slot])
+    finiteTuple(state.positions, slot * 3)
+    finiteTuple(state.velocities, slot * 3)
+    finiteTuple(state.spawnPositions, slot * 3)
+    const space = required(state.spaces[slot])
+    if (space !== 0 && space !== 1 && space !== 2)
+      throw new TypeError('particle storage space or head/tail type is invalid')
+    const type = required(state.types[slot])
+    if (type !== 0 && type !== 1)
       throw new TypeError('particle storage space or head/tail type is invalid')
   }
   const scratchBytes = 256 + used.size * 512
@@ -654,20 +670,18 @@ export function createUvmParticleGeometry(
     const uv = particleUvRect(anchor, phase, tail),
       positions = new Float32Array(12),
       textureCoordinates = Float32Array.of(uv[0], uv[3], uv[0], uv[1], uv[2], uv[1], uv[2], uv[3]),
-      colors = Float32Array.from([...color, ...color, ...color, ...color])
-    const signs = [
-      [-1, -1],
-      [-1, 1],
-      [1, 1],
-      [1, -1],
-    ] as const
-    signs.forEach(([x, y], corner) => {
-      const point = addVec3(addVec3(center, scaleVec3(right, x)), scaleVec3(up, y))
-      positions.set(point, corner * 3)
-    })
-    for (const buffer of [positions, textureCoordinates, colors])
-      if (!buffer.every(Number.isFinite))
-        throw new RangeError('particle preview exceeds finite float32')
+      colors = new Float32Array(16)
+    // The corners -right -up, -right +up, +right +up and +right -up: center + right x + up y, each
+    // with the colour.
+    for (let corner = 0; corner < 4; corner++) {
+      const x = corner < 2 ? -1 : 1,
+        y = corner === 0 || corner === 3 ? -1 : 1
+      for (let axis = 0; axis < 3; axis++)
+        positions[corner * 3 + axis] = center[axis]! + right[axis]! * x + up[axis]! * y
+      colors.set(color, corner * 4)
+    }
+    if (!allFinite(positions) || !allFinite(textureCoordinates) || !allFinite(colors))
+      throw new RangeError('particle preview exceeds finite float32')
     entries.push({
       emitter: index,
       slot,

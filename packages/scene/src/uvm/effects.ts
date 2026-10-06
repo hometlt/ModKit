@@ -1261,9 +1261,17 @@ function spriteFrames(
   const normals = new Float32Array(count * 12),
     tangents = new Float32Array(count * 16)
   for (let sprite = 0; sprite < count; sprite++) {
-    const first = sprite * 4
-    const corners = indices.subarray(sprite * 6, sprite * 6 + 6)
-    if (![0, 1, 2, 0, 2, 3].every((offset, at) => corners[at] === first + offset)) return undefined
+    const first = sprite * 4,
+      at = sprite * 6
+    if (
+      indices[at] !== first ||
+      indices[at + 1] !== first + 1 ||
+      indices[at + 2] !== first + 2 ||
+      indices[at + 3] !== first ||
+      indices[at + 4] !== first + 2 ||
+      indices[at + 5] !== first + 3
+    )
+      return undefined
     const { normal, tangent } = materialTriangleFrame(
       positions,
       coordinates,
@@ -1279,6 +1287,17 @@ function spriteFrames(
   return { normals, tangents }
 }
 
+/** The centre of a sprite's box along one axis. */
+function spriteCentre(positions: Float32Array, axis: number): number {
+  let low = Infinity,
+    high = -Infinity
+  for (let at = axis; at < positions.length; at += 3) {
+    low = Math.min(low, positions[at]!)
+    high = Math.max(high, positions[at]!)
+  }
+  return (low + high) / 2
+}
+
 /**
  * One emitter's sprites as one primitive, back to front: by the view depth of each sprite's box
  * centre, as the world orders sprite draws (ties in slot order). A program material takes each
@@ -1291,26 +1310,20 @@ function emitterSprites(
   depth: readonly number[],
   toWorld: readonly number[],
 ): SceneRendererPrimitive & { readonly vertexTints?: Float32Array } {
-  const ordered = sprites
-    .map((sprite, ordinal) => {
-      const { positions } = sprite
-      const centre = [0, 1, 2].map(axis => {
-        let low = Infinity,
-          high = -Infinity
-        for (let at = axis; at < positions.length; at += 3) {
-          low = Math.min(low, positions[at]!)
-          high = Math.max(high, positions[at]!)
-        }
-        return (low + high) / 2
-      })
-      const key =
-        depth[0]! * centre[0]! + depth[1]! * centre[1]! + depth[2]! * centre[2]! + depth[3]!
-      return { sprite, ordinal, key }
-    })
-    .sort((left, right) => left.key - right.key || left.ordinal - right.ordinal)
+  const keys = new Float64Array(sprites.length)
+  const order: number[] = []
+  sprites.forEach(({ positions }, ordinal) => {
+    keys[ordinal] =
+      depth[0]! * spriteCentre(positions, 0) +
+      depth[1]! * spriteCentre(positions, 1) +
+      depth[2]! * spriteCentre(positions, 2) +
+      depth[3]!
+    order.push(ordinal)
+  })
+  order.sort((left, right) => keys[left]! - keys[right]! || left - right)
   let vertexCount = 0,
     indexCount = 0
-  for (const { sprite } of ordered) {
+  for (const sprite of sprites) {
     vertexCount += sprite.positions.length / 3
     indexCount += sprite.indices.length
   }
@@ -1320,7 +1333,8 @@ function emitterSprites(
     indices = new Uint32Array(indexCount)
   let vertex = 0,
     corner = 0
-  for (const { sprite } of ordered) {
+  for (const ordinal of order) {
+    const sprite = sprites[ordinal]!
     positions.set(sprite.positions, vertex * 3)
     textureCoordinates.set(sprite.textureCoordinates, vertex * 2)
     colors.set(sprite.colors, vertex * 4)
