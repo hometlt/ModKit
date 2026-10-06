@@ -660,3 +660,58 @@ it('samples prepared materials per moment with the programs a fresh preparation 
   }
   assert.throws(() => sampler.sample({ time: -1 }, []), /finite and nonnegative/)
 })
+
+it('gives a material without tracks its passes again at another time, and new ones for another frame', () => {
+  const sampler = createStandardMaterialPrograms(parameters(), { budget })
+  const formats = new Map()
+  const options = { ambient: [0, 0, 0, 0], normalMapFormats: formats }
+  const first = sampler.sample({ time: 0 }, options)
+  // the same frame (equal values) at another time: the same passes, nothing compiled again
+  assert.equal(sampler.sample({ time: 3 }, { ...options, ambient: [0, 0, 0, 0] }), first)
+  // the caller's map changed since, or another team colour: compiled again
+  formats.set('n', 'bc5')
+  const remapped = sampler.sample({ time: 3 }, options)
+  assert.notEqual(remapped, first)
+  assert.notEqual(sampler.sample({ time: 3 }, { ...options, teamColor: [0, 1, 0] }), remapped)
+  // a material with a track samples its value at each time
+  const animated = createStandardMaterialPrograms(
+    parameters(
+      material({
+        layers: { diffuse: layer('diffuse', { colorAdd: { value: 0, track: track([0], [1]) } }) },
+      }),
+    ),
+    { budget },
+  )
+  const [early] = animated.sample({ time: 0 }, options)
+  const [late] = animated.sample({ time: 1 }, options)
+  assert.notEqual(early, late)
+  assert.notDeepEqual(early.uniforms, late.uniforms)
+})
+
+it('keeps the programs object of a material without tracks across the clocks of a scene', () => {
+  const surface = {
+    id: 'surface',
+    baseColor: [1, 1, 1, 1],
+    shader: { id: 'modkit.render-material.v1', parameters: parameters() },
+  }
+  const pulsing = {
+    id: 'pulsing',
+    baseColor: [1, 1, 1, 1],
+    shader: {
+      id: 'modkit.render-material.v1',
+      parameters: parameters(
+        material({
+          layers: { diffuse: layer('diffuse', { colorAdd: { value: 0, track: track([0], [1]) } }) },
+        }),
+      ),
+    },
+  }
+  const sampler = createSceneMaterialProgramSampler([surface, pulsing], new Map())
+  const early = sampler.sample({ time: 0, teamColor: [1, 0, 0] }, [])
+  const late = sampler.sample({ time: 1, teamColor: [1, 0, 0] }, [])
+  // draws of the still material at other clocks share its programs (they group and keep a lease)
+  assert.equal(late.get('surface'), early.get('surface'))
+  assert.notEqual(late.get('pulsing'), early.get('pulsing'))
+  const blue = sampler.sample({ time: 1, teamColor: [0, 0, 1] }, [])
+  assert.notEqual(blue.get('surface'), early.get('surface'))
+})

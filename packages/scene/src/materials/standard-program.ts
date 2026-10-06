@@ -195,6 +195,12 @@ export function createStandardMaterialPrograms(
   // Compile-time properties are immutable. This cache is bounded by the authored pass variants;
   // changing playback time, lights or team color only creates a fresh uniform snapshot.
   const sources = new Map<string, ShaderSources>()
+  // A material without tracks samples alike at every time: its last passes and the frame they were
+  // compiled for, given again for the same frame at another time (an animated map samples each
+  // model's materials at each clock; most of them do not move).
+  let last:
+    | Readonly<{ lighting: MaterialFrameOptions; passes: readonly StandardMaterialProgram[] }>
+    | undefined
   return Object.freeze({
     resources: sampler.resources,
     usesSceneEnvironment: sampler.usesSceneEnvironment,
@@ -203,6 +209,10 @@ export function createStandardMaterialPrograms(
       lighting: MaterialFrameOptions = {},
       signal?: AbortSignal,
     ): readonly StandardMaterialProgram[] {
+      if (sampler.timeless && last !== undefined && sameMaterialFrame(last.lighting, lighting)) {
+        signal?.throwIfAborted()
+        return last.passes
+      }
       const teamColor = Object.freeze([
         ...finiteVector(lighting.teamColor ?? [1, 0, 0], 3, 'team color'),
       ]) as Vec3
@@ -222,7 +232,7 @@ export function createStandardMaterialPrograms(
       // ponytail: only the two observed intensities; a fractional exponent needs a shader uniform.
       if (intensity !== 0 && intensity !== 1)
         throw new TypeError('team color intensity must be 0 or 1')
-      return Object.freeze(
+      const passes = Object.freeze(
         sampler
           .sample(time, signal)
           .map(pass =>
@@ -245,8 +255,70 @@ export function createStandardMaterialPrograms(
             ),
           ),
       )
+      if (sampler.timeless) last = Object.freeze({ lighting: copyMaterialFrame(lighting), passes })
+      return passes
     },
   })
+}
+
+/**
+ * A copy of frame options for a later comparison (sameMaterialFrame): the caller may change its
+ * vectors, maps and environment after a sample, which the next sample must see.
+ */
+function copyMaterialFrame(lighting: MaterialFrameOptions): MaterialFrameOptions {
+  return {
+    ...lighting,
+    ...(lighting.teamColor === undefined ? {} : { teamColor: [...lighting.teamColor] as Vec3 }),
+    ...(lighting.ambient === undefined ? {} : { ambient: [...lighting.ambient] as Vec4 }),
+    ...(lighting.terrainTiling === undefined
+      ? {}
+      : { terrainTiling: [...lighting.terrainTiling] as Vec4 }),
+    ...(lighting.normalMapFormats === undefined
+      ? {}
+      : { normalMapFormats: new Map(lighting.normalMapFormats) }),
+    ...(lighting.textureDimensions === undefined
+      ? {}
+      : { textureDimensions: new Map(lighting.textureDimensions) }),
+    ...(lighting.environment === undefined
+      ? {}
+      : {
+          environment: {
+            ...lighting.environment,
+            worldToEnvironment: [...lighting.environment.worldToEnvironment],
+          },
+        }),
+  }
+}
+
+/** The same frame options by value: vectors, maps, the environment frame and the flags. */
+function sameMaterialFrame(left: MaterialFrameOptions, right: MaterialFrameOptions): boolean {
+  const sameVector = (a: ArrayLike<number> | undefined, b: ArrayLike<number> | undefined) => {
+    if (a === undefined || b === undefined) return a === b
+    if (a.length !== b.length) return false
+    for (let index = 0; index < a.length; index++) if (!Object.is(a[index], b[index])) return false
+    return true
+  }
+  const sameMap = (
+    a: ReadonlyMap<string, unknown> | undefined,
+    b: ReadonlyMap<string, unknown> | undefined,
+  ) => {
+    if (a === undefined || b === undefined) return a === b
+    if (a.size !== b.size) return false
+    for (const [key, value] of a) if (!b.has(key) || b.get(key) !== value) return false
+    return true
+  }
+  const environment = (frame: MaterialFrameOptions) => frame.environment?.worldToEnvironment
+  return (
+    sameVector(left.teamColor, right.teamColor) &&
+    sameVector(left.ambient, right.ambient) &&
+    sameVector(left.terrainTiling, right.terrainTiling) &&
+    sameMap(left.normalMapFormats, right.normalMapFormats) &&
+    sameMap(left.textureDimensions, right.textureDimensions) &&
+    (left.environment === undefined) === (right.environment === undefined) &&
+    sameVector(environment(left), environment(right)) &&
+    (left.sceneLighting === true) === (right.sceneLighting === true) &&
+    (left.teamColorIntensity ?? 1) === (right.teamColorIntensity ?? 1)
+  )
 }
 
 function compilePass(

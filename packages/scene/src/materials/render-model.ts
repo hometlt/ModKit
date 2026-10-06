@@ -72,6 +72,11 @@ export interface RenderMaterialSampler {
   readonly presentation: RenderMaterialPresentation
   readonly worldToMaterial?: readonly number[]
   readonly usesWorldProjection: boolean
+  /**
+   * No property of its passes carries a track (`track`, `sequenceTracks`): a sample is the same at
+   * every time, the only thing the time reaches.
+   */
+  readonly timeless: boolean
   sample(time: MaterialSampleTime, signal?: AbortSignal): readonly RenderMaterialPass[]
 }
 
@@ -147,6 +152,25 @@ function animated(value: unknown, path: string, size: number, signal?: AbortSign
         throw new TypeError(`${trackPath}.wrapSeconds must be positive`)
     validateTrack(track['track'], `${trackPath}.track`, size, signal)
   }
+}
+
+/** Whether a value names a `track` or `sequenceTracks` anywhere (what sampleAnimated reads). */
+function carriesTrack(value: unknown): boolean {
+  const pending: unknown[] = [value]
+  while (pending.length > 0) {
+    const item = pending.pop()
+    if (item === null || typeof item !== 'object' || ArrayBuffer.isView(item)) continue
+    if (Array.isArray(item)) {
+      pending.push(...item)
+      continue
+    }
+    for (const [key, entry] of Object.entries(item)) {
+      if ((key === 'track' || key === 'sequenceTracks') && entry !== undefined && entry !== null)
+        return true
+      pending.push(entry)
+    }
+  }
+  return false
 }
 
 const LAYER_ANIMATIONS = [
@@ -416,6 +440,7 @@ export function createRenderMaterialSampler(
   )
   return Object.freeze({
     resources,
+    timeless: colorless || !passes.some(carriesTrack),
     usesSceneEnvironment:
       !colorless &&
       passes.some(pass => pass.material.layers.envi?.texturePath === SCENE_ENVIRONMENT_RESOURCE),

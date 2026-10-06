@@ -120,14 +120,17 @@ export function createSceneMaterialProgramSampler(
         sampler: SceneMaterialProgramSampler
       }>
     | Readonly<{ kind: 'gltf'; material: SceneRendererMaterial; programs: GltfMaterialPrograms }>
-    | Readonly<{
+    | (Readonly<{
         kind: 'standard'
         material: SceneRendererMaterial
         sampler: ReturnType<typeof createStandardMaterialPrograms>
         bound: ReadonlyMap<string, SceneRendererTexture>
         normalMapFormats: ReadonlyMap<string, NormalMapFormat>
         textureDimensions: ReadonlyMap<string, '2d' | 'cube'>
-      }>
+      }> & {
+        /** Its last programs: kept while its passes are the same objects (see sample below). */
+        last?: SceneMaterialPrograms
+      })
   const entries: Entry[] = []
   for (const [index, material] of materials.entries()) {
     signal?.throwIfAborted()
@@ -321,7 +324,12 @@ export function createSceneMaterialProgramSampler(
               code: 'common.scene/material-feature-unrendered',
               message: `Material ${entry.material.id}: ${message}`,
             })
-        results.set(entry.material.id, Object.freeze({ passes, textures: entry.bound }))
+        // The same passes (a material without tracks at another time) keep their programs object:
+        // draws of it at other clocks group together and keep their GPU lease.
+        let programs = entry.last
+        if (programs?.passes !== passes)
+          entry.last = programs = Object.freeze({ passes, textures: entry.bound })
+        results.set(entry.material.id, programs)
       }
       return results
     },
