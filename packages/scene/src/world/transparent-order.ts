@@ -8,6 +8,48 @@ const IN_CELLS = 1
 const LARGE = 2
 const EVERYWHERE = 3
 
+/** The item whose level is being found, as the earlier items' checks read it (see requiredLevel). */
+interface LevelSearch {
+  item: number
+  batch: number
+  blend: number
+  x0: number
+  y0: number
+  x1: number
+  y1: number
+  level: number
+}
+
+/**
+ * Raises `search.level` to what the earlier item `other` requires of it: one above `other`'s level, or
+ * that level itself in the same batch, where `other` overlaps it on screen. An item placed at or below
+ * the level less one, seen already (`visited`) or commuting with it cannot raise it.
+ */
+function requiredLevel(
+  search: LevelSearch,
+  other: number,
+  levels: Int32Array,
+  visited: Int32Array,
+  boxes: Float64Array,
+  batches: Int32Array,
+  commuting: Uint8Array | undefined,
+): void {
+  const placedAt = levels[other]!
+  if (placedAt + 1 <= search.level || visited[other] === search.item) return
+  visited[other] = search.item
+  if (search.blend !== 0 && commuting![other] === search.blend) return
+  const at = other * 4
+  if (
+    boxes[at]! > search.x1 ||
+    boxes[at + 2]! < search.x0 ||
+    boxes[at + 1]! > search.y1 ||
+    boxes[at + 3]! < search.y0
+  )
+    return
+  const value = placedAt + (search.batch >= 0 && batches[other] === search.batch ? 0 : 1)
+  if (value > search.level) search.level = value
+}
+
 /**
  * Levels for depth-sorted transparent draws. The blending order changes the picture only where two
  * draws cover the same pixel, so an item may move past any earlier item it does not overlap on screen.
@@ -110,51 +152,38 @@ export function transparentOrderLevels(
   const large: number[] = []
   let largeCeiling = 0
   const visited = new Int32Array(count).fill(-1)
+  // One search object for every item: no closure or object is made per item.
+  const search: LevelSearch = { item: 0, batch: 0, blend: 0, x0: 0, y0: 0, x1: 0, y1: 0, level: 0 }
   for (let item = 0; item < count; item += 1) {
     const kind = kinds[item]!
     if (kind === EMPTY) continue
     const offset = item * 4
-    const x0 = boxes[offset]! - epsilon
-    const y0 = boxes[offset + 1]! - epsilon
-    const x1 = boxes[offset + 2]! + epsilon
-    const y1 = boxes[offset + 3]! + epsilon
-    const batch = batches[item]!
-    const blend = commuting?.[item] ?? 0
-    let level = 0
-    // The level an earlier item requires, or -1 where it cannot raise the level found (placed at or
-    // below it less one, seen already, commuting with it or apart on screen).
-    const required = (other: number, found: number) => {
-      const placedAt = levels[other]!
-      if (placedAt + 1 <= found || visited[other] === item) return -1
-      visited[other] = item
-      if (blend !== 0 && commuting![other] === blend) return -1
-      const at = other * 4
-      if (boxes[at]! > x1 || boxes[at + 2]! < x0 || boxes[at + 1]! > y1 || boxes[at + 3]! < y0)
-        return -1
-      return placedAt + (batch >= 0 && batches[other] === batch ? 0 : 1)
-    }
+    search.item = item
+    search.x0 = boxes[offset]! - epsilon
+    search.y0 = boxes[offset + 1]! - epsilon
+    search.x1 = boxes[offset + 2]! + epsilon
+    search.y1 = boxes[offset + 3]! + epsilon
+    search.batch = batches[item]!
+    search.blend = commuting?.[item] ?? 0
+    search.level = 0
     if (kind === EVERYWHERE)
-      for (let other = 0; other < item; other += 1) {
-        const value = required(other, level)
-        if (value > level) level = value
-      }
+      for (let other = 0; other < item; other += 1)
+        requiredLevel(search, other, levels, visited, boxes, batches, commuting)
     else {
       // Every earlier item the box overlaps is a large one or in a cell the box covers.
       for (let cy = ranges[offset + 2]!; cy <= ranges[offset + 3]!; cy += 1)
         for (let cx = ranges[offset]!; cx <= ranges[offset + 1]!; cx += 1) {
           const cell = cy * side + cx
           for (let at = placed[cell]! - 1, first = starts[cell]!; at >= first; at -= 1) {
-            if (ceilings[at]! <= level) break
-            const value = required(members[at]!, level)
-            if (value > level) level = value
+            if (ceilings[at]! <= search.level) break
+            requiredLevel(search, members[at]!, levels, visited, boxes, batches, commuting)
           }
         }
-      if (largeCeiling > level)
-        for (const other of large) {
-          const value = required(other, level)
-          if (value > level) level = value
-        }
+      if (largeCeiling > search.level)
+        for (const other of large)
+          requiredLevel(search, other, levels, visited, boxes, batches, commuting)
     }
+    const level = search.level
     levels[item] = level
     if (kind !== IN_CELLS) {
       large.push(item)

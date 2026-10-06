@@ -3405,15 +3405,49 @@ function worldObjectProgramTemplateKey(
   resourceId: string,
   moment: ReturnType<typeof worldObjectMaterialMoment>,
 ): string {
-  return [
+  const animation = moment.selectedAnimation?.id ?? ''
+  const { teamColor } = moment
+  const { terrainTiling } = moment.materialContext
+  let byResource = worldObjectTemplateKeys.get(item)
+  const known = byResource?.get(resourceId)
+  if (
+    known !== undefined &&
+    known.animation === animation &&
+    known.teamColor === teamColor &&
+    known.terrainTiling === terrainTiling
+  )
+    return known.key
+  const key = [
     resourceId,
-    moment.selectedAnimation?.id ?? '',
-    moment.teamColor?.join(',') ?? '',
+    animation,
+    teamColor?.join(',') ?? '',
     item.presentationTeamColorIntensity ?? '',
     item.derivedFrom === 'cliffs' ? 'cliffs' : '',
-    moment.materialContext.terrainTiling?.join(',') ?? '',
+    terrainTiling?.join(',') ?? '',
   ].join('\u0000')
+  if (byResource === undefined) worldObjectTemplateKeys.set(item, (byResource = new Map()))
+  byResource.set(resourceId, Object.freeze({ animation, teamColor, terrainTiling, key }))
+  return key
 }
+
+/**
+ * Each object's last program template key per model, with what it was written from: the object's
+ * team colour and the ground's tiling stay the same objects from frame to frame (the input's, as
+ * worldStaticObjectKey takes them, and worldTerrainTiling's per input), and the rest is the object's
+ * own.
+ */
+const worldObjectTemplateKeys = new WeakMap<
+  WorldSceneObjectItem,
+  Map<
+    string,
+    Readonly<{
+      animation: string
+      teamColor: unknown
+      terrainTiling: unknown
+      key: string
+    }>
+  >
+>()
 
 /**
  * The clocks at which an object samples its clock-following materials, one per model: the time
