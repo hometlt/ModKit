@@ -1,4 +1,4 @@
 interface:
-  display_name: "Implement Modkit Game MCP"
-  short_description: "Build game adapters through shared Modkit contracts"
-  default_prompt: "Use $implement-modkit-game-mcp to add this game's authoring workflow through existing Modkit owners and verify its public MCP route."
+  display_name: "Build Modkit Extensions and Codecs"
+  short_description: "Build MK3 game extensions and codecs with shared owners"
+  default_prompt: "Use $implement-modkit-game-mcp to create or extend this game's extension or codec through existing MK3 owners and verify its supported public workflows."

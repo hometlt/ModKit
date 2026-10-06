@@ -1,23 +1,39 @@
 ---
 name: implement-modkit-game-mcp
-description: Implement or extend Modkit game adapters and MCP authoring workflows using existing host, codec, schema, edit-plan and preview contracts. Use for adding support for a game or format, exposing an existing module to MCP, or designing shared native and UVW authoring operations. This is a developer workflow, not a skill for editing a user's mod through a running server.
+description: Create or extend MK3 game extensions for one or several games, individual codecs, and their MCP authoring workflows. Use when implementing game or format support, installation and content sources, resolved data and languages, native writers, or UVM/UVW conversion through existing Modkit contracts. This is a developer workflow, not a skill for editing a user's mod through a running server.
 ---
 
-# Implement Modkit game authoring
+# Build Modkit extensions and codecs
 
-Read the workspace and repository AGENTS.md first. Follow existing ownership and use graph discovery
-when available. This skill does not declare any new callable MCP operation.
+Read workspace and repository AGENTS.md, the architecture charter and an applicable PROMPT.txt
+first. Follow current ownership and integration rules; do not infer paths or available APIs from an
+old handoff. Prefer graph discovery when available, with text search for manifests or a missing
+graph. This skill does not declare any new callable MCP operation or authorize remote publishing.
+
+## Choose the task-sized workflow
+
+- A complete extension or additional game: read [extension-workflow.md](references/extension-workflow.md).
+- A reader, writer, container, language or media codec: read [codec-workflow.md](references/codec-workflow.md).
+- An MCP authoring operation over existing support: follow the shared lifecycle below; read the
+  codec reference only if its owner needs changing.
+
+For a complete game, use both references as needed. For a single format, do not scaffold unrelated
+installation, map, online or runtime modules. Preserve the user-selected games, scope and interfaces.
 
 ## Start with one observable result
 
-Name the source format, action, writable destination and verification result. Examples: move one
-map instance and reopen it; clone a definition and rewire one owner; render a layout at two locales.
-Inspect existing manifests, owner implementations, callers, tests and parity records before adding
-an operation. Use the public host/MCP route to inspect game content, never a second archive reader.
+Name the source format, requested action and observable verification result. Identify a destination
+when writing or exporting. Examples: open one native model; move one map instance and reopen it;
+clone a definition and rewire one owner; render a layout at two locales.
+Inspect existing manifests, owner implementations, callers, tests and parity records across the
+workspace before adding an operation or codec. Use public Host/CLI/MCP routes to investigate installed
+game content, never a parallel archive reader. Parser unit tests may use bounded synthetic fixtures;
+real-content checks use discovered installations through the existing sources.
 
 Record a small implementation matrix for the task: action → current operation/schema → owner →
-missing behavior → product-route check. Distinguish implemented, exposed, available on this machine,
-and verified. Do not count a declared operation or renderer projection as write support.
+missing behavior → product-route check. Include versions, source kinds, dependency scope and runtime
+variants relevant to the task. Distinguish implemented, exposed, available on this machine and
+verified. Do not count a declared operation, parser test or renderer projection as write support.
 
 ## Repository conventions and documentation
 
@@ -39,9 +55,53 @@ comments, public declarations and knowledge consistent. Do not duplicate registr
 - MCP: discover and invoke public operations. No parser, game switch, private provider call or
   separate game MCP/LSP server in the adapter.
 
+Before adding a format, check its signatures and variants against existing codecs, not just file
+extensions. Shared algorithms belong at the existing codec-kit owner; widespread format-neutral
+codecs reuse the appropriate built-in extension. Publisher/engine formats remain at their shared
+publisher/engine owner. Cross-publisher middleware such as Wwise or FMOD belongs in its own extension
+package, which may already live in a technology repository. Open-source availability alone is not a
+reason to put game semantics in Core. Preserve upstream provenance and applicable project decisions.
+
+Name a new source repository `modkit-extensions-<domain>`. Keep repository, extension, contribution,
+game, format and subject identities distinct. Multiple games share one technology implementation
+with explicit version/profile handling; distinguish their package rules and schemas. An ambiguous
+common extension such as XML or JSON must not silently choose a game.
+
 Keep native-specific operations alongside common operations when needed; both call the same owner.
 Use actual operation naming conventions (for example `map.layer-read`) and manifest-owned schemas.
 Do not hand-maintain a parallel operation catalog in examples, the MCP app, or the skill.
+
+## Keep context, schema and resources shared
+
+Reuse Host installation probes, VFS and ContentSources. The explicitly selected installation must
+reach every dependent provider; discovery order must not replace it. Open packed, directory, nested
+and loose resources through the same package/context path, with deterministic dependency layers,
+revisions, unresolved reasons and writable targets. Retained loaded mods must not depend on one
+editor tab remaining open. If that lifecycle is missing, close the gap at its common owner.
+
+Keep one canonical data schema/resolver and one script specification at each module owner. Describe
+all supported fields, defaults, types, allowed values, units, references and documentation targets.
+Data, strings, scripts, styles, layouts, wizards, language providers and UI consume these owners;
+they do not introduce their own classes or inheritance algorithms.
+
+Resources show calculated semantic contents per loaded mod, with scoped constants/defaults and
+provenance; Files remains the separate file view. Common cards, fields, viewers and operation
+surfaces provide navigation, editing and validation. Expose Verify only where a supported codec
+capability exists. Do not replace missing shared UI with a game-specific editor.
+
+## Use current codec contracts
+
+Use strict TypeScript and existing `defineCodec`/manifest generation where available. Point
+manifest entrypoints directly at compiled JavaScript inside their own artifact; an empty
+`codec.js`/`runtime.js` re-export is optional, not required. Package the entire runtime closure
+and verify entrypoint containment and activation. Reuse `createInspectionCodec`
+instead of rewriting session plumbing; containers use bounded range access and common extraction.
+Namespace semantics reuse the owning container so folder and archive representations agree.
+
+Publish standard data sources and operation descriptors. Resolve companions, textures, audio and
+dependencies through Host resource ports and their codecs. Model/map exports use current UV
+materializers and the pinned Multiverse specifications. Do not invent UV variants or a game-kit API.
+Separate portable parsing from Node-only discovery/launch; prove each runtime variant actually runs.
 
 ## Prove shared semantics in small slices
 
@@ -54,9 +114,12 @@ The native document is authoritative when editing a native subject. UVW is autho
 editing a standalone UVW subject. Refresh derived previews from the committed revision. Editing
 a UVW projection does not imply a lossless write back into its native source.
 
-Read multiverse/specs for conversion guarantees. UVW is spatial; definitions, scripts and runtime
-state have their own owners. Admit only supported profiles, with explicit conversion losses and
-refusals. Do not encode SC2 catalog classes, XML keys or terrain companion filenames in a common API.
+Read multiverse/specs for conversion guarantees. UVW is spatial; UVM models, UVD definitions, UVS
+scenarios, UVB behavior and UVP packages have distinct owners and acceptance requirements. Admit
+only supported profiles, with explicit conversion losses and refusals. Native read, native write,
+universal projection, visual fidelity and playable behavior are separate claims. Validate coordinate
+frames independently, including model placement and resource closure. Do not encode SC2 catalog
+classes, XML keys or terrain companion filenames in a common API.
 
 ## Connect the existing lifecycle
 
@@ -85,6 +148,10 @@ not duplicate schemas or implement algorithms in prose. Prefer discovery and tar
 queries over loading every schema and tool for every game.
 
 Run checks appropriate to the change, including the public MCP/host route for exposed behavior.
+Confirm new tests are included in the repository's actual test tier. Exercise cold/warm access,
+bounded reads, cancellation and the relevant worker route; do not introduce a second cache to conceal
+missing context or repeated parsing. Missing real corpus or a skipped native backend leaves that
+acceptance incomplete.
 Verify effective reopened state and native data preservation; exercise stale revisions and the
 relevant unsupported case. Verify real editor/game acceptance for native output when required,
 and label it unverified if that backend cannot be run. Do not bypass the missing route to claim it.
@@ -93,7 +160,11 @@ MCP, LSP and VS Code must share the implementation; follow project acceptance or
 Report the owner, operation, tests actually run and remaining limits. Update project owner rules
 when implementation ownership changes. Do not turn a plan into a claim of shipped capabilities.
 
-In the full coding workspace, the staged roadmap is
+In the full coding workspace, the detailed game handbook is
+[GAME_EXTENSION_AGENT_GUIDE.md](../../../docs/MK3/GAME_EXTENSION_AGENT_GUIDE.md), with staged scope,
+completion criteria and an agent starter request. The shared authoring roadmap is
 [UNIVERSAL_GAME_AUTHORING_MCP_PLAN.md](../../../docs/MK3/UNIVERSAL_GAME_AUTHORING_MCP_PLAN.md).
-If that external documentation directory is absent from a standalone checkout, use this skill,
-repository rules and current manifests as the starting point; do not assume planned APIs exist.
+These external links are relative to the repository copy of this skill. When using an installed
+copy, find the documents in the active workspace. If absent, use the bundled references, repository
+rules and current manifests; do not assume planned APIs exist. The handbook does not supersede a
+current SDK schema or a pinned Multiverse specification.
