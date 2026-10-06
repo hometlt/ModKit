@@ -275,3 +275,19 @@ test('validating one receiver buffer does not validate a different one', () => {
   // Repeating the accepted buffer takes the cached path and must still produce the same geometry.
   assert.deepEqual([...clipProjectorReceivers(frame, good, budget).indices], [0, 1, 2])
 })
+
+test('refuses a receiver whose placement leaves the float32 range, as every clip of it did', () => {
+  // a triangle around the projector's box, placed a hundred billion times larger: past float32
+  const huge = [
+    {
+      primitive: {
+        id: 'huge',
+        topology: 'triangles',
+        positions: Float32Array.from([-1e30, -1e30, 1, 1e30, -1e30, 1, 0, 1e30, 1]),
+      },
+      transform: [1e11, 0, 0, 0, 0, 1e11, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+    },
+  ]
+  for (let call = 0; call < 2; call += 1)
+    assert.throws(() => clipProjectorReceivers(frame, huge, budget), /invalid projector coordinate/)
+})

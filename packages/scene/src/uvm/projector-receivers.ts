@@ -29,12 +29,6 @@ interface Options {
   readonly maxTriangles: number
   readonly signal?: AbortSignal
 }
-const component = (values: ArrayLike<number>, index: number): number => {
-  const value = values[index]
-  if (value === undefined || !Number.isFinite(value))
-    throw new TypeError('invalid projector coordinate')
-  return value
-}
 const dot = (x: number, y: number, z: number, v: ProjectorVec3) => x * v[0] + y * v[1] + z * v[2]
 const clamp = (value: number) => Math.min(1, Math.max(0, value))
 // Every projector of a frame validates the same receiver arrays, and the next frame receives the
@@ -162,8 +156,11 @@ function createReceiverGrid(
   })
 }
 
-/** Two passes reserve exact output before allocation. Unlike the old live-buffer preview,
- * exhaustion rejects the frame instead of publishing silently truncated receiver geometry. */
+/**
+ * One pass keeps the clipped vertices and makes the output to its exact size. Unlike the old
+ * live-buffer preview, exhaustion rejects the frame instead of publishing silently truncated
+ * receiver geometry.
+ */
 export function clipProjectorReceivers(
   frame: ProjectorFrame,
   receivers: readonly ProjectorReceiver[],
@@ -268,10 +265,13 @@ export function clipProjectorReceivers(
       candidates: receiverGrid(receiver.primitive)?.query(minimum, maximum),
     }
   })
+  // The scratch polygons hold finite values only: a vertex is checked once it is written (below),
+  // and clipping writes convex combinations of two of them. The receivers' positions and
+  // transforms were checked above, so the loops read them directly.
   const distance = (vertices: Float32Array, vertex: number, plane: number): number => {
-    const x = component(vertices, vertex * 6 + 3),
-      y = component(vertices, vertex * 6 + 4),
-      z = component(vertices, vertex * 6 + 5)
+    const x = vertices[vertex * 6 + 3]!,
+      y = vertices[vertex * 6 + 4]!,
+      z = vertices[vertex * 6 + 5]!
     if (plane === 0) return z - frame.near
     if (plane === 1) return frame.far - z
     if (frame.projectionType === 'perspective') {
@@ -300,16 +300,15 @@ export function clipProjectorReceivers(
           const denominator = previousDistance - currentDistance
           const factor = Math.abs(denominator) > 1e-12 ? previousDistance / denominator : 0
           for (let axis = 0; axis < 6; axis++) {
-            const start = component(input, previous * 6 + axis)
-            output[nextCount * 6 + axis] =
-              start + (component(input, current * 6 + axis) - start) * factor
+            const start = input[previous * 6 + axis]!
+            output[nextCount * 6 + axis] = start + (input[current * 6 + axis]! - start) * factor
           }
           nextCount++
         }
         if (currentDistance >= 0) {
           if (nextCount >= 10) throw new RangeError('projector clipping capacity exceeded')
           for (let axis = 0; axis < 6; axis++)
-            output[nextCount * 6 + axis] = component(input, current * 6 + axis)
+            output[nextCount * 6 + axis] = input[current * 6 + axis]!
           nextCount++
         }
         previous = current
@@ -323,10 +322,23 @@ export function clipProjectorReceivers(
     }
     return count // Six swaps put the final polygon back into first.
   }
-  const visit = (write?: (vertex: number) => void): number => {
+  // One pass: the fans of the clipped polygons, their vertices (placed position and projector
+  // space, as the scratch polygon holds them) kept in a scratch that grows; the output is then made
+  // to its exact size. Two passes (count, then write) clipped every triangle twice.
+  let kept = new Float32Array(6 * 96)
+  const keep = (vertex: number, at: number) => {
+    if (kept.length < at + 6) {
+      const grown = new Float32Array(Math.max(kept.length * 2, at + 6))
+      grown.set(kept)
+      kept = grown
+    }
+    for (let axis = 0; axis < 6; axis++) kept[at + axis] = first[vertex * 6 + axis]!
+  }
+  const visit = (): number => {
     let vertices = 0
     for (const { primitive, transform: m, minimum, maximum, candidates } of bounded) {
       const count = primitive.indices?.length ?? primitive.positions.length / 3
+      const [m0, m1, m2, , m4, m5, m6, , m8, m9, m10, , m12, m13, m14] = m as readonly number[]
       const visited = candidates === undefined ? count / 3 : candidates.length
       for (let candidate = 0; candidate < visited; candidate++) {
         const triangle = candidates === undefined ? candidate * 3 : candidates[candidate]!
@@ -348,45 +360,46 @@ export function clipProjectorReceivers(
         if (outside) continue
         for (let vertex = 0; vertex < 3; vertex++) {
           const index = primitive.indices?.[triangle + vertex] ?? triangle + vertex
-          const x = component(primitive.positions, index * 3),
-            y = component(primitive.positions, index * 3 + 1),
-            z = component(primitive.positions, index * 3 + 2)
-          const px =
-            component(m, 0) * x + component(m, 4) * y + component(m, 8) * z + component(m, 12)
-          const py =
-            component(m, 1) * x + component(m, 5) * y + component(m, 9) * z + component(m, 13)
-          const pz =
-            component(m, 2) * x + component(m, 6) * y + component(m, 10) * z + component(m, 14)
-          first.set(
-            [
-              px,
-              py,
-              pz,
-              dot(
-                px - frame.origin[0],
-                py - frame.origin[1],
-                pz - frame.origin[2],
-                frame.rightAxis,
-              ),
-              dot(px - frame.origin[0], py - frame.origin[1], pz - frame.origin[2], frame.upAxis),
-              dot(
-                px - frame.origin[0],
-                py - frame.origin[1],
-                pz - frame.origin[2],
-                frame.forwardAxis,
-              ),
-            ],
-            vertex * 6,
+          const x = p[index * 3]!,
+            y = p[index * 3 + 1]!,
+            z = p[index * 3 + 2]!
+          const px = m0! * x + m4! * y + m8! * z + m12!
+          const py = m1! * x + m5! * y + m9! * z + m13!
+          const pz = m2! * x + m6! * y + m10! * z + m14!
+          const at = vertex * 6
+          first[at] = px
+          first[at + 1] = py
+          first[at + 2] = pz
+          first[at + 3] = dot(
+            px - frame.origin[0],
+            py - frame.origin[1],
+            pz - frame.origin[2],
+            frame.rightAxis,
           )
+          first[at + 4] = dot(
+            px - frame.origin[0],
+            py - frame.origin[1],
+            pz - frame.origin[2],
+            frame.upAxis,
+          )
+          first[at + 5] = dot(
+            px - frame.origin[0],
+            py - frame.origin[1],
+            pz - frame.origin[2],
+            frame.forwardAxis,
+          )
+          // a placed coordinate beyond float32 overflows here, and is refused as before
+          for (let axis = at; axis < at + 6; axis++)
+            if (!Number.isFinite(first[axis]!)) throw new TypeError('invalid projector coordinate')
         }
         const count = clipped()
         for (let fan = 1; fan + 1 < count; fan++) {
           vertices += 3
           if (vertices * 24 + 480 > options.maxBytes)
             throw new RangeError('projector output exceeds budget')
-          write?.(0)
-          write?.(fan)
-          write?.(fan + 1)
+          keep(0, (vertices - 3) * 6)
+          keep(fan, (vertices - 2) * 6)
+          keep(fan + 1, (vertices - 1) * 6)
         }
       }
     }
@@ -396,13 +409,12 @@ export function clipProjectorReceivers(
     positions = new Float32Array(vertices * 3),
     textureCoordinates = new Float32Array(vertices * 2),
     indices = new Uint32Array(vertices)
-  let written = 0
-  const finalCount = visit(vertex => {
-    for (let axis = 0; axis < 3; axis++)
-      positions[written * 3 + axis] = component(first, vertex * 6 + axis)
-    const x = component(first, vertex * 6 + 3),
-      y = component(first, vertex * 6 + 4),
-      z = component(first, vertex * 6 + 5)
+  for (let written = 0; written < vertices; written++) {
+    const at = written * 6
+    for (let axis = 0; axis < 3; axis++) positions[written * 3 + axis] = kept[at + axis]!
+    const x = kept[at + 3]!,
+      y = kept[at + 4]!,
+      z = kept[at + 5]!
     textureCoordinates[written * 2] = clamp(
       frame.projectionType === 'perspective'
         ? 0.5 + x / Math.max(1e-6, 2 * z * frame.tangentX)
@@ -416,9 +428,7 @@ export function clipProjectorReceivers(
         ? 0.5 - y / Math.max(1e-6, 2 * z * frame.tangentY)
         : (frame.top - y) / Math.max(1e-6, frame.top - frame.bottom),
     )
-    indices[written] = written++
-  })
-  if (finalCount !== vertices || written !== vertices)
-    throw new TypeError('projector receivers changed during preparation')
+    indices[written] = written
+  }
   return { positions, textureCoordinates, indices, triangles, byteLength: vertices * 24 }
 }
