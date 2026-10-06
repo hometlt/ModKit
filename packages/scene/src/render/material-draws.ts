@@ -36,7 +36,7 @@ const preparedGeometry = new WeakMap<
 >()
 
 /** Placed instances of one model are distinct primitive objects over the same vertex arrays. */
-function sameGeometry(left: SceneRendererPrimitive, right: SceneRendererPrimitive) {
+export function sameMaterialGeometry(left: SceneRendererPrimitive, right: SceneRendererPrimitive) {
   const sets = (primitive: SceneRendererPrimitive) => primitive.textureCoordinateSets ?? []
   return (
     left.topology === right.topology &&
@@ -93,7 +93,11 @@ function preparedMaterialGeometry(
   // Keyed by vertex arrays, not the primitive object: a map places the same model thousands of
   // times, and per-instance tangent generation and GPU uploads made the first frame take minutes.
   const cached = preparedGeometry.get(source.positions)?.get(texCoord)
-  if (cached !== undefined && cached.bytes <= maxBytes && sameGeometry(cached.source, source)) {
+  if (
+    cached !== undefined &&
+    cached.bytes <= maxBytes &&
+    sameMaterialGeometry(cached.source, source)
+  ) {
     diagnostics.push(...cached.diagnostics)
     return { ...cached, primitive: rebindPrepared(cached.primitive, cached.source, source) }
   }

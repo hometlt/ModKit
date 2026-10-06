@@ -793,8 +793,53 @@ it('draws the particles of a trackless material with one program at every start 
   let vertices = 0
   for (const entry of still.draws) vertices += entry.draw.primitive.positions.length / 3
   let packed = 0
-  for (const entry of materials) packed += entry.draw.primitive.positions.length / 3
+  for (const entry of materials)
+    packed += (entry.draw.primitive.positions.length / 3) * (entry.instances?.count ?? 1)
   assert.equal(packed, vertices)
+})
+
+it('draws the copies of one effect frame as instances of one draw', () => {
+  // Six copies turned alike at one clock share one simulated frame.
+  const actors = Array.from({ length: 6 }, (_, index) => ({
+    ...actor,
+    id: `copy-${index}`,
+    objectId: index + 1,
+    rotation: 0,
+    uvwPosition: { x: index * 3, y: 0, z: 0 },
+  }))
+  const plan = createWorldWebGlPlan({
+    ...world(),
+    items: [...world().items.filter(item => item !== actor), ...actors],
+    models: new Map([['actor', effectModel({ particles: true, animatedAlpha: false })]]),
+    timeSeconds: 0.5,
+  })
+  const draws = worldModelEffectDraws(plan, createWorldWebGlCameraFrame(plan, 64, 64))
+  const geometry = draws[0].draw.primitive.positions
+  assert.ok(draws.length >= 6)
+  assert.ok(draws.every(entry => entry.draw.primitive.positions === geometry))
+  const packed = createWorldWebGlCompositeTransparentDrawPlan(
+    plan,
+    DEFAULT_WORLD_WEBGL_CAMERA,
+    draws,
+  ).filter(entry => entry.kind === 'material')
+  const instanced = packed.filter(entry => entry.instances !== undefined)
+  assert.ok(instanced.length > 0 && packed.length < draws.length)
+  // Every copy once: as an instance, or apart.
+  let copies = 0
+  for (const entry of packed) copies += entry.instances?.count ?? 1
+  assert.equal(copies, draws.length)
+  const placements = draws.map(entry => [...entry.draw.primitive.transform].join(','))
+  for (const entry of instanced) {
+    // The copies' one geometry, placed by each instance's matrix: a copy's own placement.
+    assert.equal(entry.draw.primitive.positions, geometry)
+    assert.equal(entry.draw.primitive.transform, undefined)
+    for (let index = 0; index < entry.instances.count; index++)
+      assert.ok(
+        placements.includes(
+          [...entry.instances.matrices.subarray(index * 16, index * 16 + 16)].join(','),
+        ),
+      )
+  }
 })
 
 // A render-material model whose Stand clip keys nothing and whose materials carry no tracks.

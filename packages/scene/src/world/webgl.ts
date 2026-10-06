@@ -72,7 +72,13 @@ import {
   materialSkinCenter,
   materialSkinOf,
 } from '../render/material-skin.js'
-import { materialIsSolid, sceneMaterialDraws, type MaterialDraw } from '../render/material-draws.js'
+import {
+  materialIsSolid,
+  sameMaterialGeometry,
+  sceneMaterialDraws,
+  type MaterialDraw,
+} from '../render/material-draws.js'
+import { materialModelMatrix, materialNormalMatrix } from '../render/material-geometry.js'
 import {
   createSceneMaterialProgramSampler,
   sampleSceneMaterialPrograms,
@@ -10084,6 +10090,8 @@ export type WorldWebGlCompositeTransparentDraw =
        * draw wherever the order allows (see packWorldWebGlTransparentDraws).
        */
       merge?: boolean
+      /** Copies of `draw`'s geometry it draws, in their order (see worldMaterialInstances). */
+      instances?: MaterialInstances
     }>
 
 const boundsCenters = new WeakMap<Float32Array, readonly [number, number, number]>()
@@ -10438,6 +10446,41 @@ function worldMaterialMergeKey(entry: WorldCompositeMaterialDraw): string | unde
 }
 
 /**
+ * The members of a packed group (worldMaterialMergeKey) as instances of one draw, in the group's
+ * order, when they are copies of one geometry: an effect frame placed at many objects. The vertex
+ * stage reads an instance's matrix as it reads a merged vertex's (mergeMaterialDraws), so every
+ * vertex computes what it computed merged, and no vertex is copied. Undefined unless every member
+ * draws the same vertex arrays, unmerged and unmirrored.
+ */
+function worldMaterialInstances(
+  entries: readonly WorldCompositeMaterialDraw[],
+): WorldCompositeMaterialDraw | undefined {
+  const first = entries[0]
+  if (first === undefined || entries.length < 2) return undefined
+  const lead = first.draw.primitive
+  for (const { draw } of entries) {
+    const primitive = draw.primitive
+    if (
+      !sameMaterialGeometry(primitive, lead) ||
+      primitiveVertexTints(primitive) !== primitiveVertexTints(lead) ||
+      primitiveVertexPlacements(primitive) !== undefined ||
+      materialNormalMatrix(materialModelMatrix(primitive)).sign < 0
+    )
+      return undefined
+  }
+  const matrices = new Float32Array(entries.length * 16)
+  entries.forEach(({ draw }, index) =>
+    matrices.set(materialModelMatrix(draw.primitive), index * 16),
+  )
+  const { transform: _transform, ...shared } = lead
+  return Object.freeze({
+    ...first,
+    draw: Object.freeze({ ...first.draw, primitive: Object.freeze(shared) }),
+    instances: Object.freeze({ matrices, count: entries.length }),
+  })
+}
+
+/**
  * Blend classes whose draws commute (see transparentOrderLevels): additions to the target (a world
  * batch's additive blend, a material's additive and add-alpha) and products with it (modulate). A
  * draw that writes depth commutes with nothing.
@@ -10600,6 +10643,8 @@ function packWorldWebGlTransparentDraws(
   return Object.freeze(
     emitted.flatMap(value => {
       if ('entries' in value) {
+        const instanced = worldMaterialInstances(value.entries)
+        if (instanced !== undefined) return [instanced]
         // Draws whose vertices do not lay out alike stay apart, still in the group's order.
         const draw = mergeMaterialDraws(value.entries.map(entry => entry.draw))
         return draw === undefined || value.entries.length === 1
@@ -12102,7 +12147,12 @@ function drawWorldWebGlWithResources(
         for (let next = index; next < transparentEntries.length; next++) {
           const candidate = transparentEntries[next]!
           if (candidate.kind !== 'material') break
-          for (const draw of worldBlendedMaterialPasses(candidate.draw)) run.push({ draw })
+          for (const draw of worldBlendedMaterialPasses(candidate.draw))
+            run.push(
+              candidate.instances === undefined
+                ? { draw }
+                : { draw, instances: candidate.instances },
+            )
           index = next
         }
         resources.materialDraws.drawSequence(
