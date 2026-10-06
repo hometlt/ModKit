@@ -22,6 +22,7 @@ import { materialIsSolid, type MaterialDraw } from './material-draws.js'
 import { materialSkinOf } from './material-skin.js'
 import { primitiveFade, primitiveVertexTints } from './tint.js'
 import { primitiveVertexPlacements } from './vertex-placements.js'
+import { WORLD_SHADOW_GLSL, type WorldShadowReceiver } from './world-shadow.js'
 
 /**
  * The vertex and fragment stages a draw needs beyond its material's: a skin posed on the GPU
@@ -112,6 +113,11 @@ export type MaterialTextureHandles =
  */
 const SKIN_PALETTE_WIDTH = 1024
 const SKIN_PALETTE_UNIT = 15
+/**
+ * The world's shadow map (MaterialSceneLight.shadow) on this unit, below the skin palettes: a program
+ * lit by the scene's key light reads it as a 2D sampler. A material of more textures takes no shadow.
+ */
+const SHADOW_MAP_UNIT = 14
 
 /** Retained GPU program/geometry leases. Scene owns camera matrices and render state. */
 export function materialWebGlDraws(
@@ -273,6 +279,11 @@ export function materialWebGlDraws(
   let skinBases = new Map<Float32Array, number>()
   const skinUnits = new WeakSet<WebGLProgram>()
   const programSkinBases = new WeakMap<WebGLProgram, number>()
+  // Whether a program's draw takes the shadow (MaterialDraw.receiveShadows), as its uniform holds it.
+  const programShadowReceivers = new WeakMap<WebGLProgram, number>()
+  // The texture on SHADOW_MAP_UNIT across sequences: none at first (only the shadow map is put there
+  // by this renderer), undefined once a material's own texture went there.
+  let shadowUnitTexture: WebGLTexture | null | undefined = null
   /** Room in the packed values for `texels` texels, keeping those packed so far. */
   const reserveSkinTexels = (texels: number) => {
     const rows = Math.ceil(texels / SKIN_PALETTE_WIDTH)
@@ -562,6 +573,7 @@ export function materialWebGlDraws(
     // Decided by the uniforms the program declares, not by whichever material draws it first.
     if (source.defines.sceneLighting === true || uniform('u_sceneLightColor') !== null)
       bindSceneLight(program, frame.camera, frame.light)
+    if (source.defines.sceneLighting === true) bindSceneShadow(program, source, frame.light?.shadow)
     bindSceneFrame(
       program,
       frame.eyePosition,
@@ -597,6 +609,45 @@ export function materialWebGlDraws(
       gl.uniform3fv(uniform(`u_sceneFillWorldDirection${index}`), d)
       gl.uniform3fv(uniform(`u_sceneFillColor${index}`), fill?.color ?? [0, 0, 0])
     }
+  }
+  /**
+   * The key light's shadow as the program's lighting reads it. The sampler names a unit no sampler
+   * of another type in the program uses, with or without a shadow (WebGL refuses the draw otherwise).
+   */
+  const bindSceneShadow = (
+    program: WebGLProgram,
+    source: StandardMaterialProgram,
+    shadow: WorldShadowReceiver | undefined,
+  ) => {
+    const uniform = (name: string) => uniformLocation(gl, program, name)
+    const sampler = uniform('u_sceneShadowMap')
+    if (sampler === null) return
+    const free = source.textures.length <= SHADOW_MAP_UNIT
+    gl.uniform1i(
+      sampler,
+      free
+        ? SHADOW_MAP_UNIT
+        : Math.max(0, source.textures.findIndex(binding => binding.dimension !== 'cube')),
+    )
+    gl.uniform1f(uniform('u_sceneShadowEnabled'), shadow !== undefined && free ? 1 : 0)
+    if (shadow === undefined || !free) return
+    gl.uniformMatrix4fv(uniform('u_sceneShadowViewProjection'), false, shadow.viewProjection)
+    gl.uniform2f(uniform('u_sceneShadowTexelSize'), shadow.texelSize[0], shadow.texelSize[1])
+    gl.uniform3fv(uniform('u_sceneShadowRangeEye'), shadow.rangeEye)
+    gl.uniform1f(uniform('u_sceneShadowRangeDistance'), shadow.rangeDistance)
+  }
+  /** Puts `texture` (the shadow map, or none) on SHADOW_MAP_UNIT unless it is there already. */
+  const bindShadowMap = (texture: WebGLTexture | null, state: SequenceState) => {
+    if (shadowUnitTexture === texture) return
+    if (state.activeUnit !== SHADOW_MAP_UNIT) {
+      gl.activeTexture(gl.TEXTURE0 + SHADOW_MAP_UNIT)
+      state.activeUnit = SHADOW_MAP_UNIT
+    }
+    gl.bindTexture(gl.TEXTURE_2D, texture)
+    gl.bindSampler(SHADOW_MAP_UNIT, null)
+    state.lastUnit = SHADOW_MAP_UNIT
+    state.units[SHADOW_MAP_UNIT] = undefined
+    shadowUnitTexture = texture
   }
   /** Environment eye and world-shading frame: per frame, not per placement. */
   const bindSceneFrame = (
@@ -737,6 +788,7 @@ export function materialWebGlDraws(
       }
       if (sampler) gl.bindSampler(unit, binding.sampler)
       state.units[unit] = binding
+      if (unit === SHADOW_MAP_UNIT) shadowUnitTexture = undefined
     })
   }
   const drawInSequence = (
@@ -840,6 +892,16 @@ export function materialWebGlDraws(
       programWorldToMaterial.set(program, worldToMaterial)
     }
     bindFrameUniforms(program, source, frame)
+    if (source.defines.sceneLighting === true) {
+      const shadow = frame.light?.shadow
+      if (shadow !== undefined && source.textures.length <= SHADOW_MAP_UNIT)
+        bindShadowMap(shadow.texture, state)
+      const receiver = draw.receiveShadows === false ? 0 : 1
+      if (programShadowReceivers.get(program) !== receiver) {
+        gl.uniform1f(uniformLocation(gl, program, 'u_sceneShadowReceiver'), receiver)
+        programShadowReceivers.set(program, receiver)
+      }
+    }
     // Object-space normal maps turn the decoded normal by the model's normal matrix per fragment.
     if (model !== undefined && source.normalMapSpace === 'object')
       gl.uniformMatrix3fv(
@@ -872,6 +934,9 @@ export function materialWebGlDraws(
     const state: SequenceState = { units: [], constants: new Map() }
     let triangles = 0
     try {
+      // A pass without the world's shadow (the shadow pass draws into that map) leaves no shadow map
+      // on a unit its programs sample.
+      if (light?.shadow === undefined && shadowUnitTexture !== null) bindShadowMap(null, state)
       for (const item of draws) triangles += drawInSequence(item, frame, state, programs)
     } finally {
       restore(state)
@@ -1045,12 +1110,32 @@ export function materialWebGlDraws(
 export type MaterialSceneLight = SceneRendererDirectionalLight & {
   readonly ambientColor?: readonly [number, number, number]
   readonly specularColor?: readonly [number, number, number]
+  /** The world's shadow of the key light (render/world-shadow.ts); none where it is absent. */
+  readonly shadow?: WorldShadowReceiver
   readonly fills?: readonly {
     readonly direction: readonly [number, number, number]
     readonly color: readonly [number, number, number]
   }[]
 }
 import { primitiveTint } from './tint.js'
+
+/**
+ * The key light's shadow in a scene-lit program: the world's formula (WORLD_SHADOW_GLSL) at the
+ * fragment's world position (the vertex stage's v_sceneShadowWorld), times one where the draw takes
+ * none (MaterialDraw.receiveShadows) or the frame has none.
+ */
+const SCENE_SHADOW_FRAGMENT = `uniform sampler2D u_sceneShadowMap;
+      uniform mat4 u_sceneShadowViewProjection;
+      uniform float u_sceneShadowEnabled, u_sceneShadowReceiver, u_sceneShadowRangeDistance;
+      uniform vec2 u_sceneShadowTexelSize;
+      uniform vec3 u_sceneShadowRangeEye;
+      in vec3 v_sceneShadowWorld;
+      ${WORLD_SHADOW_GLSL}
+      float sceneKeyShadow(float lightCosine) {
+        if (u_sceneShadowEnabled < 0.5 || u_sceneShadowReceiver < 0.5) return 1.0;
+        return modkitWorldShadow(u_sceneShadowMap, u_sceneShadowViewProjection * vec4(v_sceneShadowWorld, 1.0),
+          v_sceneShadowWorld, lightCosine, u_sceneShadowTexelSize, u_sceneShadowRangeEye, u_sceneShadowRangeDistance);
+      }`
 
 /**
  * Final shader sources by compiled variant: every sample of one material template shares its
@@ -1113,8 +1198,19 @@ function buildLeaseShaderSources(
     fragment = fragment.replace('precision highp float;', `precision highp float;
       uniform vec3 u_sceneFillColor0, u_sceneFillColor1;
       ${worldShading ? 'uniform vec3 u_sceneFillWorldDirection0, u_sceneFillWorldDirection1;' : 'in vec3 v_sceneFillDir0, v_sceneFillDir1;'}
-    `).replace('u_sceneAmbientColor + u_sceneLightColor * lambert',
-      `u_sceneAmbientColor + u_sceneLightColor * lambert +
+      ${SCENE_SHADOW_FRAGMENT}
+    `)
+      .replace(
+        'vec3 shaded = color * (u_sceneAmbientColor',
+        'float sceneKeyShade = sceneKeyShadow(max(dot(normal, v_lightDir), 0.0));\n  vec3 sceneKeyLight = u_sceneLightColor * sceneKeyShade;\n  vec3 shaded = color * (u_sceneAmbientColor',
+      )
+      .replace('spec * u_sceneSpecularColor;', 'spec * (u_sceneSpecularColor * sceneKeyShade);')
+      .replace(
+        'pbrLight, u_sceneLightColor, u_sceneAmbientColor)',
+        'pbrLight, u_sceneLightColor * sceneKeyShadow(max(dot(pbrNormal, pbrLight), 0.0)), u_sceneAmbientColor)',
+      )
+      .replace('u_sceneAmbientColor + u_sceneLightColor * lambert',
+      `u_sceneAmbientColor + sceneKeyLight * lambert +
        u_sceneFillColor0 * ${lambert(worldShading ? 'u_sceneFillWorldDirection0' : 'v_sceneFillDir0')} +
        u_sceneFillColor1 * ${lambert(worldShading ? 'u_sceneFillWorldDirection1' : 'v_sceneFillDir1')}`)
   }

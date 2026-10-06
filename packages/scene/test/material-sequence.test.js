@@ -270,3 +270,59 @@ it('builds the final shader sources of a compiled variant once for all its sampl
   assert.notEqual(leaseShaderSources(edited, material), first)
   assert.equal(leaseShaderSources(sampled, material).fragmentSource, first.fragmentSource)
 })
+
+it('lights a scene-lit program with the world shadow on its own unit, per draw as its material takes it', () => {
+  const lit = {
+    ...source,
+    fragmentSource:
+      'precision highp float; uniform sampler2D u_diffuseMap; uniform vec3 u_sceneLightColor; uniform vec3 u_sceneAmbientColor;' +
+      ' in vec3 v_lightDir; void main(){ vec3 normal = vec3(0.0, 0.0, 1.0); vec3 color = vec3(1.0); vec3 spec = vec3(0.0);' +
+      ' float lambert = max(dot(normal, v_lightDir), 0.0);' +
+      ' vec3 shaded = color * (u_sceneAmbientColor + u_sceneLightColor * lambert) + spec * u_sceneLightColor; }',
+    defines: { uvSetCount: 1, sceneLighting: true },
+  }
+  // The key light's diffuse and highlight take the shadow; ambient and fills do not.
+  const { fragmentSource, vertexSource } = leaseShaderSources(lit, material)
+  assert.match(fragmentSource, /float sceneKeyShade = sceneKeyShadow\(max\(dot\(normal, v_lightDir\), 0\.0\)\);/)
+  assert.match(fragmentSource, /u_sceneAmbientColor \+ sceneKeyLight \* lambert \+/)
+  assert.match(fragmentSource, /spec \* \(u_sceneSpecularColor \* sceneKeyShade\);/)
+  assert.match(fragmentSource, /float modkitWorldShadow\(/)
+  assert.match(vertexSource, /v_sceneShadowWorld=world\.xyz;/)
+
+  const { gl, uniforms, uploads, boundTextures } = context()
+  const renderer = materialWebGlDraws(gl, new Map([['albedo.png', {}]]), { checkEachDraw: false })
+  const shadowMap = { shadowMap: true }
+  const light = {
+    direction: [0, -1, 0],
+    color: [1, 1, 1, 1],
+    ambient: 0.2,
+    shadow: {
+      texture: shadowMap,
+      viewProjection: identity,
+      texelSize: [1 / 1024, 1 / 1024],
+      rangeEye: [0, 0, 0],
+      rangeDistance: 0,
+    },
+  }
+  renderer.drawSequence(
+    [
+      { draw: { primitive: mesh('lit'), program: lit, material } },
+      { draw: { primitive: mesh('unshadowed'), program: lit, material, receiveShadows: false } },
+    ],
+    camera,
+    light,
+  )
+  assert.equal(uniforms.get('u_sceneShadowMap'), 14)
+  assert.equal(uniforms.get('u_sceneShadowEnabled'), 1)
+  assert.ok(boundTextures.includes(shadowMap))
+  // the first draw takes the shadow, the second does not
+  assert.equal(uploads.get('u_sceneShadowReceiver'), 2)
+  assert.equal(uniforms.get('u_sceneShadowReceiver'), 0)
+  // A pass without the shadow (the shadow pass draws into that map) takes the map off its unit.
+  const before = boundTextures.length
+  renderer.drawSequence([{ draw: { primitive: mesh('caster'), program: lit, material } }], camera, {
+    direction: [0, -1, 0],
+  })
+  assert.equal(boundTextures[before], null)
+  assert.equal(uniforms.get('u_sceneShadowEnabled'), 0)
+})

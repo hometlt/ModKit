@@ -14,6 +14,8 @@ export interface MaterialDraw {
   readonly material?: SceneMaterialPrograms
   readonly program?: StandardMaterialProgram
   readonly depthOnly?: boolean
+  /** False when the primitive's material takes no shadow of the world (MaterialSceneLight.shadow). */
+  readonly receiveShadows?: boolean
 }
 export const materialIsSolid = (program: StandardMaterialProgram) =>
   program.blend === 'opaque' || program.blend === 'alpha-test'

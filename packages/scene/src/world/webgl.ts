@@ -41,6 +41,7 @@ import {
   type TeamMaskRule,
 } from '@modkit/codec-kit/model-math/color-remap'
 import { teamMaskRule } from '../render/team-color.js'
+import { WORLD_SHADOW_GLSL } from '../render/world-shadow.js'
 import { createModelSceneSampler, modelMaterialTeamColor } from '../model/index.js'
 import {
   decomposeMatrix4,
@@ -59,6 +60,7 @@ import {
   materialCanInstance,
   materialWebGlDraws,
   type MaterialInstances,
+  type MaterialSceneLight,
   type MaterialSequenceDraw,
 } from '../render/material-webgl.js'
 import type { StandardMaterialProgram } from '../materials/index.js'
@@ -4023,6 +4025,21 @@ function worldWaterSurfaceDepth(writes: readonly WorldBatchWrite[]): Float32Arra
 const retainedStaticObjects = new WeakMap<WorldSceneObjectItem, WorldStaticObject>()
 
 /**
+ * The material ids of a model scene whose materials take no shadow of the world
+ * (modelMaterialShadowPolicy): their draws say so (MaterialDraw.receiveShadows). Kept and resampled
+ * scenes are the same objects, so the entry lasts as long as the scene.
+ */
+const worldShadowlessMaterials = new WeakMap<WorldWebGlModelMaterialScene, ReadonlySet<string>>()
+
+/** A world draw of a model scene, saying when its material takes no shadow. */
+function worldSceneDraw<T extends MaterialDraw>(scene: WorldWebGlModelMaterialScene, draw: T): T {
+  const shadowless = worldShadowlessMaterials.get(scene)
+  return shadowless !== undefined && shadowless.has(draw.primitive.materialId ?? '')
+    ? { ...draw, receiveShadows: false }
+    : draw
+}
+
+/**
  * A terrain preparation as kept objects name it in their keys. An object the caller still holds
  * keeps its entry after it leaves the list (a unit out of view, a hidden facet); the entry must
  * not keep the preparation alive with it: that is the terrain of a past frame, tens of megabytes.
@@ -6393,6 +6410,7 @@ export function createWorldWebGlPlan(
       const objectTint = worldObjectTint(item, input.selectedObjectId)
       const materialPrimitives: SceneRendererPrimitive[] = []
       const materialShadowPrimitives: SceneRendererPrimitive[] = []
+      const shadowlessMaterials = new Set<string>()
       const instanceTransform = multiplyComponentTransforms(
         worldObjectTransform(item, translation),
         componentTransform,
@@ -6488,6 +6506,8 @@ export function createWorldWebGlPlan(
           })
           materialPrimitives.push(instancePrimitive)
           if (castsSharedMaterialShadow) materialShadowPrimitives.push(instancePrimitive)
+          if (!shadowPolicy.receiveShadows && primitive.materialId !== undefined)
+            shadowlessMaterials.add(primitive.materialId)
           const count = primitiveTriangleCount(primitive)
           if (count > 0) {
             pickPrimitives.push(
@@ -6873,6 +6893,7 @@ export function createWorldWebGlPlan(
           programs,
           textures: scene.textures,
         })
+        if (shadowlessMaterials.size > 0) worldShadowlessMaterials.set(materialScene, shadowlessMaterials)
         modelMaterialScenes.push(materialScene)
         // The presentation (clip, team colour) is in the kept object's key: only the time moves.
         if (materialsFollowTime) {
@@ -7543,32 +7564,18 @@ vec3 terrainLayerNormal(vec3 baseNormal, int layer, vec2 authoredUv) {
   }
   return normalize(tangent * mappedNormal.x + bitangent * mappedNormal.y + baseNormal * mappedNormal.z);
 }
+${WORLD_SHADOW_GLSL}
 float directionalShadow(vec3 resolvedNormal) {
-  if (shadowEnabled < 0.5 || shadowReceiver < 0.5 || shadowPosition.w <= 0.0) return 1.0;
-  vec3 projected = shadowPosition.xyz / shadowPosition.w * 0.5 + 0.5;
-  if (
-    projected.x <= 0.0 || projected.x >= 1.0 ||
-    projected.y <= 0.0 || projected.y >= 1.0 ||
-    projected.z <= 0.0 || projected.z >= 1.0
-  ) return 1.0;
-  // SC2 draws shadows only within its camera's ShadowClip of the eye: fade over the last tenth.
-  float reach = shadowRangeDistance > 0.0
-    ? distance(worldPosition, shadowRangeEye) / shadowRangeDistance
-    : 0.0;
-  if (reach >= 1.0) return 1.0;
-  float slope = 1.0 - max(0.0, dot(normalize(resolvedNormal), normalize(-lightDirection)));
-  float bias = max(0.00035, 0.0015 * slope);
-  float visible = 0.0;
-  for (int y = -1; y <= 1; y++) {
-    for (int x = -1; x <= 1; x++) {
-      float closest = texture(
-        shadowMap,
-        projected.xy + vec2(float(x), float(y)) * shadowTexelSize
-      ).r;
-      visible += projected.z - bias <= closest ? 1.0 : 0.0;
-    }
-  }
-  return mix(visible / 9.0, 1.0, smoothstep(0.9, 1.0, reach));
+  if (shadowEnabled < 0.5 || shadowReceiver < 0.5) return 1.0;
+  return modkitWorldShadow(
+    shadowMap,
+    shadowPosition,
+    worldPosition,
+    max(0.0, dot(normalize(resolvedNormal), normalize(-lightDirection))),
+    shadowTexelSize,
+    shadowRangeEye,
+    shadowRangeDistance
+  );
 }
 /**
  * Warzone 2100 terrain_water_high.frag on the two scrolling UV sets. Its normal images are read as
@@ -11022,7 +11029,7 @@ function worldSceneSolidDrawsOf(
           primitive: { ...found.primitive, depthBias: SHADOW_DEPTH_BIAS },
           depthOnly: true,
         }
-      : { ...found, program }
+      : worldSceneDraw(scene, { ...found, program })
     if (!materialCanInstance(program)) {
       draws.push({ key: undefined, geometryKey: undefined, draw })
       continue
@@ -11671,7 +11678,20 @@ function drawWorldWebGlWithResources(
       gl.disable(gl.BLEND)
       gl.depthMask(true)
     }
-    const sceneLight = worldMaterialLight(plan)
+    // Material programs take the key light's shadow from the batches' map, texel and reach.
+    const sceneLight: MaterialSceneLight =
+      shadow === undefined
+        ? worldMaterialLight(plan)
+        : {
+            ...worldMaterialLight(plan),
+            shadow: Object.freeze({
+              texture: shadow.texture,
+              viewProjection: shadow.viewProjection,
+              texelSize: Object.freeze([1 / shadow.size, 1 / shadow.size] as const),
+              rangeEye: shadowRange?.eye ?? Object.freeze([0, 0, 0] as const),
+              rangeDistance: shadowRange?.distance ?? 0,
+            }),
+          }
     const batches = worldMaterialBatchesOf(plan)
     // Blended passes keep the per-frame back-to-front order of their scene.
     const transparentSceneDraws: Array<{
@@ -11699,7 +11719,7 @@ function drawWorldWebGlWithResources(
           draw.program !== undefined &&
           !materialIsSolid(draw.program)
         ) {
-          const entry = { scene, draw: { ...draw, program: draw.program } }
+          const entry = { scene, draw: worldSceneDraw(scene, { ...draw, program: draw.program }) }
           if (splatLayers === undefined) transparentSceneDraws.push(entry)
           else splatMaterialDraws.push({ ...entry, layer: splatLayers.get(draw.primitive.id) })
         }
