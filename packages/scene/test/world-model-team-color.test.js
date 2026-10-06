@@ -170,3 +170,64 @@ it("draws a glTF material and its team colour by a program, in its player's colo
   assert.equal(plan.texturedTriangles.length, 1)
   assert.equal(plan.texturedTriangles[0].texture.id, 'albedo.dds')
 })
+
+it("draws a glTF material's textures on its base colour's UV set, one set per material", () => {
+  const second = Float32Array.of(0.5, 0.5, 1, 0.5, 0.5, 1)
+  const textures = ['albedo.dds', 'team.dds', 'mr.dds', 'bump.dds'].map(texture)
+  const uvModel = (key, layers, sets = [{ set: 2, coordinates: second }]) => {
+    const built = model(key, { layers }, textures)
+    return {
+      ...built,
+      primitives: [{ ...built.primitives[0], id: key, textureCoordinateSets: sets }],
+    }
+  }
+  const plan = createWorldWebGlPlan({
+    items: [unit(5, 'footman'), unit(6, 'bare'), unit(7, 'split'), unit(8, 'bumpy')],
+    teamColors: new Map([[1, [1, 0, 0]]]),
+    models: new Map([
+      // the base colour on set 2, the team mask on set 0: its program reads set 2 and draws no
+      // mask, as the fallback and the UVM route draw it
+      [
+        'footman',
+        uvModel('footman', [
+          { slot: 'baseColor', resourceId: 'albedo.dds', uvSource: 2 },
+          { slot: 'teamColor', resourceId: 'team.dds', uvSource: 0 },
+        ]),
+      ],
+      // a primitive without that set: no coordinates, as the fallback draws it
+      ['bare', uvModel('bare', [{ slot: 'baseColor', resourceId: 'albedo.dds', uvSource: 2 }], [])],
+      // metallic-roughness on another set than the base colour's: the fallback
+      [
+        'split',
+        uvModel('split', [
+          { slot: 'baseColor', resourceId: 'albedo.dds', uvSource: 2 },
+          { slot: 'metallicRoughness', resourceId: 'mr.dds', uvSource: 0 },
+        ]),
+      ],
+      // a normal map in another spelling the fallback draws: the fallback
+      [
+        'bumpy',
+        uvModel('bumpy', [
+          { slot: 'baseColor', resourceId: 'albedo.dds' },
+          { slot: 'normalMap', resourceId: 'bump.dds' },
+        ]),
+      ],
+    ]),
+  })
+  const drawn = new Map(
+    plan.modelMaterialScenes.flatMap(scene =>
+      scene.primitives.map(primitive => [
+        primitive.id,
+        { primitive, program: scene.programs.get(primitive.materialId).passes[0] },
+      ]),
+    ),
+  )
+  assert.deepEqual([...drawn.keys()].sort(), ['bare', 'footman'])
+  const footman = drawn.get('footman')
+  assert.equal(footman.program.key, 'gltf;t;team=0;opaque')
+  // the set it draws is its only one: the GPU path reads a numbered set 0 first
+  assert.equal(footman.primitive.textureCoordinates, second)
+  assert.equal(footman.primitive.textureCoordinateSets, undefined)
+  assert.equal('textureCoordinates' in drawn.get('bare').primitive, false)
+  assert.ok(plan.texturedTriangles.length > 0)
+})

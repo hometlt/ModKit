@@ -2567,42 +2567,52 @@ function presentationMaterials(
   })
 }
 
-/** Layers a glTF program does not carry: the material keeps its fallback (gltf-program.ts). */
-const GLTF_UNCARRIED_SLOTS = new Set(['normal', 'emissive', 'occlusion'])
+/**
+ * Layers a glTF program does not carry: the material keeps its fallback (gltf-program.ts). The
+ * normal map in every spelling the fallback draws it by (NORMAL_SLOTS).
+ */
+const GLTF_UNCARRIED_SLOTS = new Set([...NORMAL_SLOTS, 'emissive', 'occlusion'])
 
 /**
  * A model material of the glTF path as the scene draws it (materials/gltf-program.ts): its base
  * colour factor and texture, metallic-roughness factors (absent: a rough dielectric, as the model
  * contract says) and texture, emissive colour, coverage, sides, draw order and team colour
- * (modelMaterialTeamColor, at the base colour's UVs). Undefined for a material the glTF programs do
- * not carry, which keeps the fallback path: a program of its own, unlit, a normal, emissive or
- * occlusion texture, a texture on other UVs than the first, or neither a factor nor a texture (the
- * fallback marks those with a stand-in hue).
+ * (modelMaterialTeamColor, at the base colour's UVs), with the UV set its textures read. Undefined
+ * for a material the glTF programs do not carry, which keeps the fallback path: a program of its
+ * own, unlit, a normal, emissive or occlusion texture, a metallic-roughness texture on another UV
+ * set than the base colour's, or neither a factor nor a texture (the fallback marks those with a
+ * stand-in hue).
+ *
+ * One UV set per material, as the UVM route draws (uvm/render.ts) and the fallback reads (the base
+ * colour's): the program reads it as its first coordinates (worldUvSetPrimitive), and a team mask
+ * on another set is not drawn, as neither draws it.
  */
 function worldGltfSceneMaterial(
   ref: ModelMaterialRef,
   byId: ReadonlyMap<string, SceneRendererTexture>,
-): SceneRendererMaterial | undefined {
+): Readonly<{ material: SceneRendererMaterial; uvSet: number }> | undefined {
   if (ref.shader !== undefined || ref.unlit === true) return undefined
   const layers = (ref.layers ?? []).filter(layer => layer.resourceId !== undefined)
   if (layers.some(layer => GLTF_UNCARRIED_SLOTS.has(materialSlot(layer.slot)))) return undefined
-  if (layers.some(layer => (layer.uvSource ?? 0) !== 0)) return undefined
-  const textureOf = (slots: ReadonlySet<string>) => {
-    const layer = layers.find(candidate => slots.has(materialSlot(candidate.slot)))
-    return layer?.resourceId === undefined ? undefined : byId.get(layer.resourceId)
-  }
-  const base = textureOf(BASE_COLOR_SLOTS)
+  const layerOf = (slots: ReadonlySet<string>) =>
+    layers.find(candidate => slots.has(materialSlot(candidate.slot)))
+  const baseLayer = layerOf(BASE_COLOR_SLOTS)
+  const metallicRoughnessLayer = layerOf(GLTF_METALLIC_ROUGHNESS_SLOTS)
+  const uvSet = baseLayer?.uvSource ?? metallicRoughnessLayer?.uvSource ?? 0
+  if ((metallicRoughnessLayer?.uvSource ?? uvSet) !== uvSet) return undefined
+  const base = baseLayer === undefined ? undefined : byId.get(baseLayer.resourceId!)
   if (ref.baseColorFactor === undefined && base === undefined) return undefined
   // coverage as the fallback reads it (alpha mode, cutoff, native blend); an adding blend is its own
   const coverage = modelMaterialCoverage(ref)
   if (ref.blendMode === 'additive' || ref.blendMode === 'add-alpha') return undefined
-  const metallicRoughness = textureOf(GLTF_METALLIC_ROUGHNESS_SLOTS)
-  const team = modelMaterialTeamColor(ref, byId, 0)
+  const metallicRoughness =
+    metallicRoughnessLayer === undefined ? undefined : byId.get(metallicRoughnessLayer.resourceId!)
+  const team = modelMaterialTeamColor(ref, byId, uvSet)
   const bindings = layers.flatMap(layer => {
     const texture = byId.get(layer.resourceId!)
     return texture === undefined ? [] : [{ resourceId: layer.resourceId!, textureId: texture.id }]
   })
-  return Object.freeze({
+  const material: SceneRendererMaterial = Object.freeze({
     id: ref.id,
     baseColor: ref.baseColorFactor ?? ([1, 1, 1, 1] as const),
     ...(base === undefined ? {} : { baseColorTexture: base.id }),
@@ -2621,6 +2631,22 @@ function worldGltfSceneMaterial(
     ...(team === undefined ? {} : { teamColor: team }),
     ...(bindings.length === 0 ? {} : { textureBindings: Object.freeze(bindings) }),
   })
+  return Object.freeze({ material, uvSet })
+}
+
+/**
+ * A placed primitive of a material whose glTF program reads UV set `uvSet` (worldGltfSceneMaterial):
+ * that set as its only coordinates, the first set the program and the base routes read, as the UVM
+ * route does (the GPU path and the CPU sampler take a numbered set 0 before `textureCoordinates`);
+ * without the set, no coordinates, as the fallback draws such a primitive untextured.
+ */
+function worldUvSetPrimitive<P extends SceneRendererPrimitive>(primitive: P, uvSet: number | undefined): P {
+  if (uvSet === undefined) return primitive
+  const coordinates = primitive.textureCoordinateSets?.find(set => set.set === uvSet)?.coordinates
+  const { textureCoordinates, textureCoordinateSets, ...rest } = primitive
+  void textureCoordinates
+  void textureCoordinateSets
+  return (coordinates === undefined ? rest : { ...rest, textureCoordinates: coordinates }) as P
 }
 
 const GLTF_METALLIC_ROUGHNESS_SLOTS = new Set(['metallicroughness'])
@@ -2631,15 +2657,19 @@ function worldModelSceneMaterials(
 ): Readonly<{
   materials: readonly SceneRendererMaterial[]
   textures: readonly SceneRendererTexture[]
+  /** The UV set a material's glTF program reads, where it is not the first (worldUvSetPrimitive). */
+  uvSets: ReadonlyMap<string, number>
 }> {
   const byId = new Map(textures.map(texture => [texture.id, texture]))
   const used = new Map<string, SceneRendererTexture>()
+  const uvSets = new Map<string, number>()
   const materials = refs.map((ref): SceneRendererMaterial => {
     const gltf = worldGltfSceneMaterial(ref, byId)
     if (gltf !== undefined) {
-      for (const binding of gltf.textureBindings ?? [])
+      for (const binding of gltf.material.textureBindings ?? [])
         used.set(binding.textureId, byId.get(binding.textureId)!)
-      return gltf
+      if (gltf.uvSet !== 0) uvSets.set(ref.id, gltf.uvSet)
+      return gltf.material
     }
     const baseLayer = ref.layers?.find(
       layer => BASE_COLOR_SLOTS.has(materialSlot(layer.slot)) && layer.resourceId !== undefined,
@@ -2670,6 +2700,7 @@ function worldModelSceneMaterials(
   return Object.freeze({
     materials: Object.freeze(materials),
     textures: Object.freeze([...used.values()]),
+    uvSets,
   })
 }
 
@@ -6563,7 +6594,7 @@ export function createWorldWebGlPlan(
         if (sharedMaterial) {
           const primitiveTransform = 'transform' in primitive ? primitive.transform : undefined
           const instancePrimitive = Object.freeze({
-            ...primitive,
+            ...worldUvSetPrimitive(primitive, scene.uvSets.get(primitive.materialId ?? '')),
             transform: multiplyComponentTransforms(
               instanceTransform,
               primitiveTransform ?? IDENTITY_COMPONENT_TRANSFORM,
