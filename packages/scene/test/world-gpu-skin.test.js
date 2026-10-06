@@ -381,7 +381,23 @@ it('keeps the scenes of placed skins while they play, each plan equal to one bui
     { ...input, timeSeconds: 1.3, selectedObjectId: 2 },
     { ...input, timeSeconds: 1.4 },
     { ...input, timeSeconds: 1.5 },
+    // Items moved, turned and shaded in place, as the RTS preview moves its units: with the clock,
+    // while it stays, and shaded alone; then the clock moves on.
+    { ...input, timeSeconds: 1.6 },
+    { ...input, timeSeconds: 1.6 },
+    { ...input, timeSeconds: 1.7 },
+    { ...input, timeSeconds: 1.8 },
   ]
+  const turned = (item, x, angle) =>
+    Object.assign(item, {
+      uvwPosition: { ...item.uvwPosition, x },
+      uvwRotation: [0, Math.sin(angle / 2), 0, Math.cos(angle / 2)],
+    })
+  const changes = new Map([
+    [14, () => turned(items[5], 40, 0.5)],
+    [15, () => turned(items[7], 41, 1)],
+    [16, () => Object.assign(items[9], { presentationTint: [0.25, 0.25, 0.25] })],
+  ])
   // A kept scene keeps the programs and skins it was built with, and a plan draws what they stand
   // for (worldWebGlScenePrograms, worldWebGlPosedScene): its scenes are compared as posed, every
   // program as the one it stands for. The draws carry their poses themselves.
@@ -425,6 +441,7 @@ it('keeps the scenes of placed skins while they play, each plan equal to one bui
   let plan = createWorldWebGlPlan({ ...input, timeSeconds: 0 })
   let posedScenes = 0
   for (const [index, step] of steps.entries()) {
+    changes.get(index)?.()
     const previous = plan
     plan = createWorldWebGlPlan(step, previous)
     // Built anew: a module of its own keeps nothing of earlier plans.

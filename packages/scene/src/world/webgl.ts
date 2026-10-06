@@ -3762,6 +3762,13 @@ interface WorldKeptPose {
    * is kept only while the models' times stay.
    */
   readonly posable: boolean
+  /**
+   * Where the object stood (worldObjectTransform) and its tint (worldObjectTint) at the build. A
+   * caller may move or shade an item in place, keeping its identity for its clock to pose it (the
+   * RTS preview's units): its scenes, picks and effects hold the old ones, so it is built anew.
+   */
+  readonly placement: Float32Array
+  readonly tint: readonly [number, number, number, number] | undefined
 }
 
 /**
@@ -3778,9 +3785,10 @@ type WorldResampled = Map<
  * the kept mesh while each model's time stays. At another time the model is sampled again, the skins
  * of the kept scenes stand for the new sample's skins (added to `pairs`, which may hold the pairs of
  * the objects before it in a block), and the pick primitives are posed at the new samples.
- * Undefined when a new sample differs from the kept one in more than its skins' poses (another
- * visibility, a moving node or socket), when a skin already stands for another pose in this plan,
- * or when the object drew by the fallback: the object is then built anew.
+ * Undefined when the item was moved, turned or shaded in place since the build, when a new sample
+ * differs from the kept one in more than its skins' poses (another visibility, a moving node or
+ * socket), when a skin already stands for another pose in this plan, or when the object drew by the
+ * fallback: the object is then built anew.
  */
 function keptWorldObjectPose(
   item: WorldSceneObjectItem,
@@ -3792,6 +3800,11 @@ function keptWorldObjectPose(
   current: WorldCurrentPrograms,
   pairs: [ModelSceneSkin, ModelSceneSkin][],
 ): WorldObjectPickMesh | undefined {
+  if (
+    !sameOptionalMatrix(pose.placement, worldObjectTransform(item, objectPosition(item, input))) ||
+    !sameOptionalMatrix(pose.tint, worldObjectTint(item, input.selectedObjectId))
+  )
+    return undefined
   // Each model's sample at this clock: the kept one while its time stays.
   let samples: WorldModelSample[] | undefined
   for (let at = 0; at < pose.models.length; at++) {
@@ -7868,6 +7881,8 @@ export function createWorldWebGlPlan(
                   ),
                   picks: Object.freeze(posePicks),
                   posable: !byFallback,
+                  placement: worldObjectTransform(item, translation),
+                  tint: worldObjectTint(item, input.selectedObjectId),
                 }),
               }),
           ...(restTransforms === undefined ? {} : { atRest: true as const }),
