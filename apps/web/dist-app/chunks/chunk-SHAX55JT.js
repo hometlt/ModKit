@@ -261,6 +261,24 @@ function animated(value, path, size, signal) {
     validateTrack(track["track"], `${trackPath}.track`, size, signal);
   }
 }
+function carriesTrack(value) {
+  const pending = [value];
+  while (pending.length > 0) {
+    const item = pending.pop();
+    if (item === null || typeof item !== "object" || ArrayBuffer.isView(item))
+      continue;
+    if (Array.isArray(item)) {
+      pending.push(...item);
+      continue;
+    }
+    for (const [key, entry] of Object.entries(item)) {
+      if ((key === "track" || key === "sequenceTracks") && entry !== void 0 && entry !== null)
+        return true;
+      pending.push(entry);
+    }
+  }
+  return false;
+}
 var LAYER_ANIMATIONS = [
   ["constantColor", 4],
   ["colorMultiply", 1],
@@ -454,6 +472,7 @@ function createRenderMaterialSampler(parameters, budget, signal) {
   ]);
   return Object.freeze({
     resources,
+    timeless: colorless || !passes.some(carriesTrack),
     usesSceneEnvironment: !colorless && passes.some((pass) => pass.material.layers.envi?.texturePath === SCENE_ENVIRONMENT_RESOURCE),
     presentation,
     ...worldToMaterial === void 0 ? {} : { worldToMaterial },

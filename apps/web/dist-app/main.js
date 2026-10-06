@@ -99,7 +99,7 @@ import {
   validateSubjectDescriptorV2,
   webExtensionSubjectCardBundle,
   withoutHiddenEntries
-} from "./chunks/chunk-CHVWX4J2.js";
+} from "./chunks/chunk-LD676W37.js";
 import {
   CONTAINER_EXTRACT_OPERATION_ID,
   ModkitError,
@@ -116,7 +116,7 @@ import {
   parseVersionRange,
   satisfiesRange,
   throwIfAborted
-} from "./chunks/chunk-RSKTTXN3.js";
+} from "./chunks/chunk-C64EV3HL.js";
 import "./chunks/chunk-QPJEB2TM.js";
 import "./chunks/chunk-7TLUWFCA.js";
 import "./chunks/chunk-DJDDRNPC.js";

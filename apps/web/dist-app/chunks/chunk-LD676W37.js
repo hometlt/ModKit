@@ -139,7 +139,7 @@ import {
   validateUvmDocument,
   versionRangeTargetsMajor,
   withMaterialFrame
-} from "./chunk-RSKTTXN3.js";
+} from "./chunk-C64EV3HL.js";
 import {
   __export
 } from "./chunk-DJDDRNPC.js";
@@ -42611,7 +42611,7 @@ function createModelViewer(options = {}) {
               const output = result.output;
               if (output.kind !== "bytes" || !(output.value instanceof Uint8Array))
                 throw new Error(`the codec answered ${output.kind}, not bytes`);
-              const { createUvmFramePreparer } = await import("./render-MRXU6ULS.js");
+              const { createUvmFramePreparer } = await import("./render-WRFZFDVC.js");
               const raster = options.rasterResources?.(args.descriptor);
               const preparer = createUvmFramePreparer(output.value, {
                 budget: MODEL_EFFECT_BUDGET,
@@ -66381,7 +66381,10 @@ function createSceneMaterialProgramSampler(materials, textures, signal, options 
               code: "common.scene/material-feature-unrendered",
               message: `Material ${entry2.material.id}: ${message}`
             });
-        results.set(entry2.material.id, Object.freeze({ passes, textures: entry2.bound }));
+        let programs = entry2.last;
+        if (programs?.passes !== passes)
+          entry2.last = programs = Object.freeze({ passes, textures: entry2.bound });
+        results.set(entry2.material.id, programs);
       }
       return results;
     }
@@ -67001,6 +67004,7 @@ function materialWebGlDraws(gl, textures, options = {}) {
   const pendingPrograms = /* @__PURE__ */ new Set();
   let programCompilations = 0;
   let drawCalls = 0;
+  let vertexArraysCreated = 0, buffersCreated = 0, placementsDrawn = 0;
   const INSTANCED = new Float32Array(0);
   const INDEXED = new Uint32Array(0);
   const retained = /* @__PURE__ */ new Map();
@@ -67048,7 +67052,6 @@ function materialWebGlDraws(gl, textures, options = {}) {
   let skinTexels = 0;
   let skinBases = /* @__PURE__ */ new Map();
   const skinUnits = /* @__PURE__ */ new WeakSet();
-  const programSkinBases = /* @__PURE__ */ new WeakMap();
   const programShadowReceivers = /* @__PURE__ */ new WeakMap();
   let shadowUnitTexture = null;
   const reserveSkinTexels = (texels) => {
@@ -67117,6 +67120,8 @@ function materialWebGlDraws(gl, textures, options = {}) {
       const buffer = spare ?? gl.createBuffer();
       if (buffer === null)
         throw new TypeError("could not allocate material geometry");
+      if (spare === void 0)
+        buffersCreated += 1;
       gl.bindBuffer(target, buffer);
       gl.bufferData(target, data, gl.STATIC_DRAW);
       entry2 = { buffer, target, byteLength: data.byteLength, used: true };
@@ -67154,6 +67159,7 @@ function materialWebGlDraws(gl, textures, options = {}) {
       const vao = gl.createVertexArray();
       if (vao === null)
         throw new TypeError("could not allocate material vertex array");
+      vertexArraysCreated += 1;
       const created = {
         vao,
         data,
@@ -67201,6 +67207,18 @@ function materialWebGlDraws(gl, textures, options = {}) {
             gl.enableVertexAttribArray(location);
             gl.vertexAttribPointer(location, 4, type, false, 0, 0);
           }
+        const skinBaseLocation = skin === void 0 || instances === void 0 ? -1 : attributeLocation(program, "a_instanceSkinBase");
+        if (skinBaseLocation >= 0) {
+          const buffer = gl.createBuffer();
+          if (buffer === null)
+            throw new TypeError("could not allocate material skin bases");
+          buffersCreated += 1;
+          created.skinBases = { buffer, data: new Float32Array(0) };
+          gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+          gl.enableVertexAttribArray(skinBaseLocation);
+          gl.vertexAttribPointer(skinBaseLocation, 1, gl.FLOAT, false, 4, 0);
+          gl.vertexAttribDivisor(skinBaseLocation, 1);
+        }
         const tintLocation = tints === void 0 ? -1 : attributeLocation(program, "a_vertexTint");
         if (tints !== void 0 && tintLocation >= 0) {
           created.buffers.push(retainedBuffer(gl.ARRAY_BUFFER, tints));
@@ -67217,6 +67235,7 @@ function materialWebGlDraws(gl, textures, options = {}) {
           const buffer = gl.createBuffer();
           if (buffer === null)
             throw new TypeError("could not allocate material instances");
+          buffersCreated += 1;
           created.instances = { buffer, data: instances, byteLength: instances.byteLength };
           gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
           gl.bufferData(gl.ARRAY_BUFFER, instances, gl.DYNAMIC_DRAW);
@@ -67234,6 +67253,8 @@ function materialWebGlDraws(gl, textures, options = {}) {
         gl.bindVertexArray(null);
         if (created.instances !== void 0)
           gl.deleteBuffer(created.instances.buffer);
+        if (created.skinBases !== void 0)
+          gl.deleteBuffer(created.skinBases.buffer);
         gl.deleteVertexArray(vao);
         throw error5;
       }
@@ -67460,6 +67481,7 @@ function materialWebGlDraws(gl, textures, options = {}) {
     else
       gl.drawElementsInstanced(mode, count5, gl.UNSIGNED_INT, 0, instances);
     drawCalls += 1;
+    placementsDrawn += instances ?? 1;
     if (options.checkEachDraw !== false) {
       const error5 = gl.getError();
       if (error5 !== gl.NO_ERROR)
@@ -67514,7 +67536,7 @@ function materialWebGlDraws(gl, textures, options = {}) {
         throw new TypeError("object-space normal materials cannot be instanced");
       if (frame3.camera.viewMatrix === void 0)
         throw new TypeError("instanced material draws require a view matrix");
-      if (!Number.isSafeInteger(instances.count) || instances.count < 0 || instances.matrices.length < instances.count * 16)
+      if (!Number.isSafeInteger(instances.count) || instances.count < 0 || instances.matrices.length < instances.count * 16 || instances.palettes !== void 0 && instances.palettes.length !== instances.count)
         throw new TypeError("invalid material instances");
     }
     if (requiresEnvironmentEye(source2) && frame3.eyePosition === void 0)
@@ -67532,12 +67554,32 @@ function materialWebGlDraws(gl, textures, options = {}) {
       state.program = program;
     }
     if (skin !== void 0) {
-      let base = skinBase(skin.palette);
-      if (base === void 0) {
-        base = skinBases.get(skin.palette);
+      const baseOf = (palette) => {
+        const base = skinBase(palette);
+        if (base !== void 0)
+          return base;
         state.activeUnit = SKIN_PALETTE_UNIT;
         state.lastUnit = SKIN_PALETTE_UNIT;
         state.skinPalettes = true;
+        return skinBases.get(palette);
+      };
+      const location = attributeLocation(program, "a_instanceSkinBase");
+      if (instances === void 0) {
+        const value2 = Float32Array.of(baseOf(skin.palette), 0, 0, 1);
+        if (location >= 0 && !holdsAttribute(state.constants.get(location), value2, 0)) {
+          gl.vertexAttrib4fv(location, value2);
+          state.constants.set(location, value2);
+        }
+      } else if (geometry.skinBases !== void 0) {
+        const bases = new Float32Array(instances.count);
+        for (let index = 0; index < instances.count; index++)
+          bases[index] = baseOf(instances.palettes?.[index] ?? skin.palette);
+        const held = geometry.skinBases.data;
+        if (held.length !== bases.length || held.some((value2, index) => value2 !== bases[index])) {
+          gl.bindBuffer(gl.ARRAY_BUFFER, geometry.skinBases.buffer);
+          gl.bufferData(gl.ARRAY_BUFFER, bases, gl.DYNAMIC_DRAW);
+          geometry.skinBases.data = bases;
+        }
       }
       if (state.skinPalettes !== true) {
         if (state.activeUnit !== SKIN_PALETTE_UNIT) {
@@ -67551,10 +67593,6 @@ function materialWebGlDraws(gl, textures, options = {}) {
       if (!skinUnits.has(program)) {
         gl.uniform1i(uniformLocation(gl, program, "u_skinPalette"), SKIN_PALETTE_UNIT);
         skinUnits.add(program);
-      }
-      if (programSkinBases.get(program) !== base) {
-        gl.uniform1i(uniformLocation(gl, program, "u_skinBase"), base);
-        programSkinBases.set(program, base);
       }
     }
     if (programLeases.get(program) !== lease2 || programUniforms.get(program) !== source2.uniforms) {
@@ -67620,6 +67658,11 @@ function materialWebGlDraws(gl, textures, options = {}) {
     /** Cumulative drawArrays/drawElements submissions, including depth-only material passes.
      * Snapshot before/after a pass or frame for its direct draw count. */
     drawCalls: () => drawCalls,
+    /**
+     * Cumulative work counters: vertex arrays and buffers made (a frame of known geometry makes
+     * none) and placements drawn (an instanced draw counts its instances).
+     */
+    counters: () => Object.freeze({ vertexArraysCreated, buffersCreated, placementsDrawn }),
     /** Snapshot of this renderer's owned GPU geometry; no GL queries or frame-state changes.
      * Each retained entry owns one distinct buffer, even for views sharing CPU backing storage;
      * spare buffers waiting for the next frame's arrays count as held.
@@ -67635,11 +67678,16 @@ function materialWebGlDraws(gl, textures, options = {}) {
       for (const geometries of vertexArrays.values())
         for (const variants of geometries.values()) {
           vertexArrayEntries += variants.length;
-          for (const entry2 of variants)
+          for (const entry2 of variants) {
             if (entry2.instances !== void 0) {
               instanceBuffers += 1;
               bufferBytesRetained += entry2.instances.byteLength;
             }
+            if (entry2.skinBases !== void 0) {
+              instanceBuffers += 1;
+              bufferBytesRetained += entry2.skinBases.data.byteLength;
+            }
+          }
         }
       return Object.freeze({
         bufferEntries: retained.size + spares + instanceBuffers,
@@ -67687,6 +67735,8 @@ function materialWebGlDraws(gl, textures, options = {}) {
             gl.deleteVertexArray(entry2.vao);
             if (entry2.instances !== void 0)
               gl.deleteBuffer(entry2.instances.buffer);
+            if (entry2.skinBases !== void 0)
+              gl.deleteBuffer(entry2.skinBases.buffer);
           }
       vertexArrays.clear();
       for (const leases of programs.values())
@@ -67745,6 +67795,8 @@ function materialWebGlDraws(gl, textures, options = {}) {
               gl.deleteVertexArray(entry2.vao);
               if (entry2.instances !== void 0)
                 gl.deleteBuffer(entry2.instances.buffer);
+              if (entry2.skinBases !== void 0)
+                gl.deleteBuffer(entry2.skinBases.buffer);
               return false;
             }
             entry2.used = false;
@@ -111022,7 +111074,7 @@ function createModelViewer2(options = {}) {
               const output = result.output;
               if (output.kind !== "bytes" || !(output.value instanceof Uint8Array))
                 throw new Error(`the codec answered ${output.kind}, not bytes`);
-              const { createUvmFramePreparer } = await import("./render-MRXU6ULS.js");
+              const { createUvmFramePreparer } = await import("./render-WRFZFDVC.js");
               const raster = options.rasterResources?.(args.descriptor);
               const preparer = createUvmFramePreparer(output.value, {
                 budget: MODEL_EFFECT_BUDGET2,
@@ -133262,6 +133314,7 @@ function sameBatchTemplate(left, right) {
   return a2.texture === b2.texture && a2.normalTexture === b2.normalTexture && a2.secondaryTexture === b2.secondaryTexture && a2.secondaryTextureCoordinates === void 0 === (b2.secondaryTextureCoordinates === void 0) && a2.alphaCutoff === b2.alphaCutoff && a2.castShadows === b2.castShadows && a2.receiveShadows === b2.receiveShadows && a2.blendMode === b2.blendMode && left.colorFalloff === right.colorFalloff && left.caustics === right.caustics && left.waves === right.waves && a2.waterDetail === b2.waterDetail;
 }
 var worldPlanBatches = /* @__PURE__ */ new WeakMap();
+var worldPlanWork = /* @__PURE__ */ new WeakMap();
 function worldWaterSurfaceDepth(writes) {
   const positions = [];
   for (const source2 of writes) {
@@ -134625,6 +134678,7 @@ function createWorldWebGlPlan(input, previousPlan) {
   const projectorCliffs = preparation.projectorCliffReceivers;
   let modelTriangles = 0;
   let diagnosticPlaceholders = 0;
+  let programObjects = 0, fallbackObjects = 0, keptObjects = 0;
   const planPrograms = /* @__PURE__ */ new Map();
   const currentPrograms = {
     passes: /* @__PURE__ */ new Map(),
@@ -134661,6 +134715,11 @@ function createWorldWebGlPlan(input, previousPlan) {
       objectPickMeshes.push(retainedObject.pickMesh);
       modelTriangles += retainedObject.modelTriangles;
       modelMaterialShadowTriangles += retainedObject.shadowTriangles;
+      keptObjects += 1;
+      if (retainedObject.byProgram)
+        programObjects += 1;
+      if (retainedObject.byFallback)
+        fallbackObjects += 1;
       continue;
     }
     const scenesBefore = modelMaterialScenes.length;
@@ -134699,6 +134758,7 @@ function createWorldWebGlPlan(input, previousPlan) {
     const restPrimitives = [];
     let rendered = false;
     let resolved2 = false;
+    let byProgram = false, byFallback = false;
     for (const component of components2) {
       const sampled = sampleFor(component.resourceId);
       if (sampled === void 0)
@@ -134789,6 +134849,7 @@ function createWorldWebGlPlan(input, previousPlan) {
               modelMaterialShadowTriangles += count5;
             modelTriangles += count5;
             rendered = true;
+            byProgram = true;
           }
           continue;
         }
@@ -134893,6 +134954,7 @@ function createWorldWebGlPlan(input, previousPlan) {
             pickTriangles.push(vertex[0], vertex[1], vertex[2]);
           modelTriangles += 1;
           rendered = true;
+          byFallback = true;
         }
         if (written !== void 0) {
           journalObjectWrite(written);
@@ -135049,6 +135111,10 @@ function createWorldWebGlPlan(input, previousPlan) {
         clockWrites.add(entry2.write);
     const pickMesh = worldObjectPickMesh(item.objectId, translation, pickTriangles, pickPrimitives, !resolved2, framingTriangles, framingPrimitives);
     objectPickMeshes.push(pickMesh);
+    if (byProgram)
+      programObjects += 1;
+    if (byFallback)
+      fallbackObjects += 1;
     if (retainable && staticKey !== void 0)
       retainedStaticObjects.set(item, Object.freeze({
         key: staticKey,
@@ -135063,7 +135129,9 @@ function createWorldWebGlPlan(input, previousPlan) {
         batchWrites: Object.freeze(objectBatchWrites),
         pickMesh,
         modelTriangles: modelTriangles - trianglesBefore,
-        shadowTriangles: modelMaterialShadowTriangles - shadowTrianglesBefore
+        shadowTriangles: modelMaterialShadowTriangles - shadowTrianglesBefore,
+        byProgram,
+        byFallback
       }));
   }
   let navigationSamples = 0;
@@ -135254,6 +135322,8 @@ function createWorldWebGlPlan(input, previousPlan) {
       cliffEdges: preparation.stats.cliffEdges,
       cliffTriangles: preparation.stats.cliffTriangles,
       objectInstances: objects.length,
+      programObjects,
+      fallbackObjects,
       modelTriangles,
       navigationSamples,
       gatewaySegments: preparation.stats.gatewaySegments,
@@ -135272,6 +135342,11 @@ function createWorldWebGlPlan(input, previousPlan) {
   if (currentPrograms.materials.size > 0)
     worldCurrentPrograms.set(plan, currentPrograms);
   worldPlanFacets.set(plan, facets);
+  worldPlanWork.set(plan, Object.freeze({
+    keptObjects,
+    builtObjects: objects.length - keptObjects,
+    posedSamples: planSamples.size
+  }));
   worldPlanBatches.set(plan, {
     batches: currentBatches,
     water: waterWrites,
@@ -136209,13 +136284,23 @@ function retainedWorldPlan(input, resources) {
   }
   if (animationSeek)
     retainPerformanceSample(resources.animationSeekMilliseconds, elapsed);
+  const work = worldPlanWork.get(plan);
+  if (work !== void 0) {
+    resources.worldObjectsKept += work.keptObjects;
+    resources.worldObjectsBuilt += work.builtObjects;
+    resources.worldPosedSamples += work.posedSamples;
+  }
   resources.lastPlanInput = worldStaticPreparations.get(plan).input;
   resources.lastPlan = plan;
   return plan;
 }
+var worldPlanBytes = /* @__PURE__ */ new WeakMap();
 function retainedWorldPlanBytes(plan) {
   if (plan === void 0)
     return 0;
+  const known2 = worldPlanBytes.get(plan);
+  if (known2 !== void 0)
+    return known2;
   const buffers = /* @__PURE__ */ new Set();
   const retain = (value2) => {
     if (value2 !== void 0)
@@ -136285,6 +136370,7 @@ function retainedWorldPlanBytes(plan) {
   let bytes2 = 0;
   for (const buffer of buffers)
     bytes2 += buffer.byteLength;
+  worldPlanBytes.set(plan, bytes2);
   return bytes2;
 }
 function createShadowProgram(gl) {
@@ -136325,6 +136411,9 @@ function createOwnedResources(gl) {
       shadowTargetAllocations: 0,
       shadowTargetReuses: 0,
       worldPlanBuilds: 0,
+      worldObjectsKept: 0,
+      worldObjectsBuilt: 0,
+      worldPosedSamples: 0,
       worldPlanReuses: 0,
       worldPlanDynamicUpdates: 0,
       worldPlanBuildMilliseconds: [],
@@ -136350,6 +136439,7 @@ function createOwnedResources(gl) {
       materialPlan: void 0,
       retiredMaterialProgramCompilations: 0,
       retiredMaterialDrawCalls: 0,
+      retiredMaterialCounters: { vertexArraysCreated: 0, buffersCreated: 0, placementsDrawn: 0 },
       sentinelTexture: void 0,
       textureUploads: 0,
       textureCacheHits: 0,
@@ -136365,6 +136455,17 @@ function createOwnedResources(gl) {
     throw error5;
   }
 }
+function worldMaterialCounters(resources) {
+  const retired = resources.retiredMaterialCounters;
+  if (resources.disposed)
+    return retired;
+  const live = resources.materialDraws.counters();
+  return Object.freeze({
+    vertexArraysCreated: retired.vertexArraysCreated + live.vertexArraysCreated,
+    buffersCreated: retired.buffersCreated + live.buffersCreated,
+    placementsDrawn: retired.placementsDrawn + live.placementsDrawn
+  });
+}
 function disposeOwnedResources(resources) {
   if (resources.disposed)
     return;
@@ -136376,6 +136477,7 @@ function disposeOwnedResources(resources) {
   resources.materialPlan = void 0;
   resources.retiredMaterialProgramCompilations += resources.materialDraws.programCompilations();
   resources.retiredMaterialDrawCalls += resources.materialDraws.drawCalls();
+  resources.retiredMaterialCounters = worldMaterialCounters(resources);
   resources.materialDraws.release();
   resources.materialTextureHandles.clear();
   resources.usedGeometry.clear();
@@ -136542,7 +136644,7 @@ function worldShadowEntryKey(entry2, passes) {
   return [
     "material",
     primitive.positions,
-    materialSkinOf(primitive)?.palette,
+    entry2.instances?.palettes ?? materialSkinOf(primitive)?.palette,
     primitive.indices,
     primitive.topology,
     entry2.instances?.matrices ?? primitive.transform,
@@ -138019,6 +138121,7 @@ function worldSceneSolidDrawsOf(scene, shadow) {
     }
     const primitive = draw.primitive;
     const bias = primitive.depthBias;
+    const skin = materialSkinOf(primitive);
     const geometryKey = [
       draw.depthOnly === true ? "depth" : "colour",
       primitive.topology,
@@ -138029,7 +138132,9 @@ function worldSceneSolidDrawsOf(scene, shadow) {
       worldGroupId(primitive.textureCoordinates),
       ...(primitive.textureCoordinateSets ?? []).map((set) => `${set.set}:${worldGroupId(set.coordinates)}`),
       worldGroupId(primitive.indices),
-      worldGroupId(materialSkinOf(primitive)?.palette),
+      // a skin by its vertex slots and weights: placements in other poses draw at once (each
+      // instance's palette, MaterialInstances.palettes)
+      skin === void 0 ? "-" : `${worldGroupId(skin.joints)}:${worldGroupId(skin.weights)}`,
       bias === void 0 ? "-" : `${bias.slopeScale}:${bias.units}`,
       primitiveTint(primitive).join(":")
     ].join("|");
@@ -138070,8 +138175,15 @@ function groupWorldMaterialDraws(plan, shadow) {
       if (byGeometry === void 0)
         byMaterial.set(material, byGeometry = /* @__PURE__ */ new Map());
       let group2 = byGeometry.get(geometryKey);
+      const palette = materialSkinOf(draw.primitive)?.palette;
       if (group2 === void 0) {
-        byGeometry.set(geometryKey, group2 = { draw, geometryKey, transforms: [], seen: /* @__PURE__ */ new Set() });
+        byGeometry.set(geometryKey, group2 = {
+          draw,
+          geometryKey,
+          transforms: [],
+          palettes: palette === void 0 ? void 0 : [],
+          seen: /* @__PURE__ */ new Set()
+        });
         groups.push(group2);
       }
       const transform = draw.primitive.transform ?? IDENTITY_VIEW_PROJECTION;
@@ -138081,24 +138193,31 @@ function groupWorldMaterialDraws(plan, shadow) {
         group2.seen.add(transform);
       }
       group2.transforms.push(transform);
+      if (palette !== void 0)
+        group2.palettes?.push(palette);
     }
     if (solid.transparent && !shadow)
       transparentScenes.push(scene);
   }
   const last = lastWorldInstanceMatrices[shadow ? 1 : 0];
   const kept = /* @__PURE__ */ new Map();
-  const instanced = groups.map(({ draw, geometryKey, transforms }) => {
+  const instanced = groups.map(({ draw, geometryKey, transforms, palettes }) => {
     const previous = kept.get(geometryKey) ?? last.get(geometryKey);
     let matrices = previous?.matrices;
     if (previous === void 0 || previous.transforms.length !== transforms.length || previous.transforms.some((transform, index) => transform !== transforms[index])) {
       matrices = new Float32Array(transforms.length * 16);
       transforms.forEach((transform, index) => matrices.set(transform, index * 16));
     }
+    const posed = palettes === void 0 ? void 0 : previous?.palettes !== void 0 && previous.palettes.length === palettes.length && previous.palettes.every((palette, index) => palette === palettes[index]) ? previous.palettes : Object.freeze(palettes);
     if (!kept.has(geometryKey))
-      kept.set(geometryKey, { transforms, matrices });
+      kept.set(geometryKey, { transforms, matrices, palettes: posed });
     return Object.freeze({
       draw,
-      instances: Object.freeze({ matrices, count: transforms.length })
+      instances: Object.freeze({
+        matrices,
+        count: transforms.length,
+        ...posed === void 0 ? {} : { palettes: posed }
+      })
     });
   });
   lastWorldInstanceMatrices[shadow ? 1 : 0] = kept;
@@ -138669,6 +138788,7 @@ function createWorldWebGlRenderer(canvas) {
       const geometry = geometryResourceTotals(resources);
       const textures = textureResourceTotals(resources);
       const material = resources.disposed ? { bufferEntries: 0, bufferBytesRetained: 0, vertexArrayEntries: 0 } : resources.materialDraws.stats();
+      const counters = worldMaterialCounters(resources);
       const worldPlanBytesRetained = retainedWorldPlanBytes(resources.lastPlan);
       const shadowTargetBytesRetained = (resources.shadowTarget === void 0 ? 0 : resources.shadowTarget.size ** 2 * 4) + (resources.shadowKept === void 0 ? 0 : resources.shadowKept.size ** 2 * 4);
       const sentinelBytesRetained = resources.sentinelTexture === void 0 ? 0 : 4;
@@ -138680,6 +138800,9 @@ function createWorldWebGlRenderer(canvas) {
         shadowTargetReuses: resources.shadowTargetReuses,
         worldPlanBuilds: resources.worldPlanBuilds,
         worldPlanReuses: resources.worldPlanReuses,
+        worldObjectsKept: resources.worldObjectsKept,
+        worldObjectsBuilt: resources.worldObjectsBuilt,
+        worldPosedSamples: resources.worldPosedSamples,
         worldPlanDynamicUpdates: resources.worldPlanDynamicUpdates,
         worldPlanDynamicUpdateSamples: resources.worldPlanDynamicUpdateMilliseconds.length,
         ...dynamicP50 === void 0 ? {} : { worldPlanDynamicUpdateP50Milliseconds: dynamicP50 },
@@ -138698,6 +138821,9 @@ function createWorldWebGlRenderer(canvas) {
         materialBufferEntries: material.bufferEntries,
         materialBufferBytesRetained: material.bufferBytesRetained,
         materialVertexArrayEntries: material.vertexArrayEntries,
+        materialVertexArraysCreated: counters.vertexArraysCreated,
+        materialBuffersCreated: counters.buffersCreated,
+        materialPlacementsDrawn: counters.placementsDrawn,
         textureUploads: resources.textureUploads,
         textureCacheHits: resources.textureCacheHits,
         textureDisposals: resources.textureDisposals,

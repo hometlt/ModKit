@@ -18,7 +18,7 @@ import {
   snapshotEnvironment,
   snapshotEyePosition,
   snapshotModelBillboards
-} from "../../../chunks/chunk-Z5KNR7TV.js";
+} from "../../../chunks/chunk-SHAX55JT.js";
 import "../../../chunks/chunk-X6TJ64VW.js";
 import "../../../chunks/chunk-SPVJPG77.js";
 import {
@@ -302,7 +302,7 @@ async function composeModelParticles(instances, parent, options, depth, maxBytes
           id: prefix + primitive.id,
           ...primitive.materialId === void 0 ? {} : { materialId: materialId(primitive.materialId) },
           transform: multiplyFrames(matrix, primitive.transform ?? IDENTITY_MATERIAL_FRAME),
-          tint: instance.color.map((component2, axis) => component2 * (primitive.tint?.[axis] ?? 1))
+          tint: instance.color.map((component, axis) => component * (primitive.tint?.[axis] ?? 1))
         });
       for (const material of scene.materials ?? [])
         materials.push({
@@ -429,7 +429,7 @@ function readUvmEffectAnimation(value, sequence, timeUnit, maxKeys, signal) {
         const vector7 = key[name];
         if (vector7 === void 0 && name !== "vector")
           continue;
-        if (!Array.isArray(vector7) || vector7.length < 1 || vector7.length > 4 || vector7.some((component2) => typeof component2 !== "number" || !Number.isFinite(component2)))
+        if (!Array.isArray(vector7) || vector7.length < 1 || vector7.length > 4 || vector7.some((component) => typeof component !== "number" || !Number.isFinite(component)))
           throw new TypeError("effect key values must be finite vectors of arity 1..4");
         arity ??= vector7.length;
         if (vector7.length !== arity)
@@ -491,8 +491,8 @@ function sampleUvmSceneProperties(source, defaults, options) {
         const track = object(raw["track"], "scene property track");
         for (const rawKey of array(track, "keys")) {
           const value = object(rawKey, "scene property key");
-          for (const component2 of ["vector", "inTan", "outTan"]) {
-            if (value[component2] !== void 0 && array(value, component2).length !== width)
+          for (const component of ["vector", "inTan", "outTan"]) {
+            if (value[component] !== void 0 && array(value, component).length !== width)
               throw new TypeError(`scene property ${key} track width differs from its default`);
           }
         }
@@ -2202,12 +2202,6 @@ function layerListTexture(shader) {
 }
 
 // packages/scene/dist/uvm/projector-receivers.js
-var component = (values, index) => {
-  const value = values[index];
-  if (value === void 0 || !Number.isFinite(value))
-    throw new TypeError("invalid projector coordinate");
-  return value;
-};
 var dot2 = (x, y, z, v) => x * v[0] + y * v[1] + z * v[2];
 var clamp = (value) => Math.min(1, Math.max(0, value));
 var finiteReceiverPositions = /* @__PURE__ */ new WeakSet();
@@ -2379,7 +2373,7 @@ function clipProjectorReceivers(frame, receivers, options) {
     };
   });
   const distance = (vertices2, vertex, plane) => {
-    const x = component(vertices2, vertex * 6 + 3), y = component(vertices2, vertex * 6 + 4), z = component(vertices2, vertex * 6 + 5);
+    const x = vertices2[vertex * 6 + 3], y = vertices2[vertex * 6 + 4], z = vertices2[vertex * 6 + 5];
     if (plane === 0)
       return z - frame.near;
     if (plane === 1)
@@ -2413,8 +2407,8 @@ function clipProjectorReceivers(frame, receivers, options) {
           const denominator = previousDistance - currentDistance;
           const factor = Math.abs(denominator) > 1e-12 ? previousDistance / denominator : 0;
           for (let axis = 0; axis < 6; axis++) {
-            const start = component(input, previous * 6 + axis);
-            output[nextCount * 6 + axis] = start + (component(input, current * 6 + axis) - start) * factor;
+            const start = input[previous * 6 + axis];
+            output[nextCount * 6 + axis] = start + (input[current * 6 + axis] - start) * factor;
           }
           nextCount++;
         }
@@ -2422,7 +2416,7 @@ function clipProjectorReceivers(frame, receivers, options) {
           if (nextCount >= 10)
             throw new RangeError("projector clipping capacity exceeded");
           for (let axis = 0; axis < 6; axis++)
-            output[nextCount * 6 + axis] = component(input, current * 6 + axis);
+            output[nextCount * 6 + axis] = input[current * 6 + axis];
           nextCount++;
         }
         previous = current;
@@ -2437,10 +2431,21 @@ function clipProjectorReceivers(frame, receivers, options) {
     }
     return count;
   };
-  const visit = (write) => {
+  let kept = new Float32Array(6 * 96);
+  const keep = (vertex, at) => {
+    if (kept.length < at + 6) {
+      const grown = new Float32Array(Math.max(kept.length * 2, at + 6));
+      grown.set(kept);
+      kept = grown;
+    }
+    for (let axis = 0; axis < 6; axis++)
+      kept[at + axis] = first[vertex * 6 + axis];
+  };
+  const visit = () => {
     let vertices2 = 0;
     for (const { primitive, transform: m, minimum, maximum, candidates } of bounded) {
       const count = primitive.indices?.length ?? primitive.positions.length / 3;
+      const [m0, m1, m2, , m4, m5, m6, , m8, m9, m10, , m12, m13, m14] = m;
       const visited = candidates === void 0 ? count / 3 : candidates.length;
       for (let candidate = 0; candidate < visited; candidate++) {
         const triangle = candidates === void 0 ? candidate * 3 : candidates[candidate];
@@ -2460,44 +2465,44 @@ function clipProjectorReceivers(frame, receivers, options) {
           continue;
         for (let vertex = 0; vertex < 3; vertex++) {
           const index = primitive.indices?.[triangle + vertex] ?? triangle + vertex;
-          const x = component(primitive.positions, index * 3), y = component(primitive.positions, index * 3 + 1), z = component(primitive.positions, index * 3 + 2);
-          const px = component(m, 0) * x + component(m, 4) * y + component(m, 8) * z + component(m, 12);
-          const py = component(m, 1) * x + component(m, 5) * y + component(m, 9) * z + component(m, 13);
-          const pz = component(m, 2) * x + component(m, 6) * y + component(m, 10) * z + component(m, 14);
-          first.set([
-            px,
-            py,
-            pz,
-            dot2(px - frame.origin[0], py - frame.origin[1], pz - frame.origin[2], frame.rightAxis),
-            dot2(px - frame.origin[0], py - frame.origin[1], pz - frame.origin[2], frame.upAxis),
-            dot2(px - frame.origin[0], py - frame.origin[1], pz - frame.origin[2], frame.forwardAxis)
-          ], vertex * 6);
+          const x = p[index * 3], y = p[index * 3 + 1], z = p[index * 3 + 2];
+          const px = m0 * x + m4 * y + m8 * z + m12;
+          const py = m1 * x + m5 * y + m9 * z + m13;
+          const pz = m2 * x + m6 * y + m10 * z + m14;
+          const at = vertex * 6;
+          first[at] = px;
+          first[at + 1] = py;
+          first[at + 2] = pz;
+          first[at + 3] = dot2(px - frame.origin[0], py - frame.origin[1], pz - frame.origin[2], frame.rightAxis);
+          first[at + 4] = dot2(px - frame.origin[0], py - frame.origin[1], pz - frame.origin[2], frame.upAxis);
+          first[at + 5] = dot2(px - frame.origin[0], py - frame.origin[1], pz - frame.origin[2], frame.forwardAxis);
+          for (let axis = at; axis < at + 6; axis++)
+            if (!Number.isFinite(first[axis]))
+              throw new TypeError("invalid projector coordinate");
         }
         const count2 = clipped();
         for (let fan = 1; fan + 1 < count2; fan++) {
           vertices2 += 3;
           if (vertices2 * 24 + 480 > options.maxBytes)
             throw new RangeError("projector output exceeds budget");
-          write?.(0);
-          write?.(fan);
-          write?.(fan + 1);
+          keep(0, (vertices2 - 3) * 6);
+          keep(fan, (vertices2 - 2) * 6);
+          keep(fan + 1, (vertices2 - 1) * 6);
         }
       }
     }
     return vertices2;
   };
   const vertices = visit(), positions = new Float32Array(vertices * 3), textureCoordinates = new Float32Array(vertices * 2), indices = new Uint32Array(vertices);
-  let written = 0;
-  const finalCount = visit((vertex) => {
+  for (let written = 0; written < vertices; written++) {
+    const at = written * 6;
     for (let axis = 0; axis < 3; axis++)
-      positions[written * 3 + axis] = component(first, vertex * 6 + axis);
-    const x = component(first, vertex * 6 + 3), y = component(first, vertex * 6 + 4), z = component(first, vertex * 6 + 5);
+      positions[written * 3 + axis] = kept[at + axis];
+    const x = kept[at + 3], y = kept[at + 4], z = kept[at + 5];
     textureCoordinates[written * 2] = clamp(frame.projectionType === "perspective" ? 0.5 + x / Math.max(1e-6, 2 * z * frame.tangentX) : (x - frame.left) / Math.max(1e-6, frame.rightExtent - frame.left));
     textureCoordinates[written * 2 + 1] = clamp(frame.projectionType === "perspective" ? 0.5 - y / Math.max(1e-6, 2 * z * frame.tangentY) : (frame.top - y) / Math.max(1e-6, frame.top - frame.bottom));
-    indices[written] = written++;
-  });
-  if (finalCount !== vertices || written !== vertices)
-    throw new TypeError("projector receivers changed during preparation");
+    indices[written] = written;
+  }
   return { positions, textureCoordinates, indices, triangles, byteLength: vertices * 24 };
 }
 
@@ -2658,8 +2663,8 @@ function createUvmProjectorFrame(document2, options) {
             if (++work > options.maxNodes)
               throw new RangeError("projector track work exceeds budget");
             const frameKey = object(rawKey, "key");
-            for (const component2 of ["vector", "inTan", "outTan"])
-              if (frameKey[component2] !== void 0 && array(frameKey, component2).length !== (key === "offset" ? 3 : 1))
+            for (const component of ["vector", "inTan", "outTan"])
+              if (frameKey[component] !== void 0 && array(frameKey, component).length !== (key === "offset" ? 3 : 1))
                 throw new TypeError("projector track component count differs");
           }
         }
@@ -11842,8 +11847,8 @@ var BufferAttribute = class {
    * @param {number} component - The component index.
    * @return {number} The returned value.
    */
-  getComponent(index, component2) {
-    let value = this.array[index * this.itemSize + component2];
+  getComponent(index, component) {
+    let value = this.array[index * this.itemSize + component];
     if (this.normalized) value = denormalize(value, this.array);
     return value;
   }
@@ -11855,9 +11860,9 @@ var BufferAttribute = class {
    * @param {number} value - The value to set.
    * @return {BufferAttribute} A reference to this instance.
    */
-  setComponent(index, component2, value) {
+  setComponent(index, component, value) {
     if (this.normalized) value = normalize(value, this.array);
-    this.array[index * this.itemSize + component2] = value;
+    this.array[index * this.itemSize + component] = value;
     return this;
   }
   /**
@@ -16351,7 +16356,7 @@ var reversedFuncs = {
 
 // packages/scene/dist/uvm/cameras.js
 function numbers(value, count, label) {
-  if (!Array.isArray(value) && !(value instanceof Float32Array) || value.length !== count || !Array.from(value).every((component2) => typeof component2 === "number" && Number.isFinite(component2)))
+  if (!Array.isArray(value) && !(value instanceof Float32Array) || value.length !== count || !Array.from(value).every((component) => typeof component === "number" && Number.isFinite(component)))
     throw new TypeError(`${label} must contain ${count} finite numbers`);
   return Array.from(value);
 }
@@ -18223,7 +18228,7 @@ function finite2(value, label) {
 function vector2(value, label) {
   if (!Array.isArray(value) || value.length !== 3)
     throw new TypeError(`spline ${label} requires a three-component vector`);
-  return value.map((component2) => finite2(component2, label));
+  return value.map((component) => finite2(component, label));
 }
 function variation(value) {
   const raw = object(value, "spline variation"), shape = raw["shape"];
@@ -18558,8 +18563,8 @@ function validatePreviewEmitter(emitter) {
   const vector7 = (value) => {
     if (!Array.isArray(value) || value.length !== 3)
       throw new TypeError("particle preview requires declared three-component vectors");
-    for (const component2 of value)
-      finite3(component2);
+    for (const component of value)
+      finite3(component);
   };
   for (const field2 of [
     "particleScaling",
@@ -19116,8 +19121,8 @@ function createUvmRibbonGeometry(state, emitters, options) {
     if (slot !== -1 || state.lastSlots[emitterIndex] !== previous)
       throw new TypeError("incomplete live ribbon chain");
     const positions = new Float32Array(vertices * 3), colors = new Float32Array(vertices * 4), textureCoordinates = new Float32Array(vertices * 2), indices = new Uint32Array(indexCount);
-    const centerAt = (slot2, component2) => {
-      const offset = slot2 * 6 + component2;
+    const centerAt = (slot2, component) => {
+      const offset = slot2 * 6 + component;
       return (finite4(state.vertices[offset]) + finite4(state.vertices[offset + 3])) * 0.5;
     };
     const rows = Math.max(1, Math.trunc(emitter.rows ?? 1)), columns = Math.max(1, Math.trunc(emitter.columns ?? 1));
@@ -19141,7 +19146,7 @@ function createUvmRibbonGeometry(state, emitters, options) {
       const age = finite4(state.ages[slot2]), phase = clamp3(age / Math.max(1e-6, finite4(state.lifeSpans[slot2])));
       const width = Math.max(1e-4, curve(widthStages, phase, emitter.widthTimeMiddle ?? 0.5)) * Math.max(0, 1 + effectVariationValue(emitter.scaleVariation, age, finite4(state.randomSeeds[slot2])));
       writeEffectRibbonRingPositions(positions, point * ring, 3, center, tangent, up, camera, width * 0.5, emitter.ribbonType, emitter.sides, emitter.starRatio);
-      const rgba = [0, 1, 2].map((component2) => clamp3(curve(colorStages.map((value) => finite4(value[component2])), phase, emitter.colorTimeMiddle ?? 0.5))).concat(clamp3(clamp3(curve(alphaStages, phase, emitter.colorTimeMiddle ?? 0.5)) * finite4(state.alphas[slot2])));
+      const rgba = [0, 1, 2].map((component) => clamp3(curve(colorStages.map((value) => finite4(value[component])), phase, emitter.colorTimeMiddle ?? 0.5))).concat(clamp3(clamp3(curve(alphaStages, phase, emitter.colorTimeMiddle ?? 0.5)) * finite4(state.alphas[slot2])));
       const textureSlot = finite4(state.textureSlots[slot2]), cellX = textureSlot % columns / columns, cellY = Math.floor(textureSlot / columns) % rows / rows;
       for (let cross2 = 0; cross2 < ring; cross2++) {
         const vertex = point * ring + cross2;
@@ -19327,8 +19332,8 @@ function readUvmEffectFields(effect, options) {
         const track = object(object(raw, "field sequence")["track"], "field track");
         for (const rawKey of array(track, "keys")) {
           const key = object(rawKey, "field key");
-          for (const component2 of ["vector", "inTan", "outTan"])
-            if (key[component2] !== void 0 && array(key, component2).length !== 1)
+          for (const component of ["vector", "inTan", "outTan"])
+            if (key[component] !== void 0 && array(key, component).length !== 1)
               throw new TypeError("effect field animation requires scalar keys");
         }
       }
@@ -19502,8 +19507,8 @@ function readUvmEffectMeshes(document2, binary, value, budget, signal) {
     if (nodes > budget.maxNodes || bytes > budget.maxBytes)
       throw new RangeError("effect emission triangles exceed budget");
     let area = 0;
-    const coordinate = (vertex, component2) => {
-      const scalar4 = positions.values[vertex * 3 + component2];
+    const coordinate = (vertex, component) => {
+      const scalar4 = positions.values[vertex * 3 + component];
       if (scalar4 === void 0)
         throw new RangeError("effect emission index exceeds positions");
       return scalar4;
@@ -20557,12 +20562,15 @@ function placementLocals(worldGeometry) {
   mat3 viewNormalMatrix=sceneCofactor(mat3(modelView))*orientation;
   mat3 worldNormalMatrix=sceneCofactor(mat3(materialWorld))*sceneOrientationOf(mat3(materialWorld));${worldGeometry ? "\n  float objectOrientation=sceneOrientationOf(mat3(model));\n  mat3 objectNormalMatrix=sceneCofactor(mat3(model))*objectOrientation;" : ""}`;
 }
-var SKIN_DECLARATIONS = `in vec4 a_skinJoints, a_skinWeights;
+function skinDeclarations(placementAttributes) {
+  const base = placementAttributes ? "int(a_instanceSkinBase+0.5)" : "u_skinBase";
+  return `in vec4 a_skinJoints, a_skinWeights;
 uniform highp sampler2D u_skinPalette;
-uniform int u_skinBase;
-mat4 skinMatrix(float joint){int texel=u_skinBase+int(joint)*4,width=textureSize(u_skinPalette,0).x;ivec2 at=ivec2(texel%width,texel/width);
+${placementAttributes ? "in float a_instanceSkinBase;" : "uniform int u_skinBase;"}
+mat4 skinMatrix(float joint){int texel=${base}+int(joint)*4,width=textureSize(u_skinPalette,0).x;ivec2 at=ivec2(texel%width,texel/width);
   return mat4(texelFetch(u_skinPalette,at,0),texelFetch(u_skinPalette,at+ivec2(1,0),0),texelFetch(u_skinPalette,at+ivec2(2,0),0),texelFetch(u_skinPalette,at+ivec2(3,0),0));}
 `;
+}
 var SKIN_LOCALS = `
   mat4 skin=skinMatrix(a_skinJoints.x)*a_skinWeights.x+skinMatrix(a_skinJoints.y)*a_skinWeights.y+skinMatrix(a_skinJoints.z)*a_skinWeights.z+skinMatrix(a_skinJoints.w)*a_skinWeights.w;
   vec3 skinPosition=(skin*vec4(a_position,1.0)).xyz,skinNormal=mat3(skin)*a_normal;
@@ -20598,7 +20606,7 @@ uniform vec3 u_lightDirection;
 ${defines.sceneLighting ? "uniform vec3 u_sceneFillViewDirection0, u_sceneFillViewDirection1;\nout vec3 v_sceneFillDir0, v_sceneFillDir1;\nout vec3 v_sceneShadowWorld;" : ""}
 ${worldGeometry && !placementAttributes ? "uniform mat3 u_sceneWorldNormalMatrix;\nuniform float u_sceneWorldOrientation;\n" : ""}uniform float ${placementAttributes ? "" : "u_orientation, "}u_orthographic;
 in vec3 a_position, a_normal; in vec4 a_tangent;
-${skinned ? SKIN_DECLARATIONS : ""}${tinted ? "in vec4 a_vertexTint; flat out vec4 v_vertexTint;\n" : ""}${Array.from({ length: defines.uvSetCount }, (_, i) => `in vec2 a_uv${i}; out vec2 v_uv${i};`).join("\n")}
+${skinned ? skinDeclarations(placementAttributes) : ""}${tinted ? "in vec4 a_vertexTint; flat out vec4 v_vertexTint;\n" : ""}${Array.from({ length: defines.uvSetCount }, (_, i) => `in vec2 a_uv${i}; out vec2 v_uv${i};`).join("\n")}
 ${defines.usesVertexAlpha || defines.usesVertexColor ? "in vec4 a_color; out vec4 v_vertexColor;" : ""}
 out vec3 v_normal, v_lightDir, v_halfVec, v_viewDir, v_viewPosition, v_viewNormal;
 out vec3 v_modelPosition, v_modelNormal, v_worldPosition, v_worldNormal;
@@ -20766,17 +20774,22 @@ function emissiveBlendThroughRgb(material) {
   return Object.freeze({ ...material, layers: Object.freeze(layers) });
 }
 function finiteVector(value, size, name) {
-  if (!Array.isArray(value) || value.length !== size || value.some((component2) => typeof component2 !== "number" || !Number.isFinite(component2) || !Number.isFinite(Math.fround(component2))))
+  if (!Array.isArray(value) || value.length !== size || value.some((component) => typeof component !== "number" || !Number.isFinite(component) || !Number.isFinite(Math.fround(component))))
     throw new TypeError(`${name} requires ${size} finite float32 components`);
   return value;
 }
 function createStandardMaterialPrograms(parameters, options) {
   const sampler = createRenderMaterialSampler(parameters, options.budget, options.signal);
   const sources = /* @__PURE__ */ new Map();
+  let last;
   return Object.freeze({
     resources: sampler.resources,
     usesSceneEnvironment: sampler.usesSceneEnvironment,
     sample(time, lighting = {}, signal) {
+      if (sampler.timeless && last !== void 0 && sameMaterialFrame(last.lighting, lighting)) {
+        signal?.throwIfAborted();
+        return last.passes;
+      }
       const teamColor = Object.freeze([
         ...finiteVector(lighting.teamColor ?? [1, 0, 0], 3, "team color")
       ]);
@@ -20795,12 +20808,55 @@ function createStandardMaterialPrograms(parameters, options) {
       const intensity = lighting.teamColorIntensity ?? 1;
       if (intensity !== 0 && intensity !== 1)
         throw new TypeError("team color intensity must be 0 or 1");
-      return Object.freeze(sampler.sample(time, signal).map((pass) => compilePass({
+      const passes = Object.freeze(sampler.sample(time, signal).map((pass) => compilePass({
         ...pass,
         material: emissiveBlendThroughRgb(specularOfTeamColor(intensity === 0 ? withoutDiffuseTeamColor(pass.material) : pass.material))
       }, { teamColor, ambient, terrainTiling }, sources, normalFormats, sampler.worldToMaterial, textureDimensions, environment, lighting.sceneLighting === true)));
+      if (sampler.timeless)
+        last = Object.freeze({ lighting: copyMaterialFrame(lighting), passes });
+      return passes;
     }
   });
+}
+function copyMaterialFrame(lighting) {
+  return {
+    ...lighting,
+    ...lighting.teamColor === void 0 ? {} : { teamColor: [...lighting.teamColor] },
+    ...lighting.ambient === void 0 ? {} : { ambient: [...lighting.ambient] },
+    ...lighting.terrainTiling === void 0 ? {} : { terrainTiling: [...lighting.terrainTiling] },
+    ...lighting.normalMapFormats === void 0 ? {} : { normalMapFormats: new Map(lighting.normalMapFormats) },
+    ...lighting.textureDimensions === void 0 ? {} : { textureDimensions: new Map(lighting.textureDimensions) },
+    ...lighting.environment === void 0 ? {} : {
+      environment: {
+        ...lighting.environment,
+        worldToEnvironment: [...lighting.environment.worldToEnvironment]
+      }
+    }
+  };
+}
+function sameMaterialFrame(left, right) {
+  const sameVector = (a, b) => {
+    if (a === void 0 || b === void 0)
+      return a === b;
+    if (a.length !== b.length)
+      return false;
+    for (let index = 0; index < a.length; index++)
+      if (!Object.is(a[index], b[index]))
+        return false;
+    return true;
+  };
+  const sameMap = (a, b) => {
+    if (a === void 0 || b === void 0)
+      return a === b;
+    if (a.size !== b.size)
+      return false;
+    for (const [key, value] of a)
+      if (!b.has(key) || b.get(key) !== value)
+        return false;
+    return true;
+  };
+  const environment = (frame) => frame.environment?.worldToEnvironment;
+  return sameVector(left.teamColor, right.teamColor) && sameVector(left.ambient, right.ambient) && sameVector(left.terrainTiling, right.terrainTiling) && sameMap(left.normalMapFormats, right.normalMapFormats) && sameMap(left.textureDimensions, right.textureDimensions) && left.environment === void 0 === (right.environment === void 0) && sameVector(environment(left), environment(right)) && left.sceneLighting === true === (right.sceneLighting === true) && (left.teamColorIntensity ?? 1) === (right.teamColorIntensity ?? 1);
 }
 function compilePass(pass, lighting, sources, bindings, worldToMaterial, textureDimensions = /* @__PURE__ */ new Map(), environment, sceneLighting = false) {
   const { material, alpha } = pass;
@@ -21515,7 +21571,7 @@ async function prepareNestedUvmRender(bytes, value, options, depth, cache) {
   if (typeof time !== "number" || !Number.isFinite(time) || time < 0 || clipId !== void 0 && (typeof clipId !== "string" || !clipId) || rendererId !== void 0 && (typeof rendererId !== "string" || !rendererId) || typeof modelState !== "string" || modelState.length === 0 || input["collisions"] !== void 0 && typeof input["collisions"] !== "boolean" || input["shadows"] !== void 0 && typeof input["shadows"] !== "boolean")
     throw new TypeError("invalid render time, clip, renderer or collision option");
   const clearColor = input["clearColor"] === void 0 ? void 0 : vector4(input["clearColor"]);
-  if (clearColor?.some((component2) => component2 < 0 || component2 > 1))
+  if (clearColor?.some((component) => component < 0 || component > 1))
     throw new RangeError("render clearColor must be in 0..1");
   const frameBytes = width * height * 12;
   let textureBytes = 0;
@@ -21763,7 +21819,7 @@ async function prepareNestedUvmRender(bytes, value, options, depth, cache) {
       throw new TypeError("material doubleSided must be boolean");
     const pbr = object(material["pbrMetallicRoughness"] ?? {}, "PBR material");
     const baseColor = pbr["baseColorFactor"] === void 0 ? [1, 1, 1, 1] : vector4(pbr["baseColorFactor"]);
-    if (baseColor.some((component2) => component2 < 0 || component2 > 1))
+    if (baseColor.some((component) => component < 0 || component > 1))
       throw new RangeError("material baseColorFactor must be in 0..1");
     const texture = pbr["baseColorTexture"] === void 0 ? void 0 : object(pbr["baseColorTexture"], "base color texture");
     const textureIndex = texture === void 0 ? void 0 : safeIndex(texture["index"], array(document2, "textures").length, "texture");

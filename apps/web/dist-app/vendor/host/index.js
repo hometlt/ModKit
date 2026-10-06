@@ -17232,13 +17232,50 @@ function createContentDependencyLanguageDocumentSource(options) {
   const revisions = /* @__PURE__ */ new Map();
   let retainedDocumentBytes = 0;
   let retainedPathIndex;
+  const keptListings = /* @__PURE__ */ new Map();
+  let keptListingBytes = 0;
+  const UNROUTED = Object.freeze({
+    route: Object.freeze({ candidates: Object.freeze([]) }),
+    uri: ""
+  });
+  const fingerprinted = (mount) => mount.fingerprint !== void 0 && isRevisionId(mount.fingerprint);
   const trimDocumentCaptures = () => {
     for (const entry2 of revisions.values()) {
-      if (retainedDocumentBytes <= maxWorkspaceBytes - (retainedPathIndex?.bytes ?? 0)) break;
+      if (retainedDocumentBytes <= maxWorkspaceBytes - (retainedPathIndex?.bytes ?? 0) - keptListingBytes)
+        break;
       retainedDocumentBytes -= entry2.bytes;
       entry2.bytes = 0;
       delete entry2.document;
     }
+  };
+  const keepListing = (mount, paths) => {
+    const relatives = [];
+    const routed = [];
+    let outside = 0;
+    let bytes = 0;
+    for (const path of paths) {
+      const relative = relativeEntry(mount, { path });
+      if (relative === void 0) {
+        outside += 1;
+        continue;
+      }
+      const route = classify(relative);
+      if (route.languageId !== void 0 || route.candidates.length > 0 || !relative.includes("/")) {
+        routed.push({
+          at: relatives.length,
+          path,
+          route,
+          uri: contentSourceUri(mount.sourceId, path)
+        });
+        bytes += (path.length + relative.length) * 2 + 256;
+      }
+      relatives.push(relative);
+      bytes += relative.length * 2 + 32;
+    }
+    if (keptListingBytes + bytes > maxWorkspaceBytes - (retainedPathIndex?.bytes ?? 0)) return;
+    keptListings.set(mount, Object.freeze({ relatives, routed, outside, bytes }));
+    keptListingBytes += bytes;
+    trimDocumentCaptures();
   };
   const contextId = languageWorkspaceContextToken({
     gameId: options.resolution.gameId,
@@ -17291,11 +17328,15 @@ function createContentDependencyLanguageDocumentSource(options) {
       let indexed = 0;
       let complete = options.resolution.complete && mounts.every((mount) => mount.fingerprint !== void 0 && isRevisionId(mount.fingerprint));
       let pathIndexComplete = options.resolution.complete;
+      let recording;
+      let recordingFailed = false;
       const visit2 = (mount, path) => {
+        recording?.push(path);
         indexed += 1;
         if (indexed > maxIndexedPaths) {
           complete = false;
           pathIndexComplete = false;
+          recordingFailed = true;
           return false;
         }
         const relative = relativeEntry(mount, { path });
@@ -17304,19 +17345,23 @@ function createContentDependencyLanguageDocumentSource(options) {
           pathIndexComplete = false;
           return true;
         }
+        place(mount, path, relative);
+        return true;
+      };
+      const place = (mount, path, relative, known) => {
         contentPaths.set(relative, mounts.indexOf(mount));
         if (!relative.includes("/") && wantedKnowledge.has(relative.toLowerCase())) {
           knowledge.push({ mount, path, fileName: relative });
-          return true;
+          return;
         }
-        const { languageId, dialect, candidates: claimants } = classify(relative);
+        const { languageId, dialect, candidates: claimants } = known?.route ?? classify(relative);
         if (languageId === void 0) {
           if (claimants.some((id) => accepted.has(id))) complete = false;
-          return true;
+          return;
         }
-        if (!accepted.has(languageId)) return true;
+        if (!accepted.has(languageId)) return;
         claimed += 1;
-        const uri = contentSourceUri(mount.sourceId, path);
+        const uri = known?.uri ?? contentSourceUri(mount.sourceId, path);
         const open = openDocuments.get(uri);
         if (open !== void 0) {
           documentOrigins.push(
@@ -17334,12 +17379,11 @@ function createContentDependencyLanguageDocumentSource(options) {
               readOnly: true
             })
           );
-          return true;
+          return;
         }
         if (claimed <= maxEntries && candidates.length < request.maxDocuments)
           candidates.push({ mount, path, relative });
         else complete = false;
-        return true;
       };
       const walk = async (mount, path) => {
         request.signal.throwIfAborted();
@@ -17349,6 +17393,7 @@ function createContentDependencyLanguageDocumentSource(options) {
         } catch {
           complete = false;
           pathIndexComplete = false;
+          recordingFailed = true;
           return true;
         }
         for (const entry2 of entries) {
@@ -17358,11 +17403,12 @@ function createContentDependencyLanguageDocumentSource(options) {
           } else if (relativeEntry(mount, entry2) === void 0) {
             complete = false;
             pathIndexComplete = false;
+            recordingFailed = true;
           } else if (!await walk(mount, entry2.path)) return false;
         }
         return true;
       };
-      const layer = async (mount) => {
+      const listLayer = async (mount) => {
         let cursor3;
         do {
           request.signal.throwIfAborted();
@@ -17375,18 +17421,45 @@ function createContentDependencyLanguageDocumentSource(options) {
           } catch {
             complete = false;
             pathIndexComplete = false;
+            recordingFailed = true;
             return true;
           }
           if (page === void 0) {
             if (cursor3 === void 0) return walk(mount, mount.sourcePath);
             complete = false;
             pathIndexComplete = false;
+            recordingFailed = true;
             return true;
           }
           for (const file of page.items) if (!visit2(mount, file.path)) return false;
           cursor3 = page.nextCursor;
         } while (cursor3 !== void 0);
         return true;
+      };
+      const layer = async (mount) => {
+        const kept = keptListings.get(mount);
+        if (kept !== void 0 && indexed + kept.relatives.length + kept.outside <= maxIndexedPaths) {
+          indexed += kept.relatives.length + kept.outside;
+          if (kept.outside > 0) {
+            complete = false;
+            pathIndexComplete = false;
+          }
+          let next = 0;
+          for (const [at, relative] of kept.relatives.entries()) {
+            if (at % 65536 === 0) request.signal.throwIfAborted();
+            const routed = kept.routed[next]?.at === at ? kept.routed[next++] : void 0;
+            place(mount, routed?.path ?? "", relative, routed ?? UNROUTED);
+          }
+          return true;
+        }
+        const keep = kept === void 0 && fingerprinted(mount);
+        recording = keep ? [] : void 0;
+        recordingFailed = false;
+        const listed = await listLayer(mount);
+        if (keep && listed && !recordingFailed && recording !== void 0)
+          keepListing(mount, recording);
+        recording = void 0;
+        return listed;
       };
       for (const mount of mounts) if (!await layer(mount)) break;
       let pathInputs = retainedPathIndex?.inputs;
@@ -17424,6 +17497,29 @@ function createContentDependencyLanguageDocumentSource(options) {
         request.signal.throwIfAborted();
         const { languageId: classified, dialect } = classify(candidate.relative);
         const languageId = classified;
+        const kept = fingerprinted(candidate.mount) ? revisions.get(contentSourceUri(candidate.mount.sourceId, candidate.path)) : void 0;
+        if (kept?.document !== void 0 && kept.document.languageId === languageId && kept.document.dialect === dialect) {
+          if (totalBytes + kept.byteLength > maxWorkspaceBytes) {
+            complete = false;
+            continue;
+          }
+          totalBytes += kept.byteLength;
+          const uri2 = kept.document.uri;
+          revisions.delete(uri2);
+          revisions.set(uri2, kept);
+          documents.push(kept.document);
+          documentOrigins.push(
+            Object.freeze({
+              uri: uri2,
+              layerId: `${contextId}:${candidate.mount.order}:${candidate.mount.dependencyId}`,
+              logicalId: candidate.relative,
+              precedence: candidate.mount.order,
+              sourceRevision: kept.signature,
+              readOnly: true
+            })
+          );
+          continue;
+        }
         let bytes;
         try {
           bytes = await options.contentSources.read(
@@ -17467,7 +17563,13 @@ function createContentDependencyLanguageDocumentSource(options) {
         const retainedBytes = Math.max(bytes.byteLength, text.length * 2);
         retainedDocumentBytes -= previous?.bytes ?? 0;
         revisions.delete(uri);
-        revisions.set(uri, { signature, version, document, bytes: retainedBytes });
+        revisions.set(uri, {
+          signature,
+          version,
+          document,
+          byteLength: bytes.byteLength,
+          bytes: retainedBytes
+        });
         retainedDocumentBytes += retainedBytes;
         trimDocumentCaptures();
         documents.push(document);
