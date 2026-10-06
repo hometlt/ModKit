@@ -34,7 +34,7 @@
   "packages/vfs/dist/providers/browser-file/index.js": "598a365065060fe31a6e7663915b664417e2c9dfda0c30ffb7334cbc7c98e187",
   "packages/vfs/dist/providers/rapid/index.js": "c4ec617e7bb41d881deb8b9672c47f30f24e22abe791829a614317238e243a45",
   "packages/vfs/dist/providers/rapid/manifest.js": "6bed5b655fac952f1c70606b5ab89991bc14169d8e93383c1adbb4dbd2f7bddc",
-  "packages/host/dist/index.js": "8d89f64a847e1fd664a72da8e15b6aa1fc2f124fa7d9201e738d58065f8aa930",
+  "packages/host/dist/index.js": "8441386c55ba179fd1283c6a7ae0a52fdea36dbfdf0c585c78f597a4caa54326",
   "packages/host/dist/node/index.js": "a9cdfada8ba99d2ff55546137017d86d4a276dd3fbd73116517a573bd12d1284",
   "packages/host/dist/browser/index.js": "982f4a7d784d53029b363503aba2aaa47f80819abacb303e856f6737d85014f8",
   "packages/host/dist/execution/index.js": "d24501428b105bbfff76f6fc95f3210974e7ac3a7e60aa4b03a3ad82f212f138",

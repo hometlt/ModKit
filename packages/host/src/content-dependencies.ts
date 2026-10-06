@@ -3,7 +3,8 @@
  * companion origins, bounded language documents, knowledge inputs and complete path/layer indexes.
  * Access goes through ContentSources for loose and packed storage; no game parser or native writer
  * lives here. Mount bounds, routes and revisions are preserved, current listings/bytes are checked
- * on each language snapshot, and retained immutable captures share the source's byte allowance.
+ * on each language snapshot (once per source for a mount whose provider fingerprint names its
+ * content), and retained immutable captures share the source's byte allowance.
  */
 import {
   compareUtf8,
@@ -377,9 +378,12 @@ function createContentDependencyOrigin(
  * path. Physical cache paths and credentials remain in the provider, while virtual URIs preserve
  * dependency load order and revision identity. Extension-only routing is admitted only when the
  * extension identifies one language across the whole active inventory.
- * Every snapshot lists current paths and reads current document bytes. One exact immutable path
- * capture may be retained alongside document captures within the aggregate retention allowance;
- * changed ownership, listing failures or completeness replace it without dropping any output.
+ * Every snapshot lists current paths and reads current document bytes, except of a mount whose
+ * provider fingerprint names its content (CASC: the installation's build): its complete listing is
+ * kept and its retained captures reused, since neither can change while the fingerprint holds.
+ * One exact immutable path capture may be retained alongside document captures and kept listings
+ * within the aggregate retention allowance; changed ownership, listing failures or completeness
+ * replace it without dropping any output.
  */
 export function createContentDependencyLanguageDocumentSource(
   options: ContentDependencyLanguageDocumentSourceOptions,
@@ -408,6 +412,8 @@ export function createContentDependencyLanguageDocumentSource(
       readonly signature: string
       readonly version: number
       document?: LanguageDocument
+      /** Bytes the source returned for the captured document. */
+      readonly byteLength: number
       bytes: number
     }
   >()
@@ -421,14 +427,85 @@ export function createContentDependencyLanguageDocumentSource(
         bytes: number
       }>
     | undefined
-  /** Evict document captures until their bytes and the retained index fit the source allowance. */
+  type FileRoute = ReturnType<typeof classify>
+  /*
+   * A mount whose provider fingerprint names its content (CASC: the installation's build) lists and
+   * reads the same on every snapshot while this source lives. Its complete listing — each file's
+   * layer-relative path, and the route and URI of the files a route claims — is kept after the
+   * first snapshot, and its retained document captures are reused instead of read again. A mount
+   * without a fingerprint (a folder on disk) is listed and read on every snapshot.
+   */
+  interface KeptListing {
+    /** Layer-relative paths, in listing order. */
+    readonly relatives: readonly string[]
+    /** Listing positions of the files some route claims, ascending, with their route and URI. */
+    readonly routed: readonly Readonly<{
+      at: number
+      path: string
+      route: FileRoute
+      uri: string
+    }>[]
+    /** Files the source listed outside the mount's source path. */
+    readonly outside: number
+    readonly bytes: number
+  }
+  const keptListings = new Map<IndexedMount, KeptListing>()
+  let keptListingBytes = 0
+  /** A kept file no route claims: its place in the index is all a snapshot needs of it. */
+  const UNROUTED: Readonly<{ route: FileRoute; uri: string }> = Object.freeze({
+    route: Object.freeze({ candidates: Object.freeze([]) }),
+    uri: '',
+  })
+  const fingerprinted = (mount: IndexedMount): boolean =>
+    mount.fingerprint !== undefined && isRevisionId(mount.fingerprint)
+  /** Evict document captures until they, the retained index and kept listings fit the allowance. */
   const trimDocumentCaptures = (): void => {
     for (const entry of revisions.values()) {
-      if (retainedDocumentBytes <= maxWorkspaceBytes - (retainedPathIndex?.bytes ?? 0)) break
+      if (
+        retainedDocumentBytes <=
+        maxWorkspaceBytes - (retainedPathIndex?.bytes ?? 0) - keptListingBytes
+      )
+        break
       retainedDocumentBytes -= entry.bytes
       entry.bytes = 0
       delete entry.document
     }
+  }
+  /** Keep a fingerprinted mount's complete listing, if it fits the allowance beside the index. */
+  const keepListing = (mount: IndexedMount, paths: readonly string[]): void => {
+    const relatives: string[] = []
+    const routed: { at: number; path: string; route: FileRoute; uri: string }[] = []
+    let outside = 0
+    let bytes = 0
+    for (const path of paths) {
+      const relative = relativeEntry(mount, { path })
+      if (relative === undefined) {
+        outside += 1
+        continue
+      }
+      const route = classify(relative)
+      // Claimed files, and a layer's root files (a provider may ask for one as language knowledge),
+      // keep their source path; the rest only need their place in the path index.
+      if (
+        route.languageId !== undefined ||
+        route.candidates.length > 0 ||
+        !relative.includes('/')
+      ) {
+        routed.push({
+          at: relatives.length,
+          path,
+          route,
+          uri: contentSourceUri(mount.sourceId, path),
+        })
+        bytes += (path.length + relative.length) * 2 + 256
+      }
+      relatives.push(relative)
+      bytes += relative.length * 2 + 32
+    }
+    if (keptListingBytes + bytes > maxWorkspaceBytes - (retainedPathIndex?.bytes ?? 0)) return
+    keptListings.set(mount, Object.freeze({ relatives, routed, outside, bytes }))
+    keptListingBytes += bytes
+    trimDocumentCaptures()
   }
   const contextId = languageWorkspaceContextToken({
     gameId: options.resolution.gameId,
@@ -501,11 +578,16 @@ export function createContentDependencyLanguageDocumentSource(
        * workspace's languages claims it. Only those count against `maxEntries` (a layer's textures
        * and models are most of its files); false once the path index is full.
        */
+      /** The listing of the mount being walked, for keeping it when the mount is fingerprinted. */
+      let recording: string[] | undefined
+      let recordingFailed = false
       const visit = (mount: IndexedMount, path: string): boolean => {
+        recording?.push(path)
         indexed += 1
         if (indexed > maxIndexedPaths) {
           complete = false
           pathIndexComplete = false
+          recordingFailed = true
           return false
         }
         const relative = relativeEntry(mount, { path })
@@ -514,19 +596,32 @@ export function createContentDependencyLanguageDocumentSource(
           pathIndexComplete = false
           return true
         }
+        place(mount, path, relative)
+        return true
+      }
+      /**
+       * A file of a layer with its layer-relative path: into the path index, and a candidate when
+       * a route of the workspace's languages claims it. A kept listing passes the route and URI.
+       */
+      const place = (
+        mount: IndexedMount,
+        path: string,
+        relative: string,
+        known?: Readonly<{ route: FileRoute; uri: string }>,
+      ): void => {
         contentPaths.set(relative, mounts.indexOf(mount))
         if (!relative.includes('/') && wantedKnowledge.has(relative.toLowerCase())) {
           knowledge.push({ mount, path, fileName: relative })
-          return true
+          return
         }
-        const { languageId, dialect, candidates: claimants } = classify(relative)
+        const { languageId, dialect, candidates: claimants } = known?.route ?? classify(relative)
         if (languageId === undefined) {
           if (claimants.some(id => accepted.has(id))) complete = false
-          return true
+          return
         }
-        if (!accepted.has(languageId)) return true
+        if (!accepted.has(languageId)) return
         claimed += 1
-        const uri = contentSourceUri(mount.sourceId, path)
+        const uri = known?.uri ?? contentSourceUri(mount.sourceId, path)
         const open = openDocuments.get(uri)
         if (open !== undefined) {
           documentOrigins.push(
@@ -544,12 +639,11 @@ export function createContentDependencyLanguageDocumentSource(
               readOnly: true,
             }),
           )
-          return true
+          return
         }
         if (claimed <= maxEntries && candidates.length < request.maxDocuments)
           candidates.push({ mount, path, relative })
         else complete = false
-        return true
       }
       /** A layer that cannot list its files in bulk, folder after folder. */
       const walk = async (mount: IndexedMount, path: string): Promise<boolean> => {
@@ -560,6 +654,7 @@ export function createContentDependencyLanguageDocumentSource(
         } catch {
           complete = false
           pathIndexComplete = false
+          recordingFailed = true
           return true
         }
         for (const entry of entries) {
@@ -569,12 +664,13 @@ export function createContentDependencyLanguageDocumentSource(
           } else if (relativeEntry(mount, entry) === undefined) {
             complete = false
             pathIndexComplete = false
+            recordingFailed = true
           } else if (!(await walk(mount, entry.path))) return false
         }
         return true
       }
       /** A layer's files in pages from the source's own index where it has one (CASC, folders). */
-      const layer = async (mount: IndexedMount): Promise<boolean> => {
+      const listLayer = async (mount: IndexedMount): Promise<boolean> => {
         let cursor: string | undefined
         do {
           request.signal.throwIfAborted()
@@ -587,18 +683,54 @@ export function createContentDependencyLanguageDocumentSource(
           } catch {
             complete = false
             pathIndexComplete = false
+            recordingFailed = true
             return true
           }
           if (page === undefined) {
             if (cursor === undefined) return walk(mount, mount.sourcePath)
             complete = false
             pathIndexComplete = false
+            recordingFailed = true
             return true
           }
           for (const file of page.items) if (!visit(mount, file.path)) return false
           cursor = page.nextCursor
         } while (cursor !== undefined)
         return true
+      }
+      /**
+       * A fingerprinted mount replays its kept listing (when the whole of it fits the path bound;
+       * otherwise it is listed again, which cuts at the same place); any other mount is listed, and
+       * a fingerprinted one whose listing completed is kept for the next snapshots.
+       */
+      const layer = async (mount: IndexedMount): Promise<boolean> => {
+        const kept = keptListings.get(mount)
+        if (
+          kept !== undefined &&
+          indexed + kept.relatives.length + kept.outside <= maxIndexedPaths
+        ) {
+          indexed += kept.relatives.length + kept.outside
+          if (kept.outside > 0) {
+            complete = false
+            pathIndexComplete = false
+          }
+          let next = 0
+          for (const [at, relative] of kept.relatives.entries()) {
+            if (at % 65_536 === 0) request.signal.throwIfAborted()
+            const routed = kept.routed[next]?.at === at ? kept.routed[next++] : undefined
+            // An unrouted file below the root is neither a candidate nor knowledge: its path is unused.
+            place(mount, routed?.path ?? '', relative, routed ?? UNROUTED)
+          }
+          return true
+        }
+        const keep = kept === undefined && fingerprinted(mount)
+        recording = keep ? [] : undefined
+        recordingFailed = false
+        const listed = await listLayer(mount)
+        if (keep && listed && !recordingFailed && recording !== undefined)
+          keepListing(mount, recording)
+        recording = undefined
+        return listed
       }
       for (const mount of mounts) if (!(await layer(mount))) break
       let pathInputs = retainedPathIndex?.inputs
@@ -647,6 +779,36 @@ export function createContentDependencyLanguageDocumentSource(
         request.signal.throwIfAborted()
         const { languageId: classified, dialect } = classify(candidate.relative)
         const languageId = classified!
+        const kept = fingerprinted(candidate.mount)
+          ? revisions.get(contentSourceUri(candidate.mount.sourceId, candidate.path))
+          : undefined
+        if (
+          kept?.document !== undefined &&
+          kept.document.languageId === languageId &&
+          kept.document.dialect === dialect
+        ) {
+          // The fingerprint names these bytes: the retained capture is the document, unread.
+          if (totalBytes + kept.byteLength > maxWorkspaceBytes) {
+            complete = false
+            continue
+          }
+          totalBytes += kept.byteLength
+          const uri = kept.document.uri
+          revisions.delete(uri)
+          revisions.set(uri, kept)
+          documents.push(kept.document)
+          documentOrigins.push(
+            Object.freeze({
+              uri,
+              layerId: `${contextId}:${candidate.mount.order}:${candidate.mount.dependencyId}`,
+              logicalId: candidate.relative,
+              precedence: candidate.mount.order,
+              sourceRevision: kept.signature,
+              readOnly: true,
+            }),
+          )
+          continue
+        }
         let bytes: Uint8Array
         try {
           bytes = await options.contentSources.read(
@@ -706,7 +868,13 @@ export function createContentDependencyLanguageDocumentSource(
         const retainedBytes = Math.max(bytes.byteLength, text.length * 2)
         retainedDocumentBytes -= previous?.bytes ?? 0
         revisions.delete(uri)
-        revisions.set(uri, { signature, version, document, bytes: retainedBytes })
+        revisions.set(uri, {
+          signature,
+          version,
+          document,
+          byteLength: bytes.byteLength,
+          bytes: retainedBytes,
+        })
         retainedDocumentBytes += retainedBytes
         // The existing revision metadata owns these immutable copies; retain no more than the
         // source's aggregate byte bound. Reads still check current bytes on every snapshot.

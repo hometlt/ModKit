@@ -69,6 +69,12 @@ const resolution: ContentDependencyResolution = {
   diagnostics: [],
 }
 
+/** The same closure as mounts whose content no provider fingerprint names (folders on disk). */
+const withoutFingerprints = (value: ContentDependencyResolution): ContentDependencyResolution => ({
+  ...value,
+  mounts: value.mounts.map(({ fingerprint: _fingerprint, ...mount }) => mount),
+})
+
 describe('content dependency language documents', () => {
   it('admits an edited open dependency by mount identity without reading its disk copy', async () => {
     const source = createContentDependencyLanguageDocumentSource({
@@ -294,16 +300,28 @@ describe('content dependency language documents', () => {
         '<Override/>',
       ],
     ])
+    // A fingerprint names the layers' bytes: a repeated snapshot answers with the same captures.
     const repeated = await language.snapshot(request)
+    expect(repeated.documents[0]).toBe(result.documents[0])
+    // Without one, every snapshot reads the bytes again and versions the document that changed.
+    const unfingerprinted = createContentDependencyLanguageDocumentSource({
+      contentSources: sources,
+      resolution: withoutFingerprints(resolution),
+      routes: [
+        { languageId: 'sc2-data', extension: 'xml' },
+        { languageId: 'plain-text', extension: 'txt' },
+        { languageId: 'sc2-strings', extension: 'txt' },
+      ],
+    })
+    const before = await unfingerprinted.snapshot(request)
     const changedPath = 'cache/base/Base.SC2Data/GameData/Units.xml'
     sourceFiles.set(changedPath, encoder.encode('<Changed/>'))
-    const changed = await language.snapshot(request)
-    expect(changed.documents[0]?.version).toBe((result.documents[0]?.version ?? 0) + 1)
+    const changed = await unfingerprinted.snapshot(request)
+    expect(changed.documents[0]?.version).toBe((before.documents[0]?.version ?? 0) + 1)
     expect(changed.documents[0]?.text).toBe('<Changed/>')
     expect(changed.workspaceContext?.documentOrigins[0]?.sourceRevision).not.toBe(
-      result.workspaceContext?.documentOrigins[0]?.sourceRevision,
+      before.workspaceContext?.documentOrigins[0]?.sourceRevision,
     )
-    expect(repeated.documents[0]).toBe(result.documents[0])
   })
 
   it('revisions dependency fingerprints and load order and refuses completeness without fingerprints', async () => {
@@ -356,6 +374,78 @@ describe('content dependency language documents', () => {
     expect(missingFingerprint.workspaceContext?.semanticComplete).toBe(false)
   })
 
+  it('lists and reads a fingerprinted layer once, and keeps no listing that failed', async () => {
+    const paths = new Map([
+      ['cache/base/a.dds', encoder.encode('texture')],
+      ['cache/base/units.xml', encoder.encode('<Unit/>')],
+      ['cache/base/api.json', encoder.encode('{}')],
+      ['cache/override/b.dds', encoder.encode('texture')],
+    ])
+    let failing = true
+    let listings = 0
+    let reads = 0
+    const source = createContentDependencyLanguageDocumentSource({
+      contentSources: {
+        ...contentSources(),
+        async list(_sourceId, path) {
+          listings += 1
+          if (failing && path === 'cache/override')
+            throw new Error('source temporarily unavailable')
+          return [...paths.keys()]
+            .filter(file => file.startsWith(`${path}/`))
+            .map(file => ({
+              path: file,
+              name: file.slice(file.lastIndexOf('/') + 1),
+              directory: false,
+            }))
+        },
+        async read(_sourceId, path) {
+          reads += 1
+          return paths.get(path)!.slice()
+        },
+      },
+      resolution,
+      routes: [{ languageId: 'sc2-data', extension: 'xml' }],
+    })
+    const request = {
+      document: { uri: 'file:///active.xml', languageId: 'sc2-data', version: 1, text: '' },
+      workspaceDocuments: [],
+      workspaceDocumentOrigins: [],
+      workspaceLanguageIds: ['sc2-data'],
+      knowledgeFileNames: ['api.json'],
+      maxDocuments: 8,
+      signal: new AbortController().signal,
+    }
+    const indexOf = (result: Awaited<ReturnType<typeof source.snapshot>>) =>
+      result.workspaceContext?.semanticInputs?.find(input => input.kind === 'content-path-index')!
+    const knowledgeOf = (result: Awaited<ReturnType<typeof source.snapshot>>) =>
+      result.workspaceContext?.semanticInputs?.filter(input => input.kind === 'language-knowledge')
+    // The override layer fails to list: only the base layer's listing is kept.
+    const partial = await source.snapshot(request)
+    expect(partial.isComplete).toBe(false)
+    expect(listings).toBe(2)
+    failing = false
+    const first = await source.snapshot(request)
+    expect(first.isComplete).toBe(true)
+    expect(listings).toBe(3)
+    expect(reads).toBe(3)
+    expect(indexOf(first).payload).toMatchObject({
+      paths: ['a.dds', 'api.json', 'b.dds', 'units.xml'],
+    })
+    // Both listings are kept now; the document capture and the knowledge file answer unread.
+    const repeated = await source.snapshot(request)
+    expect(listings).toBe(3)
+    expect(reads).toBe(4)
+    expect(repeated.documents).toEqual(first.documents)
+    expect(repeated.documents[0]).toBe(first.documents[0])
+    expect(repeated.workspaceContext?.documentOrigins).toEqual(
+      first.workspaceContext?.documentOrigins,
+    )
+    expect(indexOf(repeated)).toBe(indexOf(first))
+    expect(knowledgeOf(repeated)).toEqual(knowledgeOf(first))
+    expect(knowledgeOf(repeated)).toHaveLength(1)
+  })
+
   it('reuses only a revalidated path capture and refreshes changed owners, failures and document bytes', async () => {
     const paths = new Map([
       ['cache/base/a.dds', encoder.encode('texture')],
@@ -364,6 +454,7 @@ describe('content dependency language documents', () => {
     let listingFailed = false
     let listings = 0
     let reads = 0
+    // Folders on disk: no fingerprint names their content, so every snapshot lists and reads them.
     const source = createContentDependencyLanguageDocumentSource({
       contentSources: {
         ...contentSources(),
@@ -383,7 +474,7 @@ describe('content dependency language documents', () => {
           return paths.get(path)!.slice()
         },
       },
-      resolution,
+      resolution: withoutFingerprints(resolution),
       routes: [{ languageId: 'sc2-data', extension: 'xml' }],
     })
     const request = {
@@ -422,7 +513,8 @@ describe('content dependency language documents', () => {
     expect(indexOf(unavailable).payload).toMatchObject({ isComplete: false, paths: [] })
     listingFailed = false
     const recovered = await source.snapshot(request)
-    expect(recovered.isComplete).toBe(true)
+    // Unfingerprinted layers never make the snapshot complete; the path index is complete again.
+    expect(indexOf(recovered).payload).toMatchObject({ isComplete: true })
     expect(indexOf(recovered).revision).toBe(indexOf(addedPath).revision)
     paths.delete('cache/base/b.dds')
     expect(indexOf(await source.snapshot(request)).revision).toBe(indexOf(changedOwner).revision)
