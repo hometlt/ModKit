@@ -127,6 +127,24 @@ function preparedMaterialGeometry(
   return result
 }
 
+/** Blend equations that add or multiply what each triangle draws (see triangleOrderShows). */
+const COMMUTING_BLENDS: ReadonlySet<string> = new Set(['additive', 'add-alpha', 'modulate'])
+
+/**
+ * Whether the order of a blended draw's own triangles can show. Not after a depth prepass, which
+ * leaves the draw only its nearest surface; nor under a blend equation that commutes, as a blended
+ * pass writes no depth: additive and add-alpha add what each triangle draws, and modulate multiplies
+ * by it, up to the target's rounding of each step, which may differ by a level where two of the
+ * draw's triangles cover one pixel. Source-over (blend, premultiplied, a fading solid pass) shows
+ * it, and so does modulate2x, whose sum is clamped after each triangle.
+ */
+function triangleOrderShows(draw: MaterialDraw): boolean {
+  const program = draw.program
+  if (program === undefined) return true
+  if (program.depthPrepass) return false
+  return materialIsSolid(program) || !COMMUTING_BLENDS.has(program.blend)
+}
+
 /**
  * One draw schedule for both providers, including composite passes and requested depth prepasses.
  * `solidOnly` keeps only the solid (opaque and alpha-tested) passes of programmed primitives, in the
@@ -257,8 +275,9 @@ export function sceneMaterialDraws(
     const original = originals[Number(key.materialId)],
       entry = original === undefined ? undefined : entries.get(original)
     if (entry === undefined) throw new TypeError('invalid material draw')
-    // a blended primitive's own triangles go back to front as the primitives do
-    return alpha(original!).mode === 'blend' || primitiveFade(entry.primitive) < 1
+    // a blended primitive's own triangles go back to front as the primitives do, where it can show
+    return (alpha(original!).mode === 'blend' || primitiveFade(entry.primitive) < 1) &&
+      triangleOrderShows(entry)
       ? { ...entry, primitive: depthSortedTriangles(entry.primitive, viewProjection) }
       : entry
   })

@@ -67,8 +67,9 @@ import type { StandardMaterialProgram } from '../materials/index.js'
 import { primitiveTint, primitiveVertexTints } from '../render/tint.js'
 import { mergeMaterialDraws, primitiveVertexPlacements } from '../render/vertex-placements.js'
 import {
-  materialPosedPositions,
   materialPosedPrimitive,
+  materialSkinBounds,
+  materialSkinCenter,
   materialSkinOf,
 } from '../render/material-skin.js'
 import { materialIsSolid, sceneMaterialDraws, type MaterialDraw } from '../render/material-draws.js'
@@ -10093,12 +10094,19 @@ function cachedPrimitiveBounds(positions: Float32Array): ReturnType<typeof bound
   return bounds
 }
 
+/**
+ * Depth of a transparent primitive's bounds centre along the view direction, a skin's as its pose
+ * stands (materialSkinCenter).
+ */
 function transparentProjectionDepth(
-  positions: Float32Array,
+  primitive: SceneRendererPrimitive,
   direction: readonly [number, number, number],
-  transform?: Float32Array,
 ): number {
-  let center = boundsCenters.get(positions)
+  const positions = primitive.positions
+  const transform = primitive.transform
+  const skin = materialSkinOf(primitive)
+  let center =
+    skin === undefined ? boundsCenters.get(positions) : materialSkinCenter(primitive, skin)
   if (center === undefined) {
     if (positions.length % 3 !== 0 || !positions.every(Number.isFinite))
       throw new TypeError('world transparent primitive contains invalid positions')
@@ -10199,11 +10207,7 @@ export function createWorldWebGlCompositeTransparentDrawPlan(
     entries.push({
       value: Object.freeze({ kind: 'material', ...entry }),
       priority: entry.draw.program.priority,
-      depth: transparentProjectionDepth(
-        materialPosedPositions(entry.draw.primitive),
-        direction,
-        entry.draw.primitive.transform,
-      ),
+      depth: transparentProjectionDepth(entry.draw.primitive, direction),
       ordinal: entries.length,
     })
   entries.sort(
@@ -10289,14 +10293,22 @@ function worldViewRectangle(
   return Object.values(rectangle).every(Number.isFinite) ? Object.freeze(rectangle) : undefined
 }
 
-/** Screen box of a transformed primitive: its local bounds' corners projected on the view plane. */
+/**
+ * Screen box of a transformed primitive: its local bounds' corners projected on the view plane. A
+ * skin's bounds hold its pose (materialSkinBounds), so the box holds every pixel it draws.
+ */
 function primitiveScreenBox(
   primitive: SceneRendererPrimitive,
   basis: ReturnType<typeof worldViewPlaneBasis>,
   box: Float64Array,
   offset: number,
 ): void {
-  const { min, max } = cachedPrimitiveBounds(materialPosedPositions(primitive))
+  const skin = materialSkinOf(primitive)
+  const posed = skin === undefined ? undefined : materialSkinBounds(primitive, skin)
+  const { min, max } =
+    posed === undefined
+      ? cachedPrimitiveBounds(primitive.positions)
+      : { min: posed.minimum, max: posed.maximum }
   if (!(min[0] <= max[0])) {
     // Nothing to draw, nothing to overlap.
     box.set([Infinity, Infinity, -Infinity, -Infinity], offset)
