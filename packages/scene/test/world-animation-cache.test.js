@@ -687,6 +687,34 @@ it('reuses the simulated effect frames of many differently turned instances in t
   assert.notEqual(pannedDraws[0].scene.materials, firstDraws[0].scene.materials)
 })
 
+it('builds an effect frame without geometry once per clock, not once per turned copy', () => {
+  // A source whose emitters have nothing live at this clock, placed four ways round.
+  let built = 0
+  const source = {
+    frame: () => {
+      built += 1
+      return { primitives: [], materials: [] }
+    },
+  }
+  const turned = angle => {
+    const [c, s] = [Math.cos(angle), Math.sin(angle)]
+    return Float32Array.of(c, 0, -s, 0, 0, 1, 0, 0, s, 0, c, 0, 0, 0, 0, 1)
+  }
+  const plan = createWorldWebGlPlan(world())
+  const effects = {
+    modelEffects: [0, 1, 2, 3].map(index => ({
+      source,
+      time: 0.5,
+      transform: turned(index * 0.5),
+      context: {},
+      materials: [],
+      textures: new Map(),
+    })),
+  }
+  assert.deepEqual(worldModelEffectDraws(effects, createWorldWebGlCameraFrame(plan, 64, 64)), [])
+  assert.equal(built, 1)
+})
+
 it('neither builds nor draws the effects of instances the view cannot show', () => {
   const placed = (index, x, rotation) => ({
     ...actor,

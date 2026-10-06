@@ -915,17 +915,19 @@ export function worldModelEffectDraws(
         frames.current.set(key, (cached = { frame, programs }))
       }
       const { frame, programs } = cached
-      if (frame.primitives.length === 0) continue
-      // The first instance at a clock measures the reach its copies are culled by.
+      // The first instance at a clock measures the reach its copies are culled by. A frame's content
+      // does not depend on the view, so a clock without geometry has none for any turn of a copy:
+      // the copies at it build nothing.
       if (reach === undefined) {
         const measured = worldEffectReach(frame)
         frames.reach.set(time, measured)
         if (
-          measured !== null &&
+          measured === null ||
           worldBoxOutsideView(measured, effect.transform, camera.viewProjection)
         )
           continue
       }
+      if (frame.primitives.length === 0) continue
       const primitives = frame.primitives.map(primitive => ({
         ...primitive,
         transform: multiplyComponentTransforms(
