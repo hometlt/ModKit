@@ -158,6 +158,7 @@ it('draws a skin from its bind-pose arrays with each clock its palette, and pick
     for (const shadow of [false, true]) {
       const group = worldMaterialBatchesOf(plan, shadow).groups[0]
       assert.equal(group.draw.primitive.skin.palette, primitive.skin.palette)
+      assert.deepEqual(group.instances.palettes, [primitive.skin.palette])
     }
     // Picking reads the pose on the CPU.
     const [entry] = plan.picking.objects[0].primitives
@@ -166,4 +167,39 @@ it('draws a skin from its bind-pose arrays with each clock its palette, and pick
   }
   assert.notEqual(drawn[0], drawn[1])
   assert.notDeepEqual([...drawn[0]], [...drawn[1]])
+})
+
+it('draws placements of one skin at other clocks as one group, each placement with its pose', () => {
+  const placed = (objectId, x) => ({
+    ...world(0).items[0],
+    id: `object-${objectId}`,
+    objectId,
+    position: { x, y: 0, z: 0 },
+    uvwPosition: { x, y: 0, z: 0 },
+  })
+  const input = {
+    ...world(0),
+    items: [placed(1, 0), placed(2, 5)],
+    animationTimes: new Map([
+      [1, 0.25],
+      [2, 0.5],
+    ]),
+  }
+  const plan = createWorldWebGlPlan(input)
+  const primitives = plan.modelMaterialScenes.flatMap(scene => scene.primitives)
+  assert.equal(primitives.length, 2)
+  const [first, second] = primitives.map(primitive => primitive.skin.palette)
+  assert.notEqual(first, second)
+  for (const shadow of [false, true]) {
+    const { groups } = worldMaterialBatchesOf(plan, shadow)
+    assert.equal(groups.length, 1)
+    assert.equal(groups[0].instances.count, 2)
+    assert.deepEqual(groups[0].instances.palettes, [first, second])
+  }
+  // the same poses again: the same list, which the kept shadow keys its caster by
+  const again = createWorldWebGlPlan(input, plan)
+  assert.equal(
+    worldMaterialBatchesOf(again, true).groups[0].instances.palettes,
+    worldMaterialBatchesOf(plan, true).groups[0].instances.palettes,
+  )
 })

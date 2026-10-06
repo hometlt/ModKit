@@ -49,6 +49,12 @@ import { cubeNearestSamplerSource } from '../materials/cube-maps.js'
 export interface MaterialInstances {
   readonly matrices: Float32Array
   readonly count: number
+  /**
+   * A skinned draw's pose per instance (ModelSceneSkin.palette), in the order of the matrices:
+   * placements of one mesh in different poses draw at once. Absent, every instance takes the
+   * draw's own palette.
+   */
+  readonly palettes?: readonly Float32Array[]
 }
 
 /** One draw of a sequence; with `instances` it draws every placement at once (`drawInstanced`). */
@@ -171,6 +177,11 @@ export function materialWebGlDraws(
      * instead of making a vertex array for each order.
      */
     elements?: { data: ArrayBufferView; buffer: BufferEntry }
+    /**
+     * An instanced skinned vertex array's own buffer of first palette texels (a_instanceSkinBase)
+     * and the values it holds; a single skinned draw's vertex array reads a constant value.
+     */
+    skinBases?: { buffer: WebGLBuffer; data: Float32Array }
     used: boolean
   }
   /** The placement slot of an instanced vertex array's key: its matrices are not part of the key. */
@@ -298,7 +309,6 @@ export function materialWebGlDraws(
   let skinTexels = 0
   let skinBases = new Map<Float32Array, number>()
   const skinUnits = new WeakSet<WebGLProgram>()
-  const programSkinBases = new WeakMap<WebGLProgram, number>()
   // Whether a program's draw takes the shadow (MaterialDraw.receiveShadows), as its uniform holds it.
   const programShadowReceivers = new WeakMap<WebGLProgram, number>()
   // The texture on SHADOW_MAP_UNIT across sequences: none at first (only the shadow map is put there
@@ -492,6 +502,20 @@ export function materialWebGlDraws(
             gl.enableVertexAttribArray(location)
             gl.vertexAttribPointer(location, 4, type, false, 0, 0)
           }
+        const skinBaseLocation =
+          skin === undefined || instances === undefined
+            ? -1
+            : attributeLocation(program, 'a_instanceSkinBase')
+        if (skinBaseLocation >= 0) {
+          const buffer = gl.createBuffer()
+          if (buffer === null) throw new TypeError('could not allocate material skin bases')
+          buffersCreated += 1
+          created.skinBases = { buffer, data: new Float32Array(0) }
+          gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+          gl.enableVertexAttribArray(skinBaseLocation)
+          gl.vertexAttribPointer(skinBaseLocation, 1, gl.FLOAT, false, 4, 0)
+          gl.vertexAttribDivisor(skinBaseLocation, 1)
+        }
         const tintLocation = tints === undefined ? -1 : attributeLocation(program, 'a_vertexTint')
         if (tints !== undefined && tintLocation >= 0) {
           created.buffers.push(retainedBuffer(gl.ARRAY_BUFFER, tints))
@@ -525,6 +549,7 @@ export function materialWebGlDraws(
       } catch (error) {
         gl.bindVertexArray(null)
         if (created.instances !== undefined) gl.deleteBuffer(created.instances.buffer)
+        if (created.skinBases !== undefined) gl.deleteBuffer(created.skinBases.buffer)
         gl.deleteVertexArray(vao)
         throw error
       }
@@ -867,7 +892,8 @@ export function materialWebGlDraws(
       if (
         !Number.isSafeInteger(instances.count) ||
         instances.count < 0 ||
-        instances.matrices.length < instances.count * 16
+        instances.matrices.length < instances.count * 16 ||
+        (instances.palettes !== undefined && instances.palettes.length !== instances.count)
       )
         throw new TypeError('invalid material instances')
     }
@@ -885,13 +911,35 @@ export function materialWebGlDraws(
       state.program = program
     }
     if (skin !== undefined) {
-      // An upload leaves the palette unit active with the palettes bound.
-      let base = skinBase(skin.palette)
-      if (base === undefined) {
-        base = skinBases.get(skin.palette)!
+      // The first texel of a palette, appended this frame when new. An upload leaves the palette
+      // unit active with the palettes bound.
+      const baseOf = (palette: Float32Array): number => {
+        const base = skinBase(palette)
+        if (base !== undefined) return base
         state.activeUnit = SKIN_PALETTE_UNIT
         state.lastUnit = SKIN_PALETTE_UNIT
         state.skinPalettes = true
+        return skinBases.get(palette)!
+      }
+      const location = attributeLocation(program, 'a_instanceSkinBase')
+      if (instances === undefined) {
+        // A single draw's first texel as a constant value, as its model matrix.
+        const value = Float32Array.of(baseOf(skin.palette), 0, 0, 1)
+        if (location >= 0 && !holdsAttribute(state.constants.get(location), value, 0)) {
+          gl.vertexAttrib4fv(location, value)
+          state.constants.set(location, value)
+        }
+      } else if (geometry.skinBases !== undefined) {
+        // Each instance's first texel, into the vertex array's buffer when they changed.
+        const bases = new Float32Array(instances.count)
+        for (let index = 0; index < instances.count; index++)
+          bases[index] = baseOf(instances.palettes?.[index] ?? skin.palette)
+        const held = geometry.skinBases.data
+        if (held.length !== bases.length || held.some((value, index) => value !== bases[index])) {
+          gl.bindBuffer(gl.ARRAY_BUFFER, geometry.skinBases.buffer)
+          gl.bufferData(gl.ARRAY_BUFFER, bases, gl.DYNAMIC_DRAW)
+          geometry.skinBases.data = bases
+        }
       }
       if (state.skinPalettes !== true) {
         if (state.activeUnit !== SKIN_PALETTE_UNIT) {
@@ -905,10 +953,6 @@ export function materialWebGlDraws(
       if (!skinUnits.has(program)) {
         gl.uniform1i(uniformLocation(gl, program, 'u_skinPalette'), SKIN_PALETTE_UNIT)
         skinUnits.add(program)
-      }
-      if (programSkinBases.get(program) !== base) {
-        gl.uniform1i(uniformLocation(gl, program, 'u_skinBase'), base)
-        programSkinBases.set(program, base)
       }
     }
     if (programLeases.get(program) !== lease || programUniforms.get(program) !== source.uniforms) {
@@ -1021,11 +1065,16 @@ export function materialWebGlDraws(
       for (const geometries of vertexArrays.values())
         for (const variants of geometries.values()) {
           vertexArrayEntries += variants.length
-          for (const entry of variants)
+          for (const entry of variants) {
             if (entry.instances !== undefined) {
               instanceBuffers += 1
               bufferBytesRetained += entry.instances.byteLength
             }
+            if (entry.skinBases !== undefined) {
+              instanceBuffers += 1
+              bufferBytesRetained += entry.skinBases.data.byteLength
+            }
+          }
         }
       return Object.freeze({
         bufferEntries: retained.size + spares + instanceBuffers,
@@ -1070,6 +1119,7 @@ export function materialWebGlDraws(
           for (const entry of variants) {
             gl.deleteVertexArray(entry.vao)
             if (entry.instances !== undefined) gl.deleteBuffer(entry.instances.buffer)
+            if (entry.skinBases !== undefined) gl.deleteBuffer(entry.skinBases.buffer)
           }
       vertexArrays.clear()
       for (const leases of programs.values()) for (const lease of leases.values()) lease.release()
@@ -1124,6 +1174,7 @@ export function materialWebGlDraws(
             if (!entry.used) {
               gl.deleteVertexArray(entry.vao)
               if (entry.instances !== undefined) gl.deleteBuffer(entry.instances.buffer)
+              if (entry.skinBases !== undefined) gl.deleteBuffer(entry.skinBases.buffer)
               return false
             }
             entry.used = false

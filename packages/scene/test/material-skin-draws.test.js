@@ -88,11 +88,13 @@ it('draws a skin posed on the GPU with its own program, its vertex slots and the
   assert.equal(image[0].args[2], constants.get('RGBA32F'))
   const uploads = named('texSubImage2D')
   assert.equal(uploads.length, 2)
-  // The first palette's texels at 0, the second's after them (eight texels a two-matrix palette).
-  const bases = named('uniform1i')
-    .filter(call => call.args[0].name === 'u_skinBase')
-    .map(call => call.args[1])
-  assert.deepEqual(bases, [0, 8])
+  // The first palette's texels at 0, the second's after them (eight texels a two-matrix palette):
+  // a single draw's first texel is a constant value of its attribute, as its model matrix.
+  const skinBases = () =>
+    named('vertexAttrib4fv')
+      .filter(call => call.args[0] === attributes.get('a_instanceSkinBase'))
+      .map(call => call.args[1][0])
+  assert.deepEqual(skinBases(), [0, 8])
   assert.ok(calls.slice(0, prepared).some(call => call.name === 'texSubImage2D'))
   // The skinned draws link the skinning vertex stage, the plain draw the plain one.
   const vertexSources = named('shaderSource')
@@ -115,11 +117,49 @@ it('draws a skin posed on the GPU with its own program, its vertex slots and the
   draws.sweep()
   calls.length = 0
   draws.drawSequence([draw(skinned(second))], camera)
-  assert.deepEqual(
-    named('uniform1i')
-      .filter(call => call.args[0].name === 'u_skinBase')
-      .map(call => call.args[1]),
-    [0],
+  assert.deepEqual(skinBases(), [0])
+  draws.release()
+})
+
+it('draws placements of one skinned mesh in different poses at once, each from its palette', () => {
+  const { gl, attributes, constants, named } = recording()
+  const draws = materialWebGlDraws(gl, new Map(), { checkEachDraw: false })
+  const pose = rows => {
+    const palette = new Float32Array(rows * 16)
+    for (let row = 0; row < rows; row++) palette.set(identity, row * 16)
+    return palette
+  }
+  const first = pose(2),
+    second = pose(3)
+  draws.prepareSkins([first, second])
+  const matrices = new Float32Array(3 * 16)
+  for (let index = 0; index < 3; index++) matrices.set(identity, index * 16)
+  const instances = { matrices, count: 3, palettes: [second, first, second] }
+  const sequence = [{ draw: { primitive: skinned(first), program, material }, instances }]
+  draws.drawSequence(sequence, camera)
+  // one submission for the three placements
+  const submitted = named('drawElementsInstanced')
+  assert.equal(submitted.length, 1)
+  assert.equal(submitted[0].args[4], 3)
+  // each placement's first palette texel, per instance: the first palette at 0, the second at 8
+  const location = attributes.get('a_instanceSkinBase')
+  const pointer = named('vertexAttribPointer').find(call => call.args[0] === location)
+  assert.deepEqual(pointer.args.slice(1, 3), [1, constants.get('FLOAT')])
+  assert.ok(named('vertexAttribDivisor').some(call => call.args[0] === location && call.args[1] === 1))
+  const bases = () => named('bufferData').filter(call => call.args[1]?.length === 3)
+  assert.deepEqual([...bases().at(-1).args[1]], [8, 0, 8])
+  // the same poses again upload no bases
+  const uploads = bases().length
+  draws.drawSequence(sequence, camera)
+  assert.equal(bases().length, uploads)
+  // other counts of palettes than of placements are refused
+  assert.throws(
+    () =>
+      draws.drawSequence(
+        [{ draw: sequence[0].draw, instances: { matrices, count: 3, palettes: [first] } }],
+        camera,
+      ),
+    /invalid material instances/,
   )
   draws.release()
 })

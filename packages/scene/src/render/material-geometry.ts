@@ -694,16 +694,22 @@ function placementLocals(worldGeometry: boolean): string {
 
 /**
  * Skinning on the GPU (see ModelSceneSkin): each vertex blends four matrices of its draw's palette,
- * read from a float texture of four texels a matrix from the draw's first texel `u_skinBase`. The
- * weights arrive over their sum, and an influence without weight names the identity, as the CPU
- * kernel skips it; normals and tangents take the blend's upper 3x3, their length left to the stage.
+ * read from a float texture of four texels a matrix from the palette's first texel. The weights
+ * arrive over their sum, and an influence without weight names the identity, as the CPU kernel
+ * skips it; normals and tangents take the blend's upper 3x3, their length left to the stage. With
+ * the placement from attributes the first texel is one too, `a_instanceSkinBase`: per instance, so
+ * placements of one mesh in different poses draw at once (TASK_CORE_RTS_PREVIEW_RENDER C5), and a
+ * constant value for a single draw, as its model matrix; otherwise the uniform `u_skinBase`.
  */
-const SKIN_DECLARATIONS = `in vec4 a_skinJoints, a_skinWeights;
+function skinDeclarations(placementAttributes: boolean): string {
+  const base = placementAttributes ? 'int(a_instanceSkinBase+0.5)' : 'u_skinBase'
+  return `in vec4 a_skinJoints, a_skinWeights;
 uniform highp sampler2D u_skinPalette;
-uniform int u_skinBase;
-mat4 skinMatrix(float joint){int texel=u_skinBase+int(joint)*4,width=textureSize(u_skinPalette,0).x;ivec2 at=ivec2(texel%width,texel/width);
+${placementAttributes ? 'in float a_instanceSkinBase;' : 'uniform int u_skinBase;'}
+mat4 skinMatrix(float joint){int texel=${base}+int(joint)*4,width=textureSize(u_skinPalette,0).x;ivec2 at=ivec2(texel%width,texel/width);
   return mat4(texelFetch(u_skinPalette,at,0),texelFetch(u_skinPalette,at+ivec2(1,0),0),texelFetch(u_skinPalette,at+ivec2(2,0),0),texelFetch(u_skinPalette,at+ivec2(3,0),0));}
 `
+}
 const SKIN_LOCALS = `
   mat4 skin=skinMatrix(a_skinJoints.x)*a_skinWeights.x+skinMatrix(a_skinJoints.y)*a_skinWeights.y+skinMatrix(a_skinJoints.z)*a_skinWeights.z+skinMatrix(a_skinJoints.w)*a_skinWeights.w;
   vec3 skinPosition=(skin*vec4(a_position,1.0)).xyz,skinNormal=mat3(skin)*a_normal;
@@ -713,7 +719,7 @@ const SKIN_LOCALS = `
  * tangent-space lighting, and explicit camera frames. Native shader builders remain immutable.
  * `placementAttributes` takes the model matrix from attributes (see PLACEMENT_DECLARATIONS);
  * without it the stage reads the per-draw matrices from uniforms. `skinned` poses the vertices by
- * the draw's skin first (see SKIN_DECLARATIONS); `tinted` hands each vertex's tint to the fragment
+ * the draw's skin first (see skinDeclarations); `tinted` hands each vertex's tint to the fragment
  * stage, flat (see primitiveVertexTints). */
 export function sceneMaterialVertexSource(
   defines: StandardMaterialDefines,
@@ -756,7 +762,7 @@ uniform vec3 u_lightDirection;
 ${defines.sceneLighting ? 'uniform vec3 u_sceneFillViewDirection0, u_sceneFillViewDirection1;\nout vec3 v_sceneFillDir0, v_sceneFillDir1;\nout vec3 v_sceneShadowWorld;' : ''}
 ${worldGeometry && !placementAttributes ? 'uniform mat3 u_sceneWorldNormalMatrix;\nuniform float u_sceneWorldOrientation;\n' : ''}uniform float ${placementAttributes ? '' : 'u_orientation, '}u_orthographic;
 in vec3 a_position, a_normal; in vec4 a_tangent;
-${skinned ? SKIN_DECLARATIONS : ''}${tinted ? 'in vec4 a_vertexTint; flat out vec4 v_vertexTint;\n' : ''}${Array.from({ length: defines.uvSetCount }, (_, i) => `in vec2 a_uv${i}; out vec2 v_uv${i};`).join('\n')}
+${skinned ? skinDeclarations(placementAttributes) : ''}${tinted ? 'in vec4 a_vertexTint; flat out vec4 v_vertexTint;\n' : ''}${Array.from({ length: defines.uvSetCount }, (_, i) => `in vec2 a_uv${i}; out vec2 v_uv${i};`).join('\n')}
 ${defines.usesVertexAlpha || defines.usesVertexColor ? 'in vec4 a_color; out vec4 v_vertexColor;' : ''}
 out vec3 v_normal, v_lightDir, v_halfVec, v_viewDir, v_viewPosition, v_viewNormal;
 out vec3 v_modelPosition, v_modelNormal, v_worldPosition, v_worldNormal;

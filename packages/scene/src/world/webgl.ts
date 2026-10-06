@@ -9080,7 +9080,7 @@ function worldShadowEntryKey(
   return [
     'material',
     primitive.positions,
-    materialSkinOf(primitive)?.palette,
+    entry.instances?.palettes ?? materialSkinOf(primitive)?.palette,
     primitive.indices,
     primitive.topology,
     entry.instances?.matrices ?? primitive.transform,
@@ -11233,6 +11233,7 @@ function worldSceneSolidDrawsOf(
     }
     const primitive = draw.primitive
     const bias = primitive.depthBias
+    const skin = materialSkinOf(primitive)
     const geometryKey = [
       draw.depthOnly === true ? 'depth' : 'colour',
       primitive.topology,
@@ -11245,7 +11246,9 @@ function worldSceneSolidDrawsOf(
         set => `${set.set}:${worldGroupId(set.coordinates)}`,
       ),
       worldGroupId(primitive.indices),
-      worldGroupId(materialSkinOf(primitive)?.palette),
+      // a skin by its vertex slots and weights: placements in other poses draw at once (each
+      // instance's palette, MaterialInstances.palettes)
+      skin === undefined ? '-' : `${worldGroupId(skin.joints)}:${worldGroupId(skin.weights)}`,
       bias === undefined ? '-' : `${bias.slopeScale}:${bias.units}`,
       primitiveTint(primitive).join(':'),
     ].join('|')
@@ -11274,9 +11277,15 @@ function worldSceneSolidDrawsOf(
  * buffer and vertex array in the renderer, where a new one allocated both again for every group
  * at every frame. A program sampled at a new clock changes the group key, not the geometry key.
  */
+/** A group's placements as last given: its matrices and, for a skin, the pose of each placement. */
+type WorldInstancesKept = Readonly<{
+  transforms: readonly Float32Array[]
+  matrices: Float32Array
+  palettes: readonly Float32Array[] | undefined
+}>
 const lastWorldInstanceMatrices = [
-  new Map<string, Readonly<{ transforms: readonly Float32Array[]; matrices: Float32Array }>>(),
-  new Map<string, Readonly<{ transforms: readonly Float32Array[]; matrices: Float32Array }>>(),
+  new Map<string, WorldInstancesKept>(),
+  new Map<string, WorldInstancesKept>(),
 ]
 
 function groupWorldMaterialDraws(plan: WorldWebGlPlan, shadow: boolean): WorldWebGlMaterialBatches {
@@ -11284,6 +11293,8 @@ function groupWorldMaterialDraws(plan: WorldWebGlPlan, shadow: boolean): WorldWe
     readonly draw: WorldWebGlMaterialGroup['draw']
     readonly geometryKey: string
     readonly transforms: Float32Array[]
+    /** A skinned group's pose per placement, in the order of `transforms`. */
+    readonly palettes: Float32Array[] | undefined
     readonly seen: Set<Float32Array>
   }
   // Groups by program, material and geometry key, in the order they first appear: the parts of a
@@ -11311,8 +11322,18 @@ function groupWorldMaterialDraws(plan: WorldWebGlPlan, shadow: boolean): WorldWe
       let byGeometry = byMaterial.get(material)
       if (byGeometry === undefined) byMaterial.set(material, (byGeometry = new Map()))
       let group = byGeometry.get(geometryKey)
+      const palette = materialSkinOf(draw.primitive)?.palette
       if (group === undefined) {
-        byGeometry.set(geometryKey, (group = { draw, geometryKey, transforms: [], seen: new Set() }))
+        byGeometry.set(
+          geometryKey,
+          (group = {
+            draw,
+            geometryKey,
+            transforms: [],
+            palettes: palette === undefined ? undefined : [],
+            seen: new Set(),
+          }),
+        )
         groups.push(group)
       }
       const transform = draw.primitive.transform ?? IDENTITY_VIEW_PROJECTION
@@ -11322,15 +11343,13 @@ function groupWorldMaterialDraws(plan: WorldWebGlPlan, shadow: boolean): WorldWe
         group.seen.add(transform)
       }
       group.transforms.push(transform)
+      if (palette !== undefined) group.palettes?.push(palette)
     }
     if (solid.transparent && !shadow) transparentScenes.push(scene)
   }
   const last = lastWorldInstanceMatrices[shadow ? 1 : 0]!
-  const kept = new Map<
-    string,
-    Readonly<{ transforms: readonly Float32Array[]; matrices: Float32Array }>
-  >()
-  const instanced = groups.map(({ draw, geometryKey, transforms }) => {
+  const kept = new Map<string, WorldInstancesKept>()
+  const instanced = groups.map(({ draw, geometryKey, transforms, palettes }) => {
     const previous = kept.get(geometryKey) ?? last.get(geometryKey)
     let matrices = previous?.matrices
     if (
@@ -11341,10 +11360,24 @@ function groupWorldMaterialDraws(plan: WorldWebGlPlan, shadow: boolean): WorldWe
       matrices = new Float32Array(transforms.length * 16)
       transforms.forEach((transform, index) => matrices!.set(transform, index * 16))
     }
-    if (!kept.has(geometryKey)) kept.set(geometryKey, { transforms, matrices: matrices! })
+    // the same poses as before keep their list (the shadow pass keys its casters by it)
+    const posed =
+      palettes === undefined
+        ? undefined
+        : previous?.palettes !== undefined &&
+            previous.palettes.length === palettes.length &&
+            previous.palettes.every((palette, index) => palette === palettes[index])
+          ? previous.palettes
+          : Object.freeze(palettes)
+    if (!kept.has(geometryKey))
+      kept.set(geometryKey, { transforms, matrices: matrices!, palettes: posed })
     return Object.freeze({
       draw,
-      instances: Object.freeze({ matrices: matrices!, count: transforms.length }),
+      instances: Object.freeze({
+        matrices: matrices!,
+        count: transforms.length,
+        ...(posed === undefined ? {} : { palettes: posed }),
+      }),
     })
   })
   lastWorldInstanceMatrices[shadow ? 1 : 0] = kept
