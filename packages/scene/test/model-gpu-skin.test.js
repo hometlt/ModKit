@@ -6,6 +6,10 @@ import {
   snapshotModelAnimations,
 } from '@modkit/codec-kit/model/animation'
 import { createModelSceneSampler } from '../src/model/sampler.js'
+import { createGltfMaterialPrograms } from '../src/materials/gltf-program.js'
+import { sceneMaterialDraws } from '../src/render/material-draws.js'
+import { prepareMaterialGeometry } from '../src/render/material-geometry.js'
+import { materialPosedPrimitive } from '../src/render/material-skin.js'
 
 const identity = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
 const inverse = (x, y) => {
@@ -141,14 +145,28 @@ it('poses a skin on the GPU with the arithmetic of the CPU kernel', () => {
   assert.notDeepEqual([...later.skin.palette], [...palette])
 })
 
-it('keeps a skin without authored tangents on the CPU', () => {
+it('poses a skin without authored tangents on the GPU, its tangents made per vertex', () => {
   const source = primitive(false)
   const cpu = createModelSceneSampler(projection(source), { clip }).sample(0.5).primitives[0]
   const [gpu] = createModelSceneSampler(projection(source), { clip, skinning: 'gpu' }).sample(
     0.5,
   ).primitives
-  assert.equal(gpu.skin, undefined)
-  assert.deepEqual([...gpu.positions], [...cpu.positions])
+  assert.notEqual(gpu.skin, undefined)
+  near(materialPosedPrimitive(gpu).positions, [...cpu.positions], 'posed position')
+  // The renderer keeps the skin's vertices (and indices): its tangents are made per vertex, at
+  // right angles to each vertex's normal, instead of expanding the triangles.
+  const prepared = prepareMaterialGeometry(gpu, 1 << 20)
+  assert.equal(prepared.indices, gpu.indices)
+  assert.equal(prepared.positions, gpu.positions)
+  assert.equal(prepared.skin, gpu.skin)
+  assert.equal(prepared.tangents.length, 16)
+  for (let vertex = 0; vertex < 4; vertex++) {
+    const normal = normalize([...gpu.normals.subarray(vertex * 3, vertex * 3 + 3)])
+    const tangent = prepared.tangents.subarray(vertex * 4, vertex * 4 + 3)
+    assert.ok(Math.abs(normal[0] * tangent[0] + normal[1] * tangent[1] + normal[2] * tangent[2]) < 1e-6)
+    assert.ok(Math.abs(Math.hypot(...tangent) - 1) < 1e-6)
+    assert.ok(Math.abs(prepared.tangents[vertex * 4 + 3]) === 1)
+  }
 })
 
 it('poses all eight influences on the CPU even when GPU skinning was requested', () => {
@@ -262,4 +280,34 @@ it('poses a large channelled skin with a clip-sized node budget and a bounded by
     () => createModelSceneSampler(largeProjection, { clip: largeClip, maxBytes: 1024 }),
     /exceeds maxBytes|exceeds byte budget/,
   )
+})
+
+it("keeps a skin's indices for every placed instance its prepared geometry serves", () => {
+  // two units of one model: two primitives over the same vertex arrays, posed apart
+  const source = { ...primitive(false), materialId: 'm' }
+  const sampler = createModelSceneSampler(projection(source), { clip, skinning: 'gpu' })
+  const [first] = sampler.sample(0.25).primitives
+  const [second] = sampler.sample(0.75).primitives
+  assert.notEqual(first, second)
+  assert.equal(first.positions, second.positions)
+  const material = { id: 'm', baseColor: [1, 1, 1, 1], shading: 'pbr' }
+  const program = createGltfMaterialPrograms(material, new Map()).sample(undefined)
+  const draws = sceneMaterialDraws(
+    [first, second],
+    [material],
+    new Map([['m', { passes: [program], textures: new Map() }]]),
+    Float32Array.from(identity),
+    [],
+    1,
+  )
+  assert.equal(draws.length, 2)
+  for (const [index, instance] of [first, second].entries()) {
+    const drawn = draws.find(draw => draw.primitive.skin === instance.skin)
+    assert.ok(drawn !== undefined, `instance ${index} drawn with its own palette`)
+    // the second reuses the first's prepared arrays (tangents made once), with the skin's indices
+    assert.equal(drawn.primitive.indices, source.indices)
+    assert.equal(drawn.primitive.positions, source.positions)
+    assert.equal(drawn.primitive.tangents, draws[0].primitive.tangents)
+    assert.equal(drawn.primitive.tangents.length, 16)
+  }
 })

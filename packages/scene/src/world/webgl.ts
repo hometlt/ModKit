@@ -2567,6 +2567,64 @@ function presentationMaterials(
   })
 }
 
+/** Layers a glTF program does not carry: the material keeps its fallback (gltf-program.ts). */
+const GLTF_UNCARRIED_SLOTS = new Set(['normal', 'emissive', 'occlusion'])
+
+/**
+ * A model material of the glTF path as the scene draws it (materials/gltf-program.ts): its base
+ * colour factor and texture, metallic-roughness factors (absent: a rough dielectric, as the model
+ * contract says) and texture, emissive colour, coverage, sides, draw order and team colour
+ * (modelMaterialTeamColor, at the base colour's UVs). Undefined for a material the glTF programs do
+ * not carry, which keeps the fallback path: a program of its own, unlit, a normal, emissive or
+ * occlusion texture, a texture on other UVs than the first, or neither a factor nor a texture (the
+ * fallback marks those with a stand-in hue).
+ */
+function worldGltfSceneMaterial(
+  ref: ModelMaterialRef,
+  byId: ReadonlyMap<string, SceneRendererTexture>,
+): SceneRendererMaterial | undefined {
+  if (ref.shader !== undefined || ref.unlit === true) return undefined
+  const layers = (ref.layers ?? []).filter(layer => layer.resourceId !== undefined)
+  if (layers.some(layer => GLTF_UNCARRIED_SLOTS.has(materialSlot(layer.slot)))) return undefined
+  if (layers.some(layer => (layer.uvSource ?? 0) !== 0)) return undefined
+  const textureOf = (slots: ReadonlySet<string>) => {
+    const layer = layers.find(candidate => slots.has(materialSlot(candidate.slot)))
+    return layer?.resourceId === undefined ? undefined : byId.get(layer.resourceId)
+  }
+  const base = textureOf(BASE_COLOR_SLOTS)
+  if (ref.baseColorFactor === undefined && base === undefined) return undefined
+  // coverage as the fallback reads it (alpha mode, cutoff, native blend); an adding blend is its own
+  const coverage = modelMaterialCoverage(ref)
+  if (ref.blendMode === 'additive' || ref.blendMode === 'add-alpha') return undefined
+  const metallicRoughness = textureOf(GLTF_METALLIC_ROUGHNESS_SLOTS)
+  const team = modelMaterialTeamColor(ref, byId, 0)
+  const bindings = layers.flatMap(layer => {
+    const texture = byId.get(layer.resourceId!)
+    return texture === undefined ? [] : [{ resourceId: layer.resourceId!, textureId: texture.id }]
+  })
+  return Object.freeze({
+    id: ref.id,
+    baseColor: ref.baseColorFactor ?? ([1, 1, 1, 1] as const),
+    ...(base === undefined ? {} : { baseColorTexture: base.id }),
+    shading: 'pbr' as const,
+    pbr: Object.freeze({
+      metallic: ref.metallicFactor ?? 0,
+      roughness: ref.roughnessFactor ?? 1,
+      ...(metallicRoughness === undefined ? {} : { metallicRoughnessTexture: metallicRoughness.id }),
+      ...(ref.emissiveFactor === undefined ? {} : { emissive: ref.emissiveFactor }),
+    }),
+    alphaMode: coverage.mode,
+    ...(coverage.mode === 'mask' ? { alphaCutoff: coverage.cutoff } : {}),
+    ...(ref.doubleSided === true ? { doubleSided: true } : {}),
+    ...(ref.depthWrite === undefined ? {} : { depthWrite: ref.depthWrite }),
+    ...(ref.priority === undefined ? {} : { priority: ref.priority }),
+    ...(team === undefined ? {} : { teamColor: team }),
+    ...(bindings.length === 0 ? {} : { textureBindings: Object.freeze(bindings) }),
+  })
+}
+
+const GLTF_METALLIC_ROUGHNESS_SLOTS = new Set(['metallicroughness'])
+
 function worldModelSceneMaterials(
   refs: readonly ModelMaterialRef[],
   textures: readonly SceneRendererTexture[],
@@ -2577,6 +2635,12 @@ function worldModelSceneMaterials(
   const byId = new Map(textures.map(texture => [texture.id, texture]))
   const used = new Map<string, SceneRendererTexture>()
   const materials = refs.map((ref): SceneRendererMaterial => {
+    const gltf = worldGltfSceneMaterial(ref, byId)
+    if (gltf !== undefined) {
+      for (const binding of gltf.textureBindings ?? [])
+        used.set(binding.textureId, byId.get(binding.textureId)!)
+      return gltf
+    }
     const baseLayer = ref.layers?.find(
       layer => BASE_COLOR_SLOTS.has(materialSlot(layer.slot)) && layer.resourceId !== undefined,
     )
@@ -3537,6 +3601,8 @@ function worldModelProgramTemplate(
       sampler = createSceneMaterialProgramSampler(
         scene.materials,
         new Map(scene.textures.map(texture => [texture.id, texture])),
+        undefined,
+        { gltfPrograms: true },
       )
     } catch {
       // A malformed or unsupported game-material vocabulary must retain the existing visible

@@ -51,6 +51,8 @@ it("draws a fallback model's team colour layer in its player's colour (П9 step 
         model(
           'tank',
           {
+            // unlit: the fallback path draws it (a glTF program lights its material, gltf-program.ts)
+            unlit: true,
             layers: [
               { slot: 'diffuse', resourceId: 'albedo.dds' },
               { slot: 'teamColor', resourceId: 'team.dds', colorChannels: 8, blend: 'lerp' },
@@ -73,7 +75,12 @@ it('takes a whole team colour into an untextured model as its colour', () => {
     models: new Map([
       [
         'hull',
-        model('hull', { baseColorFactor: [0.5, 0.5, 0.5, 1], layers: [{ slot: 'teamColor' }] }, []),
+        // unlit: the fallback path draws it (a glTF program lights its material, gltf-program.ts)
+        model(
+          'hull',
+          { baseColorFactor: [0.5, 0.5, 0.5, 1], unlit: true, layers: [{ slot: 'teamColor' }] },
+          [],
+        ),
       ],
     ]),
   })
@@ -104,4 +111,62 @@ it('reads a material team colour once for every renderer (modelMaterialTeamColor
     { slot: 'teamColor', resourceId: 'absent.dds' },
   ])
     assert.equal(modelMaterialTeamColor({ id: 'm', layers: [layer] }, textures, 0), undefined)
+})
+
+it("draws a glTF material and its team colour by a program, in its player's colour (C4)", () => {
+  const plan = createWorldWebGlPlan({
+    items: [unit(3, 'tank'), unit(4, 'bumpy')],
+    teamColors: new Map([[1, [1, 0, 0]]]),
+    models: new Map([
+      [
+        'tank',
+        model(
+          'tank',
+          {
+            baseColorFactor: [0.5, 0.5, 0.5, 1],
+            metallicFactor: 0.25,
+            layers: [
+              { slot: 'diffuse', resourceId: 'albedo.dds' },
+              { slot: 'teamColor', resourceId: 'team.dds', colorChannels: 8, blend: 'lerp' },
+            ],
+          },
+          [texture('albedo.dds'), texture('team.dds')],
+        ),
+      ],
+      [
+        // a normal texture is not carried by the glTF programs: the fallback draws the model
+        'bumpy',
+        model(
+          'bumpy',
+          {
+            layers: [
+              { slot: 'diffuse', resourceId: 'albedo.dds' },
+              { slot: 'normal', resourceId: 'normal.dds' },
+            ],
+          },
+          [texture('albedo.dds'), texture('normal.dds')],
+        ),
+      ],
+    ]),
+  })
+  const passes = plan.modelMaterialScenes.flatMap(scene =>
+    [...scene.programs.values()].flatMap(programs => programs.passes),
+  )
+  assert.equal(passes.length, 1)
+  const [program] = passes
+  assert.equal(program.key, 'gltf;t;team=2;opaque')
+  assert.deepEqual(program.uniforms.u_teamColor, [1, 0, 0])
+  assert.equal(program.uniforms.u_teamBlend, 4)
+  assert.equal(program.uniforms.u_teamMaskChannel, 3)
+  assert.equal(program.uniforms.u_metallicFactor, 0.25)
+  assert.equal(program.uniforms.u_roughnessFactor, 1)
+  assert.deepEqual(
+    program.textures.map(binding => [binding.slot, binding.uniform]),
+    [
+      ['diffuse', 'u_baseColorMap'],
+      ['teamColorMask', 'u_teamMaskMap'],
+    ],
+  )
+  assert.equal(plan.texturedTriangles.length, 1)
+  assert.equal(plan.texturedTriangles[0].texture.id, 'albedo.dds')
 })

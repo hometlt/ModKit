@@ -783,6 +783,8 @@ describe('common world WebGL plan', () => {
             alphaMode: 'mask',
             alphaCutoff: 0.4,
             castShadows: false,
+            // unlit: the fallback path draws it (a glTF program lights its material, gltf-program.ts)
+            unlit: true,
             layers,
           }),
         ],
@@ -944,6 +946,8 @@ describe('common world WebGL plan', () => {
         {
           id: 'surface',
           blendMode: 'blend',
+          // unlit: the fallback path draws it (a glTF program lights its material, gltf-program.ts)
+          unlit: true,
           layers: [{ slot: 'diffuse', resourceId: texture.id, uvSource: 0 }],
         },
       ],

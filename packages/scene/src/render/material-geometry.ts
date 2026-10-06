@@ -83,6 +83,105 @@ const read4 = (array: Float32Array, index: number): Vec4 => [
 const subtract = (a: Vec3, b: Vec3): Vec3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]]
 const tangentFallback = (normal: Vec3): Vec3 =>
   unit(cross(Math.abs(normal[2]) < 0.9 ? [0, 0, 1] : [0, 1, 0], normal), [1, 0, 0])
+
+/**
+ * A triangle's face normal, tangent and bitangent: from its edges and the UV deltas at its corners
+ * (`a`, `b`, `c`: the corners' offsets in `uv`), or the face's fallback frame without UVs or with a
+ * degenerate UV determinant (`degenerate`).
+ */
+function triangleTangentFrame(
+  p: Vec3,
+  q: Vec3,
+  r: Vec3,
+  uv: ArrayLike<number> | undefined,
+  a: number,
+  b: number,
+  c: number,
+): Readonly<{ face: Vec3; tangent: Vec3; bitangent: Vec3; degenerate: boolean }> {
+  const e1 = subtract(q, p),
+    e2 = subtract(r, p),
+    face = unit(cross(e1, e2))
+  let tangent: Vec3 = tangentFallback(face),
+    bitangent: Vec3 = cross(face, tangent)
+  if (uv === undefined) return { face, tangent, bitangent, degenerate: false }
+  const u1 = value(uv, b) - value(uv, a),
+    v1 = value(uv, b + 1) - value(uv, a + 1),
+    u2 = value(uv, c) - value(uv, a),
+    v2 = value(uv, c + 1) - value(uv, a + 1),
+    determinant = u1 * v2 - u2 * v1
+  if (!(Math.abs(determinant) > 1e-9)) return { face, tangent, bitangent, degenerate: true }
+  tangent = [
+    (e1[0] * v2 - e2[0] * v1) / determinant,
+    (e1[1] * v2 - e2[1] * v1) / determinant,
+    (e1[2] * v2 - e2[2] * v1) / determinant,
+  ]
+  bitangent = [
+    (e2[0] * u1 - e1[0] * u2) / determinant,
+    (e2[1] * u1 - e1[1] * u2) / determinant,
+    (e2[2] * u1 - e1[2] * u2) / determinant,
+  ]
+  return { face, tangent, bitangent, degenerate: false }
+}
+
+/** `tangent` made orthogonal to `normal`, with the handedness `bitangent` gives it (glTF TANGENT.w). */
+function orthogonalTangent(normal: Vec3, tangent: Vec3, bitangent: Vec3): Vec4 {
+  const n = unit(normal),
+    nt = dot(n, tangent),
+    along = unit(
+      [tangent[0] - n[0] * nt, tangent[1] - n[1] * nt, tangent[2] - n[2] * nt],
+      tangentFallback(n),
+    )
+  return [...along, dot(cross(n, along), bitangent) < 0 ? -1 : 1]
+}
+
+/**
+ * Tangents of an indexed mesh, per vertex: a skin keeps its vertices, whose joints and weights are
+ * theirs, so its bind pose takes each triangle's frame summed at its corners and made orthogonal to
+ * the vertex's own normal there, instead of expanding into triangles of their own.
+ */
+function vertexTangents(
+  positions: Float32Array,
+  normals: Float32Array,
+  uv: ArrayLike<number> | undefined,
+  triangles: Uint32Array,
+): Float32Array {
+  const count = positions.length / 3
+  const tangentSums = new Float64Array(count * 3),
+    bitangentSums = new Float64Array(count * 3)
+  for (let i = 0; i + 2 < triangles.length; i += 3) {
+    const a = value(triangles, i),
+      b = value(triangles, i + 1),
+      c = value(triangles, i + 2)
+    const frame = triangleTangentFrame(
+      read3(positions, a),
+      read3(positions, b),
+      read3(positions, c),
+      uv,
+      a * 2,
+      b * 2,
+      c * 2,
+    )
+    for (const corner of [a, b, c])
+      for (let axis = 0; axis < 3; axis++) {
+        const at = corner * 3 + axis
+        tangentSums[at] = tangentSums[at]! + frame.tangent[axis]!
+        bitangentSums[at] = bitangentSums[at]! + frame.bitangent[axis]!
+      }
+  }
+  const tangents = new Float32Array(count * 4)
+  for (let vertex = 0; vertex < count; vertex++) {
+    const sum = (sums: Float64Array): Vec3 => [
+      sums[vertex * 3]!,
+      sums[vertex * 3 + 1]!,
+      sums[vertex * 3 + 2]!,
+    ]
+    tangents.set(
+      orthogonalTangent(read3(normals, vertex), sum(tangentSums), sum(bitangentSums)),
+      vertex * 4,
+    )
+  }
+  return tangents
+}
 export function point(matrix: Float32Array, vector: Vec3, w: number): Vec4 {
   const component = (row: number) =>
     value(matrix, row) * vector[0] +
@@ -421,7 +520,6 @@ export function prepareMaterialGeometry(
   if (
     skin !== undefined &&
     (primitive.normals === undefined ||
-      primitive.tangents === undefined ||
       skin.joints.length !== count * 4 ||
       skin.weights.length !== count * 4 ||
       !allFinite(skin.weights))
@@ -491,6 +589,11 @@ export function prepareMaterialGeometry(
     for (let i = 1; i + 1 < length; i++) append(0, i, i + 1)
   else return primitive
   if (!allBelow(triangles, count)) throw new TypeError('material geometry index is out of range')
+  if (skin !== undefined)
+    return Object.freeze({
+      ...primitive,
+      tangents: vertexTangents(primitive.positions, primitive.normals!, uv, triangles),
+    })
   // One expansion per source array: UV sets that share coordinates (a sprite's UV0-3) share the
   // expanded array too, and with it one GPU buffer.
   const expanded = new Map<Float32Array, Float32Array>()
@@ -516,45 +619,20 @@ export function prepareMaterialGeometry(
       : new Float32Array(triangles.length * 4)
   let degenerateTriangles = 0
   for (let i = 0; i < triangles.length; i += 3) {
-    const p = read3(positions, i),
-      e1 = subtract(read3(positions, i + 1), p),
-      e2 = subtract(read3(positions, i + 2), p),
-      face = unit(cross(e1, e2))
-    let tangent: Vec3 = tangentFallback(face),
-      bitangent: Vec3 = cross(face, tangent)
-    if (uv !== undefined) {
-      const a = value(triangles, i) * 2,
-        b = value(triangles, i + 1) * 2,
-        c = value(triangles, i + 2) * 2,
-        u1 = value(uv, b) - value(uv, a),
-        v1 = value(uv, b + 1) - value(uv, a + 1),
-        u2 = value(uv, c) - value(uv, a),
-        v2 = value(uv, c + 1) - value(uv, a + 1),
-        determinant = u1 * v2 - u2 * v1
-      if (Math.abs(determinant) > 1e-9) {
-        tangent = [
-          (e1[0] * v2 - e2[0] * v1) / determinant,
-          (e1[1] * v2 - e2[1] * v1) / determinant,
-          (e1[2] * v2 - e2[2] * v1) / determinant,
-        ]
-        bitangent = [
-          (e2[0] * u1 - e1[0] * u2) / determinant,
-          (e2[1] * u1 - e1[1] * u2) / determinant,
-          (e2[2] * u1 - e1[2] * u2) / determinant,
-        ]
-      } else degenerateTriangles++
-    }
+    const { face, tangent, bitangent, degenerate } = triangleTangentFrame(
+      read3(positions, i),
+      read3(positions, i + 1),
+      read3(positions, i + 2),
+      uv,
+      value(triangles, i) * 2,
+      value(triangles, i + 1) * 2,
+      value(triangles, i + 2) * 2,
+    )
+    if (degenerate) degenerateTriangles++
     for (let j = i; j < i + 3; j++) {
       if (primitive.normals === undefined) normals.set(face, j * 3)
-      if (primitive.tangents === undefined) {
-        const n = unit(read3(normals, j)),
-          nt = dot(n, tangent),
-          t = unit(
-            [tangent[0] - n[0] * nt, tangent[1] - n[1] * nt, tangent[2] - n[2] * nt],
-            tangentFallback(n),
-          )
-        tangents.set([...t, dot(cross(n, t), bitangent) < 0 ? -1 : 1], j * 4)
-      }
+      if (primitive.tangents === undefined)
+        tangents.set(orthogonalTangent(read3(normals, j), tangent, bitangent), j * 4)
     }
   }
   if (requestedTexCoord !== undefined && degenerateTriangles > 0)

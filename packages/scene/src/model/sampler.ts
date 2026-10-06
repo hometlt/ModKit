@@ -599,14 +599,14 @@ export function createModelSceneSampler(
         signal,
       )
       workingBytes += deformer.workingBytes
-      // A skin without authored normals and tangents stays on the CPU: the renderer derives them
-      // from the posed triangles.
+      // A skin without authored normals stays on the CPU: the renderer derives them from the posed
+      // triangles. Tangents it lacks the renderer generates from the bind pose, where a normal map
+      // needs them, and the GPU turns them with the skin.
       // Eight-influence skins use the same CPU kernel; the GPU vertex layout remains four-wide.
       if (
         gpuSkinning &&
         (primitive.boneInfluences ?? 4) === 4 &&
-        primitive.normals !== undefined &&
-        primitive.tangents !== undefined
+        primitive.normals !== undefined
       ) {
         // Slots and weights: a byte or two and four floats per influence.
         workingBytes += primitive.positions.length * 8

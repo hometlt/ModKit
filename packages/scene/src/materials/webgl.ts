@@ -252,12 +252,17 @@ export function createWebGlMaterialProgram(
         // WebGL reads a plain array into float32 as it reads the lease's own Float32Array copy.
         const value = (uniforms === undefined ? own : uniforms[name]) as number | Float32List
         if (value === undefined) throw new TypeError(`material uniform ${name} has no value`)
-        if (typeof value !== 'number' && ![2, 3, 4, 9].includes(value.length))
+        // vec2-vec4, a mat3, or an array of vec3 longer than one mat3 (a team ramp's shades)
+        if (
+          typeof value !== 'number' &&
+          ![2, 3, 4, 9].includes(value.length) &&
+          !(value.length > 9 && value.length % 3 === 0)
+        )
           throw new TypeError('invalid material uniform arity')
         if (holdsUniform(holds, location, value)) continue
         if (typeof value === 'number') gl.uniform1f(location, value)
         else if (value.length === 2) gl.uniform2fv(location, value)
-        else if (value.length === 3) gl.uniform3fv(location, value)
+        else if (value.length === 3 || value.length > 9) gl.uniform3fv(location, value)
         else if (value.length === 4) gl.uniform4fv(location, value)
         else gl.uniformMatrix3fv(location, false, value)
         holds.set(

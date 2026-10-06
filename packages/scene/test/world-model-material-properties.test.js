@@ -53,7 +53,8 @@ it('colours a fallback model by its baseColorFactor and draws an unlit one witho
 })
 
 it('orders transparent fallback models by priority before depth', () => {
-  const blend = { alphaMode: 'blend' }
+  // unlit: the fallback path draws it (a glTF program lights its material, gltf-program.ts)
+  const blend = { alphaMode: 'blend', unlit: true }
   const plan = createWorldWebGlPlan({
     items: [item(1, 'high'), item(2, 'low')],
     models: new Map([

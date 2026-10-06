@@ -13,6 +13,7 @@ import {
   snapshotEnvironment,
 } from '../materials/environment.js'
 import { sceneTexturePixels } from './compressed-textures.js'
+import { createGltfMaterialPrograms, type GltfMaterialPrograms } from '../materials/gltf-program.js'
 import type { NormalMapFormat } from '@modkit/codec-kit/legacy/models/material'
 import {
   createStandardMaterialPrograms,
@@ -88,6 +89,12 @@ export function createSceneMaterialProgramSampler(
   materials: readonly SceneRendererMaterial[],
   textures: ReadonlyMap<string, SceneRendererTexture>,
   signal?: AbortSignal,
+  /**
+   * `gltfPrograms`: a material of the glTF path (`shading: 'pbr'`, no program) gets the glTF
+   * program (materials/gltf-program.ts) where it can carry it, for a renderer that draws only
+   * programs (the world's shared path); other renderers draw such a material by their base route.
+   */
+  options: Readonly<{ gltfPrograms?: boolean }> = {},
 ): SceneMaterialProgramSampler {
   for (const texture of textures.values())
     if (texture.filter !== undefined && texture.filter !== 'nearest' && texture.filter !== 'linear')
@@ -112,6 +119,7 @@ export function createSceneMaterialProgramSampler(
         context: SceneRendererMaterialContext
         sampler: SceneMaterialProgramSampler
       }>
+    | Readonly<{ kind: 'gltf'; material: SceneRendererMaterial; programs: GltfMaterialPrograms }>
     | Readonly<{
         kind: 'standard'
         material: SceneRendererMaterial
@@ -130,7 +138,7 @@ export function createSceneMaterialProgramSampler(
         kind: 'instance',
         material,
         context: instanceContext,
-        sampler: createSceneMaterialProgramSampler([plain], textures, signal),
+        sampler: createSceneMaterialProgramSampler([plain], textures, signal, options),
       })
       continue
     }
@@ -150,7 +158,13 @@ export function createSceneMaterialProgramSampler(
       continue
     }
     if (material.shader === undefined) {
-      entries.push({ kind: 'skip', diagnostics: skipped })
+      const gltf =
+        options.gltfPrograms === true ? createGltfMaterialPrograms(material, textures) : undefined
+      entries.push(
+        gltf === undefined
+          ? { kind: 'skip', diagnostics: skipped }
+          : { kind: 'gltf', material, programs: gltf },
+      )
       continue
     }
     // a neutral layer list is drawn by the base route (its diffuse layer): nothing is unsupported
@@ -234,6 +248,16 @@ export function createSceneMaterialProgramSampler(
         sampleSignal?.throwIfAborted()
         if (entry.kind === 'skip') {
           diagnostics.push(...entry.diagnostics)
+          continue
+        }
+        if (entry.kind === 'gltf') {
+          results.set(
+            entry.material.id,
+            Object.freeze({
+              passes: Object.freeze([entry.programs.sample(context)]),
+              textures: entry.programs.textures,
+            }),
+          )
           continue
         }
         if (entry.kind === 'instance') {

@@ -1206,8 +1206,11 @@ function buildLeaseShaderSources(
       )
       .replace('spec * u_sceneSpecularColor;', 'spec * (u_sceneSpecularColor * sceneKeyShade);')
       .replace(
-        'pbrLight, u_sceneLightColor, u_sceneAmbientColor)',
-        'pbrLight, u_sceneLightColor * sceneKeyShadow(max(dot(pbrNormal, pbrLight), 0.0)), u_sceneAmbientColor)',
+        'pbrLight, u_sceneLightColor, u_sceneAmbientColor);',
+        `pbrLight, u_sceneLightColor * sceneKeyShadow(max(dot(pbrNormal, pbrLight), 0.0)), u_sceneAmbientColor);
+  shaded += pbrBase * (1.0 - clamp(pbrMetallic, 0.0, 1.0)) * (
+    u_sceneFillColor0 * max(dot(pbrNormal, ${worldShading ? 'u_sceneFillWorldDirection0' : 'normalize(v_sceneFillDir0)'}), 0.0) +
+    u_sceneFillColor1 * max(dot(pbrNormal, ${worldShading ? 'u_sceneFillWorldDirection1' : 'normalize(v_sceneFillDir1)'}), 0.0));`,
       )
       .replace('u_sceneAmbientColor + u_sceneLightColor * lambert',
       `u_sceneAmbientColor + sceneKeyLight * lambert +

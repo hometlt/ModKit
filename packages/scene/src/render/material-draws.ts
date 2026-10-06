@@ -69,6 +69,8 @@ function rebindPrepared(
     ...(vertexTints === undefined ? {} : { vertexTints }),
     topology: prepared.topology,
     positions: prepared.positions,
+    // an expanded primitive has no indices; a skin keeps its vertices, and its indices
+    ...(prepared.indices === undefined ? {} : { indices: prepared.indices }),
     ...(prepared.normals === undefined ? {} : { normals: prepared.normals }),
     ...(prepared.tangents === undefined ? {} : { tangents: prepared.tangents }),
     ...(prepared.colors === undefined ? {} : { colors: prepared.colors }),

@@ -117,9 +117,11 @@ it('joins portable base-color image references to decoded textures in the world 
     models: new Map([['portable-model', model]]),
   })
   assert.equal(plan.stats.modelTriangles, 1)
-  assert.equal(plan.texturedTriangles.length, 1)
-  assert.equal(plan.texturedTriangles[0].texture.id, model.textures[0].id)
-  assert.deepEqual(plan.texturedTriangles[0].texture.rgba, model.textures[0].rgba)
+  // a glTF material: its program (gltf-program.ts) binds the decoded texture
+  const [scene] = plan.modelMaterialScenes
+  const [bound] = scene.programs.get(scene.primitives[0].materialId).textures.values()
+  assert.equal(bound.id, model.textures[0].id)
+  assert.deepEqual(bound.rgba, model.textures[0].rgba)
 })
 
 for (const image of [

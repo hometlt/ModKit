@@ -28,6 +28,8 @@ const decal = key => ({
     {
       id: 'surface',
       blendMode: 'blend',
+      // unlit: the fallback path draws it (a glTF program lights its material, gltf-program.ts)
+      unlit: true,
       layers: [{ slot: 'diffuse', resourceId: `${key}.png`, uvSource: 0 }],
     },
   ],

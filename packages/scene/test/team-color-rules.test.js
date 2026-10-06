@@ -106,6 +106,8 @@ it('takes an object-tint colour from the object, whose tint then leaves the mate
     materials: [
       {
         id: 'body',
+        // unlit: the fallback path draws it (a glTF program lights its material, gltf-program.ts)
+        unlit: true,
         layers: [
           { slot: 'diffuse', resourceId: 'hull.tga' },
           {

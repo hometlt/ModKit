@@ -9,7 +9,8 @@ import {
 } from '../src/world/webgl.js'
 import { primitiveVertexPlacements } from '../src/render/vertex-placements.js'
 
-// Two blended decal models (textured fallback batches), one triangle each.
+// Two blended decal models (textured fallback batches), one triangle each; unlit, as the fallback
+// draws them (a glTF program lights its material, gltf-program.ts).
 const decal = key => ({
   state: 'converted',
   sourceKey: key,
@@ -29,6 +30,7 @@ const decal = key => ({
     {
       id: 'surface',
       blendMode: 'blend',
+      unlit: true,
       layers: [{ slot: 'diffuse', resourceId: `${key}.png`, uvSource: 0 }],
     },
   ],
