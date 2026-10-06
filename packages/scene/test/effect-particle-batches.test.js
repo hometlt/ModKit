@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { createUvmEffectFrame } from '../src/uvm/effects.js'
+import { prepareMaterialGeometry } from '../src/render/material-geometry.js'
 
 const identity = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1])
 // A view turned a quarter about Y and moved back, and one tilted down from above.
@@ -154,4 +155,37 @@ test("an emitter's sprites draw as one primitive, back to front, each with its o
   }
   // Both kinds of sprite were drawn.
   assert.deepEqual([...programmed].sort(), [false, true])
+})
+
+test('a programmed sprite carries the frame the material path gives it, and draws unexpanded', () => {
+  for (const batchParticles of [true, false]) {
+    const frame = createUvmEffectFrame(document, {
+      ...options,
+      time: 1.5,
+      viewMatrix: tilted,
+      batchParticles,
+    })
+    const programmed = frame.primitives.filter(each => each.textureCoordinateSets !== undefined)
+    assert.ok(programmed.length > 0)
+    for (const primitive of programmed) {
+      // Prepared as it is: no triangles of its own, no frame generated again.
+      assert.equal(prepareMaterialGeometry(primitive, 1 << 24), primitive)
+      // Expanded without its frame, each triangle takes the frame its corners carry: the first of
+      // each sprite exactly, the second to the rounding of its own edges.
+      const { normals, tangents, ...bare } = primitive
+      const expanded = prepareMaterialGeometry(bare, 1 << 24)
+      assert.equal(expanded.normals.length, primitive.indices.length * 3)
+      primitive.indices.forEach((vertex, corner) => {
+        const near = (left, right) =>
+          corner % 6 < 3 ? assert.equal(left, right) : assert.ok(Math.abs(left - right) < 1e-6)
+        for (let axis = 0; axis < 3; axis++)
+          near(expanded.normals[corner * 3 + axis], normals[vertex * 3 + axis])
+        for (let axis = 0; axis < 4; axis++)
+          near(expanded.tangents[corner * 4 + axis], tangents[vertex * 4 + axis])
+      })
+    }
+    // A single-texture sprite is not prepared by the material path, and keeps its geometry.
+    for (const primitive of frame.primitives)
+      if (primitive.textureCoordinateSets === undefined) assert.equal(primitive.normals, undefined)
+  }
 })

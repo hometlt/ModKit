@@ -10,6 +10,7 @@ import {
   type UvmParticleGeometryEntry,
 } from './effect-particles.js'
 import { createUvmRibbonGeometry } from './ribbon-geometry.js'
+import { materialTriangleFrame } from '../render/material-geometry.js'
 import { bindUvmEffectLinks } from './effect-links.js'
 import { effectSurfaceMaterial } from './projector-material.js'
 import { readEffectCollisionShapes } from './effect-collisions.js'
@@ -1150,6 +1151,7 @@ function uvmEffectFrameGeometry(
       const { colors: _vertexColors, ...uncolored } = geometryPrimitive
       primitives.push({
         ...uncolored,
+        ...spriteFrames(geometry.positions, geometry.textureCoordinates, geometry.indices),
         textureCoordinateSets: [1, 2, 3].map(set => ({
           set,
           coordinates: geometry.textureCoordinates,
@@ -1243,6 +1245,41 @@ function viewDepthRow(view: Float32Array, toWorld: readonly number[]): readonly 
 }
 
 /**
+ * Normals and tangents of sprites (UvmParticleGeometryEntry: four vertices and the two triangles
+ * 0 1 2 and 0 2 3 each, in order). A sprite is a flat quad whose triangles share a face and a UV
+ * frame, so its corners take the frame the material path gives its first triangle
+ * (materialTriangleFrame): it draws as it is, instead of being expanded into triangles of their own
+ * every frame. Undefined for geometry of another shape.
+ */
+function spriteFrames(
+  positions: Float32Array,
+  coordinates: Float32Array,
+  indices: Uint32Array,
+): Readonly<{ normals: Float32Array; tangents: Float32Array }> | undefined {
+  const count = positions.length / 12
+  if (!Number.isInteger(count) || indices.length !== count * 6) return undefined
+  const normals = new Float32Array(count * 12),
+    tangents = new Float32Array(count * 16)
+  for (let sprite = 0; sprite < count; sprite++) {
+    const first = sprite * 4
+    const corners = indices.subarray(sprite * 6, sprite * 6 + 6)
+    if (![0, 1, 2, 0, 2, 3].every((offset, at) => corners[at] === first + offset)) return undefined
+    const { normal, tangent } = materialTriangleFrame(
+      positions,
+      coordinates,
+      first,
+      first + 1,
+      first + 2,
+    )
+    for (let vertex = first; vertex < first + 4; vertex++) {
+      normals.set(normal, vertex * 3)
+      tangents.set(tangent, vertex * 4)
+    }
+  }
+  return { normals, tangents }
+}
+
+/**
  * One emitter's sprites as one primitive, back to front: by the view depth of each sprite's box
  * centre, as the world orders sprite draws (ties in slot order). A program material takes each
  * sprite's colour as its tint, per vertex, as a sprite draw takes it as its `tint`.
@@ -1307,6 +1344,7 @@ function emitterSprites(
       throw new TypeError('primitive tint requires four finite components in 0..1')
   return {
     ...primitive,
+    ...spriteFrames(positions, textureCoordinates, indices),
     textureCoordinateSets: [1, 2, 3].map(set => ({ set, coordinates: textureCoordinates })),
     vertexTints: colors,
   }

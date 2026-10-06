@@ -135,6 +135,32 @@ function orthogonalTangent(normal: Vec3, tangent: Vec3, bitangent: Vec3): Vec4 {
 }
 
 /**
+ * The normal and tangent the material path gives each corner of the triangle `a`, `b`, `c` (vertex
+ * indices) of a primitive it expands for want of them (prepareMaterialGeometry): the face normal
+ * as float32, and the UV tangent made orthogonal to it with its handedness. A caller whose triangles
+ * share their frame, as the two of a flat quad do, can give its vertices these instead.
+ */
+export function materialTriangleFrame(
+  positions: Float32Array,
+  uv: ArrayLike<number> | undefined,
+  a: number,
+  b: number,
+  c: number,
+): Readonly<{ normal: Vec3; tangent: Vec4 }> {
+  const { face, tangent, bitangent } = triangleTangentFrame(
+    read3(positions, a),
+    read3(positions, b),
+    read3(positions, c),
+    uv,
+    a * 2,
+    b * 2,
+    c * 2,
+  )
+  const normal: Vec3 = [Math.fround(face[0]), Math.fround(face[1]), Math.fround(face[2])]
+  return { normal, tangent: orthogonalTangent(normal, tangent, bitangent) }
+}
+
+/**
  * Tangents of an indexed mesh, per vertex: a skin keeps its vertices, whose joints and weights are
  * theirs, so its bind pose takes each triangle's frame summed at its corners and made orthogonal to
  * the vertex's own normal there, instead of expanding into triangles of their own.
