@@ -73,11 +73,14 @@ import {
   linearToSrgb,
   materialFrameGeometry,
   materialGeometry,
+  materialMirrors,
   materialModelMatrix,
   materialNormalMatrix,
-  materialPosedPositions,
   materialPosedPrimitive,
+  materialSkinBounds,
+  materialSkinCenter,
   materialSkinOf,
+  materialVertexDepths,
   materializeUvmAnimationMaterialTargets,
   modelPrimitiveByteLength,
   multiplyMatrix4,
@@ -139,7 +142,7 @@ import {
   validateUvmDocument,
   versionRangeTargetsMajor,
   withMaterialFrame
-} from "./chunk-C64EV3HL.js";
+} from "./chunk-Y4TXTJJB.js";
 import {
   __export
 } from "./chunk-DJDDRNPC.js";
@@ -12913,7 +12916,7 @@ var RESOLVED_DATA_WORKSPACE_CONTRACT_DEFINITION = Object.freeze({
   matching: Object.freeze({ profile: RESOLVED_DATA_WORKSPACE_MATCHER_PROFILE, major: 1 }),
   conformanceProfile: "common.data/resolved-workspace-v1",
   surface: Object.freeze({
-    fields: Object.freeze(["contract", "providerId", "gameIds"]),
+    fields: Object.freeze(["contract", "providerId", "gameIds", "persistentRoots"]),
     methods: Object.freeze({
       plan: Object.freeze({
         kind: "value",
@@ -13042,7 +13045,7 @@ var DEFAULT_PROTOCOL_LIMITS = Object.freeze({
 });
 var MAX_ERROR_MESSAGE = 8 * 1024;
 var LITTLE_ENDIAN = new Uint8Array(new Uint16Array([1]).buffer)[0] === 1;
-var SEMANTIC_CONTEXT_CACHE_MAX_BYTES = 64 * 1024 * 1024;
+var LANGUAGE_SEMANTIC_CONTEXT_MEMORY_BYTES = 512 * 1024 * 1024;
 var SYMBOL_KINDS = /* @__PURE__ */ new Set([
   "class",
   "constant",
@@ -29021,7 +29024,7 @@ var RESOLVED_DATA_WORKSPACE_CONTRACT_DEFINITION2 = Object.freeze({
   matching: Object.freeze({ profile: RESOLVED_DATA_WORKSPACE_MATCHER_PROFILE, major: 1 }),
   conformanceProfile: "common.data/resolved-workspace-v1",
   surface: Object.freeze({
-    fields: Object.freeze(["contract", "providerId", "gameIds"]),
+    fields: Object.freeze(["contract", "providerId", "gameIds", "persistentRoots"]),
     methods: Object.freeze({
       plan: Object.freeze({
         kind: "value",
@@ -42611,7 +42614,7 @@ function createModelViewer(options = {}) {
               const output = result.output;
               if (output.kind !== "bytes" || !(output.value instanceof Uint8Array))
                 throw new Error(`the codec answered ${output.kind}, not bytes`);
-              const { createUvmFramePreparer } = await import("./render-WRFZFDVC.js");
+              const { createUvmFramePreparer } = await import("./render-PJNNMTED.js");
               const raster = options.rasterResources?.(args.descriptor);
               const preparer = createUvmFramePreparer(output.value, {
                 budget: MODEL_EFFECT_BUDGET,
@@ -65434,10 +65437,11 @@ function alphaDrawOrder(primitives, alphaFor, viewProjection) {
       blending.push(primitive);
   const blended = [];
   for (const [order, primitive] of blending.entries()) {
-    const positions = blending.length > 1 ? materialPosedPositions(primitive) : primitive.positions;
+    const positions = primitive.positions;
     if (!(positions instanceof Float32Array) || positions.length % 3 !== 0)
       throw new TypeError("blend primitive positions must be an xyz Float32Array");
-    let center = boundsCenter(positions);
+    const skin = blending.length > 1 ? materialSkinOf(primitive) : void 0;
+    let center = skin === void 0 ? boundsCenter(positions) : [...materialSkinCenter(primitive, skin), 1];
     for (const matrix2 of [primitive.transform, viewProjection]) {
       if (matrix2 === void 0)
         continue;
@@ -65456,8 +65460,17 @@ function alphaDrawOrder(primitives, alphaFor, viewProjection) {
 }
 var sortedTriangles = /* @__PURE__ */ new WeakMap();
 var sortedPrimitives = /* @__PURE__ */ new WeakMap();
-var sameMatrix = (left, right) => {
-  for (let index = 0; index < 16; index++)
+function triangleOrderKey(matrix2) {
+  if (matrix2[3] === 0 && matrix2[7] === 0 && matrix2[11] === 0 && matrix2[15] > 0) {
+    const length = Math.hypot(matrix2[2], matrix2[6], matrix2[10]);
+    return length > 0 ? Float64Array.of(matrix2[2] / length, matrix2[6] / length, matrix2[10] / length) : new Float64Array(3);
+  }
+  return Float64Array.from({ length: 16 }, (_, index) => matrix2[index]);
+}
+var sameValues = (left, right) => {
+  if (left.length !== right.length)
+    return false;
+  for (let index = 0; index < left.length; index++)
     if (left[index] !== right[index])
       return false;
   return true;
@@ -65493,44 +65506,41 @@ function triangleCorners(primitive) {
   return new Uint32Array(0);
 }
 function depthSortedTriangles(primitive, viewProjection) {
+  const matrix2 = primitive.transform === void 0 ? viewProjection : multiplyMatrix4(viewProjection, primitive.transform);
+  const key3 = triangleOrderKey(matrix2);
   const known2 = sortedPrimitives.get(primitive);
-  if (known2 !== void 0 && sameMatrix(known2.viewProjection, viewProjection))
+  if (known2 !== void 0 && sameValues(known2.key, key3))
     return known2.result;
   const order = primitive.indices;
   const length = order?.length ?? Math.floor(primitive.positions.length / 3);
   const count5 = primitive.topology === "triangles" ? Math.floor(length / 3) : primitive.topology === "triangle-strip" || primitive.topology === "triangle-fan" ? Math.max(0, length - 2) : 0;
   if (count5 < 2)
     return primitive;
-  const matrix2 = primitive.transform === void 0 ? viewProjection : multiplyMatrix4(viewProjection, primitive.transform);
+  const palette = materialSkinOf(primitive)?.palette;
   const kept = sortedTriangles.get(primitive.positions);
   let sorted = kept?.sorted;
-  if (kept === void 0 || kept.indices !== order || !sameMatrix(kept.matrix, matrix2)) {
+  if (kept === void 0 || kept.indices !== order || kept.palette !== palette || !sameValues(kept.key, key3)) {
     const corners = triangleCorners(primitive);
-    const positions = materialPosedPositions(primitive);
-    const depth = (vertex) => {
-      const x = positions[vertex * 3] ?? 0, y = positions[vertex * 3 + 1] ?? 0, z = positions[vertex * 3 + 2] ?? 0;
-      const clipZ = matrix2[2] * x + matrix2[6] * y + matrix2[10] * z + matrix2[14];
-      const clipW = matrix2[3] * x + matrix2[7] * y + matrix2[11] * z + matrix2[15];
-      return clipW === 0 ? clipZ : clipZ / clipW;
-    };
+    const depth = materialVertexDepths(primitive, matrix2);
     const depths3 = new Float64Array(count5);
     const triangles = new Uint32Array(count5);
     for (let triangle = 0; triangle < count5; triangle++) {
-      depths3[triangle] = depth(corners[triangle * 3]) + depth(corners[triangle * 3 + 1]) + depth(corners[triangle * 3 + 2]);
+      depths3[triangle] = (depth[corners[triangle * 3]] ?? 0) + (depth[corners[triangle * 3 + 1]] ?? 0) + (depth[corners[triangle * 3 + 2]] ?? 0);
       triangles[triangle] = triangle;
     }
     triangles.sort((left, right) => depths3[right] - depths3[left] || left - right);
-    sorted = new Uint32Array(count5 * 3);
+    const next = new Uint32Array(count5 * 3);
     for (let index = 0; index < count5; index++) {
       const from = triangles[index] * 3;
-      sorted[index * 3] = corners[from];
-      sorted[index * 3 + 1] = corners[from + 1];
-      sorted[index * 3 + 2] = corners[from + 2];
+      next[index * 3] = corners[from];
+      next[index * 3 + 1] = corners[from + 1];
+      next[index * 3 + 2] = corners[from + 2];
     }
-    sortedTriangles.set(primitive.positions, Object.freeze({ indices: order, matrix: Float32Array.from(matrix2), sorted }));
+    sorted = kept !== void 0 && kept.indices === order && sameValues(kept.sorted, next) ? kept.sorted : next;
+    sortedTriangles.set(primitive.positions, Object.freeze({ indices: order, key: key3, palette, sorted }));
   }
-  const result = Object.freeze({ ...primitive, topology: "triangles", indices: sorted });
-  sortedPrimitives.set(primitive, Object.freeze({ viewProjection: Float32Array.from(viewProjection), result }));
+  const result = known2 !== void 0 && known2.result.indices === sorted ? known2.result : Object.freeze({ ...primitive, topology: "triangles", indices: sorted });
+  sortedPrimitives.set(primitive, Object.freeze({ key: key3, result }));
   return result;
 }
 function straightenAlpha(rgba) {
@@ -66433,7 +66443,7 @@ function sampleMaterialTexture(texture, u2, v, wrapU, wrapV) {
 // packages/scene/dist/render/material-draws.js
 var materialIsSolid = (program) => program.blend === "opaque" || program.blend === "alpha-test";
 var preparedGeometry = /* @__PURE__ */ new WeakMap();
-function sameGeometry(left, right) {
+function sameMaterialGeometry(left, right) {
   const sets = (primitive) => primitive.textureCoordinateSets ?? [];
   return left.topology === right.topology && left.positions === right.positions && left.indices === right.indices && left.normals === right.normals && left.tangents === right.tangents && left.colors === right.colors && left.textureCoordinates === right.textureCoordinates && sets(left).length === sets(right).length && sets(left).every((set, index) => set.set === sets(right)[index]?.set && set.coordinates === sets(right)[index]?.coordinates);
 }
@@ -66460,7 +66470,7 @@ function rebindPrepared(prepared, cachedSource, source2) {
 }
 function preparedMaterialGeometry(source2, texCoord, maxBytes, diagnostics) {
   const cached = preparedGeometry.get(source2.positions)?.get(texCoord);
-  if (cached !== void 0 && cached.bytes <= maxBytes && sameGeometry(cached.source, source2)) {
+  if (cached !== void 0 && cached.bytes <= maxBytes && sameMaterialGeometry(cached.source, source2)) {
     diagnostics.push(...cached.diagnostics);
     return { ...cached, primitive: rebindPrepared(cached.primitive, cached.source, source2) };
   }
@@ -66491,6 +66501,15 @@ function preparedMaterialGeometry(source2, texCoord, maxBytes, diagnostics) {
   choices.set(texCoord, Object.freeze({ ...result, source: source2 }));
   preparedGeometry.set(source2.positions, choices);
   return result;
+}
+var COMMUTING_BLENDS = /* @__PURE__ */ new Set(["additive", "add-alpha", "modulate"]);
+function triangleOrderShows(draw) {
+  const program = draw.program;
+  if (program === void 0)
+    return true;
+  if (program.depthPrepass)
+    return false;
+  return materialIsSolid(program) || !COMMUTING_BLENDS.has(program.blend);
 }
 function sceneMaterialDraws(primitives, materials, programs, viewProjection, diagnostics, clearAlpha, maxGeometryBytes = 256 * 1024 * 1024, solidOnly = false) {
   if (!Number.isSafeInteger(maxGeometryBytes) || maxGeometryBytes < 0)
@@ -66587,7 +66606,7 @@ function sceneMaterialDraws(primitives, materials, programs, viewProjection, dia
     const original = originals[Number(key3.materialId)], entry2 = original === void 0 ? void 0 : entries.get(original);
     if (entry2 === void 0)
       throw new TypeError("invalid material draw");
-    return alpha(original).mode === "blend" || primitiveFade(entry2.primitive) < 1 ? { ...entry2, primitive: depthSortedTriangles(entry2.primitive, viewProjection) } : entry2;
+    return (alpha(original).mode === "blend" || primitiveFade(entry2.primitive) < 1) && triangleOrderShows(entry2) ? { ...entry2, primitive: depthSortedTriangles(entry2.primitive, viewProjection) } : entry2;
   });
   return [...prepasses, ...draws];
 }
@@ -66855,7 +66874,7 @@ function mergeMaterialDraws(draws) {
   let vertices = 0, corners = 0;
   for (const primitive2 of primitives) {
     if (primitive2.topology !== "triangles" || primitive2.indices !== void 0 !== indexed || primitive2.positions.length % 3 !== 0 || materialSkinOf(primitive2) !== void 0 || primitiveVertexPlacements(primitive2) !== void 0 || // a mirrored draw culls its other winding (glTF); a joined draw has one winding for all
-    materialNormalMatrix(materialModelMatrix(primitive2)).sign < 0)
+    materialMirrors(materialModelMatrix(primitive2)))
       return void 0;
     vertices += primitive2.positions.length / 3;
     corners += primitive2.indices?.length ?? 0;
@@ -66967,13 +66986,10 @@ var WORLD_SHADOW_GLSL = `float modkitWorldShadow(sampler2D map, vec4 position, v
 }`;
 
 // packages/scene/dist/render/material-webgl.js
-var PLAIN_STAGES = Object.freeze({ skinned: false, tinted: false });
-var materialStagesOf = (primitive) => {
-  const skinned = materialSkinOf(primitive) !== void 0;
-  const tinted = primitiveVertexTints(primitive) !== void 0;
-  return skinned || tinted ? { skinned, tinted } : PLAIN_STAGES;
-};
-var stagesKey = (stages) => `${String(stages.skinned)}|${String(stages.tinted)}`;
+var STAGES = [false, true].map((skinned) => Object.freeze([false, true].map((tinted) => Object.freeze({ skinned, tinted, key: `${String(skinned)}|${String(tinted)}` }))));
+var materialStagesOf = (primitive) => STAGES[materialSkinOf(primitive) === void 0 ? 0 : 1][primitiveVertexTints(primitive) === void 0 ? 0 : 1];
+var PLAIN_STAGES = STAGES[0][0];
+var stagesKey = (stages) => stages.key;
 var IDENTITY_MATRIX = Float32Array.of(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
 var worldToMaterialMatrices = /* @__PURE__ */ new WeakMap();
 var worldToMaterialOf = (source2) => {
@@ -66983,6 +66999,26 @@ var worldToMaterialOf = (source2) => {
   return matrix2;
 };
 var materialWorldShading = (source2) => source2.normalBlendPolicy !== void 0 || source2.normalMapSpace === "object";
+var sameEntries = (left, right) => {
+  if (left.length !== right.length)
+    return false;
+  for (let index = 0; index < left.length; index++)
+    if (left[index] !== right[index])
+      return false;
+  return true;
+};
+function uvCoordinatesOf(primitive, set) {
+  let found2;
+  const sets = primitive.textureCoordinateSets;
+  if (sets !== void 0) {
+    for (const uv of sets)
+      if (uv.set === set) {
+        found2 = uv.coordinates;
+        break;
+      }
+  }
+  return found2 ?? (set === 0 ? primitive.textureCoordinates : void 0);
+}
 var sameNumbers = (left, right) => {
   if (left === void 0 || right === void 0)
     return left === right;
@@ -67131,31 +67167,31 @@ function materialWebGlDraws(gl, textures, options = {}) {
     entry2.used = true;
     return entry2;
   };
+  const geometryKey = [];
   const bindGeometry = (program, source2, primitive, instances, state) => {
-    const attributes = [
-      primitive.positions,
-      primitive.normals,
-      primitive.tangents,
-      primitive.colors
-    ];
+    const key3 = geometryKey;
+    key3.length = 0;
+    key3.push(primitive.positions, primitive.normals, primitive.tangents, primitive.colors);
     for (let set = 0; set < source2.defines.uvSetCount; set++)
-      attributes.push(primitive.textureCoordinateSets?.find((uv) => uv.set === set)?.coordinates ?? (set === 0 ? primitive.textureCoordinates : void 0));
+      key3.push(uvCoordinatesOf(primitive, set));
+    const attributeCount = key3.length;
     const skin = materialSkinOf(primitive);
     const tints = primitiveVertexTints(primitive);
     const vertexPlacements = instances === void 0 ? primitiveVertexPlacements(primitive) : void 0;
-    const data = [
-      ...attributes,
-      primitive.indices === void 0 ? void 0 : INDEXED,
-      instances === void 0 ? void 0 : INSTANCED,
-      skin?.joints,
-      skin?.weights,
-      tints,
-      vertexPlacements
-    ];
+    key3.push(primitive.indices === void 0 ? void 0 : INDEXED, instances === void 0 ? void 0 : INSTANCED, skin?.joints, skin?.weights, tints, vertexPlacements);
     const geometries = vertexArrays.get(program);
     const variants = geometries?.get(primitive.positions);
-    let entry2 = variants?.find((candidate) => candidate.data.length === data.length && candidate.data.every((value2, index) => value2 === data[index]));
+    let entry2;
+    if (variants !== void 0) {
+      for (const candidate of variants)
+        if (sameEntries(candidate.data, key3)) {
+          entry2 = candidate;
+          break;
+        }
+    }
     if (entry2 === void 0) {
+      const data = key3.slice();
+      const attributes = data.slice(0, attributeCount);
       const vao = gl.createVertexArray();
       if (vao === null)
         throw new TypeError("could not allocate material vertex array");
@@ -67636,7 +67672,7 @@ function materialWebGlDraws(gl, textures, options = {}) {
     }
     if (model !== void 0 && source2.normalMapSpace === "object")
       gl.uniformMatrix3fv(uniformLocation(gl, program, "u_sceneWorldNormalMatrix"), false, materialNormalMatrix(model).matrix);
-    applyDrawState(source2, primitive, draw.depthOnly === true, state, model !== void 0 && materialNormalMatrix(model).sign < 0);
+    applyDrawState(source2, primitive, draw.depthOnly === true, state, model !== void 0 && materialMirrors(model));
     return submit(mode, primitive, instances?.count);
   };
   const drawSequence = (draws, camera, light, programs2) => {
@@ -69400,7 +69436,7 @@ function renderMaterialDraw(context, draw, request) {
     });
     return;
   }
-  const mirrored = materialNormalMatrix(materialModelMatrix(primitive)).sign < 0;
+  const mirrored = materialMirrors(materialModelMatrix(primitive));
   for (const indices of elements) {
     context.signal?.throwIfAborted();
     const source2 = [
@@ -69580,7 +69616,7 @@ function renderPrimitive(context, primitive) {
     throw new TypeError(`primitive ${primitive.id} indices must be a Uint32Array`);
   }
   const model = primitive.transform === void 0 ? void 0 : matrix(primitive.transform, `primitive ${primitive.id} transform`);
-  const mirrored = model !== void 0 && materialNormalMatrix(Float32Array.from(model)).sign < 0;
+  const mirrored = model !== void 0 && materialMirrors(Float32Array.from(model));
   const vertexCount = primitive.positions.length / 3;
   const order = primitive.indices;
   const elementCount = order?.length ?? vertexCount;
@@ -111074,7 +111110,7 @@ function createModelViewer2(options = {}) {
               const output = result.output;
               if (output.kind !== "bytes" || !(output.value instanceof Uint8Array))
                 throw new Error(`the codec answered ${output.kind}, not bytes`);
-              const { createUvmFramePreparer } = await import("./render-WRFZFDVC.js");
+              const { createUvmFramePreparer } = await import("./render-PJNNMTED.js");
               const raster = options.rasterResources?.(args.descriptor);
               const preparer = createUvmFramePreparer(output.value, {
                 budget: MODEL_EFFECT_BUDGET2,
@@ -131217,6 +131253,41 @@ var EMPTY2 = 0;
 var IN_CELLS = 1;
 var LARGE = 2;
 var EVERYWHERE = 3;
+function requiredLevel(search, other, levels, visited, boxes, batches, commuting) {
+  const placedAt = levels[other];
+  if (placedAt + 1 <= search.level || visited[other] === search.item)
+    return;
+  visited[other] = search.item;
+  if (search.blend !== 0 && commuting[other] === search.blend)
+    return;
+  const at2 = other * 4;
+  if (boxes[at2] > search.x1 || boxes[at2 + 2] < search.x0 || boxes[at2 + 1] > search.y1 || boxes[at2 + 3] < search.y0)
+    return;
+  const value2 = placedAt + (search.batch >= 0 && batches[other] === search.batch ? 0 : 1);
+  if (value2 > search.level)
+    search.level = value2;
+}
+function placeLevel(stats, from, to, level, batch2) {
+  if (from >= 0) {
+    const top = stats[from * 2];
+    if (level < top) {
+      stats[to * 2] = top;
+      stats[to * 2 + 1] = stats[from * 2 + 1];
+      return;
+    }
+    if (level === top) {
+      stats[to * 2] = top;
+      stats[to * 2 + 1] = batch2 === stats[from * 2 + 1] ? batch2 : -1;
+      return;
+    }
+  }
+  stats[to * 2] = level;
+  stats[to * 2 + 1] = batch2;
+}
+function levelBound(stats, at2, batch2) {
+  const top = stats[at2 * 2];
+  return batch2 >= 0 && batch2 === stats[at2 * 2 + 1] ? top : top + 1;
+}
 function transparentOrderLevels(source2, batches, epsilon, commuting) {
   const count5 = batches.length;
   if (source2.length !== count5 * 4)
@@ -131299,71 +131370,53 @@ function transparentOrderLevels(source2, batches, epsilon, commuting) {
       for (let cx = ranges[offset]; cx <= ranges[offset + 1]; cx += 1)
         members4[fill[cy * side + cx]++] = item;
   }
-  const ceilings = new Int32Array(members4.length);
+  const stats = new Int32Array(members4.length * 2);
   const placed = starts.slice(0, side * side);
   const large = [];
-  let largeCeiling = 0;
+  const largeStats = new Int32Array(2);
   const visited = new Int32Array(count5).fill(-1);
+  const search = { item: 0, batch: 0, blend: 0, x0: 0, y0: 0, x1: 0, y1: 0, level: 0 };
   for (let item = 0; item < count5; item += 1) {
     const kind = kinds[item];
     if (kind === EMPTY2)
       continue;
     const offset = item * 4;
-    const x0 = boxes[offset] - epsilon;
-    const y0 = boxes[offset + 1] - epsilon;
-    const x1 = boxes[offset + 2] + epsilon;
-    const y1 = boxes[offset + 3] + epsilon;
-    const batch2 = batches[item];
-    const blend = commuting?.[item] ?? 0;
-    let level = 0;
-    const required2 = (other, found2) => {
-      const placedAt = levels[other];
-      if (placedAt + 1 <= found2 || visited[other] === item)
-        return -1;
-      visited[other] = item;
-      if (blend !== 0 && commuting[other] === blend)
-        return -1;
-      const at2 = other * 4;
-      if (boxes[at2] > x1 || boxes[at2 + 2] < x0 || boxes[at2 + 1] > y1 || boxes[at2 + 3] < y0)
-        return -1;
-      return placedAt + (batch2 >= 0 && batches[other] === batch2 ? 0 : 1);
-    };
+    search.item = item;
+    search.x0 = boxes[offset] - epsilon;
+    search.y0 = boxes[offset + 1] - epsilon;
+    search.x1 = boxes[offset + 2] + epsilon;
+    search.y1 = boxes[offset + 3] + epsilon;
+    search.batch = batches[item];
+    search.blend = commuting?.[item] ?? 0;
+    search.level = 0;
     if (kind === EVERYWHERE)
-      for (let other = 0; other < item; other += 1) {
-        const value2 = required2(other, level);
-        if (value2 > level)
-          level = value2;
-      }
+      for (let other = 0; other < item; other += 1)
+        requiredLevel(search, other, levels, visited, boxes, batches, commuting);
     else {
       for (let cy = ranges[offset + 2]; cy <= ranges[offset + 3]; cy += 1)
         for (let cx = ranges[offset]; cx <= ranges[offset + 1]; cx += 1) {
           const cell = cy * side + cx;
           for (let at2 = placed[cell] - 1, first = starts[cell]; at2 >= first; at2 -= 1) {
-            if (ceilings[at2] <= level)
+            if (levelBound(stats, at2, search.batch) <= search.level)
               break;
-            const value2 = required2(members4[at2], level);
-            if (value2 > level)
-              level = value2;
+            requiredLevel(search, members4[at2], levels, visited, boxes, batches, commuting);
           }
         }
-      if (largeCeiling > level)
-        for (const other of large) {
-          const value2 = required2(other, level);
-          if (value2 > level)
-            level = value2;
-        }
+      if (large.length > 0 && levelBound(largeStats, 0, search.batch) > search.level)
+        for (const other of large)
+          requiredLevel(search, other, levels, visited, boxes, batches, commuting);
     }
+    const level = search.level;
     levels[item] = level;
     if (kind !== IN_CELLS) {
+      placeLevel(largeStats, large.length > 0 ? 0 : -1, 0, level, search.batch);
       large.push(item);
-      if (level + 1 > largeCeiling)
-        largeCeiling = level + 1;
     } else
       for (let cy = ranges[offset + 2]; cy <= ranges[offset + 3]; cy += 1)
         for (let cx = ranges[offset]; cx <= ranges[offset + 1]; cx += 1) {
           const cell = cy * side + cx;
           const at2 = placed[cell]++;
-          ceilings[at2] = at2 > starts[cell] ? Math.max(ceilings[at2 - 1], level + 1) : level + 1;
+          placeLevel(stats, at2 > starts[cell] ? at2 - 1 : -1, at2, level, search.batch);
         }
   }
   return levels;
@@ -131581,14 +131634,14 @@ function worldModelEffectDraws(plan, camera) {
         frames.current.set(key3, cached = { frame: frame4, programs: programs2 });
       }
       const { frame: frame3, programs } = cached;
-      if (frame3.primitives.length === 0)
-        continue;
       if (reach === void 0) {
         const measured = worldEffectReach(frame3);
         frames.reach.set(time, measured);
-        if (measured !== null && worldBoxOutsideView(measured, effect.transform, camera.viewProjection))
+        if (measured === null || worldBoxOutsideView(measured, effect.transform, camera.viewProjection))
           continue;
       }
+      if (frame3.primitives.length === 0)
+        continue;
       const primitives = frame3.primitives.map((primitive) => ({
         ...primitive,
         transform: multiplyComponentTransforms(effect.transform, primitive.transform === void 0 ? IDENTITY_COMPONENT_TRANSFORM : Float32Array.from(primitive.transform))
@@ -133013,15 +133066,27 @@ function worldObjectModelPrograms(result, item, templateKey, time, context, plan
   return cachedMaterials;
 }
 function worldObjectProgramTemplateKey(item, resourceId, moment) {
-  return [
+  const animation = moment.selectedAnimation?.id ?? "";
+  const { teamColor } = moment;
+  const { terrainTiling } = moment.materialContext;
+  let byResource = worldObjectTemplateKeys.get(item);
+  const known2 = byResource?.get(resourceId);
+  if (known2 !== void 0 && known2.animation === animation && known2.teamColor === teamColor && known2.terrainTiling === terrainTiling)
+    return known2.key;
+  const key3 = [
     resourceId,
-    moment.selectedAnimation?.id ?? "",
-    moment.teamColor?.join(",") ?? "",
+    animation,
+    teamColor?.join(",") ?? "",
     item.presentationTeamColorIntensity ?? "",
     item.derivedFrom === "cliffs" ? "cliffs" : "",
-    moment.materialContext.terrainTiling?.join(",") ?? ""
+    terrainTiling?.join(",") ?? ""
   ].join("\0");
+  if (byResource === void 0)
+    worldObjectTemplateKeys.set(item, byResource = /* @__PURE__ */ new Map());
+  byResource.set(resourceId, Object.freeze({ animation, teamColor, terrainTiling, key: key3 }));
+  return key3;
 }
+var worldObjectTemplateKeys = /* @__PURE__ */ new WeakMap();
 function worldObjectMaterialClock(item, input) {
   let clock3 = "";
   let models = 0;
@@ -137389,8 +137454,11 @@ function cachedPrimitiveBounds(positions) {
     primitiveBounds.set(positions, bounds2 = boundsOf(positions));
   return bounds2;
 }
-function transparentProjectionDepth(positions, direction, transform) {
-  let center = boundsCenters2.get(positions);
+function transparentProjectionDepth(primitive, direction) {
+  const positions = primitive.positions;
+  const transform = primitive.transform;
+  const skin = materialSkinOf(primitive);
+  let center = skin === void 0 ? boundsCenters2.get(positions) : materialSkinCenter(primitive, skin);
   if (center === void 0) {
     if (positions.length % 3 !== 0 || !positions.every(Number.isFinite))
       throw new TypeError("world transparent primitive contains invalid positions");
@@ -137451,7 +137519,7 @@ function createWorldWebGlCompositeTransparentDrawPlan(plan, requested, materialD
     entries.push({
       value: Object.freeze({ kind: "material", ...entry2 }),
       priority: entry2.draw.program.priority,
-      depth: transparentProjectionDepth(materialPosedPositions(entry2.draw.primitive), direction, entry2.draw.primitive.transform),
+      depth: transparentProjectionDepth(entry2.draw.primitive, direction),
       ordinal: entries.length
     });
   entries.sort((left, right) => left.priority - right.priority || left.depth - right.depth || left.ordinal - right.ordinal);
@@ -137496,7 +137564,9 @@ function worldViewRectangle(plan, view, aspect) {
   return Object.values(rectangle).every(Number.isFinite) ? Object.freeze(rectangle) : void 0;
 }
 function primitiveScreenBox(primitive, basis2, box, offset) {
-  const { min, max } = cachedPrimitiveBounds(materialPosedPositions(primitive));
+  const skin = materialSkinOf(primitive);
+  const posed = skin === void 0 ? void 0 : materialSkinBounds(primitive, skin);
+  const { min, max } = posed === void 0 ? cachedPrimitiveBounds(primitive.positions) : { min: posed.minimum, max: posed.maximum };
   if (!(min[0] <= max[0])) {
     box.set([Infinity, Infinity, -Infinity, -Infinity], offset);
     return;
@@ -137603,6 +137673,25 @@ function worldMaterialMergeKey(entry2) {
     ].map((values) => values === void 0 ? "-" : "+").join(""),
     (primitive.textureCoordinateSets ?? []).map((set) => set.set).join(",")
   ].join("|");
+}
+function worldMaterialInstances(entries) {
+  const first = entries[0];
+  if (first === void 0 || entries.length < 2)
+    return void 0;
+  const lead = first.draw.primitive;
+  for (const { draw } of entries) {
+    const primitive = draw.primitive;
+    if (!sameMaterialGeometry(primitive, lead) || primitiveVertexTints(primitive) !== primitiveVertexTints(lead) || primitiveVertexPlacements(primitive) !== void 0 || materialMirrors(materialModelMatrix(primitive)))
+      return void 0;
+  }
+  const matrices = new Float32Array(entries.length * 16);
+  entries.forEach(({ draw }, index) => matrices.set(materialModelMatrix(draw.primitive), index * 16));
+  const { transform: _transform, ...shared } = lead;
+  return Object.freeze({
+    ...first,
+    draw: Object.freeze({ ...first.draw, primitive: Object.freeze(shared) }),
+    instances: Object.freeze({ matrices, count: entries.length })
+  });
 }
 var ADDING_BLEND = 1;
 var MULTIPLYING_BLEND = 2;
@@ -137726,6 +137815,9 @@ function packWorldWebGlTransparentDraws(plan, view, worldDraws, ordered, visible
     lists.set(batch2, { indices: new Uint32Array(size), filled: 0 });
   return Object.freeze(emitted.flatMap((value2) => {
     if ("entries" in value2) {
+      const instanced = worldMaterialInstances(value2.entries);
+      if (instanced !== void 0)
+        return [instanced];
       const draw = mergeMaterialDraws(value2.entries.map((entry2) => entry2.draw));
       return draw === void 0 || value2.entries.length === 1 ? value2.entries : [Object.freeze({ ...value2.entries[0], draw })];
     }
@@ -138669,7 +138761,7 @@ function drawWorldWebGlWithResources(canvas, input, resources) {
           if (candidate.kind !== "material")
             break;
           for (const draw of worldBlendedMaterialPasses(candidate.draw))
-            run.push({ draw });
+            run.push(candidate.instances === void 0 ? { draw } : { draw, instances: candidate.instances });
           index = next;
         }
         resources.materialDraws.drawSequence(run, sceneCamera, sceneLight2, worldCurrentPrograms.get(plan)?.passes);

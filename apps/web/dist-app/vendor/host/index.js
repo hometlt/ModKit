@@ -2040,7 +2040,7 @@ var RESOLVED_DATA_WORKSPACE_CONTRACT_DEFINITION = Object.freeze({
   matching: Object.freeze({ profile: RESOLVED_DATA_WORKSPACE_MATCHER_PROFILE, major: 1 }),
   conformanceProfile: "common.data/resolved-workspace-v1",
   surface: Object.freeze({
-    fields: Object.freeze(["contract", "providerId", "gameIds"]),
+    fields: Object.freeze(["contract", "providerId", "gameIds", "persistentRoots"]),
     methods: Object.freeze({
       plan: Object.freeze({
         kind: "value",
@@ -2134,6 +2134,47 @@ function isResolvedDataWorkspace(value) {
   const record3 = recordOf(value);
   return record3?.["contract"] === RESOLVED_DATA_WORKSPACE_CONTRACT && nonEmptyString(record3["providerId"]) && stringList(record3["gameIds"]) !== void 0 && typeof record3["plan"] === "function" && typeof record3["analyze"] === "function" && (record3["analyzeAuthoringIndex"] === void 0 || typeof record3["analyzeAuthoringIndex"] === "function") && typeof record3["openSchemaTree"] === "function" && typeof record3["openDefinitionTable"] === "function" && typeof record3["openLocalizationTable"] === "function" && typeof record3["openRelations"] === "function" && (record3["resolveEditTarget"] === void 0 || typeof record3["resolveEditTarget"] === "function") && (record3["planEdit"] === void 0 || typeof record3["planEdit"] === "function") && (record3["analyzeIsolation"] === void 0 || typeof record3["analyzeIsolation"] === "function") && (record3["planIsolation"] === void 0 || typeof record3["planIsolation"] === "function");
 }
+function resolvedDataAnalyzerIdentity(inventory, gameId) {
+  const providers = offersFromInventory(inventory).flatMap((offer) => {
+    const analyses = offer.provides.some(
+      (item) => item.contract === RESOLVED_DATA_WORKSPACE_CONTRACT && item.major === 1 && (stringList(recordOf(item.facet)?.["gameIds"]) ?? []).includes(gameId)
+    );
+    if (!analyses) return [];
+    const record3 = inventoryBindingForOffer(offer)?.record;
+    return [
+      canonicalJsonStringify({
+        providerId: offer.providerId,
+        runtimeVariant: offer.runtimeVariant,
+        artifactDigest: record3?.artifactDigest ?? "unattested",
+        manifestDigest: record3?.manifestDigest ?? "unattested"
+      })
+    ];
+  });
+  return canonicalJsonStringify([...new Set(providers)].sort(compareUtf8));
+}
+var MAX_PERSISTENT_ROOTS = 64;
+function resolvedDataPersistentRoots(workspace) {
+  const value = workspace.persistentRoots;
+  if (!Array.isArray(value) || value.length > MAX_PERSISTENT_ROOTS) return Object.freeze([]);
+  const roots = [];
+  for (const item of value) {
+    const record3 = recordOf(item);
+    if (record3 === void 0) return Object.freeze([]);
+    const sourcePath2 = record3["sourcePath"];
+    const path = record3["path"];
+    const bounded22 = (text) => typeof text === "string" && text.length > 0 && text.length <= 4096 && !text.includes("\0");
+    if (Object.keys(record3).some((key3) => key3 !== "sourcePath" && key3 !== "path") || sourcePath2 !== void 0 && !bounded22(sourcePath2) || path !== void 0 && !bounded22(path) || sourcePath2 === void 0 && path === void 0) {
+      return Object.freeze([]);
+    }
+    roots.push(
+      Object.freeze({
+        ...sourcePath2 === void 0 ? {} : { sourcePath: sourcePath2 },
+        ...path === void 0 ? {} : { path }
+      })
+    );
+  }
+  return Object.freeze(roots);
+}
 async function resolveResolvedDataWorkspace(request) {
   const definitions = request.services.serviceDefinitions;
   if (definitions === void 0) {
@@ -2155,6 +2196,7 @@ async function resolveResolvedDataWorkspace(request) {
     definitions,
     grant: request.grant,
     budgets: request.budgets,
+    ...request.services.contributionSettings === void 0 ? {} : { contributionSettings: request.services.contributionSettings },
     ...request.signal === void 0 ? {} : { signal: request.signal }
   });
   try {
@@ -2266,6 +2308,52 @@ function validatedLanguageSemanticContextRequirements(value) {
   }
   return Object.freeze(requirements);
 }
+function semanticInputLayers(inputs) {
+  const layers = [];
+  for (const input of inputs) {
+    if (input.kind !== "dependency-closure") continue;
+    const listed = input.payload?.layers;
+    if (!Array.isArray(listed)) continue;
+    for (const item of listed) {
+      const layer = item;
+      if (typeof layer !== "object" || layer === null || !boundedText(layer.layerId)) continue;
+      layers.push(
+        Object.freeze({
+          layerId: layer.layerId,
+          ...boundedText(layer.sourceId) ? { sourceId: layer.sourceId } : {},
+          ...boundedText(layer.sourcePath) ? { sourcePath: layer.sourcePath } : {}
+        })
+      );
+    }
+  }
+  return Object.freeze(layers);
+}
+function fileDirectory(uri, logicalId) {
+  if (!uri.startsWith("file:")) return void 0;
+  let path;
+  try {
+    path = decodeURIComponent(new URL(uri).pathname);
+  } catch {
+    return void 0;
+  }
+  if (/^\/[A-Za-z]:/u.test(path)) path = path.slice(1);
+  const suffix = `/${logicalId}`;
+  if (path.length <= suffix.length || path.slice(-suffix.length).toLowerCase() !== suffix.toLowerCase()) {
+    return void 0;
+  }
+  return path.slice(0, -suffix.length);
+}
+var comparablePath = (path) => path.replaceAll("\\", "/").replace(/\/+$/u, "").toLowerCase();
+function persistentRootsInclude(roots, top) {
+  const named = [top.sourcePath, top.directory].flatMap(
+    (path) => path === void 0 ? [] : [comparablePath(path)]
+  );
+  return roots.some(
+    (root) => [root.sourcePath, root.path].some(
+      (path) => path !== void 0 && named.includes(comparablePath(path))
+    )
+  );
+}
 function semanticInputLocales(inputs) {
   for (const input of inputs) {
     if (input.kind !== "locale-set") continue;
@@ -2320,15 +2408,20 @@ function prepareResolvedDataSemanticContext(request) {
       })
     ];
   });
-  const identities = selected.map(({ document, origin }) => {
-    return {
-      uri: document.uri,
-      languageId: document.languageId,
-      version: document.version,
-      contentRevision: languageDocumentTextToken(document),
-      origin
-    };
-  });
+  const budgets = request.budgets === void 0 ? void 0 : {
+    ...request.budgets,
+    maxInputBytes: String(request.budgets.maxInputBytes)
+  };
+  const analysed = selected.flatMap(
+    ({ document, origin }) => origin === void 0 ? [] : [
+      {
+        layerId: origin.layerId,
+        logicalId: origin.logicalId,
+        languageId: document.languageId,
+        contentRevision: languageDocumentTextToken(document)
+      }
+    ]
+  );
   const localizationIdentities = localizationDocuments.map(
     ({ document, origin, sourceDocument }) => ({
       path: origin.logicalId,
@@ -2339,33 +2432,28 @@ function prepareResolvedDataSemanticContext(request) {
   );
   const key3 = languageWorkspaceContextToken({
     requirement: request.requirement,
-    documents: identities,
+    documents: analysed,
     locales,
     localization: localizationIdentities,
-    budgets: request.budgets === void 0 ? void 0 : {
-      ...request.budgets,
-      maxInputBytes: String(request.budgets.maxInputBytes)
-    },
+    budgets,
     complete
   });
   const scopeKey = languageWorkspaceContextToken({
     requirement: request.requirement,
     locales,
-    budgets: request.budgets === void 0 ? void 0 : {
-      ...request.budgets,
-      maxInputBytes: String(request.budgets.maxInputBytes)
-    },
-    documents: identities.map((identity) => ({
-      uri: identity.uri,
-      languageId: identity.languageId,
-      origin: identity.origin === void 0 ? void 0 : {
-        layerId: identity.origin.layerId,
-        logicalId: identity.origin.logicalId,
-        precedence: identity.origin.precedence
+    budgets,
+    documents: selected.map(({ document, origin }) => ({
+      uri: document.uri,
+      languageId: document.languageId,
+      origin: origin === void 0 ? void 0 : {
+        layerId: origin.layerId,
+        logicalId: origin.logicalId,
+        precedence: origin.precedence
       }
     })),
     complete
   });
+  const persistence = complete ? resolvedDataPersistence(request, selected, locales, budgets) : void 0;
   return Object.freeze({
     key: key3,
     scopeKey,
@@ -2373,7 +2461,42 @@ function prepareResolvedDataSemanticContext(request) {
     documents: Object.freeze(documents),
     locales,
     localizationDocuments: Object.freeze(localizationDocuments.map((item) => item.document)),
-    complete
+    complete,
+    ...persistence === void 0 ? {} : { persistence }
+  });
+}
+function resolvedDataPersistence(request, selected, locales, budgets) {
+  const closure = new Map((request.layers ?? []).map((layer) => [layer.layerId, layer]));
+  const byLayer = /* @__PURE__ */ new Map();
+  for (const { document, origin } of selected) {
+    if (origin === void 0) continue;
+    const layer = byLayer.get(origin.layerId) ?? { layerId: origin.layerId };
+    if (!byLayer.has(origin.layerId)) {
+      const sourcePath2 = closure.get(origin.layerId)?.sourcePath;
+      if (sourcePath2 !== void 0) layer.sourcePath = sourcePath2;
+      byLayer.set(origin.layerId, layer);
+    }
+    if (layer.directory === void 0) {
+      const directory = fileDirectory(document.uri, origin.logicalId);
+      if (directory !== void 0) layer.directory = directory;
+    }
+  }
+  const layers = [...byLayer.values()];
+  const top = layers.at(-1);
+  if (top === void 0) return void 0;
+  const label = layers.map((layer) => layer.sourcePath ?? layer.directory ?? layer.layerId).join(" \u2192 ");
+  return Object.freeze({
+    slot: languageWorkspaceContextToken({
+      requirement: request.requirement,
+      locales,
+      budgets,
+      layers: layers.map((layer) => layer.layerId)
+    }),
+    label: `${label}${locales.length === 0 ? "" : ` \xB7 ${locales.join(", ")}`}`.slice(0, 2048),
+    top: Object.freeze({
+      ...top.sourcePath === void 0 ? {} : { sourcePath: top.sourcePath },
+      ...top.directory === void 0 ? {} : { directory: top.directory }
+    })
   });
 }
 var unavailable = (message) => Object.freeze({ complete: false, failure: message.replaceAll("\0", "").slice(0, 2048) });
@@ -2492,10 +2615,12 @@ async function analyzeResolvedDataSemanticContext(request) {
           index,
           index.valuesComplete
         );
+        const persistentRoots = resolvedDataPersistentRoots(resolution.workspace);
         return Object.freeze({
           ...input2 === void 0 ? {} : { input: input2 },
           complete: request.prepared.complete && index.complete && index.valuesComplete,
-          ...failure22 === void 0 ? {} : { failure: failure22 }
+          ...failure22 === void 0 ? {} : { failure: failure22 },
+          ...persistentRoots.length === 0 ? {} : { persistentRoots }
         });
       }
       const snapshot2 = await resolution.workspace.analyze(analysisRequest);
@@ -2530,6 +2655,56 @@ async function analyzeResolvedDataSemanticContext(request) {
     }
     return unavailable(error3 instanceof Error ? error3.message : String(error3));
   }
+}
+var RESOLVED_DATA_CONTEXT_STORE_FORMAT = 1;
+function resolvedDataContextStoreKey(prepared, analyzer) {
+  return languageWorkspaceContextToken({
+    format: RESOLVED_DATA_CONTEXT_STORE_FORMAT,
+    context: prepared.key,
+    analyzer,
+    limits: {
+      maxEntities: MAX_LANGUAGE_RESOLVED_DATA_ENTITIES,
+      maxOutputBytes: Math.min(
+        LANGUAGE_WORKSPACE_SEMANTIC_PAYLOAD_MAX_BYTES,
+        MAX_LANGUAGE_AUTHORING_INDEX_BYTES
+      ),
+      maxTextBytes: MAX_LANGUAGE_RESOLVED_DATA_INPUT_BYTES
+    }
+  });
+}
+async function loadResolvedDataSemanticContext(request) {
+  if (!request.prepared.complete || request.prepared.documents.length === 0) return void 0;
+  let stored;
+  try {
+    stored = await request.store.load({
+      key: resolvedDataContextStoreKey(request.prepared, request.analyzer),
+      ...request.signal === void 0 ? {} : { signal: request.signal }
+    });
+  } catch (error3) {
+    if (isCancellation(error3) || request.signal?.aborted === true) {
+      throwIfAborted(request.signal);
+      throw error3;
+    }
+    return void 0;
+  }
+  throwIfAborted(request.signal);
+  if (stored === void 0) return void 0;
+  try {
+    const [input] = validatedLanguageWorkspaceSemanticInputs([stored]);
+    const index = input?.payload;
+    if (input === void 0 || index === void 0 || input.kind !== RESOLVED_DATA_AUTHORING_INDEX_KIND || input.id !== request.requirement.gameId || !validAuthoringIndex(index, request.requirement.gameId) || !index.complete || !index.valuesComplete || input.revision !== languageWorkspaceContextToken({
+      context: request.prepared.key,
+      snapshot: index.snapshotId
+    })) {
+      return void 0;
+    }
+    return Object.freeze({ input, complete: true });
+  } catch {
+    return void 0;
+  }
+}
+function resolvedDataContextToKeep(prepared, result) {
+  return prepared.complete && prepared.persistence !== void 0 && result.complete && result.input?.kind === RESOLVED_DATA_AUTHORING_INDEX_KIND && result.persistentRoots !== void 0 && persistentRootsInclude(result.persistentRoots, prepared.persistence.top) ? prepared.persistence : void 0;
 }
 var WIRE_TYPED_ARRAYS = Object.freeze({
   bytes: Uint8Array,
@@ -2794,7 +2969,7 @@ function knowledgeFileNamesOf(provider) {
     return {};
   }
 }
-var SEMANTIC_CONTEXT_CACHE_MAX_BYTES = 64 * 1024 * 1024;
+var LANGUAGE_SEMANTIC_CONTEXT_MEMORY_BYTES = 512 * 1024 * 1024;
 var SEMANTIC_CONTEXT_PENDING_MAX = 16;
 var SEMANTIC_CONTEXT_SCOPE_MAX = 64;
 var ROUTE_KEYS = /* @__PURE__ */ new Set([
@@ -3618,6 +3793,9 @@ function createLanguageWorkspace(options) {
   const hostAnalyzedSemanticInputs = /* @__PURE__ */ new WeakSet();
   const semanticContextEncoder = new TextEncoder();
   let semanticContextCacheBytes = 0;
+  const semanticContextMaxBytes = options.semanticContextMemoryBytes !== void 0 && Number.isSafeInteger(options.semanticContextMemoryBytes) && options.semanticContextMemoryBytes >= 0 ? options.semanticContextMemoryBytes : LANGUAGE_SEMANTIC_CONTEXT_MEMORY_BYTES;
+  const semanticContextStore = options.semanticContextStore;
+  const pendingContextSaves = /* @__PURE__ */ new Set();
   let state = "new";
   let shutdownPromise;
   let workspaceGeneration = 0;
@@ -3662,13 +3840,13 @@ function createLanguageWorkspace(options) {
     const bytes = semanticContextEncoder.encode(key3).byteLength + (payloadBytes2 === void 0 || value.input === void 0 ? semanticContextEncoder.encode(JSON.stringify(value)).byteLength : semanticContextEncoder.encode(
       JSON.stringify({ ...value, input: { ...value.input, payload: 0 } })
     ).byteLength - 1 + payloadBytes2);
-    if (bytes > SEMANTIC_CONTEXT_CACHE_MAX_BYTES) return;
+    if (bytes > semanticContextMaxBytes) return;
     const previous = semanticContextCache.get(key3);
     if (previous !== void 0) semanticContextCacheBytes -= previous.bytes;
     semanticContextCache.delete(key3);
     semanticContextCache.set(key3, Object.freeze({ value, bytes }));
     semanticContextCacheBytes += bytes;
-    while (semanticContextCacheBytes > SEMANTIC_CONTEXT_CACHE_MAX_BYTES) {
+    while (semanticContextCacheBytes > semanticContextMaxBytes) {
       const oldest = semanticContextCache.keys().next().value;
       if (oldest === void 0) break;
       const removed = semanticContextCache.get(oldest);
@@ -3676,16 +3854,26 @@ function createLanguageWorkspace(options) {
       semanticContextCacheBytes -= removed?.bytes ?? 0;
     }
   };
+  const forgetSemanticContext = (key3) => {
+    const removed = semanticContextCache.get(key3);
+    if (removed === void 0) return;
+    semanticContextCache.delete(key3);
+    semanticContextCacheBytes -= removed.bytes;
+  };
   const rememberLatestSemanticContext = (scopeKey, key3) => {
+    const superseded = latestSemanticContextKeys.get(scopeKey);
     latestSemanticContextKeys.delete(scopeKey);
     latestSemanticContextKeys.set(scopeKey, key3);
+    if (superseded !== void 0 && superseded !== key3 && ![...latestSemanticContextKeys.values()].includes(superseded)) {
+      forgetSemanticContext(superseded);
+    }
     while (latestSemanticContextKeys.size > SEMANTIC_CONTEXT_SCOPE_MAX) {
       const oldest = latestSemanticContextKeys.keys().next().value;
       if (oldest === void 0) break;
       latestSemanticContextKeys.delete(oldest);
     }
   };
-  const resolvedDataSemanticInputs = async (provider, routeLanguageId, snapshotDocuments, originsByUri, complete, signal, preferCached = false, locales = []) => {
+  const resolvedDataSemanticInputs = async (provider, routeLanguageId, snapshotDocuments, originsByUri, complete, signal, preferCached = false, locales = [], layers = []) => {
     const requirements = validatedLanguageSemanticContextRequirements(
       provider.semanticContextRequirements ?? []
     ).filter(
@@ -3703,7 +3891,8 @@ function createLanguageWorkspace(options) {
         origins: originsByUri,
         complete,
         locales,
-        budgets: workspaceBudgets
+        budgets: workspaceBudgets,
+        layers
       });
       let resolved = cachedSemanticContext(prepared.key);
       let stale = false;
@@ -3729,14 +3918,12 @@ function createLanguageWorkspace(options) {
           pending = {
             controller,
             waiters: 0,
-            promise: analyzeResolvedDataSemanticContext({
-              services: options.services,
-              grant: options.grant,
-              budgets: workspaceBudgets,
+            promise: keptOrAnalyzedSemanticContext(
               requirement,
               prepared,
-              signal: controller.signal
-            })
+              workspaceBudgets,
+              controller.signal
+            )
           };
           pendingSemanticContexts.set(prepared.key, pending);
           void pending.promise.then(
@@ -3788,6 +3975,47 @@ function createLanguageWorkspace(options) {
       }
     }
     return Object.freeze({ inputs: Object.freeze(inputs), complete: contextsComplete });
+  };
+  const keptOrAnalyzedSemanticContext = async (requirement, prepared, workspaceBudgets, signal) => {
+    const store = semanticContextStore;
+    const analyzer = store === void 0 ? void 0 : resolvedDataAnalyzerIdentity(options.services.inventory, requirement.gameId);
+    if (store !== void 0 && analyzer !== void 0) {
+      const kept = await loadResolvedDataSemanticContext({
+        store,
+        prepared,
+        requirement,
+        analyzer,
+        signal
+      });
+      if (kept !== void 0) return kept;
+    }
+    const value = await analyzeResolvedDataSemanticContext({
+      services: options.services,
+      grant: options.grant,
+      budgets: workspaceBudgets,
+      requirement,
+      prepared,
+      signal
+    });
+    const persistence = resolvedDataContextToKeep(prepared, value);
+    if (store !== void 0 && analyzer !== void 0 && persistence !== void 0 && value.input !== void 0 && state !== "shut-down") {
+      const input = value.input;
+      const saving = new Promise((resolve) => {
+        setTimeout(resolve, 0);
+      }).then(
+        () => store.save({
+          key: resolvedDataContextStoreKey(prepared, analyzer),
+          slot: persistence.slot,
+          gameId: requirement.gameId,
+          label: persistence.label,
+          input
+        })
+      ).catch(() => void 0).finally(() => {
+        pendingContextSaves.delete(saving);
+      });
+      pendingContextSaves.add(saving);
+    }
+    return value;
   };
   const requireFeatureEntry = (request, positioned, maxAllowedResults = LANGUAGE_MAX_RESULTS) => {
     requireReady();
@@ -4011,7 +4239,8 @@ function createLanguageWorkspace(options) {
           baseSemanticComplete,
           controller.signal,
           preferCachedSemanticContext,
-          semanticInputLocales(baseSemanticInputs)
+          semanticInputLocales(baseSemanticInputs),
+          semanticInputLayers(baseSemanticInputs)
         );
         semanticContextsComplete = semanticContexts.complete;
       } catch (error3) {
@@ -5049,6 +5278,7 @@ function createLanguageWorkspace(options) {
         semanticContextCacheBytes = 0;
         pendingSemanticContexts.clear();
         latestSemanticContextKeys.clear();
+        await Promise.allSettled([...pendingContextSaves]);
         const open = [...documents.values()];
         documents.clear();
         for (const entry2 of open) entry2.analysisController?.abort("language workspace shut down");
@@ -25489,7 +25719,7 @@ var RESOLVED_DATA_WORKSPACE_CONTRACT_DEFINITION2 = Object.freeze({
   matching: Object.freeze({ profile: RESOLVED_DATA_WORKSPACE_MATCHER_PROFILE, major: 1 }),
   conformanceProfile: "common.data/resolved-workspace-v1",
   surface: Object.freeze({
-    fields: Object.freeze(["contract", "providerId", "gameIds"]),
+    fields: Object.freeze(["contract", "providerId", "gameIds", "persistentRoots"]),
     methods: Object.freeze({
       plan: Object.freeze({
         kind: "value",
@@ -25677,6 +25907,47 @@ function isResolvedDataWorkspace2(value) {
   const record3 = recordOf8(value);
   return record3?.["contract"] === RESOLVED_DATA_WORKSPACE_CONTRACT && nonEmptyString6(record3["providerId"]) && stringList5(record3["gameIds"]) !== void 0 && typeof record3["plan"] === "function" && typeof record3["analyze"] === "function" && (record3["analyzeAuthoringIndex"] === void 0 || typeof record3["analyzeAuthoringIndex"] === "function") && typeof record3["openSchemaTree"] === "function" && typeof record3["openDefinitionTable"] === "function" && typeof record3["openLocalizationTable"] === "function" && typeof record3["openRelations"] === "function" && (record3["resolveEditTarget"] === void 0 || typeof record3["resolveEditTarget"] === "function") && (record3["planEdit"] === void 0 || typeof record3["planEdit"] === "function") && (record3["analyzeIsolation"] === void 0 || typeof record3["analyzeIsolation"] === "function") && (record3["planIsolation"] === void 0 || typeof record3["planIsolation"] === "function");
 }
+function resolvedDataAnalyzerIdentity2(inventory, gameId) {
+  const providers = offersFromInventory2(inventory).flatMap((offer) => {
+    const analyses = offer.provides.some(
+      (item) => item.contract === RESOLVED_DATA_WORKSPACE_CONTRACT && item.major === 1 && (stringList5(recordOf8(item.facet)?.["gameIds"]) ?? []).includes(gameId)
+    );
+    if (!analyses) return [];
+    const record3 = inventoryBindingForOffer2(offer)?.record;
+    return [
+      canonicalJsonStringify({
+        providerId: offer.providerId,
+        runtimeVariant: offer.runtimeVariant,
+        artifactDigest: record3?.artifactDigest ?? "unattested",
+        manifestDigest: record3?.manifestDigest ?? "unattested"
+      })
+    ];
+  });
+  return canonicalJsonStringify([...new Set(providers)].sort(compareUtf8));
+}
+var MAX_PERSISTENT_ROOTS2 = 64;
+function resolvedDataPersistentRoots2(workspace) {
+  const value = workspace.persistentRoots;
+  if (!Array.isArray(value) || value.length > MAX_PERSISTENT_ROOTS2) return Object.freeze([]);
+  const roots = [];
+  for (const item of value) {
+    const record3 = recordOf8(item);
+    if (record3 === void 0) return Object.freeze([]);
+    const sourcePath2 = record3["sourcePath"];
+    const path = record3["path"];
+    const bounded22 = (text) => typeof text === "string" && text.length > 0 && text.length <= 4096 && !text.includes("\0");
+    if (Object.keys(record3).some((key3) => key3 !== "sourcePath" && key3 !== "path") || sourcePath2 !== void 0 && !bounded22(sourcePath2) || path !== void 0 && !bounded22(path) || sourcePath2 === void 0 && path === void 0) {
+      return Object.freeze([]);
+    }
+    roots.push(
+      Object.freeze({
+        ...sourcePath2 === void 0 ? {} : { sourcePath: sourcePath2 },
+        ...path === void 0 ? {} : { path }
+      })
+    );
+  }
+  return Object.freeze(roots);
+}
 async function resolveResolvedDataWorkspace2(request) {
   const definitions = request.services.serviceDefinitions;
   if (definitions === void 0) {
@@ -25698,6 +25969,7 @@ async function resolveResolvedDataWorkspace2(request) {
     definitions,
     grant: request.grant,
     budgets: request.budgets,
+    ...request.services.contributionSettings === void 0 ? {} : { contributionSettings: request.services.contributionSettings },
     ...request.signal === void 0 ? {} : { signal: request.signal }
   });
   try {
@@ -40838,6 +41110,7 @@ export {
   LANGUAGE_MAX_EDITS,
   LANGUAGE_MAX_RESULTS,
   LANGUAGE_PROVIDER_FAILED,
+  LANGUAGE_SEMANTIC_CONTEXT_MEMORY_BYTES,
   LANGUAGE_WORKSPACE_NOT_INITIALIZED,
   LANGUAGE_WORKSPACE_SHUT_DOWN,
   LOCALIZATION_CATALOG_MAXIMUM_JSON_BYTES,
@@ -41103,6 +41376,8 @@ export {
   resolveServiceProvider2 as resolveServiceProvider,
   resolveSessionPresentationPlan,
   resolveSubjectClosure,
+  resolvedDataAnalyzerIdentity2 as resolvedDataAnalyzerIdentity,
+  resolvedDataPersistentRoots2 as resolvedDataPersistentRoots,
   selectSceneRenderer,
   serializeCodecDetectionSelection,
   serializePolicyLock,

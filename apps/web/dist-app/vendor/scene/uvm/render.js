@@ -18,7 +18,7 @@ import {
   snapshotEnvironment,
   snapshotEyePosition,
   snapshotModelBillboards
-} from "../../../chunks/chunk-SHAX55JT.js";
+} from "../../../chunks/chunk-BEYDX5DP.js";
 import "../../../chunks/chunk-X6TJ64VW.js";
 import "../../../chunks/chunk-SPVJPG77.js";
 import {
@@ -107,13 +107,13 @@ import "../../../chunks/chunk-UCBII6KW.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 
 // packages/scene/dist/uvm/pose-samples.js
-function readUvmPoseSamples(value, clips) {
-  if (value === void 0)
+function readUvmPoseSamples(value2, clips) {
+  if (value2 === void 0)
     return void 0;
-  if (!Array.isArray(value) || value.length === 0 || value.length > 32)
+  if (!Array.isArray(value2) || value2.length === 0 || value2.length > 32)
     throw new RangeError("poseSamples requires 1..32 entries");
   let active = false;
-  const samples = value.map((raw) => {
+  const samples = value2.map((raw) => {
     const sample = object(raw, "pose sample"), clipId = sample["clipId"], time = sample["time"], weight = sample["weight"], additive = sample["additive"];
     if (Object.keys(sample).some((key) => !["clipId", "time", "weight", "additive"].includes(key)) || typeof clipId !== "string" || typeof time !== "number" || !Number.isFinite(time) || time < 0 || typeof weight !== "number" || !Number.isFinite(weight) || weight < 0 || additive !== void 0 && typeof additive !== "boolean")
       throw new TypeError("invalid explicit pose sample");
@@ -137,12 +137,12 @@ var multiplyMatrix4 = (a, b) => {
   const output = new Float32Array(16);
   for (let column = 0; column < 4; column++)
     for (let row = 0; row < 4; row++) {
-      let value = 0;
+      let value2 = 0;
       for (let index = 0; index < 4; index++)
-        value += (a[index * 4 + row] ?? Number.NaN) * (b[column * 4 + index] ?? Number.NaN);
-      if (!Number.isFinite(value) || !Number.isFinite(Math.fround(value)))
+        value2 += (a[index * 4 + row] ?? Number.NaN) * (b[column * 4 + index] ?? Number.NaN);
+      if (!Number.isFinite(value2) || !Number.isFinite(Math.fround(value2)))
         throw new RangeError("model particle camera matrix exceeds float32");
-      output[column * 4 + row] = value;
+      output[column * 4 + row] = value2;
     }
   return output;
 };
@@ -338,16 +338,16 @@ async function composeModelParticles(instances, parent, options, depth, maxBytes
 }
 
 // packages/scene/dist/render/preview-lighting.js
-var vector = (value, label) => {
-  if (!Array.isArray(value) || value.length !== 3 || !value.every((x) => typeof x === "number" && Number.isFinite(Math.fround(x))))
+var vector = (value2, label) => {
+  if (!Array.isArray(value2) || value2.length !== 3 || !value2.every((x) => typeof x === "number" && Number.isFinite(Math.fround(x))))
     throw new TypeError(`invalid preview light ${label}`);
-  return [Math.fround(value[0]), Math.fround(value[1]), Math.fround(value[2])];
+  return [Math.fround(value2[0]), Math.fround(value2[1]), Math.fround(value2[2])];
 };
-var unit = (value) => {
-  const length = Math.hypot(...value);
+var unit = (value2) => {
+  const length = Math.hypot(...value2);
   if (length <= 1e-8)
     throw new TypeError("preview light direction is zero");
-  return [value[0] / length, value[1] / length, value[2] / length];
+  return [value2[0] / length, value2[1] / length, value2[2] / length];
 };
 function readPreviewLighting(lights, ambient) {
   if (lights === void 0) {
@@ -380,12 +380,12 @@ function readPreviewLighting(lights, ambient) {
         "innerConeAngle",
         "outerConeAngle"
       ]) {
-        const value = light[key];
-        if (value === void 0)
+        const value2 = light[key];
+        if (value2 === void 0)
           continue;
-        if (typeof value !== "number" || value < 0 || !Number.isFinite(Math.fround(value)))
+        if (typeof value2 !== "number" || value2 < 0 || !Number.isFinite(Math.fround(value2)))
           throw new TypeError(`invalid preview light ${key}`);
-        values[key] = Math.fround(value);
+        values[key] = Math.fround(value2);
       }
       return {
         type: light.type,
@@ -399,7 +399,7 @@ function readPreviewLighting(lights, ambient) {
 }
 
 // packages/scene/dist/uvm/effect-tracks.js
-function readUvmEffectAnimation(value, sequence, timeUnit, maxKeys, signal) {
+function readUvmEffectAnimation(value2, sequence, timeUnit, maxKeys, signal) {
   const output = {};
   let keysRead = 0;
   const track = (input) => {
@@ -416,9 +416,9 @@ function readUvmEffectAnimation(value, sequence, timeUnit, maxKeys, signal) {
     if (keysRead > maxKeys)
       throw new RangeError("effect animation key budget exceeded");
     let previous = -Infinity, arity;
-    const keys = rawKeys.map((value2) => {
+    const keys = rawKeys.map((value3) => {
       signal?.throwIfAborted();
-      const key = object(value2, "effect animation key"), frame = key["frame"];
+      const key = object(value3, "effect animation key"), frame = key["frame"];
       if (Object.keys(key).some((name) => !["frame", "vector", "inTan", "outTan"].includes(name)) || typeof frame !== "number" || !Number.isFinite(frame) || frame < previous)
         throw new TypeError("effect key frames must be finite and ordered");
       previous = frame;
@@ -440,7 +440,7 @@ function readUvmEffectAnimation(value, sequence, timeUnit, maxKeys, signal) {
     });
     return { lineType, globalSeqId, keys };
   };
-  for (const [property, propertyValue] of Object.entries(object(value, "effect animation"))) {
+  for (const [property, propertyValue] of Object.entries(object(value2, "effect animation"))) {
     signal?.throwIfAborted();
     if (!sequence) {
       output[property] = track(propertyValue);
@@ -449,8 +449,8 @@ function readUvmEffectAnimation(value, sequence, timeUnit, maxKeys, signal) {
     if (!Array.isArray(propertyValue))
       throw new TypeError("effect sequence tracks must be an array");
     const indices = /* @__PURE__ */ new Set();
-    output[property] = propertyValue.map((value2) => {
-      const entry = object(value2, "effect sequence track"), index = entry["sequenceIndex"];
+    output[property] = propertyValue.map((value3) => {
+      const entry = object(value3, "effect sequence track"), index = entry["sequenceIndex"];
       if (typeof index !== "number" || !Number.isSafeInteger(index) || index < 0 || indices.has(index))
         throw new TypeError("effect sequence indices must be unique nonnegative integers");
       indices.add(index);
@@ -490,9 +490,9 @@ function sampleUvmSceneProperties(source, defaults, options) {
       for (const raw of entries) {
         const track = object(raw["track"], "scene property track");
         for (const rawKey of array(track, "keys")) {
-          const value = object(rawKey, "scene property key");
+          const value2 = object(rawKey, "scene property key");
           for (const component of ["vector", "inTan", "outTan"]) {
-            if (value[component] !== void 0 && array(value, component).length !== width)
+            if (value2[component] !== void 0 && array(value2, component).length !== width)
               throw new TypeError(`scene property ${key} track width differs from its default`);
           }
         }
@@ -538,13 +538,13 @@ function readUvmSceneLights(document2, transforms, activeNodes, options) {
     });
     const baseColor = sampled["color"];
     const intensity = sampled["intensity"];
-    if (!Array.isArray(baseColor) || baseColor.length !== 3 || baseColor.some((value) => typeof value !== "number" || !Number.isFinite(value)) || typeof intensity !== "number" || !Number.isFinite(intensity) || intensity < 0)
+    if (!Array.isArray(baseColor) || baseColor.length !== 3 || baseColor.some((value2) => typeof value2 !== "number" || !Number.isFinite(value2)) || typeof intensity !== "number" || !Number.isFinite(intensity) || intensity < 0)
       throw new TypeError("invalid sampled scene light color/intensity");
     const { animationDefaults: _defaults, sequenceAnimation: _animation, ...staticLight } = light;
     return {
       ...staticLight,
       ...sampled,
-      color: baseColor.map((value) => value * intensity)
+      color: baseColor.map((value2) => value2 * intensity)
     };
   });
   const rig = readPreviewLighting(sampledLights, ext["ambient"]);
@@ -588,10 +588,10 @@ function readUvmSceneLights(document2, transforms, activeNodes, options) {
 }
 
 // packages/scene/dist/uvm/collision-splats.js
-var finite = (value) => {
-  if (value === void 0 || !Number.isFinite(value))
+var finite = (value2) => {
+  if (value2 === void 0 || !Number.isFinite(value2))
     throw new TypeError("invalid collision splat scalar");
-  return value;
+  return value2;
 };
 function captureCollisionSplats(state, maxNodes, maxBytes, signal) {
   signal?.throwIfAborted();
@@ -683,9 +683,9 @@ function readEffectProjectors(document2, maxNodes, maxBytes, signal) {
   const effect = object(object(document2["extensions"], "extensions")["UV_game_effects"], "effects"), raw = array(effect, "projectors"), nodes = array(document2, "nodes"), materials = array(document2, "materials");
   if (raw.length > maxNodes || raw.length * 1024 > maxBytes)
     throw new RangeError("effect projector templates exceed budget");
-  return raw.map((value, index) => {
+  return raw.map((value2, index) => {
     signal?.throwIfAborted();
-    const entry = object(value, "projector"), output = {
+    const entry = object(value2, "projector"), output = {
       name: typeof entry["name"] === "string" ? entry["name"] : `projector-${index}`,
       boneIndex: safeIndex(entry["node"], nodes.length, "projector node"),
       materialIndex: safeIndex(entry["material"], materials.length, "projector material")
@@ -747,7 +747,7 @@ function readEffectProjectors(document2, maxNodes, maxBytes, signal) {
 
 // packages/codec-kit/dist/model-math/pbr.js
 var dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
-var clamp01 = (value) => Math.min(1, Math.max(0, value));
+var clamp01 = (value2) => Math.min(1, Math.max(0, value2));
 function shadePbr(surface, normal, view, light, ambient) {
   const roughness = clamp01(surface.roughness);
   const metallic = clamp01(surface.metallic);
@@ -783,9 +783,9 @@ function shadePbr(surface, normal, view, light, ambient) {
     return direct + environment + (surface.emissive?.[channel] ?? 0);
   });
 }
-function tonemap(value, curve2) {
+function tonemap(value2, curve2) {
   const [a, b, c, d, e] = curve2;
-  const x = Math.max(0, value);
+  const x = Math.max(0, value2);
   return clamp01(x * (a * x + b) / (x * (c * x + d) + e));
 }
 var TONEMAP_GLSL = `vec3 modkitTonemap(vec3 x, vec4 abcd, float e) {
@@ -1062,8 +1062,8 @@ function computeLayerColorCpu(sample, teamColor, viewNormal = [0, 0, 1], eyeToVe
 function calculateLayerFresnelCpu(fresnel, viewNormal, eyeToVertex) {
   const normal = normalize3(viewNormal);
   const direction = normalize3(eyeToVertex);
-  const dot4 = dot3(normal, direction);
-  const edge = fresnel.doNotMirror ? 1 - clamp012(-dot4) : 1 - Math.abs(dot4);
+  const dot5 = dot3(normal, direction);
+  const edge = fresnel.doNotMirror ? 1 - clamp012(-dot5) : 1 - Math.abs(dot5);
   let factor = Math.pow(Math.max(edge, 1e-4), Math.max(fresnel.exponent, 0));
   if (fresnel.mode === 2)
     factor = 1 - factor;
@@ -1118,9 +1118,9 @@ function clamp012(v) {
 function dot3(a, b) {
   return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 }
-function normalize3(value) {
-  const length = Math.hypot(value[0], value[1], value[2]);
-  return length > 1e-8 ? [value[0] / length, value[1] / length, value[2] / length] : [0, 0, 1];
+function normalize3(value2) {
+  const length = Math.hypot(value2[0], value2[1], value2[2]);
+  return length > 1e-8 ? [value2[0] / length, value2[1] / length, value2[2] / length] : [0, 0, 1];
 }
 function blendNormalCpu(base, detail, factor) {
   const amount = clamp012(factor);
@@ -1160,12 +1160,12 @@ function composeStandardPixelCpu(input) {
       const layer = layers[slot];
       if (layer === void 0)
         continue;
-      const value = computeLayerColorCpu(layer, teamColor);
+      const value2 = computeLayerColorCpu(layer, teamColor);
       const weight = weights[index];
       color = [
-        color[0] + (value[0] - color[0]) * weight,
-        color[1] + (value[1] - color[1]) * weight,
-        color[2] + (value[2] - color[2]) * weight
+        color[0] + (value2[0] - color[0]) * weight,
+        color[1] + (value2[1] - color[1]) * weight,
+        color[2] + (value2[2] - color[2]) * weight
       ];
     }
   }
@@ -1181,12 +1181,12 @@ function composeStandardPixelCpu(input) {
     color = [color[0] * ao[0], color[1] * ao[1], color[2] * ao[2]];
   }
   const linear = input.linearColor !== void 0;
-  const inPipeline = (value) => linear ? [
-    srgbToLinear(clamp012(value[0])),
-    srgbToLinear(clamp012(value[1])),
-    srgbToLinear(clamp012(value[2])),
-    value[3]
-  ] : [value[0], value[1], value[2], value[3]];
+  const inPipeline = (value2) => linear ? [
+    srgbToLinear(clamp012(value2[0])),
+    srgbToLinear(clamp012(value2[1])),
+    srgbToLinear(clamp012(value2[2])),
+    value2[3]
+  ] : [value2[0], value2[1], value2[2], value2[3]];
   const applyEmissive = (base) => {
     let final2 = [base[0], base[1], base[2]];
     let addEmissive = false;
@@ -1303,7 +1303,7 @@ function composeStandardPixelCpu(input) {
     rgb = applyEmissive(applyEnvironment(rgb, Math.max(dot3(n, l), 0), [0, 0, 0]));
     if (input.linearColor !== void 0) {
       const curve2 = input.linearColor.tonemap;
-      rgb = rgb.map((value) => linearToSrgb(curve2 === void 0 ? clamp012(value) : tonemap(value, curve2)));
+      rgb = rgb.map((value2) => linearToSrgb(curve2 === void 0 ? clamp012(value2) : tonemap(value2, curve2)));
     }
     final = [rgb[0], rgb[1], rgb[2], final[3]];
   } else if (input.unshaded) {
@@ -1382,8 +1382,8 @@ function composeStandardPixelCpu(input) {
 function layerUniformName(slot, suffix) {
   return `u_${slot}${suffix}`;
 }
-function glslFloat(value) {
-  return Number.isInteger(value) ? `${value}.0` : `${value}`;
+function glslFloat(value2) {
+  return Number.isInteger(value2) ? `${value2}.0` : `${value2}`;
 }
 function uvExpression(layer) {
   if (layer.angleLookup !== void 0)
@@ -1856,7 +1856,7 @@ function buildStandardFragmentSource(defines, options = {}) {
   };
   if (defines.pbr && !defines.unshaded) {
     const channel = (slot) => layerBySlot.has(slot) ? ` * computeLayer_${slot}().r` : "";
-    const vector7 = (value) => `vec3(${value.map(glslFloat).join(", ")})`;
+    const vector7 = (value2) => `vec3(${value2.map(glslFloat).join(", ")})`;
     const light = defines.sceneLighting ? "u_sceneLightColor" : vector7(PBR_VIEWER_LIGHT);
     const ambient = defines.sceneLighting ? "u_sceneAmbientColor" : vector7(PBR_VIEWER_AMBIENT);
     body.push(`  vec3 pbrBase = ${defines.linearColor ? "modkitSrgbToLinear(clamp(color, 0.0, 1.0))" : "color"};`, `  float pbrMetallic = u_metallicFactor${channel("metalness")};`, `  float pbrRoughness = u_roughnessFactor${channel("roughness")};`, "  vec3 pbrNormal = normalize(normal);", "  vec3 pbrLight = normalize(v_lightDir);", "  vec3 pbrView = normalize(v_viewDir);", `  vec3 shaded = modkitPbr(pbrBase, pbrMetallic, pbrRoughness, 1.0, vec3(0.0), pbrNormal, pbrView, pbrLight, ${light}, ${ambient});`);
@@ -2203,7 +2203,7 @@ function layerListTexture(shader) {
 
 // packages/scene/dist/uvm/projector-receivers.js
 var dot2 = (x, y, z, v) => x * v[0] + y * v[1] + z * v[2];
-var clamp = (value) => Math.min(1, Math.max(0, value));
+var clamp = (value2) => Math.min(1, Math.max(0, value2));
 var finiteReceiverPositions = /* @__PURE__ */ new WeakSet();
 var highestReceiverIndex = /* @__PURE__ */ new WeakMap();
 var RECEIVER_GRID_MIN_TRIANGLES = 1024;
@@ -2228,11 +2228,11 @@ function createReceiverGrid(positions, indices) {
   for (let offset = 0; offset < triangles * 3; offset++) {
     const vertex = vertexOf(offset);
     for (let axis = 0; axis < 3; axis++) {
-      const value = positions[vertex + axis];
-      if (value < low[axis])
-        low[axis] = value;
-      if (value > high[axis])
-        high[axis] = value;
+      const value2 = positions[vertex + axis];
+      if (value2 < low[axis])
+        low[axis] = value2;
+      if (value2 > high[axis])
+        high[axis] = value2;
     }
   }
   const extents = [0, 1, 2].map((axis) => high[axis] - low[axis]);
@@ -2243,8 +2243,8 @@ function createReceiverGrid(positions, indices) {
   const columns = Math.max(1, Math.min(512, Math.round(Math.sqrt(targetCells * spanU / spanV))));
   const rows = Math.max(1, Math.min(512, Math.round(targetCells / columns)));
   const cellU = spanU / columns, cellV = spanV / rows;
-  const cellColumn = (value) => Math.min(columns - 1, Math.max(0, Math.floor((value - low[u]) / cellU)));
-  const cellRow = (value) => Math.min(rows - 1, Math.max(0, Math.floor((value - low[v]) / cellV)));
+  const cellColumn = (value2) => Math.min(columns - 1, Math.max(0, Math.floor((value2 - low[u]) / cellU)));
+  const cellRow = (value2) => Math.min(rows - 1, Math.max(0, Math.floor((value2 - low[v]) / cellV)));
   const triangleCells = (offset) => {
     const a = vertexOf(offset), b = vertexOf(offset + 1), c = vertexOf(offset + 2);
     return [
@@ -2299,16 +2299,16 @@ function createReceiverGrid(positions, indices) {
   });
 }
 function clipProjectorReceivers(frame, receivers, options) {
-  for (const value of [options.maxBytes, options.maxTriangles])
-    if (!Number.isSafeInteger(value) || value < 0)
+  for (const value2 of [options.maxBytes, options.maxTriangles])
+    if (!Number.isSafeInteger(value2) || value2 < 0)
       throw new RangeError("invalid projector budget");
   if (options.maxBytes < 480)
     throw new RangeError("projector scratch exceeds budget");
   for (const vector7 of [frame.origin, frame.rightAxis, frame.upAxis, frame.forwardAxis])
-    for (const value of vector7)
-      if (!Number.isFinite(value))
+    for (const value2 of vector7)
+      if (!Number.isFinite(value2))
         throw new TypeError("invalid projector frame");
-  for (const value of [
+  for (const value2 of [
     frame.near,
     frame.far,
     frame.left,
@@ -2318,7 +2318,7 @@ function clipProjectorReceivers(frame, receivers, options) {
     frame.tangentX,
     frame.tangentY
   ])
-    if (!Number.isFinite(value))
+    if (!Number.isFinite(value2))
       throw new TypeError("invalid projector frame");
   if (frame.near <= 0 || frame.far < frame.near || (frame.projectionType === "perspective" ? frame.tangentX <= 0 || frame.tangentY <= 0 : frame.rightExtent <= frame.left || frame.top <= frame.bottom))
     throw new TypeError("invalid projector volume");
@@ -2343,8 +2343,8 @@ function clipProjectorReceivers(frame, receivers, options) {
         throw new RangeError("projector receiver index absent");
     }
     if (!finiteReceiverPositions.has(primitive.positions)) {
-      for (const value of primitive.positions)
-        if (!Number.isFinite(value))
+      for (const value2 of primitive.positions)
+        if (!Number.isFinite(value2))
           throw new TypeError("nonfinite projector receiver");
       finiteReceiverPositions.add(primitive.positions);
     }
@@ -2356,11 +2356,11 @@ function clipProjectorReceivers(frame, receivers, options) {
     for (const depth of [frame.near, frame.far]) {
       for (const x of frame.projectionType === "perspective" ? [-depth * frame.tangentX, depth * frame.tangentX] : [frame.left, frame.rightExtent]) {
         for (const y of frame.projectionType === "perspective" ? [-depth * frame.tangentY, depth * frame.tangentY] : [frame.bottom, frame.top]) {
-          const point = frame.origin.map((value, axis) => value + frame.rightAxis[axis] * x + frame.upAxis[axis] * y + frame.forwardAxis[axis] * depth);
+          const point = frame.origin.map((value2, axis) => value2 + frame.rightAxis[axis] * x + frame.upAxis[axis] * y + frame.forwardAxis[axis] * depth);
           for (let axis = 0; axis < 3; axis++) {
-            const value = inverse[axis] * point[0] + inverse[4 + axis] * point[1] + inverse[8 + axis] * point[2] + inverse[12 + axis];
-            minimum[axis] = Math.min(minimum[axis], value - 1e-5);
-            maximum[axis] = Math.max(maximum[axis], value + 1e-5);
+            const value2 = inverse[axis] * point[0] + inverse[4 + axis] * point[1] + inverse[8 + axis] * point[2] + inverse[12 + axis];
+            minimum[axis] = Math.min(minimum[axis], value2 - 1e-5);
+            maximum[axis] = Math.max(maximum[axis], value2 + 1e-5);
           }
         }
       }
@@ -2538,6 +2538,58 @@ function projectorMaterialTag(material) {
   const parameters = material?.shader?.parameters;
   return parameters?.renderModel?.metadata?.sourceMaterialTag;
 }
+var PROJECTOR_TRACKS = [
+  "offset",
+  "pitch",
+  "yaw",
+  "roll",
+  "fieldOfView",
+  "aspectRatio",
+  "near",
+  "far",
+  "boxOffsetZBottom",
+  "boxOffsetZTop",
+  "boxOffsetXLeft",
+  "boxOffsetXRight",
+  "boxOffsetYFront",
+  "boxOffsetYBack",
+  "active"
+];
+var projectorAnimations = /* @__PURE__ */ new WeakMap();
+function projectorAnimation(value2, timeUnit, maxKeys, signal) {
+  const owner = value2 !== null && typeof value2 === "object" ? value2 : void 0;
+  const kept = owner === void 0 ? void 0 : projectorAnimations.get(owner)?.get(timeUnit);
+  if (kept !== void 0) {
+    if (kept.keys > maxKeys)
+      throw new RangeError("effect animation key budget exceeded");
+    return kept;
+  }
+  const parsed = readUvmEffectAnimation(value2, true, timeUnit, maxKeys, signal);
+  let keys = 0, work = 0;
+  for (const [key, list] of Object.entries(parsed)) {
+    if (!PROJECTOR_TRACKS.includes(key))
+      throw new TypeError(`unsupported projector track ${key}`);
+    for (const rawTrack of array({ list }, "list")) {
+      work += 1;
+      for (const rawKey of array(object(object(rawTrack, "sequence")["track"], "track"), "keys")) {
+        keys += 1;
+        work += 1;
+        const frameKey = object(rawKey, "key");
+        for (const component of ["vector", "inTan", "outTan"])
+          if (frameKey[component] !== void 0 && array(frameKey, component).length !== (key === "offset" ? 3 : 1))
+            throw new TypeError("projector track component count differs");
+      }
+    }
+  }
+  const read = Object.freeze({ parsed, keys, work });
+  if (owner !== void 0) {
+    let units = projectorAnimations.get(owner);
+    if (units === void 0)
+      projectorAnimations.set(owner, units = /* @__PURE__ */ new Map());
+    units.set(timeUnit, read);
+  }
+  return read;
+}
 var bufferIds = /* @__PURE__ */ new WeakMap();
 var bufferIdCount = 0;
 var bufferId = (buffer) => {
@@ -2546,25 +2598,25 @@ var bufferId = (buffer) => {
     bufferIds.set(buffer, id = ++bufferIdCount);
   return id;
 };
-var exact = (value) => Object.is(value, -0) ? "-0" : String(value);
+var exact = (value2) => Object.is(value2, -0) ? "-0" : String(value2);
 function projectorClipKey(frame, receivers, maxBytes, maxTriangles) {
   const parts = [];
-  for (const [name, value] of Object.entries(frame))
-    parts.push(name, typeof value === "number" ? exact(value) : Array.isArray(value) ? value.map(exact).join(" ") : String(value));
+  for (const [name, value2] of Object.entries(frame))
+    parts.push(name, typeof value2 === "number" ? exact(value2) : Array.isArray(value2) ? value2.map(exact).join(" ") : String(value2));
   for (const { primitive, transform: transform2 } of receivers)
     parts.push(primitive.topology, String(bufferId(primitive.positions)), primitive.indices === void 0 ? "-" : String(bufferId(primitive.indices)), transform2.map(exact).join(" "));
   parts.push(String(maxBytes), String(maxTriangles));
   return parts.join("|");
 }
-var scalar = (value) => {
-  if (typeof value !== "number" || !Number.isFinite(value))
+var scalar = (value2) => {
+  if (typeof value2 !== "number" || !Number.isFinite(value2))
     throw new TypeError("invalid projector scalar");
-  return value;
+  return value2;
 };
-var vec = (value) => {
-  if (!Array.isArray(value) || value.length !== 3)
+var vec = (value2) => {
+  if (!Array.isArray(value2) || value2.length !== 3)
     throw new TypeError("invalid projector vector");
-  return [scalar(value[0]), scalar(value[1]), scalar(value[2])];
+  return [scalar(value2[0]), scalar(value2[1]), scalar(value2[2])];
 };
 var unit3 = (v) => {
   const length = Math.hypot(...v);
@@ -2572,12 +2624,12 @@ var unit3 = (v) => {
     throw new TypeError("singular projector basis");
   return [v[0] / length, v[1] / length, v[2] / length];
 };
-var fov = (value) => Math.min(Math.PI - 1e-3, Math.max(1e-3, Math.abs(value) > Math.PI * 2 ? Math.abs(value) * Math.PI / 180 : Math.abs(value)));
+var fov = (value2) => Math.min(Math.PI - 1e-3, Math.max(1e-3, Math.abs(value2) > Math.PI * 2 ? Math.abs(value2) * Math.PI / 180 : Math.abs(value2)));
 var valueAt = (matrix, index) => scalar(matrix[index]);
 function createUvmProjectorFrame(document2, options) {
   options.signal?.throwIfAborted();
-  for (const value of [options.maxBytes, options.maxNodes])
-    if (!Number.isSafeInteger(value) || value < 0)
+  for (const value2 of [options.maxBytes, options.maxNodes])
+    if (!Number.isSafeInteger(value2) || value2 < 0)
       throw new RangeError("invalid projector budget");
   const effect = object(object(document2["extensions"], "extensions")["UV_game_effects"], "effects");
   const nodes = array(document2, "nodes"), projectors = array(effect, "projectors");
@@ -2635,39 +2687,11 @@ function createUvmProjectorFrame(document2, options) {
       const timeUnit = effect["trackTimeUnit"] ?? "seconds";
       if (timeUnit !== "seconds" && timeUnit !== "milliseconds")
         throw new TypeError("invalid projector track unit");
-      const parsed = readUvmEffectAnimation(entry["sequenceAnimation"], true, timeUnit, options.maxNodes - work, options.signal);
-      const allowed = [
-        "offset",
-        "pitch",
-        "yaw",
-        "roll",
-        "fieldOfView",
-        "aspectRatio",
-        "near",
-        "far",
-        "boxOffsetZBottom",
-        "boxOffsetZTop",
-        "boxOffsetXLeft",
-        "boxOffsetXRight",
-        "boxOffsetYFront",
-        "boxOffsetYBack",
-        "active"
-      ];
-      for (const [key, list] of Object.entries(parsed)) {
-        if (!allowed.includes(key))
-          throw new TypeError(`unsupported projector track ${key}`);
-        for (const rawTrack of array({ list }, "list")) {
-          if (++work > options.maxNodes)
-            throw new RangeError("projector track work exceeds budget");
-          for (const rawKey of array(object(object(rawTrack, "sequence")["track"], "track"), "keys")) {
-            if (++work > options.maxNodes)
-              throw new RangeError("projector track work exceeds budget");
-            const frameKey = object(rawKey, "key");
-            for (const component of ["vector", "inTan", "outTan"])
-              if (frameKey[component] !== void 0 && array(frameKey, component).length !== (key === "offset" ? 3 : 1))
-                throw new TypeError("projector track component count differs");
-          }
-        }
+      const animation = projectorAnimation(entry["sequenceAnimation"], timeUnit, options.maxNodes - work, options.signal);
+      work += animation.work;
+      if (work > options.maxNodes)
+        throw new RangeError("projector track work exceeds budget");
+      for (const [key, list] of Object.entries(animation.parsed)) {
         const tracks2 = list;
         entry[key] = key === "offset" ? [
           ...sampleEffectSequenceVector(tracks2, options.sequenceIndex ?? null, time, vec(entry[key]))
@@ -2948,8 +2972,8 @@ function generateUUID() {
   const uuid = _lut[d0 & 255] + _lut[d0 >> 8 & 255] + _lut[d0 >> 16 & 255] + _lut[d0 >> 24 & 255] + "-" + _lut[d1 & 255] + _lut[d1 >> 8 & 255] + "-" + _lut[d1 >> 16 & 15 | 64] + _lut[d1 >> 24 & 255] + "-" + _lut[d2 & 63 | 128] + _lut[d2 >> 8 & 255] + "-" + _lut[d2 >> 16 & 255] + _lut[d2 >> 24 & 255] + _lut[d3 & 255] + _lut[d3 >> 8 & 255] + _lut[d3 >> 16 & 255] + _lut[d3 >> 24 & 255];
   return uuid.toLowerCase();
 }
-function clamp2(value, min, max) {
-  return Math.max(min, Math.min(max, value));
+function clamp2(value2, min, max) {
+  return Math.max(min, Math.min(max, value2));
 }
 function euclideanModulo(n, m) {
   return (n % m + m) % m;
@@ -2957,9 +2981,9 @@ function euclideanModulo(n, m) {
 function mapLinear(x, a1, a2, b1, b2) {
   return b1 + (x - a1) * (b2 - b1) / (a2 - a1);
 }
-function inverseLerp(x, y, value) {
+function inverseLerp(x, y, value2) {
   if (x !== y) {
-    return (value - x) / (y - x);
+    return (value2 - x) / (y - x);
   } else {
     return 0;
   }
@@ -3007,14 +3031,14 @@ function degToRad(degrees) {
 function radToDeg(radians) {
   return radians * RAD2DEG;
 }
-function isPowerOfTwo(value) {
-  return (value & value - 1) === 0 && value !== 0;
+function isPowerOfTwo(value2) {
+  return (value2 & value2 - 1) === 0 && value2 !== 0;
 }
-function ceilPowerOfTwo(value) {
-  return Math.pow(2, Math.ceil(Math.log(value) / Math.LN2));
+function ceilPowerOfTwo(value2) {
+  return Math.pow(2, Math.ceil(Math.log(value2) / Math.LN2));
 }
-function floorPowerOfTwo(value) {
-  return Math.pow(2, Math.floor(Math.log(value) / Math.LN2));
+function floorPowerOfTwo(value2) {
+  return Math.pow(2, Math.floor(Math.log(value2) / Math.LN2));
 }
 function setQuaternionFromProperEuler(q, a, b, c, order) {
   const cos = Math.cos;
@@ -3050,42 +3074,42 @@ function setQuaternionFromProperEuler(q, a, b, c, order) {
       console.warn("THREE.MathUtils: .setQuaternionFromProperEuler() encountered an unknown order: " + order);
   }
 }
-function denormalize(value, array2) {
+function denormalize(value2, array2) {
   switch (array2.constructor) {
     case Float32Array:
-      return value;
+      return value2;
     case Uint32Array:
-      return value / 4294967295;
+      return value2 / 4294967295;
     case Uint16Array:
-      return value / 65535;
+      return value2 / 65535;
     case Uint8Array:
-      return value / 255;
+      return value2 / 255;
     case Int32Array:
-      return Math.max(value / 2147483647, -1);
+      return Math.max(value2 / 2147483647, -1);
     case Int16Array:
-      return Math.max(value / 32767, -1);
+      return Math.max(value2 / 32767, -1);
     case Int8Array:
-      return Math.max(value / 127, -1);
+      return Math.max(value2 / 127, -1);
     default:
       throw new Error("Invalid component type.");
   }
 }
-function normalize(value, array2) {
+function normalize(value2, array2) {
   switch (array2.constructor) {
     case Float32Array:
-      return value;
+      return value2;
     case Uint32Array:
-      return Math.round(value * 4294967295);
+      return Math.round(value2 * 4294967295);
     case Uint16Array:
-      return Math.round(value * 65535);
+      return Math.round(value2 * 65535);
     case Uint8Array:
-      return Math.round(value * 255);
+      return Math.round(value2 * 255);
     case Int32Array:
-      return Math.round(value * 2147483647);
+      return Math.round(value2 * 2147483647);
     case Int16Array:
-      return Math.round(value * 32767);
+      return Math.round(value2 * 32767);
     case Int8Array:
-      return Math.round(value * 127);
+      return Math.round(value2 * 127);
     default:
       throw new Error("Invalid component type.");
   }
@@ -3354,8 +3378,8 @@ var Vector2 = class _Vector2 {
   get width() {
     return this.x;
   }
-  set width(value) {
-    this.x = value;
+  set width(value2) {
+    this.x = value2;
   }
   /**
    * Alias for {@link Vector2#y}.
@@ -3365,8 +3389,8 @@ var Vector2 = class _Vector2 {
   get height() {
     return this.y;
   }
-  set height(value) {
-    this.y = value;
+  set height(value2) {
+    this.y = value2;
   }
   /**
    * Sets the vector components.
@@ -3418,13 +3442,13 @@ var Vector2 = class _Vector2 {
    * @param {number} value - The value to set.
    * @return {Vector2} A reference to this vector.
    */
-  setComponent(index, value) {
+  setComponent(index, value2) {
     switch (index) {
       case 0:
-        this.x = value;
+        this.x = value2;
         break;
       case 1:
-        this.y = value;
+        this.y = value2;
         break;
       default:
         throw new Error("index is out of range: " + index);
@@ -4051,8 +4075,8 @@ var Quaternion = class {
   get x() {
     return this._x;
   }
-  set x(value) {
-    this._x = value;
+  set x(value2) {
+    this._x = value2;
     this._onChangeCallback();
   }
   /**
@@ -4064,8 +4088,8 @@ var Quaternion = class {
   get y() {
     return this._y;
   }
-  set y(value) {
-    this._y = value;
+  set y(value2) {
+    this._y = value2;
     this._onChangeCallback();
   }
   /**
@@ -4077,8 +4101,8 @@ var Quaternion = class {
   get z() {
     return this._z;
   }
-  set z(value) {
-    this._z = value;
+  set z(value2) {
+    this._z = value2;
     this._onChangeCallback();
   }
   /**
@@ -4090,8 +4114,8 @@ var Quaternion = class {
   get w() {
     return this._w;
   }
-  set w(value) {
-    this._w = value;
+  set w(value2) {
+    this._w = value2;
     this._onChangeCallback();
   }
   /**
@@ -4652,16 +4676,16 @@ var Vector3 = class _Vector3 {
    * @param {number} value - The value to set.
    * @return {Vector3} A reference to this vector.
    */
-  setComponent(index, value) {
+  setComponent(index, value2) {
     switch (index) {
       case 0:
-        this.x = value;
+        this.x = value2;
         break;
       case 1:
-        this.y = value;
+        this.y = value2;
         break;
       case 2:
-        this.z = value;
+        this.z = value2;
         break;
       default:
         throw new Error("index is out of range: " + index);
@@ -6230,8 +6254,8 @@ var Source = class {
    * @default false
    * @param {boolean} value
    */
-  set needsUpdate(value) {
-    if (value === true) this.version++;
+  set needsUpdate(value2) {
+    if (value2 === true) this.version++;
   }
   /**
    * Serializes the source into JSON.
@@ -6370,8 +6394,8 @@ var Texture = class _Texture extends EventDispatcher {
   get image() {
     return this.source.data;
   }
-  set image(value = null) {
-    this.source.data = value;
+  set image(value2 = null) {
+    this.source.data = value2;
   }
   /**
    * Updates the texture transformation matrix from the from the properties {@link Texture#offset},
@@ -6580,8 +6604,8 @@ var Texture = class _Texture extends EventDispatcher {
    * @default false
    * @param {boolean} value
    */
-  set needsUpdate(value) {
-    if (value === true) {
+  set needsUpdate(value2) {
+    if (value2 === true) {
       this.version++;
       this.source.needsUpdate = true;
     }
@@ -6594,8 +6618,8 @@ var Texture = class _Texture extends EventDispatcher {
    * @default false
    * @param {boolean} value
    */
-  set needsPMREMUpdate(value) {
-    if (value === true) {
+  set needsPMREMUpdate(value2) {
+    if (value2 === true) {
       this.pmremVersion++;
     }
   }
@@ -6627,8 +6651,8 @@ var Vector4 = class _Vector4 {
   get width() {
     return this.z;
   }
-  set width(value) {
-    this.z = value;
+  set width(value2) {
+    this.z = value2;
   }
   /**
    * Alias for {@link Vector4#w}.
@@ -6638,8 +6662,8 @@ var Vector4 = class _Vector4 {
   get height() {
     return this.w;
   }
-  set height(value) {
-    this.w = value;
+  set height(value2) {
+    this.w = value2;
   }
   /**
    * Sets the vector components.
@@ -6718,19 +6742,19 @@ var Vector4 = class _Vector4 {
    * @param {number} value - The value to set.
    * @return {Vector4} A reference to this vector.
    */
-  setComponent(index, value) {
+  setComponent(index, value2) {
     switch (index) {
       case 0:
-        this.x = value;
+        this.x = value2;
         break;
       case 1:
-        this.y = value;
+        this.y = value2;
         break;
       case 2:
-        this.z = value;
+        this.z = value2;
         break;
       case 3:
-        this.w = value;
+        this.w = value2;
         break;
       default:
         throw new Error("index is out of range: " + index);
@@ -9274,8 +9298,8 @@ var Euler = class _Euler {
   get x() {
     return this._x;
   }
-  set x(value) {
-    this._x = value;
+  set x(value2) {
+    this._x = value2;
     this._onChangeCallback();
   }
   /**
@@ -9287,8 +9311,8 @@ var Euler = class _Euler {
   get y() {
     return this._y;
   }
-  set y(value) {
-    this._y = value;
+  set y(value2) {
+    this._y = value2;
     this._onChangeCallback();
   }
   /**
@@ -9300,8 +9324,8 @@ var Euler = class _Euler {
   get z() {
     return this._z;
   }
-  set z(value) {
-    this._z = value;
+  set z(value2) {
+    this._z = value2;
     this._onChangeCallback();
   }
   /**
@@ -9313,8 +9337,8 @@ var Euler = class _Euler {
   get order() {
     return this._order;
   }
-  set order(value) {
-    this._order = value;
+  set order(value2) {
+    this._order = value2;
     this._onChangeCallback();
   }
   /**
@@ -10108,11 +10132,11 @@ var Object3D = class _Object3D extends EventDispatcher {
    * @param {any} value - The value.
    * @return {Object3D|undefined} The found 3D object. Returns `undefined` if no 3D object has been found.
    */
-  getObjectByProperty(name, value) {
-    if (this[name] === value) return this;
+  getObjectByProperty(name, value2) {
+    if (this[name] === value2) return this;
     for (let i = 0, l = this.children.length; i < l; i++) {
       const child = this.children[i];
-      const object3 = child.getObjectByProperty(name, value);
+      const object3 = child.getObjectByProperty(name, value2);
       if (object3 !== void 0) {
         return object3;
       }
@@ -10128,11 +10152,11 @@ var Object3D = class _Object3D extends EventDispatcher {
    * @param {Array<Object3D>} result - The method stores the result in this array.
    * @return {Array<Object3D>} The found 3D objects.
    */
-  getObjectsByProperty(name, value, result = []) {
-    if (this[name] === value) result.push(this);
+  getObjectsByProperty(name, value2, result = []) {
+    if (this[name] === value2) result.push(this);
     const children = this.children;
     for (let i = 0, l = children.length; i < l; i++) {
-      children[i].getObjectsByProperty(name, value, result);
+      children[i].getObjectsByProperty(name, value2, result);
     }
     return result;
   }
@@ -11086,13 +11110,13 @@ var Color = class {
    */
   set(r, g, b) {
     if (g === void 0 && b === void 0) {
-      const value = r;
-      if (value && value.isColor) {
-        this.copy(value);
-      } else if (typeof value === "number") {
-        this.setHex(value);
-      } else if (typeof value === "string") {
-        this.setStyle(value);
+      const value2 = r;
+      if (value2 && value2.isColor) {
+        this.copy(value2);
+      } else if (typeof value2 === "number") {
+        this.setHex(value2);
+      } else if (typeof value2 === "string") {
+        this.setStyle(value2);
       }
     } else {
       this.setRGB(r, g, b);
@@ -11689,8 +11713,8 @@ var BufferAttribute = class {
    * @default false
    * @param {boolean} value
    */
-  set needsUpdate(value) {
-    if (value === true) this.version++;
+  set needsUpdate(value2) {
+    if (value2 === true) this.version++;
   }
   /**
    * Sets the usage of this buffer attribute.
@@ -11698,8 +11722,8 @@ var BufferAttribute = class {
    * @param {(StaticDrawUsage|DynamicDrawUsage|StreamDrawUsage|StaticReadUsage|DynamicReadUsage|StreamReadUsage|StaticCopyUsage|DynamicCopyUsage|StreamCopyUsage)} value - The usage to set.
    * @return {BufferAttribute} A reference to this buffer attribute.
    */
-  setUsage(value) {
-    this.usage = value;
+  setUsage(value2) {
+    this.usage = value2;
     return this;
   }
   /**
@@ -11836,8 +11860,8 @@ var BufferAttribute = class {
    * @param {number} [offset=0] - The offset in this buffer attribute's array.
    * @return {BufferAttribute} A reference to this instance.
    */
-  set(value, offset = 0) {
-    this.array.set(value, offset);
+  set(value2, offset = 0) {
+    this.array.set(value2, offset);
     return this;
   }
   /**
@@ -11848,9 +11872,9 @@ var BufferAttribute = class {
    * @return {number} The returned value.
    */
   getComponent(index, component) {
-    let value = this.array[index * this.itemSize + component];
-    if (this.normalized) value = denormalize(value, this.array);
-    return value;
+    let value2 = this.array[index * this.itemSize + component];
+    if (this.normalized) value2 = denormalize(value2, this.array);
+    return value2;
   }
   /**
    * Sets the given value to the given component of the vector at the given index.
@@ -11860,9 +11884,9 @@ var BufferAttribute = class {
    * @param {number} value - The value to set.
    * @return {BufferAttribute} A reference to this instance.
    */
-  setComponent(index, component, value) {
-    if (this.normalized) value = normalize(value, this.array);
-    this.array[index * this.itemSize + component] = value;
+  setComponent(index, component, value2) {
+    if (this.normalized) value2 = normalize(value2, this.array);
+    this.array[index * this.itemSize + component] = value2;
     return this;
   }
   /**
@@ -14433,9 +14457,9 @@ var KeyframeTrack = class {
     if (values !== void 0) {
       if (isTypedArray(values)) {
         for (let i = 0, n = values.length; i !== n; ++i) {
-          const value = values[i];
-          if (isNaN(value)) {
-            console.error("THREE.KeyframeTrack: Value is not a valid number.", this, i, value);
+          const value2 = values[i];
+          if (isNaN(value2)) {
+            console.error("THREE.KeyframeTrack: Value is not a valid number.", this, i, value2);
             valid = false;
             break;
           }
@@ -14461,8 +14485,8 @@ var KeyframeTrack = class {
         if (!smoothInterpolation) {
           const offset = i * stride, offsetP = offset - stride, offsetN = offset + stride;
           for (let j = 0; j !== stride; ++j) {
-            const value = values[offset + j];
-            if (value !== values[offsetP + j] || value !== values[offsetN + j]) {
+            const value2 = values[offset + j];
+            if (value2 !== values[offsetP + j] || value2 !== values[offsetN + j]) {
               keep = true;
               break;
             }
@@ -14798,8 +14822,8 @@ var Loader = class {
    * @param {boolean} value - The `withCredentials` value.
    * @return {Loader} A reference to this instance.
    */
-  setWithCredentials(value) {
-    this.withCredentials = value;
+  setWithCredentials(value2) {
+    this.withCredentials = value2;
     return this;
   }
   /**
@@ -16355,18 +16379,18 @@ var reversedFuncs = {
 };
 
 // packages/scene/dist/uvm/cameras.js
-function numbers(value, count, label) {
-  if (!Array.isArray(value) && !(value instanceof Float32Array) || value.length !== count || !Array.from(value).every((component) => typeof component === "number" && Number.isFinite(component)))
+function numbers(value2, count, label) {
+  if (!Array.isArray(value2) && !(value2 instanceof Float32Array) || value2.length !== count || !Array.from(value2).every((component) => typeof component === "number" && Number.isFinite(component)))
     throw new TypeError(`${label} must contain ${count} finite numbers`);
-  return Array.from(value);
+  return Array.from(value2);
 }
-function positive(value, label) {
-  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0)
+function positive(value2, label) {
+  if (typeof value2 !== "number" || !Number.isFinite(value2) || value2 <= 0)
     throw new TypeError(`${label} must be finite and positive`);
-  return value;
+  return value2;
 }
-function xyz(value) {
-  return [value.x, value.y, value.z];
+function xyz(value2) {
+  return [value2.x, value2.y, value2.z];
 }
 function ownedMatrix(matrix) {
   const output = Float32Array.from(matrix.elements);
@@ -16374,8 +16398,8 @@ function ownedMatrix(matrix) {
     throw new RangeError("camera matrix exceeds finite float32");
   return output;
 }
-function affine(value) {
-  const values = numbers(value, 16, "camera frame");
+function affine(value2) {
+  const values = numbers(value2, 16, "camera frame");
   if (values[3] !== 0 || values[7] !== 0 || values[11] !== 0 || values[15] !== 1)
     throw new TypeError("camera frame must be affine");
   const matrix = new Matrix4().fromArray(values);
@@ -16422,7 +16446,7 @@ function resolveUvmCamera(document2, input, options) {
   const position = new Vector3(), rotation = new Quaternion(), scale = new Vector3();
   world.decompose(position, rotation, scale);
   const reconstructed = new Matrix4().compose(position, rotation, scale);
-  if ([scale.x, scale.y, scale.z].some((value) => !(value > 0)) || world.elements.some((value, index) => Math.abs(value - (reconstructed.elements[index] ?? 0)) > 1e-6 * Math.max(1, Math.abs(value))))
+  if ([scale.x, scale.y, scale.z].some((value2) => !(value2 > 0)) || world.elements.some((value2, index) => Math.abs(value2 - (reconstructed.elements[index] ?? 0)) > 1e-6 * Math.max(1, Math.abs(value2))))
     throw new TypeError("camera frame shear/reflection is unsupported");
   const view = new Matrix4().compose(position, rotation, new Vector3(1, 1, 1)).invert();
   let projection2;
@@ -16546,10 +16570,10 @@ function skinPalette(bones, slots) {
     if (filled[slot] === 1 || matrix?.length !== 16)
       throw new TypeError("skin needs a unique explicit inverse-bind pose for each bone");
     for (let index = 0; index < 16; index++) {
-      const value = matrix[index];
-      if (!Number.isFinite(value))
+      const value2 = matrix[index];
+      if (!Number.isFinite(value2))
         throw new TypeError("skin needs a unique explicit inverse-bind pose for each bone");
-      palette[slot * 16 + index] = value;
+      palette[slot * 16 + index] = value2;
     }
     filled[slot] = 1;
   }
@@ -16561,10 +16585,10 @@ function skinPalette(bones, slots) {
       throw new RangeError("deformed skin exceeds finite float range");
   return palette;
 }
-function present(value, label) {
-  if (value === void 0)
+function present(value2, label) {
+  if (value2 === void 0)
     throw new TypeError(`missing scene ${label}`);
-  return value;
+  return value2;
 }
 function morphPrimitive(primitive, weights) {
   const targets = present(primitive.morphTargets, "morph targets");
@@ -16804,7 +16828,7 @@ function createModelSceneSampler(projection2, options = {}) {
           const rootFrame = parent === void 0 ? IDENTITY : worlds.get(parent);
           if (rootFrame === void 0)
             throw new TypeError("skin root frame is absent");
-          if (frame !== void 0 && !frame.every((value, i) => value === rootFrame[i]))
+          if (frame !== void 0 && !frame.every((value2, i) => value2 === rootFrame[i]))
             throw new TypeError("skin roots need the same external frame");
           frame = rootFrame;
           while (parent !== void 0) {
@@ -16815,7 +16839,7 @@ function createModelSceneSampler(projection2, options = {}) {
         } else {
           while (parent !== void 0 && !bindingsByNode.get(parent)?.some((item) => item.hierarchyId === hierarchyId)) {
             const node = nodes.get(parent);
-            if (node === void 0 || !node.transform.every((value, i) => value === IDENTITY[i]))
+            if (node === void 0 || !node.transform.every((value2, i) => value2 === IDENTITY[i]))
               throw new TypeError("transformed node between bones needs pose rebasing");
             parent = parents.get(parent);
           }
@@ -16969,24 +16993,24 @@ function createModelSceneSampler(projection2, options = {}) {
       const animatedWorlds = /* @__PURE__ */ new Map();
       const hiddenPrimitives = new Set(projection2.primitives.filter((primitive) => primitive.hidden === true).map((primitive) => primitive.id));
       const fades = /* @__PURE__ */ new Map();
-      for (const value of visibilitySampler?.sample(timeSeconds, requestSignal) ?? [])
-        if (primitiveIds.has(value.target)) {
-          const visibility2 = value.value[0] ?? 0;
+      for (const value2 of visibilitySampler?.sample(timeSeconds, requestSignal) ?? [])
+        if (primitiveIds.has(value2.target)) {
+          const visibility2 = value2.value[0] ?? 0;
           if (visibility2 > 0)
-            hiddenPrimitives.delete(value.target);
+            hiddenPrimitives.delete(value2.target);
           else
-            hiddenPrimitives.add(value.target);
+            hiddenPrimitives.add(value2.target);
           if (visibility2 > 0 && visibility2 < 1)
-            fades.set(value.target, visibility2);
+            fades.set(value2.target, visibility2);
         }
       const faded = (primitive) => {
         const fade = fades.get(primitive.id);
         return fade === void 0 ? {} : { tint: [1, 1, 1, fade] };
       };
       const nodeWeights = /* @__PURE__ */ new Map();
-      for (const value of morphSampler?.sample(timeSeconds, requestSignal) ?? [])
-        if (value.value.length === morphTargetCounts.get(value.target))
-          nodeWeights.set(value.target, value.value);
+      for (const value2 of morphSampler?.sample(timeSeconds, requestSignal) ?? [])
+        if (value2.value.length === morphTargetCounts.get(value2.target))
+          nodeWeights.set(value2.target, value2.value);
       const localPoses = nodeSampler?.sample(timeSeconds, requestSignal);
       const faceBillboards = new Map(billboards.flatMap((item) => item.mode === "face-camera" ? [[item.nodeId, item]] : []));
       const joints = [];
@@ -17056,7 +17080,7 @@ function createModelSceneSampler(projection2, options = {}) {
             });
           }
           const frame = hierarchyFrames.get(hierarchyId);
-          const transformed = frame !== void 0 && !frame.every((value, i) => value === IDENTITY[i]);
+          const transformed = frame !== void 0 && !frame.every((value2, i) => value2 === IDENTITY[i]);
           const instances2 = primitiveNodes.get(primitive.id)?.length ?? 1;
           for (let instance = 0; instance < instances2; instance++) {
             const posed = {
@@ -17093,15 +17117,15 @@ function createModelSceneSampler(projection2, options = {}) {
     }
   });
 }
-function sampleRotation(value) {
-  if (value.length !== 4 || !value.every(Number.isFinite) || Math.hypot(...value) === 0)
+function sampleRotation(value2) {
+  if (value2.length !== 4 || !value2.every(Number.isFinite) || Math.hypot(...value2) === 0)
     throw new TypeError("sample camera rotation must be a finite nonzero quaternion");
-  return [value[0], value[1], value[2], value[3]];
+  return [value2[0], value2[1], value2[2], value2[3]];
 }
-function samplePosition(value) {
-  if (value.length !== 3 || !value.every(Number.isFinite))
+function samplePosition(value2) {
+  if (value2.length !== 3 || !value2.every(Number.isFinite))
     throw new TypeError("sample camera position must contain three finite numbers");
-  return [value[0], value[1], value[2]];
+  return [value2[0], value2[1], value2[2]];
 }
 
 // packages/scene/dist/output/png.js
@@ -18059,13 +18083,13 @@ function createUvmCollisionOverlay(document2, binary, budget, signal) {
     const collision = field(field(node, "extensions"), "UV_game_collision");
     if (collision === void 0)
       continue;
-    for (const [index, value] of array(collision, "shapes").entries()) {
+    for (const [index, value2] of array(collision, "shapes").entries()) {
       if (records.length >= maxShapes || (records.length + 1) * WORKING_BYTES_PER_SHAPE > budget.maxScalarBytes)
         throw new RangeError("UVM collision overlay exceeds its working budget");
       records.push({
         nodeId: `node-${nodeIndex}`,
         id: `node-${nodeIndex}-collision-${index}`,
-        shape: object(value, "collision shape")
+        shape: object(value2, "collision shape")
       });
     }
   }
@@ -18220,18 +18244,18 @@ var EFFECT_SPLINE_FIELDS = /* @__PURE__ */ new Set([
   ...particleFields,
   ...ribbonFields
 ]);
-function finite2(value, label) {
-  if (typeof value !== "number" || !Number.isFinite(value))
+function finite2(value2, label) {
+  if (typeof value2 !== "number" || !Number.isFinite(value2))
     throw new TypeError(`invalid spline ${label}`);
-  return value;
+  return value2;
 }
-function vector2(value, label) {
-  if (!Array.isArray(value) || value.length !== 3)
+function vector2(value2, label) {
+  if (!Array.isArray(value2) || value2.length !== 3)
     throw new TypeError(`spline ${label} requires a three-component vector`);
-  return value.map((component) => finite2(component, label));
+  return value2.map((component) => finite2(component, label));
 }
-function variation(value) {
-  const raw = object(value, "spline variation"), shape = raw["shape"];
+function variation(value2) {
+  const raw = object(value2, "spline variation"), shape = raw["shape"];
   if (Object.keys(raw).some((key) => !["shape", "amplitude", "frequency", "phase"].includes(key)))
     throw new TypeError("unknown spline variation field");
   if (!(typeof shape === "number" && Number.isSafeInteger(shape)) && !["none", "sine", "triangle", "square", "saw", "noise"].includes(String(shape)))
@@ -18256,17 +18280,17 @@ function readUvmEffectSplines(entry, kind, options) {
       selected[key] = entry[key];
   const owned = object(snapshotJson(selected, { maxNodes: options.maxNodes, maxBytes: options.maxBytes, maxDepth: 32 }, options.signal), "effect splines");
   let nodes = 0, bytes = 0;
-  function count(value) {
+  function count(value2) {
     options.signal?.throwIfAborted();
     nodes++;
-    bytes += 32 + (typeof value === "string" ? value.length * 2 : 0);
+    bytes += 32 + (typeof value2 === "string" ? value2.length * 2 : 0);
     if (nodes > options.maxNodes || bytes > options.maxBytes)
       throw new RangeError("effect splines exceed budget");
-    if (Array.isArray(value))
-      for (const item of value)
+    if (Array.isArray(value2))
+      for (const item of value2)
         count(item);
-    else if (value !== null && typeof value === "object")
-      for (const [key, item] of Object.entries(value)) {
+    else if (value2 !== null && typeof value2 === "object")
+      for (const [key, item] of Object.entries(value2)) {
         bytes += key.length * 2;
         count(item);
       }
@@ -18274,16 +18298,16 @@ function readUvmEffectSplines(entry, kind, options) {
   if (Object.keys(owned).length > 0)
     count(owned);
   let trackWork = 0;
-  function animation(value, arity, allowed) {
-    const parsed = readUvmEffectAnimation(value, true, options.timeUnit, options.maxNodes, options.signal);
+  function animation(value2, arity, allowed) {
+    const parsed = readUvmEffectAnimation(value2, true, options.timeUnit, options.maxNodes, options.signal);
     for (const [property, sequences] of Object.entries(parsed)) {
       if (!allowed.includes(property))
         throw new TypeError(`unsupported spline track ${property}`);
       for (const sequence of array({ sequences }, "sequences")) {
         const track = object(object(sequence, "spline sequence")["track"], "spline track");
         trackWork++;
-        for (const value2 of array(track, "keys")) {
-          const key = object(value2, "spline key");
+        for (const value3 of array(track, "keys")) {
+          const key = object(value3, "spline key");
           trackWork += 8 * arity;
           for (const field2 of ["vector", "inTan", "outTan"]) {
             if (field2 !== "vector" && key[field2] === void 0 && track["lineType"] !== 2 && track["lineType"] !== 3)
@@ -18329,7 +18353,7 @@ function readUvmEffectSplines(entry, kind, options) {
     }
     if (owned["emitShapeCutoutSize"] !== void 0) {
       const size = vector2(owned["emitShapeCutoutSize"], "cutout size");
-      if (size.some((value) => value < 0))
+      if (size.some((value2) => value2 < 0))
         throw new TypeError("negative cutout size");
       values["emitShapeCutoutSize"] = size;
     }
@@ -18364,8 +18388,8 @@ function readUvmEffectSplines(entry, kind, options) {
         ...variations,
         "sequenceAnimation"
       ];
-      values["splineEndpoints"] = rawEndpoints.map((value) => {
-        const endpoint = object(value, "spline endpoint");
+      values["splineEndpoints"] = rawEndpoints.map((value2) => {
+        const endpoint = object(value2, "spline endpoint");
         if (Object.keys(endpoint).some((key) => !allowed.includes(key)))
           throw new TypeError("unknown spline endpoint field");
         const node = safeIndex(endpoint["node"], options.nodeCount, "spline endpoint node");
@@ -18399,18 +18423,18 @@ function assertUvmEffectSplineWork(particleWork, ribbonWork, time, spawnPerStep)
 }
 
 // packages/scene/dist/uvm/effect-particles.js
-var required2 = (value) => {
-  if (value === void 0 || value === null)
+var required2 = (value2) => {
+  if (value2 === void 0 || value2 === null)
     throw new TypeError("particle preview value absent");
-  return value;
+  return value2;
 };
-function finite3(value) {
-  if (typeof value !== "number" || !Number.isFinite(value))
+function finite3(value2) {
+  if (typeof value2 !== "number" || !Number.isFinite(value2))
     throw new TypeError("particle preview requires finite scalars");
-  return value;
+  return value2;
 }
-function tuple(value, offset = 0) {
-  return [finite3(value[offset]), finite3(value[offset + 1]), finite3(value[offset + 2])];
+function tuple(value2, offset = 0) {
+  return [finite3(value2[offset]), finite3(value2[offset + 1]), finite3(value2[offset + 2])];
 }
 var previewFields = [
   "modelPaths",
@@ -18496,16 +18520,16 @@ function ownedEmitters(used, budget, kept, signal) {
   for (const emitter of used) {
     let copy = kept.get(emitter);
     if (copy === void 0) {
-      const value = snapshotJson(projection(emitter), {
+      const value2 = snapshotJson(projection(emitter), {
         maxDepth: budget.maxDepth - 1,
         maxNodes: budget.maxNodes - 1,
         maxBytes: budget.maxBytes - 2
       }, signal);
       copy = Object.freeze({
-        emitter: value,
-        nodes: jsonNodes(value),
+        emitter: value2,
+        nodes: jsonNodes(value2),
         // A snapshot charges the UTF-8 size of its JSON text.
-        bytes: new TextEncoder().encode(JSON.stringify(value)).length
+        bytes: new TextEncoder().encode(JSON.stringify(value2)).length
       });
       kept.set(emitter, copy);
     }
@@ -18519,11 +18543,11 @@ function ownedEmitters(used, budget, kept, signal) {
   }
   return Object.freeze(owned);
 }
-function jsonNodes(value) {
-  if (value === null || typeof value !== "object")
+function jsonNodes(value2) {
+  if (value2 === null || typeof value2 !== "object")
     return 1;
   let nodes = 1;
-  for (const item of Array.isArray(value) ? value : Object.values(value))
+  for (const item of Array.isArray(value2) ? value2 : Object.values(value2))
     nodes += jsonNodes(item);
   return nodes;
 }
@@ -18560,10 +18584,10 @@ function validatePreviewEmitter(emitter) {
   ])
     if (emitter[field2] !== void 0 && typeof emitter[field2] !== "boolean")
       throw new TypeError("particle preview flags must be booleans");
-  const vector7 = (value) => {
-    if (!Array.isArray(value) || value.length !== 3)
+  const vector7 = (value2) => {
+    if (!Array.isArray(value2) || value2.length !== 3)
       throw new TypeError("particle preview requires declared three-component vectors");
-    for (const component of value)
+    for (const component of value2)
       finite3(component);
   };
   for (const field2 of [
@@ -18592,13 +18616,13 @@ function validatePreviewEmitter(emitter) {
     "lifecycleRotation",
     "lifecycleRotationRandom"
   ]) {
-    const value = emitter[field2];
-    if (value === void 0)
+    const value2 = emitter[field2];
+    if (value2 === void 0)
       continue;
-    vector7(value.start);
-    vector7(value.middle);
-    vector7(value.end);
-    finite3(value.timeMiddle);
+    vector7(value2.start);
+    vector7(value2.middle);
+    vector7(value2.end);
+    finite3(value2.timeMiddle);
   }
   for (const field2 of [
     "sizeVariation",
@@ -18606,15 +18630,15 @@ function validatePreviewEmitter(emitter) {
     "alphaVariation",
     "rotationVariation"
   ]) {
-    const value = emitter[field2];
-    if (value === void 0)
+    const value2 = emitter[field2];
+    if (value2 === void 0)
       continue;
-    finite3(value.amplitude);
-    finite3(value.frequency);
-    if (value.phase !== void 0)
-      finite3(value.phase);
-    if (typeof value.shape !== "string")
-      finite3(value.shape);
+    finite3(value2.amplitude);
+    finite3(value2.frequency);
+    if (value2.phase !== void 0)
+      finite3(value2.phase);
+    if (typeof value2.shape !== "string")
+      finite3(value2.shape);
   }
 }
 function prepareAnchor(emitter, index, options, scratch) {
@@ -18625,8 +18649,8 @@ function prepareAnchor(emitter, index, options, scratch) {
   const sequence = options.sequenceIndex ?? null;
   const dimension = (key) => {
     const raw = emitter[key], fallback = raw !== void 0 && finite3(raw) > 0 ? raw : Number.NaN;
-    const value = sampleEffectSequenceScalar(emitter.sequenceAnimation?.[key], emitter.animation?.[key], sequence, options.time, fallback);
-    return Number.isFinite(value) ? value : void 0;
+    const value2 = sampleEffectSequenceScalar(emitter.sequenceAnimation?.[key], emitter.animation?.[key], sequence, options.time, fallback);
+    return Number.isFinite(value2) ? value2 : void 0;
   };
   const segments = particleSegmentsForAnchor(emitter, sequence, options.time);
   const local = emitter.modelSpace && !emitter.boneAnchored;
@@ -18698,7 +18722,7 @@ function createUvmParticleGeometry(state, emitters, options) {
       throw new TypeError("particle emitter index absent");
     if (!used.has(index))
       used.set(index, used.size);
-    for (const value of [
+    for (const value2 of [
       state.ages[slot],
       state.lifeSpans[slot],
       state.facings[slot],
@@ -18708,7 +18732,7 @@ function createUvmParticleGeometry(state, emitters, options) {
       state.rotationRandomFactors[slot],
       state.randomSeeds[slot]
     ])
-      finite3(value);
+      finite3(value2);
     tuple(state.positions, slot * 3);
     tuple(state.velocities, slot * 3);
     tuple(state.spawnPositions, slot * 3);
@@ -18790,7 +18814,7 @@ function createUvmParticleGeometry(state, emitters, options) {
       const speed = lengthVec3(velocity), direction = speed > 0 ? velocity : anchor.localZ, normal = normalizeVec3(direction);
       if (anchor.orientationMode === "tail" || anchor.orientationMode === "trail") {
         let tail2 = anchor.tailLength ?? 1;
-        const lengthOf = (value) => anchor.tailFixed === true ? value : Math.max(value, value * speed);
+        const lengthOf = (value2) => anchor.tailFixed === true ? value2 : Math.max(value2, value2 * speed);
         if (anchor.tailClamped === true && speed > 0) {
           writeEffectParticleRenderOrigin(originBuffer, 0, state, slot, scratch);
           const travelled = lengthVec3(subVec3(position, tuple(originBuffer)));
@@ -19034,11 +19058,11 @@ function particleSegmentsForAnchor(effect, sequenceId, animationTime) {
   }
   return { colors, alphas };
 }
-function normalizeEffectAlpha(value) {
-  return value > 1 ? value / 255 : value;
+function normalizeEffectAlpha(value2) {
+  return value2 > 1 ? value2 / 255 : value2;
 }
-function clamp013(value) {
-  return Math.max(0, Math.min(1, value));
+function clamp013(value2) {
+  return Math.max(0, Math.min(1, value2));
 }
 function lerpNumber(a, b, t) {
   return a * (1 - t) + b * t;
@@ -19055,22 +19079,22 @@ function addVec3(a, b) {
 function subVec3(a, b) {
   return [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
 }
-function scaleVec3(value, scale) {
-  return [value[0] * scale, value[1] * scale, value[2] * scale];
+function scaleVec3(value2, scale) {
+  return [value2[0] * scale, value2[1] * scale, value2[2] * scale];
 }
-function lengthVec3(value) {
-  return Math.hypot(value[0], value[1], value[2]);
+function lengthVec3(value2) {
+  return Math.hypot(value2[0], value2[1], value2[2]);
 }
-function normalizeVec3(value) {
-  const length = lengthVec3(value);
-  return length > 0 ? [value[0] / length, value[1] / length, value[2] / length] : [0, 0, 0];
+function normalizeVec3(value2) {
+  const length = lengthVec3(value2);
+  return length > 0 ? [value2[0] / length, value2[1] / length, value2[2] / length] : [0, 0, 0];
 }
 
 // packages/scene/dist/uvm/ribbon-geometry.js
-var finite4 = (value) => {
-  if (value === void 0 || !Number.isFinite(value))
+var finite4 = (value2) => {
+  if (value2 === void 0 || !Number.isFinite(value2))
     throw new TypeError("invalid live ribbon scalar");
-  return value;
+  return value2;
 };
 var clamp3 = (v) => Math.max(0, Math.min(1, v));
 function curve(values, phase, middle) {
@@ -19086,12 +19110,12 @@ function scalar2(emitter, key, sequence, time, fallback) {
   return sampleEffectSequenceScalar(tracks(emitter, key), legacy, sequence, time, fallback);
 }
 function vector5(emitter, key, sequence, time, fallback) {
-  const value = sampleEffectSequenceVector(tracks(emitter, key), sequence, time, fallback);
-  return [finite4(value[0]), finite4(value[1]), finite4(value[2])];
+  const value2 = sampleEffectSequenceVector(tracks(emitter, key), sequence, time, fallback);
+  return [finite4(value2[0]), finite4(value2[1]), finite4(value2[2])];
 }
 function createUvmRibbonGeometry(state, emitters, options) {
-  for (const value of [options.maxBytes, options.maxNodes])
-    if (!Number.isSafeInteger(value) || value < 0)
+  for (const value2 of [options.maxBytes, options.maxNodes])
+    if (!Number.isSafeInteger(value2) || value2 < 0)
       throw new RangeError("invalid ribbon geometry budget");
   const sequence = options.sequenceIndex ?? null, entries = [];
   let bytes = 0, nodes = 0;
@@ -19146,11 +19170,11 @@ function createUvmRibbonGeometry(state, emitters, options) {
       const age = finite4(state.ages[slot2]), phase = clamp3(age / Math.max(1e-6, finite4(state.lifeSpans[slot2])));
       const width = Math.max(1e-4, curve(widthStages, phase, emitter.widthTimeMiddle ?? 0.5)) * Math.max(0, 1 + effectVariationValue(emitter.scaleVariation, age, finite4(state.randomSeeds[slot2])));
       writeEffectRibbonRingPositions(positions, point * ring, 3, center, tangent, up, camera, width * 0.5, emitter.ribbonType, emitter.sides, emitter.starRatio);
-      const rgba = [0, 1, 2].map((component) => clamp3(curve(colorStages.map((value) => finite4(value[component])), phase, emitter.colorTimeMiddle ?? 0.5))).concat(clamp3(clamp3(curve(alphaStages, phase, emitter.colorTimeMiddle ?? 0.5)) * finite4(state.alphas[slot2])));
+      const rgba = [0, 1, 2].map((component) => clamp3(curve(colorStages.map((value2) => finite4(value2[component])), phase, emitter.colorTimeMiddle ?? 0.5))).concat(clamp3(clamp3(curve(alphaStages, phase, emitter.colorTimeMiddle ?? 0.5)) * finite4(state.alphas[slot2])));
       const textureSlot = finite4(state.textureSlots[slot2]), cellX = textureSlot % columns / columns, cellY = Math.floor(textureSlot / columns) % rows / rows;
-      for (let cross2 = 0; cross2 < ring; cross2++) {
-        const vertex = point * ring + cross2;
-        textureCoordinates[vertex * 2] = cellX + cross2 / Math.max(1, ring - 1) / columns;
+      for (let cross3 = 0; cross3 < ring; cross3++) {
+        const vertex = point * ring + cross3;
+        textureCoordinates[vertex * 2] = cellX + cross3 / Math.max(1, ring - 1) / columns;
         textureCoordinates[vertex * 2 + 1] = cellY + point / (count - 1) / rows;
         colors.set(rgba, vertex * 4);
       }
@@ -19172,6 +19196,152 @@ function createUvmRibbonGeometry(state, emitters, options) {
     });
   }
   return { entries, bytes, nodes };
+}
+
+// packages/scene/dist/render/material-geometry.js
+var IDENTITY3 = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+var value = (array2, index) => {
+  const result = array2[index];
+  if (result === void 0 || !Number.isFinite(result))
+    throw new TypeError("invalid material geometry component");
+  return result;
+};
+var dot4 = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+var cross2 = (a, b) => [
+  a[1] * b[2] - a[2] * b[1],
+  a[2] * b[0] - a[0] * b[2],
+  a[0] * b[1] - a[1] * b[0]
+];
+var unit4 = (a, fallback = [0, 0, 1]) => {
+  const length = Math.hypot(...a);
+  return length > 1e-9 ? [a[0] / length, a[1] / length, a[2] / length] : fallback;
+};
+var read3 = (array2, index) => [
+  value(array2, index * 3),
+  value(array2, index * 3 + 1),
+  value(array2, index * 3 + 2)
+];
+var subtract = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+var tangentFallback = (normal) => unit4(cross2(Math.abs(normal[2]) < 0.9 ? [0, 0, 1] : [0, 1, 0], normal), [1, 0, 0]);
+function triangleTangentFrame(p, q, r, uv, a, b, c) {
+  const e1 = subtract(q, p), e2 = subtract(r, p), face = unit4(cross2(e1, e2));
+  let tangent = tangentFallback(face), bitangent = cross2(face, tangent);
+  if (uv === void 0)
+    return { face, tangent, bitangent, degenerate: false };
+  const u1 = value(uv, b) - value(uv, a), v1 = value(uv, b + 1) - value(uv, a + 1), u2 = value(uv, c) - value(uv, a), v2 = value(uv, c + 1) - value(uv, a + 1), determinant = u1 * v2 - u2 * v1;
+  if (!(Math.abs(determinant) > 1e-9))
+    return { face, tangent, bitangent, degenerate: true };
+  tangent = [
+    (e1[0] * v2 - e2[0] * v1) / determinant,
+    (e1[1] * v2 - e2[1] * v1) / determinant,
+    (e1[2] * v2 - e2[2] * v1) / determinant
+  ];
+  bitangent = [
+    (e2[0] * u1 - e1[0] * u2) / determinant,
+    (e2[1] * u1 - e1[1] * u2) / determinant,
+    (e2[2] * u1 - e1[2] * u2) / determinant
+  ];
+  return { face, tangent, bitangent, degenerate: false };
+}
+function orthogonalTangent(normal, tangent, bitangent) {
+  const n = unit4(normal), nt = dot4(n, tangent), along = unit4([tangent[0] - n[0] * nt, tangent[1] - n[1] * nt, tangent[2] - n[2] * nt], tangentFallback(n));
+  return [...along, dot4(cross2(n, along), bitangent) < 0 ? -1 : 1];
+}
+function materialTriangleFrame(positions, uv, a, b, c) {
+  const { face, tangent, bitangent } = triangleTangentFrame(read3(positions, a), read3(positions, b), read3(positions, c), uv, a * 2, b * 2, c * 2);
+  const normal = [Math.fround(face[0]), Math.fround(face[1]), Math.fround(face[2])];
+  return { normal, tangent: orthogonalTangent(normal, tangent, bitangent) };
+}
+var HIGH_HALF = new Uint8Array(Uint16Array.of(1).buffer)[0] === 1 ? 1 : 0;
+var PLACEMENT_DECLARATIONS = `uniform mat4 u_view, u_worldToMaterial;
+in vec4 a_instanceMatrix0, a_instanceMatrix1, a_instanceMatrix2, a_instanceMatrix3;
+mat3 sceneCofactor(mat3 m){return mat3(cross(m[1],m[2]),cross(m[2],m[0]),cross(m[0],m[1]));}
+float sceneOrientationOf(mat3 m){return dot(m[0],cross(m[1],m[2]))<0.0?-1.0:1.0;}
+`;
+function placementLocals(worldGeometry) {
+  return `
+  mat4 model=mat4(a_instanceMatrix0,a_instanceMatrix1,a_instanceMatrix2,a_instanceMatrix3);
+  mat4 modelView=u_view*model,materialWorld=u_worldToMaterial*model;
+  float orientation=sceneOrientationOf(mat3(modelView));
+  mat3 viewNormalMatrix=sceneCofactor(mat3(modelView))*orientation;
+  mat3 worldNormalMatrix=sceneCofactor(mat3(materialWorld))*sceneOrientationOf(mat3(materialWorld));${worldGeometry ? "\n  float objectOrientation=sceneOrientationOf(mat3(model));\n  mat3 objectNormalMatrix=sceneCofactor(mat3(model))*objectOrientation;" : ""}`;
+}
+function skinDeclarations(placementAttributes) {
+  const base = placementAttributes ? "int(a_instanceSkinBase+0.5)" : "u_skinBase";
+  return `in vec4 a_skinJoints, a_skinWeights;
+uniform highp sampler2D u_skinPalette;
+${placementAttributes ? "in float a_instanceSkinBase;" : "uniform int u_skinBase;"}
+mat4 skinMatrix(float joint){int texel=${base}+int(joint)*4,width=textureSize(u_skinPalette,0).x;ivec2 at=ivec2(texel%width,texel/width);
+  return mat4(texelFetch(u_skinPalette,at,0),texelFetch(u_skinPalette,at+ivec2(1,0),0),texelFetch(u_skinPalette,at+ivec2(2,0),0),texelFetch(u_skinPalette,at+ivec2(3,0),0));}
+`;
+}
+var SKIN_LOCALS = `
+  mat4 skin=skinMatrix(a_skinJoints.x)*a_skinWeights.x+skinMatrix(a_skinJoints.y)*a_skinWeights.y+skinMatrix(a_skinJoints.z)*a_skinWeights.z+skinMatrix(a_skinJoints.w)*a_skinWeights.w;
+  vec3 skinPosition=(skin*vec4(a_position,1.0)).xyz,skinNormal=mat3(skin)*a_normal;
+  vec4 skinTangent=vec4(mat3(skin)*a_tangent.xyz,a_tangent.w);`;
+function sceneMaterialVertexSource(defines, environmentEnabled = false, worldShading = false, placementAttributes = false, skinned = false, tinted = false) {
+  const worldGeometry = environmentEnabled || worldShading;
+  const position = skinned ? "skinPosition" : "a_position";
+  const normal = skinned ? "skinNormal" : "a_normal";
+  const tangent = skinned ? "skinTangent" : "a_tangent";
+  const name = placementAttributes ? {
+    model: "model",
+    modelView: "modelView",
+    materialWorld: "materialWorld",
+    worldNormal: "worldNormalMatrix",
+    viewNormal: "viewNormalMatrix",
+    orientation: "orientation",
+    objectNormal: "objectNormalMatrix",
+    objectOrientation: "objectOrientation"
+  } : {
+    model: "u_model",
+    modelView: "u_modelView",
+    materialWorld: "u_materialWorld",
+    worldNormal: "u_worldNormalMatrix",
+    viewNormal: "u_viewNormalMatrix",
+    orientation: "u_orientation",
+    objectNormal: "u_sceneWorldNormalMatrix",
+    objectOrientation: "u_sceneWorldOrientation"
+  };
+  return `#version 300 es
+precision highp float;
+${placementAttributes ? "uniform mat4 u_viewProjection;" : "uniform mat4 u_model, u_modelView, u_viewProjection, u_materialWorld;\nuniform mat3 u_worldNormalMatrix, u_viewNormalMatrix;"}
+uniform vec3 u_lightDirection;
+${defines.sceneLighting ? "uniform vec3 u_sceneFillViewDirection0, u_sceneFillViewDirection1;\nout vec3 v_sceneFillDir0, v_sceneFillDir1;\nout vec3 v_sceneShadowWorld;" : ""}
+${worldGeometry && !placementAttributes ? "uniform mat3 u_sceneWorldNormalMatrix;\nuniform float u_sceneWorldOrientation;\n" : ""}uniform float ${placementAttributes ? "" : "u_orientation, "}u_orthographic;
+in vec3 a_position, a_normal; in vec4 a_tangent;
+${skinned ? skinDeclarations(placementAttributes) : ""}${tinted ? "in vec4 a_vertexTint; flat out vec4 v_vertexTint;\n" : ""}${Array.from({ length: defines.uvSetCount }, (_, i) => `in vec2 a_uv${i}; out vec2 v_uv${i};`).join("\n")}
+${defines.usesVertexAlpha || defines.usesVertexColor ? "in vec4 a_color; out vec4 v_vertexColor;" : ""}
+out vec3 v_normal, v_lightDir, v_halfVec, v_viewDir, v_viewPosition, v_viewNormal;
+out vec3 v_modelPosition, v_modelNormal, v_worldPosition, v_worldNormal;
+${worldGeometry ? "out vec3 v_sceneWorldPosition, v_sceneWorldNormal, v_sceneWorldTangent, v_sceneWorldBitangent;\n" : ""}out vec4 v_clipPosition;
+vec3 unit(vec3 v,vec3 fallback){float len=length(v);return len>1e-9?v/len:fallback;}
+${placementAttributes ? PLACEMENT_DECLARATIONS : ""}void main(){${placementAttributes ? placementLocals(worldGeometry) : ""}${skinned ? SKIN_LOCALS : ""}
+  vec4 world=${name.model}*vec4(${position},1.0);
+  vec3 view=(${name.modelView}*vec4(${position},1.0)).xyz;
+  vec3 n=unit(${name.viewNormal}*${normal},vec3(0.0,0.0,1.0));
+  vec3 rawT=mat3(${name.modelView})*${tangent}.xyz;
+  vec3 fallback=unit(cross(abs(n.z)<0.9?vec3(0.0,0.0,1.0):vec3(0.0,1.0,0.0),n),vec3(1.0,0.0,0.0));
+  vec3 t=unit(rawT-n*dot(n,rawT),fallback);
+  vec3 b=cross(n,t)*(${tangent}.w<0.0?-1.0:1.0)*${name.orientation};
+  mat3 tbn=transpose(mat3(t,b,n));
+  vec3 eye=u_orthographic>0.5?vec3(0.0,0.0,1.0):unit(-view,vec3(0.0,0.0,1.0));
+  v_normal=vec3(0.0,0.0,1.0); v_lightDir=tbn*u_lightDirection;
+${defines.sceneLighting ? "  v_sceneFillDir0=tbn*u_sceneFillViewDirection0; v_sceneFillDir1=tbn*u_sceneFillViewDirection1;\n  v_sceneShadowWorld=world.xyz;" : ""}
+  v_halfVec=tbn*(-unit(eye+u_lightDirection,vec3(0.0,0.0,1.0))); v_viewDir=tbn*eye;
+  v_viewPosition=u_orthographic>0.5?vec3(0.0,0.0,-1.0):view; v_viewNormal=n;
+${worldGeometry ? `  vec3 sceneN=unit(${name.objectNormal}*${normal},vec3(0.0,0.0,1.0));
+  vec3 sceneRawT=mat3(${name.model})*${tangent}.xyz;
+  vec3 sceneFallback=unit(cross(abs(sceneN.z)<0.9?vec3(0.0,0.0,1.0):vec3(0.0,1.0,0.0),sceneN),vec3(1.0,0.0,0.0));
+  vec3 sceneT=unit(sceneRawT-sceneN*dot(sceneN,sceneRawT),sceneFallback);
+  v_sceneWorldPosition=world.xyz;v_sceneWorldNormal=sceneN;v_sceneWorldTangent=sceneT;
+  v_sceneWorldBitangent=cross(sceneN,sceneT)*(${tangent}.w<0.0?-1.0:1.0)*${name.objectOrientation};
+` : ""}  v_modelPosition=${position};v_modelNormal=unit(${normal},vec3(0.0,0.0,1.0));
+  v_worldPosition=(${name.materialWorld}*vec4(${position},1.0)).xyz;v_worldNormal=unit(${name.worldNormal}*${normal},vec3(0.0,0.0,1.0));
+  v_clipPosition=u_viewProjection*world;gl_Position=v_clipPosition;
+  ${Array.from({ length: defines.uvSetCount }, (_, i) => `v_uv${i}=a_uv${i};`).join("\n")}
+  ${defines.usesVertexAlpha || defines.usesVertexColor ? "v_vertexColor=a_color;" : ""}${tinted ? "\n  v_vertexTint=a_vertexTint;" : ""}
+}`;
 }
 
 // packages/scene/dist/uvm/effect-links.js
@@ -19202,13 +19372,13 @@ function bindUvmEffectLinks(particles, particleOrdinals, ribbonOrdinals, sourceP
       "bounceRibbonEmitterIndex"
     ]) {
       signal?.throwIfAborted();
-      const value = emitter[key];
-      if (value === void 0)
+      const value2 = emitter[key];
+      if (value2 === void 0)
         continue;
       const limit = key === "bounceRibbonEmitterIndex" ? sourceRibbonCount : sourceParticleCount, targetMap = key === "bounceRibbonEmitterIndex" ? ribbonMap : particleMap;
-      if (!Number.isSafeInteger(value) || value < 0 || value >= limit)
+      if (!Number.isSafeInteger(value2) || value2 < 0 || value2 >= limit)
         throw new TypeError(`invalid authored ${key}`);
-      const target = targetMap.get(value);
+      const target = targetMap.get(value2);
       if (target === void 0)
         throw new TypeError(`${key} target has unsupported geometry or no sampled scene transform`);
       changes.push({ emitter, key, target });
@@ -19242,10 +19412,10 @@ function readEffectCollisionShapes(document2, binary, options) {
       if (!finiteArray(rawMatrix, 16) || rawMatrix[3] !== 0 || rawMatrix[7] !== 0 || rawMatrix[11] !== 0 || rawMatrix[15] !== 1)
         throw new TypeError("effect collision matrix must be affine");
       let matrix = rawMatrix;
-      const positive2 = (value) => {
-        if (typeof value !== "number" || !Number.isFinite(value) || value <= 0)
+      const positive2 = (value2) => {
+        if (typeof value2 !== "number" || !Number.isFinite(value2) || value2 <= 0)
           throw new TypeError("invalid effect collision dimension");
-        return value;
+        return value2;
       };
       let size;
       let vertices;
@@ -19297,23 +19467,23 @@ function readEffectCollisionShapes(document2, binary, options) {
 }
 
 // packages/scene/dist/uvm/effect-fields.js
-function scalar3(value, name) {
-  if (typeof value !== "number" || !Number.isFinite(value))
+function scalar3(value2, name) {
+  if (typeof value2 !== "number" || !Number.isFinite(value2))
     throw new TypeError(`invalid effect field ${name}`);
-  return value;
+  return value2;
 }
-function unsigned(value, name) {
-  const result = scalar3(value, name);
+function unsigned(value2, name) {
+  const result = scalar3(value2, name);
   if (!Number.isSafeInteger(result) || result < 0 || result > 4294967295)
     throw new TypeError(`invalid effect field ${name}`);
   return result;
 }
-function flag(value, name) {
-  if (value === void 0)
+function flag(value2, name) {
+  if (value2 === void 0)
     return false;
-  if (typeof value !== "boolean")
+  if (typeof value2 !== "boolean")
     throw new TypeError(`invalid effect field ${name}`);
-  return value;
+  return value2;
 }
 function readUvmEffectFields(effect, options) {
   const forces = [], warps = [];
@@ -19346,9 +19516,9 @@ function readUvmEffectFields(effect, options) {
     });
   }
   for (const kind of ["forces", "warps"])
-    for (const [index, value] of array(effect, kind).entries()) {
+    for (const [index, value2] of array(effect, kind).entries()) {
       options.signal?.throwIfAborted();
-      const entry = object(value, kind), node = safeIndex(entry["node"], options.nodeCount, `${kind} node`);
+      const entry = object(value2, kind), node = safeIndex(entry["node"], options.nodeCount, `${kind} node`);
       if (!options.activeNodes.has(`node-${node}`))
         continue;
       if (++count > options.maxNodes || count * 4096 > options.maxBytes)
@@ -19428,10 +19598,10 @@ function readUvmEffectFields(effect, options) {
 }
 
 // packages/scene/dist/uvm/effect-modes.js
-function object2(value) {
-  if (value === null || typeof value !== "object" || Array.isArray(value))
+function object2(value2) {
+  if (value2 === null || typeof value2 !== "object" || Array.isArray(value2))
     throw new TypeError("effect sequence mode must use a constant boolean STEP track");
-  return value;
+  return value2;
 }
 function selectUvmEffectSquirt(emitter, sequenceIndex, maxNodes, signal) {
   signal?.throwIfAborted();
@@ -19463,7 +19633,7 @@ function selectUvmEffectSquirt(emitter, sequenceIndex, maxNodes, signal) {
   return selected;
 }
 function uvmEffectSquirtKeyed(emitter, sequenceIndex) {
-  const record = (value) => value !== null && typeof value === "object" && !Array.isArray(value) ? value : void 0;
+  const record = (value2) => value2 !== null && typeof value2 === "object" && !Array.isArray(value2) ? value2 : void 0;
   const sequence = record(emitter["sequenceAnimation"]);
   const counted = emitter["emitCount"] !== void 0 || sequence?.["emitCount"] !== void 0;
   const tracks2 = sequence?.[counted ? "emitCount" : "emissionRate"];
@@ -19476,15 +19646,15 @@ function uvmEffectSquirtKeyed(emitter, sequenceIndex) {
 }
 
 // packages/scene/dist/uvm/effect-mesh.js
-function readUvmEffectMeshes(document2, binary, value, budget, signal) {
+function readUvmEffectMeshes(document2, binary, value2, budget, signal) {
   signal?.throwIfAborted();
   if (![budget.maxBytes, budget.maxNodes].every((limit) => Number.isSafeInteger(limit) && limit >= 0))
     throw new RangeError("invalid effect mesh budget");
-  if (!Array.isArray(value) || value.length === 0)
+  if (!Array.isArray(value2) || value2.length === 0)
     throw new TypeError("effect mesh emission requires nonempty emitShapeMeshes");
   const meshes = [];
   let bytes = 0, nodes = 0, totalArea = 0;
-  for (const valueEntry of value) {
+  for (const valueEntry of value2) {
     signal?.throwIfAborted();
     const entry = object(valueEntry, "effect emission mesh");
     bytes += 256;
@@ -19667,25 +19837,25 @@ var shapeNames = /* @__PURE__ */ new Set([
   "mesh",
   "spline"
 ]);
-function number(value, fallback) {
-  if (value === void 0)
+function number(value2, fallback) {
+  if (value2 === void 0)
     return fallback;
-  if (typeof value !== "number" || !Number.isFinite(value))
+  if (typeof value2 !== "number" || !Number.isFinite(value2))
     throw new TypeError("effect scalar must be finite");
-  return value;
+  return value2;
 }
-function vector6(value, fallback) {
-  if (value === void 0)
+function vector6(value2, fallback) {
+  if (value2 === void 0)
     return fallback;
-  if (!Array.isArray(value) || value.length !== 3)
+  if (!Array.isArray(value2) || value2.length !== 3)
     throw new TypeError("effect vector requires three scalars");
-  return [number(value[0], 0), number(value[1], 0), number(value[2], 0)];
+  return [number(value2[0], 0), number(value2[1], 0), number(value2[2], 0)];
 }
-function normalize2(value) {
-  const length = Math.hypot(...value);
+function normalize2(value2) {
+  const length = Math.hypot(...value2);
   if (!(length > 0))
     throw new TypeError("effect camera basis is singular");
-  return [value[0] / length, value[1] / length, value[2] / length];
+  return [value2[0] / length, value2[1] / length, value2[2] / length];
 }
 function setAnchor(out, matrix) {
   if (matrix === void 0 || matrix.length !== 16 || !matrix.every(Number.isFinite))
@@ -19702,7 +19872,7 @@ function snapshotUvmEffectExtension(document2, budget, signal) {
   return snapshotJson(field(document2["extensions"], "UV_game_effects"), { maxBytes: budget.maxBytes, maxNodes: budget.maxNodes, maxDepth: 64 }, signal);
 }
 var CACHED_EFFECT_SIMULATIONS = 10;
-var sameInputs = (left, right) => left.length === right.length && left.every((value, index) => value === right[index]);
+var sameInputs = (left, right) => left.length === right.length && left.every((value2, index) => value2 === right[index]);
 function createUvmEffectFrame(document2, options) {
   const { signal, cache } = options;
   signal?.throwIfAborted();
@@ -19818,9 +19988,9 @@ function prepareUvmEffectFrame(document2, options) {
   let emitterCount = 0;
   let meshBytes = 0, meshNodes = 0;
   for (const kind of ["particles", "ribbons"]) {
-    for (const [index, value] of array(effect, kind).entries()) {
+    for (const [index, value2] of array(effect, kind).entries()) {
       signal?.throwIfAborted();
-      const entry = object(value, "effect emitter");
+      const entry = object(value2, "effect emitter");
       const node = safeIndex(entry["node"], nodeCount, "effect node");
       const material = safeIndex(entry["material"], materialCount, "effect material");
       if (!options.activeNodes.has(`node-${node}`))
@@ -19847,24 +20017,24 @@ function prepareUvmEffectFrame(document2, options) {
       for (const endpoint of splines.nodeIndices)
         splineNodes.add(endpoint);
       const omitted = [];
-      for (const [key, value2] of Object.entries(entry)) {
+      for (const [key, value3] of Object.entries(entry)) {
         if (["name", "node", "material"].includes(key) || EFFECT_SPLINE_FIELDS.has(key))
           continue;
         if (key === "emitShapeMeshes" && kind === "particles" && entry["emitShape"] === "mesh")
           continue;
         if (key === "animation" || key === "sequenceAnimation") {
-          output[key] = readUvmEffectAnimation(value2, key === "sequenceAnimation", timeUnit, options.maxNodes, signal);
+          output[key] = readUvmEffectAnimation(value3, key === "sequenceAnimation", timeUnit, options.maxNodes, signal);
           const unapplied = Object.keys(object(output[key], "effect animation")).filter((property) => kind === "particles" && (property === "textureSlot" || property.startsWith("lifecycleRotation") || property === "alpha" || property === "color"));
           if (unapplied.length > 0)
             omitted.push(...unapplied.map((property) => `${key}.${property}`));
         } else if (key === "modelPaths" && kind === "particles") {
-          if (!Array.isArray(value2) || value2.some((path) => typeof path !== "string" || !path || path.includes("\0")))
+          if (!Array.isArray(value3) || value3.some((path) => typeof path !== "string" || !path || path.includes("\0")))
             throw new TypeError("model particle paths must be nonempty logical strings");
-          output[key] = [...value2];
+          output[key] = [...value3];
         } else if (key === "texturePath") {
-          if (typeof value2 !== "string" || value2.trim() === "" || value2.includes("\0"))
+          if (typeof value3 !== "string" || value3.trim() === "" || value3.includes("\0"))
             throw new TypeError(`${label}.texturePath must be a nonempty logical string`);
-          output[key] = value2;
+          output[key] = value3;
         } else if (numeric.has(key)) {
           if ([
             "maxCollisionEvents",
@@ -19878,24 +20048,24 @@ function prepareUvmEffectFrame(document2, options) {
             "columns",
             "textureSlot",
             "sides"
-          ].includes(key) && (typeof value2 !== "number" || !Number.isSafeInteger(value2) || value2 < 0))
+          ].includes(key) && (typeof value3 !== "number" || !Number.isSafeInteger(value3) || value3 < 0))
             throw new TypeError("effect collision index/event limit must be a nonnegative integer");
-          if (key.endsWith("ForceChannels") && (typeof value2 !== "number" || !Number.isSafeInteger(value2) || value2 < 0 || value2 > 4294967295))
+          if (key.endsWith("ForceChannels") && (typeof value3 !== "number" || !Number.isSafeInteger(value3) || value3 < 0 || value3 > 4294967295))
             throw new TypeError("effect force channels must be uint32");
-          const scalar4 = number(value2, 0);
+          const scalar4 = number(value3, 0);
           output[key] = scalar4;
         } else if (booleans.has(key)) {
-          if (typeof value2 !== "boolean")
+          if (typeof value3 !== "boolean")
             throw new TypeError(`${label}.${key} must be boolean`);
-          output[key] = value2;
+          output[key] = value3;
         } else if (key === "gravity")
-          output[key] = kind === "particles" ? number(value2, 0) : [...vector6(value2, [0, 0, 0])];
-        else if (key === "emitShape" && typeof value2 === "string" && shapeNames.has(value2))
-          output[key] = value2;
-        else if (key === "orientationMode" && typeof value2 === "string" && orientationNames.has(value2))
-          output[key] = value2;
-        else if (key === "ribbonType" && ["planar", "billboard", "cylinder", "star"].includes(String(value2)))
-          output[key] = value2;
+          output[key] = kind === "particles" ? number(value3, 0) : [...vector6(value3, [0, 0, 0])];
+        else if (key === "emitShape" && typeof value3 === "string" && shapeNames.has(value3))
+          output[key] = value3;
+        else if (key === "orientationMode" && typeof value3 === "string" && orientationNames.has(value3))
+          output[key] = value3;
+        else if (key === "ribbonType" && ["planar", "billboard", "cylinder", "star"].includes(String(value3)))
+          output[key] = value3;
         else if (kind === "ribbons" && ["scaleVariation", "alphaVariation", "lengthVariation"].includes(key) || [
           "pitchVariation",
           "yawVariation",
@@ -19907,7 +20077,7 @@ function prepareUvmEffectFrame(document2, options) {
           "colorVariation",
           "rotationVariation"
         ].includes(key)) {
-          const variation2 = object(value2, "effect variation"), shape = variation2["shape"];
+          const variation2 = object(value3, "effect variation"), shape = variation2["shape"];
           if (typeof shape !== "string" && typeof shape !== "number")
             throw new TypeError("effect variation shape must be named or numbered");
           if (!["none", "sine", "triangle", "square", "saw", "noise"].includes(String(shape)) && !(typeof shape === "number" && Number.isSafeInteger(shape) && shape >= 0 && shape <= 5))
@@ -19919,7 +20089,7 @@ function prepareUvmEffectFrame(document2, options) {
             ...variation2["phase"] === void 0 ? {} : { phase: number(variation2["phase"], 0) }
           };
         } else if (key === "screenSpaceUv" && kind === "particles") {
-          const uv = object(value2, "particle screen-space UV"), pair = (raw) => {
+          const uv = object(value3, "particle screen-space UV"), pair = (raw) => {
             if (!Array.isArray(raw) || raw.length !== 2)
               throw new TypeError("screen UV requires two finite components");
             return [number(raw[0], 0), number(raw[1], 0)];
@@ -19932,11 +20102,11 @@ function prepareUvmEffectFrame(document2, options) {
           };
         } else if (structures.has(key)) {
           if (key === "emitShapeSize")
-            output[key] = [...vector6(value2, [0, 0, 0])];
+            output[key] = [...vector6(value3, [0, 0, 0])];
           if (key === "segmentColors" || key === "segmentColorsRandom") {
-            if (!Array.isArray(value2) || value2.length !== 3)
+            if (!Array.isArray(value3) || value3.length !== 3)
               throw new TypeError("effect colors require three stages");
-            output[key] = value2.map((item) => [...vector6(item, [1, 1, 1])]);
+            output[key] = value3.map((item) => [...vector6(item, [1, 1, 1])]);
           }
           if ([
             "segmentAlphas",
@@ -19947,16 +20117,16 @@ function prepareUvmEffectFrame(document2, options) {
             "tailUvAnim",
             "tailDecayUvAnim"
           ].includes(key))
-            output[key] = [...vector6(value2, [1, 1, 1])];
+            output[key] = [...vector6(value3, [1, 1, 1])];
           if (key === "widths" || key === "color")
-            output[key] = [...vector6(value2, [1, 1, 1])];
+            output[key] = [...vector6(value3, [1, 1, 1])];
           if ([
             "lifecycleSize",
             "lifecycleSizeRandom",
             "lifecycleRotation",
             "lifecycleRotationRandom"
           ].includes(key)) {
-            const size = object(value2, "effect lifecycle size");
+            const size = object(value3, "effect lifecycle size");
             output[key] = {
               start: [...vector6(size["start"], [1, 1, 1])],
               middle: [...vector6(size["middle"], [1, 1, 1])],
@@ -19964,7 +20134,7 @@ function prepareUvmEffectFrame(document2, options) {
               timeMiddle: number(size["timeMiddle"], 0.5)
             };
           }
-        } else if (value2 !== void 0 && value2 !== null && value2 !== false && value2 !== 0 && value2 !== "")
+        } else if (value3 !== void 0 && value3 !== null && value3 !== false && value3 !== 0 && value3 !== "")
           omitted.push(key);
       }
       if (omitted.length > 0)
@@ -20219,7 +20389,7 @@ function uvmEffectFrameGeometry(prepared, simulated, options, view, diagnostics)
   const modelParticles = [];
   const worldRight = [number(view[0], 0), number(view[4], 0), number(view[8], 0)];
   const worldUp = [number(view[1], 0), number(view[5], 0), number(view[9], 0)];
-  const direction = (value) => normalize2([0, 1, 2].map((row) => number(toLocal[row], 0) * value[0] + number(toLocal[row + 4], 0) * value[1] + number(toLocal[row + 8], 0) * value[2]));
+  const direction = (value2) => normalize2([0, 1, 2].map((row) => number(toLocal[row], 0) * value2[0] + number(toLocal[row + 4], 0) * value2[1] + number(toLocal[row + 8], 0) * value2[2]));
   const right = direction(worldRight), up = direction(worldUp);
   let bytes = emitterCount * 4096 + prepared.meshBytes;
   const materialById = new Map(options.materials.map((material) => [material.id, material]));
@@ -20300,6 +20470,7 @@ function uvmEffectFrameGeometry(prepared, simulated, options, view, diagnostics)
       const { colors: _vertexColors, ...uncolored } = geometryPrimitive;
       primitives.push({
         ...uncolored,
+        ...spriteFrames(geometry.positions, geometry.textureCoordinates, geometry.indices),
         textureCoordinateSets: [1, 2, 3].map((set) => ({
           set,
           coordinates: geometry.textureCoordinates
@@ -20369,6 +20540,24 @@ function uvmEffectFrameGeometry(prepared, simulated, options, view, diagnostics)
 function viewDepthRow(view, toWorld) {
   return [0, 1, 2, 3].map((column) => number(view[2], 0) * number(toWorld[column * 4], 0) + number(view[6], 0) * number(toWorld[column * 4 + 1], 0) + number(view[10], 0) * number(toWorld[column * 4 + 2], 0) + number(view[14], 0) * number(toWorld[column * 4 + 3], 0));
 }
+function spriteFrames(positions, coordinates, indices) {
+  const count = positions.length / 12;
+  if (!Number.isInteger(count) || indices.length !== count * 6)
+    return void 0;
+  const normals = new Float32Array(count * 12), tangents = new Float32Array(count * 16);
+  for (let sprite = 0; sprite < count; sprite++) {
+    const first = sprite * 4;
+    const corners = indices.subarray(sprite * 6, sprite * 6 + 6);
+    if (![0, 1, 2, 0, 2, 3].every((offset, at) => corners[at] === first + offset))
+      return void 0;
+    const { normal, tangent } = materialTriangleFrame(positions, coordinates, first, first + 1, first + 2);
+    for (let vertex = first; vertex < first + 4; vertex++) {
+      normals.set(normal, vertex * 3);
+      tangents.set(tangent, vertex * 4);
+    }
+  }
+  return { normals, tangents };
+}
 function emitterSprites(index, sprites, material, depth, toWorld) {
   const ordered = sprites.map((sprite, ordinal) => {
     const { positions: positions2 } = sprite;
@@ -20409,11 +20598,12 @@ function emitterSprites(index, sprites, material, depth, toWorld) {
   };
   if (material.simpleEffect !== void 0)
     return { ...primitive, colors };
-  for (const value of colors)
-    if (!(value >= 0 && value <= 1))
+  for (const value2 of colors)
+    if (!(value2 >= 0 && value2 <= 1))
       throw new TypeError("primitive tint requires four finite components in 0..1");
   return {
     ...primitive,
+    ...spriteFrames(positions, textureCoordinates, indices),
     textureCoordinateSets: [1, 2, 3].map((set) => ({ set, coordinates: textureCoordinates })),
     vertexTints: colors
   };
@@ -20546,100 +20736,6 @@ ${marker}`);
   return source;
 }
 
-// packages/scene/dist/render/material-geometry.js
-var IDENTITY3 = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
-var HIGH_HALF = new Uint8Array(Uint16Array.of(1).buffer)[0] === 1 ? 1 : 0;
-var PLACEMENT_DECLARATIONS = `uniform mat4 u_view, u_worldToMaterial;
-in vec4 a_instanceMatrix0, a_instanceMatrix1, a_instanceMatrix2, a_instanceMatrix3;
-mat3 sceneCofactor(mat3 m){return mat3(cross(m[1],m[2]),cross(m[2],m[0]),cross(m[0],m[1]));}
-float sceneOrientationOf(mat3 m){return dot(m[0],cross(m[1],m[2]))<0.0?-1.0:1.0;}
-`;
-function placementLocals(worldGeometry) {
-  return `
-  mat4 model=mat4(a_instanceMatrix0,a_instanceMatrix1,a_instanceMatrix2,a_instanceMatrix3);
-  mat4 modelView=u_view*model,materialWorld=u_worldToMaterial*model;
-  float orientation=sceneOrientationOf(mat3(modelView));
-  mat3 viewNormalMatrix=sceneCofactor(mat3(modelView))*orientation;
-  mat3 worldNormalMatrix=sceneCofactor(mat3(materialWorld))*sceneOrientationOf(mat3(materialWorld));${worldGeometry ? "\n  float objectOrientation=sceneOrientationOf(mat3(model));\n  mat3 objectNormalMatrix=sceneCofactor(mat3(model))*objectOrientation;" : ""}`;
-}
-function skinDeclarations(placementAttributes) {
-  const base = placementAttributes ? "int(a_instanceSkinBase+0.5)" : "u_skinBase";
-  return `in vec4 a_skinJoints, a_skinWeights;
-uniform highp sampler2D u_skinPalette;
-${placementAttributes ? "in float a_instanceSkinBase;" : "uniform int u_skinBase;"}
-mat4 skinMatrix(float joint){int texel=${base}+int(joint)*4,width=textureSize(u_skinPalette,0).x;ivec2 at=ivec2(texel%width,texel/width);
-  return mat4(texelFetch(u_skinPalette,at,0),texelFetch(u_skinPalette,at+ivec2(1,0),0),texelFetch(u_skinPalette,at+ivec2(2,0),0),texelFetch(u_skinPalette,at+ivec2(3,0),0));}
-`;
-}
-var SKIN_LOCALS = `
-  mat4 skin=skinMatrix(a_skinJoints.x)*a_skinWeights.x+skinMatrix(a_skinJoints.y)*a_skinWeights.y+skinMatrix(a_skinJoints.z)*a_skinWeights.z+skinMatrix(a_skinJoints.w)*a_skinWeights.w;
-  vec3 skinPosition=(skin*vec4(a_position,1.0)).xyz,skinNormal=mat3(skin)*a_normal;
-  vec4 skinTangent=vec4(mat3(skin)*a_tangent.xyz,a_tangent.w);`;
-function sceneMaterialVertexSource(defines, environmentEnabled = false, worldShading = false, placementAttributes = false, skinned = false, tinted = false) {
-  const worldGeometry = environmentEnabled || worldShading;
-  const position = skinned ? "skinPosition" : "a_position";
-  const normal = skinned ? "skinNormal" : "a_normal";
-  const tangent = skinned ? "skinTangent" : "a_tangent";
-  const name = placementAttributes ? {
-    model: "model",
-    modelView: "modelView",
-    materialWorld: "materialWorld",
-    worldNormal: "worldNormalMatrix",
-    viewNormal: "viewNormalMatrix",
-    orientation: "orientation",
-    objectNormal: "objectNormalMatrix",
-    objectOrientation: "objectOrientation"
-  } : {
-    model: "u_model",
-    modelView: "u_modelView",
-    materialWorld: "u_materialWorld",
-    worldNormal: "u_worldNormalMatrix",
-    viewNormal: "u_viewNormalMatrix",
-    orientation: "u_orientation",
-    objectNormal: "u_sceneWorldNormalMatrix",
-    objectOrientation: "u_sceneWorldOrientation"
-  };
-  return `#version 300 es
-precision highp float;
-${placementAttributes ? "uniform mat4 u_viewProjection;" : "uniform mat4 u_model, u_modelView, u_viewProjection, u_materialWorld;\nuniform mat3 u_worldNormalMatrix, u_viewNormalMatrix;"}
-uniform vec3 u_lightDirection;
-${defines.sceneLighting ? "uniform vec3 u_sceneFillViewDirection0, u_sceneFillViewDirection1;\nout vec3 v_sceneFillDir0, v_sceneFillDir1;\nout vec3 v_sceneShadowWorld;" : ""}
-${worldGeometry && !placementAttributes ? "uniform mat3 u_sceneWorldNormalMatrix;\nuniform float u_sceneWorldOrientation;\n" : ""}uniform float ${placementAttributes ? "" : "u_orientation, "}u_orthographic;
-in vec3 a_position, a_normal; in vec4 a_tangent;
-${skinned ? skinDeclarations(placementAttributes) : ""}${tinted ? "in vec4 a_vertexTint; flat out vec4 v_vertexTint;\n" : ""}${Array.from({ length: defines.uvSetCount }, (_, i) => `in vec2 a_uv${i}; out vec2 v_uv${i};`).join("\n")}
-${defines.usesVertexAlpha || defines.usesVertexColor ? "in vec4 a_color; out vec4 v_vertexColor;" : ""}
-out vec3 v_normal, v_lightDir, v_halfVec, v_viewDir, v_viewPosition, v_viewNormal;
-out vec3 v_modelPosition, v_modelNormal, v_worldPosition, v_worldNormal;
-${worldGeometry ? "out vec3 v_sceneWorldPosition, v_sceneWorldNormal, v_sceneWorldTangent, v_sceneWorldBitangent;\n" : ""}out vec4 v_clipPosition;
-vec3 unit(vec3 v,vec3 fallback){float len=length(v);return len>1e-9?v/len:fallback;}
-${placementAttributes ? PLACEMENT_DECLARATIONS : ""}void main(){${placementAttributes ? placementLocals(worldGeometry) : ""}${skinned ? SKIN_LOCALS : ""}
-  vec4 world=${name.model}*vec4(${position},1.0);
-  vec3 view=(${name.modelView}*vec4(${position},1.0)).xyz;
-  vec3 n=unit(${name.viewNormal}*${normal},vec3(0.0,0.0,1.0));
-  vec3 rawT=mat3(${name.modelView})*${tangent}.xyz;
-  vec3 fallback=unit(cross(abs(n.z)<0.9?vec3(0.0,0.0,1.0):vec3(0.0,1.0,0.0),n),vec3(1.0,0.0,0.0));
-  vec3 t=unit(rawT-n*dot(n,rawT),fallback);
-  vec3 b=cross(n,t)*(${tangent}.w<0.0?-1.0:1.0)*${name.orientation};
-  mat3 tbn=transpose(mat3(t,b,n));
-  vec3 eye=u_orthographic>0.5?vec3(0.0,0.0,1.0):unit(-view,vec3(0.0,0.0,1.0));
-  v_normal=vec3(0.0,0.0,1.0); v_lightDir=tbn*u_lightDirection;
-${defines.sceneLighting ? "  v_sceneFillDir0=tbn*u_sceneFillViewDirection0; v_sceneFillDir1=tbn*u_sceneFillViewDirection1;\n  v_sceneShadowWorld=world.xyz;" : ""}
-  v_halfVec=tbn*(-unit(eye+u_lightDirection,vec3(0.0,0.0,1.0))); v_viewDir=tbn*eye;
-  v_viewPosition=u_orthographic>0.5?vec3(0.0,0.0,-1.0):view; v_viewNormal=n;
-${worldGeometry ? `  vec3 sceneN=unit(${name.objectNormal}*${normal},vec3(0.0,0.0,1.0));
-  vec3 sceneRawT=mat3(${name.model})*${tangent}.xyz;
-  vec3 sceneFallback=unit(cross(abs(sceneN.z)<0.9?vec3(0.0,0.0,1.0):vec3(0.0,1.0,0.0),sceneN),vec3(1.0,0.0,0.0));
-  vec3 sceneT=unit(sceneRawT-sceneN*dot(sceneN,sceneRawT),sceneFallback);
-  v_sceneWorldPosition=world.xyz;v_sceneWorldNormal=sceneN;v_sceneWorldTangent=sceneT;
-  v_sceneWorldBitangent=cross(sceneN,sceneT)*(${tangent}.w<0.0?-1.0:1.0)*${name.objectOrientation};
-` : ""}  v_modelPosition=${position};v_modelNormal=unit(${normal},vec3(0.0,0.0,1.0));
-  v_worldPosition=(${name.materialWorld}*vec4(${position},1.0)).xyz;v_worldNormal=unit(${name.worldNormal}*${normal},vec3(0.0,0.0,1.0));
-  v_clipPosition=u_viewProjection*world;gl_Position=v_clipPosition;
-  ${Array.from({ length: defines.uvSetCount }, (_, i) => `v_uv${i}=a_uv${i};`).join("\n")}
-  ${defines.usesVertexAlpha || defines.usesVertexColor ? "v_vertexColor=a_color;" : ""}${tinted ? "\n  v_vertexTint=a_vertexTint;" : ""}
-}`;
-}
-
 // packages/scene/dist/materials/normal-blending.js
 var WORLD_NORMAL_VARYINGS = "in vec3 v_sceneWorldPosition, v_sceneWorldNormal, v_sceneWorldTangent, v_sceneWorldBitangent;";
 function objectSpaceNormalLayerShader(source) {
@@ -20659,15 +20755,15 @@ vec3 sceneObjectHalfVector(){
   return -sceneObjectUnit(eye+u_sceneLightDirection);
 }`);
 }
-var unit4 = (v, threshold = 1e-8) => {
+var unit5 = (v, threshold = 1e-8) => {
   const length = Math.hypot(...v);
   return length > threshold ? [v[0] / length, v[1] / length, v[2] / length] : [0, 0, 1];
 };
-function normalInBasis(value, basis) {
-  return unit4(basis === void 0 ? value : [
-    basis.tangent[0] * value[0] + basis.bitangent[0] * value[1] + basis.normal[0] * value[2],
-    basis.tangent[1] * value[0] + basis.bitangent[1] * value[1] + basis.normal[1] * value[2],
-    basis.tangent[2] * value[0] + basis.bitangent[2] * value[1] + basis.normal[2] * value[2]
+function normalInBasis(value2, basis) {
+  return unit5(basis === void 0 ? value2 : [
+    basis.tangent[0] * value2[0] + basis.bitangent[0] * value2[1] + basis.normal[0] * value2[2],
+    basis.tangent[1] * value2[0] + basis.bitangent[1] * value2[1] + basis.normal[1] * value2[2],
+    basis.tangent[2] * value2[0] + basis.bitangent[2] * value2[1] + basis.normal[2] * value2[2]
   ]);
 }
 function blendSignedNormals(base, first, second, maskSum, basis) {
@@ -20675,7 +20771,7 @@ function blendSignedNormals(base, first, second, maskSum, basis) {
   const source = normalInBasis(base, basis);
   const detail = normalInBasis(factor < 0 ? first : second, basis);
   const weight = factor * factor;
-  return unit4([
+  return unit5([
     source[0] + (detail[0] - source[0]) * weight,
     source[1] + (detail[1] - source[1]) * weight,
     source[2] + (detail[2] - source[2]) * weight
@@ -20684,11 +20780,11 @@ function blendSignedNormals(base, first, second, maskSum, basis) {
 function signedNormalFactor(first, firstFactors, second, secondFactors) {
   const maskScale = Math.max(1, ...first.map(Math.abs), ...second.map(Math.abs));
   const factorScale = Math.max(1, ...firstFactors.map(Math.abs), ...secondFactors.map(Math.abs));
-  const dot4 = (mask, factors) => mask.reduce((sum, value2, index) => sum + value2 / maskScale * ((factors[index] ?? 0) / factorScale), 0);
-  const value = dot4(first, firstFactors) + dot4(second, secondFactors);
-  if (value === 0)
+  const dot5 = (mask, factors) => mask.reduce((sum, value3, index) => sum + value3 / maskScale * ((factors[index] ?? 0) / factorScale), 0);
+  const value2 = dot5(first, firstFactors) + dot5(second, secondFactors);
+  if (value2 === 0)
     return 0;
-  return Math.abs(value) >= 1 / factorScale / maskScale ? Math.sign(value) : value * factorScale * maskScale;
+  return Math.abs(value2) >= 1 / factorScale / maskScale ? Math.sign(value2) : value2 * factorScale * maskScale;
 }
 function signedNormalLayerShader(source, defines, policy, perLayerFormats) {
   const main = source.indexOf("void main() {");
@@ -20773,15 +20869,16 @@ function emissiveBlendThroughRgb(material) {
   }
   return Object.freeze({ ...material, layers: Object.freeze(layers) });
 }
-function finiteVector(value, size, name) {
-  if (!Array.isArray(value) || value.length !== size || value.some((component) => typeof component !== "number" || !Number.isFinite(component) || !Number.isFinite(Math.fround(component))))
+function finiteVector(value2, size, name) {
+  if (!Array.isArray(value2) || value2.length !== size || value2.some((component) => typeof component !== "number" || !Number.isFinite(component) || !Number.isFinite(Math.fround(component))))
     throw new TypeError(`${name} requires ${size} finite float32 components`);
-  return value;
+  return value2;
 }
 function createStandardMaterialPrograms(parameters, options) {
   const sampler = createRenderMaterialSampler(parameters, options.budget, options.signal);
   const sources = /* @__PURE__ */ new Map();
   let last;
+  let shapes;
   return Object.freeze({
     resources: sampler.resources,
     usesSceneEnvironment: sampler.usesSceneEnvironment,
@@ -20802,16 +20899,29 @@ function createStandardMaterialPrograms(parameters, options) {
       const normalFormats = snapshotNormalFormats(lighting.normalMapFormats);
       const textureDimensions = new Map(lighting.textureDimensions);
       const environment = snapshotEnvironment(lighting.environment);
-      for (const value of textureDimensions.values())
-        if (value !== "2d" && value !== "cube")
+      for (const value2 of textureDimensions.values())
+        if (value2 !== "2d" && value2 !== "cube")
           throw new TypeError("invalid material texture dimension");
       const intensity = lighting.teamColorIntensity ?? 1;
       if (intensity !== 0 && intensity !== 1)
         throw new TypeError("team color intensity must be 0 or 1");
-      const passes = Object.freeze(sampler.sample(time, signal).map((pass) => compilePass({
-        ...pass,
-        material: emissiveBlendThroughRgb(specularOfTeamColor(intensity === 0 ? withoutDiffuseTeamColor(pass.material) : pass.material))
-      }, { teamColor, ambient, terrainTiling }, sources, normalFormats, sampler.worldToMaterial, textureDimensions, environment, lighting.sceneLighting === true)));
+      const sampled = sampler.sample(time, signal);
+      const kept = shapes !== void 0 && shapes.passes.length === sampled.length && sameMaterialFrame(shapes.lighting, lighting) ? shapes.passes : void 0;
+      const passShapes = [];
+      const passes = Object.freeze(sampled.map((pass, index) => {
+        const prepared = {
+          ...pass,
+          material: emissiveBlendThroughRgb(specularOfTeamColor(intensity === 0 ? withoutDiffuseTeamColor(pass.material) : pass.material))
+        };
+        const shape = kept?.[index] ?? passShape(prepared.material, sources, normalFormats, textureDimensions, environment, lighting.sceneLighting === true);
+        passShapes.push(shape);
+        return compilePass(prepared, { teamColor, ambient, terrainTiling }, shape, sampler.worldToMaterial, environment, lighting.sceneLighting === true);
+      }));
+      if (kept === void 0)
+        shapes = Object.freeze({
+          lighting: copyMaterialFrame(lighting),
+          passes: Object.freeze(passShapes)
+        });
       if (sampler.timeless)
         last = Object.freeze({ lighting: copyMaterialFrame(lighting), passes });
       return passes;
@@ -20850,119 +20960,73 @@ function sameMaterialFrame(left, right) {
       return a === b;
     if (a.size !== b.size)
       return false;
-    for (const [key, value] of a)
-      if (!b.has(key) || b.get(key) !== value)
+    for (const [key, value2] of a)
+      if (!b.has(key) || b.get(key) !== value2)
         return false;
     return true;
   };
   const environment = (frame) => frame.environment?.worldToEnvironment;
   return sameVector(left.teamColor, right.teamColor) && sameVector(left.ambient, right.ambient) && sameVector(left.terrainTiling, right.terrainTiling) && sameMap(left.normalMapFormats, right.normalMapFormats) && sameMap(left.textureDimensions, right.textureDimensions) && left.environment === void 0 === (right.environment === void 0) && sameVector(environment(left), environment(right)) && left.sceneLighting === true === (right.sceneLighting === true) && (left.teamColorIntensity ?? 1) === (right.teamColorIntensity ?? 1);
 }
-function compilePass(pass, lighting, sources, bindings, worldToMaterial, textureDimensions = /* @__PURE__ */ new Map(), environment, sceneLighting = false) {
-  const { material, alpha } = pass;
+var UNIFORM_DEFAULTS = Object.freeze({
+  one2: Object.freeze([1, 1]),
+  zero2: Object.freeze([0, 0]),
+  one3: Object.freeze([1, 1, 1]),
+  zero3: Object.freeze([0, 0, 0]),
+  color: Object.freeze([1, 1, 1, 1]),
+  environmentMultipliers: Object.freeze([1, 0, 0]),
+  normalBlend: Object.freeze([1, 0, 0, 0]),
+  normalMapTransform: Object.freeze([1, 0, 0, 0, 1, 0, 0, 0, 1])
+});
+var layerUniformNames = /* @__PURE__ */ new Map();
+function layerUniformsOf(slot) {
+  let names = layerUniformNames.get(slot);
+  if (names === void 0) {
+    const prefix = `u_${slot}`;
+    names = Object.freeze({
+      map: `${prefix}Map`,
+      color: `${prefix}Color`,
+      multiply: `${prefix}Multiply`,
+      add: `${prefix}Add`,
+      alphaFactor: `${prefix}AlphaFactor`,
+      uvAngle: `${prefix}UvAngle`,
+      uvTriplanarOffset: `${prefix}UvTriplanarOffset`,
+      uvTriplanarScale: `${prefix}UvTriplanarScale`,
+      uvTiling: `${prefix}UvTiling`,
+      uvOffset: `${prefix}UvOffset`
+    });
+    layerUniformNames.set(slot, names);
+  }
+  return names;
+}
+function passShape(material, sources, bindings, textureDimensions, environment, sceneLighting) {
   const normalFormats = materialNormalFormats(material, bindings);
   const objectSpaceNormal = material.normalMapSpace === "object";
   const defines = buildMaterialDefines(material, {
     ...normalFormats === void 0 ? {} : { normalMapFormat: "rgb8" },
     ...sceneLighting ? { sceneLighting: true } : {}
   });
-  const uniforms = {
-    u_teamColor: lighting.teamColor,
-    u_ambient: lighting.ambient,
-    u_specularity: material.specularity,
-    u_specMult: material.specMult,
-    u_emisMult: material.emisMult,
-    u_emissiveTint: material.emissiveTint ?? [1, 1, 1],
-    u_environmentMultipliers: material.environmentMultipliers ?? [1, 0, 0],
-    u_terrainTiling: lighting.terrainTiling,
-    u_materialAlpha: alpha,
-    u_alphaTestThreshold: material.alphaTestThreshold,
-    u_parallaxHeight: material.parallaxHeight?.value ?? 0,
-    u_normalBlend1Factors: material.normalBlendFactors?.slice(0, 4).map((factor) => factor.value) ?? [
-      1,
-      0,
-      0,
-      0
-    ],
-    u_normalBlend2Factors: material.normalBlendFactors?.slice(4, 8).map((factor) => factor.value) ?? [
-      1,
-      0,
-      0,
-      0
-    ],
-    u_normalMapTransform: material.normalMapTransform ?? [1, 0, 0, 0, 1, 0, 0, 0, 1],
-    ...defines.pbr === true ? {
-      u_metallicFactor: material.metallicFactor ?? 1,
-      u_roughnessFactor: material.roughnessFactor ?? 1
-    } : {},
-    ...defines.tonemap === true && material.tonemap !== void 0 ? { u_tonemapCurve: material.tonemap.slice(0, 4), u_tonemapE: material.tonemap[4] } : {}
-  };
   const textures = [], diagnostics = [];
   for (const definition of defines.layers) {
     const { slot } = definition, layer = material.layers[slot];
     if (layer === void 0)
       throw new TypeError(`missing material layer ${slot}`);
-    const prefix = `u_${slot}`;
     if (layer.texturePath !== null)
       textures.push(Object.freeze({
         slot,
         resourceId: layer.texturePath,
-        uniform: `${prefix}Map`,
+        uniform: layerUniformsOf(slot).map,
         wrapU: layer.wrapX ? "repeat" : "clamp",
         wrapV: layer.wrapY ? "repeat" : "clamp",
         ...textureDimensions.get(layer.texturePath) === "cube" ? { dimension: "cube" } : {}
       }));
-    else
-      uniforms[`${prefix}Color`] = layer.constantColor?.value ?? [1, 1, 1, 1];
-    uniforms[`${prefix}Multiply`] = layer.colorMultiply?.value ?? 1;
-    uniforms[`${prefix}Add`] = layer.colorAdd?.value ?? 0;
-    uniforms[`${prefix}AlphaFactor`] = layer.alphaFactor?.value ?? 1;
-    uniforms[`${prefix}UvAngle`] = layer.uvAngle?.value ?? [0, 0, 0];
-    uniforms[`${prefix}UvTriplanarOffset`] = layer.uvTriplanarOffset?.value ?? [0, 0, 0];
-    uniforms[`${prefix}UvTriplanarScale`] = layer.uvTriplanarScale?.value ?? [1, 1, 1];
-    const tiling = layer.uvTiling?.value ?? [1, 1], offset = layer.uvOffset?.value ?? [0, 0];
-    if (layer.flipbook === void 0) {
-      uniforms[`${prefix}UvTiling`] = tiling;
-      uniforms[`${prefix}UvOffset`] = offset;
-    } else {
-      const { rows, cols } = layer.flipbook;
-      const frame = (Math.floor(layer.flipbook.frame.value) % (rows * cols) + rows * cols) % (rows * cols);
-      const frameSize = layer.flipbook.frameSize;
-      const beforeTiling = (cell, scale) => scale === 0 ? 0 : cell / scale;
-      if (frameSize === void 0) {
-        uniforms[`${prefix}UvTiling`] = [tiling[0] / cols, tiling[1] / rows];
-        uniforms[`${prefix}UvOffset`] = [
-          offset[0] - beforeTiling(frame % cols + 0.5 - cols / 2, tiling[0]),
-          offset[1] - beforeTiling(Math.floor(frame / cols) + 0.5 - rows / 2, tiling[1])
-        ];
-      } else {
-        uniforms[`${prefix}UvTiling`] = tiling;
-        uniforms[`${prefix}UvOffset`] = [
-          offset[0] - beforeTiling(frame % cols * frameSize[0], tiling[0]),
-          offset[1] - beforeTiling(Math.floor(frame / cols) * frameSize[1], tiling[1])
-        ];
-      }
-    }
     if (layer.fresnel !== void 0 && layer.fresnel.transformMode !== 0)
       diagnostics.push(`${slot}: Fresnel matrix transform is preserved but not evaluated by the shared kernel`);
     if (layer.uvSource === 6)
       diagnostics.push(`${slot}: particle UV requires a particle geometry adapter`);
   }
-  for (const binding of textures)
-    if (binding.dimension === "cube" && !(environment !== void 0 && isEnvironmentBinding(binding))) {
-      const slot = `u_${binding.slot}`;
-      const same = (key2, expected) => {
-        const value = uniforms[key2];
-        return Array.isArray(value) && value.length === expected.length && value.every((item, index) => item === expected[index]);
-      };
-      if (!same(`${slot}UvAngle`, [0, 0, 0]) || !same(`${slot}UvOffset`, [0, 0]) || !same(`${slot}UvTiling`, [1, 1]) || uniforms["u_parallaxHeight"] !== 0)
-        throw new UnsupportedCubeCoordinatesError(`${binding.slot}: transformed UV/flipbook/parallax sampling of a cube image requires a direction-space mapping`);
-    }
   const worldEnvironment = environment !== void 0 && textures.some(isEnvironmentBinding);
   const policy = material.normalBlendPolicy;
-  if (worldEnvironment)
-    for (const row of [0, 1, 2])
-      uniforms[`u_sceneEnvironment${row}`] = [0, 4, 8, 12].map((column) => environment.worldToEnvironment[row + column] ?? 0);
   const key = canonicalDefineKey(defines) + (normalFormats === void 0 ? "" : `;normals=${NORMAL_SLOTS.map((slot) => normalFormats[slot]).join(",")}`) + textures.filter((binding) => binding.dimension === "cube").map((binding) => `;cube=${binding.slot}`).join("") + (worldEnvironment ? ";environment=world" : "") + (policy === void 0 ? "" : `;normals=signed-two-detail;mask2=${policy.secondMask}`);
   let compiled = sources.get(key);
   if (compiled === void 0) {
@@ -20984,22 +21048,107 @@ ${WORLD_NORMAL_VARYINGS}`);
     compiled = Object.freeze({ vertexSource, fragmentSource, defines: Object.freeze(defines) });
     sources.set(key, compiled);
   }
-  for (const value of Object.values(uniforms))
-    if (Array.isArray(value))
-      Object.freeze(value);
+  return Object.freeze({
+    normalFormats,
+    defines,
+    textures: Object.freeze(textures),
+    diagnostics: Object.freeze(diagnostics),
+    worldEnvironment,
+    key,
+    compiled
+  });
+}
+function compilePass(pass, lighting, shape, worldToMaterial, environment, sceneLighting) {
+  const { material, alpha } = pass;
+  const { normalFormats, defines, textures, worldEnvironment, key, compiled } = shape;
+  const policy = material.normalBlendPolicy;
+  const uniforms = {
+    u_teamColor: lighting.teamColor,
+    u_ambient: lighting.ambient,
+    u_specularity: material.specularity,
+    u_specMult: material.specMult,
+    u_emisMult: material.emisMult,
+    u_emissiveTint: material.emissiveTint ?? UNIFORM_DEFAULTS.one3,
+    u_environmentMultipliers: material.environmentMultipliers ?? UNIFORM_DEFAULTS.environmentMultipliers,
+    u_terrainTiling: lighting.terrainTiling,
+    u_materialAlpha: alpha,
+    u_alphaTestThreshold: material.alphaTestThreshold,
+    u_parallaxHeight: material.parallaxHeight?.value ?? 0,
+    u_normalBlend1Factors: material.normalBlendFactors?.slice(0, 4).map((factor) => factor.value) ?? UNIFORM_DEFAULTS.normalBlend,
+    u_normalBlend2Factors: material.normalBlendFactors?.slice(4, 8).map((factor) => factor.value) ?? UNIFORM_DEFAULTS.normalBlend,
+    u_normalMapTransform: material.normalMapTransform ?? UNIFORM_DEFAULTS.normalMapTransform,
+    ...defines.pbr === true ? {
+      u_metallicFactor: material.metallicFactor ?? 1,
+      u_roughnessFactor: material.roughnessFactor ?? 1
+    } : {},
+    ...defines.tonemap === true && material.tonemap !== void 0 ? { u_tonemapCurve: material.tonemap.slice(0, 4), u_tonemapE: material.tonemap[4] } : {}
+  };
+  for (const definition of defines.layers) {
+    const { slot } = definition, layer = material.layers[slot];
+    if (layer === void 0)
+      throw new TypeError(`missing material layer ${slot}`);
+    const names = layerUniformsOf(slot);
+    if (layer.texturePath === null)
+      uniforms[names.color] = layer.constantColor?.value ?? UNIFORM_DEFAULTS.color;
+    uniforms[names.multiply] = layer.colorMultiply?.value ?? 1;
+    uniforms[names.add] = layer.colorAdd?.value ?? 0;
+    uniforms[names.alphaFactor] = layer.alphaFactor?.value ?? 1;
+    uniforms[names.uvAngle] = layer.uvAngle?.value ?? UNIFORM_DEFAULTS.zero3;
+    uniforms[names.uvTriplanarOffset] = layer.uvTriplanarOffset?.value ?? UNIFORM_DEFAULTS.zero3;
+    uniforms[names.uvTriplanarScale] = layer.uvTriplanarScale?.value ?? UNIFORM_DEFAULTS.one3;
+    const tiling = layer.uvTiling?.value ?? UNIFORM_DEFAULTS.one2, offset = layer.uvOffset?.value ?? UNIFORM_DEFAULTS.zero2;
+    if (layer.flipbook === void 0) {
+      uniforms[names.uvTiling] = tiling;
+      uniforms[names.uvOffset] = offset;
+    } else {
+      const { rows, cols } = layer.flipbook;
+      const frame = (Math.floor(layer.flipbook.frame.value) % (rows * cols) + rows * cols) % (rows * cols);
+      const frameSize = layer.flipbook.frameSize;
+      const beforeTiling = (cell, scale) => scale === 0 ? 0 : cell / scale;
+      if (frameSize === void 0) {
+        uniforms[names.uvTiling] = [tiling[0] / cols, tiling[1] / rows];
+        uniforms[names.uvOffset] = [
+          offset[0] - beforeTiling(frame % cols + 0.5 - cols / 2, tiling[0]),
+          offset[1] - beforeTiling(Math.floor(frame / cols) + 0.5 - rows / 2, tiling[1])
+        ];
+      } else {
+        uniforms[names.uvTiling] = tiling;
+        uniforms[names.uvOffset] = [
+          offset[0] - beforeTiling(frame % cols * frameSize[0], tiling[0]),
+          offset[1] - beforeTiling(Math.floor(frame / cols) * frameSize[1], tiling[1])
+        ];
+      }
+    }
+  }
+  for (const binding of textures)
+    if (binding.dimension === "cube" && !(environment !== void 0 && isEnvironmentBinding(binding))) {
+      const slot = `u_${binding.slot}`;
+      const same = (key2, expected) => {
+        const value2 = uniforms[key2];
+        return Array.isArray(value2) && value2.length === expected.length && value2.every((item, index) => item === expected[index]);
+      };
+      if (!same(`${slot}UvAngle`, [0, 0, 0]) || !same(`${slot}UvOffset`, [0, 0]) || !same(`${slot}UvTiling`, [1, 1]) || uniforms["u_parallaxHeight"] !== 0)
+        throw new UnsupportedCubeCoordinatesError(`${binding.slot}: transformed UV/flipbook/parallax sampling of a cube image requires a direction-space mapping`);
+    }
+  if (worldEnvironment && environment !== void 0)
+    for (const row of [0, 1, 2])
+      uniforms[`u_sceneEnvironment${row}`] = [0, 4, 8, 12].map((column) => environment.worldToEnvironment[row + column] ?? 0);
+  for (const value2 of Object.values(uniforms))
+    if (Array.isArray(value2) && !Object.isFrozen(value2))
+      Object.freeze(value2);
   return Object.freeze({
     key,
     ...compiled,
     uniforms: Object.freeze(uniforms),
-    textures: Object.freeze(textures),
+    textures,
     blend: standardBlendModeName(material.blendMode, material.alphaTestThreshold),
     twoSided: material.twoSided,
     depthPrepass: material.depthPrepass ?? false,
     priority: pass.priority,
-    diagnostics: Object.freeze(diagnostics),
+    diagnostics: shape.diagnostics,
     normalMapSpace: material.normalMapSpace ?? "tangent",
     ...worldToMaterial === void 0 ? {} : { worldToMaterial },
-    ...worldEnvironment ? { environment } : {},
+    ...worldEnvironment && environment !== void 0 ? { environment } : {},
     ...policy === void 0 ? {} : { normalBlendPolicy: policy },
     ...material.tangentGeneration === void 0 ? {} : { tangentGeneration: material.tangentGeneration },
     sampleNormal: (pixel = {}, basis) => sampleNormal(material, lighting, pixel, normalFormats, basis),
@@ -21116,12 +21265,12 @@ function pixelLayers(material, pixel, teamColor, normalFormats, slots = Object.k
 function sampleNormal(material, lighting, pixel, formats, basis) {
   const team = pixel.teamColor ?? lighting.teamColor;
   finiteVector(team, 3, "team color");
-  for (const value of [pixel.normal, pixel.viewNormal, pixel.eyeToVertex])
-    if (value !== void 0)
-      finiteVector(value, 3, "material normal vector");
+  for (const value2 of [pixel.normal, pixel.viewNormal, pixel.eyeToVertex])
+    if (value2 !== void 0)
+      finiteVector(value2, 3, "material normal vector");
   if (basis !== void 0)
-    for (const value of [basis.tangent, basis.bitangent, basis.normal])
-      finiteVector(value, 3, "material normal basis");
+    for (const value2 of [basis.tangent, basis.bitangent, basis.normal])
+      finiteVector(value2, 3, "material normal basis");
   const layers = pixelLayers(material, pixel, team, formats, [
     "normal",
     "normalBlend1",
@@ -21149,7 +21298,7 @@ function sampleNormal(material, lighting, pixel, formats, basis) {
   };
   const maskWeight = (index) => {
     const weights = maskValue(index);
-    return weights.reduce((sum, value, channel) => sum + value * (material.normalBlendFactors?.[index * 4 + channel]?.value ?? (channel === 0 ? 1 : 0)), 0);
+    return weights.reduce((sum, value2, channel) => sum + value2 * (material.normalBlendFactors?.[index * 4 + channel]?.value ?? (channel === 0 ? 1 : 0)), 0);
   };
   if (material.normalBlendPolicy !== void 0) {
     const first = layers.normalBlend1, second = layers.normalBlend2;
@@ -21229,8 +21378,8 @@ function uvmMaterialDrawOrder(material) {
 function uvmMaterialPbr(material, baseTexCoord) {
   const pbr = object(material["pbrMetallicRoughness"] ?? {}, "PBR material");
   const unrendered = [];
-  const unit5 = (value, fallback, label) => {
-    const result = value ?? fallback;
+  const unit6 = (value2, fallback, label) => {
+    const result = value2 ?? fallback;
     if (typeof result !== "number" || !Number.isFinite(result) || result < 0 || result > 1)
       throw new TypeError(`material ${label} must be in 0..1`);
     return result;
@@ -21262,12 +21411,12 @@ function uvmMaterialPbr(material, baseTexCoord) {
     throw new TypeError("material normal texture scale must be finite");
   return {
     pbr: {
-      metallic: unit5(pbr["metallicFactor"], 1, "metallicFactor"),
-      roughness: unit5(pbr["roughnessFactor"], 1, "roughnessFactor"),
+      metallic: unit6(pbr["metallicFactor"], 1, "metallicFactor"),
+      roughness: unit6(pbr["roughnessFactor"], 1, "roughnessFactor"),
       ...metallicRoughnessTexture === void 0 ? {} : { metallicRoughnessTexture },
       ...occlusionTexture === void 0 ? {} : {
         occlusionTexture,
-        occlusionStrength: unit5(field(occlusion, "strength"), 1, "occlusion strength")
+        occlusionStrength: unit6(field(occlusion, "strength"), 1, "occlusion strength")
       },
       ...emissive === void 0 ? {} : { emissive: [emissive[0], emissive[1], emissive[2]] },
       ...emissiveTexture === void 0 ? {} : { emissiveTexture },
@@ -21502,8 +21651,8 @@ async function acquireUvmMaterialTextures(resources, port, maxBytes, diagnostics
 }
 
 // packages/scene/dist/uvm/render.js
-function prepareUvmRender(bytes, value, options) {
-  return prepareNestedUvmRender(bytes, value, options, 0);
+function prepareUvmRender(bytes, value2, options) {
+  return prepareNestedUvmRender(bytes, value2, options, 0);
 }
 function createUvmFramePreparer(bytes, options) {
   const owned = bytes.slice();
@@ -21519,7 +21668,7 @@ function createUvmFramePreparer(bytes, options) {
     }
   });
 }
-async function prepareNestedUvmRender(bytes, value, options, depth, cache) {
+async function prepareNestedUvmRender(bytes, value2, options, depth, cache) {
   const { budget, signal, rasterResources } = options;
   signal?.throwIfAborted();
   for (const limit of [
@@ -21530,7 +21679,7 @@ async function prepareNestedUvmRender(bytes, value, options, depth, cache) {
   ])
     if (!Number.isSafeInteger(limit) || limit < 0)
       throw new TypeError("invalid UVM render budget");
-  const input = object(snapshotJson(value, { maxDepth: budget.maxDepth, maxNodes: budget.maxNodes, maxBytes: budget.maxScalarBytes }, signal), "render request");
+  const input = object(snapshotJson(value2, { maxDepth: budget.maxDepth, maxNodes: budget.maxNodes, maxBytes: budget.maxScalarBytes }, signal), "render request");
   if (input["schemaVersion"] !== 1 || Object.keys(input).some((key) => ![
     "schemaVersion",
     "viewport",
@@ -21563,9 +21712,9 @@ async function prepareNestedUvmRender(bytes, value, options, depth, cache) {
   const team = materialInput["teamColor"], teamIntensity = materialInput["teamColorIntensity"], ambient = materialInput["ambient"];
   if (teamIntensity !== void 0 && teamIntensity !== 0 && teamIntensity !== 1)
     throw new TypeError("team color intensity must be 0 or 1");
-  if (team !== void 0 && (!finiteArray(team, 3) || team.some((value2) => value2 < 0 || value2 > 1)))
+  if (team !== void 0 && (!finiteArray(team, 3) || team.some((value3) => value3 < 0 || value3 > 1)))
     throw new TypeError("team color must contain three components in 0..1");
-  if (ambient !== void 0 && (!finiteArray(ambient, 4) || ambient.some((value2) => value2 < 0 || value2 > 1)))
+  if (ambient !== void 0 && (!finiteArray(ambient, 4) || ambient.some((value3) => value3 < 0 || value3 > 1)))
     throw new TypeError("material ambient must contain four components in 0..1");
   const time = input["time"] ?? 0, clipId = input["clipId"], rendererId = input["rendererId"], modelState = input["modelState"] ?? "base";
   if (typeof time !== "number" || !Number.isFinite(time) || time < 0 || clipId !== void 0 && (typeof clipId !== "string" || !clipId) || rendererId !== void 0 && (typeof rendererId !== "string" || !rendererId) || typeof modelState !== "string" || modelState.length === 0 || input["collisions"] !== void 0 && typeof input["collisions"] !== "boolean" || input["shadows"] !== void 0 && typeof input["shadows"] !== "boolean")
@@ -22152,7 +22301,7 @@ function previewKeyLight(viewMatrix) {
   const local = [-0.35, 0.75, 0.55];
   const direction = viewMatrix === void 0 ? [0.35, 0.85, 0.4] : (
     // Inverse of the view rotation is its transpose (column-major rows become columns).
-    [0, 1, 2].map((axis) => local.reduce((sum, value, row) => sum + value * (viewMatrix[axis * 4 + row] ?? 0), 0))
+    [0, 1, 2].map((axis) => local.reduce((sum, value2, row) => sum + value2 * (viewMatrix[axis * 4 + row] ?? 0), 0))
   );
   return {
     direction,
@@ -22160,8 +22309,8 @@ function previewKeyLight(viewMatrix) {
     color: [0.8, 0.8, 0.8, 1]
   };
 }
-async function renderUvm(bytes, value, options) {
-  const { request, diagnostics, rendererId } = await prepareUvmRender(bytes, value, options);
+async function renderUvm(bytes, value2, options) {
+  const { request, diagnostics, rendererId } = await prepareUvmRender(bytes, value2, options);
   const { signal } = options;
   const { width, height } = request.viewport;
   const lease = await options.contracts.resolve({

@@ -527,22 +527,42 @@ function sampleAnimated(value, time) {
   }
   return Object.freeze({ value: sampled });
 }
+var layerPlans = /* @__PURE__ */ new WeakMap();
+var tracked = (value) => value !== void 0 && (value.track !== void 0 || value.sequenceTracks !== void 0);
+function materialLayerPlan(material) {
+  let plan = layerPlans.get(material);
+  if (plan === void 0) {
+    plan = Object.freeze(activeLayers(material).map((layer) => {
+      const slot = layer.slot;
+      if (!isStandardLayerSlot(slot))
+        throw new TypeError(`unknown material slot ${slot}`);
+      const animated2 = LAYER_ANIMATIONS.map(([key]) => key).filter((key) => tracked(layer[key]));
+      const flipbook = tracked(layer.flipbook?.frame);
+      return Object.freeze({
+        slot,
+        layer: animated2.length === 0 && !flipbook ? Object.freeze({ ...layer }) : layer,
+        animated: Object.freeze(animated2),
+        flipbook
+      });
+    }));
+    layerPlans.set(material, plan);
+  }
+  return plan;
+}
 function sampleMaterial(material, time, signal) {
   const layers = {};
-  for (const layer of activeLayers(material)) {
-    const slot = layer.slot;
+  for (const { slot, layer, animated: animated2, flipbook } of materialLayerPlan(material)) {
     signal?.throwIfAborted();
-    if (!isStandardLayerSlot(slot))
-      throw new TypeError(`unknown material slot ${slot}`);
-    const sampled = { ...layer };
-    for (const [key] of LAYER_ANIMATIONS) {
-      const property = layer[key];
-      if (property !== void 0)
-        Object.assign(sampled, {
-          [key]: sampleAnimated(property, time)
-        });
+    if (animated2.length === 0 && !flipbook) {
+      layers[slot] = layer;
+      continue;
     }
-    if (layer.flipbook !== void 0)
+    const sampled = { ...layer };
+    for (const key of animated2)
+      Object.assign(sampled, {
+        [key]: sampleAnimated(layer[key], time)
+      });
+    if (flipbook)
       sampled.flipbook = Object.freeze({
         ...layer.flipbook,
         frame: sampleAnimated(layer.flipbook.frame, time)

@@ -99,7 +99,7 @@ import {
   validateSubjectDescriptorV2,
   webExtensionSubjectCardBundle,
   withoutHiddenEntries
-} from "./chunks/chunk-LD676W37.js";
+} from "./chunks/chunk-LD5LKWKH.js";
 import {
   CONTAINER_EXTRACT_OPERATION_ID,
   ModkitError,
@@ -116,7 +116,7 @@ import {
   parseVersionRange,
   satisfiesRange,
   throwIfAborted
-} from "./chunks/chunk-C64EV3HL.js";
+} from "./chunks/chunk-Y4TXTJJB.js";
 import "./chunks/chunk-QPJEB2TM.js";
 import "./chunks/chunk-7TLUWFCA.js";
 import "./chunks/chunk-DJDDRNPC.js";
@@ -11245,7 +11245,7 @@ var RESOLVED_DATA_WORKSPACE_CONTRACT_DEFINITION = Object.freeze({
   matching: Object.freeze({ profile: RESOLVED_DATA_WORKSPACE_MATCHER_PROFILE, major: 1 }),
   conformanceProfile: "common.data/resolved-workspace-v1",
   surface: Object.freeze({
-    fields: Object.freeze(["contract", "providerId", "gameIds"]),
+    fields: Object.freeze(["contract", "providerId", "gameIds", "persistentRoots"]),
     methods: Object.freeze({
       plan: Object.freeze({
         kind: "value",
@@ -11360,6 +11360,7 @@ async function resolveResolvedDataWorkspace(request) {
     definitions,
     grant: request.grant,
     budgets: request.budgets,
+    ...request.services.contributionSettings === void 0 ? {} : { contributionSettings: request.services.contributionSettings },
     ...request.signal === void 0 ? {} : { signal: request.signal }
   });
   try {
