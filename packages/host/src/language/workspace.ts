@@ -1973,6 +1973,21 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
   )
   const advertisedRoutes = languageProviderRoutes(options.services.inventory)
   const referenceIndex = createWorkspaceReferenceIndex()
+  /*
+   * The provider whose occurrence batches the reference index last took in full, and for which
+   * snapshot. Batches are a function of the snapshot — its context id and revision digest every
+   * document, origin and semantic input — so asking the same provider again for the same snapshot
+   * would only send, validate and index the same batches once more (tens of megabytes for a mod
+   * closure). Another provider's batches, a new snapshot or an invalidation forget it.
+   */
+  let indexedOccurrences:
+    | Readonly<{
+        provider: LanguageProvider
+        contextId: string
+        contextRevision: string
+        batches: number
+      }>
+    | undefined
   const featureControllers = new Set<AbortController>()
   const semanticContextCache = new Map<
     string,
@@ -2013,6 +2028,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
   const invalidateFeatures = (reason: string): void => {
     workspaceGeneration += 1
     referenceIndex.clear()
+    indexedOccurrences = undefined
     for (const controller of featureControllers) controller.abort(reason)
     featureControllers.clear()
   }
@@ -3022,34 +3038,55 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
     if (provider.referenceOccurrences === undefined || feature.workspaceContext === undefined) {
       return undefined
     }
-    const batches = await provider.referenceOccurrences(feature)
-    if (!Array.isArray(batches) || batches.length > feature.maxDocuments) {
+    const context = feature.workspaceContext
+    const byUri = new Map(feature.workspaceDocuments.map(document => [document.uri, document]))
+    const held =
+      indexedOccurrences !== undefined &&
+      indexedOccurrences.provider === provider &&
+      indexedOccurrences.contextId === context.id &&
+      indexedOccurrences.contextRevision === context.revision
+        ? indexedOccurrences
+        : undefined
+    if (held === undefined) {
+      indexedOccurrences = undefined
+      const batches = await provider.referenceOccurrences(feature)
+      if (!Array.isArray(batches) || batches.length > feature.maxDocuments) {
+        invalidFeature(
+          'language provider returned invalid reference occurrence batches',
+          feature.document.uri,
+        )
+      }
+      const origins = new Map(context.documentOrigins.map(origin => [origin.uri, origin]))
+      for (const batch of batches) {
+        const document = byUri.get(batch.sourceUri)
+        const origin = origins.get(batch.sourceUri)
+        if (
+          batch.contextId !== context.id ||
+          batch.contextRevision !== context.revision ||
+          (batch.semanticComplete && !context.semanticComplete) ||
+          document === undefined ||
+          origin === undefined ||
+          batch.sourceRevision !== origin.sourceRevision
+        ) {
+          invalidFeature(
+            'language provider returned a reference batch for another snapshot',
+            feature.document.uri,
+          )
+        }
+        referenceIndex.replace(batch)
+      }
+      // Replacing is synchronous, so the index now holds exactly these batches for their sources.
+      indexedOccurrences = Object.freeze({
+        provider,
+        contextId: context.id,
+        contextRevision: context.revision,
+        batches: batches.length,
+      })
+    } else if (held.batches > feature.maxDocuments) {
       invalidFeature(
         'language provider returned invalid reference occurrence batches',
         feature.document.uri,
       )
-    }
-    const byUri = new Map(feature.workspaceDocuments.map(document => [document.uri, document]))
-    const origins = new Map(
-      feature.workspaceContext.documentOrigins.map(origin => [origin.uri, origin]),
-    )
-    for (const batch of batches) {
-      const document = byUri.get(batch.sourceUri)
-      const origin = origins.get(batch.sourceUri)
-      if (
-        batch.contextId !== feature.workspaceContext.id ||
-        batch.contextRevision !== feature.workspaceContext.revision ||
-        (batch.semanticComplete && !feature.workspaceContext.semanticComplete) ||
-        document === undefined ||
-        origin === undefined ||
-        batch.sourceRevision !== origin.sourceRevision
-      ) {
-        invalidFeature(
-          'language provider returned a reference batch for another snapshot',
-          feature.document.uri,
-        )
-      }
-      referenceIndex.replace(batch)
     }
     const sourceLines = feature.document.text.split('\n')
     const cursorOffset =

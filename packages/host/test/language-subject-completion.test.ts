@@ -1181,6 +1181,62 @@ describe('language subject completion lifecycle', () => {
     }
   })
 
+  it('asks the provider for occurrences once per snapshot and again after an edit', async () => {
+    const original = provider.referenceOccurrences
+    if (original === undefined) throw new Error('the fixture provider publishes occurrences')
+    let asked = 0
+    provider.referenceOccurrences = request => {
+      asked += 1
+      return original(request)
+    }
+    const workspace = await openWorkspace(
+      { open: async () => undefined },
+      false,
+      {
+        snapshot: async () => ({
+          documents: [
+            {
+              uri: 'file:///workspace/dependency.lang',
+              languageId: 'fixture-language',
+              version: 1,
+              text: 'dependency',
+            },
+          ],
+          isComplete: true,
+        }),
+      },
+      document => ({
+        uri: document.uri,
+        layerId: 'fixture:workspace',
+        logicalId: document.uri.slice('file:///workspace/'.length),
+        precedence: 0,
+        sourceRevision: `fixture:${document.version}:${document.text}`,
+        readOnly: false,
+      }),
+      undefined,
+      'indexed-declaration',
+    )
+    try {
+      const request = { ...completionRequest(), includeDeclaration: true }
+      const first = await workspace.references(request)
+      expect(first?.locations).toHaveLength(2)
+      await expect(workspace.references(request)).resolves.toEqual(first)
+      await workspace.definition(completionRequest())
+      expect(asked).toBe(1)
+      // An edit is another snapshot: the index must not answer from the old batches.
+      await workspace.change(languageRequest(2, 'indexed-declaration, edited'))
+      await expect(workspace.references({ ...request, documentVersion: 2 })).resolves.toMatchObject(
+        {
+          locations: [{ uri: DOCUMENT_URI }, { uri: 'file:///workspace/dependency.lang' }],
+        },
+      )
+      expect(asked).toBe(2)
+    } finally {
+      provider.referenceOccurrences = original
+      await workspace.shutdown()
+    }
+  })
+
   it.each([
     {
       name: 'complete dependency context',
