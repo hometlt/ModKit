@@ -1,7 +1,7 @@
 import {
   NATIVE_MODEL_ENCODER_CONTRACT,
   NATIVE_MODEL_ENCODER_MATCHER_PROFILE
-} from "../../chunks/chunk-YYQ3QKXM.js";
+} from "../../chunks/chunk-PZKRES3P.js";
 import "../../chunks/chunk-CQ52GEHY.js";
 export {
   NATIVE_MODEL_ENCODER_CONTRACT,

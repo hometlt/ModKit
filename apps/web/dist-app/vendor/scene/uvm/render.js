@@ -1,4 +1,7 @@
 import {
+  SCENE_RENDERER_CONTRACT
+} from "../../../chunks/chunk-GGIVOOBZ.js";
+import {
   IDENTITY_MATERIAL_FRAME,
   MATERIAL_LAYERS_SHADER,
   RENDER_MATERIAL_SHADER,
@@ -58,8 +61,9 @@ import {
   createModelPoseBlendSampler,
   createModelPoseSampler,
   snapshotModelSkeleton
-} from "../../../chunks/chunk-DY2LR5H6.js";
+} from "../../../chunks/chunk-IJGLIHDN.js";
 import {
+  animationSnapshotBudget,
   clipEventsBetween,
   createModelAnimationSampler
 } from "../../../chunks/chunk-ZSMVBT5D.js";
@@ -95,11 +99,8 @@ import {
 import "../../../chunks/chunk-EVR7SMKZ.js";
 import "../../../chunks/chunk-JVAXQGJ2.js";
 import {
-  SCENE_RENDERER_CONTRACT
-} from "../../../chunks/chunk-GGIVOOBZ.js";
-import {
   diagnostic
-} from "../../../chunks/chunk-LX6GSJ3D.js";
+} from "../../../chunks/chunk-WMDX3O34.js";
 import "../../../chunks/chunk-NBEJVPOY.js";
 import "../../../chunks/chunk-KSBE5J2R.js";
 import "../../../chunks/chunk-UCBII6KW.js";
@@ -16537,9 +16538,14 @@ function skinPalette(bones, slots) {
     if (slot === void 0)
       continue;
     const matrix = bone.skinningMatrix;
-    if (filled[slot] === 1 || matrix?.length !== 16 || !matrix.every(Number.isFinite))
+    if (filled[slot] === 1 || matrix?.length !== 16)
       throw new TypeError("skin needs a unique explicit inverse-bind pose for each bone");
-    palette.set(matrix, slot * 16);
+    for (let index = 0; index < 16; index++) {
+      const value = matrix[index];
+      if (!Number.isFinite(value))
+        throw new TypeError("skin needs a unique explicit inverse-bind pose for each bone");
+      palette[slot * 16 + index] = value;
+    }
     filled[slot] = 1;
   }
   if (filled.includes(0))
@@ -16605,7 +16611,11 @@ function createModelSceneSampler(projection2, options = {}) {
   const maxBytes = options.maxBytes ?? 134217728;
   if (!Number.isSafeInteger(maxBytes) || maxBytes < 0)
     throw new TypeError("invalid scene maxBytes");
-  const budget = { maxDepth: 64, maxNodes: 1e6, maxBytes };
+  const budget = {
+    maxDepth: 64,
+    maxNodes: Math.max(1e6, clip === void 0 ? 0 : animationSnapshotBudget([clip]).maxNodes),
+    maxBytes
+  };
   const owned = snapshotJson({ nodes: projection2.nodes, meshes: projection2.meshes }, budget, signal);
   const bindings = snapshotModelSkeleton(projection2.skeleton ?? [], budget, signal);
   const stated = new Set((options.billboards ?? []).map((item) => item.nodeId));
@@ -16873,7 +16883,7 @@ function createModelSceneSampler(projection2, options = {}) {
         throw new TypeError("skin has no explicit inverse bind matrix");
       const deformer = createModelSkinDeformer(primitive, bones.map((bone) => bone.boneIndex), maxBytes - workingBytes, signal);
       workingBytes += deformer.workingBytes;
-      if (gpuSkinning && (primitive.boneInfluences ?? 4) === 4 && primitive.normals !== void 0 && primitive.tangents !== void 0) {
+      if (gpuSkinning && (primitive.boneInfluences ?? 4) === 4 && primitive.normals !== void 0) {
         workingBytes += primitive.positions.length * 8;
         if (workingBytes > maxBytes)
           throw new RangeError("skin deformation exceeds maxBytes");
@@ -20585,7 +20595,7 @@ function sceneMaterialVertexSource(defines, environmentEnabled = false, worldSha
 precision highp float;
 ${placementAttributes ? "uniform mat4 u_viewProjection;" : "uniform mat4 u_model, u_modelView, u_viewProjection, u_materialWorld;\nuniform mat3 u_worldNormalMatrix, u_viewNormalMatrix;"}
 uniform vec3 u_lightDirection;
-${defines.sceneLighting ? "uniform vec3 u_sceneFillViewDirection0, u_sceneFillViewDirection1;\nout vec3 v_sceneFillDir0, v_sceneFillDir1;" : ""}
+${defines.sceneLighting ? "uniform vec3 u_sceneFillViewDirection0, u_sceneFillViewDirection1;\nout vec3 v_sceneFillDir0, v_sceneFillDir1;\nout vec3 v_sceneShadowWorld;" : ""}
 ${worldGeometry && !placementAttributes ? "uniform mat3 u_sceneWorldNormalMatrix;\nuniform float u_sceneWorldOrientation;\n" : ""}uniform float ${placementAttributes ? "" : "u_orientation, "}u_orthographic;
 in vec3 a_position, a_normal; in vec4 a_tangent;
 ${skinned ? SKIN_DECLARATIONS : ""}${tinted ? "in vec4 a_vertexTint; flat out vec4 v_vertexTint;\n" : ""}${Array.from({ length: defines.uvSetCount }, (_, i) => `in vec2 a_uv${i}; out vec2 v_uv${i};`).join("\n")}
@@ -20605,7 +20615,7 @@ ${placementAttributes ? PLACEMENT_DECLARATIONS : ""}void main(){${placementAttri
   mat3 tbn=transpose(mat3(t,b,n));
   vec3 eye=u_orthographic>0.5?vec3(0.0,0.0,1.0):unit(-view,vec3(0.0,0.0,1.0));
   v_normal=vec3(0.0,0.0,1.0); v_lightDir=tbn*u_lightDirection;
-${defines.sceneLighting ? "  v_sceneFillDir0=tbn*u_sceneFillViewDirection0; v_sceneFillDir1=tbn*u_sceneFillViewDirection1;" : ""}
+${defines.sceneLighting ? "  v_sceneFillDir0=tbn*u_sceneFillViewDirection0; v_sceneFillDir1=tbn*u_sceneFillViewDirection1;\n  v_sceneShadowWorld=world.xyz;" : ""}
   v_halfVec=tbn*(-unit(eye+u_lightDirection,vec3(0.0,0.0,1.0))); v_viewDir=tbn*eye;
   v_viewPosition=u_orthographic>0.5?vec3(0.0,0.0,-1.0):view; v_viewNormal=n;
 ${worldGeometry ? `  vec3 sceneN=unit(${name.objectNormal}*${normal},vec3(0.0,0.0,1.0));

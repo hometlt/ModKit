@@ -3,10 +3,10 @@ import {
 } from "../../../../chunks/chunk-EBEE75BR.js";
 import {
   pageStart
-} from "../../../../chunks/chunk-QVBE5GHG.js";
+} from "../../../../chunks/chunk-WQ4GYISP.js";
 import "../../../../chunks/chunk-N7TDQTWE.js";
 import "../../../../chunks/chunk-C4KZWCMG.js";
-import "../../../../chunks/chunk-DY2LR5H6.js";
+import "../../../../chunks/chunk-IJGLIHDN.js";
 import "../../../../chunks/chunk-ZSMVBT5D.js";
 import {
   snapshotJson
@@ -26,29 +26,25 @@ import "../../../../chunks/chunk-IPABFL2T.js";
 import {
   decompressBounded
 } from "../../../../chunks/chunk-JVAXQGJ2.js";
-import "../../../../chunks/chunk-OVW5EXOM.js";
+import "../../../../chunks/chunk-VET2MZFH.js";
 import {
   assembleSubjectDescriptor,
   createAssetSession,
-  createUtf8TextDataSource
-} from "../../../../chunks/chunk-XX72WYK3.js";
-import "../../../../chunks/chunk-JHPOUH6S.js";
+  createUtf8TextDataSource,
+  revisionId as revisionId2,
+  toPortableProjectionReceipt
+} from "../../../../chunks/chunk-KL4QSMVR.js";
+import "../../../../chunks/chunk-3KAXL5BS.js";
 import {
   containerEntryRevision,
-  contributionSettingsFor
-} from "../../../../chunks/chunk-GXIKMRRL.js";
-import "../../../../chunks/chunk-GGIVOOBZ.js";
-import "../../../../chunks/chunk-YYQ3QKXM.js";
-import "../../../../chunks/chunk-IKMEGZBP.js";
-import {
-  revisionId,
-  toPortableProjectionReceipt
-} from "../../../../chunks/chunk-KNV6HMFY.js";
+  contributionSettingsFor,
+  revisionId
+} from "../../../../chunks/chunk-USBGWOTH.js";
 import {
   ModkitError,
   canonicalJsonStringify,
   diagnostic
-} from "../../../../chunks/chunk-LX6GSJ3D.js";
+} from "../../../../chunks/chunk-WMDX3O34.js";
 import "../../../../chunks/chunk-L5WKTLBK.js";
 import {
   crc32
@@ -889,7 +885,7 @@ function createInspectionCodec(definition2, contributionContext) {
       async open(input, intent, budget, signal) {
         signal?.throwIfAborted();
         const ownedBudget = Object.freeze({ ...budget });
-        return deferAssetSession(revisionId(input.revisions.revision), (initializeSignal) => codec.open(input, intent, ownedBudget, initializeSignal), ownedBudget, signal);
+        return deferAssetSession(revisionId2(input.revisions.revision), (initializeSignal) => codec.open(input, intent, ownedBudget, initializeSignal), ownedBudget, signal);
       }
     });
   }
@@ -1083,7 +1079,7 @@ function createInspectionCodec(definition2, contributionContext) {
           ]);
           return createAssetSession({
             maxOperationDiagnostics: budget.maxDiagnostics,
-            revision: revisionId(input.revisions.revision),
+            revision: revisionId2(input.revisions.revision),
             descriptor,
             operationDeclarations,
             permissionGrant: {
@@ -1246,7 +1242,7 @@ function createInspectionCodec(definition2, contributionContext) {
         ]);
         return createAssetSession({
           maxOperationDiagnostics: budget.maxDiagnostics,
-          revision: revisionId(input.revisions.revision),
+          revision: revisionId2(input.revisions.revision),
           descriptor,
           operationDeclarations,
           permissionGrant: {

@@ -10,50 +10,31 @@ import {
   createWebPreviewStages,
   createWebSubjectServices,
   describeEditability,
+  element,
   isWritableHandle,
   nestedSubjectServices,
   openNestedSubjectRef,
+  parseSubjectRef,
   requestWriteAccess,
   resolveCommonPresentationPlan,
   resolveFormatWriter,
+  revisionId,
+  serializeSubjectRef,
+  setPart,
+  setState,
+  setViewerText,
   sourceRevisionToken,
   sourceUriFor,
   stageIdOf
-} from "./chunks/chunk-7M4YKVSL.js";
-import "./chunks/chunk-VYFJCYN7.js";
-import "./chunks/chunk-GG4FIPT2.js";
-import "./chunks/chunk-BBFWVOVG.js";
-import "./chunks/chunk-ERANLFM3.js";
-import "./chunks/chunk-S5HFHQEW.js";
-import "./chunks/chunk-XIDDMPVT.js";
-import "./chunks/chunk-XCAV2LUJ.js";
-import "./chunks/chunk-2EEDA474.js";
-import "./chunks/chunk-7FYO6RSO.js";
+} from "./chunks/chunk-CHVWX4J2.js";
+import "./chunks/chunk-RSKTTXN3.js";
+import "./chunks/chunk-QPJEB2TM.js";
+import "./chunks/chunk-7TLUWFCA.js";
 import {
-  element,
-  setPart,
-  setState,
-  setViewerText
-} from "./chunks/chunk-HWKS7XZX.js";
-import "./chunks/chunk-XYTHVMJS.js";
-import {
-  parseSubjectRef,
-  revisionId,
-  serializeSubjectRef
-} from "./chunks/chunk-IVTPINNZ.js";
-import "./chunks/chunk-MSNTNGNE.js";
-import "./chunks/chunk-4PVNK3EX.js";
-import "./chunks/chunk-FFGMY2G2.js";
-import "./chunks/chunk-VVYBZOBJ.js";
-import "./chunks/chunk-VSFYEBAW.js";
-import "./chunks/chunk-VOFWEHM4.js";
-import {
-  define_MODKIT_EMBED_EXTENSION_ORIGINS_default,
-  init_define_MODKIT_EMBED_EXTENSION_ORIGINS
-} from "./chunks/chunk-BLWUC7LO.js";
+  define_MODKIT_EMBED_EXTENSION_ORIGINS_default
+} from "./chunks/chunk-DJDDRNPC.js";
 
 // apps/web/src/embed.ts
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var MODKIT_VIEWER_TAG = "modkit-viewer";
 var EMBED_MAXIMUM_BYTES = EXPLORER_MAXIMUM_BYTES;
 var EMBED_CHROME_CSS = `

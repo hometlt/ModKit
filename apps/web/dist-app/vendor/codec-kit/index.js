@@ -1,32 +1,29 @@
 import "../../chunks/chunk-H6MFHEBP.js";
 import {
+  RESOLVED_DATA_WORKSPACE_CONTRACT
+} from "../../chunks/chunk-VET2MZFH.js";
+import {
   createTableDataSource
 } from "../../chunks/chunk-XYU4XXWE.js";
-import "../../chunks/chunk-OVW5EXOM.js";
 import {
   assembleSubjectDescriptor,
   createAssetSession,
-  createUtf8TextDataSource
-} from "../../chunks/chunk-XX72WYK3.js";
-import "../../chunks/chunk-JHPOUH6S.js";
-import {
-  RESOLVED_DATA_WORKSPACE_CONTRACT,
-  containerEntryRevision,
-  contributionSettingsFor
-} from "../../chunks/chunk-GXIKMRRL.js";
-import "../../chunks/chunk-GGIVOOBZ.js";
-import "../../chunks/chunk-YYQ3QKXM.js";
-import "../../chunks/chunk-IKMEGZBP.js";
-import {
-  revisionId,
+  createUtf8TextDataSource,
+  revisionId as revisionId2,
   toPortableProjectionReceipt
-} from "../../chunks/chunk-KNV6HMFY.js";
+} from "../../chunks/chunk-KL4QSMVR.js";
+import "../../chunks/chunk-3KAXL5BS.js";
+import {
+  containerEntryRevision,
+  contributionSettingsFor,
+  revisionId
+} from "../../chunks/chunk-USBGWOTH.js";
 import {
   ModkitError,
   canonicalJsonStringify,
   createReferenceIndex,
   diagnostic
-} from "../../chunks/chunk-LX6GSJ3D.js";
+} from "../../chunks/chunk-WMDX3O34.js";
 import "../../chunks/chunk-CQ52GEHY.js";
 
 // packages/codec-kit/src/paging.ts
@@ -1004,9 +1001,39 @@ var DEFAULT_MODEL_SKELETON_BUDGET = Object.freeze({
   maxBytes: 134217728
 });
 function vector(value, size, label) {
-  if (!Array.isArray(value) || value.length !== size || value.some((x) => typeof x !== "number" || !Number.isFinite(x)))
-    throw new TypeError(`invalid ${label}`);
+  if (!Array.isArray(value) || value.length !== size) throw new TypeError(`invalid ${label}`);
+  for (let index = 0; index < size; index++) {
+    const x = value[index];
+    if (typeof x !== "number" || !Number.isFinite(x)) throw new TypeError(`invalid ${label}`);
+  }
 }
+function finiteMatrix(matrix, offset) {
+  for (let index = offset; index < offset + 16; index++)
+    if (!Number.isFinite(matrix[index])) return false;
+  return true;
+}
+function frozenMatrix(matrix, offset) {
+  const m = (index) => matrix[offset + index];
+  return Object.freeze([
+    m(0),
+    m(1),
+    m(2),
+    m(3),
+    m(4),
+    m(5),
+    m(6),
+    m(7),
+    m(8),
+    m(9),
+    m(10),
+    m(11),
+    m(12),
+    m(13),
+    m(14),
+    m(15)
+  ]);
+}
+var boneChannelKind = (kind) => kind === "translation" ? 0 : kind === "rotation" ? 1 : kind === "scale" ? 2 : -1;
 function snapshotModelSkeleton(bindings, budget = DEFAULT_MODEL_SKELETON_BUDGET, signal) {
   const owned = snapshotJson(bindings, budget, signal);
   if (!Array.isArray(owned)) throw new TypeError("skeleton bindings must be an array");
@@ -1105,42 +1132,52 @@ function createModelPoseSampler({
   const world = new Float32Array(bones.length * 16);
   const local = new Float32Array(16);
   const skin = new Float32Array(16);
+  const trs = new Array(bones.length * 3);
+  const assigned = new Uint8Array(bones.length * 3);
   return Object.freeze({
     sample(timeSeconds, requestSignal) {
       if (requestSignal?.aborted) throw new DOMException("operation cancelled", "AbortError");
       if (!Number.isFinite(timeSeconds)) throw new TypeError("pose time must be finite");
       const channels = animation?.sample(timeSeconds, requestSignal) ?? Object.freeze([]);
-      const poses = bones.map((bone) => ({ ...bone.localPose }));
-      const assigned = /* @__PURE__ */ new Set();
+      for (let slot = 0; slot < bones.length; slot++) {
+        const rest = bones[slot].localPose;
+        trs[slot * 3] = rest.translation;
+        trs[slot * 3 + 1] = rest.rotation;
+        trs[slot * 3 + 2] = rest.scale;
+      }
+      assigned.fill(0);
       for (const channel of channels) {
-        if (!["translation", "rotation", "scale"].includes(channel.kind)) continue;
+        const kind = boneChannelKind(channel.kind);
+        if (kind < 0) continue;
         const slot = byNode.get(channel.target);
         if (slot === void 0 || channel.axis !== void 0)
           throw new TypeError("animation has no whole-bone target");
-        const key = `${slot}/${channel.kind}`;
-        if (assigned.has(key)) throw new TypeError("duplicate bone animation channel");
-        assigned.add(key);
-        vector(channel.value, channel.kind === "rotation" ? 4 : 3, "bone animation value");
-        Object.assign(poses[slot], { [channel.kind]: channel.value });
+        if (assigned[slot * 3 + kind] === 1) throw new TypeError("duplicate bone animation channel");
+        assigned[slot * 3 + kind] = 1;
+        vector(channel.value, kind === 1 ? 4 : 3, "bone animation value");
+        trs[slot * 3 + kind] = channel.value;
       }
       const result = new Array(bones.length);
       for (const slot of order) {
         if (requestSignal?.aborted) throw new DOMException("operation cancelled", "AbortError");
         const bone = bones[slot];
-        const pose = poses[slot];
-        composeTrsMatrix(local, 0, pose.translation, pose.rotation, pose.scale);
+        composeTrsMatrix(local, 0, trs[slot * 3], trs[slot * 3 + 1], trs[slot * 3 + 2]);
         const parent = parents[slot];
         if (parent < 0) world.set(local, slot * 16);
         else multiplyMat4(world, slot * 16, world, parent * 16, local, 0);
-        if (bone.inverseBindMatrix !== void 0)
-          multiplyMat4(skin, 0, world, slot * 16, bone.inverseBindMatrix, 0);
-        if (!world.subarray(slot * 16, slot * 16 + 16).every(Number.isFinite) || bone.inverseBindMatrix !== void 0 && !skin.every(Number.isFinite))
+        const inverseBind = bone.inverseBindMatrix;
+        if (inverseBind !== void 0) multiplyMat4(skin, 0, world, slot * 16, inverseBind, 0);
+        if (!finiteMatrix(world, slot * 16) || inverseBind !== void 0 && !finiteMatrix(skin, 0))
           throw new RangeError("bone pose exceeds finite float range");
-        result[slot] = Object.freeze({
+        result[slot] = inverseBind === void 0 ? Object.freeze({
           boneIndex: bone.boneIndex,
           nodeId: bone.nodeId,
-          worldMatrix: Object.freeze(Array.from(world.subarray(slot * 16, slot * 16 + 16))),
-          ...bone.inverseBindMatrix === void 0 ? {} : { skinningMatrix: Object.freeze(Array.from(skin)) }
+          worldMatrix: frozenMatrix(world, slot * 16)
+        }) : Object.freeze({
+          boneIndex: bone.boneIndex,
+          nodeId: bone.nodeId,
+          worldMatrix: frozenMatrix(world, slot * 16),
+          skinningMatrix: frozenMatrix(skin, 0)
         });
       }
       return Object.freeze({ bones: Object.freeze(result), channels });
@@ -3225,7 +3262,7 @@ function createInspectionCodec(definition, contributionContext) {
         signal?.throwIfAborted();
         const ownedBudget = Object.freeze({ ...budget });
         return deferAssetSession(
-          revisionId(input.revisions.revision),
+          revisionId2(input.revisions.revision),
           (initializeSignal) => codec.open(input, intent, ownedBudget, initializeSignal),
           ownedBudget,
           signal
@@ -3439,7 +3476,7 @@ function createInspectionCodec(definition, contributionContext) {
           ]);
           return createAssetSession({
             maxOperationDiagnostics: budget.maxDiagnostics,
-            revision: revisionId(input.revisions.revision),
+            revision: revisionId2(input.revisions.revision),
             descriptor,
             operationDeclarations,
             permissionGrant: {
@@ -3611,7 +3648,7 @@ function createInspectionCodec(definition, contributionContext) {
         ]);
         return createAssetSession({
           maxOperationDiagnostics: budget.maxDiagnostics,
-          revision: revisionId(input.revisions.revision),
+          revision: revisionId2(input.revisions.revision),
           descriptor,
           operationDeclarations,
           permissionGrant: {
