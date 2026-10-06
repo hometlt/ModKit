@@ -114,9 +114,15 @@ function skinPalette(
     const slot = slots.get(bone.boneIndex)
     if (slot === undefined) continue
     const matrix = bone.skinningMatrix
-    if (filled[slot] === 1 || matrix?.length !== 16 || !matrix.every(Number.isFinite))
+    if (filled[slot] === 1 || matrix?.length !== 16)
       throw new TypeError('skin needs a unique explicit inverse-bind pose for each bone')
-    palette.set(matrix, slot * 16)
+    // checked and copied in one pass: every unit posed on the GPU makes its palette each frame
+    for (let index = 0; index < 16; index++) {
+      const value = matrix[index]!
+      if (!Number.isFinite(value))
+        throw new TypeError('skin needs a unique explicit inverse-bind pose for each bone')
+      palette[slot * 16 + index] = value
+    }
     filled[slot] = 1
   }
   if (filled.includes(0)) throw new TypeError('skin pose is incomplete')
