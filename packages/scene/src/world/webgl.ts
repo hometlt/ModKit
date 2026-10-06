@@ -12044,6 +12044,56 @@ function worldSplatEntries(
   return entries.map(entry => entry.value)
 }
 
+/** A blended draw of a scene as the transparent pass takes it (WorldWebGlCompositeTransparentDraw). */
+type WorldSceneBlendedDraw = Readonly<{
+  scene: WorldWebGlModelMaterialScene
+  draw: MaterialDraw & { readonly program: NonNullable<MaterialDraw['program']> }
+}>
+
+/**
+ * Each scene's blended draws for the view it was last drawn with: the draws in back-to-front order,
+ * and its projected decals' with their splat layers (worldSplatSceneLayers). A scene is the same
+ * object for as long as its object is kept, and for the same view sorting and preparing its draws
+ * (sceneMaterialDraws) gives the same draws: a kept scene seen from the same camera takes them as
+ * they were, where they were made again at every frame.
+ */
+const worldSceneBlendedDrawsByView = new WeakMap<
+  WorldWebGlModelMaterialScene,
+  Readonly<{
+    viewProjection: Float32Array
+    blended: readonly WorldSceneBlendedDraw[]
+    splat: readonly (WorldSceneBlendedDraw & Readonly<{ layer: number | undefined }>)[]
+  }>
+>()
+
+function worldSceneBlendedDraws(scene: WorldWebGlModelMaterialScene, viewProjection: Float32Array) {
+  const kept = worldSceneBlendedDrawsByView.get(scene)
+  if (kept !== undefined && sameFloats(kept.viewProjection, viewProjection)) return kept
+  const splatLayers = worldSplatSceneLayers.get(scene)
+  const blended: WorldSceneBlendedDraw[] = []
+  const splat: (WorldSceneBlendedDraw & Readonly<{ layer: number | undefined }>)[] = []
+  for (const draw of sceneMaterialDraws(
+    scene.primitives,
+    scene.materials,
+    scene.programs,
+    viewProjection,
+    [],
+    1,
+  ))
+    if (draw.depthOnly !== true && draw.program !== undefined && !materialIsSolid(draw.program)) {
+      const entry = { scene, draw: worldSceneDraw(scene, { ...draw, program: draw.program }) }
+      if (splatLayers === undefined) blended.push(Object.freeze(entry))
+      else splat.push(Object.freeze({ ...entry, layer: splatLayers.get(draw.primitive.id) }))
+    }
+  const made = Object.freeze({
+    viewProjection: Float32Array.from(viewProjection),
+    blended: Object.freeze(blended),
+    splat: Object.freeze(splat),
+  })
+  worldSceneBlendedDrawsByView.set(scene, made)
+  return made
+}
+
 /** A plan's material draws as the renderer submits them; retained with the plan. */
 export function worldMaterialBatchesOf(
   plan: WorldWebGlPlan,
@@ -12304,24 +12354,9 @@ function drawWorldWebGlWithResources(
       layer: number | undefined
     }> = []
     for (const scene of batches.transparentScenes) {
-      const splatLayers = worldSplatSceneLayers.get(scene)
-      for (const draw of sceneMaterialDraws(
-        scene.primitives,
-        scene.materials,
-        scene.programs,
-        sceneCamera.viewProjection,
-        [],
-        1,
-      ))
-        if (
-          draw.depthOnly !== true &&
-          draw.program !== undefined &&
-          !materialIsSolid(draw.program)
-        ) {
-          const entry = { scene, draw: worldSceneDraw(scene, { ...draw, program: draw.program }) }
-          if (splatLayers === undefined) transparentSceneDraws.push(entry)
-          else splatMaterialDraws.push({ ...entry, layer: splatLayers.get(draw.primitive.id) })
-        }
+      const { blended, splat } = worldSceneBlendedDraws(scene, sceneCamera.viewProjection)
+      for (const entry of blended) transparentSceneDraws.push(entry)
+      for (const entry of splat) splatMaterialDraws.push(entry)
     }
     const effectDraws = worldModelEffectDraws(plan, sceneCamera)
     // Issue every program this frame needs before the first draw, so they compile in parallel.
