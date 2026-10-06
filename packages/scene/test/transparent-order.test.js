@@ -212,3 +212,42 @@ it('matches the pairwise definition on random fields of commuting and ordered bl
   )
   assert.deepEqual(Array.from(levels), bruteForceLevels(boxes, batches, 0.01, commuting))
 })
+
+it('matches the pairwise definition on piles of one batch among a few other draws', () => {
+  // Draws of one batch piled on a small area, as a terrain decal's triangles are, with draws of other
+  // batches, unbatched, commuting and large ones among them: a search stops early where only its own
+  // batch stands at its level, and goes on where a draw of another batch stands there too. Large
+  // draws cover one half or the other, so a newer one may stand below an older one.
+  let seed = 9001
+  const random = () => {
+    seed = (Math.imul(seed, 1103515245) + 12345) >>> 0
+    return seed / 2 ** 32
+  }
+  for (const [count, span, share] of [
+    [3000, 10, 0.95],
+    [2500, 30, 0.8],
+    [2400, 6, 0.99],
+  ]) {
+    const boxes = []
+    const batches = []
+    const commuting = []
+    for (let item = 0; item < count; item += 1) {
+      const x = random() * span
+      const y = random() * span
+      if (random() < 0.01)
+        boxes.push(...(random() < 0.5 ? [0, 0, span * 0.48, span] : [span * 0.52, 0, span, span]))
+      else boxes.push(x, y, x + 0.5 + random() * 2, y + 0.5 + random() * 2)
+      const roll = random()
+      batches.push(roll < share ? 0 : roll < (1 + share) / 2 ? -1 : 1 + Math.floor(random() * 3))
+      commuting.push(random() < 0.1 ? 1 : 0)
+    }
+    const levels = transparentOrderLevels(
+      Float64Array.from(boxes),
+      Int32Array.from(batches),
+      0.01,
+      Uint8Array.from(commuting),
+    )
+    assert.ok(Math.max(...levels) > 10)
+    assert.deepEqual(Array.from(levels), bruteForceLevels(boxes, batches, 0.01, commuting))
+  }
+})

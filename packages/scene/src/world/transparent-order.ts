@@ -51,6 +51,40 @@ function requiredLevel(
 }
 
 /**
+ * Writes at `to` what the members up to a new one, placed at `level` in `batch`, can require of later
+ * items (levelBound), from what was written at `from` for the members before it (`from` < 0: none):
+ * their highest level, and the one batch whose members alone stand there (negative where members of
+ * several batches, or unbatched ones, do). `from` may be `to`.
+ */
+function placeLevel(stats: Int32Array, from: number, to: number, level: number, batch: number) {
+  if (from >= 0) {
+    const top = stats[from * 2]!
+    if (level < top) {
+      stats[to * 2] = top
+      stats[to * 2 + 1] = stats[from * 2 + 1]!
+      return
+    }
+    if (level === top) {
+      stats[to * 2] = top
+      stats[to * 2 + 1] = batch === stats[from * 2 + 1]! ? batch : -1
+      return
+    }
+  }
+  stats[to * 2] = level
+  stats[to * 2 + 1] = batch
+}
+
+/**
+ * The highest level the members placeLevel wrote `at` for can require of an item of `batch`
+ * (requiredLevel): their highest level where members of the item's batch alone stand there, one above
+ * it otherwise.
+ */
+function levelBound(stats: Int32Array, at: number, batch: number) {
+  const top = stats[at * 2]!
+  return batch >= 0 && batch === stats[at * 2 + 1]! ? top : top + 1
+}
+
+/**
  * Levels for depth-sorted transparent draws. The blending order changes the picture only where two
  * draws cover the same pixel, so an item may move past any earlier item it does not overlap on screen.
  * Each item lands one level above every earlier overlapping item of another batch and no lower than an
@@ -144,13 +178,15 @@ export function transparentOrderLevels(
       for (let cx = ranges[offset]!; cx <= ranges[offset + 1]!; cx += 1)
         members[fill[cy * side + cx]!++] = item
   }
-  // Per cell, one above the highest level among its members up to each one (members are placed in
-  // order): read from the newest earlier member back, a cell's rest cannot raise the level being
-  // found once its ceiling there does not exceed it. `placed` counts each cell's placed members.
-  const ceilings = new Int32Array(members.length)
+  // Per cell, what its members up to each one can require (placeLevel; members are placed in order):
+  // read from the newest earlier member back, a cell's rest cannot raise the level being found once
+  // that does not exceed it. Members of the item's own batch at its level stop the scan too, unless a
+  // member of another batch stands there as well. `placed` counts each cell's placed members; the
+  // large items keep the same for all of them.
+  const stats = new Int32Array(members.length * 2)
   const placed = starts.slice(0, side * side)
   const large: number[] = []
-  let largeCeiling = 0
+  const largeStats = new Int32Array(2)
   const visited = new Int32Array(count).fill(-1)
   // One search object for every item: no closure or object is made per item.
   const search: LevelSearch = { item: 0, batch: 0, blend: 0, x0: 0, y0: 0, x1: 0, y1: 0, level: 0 }
@@ -175,25 +211,25 @@ export function transparentOrderLevels(
         for (let cx = ranges[offset]!; cx <= ranges[offset + 1]!; cx += 1) {
           const cell = cy * side + cx
           for (let at = placed[cell]! - 1, first = starts[cell]!; at >= first; at -= 1) {
-            if (ceilings[at]! <= search.level) break
+            if (levelBound(stats, at, search.batch) <= search.level) break
             requiredLevel(search, members[at]!, levels, visited, boxes, batches, commuting)
           }
         }
-      if (largeCeiling > search.level)
+      if (large.length > 0 && levelBound(largeStats, 0, search.batch) > search.level)
         for (const other of large)
           requiredLevel(search, other, levels, visited, boxes, batches, commuting)
     }
     const level = search.level
     levels[item] = level
     if (kind !== IN_CELLS) {
+      placeLevel(largeStats, large.length > 0 ? 0 : -1, 0, level, search.batch)
       large.push(item)
-      if (level + 1 > largeCeiling) largeCeiling = level + 1
     } else
       for (let cy = ranges[offset + 2]!; cy <= ranges[offset + 3]!; cy += 1)
         for (let cx = ranges[offset]!; cx <= ranges[offset + 1]!; cx += 1) {
           const cell = cy * side + cx
           const at = placed[cell]!++
-          ceilings[at] = at > starts[cell]! ? Math.max(ceilings[at - 1]!, level + 1) : level + 1
+          placeLevel(stats, at > starts[cell]! ? at - 1 : -1, at, level, search.batch)
         }
   }
   return levels
