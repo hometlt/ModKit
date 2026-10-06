@@ -25,6 +25,7 @@ import {
   type WorldWebGlCamera,
   type WorldWebGlPlan,
   type WorldWebGlTexturedBatch,
+  worldWebGlPosedScene,
 } from './webgl.js'
 
 const CHANNELS = ['r', 'g', 'b', 'a'] as const
@@ -265,7 +266,9 @@ export function worldHeadlessScene(plan: WorldWebGlPlan): Readonly<{
     ),
   )
   ground('world/transparent', plan.transparentTriangles, { alphaMode: 'blend', depthWrite: false })
-  plan.modelMaterialScenes.forEach((scene, index) => {
+  plan.modelMaterialScenes.forEach((kept, index) => {
+    // A scene kept from an earlier plan draws in this plan's poses.
+    const scene = worldWebGlPosedScene(plan, kept)
     const own = prefixed(
       `model-${String(index)}/`,
       scene.primitives,

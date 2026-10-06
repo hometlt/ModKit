@@ -43,6 +43,7 @@ import {
 import { teamMaskRule } from '../render/team-color.js'
 import { WORLD_SHADOW_GLSL } from '../render/world-shadow.js'
 import { createModelSceneSampler, modelMaterialTeamColor } from '../model/index.js'
+import type { ModelSceneSkin } from '../model/sampler.js'
 import {
   decomposeMatrix4,
   invertQuat,
@@ -3551,11 +3552,12 @@ function sameProgramLayout(
 }
 
 /**
- * What the programs of kept scenes stand for in one plan (see keptWorldObjectScenes). A kept scene
- * keeps the programs it was built with, and with them its draws, instanced groups and GPU leases;
- * each of its passes stands for the pass of the programs sampled at the plan's clock, whose uniform
- * values it draws with (`passes`, for MaterialSequencePrograms), and its draws group with the draws
- * of those programs as a new scene's would (`materials` and `passes`).
+ * What the programs and skins of kept scenes stand for in one plan (see keptWorldObjectScenes and
+ * keptWorldObjectPose). A kept scene keeps the programs it was built with, and with them its draws,
+ * instanced groups and GPU leases; each of its passes stands for the pass of the programs sampled
+ * at the plan's clock, whose uniform values it draws with (`passes`, for MaterialSequencePrograms),
+ * and its draws group with the draws of those programs as a new scene's would (`materials` and
+ * `passes`).
  */
 interface WorldCurrentPrograms {
   readonly passes: Map<StandardMaterialProgram, StandardMaterialProgram>
@@ -3565,6 +3567,12 @@ interface WorldCurrentPrograms {
    * its members sample the same programs at the same moment, so the first one decides for all.
    */
   readonly cohorts: Map<string, boolean>
+  /**
+   * The skins of kept scenes whose models were sampled again at the plan's clock, each with the
+   * skin of the new sample: the pose it draws in (MaterialInstances.palettes, worldWebGlPosedScene)
+   * while its scene keeps its primitives, draws and groups.
+   */
+  readonly skins: Map<ModelSceneSkin, ModelSceneSkin>
 }
 
 const worldCurrentPrograms = new WeakMap<WorldWebGlPlan, WorldCurrentPrograms>()
@@ -3582,6 +3590,58 @@ export function worldWebGlScenePrograms(
   return new Map(
     [...scene.programs].map(([id, entry]) => [id, current.materials.get(entry) ?? entry] as const),
   )
+}
+
+/** Each plan's material scenes in the poses it draws them in (worldWebGlPosedScene). */
+const worldPosedScenes = new WeakMap<
+  WorldWebGlPlan,
+  Map<WorldWebGlModelMaterialScene, WorldWebGlModelMaterialScene>
+>()
+
+/**
+ * A plan's material scene in the poses it draws at the plan's clock: its own, or, for a scene kept
+ * from an earlier plan while its models move its skins, the same scene whose primitives take the
+ * skins theirs stand for in this plan (WorldCurrentPrograms.skins). Its programs stay its own
+ * (worldWebGlScenePrograms).
+ */
+export function worldWebGlPosedScene(
+  plan: WorldWebGlPlan,
+  scene: WorldWebGlModelMaterialScene,
+): WorldWebGlModelMaterialScene {
+  const skins = worldCurrentPrograms.get(plan)?.skins
+  if (skins === undefined || skins.size === 0) return scene
+  let posedScenes = worldPosedScenes.get(plan)
+  const known = posedScenes?.get(scene)
+  if (known !== undefined) return known
+  // A shadow primitive is one of the scene's primitives: posed as the same object.
+  const posedPrimitives = new Map<SceneRendererPrimitive, SceneRendererPrimitive>()
+  let moved = false
+  const pose = (primitive: SceneRendererPrimitive) => {
+    let posed = posedPrimitives.get(primitive)
+    if (posed === undefined) {
+      const skin = materialSkinOf(primitive)
+      const now = skin === undefined ? undefined : skins.get(skin)
+      if (now !== undefined) moved = true
+      posed = now === undefined ? primitive : Object.freeze({ ...primitive, skin: now })
+      posedPrimitives.set(primitive, posed)
+    }
+    return posed
+  }
+  const primitives = scene.primitives.map(pose)
+  const shadowPrimitives = scene.shadowPrimitives.map(pose)
+  let made = scene
+  if (moved) {
+    made = Object.freeze({
+      ...scene,
+      primitives: Object.freeze(primitives),
+      shadowPrimitives: Object.freeze(shadowPrimitives),
+    })
+    const shadowless = worldShadowlessMaterials.get(scene)
+    if (shadowless !== undefined) worldShadowlessMaterials.set(made, shadowless)
+  }
+  if (posedScenes === undefined) worldPosedScenes.set(plan, (posedScenes = new Map()))
+  posedScenes.set(scene, made)
+  return made
 }
 
 /**
@@ -3658,6 +3718,241 @@ function keptWorldObjectResampledScenes(
   if (pending !== undefined) for (const pair of added ?? []) pending.push(pair)
   else standForPrograms(current, added ?? [])
   return kept.scenes
+}
+
+/** Lets each pair's second skin stand for its first in the plan (keptWorldObjectPose). */
+function standForSkins(
+  current: WorldCurrentPrograms,
+  pairs: readonly (readonly [ModelSceneSkin, ModelSceneSkin])[],
+): void {
+  for (const [kept, now] of pairs) current.skins.set(kept, now)
+}
+
+/**
+ * How a kept object whose models move its geometry takes another clock (keptWorldObjectPose): its
+ * models are sampled again, and while each new sample is the kept one in another pose of its skins
+ * the object keeps its scenes, whose skins stand for the new ones (WorldCurrentPrograms.skins).
+ */
+interface WorldKeptPose {
+  /** Each model of the object that moves its geometry, once: its clip, the time and the sample. */
+  readonly models: readonly Readonly<{
+    resourceId: string
+    animation: ReturnType<typeof worldModelAnimation>
+    time: number
+    sample: WorldModelSample
+  }>[]
+  /** Where each component hung from a socket was placed: a socket may move with the clock. */
+  readonly sockets: readonly Readonly<{ id: string; transform: Float32Array | undefined }>[]
+  /**
+   * Per primitive of the kept pick mesh: the skinned primitive it poses (its model in `models`, its
+   * index in the model's sample, the scene's placed primitive and its pick slot), or undefined for
+   * one without a skin, which stays as it is.
+   */
+  readonly picks: readonly (
+    | Readonly<{
+        model: number
+        index: number
+        instance: SceneRendererPrimitive
+        slot: string
+      }>
+    | undefined
+  )[]
+  /**
+   * False when a primitive drew by the fallback, posed on the CPU into the shared batches: the object
+   * is kept only while the models' times stay.
+   */
+  readonly posable: boolean
+}
+
+/**
+ * The samples a plan took of kept samples' models at another time (keptWorldObjectPose): objects
+ * kept with one sample, at one time now, take the same new sample.
+ */
+type WorldResampled = Map<
+  WorldModelSample,
+  Readonly<{ time: number; now: WorldModelSample | undefined }>
+>
+
+/**
+ * A kept object's pick mesh in this plan when its models move its geometry (WorldStaticObject.pose):
+ * the kept mesh while each model's time stays. At another time the model is sampled again, the skins
+ * of the kept scenes stand for the new sample's skins (added to `pairs`, which may hold the pairs of
+ * the objects before it in a block), and the pick primitives are posed at the new samples.
+ * Undefined when a new sample differs from the kept one in more than its skins' poses (another
+ * visibility, a moving node or socket), when a skin already stands for another pose in this plan,
+ * or when the object drew by the fallback: the object is then built anew.
+ */
+function keptWorldObjectPose(
+  item: WorldSceneObjectItem,
+  kept: WorldStaticObject,
+  pose: WorldKeptPose,
+  input: WorldWebGlInput,
+  sample: (resourceId: string, item: WorldSceneObjectItem) => WorldModelSample | undefined,
+  resampled: WorldResampled,
+  current: WorldCurrentPrograms,
+  pairs: [ModelSceneSkin, ModelSceneSkin][],
+): WorldObjectPickMesh | undefined {
+  // Each model's sample at this clock: the kept one while its time stays.
+  let samples: WorldModelSample[] | undefined
+  for (let at = 0; at < pose.models.length; at++) {
+    const model = pose.models[at]!
+    const time = worldModelSampleTime(input, item, model.animation)
+    if (time === model.time) {
+      samples?.push(model.sample)
+      continue
+    }
+    if (!pose.posable) return undefined
+    samples ??= pose.models.slice(0, at).map(entry => entry.sample)
+    const known = resampled.get(model.sample)
+    let now = known?.now
+    if (known?.time !== time) {
+      now = sample(model.resourceId, item)
+      resampled.set(model.sample, Object.freeze({ time, now }))
+    }
+    if (now === undefined || !sameWorldPosedSample(model.sample, now)) return undefined
+    samples.push(now)
+  }
+  if (samples === undefined) return kept.pickMesh
+  if (pose.sockets.length > 0) {
+    const placed = worldComponentTransforms(worldObjectResourcesOf(item).components, resourceId =>
+      sample(resourceId, item),
+    )
+    for (const socket of pose.sockets)
+      if (!sameOptionalMatrix(socket.transform, placed.get(socket.id))) return undefined
+  }
+  for (let at = 0; at < pose.models.length; at++) {
+    const keptSample = pose.models[at]!.sample
+    const now = samples[at]!
+    if (now === keptSample) continue
+    for (let index = 0; index < keptSample.primitives.length; index++) {
+      const skin = materialSkinOf(keptSample.primitives[index]!)
+      if (skin === undefined) continue
+      const nowSkin = materialSkinOf(now.primitives[index]!)!
+      const standing = current.skins.get(skin) ?? pairs.find(pair => pair[0] === skin)?.[1]
+      if (standing === nowSkin) continue
+      if (standing !== undefined) return undefined
+      pairs.push([skin, nowSkin])
+    }
+  }
+  return worldPosedPickMesh(item, kept.pickMesh, pose, samples)
+}
+
+/**
+ * A kept object's pick mesh with its skinned primitives posed at new samples (keptWorldObjectPose),
+ * framed as the kept one (at rest). Its pick primitives are made when first read, as a pick or the
+ * plan's reader asks for them.
+ */
+function worldPosedPickMesh(
+  item: WorldSceneObjectItem,
+  kept: WorldObjectPickMesh,
+  pose: WorldKeptPose,
+  samples: readonly WorldModelSample[],
+): WorldObjectPickMesh {
+  let primitives: readonly WorldWebGlPickPrimitive[] | undefined
+  const posed = () =>
+    (primitives ??= Object.freeze(
+      kept.primitives.map((entry, at) => {
+        const pick = pose.picks[at]
+        if (pick === undefined) return entry
+        const now = samples[pick.model]!
+        if (now === pose.models[pick.model]!.sample) return entry
+        const source = now.primitives[pick.index]!
+        return sharedPickPrimitive(
+          source,
+          Object.freeze({ ...pick.instance, skin: materialSkinOf(source) }),
+          item,
+          pick.slot,
+        )
+      }),
+    ))
+  const { pick } = kept
+  return {
+    objectId: kept.objectId,
+    center: kept.center,
+    triangles: kept.triangles,
+    get primitives() {
+      return posed()
+    },
+    placeholder: kept.placeholder,
+    get bounds() {
+      return kept.bounds
+    },
+    envelope: kept.envelope,
+    pick: Object.freeze({
+      objectId: pick.objectId,
+      center: pick.center,
+      triangles: pick.triangles,
+      get primitives() {
+        return posed()
+      },
+      placeholder: pick.placeholder,
+    }),
+  }
+}
+
+/** Whether a model's new sample is a kept one in another pose of its skins, per pair once. */
+const worldPosedSampleMatches = new WeakMap<WorldModelSample, WeakMap<WorldModelSample, boolean>>()
+function sameWorldPosedSample(kept: WorldModelSample, now: WorldModelSample): boolean {
+  if (kept === now) return true
+  let byKept = worldPosedSampleMatches.get(now)
+  const known = byKept?.get(kept)
+  if (known !== undefined) return known
+  let same = kept.result === now.result && kept.primitives.length === now.primitives.length
+  for (let index = 0; same && index < kept.primitives.length; index++)
+    same = sameWorldPosedPrimitive(kept.primitives[index]!, now.primitives[index]!)
+  if (byKept === undefined) worldPosedSampleMatches.set(now, (byKept = new WeakMap()))
+  byKept.set(kept, same)
+  return same
+}
+
+/**
+ * Whether a primitive of a new sample is a kept one in another pose: the same fields holding the same
+ * objects, but for the skin, whose pose may differ (sameSkinBesidesPose), and the transform, which
+ * each sample makes anew (a skin's frame), here with the same values.
+ */
+function sameWorldPosedPrimitive(
+  kept: SceneRendererPrimitive,
+  now: SceneRendererPrimitive,
+): boolean {
+  if (kept === now) return true
+  const keys = Object.keys(kept)
+  if (keys.length !== Object.keys(now).length) return false
+  for (const key of keys) {
+    if (!Object.hasOwn(now, key)) return false
+    const one: unknown = (kept as unknown as Record<string, unknown>)[key]
+    const other: unknown = (now as unknown as Record<string, unknown>)[key]
+    if (one === other) continue
+    if (key === 'transform') {
+      if (!sameOptionalMatrix(one as Float32Array | undefined, other as Float32Array | undefined))
+        return false
+    } else if (
+      key !== 'skin' ||
+      !sameSkinBesidesPose(one as ModelSceneSkin, other as ModelSceneSkin)
+    )
+      return false
+  }
+  return true
+}
+
+/**
+ * Whether two skins bind the same vertices to the same slots and weights: the same fields holding the
+ * same objects, but for the pose, its palette of as many slots and its pose on the CPU.
+ */
+function sameSkinBesidesPose(kept: ModelSceneSkin, now: ModelSceneSkin): boolean {
+  const keys = Object.keys(kept)
+  if (keys.length !== Object.keys(now).length) return false
+  for (const key of keys) {
+    if (!Object.hasOwn(now, key)) return false
+    if (key === 'palette') {
+      if (kept.palette.length !== now.palette.length) return false
+    } else if (
+      key !== 'deformed' &&
+      (kept as unknown as Record<string, unknown>)[key] !==
+        (now as unknown as Record<string, unknown>)[key]
+    )
+      return false
+  }
+  return true
 }
 
 /** Lets each pair's second programs stand for its first in the plan (keptWorldObjectResampledScenes). */
@@ -3780,13 +4075,23 @@ interface WorldStaticObject {
   /** The paths its model primitives took (WorldWebGlStats.programObjects, fallbackObjects). */
   readonly byProgram: boolean
   readonly byFallback: boolean
+  /**
+   * For an object whose models move its geometry while its key leaves their clock out
+   * (worldModelPosedByClock): what it was built from, to follow another clock (keptWorldObjectPose).
+   */
+  readonly pose?: WorldKeptPose
+  /**
+   * Set when the plan framed the object by its models at rest, as they move its geometry: its batch
+   * writes stay out of the plan's bounds (clockWrites), kept or built.
+   */
+  readonly atRest?: true
 }
 
 interface WorldObjectPickMesh {
   readonly objectId: number
   readonly center: readonly [number, number, number]
   readonly triangles: number[]
-  readonly primitives: WorldWebGlPickPrimitive[]
+  readonly primitives: readonly WorldWebGlPickPrimitive[]
   readonly placeholder: boolean
   /**
    * The box the plan frames the object by (min xyz, max xyz): its triangles and primitives, or its
@@ -4255,6 +4560,14 @@ interface WorldKeptBlock {
     item: WorldSceneObjectItem
     kept: WorldStaticObject
   }>[]
+  /** The objects whose models move their geometry (WorldStaticObject.pose), with their offsets. */
+  readonly poses: readonly Readonly<{
+    offset: number
+    item: WorldSceneObjectItem
+    kept: WorldStaticObject
+  }>[]
+  /** The batch writes of its objects framed at rest, which the plan's bounds leave out. */
+  readonly clockWrites: readonly WorldBatchWrite[]
   readonly modelTriangles: number
   readonly shadowTriangles: number
   readonly programObjects: number
@@ -4349,8 +4662,9 @@ function worldStaticObjectKey(
       timed = true
     }
     // Materials and live effects alone follow the clock through the kept object (its resamplers,
-    // keptWorldObjectEffect).
+    // keptWorldObjectEffect), and so does a model the kept object samples again (its pose).
     if (result?.state !== 'converted' || !worldObjectFollowsTime(result, item)) continue
+    if (worldModelPosedByClock(result, item)) continue
     const selected = worldModelAnimation(result, item)
     key.push(worldObjectTime(input, item, selected !== undefined, selected?.durationSeconds))
     timed = true
@@ -4391,12 +4705,53 @@ function worldObjectFollowsTime(
   result: WorldModelSample['result'],
   item: WorldSceneObjectItem,
 ): boolean {
-  if (worldModelHasAnimatedGeometry(result, item)) return true
+  return (
+    worldModelHasAnimatedGeometry(result, item) || worldModelProjectionsFollowTime(result, item)
+  )
+}
+
+/** Whether a model's decals, as an object samples the model, move with the object's clock. */
+function worldModelProjectionsFollowTime(
+  result: WorldModelSample['result'],
+  item: WorldSceneObjectItem,
+): boolean {
   const source =
     result.uvmBytes === undefined
       ? undefined
       : uvmEffectSource(result.uvmBytes, worldModelAnimation(result, item)?.sequenceIndex)
   return source !== undefined && source.projectionsFollowTime
+}
+
+/**
+ * Whether a model that moves an object's geometry with the clock is sampled again by the kept
+ * object at another clock (WorldStaticObject.pose), the clock left out of its key: not a cliff piece
+ * (posed on the CPU onto the ground), a stretched foundation (its positions written per sample), a
+ * model facing the camera (posed by the camera's turn as well), nor one whose decals follow the
+ * clock.
+ */
+function worldModelPosedByClock(
+  result: WorldModelSample['result'],
+  item: WorldSceneObjectItem,
+): boolean {
+  return (
+    item.derivedFrom !== 'cliffs' &&
+    !((item.presentationFoundationStretch ?? 0) > 0) &&
+    worldModelHasAnimatedGeometry(result, item) &&
+    !worldModelFacesCamera(result) &&
+    !worldModelProjectionsFollowTime(result, item)
+  )
+}
+
+/** The time an object samples one of its models at (sampleSharedModel): a looping clip's in one loop. */
+function worldModelSampleTime(
+  input: WorldWebGlInput,
+  item: WorldSceneObjectItem,
+  selected: ReturnType<typeof worldModelAnimation>,
+): number {
+  const clock = worldObjectTime(input, item, selected !== undefined, selected?.durationSeconds)
+  return selected?.durationSeconds && (item.presentationAnimation?.loop ?? selected.looping)
+    ? clock % selected.durationSeconds
+    : clock
 }
 
 /**
@@ -6359,11 +6714,7 @@ export function createWorldWebGlPlan(
       ? staticModelSamples.get(result)?.get(staticKey)
       : undefined
     if (previousStatic !== undefined) return previousStatic
-    const clock = worldObjectTime(input, item, selected !== undefined, selected?.durationSeconds)
-    const time =
-      selected?.durationSeconds && (item.presentationAnimation?.loop ?? selected.looping)
-        ? clock % selected.durationSeconds
-        : clock
+    const time = worldModelSampleTime(input, item, selected)
     // instances turned alike see the camera alike
     const sharedKey =
       `${resourceId}\u0000${selected?.id ?? ''}\u0000${time}` +
@@ -6530,7 +6881,9 @@ export function createWorldWebGlPlan(
     passes: new Map(),
     materials: new Map(),
     cohorts: new Map(),
+    skins: new Map(),
   }
+  const resampled: WorldResampled = new Map()
   // Projector decals batch by splat layer, blend and texture: a layer draws as one part of the ground.
   // An additive decal (Purifier_City_Decals: orange lines on black) adds its colour; blended over the
   // ground, its opaque black texels painted a black slab across Old Sun Temple's ramp.
@@ -6603,6 +6956,8 @@ export function createWorldWebGlPlan(
     const effects: WorldKeptBlock['effects'][number][] = []
     const writes: WorldObjectBatchWrite[] = []
     const samples: WorldKeptBlock['samples'][number][] = []
+    const poses: WorldKeptBlock['poses'][number][] = []
+    const restWrites: WorldBatchWrite[] = []
     let triangles = 0,
       shadowed = 0,
       byProgram = 0,
@@ -6613,6 +6968,9 @@ export function createWorldWebGlPlan(
         effects.push(Object.freeze({ item, effect, resourceId: record.effectResources[index]! })),
       )
       for (const write of record.batchWrites) writes.push(write)
+      if (record.pose !== undefined) poses.push(Object.freeze({ offset, item, kept: record }))
+      if (record.atRest === true)
+        for (const entry of record.batchWrites) restWrites.push(entry.write)
       if (record.resamplers !== undefined) {
         const cohort =
           record.cohort !== undefined && input.animationTimes?.has(item.objectId) !== true
@@ -6650,6 +7008,8 @@ export function createWorldWebGlPlan(
       envelope: envelope === null ? null : Object.freeze(envelope),
       finite,
       samples: Object.freeze(samples),
+      poses: Object.freeze(poses),
+      clockWrites: Object.freeze(restWrites),
       modelTriangles: triangles,
       shadowTriangles: shadowed,
       programObjects: byProgram,
@@ -6688,14 +7048,37 @@ export function createWorldWebGlPlan(
       if (scenes === undefined) return 0
       if (cohort !== undefined) decided.set(cohort, true)
     }
+    // Its objects whose models move: posed at this clock, or the block is not taken.
+    const skinPairs: [ModelSceneSkin, ModelSceneSkin][] = []
+    let meshes = kept.pickMeshes
+    if (kept.poses.length > 0) {
+      const posed = [...kept.pickMeshes]
+      for (const { offset, item, kept: record } of kept.poses) {
+        const mesh = keptWorldObjectPose(
+          item,
+          record,
+          record.pose!,
+          input,
+          sampleSharedModel,
+          resampled,
+          currentPrograms,
+          skinPairs,
+        )
+        if (mesh === undefined) return 0
+        posed[offset] = mesh
+      }
+      meshes = posed
+    }
     standForPrograms(currentPrograms, pending)
+    standForSkins(currentPrograms, skinPairs)
     for (const cohort of decided.keys()) currentPrograms.cohorts.set(cohort, true)
     for (const scene of kept.scenes) modelMaterialScenes.push(scene)
     for (const { item, effect, resourceId } of kept.effects)
       modelEffects.push(keptWorldObjectEffect(item, effect, resourceId, input))
     for (const entry of kept.batchWrites) journalObjectWrite(entry)
+    for (const write of kept.clockWrites) clockWrites.add(write)
     const firstMesh = objectPickMeshes.length
-    for (const mesh of kept.pickMeshes) objectPickMeshes.push(mesh)
+    for (const mesh of meshes) objectPickMeshes.push(mesh)
     keptSegments.push({ first: firstMesh, end: objectPickMeshes.length, block: kept })
     modelTriangles += kept.modelTriangles
     modelMaterialShadowTriangles += kept.shadowTriangles
@@ -6726,11 +7109,30 @@ export function createWorldWebGlPlan(
     const item = objects[index]!
     const staticKey = worldStaticObjectKey(item, input, preparation, models)
     const retainedObject = staticKey === undefined ? undefined : retainedStaticObjects.get(item)
+    // An object whose models move its geometry takes their poses at this clock with its scenes.
+    const posePairs: [ModelSceneSkin, ModelSceneSkin][] | undefined =
+      retainedObject?.pose === undefined ? undefined : []
+    const keptPickMesh =
+      retainedObject === undefined || !sameWorldStaticObjectKey(retainedObject.key, staticKey!)
+        ? undefined
+        : retainedObject.pose === undefined
+          ? retainedObject.pickMesh
+          : keptWorldObjectPose(
+              item,
+              retainedObject,
+              retainedObject.pose,
+              input,
+              sampleSharedModel,
+              resampled,
+              currentPrograms,
+              posePairs!,
+            )
     const keptScenes =
-      retainedObject !== undefined && sameWorldStaticObjectKey(retainedObject.key, staticKey!)
-        ? keptWorldObjectScenes(item, retainedObject, input, planPrograms, currentPrograms)
-        : undefined
+      keptPickMesh === undefined
+        ? undefined
+        : keptWorldObjectScenes(item, retainedObject!, input, planPrograms, currentPrograms)
     if (retainedObject !== undefined && keptScenes !== undefined) {
+      if (posePairs !== undefined) standForSkins(currentPrograms, posePairs)
       // Kept by the key it was retained with: its block can stand for it in the next plan.
       if (block !== undefined && retainedObject.key === staticKey) {
         block.items.push(item)
@@ -6742,7 +7144,9 @@ export function createWorldWebGlPlan(
           keptWorldObjectEffect(item, effect, retainedObject.effectResources[index]!, input),
         )
       for (const entry of retainedObject.batchWrites) journalObjectWrite(entry)
-      objectPickMeshes.push(retainedObject.pickMesh)
+      if (retainedObject.atRest === true)
+        for (const entry of retainedObject.batchWrites) clockWrites.add(entry.write)
+      objectPickMeshes.push(keptPickMesh!)
       modelTriangles += retainedObject.modelTriangles
       modelMaterialShadowTriangles += retainedObject.shadowTriangles
       keptObjects += 1
@@ -6766,7 +7170,16 @@ export function createWorldWebGlPlan(
     const translation = objectPosition(item, input)
     const pickTriangles: number[] = []
     const pickPrimitives: WorldWebGlPickPrimitive[] = []
-    const { components } = worldObjectResourcesOf(item)
+    const { components, keyed } = worldObjectResourcesOf(item)
+    // What an object whose key leaves out its models' clock was built from (WorldStaticObject.pose).
+    const posed =
+      staticKey !== undefined &&
+      keyed.some(resourceId => {
+        const result = input.models?.get(resourceId)
+        return result?.state === 'converted' && worldModelPosedByClock(result, item)
+      })
+    const poseModels: WorldKeptPose['models'][number][] | undefined = posed ? [] : undefined
+    const posePicks: WorldKeptPose['picks'][number][] | undefined = posed ? [] : undefined
     const samples = new Map<
       string,
       Readonly<{
@@ -6811,6 +7224,23 @@ export function createWorldWebGlPlan(
       // keeps its placeholder instead of vanishing.
       if (componentTransform === undefined) continue
       resolved = true
+      // The model's sample, when it moves the object's geometry, for the kept object to follow it.
+      let poseModel = -1
+      if (poseModels !== undefined && worldModelHasAnimatedGeometry(result, item)) {
+        poseModel = poseModels.findIndex(model => model.resourceId === component.resourceId)
+        if (poseModel < 0) {
+          const animation = worldModelAnimation(result, item)
+          poseModel =
+            poseModels.push(
+              Object.freeze({
+                resourceId: component.resourceId,
+                animation,
+                time: worldModelSampleTime(input, item, animation),
+                sample: sampled,
+              }),
+            ) - 1
+        }
+      }
       // Cliff meshes follow the painted base height (see `baseOffsetAt`).
       const primitives: typeof sampled.primitives =
         item.derivedFrom === 'cliffs'
@@ -6937,13 +7367,17 @@ export function createWorldWebGlPlan(
             shadowlessMaterials.add(primitive.materialId)
           const count = primitiveTriangleCount(primitive)
           if (count > 0) {
-            pickPrimitives.push(
-              sharedPickPrimitive(
-                primitive,
-                instancePrimitive,
-                item,
-                `${component.id}\u0000${String(primitiveIndex)}`,
-              ),
+            const slot = `${component.id}\u0000${String(primitiveIndex)}`
+            pickPrimitives.push(sharedPickPrimitive(primitive, instancePrimitive, item, slot))
+            posePicks?.push(
+              poseModel >= 0 && materialSkinOf(primitive) !== undefined
+                ? Object.freeze({
+                    model: poseModel,
+                    index: primitiveIndex,
+                    instance: instancePrimitive,
+                    slot,
+                  })
+                : undefined,
             )
             if (castsSharedMaterialShadow) modelMaterialShadowTriangles += count
             modelTriangles += count
@@ -7417,6 +7851,26 @@ export function createWorldWebGlPlan(
           shadowTriangles: modelMaterialShadowTriangles - shadowTrianglesBefore,
           byProgram,
           byFallback,
+          ...(poseModels === undefined || posePicks === undefined
+            ? {}
+            : {
+                pose: Object.freeze({
+                  models: Object.freeze(poseModels),
+                  sockets: Object.freeze(
+                    components
+                      .filter(component => component.parentId !== undefined)
+                      .map(component =>
+                        Object.freeze({
+                          id: component.id,
+                          transform: componentTransforms.get(component.id),
+                        }),
+                      ),
+                  ),
+                  picks: Object.freeze(posePicks),
+                  posable: !byFallback,
+                }),
+              }),
+          ...(restTransforms === undefined ? {} : { atRest: true as const }),
         }),
       )
   }
@@ -7732,7 +8186,8 @@ export function createWorldWebGlPlan(
     preparation,
     models,
   })
-  if (currentPrograms.materials.size > 0) worldCurrentPrograms.set(plan, currentPrograms)
+  if (currentPrograms.materials.size > 0 || currentPrograms.skins.size > 0)
+    worldCurrentPrograms.set(plan, currentPrograms)
   worldPlanFacets.set(plan, facets)
   worldKeptBlocks.set(plan, keptBlocks)
   worldPlanSerials.set(plan, worldPlansBuilt)
@@ -9038,12 +9493,15 @@ function retainedWorldPlanBytes(plan: WorldWebGlPlan | undefined): number {
     retainBatch(preparation.lines)
     retainBatch(preparation.points)
   }
+  const skins = worldCurrentPrograms.get(plan)?.skins
   for (const scene of plan.modelMaterialScenes) {
     for (const primitive of scene.primitives) {
       const skin = materialSkinOf(primitive)
       retain(skin?.joints)
       retain(skin?.weights)
       retain(skin?.palette)
+      // the pose a kept skin stands for in this plan
+      retain(skin === undefined ? undefined : skins?.get(skin)?.palette)
       retain(primitive.positions)
       retain(primitive.normals)
       retain(primitive.tangents)
@@ -9346,26 +9804,28 @@ function prepareWorldMaterialResources(
   for (const effect of plan.modelEffects) bind(effect.textures)
   // what an `envi` layer reflects when it names no map of its own (6 KiB, uploaded once)
   bind(SCENE_ENVIRONMENT_TEXTURES)
-  // The poses of the frame's skins, uploaded at once before the shadow pass draws any of them.
+  // The poses of the frame's skins, uploaded at once before the shadow pass draws any of them: a
+  // kept skin's the one it stands for.
+  const skins = worldCurrentPrograms.get(plan)?.skins
   const palettes = new Set<Float32Array>()
   for (const scene of plan.modelMaterialScenes)
-    for (const palette of worldScenePalettes(scene)) palettes.add(palette)
+    for (const skin of worldSceneSkins(scene)) palettes.add((skins?.get(skin) ?? skin).palette)
   resources.materialDraws.prepareSkins(palettes)
 }
 
-/** The skin palettes a scene's primitives draw with, in their order; kept scenes keep theirs. */
-const worldScenePaletteLists = new WeakMap<WorldWebGlModelMaterialScene, readonly Float32Array[]>()
-function worldScenePalettes(scene: WorldWebGlModelMaterialScene): readonly Float32Array[] {
-  let palettes = worldScenePaletteLists.get(scene)
-  if (palettes === undefined) {
-    const found: Float32Array[] = []
+/** The skins a scene's primitives draw with, in their order; kept scenes keep theirs. */
+const worldSceneSkinLists = new WeakMap<WorldWebGlModelMaterialScene, readonly ModelSceneSkin[]>()
+function worldSceneSkins(scene: WorldWebGlModelMaterialScene): readonly ModelSceneSkin[] {
+  let skins = worldSceneSkinLists.get(scene)
+  if (skins === undefined) {
+    const found: ModelSceneSkin[] = []
     for (const primitive of scene.primitives) {
       const skin = materialSkinOf(primitive)
-      if (skin !== undefined) found.push(skin.palette)
+      if (skin !== undefined) found.push(skin)
     }
-    worldScenePaletteLists.set(scene, (palettes = found))
+    worldSceneSkinLists.set(scene, (skins = found))
   }
-  return palettes
+  return skins
 }
 
 /** One caster of the shadow map, with the identities its depth reads (see worldShadowEntryKey). */
@@ -11557,6 +12017,14 @@ const worldGroupId = (value: object | undefined) => {
   return String(known)
 }
 
+/**
+ * A kept scene's draw in the pose its skin stands for in a plan: the draw of the scene as the plan
+ * poses it (worldWebGlPosedScene), whose primitive differs from this one's in its skin alone.
+ */
+function worldPosedDraw<T extends MaterialDraw>(draw: T, skin: ModelSceneSkin): T {
+  return { ...draw, primitive: { ...draw.primitive, skin } }
+}
+
 function worldSceneSolidDrawsOf(
   scene: WorldWebGlModelMaterialScene,
   shadow: boolean,
@@ -11673,11 +12141,15 @@ function groupWorldMaterialDraws(plan: WorldWebGlPlan, shadow: boolean): WorldWe
   const singles: MaterialDraw[] = []
   const transparentScenes: WorldWebGlModelMaterialScene[] = []
   const current = worldCurrentPrograms.get(plan)
+  const skins = current?.skins
   for (const scene of plan.modelMaterialScenes) {
     const solid = worldSceneSolidDrawsOf(scene, shadow)
     for (const { key, geometryKey, draw } of solid.draws) {
+      // A kept scene's skin draws in the pose it stands for in this plan.
+      const skin = materialSkinOf(draw.primitive)
+      const pose = skin === undefined ? undefined : (skins?.get(skin) ?? skin)
       if (key === undefined || geometryKey === undefined) {
-        singles.push(draw)
+        singles.push(pose === skin ? draw : worldPosedDraw(draw, pose!))
         continue
       }
       // A kept scene's draw groups with the draws of the programs it stands for, as a new scene's
@@ -11691,12 +12163,12 @@ function groupWorldMaterialDraws(plan: WorldWebGlPlan, shadow: boolean): WorldWe
       let byGeometry = byMaterial.get(material)
       if (byGeometry === undefined) byMaterial.set(material, (byGeometry = new Map()))
       let group = byGeometry.get(geometryKey)
-      const palette = materialSkinOf(draw.primitive)?.palette
+      const palette = pose?.palette
       if (group === undefined) {
         byGeometry.set(
           geometryKey,
           (group = {
-            draw,
+            draw: pose === skin ? draw : worldPosedDraw(draw, pose!),
             geometryKey,
             transforms: [],
             palettes: palette === undefined ? undefined : [],
@@ -12354,7 +12826,10 @@ function drawWorldWebGlWithResources(
       layer: number | undefined
     }> = []
     for (const scene of batches.transparentScenes) {
-      const { blended, splat } = worldSceneBlendedDraws(scene, sceneCamera.viewProjection)
+      const { blended, splat } = worldSceneBlendedDraws(
+        worldWebGlPosedScene(plan, scene),
+        sceneCamera.viewProjection,
+      )
       for (const entry of blended) transparentSceneDraws.push(entry)
       for (const entry of splat) splatMaterialDraws.push(entry)
     }
