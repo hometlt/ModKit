@@ -520,30 +520,70 @@ function sampleAnimated<T extends number | readonly number[]>(
   return Object.freeze({ value: sampled as T })
 }
 
+/**
+ * A material's active layers with what a clock reaches in each, worked out once per material: the
+ * properties with a track (`track` or `sequenceTracks`) and whether the flipbook frame has one. A
+ * layer no clock reaches is kept as one frozen copy.
+ */
+const layerPlans = new WeakMap<
+  SceneStandardMaterial,
+  readonly Readonly<{
+    slot: string
+    layer: StandardMaterialLayer
+    animated: readonly (typeof LAYER_ANIMATIONS)[number][0][]
+    flipbook: boolean
+  }>[]
+>()
+
+const tracked = (value: AnimatedValueTracks | undefined) =>
+  value !== undefined && (value.track !== undefined || value.sequenceTracks !== undefined)
+
+function materialLayerPlan(material: SceneStandardMaterial) {
+  let plan = layerPlans.get(material)
+  if (plan === undefined) {
+    plan = Object.freeze(
+      activeLayers(material).map(layer => {
+        const slot = layer.slot
+        if (!isStandardLayerSlot(slot)) throw new TypeError(`unknown material slot ${slot}`)
+        const animated = LAYER_ANIMATIONS.map(([key]) => key).filter(key => tracked(layer[key]))
+        const flipbook = tracked(layer.flipbook?.frame)
+        return Object.freeze({
+          slot,
+          layer: animated.length === 0 && !flipbook ? Object.freeze({ ...layer }) : layer,
+          animated: Object.freeze(animated),
+          flipbook,
+        })
+      }),
+    )
+    layerPlans.set(material, plan)
+  }
+  return plan
+}
+
 function sampleMaterial(
   material: SceneStandardMaterial,
   time: MaterialSampleTime,
   signal?: AbortSignal,
 ): SceneStandardMaterial {
   const layers: StandardMaterialModel['layers'] = {}
-  for (const layer of activeLayers(material)) {
-    const slot = layer.slot
+  for (const { slot, layer, animated, flipbook } of materialLayerPlan(material)) {
     signal?.throwIfAborted()
-    if (!isStandardLayerSlot(slot)) throw new TypeError(`unknown material slot ${slot}`)
-    const sampled: StandardMaterialLayer = { ...layer }
-    for (const [key] of LAYER_ANIMATIONS) {
-      const property = layer[key]
-      if (property !== undefined)
-        Object.assign(sampled, {
-          [key]: sampleAnimated<number | readonly number[]>(property, time),
-        })
+    if (animated.length === 0 && !flipbook) {
+      layers[slot as keyof StandardMaterialModel['layers']] = layer
+      continue
     }
-    if (layer.flipbook !== undefined)
-      sampled.flipbook = Object.freeze({
-        ...layer.flipbook,
-        frame: sampleAnimated(layer.flipbook.frame, time),
+    // A property without a track keeps its value: only the tracked ones are sampled.
+    const sampled: StandardMaterialLayer = { ...layer }
+    for (const key of animated)
+      Object.assign(sampled, {
+        [key]: sampleAnimated<number | readonly number[]>(layer[key]!, time),
       })
-    layers[slot] = Object.freeze(sampled)
+    if (flipbook)
+      sampled.flipbook = Object.freeze({
+        ...layer.flipbook!,
+        frame: sampleAnimated(layer.flipbook!.frame, time),
+      })
+    layers[slot as keyof StandardMaterialModel['layers']] = Object.freeze(sampled)
   }
   return Object.freeze({
     ...material,

@@ -688,6 +688,38 @@ it('gives a material without tracks its passes again at another time, and new on
   assert.notDeepEqual(early.uniforms, late.uniforms)
 })
 
+it('samples a playing material at another clock without making again what no clock reaches', () => {
+  // A textured layer whose colour add the clock moves, beside a constant layer it does not reach.
+  const sampler = createStandardMaterialPrograms(
+    parameters(
+      material({
+        layers: {
+          diffuse: layer('diffuse', {
+            texturePath: 'diffuse.dds',
+            colorAdd: { value: 0, track: track([0], [1]) },
+          }),
+          emissive1: layer('emissive1'),
+        },
+      }),
+    ),
+    { budget },
+  )
+  const options = { ambient: [0, 0, 0, 0], normalMapFormats: new Map() }
+  const [early] = sampler.sample({ time: 0.5 }, options)
+  const [late] = sampler.sample({ time: 1.5 }, options)
+  // the clock moves what it reaches
+  assert.notEqual(early.uniforms.u_diffuseAdd, late.uniforms.u_diffuseAdd)
+  // the rest is made once: the texture bindings, the diagnostics and the default values
+  assert.equal(late.textures, early.textures)
+  assert.equal(late.diagnostics, early.diagnostics)
+  assert.equal(late.uniforms.u_diffuseUvAngle, early.uniforms.u_diffuseUvAngle)
+  assert.equal(late.uniforms.u_emissive1Color, early.uniforms.u_emissive1Color)
+  // another frame makes them again, alike
+  const [lit] = sampler.sample({ time: 1.5 }, { ...options, sceneLighting: true })
+  assert.notEqual(lit.textures, early.textures)
+  assert.deepEqual(lit.textures, early.textures)
+})
+
 it('keeps the programs object of a material without tracks across the clocks of a scene', () => {
   const surface = {
     id: 'surface',

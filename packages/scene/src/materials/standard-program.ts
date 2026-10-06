@@ -201,6 +201,9 @@ export function createStandardMaterialPrograms(
   let last:
     | Readonly<{ lighting: MaterialFrameOptions; passes: readonly StandardMaterialProgram[] }>
     | undefined
+  // The passes' shapes (passShape) and the frame they were made for: a material sampled at another
+  // clock keeps its layers, so the same frame gives the same shapes.
+  let shapes: Readonly<{ lighting: MaterialFrameOptions; passes: readonly PassShape[] }> | undefined
   return Object.freeze({
     resources: sampler.resources,
     usesSceneEnvironment: sampler.usesSceneEnvironment,
@@ -232,29 +235,50 @@ export function createStandardMaterialPrograms(
       // ponytail: only the two observed intensities; a fractional exponent needs a shader uniform.
       if (intensity !== 0 && intensity !== 1)
         throw new TypeError('team color intensity must be 0 or 1')
+      const sampled = sampler.sample(time, signal)
+      const kept =
+        shapes !== undefined &&
+        shapes.passes.length === sampled.length &&
+        sameMaterialFrame(shapes.lighting, lighting)
+          ? shapes.passes
+          : undefined
+      const passShapes: PassShape[] = []
       const passes = Object.freeze(
-        sampler
-          .sample(time, signal)
-          .map(pass =>
-            compilePass(
-              {
-                ...pass,
-                material: emissiveBlendThroughRgb(
-                  specularOfTeamColor(
-                    intensity === 0 ? withoutDiffuseTeamColor(pass.material) : pass.material,
-                  ),
-                ),
-              },
-              { teamColor, ambient, terrainTiling },
+        sampled.map((pass, index) => {
+          const prepared = {
+            ...pass,
+            material: emissiveBlendThroughRgb(
+              specularOfTeamColor(
+                intensity === 0 ? withoutDiffuseTeamColor(pass.material) : pass.material,
+              ),
+            ),
+          }
+          const shape =
+            kept?.[index] ??
+            passShape(
+              prepared.material,
               sources,
               normalFormats,
-              sampler.worldToMaterial,
               textureDimensions,
               environment,
               lighting.sceneLighting === true,
-            ),
-          ),
+            )
+          passShapes.push(shape)
+          return compilePass(
+            prepared,
+            { teamColor, ambient, terrainTiling },
+            shape,
+            sampler.worldToMaterial,
+            environment,
+            lighting.sceneLighting === true,
+          )
+        }),
       )
+      if (kept === undefined)
+        shapes = Object.freeze({
+          lighting: copyMaterialFrame(lighting),
+          passes: Object.freeze(passShapes),
+        })
       if (sampler.timeless) last = Object.freeze({ lighting: copyMaterialFrame(lighting), passes })
       return passes
     },
@@ -321,65 +345,100 @@ function sameMaterialFrame(left: MaterialFrameOptions, right: MaterialFrameOptio
   )
 }
 
-function compilePass(
-  pass: RenderMaterialPass,
-  lighting: Required<MaterialLighting>,
+/**
+ * Default uniform values, frozen once. A program's uniform arrays are frozen, and freezing a fresh
+ * default array for every pass of a playing material at every clock was most of compiling it.
+ */
+const UNIFORM_DEFAULTS = Object.freeze({
+  one2: Object.freeze([1, 1] as const),
+  zero2: Object.freeze([0, 0] as const),
+  one3: Object.freeze([1, 1, 1] as const),
+  zero3: Object.freeze([0, 0, 0] as const),
+  color: Object.freeze([1, 1, 1, 1] as const),
+  environmentMultipliers: Object.freeze([1, 0, 0] as const),
+  normalBlend: Object.freeze([1, 0, 0, 0] as const),
+  normalMapTransform: Object.freeze([1, 0, 0, 0, 1, 0, 0, 0, 1] as const),
+})
+
+/** A layer slot's uniform names, written once per slot rather than for every pass and clock. */
+const layerUniformNames = new Map<
+  string,
+  Readonly<{
+    map: string
+    color: string
+    multiply: string
+    add: string
+    alphaFactor: string
+    uvAngle: string
+    uvTriplanarOffset: string
+    uvTriplanarScale: string
+    uvTiling: string
+    uvOffset: string
+  }>
+>()
+
+function layerUniformsOf(slot: string) {
+  let names = layerUniformNames.get(slot)
+  if (names === undefined) {
+    const prefix = `u_${slot}`
+    names = Object.freeze({
+      map: `${prefix}Map`,
+      color: `${prefix}Color`,
+      multiply: `${prefix}Multiply`,
+      add: `${prefix}Add`,
+      alphaFactor: `${prefix}AlphaFactor`,
+      uvAngle: `${prefix}UvAngle`,
+      uvTriplanarOffset: `${prefix}UvTriplanarOffset`,
+      uvTriplanarScale: `${prefix}UvTriplanarScale`,
+      uvTiling: `${prefix}UvTiling`,
+      uvOffset: `${prefix}UvOffset`,
+    })
+    layerUniformNames.set(slot, names)
+  }
+  return names
+}
+
+/**
+ * What no clock reaches of a pass's program: its material's layers, flags and texture bindings
+ * under the frame's normal formats, texture dimensions, environment and lighting. Passes sampled
+ * from one material at other clocks keep their layers (sampleMaterial), so they share it.
+ */
+interface PassShape {
+  readonly normalFormats: ReturnType<typeof materialNormalFormats>
+  readonly defines: ReturnType<typeof buildMaterialDefines>
+  readonly textures: readonly MaterialTextureBinding[]
+  readonly diagnostics: readonly string[]
+  readonly worldEnvironment: boolean
+  readonly key: string
+  readonly compiled: ShaderSources
+}
+
+function passShape(
+  material: SceneStandardMaterial,
   sources: Map<string, ShaderSources>,
   bindings: ReadonlyMap<string, NormalMapFormat>,
-  worldToMaterial?: readonly number[],
-  textureDimensions: ReadonlyMap<string, '2d' | 'cube'> = new Map(),
-  environment?: SceneRendererEnvironment,
-  sceneLighting = false,
-): StandardMaterialProgram {
-  const { material, alpha } = pass
+  textureDimensions: ReadonlyMap<string, '2d' | 'cube'>,
+  environment: SceneRendererEnvironment | undefined,
+  sceneLighting: boolean,
+): PassShape {
   const normalFormats = materialNormalFormats(material, bindings)
   const objectSpaceNormal = material.normalMapSpace === 'object'
   const defines = buildMaterialDefines(material, {
     ...(normalFormats === undefined ? {} : { normalMapFormat: 'rgb8' as const }),
     ...(sceneLighting ? { sceneLighting: true } : {}),
   })
-  const uniforms: Record<string, number | readonly number[]> = {
-    u_teamColor: lighting.teamColor,
-    u_ambient: lighting.ambient,
-    u_specularity: material.specularity,
-    u_specMult: material.specMult,
-    u_emisMult: material.emisMult,
-    u_emissiveTint: material.emissiveTint ?? [1, 1, 1],
-    u_environmentMultipliers: material.environmentMultipliers ?? [1, 0, 0],
-    u_terrainTiling: lighting.terrainTiling,
-    u_materialAlpha: alpha,
-    u_alphaTestThreshold: material.alphaTestThreshold,
-    u_parallaxHeight: material.parallaxHeight?.value ?? 0,
-    u_normalBlend1Factors: material.normalBlendFactors?.slice(0, 4).map(factor => factor.value) ?? [
-      1, 0, 0, 0,
-    ],
-    u_normalBlend2Factors: material.normalBlendFactors?.slice(4, 8).map(factor => factor.value) ?? [
-      1, 0, 0, 0,
-    ],
-    u_normalMapTransform: material.normalMapTransform ?? [1, 0, 0, 0, 1, 0, 0, 0, 1],
-    ...(defines.pbr === true
-      ? {
-          u_metallicFactor: material.metallicFactor ?? 1,
-          u_roughnessFactor: material.roughnessFactor ?? 1,
-        }
-      : {}),
-    ...(defines.tonemap === true && material.tonemap !== undefined
-      ? { u_tonemapCurve: material.tonemap.slice(0, 4), u_tonemapE: material.tonemap[4] }
-      : {}),
-  }
   const textures: MaterialTextureBinding[] = [],
     diagnostics: string[] = []
   for (const definition of defines.layers) {
     const { slot } = definition,
       layer = material.layers[slot]
     if (layer === undefined) throw new TypeError(`missing material layer ${slot}`)
-    const prefix = `u_${slot}`
     if (layer.texturePath !== null)
       textures.push(
         Object.freeze({
           slot,
           resourceId: layer.texturePath,
-          uniform: `${prefix}Map`,
+          uniform: layerUniformsOf(slot).map,
           wrapU: layer.wrapX ? 'repeat' : 'clamp',
           wrapV: layer.wrapY ? 'repeat' : 'clamp',
           ...(textureDimensions.get(layer.texturePath) === 'cube'
@@ -387,41 +446,6 @@ function compilePass(
             : {}),
         }),
       )
-    else uniforms[`${prefix}Color`] = layer.constantColor?.value ?? [1, 1, 1, 1]
-    uniforms[`${prefix}Multiply`] = layer.colorMultiply?.value ?? 1
-    uniforms[`${prefix}Add`] = layer.colorAdd?.value ?? 0
-    uniforms[`${prefix}AlphaFactor`] = layer.alphaFactor?.value ?? 1
-    uniforms[`${prefix}UvAngle`] = layer.uvAngle?.value ?? [0, 0, 0]
-    uniforms[`${prefix}UvTriplanarOffset`] = layer.uvTriplanarOffset?.value ?? [0, 0, 0]
-    uniforms[`${prefix}UvTriplanarScale`] = layer.uvTriplanarScale?.value ?? [1, 1, 1]
-    const tiling = layer.uvTiling?.value ?? [1, 1],
-      offset = layer.uvOffset?.value ?? [0, 0]
-    if (layer.flipbook === undefined) {
-      uniforms[`${prefix}UvTiling`] = tiling
-      uniforms[`${prefix}UvOffset`] = offset
-    } else {
-      const { rows, cols } = layer.flipbook
-      const frame =
-        ((Math.floor(layer.flipbook.frame.value) % (rows * cols)) + rows * cols) % (rows * cols)
-      const frameSize = layer.flipbook.frameSize
-      // The shader samples (uv - 0.5 - offset) * tiling + 0.5; the frame's cell lies after tiling, so
-      // it enters the offset divided by the tiling (a zero tiling samples one texel whatever the
-      // offset). A grid of n cells samples the layer's own window scaled into cell (i + 0.5) / n.
-      const beforeTiling = (cell: number, scale: number) => (scale === 0 ? 0 : cell / scale)
-      if (frameSize === undefined) {
-        uniforms[`${prefix}UvTiling`] = [tiling[0] / cols, tiling[1] / rows]
-        uniforms[`${prefix}UvOffset`] = [
-          offset[0] - beforeTiling((frame % cols) + 0.5 - cols / 2, tiling[0]),
-          offset[1] - beforeTiling(Math.floor(frame / cols) + 0.5 - rows / 2, tiling[1]),
-        ]
-      } else {
-        uniforms[`${prefix}UvTiling`] = tiling
-        uniforms[`${prefix}UvOffset`] = [
-          offset[0] - beforeTiling((frame % cols) * frameSize[0], tiling[0]),
-          offset[1] - beforeTiling(Math.floor(frame / cols) * frameSize[1], tiling[1]),
-        ]
-      }
-    }
     if (layer.fresnel !== undefined && layer.fresnel.transformMode !== 0)
       diagnostics.push(
         `${slot}: Fresnel matrix transform is preserved but not evaluated by the shared kernel`,
@@ -429,39 +453,10 @@ function compilePass(
     if (layer.uvSource === 6)
       diagnostics.push(`${slot}: particle UV requires a particle geometry adapter`)
   }
-  for (const binding of textures)
-    if (
-      binding.dimension === 'cube' &&
-      !(environment !== undefined && isEnvironmentBinding(binding))
-    ) {
-      const slot = `u_${binding.slot}`
-      const same = (key: string, expected: readonly number[]) => {
-        const value = uniforms[key]
-        return (
-          Array.isArray(value) &&
-          value.length === expected.length &&
-          value.every((item, index) => item === expected[index])
-        )
-      }
-      if (
-        !same(`${slot}UvAngle`, [0, 0, 0]) ||
-        !same(`${slot}UvOffset`, [0, 0]) ||
-        !same(`${slot}UvTiling`, [1, 1]) ||
-        uniforms['u_parallaxHeight'] !== 0
-      )
-        throw new UnsupportedCubeCoordinatesError(
-          `${binding.slot}: transformed UV/flipbook/parallax sampling of a cube image requires a direction-space mapping`,
-        )
-    }
   // The CPU pixel function receives sampled texels; parallax and generated UVs must be supplied
   // by its geometry adapter. The GLSL builder already contains those sampling paths.
   const worldEnvironment = environment !== undefined && textures.some(isEnvironmentBinding)
   const policy = material.normalBlendPolicy
-  if (worldEnvironment)
-    for (const row of [0, 1, 2])
-      uniforms[`u_sceneEnvironment${row}`] = [0, 4, 8, 12].map(
-        column => environment.worldToEnvironment[row + column] ?? 0,
-      )
   const key =
     canonicalDefineKey(defines) +
     (normalFormats === undefined
@@ -521,20 +516,146 @@ function compilePass(
     compiled = Object.freeze({ vertexSource, fragmentSource, defines: Object.freeze(defines) })
     sources.set(key, compiled)
   }
-  for (const value of Object.values(uniforms)) if (Array.isArray(value)) Object.freeze(value)
+  return Object.freeze({
+    normalFormats,
+    defines,
+    textures: Object.freeze(textures),
+    diagnostics: Object.freeze(diagnostics),
+    worldEnvironment,
+    key,
+    compiled,
+  })
+}
+
+/** A pass's program at its clock: its shape (passShape) and the uniforms the clock samples. */
+function compilePass(
+  pass: RenderMaterialPass,
+  lighting: Required<MaterialLighting>,
+  shape: PassShape,
+  worldToMaterial: readonly number[] | undefined,
+  environment: SceneRendererEnvironment | undefined,
+  sceneLighting: boolean,
+): StandardMaterialProgram {
+  const { material, alpha } = pass
+  const { normalFormats, defines, textures, worldEnvironment, key, compiled } = shape
+  const policy = material.normalBlendPolicy
+  const uniforms: Record<string, number | readonly number[]> = {
+    u_teamColor: lighting.teamColor,
+    u_ambient: lighting.ambient,
+    u_specularity: material.specularity,
+    u_specMult: material.specMult,
+    u_emisMult: material.emisMult,
+    u_emissiveTint: material.emissiveTint ?? UNIFORM_DEFAULTS.one3,
+    u_environmentMultipliers:
+      material.environmentMultipliers ?? UNIFORM_DEFAULTS.environmentMultipliers,
+    u_terrainTiling: lighting.terrainTiling,
+    u_materialAlpha: alpha,
+    u_alphaTestThreshold: material.alphaTestThreshold,
+    u_parallaxHeight: material.parallaxHeight?.value ?? 0,
+    u_normalBlend1Factors:
+      material.normalBlendFactors?.slice(0, 4).map(factor => factor.value) ??
+      UNIFORM_DEFAULTS.normalBlend,
+    u_normalBlend2Factors:
+      material.normalBlendFactors?.slice(4, 8).map(factor => factor.value) ??
+      UNIFORM_DEFAULTS.normalBlend,
+    u_normalMapTransform: material.normalMapTransform ?? UNIFORM_DEFAULTS.normalMapTransform,
+    ...(defines.pbr === true
+      ? {
+          u_metallicFactor: material.metallicFactor ?? 1,
+          u_roughnessFactor: material.roughnessFactor ?? 1,
+        }
+      : {}),
+    ...(defines.tonemap === true && material.tonemap !== undefined
+      ? { u_tonemapCurve: material.tonemap.slice(0, 4), u_tonemapE: material.tonemap[4] }
+      : {}),
+  }
+  for (const definition of defines.layers) {
+    const { slot } = definition,
+      layer = material.layers[slot]
+    if (layer === undefined) throw new TypeError(`missing material layer ${slot}`)
+    const names = layerUniformsOf(slot)
+    if (layer.texturePath === null)
+      uniforms[names.color] = layer.constantColor?.value ?? UNIFORM_DEFAULTS.color
+    uniforms[names.multiply] = layer.colorMultiply?.value ?? 1
+    uniforms[names.add] = layer.colorAdd?.value ?? 0
+    uniforms[names.alphaFactor] = layer.alphaFactor?.value ?? 1
+    uniforms[names.uvAngle] = layer.uvAngle?.value ?? UNIFORM_DEFAULTS.zero3
+    uniforms[names.uvTriplanarOffset] = layer.uvTriplanarOffset?.value ?? UNIFORM_DEFAULTS.zero3
+    uniforms[names.uvTriplanarScale] = layer.uvTriplanarScale?.value ?? UNIFORM_DEFAULTS.one3
+    const tiling = layer.uvTiling?.value ?? UNIFORM_DEFAULTS.one2,
+      offset = layer.uvOffset?.value ?? UNIFORM_DEFAULTS.zero2
+    if (layer.flipbook === undefined) {
+      uniforms[names.uvTiling] = tiling
+      uniforms[names.uvOffset] = offset
+    } else {
+      const { rows, cols } = layer.flipbook
+      const frame =
+        ((Math.floor(layer.flipbook.frame.value) % (rows * cols)) + rows * cols) % (rows * cols)
+      const frameSize = layer.flipbook.frameSize
+      // The shader samples (uv - 0.5 - offset) * tiling + 0.5; the frame's cell lies after tiling, so
+      // it enters the offset divided by the tiling (a zero tiling samples one texel whatever the
+      // offset). A grid of n cells samples the layer's own window scaled into cell (i + 0.5) / n.
+      const beforeTiling = (cell: number, scale: number) => (scale === 0 ? 0 : cell / scale)
+      if (frameSize === undefined) {
+        uniforms[names.uvTiling] = [tiling[0] / cols, tiling[1] / rows]
+        uniforms[names.uvOffset] = [
+          offset[0] - beforeTiling((frame % cols) + 0.5 - cols / 2, tiling[0]),
+          offset[1] - beforeTiling(Math.floor(frame / cols) + 0.5 - rows / 2, tiling[1]),
+        ]
+      } else {
+        uniforms[names.uvTiling] = tiling
+        uniforms[names.uvOffset] = [
+          offset[0] - beforeTiling((frame % cols) * frameSize[0], tiling[0]),
+          offset[1] - beforeTiling(Math.floor(frame / cols) * frameSize[1], tiling[1]),
+        ]
+      }
+    }
+  }
+  for (const binding of textures)
+    if (
+      binding.dimension === 'cube' &&
+      !(environment !== undefined && isEnvironmentBinding(binding))
+    ) {
+      const slot = `u_${binding.slot}`
+      const same = (key: string, expected: readonly number[]) => {
+        const value = uniforms[key]
+        return (
+          Array.isArray(value) &&
+          value.length === expected.length &&
+          value.every((item, index) => item === expected[index])
+        )
+      }
+      if (
+        !same(`${slot}UvAngle`, [0, 0, 0]) ||
+        !same(`${slot}UvOffset`, [0, 0]) ||
+        !same(`${slot}UvTiling`, [1, 1]) ||
+        uniforms['u_parallaxHeight'] !== 0
+      )
+        throw new UnsupportedCubeCoordinatesError(
+          `${binding.slot}: transformed UV/flipbook/parallax sampling of a cube image requires a direction-space mapping`,
+        )
+    }
+  if (worldEnvironment && environment !== undefined)
+    for (const row of [0, 1, 2])
+      uniforms[`u_sceneEnvironment${row}`] = [0, 4, 8, 12].map(
+        column => environment.worldToEnvironment[row + column] ?? 0,
+      )
+  // Values sampled from tracks and the defaults above come frozen already.
+  for (const value of Object.values(uniforms))
+    if (Array.isArray(value) && !Object.isFrozen(value)) Object.freeze(value)
   return Object.freeze({
     key,
     ...compiled,
     uniforms: Object.freeze(uniforms),
-    textures: Object.freeze(textures),
+    textures,
     blend: standardBlendModeName(material.blendMode, material.alphaTestThreshold),
     twoSided: material.twoSided,
     depthPrepass: material.depthPrepass ?? false,
     priority: pass.priority,
-    diagnostics: Object.freeze(diagnostics),
+    diagnostics: shape.diagnostics,
     normalMapSpace: material.normalMapSpace ?? 'tangent',
     ...(worldToMaterial === undefined ? {} : { worldToMaterial }),
-    ...(worldEnvironment ? { environment } : {}),
+    ...(worldEnvironment && environment !== undefined ? { environment } : {}),
     ...(policy === undefined ? {} : { normalBlendPolicy: policy }),
     ...(material.tangentGeneration === undefined
       ? {}
