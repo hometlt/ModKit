@@ -12,6 +12,8 @@ import {
 } from '@modkit/host/language'
 import {
   createModkit,
+  createResolvedDataContextStore,
+  languageRetainedValues,
   loadContentSources,
   workerBackendPolicy,
   type ModkitOpened,
@@ -46,6 +48,7 @@ export async function runModkitLsp(argv: readonly string[]) {
     roots,
     intent: 'inspect',
     policy: workerBackendPolicy({ outputCapBytes: 4_194_304 }),
+    retainedValues: languageRetainedValues(configuration.resolvedDataMemoryBytes),
     onDiagnostic: diagnostic =>
       process.stderr.write(errorLine(diagnostic.code, diagnostic.message)),
   })
@@ -136,6 +139,12 @@ export async function runModkitLsp(argv: readonly string[]) {
       maxInputBytes: BigInt(configuration.maxWorkspaceBytes),
     },
     ...(documentSource === undefined ? {} : { documentSource }),
+    semanticContextMemoryBytes: configuration.resolvedDataMemoryBytes,
+    ...(configuration.resolvedDataCache === undefined
+      ? {}
+      : {
+          semanticContextStore: createResolvedDataContextStore(configuration.resolvedDataCache),
+        }),
     semanticInputs: Object.freeze([
       Object.freeze({
         kind: 'locale-set',

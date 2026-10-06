@@ -35,8 +35,11 @@ export interface IndexCacheManifest {
   readonly game: string
   /** The product or build line the index belongs to (`s2`, `wow_classic`), when there is one. */
   readonly product?: string
-  /** `names`: a path index; `content`: a text index over file contents. */
-  readonly kind: 'names' | 'content'
+  /**
+   * `names`: a path index; `content`: a text index over file contents; `resolved-data`: a language
+   * context's resolved Data analysis, kept by the host (`installation` then names the mod chain).
+   */
+  readonly kind: 'names' | 'content' | 'resolved-data'
   /** The indexed installation or root, as the user would recognise it (a directory, a root label). */
   readonly installation: string
 }

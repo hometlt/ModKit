@@ -19,6 +19,10 @@ import {
   type RemoteCapability,
   type RetainedValuePolicy,
 } from '../src/execution/index.js'
+import {
+  LANGUAGE_RETAINED_VALUE_BYTES,
+  languageRetainedValues,
+} from '../src/node/execution-backends.js'
 import { ModkitError } from '@modkit/core'
 
 type Side = 'host' | 'worker'
@@ -386,5 +390,16 @@ describe('retained call values', () => {
     await settle()
     expect(w.host.counters().retainedValues).toBe(0)
     expect(w.worker.counters().retainedValues).toBe(0)
+  })
+})
+
+describe('the language captures a Node worker keeps', () => {
+  const mebibyte = 1_048_576
+  it('follow twice the resolved Data a host holds, never below the default', () => {
+    expect(languageRetainedValues(512 * mebibyte).maxBytes).toBe(1_024 * mebibyte)
+    expect(languageRetainedValues(64 * mebibyte).maxBytes).toBe(LANGUAGE_RETAINED_VALUE_BYTES)
+    expect(languageRetainedValues(0).maxBytes).toBe(LANGUAGE_RETAINED_VALUE_BYTES)
+    expect(languageRetainedValues(Number.NaN).maxBytes).toBe(LANGUAGE_RETAINED_VALUE_BYTES)
+    expect(languageRetainedValues(512 * mebibyte).isRetainable({})).toBe(false)
   })
 })

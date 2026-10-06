@@ -499,6 +499,20 @@
           "markdownDescription": "%configuration.nonDefaultContributions.description%",
           "type": "array"
         },
+        "modkit.resolvedDataCache.diskMiB": {
+          "default": 1024,
+          "markdownDescription": "%configuration.resolvedDataCache.diskMiB.description%",
+          "maximum": 65536,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "modkit.resolvedDataCache.memoryMiB": {
+          "default": 512,
+          "markdownDescription": "%configuration.resolvedDataCache.memoryMiB.description%",
+          "maximum": 65536,
+          "minimum": 0,
+          "type": "integer"
+        },
         "modkit.showHiddenEntries": {
           "default": false,
           "markdownDescription": "%configuration.showHiddenEntries.description%",

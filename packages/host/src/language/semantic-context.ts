@@ -3,6 +3,13 @@
  * localization inputs, invoke the canonical Data provider under workspace budgets and retain its
  * full authoring values/provenance. Partial results carry bounded diagnostic reasons; cancellation
  * propagates and every opened Data workspace releases through its normal lifecycle.
+ *
+ * A prepared context is keyed by what the provider analyses — each document's layer, logical path
+ * and text, the locales, budgets and completeness — never by editor URIs, versions or overlays, so
+ * opening a file of a loaded mod reuses its analysis. A complete analysis whose strongest Data layer
+ * is one of the provider's persistent roots may also be kept by a host-supplied store
+ * (`LanguageSemanticContextStore`, Node: `createResolvedDataContextStore`): stored under the same
+ * content key plus the provider artifacts, one per chain slot, and validated again when loaded.
  */
 import { compareUtf8, isCancellation, throwIfAborted } from '@modkit/core'
 import type { PermissionGrant, ResourceBudget } from '@modkit/sdk'
@@ -11,6 +18,7 @@ import {
   type DataCatalogDocument,
   type DataLocalizationDocument,
   type ResolvedDataAuthoringIndex,
+  type ResolvedDataPersistentRoot,
   type ResolvedDataWorkspaceAnalysisRequest,
   type ResolvedDataWorkspaceSnapshot,
 } from '@modkit/sdk/data'
@@ -21,7 +29,11 @@ import type {
   LanguageWorkspaceDocumentOrigin,
   LanguageWorkspaceSemanticInput,
 } from '@modkit/sdk/language'
-import { resolveResolvedDataWorkspace, type DataHostServices } from '../data/index.js'
+import {
+  resolvedDataPersistentRoots,
+  resolveResolvedDataWorkspace,
+  type DataHostServices,
+} from '../data/index.js'
 import {
   LANGUAGE_WORKSPACE_SEMANTIC_PAYLOAD_MAX_BYTES,
   languageWorkspaceContextToken,
@@ -141,6 +153,7 @@ export function validatedLanguageSemanticContextRequirements(
 }
 
 export interface PreparedResolvedDataSemanticContext {
+  /** What the provider analyses (layers, logical paths, texts, locales, budgets, completeness). */
   readonly key: string
   /** Stable across edits to the same logical document set; used only for stale-while-editing reads. */
   readonly scopeKey: string
@@ -150,6 +163,87 @@ export interface PreparedResolvedDataSemanticContext {
   readonly locales: readonly string[]
   readonly localizationDocuments: readonly DataLocalizationDocument[]
   readonly complete: boolean
+  /** Present for a complete context with documents: what a host may keep of it on disk. */
+  readonly persistence?: PreparedResolvedDataPersistence
+}
+
+/** One layer a snapshot's `dependency-closure` input names (payload `{ layers }`). */
+export interface LanguageContextLayer {
+  readonly layerId: string
+  readonly sourceId?: string
+  readonly sourcePath?: string
+}
+
+/** How a complete context is kept: its slot, its label and the layer persistent roots match. */
+export interface PreparedResolvedDataPersistence {
+  /** One kept analysis per slot: the same layers under the same requirement, locales and budgets. */
+  readonly slot: string
+  /** The chain as a person reads it (`Mods/Core.SC2Mod → Mods/Liberty.SC2Mod · enUS`). */
+  readonly label: string
+  /** The strongest Data layer: its content-source path, or the host folder it was read from. */
+  readonly top: Readonly<{ sourcePath?: string; directory?: string }>
+}
+
+/** The layers the `dependency-closure` inputs name, in order; malformed entries are skipped. */
+export function semanticInputLayers(
+  inputs: readonly LanguageWorkspaceSemanticInput[],
+): readonly LanguageContextLayer[] {
+  const layers: LanguageContextLayer[] = []
+  for (const input of inputs) {
+    if (input.kind !== 'dependency-closure') continue
+    const listed = (input.payload as { readonly layers?: unknown } | undefined)?.layers
+    if (!Array.isArray(listed)) continue
+    for (const item of listed as unknown[]) {
+      const layer = item as Partial<Record<'layerId' | 'sourceId' | 'sourcePath', unknown>> | null
+      if (typeof layer !== 'object' || layer === null || !boundedText(layer.layerId)) continue
+      layers.push(
+        Object.freeze({
+          layerId: layer.layerId,
+          ...(boundedText(layer.sourceId) ? { sourceId: layer.sourceId } : {}),
+          ...(boundedText(layer.sourcePath) ? { sourcePath: layer.sourcePath } : {}),
+        }),
+      )
+    }
+  }
+  return Object.freeze(layers)
+}
+
+/** The host folder a `file:` document was read from: its path without the logical path. */
+function fileDirectory(uri: string, logicalId: string): string | undefined {
+  if (!uri.startsWith('file:')) return undefined
+  let path: string
+  try {
+    path = decodeURIComponent(new URL(uri).pathname)
+  } catch {
+    return undefined
+  }
+  if (/^\/[A-Za-z]:/u.test(path)) path = path.slice(1)
+  const suffix = `/${logicalId}`
+  if (
+    path.length <= suffix.length ||
+    path.slice(-suffix.length).toLowerCase() !== suffix.toLowerCase()
+  ) {
+    return undefined
+  }
+  return path.slice(0, -suffix.length)
+}
+
+const comparablePath = (path: string): string =>
+  path.replaceAll('\\', '/').replace(/\/+$/u, '').toLowerCase()
+
+/** Whether a provider's persistent roots name the context's strongest Data layer. */
+export function persistentRootsInclude(
+  roots: readonly ResolvedDataPersistentRoot[],
+  top: PreparedResolvedDataPersistence['top'],
+): boolean {
+  const named = [top.sourcePath, top.directory].flatMap(path =>
+    path === undefined ? [] : [comparablePath(path)],
+  )
+  return roots.some(root =>
+    [root.sourcePath, root.path].some(
+      path => path !== undefined && named.includes(comparablePath(path)),
+    ),
+  )
 }
 
 /** The locales a workspace's `locale-set` input names (payload `{ locales }`), preferred first. */
@@ -178,6 +272,8 @@ export function prepareResolvedDataSemanticContext(request: {
   /** From `semanticInputLocales`; without locales no string file enters the analysis. */
   readonly locales?: readonly string[]
   readonly budgets?: ResourceBudget
+  /** From `semanticInputLayers`: names content-source layers for persistence slots and labels. */
+  readonly layers?: readonly LanguageContextLayer[]
 }): PreparedResolvedDataSemanticContext {
   let complete = request.complete
   const locales = request.locales ?? []
@@ -231,15 +327,27 @@ export function prepareResolvedDataSemanticContext(request: {
       }),
     ]
   })
-  const identities = selected.map(({ document, origin }) => {
-    return {
-      uri: document.uri,
-      languageId: document.languageId,
-      version: document.version,
-      contentRevision: languageDocumentTextToken(document),
-      origin,
-    }
-  })
+  const budgets =
+    request.budgets === undefined
+      ? undefined
+      : {
+          ...request.budgets,
+          maxInputBytes: String(request.budgets.maxInputBytes),
+        }
+  // Exactly what the provider reads, in its order: editor URIs, versions and overlay flags of the
+  // same text change nothing it answers, so they stay out of the key.
+  const analysed = selected.flatMap(({ document, origin }) =>
+    origin === undefined
+      ? []
+      : [
+          {
+            layerId: origin.layerId,
+            logicalId: origin.logicalId,
+            languageId: document.languageId,
+            contentRevision: languageDocumentTextToken(document),
+          },
+        ],
+  )
   const localizationIdentities = localizationDocuments.map(
     ({ document, origin, sourceDocument }) => ({
       path: origin.logicalId,
@@ -250,42 +358,33 @@ export function prepareResolvedDataSemanticContext(request: {
   )
   const key = languageWorkspaceContextToken({
     requirement: request.requirement,
-    documents: identities,
+    documents: analysed,
     locales,
     localization: localizationIdentities,
-    budgets:
-      request.budgets === undefined
-        ? undefined
-        : {
-            ...request.budgets,
-            maxInputBytes: String(request.budgets.maxInputBytes),
-          },
+    budgets,
     complete,
   })
   const scopeKey = languageWorkspaceContextToken({
     requirement: request.requirement,
     locales,
-    budgets:
-      request.budgets === undefined
-        ? undefined
-        : {
-            ...request.budgets,
-            maxInputBytes: String(request.budgets.maxInputBytes),
-          },
-    documents: identities.map(identity => ({
-      uri: identity.uri,
-      languageId: identity.languageId,
+    budgets,
+    documents: selected.map(({ document, origin }) => ({
+      uri: document.uri,
+      languageId: document.languageId,
       origin:
-        identity.origin === undefined
+        origin === undefined
           ? undefined
           : {
-              layerId: identity.origin.layerId,
-              logicalId: identity.origin.logicalId,
-              precedence: identity.origin.precedence,
+              layerId: origin.layerId,
+              logicalId: origin.logicalId,
+              precedence: origin.precedence,
             },
     })),
     complete,
   })
+  const persistence = complete
+    ? resolvedDataPersistence(request, selected, locales, budgets)
+    : undefined
   return Object.freeze({
     key,
     scopeKey,
@@ -294,6 +393,58 @@ export function prepareResolvedDataSemanticContext(request: {
     locales,
     localizationDocuments: Object.freeze(localizationDocuments.map(item => item.document)),
     complete,
+    ...(persistence === undefined ? {} : { persistence }),
+  })
+}
+
+/**
+ * The slot, label and strongest layer of a complete context. The slot names the analysed layers in
+ * order, so a later analysis of the same chain (an edit, a new game build) replaces the kept one;
+ * the strongest layer is a content-source package or the host folder of `file:` documents.
+ */
+function resolvedDataPersistence(
+  request: Parameters<typeof prepareResolvedDataSemanticContext>[0],
+  selected: readonly {
+    readonly document: LanguageDocument
+    readonly origin: LanguageWorkspaceDocumentOrigin | undefined
+  }[],
+  locales: readonly string[],
+  budgets: unknown,
+): PreparedResolvedDataPersistence | undefined {
+  const closure = new Map((request.layers ?? []).map(layer => [layer.layerId, layer]))
+  // Layers in precedence order (documents arrive sorted weakest first).
+  const byLayer = new Map<string, { layerId: string; sourcePath?: string; directory?: string }>()
+  for (const { document, origin } of selected) {
+    if (origin === undefined) continue
+    const layer = byLayer.get(origin.layerId) ?? { layerId: origin.layerId }
+    if (!byLayer.has(origin.layerId)) {
+      const sourcePath = closure.get(origin.layerId)?.sourcePath
+      if (sourcePath !== undefined) layer.sourcePath = sourcePath
+      byLayer.set(origin.layerId, layer)
+    }
+    if (layer.directory === undefined) {
+      const directory = fileDirectory(document.uri, origin.logicalId)
+      if (directory !== undefined) layer.directory = directory
+    }
+  }
+  const layers = [...byLayer.values()]
+  const top = layers.at(-1)
+  if (top === undefined) return undefined
+  const label = layers
+    .map(layer => layer.sourcePath ?? layer.directory ?? layer.layerId)
+    .join(' → ')
+  return Object.freeze({
+    slot: languageWorkspaceContextToken({
+      requirement: request.requirement,
+      locales,
+      budgets,
+      layers: layers.map(layer => layer.layerId),
+    }),
+    label: `${label}${locales.length === 0 ? '' : ` · ${locales.join(', ')}`}`.slice(0, 2_048),
+    top: Object.freeze({
+      ...(top.sourcePath === undefined ? {} : { sourcePath: top.sourcePath }),
+      ...(top.directory === undefined ? {} : { directory: top.directory }),
+    }),
   })
 }
 
@@ -302,6 +453,8 @@ export interface ResolvedDataSemanticContextResult {
   readonly complete: boolean
   /** Bounded reason for an unavailable or incomplete context; never a stack trace. */
   readonly failure?: string
+  /** The analysing provider's persistent roots (its settings): what a host may keep on disk. */
+  readonly persistentRoots?: readonly ResolvedDataPersistentRoot[]
 }
 
 const unavailable = (message: string): ResolvedDataSemanticContextResult =>
@@ -472,10 +625,12 @@ export async function analyzeResolvedDataSemanticContext(request: {
           index,
           index.valuesComplete,
         )
+        const persistentRoots = resolvedDataPersistentRoots(resolution.workspace)
         return Object.freeze({
           ...(input === undefined ? {} : { input }),
           complete: request.prepared.complete && index.complete && index.valuesComplete,
           ...(failure === undefined ? {} : { failure }),
+          ...(persistentRoots.length === 0 ? {} : { persistentRoots }),
         })
       }
       const snapshot = await resolution.workspace.analyze(analysisRequest)
@@ -514,4 +669,129 @@ export async function analyzeResolvedDataSemanticContext(request: {
     }
     return unavailable(error instanceof Error ? error.message : String(error))
   }
+}
+
+/** Format of kept resolved Data contexts; changing it makes every kept context a miss. */
+const RESOLVED_DATA_CONTEXT_STORE_FORMAT = 1
+
+/**
+ * A host's persistent store of complete resolved Data contexts (Node:
+ * `createResolvedDataContextStore` over the shared index cache directory). The store keeps opaque
+ * inputs under exact keys; it never decides validity, and the host validates every loaded input
+ * as it validates a fresh analysis.
+ */
+export interface LanguageSemanticContextStore {
+  /** The input kept under exactly this key, or undefined (absent, unreadable, foreign format). */
+  load(request: {
+    readonly key: string
+    readonly signal?: AbortSignal
+  }): Promise<LanguageWorkspaceSemanticInput | undefined>
+  /** Keep a complete context, replacing the slot's previous one; failures stay inside the store. */
+  save(request: LanguageSemanticContextStoreSaveRequest): Promise<void>
+}
+
+export interface LanguageSemanticContextStoreSaveRequest {
+  /** From `resolvedDataContextStoreKey`: the content key, the provider artifacts, the format. */
+  readonly key: string
+  /** `PreparedResolvedDataPersistence.slot`: a later analysis of the same chain replaces this one. */
+  readonly slot: string
+  readonly gameId: string
+  /** `PreparedResolvedDataPersistence.label`, for an application's list of caches. */
+  readonly label: string
+  readonly input: LanguageWorkspaceSemanticInput
+  readonly signal?: AbortSignal
+}
+
+/**
+ * The store key of a prepared context analysed by these provider artifacts
+ * (`resolvedDataAnalyzerIdentity`) under this host's analysis limits.
+ */
+export function resolvedDataContextStoreKey(
+  prepared: PreparedResolvedDataSemanticContext,
+  analyzer: string,
+): string {
+  return languageWorkspaceContextToken({
+    format: RESOLVED_DATA_CONTEXT_STORE_FORMAT,
+    context: prepared.key,
+    analyzer,
+    limits: {
+      maxEntities: MAX_LANGUAGE_RESOLVED_DATA_ENTITIES,
+      maxOutputBytes: Math.min(
+        LANGUAGE_WORKSPACE_SEMANTIC_PAYLOAD_MAX_BYTES,
+        MAX_LANGUAGE_AUTHORING_INDEX_BYTES,
+      ),
+      maxTextBytes: MAX_LANGUAGE_RESOLVED_DATA_INPUT_BYTES,
+    },
+  })
+}
+
+/**
+ * A kept context for this prepared one, validated like a fresh analysis: a complete authoring index
+ * of the requirement's game whose revision is the one this content gives. Anything else, including
+ * a store failure, is a miss; cancellation propagates.
+ */
+export async function loadResolvedDataSemanticContext(request: {
+  readonly store: LanguageSemanticContextStore
+  readonly prepared: PreparedResolvedDataSemanticContext
+  readonly requirement: LanguageResolvedDataSemanticContextRequirement
+  readonly analyzer: string
+  readonly signal?: AbortSignal
+}): Promise<ResolvedDataSemanticContextResult | undefined> {
+  if (!request.prepared.complete || request.prepared.documents.length === 0) return undefined
+  let stored: LanguageWorkspaceSemanticInput | undefined
+  try {
+    stored = await request.store.load({
+      key: resolvedDataContextStoreKey(request.prepared, request.analyzer),
+      ...(request.signal === undefined ? {} : { signal: request.signal }),
+    })
+  } catch (error) {
+    if (isCancellation(error) || request.signal?.aborted === true) {
+      throwIfAborted(request.signal)
+      throw error
+    }
+    return undefined
+  }
+  throwIfAborted(request.signal)
+  if (stored === undefined) return undefined
+  try {
+    const [input] = validatedLanguageWorkspaceSemanticInputs([stored])
+    const index = input?.payload as unknown as ResolvedDataAuthoringIndex | undefined
+    if (
+      input === undefined ||
+      index === undefined ||
+      input.kind !== RESOLVED_DATA_AUTHORING_INDEX_KIND ||
+      input.id !== request.requirement.gameId ||
+      !validAuthoringIndex(index, request.requirement.gameId) ||
+      !index.complete ||
+      !index.valuesComplete ||
+      input.revision !==
+        languageWorkspaceContextToken({
+          context: request.prepared.key,
+          snapshot: index.snapshotId,
+        })
+    ) {
+      return undefined
+    }
+    return Object.freeze({ input, complete: true })
+  } catch {
+    return undefined
+  }
+}
+
+/**
+ * The persistence of a fresh analysis worth keeping: complete, an authoring index, and a strongest
+ * Data layer that the analysing provider's persistent roots name.
+ */
+export function resolvedDataContextToKeep(
+  prepared: PreparedResolvedDataSemanticContext,
+  result: ResolvedDataSemanticContextResult,
+): PreparedResolvedDataPersistence | undefined {
+  return prepared.complete &&
+    prepared.persistence !== undefined &&
+    result.complete &&
+    result.input?.kind === RESOLVED_DATA_AUTHORING_INDEX_KIND &&
+    result.persistentRoots !== undefined &&
+    persistentRootsInclude(result.persistentRoots, prepared.persistence.top)
+    ? prepared.persistence
+    : undefined
 }

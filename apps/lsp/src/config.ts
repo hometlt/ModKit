@@ -14,6 +14,10 @@ export interface ModkitLspConfiguration {
   readonly contentSourceStorage?: string
   /** Packages a root that belongs to no package opens inside; the game's own default when empty. */
   readonly baseMods: readonly string[]
+  /** Bytes of resolved Data contexts the language workspace keeps in memory. */
+  readonly resolvedDataMemoryBytes: number
+  /** Where and within how many bytes resolved Data contexts are kept across sessions. */
+  readonly resolvedDataCache?: { readonly directory: string; readonly maxBytes: number }
 }
 
 export class ConfigurationError extends Error {}
@@ -47,6 +51,9 @@ export function modkitLspUsage(): string {
     '  --content-source-storage <path> Cache/state directory for that content source',
     '  --base-mod <package>          Repeatable package a root outside any mod opens inside',
     '                                (default: the game default, Void for StarCraft II)',
+    '  --resolved-data-memory-mib <MiB> Memory for resolved Data of loaded mods (default 512)',
+    '  --resolved-data-cache <path>  Index cache directory that keeps resolved Data across runs',
+    '  --resolved-data-cache-mib <MiB> Disk budget of that cache (default 1024)',
     '  --help                        Print this text',
     '',
   ].join('\n')
@@ -69,6 +76,9 @@ export function parseModkitLspConfiguration(argv: readonly string[]): ModkitLspC
   let contentSourceConfig: string | undefined
   let contentSourceStorage: string | undefined
   const baseMods: string[] = []
+  let resolvedDataMemoryMiB = 512
+  let resolvedDataCacheDirectory: string | undefined
+  let resolvedDataCacheMiB = 1_024
   for (let index = 0; index < argv.length; index += 1) {
     const option = argv[index]
     if (option === '--help') throw new ConfigurationError('help requested')
@@ -111,6 +121,15 @@ export function parseModkitLspConfiguration(argv: readonly string[]): ModkitLspC
         if (value.length > 4096) throw new ConfigurationError('--base-mod is too long')
         baseMods.push(value)
         break
+      case '--resolved-data-memory-mib':
+        resolvedDataMemoryMiB = positiveInteger(value, option)
+        break
+      case '--resolved-data-cache':
+        resolvedDataCacheDirectory = absolute(value, option)
+        break
+      case '--resolved-data-cache-mib':
+        resolvedDataCacheMiB = positiveInteger(value, option)
+        break
       default:
         throw new ConfigurationError(`unknown option ${option ?? ''}`)
     }
@@ -126,6 +145,9 @@ export function parseModkitLspConfiguration(argv: readonly string[]): ModkitLspC
   if (maxDocumentBytes > maxWorkspaceBytes) {
     throw new ConfigurationError('--max-document-bytes cannot exceed --max-workspace-bytes')
   }
+  if (resolvedDataMemoryMiB > 65_536 || resolvedDataCacheMiB > 65_536) {
+    throw new ConfigurationError('resolved Data budgets cannot exceed 65536 MiB')
+  }
   return Object.freeze({
     roots: Object.freeze([...new Set(roots)]),
     extensions: Object.freeze([...new Set(extensions)]),
@@ -135,6 +157,15 @@ export function parseModkitLspConfiguration(argv: readonly string[]): ModkitLspC
     maxWorkspaceBytes,
     locales: Object.freeze(locales.length === 0 ? ['enUS'] : [...new Set(locales)]),
     baseMods: Object.freeze([...new Set(baseMods)]),
+    resolvedDataMemoryBytes: resolvedDataMemoryMiB * 1_048_576,
+    ...(resolvedDataCacheDirectory === undefined
+      ? {}
+      : {
+          resolvedDataCache: Object.freeze({
+            directory: resolvedDataCacheDirectory,
+            maxBytes: resolvedDataCacheMiB * 1_048_576,
+          }),
+        }),
     ...(contentSourceConfig === undefined || contentSourceStorage === undefined
       ? {}
       : { contentSourceConfig, contentSourceStorage }),

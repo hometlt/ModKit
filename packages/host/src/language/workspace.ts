@@ -95,11 +95,18 @@ import {
 import { createWorkspaceReferenceIndex } from '../references.js'
 import {
   analyzeResolvedDataSemanticContext,
+  loadResolvedDataSemanticContext,
   prepareResolvedDataSemanticContext,
+  resolvedDataContextStoreKey,
+  resolvedDataContextToKeep,
+  semanticInputLayers,
   semanticInputLocales,
   validatedLanguageSemanticContextRequirements,
+  type LanguageContextLayer,
+  type LanguageSemanticContextStore,
   type ResolvedDataSemanticContextResult,
 } from './semantic-context.js'
+import { resolvedDataAnalyzerIdentity } from '../data/index.js'
 
 export const LANGUAGE_WORKSPACE_NOT_INITIALIZED = 'x3.host/language-workspace-not-initialized'
 export const LANGUAGE_WORKSPACE_SHUT_DOWN = 'x3.host/language-workspace-shut-down'
@@ -143,7 +150,8 @@ function knowledgeFileNamesOf(provider: LanguageProvider): {
   }
 }
 
-const SEMANTIC_CONTEXT_CACHE_MAX_BYTES = 64 * 1_024 * 1_024
+/** Default bytes of resolved Data contexts a workspace keeps in memory (`semanticContextMemoryBytes`). */
+export const LANGUAGE_SEMANTIC_CONTEXT_MEMORY_BYTES = 512 * 1_024 * 1_024
 const SEMANTIC_CONTEXT_PENDING_MAX = 16
 const SEMANTIC_CONTEXT_SCOPE_MAX = 64
 
@@ -617,6 +625,18 @@ export interface LanguageWorkspaceOptions {
     context: LanguageWorkspaceContext | undefined,
     documentUri: string,
   ) => void
+  /**
+   * Bytes of resolved Data contexts kept in memory while their mods stay loaded (payload JSON
+   * bytes; default {@link LANGUAGE_SEMANTIC_CONTEXT_MEMORY_BYTES}). Least recently used contexts go
+   * first, and a context an edit superseded goes as soon as its successor arrives.
+   */
+  readonly semanticContextMemoryBytes?: number
+  /**
+   * Keeps complete resolved Data contexts across sessions (Node: `createResolvedDataContextStore`).
+   * A context is looked up before it is analysed and kept after, when the analysing provider's
+   * persistent roots name its strongest Data layer.
+   */
+  readonly semanticContextStore?: LanguageSemanticContextStore
 }
 
 export interface LanguageWorkspaceDocumentSourceRequest {
@@ -2009,6 +2029,15 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
   const hostAnalyzedSemanticInputs = new WeakSet<LanguageWorkspaceSemanticInput>()
   const semanticContextEncoder = new TextEncoder()
   let semanticContextCacheBytes = 0
+  const semanticContextMaxBytes =
+    options.semanticContextMemoryBytes !== undefined &&
+    Number.isSafeInteger(options.semanticContextMemoryBytes) &&
+    options.semanticContextMemoryBytes >= 0
+      ? options.semanticContextMemoryBytes
+      : LANGUAGE_SEMANTIC_CONTEXT_MEMORY_BYTES
+  const semanticContextStore = options.semanticContextStore
+  // Writes of kept contexts still in flight; shutdown waits for them so no file is left half done.
+  const pendingContextSaves = new Set<Promise<void>>()
   let state: 'new' | 'ready' | 'shut-down' = 'new'
   let shutdownPromise: Promise<void> | undefined
   let workspaceGeneration = 0
@@ -2075,13 +2104,13 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
           ).byteLength -
           1 +
           payloadBytes)
-    if (bytes > SEMANTIC_CONTEXT_CACHE_MAX_BYTES) return
+    if (bytes > semanticContextMaxBytes) return
     const previous = semanticContextCache.get(key)
     if (previous !== undefined) semanticContextCacheBytes -= previous.bytes
     semanticContextCache.delete(key)
     semanticContextCache.set(key, Object.freeze({ value, bytes }))
     semanticContextCacheBytes += bytes
-    while (semanticContextCacheBytes > SEMANTIC_CONTEXT_CACHE_MAX_BYTES) {
+    while (semanticContextCacheBytes > semanticContextMaxBytes) {
       const oldest = semanticContextCache.keys().next().value
       if (oldest === undefined) break
       const removed = semanticContextCache.get(oldest)
@@ -2090,9 +2119,25 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
     }
   }
 
+  const forgetSemanticContext = (key: string): void => {
+    const removed = semanticContextCache.get(key)
+    if (removed === undefined) return
+    semanticContextCache.delete(key)
+    semanticContextCacheBytes -= removed.bytes
+  }
+
   const rememberLatestSemanticContext = (scopeKey: string, key: string): void => {
+    const superseded = latestSemanticContextKeys.get(scopeKey)
     latestSemanticContextKeys.delete(scopeKey)
     latestSemanticContextKeys.set(scopeKey, key)
+    // An edit's analysis replaces its scope's previous one, unless another scope still uses it.
+    if (
+      superseded !== undefined &&
+      superseded !== key &&
+      ![...latestSemanticContextKeys.values()].includes(superseded)
+    ) {
+      forgetSemanticContext(superseded)
+    }
     while (latestSemanticContextKeys.size > SEMANTIC_CONTEXT_SCOPE_MAX) {
       const oldest = latestSemanticContextKeys.keys().next().value
       if (oldest === undefined) break
@@ -2109,6 +2154,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
     signal: AbortSignal,
     preferCached = false,
     locales: readonly string[] = [],
+    layers: readonly LanguageContextLayer[] = [],
   ): Promise<
     Readonly<{ inputs: readonly LanguageWorkspaceSemanticInput[]; complete: boolean }>
   > => {
@@ -2132,6 +2178,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         complete,
         locales,
         budgets: workspaceBudgets,
+        layers,
       })
       let resolved = cachedSemanticContext(prepared.key)
       let stale = false
@@ -2157,14 +2204,12 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
           pending = {
             controller,
             waiters: 0,
-            promise: analyzeResolvedDataSemanticContext({
-              services: options.services,
-              grant: options.grant,
-              budgets: workspaceBudgets,
+            promise: keptOrAnalyzedSemanticContext(
               requirement,
               prepared,
-              signal: controller.signal,
-            }),
+              workspaceBudgets,
+              controller.signal,
+            ),
           }
           pendingSemanticContexts.set(prepared.key, pending)
           void pending.promise.then(
@@ -2217,6 +2262,71 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
       }
     }
     return Object.freeze({ inputs: Object.freeze(inputs), complete: contextsComplete })
+  }
+
+  /**
+   * A context from the store when one is kept for exactly this content and these provider artifacts,
+   * else a fresh analysis, kept afterwards when the provider's persistent roots name its strongest
+   * layer. The write runs in the background; a failed or refused write is only a missed cache.
+   */
+  const keptOrAnalyzedSemanticContext = async (
+    requirement: LanguageResolvedDataSemanticContextRequirement,
+    prepared: ReturnType<typeof prepareResolvedDataSemanticContext>,
+    workspaceBudgets: ResourceBudget,
+    signal: AbortSignal,
+  ): Promise<ResolvedDataSemanticContextResult> => {
+    const store = semanticContextStore
+    const analyzer =
+      store === undefined
+        ? undefined
+        : resolvedDataAnalyzerIdentity(options.services.inventory, requirement.gameId)
+    if (store !== undefined && analyzer !== undefined) {
+      const kept = await loadResolvedDataSemanticContext({
+        store,
+        prepared,
+        requirement,
+        analyzer,
+        signal,
+      })
+      if (kept !== undefined) return kept
+    }
+    const value = await analyzeResolvedDataSemanticContext({
+      services: options.services,
+      grant: options.grant,
+      budgets: workspaceBudgets,
+      requirement,
+      prepared,
+      signal,
+    })
+    const persistence = resolvedDataContextToKeep(prepared, value)
+    if (
+      store !== undefined &&
+      analyzer !== undefined &&
+      persistence !== undefined &&
+      value.input !== undefined &&
+      state !== 'shut-down'
+    ) {
+      const input = value.input
+      // On a later task: serializing the payload must not hold back the answer that waits for it.
+      const saving: Promise<void> = new Promise<void>(resolve => {
+        setTimeout(resolve, 0)
+      })
+        .then(() =>
+          store.save({
+            key: resolvedDataContextStoreKey(prepared, analyzer),
+            slot: persistence.slot,
+            gameId: requirement.gameId,
+            label: persistence.label,
+            input,
+          }),
+        )
+        .catch(() => undefined)
+        .finally(() => {
+          pendingContextSaves.delete(saving)
+        })
+      pendingContextSaves.add(saving)
+    }
+    return value
   }
 
   const requireFeatureEntry = (
@@ -2546,6 +2656,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
               controller.signal,
               preferCachedSemanticContext,
               semanticInputLocales(baseSemanticInputs),
+              semanticInputLayers(baseSemanticInputs),
             )
         semanticContextsComplete = semanticContexts.complete
       } catch (error) {
@@ -3911,6 +4022,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         semanticContextCacheBytes = 0
         pendingSemanticContexts.clear()
         latestSemanticContextKeys.clear()
+        await Promise.allSettled([...pendingContextSaves])
         const open = [...documents.values()]
         documents.clear()
         for (const entry of open) entry.analysisController?.abort('language workspace shut down')

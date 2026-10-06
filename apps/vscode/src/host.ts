@@ -402,6 +402,11 @@ export interface VsCodeSubjectHostOptions {
   /** Raw value of `modkit.indexCaches`: per game product, the name and content index switches. */
   readonly configuredIndexCaches?: unknown
   /**
+   * Language captures each worker keeps between calls (`languageRetainedValues` of the resolved
+   * Data memory); absent, the host default.
+   */
+  readonly retainedValues?: NodeSubjectServicesOptions['retainedValues']
+  /**
    * The worker bootstrap this extension shipped beside its bundle. Required in a packaged build:
    * the backend default resolves it through `import.meta.url`, which a CommonJS extension entry
    * does not have.
@@ -574,6 +579,7 @@ export async function createVsCodeSubjectHost(
      * `import.meta.url` that made one expression mean something else than it says.
      */
     ...(options.bootstrapUrl === undefined ? {} : { bootstrapUrl: options.bootstrapUrl }),
+    ...(options.retainedValues === undefined ? {} : { retainedValues: options.retainedValues }),
     ...(options.onDiagnostic === undefined ? {} : { onDiagnostic: options.onDiagnostic }),
     ...(options.credentials === undefined ? {} : { credentials: options.credentials }),
   })

@@ -2,6 +2,7 @@
 
 import {
   canonicalJsonStringify,
+  compareUtf8,
   contractId,
   diagnostic,
   ModkitError,
@@ -37,10 +38,12 @@ import {
   type DataWorkspaceListing,
   type DataWorkspacePlan,
   type DataWorkspacePlanRequest,
+  type ResolvedDataPersistentRoot,
   type ResolvedDataWorkspace,
   type ResolvedDataWorkspaceSnapshot,
 } from '@modkit/sdk/data'
 import type {
+  ContributionSettings,
   DefinitionInventoryResult,
   AssetRevision,
   AssetSourceRef,
@@ -79,6 +82,7 @@ import type {
 import type { ExecutionBackendRegistry } from '../execution/backend.js'
 import type { Inventory } from '../inventory.js'
 import { normalizeCompanionLogicalId } from '../input-resolution.js'
+import { inventoryBindingForOffer, offersFromInventory } from '../offers.js'
 import { createHostServiceResolver } from '../service-leases.js'
 
 /** Owner id under which the standard catalog-analysis definition is registered. */
@@ -211,7 +215,7 @@ export const RESOLVED_DATA_WORKSPACE_CONTRACT_DEFINITION: ServiceContractDefinit
     matching: Object.freeze({ profile: RESOLVED_DATA_WORKSPACE_MATCHER_PROFILE, major: 1 }),
     conformanceProfile: 'common.data/resolved-workspace-v1',
     surface: Object.freeze({
-      fields: Object.freeze(['contract', 'providerId', 'gameIds']),
+      fields: Object.freeze(['contract', 'providerId', 'gameIds', 'persistentRoots']),
       methods: Object.freeze({
         plan: Object.freeze({
           kind: 'value',
@@ -329,6 +333,8 @@ export interface DataHostServices {
   readonly target: RuntimeTarget
   readonly executionBackends: ExecutionBackendRegistry
   readonly serviceDefinitions?: ServiceContractDefinitionRegistry
+  /** The host's settings for a Data provider, by its id (`ContributionContext.settings`). */
+  readonly contributionSettings?: (contributionId: string) => ContributionSettings | undefined
 }
 
 export interface ResolveDataCatalogRequest extends DataCatalogRequestFacet {
@@ -470,6 +476,70 @@ function isResolvedDataWorkspace(value: unknown): value is ResolvedDataWorkspace
   )
 }
 
+/**
+ * The artifacts of every provider that may analyse a game's resolved Data, read from the inventory
+ * without activating any: kept analyses (`LanguageSemanticContextStore`) are keyed by it, so a
+ * changed provider artifact makes them misses. An unattested offer names itself as such.
+ */
+export function resolvedDataAnalyzerIdentity(inventory: Inventory, gameId: string): string {
+  const providers = offersFromInventory(inventory).flatMap(offer => {
+    const analyses = offer.provides.some(
+      item =>
+        item.contract === RESOLVED_DATA_WORKSPACE_CONTRACT &&
+        item.major === 1 &&
+        (stringList(recordOf(item.facet)?.['gameIds']) ?? []).includes(gameId),
+    )
+    if (!analyses) return []
+    const record = inventoryBindingForOffer(offer)?.record
+    return [
+      canonicalJsonStringify({
+        providerId: offer.providerId,
+        runtimeVariant: offer.runtimeVariant,
+        artifactDigest: record?.artifactDigest ?? 'unattested',
+        manifestDigest: record?.manifestDigest ?? 'unattested',
+      }),
+    ]
+  })
+  return canonicalJsonStringify([...new Set(providers)].sort(compareUtf8))
+}
+
+const MAX_PERSISTENT_ROOTS = 64
+
+/**
+ * The packages a resolved Data provider lets a host keep on disk, copied and bounded; an absent or
+ * malformed field keeps nothing (it never makes the workspace itself invalid).
+ */
+export function resolvedDataPersistentRoots(
+  workspace: ResolvedDataWorkspace,
+): readonly ResolvedDataPersistentRoot[] {
+  const value: unknown = workspace.persistentRoots
+  if (!Array.isArray(value) || value.length > MAX_PERSISTENT_ROOTS) return Object.freeze([])
+  const roots: ResolvedDataPersistentRoot[] = []
+  for (const item of value as unknown[]) {
+    const record = recordOf(item)
+    if (record === undefined) return Object.freeze([])
+    const sourcePath = record['sourcePath']
+    const path = record['path']
+    const bounded = (text: unknown): text is string =>
+      typeof text === 'string' && text.length > 0 && text.length <= 4_096 && !text.includes('\0')
+    if (
+      Object.keys(record).some(key => key !== 'sourcePath' && key !== 'path') ||
+      (sourcePath !== undefined && !bounded(sourcePath)) ||
+      (path !== undefined && !bounded(path)) ||
+      (sourcePath === undefined && path === undefined)
+    ) {
+      return Object.freeze([])
+    }
+    roots.push(
+      Object.freeze({
+        ...(sourcePath === undefined ? {} : { sourcePath }),
+        ...(path === undefined ? {} : { path }),
+      }),
+    )
+  }
+  return Object.freeze(roots)
+}
+
 /** Resolve the additive workspace/VFS/live-definition provider for one named game. */
 export async function resolveResolvedDataWorkspace(
   request: ResolveDataCatalogRequest,
@@ -494,6 +564,9 @@ export async function resolveResolvedDataWorkspace(
     definitions,
     grant: request.grant,
     budgets: request.budgets,
+    ...(request.services.contributionSettings === undefined
+      ? {}
+      : { contributionSettings: request.services.contributionSettings }),
     ...(request.signal === undefined ? {} : { signal: request.signal }),
   })
   try {

@@ -125,6 +125,8 @@ flushArtifactDigestCache,
 launchNodeGameResource,
 listIndexCaches,
 openCachedContentIndex,
+createResolvedDataContextStore,
+languageRetainedValues,
 removeIndexCache,
 resolveContentSources,
 createNodeInstallationFiles,
@@ -644,6 +646,23 @@ async function activateModkit(
   // One directory of index caches for every codec and content source: an installation's name and
   // content indexes are built once, whichever asked first, and listed and cleared in one place.
   const indexCacheDirectory = join(context.globalStorageUri.fsPath, 'index-cache')
+  /*
+   * Resolved Data of loaded mods: kept in memory up to `modkit.resolvedDataCache.memoryMiB` (the
+   * workers keep their copies within twice that), and on disk in the index cache directory up to
+   * `modkit.resolvedDataCache.diskMiB` for the mods the Data provider's own setting names
+   * (StarCraft II: `cachedMods`, Liberty and Void by default). Read once per window; a change
+   * applies after a reload.
+   */
+  const mebibytesSetting = (key: string, fallback: number): number => {
+    const value = vscode.workspace.getConfiguration('modkit').get<number>(key, fallback)
+    return (
+      (typeof value === 'number' && Number.isFinite(value) && value >= 0
+        ? Math.min(Math.floor(value), 65_536)
+        : fallback) * 1_048_576
+    )
+  }
+  const resolvedDataMemoryBytes = mebibytesSetting('resolvedDataCache.memoryMiB', 512)
+  const resolvedDataDiskBytes = mebibytesSetting('resolvedDataCache.diskMiB', 1_024)
   // Content indexes of source roots this window opened, one per root revision (see the search).
   const contentIndexes = new Map<string, Promise<CachedContentIndex>>()
   const closeContentIndexes = async (): Promise<void> => {
@@ -699,6 +718,7 @@ async function activateModkit(
     contributionCacheDirectory: join(context.globalStorageUri.fsPath, 'contribution-cache'),
     indexCacheDirectory,
     configuredIndexCaches: vscode.workspace.getConfiguration('modkit').get('indexCaches'),
+    retainedValues: languageRetainedValues(resolvedDataMemoryBytes),
     // the bootstrap this extension ships beside its own bundle: a CommonJS entry has no
     // `import.meta.url` for the backend to resolve it from
     bootstrapUrl: pathToFileURL(join(extensionRoot, 'dist-app', 'worker-bootstrap.js')),
@@ -7318,6 +7338,15 @@ async function activateModkit(
     grant: { id: 'modkit.app.vscode/language', classes: [] },
     budgets: LANGUAGE_ACTIVATION_BUDGET,
     workspaceBudgets: LANGUAGE_WORKSPACE_BUDGET,
+    semanticContextMemoryBytes: resolvedDataMemoryBytes,
+    ...(resolvedDataDiskBytes === 0
+      ? {}
+      : {
+          semanticContextStore: createResolvedDataContextStore({
+            directory: indexCacheDirectory,
+            maxBytes: resolvedDataDiskBytes,
+          }),
+        }),
     subjectCandidates: languageSubjectCandidates,
     documentSource: languageDocumentSource,
     documentOrigin: document => {
@@ -12114,7 +12143,9 @@ async function activateModkit(
             description: localizer.text(
               cache.manifest.kind === 'names'
                 ? 'vscode.indexCaches.names'
-                : 'vscode.indexCaches.content',
+                : cache.manifest.kind === 'resolved-data'
+                  ? 'vscode.indexCaches.resolvedData'
+                  : 'vscode.indexCaches.content',
               { size: mebibytes(cache.bytes) },
             ),
             detail: cache.manifest.installation,

@@ -756,6 +756,7 @@ export {
   LANGUAGE_MAX_EDITS,
   LANGUAGE_MAX_RESULTS,
   LANGUAGE_PROVIDER_FAILED,
+  LANGUAGE_SEMANTIC_CONTEXT_MEMORY_BYTES,
   LANGUAGE_WORKSPACE_NOT_INITIALIZED,
   LANGUAGE_WORKSPACE_SHUT_DOWN,
   languageAssetPictures,
@@ -783,6 +784,10 @@ export {
   type LanguageWorkspaceRenameRequest,
   type LanguageWorkspaceSymbolsRequest,
 } from './workspace.js'
+export type {
+  LanguageSemanticContextStore,
+  LanguageSemanticContextStoreSaveRequest,
+} from './semantic-context.js'
 export { expandSubjectReferenceCompletions } from './subject-completion.js'
 export {
   languageDocumentSnapshot,
