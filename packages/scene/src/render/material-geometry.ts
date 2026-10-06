@@ -304,6 +304,23 @@ export function materialNormalMatrix(matrix: Float32Array): { matrix: Float32Arr
   return normalMatrix(matrix)
 }
 
+/**
+ * Whether a model matrix mirrors what it places: the sign of materialNormalMatrix, a·(b×c) of its
+ * columns in the same arithmetic, without making the matrix (a draw asks it every frame).
+ */
+export function materialMirrors(matrix: Float32Array): boolean {
+  const a0 = value(matrix, 0),
+    a1 = value(matrix, 1),
+    a2 = value(matrix, 2)
+  const b0 = value(matrix, 4),
+    b1 = value(matrix, 5),
+    b2 = value(matrix, 6)
+  const c0 = value(matrix, 8),
+    c1 = value(matrix, 9),
+    c2 = value(matrix, 10)
+  return a0 * (b1 * c2 - b2 * c1) + a1 * (b2 * c0 - b0 * c2) + a2 * (b0 * c1 - b1 * c0) < 0
+}
+
 /** The camera- and light-dependent part of `materialGeometry`: one per frame for every draw. */
 export function materialFrameGeometry(
   camera: SceneRendererCamera,

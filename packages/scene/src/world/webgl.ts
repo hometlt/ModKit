@@ -78,7 +78,7 @@ import {
   sceneMaterialDraws,
   type MaterialDraw,
 } from '../render/material-draws.js'
-import { materialModelMatrix, materialNormalMatrix } from '../render/material-geometry.js'
+import { materialMirrors, materialModelMatrix } from '../render/material-geometry.js'
 import {
   createSceneMaterialProgramSampler,
   sampleSceneMaterialPrograms,
@@ -10498,7 +10498,7 @@ function worldMaterialInstances(
       !sameMaterialGeometry(primitive, lead) ||
       primitiveVertexTints(primitive) !== primitiveVertexTints(lead) ||
       primitiveVertexPlacements(primitive) !== undefined ||
-      materialNormalMatrix(materialModelMatrix(primitive)).sign < 0
+      materialMirrors(materialModelMatrix(primitive))
     )
       return undefined
   }

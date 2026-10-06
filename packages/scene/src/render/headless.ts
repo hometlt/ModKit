@@ -41,8 +41,8 @@ import {
 } from './material-draws.js'
 import {
   materialGeometry,
+  materialMirrors,
   materialModelMatrix,
-  materialNormalMatrix,
   type MaterialVertex,
 } from './material-geometry.js'
 import { shadeMaterial, interpolateMaterialVertex } from './material-sampling.js'
@@ -682,7 +682,7 @@ function renderMaterialDraw(
     })
     return
   }
-  const mirrored = materialNormalMatrix(materialModelMatrix(primitive)).sign < 0
+  const mirrored = materialMirrors(materialModelMatrix(primitive))
   for (const indices of elements) {
     context.signal?.throwIfAborted()
     const source: Triangle<MaterialVertex> = [
@@ -926,7 +926,7 @@ function renderPrimitive(context: RasterContext, primitive: SceneRendererPrimiti
     primitive.transform === undefined
       ? undefined
       : matrix(primitive.transform, `primitive ${primitive.id} transform`)
-  const mirrored = model !== undefined && materialNormalMatrix(Float32Array.from(model)).sign < 0
+  const mirrored = model !== undefined && materialMirrors(Float32Array.from(model))
   const vertexCount = primitive.positions.length / 3
   const order = primitive.indices
   const elementCount = order?.length ?? vertexCount

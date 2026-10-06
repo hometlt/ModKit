@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { renderHeadless } from '../src/render/headless.js'
+import { materialMirrors, materialNormalMatrix } from '../src/render/material-geometry.js'
 
 const identity = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
 const mirrorX = [-1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
@@ -51,4 +52,34 @@ test('a mirrored node keeps the faces its winding fronts and culls the others (g
   // a mirror turns the screen winding over, and the front faces with it
   assert.equal(await covers(triangle, mirrorX), front)
   assert.equal(await covers(reversed, mirrorX), !front)
+})
+
+test('materialMirrors is the sign of materialNormalMatrix, without making the matrix', () => {
+  // A fixed sequence in [-2, 2), every seventh value tiny, so that determinants near zero come too.
+  let seed = 1
+  const next = () => {
+    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0
+    const value = 2 * (seed / 2 ** 31 - 1)
+    return seed % 7 === 0 ? value * 1e-20 : value
+  }
+  const matrices = [
+    identity,
+    mirrorX,
+    [1, 0, 0, 0, 0, -1, 0, 0, 0, 0, -1, 0, 5, 6, 7, 1], // two flips: a turn, not a mirror
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+  ]
+  for (let index = 0; index < 2000; index++) matrices.push(Array.from({ length: 16 }, next))
+  let mirrored = 0
+  for (const values of matrices) {
+    const matrix = Float32Array.from(values)
+    const expected = materialNormalMatrix(matrix).sign < 0
+    assert.equal(materialMirrors(matrix), expected, values.join(', '))
+    if (expected) mirrored++
+  }
+  assert.ok(mirrored > 100 && mirrored < matrices.length - 100)
+  assert.throws(
+    () =>
+      materialMirrors(Float32Array.from(mirrorX, (value, index) => (index === 5 ? NaN : value))),
+    /invalid material geometry component/,
+  )
 })

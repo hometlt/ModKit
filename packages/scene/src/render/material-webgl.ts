@@ -14,6 +14,7 @@ import {
 import type { StandardMaterialProgram } from '../materials/index.js'
 import {
   materialFrameGeometry,
+  materialMirrors,
   materialModelMatrix,
   materialNormalMatrix,
   sceneMaterialVertexSource,
@@ -31,17 +32,27 @@ import { WORLD_SHADOW_GLSL, type WorldShadowReceiver } from './world-shadow.js'
 interface MaterialStages {
   readonly skinned: boolean
   readonly tinted: boolean
+  /** The program cache's key for these stages. */
+  readonly key: string
 }
 
-const PLAIN_STAGES: MaterialStages = Object.freeze({ skinned: false, tinted: false })
+/** The four stage choices, made once: a draw asks for its stages every frame. */
+const STAGES: readonly (readonly MaterialStages[])[] = [false, true].map(skinned =>
+  Object.freeze(
+    [false, true].map(tinted =>
+      Object.freeze({ skinned, tinted, key: `${String(skinned)}|${String(tinted)}` }),
+    ),
+  ),
+)
 
-const materialStagesOf = (primitive: MaterialDraw['primitive']): MaterialStages => {
-  const skinned = materialSkinOf(primitive) !== undefined
-  const tinted = primitiveVertexTints(primitive) !== undefined
-  return skinned || tinted ? { skinned, tinted } : PLAIN_STAGES
-}
+const materialStagesOf = (primitive: MaterialDraw['primitive']): MaterialStages =>
+  STAGES[materialSkinOf(primitive) === undefined ? 0 : 1]![
+    primitiveVertexTints(primitive) === undefined ? 0 : 1
+  ]!
 
-const stagesKey = (stages: MaterialStages) => `${String(stages.skinned)}|${String(stages.tinted)}`
+const PLAIN_STAGES = STAGES[0]![0]!
+
+const stagesKey = (stages: MaterialStages) => stages.key
 import { requiresEnvironmentEye, snapshotEyePosition } from '../materials/environment.js'
 import { cubeNearestSamplerSource } from '../materials/cube-maps.js'
 
@@ -90,6 +101,26 @@ const worldToMaterialOf = (source: StandardMaterialProgram) => {
 /** Materials whose shading reads world-space inputs; the vertex stage and frame uniforms differ. */
 const materialWorldShading = (source: StandardMaterialProgram) =>
   source.normalBlendPolicy !== undefined || source.normalMapSpace === 'object'
+
+/** Two vertex array keys holding the same values in order (see geometryKey). */
+const sameEntries = (left: readonly unknown[], right: readonly unknown[]) => {
+  if (left.length !== right.length) return false
+  for (let index = 0; index < left.length; index++) if (left[index] !== right[index]) return false
+  return true
+}
+
+/** What a draw's UV set `set` reads: that set's coordinates, or for set 0 textureCoordinates. */
+function uvCoordinatesOf(primitive: MaterialDraw['primitive'], set: number) {
+  let found: Float32Array | undefined
+  const sets = primitive.textureCoordinateSets
+  if (sets !== undefined)
+    for (const uv of sets)
+      if (uv.set === set) {
+        found = uv.coordinates
+        break
+      }
+  return found ?? (set === 0 ? primitive.textureCoordinates : undefined)
+}
 
 const sameNumbers = (left: ArrayLike<number> | undefined, right: ArrayLike<number> | undefined) => {
   if (left === undefined || right === undefined) return left === right
@@ -414,6 +445,10 @@ export function materialWebGlDraws(
     entry.used = true
     return entry
   }
+  // A draw's vertex array key, written into one scratch array for every draw and copied only into
+  // a new vertex array's entry: the attribute arrays, then indexing, instancing, skin, tints and
+  // placements per vertex.
+  const geometryKey: (ArrayBufferView | undefined)[] = []
   const bindGeometry = (
     program: WebGLProgram,
     source: StandardMaterialProgram,
@@ -421,39 +456,37 @@ export function materialWebGlDraws(
     instances: Float32Array | undefined,
     state: SequenceState,
   ) => {
-    const attributes = [
-      primitive.positions,
-      primitive.normals,
-      primitive.tangents,
-      primitive.colors,
-    ]
+    const key = geometryKey
+    key.length = 0
+    key.push(primitive.positions, primitive.normals, primitive.tangents, primitive.colors)
     for (let set = 0; set < source.defines.uvSetCount; set++)
-      attributes.push(
-        primitive.textureCoordinateSets?.find(uv => uv.set === set)?.coordinates ??
-          (set === 0 ? primitive.textureCoordinates : undefined),
-      )
+      key.push(uvCoordinatesOf(primitive, set))
+    const attributeCount = key.length
     const skin = materialSkinOf(primitive)
     const tints = primitiveVertexTints(primitive)
     // Model matrices per instance (the vertex array's own buffer), or per vertex
     // (primitiveVertexPlacements, retained like the other attributes): read alike.
     const vertexPlacements = instances === undefined ? primitiveVertexPlacements(primitive) : undefined
-    const data = [
-      ...attributes,
+    key.push(
       primitive.indices === undefined ? undefined : INDEXED,
       instances === undefined ? undefined : INSTANCED,
       skin?.joints,
       skin?.weights,
       tints,
       vertexPlacements,
-    ]
+    )
     const geometries = vertexArrays.get(program)
     const variants = geometries?.get(primitive.positions)
-    let entry = variants?.find(
-      candidate =>
-        candidate.data.length === data.length &&
-        candidate.data.every((value, index) => value === data[index]),
-    )
+    let entry: VertexArrayEntry | undefined
+    if (variants !== undefined)
+      for (const candidate of variants)
+        if (sameEntries(candidate.data, key)) {
+          entry = candidate
+          break
+        }
     if (entry === undefined) {
+      const data = key.slice()
+      const attributes = data.slice(0, attributeCount)
       const vao = gl.createVertexArray()
       if (vao === null) throw new TypeError('could not allocate material vertex array')
       vertexArraysCreated += 1
@@ -1012,7 +1045,7 @@ export function materialWebGlDraws(
       primitive,
       draw.depthOnly === true,
       state,
-      model !== undefined && materialNormalMatrix(model).sign < 0,
+      model !== undefined && materialMirrors(model),
     )
     return submit(mode, primitive, instances?.count)
   }
