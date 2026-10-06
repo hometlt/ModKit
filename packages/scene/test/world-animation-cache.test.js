@@ -1152,3 +1152,126 @@ it('uses a smooth height gradient only for terrain whose texture has not loaded'
   assert.ok(loaded.texturedTriangles.length > 0)
   assert.ok(loaded.texturedTriangles[0].colors.every(value => value === 1))
 })
+
+it('takes whole the blocks of objects the previous plan kept, each plan equal to a fresh one', async () => {
+  // Another instance of the module builds the fresh plans: here, building one would make it the plan
+  // built last, and only the plan built right after a plan takes its blocks.
+  const fresh = await import('../src/world/webgl.js?fresh')
+  assert.notEqual(fresh.createWorldWebGlPlan, createWorldWebGlPlan)
+  const values = (module, plan) =>
+    JSON.stringify(
+      {
+        ...plan,
+        modelMaterialScenes: plan.modelMaterialScenes.map(scene => ({
+          ...scene,
+          programs: module.worldWebGlScenePrograms(plan, scene),
+        })),
+      },
+      (_, value) => (value instanceof Map ? [...value] : value),
+    )
+  const base = world()
+  // Kept objects of every kind a block holds: materials that play (a cohort), particles with a
+  // playing decal (sampled alone), still decals (writes into the shared batches), a still clip and
+  // fallback geometry. The third block holds objects whose geometry follows the clock, the fourth
+  // cards that turn to the camera: their blocks are made object by object every frame.
+  const kinds = ['cohort', 'particles', 'decal', 'still', 'fallback']
+  const objects = Array.from({ length: 112 }, (_, index) => ({
+    ...actor,
+    id: `actor:${index + 1}`,
+    objectId: index + 1,
+    resourceId:
+      index >= 70 && index < 76
+        ? 'animated'
+        : index >= 100 && index < 106
+          ? 'card'
+          : kinds[index % kinds.length],
+    player: index % 2,
+    uvwPosition: { x: (index % 9) * 0.2, y: 0, z: -Math.floor(index / 9) * 0.15 },
+  }))
+  const still = stillClipModel()
+  const models = new Map([
+    ['cohort', effectModel({ projector: false })],
+    ['particles', effectModel({ particles: true, projector: true })],
+    ['decal', effectModel({ decal: true, animatedAlpha: false })],
+    ['still', still],
+    ['fallback', { ...animatedModel(), animations: [] }],
+    ['animated', animatedModel()],
+    [
+      'card',
+      {
+        ...animatedModel(),
+        animations: [],
+        nodes: animatedModel().nodes.map(node => ({
+          ...node,
+          billboard: { mode: 'inverse-camera', basisRotations: [] },
+        })),
+      },
+    ],
+  ])
+  const input = {
+    ...base,
+    items: [...base.items.filter(item => item.facet !== 'objects'), ...objects],
+    models,
+    teamColors: new Map([
+      [0, [1, 0, 0]],
+      [1, [0, 0, 1]],
+    ]),
+  }
+  const moved = input.items.map(item =>
+    item.objectId === 40 ? { ...item, uvwPosition: { x: 1.9, y: 0, z: -0.1 } } : item,
+  )
+  const turned = {
+    ...DEFAULT_WORLD_WEBGL_CAMERA,
+    azimuth: DEFAULT_WORLD_WEBGL_CAMERA.azimuth + 0.3,
+  }
+  const larger = new Map([
+    ...models,
+    [
+      'still',
+      {
+        ...still,
+        primitives: still.primitives.map(primitive => ({
+          ...primitive,
+          positions: Float32Array.of(0, 0, 0, 2, 0, 0, 0, 0, -2),
+        })),
+      },
+    ],
+  ])
+  const steps = [
+    { ...input, timeSeconds: 0.1 },
+    { ...input, timeSeconds: 0.2 },
+    { ...input, timeSeconds: 0.3 },
+    // A selected object is tinted and built anew: its block stands for it no longer.
+    { ...input, timeSeconds: 0.4, selectedObjectId: 5 },
+    { ...input, timeSeconds: 0.5, selectedObjectId: 5 },
+    { ...input, timeSeconds: 0.6 },
+    // An object that moves is a new item: its block is made object by object.
+    { ...input, timeSeconds: 0.7, items: moved },
+    { ...input, timeSeconds: 0.8, items: moved },
+    { ...input, timeSeconds: 0.9, items: moved },
+    // Other team colours give other keys.
+    { ...input, timeSeconds: 1, teamColors: new Map([...input.teamColors, [1, [0, 1, 0]]]) },
+    { ...input, timeSeconds: 1.1 },
+    { ...input, timeSeconds: 1.2 },
+    // The camera turns: the cards with it.
+    { ...input, timeSeconds: 1.3, camera: turned },
+    { ...input, timeSeconds: 1.4, camera: turned },
+    // Another model for a kind: its objects are built anew.
+    { ...input, timeSeconds: 1.5, models: larger },
+    { ...input, timeSeconds: 1.6, models: larger },
+    { ...input, timeSeconds: 1.7 },
+    { ...input, timeSeconds: 1.8 },
+  ]
+  let plan = createWorldWebGlPlan({ ...input, timeSeconds: 0 })
+  for (const step of steps) {
+    const previous = plan
+    plan = createWorldWebGlPlan(step, previous)
+    assert.equal(
+      values({ worldWebGlScenePrograms }, plan),
+      values(fresh, fresh.createWorldWebGlPlan(step)),
+    )
+    // The first object is kept from frame to frame while nothing but the clock changes.
+    if (step.timeSeconds === 0.3 || step.timeSeconds === 1.8)
+      assert.equal(plan.picking.objects[0], previous.picking.objects[0])
+  }
+})

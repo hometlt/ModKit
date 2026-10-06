@@ -3627,6 +3627,12 @@ function keptWorldObjectResampledScenes(
   input: WorldWebGlInput,
   planPrograms: WorldPlanPrograms,
   current: WorldCurrentPrograms,
+  /**
+   * The pairs that the objects before it in a block taken whole stand for (takeKeptBlock): this
+   * object's pairs join them instead of the plan's programs, which take them all once every object
+   * of the block keeps its scenes.
+   */
+  pending?: [SceneMaterialPrograms, SceneMaterialPrograms][],
 ): readonly WorldWebGlModelMaterialScene[] | undefined {
   // At its own clock a kept scene stands for its own programs.
   const moved = worldObjectMaterialClock(item, input) !== kept.materialClock
@@ -3640,17 +3646,29 @@ function keptWorldObjectResampledScenes(
       return undefined
     for (const [id, entry] of scene.programs) {
       const now = programs.get(id)!
-      const standing = current.materials.get(entry) ?? added?.find(pair => pair[0] === entry)?.[1]
+      const standing =
+        current.materials.get(entry) ??
+        pending?.find(pair => pair[0] === entry)?.[1] ??
+        added?.find(pair => pair[0] === entry)?.[1]
       if (standing === now) continue
       if (standing !== undefined) return undefined
       ;(added ??= []).push([entry, now])
     }
   }
-  for (const [entry, now] of added ?? []) {
+  if (pending !== undefined) for (const pair of added ?? []) pending.push(pair)
+  else standForPrograms(current, added ?? [])
+  return kept.scenes
+}
+
+/** Lets each pair's second programs stand for its first in the plan (keptWorldObjectResampledScenes). */
+function standForPrograms(
+  current: WorldCurrentPrograms,
+  pairs: readonly (readonly [SceneMaterialPrograms, SceneMaterialPrograms])[],
+): void {
+  for (const [entry, now] of pairs) {
     current.materials.set(entry, now)
     entry.passes.forEach((pass, index) => current.passes.set(pass, now.passes[index]!))
   }
-  return kept.scenes
 }
 
 // Programs of clock-independent materials, per converted model and presentation key. Bounded by the
@@ -4201,6 +4219,61 @@ function worldWaterSurfaceDepth(writes: readonly WorldBatchWrite[]): Float32Arra
  * instead of placing, bounding and grouping all of them every frame.
  */
 const retainedStaticObjects = new WeakMap<WorldSceneObjectItem, WorldStaticObject>()
+
+/**
+ * WORLD_KEPT_BLOCK consecutive objects of a plan that it kept as they were (retainedStaticObjects),
+ * each by the key it was retained with (not one built for this frame: a camera turn, say). The plan
+ * that follows, built from the same inputs but the clock, takes such a block whole: it samples the
+ * playing materials as each object would (once per cohort), gives each effect the new time, and
+ * takes the scenes, decal writes, pick meshes and counts as they are, instead of keying and looking
+ * up each object again. The result is the same plan.
+ */
+interface WorldKeptBlock {
+  readonly items: readonly WorldSceneObjectItem[]
+  readonly scenes: readonly WorldWebGlModelMaterialScene[]
+  /** Each retained effect with its object and model, in order (keptWorldObjectEffect). */
+  readonly effects: readonly Readonly<{
+    item: WorldSceneObjectItem
+    effect: WorldWebGlModelEffectInstance
+    resourceId: string
+  }>[]
+  readonly batchWrites: readonly WorldObjectBatchWrite[]
+  readonly pickMeshes: readonly WorldObjectPickMesh[]
+  /**
+   * The box holding the pick meshes' envelopes (null when none has one), and whether each envelope
+   * is finite: then a box inside the plan bounds so far means every envelope is, and the block
+   * leaves them as they are.
+   */
+  readonly envelope: readonly number[] | null
+  readonly finite: boolean
+  /**
+   * The objects whose materials play, in order, as keptWorldObjectScenes samples them: a cohort's
+   * first object decides for the cohort, an object with no cohort (or a time of its own) for itself.
+   */
+  readonly samples: readonly Readonly<{
+    cohort: string | undefined
+    item: WorldSceneObjectItem
+    kept: WorldStaticObject
+  }>[]
+  readonly modelTriangles: number
+  readonly shadowTriangles: number
+  readonly programObjects: number
+  readonly fallbackObjects: number
+}
+
+/** Objects per kept block, counted from the first of the plan's objects (see WorldKeptBlock). */
+const WORLD_KEPT_BLOCK = 32
+
+/** A plan's kept blocks by their index, for the plan built from it. */
+const worldKeptBlocks = new WeakMap<WorldWebGlPlan, readonly (WorldKeptBlock | undefined)[]>()
+
+/**
+ * Plans built so far, and each plan's count when it was built. Retained objects stand as the plan
+ * built last left them: another plan built since (another viewer's) may have rebuilt them, so only
+ * the plan built right after a plan takes its kept blocks.
+ */
+let worldPlansBuilt = 0
+const worldPlanSerials = new WeakMap<WorldWebGlPlan, number>()
 
 /**
  * The material ids of a model scene whose materials take no shadow of the world
@@ -6219,6 +6292,10 @@ export function createWorldWebGlPlan(
   input: WorldWebGlInput,
   previousPlan?: WorldWebGlPlan,
 ): WorldWebGlPlan {
+  // Only the plan built right after the previous one takes its kept blocks (worldPlanSerials).
+  const previousBuiltLast =
+    previousPlan !== undefined && worldPlanSerials.get(previousPlan) === worldPlansBuilt
+  worldPlansBuilt += 1
   // Shared batches: `opaque`, `transparent` and the maps' entries only describe a batch; its
   // triangles are the writes journaled to it (see WorldBatchWrite). Lines and points are built here.
   const opaque = batch()
@@ -6487,7 +6564,166 @@ export function createWorldWebGlPlan(
     transparentTextured.set(key, target)
     return target
   }
-  for (const item of objects) {
+  // The previous plan's kept blocks stand for their objects while every input of the objects' keys
+  // but the clock is the same (worldStaticObjectKey): the models, the terrain preparation, the team
+  // colours and the selection; and the objects that play at a time of their own, which sample their
+  // materials apart from their cohort (keptWorldObjectScenes).
+  const replayBlocks =
+    previousBuiltLast &&
+    previous !== undefined &&
+    models === previous.models &&
+    preparation === previous.preparation &&
+    input.selectedObjectId === previous.input.selectedObjectId &&
+    sameWorldMap(previous.input.teamColors, input.teamColors) &&
+    sameMapKeys(previous.input.animationTimes, input.animationTimes)
+      ? worldKeptBlocks.get(previousPlan!)
+      : undefined
+  const keptBlocks: (WorldKeptBlock | undefined)[] = []
+  /** The pick meshes of each block taken whole: its first index and one past its last. */
+  const keptSegments: {
+    readonly first: number
+    readonly end: number
+    readonly block: WorldKeptBlock
+  }[] = []
+  /** The block being made object by object, and which of its objects it could stand for. */
+  let block:
+    | {
+        readonly start: number
+        readonly length: number
+        readonly items: WorldSceneObjectItem[]
+        readonly records: WorldStaticObject[]
+        readonly scenes: number
+        readonly pickMeshes: number
+      }
+    | undefined
+  // A block whose every object took the kept path whole is handed to the next plan.
+  const finishKeptBlock = () => {
+    if (block === undefined || block.records.length !== block.length) return
+    const { start, items, records, scenes, pickMeshes: firstMesh } = block
+    const effects: WorldKeptBlock['effects'][number][] = []
+    const writes: WorldObjectBatchWrite[] = []
+    const samples: WorldKeptBlock['samples'][number][] = []
+    let triangles = 0,
+      shadowed = 0,
+      byProgram = 0,
+      byFallback = 0
+    records.forEach((record, offset) => {
+      const item = items[offset]!
+      record.effects.forEach((effect, index) =>
+        effects.push(Object.freeze({ item, effect, resourceId: record.effectResources[index]! })),
+      )
+      for (const write of record.batchWrites) writes.push(write)
+      if (record.resamplers !== undefined) {
+        const cohort =
+          record.cohort !== undefined && input.animationTimes?.has(item.objectId) !== true
+            ? record.cohort
+            : undefined
+        if (cohort === undefined || !samples.some(entry => entry.cohort === cohort))
+          samples.push(Object.freeze({ cohort, item, kept: record }))
+      }
+      triangles += record.modelTriangles
+      shadowed += record.shadowTriangles
+      if (record.byProgram) byProgram += 1
+      if (record.byFallback) byFallback += 1
+    })
+    const pickMeshes = objectPickMeshes.slice(firstMesh)
+    let envelope: number[] | null = null
+    let finite = true
+    for (const mesh of pickMeshes) {
+      const box = mesh.envelope
+      if (box === null) continue
+      if (!Number.isFinite(box[3]! - box[0]! + box[4]! - box[1]! + box[5]! - box[2]!))
+        finite = false
+      if (envelope === null) envelope = [...box]
+      else
+        for (let axis = 0; axis < 3; axis += 1) {
+          envelope[axis] = Math.min(envelope[axis]!, box[axis]!)
+          envelope[axis + 3] = Math.max(envelope[axis + 3]!, box[axis + 3]!)
+        }
+    }
+    keptBlocks[start / WORLD_KEPT_BLOCK] = Object.freeze({
+      items: Object.freeze(items),
+      scenes: Object.freeze(modelMaterialScenes.slice(scenes)),
+      effects: Object.freeze(effects),
+      batchWrites: Object.freeze(writes),
+      pickMeshes: Object.freeze(pickMeshes),
+      envelope: envelope === null ? null : Object.freeze(envelope),
+      finite,
+      samples: Object.freeze(samples),
+      modelTriangles: triangles,
+      shadowTriangles: shadowed,
+      programObjects: byProgram,
+      fallbackObjects: byFallback,
+    })
+  }
+  // The previous plan's block at `start`, taken whole when it holds the same objects and each of them
+  // keeps its scenes at this clock: what each of its objects would add, in the same order. Its
+  // objects decide as each would (keptWorldObjectScenes), but the plan's programs take what they
+  // decided only once all of them keep: a block not taken leaves the plan as it was, to be made
+  // object by object. Returns how many objects it took.
+  const takeKeptBlock = (start: number): number => {
+    const kept = replayBlocks?.[start / WORLD_KEPT_BLOCK]
+    if (kept === undefined) return 0
+    const { items } = kept
+    if (items.length !== Math.min(WORLD_KEPT_BLOCK, objects.length - start)) return 0
+    for (let offset = 0; offset < items.length; offset += 1)
+      if (objects[start + offset] !== items[offset]) return 0
+    const pending: [SceneMaterialPrograms, SceneMaterialPrograms][] = []
+    const decided = new Map<string, true>()
+    for (const { cohort, item, kept: deciding } of kept.samples) {
+      if (cohort !== undefined) {
+        const keeps = decided.get(cohort) ?? currentPrograms.cohorts.get(cohort)
+        if (keeps === false) return 0
+        if (keeps !== undefined) continue
+      }
+      const scenes = keptWorldObjectResampledScenes(
+        item,
+        deciding,
+        deciding.resamplers!,
+        input,
+        planPrograms,
+        currentPrograms,
+        pending,
+      )
+      if (scenes === undefined) return 0
+      if (cohort !== undefined) decided.set(cohort, true)
+    }
+    standForPrograms(currentPrograms, pending)
+    for (const cohort of decided.keys()) currentPrograms.cohorts.set(cohort, true)
+    for (const scene of kept.scenes) modelMaterialScenes.push(scene)
+    for (const { item, effect, resourceId } of kept.effects)
+      modelEffects.push(keptWorldObjectEffect(item, effect, resourceId, input))
+    for (const entry of kept.batchWrites) journalObjectWrite(entry)
+    const firstMesh = objectPickMeshes.length
+    for (const mesh of kept.pickMeshes) objectPickMeshes.push(mesh)
+    keptSegments.push({ first: firstMesh, end: objectPickMeshes.length, block: kept })
+    modelTriangles += kept.modelTriangles
+    modelMaterialShadowTriangles += kept.shadowTriangles
+    keptObjects += items.length
+    programObjects += kept.programObjects
+    fallbackObjects += kept.fallbackObjects
+    keptBlocks[start / WORLD_KEPT_BLOCK] = kept
+    return items.length
+  }
+  for (let index = 0; index < objects.length; index += 1) {
+    if (index % WORLD_KEPT_BLOCK === 0) {
+      finishKeptBlock()
+      block = undefined
+      const taken = takeKeptBlock(index)
+      if (taken > 0) {
+        index += taken - 1
+        continue
+      }
+      block = {
+        start: index,
+        length: Math.min(WORLD_KEPT_BLOCK, objects.length - index),
+        items: [],
+        records: [],
+        scenes: modelMaterialScenes.length,
+        pickMeshes: objectPickMeshes.length,
+      }
+    }
+    const item = objects[index]!
     const staticKey = worldStaticObjectKey(item, input, preparation, models)
     const retainedObject = staticKey === undefined ? undefined : retainedStaticObjects.get(item)
     const keptScenes =
@@ -6495,6 +6731,11 @@ export function createWorldWebGlPlan(
         ? keptWorldObjectScenes(item, retainedObject, input, planPrograms, currentPrograms)
         : undefined
     if (retainedObject !== undefined && keptScenes !== undefined) {
+      // Kept by the key it was retained with: its block can stand for it in the next plan.
+      if (block !== undefined && retainedObject.key === staticKey) {
+        block.items.push(item)
+        block.records.push(retainedObject)
+      }
       for (const scene of keptScenes) modelMaterialScenes.push(scene)
       for (const [index, effect] of retainedObject.effects.entries())
         modelEffects.push(
@@ -7179,6 +7420,7 @@ export function createWorldWebGlPlan(
         }),
       )
   }
+  finishKeptBlock()
 
   let navigationSamples = 0
   for (const item of worldFacetItems(facets, 'navigation')) {
@@ -7272,19 +7514,39 @@ export function createWorldWebGlPlan(
       maximum[axis] = Math.max(maximum[axis], bounds[axis + 3]!)
     }
   }
-  for (const mesh of objectPickMeshes) {
+  const insideBounds = (envelope: readonly number[]) =>
+    envelope[0]! >= minimum[0] &&
+    envelope[1]! >= minimum[1] &&
+    envelope[2]! >= minimum[2] &&
+    envelope[3]! <= maximum[0] &&
+    envelope[4]! <= maximum[1] &&
+    envelope[5]! <= maximum[2]
+  let segment = 0
+  for (let index = 0; index < objectPickMeshes.length; index += 1) {
+    // A block taken whole: when the box holding its finite envelopes lies inside the bounds so far,
+    // every one of them does, and each would leave the bounds as they are.
+    const kept = keptSegments[segment]
+    if (kept?.first === index) {
+      segment += 1
+      const { envelope, finite } = kept.block
+      if (envelope === null) {
+        index = kept.end - 1
+        continue
+      }
+      hasPositions = true
+      if (finite && insideBounds(envelope)) {
+        index = kept.end - 1
+        continue
+      }
+    }
+    const mesh = objectPickMeshes[index]!
     const envelope = mesh.envelope
     if (envelope === null) continue
     hasPositions = true
     // An object inside the bounds so far leaves them as they are, whatever its exact bounds: only
     // an envelope that reaches past them (or is not finite) needs the pass over its vertices.
     if (
-      envelope[0]! >= minimum[0] &&
-      envelope[1]! >= minimum[1] &&
-      envelope[2]! >= minimum[2] &&
-      envelope[3]! <= maximum[0] &&
-      envelope[4]! <= maximum[1] &&
-      envelope[5]! <= maximum[2] &&
+      insideBounds(envelope) &&
       Number.isFinite(
         envelope[3]! - envelope[0]! + envelope[4]! - envelope[1]! + envelope[5]! - envelope[2]!,
       )
@@ -7472,6 +7734,8 @@ export function createWorldWebGlPlan(
   })
   if (currentPrograms.materials.size > 0) worldCurrentPrograms.set(plan, currentPrograms)
   worldPlanFacets.set(plan, facets)
+  worldKeptBlocks.set(plan, keptBlocks)
+  worldPlanSerials.set(plan, worldPlansBuilt)
   worldPlanWork.set(
     plan,
     Object.freeze({
@@ -8553,6 +8817,18 @@ function snapshotWorldPlanInput(input: WorldWebGlInput): WorldWebGlInput {
       ? {}
       : { previewPosition: { ...input.previewPosition } }),
   }
+}
+
+/** Whether two maps hold the same keys, whatever their values (an absent map holds none). */
+function sameMapKeys(
+  left: ReadonlyMap<unknown, unknown> | undefined,
+  right: ReadonlyMap<unknown, unknown> | undefined,
+): boolean {
+  if (left === right) return true
+  if ((left?.size ?? 0) !== (right?.size ?? 0)) return false
+  if (left === undefined || right === undefined) return true
+  for (const key of left.keys()) if (!right.has(key)) return false
+  return true
 }
 
 function sameWorldMap<K, V>(
