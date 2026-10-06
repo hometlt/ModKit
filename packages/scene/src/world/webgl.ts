@@ -3059,6 +3059,51 @@ type WorldSceneResampler = (
   planPrograms: WorldPlanPrograms,
 ) => ReadonlyMap<string, SceneMaterialPrograms>
 
+// Resamplers live as long as their kept object, past the plan that made them: they are made here,
+// not in the plan builder, whose frame (writes, terrain preparation) a closure there would hold.
+
+/** The programs of a kept model scene at another moment: its object's clock at that input. */
+function worldModelSceneResampler(
+  result: WorldModelSample['result'],
+  item: WorldSceneObjectItem,
+  templateKey: string,
+  animated: boolean,
+  durationSeconds: number | undefined,
+): WorldSceneResampler {
+  return (next, nextPrograms) =>
+    worldObjectModelPrograms(
+      result,
+      item,
+      templateKey,
+      worldObjectTime(next, item, animated, durationSeconds),
+      () => worldObjectMaterialMoment(next, item, result).materialContext,
+      nextPrograms,
+    ).programs
+}
+
+/** The programs of a kept projected (decal) scene at another moment, sampled from its materials. */
+function worldProjectorSceneResampler(
+  materials: readonly SceneRendererMaterial[],
+  textures: readonly SceneRendererTexture[],
+  item: WorldSceneObjectItem,
+  result: WorldModelSample['result'],
+): WorldSceneResampler {
+  let sampler: SceneMaterialProgramSampler | undefined
+  return next => {
+    try {
+      sampler ??= createSceneMaterialProgramSampler(
+        materials,
+        new Map(textures.map(texture => [texture.id, texture])),
+      )
+      const { materialContext: context } = worldObjectMaterialMoment(next, item, result)
+      return sampler.sample(context, [])
+    } catch {
+      // As in the build: unsupported projector materials stay apart from the map.
+      return new Map()
+    }
+  }
+}
+
 /** Where and when an object samples one model's materials: its clip, clock and team colour. */
 function worldObjectMaterialMoment(
   input: WorldWebGlInput,
@@ -3626,6 +3671,41 @@ const checkedWorldWrites = new WeakSet<WorldBatchWrite>()
  * Bounds of a pick mesh's triangles and primitives (minimum xyz, maximum xyz), or null when it has
  * neither. Taken when the mesh is built; a retained object carries them with its mesh.
  */
+/**
+ * An object's pick entry, its framing box computed when first read. Made here and not in the plan
+ * builder: a kept object outlives its plan, and a getter made in the builder would hold the
+ * builder's whole frame (every write of it, its terrain preparation) alive with it.
+ */
+function worldObjectPickMesh(
+  objectId: number,
+  center: readonly [number, number, number],
+  triangles: number[],
+  primitives: WorldWebGlPickPrimitive[],
+  placeholder: boolean,
+  framingTriangles: readonly number[],
+  framingPrimitives: readonly WorldWebGlPickPrimitive[],
+): WorldObjectPickMesh {
+  let bounds: readonly number[] | null | undefined
+  return {
+    objectId,
+    center,
+    triangles,
+    primitives,
+    placeholder,
+    get bounds() {
+      return (bounds ??= pickMeshBoundsOf(framingTriangles, framingPrimitives))
+    },
+    envelope: pickMeshEnvelopeOf(framingTriangles, framingPrimitives),
+    pick: Object.freeze({
+      objectId,
+      center,
+      triangles: Float32Array.from(triangles),
+      primitives: Object.freeze(primitives),
+      placeholder,
+    }),
+  }
+}
+
 function pickMeshBoundsOf(
   triangles: readonly number[],
   primitives: readonly WorldWebGlPickPrimitive[],
@@ -3943,6 +4023,19 @@ function worldWaterSurfaceDepth(writes: readonly WorldBatchWrite[]): Float32Arra
 const retainedStaticObjects = new WeakMap<WorldSceneObjectItem, WorldStaticObject>()
 
 /**
+ * A terrain preparation as kept objects name it in their keys. An object the caller still holds
+ * keeps its entry after it leaves the list (a unit out of view, a hidden facet); the entry must
+ * not keep the preparation alive with it: that is the terrain of a past frame, tens of megabytes.
+ */
+const worldPreparationTokens = new WeakMap<object, object>()
+function worldPreparationToken(preparation: unknown): unknown {
+  if (preparation === null || typeof preparation !== 'object') return preparation
+  let token = worldPreparationTokens.get(preparation)
+  if (token === undefined) worldPreparationTokens.set(preparation, (token = Object.freeze({})))
+  return token
+}
+
+/**
  * Everything an object's contribution depends on: the terrain preparation (cliff lifting, projector
  * ground), its team colour, and each model result with the clock the object samples it at (its
  * geometry, materials, effects and projectors follow only that clock). The selected object
@@ -3960,7 +4053,12 @@ function worldStaticObjectKey(
     (item.player === undefined ? undefined : input.teamColors?.get(item.player))
   const keyed = worldObjectResourcesOf(item).keyed
   const known = worldStaticObjectKeys.get(item)
-  if (known !== undefined && known.preparation === preparation && known.teamColor === teamColor) {
+  const preparationToken = worldPreparationToken(preparation)
+  if (
+    known !== undefined &&
+    known.preparation === preparationToken &&
+    known.teamColor === teamColor
+  ) {
     // One generation reads the same result for every resource id (worldModelGenerations).
     if (known.models === models) return known.key
     if (
@@ -3970,7 +4068,7 @@ function worldStaticObjectKey(
       return known.key
     }
   }
-  const key: unknown[] = [preparation, teamColor?.join(',') ?? '']
+  const key: unknown[] = [preparationToken, teamColor?.join(',') ?? '']
   const results: unknown[] = []
   let timed = false
   for (const resourceId of keyed) {
@@ -3991,7 +4089,10 @@ function worldStaticObjectKey(
   }
   if (timed) worldStaticObjectKeys.delete(item)
   else
-    worldStaticObjectKeys.set(item, Object.freeze({ preparation, teamColor, results, key, models }))
+    worldStaticObjectKeys.set(
+      item,
+      Object.freeze({ preparation: preparationToken, teamColor, results, key, models }),
+    )
   return key
 }
 
@@ -6730,22 +6831,11 @@ export function createWorldWebGlPlan(
               ]),
             ),
           )
-          if (materialsFollowTime) {
-            let sampler: SceneMaterialProgramSampler | undefined
-            sceneResamplers.set(projectedScene, next => {
-              try {
-                sampler ??= createSceneMaterialProgramSampler(
-                  projected.materials,
-                  new Map(scene.textures.map(texture => [texture.id, texture])),
-                )
-                const { materialContext: context } = worldObjectMaterialMoment(next, item, result)
-                return sampler.sample(context, [])
-              } catch {
-                // As in the build: unsupported projector materials stay apart from the map.
-                return new Map()
-              }
-            })
-          }
+          if (materialsFollowTime)
+            sceneResamplers.set(
+              projectedScene,
+              worldProjectorSceneResampler(projected.materials, scene.textures, item, result),
+            )
         }
       }
       // Decals are projected above; only particles and ribbons are drawn per frame from here.
@@ -6787,20 +6877,13 @@ export function createWorldWebGlPlan(
           )
           sceneResamplers.set(
             materialScene,
-            (next, nextPrograms) =>
-              worldObjectModelPrograms(
-                result,
-                item,
-                templateKey,
-                worldObjectTime(
-                  next,
-                  item,
-                  selectedAnimation !== undefined,
-                  selectedAnimation?.durationSeconds,
-                ),
-                () => worldObjectMaterialMoment(next, item, result).materialContext,
-                nextPrograms,
-              ).programs,
+            worldModelSceneResampler(
+              result,
+              item,
+              templateKey,
+              selectedAnimation !== undefined,
+              selectedAnimation?.durationSeconds,
+            ),
           )
         }
       }
@@ -6830,25 +6913,15 @@ export function createWorldWebGlPlan(
     const framingPrimitives = restTransforms === undefined ? pickPrimitives : restPrimitives
     if (restTransforms !== undefined)
       for (const entry of objectBatchWrites) clockWrites.add(entry.write)
-    let pickBounds: readonly number[] | null | undefined
-    const pickMesh: WorldObjectPickMesh = {
-      objectId: item.objectId,
-      center: translation,
-      triangles: pickTriangles,
-      primitives: pickPrimitives,
-      placeholder: !resolved,
-      get bounds() {
-        return (pickBounds ??= pickMeshBoundsOf(framingTriangles, framingPrimitives))
-      },
-      envelope: pickMeshEnvelopeOf(framingTriangles, framingPrimitives),
-      pick: Object.freeze({
-        objectId: item.objectId,
-        center: translation,
-        triangles: Float32Array.from(pickTriangles),
-        primitives: Object.freeze(pickPrimitives),
-        placeholder: !resolved,
-      }),
-    }
+    const pickMesh = worldObjectPickMesh(
+      item.objectId,
+      translation,
+      pickTriangles,
+      pickPrimitives,
+      !resolved,
+      framingTriangles,
+      framingPrimitives,
+    )
     objectPickMeshes.push(pickMesh)
     if (retainable && staticKey !== undefined)
       retainedStaticObjects.set(
