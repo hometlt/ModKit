@@ -1,7 +1,7 @@
 import { collisionSplatFrame, type UvmCollisionSplat } from './collision-splats.js'
 import { readEffectProjectors } from './effect-projectors.js'
 import { projectorMaterial } from './projector-material.js'
-import type { JsonObject } from '@modkit/sdk'
+import type { JsonObject, JsonValue } from '@modkit/sdk'
 import type { SceneRendererPrimitive, SceneRendererMaterial } from '@modkit/sdk/renderer'
 import { array, object, safeIndex } from './values.js'
 import {
@@ -81,6 +81,76 @@ interface Options {
   readonly warn: (message: string) => void
   /** One placement's projectors at its previous frame (see UvmProjectorFrameCache). */
   readonly cache?: UvmProjectorFrameCache
+}
+
+const PROJECTOR_TRACKS = [
+  'offset',
+  'pitch',
+  'yaw',
+  'roll',
+  'fieldOfView',
+  'aspectRatio',
+  'near',
+  'far',
+  'boxOffsetZBottom',
+  'boxOffsetZTop',
+  'boxOffsetXLeft',
+  'boxOffsetXRight',
+  'boxOffsetYFront',
+  'boxOffsetYBack',
+  'active',
+]
+
+/**
+ * Each projector animation read and checked per time unit, with the keys it read and the work its
+ * checks count (a track and each of its keys). A projector's animation is its effect's own and never
+ * changes, and a moving projector was read and checked again at every frame; a frame now only spends
+ * the same budget on it.
+ */
+const projectorAnimations = new WeakMap<
+  object,
+  Map<string, Readonly<{ parsed: JsonObject; keys: number; work: number }>>
+>()
+
+function projectorAnimation(
+  value: JsonValue,
+  timeUnit: 'seconds' | 'milliseconds',
+  maxKeys: number,
+  signal?: AbortSignal,
+): Readonly<{ parsed: JsonObject; work: number }> {
+  const owner = value !== null && typeof value === 'object' ? value : undefined
+  const kept = owner === undefined ? undefined : projectorAnimations.get(owner)?.get(timeUnit)
+  if (kept !== undefined) {
+    if (kept.keys > maxKeys) throw new RangeError('effect animation key budget exceeded')
+    return kept
+  }
+  const parsed = readUvmEffectAnimation(value, true, timeUnit, maxKeys, signal)
+  let keys = 0,
+    work = 0
+  for (const [key, list] of Object.entries(parsed)) {
+    if (!PROJECTOR_TRACKS.includes(key)) throw new TypeError(`unsupported projector track ${key}`)
+    for (const rawTrack of array({ list }, 'list')) {
+      work += 1
+      for (const rawKey of array(object(object(rawTrack, 'sequence')['track'], 'track'), 'keys')) {
+        keys += 1
+        work += 1
+        const frameKey = object(rawKey, 'key')
+        for (const component of ['vector', 'inTan', 'outTan'])
+          if (
+            frameKey[component] !== undefined &&
+            array(frameKey, component).length !== (key === 'offset' ? 3 : 1)
+          )
+            throw new TypeError('projector track component count differs')
+      }
+    }
+  }
+  const read = Object.freeze({ parsed, keys, work })
+  if (owner !== undefined) {
+    let units = projectorAnimations.get(owner)
+    if (units === undefined) projectorAnimations.set(owner, (units = new Map()))
+    units.set(timeUnit, read)
+  }
+  return read
 }
 
 /**
@@ -266,49 +336,15 @@ export function createUvmProjectorFrame(document: JsonObject, options: Options) 
       const timeUnit = effect['trackTimeUnit'] ?? 'seconds'
       if (timeUnit !== 'seconds' && timeUnit !== 'milliseconds')
         throw new TypeError('invalid projector track unit')
-      const parsed = readUvmEffectAnimation(
+      const animation = projectorAnimation(
         entry['sequenceAnimation'],
-        true,
         timeUnit,
         options.maxNodes - work,
         options.signal,
       )
-      const allowed = [
-        'offset',
-        'pitch',
-        'yaw',
-        'roll',
-        'fieldOfView',
-        'aspectRatio',
-        'near',
-        'far',
-        'boxOffsetZBottom',
-        'boxOffsetZTop',
-        'boxOffsetXLeft',
-        'boxOffsetXRight',
-        'boxOffsetYFront',
-        'boxOffsetYBack',
-        'active',
-      ]
-      for (const [key, list] of Object.entries(parsed)) {
-        if (!allowed.includes(key)) throw new TypeError(`unsupported projector track ${key}`)
-        for (const rawTrack of array({ list }, 'list')) {
-          if (++work > options.maxNodes) throw new RangeError('projector track work exceeds budget')
-          for (const rawKey of array(
-            object(object(rawTrack, 'sequence')['track'], 'track'),
-            'keys',
-          )) {
-            if (++work > options.maxNodes)
-              throw new RangeError('projector track work exceeds budget')
-            const frameKey = object(rawKey, 'key')
-            for (const component of ['vector', 'inTan', 'outTan'])
-              if (
-                frameKey[component] !== undefined &&
-                array(frameKey, component).length !== (key === 'offset' ? 3 : 1)
-              )
-                throw new TypeError('projector track component count differs')
-          }
-        }
+      work += animation.work
+      if (work > options.maxNodes) throw new RangeError('projector track work exceeds budget')
+      for (const [key, list] of Object.entries(animation.parsed)) {
         const tracks = list as unknown as RenderEffectSequenceTracks
         entry[key] =
           key === 'offset'
