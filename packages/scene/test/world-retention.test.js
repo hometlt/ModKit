@@ -68,3 +68,21 @@ it('keeps no past frame alive through an object that left the list while its cal
   )
 })
 
+it('keeps the terrain preparation while units enter and leave the list', () => {
+  const models = new Map([['unit', model]])
+  const staying = unit(1, 0)
+  const first = createWorldWebGlPlan({ items: [...terrain, staying], models })
+  // a unit walks into view, then another item stands for the same unit (a new clip)
+  const arriving = unit(2, 2)
+  const second = createWorldWebGlPlan({ items: [...terrain, staying, arriving], models }, first)
+  assert.equal(second.lines, first.lines)
+  const third = createWorldWebGlPlan({ items: [...terrain, staying, { ...arriving }], models }, second)
+  assert.equal(third.lines, first.lines)
+  assert.deepEqual(third.picking.objects.map(object => object.objectId).sort(), [1, 2])
+  // new ground is a new preparation
+  const fourth = createWorldWebGlPlan(
+    { items: [...terrain.map(item => ({ ...item })), staying], models },
+    third,
+  )
+  assert.notEqual(fourth.lines, first.lines)
+})

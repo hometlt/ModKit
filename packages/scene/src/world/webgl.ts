@@ -5927,27 +5927,39 @@ function prepareWorldStaticTerrain(
 }
 
 /**
- * The items of each facet, grouped in one pass per terrain preparation: a plan reuses a preparation
- * only while its items are the same, element by element (see sameWorldStaticInput), and scanning
- * all ~72 000 items once per facet took several milliseconds of every plan.
+ * The items of each facet, grouped in one pass: a plan takes its predecessor's grouping while its
+ * list holds the same items, element by element (scanning all ~72 000 items once per facet took
+ * several milliseconds of every plan). A unit entering the list keeps the terrain preparation (see
+ * worldStaticItems), not the grouping.
  */
-const worldPreparationFacets = new WeakMap<object, ReadonlyMap<string, readonly WorldSceneItem[]>>()
+const worldPlanFacets = new WeakMap<WorldWebGlPlan, ReadonlyMap<string, readonly WorldSceneItem[]>>()
+
+function worldFacetGroups(
+  input: WorldWebGlInput,
+  previousInput: WorldWebGlInput | undefined,
+  previousPlan: WorldWebGlPlan | undefined,
+): ReadonlyMap<string, readonly WorldSceneItem[]> {
+  const previous = previousPlan === undefined ? undefined : worldPlanFacets.get(previousPlan)
+  if (
+    previous !== undefined &&
+    previousInput !== undefined &&
+    ((worldInputsCompared?.previous === previousInput && worldInputsCompared.input === input) ||
+      sameArrayIdentity(previousInput.items, input.items))
+  )
+    return previous
+  const grouped = new Map<string, WorldSceneItem[]>()
+  for (const item of input.items) {
+    const list = grouped.get(item.facet)
+    if (list === undefined) grouped.set(item.facet, [item])
+    else list.push(item)
+  }
+  return grouped
+}
 
 function worldFacetItems<F extends WorldSceneItem['facet']>(
-  preparation: object,
-  items: readonly WorldSceneItem[],
+  facets: ReadonlyMap<string, readonly WorldSceneItem[]>,
   facet: F,
 ): readonly Extract<WorldSceneItem, { facet: F }>[] {
-  let facets = worldPreparationFacets.get(preparation)
-  if (facets === undefined) {
-    const grouped = new Map<string, WorldSceneItem[]>()
-    for (const item of items) {
-      const list = grouped.get(item.facet)
-      if (list === undefined) grouped.set(item.facet, [item])
-      else list.push(item)
-    }
-    worldPreparationFacets.set(preparation, (facets = grouped))
-  }
   return (facets.get(facet) ?? []) as readonly Extract<WorldSceneItem, { facet: F }>[]
 }
 
@@ -6122,6 +6134,7 @@ export function createWorldWebGlPlan(
           worldPosedSample(sampleSharedModel(resourceId, item)),
         )
   const { terrain, liftedCliffPrimitives } = preparation
+  const facets = worldFacetGroups(input, previous?.input, previousPlan)
   const timeSeconds = input.timeSeconds ?? 0
   if (!Number.isFinite(timeSeconds) || timeSeconds < 0)
     throw new TypeError('world WebGL timeSeconds must be finite and nonnegative')
@@ -6136,7 +6149,7 @@ export function createWorldWebGlPlan(
       readonly waves?: WorldWebGlWaterWaves
     }
   >()
-  for (const item of worldFacetItems(preparation, input.items, 'water')) {
+  for (const item of worldFacetItems(facets, 'water')) {
     const minimum = item.uvwMinimum ?? { x: item.minimum.x, z: item.minimum.y }
     const maximum = item.uvwMaximum ?? { x: item.maximum.x, z: item.maximum.y }
     const elevation = item.uvwElevation ?? item.elevation
@@ -6232,7 +6245,7 @@ export function createWorldWebGlPlan(
       ? previousBatches.waterSurfaceDepth
       : worldWaterSurfaceDepth(waterWrites)
 
-  const objects = worldFacetItems(preparation, input.items, 'objects')
+  const objects = worldFacetItems(facets, 'objects')
   const projectorGround = preparation.projectorReceivers
   const projectorCliffs = preparation.projectorCliffReceivers
   let modelTriangles = 0
@@ -6955,7 +6968,7 @@ export function createWorldWebGlPlan(
   }
 
   let navigationSamples = 0
-  for (const item of worldFacetItems(preparation, input.items, 'navigation')) {
+  for (const item of worldFacetItems(facets, 'navigation')) {
     if (item.flags === 0) continue
     const position =
       item.uvwPosition === undefined
@@ -6966,7 +6979,7 @@ export function createWorldWebGlPlan(
   }
 
   let regionShapes = 0
-  for (const item of worldFacetItems(preparation, input.items, 'regions')) {
+  for (const item of worldFacetItems(facets, 'regions')) {
     const shapes = item.uvwShapes ?? item.shapes
     for (const shape of shapes) {
       const color = [1, 0.75, 0.12, 1] as const
@@ -7076,7 +7089,7 @@ export function createWorldWebGlPlan(
     minimum.fill(-0.5)
     maximum.fill(0.5)
   }
-  const lighting = worldFacetItems(preparation, input.items, 'lighting')[0]
+  const lighting = worldFacetItems(facets, 'lighting')[0]
   // an unlit world (tiles shaded in their pixels): each texel times unlitColor, no light, no highlight
   const unlit = lighting?.model === 'unlit'
   const directional = unlit ? undefined : lighting?.directional[0]
@@ -7243,6 +7256,7 @@ export function createWorldWebGlPlan(
     models,
   })
   if (currentPrograms.materials.size > 0) worldCurrentPrograms.set(plan, currentPrograms)
+  worldPlanFacets.set(plan, facets)
   worldPlanBatches.set(plan, {
     batches: currentBatches,
     water: waterWrites,
@@ -8397,11 +8411,28 @@ function worldCliffItems(items: readonly WorldSceneItem[]): readonly WorldSceneO
   return cliffs
 }
 
+/**
+ * The items a terrain preparation reads (prepareWorldStaticTerrain): all but the objects, and of the
+ * objects the cliff pieces and those whose models show the ground on their surface. Any other object
+ * that enters or leaves the list, or comes as a new item (a unit walking into view, changing clip),
+ * leaves the preparation, and every object kept by it, as they are.
+ */
+function worldStaticItems(input: WorldWebGlInput): readonly WorldSceneItem[] {
+  return input.items.filter(
+    item =>
+      item.facet !== 'objects' ||
+      (item.resourceId !== undefined &&
+        (item.derivedFrom === 'cliffs' ||
+          terrainProjectionMaterialIds(input.models?.get(item.resourceId)).size > 0)),
+  )
+}
+
 function sameWorldStaticInput(left: WorldWebGlInput, right: WorldWebGlInput): boolean {
   const compared = worldInputsCompared?.previous === left && worldInputsCompared.input === right
+  const staticItems = compared ? undefined : worldStaticItems(right)
   if (
-    !compared &&
-    (!sameArrayIdentity(left.items, right.items) ||
+    staticItems !== undefined &&
+    (!sameArrayIdentity(worldStaticItems(left), staticItems) ||
       !sameArrayIdentity(left.terrainMaterials, right.terrainMaterials) ||
       !sameArrayIdentity(left.terrainWeightRasters, right.terrainWeightRasters) ||
       !sameWorldMap(left.terrainTextures, right.terrainTextures))
@@ -8409,7 +8440,7 @@ function sameWorldStaticInput(left: WorldWebGlInput, right: WorldWebGlInput): bo
     return false
   // With the same model results (inputs found the same but for the clocks) only the cliff pieces
   // can differ: their clocks.
-  const items = compared ? worldCliffItems(right.items) : right.items
+  const items = staticItems ?? worldCliffItems(right.items)
   for (const item of items) {
     if (item.facet !== 'objects' || item.resourceId === undefined) continue
     if (item.derivedFrom !== 'cliffs') {
