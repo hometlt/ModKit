@@ -1971,6 +1971,49 @@ describe('language subject completion lifecycle', () => {
     }
   })
 
+  it('keys the context revision on the analyzed Data identity and follows edits', async () => {
+    const baselineAnalyses = dataAnalyzeRequests.length
+    const analyzedInput = () =>
+      observedWorkspaceContext?.semanticInputs?.find(
+        input => input.kind === 'resolved-data-snapshot',
+      )
+    const workspace = await openWorkspace(
+      { open: async () => undefined },
+      false,
+      undefined,
+      document => ({
+        uri: document.uri,
+        layerId: 'selected-mod',
+        logicalId: 'GameData/UnitData.xml',
+        precedence: 0,
+        sourceRevision: `open:${document.version}`,
+        readOnly: false,
+        overlay: true,
+      }),
+    )
+    try {
+      await workspace.completion(completionRequest())
+      const firstRevision = observedWorkspaceContext?.revision
+      const firstInput = analyzedInput()
+      expect(firstInput).toBeDefined()
+      expect(firstRevision).toMatch(/^language-context-v1:/u)
+
+      await workspace.completion(completionRequest())
+      expect(dataAnalyzeRequests).toHaveLength(baselineAnalyses + 1)
+      expect(observedWorkspaceContext?.revision).toBe(firstRevision)
+      // The cached analysis is reused by identity, not re-validated into a new copy.
+      expect(analyzedInput()).toBe(firstInput)
+
+      await workspace.change(languageRequest(2, 'edited value'))
+      await workspace.completion({ ...completionRequest(), documentVersion: 2 })
+      expect(dataAnalyzeRequests).toHaveLength(baselineAnalyses + 2)
+      expect(analyzedInput()?.revision).not.toBe(firstInput?.revision)
+      expect(observedWorkspaceContext?.revision).not.toBe(firstRevision)
+    } finally {
+      await workspace.shutdown()
+    }
+  })
+
   it('degrades an oversized resolved Data payload to incomplete without failing the feature', async () => {
     dataPayloadPaddingBytes = 64 * 1024 * 1024
     const baselineReleases = dataProviderReleases

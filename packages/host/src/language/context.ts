@@ -166,6 +166,17 @@ function copySemanticInput(item: unknown): Readonly<{
   return result
 }
 
+/**
+ * Exact UTF-8 JSON byte length of an owner-validated semantic input payload, counted once when the
+ * copy was made. Undefined for objects this owner did not copy: their sizes are never trusted.
+ */
+export function languageSemanticInputPayloadBytes(
+  input: LanguageWorkspaceSemanticInput,
+): number | undefined {
+  const metadata = validatedContextCopies.get(input)
+  return metadata !== undefined && 'input' in metadata ? metadata.payloadBytes : undefined
+}
+
 /** Validate, deduplicate and defensively copy semantic inputs crossing a host boundary. */
 export function validatedLanguageWorkspaceSemanticInputs(
   value: unknown,

@@ -38,7 +38,7 @@
   "packages/host/dist/node/index.js": "4c69e94eae9f6121789ac9fef2b2ac5edffa3edd692076f691d16bcb033f9c33",
   "packages/host/dist/browser/index.js": "0827a9585aacd1cbe2a31dbd26184e996b31eba3162ceb808b12b527b6611d9a",
   "packages/host/dist/execution/index.js": "bb7f720fe5a611a6156d952f2775f476428a363ce597a51191620084fde818d5",
-  "packages/host/dist/language/index.js": "99c765ae9a3c7fc1192ddd0a0896f79fb2c95db6c0c74b509b5cf01f009c6be0",
+  "packages/host/dist/language/index.js": "8935206c7797318a83b56db884e58e8940ae53f9afefb58e2c2d85adbaa4b857",
   "packages/host/dist/knowledge/index.js": "47f429f64c3fc5775f19bcb2ba6a495602fc6d3cc0779da289e97e60b5bb28f6",
   "packages/host/dist/runtime/index.js": "698914a9fcb4021f02a513b8e7af30314f27e0c457785ed4a84009d9141c7afe",
   "packages/host/dist/renderer/index.js": "bb9b4e0f2ac02e65c5197bec1e7c0888adf94ed3e483a32fdba0231cd143fdb7",

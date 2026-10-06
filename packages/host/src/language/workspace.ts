@@ -89,6 +89,7 @@ import {
   languageWorkspaceContextToken,
   languageDocumentSnapshot,
   languageDocumentTextToken,
+  languageSemanticInputPayloadBytes,
   validatedLanguageWorkspaceSemanticInputs,
 } from './context.js'
 import { createWorkspaceReferenceIndex } from '../references.js'
@@ -1986,6 +1987,11 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
     }
   >()
   const latestSemanticContextKeys = new Map<string, string>()
+  // Inputs this workspace obtained from its own resolved Data analysis. Their revision derives from
+  // every analyzed document, locale, budget and completeness flag plus the analyzer snapshot, so the
+  // context revision uses it instead of canonicalizing and hashing the multi-megabyte payload again
+  // on the editor thread. Inputs from sources and callers are still hashed in full.
+  const hostAnalyzedSemanticInputs = new WeakSet<LanguageWorkspaceSemanticInput>()
   const semanticContextEncoder = new TextEncoder()
   let semanticContextCacheBytes = 0
   let state: 'new' | 'ready' | 'shut-down' = 'new'
@@ -2038,9 +2044,21 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
   }
 
   const rememberSemanticContext = (key: string, value: ResolvedDataSemanticContextResult): void => {
+    // The payload's exact JSON bytes were counted when it was validated; weigh the small envelope
+    // with a one-byte placeholder instead of serializing the whole payload a second time.
+    const payloadBytes =
+      value.input?.payload === undefined
+        ? undefined
+        : languageSemanticInputPayloadBytes(value.input)
     const bytes =
       semanticContextEncoder.encode(key).byteLength +
-      semanticContextEncoder.encode(JSON.stringify(value)).byteLength
+      (payloadBytes === undefined || value.input === undefined
+        ? semanticContextEncoder.encode(JSON.stringify(value)).byteLength
+        : semanticContextEncoder.encode(
+            JSON.stringify({ ...value, input: { ...value.input, payload: 0 } }),
+          ).byteLength -
+          1 +
+          payloadBytes)
     if (bytes > SEMANTIC_CONTEXT_CACHE_MAX_BYTES) return
     const previous = semanticContextCache.get(key)
     if (previous !== undefined) semanticContextCacheBytes -= previous.bytes
@@ -2161,7 +2179,10 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         }
       }
       contextsComplete &&= resolved.complete && !stale
-      if (resolved.input !== undefined) inputs.push(resolved.input)
+      if (resolved.input !== undefined) {
+        hostAnalyzedSemanticInputs.add(resolved.input)
+        inputs.push(resolved.input)
+      }
       if (resolved.failure !== undefined) {
         inputs.push(
           ...validatedLanguageWorkspaceSemanticInputs([
@@ -2557,7 +2578,9 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
                 semanticInputs: semanticInputs.map(input => ({
                   kind: input.kind,
                   id: input.id,
-                  contentRevision: languageWorkspaceContextToken(input),
+                  contentRevision: hostAnalyzedSemanticInputs.has(input)
+                    ? input.revision
+                    : languageWorkspaceContextToken(input),
                 })),
                 semanticComplete,
                 documents: snapshotDocuments.map(document => ({

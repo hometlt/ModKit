@@ -7,6 +7,7 @@ import {
   languageWorkspaceContextToken,
   languageDocumentSnapshot,
   languageDocumentTextToken,
+  languageSemanticInputPayloadBytes,
   validatedLanguageWorkspaceSemanticInputs,
 } from '../src/language/context.js'
 import { validatedLanguageSemanticContextRequirements } from '../src/language/semantic-context.js'
@@ -126,6 +127,29 @@ describe('language workspace semantic payloads', () => {
       ]),
     ).toThrow(/maximum bytes/u)
   }, 15_000)
+
+  it('reports exact payload JSON bytes only for owner-validated copies', () => {
+    const payload = {
+      label: 'Zergling ✓ 𝄞',
+      escapes: 'quote " backslash \\ line\n',
+      values: [1, 2.5, -0, null, true],
+      nested: { empty: '' },
+    }
+    const caller = { kind: 'catalog', id: 'sc2/bytes', revision: '1', payload }
+    const [copy] = validatedLanguageWorkspaceSemanticInputs([caller])
+    if (copy === undefined) throw new Error('expected one validated input')
+    expect(languageSemanticInputPayloadBytes(copy)).toBe(
+      new TextEncoder().encode(JSON.stringify(payload)).byteLength,
+    )
+    // Caller objects, frozen or not, never get a trusted size.
+    expect(languageSemanticInputPayloadBytes(caller)).toBeUndefined()
+    expect(languageSemanticInputPayloadBytes(Object.freeze({ ...caller }))).toBeUndefined()
+    const [withoutPayload] = validatedLanguageWorkspaceSemanticInputs([
+      { kind: 'catalog', id: 'sc2/empty', revision: '1' },
+    ])
+    if (withoutPayload === undefined) throw new Error('expected one validated input')
+    expect(languageSemanticInputPayloadBytes(withoutPayload)).toBe(0)
+  })
 
   it('rejects array holes replaced by extra keys and never invokes array accessors', () => {
     let reads = 0
