@@ -249,16 +249,17 @@ it('uploads a new array into the buffer an array of its size left behind', () =>
   for (const resources of Object.values(live)) assert.equal(resources.size, 0)
 })
 
-it('replaces VAOs for changed attributes, UVs or indices while retaining buffers still in use', () => {
+it('replaces VAOs for changed attributes or UVs, rebinds changed indices, retaining buffers in use', () => {
   const { gl, live, submissions } = context()
   const renderer = materialWebGlDraws(gl, new Map())
   let mesh = primitive()
-  for (const replacement of [
-    {},
-    { normals: Float32Array.of(0, 0, 1, 0, 0, 1, 0, 0, 1) },
-    { textureCoordinateSets: [{ set: 0, coordinates: Float32Array.of(1, 1, 0, 1, 1, 0) }] },
-    { indices: Uint32Array.of(0, 2, 1) },
-    { indices: undefined },
+  for (const [replacement, kept] of [
+    [{}, false],
+    [{ normals: Float32Array.of(0, 0, 1, 0, 0, 1, 0, 0, 1) }, false],
+    [{ textureCoordinateSets: [{ set: 0, coordinates: Float32Array.of(1, 1, 0, 1, 1, 0) }] }, false],
+    // other indices over the same vertices (a blended primitive sorted again) bind into the kept VAO
+    [{ indices: Uint32Array.of(0, 2, 1) }, true],
+    [{ indices: undefined }, false],
   ]) {
     mesh = { ...mesh, ...replacement }
     renderer.draw(draw(mesh), camera)
@@ -281,7 +282,8 @@ it('replaces VAOs for changed attributes, UVs or indices while retaining buffers
       last.attributes.get(4),
       mesh.textureCoordinateSets?.[0].coordinates ?? mesh.textureCoordinates,
     )
-    if (previous) {
+    if (previous && kept) assert.equal(last.vao, previous.vao)
+    else if (previous) {
       assert.notEqual(last.vao, previous.vao)
       assert.ok(!live.vao.has(previous.vao))
     }

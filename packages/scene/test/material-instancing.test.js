@@ -54,13 +54,16 @@ function context() {
     createBuffer: () => ({}),
     bindBuffer(target, buffer) {
       if (target === gl.ARRAY_BUFFER) arrayBuffer = buffer
+      // the element binding is the bound vertex array's
+      else if (target === gl.ELEMENT_ARRAY_BUFFER && vao !== undefined) vao.elements = buffer
     },
     bufferData(target, data) {
       if (target === gl.ARRAY_BUFFER) arrayBuffer.data = data
+      else if (target === gl.ELEMENT_ARRAY_BUFFER) vao.elements.data = data
     },
     getAttribLocation: (_, name) => names.indexOf(name),
     vertexAttribPointer(location, size, _type, _normalized, stride, offset) {
-      vao.attributes.set(location, { data: arrayBuffer.data, size, stride, offset })
+      vao.attributes.set(location, { buffer: arrayBuffer, data: arrayBuffer.data, size, stride, offset })
     },
     vertexAttribDivisor: (location, divisor) => vao.divisors.set(location, divisor),
     vertexAttrib4fv: (location, values) => constants.set(location, [...values]),
@@ -125,6 +128,92 @@ it('draws every placement at once from per-instance model matrices', () => {
   assert.notEqual(submissions[1].vao, submissions[0].vao)
   assert.equal(submissions[1].vao.divisors.size, 0)
   assert.deepEqual(submissions[1].constants.get(8), [5, 6, 7, 1])
+})
+
+it('keeps an instanced vertex array when its placements change, uploading them into its own buffer', () => {
+  const { gl, submissions } = context()
+  const vertexArrays = [],
+    uploads = [],
+    deleted = []
+  const counting = new Proxy(gl, {
+    get(target, name) {
+      if (name === 'createVertexArray')
+        return () => {
+          const vao = target.createVertexArray()
+          vertexArrays.push(vao)
+          return vao
+        }
+      if (name === 'bufferData')
+        return (bufferTarget, data, usage) => {
+          uploads.push(data)
+          target.bufferData(bufferTarget, data, usage)
+        }
+      if (name === 'deleteBuffer') return buffer => deleted.push(buffer)
+      return target[name]
+    },
+  })
+  const renderer = materialWebGlDraws(counting, new Map(), { checkEachDraw: false })
+  const placements = x => {
+    const matrices = new Float32Array(2 * 16)
+    matrices.set(identity)
+    matrices.set(identity, 16)
+    matrices[12] = x
+    return matrices
+  }
+  const draw = { primitive: mesh, program: source, material }
+  const first = placements(1),
+    second = placements(2)
+  renderer.drawInstanced(draw, { matrices: first, count: 2 }, camera)
+  renderer.sweep()
+  // a frame later the group moved: its new matrices go into the vertex array's buffer
+  renderer.drawInstanced(draw, { matrices: second, count: 2 }, camera)
+  assert.equal(vertexArrays.length, 1)
+  assert.equal(submissions[1].vao, submissions[0].vao)
+  const buffer = submissions[0].vao.attributes.get(5).buffer
+  assert.equal(buffer.data, second)
+  assert.equal(uploads.at(-1), second)
+  // the same matrices again upload nothing
+  const count = uploads.length
+  renderer.drawInstanced(draw, { matrices: second, count: 2 }, camera)
+  assert.equal(uploads.length, count)
+  // a vertex array no frame draws is deleted with its placements' buffer
+  renderer.sweep()
+  renderer.sweep()
+  assert.ok(deleted.includes(buffer))
+})
+
+it('binds other indices into a kept vertex array (triangles sorted again) instead of making one', () => {
+  const { gl } = context()
+  const vertexArrays = []
+  let bound
+  const counting = new Proxy(gl, {
+    get(target, name) {
+      if (name === 'createVertexArray')
+        return () => {
+          const vao = target.createVertexArray()
+          vertexArrays.push(vao)
+          return vao
+        }
+      if (name === 'drawElements')
+        return (...args) => {
+          bound = vertexArrays.at(-1).elements.data
+          return target.drawElements(...args)
+        }
+      return target[name]
+    },
+  })
+  const renderer = materialWebGlDraws(counting, new Map(), { checkEachDraw: false })
+  const forward = { ...mesh, indices: Uint32Array.of(0, 1, 2) }
+  const backward = { ...mesh, indices: Uint32Array.of(2, 1, 0) }
+  renderer.draw({ primitive: forward, program: source, material }, camera)
+  assert.equal(bound, forward.indices)
+  renderer.sweep()
+  // the next frame's order of the same primitive: the same vertex array, its elements rebound
+  renderer.draw({ primitive: backward, program: source, material }, camera)
+  assert.equal(bound, backward.indices)
+  renderer.draw({ primitive: forward, program: source, material }, camera)
+  assert.equal(bound, forward.indices)
+  assert.equal(vertexArrays.length, 1)
 })
 
 it('refuses materials whose fragments read the draw normal matrix, and draws nothing for no placements', () => {

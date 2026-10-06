@@ -155,8 +155,24 @@ export function materialWebGlDraws(
     constants: { location: number; value: Float32Array }[]
     /** Model-matrix column attributes; a single draw sets them as constant values. */
     placement: readonly number[]
+    /**
+     * An instanced vertex array's own buffer of placements, and the matrices it holds: a group whose
+     * placements change (a unit moves, a rigid part animates) uploads its new matrices into it,
+     * keeping the vertex array, instead of making a vertex array for each frame's matrices.
+     */
+    instances?: { buffer: WebGLBuffer; data: Float32Array; byteLength: number }
+    /**
+     * The index array the vertex array binds now, and its retained buffer: a blended primitive's
+     * triangles sorted again for the view (depthSortedTriangles) rebind the vertex array's elements
+     * instead of making a vertex array for each order.
+     */
+    elements?: { data: ArrayBufferView; buffer: BufferEntry }
     used: boolean
   }
+  /** The placement slot of an instanced vertex array's key: its matrices are not part of the key. */
+  const INSTANCED = new Float32Array(0)
+  /** The index slot of an indexed vertex array's key: its index array is not part of the key. */
+  const INDEXED = new Uint32Array(0)
   const retained = new Map<ArrayBufferView, BufferEntry>()
   // Buffers of arrays a frame stopped drawing, by target and size, for the next frame's new arrays:
   // an animated scene draws new sprite and skin arrays of the same sizes every frame (on Amphion
@@ -403,16 +419,17 @@ export function materialWebGlDraws(
       )
     const skin = materialSkinOf(primitive)
     const tints = primitiveVertexTints(primitive)
-    // Model matrices per instance, or per vertex (primitiveVertexPlacements): read alike.
-    const placements = instances ?? primitiveVertexPlacements(primitive)
+    // Model matrices per instance (the vertex array's own buffer), or per vertex
+    // (primitiveVertexPlacements, retained like the other attributes): read alike.
+    const vertexPlacements = instances === undefined ? primitiveVertexPlacements(primitive) : undefined
     const data = [
       ...attributes,
-      primitive.indices,
-      instances,
+      primitive.indices === undefined ? undefined : INDEXED,
+      instances === undefined ? undefined : INSTANCED,
       skin?.joints,
       skin?.weights,
       tints,
-      placements,
+      vertexPlacements,
     ]
     const geometries = vertexArrays.get(program)
     const variants = geometries?.get(primitive.positions)
@@ -476,21 +493,31 @@ export function materialWebGlDraws(
           gl.vertexAttribPointer(tintLocation, 4, gl.FLOAT, false, 0, 0)
         }
         if (primitive.indices !== undefined)
-          entry.buffers.push(retainedBuffer(gl.ELEMENT_ARRAY_BUFFER, primitive.indices))
+          created.elements = {
+            data: primitive.indices,
+            buffer: retainedBuffer(gl.ELEMENT_ARRAY_BUFFER, primitive.indices),
+          }
         created.placement = [0, 1, 2, 3].map(column =>
           attributeLocation(program, `a_instanceMatrix${column}`),
         )
-        if (placements !== undefined) {
-          entry.buffers.push(retainedBuffer(gl.ARRAY_BUFFER, placements))
+        if (instances !== undefined) {
+          const buffer = gl.createBuffer()
+          if (buffer === null) throw new TypeError('could not allocate material instances')
+          created.instances = { buffer, data: instances, byteLength: instances.byteLength }
+          gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+          gl.bufferData(gl.ARRAY_BUFFER, instances, gl.DYNAMIC_DRAW)
+        } else if (vertexPlacements !== undefined)
+          entry.buffers.push(retainedBuffer(gl.ARRAY_BUFFER, vertexPlacements))
+        if (instances !== undefined || vertexPlacements !== undefined)
           created.placement.forEach((location, column) => {
             if (location < 0) return
             gl.enableVertexAttribArray(location)
             gl.vertexAttribPointer(location, 4, gl.FLOAT, false, 64, column * 16)
             gl.vertexAttribDivisor(location, instances === undefined ? 0 : 1)
           })
-        }
       } catch (error) {
         gl.bindVertexArray(null)
+        if (created.instances !== undefined) gl.deleteBuffer(created.instances.buffer)
         gl.deleteVertexArray(vao)
         throw error
       }
@@ -500,6 +527,25 @@ export function materialWebGlDraws(
     } else {
       if (state.vertexArray !== entry.vao) gl.bindVertexArray(entry.vao)
       for (const buffer of entry.buffers) buffer.used = true
+      // Other indices for the same vertex array (another order, another primitive over the same
+      // vertices): bound into it, retained as any array. A buffer this vertex array binds was used
+      // in each frame since it was bound, so the sweep has not reused it.
+      if (primitive.indices !== undefined && entry.elements !== undefined) {
+        if (entry.elements.data !== primitive.indices)
+          entry.elements = {
+            data: primitive.indices,
+            buffer: retainedBuffer(gl.ELEMENT_ARRAY_BUFFER, primitive.indices),
+          }
+        else entry.elements.buffer.used = true
+      }
+      // New placements for the same vertex array: respecified in its buffer (a frame still in
+      // flight keeps the storage it read).
+      if (instances !== undefined && entry.instances !== undefined && entry.instances.data !== instances) {
+        gl.bindBuffer(gl.ARRAY_BUFFER, entry.instances.buffer)
+        gl.bufferData(gl.ARRAY_BUFFER, instances, gl.DYNAMIC_DRAW)
+        entry.instances.data = instances
+        entry.instances.byteLength = instances.byteLength
+      }
     }
     state.vertexArray = entry.vao
     entry.used = true
@@ -957,11 +1003,19 @@ export function materialWebGlDraws(
       for (const entry of retained.values()) bufferBytesRetained += entry.byteLength
       let spares = 0
       for (const buffers of spareBuffers.values()) spares += buffers.length
-      let vertexArrayEntries = 0
+      let vertexArrayEntries = 0,
+        instanceBuffers = 0
       for (const geometries of vertexArrays.values())
-        for (const variants of geometries.values()) vertexArrayEntries += variants.length
+        for (const variants of geometries.values()) {
+          vertexArrayEntries += variants.length
+          for (const entry of variants)
+            if (entry.instances !== undefined) {
+              instanceBuffers += 1
+              bufferBytesRetained += entry.instances.byteLength
+            }
+        }
       return Object.freeze({
-        bufferEntries: retained.size + spares,
+        bufferEntries: retained.size + spares + instanceBuffers,
         bufferBytesRetained,
         vertexArrayEntries,
       })
@@ -1000,7 +1054,10 @@ export function materialWebGlDraws(
     release() {
       for (const geometries of vertexArrays.values())
         for (const variants of geometries.values())
-          for (const entry of variants) gl.deleteVertexArray(entry.vao)
+          for (const entry of variants) {
+            gl.deleteVertexArray(entry.vao)
+            if (entry.instances !== undefined) gl.deleteBuffer(entry.instances.buffer)
+          }
       vertexArrays.clear()
       for (const leases of programs.values()) for (const lease of leases.values()) lease.release()
       programs.clear()
@@ -1053,6 +1110,7 @@ export function materialWebGlDraws(
           const live = variants.filter(entry => {
             if (!entry.used) {
               gl.deleteVertexArray(entry.vao)
+              if (entry.instances !== undefined) gl.deleteBuffer(entry.instances.buffer)
               return false
             }
             entry.used = false
