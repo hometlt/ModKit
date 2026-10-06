@@ -36,6 +36,9 @@ import {
   HANDLE_MARKER,
   isHandleRef,
   isPlainObject,
+  isRetainedRef,
+  RETAINED_MARKER,
+  RETAINED_VALUES_FEATURE,
   protocolViolationError,
   toErrorDto,
   validateFrame,
@@ -100,6 +103,23 @@ export interface EndpointOptions {
   readonly onDiagnostic?: (diagnostic: Diagnostic) => void
   /** The peer asked this side to terminate (worker role). */
   readonly onTerminate?: (reason: string) => void
+  /**
+   * Host role only: immutable call values the worker keeps between calls. A value the policy
+   * names crosses once; later calls refer to the worker's deep-frozen copy instead of copying,
+   * validating and decoding it again. Used only after the worker announced the feature.
+   */
+  readonly retainedValues?: RetainedValuePolicy
+}
+
+/** Which call values a host may leave with its worker, and how much the worker may keep. */
+export interface RetainedValuePolicy {
+  /**
+   * True only for deeply immutable plain data the host created and owns (never a caller object,
+   * even a frozen one): later mutation would silently diverge from the worker's copy.
+   */
+  readonly isRetainable: (value: object) => boolean
+  /** Estimated bytes the worker may keep; least recently used values are released first. */
+  readonly maxBytes: number
 }
 
 export interface CallOptions {
@@ -165,6 +185,10 @@ export interface EndpointCounters {
   readonly droppedLateReplies: number
   readonly droppedEvents: number
   readonly violations: number
+  /** Retained call values: the host's ledger size, or the copies a worker holds. */
+  readonly retainedValues: number
+  /** Host role: estimated bytes of those values (the policy's budget unit). */
+  readonly retainedBytes: number
 }
 
 export interface Endpoint {
@@ -277,6 +301,74 @@ class LocalCapabilityImpl implements LocalCapability {
 }
 
 const noopRelease = (): void => undefined
+
+/** One retained value as the host remembers it: the object weakly, and its estimated bytes. */
+interface RetainedLedgerEntry {
+  readonly ref: WeakRef<object>
+  readonly bytes: number
+}
+
+/** Retained values one call encodes: what it defines (staged until sent) and what it refers to. */
+interface RetainedEncoding {
+  readonly policy: RetainedValuePolicy
+  readonly defined: Map<object, { readonly id: string; readonly bytes: number }>
+  readonly used: Set<string>
+}
+
+const retainedReference = (id: string): WireValue =>
+  ({ [RETAINED_MARKER]: { id } }) as unknown as WireValue
+
+/**
+ * Copies a retained value as plain JSON wire data and estimates what its copy will occupy on the
+ * worker (UTF-16 string units plus a fixed cost per node; an estimate for the byte budget, not a
+ * limit). Capabilities, handles, nested markers, typed arrays and other non-JSON values are
+ * refused: the worker freezes the copy and hands it to every later call.
+ */
+function encodeRetainedValue(value: unknown, counter: { bytes: number }): WireValue {
+  if (typeof value === 'string') {
+    counter.bytes += 16 + value.length * 2
+    return value
+  }
+  if (
+    value === null ||
+    value === undefined ||
+    typeof value === 'number' ||
+    typeof value === 'boolean'
+  ) {
+    counter.bytes += 16
+    return value as WireValue
+  }
+  if (Array.isArray(value)) {
+    counter.bytes += 16
+    return value.map(item => encodeRetainedValue(item, counter))
+  }
+  if (
+    isPlainObject(value) &&
+    !Object.hasOwn(value, HANDLE_MARKER) &&
+    !Object.hasOwn(value, RETAINED_MARKER)
+  ) {
+    counter.bytes += 16
+    const out: Record<string, WireValue> = {}
+    for (const [key, item] of Object.entries(value)) {
+      counter.bytes += key.length * 2
+      out[key] = encodeRetainedValue(item, counter)
+    }
+    return out
+  }
+  throw new ModkitError({
+    code: 'x3.host/rpc-bad-retained',
+    message: 'a retained call value must be plain JSON data',
+  })
+}
+
+/** Freezes a received wire tree in place; it then belongs to every call that refers to it. */
+function deepFreeze(value: unknown): unknown {
+  if (typeof value === 'object' && value !== null && !Object.isFrozen(value)) {
+    Object.freeze(value)
+    for (const item of Object.values(value)) deepFreeze(item)
+  }
+  return value
+}
 
 /** Bounds a target-supplied progress report to the wire `ProgressDto` shape. */
 function normalizeProgress(value: unknown): ProgressDto | undefined {
@@ -393,6 +485,27 @@ class EndpointImpl implements Endpoint {
   private droppedEvents = 0
   private violations = 0
   private inboundCount = 0
+  /**
+   * Host role: retained call values. `retainedOut` names the id each retained object crossed
+   * under; the ledger keeps the ids in least-recently-used order with their estimated bytes. It
+   * holds the objects only weakly: a value the host dropped (an old document version, an evicted
+   * context) can never be sent again, so its worker copy is released once it is collected rather
+   * than kept until the byte budget pushes it out.
+   */
+  private readonly retainedValues: RetainedValuePolicy | undefined
+  private peerRetains = false
+  private retainedOut = new WeakMap<object, string>()
+  private readonly retainedLedger = new Map<string, RetainedLedgerEntry>()
+  private readonly retainedFinalizer = new FinalizationRegistry<string>(id =>
+    this.forgetRetained(id),
+  )
+  private retainedReleases: string[] = []
+  private retainedBytes = 0
+  private retainedSequence = 0
+  /** Worker role: deep-frozen copies the host refers to by id until it releases them. */
+  private readonly retainedIn = new Map<string, unknown>()
+  /** Worker role: those copies by identity, so decoding hands them over instead of copying. */
+  private readonly retainedRoots = new WeakSet<object>()
 
   constructor(options: EndpointOptions) {
     this.role = options.role
@@ -409,6 +522,18 @@ class EndpointImpl implements Endpoint {
     this.onFailure = options.onFailure
     this.onDiagnostic = options.onDiagnostic
     this.onTerminate = options.onTerminate
+    if (
+      options.retainedValues !== undefined &&
+      (!Number.isSafeInteger(options.retainedValues.maxBytes) ||
+        options.retainedValues.maxBytes <= 0 ||
+        typeof options.retainedValues.isRetainable !== 'function')
+    ) {
+      throw new ModkitError({
+        code: 'x3.host/rpc-invalid-retained-policy',
+        message: 'retained values need a predicate and a positive safe-integer byte budget',
+      })
+    }
+    this.retainedValues = options.role === 'host' ? options.retainedValues : undefined
     this.ownerPrefix = options.role === 'host' ? 'h' : 'w'
     this.table = new HandleTable(this.ownerPrefix, options.generation, this.limits)
     this.pending = new PendingCalls(this.limits)
@@ -431,6 +556,8 @@ class EndpointImpl implements Endpoint {
       droppedLateReplies: this.pending.droppedLateReplies,
       droppedEvents: this.droppedEvents,
       violations: this.violations,
+      retainedValues: this.role === 'host' ? this.retainedLedger.size : this.retainedIn.size,
+      retainedBytes: this.retainedBytes,
     })
   }
 
@@ -629,6 +756,7 @@ class EndpointImpl implements Endpoint {
     const validated = validateFrame(raw, this.limits, {
       session: this.session,
       generation: this.generation,
+      retained: this.role === 'worker',
     })
     if (!validated.ok) {
       this.fail(validated.violation)
@@ -644,6 +772,15 @@ class EndpointImpl implements Endpoint {
     }
     this.lastInboundId = frame.id
     this.inboundCount += 1
+    if (frame.t === 'call' && this.role === 'worker') {
+      // Keep definitions and resolve references now, in frame order: a later `retain-release`
+      // cannot remove a value this call names, even if the call itself is refused or deferred.
+      const problem = this.adoptRetained(frame.args as WireValue[])
+      if (problem !== undefined) {
+        this.fail(problem)
+        return
+      }
+    }
     void this.dispatch(frame).catch((error: unknown) => {
       // Handlers convert their own failures into frames; anything escaping is an endpoint bug
       // and is treated as a violation so it cannot leave leases behind silently.
@@ -717,6 +854,11 @@ class EndpointImpl implements Endpoint {
     for (const state of this.remote.values()) state.released = true
     this.remote.clear()
     this.remoteProxies.clear()
+    this.retainedIn.clear()
+    this.retainedLedger.clear()
+    this.retainedOut = new WeakMap()
+    this.retainedReleases = []
+    this.retainedBytes = 0
     const { failures } = await this.table.invalidate()
     for (const failure of failures)
       this.report(
@@ -760,7 +902,13 @@ class EndpointImpl implements Endpoint {
     const frame = this.buildFrame(body)
     const transfer: ArrayBuffer[] = []
     const measure = (value: unknown, handles: 'forbid' | 'top' | 'nested', move: boolean) => {
-      const checked = validateWireValue(value, this.limits, handles)
+      const checked = validateWireValue(
+        value,
+        this.limits,
+        handles,
+        [],
+        frame.t === 'call' && this.peerRetains ? 'allow' : 'forbid',
+      )
       if (!checked.ok) {
         throw new ModkitError({
           code: 'x3.host/rpc-outbound-value-invalid',
@@ -785,10 +933,12 @@ class EndpointImpl implements Endpoint {
     }
   }
 
+  /** `onSent` runs synchronously once the frame left, before any reply can arrive. */
   private request(
     body: FrameBody,
     kind: 'call' | 'load' | 'next' | 'subscribe' | 'release',
     options: CallOptions,
+    onSent?: () => void,
   ): Promise<PendingOutcome> {
     this.assertOpen()
     if (options.signal?.aborted) {
@@ -849,6 +999,7 @@ class EndpointImpl implements Endpoint {
             message: 'frame id allocation raced',
           })
         }
+        onSent?.()
       } catch (error) {
         this.pending.drop(id)
         cleanup()
@@ -883,7 +1034,13 @@ class EndpointImpl implements Endpoint {
   }
 
   /** Encode capabilities with a per-call path stack; format it only for released-handle errors. */
-  private encodeArgs(args: readonly unknown[]): WireValue[] {
+  /**
+   * Copies call arguments into wire values. With `retain`, a value the host policy names crosses
+   * as a retained value: defined in full the first time, a reference afterwards, once per call even
+   * when it appears twice. Definitions are only staged here; `commitRetained` records them after
+   * the frame actually left, so a refused send never makes the host believe the worker has a copy.
+   */
+  private encodeArgs(args: readonly unknown[], retain?: RetainedEncoding): WireValue[] {
     const path: (string | number)[] = []
     /** A failed encode aborts this call, so no diagnostic path escapes to the next call. */
     const child = (value: unknown, key: string | number): WireValue => {
@@ -893,6 +1050,26 @@ class EndpointImpl implements Endpoint {
       return encoded
     }
     const encode = (value: unknown): WireValue => {
+      if (
+        retain !== undefined &&
+        typeof value === 'object' &&
+        value !== null &&
+        retain.policy.isRetainable(value)
+      ) {
+        const known = this.retainedOut.get(value)
+        if (known !== undefined && this.retainedLedger.has(known)) {
+          retain.used.add(known)
+          return retainedReference(known)
+        }
+        const staged = retain.defined.get(value)
+        if (staged !== undefined) return retainedReference(staged.id)
+        const counter = { bytes: 0 }
+        const copy = encodeRetainedValue(value, counter)
+        const id = `r${this.retainedSequence}`
+        this.retainedSequence += 1
+        retain.defined.set(value, { id, bytes: counter.bytes })
+        return { [RETAINED_MARKER]: { id, value: copy } } as unknown as WireValue
+      }
       if (value instanceof RemoteCapabilityImpl || value instanceof LocalCapabilityImpl) {
         if (value.isReleased) {
           const location = path
@@ -922,6 +1099,121 @@ class EndpointImpl implements Endpoint {
     return args.map((arg, index) => child(arg, `args[${index}]`))
   }
 
+  /**
+   * Records the definitions a sent call staged, moves every value it used to the recent end and
+   * releases the least recently used copies beyond the byte budget. A value the call itself names
+   * is never released by it, even when that call alone exceeds the budget.
+   */
+  private commitRetained(retain: RetainedEncoding): void {
+    for (const [value, staged] of retain.defined) {
+      const entry: RetainedLedgerEntry = { ref: new WeakRef(value), bytes: staged.bytes }
+      this.retainedOut.set(value, staged.id)
+      this.retainedLedger.set(staged.id, entry)
+      this.retainedFinalizer.register(value, staged.id, entry)
+      this.retainedBytes += staged.bytes
+      retain.used.add(staged.id)
+    }
+    for (const id of retain.used) {
+      const entry = this.retainedLedger.get(id)
+      if (entry === undefined) continue
+      this.retainedLedger.delete(id)
+      this.retainedLedger.set(id, entry)
+    }
+    for (const [id, entry] of this.retainedLedger) {
+      if (this.retainedBytes <= retain.policy.maxBytes) break
+      if (retain.used.has(id)) continue
+      this.retainedLedger.delete(id)
+      this.retainedFinalizer.unregister(entry)
+      const value = entry.ref.deref()
+      if (value !== undefined) this.retainedOut.delete(value)
+      this.retainedBytes -= entry.bytes
+      this.retainedReleases.push(id)
+    }
+    this.flushRetainedReleases()
+  }
+
+  /**
+   * The host collected a retained value: nothing can refer to its id again, so the worker's copy
+   * goes with the next release. Runs from a finalizer, after the endpoint may have closed.
+   */
+  private forgetRetained(id: string): void {
+    const entry = this.retainedLedger.get(id)
+    if (this.state !== 'open' || entry === undefined) return
+    this.retainedLedger.delete(id)
+    this.retainedBytes -= entry.bytes
+    this.retainedReleases.push(id)
+    this.flushRetainedReleases()
+  }
+
+  /** Sends the pending releases, in frames of at most `maxArrayLength` ids. */
+  private flushRetainedReleases(): void {
+    const released = this.retainedReleases
+    if (released.length === 0) return
+    this.retainedReleases = []
+    for (let start = 0; start < released.length; start += this.limits.maxArrayLength) {
+      this.trySend({
+        t: 'retain-release',
+        ids: released.slice(start, start + this.limits.maxArrayLength),
+      })
+    }
+  }
+
+  /**
+   * Worker role: keeps every retained definition of an incoming call (deep-frozen in place: the
+   * received frame belongs to this endpoint) and replaces each marker, definition or reference,
+   * with the kept copy. A reference to a value this side does not hold, or a redefinition, is a
+   * protocol violation: the host's ledger and this copy set must never disagree.
+   */
+  private adoptRetained(args: WireValue[]): ProtocolViolation | undefined {
+    const visit = (
+      holder: unknown[] | Record<string, unknown>,
+      key: number | string,
+    ): ProtocolViolation | undefined => {
+      const value = (holder as Record<string | number, unknown>)[key]
+      if (Array.isArray(value)) {
+        for (let index = 0; index < value.length; index += 1) {
+          const found: ProtocolViolation | undefined = visit(value, index)
+          if (found !== undefined) return found
+        }
+        return undefined
+      }
+      if (!isPlainObject(value) || Object.hasOwn(value, HANDLE_MARKER)) return undefined
+      if (!Object.hasOwn(value, RETAINED_MARKER)) {
+        for (const name of Object.keys(value)) {
+          const found: ProtocolViolation | undefined = visit(value, name)
+          if (found !== undefined) return found
+        }
+        return undefined
+      }
+      if (!isRetainedRef(value)) return { code: 'bad-retained', message: 'malformed retained value' }
+      const inner = value[RETAINED_MARKER]
+      let held: unknown
+      if (Object.hasOwn(inner, 'value')) {
+        if (this.retainedIn.has(inner.id)) {
+          return {
+            code: 'duplicate-retained',
+            message: `retained value ${inner.id} is already held`,
+          }
+        }
+        held = deepFreeze(inner.value)
+        this.retainedIn.set(inner.id, held)
+        if (typeof held === 'object' && held !== null) this.retainedRoots.add(held)
+      } else {
+        if (!this.retainedIn.has(inner.id)) {
+          return { code: 'unknown-retained', message: `retained value ${inner.id} is not held` }
+        }
+        held = this.retainedIn.get(inner.id)
+      }
+      ;(holder as Record<string | number, unknown>)[key] = held
+      return undefined
+    }
+    for (let index = 0; index < args.length; index += 1) {
+      const found = visit(args, index)
+      if (found !== undefined) return found
+    }
+    return undefined
+  }
+
   async callRemote(
     remote: RemoteCapabilityImpl,
     method: string,
@@ -949,7 +1241,12 @@ class EndpointImpl implements Endpoint {
         message: `more than ${this.limits.maxArgs} arguments`,
       })
     }
-    const encoded = this.encodeArgs(args)
+    // A method that validates its wire arguments always receives full copies to validate.
+    const retain: RetainedEncoding | undefined =
+      this.retainedValues !== undefined && this.peerRetains && decl.validateArgs === undefined
+        ? { policy: this.retainedValues, defined: new Map(), used: new Set() }
+        : undefined
+    const encoded = this.encodeArgs(args, retain)
     const argProblem = decl.validateArgs?.(encoded)
     if (argProblem !== undefined) {
       throw new ModkitError({
@@ -967,6 +1264,7 @@ class EndpointImpl implements Endpoint {
       },
       'call',
       options,
+      retain === undefined ? undefined : () => this.commitRetained(retain),
     )
     if (outcome.kind === 'throw') throw fromErrorDto(outcome.error)
     if (outcome.kind === 'done')
@@ -1277,6 +1575,8 @@ class EndpointImpl implements Endpoint {
 
   private decodeArgs(args: readonly WireValue[]): unknown[] {
     const decode = (value: WireValue): unknown => {
+      // a kept copy is already frozen plain data: every call shares it by identity
+      if (typeof value === 'object' && value !== null && this.retainedRoots.has(value)) return value
       if (isHandleRef(value)) {
         const inner = value[HANDLE_MARKER]
         if (this.table.owns(inner.id)) {
@@ -1341,6 +1641,7 @@ class EndpointImpl implements Endpoint {
             abiVersion: 1,
             exports: outcome.value.exports,
             root: outcome.value.root,
+            features: [RETAINED_VALUES_FEATURE],
           })
           break
         case 'done':
@@ -1416,6 +1717,11 @@ class EndpointImpl implements Endpoint {
           return
         }
         this.markRemoteReleased(frame.handle)
+        return
+      case 'retain-release':
+        // Only a worker accepts this frame (validateFrame refuses it on a host). A value already
+        // substituted into an earlier call stays alive for that call; only the copy is dropped.
+        for (const id of frame.ids) this.retainedIn.delete(id)
         return
       case 'terminate':
         if (this.state !== 'open') return
@@ -1529,6 +1835,14 @@ class EndpointImpl implements Endpoint {
       kind: 'handle',
       value: { abiVersion: 1, exports: frame.exports, root: frame.root },
     })
+    // The worker of this endpoint keeps retained values once it says so; an older one never sees
+    // a marker and keeps receiving full copies.
+    if (
+      this.role === 'host' &&
+      result === 'settled' &&
+      frame.features?.includes(RETAINED_VALUES_FEATURE) === true
+    )
+      this.peerRetains = true
     if (result === 'unknown') {
       this.fail({
         code: 'unknown-reply-target',

@@ -25,6 +25,7 @@ import {
   type Endpoint,
   type FramePort,
   type ProtocolLimits,
+  type RetainedValuePolicy,
   type SurfaceRegistry,
 } from '../execution/index.js'
 import type {
@@ -89,6 +90,8 @@ export interface BrowserWorkerBackendOptions {
   /** Overrides the surface registry entirely (tests); defaults to the standard registry. */
   readonly surfaces?: SurfaceRegistry
   readonly onDiagnostic?: (diagnostic: Diagnostic) => void
+  /** Immutable call values each worker keeps between calls (see `RetainedValuePolicy`). */
+  readonly retainedValues?: RetainedValuePolicy
 }
 
 export function createBrowserWorkerBackend(options: BrowserWorkerBackendOptions): ExecutionBackend {
@@ -148,6 +151,7 @@ export function createBrowserWorkerBackend(options: BrowserWorkerBackendOptions)
       generation,
       surfaces,
       limits,
+      ...(options.retainedValues === undefined ? {} : { retainedValues: options.retainedValues }),
       onFailure: failure => {
         const code = 'code' in failure ? failure.code : 'peer-failure'
         void terminate(`protocol failure: ${String(code)}`)

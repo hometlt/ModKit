@@ -18,8 +18,9 @@ import {
   type ExecutionBackend,
   type ExecutionBackendRegistry,
 } from '../execution/backend.js'
-import type { DataSourceSurfaceSource } from '../execution/index.js'
+import type { DataSourceSurfaceSource, RetainedValuePolicy } from '../execution/index.js'
 import type { WorkerBackendPolicy } from '../execution/worker-policy.js'
+import { languageImmutableCapture } from '../language/index.js'
 import { NATIVE_TEXT_MODULES, withNativeTextModules } from '../native-text.js'
 import {
   warmExecutionBackend,
@@ -56,11 +57,30 @@ export interface NodeExecutionBackendsOptions {
   readonly linkedModules?: ReadonlyMap<string, Readonly<Record<string, unknown>>>
   /** The host process's target, when codecs are activated for a worker realm (see the registry). */
   readonly inProcessTarget?: RuntimeTarget
+  /**
+   * Call values each worker keeps between calls. Defaults to the language captures (validated
+   * semantic inputs and document snapshots) within {@link LANGUAGE_RETAINED_VALUE_BYTES}; `false`
+   * sends full copies on every call.
+   */
+  readonly retainedValues?: RetainedValuePolicy | false
 }
+
+/**
+ * Estimated bytes of language captures one worker keeps: the full SC2 authoring index of a
+ * dependency closure plus its documents, with room for the previous revision during edits.
+ */
+export const LANGUAGE_RETAINED_VALUE_BYTES = 256 * 1_024 * 1_024
 
 export function createNodeExecutionBackends(
   options: NodeExecutionBackendsOptions = {},
 ): ExecutionBackendRegistry {
+  const retainedValues =
+    options.retainedValues === false
+      ? undefined
+      : (options.retainedValues ?? {
+          isRetainable: languageImmutableCapture,
+          maxBytes: LANGUAGE_RETAINED_VALUE_BYTES,
+        })
   const backends: ExecutionBackend[] = []
   // Core-native modules are always present. `trustedInProcess: false` only excludes application-
   // supplied linked extensions; it must not disable the built-in text/JSON implementation.
@@ -82,6 +102,7 @@ export function createNodeExecutionBackends(
           ? {}
           : { foreignSurfaces: options.foreignSurfaces }),
         ...(options.bootstrapUrl === undefined ? {} : { bootstrapUrl: options.bootstrapUrl }),
+        ...(retainedValues === undefined ? {} : { retainedValues }),
       }),
       {
         ...(options.warmRealms ?? {}),

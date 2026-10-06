@@ -91,6 +91,15 @@ const validatedContextCopies = new WeakMap<
   | { document: LanguageDocument; textToken?: string }
 >()
 
+/**
+ * True only for the immutable captures this owner created: validated semantic inputs (deep-frozen
+ * strict JSON) and document snapshots (frozen primitive fields). An execution boundary may leave
+ * them with its worker between calls; caller objects, frozen or not, never qualify.
+ */
+export function languageImmutableCapture(value: object): boolean {
+  return validatedContextCopies.has(value)
+}
+
 /** Capture primitive document fields; only copies made by this owner can reuse their text token. */
 export function languageDocumentSnapshot(document: LanguageDocument): LanguageDocument {
   const metadata = validatedContextCopies.get(document)

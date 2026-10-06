@@ -121,6 +121,8 @@ export interface ModkitOptions {
    * host passes an in-memory store and `environment: process.env`: no prompts, no persisted secret.
    */
   readonly credentials?: NodeSubjectServicesOptions['credentials']
+  /** Call values each worker keeps between calls (see `createNodeSubjectServices`); `false` turns it off. */
+  readonly retainedValues?: NodeSubjectServicesOptions['retainedValues']
   /** Budget of every open and of the writer an edit resolves (default `DEFAULT_SUBJECT_OPEN_BUDGET`). */
   readonly budget?: ResourceBudget
   readonly onDiagnostic?: (diagnostic: Diagnostic) => void
@@ -237,6 +239,7 @@ export async function createModkit(options: ModkitOptions): Promise<Modkit> {
     ...(options.onDiagnostic === undefined ? {} : { onDiagnostic: options.onDiagnostic }),
     ...(options.subjectCatalog === undefined ? {} : { subjectCatalog: options.subjectCatalog }),
     ...(options.credentials === undefined ? {} : { credentials: options.credentials }),
+    ...(options.retainedValues === undefined ? {} : { retainedValues: options.retainedValues }),
   })
 
   /*

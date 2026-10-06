@@ -787,6 +787,7 @@ export { expandSubjectReferenceCompletions } from './subject-completion.js'
 export {
   languageDocumentSnapshot,
   languageDocumentTextToken,
+  languageImmutableCapture,
   languageWorkspaceContextToken,
   validatedLanguageWorkspaceSemanticInputs,
 } from './context.js'

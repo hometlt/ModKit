@@ -17,6 +17,10 @@
  *    one request-local path; only a reported violation retains a copied diagnostic path;
  *  - a handle ref is only meaningful where the method surface says a handle is expected; the
  *    marker key is `@x3.handle` and any other object carrying that key is a violation;
+ *  - retained values (`@x3.retained`): a host may define a host-owned immutable call value once
+ *    and refer to it by id afterwards, only inside `call` arguments and only to a worker whose
+ *    `ready` announced `retained-values`. The worker deep-freezes its copy and keeps it until a
+ *    `retain-release` frame; a reference it does not hold, or a redefinition, is a violation;
  *  - errors travel as a bounded DTO built from `ModkitError.toJSON()`; cancellation stays a
  *    distinct outcome (`cancelled: true`) and never turns into a generic failure; stacks never
  *    cross the boundary.
@@ -41,6 +45,20 @@ export const CAPABILITY_RPC_VERSION = 1
 
 /** Marker key of an opaque handle reference inside a wire value. */
 export const HANDLE_MARKER = '@x3.handle'
+
+/**
+ * Marker key of a retained immutable call value: `{ '@x3.retained': { id, value } }` defines it
+ * once, `{ '@x3.retained': { id } }` refers to the copy the worker keeps. Only a host may send it,
+ * only inside `call` arguments, and only to a worker that announced {@link RETAINED_VALUES_FEATURE}.
+ */
+export const RETAINED_MARKER = '@x3.retained'
+/** `ready.features` entry: this worker keeps retained call values until its host releases them. */
+export const RETAINED_VALUES_FEATURE = 'retained-values'
+/** Retained ids are allocated by the host endpoint: `r` and a decimal sequence. */
+const RETAINED_ID = /^r(?:0|[1-9]\d{0,14})$/u
+/** Feature names announced in `ready`: lower-case words joined by dashes. */
+const FEATURE_NAME = /^[a-z][a-z0-9-]{0,63}$/u
+const MAX_FEATURES = 16
 
 /**
  * Handle ids are `<owner><generation>-<sequence>` where owner is `h` (allocated by the host
@@ -68,6 +86,7 @@ const FRAME_TYPES = [
   'progress',
   'release',
   'revoke',
+  'retain-release',
   'terminate',
 ] as const
 
@@ -228,6 +247,27 @@ export function isHandleRef(value: unknown): value is HandleRef {
   return true
 }
 
+export function isRetainedId(value: string): boolean {
+  return RETAINED_ID.test(value)
+}
+
+export interface RetainedRef {
+  readonly [RETAINED_MARKER]: { readonly id: string; readonly value?: WireValue }
+}
+
+/** Exactly `{ '@x3.retained': { id, value? } }` with a host-allocated id; the value is not checked. */
+export function isRetainedRef(value: unknown): value is RetainedRef {
+  if (!isPlainObject(value)) return false
+  const keys = Object.keys(value)
+  if (keys.length !== 1 || keys[0] !== RETAINED_MARKER) return false
+  const inner = (value as Record<string, unknown>)[RETAINED_MARKER]
+  if (!isPlainObject(inner)) return false
+  const innerKeys = Object.keys(inner)
+  if (!innerKeys.every(key => key === 'id' || key === 'value')) return false
+  const id = (inner as Record<string, unknown>)['id']
+  return typeof id === 'string' && isRetainedId(id)
+}
+
 /** A plain data object: `Object.prototype` or null prototype, nothing else. */
 export function isPlainObject(value: unknown): value is Record<string, unknown> {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) return false
@@ -353,6 +393,10 @@ export type ProtocolViolationCode =
   | 'bad-argument'
   | 'bad-return'
   | 'handle-not-allowed'
+  | 'retained-not-allowed'
+  | 'bad-retained'
+  | 'unknown-retained'
+  | 'duplicate-retained'
   | 'endpoint-closed'
 
 export interface ProtocolViolation {
@@ -415,6 +459,7 @@ function validateInner(
   depth: number,
   path: (string | number)[],
   handles: 'forbid' | 'allow',
+  retained: 'forbid' | 'allow' | 'inside' = 'forbid',
 ): ProtocolViolation | undefined {
   measure.nodes += 1
   if (measure.nodes > limits.maxNodes) {
@@ -447,6 +492,10 @@ function validateInner(
       return { code: 'bad-value', message: `${typeof value} is not a wire value`, path }
   }
   if (value === null) return undefined
+  if (retained === 'inside' && ArrayBuffer.isView(value)) {
+    // a retained copy is deep-frozen on the worker, and typed-array elements cannot be frozen
+    return { code: 'bad-retained', message: 'a retained value carries only JSON data', path }
+  }
   if (ArrayBuffer.isView(value) && !(value instanceof DataView)) {
     const kind = value.constructor.name
     if (wireTypedArrayCode(value) === undefined) {
@@ -499,7 +548,7 @@ function validateInner(
     }
     for (let index = 0; index < value.length; index += 1) {
       path.push(index)
-      const found = validateInner(value[index], limits, measure, depth + 1, path, handles)
+      const found = validateInner(value[index], limits, measure, depth + 1, path, handles, retained)
       if (found !== undefined) return found
       path.pop()
     }
@@ -507,6 +556,26 @@ function validateInner(
   }
   if (!isPlainObject(value)) {
     return { code: 'bad-value', message: 'only plain data objects may cross the boundary', path }
+  }
+  if (Object.hasOwn(value, RETAINED_MARKER)) {
+    if (retained !== 'allow') {
+      return {
+        code: retained === 'inside' ? 'bad-retained' : 'retained-not-allowed',
+        message:
+          retained === 'inside'
+            ? 'a retained value cannot nest another retained value'
+            : 'a retained value is not allowed at this position',
+        path,
+      }
+    }
+    if (!isRetainedRef(value)) return { code: 'bad-retained', message: 'malformed retained value', path }
+    const inner = value[RETAINED_MARKER]
+    if (!Object.hasOwn(inner, 'value')) return undefined
+    path.push(RETAINED_MARKER, 'value')
+    const found = validateInner(inner.value, limits, measure, depth + 1, path, 'forbid', 'inside')
+    if (found !== undefined) return found
+    path.length -= 2
+    return undefined
   }
   if (Object.hasOwn(value, HANDLE_MARKER)) {
     if (handles === 'forbid') {
@@ -541,7 +610,7 @@ function validateInner(
       return { code: 'string-too-long', message: 'object key too long', path: [...path, key] }
     }
     path.push(key)
-    const found = validateInner(value[key], limits, measure, depth + 1, path, handles)
+    const found = validateInner(value[key], limits, measure, depth + 1, path, handles, retained)
     if (found !== undefined) return found
     path.pop()
   }
@@ -552,13 +621,16 @@ function validateInner(
  * Validates one wire value against the limits. `handles: 'forbid'` (default) rejects any handle
  * ref inside; `'top'` allows a handle ref only as the whole value; `'nested'` allows refs at any
  * depth (used only by the endpoints for surfaces that return handle-bearing structures — none in
- * v1, kept for the state machine's own frames).
+ * v1, kept for the state machine's own frames). `retained: 'allow'` admits retained-value markers
+ * (call arguments between a host and a worker that announced the feature); they are refused
+ * everywhere else.
  */
 export function validateWireValue(
   value: unknown,
   limits: ProtocolLimits,
   handles: 'forbid' | 'top' | 'nested' = 'forbid',
   path: readonly (string | number)[] = [],
+  retained: 'forbid' | 'allow' = 'forbid',
 ): Validated<WireValueMeasure> {
   const measure: Measure = { nodes: 0, bytes: 0, buffers: [] }
   if (handles === 'top' && isHandleRef(value)) {
@@ -592,6 +664,7 @@ export function validateWireValue(
     0,
     [...path],
     handles === 'nested' ? 'allow' : 'forbid',
+    retained,
   )
   if (found !== undefined)
     return {
@@ -766,6 +839,8 @@ export type Frame =
       readonly exports: readonly string[]
       /** Handle of the loaded module object (surface: the module surface of its contract). */
       readonly root: HandleRef
+      /** Optional protocol features this worker supports, e.g. {@link RETAINED_VALUES_FEATURE}. */
+      readonly features?: readonly string[]
     })
   | (Envelope & {
       readonly t: 'call'
@@ -811,6 +886,8 @@ export type Frame =
   | (Envelope & { readonly t: 'release'; readonly handle: string })
   /** The owner let go of a handle it once sent; the peer drops its proxy. No reply. */
   | (Envelope & { readonly t: 'revoke'; readonly handle: string })
+  /** The host no longer refers to these retained values; the worker drops its copies. No reply. */
+  | (Envelope & { readonly t: 'retain-release'; readonly ids: readonly string[] })
   | (Envelope & { readonly t: 'terminate'; readonly reason: string })
 
 export type FrameOf<T extends FrameType> = Extract<Frame, { readonly t: T }>
@@ -823,7 +900,7 @@ const FRAME_KEYS: Readonly<
     required: ['moduleUrl', 'contributionId', 'variantId', 'artifactDigest'],
     optional: ['entrypointDigest'],
   },
-  ready: { required: ['inReplyTo', 'abiVersion', 'exports', 'root'], optional: [] },
+  ready: { required: ['inReplyTo', 'abiVersion', 'exports', 'root'], optional: ['features'] },
   call: { required: ['handle', 'method', 'args'], optional: ['deadlineMs'] },
   return: { required: ['inReplyTo'], optional: ['value', 'lease'] },
   throw: { required: ['inReplyTo', 'error'], optional: [] },
@@ -836,12 +913,15 @@ const FRAME_KEYS: Readonly<
   progress: { required: ['inReplyTo', 'progress'], optional: [] },
   release: { required: ['handle'], optional: [] },
   revoke: { required: ['handle'], optional: [] },
+  'retain-release': { required: ['ids'], optional: [] },
   terminate: { required: ['reason'], optional: [] },
 }
 
 export interface FrameExpectation {
   readonly session: string
   readonly generation: number
+  /** True on a worker that keeps retained values: its host's `call` arguments may carry markers. */
+  readonly retained?: boolean
 }
 
 function isMessageId(value: unknown): value is number {
@@ -948,6 +1028,16 @@ export function validateFrame(
         const checked = validateWireValue(record['root'], limits, 'top', ['root'])
         if (!checked.ok) return checked
       }
+      const features = record['features']
+      if (
+        features !== undefined &&
+        (!Array.isArray(features) ||
+          features.length > MAX_FEATURES ||
+          !features.every(item => typeof item === 'string' && FEATURE_NAME.test(item)) ||
+          new Set(features).size !== features.length)
+      ) {
+        return violation('bad-value', 'features must be distinct short feature names', ['features'])
+      }
       break
     }
     case 'call': {
@@ -958,7 +1048,13 @@ export function validateFrame(
       if (!Array.isArray(args)) return violation('bad-value', 'args must be an array', ['args'])
       if (args.length > limits.maxArgs)
         return violation('too-many-args', `more than ${limits.maxArgs} args`, ['args'])
-      const checked = validateWireValue(args, limits, 'nested', ['args'])
+      const checked = validateWireValue(
+        args,
+        limits,
+        'nested',
+        ['args'],
+        expect.retained === true ? 'allow' : 'forbid',
+      )
       if (!checked.ok) return checked
       if (
         record['deadlineMs'] !== undefined &&
@@ -1026,6 +1122,21 @@ export function validateFrame(
     case 'revoke': {
       const bad = str('handle', isHandleId, 'bad-handle')
       if (bad) return bad
+      break
+    }
+    case 'retain-release': {
+      const ids = record['ids']
+      if (
+        expect.retained !== true ||
+        !Array.isArray(ids) ||
+        ids.length === 0 ||
+        ids.length > limits.maxArrayLength ||
+        !ids.every(item => typeof item === 'string' && isRetainedId(item))
+      ) {
+        return violation('bad-retained', 'retain-release must name retained ids it may release', [
+          'ids',
+        ])
+      }
       break
     }
     case 'done': {

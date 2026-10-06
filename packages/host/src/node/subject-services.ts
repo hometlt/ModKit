@@ -28,6 +28,7 @@ import {
 } from '@modkit/sdk'
 import { createHostComposition, type HostComposition } from '../composition.js'
 import type { ExecutionBackendRegistry } from '../execution/backend.js'
+import type { RetainedValuePolicy } from '../execution/endpoint.js'
 import type { WorkerBackendPolicy } from '../execution/worker-policy.js'
 import type { SubjectCatalogOptions } from '../catalog-questions.js'
 import type { ExtensionInput } from '../inventory.js'
@@ -65,6 +66,11 @@ export interface NodeSubjectServicesOptions {
   readonly trustedInProcess?: boolean
   /** Statically linked modules (see `linkedExtensionInputs`), served by the in-process backend. */
   readonly linkedModules?: ReadonlyMap<string, Readonly<Record<string, unknown>>>
+  /**
+   * Call values each worker keeps between calls (`createNodeExecutionBackends`): language captures
+   * by default, `false` for full copies on every call (for example under a tight memory budget).
+   */
+  readonly retainedValues?: RetainedValuePolicy | false
   /**
    * Extension coordinates (`publisher/id`) the user switched off. Their contributions stay
    * inventoried and their individual disabled settings remain independent.
@@ -122,6 +128,7 @@ export async function createNodeSubjectServices(
       ? {}
       : { trustedInProcess: options.trustedInProcess }),
     ...(options.linkedModules === undefined ? {} : { linkedModules: options.linkedModules }),
+    ...(options.retainedValues === undefined ? {} : { retainedValues: options.retainedValues }),
   })
   const host = await createHostComposition({
     topology: options.topology,

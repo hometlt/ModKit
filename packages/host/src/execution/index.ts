@@ -21,8 +21,12 @@ export {
   isHandleRef,
   isMethodName,
   isPlainObject,
+  isRetainedId,
+  isRetainedRef,
   isSubscriptionId,
   protocolLimits,
+  RETAINED_MARKER,
+  RETAINED_VALUES_FEATURE,
   protocolViolationError,
   toErrorDto,
   validateErrorDto,
@@ -41,6 +45,7 @@ export {
   type ProtocolLimits,
   type ProtocolViolation,
   type ProtocolViolationCode,
+  type RetainedRef,
   type Validated,
   type WireScalar,
   type WireValue,
@@ -88,6 +93,7 @@ export {
   type LoadedModule,
   type LocalCapability,
   type RemoteCapability,
+  type RetainedValuePolicy,
   type Scheduler,
 } from './endpoint.js'
 export {

@@ -44,6 +44,7 @@ import {
   type Endpoint,
   type ProtocolLimits,
   type RemoteCapability,
+  type RetainedValuePolicy,
   type SurfaceRegistry,
 } from '../execution/index.js'
 import type {
@@ -82,6 +83,11 @@ export interface NodeWorkerBackendOptions {
    * re-verification must close.
    */
   readonly afterEntrypointDigest?: (digest: string) => Promise<void> | void
+  /**
+   * Immutable call values each worker keeps between calls (see `RetainedValuePolicy`): large
+   * host-owned inputs then cross once per worker instead of once per call.
+   */
+  readonly retainedValues?: RetainedValuePolicy
 }
 
 /** One spawned generation: worker, its endpoint and the loaded module root. */
@@ -195,6 +201,7 @@ export function createNodeWorkerBackend(options: NodeWorkerBackendOptions = {}):
       generation,
       surfaces,
       limits,
+      ...(options.retainedValues === undefined ? {} : { retainedValues: options.retainedValues }),
       onFailure: failure => {
         const code = 'code' in failure ? failure.code : 'peer-failure'
         void terminate(`protocol failure: ${code}`)
