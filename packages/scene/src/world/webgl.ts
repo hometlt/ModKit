@@ -177,6 +177,13 @@ export interface WorldWebGlStats {
   readonly cliffEdges: number
   readonly cliffTriangles: number
   readonly objectInstances: number
+  /**
+   * Objects with a model primitive drawn by a material program (the shared GPU path), and objects
+   * with a model triangle written to the plan's batches (the CPU fallback); an object of both counts
+   * in each.
+   */
+  readonly programObjects: number
+  readonly fallbackObjects: number
   readonly modelTriangles: number
   readonly navigationSamples: number
   readonly gatewaySegments: number
@@ -198,6 +205,14 @@ export interface WorldWebGlRendererStats {
   readonly shadowTargetReuses: number
   readonly worldPlanBuilds: number
   readonly worldPlanReuses: number
+  /**
+   * Over the plans this renderer made, cumulative: objects kept from the plan before (their
+   * contribution reused), objects built again, and model samples (poses) made. A still object is
+   * kept; an animated one is built each frame, its pose shared with the instances at its clock.
+   */
+  readonly worldObjectsKept: number
+  readonly worldObjectsBuilt: number
+  readonly worldPosedSamples: number
   /** Updates that retained ground/cliff preparation and rebuilt only the dynamic sections. */
   readonly worldPlanDynamicUpdates: number
   readonly worldPlanDynamicUpdateSamples: number
@@ -217,6 +232,17 @@ export interface WorldWebGlRendererStats {
   readonly materialBufferEntries: number
   readonly materialBufferBytesRetained: number
   readonly materialVertexArrayEntries: number
+  /**
+   * Vertex arrays and buffers the material path made, cumulative: a frame whose models and
+   * geometry stay makes none (moving placements and sorted indices reuse their vertex arrays).
+   */
+  readonly materialVertexArraysCreated: number
+  readonly materialBuffersCreated: number
+  /**
+   * Placements the material draws submitted, cumulative: an instanced draw counts its instances.
+   * Over materialDrawCalls, how many placements a draw carries.
+   */
+  readonly materialPlacementsDrawn: number
   readonly textureUploads: number
   readonly textureCacheHits: number
   readonly textureDisposals: number
@@ -3690,6 +3716,9 @@ interface WorldStaticObject {
   readonly pickMesh: WorldObjectPickMesh
   readonly modelTriangles: number
   readonly shadowTriangles: number
+  /** The paths its model primitives took (WorldWebGlStats.programObjects, fallbackObjects). */
+  readonly byProgram: boolean
+  readonly byFallback: boolean
 }
 
 interface WorldObjectPickMesh {
@@ -4093,6 +4122,15 @@ interface WorldPlanBatches {
 }
 
 const worldPlanBatches = new WeakMap<WorldWebGlPlan, WorldPlanBatches>()
+
+/**
+ * What making a plan took (WorldWebGlRendererStats.worldObjectsKept and the counters beside it):
+ * kept beside the plan, not in it, since a plan made from an earlier one equals one made fresh.
+ */
+const worldPlanWork = new WeakMap<
+  WorldWebGlPlan,
+  Readonly<{ keptObjects: number; builtObjects: number; posedSamples: number }>
+>()
 
 /** The water surface an ambient-occlusion pass measures depth against: visible water triangles. */
 function worldWaterSurfaceDepth(writes: readonly WorldBatchWrite[]): Float32Array {
@@ -6364,6 +6402,9 @@ export function createWorldWebGlPlan(
   const projectorCliffs = preparation.projectorCliffReceivers
   let modelTriangles = 0
   let diagnosticPlaceholders = 0
+  let programObjects = 0,
+    fallbackObjects = 0,
+    keptObjects = 0
   const planPrograms: WorldPlanPrograms = new Map()
   const currentPrograms: WorldCurrentPrograms = {
     passes: new Map(),
@@ -6420,6 +6461,9 @@ export function createWorldWebGlPlan(
       objectPickMeshes.push(retainedObject.pickMesh)
       modelTriangles += retainedObject.modelTriangles
       modelMaterialShadowTriangles += retainedObject.shadowTriangles
+      keptObjects += 1
+      if (retainedObject.byProgram) programObjects += 1
+      if (retainedObject.byFallback) fallbackObjects += 1
       continue
     }
     const scenesBefore = modelMaterialScenes.length
@@ -6472,6 +6516,8 @@ export function createWorldWebGlPlan(
     const restPrimitives: WorldWebGlPickPrimitive[] = []
     let rendered = false
     let resolved = false
+    let byProgram = false,
+      byFallback = false
     for (const component of components) {
       const sampled = sampleFor(component.resourceId)
       if (sampled === undefined) continue
@@ -6618,6 +6664,7 @@ export function createWorldWebGlPlan(
             if (castsSharedMaterialShadow) modelMaterialShadowTriangles += count
             modelTriangles += count
             rendered = true
+            byProgram = true
           }
           continue
         }
@@ -6804,6 +6851,7 @@ export function createWorldWebGlPlan(
           for (const vertex of vertices) pickTriangles.push(vertex[0], vertex[1], vertex[2])
           modelTriangles += 1
           rendered = true
+          byFallback = true
         }
         if (written !== undefined) {
           journalObjectWrite(written)
@@ -7054,6 +7102,8 @@ export function createWorldWebGlPlan(
       framingPrimitives,
     )
     objectPickMeshes.push(pickMesh)
+    if (byProgram) programObjects += 1
+    if (byFallback) fallbackObjects += 1
     if (retainable && staticKey !== undefined)
       retainedStaticObjects.set(
         item,
@@ -7081,6 +7131,8 @@ export function createWorldWebGlPlan(
           pickMesh,
           modelTriangles: modelTriangles - trianglesBefore,
           shadowTriangles: modelMaterialShadowTriangles - shadowTrianglesBefore,
+          byProgram,
+          byFallback,
         }),
       )
   }
@@ -7358,6 +7410,8 @@ export function createWorldWebGlPlan(
       cliffEdges: preparation.stats.cliffEdges,
       cliffTriangles: preparation.stats.cliffTriangles,
       objectInstances: objects.length,
+      programObjects,
+      fallbackObjects,
       modelTriangles,
       navigationSamples,
       gatewaySegments: preparation.stats.gatewaySegments,
@@ -7375,6 +7429,14 @@ export function createWorldWebGlPlan(
   })
   if (currentPrograms.materials.size > 0) worldCurrentPrograms.set(plan, currentPrograms)
   worldPlanFacets.set(plan, facets)
+  worldPlanWork.set(
+    plan,
+    Object.freeze({
+      keptObjects,
+      builtObjects: objects.length - keptObjects,
+      posedSamples: planSamples.size,
+    }),
+  )
   worldPlanBatches.set(plan, {
     batches: currentBatches,
     water: waterWrites,
@@ -8004,6 +8066,9 @@ interface WorldWebGlOwnedResources {
   worldPlanBuilds: number
   worldPlanReuses: number
   worldPlanDynamicUpdates: number
+  worldObjectsKept: number
+  worldObjectsBuilt: number
+  worldPosedSamples: number
   readonly worldPlanBuildMilliseconds: number[]
   readonly worldPlanDynamicUpdateMilliseconds: number[]
   readonly animationSeekMilliseconds: number[]
@@ -8026,6 +8091,12 @@ interface WorldWebGlOwnedResources {
   materialPlan: WorldWebGlPlan | undefined
   retiredMaterialProgramCompilations: number
   retiredMaterialDrawCalls: number
+  /** The material counters (MaterialWebGlDraws.counters) of the material path disposed. */
+  retiredMaterialCounters: Readonly<{
+    vertexArraysCreated: number
+    buffersCreated: number
+    placementsDrawn: number
+  }>
   sentinelTexture: WorldWebGlTextureEntry | undefined
   textureUploads: number
   textureCacheHits: number
@@ -8614,12 +8685,23 @@ function retainedWorldPlan(
     retainPerformanceSample(resources.worldPlanBuildMilliseconds, elapsed)
   }
   if (animationSeek) retainPerformanceSample(resources.animationSeekMilliseconds, elapsed)
+  const work = worldPlanWork.get(plan)
+  if (work !== undefined) {
+    resources.worldObjectsKept += work.keptObjects
+    resources.worldObjectsBuilt += work.builtObjects
+    resources.worldPosedSamples += work.posedSamples
+  }
   resources.lastPlanInput = worldStaticPreparations.get(plan)!.input
   resources.lastPlan = plan
   return plan
 }
+/** Each plan's retained bytes: a plan does not change, and a viewer may ask for stats() each frame. */
+const worldPlanBytes = new WeakMap<WorldWebGlPlan, number>()
+
 function retainedWorldPlanBytes(plan: WorldWebGlPlan | undefined): number {
   if (plan === undefined) return 0
+  const known = worldPlanBytes.get(plan)
+  if (known !== undefined) return known
   const buffers = new Set<ArrayBufferLike>()
   const retain = (value: ArrayBufferView | undefined): void => {
     if (value !== undefined) buffers.add(value.buffer)
@@ -8682,6 +8764,7 @@ function retainedWorldPlanBytes(plan: WorldWebGlPlan | undefined): number {
   for (const item of plan.picking.objects) retain(item.triangles)
   let bytes = 0
   for (const buffer of buffers) bytes += buffer.byteLength
+  worldPlanBytes.set(plan, bytes)
   return bytes
 }
 
@@ -8724,6 +8807,9 @@ function createOwnedResources(gl: WebGL2RenderingContext): WorldWebGlOwnedResour
       shadowTargetAllocations: 0,
       shadowTargetReuses: 0,
       worldPlanBuilds: 0,
+      worldObjectsKept: 0,
+      worldObjectsBuilt: 0,
+      worldPosedSamples: 0,
       worldPlanReuses: 0,
       worldPlanDynamicUpdates: 0,
       worldPlanBuildMilliseconds: [],
@@ -8749,6 +8835,7 @@ function createOwnedResources(gl: WebGL2RenderingContext): WorldWebGlOwnedResour
       materialPlan: undefined,
       retiredMaterialProgramCompilations: 0,
       retiredMaterialDrawCalls: 0,
+      retiredMaterialCounters: { vertexArraysCreated: 0, buffersCreated: 0, placementsDrawn: 0 },
       sentinelTexture: undefined,
       textureUploads: 0,
       textureCacheHits: 0,
@@ -8767,6 +8854,18 @@ function createOwnedResources(gl: WebGL2RenderingContext): WorldWebGlOwnedResour
   }
 }
 
+/** The material path's cumulative counters: the disposed path's and the live one's. */
+function worldMaterialCounters(resources: WorldWebGlOwnedResources) {
+  const retired = resources.retiredMaterialCounters
+  if (resources.disposed) return retired
+  const live = resources.materialDraws.counters()
+  return Object.freeze({
+    vertexArraysCreated: retired.vertexArraysCreated + live.vertexArraysCreated,
+    buffersCreated: retired.buffersCreated + live.buffersCreated,
+    placementsDrawn: retired.placementsDrawn + live.placementsDrawn,
+  })
+}
+
 function disposeOwnedResources(resources: WorldWebGlOwnedResources): void {
   if (resources.disposed) return
   resources.disposed = true
@@ -8777,6 +8876,7 @@ function disposeOwnedResources(resources: WorldWebGlOwnedResources): void {
   resources.materialPlan = undefined
   resources.retiredMaterialProgramCompilations += resources.materialDraws.programCompilations()
   resources.retiredMaterialDrawCalls += resources.materialDraws.drawCalls()
+  resources.retiredMaterialCounters = worldMaterialCounters(resources)
   resources.materialDraws.release()
   resources.materialTextureHandles.clear()
   resources.usedGeometry.clear()
@@ -12106,6 +12206,7 @@ export function createWorldWebGlRenderer(
         const material = resources.disposed
           ? { bufferEntries: 0, bufferBytesRetained: 0, vertexArrayEntries: 0 }
           : resources.materialDraws.stats()
+        const counters = worldMaterialCounters(resources)
         const worldPlanBytesRetained = retainedWorldPlanBytes(resources.lastPlan)
         const shadowTargetBytesRetained =
           (resources.shadowTarget === undefined ? 0 : resources.shadowTarget.size ** 2 * 4) +
@@ -12124,6 +12225,9 @@ export function createWorldWebGlRenderer(
           shadowTargetReuses: resources.shadowTargetReuses,
           worldPlanBuilds: resources.worldPlanBuilds,
           worldPlanReuses: resources.worldPlanReuses,
+          worldObjectsKept: resources.worldObjectsKept,
+          worldObjectsBuilt: resources.worldObjectsBuilt,
+          worldPosedSamples: resources.worldPosedSamples,
           worldPlanDynamicUpdates: resources.worldPlanDynamicUpdates,
           worldPlanDynamicUpdateSamples: resources.worldPlanDynamicUpdateMilliseconds.length,
           ...(dynamicP50 === undefined
@@ -12146,6 +12250,9 @@ export function createWorldWebGlRenderer(
           materialBufferEntries: material.bufferEntries,
           materialBufferBytesRetained: material.bufferBytesRetained,
           materialVertexArrayEntries: material.vertexArrayEntries,
+          materialVertexArraysCreated: counters.vertexArraysCreated,
+          materialBuffersCreated: counters.buffersCreated,
+          materialPlacementsDrawn: counters.placementsDrawn,
           textureUploads: resources.textureUploads,
           textureCacheHits: resources.textureCacheHits,
           textureDisposals: resources.textureDisposals,

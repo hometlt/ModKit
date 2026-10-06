@@ -152,6 +152,8 @@ describe('common world WebGL plan', () => {
       cliffEdges: 1,
       cliffTriangles: 2,
       objectInstances: 1,
+      programObjects: 0,
+      fallbackObjects: 1,
       modelTriangles: 1,
       navigationSamples: 1,
       gatewaySegments: 1,

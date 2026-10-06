@@ -231,3 +231,19 @@ it("draws a glTF material's textures on its base colour's UV set, one set per ma
   assert.equal('textureCoordinates' in drawn.get('bare').primitive, false)
   assert.ok(plan.texturedTriangles.length > 0)
 })
+
+it('counts the objects each path draws, alike in a plan kept from the last and in a fresh one', () => {
+  const input = {
+    items: [unit(9, 'gltf'), unit(10, 'unlit')],
+    teamColors: new Map([[1, [1, 0, 0]]]),
+    models: new Map([
+      ['gltf', model('gltf', { baseColorFactor: [0.5, 0.5, 0.5, 1] }, [])],
+      ['unlit', model('unlit', { baseColorFactor: [0.5, 0.5, 0.5, 1], unlit: true }, [])],
+    ]),
+  }
+  const counts = plan => [plan.stats.programObjects, plan.stats.fallbackObjects]
+  const first = createWorldWebGlPlan(input)
+  assert.deepEqual(counts(first), [1, 1])
+  // the same still objects, kept: counted as before
+  assert.deepEqual(counts(createWorldWebGlPlan({ ...input, timeSeconds: 1 }, first)), [1, 1])
+})

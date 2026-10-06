@@ -139,6 +139,10 @@ export function materialWebGlDraws(
   const pendingPrograms = new Set<WebGLProgram>()
   let programCompilations = 0
   let drawCalls = 0
+  // Cumulative (counters()): vertex arrays and buffers made, placements drawn.
+  let vertexArraysCreated = 0,
+    buffersCreated = 0,
+    placementsDrawn = 0
   // Primitive arrays are immutable for the lifetime of a draw plan; keep their GPU copies across
   // frames instead of re-uploading every attribute on every draw. `sweep()` drops arrays a frame
   // did not touch, `release()` drops everything.
@@ -391,6 +395,7 @@ export function materialWebGlDraws(
       if (spare !== undefined) spareBytes -= data.byteLength
       const buffer = spare ?? gl.createBuffer()
       if (buffer === null) throw new TypeError('could not allocate material geometry')
+      if (spare === undefined) buffersCreated += 1
       gl.bindBuffer(target, buffer)
       gl.bufferData(target, data, gl.STATIC_DRAW)
       entry = { buffer, target, byteLength: data.byteLength, used: true }
@@ -441,6 +446,7 @@ export function materialWebGlDraws(
     if (entry === undefined) {
       const vao = gl.createVertexArray()
       if (vao === null) throw new TypeError('could not allocate material vertex array')
+      vertexArraysCreated += 1
       const created: VertexArrayEntry = {
         vao,
         data,
@@ -503,6 +509,7 @@ export function materialWebGlDraws(
         if (instances !== undefined) {
           const buffer = gl.createBuffer()
           if (buffer === null) throw new TypeError('could not allocate material instances')
+          buffersCreated += 1
           created.instances = { buffer, data: instances, byteLength: instances.byteLength }
           gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
           gl.bufferData(gl.ARRAY_BUFFER, instances, gl.DYNAMIC_DRAW)
@@ -795,6 +802,7 @@ export function materialWebGlDraws(
     } else if (primitive.indices === undefined) gl.drawArraysInstanced(mode, 0, count, instances)
     else gl.drawElementsInstanced(mode, count, gl.UNSIGNED_INT, 0, instances)
     drawCalls += 1
+    placementsDrawn += instances ?? 1
     if (options.checkEachDraw !== false) {
       const error = gl.getError()
       if (error !== gl.NO_ERROR) throw new TypeError(`material WebGL draw failed (${error})`)
@@ -994,6 +1002,11 @@ export function materialWebGlDraws(
     /** Cumulative drawArrays/drawElements submissions, including depth-only material passes.
      * Snapshot before/after a pass or frame for its direct draw count. */
     drawCalls: () => drawCalls,
+    /**
+     * Cumulative work counters: vertex arrays and buffers made (a frame of known geometry makes
+     * none) and placements drawn (an instanced draw counts its instances).
+     */
+    counters: () => Object.freeze({ vertexArraysCreated, buffersCreated, placementsDrawn }),
     /** Snapshot of this renderer's owned GPU geometry; no GL queries or frame-state changes.
      * Each retained entry owns one distinct buffer, even for views sharing CPU backing storage;
      * spare buffers waiting for the next frame's arrays count as held.

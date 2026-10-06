@@ -176,6 +176,9 @@ it('keeps an instanced vertex array when its placements change, uploading them i
   const count = uploads.length
   renderer.drawInstanced(draw, { matrices: second, count: 2 }, camera)
   assert.equal(uploads.length, count)
+  // one vertex array made, three draws of two placements each
+  const { vertexArraysCreated, placementsDrawn } = renderer.counters()
+  assert.deepEqual([vertexArraysCreated, placementsDrawn, renderer.drawCalls()], [1, 6, 3])
   // a vertex array no frame draws is deleted with its placements' buffer
   renderer.sweep()
   renderer.sweep()

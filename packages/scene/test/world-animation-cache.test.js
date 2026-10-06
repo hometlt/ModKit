@@ -279,7 +279,20 @@ it('renderer picking reuses its retained plan, counts dynamic updates honestly a
   renderer.pick({ ...next, selectedObjectId: 1 }, screen)
   assert.equal(renderer.stats().worldPlanBuilds, 1)
   assert.equal(renderer.stats().worldPlanDynamicUpdates, 2)
+  // three plans of the one animated object: built once fresh and twice again, never kept
+  assert.deepEqual(
+    [renderer.stats().worldObjectsBuilt, renderer.stats().worldObjectsKept],
+    [3, 0],
+  )
+  // picking draws no material: the material path's counters stay at zero, and survive dispose()
+  const counters = stats => [
+    stats.materialVertexArraysCreated,
+    stats.materialBuffersCreated,
+    stats.materialPlacementsDrawn,
+  ]
+  assert.deepEqual(counters(renderer.stats()), [0, 0, 0])
   renderer.dispose()
+  assert.deepEqual(counters(renderer.stats()), [0, 0, 0])
   assert.equal(renderer.stats().worldPlanBytesRetained, 0)
   assert.throws(() => renderer.pick(next, screen), /disposed/)
 })
