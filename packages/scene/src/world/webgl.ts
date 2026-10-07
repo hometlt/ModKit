@@ -9173,10 +9173,18 @@ function retainPerformanceSample(target: number[], value: number): void {
   if (target.length > WORLD_WEBGL_PERFORMANCE_SAMPLE_LIMIT) target.shift()
 }
 
-function percentile(values: readonly number[], fraction: number): number | undefined {
-  if (values.length === 0) return undefined
-  const ordered = [...values].sort((left, right) => left - right)
-  return ordered[Math.min(ordered.length - 1, Math.ceil(ordered.length * fraction) - 1)]
+/**
+ * The values at `fractions` of the way through `values` in order (the nearest rank), from one sort:
+ * the samples are finite and not negative (retainPerformanceSample), so a numeric typed sort orders
+ * them as comparing them does. A renderer's stats() takes ten of them, and a caller may read its
+ * stats every frame (the RTS preview does).
+ */
+function percentiles(values: readonly number[], ...fractions: number[]): (number | undefined)[] {
+  if (values.length === 0) return fractions.map(() => undefined)
+  const ordered = Float64Array.from(values).sort()
+  return fractions.map(
+    fraction => ordered[Math.min(ordered.length - 1, Math.ceil(ordered.length * fraction) - 1)],
+  )
 }
 
 function harvestGpuTimer(resources: WorldWebGlOwnedResources): void {
@@ -12864,8 +12872,17 @@ function worldSceneBlendedDraws(scene: WorldWebGlModelMaterialScene, viewProject
   const splatLayers = worldSplatSceneLayers.get(scene)
   const blended: WorldSceneBlendedDraw[] = []
   const splat: (WorldSceneBlendedDraw & Readonly<{ layer: number | undefined }>)[] = []
+  // Only a primitive with a blended pass gives a blended draw, and leaving the others out changes
+  // none of them nor their order: sceneMaterialDraws orders blended draws after the solid ones, by
+  // their own priority, depth and order, and sorts each one's triangles alone. A posed scene (its
+  // skins standing for new poses) is made again every plan; most of its primitives are solid.
+  const blending = scene.primitives.filter(primitive =>
+    scene.programs
+      .get(primitive.materialId ?? '')
+      ?.passes.some(program => !materialIsSolid(program)),
+  )
   for (const draw of sceneMaterialDraws(
-    scene.primitives,
+    blending,
     scene.materials,
     scene.programs,
     viewProjection,
@@ -13439,16 +13456,15 @@ export function createWorldWebGlRenderer(
     stats: (): WorldWebGlRendererStats =>
       (() => {
         harvestGpuTimer(resources)
-        const cpuP50 = percentile(resources.cpuFrameMilliseconds, 0.5)
-        const cpuP95 = percentile(resources.cpuFrameMilliseconds, 0.95)
-        const gpuP50 = percentile(resources.gpuFrameMilliseconds, 0.5)
-        const gpuP95 = percentile(resources.gpuFrameMilliseconds, 0.95)
-        const planP50 = percentile(resources.worldPlanBuildMilliseconds, 0.5)
-        const planP95 = percentile(resources.worldPlanBuildMilliseconds, 0.95)
-        const dynamicP50 = percentile(resources.worldPlanDynamicUpdateMilliseconds, 0.5)
-        const dynamicP95 = percentile(resources.worldPlanDynamicUpdateMilliseconds, 0.95)
-        const seekP50 = percentile(resources.animationSeekMilliseconds, 0.5)
-        const seekP95 = percentile(resources.animationSeekMilliseconds, 0.95)
+        const [cpuP50, cpuP95] = percentiles(resources.cpuFrameMilliseconds, 0.5, 0.95)
+        const [gpuP50, gpuP95] = percentiles(resources.gpuFrameMilliseconds, 0.5, 0.95)
+        const [planP50, planP95] = percentiles(resources.worldPlanBuildMilliseconds, 0.5, 0.95)
+        const [dynamicP50, dynamicP95] = percentiles(
+          resources.worldPlanDynamicUpdateMilliseconds,
+          0.5,
+          0.95,
+        )
+        const [seekP50, seekP95] = percentiles(resources.animationSeekMilliseconds, 0.5, 0.95)
         const geometry = geometryResourceTotals(resources)
         const textures = textureResourceTotals(resources)
         const material = resources.disposed
