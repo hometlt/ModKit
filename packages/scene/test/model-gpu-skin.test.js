@@ -371,3 +371,117 @@ it('draws a pose sampled as matrices as its frozen bones draw it', () => {
     }
   }
 })
+
+it('bounds every vertex of every sample, and leaves out what it does not bound', () => {
+  const rigid = {
+    id: 'cap',
+    topology: 'triangles',
+    positions: Float32Array.of(0, 0, 0, 1, 0, 0, 0, 1, 0),
+    indices: Uint32Array.of(0, 1, 2),
+  }
+  // The skin, a rigid primitive under its child bone and one no bone moves (as in the test above),
+  // the skin with a vertex 8 above its root (which turns a quarter) or with every vertex's weights
+  // summing to a half (the kernel divides by the sum), alone or together, and under a node that
+  // scales the whole model twice and moves it by (5, -3, 1).
+  const levered = {
+    ...primitive(),
+    positions: Float32Array.of(10, 8, 0, 10, 2, 0, 11, 1, 0, 12, 3, 1),
+  }
+  const halved = {
+    ...primitive(),
+    boneWeights: Float32Array.of(0.5, 0, 0, 0, 0.125, 0.375, 0, 0, 0.1, 0.1, 0, 0, 0.5, 0, 0, 0),
+  }
+  const scene = ({ skin, lever, half, tip, still, framed }) => ({
+    nodes: [
+      ...(framed
+        ? [
+            {
+              id: 'base',
+              childIds: ['node-9', 'still'],
+              meshIds: [],
+              transform: [2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 2, 0, 5, -3, 1, 1],
+            },
+          ]
+        : []),
+      ...nodes.map(node => ({
+        ...node,
+        ...(node.id === 'node-9' ? { meshIds: skin || lever || half ? ['mesh'] : [] } : {}),
+        ...(node.id === 'node-3' ? { childIds: [...node.childIds, 'tip'] } : {}),
+      })),
+      { id: 'tip', childIds: [], meshIds: tip ? ['cap'] : [], transform: [...inverse(-4, -0.5)] },
+      { id: 'still', childIds: [], meshIds: still ? ['cap'] : [], transform: [...inverse(-2, -3)] },
+    ],
+    meshes: [
+      ...(skin || lever || half ? [{ id: 'mesh', primitiveIds: ['quad'] }] : []),
+      ...(tip || still ? [{ id: 'cap', primitiveIds: ['cap'] }] : []),
+    ],
+    primitives: [
+      ...(skin ? [primitive()] : lever ? [levered] : half ? [halved] : []),
+      ...(tip || still ? [rigid] : []),
+    ],
+    skeleton: bindings,
+  })
+  // how far a sample's vertices lie from a point
+  const farthest = (sample, [cx, cy, cz]) =>
+    Math.max(
+      ...sample.primitives.flatMap(({ positions, transform: m }) =>
+        Array.from({ length: positions.length / 3 }, (_, v) => {
+          const [x, y, z] = positions.subarray(v * 3, v * 3 + 3)
+          return m === undefined
+            ? Math.hypot(x - cx, y - cy, z - cz)
+            : Math.hypot(
+                m[0] * x + m[4] * y + m[8] * z + m[12] - cx,
+                m[1] * x + m[5] * y + m[9] * z + m[13] - cy,
+                m[2] * x + m[6] * y + m[10] * z + m[14] - cz,
+              )
+        }),
+      ),
+    )
+  for (const parts of [
+    { skin: true },
+    { lever: true },
+    { half: true },
+    { tip: true },
+    { still: true },
+    { skin: true, tip: true, still: true },
+    { skin: true, tip: true, still: true, framed: true },
+  ]) {
+    const sampler = createModelSceneSampler(scene(parts), { clip })
+    const bounds = sampler.bounds()
+    assert.equal(sampler.bounds(), bounds)
+    let far = 0
+    for (let step = -10; step <= 130; step++)
+      far = Math.max(far, farthest(sampler.sample(step / 100), bounds.center))
+    const label = Object.keys(parts).join('+')
+    assert.ok(far <= bounds.radius, `${label}: ${far} > ${bounds.radius}`)
+    // and not far beyond them: the rigid part under a bone that turns and scales is the loosest
+    assert.ok(far > bounds.radius * 0.4, `${label}: ${far} < 0.4 × ${bounds.radius}`)
+    // on the GPU the same sphere: the bounds are the clip's, not the skinning's
+    const gpu = createModelSceneSampler(scene(parts), { clip, skinning: 'gpu' })
+    assert.deepEqual(gpu.bounds(), bounds)
+  }
+  // under the frame, each part's sphere scaled twice and moved
+  for (const parts of [{ skin: true }, { lever: true }, { tip: true }, { still: true }]) {
+    const plain = createModelSceneSampler(scene(parts), { clip }).bounds()
+    const framed = createModelSceneSampler(scene({ ...parts, framed: true }), { clip }).bounds()
+    const label = Object.keys(parts).join('+')
+    near(
+      framed.center,
+      plain.center.map((x, axis) => 2 * x + [5, -3, 1][axis]),
+      label,
+    )
+    assert.ok(Math.abs(framed.radius - 2 * plain.radius) < 1e-2 * plain.radius, label)
+  }
+  // a camera rule turns a bone where the clip does not, morph weights move vertices: no bounds
+  const whole = scene({ skin: true, tip: true, still: true })
+  const turned = { nodeId: 'node-9', mode: 'inverse-camera', basisRotations: [] }
+  assert.equal(createModelSceneSampler(whole, { clip, billboards: [turned] }).bounds(), undefined)
+  const morphed = {
+    ...whole,
+    primitives: [
+      primitive(),
+      { ...rigid, morphTargets: [{ positions: Float32Array.of(0, 0, 9, 0, 0, 9, 0, 0, 9) }] },
+    ],
+  }
+  assert.equal(createModelSceneSampler(morphed, { clip }).bounds(), undefined)
+})

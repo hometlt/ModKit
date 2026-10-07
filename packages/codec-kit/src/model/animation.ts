@@ -332,6 +332,32 @@ export interface ModelAnimationValue {
 }
 
 /**
+ * What every value of one channel stays within, whatever the time (createModelAnimationSampler's
+ * `extent`), as sampleTrackValue makes it: at and beyond its ends a key, between two keys the first
+ * (step), a convex combination of them or a cubic within the Bezier control points of the keys and
+ * their tangents (linear, cubic-spline), or a unit quaternion on the arc between them (a channel of
+ * quaternions, spherical-linear with keys four wide).
+ */
+export interface ModelAnimationExtent {
+  /** The number of components of its keys. */
+  readonly width: number
+  /**
+   * What a value between two keys is: one of `points` (`step`), a point of their convex hull
+   * (`hull`), or one on an arc of `arcs` (`arc`).
+   */
+  readonly between: 'step' | 'hull' | 'arc'
+  /** The keys, and a cubic's inner control points. */
+  readonly points: readonly (readonly number[])[]
+  /**
+   * The keys of an `arc` channel in pairs, each and the next, the second turned to the first's side
+   * as slerp turns it. A value between them is the unit quaternion of a combination of the two with
+   * weights not below zero: on the shorter arc between their directions (or the quaternion of no
+   * length, the identity's, where a key has none and the other no weight).
+   */
+  readonly arcs: readonly (readonly [readonly number[], readonly number[]])[]
+}
+
+/**
  * Compile a facet clip once, then sample without rebuilding its tracks each frame.
  * Time is sequence-local seconds; the caller controls sequence looping. Concurrent channels wrap
  * by their own duration. Descriptive channels without a declared interpolation are refused.
@@ -351,6 +377,8 @@ export function createModelAnimationSampler(
   sampleInto(timeSeconds: number, values: number[][], signal?: AbortSignal): void
   /** What each value is (its target, kind and axis), in the order of `sample` and `sampleInto`. */
   readonly channels: readonly Omit<ModelAnimationValue, 'value'>[]
+  /** What every value of channel `index` stays within (ModelAnimationExtent), made when first asked for. */
+  extent(index: number): ModelAnimationExtent
 } {
   const owned = snapshotModelAnimations([clip], budget, signal)[0]!
   const tracks = owned.channels.map(channel => {
@@ -387,8 +415,50 @@ export function createModelAnimationSampler(
       ),
     ),
   )
+  const extents: ModelAnimationExtent[] = []
   return Object.freeze({
     channels,
+    extent(index: number): ModelAnimationExtent {
+      const known = extents[index]
+      if (known !== undefined) return known
+      const entry = tracks[index]
+      if (entry === undefined) throw new RangeError('no animation channel at that index')
+      const { track, options } = entry
+      const keys = track.keys
+      const width = keys[0]?.vector.length ?? 0
+      // sampleTrackValue slerps keys four wide only; others it blends linearly
+      const between =
+        track.lineType === 0
+          ? 'step'
+          : track.lineType !== CUBIC_SPLINE_LINE_TYPE && options.isQuat && width === 4
+            ? 'arc'
+            : 'hull'
+      const points: (readonly number[])[] = []
+      const arcs: (readonly [readonly number[], readonly number[]])[] = []
+      for (let at = 0; at < keys.length; at++) {
+        const key = keys[at]!
+        points.push(key.vector)
+        const next = keys[at + 1]
+        if (next === undefined) continue
+        if (track.lineType === CUBIC_SPLINE_LINE_TYPE) {
+          // the segment's inner Bezier control points: each key a third of the span along its tangent
+          const span = next.frame - key.frame
+          points.push(key.vector.map((x, axis) => x + (span * (key.outTan?.[axis] ?? 0)) / 3))
+          points.push(next.vector.map((x, axis) => x - (span * (next.inTan?.[axis] ?? 0)) / 3))
+        } else if (between === 'arc') {
+          // slerp takes the shorter way: the second key turned to the first's side
+          let dot = 0
+          for (let axis = 0; axis < 4; axis++) dot += key.vector[axis]! * next.vector[axis]!
+          arcs.push([key.vector, dot < 0 ? next.vector.map(x => -x) : next.vector])
+        }
+      }
+      return (extents[index] = Object.freeze({
+        width,
+        between,
+        points: Object.freeze(points),
+        arcs: Object.freeze(arcs),
+      }))
+    },
     sample(timeSeconds: number, requestSignal?: AbortSignal): readonly ModelAnimationValue[] {
       if (requestSignal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
       finite(timeSeconds, 'sample time')

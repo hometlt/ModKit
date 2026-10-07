@@ -164,6 +164,26 @@ export function invertAffine(matrix: readonly number[]): number[] {
   ]
 }
 
+/**
+ * A bound of how much the linear part A of a column-major 4x4 matrix lengthens a vector: the square
+ * root of the largest Gershgorin row sum of AᵀA (its entries are the products of A's columns), never
+ * below A's spectral norm and equal to it when AᵀA is diagonal, as for a rotation after an axis
+ * scale (T·R·S); a relative 1e-12 covers the rounding of the sums.
+ */
+export function linearStretch(matrix: ArrayLike<number>): number {
+  const at = (index: number) => matrix[index] ?? 0
+  let largest = 0
+  for (let i = 0; i < 3; i++) {
+    let row = 0
+    for (let j = 0; j < 3; j++)
+      row += Math.abs(
+        at(i * 4) * at(j * 4) + at(i * 4 + 1) * at(j * 4 + 1) + at(i * 4 + 2) * at(j * 4 + 2),
+      )
+    largest = Math.max(largest, row)
+  }
+  return Math.sqrt(largest) * (1 + 1e-12)
+}
+
 /** Column-major 4x4 product `left × right` in doubles: `right` applies first. */
 export function multiplyAffine(left: readonly number[], right: readonly number[]): number[] {
   const product = new Array<number>(16)

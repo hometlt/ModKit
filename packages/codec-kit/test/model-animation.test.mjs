@@ -169,3 +169,93 @@ test('values sampled into kept arrays are those sample makes, in the order of ch
   assert.throws(() => sampler.sampleInto(NaN, values), TypeError)
   assert.throws(() => sampler.sampleInto(0, values, AbortSignal.abort()), { name: 'AbortError' })
 })
+
+test('the extent of a channel holds every value it takes, whatever the time', () => {
+  const cubic = (value, inTangent, outTangent) => ({ value, inTangent, outTangent })
+  const sampler = createModelAnimationSampler(
+    clip([
+      channel('translation', 'linear', [
+        [0, 2, -4],
+        [2, 4, 6],
+        [-4, 6, 8],
+      ]),
+      channel('scale', 'step', [
+        [1, 1, 1],
+        [2, 0.5, 1],
+        [1, 3, 1],
+      ]),
+      channel('rotation', 'spherical-linear', [
+        [0, 0, 0, 0.5],
+        [0, 0, 1, 0],
+        [0, 0.6, -0.8, 0],
+      ]),
+      {
+        ...channel('translation', 'cubic-spline', [[0], [1], [0]]),
+        samples: [cubic([0], [0], [6]), cubic([1], [-5], [4]), cubic([0], [3], [0])].map(
+          (key, frame) => ({ frame, timeSeconds: frame, ...key }),
+        ),
+      },
+      channel('translation', 'linear', [[10], [-20]], { concurrent: true, wrapSeconds: 0.75 }),
+    ]),
+  )
+  const extents = sampler.channels.map((_, index) => sampler.extent(index))
+  assert.deepEqual(
+    extents.map(({ width, between }) => [width, between]),
+    [
+      [3, 'hull'],
+      [3, 'step'],
+      [4, 'arc'],
+      [1, 'hull'],
+      [1, 'hull'],
+    ],
+  )
+  // the cubic's inner control points: 0 + 6/3, 1 + 5/3, 1 + 4/3, 0 − 3/3
+  assert.deepEqual(extents[3].points, [[0], [2], [1 + 5 / 3], [1], [1 + 4 / 3], [-1], [0]])
+  // slerp's shorter way: the third key turned to the second's side
+  assert.deepEqual(extents[2].arcs, [
+    [
+      [0, 0, 0, 0.5],
+      [0, 0, 1, 0],
+    ],
+    [
+      [0, 0, 1, 0],
+      [-0, -0.6, 0.8, -0],
+    ],
+  ])
+  const length = vector => Math.hypot(...vector)
+  const distance = (a, b) => Math.hypot(...a.map((x, axis) => x - b[axis]))
+  const unit = vector => vector.map(x => x / length(vector))
+  let spread = 0
+  for (let step = -10; step <= 310; step++) {
+    const time = step / 100
+    for (const [index, { value }] of sampler.sample(time).entries()) {
+      const { between, points, arcs } = extents[index]
+      const key = points.some(point => distance(point, value) === 0)
+      if (between === 'step') assert.ok(key, `${index} at ${time}: not a key`)
+      if (between === 'arc' && !key) {
+        // a unit quaternion no farther from either end of its arc than the ends from each other
+        assert.ok(Math.abs(length(value) - 1) < 1e-12)
+        assert.ok(
+          arcs.some(([from, to]) => {
+            const span = distance(unit(from), unit(to)) + 1e-12
+            return distance(value, unit(from)) <= span && distance(value, unit(to)) <= span
+          }),
+          `${index} at ${time}: off its arcs`,
+        )
+        continue
+      }
+      // within the box and the length of the points
+      for (const [axis, x] of value.entries()) {
+        const low = Math.min(...points.map(point => point[axis]))
+        const high = Math.max(...points.map(point => point[axis]))
+        assert.ok(x >= low - 1e-12 && x <= high + 1e-12, `${index} at ${time}: ${x}`)
+      }
+      const longest = Math.max(...points.map(length))
+      spread = Math.max(spread, length(value) / longest)
+      assert.ok(length(value) <= longest * (1 + 1e-12), `${index} at ${time}: ${value}`)
+    }
+  }
+  assert.ok(spread > 0.99)
+  assert.equal(sampler.extent(0), extents[0])
+  assert.throws(() => sampler.extent(5), RangeError)
+})

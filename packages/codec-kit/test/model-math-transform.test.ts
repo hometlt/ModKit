@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { decomposeMatrix4, invertAffine } from '../src/model-math/transform.js'
+import { decomposeMatrix4, invertAffine, linearStretch } from '../src/model-math/transform.js'
 
 // column-major: rotate 90° about Z, scale (2, 3, 4), translate (5, 6, 7)
 const matrix = [0, 2, 0, 0, -3, 0, 0, 0, 0, 0, 4, 0, 5, 6, 7, 1]
@@ -66,5 +66,16 @@ describe('model-math transform', () => {
     const z = inverse[2]! * 5 + inverse[6]! * 6 + inverse[10]! * 7 + inverse[14]!
     expect([x, y, z].map(value => Math.abs(value) < 1e-9)).toEqual([true, true, true])
     expect(() => invertAffine([0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1])).toThrow(RangeError)
+  })
+
+  it('bounds how much a linear part lengthens a vector, exactly after a rotation and a scale', () => {
+    // T·R·S: the largest scale, whatever the turn and the translation
+    expect(linearStretch(matrix)).toBeCloseTo(4, 10)
+    const turned = [0, -0.5, 0, 0, 0.5, 0, 0, 0, 0, 0, -0.25, 0, 9, 9, 9, 1]
+    expect(linearStretch(turned)).toBeCloseTo(0.5, 10)
+    // a shear: never below its largest singular value, √((3 + √5) / 2), here √3
+    const shear = [1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
+    expect(linearStretch(shear)).toBeGreaterThanOrEqual(Math.sqrt((3 + Math.sqrt(5)) / 2))
+    expect(linearStretch(shear)).toBeCloseTo(Math.sqrt(3), 10)
   })
 })

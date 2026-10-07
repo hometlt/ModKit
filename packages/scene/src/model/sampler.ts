@@ -17,6 +17,7 @@ import type {
 } from '@modkit/sdk'
 import { snapshotJson } from '@modkit/codec-kit/json-snapshot'
 import { multiplyMat4 } from '@modkit/codec-kit/model-math/sequence-pose'
+import { linearStretch, multiplyAffine } from '@modkit/codec-kit/model-math/transform'
 import {
   createModelPoseSampler,
   createModelPoseBlendSampler,
@@ -31,6 +32,7 @@ import type {
   ModelBonePoseSample,
   ModelPoseBlendSample,
   ModelPoseBone,
+  ModelPoseExtent,
   ModelPoseMatrices,
 } from '@modkit/codec-kit/model/skeleton'
 import { createModelSkinDeformer } from '@modkit/codec-kit/model/skinning'
@@ -52,6 +54,7 @@ export interface ModelRenderJoint {
   readonly parent?: number
 }
 const IDENTITY = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1])
+const IDENTITY_ROWS: readonly number[] = Object.freeze([...IDENTITY])
 
 /**
  * The camera one sample is drawn from, for the model's camera-facing nodes: its rotation from camera
@@ -81,6 +84,12 @@ export interface ModelSceneSkin {
   readonly palette: Float32Array
   /** This pose on the CPU (positions, normals and tangents), computed when first asked for. */
   deformed(): ModelPrimitive
+}
+
+/** A sphere in a model's space (createModelSceneSampler's `bounds`). */
+export interface ModelSceneBounds {
+  readonly center: readonly [number, number, number]
+  readonly radius: number
 }
 
 /** Palette slots and weights of a skin's vertices (see ModelSceneSkin), for a validated skin. */
@@ -912,11 +921,235 @@ export function createModelSceneSampler(
     }
     return Object.freeze(joints)
   }
+  // A sphere that holds every vertex of every sample (`bounds`): each vertex no farther from where the
+  // clip's middle pose puts it than any pose carries it (the pose samplers' extents; a skinned vertex
+  // blends its bones' places by its weights over their sum, a rigid one follows the bone at or above
+  // its node, or keeps its world at rest where no bone moves it), about the middle of those places.
+  // Null where a node pose, a camera rule, a blend or morph weights move what the extents do not
+  // bound.
+  const boundsOf = (): ModelSceneBounds | null => {
+    if (nodeSampler !== undefined || billboards.length > 0 || poseSamples !== undefined) return null
+    // Per hierarchy: its extent, its bones' slots, and per slot how much the middle world and the
+    // inverse bind stretch and how far they move the origin (how large a pose's numbers are).
+    const extents: {
+      extent: ModelPoseExtent
+      slots: Map<number, number>
+      stretch: Float64Array
+      offset: Float64Array
+      bindStretch: Float64Array
+      bindOffset: Float64Array
+    }[] = []
+    // the bone a node is, by hierarchy and slot; null where two hierarchies bind it
+    const boneOf = new Map<string, { hierarchy: number; slot: number } | null>()
+    for (const [index, { matrices, entries }] of hierarchies.entries()) {
+      const extent = matrices?.extent()
+      if (matrices === undefined || extent === undefined) return null
+      const count = matrices.bones.length
+      const stretch = new Float64Array(count)
+      const offset = new Float64Array(count)
+      const bindStretch = new Float64Array(count)
+      const bindOffset = new Float64Array(count)
+      for (const [slot, bone] of matrices.bones.entries()) {
+        const world = extent.center.subarray(slot * 16, slot * 16 + 16)
+        stretch[slot] = linearStretch(world)
+        offset[slot] = Math.hypot(world[12]!, world[13]!, world[14]!)
+        const inverse = entries.get(bone.boneIndex)?.inverseBindMatrix
+        if (inverse !== undefined) {
+          bindStretch[slot] = linearStretch(inverse)
+          bindOffset[slot] = Math.hypot(inverse[12]!, inverse[13]!, inverse[14]!)
+        }
+        boneOf.set(bone.nodeId, boneOf.has(bone.nodeId) ? null : { hierarchy: index, slot })
+      }
+      extents.push({
+        extent,
+        slots: new Map(matrices.bones.map((bone, slot) => [bone.boneIndex, slot])),
+        stretch,
+        offset,
+        bindStretch,
+        bindOffset,
+      })
+    }
+    type Take = (x: number, y: number, z: number, reach: number, size: number) => void
+    // `take` through a frame: the place moved, the reach and the size stretched, the size moved too
+    const framed = (frame: ArrayLike<number>, take: Take): Take => {
+      const stretch = linearStretch(frame)
+      const offset = Math.hypot(frame[12]!, frame[13]!, frame[14]!)
+      return (x, y, z, reach, size) =>
+        take(
+          frame[0]! * x + frame[4]! * y + frame[8]! * z + frame[12]!,
+          frame[1]! * x + frame[5]! * y + frame[9]! * z + frame[13]!,
+          frame[2]! * x + frame[6]! * y + frame[10]! * z + frame[14]!,
+          stretch * reach,
+          stretch * size + offset,
+        )
+    }
+    // Each vertex's place in the middle pose, how far a sample can move it from there (`reach`) and
+    // how large the numbers making its place are (`size`), to `take`; false where the extents do not
+    // bound a vertex.
+    const visit = (take: Take): boolean => {
+      for (const { primitive, nodes: instances, skinned } of draws) {
+        const { positions } = primitive
+        if (skinned !== undefined) {
+          const hierarchy = present(hierarchies[skinned.hierarchy], 'skin hierarchy')
+          const { extent, slots, stretch, offset, bindStretch, bindOffset } = present(
+            extents[skinned.hierarchy],
+            'skin extent',
+          )
+          const { center, turn, shift } = extent
+          const indices = present(primitive.boneIndices, 'skin indices')
+          const weights = present(primitive.boneWeights, 'skin weights')
+          const width = primitive.boneInfluences ?? 4
+          // the scene draws a skin in its hierarchy's frame
+          const place = hierarchy.transformed ? framed(hierarchy.frame, take) : take
+          for (let vertex = 0; vertex * 3 + 2 < positions.length; vertex++) {
+            const x = positions[vertex * 3]!
+            const y = positions[vertex * 3 + 1]!
+            const z = positions[vertex * 3 + 2]!
+            let sum = 0
+            for (let influence = 0; influence < width; influence++) {
+              const weight = weights[vertex * width + influence]!
+              if (!(weight >= 0)) return false
+              sum += weight
+            }
+            // the weights over their sum blend the bones' places; a vertex without weight stays
+            const length = Math.hypot(x, y, z)
+            let px = sum > 0 ? 0 : x
+            let py = sum > 0 ? 0 : y
+            let pz = sum > 0 ? 0 : z
+            let reach = 0
+            let size = sum > 0 ? 0 : length
+            for (let influence = 0; sum > 0 && influence < width; influence++) {
+              const weight = weights[vertex * width + influence]! / sum
+              if (weight === 0) continue
+              const boneIndex = indices[vertex * width + influence]!
+              const slot = slots.get(boneIndex)
+              const inverse = hierarchy.entries.get(boneIndex)?.inverseBindMatrix
+              if (slot === undefined || inverse === undefined) return false
+              // where the vertex sits in the bone's frame, and there in the middle pose
+              const bx = inverse[0]! * x + inverse[4]! * y + inverse[8]! * z + inverse[12]!
+              const by = inverse[1]! * x + inverse[5]! * y + inverse[9]! * z + inverse[13]!
+              const bz = inverse[2]! * x + inverse[6]! * y + inverse[10]! * z + inverse[14]!
+              const at = slot * 16
+              px += weight * (center[at]! * bx + center[at + 4]! * by + center[at + 8]! * bz)
+              py += weight * (center[at + 1]! * bx + center[at + 5]! * by + center[at + 9]! * bz)
+              pz += weight * (center[at + 2]! * bx + center[at + 6]! * by + center[at + 10]! * bz)
+              px += weight * center[at + 12]!
+              py += weight * center[at + 13]!
+              pz += weight * center[at + 14]!
+              reach += weight * (shift[slot]! + turn[slot]! * Math.hypot(bx, by, bz))
+              const bound = bindOffset[slot]! + bindStretch[slot]! * length
+              size +=
+                weight * (offset[slot]! + shift[slot]! + (stretch[slot]! + turn[slot]!) * bound)
+            }
+            place(px, py, pz, reach, size)
+          }
+          continue
+        }
+        if ((primitive.morphTargets?.length ?? 0) > 0) return false
+        for (const node of instances) {
+          // the nearest bone at or above the node, and the transforms of the nodes below it down to it
+          const below: (readonly number[])[] = []
+          let at = node
+          while (at !== undefined && !boneOf.has(at)) {
+            below.push(present(nodes.get(at), 'node').transform)
+            at = parents.get(at)
+          }
+          if (node === undefined || at === undefined) {
+            // no bone moves it: its world at rest (none for a primitive of no node)
+            const world = node === undefined ? IDENTITY : present(worlds.get(node), 'node world')
+            const place = framed(world, take)
+            for (let vertex = 0; vertex * 3 + 2 < positions.length; vertex++) {
+              const x = positions[vertex * 3]!
+              const y = positions[vertex * 3 + 1]!
+              const z = positions[vertex * 3 + 2]!
+              place(x, y, z, 0, Math.hypot(x, y, z))
+            }
+            continue
+          }
+          const bone = boneOf.get(at)
+          if (bone === undefined || bone === null) return false
+          const { extent, stretch, offset } = present(extents[bone.hierarchy], 'bone extent')
+          const { center, turn, shift } = extent
+          // the scene's bone worlds take the hierarchy's frame, the identity one too
+          const place = framed(present(hierarchies[bone.hierarchy], 'bone hierarchy').frame, take)
+          let chain: readonly number[] = IDENTITY_ROWS
+          for (const transform of below) chain = multiplyAffine(transform, chain)
+          const chainStretch = linearStretch(chain)
+          const chainOffset = Math.hypot(chain[12]!, chain[13]!, chain[14]!)
+          const { slot } = bone
+          const m = slot * 16
+          for (let vertex = 0; vertex * 3 + 2 < positions.length; vertex++) {
+            const x = positions[vertex * 3]!
+            const y = positions[vertex * 3 + 1]!
+            const z = positions[vertex * 3 + 2]!
+            // where the vertex sits in the bone's frame, and there in the middle pose
+            const bx = chain[0]! * x + chain[4]! * y + chain[8]! * z + chain[12]!
+            const by = chain[1]! * x + chain[5]! * y + chain[9]! * z + chain[13]!
+            const bz = chain[2]! * x + chain[6]! * y + chain[10]! * z + chain[14]!
+            const bound = chainOffset + chainStretch * Math.hypot(x, y, z)
+            place(
+              center[m]! * bx + center[m + 4]! * by + center[m + 8]! * bz + center[m + 12]!,
+              center[m + 1]! * bx + center[m + 5]! * by + center[m + 9]! * bz + center[m + 13]!,
+              center[m + 2]! * bx + center[m + 6]! * by + center[m + 10]! * bz + center[m + 14]!,
+              shift[slot]! + turn[slot]! * Math.hypot(bx, by, bz),
+              offset[slot]! + shift[slot]! + (stretch[slot]! + turn[slot]!) * bound,
+            )
+          }
+        }
+      }
+      return true
+    }
+    // the box of every vertex's reach about its middle place
+    let lowX = Infinity
+    let lowY = Infinity
+    let lowZ = Infinity
+    let highX = -Infinity
+    let highY = -Infinity
+    let highZ = -Infinity
+    const bounded = visit((x, y, z, reach) => {
+      lowX = Math.min(lowX, x - reach)
+      lowY = Math.min(lowY, y - reach)
+      lowZ = Math.min(lowZ, z - reach)
+      highX = Math.max(highX, x + reach)
+      highY = Math.max(highY, y + reach)
+      highZ = Math.max(highZ, z + reach)
+    })
+    if (!bounded) return null
+    // no vertex: the origin
+    if (lowX === Infinity)
+      return Object.freeze({ center: Object.freeze([0, 0, 0] as const), radius: 0 })
+    // about the box's middle, the farthest reach
+    const center = Object.freeze([
+      (lowX + highX) / 2,
+      (lowY + highY) / 2,
+      (lowZ + highZ) / 2,
+    ] as const)
+    let radius = 0
+    let size = 0
+    visit((x, y, z, reach, magnitude) => {
+      radius = Math.max(radius, Math.hypot(x - center[0], y - center[1], z - center[2]) + reach)
+      size = Math.max(size, magnitude)
+    })
+    // a margin for the float32 arithmetic of a pose and its draw, relative to the numbers making it
+    radius += 1e-4 * (radius + size) + 1e-6
+    return Number.isFinite(radius) && center.every(Number.isFinite)
+      ? Object.freeze({ center, radius })
+      : null
+  }
+  let bounds: ModelSceneBounds | null | undefined
   return Object.freeze({
     diagnostics: Object.freeze(diagnostics),
     /** The clip's events passed after `fromSeconds` up to `toSeconds` (see clipEventsBetween). */
     eventsBetween: (fromSeconds: number, toSeconds: number) =>
       clip === undefined ? [] : clipEventsBetween(clip, fromSeconds, toSeconds),
+    /**
+     * A sphere in the model's space that holds every vertex of every primitive in every sample,
+     * whatever the time (and a hidden primitive's, which a clip may show), made when first asked
+     * for; undefined where a node pose, a camera rule, a blend or morph weights move vertices that
+     * the clip's extents do not bound. A view that cannot see that sphere sees none of its poses.
+     */
+    bounds: (): ModelSceneBounds | undefined =>
+      (bounds === undefined ? (bounds = boundsOf()) : bounds) ?? undefined,
     sample(timeSeconds: number, requestSignal?: AbortSignal, camera?: ModelSceneCamera) {
       if (!Number.isFinite(timeSeconds)) throw new TypeError('scene time must be finite')
       if (requestSignal?.aborted) throw new DOMException('operation cancelled', 'AbortError')

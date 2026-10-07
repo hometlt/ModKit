@@ -3,8 +3,12 @@ import { it } from 'node:test'
 import { createModelSkeletonNodes } from '@modkit/codec-kit/model/skeleton'
 import { createModelSceneSampler } from '../src/model/sampler.js'
 import {
+  DEFAULT_WORLD_WEBGL_CAMERA,
   createWorldWebGlPlan,
+  createWorldWebGlRenderer,
+  pickWorldWebGl,
   worldMaterialBatchesOf,
+  worldPosingView,
   worldWebGlPosedScene,
   worldWebGlScenePrograms,
 } from '../src/world/webgl.js'
@@ -464,4 +468,108 @@ it('keeps the scenes of placed skins while they play, each plan equal to one bui
     }
   }
   assert.ok(posedScenes > 0)
+})
+
+// Four placements along x, each at a clock of its own (no two share a pose); the same items and
+// models from plan to plan, as a viewer keeps them.
+const spread = (() => {
+  const placed = (objectId, x) => ({
+    ...world(0).items[0],
+    id: `object-${objectId}`,
+    objectId,
+    position: { x, y: 0, z: 0 },
+    uvwPosition: { x, y: 0, z: 0 },
+  })
+  const base = world(0)
+  const items = [0, -28, 60, 100].map((x, index) => placed(index + 1, x))
+  return times => ({
+    ...base,
+    items,
+    animationTimes: new Map(times.map((time, index) => [index + 1, time])),
+  })
+})()
+
+it('leaves kept skins no view can see in the pose they have, posed again once one sees them', () => {
+  const input = spread
+  const gpuPalette = time =>
+    createModelSceneSampler(
+      { nodes, meshes: model.meshes, primitives: [skin], skeleton: bindings },
+      { clip, skinning: 'gpu' },
+    ).sample(time).primitives[0].skin.palette
+  const posed = plan =>
+    plan.modelMaterialScenes.map(scene => [
+      ...worldWebGlPosedScene(plan, scene).primitives[0].skin.palette,
+    ])
+  const expected = times => times.map(time => [...gpuPalette(time)])
+  // an orthographic view of x and y within ±20 and depth within ±100 (column-major)
+  const ortho = (half, depth) =>
+    Float32Array.of(1 / half, 0, 0, 0, 0, 1 / half, 0, 0, 0, 0, -1 / depth, 0, 0, 0, 0, 1)
+  const first = createWorldWebGlPlan(input([0.1, 0.2, 0.3, 0.4]))
+  const next = input([0.5, 0.6, 0.7, 0.8])
+  // The skin's bounds reach about 4.6 from (9.6, 2.9) of its placement: the placement at -28 crosses
+  // the view's edge, those at 60 and 100 cannot reach into the view, nor their shadows straight down
+  // or away from it.
+  for (const direction of [undefined, [0, -1, 0], [1, -1, 0]]) {
+    const light = direction === undefined ? undefined : { direction }
+    const plan = createWorldWebGlPlan(next, first, worldPosingView(ortho(20, 100), 0.5, light))
+    assert.deepEqual(posed(plan), expected([0.5, 0.6, 0.3, 0.4]))
+    // kept as they were: the same scenes
+    assert.equal(plan.modelMaterialScenes[2], first.modelMaterialScenes[2])
+    assert.equal(plan.modelMaterialScenes[3], first.modelMaterialScenes[3])
+  }
+  // a light that carries their shadows toward the view, a view that sees them, or none: posed
+  for (const view of [
+    worldPosingView(ortho(20, 100), 0.5, { direction: [-1, -1, 0] }),
+    worldPosingView(ortho(200, 100), 0.5),
+    undefined,
+  ])
+    assert.deepEqual(posed(createWorldWebGlPlan(next, first, view)), expected([0.5, 0.6, 0.7, 0.8]))
+  // a plan made again with a view that sees them, after one that did not, poses them at its clock
+  const unseen = createWorldWebGlPlan(next, first, worldPosingView(ortho(20, 100), 0.5))
+  const seen = createWorldWebGlPlan(next, unseen, worldPosingView(ortho(200, 100), 0.5))
+  assert.deepEqual(posed(seen), expected([0.5, 0.6, 0.7, 0.8]))
+})
+
+it("keeps a renderer's plan while its view sees no skin left unposed, made again once it sees one", () => {
+  // only shader allocation is needed until a draw: picking runs the renderer's plans
+  const noop = () => {}
+  const gl = {
+    createShader: () => ({}),
+    shaderSource: noop,
+    compileShader: noop,
+    getShaderParameter: () => true,
+    deleteShader: noop,
+    createProgram: () => ({}),
+    attachShader: noop,
+    linkProgram: noop,
+    getProgramParameter: () => true,
+    deleteProgram: noop,
+    createVertexArray: () => ({}),
+    drawArrays: noop,
+    getExtension: () => null,
+  }
+  const renderer = createWorldWebGlRenderer({ getContext: () => gl })
+  const screen = { x: 32, y: 32, width: 64, height: 64 }
+  // a view of the first placement, and one of them all
+  const near = { ...DEFAULT_WORLD_WEBGL_CAMERA, frame: { center: [0, 0, 0], radius: 20 } }
+  const wide = { ...DEFAULT_WORLD_WEBGL_CAMERA, frame: { center: [50, 0, 0], radius: 200 } }
+  renderer.pick({ ...spread([0.1, 0.2, 0.3, 0.4]), camera: near }, screen)
+  const next = spread([0.5, 0.6, 0.7, 0.8])
+  renderer.pick({ ...next, camera: near }, screen)
+  assert.equal(renderer.stats().worldObjectsUnposed, 2)
+  renderer.pick({ ...next, camera: near }, screen)
+  assert.deepEqual(
+    [renderer.stats().worldPlanReuses, renderer.stats().worldPlanViewRebuilds],
+    [1, 0],
+  )
+  // the view that sees them makes the plan again, posing them as a plan made anew does
+  const seen = { ...next, camera: wide }
+  assert.deepEqual(renderer.pick(seen, screen), pickWorldWebGl(seen, screen))
+  assert.deepEqual(
+    [renderer.stats().worldPlanReuses, renderer.stats().worldPlanViewRebuilds],
+    [1, 1],
+  )
+  assert.equal(renderer.stats().worldObjectsUnposed, 2)
+  renderer.pick(seen, screen)
+  assert.equal(renderer.stats().worldPlanReuses, 2)
 })

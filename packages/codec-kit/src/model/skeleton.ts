@@ -8,7 +8,12 @@ import {
   SequencePoseSampler,
   type SequencePoseBlendSample,
 } from '../model-math/sequence-pose.js'
-import { createModelAnimationSampler, type ModelAnimationValue } from './animation.js'
+import { linearStretch } from '../model-math/transform.js'
+import {
+  createModelAnimationSampler,
+  type ModelAnimationExtent,
+  type ModelAnimationValue,
+} from './animation.js'
 
 export const DEFAULT_MODEL_SKELETON_BUDGET: JsonSnapshotBudget = Object.freeze({
   maxDepth: 64,
@@ -169,6 +174,148 @@ export interface ModelPoseBone {
   readonly skinned: boolean
 }
 
+/**
+ * How far any pose of a pose sampler's clip moves each bone from a pose at the middle of the clip's
+ * values, whatever the time (its `extent`): a point p of a bone's frame (a vertex times the bone's
+ * inverse bind, or a point of a node below the bone) lies at most `shift + turn·|p|` from where the
+ * middle pose puts it, `center` times p. Its arrays are the sampler's own: read them, never write.
+ */
+export interface ModelPoseExtent {
+  /**
+   * Each bone's world matrix in the middle pose, as a sample composes it, 16 floats per bone in the
+   * order of `bones`, column-major: each channel of the clip at the middle of its values, the rest
+   * pose where none animates.
+   */
+  readonly center: Float32Array
+  /** Per bone: a bound of the operator norm of its world matrix's linear part less the middle one. */
+  readonly turn: Float64Array
+  /** Per bone: a bound of the length of its world translation less the middle one. */
+  readonly shift: Float64Array
+}
+
+/**
+ * The most composeTrsMatrix's rotation of a quaternion at most `length` long lengthens a vector: it
+ * does not normalize, and across the quaternion's axis scales by √(1 + 4|v|²(s² − 1)), s its length
+ * and v its vector part (|v| ≤ s), along it by 1. So 1 for a quaternion no longer than a unit one.
+ */
+function quaternionStretch(length: number): number {
+  return length <= 1 ? 1 : Math.sqrt(1 + 4 * length * length * (length * length - 1))
+}
+
+/** The length of a vector. */
+function vectorLength(vector: readonly number[]): number {
+  let sum = 0
+  for (const x of vector) sum += x * x
+  return Math.sqrt(sum)
+}
+
+/** How far `a` lies from `b` (from −b where `sign` is −1), vectors of one width. */
+function vectorDistance(a: readonly number[], b: readonly number[], sign = 1): number {
+  let sum = 0
+  for (let axis = 0; axis < a.length; axis++) sum += (a[axis]! - sign * b[axis]!) ** 2
+  return Math.sqrt(sum)
+}
+
+/** The middle of the box of points, by component. */
+function boxMiddle(points: readonly (readonly number[])[]): number[] {
+  return points[0]!.map((_, axis) => {
+    let low = Infinity
+    let high = -Infinity
+    for (const point of points) {
+      low = Math.min(low, point[axis]!)
+      high = Math.max(high, point[axis]!)
+    }
+    return (low + high) / 2
+  })
+}
+
+/**
+ * A unit quaternion amid quaternions: their directions turned to the first's side, summed and
+ * normalized; the first's direction where they cancel, the identity's where none has a length.
+ */
+function quaternionMiddle(points: readonly (readonly number[])[]): number[] {
+  const first = points.find(point => vectorLength(point) > 0)
+  if (first === undefined) return [0, 0, 0, 1]
+  const sum = [0, 0, 0, 0]
+  for (const point of points) {
+    const length = vectorLength(point)
+    if (!(length > 0)) continue
+    let dot = 0
+    for (let axis = 0; axis < 4; axis++) dot += point[axis]! * first[axis]!
+    for (let axis = 0; axis < 4; axis++) sum[axis]! += ((dot < 0 ? -1 : 1) * point[axis]!) / length
+  }
+  const middle = vectorLength(sum) > 1e-9 ? sum : [...first]
+  const length = vectorLength(middle)
+  return middle.map(x => x / length)
+}
+
+/**
+ * composeTrsMatrix's rotation of a quaternion q is I + B(q, q), B symmetric and bilinear with
+ * ‖B(a, b)‖ ≤ |a₄||b⃗| + |b₄||a⃗| + 2|a⃗||b⃗| ≤ (1 + √2)·|a|·|b| (a₄ the scalar part, a⃗ the vector).
+ */
+const ROTATION_FORM = 1 + Math.SQRT2
+
+/**
+ * A bound of how far composeTrsMatrix's rotation of a channel's values (ModelAnimationExtent) lies
+ * from the rotation of `middle`, in operator norm. Rotations of q and r differ by B(q − r, q + r):
+ * at most (1 + √2)·|q − r|·|q + r|, over a hull each distance largest at a point. Unit quaternions
+ * q and r rotate within 2·|q ∓ r| of each other (either sign); a quaternion within
+ * (1 + √2)·||q| − 1|·(|q| + 1) of its direction; a value on an arc whose ends lie on one side of a
+ * unit r is no farther from r (or −r) than the farther end. No two differ by more than both
+ * stretches.
+ */
+function rotationDeviation(extent: ModelAnimationExtent, middle: readonly number[]): number {
+  const middleLength = vectorLength(middle)
+  const middleStretch = quaternionStretch(middleLength)
+  if (extent.between === 'hull') {
+    let length = 0
+    let near = 0
+    let far = 0
+    for (const point of extent.points) {
+      length = Math.max(length, vectorLength(point))
+      near = Math.max(near, vectorDistance(point, middle))
+      far = Math.max(far, vectorDistance(point, middle, -1))
+    }
+    return Math.min(quaternionStretch(length) + middleStretch, ROTATION_FORM * near * far)
+  }
+  // the middle's direction, and how far its rotation lies from the middle's
+  const unit = middleLength > 0 ? middle.map(x => x / middleLength) : undefined
+  const unitError = ROTATION_FORM * Math.abs(middleLength - 1) * (middleLength + 1)
+  // how far a unit quaternion on the arc between unit ends (or at the one) rotates from `toward`
+  const arc = (toward: readonly number[], ends: readonly (readonly number[])[]) => {
+    const sides = ends.map(end => end.reduce((sum, x, axis) => sum + x * toward[axis]!, 0))
+    const side = sides.every(dot => dot >= 0) ? 1 : sides.every(dot => dot <= 0) ? -1 : 0
+    if (side === 0) return 2
+    let farthest = 0
+    for (const end of ends) farthest = Math.max(farthest, vectorDistance(end, toward, side))
+    return Math.min(2, 2 * farthest)
+  }
+  let deviation = 0
+  // the keys as they are: each from its direction, that from the middle's direction
+  for (const point of extent.points) {
+    const length = vectorLength(point)
+    let bound = quaternionStretch(length) + middleStretch
+    if (unit !== undefined && length > 0)
+      bound = Math.min(
+        bound,
+        ROTATION_FORM * Math.abs(length - 1) * (length + 1) +
+          arc(unit, [point.map(x => x / length)]) +
+          unitError,
+      )
+    deviation = Math.max(deviation, bound)
+  }
+  // the values between keys: unit quaternions on arcs, or the identity's
+  for (const [from, to] of extent.arcs) {
+    const a = vectorLength(from)
+    const b = vectorLength(to)
+    let bound = 1 + middleStretch
+    if (unit !== undefined && a > 0 && b > 0)
+      bound = Math.min(bound, arc(unit, [from.map(x => x / a), to.map(x => x / b)]) + unitError)
+    deviation = Math.max(deviation, bound)
+  }
+  return deviation
+}
+
 /** One pose as matrices (createModelPoseSampler's `sampleMatrices`). */
 export interface ModelPoseMatrices {
   /**
@@ -210,6 +357,12 @@ export function createModelPoseSampler({
   sampleMatrices(timeSeconds: number, signal?: AbortSignal): ModelPoseMatrices
   /** The bones of every pose, in its order. */
   readonly bones: readonly ModelPoseBone[]
+  /**
+   * How far any pose of the clip moves each bone from a pose at the middle of its values
+   * (ModelPoseExtent), made when first asked for. Undefined when a channel makes every sample
+   * reaching it refuse.
+   */
+  extent(): ModelPoseExtent | undefined
 } {
   const { bones, byNode, parents, order } = compileHierarchy(
     snapshotModelSkeleton(bindings, budget, signal),
@@ -305,7 +458,90 @@ export function createModelPoseSampler({
   }
   const scratch = new Float32Array(bones.length * 32)
   const values: number[][] = []
+  // The middle pose of the clip's values and how far a sample moves each bone from it: per bone,
+  // how long its local translation is (`length`) and how far from the middle (`move`), how much its
+  // local rotation and scale stretch (`stretch`) and how far from the middle ones (`bend`). Down the
+  // hierarchy, a world matrix W = P·L less the middle one P₀·L₀ is (P − P₀)·L + P₀·(L − L₀): its
+  // linear part within turnₚ·|L| + |P₀|·bend, its translation within
+  // turnₚ·length + shiftₚ + |P₀|·move.
+  const extentOf = (): ModelPoseExtent | undefined => {
+    const channelOf = new Int32Array(bones.length * 3).fill(-1)
+    for (let index = 0; index < targets.length; index++) {
+      const target = targets[index]!
+      if (target === IGNORED) continue
+      // a channel every sample reaching it refuses, by its target or its width
+      if (target < 0 || animation!.extent(index).width !== (target % 3 === 1 ? 4 : 3))
+        return undefined
+      channelOf[target] = index
+    }
+    const middle: (readonly number[])[] = new Array(bones.length * 3)
+    const length = new Float64Array(bones.length)
+    const move = new Float64Array(bones.length)
+    const stretch = new Float64Array(bones.length)
+    const bend = new Float64Array(bones.length)
+    for (let slot = 0; slot < bones.length; slot++) {
+      const rest = bones[slot]!.localPose!
+      const extentOfKind = (kind: number) => {
+        const index = channelOf[slot * 3 + kind]!
+        return index < 0 ? undefined : animation!.extent(index)
+      }
+      const translation = extentOfKind(0)
+      const rotation = extentOfKind(1)
+      const scale = extentOfKind(2)
+      // the translation: its middle, its length, its distance from the middle
+      const t0 = translation === undefined ? rest.translation : boxMiddle(translation.points)
+      for (const point of translation?.points ?? [t0]) {
+        length[slot] = Math.max(length[slot]!, vectorLength(point))
+        move[slot] = Math.max(move[slot]!, vectorDistance(point, t0))
+      }
+      // the rotation: its middle, its stretch (a unit quaternion's on arcs), its distance in rotation
+      const q0 = rotation === undefined ? rest.rotation : quaternionMiddle(rotation.points)
+      let turned = (rotation?.arcs.length ?? 0) > 0 ? 1 : 0
+      for (const point of rotation?.points ?? [q0])
+        turned = Math.max(turned, quaternionStretch(vectorLength(point)))
+      const deviation = rotation === undefined ? 0 : rotationDeviation(rotation, q0)
+      // the scale: its middle, its largest component, its largest distance from the middle's
+      const s0 = scale === undefined ? rest.scale : boxMiddle(scale.points)
+      let scaled = 0
+      let spread = 0
+      for (const point of scale?.points ?? [s0])
+        for (let axis = 0; axis < 3; axis++) {
+          scaled = Math.max(scaled, Math.abs(point[axis]!))
+          spread = Math.max(spread, Math.abs(point[axis]! - s0[axis]!))
+        }
+      middle[slot * 3] = t0
+      middle[slot * 3 + 1] = q0
+      middle[slot * 3 + 2] = s0
+      stretch[slot] = turned * scaled
+      // R·S − R₀·S₀ = (R − R₀)·S + R₀·(S − S₀)
+      bend[slot] = deviation * scaled + quaternionStretch(vectorLength(q0)) * spread
+    }
+    // the middle pose, composed as a sample composes it
+    const center = new Float32Array(bones.length * 16)
+    const turn = new Float64Array(bones.length)
+    const shift = new Float64Array(bones.length)
+    for (const slot of order) {
+      composeTrsMatrix(local, 0, middle[slot * 3]!, middle[slot * 3 + 1]!, middle[slot * 3 + 2]!)
+      const parent = parents[slot]!
+      if (parent < 0) {
+        center.set(local, slot * 16)
+        turn[slot] = bend[slot]!
+        shift[slot] = move[slot]!
+        continue
+      }
+      multiplyMat4(center, slot * 16, center, parent * 16, local, 0)
+      const above = linearStretch(center.subarray(parent * 16, parent * 16 + 16))
+      turn[slot] = turn[parent]! * stretch[slot]! + above * bend[slot]!
+      shift[slot] = turn[parent]! * length[slot]! + shift[parent]! + above * move[slot]!
+    }
+    for (const values of [center, turn, shift])
+      for (let index = 0; index < values.length; index++)
+        if (!Number.isFinite(values[index])) return undefined
+    return Object.freeze({ center, turn, shift })
+  }
+  let extent: ModelPoseExtent | null | undefined
   return Object.freeze({
+    extent: () => (extent === undefined ? (extent = extentOf() ?? null) : extent) ?? undefined,
     bones: Object.freeze(
       bones.map(bone =>
         Object.freeze({

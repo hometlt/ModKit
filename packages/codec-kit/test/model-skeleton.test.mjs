@@ -6,6 +6,7 @@ import {
   createModelPoseSampler,
   snapshotModelSkeleton,
 } from '../dist/model/skeleton.js'
+import { linearStretch } from '../dist/model-math/transform.js'
 
 const identity = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
 const bone = (boneIndex, parentBoneIndex, translation, inverseBindMatrix) => ({
@@ -213,4 +214,199 @@ test('a pose as matrices is the pose sample makes, its bones made when first ask
   }
   assert.throws(() => sampler.sampleMatrices(Infinity), /finite/)
   assert.throws(() => sampler.sampleMatrices(0, AbortSignal.abort()), /cancelled/)
+})
+
+test('the extent of a pose sampler holds every pose of its clip about its middle pose', () => {
+  const inverse = [...identity]
+  inverse[12] = -1
+  const bindings = [
+    bone(0, null, [30, 0, 0], [...identity]),
+    bone(1, 0, [0, 2, 0], inverse),
+    bone(2, 1, [0, 0, 3], [...identity]),
+  ]
+  const channel = (target, kind, interpolation, values) => ({
+    target,
+    kind,
+    firstFrame: 0,
+    lastFrame: values.length - 1,
+    interpolation,
+    samples: values.map((value, frame) => ({ frame, timeSeconds: frame * 0.5, value })),
+  })
+  const clip = {
+    id: 'walk',
+    name: 'Walk',
+    kind: 'animation',
+    provenance: 'direct',
+    frames: 3,
+    durationSeconds: 1,
+    hierarchyId: 'rig',
+    channels: [
+      channel('joint/0', 'translation', 'linear', [
+        [30, 0, 0],
+        [31, 1, 0],
+        [30, -1, 1],
+      ]),
+      // a few degrees either way, the first key a little long (taken as it is before the clip), the
+      // last on the other side of the sphere
+      channel('joint/0', 'rotation', 'spherical-linear', [
+        [0, 0, 0.05, 1.05],
+        [0, 0, 0.1, Math.sqrt(0.99)],
+        [0, -0.05, 0, -Math.sqrt(0.9975)],
+      ]),
+      channel('joint/1', 'scale', 'linear', [
+        [1, 1, 1],
+        [2, 0.5, 1],
+        [1, 1, 3],
+      ]),
+      // linear, not spherical: between its keys a quaternion shorter than they are, never longer
+      channel('joint/2', 'rotation', 'linear', [
+        [0, 0, 0, 1.25],
+        [0.6, 0, 0, 0.8],
+        [0, 0, 0, 1],
+      ]),
+    ],
+  }
+  const sampler = createModelPoseSampler({ bindings, hierarchyId: 'rig', clip })
+  const { center, turn, shift } = sampler.extent()
+  assert.equal(sampler.extent(), sampler.extent())
+  // points of each bone's frame, near and far: none leaves its bound about the middle pose
+  const points = [
+    [0, 0, 0],
+    [1, 0, 0],
+    [0, -1, 2],
+    [-30, 0, 0],
+    [5, 5, -5],
+  ]
+  const apply = (m, at, [x, y, z]) =>
+    [0, 1, 2].map(
+      row => m[at + row] * x + m[at + 4 + row] * y + m[at + 8 + row] * z + m[at + 12 + row],
+    )
+  let closest = 0
+  for (let step = -5; step <= 130; step++) {
+    const { matrices } = sampler.sampleMatrices(step / 100)
+    for (let slot = 0; slot < 3; slot++)
+      for (const point of points) {
+        const posed = apply(matrices, slot * 16, point)
+        const middle = apply(center, slot * 16, point)
+        const moved = Math.hypot(...posed.map((x, axis) => x - middle[axis]))
+        const bound = shift[slot] + turn[slot] * Math.hypot(...point)
+        closest = Math.max(closest, moved / bound)
+        assert.ok(
+          moved <= bound * (1 + 1e-6) + 1e-5,
+          `bone ${slot} at ${step}: ${moved} > ${bound}`,
+        )
+      }
+  }
+  // near what the poses do, though the root stands far from the origin
+  assert.ok(closest > 0.3, `${closest}`)
+  assert.ok(turn[0] < 0.35 && shift[0] < 1.3, `${turn[0]} ${shift[0]}`)
+  // a channel every sample refuses: no extent
+  const refusing = createModelPoseSampler({
+    bindings,
+    hierarchyId: 'rig',
+    clip: {
+      ...clip,
+      channels: [
+        channel('joint/9', 'translation', 'linear', [
+          [0, 0, 0],
+          [1, 1, 1],
+        ]),
+      ],
+    },
+  })
+  assert.equal(refusing.extent(), undefined)
+  // no clip: the rest pose, which no sample leaves
+  const still = createModelPoseSampler({ bindings, hierarchyId: 'rig' })
+  const rest = still.extent()
+  assert.deepEqual([...rest.center], [...still.sampleMatrices(0).matrices.subarray(0, 48)])
+  assert.deepEqual([...rest.turn, ...rest.shift], [0, 0, 0, 0, 0, 0])
+})
+
+test("the extent of a pose sampler composes each bone's bounds down its hierarchy", () => {
+  // A root that moves 2 along x, turns from a long key to a unit one and stands scaled twice; a child
+  // 3 along y that scales along x; a grandchild 4 along z that turns linearly (not spherically); a
+  // last bone 1 along x that keeps a long quaternion (no turn, but a stretch composeTrsMatrix makes).
+  const bindings = [
+    bone(0, null, [0, 0, 0]),
+    bone(1, 0, [0, 3, 0]),
+    bone(2, 1, [0, 0, 4]),
+    bone(3, 2, [1, 0, 0]),
+  ]
+  const channel = (target, kind, interpolation, values) => ({
+    target,
+    kind,
+    firstFrame: 0,
+    lastFrame: values.length - 1,
+    interpolation,
+    samples: values.map((value, frame) => ({ frame, timeSeconds: frame, value })),
+  })
+  const sampler = createModelPoseSampler({
+    bindings,
+    hierarchyId: 'rig',
+    clip: {
+      id: 'swing',
+      name: 'Swing',
+      kind: 'animation',
+      provenance: 'direct',
+      frames: 2,
+      durationSeconds: 1,
+      hierarchyId: 'rig',
+      channels: [
+        channel('joint/0', 'translation', 'linear', [
+          [0, 0, 0],
+          [2, 0, 0],
+        ]),
+        channel('joint/0', 'rotation', 'spherical-linear', [
+          [0, 0, 0, 1.1],
+          [0, 0, 0.6, 0.8],
+        ]),
+        channel('joint/0', 'scale', 'step', [[2, 2, 2]]),
+        channel('joint/1', 'scale', 'linear', [
+          [1, 1, 1],
+          [2, 1, 1],
+        ]),
+        channel('joint/2', 'rotation', 'linear', [
+          [0, 0, 0, 1],
+          [0, 0.6, 0, 0.8],
+        ]),
+        channel('joint/3', 'rotation', 'linear', [[0, 0, 0, 1.25]]),
+      ],
+    },
+  })
+  const { center, turn, shift } = sampler.extent()
+  const slot = new Map(sampler.bones.map((bone, index) => [bone.boneIndex, index]))
+  // Per bone: how much its local linear part stretches (the longest quaternion's stretch times the
+  // largest scale) and moves from the middle one (its turn's deviation times that scale, plus the
+  // scale's spread), how long its translation is and how far it moves. The turns' deviations:
+  // the root's long key 2·|k̂ − r| + (1 + √2)·0.1·2.1 from the middle r of its keys' directions, the
+  // grandchild's (1 + √2)·|k − r|·|k + r| over its keys, the last bone's (1 + √2)·0.25·2.25.
+  const stretch = [Math.sqrt(1 + 4 * 1.21 * 0.21) * 2, 2, 1, 2.125]
+  const bend = [1.1477138201262194 * 2, 0.5, 1.5268827230335917, 1.357995128834866]
+  const length = [2, 3, 4, 1]
+  const move = [1, 0, 0, 0]
+  const expectedTurn = [bend[0]]
+  const expectedShift = [move[0]]
+  for (let bone = 1; bone < 4; bone++) {
+    const parent = slot.get(bone - 1) * 16
+    // a child's world W = P·L about the middle P₀·L₀: (P − P₀)·L + P₀·(L − L₀)
+    const above = linearStretch(center.subarray(parent, parent + 16))
+    expectedTurn.push(expectedTurn[bone - 1] * stretch[bone] + above * bend[bone])
+    expectedShift.push(
+      expectedTurn[bone - 1] * length[bone] + expectedShift[bone - 1] + above * move[bone],
+    )
+  }
+  const close = (actual, expected, label) =>
+    assert.ok(Math.abs(actual - expected) < 1e-9 * expected, `${label}: ${actual} != ${expected}`)
+  for (let bone = 0; bone < 4; bone++) {
+    close(turn[slot.get(bone)], expectedTurn[bone], `turn ${bone}`)
+    close(shift[slot.get(bone)], expectedShift[bone], `shift ${bone}`)
+  }
+  // the middle pose: the root halfway along its translation, turned halfway between its keys'
+  // directions (36.87° about z: cos 0.8, sin 0.6), scaled twice
+  const root = slot.get(0) * 16
+  const near = (actual, expected) =>
+    expected.forEach((value, index) => assert.ok(Math.abs(actual[index] - value) < 1e-6))
+  near(center.subarray(root + 12, root + 15), [1, 0, 0])
+  const sine = 2 * 0.31622776601683794 * 0.9486832980505139
+  near(center.subarray(root, root + 3), [2 * (1 - 2 * 0.1), 2 * sine, 0])
 })

@@ -31,7 +31,7 @@ import type {
   SceneRendererTexture,
 } from '@modkit/sdk'
 import { boundsOf } from '@modkit/codec-kit/model/bounds'
-import { invertAffine } from '@modkit/codec-kit/model-math/transform'
+import { invertAffine, linearStretch } from '@modkit/codec-kit/model-math/transform'
 import {
   TEAM_COLOR_BLENDS,
   TEAM_COLOR_GLSL,
@@ -221,6 +221,13 @@ export interface WorldWebGlRendererStats {
   readonly worldObjectsKept: number
   readonly worldObjectsBuilt: number
   readonly worldPosedSamples: number
+  /**
+   * Of the kept objects, cumulative: those a plan left in the pose they had, as the view it was drawn
+   * with could see none of their poses nor their shadows (WorldPosingView); and the plans made again
+   * because a view came to see one.
+   */
+  readonly worldObjectsUnposed: number
+  readonly worldPlanViewRebuilds: number
   /** Updates that retained ground/cliff preparation and rebuilt only the dynamic sections. */
   readonly worldPlanDynamicUpdates: number
   readonly worldPlanDynamicUpdateSamples: number
@@ -3772,6 +3779,225 @@ interface WorldKeptPose {
 }
 
 /**
+ * The view a plan is drawn with, as the plan may leave poses to it (createWorldWebGlPlan's `view`):
+ * the six planes of its camera, normalized, inside where n·p + d >= 0; when the plan casts shadows,
+ * the direction the key light travels and, when known, the planes of its depth map's box (outside
+ * it a caster writes no depth and a surface reads no shadow); and how far beyond what casts it a
+ * shadow-map lookup reads, in world units. A sphere widened by that margin and beyond one plane of
+ * the view, swept along the light as far as the depth map goes (or not at all, beyond the depth
+ * map), adds no pixel to the view: nothing it holds is drawn there, and no surface drawn there reads
+ * its shadow.
+ */
+export interface WorldPosingView {
+  readonly planes: Float64Array
+  readonly light:
+    | Readonly<{ direction: readonly [number, number, number]; planes: Float64Array | undefined }>
+    | undefined
+  readonly margin: number
+}
+
+/** The planes of a view-projection (Gribb and Hartmann: the clip rows w ± x, w ± y, w ± z). */
+function worldClipPlanes(viewProjection: Float32Array): Float64Array {
+  const planes = new Float64Array(24)
+  const row = (index: number, column: number) => viewProjection[column * 4 + index]!
+  for (let plane = 0; plane < 6; plane++) {
+    const axis = plane >> 1
+    const sign = plane & 1 ? -1 : 1
+    const a = row(3, 0) + sign * row(axis, 0)
+    const b = row(3, 1) + sign * row(axis, 1)
+    const c = row(3, 2) + sign * row(axis, 2)
+    const d = row(3, 3) + sign * row(axis, 3)
+    const length = Math.hypot(a, b, c)
+    // a plane that does not resolve holds everything inside
+    if (length > 0) planes.set([a / length, b / length, c / length, d / length], plane * 4)
+    else planes.set([0, 0, 0, 1], plane * 4)
+  }
+  return planes
+}
+
+/**
+ * A posing view (WorldPosingView) of a camera's view-projection, a margin in world units and, when
+ * the plan casts shadows, the key light: the direction it travels and its depth map's
+ * view-projection (without one, a shadow is swept on without end).
+ */
+export function worldPosingView(
+  viewProjection: Float32Array,
+  margin: number,
+  light?: Readonly<{ direction: readonly number[]; viewProjection?: Float32Array }>,
+): WorldPosingView {
+  const direction = light?.direction
+  const travel =
+    direction === undefined ? 0 : Math.hypot(direction[0]!, direction[1]!, direction[2]!)
+  return Object.freeze({
+    planes: worldClipPlanes(viewProjection),
+    light:
+      direction === undefined || !(travel > 0)
+        ? undefined
+        : Object.freeze({
+            direction: Object.freeze([
+              direction[0]! / travel,
+              direction[1]! / travel,
+              direction[2]! / travel,
+            ] as const),
+            planes:
+              light?.viewProjection === undefined
+                ? undefined
+                : worldClipPlanes(light.viewProjection),
+          }),
+    margin,
+  })
+}
+
+/**
+ * The view a renderer draws a plan with, `width` by `height` into a drawing buffer of `buffer`
+ * (WorldPosingView): its scene camera; when the input casts shadows, the key light and the box of
+ * the depth map the shadow pass draws (worldShadowLightView); and a margin of three texels of that
+ * map at the coarsest it can be (at least 2048 texels, or what the input asks, less), which also
+ * covers the rounding of a draw. Undefined for a size no camera takes.
+ */
+function worldPlanPosingView(
+  plan: WorldWebGlPlan,
+  input: WorldWebGlInput,
+  width: number,
+  height: number,
+  buffer: Readonly<{ width: number; height: number }>,
+): WorldPosingView | undefined {
+  if (!(width > 0) || !(height > 0) || !Number.isFinite(width) || !Number.isFinite(height))
+    return undefined
+  const { camera } = cameraFor(plan, width, height, input.camera)
+  const viewProjection = Float32Array.from(
+    camera.projectionMatrix.clone().multiply(camera.matrixWorldInverse).elements,
+  )
+  const requested = input.shadowMapSize ?? 2_048
+  const size = Number.isSafeInteger(requested) && requested > 0 ? Math.min(requested, 2_048) : 2_048
+  // the depth map's aspect is the drawing buffer's; one it does not report takes the view's
+  const bufferShape = buffer.width > 0 && buffer.height > 0
+  const light = worldShadowLightView(
+    plan,
+    input,
+    bufferShape ? buffer.width : width,
+    bufferShape ? buffer.height : height,
+  )
+  if (!(light.radius > 0) || !Number.isFinite(light.radius)) return undefined
+  return worldPosingView(
+    viewProjection,
+    (6 * light.radius) / size,
+    input.shadows === true
+      ? { direction: plan.light.direction, viewProjection: light.viewProjection }
+      : undefined,
+  )
+}
+
+/** Whether a view sees no part of a sphere (x, y, z, radius) nor of its shadow (WorldPosingView). */
+function worldSphereUnseen(view: WorldPosingView, sphere: ArrayLike<number>, at = 0): boolean {
+  const x = sphere[at]!
+  const y = sphere[at + 1]!
+  const z = sphere[at + 2]!
+  const reach = sphere[at + 3]! + view.margin
+  // a reach that does not resolve sees everything
+  if (!(reach >= 0)) return false
+  const { planes, light } = view
+  // How far along the light its shadow can fall: until the sphere has left the depth map's box,
+  // nothing (-1) when it lies beyond the box, and nothing (0) when there is no shadow.
+  let sweep = 0
+  if (light !== undefined) {
+    sweep = Number.POSITIVE_INFINITY
+    const box = light.planes
+    const [lx, ly, lz] = light.direction
+    for (let plane = 0; box !== undefined && plane < 24; plane += 4) {
+      const distance = box[plane]! * x + box[plane + 1]! * y + box[plane + 2]! * z + box[plane + 3]!
+      if (distance < -reach) {
+        sweep = -1
+        break
+      }
+      const toward = box[plane]! * lx + box[plane + 1]! * ly + box[plane + 2]! * lz
+      if (toward < 0) sweep = Math.min(sweep, (distance + reach) / -toward)
+    }
+  }
+  for (let plane = 0; plane < 24; plane += 4) {
+    const nx = planes[plane]!
+    const ny = planes[plane + 1]!
+    const nz = planes[plane + 2]!
+    const distance = nx * x + ny * y + nz * z + planes[plane + 3]!
+    if (distance >= -reach) continue
+    if (sweep <= 0) return true
+    // swept along the light as far as its shadow falls, the sphere stays beyond the plane
+    const [lx, ly, lz] = light!.direction
+    const toward = nx * lx + ny * ly + nz * lz
+    if (toward <= 0 || distance + sweep * toward < -reach) return true
+  }
+  return false
+}
+
+/** The spheres of the objects a plan left unposed (createWorldWebGlPlan): x, y, z and radius each. */
+const worldUnposedSpheres = new WeakMap<WorldWebGlPlan, Float64Array>()
+
+/**
+ * Whether a view sees an object a plan left unposed: then the plan is made again with that view. An
+ * unknown view (undefined) is taken to see them all.
+ */
+function worldPlanUnposedSeen(plan: WorldWebGlPlan, view: WorldPosingView | undefined): boolean {
+  const spheres = worldUnposedSpheres.get(plan)
+  if (spheres === undefined) return false
+  if (view === undefined) return true
+  for (let at = 0; at < spheres.length; at += 4)
+    if (!worldSphereUnseen(view, spheres, at)) return true
+  return false
+}
+
+/**
+ * Where any pose of a kept object reaches (WorldKeptPose): its models' bounds (the scene sampler's
+ * spheres, held by one about the first's center) placed by its placement, the radius stretched by
+ * it, with a margin for the float32 arithmetic of placing them. Undefined for an object whose
+ * components the item places (their own transforms, sockets that move with the clock), one that
+ * drew by the fallback, or a model whose samples the bounds do not hold.
+ */
+const worldKeptPoseSpheres = new WeakMap<WorldKeptPose, Float64Array | null>()
+function worldKeptPoseSphere(
+  item: WorldSceneObjectItem,
+  pose: WorldKeptPose,
+): Float64Array | undefined {
+  let sphere = worldKeptPoseSpheres.get(pose)
+  if (sphere === undefined) {
+    sphere = null
+    if (item.modelComponents === undefined && pose.sockets.length === 0 && pose.posable) {
+      let center: readonly [number, number, number] | undefined
+      let radius: number | undefined = 0
+      for (const { sample, animation } of pose.models) {
+        const clip = animation?.kind === 'animation' ? animation : undefined
+        const bounds = worldModelSceneSampler(sample.result, clip).bounds()
+        if (bounds === undefined) {
+          radius = undefined
+          break
+        }
+        center ??= bounds.center
+        const [x, y, z] = bounds.center
+        radius = Math.max(
+          radius,
+          Math.hypot(x - center[0], y - center[1], z - center[2]) + bounds.radius,
+        )
+      }
+      if (center !== undefined && radius !== undefined) {
+        const [x, y, z] = center
+        const m = pose.placement
+        const placed = [0, 1, 2].map(
+          row => m[row]! * x + m[4 + row]! * y + m[8 + row]! * z + m[12 + row]!,
+        )
+        const stretched = radius * linearStretch(m)
+        sphere = Float64Array.of(
+          placed[0]!,
+          placed[1]!,
+          placed[2]!,
+          stretched + 1e-5 * (stretched + Math.hypot(placed[0]!, placed[1]!, placed[2]!)),
+        )
+      }
+    }
+    worldKeptPoseSpheres.set(pose, sphere)
+  }
+  return sphere ?? undefined
+}
+
+/**
  * The samples a plan took of kept samples' models at another time (keptWorldObjectPose): objects
  * kept with one sample, at one time now, take the same new sample.
  */
@@ -3784,7 +4010,9 @@ type WorldResampled = Map<
  * A kept object's pick mesh in this plan when its models move its geometry (WorldStaticObject.pose):
  * the kept mesh while each model's time stays. At another time the model is sampled again, the skins
  * of the kept scenes stand for the new sample's skins (added to `pairs`, which may hold the pairs of
- * the objects before it in a block), and the pick primitives are posed at the new samples.
+ * the objects before it in a block), and the pick primitives are posed at the new samples. An object
+ * `unseen` says the plan's view cannot see in any pose keeps its scenes and pick mesh as they are:
+ * whatever pose they hold stays out of that view.
  * Undefined when the item was moved, turned or shaded in place since the build, when a new sample
  * differs from the kept one in more than its skins' poses (another visibility, a moving node or
  * socket), when a skin already stands for another pose in this plan, or when the object drew by the
@@ -3799,6 +4027,7 @@ function keptWorldObjectPose(
   resampled: WorldResampled,
   current: WorldCurrentPrograms,
   pairs: [ModelSceneSkin, ModelSceneSkin][],
+  unseen?: (item: WorldSceneObjectItem, pose: WorldKeptPose) => boolean,
 ): WorldObjectPickMesh | undefined {
   if (
     !sameOptionalMatrix(pose.placement, worldObjectTransform(item, objectPosition(item, input))) ||
@@ -3815,6 +4044,8 @@ function keptWorldObjectPose(
       continue
     }
     if (!pose.posable) return undefined
+    // Out of the view's sight in any pose, the object keeps the pose it has (see `unseen`).
+    if (samples === undefined && unseen?.(item, pose) === true) return kept.pickMesh
     samples ??= pose.models.slice(0, at).map(entry => entry.sample)
     const known = resampled.get(model.sample)
     let now = known?.now
@@ -4508,7 +4739,12 @@ const worldPlanBatches = new WeakMap<WorldWebGlPlan, WorldPlanBatches>()
  */
 const worldPlanWork = new WeakMap<
   WorldWebGlPlan,
-  Readonly<{ keptObjects: number; builtObjects: number; posedSamples: number }>
+  Readonly<{
+    keptObjects: number
+    builtObjects: number
+    posedSamples: number
+    unposedObjects: number
+  }>
 >()
 
 /** The water surface an ambient-occlusion pass measures depth against: visible water triangles. */
@@ -6659,6 +6895,11 @@ function appendWorldBatch(
 export function createWorldWebGlPlan(
   input: WorldWebGlInput,
   previousPlan?: WorldWebGlPlan,
+  /**
+   * The view the plan is drawn with (a renderer's): a kept object it cannot see in any pose keeps
+   * the pose it has. Without it every kept object takes its pose at the plan's clock.
+   */
+  view?: WorldPosingView,
 ): WorldWebGlPlan {
   // Only the plan built right after the previous one takes its kept blocks (worldPlanSerials).
   const previousBuiltLast =
@@ -6897,6 +7138,18 @@ export function createWorldWebGlPlan(
     skins: new Map(),
   }
   const resampled: WorldResampled = new Map()
+  // Kept objects the view cannot see in any pose (WorldPosingView) keep the pose they have, their
+  // spheres noted for the renderer to make the plan again once a view sees one.
+  const unposed: number[] = []
+  const unseen =
+    view === undefined
+      ? undefined
+      : (item: WorldSceneObjectItem, pose: WorldKeptPose): boolean => {
+          const sphere = worldKeptPoseSphere(item, pose)
+          if (sphere === undefined || !worldSphereUnseen(view, sphere)) return false
+          unposed.push(sphere[0]!, sphere[1]!, sphere[2]!, sphere[3]!)
+          return true
+        }
   // Projector decals batch by splat layer, blend and texture: a layer draws as one part of the ground.
   // An additive decal (Purifier_City_Decals: orange lines on black) adds its colour; blended over the
   // ground, its opaque black texels painted a black slab across Old Sun Temple's ramp.
@@ -7076,6 +7329,7 @@ export function createWorldWebGlPlan(
           resampled,
           currentPrograms,
           skinPairs,
+          unseen,
         )
         if (mesh === undefined) return 0
         posed[offset] = mesh
@@ -7139,6 +7393,7 @@ export function createWorldWebGlPlan(
               resampled,
               currentPrograms,
               posePairs!,
+              unseen,
             )
     const keptScenes =
       keptPickMesh === undefined
@@ -8212,8 +8467,10 @@ export function createWorldWebGlPlan(
       keptObjects,
       builtObjects: objects.length - keptObjects,
       posedSamples: planSamples.size,
+      unposedObjects: unposed.length / 4,
     }),
   )
+  if (unposed.length > 0) worldUnposedSpheres.set(plan, Float64Array.from(unposed))
   worldPlanBatches.set(plan, {
     batches: currentBatches,
     water: waterWrites,
@@ -8846,6 +9103,8 @@ interface WorldWebGlOwnedResources {
   worldObjectsKept: number
   worldObjectsBuilt: number
   worldPosedSamples: number
+  worldObjectsUnposed: number
+  worldPlanViewRebuilds: number
   readonly worldPlanBuildMilliseconds: number[]
   readonly worldPlanDynamicUpdateMilliseconds: number[]
   readonly animationSeekMilliseconds: number[]
@@ -9432,17 +9691,28 @@ function sameWorldStaticInput(left: WorldWebGlInput, right: WorldWebGlInput): bo
   return true
 }
 
+/**
+ * The plan to draw `input` with: the last one while its input is the same and the view it is drawn
+ * with (`viewOf`) sees no object it left unposed, else one made from it. A plan is made for the view
+ * of the plan before (whose frame and light the new one keeps while only clocks move) and made again,
+ * once, when its own view sees an object it left unposed.
+ */
 function retainedWorldPlan(
   input: WorldWebGlInput,
   resources: WorldWebGlOwnedResources,
+  viewOf?: (plan: WorldWebGlPlan) => WorldPosingView | undefined,
 ): WorldWebGlPlan {
   if (
     resources.lastPlan !== undefined &&
     resources.lastPlanInput !== undefined &&
     sameWorldPlanInput(resources.lastPlanInput, input)
   ) {
-    resources.worldPlanReuses += 1
-    return resources.lastPlan
+    const last = resources.lastPlan
+    if (viewOf === undefined || !worldPlanUnposedSeen(last, viewOf(last))) {
+      resources.worldPlanReuses += 1
+      return last
+    }
+    resources.worldPlanViewRebuilds += 1
   }
   const previousInput = resources.lastPlanInput
   // Only the clocks moved (an animated frame): the new plan's static part need not compare again.
@@ -9458,7 +9728,19 @@ function retainedWorldPlan(
   let plan: WorldWebGlPlan
   try {
     if (sameExceptClocks) worldInputsCompared = Object.freeze({ previous: previousInput, input })
-    plan = createWorldWebGlPlan(input, resources.lastPlan)
+    const lastPlan = resources.lastPlan
+    plan = createWorldWebGlPlan(
+      input,
+      lastPlan,
+      viewOf === undefined || lastPlan === undefined ? undefined : viewOf(lastPlan),
+    )
+    if (viewOf !== undefined) {
+      const view = viewOf(plan)
+      if (worldPlanUnposedSeen(plan, view)) {
+        resources.worldPlanViewRebuilds += 1
+        plan = createWorldWebGlPlan(input, lastPlan, view)
+      }
+    }
   } finally {
     worldInputsCompared = undefined
   }
@@ -9479,6 +9761,7 @@ function retainedWorldPlan(
     resources.worldObjectsKept += work.keptObjects
     resources.worldObjectsBuilt += work.builtObjects
     resources.worldPosedSamples += work.posedSamples
+    resources.worldObjectsUnposed += work.unposedObjects
   }
   resources.lastPlanInput = worldStaticPreparations.get(plan)!.input
   resources.lastPlan = plan
@@ -9602,6 +9885,8 @@ function createOwnedResources(gl: WebGL2RenderingContext): WorldWebGlOwnedResour
       worldObjectsKept: 0,
       worldObjectsBuilt: 0,
       worldPosedSamples: 0,
+      worldObjectsUnposed: 0,
+      worldPlanViewRebuilds: 0,
       worldPlanReuses: 0,
       worldPlanDynamicUpdates: 0,
       worldPlanBuildMilliseconds: [],
@@ -10037,6 +10322,43 @@ function drawWorldShadowCasters(
   gl.colorMask(false, false, false, false)
 }
 
+/**
+ * The key light's depth-map camera for a plan drawn into a buffer of `width` by `height`: an
+ * orthographic box `radius` wide about the view, deep enough for the world's height, and its
+ * view-projection. The shadow pass draws with it; the posing view bounds shadows by it.
+ */
+function worldShadowLightView(
+  plan: WorldWebGlPlan,
+  input: WorldWebGlInput,
+  width: number,
+  height: number,
+) {
+  const minimum = new Vector3(...plan.bounds.minimum)
+  const maximum = new Vector3(...plan.bounds.maximum)
+  const extent = maximum.clone().sub(minimum)
+  const view = cameraState(input.camera)
+  const frame = view.frame ?? plan.stats.frame
+  // Spend the depth map on what the camera sees: the orbit target and the ground footprint of the
+  // orthographic view (stretched by a low elevation), plus the world height for casters that lean
+  // in. A whole-map map at close zoom turns each texel into a visible block.
+  const center = new Vector3(...frame.center).add(new Vector3(...view.target))
+  const aspect = width / Math.max(1, height)
+  const footprint =
+    ((frame.radius / view.zoom) * Math.max(1, aspect)) / Math.max(0.25, Math.sin(view.elevation))
+  const radius = Math.max(0.5, Math.min(extent.length() * 0.5, footprint * 1.25 + extent.y))
+  const rayDirection = new Vector3(...plan.light.direction).normalize()
+  const lightCamera = new OrthographicCamera(-radius, radius, radius, -radius, 0.01, radius * 4 + 2)
+  lightCamera.position.copy(center).addScaledVector(rayDirection, -(radius * 2 + 1))
+  lightCamera.up.set(0, 1, 0)
+  if (Math.abs(rayDirection.dot(lightCamera.up)) > 0.95) lightCamera.up.set(0, 0, 1)
+  lightCamera.lookAt(center)
+  lightCamera.updateMatrixWorld(true)
+  const viewProjection = Float32Array.from(
+    lightCamera.projectionMatrix.clone().multiply(lightCamera.matrixWorldInverse).elements,
+  )
+  return { lightCamera, viewProjection, radius }
+}
+
 function renderWorldShadowMap(
   gl: WebGL2RenderingContext,
   plan: WorldWebGlPlan,
@@ -10056,28 +10378,11 @@ function renderWorldShadowMap(
   const size = Math.min(requestedSize, 4_096, Number(gl.getParameter(gl.MAX_TEXTURE_SIZE)))
   if (size <= 0) throw new TypeError('WebGL2 reports no usable shadow-map texture size')
 
-  const minimum = new Vector3(...plan.bounds.minimum)
-  const maximum = new Vector3(...plan.bounds.maximum)
-  const extent = maximum.clone().sub(minimum)
-  const view = cameraState(input.camera)
-  const frame = view.frame ?? plan.stats.frame
-  // Spend the depth map on what the camera sees: the orbit target and the ground footprint of the
-  // orthographic view (stretched by a low elevation), plus the world height for casters that lean
-  // in. A whole-map map at close zoom turns each texel into a visible block.
-  const center = new Vector3(...frame.center).add(new Vector3(...view.target))
-  const aspect = gl.drawingBufferWidth / Math.max(1, gl.drawingBufferHeight)
-  const footprint =
-    ((frame.radius / view.zoom) * Math.max(1, aspect)) / Math.max(0.25, Math.sin(view.elevation))
-  const radius = Math.max(0.5, Math.min(extent.length() * 0.5, footprint * 1.25 + extent.y))
-  const rayDirection = new Vector3(...plan.light.direction).normalize()
-  const lightCamera = new OrthographicCamera(-radius, radius, radius, -radius, 0.01, radius * 4 + 2)
-  lightCamera.position.copy(center).addScaledVector(rayDirection, -(radius * 2 + 1))
-  lightCamera.up.set(0, 1, 0)
-  if (Math.abs(rayDirection.dot(lightCamera.up)) > 0.95) lightCamera.up.set(0, 0, 1)
-  lightCamera.lookAt(center)
-  lightCamera.updateMatrixWorld(true)
-  const viewProjection = Float32Array.from(
-    lightCamera.projectionMatrix.clone().multiply(lightCamera.matrixWorldInverse).elements,
+  const { lightCamera, viewProjection } = worldShadowLightView(
+    plan,
+    input,
+    gl.drawingBufferWidth,
+    gl.drawingBufferHeight,
   )
   const program = resources.shadowProgram
   if (resources.shadowTarget !== undefined && resources.shadowTarget.size !== size) {
@@ -12601,7 +12906,12 @@ function drawWorldWebGlWithResources(
   const gl = resources.gl
   harvestGpuTimer(resources)
   const startedAt = globalThis.performance?.now() ?? Date.now()
-  const plan = retainedWorldPlan(input, resources)
+  const plan = retainedWorldPlan(input, resources, made =>
+    worldPlanPosingView(made, input, canvas.width, canvas.height, {
+      width: gl.drawingBufferWidth,
+      height: gl.drawingBufferHeight,
+    }),
+  )
   const program = resources.program
   let shadow: WorldShadowResources | undefined
   let gpuQuery: WebGLQuery | undefined
@@ -13118,7 +13428,13 @@ export function createWorldWebGlRenderer(
     draw: (input: WorldWebGlInput) => drawWorldWebGlWithResources(canvas, input, resources),
     pick: (input: WorldWebGlInput, screen: WorldWebGlPickScreen) => {
       if (resources.disposed) throw new TypeError('world WebGL renderer is disposed')
-      return pickWorldWebGlPlan(retainedWorldPlan(input, resources), input, screen)
+      const plan = retainedWorldPlan(input, resources, made =>
+        worldPlanPosingView(made, input, screen.width, screen.height, {
+          width: resources.gl.drawingBufferWidth,
+          height: resources.gl.drawingBufferHeight,
+        }),
+      )
+      return pickWorldWebGlPlan(plan, input, screen)
     },
     stats: (): WorldWebGlRendererStats =>
       (() => {
@@ -13160,6 +13476,8 @@ export function createWorldWebGlRenderer(
           worldObjectsKept: resources.worldObjectsKept,
           worldObjectsBuilt: resources.worldObjectsBuilt,
           worldPosedSamples: resources.worldPosedSamples,
+          worldObjectsUnposed: resources.worldObjectsUnposed,
+          worldPlanViewRebuilds: resources.worldPlanViewRebuilds,
           worldPlanDynamicUpdates: resources.worldPlanDynamicUpdates,
           worldPlanDynamicUpdateSamples: resources.worldPlanDynamicUpdateMilliseconds.length,
           ...(dynamicP50 === undefined
