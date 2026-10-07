@@ -10,6 +10,7 @@
     "extension.cjs",
     "format-smoke.v1.json",
     "modkit-ui.css",
+    "mod-server-daemon.js",
     "registry-trust.v1.json",
     "webview.js",
     "worker-bootstrap.js"

@@ -244,7 +244,8 @@ export interface ModContext {
   /**
    * Unsaved editor text over a layer's file, or a file the editor has not saved yet; a change
    * without `text` removes the overlay. Every reader of the chain — `read`, `files`, `query` — sees
-   * the text from then on.
+   * the text from then on. No changes change nothing and answer the server's revision now (on a
+   * server other clients share, the `revision` a client last heard may be behind).
    */
   overlay?(changes: readonly ModContextOverlay[]): Promise<{ readonly revision: string }>
   /** The chain's files changed on disk: list and read them again. */

@@ -64,6 +64,10 @@
       "types": "./dist/node/worker-bootstrap.d.ts",
       "default": "./dist/node/worker-bootstrap.js"
     },
+    "./node/mod-server-daemon": {
+      "types": "./dist/node/mod-server-daemon.d.ts",
+      "default": "./dist/node/mod-server-daemon.js"
+    },
     "./browser/worker-entry": {
       "types": "./dist/browser/worker-entry.d.ts",
       "default": "./dist/browser/worker-entry.js"

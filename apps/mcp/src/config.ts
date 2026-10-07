@@ -22,9 +22,11 @@ export interface ModkitMcpConfiguration {
   readonly contentSourceStorage?: string
   /** Packages a root that belongs to no package opens inside; the game's own default when absent. */
   readonly baseMods?: readonly string[]
+  /** `false`: open mod contexts in this process; absent: on the machine's shared mod server. */
+  readonly sharedModServer?: false
 }
 
-const USAGE = `Usage: modkit-mcp --root <absolute-directory> --extension <absolute-directory> [--root ...] [--extension ...] [--output-artifacts] [--allow-edits] [--operation-permission <class> ...] [--allow-effectful-service-operations] [--trust-extensions] [--content-source-config <absolute-file> --content-source-storage <absolute-directory>] [--base-mod <package> ...]\n\nEnvironment fallback:\n  ${MODKIT_MCP_ROOTS_ENV}=<paths separated by ${JSON.stringify(delimiter)}>\n  ${MODKIT_MCP_EXTENSIONS_ENV}=<paths separated by ${JSON.stringify(delimiter)}>\n  ${MODKIT_MCP_OPERATION_PERMISSIONS_ENV}=<permission classes separated by ${JSON.stringify(delimiter)}>\n  ${MODKIT_MCP_ALLOW_EDITS_ENV}=true|false\n  ${MODKIT_MCP_CONTENT_SOURCE_CONFIG_ENV}=<absolute-file>\n  ${MODKIT_MCP_CONTENT_SOURCE_STORAGE_ENV}=<absolute-directory>\n`
+const USAGE = `Usage: modkit-mcp --root <absolute-directory> --extension <absolute-directory> [--root ...] [--extension ...] [--output-artifacts] [--allow-edits] [--operation-permission <class> ...] [--allow-effectful-service-operations] [--trust-extensions] [--content-source-config <absolute-file> --content-source-storage <absolute-directory>] [--base-mod <package> ...] [--no-shared-mod-server]\n\nEnvironment fallback:\n  ${MODKIT_MCP_ROOTS_ENV}=<paths separated by ${JSON.stringify(delimiter)}>\n  ${MODKIT_MCP_EXTENSIONS_ENV}=<paths separated by ${JSON.stringify(delimiter)}>\n  ${MODKIT_MCP_OPERATION_PERMISSIONS_ENV}=<permission classes separated by ${JSON.stringify(delimiter)}>\n  ${MODKIT_MCP_ALLOW_EDITS_ENV}=true|false\n  ${MODKIT_MCP_CONTENT_SOURCE_CONFIG_ENV}=<absolute-file>\n  ${MODKIT_MCP_CONTENT_SOURCE_STORAGE_ENV}=<absolute-directory>\n`
 
 export class ConfigurationError extends TypeError {
   readonly usage = USAGE
@@ -73,6 +75,7 @@ export function parseModkitMcpConfiguration(
   let allowEdits = envBoolean(MODKIT_MCP_ALLOW_EDITS_ENV, env[MODKIT_MCP_ALLOW_EDITS_ENV])
   let allowEffectfulServiceOperations = false
   let trustExtensions = false
+  let sharedModServer = true
   let contentSourceConfig: string | undefined
   let contentSourceStorage: string | undefined
   const baseMods: string[] = []
@@ -92,6 +95,10 @@ export function parseModkitMcpConfiguration(
     }
     if (option === '--trust-extensions') {
       trustExtensions = true
+      continue
+    }
+    if (option === '--no-shared-mod-server') {
+      sharedModServer = false
       continue
     }
     if (option === '--help' || option === '-h') throw new ConfigurationError('help requested')
@@ -158,6 +165,7 @@ export function parseModkitMcpConfiguration(
           contentSourceStorage: resolve(contentSourceStorage!),
         }),
     ...(baseMods.length === 0 ? {} : { baseMods: Object.freeze([...new Set(baseMods)]) }),
+    ...(sharedModServer ? {} : { sharedModServer: false as const }),
   })
 }
 

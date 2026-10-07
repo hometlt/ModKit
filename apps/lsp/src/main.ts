@@ -15,6 +15,7 @@ import {
 import {
   createModkit,
   loadContentSources,
+  withSharedModContexts,
   workerBackendPolicy,
   type ModkitOpened,
 } from '@modkit/host/node'
@@ -75,10 +76,26 @@ export async function runModkitLsp(argv: readonly string[]) {
       : await loadContentSources(
           configuration.contentSourceConfig,
           configuration.contentSourceStorage,
-        ).catch(async (error: unknown) => {
-          await modkit.close()
-          throw error
-        })
+        )
+          .then(local =>
+            // The machine's shared mod server holds the mod contexts for every client (owner
+            // decision 07.10); this process opens them itself when the server cannot be reached.
+            local !== undefined && configuration.sharedModServer
+              ? withSharedModContexts(local, {
+                  extensionRoots: [],
+                  storage: configuration.contentSourceStorage!,
+                  configPath: configuration.contentSourceConfig!,
+                  onFallback: error =>
+                    process.stderr.write(
+                      `modkit-lsp: shared mod server unavailable, mod contexts open here: ${error instanceof Error ? error.message : String(error)}\n`,
+                    ),
+                })
+              : local,
+          )
+          .catch(async (error: unknown) => {
+            await modkit.close()
+            throw error
+          })
   const openedRoots: ModkitOpened[] = []
   let openedSubjectDescriptors: AnyDescriptor[] = []
   const dependencySources = []

@@ -3,8 +3,8 @@
   "schemaVersion": "bundle-graph-1",
   "entryCount": 74,
   "totals": {
-    "modules": 1043,
-    "bytes": 14158974
+    "modules": 1044,
+    "bytes": 14183107
   },
   "entries": [
     {
@@ -138,7 +138,7 @@
       "entry": "packages/host/dist/language/index.js",
       "surface": "host/language",
       "modules": 43,
-      "bytes": 252531,
+      "bytes": 252507,
       "reachesUnits": [],
       "externalUnits": [
         "@modkit/core",
@@ -186,8 +186,8 @@
     {
       "entry": "packages/host/dist/node/index.js",
       "surface": "host/node",
-      "modules": 133,
-      "bytes": 1138509,
+      "modules": 134,
+      "bytes": 1162666,
       "reachesUnits": [],
       "externalUnits": [
         "@modkit/core",

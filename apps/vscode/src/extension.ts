@@ -128,6 +128,7 @@ listIndexCaches,
 openCachedContentIndex,
 removeIndexCache,
 resolveContentSources,
+withSharedModContexts,
 createNodeInstallationFiles,
 runningGameProcesses,
 searchInstallationFolders,
@@ -1303,66 +1304,100 @@ async function activateModkit(
       process.env['MODKIT_CONTENT_SOURCE_CONFIG'] ??
       configuredPath ??
       (existsSync(defaultConfig) ? defaultConfig : undefined)
+    // One extension's module options: the chosen installation of its game and the team's settings.
+    const moduleOptionsOf = (
+      extension: string,
+      found: Parameters<typeof selectedInstallationDirectory>[3],
+    ): Readonly<Record<string, unknown>> | undefined => {
+      const installationDirectory = selectedInstallationDirectory(
+        host.services.host.inventory,
+        presentSources(),
+        extension,
+        found,
+      )
+      // the settings a team commits (plan 8.9) win over the installation one user picked here
+      const configured = contentSourceOptionsFor(
+        vscode.workspace.getConfiguration('modkit').inspect('contentSourceOptions') ?? {},
+        extension,
+        {
+          workspaceFolders: (vscode.workspace.workspaceFolders ?? []).map(folder => ({
+            name: folder.name,
+            path: folder.uri.fsPath,
+          })),
+          env: process.env,
+          userHome: homedir(),
+        },
+      )
+      if (installationDirectory === undefined && configured === undefined) return undefined
+      return {
+        ...(installationDirectory === undefined ? {} : { installationDirectory }),
+        ...configured,
+      }
+    }
     if (contentSources === undefined) {
       const finished = timing.phase('content sources (every extension that declares them)')
+      // the user's per-product switches: a module keeps no name index its product turned off
+      const indexCaches = configuredIndexCaches(
+        vscode.workspace.getConfiguration('modkit').get('indexCaches'),
+      ).switches
       contentSources = foundInstallations().then(found =>
         resolveContentSources({
           extensionRoots: extensionRootPaths(),
           ...(configured === undefined ? {} : { configPath: configured }),
           storage,
           indexCacheDirectory,
-          // the user's per-product switches: a module keeps no name index its product turned off
-          indexCaches: configuredIndexCaches(
-            vscode.workspace.getConfiguration('modkit').get('indexCaches'),
-          ).switches,
-          moduleOptions: extension => {
-            const installationDirectory = selectedInstallationDirectory(
-              host.services.host.inventory,
-              presentSources(),
-              extension,
-              found,
-            )
-            // the settings a team commits (plan 8.9) win over the installation one user picked here
-            const configured = contentSourceOptionsFor(
-              vscode.workspace.getConfiguration('modkit').inspect('contentSourceOptions') ?? {},
-              extension,
-              {
-                workspaceFolders: (vscode.workspace.workspaceFolders ?? []).map(folder => ({
-                  name: folder.name,
-                  path: folder.uri.fsPath,
-                })),
-                env: process.env,
-                userHome: homedir(),
-              },
-            )
-            if (installationDirectory === undefined && configured === undefined) return undefined
-            return {
-              ...(installationDirectory === undefined ? {} : { installationDirectory }),
-              ...configured,
-            }
-          },
+          indexCaches,
+          moduleOptions: extension => moduleOptionsOf(extension, found),
           // each extension's module reaches only the credentials that extension declared
           credentials: extension => host.services.credentials?.portFor(extension),
         }).then(created =>
           created === undefined
             ? undefined
             : // a context that takes a while says so in the status bar, as MK2's did (plan 0.8)
-              announceModContexts(created, {
-                delayMs: MOD_CONTEXT_PROGRESS_DELAY_MS,
-                building: opening =>
-                  void vscode.window.withProgress(
-                    {
-                      location: vscode.ProgressLocation.Window,
-                      title: localizer.text('vscode.modContext.building'),
-                    },
-                    () => opening,
-                  ),
-                ready: layers =>
-                  vscode.window.setStatusBarMessage(
-                    localizer.text('vscode.modContext.ready', { layers }),
-                    4_000,
-                  ),
-              }),
+              announceModContexts(
+                // The loaded mods live in the user's shared mod server (owner decision 07.10): one
+                // process for every window, the LSP and MCP; without it this window loads them.
+                vscode.workspace.getConfiguration('modkit').get<boolean>('sharedModServer', true)
+                  ? withSharedModContexts(created, {
+                      extensionRoots: extensionRootPaths(),
+                      ...(configured === undefined ? {} : { configPath: configured }),
+                      storage,
+                      indexCacheDirectory,
+                      indexCaches,
+                      moduleOptions: Object.fromEntries(
+                        [
+                          ...new Set(
+                            host.services.host.inventory.extensions.map(
+                              item => `${item.manifest.publisher}/${item.manifest.id}`,
+                            ),
+                          ),
+                        ].flatMap(extension => {
+                          const options = moduleOptionsOf(extension, found)
+                          return options === undefined ? [] : [[extension, options] as const]
+                        }),
+                      ),
+                      daemonScript: join(extensionRoot, 'dist-app', 'mod-server-daemon.js'),
+                      onFallback: error =>
+                        log(`[mod-server] unavailable, this window loads its mods: ${String(error)}`),
+                    })
+                  : created,
+                {
+                  delayMs: MOD_CONTEXT_PROGRESS_DELAY_MS,
+                  building: opening =>
+                    void vscode.window.withProgress(
+                      {
+                        location: vscode.ProgressLocation.Window,
+                        title: localizer.text('vscode.modContext.building'),
+                      },
+                      () => opening,
+                    ),
+                  ready: layers =>
+                    vscode.window.setStatusBarMessage(
+                      localizer.text('vscode.modContext.ready', { layers }),
+                      4_000,
+                    ),
+                },
+              ),
         ),
       )
       void contentSources.finally(finished).catch(() => undefined)
@@ -3094,7 +3129,8 @@ async function activateModkit(
         if (
           !event.affectsConfiguration('modkit.contentSourceConfig') &&
           !event.affectsConfiguration('modkit.indexCaches') &&
-          !event.affectsConfiguration('modkit.contentSourceOptions')
+          !event.affectsConfiguration('modkit.contentSourceOptions') &&
+          !event.affectsConfiguration('modkit.sharedModServer')
         )
           return
         resetContentSources()

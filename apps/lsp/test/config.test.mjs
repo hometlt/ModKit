@@ -14,6 +14,9 @@ test('default closure admits dependencies up to the primary activation bound', (
   const defaults = parseModkitLspConfiguration(args)
   assert.equal(defaults.maxDocumentBytes, 16_777_216)
   assert.equal(defaults.maxWorkspaceBytes, 268_435_456)
+  // mod contexts open on the machine's shared mod server unless the client opts out
+  assert.equal(defaults.sharedModServer, true)
+  assert.equal(parseModkitLspConfiguration([...args, '--no-shared-mod-server']).sharedModServer, false)
   assert.throws(
     () => parseModkitLspConfiguration([...args, '--max-workspace-bytes', '4194304']),
     /--max-document-bytes cannot exceed --max-workspace-bytes/,

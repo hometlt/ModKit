@@ -484,6 +484,24 @@ async function buildInto(output, syncManifest) {
     logLevel: 'warning',
   })
 
+  // The shared mod server's process (owner decision 07.10): started detached by the first window,
+  // it runs this file under the editor's runtime as plain Node and serves every window's mods.
+  const daemonEntry = join(repoRoot, 'packages', 'host', 'dist', 'node', 'mod-server-daemon.js')
+  if (!existsSync(daemonEntry)) {
+    console.error(`missing ${daemonEntry} — run pnpm build (tsc -b) before bundling the extension`)
+    process.exit(1)
+  }
+  await build({
+    entryPoints: [daemonEntry],
+    outfile: join(output, 'mod-server-daemon.js'),
+    bundle: true,
+    format: 'esm',
+    platform: 'node',
+    target: ['node20'],
+    absWorkingDir: repoRoot,
+    logLevel: 'warning',
+  })
+
   await build({
     entryPoints: {
       webview: join(appRoot, 'src', 'webview.ts'),

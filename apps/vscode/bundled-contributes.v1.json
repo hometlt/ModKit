@@ -454,6 +454,12 @@
         "default": "",
         "markdownDescription": "%configuration.contentSourceConfig.description%"
       },
+      "modkit.sharedModServer": {
+        "type": "boolean",
+        "default": true,
+        "scope": "machine",
+        "markdownDescription": "%configuration.sharedModServer.description%"
+      },
       "modkit.baseMods": {
         "type": "object",
         "default": {},

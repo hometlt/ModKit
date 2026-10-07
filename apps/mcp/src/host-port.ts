@@ -39,6 +39,7 @@ import {
   createNodeMapPreviewResourcePlanResolver,
   type ModkitOpened,
   openDirectoryResolvedDataWorkspace,
+  withSharedModContexts,
   type DirectoryResolvedDataWorkspace,
   type ResolvedDataChangeRequest,
 } from '@modkit/host/node'
@@ -514,10 +515,32 @@ export async function createHostMcpPort(
     configuration.contentSourceStorage !== undefined
   ) {
     try {
-      contentSources = await loadContentSources(
+      const local = await loadContentSources(
         configuration.contentSourceConfig,
         configuration.contentSourceStorage,
       )
+      // The machine's shared mod server holds the mod contexts for every client (owner decision
+      // 07.10); this process opens them itself when the server cannot be reached.
+      contentSources =
+        local === undefined || configuration.sharedModServer === false
+          ? local
+          : withSharedModContexts(local, {
+              extensionRoots: [],
+              storage: configuration.contentSourceStorage,
+              configPath: configuration.contentSourceConfig,
+              ...(onDiagnostic === undefined
+                ? {}
+                : {
+                    onFallback: (error: unknown) =>
+                      onDiagnostic(
+                        diagnostic(
+                          'warning',
+                          'x3.mcp/mod-server-unavailable',
+                          `shared mod server unavailable, mod contexts open in this process: ${error instanceof Error ? error.message : String(error)}`,
+                        ),
+                      ),
+                  }),
+            })
     } catch (error) {
       await modkit.close()
       throw error

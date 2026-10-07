@@ -296,7 +296,9 @@ export function createLanguageModContexts(options: LanguageModContextsOptions = 
           pushed.delete(key)
           if (known.overlaid) changes.push(Object.freeze({ layerId: known.layerId, path: known.path }))
         }
-        if (changes.length > 0) await context.overlay?.(changes)
+        // An empty overlay asks the server its revision now: on a shared server another client may
+        // have edited the chain since this client last heard.
+        await context.overlay?.(changes)
         return Object.freeze({
           scope,
           gameId: context.gameId,

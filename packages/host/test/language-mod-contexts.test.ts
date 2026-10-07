@@ -67,6 +67,8 @@ function server() {
       return String(revision)
     },
     async overlay(batch) {
+      // An empty overlay only asks the revision, as the contract says.
+      if (batch.length === 0) return { revision: String(revision) }
       changes.push(batch)
       for (const change of batch) {
         const key = `${change.layerId}\u0000${change.path}`

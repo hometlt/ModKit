@@ -125,6 +125,22 @@ export { createModkit, type Modkit, type ModkitOpened, type ModkitOptions } from
 export { loadContentSources } from '@modkit/vfs/content-sources/node'
 export { resolveContentSources, type ResolveContentSourcesOptions } from './content-sources.js'
 export {
+  ABI_MOD_SERVER,
+  ABI_SERVED_MOD_CONTEXT,
+  MOD_SERVER_PROTOCOL,
+  connectModServer,
+  modServerAddress,
+  modServerDirectory,
+  serveModServer,
+  withSharedModContexts,
+  type ModServerAddress,
+  type ModServerConnection,
+  type ModServerSourcesOptions,
+  type ServeModServerOptions,
+  type ServedModServer,
+  type SharedModContextsOptions,
+} from './mod-server.js'
+export {
   createNodeInstallationProbes,
   type NodeInstallationProbeOptions,
 } from './installation-probes.js'

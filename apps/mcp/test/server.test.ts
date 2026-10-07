@@ -873,6 +873,13 @@ describe('MCP configuration', () => {
     expect(config.allowEffectfulServiceOperations).toBe(true)
     expect(config.allowEdits).toBe(true)
     expect(config.trustExtensions).toBe(true)
+    expect(config.sharedModServer).toBeUndefined()
+    expect(
+      parseModkitMcpConfiguration(
+        ['--root', 'C:\\one', '--extension', 'C:\\ext', '--no-shared-mod-server'],
+        {},
+      ).sharedModServer,
+    ).toBe(false)
     expect(() =>
       parseModkitMcpConfiguration(['--root', 'C:\\one', '--extension', 'C:\\ext'], {
         MODKIT_MCP_ALLOW_EDITS: 'sometimes',

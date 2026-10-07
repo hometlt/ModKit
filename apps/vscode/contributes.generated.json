@@ -604,6 +604,12 @@
         "markdownDescription": "%configuration.nonDefaultContributions.description%",
         "type": "array"
       },
+      "modkit.sharedModServer": {
+        "default": true,
+        "markdownDescription": "%configuration.sharedModServer.description%",
+        "scope": "machine",
+        "type": "boolean"
+      },
       "modkit.showHiddenEntries": {
         "default": false,
         "markdownDescription": "%configuration.showHiddenEntries.description%",

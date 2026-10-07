@@ -14,6 +14,8 @@ export interface ModkitLspConfiguration {
   readonly contentSourceStorage?: string
   /** Packages a root that belongs to no package opens inside; the game's own default when empty. */
   readonly baseMods: readonly string[]
+  /** Open mod contexts on the shared mod server of this machine (default), not in this process. */
+  readonly sharedModServer: boolean
 }
 
 export class ConfigurationError extends Error {}
@@ -46,6 +48,7 @@ export function modkitLspUsage(): string {
     '  --content-source-config <path>  Trusted content-source JSON; resolves packed dependencies',
     '  --content-source-storage <path> Cache/state directory for that content source',
     '  --base-mod <package>          Repeatable package a root outside any mod opens inside',
+    '  --no-shared-mod-server        Open mod contexts in this process, not on the shared server',
     '                                (default: the game default, Void for StarCraft II)',
     '  --help                        Print this text',
     '',
@@ -69,11 +72,16 @@ export function parseModkitLspConfiguration(argv: readonly string[]): ModkitLspC
   let contentSourceConfig: string | undefined
   let contentSourceStorage: string | undefined
   const baseMods: string[] = []
+  let sharedModServer = true
   for (let index = 0; index < argv.length; index += 1) {
     const option = argv[index]
     if (option === '--help') throw new ConfigurationError('help requested')
     if (option === '--trust-extensions') {
       trustExtensions = true
+      continue
+    }
+    if (option === '--no-shared-mod-server') {
+      sharedModServer = false
       continue
     }
     const value = argv[index + 1]
@@ -135,6 +143,7 @@ export function parseModkitLspConfiguration(argv: readonly string[]): ModkitLspC
     maxWorkspaceBytes,
     locales: Object.freeze(locales.length === 0 ? ['enUS'] : [...new Set(locales)]),
     baseMods: Object.freeze([...new Set(baseMods)]),
+    sharedModServer,
     ...(contentSourceConfig === undefined || contentSourceStorage === undefined
       ? {}
       : { contentSourceConfig, contentSourceStorage }),
