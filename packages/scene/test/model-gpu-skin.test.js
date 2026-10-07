@@ -311,3 +311,63 @@ it("keeps a skin's indices for every placed instance its prepared geometry serve
     assert.equal(drawn.primitive.tangents.length, 16)
   }
 })
+
+it('draws a pose sampled as matrices as its frozen bones draw it', () => {
+  // The same skin, rigid node and clip with an inverse-camera rule on the root and no camera: the
+  // rule keeps the authored pose, and the sampler makes each pose's frozen bones first.
+  const rigid = {
+    id: 'cap',
+    topology: 'triangles',
+    positions: Float32Array.of(0, 0, 0, 1, 0, 0, 0, 1, 0),
+    indices: Uint32Array.of(0, 1, 2),
+  }
+  const scene = {
+    ...projection(primitive()),
+    nodes: [
+      ...nodes.map(node =>
+        node.id === 'node-3' ? { ...node, childIds: [...node.childIds, 'tip'] } : node,
+      ),
+      { id: 'tip', childIds: [], meshIds: ['cap'], transform: [...inverse(-1, -0.5)] },
+      { id: 'still', childIds: [], meshIds: ['cap'], transform: [...inverse(-2, -3)] },
+    ],
+    meshes: [
+      { id: 'mesh', primitiveIds: ['quad'] },
+      { id: 'cap', primitiveIds: ['cap'] },
+    ],
+    primitives: [primitive(), rigid],
+  }
+  const turning = [{ nodeId: 'node-9', mode: 'inverse-camera', basisRotations: [] }]
+  const values = sample => ({
+    nodes: [...sample.nodeTransforms].map(([id, matrix]) => [id, [...matrix]]),
+    primitives: sample.primitives.map(({ skin, ...rest }) => ({
+      ...rest,
+      ...(skin === undefined
+        ? {}
+        : { skin: { ...skin, palette: [...skin.palette], deformed: skin.deformed() } }),
+    })),
+    joints: sample.joints,
+  })
+  for (const skinning of ['cpu', 'gpu']) {
+    const matrices = createModelSceneSampler(scene, { clip, skinning })
+    const bones = createModelSceneSampler(scene, { clip, skinning, billboards: turning })
+    for (const time of [0, 0.25, 0.5, 1, 1.75]) {
+      const sample = matrices.sample(time)
+      assert.deepEqual(values(sample), values(bones.sample(time)))
+      // a node no bone moves stands where it was authored, one under a bone goes with it
+      assert.deepEqual([...sample.nodeTransforms.get('still')], inverse(-2, -3))
+      const bone = sample.nodeTransforms.get('node-3')
+      near(
+        [...sample.nodeTransforms.get('tip')].slice(12, 15),
+        [0, 1, 2].map(axis => bone[12 + axis] + bone[axis] + 0.5 * bone[4 + axis]),
+        'tip',
+      )
+      assert.deepEqual(
+        sample.joints.map(joint => [joint.boneIndex, joint.parent]),
+        [
+          [3, 1],
+          [9, undefined],
+        ],
+      )
+    }
+  }
+})

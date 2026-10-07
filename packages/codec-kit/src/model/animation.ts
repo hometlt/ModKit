@@ -335,12 +335,23 @@ export interface ModelAnimationValue {
  * Compile a facet clip once, then sample without rebuilding its tracks each frame.
  * Time is sequence-local seconds; the caller controls sequence looping. Concurrent channels wrap
  * by their own duration. Descriptive channels without a declared interpolation are refused.
+ * `sample` returns frozen values; `sampleInto` writes the same values into arrays the caller keeps
+ * from sample to sample, for a pose made every frame (an animated map poses every placed unit).
  */
 export function createModelAnimationSampler(
   clip: ModelAnimationClip,
   budget?: JsonSnapshotBudget,
   signal?: AbortSignal,
-): { sample(timeSeconds: number, signal?: AbortSignal): readonly ModelAnimationValue[] } {
+): {
+  sample(timeSeconds: number, signal?: AbortSignal): readonly ModelAnimationValue[]
+  /**
+   * Each channel's value at a time into `values[index]` (an array made where there is none), in
+   * the order of `channels`: the values `sample` returns, overwritten by the next call.
+   */
+  sampleInto(timeSeconds: number, values: number[][], signal?: AbortSignal): void
+  /** What each value is (its target, kind and axis), in the order of `sample` and `sampleInto`. */
+  readonly channels: readonly Omit<ModelAnimationValue, 'value'>[]
+} {
   const owned = snapshotModelAnimations([clip], budget, signal)[0]!
   const tracks = owned.channels.map(channel => {
     if (channel.interpolation === undefined || channel.samples === undefined)
@@ -360,28 +371,51 @@ export function createModelAnimationSampler(
         ...(key.outTangent === undefined ? {} : { outTan: key.outTangent }),
       })),
     }
-    return { channel, track }
+    // what each sample tells sampleTrackValue of the channel
+    const options = {
+      isQuat: channel.interpolation === 'spherical-linear',
+      wrapSeconds: channel.concurrent ? channel.wrapSeconds : undefined,
+    }
+    return { channel, track, options }
   })
+  const channels = Object.freeze(
+    tracks.map(({ channel }) =>
+      Object.freeze(
+        channel.axis === undefined
+          ? { target: channel.target, kind: channel.kind }
+          : { target: channel.target, kind: channel.kind, axis: channel.axis },
+      ),
+    ),
+  )
   return Object.freeze({
+    channels,
     sample(timeSeconds: number, requestSignal?: AbortSignal): readonly ModelAnimationValue[] {
       if (requestSignal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
       finite(timeSeconds, 'sample time')
-      return Object.freeze(
-        tracks.map(({ channel, track }) => {
-          if (requestSignal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
-          return Object.freeze({
-            target: channel.target,
-            kind: channel.kind,
-            ...(channel.axis === undefined ? {} : { axis: channel.axis }),
-            value: Object.freeze(
-              sampleTrackValue(track, timeSeconds, [], {
-                isQuat: channel.interpolation === 'spherical-linear',
-                wrapSeconds: channel.concurrent ? channel.wrapSeconds : undefined,
-              }),
-            ),
-          })
-        }),
-      )
+      // a value of one shape per channel, without a closure or a spread
+      const values: ModelAnimationValue[] = []
+      for (const { channel, track, options } of tracks) {
+        if (requestSignal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
+        const value = Object.freeze(sampleTrackValue(track, timeSeconds, [], options))
+        values.push(
+          Object.freeze(
+            channel.axis === undefined
+              ? { target: channel.target, kind: channel.kind, value }
+              : { target: channel.target, kind: channel.kind, axis: channel.axis, value },
+          ),
+        )
+      }
+      return Object.freeze(values)
+    },
+    sampleInto(timeSeconds: number, values: number[][], requestSignal?: AbortSignal): void {
+      if (requestSignal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
+      finite(timeSeconds, 'sample time')
+      for (let index = 0; index < tracks.length; index++) {
+        if (requestSignal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
+        const { track, options } = tracks[index]!
+        // sampleTrackValue sets the length and every element, so a kept array ends as a new one
+        sampleTrackValue(track, timeSeconds, (values[index] ??= []), options)
+      }
     },
   })
 }

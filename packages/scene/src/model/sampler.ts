@@ -27,7 +27,12 @@ import {
   clipEventsBetween,
   createModelAnimationSampler,
 } from '@modkit/codec-kit/model/animation'
-import type { ModelBonePoseSample, ModelPoseBlendSample } from '@modkit/codec-kit/model/skeleton'
+import type {
+  ModelBonePoseSample,
+  ModelPoseBlendSample,
+  ModelPoseBone,
+  ModelPoseMatrices,
+} from '@modkit/codec-kit/model/skeleton'
 import { createModelSkinDeformer } from '@modkit/codec-kit/model/skinning'
 import { modelPrimitiveByteLength } from '@modkit/codec-kit/model/geometry'
 import { createNodePoseSampler, type ModelNodePose } from './node-pose.js'
@@ -131,6 +136,67 @@ function skinPalette(
     if (!Number.isFinite(palette[index]!))
       throw new RangeError('deformed skin exceeds finite float range')
   return palette
+}
+
+/**
+ * skinPalette of a pose sampled as matrices (ModelPoseMatrices, its sampler's `bones`): the same
+ * palette, checked alike, without the frozen bones.
+ */
+function skinPaletteOf(
+  sampled: ModelPoseMatrices,
+  bones: readonly ModelPoseBone[],
+  slots: ReadonlyMap<number, number>,
+): Float32Array {
+  const palette = new Float32Array((slots.size + 1) * 16)
+  const filled = new Uint8Array(slots.size)
+  const skinning = bones.length * 16
+  for (let index = 0; index < bones.length; index++) {
+    const bone = bones[index]!
+    const slot = slots.get(bone.boneIndex)
+    if (slot === undefined) continue
+    if (filled[slot] === 1 || !bone.skinned)
+      throw new TypeError('skin needs a unique explicit inverse-bind pose for each bone')
+    for (let value = 0; value < 16; value++) {
+      const entry = sampled.matrices[skinning + index * 16 + value]!
+      if (!Number.isFinite(entry))
+        throw new TypeError('skin needs a unique explicit inverse-bind pose for each bone')
+      palette[slot * 16 + value] = entry
+    }
+    filled[slot] = 1
+  }
+  if (filled.includes(0)) throw new TypeError('skin pose is incomplete')
+  palette.set(IDENTITY, slots.size * 16)
+  for (let index = 0; index < palette.length; index++)
+    if (!Number.isFinite(palette[index]!))
+      throw new RangeError('deformed skin exceeds finite float range')
+  return palette
+}
+
+/** Whether every value of a matrix is finite. */
+function finiteValues(values: Float32Array): boolean {
+  for (let index = 0; index < values.length; index++)
+    if (!Number.isFinite(values[index]!)) return false
+  return true
+}
+
+/**
+ * A primitive as a sample draws it: `base` with the transform, the skin and the fade (a tint's
+ * alpha) it has, in that order.
+ */
+function placedPrimitive(
+  base: ModelPrimitive,
+  transform: Float32Array | undefined,
+  skin: ModelSceneSkin | undefined,
+  fade: number | undefined,
+): SceneRendererPrimitive & { readonly skin?: ModelSceneSkin } {
+  if (transform === undefined && fade === undefined)
+    return skin === undefined ? { ...base } : { ...base, skin }
+  return {
+    ...base,
+    ...(transform === undefined ? {} : { transform }),
+    ...(skin === undefined ? {} : { skin }),
+    ...(fade === undefined ? {} : { tint: [1, 1, 1, fade] as const }),
+  }
 }
 
 function present<T>(value: T | undefined, label: string): T {
@@ -410,7 +476,19 @@ export function createModelSceneSampler(
           signal,
         ) as unknown as readonly ModelPoseBlendSample[])
   const poseBlendBytes = poseSamples === undefined ? 0 : Math.floor(maxBytes / 2)
-  const poseSamplers = new Map<string, ReturnType<typeof createModelPoseSampler>>()
+  // Each hierarchy's pose sampler, and the same one where it is no blend (its poses as matrices).
+  const poseSamplers = new Map<
+    string,
+    Readonly<{
+      sampler: {
+        sample(
+          time: number,
+          signal?: AbortSignal,
+        ): { readonly bones: readonly ModelBonePoseSample[] }
+      }
+      matrices: ReturnType<typeof createModelPoseSampler> | undefined
+    }>
+  >()
   const hierarchyFrames = new Map<string, Float32Array>()
   const bindingsByNode = new Map<string, ModelBoneBinding[]>()
   for (const bone of bindings)
@@ -558,7 +636,7 @@ export function createModelSceneSampler(
                 blended.sample(time - poseTime, requestSignal),
             }
       sampler.sample(0, signal)
-      poseSamplers.set(hierarchyId, sampler)
+      poseSamplers.set(hierarchyId, { sampler, matrices: primarySampler })
       hierarchyFrames.set(hierarchyId, new Float32Array(frame ?? IDENTITY))
     } catch (error) {
       if (signal?.aborted) throw error
@@ -726,6 +804,114 @@ export function createModelSceneSampler(
       )
     }
   }
+  // What every sample takes the same: the primitives stored hidden, the nodes facing the camera's
+  // position, each hierarchy, the nodes that are no bone and each primitive's draw.
+  const storedHidden: ReadonlySet<string> = new Set(
+    projection.primitives
+      .filter(primitive => primitive.hidden === true)
+      .map(primitive => primitive.id),
+  )
+  const faceBillboards = new Map(
+    billboards.flatMap(item => (item.mode === 'face-camera' ? [[item.nodeId, item] as const] : [])),
+  )
+  // A camera rule turning bones makes each pose of the sampler first (applyModelBillboards).
+  const turnsBones = billboards.some(item => item.mode === 'inverse-camera' || item.mode === 'aim')
+  const hierarchies = [...poseSamplers].map(([hierarchyId, { sampler, matrices }]) => {
+    const entries = present(hierarchyBindings.get(hierarchyId), 'hierarchy bindings')
+    const frame = present(hierarchyFrames.get(hierarchyId), 'skin frame')
+    return {
+      hierarchyId,
+      sampler,
+      // sampled as matrices: the frozen bones are made only when asked for
+      matrices: turnsBones ? undefined : matrices,
+      entries,
+      bindings: [...entries.values()],
+      frame,
+      transformed: !frame.every((value, i) => value === IDENTITY[i]),
+    }
+  })
+  type SceneHierarchy = (typeof hierarchies)[number]
+  /** A hierarchy's pose in one sample: its matrices where sampled so, and its frozen bones. */
+  type ScenePose = Readonly<{
+    hierarchy: SceneHierarchy
+    sampled: ModelPoseMatrices | undefined
+    bones: () => readonly ModelBonePoseSample[]
+  }>
+  const boneNodes = new Set<string>()
+  for (const { entries } of hierarchies)
+    for (const bone of entries.values()) if (bone.nodeId !== undefined) boneNodes.add(bone.nodeId)
+  // The nodes that are no bone, parents first. One that no bone, node pose or camera moves (nor any
+  // of its ancestors) takes its world at rest: what the parent's world times its own transform
+  // makes there.
+  const moved = new Set<string>()
+  const rigidNodes = [...worlds.keys()]
+    .filter(id => !boneNodes.has(id))
+    .map(id => {
+      const parent = parents.get(id)
+      const face = faceBillboards.get(id)
+      const still =
+        !poseNodeIds.has(id) &&
+        face === undefined &&
+        (parent === undefined || (!boneNodes.has(parent) && !moved.has(parent)))
+      if (!still) moved.add(id)
+      return {
+        id,
+        parent,
+        face,
+        transform: present(nodes.get(id), 'animated node').transform,
+        rest: present(worlds.get(id), 'node world'),
+        still,
+      }
+    })
+  const hierarchyIndices = new Map(
+    hierarchies.map(({ hierarchyId }, index) => [hierarchyId, index]),
+  )
+  const draws = projection.primitives.map(primitive => {
+    const nodes = primitiveNodes.get(primitive.id) ?? [undefined]
+    const deformer = deformers.get(primitive)
+    if (deformer === undefined) return { primitive, nodes, skinned: undefined }
+    const gpu = gpuSkins.get(primitive)
+    return {
+      primitive,
+      nodes,
+      skinned: {
+        deformer,
+        hierarchy: present(
+          hierarchyIndices.get(present(primitive.hierarchyId, 'skin hierarchy')),
+          'skin pose',
+        ),
+        gpu: gpu === undefined ? undefined : { ...gpu, drawn: drawn(gpu.bindPose) },
+      },
+    }
+  })
+  // The joints of a sample's poses (ModelRenderJoint), made when first read: the world reads none.
+  const sampleJoints = (poses: readonly ScenePose[]): readonly ModelRenderJoint[] => {
+    const joints: ModelRenderJoint[] = []
+    for (const { hierarchy, bones } of poses) {
+      const pose = bones()
+      const offset = joints.length
+      const byIndex = new Map(pose.map((bone, i) => [bone.boneIndex, offset + i]))
+      for (const bone of pose) {
+        const world = new Float32Array(16)
+        multiplyMat4(world, 0, hierarchy.frame, 0, bone.worldMatrix, 0)
+        const binding = present(hierarchy.entries.get(bone.boneIndex), 'bone binding')
+        const parent =
+          binding.parentBoneIndex == null ? undefined : byIndex.get(binding.parentBoneIndex)
+        joints.push({
+          hierarchyId: hierarchy.hierarchyId,
+          boneIndex: bone.boneIndex,
+          name: binding.boneName,
+          position: [
+            present(world[12], 'joint x'),
+            present(world[13], 'joint y'),
+            present(world[14], 'joint z'),
+          ],
+          ...(parent === undefined ? {} : { parent }),
+        })
+      }
+    }
+    return Object.freeze(joints)
+  }
   return Object.freeze({
     diagnostics: Object.freeze(diagnostics),
     /** The clip's events passed after `fromSeconds` up to `toSeconds` (see clipEventsBetween). */
@@ -738,173 +924,166 @@ export function createModelSceneSampler(
         camera?.rotation === undefined ? billboardCamera : sampleRotation(camera.rotation)
       const cameraPosition =
         camera?.position === undefined ? billboardPosition : samplePosition(camera.position)
-      const poses = new Map<string, readonly ModelBonePoseSample[]>()
       const animatedWorlds = new Map<string, Float32Array>()
       // stored invisible until a clip shows it; a sampled visibility decides either way
-      const hiddenPrimitives = new Set<string>(
-        projection.primitives
-          .filter(primitive => primitive.hidden === true)
-          .map(primitive => primitive.id),
-      )
+      let hiddenPrimitives = storedHidden
       // a visibility between 0 and 1 fades the primitive (WC3 geoset alpha): its tint's alpha
-      const fades = new Map<string, number>()
-      for (const value of visibilitySampler?.sample(timeSeconds, requestSignal) ?? [])
-        if (primitiveIds.has(value.target)) {
-          const visibility = value.value[0] ?? 0
-          if (visibility > 0) hiddenPrimitives.delete(value.target)
-          else hiddenPrimitives.add(value.target)
-          if (visibility > 0 && visibility < 1) fades.set(value.target, visibility)
-        }
-      const faded = (primitive: ModelPrimitive) => {
-        const fade = fades.get(primitive.id)
-        return fade === undefined ? {} : { tint: [1, 1, 1, fade] as const }
+      let fades: Map<string, number> | undefined
+      if (visibilitySampler !== undefined) {
+        const hidden = new Set(storedHidden)
+        fades = new Map()
+        for (const value of visibilitySampler.sample(timeSeconds, requestSignal))
+          if (primitiveIds.has(value.target)) {
+            const visibility = value.value[0] ?? 0
+            if (visibility > 0) hidden.delete(value.target)
+            else hidden.add(value.target)
+            if (visibility > 0 && visibility < 1) fades.set(value.target, visibility)
+          }
+        hiddenPrimitives = hidden
       }
-      const nodeWeights = new Map<string, readonly number[]>()
-      for (const value of morphSampler?.sample(timeSeconds, requestSignal) ?? [])
-        if (value.value.length === morphTargetCounts.get(value.target))
-          nodeWeights.set(value.target, value.value)
+      let nodeWeights: Map<string, readonly number[]> | undefined
+      if (morphSampler !== undefined) {
+        nodeWeights = new Map()
+        for (const value of morphSampler.sample(timeSeconds, requestSignal))
+          if (value.value.length === morphTargetCounts.get(value.target))
+            nodeWeights.set(value.target, value.value)
+      }
       const localPoses = nodeSampler?.sample(timeSeconds, requestSignal)
-      const faceBillboards = new Map(
-        billboards.flatMap(item =>
-          item.mode === 'face-camera' ? [[item.nodeId, item] as const] : [],
-        ),
-      )
-      const joints: ModelRenderJoint[] = []
-      // Each hierarchy's palette of this sample, shared by its skins (see ModelSceneSkin).
-      const palettes = new Map<string, Float32Array>()
-      for (const [hierarchyId, sampler] of poseSamplers) {
-        const originalPose = sampler.sample(timeSeconds, requestSignal).bones
+      const poses: ScenePose[] = []
+      for (const hierarchy of hierarchies) {
+        const { frame } = hierarchy
+        if (hierarchy.matrices !== undefined) {
+          const sampled = hierarchy.matrices.sampleMatrices(timeSeconds, requestSignal)
+          const { bones } = hierarchy.matrices
+          for (let slot = 0; slot < bones.length; slot++) {
+            const world = new Float32Array(16)
+            multiplyMat4(world, 0, frame, 0, sampled.matrices, slot * 16)
+            if (!finiteValues(world))
+              throw new RangeError('animated bone transform exceeds finite float range')
+            animatedWorlds.set(bones[slot]!.nodeId, world)
+          }
+          poses.push({ hierarchy, sampled, bones: () => sampled.pose() })
+          continue
+        }
         const pose = applyModelBillboards(
-          originalPose,
-          [...present(hierarchyBindings.get(hierarchyId), 'billboard bindings').values()],
+          hierarchy.sampler.sample(timeSeconds, requestSignal).bones,
+          hierarchy.bindings,
           billboards,
           cameraRotation,
-          present(hierarchyFrames.get(hierarchyId), 'billboard frame'),
+          frame,
           billboardBytes,
           requestSignal,
           cameraPosition,
         )
-        poses.set(hierarchyId, pose)
-        const offset = joints.length
-        const byIndex = new Map(pose.map((bone, i) => [bone.boneIndex, offset + i]))
         for (const bone of pose) {
-          const frame = hierarchyFrames.get(hierarchyId)
-          if (frame === undefined) throw new TypeError('skin frame is absent')
           const world = new Float32Array(16)
           multiplyMat4(world, 0, frame, 0, bone.worldMatrix, 0)
-          if (!world.every(Number.isFinite))
+          if (!finiteValues(world))
             throw new RangeError('animated bone transform exceeds finite float range')
           animatedWorlds.set(bone.nodeId, world)
-          const binding = present(
-            present(hierarchyBindings.get(hierarchyId), 'hierarchy bindings').get(bone.boneIndex),
-            'bone binding',
-          )
-          const parent =
-            binding.parentBoneIndex == null ? undefined : byIndex.get(binding.parentBoneIndex)
-          joints.push({
-            hierarchyId,
-            boneIndex: bone.boneIndex,
-            name: binding.boneName,
-            position: [
-              present(world[12], 'joint x'),
-              present(world[13], 'joint y'),
-              present(world[14], 'joint z'),
-            ],
-            ...(parent === undefined ? {} : { parent }),
-          })
         }
+        poses.push({ hierarchy, sampled: undefined, bones: () => pose })
       }
       // Rigid descendants of animated bones inherit their current world transforms too.
-      for (const [id] of worlds)
-        if (!animatedWorlds.has(id)) {
-          const parent = parents.get(id)
-          const matrix = new Float32Array(16)
-          multiplyMat4(
-            matrix,
-            0,
-            parent === undefined
-              ? IDENTITY
-              : present(animatedWorlds.get(parent), 'animated parent'),
-            0,
-            localPoses?.get(id) ?? present(nodes.get(id), 'animated node').transform,
-            0,
-          )
-          const face = faceBillboards.get(id)
-          const adjusted =
-            face === undefined || cameraPosition === undefined
-              ? matrix
-              : applyModelFaceCameraBillboard(matrix, face, cameraPosition)
-          if (!adjusted.every(Number.isFinite))
-            throw new RangeError('animated scene transform exceeds finite float range')
-          animatedWorlds.set(id, adjusted)
+      for (const node of rigidNodes) {
+        if (node.still) {
+          animatedWorlds.set(node.id, new Float32Array(node.rest))
+          continue
         }
+        const matrix = new Float32Array(16)
+        multiplyMat4(
+          matrix,
+          0,
+          node.parent === undefined
+            ? IDENTITY
+            : present(animatedWorlds.get(node.parent), 'animated parent'),
+          0,
+          localPoses?.get(node.id) ?? node.transform,
+          0,
+        )
+        const adjusted =
+          node.face === undefined || cameraPosition === undefined
+            ? matrix
+            : applyModelFaceCameraBillboard(matrix, node.face, cameraPosition)
+        if (!finiteValues(adjusted))
+          throw new RangeError('animated scene transform exceeds finite float range')
+        animatedWorlds.set(node.id, adjusted)
+      }
+      // Each hierarchy's palette of this sample, shared by its skins (see ModelSceneSkin).
+      const palettes: (Float32Array | undefined)[] = []
       const primitives: SceneRendererPrimitive[] = []
-      for (const primitive of projection.primitives) {
+      for (const { primitive, nodes: instances, skinned } of draws) {
         if (hiddenPrimitives.has(primitive.id)) continue
-        const deformer = deformers.get(primitive)
-        if (deformer !== undefined) {
-          const hierarchyId = present(primitive.hierarchyId, 'skin hierarchy')
-          const pose = present(poses.get(hierarchyId), 'skin pose')
-          const gpu = gpuSkins.get(primitive)
+        const fade = fades?.get(primitive.id)
+        if (skinned !== undefined) {
+          const { deformer, gpu } = skinned
+          const pose = present(poses[skinned.hierarchy], 'skin pose')
+          const { hierarchy } = pose
           // Bone world × inverse bind produces geometry in the hierarchy's authored frame.
           // Only its external frame is applied here, never the mesh node transform a second time.
           let deformed: ModelPrimitive | undefined
           let skin: ModelSceneSkin | undefined
-          if (gpu === undefined) deformed = deformer.deform(pose, requestSignal)
+          if (gpu === undefined) deformed = deformer.deform(pose.bones(), requestSignal)
           else {
-            let palette = palettes.get(hierarchyId)
-            if (palette === undefined)
-              palettes.set(
-                hierarchyId,
-                (palette = skinPalette(
-                  pose,
-                  present(hierarchySlots.get(hierarchyId), 'skin slots'),
-                )),
-              )
+            const palette = (palettes[skinned.hierarchy] ??=
+              pose.sampled === undefined
+                ? skinPalette(
+                    pose.bones(),
+                    present(hierarchySlots.get(hierarchy.hierarchyId), 'skin slots'),
+                  )
+                : skinPaletteOf(
+                    pose.sampled,
+                    present(hierarchy.matrices, 'pose bones').bones,
+                    present(hierarchySlots.get(hierarchy.hierarchyId), 'skin slots'),
+                  ))
             skin = Object.freeze({
-              ...gpu.vertices,
+              joints: gpu.vertices.joints,
+              weights: gpu.vertices.weights,
               palette,
-              deformed: () => (deformed ??= deformer.deform(pose)),
+              deformed: () => (deformed ??= deformer.deform(pose.bones())),
             })
           }
-          const frame = hierarchyFrames.get(hierarchyId)
-          const transformed =
-            frame !== undefined && !frame.every((value, i) => value === IDENTITY[i])
-          const instances = primitiveNodes.get(primitive.id)?.length ?? 1
-          for (let instance = 0; instance < instances; instance++) {
-            const posed: SceneRendererPrimitive & { readonly skin?: ModelSceneSkin } = {
-              ...drawn(skin === undefined ? present(deformed, 'deformed skin') : gpu!.bindPose),
-              ...(transformed ? { transform: new Float32Array(frame) } : {}),
-              ...(skin === undefined ? {} : { skin }),
-              ...faded(primitive),
-            }
-            primitives.push(posed)
-          }
+          const base = skin === undefined ? drawn(present(deformed, 'deformed skin')) : gpu!.drawn
+          for (let instance = 0; instance < instances.length; instance++)
+            primitives.push(
+              placedPrimitive(
+                base,
+                hierarchy.transformed ? new Float32Array(hierarchy.frame) : undefined,
+                skin,
+                fade,
+              ),
+            )
         } else {
           const targets = primitive.morphTargets?.length ?? 0
           const defaults = meshOfPrimitive.get(primitive.id)?.morphWeights
-          for (const node of primitiveNodes.get(primitive.id) ?? [undefined]) {
+          for (const node of instances) {
             const transform =
               node === undefined ? undefined : (animatedWorlds.get(node) ?? worlds.get(node))
-            const weights = (node === undefined ? undefined : nodeWeights.get(node)) ?? defaults
+            const weights = (node === undefined ? undefined : nodeWeights?.get(node)) ?? defaults
             const shaped =
               targets > 0 && weights !== undefined && weights.some(weight => weight !== 0)
                 ? morphPrimitive(primitive, weights)
                 : primitive
-            primitives.push({
-              ...drawn(shaped),
-              ...(transform === undefined ? {} : { transform: new Float32Array(transform) }),
-              ...faded(primitive),
-            })
+            primitives.push(
+              placedPrimitive(
+                drawn(shaped),
+                transform === undefined ? undefined : new Float32Array(transform),
+                undefined,
+                fade,
+              ),
+            )
           }
         }
       }
+      let joints: readonly ModelRenderJoint[] | undefined
       return {
         // Each sample owns these matrices. Sockets, emitters and other node-based features use
         // the same full world transforms as geometry and bones, without format-specific math.
         nodeTransforms: animatedWorlds as ReadonlyMap<string, Float32Array>,
         primitives: Object.freeze(primitives),
-        joints: Object.freeze(joints),
+        get joints(): readonly ModelRenderJoint[] {
+          return (joints ??= sampleJoints(poses))
+        },
         diagnostics: Object.freeze(diagnostics),
       }
     },

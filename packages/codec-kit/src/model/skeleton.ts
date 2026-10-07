@@ -161,10 +161,30 @@ export interface ModelBonePoseSample {
   readonly skinningMatrix?: readonly number[]
 }
 
+/** A bone of a pose sampler, in the order of its poses (by boneIndex). */
+export interface ModelPoseBone {
+  readonly boneIndex: number
+  readonly nodeId: string
+  /** Whether it has an inverse bind matrix, and so a skinning matrix. */
+  readonly skinned: boolean
+}
+
+/** One pose as matrices (createModelPoseSampler's `sampleMatrices`). */
+export interface ModelPoseMatrices {
+  /**
+   * 32 floats per bone of the sampler's `bones`, column-major, owned by this pose: the world matrix
+   * at 16 × slot, then world × inverse bind at 16 × (bones + slot), zeros where a bone has none.
+   */
+  readonly matrices: Float32Array
+  /** The bones `sample` returns at this time, made from `matrices` when first asked for. */
+  pose(): readonly ModelBonePoseSample[]
+}
+
 /**
  * Compile once; sample TRS, parent composition and world × inverse bind through shared math. A
  * sample reuses the sampler's own TRS slots and matrices: per bone it makes only the frozen pose it
- * returns (an animated map poses every placed unit each frame).
+ * returns (an animated map poses every placed unit each frame). `sampleMatrices` makes the same
+ * pose as one array of matrices, its channel values and frozen bones left unmade.
  */
 export function createModelPoseSampler({
   bindings,
@@ -186,6 +206,10 @@ export function createModelPoseSampler({
     readonly bones: readonly ModelBonePoseSample[]
     readonly channels: readonly ModelAnimationValue[]
   }
+  /** The pose `sample` makes at a time, as matrices (ModelPoseMatrices). */
+  sampleMatrices(timeSeconds: number, signal?: AbortSignal): ModelPoseMatrices
+  /** The bones of every pose, in its order. */
+  readonly bones: readonly ModelPoseBone[]
 } {
   const { bones, byNode, parents, order } = compileHierarchy(
     snapshotModelSkeleton(bindings, budget, signal),
@@ -195,63 +219,121 @@ export function createModelPoseSampler({
     throw new TypeError('animation belongs to a different hierarchy')
   const animation =
     clip === undefined ? undefined : createModelAnimationSampler(clip, budget, signal)
-  const world = new Float32Array(bones.length * 16)
-  const local = new Float32Array(16)
-  const skin = new Float32Array(16)
+  // What each channel of the clip does to a sample, the same every time: its TRS slot (3 × bone +
+  // kind), or IGNORED (not translation, rotation nor scale), UNBOUND (no whole bone) or REPEATED (a
+  // second channel for a bone's kind), which every sample reaching it refuses.
+  const IGNORED = -1
+  const UNBOUND = -2
+  const REPEATED = -3
+  const targets = new Int32Array(animation?.channels.length ?? 0)
+  const claimed = new Uint8Array(bones.length * 3)
+  for (const [index, channel] of (animation?.channels ?? []).entries()) {
+    const kind = boneChannelKind(channel.kind)
+    const slot = kind < 0 ? undefined : byNode.get(channel.target)
+    const target =
+      kind < 0
+        ? IGNORED
+        : slot === undefined || channel.axis !== undefined
+          ? UNBOUND
+          : claimed[slot * 3 + kind] === 1
+            ? REPEATED
+            : slot * 3 + kind
+    if (target >= 0) claimed[target] = 1
+    targets[index] = target
+  }
   // A sample's TRS per bone and kind (translation, rotation, scale): the rest pose unless a channel
-  // of the sample sets it, and which bone kinds the sample's channels set.
+  // of the sample sets it.
   const trs: (readonly number[])[] = new Array(bones.length * 3)
-  const assigned = new Uint8Array(bones.length * 3)
+  const restPose = () => {
+    for (let slot = 0; slot < bones.length; slot++) {
+      const rest = bones[slot]!.localPose!
+      trs[slot * 3] = rest.translation
+      trs[slot * 3 + 1] = rest.rotation
+      trs[slot * 3 + 2] = rest.scale
+    }
+  }
+  // A channel's value into the sample's TRS, refused as every sample refuses it.
+  const assign = (index: number, value: readonly number[]) => {
+    const target = targets[index]!
+    if (target === IGNORED) return
+    if (target === UNBOUND) throw new TypeError('animation has no whole-bone target')
+    if (target === REPEATED) throw new TypeError('duplicate bone animation channel')
+    vector(value, target % 3 === 1 ? 4 : 3, 'bone animation value')
+    trs[target] = value
+  }
+  const local = new Float32Array(16)
+  const skinning = bones.length * 16
+  // The sample's TRS composed into `matrices`: world matrices at 16 × slot, world × inverse bind at
+  // 16 × (bones + slot).
+  const compose = (matrices: Float32Array, requestSignal?: AbortSignal) => {
+    for (const slot of order) {
+      if (requestSignal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
+      composeTrsMatrix(local, 0, trs[slot * 3]!, trs[slot * 3 + 1]!, trs[slot * 3 + 2]!)
+      const parent = parents[slot]!
+      if (parent < 0) matrices.set(local, slot * 16)
+      else multiplyMat4(matrices, slot * 16, matrices, parent * 16, local, 0)
+      const inverseBind = bones[slot]!.inverseBindMatrix
+      if (inverseBind !== undefined)
+        multiplyMat4(matrices, skinning + slot * 16, matrices, slot * 16, inverseBind, 0)
+      if (
+        !finiteMatrix(matrices, slot * 16) ||
+        (inverseBind !== undefined && !finiteMatrix(matrices, skinning + slot * 16))
+      )
+        throw new RangeError('bone pose exceeds finite float range')
+    }
+  }
+  // The frozen bones of composed matrices: what `sample` returns.
+  const frozenPose = (matrices: Float32Array): readonly ModelBonePoseSample[] => {
+    const result: ModelBonePoseSample[] = new Array(bones.length)
+    for (let slot = 0; slot < bones.length; slot++) {
+      const bone = bones[slot]!
+      result[slot] =
+        bone.inverseBindMatrix === undefined
+          ? Object.freeze({
+              boneIndex: bone.boneIndex,
+              nodeId: bone.nodeId!,
+              worldMatrix: frozenMatrix(matrices, slot * 16),
+            })
+          : Object.freeze({
+              boneIndex: bone.boneIndex,
+              nodeId: bone.nodeId!,
+              worldMatrix: frozenMatrix(matrices, slot * 16),
+              skinningMatrix: frozenMatrix(matrices, skinning + slot * 16),
+            })
+    }
+    return Object.freeze(result)
+  }
+  const scratch = new Float32Array(bones.length * 32)
+  const values: number[][] = []
   return Object.freeze({
+    bones: Object.freeze(
+      bones.map(bone =>
+        Object.freeze({
+          boneIndex: bone.boneIndex,
+          nodeId: bone.nodeId!,
+          skinned: bone.inverseBindMatrix !== undefined,
+        }),
+      ),
+    ),
     sample(timeSeconds: number, requestSignal?: AbortSignal) {
       if (requestSignal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
       if (!Number.isFinite(timeSeconds)) throw new TypeError('pose time must be finite')
       const channels = animation?.sample(timeSeconds, requestSignal) ?? Object.freeze([])
-      for (let slot = 0; slot < bones.length; slot++) {
-        const rest = bones[slot]!.localPose!
-        trs[slot * 3] = rest.translation
-        trs[slot * 3 + 1] = rest.rotation
-        trs[slot * 3 + 2] = rest.scale
-      }
-      assigned.fill(0)
-      for (const channel of channels) {
-        const kind = boneChannelKind(channel.kind)
-        if (kind < 0) continue
-        const slot = byNode.get(channel.target)
-        if (slot === undefined || channel.axis !== undefined)
-          throw new TypeError('animation has no whole-bone target')
-        if (assigned[slot * 3 + kind] === 1) throw new TypeError('duplicate bone animation channel')
-        assigned[slot * 3 + kind] = 1
-        vector(channel.value, kind === 1 ? 4 : 3, 'bone animation value')
-        trs[slot * 3 + kind] = channel.value as readonly number[]
-      }
-      const result: ModelBonePoseSample[] = new Array(bones.length)
-      for (const slot of order) {
-        if (requestSignal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
-        const bone = bones[slot]!
-        composeTrsMatrix(local, 0, trs[slot * 3]!, trs[slot * 3 + 1]!, trs[slot * 3 + 2]!)
-        const parent = parents[slot]!
-        if (parent < 0) world.set(local, slot * 16)
-        else multiplyMat4(world, slot * 16, world, parent * 16, local, 0)
-        const inverseBind = bone.inverseBindMatrix
-        if (inverseBind !== undefined) multiplyMat4(skin, 0, world, slot * 16, inverseBind, 0)
-        if (!finiteMatrix(world, slot * 16) || (inverseBind !== undefined && !finiteMatrix(skin, 0)))
-          throw new RangeError('bone pose exceeds finite float range')
-        result[slot] =
-          inverseBind === undefined
-            ? Object.freeze({
-                boneIndex: bone.boneIndex,
-                nodeId: bone.nodeId!,
-                worldMatrix: frozenMatrix(world, slot * 16),
-              })
-            : Object.freeze({
-                boneIndex: bone.boneIndex,
-                nodeId: bone.nodeId!,
-                worldMatrix: frozenMatrix(world, slot * 16),
-                skinningMatrix: frozenMatrix(skin, 0),
-              })
-      }
-      return Object.freeze({ bones: Object.freeze(result), channels })
+      restPose()
+      for (let index = 0; index < channels.length; index++) assign(index, channels[index]!.value)
+      compose(scratch, requestSignal)
+      return Object.freeze({ bones: frozenPose(scratch), channels })
+    },
+    sampleMatrices(timeSeconds: number, requestSignal?: AbortSignal): ModelPoseMatrices {
+      if (requestSignal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
+      if (!Number.isFinite(timeSeconds)) throw new TypeError('pose time must be finite')
+      animation?.sampleInto(timeSeconds, values, requestSignal)
+      restPose()
+      for (let index = 0; index < targets.length; index++) assign(index, values[index]!)
+      const matrices = new Float32Array(bones.length * 32)
+      compose(matrices, requestSignal)
+      let pose: readonly ModelBonePoseSample[] | undefined
+      return Object.freeze({ matrices, pose: () => (pose ??= frozenPose(matrices)) })
     },
   })
 }

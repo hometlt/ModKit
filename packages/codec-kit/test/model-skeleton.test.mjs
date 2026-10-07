@@ -119,3 +119,98 @@ test('unknown joins, cycles, malformed poses, limits and cancellation are refuse
     /target/,
   )
 })
+
+test('a pose as matrices is the pose sample makes, its bones made when first asked for', () => {
+  const inverse = [...identity]
+  inverse[12] = -10
+  const bindings = [
+    bone(3, 9, [0, 2, 0], inverse),
+    bone(9, null, [10, 0, 0]),
+    bone(5, 9, [1, 0, 0], [...identity]),
+  ]
+  const channel = (target, kind, interpolation, values) => ({
+    target,
+    kind,
+    firstFrame: 0,
+    lastFrame: values.length - 1,
+    interpolation,
+    samples: values.map((value, frame) => ({ frame, timeSeconds: frame * 0.5, value })),
+  })
+  const clip = channels => ({
+    id: 'walk',
+    name: 'Walk',
+    kind: 'animation',
+    provenance: 'direct',
+    frames: 3,
+    durationSeconds: 1,
+    hierarchyId: 'rig',
+    channels,
+  })
+  const moving = [
+    channel('joint/9', 'translation', 'linear', [
+      [10, 0, 0],
+      [12, 1, -0.5],
+      [10, 0, 0],
+    ]),
+    channel('joint/9', 'rotation', 'spherical-linear', [
+      [0, 0, 0, 1],
+      [0, 0, Math.SQRT1_2, Math.SQRT1_2],
+      [0, 0.6, 0, 0.8],
+    ]),
+    channel('joint/3', 'scale', 'step', [
+      [1, 1, 1],
+      [1.5, 0.5, 1],
+      [1, 1, 1],
+    ]),
+    // not a bone's translation, rotation or scale: no part of the pose
+    channel('joint/5', 'visibility', 'step', [[1], [0], [1]]),
+  ]
+  const sampler = createModelPoseSampler({ bindings, hierarchyId: 'rig', clip: clip(moving) })
+  assert.deepEqual(sampler.bones, [
+    { boneIndex: 3, nodeId: 'joint/3', skinned: true },
+    { boneIndex: 5, nodeId: 'joint/5', skinned: true },
+    { boneIndex: 9, nodeId: 'joint/9', skinned: false },
+  ])
+  const earlier = sampler.sampleMatrices(0.3)
+  const kept = Float32Array.from(earlier.matrices)
+  for (const time of [-0.2, 0, 0.3, 0.5, 0.77, 1, 1.4]) {
+    const sampled = sampler.sampleMatrices(time)
+    const { bones } = sampler.sample(time)
+    assert.deepEqual(sampled.pose(), bones)
+    assert.equal(sampled.pose(), sampled.pose())
+    assert.ok(Object.isFrozen(sampled.pose()) && Object.isFrozen(sampled.pose()[0].worldMatrix))
+    for (const [slot, pose] of bones.entries()) {
+      const world = sampled.matrices.subarray(slot * 16, slot * 16 + 16)
+      const skinning = sampled.matrices.subarray((3 + slot) * 16, (4 + slot) * 16)
+      assert.deepEqual([...world], pose.worldMatrix)
+      assert.deepEqual([...skinning], pose.skinningMatrix ?? new Array(16).fill(0))
+    }
+  }
+  // each pose owns its matrices
+  assert.deepEqual(earlier.matrices, kept)
+  // the refusals of sample, at the same channel
+  const short = channel('joint/3', 'rotation', 'linear', [
+    [0, 0, 1],
+    [0, 1, 0],
+  ])
+  for (const [channels, refusal] of [
+    [
+      [
+        moving[0],
+        channel('joint/7', 'translation', 'linear', [
+          [0, 0, 0],
+          [1, 1, 1],
+        ]),
+      ],
+      /whole-bone/,
+    ],
+    [[moving[2], moving[0], { ...moving[2], interpolation: 'linear' }], /duplicate/],
+    [[moving[0], short], /bone animation value/],
+  ]) {
+    const refusing = createModelPoseSampler({ bindings, hierarchyId: 'rig', clip: clip(channels) })
+    assert.throws(() => refusing.sample(0.25), refusal)
+    assert.throws(() => refusing.sampleMatrices(0.25), refusal)
+  }
+  assert.throws(() => sampler.sampleMatrices(Infinity), /finite/)
+  assert.throws(() => sampler.sampleMatrices(0, AbortSignal.abort()), /cancelled/)
+})

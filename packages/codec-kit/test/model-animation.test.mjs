@@ -122,3 +122,50 @@ test('invalid sampling declarations, budgets and cancellation fail without guess
   assert.throws(() => createModelAnimationSampler(valid).sample(0, signal), { name: 'AbortError' })
   assert.throws(() => createModelAnimationSampler(valid).sample(NaN), TypeError)
 })
+
+test('values sampled into kept arrays are those sample makes, in the order of channels', () => {
+  const cubic = (value, tangent) => ({ value, inTangent: tangent, outTangent: tangent })
+  const sampler = createModelAnimationSampler(
+    clip([
+      channel('translation', 'linear', [
+        [0, 2, 4],
+        [-0, 4, 6],
+        [4, 6, 8],
+      ]),
+      channel('visibility', 'step', [[0], [1], [0]]),
+      channel('rotation', 'spherical-linear', [
+        [0, 0, 0, 1],
+        [0, 0, 1, 0],
+      ]),
+      {
+        ...channel('scale', 'cubic-spline', [[1], [2], [1]]),
+        samples: [cubic([1], [0]), cubic([2], [1.5]), cubic([1], [-1])].map((key, frame) => ({
+          frame,
+          timeSeconds: frame,
+          ...key,
+        })),
+      },
+      channel('translation', 'linear', [[10], [20]], { concurrent: true, wrapSeconds: 1 }),
+      channel('rotation', 'linear', [[0], [1]], { axis: 'x' }),
+    ]),
+  )
+  assert.deepEqual(sampler.channels, [
+    { target: 'node-a', kind: 'translation' },
+    { target: 'node-a', kind: 'visibility' },
+    { target: 'node-a', kind: 'rotation' },
+    { target: 'node-a', kind: 'scale' },
+    { target: 'node-a', kind: 'translation' },
+    { target: 'node-a', kind: 'rotation', axis: 'x' },
+  ])
+  // a kept array of another length ends as a new one would
+  const values = [[7, 7, 7, 7, 7, 7, 7]]
+  for (const time of [-1, 0, 0.5, 1, 1.25, 1.5, 2, 2.5, 4]) {
+    sampler.sampleInto(time, values)
+    assert.deepEqual(
+      values,
+      sampler.sample(time).map(item => [...item.value]),
+    )
+  }
+  assert.throws(() => sampler.sampleInto(NaN, values), TypeError)
+  assert.throws(() => sampler.sampleInto(0, values, AbortSignal.abort()), { name: 'AbortError' })
+})
