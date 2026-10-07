@@ -927,7 +927,7 @@ export function createModelSceneSampler(
   // its node, or keeps its world at rest where no bone moves it), about the middle of those places.
   // Null where a node pose, a camera rule, a blend or morph weights move what the extents do not
   // bound.
-  const boundsOf = (): ModelSceneBounds | null => {
+  const clipSphere = (): ModelSceneBounds | null => {
     if (nodeSampler !== undefined || billboards.length > 0 || poseSamples !== undefined) return null
     // Per hierarchy: its extent, its bones' slots, and per slot how much the middle world and the
     // inverse bind stretch and how far they move the origin (how large a pose's numbers are).
@@ -1149,7 +1149,7 @@ export function createModelSceneSampler(
      * the clip's extents do not bound. A view that cannot see that sphere sees none of its poses.
      */
     bounds: (): ModelSceneBounds | undefined =>
-      (bounds === undefined ? (bounds = boundsOf()) : bounds) ?? undefined,
+      (bounds === undefined ? (bounds = clipSphere()) : bounds) ?? undefined,
     sample(timeSeconds: number, requestSignal?: AbortSignal, camera?: ModelSceneCamera) {
       if (!Number.isFinite(timeSeconds)) throw new TypeError('scene time must be finite')
       if (requestSignal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
