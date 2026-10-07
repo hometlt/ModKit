@@ -399,7 +399,7 @@ it('keeps the scenes of placed skins while they play, each plan equal to one bui
     })
   const changes = new Map([
     [14, () => turned(items[5], 40, 0.5)],
-    [15, () => turned(items[7], 41, 1)],
+    [15, () => [turned(items[7], 41, 1), turned(items[36], 42, 0.25)]],
     [16, () => Object.assign(items[9], { presentationTint: [0.25, 0.25, 0.25] })],
   ])
   // A kept scene keeps the programs and skins it was built with, and a plan draws what they stand
@@ -572,4 +572,81 @@ it("keeps a renderer's plan while its view sees no skin left unposed, made again
   assert.equal(renderer.stats().worldObjectsUnposed, 2)
   renderer.pick(seen, screen)
   assert.equal(renderer.stats().worldPlanReuses, 2)
+})
+
+it('keeps a skin moved in place: its scenes, drawn, picked and framed where it stands now', async () => {
+  // two units the preview moves in their items (render3d), the second drawn by the fallback (its
+  // triangles written to the plan's batches where it stands: built anew)
+  const unit = (objectId, x, extra = {}) => ({
+    ...world(0).items[0],
+    id: `object-${objectId}`,
+    objectId,
+    position: { x, y: 0, z: 0 },
+    uvwPosition: { x, y: 0, z: 0 },
+    ...extra,
+  })
+  const items = [unit(1, 0), unit(2, 9, { resourceId: 'bare' })]
+  const models = new Map([
+    ['skinned', model],
+    ['bare', { ...model, materials: [], textures: [] }],
+  ])
+  const input = time => ({ ...world(time), items, models })
+  // a plan as drawn: its scenes posed, its groups, its picks and bounds (typed arrays as numbers)
+  const drawn = (module, plan) =>
+    JSON.stringify(
+      {
+        scenes: plan.modelMaterialScenes.map(scene => module.worldWebGlPosedScene(plan, scene)),
+        main: module.worldMaterialBatchesOf(plan, false),
+        shadow: module.worldMaterialBatchesOf(plan, true),
+        picking: plan.picking,
+        bounds: plan.bounds,
+        batches: [plan.opaqueTriangles, plan.texturedTriangles],
+        effects: plan.modelEffects,
+      },
+      (_, value) => {
+        if (ArrayBuffer.isView(value)) return Array.from(value)
+        if (value === null || typeof value !== 'object' || Array.isArray(value)) return value
+        return Object.fromEntries(
+          Object.keys(value)
+            .sort()
+            .map(key => [key, value[key]]),
+        )
+      },
+    )
+  const move = (x, angle) =>
+    Object.assign(items[0], {
+      position: { x, y: 0, z: 1 },
+      uvwPosition: { x, y: 0, z: 1 },
+      uvwRotation: [0, Math.sin(angle / 2), 0, Math.cos(angle / 2)],
+    })
+  let plan = createWorldWebGlPlan(input(0.1))
+  const [built] = plan.modelMaterialScenes
+  for (const [step, [time, x, angle]] of [
+    // moved with the clock where it was built, with another clock, again, then nothing moves (both
+    // kept, then their block taken whole), and back
+    [0.1, 4, 0.5],
+    [0.3, 4, 0.5],
+    [0.3, 7, 1],
+    [0.3, 7, 1],
+    [0.3, 7, 1],
+    [0.4, 0, 0],
+  ].entries()) {
+    move(x, angle)
+    Object.assign(items[1], {
+      position: { x: x + 9, y: 0, z: 0 },
+      uvwPosition: { x: x + 9, y: 0, z: 0 },
+    })
+    const previous = plan
+    plan = createWorldWebGlPlan(input(time), previous)
+    // the moved unit keeps the scene it was built with
+    assert.equal(plan.modelMaterialScenes[0], built)
+    // where it stays, the transform it stood at before: its instances keep their matrices
+    const at = drawnPlan => worldWebGlPosedScene(drawnPlan, built).primitives[0].transform
+    if (step === 1) assert.equal(at(plan), at(previous))
+    // as a plan made anew draws it: by a module of its own, which keeps nothing of these plans
+    const fresh = await import(`../src/world/webgl.js?moved-${step}`)
+    const same = { worldWebGlPosedScene, worldMaterialBatchesOf }
+    const anew = fresh.createWorldWebGlPlan(input(time))
+    assert.equal(drawn(same, plan), drawn(fresh, anew), `${time}`)
+  }
 })

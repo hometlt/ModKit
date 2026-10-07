@@ -3580,6 +3580,12 @@ interface WorldCurrentPrograms {
    * while its scene keeps its primitives, draws and groups.
    */
   readonly skins: Map<ModelSceneSkin, ModelSceneSkin>
+  /**
+   * The transforms of kept scenes' primitives whose objects moved in place since they were built,
+   * each with the transform it draws with in this plan (WorldKeptPose.placed): the scene keeps its
+   * primitives, draws and groups (worldWebGlPosedScene, groupWorldMaterialDraws).
+   */
+  readonly transforms: Map<Float32Array, Float32Array>
 }
 
 const worldCurrentPrograms = new WeakMap<WorldWebGlPlan, WorldCurrentPrograms>()
@@ -3607,16 +3613,22 @@ const worldPosedScenes = new WeakMap<
 
 /**
  * A plan's material scene in the poses it draws at the plan's clock: its own, or, for a scene kept
- * from an earlier plan while its models move its skins, the same scene whose primitives take the
- * skins theirs stand for in this plan (WorldCurrentPrograms.skins). Its programs stay its own
- * (worldWebGlScenePrograms).
+ * from an earlier plan while its models move its skins or its object moved in place, the same scene
+ * whose primitives take the skins and transforms theirs stand for in this plan
+ * (WorldCurrentPrograms.skins, transforms). Its programs stay its own (worldWebGlScenePrograms).
  */
 export function worldWebGlPosedScene(
   plan: WorldWebGlPlan,
   scene: WorldWebGlModelMaterialScene,
 ): WorldWebGlModelMaterialScene {
-  const skins = worldCurrentPrograms.get(plan)?.skins
-  if (skins === undefined || skins.size === 0) return scene
+  const current = worldCurrentPrograms.get(plan)
+  const skins = current?.skins
+  const transforms = current?.transforms
+  if (
+    (skins === undefined || skins.size === 0) &&
+    (transforms === undefined || transforms.size === 0)
+  )
+    return scene
   let posedScenes = worldPosedScenes.get(plan)
   const known = posedScenes?.get(scene)
   if (known !== undefined) return known
@@ -3627,9 +3639,18 @@ export function worldWebGlPosedScene(
     let posed = posedPrimitives.get(primitive)
     if (posed === undefined) {
       const skin = materialSkinOf(primitive)
-      const now = skin === undefined ? undefined : skins.get(skin)
-      if (now !== undefined) moved = true
-      posed = now === undefined ? primitive : Object.freeze({ ...primitive, skin: now })
+      const now = skin === undefined ? undefined : skins?.get(skin)
+      const placed =
+        primitive.transform === undefined ? undefined : transforms?.get(primitive.transform)
+      if (now !== undefined || placed !== undefined) moved = true
+      posed =
+        now === undefined && placed === undefined
+          ? primitive
+          : Object.freeze({
+              ...primitive,
+              ...(now === undefined ? {} : { skin: now }),
+              ...(placed === undefined ? {} : { transform: placed }),
+            })
       posedPrimitives.set(primitive, posed)
     }
     return posed
@@ -3727,6 +3748,11 @@ function keptWorldObjectResampledScenes(
   return kept.scenes
 }
 
+/** Lets the transforms where a moved kept object stands now stand for its scenes' (WorldKeptPose.placed). */
+function standForPlacements(current: WorldCurrentPrograms, pose: WorldKeptPose | undefined): void {
+  for (const [kept, now] of pose?.placed ?? []) current.transforms.set(kept, now)
+}
+
 /** Lets each pair's second skin stand for its first in the plan (keptWorldObjectPose). */
 function standForSkins(
   current: WorldCurrentPrograms,
@@ -3776,6 +3802,204 @@ interface WorldKeptPose {
    */
   readonly placement: Float32Array
   readonly tint: readonly [number, number, number, number] | undefined
+  /**
+   * How the placement enters the object's scenes, effects and picks, for it to be placed anew where
+   * it moves (movedWorldObject); undefined where the placement enters more (projectors, writes to
+   * the shared batches, a stretched foundation, a cliff piece): such an object is built anew.
+   */
+  readonly placing?: WorldKeptPlacing
+  /**
+   * For an object moved in place since its scenes were built: each scene primitive's transform as
+   * built to the one where the object stands now (WorldCurrentPrograms.transforms).
+   */
+  readonly placed?: ReadonlyMap<Float32Array, Float32Array>
+}
+
+/**
+ * What a kept object's placement P enters (WorldKeptPose.placing): each material scene's primitive i
+ * stands at P × component × own(i), each live effect at P × its component, each pick primitive is
+ * its source placed as its scene primitive, and each component framed at rest (its models move its
+ * geometry) is framed by its model at rest placed at P × its transform at rest.
+ */
+interface WorldKeptPlacing {
+  readonly scenes: readonly Readonly<{
+    component: Float32Array
+    primitives: readonly (Float32Array | undefined)[]
+  }>[]
+  readonly effects: readonly Float32Array[]
+  readonly picks: readonly Readonly<{
+    source: SceneRendererPrimitive
+    scene: number
+    index: number
+    slot: string
+  }>[]
+  readonly rest:
+    | readonly Readonly<{
+        id: string
+        result: Extract<WorldSceneModelResult, { state: 'converted' }>
+        programs: ReadonlyMap<string, SceneMaterialPrograms>
+        transform: Float32Array
+      }>[]
+    | undefined
+}
+
+/**
+ * A kept object moved in place (the RTS preview moves its units in their items) as a fresh build at
+ * the new placement would make it from the same samples: its scenes as they are, their primitives'
+ * transforms standing for the new ones (WorldKeptPose.placed, from the build's placing, so the same
+ * arithmetic as a build), its live effects, picks and pick mesh placed anew. The object itself when
+ * it stands where it was built or last moved to; undefined when it cannot move so (no placing) or
+ * its tint changed with it: it is then built anew.
+ */
+function movedWorldObject(
+  item: WorldSceneObjectItem,
+  kept: WorldStaticObject,
+  input: WorldWebGlInput,
+): WorldStaticObject | undefined {
+  const pose = kept.pose
+  const placing = pose?.placing
+  if (pose === undefined || placing === undefined) return undefined
+  const translation = objectPosition(item, input)
+  const placement = worldObjectTransform(item, translation)
+  if (sameOptionalMatrix(pose.placement, placement)) return kept
+  if (!sameOptionalMatrix(pose.tint, worldObjectTint(item, input.selectedObjectId)))
+    return undefined
+  // each scene primitive where it stands now, by its transform as built
+  const placed = new Map<Float32Array, Float32Array>()
+  const instances = new Map<SceneRendererPrimitive, SceneRendererPrimitive>()
+  const instanceOf = (primitive: SceneRendererPrimitive) => {
+    let instance = instances.get(primitive)
+    if (instance === undefined)
+      instances.set(
+        primitive,
+        (instance = Object.freeze({ ...primitive, transform: placed.get(primitive.transform!)! })),
+      )
+    return instance
+  }
+  for (const [index, scene] of kept.scenes.entries()) {
+    const { component, primitives } = placing.scenes[index]!
+    const instanceTransform = multiplyComponentTransforms(placement, component)
+    for (const [at, primitive] of scene.primitives.entries())
+      placed.set(
+        primitive.transform!,
+        multiplyComponentTransforms(
+          instanceTransform,
+          primitives[at] ?? IDENTITY_COMPONENT_TRANSFORM,
+        ),
+      )
+  }
+  // each pick primitive's scene primitive where it stands now (pose.picks follow the same order)
+  const pickInstances = placing.picks.map(({ scene, index }) =>
+    instanceOf(kept.scenes[scene]!.primitives[index]!),
+  )
+  const pickPrimitives = placing.picks.map(({ source, slot }, at) =>
+    sharedPickPrimitive(source, pickInstances[at]!, item, slot),
+  )
+  const restPrimitives =
+    placing.rest === undefined
+      ? undefined
+      : placing.rest.flatMap(({ id, result, programs, transform }) =>
+          worldRestPickPrimitivesOf(
+            item,
+            id,
+            result,
+            programs,
+            multiplyComponentTransforms(placement, transform),
+          ),
+        )
+  return Object.freeze({
+    ...kept,
+    effects: Object.freeze(
+      kept.effects.map((effect, index) =>
+        Object.freeze({
+          ...effect,
+          transform: multiplyComponentTransforms(placement, placing.effects[index]!),
+        }),
+      ),
+    ),
+    pickMesh: worldObjectPickMesh(
+      item.objectId,
+      translation,
+      [],
+      pickPrimitives,
+      false,
+      [],
+      restPrimitives ?? pickPrimitives,
+    ),
+    pose: Object.freeze({
+      ...pose,
+      picks: Object.freeze(
+        pose.picks.map((pick, at) =>
+          pick === undefined ? undefined : Object.freeze({ ...pick, instance: pickInstances[at]! }),
+        ),
+      ),
+      placement,
+      placed,
+    }),
+  })
+}
+
+/**
+ * A component's model at rest placed for picking's bounds (WorldObjectPickMesh: an object whose
+ * models move its geometry is framed by them at rest): the primitives the object draws (no material
+ * without color passes, no empty ones). Kept per object and component while the rest sample, the
+ * materials without passes and the placement stay.
+ */
+function worldRestPickPrimitivesOf(
+  item: WorldSceneObjectItem,
+  componentId: string,
+  result: Extract<WorldSceneModelResult, { state: 'converted' }>,
+  programs: ReadonlyMap<string, SceneMaterialPrograms>,
+  restInstanceTransform: Float32Array,
+): readonly WorldWebGlPickPrimitive[] {
+  const rest = restWorldModelSample(result)
+  // The materials without color passes, whose primitives the object does not draw.
+  let hidden = ''
+  for (const [id, prepared] of programs) if (prepared.passes.length === 0) hidden += `${id}\u0000`
+  let placedAtRest = worldRestPickPrimitives.get(item)
+  const known = placedAtRest?.get(componentId)
+  if (
+    known !== undefined &&
+    known.sample === rest &&
+    known.hidden === hidden &&
+    sameOptionalMatrix(known.placement, restInstanceTransform)
+  )
+    return known.primitives
+  const placed: WorldWebGlPickPrimitive[] = []
+  let restIndex = -1
+  for (const primitive of rest.primitives) {
+    restIndex += 1
+    // The primitives the object draws: no material without color passes, no empty ones.
+    const prepared = programs.get(primitive.materialId ?? '')
+    if (prepared !== undefined && prepared.passes.length === 0) continue
+    if (primitiveTriangleCount(primitive) === 0) continue
+    const primitiveTransform = 'transform' in primitive ? primitive.transform : undefined
+    placed.push(
+      sharedPickPrimitive(
+        primitive,
+        {
+          ...primitive,
+          transform: multiplyComponentTransforms(
+            restInstanceTransform,
+            primitiveTransform ?? IDENTITY_COMPONENT_TRANSFORM,
+          ),
+        },
+        item,
+        `rest\u0000${componentId}\u0000${String(restIndex)}`,
+      ),
+    )
+  }
+  if (placedAtRest === undefined) worldRestPickPrimitives.set(item, (placedAtRest = new Map()))
+  placedAtRest.set(
+    componentId,
+    Object.freeze({
+      sample: rest,
+      placement: restInstanceTransform,
+      hidden,
+      primitives: Object.freeze(placed),
+    }),
+  )
+  return placed
 }
 
 /**
@@ -7136,6 +7360,7 @@ export function createWorldWebGlPlan(
     materials: new Map(),
     cohorts: new Map(),
     skins: new Map(),
+    transforms: new Map(),
   }
   const resampled: WorldResampled = new Map()
   // Kept objects the view cannot see in any pose (WorldPosingView) keep the pose they have, their
@@ -7338,6 +7563,7 @@ export function createWorldWebGlPlan(
     }
     standForPrograms(currentPrograms, pending)
     standForSkins(currentPrograms, skinPairs)
+    for (const { kept: record } of kept.poses) standForPlacements(currentPrograms, record.pose)
     for (const cohort of decided.keys()) currentPrograms.cohorts.set(cohort, true)
     for (const scene of kept.scenes) modelMaterialScenes.push(scene)
     for (const { item, effect, resourceId } of kept.effects)
@@ -7375,7 +7601,13 @@ export function createWorldWebGlPlan(
     }
     const item = objects[index]!
     const staticKey = worldStaticObjectKey(item, input, preparation, models)
-    const retainedObject = staticKey === undefined ? undefined : retainedStaticObjects.get(item)
+    const retainedAsBuilt = staticKey === undefined ? undefined : retainedStaticObjects.get(item)
+    // An object moved in place since keeps its scenes, placed anew (movedWorldObject).
+    const retainedObject =
+      retainedAsBuilt?.pose?.placing === undefined ||
+      !sameWorldStaticObjectKey(retainedAsBuilt.key, staticKey!)
+        ? retainedAsBuilt
+        : (movedWorldObject(item, retainedAsBuilt, input) ?? retainedAsBuilt)
     // An object whose models move its geometry takes their poses at this clock with its scenes.
     const posePairs: [ModelSceneSkin, ModelSceneSkin][] | undefined =
       retainedObject?.pose === undefined ? undefined : []
@@ -7401,6 +7633,8 @@ export function createWorldWebGlPlan(
         : keptWorldObjectScenes(item, retainedObject!, input, planPrograms, currentPrograms)
     if (retainedObject !== undefined && keptScenes !== undefined) {
       if (posePairs !== undefined) standForSkins(currentPrograms, posePairs)
+      standForPlacements(currentPrograms, retainedObject.pose)
+      if (retainedObject !== retainedAsBuilt) retainedStaticObjects.set(item, retainedObject)
       // Kept by the key it was retained with: its block can stand for it in the next plan.
       if (block !== undefined && retainedObject.key === staticKey) {
         block.items.push(item)
@@ -7479,6 +7713,13 @@ export function createWorldWebGlPlan(
         })
       : undefined
     const restPrimitives: WorldWebGlPickPrimitive[] = []
+    // What the placement enters (WorldKeptPose.placing), while nothing but those depends on it.
+    let placeable =
+      item.derivedFrom !== 'cliffs' && !((item.presentationFoundationStretch ?? 0) > 0)
+    const placingScenes: WorldKeptPlacing['scenes'][number][] = []
+    const placingEffects: Float32Array[] = []
+    const placingPicks: WorldKeptPlacing['picks'][number][] = []
+    const placingRest: NonNullable<WorldKeptPlacing['rest']>[number][] = []
     let rendered = false
     let resolved = false
     let byProgram = false,
@@ -7534,6 +7775,8 @@ export function createWorldWebGlPlan(
       const materialsFollowTime = worldMaterialsFollowTime(result)
       const objectTint = worldObjectTint(item, input.selectedObjectId)
       const materialPrimitives: SceneRendererPrimitive[] = []
+      // each material primitive's own transform, under the component's
+      const ownTransforms: (Float32Array | undefined)[] = []
       const materialShadowPrimitives: SceneRendererPrimitive[] = []
       const shadowlessMaterials = new Set<string>()
       const instanceTransform = multiplyComponentTransforms(
@@ -7542,62 +7785,18 @@ export function createWorldWebGlPlan(
       )
       const restTransform = restTransforms?.get(component.id)
       if (restTransform !== undefined) {
-        const restInstanceTransform = multiplyComponentTransforms(
-          worldObjectTransform(item, translation),
-          restTransform,
-        )
-        const rest = restWorldModelSample(result)
-        // The materials without color passes, whose primitives the object does not draw.
-        let hidden = ''
-        for (const [id, prepared] of programs)
-          if (prepared.passes.length === 0) hidden += `${id}\u0000`
-        let placedAtRest = worldRestPickPrimitives.get(item)
-        const known = placedAtRest?.get(component.id)
-        if (
-          known !== undefined &&
-          known.sample === rest &&
-          known.hidden === hidden &&
-          sameOptionalMatrix(known.placement, restInstanceTransform)
-        )
-          restPrimitives.push(...known.primitives)
-        else {
-          const placed: WorldWebGlPickPrimitive[] = []
-          let restIndex = -1
-          for (const primitive of rest.primitives) {
-            restIndex += 1
-            // The primitives the object draws: no material without color passes, no empty ones.
-            const prepared = programs.get(primitive.materialId ?? '')
-            if (prepared !== undefined && prepared.passes.length === 0) continue
-            if (primitiveTriangleCount(primitive) === 0) continue
-            const primitiveTransform = 'transform' in primitive ? primitive.transform : undefined
-            placed.push(
-              sharedPickPrimitive(
-                primitive,
-                {
-                  ...primitive,
-                  transform: multiplyComponentTransforms(
-                    restInstanceTransform,
-                    primitiveTransform ?? IDENTITY_COMPONENT_TRANSFORM,
-                  ),
-                },
-                item,
-                `rest\u0000${component.id}\u0000${String(restIndex)}`,
-              ),
-            )
-          }
-          restPrimitives.push(...placed)
-          if (placedAtRest === undefined)
-            worldRestPickPrimitives.set(item, (placedAtRest = new Map()))
-          placedAtRest.set(
+        restPrimitives.push(
+          ...worldRestPickPrimitivesOf(
+            item,
             component.id,
-            Object.freeze({
-              sample: rest,
-              placement: restInstanceTransform,
-              hidden,
-              primitives: Object.freeze(placed),
-            }),
-          )
-        }
+            result,
+            programs,
+            multiplyComponentTransforms(worldObjectTransform(item, translation), restTransform),
+          ),
+        )
+        placingRest.push(
+          Object.freeze({ id: component.id, result, programs, transform: restTransform }),
+        )
       }
       let primitiveIndex = -1
       for (const sampledPrimitive of primitives) {
@@ -7630,6 +7829,7 @@ export function createWorldWebGlPlan(
             ...(objectTint === undefined ? {} : { tint: objectTint }),
           })
           materialPrimitives.push(instancePrimitive)
+          ownTransforms.push(primitiveTransform)
           if (castsSharedMaterialShadow) materialShadowPrimitives.push(instancePrimitive)
           if (!shadowPolicy.receiveShadows && primitive.materialId !== undefined)
             shadowlessMaterials.add(primitive.materialId)
@@ -7637,6 +7837,14 @@ export function createWorldWebGlPlan(
           if (count > 0) {
             const slot = `${component.id}\u0000${String(primitiveIndex)}`
             pickPrimitives.push(sharedPickPrimitive(primitive, instancePrimitive, item, slot))
+            placingPicks.push(
+              Object.freeze({
+                source: primitive,
+                scene: placingScenes.length,
+                index: materialPrimitives.length - 1,
+                slot,
+              }),
+            )
             posePicks?.push(
               poseModel >= 0 && materialSkinOf(primitive) !== undefined
                 ? Object.freeze({
@@ -7849,6 +8057,8 @@ export function createWorldWebGlPlan(
           ? undefined
           : uvmEffectSource(result.uvmBytes, selectedAnimation?.sequenceIndex)
       if (effectSource?.hasProjectors && scene.materials.length > 0) {
+        // the projection follows the placement
+        placeable = false
         const receiverTransform = Float32Array.from(
           invertMaterialFrame(Array.from(instanceTransform)),
         )
@@ -8005,6 +8215,7 @@ export function createWorldWebGlPlan(
       // Decals are projected above; only particles and ribbons are drawn per frame from here.
       if (effectSource?.liveEffects === true) {
         effectResources.push(component.resourceId)
+        placingEffects.push(componentTransform)
         modelEffects.push(
           Object.freeze({
             source: effectSource,
@@ -8026,6 +8237,12 @@ export function createWorldWebGlPlan(
         })
         if (shadowlessMaterials.size > 0) worldShadowlessMaterials.set(materialScene, shadowlessMaterials)
         modelMaterialScenes.push(materialScene)
+        placingScenes.push(
+          Object.freeze({
+            component: componentTransform,
+            primitives: Object.freeze(ownTransforms),
+          }),
+        )
         // The presentation (clip, team colour) is in the kept object's key: only the time moves.
         if (materialsFollowTime) {
           sceneCohortTerms.set(
@@ -8138,6 +8355,17 @@ export function createWorldWebGlPlan(
                   posable: !byFallback,
                   placement: worldObjectTransform(item, translation),
                   tint: worldObjectTint(item, input.selectedObjectId),
+                  ...(placeable && !byFallback && objectBatchWrites.length === 0
+                    ? {
+                        placing: Object.freeze({
+                          scenes: Object.freeze(placingScenes),
+                          effects: Object.freeze(placingEffects),
+                          picks: Object.freeze(placingPicks),
+                          rest:
+                            restTransforms === undefined ? undefined : Object.freeze(placingRest),
+                        }),
+                      }
+                    : {}),
                 }),
               }),
           ...(restTransforms === undefined ? {} : { atRest: true as const }),
@@ -8456,7 +8684,11 @@ export function createWorldWebGlPlan(
     preparation,
     models,
   })
-  if (currentPrograms.materials.size > 0 || currentPrograms.skins.size > 0)
+  if (
+    currentPrograms.materials.size > 0 ||
+    currentPrograms.skins.size > 0 ||
+    currentPrograms.transforms.size > 0
+  )
     worldCurrentPrograms.set(plan, currentPrograms)
   worldPlanFacets.set(plan, facets)
   worldKeptBlocks.set(plan, keptBlocks)
@@ -12346,11 +12578,24 @@ const worldGroupId = (value: object | undefined) => {
 }
 
 /**
- * A kept scene's draw in the pose its skin stands for in a plan: the draw of the scene as the plan
- * poses it (worldWebGlPosedScene), whose primitive differs from this one's in its skin alone.
+ * A kept scene's draw in the pose its skin stands for in a plan and where its object stands now:
+ * the draw of the scene as the plan poses it (worldWebGlPosedScene), whose primitive differs from
+ * this one's in its skin and transform alone. The draw itself where neither stands for another.
  */
-function worldPosedDraw<T extends MaterialDraw>(draw: T, skin: ModelSceneSkin): T {
-  return { ...draw, primitive: { ...draw.primitive, skin } }
+function worldPosedDraw<T extends MaterialDraw>(
+  draw: T,
+  skin: ModelSceneSkin | undefined,
+  transform: Float32Array | undefined,
+): T {
+  if (skin === undefined && transform === undefined) return draw
+  return {
+    ...draw,
+    primitive: {
+      ...draw.primitive,
+      ...(skin === undefined ? {} : { skin }),
+      ...(transform === undefined ? {} : { transform }),
+    },
+  }
 }
 
 function worldSceneSolidDrawsOf(
@@ -12470,14 +12715,18 @@ function groupWorldMaterialDraws(plan: WorldWebGlPlan, shadow: boolean): WorldWe
   const transparentScenes: WorldWebGlModelMaterialScene[] = []
   const current = worldCurrentPrograms.get(plan)
   const skins = current?.skins
+  const transforms = current?.transforms
   for (const scene of plan.modelMaterialScenes) {
     const solid = worldSceneSolidDrawsOf(scene, shadow)
     for (const { key, geometryKey, draw } of solid.draws) {
-      // A kept scene's skin draws in the pose it stands for in this plan.
+      // A kept scene's skin draws in the pose it stands for in this plan, and a moved object's
+      // primitive where the object stands now.
       const skin = materialSkinOf(draw.primitive)
       const pose = skin === undefined ? undefined : (skins?.get(skin) ?? skin)
+      const own = draw.primitive.transform
+      const placed = own === undefined ? undefined : transforms?.get(own)
       if (key === undefined || geometryKey === undefined) {
-        singles.push(pose === skin ? draw : worldPosedDraw(draw, pose!))
+        singles.push(worldPosedDraw(draw, pose === skin ? undefined : pose, placed))
         continue
       }
       // A kept scene's draw groups with the draws of the programs it stands for, as a new scene's
@@ -12496,7 +12745,7 @@ function groupWorldMaterialDraws(plan: WorldWebGlPlan, shadow: boolean): WorldWe
         byGeometry.set(
           geometryKey,
           (group = {
-            draw: pose === skin ? draw : worldPosedDraw(draw, pose!),
+            draw: worldPosedDraw(draw, pose === skin ? undefined : pose, placed),
             geometryKey,
             transforms: [],
             palettes: palette === undefined ? undefined : [],
@@ -12505,7 +12754,7 @@ function groupWorldMaterialDraws(plan: WorldWebGlPlan, shadow: boolean): WorldWe
         )
         groups.push(group)
       }
-      const transform = draw.primitive.transform ?? IDENTITY_VIEW_PROJECTION
+      const transform = placed ?? own ?? IDENTITY_VIEW_PROJECTION
       // A primitive drawn twice into the same depth (two solid passes) writes it once.
       if (shadow) {
         if (group.seen.has(transform)) continue
