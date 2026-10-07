@@ -223,12 +223,6 @@ export const RESOLVED_DATA_WORKSPACE_CONTRACT_DEFINITION: ServiceContractDefinit
           signal: Object.freeze({ arg: 0, key: 'signal' }),
           limits: Object.freeze({ maxBytes: 16_777_216, maxStringLength: 4_194_304 }),
         }),
-        analyzeAuthoringIndex: Object.freeze({
-          kind: 'value',
-          optional: true,
-          signal: Object.freeze({ arg: 0, key: 'signal' }),
-          limits: Object.freeze({ maxBytes: 50_331_648, maxStringLength: 50_331_648 }),
-        }),
         openSchemaTree: Object.freeze({
           kind: 'lease',
           wrapper: 'lease',
@@ -456,8 +450,6 @@ function isResolvedDataWorkspace(value: unknown): value is ResolvedDataWorkspace
     stringList(record['gameIds']) !== undefined &&
     typeof record['plan'] === 'function' &&
     typeof record['analyze'] === 'function' &&
-    (record['analyzeAuthoringIndex'] === undefined ||
-      typeof record['analyzeAuthoringIndex'] === 'function') &&
     typeof record['openSchemaTree'] === 'function' &&
     typeof record['openDefinitionTable'] === 'function' &&
     typeof record['openLocalizationTable'] === 'function' &&

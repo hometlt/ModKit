@@ -28,23 +28,23 @@ describe('language workspace semantic payloads', () => {
     expect(languageDocumentTextToken(languageDocumentSnapshot(caller))).not.toBe(token)
   })
 
-  it('validates and copies resolved Data context declarations', () => {
-    const original = {
-      kind: 'resolved-data-snapshot',
-      gameId: 'fixture-game',
-      languageIds: ['fixture-data'],
-    }
+  it('validates and copies mod server declarations, and refuses the removed resolved Data kind', () => {
+    const original = { kind: 'mod-context', gameId: 'fixture-game' }
     const [requirement] = validatedLanguageSemanticContextRequirements([original])
     expect(requirement).toEqual(original)
     expect(requirement).not.toBe(original)
-    if (requirement?.kind !== 'resolved-data-snapshot')
-      throw new Error('expected resolved data requirement')
-    expect(Object.isFrozen(requirement?.languageIds)).toBe(true)
+    expect(Object.isFrozen(requirement)).toBe(true)
     expect(() => validatedLanguageSemanticContextRequirements([original, { ...original }])).toThrow(
       TypeError,
     )
     expect(() =>
-      validatedLanguageSemanticContextRequirements([{ ...original, languageIds: Array(1) }]),
+      validatedLanguageSemanticContextRequirements([{ ...original, languageIds: ['fixture-data'] }]),
+    ).toThrow(TypeError)
+    // The host no longer analyses resolved Data for a provider: a provider asking for it is refused.
+    expect(() =>
+      validatedLanguageSemanticContextRequirements([
+        { kind: 'resolved-data-snapshot', gameId: 'fixture-game', languageIds: ['fixture-data'] },
+      ]),
     ).toThrow(TypeError)
   })
 

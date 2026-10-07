@@ -578,23 +578,15 @@ function isLanguageProvider(value: unknown): value is LanguageProvider {
     (record['completionContext'] === undefined ||
       typeof record['completionContext'] === 'function') &&
     (semanticContextRequirements === undefined ||
-      validProviderSemanticContextRequirements(
-        semanticContextRequirements,
-        workspaceLanguageIds === undefined ? record['languageIds'] : workspaceLanguageIds,
-      )) &&
+      validProviderSemanticContextRequirements(semanticContextRequirements)) &&
     typeof record['analyze'] === 'function'
   )
 }
 
-function validProviderSemanticContextRequirements(value: unknown, languageIds: unknown): boolean {
-  if (!Array.isArray(languageIds)) return false
+function validProviderSemanticContextRequirements(value: unknown): boolean {
   try {
-    const allowed = new Set(languageIds)
-    return validatedLanguageSemanticContextRequirements(value).every(
-      requirement =>
-        requirement.kind !== 'resolved-data-snapshot' ||
-        requirement.languageIds.every(languageId => allowed.has(languageId)),
-    )
+    validatedLanguageSemanticContextRequirements(value)
+    return true
   } catch {
     return false
   }

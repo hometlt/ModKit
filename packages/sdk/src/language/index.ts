@@ -459,21 +459,6 @@ export interface LanguageWorkspaceSemanticInput {
   readonly payload?: JsonValue
 }
 
-/** Provider-declared request for one host-resolved effective Data snapshot. */
-export interface LanguageResolvedDataSemanticContextRequirement {
-  readonly kind: 'resolved-data-snapshot'
-  readonly gameId: string
-  /** Only final workspace documents with one of these language ids enter Data analysis. */
-  readonly languageIds: readonly string[]
-  /**
-   * Workspace documents with these language ids are the Data's string files. They enter the analysis
-   * as localization documents of the locales the workspace's `locale-set` input names (payload
-   * `{ locales }`, preferred first): a file belongs to the first locale that begins one of its path
-   * segments (`enUS.SC2Data/LocalizedData/GameStrings.txt`).
-   */
-  readonly localizationLanguageIds?: readonly string[]
-}
-
 /**
  * Provider-declared request for game knowledge files the subject's context carries (an API dump,
  * a module map). The host finds a file with one of these names at the root of any context layer
@@ -496,7 +481,6 @@ export interface LanguageModContextSemanticContextRequirement {
 }
 
 export type LanguageSemanticContextRequirement =
-  | LanguageResolvedDataSemanticContextRequirement
   | LanguageKnowledgeSemanticContextRequirement
   | LanguageModContextSemanticContextRequirement
 

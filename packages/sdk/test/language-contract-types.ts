@@ -4,7 +4,7 @@ import type {
   LanguageProviderCompletionList,
   LanguageProviderModule,
   LanguageProviderRequestFacet,
-  LanguageResolvedDataSemanticContextRequirement,
+  LanguageModContextSemanticContextRequirement,
   LanguageWorkspaceSemanticInput,
 } from '@modkit/sdk/language'
 import type { TypedServiceContractRequest } from '@modkit/sdk/service-contracts'
@@ -68,8 +68,7 @@ export const semanticPayload = {
   payload: { assets: ['Assets/Marine.m3'], complete: true },
 } satisfies LanguageWorkspaceSemanticInput
 
-export const resolvedDataContextRequirement = {
-  kind: 'resolved-data-snapshot',
+export const modContextRequirement = {
+  kind: 'mod-context',
   gameId: 'starcraft-2',
-  languageIds: ['sc2-data'],
-} satisfies LanguageResolvedDataSemanticContextRequirement
+} satisfies LanguageModContextSemanticContextRequirement

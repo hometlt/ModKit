@@ -553,34 +553,20 @@ exports.run = async function run() {
       return text.includes('LifeMax') ? text : undefined
     })
     if (dataHover === undefined) throw new Error('Data hover failed')
-    const resolvedDataContext = await waitFor(() =>
+    // The Data provider reads the loaded mod's server (owner decision 07.10): its context names one.
+    const modServerContext = await waitFor(() =>
       extensionApi
         .diagnostics()
         .find(
           line =>
-            line.includes('inputs=resolved-data-snapshot:blizzard/starcraft-2') ||
-            line.includes(',resolved-data-snapshot:blizzard/starcraft-2') ||
-            line.includes('inputs=resolved-data-authoring-index:blizzard/starcraft-2') ||
-            line.includes(',resolved-data-authoring-index:blizzard/starcraft-2'),
+            line.includes('[language-context] resolved revision=') &&
+            line.includes(`document=${uris.data.toString()} failures=`) &&
+            /modContext=mod-context:[^@\s]+@\S+ /u.test(line),
         ),
     )
-    if (resolvedDataContext === undefined)
-      throw new Error('Data provider did not receive a canonical host Data semantic context')
-    receipt.resolvedDataContext = resolvedDataContext
-    if (
-      !resolvedDataContext.includes('complete=false') ||
-      !resolvedDataContext.includes('semantic-context-status:') ||
-      !resolvedDataContext.includes('resolved Data analysis is incomplete:') ||
-      !resolvedDataContext.includes('Base.SC2Data/GameData/NestedData.xml:') ||
-      !resolvedDataContext.includes('Missing end tag for element CUnit')
-    )
-      throw new Error('Partial Data context omitted the intentional NestedData XML failure')
-    receipt.partialDataReason = {
-      availableAuthoringIndex: resolvedDataContext.includes('resolved-data-authoring-index:'),
-      incomplete: true,
-      malformedFixture: 'Base.SC2Data/GameData/NestedData.xml',
-      diagnostic: 'Missing end tag for element CUnit',
-    }
+    if (modServerContext === undefined)
+      throw new Error('Data provider did not receive the loaded mod\'s server in its context')
+    receipt.modServerContext = modServerContext
     const dataRootCompletion = await waitFor(async () => {
       const result = await vscode.commands.executeCommand(
         'vscode.executeCompletionItemProvider',

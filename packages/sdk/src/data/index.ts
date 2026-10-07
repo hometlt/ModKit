@@ -1529,11 +1529,6 @@ export interface ResolvedDataWorkspaceAnalysisRequest extends DataCatalogAnalysi
   readonly unresolvedRequirementIds: readonly string[]
 }
 
-export interface ResolvedDataAuthoringIndexRequest extends ResolvedDataWorkspaceAnalysisRequest {
-  /** Hard JSON transfer bound. Providers preserve identity/source rows before optional values. */
-  readonly maxOutputBytes: number
-}
-
 export interface ResolvedDataWorkspaceSnapshot extends DataCatalogSnapshot {
   readonly definitions: readonly DataResolvedEntity[]
   readonly relations: readonly DataEntityRelation[]
@@ -1550,10 +1545,6 @@ export interface ResolvedDataWorkspace {
   readonly gameIds: readonly string[]
   plan(request: DataWorkspacePlanRequest): Promise<DataWorkspacePlan>
   analyze(request: ResolvedDataWorkspaceAnalysisRequest): Promise<ResolvedDataWorkspaceSnapshot>
-  /** Optional compact language projection over the same parsed patches and parent graph. */
-  analyzeAuthoringIndex?(
-    request: ResolvedDataAuthoringIndexRequest,
-  ): Promise<ResolvedDataAuthoringIndex>
   openSchemaTree(request: DataFacetOpenRequest): Promise<Lease<TreeDataSource>>
   openDefinitionTable(request: DataFacetOpenRequest): Promise<Lease<TableDataSource>>
   openLocalizationTable(request: DataFacetOpenRequest): Promise<Lease<TableDataSource>>

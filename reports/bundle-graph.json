@@ -3,8 +3,8 @@
   "schemaVersion": "bundle-graph-1",
   "entryCount": 74,
   "totals": {
-    "modules": 1044,
-    "bytes": 14185343
+    "modules": 1043,
+    "bytes": 14151452
   },
   "entries": [
     {
@@ -61,7 +61,7 @@
       "entry": "packages/host/dist/data/index.js",
       "surface": "host/data",
       "modules": 33,
-      "bytes": 135822,
+      "bytes": 135476,
       "reachesUnits": [],
       "externalUnits": [
         "@modkit/core",
@@ -101,7 +101,7 @@
       "entry": "packages/host/dist/index.js",
       "surface": "host",
       "modules": 124,
-      "bytes": 1396854,
+      "bytes": 1396506,
       "reachesUnits": [],
       "externalUnits": [
         "@modkit/core",
@@ -137,13 +137,12 @@
     {
       "entry": "packages/host/dist/language/index.js",
       "surface": "host/language",
-      "modules": 43,
-      "bytes": 252507,
+      "modules": 42,
+      "bytes": 220002,
       "reachesUnits": [],
       "externalUnits": [
         "@modkit/core",
         "@modkit/sdk",
-        "@modkit/sdk/data",
         "@modkit/sdk/descriptor",
         "@modkit/sdk/language",
         "@modkit/sdk/security",
@@ -155,7 +154,7 @@
       "entry": "packages/host/dist/maps/index.js",
       "surface": "host/maps",
       "modules": 41,
-      "bytes": 647723,
+      "bytes": 647377,
       "reachesUnits": [],
       "externalUnits": [
         "@modkit/core",
@@ -187,7 +186,7 @@
       "entry": "packages/host/dist/node/index.js",
       "surface": "host/node",
       "modules": 134,
-      "bytes": 1162666,
+      "bytes": 1162320,
       "reachesUnits": [],
       "externalUnits": [
         "@modkit/core",

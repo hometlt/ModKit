@@ -56,7 +56,6 @@ import {
   type LanguageRange,
   type LanguageRenamePreparation,
   type LanguageModContextSemanticContextRequirement,
-  type LanguageResolvedDataSemanticContextRequirement,
   type LanguageSignatureHelp,
   type LanguageSignatureParameter,
   type LanguageSymbol,
@@ -89,21 +88,15 @@ import {
 } from './index.js'
 import { expandSubjectReferenceCompletions } from './subject-completion.js'
 import {
+  languageImmutableCapture,
   languageWorkspaceContextToken,
   languageDocumentSnapshot,
   languageDocumentTextToken,
-  languageSemanticInputPayloadBytes,
   validatedLanguageWorkspaceSemanticInputs,
 } from './context.js'
 import { createWorkspaceReferenceIndex } from '../references.js'
 import type { LanguageModContexts } from './mod-contexts.js'
-import {
-  analyzeResolvedDataSemanticContext,
-  prepareResolvedDataSemanticContext,
-  semanticInputLocales,
-  validatedLanguageSemanticContextRequirements,
-  type ResolvedDataSemanticContextResult,
-} from './semantic-context.js'
+import { validatedLanguageSemanticContextRequirements } from './semantic-context.js'
 
 export const LANGUAGE_WORKSPACE_NOT_INITIALIZED = 'x3.host/language-workspace-not-initialized'
 export const LANGUAGE_WORKSPACE_SHUT_DOWN = 'x3.host/language-workspace-shut-down'
@@ -146,10 +139,6 @@ function knowledgeFileNamesOf(provider: LanguageProvider): {
     return {}
   }
 }
-
-const SEMANTIC_CONTEXT_CACHE_MAX_BYTES = 64 * 1_024 * 1_024
-const SEMANTIC_CONTEXT_PENDING_MAX = 16
-const SEMANTIC_CONTEXT_SCOPE_MAX = 64
 
 /** One exact request route plus provider-owned editor activation metadata. */
 export interface LanguageProviderRoute extends LanguageProviderRequestFacet {
@@ -2000,26 +1989,21 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
       }>
     | undefined
   const featureControllers = new Set<AbortController>()
-  const semanticContextCache = new Map<
-    string,
-    Readonly<{ value: ResolvedDataSemanticContextResult; bytes: number }>
-  >()
-  const pendingSemanticContexts = new Map<
-    string,
-    {
-      readonly promise: Promise<ResolvedDataSemanticContextResult>
-      readonly controller: AbortController
-      waiters: number
+  /*
+   * Content tokens of the semantic inputs this owner validated. Such an input is a deep-frozen copy
+   * (a source's path index is the same object while its listing stands), so its full content is
+   * hashed once, not canonicalized again on every request; any other input is hashed every time.
+   */
+  const semanticInputTokens = new WeakMap<LanguageWorkspaceSemanticInput, string>()
+  const semanticInputToken = (input: LanguageWorkspaceSemanticInput): string => {
+    if (!languageImmutableCapture(input)) return languageWorkspaceContextToken(input)
+    let token = semanticInputTokens.get(input)
+    if (token === undefined) {
+      token = languageWorkspaceContextToken(input)
+      semanticInputTokens.set(input, token)
     }
-  >()
-  const latestSemanticContextKeys = new Map<string, string>()
-  // Inputs this workspace obtained from its own resolved Data analysis. Their revision derives from
-  // every analyzed document, locale, budget and completeness flag plus the analyzer snapshot, so the
-  // context revision uses it instead of canonicalizing and hashing the multi-megabyte payload again
-  // on the editor thread. Inputs from sources and callers are still hashed in full.
-  const hostAnalyzedSemanticInputs = new WeakSet<LanguageWorkspaceSemanticInput>()
-  const semanticContextEncoder = new TextEncoder()
-  let semanticContextCacheBytes = 0
+    return token
+  }
   let state: 'new' | 'ready' | 'shut-down' = 'new'
   let shutdownPromise: Promise<void> | undefined
   let workspaceGeneration = 0
@@ -2096,174 +2080,6 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
     if (entry.released) return
     entry.released = true
     await entry.resolution.release()
-  }
-
-  const cachedSemanticContext = (key: string): ResolvedDataSemanticContextResult | undefined => {
-    const cached = semanticContextCache.get(key)
-    if (cached === undefined) return undefined
-    semanticContextCache.delete(key)
-    semanticContextCache.set(key, cached)
-    return cached.value
-  }
-
-  const rememberSemanticContext = (key: string, value: ResolvedDataSemanticContextResult): void => {
-    // The payload's exact JSON bytes were counted when it was validated; weigh the small envelope
-    // with a one-byte placeholder instead of serializing the whole payload a second time.
-    const payloadBytes =
-      value.input?.payload === undefined
-        ? undefined
-        : languageSemanticInputPayloadBytes(value.input)
-    const bytes =
-      semanticContextEncoder.encode(key).byteLength +
-      (payloadBytes === undefined || value.input === undefined
-        ? semanticContextEncoder.encode(JSON.stringify(value)).byteLength
-        : semanticContextEncoder.encode(
-            JSON.stringify({ ...value, input: { ...value.input, payload: 0 } }),
-          ).byteLength -
-          1 +
-          payloadBytes)
-    if (bytes > SEMANTIC_CONTEXT_CACHE_MAX_BYTES) return
-    const previous = semanticContextCache.get(key)
-    if (previous !== undefined) semanticContextCacheBytes -= previous.bytes
-    semanticContextCache.delete(key)
-    semanticContextCache.set(key, Object.freeze({ value, bytes }))
-    semanticContextCacheBytes += bytes
-    while (semanticContextCacheBytes > SEMANTIC_CONTEXT_CACHE_MAX_BYTES) {
-      const oldest = semanticContextCache.keys().next().value
-      if (oldest === undefined) break
-      const removed = semanticContextCache.get(oldest)
-      semanticContextCache.delete(oldest)
-      semanticContextCacheBytes -= removed?.bytes ?? 0
-    }
-  }
-
-  const rememberLatestSemanticContext = (scopeKey: string, key: string): void => {
-    latestSemanticContextKeys.delete(scopeKey)
-    latestSemanticContextKeys.set(scopeKey, key)
-    while (latestSemanticContextKeys.size > SEMANTIC_CONTEXT_SCOPE_MAX) {
-      const oldest = latestSemanticContextKeys.keys().next().value
-      if (oldest === undefined) break
-      latestSemanticContextKeys.delete(oldest)
-    }
-  }
-
-  const resolvedDataSemanticInputs = async (
-    provider: LanguageProvider,
-    routeLanguageId: string,
-    snapshotDocuments: readonly LanguageDocument[],
-    originsByUri: ReadonlyMap<string, LanguageWorkspaceDocumentOrigin>,
-    complete: boolean,
-    signal: AbortSignal,
-    preferCached = false,
-    locales: readonly string[] = [],
-  ): Promise<
-    Readonly<{ inputs: readonly LanguageWorkspaceSemanticInput[]; complete: boolean }>
-  > => {
-    const requirements = validatedLanguageSemanticContextRequirements(
-      provider.semanticContextRequirements ?? [],
-    ).filter(
-      (requirement): requirement is LanguageResolvedDataSemanticContextRequirement =>
-        requirement.kind === 'resolved-data-snapshot' &&
-        requirement.languageIds.includes(routeLanguageId),
-    )
-    if (requirements.length === 0)
-      return Object.freeze({ inputs: Object.freeze([]), complete: true })
-    const workspaceBudgets = Object.freeze({ ...(options.workspaceBudgets ?? options.budgets) })
-    const inputs: LanguageWorkspaceSemanticInput[] = []
-    let contextsComplete = true
-    for (const requirement of requirements) {
-      const prepared = prepareResolvedDataSemanticContext({
-        requirement,
-        documents: snapshotDocuments,
-        origins: originsByUri,
-        complete,
-        locales,
-        budgets: workspaceBudgets,
-      })
-      let resolved = cachedSemanticContext(prepared.key)
-      let stale = false
-      if (resolved === undefined && preferCached) {
-        const latestKey = latestSemanticContextKeys.get(prepared.scopeKey)
-        resolved = latestKey === undefined ? undefined : cachedSemanticContext(latestKey)
-        stale = resolved !== undefined
-        if (latestKey !== undefined && resolved === undefined) {
-          latestSemanticContextKeys.delete(prepared.scopeKey)
-        }
-      }
-      if (resolved === undefined && preferCached) {
-        contextsComplete = false
-        continue
-      }
-      if (resolved === undefined) {
-        let pending = pendingSemanticContexts.get(prepared.key)
-        if (pending === undefined) {
-          if (pendingSemanticContexts.size >= SEMANTIC_CONTEXT_PENDING_MAX) {
-            pendingSemanticContexts.delete(pendingSemanticContexts.keys().next().value as string)
-          }
-          const controller = new AbortController()
-          pending = {
-            controller,
-            waiters: 0,
-            promise: analyzeResolvedDataSemanticContext({
-              services: options.services,
-              grant: options.grant,
-              budgets: workspaceBudgets,
-              requirement,
-              prepared,
-              signal: controller.signal,
-            }),
-          }
-          pendingSemanticContexts.set(prepared.key, pending)
-          void pending.promise.then(
-            value => {
-              if (pendingSemanticContexts.get(prepared.key) !== pending) return
-              pendingSemanticContexts.delete(prepared.key)
-              rememberSemanticContext(prepared.key, value)
-              rememberLatestSemanticContext(prepared.scopeKey, prepared.key)
-            },
-            () => {
-              if (pendingSemanticContexts.get(prepared.key) === pending) {
-                pendingSemanticContexts.delete(prepared.key)
-              }
-            },
-          )
-        }
-        // The existing shared analysis belongs to every live waiter, not the first editor request.
-        pending.waiters += 1
-        try {
-          resolved = await waitWithSignal(pending.promise, signal)
-        } finally {
-          pending.waiters -= 1
-          if (pending.waiters === 0) {
-            if (pendingSemanticContexts.get(prepared.key) === pending)
-              pendingSemanticContexts.delete(prepared.key)
-            pending.controller.abort('no language features await the resolved Data analysis')
-          }
-        }
-      }
-      contextsComplete &&= resolved.complete && !stale
-      if (resolved.input !== undefined) {
-        hostAnalyzedSemanticInputs.add(resolved.input)
-        inputs.push(resolved.input)
-      }
-      if (resolved.failure !== undefined) {
-        inputs.push(
-          ...validatedLanguageWorkspaceSemanticInputs([
-            {
-              kind: 'semantic-context-status',
-              id: `resolved-data-snapshot:${requirement.gameId}`,
-              revision: languageWorkspaceContextToken(resolved.failure),
-              payload: {
-                state: resolved.input === undefined ? 'unavailable' : 'incomplete',
-                requirement: requirement.kind,
-                message: resolved.failure,
-              },
-            },
-          ]),
-        )
-      }
-    }
-    return Object.freeze({ inputs: Object.freeze(inputs), complete: contextsComplete })
   }
 
   const requireFeatureEntry = (
@@ -2565,36 +2381,17 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         allDocumentsHaveOrigins &&
         (sourceContext === undefined || sourceContext.semanticComplete)
       let semanticInputs: readonly LanguageWorkspaceSemanticInput[]
-      let semanticContextsComplete = true
-      let baseSemanticInputs: readonly LanguageWorkspaceSemanticInput[]
-      let semanticContexts: Readonly<{
-        inputs: readonly LanguageWorkspaceSemanticInput[]
-        complete: boolean
-      }>
       try {
         const hostInputs =
           typeof options.semanticInputs === 'function'
             ? options.semanticInputs()
             : (options.semanticInputs ?? [])
-        baseSemanticInputs = validatedLanguageWorkspaceSemanticInputs([
+        semanticInputs = validatedLanguageWorkspaceSemanticInputs([
           ...(sourceContext?.semanticInputs ?? []),
           entry.resolution.semanticInput,
           ...(entry.resolution.provider.semanticInputs ?? []),
           ...hostInputs,
         ])
-        semanticContexts = documentOnly
-          ? { inputs: Object.freeze([]), complete: false }
-          : await resolvedDataSemanticInputs(
-              entry.resolution.provider,
-              entry.route.languageId,
-              snapshotDocuments,
-              originsByUri,
-              baseSemanticComplete,
-              controller.signal,
-              preferCachedSemanticContext,
-              semanticInputLocales(baseSemanticInputs),
-            )
-        semanticContextsComplete = semanticContexts.complete
       } catch (error) {
         throwIfAborted(controller.signal)
         if (isCancellation(error)) throw error
@@ -2605,16 +2402,8 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
           entry.uri,
         )
       }
-      try {
-        semanticInputs = validatedLanguageWorkspaceSemanticInputs([
-          ...baseSemanticInputs,
-          ...semanticContexts.inputs,
-        ])
-      } catch {
-        semanticInputs = baseSemanticInputs
-        semanticContextsComplete = false
-      }
-      const semanticComplete = baseSemanticComplete && semanticContextsComplete
+      // A document-only completion reads no workspace: its context is never complete.
+      const semanticComplete = baseSemanticComplete && !documentOnly
       let modContext: LanguageWorkspaceModContext | undefined
       if (!documentOnly) {
         try {
@@ -2664,9 +2453,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
                 semanticInputs: semanticInputs.map(input => ({
                   kind: input.kind,
                   id: input.id,
-                  contentRevision: hostAnalyzedSemanticInputs.has(input)
-                    ? input.revision
-                    : languageWorkspaceContextToken(input),
+                  contentRevision: semanticInputToken(input),
                 })),
                 semanticComplete,
                 ...(modContext === undefined
@@ -3986,10 +3773,6 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
       shutdownPromise = (async () => {
         invalidateFeatures('language workspace shut down')
         sourceDocumentCaptures.clear()
-        semanticContextCache.clear()
-        semanticContextCacheBytes = 0
-        pendingSemanticContexts.clear()
-        latestSemanticContextKeys.clear()
         const open = [...documents.values()]
         documents.clear()
         for (const entry of open) entry.analysisController?.abort('language workspace shut down')

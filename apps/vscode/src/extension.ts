@@ -7453,8 +7453,13 @@ async function activateModkit(
           const message = (input.payload as Readonly<Record<string, unknown>>)['message']
           return typeof message === 'string' ? [message] : []
         }) ?? []
+      // The loaded mod's server a provider asks, by scope and revision (owner decision 07.10).
+      const server =
+        context.modContext === undefined
+          ? ''
+          : `${context.modContext.scope}@${context.modContext.revision}`
       log(
-        `[language-context] resolved revision=${context.revision} complete=${String(context.semanticComplete)} inputs=${inputs.join(',')} document=${documentUri} failures=${failures.join('; ')}`,
+        `[language-context] resolved revision=${context.revision} complete=${String(context.semanticComplete)} inputs=${inputs.join(',')} modContext=${server} document=${documentUri} failures=${failures.join('; ')}`,
       )
     },
   })
