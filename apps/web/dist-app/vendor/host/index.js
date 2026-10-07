@@ -9,10 +9,9 @@ import {
 import {
   DATA_CATALOG_ANALYSIS_CONTRACT,
   DATA_CATALOG_MATCHER_PROFILE,
-  RESOLVED_DATA_AUTHORING_INDEX_KIND,
   RESOLVED_DATA_WORKSPACE_CONTRACT,
   RESOLVED_DATA_WORKSPACE_MATCHER_PROFILE
-} from "../../chunks/chunk-VET2MZFH.js";
+} from "../../chunks/chunk-RBYIYBRS.js";
 import {
   grantValidity as grantValidity2,
   parseSubjectRef,
@@ -1362,6 +1361,7 @@ function createHostServiceResolver(options) {
             budgets: options.budgets,
             ...chain.length !== 0 || options.logicalResourcesFor === void 0 ? {} : { logicalResources: options.logicalResourcesFor(effectiveGrant) },
             ...chain.length !== 0 || options.installationProbes === void 0 ? {} : { installationProbes: options.installationProbes },
+            ...chain.length !== 0 || options.modContexts === void 0 ? {} : { modContexts: options.modContexts },
             diagnostics: {
               report(item) {
                 diagnostics.push(item);
@@ -1524,10 +1524,6 @@ function copySemanticInput(item) {
   validatedContextCopies.set(copy, result);
   return result;
 }
-function languageSemanticInputPayloadBytes(input) {
-  const metadata = validatedContextCopies.get(input);
-  return metadata !== void 0 && "input" in metadata ? metadata.payloadBytes : void 0;
-}
 function validatedLanguageWorkspaceSemanticInputs(value) {
   if (!Array.isArray(value) || value.length > LANGUAGE_WORKSPACE_SEMANTIC_INPUTS_MAX) {
     throw new TypeError("language workspace semantic inputs are invalid");
@@ -1573,686 +1569,7 @@ var languageWorkspaceContextToken = (value) => {
   if (semantic !== void 0) semantic.token = token;
   return token;
 };
-var MAX_SIGNATURE_WINDOW_BYTES = 4096 + 64;
-var RESOURCE_NOT_FOUND = "x3.host/resource-not-found";
-var RESOURCE_NOT_ALLOWLISTED = "x3.host/resource-not-allowlisted";
-var RESOURCE_PATH_REFUSED = "x3.host/resource-path-refused";
-var RESOURCE_SCOPE_UNSUPPORTED = "x3.host/resource-scope-unsupported";
-var RESOURCE_BUDGET_EXCEEDED = "x3.host/resource-budget-exceeded";
-var RESOURCE_CYCLE_DETECTED = "x3.host/resource-cycle-detected";
-var RESOURCE_SESSION_DISPOSED = "x3.host/resource-session-disposed";
-var RESOURCE_REVISION_CHANGED = "x3.host/resource-revision-changed";
-var RESOURCE_PERMISSION_MISSING = "x3.host/resource-permission-missing";
-var REASON_CODES = Object.freeze({
-  "not-found": RESOURCE_NOT_FOUND,
-  "not-allowlisted": RESOURCE_NOT_ALLOWLISTED,
-  "path-refused": RESOURCE_PATH_REFUSED,
-  "scope-unsupported": RESOURCE_SCOPE_UNSUPPORTED,
-  "budget-exceeded": RESOURCE_BUDGET_EXCEEDED,
-  "cycle-detected": RESOURCE_CYCLE_DETECTED,
-  "session-disposed": RESOURCE_SESSION_DISPOSED,
-  "source-revision-changed": RESOURCE_REVISION_CHANGED,
-  "permission-missing": RESOURCE_PERMISSION_MISSING
-});
-var DEFAULT_RESOURCE_SESSION_LIMITS = Object.freeze({
-  maxResources: 256,
-  maxBytes: 256n * 1024n * 1024n,
-  maxDepth: 8,
-  // One scope of a game archive: a bare texture name is looked for in every folder (Emperor's
-  // 3DDATA0001.RFH holds 3 749 entries, Diablo III's anim/ 15 258); see DEFAULT_COMPANION_LIMITS.
-  maxEntries: 65536
-});
-var DEPENDENCY_SCOPE = Object.freeze(["workspace-dependency-layer"]);
-var KNOWLEDGE_FILE_MAX_BYTES = 8 * 1024 * 1024;
-var KNOWLEDGE_TOTAL_MAX_BYTES = 32 * 1024 * 1024;
-var EVIDENCE_KINDS = Object.freeze([
-  "magic",
-  "structure",
-  "companion",
-  "context",
-  "extension",
-  "user-override"
-]);
-var ABI_CODEC_MODULE = { contract: "x3.abi/codec-module", major: 1 };
-var ABI_SERVICE_PROVIDER_MODULE = {
-  contract: "x3.abi/service-provider-module",
-  major: 1
-};
-var ABI_CODEC = { contract: "x3.abi/codec", major: 1 };
-var ABI_ASSET_SESSION = { contract: "x3.abi/asset-session", major: 1 };
-var ABI_OPERATION_SESSION = { contract: "x3.abi/operation-session", major: 1 };
-var ABI_ARTIFACT_SOURCE = { contract: "x3.abi/artifact-source", major: 1 };
-var ABI_ASSET_NAMESPACE = { contract: "x3.abi/asset-namespace", major: 1 };
-var ABI_ASSET_INPUT = { contract: "x3.abi/asset-input", major: 1 };
-var ABI_DIAGNOSTIC_SINK = { contract: "x3.abi/diagnostic-sink", major: 1 };
-var ABI_CONTRACT_RESOLVER = { contract: "x3.abi/contract-resolver", major: 1 };
-var ABI_RASTER_RESOURCES = { contract: "x3.abi/raster-resources", major: 1 };
-var ABI_MODEL_RESOURCES = { contract: "x3.abi/model-resources", major: 1 };
-var ABI_INSTALLATION_PROBES = { contract: "x3.abi/installation-probes", major: 1 };
-var ABI_VIDEO_FRAMES = { contract: "x3.abi/video-frames", major: 1 };
-var ABI_INSTALLATION_FILES = { contract: "x3.abi/installation-files", major: 1 };
-var ABI_SUBJECT_CATALOG = { contract: "x3.abi/subject-catalog", major: 1 };
-var ABI_CREDENTIALS = { contract: "x3.abi/credentials", major: 1 };
-var ABI_MODEL_RESOURCE_ASSET = {
-  contract: "x3.abi/model-resource-asset",
-  major: 1
-};
-var ABI_LOGICAL_RESOURCES = { contract: "x3.abi/logical-resources", major: 1 };
-var ABI_LOGICAL_RESOURCE_RESOLUTION = {
-  contract: "x3.abi/logical-resource-resolution",
-  major: 1
-};
-var sig = { signal: "last" };
-var codecModuleSurface = {
-  ...ABI_CODEC_MODULE,
-  fields: ["abiVersion"],
-  methods: {
-    /** `createCodec(context)` — the backend marshals `context` (budgets copied, ports as refs). */
-    createCodec: { kind: "lease", result: ABI_CODEC, wrapper: "bare" }
-  }
-};
-var serviceProviderModuleSurface = {
-  ...ABI_SERVICE_PROVIDER_MODULE,
-  fields: ["abiVersion", "provides"],
-  methods: {
-    /**
-     * `createProvider(selection, context)` — the leased provider's surface is the one the
-     * selection names (its contract definition's `surface`); `context` is marshalled like
-     * `createCodec`'s. Returns a `Lease`: releasing the handle releases the provider.
-     */
-    createProvider: {
-      kind: "lease",
-      wrapper: "lease",
-      resultFromArgs: { contract: { arg: 0, key: "contract" }, major: { arg: 0, key: "major" } }
-    }
-  }
-};
-var codecSurface = {
-  ...ABI_CODEC,
-  methods: {
-    probe: { kind: "value", ...sig },
-    planInput: { kind: "value", optional: true, ...sig },
-    open: { kind: "lease", result: ABI_ASSET_SESSION, wrapper: "bare", ...sig }
-  }
-};
-var assetSessionSurface = {
-  ...ABI_ASSET_SESSION,
-  fields: ["revision"],
-  releaseVia: "dispose",
-  methods: {
-    state: { kind: "value" },
-    descriptor: { kind: "value" },
-    /** `dataSource(contract, major)` — the leased surface is named by the arguments. */
-    dataSource: {
-      kind: "lease",
-      resultFromArgs: { contract: 0, major: 1 },
-      wrapper: "lease"
-    },
-    operations: { kind: "lease", result: ABI_OPERATION_SESSION, wrapper: "bare" },
-    events: { kind: "events", ...sig },
-    dispose: { kind: "value" }
-  }
-};
-var operationSessionSurface = {
-  ...ABI_OPERATION_SESSION,
-  releaseVia: "dispose",
-  methods: {
-    invoke: {
-      kind: "value",
-      signal: { arg: 2, key: "signal" },
-      progress: { arg: 2, key: "onProgress" }
-    },
-    dispose: { kind: "value" }
-  }
-};
-var artifactSourceSurface = {
-  ...ABI_ARTIFACT_SOURCE,
-  fields: ["ref", "revision", "kind", "size"],
-  methods: {
-    read: { kind: "value", optional: true, ...sig },
-    stream: { kind: "iterable", optional: true, ...sig },
-    openNamespace: {
-      kind: "lease",
-      result: ABI_ASSET_NAMESPACE,
-      wrapper: "lease",
-      optional: true,
-      ...sig
-    }
-  }
-};
-var assetNamespaceSurface = {
-  ...ABI_ASSET_NAMESPACE,
-  methods: {
-    list: { kind: "iterable", batchItems: 512, ...sig },
-    readPreamble: { kind: "value", optional: true, ...sig },
-    open: { kind: "lease", result: ABI_ARTIFACT_SOURCE, wrapper: "lease", ...sig }
-  }
-};
-var assetInputSurface = {
-  ...ABI_ASSET_INPUT,
-  // topology data as fields: physical bindings, the namespace/derived discriminants, the derived
-  // subject list and its optional materialized requirement/recipe
-  fields: [
-    "originKind",
-    "root",
-    "bindings",
-    "revisions",
-    "primaryBindingId",
-    "subjects",
-    "recipe",
-    "materialized"
-  ],
-  methods: {
-    openBinding: {
-      kind: "lease",
-      result: ABI_ARTIFACT_SOURCE,
-      wrapper: "lease",
-      optional: true,
-      ...sig
-    },
-    openNamespace: {
-      kind: "lease",
-      result: ABI_ASSET_NAMESPACE,
-      wrapper: "lease",
-      optional: true,
-      ...sig
-    },
-    // derived inputs: open one input subject as a session, or the optional materialized artifact
-    openSubject: {
-      kind: "lease",
-      result: ABI_ASSET_SESSION,
-      wrapper: "lease",
-      optional: true,
-      ...sig
-    },
-    openMaterialized: {
-      kind: "lease",
-      result: ABI_ARTIFACT_SOURCE,
-      wrapper: "lease",
-      optional: true,
-      ...sig
-    }
-  }
-};
-var contractResolverSurface = {
-  ...ABI_CONTRACT_RESOLVER,
-  methods: {
-    resolve: {
-      kind: "lease",
-      wrapper: "lease",
-      resultFromArgs: { contract: { arg: 0, key: "contract" }, major: { arg: 0, key: "major" } },
-      signal: { arg: 0, key: "signal" }
-    },
-    resolveUnknown: {
-      kind: "lease",
-      wrapper: "lease",
-      resultFromArgs: { contract: { arg: 0, key: "contract" }, major: { arg: 0, key: "major" } },
-      signal: { arg: 0, key: "signal" }
-    }
-  }
-};
-var diagnosticSinkSurface = {
-  ...ABI_DIAGNOSTIC_SINK,
-  methods: {
-    report: { kind: "value" }
-  }
-};
-var rasterResourcesSurface = {
-  ...ABI_RASTER_RESOURCES,
-  methods: { read: { kind: "value", ...sig } }
-};
-var installationProbesSurface = {
-  ...ABI_INSTALLATION_PROBES,
-  methods: {
-    registryValues: { kind: "value", ...sig },
-    steamAppDir: { kind: "value", ...sig },
-    epicInstallLocation: { kind: "value", ...sig },
-    gogInstallPath: { kind: "value", ...sig },
-    storePackageLocation: { kind: "value", ...sig },
-    knownFolder: { kind: "value", ...sig }
-  }
-};
-var videoFramesSurface = {
-  ...ABI_VIDEO_FRAMES,
-  methods: { decodeFrame: { kind: "value", signal: { arg: 0, key: "signal" } } }
-};
-var installationFilesSurface = {
-  ...ABI_INSTALLATION_FILES,
-  methods: {
-    size: { kind: "value", signal: { arg: 0, key: "signal" } },
-    read: { kind: "value", signal: { arg: 0, key: "signal" } }
-  }
-};
-var subjectCatalogSurface = {
-  ...ABI_SUBJECT_CATALOG,
-  methods: {
-    entities: { kind: "value", arity: 2, ...sig },
-    strings: { kind: "value", arity: 3, optional: true, ...sig }
-  }
-};
-var credentialsSurface = {
-  ...ABI_CREDENTIALS,
-  methods: {
-    status: { kind: "value", arity: 2, ...sig },
-    acquire: { kind: "value", arity: 2, ...sig },
-    fetch: { kind: "value", arity: 2, ...sig },
-    secret: { kind: "value", arity: 2, ...sig },
-    remember: { kind: "value", arity: 3, ...sig },
-    forget: { kind: "value", arity: 2, ...sig }
-  }
-};
-var modelAcquire = {
-  kind: "lease",
-  result: ABI_MODEL_RESOURCE_ASSET,
-  wrapper: "lease",
-  ...sig
-};
-var modelResourcesSurface = {
-  ...ABI_MODEL_RESOURCES,
-  methods: { acquire: modelAcquire }
-};
-var modelResourceAssetSurface = {
-  ...ABI_MODEL_RESOURCE_ASSET,
-  fields: ["result"],
-  methods: {
-    acquire: modelAcquire,
-    readRaster: { kind: "value", ...sig },
-    sceneInfo: { kind: "value", optional: true, ...sig },
-    nodes: { kind: "value", optional: true, ...sig },
-    meshes: { kind: "value", optional: true, ...sig },
-    primitive: { kind: "value", optional: true, ...sig },
-    skeletonBindings: { kind: "value", optional: true, ...sig },
-    animationClips: { kind: "value", optional: true, ...sig },
-    materials: { kind: "value", optional: true, ...sig },
-    resourceReferences: { kind: "value", optional: true, ...sig },
-    sockets: { kind: "value", optional: true, ...sig }
-  }
-};
-var logicalResourcesSurface = {
-  ...ABI_LOGICAL_RESOURCES,
-  methods: {
-    discover: { kind: "value", ...sig },
-    readBatch: { kind: "value", ...sig },
-    resolve: { kind: "lease", result: ABI_LOGICAL_RESOURCE_RESOLUTION, wrapper: "lease", ...sig },
-    provenance: { kind: "value", ...sig },
-    identity: { kind: "value", ...sig }
-  }
-};
-var logicalResourceResolutionSurface = {
-  ...ABI_LOGICAL_RESOURCE_RESOLUTION,
-  fields: ["result"],
-  methods: { openSource: { kind: "lease", result: ABI_ARTIFACT_SOURCE, wrapper: "lease", ...sig } }
-};
-var RUNTIME_ABI_SURFACES = Object.freeze([
-  codecModuleSurface,
-  serviceProviderModuleSurface,
-  codecSurface,
-  assetSessionSurface,
-  operationSessionSurface,
-  artifactSourceSurface,
-  assetNamespaceSurface,
-  assetInputSurface,
-  diagnosticSinkSurface,
-  contractResolverSurface,
-  rasterResourcesSurface,
-  installationProbesSurface,
-  videoFramesSurface,
-  installationFilesSurface,
-  subjectCatalogSurface,
-  credentialsSurface,
-  modelResourcesSurface,
-  modelResourceAssetSurface,
-  logicalResourcesSurface,
-  logicalResourceResolutionSurface
-]);
-init_subject_field_projections();
-var EMPTY_RECEIPT = Object.freeze({
-  complete: false,
-  pages: 0,
-  entries: 0,
-  candidates: 0,
-  bytes: 0n
-});
-var NAMESPACE_SCOPES = Object.freeze([
-  "current-mount",
-  "enclosing-container"
-]);
-var WORKSPACE_SCOPES = Object.freeze([
-  "workspace-dependency-layer",
-  "current-mount",
-  "enclosing-container"
-]);
-var MODEL_PREVIEW_BYTES = 64 * 1024 * 1024;
-var NAMESPACE_PATH_ENCODER = new TextEncoder();
-var DEFAULT_COMPANION_LIMITS = Object.freeze({
-  // One scope of a game archive: a model's bare texture name is looked for in every folder of the
-  // enclosing container, and Emperor's 3DDATA0001.RFH holds 3 749 entries, Diablo III's anim/ 15 258.
-  maxEntries: 65536,
-  maxProbes: 64,
-  maxProbeBytes: 256 * 1024,
-  // A binding is a reference into a scope already bounded by maxEntries. Kane's Wrath's compiled
-  // containers bind their meshes and clips one by one: the MARV names 164 parts, the Eradicator
-  // Hexapod 175 plus 19 clips, and at 64 they did not open.
-  maxBindings: 1024
-});
-var OFFER_KEYS = /* @__PURE__ */ new Set(["gameIds"]);
-var REQUEST_KEYS = /* @__PURE__ */ new Set(["gameId"]);
-function recordOf(value) {
-  return typeof value === "object" && value !== null && !Array.isArray(value) ? value : void 0;
-}
-function nonEmptyString(value) {
-  return typeof value === "string" && value.trim().length > 0;
-}
-function stringList(value) {
-  if (!Array.isArray(value) || value.length === 0 || !value.every(nonEmptyString)) return void 0;
-  const strings = value;
-  return new Set(strings).size === strings.length ? strings : void 0;
-}
-function parseOffer(value) {
-  const record3 = recordOf(value);
-  if (record3 === void 0 || Object.keys(record3).some((key3) => !OFFER_KEYS.has(key3))) {
-    return void 0;
-  }
-  const gameIds = stringList(record3["gameIds"]);
-  return gameIds === void 0 ? void 0 : { gameIds };
-}
-function parseRequest(value) {
-  const record3 = recordOf(value);
-  if (record3 === void 0 || Object.keys(record3).some((key3) => !REQUEST_KEYS.has(key3))) {
-    return void 0;
-  }
-  return nonEmptyString(record3["gameId"]) ? { gameId: record3["gameId"] } : void 0;
-}
-function matchDataCatalogFacets(context) {
-  const offer = parseOffer(context.offerFacet);
-  const request = parseRequest(context.requestFacet);
-  if (offer === void 0 || request === void 0) {
-    return {
-      state: "invalid",
-      diagnostics: [
-        diagnostic(
-          "error",
-          "x3.host/data-catalog-facet-invalid",
-          `${context.contract}@${context.major}: data catalog routes must be well formed`
-        )
-      ]
-    };
-  }
-  return offer.gameIds.includes(request.gameId) ? { state: "match", selectionKey: `game=${request.gameId}` } : { state: "no-match" };
-}
-var DATA_CATALOG_MATCHER = Object.freeze({
-  profile: contractId(DATA_CATALOG_MATCHER_PROFILE),
-  major: 1,
-  match: matchDataCatalogFacets
-});
-var RESOLVED_DATA_WORKSPACE_MATCHER = Object.freeze({
-  profile: contractId(RESOLVED_DATA_WORKSPACE_MATCHER_PROFILE),
-  major: 1,
-  match: matchDataCatalogFacets
-});
-var DATA_CATALOG_CONTRACT_DEFINITION = Object.freeze({
-  schemaVersion: 1,
-  kind: "service",
-  contract: DATA_CATALOG_ANALYSIS_CONTRACT,
-  major: 1,
-  offerFacet: Object.freeze({
-    presence: "required",
-    schema: Object.freeze({
-      $ref: "https://schemas.modkit.org/x3/data-catalog-offer.v1.schema.json"
-    })
-  }),
-  requestFacet: Object.freeze({
-    presence: "required",
-    schema: Object.freeze({
-      $ref: "https://schemas.modkit.org/x3/data-catalog-request.v1.schema.json"
-    })
-  }),
-  matching: Object.freeze({ profile: DATA_CATALOG_MATCHER_PROFILE, major: 1 }),
-  conformanceProfile: "common.data/catalog-analysis-v1",
-  surface: Object.freeze({
-    fields: Object.freeze(["contract", "analyzerId", "gameIds"]),
-    methods: Object.freeze({
-      analyze: Object.freeze({
-        kind: "value",
-        signal: Object.freeze({ arg: 0, key: "signal" }),
-        limits: Object.freeze({ maxBytes: 16777216, maxStringLength: 4194304 })
-      })
-    })
-  })
-});
-var RESOLVED_DATA_WORKSPACE_CONTRACT_DEFINITION = Object.freeze({
-  schemaVersion: 1,
-  kind: "service",
-  contract: RESOLVED_DATA_WORKSPACE_CONTRACT,
-  major: 1,
-  offerFacet: Object.freeze({
-    presence: "required",
-    schema: Object.freeze({
-      $ref: "https://schemas.modkit.org/x3/data-catalog-offer.v1.schema.json"
-    })
-  }),
-  requestFacet: Object.freeze({
-    presence: "required",
-    schema: Object.freeze({
-      $ref: "https://schemas.modkit.org/x3/data-catalog-request.v1.schema.json"
-    })
-  }),
-  matching: Object.freeze({ profile: RESOLVED_DATA_WORKSPACE_MATCHER_PROFILE, major: 1 }),
-  conformanceProfile: "common.data/resolved-workspace-v1",
-  surface: Object.freeze({
-    fields: Object.freeze(["contract", "providerId", "gameIds", "persistentRoots"]),
-    methods: Object.freeze({
-      plan: Object.freeze({
-        kind: "value",
-        signal: Object.freeze({ arg: 0, key: "signal" }),
-        limits: Object.freeze({ maxBytes: 4194304, maxStringLength: 1048576 })
-      }),
-      analyze: Object.freeze({
-        kind: "value",
-        signal: Object.freeze({ arg: 0, key: "signal" }),
-        limits: Object.freeze({ maxBytes: 16777216, maxStringLength: 4194304 })
-      }),
-      analyzeAuthoringIndex: Object.freeze({
-        kind: "value",
-        optional: true,
-        signal: Object.freeze({ arg: 0, key: "signal" }),
-        limits: Object.freeze({ maxBytes: 50331648, maxStringLength: 50331648 })
-      }),
-      openSchemaTree: Object.freeze({
-        kind: "lease",
-        wrapper: "lease",
-        result: Object.freeze({ contract: "common.view/tree-data-source", major: 1 }),
-        signal: Object.freeze({ arg: 0, key: "signal" })
-      }),
-      openDefinitionTable: Object.freeze({
-        kind: "lease",
-        wrapper: "lease",
-        result: Object.freeze({ contract: "common.view/table-data-source", major: 1 }),
-        signal: Object.freeze({ arg: 0, key: "signal" })
-      }),
-      openLocalizationTable: Object.freeze({
-        kind: "lease",
-        wrapper: "lease",
-        result: Object.freeze({ contract: "common.view/table-data-source", major: 1 }),
-        signal: Object.freeze({ arg: 0, key: "signal" })
-      }),
-      openRelations: Object.freeze({
-        kind: "lease",
-        wrapper: "lease",
-        result: Object.freeze({ contract: "common.view/relation-graph-source", major: 1 }),
-        signal: Object.freeze({ arg: 0, key: "signal" })
-      }),
-      openSubjectFacts: Object.freeze({
-        kind: "lease",
-        optional: true,
-        wrapper: "lease",
-        result: Object.freeze({ contract: "common.view/subject-facts-source", major: 1 }),
-        signal: Object.freeze({ arg: 0, key: "signal" })
-      }),
-      openSubjectCalculations: Object.freeze({
-        kind: "lease",
-        optional: true,
-        wrapper: "lease",
-        result: Object.freeze({
-          contract: "common.view/subject-calculations-source",
-          major: 1
-        }),
-        signal: Object.freeze({ arg: 0, key: "signal" })
-      }),
-      // Editing preview is optional and value-shaped: bytes are planned, never written here.
-      resolveEditTarget: Object.freeze({
-        kind: "value",
-        optional: true,
-        signal: Object.freeze({ arg: 0, key: "signal" }),
-        limits: Object.freeze({ maxBytes: 4194304, maxStringLength: 4194304 })
-      }),
-      // Editing preview is optional and value-shaped: bytes are planned, never written here.
-      planEdit: Object.freeze({
-        kind: "value",
-        optional: true,
-        signal: Object.freeze({ arg: 0, key: "signal" }),
-        limits: Object.freeze({ maxBytes: 16777216, maxStringLength: 16777216 })
-      }),
-      // Editing preview is optional and value-shaped: bytes are planned, never written here.
-      analyzeIsolation: Object.freeze({
-        kind: "value",
-        optional: true,
-        signal: Object.freeze({ arg: 0, key: "signal" }),
-        limits: Object.freeze({ maxBytes: 4194304, maxStringLength: 4194304 })
-      }),
-      // Editing preview is optional and value-shaped: bytes are planned, never written here.
-      planIsolation: Object.freeze({
-        kind: "value",
-        optional: true,
-        signal: Object.freeze({ arg: 0, key: "signal" }),
-        limits: Object.freeze({ maxBytes: 16777216, maxStringLength: 16777216 })
-      })
-    })
-  })
-});
-function isResolvedDataWorkspace(value) {
-  const record3 = recordOf(value);
-  return record3?.["contract"] === RESOLVED_DATA_WORKSPACE_CONTRACT && nonEmptyString(record3["providerId"]) && stringList(record3["gameIds"]) !== void 0 && typeof record3["plan"] === "function" && typeof record3["analyze"] === "function" && (record3["analyzeAuthoringIndex"] === void 0 || typeof record3["analyzeAuthoringIndex"] === "function") && typeof record3["openSchemaTree"] === "function" && typeof record3["openDefinitionTable"] === "function" && typeof record3["openLocalizationTable"] === "function" && typeof record3["openRelations"] === "function" && (record3["resolveEditTarget"] === void 0 || typeof record3["resolveEditTarget"] === "function") && (record3["planEdit"] === void 0 || typeof record3["planEdit"] === "function") && (record3["analyzeIsolation"] === void 0 || typeof record3["analyzeIsolation"] === "function") && (record3["planIsolation"] === void 0 || typeof record3["planIsolation"] === "function");
-}
-function resolvedDataAnalyzerIdentity(inventory, gameId) {
-  const providers = offersFromInventory(inventory).flatMap((offer) => {
-    const analyses = offer.provides.some(
-      (item) => item.contract === RESOLVED_DATA_WORKSPACE_CONTRACT && item.major === 1 && (stringList(recordOf(item.facet)?.["gameIds"]) ?? []).includes(gameId)
-    );
-    if (!analyses) return [];
-    const record3 = inventoryBindingForOffer(offer)?.record;
-    return [
-      canonicalJsonStringify({
-        providerId: offer.providerId,
-        runtimeVariant: offer.runtimeVariant,
-        artifactDigest: record3?.artifactDigest ?? "unattested",
-        manifestDigest: record3?.manifestDigest ?? "unattested"
-      })
-    ];
-  });
-  return canonicalJsonStringify([...new Set(providers)].sort(compareUtf8));
-}
-var MAX_PERSISTENT_ROOTS = 64;
-function resolvedDataPersistentRoots(workspace) {
-  const value = workspace.persistentRoots;
-  if (!Array.isArray(value) || value.length > MAX_PERSISTENT_ROOTS) return Object.freeze([]);
-  const roots = [];
-  for (const item of value) {
-    const record3 = recordOf(item);
-    if (record3 === void 0) return Object.freeze([]);
-    const sourcePath2 = record3["sourcePath"];
-    const path = record3["path"];
-    const bounded22 = (text) => typeof text === "string" && text.length > 0 && text.length <= 4096 && !text.includes("\0");
-    if (Object.keys(record3).some((key3) => key3 !== "sourcePath" && key3 !== "path") || sourcePath2 !== void 0 && !bounded22(sourcePath2) || path !== void 0 && !bounded22(path) || sourcePath2 === void 0 && path === void 0) {
-      return Object.freeze([]);
-    }
-    roots.push(
-      Object.freeze({
-        ...sourcePath2 === void 0 ? {} : { sourcePath: sourcePath2 },
-        ...path === void 0 ? {} : { path }
-      })
-    );
-  }
-  return Object.freeze(roots);
-}
-async function resolveResolvedDataWorkspace(request) {
-  const definitions = request.services.serviceDefinitions;
-  if (definitions === void 0) {
-    return {
-      state: "unresolved",
-      diagnostics: [
-        diagnostic(
-          "information",
-          "x3.host/resolved-data-workspace-unavailable",
-          "this host registered no service-contract definitions, so workspace data cannot resolve"
-        )
-      ]
-    };
-  }
-  const resolver = createHostServiceResolver({
-    inventory: request.services.inventory,
-    target: request.services.target,
-    executionBackends: request.services.executionBackends,
-    definitions,
-    grant: request.grant,
-    budgets: request.budgets,
-    ...request.services.contributionSettings === void 0 ? {} : { contributionSettings: request.services.contributionSettings },
-    ...request.signal === void 0 ? {} : { signal: request.signal }
-  });
-  try {
-    const lease2 = await resolver.port.resolve({
-      contract: RESOLVED_DATA_WORKSPACE_CONTRACT,
-      major: 1,
-      facet: { gameId: request.gameId },
-      ...request.signal === void 0 ? {} : { signal: request.signal }
-    });
-    if (!isResolvedDataWorkspace(lease2.value) || !lease2.value.gameIds.includes(request.gameId)) {
-      await resolver.release();
-      return {
-        state: "unresolved",
-        diagnostics: [
-          ...resolver.diagnostics,
-          diagnostic(
-            "error",
-            "x3.host/resolved-data-workspace-invalid",
-            `the selected provider does not implement ${RESOLVED_DATA_WORKSPACE_CONTRACT}@1 for ${request.gameId}`
-          )
-        ]
-      };
-    }
-    return Object.freeze({
-      state: "resolved",
-      workspace: lease2.value,
-      diagnostics: Object.freeze([
-        ...resolver.diagnostics,
-        diagnostic(
-          "information",
-          "x3.host/resolved-data-workspace-selected",
-          `selected ${lease2.value.providerId} for ${request.gameId}`
-        )
-      ]),
-      release: () => resolver.release()
-    });
-  } catch (error3) {
-    await resolver.release();
-    return {
-      state: "unresolved",
-      diagnostics: [
-        ...resolver.diagnostics,
-        diagnostic(
-          "information",
-          "x3.host/resolved-data-workspace-unresolved",
-          `no resolved data workspace provider resolved for ${request.gameId} (${error3 instanceof Error ? error3.message : String(error3)})`
-        )
-      ]
-    };
-  }
-}
-var DATA_WORKSPACE_LISTING_LIMITS = Object.freeze({ maxQueries: 64, maxPaths: 16384 });
 var MAX_SEMANTIC_CONTEXT_REQUIREMENTS = 8;
-var MAX_LANGUAGE_RESOLVED_DATA_ENTITIES = 1e5;
-var MAX_LANGUAGE_AUTHORING_INDEX_BYTES = 48 * 1024 * 1024;
-var MAX_LANGUAGE_RESOLVED_DATA_INPUT_BYTES = 256 * 1024 * 1024;
 var boundedText = (value) => typeof value === "string" && value.length > 0 && value.length <= 8192 && !value.includes("\0");
 function validatedLanguageSemanticContextRequirements(value) {
   if (!Array.isArray(value) || value.length > MAX_SEMANTIC_CONTEXT_REQUIREMENTS) {
@@ -2262,8 +1579,10 @@ function validatedLanguageSemanticContextRequirements(value) {
   const seen = /* @__PURE__ */ new Set();
   for (const item of value) {
     const keys = typeof item === "object" && item !== null ? Reflect.ownKeys(item) : [];
-    const knowledge = typeof item === "object" && item !== null && item.kind === "language-knowledge";
-    const allowed2 = knowledge ? ["kind", "fileNames"] : ["kind", "gameId", "languageIds", "localizationLanguageIds"];
+    const declared = typeof item === "object" && item !== null ? item.kind : void 0;
+    const knowledge = declared === "language-knowledge";
+    const modContext = declared === "mod-context";
+    const allowed2 = knowledge ? ["kind", "fileNames"] : ["kind", "gameId"];
     if (typeof item !== "object" || item === null || Array.isArray(item) || Object.getPrototypeOf(item) !== Object.prototype && Object.getPrototypeOf(item) !== null || keys.some((key3) => typeof key3 !== "string" || !allowed2.includes(key3))) {
       throw new TypeError("language semantic context requirement is invalid");
     }
@@ -2280,431 +1599,18 @@ function validatedLanguageSemanticContextRequirements(value) {
       );
       continue;
     }
-    const descriptors = Object.getOwnPropertyDescriptors(item);
-    if (keys.some((key3) => {
-      if (typeof key3 !== "string") return true;
-      const descriptor = descriptors[key3];
-      return descriptor === void 0 || !descriptor.enumerable || !("value" in descriptor);
-    })) {
-      throw new TypeError("language semantic context requirement is invalid");
+    if (modContext) {
+      const gameId = Object.getOwnPropertyDescriptor(item, "gameId")?.value;
+      if (!boundedText(gameId) || seen.has(`\0mod-context\0${gameId}`)) {
+        throw new TypeError("language semantic context requirement is invalid");
+      }
+      seen.add(`\0mod-context\0${gameId}`);
+      requirements.push(Object.freeze({ kind: "mod-context", gameId }));
+      continue;
     }
-    const kind = descriptors["kind"]?.value;
-    const gameId = descriptors["gameId"]?.value;
-    const languageIds = descriptors["languageIds"]?.value;
-    const localizationLanguageIds = descriptors["localizationLanguageIds"]?.value;
-    const idList = (value2) => Array.isArray(value2) && value2.length > 0 && value2.length <= 16 && Object.keys(value2).length === value2.length && value2.every(boundedText) && new Set(value2).size === value2.length;
-    if (kind !== "resolved-data-snapshot" || localizationLanguageIds !== void 0 && !idList(localizationLanguageIds) || !boundedText(gameId) || !Array.isArray(languageIds) || languageIds.length === 0 || languageIds.length > 16 || Object.keys(languageIds).length !== languageIds.length || !languageIds.every(boundedText) || new Set(languageIds).size !== languageIds.length || seen.has(gameId)) {
-      throw new TypeError("language semantic context requirement is invalid");
-    }
-    seen.add(gameId);
-    requirements.push(
-      Object.freeze({
-        kind,
-        gameId,
-        languageIds: Object.freeze([...languageIds]),
-        ...localizationLanguageIds === void 0 ? {} : { localizationLanguageIds: Object.freeze([...localizationLanguageIds]) }
-      })
-    );
+    throw new TypeError("language semantic context requirement is invalid");
   }
   return Object.freeze(requirements);
-}
-function semanticInputLayers(inputs) {
-  const layers = [];
-  for (const input of inputs) {
-    if (input.kind !== "dependency-closure") continue;
-    const listed = input.payload?.layers;
-    if (!Array.isArray(listed)) continue;
-    for (const item of listed) {
-      const layer = item;
-      if (typeof layer !== "object" || layer === null || !boundedText(layer.layerId)) continue;
-      layers.push(
-        Object.freeze({
-          layerId: layer.layerId,
-          ...boundedText(layer.sourceId) ? { sourceId: layer.sourceId } : {},
-          ...boundedText(layer.sourcePath) ? { sourcePath: layer.sourcePath } : {}
-        })
-      );
-    }
-  }
-  return Object.freeze(layers);
-}
-function fileDirectory(uri, logicalId) {
-  if (!uri.startsWith("file:")) return void 0;
-  let path;
-  try {
-    path = decodeURIComponent(new URL(uri).pathname);
-  } catch {
-    return void 0;
-  }
-  if (/^\/[A-Za-z]:/u.test(path)) path = path.slice(1);
-  const suffix = `/${logicalId}`;
-  if (path.length <= suffix.length || path.slice(-suffix.length).toLowerCase() !== suffix.toLowerCase()) {
-    return void 0;
-  }
-  return path.slice(0, -suffix.length);
-}
-var comparablePath = (path) => path.replaceAll("\\", "/").replace(/\/+$/u, "").toLowerCase();
-function persistentRootsInclude(roots, top) {
-  const named = [top.sourcePath, top.directory].flatMap(
-    (path) => path === void 0 ? [] : [comparablePath(path)]
-  );
-  return roots.some(
-    (root) => [root.sourcePath, root.path].some(
-      (path) => path !== void 0 && named.includes(comparablePath(path))
-    )
-  );
-}
-function semanticInputLocales(inputs) {
-  for (const input of inputs) {
-    if (input.kind !== "locale-set") continue;
-    const locales = input.payload?.locales;
-    if (Array.isArray(locales) && locales.every(boundedText)) return Object.freeze([...locales]);
-  }
-  return Object.freeze([]);
-}
-function localeOfPath(path, locales) {
-  const segments = path.split("/").map((segment) => segment.toLowerCase());
-  return locales.find((locale) => segments.some((segment) => segment.startsWith(locale.toLowerCase())));
-}
-function prepareResolvedDataSemanticContext(request) {
-  let complete = request.complete;
-  const locales = request.locales ?? [];
-  const localizationLanguageIds = request.requirement.localizationLanguageIds ?? [];
-  const localizationDocuments = request.documents.flatMap((document) => {
-    const origin = request.origins.get(document.uri);
-    if (!localizationLanguageIds.includes(document.languageId) || origin === void 0) return [];
-    const locale = localeOfPath(origin.logicalId, locales);
-    return locale === void 0 ? [] : [
-      {
-        origin,
-        sourceDocument: document,
-        document: Object.freeze({
-          rootId: origin.layerId,
-          path: origin.logicalId,
-          text: document.text,
-          locale
-        })
-      }
-    ];
-  });
-  localizationDocuments.sort(
-    (left, right) => left.origin.precedence - right.origin.precedence || compareUtf8(left.origin.logicalId, right.origin.logicalId)
-  );
-  const selected = request.documents.filter((document) => request.requirement.languageIds.includes(document.languageId)).map((document) => ({ document, origin: request.origins.get(document.uri) })).sort((left, right) => {
-    if (left.origin === void 0) return right.origin === void 0 ? 0 : 1;
-    if (right.origin === void 0) return -1;
-    return left.origin.precedence - right.origin.precedence || compareUtf8(left.origin.logicalId, right.origin.logicalId) || compareUtf8(left.document.uri, right.document.uri);
-  });
-  const documents = selected.flatMap(({ document, origin }) => {
-    if (origin === void 0) {
-      complete = false;
-      return [];
-    }
-    return [
-      Object.freeze({
-        rootId: origin.layerId,
-        path: origin.logicalId,
-        text: document.text
-      })
-    ];
-  });
-  const budgets = request.budgets === void 0 ? void 0 : {
-    ...request.budgets,
-    maxInputBytes: String(request.budgets.maxInputBytes)
-  };
-  const analysed = selected.flatMap(
-    ({ document, origin }) => origin === void 0 ? [] : [
-      {
-        layerId: origin.layerId,
-        logicalId: origin.logicalId,
-        languageId: document.languageId,
-        contentRevision: languageDocumentTextToken(document)
-      }
-    ]
-  );
-  const localizationIdentities = localizationDocuments.map(
-    ({ document, origin, sourceDocument }) => ({
-      path: origin.logicalId,
-      layerId: origin.layerId,
-      locale: document.locale,
-      contentRevision: languageDocumentTextToken(sourceDocument)
-    })
-  );
-  const key3 = languageWorkspaceContextToken({
-    requirement: request.requirement,
-    documents: analysed,
-    locales,
-    localization: localizationIdentities,
-    budgets,
-    complete
-  });
-  const scopeKey = languageWorkspaceContextToken({
-    requirement: request.requirement,
-    locales,
-    budgets,
-    documents: selected.map(({ document, origin }) => ({
-      uri: document.uri,
-      languageId: document.languageId,
-      origin: origin === void 0 ? void 0 : {
-        layerId: origin.layerId,
-        logicalId: origin.logicalId,
-        precedence: origin.precedence
-      }
-    })),
-    complete
-  });
-  const persistence = complete ? resolvedDataPersistence(request, selected, locales, budgets) : void 0;
-  return Object.freeze({
-    key: key3,
-    scopeKey,
-    workspaceId: `language:${key3}`,
-    documents: Object.freeze(documents),
-    locales,
-    localizationDocuments: Object.freeze(localizationDocuments.map((item) => item.document)),
-    complete,
-    ...persistence === void 0 ? {} : { persistence }
-  });
-}
-function resolvedDataPersistence(request, selected, locales, budgets) {
-  const closure = new Map((request.layers ?? []).map((layer) => [layer.layerId, layer]));
-  const byLayer = /* @__PURE__ */ new Map();
-  for (const { document, origin } of selected) {
-    if (origin === void 0) continue;
-    const layer = byLayer.get(origin.layerId) ?? { layerId: origin.layerId };
-    if (!byLayer.has(origin.layerId)) {
-      const sourcePath2 = closure.get(origin.layerId)?.sourcePath;
-      if (sourcePath2 !== void 0) layer.sourcePath = sourcePath2;
-      byLayer.set(origin.layerId, layer);
-    }
-    if (layer.directory === void 0) {
-      const directory = fileDirectory(document.uri, origin.logicalId);
-      if (directory !== void 0) layer.directory = directory;
-    }
-  }
-  const layers = [...byLayer.values()];
-  const top = layers.at(-1);
-  if (top === void 0) return void 0;
-  const label = layers.map((layer) => layer.sourcePath ?? layer.directory ?? layer.layerId).join(" \u2192 ");
-  return Object.freeze({
-    slot: languageWorkspaceContextToken({
-      requirement: request.requirement,
-      locales,
-      budgets,
-      layers: layers.map((layer) => layer.layerId)
-    }),
-    label: `${label}${locales.length === 0 ? "" : ` \xB7 ${locales.join(", ")}`}`.slice(0, 2048),
-    top: Object.freeze({
-      ...top.sourcePath === void 0 ? {} : { sourcePath: top.sourcePath },
-      ...top.directory === void 0 ? {} : { directory: top.directory }
-    })
-  });
-}
-var unavailable = (message) => Object.freeze({ complete: false, failure: message.replaceAll("\0", "").slice(0, 2048) });
-function resolvedDataCompletenessFailure(prepared, analysis, valuesComplete = true) {
-  const reasons = [];
-  if (!prepared.complete) reasons.push("language workspace inputs are incomplete");
-  if (!analysis.complete) {
-    const diagnostics = analysis.diagnostics;
-    const items = Array.isArray(diagnostics) ? diagnostics : typeof diagnostics === "object" && diagnostics !== null && "items" in diagnostics ? diagnostics.items : [];
-    const messages = Array.isArray(items) ? items.slice(0, 3).flatMap(
-      (item) => typeof item === "object" && item !== null && typeof item.message === "string" ? [item.message.replaceAll("\0", "").slice(0, 512)] : []
-    ) : [];
-    reasons.push(
-      `resolved Data analysis is incomplete${messages.length === 0 ? "" : `: ${messages.join("; ")}`}`
-    );
-  }
-  if (!valuesComplete)
-    reasons.push("resolved Data authoring values were omitted by the output budget");
-  return reasons.length === 0 ? void 0 : reasons.join("; ").slice(0, 2048);
-}
-var jsonSnapshotPayload = (snapshot2) => ({
-  schemaVersion: snapshot2.schemaVersion,
-  workspaceId: snapshot2.workspaceId,
-  gameId: snapshot2.gameId,
-  analyzerId: snapshot2.analyzerId,
-  typeIds: snapshot2.typeIds,
-  ...snapshot2.schemas === void 0 ? {} : { schemas: snapshot2.schemas },
-  namespaces: snapshot2.namespaces,
-  entityCount: snapshot2.entityCount,
-  patchCount: snapshot2.patchCount,
-  definitions: snapshot2.definitions,
-  entities: snapshot2.entities,
-  relations: snapshot2.relations,
-  localizedStrings: snapshot2.localizedStrings,
-  diagnostics: snapshot2.diagnostics,
-  ...snapshot2.ownerMetadata === void 0 ? {} : { ownerMetadata: snapshot2.ownerMetadata },
-  snapshotId: snapshot2.snapshotId,
-  complete: snapshot2.complete
-});
-var validAuthoringIndex = (value, gameId) => (value.schemaVersion === 1 || value.schemaVersion === 2 && Array.isArray(value.sourceDocuments)) && value.kind === RESOLVED_DATA_AUTHORING_INDEX_KIND && value.gameId === gameId && boundedText(value.snapshotId) && Array.isArray(value.sourceTable) && Array.isArray(value.entities) && value.entityCount === value.entities.length && typeof value.complete === "boolean" && typeof value.valuesComplete === "boolean";
-async function analyzeResolvedDataSemanticContext(request) {
-  try {
-    throwIfAborted(request.signal);
-    if (request.prepared.documents.length === 0) {
-      return unavailable("resolved Data context has no documents with the requested language ids");
-    }
-    const maximumInputBytes = Number(
-      request.budgets.maxInputBytes > BigInt(Number.MAX_SAFE_INTEGER) ? BigInt(Number.MAX_SAFE_INTEGER) : request.budgets.maxInputBytes
-    );
-    const maxTextBytes = Math.min(maximumInputBytes, MAX_LANGUAGE_RESOLVED_DATA_INPUT_BYTES);
-    const textBytes = [
-      ...request.prepared.documents,
-      ...request.prepared.localizationDocuments
-    ].reduce((total, document) => total + new TextEncoder().encode(document.text).byteLength, 0);
-    if (maxTextBytes <= 0 || textBytes > maxTextBytes || request.budgets.maxNodes <= 0 || request.budgets.maxDepth <= 0) {
-      return unavailable("resolved Data context exceeds the language workspace resource budget");
-    }
-    const resolution = await resolveResolvedDataWorkspace({
-      services: request.services,
-      gameId: request.requirement.gameId,
-      grant: request.grant,
-      budgets: request.budgets,
-      ...request.signal === void 0 ? {} : { signal: request.signal }
-    });
-    if (resolution.state === "unresolved") {
-      throwIfAborted(request.signal);
-      return unavailable(
-        resolution.diagnostics.map((item) => item.message).join("; ") || `no resolved Data workspace provider accepts ${request.requirement.gameId}`
-      );
-    }
-    try {
-      throwIfAborted(request.signal);
-      const analysisRequest = {
-        workspaceId: request.prepared.workspaceId,
-        gameId: request.requirement.gameId,
-        documents: request.prepared.documents,
-        localizationDocuments: request.prepared.localizationDocuments,
-        locales: request.prepared.locales,
-        localizationKeys: [],
-        queries: [],
-        plannedDocumentCount: request.prepared.documents.length + request.prepared.localizationDocuments.length + (request.prepared.complete ? 0 : 1),
-        unresolvedRequirementIds: request.prepared.complete ? [] : ["language-workspace-incomplete"],
-        snapshotId: request.prepared.key,
-        maxDocuments: request.prepared.documents.length + request.prepared.localizationDocuments.length,
-        maxTextBytes,
-        maxEntities: Math.min(request.budgets.maxNodes, MAX_LANGUAGE_RESOLVED_DATA_ENTITIES),
-        maxDepth: request.budgets.maxDepth,
-        ...request.signal === void 0 ? {} : { signal: request.signal }
-      };
-      const analyzeAuthoringIndex = resolution.workspace.analyzeAuthoringIndex;
-      if (analyzeAuthoringIndex !== void 0) {
-        const index = await analyzeAuthoringIndex.call(resolution.workspace, {
-          ...analysisRequest,
-          maxOutputBytes: Math.min(
-            LANGUAGE_WORKSPACE_SEMANTIC_PAYLOAD_MAX_BYTES,
-            MAX_LANGUAGE_AUTHORING_INDEX_BYTES
-          )
-        });
-        throwIfAborted(request.signal);
-        if (!validAuthoringIndex(index, request.requirement.gameId)) {
-          return unavailable("resolved Data workspace returned an invalid authoring index");
-        }
-        const [input2] = validatedLanguageWorkspaceSemanticInputs([
-          {
-            kind: RESOLVED_DATA_AUTHORING_INDEX_KIND,
-            id: request.requirement.gameId,
-            revision: languageWorkspaceContextToken({
-              context: request.prepared.key,
-              snapshot: index.snapshotId
-            }),
-            payload: index
-          }
-        ]);
-        const failure22 = resolvedDataCompletenessFailure(
-          request.prepared,
-          index,
-          index.valuesComplete
-        );
-        const persistentRoots = resolvedDataPersistentRoots(resolution.workspace);
-        return Object.freeze({
-          ...input2 === void 0 ? {} : { input: input2 },
-          complete: request.prepared.complete && index.complete && index.valuesComplete,
-          ...failure22 === void 0 ? {} : { failure: failure22 },
-          ...persistentRoots.length === 0 ? {} : { persistentRoots }
-        });
-      }
-      const snapshot2 = await resolution.workspace.analyze(analysisRequest);
-      throwIfAborted(request.signal);
-      if (snapshot2.gameId !== request.requirement.gameId || !boundedText(snapshot2.snapshotId) || !Array.isArray(snapshot2.definitions)) {
-        return unavailable("resolved Data workspace returned an invalid snapshot identity");
-      }
-      const [input] = validatedLanguageWorkspaceSemanticInputs([
-        {
-          kind: "resolved-data-snapshot",
-          id: request.requirement.gameId,
-          revision: languageWorkspaceContextToken({
-            context: request.prepared.key,
-            snapshot: snapshot2.snapshotId
-          }),
-          payload: jsonSnapshotPayload(snapshot2)
-        }
-      ]);
-      const failure3 = resolvedDataCompletenessFailure(request.prepared, snapshot2);
-      return Object.freeze({
-        ...input === void 0 ? {} : { input },
-        complete: request.prepared.complete && snapshot2.complete,
-        ...failure3 === void 0 ? {} : { failure: failure3 }
-      });
-    } finally {
-      await resolution.release();
-    }
-  } catch (error3) {
-    if (isCancellation(error3) || request.signal?.aborted === true) {
-      throwIfAborted(request.signal);
-      throw error3;
-    }
-    return unavailable(error3 instanceof Error ? error3.message : String(error3));
-  }
-}
-var RESOLVED_DATA_CONTEXT_STORE_FORMAT = 1;
-function resolvedDataContextStoreKey(prepared, analyzer) {
-  return languageWorkspaceContextToken({
-    format: RESOLVED_DATA_CONTEXT_STORE_FORMAT,
-    context: prepared.key,
-    analyzer,
-    limits: {
-      maxEntities: MAX_LANGUAGE_RESOLVED_DATA_ENTITIES,
-      maxOutputBytes: Math.min(
-        LANGUAGE_WORKSPACE_SEMANTIC_PAYLOAD_MAX_BYTES,
-        MAX_LANGUAGE_AUTHORING_INDEX_BYTES
-      ),
-      maxTextBytes: MAX_LANGUAGE_RESOLVED_DATA_INPUT_BYTES
-    }
-  });
-}
-async function loadResolvedDataSemanticContext(request) {
-  if (!request.prepared.complete || request.prepared.documents.length === 0) return void 0;
-  let stored;
-  try {
-    stored = await request.store.load({
-      key: resolvedDataContextStoreKey(request.prepared, request.analyzer),
-      ...request.signal === void 0 ? {} : { signal: request.signal }
-    });
-  } catch (error3) {
-    if (isCancellation(error3) || request.signal?.aborted === true) {
-      throwIfAborted(request.signal);
-      throw error3;
-    }
-    return void 0;
-  }
-  throwIfAborted(request.signal);
-  if (stored === void 0) return void 0;
-  try {
-    const [input] = validatedLanguageWorkspaceSemanticInputs([stored]);
-    const index = input?.payload;
-    if (input === void 0 || index === void 0 || input.kind !== RESOLVED_DATA_AUTHORING_INDEX_KIND || input.id !== request.requirement.gameId || !validAuthoringIndex(index, request.requirement.gameId) || !index.complete || !index.valuesComplete || input.revision !== languageWorkspaceContextToken({
-      context: request.prepared.key,
-      snapshot: index.snapshotId
-    })) {
-      return void 0;
-    }
-    return Object.freeze({ input, complete: true });
-  } catch {
-    return void 0;
-  }
-}
-function resolvedDataContextToKeep(prepared, result) {
-  return prepared.complete && prepared.persistence !== void 0 && result.complete && result.input?.kind === RESOLVED_DATA_AUTHORING_INDEX_KIND && result.persistentRoots !== void 0 && persistentRootsInclude(result.persistentRoots, prepared.persistence.top) ? prepared.persistence : void 0;
 }
 var WIRE_TYPED_ARRAYS = Object.freeze({
   bytes: Uint8Array,
@@ -2969,9 +1875,6 @@ function knowledgeFileNamesOf(provider) {
     return {};
   }
 }
-var LANGUAGE_SEMANTIC_CONTEXT_MEMORY_BYTES = 512 * 1024 * 1024;
-var SEMANTIC_CONTEXT_PENDING_MAX = 16;
-var SEMANTIC_CONTEXT_SCOPE_MAX = 64;
 var ROUTE_KEYS = /* @__PURE__ */ new Set([
   "languageIds",
   "documentKinds",
@@ -3027,7 +1930,7 @@ var CODE_ACTION_KINDS = /* @__PURE__ */ new Set([
   "rewrite",
   "source"
 ]);
-function recordOf2(value) {
+function recordOf(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value) ? value : void 0;
 }
 function nonBlankStrings(value) {
@@ -3044,7 +1947,7 @@ function triggerCharacters(value) {
   return new Set(strings).size === strings.length ? strings : void 0;
 }
 function languageOfferFacet(value) {
-  const record3 = recordOf2(value);
+  const record3 = recordOf(value);
   if (record3 === void 0 || Object.keys(record3).some((key3) => !ROUTE_KEYS.has(key3))) {
     throw new TypeError("language provider offer facet must contain only route fields");
   }
@@ -3387,25 +2290,25 @@ function validJsonValue(value, seen = /* @__PURE__ */ new Set()) {
 }
 var validFilterStrings = (value) => Array.isArray(value) && value.every((item) => typeof item === "string" && item.length > 0) && new Set(value).size === value.length;
 function validSubjectFilter(value) {
-  const filter = recordOf2(value);
+  const filter = recordOf(value);
   if (filter === void 0 || Object.keys(filter).some(
     (key3) => !["type", "sameTypeAs", "text", "requireTags", "excludeTags", "predicate"].includes(key3)
   ) || filter["type"] !== void 0 && (typeof filter["type"] !== "string" || filter["type"].length === 0) || filter["sameTypeAs"] !== void 0 && (typeof filter["sameTypeAs"] !== "string" || filter["sameTypeAs"].length === 0) || filter["text"] !== void 0 && typeof filter["text"] !== "string" || filter["requireTags"] !== void 0 && !validFilterStrings(filter["requireTags"]) || filter["excludeTags"] !== void 0 && !validFilterStrings(filter["excludeTags"])) {
     return false;
   }
   if (filter["predicate"] === void 0) return true;
-  const predicate = recordOf2(filter["predicate"]);
+  const predicate = recordOf(filter["predicate"]);
   return predicate !== void 0 && Object.keys(predicate).every((key3) => key3 === "id" || key3 === "params") && typeof predicate["id"] === "string" && predicate["id"].length > 0 && (predicate["params"] === void 0 || validJsonValue(predicate["params"]));
 }
 var validCompletionItem = (item, lengths) => typeof item["label"] === "string" && item["label"].length > 0 && typeof item["kind"] === "string" && COMPLETION_KINDS.has(item["kind"]) && (item["detail"] === void 0 || typeof item["detail"] === "string") && (item["documentation"] === void 0 || typeof item["documentation"] === "string") && (item["insertText"] === void 0 || typeof item["insertText"] === "string") && (item["insertTextFormat"] === void 0 || item["insertTextFormat"] === "plain-text" || item["insertTextFormat"] === "snippet") && (item["replacementRange"] === void 0 || validRange(item["replacementRange"], lengths)) && (item["sortText"] === void 0 || typeof item["sortText"] === "string") && (item["filterText"] === void 0 || typeof item["filterText"] === "string") && (item["preselect"] === void 0 || typeof item["preselect"] === "boolean") && (item["retrigger"] === void 0 || typeof item["retrigger"] === "boolean") && (item["deprecated"] === void 0 || typeof item["deprecated"] === "boolean") && (item["commitCharacters"] === void 0 || Array.isArray(item["commitCharacters"]) && item["commitCharacters"].length <= 16 && item["commitCharacters"].every(
   (character) => typeof character === "string" && [...character].length === 1
 ));
 function validateProviderCompletionList(value, request) {
-  const list = recordOf2(value);
+  const list = recordOf(value);
   const items = list?.["items"];
   const lengths = lineLengths(request.document.text);
   if (list === void 0 || !Array.isArray(items) || items.length > request.maxResults || typeof list["isIncomplete"] !== "boolean" || !items.every((item) => {
-    const record3 = recordOf2(item);
+    const record3 = recordOf(item);
     if (record3 === void 0) return false;
     if (record3["kind"] !== "subject-ref") return validCompletionItem(record3, lengths);
     return Object.keys(record3).every(
@@ -3423,7 +2326,7 @@ function validateCompletionList(value, request) {
   const list = value;
   const lengths = lineLengths(request.document.text);
   if (typeof list !== "object" || list === null || !Array.isArray(list.items) || list.items.length > request.maxResults || typeof list.isIncomplete !== "boolean" || !list.items.every((item) => {
-    const record3 = recordOf2(item);
+    const record3 = recordOf(item);
     return record3 !== void 0 && validCompletionItem(record3, lengths);
   })) {
     invalidFeature(
@@ -3787,18 +2690,46 @@ function createLanguageWorkspace(options) {
   const referenceIndex = createWorkspaceReferenceIndex();
   let indexedOccurrences;
   const featureControllers = /* @__PURE__ */ new Set();
-  const semanticContextCache = /* @__PURE__ */ new Map();
-  const pendingSemanticContexts = /* @__PURE__ */ new Map();
-  const latestSemanticContextKeys = /* @__PURE__ */ new Map();
-  const hostAnalyzedSemanticInputs = /* @__PURE__ */ new WeakSet();
-  const semanticContextEncoder = new TextEncoder();
-  let semanticContextCacheBytes = 0;
-  const semanticContextMaxBytes = options.semanticContextMemoryBytes !== void 0 && Number.isSafeInteger(options.semanticContextMemoryBytes) && options.semanticContextMemoryBytes >= 0 ? options.semanticContextMemoryBytes : LANGUAGE_SEMANTIC_CONTEXT_MEMORY_BYTES;
-  const semanticContextStore = options.semanticContextStore;
-  const pendingContextSaves = /* @__PURE__ */ new Set();
+  const semanticInputTokens = /* @__PURE__ */ new WeakMap();
+  const semanticInputToken = (input) => {
+    if (!languageImmutableCapture(input)) return languageWorkspaceContextToken(input);
+    let token = semanticInputTokens.get(input);
+    if (token === void 0) {
+      token = languageWorkspaceContextToken(input);
+      semanticInputTokens.set(input, token);
+    }
+    return token;
+  };
   let state = "new";
   let shutdownPromise;
   let workspaceGeneration = 0;
+  const modContextsNow = () => typeof options.modContexts === "function" ? options.modContexts() : options.modContexts;
+  const modContextPort = Object.freeze({
+    query(scope, question, signal) {
+      const registry = modContextsNow();
+      if (registry === void 0) {
+        return Promise.reject(new TypeError(`no loaded mod is served as ${scope}`));
+      }
+      return registry.query(scope, question, signal);
+    }
+  });
+  const requestModContext = async (entry2, signal) => {
+    const registry = modContextsNow();
+    if (registry === void 0) return void 0;
+    const requirement = validatedLanguageSemanticContextRequirements(
+      entry2.resolution.provider.semanticContextRequirements ?? []
+    ).find(
+      (item) => item.kind === "mod-context"
+    );
+    if (requirement === void 0) return void 0;
+    const place = registry.placeOf(entry2.uri, requirement.gameId);
+    if (place === void 0) return void 0;
+    return registry.synchronize(
+      place.scope,
+      [...documents.values()].map((open) => open.document),
+      signal
+    );
+  };
   const routeForRequest = (request) => {
     const identity = routeOf(request);
     return advertisedRoutes.find(
@@ -3827,195 +2758,6 @@ function createLanguageWorkspace(options) {
     if (entry2.released) return;
     entry2.released = true;
     await entry2.resolution.release();
-  };
-  const cachedSemanticContext = (key3) => {
-    const cached = semanticContextCache.get(key3);
-    if (cached === void 0) return void 0;
-    semanticContextCache.delete(key3);
-    semanticContextCache.set(key3, cached);
-    return cached.value;
-  };
-  const rememberSemanticContext = (key3, value) => {
-    const payloadBytes2 = value.input?.payload === void 0 ? void 0 : languageSemanticInputPayloadBytes(value.input);
-    const bytes = semanticContextEncoder.encode(key3).byteLength + (payloadBytes2 === void 0 || value.input === void 0 ? semanticContextEncoder.encode(JSON.stringify(value)).byteLength : semanticContextEncoder.encode(
-      JSON.stringify({ ...value, input: { ...value.input, payload: 0 } })
-    ).byteLength - 1 + payloadBytes2);
-    if (bytes > semanticContextMaxBytes) return;
-    const previous = semanticContextCache.get(key3);
-    if (previous !== void 0) semanticContextCacheBytes -= previous.bytes;
-    semanticContextCache.delete(key3);
-    semanticContextCache.set(key3, Object.freeze({ value, bytes }));
-    semanticContextCacheBytes += bytes;
-    while (semanticContextCacheBytes > semanticContextMaxBytes) {
-      const oldest = semanticContextCache.keys().next().value;
-      if (oldest === void 0) break;
-      const removed = semanticContextCache.get(oldest);
-      semanticContextCache.delete(oldest);
-      semanticContextCacheBytes -= removed?.bytes ?? 0;
-    }
-  };
-  const forgetSemanticContext = (key3) => {
-    const removed = semanticContextCache.get(key3);
-    if (removed === void 0) return;
-    semanticContextCache.delete(key3);
-    semanticContextCacheBytes -= removed.bytes;
-  };
-  const rememberLatestSemanticContext = (scopeKey, key3) => {
-    const superseded = latestSemanticContextKeys.get(scopeKey);
-    latestSemanticContextKeys.delete(scopeKey);
-    latestSemanticContextKeys.set(scopeKey, key3);
-    if (superseded !== void 0 && superseded !== key3 && ![...latestSemanticContextKeys.values()].includes(superseded)) {
-      forgetSemanticContext(superseded);
-    }
-    while (latestSemanticContextKeys.size > SEMANTIC_CONTEXT_SCOPE_MAX) {
-      const oldest = latestSemanticContextKeys.keys().next().value;
-      if (oldest === void 0) break;
-      latestSemanticContextKeys.delete(oldest);
-    }
-  };
-  const resolvedDataSemanticInputs = async (provider, routeLanguageId, snapshotDocuments, originsByUri, complete, signal, preferCached = false, locales = [], layers = []) => {
-    const requirements = validatedLanguageSemanticContextRequirements(
-      provider.semanticContextRequirements ?? []
-    ).filter(
-      (requirement) => requirement.kind === "resolved-data-snapshot" && requirement.languageIds.includes(routeLanguageId)
-    );
-    if (requirements.length === 0)
-      return Object.freeze({ inputs: Object.freeze([]), complete: true });
-    const workspaceBudgets = Object.freeze({ ...options.workspaceBudgets ?? options.budgets });
-    const inputs = [];
-    let contextsComplete = true;
-    for (const requirement of requirements) {
-      const prepared = prepareResolvedDataSemanticContext({
-        requirement,
-        documents: snapshotDocuments,
-        origins: originsByUri,
-        complete,
-        locales,
-        budgets: workspaceBudgets,
-        layers
-      });
-      let resolved = cachedSemanticContext(prepared.key);
-      let stale = false;
-      if (resolved === void 0 && preferCached) {
-        const latestKey = latestSemanticContextKeys.get(prepared.scopeKey);
-        resolved = latestKey === void 0 ? void 0 : cachedSemanticContext(latestKey);
-        stale = resolved !== void 0;
-        if (latestKey !== void 0 && resolved === void 0) {
-          latestSemanticContextKeys.delete(prepared.scopeKey);
-        }
-      }
-      if (resolved === void 0 && preferCached) {
-        contextsComplete = false;
-        continue;
-      }
-      if (resolved === void 0) {
-        let pending = pendingSemanticContexts.get(prepared.key);
-        if (pending === void 0) {
-          if (pendingSemanticContexts.size >= SEMANTIC_CONTEXT_PENDING_MAX) {
-            pendingSemanticContexts.delete(pendingSemanticContexts.keys().next().value);
-          }
-          const controller = new AbortController();
-          pending = {
-            controller,
-            waiters: 0,
-            promise: keptOrAnalyzedSemanticContext(
-              requirement,
-              prepared,
-              workspaceBudgets,
-              controller.signal
-            )
-          };
-          pendingSemanticContexts.set(prepared.key, pending);
-          void pending.promise.then(
-            (value) => {
-              if (pendingSemanticContexts.get(prepared.key) !== pending) return;
-              pendingSemanticContexts.delete(prepared.key);
-              rememberSemanticContext(prepared.key, value);
-              rememberLatestSemanticContext(prepared.scopeKey, prepared.key);
-            },
-            () => {
-              if (pendingSemanticContexts.get(prepared.key) === pending) {
-                pendingSemanticContexts.delete(prepared.key);
-              }
-            }
-          );
-        }
-        pending.waiters += 1;
-        try {
-          resolved = await waitWithSignal(pending.promise, signal);
-        } finally {
-          pending.waiters -= 1;
-          if (pending.waiters === 0) {
-            if (pendingSemanticContexts.get(prepared.key) === pending)
-              pendingSemanticContexts.delete(prepared.key);
-            pending.controller.abort("no language features await the resolved Data analysis");
-          }
-        }
-      }
-      contextsComplete &&= resolved.complete && !stale;
-      if (resolved.input !== void 0) {
-        hostAnalyzedSemanticInputs.add(resolved.input);
-        inputs.push(resolved.input);
-      }
-      if (resolved.failure !== void 0) {
-        inputs.push(
-          ...validatedLanguageWorkspaceSemanticInputs([
-            {
-              kind: "semantic-context-status",
-              id: `resolved-data-snapshot:${requirement.gameId}`,
-              revision: languageWorkspaceContextToken(resolved.failure),
-              payload: {
-                state: resolved.input === void 0 ? "unavailable" : "incomplete",
-                requirement: requirement.kind,
-                message: resolved.failure
-              }
-            }
-          ])
-        );
-      }
-    }
-    return Object.freeze({ inputs: Object.freeze(inputs), complete: contextsComplete });
-  };
-  const keptOrAnalyzedSemanticContext = async (requirement, prepared, workspaceBudgets, signal) => {
-    const store = semanticContextStore;
-    const analyzer = store === void 0 ? void 0 : resolvedDataAnalyzerIdentity(options.services.inventory, requirement.gameId);
-    if (store !== void 0 && analyzer !== void 0) {
-      const kept = await loadResolvedDataSemanticContext({
-        store,
-        prepared,
-        requirement,
-        analyzer,
-        signal
-      });
-      if (kept !== void 0) return kept;
-    }
-    const value = await analyzeResolvedDataSemanticContext({
-      services: options.services,
-      grant: options.grant,
-      budgets: workspaceBudgets,
-      requirement,
-      prepared,
-      signal
-    });
-    const persistence = resolvedDataContextToKeep(prepared, value);
-    if (store !== void 0 && analyzer !== void 0 && persistence !== void 0 && value.input !== void 0 && state !== "shut-down") {
-      const input = value.input;
-      const saving = new Promise((resolve) => {
-        setTimeout(resolve, 0);
-      }).then(
-        () => store.save({
-          key: resolvedDataContextStoreKey(prepared, analyzer),
-          slot: persistence.slot,
-          gameId: requirement.gameId,
-          label: persistence.label,
-          input
-        })
-      ).catch(() => void 0).finally(() => {
-        pendingContextSaves.delete(saving);
-      });
-      pendingContextSaves.add(saving);
-    }
-    return value;
   };
   const requireFeatureEntry = (request, positioned, maxAllowedResults = LANGUAGE_MAX_RESULTS) => {
     requireReady();
@@ -4220,29 +2962,14 @@ function createLanguageWorkspace(options) {
       );
       const baseSemanticComplete = candidates.length <= selected.length && !sourceIncomplete && !callerIncomplete && allDocumentsHaveOrigins && (sourceContext === void 0 || sourceContext.semanticComplete);
       let semanticInputs;
-      let semanticContextsComplete = true;
-      let baseSemanticInputs;
-      let semanticContexts;
       try {
         const hostInputs = typeof options.semanticInputs === "function" ? options.semanticInputs() : options.semanticInputs ?? [];
-        baseSemanticInputs = validatedLanguageWorkspaceSemanticInputs([
+        semanticInputs = validatedLanguageWorkspaceSemanticInputs([
           ...sourceContext?.semanticInputs ?? [],
           entry2.resolution.semanticInput,
           ...entry2.resolution.provider.semanticInputs ?? [],
           ...hostInputs
         ]);
-        semanticContexts = documentOnly ? { inputs: Object.freeze([]), complete: false } : await resolvedDataSemanticInputs(
-          entry2.resolution.provider,
-          entry2.route.languageId,
-          snapshotDocuments,
-          originsByUri,
-          baseSemanticComplete,
-          controller.signal,
-          preferCachedSemanticContext,
-          semanticInputLocales(baseSemanticInputs),
-          semanticInputLayers(baseSemanticInputs)
-        );
-        semanticContextsComplete = semanticContexts.complete;
       } catch (error3) {
         throwIfAborted(controller.signal);
         if (isCancellation(error3)) throw error3;
@@ -4252,17 +2979,27 @@ function createLanguageWorkspace(options) {
           entry2.uri
         );
       }
-      try {
-        semanticInputs = validatedLanguageWorkspaceSemanticInputs([
-          ...baseSemanticInputs,
-          ...semanticContexts.inputs
-        ]);
-      } catch {
-        semanticInputs = baseSemanticInputs;
-        semanticContextsComplete = false;
+      const semanticComplete = baseSemanticComplete && !documentOnly;
+      let modContext;
+      if (!documentOnly) {
+        try {
+          modContext = await requestModContext(entry2, controller.signal);
+        } catch (error3) {
+          if (isCancellation(error3)) throw error3;
+          throwIfAborted(controller.signal);
+          throw workspaceError(
+            LANGUAGE_PROVIDER_FAILED,
+            `the loaded mod of ${entry2.uri}@${entry2.version} did not take the open buffers`,
+            {
+              uri: entry2.uri,
+              version: String(entry2.version),
+              error: error3 instanceof Error ? error3.message : String(error3)
+            }
+          );
+        }
+        throwIfAborted(controller.signal);
       }
-      const semanticComplete = baseSemanticComplete && semanticContextsComplete;
-      const workspaceContext = sourceContext === void 0 && documentOrigins.length === 0 && semanticInputs.length === 0 ? void 0 : Object.freeze({
+      const workspaceContext = sourceContext === void 0 && documentOrigins.length === 0 && semanticInputs.length === 0 && modContext === void 0 ? void 0 : Object.freeze({
         id: languageWorkspaceContextToken({
           sourceContextId: sourceContext?.id,
           documents: documentOrigins.map((origin) => ({
@@ -4276,16 +3013,18 @@ function createLanguageWorkspace(options) {
           semanticInputs: semanticInputs.map((input) => ({
             kind: input.kind,
             id: input.id
-          }))
+          })),
+          ...modContext === void 0 ? {} : { modContext: modContext.scope }
         }),
         revision: languageWorkspaceContextToken({
           sourceRevision: sourceContext?.revision,
           semanticInputs: semanticInputs.map((input) => ({
             kind: input.kind,
             id: input.id,
-            contentRevision: hostAnalyzedSemanticInputs.has(input) ? input.revision : languageWorkspaceContextToken(input)
+            contentRevision: semanticInputToken(input)
           })),
           semanticComplete,
+          ...modContext === void 0 ? {} : { modContext: { revision: modContext.revision, complete: modContext.complete } },
           documents: snapshotDocuments.map((document) => ({
             uri: document.uri,
             version: document.version,
@@ -4295,7 +3034,8 @@ function createLanguageWorkspace(options) {
         }),
         semanticComplete,
         documentOrigins,
-        semanticInputs
+        semanticInputs,
+        ...modContext === void 0 ? {} : { modContext }
       });
       const providerRequest = Object.freeze({
         document: entry2.document,
@@ -4395,7 +3135,7 @@ function createLanguageWorkspace(options) {
     }
     let editCount = 0;
     for (const value2 of list.actions) {
-      const action = recordOf2(value2);
+      const action = recordOf(value2);
       if (action === void 0) {
         invalidFeature("language provider returned an invalid code action", request.document.uri);
       }
@@ -4498,6 +3238,7 @@ function createLanguageWorkspace(options) {
       ...route,
       grant: options.grant,
       budgets: options.budgets,
+      ...options.modContexts === void 0 ? {} : { modContexts: modContextPort },
       ...request.signal === void 0 ? {} : { signal: request.signal }
     });
     if (resolution.state === "unresolved") {
@@ -4566,6 +3307,7 @@ function createLanguageWorkspace(options) {
       }
     }
     await release(entry2);
+    await modContextsNow()?.release(entry2.uri).catch(() => void 0);
   };
   const positionAtOffset = (text, rawOffset) => {
     const offset = Math.max(0, Math.min(rawOffset, text.length));
@@ -4850,7 +3592,7 @@ function createLanguageWorkspace(options) {
           item: request.item
         }) ?? Promise.resolve(request.item),
         (value, feature) => {
-          const item = recordOf2(value);
+          const item = recordOf(value);
           if (item === void 0 || !validCompletionItem(item, lineLengths(feature.document.text)) || item["label"] !== request.item.label || item["kind"] !== request.item.kind || item["asset"] !== void 0 && !validAssetRef(item["asset"]))
             invalidFeature(
               "language provider resolved a completion item into another one",
@@ -5227,7 +3969,7 @@ function createLanguageWorkspace(options) {
           const valid = typeof result === "object" && result !== null && typeof result.isIncomplete === "boolean" && Array.isArray(result.documents) && result.documents.every((item) => {
             const text = texts.get(item.uri);
             return text !== void 0 && Array.isArray(item.diagnostics) && item.diagnostics.length <= feature.maxResults && item.diagnostics.every(
-              (diagnostic14) => validDiagnostic(diagnostic14, lineLengths(text))
+              (diagnostic13) => validDiagnostic(diagnostic13, lineLengths(text))
             );
           });
           if (!valid)
@@ -5274,11 +4016,6 @@ function createLanguageWorkspace(options) {
       shutdownPromise = (async () => {
         invalidateFeatures("language workspace shut down");
         sourceDocumentCaptures.clear();
-        semanticContextCache.clear();
-        semanticContextCacheBytes = 0;
-        pendingSemanticContexts.clear();
-        latestSemanticContextKeys.clear();
-        await Promise.allSettled([...pendingContextSaves]);
         const open = [...documents.values()];
         documents.clear();
         for (const entry2 of open) entry2.analysisController?.abort("language workspace shut down");
@@ -5295,6 +4032,626 @@ function createLanguageWorkspace(options) {
       return shutdownPromise;
     }
   });
+}
+var MAX_SIGNATURE_WINDOW_BYTES = 4096 + 64;
+var RESOURCE_NOT_FOUND = "x3.host/resource-not-found";
+var RESOURCE_NOT_ALLOWLISTED = "x3.host/resource-not-allowlisted";
+var RESOURCE_PATH_REFUSED = "x3.host/resource-path-refused";
+var RESOURCE_SCOPE_UNSUPPORTED = "x3.host/resource-scope-unsupported";
+var RESOURCE_BUDGET_EXCEEDED = "x3.host/resource-budget-exceeded";
+var RESOURCE_CYCLE_DETECTED = "x3.host/resource-cycle-detected";
+var RESOURCE_SESSION_DISPOSED = "x3.host/resource-session-disposed";
+var RESOURCE_REVISION_CHANGED = "x3.host/resource-revision-changed";
+var RESOURCE_PERMISSION_MISSING = "x3.host/resource-permission-missing";
+var REASON_CODES = Object.freeze({
+  "not-found": RESOURCE_NOT_FOUND,
+  "not-allowlisted": RESOURCE_NOT_ALLOWLISTED,
+  "path-refused": RESOURCE_PATH_REFUSED,
+  "scope-unsupported": RESOURCE_SCOPE_UNSUPPORTED,
+  "budget-exceeded": RESOURCE_BUDGET_EXCEEDED,
+  "cycle-detected": RESOURCE_CYCLE_DETECTED,
+  "session-disposed": RESOURCE_SESSION_DISPOSED,
+  "source-revision-changed": RESOURCE_REVISION_CHANGED,
+  "permission-missing": RESOURCE_PERMISSION_MISSING
+});
+var DEFAULT_RESOURCE_SESSION_LIMITS = Object.freeze({
+  maxResources: 256,
+  maxBytes: 256n * 1024n * 1024n,
+  maxDepth: 8,
+  // One scope of a game archive: a bare texture name is looked for in every folder (Emperor's
+  // 3DDATA0001.RFH holds 3 749 entries, Diablo III's anim/ 15 258); see DEFAULT_COMPANION_LIMITS.
+  maxEntries: 65536
+});
+var EVIDENCE_KINDS = Object.freeze([
+  "magic",
+  "structure",
+  "companion",
+  "context",
+  "extension",
+  "user-override"
+]);
+var ABI_CODEC_MODULE = { contract: "x3.abi/codec-module", major: 1 };
+var ABI_SERVICE_PROVIDER_MODULE = {
+  contract: "x3.abi/service-provider-module",
+  major: 1
+};
+var ABI_CODEC = { contract: "x3.abi/codec", major: 1 };
+var ABI_ASSET_SESSION = { contract: "x3.abi/asset-session", major: 1 };
+var ABI_OPERATION_SESSION = { contract: "x3.abi/operation-session", major: 1 };
+var ABI_ARTIFACT_SOURCE = { contract: "x3.abi/artifact-source", major: 1 };
+var ABI_ASSET_NAMESPACE = { contract: "x3.abi/asset-namespace", major: 1 };
+var ABI_ASSET_INPUT = { contract: "x3.abi/asset-input", major: 1 };
+var ABI_DIAGNOSTIC_SINK = { contract: "x3.abi/diagnostic-sink", major: 1 };
+var ABI_CONTRACT_RESOLVER = { contract: "x3.abi/contract-resolver", major: 1 };
+var ABI_RASTER_RESOURCES = { contract: "x3.abi/raster-resources", major: 1 };
+var ABI_MODEL_RESOURCES = { contract: "x3.abi/model-resources", major: 1 };
+var ABI_INSTALLATION_PROBES = { contract: "x3.abi/installation-probes", major: 1 };
+var ABI_VIDEO_FRAMES = { contract: "x3.abi/video-frames", major: 1 };
+var ABI_INSTALLATION_FILES = { contract: "x3.abi/installation-files", major: 1 };
+var ABI_SUBJECT_CATALOG = { contract: "x3.abi/subject-catalog", major: 1 };
+var ABI_MOD_CONTEXT_QUERY = { contract: "x3.abi/mod-context-query", major: 1 };
+var ABI_CREDENTIALS = { contract: "x3.abi/credentials", major: 1 };
+var ABI_MODEL_RESOURCE_ASSET = {
+  contract: "x3.abi/model-resource-asset",
+  major: 1
+};
+var ABI_LOGICAL_RESOURCES = { contract: "x3.abi/logical-resources", major: 1 };
+var ABI_LOGICAL_RESOURCE_RESOLUTION = {
+  contract: "x3.abi/logical-resource-resolution",
+  major: 1
+};
+var sig = { signal: "last" };
+var codecModuleSurface = {
+  ...ABI_CODEC_MODULE,
+  fields: ["abiVersion"],
+  methods: {
+    /** `createCodec(context)` — the backend marshals `context` (budgets copied, ports as refs). */
+    createCodec: { kind: "lease", result: ABI_CODEC, wrapper: "bare" }
+  }
+};
+var serviceProviderModuleSurface = {
+  ...ABI_SERVICE_PROVIDER_MODULE,
+  fields: ["abiVersion", "provides"],
+  methods: {
+    /**
+     * `createProvider(selection, context)` — the leased provider's surface is the one the
+     * selection names (its contract definition's `surface`); `context` is marshalled like
+     * `createCodec`'s. Returns a `Lease`: releasing the handle releases the provider.
+     */
+    createProvider: {
+      kind: "lease",
+      wrapper: "lease",
+      resultFromArgs: { contract: { arg: 0, key: "contract" }, major: { arg: 0, key: "major" } }
+    }
+  }
+};
+var codecSurface = {
+  ...ABI_CODEC,
+  methods: {
+    probe: { kind: "value", ...sig },
+    planInput: { kind: "value", optional: true, ...sig },
+    open: { kind: "lease", result: ABI_ASSET_SESSION, wrapper: "bare", ...sig }
+  }
+};
+var assetSessionSurface = {
+  ...ABI_ASSET_SESSION,
+  fields: ["revision"],
+  releaseVia: "dispose",
+  methods: {
+    state: { kind: "value" },
+    descriptor: { kind: "value" },
+    /** `dataSource(contract, major)` — the leased surface is named by the arguments. */
+    dataSource: {
+      kind: "lease",
+      resultFromArgs: { contract: 0, major: 1 },
+      wrapper: "lease"
+    },
+    operations: { kind: "lease", result: ABI_OPERATION_SESSION, wrapper: "bare" },
+    events: { kind: "events", ...sig },
+    dispose: { kind: "value" }
+  }
+};
+var operationSessionSurface = {
+  ...ABI_OPERATION_SESSION,
+  releaseVia: "dispose",
+  methods: {
+    invoke: {
+      kind: "value",
+      signal: { arg: 2, key: "signal" },
+      progress: { arg: 2, key: "onProgress" }
+    },
+    dispose: { kind: "value" }
+  }
+};
+var artifactSourceSurface = {
+  ...ABI_ARTIFACT_SOURCE,
+  fields: ["ref", "revision", "kind", "size"],
+  methods: {
+    read: { kind: "value", optional: true, ...sig },
+    stream: { kind: "iterable", optional: true, ...sig },
+    openNamespace: {
+      kind: "lease",
+      result: ABI_ASSET_NAMESPACE,
+      wrapper: "lease",
+      optional: true,
+      ...sig
+    }
+  }
+};
+var assetNamespaceSurface = {
+  ...ABI_ASSET_NAMESPACE,
+  methods: {
+    list: { kind: "iterable", batchItems: 512, ...sig },
+    readPreamble: { kind: "value", optional: true, ...sig },
+    open: { kind: "lease", result: ABI_ARTIFACT_SOURCE, wrapper: "lease", ...sig }
+  }
+};
+var assetInputSurface = {
+  ...ABI_ASSET_INPUT,
+  // topology data as fields: physical bindings, the namespace/derived discriminants, the derived
+  // subject list and its optional materialized requirement/recipe
+  fields: [
+    "originKind",
+    "root",
+    "bindings",
+    "revisions",
+    "primaryBindingId",
+    "subjects",
+    "recipe",
+    "materialized"
+  ],
+  methods: {
+    openBinding: {
+      kind: "lease",
+      result: ABI_ARTIFACT_SOURCE,
+      wrapper: "lease",
+      optional: true,
+      ...sig
+    },
+    openNamespace: {
+      kind: "lease",
+      result: ABI_ASSET_NAMESPACE,
+      wrapper: "lease",
+      optional: true,
+      ...sig
+    },
+    // derived inputs: open one input subject as a session, or the optional materialized artifact
+    openSubject: {
+      kind: "lease",
+      result: ABI_ASSET_SESSION,
+      wrapper: "lease",
+      optional: true,
+      ...sig
+    },
+    openMaterialized: {
+      kind: "lease",
+      result: ABI_ARTIFACT_SOURCE,
+      wrapper: "lease",
+      optional: true,
+      ...sig
+    }
+  }
+};
+var contractResolverSurface = {
+  ...ABI_CONTRACT_RESOLVER,
+  methods: {
+    resolve: {
+      kind: "lease",
+      wrapper: "lease",
+      resultFromArgs: { contract: { arg: 0, key: "contract" }, major: { arg: 0, key: "major" } },
+      signal: { arg: 0, key: "signal" }
+    },
+    resolveUnknown: {
+      kind: "lease",
+      wrapper: "lease",
+      resultFromArgs: { contract: { arg: 0, key: "contract" }, major: { arg: 0, key: "major" } },
+      signal: { arg: 0, key: "signal" }
+    }
+  }
+};
+var diagnosticSinkSurface = {
+  ...ABI_DIAGNOSTIC_SINK,
+  methods: {
+    report: { kind: "value" }
+  }
+};
+var rasterResourcesSurface = {
+  ...ABI_RASTER_RESOURCES,
+  methods: { read: { kind: "value", ...sig } }
+};
+var installationProbesSurface = {
+  ...ABI_INSTALLATION_PROBES,
+  methods: {
+    registryValues: { kind: "value", ...sig },
+    steamAppDir: { kind: "value", ...sig },
+    epicInstallLocation: { kind: "value", ...sig },
+    gogInstallPath: { kind: "value", ...sig },
+    storePackageLocation: { kind: "value", ...sig },
+    knownFolder: { kind: "value", ...sig }
+  }
+};
+var videoFramesSurface = {
+  ...ABI_VIDEO_FRAMES,
+  methods: { decodeFrame: { kind: "value", signal: { arg: 0, key: "signal" } } }
+};
+var installationFilesSurface = {
+  ...ABI_INSTALLATION_FILES,
+  methods: {
+    size: { kind: "value", signal: { arg: 0, key: "signal" } },
+    read: { kind: "value", signal: { arg: 0, key: "signal" } }
+  }
+};
+var subjectCatalogSurface = {
+  ...ABI_SUBJECT_CATALOG,
+  methods: {
+    entities: { kind: "value", arity: 2, ...sig },
+    strings: { kind: "value", arity: 3, optional: true, ...sig }
+  }
+};
+var modContextQuerySurface = {
+  ...ABI_MOD_CONTEXT_QUERY,
+  methods: { query: { kind: "value", arity: 2, ...sig } }
+};
+var credentialsSurface = {
+  ...ABI_CREDENTIALS,
+  methods: {
+    status: { kind: "value", arity: 2, ...sig },
+    acquire: { kind: "value", arity: 2, ...sig },
+    fetch: { kind: "value", arity: 2, ...sig },
+    secret: { kind: "value", arity: 2, ...sig },
+    remember: { kind: "value", arity: 3, ...sig },
+    forget: { kind: "value", arity: 2, ...sig }
+  }
+};
+var modelAcquire = {
+  kind: "lease",
+  result: ABI_MODEL_RESOURCE_ASSET,
+  wrapper: "lease",
+  ...sig
+};
+var modelResourcesSurface = {
+  ...ABI_MODEL_RESOURCES,
+  methods: { acquire: modelAcquire }
+};
+var modelResourceAssetSurface = {
+  ...ABI_MODEL_RESOURCE_ASSET,
+  fields: ["result"],
+  methods: {
+    acquire: modelAcquire,
+    readRaster: { kind: "value", ...sig },
+    sceneInfo: { kind: "value", optional: true, ...sig },
+    nodes: { kind: "value", optional: true, ...sig },
+    meshes: { kind: "value", optional: true, ...sig },
+    primitive: { kind: "value", optional: true, ...sig },
+    skeletonBindings: { kind: "value", optional: true, ...sig },
+    animationClips: { kind: "value", optional: true, ...sig },
+    materials: { kind: "value", optional: true, ...sig },
+    resourceReferences: { kind: "value", optional: true, ...sig },
+    sockets: { kind: "value", optional: true, ...sig }
+  }
+};
+var logicalResourcesSurface = {
+  ...ABI_LOGICAL_RESOURCES,
+  methods: {
+    discover: { kind: "value", ...sig },
+    readBatch: { kind: "value", ...sig },
+    resolve: { kind: "lease", result: ABI_LOGICAL_RESOURCE_RESOLUTION, wrapper: "lease", ...sig },
+    provenance: { kind: "value", ...sig },
+    identity: { kind: "value", ...sig }
+  }
+};
+var logicalResourceResolutionSurface = {
+  ...ABI_LOGICAL_RESOURCE_RESOLUTION,
+  fields: ["result"],
+  methods: { openSource: { kind: "lease", result: ABI_ARTIFACT_SOURCE, wrapper: "lease", ...sig } }
+};
+var RUNTIME_ABI_SURFACES = Object.freeze([
+  codecModuleSurface,
+  serviceProviderModuleSurface,
+  codecSurface,
+  assetSessionSurface,
+  operationSessionSurface,
+  artifactSourceSurface,
+  assetNamespaceSurface,
+  assetInputSurface,
+  diagnosticSinkSurface,
+  contractResolverSurface,
+  rasterResourcesSurface,
+  installationProbesSurface,
+  videoFramesSurface,
+  installationFilesSurface,
+  subjectCatalogSurface,
+  modContextQuerySurface,
+  credentialsSurface,
+  modelResourcesSurface,
+  modelResourceAssetSurface,
+  logicalResourcesSurface,
+  logicalResourceResolutionSurface
+]);
+init_subject_field_projections();
+var EMPTY_RECEIPT = Object.freeze({
+  complete: false,
+  pages: 0,
+  entries: 0,
+  candidates: 0,
+  bytes: 0n
+});
+var NAMESPACE_SCOPES = Object.freeze([
+  "current-mount",
+  "enclosing-container"
+]);
+var WORKSPACE_SCOPES = Object.freeze([
+  "workspace-dependency-layer",
+  "current-mount",
+  "enclosing-container"
+]);
+var MODEL_PREVIEW_BYTES = 64 * 1024 * 1024;
+var NAMESPACE_PATH_ENCODER = new TextEncoder();
+var DEFAULT_COMPANION_LIMITS = Object.freeze({
+  // One scope of a game archive: a model's bare texture name is looked for in every folder of the
+  // enclosing container, and Emperor's 3DDATA0001.RFH holds 3 749 entries, Diablo III's anim/ 15 258.
+  maxEntries: 65536,
+  maxProbes: 64,
+  maxProbeBytes: 256 * 1024,
+  // A binding is a reference into a scope already bounded by maxEntries. Kane's Wrath's compiled
+  // containers bind their meshes and clips one by one: the MARV names 164 parts, the Eradicator
+  // Hexapod 175 plus 19 clips, and at 64 they did not open.
+  maxBindings: 1024
+});
+var DEPENDENCY_SCOPE = Object.freeze(["workspace-dependency-layer"]);
+var KNOWLEDGE_FILE_MAX_BYTES = 8 * 1024 * 1024;
+var KNOWLEDGE_TOTAL_MAX_BYTES = 32 * 1024 * 1024;
+function contentSourceUri(sourceId, path) {
+  return `content-source://${encodeURIComponent(sourceId)}/${path.split("/").map(encodeURIComponent).join("/")}`;
+}
+var MAX_SCOPE_DOCUMENTS = 4096;
+var decoder = new TextDecoder();
+var registries = 0;
+function pathKey(path) {
+  const slashed = path.replaceAll("\\", "/").replace(/\/+$/u, "");
+  return /^(?:[A-Za-z]:|\/\/)/u.test(slashed) ? slashed.toLowerCase() : slashed;
+}
+function languageModContextTarget(uri) {
+  let url;
+  try {
+    url = new URL(uri);
+  } catch {
+    return void 0;
+  }
+  try {
+    if (url.protocol === "content-source:") {
+      const sourceId = decodeURIComponent(url.host);
+      const path2 = url.pathname.split("/").filter(Boolean).map(decodeURIComponent).join("/");
+      return sourceId === "" ? void 0 : Object.freeze({ sourceId, path: path2 });
+    }
+    if (url.protocol !== "file:") return void 0;
+    const path = decodeURIComponent(url.pathname);
+    if (url.host !== "") return `//${url.host}${path}`;
+    return /^\/[A-Za-z]:\//u.test(path) ? path.slice(1) : path;
+  } catch {
+    return void 0;
+  }
+}
+function relativeTo(base, path, hostPath2) {
+  const slashed = path.replaceAll("\\", "/");
+  const root = base.replaceAll("\\", "/").replace(/\/+$/u, "");
+  const key3 = hostPath2 ? pathKey(slashed) : slashed.toLowerCase();
+  const rootKey = hostPath2 ? pathKey(root) : root.toLowerCase();
+  if (rootKey === "" || !key3.startsWith(`${rootKey}/`)) return void 0;
+  const relative = slashed.slice(root.length + 1);
+  return relative === "" ? void 0 : relative;
+}
+var defaultUriOf = (target) => typeof target === "string" ? void 0 : contentSourceUri(target.sourceId, target.path);
+function createLanguageModContexts(options = {}) {
+  const registry = registries += 1;
+  const targetOf = options.targetOf ?? languageModContextTarget;
+  const uriOf = (target) => options.uriOf?.(target) ?? defaultUriOf(target);
+  const maxDocumentBytes = options.maxDocumentBytes ?? 64 * 1024 * 1024;
+  let entries = [];
+  let opened = 0;
+  const pushed = /* @__PURE__ */ new Map();
+  const pushedKey = (scope, uri) => JSON.stringify([scope, uri]);
+  let disposed = false;
+  let queue = Promise.resolve();
+  const serially = (work) => {
+    const next = queue.then(work, work);
+    queue = next.catch(() => void 0);
+    return next;
+  };
+  const entryOf = (scope) => {
+    const entry2 = disposed ? void 0 : entries.find((item) => item.scope === scope);
+    if (entry2 === void 0) throw new TypeError(`no loaded mod is served as ${scope}`);
+    return entry2;
+  };
+  const layerPlace = (entry2, layer, target) => {
+    const host = layer.sourceId === HOST_LAYER_SOURCE_ID;
+    if (host !== (typeof target === "string")) return void 0;
+    if (typeof target !== "string" && target.sourceId !== layer.sourceId) return void 0;
+    const path = relativeTo(layer.sourcePath, typeof target === "string" ? target : target.path, host);
+    return path === void 0 ? void 0 : Object.freeze({
+      scope: entry2.scope,
+      gameId: entry2.context.gameId,
+      layerId: layer.id,
+      path,
+      writable: host
+    });
+  };
+  const placeIn = (entry2, uri) => {
+    const target = targetOf(uri);
+    if (target === void 0) return void 0;
+    const layers = entry2.context.layers;
+    for (let index = layers.length - 1; index >= 0; index -= 1) {
+      const place = layerPlace(entry2, layers[index], target);
+      if (place !== void 0) return place;
+    }
+    return void 0;
+  };
+  const fileUri = (context, layerId2, path) => {
+    const layer = context.layers.find((item) => item.id === layerId2);
+    if (layer === void 0 || path === "") return void 0;
+    const parts = path.split("/").filter(Boolean);
+    if (layer.sourceId === HOST_LAYER_SOURCE_ID) {
+      return uriOf(`${layer.sourcePath.replace(/[\\/]+$/u, "")}/${parts.join("/")}`);
+    }
+    return uriOf(
+      Object.freeze({
+        sourceId: layer.sourceId,
+        path: [...layer.sourcePath.split("/").filter(Boolean), ...parts].join("/")
+      })
+    );
+  };
+  const diskText = async (context, layerId2, path) => {
+    try {
+      return decoder.decode(await context.read(layerId2, path, maxDocumentBytes));
+    } catch {
+      return void 0;
+    }
+  };
+  const retire = async (entry2) => {
+    const removals = [];
+    for (const [key3, known] of pushed) {
+      if (known.scope !== entry2.scope) continue;
+      pushed.delete(key3);
+      if (known.overlaid) removals.push(Object.freeze({ layerId: known.layerId, path: known.path }));
+    }
+    try {
+      if (removals.length > 0) await entry2.context.overlay?.(removals);
+    } finally {
+      await entry2.context.dispose();
+    }
+  };
+  const add = (key3, context) => {
+    const entry2 = Object.freeze({ scope: `mod-context:${registry}:${opened += 1}`, key: key3, context });
+    entries.push(entry2);
+    return entry2;
+  };
+  for (const context of options.contexts ?? []) add("", context);
+  const api = {
+    placeOf(uri, gameId) {
+      if (disposed) return void 0;
+      let found;
+      for (const entry2 of entries) {
+        if (gameId !== void 0 && entry2.context.gameId !== gameId) continue;
+        const place = placeIn(entry2, uri);
+        if (place === void 0) continue;
+        if (entry2.context.layers.find((layer) => layer.id === place.layerId)?.role === "primary") return place;
+        found ??= place;
+      }
+      return found;
+    },
+    synchronize(scope, documents, signal) {
+      return serially(async () => {
+        const entry2 = entryOf(scope);
+        signal?.throwIfAborted();
+        const context = entry2.context;
+        const changes = [];
+        const open = /* @__PURE__ */ new Set();
+        for (const document of documents.slice(0, MAX_SCOPE_DOCUMENTS)) {
+          const place = placeIn(entry2, document.uri);
+          if (place === void 0 || !place.writable || context.overlay === void 0) continue;
+          open.add(document.uri);
+          const key3 = pushedKey(scope, document.uri);
+          const known = pushed.get(key3);
+          if (known !== void 0 && known.text === document.text) continue;
+          if (known === void 0 && await diskText(context, place.layerId, place.path) === document.text) {
+            pushed.set(key3, Object.freeze({ ...place, uri: document.uri, text: document.text, overlaid: false }));
+            continue;
+          }
+          changes.push(Object.freeze({ layerId: place.layerId, path: place.path, text: document.text }));
+          pushed.set(key3, Object.freeze({ ...place, uri: document.uri, text: document.text, overlaid: true }));
+        }
+        for (const [key3, known] of pushed) {
+          if (known.scope !== scope || open.has(known.uri)) continue;
+          pushed.delete(key3);
+          if (known.overlaid) changes.push(Object.freeze({ layerId: known.layerId, path: known.path }));
+        }
+        await context.overlay?.(changes);
+        return Object.freeze({
+          scope,
+          gameId: context.gameId,
+          revision: context.revision ?? "0",
+          complete: context.unresolved.length === 0
+        });
+      });
+    },
+    release(uri) {
+      return serially(async () => {
+        for (const [key3, known] of [...pushed]) {
+          if (known.uri !== uri) continue;
+          pushed.delete(key3);
+          const context = entries.find((entry2) => entry2.scope === known.scope)?.context;
+          if (!disposed && known.overlaid) {
+            await context?.overlay?.([Object.freeze({ layerId: known.layerId, path: known.path })]);
+          }
+        }
+      });
+    },
+    async query(scope, question, signal) {
+      const { context } = entryOf(scope);
+      if (context.query === void 0) throw new TypeError(`the loaded mod ${scope} answers no questions`);
+      if (!isJsonValue(question)) throw new TypeError("a mod context question must be JSON");
+      const answer = await context.query(question, signal);
+      signal?.throwIfAborted();
+      if (!isJsonValue(answer)) throw new TypeError("a mod context answered with something other than JSON");
+      if (typeof answer !== "object" || answer === null || Array.isArray(answer)) return answer;
+      const documents = answer.documents;
+      if (!Array.isArray(documents)) return answer;
+      return Object.freeze({
+        ...answer,
+        documents: Object.freeze(
+          documents.map((item) => {
+            const record3 = item;
+            if (typeof record3?.layerId !== "string" || typeof record3.path !== "string") return item;
+            const uri = fileUri(context, record3.layerId, record3.path);
+            return uri === void 0 ? item : Object.freeze({ ...item, uri });
+          })
+        )
+      });
+    },
+    replace(key3, contexts) {
+      if (disposed) {
+        void Promise.allSettled(contexts.map((context) => context.dispose()));
+        return;
+      }
+      const before = entries.filter((entry2) => entry2.key === key3);
+      const kept = /* @__PURE__ */ new Set();
+      const surplus = [];
+      for (const context of contexts) {
+        const same2 = before.find((entry2) => !kept.has(entry2) && entry2.context.contextId === context.contextId);
+        if (same2 === void 0) add(key3, context);
+        else {
+          kept.add(same2);
+          surplus.push(context);
+        }
+      }
+      const retired = before.filter((entry2) => !kept.has(entry2));
+      entries = entries.filter((entry2) => !retired.includes(entry2));
+      void serially(async () => {
+        await Promise.allSettled([
+          ...retired.map(retire),
+          ...surplus.map((context) => context.dispose())
+        ]);
+      });
+    },
+    invalidate() {
+      return serially(async () => {
+        await Promise.all(entries.map((entry2) => entry2.context.invalidate?.()));
+      });
+    },
+    async prepare() {
+      await Promise.allSettled(entries.map((entry2) => entry2.context.prepare?.()));
+    },
+    async dispose() {
+      if (disposed) return;
+      disposed = true;
+      const closing = entries;
+      entries = [];
+      await serially(async () => {
+        await Promise.allSettled(closing.map(retire));
+      });
+    }
+  };
+  return Object.freeze(api);
 }
 var PATHS_PER_INPUT = 16384;
 function contentPathIndexSemanticInputs(index) {
@@ -5324,7 +4681,7 @@ function contentPathIndexSemanticInputs(index) {
   return Object.freeze(inputs.map((input) => captured.get(input.id)));
 }
 var STANDARD_LANGUAGE_OWNER = "modkit/language";
-var OFFER_KEYS2 = /* @__PURE__ */ new Set([
+var OFFER_KEYS = /* @__PURE__ */ new Set([
   "languageIds",
   "documentKinds",
   "extensions",
@@ -5333,11 +4690,11 @@ var OFFER_KEYS2 = /* @__PURE__ */ new Set([
   "signatureHelpTriggerCharacters",
   "onTypeFormattingTriggerCharacters"
 ]);
-var REQUEST_KEYS2 = /* @__PURE__ */ new Set(["languageId", "documentKind", "extension", "fileName"]);
-function recordOf3(value) {
+var REQUEST_KEYS = /* @__PURE__ */ new Set(["languageId", "documentKind", "extension", "fileName"]);
+function recordOf2(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value) ? value : void 0;
 }
-function stringList2(value) {
+function stringList(value) {
   if (!Array.isArray(value) || value.length === 0) return void 0;
   if (!value.every((item) => typeof item === "string" && item.trim().length > 0)) return void 0;
   const strings = value;
@@ -5349,21 +4706,21 @@ function triggerCharacterList(value) {
   const strings = value;
   return new Set(strings).size === strings.length ? strings : void 0;
 }
-function parseOffer2(value) {
-  const record3 = recordOf3(value);
-  if (record3 === void 0 || Object.keys(record3).some((key3) => !OFFER_KEYS2.has(key3)))
+function parseOffer(value) {
+  const record3 = recordOf2(value);
+  if (record3 === void 0 || Object.keys(record3).some((key3) => !OFFER_KEYS.has(key3)))
     return void 0;
-  const languageIds = stringList2(record3["languageIds"]);
+  const languageIds = stringList(record3["languageIds"]);
   if (languageIds === void 0) return void 0;
   const rawKinds = record3["documentKinds"];
   const rawExtensions = record3["extensions"];
   const rawFileNames = record3["fileNames"];
-  const fileNames = rawFileNames === void 0 ? void 0 : stringList2(rawFileNames);
+  const fileNames = rawFileNames === void 0 ? void 0 : stringList(rawFileNames);
   const rawCompletionTriggers = record3["completionTriggerCharacters"];
   const rawSignatureTriggers = record3["signatureHelpTriggerCharacters"];
   const rawOnTypeFormattingTriggers = record3["onTypeFormattingTriggerCharacters"];
-  const documentKinds = rawKinds === void 0 ? void 0 : stringList2(rawKinds);
-  const extensions = rawExtensions === void 0 ? void 0 : stringList2(rawExtensions);
+  const documentKinds = rawKinds === void 0 ? void 0 : stringList(rawKinds);
+  const extensions = rawExtensions === void 0 ? void 0 : stringList(rawExtensions);
   const completionTriggerCharacters = rawCompletionTriggers === void 0 ? void 0 : triggerCharacterList(rawCompletionTriggers);
   const signatureHelpTriggerCharacters = rawSignatureTriggers === void 0 ? void 0 : triggerCharacterList(rawSignatureTriggers);
   const onTypeFormattingTriggerCharacters = rawOnTypeFormattingTriggers === void 0 ? void 0 : triggerCharacterList(rawOnTypeFormattingTriggers);
@@ -5380,9 +4737,9 @@ function parseOffer2(value) {
     ...onTypeFormattingTriggerCharacters === void 0 ? {} : { onTypeFormattingTriggerCharacters }
   };
 }
-function parseRequest2(value) {
-  const record3 = recordOf3(value);
-  if (record3 === void 0 || Object.keys(record3).some((key3) => !REQUEST_KEYS2.has(key3)))
+function parseRequest(value) {
+  const record3 = recordOf2(value);
+  if (record3 === void 0 || Object.keys(record3).some((key3) => !REQUEST_KEYS.has(key3)))
     return void 0;
   const languageId = record3["languageId"];
   const documentKind = record3["documentKind"];
@@ -5407,8 +4764,8 @@ function parseRequest2(value) {
 }
 var normalizedExtension2 = (value) => value.replace(/^\./u, "").toLowerCase();
 function matchLanguageFacets(context) {
-  const offer = parseOffer2(context.offerFacet);
-  const request = parseRequest2(context.requestFacet);
+  const offer = parseOffer(context.offerFacet);
+  const request = parseRequest(context.requestFacet);
   if (offer === void 0 || request === void 0) {
     return {
       state: "invalid",
@@ -5610,12 +4967,12 @@ var LANGUAGE_DOCUMENT_CONTRACT_DEFINITION = Object.freeze({
 var TRANSLATION_OFFER_KEYS = /* @__PURE__ */ new Set(["backends", "languages"]);
 var TRANSLATION_REQUEST_KEYS = /* @__PURE__ */ new Set(["backend", "sourceLanguage", "targetLanguage"]);
 function parseTranslationOffer(value) {
-  const record3 = recordOf3(value);
+  const record3 = recordOf2(value);
   if (record3 === void 0 || Object.keys(record3).some((key3) => !TRANSLATION_OFFER_KEYS.has(key3)))
     return void 0;
-  const backends = stringList2(record3["backends"]);
+  const backends = stringList(record3["backends"]);
   if (backends === void 0 || backends.length === 0) return void 0;
-  const languages = record3["languages"] === void 0 ? void 0 : stringList2(record3["languages"]);
+  const languages = record3["languages"] === void 0 ? void 0 : stringList(record3["languages"]);
   if (record3["languages"] !== void 0 && languages === void 0) return void 0;
   return {
     backends,
@@ -5624,7 +4981,7 @@ function parseTranslationOffer(value) {
 }
 function parseTranslationRequest(value) {
   if (value === void 0) return {};
-  const record3 = recordOf3(value);
+  const record3 = recordOf2(value);
   if (record3 === void 0 || Object.keys(record3).some((key3) => !TRANSLATION_REQUEST_KEYS.has(key3)))
     return void 0;
   for (const key3 of TRANSLATION_REQUEST_KEYS) {
@@ -5717,22 +5074,16 @@ function registerStandardLanguageDefinitions(definitions) {
   );
 }
 function isLanguageProvider(value) {
-  const record3 = recordOf3(value);
+  const record3 = recordOf2(value);
   const workspaceLanguageIds = record3?.["workspaceLanguageIds"];
   const semanticInputs = record3?.["semanticInputs"];
   const semanticContextRequirements = record3?.["semanticContextRequirements"];
-  return record3?.["contract"] === LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT && Array.isArray(record3["languageIds"]) && record3["languageIds"].every((item) => typeof item === "string") && (workspaceLanguageIds === void 0 || Array.isArray(workspaceLanguageIds) && workspaceLanguageIds.length > 0 && workspaceLanguageIds.length <= 16 && workspaceLanguageIds.every((item) => typeof item === "string" && item.trim().length > 0) && new Set(workspaceLanguageIds).size === workspaceLanguageIds.length) && (semanticInputs === void 0 || validProviderSemanticInputs(semanticInputs)) && (record3["completionContext"] === void 0 || typeof record3["completionContext"] === "function") && (semanticContextRequirements === void 0 || validProviderSemanticContextRequirements(
-    semanticContextRequirements,
-    workspaceLanguageIds === void 0 ? record3["languageIds"] : workspaceLanguageIds
-  )) && typeof record3["analyze"] === "function";
+  return record3?.["contract"] === LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT && Array.isArray(record3["languageIds"]) && record3["languageIds"].every((item) => typeof item === "string") && (workspaceLanguageIds === void 0 || Array.isArray(workspaceLanguageIds) && workspaceLanguageIds.length > 0 && workspaceLanguageIds.length <= 16 && workspaceLanguageIds.every((item) => typeof item === "string" && item.trim().length > 0) && new Set(workspaceLanguageIds).size === workspaceLanguageIds.length) && (semanticInputs === void 0 || validProviderSemanticInputs(semanticInputs)) && (record3["completionContext"] === void 0 || typeof record3["completionContext"] === "function") && (semanticContextRequirements === void 0 || validProviderSemanticContextRequirements(semanticContextRequirements)) && typeof record3["analyze"] === "function";
 }
-function validProviderSemanticContextRequirements(value, languageIds) {
-  if (!Array.isArray(languageIds)) return false;
+function validProviderSemanticContextRequirements(value) {
   try {
-    const allowed2 = new Set(languageIds);
-    return validatedLanguageSemanticContextRequirements(value).every(
-      (requirement) => requirement.kind !== "resolved-data-snapshot" || requirement.languageIds.every((languageId) => allowed2.has(languageId))
-    );
+    validatedLanguageSemanticContextRequirements(value);
+    return true;
   } catch {
     return false;
   }
@@ -5769,6 +5120,7 @@ async function resolveLanguageProvider(request) {
     grant: request.grant,
     budgets: request.budgets,
     ...request.services.contributionSettings === void 0 ? {} : { contributionSettings: request.services.contributionSettings },
+    ...request.modContexts === void 0 ? {} : { modContexts: request.modContexts },
     ...request.signal === void 0 ? {} : { signal: request.signal }
   });
   let released = false;
@@ -6879,7 +6231,7 @@ function pageOf(items, request) {
     ...next < items.length ? { nextCursor: String(next) } : {}
   });
 }
-function recordOf4(value) {
+function recordOf3(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value) ? value : void 0;
 }
 function relationKey(edge) {
@@ -7008,7 +6360,7 @@ async function visitField(state, type, value, path, depth) {
         }
         return;
       case "struct": {
-        const record3 = recordOf4(value);
+        const record3 = recordOf3(value);
         if (record3 === void 0) return;
         for (const field of type.fields) {
           if (state.capped) return;
@@ -7019,7 +6371,7 @@ async function visitField(state, type, value, path, depth) {
         return;
       }
       case "record": {
-        const record3 = recordOf4(value);
+        const record3 = recordOf3(value);
         if (record3 === void 0) return;
         for (const key3 of Object.keys(record3).sort(compareUtf8)) {
           if (state.capped) return;
@@ -8323,7 +7675,7 @@ async function readAttestedArtifactFile(contribution, authoredPath, options) {
   }
 }
 var LOCALIZATION_CATALOG_MAXIMUM_JSON_BYTES = 8 * 1024 * 1024;
-var decoder = new TextDecoder("utf-8", { fatal: true });
+var decoder2 = new TextDecoder("utf-8", { fatal: true });
 function extensionCoordinate(extension) {
   return `${extension.manifest.publisher}/${extension.manifest.id}`;
 }
@@ -8434,7 +7786,7 @@ async function loadLocalizationCatalogs(inventory, options) {
       );
       let document;
       try {
-        document = JSON.parse(decoder.decode(bytes));
+        document = JSON.parse(decoder2.decode(bytes));
       } catch (error3) {
         throw new TypeError(
           `localization catalog is not valid UTF-8 JSON: ${error3 instanceof Error ? error3.message : String(error3)}`
@@ -8484,7 +7836,7 @@ var commandDiagnostic = (item) => ({
   ...item.severity === void 0 ? {} : { severity: item.severity }
 });
 var ok = (command, data, diagnostics = []) => ({ state: "ok", command, data, diagnostics });
-var unavailable2 = (command, reason, alternative, diagnostics = [], code = COMMAND_UNAVAILABLE) => ({ state: "unavailable", command, code, reason, alternative, diagnostics });
+var unavailable = (command, reason, alternative, diagnostics = [], code = COMMAND_UNAVAILABLE) => ({ state: "unavailable", command, code, reason, alternative, diagnostics });
 var failed = (command, code, message, diagnostics = []) => ({ state: "failed", command, code, message, diagnostics });
 function createCommandRuntime(descriptors) {
   const byId = new Map(descriptors.map((descriptor) => [descriptor.id, descriptor]));
@@ -10380,6 +9732,7 @@ function createHostServiceResolver2(options) {
             budgets: options.budgets,
             ...chain.length !== 0 || options.logicalResourcesFor === void 0 ? {} : { logicalResources: options.logicalResourcesFor(effectiveGrant) },
             ...chain.length !== 0 || options.installationProbes === void 0 ? {} : { installationProbes: options.installationProbes },
+            ...chain.length !== 0 || options.modContexts === void 0 ? {} : { modContexts: options.modContexts },
             diagnostics: {
               report(item) {
                 diagnostics.push(item);
@@ -10629,6 +9982,7 @@ var ABI_INSTALLATION_PROBES2 = { contract: "x3.abi/installation-probes", major: 
 var ABI_VIDEO_FRAMES2 = { contract: "x3.abi/video-frames", major: 1 };
 var ABI_INSTALLATION_FILES2 = { contract: "x3.abi/installation-files", major: 1 };
 var ABI_SUBJECT_CATALOG2 = { contract: "x3.abi/subject-catalog", major: 1 };
+var ABI_MOD_CONTEXT_QUERY2 = { contract: "x3.abi/mod-context-query", major: 1 };
 var ABI_CREDENTIALS2 = { contract: "x3.abi/credentials", major: 1 };
 var ABI_MODEL_RESOURCE_ASSET2 = {
   contract: "x3.abi/model-resource-asset",
@@ -10827,6 +10181,10 @@ var subjectCatalogSurface2 = {
     strings: { kind: "value", arity: 3, optional: true, ...sig2 }
   }
 };
+var modContextQuerySurface2 = {
+  ...ABI_MOD_CONTEXT_QUERY2,
+  methods: { query: { kind: "value", arity: 2, ...sig2 } }
+};
 var credentialsSurface2 = {
   ...ABI_CREDENTIALS2,
   methods: {
@@ -10896,6 +10254,7 @@ var RUNTIME_ABI_SURFACES2 = Object.freeze([
   videoFramesSurface2,
   installationFilesSurface2,
   subjectCatalogSurface2,
+  modContextQuerySurface2,
   credentialsSurface2,
   modelResourcesSurface2,
   modelResourceAssetSurface2,
@@ -17238,7 +16597,7 @@ function relativeEntry(mount, entry2) {
   const prefix = `${mount.sourcePath}/`;
   return path.toLowerCase().startsWith(prefix.toLowerCase()) ? path.slice(prefix.length) : void 0;
 }
-function contentSourceUri(sourceId, path) {
+function contentSourceUri2(sourceId, path) {
   return `content-source://${encodeURIComponent(sourceId)}/${path.split("/").map(encodeURIComponent).join("/")}`;
 }
 function entryRevision(mount) {
@@ -17430,7 +16789,7 @@ function createContentDependencyOrigin(contentSources, mounts, maximumEntryBytes
         joinPath(mount.sourcePath, relative),
         maximumEntryBytes
       );
-      const uri = contentSourceUri(mount.sourceId, joinPath(mount.sourcePath, relative));
+      const uri = contentSourceUri2(mount.sourceId, joinPath(mount.sourcePath, relative));
       const source = artifactByteSourceFromBytes(
         Object.freeze({ id: `${mount.rootId}:${normalized2}`, uri }),
         mount.revision,
@@ -17461,18 +16820,28 @@ function createContentDependencyLanguageDocumentSource(options) {
   }
   const revisions = /* @__PURE__ */ new Map();
   let retainedDocumentBytes = 0;
+  let generation = 0;
   let retainedPathIndex;
   const keptListings = /* @__PURE__ */ new Map();
   let keptListingBytes = 0;
+  let replayedIndex;
   const UNROUTED = Object.freeze({
     route: Object.freeze({ candidates: Object.freeze([]) }),
     uri: ""
   });
   const fingerprinted = (mount) => mount.fingerprint !== void 0 && isRevisionId(mount.fingerprint);
   const trimDocumentCaptures = () => {
+    const allowance = () => maxWorkspaceBytes - (retainedPathIndex?.bytes ?? 0) - keptListingBytes - (replayedIndex?.bytes ?? 0);
     for (const entry2 of revisions.values()) {
-      if (retainedDocumentBytes <= maxWorkspaceBytes - (retainedPathIndex?.bytes ?? 0) - keptListingBytes)
-        break;
+      if (retainedDocumentBytes <= allowance()) return;
+      if (entry2.taken === generation) continue;
+      retainedDocumentBytes -= entry2.bytes;
+      entry2.bytes = 0;
+      delete entry2.document;
+    }
+    if (retainedDocumentBytes <= allowance()) return;
+    for (const entry2 of [...revisions.values()].reverse()) {
+      if (retainedDocumentBytes <= allowance()) return;
       retainedDocumentBytes -= entry2.bytes;
       entry2.bytes = 0;
       delete entry2.document;
@@ -17495,7 +16864,7 @@ function createContentDependencyLanguageDocumentSource(options) {
           at: relatives.length,
           path,
           route,
-          uri: contentSourceUri(mount.sourceId, path)
+          uri: contentSourceUri2(mount.sourceId, path)
         });
         bytes += (path.length + relative.length) * 2 + 256;
       }
@@ -17543,13 +16912,14 @@ function createContentDependencyLanguageDocumentSource(options) {
   return Object.freeze({
     async snapshot(request) {
       request.signal.throwIfAborted();
+      generation += 1;
       const accepted = new Set(request.workspaceLanguageIds);
       const openDocuments = new Map(
         [...request.workspaceDocuments, request.document].map((document) => [document.uri, document])
       );
       const documentOrigins = [];
       const candidates = [];
-      const contentPaths = /* @__PURE__ */ new Map();
+      let contentPaths = /* @__PURE__ */ new Map();
       const wantedKnowledge = new Set(
         (request.knowledgeFileNames ?? []).map((name) => name.toLowerCase())
       );
@@ -17578,8 +16948,8 @@ function createContentDependencyLanguageDocumentSource(options) {
         place(mount, path, relative);
         return true;
       };
-      const place = (mount, path, relative, known) => {
-        contentPaths.set(relative, mounts.indexOf(mount));
+      const place = (mount, path, relative, known, indexed2 = false) => {
+        if (!indexed2) contentPaths.set(relative, mounts.indexOf(mount));
         if (!relative.includes("/") && wantedKnowledge.has(relative.toLowerCase())) {
           knowledge.push({ mount, path, fileName: relative });
           return;
@@ -17591,7 +16961,7 @@ function createContentDependencyLanguageDocumentSource(options) {
         }
         if (!accepted.has(languageId)) return;
         claimed += 1;
-        const uri = known?.uri ?? contentSourceUri(mount.sourceId, path);
+        const uri = known?.uri ?? contentSourceUri2(mount.sourceId, path);
         const open = openDocuments.get(uri);
         if (open !== void 0) {
           documentOrigins.push(
@@ -17691,11 +17061,34 @@ function createContentDependencyLanguageDocumentSource(options) {
         recording = void 0;
         return listed;
       };
-      for (const mount of mounts) if (!await layer(mount)) break;
+      const listings = mounts.map((mount) => keptListings.get(mount));
+      const replays = listings.every((kept) => kept !== void 0) && listings.reduce((total, kept) => total + kept.relatives.length + kept.outside, 0) <= maxIndexedPaths;
+      if (replays && replayedIndex !== void 0 && replayedIndex.listings.length === listings.length && replayedIndex.listings.every((kept, at) => kept === listings[at])) {
+        contentPaths = replayedIndex.paths;
+        for (const [at, mount] of mounts.entries()) {
+          const kept = listings[at];
+          indexed += kept.relatives.length + kept.outside;
+          if (kept.outside > 0) {
+            complete = false;
+            pathIndexComplete = false;
+          }
+          for (const routed of kept.routed)
+            place(mount, routed.path, kept.relatives[routed.at], routed, true);
+        }
+      } else {
+        for (const mount of mounts) if (!await layer(mount)) break;
+        if (replays) {
+          const bytes = contentPaths.size * 48;
+          replayedIndex = bytes <= maxWorkspaceBytes - (retainedPathIndex?.bytes ?? 0) - keptListingBytes ? Object.freeze({ listings, paths: contentPaths, bytes }) : void 0;
+        }
+      }
       let pathInputs = retainedPathIndex?.inputs;
-      if (retainedPathIndex === void 0 || retainedPathIndex.complete !== pathIndexComplete || retainedPathIndex.paths.length !== contentPaths.size || !retainedPathIndex.paths.every(
+      if (retainedPathIndex !== void 0 && retainedPathIndex.complete === pathIndexComplete && retainedPathIndex.from !== contentPaths && retainedPathIndex.paths.length === contentPaths.size && retainedPathIndex.paths.every(
         (path, index) => contentPaths.get(path) === retainedPathIndex.layers[index]
       )) {
+        retainedPathIndex = { ...retainedPathIndex, from: contentPaths };
+      }
+      if (retainedPathIndex === void 0 || retainedPathIndex.complete !== pathIndexComplete || retainedPathIndex.from !== contentPaths) {
         const indexedPaths = Object.freeze([...contentPaths.keys()].sort(compareUtf8));
         const pathLayers = Object.freeze(indexedPaths.map((path) => contentPaths.get(path)));
         const pathIndexRevision = languageWorkspaceContextToken({
@@ -17717,8 +17110,13 @@ function createContentDependencyLanguageDocumentSource(options) {
           layers: pathLayers,
           complete: pathIndexComplete,
           inputs: pathInputs,
-          bytes
+          bytes,
+          from: contentPaths
         } : void 0;
+      }
+      for (const candidate of candidates.slice(0, request.maxDocuments)) {
+        const entry2 = revisions.get(contentSourceUri2(candidate.mount.sourceId, candidate.path));
+        if (entry2 !== void 0) entry2.taken = generation;
       }
       trimDocumentCaptures();
       const documents = [];
@@ -17727,7 +17125,7 @@ function createContentDependencyLanguageDocumentSource(options) {
         request.signal.throwIfAborted();
         const { languageId: classified, dialect } = classify(candidate.relative);
         const languageId = classified;
-        const kept = fingerprinted(candidate.mount) ? revisions.get(contentSourceUri(candidate.mount.sourceId, candidate.path)) : void 0;
+        const kept = fingerprinted(candidate.mount) ? revisions.get(contentSourceUri2(candidate.mount.sourceId, candidate.path)) : void 0;
         if (kept?.document !== void 0 && kept.document.languageId === languageId && kept.document.dialect === dialect) {
           if (totalBytes + kept.byteLength > maxWorkspaceBytes) {
             complete = false;
@@ -17735,6 +17133,7 @@ function createContentDependencyLanguageDocumentSource(options) {
           }
           totalBytes += kept.byteLength;
           const uri2 = kept.document.uri;
+          kept.taken = generation;
           revisions.delete(uri2);
           revisions.set(uri2, kept);
           documents.push(kept.document);
@@ -17773,7 +17172,7 @@ function createContentDependencyLanguageDocumentSource(options) {
           continue;
         }
         totalBytes += bytes.byteLength;
-        const uri = contentSourceUri(candidate.mount.sourceId, candidate.path);
+        const uri = contentSourceUri2(candidate.mount.sourceId, candidate.path);
         const previous = revisions.get(uri);
         const captured = previous?.document?.text === text && previous.document.languageId === languageId && previous.document.dialect === dialect ? previous.document : languageDocumentSnapshot({
           uri,
@@ -17790,7 +17189,7 @@ function createContentDependencyLanguageDocumentSource(options) {
         });
         const version = previous === void 0 ? 1 : previous.signature === signature ? previous.version : previous.version + 1;
         const document = version === captured.version ? captured : languageDocumentSnapshot({ ...captured, version });
-        const retainedBytes = Math.max(bytes.byteLength, text.length * 2);
+        const retainedBytes = bytes.byteLength === text.length ? text.length : text.length * 2;
         retainedDocumentBytes -= previous?.bytes ?? 0;
         revisions.delete(uri);
         revisions.set(uri, {
@@ -17798,7 +17197,8 @@ function createContentDependencyLanguageDocumentSource(options) {
           version,
           document,
           byteLength: bytes.byteLength,
-          bytes: retainedBytes
+          bytes: retainedBytes,
+          taken: generation
         });
         retainedDocumentBytes += retainedBytes;
         trimDocumentCaptures();
@@ -18002,14 +17402,23 @@ async function subjectClosures(request) {
   const { contentSources, signal } = request;
   const resolutions = [];
   const diagnostics = [];
+  const contexts = [];
   let complete = request.subjects.length > 0;
   for (const subject of request.subjects) {
-    const closure = await resolveSubjectClosure({
-      contentSources,
-      subject,
-      ...request.baseMods === void 0 ? {} : { baseMods: request.baseMods },
-      ...signal === void 0 ? {} : { signal }
-    });
+    let closure;
+    try {
+      closure = await resolveSubjectClosure({
+        contentSources,
+        subject,
+        ...request.baseMods === void 0 ? {} : { baseMods: request.baseMods },
+        ...request.keepContexts === true ? { keepContext: true } : {},
+        ...signal === void 0 ? {} : { signal }
+      });
+    } catch (error3) {
+      await Promise.allSettled(contexts.map((context) => context.dispose()));
+      throw error3;
+    }
+    if (closure.context !== void 0) contexts.push(closure.context);
     diagnostics.push(...closure.diagnostics);
     if (closure.resolution === void 0) complete = false;
     else {
@@ -18020,7 +17429,8 @@ async function subjectClosures(request) {
   return Object.freeze({
     resolutions: Object.freeze(resolutions.filter((resolution) => resolution.mounts.length > 0)),
     diagnostics: Object.freeze(diagnostics),
-    complete
+    complete,
+    contexts: Object.freeze(contexts)
   });
 }
 async function resolveContentAssetOrigins(request) {
@@ -18136,7 +17546,8 @@ async function resolveContentLanguageSources(request) {
       )
     ),
     diagnostics: closures.diagnostics,
-    dependenciesComplete: closures.complete
+    dependenciesComplete: closures.complete,
+    ...request.keepContexts === true ? { contexts: closures.contexts } : {}
   });
 }
 function composeLanguageDocumentSources(sources, noteCompleteness) {
@@ -18586,7 +17997,7 @@ var validateCommand = {
       async (subject, session, descriptor, diagnostics) => {
         const operation = availableOperation(descriptor, VALIDATE);
         if (operation === void 0) {
-          return unavailable2(
+          return unavailable(
             VALIDATE_COMMAND,
             `this subject publishes no available \xAB${VALIDATE}\xBB \u2014 ${publishedOperations(descriptor)}`,
             "run subject.inspect: it reports every trait and diagnostic the codec did produce, which is what validation would have been reading",
@@ -18663,7 +18074,7 @@ var extractCommand = {
           (item) => item.contract === NAMESPACE_ENTRY_SOURCE2
         );
         if (operation === void 0 || !listing) {
-          return unavailable2(
+          return unavailable(
             EXTRACT_COMMAND,
             `this subject is not a container this host can read into \u2014 ${publishedOperations(descriptor)}`,
             `run subject.inspect to see what it does publish; extraction needs both \xAB${CONTAINER_EXTRACT_OPERATION_ID2}\xBB and \xAB${NAMESPACE_ENTRY_SOURCE2}\xBB`,
@@ -18797,7 +18208,7 @@ var convertCommand = {
           const write = worldFormat === "uvw" ? context.worldToUvw : context.worldToUvp;
           const name = worldFormat.toUpperCase();
           if (write === void 0)
-            return unavailable2(
+            return unavailable(
               CONVERT_COMMAND,
               `this application has no UV module to write ${name}`,
               "convert with the CLI or the desktop application",
@@ -18840,7 +18251,7 @@ var convertCommand = {
           }
         }
         if (worldFormat !== void 0)
-          return unavailable2(
+          return unavailable(
             CONVERT_COMMAND,
             `this subject publishes no map world to write as ${worldFormat.toUpperCase()}`,
             "open the map itself, or a package naming one map; name an operation to run it instead",
@@ -18857,7 +18268,7 @@ var convertCommand = {
           input["operation"]
         );
         if (operation === void 0) {
-          return unavailable2(
+          return unavailable(
             CONVERT_COMMAND,
             `the requested export is unavailable \u2014 ${publishedOperations(descriptor)}`,
             "run subject.inspect to see which data sources it does publish; a universal projection is the route for formats with no native export",
@@ -18883,7 +18294,7 @@ var convertCommand = {
         if (operation.id === "map.export-native" && questions(answer).length > 0) {
           const targetContext = typeof input["targetContext"] === "string" ? input["targetContext"] : void 0;
           if (targetContext === void 0 || context.openTargetCatalog === void 0)
-            return unavailable2(
+            return unavailable(
               CONVERT_COMMAND,
               `the ${target ?? "map"} encoder needs the target game's catalog`,
               "name the installation or mod to write for (targetContext; --target-context in the CLI)",
@@ -18964,7 +18375,7 @@ var previewCommand = {
           input["operation"]
         );
         if (operation === void 0) {
-          return unavailable2(
+          return unavailable(
             PREVIEW_COMMAND,
             `the requested preview is unavailable \u2014 ${publishedOperations(descriptor)}`,
             `mount a viewer over one of its data sources instead: ${(descriptor.dataSources ?? []).map((item) => item.contract).join(", ") || "it publishes none"}`,
@@ -19021,7 +18432,7 @@ var catalogCommand = Object.freeze({
   mutatesSource: false,
   async run(context, input) {
     if (context.serviceOperations === void 0) {
-      return unavailable2(
+      return unavailable(
         SERVICE_OPERATIONS_COMMAND,
         "this host does not expose the extension operation catalog",
         "use a host configured with service-operation authority"
@@ -19054,7 +18465,7 @@ var invokeCommand = Object.freeze({
   mutatesSource: true,
   async run(context, input) {
     if (context.serviceOperations === void 0) {
-      return unavailable2(
+      return unavailable(
         SERVICE_OPERATION_INVOKE_COMMAND,
         "this host does not expose extension operation invocation",
         `inspect ${SERVICE_OPERATIONS_COMMAND} in an operation-capable host`
@@ -19086,7 +18497,7 @@ var invokeCommand = Object.freeze({
         diagnostics
       );
     }
-    return unavailable2(
+    return unavailable(
       SERVICE_OPERATION_INVOKE_COMMAND,
       result.diagnostics.at(-1)?.message ?? `${operationId} is unavailable`,
       `inspect ${SERVICE_OPERATIONS_COMMAND} with activation enabled`,
@@ -19169,7 +18580,7 @@ var editCommand = Object.freeze({
       async (subject, session, descriptor, diagnostics) => {
         const operation = (descriptor.operations ?? []).find((item) => item.id === operationId);
         if (operation?.state !== "available" || operation.mutatesSource !== true) {
-          return unavailable2(
+          return unavailable(
             SUBJECT_EDIT_COMMAND,
             operation === void 0 ? `the subject publishes no ${operationId}` : `${operationId} is not an available mutating operation here${operation.reason === void 0 ? "" : `: ${operation.reason}`}`,
             "run subject.inspect to see which edit operations this subject publishes",
@@ -19209,7 +18620,7 @@ var editCommand = Object.freeze({
         }
         const editing = subject.editing;
         if (editing === void 0) {
-          return unavailable2(
+          return unavailable(
             SUBJECT_EDIT_COMMAND,
             "this host opened the subject without an editing surface (it is outside the writable roots, or the host is read-only)",
             "run with commit=false to preview, or open the subject in a host configured with writable roots",
@@ -21704,7 +21115,7 @@ async function contentSourceRootServing(sources, directory) {
 }
 async function openContentSourceRootSession(options) {
   const { sources, root, budget } = options;
-  const subjectUri = contentSourceUri(root.id, "");
+  const subjectUri = contentSourceUri2(root.id, "");
   const revision = revisionIdFromRef({
     kind: "provider-token",
     value: `${root.id}:${root.revision ?? "-"}`
@@ -21778,7 +21189,7 @@ async function openContentSourceRootSession(options) {
       return found === void 0 ? void 0 : fromListing(found);
     },
     async openEntry(entryId) {
-      const uri = contentSourceUri(root.id, sourcePath(entryId));
+      const uri = contentSourceUri2(root.id, sourcePath(entryId));
       return { value: Object.freeze({ id: uri, uri }), release: async () => void 0 };
     }
   };
@@ -22480,7 +21891,7 @@ async function registerServiceContractDefinitionsFromInventory(inventory, regist
 }
 var STANDARD_EDITING_OWNER = "modkit/editing";
 var REQUIREMENT_KEYS = ["formatId", "representationId", "mutationMode", "minimumRoundTrip"];
-var OFFER_KEYS3 = [...REQUIREMENT_KEYS, "providerId", "fidelityEvidenceId"];
+var OFFER_KEYS2 = [...REQUIREMENT_KEYS, "providerId", "fidelityEvidenceId"];
 var MUTATION_MODES = /* @__PURE__ */ new Set(["export-only", "mutate"]);
 var ROUND_TRIPS = /* @__PURE__ */ new Set(["byte-identical", "semantic", "lossy", "none"]);
 function facetOf(value, keys) {
@@ -22497,7 +21908,7 @@ function facetOf(value, keys) {
 }
 function matchWriterFacets(context) {
   const request = facetOf(context.requestFacet, REQUIREMENT_KEYS);
-  const offer = facetOf(context.offerFacet, OFFER_KEYS3);
+  const offer = facetOf(context.offerFacet, OFFER_KEYS2);
   if (request === void 0 || offer === void 0) {
     return {
       state: "invalid",
@@ -22819,39 +22230,39 @@ function captureRuntimeSourceReads(context) {
 }
 var STANDARD_RUNTIME_OWNER = "modkit/runtime";
 var OFFER_KEYS22 = /* @__PURE__ */ new Set(["runtimeIds"]);
-var REQUEST_KEYS3 = /* @__PURE__ */ new Set(["runtimeId"]);
+var REQUEST_KEYS2 = /* @__PURE__ */ new Set(["runtimeId"]);
 var BUDGET_KEYS = /* @__PURE__ */ new Set(["maxWallTimeMs", "maxTicks", "maxMemoryBytes"]);
 function recordOf22(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value) ? value : void 0;
 }
-function nonEmptyString2(value) {
+function nonEmptyString(value) {
   return typeof value === "string" && value.trim().length > 0;
 }
 function nonNegativeSafeInteger(value) {
   return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
 }
-function stringList3(value) {
-  if (!Array.isArray(value) || value.length === 0 || !value.every(nonEmptyString2)) return void 0;
+function stringList2(value) {
+  if (!Array.isArray(value) || value.length === 0 || !value.every(nonEmptyString)) return void 0;
   const strings = value;
   return new Set(strings).size === strings.length ? strings : void 0;
 }
-function parseOffer3(value) {
+function parseOffer2(value) {
   const record3 = recordOf22(value);
   if (record3 === void 0 || Object.keys(record3).some((key3) => !OFFER_KEYS22.has(key3)))
     return void 0;
-  const runtimeIds = stringList3(record3["runtimeIds"]);
+  const runtimeIds = stringList2(record3["runtimeIds"]);
   return runtimeIds === void 0 ? void 0 : { runtimeIds };
 }
-function parseRequest3(value) {
+function parseRequest2(value) {
   const record3 = recordOf22(value);
-  if (record3 === void 0 || Object.keys(record3).some((key3) => !REQUEST_KEYS3.has(key3)))
+  if (record3 === void 0 || Object.keys(record3).some((key3) => !REQUEST_KEYS2.has(key3)))
     return void 0;
   const runtimeId = record3["runtimeId"];
-  return nonEmptyString2(runtimeId) ? { runtimeId } : void 0;
+  return nonEmptyString(runtimeId) ? { runtimeId } : void 0;
 }
 function matchRuntimeFacets(context) {
-  const offer = parseOffer3(context.offerFacet);
-  const request = parseRequest3(context.requestFacet);
+  const offer = parseOffer2(context.offerFacet);
+  const request = parseRequest2(context.requestFacet);
   if (offer === void 0 || request === void 0) {
     return {
       state: "invalid",
@@ -22994,11 +22405,11 @@ function sameBudget(left, right) {
 }
 function isRuntimeProvider(value) {
   const record3 = recordOf22(value);
-  return record3?.["contract"] === RUNTIME_PROVIDER_CONTRACT && nonEmptyString2(record3["providerId"]) && stringList3(record3["runtimeIds"]) !== void 0 && typeof record3["createSession"] === "function";
+  return record3?.["contract"] === RUNTIME_PROVIDER_CONTRACT && nonEmptyString(record3["providerId"]) && stringList2(record3["runtimeIds"]) !== void 0 && typeof record3["createSession"] === "function";
 }
 function isRuntimeSession(value) {
   const record3 = recordOf22(value);
-  return record3?.["contract"] === RUNTIME_SESSION_CONTRACT && nonEmptyString2(record3["sessionId"]) && nonEmptyString2(record3["providerId"]) && isRuntimeBudget(record3["budget"]) && typeof record3["execute"] === "function" && typeof record3["status"] === "function";
+  return record3?.["contract"] === RUNTIME_SESSION_CONTRACT && nonEmptyString(record3["sessionId"]) && nonEmptyString(record3["providerId"]) && isRuntimeBudget(record3["budget"]) && typeof record3["execute"] === "function" && typeof record3["status"] === "function";
 }
 function isRuntimeSessionLease(value) {
   const record3 = recordOf22(value);
@@ -23093,7 +22504,7 @@ async function resolveRuntimeSession(request, resourceState, inputs) {
       ]
     };
   }
-  if (!nonEmptyString2(request.runtimeId) || !nonEmptyString2(request.sessionId)) {
+  if (!nonEmptyString(request.runtimeId) || !nonEmptyString(request.sessionId)) {
     return {
       state: "unresolved",
       diagnostics: [
@@ -24170,17 +23581,17 @@ async function invokeServiceOperation(request) {
   });
 }
 var STANDARD_RENDERER_OWNER = "modkit/renderer";
-var OFFER_KEYS32 = /* @__PURE__ */ new Set(["rendererIds", "outputKinds"]);
+var OFFER_KEYS3 = /* @__PURE__ */ new Set(["rendererIds", "outputKinds"]);
 var REQUEST_KEYS22 = /* @__PURE__ */ new Set(["rendererId", "outputKind"]);
 var OUTPUT_KINDS = /* @__PURE__ */ new Set(["rgba8"]);
-function recordOf42(value) {
+function recordOf4(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value) ? value : void 0;
 }
-function nonEmptyString22(value) {
+function nonEmptyString2(value) {
   return typeof value === "string" && value.trim().length > 0;
 }
 function stringList22(value) {
-  if (!Array.isArray(value) || value.length === 0 || !value.every(nonEmptyString22)) return void 0;
+  if (!Array.isArray(value) || value.length === 0 || !value.every(nonEmptyString2)) return void 0;
   const strings = value;
   return new Set(strings).size === strings.length ? strings : void 0;
 }
@@ -24195,21 +23606,21 @@ function outputKindList(value) {
   });
   return outputKinds.length === value.length && new Set(outputKinds).size === outputKinds.length ? outputKinds : void 0;
 }
-function parseOffer32(value) {
-  const record3 = recordOf42(value);
-  if (record3 === void 0 || Object.keys(record3).some((key3) => !OFFER_KEYS32.has(key3)))
+function parseOffer3(value) {
+  const record3 = recordOf4(value);
+  if (record3 === void 0 || Object.keys(record3).some((key3) => !OFFER_KEYS3.has(key3)))
     return void 0;
   const rendererIds = stringList22(record3["rendererIds"]);
   const outputKinds = outputKindList(record3["outputKinds"]);
   return rendererIds === void 0 || outputKinds === void 0 ? void 0 : { rendererIds, outputKinds };
 }
-function parseRequest32(value) {
-  const record3 = recordOf42(value);
+function parseRequest3(value) {
+  const record3 = recordOf4(value);
   if (record3 === void 0 || Object.keys(record3).some((key3) => !REQUEST_KEYS22.has(key3)))
     return void 0;
   const rendererId = record3["rendererId"];
   const parsedOutput = outputKind(record3["outputKind"]);
-  if (parsedOutput === void 0 || rendererId !== void 0 && !nonEmptyString22(rendererId)) {
+  if (parsedOutput === void 0 || rendererId !== void 0 && !nonEmptyString2(rendererId)) {
     return void 0;
   }
   return {
@@ -24218,8 +23629,8 @@ function parseRequest32(value) {
   };
 }
 function matchRendererFacets(context) {
-  const offer = parseOffer32(context.offerFacet);
-  const request = parseRequest32(context.requestFacet);
+  const offer = parseOffer3(context.offerFacet);
+  const request = parseRequest3(context.requestFacet);
   if (offer === void 0 || request === void 0) {
     return {
       state: "invalid",
@@ -24293,8 +23704,8 @@ function registerStandardRendererDefinitions(definitions) {
   ]);
 }
 function isSceneRenderer(value) {
-  const record3 = recordOf42(value);
-  return record3?.["contract"] === SCENE_RENDERER_CONTRACT && nonEmptyString22(record3["rendererId"]) && outputKindList(record3["outputKinds"]) !== void 0 && typeof record3["render"] === "function";
+  const record3 = recordOf4(value);
+  return record3?.["contract"] === SCENE_RENDERER_CONTRACT && nonEmptyString2(record3["rendererId"]) && outputKindList(record3["outputKinds"]) !== void 0 && typeof record3["render"] === "function";
 }
 async function resolveSceneRenderer(request) {
   const definitions = request.services.serviceDefinitions;
@@ -24417,7 +23828,7 @@ async function selectSceneRenderer(request) {
       ]
     };
   }
-  const offer = parseOffer32(result.selected.resolvedContract.facet);
+  const offer = parseOffer3(result.selected.resolvedContract.facet);
   if (offer === void 0) {
     return {
       state: "unselected",
@@ -24630,7 +24041,7 @@ var OPTION_KEYS = /* @__PURE__ */ new Set([
   "path"
 ]);
 var FOLDER_NAME = /^[^\\/:*?"<>|\u0000-\u001f]{1,255}$/u;
-var REQUEST_KEYS32 = /* @__PURE__ */ new Set(["gameId"]);
+var REQUEST_KEYS3 = /* @__PURE__ */ new Set(["gameId"]);
 var ORIGINS = /* @__PURE__ */ new Set([
   "configured-path",
   "default-directory",
@@ -24645,7 +24056,7 @@ function recordOf6(value) {
 function nonEmptyString4(value) {
   return typeof value === "string" && value.trim().length > 0;
 }
-function stringList32(value) {
+function stringList3(value) {
   if (!Array.isArray(value) || value.length === 0 || !value.every(nonEmptyString4)) return void 0;
   const strings = value;
   return new Set(strings).size === strings.length ? strings : void 0;
@@ -24658,7 +24069,7 @@ function originList(value) {
   return origins.length === value.length && new Set(origins).size === origins.length ? origins : void 0;
 }
 function nameList(value) {
-  const names = stringList32(value);
+  const names = stringList3(value);
   return names?.every((name) => FOLDER_NAME.test(name) && name !== "." && name !== "..") ? names : void 0;
 }
 function launchOptionsOf(value) {
@@ -24696,7 +24107,7 @@ function parseOffer5(value) {
   const record3 = recordOf6(value);
   if (record3 === void 0 || Object.keys(record3).some((key3) => !OFFER_KEYS4.has(key3)))
     return void 0;
-  const gameIds = stringList32(record3["gameIds"]);
+  const gameIds = stringList3(record3["gameIds"]);
   if (gameIds === void 0) return void 0;
   const markers = [];
   if (record3["markers"] !== void 0) {
@@ -24758,7 +24169,7 @@ function gameInstallationSearchOf(inventory) {
 }
 function parseRequest5(value) {
   const record3 = recordOf6(value);
-  if (record3 === void 0 || Object.keys(record3).some((key3) => !REQUEST_KEYS32.has(key3))) {
+  if (record3 === void 0 || Object.keys(record3).some((key3) => !REQUEST_KEYS3.has(key3))) {
     return void 0;
   }
   return nonEmptyString4(record3["gameId"]) ? { gameId: record3["gameId"] } : void 0;
@@ -24864,7 +24275,7 @@ function registerStandardGameDefinitions(definitions) {
 }
 function isGameInstallationDiscovery(value) {
   const record3 = recordOf6(value);
-  return record3?.["contract"] === GAME_INSTALLATION_DISCOVERY_CONTRACT && nonEmptyString4(record3["discoveryId"]) && stringList32(record3["gameIds"]) !== void 0 && originList(record3["origins"]) !== void 0 && typeof record3["discover"] === "function";
+  return record3?.["contract"] === GAME_INSTALLATION_DISCOVERY_CONTRACT && nonEmptyString4(record3["discoveryId"]) && stringList3(record3["gameIds"]) !== void 0 && originList(record3["origins"]) !== void 0 && typeof record3["discover"] === "function";
 }
 function validEvidence(value) {
   const record3 = recordOf6(value);
@@ -25003,7 +24414,7 @@ async function discoverGameInstallations(request) {
 }
 function isGameLaunchPlanner(value) {
   const record3 = recordOf6(value);
-  return record3?.["contract"] === GAME_LAUNCH_PLAN_CONTRACT && nonEmptyString4(record3["plannerId"]) && stringList32(record3["gameIds"]) !== void 0 && typeof record3["plan"] === "function";
+  return record3?.["contract"] === GAME_LAUNCH_PLAN_CONTRACT && nonEmptyString4(record3["plannerId"]) && stringList3(record3["gameIds"]) !== void 0 && typeof record3["plan"] === "function";
 }
 function validRelativeProcessPath(value, allowDot) {
   if (!nonEmptyString4(value) || value.includes("\0")) return false;
@@ -25642,7 +25053,7 @@ function parseRequest7(value) {
   }
   return nonEmptyString6(record3["gameId"]) ? { gameId: record3["gameId"] } : void 0;
 }
-function matchDataCatalogFacets2(context) {
+function matchDataCatalogFacets(context) {
   const offer = parseOffer7(context.offerFacet);
   const request = parseRequest7(context.requestFacet);
   if (offer === void 0 || request === void 0) {
@@ -25659,17 +25070,17 @@ function matchDataCatalogFacets2(context) {
   }
   return offer.gameIds.includes(request.gameId) ? { state: "match", selectionKey: `game=${request.gameId}` } : { state: "no-match" };
 }
-var DATA_CATALOG_MATCHER2 = Object.freeze({
+var DATA_CATALOG_MATCHER = Object.freeze({
   profile: contractId(DATA_CATALOG_MATCHER_PROFILE),
   major: 1,
-  match: matchDataCatalogFacets2
+  match: matchDataCatalogFacets
 });
-var RESOLVED_DATA_WORKSPACE_MATCHER2 = Object.freeze({
+var RESOLVED_DATA_WORKSPACE_MATCHER = Object.freeze({
   profile: contractId(RESOLVED_DATA_WORKSPACE_MATCHER_PROFILE),
   major: 1,
-  match: matchDataCatalogFacets2
+  match: matchDataCatalogFacets
 });
-var DATA_CATALOG_CONTRACT_DEFINITION2 = Object.freeze({
+var DATA_CATALOG_CONTRACT_DEFINITION = Object.freeze({
   schemaVersion: 1,
   kind: "service",
   contract: DATA_CATALOG_ANALYSIS_CONTRACT,
@@ -25699,7 +25110,7 @@ var DATA_CATALOG_CONTRACT_DEFINITION2 = Object.freeze({
     })
   })
 });
-var RESOLVED_DATA_WORKSPACE_CONTRACT_DEFINITION2 = Object.freeze({
+var RESOLVED_DATA_WORKSPACE_CONTRACT_DEFINITION = Object.freeze({
   schemaVersion: 1,
   kind: "service",
   contract: RESOLVED_DATA_WORKSPACE_CONTRACT,
@@ -25719,7 +25130,7 @@ var RESOLVED_DATA_WORKSPACE_CONTRACT_DEFINITION2 = Object.freeze({
   matching: Object.freeze({ profile: RESOLVED_DATA_WORKSPACE_MATCHER_PROFILE, major: 1 }),
   conformanceProfile: "common.data/resolved-workspace-v1",
   surface: Object.freeze({
-    fields: Object.freeze(["contract", "providerId", "gameIds", "persistentRoots"]),
+    fields: Object.freeze(["contract", "providerId", "gameIds"]),
     methods: Object.freeze({
       plan: Object.freeze({
         kind: "value",
@@ -25730,12 +25141,6 @@ var RESOLVED_DATA_WORKSPACE_CONTRACT_DEFINITION2 = Object.freeze({
         kind: "value",
         signal: Object.freeze({ arg: 0, key: "signal" }),
         limits: Object.freeze({ maxBytes: 16777216, maxStringLength: 4194304 })
-      }),
-      analyzeAuthoringIndex: Object.freeze({
-        kind: "value",
-        optional: true,
-        signal: Object.freeze({ arg: 0, key: "signal" }),
-        limits: Object.freeze({ maxBytes: 50331648, maxStringLength: 50331648 })
       }),
       openSchemaTree: Object.freeze({
         kind: "lease",
@@ -25810,7 +25215,7 @@ var RESOLVED_DATA_WORKSPACE_CONTRACT_DEFINITION2 = Object.freeze({
   })
 });
 function registerStandardDataDefinitions(definitions) {
-  const registered = [DATA_CATALOG_CONTRACT_DEFINITION2, RESOLVED_DATA_WORKSPACE_CONTRACT_DEFINITION2];
+  const registered = [DATA_CATALOG_CONTRACT_DEFINITION, RESOLVED_DATA_WORKSPACE_CONTRACT_DEFINITION];
   return definitions.replaceOwnerInventory(
     STANDARD_DATA_OWNER,
     registered.map((definition) => ({
@@ -25903,52 +25308,11 @@ async function resolveDataCatalogAnalysis(request) {
     };
   }
 }
-function isResolvedDataWorkspace2(value) {
+function isResolvedDataWorkspace(value) {
   const record3 = recordOf8(value);
-  return record3?.["contract"] === RESOLVED_DATA_WORKSPACE_CONTRACT && nonEmptyString6(record3["providerId"]) && stringList5(record3["gameIds"]) !== void 0 && typeof record3["plan"] === "function" && typeof record3["analyze"] === "function" && (record3["analyzeAuthoringIndex"] === void 0 || typeof record3["analyzeAuthoringIndex"] === "function") && typeof record3["openSchemaTree"] === "function" && typeof record3["openDefinitionTable"] === "function" && typeof record3["openLocalizationTable"] === "function" && typeof record3["openRelations"] === "function" && (record3["resolveEditTarget"] === void 0 || typeof record3["resolveEditTarget"] === "function") && (record3["planEdit"] === void 0 || typeof record3["planEdit"] === "function") && (record3["analyzeIsolation"] === void 0 || typeof record3["analyzeIsolation"] === "function") && (record3["planIsolation"] === void 0 || typeof record3["planIsolation"] === "function");
+  return record3?.["contract"] === RESOLVED_DATA_WORKSPACE_CONTRACT && nonEmptyString6(record3["providerId"]) && stringList5(record3["gameIds"]) !== void 0 && typeof record3["plan"] === "function" && typeof record3["analyze"] === "function" && typeof record3["openSchemaTree"] === "function" && typeof record3["openDefinitionTable"] === "function" && typeof record3["openLocalizationTable"] === "function" && typeof record3["openRelations"] === "function" && (record3["resolveEditTarget"] === void 0 || typeof record3["resolveEditTarget"] === "function") && (record3["planEdit"] === void 0 || typeof record3["planEdit"] === "function") && (record3["analyzeIsolation"] === void 0 || typeof record3["analyzeIsolation"] === "function") && (record3["planIsolation"] === void 0 || typeof record3["planIsolation"] === "function");
 }
-function resolvedDataAnalyzerIdentity2(inventory, gameId) {
-  const providers = offersFromInventory2(inventory).flatMap((offer) => {
-    const analyses = offer.provides.some(
-      (item) => item.contract === RESOLVED_DATA_WORKSPACE_CONTRACT && item.major === 1 && (stringList5(recordOf8(item.facet)?.["gameIds"]) ?? []).includes(gameId)
-    );
-    if (!analyses) return [];
-    const record3 = inventoryBindingForOffer2(offer)?.record;
-    return [
-      canonicalJsonStringify({
-        providerId: offer.providerId,
-        runtimeVariant: offer.runtimeVariant,
-        artifactDigest: record3?.artifactDigest ?? "unattested",
-        manifestDigest: record3?.manifestDigest ?? "unattested"
-      })
-    ];
-  });
-  return canonicalJsonStringify([...new Set(providers)].sort(compareUtf8));
-}
-var MAX_PERSISTENT_ROOTS2 = 64;
-function resolvedDataPersistentRoots2(workspace) {
-  const value = workspace.persistentRoots;
-  if (!Array.isArray(value) || value.length > MAX_PERSISTENT_ROOTS2) return Object.freeze([]);
-  const roots = [];
-  for (const item of value) {
-    const record3 = recordOf8(item);
-    if (record3 === void 0) return Object.freeze([]);
-    const sourcePath2 = record3["sourcePath"];
-    const path = record3["path"];
-    const bounded22 = (text) => typeof text === "string" && text.length > 0 && text.length <= 4096 && !text.includes("\0");
-    if (Object.keys(record3).some((key3) => key3 !== "sourcePath" && key3 !== "path") || sourcePath2 !== void 0 && !bounded22(sourcePath2) || path !== void 0 && !bounded22(path) || sourcePath2 === void 0 && path === void 0) {
-      return Object.freeze([]);
-    }
-    roots.push(
-      Object.freeze({
-        ...sourcePath2 === void 0 ? {} : { sourcePath: sourcePath2 },
-        ...path === void 0 ? {} : { path }
-      })
-    );
-  }
-  return Object.freeze(roots);
-}
-async function resolveResolvedDataWorkspace2(request) {
+async function resolveResolvedDataWorkspace(request) {
   const definitions = request.services.serviceDefinitions;
   if (definitions === void 0) {
     return {
@@ -25969,7 +25333,6 @@ async function resolveResolvedDataWorkspace2(request) {
     definitions,
     grant: request.grant,
     budgets: request.budgets,
-    ...request.services.contributionSettings === void 0 ? {} : { contributionSettings: request.services.contributionSettings },
     ...request.signal === void 0 ? {} : { signal: request.signal }
   });
   try {
@@ -25979,7 +25342,7 @@ async function resolveResolvedDataWorkspace2(request) {
       facet: { gameId: request.gameId },
       ...request.signal === void 0 ? {} : { signal: request.signal }
     });
-    if (!isResolvedDataWorkspace2(lease2.value) || !lease2.value.gameIds.includes(request.gameId)) {
+    if (!isResolvedDataWorkspace(lease2.value) || !lease2.value.gameIds.includes(request.gameId)) {
       await resolver.release();
       return {
         state: "unresolved",
@@ -26021,12 +25384,12 @@ async function resolveResolvedDataWorkspace2(request) {
     };
   }
 }
-var DATA_WORKSPACE_LISTING_LIMITS2 = Object.freeze({ maxQueries: 64, maxPaths: 16384 });
+var DATA_WORKSPACE_LISTING_LIMITS = Object.freeze({ maxQueries: 64, maxPaths: 16384 });
 async function planDataWorkspace(planner, request, listFiles) {
   const first = await planner.plan(request);
   const queries = first.listingQueries;
   if (listFiles === void 0 || !Array.isArray(queries) || queries.length === 0) return first;
-  if (queries.length > DATA_WORKSPACE_LISTING_LIMITS2.maxQueries) {
+  if (queries.length > DATA_WORKSPACE_LISTING_LIMITS.maxQueries) {
     throw new TypeError("resolved data provider asked for too many directory listings");
   }
   const roots = new Set(request.workspace.loadOrder.map((root) => root.rootId));
@@ -26039,15 +25402,15 @@ async function planDataWorkspace(planner, request, listFiles) {
     const listed = await listFiles(
       query.rootId,
       prefix,
-      DATA_WORKSPACE_LISTING_LIMITS2.maxPaths,
+      DATA_WORKSPACE_LISTING_LIMITS.maxPaths,
       request.signal
     );
     listings.push(
       Object.freeze({
         rootId: query.rootId,
         prefix,
-        paths: Object.freeze(listed.paths.slice(0, DATA_WORKSPACE_LISTING_LIMITS2.maxPaths)),
-        complete: listed.complete && listed.paths.length <= DATA_WORKSPACE_LISTING_LIMITS2.maxPaths
+        paths: Object.freeze(listed.paths.slice(0, DATA_WORKSPACE_LISTING_LIMITS.maxPaths)),
+        complete: listed.complete && listed.paths.length <= DATA_WORKSPACE_LISTING_LIMITS.maxPaths
       })
     );
   }
@@ -26928,7 +26291,7 @@ async function analyzeResolvedDataWorkspace(request) {
       ]
     };
   }
-  const resolution = await resolveResolvedDataWorkspace2({
+  const resolution = await resolveResolvedDataWorkspace({
     services: request.services,
     gameId: request.workspace.gameId,
     grant: request.grant,
@@ -30852,7 +30215,7 @@ async function boundedPreparationDocumentReads(original, descriptor, requests, s
   const release = releaseOnce(() => lease2.release());
   try {
     const source = lease2.value;
-    const decoder2 = new TextDecoder("utf-8", { fatal: false });
+    const decoder22 = new TextDecoder("utf-8", { fatal: false });
     const results = [];
     for (const request of requests) {
       signal?.throwIfAborted();
@@ -30915,7 +30278,7 @@ async function boundedPreparationDocumentReads(original, descriptor, requests, s
             documentId: request.documentId,
             path: request.path,
             state: "read",
-            text: decoder2.decode(invoked.output.value)
+            text: decoder22.decode(invoked.output.value)
           })
         );
       } catch (error3) {
@@ -31774,8 +31137,8 @@ function createBundledServiceDefinitionRegistry(options = {}) {
       NATIVE_MODEL_ENCODER_MATCHER,
       GAME_INSTALLATION_MATCHER,
       MOD_WORKSPACE_MATCHER,
-      DATA_CATALOG_MATCHER2,
-      RESOLVED_DATA_WORKSPACE_MATCHER2,
+      DATA_CATALOG_MATCHER,
+      RESOLVED_DATA_WORKSPACE_MATCHER,
       MAP_SEMANTIC_MATCHER,
       MAP_PREVIEW_PREPARATION_MATCHER,
       NATIVE_MAP_ENCODER_MATCHER,
@@ -37116,7 +36479,7 @@ function renderProviderResolutionExplanation(explanation, json2 = false) {
 `;
 }
 init_subject_projection();
-function unavailable22(message) {
+function unavailable2(message) {
   const item = Object.freeze({
     id: "v1-projection-unavailable",
     category: "dependency",
@@ -37149,10 +36512,10 @@ function createV1DescriptorProjectionPort() {
     async project(descriptor, catalog, signal) {
       throwIfAborted(signal);
       if (catalog === void 0) {
-        return unavailable22("viewer catalog evaluation is required for a v1 projection");
+        return unavailable2("viewer catalog evaluation is required for a v1 projection");
       }
       if (catalog.subjectUri !== descriptor.subjectUri || catalog.revision !== descriptor.revision) {
-        return unavailable22("viewer catalog evaluation belongs to another subject revision");
+        return unavailable2("viewer catalog evaluation belongs to another subject revision");
       }
       const contributions = Object.freeze(catalog.compatibleContributions.map(snapshotContribution));
       throwIfAborted(signal);
@@ -41076,10 +40439,10 @@ export {
   COMMAND_UNKNOWN,
   COMMON_PRESENTATION_CATALOG,
   CONTRIBUTION_DISABLED_CODE,
-  DATA_CATALOG_CONTRACT_DEFINITION2 as DATA_CATALOG_CONTRACT_DEFINITION,
-  DATA_CATALOG_MATCHER2 as DATA_CATALOG_MATCHER,
+  DATA_CATALOG_CONTRACT_DEFINITION,
+  DATA_CATALOG_MATCHER,
   DATA_EDIT_SELECTION_REQUIRED,
-  DATA_WORKSPACE_LISTING_LIMITS2 as DATA_WORKSPACE_LISTING_LIMITS,
+  DATA_WORKSPACE_LISTING_LIMITS,
   DEFAULT_COMMAND_MAX_CONCURRENT_RUNS,
   DEFAULT_EXECUTION_BACKENDS2 as DEFAULT_EXECUTION_BACKENDS,
   DEFAULT_SUBJECT_RELATION_PROJECTION_BUDGET,
@@ -41110,7 +40473,6 @@ export {
   LANGUAGE_MAX_EDITS,
   LANGUAGE_MAX_RESULTS,
   LANGUAGE_PROVIDER_FAILED,
-  LANGUAGE_SEMANTIC_CONTEXT_MEMORY_BYTES,
   LANGUAGE_WORKSPACE_NOT_INITIALIZED,
   LANGUAGE_WORKSPACE_SHUT_DOWN,
   LOCALIZATION_CATALOG_MAXIMUM_JSON_BYTES,
@@ -41134,8 +40496,8 @@ export {
   NO_STAGED_PAYLOADS,
   OODLE_DECODER_CONTRACT_DEFINITION,
   PROVIDER_OFFER_INVENTORY_FACT2 as PROVIDER_OFFER_INVENTORY_FACT,
-  RESOLVED_DATA_WORKSPACE_CONTRACT_DEFINITION2 as RESOLVED_DATA_WORKSPACE_CONTRACT_DEFINITION,
-  RESOLVED_DATA_WORKSPACE_MATCHER2 as RESOLVED_DATA_WORKSPACE_MATCHER,
+  RESOLVED_DATA_WORKSPACE_CONTRACT_DEFINITION,
+  RESOLVED_DATA_WORKSPACE_MATCHER,
   RESOLVED_MAP_WORKSPACE_CONTRACT_DEFINITION,
   RESOLVER_VERSION2 as RESOLVER_VERSION,
   RUNTIME_PREPARER_MAJOR,
@@ -41209,7 +40571,7 @@ export {
   ok as commandOk,
   commandRequest,
   commandSubjectsFrom,
-  unavailable2 as commandUnavailable,
+  unavailable as commandUnavailable,
   compareDetectionEvidence,
   composeLanguageDocumentSources,
   connectSubjectRpc,
@@ -41248,6 +40610,7 @@ export {
   createHostServiceResolver2 as createHostServiceResolver,
   createKnowledgeCatalog,
   createLanguageFileClassifier,
+  createLanguageModContexts,
   createLanguageWorkspace,
   createLayeredCompanionOrigin,
   createLazyTableDataSource,
@@ -41306,6 +40669,7 @@ export {
   languageFileAssociations,
   languageFileExtension,
   languageImmutableCapture,
+  languageModContextTarget,
   languageProviderRoutes,
   languageProviderTriggerCharacters,
   languageRouteServesFile,
@@ -41370,14 +40734,12 @@ export {
   resolveModelWorldPresentationPlan,
   resolvePresentationPlan,
   resolveProvider2 as resolveProvider,
-  resolveResolvedDataWorkspace2 as resolveResolvedDataWorkspace,
+  resolveResolvedDataWorkspace,
   resolveResolvedMapWorkspace,
   resolveSceneRenderer,
   resolveServiceProvider2 as resolveServiceProvider,
   resolveSessionPresentationPlan,
   resolveSubjectClosure,
-  resolvedDataAnalyzerIdentity2 as resolvedDataAnalyzerIdentity,
-  resolvedDataPersistentRoots2 as resolvedDataPersistentRoots,
   selectSceneRenderer,
   serializeCodecDetectionSelection,
   serializePolicyLock,

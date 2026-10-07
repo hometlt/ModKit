@@ -3234,6 +3234,7 @@ var ABI_INSTALLATION_PROBES = { contract: "x3.abi/installation-probes", major: 1
 var ABI_VIDEO_FRAMES = { contract: "x3.abi/video-frames", major: 1 };
 var ABI_INSTALLATION_FILES = { contract: "x3.abi/installation-files", major: 1 };
 var ABI_SUBJECT_CATALOG = { contract: "x3.abi/subject-catalog", major: 1 };
+var ABI_MOD_CONTEXT_QUERY = { contract: "x3.abi/mod-context-query", major: 1 };
 var ABI_CREDENTIALS = { contract: "x3.abi/credentials", major: 1 };
 var ABI_MODEL_RESOURCE_ASSET = {
   contract: "x3.abi/model-resource-asset",
@@ -3432,6 +3433,10 @@ var subjectCatalogSurface = {
     strings: { kind: "value", arity: 3, optional: true, ...sig }
   }
 };
+var modContextQuerySurface = {
+  ...ABI_MOD_CONTEXT_QUERY,
+  methods: { query: { kind: "value", arity: 2, ...sig } }
+};
 var credentialsSurface = {
   ...ABI_CREDENTIALS,
   methods: {
@@ -3501,6 +3506,7 @@ var RUNTIME_ABI_SURFACES = Object.freeze([
   videoFramesSurface,
   installationFilesSurface,
   subjectCatalogSurface,
+  modContextQuerySurface,
   credentialsSurface,
   modelResourcesSurface,
   modelResourceAssetSurface,
@@ -3694,6 +3700,7 @@ function contributionContext(wire) {
     ...wire.videoFrames === void 0 ? {} : { videoFrames: wire.videoFrames },
     ...wire.installationFiles === void 0 ? {} : { installationFiles: wire.installationFiles },
     ...wire.catalog === void 0 ? {} : { catalog: wire.catalog },
+    ...wire.modContexts === void 0 ? {} : { modContexts: wire.modContexts },
     ...wire.credentials === void 0 ? {} : { credentials: wire.credentials },
     ...wire.containerContext === void 0 ? {} : { containerContext: wire.containerContext },
     ...wire.providerIdentity === void 0 ? {} : { providerIdentity: Object.freeze({ ...wire.providerIdentity }) },

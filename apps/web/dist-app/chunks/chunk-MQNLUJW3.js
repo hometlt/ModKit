@@ -70,6 +70,7 @@ import {
   isSegment,
   isTraitId,
   isUInt64String,
+  linearStretch,
   linearToSrgb,
   materialFrameGeometry,
   materialGeometry,
@@ -142,7 +143,7 @@ import {
   validateUvmDocument,
   versionRangeTargetsMajor,
   withMaterialFrame
-} from "./chunk-Y4TXTJJB.js";
+} from "./chunk-52X4PYT2.js";
 import {
   __export
 } from "./chunk-DJDDRNPC.js";
@@ -8911,12 +8912,6 @@ var TRANSLATION_MATCHER_PROFILE = "modkit/translation-matcher";
 var LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT = "common.language/document-analysis";
 var LANGUAGE_DOCUMENT_MATCHER_PROFILE = "modkit/language-document-matcher";
 
-// packages/sdk/dist/data/index.js
-var DATA_CATALOG_ANALYSIS_CONTRACT = "common.data/catalog-analysis";
-var DATA_CATALOG_MATCHER_PROFILE = "modkit/data-catalog-matcher";
-var RESOLVED_DATA_WORKSPACE_CONTRACT = "common.data/resolved-workspace";
-var RESOLVED_DATA_WORKSPACE_MATCHER_PROFILE = "modkit/resolved-data-workspace-matcher";
-
 // packages/sdk/dist/security/grant.js
 function grantValidity2(grant, now = Date.now()) {
   if (grant.expiresAt === void 0) return { state: "valid" };
@@ -12449,6 +12444,69 @@ var PROFILE_VALUES = Object.freeze([
 var PROBE_PERMISSION_CLASSES = Object.freeze(["read-source"]);
 var LANGUAGE_WORKSPACE_SEMANTIC_PAYLOAD_MAX_BYTES = 64 * 1024 * 1024;
 var encoder = new TextEncoder();
+var WIRE_TYPED_ARRAYS = Object.freeze({
+  bytes: Uint8Array,
+  i8: Int8Array,
+  u8c: Uint8ClampedArray,
+  i16: Int16Array,
+  u16: Uint16Array,
+  i32: Int32Array,
+  u32: Uint32Array,
+  f32: Float32Array,
+  f64: Float64Array,
+  i64: BigInt64Array,
+  u64: BigUint64Array
+});
+var DEFAULT_PROTOCOL_LIMITS = Object.freeze({
+  maxDepth: 32,
+  // Resolved game catalogs legitimately carry tens of thousands of definitions and field nodes
+  // in one pinned snapshot. The byte, array, object-key, deadline and worker-memory ceilings still
+  // bound the frame; this node ceiling prevents valid schemas from being rejected first.
+  maxNodes: 4e6,
+  // As large as a frame: a pixel operation carries its image as base64 in its JSON input (a 1024²
+  // RGBA image is 5.6 M characters). ponytail: an image past ~3500² needs bytes in operation input.
+  maxStringLength: 64 * 1024 * 1024,
+  maxArrayLength: 1e5,
+  maxObjectKeys: 1e4,
+  maxTransferBytes: 64 * 1024 * 1024,
+  maxArgs: 16,
+  maxPendingCalls: 256,
+  maxHandles: 4096,
+  maxIterators: 256,
+  maxSubscriptions: 64,
+  maxQueuedEvents: 1024,
+  defaultCallDeadlineMs: 3e4,
+  iteratorBatchItems: 1
+});
+var MAX_ERROR_MESSAGE = 8 * 1024;
+var LITTLE_ENDIAN = new Uint8Array(new Uint16Array([1]).buffer)[0] === 1;
+var SYMBOL_KINDS = /* @__PURE__ */ new Set([
+  "class",
+  "constant",
+  "enum",
+  "field",
+  "function",
+  "interface",
+  "module",
+  "namespace",
+  "property",
+  "struct",
+  "variable"
+]);
+var COMPLETION_KINDS = /* @__PURE__ */ new Set([
+  ...SYMBOL_KINDS,
+  "keyword",
+  "parameter",
+  "snippet",
+  "text",
+  "type",
+  "color",
+  "file",
+  "folder",
+  "enum-member",
+  "event"
+]);
+var ASSET_IMAGE_MAX_BYTES = 96 * 1024;
 var MAX_SIGNATURE_WINDOW_BYTES = 4096 + 64;
 var RESOURCE_NOT_FOUND = "x3.host/resource-not-found";
 var RESOURCE_NOT_ALLOWLISTED = "x3.host/resource-not-allowlisted";
@@ -12478,9 +12536,6 @@ var DEFAULT_RESOURCE_SESSION_LIMITS = Object.freeze({
   // 3DDATA0001.RFH holds 3 749 entries, Diablo III's anim/ 15 258); see DEFAULT_COMPANION_LIMITS.
   maxEntries: 65536
 });
-var DEPENDENCY_SCOPE = Object.freeze(["workspace-dependency-layer"]);
-var KNOWLEDGE_FILE_MAX_BYTES = 8 * 1024 * 1024;
-var KNOWLEDGE_TOTAL_MAX_BYTES = 32 * 1024 * 1024;
 var EVIDENCE_KINDS = Object.freeze([
   "magic",
   "structure",
@@ -12508,6 +12563,7 @@ var ABI_INSTALLATION_PROBES = { contract: "x3.abi/installation-probes", major: 1
 var ABI_VIDEO_FRAMES = { contract: "x3.abi/video-frames", major: 1 };
 var ABI_INSTALLATION_FILES = { contract: "x3.abi/installation-files", major: 1 };
 var ABI_SUBJECT_CATALOG = { contract: "x3.abi/subject-catalog", major: 1 };
+var ABI_MOD_CONTEXT_QUERY = { contract: "x3.abi/mod-context-query", major: 1 };
 var ABI_CREDENTIALS = { contract: "x3.abi/credentials", major: 1 };
 var ABI_MODEL_RESOURCE_ASSET = {
   contract: "x3.abi/model-resource-asset",
@@ -12706,6 +12762,10 @@ var subjectCatalogSurface = {
     strings: { kind: "value", arity: 3, optional: true, ...sig2 }
   }
 };
+var modContextQuerySurface = {
+  ...ABI_MOD_CONTEXT_QUERY,
+  methods: { query: { kind: "value", arity: 2, ...sig2 } }
+};
 var credentialsSurface = {
   ...ABI_CREDENTIALS,
   methods: {
@@ -12775,6 +12835,7 @@ var RUNTIME_ABI_SURFACES = Object.freeze([
   videoFramesSurface,
   installationFilesSurface,
   subjectCatalogSurface,
+  modContextQuerySurface,
   credentialsSurface,
   modelResourcesSurface,
   modelResourceAssetSurface,
@@ -12811,270 +12872,12 @@ var DEFAULT_COMPANION_LIMITS = Object.freeze({
   // Hexapod 175 plus 19 clips, and at 64 they did not open.
   maxBindings: 1024
 });
-var OFFER_KEYS = /* @__PURE__ */ new Set(["gameIds"]);
-var REQUEST_KEYS = /* @__PURE__ */ new Set(["gameId"]);
-function recordOf(value2) {
-  return typeof value2 === "object" && value2 !== null && !Array.isArray(value2) ? value2 : void 0;
-}
-function nonEmptyString5(value2) {
-  return typeof value2 === "string" && value2.trim().length > 0;
-}
-function stringList(value2) {
-  if (!Array.isArray(value2) || value2.length === 0 || !value2.every(nonEmptyString5)) return void 0;
-  const strings4 = value2;
-  return new Set(strings4).size === strings4.length ? strings4 : void 0;
-}
-function parseOffer(value2) {
-  const record7 = recordOf(value2);
-  if (record7 === void 0 || Object.keys(record7).some((key3) => !OFFER_KEYS.has(key3))) {
-    return void 0;
-  }
-  const gameIds = stringList(record7["gameIds"]);
-  return gameIds === void 0 ? void 0 : { gameIds };
-}
-function parseRequest(value2) {
-  const record7 = recordOf(value2);
-  if (record7 === void 0 || Object.keys(record7).some((key3) => !REQUEST_KEYS.has(key3))) {
-    return void 0;
-  }
-  return nonEmptyString5(record7["gameId"]) ? { gameId: record7["gameId"] } : void 0;
-}
-function matchDataCatalogFacets(context) {
-  const offer = parseOffer(context.offerFacet);
-  const request = parseRequest(context.requestFacet);
-  if (offer === void 0 || request === void 0) {
-    return {
-      state: "invalid",
-      diagnostics: [
-        diagnostic(
-          "error",
-          "x3.host/data-catalog-facet-invalid",
-          `${context.contract}@${context.major}: data catalog routes must be well formed`
-        )
-      ]
-    };
-  }
-  return offer.gameIds.includes(request.gameId) ? { state: "match", selectionKey: `game=${request.gameId}` } : { state: "no-match" };
-}
-var DATA_CATALOG_MATCHER = Object.freeze({
-  profile: contractId(DATA_CATALOG_MATCHER_PROFILE),
-  major: 1,
-  match: matchDataCatalogFacets
-});
-var RESOLVED_DATA_WORKSPACE_MATCHER = Object.freeze({
-  profile: contractId(RESOLVED_DATA_WORKSPACE_MATCHER_PROFILE),
-  major: 1,
-  match: matchDataCatalogFacets
-});
-var DATA_CATALOG_CONTRACT_DEFINITION = Object.freeze({
-  schemaVersion: 1,
-  kind: "service",
-  contract: DATA_CATALOG_ANALYSIS_CONTRACT,
-  major: 1,
-  offerFacet: Object.freeze({
-    presence: "required",
-    schema: Object.freeze({
-      $ref: "https://schemas.modkit.org/x3/data-catalog-offer.v1.schema.json"
-    })
-  }),
-  requestFacet: Object.freeze({
-    presence: "required",
-    schema: Object.freeze({
-      $ref: "https://schemas.modkit.org/x3/data-catalog-request.v1.schema.json"
-    })
-  }),
-  matching: Object.freeze({ profile: DATA_CATALOG_MATCHER_PROFILE, major: 1 }),
-  conformanceProfile: "common.data/catalog-analysis-v1",
-  surface: Object.freeze({
-    fields: Object.freeze(["contract", "analyzerId", "gameIds"]),
-    methods: Object.freeze({
-      analyze: Object.freeze({
-        kind: "value",
-        signal: Object.freeze({ arg: 0, key: "signal" }),
-        limits: Object.freeze({ maxBytes: 16777216, maxStringLength: 4194304 })
-      })
-    })
-  })
-});
-var RESOLVED_DATA_WORKSPACE_CONTRACT_DEFINITION = Object.freeze({
-  schemaVersion: 1,
-  kind: "service",
-  contract: RESOLVED_DATA_WORKSPACE_CONTRACT,
-  major: 1,
-  offerFacet: Object.freeze({
-    presence: "required",
-    schema: Object.freeze({
-      $ref: "https://schemas.modkit.org/x3/data-catalog-offer.v1.schema.json"
-    })
-  }),
-  requestFacet: Object.freeze({
-    presence: "required",
-    schema: Object.freeze({
-      $ref: "https://schemas.modkit.org/x3/data-catalog-request.v1.schema.json"
-    })
-  }),
-  matching: Object.freeze({ profile: RESOLVED_DATA_WORKSPACE_MATCHER_PROFILE, major: 1 }),
-  conformanceProfile: "common.data/resolved-workspace-v1",
-  surface: Object.freeze({
-    fields: Object.freeze(["contract", "providerId", "gameIds", "persistentRoots"]),
-    methods: Object.freeze({
-      plan: Object.freeze({
-        kind: "value",
-        signal: Object.freeze({ arg: 0, key: "signal" }),
-        limits: Object.freeze({ maxBytes: 4194304, maxStringLength: 1048576 })
-      }),
-      analyze: Object.freeze({
-        kind: "value",
-        signal: Object.freeze({ arg: 0, key: "signal" }),
-        limits: Object.freeze({ maxBytes: 16777216, maxStringLength: 4194304 })
-      }),
-      analyzeAuthoringIndex: Object.freeze({
-        kind: "value",
-        optional: true,
-        signal: Object.freeze({ arg: 0, key: "signal" }),
-        limits: Object.freeze({ maxBytes: 50331648, maxStringLength: 50331648 })
-      }),
-      openSchemaTree: Object.freeze({
-        kind: "lease",
-        wrapper: "lease",
-        result: Object.freeze({ contract: "common.view/tree-data-source", major: 1 }),
-        signal: Object.freeze({ arg: 0, key: "signal" })
-      }),
-      openDefinitionTable: Object.freeze({
-        kind: "lease",
-        wrapper: "lease",
-        result: Object.freeze({ contract: "common.view/table-data-source", major: 1 }),
-        signal: Object.freeze({ arg: 0, key: "signal" })
-      }),
-      openLocalizationTable: Object.freeze({
-        kind: "lease",
-        wrapper: "lease",
-        result: Object.freeze({ contract: "common.view/table-data-source", major: 1 }),
-        signal: Object.freeze({ arg: 0, key: "signal" })
-      }),
-      openRelations: Object.freeze({
-        kind: "lease",
-        wrapper: "lease",
-        result: Object.freeze({ contract: "common.view/relation-graph-source", major: 1 }),
-        signal: Object.freeze({ arg: 0, key: "signal" })
-      }),
-      openSubjectFacts: Object.freeze({
-        kind: "lease",
-        optional: true,
-        wrapper: "lease",
-        result: Object.freeze({ contract: "common.view/subject-facts-source", major: 1 }),
-        signal: Object.freeze({ arg: 0, key: "signal" })
-      }),
-      openSubjectCalculations: Object.freeze({
-        kind: "lease",
-        optional: true,
-        wrapper: "lease",
-        result: Object.freeze({
-          contract: "common.view/subject-calculations-source",
-          major: 1
-        }),
-        signal: Object.freeze({ arg: 0, key: "signal" })
-      }),
-      // Editing preview is optional and value-shaped: bytes are planned, never written here.
-      resolveEditTarget: Object.freeze({
-        kind: "value",
-        optional: true,
-        signal: Object.freeze({ arg: 0, key: "signal" }),
-        limits: Object.freeze({ maxBytes: 4194304, maxStringLength: 4194304 })
-      }),
-      // Editing preview is optional and value-shaped: bytes are planned, never written here.
-      planEdit: Object.freeze({
-        kind: "value",
-        optional: true,
-        signal: Object.freeze({ arg: 0, key: "signal" }),
-        limits: Object.freeze({ maxBytes: 16777216, maxStringLength: 16777216 })
-      }),
-      // Editing preview is optional and value-shaped: bytes are planned, never written here.
-      analyzeIsolation: Object.freeze({
-        kind: "value",
-        optional: true,
-        signal: Object.freeze({ arg: 0, key: "signal" }),
-        limits: Object.freeze({ maxBytes: 4194304, maxStringLength: 4194304 })
-      }),
-      // Editing preview is optional and value-shaped: bytes are planned, never written here.
-      planIsolation: Object.freeze({
-        kind: "value",
-        optional: true,
-        signal: Object.freeze({ arg: 0, key: "signal" }),
-        limits: Object.freeze({ maxBytes: 16777216, maxStringLength: 16777216 })
-      })
-    })
-  })
-});
-var DATA_WORKSPACE_LISTING_LIMITS = Object.freeze({ maxQueries: 64, maxPaths: 16384 });
-var MAX_LANGUAGE_AUTHORING_INDEX_BYTES = 48 * 1024 * 1024;
-var MAX_LANGUAGE_RESOLVED_DATA_INPUT_BYTES = 256 * 1024 * 1024;
-var WIRE_TYPED_ARRAYS = Object.freeze({
-  bytes: Uint8Array,
-  i8: Int8Array,
-  u8c: Uint8ClampedArray,
-  i16: Int16Array,
-  u16: Uint16Array,
-  i32: Int32Array,
-  u32: Uint32Array,
-  f32: Float32Array,
-  f64: Float64Array,
-  i64: BigInt64Array,
-  u64: BigUint64Array
-});
-var DEFAULT_PROTOCOL_LIMITS = Object.freeze({
-  maxDepth: 32,
-  // Resolved game catalogs legitimately carry tens of thousands of definitions and field nodes
-  // in one pinned snapshot. The byte, array, object-key, deadline and worker-memory ceilings still
-  // bound the frame; this node ceiling prevents valid schemas from being rejected first.
-  maxNodes: 4e6,
-  // As large as a frame: a pixel operation carries its image as base64 in its JSON input (a 1024²
-  // RGBA image is 5.6 M characters). ponytail: an image past ~3500² needs bytes in operation input.
-  maxStringLength: 64 * 1024 * 1024,
-  maxArrayLength: 1e5,
-  maxObjectKeys: 1e4,
-  maxTransferBytes: 64 * 1024 * 1024,
-  maxArgs: 16,
-  maxPendingCalls: 256,
-  maxHandles: 4096,
-  maxIterators: 256,
-  maxSubscriptions: 64,
-  maxQueuedEvents: 1024,
-  defaultCallDeadlineMs: 3e4,
-  iteratorBatchItems: 1
-});
-var MAX_ERROR_MESSAGE = 8 * 1024;
-var LITTLE_ENDIAN = new Uint8Array(new Uint16Array([1]).buffer)[0] === 1;
-var LANGUAGE_SEMANTIC_CONTEXT_MEMORY_BYTES = 512 * 1024 * 1024;
-var SYMBOL_KINDS = /* @__PURE__ */ new Set([
-  "class",
-  "constant",
-  "enum",
-  "field",
-  "function",
-  "interface",
-  "module",
-  "namespace",
-  "property",
-  "struct",
-  "variable"
-]);
-var COMPLETION_KINDS = /* @__PURE__ */ new Set([
-  ...SYMBOL_KINDS,
-  "keyword",
-  "parameter",
-  "snippet",
-  "text",
-  "type",
-  "color",
-  "file",
-  "folder",
-  "enum-member",
-  "event"
-]);
-var ASSET_IMAGE_MAX_BYTES = 96 * 1024;
+var DEPENDENCY_SCOPE = Object.freeze(["workspace-dependency-layer"]);
+var KNOWLEDGE_FILE_MAX_BYTES = 8 * 1024 * 1024;
+var KNOWLEDGE_TOTAL_MAX_BYTES = 32 * 1024 * 1024;
+var decoder = new TextDecoder();
 var STANDARD_LANGUAGE_OWNER = "modkit/language";
-var OFFER_KEYS2 = /* @__PURE__ */ new Set([
+var OFFER_KEYS = /* @__PURE__ */ new Set([
   "languageIds",
   "documentKinds",
   "extensions",
@@ -13083,11 +12886,11 @@ var OFFER_KEYS2 = /* @__PURE__ */ new Set([
   "signatureHelpTriggerCharacters",
   "onTypeFormattingTriggerCharacters"
 ]);
-var REQUEST_KEYS2 = /* @__PURE__ */ new Set(["languageId", "documentKind", "extension", "fileName"]);
-function recordOf3(value2) {
+var REQUEST_KEYS = /* @__PURE__ */ new Set(["languageId", "documentKind", "extension", "fileName"]);
+function recordOf2(value2) {
   return typeof value2 === "object" && value2 !== null && !Array.isArray(value2) ? value2 : void 0;
 }
-function stringList2(value2) {
+function stringList(value2) {
   if (!Array.isArray(value2) || value2.length === 0) return void 0;
   if (!value2.every((item) => typeof item === "string" && item.trim().length > 0)) return void 0;
   const strings4 = value2;
@@ -13099,21 +12902,21 @@ function triggerCharacterList(value2) {
   const strings4 = value2;
   return new Set(strings4).size === strings4.length ? strings4 : void 0;
 }
-function parseOffer2(value2) {
-  const record7 = recordOf3(value2);
-  if (record7 === void 0 || Object.keys(record7).some((key3) => !OFFER_KEYS2.has(key3)))
+function parseOffer(value2) {
+  const record7 = recordOf2(value2);
+  if (record7 === void 0 || Object.keys(record7).some((key3) => !OFFER_KEYS.has(key3)))
     return void 0;
-  const languageIds = stringList2(record7["languageIds"]);
+  const languageIds = stringList(record7["languageIds"]);
   if (languageIds === void 0) return void 0;
   const rawKinds = record7["documentKinds"];
   const rawExtensions = record7["extensions"];
   const rawFileNames = record7["fileNames"];
-  const fileNames = rawFileNames === void 0 ? void 0 : stringList2(rawFileNames);
+  const fileNames = rawFileNames === void 0 ? void 0 : stringList(rawFileNames);
   const rawCompletionTriggers = record7["completionTriggerCharacters"];
   const rawSignatureTriggers = record7["signatureHelpTriggerCharacters"];
   const rawOnTypeFormattingTriggers = record7["onTypeFormattingTriggerCharacters"];
-  const documentKinds = rawKinds === void 0 ? void 0 : stringList2(rawKinds);
-  const extensions = rawExtensions === void 0 ? void 0 : stringList2(rawExtensions);
+  const documentKinds = rawKinds === void 0 ? void 0 : stringList(rawKinds);
+  const extensions = rawExtensions === void 0 ? void 0 : stringList(rawExtensions);
   const completionTriggerCharacters = rawCompletionTriggers === void 0 ? void 0 : triggerCharacterList(rawCompletionTriggers);
   const signatureHelpTriggerCharacters = rawSignatureTriggers === void 0 ? void 0 : triggerCharacterList(rawSignatureTriggers);
   const onTypeFormattingTriggerCharacters = rawOnTypeFormattingTriggers === void 0 ? void 0 : triggerCharacterList(rawOnTypeFormattingTriggers);
@@ -13130,9 +12933,9 @@ function parseOffer2(value2) {
     ...onTypeFormattingTriggerCharacters === void 0 ? {} : { onTypeFormattingTriggerCharacters }
   };
 }
-function parseRequest2(value2) {
-  const record7 = recordOf3(value2);
-  if (record7 === void 0 || Object.keys(record7).some((key3) => !REQUEST_KEYS2.has(key3)))
+function parseRequest(value2) {
+  const record7 = recordOf2(value2);
+  if (record7 === void 0 || Object.keys(record7).some((key3) => !REQUEST_KEYS.has(key3)))
     return void 0;
   const languageId = record7["languageId"];
   const documentKind = record7["documentKind"];
@@ -13157,8 +12960,8 @@ function parseRequest2(value2) {
 }
 var normalizedExtension2 = (value2) => value2.replace(/^\./u, "").toLowerCase();
 function matchLanguageFacets(context) {
-  const offer = parseOffer2(context.offerFacet);
-  const request = parseRequest2(context.requestFacet);
+  const offer = parseOffer(context.offerFacet);
+  const request = parseRequest(context.requestFacet);
   if (offer === void 0 || request === void 0) {
     return {
       state: "invalid",
@@ -13360,12 +13163,12 @@ var LANGUAGE_DOCUMENT_CONTRACT_DEFINITION = Object.freeze({
 var TRANSLATION_OFFER_KEYS = /* @__PURE__ */ new Set(["backends", "languages"]);
 var TRANSLATION_REQUEST_KEYS = /* @__PURE__ */ new Set(["backend", "sourceLanguage", "targetLanguage"]);
 function parseTranslationOffer(value2) {
-  const record7 = recordOf3(value2);
+  const record7 = recordOf2(value2);
   if (record7 === void 0 || Object.keys(record7).some((key3) => !TRANSLATION_OFFER_KEYS.has(key3)))
     return void 0;
-  const backends = stringList2(record7["backends"]);
+  const backends = stringList(record7["backends"]);
   if (backends === void 0 || backends.length === 0) return void 0;
-  const languages = record7["languages"] === void 0 ? void 0 : stringList2(record7["languages"]);
+  const languages = record7["languages"] === void 0 ? void 0 : stringList(record7["languages"]);
   if (record7["languages"] !== void 0 && languages === void 0) return void 0;
   return {
     backends,
@@ -13374,7 +13177,7 @@ function parseTranslationOffer(value2) {
 }
 function parseTranslationRequest(value2) {
   if (value2 === void 0) return {};
-  const record7 = recordOf3(value2);
+  const record7 = recordOf2(value2);
   if (record7 === void 0 || Object.keys(record7).some((key3) => !TRANSLATION_REQUEST_KEYS.has(key3)))
     return void 0;
   for (const key3 of TRANSLATION_REQUEST_KEYS) {
@@ -13493,6 +13296,12 @@ var GAME_INSTALLATION_MATCHER_PROFILE = "modkit/game-installation-matcher";
 // packages/sdk/dist/mods/index.js
 var MOD_WORKSPACE_COMPOSITION_CONTRACT = "common.mod/workspace-composition";
 var MOD_WORKSPACE_MATCHER_PROFILE = "modkit/mod-workspace-matcher";
+
+// packages/sdk/dist/data/index.js
+var DATA_CATALOG_ANALYSIS_CONTRACT = "common.data/catalog-analysis";
+var DATA_CATALOG_MATCHER_PROFILE = "modkit/data-catalog-matcher";
+var RESOLVED_DATA_WORKSPACE_CONTRACT = "common.data/resolved-workspace";
+var RESOLVED_DATA_WORKSPACE_MATCHER_PROFILE = "modkit/resolved-data-workspace-matcher";
 
 // packages/sdk/dist/maps/index.js
 var MAP_SEMANTIC_ANALYSIS_CONTRACT = "common.map/semantic-analysis";
@@ -14623,7 +14432,7 @@ function pageOf(items, request) {
     ...next < items.length ? { nextCursor: String(next) } : {}
   });
 }
-function recordOf2(value2) {
+function recordOf(value2) {
   return typeof value2 === "object" && value2 !== null && !Array.isArray(value2) ? value2 : void 0;
 }
 function relationKey(edge2) {
@@ -14752,7 +14561,7 @@ async function visitField(state, type, value2, path, depth) {
         }
         return;
       case "struct": {
-        const record32 = recordOf2(value2);
+        const record32 = recordOf(value2);
         if (record32 === void 0) return;
         for (const field5 of type.fields) {
           if (state.capped) return;
@@ -14763,7 +14572,7 @@ async function visitField(state, type, value2, path, depth) {
         return;
       }
       case "record": {
-        const record32 = recordOf2(value2);
+        const record32 = recordOf(value2);
         if (record32 === void 0) return;
         for (const key3 of Object.keys(record32).sort(compareUtf8)) {
           if (state.capped) return;
@@ -16062,7 +15871,7 @@ async function readAttestedArtifactFile(contribution, authoredPath, options) {
   }
 }
 var LOCALIZATION_CATALOG_MAXIMUM_JSON_BYTES = 8 * 1024 * 1024;
-var decoder = new TextDecoder("utf-8", { fatal: true });
+var decoder2 = new TextDecoder("utf-8", { fatal: true });
 function extensionCoordinate(extension) {
   return `${extension.manifest.publisher}/${extension.manifest.id}`;
 }
@@ -16173,7 +15982,7 @@ async function loadLocalizationCatalogs(inventory, options) {
       );
       let document;
       try {
-        document = JSON.parse(decoder.decode(bytes2));
+        document = JSON.parse(decoder2.decode(bytes2));
       } catch (error32) {
         throw new TypeError(
           `localization catalog is not valid UTF-8 JSON: ${error32 instanceof Error ? error32.message : String(error32)}`
@@ -18050,6 +17859,7 @@ function createHostServiceResolver(options) {
             budgets: options.budgets,
             ...chain.length !== 0 || options.logicalResourcesFor === void 0 ? {} : { logicalResources: options.logicalResourcesFor(effectiveGrant) },
             ...chain.length !== 0 || options.installationProbes === void 0 ? {} : { installationProbes: options.installationProbes },
+            ...chain.length !== 0 || options.modContexts === void 0 ? {} : { modContexts: options.modContexts },
             diagnostics: {
               report(item) {
                 diagnostics.push(item);
@@ -18256,6 +18066,7 @@ var ABI_INSTALLATION_PROBES2 = { contract: "x3.abi/installation-probes", major: 
 var ABI_VIDEO_FRAMES2 = { contract: "x3.abi/video-frames", major: 1 };
 var ABI_INSTALLATION_FILES2 = { contract: "x3.abi/installation-files", major: 1 };
 var ABI_SUBJECT_CATALOG2 = { contract: "x3.abi/subject-catalog", major: 1 };
+var ABI_MOD_CONTEXT_QUERY2 = { contract: "x3.abi/mod-context-query", major: 1 };
 var ABI_CREDENTIALS2 = { contract: "x3.abi/credentials", major: 1 };
 var ABI_MODEL_RESOURCE_ASSET2 = {
   contract: "x3.abi/model-resource-asset",
@@ -18454,6 +18265,10 @@ var subjectCatalogSurface2 = {
     strings: { kind: "value", arity: 3, optional: true, ...sig3 }
   }
 };
+var modContextQuerySurface2 = {
+  ...ABI_MOD_CONTEXT_QUERY2,
+  methods: { query: { kind: "value", arity: 2, ...sig3 } }
+};
 var credentialsSurface2 = {
   ...ABI_CREDENTIALS2,
   methods: {
@@ -18523,6 +18338,7 @@ var RUNTIME_ABI_SURFACES2 = Object.freeze([
   videoFramesSurface2,
   installationFilesSurface2,
   subjectCatalogSurface2,
+  modContextQuerySurface2,
   credentialsSurface2,
   modelResourcesSurface2,
   modelResourceAssetSurface2,
@@ -28003,7 +27819,7 @@ async function registerServiceContractDefinitionsFromInventory(inventory, regist
 }
 var STANDARD_EDITING_OWNER = "modkit/editing";
 var REQUIREMENT_KEYS = ["formatId", "representationId", "mutationMode", "minimumRoundTrip"];
-var OFFER_KEYS3 = [...REQUIREMENT_KEYS, "providerId", "fidelityEvidenceId"];
+var OFFER_KEYS2 = [...REQUIREMENT_KEYS, "providerId", "fidelityEvidenceId"];
 var MUTATION_MODES = /* @__PURE__ */ new Set(["export-only", "mutate"]);
 var ROUND_TRIPS = /* @__PURE__ */ new Set(["byte-identical", "semantic", "lossy", "none"]);
 function facetOf(value2, keys) {
@@ -28020,7 +27836,7 @@ function facetOf(value2, keys) {
 }
 function matchWriterFacets(context) {
   const request = facetOf(context.requestFacet, REQUIREMENT_KEYS);
-  const offer = facetOf(context.offerFacet, OFFER_KEYS3);
+  const offer = facetOf(context.offerFacet, OFFER_KEYS2);
   if (request === void 0 || offer === void 0) {
     return {
       state: "invalid",
@@ -28090,35 +27906,35 @@ var MAX_LIST_BYTES = 64 * 1024 * 1024;
 var encoder22 = new TextEncoder();
 var STANDARD_RUNTIME_OWNER = "modkit/runtime";
 var OFFER_KEYS22 = /* @__PURE__ */ new Set(["runtimeIds"]);
-var REQUEST_KEYS3 = /* @__PURE__ */ new Set(["runtimeId"]);
+var REQUEST_KEYS2 = /* @__PURE__ */ new Set(["runtimeId"]);
 function recordOf22(value2) {
   return typeof value2 === "object" && value2 !== null && !Array.isArray(value2) ? value2 : void 0;
 }
-function nonEmptyString6(value2) {
+function nonEmptyString5(value2) {
   return typeof value2 === "string" && value2.trim().length > 0;
 }
-function stringList3(value2) {
-  if (!Array.isArray(value2) || value2.length === 0 || !value2.every(nonEmptyString6)) return void 0;
+function stringList2(value2) {
+  if (!Array.isArray(value2) || value2.length === 0 || !value2.every(nonEmptyString5)) return void 0;
   const strings4 = value2;
   return new Set(strings4).size === strings4.length ? strings4 : void 0;
 }
-function parseOffer3(value2) {
+function parseOffer2(value2) {
   const record32 = recordOf22(value2);
   if (record32 === void 0 || Object.keys(record32).some((key3) => !OFFER_KEYS22.has(key3)))
     return void 0;
-  const runtimeIds = stringList3(record32["runtimeIds"]);
+  const runtimeIds = stringList2(record32["runtimeIds"]);
   return runtimeIds === void 0 ? void 0 : { runtimeIds };
 }
-function parseRequest3(value2) {
+function parseRequest2(value2) {
   const record32 = recordOf22(value2);
-  if (record32 === void 0 || Object.keys(record32).some((key3) => !REQUEST_KEYS3.has(key3)))
+  if (record32 === void 0 || Object.keys(record32).some((key3) => !REQUEST_KEYS2.has(key3)))
     return void 0;
   const runtimeId = record32["runtimeId"];
-  return nonEmptyString6(runtimeId) ? { runtimeId } : void 0;
+  return nonEmptyString5(runtimeId) ? { runtimeId } : void 0;
 }
 function matchRuntimeFacets(context) {
-  const offer = parseOffer3(context.offerFacet);
-  const request = parseRequest3(context.requestFacet);
+  const offer = parseOffer2(context.offerFacet);
+  const request = parseRequest2(context.requestFacet);
   if (offer === void 0 || request === void 0) {
     return {
       state: "invalid",
@@ -28253,21 +28069,21 @@ function registerStandardRuntimeDefinitions(definitions) {
   );
 }
 var STANDARD_SERVICE_OPERATION_OWNER = "modkit/service-operations";
-var recordOf32 = (value2) => typeof value2 === "object" && value2 !== null && !Array.isArray(value2) ? value2 : void 0;
+var recordOf3 = (value2) => typeof value2 === "object" && value2 !== null && !Array.isArray(value2) ? value2 : void 0;
 var nonEmpty2 = (value2) => typeof value2 === "string" && value2.trim().length > 0;
 function operationIds(value2) {
   if (!Array.isArray(value2) || value2.length === 0 || !value2.every(nonEmpty2)) return void 0;
   return new Set(value2).size === value2.length ? value2 : void 0;
 }
 function parseOffer22(value2) {
-  const record32 = recordOf32(value2);
+  const record32 = recordOf3(value2);
   if (record32 === void 0 || Object.keys(record32).some((key3) => key3 !== "operationIds"))
     return void 0;
   const ids = operationIds(record32["operationIds"]);
   return ids === void 0 ? void 0 : { operationIds: ids };
 }
 function parseRequest22(value2) {
-  const record32 = recordOf32(value2);
+  const record32 = recordOf3(value2);
   if (record32 === void 0 || Object.keys(record32).some((key3) => key3 !== "operationId"))
     return void 0;
   return nonEmpty2(record32["operationId"]) ? { operationId: record32["operationId"] } : void 0;
@@ -28371,7 +28187,7 @@ var RESULT_KEYS = Object.freeze({
 var PERMISSIONS = new Set(PERMISSION_CLASSES);
 var encoder3 = new TextEncoder();
 var STANDARD_RENDERER_OWNER = "modkit/renderer";
-var OFFER_KEYS32 = /* @__PURE__ */ new Set(["rendererIds", "outputKinds"]);
+var OFFER_KEYS3 = /* @__PURE__ */ new Set(["rendererIds", "outputKinds"]);
 var REQUEST_KEYS22 = /* @__PURE__ */ new Set(["rendererId", "outputKind"]);
 var OUTPUT_KINDS = /* @__PURE__ */ new Set(["rgba8"]);
 function recordOf4(value2) {
@@ -28396,15 +28212,15 @@ function outputKindList(value2) {
   });
   return outputKinds.length === value2.length && new Set(outputKinds).size === outputKinds.length ? outputKinds : void 0;
 }
-function parseOffer32(value2) {
+function parseOffer3(value2) {
   const record32 = recordOf4(value2);
-  if (record32 === void 0 || Object.keys(record32).some((key3) => !OFFER_KEYS32.has(key3)))
+  if (record32 === void 0 || Object.keys(record32).some((key3) => !OFFER_KEYS3.has(key3)))
     return void 0;
   const rendererIds = stringList22(record32["rendererIds"]);
   const outputKinds = outputKindList(record32["outputKinds"]);
   return rendererIds === void 0 || outputKinds === void 0 ? void 0 : { rendererIds, outputKinds };
 }
-function parseRequest32(value2) {
+function parseRequest3(value2) {
   const record32 = recordOf4(value2);
   if (record32 === void 0 || Object.keys(record32).some((key3) => !REQUEST_KEYS22.has(key3)))
     return void 0;
@@ -28419,8 +28235,8 @@ function parseRequest32(value2) {
   };
 }
 function matchRendererFacets(context) {
-  const offer = parseOffer32(context.offerFacet);
-  const request = parseRequest32(context.requestFacet);
+  const offer = parseOffer3(context.offerFacet);
+  const request = parseRequest3(context.requestFacet);
   if (offer === void 0 || request === void 0) {
     return {
       state: "invalid",
@@ -28637,20 +28453,20 @@ var OPTION_KEYS = /* @__PURE__ */ new Set([
   "path"
 ]);
 var FOLDER_NAME = /^[^\\/:*?"<>|\u0000-\u001f]{1,255}$/u;
-var REQUEST_KEYS32 = /* @__PURE__ */ new Set(["gameId"]);
+var REQUEST_KEYS3 = /* @__PURE__ */ new Set(["gameId"]);
 function recordOf6(value2) {
   return typeof value2 === "object" && value2 !== null && !Array.isArray(value2) ? value2 : void 0;
 }
 function nonEmptyString42(value2) {
   return typeof value2 === "string" && value2.trim().length > 0;
 }
-function stringList32(value2) {
+function stringList3(value2) {
   if (!Array.isArray(value2) || value2.length === 0 || !value2.every(nonEmptyString42)) return void 0;
   const strings4 = value2;
   return new Set(strings4).size === strings4.length ? strings4 : void 0;
 }
 function nameList(value2) {
-  const names = stringList32(value2);
+  const names = stringList3(value2);
   return names?.every((name) => FOLDER_NAME.test(name) && name !== "." && name !== "..") ? names : void 0;
 }
 function launchOptionsOf(value2) {
@@ -28688,7 +28504,7 @@ function parseOffer5(value2) {
   const record32 = recordOf6(value2);
   if (record32 === void 0 || Object.keys(record32).some((key3) => !OFFER_KEYS4.has(key3)))
     return void 0;
-  const gameIds = stringList32(record32["gameIds"]);
+  const gameIds = stringList3(record32["gameIds"]);
   if (gameIds === void 0) return void 0;
   const markers = [];
   if (record32["markers"] !== void 0) {
@@ -28714,7 +28530,7 @@ function parseOffer5(value2) {
 }
 function parseRequest5(value2) {
   const record32 = recordOf6(value2);
-  if (record32 === void 0 || Object.keys(record32).some((key3) => !REQUEST_KEYS32.has(key3))) {
+  if (record32 === void 0 || Object.keys(record32).some((key3) => !REQUEST_KEYS3.has(key3))) {
     return void 0;
   }
   return nonEmptyString42(record32["gameId"]) ? { gameId: record32["gameId"] } : void 0;
@@ -28924,11 +28740,11 @@ var REQUEST_KEYS5 = /* @__PURE__ */ new Set(["gameId"]);
 function recordOf8(value2) {
   return typeof value2 === "object" && value2 !== null && !Array.isArray(value2) ? value2 : void 0;
 }
-function nonEmptyString62(value2) {
+function nonEmptyString6(value2) {
   return typeof value2 === "string" && value2.trim().length > 0;
 }
 function stringList5(value2) {
-  if (!Array.isArray(value2) || value2.length === 0 || !value2.every(nonEmptyString62)) return void 0;
+  if (!Array.isArray(value2) || value2.length === 0 || !value2.every(nonEmptyString6)) return void 0;
   const strings4 = value2;
   return new Set(strings4).size === strings4.length ? strings4 : void 0;
 }
@@ -28945,9 +28761,9 @@ function parseRequest7(value2) {
   if (record32 === void 0 || Object.keys(record32).some((key3) => !REQUEST_KEYS5.has(key3))) {
     return void 0;
   }
-  return nonEmptyString62(record32["gameId"]) ? { gameId: record32["gameId"] } : void 0;
+  return nonEmptyString6(record32["gameId"]) ? { gameId: record32["gameId"] } : void 0;
 }
-function matchDataCatalogFacets2(context) {
+function matchDataCatalogFacets(context) {
   const offer = parseOffer7(context.offerFacet);
   const request = parseRequest7(context.requestFacet);
   if (offer === void 0 || request === void 0) {
@@ -28964,17 +28780,17 @@ function matchDataCatalogFacets2(context) {
   }
   return offer.gameIds.includes(request.gameId) ? { state: "match", selectionKey: `game=${request.gameId}` } : { state: "no-match" };
 }
-var DATA_CATALOG_MATCHER2 = Object.freeze({
+var DATA_CATALOG_MATCHER = Object.freeze({
   profile: contractId(DATA_CATALOG_MATCHER_PROFILE),
   major: 1,
-  match: matchDataCatalogFacets2
+  match: matchDataCatalogFacets
 });
-var RESOLVED_DATA_WORKSPACE_MATCHER2 = Object.freeze({
+var RESOLVED_DATA_WORKSPACE_MATCHER = Object.freeze({
   profile: contractId(RESOLVED_DATA_WORKSPACE_MATCHER_PROFILE),
   major: 1,
-  match: matchDataCatalogFacets2
+  match: matchDataCatalogFacets
 });
-var DATA_CATALOG_CONTRACT_DEFINITION2 = Object.freeze({
+var DATA_CATALOG_CONTRACT_DEFINITION = Object.freeze({
   schemaVersion: 1,
   kind: "service",
   contract: DATA_CATALOG_ANALYSIS_CONTRACT,
@@ -29004,7 +28820,7 @@ var DATA_CATALOG_CONTRACT_DEFINITION2 = Object.freeze({
     })
   })
 });
-var RESOLVED_DATA_WORKSPACE_CONTRACT_DEFINITION2 = Object.freeze({
+var RESOLVED_DATA_WORKSPACE_CONTRACT_DEFINITION = Object.freeze({
   schemaVersion: 1,
   kind: "service",
   contract: RESOLVED_DATA_WORKSPACE_CONTRACT,
@@ -29024,7 +28840,7 @@ var RESOLVED_DATA_WORKSPACE_CONTRACT_DEFINITION2 = Object.freeze({
   matching: Object.freeze({ profile: RESOLVED_DATA_WORKSPACE_MATCHER_PROFILE, major: 1 }),
   conformanceProfile: "common.data/resolved-workspace-v1",
   surface: Object.freeze({
-    fields: Object.freeze(["contract", "providerId", "gameIds", "persistentRoots"]),
+    fields: Object.freeze(["contract", "providerId", "gameIds"]),
     methods: Object.freeze({
       plan: Object.freeze({
         kind: "value",
@@ -29035,12 +28851,6 @@ var RESOLVED_DATA_WORKSPACE_CONTRACT_DEFINITION2 = Object.freeze({
         kind: "value",
         signal: Object.freeze({ arg: 0, key: "signal" }),
         limits: Object.freeze({ maxBytes: 16777216, maxStringLength: 4194304 })
-      }),
-      analyzeAuthoringIndex: Object.freeze({
-        kind: "value",
-        optional: true,
-        signal: Object.freeze({ arg: 0, key: "signal" }),
-        limits: Object.freeze({ maxBytes: 50331648, maxStringLength: 50331648 })
       }),
       openSchemaTree: Object.freeze({
         kind: "lease",
@@ -29115,7 +28925,7 @@ var RESOLVED_DATA_WORKSPACE_CONTRACT_DEFINITION2 = Object.freeze({
   })
 });
 function registerStandardDataDefinitions(definitions) {
-  const registered = [DATA_CATALOG_CONTRACT_DEFINITION2, RESOLVED_DATA_WORKSPACE_CONTRACT_DEFINITION2];
+  const registered = [DATA_CATALOG_CONTRACT_DEFINITION, RESOLVED_DATA_WORKSPACE_CONTRACT_DEFINITION];
   return definitions.replaceOwnerInventory(
     STANDARD_DATA_OWNER,
     registered.map((definition3) => ({
@@ -29132,7 +28942,7 @@ function registerStandardDataDefinitions(definitions) {
     }))
   );
 }
-var DATA_WORKSPACE_LISTING_LIMITS2 = Object.freeze({ maxQueries: 64, maxPaths: 16384 });
+var DATA_WORKSPACE_LISTING_LIMITS = Object.freeze({ maxQueries: 64, maxPaths: 16384 });
 var STANDARD_MAPS_OWNER = "modkit/maps";
 var OFFER_KEYS7 = /* @__PURE__ */ new Set(["gameIds"]);
 var REQUEST_KEYS6 = /* @__PURE__ */ new Set(["gameId"]);
@@ -29471,8 +29281,8 @@ function createBundledServiceDefinitionRegistry(options = {}) {
       NATIVE_MODEL_ENCODER_MATCHER,
       GAME_INSTALLATION_MATCHER,
       MOD_WORKSPACE_MATCHER,
-      DATA_CATALOG_MATCHER2,
-      RESOLVED_DATA_WORKSPACE_MATCHER2,
+      DATA_CATALOG_MATCHER,
+      RESOLVED_DATA_WORKSPACE_MATCHER,
       MAP_SEMANTIC_MATCHER,
       MAP_PREVIEW_PREPARATION_MATCHER,
       NATIVE_MAP_ENCODER_MATCHER,
@@ -42614,7 +42424,7 @@ function createModelViewer(options = {}) {
               const output = result.output;
               if (output.kind !== "bytes" || !(output.value instanceof Uint8Array))
                 throw new Error(`the codec answered ${output.kind}, not bytes`);
-              const { createUvmFramePreparer } = await import("./render-PJNNMTED.js");
+              const { createUvmFramePreparer } = await import("./render-ZTELSO74.js");
               const raster = options.rasterResources?.(args.descriptor);
               const preparer = createUvmFramePreparer(output.value, {
                 budget: MODEL_EFFECT_BUDGET,
@@ -62262,7 +62072,7 @@ function normalizeRepositoryManifest(value2) {
 }
 
 // packages/extension-manager/dist/vfs.js
-var decoder2 = new TextDecoder("utf-8", { fatal: true });
+var decoder3 = new TextDecoder("utf-8", { fatal: true });
 var MAXIMUM_SUBJECT_PROFILE_BYTES = 256 * 1024;
 var MAXIMUM_SUBJECT_PROFILES_BYTES = 4 * 1024 * 1024;
 function createExtensionVfs(providers) {
@@ -65775,13 +65585,13 @@ function sceneTexturePixels(texture) {
     return texture.rgba;
   let texels = decodedTexels.get(texture);
   if (texels === void 0) {
-    const decoder4 = DECODABLE.get(compressed.format);
+    const decoder5 = DECODABLE.get(compressed.format);
     const level = compressed.subresources[0];
-    if (decoder4 === void 0 || level === void 0)
+    if (decoder5 === void 0 || level === void 0)
       throw new TypeError(`scene texture ${texture.id} has blocks of an undecodable format`);
     if (level.width !== texture.width || level.height !== texture.height)
       throw new TypeError(`scene texture ${texture.id} has blocks of another size`);
-    texels = decodeBcSurface(level.data, 0, level.width, level.height, decoder4.bc, decoder4.snorm);
+    texels = decodeBcSurface(level.data, 0, level.width, level.height, decoder5.bc, decoder5.snorm);
     decodedTexels.set(texture, texels);
   }
   return texels;
@@ -76640,6 +76450,7 @@ function createHostServiceResolver2(options) {
             budgets: options.budgets,
             ...chain.length !== 0 || options.logicalResourcesFor === void 0 ? {} : { logicalResources: options.logicalResourcesFor(effectiveGrant) },
             ...chain.length !== 0 || options.installationProbes === void 0 ? {} : { installationProbes: options.installationProbes },
+            ...chain.length !== 0 || options.modContexts === void 0 ? {} : { modContexts: options.modContexts },
             diagnostics: {
               report(item) {
                 diagnostics.push(item);
@@ -79891,9 +79702,9 @@ __export(codec_exports3, {
   abiVersion: () => abiVersion15,
   createCodec: () => createCodec5
 });
-var decoder3 = new TextDecoder("utf-8", { fatal: false });
+var decoder4 = new TextDecoder("utf-8", { fatal: false });
 function looksLikeUvw(bytes2, tail) {
-  const text7 = decoder3.decode(bytes2) + (tail === void 0 ? "" : ` ${decoder3.decode(tail)}`);
+  const text7 = decoder4.decode(bytes2) + (tail === void 0 ? "" : ` ${decoder4.decode(tail)}`);
   return /"format"\s*:\s*"UVW"/u.test(text7) && /"version"\s*:\s*"1\.0"/u.test(text7) && /"status"\s*:\s*"profile"/u.test(text7) && /"spaces"\s*:/u.test(text7);
 }
 function editObject(value2, label) {
@@ -85735,6 +85546,7 @@ var ABI_INSTALLATION_PROBES3 = { contract: "x3.abi/installation-probes", major: 
 var ABI_VIDEO_FRAMES3 = { contract: "x3.abi/video-frames", major: 1 };
 var ABI_INSTALLATION_FILES3 = { contract: "x3.abi/installation-files", major: 1 };
 var ABI_SUBJECT_CATALOG3 = { contract: "x3.abi/subject-catalog", major: 1 };
+var ABI_MOD_CONTEXT_QUERY3 = { contract: "x3.abi/mod-context-query", major: 1 };
 var ABI_CREDENTIALS3 = { contract: "x3.abi/credentials", major: 1 };
 var ABI_MODEL_RESOURCE_ASSET3 = {
   contract: "x3.abi/model-resource-asset",
@@ -85933,6 +85745,10 @@ var subjectCatalogSurface3 = {
     strings: { kind: "value", arity: 3, optional: true, ...sig4 }
   }
 };
+var modContextQuerySurface3 = {
+  ...ABI_MOD_CONTEXT_QUERY3,
+  methods: { query: { kind: "value", arity: 2, ...sig4 } }
+};
 var credentialsSurface3 = {
   ...ABI_CREDENTIALS3,
   methods: {
@@ -86002,6 +85818,7 @@ var RUNTIME_ABI_SURFACES3 = Object.freeze([
   videoFramesSurface3,
   installationFilesSurface3,
   subjectCatalogSurface3,
+  modContextQuerySurface3,
   credentialsSurface3,
   modelResourcesSurface3,
   modelResourceAssetSurface3,
@@ -86233,6 +86050,7 @@ function moduleAdapter(contributionId3, first, realm, watch) {
       ...context.videoFrames === void 0 ? {} : { videoFrames: expose(context.videoFrames, ABI_VIDEO_FRAMES3) },
       ...context.installationFiles === void 0 ? {} : { installationFiles: expose(context.installationFiles, ABI_INSTALLATION_FILES3) },
       ...context.catalog === void 0 ? {} : { catalog: expose(context.catalog, ABI_SUBJECT_CATALOG3) },
+      ...context.modContexts === void 0 ? {} : { modContexts: expose(context.modContexts, ABI_MOD_CONTEXT_QUERY3) },
       ...context.credentials === void 0 ? {} : { credentials: expose(context.credentials, ABI_CREDENTIALS3) }
     };
   };
@@ -86627,6 +86445,7 @@ function contributionContext(wire) {
     ...wire.videoFrames === void 0 ? {} : { videoFrames: wire.videoFrames },
     ...wire.installationFiles === void 0 ? {} : { installationFiles: wire.installationFiles },
     ...wire.catalog === void 0 ? {} : { catalog: wire.catalog },
+    ...wire.modContexts === void 0 ? {} : { modContexts: wire.modContexts },
     ...wire.credentials === void 0 ? {} : { credentials: wire.credentials },
     ...wire.containerContext === void 0 ? {} : { containerContext: wire.containerContext },
     ...wire.providerIdentity === void 0 ? {} : { providerIdentity: Object.freeze({ ...wire.providerIdentity }) },
@@ -111110,7 +110929,7 @@ function createModelViewer2(options = {}) {
               const output = result.output;
               if (output.kind !== "bytes" || !(output.value instanceof Uint8Array))
                 throw new Error(`the codec answered ${output.kind}, not bytes`);
-              const { createUvmFramePreparer } = await import("./render-PJNNMTED.js");
+              const { createUvmFramePreparer } = await import("./render-ZTELSO74.js");
               const raster = options.rasterResources?.(args.descriptor);
               const preparer = createUvmFramePreparer(output.value, {
                 budget: MODEL_EFFECT_BUDGET2,
@@ -133135,6 +132954,54 @@ function sameProgramLayout(kept, now) {
   return same;
 }
 var worldCurrentPrograms = /* @__PURE__ */ new WeakMap();
+var worldPosedScenes = /* @__PURE__ */ new WeakMap();
+function worldWebGlPosedScene(plan, scene) {
+  const current = worldCurrentPrograms.get(plan);
+  const skins = current?.skins;
+  const transforms = current?.transforms;
+  if ((skins === void 0 || skins.size === 0) && (transforms === void 0 || transforms.size === 0))
+    return scene;
+  let posedScenes = worldPosedScenes.get(plan);
+  const known2 = posedScenes?.get(scene);
+  if (known2 !== void 0)
+    return known2;
+  const posedPrimitives = /* @__PURE__ */ new Map();
+  let moved = false;
+  const pose = (primitive) => {
+    let posed = posedPrimitives.get(primitive);
+    if (posed === void 0) {
+      const skin = materialSkinOf(primitive);
+      const now = skin === void 0 ? void 0 : skins?.get(skin);
+      const placed = primitive.transform === void 0 ? void 0 : transforms?.get(primitive.transform);
+      if (now !== void 0 || placed !== void 0)
+        moved = true;
+      posed = now === void 0 && placed === void 0 ? primitive : Object.freeze({
+        ...primitive,
+        ...now === void 0 ? {} : { skin: now },
+        ...placed === void 0 ? {} : { transform: placed }
+      });
+      posedPrimitives.set(primitive, posed);
+    }
+    return posed;
+  };
+  const primitives = scene.primitives.map(pose);
+  const shadowPrimitives = scene.shadowPrimitives.map(pose);
+  let made = scene;
+  if (moved) {
+    made = Object.freeze({
+      ...scene,
+      primitives: Object.freeze(primitives),
+      shadowPrimitives: Object.freeze(shadowPrimitives)
+    });
+    const shadowless = worldShadowlessMaterials.get(scene);
+    if (shadowless !== void 0)
+      worldShadowlessMaterials.set(made, shadowless);
+  }
+  if (posedScenes === void 0)
+    worldPosedScenes.set(plan, posedScenes = /* @__PURE__ */ new Map());
+  posedScenes.set(scene, made);
+  return made;
+}
 function keptWorldObjectScenes(item, kept, input, planPrograms, current) {
   if (kept.resamplers === void 0)
     return kept.scenes;
@@ -133149,7 +133016,7 @@ function keptWorldObjectScenes(item, kept, input, planPrograms, current) {
     current.cohorts.set(cohort, scenes !== void 0);
   return scenes;
 }
-function keptWorldObjectResampledScenes(item, kept, resamplers, input, planPrograms, current) {
+function keptWorldObjectResampledScenes(item, kept, resamplers, input, planPrograms, current, pending) {
   const moved = worldObjectMaterialClock(item, input) !== kept.materialClock;
   let added;
   for (const [index, scene] of kept.scenes.entries()) {
@@ -133161,7 +133028,7 @@ function keptWorldObjectResampledScenes(item, kept, resamplers, input, planProgr
       return void 0;
     for (const [id4, entry2] of scene.programs) {
       const now = programs.get(id4);
-      const standing = current.materials.get(entry2) ?? added?.find((pair) => pair[0] === entry2)?.[1];
+      const standing = current.materials.get(entry2) ?? pending?.find((pair) => pair[0] === entry2)?.[1] ?? added?.find((pair) => pair[0] === entry2)?.[1];
       if (standing === now)
         continue;
       if (standing !== void 0)
@@ -133169,11 +133036,376 @@ function keptWorldObjectResampledScenes(item, kept, resamplers, input, planProgr
       (added ??= []).push([entry2, now]);
     }
   }
-  for (const [entry2, now] of added ?? []) {
+  if (pending !== void 0)
+    for (const pair of added ?? [])
+      pending.push(pair);
+  else
+    standForPrograms(current, added ?? []);
+  return kept.scenes;
+}
+function standForPlacements(current, pose) {
+  for (const [kept, now] of pose?.placed ?? [])
+    current.transforms.set(kept, now);
+}
+function standForSkins(current, pairs) {
+  for (const [kept, now] of pairs)
+    current.skins.set(kept, now);
+}
+function movedWorldObject(item, kept, input) {
+  const pose = kept.pose;
+  const placing = pose?.placing;
+  if (pose === void 0 || placing === void 0)
+    return void 0;
+  const translation = objectPosition(item, input);
+  const placement = worldObjectTransform(item, translation);
+  if (sameOptionalMatrix(pose.placement, placement))
+    return kept;
+  if (!sameOptionalMatrix(pose.tint, worldObjectTint(item, input.selectedObjectId)))
+    return void 0;
+  const placed = /* @__PURE__ */ new Map();
+  const instances = /* @__PURE__ */ new Map();
+  const instanceOf = (primitive) => {
+    let instance = instances.get(primitive);
+    if (instance === void 0)
+      instances.set(primitive, instance = Object.freeze({ ...primitive, transform: placed.get(primitive.transform) }));
+    return instance;
+  };
+  for (const [index, scene] of kept.scenes.entries()) {
+    const { component, primitives } = placing.scenes[index];
+    const instanceTransform = multiplyComponentTransforms(placement, component);
+    for (const [at2, primitive] of scene.primitives.entries())
+      placed.set(primitive.transform, multiplyComponentTransforms(instanceTransform, primitives[at2] ?? IDENTITY_COMPONENT_TRANSFORM));
+  }
+  const pickInstances = placing.picks.map(({ scene, index }) => instanceOf(kept.scenes[scene].primitives[index]));
+  const pickPrimitives = placing.picks.map(({ source: source2, slot }, at2) => sharedPickPrimitive(source2, pickInstances[at2], item, slot));
+  const restPrimitives = placing.rest === void 0 ? void 0 : placing.rest.flatMap(({ id: id4, result, programs, transform }) => worldRestPickPrimitivesOf(item, id4, result, programs, multiplyComponentTransforms(placement, transform)));
+  return Object.freeze({
+    ...kept,
+    effects: Object.freeze(kept.effects.map((effect, index) => Object.freeze({
+      ...effect,
+      transform: multiplyComponentTransforms(placement, placing.effects[index])
+    }))),
+    pickMesh: worldObjectPickMesh(item.objectId, translation, [], pickPrimitives, false, [], restPrimitives ?? pickPrimitives),
+    pose: Object.freeze({
+      ...pose,
+      picks: Object.freeze(pose.picks.map((pick3, at2) => pick3 === void 0 ? void 0 : Object.freeze({ ...pick3, instance: pickInstances[at2] }))),
+      placement,
+      placed
+    })
+  });
+}
+function worldRestPickPrimitivesOf(item, componentId, result, programs, restInstanceTransform) {
+  const rest = restWorldModelSample(result);
+  let hidden = "";
+  for (const [id4, prepared] of programs)
+    if (prepared.passes.length === 0)
+      hidden += `${id4}\0`;
+  let placedAtRest = worldRestPickPrimitives.get(item);
+  const known2 = placedAtRest?.get(componentId);
+  if (known2 !== void 0 && known2.sample === rest && known2.hidden === hidden && sameOptionalMatrix(known2.placement, restInstanceTransform))
+    return known2.primitives;
+  const placed = [];
+  let restIndex = -1;
+  for (const primitive of rest.primitives) {
+    restIndex += 1;
+    const prepared = programs.get(primitive.materialId ?? "");
+    if (prepared !== void 0 && prepared.passes.length === 0)
+      continue;
+    if (primitiveTriangleCount(primitive) === 0)
+      continue;
+    const primitiveTransform = "transform" in primitive ? primitive.transform : void 0;
+    placed.push(sharedPickPrimitive(primitive, {
+      ...primitive,
+      transform: multiplyComponentTransforms(restInstanceTransform, primitiveTransform ?? IDENTITY_COMPONENT_TRANSFORM)
+    }, item, `rest\0${componentId}\0${String(restIndex)}`));
+  }
+  if (placedAtRest === void 0)
+    worldRestPickPrimitives.set(item, placedAtRest = /* @__PURE__ */ new Map());
+  placedAtRest.set(componentId, Object.freeze({
+    sample: rest,
+    placement: restInstanceTransform,
+    hidden,
+    primitives: Object.freeze(placed)
+  }));
+  return placed;
+}
+function worldClipPlanes(viewProjection) {
+  const planes = new Float64Array(24);
+  const row = (index, column) => viewProjection[column * 4 + index];
+  for (let plane = 0; plane < 6; plane++) {
+    const axis2 = plane >> 1;
+    const sign = plane & 1 ? -1 : 1;
+    const a2 = row(3, 0) + sign * row(axis2, 0);
+    const b2 = row(3, 1) + sign * row(axis2, 1);
+    const c4 = row(3, 2) + sign * row(axis2, 2);
+    const d = row(3, 3) + sign * row(axis2, 3);
+    const length = Math.hypot(a2, b2, c4);
+    if (length > 0)
+      planes.set([a2 / length, b2 / length, c4 / length, d / length], plane * 4);
+    else
+      planes.set([0, 0, 0, 1], plane * 4);
+  }
+  return planes;
+}
+function worldPosingView(viewProjection, margin, light) {
+  const direction = light?.direction;
+  const travel = direction === void 0 ? 0 : Math.hypot(direction[0], direction[1], direction[2]);
+  return Object.freeze({
+    planes: worldClipPlanes(viewProjection),
+    light: direction === void 0 || !(travel > 0) ? void 0 : Object.freeze({
+      direction: Object.freeze([
+        direction[0] / travel,
+        direction[1] / travel,
+        direction[2] / travel
+      ]),
+      planes: light?.viewProjection === void 0 ? void 0 : worldClipPlanes(light.viewProjection)
+    }),
+    margin
+  });
+}
+function worldPlanPosingView(plan, input, width, height, buffer) {
+  if (!(width > 0) || !(height > 0) || !Number.isFinite(width) || !Number.isFinite(height))
+    return void 0;
+  const { camera } = cameraFor(plan, width, height, input.camera);
+  const viewProjection = Float32Array.from(camera.projectionMatrix.clone().multiply(camera.matrixWorldInverse).elements);
+  const requested = input.shadowMapSize ?? 2048;
+  const size = Number.isSafeInteger(requested) && requested > 0 ? Math.min(requested, 2048) : 2048;
+  const bufferShape = buffer.width > 0 && buffer.height > 0;
+  const light = worldShadowLightView(plan, input, bufferShape ? buffer.width : width, bufferShape ? buffer.height : height);
+  if (!(light.radius > 0) || !Number.isFinite(light.radius))
+    return void 0;
+  return worldPosingView(viewProjection, 6 * light.radius / size, input.shadows === true ? { direction: plan.light.direction, viewProjection: light.viewProjection } : void 0);
+}
+function worldSphereUnseen(view, sphere, at2 = 0) {
+  const x = sphere[at2];
+  const y = sphere[at2 + 1];
+  const z = sphere[at2 + 2];
+  const reach = sphere[at2 + 3] + view.margin;
+  if (!(reach >= 0))
+    return false;
+  const { planes, light } = view;
+  let sweep = 0;
+  if (light !== void 0) {
+    sweep = Number.POSITIVE_INFINITY;
+    const box = light.planes;
+    const [lx, ly, lz] = light.direction;
+    for (let plane = 0; box !== void 0 && plane < 24; plane += 4) {
+      const distance = box[plane] * x + box[plane + 1] * y + box[plane + 2] * z + box[plane + 3];
+      if (distance < -reach) {
+        sweep = -1;
+        break;
+      }
+      const toward = box[plane] * lx + box[plane + 1] * ly + box[plane + 2] * lz;
+      if (toward < 0)
+        sweep = Math.min(sweep, (distance + reach) / -toward);
+    }
+  }
+  for (let plane = 0; plane < 24; plane += 4) {
+    const nx = planes[plane];
+    const ny = planes[plane + 1];
+    const nz = planes[plane + 2];
+    const distance = nx * x + ny * y + nz * z + planes[plane + 3];
+    if (distance >= -reach)
+      continue;
+    if (sweep <= 0)
+      return true;
+    const [lx, ly, lz] = light.direction;
+    const toward = nx * lx + ny * ly + nz * lz;
+    if (toward <= 0 || distance + sweep * toward < -reach)
+      return true;
+  }
+  return false;
+}
+var worldUnposedSpheres = /* @__PURE__ */ new WeakMap();
+function worldPlanUnposedSeen(plan, view) {
+  const spheres = worldUnposedSpheres.get(plan);
+  if (spheres === void 0)
+    return false;
+  if (view === void 0)
+    return true;
+  for (let at2 = 0; at2 < spheres.length; at2 += 4)
+    if (!worldSphereUnseen(view, spheres, at2))
+      return true;
+  return false;
+}
+var worldKeptPoseSpheres = /* @__PURE__ */ new WeakMap();
+function worldKeptPoseSphere(item, pose) {
+  let sphere = worldKeptPoseSpheres.get(pose);
+  if (sphere === void 0) {
+    sphere = null;
+    if (item.modelComponents === void 0 && pose.sockets.length === 0 && pose.posable) {
+      let center;
+      let radius = 0;
+      for (const { sample, animation } of pose.models) {
+        const clip = animation?.kind === "animation" ? animation : void 0;
+        const bounds2 = worldModelSceneSampler(sample.result, clip).bounds();
+        if (bounds2 === void 0) {
+          radius = void 0;
+          break;
+        }
+        center ??= bounds2.center;
+        const [x, y, z] = bounds2.center;
+        radius = Math.max(radius, Math.hypot(x - center[0], y - center[1], z - center[2]) + bounds2.radius);
+      }
+      if (center !== void 0 && radius !== void 0) {
+        const [x, y, z] = center;
+        const m = pose.placement;
+        const placed = [0, 1, 2].map((row) => m[row] * x + m[4 + row] * y + m[8 + row] * z + m[12 + row]);
+        const stretched = radius * linearStretch(m);
+        sphere = Float64Array.of(placed[0], placed[1], placed[2], stretched + 1e-5 * (stretched + Math.hypot(placed[0], placed[1], placed[2])));
+      }
+    }
+    worldKeptPoseSpheres.set(pose, sphere);
+  }
+  return sphere ?? void 0;
+}
+function keptWorldObjectPose(item, kept, pose, input, sample, resampled, current, pairs, unseen) {
+  if (!sameOptionalMatrix(pose.placement, worldObjectTransform(item, objectPosition(item, input))) || !sameOptionalMatrix(pose.tint, worldObjectTint(item, input.selectedObjectId)))
+    return void 0;
+  let samples;
+  for (let at2 = 0; at2 < pose.models.length; at2++) {
+    const model = pose.models[at2];
+    const time = worldModelSampleTime(input, item, model.animation);
+    if (time === model.time) {
+      samples?.push(model.sample);
+      continue;
+    }
+    if (!pose.posable)
+      return void 0;
+    if (samples === void 0 && unseen?.(item, pose) === true)
+      return kept.pickMesh;
+    samples ??= pose.models.slice(0, at2).map((entry2) => entry2.sample);
+    const known2 = resampled.get(model.sample);
+    let now = known2?.now;
+    if (known2?.time !== time) {
+      now = sample(model.resourceId, item);
+      resampled.set(model.sample, Object.freeze({ time, now }));
+    }
+    if (now === void 0 || !sameWorldPosedSample(model.sample, now))
+      return void 0;
+    samples.push(now);
+  }
+  if (samples === void 0)
+    return kept.pickMesh;
+  if (pose.sockets.length > 0) {
+    const placed = worldComponentTransforms(worldObjectResourcesOf(item).components, (resourceId) => sample(resourceId, item));
+    for (const socket of pose.sockets)
+      if (!sameOptionalMatrix(socket.transform, placed.get(socket.id)))
+        return void 0;
+  }
+  for (let at2 = 0; at2 < pose.models.length; at2++) {
+    const keptSample = pose.models[at2].sample;
+    const now = samples[at2];
+    if (now === keptSample)
+      continue;
+    for (let index = 0; index < keptSample.primitives.length; index++) {
+      const skin = materialSkinOf(keptSample.primitives[index]);
+      if (skin === void 0)
+        continue;
+      const nowSkin = materialSkinOf(now.primitives[index]);
+      const standing = current.skins.get(skin) ?? pairs.find((pair) => pair[0] === skin)?.[1];
+      if (standing === nowSkin)
+        continue;
+      if (standing !== void 0)
+        return void 0;
+      pairs.push([skin, nowSkin]);
+    }
+  }
+  return worldPosedPickMesh(item, kept.pickMesh, pose, samples);
+}
+function worldPosedPickMesh(item, kept, pose, samples) {
+  let primitives;
+  const posed = () => primitives ??= Object.freeze(kept.primitives.map((entry2, at2) => {
+    const pick4 = pose.picks[at2];
+    if (pick4 === void 0)
+      return entry2;
+    const now = samples[pick4.model];
+    if (now === pose.models[pick4.model].sample)
+      return entry2;
+    const source2 = now.primitives[pick4.index];
+    return sharedPickPrimitive(source2, Object.freeze({ ...pick4.instance, skin: materialSkinOf(source2) }), item, pick4.slot);
+  }));
+  const { pick: pick3 } = kept;
+  return {
+    objectId: kept.objectId,
+    center: kept.center,
+    triangles: kept.triangles,
+    get primitives() {
+      return posed();
+    },
+    placeholder: kept.placeholder,
+    get bounds() {
+      return kept.bounds;
+    },
+    envelope: kept.envelope,
+    pick: Object.freeze({
+      objectId: pick3.objectId,
+      center: pick3.center,
+      triangles: pick3.triangles,
+      get primitives() {
+        return posed();
+      },
+      placeholder: pick3.placeholder
+    })
+  };
+}
+var worldPosedSampleMatches = /* @__PURE__ */ new WeakMap();
+function sameWorldPosedSample(kept, now) {
+  if (kept === now)
+    return true;
+  let byKept = worldPosedSampleMatches.get(now);
+  const known2 = byKept?.get(kept);
+  if (known2 !== void 0)
+    return known2;
+  let same = kept.result === now.result && kept.primitives.length === now.primitives.length;
+  for (let index = 0; same && index < kept.primitives.length; index++)
+    same = sameWorldPosedPrimitive(kept.primitives[index], now.primitives[index]);
+  if (byKept === void 0)
+    worldPosedSampleMatches.set(now, byKept = /* @__PURE__ */ new WeakMap());
+  byKept.set(kept, same);
+  return same;
+}
+function sameWorldPosedPrimitive(kept, now) {
+  if (kept === now)
+    return true;
+  const keys = Object.keys(kept);
+  if (keys.length !== Object.keys(now).length)
+    return false;
+  for (const key3 of keys) {
+    if (!Object.hasOwn(now, key3))
+      return false;
+    const one = kept[key3];
+    const other = now[key3];
+    if (one === other)
+      continue;
+    if (key3 === "transform") {
+      if (!sameOptionalMatrix(one, other))
+        return false;
+    } else if (key3 !== "skin" || !sameSkinBesidesPose(one, other))
+      return false;
+  }
+  return true;
+}
+function sameSkinBesidesPose(kept, now) {
+  const keys = Object.keys(kept);
+  if (keys.length !== Object.keys(now).length)
+    return false;
+  for (const key3 of keys) {
+    if (!Object.hasOwn(now, key3))
+      return false;
+    if (key3 === "palette") {
+      if (kept.palette.length !== now.palette.length)
+        return false;
+    } else if (key3 !== "deformed" && kept[key3] !== now[key3])
+      return false;
+  }
+  return true;
+}
+function standForPrograms(current, pairs) {
+  for (const [entry2, now] of pairs) {
     current.materials.set(entry2, now);
     entry2.passes.forEach((pass, index) => current.passes.set(pass, now.passes[index]));
   }
-  return kept.scenes;
 }
 var retainedModelPrograms = /* @__PURE__ */ new WeakMap();
 function retainedWorldModelPrograms(result) {
@@ -133393,6 +133625,10 @@ function worldWaterSurfaceDepth(writes) {
   return Float32Array.from(positions);
 }
 var retainedStaticObjects = /* @__PURE__ */ new WeakMap();
+var WORLD_KEPT_BLOCK = 32;
+var worldKeptBlocks = /* @__PURE__ */ new WeakMap();
+var worldPlansBuilt = 0;
+var worldPlanSerials = /* @__PURE__ */ new WeakMap();
 var worldShadowlessMaterials = /* @__PURE__ */ new WeakMap();
 function worldSceneDraw(scene, draw) {
   const shadowless = worldShadowlessMaterials.get(scene);
@@ -133435,6 +133671,8 @@ function worldStaticObjectKey(item, input, preparation, models) {
     }
     if (result?.state !== "converted" || !worldObjectFollowsTime(result, item))
       continue;
+    if (worldModelPosedByClock(result, item))
+      continue;
     const selected = worldModelAnimation(result, item);
     key3.push(worldObjectTime(input, item, selected !== void 0, selected?.durationSeconds));
     timed = true;
@@ -133447,10 +133685,18 @@ function worldStaticObjectKey(item, input, preparation, models) {
 }
 var worldStaticObjectKeys = /* @__PURE__ */ new WeakMap();
 function worldObjectFollowsTime(result, item) {
-  if (worldModelHasAnimatedGeometry(result, item))
-    return true;
+  return worldModelHasAnimatedGeometry(result, item) || worldModelProjectionsFollowTime(result, item);
+}
+function worldModelProjectionsFollowTime(result, item) {
   const source2 = result.uvmBytes === void 0 ? void 0 : uvmEffectSource(result.uvmBytes, worldModelAnimation(result, item)?.sequenceIndex);
   return source2 !== void 0 && source2.projectionsFollowTime;
+}
+function worldModelPosedByClock(result, item) {
+  return item.derivedFrom !== "cliffs" && !((item.presentationFoundationStretch ?? 0) > 0) && worldModelHasAnimatedGeometry(result, item) && !worldModelFacesCamera(result) && !worldModelProjectionsFollowTime(result, item);
+}
+function worldModelSampleTime(input, item, selected) {
+  const clock3 = worldObjectTime(input, item, selected !== void 0, selected?.durationSeconds);
+  return selected?.durationSeconds && (item.presentationAnimation?.loop ?? selected.looping) ? clock3 % selected.durationSeconds : clock3;
 }
 function keptWorldObjectEffect(item, effect, resourceId, input) {
   const result = input.models?.get(resourceId);
@@ -134586,7 +134832,9 @@ function appendWorldBatch(staticBatch, dynamicBatch) {
     colors: append(staticBatch.colors, dynamicBatch.colors)
   });
 }
-function createWorldWebGlPlan(input, previousPlan) {
+function createWorldWebGlPlan(input, previousPlan, view) {
+  const previousBuiltLast = previousPlan !== void 0 && worldPlanSerials.get(previousPlan) === worldPlansBuilt;
+  worldPlansBuilt += 1;
   const opaque = batch();
   const modelMaterialScenes = [];
   const modelEffects = [];
@@ -134641,8 +134889,7 @@ function createWorldWebGlPlan(input, previousPlan) {
     const previousStatic = staticGeometry ? staticModelSamples.get(result)?.get(staticKey) : void 0;
     if (previousStatic !== void 0)
       return previousStatic;
-    const clock3 = worldObjectTime(input, item, selected !== void 0, selected?.durationSeconds);
-    const time = selected?.durationSeconds && (item.presentationAnimation?.loop ?? selected.looping) ? clock3 % selected.durationSeconds : clock3;
+    const time = worldModelSampleTime(input, item, selected);
     const sharedKey = `${resourceId}\0${selected?.id ?? ""}\0${time}` + (camera === void 0 ? "" : `\0${camera.rotation.join(",")}`);
     const shared = planSamples.get(sharedKey);
     if (shared !== void 0)
@@ -134748,7 +134995,18 @@ function createWorldWebGlPlan(input, previousPlan) {
   const currentPrograms = {
     passes: /* @__PURE__ */ new Map(),
     materials: /* @__PURE__ */ new Map(),
-    cohorts: /* @__PURE__ */ new Map()
+    cohorts: /* @__PURE__ */ new Map(),
+    skins: /* @__PURE__ */ new Map(),
+    transforms: /* @__PURE__ */ new Map()
+  };
+  const resampled = /* @__PURE__ */ new Map();
+  const unposed = [];
+  const unseen = view === void 0 ? void 0 : (item, pose) => {
+    const sphere = worldKeptPoseSphere(item, pose);
+    if (sphere === void 0 || !worldSphereUnseen(view, sphere))
+      return false;
+    unposed.push(sphere[0], sphere[1], sphere[2], sphere[3]);
+    return true;
   };
   const projectorBatchKey = (texture, layer2, blendMode, normal) => `projector:${layer2 ?? ""}:${blendMode === "additive" ? "add:" : ""}${texture.id}` + (normal === void 0 ? "" : `|normal:${normal.swizzle}:${normal.texture.id}`);
   const projectorBatch = (texture, layer2, blendMode, normal) => {
@@ -134766,18 +135024,185 @@ function createWorldWebGlPlan(input, previousPlan) {
     transparentTextured.set(key3, target);
     return target;
   };
-  for (const item of objects) {
+  const replayBlocks = previousBuiltLast && previous !== void 0 && models === previous.models && preparation === previous.preparation && input.selectedObjectId === previous.input.selectedObjectId && sameWorldMap(previous.input.teamColors, input.teamColors) && sameMapKeys(previous.input.animationTimes, input.animationTimes) ? worldKeptBlocks.get(previousPlan) : void 0;
+  const keptBlocks = [];
+  const keptSegments = [];
+  let block;
+  const finishKeptBlock = () => {
+    if (block === void 0 || block.records.length !== block.length)
+      return;
+    const { start, items, records, scenes, pickMeshes: firstMesh } = block;
+    const effects = [];
+    const writes = [];
+    const samples = [];
+    const poses = [];
+    const restWrites = [];
+    let triangles = 0, shadowed = 0, byProgram = 0, byFallback = 0;
+    records.forEach((record7, offset) => {
+      const item = items[offset];
+      record7.effects.forEach((effect, index) => effects.push(Object.freeze({ item, effect, resourceId: record7.effectResources[index] })));
+      for (const write of record7.batchWrites)
+        writes.push(write);
+      if (record7.pose !== void 0)
+        poses.push(Object.freeze({ offset, item, kept: record7 }));
+      if (record7.atRest === true)
+        for (const entry2 of record7.batchWrites)
+          restWrites.push(entry2.write);
+      if (record7.resamplers !== void 0) {
+        const cohort = record7.cohort !== void 0 && input.animationTimes?.has(item.objectId) !== true ? record7.cohort : void 0;
+        if (cohort === void 0 || !samples.some((entry2) => entry2.cohort === cohort))
+          samples.push(Object.freeze({ cohort, item, kept: record7 }));
+      }
+      triangles += record7.modelTriangles;
+      shadowed += record7.shadowTriangles;
+      if (record7.byProgram)
+        byProgram += 1;
+      if (record7.byFallback)
+        byFallback += 1;
+    });
+    const pickMeshes = objectPickMeshes.slice(firstMesh);
+    let envelope = null;
+    let finite6 = true;
+    for (const mesh of pickMeshes) {
+      const box = mesh.envelope;
+      if (box === null)
+        continue;
+      if (!Number.isFinite(box[3] - box[0] + box[4] - box[1] + box[5] - box[2]))
+        finite6 = false;
+      if (envelope === null)
+        envelope = [...box];
+      else
+        for (let axis2 = 0; axis2 < 3; axis2 += 1) {
+          envelope[axis2] = Math.min(envelope[axis2], box[axis2]);
+          envelope[axis2 + 3] = Math.max(envelope[axis2 + 3], box[axis2 + 3]);
+        }
+    }
+    keptBlocks[start / WORLD_KEPT_BLOCK] = Object.freeze({
+      items: Object.freeze(items),
+      scenes: Object.freeze(modelMaterialScenes.slice(scenes)),
+      effects: Object.freeze(effects),
+      batchWrites: Object.freeze(writes),
+      pickMeshes: Object.freeze(pickMeshes),
+      envelope: envelope === null ? null : Object.freeze(envelope),
+      finite: finite6,
+      samples: Object.freeze(samples),
+      poses: Object.freeze(poses),
+      clockWrites: Object.freeze(restWrites),
+      modelTriangles: triangles,
+      shadowTriangles: shadowed,
+      programObjects: byProgram,
+      fallbackObjects: byFallback
+    });
+  };
+  const takeKeptBlock = (start) => {
+    const kept = replayBlocks?.[start / WORLD_KEPT_BLOCK];
+    if (kept === void 0)
+      return 0;
+    const { items } = kept;
+    if (items.length !== Math.min(WORLD_KEPT_BLOCK, objects.length - start))
+      return 0;
+    for (let offset = 0; offset < items.length; offset += 1)
+      if (objects[start + offset] !== items[offset])
+        return 0;
+    const pending = [];
+    const decided = /* @__PURE__ */ new Map();
+    for (const { cohort, item, kept: deciding } of kept.samples) {
+      if (cohort !== void 0) {
+        const keeps = decided.get(cohort) ?? currentPrograms.cohorts.get(cohort);
+        if (keeps === false)
+          return 0;
+        if (keeps !== void 0)
+          continue;
+      }
+      const scenes = keptWorldObjectResampledScenes(item, deciding, deciding.resamplers, input, planPrograms, currentPrograms, pending);
+      if (scenes === void 0)
+        return 0;
+      if (cohort !== void 0)
+        decided.set(cohort, true);
+    }
+    const skinPairs = [];
+    let meshes = kept.pickMeshes;
+    if (kept.poses.length > 0) {
+      const posed = [...kept.pickMeshes];
+      for (const { offset, item, kept: record7 } of kept.poses) {
+        const mesh = keptWorldObjectPose(item, record7, record7.pose, input, sampleSharedModel, resampled, currentPrograms, skinPairs, unseen);
+        if (mesh === void 0)
+          return 0;
+        posed[offset] = mesh;
+      }
+      meshes = posed;
+    }
+    standForPrograms(currentPrograms, pending);
+    standForSkins(currentPrograms, skinPairs);
+    for (const { kept: record7 } of kept.poses)
+      standForPlacements(currentPrograms, record7.pose);
+    for (const cohort of decided.keys())
+      currentPrograms.cohorts.set(cohort, true);
+    for (const scene of kept.scenes)
+      modelMaterialScenes.push(scene);
+    for (const { item, effect, resourceId } of kept.effects)
+      modelEffects.push(keptWorldObjectEffect(item, effect, resourceId, input));
+    for (const entry2 of kept.batchWrites)
+      journalObjectWrite(entry2);
+    for (const write of kept.clockWrites)
+      clockWrites.add(write);
+    const firstMesh = objectPickMeshes.length;
+    for (const mesh of meshes)
+      objectPickMeshes.push(mesh);
+    keptSegments.push({ first: firstMesh, end: objectPickMeshes.length, block: kept });
+    modelTriangles += kept.modelTriangles;
+    modelMaterialShadowTriangles += kept.shadowTriangles;
+    keptObjects += items.length;
+    programObjects += kept.programObjects;
+    fallbackObjects += kept.fallbackObjects;
+    keptBlocks[start / WORLD_KEPT_BLOCK] = kept;
+    return items.length;
+  };
+  for (let index = 0; index < objects.length; index += 1) {
+    if (index % WORLD_KEPT_BLOCK === 0) {
+      finishKeptBlock();
+      block = void 0;
+      const taken = takeKeptBlock(index);
+      if (taken > 0) {
+        index += taken - 1;
+        continue;
+      }
+      block = {
+        start: index,
+        length: Math.min(WORLD_KEPT_BLOCK, objects.length - index),
+        items: [],
+        records: [],
+        scenes: modelMaterialScenes.length,
+        pickMeshes: objectPickMeshes.length
+      };
+    }
+    const item = objects[index];
     const staticKey = worldStaticObjectKey(item, input, preparation, models);
-    const retainedObject = staticKey === void 0 ? void 0 : retainedStaticObjects.get(item);
-    const keptScenes = retainedObject !== void 0 && sameWorldStaticObjectKey(retainedObject.key, staticKey) ? keptWorldObjectScenes(item, retainedObject, input, planPrograms, currentPrograms) : void 0;
+    const retainedAsBuilt = staticKey === void 0 ? void 0 : retainedStaticObjects.get(item);
+    const retainedObject = retainedAsBuilt?.pose?.placing === void 0 || !sameWorldStaticObjectKey(retainedAsBuilt.key, staticKey) ? retainedAsBuilt : movedWorldObject(item, retainedAsBuilt, input) ?? retainedAsBuilt;
+    const posePairs = retainedObject?.pose === void 0 ? void 0 : [];
+    const keptPickMesh = retainedObject === void 0 || !sameWorldStaticObjectKey(retainedObject.key, staticKey) ? void 0 : retainedObject.pose === void 0 ? retainedObject.pickMesh : keptWorldObjectPose(item, retainedObject, retainedObject.pose, input, sampleSharedModel, resampled, currentPrograms, posePairs, unseen);
+    const keptScenes = keptPickMesh === void 0 ? void 0 : keptWorldObjectScenes(item, retainedObject, input, planPrograms, currentPrograms);
     if (retainedObject !== void 0 && keptScenes !== void 0) {
+      if (posePairs !== void 0)
+        standForSkins(currentPrograms, posePairs);
+      standForPlacements(currentPrograms, retainedObject.pose);
+      if (retainedObject !== retainedAsBuilt)
+        retainedStaticObjects.set(item, retainedObject);
+      if (block !== void 0 && retainedObject.key === staticKey) {
+        block.items.push(item);
+        block.records.push(retainedObject);
+      }
       for (const scene of keptScenes)
         modelMaterialScenes.push(scene);
-      for (const [index, effect] of retainedObject.effects.entries())
-        modelEffects.push(keptWorldObjectEffect(item, effect, retainedObject.effectResources[index], input));
+      for (const [index2, effect] of retainedObject.effects.entries())
+        modelEffects.push(keptWorldObjectEffect(item, effect, retainedObject.effectResources[index2], input));
       for (const entry2 of retainedObject.batchWrites)
         journalObjectWrite(entry2);
-      objectPickMeshes.push(retainedObject.pickMesh);
+      if (retainedObject.atRest === true)
+        for (const entry2 of retainedObject.batchWrites)
+          clockWrites.add(entry2.write);
+      objectPickMeshes.push(keptPickMesh);
       modelTriangles += retainedObject.modelTriangles;
       modelMaterialShadowTriangles += retainedObject.shadowTriangles;
       keptObjects += 1;
@@ -134801,7 +135226,13 @@ function createWorldWebGlPlan(input, previousPlan) {
     const translation = objectPosition(item, input);
     const pickTriangles = [];
     const pickPrimitives = [];
-    const { components: components2 } = worldObjectResourcesOf(item);
+    const { components: components2, keyed } = worldObjectResourcesOf(item);
+    const posed = staticKey !== void 0 && keyed.some((resourceId) => {
+      const result = input.models?.get(resourceId);
+      return result?.state === "converted" && worldModelPosedByClock(result, item);
+    });
+    const poseModels = posed ? [] : void 0;
+    const posePicks = posed ? [] : void 0;
     const samples = /* @__PURE__ */ new Map();
     const sampleFor = (resourceId) => {
       const previous2 = samples.get(resourceId);
@@ -134821,6 +135252,11 @@ function createWorldWebGlPlan(input, previousPlan) {
       return result?.state === "converted" ? restWorldModelSample(result) : void 0;
     }) : void 0;
     const restPrimitives = [];
+    let placeable = item.derivedFrom !== "cliffs" && !((item.presentationFoundationStretch ?? 0) > 0);
+    const placingScenes = [];
+    const placingEffects = [];
+    const placingPicks = [];
+    const placingRest = [];
     let rendered = false;
     let resolved2 = false;
     let byProgram = false, byFallback = false;
@@ -134833,6 +135269,19 @@ function createWorldWebGlPlan(input, previousPlan) {
       if (componentTransform === void 0)
         continue;
       resolved2 = true;
+      let poseModel = -1;
+      if (poseModels !== void 0 && worldModelHasAnimatedGeometry(result, item)) {
+        poseModel = poseModels.findIndex((model) => model.resourceId === component.resourceId);
+        if (poseModel < 0) {
+          const animation = worldModelAnimation(result, item);
+          poseModel = poseModels.push(Object.freeze({
+            resourceId: component.resourceId,
+            animation,
+            time: worldModelSampleTime(input, item, animation),
+            sample: sampled
+          })) - 1;
+        }
+      }
       const primitives = item.derivedFrom === "cliffs" ? liftedCliffPrimitives(sampled.primitives, multiplyComponentTransforms(worldObjectTransform(item, translation), componentTransform)) : sampled.primitives;
       const moment = worldObjectMaterialMoment(input, item, result);
       const { selectedAnimation, time, materialContext } = moment;
@@ -134841,47 +135290,14 @@ function createWorldWebGlPlan(input, previousPlan) {
       const materialsFollowTime = worldMaterialsFollowTime(result);
       const objectTint = worldObjectTint(item, input.selectedObjectId);
       const materialPrimitives = [];
+      const ownTransforms = [];
       const materialShadowPrimitives = [];
       const shadowlessMaterials = /* @__PURE__ */ new Set();
       const instanceTransform = multiplyComponentTransforms(worldObjectTransform(item, translation), componentTransform);
       const restTransform = restTransforms?.get(component.id);
       if (restTransform !== void 0) {
-        const restInstanceTransform = multiplyComponentTransforms(worldObjectTransform(item, translation), restTransform);
-        const rest = restWorldModelSample(result);
-        let hidden = "";
-        for (const [id4, prepared] of programs)
-          if (prepared.passes.length === 0)
-            hidden += `${id4}\0`;
-        let placedAtRest = worldRestPickPrimitives.get(item);
-        const known2 = placedAtRest?.get(component.id);
-        if (known2 !== void 0 && known2.sample === rest && known2.hidden === hidden && sameOptionalMatrix(known2.placement, restInstanceTransform))
-          restPrimitives.push(...known2.primitives);
-        else {
-          const placed = [];
-          let restIndex = -1;
-          for (const primitive of rest.primitives) {
-            restIndex += 1;
-            const prepared = programs.get(primitive.materialId ?? "");
-            if (prepared !== void 0 && prepared.passes.length === 0)
-              continue;
-            if (primitiveTriangleCount(primitive) === 0)
-              continue;
-            const primitiveTransform = "transform" in primitive ? primitive.transform : void 0;
-            placed.push(sharedPickPrimitive(primitive, {
-              ...primitive,
-              transform: multiplyComponentTransforms(restInstanceTransform, primitiveTransform ?? IDENTITY_COMPONENT_TRANSFORM)
-            }, item, `rest\0${component.id}\0${String(restIndex)}`));
-          }
-          restPrimitives.push(...placed);
-          if (placedAtRest === void 0)
-            worldRestPickPrimitives.set(item, placedAtRest = /* @__PURE__ */ new Map());
-          placedAtRest.set(component.id, Object.freeze({
-            sample: rest,
-            placement: restInstanceTransform,
-            hidden,
-            primitives: Object.freeze(placed)
-          }));
-        }
+        restPrimitives.push(...worldRestPickPrimitivesOf(item, component.id, result, programs, multiplyComponentTransforms(worldObjectTransform(item, translation), restTransform)));
+        placingRest.push(Object.freeze({ id: component.id, result, programs, transform: restTransform }));
       }
       let primitiveIndex = -1;
       for (const sampledPrimitive of primitives) {
@@ -134903,13 +135319,27 @@ function createWorldWebGlPlan(input, previousPlan) {
             ...objectTint === void 0 ? {} : { tint: objectTint }
           });
           materialPrimitives.push(instancePrimitive);
+          ownTransforms.push(primitiveTransform);
           if (castsSharedMaterialShadow)
             materialShadowPrimitives.push(instancePrimitive);
           if (!shadowPolicy.receiveShadows && primitive.materialId !== void 0)
             shadowlessMaterials.add(primitive.materialId);
           const count5 = primitiveTriangleCount(primitive);
           if (count5 > 0) {
-            pickPrimitives.push(sharedPickPrimitive(primitive, instancePrimitive, item, `${component.id}\0${String(primitiveIndex)}`));
+            const slot = `${component.id}\0${String(primitiveIndex)}`;
+            pickPrimitives.push(sharedPickPrimitive(primitive, instancePrimitive, item, slot));
+            placingPicks.push(Object.freeze({
+              source: primitive,
+              scene: placingScenes.length,
+              index: materialPrimitives.length - 1,
+              slot
+            }));
+            posePicks?.push(poseModel >= 0 && materialSkinOf(primitive) !== void 0 ? Object.freeze({
+              model: poseModel,
+              index: primitiveIndex,
+              instance: instancePrimitive,
+              slot
+            }) : void 0);
             if (castsSharedMaterialShadow)
               modelMaterialShadowTriangles += count5;
             modelTriangles += count5;
@@ -134945,11 +135375,11 @@ function createWorldWebGlPlan(input, previousPlan) {
           albedo[3]
         ];
         const vertexColors = primitive.colors;
-        const colorAt = (index) => vertexColors === void 0 || vertexColors.length < (index + 1) * 4 ? base : [
-          base[0] * vertexColors[index * 4],
-          base[1] * vertexColors[index * 4 + 1],
-          base[2] * vertexColors[index * 4 + 2],
-          base[3] * vertexColors[index * 4 + 3]
+        const colorAt = (index2) => vertexColors === void 0 || vertexColors.length < (index2 + 1) * 4 ? base : [
+          base[0] * vertexColors[index2 * 4],
+          base[1] * vertexColors[index2 * 4 + 1],
+          base[2] * vertexColors[index2 * 4 + 2],
+          base[3] * vertexColors[index2 * 4 + 3]
         ];
         const selectedColor = item.objectId === input.selectedObjectId ? [1, 0.82, 0.12, 1] : void 0;
         const triangleColor = (triangle) => selectedColor ?? (vertexColors === void 0 ? base : [colorAt(triangle[0]), colorAt(triangle[1]), colorAt(triangle[2])]);
@@ -134957,7 +135387,7 @@ function createWorldWebGlPlan(input, previousPlan) {
         let texturedWrite;
         let plainWrite;
         for (const triangle of primitiveTriangles(primitive)) {
-          const vertices = triangle.map((index) => instanceVertex(transformedComponentVertex(transformedPrimitiveVertex(primitive, index), componentTransform), item, translation));
+          const vertices = triangle.map((index2) => instanceVertex(transformedComponentVertex(transformedPrimitiveVertex(primitive, index2), componentTransform), item, translation));
           if (texture !== void 0 && textureCoordinates !== void 0 && textureCoordinates.length >= primitive.positions.length / 3 * 2) {
             if (texturedWrite === void 0) {
               const teamKey = worldTeamKey(team);
@@ -134985,9 +135415,9 @@ function createWorldWebGlPlan(input, previousPlan) {
                 write: texturedWrite
               };
             }
-            pushTexturedTriangle(texturedWrite, vertices, triangle.map((index) => [
-              textureCoordinates[index * 2] ?? 0,
-              textureCoordinates[index * 2 + 1] ?? 0
+            pushTexturedTriangle(texturedWrite, vertices, triangle.map((index2) => [
+              textureCoordinates[index2 * 2] ?? 0,
+              textureCoordinates[index2 * 2 + 1] ?? 0
             ]), triangleColor(triangle));
           } else if (blendMode !== void 0) {
             if (plainWrite === void 0) {
@@ -135028,6 +135458,7 @@ function createWorldWebGlPlan(input, previousPlan) {
       }
       const effectSource = result.uvmBytes === void 0 ? void 0 : uvmEffectSource(result.uvmBytes, selectedAnimation?.sequenceIndex);
       if (effectSource?.hasProjectors && scene.materials.length > 0) {
+        placeable = false;
         const receiverTransform = Float32Array.from(invertMaterialFrame(Array.from(instanceTransform)));
         const still = !effectSource.projectionsFollowTime;
         let projections = worldObjectProjections.get(item);
@@ -135093,13 +135524,13 @@ function createWorldWebGlPlan(input, previousPlan) {
           const target = projectorBatch(texture, layer2, blendMode, normal);
           const write = { ...batch(), textureCoordinates: [], texture };
           for (const triangle of primitiveTriangles(primitive)) {
-            const vertices = triangle.map((index) => {
-              const p = transformedComponentVertex(transformedPrimitiveVertex(primitive, index), instanceTransform);
+            const vertices = triangle.map((index2) => {
+              const p = transformedComponentVertex(transformedPrimitiveVertex(primitive, index2), instanceTransform);
               return [p[0], p[1] + 5e-3, p[2]];
             });
-            pushTexturedTriangle(write, vertices, triangle.map((index) => [
-              primitive.textureCoordinates[index * 2],
-              primitive.textureCoordinates[index * 2 + 1]
+            pushTexturedTriangle(write, vertices, triangle.map((index2) => [
+              primitive.textureCoordinates[index2 * 2],
+              primitive.textureCoordinates[index2 * 2 + 1]
             ]), [1, 1, 1, material?.baseColor?.[3] ?? 1]);
           }
           const key3 = projectorBatchKey(texture, layer2, blendMode, normal);
@@ -135128,6 +135559,7 @@ function createWorldWebGlPlan(input, previousPlan) {
       }
       if (effectSource?.liveEffects === true) {
         effectResources.push(component.resourceId);
+        placingEffects.push(componentTransform);
         modelEffects.push(Object.freeze({
           source: effectSource,
           transform: instanceTransform,
@@ -135148,6 +135580,10 @@ function createWorldWebGlPlan(input, previousPlan) {
         if (shadowlessMaterials.size > 0)
           worldShadowlessMaterials.set(materialScene, shadowlessMaterials);
         modelMaterialScenes.push(materialScene);
+        placingScenes.push(Object.freeze({
+          component: componentTransform,
+          primitives: Object.freeze(ownTransforms)
+        }));
         if (materialsFollowTime) {
           sceneCohortTerms.set(materialScene, [
             worldGroupId(programs),
@@ -135196,9 +135632,32 @@ function createWorldWebGlPlan(input, previousPlan) {
         modelTriangles: modelTriangles - trianglesBefore,
         shadowTriangles: modelMaterialShadowTriangles - shadowTrianglesBefore,
         byProgram,
-        byFallback
+        byFallback,
+        ...poseModels === void 0 || posePicks === void 0 ? {} : {
+          pose: Object.freeze({
+            models: Object.freeze(poseModels),
+            sockets: Object.freeze(components2.filter((component) => component.parentId !== void 0).map((component) => Object.freeze({
+              id: component.id,
+              transform: componentTransforms.get(component.id)
+            }))),
+            picks: Object.freeze(posePicks),
+            posable: !byFallback,
+            placement: worldObjectTransform(item, translation),
+            tint: worldObjectTint(item, input.selectedObjectId),
+            ...placeable && !byFallback && objectBatchWrites.length === 0 ? {
+              placing: Object.freeze({
+                scenes: Object.freeze(placingScenes),
+                effects: Object.freeze(placingEffects),
+                picks: Object.freeze(placingPicks),
+                rest: restTransforms === void 0 ? void 0 : Object.freeze(placingRest)
+              })
+            } : {}
+          })
+        },
+        ...restTransforms === void 0 ? {} : { atRest: true }
       }));
   }
+  finishKeptBlock();
   let navigationSamples = 0;
   for (const item of worldFacetItems(facets, "navigation")) {
     if (item.flags === 0)
@@ -135213,9 +135672,9 @@ function createWorldWebGlPlan(input, previousPlan) {
     for (const shape of shapes) {
       const color2 = [1, 0.75, 0.12, 1];
       if (shape.center !== void 0 && shape.radius !== void 0) {
-        for (let segment = 0; segment < 32; segment += 1) {
-          const start = segment / 32 * Math.PI * 2;
-          const end = (segment + 1) / 32 * Math.PI * 2;
+        for (let segment2 = 0; segment2 < 32; segment2 += 1) {
+          const start = segment2 / 32 * Math.PI * 2;
+          const end = (segment2 + 1) / 32 * Math.PI * 2;
           pushLine(lines, [
             shape.center.x + Math.cos(start) * shape.radius,
             0,
@@ -135274,12 +135733,29 @@ function createWorldWebGlPlan(input, previousPlan) {
       maximum[axis2] = Math.max(maximum[axis2], bounds2[axis2 + 3]);
     }
   }
-  for (const mesh of objectPickMeshes) {
+  const insideBounds = (envelope) => envelope[0] >= minimum[0] && envelope[1] >= minimum[1] && envelope[2] >= minimum[2] && envelope[3] <= maximum[0] && envelope[4] <= maximum[1] && envelope[5] <= maximum[2];
+  let segment = 0;
+  for (let index = 0; index < objectPickMeshes.length; index += 1) {
+    const kept = keptSegments[segment];
+    if (kept?.first === index) {
+      segment += 1;
+      const { envelope: envelope2, finite: finite6 } = kept.block;
+      if (envelope2 === null) {
+        index = kept.end - 1;
+        continue;
+      }
+      hasPositions = true;
+      if (finite6 && insideBounds(envelope2)) {
+        index = kept.end - 1;
+        continue;
+      }
+    }
+    const mesh = objectPickMeshes[index];
     const envelope = mesh.envelope;
     if (envelope === null)
       continue;
     hasPositions = true;
-    if (envelope[0] >= minimum[0] && envelope[1] >= minimum[1] && envelope[2] >= minimum[2] && envelope[3] <= maximum[0] && envelope[4] <= maximum[1] && envelope[5] <= maximum[2] && Number.isFinite(envelope[3] - envelope[0] + envelope[4] - envelope[1] + envelope[5] - envelope[2]))
+    if (insideBounds(envelope) && Number.isFinite(envelope[3] - envelope[0] + envelope[4] - envelope[1] + envelope[5] - envelope[2]))
       continue;
     const bounds2 = mesh.bounds;
     minimum[0] = Math.min(minimum[0], bounds2[0]);
@@ -135404,14 +135880,19 @@ function createWorldWebGlPlan(input, previousPlan) {
     preparation,
     models
   });
-  if (currentPrograms.materials.size > 0)
+  if (currentPrograms.materials.size > 0 || currentPrograms.skins.size > 0 || currentPrograms.transforms.size > 0)
     worldCurrentPrograms.set(plan, currentPrograms);
   worldPlanFacets.set(plan, facets);
+  worldKeptBlocks.set(plan, keptBlocks);
+  worldPlanSerials.set(plan, worldPlansBuilt);
   worldPlanWork.set(plan, Object.freeze({
     keptObjects,
     builtObjects: objects.length - keptObjects,
-    posedSamples: planSamples.size
+    posedSamples: planSamples.size,
+    unposedObjects: unposed.length / 4
   }));
+  if (unposed.length > 0)
+    worldUnposedSpheres.set(plan, Float64Array.from(unposed));
   worldPlanBatches.set(plan, {
     batches: currentBatches,
     water: waterWrites,
@@ -135996,11 +136477,11 @@ function retainPerformanceSample(target, value2) {
   if (target.length > WORLD_WEBGL_PERFORMANCE_SAMPLE_LIMIT)
     target.shift();
 }
-function percentile(values, fraction) {
+function percentiles(values, ...fractions) {
   if (values.length === 0)
-    return void 0;
-  const ordered = [...values].sort((left, right) => left - right);
-  return ordered[Math.min(ordered.length - 1, Math.ceil(ordered.length * fraction) - 1)];
+    return fractions.map(() => void 0);
+  const ordered = Float64Array.from(values).sort();
+  return fractions.map((fraction) => ordered[Math.min(ordered.length - 1, Math.ceil(ordered.length * fraction) - 1)]);
 }
 function harvestGpuTimer(resources) {
   const query2 = resources.pendingGpuQuery;
@@ -136263,6 +136744,18 @@ function snapshotWorldPlanInput(input) {
     ...input.previewPosition === void 0 ? {} : { previewPosition: { ...input.previewPosition } }
   };
 }
+function sameMapKeys(left, right) {
+  if (left === right)
+    return true;
+  if ((left?.size ?? 0) !== (right?.size ?? 0))
+    return false;
+  if (left === void 0 || right === void 0)
+    return true;
+  for (const key3 of left.keys())
+    if (!right.has(key3))
+      return false;
+  return true;
+}
 function sameWorldMap(left, right) {
   if (left === right)
     return true;
@@ -136321,10 +136814,14 @@ function sameWorldStaticInput(left, right) {
   }
   return true;
 }
-function retainedWorldPlan(input, resources) {
+function retainedWorldPlan(input, resources, viewOf) {
   if (resources.lastPlan !== void 0 && resources.lastPlanInput !== void 0 && sameWorldPlanInput(resources.lastPlanInput, input)) {
-    resources.worldPlanReuses += 1;
-    return resources.lastPlan;
+    const last = resources.lastPlan;
+    if (viewOf === void 0 || !worldPlanUnposedSeen(last, viewOf(last))) {
+      resources.worldPlanReuses += 1;
+      return last;
+    }
+    resources.worldPlanViewRebuilds += 1;
   }
   const previousInput = resources.lastPlanInput;
   const sameExceptClocks = previousInput !== void 0 && sameWorldPlanInputExceptAnimationTimes(previousInput, input);
@@ -136335,7 +136832,15 @@ function retainedWorldPlan(input, resources) {
   try {
     if (sameExceptClocks)
       worldInputsCompared = Object.freeze({ previous: previousInput, input });
-    plan = createWorldWebGlPlan(input, resources.lastPlan);
+    const lastPlan = resources.lastPlan;
+    plan = createWorldWebGlPlan(input, lastPlan, viewOf === void 0 || lastPlan === void 0 ? void 0 : viewOf(lastPlan));
+    if (viewOf !== void 0) {
+      const view = viewOf(plan);
+      if (worldPlanUnposedSeen(plan, view)) {
+        resources.worldPlanViewRebuilds += 1;
+        plan = createWorldWebGlPlan(input, lastPlan, view);
+      }
+    }
   } finally {
     worldInputsCompared = void 0;
   }
@@ -136354,6 +136859,7 @@ function retainedWorldPlan(input, resources) {
     resources.worldObjectsKept += work.keptObjects;
     resources.worldObjectsBuilt += work.builtObjects;
     resources.worldPosedSamples += work.posedSamples;
+    resources.worldObjectsUnposed += work.unposedObjects;
   }
   resources.lastPlanInput = worldStaticPreparations.get(plan).input;
   resources.lastPlan = plan;
@@ -136383,12 +136889,14 @@ function retainedWorldPlanBytes(plan) {
     retainBatch(preparation.lines);
     retainBatch(preparation.points);
   }
+  const skins = worldCurrentPrograms.get(plan)?.skins;
   for (const scene of plan.modelMaterialScenes) {
     for (const primitive of scene.primitives) {
       const skin = materialSkinOf(primitive);
       retain(skin?.joints);
       retain(skin?.weights);
       retain(skin?.palette);
+      retain(skin === void 0 ? void 0 : skins?.get(skin)?.palette);
       retain(primitive.positions);
       retain(primitive.normals);
       retain(primitive.tangents);
@@ -136479,6 +136987,8 @@ function createOwnedResources(gl) {
       worldObjectsKept: 0,
       worldObjectsBuilt: 0,
       worldPosedSamples: 0,
+      worldObjectsUnposed: 0,
+      worldPlanViewRebuilds: 0,
       worldPlanReuses: 0,
       worldPlanDynamicUpdates: 0,
       worldPlanBuildMilliseconds: [],
@@ -136677,25 +137187,26 @@ function prepareWorldMaterialResources(resources, plan) {
   for (const effect of plan.modelEffects)
     bind(effect.textures);
   bind(SCENE_ENVIRONMENT_TEXTURES);
+  const skins = worldCurrentPrograms.get(plan)?.skins;
   const palettes = /* @__PURE__ */ new Set();
   for (const scene of plan.modelMaterialScenes)
-    for (const palette of worldScenePalettes(scene))
-      palettes.add(palette);
+    for (const skin of worldSceneSkins(scene))
+      palettes.add((skins?.get(skin) ?? skin).palette);
   resources.materialDraws.prepareSkins(palettes);
 }
-var worldScenePaletteLists = /* @__PURE__ */ new WeakMap();
-function worldScenePalettes(scene) {
-  let palettes = worldScenePaletteLists.get(scene);
-  if (palettes === void 0) {
+var worldSceneSkinLists = /* @__PURE__ */ new WeakMap();
+function worldSceneSkins(scene) {
+  let skins = worldSceneSkinLists.get(scene);
+  if (skins === void 0) {
     const found2 = [];
     for (const primitive of scene.primitives) {
       const skin = materialSkinOf(primitive);
       if (skin !== void 0)
-        found2.push(skin.palette);
+        found2.push(skin);
     }
-    worldScenePaletteLists.set(scene, palettes = found2);
+    worldSceneSkinLists.set(scene, skins = found2);
   }
-  return palettes;
+  return skins;
 }
 var worldShadowDiscards = /* @__PURE__ */ new WeakMap();
 function worldShadowEntryKey(entry2, passes) {
@@ -136840,24 +137351,14 @@ function drawWorldShadowCasters(resources, program, plan, casters, sceneCamera, 
   resources.materialDraws.drawSequence(entries, sceneCamera, worldMaterialLight(plan), passes);
   gl.colorMask(false, false, false, false);
 }
-function renderWorldShadowMap(gl, plan, input, resources) {
-  if (input.shadows !== true || plan.stats.shadowCasterTriangles === 0)
-    return void 0;
-  if (worldShadowRangeEye(plan, gl.drawingBufferWidth, gl.drawingBufferHeight, input.camera)?.reachable === false)
-    return void 0;
-  const requestedSize = input.shadowMapSize ?? 2048;
-  if (!Number.isSafeInteger(requestedSize) || requestedSize <= 0)
-    throw new TypeError("world shadowMapSize must be a positive safe integer");
-  const size = Math.min(requestedSize, 4096, Number(gl.getParameter(gl.MAX_TEXTURE_SIZE)));
-  if (size <= 0)
-    throw new TypeError("WebGL2 reports no usable shadow-map texture size");
+function worldShadowLightView(plan, input, width, height) {
   const minimum = new Vector3(...plan.bounds.minimum);
   const maximum = new Vector3(...plan.bounds.maximum);
   const extent = maximum.clone().sub(minimum);
   const view = cameraState(input.camera);
   const frame3 = view.frame ?? plan.stats.frame;
   const center = new Vector3(...frame3.center).add(new Vector3(...view.target));
-  const aspect = gl.drawingBufferWidth / Math.max(1, gl.drawingBufferHeight);
+  const aspect = width / Math.max(1, height);
   const footprint = frame3.radius / view.zoom * Math.max(1, aspect) / Math.max(0.25, Math.sin(view.elevation));
   const radius = Math.max(0.5, Math.min(extent.length() * 0.5, footprint * 1.25 + extent.y));
   const rayDirection = new Vector3(...plan.light.direction).normalize();
@@ -136869,6 +137370,20 @@ function renderWorldShadowMap(gl, plan, input, resources) {
   lightCamera.lookAt(center);
   lightCamera.updateMatrixWorld(true);
   const viewProjection = Float32Array.from(lightCamera.projectionMatrix.clone().multiply(lightCamera.matrixWorldInverse).elements);
+  return { lightCamera, viewProjection, radius };
+}
+function renderWorldShadowMap(gl, plan, input, resources) {
+  if (input.shadows !== true || plan.stats.shadowCasterTriangles === 0)
+    return void 0;
+  if (worldShadowRangeEye(plan, gl.drawingBufferWidth, gl.drawingBufferHeight, input.camera)?.reachable === false)
+    return void 0;
+  const requestedSize = input.shadowMapSize ?? 2048;
+  if (!Number.isSafeInteger(requestedSize) || requestedSize <= 0)
+    throw new TypeError("world shadowMapSize must be a positive safe integer");
+  const size = Math.min(requestedSize, 4096, Number(gl.getParameter(gl.MAX_TEXTURE_SIZE)));
+  if (size <= 0)
+    throw new TypeError("WebGL2 reports no usable shadow-map texture size");
+  const { lightCamera, viewProjection } = worldShadowLightView(plan, input, gl.drawingBufferWidth, gl.drawingBufferHeight);
   const program = resources.shadowProgram;
   if (resources.shadowTarget !== void 0 && resources.shadowTarget.size !== size) {
     gl.deleteFramebuffer(resources.shadowTarget.framebuffer);
@@ -138189,6 +138704,18 @@ var worldGroupId = (value2) => {
     worldGroupIds.set(value2, known2 = ++worldGroupIdCount);
   return String(known2);
 };
+function worldPosedDraw(draw, skin, transform) {
+  if (skin === void 0 && transform === void 0)
+    return draw;
+  return {
+    ...draw,
+    primitive: {
+      ...draw.primitive,
+      ...skin === void 0 ? {} : { skin },
+      ...transform === void 0 ? {} : { transform }
+    }
+  };
+}
 function worldSceneSolidDrawsOf(scene, shadow) {
   const cache = shadow ? worldSceneCasterDraws : worldSceneSolidDraws;
   const cached = cache.get(scene);
@@ -138250,11 +138777,17 @@ function groupWorldMaterialDraws(plan, shadow) {
   const singles = [];
   const transparentScenes = [];
   const current = worldCurrentPrograms.get(plan);
+  const skins = current?.skins;
+  const transforms = current?.transforms;
   for (const scene of plan.modelMaterialScenes) {
     const solid = worldSceneSolidDrawsOf(scene, shadow);
     for (const { key: key3, geometryKey, draw } of solid.draws) {
+      const skin = materialSkinOf(draw.primitive);
+      const pose = skin === void 0 ? void 0 : skins?.get(skin) ?? skin;
+      const own = draw.primitive.transform;
+      const placed = own === void 0 ? void 0 : transforms?.get(own);
       if (key3 === void 0 || geometryKey === void 0) {
-        singles.push(draw);
+        singles.push(worldPosedDraw(draw, pose === skin ? void 0 : pose, placed));
         continue;
       }
       const pass = current?.passes.get(draw.program);
@@ -138267,10 +138800,10 @@ function groupWorldMaterialDraws(plan, shadow) {
       if (byGeometry === void 0)
         byMaterial.set(material, byGeometry = /* @__PURE__ */ new Map());
       let group2 = byGeometry.get(geometryKey);
-      const palette = materialSkinOf(draw.primitive)?.palette;
+      const palette = pose?.palette;
       if (group2 === void 0) {
         byGeometry.set(geometryKey, group2 = {
-          draw,
+          draw: worldPosedDraw(draw, pose === skin ? void 0 : pose, placed),
           geometryKey,
           transforms: [],
           palettes: palette === void 0 ? void 0 : [],
@@ -138278,7 +138811,7 @@ function groupWorldMaterialDraws(plan, shadow) {
         });
         groups.push(group2);
       }
-      const transform = draw.primitive.transform ?? IDENTITY_VIEW_PROJECTION;
+      const transform = placed ?? own ?? IDENTITY_VIEW_PROJECTION;
       if (shadow) {
         if (group2.seen.has(transform))
           continue;
@@ -138293,21 +138826,21 @@ function groupWorldMaterialDraws(plan, shadow) {
   }
   const last = lastWorldInstanceMatrices[shadow ? 1 : 0];
   const kept = /* @__PURE__ */ new Map();
-  const instanced = groups.map(({ draw, geometryKey, transforms, palettes }) => {
+  const instanced = groups.map(({ draw, geometryKey, transforms: transforms2, palettes }) => {
     const previous = kept.get(geometryKey) ?? last.get(geometryKey);
     let matrices = previous?.matrices;
-    if (previous === void 0 || previous.transforms.length !== transforms.length || previous.transforms.some((transform, index) => transform !== transforms[index])) {
-      matrices = new Float32Array(transforms.length * 16);
-      transforms.forEach((transform, index) => matrices.set(transform, index * 16));
+    if (previous === void 0 || previous.transforms.length !== transforms2.length || previous.transforms.some((transform, index) => transform !== transforms2[index])) {
+      matrices = new Float32Array(transforms2.length * 16);
+      transforms2.forEach((transform, index) => matrices.set(transform, index * 16));
     }
     const posed = palettes === void 0 ? void 0 : previous?.palettes !== void 0 && previous.palettes.length === palettes.length && previous.palettes.every((palette, index) => palette === palettes[index]) ? previous.palettes : Object.freeze(palettes);
     if (!kept.has(geometryKey))
-      kept.set(geometryKey, { transforms, matrices, palettes: posed });
+      kept.set(geometryKey, { transforms: transforms2, matrices, palettes: posed });
     return Object.freeze({
       draw,
       instances: Object.freeze({
         matrices,
-        count: transforms.length,
+        count: transforms2.length,
         ...posed === void 0 ? {} : { palettes: posed }
       })
     });
@@ -138464,6 +138997,31 @@ function worldSplatEntries(plan, materialDraws) {
   entries.sort((left, right) => left.rank - right.rank || left.order - right.order);
   return entries.map((entry2) => entry2.value);
 }
+var worldSceneBlendedDrawsByView = /* @__PURE__ */ new WeakMap();
+function worldSceneBlendedDraws(scene, viewProjection) {
+  const kept = worldSceneBlendedDrawsByView.get(scene);
+  if (kept !== void 0 && sameFloats(kept.viewProjection, viewProjection))
+    return kept;
+  const splatLayers = worldSplatSceneLayers.get(scene);
+  const blended = [];
+  const splat = [];
+  const blending = scene.primitives.filter((primitive) => scene.programs.get(primitive.materialId ?? "")?.passes.some((program) => !materialIsSolid(program)));
+  for (const draw of sceneMaterialDraws(blending, scene.materials, scene.programs, viewProjection, [], 1))
+    if (draw.depthOnly !== true && draw.program !== void 0 && !materialIsSolid(draw.program)) {
+      const entry2 = { scene, draw: worldSceneDraw(scene, { ...draw, program: draw.program }) };
+      if (splatLayers === void 0)
+        blended.push(Object.freeze(entry2));
+      else
+        splat.push(Object.freeze({ ...entry2, layer: splatLayers.get(draw.primitive.id) }));
+    }
+  const made = Object.freeze({
+    viewProjection: Float32Array.from(viewProjection),
+    blended: Object.freeze(blended),
+    splat: Object.freeze(splat)
+  });
+  worldSceneBlendedDrawsByView.set(scene, made);
+  return made;
+}
 function worldMaterialBatchesOf(plan, shadow = false) {
   const cache = shadow ? worldShadowMaterialBatches : worldMaterialBatches;
   let batches = cache.get(plan);
@@ -138477,7 +139035,10 @@ function drawWorldWebGlWithResources(canvas, input, resources) {
   const gl = resources.gl;
   harvestGpuTimer(resources);
   const startedAt = globalThis.performance?.now() ?? Date.now();
-  const plan = retainedWorldPlan(input, resources);
+  const plan = retainedWorldPlan(input, resources, (made) => worldPlanPosingView(made, input, canvas.width, canvas.height, {
+    width: gl.drawingBufferWidth,
+    height: gl.drawingBufferHeight
+  }));
   const program = resources.program;
   let shadow;
   let gpuQuery;
@@ -138655,15 +139216,11 @@ function drawWorldWebGlWithResources(canvas, input, resources) {
     const transparentSceneDraws = [];
     const splatMaterialDraws = [];
     for (const scene of batches.transparentScenes) {
-      const splatLayers = worldSplatSceneLayers.get(scene);
-      for (const draw of sceneMaterialDraws(scene.primitives, scene.materials, scene.programs, sceneCamera.viewProjection, [], 1))
-        if (draw.depthOnly !== true && draw.program !== void 0 && !materialIsSolid(draw.program)) {
-          const entry2 = { scene, draw: worldSceneDraw(scene, { ...draw, program: draw.program }) };
-          if (splatLayers === void 0)
-            transparentSceneDraws.push(entry2);
-          else
-            splatMaterialDraws.push({ ...entry2, layer: splatLayers.get(draw.primitive.id) });
-        }
+      const { blended, splat } = worldSceneBlendedDraws(worldWebGlPosedScene(plan, scene), sceneCamera.viewProjection);
+      for (const entry2 of blended)
+        transparentSceneDraws.push(entry2);
+      for (const entry2 of splat)
+        splatMaterialDraws.push(entry2);
     }
     const effectDraws = worldModelEffectDraws(plan, sceneCamera);
     resources.materialDraws.warm([
@@ -138863,20 +139420,19 @@ function createWorldWebGlRenderer(canvas) {
     pick: (input, screen) => {
       if (resources.disposed)
         throw new TypeError("world WebGL renderer is disposed");
-      return pickWorldWebGlPlan(retainedWorldPlan(input, resources), input, screen);
+      const plan = retainedWorldPlan(input, resources, (made) => worldPlanPosingView(made, input, screen.width, screen.height, {
+        width: resources.gl.drawingBufferWidth,
+        height: resources.gl.drawingBufferHeight
+      }));
+      return pickWorldWebGlPlan(plan, input, screen);
     },
     stats: () => (() => {
       harvestGpuTimer(resources);
-      const cpuP50 = percentile(resources.cpuFrameMilliseconds, 0.5);
-      const cpuP95 = percentile(resources.cpuFrameMilliseconds, 0.95);
-      const gpuP50 = percentile(resources.gpuFrameMilliseconds, 0.5);
-      const gpuP95 = percentile(resources.gpuFrameMilliseconds, 0.95);
-      const planP50 = percentile(resources.worldPlanBuildMilliseconds, 0.5);
-      const planP95 = percentile(resources.worldPlanBuildMilliseconds, 0.95);
-      const dynamicP50 = percentile(resources.worldPlanDynamicUpdateMilliseconds, 0.5);
-      const dynamicP95 = percentile(resources.worldPlanDynamicUpdateMilliseconds, 0.95);
-      const seekP50 = percentile(resources.animationSeekMilliseconds, 0.5);
-      const seekP95 = percentile(resources.animationSeekMilliseconds, 0.95);
+      const [cpuP50, cpuP95] = percentiles(resources.cpuFrameMilliseconds, 0.5, 0.95);
+      const [gpuP50, gpuP95] = percentiles(resources.gpuFrameMilliseconds, 0.5, 0.95);
+      const [planP50, planP95] = percentiles(resources.worldPlanBuildMilliseconds, 0.5, 0.95);
+      const [dynamicP50, dynamicP95] = percentiles(resources.worldPlanDynamicUpdateMilliseconds, 0.5, 0.95);
+      const [seekP50, seekP95] = percentiles(resources.animationSeekMilliseconds, 0.5, 0.95);
       const geometry = geometryResourceTotals(resources);
       const textures = textureResourceTotals(resources);
       const material = resources.disposed ? { bufferEntries: 0, bufferBytesRetained: 0, vertexArrayEntries: 0 } : resources.materialDraws.stats();
@@ -138895,6 +139451,8 @@ function createWorldWebGlRenderer(canvas) {
         worldObjectsKept: resources.worldObjectsKept,
         worldObjectsBuilt: resources.worldObjectsBuilt,
         worldPosedSamples: resources.worldPosedSamples,
+        worldObjectsUnposed: resources.worldObjectsUnposed,
+        worldPlanViewRebuilds: resources.worldPlanViewRebuilds,
         worldPlanDynamicUpdates: resources.worldPlanDynamicUpdates,
         worldPlanDynamicUpdateSamples: resources.worldPlanDynamicUpdateMilliseconds.length,
         ...dynamicP50 === void 0 ? {} : { worldPlanDynamicUpdateP50Milliseconds: dynamicP50 },
@@ -142687,14 +143245,14 @@ export {
   createMemorySource,
   HOST_LAYER_SOURCE_ID,
   MOD_CONTEXT_MAX_QUERY_REFS,
-  DATA_CATALOG_ANALYSIS_CONTRACT,
-  DATA_CATALOG_MATCHER_PROFILE,
-  RESOLVED_DATA_WORKSPACE_CONTRACT,
-  RESOLVED_DATA_WORKSPACE_MATCHER_PROFILE,
   grantValidity2,
   validateSubjectDescriptorV2,
   NATIVE_MODEL_ENCODER_CONTRACT,
   NATIVE_MODEL_ENCODER_MATCHER_PROFILE,
+  DATA_CATALOG_ANALYSIS_CONTRACT,
+  DATA_CATALOG_MATCHER_PROFILE,
+  RESOLVED_DATA_WORKSPACE_CONTRACT,
+  RESOLVED_DATA_WORKSPACE_MATCHER_PROFILE,
   MAP_SEMANTIC_ANALYSIS_CONTRACT,
   RESOLVED_MAP_WORKSPACE_CONTRACT,
   MAP_PREVIEW_PREPARATION_CONTRACT,

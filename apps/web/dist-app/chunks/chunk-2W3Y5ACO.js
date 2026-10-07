@@ -226,26 +226,76 @@ function createModelAnimationSampler(clip, budget, signal) {
         ...key.outTangent === void 0 ? {} : { outTan: key.outTangent }
       }))
     };
-    return { channel, track };
+    const options = {
+      isQuat: channel.interpolation === "spherical-linear",
+      wrapSeconds: channel.concurrent ? channel.wrapSeconds : void 0
+    };
+    return { channel, track, options };
   });
+  const channels = Object.freeze(tracks.map(({ channel }) => Object.freeze(channel.axis === void 0 ? { target: channel.target, kind: channel.kind } : { target: channel.target, kind: channel.kind, axis: channel.axis })));
+  const extents = [];
   return Object.freeze({
+    channels,
+    extent(index) {
+      const known = extents[index];
+      if (known !== void 0)
+        return known;
+      const entry = tracks[index];
+      if (entry === void 0)
+        throw new RangeError("no animation channel at that index");
+      const { track, options } = entry;
+      const keys = track.keys;
+      const width = keys[0]?.vector.length ?? 0;
+      const between = track.lineType === 0 ? "step" : track.lineType !== CUBIC_SPLINE_LINE_TYPE && options.isQuat && width === 4 ? "arc" : "hull";
+      const points = [];
+      const arcs = [];
+      for (let at = 0; at < keys.length; at++) {
+        const key = keys[at];
+        points.push(key.vector);
+        const next = keys[at + 1];
+        if (next === void 0)
+          continue;
+        if (track.lineType === CUBIC_SPLINE_LINE_TYPE) {
+          const span = next.frame - key.frame;
+          points.push(key.vector.map((x, axis) => x + span * (key.outTan?.[axis] ?? 0) / 3));
+          points.push(next.vector.map((x, axis) => x - span * (next.inTan?.[axis] ?? 0) / 3));
+        } else if (between === "arc") {
+          let dot = 0;
+          for (let axis = 0; axis < 4; axis++)
+            dot += key.vector[axis] * next.vector[axis];
+          arcs.push([key.vector, dot < 0 ? next.vector.map((x) => -x) : next.vector]);
+        }
+      }
+      return extents[index] = Object.freeze({
+        width,
+        between,
+        points: Object.freeze(points),
+        arcs: Object.freeze(arcs)
+      });
+    },
     sample(timeSeconds, requestSignal) {
       if (requestSignal?.aborted)
         throw new DOMException("operation cancelled", "AbortError");
       finite(timeSeconds, "sample time");
-      return Object.freeze(tracks.map(({ channel, track }) => {
+      const values = [];
+      for (const { channel, track, options } of tracks) {
         if (requestSignal?.aborted)
           throw new DOMException("operation cancelled", "AbortError");
-        return Object.freeze({
-          target: channel.target,
-          kind: channel.kind,
-          ...channel.axis === void 0 ? {} : { axis: channel.axis },
-          value: Object.freeze(sampleTrackValue(track, timeSeconds, [], {
-            isQuat: channel.interpolation === "spherical-linear",
-            wrapSeconds: channel.concurrent ? channel.wrapSeconds : void 0
-          }))
-        });
-      }));
+        const value = Object.freeze(sampleTrackValue(track, timeSeconds, [], options));
+        values.push(Object.freeze(channel.axis === void 0 ? { target: channel.target, kind: channel.kind, value } : { target: channel.target, kind: channel.kind, axis: channel.axis, value }));
+      }
+      return Object.freeze(values);
+    },
+    sampleInto(timeSeconds, values, requestSignal) {
+      if (requestSignal?.aborted)
+        throw new DOMException("operation cancelled", "AbortError");
+      finite(timeSeconds, "sample time");
+      for (let index = 0; index < tracks.length; index++) {
+        if (requestSignal?.aborted)
+          throw new DOMException("operation cancelled", "AbortError");
+        const { track, options } = tracks[index];
+        sampleTrackValue(track, timeSeconds, values[index] ??= [], options);
+      }
     }
   });
 }

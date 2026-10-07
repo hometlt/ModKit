@@ -1,6 +1,6 @@
 import {
   invertAffine
-} from "./chunk-EVR7SMKZ.js";
+} from "./chunk-RUCAYZBL.js";
 
 // packages/codec-kit/dist/model/legacy/skinning-kernels.js
 function skinInterleaved(source, mesh, matrices, target) {

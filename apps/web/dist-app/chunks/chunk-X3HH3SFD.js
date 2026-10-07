@@ -4,7 +4,7 @@ import {
 } from "./chunk-X6TJ64VW.js";
 import {
   WORLD_PROJECTION_UV_SOURCES
-} from "./chunk-SPVJPG77.js";
+} from "./chunk-OAHCSLY5.js";
 import {
   array as array2,
   field,
@@ -33,7 +33,7 @@ import {
   decomposeMatrix4,
   normalizeQuat,
   quaternionFromRotationMatrix
-} from "./chunk-EVR7SMKZ.js";
+} from "./chunk-RUCAYZBL.js";
 
 // packages/scene/dist/materials/environment.js
 function vector(value, length, name) {

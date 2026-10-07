@@ -62,7 +62,7 @@ import {
   validateUvmDocument,
   vector3,
   vector4
-} from "./chunk-Y4TXTJJB.js";
+} from "./chunk-52X4PYT2.js";
 import "./chunk-QPJEB2TM.js";
 import "./chunk-7TLUWFCA.js";
 import "./chunk-DJDDRNPC.js";

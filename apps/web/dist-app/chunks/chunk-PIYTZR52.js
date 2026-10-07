@@ -1,6 +1,6 @@
 import {
   createModelAnimationSampler
-} from "./chunk-ZSMVBT5D.js";
+} from "./chunk-2W3Y5ACO.js";
 import {
   snapshotJson
 } from "./chunk-3YDGNEY2.js";
@@ -9,6 +9,9 @@ import {
   composeTrsMatrix,
   multiplyMat4
 } from "./chunk-WXUQLAQ3.js";
+import {
+  linearStretch
+} from "./chunk-RUCAYZBL.js";
 
 // packages/codec-kit/dist/model/skeleton.js
 var DEFAULT_MODEL_SKELETON_BUDGET = Object.freeze({
@@ -135,71 +138,276 @@ function createModelSkeletonNodes(bindings, hierarchyId, budget, signal) {
     });
   }));
 }
+function quaternionStretch(length) {
+  return length <= 1 ? 1 : Math.sqrt(1 + 4 * length * length * (length * length - 1));
+}
+function vectorLength(vector2) {
+  let sum = 0;
+  for (const x of vector2)
+    sum += x * x;
+  return Math.sqrt(sum);
+}
+function vectorDistance(a, b, sign = 1) {
+  let sum = 0;
+  for (let axis = 0; axis < a.length; axis++)
+    sum += (a[axis] - sign * b[axis]) ** 2;
+  return Math.sqrt(sum);
+}
+function boxMiddle(points) {
+  return points[0].map((_, axis) => {
+    let low = Infinity;
+    let high = -Infinity;
+    for (const point of points) {
+      low = Math.min(low, point[axis]);
+      high = Math.max(high, point[axis]);
+    }
+    return (low + high) / 2;
+  });
+}
+function quaternionMiddle(points) {
+  const first = points.find((point) => vectorLength(point) > 0);
+  if (first === void 0)
+    return [0, 0, 0, 1];
+  const sum = [0, 0, 0, 0];
+  for (const point of points) {
+    const length2 = vectorLength(point);
+    if (!(length2 > 0))
+      continue;
+    let dot = 0;
+    for (let axis = 0; axis < 4; axis++)
+      dot += point[axis] * first[axis];
+    for (let axis = 0; axis < 4; axis++)
+      sum[axis] += (dot < 0 ? -1 : 1) * point[axis] / length2;
+  }
+  const middle = vectorLength(sum) > 1e-9 ? sum : [...first];
+  const length = vectorLength(middle);
+  return middle.map((x) => x / length);
+}
+var ROTATION_FORM = 1 + Math.SQRT2;
+function rotationDeviation(extent, middle) {
+  const middleLength = vectorLength(middle);
+  const middleStretch = quaternionStretch(middleLength);
+  if (extent.between === "hull") {
+    let length = 0;
+    let near = 0;
+    let far = 0;
+    for (const point of extent.points) {
+      length = Math.max(length, vectorLength(point));
+      near = Math.max(near, vectorDistance(point, middle));
+      far = Math.max(far, vectorDistance(point, middle, -1));
+    }
+    return Math.min(quaternionStretch(length) + middleStretch, ROTATION_FORM * near * far);
+  }
+  const unit = middleLength > 0 ? middle.map((x) => x / middleLength) : void 0;
+  const unitError = ROTATION_FORM * Math.abs(middleLength - 1) * (middleLength + 1);
+  const arc = (toward, ends) => {
+    const sides = ends.map((end) => end.reduce((sum, x, axis) => sum + x * toward[axis], 0));
+    const side = sides.every((dot) => dot >= 0) ? 1 : sides.every((dot) => dot <= 0) ? -1 : 0;
+    if (side === 0)
+      return 2;
+    let farthest = 0;
+    for (const end of ends)
+      farthest = Math.max(farthest, vectorDistance(end, toward, side));
+    return Math.min(2, 2 * farthest);
+  };
+  let deviation = 0;
+  for (const point of extent.points) {
+    const length = vectorLength(point);
+    let bound = quaternionStretch(length) + middleStretch;
+    if (unit !== void 0 && length > 0)
+      bound = Math.min(bound, ROTATION_FORM * Math.abs(length - 1) * (length + 1) + arc(unit, [point.map((x) => x / length)]) + unitError);
+    deviation = Math.max(deviation, bound);
+  }
+  for (const [from, to] of extent.arcs) {
+    const a = vectorLength(from);
+    const b = vectorLength(to);
+    let bound = 1 + middleStretch;
+    if (unit !== void 0 && a > 0 && b > 0)
+      bound = Math.min(bound, arc(unit, [from.map((x) => x / a), to.map((x) => x / b)]) + unitError);
+    deviation = Math.max(deviation, bound);
+  }
+  return deviation;
+}
 function createModelPoseSampler({ bindings, hierarchyId, clip, budget, signal }) {
   const { bones, byNode, parents, order } = compileHierarchy(snapshotModelSkeleton(bindings, budget, signal), hierarchyId);
   if (clip?.hierarchyId !== void 0 && clip.hierarchyId !== hierarchyId)
     throw new TypeError("animation belongs to a different hierarchy");
   const animation = clip === void 0 ? void 0 : createModelAnimationSampler(clip, budget, signal);
-  const world = new Float32Array(bones.length * 16);
-  const local = new Float32Array(16);
-  const skin = new Float32Array(16);
+  const IGNORED = -1;
+  const UNBOUND = -2;
+  const REPEATED = -3;
+  const targets = new Int32Array(animation?.channels.length ?? 0);
+  const claimed = new Uint8Array(bones.length * 3);
+  for (const [index, channel] of (animation?.channels ?? []).entries()) {
+    const kind = boneChannelKind(channel.kind);
+    const slot = kind < 0 ? void 0 : byNode.get(channel.target);
+    const target = kind < 0 ? IGNORED : slot === void 0 || channel.axis !== void 0 ? UNBOUND : claimed[slot * 3 + kind] === 1 ? REPEATED : slot * 3 + kind;
+    if (target >= 0)
+      claimed[target] = 1;
+    targets[index] = target;
+  }
   const trs = new Array(bones.length * 3);
-  const assigned = new Uint8Array(bones.length * 3);
+  const restPose = () => {
+    for (let slot = 0; slot < bones.length; slot++) {
+      const rest = bones[slot].localPose;
+      trs[slot * 3] = rest.translation;
+      trs[slot * 3 + 1] = rest.rotation;
+      trs[slot * 3 + 2] = rest.scale;
+    }
+  };
+  const assign = (index, value) => {
+    const target = targets[index];
+    if (target === IGNORED)
+      return;
+    if (target === UNBOUND)
+      throw new TypeError("animation has no whole-bone target");
+    if (target === REPEATED)
+      throw new TypeError("duplicate bone animation channel");
+    vector(value, target % 3 === 1 ? 4 : 3, "bone animation value");
+    trs[target] = value;
+  };
+  const local = new Float32Array(16);
+  const skinning = bones.length * 16;
+  const compose = (matrices, requestSignal) => {
+    for (const slot of order) {
+      if (requestSignal?.aborted)
+        throw new DOMException("operation cancelled", "AbortError");
+      composeTrsMatrix(local, 0, trs[slot * 3], trs[slot * 3 + 1], trs[slot * 3 + 2]);
+      const parent = parents[slot];
+      if (parent < 0)
+        matrices.set(local, slot * 16);
+      else
+        multiplyMat4(matrices, slot * 16, matrices, parent * 16, local, 0);
+      const inverseBind = bones[slot].inverseBindMatrix;
+      if (inverseBind !== void 0)
+        multiplyMat4(matrices, skinning + slot * 16, matrices, slot * 16, inverseBind, 0);
+      if (!finiteMatrix(matrices, slot * 16) || inverseBind !== void 0 && !finiteMatrix(matrices, skinning + slot * 16))
+        throw new RangeError("bone pose exceeds finite float range");
+    }
+  };
+  const frozenPose = (matrices) => {
+    const result = new Array(bones.length);
+    for (let slot = 0; slot < bones.length; slot++) {
+      const bone = bones[slot];
+      result[slot] = bone.inverseBindMatrix === void 0 ? Object.freeze({
+        boneIndex: bone.boneIndex,
+        nodeId: bone.nodeId,
+        worldMatrix: frozenMatrix(matrices, slot * 16)
+      }) : Object.freeze({
+        boneIndex: bone.boneIndex,
+        nodeId: bone.nodeId,
+        worldMatrix: frozenMatrix(matrices, slot * 16),
+        skinningMatrix: frozenMatrix(matrices, skinning + slot * 16)
+      });
+    }
+    return Object.freeze(result);
+  };
+  const scratch = new Float32Array(bones.length * 32);
+  const values = [];
+  const extentOf = () => {
+    const channelOf = new Int32Array(bones.length * 3).fill(-1);
+    for (let index = 0; index < targets.length; index++) {
+      const target = targets[index];
+      if (target === IGNORED)
+        continue;
+      if (target < 0 || animation.extent(index).width !== (target % 3 === 1 ? 4 : 3))
+        return void 0;
+      channelOf[target] = index;
+    }
+    const middle = new Array(bones.length * 3);
+    const length = new Float64Array(bones.length);
+    const move = new Float64Array(bones.length);
+    const stretch = new Float64Array(bones.length);
+    const bend = new Float64Array(bones.length);
+    for (let slot = 0; slot < bones.length; slot++) {
+      const rest = bones[slot].localPose;
+      const extentOfKind = (kind) => {
+        const index = channelOf[slot * 3 + kind];
+        return index < 0 ? void 0 : animation.extent(index);
+      };
+      const translation = extentOfKind(0);
+      const rotation = extentOfKind(1);
+      const scale = extentOfKind(2);
+      const t0 = translation === void 0 ? rest.translation : boxMiddle(translation.points);
+      for (const point of translation?.points ?? [t0]) {
+        length[slot] = Math.max(length[slot], vectorLength(point));
+        move[slot] = Math.max(move[slot], vectorDistance(point, t0));
+      }
+      const q0 = rotation === void 0 ? rest.rotation : quaternionMiddle(rotation.points);
+      let turned = (rotation?.arcs.length ?? 0) > 0 ? 1 : 0;
+      for (const point of rotation?.points ?? [q0])
+        turned = Math.max(turned, quaternionStretch(vectorLength(point)));
+      const deviation = rotation === void 0 ? 0 : rotationDeviation(rotation, q0);
+      const s0 = scale === void 0 ? rest.scale : boxMiddle(scale.points);
+      let scaled = 0;
+      let spread = 0;
+      for (const point of scale?.points ?? [s0])
+        for (let axis = 0; axis < 3; axis++) {
+          scaled = Math.max(scaled, Math.abs(point[axis]));
+          spread = Math.max(spread, Math.abs(point[axis] - s0[axis]));
+        }
+      middle[slot * 3] = t0;
+      middle[slot * 3 + 1] = q0;
+      middle[slot * 3 + 2] = s0;
+      stretch[slot] = turned * scaled;
+      bend[slot] = deviation * scaled + quaternionStretch(vectorLength(q0)) * spread;
+    }
+    const center = new Float32Array(bones.length * 16);
+    const turn = new Float64Array(bones.length);
+    const shift = new Float64Array(bones.length);
+    for (const slot of order) {
+      composeTrsMatrix(local, 0, middle[slot * 3], middle[slot * 3 + 1], middle[slot * 3 + 2]);
+      const parent = parents[slot];
+      if (parent < 0) {
+        center.set(local, slot * 16);
+        turn[slot] = bend[slot];
+        shift[slot] = move[slot];
+        continue;
+      }
+      multiplyMat4(center, slot * 16, center, parent * 16, local, 0);
+      const above = linearStretch(center.subarray(parent * 16, parent * 16 + 16));
+      turn[slot] = turn[parent] * stretch[slot] + above * bend[slot];
+      shift[slot] = turn[parent] * length[slot] + shift[parent] + above * move[slot];
+    }
+    for (const values2 of [center, turn, shift])
+      for (let index = 0; index < values2.length; index++)
+        if (!Number.isFinite(values2[index]))
+          return void 0;
+    return Object.freeze({ center, turn, shift });
+  };
+  let extent;
   return Object.freeze({
+    extent: () => (extent === void 0 ? extent = extentOf() ?? null : extent) ?? void 0,
+    bones: Object.freeze(bones.map((bone) => Object.freeze({
+      boneIndex: bone.boneIndex,
+      nodeId: bone.nodeId,
+      skinned: bone.inverseBindMatrix !== void 0
+    }))),
     sample(timeSeconds, requestSignal) {
       if (requestSignal?.aborted)
         throw new DOMException("operation cancelled", "AbortError");
       if (!Number.isFinite(timeSeconds))
         throw new TypeError("pose time must be finite");
       const channels = animation?.sample(timeSeconds, requestSignal) ?? Object.freeze([]);
-      for (let slot = 0; slot < bones.length; slot++) {
-        const rest = bones[slot].localPose;
-        trs[slot * 3] = rest.translation;
-        trs[slot * 3 + 1] = rest.rotation;
-        trs[slot * 3 + 2] = rest.scale;
-      }
-      assigned.fill(0);
-      for (const channel of channels) {
-        const kind = boneChannelKind(channel.kind);
-        if (kind < 0)
-          continue;
-        const slot = byNode.get(channel.target);
-        if (slot === void 0 || channel.axis !== void 0)
-          throw new TypeError("animation has no whole-bone target");
-        if (assigned[slot * 3 + kind] === 1)
-          throw new TypeError("duplicate bone animation channel");
-        assigned[slot * 3 + kind] = 1;
-        vector(channel.value, kind === 1 ? 4 : 3, "bone animation value");
-        trs[slot * 3 + kind] = channel.value;
-      }
-      const result = new Array(bones.length);
-      for (const slot of order) {
-        if (requestSignal?.aborted)
-          throw new DOMException("operation cancelled", "AbortError");
-        const bone = bones[slot];
-        composeTrsMatrix(local, 0, trs[slot * 3], trs[slot * 3 + 1], trs[slot * 3 + 2]);
-        const parent = parents[slot];
-        if (parent < 0)
-          world.set(local, slot * 16);
-        else
-          multiplyMat4(world, slot * 16, world, parent * 16, local, 0);
-        const inverseBind = bone.inverseBindMatrix;
-        if (inverseBind !== void 0)
-          multiplyMat4(skin, 0, world, slot * 16, inverseBind, 0);
-        if (!finiteMatrix(world, slot * 16) || inverseBind !== void 0 && !finiteMatrix(skin, 0))
-          throw new RangeError("bone pose exceeds finite float range");
-        result[slot] = inverseBind === void 0 ? Object.freeze({
-          boneIndex: bone.boneIndex,
-          nodeId: bone.nodeId,
-          worldMatrix: frozenMatrix(world, slot * 16)
-        }) : Object.freeze({
-          boneIndex: bone.boneIndex,
-          nodeId: bone.nodeId,
-          worldMatrix: frozenMatrix(world, slot * 16),
-          skinningMatrix: frozenMatrix(skin, 0)
-        });
-      }
-      return Object.freeze({ bones: Object.freeze(result), channels });
+      restPose();
+      for (let index = 0; index < channels.length; index++)
+        assign(index, channels[index].value);
+      compose(scratch, requestSignal);
+      return Object.freeze({ bones: frozenPose(scratch), channels });
+    },
+    sampleMatrices(timeSeconds, requestSignal) {
+      if (requestSignal?.aborted)
+        throw new DOMException("operation cancelled", "AbortError");
+      if (!Number.isFinite(timeSeconds))
+        throw new TypeError("pose time must be finite");
+      animation?.sampleInto(timeSeconds, values, requestSignal);
+      restPose();
+      for (let index = 0; index < targets.length; index++)
+        assign(index, values[index]);
+      const matrices = new Float32Array(bones.length * 32);
+      compose(matrices, requestSignal);
+      let pose;
+      return Object.freeze({ matrices, pose: () => pose ??= frozenPose(matrices) });
     }
   });
 }

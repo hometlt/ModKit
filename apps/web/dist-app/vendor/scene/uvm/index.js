@@ -8,9 +8,9 @@ import {
   readUvmBillboards,
   readUvmModelStates,
   readUvmShadowMeshBindings
-} from "../../../chunks/chunk-BEYDX5DP.js";
+} from "../../../chunks/chunk-X3HH3SFD.js";
 import "../../../chunks/chunk-X6TJ64VW.js";
-import "../../../chunks/chunk-SPVJPG77.js";
+import "../../../chunks/chunk-OAHCSLY5.js";
 import {
   array,
   field,
@@ -38,7 +38,7 @@ import {
   snapshotJson
 } from "../../../chunks/chunk-3YDGNEY2.js";
 import "../../../chunks/chunk-WXUQLAQ3.js";
-import "../../../chunks/chunk-EVR7SMKZ.js";
+import "../../../chunks/chunk-RUCAYZBL.js";
 import "../../../chunks/chunk-NBEJVPOY.js";
 import {
   applyJsonEdit

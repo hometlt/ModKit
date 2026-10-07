@@ -99,7 +99,7 @@ import {
   validateSubjectDescriptorV2,
   webExtensionSubjectCardBundle,
   withoutHiddenEntries
-} from "./chunks/chunk-LD5LKWKH.js";
+} from "./chunks/chunk-MQNLUJW3.js";
 import {
   CONTAINER_EXTRACT_OPERATION_ID,
   ModkitError,
@@ -116,7 +116,7 @@ import {
   parseVersionRange,
   satisfiesRange,
   throwIfAborted
-} from "./chunks/chunk-Y4TXTJJB.js";
+} from "./chunks/chunk-52X4PYT2.js";
 import "./chunks/chunk-QPJEB2TM.js";
 import "./chunks/chunk-7TLUWFCA.js";
 import "./chunks/chunk-DJDDRNPC.js";
@@ -4102,6 +4102,7 @@ function createHostServiceResolver(options) {
             budgets: options.budgets,
             ...chain.length !== 0 || options.logicalResourcesFor === void 0 ? {} : { logicalResources: options.logicalResourcesFor(effectiveGrant) },
             ...chain.length !== 0 || options.installationProbes === void 0 ? {} : { installationProbes: options.installationProbes },
+            ...chain.length !== 0 || options.modContexts === void 0 ? {} : { modContexts: options.modContexts },
             diagnostics: {
               report(item) {
                 diagnostics.push(item);
@@ -4308,6 +4309,7 @@ var ABI_INSTALLATION_PROBES = { contract: "x3.abi/installation-probes", major: 1
 var ABI_VIDEO_FRAMES = { contract: "x3.abi/video-frames", major: 1 };
 var ABI_INSTALLATION_FILES = { contract: "x3.abi/installation-files", major: 1 };
 var ABI_SUBJECT_CATALOG = { contract: "x3.abi/subject-catalog", major: 1 };
+var ABI_MOD_CONTEXT_QUERY = { contract: "x3.abi/mod-context-query", major: 1 };
 var ABI_CREDENTIALS = { contract: "x3.abi/credentials", major: 1 };
 var ABI_MODEL_RESOURCE_ASSET = {
   contract: "x3.abi/model-resource-asset",
@@ -4506,6 +4508,10 @@ var subjectCatalogSurface = {
     strings: { kind: "value", arity: 3, optional: true, ...sig }
   }
 };
+var modContextQuerySurface = {
+  ...ABI_MOD_CONTEXT_QUERY,
+  methods: { query: { kind: "value", arity: 2, ...sig } }
+};
 var credentialsSurface = {
   ...ABI_CREDENTIALS,
   methods: {
@@ -4575,6 +4581,7 @@ var RUNTIME_ABI_SURFACES = Object.freeze([
   videoFramesSurface,
   installationFilesSurface,
   subjectCatalogSurface,
+  modContextQuerySurface,
   credentialsSurface,
   modelResourcesSurface,
   modelResourceAssetSurface,
@@ -10927,14 +10934,23 @@ async function subjectClosures(request) {
   const { contentSources, signal } = request;
   const resolutions = [];
   const diagnostics = [];
+  const contexts = [];
   let complete = request.subjects.length > 0;
   for (const subject of request.subjects) {
-    const closure = await resolveSubjectClosure({
-      contentSources,
-      subject,
-      ...request.baseMods === void 0 ? {} : { baseMods: request.baseMods },
-      ...signal === void 0 ? {} : { signal }
-    });
+    let closure;
+    try {
+      closure = await resolveSubjectClosure({
+        contentSources,
+        subject,
+        ...request.baseMods === void 0 ? {} : { baseMods: request.baseMods },
+        ...request.keepContexts === true ? { keepContext: true } : {},
+        ...signal === void 0 ? {} : { signal }
+      });
+    } catch (error) {
+      await Promise.allSettled(contexts.map((context) => context.dispose()));
+      throw error;
+    }
+    if (closure.context !== void 0) contexts.push(closure.context);
     diagnostics.push(...closure.diagnostics);
     if (closure.resolution === void 0) complete = false;
     else {
@@ -10945,7 +10961,8 @@ async function subjectClosures(request) {
   return Object.freeze({
     resolutions: Object.freeze(resolutions.filter((resolution) => resolution.mounts.length > 0)),
     diagnostics: Object.freeze(diagnostics),
-    complete
+    complete,
+    contexts: Object.freeze(contexts)
   });
 }
 async function resolveContentAssetOrigins(request) {
@@ -11245,7 +11262,7 @@ var RESOLVED_DATA_WORKSPACE_CONTRACT_DEFINITION = Object.freeze({
   matching: Object.freeze({ profile: RESOLVED_DATA_WORKSPACE_MATCHER_PROFILE, major: 1 }),
   conformanceProfile: "common.data/resolved-workspace-v1",
   surface: Object.freeze({
-    fields: Object.freeze(["contract", "providerId", "gameIds", "persistentRoots"]),
+    fields: Object.freeze(["contract", "providerId", "gameIds"]),
     methods: Object.freeze({
       plan: Object.freeze({
         kind: "value",
@@ -11256,12 +11273,6 @@ var RESOLVED_DATA_WORKSPACE_CONTRACT_DEFINITION = Object.freeze({
         kind: "value",
         signal: Object.freeze({ arg: 0, key: "signal" }),
         limits: Object.freeze({ maxBytes: 16777216, maxStringLength: 4194304 })
-      }),
-      analyzeAuthoringIndex: Object.freeze({
-        kind: "value",
-        optional: true,
-        signal: Object.freeze({ arg: 0, key: "signal" }),
-        limits: Object.freeze({ maxBytes: 50331648, maxStringLength: 50331648 })
       }),
       openSchemaTree: Object.freeze({
         kind: "lease",
@@ -11337,7 +11348,7 @@ var RESOLVED_DATA_WORKSPACE_CONTRACT_DEFINITION = Object.freeze({
 });
 function isResolvedDataWorkspace(value) {
   const record = recordOf3(value);
-  return record?.["contract"] === RESOLVED_DATA_WORKSPACE_CONTRACT && nonEmptyString2(record["providerId"]) && stringList(record["gameIds"]) !== void 0 && typeof record["plan"] === "function" && typeof record["analyze"] === "function" && (record["analyzeAuthoringIndex"] === void 0 || typeof record["analyzeAuthoringIndex"] === "function") && typeof record["openSchemaTree"] === "function" && typeof record["openDefinitionTable"] === "function" && typeof record["openLocalizationTable"] === "function" && typeof record["openRelations"] === "function" && (record["resolveEditTarget"] === void 0 || typeof record["resolveEditTarget"] === "function") && (record["planEdit"] === void 0 || typeof record["planEdit"] === "function") && (record["analyzeIsolation"] === void 0 || typeof record["analyzeIsolation"] === "function") && (record["planIsolation"] === void 0 || typeof record["planIsolation"] === "function");
+  return record?.["contract"] === RESOLVED_DATA_WORKSPACE_CONTRACT && nonEmptyString2(record["providerId"]) && stringList(record["gameIds"]) !== void 0 && typeof record["plan"] === "function" && typeof record["analyze"] === "function" && typeof record["openSchemaTree"] === "function" && typeof record["openDefinitionTable"] === "function" && typeof record["openLocalizationTable"] === "function" && typeof record["openRelations"] === "function" && (record["resolveEditTarget"] === void 0 || typeof record["resolveEditTarget"] === "function") && (record["planEdit"] === void 0 || typeof record["planEdit"] === "function") && (record["analyzeIsolation"] === void 0 || typeof record["analyzeIsolation"] === "function") && (record["planIsolation"] === void 0 || typeof record["planIsolation"] === "function");
 }
 async function resolveResolvedDataWorkspace(request) {
   const definitions = request.services.serviceDefinitions;
@@ -11360,7 +11371,6 @@ async function resolveResolvedDataWorkspace(request) {
     definitions,
     grant: request.grant,
     budgets: request.budgets,
-    ...request.services.contributionSettings === void 0 ? {} : { contributionSettings: request.services.contributionSettings },
     ...request.signal === void 0 ? {} : { signal: request.signal }
   });
   try {

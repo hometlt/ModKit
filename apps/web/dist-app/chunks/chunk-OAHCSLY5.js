@@ -15,7 +15,7 @@ import {
 import {
   invertAffine,
   multiplyAffine
-} from "./chunk-EVR7SMKZ.js";
+} from "./chunk-RUCAYZBL.js";
 
 // packages/uv/dist/model/frame.js
 var WORLD_PROJECTION_UV_SOURCES = Object.freeze([5, 13, 14, 17, 18]);

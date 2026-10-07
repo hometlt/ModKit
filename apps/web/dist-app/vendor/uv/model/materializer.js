@@ -8,7 +8,7 @@ import {
 import {
   uvmSceneFrameInverse,
   withMaterialFrame
-} from "../../../chunks/chunk-SPVJPG77.js";
+} from "../../../chunks/chunk-OAHCSLY5.js";
 import {
   packUvmGlb,
   uvmImageUri
@@ -28,11 +28,11 @@ import {
   DEFAULT_MODEL_SKELETON_BUDGET,
   createModelSkeletonNodes,
   snapshotModelSkeleton
-} from "../../../chunks/chunk-IJGLIHDN.js";
+} from "../../../chunks/chunk-PIYTZR52.js";
 import {
   DEFAULT_MODEL_ANIMATION_BUDGET,
   snapshotModelAnimations
-} from "../../../chunks/chunk-ZSMVBT5D.js";
+} from "../../../chunks/chunk-2W3Y5ACO.js";
 import "../../../chunks/chunk-3YDGNEY2.js";
 import {
   composeTrsMatrix
@@ -40,7 +40,7 @@ import {
 import {
   boundsOf
 } from "../../../chunks/chunk-IF5B6DHS.js";
-import "../../../chunks/chunk-EVR7SMKZ.js";
+import "../../../chunks/chunk-RUCAYZBL.js";
 import {
   isJsonValue
 } from "../../../chunks/chunk-USBGWOTH.js";

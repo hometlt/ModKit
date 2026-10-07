@@ -131,6 +131,17 @@ function invertAffine(matrix) {
     1
   ];
 }
+function linearStretch(matrix) {
+  const at = (index) => matrix[index] ?? 0;
+  let largest = 0;
+  for (let i = 0; i < 3; i++) {
+    let row = 0;
+    for (let j = 0; j < 3; j++)
+      row += Math.abs(at(i * 4) * at(j * 4) + at(i * 4 + 1) * at(j * 4 + 1) + at(i * 4 + 2) * at(j * 4 + 2));
+    largest = Math.max(largest, row);
+  }
+  return Math.sqrt(largest) * (1 + 1e-12);
+}
 function multiplyAffine(left, right) {
   const product = new Array(16);
   for (let column = 0; column < 4; column++)
@@ -148,5 +159,6 @@ export {
   decomposeMatrix4,
   quaternionFromRotationMatrix,
   invertAffine,
+  linearStretch,
   multiplyAffine
 };

@@ -18,9 +18,9 @@ import {
   snapshotEnvironment,
   snapshotEyePosition,
   snapshotModelBillboards
-} from "../../../chunks/chunk-BEYDX5DP.js";
+} from "../../../chunks/chunk-X3HH3SFD.js";
 import "../../../chunks/chunk-X6TJ64VW.js";
-import "../../../chunks/chunk-SPVJPG77.js";
+import "../../../chunks/chunk-OAHCSLY5.js";
 import {
   opaqueTexels,
   prepareUvmImages,
@@ -61,18 +61,18 @@ import {
   createModelPoseBlendSampler,
   createModelPoseSampler,
   snapshotModelSkeleton
-} from "../../../chunks/chunk-IJGLIHDN.js";
+} from "../../../chunks/chunk-PIYTZR52.js";
 import {
   animationSnapshotBudget,
   clipEventsBetween,
   createModelAnimationSampler
-} from "../../../chunks/chunk-ZSMVBT5D.js";
+} from "../../../chunks/chunk-2W3Y5ACO.js";
 import {
   snapshotJson
 } from "../../../chunks/chunk-3YDGNEY2.js";
 import {
   createModelSkinDeformer
-} from "../../../chunks/chunk-27JOTHQU.js";
+} from "../../../chunks/chunk-SRJNXB3H.js";
 import {
   multiplyMat4
 } from "../../../chunks/chunk-WXUQLAQ3.js";
@@ -96,7 +96,10 @@ import {
   linearToSrgb,
   srgbToLinear
 } from "../../../chunks/chunk-OX73FBBJ.js";
-import "../../../chunks/chunk-EVR7SMKZ.js";
+import {
+  linearStretch,
+  multiplyAffine
+} from "../../../chunks/chunk-RUCAYZBL.js";
 import "../../../chunks/chunk-JVAXQGJ2.js";
 import {
   diagnostic
@@ -16539,6 +16542,7 @@ function createNodePoseSampler(nodes, options) {
 
 // packages/scene/dist/model/sampler.js
 var IDENTITY = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+var IDENTITY_ROWS = Object.freeze([...IDENTITY]);
 function skinVertices(primitive, slots) {
   const authored = present(primitive.boneIndices, "skin indices");
   const source = present(primitive.boneWeights, "skin weights");
@@ -16584,6 +16588,49 @@ function skinPalette(bones, slots) {
     if (!Number.isFinite(palette[index]))
       throw new RangeError("deformed skin exceeds finite float range");
   return palette;
+}
+function skinPaletteOf(sampled, bones, slots) {
+  const palette = new Float32Array((slots.size + 1) * 16);
+  const filled = new Uint8Array(slots.size);
+  const skinning = bones.length * 16;
+  for (let index = 0; index < bones.length; index++) {
+    const bone = bones[index];
+    const slot = slots.get(bone.boneIndex);
+    if (slot === void 0)
+      continue;
+    if (filled[slot] === 1 || !bone.skinned)
+      throw new TypeError("skin needs a unique explicit inverse-bind pose for each bone");
+    for (let value2 = 0; value2 < 16; value2++) {
+      const entry = sampled.matrices[skinning + index * 16 + value2];
+      if (!Number.isFinite(entry))
+        throw new TypeError("skin needs a unique explicit inverse-bind pose for each bone");
+      palette[slot * 16 + value2] = entry;
+    }
+    filled[slot] = 1;
+  }
+  if (filled.includes(0))
+    throw new TypeError("skin pose is incomplete");
+  palette.set(IDENTITY, slots.size * 16);
+  for (let index = 0; index < palette.length; index++)
+    if (!Number.isFinite(palette[index]))
+      throw new RangeError("deformed skin exceeds finite float range");
+  return palette;
+}
+function finiteValues(values) {
+  for (let index = 0; index < values.length; index++)
+    if (!Number.isFinite(values[index]))
+      return false;
+  return true;
+}
+function placedPrimitive(base, transform2, skin, fade) {
+  if (transform2 === void 0 && fade === void 0)
+    return skin === void 0 ? { ...base } : { ...base, skin };
+  return {
+    ...base,
+    ...transform2 === void 0 ? {} : { transform: transform2 },
+    ...skin === void 0 ? {} : { skin },
+    ...fade === void 0 ? {} : { tint: [1, 1, 1, fade] }
+  };
 }
 function present(value2, label) {
   if (value2 === void 0)
@@ -16848,8 +16895,8 @@ function createModelSceneSampler(projection2, options = {}) {
             throw new TypeError("scene bone parent differs from the skin hierarchy");
         }
       }
-      const boneNodes = new Set(bones.map((bone) => bone.nodeId));
-      const channels = trs.filter((channel) => boneNodes.has(channel.target));
+      const boneNodes2 = new Set(bones.map((bone) => bone.nodeId));
+      const channels = trs.filter((channel) => boneNodes2.has(channel.target));
       const primarySampler = poseSamples === void 0 ? createModelPoseSampler({
         bindings: bones,
         hierarchyId,
@@ -16867,7 +16914,7 @@ function createModelSceneSampler(projection2, options = {}) {
           clip: {
             ...sample.clip,
             hierarchyId,
-            channels: sample.clip.hierarchyId !== void 0 && sample.clip.hierarchyId !== hierarchyId ? [] : sample.clip.channels.filter((channel) => boneNodes.has(channel.target) && ["translation", "rotation", "scale"].includes(channel.kind))
+            channels: sample.clip.hierarchyId !== void 0 && sample.clip.hierarchyId !== hierarchyId ? [] : sample.clip.channels.filter((channel) => boneNodes2.has(channel.target) && ["translation", "rotation", "scale"].includes(channel.kind))
           }
         }))
       });
@@ -16875,7 +16922,7 @@ function createModelSceneSampler(projection2, options = {}) {
         sample: (time, requestSignal) => blended.sample(time - poseTime, requestSignal)
       };
       sampler.sample(0, signal);
-      poseSamplers.set(hierarchyId, sampler);
+      poseSamplers.set(hierarchyId, { sampler, matrices: primarySampler });
       hierarchyFrames.set(hierarchyId, new Float32Array(frame ?? IDENTITY));
     } catch (error) {
       if (signal?.aborted)
@@ -16978,10 +17025,272 @@ function createModelSceneSampler(projection2, options = {}) {
       report("visibility-unavailable", `Primitive visibility is not sampleable: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
+  const storedHidden = new Set(projection2.primitives.filter((primitive) => primitive.hidden === true).map((primitive) => primitive.id));
+  const faceBillboards = new Map(billboards.flatMap((item) => item.mode === "face-camera" ? [[item.nodeId, item]] : []));
+  const turnsBones = billboards.some((item) => item.mode === "inverse-camera" || item.mode === "aim");
+  const hierarchies = [...poseSamplers].map(([hierarchyId, { sampler, matrices }]) => {
+    const entries = present(hierarchyBindings.get(hierarchyId), "hierarchy bindings");
+    const frame = present(hierarchyFrames.get(hierarchyId), "skin frame");
+    return {
+      hierarchyId,
+      sampler,
+      // sampled as matrices: the frozen bones are made only when asked for
+      matrices: turnsBones ? void 0 : matrices,
+      entries,
+      bindings: [...entries.values()],
+      frame,
+      transformed: !frame.every((value2, i) => value2 === IDENTITY[i])
+    };
+  });
+  const boneNodes = /* @__PURE__ */ new Set();
+  for (const { entries } of hierarchies)
+    for (const bone of entries.values())
+      if (bone.nodeId !== void 0)
+        boneNodes.add(bone.nodeId);
+  const moved = /* @__PURE__ */ new Set();
+  const rigidNodes = [...worlds.keys()].filter((id) => !boneNodes.has(id)).map((id) => {
+    const parent = parents.get(id);
+    const face = faceBillboards.get(id);
+    const still = !poseNodeIds.has(id) && face === void 0 && (parent === void 0 || !boneNodes.has(parent) && !moved.has(parent));
+    if (!still)
+      moved.add(id);
+    return {
+      id,
+      parent,
+      face,
+      transform: present(nodes.get(id), "animated node").transform,
+      rest: present(worlds.get(id), "node world"),
+      still
+    };
+  });
+  const hierarchyIndices = new Map(hierarchies.map(({ hierarchyId }, index) => [hierarchyId, index]));
+  const draws = projection2.primitives.map((primitive) => {
+    const nodes2 = primitiveNodes.get(primitive.id) ?? [void 0];
+    const deformer = deformers.get(primitive);
+    if (deformer === void 0)
+      return { primitive, nodes: nodes2, skinned: void 0 };
+    const gpu = gpuSkins.get(primitive);
+    return {
+      primitive,
+      nodes: nodes2,
+      skinned: {
+        deformer,
+        hierarchy: present(hierarchyIndices.get(present(primitive.hierarchyId, "skin hierarchy")), "skin pose"),
+        gpu: gpu === void 0 ? void 0 : { ...gpu, drawn: drawn(gpu.bindPose) }
+      }
+    };
+  });
+  const sampleJoints = (poses) => {
+    const joints = [];
+    for (const { hierarchy, bones } of poses) {
+      const pose = bones();
+      const offset = joints.length;
+      const byIndex = new Map(pose.map((bone, i) => [bone.boneIndex, offset + i]));
+      for (const bone of pose) {
+        const world = new Float32Array(16);
+        multiplyMat4(world, 0, hierarchy.frame, 0, bone.worldMatrix, 0);
+        const binding = present(hierarchy.entries.get(bone.boneIndex), "bone binding");
+        const parent = binding.parentBoneIndex == null ? void 0 : byIndex.get(binding.parentBoneIndex);
+        joints.push({
+          hierarchyId: hierarchy.hierarchyId,
+          boneIndex: bone.boneIndex,
+          name: binding.boneName,
+          position: [
+            present(world[12], "joint x"),
+            present(world[13], "joint y"),
+            present(world[14], "joint z")
+          ],
+          ...parent === void 0 ? {} : { parent }
+        });
+      }
+    }
+    return Object.freeze(joints);
+  };
+  const clipSphere = () => {
+    if (nodeSampler !== void 0 || billboards.length > 0 || poseSamples !== void 0)
+      return null;
+    const extents = [];
+    const boneOf = /* @__PURE__ */ new Map();
+    for (const [index, { matrices, entries }] of hierarchies.entries()) {
+      const extent = matrices?.extent();
+      if (matrices === void 0 || extent === void 0)
+        return null;
+      const count = matrices.bones.length;
+      const stretch = new Float64Array(count);
+      const offset = new Float64Array(count);
+      const bindStretch = new Float64Array(count);
+      const bindOffset = new Float64Array(count);
+      for (const [slot, bone] of matrices.bones.entries()) {
+        const world = extent.center.subarray(slot * 16, slot * 16 + 16);
+        stretch[slot] = linearStretch(world);
+        offset[slot] = Math.hypot(world[12], world[13], world[14]);
+        const inverse = entries.get(bone.boneIndex)?.inverseBindMatrix;
+        if (inverse !== void 0) {
+          bindStretch[slot] = linearStretch(inverse);
+          bindOffset[slot] = Math.hypot(inverse[12], inverse[13], inverse[14]);
+        }
+        boneOf.set(bone.nodeId, boneOf.has(bone.nodeId) ? null : { hierarchy: index, slot });
+      }
+      extents.push({
+        extent,
+        slots: new Map(matrices.bones.map((bone, slot) => [bone.boneIndex, slot])),
+        stretch,
+        offset,
+        bindStretch,
+        bindOffset
+      });
+    }
+    const framed = (frame, take) => {
+      const stretch = linearStretch(frame);
+      const offset = Math.hypot(frame[12], frame[13], frame[14]);
+      return (x, y, z, reach, size2) => take(frame[0] * x + frame[4] * y + frame[8] * z + frame[12], frame[1] * x + frame[5] * y + frame[9] * z + frame[13], frame[2] * x + frame[6] * y + frame[10] * z + frame[14], stretch * reach, stretch * size2 + offset);
+    };
+    const visit = (take) => {
+      for (const { primitive, nodes: instances2, skinned } of draws) {
+        const { positions } = primitive;
+        if (skinned !== void 0) {
+          const hierarchy = present(hierarchies[skinned.hierarchy], "skin hierarchy");
+          const { extent, slots, stretch, offset, bindStretch, bindOffset } = present(extents[skinned.hierarchy], "skin extent");
+          const { center: center2, turn, shift } = extent;
+          const indices = present(primitive.boneIndices, "skin indices");
+          const weights = present(primitive.boneWeights, "skin weights");
+          const width = primitive.boneInfluences ?? 4;
+          const place = hierarchy.transformed ? framed(hierarchy.frame, take) : take;
+          for (let vertex = 0; vertex * 3 + 2 < positions.length; vertex++) {
+            const x = positions[vertex * 3];
+            const y = positions[vertex * 3 + 1];
+            const z = positions[vertex * 3 + 2];
+            let sum = 0;
+            for (let influence = 0; influence < width; influence++) {
+              const weight = weights[vertex * width + influence];
+              if (!(weight >= 0))
+                return false;
+              sum += weight;
+            }
+            const length = Math.hypot(x, y, z);
+            let px = sum > 0 ? 0 : x;
+            let py = sum > 0 ? 0 : y;
+            let pz = sum > 0 ? 0 : z;
+            let reach = 0;
+            let size2 = sum > 0 ? 0 : length;
+            for (let influence = 0; sum > 0 && influence < width; influence++) {
+              const weight = weights[vertex * width + influence] / sum;
+              if (weight === 0)
+                continue;
+              const boneIndex = indices[vertex * width + influence];
+              const slot = slots.get(boneIndex);
+              const inverse = hierarchy.entries.get(boneIndex)?.inverseBindMatrix;
+              if (slot === void 0 || inverse === void 0)
+                return false;
+              const bx = inverse[0] * x + inverse[4] * y + inverse[8] * z + inverse[12];
+              const by = inverse[1] * x + inverse[5] * y + inverse[9] * z + inverse[13];
+              const bz = inverse[2] * x + inverse[6] * y + inverse[10] * z + inverse[14];
+              const at = slot * 16;
+              px += weight * (center2[at] * bx + center2[at + 4] * by + center2[at + 8] * bz);
+              py += weight * (center2[at + 1] * bx + center2[at + 5] * by + center2[at + 9] * bz);
+              pz += weight * (center2[at + 2] * bx + center2[at + 6] * by + center2[at + 10] * bz);
+              px += weight * center2[at + 12];
+              py += weight * center2[at + 13];
+              pz += weight * center2[at + 14];
+              reach += weight * (shift[slot] + turn[slot] * Math.hypot(bx, by, bz));
+              const bound = bindOffset[slot] + bindStretch[slot] * length;
+              size2 += weight * (offset[slot] + shift[slot] + (stretch[slot] + turn[slot]) * bound);
+            }
+            place(px, py, pz, reach, size2);
+          }
+          continue;
+        }
+        if ((primitive.morphTargets?.length ?? 0) > 0)
+          return false;
+        for (const node of instances2) {
+          const below = [];
+          let at = node;
+          while (at !== void 0 && !boneOf.has(at)) {
+            below.push(present(nodes.get(at), "node").transform);
+            at = parents.get(at);
+          }
+          if (node === void 0 || at === void 0) {
+            const world = node === void 0 ? IDENTITY : present(worlds.get(node), "node world");
+            const place2 = framed(world, take);
+            for (let vertex = 0; vertex * 3 + 2 < positions.length; vertex++) {
+              const x = positions[vertex * 3];
+              const y = positions[vertex * 3 + 1];
+              const z = positions[vertex * 3 + 2];
+              place2(x, y, z, 0, Math.hypot(x, y, z));
+            }
+            continue;
+          }
+          const bone = boneOf.get(at);
+          if (bone === void 0 || bone === null)
+            return false;
+          const { extent, stretch, offset } = present(extents[bone.hierarchy], "bone extent");
+          const { center: center2, turn, shift } = extent;
+          const place = framed(present(hierarchies[bone.hierarchy], "bone hierarchy").frame, take);
+          let chain = IDENTITY_ROWS;
+          for (const transform2 of below)
+            chain = multiplyAffine(transform2, chain);
+          const chainStretch = linearStretch(chain);
+          const chainOffset = Math.hypot(chain[12], chain[13], chain[14]);
+          const { slot } = bone;
+          const m = slot * 16;
+          for (let vertex = 0; vertex * 3 + 2 < positions.length; vertex++) {
+            const x = positions[vertex * 3];
+            const y = positions[vertex * 3 + 1];
+            const z = positions[vertex * 3 + 2];
+            const bx = chain[0] * x + chain[4] * y + chain[8] * z + chain[12];
+            const by = chain[1] * x + chain[5] * y + chain[9] * z + chain[13];
+            const bz = chain[2] * x + chain[6] * y + chain[10] * z + chain[14];
+            const bound = chainOffset + chainStretch * Math.hypot(x, y, z);
+            place(center2[m] * bx + center2[m + 4] * by + center2[m + 8] * bz + center2[m + 12], center2[m + 1] * bx + center2[m + 5] * by + center2[m + 9] * bz + center2[m + 13], center2[m + 2] * bx + center2[m + 6] * by + center2[m + 10] * bz + center2[m + 14], shift[slot] + turn[slot] * Math.hypot(bx, by, bz), offset[slot] + shift[slot] + (stretch[slot] + turn[slot]) * bound);
+          }
+        }
+      }
+      return true;
+    };
+    let lowX = Infinity;
+    let lowY = Infinity;
+    let lowZ = Infinity;
+    let highX = -Infinity;
+    let highY = -Infinity;
+    let highZ = -Infinity;
+    const bounded = visit((x, y, z, reach) => {
+      lowX = Math.min(lowX, x - reach);
+      lowY = Math.min(lowY, y - reach);
+      lowZ = Math.min(lowZ, z - reach);
+      highX = Math.max(highX, x + reach);
+      highY = Math.max(highY, y + reach);
+      highZ = Math.max(highZ, z + reach);
+    });
+    if (!bounded)
+      return null;
+    if (lowX === Infinity)
+      return Object.freeze({ center: Object.freeze([0, 0, 0]), radius: 0 });
+    const center = Object.freeze([
+      (lowX + highX) / 2,
+      (lowY + highY) / 2,
+      (lowZ + highZ) / 2
+    ]);
+    let radius = 0;
+    let size = 0;
+    visit((x, y, z, reach, magnitude) => {
+      radius = Math.max(radius, Math.hypot(x - center[0], y - center[1], z - center[2]) + reach);
+      size = Math.max(size, magnitude);
+    });
+    radius += 1e-4 * (radius + size) + 1e-6;
+    return Number.isFinite(radius) && center.every(Number.isFinite) ? Object.freeze({ center, radius }) : null;
+  };
+  let bounds;
   return Object.freeze({
     diagnostics: Object.freeze(diagnostics),
     /** The clip's events passed after `fromSeconds` up to `toSeconds` (see clipEventsBetween). */
     eventsBetween: (fromSeconds, toSeconds) => clip === void 0 ? [] : clipEventsBetween(clip, fromSeconds, toSeconds),
+    /**
+     * A sphere in the model's space that holds every vertex of every primitive in every sample,
+     * whatever the time (and a hidden primitive's, which a clip may show), made when first asked
+     * for; undefined where a node pose, a camera rule, a blend or morph weights move vertices that
+     * the clip's extents do not bound. A view that cannot see that sphere sees none of its poses.
+     */
+    bounds: () => (bounds === void 0 ? bounds = clipSphere() : bounds) ?? void 0,
     sample(timeSeconds, requestSignal, camera) {
       if (!Number.isFinite(timeSeconds))
         throw new TypeError("scene time must be finite");
@@ -16989,129 +17298,116 @@ function createModelSceneSampler(projection2, options = {}) {
         throw new DOMException("operation cancelled", "AbortError");
       const cameraRotation = camera?.rotation === void 0 ? billboardCamera : sampleRotation(camera.rotation);
       const cameraPosition = camera?.position === void 0 ? billboardPosition : samplePosition(camera.position);
-      const poses = /* @__PURE__ */ new Map();
       const animatedWorlds = /* @__PURE__ */ new Map();
-      const hiddenPrimitives = new Set(projection2.primitives.filter((primitive) => primitive.hidden === true).map((primitive) => primitive.id));
-      const fades = /* @__PURE__ */ new Map();
-      for (const value2 of visibilitySampler?.sample(timeSeconds, requestSignal) ?? [])
-        if (primitiveIds.has(value2.target)) {
-          const visibility2 = value2.value[0] ?? 0;
-          if (visibility2 > 0)
-            hiddenPrimitives.delete(value2.target);
-          else
-            hiddenPrimitives.add(value2.target);
-          if (visibility2 > 0 && visibility2 < 1)
-            fades.set(value2.target, visibility2);
-        }
-      const faded = (primitive) => {
-        const fade = fades.get(primitive.id);
-        return fade === void 0 ? {} : { tint: [1, 1, 1, fade] };
-      };
-      const nodeWeights = /* @__PURE__ */ new Map();
-      for (const value2 of morphSampler?.sample(timeSeconds, requestSignal) ?? [])
-        if (value2.value.length === morphTargetCounts.get(value2.target))
-          nodeWeights.set(value2.target, value2.value);
+      let hiddenPrimitives = storedHidden;
+      let fades;
+      if (visibilitySampler !== void 0) {
+        const hidden = new Set(storedHidden);
+        fades = /* @__PURE__ */ new Map();
+        for (const value2 of visibilitySampler.sample(timeSeconds, requestSignal))
+          if (primitiveIds.has(value2.target)) {
+            const visibility2 = value2.value[0] ?? 0;
+            if (visibility2 > 0)
+              hidden.delete(value2.target);
+            else
+              hidden.add(value2.target);
+            if (visibility2 > 0 && visibility2 < 1)
+              fades.set(value2.target, visibility2);
+          }
+        hiddenPrimitives = hidden;
+      }
+      let nodeWeights;
+      if (morphSampler !== void 0) {
+        nodeWeights = /* @__PURE__ */ new Map();
+        for (const value2 of morphSampler.sample(timeSeconds, requestSignal))
+          if (value2.value.length === morphTargetCounts.get(value2.target))
+            nodeWeights.set(value2.target, value2.value);
+      }
       const localPoses = nodeSampler?.sample(timeSeconds, requestSignal);
-      const faceBillboards = new Map(billboards.flatMap((item) => item.mode === "face-camera" ? [[item.nodeId, item]] : []));
-      const joints = [];
-      const palettes = /* @__PURE__ */ new Map();
-      for (const [hierarchyId, sampler] of poseSamplers) {
-        const originalPose = sampler.sample(timeSeconds, requestSignal).bones;
-        const pose = applyModelBillboards(originalPose, [...present(hierarchyBindings.get(hierarchyId), "billboard bindings").values()], billboards, cameraRotation, present(hierarchyFrames.get(hierarchyId), "billboard frame"), billboardBytes, requestSignal, cameraPosition);
-        poses.set(hierarchyId, pose);
-        const offset = joints.length;
-        const byIndex = new Map(pose.map((bone, i) => [bone.boneIndex, offset + i]));
+      const poses = [];
+      for (const hierarchy of hierarchies) {
+        const { frame } = hierarchy;
+        if (hierarchy.matrices !== void 0) {
+          const sampled = hierarchy.matrices.sampleMatrices(timeSeconds, requestSignal);
+          const { bones } = hierarchy.matrices;
+          for (let slot = 0; slot < bones.length; slot++) {
+            const world = new Float32Array(16);
+            multiplyMat4(world, 0, frame, 0, sampled.matrices, slot * 16);
+            if (!finiteValues(world))
+              throw new RangeError("animated bone transform exceeds finite float range");
+            animatedWorlds.set(bones[slot].nodeId, world);
+          }
+          poses.push({ hierarchy, sampled, bones: () => sampled.pose() });
+          continue;
+        }
+        const pose = applyModelBillboards(hierarchy.sampler.sample(timeSeconds, requestSignal).bones, hierarchy.bindings, billboards, cameraRotation, frame, billboardBytes, requestSignal, cameraPosition);
         for (const bone of pose) {
-          const frame = hierarchyFrames.get(hierarchyId);
-          if (frame === void 0)
-            throw new TypeError("skin frame is absent");
           const world = new Float32Array(16);
           multiplyMat4(world, 0, frame, 0, bone.worldMatrix, 0);
-          if (!world.every(Number.isFinite))
+          if (!finiteValues(world))
             throw new RangeError("animated bone transform exceeds finite float range");
           animatedWorlds.set(bone.nodeId, world);
-          const binding = present(present(hierarchyBindings.get(hierarchyId), "hierarchy bindings").get(bone.boneIndex), "bone binding");
-          const parent = binding.parentBoneIndex == null ? void 0 : byIndex.get(binding.parentBoneIndex);
-          joints.push({
-            hierarchyId,
-            boneIndex: bone.boneIndex,
-            name: binding.boneName,
-            position: [
-              present(world[12], "joint x"),
-              present(world[13], "joint y"),
-              present(world[14], "joint z")
-            ],
-            ...parent === void 0 ? {} : { parent }
-          });
         }
+        poses.push({ hierarchy, sampled: void 0, bones: () => pose });
       }
-      for (const [id] of worlds)
-        if (!animatedWorlds.has(id)) {
-          const parent = parents.get(id);
-          const matrix = new Float32Array(16);
-          multiplyMat4(matrix, 0, parent === void 0 ? IDENTITY : present(animatedWorlds.get(parent), "animated parent"), 0, localPoses?.get(id) ?? present(nodes.get(id), "animated node").transform, 0);
-          const face = faceBillboards.get(id);
-          const adjusted = face === void 0 || cameraPosition === void 0 ? matrix : applyModelFaceCameraBillboard(matrix, face, cameraPosition);
-          if (!adjusted.every(Number.isFinite))
-            throw new RangeError("animated scene transform exceeds finite float range");
-          animatedWorlds.set(id, adjusted);
+      for (const node of rigidNodes) {
+        if (node.still) {
+          animatedWorlds.set(node.id, new Float32Array(node.rest));
+          continue;
         }
+        const matrix = new Float32Array(16);
+        multiplyMat4(matrix, 0, node.parent === void 0 ? IDENTITY : present(animatedWorlds.get(node.parent), "animated parent"), 0, localPoses?.get(node.id) ?? node.transform, 0);
+        const adjusted = node.face === void 0 || cameraPosition === void 0 ? matrix : applyModelFaceCameraBillboard(matrix, node.face, cameraPosition);
+        if (!finiteValues(adjusted))
+          throw new RangeError("animated scene transform exceeds finite float range");
+        animatedWorlds.set(node.id, adjusted);
+      }
+      const palettes = [];
       const primitives = [];
-      for (const primitive of projection2.primitives) {
+      for (const { primitive, nodes: instances2, skinned } of draws) {
         if (hiddenPrimitives.has(primitive.id))
           continue;
-        const deformer = deformers.get(primitive);
-        if (deformer !== void 0) {
-          const hierarchyId = present(primitive.hierarchyId, "skin hierarchy");
-          const pose = present(poses.get(hierarchyId), "skin pose");
-          const gpu = gpuSkins.get(primitive);
+        const fade = fades?.get(primitive.id);
+        if (skinned !== void 0) {
+          const { deformer, gpu } = skinned;
+          const pose = present(poses[skinned.hierarchy], "skin pose");
+          const { hierarchy } = pose;
           let deformed;
           let skin;
           if (gpu === void 0)
-            deformed = deformer.deform(pose, requestSignal);
+            deformed = deformer.deform(pose.bones(), requestSignal);
           else {
-            let palette = palettes.get(hierarchyId);
-            if (palette === void 0)
-              palettes.set(hierarchyId, palette = skinPalette(pose, present(hierarchySlots.get(hierarchyId), "skin slots")));
+            const palette = palettes[skinned.hierarchy] ??= pose.sampled === void 0 ? skinPalette(pose.bones(), present(hierarchySlots.get(hierarchy.hierarchyId), "skin slots")) : skinPaletteOf(pose.sampled, present(hierarchy.matrices, "pose bones").bones, present(hierarchySlots.get(hierarchy.hierarchyId), "skin slots"));
             skin = Object.freeze({
-              ...gpu.vertices,
+              joints: gpu.vertices.joints,
+              weights: gpu.vertices.weights,
               palette,
-              deformed: () => deformed ??= deformer.deform(pose)
+              deformed: () => deformed ??= deformer.deform(pose.bones())
             });
           }
-          const frame = hierarchyFrames.get(hierarchyId);
-          const transformed = frame !== void 0 && !frame.every((value2, i) => value2 === IDENTITY[i]);
-          const instances2 = primitiveNodes.get(primitive.id)?.length ?? 1;
-          for (let instance = 0; instance < instances2; instance++) {
-            const posed = {
-              ...drawn(skin === void 0 ? present(deformed, "deformed skin") : gpu.bindPose),
-              ...transformed ? { transform: new Float32Array(frame) } : {},
-              ...skin === void 0 ? {} : { skin },
-              ...faded(primitive)
-            };
-            primitives.push(posed);
-          }
+          const base = skin === void 0 ? drawn(present(deformed, "deformed skin")) : gpu.drawn;
+          for (let instance = 0; instance < instances2.length; instance++)
+            primitives.push(placedPrimitive(base, hierarchy.transformed ? new Float32Array(hierarchy.frame) : void 0, skin, fade));
         } else {
           const targets = primitive.morphTargets?.length ?? 0;
           const defaults = meshOfPrimitive.get(primitive.id)?.morphWeights;
-          for (const node of primitiveNodes.get(primitive.id) ?? [void 0]) {
+          for (const node of instances2) {
             const transform2 = node === void 0 ? void 0 : animatedWorlds.get(node) ?? worlds.get(node);
-            const weights = (node === void 0 ? void 0 : nodeWeights.get(node)) ?? defaults;
+            const weights = (node === void 0 ? void 0 : nodeWeights?.get(node)) ?? defaults;
             const shaped = targets > 0 && weights !== void 0 && weights.some((weight) => weight !== 0) ? morphPrimitive(primitive, weights) : primitive;
-            primitives.push({
-              ...drawn(shaped),
-              ...transform2 === void 0 ? {} : { transform: new Float32Array(transform2) },
-              ...faded(primitive)
-            });
+            primitives.push(placedPrimitive(drawn(shaped), transform2 === void 0 ? void 0 : new Float32Array(transform2), void 0, fade));
           }
         }
       }
+      let joints;
       return {
         // Each sample owns these matrices. Sockets, emitters and other node-based features use
         // the same full world transforms as geometry and bones, without format-specific math.
         nodeTransforms: animatedWorlds,
         primitives: Object.freeze(primitives),
-        joints: Object.freeze(joints),
+        get joints() {
+          return joints ??= sampleJoints(poses);
+        },
         diagnostics: Object.freeze(diagnostics)
       };
     }
@@ -18436,6 +18732,17 @@ function finite3(value2) {
 function tuple(value2, offset = 0) {
   return [finite3(value2[offset]), finite3(value2[offset + 1]), finite3(value2[offset + 2])];
 }
+function finiteTuple(value2, offset) {
+  finite3(value2[offset]);
+  finite3(value2[offset + 1]);
+  finite3(value2[offset + 2]);
+}
+function allFinite(values) {
+  for (let index = 0; index < values.length; index++)
+    if (!Number.isFinite(values[index]))
+      return false;
+  return true;
+}
 var previewFields = [
   "modelPaths",
   "swapModelParticleYZ",
@@ -18641,8 +18948,12 @@ function validatePreviewEmitter(emitter) {
       finite3(value2.shape);
   }
 }
+var validPreviewEmitters = /* @__PURE__ */ new WeakSet();
 function prepareAnchor(emitter, index, options, scratch) {
-  validatePreviewEmitter(emitter);
+  if (!validPreviewEmitters.has(emitter)) {
+    validatePreviewEmitter(emitter);
+    validPreviewEmitters.add(emitter);
+  }
   identityAnchor(scratch);
   options.anchorProvider("particle", index, finite3(emitter.boneIndex), options.time, scratch);
   options.signal?.throwIfAborted();
@@ -18722,21 +19033,22 @@ function createUvmParticleGeometry(state, emitters, options) {
       throw new TypeError("particle emitter index absent");
     if (!used.has(index))
       used.set(index, used.size);
-    for (const value2 of [
-      state.ages[slot],
-      state.lifeSpans[slot],
-      state.facings[slot],
-      state.sizeRandomFactors[slot],
-      state.colorRandomFactors[slot],
-      state.alphaRandomFactors[slot],
-      state.rotationRandomFactors[slot],
-      state.randomSeeds[slot]
-    ])
-      finite3(value2);
-    tuple(state.positions, slot * 3);
-    tuple(state.velocities, slot * 3);
-    tuple(state.spawnPositions, slot * 3);
-    if (![0, 1, 2].includes(required2(state.spaces[slot])) || ![0, 1].includes(required2(state.types[slot])))
+    finite3(state.ages[slot]);
+    finite3(state.lifeSpans[slot]);
+    finite3(state.facings[slot]);
+    finite3(state.sizeRandomFactors[slot]);
+    finite3(state.colorRandomFactors[slot]);
+    finite3(state.alphaRandomFactors[slot]);
+    finite3(state.rotationRandomFactors[slot]);
+    finite3(state.randomSeeds[slot]);
+    finiteTuple(state.positions, slot * 3);
+    finiteTuple(state.velocities, slot * 3);
+    finiteTuple(state.spawnPositions, slot * 3);
+    const space = required2(state.spaces[slot]);
+    if (space !== 0 && space !== 1 && space !== 2)
+      throw new TypeError("particle storage space or head/tail type is invalid");
+    const type = required2(state.types[slot]);
+    if (type !== 0 && type !== 1)
       throw new TypeError("particle storage space or head/tail type is invalid");
   }
   const scratchBytes = 256 + used.size * 512;
@@ -18838,20 +19150,15 @@ function createUvmParticleGeometry(state, emitters, options) {
         up = scaleVec3(subVec3(position, start), 0.5);
       }
     }
-    const uv = particleUvRect(anchor, phase, tail), positions = new Float32Array(12), textureCoordinates = Float32Array.of(uv[0], uv[3], uv[0], uv[1], uv[2], uv[1], uv[2], uv[3]), colors = Float32Array.from([...color, ...color, ...color, ...color]);
-    const signs = [
-      [-1, -1],
-      [-1, 1],
-      [1, 1],
-      [1, -1]
-    ];
-    signs.forEach(([x, y], corner) => {
-      const point = addVec3(addVec3(center, scaleVec3(right, x)), scaleVec3(up, y));
-      positions.set(point, corner * 3);
-    });
-    for (const buffer of [positions, textureCoordinates, colors])
-      if (!buffer.every(Number.isFinite))
-        throw new RangeError("particle preview exceeds finite float32");
+    const uv = particleUvRect(anchor, phase, tail), positions = new Float32Array(12), textureCoordinates = Float32Array.of(uv[0], uv[3], uv[0], uv[1], uv[2], uv[1], uv[2], uv[3]), colors = new Float32Array(16);
+    for (let corner = 0; corner < 4; corner++) {
+      const x = corner < 2 ? -1 : 1, y = corner === 0 || corner === 3 ? -1 : 1;
+      for (let axis = 0; axis < 3; axis++)
+        positions[corner * 3 + axis] = center[axis] + right[axis] * x + up[axis] * y;
+      colors.set(color, corner * 4);
+    }
+    if (!allFinite(positions) || !allFinite(textureCoordinates) || !allFinite(colors))
+      throw new RangeError("particle preview exceeds finite float32");
     entries.push({
       emitter: index,
       slot,
@@ -20546,9 +20853,8 @@ function spriteFrames(positions, coordinates, indices) {
     return void 0;
   const normals = new Float32Array(count * 12), tangents = new Float32Array(count * 16);
   for (let sprite = 0; sprite < count; sprite++) {
-    const first = sprite * 4;
-    const corners = indices.subarray(sprite * 6, sprite * 6 + 6);
-    if (![0, 1, 2, 0, 2, 3].every((offset, at) => corners[at] === first + offset))
+    const first = sprite * 4, at = sprite * 6;
+    if (indices[at] !== first || indices[at + 1] !== first + 1 || indices[at + 2] !== first + 2 || indices[at + 3] !== first || indices[at + 4] !== first + 2 || indices[at + 5] !== first + 3)
       return void 0;
     const { normal, tangent } = materialTriangleFrame(positions, coordinates, first, first + 1, first + 2);
     for (let vertex = first; vertex < first + 4; vertex++) {
@@ -20558,28 +20864,31 @@ function spriteFrames(positions, coordinates, indices) {
   }
   return { normals, tangents };
 }
+function spriteCentre(positions, axis) {
+  let low = Infinity, high = -Infinity;
+  for (let at = axis; at < positions.length; at += 3) {
+    low = Math.min(low, positions[at]);
+    high = Math.max(high, positions[at]);
+  }
+  return (low + high) / 2;
+}
 function emitterSprites(index, sprites, material, depth, toWorld) {
-  const ordered = sprites.map((sprite, ordinal) => {
-    const { positions: positions2 } = sprite;
-    const centre = [0, 1, 2].map((axis) => {
-      let low = Infinity, high = -Infinity;
-      for (let at = axis; at < positions2.length; at += 3) {
-        low = Math.min(low, positions2[at]);
-        high = Math.max(high, positions2[at]);
-      }
-      return (low + high) / 2;
-    });
-    const key = depth[0] * centre[0] + depth[1] * centre[1] + depth[2] * centre[2] + depth[3];
-    return { sprite, ordinal, key };
-  }).sort((left, right) => left.key - right.key || left.ordinal - right.ordinal);
+  const keys = new Float64Array(sprites.length);
+  const order = [];
+  sprites.forEach(({ positions: positions2 }, ordinal) => {
+    keys[ordinal] = depth[0] * spriteCentre(positions2, 0) + depth[1] * spriteCentre(positions2, 1) + depth[2] * spriteCentre(positions2, 2) + depth[3];
+    order.push(ordinal);
+  });
+  order.sort((left, right) => keys[left] - keys[right] || left - right);
   let vertexCount = 0, indexCount = 0;
-  for (const { sprite } of ordered) {
+  for (const sprite of sprites) {
     vertexCount += sprite.positions.length / 3;
     indexCount += sprite.indices.length;
   }
   const positions = new Float32Array(vertexCount * 3), textureCoordinates = new Float32Array(vertexCount * 2), colors = new Float32Array(vertexCount * 4), indices = new Uint32Array(indexCount);
   let vertex = 0, corner = 0;
-  for (const { sprite } of ordered) {
+  for (const ordinal of order) {
+    const sprite = sprites[ordinal];
     positions.set(sprite.positions, vertex * 3);
     textureCoordinates.set(sprite.textureCoordinates, vertex * 2);
     colors.set(sprite.colors, vertex * 4);
