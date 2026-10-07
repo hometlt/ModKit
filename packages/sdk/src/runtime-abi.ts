@@ -121,7 +121,26 @@ export interface ContributionContext {
    * subjects in mod contexts hands it over; a card asks for the entities it shows, never a catalog.
    */
   readonly catalog?: SubjectCatalogPort
+  /**
+   * The servers of the mods the host has loaded (owner decision 07.10: a loaded mod's ModContext is
+   * the one holder of its data). A language provider whose request names a mod context
+   * (`LanguageWorkspaceContext.modContext`) asks that server game-defined questions a few entities
+   * at a time instead of receiving resolved data whole. Absent where the host loads no mods.
+   */
+  readonly modContexts?: ModContextQueryPort
   readonly signal?: AbortSignal
+}
+
+/**
+ * A host's port to the server of one loaded mod, addressed by the scope a language request names
+ * (`LanguageWorkspaceContext.modContext`). `question` is the game's own (`ModContext.query`); the
+ * answer is bounded JSON. Files are named in an answer by the context's layer and a layer-relative
+ * path: when the answer has a top-level `documents` array of `{ layerId, path }`, the host completes
+ * each entry with the `uri` it addresses that file by in language requests, so a provider never
+ * builds one. A scope the host no longer serves is refused.
+ */
+export interface ModContextQueryPort {
+  query(scope: string, question: JsonValue, signal?: AbortSignal): Promise<JsonValue>
 }
 
 export interface SubjectCatalogPort {

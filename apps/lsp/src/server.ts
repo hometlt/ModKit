@@ -264,6 +264,8 @@ export interface ModkitLanguageServerOptions {
   /** Bounded whole-document projections, independent of completion/search lists. */
   readonly maxDocumentResults?: number
   readonly connection?: Connection
+  /** Files inside the roots changed on disk: the loaded mods' servers read them again first. */
+  readonly filesChanged?: () => Promise<void>
 }
 
 export interface RunningModkitLanguageServer {
@@ -1340,6 +1342,9 @@ export function createModkitLanguageServer(
   documents.onDidSave(event => schedule(event.document, 'refresh'))
   connection.onDidChangeWatchedFiles(params => {
     if (!params.changes.some(change => fileInsideRoots(change.uri))) return
+    // The servers read the changed files before any refreshed request reaches them.
+    const filesChanged = options.filesChanged
+    if (filesChanged !== undefined) enqueue(() => filesChanged())
     for (const document of documents.all()) schedule(document, 'refresh')
   })
   documents.onDidClose(event => {

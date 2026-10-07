@@ -263,6 +263,7 @@ export type {
   ServiceProviderModule,
   SessionState,
   SubjectCatalogPort,
+  ModContextQueryPort,
   TraitQuery,
   InputSearchScope,
   SubjectSearchScope,

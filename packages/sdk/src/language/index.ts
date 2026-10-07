@@ -485,8 +485,20 @@ export interface LanguageKnowledgeSemanticContextRequirement {
   readonly fileNames: readonly string[]
 }
 
+/**
+ * Provider-declared request for the server of the loaded mod the document belongs to (owner
+ * decision 07.10). The host names that server in `LanguageWorkspaceContext.modContext` and gives the
+ * provider `ContributionContext.modContexts` to ask it; no resolved Data is analysed or sent whole.
+ */
+export interface LanguageModContextSemanticContextRequirement {
+  readonly kind: 'mod-context'
+  readonly gameId: string
+}
+
 export type LanguageSemanticContextRequirement =
-  LanguageResolvedDataSemanticContextRequirement | LanguageKnowledgeSemanticContextRequirement
+  | LanguageResolvedDataSemanticContextRequirement
+  | LanguageKnowledgeSemanticContextRequirement
+  | LanguageModContextSemanticContextRequirement
 
 /** Versioned host-owned mod/dependency context shared by every language provider. */
 export interface LanguageWorkspaceContext {
@@ -495,6 +507,19 @@ export interface LanguageWorkspaceContext {
   readonly semanticComplete: boolean
   readonly documentOrigins: readonly LanguageWorkspaceDocumentOrigin[]
   readonly semanticInputs?: readonly LanguageWorkspaceSemanticInput[]
+  /**
+   * The loaded mod's server this request reads, for a provider that declared a `mod-context`
+   * requirement: the scope to ask through `ContributionContext.modContexts`, the server's revision
+   * after the editor's open buffers reached it, and whether the mod's chain is complete.
+   */
+  readonly modContext?: LanguageWorkspaceModContext
+}
+
+export interface LanguageWorkspaceModContext {
+  readonly scope: string
+  readonly gameId: string
+  readonly revision: string
+  readonly complete: boolean
 }
 
 /**

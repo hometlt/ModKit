@@ -31,6 +31,7 @@ import {
   ABI_VIDEO_FRAMES,
   ABI_INSTALLATION_FILES,
   ABI_SUBJECT_CATALOG,
+  ABI_MOD_CONTEXT_QUERY,
   ABI_CREDENTIALS,
   ABI_MODEL_RESOURCES,
   ABI_LOGICAL_RESOURCES,
@@ -138,6 +139,9 @@ export function moduleAdapter(
       ...(context.catalog === undefined
         ? {}
         : { catalog: expose(context.catalog, ABI_SUBJECT_CATALOG) }),
+      ...(context.modContexts === undefined
+        ? {}
+        : { modContexts: expose(context.modContexts, ABI_MOD_CONTEXT_QUERY) }),
       ...(context.credentials === undefined
         ? {}
         : { credentials: expose(context.credentials, ABI_CREDENTIALS) }),

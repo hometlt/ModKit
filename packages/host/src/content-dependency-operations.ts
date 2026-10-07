@@ -141,6 +141,8 @@ interface SubjectClosures {
   readonly resolutions: readonly ContentDependencyResolution[]
   readonly diagnostics: readonly Diagnostic[]
   readonly complete: boolean
+  /** The subjects' opened mod contexts, when the caller keeps them (it disposes them). */
+  readonly contexts: readonly ModContext[]
 }
 
 const failure = (code: string, error: unknown): Diagnostic =>
@@ -220,19 +222,30 @@ async function subjectClosures(request: {
   readonly contentSources: ContentSources
   readonly subjects: readonly ContentSubject[]
   readonly baseMods?: BaseModSetting
+  /** Keep each subject's context open and hand it back. */
+  readonly keepContexts?: boolean
   readonly signal?: AbortSignal
 }): Promise<SubjectClosures> {
   const { contentSources, signal } = request
   const resolutions: ContentDependencyResolution[] = []
   const diagnostics: Diagnostic[] = []
+  const contexts: ModContext[] = []
   let complete = request.subjects.length > 0
   for (const subject of request.subjects) {
-    const closure = await resolveSubjectClosure({
-      contentSources,
-      subject,
-      ...(request.baseMods === undefined ? {} : { baseMods: request.baseMods }),
-      ...(signal === undefined ? {} : { signal }),
-    })
+    let closure: Awaited<ReturnType<typeof resolveSubjectClosure>>
+    try {
+      closure = await resolveSubjectClosure({
+        contentSources,
+        subject,
+        ...(request.baseMods === undefined ? {} : { baseMods: request.baseMods }),
+        ...(request.keepContexts === true ? { keepContext: true } : {}),
+        ...(signal === undefined ? {} : { signal }),
+      })
+    } catch (error) {
+      await Promise.allSettled(contexts.map(context => context.dispose()))
+      throw error
+    }
+    if (closure.context !== undefined) contexts.push(closure.context)
     diagnostics.push(...closure.diagnostics)
     if (closure.resolution === undefined) complete = false
     else {
@@ -244,6 +257,7 @@ async function subjectClosures(request: {
     resolutions: Object.freeze(resolutions.filter(resolution => resolution.mounts.length > 0)),
     diagnostics: Object.freeze(diagnostics),
     complete,
+    contexts: Object.freeze(contexts),
   })
 }
 
@@ -427,6 +441,12 @@ export interface ContentLanguageSourcesRequest {
   readonly subjects: readonly ContentSubject[]
   /** Packages a subject outside any package opens inside, per host path. */
   readonly baseMods?: BaseModSetting
+  /**
+   * Keep each subject's mod context open as the loaded mod's server (owner decision 07.10) and
+   * hand them back as `contexts` for the language workspace's `createLanguageModContexts`;
+   * the caller disposes them.
+   */
+  readonly keepContexts?: boolean
   readonly signal?: AbortSignal
 }
 
@@ -435,6 +455,8 @@ export interface ContentLanguageSources {
   readonly diagnostics: readonly Diagnostic[]
   /** True when at least one subject was given and every subject's closure resolved completely. */
   readonly dependenciesComplete: boolean
+  /** The subjects' opened mod contexts, when `keepContexts` asked for them; the caller disposes them. */
+  readonly contexts?: readonly ModContext[]
 }
 
 /**
@@ -459,6 +481,7 @@ export async function resolveContentLanguageSources(
     ),
     diagnostics: closures.diagnostics,
     dependenciesComplete: closures.complete,
+    ...(request.keepContexts === true ? { contexts: closures.contexts } : {}),
   })
 }
 

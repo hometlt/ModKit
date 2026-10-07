@@ -30,6 +30,7 @@ import type {
   ContributionSettings,
   DefinitionInventoryResult,
   PermissionGrant,
+  ModContextQueryPort,
   ResourceBudget,
   RuntimeTarget,
   ServiceContractDefinitionRegistry,
@@ -539,6 +540,8 @@ export interface ResolveLanguageProviderRequest extends LanguageProviderRequestF
   readonly services: LanguageHostServices
   readonly grant: PermissionGrant
   readonly budgets: ResourceBudget
+  /** The workspace's port to the loaded mod servers its requests name (`mod-context` requirements). */
+  readonly modContexts?: ModContextQueryPort
   readonly signal?: AbortSignal
 }
 
@@ -635,6 +638,7 @@ export async function resolveLanguageProvider(
     ...(request.services.contributionSettings === undefined
       ? {}
       : { contributionSettings: request.services.contributionSettings }),
+    ...(request.modContexts === undefined ? {} : { modContexts: request.modContexts }),
     ...(request.signal === undefined ? {} : { signal: request.signal }),
   })
   let released = false
@@ -784,6 +788,13 @@ export {
   type LanguageWorkspaceSymbolsRequest,
 } from './workspace.js'
 export { expandSubjectReferenceCompletions } from './subject-completion.js'
+export {
+  createLanguageModContexts,
+  languageModContextTarget,
+  type LanguageModContextPlace,
+  type LanguageModContexts,
+  type LanguageModContextsOptions,
+} from './mod-contexts.js'
 export {
   languageDocumentSnapshot,
   languageDocumentTextToken,

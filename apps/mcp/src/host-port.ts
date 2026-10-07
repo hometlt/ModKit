@@ -18,6 +18,7 @@ import {
 } from '@modkit/host'
 import { discoverGameInstallations } from '@modkit/host/games'
 import {
+  createLanguageModContexts,
   createLanguageWorkspace,
   languageWorkspaceContextToken,
   languageProviderRoutes,
@@ -849,8 +850,20 @@ export async function createHostMcpPort(
             ...(configuration.baseMods === undefined
               ? {}
               : { baseMods: { '*': configuration.baseMods } }),
+            keepContexts: true,
             ...(signal === undefined ? {} : { signal }),
           })
+    /** The subject's mod context, kept open as the loaded mod's server (owner decision 07.10). */
+    const modContexts =
+      projected === undefined
+        ? undefined
+        : createLanguageModContexts({
+            contexts: projected.contexts ?? [],
+            uriOf: target => (typeof target === 'string' ? pathToFileURL(target).href : undefined),
+            maxDocumentBytes: MCP_LANGUAGE_MAX_DOCUMENT_BYTES,
+          })
+    // The server builds its Data while the session opens its documents.
+    void modContexts?.prepare()
     dependencyDiagnostics.push(...(projected?.diagnostics ?? []))
     const dependencyResolutionComplete = projected?.dependenciesComplete === true
     /*
@@ -907,6 +920,7 @@ export async function createHostMcpPort(
             ]),
       ]),
       ...(documentSource === undefined ? {} : { documentSource }),
+      ...(modContexts === undefined ? {} : { modContexts }),
       documentOrigin: document => {
         const session = byUri.get(document.uri)
         return session === undefined
@@ -956,6 +970,7 @@ export async function createHostMcpPort(
       }
     } catch (error) {
       await workspace.shutdown()
+      await modContexts?.dispose()
       throw error
     }
     const result = async (
@@ -1103,6 +1118,7 @@ export async function createHostMcpPort(
           analyses.clear()
           featuresByUri.clear()
           await workspace.shutdown()
+          await modContexts?.dispose()
         })()
         return closePromise
       },

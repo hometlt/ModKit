@@ -96,6 +96,7 @@ type SubjectCatalogOptions,
 } from '@modkit/host'
 import {
 classifyLanguageFile,
+createLanguageModContexts,
 createLanguageWorkspace,
 LANGUAGE_MAX_DOCUMENTS,
 contentPathIndexSemanticInputs,
@@ -7122,6 +7123,33 @@ async function activateModkit(
       },
     })
 
+  /*
+   * The loaded mods' servers language requests read (owner decision 07.10): each language scope's
+   * mod context, kept open while the window lives and replaced when the scope's context is rebuilt
+   * over another chain. Documents are named here as the editor names them.
+   */
+  const languageModContexts = createLanguageModContexts({
+    targetOf: uri => {
+      let parsed: vscode.Uri
+      try {
+        parsed = vscode.Uri.parse(uri, true)
+      } catch {
+        return undefined
+      }
+      const subject = subjectPathOf(parsed)
+      return subject === undefined ? undefined : modContextTargetOf(subject)
+    },
+    uriOf: target =>
+      typeof target === 'string'
+        ? vscode.Uri.file(target).toString()
+        : vscode.Uri.from({
+            scheme: 'modkit-source',
+            authority: 'battlenet',
+            path: `/${target.sourceId}/${target.path}`,
+          }).toString(),
+    maxDocumentBytes: Number(LANGUAGE_ACTIVATION_BUDGET.maxInputBytes),
+  })
+  context.subscriptions.push({ dispose: () => void languageModContexts.dispose() })
   const dependencyFailureNotices = new Set<string>()
   /** The snapshot one key stands for, built once and remembered; callers rebase it on their request. */
   const buildLanguageSnapshot = async (
@@ -7155,8 +7183,12 @@ async function activateModkit(
             ? []
             : [{ descriptor: scope?.descriptor ?? Object.freeze({}), target }],
         ...(baseMods === undefined ? {} : { baseMods }),
+        keepContexts: true,
         signal: request.signal,
       })
+      languageModContexts.replace(scope?.contextId ?? loose ?? '', projected.contexts ?? [])
+      // The scope's server builds its Data while the snapshot is composed.
+      void languageModContexts.prepare()
       for (const item of projected.diagnostics) {
         log(`[language-context] ${item.severity} ${item.code}: ${item.message}`)
       }
@@ -7320,6 +7352,7 @@ async function activateModkit(
     workspaceBudgets: LANGUAGE_WORKSPACE_BUDGET,
     subjectCandidates: languageSubjectCandidates,
     documentSource: languageDocumentSource,
+    modContexts: languageModContexts,
     documentOrigin: document => {
       let uri: vscode.Uri
       try {
@@ -13510,6 +13543,12 @@ async function activateModkit(
       path,
       setTimeout(() => {
         reloadTimers.delete(path)
+        // The servers language requests read list and read their chains again.
+        void languageModContexts
+          .invalidate()
+          .catch(error =>
+            log(`[language-context] reload: ${error instanceof Error ? error.message : String(error)}`),
+          )
         void resourceSessions()
           .then(async sessions => {
             if (sessions.list().length === 0) return

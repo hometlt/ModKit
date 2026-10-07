@@ -55,6 +55,7 @@ import {
   type LanguageProviderRequestFacet,
   type LanguageRange,
   type LanguageRenamePreparation,
+  type LanguageModContextSemanticContextRequirement,
   type LanguageResolvedDataSemanticContextRequirement,
   type LanguageSignatureHelp,
   type LanguageSignatureParameter,
@@ -65,12 +66,14 @@ import {
   type LanguageWorkspaceEdit,
   type LanguageWorkspaceContext,
   type LanguageWorkspaceDocumentOrigin,
+  type LanguageWorkspaceModContext,
   type LanguageWorkspaceSemanticInput,
   type LanguageWorkspaceSymbolList,
 } from '@modkit/sdk/language'
 import type {
   JsonValue,
   LanguageFileAssociation,
+  ModContextQueryPort,
   PermissionGrant,
   ReferenceOccurrence,
   ResourceBudget,
@@ -93,6 +96,7 @@ import {
   validatedLanguageWorkspaceSemanticInputs,
 } from './context.js'
 import { createWorkspaceReferenceIndex } from '../references.js'
+import type { LanguageModContexts } from './mod-contexts.js'
 import {
   analyzeResolvedDataSemanticContext,
   prepareResolvedDataSemanticContext,
@@ -605,6 +609,13 @@ export interface LanguageWorkspaceOptions {
   readonly workspaceIncomplete?: boolean | (() => boolean)
   /** Optional host-owned source of read-only dependency documents for semantic feature snapshots. */
   readonly documentSource?: LanguageWorkspaceDocumentSource
+  /**
+   * The loaded mod servers of the workspace's subjects (owner decision 07.10). A provider that
+   * declares a `mod-context` requirement reads the server of its document's chain, named in
+   * `workspaceContext.modContext`, after the editor's open buffers reached it; it asks through
+   * the port the workspace gives it at activation. A function is asked again on every request.
+   */
+  readonly modContexts?: LanguageModContexts | (() => LanguageModContexts | undefined)
   /** Identity of an open document inside the selected mod/dependency context, when known. */
   readonly documentOrigin?: (
     document: LanguageDocument,
@@ -2012,6 +2023,42 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
   let state: 'new' | 'ready' | 'shut-down' = 'new'
   let shutdownPromise: Promise<void> | undefined
   let workspaceGeneration = 0
+  const modContextsNow = (): LanguageModContexts | undefined =>
+    typeof options.modContexts === 'function' ? options.modContexts() : options.modContexts
+  /** One port for every provider: a question goes to the server its scope names, now. */
+  const modContextPort: ModContextQueryPort = Object.freeze({
+    query(scope: string, question: JsonValue, signal?: AbortSignal): Promise<JsonValue> {
+      const registry = modContextsNow()
+      if (registry === undefined) {
+        return Promise.reject(new TypeError(`no loaded mod is served as ${scope}`))
+      }
+      return registry.query(scope, question, signal)
+    },
+  })
+  /**
+   * The server a request of this document reads, for a provider that declared a `mod-context`
+   * requirement: the chain holding the document, after every open buffer of that chain reached it.
+   */
+  const requestModContext = async (
+    entry: OpenDocument,
+    signal: AbortSignal,
+  ): Promise<LanguageWorkspaceModContext | undefined> => {
+    const registry = modContextsNow()
+    if (registry === undefined) return undefined
+    const requirement = validatedLanguageSemanticContextRequirements(
+      entry.resolution.provider.semanticContextRequirements ?? [],
+    ).find(
+      (item): item is LanguageModContextSemanticContextRequirement => item.kind === 'mod-context',
+    )
+    if (requirement === undefined) return undefined
+    const place = registry.placeOf(entry.uri, requirement.gameId)
+    if (place === undefined) return undefined
+    return registry.synchronize(
+      place.scope,
+      [...documents.values()].map(open => open.document),
+      signal,
+    )
+  }
 
   const routeForRequest = (request: LanguageWorkspaceDocumentRequest): LanguageProviderRoute => {
     const identity = routeOf(request)
@@ -2568,8 +2615,30 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         semanticContextsComplete = false
       }
       const semanticComplete = baseSemanticComplete && semanticContextsComplete
+      let modContext: LanguageWorkspaceModContext | undefined
+      if (!documentOnly) {
+        try {
+          modContext = await requestModContext(entry, controller.signal)
+        } catch (error) {
+          if (isCancellation(error)) throw error
+          throwIfAborted(controller.signal)
+          throw workspaceError(
+            LANGUAGE_PROVIDER_FAILED,
+            `the loaded mod of ${entry.uri}@${entry.version} did not take the open buffers`,
+            {
+              uri: entry.uri,
+              version: String(entry.version),
+              error: error instanceof Error ? error.message : String(error),
+            },
+          )
+        }
+        throwIfAborted(controller.signal)
+      }
       const workspaceContext =
-        sourceContext === undefined && documentOrigins.length === 0 && semanticInputs.length === 0
+        sourceContext === undefined &&
+        documentOrigins.length === 0 &&
+        semanticInputs.length === 0 &&
+        modContext === undefined
           ? undefined
           : Object.freeze({
               id: languageWorkspaceContextToken({
@@ -2588,6 +2657,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
                   kind: input.kind,
                   id: input.id,
                 })),
+                ...(modContext === undefined ? {} : { modContext: modContext.scope }),
               }),
               revision: languageWorkspaceContextToken({
                 sourceRevision: sourceContext?.revision,
@@ -2599,6 +2669,9 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
                     : languageWorkspaceContextToken(input),
                 })),
                 semanticComplete,
+                ...(modContext === undefined
+                  ? {}
+                  : { modContext: { revision: modContext.revision, complete: modContext.complete } }),
                 documents: snapshotDocuments.map(document => ({
                   uri: document.uri,
                   version: document.version,
@@ -2609,6 +2682,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
               semanticComplete,
               documentOrigins,
               semanticInputs,
+              ...(modContext === undefined ? {} : { modContext }),
             } satisfies LanguageWorkspaceContext)
       const providerRequest = Object.freeze({
         document: entry.document,
@@ -2908,6 +2982,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
       ...route,
       grant: options.grant,
       budgets: options.budgets,
+      ...(options.modContexts === undefined ? {} : { modContexts: modContextPort }),
       ...(request.signal === undefined ? {} : { signal: request.signal }),
     })
     if (resolution.state === 'unresolved') {
@@ -2983,6 +3058,10 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
       }
     }
     await release(entry)
+    // The editor no longer holds the buffer; the server reads the file on disk again.
+    await modContextsNow()
+      ?.release(entry.uri)
+      .catch(() => undefined)
   }
 
   const positionAtOffset = (text: string, rawOffset: number): LanguagePosition => {

@@ -6,9 +6,11 @@ import { compareUtf8 } from '@modkit/core'
 import type { AnyDescriptor } from '@modkit/sdk'
 import { composeLanguageDocumentSources, resolveContentLanguageSources } from '@modkit/host'
 import {
+  createLanguageModContexts,
   createLanguageWorkspace,
   languageProviderRoutes,
   languageWorkspaceContextToken,
+  type LanguageModContexts,
 } from '@modkit/host/language'
 import {
   createModkit,
@@ -80,6 +82,8 @@ export async function runModkitLsp(argv: readonly string[]) {
   const openedRoots: ModkitOpened[] = []
   let openedSubjectDescriptors: AnyDescriptor[] = []
   const dependencySources = []
+  /** The roots' mod contexts, kept open as the loaded mods' servers (owner decision 07.10). */
+  let modContexts: LanguageModContexts | undefined
   if (contentSources !== undefined) {
     // A root that opens as no subject (a folder of scripts) still opens inside its base mods.
     const looseRoots: string[] = []
@@ -115,7 +119,15 @@ export async function runModkitLsp(argv: readonly string[]) {
         ...looseRoots.map(root => ({ descriptor: { subjectUri: pathToFileURL(root).href } })),
       ],
       ...(configuration.baseMods.length === 0 ? {} : { baseMods: { '*': configuration.baseMods } }),
+      keepContexts: true,
     })
+    modContexts = createLanguageModContexts({
+      contexts: projected.contexts ?? [],
+      uriOf: target => (typeof target === 'string' ? pathToFileURL(target).href : undefined),
+      maxDocumentBytes: configuration.maxDocumentBytes,
+    })
+    // The servers build their Data while the client starts up; the first request finds it ready.
+    void modContexts.prepare()
     for (const item of projected.diagnostics)
       process.stderr.write(errorLine(item.code, item.message))
     dependencySources.push(...projected.sources)
@@ -136,6 +148,7 @@ export async function runModkitLsp(argv: readonly string[]) {
       maxInputBytes: BigInt(configuration.maxWorkspaceBytes),
     },
     ...(documentSource === undefined ? {} : { documentSource }),
+    ...(modContexts === undefined ? {} : { modContexts }),
     semanticInputs: Object.freeze([
       Object.freeze({
         kind: 'locale-set',
@@ -169,6 +182,7 @@ export async function runModkitLsp(argv: readonly string[]) {
     maxDocuments: configuration.maxDocuments,
     maxDocumentBytes: configuration.maxDocumentBytes,
     maxWorkspaceBytes: configuration.maxWorkspaceBytes,
+    ...(modContexts === undefined ? {} : { filesChanged: () => modContexts!.invalidate() }),
   })
   server.listen()
   let closed: Promise<void> | undefined
@@ -178,6 +192,7 @@ export async function runModkitLsp(argv: readonly string[]) {
       closed ??= (async () => {
         await server.close()
         for (const opened of openedRoots) await opened.close()
+        await modContexts?.dispose()
         await contentSources?.dispose()
         await modkit.close()
       })()

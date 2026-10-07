@@ -235,7 +235,33 @@ export interface ModContext {
    * answered where the merged state lives and paged, so no host ever carries it whole.
    */
   query?(request: unknown, signal?: AbortSignal): Promise<unknown>
+  /**
+   * A context that is its chain's server (one per loaded chain, shared by the contexts over it):
+   * the server's revision, which changes with every overlay and invalidation, so an answer can
+   * say which state of the chain it reflects. Absent where the game keeps no server.
+   */
+  readonly revision?: string
+  /**
+   * Unsaved editor text over a layer's file, or a file the editor has not saved yet; a change
+   * without `text` removes the overlay. Every reader of the chain — `read`, `files`, `query` — sees
+   * the text from then on.
+   */
+  overlay?(changes: readonly ModContextOverlay[]): Promise<{ readonly revision: string }>
+  /** The chain's files changed on disk: list and read them again. */
+  invalidate?(): Promise<{ readonly revision: string }>
+  /**
+   * Build what answering questions needs before the first question (a loaded mod's Data), so an
+   * editor's first request does not wait for it. Absent where a game builds nothing ahead.
+   */
+  prepare?(signal?: AbortSignal): Promise<void>
   dispose(): Promise<void>
+}
+
+/** Editor text over one file of a context layer (`path` is layer-relative), or its removal. */
+export interface ModContextOverlay {
+  readonly layerId: string
+  readonly path: string
+  readonly text?: string
 }
 
 /**

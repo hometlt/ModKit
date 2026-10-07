@@ -48,13 +48,14 @@ export function validatedLanguageSemanticContextRequirements(
   const seen = new Set<string>()
   for (const item of value) {
     const keys = typeof item === 'object' && item !== null ? Reflect.ownKeys(item) : []
-    const knowledge =
-      typeof item === 'object' &&
-      item !== null &&
-      (item as { kind?: unknown }).kind === 'language-knowledge'
+    const declared = typeof item === 'object' && item !== null ? (item as { kind?: unknown }).kind : undefined
+    const knowledge = declared === 'language-knowledge'
+    const modContext = declared === 'mod-context'
     const allowed = knowledge
       ? ['kind', 'fileNames']
-      : ['kind', 'gameId', 'languageIds', 'localizationLanguageIds']
+      : modContext
+        ? ['kind', 'gameId']
+        : ['kind', 'gameId', 'languageIds', 'localizationLanguageIds']
     if (
       typeof item !== 'object' ||
       item === null ||
@@ -88,6 +89,16 @@ export function validatedLanguageSemanticContextRequirements(
       requirements.push(
         Object.freeze({ kind: 'language-knowledge', fileNames: Object.freeze([...fileNames]) }),
       )
+      continue
+    }
+    if (modContext) {
+      // One server per game a provider reads; the game's own questions go through the port.
+      const gameId = Object.getOwnPropertyDescriptor(item, 'gameId')?.value
+      if (!boundedText(gameId) || seen.has(`\0mod-context\0${gameId}`)) {
+        throw new TypeError('language semantic context requirement is invalid')
+      }
+      seen.add(`\0mod-context\0${gameId}`)
+      requirements.push(Object.freeze({ kind: 'mod-context', gameId }))
       continue
     }
     const descriptors = Object.getOwnPropertyDescriptors(item)

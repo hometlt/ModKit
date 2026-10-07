@@ -171,6 +171,90 @@ export function createProvider() {
       await activated.release()
     }
   }, 30_000)
+
+  it('asks the loaded mod server through the host port (x3.abi/mod-context-query), signal last', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'modkit-language-worker-'))
+    tempDirs.push(root)
+    writeFileSync(
+      join(root, 'provider.mjs'),
+      `
+export const abiVersion = 1
+export const provides = ['common.language/document-analysis']
+/** A provider that reads its document's loaded mod only through the port it was activated with. */
+export function createProvider(_selection, context) {
+  const port = context.modContexts
+  return { value: {
+    contract: 'common.language/document-analysis', languageIds: ['fixture'],
+    semanticContextRequirements: [{ kind: 'mod-context', gameId: 'test/game' }],
+    async analyze({document}) { return {documentUri:document.uri,documentVersion:document.version,tokens:[],symbols:[],diagnostics:[]} },
+    async hover({workspaceContext,signal}) {
+      const answer = await port.query(workspaceContext.modContext.scope, { kind: 'data.authoring', refs: [{ namespace: 'Unit', entityId: 'Marine' }] }, signal)
+      return { markdown: JSON.stringify(answer) }
+    },
+  }, async release() {} }
+}
+`,
+    )
+    const definition = LANGUAGE_DOCUMENT_CONTRACT_DEFINITION
+    const b = createNodeWorkerBackend({
+      bootstrapUrl,
+      policy: workerBackendPolicy({ loadDeadlineMs: 10_000, graceMs: 300 }),
+      foreignSurfaces: [
+        { contract: definition.contract, major: definition.major, surface: definition.surface! },
+      ],
+    })
+    const artifactRoot = pathToFileURL(`${root}/`)
+    const lease = await activateExecutionBackend(
+      createExecutionBackendRegistry([b]),
+      activation(new URL('provider.mjs', artifactRoot), artifactRoot),
+    )
+    leases.push(lease)
+    const createProvider = lease.module['createProvider'] as (
+      selection: unknown,
+      context: ContributionContext,
+    ) => Promise<{ value: LanguageProvider; release(): Promise<void> }>
+    const asked: { scope: string; question: unknown; signalled: boolean }[] = []
+    const activated = await createProvider(
+      { contract: definition.contract, major: definition.major },
+      {
+        ...context([]),
+        modContexts: {
+          async query(scope, question, signal) {
+            asked.push({ scope, question, signalled: signal instanceof AbortSignal })
+            return { revision: '3', index: { entities: [{ entityId: 'Marine' }] } }
+          },
+        },
+      },
+    )
+    try {
+      const hover = await activated.value.hover!({
+        document: { uri: 'file:///mod/UnitData.xml', languageId: 'fixture', version: 1, text: 'x' },
+        workspaceDocuments: [],
+        workspaceIncomplete: false,
+        workspaceContext: {
+          id: 'context',
+          revision: 'r',
+          semanticComplete: true,
+          documentOrigins: [],
+          modContext: { scope: 'mod-context:1:0', gameId: 'test/game', revision: '3', complete: true },
+        },
+        maxResults: 8,
+        maxDocuments: 1,
+        position: { line: 0, character: 0 },
+        signal: new AbortController().signal,
+      } as Parameters<NonNullable<LanguageProvider['hover']>>[0])
+      expect(JSON.parse(hover!.markdown)).toEqual({ revision: '3', index: { entities: [{ entityId: 'Marine' }] } })
+      expect(asked).toEqual([
+        {
+          scope: 'mod-context:1:0',
+          question: { kind: 'data.authoring', refs: [{ namespace: 'Unit', entityId: 'Marine' }] },
+          signalled: true,
+        },
+      ])
+    } finally {
+      await activated.release()
+    }
+  }, 30_000)
 })
 afterEach(async () => {
   for (const lease of leases.splice(0)) await lease.release().catch(() => undefined)

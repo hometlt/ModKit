@@ -20,6 +20,7 @@ import type {
   InstallationProbes,
   Lease,
   LogicalResourcePort,
+  ModContextQueryPort,
   PermissionGrant,
   ProviderOffer,
   ProviderPolicyLockEntry,
@@ -199,6 +200,8 @@ export interface HostServiceResolverOptions {
   readonly installationProbes?: InstallationProbes
   /** The host's settings for a provider, asked for by its id when it is activated. */
   readonly contributionSettings?: (contributionId: string) => ContributionSettings | undefined
+  /** Root provider only: questions to the loaded mod servers its requests name (language providers). */
+  readonly modContexts?: ModContextQueryPort
 }
 
 export interface HostServiceResolver {
@@ -283,6 +286,9 @@ export function createHostServiceResolver(
               ...(chain.length !== 0 || options.installationProbes === undefined
                 ? {}
                 : { installationProbes: options.installationProbes }),
+              ...(chain.length !== 0 || options.modContexts === undefined
+                ? {}
+                : { modContexts: options.modContexts }),
               diagnostics: {
                 report(item: Diagnostic) {
                   diagnostics.push(item)

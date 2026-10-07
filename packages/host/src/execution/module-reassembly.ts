@@ -32,6 +32,7 @@ export interface WireContext {
   readonly videoFrames?: ContributionContext['videoFrames']
   readonly installationFiles?: ContributionContext['installationFiles']
   readonly catalog?: ContributionContext['catalog']
+  readonly modContexts?: ContributionContext['modContexts']
   readonly credentials?: ContributionContext['credentials']
   readonly containerContext?: ContributionContext['containerContext']
 }
@@ -76,6 +77,7 @@ export function contributionContext(wire: WireContext): ContributionContext {
       ? {}
       : { installationFiles: wire.installationFiles }),
     ...(wire.catalog === undefined ? {} : { catalog: wire.catalog }),
+    ...(wire.modContexts === undefined ? {} : { modContexts: wire.modContexts }),
     ...(wire.credentials === undefined ? {} : { credentials: wire.credentials }),
     ...(wire.containerContext === undefined ? {} : { containerContext: wire.containerContext }),
     ...(wire.providerIdentity === undefined
