@@ -71,22 +71,6 @@ export interface NodeExecutionBackendsOptions {
  */
 export const LANGUAGE_RETAINED_VALUE_BYTES = 256 * 1_024 * 1_024
 
-/**
- * The language captures one worker keeps for a host that holds `memoryBytes` of resolved Data
- * contexts (`createLanguageWorkspace({ semanticContextMemoryBytes })`): twice that, since the
- * retained estimate counts UTF-16 units and a cost per node (about twice the JSON bytes the
- * workspace weighs) and the contexts' documents stay too; never below
- * {@link LANGUAGE_RETAINED_VALUE_BYTES}. Below it, a worker serving two loaded mods (Liberty and
- * Void) is sent each mod's index again whenever the editor moves between them.
- */
-export function languageRetainedValues(memoryBytes: number): RetainedValuePolicy {
-  const held = Number.isSafeInteger(memoryBytes) && memoryBytes > 0 ? memoryBytes : 0
-  return Object.freeze({
-    isRetainable: languageImmutableCapture,
-    maxBytes: Math.max(LANGUAGE_RETAINED_VALUE_BYTES, Math.min(2 * held, Number.MAX_SAFE_INTEGER)),
-  })
-}
-
 export function createNodeExecutionBackends(
   options: NodeExecutionBackendsOptions = {},
 ): ExecutionBackendRegistry {

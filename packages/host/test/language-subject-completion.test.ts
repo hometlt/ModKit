@@ -37,11 +37,8 @@ import {
   LANGUAGE_DOCUMENT_CONTRACT_DEFINITION,
   LANGUAGE_EDIT_READ_ONLY,
   type LanguageHostServices,
-  type LanguageSemanticContextStore,
-  type LanguageSemanticContextStoreSaveRequest,
   type LanguageWorkspaceDocumentSource,
   type LanguageWorkspaceDocumentRequest,
-  type LanguageWorkspaceOptions,
 } from '../src/language/index.js'
 
 describe('standard language execution surface', () => {
@@ -495,22 +492,18 @@ const fixture = defineLinkedExtension({
     './src/data-provider.js': {
       abiVersion: 1,
       provides: ['common.data/resolved-workspace'],
-      createProvider: (_selection: unknown, context?: { readonly settings?: unknown }) => {
-        dataProviderSettings = context?.settings
-        return {
-          value: dataProvider,
-          release: async () => {
-            dataProviderReleases += 1
-          },
-        }
-      },
+      createProvider: () => ({
+        value: dataProvider,
+        release: async () => {
+          dataProviderReleases += 1
+        },
+      }),
     },
   },
 })
 
 let services: LanguageHostServices
 let providerSettings: unknown
-let dataProviderSettings: unknown
 
 beforeAll(async () => {
   const linked = linkedExtensionInputs([fixture])
@@ -590,16 +583,9 @@ async function openWorkspace(
   semanticInputs?: () => readonly LanguageWorkspaceSemanticInput[],
   initialText = 'value',
   workspaceBudgets?: typeof budgets,
-  extra: Partial<
-    Pick<
-      LanguageWorkspaceOptions,
-      'semanticContextMemoryBytes' | 'semanticContextStore' | 'services'
-    >
-  > = {},
 ) {
   const workspace = createLanguageWorkspace({
     services,
-    ...extra,
     grant: { id: 'subject-completion-test', classes: [] },
     budgets,
     ...(workspaceBudgets === undefined ? {} : { workspaceBudgets }),
@@ -1912,98 +1898,73 @@ describe('language subject completion lifecycle', () => {
     },
   )
 
-  /** A small complete authoring index of the fixture game; `padding` weighs it. */
-  const authoringIndexFixture = (snapshotId: string | undefined, padding = '') => ({
-    schemaVersion: 1,
-    kind: 'resolved-data-authoring-index',
-    workspaceId: 'language:fixture',
-    gameId: 'fixture-game',
-    analyzerId: 'fixture-data',
-    snapshotId: snapshotId ?? 'fixture-authoring',
-    sourceTable: [{ rootId: 'selected-mod', path: 'GameData/UnitData.xml', documentIndex: 0 }],
-    namespaces: [{ namespace: 'Unit', entityCount: 1 }],
-    entityCount: 1,
-    patchCount: 1,
-    entities: [
-      {
-        identity: 'Unit\0Marine',
-        namespace: 'Unit',
-        typeId: 'CUnit',
-        entityId: 'Marine',
-        source: 0,
-        complete: true,
-        fields: [
-          {
-            fieldId: padding === '' ? 'LifeMax' : 'Padding',
-            value: padding === '' ? 45 : padding,
-            source: 0,
-            originEntityId: 'Marine',
-          },
-        ],
-        tombstones: [],
-      },
-    ],
-    diagnostics: {
-      errorCount: 0,
-      warningCount: 0,
-      informationCount: 0,
-      items: [],
-      truncated: false,
-    },
-    complete: true,
-    valuesComplete: true,
-  })
-
-  /** Count authoring analyses; each answers `authoringIndexFixture`. */
-  const countAuthoringAnalyses = (padding = ''): string[] => {
-    const requests: string[] = []
+  it('evicts completed semantic contexts by encoded byte weight', async () => {
+    const authoringRequests: string[] = []
+    const padding = 'x'.repeat(33 * 1_024 * 1_024)
     Object.defineProperty(dataProvider, 'analyzeAuthoringIndex', {
       configurable: true,
       value: async (request: { snapshotId?: string }) => {
-        requests.push(request.snapshotId ?? '')
-        return authoringIndexFixture(request.snapshotId, padding)
+        authoringRequests.push(request.snapshotId ?? '')
+        return {
+          schemaVersion: 1,
+          kind: 'resolved-data-authoring-index',
+          workspaceId: 'language:fixture',
+          gameId: 'fixture-game',
+          analyzerId: 'fixture-data',
+          snapshotId: request.snapshotId ?? 'fixture-authoring',
+          sourceTable: [
+            { rootId: 'selected-mod', path: 'GameData/UnitData.xml', documentIndex: 0 },
+          ],
+          namespaces: [{ namespace: 'Unit', entityCount: 1 }],
+          entityCount: 1,
+          patchCount: 1,
+          entities: [
+            {
+              identity: 'Unit\0Marine',
+              namespace: 'Unit',
+              typeId: 'CUnit',
+              entityId: 'Marine',
+              source: 0,
+              complete: true,
+              fields: [
+                {
+                  fieldId: 'Padding',
+                  value: padding,
+                  source: 0,
+                  originEntityId: 'Marine',
+                },
+              ],
+              tombstones: [],
+            },
+          ],
+          diagnostics: {
+            errorCount: 0,
+            warningCount: 0,
+            informationCount: 0,
+            items: [],
+            truncated: false,
+          },
+          complete: true,
+          valuesComplete: true,
+        }
       },
     })
-    return requests
-  }
-
-  const withoutAuthoringAnalyses = (): void => {
-    delete (dataProvider as { analyzeAuthoringIndex?: unknown }).analyzeAuthoringIndex
-    delete (dataProvider as { persistentRoots?: unknown }).persistentRoots
-  }
-
-  /** Each text in its own mod layer: different texts are different mods, not edits of one. */
-  const ownModOrigin = (document: LanguageDocument): LanguageWorkspaceDocumentOrigin => ({
-    uri: document.uri,
-    layerId: `mod-${document.text}`,
-    logicalId: 'GameData/UnitData.xml',
-    precedence: 0,
-    sourceRevision: `content:${document.text}`,
-    readOnly: false,
-    overlay: true,
-  })
-
-  const selectedModOrigin = (document: LanguageDocument): LanguageWorkspaceDocumentOrigin => ({
-    uri: document.uri,
-    layerId: 'selected-mod',
-    logicalId: 'GameData/UnitData.xml',
-    precedence: 0,
-    sourceRevision: `open:${document.version}`,
-    readOnly: false,
-    overlay: true,
-  })
-
-  it('evicts completed semantic contexts by encoded byte weight within the configured memory', async () => {
-    const authoringRequests = countAuthoringAnalyses('x'.repeat(33 * 1_024 * 1_024))
+    const origin = (document: LanguageDocument): LanguageWorkspaceDocumentOrigin => ({
+      uri: document.uri,
+      layerId: 'selected-mod',
+      logicalId: 'GameData/UnitData.xml',
+      precedence: 0,
+      sourceRevision: `content:${document.text}`,
+      readOnly: false,
+      overlay: true,
+    })
     const workspace = await openWorkspace(
       { open: async () => undefined },
       false,
       undefined,
-      ownModOrigin,
+      origin,
       undefined,
       'cache-a',
-      undefined,
-      { semanticContextMemoryBytes: 64 * 1_024 * 1_024 },
     )
     try {
       await workspace.completion(completionRequest())
@@ -2020,265 +1981,10 @@ describe('language subject completion lifecycle', () => {
       expect(authoringRequests).toHaveLength(3)
       expect(authoringRequests[2]).toBe(authoringRequests[0])
     } finally {
-      withoutAuthoringAnalyses()
+      delete (dataProvider as { analyzeAuthoringIndex?: unknown }).analyzeAuthoringIndex
       await workspace.shutdown()
     }
   }, 30_000)
-
-  it('keeps the resolved Data of several loaded mods within the default memory', async () => {
-    const authoringRequests = countAuthoringAnalyses('x'.repeat(33 * 1_024 * 1_024))
-    const workspace = await openWorkspace(
-      { open: async () => undefined },
-      false,
-      undefined,
-      ownModOrigin,
-      undefined,
-      'cache-a',
-    )
-    try {
-      await workspace.completion(completionRequest())
-      await workspace.change(languageRequest(2, 'cache-b'))
-      await workspace.completion({ ...completionRequest(), documentVersion: 2 })
-      expect(authoringRequests).toHaveLength(2)
-
-      await workspace.close(DOCUMENT_URI)
-      await workspace.open(languageRequest(1, 'cache-a'))
-      await workspace.completion(completionRequest())
-      expect(authoringRequests).toHaveLength(2)
-    } finally {
-      withoutAuthoringAnalyses()
-      await workspace.shutdown()
-    }
-  }, 30_000)
-
-  it('drops the analysis an edit superseded, keeping one per mod scope', async () => {
-    const authoringRequests = countAuthoringAnalyses()
-    const workspace = await openWorkspace(
-      { open: async () => undefined },
-      false,
-      undefined,
-      selectedModOrigin,
-      undefined,
-      'cache-a',
-    )
-    try {
-      await workspace.completion(completionRequest())
-      await workspace.change(languageRequest(2, 'cache-b'))
-      await workspace.completion({ ...completionRequest(), documentVersion: 2 })
-      expect(authoringRequests).toHaveLength(2)
-
-      await workspace.close(DOCUMENT_URI)
-      await workspace.open(languageRequest(1, 'cache-a'))
-      await workspace.completion(completionRequest())
-      expect(authoringRequests).toHaveLength(3)
-    } finally {
-      withoutAuthoringAnalyses()
-      await workspace.shutdown()
-    }
-  })
-
-  it('reuses a resolved Data analysis for the same content under another version or uri', async () => {
-    const authoringRequests = countAuthoringAnalyses()
-    const workspace = await openWorkspace(
-      { open: async () => undefined },
-      false,
-      undefined,
-      selectedModOrigin,
-    )
-    try {
-      await workspace.completion(completionRequest())
-      expect(authoringRequests).toHaveLength(1)
-
-      // An edit that leaves the text as it was (typed, then undone) changes no analysed content.
-      await workspace.change(languageRequest(2, 'value'))
-      await workspace.completion({ ...completionRequest(), documentVersion: 2 })
-      expect(authoringRequests).toHaveLength(1)
-
-      const otherUri = 'file:///workspace/opened-again.lang'
-      await workspace.close(DOCUMENT_URI)
-      await workspace.open({
-        ...languageRequest(5, 'value'),
-        document: { uri: otherUri, languageId: 'fixture-language', version: 5, text: 'value' },
-      })
-      await workspace.completion({ ...completionRequest(), uri: otherUri, documentVersion: 5 })
-      expect(authoringRequests).toHaveLength(1)
-      expect(
-        observedWorkspaceContext?.semanticInputs?.some(
-          input => input.kind === 'resolved-data-authoring-index',
-        ),
-      ).toBe(true)
-    } finally {
-      withoutAuthoringAnalyses()
-      await workspace.shutdown()
-    }
-  })
-
-  it('hands the resolved Data provider the host settings for it', async () => {
-    const settings = { values: { persistentMods: ['Fixture'] } }
-    countAuthoringAnalyses()
-    dataProviderSettings = undefined
-    const workspace = await openWorkspace(
-      { open: async () => undefined },
-      false,
-      undefined,
-      selectedModOrigin,
-      undefined,
-      'value',
-      undefined,
-      { services: { ...services, contributionSettings: () => settings } },
-    )
-    try {
-      await workspace.completion(completionRequest())
-      expect(dataProviderSettings).toEqual(settings)
-    } finally {
-      withoutAuthoringAnalyses()
-      await workspace.shutdown()
-    }
-  })
-
-  /** The selected mod as a content-source package of the fixture game's closure. */
-  const fixtureClosure = (): readonly LanguageWorkspaceSemanticInput[] => [
-    {
-      kind: 'dependency-closure',
-      id: 'fixture-game:fixture-context',
-      revision: 'fixture-closure-1',
-      payload: {
-        schemaVersion: 1,
-        layers: [
-          {
-            layerId: 'selected-mod',
-            sourceId: 'fixture:source',
-            sourcePath: 'Mods/Fixture.SC2Mod',
-          },
-        ],
-      },
-    },
-  ]
-
-  /** A store in memory that records what it was asked to keep. */
-  const memoryStore = () => {
-    const kept = new Map<string, LanguageWorkspaceSemanticInput>()
-    const saved: LanguageSemanticContextStoreSaveRequest[] = []
-    const loads: string[] = []
-    const store: LanguageSemanticContextStore = {
-      async load({ key }) {
-        loads.push(key)
-        return kept.get(key)
-      },
-      async save(request) {
-        saved.push(request)
-        kept.set(request.key, request.input)
-      },
-    }
-    return { store, kept, saved, loads }
-  }
-
-  it('keeps a context its provider names a persistent root of, and a new workspace loads it', async () => {
-    const authoringRequests = countAuthoringAnalyses()
-    Object.defineProperty(dataProvider, 'persistentRoots', {
-      configurable: true,
-      value: [{ sourcePath: 'mods/fixture.sc2mod/' }],
-    })
-    const { store, saved } = memoryStore()
-    const first = await openWorkspace(
-      { open: async () => undefined },
-      false,
-      undefined,
-      selectedModOrigin,
-      fixtureClosure,
-      'value',
-      undefined,
-      { semanticContextStore: store },
-    )
-    try {
-      await first.completion(completionRequest())
-      expect(authoringRequests).toHaveLength(1)
-    } finally {
-      await first.shutdown()
-    }
-    expect(saved).toEqual([
-      expect.objectContaining({
-        gameId: 'fixture-game',
-        label: 'Mods/Fixture.SC2Mod',
-        input: expect.objectContaining({
-          kind: 'resolved-data-authoring-index',
-          id: 'fixture-game',
-        }),
-      }),
-    ])
-
-    const second = await openWorkspace(
-      { open: async () => undefined },
-      false,
-      undefined,
-      selectedModOrigin,
-      fixtureClosure,
-      'value',
-      undefined,
-      { semanticContextStore: store },
-    )
-    try {
-      await second.completion(completionRequest())
-      expect(authoringRequests).toHaveLength(1)
-      expect(observedWorkspaceContext?.semanticComplete).toBe(true)
-      expect(
-        observedWorkspaceContext?.semanticInputs?.find(
-          input => input.kind === 'resolved-data-authoring-index',
-        )?.payload,
-      ).toMatchObject({ entities: [expect.objectContaining({ entityId: 'Marine' })] })
-
-      // An edit is a new analysis of the same chain: it replaces the kept one in its slot.
-      await second.change(languageRequest(2, 'edited'))
-      await second.completion({ ...completionRequest(), documentVersion: 2 })
-      expect(authoringRequests).toHaveLength(2)
-    } finally {
-      withoutAuthoringAnalyses()
-      await second.shutdown()
-    }
-    expect(saved).toHaveLength(2)
-    expect(saved[1]?.slot).toBe(saved[0]?.slot)
-    expect(saved[1]?.key).not.toBe(saved[0]?.key)
-  })
-
-  it('keeps nothing its provider does not name, and analyses a kept context that no longer applies', async () => {
-    const authoringRequests = countAuthoringAnalyses()
-    Object.defineProperty(dataProvider, 'persistentRoots', {
-      configurable: true,
-      value: [{ sourcePath: 'Mods/Other.SC2Mod' }],
-    })
-    const { store, saved, loads } = memoryStore()
-    const forged: LanguageSemanticContextStore = {
-      load: async request => {
-        await store.load(request)
-        return {
-          kind: 'resolved-data-authoring-index',
-          id: 'fixture-game',
-          revision: 'forged',
-          payload: authoringIndexFixture('forged'),
-        }
-      },
-      save: request => store.save(request),
-    }
-    const workspace = await openWorkspace(
-      { open: async () => undefined },
-      false,
-      undefined,
-      selectedModOrigin,
-      fixtureClosure,
-      'value',
-      undefined,
-      { semanticContextStore: forged },
-    )
-    try {
-      await workspace.completion(completionRequest())
-      expect(loads).toHaveLength(1)
-      expect(authoringRequests).toHaveLength(1)
-    } finally {
-      withoutAuthoringAnalyses()
-      await workspace.shutdown()
-    }
-    expect(saved).toEqual([])
-  })
 
   it('serves cached semantic context during an edit without rebuilding resolved Data', async () => {
     const baselineAnalyses = dataAnalyzeRequests.length

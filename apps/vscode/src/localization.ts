@@ -344,7 +344,6 @@ const EN_MESSAGES = Object.freeze({
   'vscode.indexCaches.pick': 'Pick the caches to remove; each is rebuilt when it is next needed',
   'vscode.indexCaches.names': 'file names · {size} MiB',
   'vscode.indexCaches.content': 'file contents · {size} MiB',
-  'vscode.indexCaches.resolvedData': 'resolved Data · {size} MiB',
   'vscode.indexCaches.none': 'There are no index caches yet.',
   'vscode.indexCaches.inUse':
     'Could not remove {names}: the cache is in use. Reload the window and try again.',
@@ -935,7 +934,6 @@ const RU_MESSAGES: Readonly<Record<keyof typeof EN_MESSAGES, string>> = Object.f
   'vscode.indexCaches.pick': 'Выберите кэши для удаления; каждый построится заново, когда понадобится',
   'vscode.indexCaches.names': 'имена файлов · {size} МиБ',
   'vscode.indexCaches.content': 'содержимое файлов · {size} МиБ',
-  'vscode.indexCaches.resolvedData': 'разрешённые данные Data · {size} МиБ',
   'vscode.indexCaches.none': 'Кэшей индексов пока нет.',
   'vscode.indexCaches.inUse':
     'Не удалось удалить {names}: кэш занят. Перезагрузите окно и повторите.',

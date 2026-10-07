@@ -97,8 +97,6 @@ export {
 } from './profile.js'
 export {
   createNodeExecutionBackends,
-  LANGUAGE_RETAINED_VALUE_BYTES,
-  languageRetainedValues,
   type NodeExecutionBackendsOptions,
 } from './execution-backends.js'
 export type { DataSourceSurfaceSource } from '../execution/index.js'
@@ -160,10 +158,6 @@ export {
   type CachedContentIndexRequest,
   type IndexCacheEntry,
 } from './index-caches.js'
-export {
-  createResolvedDataContextStore,
-  type ResolvedDataContextStoreOptions,
-} from './resolved-data-cache.js'
 export {
   openDirectoryResolvedDataWorkspace,
   RESOLVED_DATA_EDIT_UNAVAILABLE,

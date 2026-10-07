@@ -1544,25 +1544,10 @@ export interface ResolvedDataWorkspaceSnapshot extends DataCatalogSnapshot {
 }
 
 /** Workspace-aware live native definitions. It is deliberately separate from legacy v1 analysis. */
-/**
- * An opened package whose resolved Data a host may keep across sessions: the provider names these
- * from its settings, and a host keeps the analysis of a language context whose strongest Data layer
- * is one of them. Each kept analysis stays keyed by every analysed document's content and by the
- * provider's artifact, so a root only selects what to keep, never what is valid.
- */
-export interface ResolvedDataPersistentRoot {
-  /** The package's path inside a content source, as its dependency layer names it (`Mods/Liberty.SC2Mod`). */
-  readonly sourcePath?: string
-  /** An absolute host path of a package folder (`C:/Mods/My.SC2Mod`). */
-  readonly path?: string
-}
-
 export interface ResolvedDataWorkspace {
   readonly contract: typeof RESOLVED_DATA_WORKSPACE_CONTRACT
   readonly providerId: string
   readonly gameIds: readonly string[]
-  /** Optional: packages whose analyses a host may keep on disk (provider settings, at most 64). */
-  readonly persistentRoots?: readonly ResolvedDataPersistentRoot[]
   plan(request: DataWorkspacePlanRequest): Promise<DataWorkspacePlan>
   analyze(request: ResolvedDataWorkspaceAnalysisRequest): Promise<ResolvedDataWorkspaceSnapshot>
   /** Optional compact language projection over the same parsed patches and parent graph. */

@@ -1,7 +1,6 @@
 /**
  * The host's shared directory of index caches (sdk `index-caches.ts`): list and clear them for an
- * application, and keep content indexes of source roots in it, keyed by the root's revision. Kept
- * resolved Data contexts (`resolved-data-cache.ts`) live in the same directory and list here too.
+ * application, and keep content indexes of source roots in it, keyed by the root's revision.
  */
 import { createHash } from 'node:crypto'
 import { mkdir, open, readdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
@@ -32,7 +31,7 @@ function manifestOf(value: unknown): IndexCacheManifest | undefined {
   if (typeof value !== 'object' || value === null) return undefined
   const item = value as Record<string, unknown>
   return typeof item['game'] === 'string' &&
-    (item['kind'] === 'names' || item['kind'] === 'content' || item['kind'] === 'resolved-data') &&
+    (item['kind'] === 'names' || item['kind'] === 'content') &&
     typeof item['installation'] === 'string' &&
     (item['product'] === undefined || typeof item['product'] === 'string')
     ? (item as unknown as IndexCacheManifest)

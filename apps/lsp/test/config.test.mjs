@@ -70,32 +70,3 @@ test('configuration deduplicates roots and enforces bounded snapshots', () => {
     /cannot exceed/,
   )
 })
-
-test('resolved Data stays in memory by default and on disk only in a named cache directory', () => {
-  const root = process.platform === 'win32' ? 'C:\\workspace' : '/workspace'
-  const extension = process.platform === 'win32' ? 'C:\\extension' : '/extension'
-  const cache = process.platform === 'win32' ? 'C:\\cache' : '/cache'
-  const args = ['--root', root, '--extension', extension]
-  const defaults = parseModkitLspConfiguration(args)
-  assert.equal(defaults.resolvedDataMemoryBytes, 512 * 1_048_576)
-  assert.equal(defaults.resolvedDataCache, undefined)
-  const kept = parseModkitLspConfiguration([
-    ...args,
-    '--resolved-data-cache',
-    cache,
-    '--resolved-data-cache-mib',
-    '64',
-    '--resolved-data-memory-mib',
-    '128',
-  ])
-  assert.deepEqual(kept.resolvedDataCache, { directory: cache, maxBytes: 64 * 1_048_576 })
-  assert.equal(kept.resolvedDataMemoryBytes, 128 * 1_048_576)
-  assert.throws(
-    () => parseModkitLspConfiguration([...args, '--resolved-data-cache', 'relative']),
-    /absolute/,
-  )
-  assert.throws(
-    () => parseModkitLspConfiguration([...args, '--resolved-data-memory-mib', '70000']),
-    /cannot exceed/,
-  )
-})

@@ -603,20 +603,6 @@
         },
         "markdownDescription": "%configuration.indexCaches.description%"
       },
-      "modkit.resolvedDataCache.memoryMiB": {
-        "type": "integer",
-        "default": 512,
-        "minimum": 0,
-        "maximum": 65536,
-        "markdownDescription": "%configuration.resolvedDataCache.memoryMiB.description%"
-      },
-      "modkit.resolvedDataCache.diskMiB": {
-        "type": "integer",
-        "default": 1024,
-        "minimum": 0,
-        "maximum": 65536,
-        "markdownDescription": "%configuration.resolvedDataCache.diskMiB.description%"
-      },
       "modkit.locale": {
         "type": "string",
         "default": "",
