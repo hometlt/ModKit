@@ -415,9 +415,13 @@ export function createContentDependencyLanguageDocumentSource(
       /** Bytes the source returned for the captured document. */
       readonly byteLength: number
       bytes: number
+      /** The snapshot that last took this capture. */
+      taken: number
     }
   >()
   let retainedDocumentBytes = 0
+  /** Counts snapshots; a capture taken by the running one is not evicted to make room. */
+  let generation = 0
   let retainedPathIndex:
     | Readonly<{
         paths: readonly string[]
@@ -425,6 +429,8 @@ export function createContentDependencyLanguageDocumentSource(
         complete: boolean
         inputs: readonly LanguageWorkspaceSemanticInput[]
         bytes: number
+        /** The path map it was made from; the same map needs no comparison. */
+        from: ReadonlyMap<string, number>
       }>
     | undefined
   type FileRoute = ReturnType<typeof classify>
@@ -451,6 +457,15 @@ export function createContentDependencyLanguageDocumentSource(
   }
   const keptListings = new Map<IndexedMount, KeptListing>()
   let keptListingBytes = 0
+  /**
+   * The path index — each listed path with its strongest layer — of the last snapshot that replayed
+   * every mount from its kept listing. Kept listings never change while this source lives, so the
+   * next such snapshot reuses it and visits only each listing's routed files (the files of the
+   * workspace's languages and the layers' root files), not every path of every layer again.
+   */
+  let replayedIndex:
+    | Readonly<{ listings: readonly KeptListing[]; paths: ReadonlyMap<string, number>; bytes: number }>
+    | undefined
   /** A kept file no route claims: its place in the index is all a snapshot needs of it. */
   const UNROUTED: Readonly<{ route: FileRoute; uri: string }> = Object.freeze({
     route: Object.freeze({ candidates: Object.freeze([]) }),
@@ -458,14 +473,26 @@ export function createContentDependencyLanguageDocumentSource(
   })
   const fingerprinted = (mount: IndexedMount): boolean =>
     mount.fingerprint !== undefined && isRevisionId(mount.fingerprint)
-  /** Evict document captures until they, the retained index and kept listings fit the allowance. */
+  /**
+   * Evict document captures until they, the retained index and kept listings fit the allowance:
+   * first those the running snapshot has not taken (least recently used first), then the newest.
+   * A snapshot reads its documents in the same order every time, so evicting the oldest capture it
+   * took to keep a newer one would evict exactly what the next snapshot reads first — every capture
+   * would be read again in turn. Keeping the first ones it took rereads only what does not fit.
+   */
   const trimDocumentCaptures = (): void => {
+    const allowance = () =>
+      maxWorkspaceBytes - (retainedPathIndex?.bytes ?? 0) - keptListingBytes - (replayedIndex?.bytes ?? 0)
     for (const entry of revisions.values()) {
-      if (
-        retainedDocumentBytes <=
-        maxWorkspaceBytes - (retainedPathIndex?.bytes ?? 0) - keptListingBytes
-      )
-        break
+      if (retainedDocumentBytes <= allowance()) return
+      if (entry.taken === generation) continue
+      retainedDocumentBytes -= entry.bytes
+      entry.bytes = 0
+      delete entry.document
+    }
+    if (retainedDocumentBytes <= allowance()) return
+    for (const entry of [...revisions.values()].reverse()) {
+      if (retainedDocumentBytes <= allowance()) return
       retainedDocumentBytes -= entry.bytes
       entry.bytes = 0
       delete entry.document
@@ -543,6 +570,7 @@ export function createContentDependencyLanguageDocumentSource(
   return Object.freeze({
     async snapshot(request: LanguageWorkspaceDocumentSourceRequest) {
       request.signal.throwIfAborted()
+      generation += 1
       const accepted = new Set(request.workspaceLanguageIds)
       const openDocuments = new Map(
         [...request.workspaceDocuments, request.document].map(document => [document.uri, document]),
@@ -554,7 +582,7 @@ export function createContentDependencyLanguageDocumentSource(
         readonly relative: string
       }[] = []
       // Each path with the strongest mount that lists it (mounts walk weaker first).
-      const contentPaths = new Map<string, number>()
+      let contentPaths = new Map<string, number>()
       // Knowledge files the provider asked for, at a layer's root, in layer order (weaker first).
       const wantedKnowledge = new Set(
         (request.knowledgeFileNames ?? []).map(name => name.toLowerCase()),
@@ -608,8 +636,10 @@ export function createContentDependencyLanguageDocumentSource(
         path: string,
         relative: string,
         known?: Readonly<{ route: FileRoute; uri: string }>,
+        indexed = false,
       ): void => {
-        contentPaths.set(relative, mounts.indexOf(mount))
+        // A replay over the kept index has every path in it already.
+        if (!indexed) contentPaths.set(relative, mounts.indexOf(mount))
         if (!relative.includes('/') && wantedKnowledge.has(relative.toLowerCase())) {
           knowledge.push({ mount, path, fileName: relative })
           return
@@ -732,15 +762,61 @@ export function createContentDependencyLanguageDocumentSource(
         recording = undefined
         return listed
       }
-      for (const mount of mounts) if (!(await layer(mount))) break
+      /*
+       * Every mount replays its kept listing: the same listings as the last such snapshot reuse its
+       * path index, and only the routed files are placed — in the same order, so the candidates,
+       * their count against maxEntries and the knowledge files come out as a full replay's.
+       */
+      const listings = mounts.map(mount => keptListings.get(mount))
+      const replays =
+        listings.every(kept => kept !== undefined) &&
+        listings.reduce((total, kept) => total + kept!.relatives.length + kept!.outside, 0) <=
+          maxIndexedPaths
+      if (
+        replays &&
+        replayedIndex !== undefined &&
+        replayedIndex.listings.length === listings.length &&
+        replayedIndex.listings.every((kept, at) => kept === listings[at])
+      ) {
+        contentPaths = replayedIndex.paths as Map<string, number>
+        for (const [at, mount] of mounts.entries()) {
+          const kept = listings[at]!
+          indexed += kept.relatives.length + kept.outside
+          if (kept.outside > 0) {
+            complete = false
+            pathIndexComplete = false
+          }
+          for (const routed of kept.routed)
+            place(mount, routed.path, kept.relatives[routed.at]!, routed, true)
+        }
+      } else {
+        for (const mount of mounts) if (!(await layer(mount))) break
+        if (replays) {
+          // Map entries over strings the kept listings already hold.
+          const bytes = contentPaths.size * 48
+          replayedIndex =
+            bytes <= maxWorkspaceBytes - (retainedPathIndex?.bytes ?? 0) - keptListingBytes
+              ? Object.freeze({ listings: listings as KeptListing[], paths: contentPaths, bytes })
+              : undefined
+        }
+      }
       let pathInputs = retainedPathIndex?.inputs
+      if (
+        retainedPathIndex !== undefined &&
+        retainedPathIndex.complete === pathIndexComplete &&
+        retainedPathIndex.from !== contentPaths &&
+        retainedPathIndex.paths.length === contentPaths.size &&
+        retainedPathIndex.paths.every(
+          (path, index) => contentPaths.get(path) === retainedPathIndex!.layers[index],
+        )
+      ) {
+        // The same index from another map: remember this one, which the next replay reuses.
+        retainedPathIndex = { ...retainedPathIndex, from: contentPaths }
+      }
       if (
         retainedPathIndex === undefined ||
         retainedPathIndex.complete !== pathIndexComplete ||
-        retainedPathIndex.paths.length !== contentPaths.size ||
-        !retainedPathIndex.paths.every(
-          (path, index) => contentPaths.get(path) === retainedPathIndex!.layers[index],
-        )
+        retainedPathIndex.from !== contentPaths
       ) {
         const indexedPaths = Object.freeze([...contentPaths.keys()].sort(compareUtf8))
         const pathLayers = Object.freeze(indexedPaths.map(path => contentPaths.get(path)!))
@@ -769,8 +845,14 @@ export function createContentDependencyLanguageDocumentSource(
                 complete: pathIndexComplete,
                 inputs: pathInputs,
                 bytes,
+                from: contentPaths,
               }
             : undefined
+      }
+      // The captures this snapshot will take are its own before any is evicted for room.
+      for (const candidate of candidates.slice(0, request.maxDocuments)) {
+        const entry = revisions.get(contentSourceUri(candidate.mount.sourceId, candidate.path))
+        if (entry !== undefined) entry.taken = generation
       }
       trimDocumentCaptures()
       const documents = []
@@ -794,6 +876,7 @@ export function createContentDependencyLanguageDocumentSource(
           }
           totalBytes += kept.byteLength
           const uri = kept.document.uri
+          kept.taken = generation
           revisions.delete(uri)
           revisions.set(uri, kept)
           documents.push(kept.document)
@@ -865,7 +948,8 @@ export function createContentDependencyLanguageDocumentSource(
           version === captured.version
             ? captured
             : languageDocumentSnapshot({ ...captured, version })
-        const retainedBytes = Math.max(bytes.byteLength, text.length * 2)
+        // An all-ASCII text is a one-byte string in the engine; any other may take two bytes a unit.
+        const retainedBytes = bytes.byteLength === text.length ? text.length : text.length * 2
         retainedDocumentBytes -= previous?.bytes ?? 0
         revisions.delete(uri)
         revisions.set(uri, {
@@ -874,6 +958,7 @@ export function createContentDependencyLanguageDocumentSource(
           document,
           byteLength: bytes.byteLength,
           bytes: retainedBytes,
+          taken: generation,
         })
         retainedDocumentBytes += retainedBytes
         // The existing revision metadata owns these immutable copies; retain no more than the

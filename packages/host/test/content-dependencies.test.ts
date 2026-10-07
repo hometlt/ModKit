@@ -558,6 +558,123 @@ describe('content dependency language documents', () => {
     expect(indexOf(repeated)).not.toBe(indexOf(first))
   })
 
+  it('answers a replay over the kept path index as a full replay does, open documents included', async () => {
+    const paths = new Map([
+      ['cache/base/units.xml', encoder.encode('<Units/>')],
+      ['cache/base/effects.xml', encoder.encode('<Effects/>')],
+      ['cache/base/Textures/a.dds', encoder.encode('texture')],
+      ['cache/base/api.json', encoder.encode('{}')],
+      ['cache/override/units.xml', encoder.encode('<Override/>')],
+      ['cache/override/Textures/b.dds', encoder.encode('texture')],
+    ])
+    let reads = 0
+    const source = createContentDependencyLanguageDocumentSource({
+      contentSources: {
+        ...contentSources(),
+        async list(_sourceId, path) {
+          const prefix = `${path}/`
+          return [...paths.keys()].flatMap(file => {
+            if (!file.startsWith(prefix)) return []
+            const tail = file.slice(prefix.length)
+            const slash = tail.indexOf('/')
+            return slash < 0
+              ? [{ path: file, name: tail, directory: false }]
+              : [{ path: `${path}/${tail.slice(0, slash)}`, name: tail.slice(0, slash), directory: true }]
+          }).filter((entry, at, all) => all.findIndex(other => other.path === entry.path) === at)
+        },
+        async read(_sourceId, path) {
+          // the knowledge file is read on every snapshot, as before; count the documents
+          if (path.endsWith('.xml')) reads += 1
+          return paths.get(path)!.slice()
+        },
+      },
+      resolution,
+      routes: [{ languageId: 'sc2-data', extension: 'xml' }],
+    })
+    const open = { uri: 'content-source://cache/cache/base/effects.xml', languageId: 'sc2-data', version: 3, text: '<Edited/>' }
+    const request = (documents: readonly (typeof open)[]) => ({
+      document: { uri: 'file:///active.xml', languageId: 'sc2-data', version: 1, text: '' },
+      workspaceDocuments: documents,
+      workspaceDocumentOrigins: [],
+      workspaceLanguageIds: ['sc2-data'],
+      knowledgeFileNames: ['api.json'],
+      maxDocuments: 8,
+      signal: new AbortController().signal,
+    })
+    const view = (result: Awaited<ReturnType<typeof source.snapshot>>) => ({
+      complete: result.isComplete,
+      documents: result.documents.map(document => [document.uri, document.text]),
+      origins: result.workspaceContext?.documentOrigins,
+      inputs: result.workspaceContext?.semanticInputs,
+    })
+    // Listed live, then the first replay of both kept listings, then replays over the kept index.
+    const live = view(await source.snapshot(request([open])))
+    const plain = view(await source.snapshot(request([])))
+    expect(view(await source.snapshot(request([])))).toEqual(plain)
+    const readsBefore = reads
+    expect(view(await source.snapshot(request([open])))).toEqual(live)
+    expect(view(await source.snapshot(request([])))).toEqual(plain)
+    // The open document is not read; the plain snapshots' captures answer unread.
+    expect(reads).toBe(readsBefore)
+    expect(live.documents.map(([uri]) => uri)).not.toContain(open.uri)
+    expect(live.origins?.find(origin => origin.uri === open.uri)?.logicalId).toBe('effects.xml')
+  })
+
+  it('keeps the captures a snapshot took when not all fit, and counts an ASCII text at its real size', async () => {
+    // Ten documents of one fingerprinted layer; the allowance beside the kept listing, the path
+    // index and its map (8112 - 3400 - 932 - 480 bytes) holds five two-byte texts, or all ten ASCII.
+    const rereads = async (letter: string) => {
+      const paths = new Map(
+        [...'abcdefghij'].map(name => [
+          `cache/base/${name}.xml`,
+          encoder.encode(`<${name}>${letter.repeat(300)}</${name}>`),
+        ]),
+      )
+      let reads = 0
+      const source = createContentDependencyLanguageDocumentSource({
+        contentSources: {
+          ...contentSources(),
+          async list(_sourceId, path) {
+            return [...paths.keys()]
+              .filter(file => file.startsWith(`${path}/`))
+              .map(file => ({
+                path: file,
+                name: file.slice(file.lastIndexOf('/') + 1),
+                directory: false,
+              }))
+          },
+          async read(_sourceId, path) {
+            reads += 1
+            return paths.get(path)!.slice()
+          },
+        },
+        resolution: { ...resolution, mounts: [resolution.mounts[0]!] },
+        routes: [{ languageId: 'sc2-data', extension: 'xml' }],
+        maxDocumentBytes: 1024,
+        maxWorkspaceBytes: 8112,
+      })
+      const request = {
+        document: { uri: 'file:///active.xml', languageId: 'sc2-data', version: 1, text: '' },
+        workspaceDocuments: [],
+        workspaceDocumentOrigins: [],
+        workspaceLanguageIds: ['sc2-data'],
+        maxDocuments: 16,
+        signal: new AbortController().signal,
+      }
+      const first = await source.snapshot(request)
+      expect(first.documents).toHaveLength(10)
+      expect(reads).toBe(10)
+      const repeated = await source.snapshot(request)
+      expect(repeated.documents.map(document => document.text)).toEqual(
+        first.documents.map(document => document.text),
+      )
+      return reads - 10
+    }
+    // Evicting the oldest capture for a newer one would reread all ten, each in turn.
+    expect(await rereads('é')).toBe(5)
+    expect(await rereads('e')).toBe(0)
+  })
+
   it("reads every layer's language files past a layer of textures, from the bulk listing", async () => {
     // a layer that is mostly textures, as Liberty is: only the workspace's language files count
     const textures = Array.from(
