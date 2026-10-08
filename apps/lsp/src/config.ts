@@ -40,7 +40,7 @@ export function modkitLspUsage(): string {
     'Options:',
     '  --root <path>                 Repeatable loose-workspace root (at least one)',
     '  --extension <path>            Repeatable directory extension (at least one)',
-    '  --trust-extensions            Run explicitly configured extensions in-process',
+    '  --trust-extensions            Trust configured roots (execution policy still applies)',
     '  --max-documents <count>       Semantic snapshot limit (default 4096, maximum 4096)',
     '  --max-document-bytes <bytes>  Per-file UTF-8 limit (default 16777216)',
     '  --max-workspace-bytes <bytes> Snapshot UTF-8 limit (default 268435456)',
