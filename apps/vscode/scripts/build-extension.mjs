@@ -271,6 +271,8 @@ function allFiles(path) {
 }
 
 function assertRuntimeImportsResolve(extensionsOutput) {
+  // The staged tree is complete and immutable here. Resolve each directory/package pair once.
+  const resolved = new Set()
   for (const dependency of ['@modkit/core', '@modkit/host', '@modkit/sdk', '@modkit/vfs']) {
     const path = join(extensionsOutput, 'node_modules', ...packageSegments(dependency))
     if (!existsSync(join(path, 'package.json'))) {
@@ -298,7 +300,12 @@ function assertRuntimeImportsResolve(extensionsOutput) {
       if (builtins.has(specifier)) continue
       const dependency = packageNameFromSpecifier(specifier)
       try {
-        physicalDependencyDirectory(dirname(file), dependency)
+        const owner = dirname(file)
+        const key = `${owner}\0${dependency}`
+        if (!resolved.has(key)) {
+          physicalDependencyDirectory(owner, dependency)
+          resolved.add(key)
+        }
       } catch (error) {
         throw new Error(
           `production bare import ${specifier} from ${file} cannot resolve in staged closure: ${String(error)}`,
