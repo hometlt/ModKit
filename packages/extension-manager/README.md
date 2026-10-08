@@ -19,6 +19,20 @@ other providers and embedded bundles are copied into an immutable digest-named c
 host sees them. The browser entry registers the protocols a browser can actually open without a
 native bridge: `memory:`, `http:`, `https:` and `browser-file:`.
 
+## Compact portable bundles
+
+Repository format 1 remains supported. Format 2 stores base64 contents once in a `blobs` array;
+each embedded `files` value is a zero-based integer reference into that array. The shared
+`compactRepositoryManifest` encoder preserves extension order, paths, enablement and subject
+profiles. `normalizeRepositoryManifest` resolves either format to the same format-1 model, so
+Node and browser discovery use one interpretation. Invalid references are rejected before use.
+
+This reduces artifact transfer size, not installed disk usage: installation still writes regular
+files into each root, verifies the original artifact integrity and package identities, and charges
+**every materialized copy** against byte and file-count limits. It introduces no links, remote blob
+fetches or external dependencies. Sign the compact artifact's digest, not its expanded JSON.
+Old manager versions cannot read format 2; publish such artifacts only for compatible consumers.
+
 ## Local workspace
 
 ```json

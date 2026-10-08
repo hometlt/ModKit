@@ -1300,6 +1300,18 @@ async function materializePortable(
       const rootPath = confined(stage, 'roots', String(index))
       await mkdir(rootPath, { recursive: true })
       const names = new Set()
+      const writes: { path: string; bytes: Uint8Array }[] = []
+      // Settle the whole bounded batch before throwing, so cleanup cannot race unfinished writes.
+      const flushWrites = async (): Promise<void> => {
+        const outcomes = await Promise.allSettled(
+          writes.splice(0).map(async ({ path, bytes }) => {
+            await mkdir(dirname(path), { recursive: true })
+            await writeFile(path, bytes, { flag: 'wx', mode: 0o600 })
+          }),
+        )
+        const failed = outcomes.find(outcome => outcome.status === 'rejected')
+        if (failed?.status === 'rejected') throw failed.reason
+      }
       for (const [name, encoded] of Object.entries(entries.get(expectedId).files)) {
         const safeName = safeRelativePath(name, `embedded file for ${expectedId}`)
         if (names.has(safeName)) {
@@ -1327,9 +1339,10 @@ async function materializePortable(
           })
         }
         const path = confined(rootPath, safeName)
-        await mkdir(dirname(path), { recursive: true })
-        await writeFile(path, bytes, { flag: 'wx', mode: 0o600 })
+        writes.push({ path, bytes })
+        if (writes.length === 8) await flushWrites()
       }
+      await flushWrites()
       await packageIdentity(rootPath, expectedId)
       roots.push(
         Object.freeze({

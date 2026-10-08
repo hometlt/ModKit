@@ -1,6 +1,7 @@
 export type * from './public-types.js'
 export {
   ExtensionManagerError,
+  compactRepositoryManifest,
   normalizeExtensionLock,
   normalizeRepositoryManifest,
   normalizeWorkspaceConfiguration,

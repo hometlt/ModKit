@@ -5,6 +5,7 @@ import { existsSync, lstatSync, readFileSync, readdirSync, writeFileSync } from 
 import { dirname, isAbsolute, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { format, resolveConfig } from 'prettier'
+import { normalizeRepositoryManifest } from '@modkit/extension-manager'
 
 import { extensionArtifactDigest } from '../../../scripts/lib/extension-artifact-digest.mjs'
 import { verifyOfflineReleaseDirectory } from './offline-release.mjs'
@@ -222,10 +223,7 @@ function commonContributions(target, bundledCatalog) {
 }
 
 function portableContributions(target, artifactPath, declaredExtensions) {
-  const portable = readJson(artifactPath)
-  if (portable?.schemaVersion !== 1 || !Array.isArray(portable.extensions)) {
-    throw new TypeError(`${artifactPath} is not a portable repository v1`)
-  }
+  const portable = normalizeRepositoryManifest(readJson(artifactPath))
   const actual = portable.extensions.map(extension => extension.id).sort()
   const expected = [...declaredExtensions].sort()
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {

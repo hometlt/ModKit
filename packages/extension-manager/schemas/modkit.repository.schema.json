@@ -7,7 +7,12 @@
   "required": ["schemaVersion", "extensions"],
   "properties": {
     "$schema": { "type": "string" },
-    "schemaVersion": { "const": 1 },
+    "schemaVersion": { "enum": [1, 2] },
+    "blobs": {
+      "description": "Version 2 only: base64 file contents, addressed by zero-based index in files.",
+      "type": "array",
+      "items": { "type": "string", "contentEncoding": "base64" }
+    },
     "extensions": {
       "type": "array",
       "items": {
@@ -24,8 +29,10 @@
           "files": {
             "type": "object",
             "additionalProperties": {
-              "type": "string",
-              "contentEncoding": "base64"
+              "oneOf": [
+                { "type": "string", "contentEncoding": "base64" },
+                { "type": "integer", "minimum": 0 }
+              ]
             }
           }
         }
@@ -40,6 +47,35 @@
       }
     }
   },
+  "allOf": [
+    {
+      "if": { "properties": { "schemaVersion": { "const": 2 } } },
+      "then": {
+        "required": ["blobs"],
+        "properties": {
+          "extensions": {
+            "items": {
+              "properties": {
+                "files": { "additionalProperties": { "type": "integer", "minimum": 0 } }
+              }
+            }
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "blobs": false,
+          "extensions": {
+            "items": {
+              "properties": {
+                "files": { "additionalProperties": { "type": "string" } }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
   "$defs": {
     "subjectProfilePaths": {
       "type": "array",

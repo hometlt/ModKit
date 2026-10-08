@@ -42,6 +42,7 @@ interface ManifestInput extends UnknownRecord {
   schemaVersion?: unknown
   extensions?: unknown
   subjects?: unknown
+  blobs?: unknown
 }
 
 const SOURCE_ID = /^[a-z0-9][a-z0-9._-]*$/i
@@ -229,10 +230,29 @@ export function normalizeWorkspaceConfiguration(value: unknown): ExtensionWorksp
   })
 }
 
+/** Resolve compact file references without decoding bytes; installation still checks every file. */
 export function normalizeRepositoryManifest(value: unknown): ExtensionRepositoryManifest {
   const input = object<ManifestInput>(value, 'repository manifest')
-  if (input.schemaVersion !== 1) {
-    fail('extension-manager/schema-version-unsupported', 'repository schemaVersion must be 1')
+  if (input.schemaVersion !== 1 && input.schemaVersion !== 2) {
+    fail('extension-manager/schema-version-unsupported', 'repository schemaVersion must be 1 or 2')
+  }
+  const compact = input.schemaVersion === 2
+  if (compact && !Array.isArray(input.blobs))
+    fail('extension-manager/schema-invalid', 'compact repository blobs must be a list')
+  const blobs = compact
+    ? (input.blobs as unknown[]).map((blob, index) => base64Text(blob, `blobs[${index}]`))
+    : []
+  const fileContent = (encoded: unknown, label: string): string => {
+    if (!compact) return base64Text(encoded, label)
+    if (
+      typeof encoded !== 'number' ||
+      !Number.isSafeInteger(encoded) ||
+      encoded < 0 ||
+      encoded >= blobs.length
+    ) {
+      fail('extension-manager/schema-invalid', `${label} must reference an existing blob`)
+    }
+    return blobs[encoded] as string
   }
   if (!Array.isArray(input.extensions)) {
     fail('extension-manager/schema-invalid', 'repository extensions must be a list')
@@ -258,7 +278,7 @@ export function normalizeRepositoryManifest(value: unknown): ExtensionRepository
           Object.fromEntries(
             Object.entries(rawFiles).map(([name, encoded]) => [
               text(name, `extensions[${index}].files key`),
-              base64Text(encoded, `extensions[${index}].files.${name}`),
+              fileContent(encoded, `extensions[${index}].files.${name}`),
             ]),
           ),
         )
@@ -288,6 +308,49 @@ export function normalizeRepositoryManifest(value: unknown): ExtensionRepository
     schemaVersion: 1,
     extensions: Object.freeze(extensions),
     ...(subjects === undefined ? {} : { subjects }),
+  })
+}
+
+/** Encode identical file bytes once; consumers normalize v2 to the same v1 installation model. */
+export function compactRepositoryManifest(value: unknown): Readonly<{
+  schemaVersion: 2
+  blobs: readonly string[]
+  extensions: readonly Readonly<{
+    id?: string
+    path?: string
+    enabled: boolean
+    files?: Readonly<Record<string, number>>
+  }>[]
+  subjects?: ExtensionRepositoryManifest['subjects']
+}> {
+  const manifest = normalizeRepositoryManifest(value)
+  const blobs: string[] = []
+  const indexes = new Map<string, number>()
+  const extensions = manifest.extensions.map(entry => {
+    const metadata = {
+      ...(entry.id === undefined ? {} : { id: entry.id }),
+      ...(entry.path === undefined ? {} : { path: entry.path }),
+      enabled: entry.enabled,
+    }
+    if (entry.files === undefined) return Object.freeze(metadata)
+    const files = Object.fromEntries(
+      Object.entries(entry.files).map(([path, bytes]) => {
+        let index = indexes.get(bytes)
+        if (index === undefined) {
+          index = blobs.length
+          indexes.set(bytes, index)
+          blobs.push(bytes)
+        }
+        return [path, index]
+      }),
+    )
+    return Object.freeze({ ...metadata, files: Object.freeze(files) })
+  })
+  return Object.freeze({
+    schemaVersion: 2,
+    blobs: Object.freeze(blobs),
+    extensions: Object.freeze(extensions),
+    ...(manifest.subjects === undefined ? {} : { subjects: manifest.subjects }),
   })
 }
 

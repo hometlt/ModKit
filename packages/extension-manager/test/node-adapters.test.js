@@ -6,6 +6,7 @@ import { createServer } from 'node:http'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
+import { compactRepositoryManifest } from '../dist/index.js'
 
 import {
   createNodeArtifactAcquirer,
@@ -459,12 +460,12 @@ test('strict signature policy never caches rejected refreshes or disturbs an act
   await reopened.dispose()
 })
 
-test('signed HTTP catalog and portable repository materialize without network on cached reopen', async t => {
-  const fixture = await temporaryDirectory(t)
-  const privateState = join(fixture, 'private')
-  const expectedIds = ['example.publisher/codec', 'example.publisher/language']
-  const portable = Buffer.from(
-    JSON.stringify({
+for (const format of [1, 2])
+  test(`signed HTTP catalog and portable repository format ${format} materialize without network on cached reopen`, async t => {
+    const fixture = await temporaryDirectory(t)
+    const privateState = join(fixture, 'private')
+    const expectedIds = ['example.publisher/codec', 'example.publisher/language']
+    const document = {
       schemaVersion: 1,
       extensions: expectedIds.map(id => ({
         id,
@@ -473,90 +474,92 @@ test('signed HTTP catalog and portable repository materialize without network on
           'src/index.js': Buffer.from('export const ready = true\n').toString('base64'),
         },
       })),
-    }),
-  )
-  const integrity = `sha256:${createHash('sha256').update(portable).digest('hex')}`
-  const { privateKey, publicKey } = generateKeyPairSync('ed25519')
-  const keyId = 'modkit.test-key'
-  const routes = new Map([['/bundle.json', portable]])
-  const server = await startFixtureServer(t, routes)
-  const unsigned = catalogPackage(
-    {
-      kind: 'bundle',
-      uri: './bundle.json',
-      integrity,
-      bytes: portable.byteLength,
-      trust: { mode: 'signed' },
-    },
-    expectedIds,
-  )
-  const catalog = signedCatalog(unsigned, privateKey, keyId)
-  assert.deepEqual(Buffer.from(extensionCatalogSigningBytes(unsigned)), signingBytes(unsigned))
-  routes.set('/catalog.json', Buffer.from(JSON.stringify(catalog)))
-  const trustedPublicKeys = {
-    [keyId]: publicKey.export({ format: 'pem', type: 'spki' }),
-  }
-
-  assert.equal(verifyExtensionCatalogSignature(catalog, trustedPublicKeys), true)
-  assert.equal(verifyExtensionCatalogSignature(catalog, { [keyId]: publicKey }), true)
-  assert.equal(verifyExtensionCatalogSignature(catalog, new Map([[keyId, publicKey]])), true)
-  const mutated = structuredClone(catalog)
-  mutated.packages[0].displayName = 'Mutated'
-  assert.equal(verifyExtensionCatalogSignature(mutated, trustedPublicKeys), false)
-
-  const deniedState = join(fixture, 'denied-state')
-  const denied = createNodeExtensionManager({
-    root: deniedState,
-    catalog: `${server.base}/catalog.json`,
-    trustedPublicKeys,
-  })
-  await assert.rejects(denied.refresh(), {
-    code: 'extension-manager/artifact-origin-refused',
-  })
-  assert.deepEqual(server.calls, [])
-  await denied.dispose()
-  server.calls.length = 0
-
-  const manager = createNodeExtensionManager({
-    root: privateState,
-    catalog: `${server.base}/catalog.json`,
-    trustedPublicKeys,
-    vfsOptions: { allowedOrigins: [new URL(server.base).origin] },
-  })
-  assert.deepEqual(await manager.snapshot(), { entries: [] })
-  assert.deepEqual(server.calls, [])
-  await manager.refresh()
-  assert.deepEqual(server.calls, ['/catalog.json'])
-  assert.equal((await manager.snapshot()).entries[0].trusted, true)
-  assert.deepEqual(server.calls, ['/catalog.json'])
-  await manager.install('example.publisher/toolkit')
-  assert.deepEqual(server.calls, ['/catalog.json', '/bundle.json'])
-  const roots = await manager.installedRoots()
-  assert.deepEqual(
-    roots.map(entry => entry.expectedId),
-    expectedIds,
-  )
-  for (const root of roots) {
-    assert.equal(
-      JSON.parse(await readFile(join(root.root, 'package.json'), 'utf8')).version,
-      '1.0.0',
+    }
+    const portable = Buffer.from(
+      JSON.stringify(format === 2 ? compactRepositoryManifest(document) : document),
     )
-  }
-  await manager.dispose()
+    const integrity = `sha256:${createHash('sha256').update(portable).digest('hex')}`
+    const { privateKey, publicKey } = generateKeyPairSync('ed25519')
+    const keyId = 'modkit.test-key'
+    const routes = new Map([['/bundle.json', portable]])
+    const server = await startFixtureServer(t, routes)
+    const unsigned = catalogPackage(
+      {
+        kind: 'bundle',
+        uri: './bundle.json',
+        integrity,
+        bytes: portable.byteLength,
+        trust: { mode: 'signed' },
+      },
+      expectedIds,
+    )
+    const catalog = signedCatalog(unsigned, privateKey, keyId)
+    assert.deepEqual(Buffer.from(extensionCatalogSigningBytes(unsigned)), signingBytes(unsigned))
+    routes.set('/catalog.json', Buffer.from(JSON.stringify(catalog)))
+    const trustedPublicKeys = {
+      [keyId]: publicKey.export({ format: 'pem', type: 'spki' }),
+    }
 
-  await server.close()
-  const cached = createNodeExtensionManager({
-    root: privateState,
-    catalog: `${server.base}/catalog.json`,
-    trustedPublicKeys,
-    fetch: async () => {
-      throw new Error('cached manager must not use network')
-    },
+    assert.equal(verifyExtensionCatalogSignature(catalog, trustedPublicKeys), true)
+    assert.equal(verifyExtensionCatalogSignature(catalog, { [keyId]: publicKey }), true)
+    assert.equal(verifyExtensionCatalogSignature(catalog, new Map([[keyId, publicKey]])), true)
+    const mutated = structuredClone(catalog)
+    mutated.packages[0].displayName = 'Mutated'
+    assert.equal(verifyExtensionCatalogSignature(mutated, trustedPublicKeys), false)
+
+    const deniedState = join(fixture, 'denied-state')
+    const denied = createNodeExtensionManager({
+      root: deniedState,
+      catalog: `${server.base}/catalog.json`,
+      trustedPublicKeys,
+    })
+    await assert.rejects(denied.refresh(), {
+      code: 'extension-manager/artifact-origin-refused',
+    })
+    assert.deepEqual(server.calls, [])
+    await denied.dispose()
+    server.calls.length = 0
+
+    const manager = createNodeExtensionManager({
+      root: privateState,
+      catalog: `${server.base}/catalog.json`,
+      trustedPublicKeys,
+      vfsOptions: { allowedOrigins: [new URL(server.base).origin] },
+    })
+    assert.deepEqual(await manager.snapshot(), { entries: [] })
+    assert.deepEqual(server.calls, [])
+    await manager.refresh()
+    assert.deepEqual(server.calls, ['/catalog.json'])
+    assert.equal((await manager.snapshot()).entries[0].trusted, true)
+    assert.deepEqual(server.calls, ['/catalog.json'])
+    await manager.install('example.publisher/toolkit')
+    assert.deepEqual(server.calls, ['/catalog.json', '/bundle.json'])
+    const roots = await manager.installedRoots()
+    assert.deepEqual(
+      roots.map(entry => entry.expectedId),
+      expectedIds,
+    )
+    for (const root of roots) {
+      assert.equal(
+        JSON.parse(await readFile(join(root.root, 'package.json'), 'utf8')).version,
+        '1.0.0',
+      )
+    }
+    await manager.dispose()
+
+    await server.close()
+    const cached = createNodeExtensionManager({
+      root: privateState,
+      catalog: `${server.base}/catalog.json`,
+      trustedPublicKeys,
+      fetch: async () => {
+        throw new Error('cached manager must not use network')
+      },
+    })
+    assert.equal((await cached.snapshot()).entries[0].installedVersion, '1.0.0')
+    assert.equal((await cached.installedRoots()).length, 2)
+    await cached.dispose()
   })
-  assert.equal((await cached.snapshot()).entries[0].installedVersion, '1.0.0')
-  assert.equal((await cached.installedRoots()).length, 2)
-  await cached.dispose()
-})
 
 test('artifact redirects enforce the origin allowlist before every request and bound loops', async t => {
   const bytes = Buffer.from('portable artifact bytes')
