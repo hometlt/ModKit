@@ -1,6 +1,7 @@
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { HOST_LAYER_SOURCE_ID, type ContentSources } from '@modkit/vfs/content-sources'
 import {
@@ -95,6 +96,42 @@ afterAll(async () => {
 }, 30_000)
 
 describe('host-held MCP language session', () => {
+  it.each([false, true])('refreshes canonical package state and releases contexts after writes; failure=%s', async fails => {
+    let invalidations = 0
+    let releases = 0
+    let standaloneOpens = 0
+    const sources: ContentSources = {
+      ...contentSources,
+      async locateModPackage(target) {
+        if (typeof target === 'string' && target.endsWith('standalone.fixturelang')) return { kind: 'loose' }
+        return { kind: 'package', sourceId: HOST_LAYER_SOURCE_ID, path: root, displayName: 'fixture' }
+      },
+      async openModContext(request) {
+        if (typeof request.target === 'string' && request.target.endsWith('standalone.fixturelang')) standaloneOpens++
+        const context = await contentSources.openModContext!(request)
+        return { ...context, invalidate: async () => {
+          invalidations++
+          if (fails) throw new Error('fixture saved refresh failed')
+          return { revision: '2' }
+        }, dispose: async () => { releases++ } }
+      },
+    }
+    const refreshHost = await createHostMcpPort({
+      roots: [root], extensions: [resolve(import.meta.dirname, 'fixtures', 'language-session-extension')],
+    }, undefined, { contentSources: sources })
+    try {
+      const changed = ['first.fixturelang', 'second.fixturelang', 'standalone.fixturelang'].map(name => {
+        const uri = pathToFileURL(join(root, name)).href
+        return { id: uri, uri }
+      })
+      expect(await refreshHost.sourcesChanged!(changed)).toMatchObject(fails
+        ? [{ code: 'x3.mcp/source-refresh-failed', severity: 'warning' }] : [])
+      expect(invalidations).toBe(1)
+      expect(releases).toBe(2)
+      expect(standaloneOpens).toBe(0)
+    } finally { await refreshHost.close() }
+  })
+
   const openLanguageSession = (
     target: ModkitMcpHostPort,
     ...input: Parameters<NonNullable<ModkitMcpHostPort['openLanguageSession']>>

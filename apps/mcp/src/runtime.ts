@@ -1,10 +1,18 @@
+/**
+ * [MK] Core MCP lifecycle owner: bounded protocol envelopes, subject/entity/language handles,
+ * data sources, facts/calculations/graphs, operation outputs and prepare/commit/history editing.
+ * Host/provider ports own semantics, formats and write authority; handles retain leases until
+ * close/disposal. Actual commit/replay receipts are recorded before saved-model refresh, and
+ * refresh failure becomes a warning without losing the completed write or Undo/Redo authority.
+ */
 import { OutputArtifacts, OutputArtifactError, OUTPUT_ARTIFACT_POLICY } from './output-artifacts.js'
 import { randomUUID } from 'node:crypto'
-import { ModkitError } from '@modkit/core'
+import { ModkitError, type Diagnostic } from '@modkit/core'
 import { describeInventoryContributions, summarizeEditPlan } from '@modkit/host'
 import type {
   AssetEditPlan,
   CommitReceipt,
+  CommitResult,
   KnowledgeResolveQuery,
   KnowledgeSearchQuery,
   JsonValue,
@@ -2245,6 +2253,23 @@ export class ModkitMcpRuntime {
     })
   }
 
+  /** Refresh saved-model consumers after a receipt exists; failure cannot hide a completed write. */
+  private async refreshCommittedSources(result: CommitResult): Promise<readonly Diagnostic[]> {
+    if (result.state === 'not-applied' || this.host.sourcesChanged === undefined) return []
+    const sources = [...new Map(result.receipt.writes.map(write => [write.source.id, write.source])).values()]
+    if (sources.length === 0) return []
+    try {
+      return await this.host.sourcesChanged(sources)
+    } catch {
+      return [{
+        code: 'x3.mcp/source-refresh-failed',
+        message: 'The write completed, but saved-model refresh failed. Reopen the mod before relying on derived answers.',
+        severity: 'warning',
+        path: [],
+      }]
+    }
+  }
+
   async commitEdit(planHandle: string, signal: AbortSignal): Promise<McpEnvelope> {
     if (this.host.editsEnabled !== true) {
       throw new McpOperationError(
@@ -2284,7 +2309,7 @@ export class ModkitMcpRuntime {
           : result.state === 'not-applied'
             ? 'invalid'
             : 'partial',
-      diagnostics: result.state === 'not-applied' ? result.diagnostics : [],
+      diagnostics: result.state === 'not-applied' ? result.diagnostics : await this.refreshCommittedSources(result),
       data: { planHandle, result },
     })
   }
@@ -2336,7 +2361,7 @@ export class ModkitMcpRuntime {
     return envelope({
       snapshotId: `transaction:${transactionId}:${action}`,
       completeness: result.state === 'not-applied' ? 'invalid' : 'complete',
-      diagnostics: result.state === 'not-applied' ? result.diagnostics : [],
+      diagnostics: result.state === 'not-applied' ? result.diagnostics : await this.refreshCommittedSources(result),
       data: { transactionId, action, result },
     })
   }

@@ -1,3 +1,11 @@
+/**
+ * [MK] Core MCP product adapter: public Host inventory/subjects, knowledge, language sessions,
+ * installation discovery, map preview and resolved editing with configured roots/permissions.
+ * ContentSources owns packages, dependency order and session views; Host owns codecs, resource
+ * budgets and transactions. Saved writes refresh those existing contexts, including Undo/Redo.
+ * No game parser/model is implemented here. Sessions/subjects and owned services release on close;
+ * standalone editing remains bounded and separate from the unfinished canonical editing migration.
+ */
 import { createHash, randomUUID } from 'node:crypto'
 import { open, realpath, stat } from 'node:fs/promises'
 import { basename, extname, isAbsolute, relative, resolve } from 'node:path'
@@ -48,6 +56,7 @@ import { uvModule } from '@modkit/uv/module'
 import { coordinateMapPreviewAssetSession, withMapPreviewSources } from '@modkit/host/maps'
 import type {
   AnyDescriptor,
+  AssetSourceRef,
   AssetSession,
   JsonValue,
   KnowledgeCatalog,
@@ -288,6 +297,8 @@ export interface McpModContext {
 
 /** Minimal host-injected seam; all authority remains in the public Modkit host. */
 export interface ModkitMcpHostPort {
+  /** Notify canonical saved models after actual writes; never changes the commit receipt/history. */
+  sourcesChanged?(sources: readonly AssetSourceRef[]): Promise<readonly Diagnostic[]>
   /** Present when content sources are configured. */
   modContext?(subjectUri: string): Promise<McpModContext>
   /** Status of every declared credential; values never leave the broker. */
@@ -1179,6 +1190,37 @@ export async function createHostMcpPort(
     ...(openModContext === undefined
       ? {}
       : {
+          async sourcesChanged(sources: readonly AssetSourceRef[]) {
+            const diagnostics: Diagnostic[] = []
+            const refreshed = new Set<string>()
+            for (const source of sources) {
+              const target = source.uri === undefined ? undefined : subjectTarget(source.uri)
+              if (target === undefined) continue
+              try {
+                // Standalone/manual directories do not imply a package or a new dependency chain.
+                if (contentSources?.locateModPackage !== undefined &&
+                    (await contentSources.locateModPackage(target)).kind !== 'package') continue
+                const context = await openModContext({ schemaVersion: 1, target })
+                try {
+                  if (refreshed.has(context.contextId)) continue
+                  refreshed.add(context.contextId)
+                  if (context.invalidate === undefined) {
+                    throw new Error('the loaded mod cannot invalidate saved inputs')
+                  }
+                  await context.invalidate()
+                } finally {
+                  await context.dispose()
+                }
+              } catch {
+                diagnostics.push(diagnostic(
+                  'warning',
+                  'x3.mcp/source-refresh-failed',
+                  'The write completed, but its loaded mod could not refresh. Reopen the mod before relying on derived answers.',
+                ))
+              }
+            }
+            return diagnostics
+          },
           async modContext(subjectUri: string): Promise<McpModContext> {
             const target = subjectTarget(subjectUri)
             if (target === undefined) {

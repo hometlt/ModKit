@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises'
 import { delimiter, resolve } from 'node:path'
 import { Client, InMemoryTransport } from '@modelcontextprotocol/client'
 import type { Inventory } from '@modkit/host'
-import type { AnyDescriptor, AssetSession, KnowledgeCatalog, KnowledgeTarget } from '@modkit/sdk'
+import type { AnyDescriptor, AssetSession, AssetSourceRef, KnowledgeCatalog, KnowledgeTarget } from '@modkit/sdk'
 import { revisionId } from '@modkit/sdk'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
@@ -545,6 +545,8 @@ function fakeHost(
     readonly withLanguageSession?: boolean
     readonly withEditing?: boolean
     readonly editsEnabled?: boolean
+    readonly sourceRefresh?: 'ok' | 'fail'
+    readonly rejectCommit?: boolean
     readonly ignoreFactsAbort?: boolean
   } = {},
 ) {
@@ -565,6 +567,14 @@ function fakeHost(
     executionProfiles: ['worker-brokered'],
     supportedExtensions: ['fixture'],
     ...(options.editsEnabled ? { editsEnabled: true } : {}),
+    ...(options.sourceRefresh === undefined ? {} : {
+      async sourcesChanged(sources: readonly AssetSourceRef[]) {
+        expect(sources).toEqual([{ id: 'fixture-write', uri: 'file:///C:/allowed/fixture' }])
+        editInvocations.push('refresh')
+        if (options.sourceRefresh === 'fail') throw new Error('fixture refresh failure after write')
+        return []
+      },
+    }),
     ...(options.withLanguage
       ? {
           async language(request: McpLanguageRequest, signal?: AbortSignal) {
@@ -693,7 +703,10 @@ function fakeHost(
         undo: 'snapshot',
         before: [],
         after: [],
-        writes: [],
+        writes: options.sourceRefresh === undefined ? [] : [{
+          targetId: 'fixture-write', source: { id: 'fixture-write', uri: 'file:///C:/allowed/fixture' },
+          state: 'applied', diagnosticIds: [],
+        }],
         fidelity: {
           roundTrip: 'byte-identical',
           preservesUnknownData: true,
@@ -736,6 +749,7 @@ function fakeHost(
               },
               async commit() {
                 editInvocations.push('commit')
+                if (options.rejectCommit) return { state: 'not-applied', reason: 'stale-revision', diagnostics: [] }
                 return { state: 'committed', receipt: receipt('committed') }
               },
               async undo() {
@@ -2007,8 +2021,9 @@ describe('MCP v2 adapter', () => {
     expect(result.diagnostics.some(item => item.code === 'x3.mcp/edit-not-committed')).toBe(true)
   })
 
-  it('keeps edit authority server-side through prepare, commit, history, undo and redo', async () => {
-    const fake = fakeHost({ withEditing: true, editsEnabled: true })
+  it.each([undefined, 'ok', 'fail'] as const)('keeps commit/history/undo/redo authority with saved-model refresh %s', async sourceRefresh => {
+    const fake = fakeHost({ withEditing: true, editsEnabled: true,
+      ...(sourceRefresh === undefined ? {} : { sourceRefresh }) })
     const { client } = await connected(fake.host)
     const opened = structured(
       await client.callTool({
@@ -2045,6 +2060,9 @@ describe('MCP v2 adapter', () => {
       }),
     )
     expect(committed.data).toMatchObject({ result: { state: 'committed' } })
+    expect(committed.completeness).toBe('complete')
+    expect(committed.diagnostics.map(item => item.code)).toEqual(
+      sourceRefresh === 'fail' ? ['x3.mcp/source-refresh-failed'] : [])
     const replayedCommit = await client.callTool({
       name: 'modkit.commit_edit',
       arguments: { planHandle },
@@ -2074,10 +2092,31 @@ describe('MCP v2 adapter', () => {
       'stage',
       'prepare',
       'commit',
+      ...(sourceRefresh === undefined ? [] : ['refresh']),
       'undo',
+      ...(sourceRefresh === undefined ? [] : ['refresh']),
       'redo',
+      ...(sourceRefresh === undefined ? [] : ['refresh']),
       'discard-history',
     ])
+  })
+
+  it('does not refresh saved models or create history when a commit is refused', async () => {
+    const fake = fakeHost({ withEditing: true, editsEnabled: true, sourceRefresh: 'ok', rejectCommit: true })
+    const { client } = await connected(fake.host)
+    const opened = structured(await client.callTool({
+      name: 'modkit.open_subject', arguments: { path: 'C:\\allowed\\fixture' },
+    }))
+    const proposed = structured(await client.callTool({
+      name: 'modkit.propose_edit', arguments: { handle: handleFrom(opened), operationId: 'fixture/write', input: {} },
+    }))
+    const planHandle = (proposed.data as { planHandle: string }).planHandle
+    await client.callTool({ name: 'modkit.prepare_edit', arguments: { planHandle } })
+    const refused = structured(await client.callTool({ name: 'modkit.commit_edit', arguments: { planHandle } }))
+    expect(refused.data).toMatchObject({ result: { state: 'not-applied', reason: 'stale-revision' } })
+    expect(fake.editInvocations()).toEqual(['stage', 'prepare', 'commit'])
+    const history = structured(await client.callTool({ name: 'modkit.edit_history', arguments: { limit: 10 } }))
+    expect(history.data).toMatchObject({ total: 0, items: [] })
   })
 
   it('validates a retained plan but refuses commit without the startup edit policy', async () => {
