@@ -47,6 +47,7 @@ import type {
 import {
   COMPANION_BUDGET_EXCEEDED,
   COMPANION_PATH_REFUSED,
+  companionLogicalIdKey,
   normalizeCompanionLogicalId,
   type CompanionCaseSensitivity,
   type CompanionOrigin,
@@ -285,7 +286,6 @@ export function createResourceSession(options: ResourceSessionOptions): Resource
     readonly rootId?: string
     readonly overBudget: boolean
   }> => {
-    const wanted = fold(normalized, origin.caseSensitivity)
     /*
      * A name is matched by name; a path is matched as a path.
      *
@@ -312,7 +312,8 @@ export function createResourceSession(options: ResourceSessionOptions): Resource
         const candidate = byName
           ? (entry.logicalId.split('/').at(-1) ?? entry.logicalId)
           : entry.logicalId
-        if (fold(candidate, origin.caseSensitivity) === wanted) {
+        const policy = origin.caseSensitivityAt?.(entry.logicalId) ?? origin.caseSensitivity
+        if (fold(candidate, policy) === fold(normalized, policy)) {
           return {
             found: entry.logicalId,
             ...(entry.rootId === undefined ? {} : { rootId: entry.rootId }),
@@ -376,7 +377,7 @@ export function createResourceSession(options: ResourceSessionOptions): Resource
       }
       if (
         chain.some(
-          item => fold(item, origin.caseSensitivity) === fold(normalized, origin.caseSensitivity),
+          item => companionLogicalIdKey(origin, item) === companionLogicalIdKey(origin, normalized),
         )
       ) {
         return unresolved(
@@ -404,7 +405,7 @@ export function createResourceSession(options: ResourceSessionOptions): Resource
       }
 
       // Scope order is lookup precedence. A cached miss or hit from another scope is not reusable.
-      const key = JSON.stringify([fold(normalized, origin.caseSensitivity), servedScopes])
+      const key = JSON.stringify([companionLogicalIdKey(origin, normalized), servedScopes])
       const cached = index.get(key)
       let found: string | undefined
       let rootId: string | undefined

@@ -214,6 +214,23 @@ export interface ModContextLayer {
   readonly fingerprint?: string
 }
 
+/**
+ * Source-address identity for a loader-owned layer. Separators/trailing slash are normalized;
+ * content sources use their declared policy, host drive/UNC paths fold case and POSIX paths do not.
+ * This compares addresses only: it does not validate, resolve or grant access to a path.
+ */
+export function modContextLayerPathKey(
+  layer: Pick<ModContextLayer, 'sourceId' | 'caseSensitive'>,
+  path: string,
+): string {
+  const slashed = path.replaceAll('\\', '/').replace(/\/+$/u, '')
+  const insensitive =
+    layer.sourceId === HOST_LAYER_SOURCE_ID
+      ? /^(?:[A-Za-z]:|\/\/)/u.test(slashed)
+      : layer.caseSensitive !== true
+  return insensitive ? slashed.toLowerCase() : slashed
+}
+
 export interface ModContextPage<T> {
   readonly items: readonly T[]
   readonly nextCursor?: string

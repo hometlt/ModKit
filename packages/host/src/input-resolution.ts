@@ -150,6 +150,11 @@ export interface CompanionOrigin {
   /** Logical id of the primary subject itself; never offered as its own companion. */
   readonly primaryLogicalId: string
   readonly caseSensitivity: CompanionCaseSensitivity
+  /**
+   * Mixed namespaces may refine the default per confined logical path; supplied only by the host.
+   * Enumeration must honor that same policy when using prefix/name hints.
+   */
+  readonly caseSensitivityAt?: (logicalId: string) => CompanionCaseSensitivity
   /** Scopes this backend can actually serve. Anything else is a named unsupported outcome. */
   readonly scopes: readonly InputSearchScope[]
   /** Bounded enumeration. The resolver counts entries and stops at its own limit. */
@@ -159,6 +164,12 @@ export interface CompanionOrigin {
     signal?: AbortSignal,
   ): AsyncIterable<CompanionOriginEntry>
   open(logicalId: string, signal?: AbortSignal): Promise<Lease<ArtifactSource>>
+}
+
+/** The origin owns spelling policy; both companion and resource resolution use this identity. */
+export function companionLogicalIdKey(origin: CompanionOrigin, logicalId: string): string {
+  const policy = origin.caseSensitivityAt?.(logicalId) ?? origin.caseSensitivity
+  return policy === 'insensitive' ? logicalId.toLowerCase() : logicalId
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -596,12 +607,14 @@ function validateRequirements(requirements: readonly AssetInputRequirement[]): v
 export function createLayeredCompanionOrigin(origins: readonly CompanionOrigin[]): CompanionOrigin {
   const first = origins[0]
   if (first === undefined) throw new TypeError('a layered companion origin needs a backend')
-  const fold = (value: string): string =>
-    first.caseSensitivity === 'insensitive' ? value.toLowerCase() : value
+  const fold = (value: string): string => companionLogicalIdKey(first, value)
   const producedBy = new Map<string, CompanionOrigin>()
   return Object.freeze({
     primaryLogicalId: first.primaryLogicalId,
     caseSensitivity: first.caseSensitivity,
+    ...(first.caseSensitivityAt === undefined
+      ? {}
+      : { caseSensitivityAt: first.caseSensitivityAt }),
     scopes: Object.freeze([...new Set(origins.flatMap(origin => [...origin.scopes]))]),
     async *enumerate(
       scope: InputSearchScope,
@@ -756,8 +769,7 @@ export function createCompanionInputResolver(
       return frozen
     }
 
-    const fold = (value: string): string =>
-      origin.caseSensitivity === 'insensitive' ? value.toLowerCase() : value
+    const fold = (value: string): string => companionLogicalIdKey(origin, value)
 
     const primaryKey = fold(normalizeCompanionLogicalId(origin.primaryLogicalId))
     const selected: SelectedCandidate[] = []
@@ -771,6 +783,19 @@ export function createCompanionInputResolver(
     for (const requirement of plan.requirements) {
       checkpoint(`requirement:${requirement.id}`)
       const patterns = compilePatterns(requirement.id, requirement.patterns, origin.caseSensitivity)
+      const patternsByCase = new Map<CompanionCaseSensitivity, typeof patterns>([
+        [origin.caseSensitivity, patterns],
+      ])
+      /** At most two compiled forms; matching follows the enumerated path's owner policy. */
+      const patternsAt = (logicalId: string): typeof patterns => {
+        const policy = origin.caseSensitivityAt?.(logicalId) ?? origin.caseSensitivity
+        let compiled = patternsByCase.get(policy)
+        if (compiled === undefined) {
+          compiled = compilePatterns(requirement.id, requirement.patterns, policy)
+          patternsByCase.set(policy, compiled)
+        }
+        return compiled
+      }
       /*
        * The scopes in the order the codec listed them, which is the order it wants them searched.
        *
@@ -827,7 +852,7 @@ export function createCompanionInputResolver(
               continue
             }
             if (fold(logicalId) === primaryKey) continue
-            if (!patterns.test(logicalId)) continue
+            if (!patternsAt(logicalId).test(logicalId)) continue
             matched.push({ rank, logicalId })
           }
         }

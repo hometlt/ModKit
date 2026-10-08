@@ -28,6 +28,7 @@ import { isJsonValue, type JsonValue } from '@modkit/sdk'
 import type { LanguageDocument, LanguageWorkspaceModContext } from '@modkit/sdk/language'
 import {
   HOST_LAYER_SOURCE_ID,
+  modContextLayerPathKey,
   type ModContext,
   type ModContextLayer,
   type ModContextOverlay,
@@ -106,12 +107,6 @@ interface Pushed {
   readonly overlaid: boolean
 }
 
-/** A path compared the way its file system compares it: drive and UNC paths without case. */
-function pathKey(path: string): string {
-  const slashed = path.replaceAll('\\', '/').replace(/\/+$/u, '')
-  return /^(?:[A-Za-z]:|\/\/)/u.test(slashed) ? slashed.toLowerCase() : slashed
-}
-
 /** A `file:` URI's host path, or a `content-source:` URI's source and path. */
 export function languageModContextTarget(uri: string): ModContextTarget | undefined {
   let url: URL
@@ -136,16 +131,11 @@ export function languageModContextTarget(uri: string): ModContextTarget | undefi
 }
 
 /** The layer-relative path of `path` under `base`, compared as the file system compares them. */
-function relativeTo(
-  base: string,
-  path: string,
-  hostPath: boolean,
-  caseSensitive: boolean,
-): string | undefined {
+function relativeTo(base: string, path: string, layer: ModContextLayer): string | undefined {
   const slashed = path.replaceAll('\\', '/')
   const root = base.replaceAll('\\', '/').replace(/\/+$/u, '')
-  const key = hostPath ? pathKey(slashed) : caseSensitive ? slashed : slashed.toLowerCase()
-  const rootKey = hostPath ? pathKey(root) : caseSensitive ? root : root.toLowerCase()
+  const key = modContextLayerPathKey(layer, slashed)
+  const rootKey = modContextLayerPathKey(layer, root)
   if (rootKey === '' || !key.startsWith(`${rootKey}/`)) return undefined
   const relative = slashed.slice(root.length + 1)
   return relative === '' ? undefined : relative
@@ -193,8 +183,7 @@ export function createLanguageModContexts(
     const path = relativeTo(
       layer.sourcePath,
       typeof target === 'string' ? target : target.path,
-      host,
-      layer.caseSensitive === true,
+      layer,
     )
     return path === undefined
       ? undefined
@@ -386,7 +375,9 @@ export function createLanguageModContexts(
       const surplus: ModContext[] = []
       for (const context of contexts) {
         const same = before.find(
-          entry => !kept.has(entry) && entry.context.contextId === context.contextId &&
+          entry =>
+            !kept.has(entry) &&
+            entry.context.contextId === context.contextId &&
             entry.context.generation === context.generation,
         )
         if (same === undefined) add(key, context)

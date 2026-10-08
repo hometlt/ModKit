@@ -1,5 +1,10 @@
+/**
+ * Host Resources owner for loaded ModContext v1 leases: dependency retention, explicit unload,
+ * generation replacement, source-policy identity and targeted reload, paged semantic trees.
+ * Tabs borrow contexts; the session releases them. Game semantics remain provider queries.
+ */
 import type { PageRequest, TreeDataSource, TreeNodeFacts, TreeNodeRef, TreeQuery } from '@modkit/sdk'
-import type { ContentSources, ModContext, ModContextTarget } from '@modkit/vfs/content-sources'
+import { modContextLayerPathKey, type ContentSources, type ModContext, type ModContextLayer, type ModContextTarget } from '@modkit/vfs/content-sources'
 
 type Loaded = {
   readonly id: string
@@ -15,8 +20,8 @@ const MOD = 'mod/'
 const NODE = 'node/'
 const ref = (id: string, hasChildren = true): TreeNodeRef => ({ id, hasChildren })
 /** A package layer's id among the loaded mods. */
-const packageId = (gameId: string, layer: { readonly sourceId: string; readonly sourcePath: string }): string =>
-  `${gameId}|${layer.sourceId}|${layer.sourcePath.toLowerCase()}`
+const packageId = (gameId: string, layer: ModContextLayer): string =>
+  `${gameId}|${layer.sourceId}|${modContextLayerPathKey(layer, layer.sourcePath)}`
 const nodeId = (id: string, inner: string): string => `${NODE}${encodeURIComponent(id)}/${encodeURIComponent(inner)}`
 
 function childOf(id: string): { mod: string; inner: string } | undefined {
@@ -156,12 +161,11 @@ export class LoadedModResourceSessions {
    * The caller refreshes the content source first, as for `reloadAll`.
    */
   async reloadHolding(sourceId: string, path: string): Promise<boolean> {
-    const spelled = (value: string) => value.replaceAll('\\', '/').replace(/\/+$/u, '').toLowerCase()
-    const changed = spelled(path)
     const holds = (mod: Loaded) =>
       mod.context.layers.some(layer => {
         if (layer.sourceId !== sourceId) return false
-        const root = spelled(layer.sourcePath)
+        const changed = modContextLayerPathKey(layer, path)
+        const root = modContextLayerPathKey(layer, layer.sourcePath)
         return changed === root || changed.startsWith(`${root}/`)
       })
     const affected = [...this.mods.values()].filter(holds)

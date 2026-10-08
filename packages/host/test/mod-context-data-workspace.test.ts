@@ -38,6 +38,151 @@ function context(): ModContext {
 }
 
 describe('resolved Data inputs from ModContext', () => {
+  it('resolves mixed-case layers without sharing strict hits or misses and keeps legacy aliases', async () => {
+    const documents = new Map([
+      ['upper/Unit.xml', 'UPPER'],
+      ['lower/unit.xml', 'lower'],
+      ['legacy/Unit.xml', 'legacy'],
+    ])
+    const source: ModContext = {
+      ...context(),
+      gameId: 'test/game',
+      contextId: 'mixed-case',
+      layers: [
+        {
+          id: 'upper',
+          sourceId: 'strict',
+          sourcePath: 'Mods/Base',
+          displayName: 'Upper',
+          caseSensitive: true,
+          role: 'dependency',
+          provenance: 'declared',
+        },
+        {
+          id: 'lower',
+          sourceId: 'strict',
+          sourcePath: 'mods/base',
+          displayName: 'Lower',
+          caseSensitive: true,
+          role: 'dependency',
+          provenance: 'declared',
+        },
+        {
+          id: 'legacy',
+          sourceId: 'legacy',
+          sourcePath: 'Mods/Legacy',
+          displayName: 'Legacy',
+          role: 'primary',
+          provenance: 'opened',
+        },
+      ],
+      files: async layerId => ({
+        items: [...documents.keys()]
+          .filter(key => key.startsWith(`${layerId}/`))
+          .map(key => key.slice(layerId.length + 1)),
+      }),
+      read: vi.fn(async (layerId, path) => {
+        const text = documents.get(`${layerId}/${path}`)
+        if (text === undefined) throw new RangeError(path)
+        return encoder.encode(text)
+      }),
+    }
+    const { workspace, resources } = createModContextDataWorkspaceInputs(source)
+    const lookup = (id: string, logicalId: string, parentResourceId?: string) =>
+      resources.resolve({
+        id,
+        logicalId,
+        role: 'buffer',
+        scopes: ['workspace-dependency-layer'],
+        ...(parentResourceId === undefined ? {} : { parentResourceId }),
+      })
+    const readText = async (id: string, path: string, expected: string, parent?: string) => {
+      const result = await lookup(id, path, parent)
+      expect(result.state).toBe('resolved')
+      if (result.state !== 'resolved') throw new Error('expected resolved resource')
+      try {
+        if (result.lease.value.kind !== 'bytes') throw new Error('expected bytes')
+        expect(new TextDecoder().decode(await result.lease.value.read(0n, expected.length))).toBe(
+          expected,
+        )
+      } finally {
+        await result.lease.release()
+      }
+    }
+    try {
+      expect(workspace.loadOrder.map(root => root.sourcePath)).toEqual([
+        'Mods/Base',
+        'mods/base',
+        'Mods/Legacy',
+      ])
+      expect(await lookup('strict-miss', 'Mods/Base/unit.xml')).toMatchObject({
+        state: 'unresolved',
+        reason: 'not-found',
+      })
+      await readText('upper', 'Mods/Base/Unit.xml', 'UPPER')
+      await readText('lower', 'mods/base/unit.xml', 'lower', 'upper')
+      await readText('upper-again', 'Mods/Base/Unit.xml', 'UPPER')
+      expect(await lookup('same-upper-cycle', 'Mods/Base/Unit.xml', 'upper')).toMatchObject({
+        state: 'unresolved',
+        reason: 'cycle-detected',
+      })
+      await readText('legacy', 'MODS/LEGACY/UNIT.XML', 'legacy')
+      await readText('legacy-cached', 'mods/legacy/unit.xml', 'legacy')
+      expect(await lookup('legacy-cycle', 'mods/legacy/unit.xml', 'legacy')).toMatchObject({
+        state: 'unresolved',
+        reason: 'cycle-detected',
+      })
+      expect(source.read).toHaveBeenCalledWith('upper', 'Unit.xml', expect.any(Number))
+      expect(source.read).toHaveBeenCalledWith('lower', 'unit.xml', expect.any(Number))
+      expect(source.read).toHaveBeenCalledWith('legacy', 'Unit.xml', expect.any(Number))
+    } finally {
+      await resources.dispose()
+    }
+    expect(() =>
+      createModContextDataWorkspaceInputs({
+        ...source,
+        layers: [source.layers[0]!, { ...source.layers[1]!, caseSensitive: false }],
+      }),
+    ).toThrow(/ambiguous ModContext layer path/u)
+  })
+
+  it('confines a strict nested root when its provider lists siblings or ignores the prefix hint', async () => {
+    const paths = ['Maps/Alpha/Data.xml', 'maps/alpha/Data.xml', 'Maps/AlphaOther/Data.xml']
+    const source: ModContext = {
+      ...context(),
+      layers: [{ ...context().layers[1]!, caseSensitive: true }],
+      files: async () => ({ items: paths }),
+      read: vi.fn(async (_layer, path) => encoder.encode(path)),
+    }
+    const { workspace, resources, listFiles } = createModContextDataWorkspaceInputs(source, {
+      nestedRoot: { parentLayerId: 'liberty', path: 'Maps/Alpha' },
+    })
+    const root = workspace.loadOrder.at(-1)!
+    try {
+      expect(await listFiles(root.rootId, '', 10)).toEqual({ paths: ['Data.xml'], complete: true })
+      expect(await listFiles(root.rootId, 'data', 10)).toEqual({ paths: [], complete: true })
+      const value = await resources.resolve({
+        id: 'nested',
+        logicalId: `${root.sourcePath}/Data.xml`,
+        role: 'buffer',
+        scopes: ['workspace-dependency-layer'],
+      })
+      expect(value.state).toBe('resolved')
+      if (value.state === 'resolved') await value.lease.release()
+      expect(source.read).toHaveBeenCalledWith('liberty', 'Maps/Alpha/Data.xml', expect.any(Number))
+      expect(
+        await resources.resolve({
+          id: 'wrong',
+          logicalId: `${root.sourcePath}/data.xml`,
+          role: 'buffer',
+          scopes: ['workspace-dependency-layer'],
+        }),
+      ).toMatchObject({ state: 'unresolved', reason: 'not-found' })
+    } finally {
+      await resources.dispose()
+    }
+  })
+
   it('preserves the loader order and resolves each native document through the owning layer', async () => {
     const source = context()
     const { workspace, resources } = createModContextDataWorkspaceInputs(source)

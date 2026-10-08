@@ -3,6 +3,134 @@ import type { ContentSources, ModContext, ModContextTarget } from '@modkit/vfs/c
 import { LoadedModResourceSessions } from '../src/mods/resource-sessions.js'
 
 describe('loaded mod resources', () => {
+  it.each([
+    {
+      sourceId: 'strict',
+      caseSensitive: true,
+      upper: 'Mods/Base',
+      lower: 'mods/base',
+      distinct: true,
+    },
+    { sourceId: 'legacy', upper: 'Mods/Base', lower: 'mods/base', distinct: false },
+    { sourceId: 'host', upper: '/Mods/Base', lower: '/mods/base', distinct: true },
+    { sourceId: 'host', upper: 'C:/Mods/Base', lower: 'c:/mods/base', distinct: false },
+    { sourceId: 'host', upper: '//Server/Mods/Base', lower: '//server/mods/base', distinct: false },
+  ])('keeps package identity and change targeting under $sourceId: $upper', async policy => {
+    const opened: string[] = []
+    const released: string[] = []
+    let revision = 0
+    const sources = {
+      openModContext: async (request: { target: ModContextTarget }): Promise<ModContext> => {
+        const path = typeof request.target === 'string' ? request.target : request.target.path
+        opened.push(path)
+        const contextId = `${policy.distinct ? path : policy.lower}#${revision}`
+        return {
+          schemaVersion: 1,
+          gameId: 'test/game',
+          contextId,
+          layers: [
+            {
+              id: 'primary',
+              displayName: path,
+              sourceId: policy.sourceId,
+              sourcePath: path,
+              ...('caseSensitive' in policy ? { caseSensitive: policy.caseSensitive } : {}),
+              role: 'primary',
+              provenance: 'opened',
+              kind: 'package',
+            },
+          ],
+          unresolved: [],
+          diagnostics: [],
+          files: async () => ({ items: [] }),
+          read: async () => new Uint8Array(),
+          locate: async () => undefined,
+          dispose: async () => {
+            released.push(contextId)
+          },
+        }
+      },
+    } satisfies Pick<ContentSources, 'openModContext'>
+    const target = (path: string): ModContextTarget =>
+      policy.sourceId === 'host' ? path : { sourceId: policy.sourceId, path }
+    const sessions = new LoadedModResourceSessions(sources)
+    try {
+      await sessions.load(target(policy.upper))
+      expect(await sessions.load(target(policy.lower))).toBe(policy.distinct)
+      expect(sessions.list()).toHaveLength(policy.distinct ? 2 : 1)
+      opened.length = 0
+      released.length = 0
+      revision = 1
+      expect(await sessions.reloadHolding(policy.sourceId, `${policy.lower}/Data.xml`)).toBe(true)
+      expect(opened).toEqual([policy.distinct ? policy.lower : policy.upper])
+      expect(sessions.list().map(mod => mod.contextId)).toEqual(
+        policy.distinct ? [`${policy.upper}#0`, `${policy.lower}#1`] : [`${policy.lower}#1`],
+      )
+      if (policy.distinct) {
+        const upper = sessions.list().find(mod => mod.contextId === `${policy.upper}#0`)!
+        await sessions.unload(upper.id)
+        expect(sessions.list().map(mod => mod.contextId)).toEqual([`${policy.lower}#1`])
+        expect(released).toContain(`${policy.upper}#0`)
+      }
+    } finally {
+      await sessions.dispose()
+    }
+  })
+
+  it('retains the surviving strict dependency when the other spelling is unloaded', async () => {
+    const released: string[] = []
+    const layer = (path: string, role: 'dependency' | 'primary') => ({
+      id: path,
+      displayName: path,
+      sourceId: 'strict',
+      sourcePath: path,
+      caseSensitive: true,
+      role,
+      provenance: role === 'primary' ? ('opened' as const) : ('declared' as const),
+      kind: 'package' as const,
+    })
+    const sources = {
+      openModContext: async (request: { target: ModContextTarget }): Promise<ModContext> => {
+        const path = typeof request.target === 'string' ? request.target : request.target.path
+        const dependency =
+          path === 'mods/upper' ? 'Deps/Base' : path === 'mods/lower' ? 'deps/base' : undefined
+        return {
+          schemaVersion: 1,
+          gameId: 'test/game',
+          contextId: path,
+          layers: [
+            ...(dependency === undefined ? [] : [layer(dependency, 'dependency')]),
+            layer(path, 'primary'),
+          ],
+          unresolved: [],
+          diagnostics: [],
+          files: async () => ({ items: [] }),
+          read: async () => new Uint8Array(),
+          locate: async () => undefined,
+          dispose: async () => {
+            released.push(path)
+          },
+        }
+      },
+    } satisfies Pick<ContentSources, 'openModContext'>
+    const sessions = new LoadedModResourceSessions(sources)
+    try {
+      await sessions.load({ sourceId: 'strict', path: 'mods/upper' })
+      await sessions.load({ sourceId: 'strict', path: 'mods/lower' })
+      expect(sessions.list()).toHaveLength(4)
+      await sessions.unload('test/game|strict|mods/upper')
+      expect(released.sort()).toEqual(['Deps/Base', 'mods/upper'])
+      expect(
+        sessions
+          .list()
+          .map(mod => mod.contextId)
+          .sort(),
+      ).toEqual(['deps/base', 'mods/lower'])
+    } finally {
+      await sessions.dispose()
+    }
+  })
+
   it('replaces a context from an older transport generation', async () => {
     let generation = 'connection-1'
     const released: string[] = []

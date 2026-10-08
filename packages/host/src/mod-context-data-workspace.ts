@@ -1,4 +1,9 @@
-/** Read-only Data inputs projected from the game's authoritative ModContext. */
+/**
+ * Host read-only Data inputs projected from the loader's authoritative ModContext v1.
+ * Keeps dependency order, native provenance and nested package roots; per-layer case policy
+ * drives the existing bounded resource resolver. The caller owns context and resource leases;
+ * no dependency resolution, parsing, edits or additional model is performed here.
+ */
 import {
   revisionId,
   isRevisionId,
@@ -49,7 +54,14 @@ export function createModContextDataWorkspaceInputs(
     throw new TypeError('Data workspace requires a nonempty ModContext v1')
   }
   const ids = new Set<string>()
-  const prefixes = new Set<string>()
+  const prefixes: { prefix: string; caseSensitive: boolean }[] = []
+  /** Either layer folding these prefixes makes their unqualified logical addresses ambiguous. */
+  const ambiguous = (prefix: string, caseSensitive: boolean): boolean =>
+    prefixes.some(item =>
+      item.caseSensitive && caseSensitive
+        ? item.prefix === prefix
+        : item.prefix.toLowerCase() === prefix.toLowerCase(),
+    )
   const layers = context.layers.map((layer, index) => {
     if (ids.has(layer.id)) throw new TypeError(`duplicate ModContext layer ${layer.id}`)
     ids.add(layer.id)
@@ -59,10 +71,10 @@ export function createModContextDataWorkspaceInputs(
     const rawPrefix =
       layer.sourcePath === '' || hostPath ? `context-layers/${index}` : layer.sourcePath
     const prefix = normalizeCompanionLogicalId(rawPrefix)
-    if (prefixes.has(prefix.toLowerCase())) {
+    if (ambiguous(prefix, layer.caseSensitive === true)) {
       throw new TypeError(`ambiguous ModContext layer path ${prefix}`)
     }
-    prefixes.add(prefix.toLowerCase())
+    prefixes.push({ prefix, caseSensitive: layer.caseSensitive === true })
     const revision =
       layer.fingerprint !== undefined && isRevisionId(layer.fingerprint)
         ? revisionId(layer.fingerprint)
@@ -75,12 +87,15 @@ export function createModContextDataWorkspaceInputs(
     if (parent === undefined) throw new TypeError('nested ModContext root has no parent layer')
     const readPrefix = normalizeCompanionLogicalId(options.nestedRoot.path)
     const prefix = `${parent.prefix}/${readPrefix}`
-    if (prefixes.has(prefix.toLowerCase()))
+    if (ambiguous(prefix, parent.layer.caseSensitive === true))
       throw new TypeError(`ambiguous ModContext nested path ${prefix}`)
     const layer = Object.freeze({
       id: `${parent.layer.id}:${readPrefix}`,
       sourceId: parent.layer.sourceId,
       sourcePath: prefix,
+      ...(parent.layer.caseSensitive === undefined
+        ? {}
+        : { caseSensitive: parent.layer.caseSensitive }),
       displayName: readPrefix.split('/').at(-1)!,
       role: 'primary' as const,
       provenance: 'opened' as const,
@@ -143,9 +158,9 @@ export function createModContextDataWorkspaceInputs(
     complete: true,
   })
   const find = (logicalId: string) => {
-    const wanted = logicalId.toLowerCase()
     for (const item of [...layers].reverse()) {
-      const prefix = item.prefix.toLowerCase()
+      const wanted = item.layer.caseSensitive === true ? logicalId : logicalId.toLowerCase()
+      const prefix = item.layer.caseSensitive === true ? item.prefix : item.prefix.toLowerCase()
       if (wanted.startsWith(`${prefix}/`)) {
         return { ...item, relative: logicalId.slice(item.prefix.length + 1) }
       }
@@ -154,7 +169,16 @@ export function createModContextDataWorkspaceInputs(
   }
   const origin: CompanionOrigin = Object.freeze({
     primaryLogicalId: '__mod_context_data_workspace__',
-    caseSensitivity: 'insensitive',
+    caseSensitivity: layers.some(item => item.layer.caseSensitive === true)
+      ? 'sensitive'
+      : 'insensitive',
+    caseSensitivityAt: (logicalId: string) => {
+      const item = find(logicalId)
+      return item?.layer.caseSensitive === false ||
+        (item !== undefined && item.layer.caseSensitive === undefined)
+        ? 'insensitive'
+        : 'sensitive'
+    },
     scopes: Object.freeze(['workspace-dependency-layer'] as const),
     async *enumerate(
       scope: InputSearchScope,
@@ -165,8 +189,10 @@ export function createModContextDataWorkspaceInputs(
       const prefix = options.prefix === '' ? '' : normalizeCompanionLogicalId(options.prefix)
       for (const item of [...layers].reverse()) {
         signal?.throwIfAborted()
-        const root = item.prefix.toLowerCase()
-        const wanted = prefix.toLowerCase()
+        const fold = (value: string) =>
+          item.layer.caseSensitive === true ? value : value.toLowerCase()
+        const root = fold(item.prefix)
+        const wanted = fold(prefix)
         if (
           wanted !== '' &&
           !wanted.startsWith(`${root}/`) &&
@@ -187,15 +213,12 @@ export function createModContextDataWorkspaceInputs(
           for (const relative of page.items) {
             signal?.throwIfAborted()
             const nativePath = normalizeCompanionLogicalId(relative)
-            if (
-              item.readPrefix !== '' &&
-              !nativePath.toLowerCase().startsWith(`${item.readPrefix.toLowerCase()}/`)
-            )
+            if (item.readPrefix !== '' && !fold(nativePath).startsWith(`${fold(item.readPrefix)}/`))
               continue
             const logicalId = `${item.prefix}/${
               item.readPrefix === '' ? nativePath : nativePath.slice(item.readPrefix.length + 1)
             }`
-            if (logicalId.toLowerCase().startsWith(wanted)) {
+            if (fold(logicalId).startsWith(wanted)) {
               yield { logicalId, rootId: item.layer.id }
             }
           }
@@ -268,7 +291,11 @@ export function createModContextDataWorkspaceInputs(
       })
       for (const native of page.items) {
         const path = normalizeCompanionLogicalId(native)
+        const fold = (value: string) =>
+          item.layer.caseSensitive === true ? value : value.toLowerCase()
+        if (item.readPrefix !== '' && !fold(path).startsWith(`${fold(item.readPrefix)}/`)) continue
         const relative = item.readPrefix === '' ? path : path.slice(item.readPrefix.length + 1)
+        if (!fold(relative).startsWith(fold(wanted))) continue
         if (paths.length === maximum) return { paths, complete: false }
         paths.push(relative)
       }

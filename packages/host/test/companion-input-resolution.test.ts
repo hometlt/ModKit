@@ -665,6 +665,34 @@ describe('companion input resolution — scopes', () => {
 })
 
 describe('companion input resolution — names and patterns', () => {
+  it('matches patterns and deduplicates according to each path in a mixed namespace', async () => {
+    const { origin: base } = fakeOrigin({
+      entries: ['Strict/Model.HVA', 'Strict/model.hva', 'Legacy/Model.HVA', 'Legacy/model.hva'],
+    })
+    const origin: CompanionOrigin = {
+      ...base,
+      caseSensitivityAt: logicalId =>
+        logicalId.startsWith('Legacy/') ? 'insensitive' : 'sensitive',
+    }
+    const input = await companionResolver(origin)(
+      context(
+        bundlePlan([
+          requirement({
+            id: 'motion',
+            role: 'animation',
+            patterns: ['*/*.hva'],
+            cardinality: 'many',
+          }),
+        ]),
+        byteSource('primary.vxl'),
+      ),
+    )
+    expect(input.bindingsFor('motion').map(item => item.bindingId)).toEqual([
+      'motion#Legacy/Model.HVA',
+      'motion#Strict/model.hva',
+    ])
+  })
+
   it.each([
     ['a traversal segment', '../escape.hva'],
     ['an absolute path', '/etc/escape.hva'],
