@@ -1,4 +1,9 @@
-/** Facet-aware service resolution and the runtime ContractResolverPort adapter (A-2). */
+/**
+ * [MK] Core facet-aware service resolution and ContractResolverPort adapter (A-2).
+ * Registered definitions validate/match offers; the resolver owns compatibility, grants, pins
+ * and deterministic placement preference. Host activation/leases own execution and cleanup;
+ * extension facets cannot request the host's alternate-target preference or bypass the gate.
+ */
 
 import { ModkitError, contractId } from '@modkit/core'
 import type {
@@ -29,6 +34,7 @@ export async function resolveServiceProvider(
   offers: readonly ProviderOffer[],
   definitions: ServiceContractDefinitionRegistry,
   targetFor?: (offer: ProviderOffer) => RuntimeTarget,
+  preferAlternateTarget = false,
 ): Promise<ResolutionResult> {
   const accepted = new Set<object>()
   const selectionKeys = new Map<object, string>()
@@ -57,6 +63,7 @@ export async function resolveServiceProvider(
     accepts: (_offer, logical) => accepted.has(logical),
     selectionKey: (_offer, logical) => selectionKeys.get(logical),
     ...(targetFor === undefined ? {} : { targetFor }),
+    ...(preferAlternateTarget ? { preferAlternateTarget: true } : {}),
   })
 }
 
@@ -66,6 +73,8 @@ export interface ContractResolverRuntimeOptions {
   readonly target: RuntimeTarget
   /** The target an offer runs in when that is not `target` (in-process code of a worker-target host). */
   readonly targetFor?: (offer: ProviderOffer) => RuntimeTarget
+  /** Host-owned preference among already admissible placements; never extension-supplied. */
+  readonly preferAlternateTarget?: boolean
   /** Host-owned activation creates the selected runtime handle; extensions never receive facets. */
   readonly activate: (
     selection: SelectedServiceOffer,
@@ -112,6 +121,7 @@ export function createContractResolverPort(
       options.offers,
       options.definitions,
       options.targetFor,
+      options.preferAlternateTarget,
     )
     if (result.state !== 'resolved') {
       throw new ModkitError({

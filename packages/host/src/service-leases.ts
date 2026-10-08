@@ -202,6 +202,8 @@ export interface HostServiceResolverOptions {
   readonly contributionSettings?: (contributionId: string) => ContributionSettings | undefined
   /** Root provider only: questions to the loaded mod servers its requests name (language providers). */
   readonly modContexts?: ModContextQueryPort
+  /** Prefer already gate-eligible trusted services beside their owner; default keeps worker ties. */
+  readonly preferTrustedInProcess?: boolean
 }
 
 export interface HostServiceResolver {
@@ -255,6 +257,7 @@ export function createHostServiceResolver(
       definitions: options.definitions,
       target,
       targetFor: offer => serviceTargetFor(options.executionBackends, offer, target),
+      ...(options.preferTrustedInProcess === true ? { preferAlternateTarget: true } : {}),
       onResolved(request: FacetAwareProviderRequest, result) {
         locks.push(buildLockEntry(request, result))
       },

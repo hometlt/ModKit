@@ -657,6 +657,9 @@ export async function resolveLanguageProvider(
     definitions,
     grant: request.grant,
     budgets: request.budgets,
+    // Only Host-attested trusted variants are rerouted by serviceTargetFor. Portable/untrusted
+    // providers and Web keep their worker target; codec/heavy-operation placement is unchanged.
+    preferTrustedInProcess: true,
     ...(request.services.contributionSettings === undefined
       ? {}
       : { contributionSettings: request.services.contributionSettings }),

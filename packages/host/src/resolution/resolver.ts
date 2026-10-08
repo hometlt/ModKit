@@ -80,6 +80,8 @@ export interface ResolutionPreparation {
   readonly selectionKey?: (offer: ProviderOffer, contractOffer: ContractOffer) => string | undefined
   /** The target an offer is checked against, when it does not run in `request.target`. */
   readonly targetFor?: (offer: ProviderOffer) => RuntimeTarget
+  /** Host-only placement preference; compatibility, facets, grants and pins still run first. */
+  readonly preferAlternateTarget?: boolean
 }
 
 function candidateSortKey(candidate: Candidate): string {
@@ -351,8 +353,9 @@ export function resolveProvider(
   }
 
   // Stage 6: deterministic preference tuple — no self-declared priority, no order. Last, an offer
-  // that runs in the requested target outranks its in-process twin (`targetFor` returns the request
-  // target itself for it): a provider shipping both variants must not tie against itself.
+  // that runs in the requested target outranks its in-process twin by default. A host's language
+  // policy can prefer the attested alternate placement; neither preference admits a rejected
+  // candidate or changes operation/output ranking. Shipping both variants must not cause a tie.
   const score = (candidate: Candidate): readonly number[] => [
     request.operation !== undefined &&
     (candidate.offer.operations ?? []).includes(request.operation)
@@ -361,7 +364,7 @@ export function resolveProvider(
     preferredOutputs.filter(requirement =>
       (candidate.offer.outputs ?? []).some(offer => traitOfferMatches(requirement, offer)),
     ).length,
-    targetOf(candidate.offer) === request.target ? 1 : 0,
+    (targetOf(candidate.offer) !== request.target) === (preparation?.preferAlternateTarget === true) ? 1 : 0,
   ]
   const compareTuple = (a: readonly number[], b: readonly number[]): number => {
     for (let i = 0; i < a.length; i += 1) {
