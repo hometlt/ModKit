@@ -10,6 +10,7 @@ const uri = 'untitled:Main.fixturelang'
 function harness({
   withCompletion = false,
   blockDiagnostics = false,
+  blockAllDiagnostics = false,
   blockCompletion = false,
 } = {}) {
   const handlers = new Map()
@@ -87,7 +88,7 @@ function harness({
         .at(-1)[3]
       diagnosticRequests.push(request)
       diagnosticEntered()
-      if (blockDiagnostics && diagnosticRequests.length === 1) await diagnosticGate
+      if (blockAllDiagnostics || (blockDiagnostics && diagnosticRequests.length === 1)) await diagnosticGate
       return {
         diagnostics: blockDiagnostics
           ? [
@@ -119,6 +120,10 @@ function harness({
       return { items: [], isIncomplete: false }
     },
     hover: async request => ({ markdown: String(request.documentVersion) }),
+    documentSymbols: async request => {
+      const range = { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } }
+      return { symbols: [{ name: String(request.documentVersion), kind: 'variable', range, selectionRange: range }], isIncomplete: false }
+    },
     codeLenses: async request => {
       calls.push(['code-lenses-budget', request.maxResults])
       const range = { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } }
@@ -177,6 +182,29 @@ function harness({
     },
   }
 }
+
+test('document symbols see queued edits without waiting for background diagnostics', async () => {
+  const h = harness({ blockDiagnostics: true, blockAllDiagnostics: true })
+  h.open(1, 'one')
+  h.release()
+  await h.diagnosticsStarted
+  let timer
+  try {
+    h.change(2, 'two')
+    const symbols = await Promise.race([
+      h.request('onDocumentSymbol', { textDocument: { uri } }),
+      new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('outline blocked on diagnostics')), 1000) }),
+    ])
+    assert.equal(symbols[0].name, '2')
+    h.releaseDiagnostics()
+    const diagnostics = await h.request('diagnostic', { textDocument: { uri } })
+    assert.deepEqual(diagnostics.items.map(item => item.code), ['two'])
+  } finally {
+    clearTimeout(timer)
+    h.releaseDiagnostics()
+    await h.server.close()
+  }
+})
 
 test('document projections keep the last lens beyond the interactive result limit', async () => {
   const h = harness()

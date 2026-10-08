@@ -1257,8 +1257,9 @@ export function createModkitLanguageServer(
     }),
   )
   connection.onDocumentSymbol((params, token) =>
-    withSignal(token, async signal => {
-      await awaitDiagnostics(signal)
+    withInteractiveSignal(token, async signal => {
+      // The outline needs applied edits, not the completed diagnostics of every open document.
+      await awaitReady()
       const value = await options.workspace.documentSymbols(
         documentRequest(params.textDocument.uri, signal),
       )
