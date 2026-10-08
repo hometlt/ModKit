@@ -7040,8 +7040,13 @@ async function activateModkit(
         ])
         if (languageOnly) {
           log(
-            `[language-context] local workspace snapshot for ${request.document.uri}: accepted=${request.workspaceLanguageIds.join(',')} open=${request.workspaceDocuments.map(document => `${document.languageId}:${document.uri}`).join(',')} additional=${documents.map(document => `${document.languageId}:${document.uri}`).join(',')} origins=${contextOrigins.map(origin => `${origin.logicalId}:${origin.uri}`).join(',')}`,
+            `[language-context] local workspace snapshot for ${request.document.uri}: accepted=${request.workspaceLanguageIds.join(',')} open=${request.workspaceDocuments.length} additional=${documents.length} origins=${contextOrigins.length}`,
           )
+          // Large dependency URI lists belong to opt-in tracing, not every editor request.
+          if (output.logLevel === vscode.LogLevel.Trace)
+            output.trace(
+              `[language-context] local documents: open=${request.workspaceDocuments.map(document => `${document.languageId}:${document.uri}`).join(',')} additional=${documents.map(document => `${document.languageId}:${document.uri}`).join(',')} origins=${contextOrigins.map(origin => `${origin.logicalId}:${origin.uri}`).join(',')}`,
+            )
         }
         return {
           documents: Object.freeze(documents),
@@ -7253,8 +7258,12 @@ async function activateModkit(
         : await composed.snapshot(request)
     rememberLanguageSnapshot(snapshotKey, snapshot)
     log(
-      `[language-context] workspace snapshot for ${request.document.uri}: accepted=${request.workspaceLanguageIds.join(',')} open=${request.workspaceDocuments.map(document => `${document.languageId}:${document.uri}`).join(',')} additional=${snapshot.documents.map(document => `${document.languageId}:${document.uri}`).join(',')} origins=${snapshot.workspaceContext?.documentOrigins.map(origin => `${origin.logicalId}:${origin.uri}`).join(',') ?? ''}`,
+      `[language-context] workspace snapshot for ${request.document.uri}: accepted=${request.workspaceLanguageIds.join(',')} open=${request.workspaceDocuments.length} additional=${snapshot.documents.length} origins=${snapshot.workspaceContext?.documentOrigins.length ?? 0}`,
     )
+    if (output.logLevel === vscode.LogLevel.Trace)
+      output.trace(
+        `[language-context] workspace documents: open=${request.workspaceDocuments.map(document => `${document.languageId}:${document.uri}`).join(',')} additional=${snapshot.documents.map(document => `${document.languageId}:${document.uri}`).join(',')} origins=${snapshot.workspaceContext?.documentOrigins.map(origin => `${origin.logicalId}:${origin.uri}`).join(',') ?? ''}`,
+      )
     return snapshot
   }
 

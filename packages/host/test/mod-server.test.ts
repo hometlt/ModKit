@@ -111,6 +111,48 @@ async function daemon(idleMs?: number, onIdle?: () => void) {
 const request = { schemaVersion: 1 as const, target: 'C:/Mods/Mine.SC2Mod' }
 
 describe('the shared mod server', () => {
+  it('accepts authenticated clients while the shared source is still loading', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'modkit-mod-server-readiness-'))
+    directories.push(directory)
+    const address = modServerAddress({ extensionRoots: [], storage: directory }, directory)
+    const chain = chainSources()
+    let release!: () => void
+    let started!: () => void
+    const loading = new Promise<void>(resolve => { release = resolve })
+    const requested = new Promise<void>(resolve => { started = resolve })
+    const server = await serveModServer({
+      address,
+      sources: {
+        async openModContext(value) {
+          started()
+          await loading
+          if (chain.sources.openModContext === undefined) throw new Error('fixture has no mod contexts')
+          return chain.sources.openModContext(value)
+        },
+      },
+    })
+    served.push(server)
+    const first = await connectModServer(address)
+    const second = await connectModServer(address)
+    try {
+      expect(chain.opened).toBe(0)
+      const opening = first.openModContext(request)
+      await requested
+      expect(chain.opened).toBe(0)
+      expect(first.closed).toBe(false)
+      expect(second.closed).toBe(false)
+      release()
+      const context = await opening
+      expect(context.contextId).toBe('chain')
+      expect(chain.opened).toBe(1)
+      await context.dispose()
+    } finally {
+      release()
+      await first.close()
+      await second.close()
+    }
+  })
+
   it('serves the ModContext contract over its pipe', async () => {
     const { address, chain } = await daemon()
     const client = await connectModServer(address)

@@ -218,7 +218,7 @@ function modContextRequest(value: unknown): ModContextRequest {
  * The daemon's service for one connection: contexts it opened and the overlays it laid, so both
  * go when the connection does.
  */
-function connectionService(sources: ContentSources) {
+function connectionService(sources: Pick<ContentSources, 'openModContext'>) {
   const opened = new Set<ModContext>()
   /** What this connection laid over each context's files: by layer and path. */
   const laid = new Map<ModContext, Map<string, ModContextOverlay>>()
@@ -295,7 +295,7 @@ function connectionService(sources: ContentSources) {
 }
 
 export interface ServeModServerOptions {
-  readonly sources: ContentSources
+  readonly sources: Pick<ContentSources, 'openModContext'>
   readonly address: Pick<ModServerAddress, 'pipe' | 'tokenFile'>
   /** Leave when no client has been connected this long (default 10 minutes). */
   readonly idleMs?: number
