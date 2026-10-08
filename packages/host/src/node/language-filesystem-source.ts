@@ -6,7 +6,12 @@ import type {
   LanguageWorkspaceDocumentSource,
   LanguageWorkspaceDocumentSourceRequest,
 } from '../language/index.js'
-import { createLanguageFileClassifier, languageWorkspaceContextToken } from '../language/index.js'
+import {
+  createLanguageFileClassifier,
+  languageDocumentSnapshot,
+  languageDocumentTextToken,
+  languageWorkspaceContextToken,
+} from '../language/index.js'
 import type { LanguageDocument, LanguageWorkspaceDocumentOrigin } from '@modkit/sdk/language'
 
 export interface FilesystemLanguageDocumentSourceOptions {
@@ -28,6 +33,9 @@ export function createFilesystemLanguageDocumentSource(
   options: FilesystemLanguageDocumentSourceOptions,
 ): FilesystemLanguageDocumentSource {
   const versions = new Map<string, { signature: string; version: number }>()
+  // Still read disk on every request; only equal text may reuse an owner capture and its token.
+  let captures = new Map<string, LanguageDocument>()
+  const captureBudget = Math.min(options.maxWorkspaceBytes, 256 * 1024 * 1024)
   const classify = createLanguageFileClassifier(options.routes)
   const maxVisitedEntries = options.maxVisitedEntries ?? 16_384
   const roots = options.roots.map(root => resolve(root))
@@ -161,7 +169,9 @@ export function createFilesystemLanguageDocumentSource(
         left.path.localeCompare(right.path),
       )) {
         const language = languageOfCandidate(candidate)
-        byLanguage.set(language, [...(byLanguage.get(language) ?? []), candidate])
+        const group = byLanguage.get(language)
+        if (group === undefined) byLanguage.set(language, [candidate])
+        else group.push(candidate)
       }
       const ranked = byLanguage.get(primaryLanguage) ?? []
       const others = [...byLanguage.entries()]
@@ -171,6 +181,8 @@ export function createFilesystemLanguageDocumentSource(
         for (const paths of others)
           if (index < paths.length) ranked.push(paths[index] as (typeof candidates)[number])
       const documents = []
+      const nextCaptures = new Map<string, LanguageDocument>()
+      let captureBytes = 0
       const documentOrigins: LanguageWorkspaceDocumentOrigin[] = []
       let totalBytes = 0
       for (const candidate of ranked.slice(0, request.maxDocuments)) {
@@ -185,6 +197,14 @@ export function createFilesystemLanguageDocumentSource(
           continue
         }
         const bytes = await readFile(path)
+        // A file may grow between stat and read; the actual bytes must fit too.
+        if (
+          bytes.byteLength > options.maxDocumentBytes ||
+          totalBytes + bytes.byteLength > options.maxWorkspaceBytes
+        ) {
+          complete = false
+          continue
+        }
         totalBytes += bytes.byteLength
         let text: string
         // UTF-16 by its BOM (Relic .ucs tables); such a document is analysed but read-only, since
@@ -202,8 +222,25 @@ export function createFilesystemLanguageDocumentSource(
           continue
         }
         const uri = pathToFileURL(path).href
-        const signature = languageWorkspaceContextToken(text)
         const previous = versions.get(uri)
+        const dialect = classify(path).dialect
+        const languageId = languageOf(path) as string
+        const retained = captures.get(uri)
+        let document =
+          retained !== undefined &&
+          retained.text === text &&
+          retained.languageId === languageId &&
+          retained.dialect === dialect &&
+          retained.version === previous?.version
+            ? retained
+            : languageDocumentSnapshot({
+                uri,
+                languageId,
+                version: previous?.version ?? 1,
+                text,
+                ...(dialect === undefined ? {} : { dialect }),
+              })
+        const signature = languageDocumentTextToken(document)
         const version =
           previous === undefined
             ? 1
@@ -211,16 +248,16 @@ export function createFilesystemLanguageDocumentSource(
               ? previous.version
               : previous.version + 1
         versions.set(uri, { signature, version })
-        const dialect = classify(path).dialect
-        documents.push(
-          Object.freeze({
-            uri,
-            languageId: languageOf(path) as string,
-            version,
-            text,
-            ...(dialect === undefined ? {} : { dialect }),
-          }),
-        )
+        if (document.version !== version)
+          document = languageDocumentSnapshot({ ...document, version })
+        documents.push(document)
+        // Keep the first fitting captures: evicting them for later files causes cyclic cache misses.
+        const retainedBytes =
+          256 + 2 * (uri.length + languageId.length + (dialect?.length ?? 0) + text.length)
+        if (captureBytes + retainedBytes <= captureBudget) {
+          nextCaptures.set(uri, document)
+          captureBytes += retainedBytes
+        }
         documentOrigins.push(
           Object.freeze({
             uri,
@@ -236,6 +273,8 @@ export function createFilesystemLanguageDocumentSource(
         origin.layerId.startsWith(`${contextId}:root:`),
       )
       const contextOrigins = Object.freeze([...openOrigins, ...documentOrigins])
+      request.signal.throwIfAborted()
+      captures = nextCaptures
       return {
         documents: Object.freeze(documents),
         isComplete: complete,
