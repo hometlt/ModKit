@@ -125,6 +125,90 @@ const document = (uri: string, text: string, version = 1) => ({
 })
 
 describe('the loaded mod servers of a language workspace', () => {
+  it('retries unchanged buffers after a rejected overlay delivery', async () => {
+    const chain = server()
+    let attempts = 0
+    const context: ModContext = { ...chain.context, overlay: async changes => {
+      if (++attempts === 1) throw new Error('delivery refused')
+      return chain.context.overlay!(changes)
+    } }
+    const servers = createLanguageModContexts({ contexts: [context] })
+    const scope = servers.placeOf(MOD_UNITS_URI)!.scope
+    const buffer = document(MOD_UNITS_URI, '<Catalog><CUnit id="Mine"/></Catalog>')
+    try {
+      await expect(servers.synchronize(scope, [buffer])).rejects.toThrow('delivery refused')
+      await servers.synchronize(scope, [buffer])
+      expect(attempts).toBe(2)
+      expect(new TextDecoder().decode(await chain.context.read('layer:1', UNITS, 1024))).toBe(buffer.text)
+    } finally { await servers.dispose() }
+  })
+
+  it.each(['release', 'synchronize'] as const)('retries a failed closed-buffer removal through %s', async method => {
+    const chain = server()
+    let rejectRemoval = true
+    const context: ModContext = { ...chain.context, overlay: async changes => {
+      if (changes.some(change => change.text === undefined) && rejectRemoval) {
+        rejectRemoval = false
+        throw new Error('removal refused')
+      }
+      return chain.context.overlay!(changes)
+    } }
+    const servers = createLanguageModContexts({ contexts: [context] })
+    const scope = servers.placeOf(MOD_UNITS_URI)!.scope
+    try {
+      await servers.synchronize(scope, [document(MOD_UNITS_URI, '<Catalog><CUnit id="Mine"/></Catalog>')])
+      const remove = () => method === 'release' ? servers.release(MOD_UNITS_URI) : servers.synchronize(scope, [])
+      await expect(remove()).rejects.toThrow('removal refused')
+      await remove()
+      expect(new TextDecoder().decode(await chain.context.read('layer:1', UNITS, 1024))).toBe('<Catalog/>')
+    } finally { await servers.dispose() }
+  })
+
+  it('rechecks a previously clean buffer after saved files change, preserving unsaved removal authority', async () => {
+    const chain = server()
+    let saved = '<Catalog/>'
+    const context: ModContext = { ...chain.context, read: async (layer, path, maximum) => {
+      const text = new TextDecoder().decode(await chain.context.read(layer, path, maximum))
+      return encoder.encode(text === '<Catalog/>' ? saved : text)
+    } }
+    const servers = createLanguageModContexts({ contexts: [context] })
+    const scope = servers.placeOf(MOD_UNITS_URI)!.scope
+    const clean = document(MOD_UNITS_URI, saved)
+    try {
+      await servers.synchronize(scope, [clean])
+      expect(chain.changes).toHaveLength(0)
+      saved = '<Catalog><CUnit id="External"/></Catalog>'
+      await servers.invalidate()
+      await servers.synchronize(scope, [clean])
+      expect(chain.changes).toEqual([[{ layerId: 'layer:1', path: UNITS, text: clean.text }]])
+      await servers.invalidate()
+      await servers.synchronize(scope, [clean])
+      expect(chain.changes).toHaveLength(1)
+      await servers.release(MOD_UNITS_URI)
+      expect(chain.changes.at(-1)).toEqual([{ layerId: 'layer:1', path: UNITS }])
+    } finally { await servers.dispose() }
+  })
+
+  it('settles every source invalidation before the next queued buffer sync even when one fails', async () => {
+    const first = server()
+    const second = server()
+    let finish!: () => void
+    const waiting = new Promise<{ revision: string }>(resolve => { finish = () => resolve({ revision: '1' }) })
+    const servers = createLanguageModContexts({ contexts: [
+      { ...first.context, invalidate: async () => { throw new Error('first source failed') } },
+      { ...second.context, contextId: 'other', invalidate: () => waiting },
+    ] })
+    const refreshed = servers.invalidate()
+    let rejected = false
+    void refreshed.catch(() => { rejected = true })
+    try {
+      await new Promise(resolve => setTimeout(resolve, 0))
+      expect(rejected).toBe(false)
+      finish()
+      await expect(refreshed).rejects.toThrow('first source failed')
+    } finally { finish(); await servers.dispose() }
+  })
+
   it('keeps distinct case-sensitive content roots separate', async () => {
     const chain = server()
     const upper = { ...chain.context.layers[0]!, caseSensitive: true }

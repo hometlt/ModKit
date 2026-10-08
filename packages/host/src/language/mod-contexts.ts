@@ -8,7 +8,8 @@
  *   under a layer's host path, or a content-source file under a layer's source path;
  * - brings the editor's open buffers to the server before a request reads it (`synchronize`): the
  *   unsaved text of a file on the host's disk goes over that file (`ModContext.overlay`); a buffer
- *   equal to the file on disk is not sent; a buffer that is gone takes its text away (`release`);
+ *   equal to the file on disk is not sent; delivery is remembered only after server acknowledgement,
+ *   so failed additions/removals retry. A buffer that is gone takes its text away (`release`);
  * - carries a provider's questions to the server (`query`) and completes the files the answer
  *   names (`documents: [{ layerId, path }]`) with the URI the workspace uses for them, so a
  *   provider never builds one;
@@ -282,6 +283,7 @@ export function createLanguageModContexts(
         signal?.throwIfAborted()
         const context = entry.context
         const changes: ModContextOverlay[] = []
+        const delivered = new Map<string, Pushed | undefined>()
         const open = new Set<string>()
         for (const document of documents.slice(0, MAX_SCOPE_DOCUMENTS)) {
           const place = placeIn(entry, document.uri)
@@ -294,7 +296,7 @@ export function createLanguageModContexts(
             known === undefined &&
             (await diskText(context, place.layerId, place.path)) === document.text
           ) {
-            pushed.set(
+            delivered.set(
               key,
               Object.freeze({ ...place, uri: document.uri, text: document.text, overlaid: false }),
             )
@@ -303,7 +305,7 @@ export function createLanguageModContexts(
           changes.push(
             Object.freeze({ layerId: place.layerId, path: place.path, text: document.text }),
           )
-          pushed.set(
+          delivered.set(
             key,
             Object.freeze({ ...place, uri: document.uri, text: document.text, overlaid: true }),
           )
@@ -311,13 +313,18 @@ export function createLanguageModContexts(
         // A buffer of this server the editor no longer has open: its text leaves.
         for (const [key, known] of pushed) {
           if (known.scope !== scope || open.has(known.uri)) continue
-          pushed.delete(key)
+          delivered.set(key, undefined)
           if (known.overlaid)
             changes.push(Object.freeze({ layerId: known.layerId, path: known.path }))
         }
         // An empty overlay asks this session's revision now: a save or another reader in the same
         // session may have changed its state since this workspace last heard.
         await context.overlay?.(changes)
+        // A rejected batch leaves the last acknowledged state intact for the next request.
+        for (const [key, known] of delivered) {
+          if (known === undefined) pushed.delete(key)
+          else pushed.set(key, known)
+        }
         return Object.freeze({
           scope,
           gameId: context.gameId,
@@ -331,11 +338,11 @@ export function createLanguageModContexts(
       return serially(async () => {
         for (const [key, known] of [...pushed]) {
           if (known.uri !== uri) continue
-          pushed.delete(key)
           const context = entries.find(entry => entry.scope === known.scope)?.context
           if (!disposed && known.overlaid) {
             await context?.overlay?.([Object.freeze({ layerId: known.layerId, path: known.path })])
           }
+          pushed.delete(key)
         }
       })
     },
@@ -398,7 +405,12 @@ export function createLanguageModContexts(
 
     invalidate() {
       return serially(async () => {
-        await Promise.all(entries.map(entry => entry.context.invalidate?.()))
+        // Previously clean buffers may differ from the new saved bytes. Recheck only those;
+        // acknowledged unsaved overlays survive invalidation and must still be removed on close.
+        for (const [key, known] of pushed) if (!known.overlaid) pushed.delete(key)
+        const refreshed = await Promise.allSettled(entries.map(entry => entry.context.invalidate?.()))
+        const failed = refreshed.find(result => result.status === 'rejected')
+        if (failed?.status === 'rejected') throw failed.reason
       })
     },
 
