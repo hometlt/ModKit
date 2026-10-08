@@ -32,6 +32,7 @@ export function crc32(data: Uint8Array): number {
 }
 export { adler32, createAdler32, type Adler32Accumulator } from '../compression/adler32.js'
 export { xxHash32 } from './xxhash32.js'
+export { jenkinsLookup2 } from './lookup2.js'
 
 /** CRC-32 over `bytes[start, end)` — a PNG chunk's type and data, say — without copying. */
 export function crc32Range(bytes: Uint8Array, start: number, end: number): number {
