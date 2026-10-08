@@ -61,6 +61,8 @@ export interface ModWorkspaceGraphRoot {
   readonly rootId: string
   readonly sourceId: string
   readonly sourcePath: string
+  /** Logical path spelling policy supplied by the source owner; omission keeps legacy folding. */
+  readonly caseSensitive?: boolean
   /**
    * The root's real address when `sourcePath` is only a logical prefix (a package folder on disk
    * read through a mod context); several roots of one source each keep their own.
@@ -169,6 +171,9 @@ export function resolveModWorkspaceGraph(input: ModWorkspaceGraphInput): ModWork
 
   const roots = new Map<string, ModWorkspaceGraphRoot>()
   for (const root of input.roots) {
+    if (root.caseSensitive !== undefined && typeof root.caseSensitive !== 'boolean') {
+      throw new TypeError(`workspace root ${root.rootId} has invalid caseSensitive policy`)
+    }
     if (!sourceIds.has(root.sourceId)) {
       diagnostics.push({
         severity: 'error',

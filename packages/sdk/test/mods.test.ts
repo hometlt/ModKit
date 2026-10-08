@@ -18,6 +18,25 @@ function root(
 }
 
 describe('game-neutral mod workspace graph', () => {
+  it('preserves declared root case policy and refuses malformed policy values', () => {
+    const input = {
+      workspaceId: 'case-policy',
+      gameId: 'example/game',
+      activeRootId: 'strict',
+      sources: [source],
+      roots: [{ ...root('strict'), caseSensitive: true }],
+      maxRoots: 4,
+      maxDepth: 4,
+    }
+    expect(resolveModWorkspaceGraph(input).loadOrder[0]?.caseSensitive).toBe(true)
+    expect(() =>
+      resolveModWorkspaceGraph({
+        ...input,
+        roots: [{ ...root('strict'), caseSensitive: 'true' as never }],
+      }),
+    ).toThrow(/invalid caseSensitive/u)
+  })
+
   it('emits deterministic dependency-first order', () => {
     const lock = resolveModWorkspaceGraph({
       workspaceId: 'ordered',

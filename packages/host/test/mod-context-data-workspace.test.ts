@@ -115,6 +115,7 @@ describe('resolved Data inputs from ModContext', () => {
         'mods/base',
         'Mods/Legacy',
       ])
+      expect(workspace.loadOrder.map(root => root.caseSensitive)).toEqual([true, true, undefined])
       expect(await lookup('strict-miss', 'Mods/Base/unit.xml')).toMatchObject({
         state: 'unresolved',
         reason: 'not-found',

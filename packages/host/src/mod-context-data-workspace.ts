@@ -122,6 +122,7 @@ export function createModContextDataWorkspaceInputs(
         rootId: layer.id,
         sourceId: layer.sourceId,
         sourcePath: prefix,
+        ...(layer.caseSensitive === undefined ? {} : { caseSensitive: layer.caseSensitive }),
         ...(location === undefined ? {} : { location }),
         displayName: layer.displayName,
         kind: layer.role,

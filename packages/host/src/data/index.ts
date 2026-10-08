@@ -620,6 +620,8 @@ export async function planDataWorkspace(
 
 export interface ResolvedDataWritableRoot {
   readonly rootId: string
+  /** Source-owned logical path policy; omission retains legacy aliases. */
+  readonly caseSensitive?: boolean
   /** Logical workspace prefix represented by target.ownerSource. */
   readonly sourcePath: string
   readonly target: SubjectEditTarget
@@ -627,6 +629,8 @@ export interface ResolvedDataWritableRoot {
 
 export interface ResolvedDataDocumentTarget {
   readonly rootId: string
+  /** Source-owned logical path policy, captured with the exact document binding. */
+  readonly caseSensitive?: boolean
   readonly path: string
   readonly target: SubjectEditTarget
 }
@@ -1365,8 +1369,8 @@ function validateWorkspacePlan(
         ? ''
         : confinedPath(root.root.sourcePath, `${requirement.requirementId}.root`)
     const path = confinedPath(requirement.path, `${requirement.requirementId}.path`)
-    const foldedRoot = rootPath.toLocaleLowerCase()
-    const foldedPath = path.toLocaleLowerCase()
+    const foldedRoot = root.root.caseSensitive === true ? rootPath : rootPath.toLocaleLowerCase()
+    const foldedPath = root.root.caseSensitive === true ? path : path.toLocaleLowerCase()
     if (rootPath !== '' && foldedPath !== foldedRoot && !foldedPath.startsWith(`${foldedRoot}/`)) {
       throw new TypeError(
         `workspace data requirement ${requirement.requirementId} escapes its root`,
@@ -1523,6 +1527,7 @@ function directDataDocumentTarget(
   path: string,
   source: AssetSourceRef,
   revision: RevisionId,
+  caseSensitive?: boolean,
 ): ResolvedDataDocumentTarget {
   const expectedRevision: AssetRevision = Object.freeze({
     bindings: Object.freeze({ [source.id]: revision }),
@@ -1536,6 +1541,7 @@ function directDataDocumentTarget(
   return Object.freeze({
     rootId,
     path,
+    ...(caseSensitive === undefined ? {} : { caseSensitive }),
     target: Object.freeze({
       targetId: source.id,
       subjectUri: source.uri,
@@ -1546,16 +1552,21 @@ function directDataDocumentTarget(
   })
 }
 
+/** A Data logical path's identity under its source owner, shared by binding and duplicate checks. */
+function logicalDataPathKey(path: string, caseSensitive: boolean): string {
+  const normalized = path.replace(/\\/gu, '/').replace(/^\/+|\/+$/gu, '')
+  return caseSensitive ? normalized : normalized.toLowerCase()
+}
+
 function sameLogicalDocument(
-  left: Readonly<{ rootId: string; path: string }>,
-  right: Readonly<{ rootId: string; path: string }>,
+  left: Readonly<{ rootId: string; path: string; caseSensitive?: boolean }>,
+  right: Readonly<{ rootId: string; path: string; caseSensitive?: boolean }>,
 ): boolean {
-  const key = (value: string) =>
-    value
-      .replace(/\\/gu, '/')
-      .replace(/^\/+|\/+$/gu, '')
-      .toLowerCase()
-  return left.rootId === right.rootId && key(left.path) === key(right.path)
+  const strict = left.caseSensitive === true || right.caseSensitive === true
+  return (
+    left.rootId === right.rootId &&
+    logicalDataPathKey(left.path, strict) === logicalDataPathKey(right.path, strict)
+  )
 }
 
 function pathInsideWritableRoot(path: string, root: ResolvedDataWritableRoot): string {
@@ -1569,7 +1580,11 @@ function pathInsideWritableRoot(path: string, root: ResolvedDataWritableRoot): s
   if (
     rootParts.length === 0 ||
     pathParts.length <= rootParts.length ||
-    rootParts.some((part, index) => part.toLowerCase() !== pathParts[index]?.toLowerCase())
+    rootParts.some((part, index) =>
+      root.caseSensitive === true
+        ? part !== pathParts[index]
+        : part.toLowerCase() !== pathParts[index]?.toLowerCase(),
+    )
   ) {
     throw new TypeError(`edit path ${path} is outside writable root ${root.sourcePath}`)
   }
@@ -1581,20 +1596,27 @@ function pathInsideWritableRoot(path: string, root: ResolvedDataWritableRoot): s
 }
 
 /**
- * Logical data paths are case-folded ids; a person reads the file as the store spells it. For a
- * replaced document that spelling is the tail of its source URI with the same folded segments.
+ * Legacy data ids may fold case; a person reads the file as the store spells it. Strict bindings
+ * accept only the same segments. This changes the displayed destination, never the bound source.
  */
-function storedSpelling(path: string, subjectUri: string): string {
-  const parts = path.replace(/\\/gu, '/').split('/').filter(part => part !== '')
+function storedSpelling(path: string, subjectUri: string, caseSensitive = false): string {
+  const parts = path
+    .replace(/\\/gu, '/')
+    .split('/')
+    .filter(part => part !== '')
   let stored: string[]
   try {
-    stored = decodeURIComponent(new URL(subjectUri).pathname).split('/').filter(part => part !== '')
+    stored = decodeURIComponent(new URL(subjectUri).pathname)
+      .split('/')
+      .filter(part => part !== '')
   } catch {
     return path
   }
   const tail = stored.slice(-parts.length)
   return tail.length === parts.length &&
-    tail.every((part, index) => part.toLowerCase() === parts[index]?.toLowerCase())
+    tail.every((part, index) =>
+      caseSensitive ? part === parts[index] : part.toLowerCase() === parts[index]?.toLowerCase(),
+    )
     ? tail.join('/')
     : path
 }
@@ -1604,9 +1626,13 @@ function bindResolvedDataEditDestination(
   documents: readonly ResolvedDataDocumentTarget[],
   writableRoots: readonly ResolvedDataWritableRoot[],
 ): ResolvedDataEditDestination {
+  const documentBinding =
+    resolved.target.mode === 'replace'
+      ? documents.find(document => sameLogicalDocument(document, resolved.target))
+      : undefined
   const binding =
     resolved.target.mode === 'replace'
-      ? documents.find(document => sameLogicalDocument(document, resolved.target))?.target
+      ? documentBinding?.target
       : writableRoots.find(root => root.rootId === resolved.selectedRootId)?.target
   if (binding === undefined) {
     throw new TypeError(
@@ -1617,7 +1643,7 @@ function bindResolvedDataEditDestination(
   }
   const path =
     resolved.target.mode === 'replace'
-      ? storedSpelling(resolved.target.path, binding.subjectUri)
+      ? storedSpelling(resolved.target.path, binding.subjectUri, documentBinding?.caseSensitive)
       : resolved.target.path
   return Object.freeze({
     rootId: resolved.target.rootId,
@@ -1635,9 +1661,13 @@ function bindDataDocumentDestination(
   documents: readonly ResolvedDataDocumentTarget[],
   writableRoots: readonly ResolvedDataWritableRoot[],
 ): ResolvedDataEditDestination {
+  const documentBinding =
+    target.mode === 'replace'
+      ? documents.find(document => sameLogicalDocument(document, target))
+      : undefined
   const binding =
     target.mode === 'replace'
-      ? documents.find(document => sameLogicalDocument(document, target))?.target
+      ? documentBinding?.target
       : writableRoots.find(root => root.rootId === selectedRootId)?.target
   if (binding === undefined) {
     throw new TypeError(
@@ -1646,7 +1676,10 @@ function bindDataDocumentDestination(
         : `active mod ${selectedRootId} has no writable namespace binding`,
     )
   }
-  const path = target.mode === 'replace' ? storedSpelling(target.path, binding.subjectUri) : target.path
+  const path =
+    target.mode === 'replace'
+      ? storedSpelling(target.path, binding.subjectUri, documentBinding?.caseSensitive)
+      : target.path
   return Object.freeze({
     rootId: target.rootId,
     path,
@@ -1691,15 +1724,11 @@ export function editChangeFromDataEditProposal(
   for (const guard of resolved.guards) {
     const binding = documentTargets.find(candidate => sameLogicalDocument(candidate, guard))
     if (binding === undefined || guard.revision === undefined) {
-      throw new TypeError(
-        `no host document binding exists for guarded ${guard.rootId}/${guard.path}`,
-      )
+      throw new TypeError(`no host document binding exists for guarded ${guard.rootId}/${guard.path}`)
     }
     const revisions = Object.values(binding.target.expectedRevision.bindings)
     if (revisions.length !== 1 || revisions[0] !== guard.revision) {
-      throw new TypeError(
-        `host document binding revision changed for ${guard.rootId}/${guard.path}`,
-      )
+      throw new TypeError(`host document binding revision changed for ${guard.rootId}/${guard.path}`)
     }
     if (!targetIds.has(binding.target.targetId)) {
       targetIds.add(binding.target.targetId)
@@ -1773,11 +1802,15 @@ export function isolationChangeFromDataGraphProposal(
   for (const guard of proposal.guards) {
     const binding = documentTargets.find(candidate => sameLogicalDocument(candidate, guard))
     if (binding === undefined || guard.revision === undefined) {
-      throw new TypeError(`no host document binding exists for guarded ${guard.rootId}/${guard.path}`)
+      throw new TypeError(
+        `no host document binding exists for guarded ${guard.rootId}/${guard.path}`,
+      )
     }
     const revisions = Object.values(binding.target.expectedRevision.bindings)
     if (revisions.length !== 1 || revisions[0] !== guard.revision) {
-      throw new TypeError(`host document binding revision changed for ${guard.rootId}/${guard.path}`)
+      throw new TypeError(
+        `host document binding revision changed for ${guard.rootId}/${guard.path}`,
+      )
     }
     if (!guardedIds.has(binding.target.targetId)) {
       guardedIds.add(binding.target.targetId)
@@ -1790,7 +1823,10 @@ export function isolationChangeFromDataGraphProposal(
     if (replacement.target.rootId !== proposal.selectedRootId) {
       throw new TypeError('isolation replacement escaped the selected writable mod')
     }
-    const pathIdentity = `${replacement.target.rootId}\0${replacement.target.path.toLowerCase()}`
+    const policy =
+      writableRoots.find(root => root.rootId === replacement.target.rootId)?.caseSensitive ??
+      documentTargets.find(document => document.rootId === replacement.target.rootId)?.caseSensitive
+    const pathIdentity = `${replacement.target.rootId}\0${logicalDataPathKey(replacement.target.path, policy === true)}`
     if (paths.has(pathIdentity)) throw new TypeError('isolation proposal contains duplicate targets')
     paths.add(pathIdentity)
     if (replacement.target.mode === 'replace') {
@@ -1905,12 +1941,16 @@ export async function analyzeResolvedDataWorkspace(
       request.listFiles,
     )
     validateWorkspacePlan(plan, request.workspace, request.locales, limits.maxRequirements)
-    const writableRoots = Object.freeze([...(request.writableRoots ?? [])])
+    const workspaceRoots = new Map(request.workspace.loadOrder.map(root => [root.rootId, root]))
+    const writableRoots = Object.freeze(
+      (request.writableRoots ?? []).map(root => {
+        const caseSensitive = workspaceRoots.get(root.rootId)?.caseSensitive
+        return Object.freeze({ ...root, ...(caseSensitive === undefined ? {} : { caseSensitive }) })
+      }),
+    )
     const writableRootIds = new Set<string>()
     for (const writable of writableRoots) {
-      const workspaceRoot = request.workspace.loadOrder.find(
-        root => root.rootId === writable.rootId,
-      )
+      const workspaceRoot = workspaceRoots.get(writable.rootId)
       if (
         workspaceRoot === undefined ||
         writableRootIds.has(writable.rootId) ||
@@ -1981,6 +2021,7 @@ export async function analyzeResolvedDataWorkspace(
             requirement.path,
             loaded.source,
             loaded.revision,
+            workspaceRoots.get(requirement.rootId)?.caseSensitive,
           ),
         )
       } else if (requirement.kind === 'usage') usageDocuments.push(document)

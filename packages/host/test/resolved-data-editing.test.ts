@@ -106,6 +106,53 @@ function proposal(
 }
 
 describe('resolved SC2 data edit binding', () => {
+  it('binds the exact strict document when another spelling has the same revision', () => {
+    const upper = {
+      ...fileTarget('C', 'C.SC2Mod/Data/Unit.xml', 'file:///C.SC2Mod/Data/Unit.xml', 'same'),
+      caseSensitive: true,
+    }
+    const lower = {
+      ...fileTarget('C', 'C.SC2Mod/Data/unit.xml', 'file:///C.SC2Mod/Data/unit.xml', 'same'),
+      caseSensitive: true,
+    }
+    const change = editChangeFromDataEditProposal(
+      proposal('replace', lower.path, [
+        { rootId: 'C', path: lower.path, revision: rev('same'), documentIndex: 1 },
+      ]),
+      [upper, lower],
+      [],
+    )
+    expect(change.targets.map(target => target.targetId)).toEqual([lower.target.targetId])
+    expect(change.edits[0]).toMatchObject({
+      operation: 'replace',
+      source: lower.target.ownerSource,
+    })
+    expect(() =>
+      editChangeFromDataEditProposal(
+        proposal('replace', 'C.SC2Mod/Data/UNIT.XML', [
+          { rootId: 'C', path: 'C.SC2Mod/Data/UNIT.XML', revision: rev('same'), documentIndex: 1 },
+        ]),
+        [upper, lower],
+        [],
+      ),
+    ).toThrow(/no host document binding/u)
+  })
+
+  it('confines a created document under the declared strict root spelling', () => {
+    const root = { ...namespaceTarget('C', 'C.SC2Mod', 'file:///C.SC2Mod'), caseSensitive: true }
+    expect(() =>
+      editChangeFromDataEditProposal(proposal('create', 'c.sc2mod/Data/Unit.xml', []), [], [root]),
+    ).toThrow(/outside writable root/u)
+    expect(
+      editChangeFromDataEditProposal(proposal('create', 'C.SC2Mod/Data/Unit.xml', []), [], [root])
+        .edits[0],
+    ).toMatchObject({
+      operation: 'create',
+      newPath: 'Data/Unit.xml',
+      source: root.target.ownerSource,
+    })
+  })
+
   it('replaces the selected C document and retains A and C as revision guards', () => {
     const a = fileTarget('A', 'A.SC2Mod/Base.SC2Data/GameData/UnitData.xml', 'file:///A.xml', 'a1')
     const c = fileTarget('C', 'C.SC2Mod/Base.SC2Data/GameData/UnitData.xml', 'file:///C.xml', 'c1')
@@ -235,5 +282,41 @@ describe('resolved SC2 data edit binding', () => {
         newPath: 'Base.SC2Data/GameData/WeaponData.xml',
       }),
     ])
+    const caseDistinct: DataGraphIsolationPlanProposal = {
+      ...isolation,
+      guards: [],
+      replacements: isolation.replacements.map((replacement, index) => ({
+        ...replacement,
+        target: {
+          rootId: 'C',
+          path: index === 0 ? 'C.SC2Mod/Data/Unit.xml' : 'C.SC2Mod/Data/unit.xml',
+          mode: 'create',
+        },
+      })),
+    }
+    const strict = { ...root, caseSensitive: true }
+    expect(isolationChangeFromDataGraphProposal(caseDistinct, [], [strict]).edits).toEqual([
+      expect.objectContaining({ operation: 'create', newPath: 'Data/Unit.xml' }),
+      expect.objectContaining({ operation: 'create', newPath: 'Data/unit.xml' }),
+    ])
+    expect(() => isolationChangeFromDataGraphProposal(caseDistinct, [], [root])).toThrow(
+      /duplicate targets/u,
+    )
+    expect(() =>
+      isolationChangeFromDataGraphProposal(
+        {
+          ...caseDistinct,
+          replacements: [
+            caseDistinct.replacements[0]!,
+            {
+              ...caseDistinct.replacements[1]!,
+              target: { rootId: 'C', path: 'C.SC2Mod\\Data\\Unit.xml', mode: 'create' },
+            },
+          ],
+        },
+        [],
+        [strict],
+      ),
+    ).toThrow(/duplicate targets/u)
   })
 })
