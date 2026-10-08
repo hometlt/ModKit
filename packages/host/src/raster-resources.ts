@@ -168,10 +168,13 @@ function ownedCompressedTexture(
  * What a logical raster id names after its last `#` (resourceIdParameters): a named atlas area
  * (`textures/tex.gaf#region=Metal01`), one frame of a many-frame image (`gi.shp#frame=3`), or both
  * (an area of that frame), its palette indices instead of its colours (`#plane=indices`), and the
- * palette file an indexed image is drawn with (`ore01.tem#frame=3&palette=temperat.pal`). A
- * parameter list of other words stays part of the name, as before; a frame that is no nonnegative
- * integer, another plane or a palette that is no `.pal` file name is refused rather than read as a
- * name.
+ * palette file an indexed image is drawn with (`ore01.tem#frame=3&palette=temperat.pal`). For a
+ * cube or array image it names one element of the array (`#layer=1`), one mip level (`#mip=3`, a
+ * prefiltered level read on its own) and the order its file stores the cube's faces in (`#faces=
+ * 0,5,2,3,4,1`: for each face +X, −X, +Y, −Y, +Z, −Z the stored face that holds it; Warcraft III's
+ * probes swap −X and −Z). A parameter list of other words stays part of the name, as before; a frame,
+ * layer or mip that is no nonnegative integer, a face order that is no permutation of 0–5, another
+ * plane or a palette that is no `.pal` file name is refused rather than read as a name.
  */
 export function rasterIdParameters(
   logicalId: string,
@@ -181,15 +184,27 @@ export function rasterIdParameters(
   frame?: number
   plane?: 'indices'
   palette?: string
+  layer?: number
+  mip?: number
+  faces?: readonly number[]
 }> {
   const { name, parameters } = resourceIdParameters(logicalId)
   const keys = Object.keys(parameters)
+  const known = ['region', 'frame', 'plane', 'palette', 'layer', 'mip', 'faces']
+  if (keys.length === 0 || keys.some(key => !known.includes(key))) return { name: logicalId }
+  const { region, frame, plane, palette, layer, mip, faces } = parameters
+  const count = (value: string | undefined, label: string) => {
+    if (value === undefined) return undefined
+    if (!(/^(?:0|[1-9][0-9]*)$/u.test(value) && Number.isSafeInteger(Number(value))))
+      throw new TypeError(`raster id ${label} must be a nonnegative integer`)
+    return Number(value)
+  }
+  const faceOrder = faces?.split(',').map(Number)
   if (
-    keys.length === 0 ||
-    keys.some(key => key !== 'region' && key !== 'frame' && key !== 'plane' && key !== 'palette')
+    faceOrder !== undefined &&
+    (faceOrder.length !== 6 || [...faceOrder].sort().join(',') !== '0,1,2,3,4,5' || !/^[0-5](?:,[0-5]){5}$/u.test(faces!))
   )
-    return { name: logicalId }
-  const { region, frame, plane, palette } = parameters
+    throw new TypeError('raster id faces must order the six faces 0-5')
   if (plane !== undefined && plane !== 'indices')
     throw new TypeError('raster id plane must be indices')
   if (palette !== undefined && !/^[A-Za-z0-9_.-]{1,60}\.pal$/u.test(palette))
@@ -207,6 +222,9 @@ export function rasterIdParameters(
     ...(frame === undefined ? {} : { frame: Number(frame) }),
     ...(plane === undefined ? {} : { plane: 'indices' as const }),
     ...(palette === undefined ? {} : { palette }),
+    ...(layer === undefined ? {} : { layer: count(layer, 'layer')! }),
+    ...(mip === undefined ? {} : { mip: count(mip, 'mip')! }),
+    ...(faceOrder === undefined ? {} : { faces: Object.freeze(faceOrder) }),
   }
 }
 
@@ -307,6 +325,10 @@ export function createSubjectRasterResources(
       let indices = false
       /** The palette an indexed image is drawn with (`#palette=temperat.pal`), one it lists. */
       let palette: string | undefined
+      /** One element of an array image (`#layer=1`): an image of its own, of one layer. */
+      let layerOnly: number | undefined
+      /** The stored face of each cube face (`#faces=0,5,2,3,4,1`), when the file's order differs. */
+      let faceOrder: readonly number[] | undefined
       try {
         let source: ArtifactByteSource
         let hint: { path?: string; mediaType?: string } = {}
@@ -341,8 +363,17 @@ export function createSubjectRasterResources(
           frameOnly = parameters.frame
           indices = parameters.plane === 'indices'
           palette = parameters.palette
+          layerOnly = parameters.layer
+          faceOrder = parameters.faces
           // indices are never averaged into a smaller level
           if (indices) selection = { ...selection, mipLevel: 0 }
+          // a named level is read as it is: a prefiltered level is no smaller copy of level 0
+          if (parameters.mip !== undefined) selection = { ...selection, mipLevel: parameters.mip }
+          if (layerOnly !== undefined && (selection.layer ?? 0) !== 0)
+            return refusal(
+              'x3.host/raster-selection-invalid',
+              'The resource names one layer of its image: it has no other layer to select.',
+            )
           if (frameOnly !== undefined && (selection.frame ?? 0) !== 0)
             return refusal(
               'x3.host/raster-selection-invalid',
@@ -564,7 +595,11 @@ export function createSubjectRasterResources(
         try {
           plan = rasterSelectionPlan(
             info,
-            frameOnly === undefined ? selection : { ...selection, frame: frameOnly },
+            {
+              ...selection,
+              ...(frameOnly === undefined ? {} : { frame: frameOnly }),
+              ...(layerOnly === undefined ? {} : { layer: layerOnly }),
+            },
             maxBytes,
           )
         } catch (error) {
@@ -625,15 +660,31 @@ export function createSubjectRasterResources(
           remaining -= region.pixels.length
           surfaces.push(
             Object.freeze({
-              // a named frame is frame 0 of the one-frame image the resource is
-              subresource:
-                frameOnly === undefined ? subresource : Object.freeze({ ...subresource, frame: 0 }),
+              // a named frame or layer is frame or layer 0 of the image the resource is
+              subresource: Object.freeze({
+                ...subresource,
+                ...(frameOnly === undefined ? {} : { frame: 0 }),
+                ...(layerOnly === undefined ? {} : { layer: 0 }),
+              }),
               region: Object.freeze({ ...region, pixels: region.pixels.slice() }),
             }),
           )
         }
+        // A face order puts each cube face where the file keeps it: face f is stored face faces[f].
+        if (faceOrder !== undefined && selection.face === 'all' && surfaces.length === 6) {
+          const stored = [...surfaces]
+          for (let face = 0; face < 6; face += 1)
+            surfaces[face] = Object.freeze({
+              subresource: Object.freeze({ ...stored[faceOrder[face]!]!.subresource, face }),
+              region: stored[faceOrder[face]!]!.region,
+            })
+        }
         const common = {
-          info: Object.freeze(frameOnly === undefined ? { ...info } : { ...info, frames: 1 }),
+          info: Object.freeze({
+            ...info,
+            ...(frameOnly === undefined ? {} : { frames: 1 }),
+            ...(layerOnly === undefined ? {} : { layers: 1 }),
+          }),
           diagnostics: Object.freeze([...opened.diagnostics]),
           ...(provenance === undefined ? {} : { provenance }),
         }
