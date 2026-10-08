@@ -4,8 +4,10 @@
  * This is deliberately a coordinator over the existing service contract, not a second language
  * composition root. A successful `open` owns exactly one provider lease until `close`/`shutdown`;
  * `change` only replaces analysis work for that document and never re-resolves the provider.
- * Source snapshots and provenance are revalidated for every workspace feature. Only unchanged
- * immutable document captures may be retained within the caller's bounded workspace allowance;
+ * Snapshot features revalidate source documents and provenance. Opted-in semantic hover instead
+ * reads a synchronized retained ModContext and checks its revision before returning; standalone
+ * documents retain the snapshot path. The server owns dependency values and provenance. Only
+ * unchanged immutable captures may be retained within the caller's bounded workspace allowance;
  * retention never changes the documents, authority or completeness forwarded to a provider.
  * Whole-document projections use their own bounded result ceiling; interactive completion and
  * searches retain the smaller ceiling. Providers still declare incomplete results explicitly.
@@ -2050,11 +2052,25 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
     if (requirement === undefined) return undefined
     const place = registry.placeOf(entry.uri, requirement.gameId)
     if (place === undefined) return undefined
-    return registry.synchronize(
-      place.scope,
-      [...documents.values()].map(open => open.document),
-      signal,
-    )
+    try {
+      return await registry.synchronize(
+        place.scope,
+        [...documents.values()].map(open => open.document),
+        signal,
+      )
+    } catch (error) {
+      if (isCancellation(error)) throw error
+      throwIfAborted(signal)
+      throw workspaceError(
+        LANGUAGE_PROVIDER_FAILED,
+        `the loaded mod of ${entry.uri}@${entry.version} did not take the open buffers`,
+        {
+          uri: entry.uri,
+          version: String(entry.version),
+          error: error instanceof Error ? error.message : String(error),
+        },
+      )
+    }
   }
 
   const routeForRequest = (request: LanguageWorkspaceDocumentRequest): LanguageProviderRoute => {
@@ -2159,7 +2175,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
     preferCachedSemanticContext = false,
     discoverCompletionContext = false,
     maxAllowedResults = LANGUAGE_MAX_RESULTS,
-    localFeature?: LanguageDocumentLocalFeature,
+    inputFeature?: LanguageDocumentLocalFeature | 'hover',
   ): Promise<Value | undefined> => {
     const entry = requireFeatureEntry(workspaceRequest, positioned, maxAllowedResults)
     throwIfAborted(workspaceRequest.signal)
@@ -2201,8 +2217,9 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
     const unlink = linkedSignal(controller, workspaceRequest.signal)
     try {
       let documentOnly =
-        localFeature !== undefined &&
-        entry.resolution.provider.documentLocalFeatures?.includes(localFeature) === true
+        inputFeature !== undefined &&
+        inputFeature !== 'hover' &&
+        entry.resolution.provider.documentLocalFeatures?.includes(inputFeature) === true
       if (
         discoverCompletionContext &&
         preferCachedSemanticContext &&
@@ -2219,9 +2236,20 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         }
         documentOnly = context === 'document'
       }
-      const snapshotDocuments = documentOnly
-        ? [entry.document]
-        : selected.map(candidate => candidate.document)
+      let modContext: LanguageWorkspaceModContext | undefined
+      const readsModContext =
+        !documentOnly &&
+        inputFeature === 'hover' &&
+        entry.resolution.provider.modContextFeatures?.includes(inputFeature) === true
+      if (readsModContext) {
+        modContext = await requestModContext(entry, controller.signal)
+        throwIfAborted(controller.signal)
+      }
+      const modContextOnly = readsModContext && modContext !== undefined
+      const snapshotDocuments =
+        documentOnly || modContextOnly
+          ? [entry.document]
+          : selected.map(candidate => candidate.document)
       const originsByUri = new Map<string, LanguageWorkspaceDocumentOrigin>()
       for (const document of snapshotDocuments) {
         const origin = options.documentOrigin?.(document)
@@ -2231,7 +2259,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
       let sourceIncomplete = false
       let hasReadOnlyContext = false
       let sourceContext: LanguageWorkspaceContext | undefined
-      if (!documentOnly && options.documentSource !== undefined) {
+      if (!documentOnly && !modContextOnly && options.documentSource !== undefined) {
         let snapshot: LanguageWorkspaceDocumentSourceResult
         try {
           snapshot = await options.documentSource.snapshot(
@@ -2422,26 +2450,13 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         )
       }
       // A document-only feature reads no workspace: its context is never complete.
-      const semanticComplete = baseSemanticComplete && !documentOnly
-      let modContext: LanguageWorkspaceModContext | undefined
-      if (!documentOnly) {
-        try {
-          modContext = await requestModContext(entry, controller.signal)
-        } catch (error) {
-          if (isCancellation(error)) throw error
-          throwIfAborted(controller.signal)
-          throw workspaceError(
-            LANGUAGE_PROVIDER_FAILED,
-            `the loaded mod of ${entry.uri}@${entry.version} did not take the open buffers`,
-            {
-              uri: entry.uri,
-              version: String(entry.version),
-              error: error instanceof Error ? error.message : String(error),
-            },
-          )
-        }
+      if (!documentOnly && modContext === undefined) {
+        modContext = await requestModContext(entry, controller.signal)
         throwIfAborted(controller.signal)
       }
+      const semanticComplete = modContextOnly
+        ? modContext!.complete && !callerIncomplete
+        : baseSemanticComplete && !documentOnly
       const workspaceContext =
         sourceContext === undefined &&
         documentOrigins.length === 0 &&
@@ -2505,7 +2520,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
          * present, not missing — an edit that would change one is refused where edits are checked.
          */
         workspaceIncomplete:
-          candidates.length > selected.length ||
+          (modContextOnly ? !modContext!.complete : candidates.length > selected.length) ||
           sourceIncomplete ||
           (hasReadOnlyContext && !allDocumentsHaveOrigins) ||
           callerIncomplete,
@@ -2534,6 +2549,14 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         )
       }
       throwIfAborted(controller.signal)
+      // A shared server can advance while the provider answers. Never attach a result from a
+      // different revision to this request, including after dependency invalidation.
+      if (modContextOnly) {
+        const current = await requestModContext(entry, controller.signal)
+        if (current?.scope !== modContext!.scope || current.revision !== modContext!.revision) {
+          throw new OperationCancelledError('stale mod context feature result')
+        }
+      }
       if (
         generation !== workspaceGeneration ||
         documents.get(entry.uri) !== entry ||
@@ -3335,6 +3358,10 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         (provider, feature) => provider.hover?.({ ...feature, position: request.position }),
         validateHover,
         { position: request.position },
+        false,
+        false,
+        LANGUAGE_MAX_RESULTS,
+        'hover',
       )
       if (hover?.assets === undefined || hover.assets.length === 0) return hover
       const pictures = await assetPictures(request.uri, hover.assets, request.signal)

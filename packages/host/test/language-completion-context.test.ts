@@ -193,6 +193,7 @@ it('keeps the full source for a provider without a document-local declaration', 
 
 it('advertises the document-local declaration across the provider execution boundary', () => {
   expect(LANGUAGE_DOCUMENT_CONTRACT_DEFINITION.surface?.fields).toContain('documentLocalFeatures')
+  expect(LANGUAGE_DOCUMENT_CONTRACT_DEFINITION.surface?.fields).toContain('modContextFeatures')
 })
 
 it('scopes a feature to its mod and edited dependency while other open mods stay loaded', async () => {

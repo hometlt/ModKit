@@ -262,6 +262,7 @@ export const LANGUAGE_DOCUMENT_CONTRACT_DEFINITION: ServiceContractDefinitionSpe
         'languageIds',
         'workspaceLanguageIds',
         'documentLocalFeatures',
+        'modContextFeatures',
         'semanticInputs',
         'semanticContextRequirements',
       ]),
@@ -569,12 +570,17 @@ function isLanguageProvider(value: unknown): value is LanguageProvider {
   const record = recordOf(value)
   const workspaceLanguageIds = record?.['workspaceLanguageIds']
   const documentLocalFeatures = record?.['documentLocalFeatures']
+  const modContextFeatures = record?.['modContextFeatures']
   const semanticInputs = record?.['semanticInputs']
   const semanticContextRequirements = record?.['semanticContextRequirements']
   return (
     record?.['contract'] === LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT &&
     Array.isArray(record['languageIds']) &&
     record['languageIds'].every(item => typeof item === 'string') &&
+    (modContextFeatures === undefined ||
+      (Array.isArray(modContextFeatures) &&
+        modContextFeatures.length <= 1 &&
+        modContextFeatures.every(item => item === 'hover'))) &&
     (documentLocalFeatures === undefined ||
       (Array.isArray(documentLocalFeatures) &&
         documentLocalFeatures.length <= 3 &&

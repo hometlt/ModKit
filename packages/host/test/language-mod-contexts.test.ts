@@ -19,6 +19,7 @@ import {
   registerServiceDefinitionsOrThrow,
 } from '../src/index.js'
 import { createLanguageModContexts, createLanguageWorkspace } from '../src/language/index.js'
+import type { LanguageWorkspaceOptions } from '../src/language/workspace.js'
 
 const encoder = new TextEncoder()
 const UNITS = 'Base.SC2Data/GameData/UnitData.xml'
@@ -38,8 +39,24 @@ function server() {
     gameId: 'test/game',
     contextId: 'chain',
     layers: [
-      { id: 'layer:0', displayName: 'Core.SC2Mod', sourceId: 'local:casc', sourcePath: 'Mods/Core.SC2Mod', role: 'dependency', provenance: 'implicit', kind: 'package' },
-      { id: 'layer:1', displayName: 'Mine.SC2Mod', sourceId: 'host', sourcePath: 'C:/Mods/Mine.SC2Mod', role: 'primary', provenance: 'opened', kind: 'package' },
+      {
+        id: 'layer:0',
+        displayName: 'Core.SC2Mod',
+        sourceId: 'local:casc',
+        sourcePath: 'Mods/Core.SC2Mod',
+        role: 'dependency',
+        provenance: 'implicit',
+        kind: 'package',
+      },
+      {
+        id: 'layer:1',
+        displayName: 'Mine.SC2Mod',
+        sourceId: 'host',
+        sourcePath: 'C:/Mods/Mine.SC2Mod',
+        role: 'primary',
+        provenance: 'opened',
+        kind: 'package',
+      },
     ],
     unresolved: [],
     diagnostics: [],
@@ -100,19 +117,161 @@ function server() {
   }
 }
 
-const document = (uri: string, text: string, version = 1) => ({ uri, languageId: 'sc2-data', version, text })
+const document = (uri: string, text: string, version = 1) => ({
+  uri,
+  languageId: 'sc2-data',
+  version,
+  text,
+})
 
 describe('the loaded mod servers of a language workspace', () => {
+  it('serves opted-in hover without a snapshot, preserving locale inputs, overlays and dependency revisions', async () => {
+    const chain = server()
+    const servers = createLanguageModContexts({ contexts: [chain.context] })
+    let locales = ['enUS', 'ruRU']
+    let incomplete = false
+    let snapshots = 0
+    const seen: unknown[] = []
+    const provider: LanguageProvider = {
+      contract: LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT,
+      languageIds: ['sc2-data'],
+      modContextFeatures: ['hover'],
+      semanticContextRequirements: [{ kind: 'mod-context', gameId: 'test/game' }],
+      analyze: async ({ document: open }) => ({
+        documentUri: open.uri,
+        documentVersion: open.version,
+        tokens: [],
+        diagnostics: [],
+        symbols: [],
+      }),
+      async hover(request) {
+        expect(request.workspaceDocuments).toEqual([request.document])
+        expect(request.workspaceIncomplete).toBe(incomplete)
+        expect(request.workspaceContext?.semanticComplete).toBe(!incomplete)
+        expect(request.workspaceContext?.semanticInputs).toContainEqual({
+          kind: 'locale-set',
+          id: 'locale',
+          revision: '1',
+          payload: { locales },
+        })
+        seen.push(request.workspaceContext?.modContext)
+        return { markdown: `${request.workspaceContext?.modContext?.revision}:${locales[0]}` }
+      },
+    }
+    const workspace = await languageWorkspace(provider, () => {}, servers, {
+      semanticInputs: () => [
+        { kind: 'locale-set', id: 'locale', revision: '1', payload: { locales } },
+      ],
+      workspaceIncomplete: () => incomplete,
+      documentSource: {
+        async snapshot() {
+          snapshots += 1
+          throw new Error('hover must use the model')
+        },
+      },
+    })
+    await workspace.synchronize({
+      languageId: 'sc2-data',
+      document: document(MOD_UNITS_URI, '<edited/>'),
+    })
+    const request = {
+      uri: MOD_UNITS_URI,
+      documentVersion: 1,
+      position: { line: 0, character: 1 },
+      maxDocuments: 1,
+    }
+    expect(await workspace.hover(request)).toMatchObject({ markdown: '1:enUS' })
+    expect(await workspace.hover(request)).toMatchObject({ markdown: '1:enUS' })
+    expect(chain.changes).toHaveLength(1)
+    locales = ['ruRU', 'enUS']
+    expect(await workspace.hover(request)).toMatchObject({ markdown: '1:ruRU' })
+    await servers.invalidate()
+    expect(await workspace.hover(request)).toMatchObject({ markdown: '2:ruRU' })
+    expect(seen).toHaveLength(4)
+    incomplete = true
+    expect(await workspace.hover(request)).toMatchObject({ markdown: '2:ruRU' })
+    expect(snapshots).toBe(0)
+    await workspace.shutdown()
+  }, 30_000)
+
+  it('keeps bounded snapshots for standalone hover and rejects answers after a server revision changes', async () => {
+    const chain = server()
+    const servers = createLanguageModContexts({ contexts: [chain.context] })
+    let snapshots = 0
+    const provider: LanguageProvider = {
+      contract: LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT,
+      languageIds: ['sc2-data'],
+      modContextFeatures: ['hover'],
+      semanticContextRequirements: [{ kind: 'mod-context', gameId: 'test/game' }],
+      analyze: async ({ document: open }) => ({
+        documentUri: open.uri,
+        documentVersion: open.version,
+        tokens: [],
+        diagnostics: [],
+        symbols: [],
+      }),
+      async hover(request) {
+        if (request.workspaceContext?.modContext !== undefined) await servers.invalidate()
+        return { markdown: 'answer' }
+      },
+    }
+    const workspace = await languageWorkspace(provider, () => {}, servers, {
+      documentSource: {
+        async snapshot() {
+          snapshots += 1
+          return { documents: [], isComplete: false }
+        },
+      },
+    })
+    const standalone = 'file:///C:/Other/UnitData.xml'
+    await workspace.synchronize({
+      languageId: 'sc2-data',
+      document: document(standalone, '<Catalog/>'),
+    })
+    expect(
+      await workspace.hover({
+        uri: standalone,
+        documentVersion: 1,
+        position: { line: 0, character: 1 },
+      }),
+    ).toMatchObject({ markdown: 'answer' })
+    expect(snapshots).toBe(1)
+    await workspace.synchronize({
+      languageId: 'sc2-data',
+      document: document(MOD_UNITS_URI, '<Catalog/>'),
+    })
+    await expect(
+      workspace.hover({
+        uri: MOD_UNITS_URI,
+        documentVersion: 1,
+        position: { line: 0, character: 1 },
+      }),
+    ).rejects.toThrow('operation cancelled')
+    expect(snapshots).toBe(1)
+    await workspace.shutdown()
+  }, 30_000)
+
   it('places a document in the layer that holds it, the opened mod on disk writable', () => {
     const chain = server()
     const servers = createLanguageModContexts({ contexts: [chain.context] })
-    expect(servers.placeOf(MOD_UNITS_URI)).toMatchObject({ layerId: 'layer:1', path: UNITS, writable: true, gameId: 'test/game' })
+    expect(servers.placeOf(MOD_UNITS_URI)).toMatchObject({
+      layerId: 'layer:1',
+      path: UNITS,
+      writable: true,
+      gameId: 'test/game',
+    })
     // A drive path compares without case, as Windows does; the URI's own spelling is kept.
-    expect(servers.placeOf('file:///c:/mods/mine.sc2mod/base.sc2data/gamedata/unitdata.xml')).toMatchObject({
+    expect(
+      servers.placeOf('file:///c:/mods/mine.sc2mod/base.sc2data/gamedata/unitdata.xml'),
+    ).toMatchObject({
       layerId: 'layer:1',
       path: 'base.sc2data/gamedata/unitdata.xml',
     })
-    expect(servers.placeOf('content-source://local%3Acasc/Mods/Core.SC2Mod/base.sc2data/gamedata/unitdata.xml')).toMatchObject({
+    expect(
+      servers.placeOf(
+        'content-source://local%3Acasc/Mods/Core.SC2Mod/base.sc2data/gamedata/unitdata.xml',
+      ),
+    ).toMatchObject({
       layerId: 'layer:0',
       path: 'base.sc2data/gamedata/unitdata.xml',
       writable: false,
@@ -134,8 +293,13 @@ describe('the loaded mod servers of a language workspace', () => {
     })
     expect(chain.changes).toEqual([])
     const edited = '<Catalog><CUnit id="Marine"/></Catalog>'
-    const stock = document('content-source://local%3Acasc/Mods/Core.SC2Mod/base.sc2data/gamedata/unitdata.xml', '<edited/>')
-    expect((await servers.synchronize(scope, [document(MOD_UNITS_URI, edited, 2), stock])).revision).toBe('1')
+    const stock = document(
+      'content-source://local%3Acasc/Mods/Core.SC2Mod/base.sc2data/gamedata/unitdata.xml',
+      '<edited/>',
+    )
+    expect(
+      (await servers.synchronize(scope, [document(MOD_UNITS_URI, edited, 2), stock])).revision,
+    ).toBe('1')
     // Only the file on disk goes over; a stock file in a content source is never written.
     expect(chain.changes).toEqual([[{ layerId: 'layer:1', path: UNITS, text: edited }]])
     await servers.synchronize(scope, [document(MOD_UNITS_URI, edited, 2)])
@@ -156,7 +320,9 @@ describe('the loaded mod servers of a language workspace', () => {
       uriOf: target => (typeof target === 'string' ? `file:///${target}` : undefined),
     })
     const { scope } = servers.placeOf(MOD_UNITS_URI)!
-    const answer = (await servers.query(scope, { kind: 'data.authoring' })) as { documents: unknown[] }
+    const answer = (await servers.query(scope, { kind: 'data.authoring' })) as {
+      documents: unknown[]
+    }
     expect(chain.questions).toEqual([{ kind: 'data.authoring' }])
     expect(answer.documents).toEqual([
       {
@@ -169,7 +335,9 @@ describe('the loaded mod servers of a language workspace', () => {
       { layerId: 'layer:9', path: 'gone.xml' },
     ])
     await expect(servers.query(scope, { kind: 'bytes' })).rejects.toThrow(/other than JSON/u)
-    await expect(servers.query('mod-context:0:7', { kind: 'data.authoring' })).rejects.toThrow(/no loaded mod/u)
+    await expect(servers.query('mod-context:0:7', { kind: 'data.authoring' })).rejects.toThrow(
+      /no loaded mod/u,
+    )
   })
 
   it('keeps an open context a host reopens over the same chain; a replaced one takes its buffers away', async () => {
@@ -226,16 +394,32 @@ describe('the loaded mod servers of a language workspace', () => {
         symbols: [],
       }),
       async hover(request) {
-        const modContext = (request as { workspaceContext?: { modContext?: { scope: string } } }).workspaceContext?.modContext
+        const modContext = (request as { workspaceContext?: { modContext?: { scope: string } } })
+          .workspaceContext?.modContext
         seen.push(modContext)
         const answer = await port!.query(modContext!.scope, { kind: 'data.ids' } as JsonValue)
         return { markdown: JSON.stringify(answer) }
       },
     }
-    const workspace = await languageWorkspace(provider, context => (port = context.modContexts), servers)
+    const workspace = await languageWorkspace(
+      provider,
+      context => (port = context.modContexts),
+      servers,
+    )
     const edited = '<Catalog><CUnit id="Marine"/></Catalog>'
-    expect((await workspace.synchronize({ languageId: 'sc2-data', document: document(MOD_UNITS_URI, edited) })).state).toBe('resolved')
-    const hover = await workspace.hover({ uri: MOD_UNITS_URI, documentVersion: 1, position: { line: 0, character: 1 } })
+    expect(
+      (
+        await workspace.synchronize({
+          languageId: 'sc2-data',
+          document: document(MOD_UNITS_URI, edited),
+        })
+      ).state,
+    ).toBe('resolved')
+    const hover = await workspace.hover({
+      uri: MOD_UNITS_URI,
+      documentVersion: 1,
+      position: { line: 0, character: 1 },
+    })
     const { scope } = servers.placeOf(MOD_UNITS_URI)!
     expect(seen).toEqual([{ scope, gameId: 'test/game', revision: '1', complete: true }])
     expect(chain.changes).toEqual([[{ layerId: 'layer:1', path: UNITS, text: edited }]])
@@ -252,6 +436,7 @@ async function languageWorkspace(
   provider: LanguageProvider,
   activated: (context: ContributionContext) => void,
   servers: ReturnType<typeof createLanguageModContexts>,
+  options: Partial<LanguageWorkspaceOptions> = {},
 ) {
   const extension = defineLinkedExtension({
     source: 'linked:test/mod-contexts',
@@ -352,6 +537,7 @@ async function languageWorkspace(
       maxDiagnostics: 100,
     },
     modContexts: servers,
+    ...options,
   })
   await workspace.initialize()
   return workspace

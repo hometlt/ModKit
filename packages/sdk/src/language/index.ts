@@ -506,8 +506,10 @@ export interface LanguageWorkspaceModContext {
 }
 
 /**
- * Full snapshots supplied to one semantic request. `workspaceDocuments` includes `document` and
- * never exceeds `maxDocuments`; no provider owns mutable editor state or transport objects.
+ * Bounded inputs for one semantic request. `workspaceDocuments` includes `document` and never
+ * exceeds `maxDocuments`. An opted-in ModContext feature receives only that live document and
+ * reads dependency semantics from the synchronized server; its completeness follows the server.
+ * No provider owns mutable editor state or transport objects.
  */
 export interface LanguageFeatureRequest {
   readonly document: LanguageDocument
@@ -609,6 +611,13 @@ export interface LanguageProvider {
    * Never declare a feature here if its answer depends on inherited values or other documents.
    */
   readonly documentLocalFeatures?: readonly LanguageDocumentLocalFeature[]
+  /**
+   * Read semantic hover from the synchronized ModContext instead of a workspace snapshot. The
+   * request keeps the live document, host/provider semantic inputs (including locales) and server
+   * revision/completeness; dependency values and provenance come from that server. Without a
+   * loaded server the host supplies the usual bounded snapshot. Older hosts ignore this opt-in.
+   */
+  readonly modContextFeatures?: readonly 'hover'[]
   analyze(request: LanguageAnalysisRequest): Promise<LanguageAnalysis>
   /**
    * Optional proof that completion at this position needs only the live document and provider
