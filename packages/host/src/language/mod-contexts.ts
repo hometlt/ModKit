@@ -17,9 +17,10 @@
  *
  * URIs: by default a `file:` URI names a host path and a `content-source://<source>/<path>` URI a
  * path in a content source; an application with its own schemes (VS Code's `modkit-source:`) gives
- * `targetOf` and `uriOf`. A host that reopens a subject's context (`replace`) keeps the open one when
- * the new one is over the same chain and target (same `contextId`), so a scope a request holds stays
- * valid; a replaced context takes its buffers away from its server before it is closed.
+ * `targetOf` and `uriOf`. Content-source roots follow the layer's declared case sensitivity; host
+ * paths follow their filesystem rules. A host that reopens a subject's context (`replace`) keeps
+ * the open one when the new one is over the same chain and target (same `contextId`), so a scope a
+ * request holds stays valid; a replaced context takes its buffers away before it is closed.
  *
  * The host knows no game: questions and answers are the game's JSON, checked to be JSON.
  */
@@ -135,11 +136,16 @@ export function languageModContextTarget(uri: string): ModContextTarget | undefi
 }
 
 /** The layer-relative path of `path` under `base`, compared as the file system compares them. */
-function relativeTo(base: string, path: string, hostPath: boolean): string | undefined {
+function relativeTo(
+  base: string,
+  path: string,
+  hostPath: boolean,
+  caseSensitive: boolean,
+): string | undefined {
   const slashed = path.replaceAll('\\', '/')
   const root = base.replaceAll('\\', '/').replace(/\/+$/u, '')
-  const key = hostPath ? pathKey(slashed) : slashed.toLowerCase()
-  const rootKey = hostPath ? pathKey(root) : root.toLowerCase()
+  const key = hostPath ? pathKey(slashed) : caseSensitive ? slashed : slashed.toLowerCase()
+  const rootKey = hostPath ? pathKey(root) : caseSensitive ? root : root.toLowerCase()
   if (rootKey === '' || !key.startsWith(`${rootKey}/`)) return undefined
   const relative = slashed.slice(root.length + 1)
   return relative === '' ? undefined : relative
@@ -148,7 +154,9 @@ function relativeTo(base: string, path: string, hostPath: boolean): string | und
 const defaultUriOf = (target: ModContextTarget): string | undefined =>
   typeof target === 'string' ? undefined : contentSourceUri(target.sourceId, target.path)
 
-export function createLanguageModContexts(options: LanguageModContextsOptions = {}): LanguageModContexts {
+export function createLanguageModContexts(
+  options: LanguageModContextsOptions = {},
+): LanguageModContexts {
   const registry = (registries += 1)
   const targetOf = options.targetOf ?? languageModContextTarget
   const uriOf = (target: ModContextTarget): string | undefined =>
@@ -182,7 +190,12 @@ export function createLanguageModContexts(options: LanguageModContextsOptions = 
     const host = layer.sourceId === HOST_LAYER_SOURCE_ID
     if (host !== (typeof target === 'string')) return undefined
     if (typeof target !== 'string' && target.sourceId !== layer.sourceId) return undefined
-    const path = relativeTo(layer.sourcePath, typeof target === 'string' ? target : target.path, host)
+    const path = relativeTo(
+      layer.sourcePath,
+      typeof target === 'string' ? target : target.path,
+      host,
+      layer.caseSensitive === true,
+    )
     return path === undefined
       ? undefined
       : Object.freeze({
@@ -223,7 +236,11 @@ export function createLanguageModContexts(options: LanguageModContextsOptions = 
   }
 
   /** The text a host file has on disk, or undefined when the layer does not hold it. */
-  const diskText = async (context: ModContext, layerId: string, path: string): Promise<string | undefined> => {
+  const diskText = async (
+    context: ModContext,
+    layerId: string,
+    path: string,
+  ): Promise<string | undefined> => {
     try {
       return decoder.decode(await context.read(layerId, path, maxDocumentBytes))
     } catch {
@@ -263,7 +280,8 @@ export function createLanguageModContexts(options: LanguageModContextsOptions = 
         if (place === undefined) continue
         // The chain that opened the document's own package answers for it before one that only
         // depends on that package.
-        if (entry.context.layers.find(layer => layer.id === place.layerId)?.role === 'primary') return place
+        if (entry.context.layers.find(layer => layer.id === place.layerId)?.role === 'primary')
+          return place
         found ??= place
       }
       return found
@@ -283,18 +301,30 @@ export function createLanguageModContexts(options: LanguageModContextsOptions = 
           const key = pushedKey(scope, document.uri)
           const known = pushed.get(key)
           if (known !== undefined && known.text === document.text) continue
-          if (known === undefined && (await diskText(context, place.layerId, place.path)) === document.text) {
-            pushed.set(key, Object.freeze({ ...place, uri: document.uri, text: document.text, overlaid: false }))
+          if (
+            known === undefined &&
+            (await diskText(context, place.layerId, place.path)) === document.text
+          ) {
+            pushed.set(
+              key,
+              Object.freeze({ ...place, uri: document.uri, text: document.text, overlaid: false }),
+            )
             continue
           }
-          changes.push(Object.freeze({ layerId: place.layerId, path: place.path, text: document.text }))
-          pushed.set(key, Object.freeze({ ...place, uri: document.uri, text: document.text, overlaid: true }))
+          changes.push(
+            Object.freeze({ layerId: place.layerId, path: place.path, text: document.text }),
+          )
+          pushed.set(
+            key,
+            Object.freeze({ ...place, uri: document.uri, text: document.text, overlaid: true }),
+          )
         }
         // A buffer of this server the editor no longer has open: its text leaves.
         for (const [key, known] of pushed) {
           if (known.scope !== scope || open.has(known.uri)) continue
           pushed.delete(key)
-          if (known.overlaid) changes.push(Object.freeze({ layerId: known.layerId, path: known.path }))
+          if (known.overlaid)
+            changes.push(Object.freeze({ layerId: known.layerId, path: known.path }))
         }
         // An empty overlay asks the server its revision now: on a shared server another client may
         // have edited the chain since this client last heard.
@@ -323,11 +353,13 @@ export function createLanguageModContexts(options: LanguageModContextsOptions = 
 
     async query(scope, question, signal) {
       const { context } = entryOf(scope)
-      if (context.query === undefined) throw new TypeError(`the loaded mod ${scope} answers no questions`)
+      if (context.query === undefined)
+        throw new TypeError(`the loaded mod ${scope} answers no questions`)
       if (!isJsonValue(question)) throw new TypeError('a mod context question must be JSON')
       const answer = await context.query(question, signal)
       signal?.throwIfAborted()
-      if (!isJsonValue(answer)) throw new TypeError('a mod context answered with something other than JSON')
+      if (!isJsonValue(answer))
+        throw new TypeError('a mod context answered with something other than JSON')
       if (typeof answer !== 'object' || answer === null || Array.isArray(answer)) return answer
       const documents = (answer as { readonly documents?: unknown }).documents
       if (!Array.isArray(documents)) return answer
@@ -353,7 +385,9 @@ export function createLanguageModContexts(options: LanguageModContextsOptions = 
       const kept = new Set<Entry>()
       const surplus: ModContext[] = []
       for (const context of contexts) {
-        const same = before.find(entry => !kept.has(entry) && entry.context.contextId === context.contextId)
+        const same = before.find(
+          entry => !kept.has(entry) && entry.context.contextId === context.contextId,
+        )
         if (same === undefined) add(key, context)
         else {
           kept.add(same)

@@ -5,7 +5,8 @@
  * archive, a mod inside the game's CASC storage, an archive of the Battle.net cache. Opening a layer
  * over the loader's own listing and reads lets that package's codec show it (its resource tree, its
  * card) the same way wherever it lives, without a second reader for any of those places. A layer is
- * read-only here: nothing writes through it.
+ * read-only here: nothing writes through it. Path lookup honors the layer's declared case
+ * sensitivity; case-insensitive v1 sources retain exact-first, folded lookup.
  */
 import { ModkitError, throwIfAborted } from '@modkit/core'
 import {
@@ -84,13 +85,15 @@ export async function openModContextLayerSource(options: {
   } while (cursor !== undefined)
 
   /*
-   * The context compares paths without case (a CASC mod lists `base.sc2data/…`, a codec asks for
-   * `Base.SC2Data`): an exact path wins, a folded one answers otherwise.
+   * A case-insensitive context may list `base.sc2data/…` while a codec asks for `Base.SC2Data`:
+   * an exact path wins, a folded one answers otherwise. A case-sensitive source never aliases it.
    */
   const folded = new Map<string, string>()
-  for (const path of [...folders.keys(), ...files]) {
-    const key = path.toLowerCase()
-    if (!folded.has(key)) folded.set(key, path)
+  if (layer.caseSensitive !== true) {
+    for (const path of [...folders.keys(), ...files]) {
+      const key = path.toLowerCase()
+      if (!folded.has(key)) folded.set(key, path)
+    }
   }
   const resolvePath = (path: string): string =>
     folders.has(path) || files.has(path) ? path : (folded.get(path.toLowerCase()) ?? path)

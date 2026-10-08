@@ -125,6 +125,49 @@ const document = (uri: string, text: string, version = 1) => ({
 })
 
 describe('the loaded mod servers of a language workspace', () => {
+  it('keeps distinct case-sensitive content roots separate', async () => {
+    const chain = server()
+    const upper = { ...chain.context.layers[0]!, caseSensitive: true }
+    const lower = { ...upper, id: 'layer:lower', sourcePath: 'mods/core.sc2mod' }
+    const servers = createLanguageModContexts({
+      contexts: [{ ...chain.context, layers: [upper, lower] }],
+    })
+    expect(
+      servers.placeOf('content-source://local%3Acasc/Mods/Core.SC2Mod/UnitData.xml'),
+    ).toMatchObject({ layerId: 'layer:0', path: 'UnitData.xml' })
+    expect(
+      servers.placeOf('content-source://local%3Acasc/mods/core.sc2mod/UnitData.xml'),
+    ).toMatchObject({ layerId: 'layer:lower', path: 'UnitData.xml' })
+    expect(
+      servers.placeOf('content-source://local%3Acasc/MODS/CORE.SC2MOD/UnitData.xml'),
+    ).toBeUndefined()
+    await servers.dispose()
+  })
+
+  it.each([undefined, false])(
+    'keeps v1 content-source aliases when caseSensitive is %s',
+    async caseSensitive => {
+      const chain = server()
+      const servers = createLanguageModContexts({
+        contexts: [
+          {
+            ...chain.context,
+            layers: [
+              {
+                ...chain.context.layers[0]!,
+                ...(caseSensitive === undefined ? {} : { caseSensitive }),
+              },
+            ],
+          },
+        ],
+      })
+      expect(
+        servers.placeOf('content-source://local%3Acasc/mods/core.sc2mod/UnitData.xml'),
+      ).toMatchObject({ layerId: 'layer:0', path: 'UnitData.xml' })
+      await servers.dispose()
+    },
+  )
+
   it('serves opted-in hover without a snapshot, preserving locale inputs, overlays and dependency revisions', async () => {
     const chain = server()
     const servers = createLanguageModContexts({ contexts: [chain.context] })

@@ -189,6 +189,12 @@ export interface ModContextLayer {
    */
   readonly sourceId: string
   readonly sourcePath: string
+  /**
+   * Whether the source distinguishes path spelling by case. Case-sensitive sources declare true;
+   * false or omission retains v1's case-insensitive content-source lookup. Host filesystem
+   * addresses still follow their native path rules. The loader supplies the path policy.
+   */
+  readonly caseSensitive?: boolean
   /** `primary` is the opened package, `base` a setting-chosen package under a loose file. */
   readonly role: 'dependency' | 'base' | 'primary'
   readonly provenance: 'declared' | 'implicit' | 'setting' | 'opened'
@@ -210,7 +216,7 @@ export interface ModContextPage<T> {
 export interface ModContext {
   readonly schemaVersion: 1
   readonly gameId: string
-  /** Stable for the same target, settings and content; changes when any of them does. */
+  /** Stable for the same target, settings, source path policies and content; changes with any of them. */
   readonly contextId: string
   /** Dependencies first, the opened package last. */
   readonly layers: readonly ModContextLayer[]
@@ -220,7 +226,7 @@ export interface ModContext {
   /**
    * One layer's files, by their paths relative to the layer's package root, components included
    * (`Base.SC2Data/TriggerLibs/LibraryList.xml`), in a stable order; `prefix` keeps only paths that
-   * start with it, compared without case.
+   * start with it, compared according to the layer's declared case sensitivity.
    */
   files(
     layerId: string,

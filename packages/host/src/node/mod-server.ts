@@ -242,7 +242,9 @@ function connectionService(sources: Pick<ContentSources, 'openModContext'>) {
       const result = await context.overlay(changes)
       const mine = laid.get(context) ?? new Map<string, ModContextOverlay>()
       for (const change of changes) {
-        const key = JSON.stringify([change.layerId, change.path.toLowerCase()])
+        const layer = context.layers.find(item => item.id === change.layerId)
+        const pathKey = layer?.caseSensitive === true ? change.path : change.path.toLowerCase()
+        const key = JSON.stringify([change.layerId, pathKey])
         if (change.text === undefined) mine.delete(key)
         else mine.set(key, Object.freeze({ layerId: change.layerId, path: change.path }))
       }

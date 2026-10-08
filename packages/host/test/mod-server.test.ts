@@ -9,7 +9,12 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import type { ContentSources, ModContext, ModContextOverlay, ModContextRequest } from '@modkit/vfs/content-sources'
+import type {
+  ContentSources,
+  ModContext,
+  ModContextOverlay,
+  ModContextRequest,
+} from '@modkit/vfs/content-sources'
 import {
   connectModServer,
   modServerAddress,
@@ -32,7 +37,18 @@ function chainSources() {
     schemaVersion: 1,
     gameId: 'test/game',
     contextId: 'chain',
-    layers: [{ id: 'layer:0', displayName: 'Mine', sourceId: 'host', sourcePath: 'C:/Mods/Mine.SC2Mod', role: 'primary', provenance: 'opened', kind: 'package' }],
+    layers: [
+      {
+        id: 'layer:0',
+        displayName: 'Mine',
+        sourceId: 'host',
+        sourcePath: 'C:/Mods/Mine.SC2Mod',
+        caseSensitive: true,
+        role: 'primary',
+        provenance: 'opened',
+        kind: 'package',
+      },
+    ],
     unresolved: [],
     diagnostics: [],
     files: async () => ({ items: [...new Set([...disk.keys(), ...overlays.keys()])].sort() }),
@@ -41,9 +57,14 @@ function chainSources() {
       if (text === undefined) throw new Error(`${path} is not a file of this layer`)
       return encoder.encode(text)
     },
-    locate: async path => (disk.has(path) || overlays.has(path) ? { layerId: 'layer:0', path } : undefined),
+    locate: async path =>
+      disk.has(path) || overlays.has(path) ? { layerId: 'layer:0', path } : undefined,
     async query(request) {
-      return { revision: String(revision), units: overlays.get(UNITS) ?? disk.get(UNITS), asked: request as never }
+      return {
+        revision: String(revision),
+        units: overlays.get(UNITS) ?? disk.get(UNITS),
+        asked: request as never,
+      }
     },
     get revision() {
       return String(revision)
@@ -69,7 +90,8 @@ function chainSources() {
     async openModContext(request: ModContextRequest) {
       opened += 1
       // a path under which nothing exists is an error of the loader, not of the transport
-      if (request.target !== 'C:/Mods/Mine.SC2Mod') throw new Error(`nothing exists at ${String(request.target)}`)
+      if (request.target !== 'C:/Mods/Mine.SC2Mod')
+        throw new Error(`nothing exists at ${String(request.target)}`)
       return context()
     },
     dispose() {},
@@ -89,13 +111,17 @@ const served: ServedModServer[] = []
 const directories: string[] = []
 afterEach(async () => {
   for (const server of served.splice(0)) await server.close()
-  for (const directory of directories.splice(0)) await rm(directory, { recursive: true, force: true })
+  for (const directory of directories.splice(0))
+    await rm(directory, { recursive: true, force: true })
 })
 
 async function daemon(idleMs?: number, onIdle?: () => void) {
   const directory = await mkdtemp(join(tmpdir(), 'modkit-mod-server-'))
   directories.push(directory)
-  const options = { extensionRoots: [join(directory, 'roots', String(Math.random()))], storage: directory }
+  const options = {
+    extensionRoots: [join(directory, 'roots', String(Math.random()))],
+    storage: directory,
+  }
   const address = modServerAddress(options, directory)
   const chain = chainSources()
   const server = await serveModServer({
@@ -118,15 +144,20 @@ describe('the shared mod server', () => {
     const chain = chainSources()
     let release!: () => void
     let started!: () => void
-    const loading = new Promise<void>(resolve => { release = resolve })
-    const requested = new Promise<void>(resolve => { started = resolve })
+    const loading = new Promise<void>(resolve => {
+      release = resolve
+    })
+    const requested = new Promise<void>(resolve => {
+      started = resolve
+    })
     const server = await serveModServer({
       address,
       sources: {
         async openModContext(value) {
           started()
           await loading
-          if (chain.sources.openModContext === undefined) throw new Error('fixture has no mod contexts')
+          if (chain.sources.openModContext === undefined)
+            throw new Error('fixture has no mod contexts')
           return chain.sources.openModContext(value)
         },
       },
@@ -158,18 +189,54 @@ describe('the shared mod server', () => {
     const client = await connectModServer(address)
     const context = await client.openModContext(request)
     expect(chain.opened).toBe(1)
-    expect([context.gameId, context.contextId, context.revision]).toEqual(['test/game', 'chain', '0'])
+    expect([context.gameId, context.contextId, context.revision]).toEqual([
+      'test/game',
+      'chain',
+      '0',
+    ])
     expect(context.layers.map(layer => layer.id)).toEqual(['layer:0'])
+    expect(context.layers[0]?.caseSensitive).toBe(true)
     expect(await context.files('layer:0', { limit: 10 })).toEqual({ items: [UNITS] })
     expect(new TextDecoder().decode(await context.read('layer:0', UNITS, 1024))).toBe('<Catalog/>')
     expect(await context.locate(UNITS)).toEqual({ layerId: 'layer:0', path: UNITS })
-    expect(await context.query!({ kind: 'data.ids' })).toMatchObject({ revision: '0', asked: { kind: 'data.ids' } })
-    expect(await context.overlay!([{ layerId: 'layer:0', path: UNITS, text: '<Catalog><CUnit id="A"/></Catalog>' }])).toEqual({ revision: '1' })
+    expect(await context.query!({ kind: 'data.ids' })).toMatchObject({
+      revision: '0',
+      asked: { kind: 'data.ids' },
+    })
+    expect(
+      await context.overlay!([
+        { layerId: 'layer:0', path: UNITS, text: '<Catalog><CUnit id="A"/></Catalog>' },
+      ]),
+    ).toEqual({ revision: '1' })
     expect(context.revision).toBe('1')
     await context.prepare!()
     expect(await context.invalidate!()).toEqual({ revision: '2' })
     await context.dispose()
     await client.close()
+  })
+
+  it('removes both distinct case-sensitive overlays when their client disconnects', async () => {
+    const { address, chain } = await daemon()
+    const editor = await connectModServer(address)
+    const context = await editor.openModContext(request)
+    await context.overlay!([
+      { layerId: 'layer:0', path: UNITS, text: '<Upper/>' },
+      { layerId: 'layer:0', path: UNITS.toLowerCase(), text: '<Lower/>' },
+    ])
+    expect((await context.files('layer:0', { limit: 10 })).items).toHaveLength(2)
+    await editor.close()
+    for (let attempt = 0; attempt < 50 && chain.disposed < 1; attempt += 1) {
+      await new Promise(resolve => setTimeout(resolve, 20))
+    }
+    const reader = await connectModServer(address)
+    try {
+      const reopened = await reader.openModContext(request)
+      expect(await reopened.files('layer:0', { limit: 10 })).toEqual({ items: [UNITS] })
+      expect(await reopened.query!({ kind: 'units' })).toMatchObject({ units: '<Catalog/>' })
+      await reopened.dispose()
+    } finally {
+      await reader.close()
+    }
   })
 
   it('lets every client read what one laid over a file, and takes it away when that client goes', async () => {
@@ -178,23 +245,30 @@ describe('the shared mod server', () => {
     const other = await connectModServer(address)
     const edited = await editor.openModContext(request)
     const reading = await other.openModContext(request)
-    await edited.overlay!([{ layerId: 'layer:0', path: UNITS, text: '<Catalog><CUnit id="Unsaved"/></Catalog>' }])
-    expect(await reading.query!({ kind: 'units' })).toMatchObject({ units: '<Catalog><CUnit id="Unsaved"/></Catalog>' })
+    await edited.overlay!([
+      { layerId: 'layer:0', path: UNITS, text: '<Catalog><CUnit id="Unsaved"/></Catalog>' },
+    ])
+    expect(await reading.query!({ kind: 'units' })).toMatchObject({
+      units: '<Catalog><CUnit id="Unsaved"/></Catalog>',
+    })
     // The other client hears the server's revision when it asks (an empty overlay).
     expect(reading.revision).toBe('1')
     await editor.close()
-    for (let attempt = 0; attempt < 50 && chain.disposed < 1; attempt += 1) await new Promise(resolve => setTimeout(resolve, 20))
+    for (let attempt = 0; attempt < 50 && chain.disposed < 1; attempt += 1)
+      await new Promise(resolve => setTimeout(resolve, 20))
     expect(await reading.query!({ kind: 'units' })).toMatchObject({ units: '<Catalog/>' })
     expect(await reading.overlay!([])).toEqual({ revision: '2' })
     await other.close()
   })
 
-  it('refuses a client without the daemon\'s token', async () => {
+  it("refuses a client without the daemon's token", async () => {
     const { address, directory } = await daemon()
     const forged = join(directory, 'forged.token')
     const { writeFile } = await import('node:fs/promises')
     await writeFile(forged, 'not the token')
-    await expect(connectModServer({ pipe: address.pipe, tokenFile: forged })).rejects.toThrow(/refused/u)
+    await expect(connectModServer({ pipe: address.pipe, tokenFile: forged })).rejects.toThrow(
+      /refused/u,
+    )
   })
 
   it('says when no client has been connected for a while', async () => {
@@ -204,7 +278,8 @@ describe('the shared mod server', () => {
     await new Promise(resolve => setTimeout(resolve, 250))
     expect(idle).toBe(0)
     await client.close()
-    for (let attempt = 0; attempt < 50 && idle === 0; attempt += 1) await new Promise(resolve => setTimeout(resolve, 20))
+    for (let attempt = 0; attempt < 50 && idle === 0; attempt += 1)
+      await new Promise(resolve => setTimeout(resolve, 20))
     expect(idle).toBe(1)
   })
 
@@ -236,12 +311,18 @@ describe('the shared mod server', () => {
     await shared.dispose()
   }, 30_000)
 
-  it('answers the server\'s refusal, without opening the context in the client', async () => {
+  it("answers the server's refusal, without opening the context in the client", async () => {
     const { options, directory, chain } = await daemon()
     const local = chainSources()
     const reasons: unknown[] = []
-    const shared = withSharedModContexts(local.sources, { ...options, directory, onFallback: reason => reasons.push(reason) })
-    await expect(shared.openModContext!({ schemaVersion: 1, target: 'C:/Mods/Missing.SC2Mod' })).rejects.toThrow(/nothing exists at C:\/Mods\/Missing\.SC2Mod/u)
+    const shared = withSharedModContexts(local.sources, {
+      ...options,
+      directory,
+      onFallback: reason => reasons.push(reason),
+    })
+    await expect(
+      shared.openModContext!({ schemaVersion: 1, target: 'C:/Mods/Missing.SC2Mod' }),
+    ).rejects.toThrow(/nothing exists at C:\/Mods\/Missing\.SC2Mod/u)
     expect([chain.opened, local.opened, reasons.length]).toEqual([1, 0, 0])
     // the connection is still the server's: the next request opens there
     const context = await shared.openModContext!(request)

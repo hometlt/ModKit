@@ -11,8 +11,12 @@ const FILES: Readonly<Record<string, string>> = {
   'enUS.SC2Data/LocalizedData/GameStrings.txt': 'Unit/Name/Marine=Marine',
 }
 
-function context(): ModContext {
-  const paths = Object.keys(FILES)
+/** A source with paginated native paths and its declared case semantics. */
+function context(
+  files: Readonly<Record<string, string>> = FILES,
+  caseSensitive?: boolean,
+): ModContext {
+  const paths = Object.keys(files)
   return {
     schemaVersion: 1,
     gameId: 'test',
@@ -23,6 +27,7 @@ function context(): ModContext {
         displayName: 'Liberty',
         sourceId: 'casc',
         sourcePath: 'Mods/Liberty.SC2Mod',
+        ...(caseSensitive === undefined ? {} : { caseSensitive }),
         role: 'dependency',
         provenance: 'implicit',
       },
@@ -36,7 +41,7 @@ function context(): ModContext {
       return start + 2 < paths.length ? { items, nextCursor: String(start + 2) } : { items }
     },
     async read(_layerId, path) {
-      const text = FILES[path]
+      const text = files[path]
       if (text === undefined) throw new Error(`not listed: ${path}`)
       return new TextEncoder().encode(text)
     },
@@ -61,6 +66,41 @@ async function text(source: ArtifactSource): Promise<string> {
 }
 
 describe('a mod context layer as a namespace subject', () => {
+  it('reads distinct case-sensitive files without manufacturing aliases', async () => {
+    const source = await openModContextLayerSource({
+      context: context({ 'Models/Hero.bin': 'upper', 'models/hero.bin': 'lower' }, true),
+      layerId: 'liberty',
+      ref: { id: 'memory://package', uri: 'memory://package' },
+    })
+    const lease = await source.openNamespace()
+    const namespace = lease.value
+    const upper = await namespace.open('Models/Hero.bin')
+    const lower = await namespace.open('models/hero.bin')
+    expect(await text(upper.value)).toBe('upper')
+    expect(await text(lower.value)).toBe('lower')
+    await expect(namespace.open('MODELS/HERO.BIN')).rejects.toThrow(/lists no/u)
+    await expect(names(namespace, 'MODELS')).rejects.toThrow(/not a directory/u)
+    await upper.release()
+    await lower.release()
+    await lease.release()
+  })
+
+  it.each([undefined, false])(
+    'keeps v1 namespace aliases when caseSensitive is %s',
+    async caseSensitive => {
+      const source = await openModContextLayerSource({
+        context: context(FILES, caseSensitive),
+        layerId: 'liberty',
+        ref: { id: 'memory://package', uri: 'memory://package' },
+      })
+      const lease = await source.openNamespace()
+      const unit = await lease.value.open('base.sc2data/gamedata/unitdata.xml')
+      expect(await text(unit.value)).toContain('Marine')
+      await unit.release()
+      await lease.release()
+    },
+  )
+
   it('lists folders and files from the loader listing and reads through the loader', async () => {
     const source = await openModContextLayerSource({
       context: context(),
@@ -86,7 +126,9 @@ describe('a mod context layer as a namespace subject', () => {
     )
     expect(await text(unit)).toContain('Marine')
     // Readers size their buffers from the source; SC2's refuses an unsized file.
-    expect(unit.kind === 'bytes' && unit.size).toBe(BigInt(FILES['Base.SC2Data/GameData/UnitData.xml']!.length))
+    expect(unit.kind === 'bytes' && unit.size).toBe(
+      BigInt(FILES['Base.SC2Data/GameData/UnitData.xml']!.length),
+    )
 
     // A folder opens as a namespace whose listing is relative to it.
     const data = (await namespace.open('Base.SC2Data')).value
