@@ -103,7 +103,7 @@ export class LoadedModResourceSessions {
     }
     const id = packageId(context.gameId, primary)
     const previous = this.mods.get(id)
-    if (previous?.context.contextId === context.contextId) {
+    if (previous?.context.contextId === context.contextId && previous.context.generation === context.generation) {
       await context.dispose()
       if (opened && !previous.opened) {
         this.mods.set(id, { ...previous, opened: true })

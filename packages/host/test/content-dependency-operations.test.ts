@@ -65,6 +65,16 @@ const wizards: ModContextLayer = { id: 'l2', displayName: 'wizards', sourceId: '
 const sibling: ModContextLayer = { id: 'l3', displayName: 'Assets', sourceId: 'host', sourcePath: 'C:/Work/Assets.SC2Mod', role: 'dependency', provenance: 'declared' }
 
 describe('subject closures through mod contexts', () => {
+  it('forwards one explicit workspace scope to every subject in a language projection', async () => {
+    const openModContext = vi.fn(async (request: ModContextRequest) => context(request, [core]))
+    await resolveContentLanguageSources({
+      contentSources: sources(openModContext), routes: [],
+      limits: { maxDocumentBytes: 1024, maxWorkspaceBytes: 4096, maxEntries: 8 },
+      subjects: [{ descriptor: { subjectUri: 'file:///C:/one' } }, { descriptor: { subjectUri: 'file:///C:/two' } }],
+      sessionId: 'workspace-a',
+    })
+    expect(openModContext.mock.calls.map(([request]) => request.sessionId)).toEqual(['workspace-a', 'workspace-a'])
+  })
   it('names a host path for file: URIs and a source path for content-source: URIs', () => {
     expect(subjectTarget('file:///C:/Work/Scripts/My%20Script.galaxy')).toBe('C:/Work/Scripts/My Script.galaxy')
     expect(subjectTarget('content-source://local%3Acasc/Mods/Liberty.SC2Mod/Base.SC2Data')).toEqual({

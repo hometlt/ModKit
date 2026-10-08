@@ -522,9 +522,10 @@ export async function createHostMcpPort(
       // The machine's shared mod server holds the mod contexts for every client (owner decision
       // 07.10); this process opens them itself when the server cannot be reached.
       contentSources =
-        local === undefined || configuration.sharedModServer === false
+        local === undefined
           ? local
           : withSharedModContexts(local, {
+              enabled: configuration.sharedModServer !== false,
               extensionRoots: [],
               storage: configuration.contentSourceStorage,
               configPath: configuration.contentSourceConfig,
@@ -863,6 +864,7 @@ export async function createHostMcpPort(
         ? undefined
         : await resolveContentLanguageSources({
             contentSources,
+            sessionId: randomUUID(),
             routes: languageProviderRoutes(modkit.services.inventory),
             limits: {
               maxDocumentBytes: MCP_LANGUAGE_MAX_DOCUMENT_BYTES,

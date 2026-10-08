@@ -152,6 +152,12 @@ export interface ModContextRequest {
   readonly baseMods?: readonly string[]
   /** Only these locales' string files, when the consumer reads one language. */
   readonly locales?: readonly string[]
+  /**
+   * Opaque editor/workspace scope for unsaved state (1–128 characters, no control characters).
+   * An overlay-capable loader must isolate this scope and echo it on the returned context.
+   * Omission retains the provider's legacy scope; hosts supply one per client session.
+   */
+  readonly sessionId?: string
 }
 
 /** A host path, or a path inside one of the provider's content sources. */
@@ -216,8 +222,12 @@ export interface ModContextPage<T> {
 export interface ModContext {
   readonly schemaVersion: 1
   readonly gameId: string
-  /** Stable for the same target, settings, source path policies and content; changes with any of them. */
+  /** Stable for the same target, settings, source path policies and session; revision tracks edits. */
   readonly contextId: string
+  /** The request's isolated unsaved-state scope, when the loader supports session isolation. */
+  readonly sessionId?: string
+  /** Owner/transport incarnation. A new generation replaces a view even when its contextId matches. */
+  readonly generation?: string
   /** Dependencies first, the opened package last. */
   readonly layers: readonly ModContextLayer[]
   /** Declared dependencies no source could provide. */
@@ -242,16 +252,15 @@ export interface ModContext {
    */
   query?(request: unknown, signal?: AbortSignal): Promise<unknown>
   /**
-   * A context that is its chain's server (one per loaded chain, shared by the contexts over it):
-   * the server's revision, which changes with every overlay and invalidation, so an answer can
-   * say which state of the chain it reflects. Absent where the game keeps no server.
+   * Revision of this session's view over the saved chain. Changes with its overlays and with
+   * saved-content invalidation; another session's overlays do not change it.
    */
   readonly revision?: string
   /**
    * Unsaved editor text over a layer's file, or a file the editor has not saved yet; a change
-   * without `text` removes the overlay. Every reader of the chain — `read`, `files`, `query` — sees
-   * the text from then on. No changes change nothing and answer the server's revision now (on a
-   * server other clients share, the `revision` a client last heard may be behind).
+   * without `text` removes the overlay. Every reader in the same session — `read`, `files`,
+   * `query` — sees the text; other sessions continue to read their own view of the saved chain.
+   * No changes change nothing and answer this view's revision now.
    */
   overlay?(changes: readonly ModContextOverlay[]): Promise<{ readonly revision: string }>
   /** The chain's files changed on disk: list and read them again. */

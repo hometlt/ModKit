@@ -156,6 +156,8 @@ export async function resolveSubjectClosure(request: {
   readonly contentSources: ContentSources
   readonly subject: ContentSubject
   readonly baseMods?: BaseModSetting
+  /** Unsaved-state scope supplied by a host with several workspaces in one client connection. */
+  readonly sessionId?: string
   /** Hand the opened mod context back (the caller disposes it) instead of closing it here. */
   readonly keepContext?: boolean
   readonly signal?: AbortSignal
@@ -195,6 +197,7 @@ export async function resolveSubjectClosure(request: {
       schemaVersion: 1,
       target,
       ...(baseMods === undefined ? {} : { baseMods }),
+      ...(request.sessionId === undefined ? {} : { sessionId: request.sessionId }),
     })
     let kept = false
     try {
@@ -222,6 +225,7 @@ async function subjectClosures(request: {
   readonly contentSources: ContentSources
   readonly subjects: readonly ContentSubject[]
   readonly baseMods?: BaseModSetting
+  readonly sessionId?: string
   /** Keep each subject's context open and hand it back. */
   readonly keepContexts?: boolean
   readonly signal?: AbortSignal
@@ -238,6 +242,7 @@ async function subjectClosures(request: {
         contentSources,
         subject,
         ...(request.baseMods === undefined ? {} : { baseMods: request.baseMods }),
+        ...(request.sessionId === undefined ? {} : { sessionId: request.sessionId }),
         ...(request.keepContexts === true ? { keepContext: true } : {}),
         ...(signal === undefined ? {} : { signal }),
       })
@@ -441,6 +446,8 @@ export interface ContentLanguageSourcesRequest {
   readonly subjects: readonly ContentSubject[]
   /** Packages a subject outside any package opens inside, per host path. */
   readonly baseMods?: BaseModSetting
+  /** Isolated workspace scope; all subjects in this language session share it. */
+  readonly sessionId?: string
   /**
    * Keep each subject's mod context open as the loaded mod's server (owner decision 07.10) and
    * hand them back as `contexts` for the language workspace's `createLanguageModContexts`;

@@ -1,7 +1,7 @@
 /**
  * The shared mod server (owner decision 07.10, 6Б): clients on the machine open the same chain's
  * server through one daemon. The whole ModContext contract crosses the named pipe; what one client
- * laid over files is seen by the others and taken away when that client goes; a client without
+ * laid over files stays in that client's session and is taken away when that client goes; a client without
  * the daemon's token is refused; the daemon notices when no client is left. A client that cannot
  * reach a daemon opens its contexts itself.
  */
@@ -22,82 +22,105 @@ import {
   withSharedModContexts,
   type ServedModServer,
 } from '../src/node/mod-server.js'
+import { LoadedModResourceSessions } from '../src/mods/resource-sessions.js'
 
 const encoder = new TextEncoder()
 const UNITS = 'Base.SC2Data/GameData/UnitData.xml'
 
-/** Content sources whose every context is the same chain's server, as the SC2 loader's are. */
+/** One saved chain with isolated views, as an overlay-capable game loader must provide. */
 function chainSources() {
   const disk = new Map([[UNITS, '<Catalog/>']])
-  const overlays = new Map<string, string>()
-  let revision = 0
+  const views = new Map<
+    string,
+    { overlays: Map<string, string>; revision: number; references: number }
+  >()
+  const removedPaths: string[] = []
   let opened = 0
   let disposed = 0
-  const context = (): ModContext => ({
-    schemaVersion: 1,
-    gameId: 'test/game',
-    contextId: 'chain',
-    layers: [
-      {
-        id: 'layer:0',
-        displayName: 'Mine',
-        sourceId: 'host',
-        sourcePath: 'C:/Mods/Mine.SC2Mod',
-        caseSensitive: true,
-        role: 'primary',
-        provenance: 'opened',
-        kind: 'package',
+  const context = (sessionId: string): ModContext => {
+    const view = views.get(sessionId) ?? {
+      overlays: new Map<string, string>(),
+      revision: 0,
+      references: 0,
+    }
+    view.references += 1
+    views.set(sessionId, view)
+    const overlays = view.overlays
+    let closed = false
+    return {
+      schemaVersion: 1,
+      gameId: 'test/game',
+      contextId: `chain:${sessionId}`,
+      sessionId,
+      layers: [
+        {
+          id: 'layer:0',
+          displayName: 'Mine',
+          sourceId: 'host',
+          sourcePath: 'C:/Mods/Mine.SC2Mod',
+          caseSensitive: true,
+          role: 'primary',
+          provenance: 'opened',
+          kind: 'package',
+        },
+      ],
+      unresolved: [],
+      diagnostics: [],
+      files: async () => ({ items: [...new Set([...disk.keys(), ...overlays.keys()])].sort() }),
+      async read(_layerId, path) {
+        const text = overlays.get(path) ?? disk.get(path)
+        if (text === undefined) throw new Error(`${path} is not a file of this layer`)
+        return encoder.encode(text)
       },
-    ],
-    unresolved: [],
-    diagnostics: [],
-    files: async () => ({ items: [...new Set([...disk.keys(), ...overlays.keys()])].sort() }),
-    async read(_layerId, path) {
-      const text = overlays.get(path) ?? disk.get(path)
-      if (text === undefined) throw new Error(`${path} is not a file of this layer`)
-      return encoder.encode(text)
-    },
-    locate: async path =>
-      disk.has(path) || overlays.has(path) ? { layerId: 'layer:0', path } : undefined,
-    async query(request) {
-      return {
-        revision: String(revision),
-        units: overlays.get(UNITS) ?? disk.get(UNITS),
-        asked: request as never,
-      }
-    },
-    get revision() {
-      return String(revision)
-    },
-    async overlay(changes: readonly ModContextOverlay[]) {
-      for (const change of changes) {
-        if (change.text === undefined) overlays.delete(change.path)
-        else overlays.set(change.path, change.text)
-      }
-      if (changes.length > 0) revision += 1
-      return { revision: String(revision) }
-    },
-    async invalidate() {
-      revision += 1
-      return { revision: String(revision) }
-    },
-    async prepare() {},
-    async dispose() {
-      disposed += 1
-    },
-  })
+      locate: async path =>
+        disk.has(path) || overlays.has(path) ? { layerId: 'layer:0', path } : undefined,
+      async query(request) {
+        return {
+          revision: String(view.revision),
+          units: overlays.get(UNITS) ?? disk.get(UNITS),
+          asked: request as never,
+        }
+      },
+      get revision() {
+        return String(view.revision)
+      },
+      async overlay(changes: readonly ModContextOverlay[]) {
+        for (const change of changes) {
+          if (change.text === undefined) {
+            overlays.delete(change.path)
+            removedPaths.push(change.path)
+          } else overlays.set(change.path, change.text)
+        }
+        if (changes.length > 0) view.revision += 1
+        return { revision: String(view.revision) }
+      },
+      async invalidate() {
+        for (const current of views.values()) current.revision += 1
+        return { revision: String(view.revision) }
+      },
+      async prepare() {},
+      async dispose() {
+        if (closed) return
+        closed = true
+        disposed += 1
+        view.references -= 1
+        if (view.references === 0) views.delete(sessionId)
+      },
+    }
+  }
   const sources = {
     async openModContext(request: ModContextRequest) {
       opened += 1
       // a path under which nothing exists is an error of the loader, not of the transport
       if (request.target !== 'C:/Mods/Mine.SC2Mod')
         throw new Error(`nothing exists at ${String(request.target)}`)
-      return context()
+      return context(request.sessionId ?? 'legacy')
     },
     dispose() {},
   } as unknown as ContentSources
   return {
     sources,
+    removedPaths,
     get opened() {
       return opened
     },
@@ -137,6 +160,115 @@ async function daemon(idleMs?: number, onIdle?: () => void) {
 const request = { schemaVersion: 1 as const, target: 'C:/Mods/Mine.SC2Mod' }
 
 describe('the shared mod server', () => {
+  it('keeps the client session but replaces its transport generation after reconnecting', async () => {
+    const { options, directory } = await daemon()
+    const local = chainSources()
+    const sources = withSharedModContexts(local.sources, { ...options, directory })
+    const resources = new LoadedModResourceSessions(sources)
+    try {
+      await resources.load(request.target)
+      const first = await sources.openModContext!(request)
+      const identity = { id: first.contextId, sessionId: first.sessionId, generation: first.generation }
+      await first.dispose()
+      const connection = await sources.shared()
+      await connection!.close()
+      const next = await sources.openModContext!(request)
+      expect(next.contextId).toBe(identity.id)
+      expect(next.sessionId).toBe(identity.sessionId)
+      expect(typeof identity.generation).toBe('string')
+      expect(next.generation).not.toBe(identity.generation)
+      expect(await resources.load(request.target)).toBe(true)
+      await next.dispose()
+    } finally { await resources.dispose(); await sources.dispose() }
+  })
+  it('preserves absent optional methods for a readonly loader', async () => {
+    const { address, chain } = await daemon()
+    const open = chain.sources.openModContext!.bind(chain.sources)
+    chain.sources.openModContext = async request => {
+      const { sessionId: _session, query: _query, overlay: _overlay,
+        invalidate: _invalidate, prepare: _prepare, ...readonly } = await open(request)
+      return readonly
+    }
+    const client = await connectModServer(address)
+    try {
+      const context = await client.openModContext(request)
+      expect([context.query, context.overlay, context.invalidate, context.prepare, context.sessionId]).toEqual([
+        undefined, undefined, undefined, undefined, undefined,
+      ])
+      expect(new TextDecoder().decode(await context.read('layer:0', UNITS, 1024))).toBe('<Catalog/>')
+      await context.dispose()
+    } finally { await client.close() }
+  })
+  it('closes live connections and their session views before waiting for the listening server', async () => {
+    const { address, chain, server } = await daemon()
+    const client = await connectModServer(address)
+    const context = await client.openModContext(request)
+    await context.overlay!([{ layerId: 'layer:0', path: UNITS, text: '<Closing/>' }])
+    try {
+      await server.close()
+      expect(chain.disposed).toBe(1)
+      expect(chain.removedPaths).toEqual([UNITS])
+      expect(server.connections).toBe(0)
+    } finally {
+      await client.close()
+    }
+  })
+  it('keeps separate local client scopes when daemon use is disabled', async () => {
+    const chain = chainSources()
+    const first = withSharedModContexts(chain.sources, {
+      extensionRoots: [],
+      storage: 'unused',
+      enabled: false,
+    })
+    const second = withSharedModContexts(chain.sources, {
+      extensionRoots: [],
+      storage: 'unused',
+      enabled: false,
+    })
+    const a = await first.openModContext!(request)
+    const again = await first.openModContext!(request)
+    const b = await second.openModContext!(request)
+    try {
+      expect(await first.shared()).toBeUndefined()
+      expect(a.sessionId).toBe(again.sessionId)
+      expect(a.sessionId).not.toBe(b.sessionId)
+      await a.overlay!([{ layerId: 'layer:0', path: UNITS, text: '<Local/>' }])
+      expect(await again.query!({ kind: 'units' })).toMatchObject({ units: '<Local/>' })
+      expect(await b.query!({ kind: 'units' })).toMatchObject({ units: '<Catalog/>' })
+      const scoped = await first.openModContext!({ ...request, sessionId: 'mcp-workspace' })
+      expect(scoped.sessionId).toBe('mcp-workspace')
+      expect(await scoped.query!({ kind: 'units' })).toMatchObject({ units: '<Catalog/>' })
+      await scoped.dispose()
+    } finally {
+      await a.dispose()
+      await again.dispose()
+      await b.dispose()
+      await first.dispose()
+      await second.dispose()
+    }
+  })
+
+  it('rejects a writable loader that ignores session isolation instead of silently sharing overlays', async () => {
+    const chain = chainSources()
+    const open = chain.sources.openModContext!.bind(chain.sources)
+    chain.sources.openModContext = async value => {
+      const context = await open(value)
+      const { sessionId: _sessionId, ...unscoped } = context
+      return unscoped
+    }
+    const local = withSharedModContexts(chain.sources, {
+      extensionRoots: [],
+      storage: 'unused',
+      enabled: false,
+    })
+    await expect(local.openModContext!(request)).rejects.toMatchObject({
+      code: 'x3.host/mod-context-session-unsupported',
+    })
+    expect(chain.disposed).toBe(1)
+    await expect(local.openModContext!({ ...request, sessionId: '' })).rejects.toThrow(/sessionId/u)
+    expect(chain.opened).toBe(1)
+    await local.dispose()
+  })
   it('accepts authenticated clients while the shared source is still loading', async () => {
     const directory = await mkdtemp(join(tmpdir(), 'modkit-mod-server-readiness-'))
     directories.push(directory)
@@ -174,7 +306,7 @@ describe('the shared mod server', () => {
       expect(second.closed).toBe(false)
       release()
       const context = await opening
-      expect(context.contextId).toBe('chain')
+      expect(context.contextId).toBe(`chain:${context.sessionId}`)
       expect(chain.opened).toBe(1)
       await context.dispose()
     } finally {
@@ -191,7 +323,7 @@ describe('the shared mod server', () => {
     expect(chain.opened).toBe(1)
     expect([context.gameId, context.contextId, context.revision]).toEqual([
       'test/game',
-      'chain',
+      `chain:${context.sessionId}`,
       '0',
     ])
     expect(context.layers.map(layer => layer.id)).toEqual(['layer:0'])
@@ -228,6 +360,7 @@ describe('the shared mod server', () => {
     for (let attempt = 0; attempt < 50 && chain.disposed < 1; attempt += 1) {
       await new Promise(resolve => setTimeout(resolve, 20))
     }
+    expect(chain.removedPaths.sort()).toEqual([UNITS, UNITS.toLowerCase()].sort())
     const reader = await connectModServer(address)
     try {
       const reopened = await reader.openModContext(request)
@@ -239,25 +372,32 @@ describe('the shared mod server', () => {
     }
   })
 
-  it('lets every client read what one laid over a file, and takes it away when that client goes', async () => {
+  it('isolates different clients while readers in one client see the same view', async () => {
     const { address, chain } = await daemon()
     const editor = await connectModServer(address)
     const other = await connectModServer(address)
     const edited = await editor.openModContext(request)
     const reading = await other.openModContext(request)
+    const sameClient = await editor.openModContext(request)
+    expect(edited.sessionId).not.toBe(reading.sessionId)
+    expect(edited.contextId).not.toBe(reading.contextId)
+    expect(sameClient.contextId).toBe(edited.contextId)
     await edited.overlay!([
       { layerId: 'layer:0', path: UNITS, text: '<Catalog><CUnit id="Unsaved"/></Catalog>' },
     ])
-    expect(await reading.query!({ kind: 'units' })).toMatchObject({
+    expect(await sameClient.query!({ kind: 'units' })).toMatchObject({
       units: '<Catalog><CUnit id="Unsaved"/></Catalog>',
     })
-    // The other client hears the server's revision when it asks (an empty overlay).
-    expect(reading.revision).toBe('1')
+    expect(await reading.query!({ kind: 'units' })).toMatchObject({
+      units: '<Catalog/>',
+      revision: '0',
+    })
+    await reading.overlay!([{ layerId: 'layer:0', path: UNITS, text: '<Other/>' }])
     await editor.close()
-    for (let attempt = 0; attempt < 50 && chain.disposed < 1; attempt += 1)
+    for (let attempt = 0; attempt < 50 && chain.disposed < 2; attempt += 1)
       await new Promise(resolve => setTimeout(resolve, 20))
-    expect(await reading.query!({ kind: 'units' })).toMatchObject({ units: '<Catalog/>' })
-    expect(await reading.overlay!([])).toEqual({ revision: '2' })
+    expect(await reading.query!({ kind: 'units' })).toMatchObject({ units: '<Other/>' })
+    expect(await reading.overlay!([])).toEqual({ revision: '1' })
     await other.close()
   })
 

@@ -1,8 +1,8 @@
 /**
  * The shared mod server (owner decision 07.10, 6Б): one process per user and set of extension
  * roots holds the loaded mods' servers — the loader's `ModContext`s, each with its chain's Data
- * session — for every client on the machine: VS Code, the standalone LSP and MCP sessions open the
- * same chain once instead of once each.
+ * saved model — for clients on the machine. Unsaved state and derived answers belong to each
+ * client's session; VS Code, standalone LSP and MCP never read another client's buffers.
  *
  * - `serveModServer` (the daemon side) answers `openModContext` from its own `ContentSources` and
  *   hands each client a lease of the context; the context's whole contract crosses: layers, files,
@@ -46,7 +46,7 @@ import { protocolLimits } from '../execution/protocol.js'
 import { createSurfaceRegistry, type CapabilitySurface } from '../execution/surface.js'
 
 /** Protocol of the handshake line; frames follow the endpoint's own version. */
-export const MOD_SERVER_PROTOCOL = 1
+export const MOD_SERVER_PROTOCOL = 2
 export const ABI_MOD_SERVER = { contract: 'x3.abi/mod-server', major: 1 } as const
 export const ABI_SERVED_MOD_CONTEXT = { contract: 'x3.abi/mod-context', major: 1 } as const
 
@@ -57,7 +57,8 @@ const sig = { signal: 'last' } as const
 
 const servedContextSurface: CapabilitySurface = {
   ...ABI_SERVED_MOD_CONTEXT,
-  fields: ['schemaVersion', 'gameId', 'contextId', 'layers', 'unresolved', 'diagnostics', 'revision'],
+  fields: ['schemaVersion', 'gameId', 'contextId', 'sessionId', 'generation', 'layers', 'unresolved', 'diagnostics', 'revision',
+    'canQuery', 'canOverlay', 'canInvalidate', 'canPrepare'],
   methods: {
     files: { kind: 'value', arity: 2 },
     read: { kind: 'value', arity: 3 },
@@ -208,10 +209,25 @@ function modContextRequest(value: unknown): ModContextRequest {
   const list = (item: unknown) => item === undefined ||
     (Array.isArray(item) && item.length <= 64 && item.every(entry => typeof entry === 'string' && entry.length <= 256))
   if (record === null || typeof record !== 'object' || record['schemaVersion'] !== 1 || !targetOk ||
-      !list(record['baseMods']) || !list(record['locales'])) {
-    throw new TypeError('openModContext needs { schemaVersion: 1, target, baseMods?, locales? }')
+      !list(record['baseMods']) || !list(record['locales']) ||
+      (record['sessionId'] !== undefined && (typeof record['sessionId'] !== 'string' ||
+        record['sessionId'].length === 0 || record['sessionId'].length > 128 ||
+        /[\u0000-\u001f]/u.test(record['sessionId'])))) {
+    throw new TypeError('openModContext needs { schemaVersion: 1, target, baseMods?, locales?, sessionId? }')
   }
   return record as unknown as ModContextRequest
+}
+
+/** Refuse writable providers that would silently put a client's overlays into a shared scope. */
+async function isolatedContext(context: ModContext, request: ModContextRequest): Promise<ModContext> {
+  if (context.overlay !== undefined && context.sessionId !== request.sessionId) {
+    await context.dispose()
+    throw new ModkitError({
+      code: 'x3.host/mod-context-session-unsupported',
+      message: 'this overlay-capable loader did not isolate the requested mod context session',
+    })
+  }
+  return context
 }
 
 /**
@@ -219,6 +235,7 @@ function modContextRequest(value: unknown): ModContextRequest {
  * go when the connection does.
  */
 function connectionService(sources: Pick<ContentSources, 'openModContext'>) {
+  const sessionId = randomBytes(16).toString('hex')
   const opened = new Set<ModContext>()
   /** What this connection laid over each context's files: by layer and path. */
   const laid = new Map<ModContext, Map<string, ModContextOverlay>>()
@@ -226,10 +243,16 @@ function connectionService(sources: Pick<ContentSources, 'openModContext'>) {
     schemaVersion: context.schemaVersion,
     gameId: context.gameId,
     contextId: context.contextId,
+    sessionId: context.sessionId,
+    generation: context.generation,
     layers: context.layers,
     unresolved: context.unresolved,
     diagnostics: context.diagnostics,
     revision: context.revision ?? '0',
+    canQuery: context.query !== undefined,
+    canOverlay: context.overlay !== undefined,
+    canInvalidate: context.invalidate !== undefined,
+    canPrepare: context.prepare !== undefined,
     files: (layerId: string, page: Parameters<ModContext['files']>[1]) => context.files(layerId, page),
     read: (layerId: string, path: string, maxBytes: number) => context.read(layerId, path, maxBytes),
     locate: (path: string) => context.locate(path),
@@ -261,7 +284,9 @@ function connectionService(sources: Pick<ContentSources, 'openModContext'>) {
   const service = {
     async openModContext(request: unknown, signal?: AbortSignal) {
       if (sources.openModContext === undefined) throw new TypeError('the mod server opens no mod contexts')
-      const context = await sources.openModContext(modContextRequest(request))
+      const input = modContextRequest(request)
+      const scoped = { ...input, sessionId: input.sessionId ?? sessionId }
+      const context = await isolatedContext(await sources.openModContext(scoped), scoped)
       if (signal?.aborted === true) {
         await context.dispose()
         signal.throwIfAborted()
@@ -385,12 +410,13 @@ export async function serveModServer(options: ServeModServerOptions): Promise<Se
     },
     async close() {
       if (idle !== undefined) clearTimeout(idle)
-      await new Promise<void>(resolve => server.close(() => resolve()))
+      const stopped = new Promise<void>(resolve => server.close(() => resolve()))
       for (const entry of [...live]) {
         entry.socket.destroy()
         await entry.close().catch(() => undefined)
       }
       live.clear()
+      await stopped
       await rm(options.address.tokenFile, { force: true }).catch(() => undefined)
     },
   }
@@ -404,7 +430,7 @@ export interface ModServerConnection {
 }
 
 /** A served context as a `ModContext`: the revision follows every answer that names one. */
-function remoteContext(remote: RemoteCapability): ModContext {
+function remoteContext(remote: RemoteCapability, generation: string): ModContext {
   const data = remote.data as Readonly<Record<string, unknown>>
   let revision = typeof data['revision'] === 'string' ? data['revision'] : '0'
   const call = async (method: string, args: readonly unknown[], signal?: AbortSignal): Promise<unknown> => {
@@ -424,6 +450,8 @@ function remoteContext(remote: RemoteCapability): ModContext {
     schemaVersion: 1 as const,
     gameId: String(data['gameId']),
     contextId: String(data['contextId']),
+    generation: JSON.stringify([generation, data['generation'] ?? null]),
+    ...(typeof data['sessionId'] === 'string' ? { sessionId: data['sessionId'] } : {}),
     layers: (data['layers'] ?? []) as ModContext['layers'],
     unresolved: (data['unresolved'] ?? []) as ModContext['unresolved'],
     diagnostics: (data['diagnostics'] ?? []) as ModContext['diagnostics'],
@@ -435,19 +463,26 @@ function remoteContext(remote: RemoteCapability): ModContext {
     read: async (layerId: string, path: string, maxBytes: number) =>
       (await call('read', [layerId, path, maxBytes])) as Uint8Array,
     locate: async (path: string) => (await call('locate', [path])) as Awaited<ReturnType<ModContext['locate']>>,
-    query: async (request: unknown, signal?: AbortSignal) => noted(await call('query', [request], signal)),
-    overlay: async (changes: readonly ModContextOverlay[]) =>
-      noted(await call('overlay', [changes])) as { readonly revision: string },
-    invalidate: async () => noted(await call('invalidate', [])) as { readonly revision: string },
-    prepare: async (signal?: AbortSignal) => {
-      await call('prepare', [], signal)
-    },
+    ...(data['canQuery'] === true ? {
+      query: async (request: unknown, signal?: AbortSignal) => noted(await call('query', [request], signal)),
+    } : {}),
+    ...(data['canOverlay'] === true ? {
+      overlay: async (changes: readonly ModContextOverlay[]) =>
+        noted(await call('overlay', [changes])) as { readonly revision: string },
+    } : {}),
+    ...(data['canInvalidate'] === true ? {
+      invalidate: async () => noted(await call('invalidate', [])) as { readonly revision: string },
+    } : {}),
+    ...(data['canPrepare'] === true ? {
+      prepare: async (signal?: AbortSignal) => { await call('prepare', [], signal) },
+    } : {}),
     dispose: () => remote.release(),
   })
 }
 
 /** Connect to the daemon at `address`, proving the user by its token. */
-export async function connectModServer(address: Pick<ModServerAddress, 'pipe' | 'tokenFile'>): Promise<ModServerConnection> {
+export async function connectModServer(address: Pick<ModServerAddress, 'pipe' | 'tokenFile'>,
+  sessionId = randomBytes(16).toString('hex')): Promise<ModServerConnection> {
   const token = (await readFile(address.tokenFile, 'utf8')).trim()
   const socket = await new Promise<Socket>((resolve, reject) => {
     const opened = connect(address.pipe)
@@ -494,12 +529,13 @@ export async function connectModServer(address: Pick<ModServerAddress, 'pipe' | 
       return closed
     },
     async openModContext(request, signal) {
-      const outcome = await root.call('openModContext', [request], {
+      const scoped = modContextRequest({ ...request, sessionId: request.sessionId ?? sessionId })
+      const outcome = await root.call('openModContext', [scoped], {
         ...(signal === undefined ? {} : { signal }),
         deadlineMs: CALL_DEADLINE_MS,
       })
       if (outcome.kind !== 'lease') throw new TypeError('the mod server answered openModContext without a lease')
-      return remoteContext(outcome.remote)
+      return remoteContext(outcome.remote, answer.session as string)
     },
     async close() {
       if (closed) return
@@ -511,6 +547,8 @@ export async function connectModServer(address: Pick<ModServerAddress, 'pipe' | 
 }
 
 export interface SharedModContextsOptions extends ModServerSourcesOptions {
+  /** False keeps the same isolated session contract in-process without starting a daemon. */
+  readonly enabled?: boolean
   /** The daemon's entry script (`mod-server-daemon.js`); by default the one beside this module. */
   readonly daemonScript?: string
   /** The Node executable to start it with; by default this process's (`ELECTRON_RUN_AS_NODE` set). */
@@ -543,10 +581,11 @@ export function withSharedModContexts(sources: ContentSources, options: SharedMo
   readonly shared: () => Promise<ModServerConnection | undefined>
 } {
   const address = modServerAddress(options, options.directory)
+  const sessionId = randomBytes(16).toString('hex')
   let connection: Promise<ModServerConnection | undefined> | undefined
   const reach = async (): Promise<ModServerConnection | undefined> => {
     try {
-      return await connectModServer(address)
+      return await connectModServer(address, sessionId)
     } catch {
       // No daemon yet: start one, and wait until it listens.
       const script = options.daemonScript ?? defaultDaemonScript()
@@ -580,7 +619,7 @@ export function withSharedModContexts(sources: ContentSources, options: SharedMo
       let last: unknown
       while (Date.now() < deadline) {
         try {
-          return await connectModServer(address)
+          return await connectModServer(address, sessionId)
         } catch (error) {
           last = error
           if (exited !== undefined && exited.code !== 0) {
@@ -598,6 +637,7 @@ export function withSharedModContexts(sources: ContentSources, options: SharedMo
     }
   }
   const shared = (): Promise<ModServerConnection | undefined> => {
+    if (options.enabled === false) return Promise.resolve(undefined)
     connection ??= reach().then(found => {
       if (found === undefined) connection = undefined
       return found
@@ -620,10 +660,11 @@ export function withSharedModContexts(sources: ContentSources, options: SharedMo
       if (key === 'shared') return shared
       if (key === 'openModContext') {
         return async (request: ModContextRequest) => {
+          const scoped = modContextRequest({ ...request, sessionId: request.sessionId ?? sessionId })
           const server = await shared()
           if (server !== undefined) {
             try {
-              return await server.openModContext(request)
+              return await server.openModContext(scoped)
             } catch (error) {
               // The server's own refusal (no such package) is the answer; only a lost connection
               // sends the request to this process's sources.
@@ -632,7 +673,7 @@ export function withSharedModContexts(sources: ContentSources, options: SharedMo
             }
           }
           if (local === undefined) throw new TypeError('these content sources open no mod contexts')
-          return local(request)
+          return isolatedContext(await local(scoped), scoped)
         }
       }
       if (key === 'dispose') {

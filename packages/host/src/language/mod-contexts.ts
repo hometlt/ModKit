@@ -19,7 +19,7 @@
  * path in a content source; an application with its own schemes (VS Code's `modkit-source:`) gives
  * `targetOf` and `uriOf`. Content-source roots follow the layer's declared case sensitivity; host
  * paths follow their filesystem rules. A host that reopens a subject's context (`replace`) keeps
- * the open one when the new one is over the same chain and target (same `contextId`), so a scope a
+ * the open one when chain, target and transport generation match, so a scope a
  * request holds stays valid; a replaced context takes its buffers away before it is closed.
  *
  * The host knows no game: questions and answers are the game's JSON, checked to be JSON.
@@ -326,8 +326,8 @@ export function createLanguageModContexts(
           if (known.overlaid)
             changes.push(Object.freeze({ layerId: known.layerId, path: known.path }))
         }
-        // An empty overlay asks the server its revision now: on a shared server another client may
-        // have edited the chain since this client last heard.
+        // An empty overlay asks this session's revision now: a save or another reader in the same
+        // session may have changed its state since this workspace last heard.
         await context.overlay?.(changes)
         return Object.freeze({
           scope,
@@ -386,7 +386,8 @@ export function createLanguageModContexts(
       const surplus: ModContext[] = []
       for (const context of contexts) {
         const same = before.find(
-          entry => !kept.has(entry) && entry.context.contextId === context.contextId,
+          entry => !kept.has(entry) && entry.context.contextId === context.contextId &&
+            entry.context.generation === context.generation,
         )
         if (same === undefined) add(key, context)
         else {

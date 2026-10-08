@@ -14,6 +14,7 @@ let host: ModkitMcpHostPort
 const dependencyBytes = new TextEncoder().encode('dependency')
 /** Every target the loader was asked to open, in order. */
 const opened: unknown[] = []
+const openedScopes: (string | undefined)[] = []
 
 const contentSources: ContentSources = {
   async snapshot() {
@@ -41,6 +42,7 @@ const contentSources: ContentSources = {
   // The subject opens inside one read-only layer of the fixture source.
   async openModContext(request) {
     opened.push(request.target)
+    openedScopes.push(request.sessionId)
     return {
       schemaVersion: 1,
       gameId: 'fixture/game',
@@ -101,6 +103,21 @@ describe('host-held MCP language session', () => {
     if (open === undefined) throw new Error('host did not expose language sessions')
     return open.apply(target, input)
   }
+
+  it('gives independent language workspaces distinct mod overlay scopes', async () => {
+    const before = openedScopes.length
+    const request = {
+      documents: [{ uri: 'modkit-source://fixture/Scripts/Main.fixturelang', languageId: 'fixture-language', documentKind: 'fixture-source', version: 1, text: 'valid' }],
+    }
+    const first = await openLanguageSession(host, request, undefined, dependencyContext)
+    const second = await openLanguageSession(host, request, undefined, dependencyContext)
+    try {
+      const scopes = openedScopes.slice(before)
+      expect(scopes).toHaveLength(2)
+      expect(scopes.every(scope => typeof scope === 'string' && scope.length > 0)).toBe(true)
+      expect(scopes[0]).not.toBe(scopes[1])
+    } finally { await first.close(); await second.close() }
+  })
 
   it('retains virtual source overlays with exact revisions and releases the provider', async () => {
     const uri = 'modkit-source://fixture/Scripts/Main.fixturelang'

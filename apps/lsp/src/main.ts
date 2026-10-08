@@ -80,8 +80,9 @@ export async function runModkitLsp(argv: readonly string[]) {
           .then(local =>
             // The machine's shared mod server holds the mod contexts for every client (owner
             // decision 07.10); this process opens them itself when the server cannot be reached.
-            local !== undefined && configuration.sharedModServer
+            local !== undefined
               ? withSharedModContexts(local, {
+                  enabled: configuration.sharedModServer,
                   extensionRoots: [],
                   storage: configuration.contentSourceStorage!,
                   configPath: configuration.contentSourceConfig!,

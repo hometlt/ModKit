@@ -1357,30 +1357,31 @@ async function activateModkit(
               announceModContexts(
                 // The loaded mods live in the user's shared mod server (owner decision 07.10): one
                 // process for every window, the LSP and MCP; without it this window loads them.
-                vscode.workspace.getConfiguration('modkit').get<boolean>('sharedModServer', true)
-                  ? withSharedModContexts(created, {
-                      extensionRoots: extensionRootPaths(),
-                      ...(configured === undefined ? {} : { configPath: configured }),
-                      storage,
-                      indexCacheDirectory,
-                      indexCaches,
-                      moduleOptions: Object.fromEntries(
-                        [
-                          ...new Set(
-                            host.services.host.inventory.extensions.map(
-                              item => `${item.manifest.publisher}/${item.manifest.id}`,
-                            ),
-                          ),
-                        ].flatMap(extension => {
-                          const options = moduleOptionsOf(extension, found)
-                          return options === undefined ? [] : [[extension, options] as const]
-                        }),
+                withSharedModContexts(created, {
+                  enabled: vscode.workspace
+                    .getConfiguration('modkit')
+                    .get<boolean>('sharedModServer', true),
+                  extensionRoots: extensionRootPaths(),
+                  ...(configured === undefined ? {} : { configPath: configured }),
+                  storage,
+                  indexCacheDirectory,
+                  indexCaches,
+                  moduleOptions: Object.fromEntries(
+                    [
+                      ...new Set(
+                        host.services.host.inventory.extensions.map(
+                          item => `${item.manifest.publisher}/${item.manifest.id}`,
+                        ),
                       ),
-                      daemonScript: join(extensionRoot, 'dist-app', 'mod-server-daemon.js'),
-                      onFallback: error =>
-                        log(`[mod-server] unavailable, this window loads its mods: ${String(error)}`),
-                    })
-                  : created,
+                    ].flatMap(extension => {
+                      const options = moduleOptionsOf(extension, found)
+                      return options === undefined ? [] : [[extension, options] as const]
+                    }),
+                  ),
+                  daemonScript: join(extensionRoot, 'dist-app', 'mod-server-daemon.js'),
+                  onFallback: error =>
+                    log(`[mod-server] unavailable, this window loads its mods: ${String(error)}`),
+                }),
                 {
                   delayMs: MOD_CONTEXT_PROGRESS_DELAY_MS,
                   building: opening =>

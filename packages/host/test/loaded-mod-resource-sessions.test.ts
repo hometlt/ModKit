@@ -3,6 +3,27 @@ import type { ContentSources, ModContext, ModContextTarget } from '@modkit/vfs/c
 import { LoadedModResourceSessions } from '../src/mods/resource-sessions.js'
 
 describe('loaded mod resources', () => {
+  it('replaces a context from an older transport generation', async () => {
+    let generation = 'connection-1'
+    const released: string[] = []
+    const source = { openModContext: async (): Promise<ModContext> => {
+      const openedAt = generation
+      return {
+        schemaVersion: 1, gameId: 'test/game', contextId: 'same-chain-and-session', generation,
+        layers: [{ id: 'primary', displayName: 'Mine', sourceId: 'host', sourcePath: 'C:/Mods/Mine',
+          role: 'primary', provenance: 'opened', kind: 'package' }],
+        unresolved: [], diagnostics: [], files: async () => ({ items: [] }), read: async () => new Uint8Array(),
+        locate: async () => undefined, dispose: async () => { released.push(openedAt) },
+      }
+    } } satisfies Pick<ContentSources, 'openModContext'>
+    const sessions = new LoadedModResourceSessions(source)
+    await sessions.load('C:/Mods/Mine')
+    generation = 'connection-2'
+    expect(await sessions.load('C:/Mods/Mine')).toBe(true)
+    expect(released).toEqual(['connection-1'])
+    await sessions.dispose()
+    expect(released).toEqual(['connection-1', 'connection-2'])
+  })
   it('keeps one server session per package across editor targets and exposes its effective tree', async () => {
     let released = 0
     const context = (target: ModContextTarget): ModContext => ({

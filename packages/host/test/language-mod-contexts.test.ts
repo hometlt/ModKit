@@ -420,6 +420,26 @@ describe('the loaded mod servers of a language workspace', () => {
     await expect(servers.query(scope, { kind: 'data.authoring' })).rejects.toThrow(/no loaded mod/u)
   })
 
+  it('replaces a lost transport generation even when the chain and session identity stay the same', async () => {
+    const first = server()
+    Object.defineProperty(first.context, 'generation', { value: 'connection-1' })
+    const contexts = createLanguageModContexts()
+    contexts.replace('mine', [first.context])
+    const { scope } = contexts.placeOf(MOD_UNITS_URI)!
+    await contexts.synchronize(scope, [document(MOD_UNITS_URI, '<edited/>')])
+    Object.defineProperty(first.context, 'overlay', { value: async () => { throw new Error('transport gone') } })
+    const next = server()
+    Object.defineProperty(next.context, 'generation', { value: 'connection-2' })
+    contexts.replace('mine', [next.context])
+    const placed = contexts.placeOf(MOD_UNITS_URI)!
+    expect(placed.scope).not.toBe(scope)
+    await contexts.synchronize(placed.scope, [document(MOD_UNITS_URI, '<edited/>')])
+    expect(first.disposed).toBe(true)
+    expect(next.disposed).toBe(false)
+    expect(next.changes.at(-1)).toEqual([{ layerId: 'layer:1', path: UNITS, text: '<edited/>' }])
+    await contexts.dispose()
+  })
+
   it('names the server in a request of a provider that asks for it, and gives the provider the port', async () => {
     const chain = server()
     const servers = createLanguageModContexts({ contexts: [chain.context] })
