@@ -57,6 +57,32 @@ const batch = (
 })
 
 describe('workspace typed reference index', () => {
+  it.each([
+    ['workspace-a', 'r1'],
+    ['workspace-a', 'r2'],
+    ['workspace-b', 'r1'],
+  ])(
+    'keeps the prior index when a batch for %s/%s contains an invalid occurrence',
+    (context, revision) => {
+      const index = createWorkspaceReferenceIndex()
+      const original = batch('workspace-a', 'r1', 'file:///a.xml', 1, 'reference')
+      index.replace(original)
+      const snapshot = index.snapshot()
+      const replacement = batch(context, revision, 'file:///a.xml', 1, 'reference')
+      const valid = replacement.occurrences[0]
+      if (valid === undefined) throw new Error('fixture needs an occurrence')
+      for (const invalid of [
+        { ...valid, target: { ...valid.target, owner: '' } },
+        { ...valid, provenance: '' },
+      ]) {
+        expect(() => index.replace({ ...replacement, occurrences: [valid, invalid] })).toThrow()
+        expect(index.snapshot()).toEqual(snapshot)
+        expect(index.occurrences(target('workspace-a'))).toEqual(original.occurrences)
+        expect(index.occurrences(target('workspace-b'))).toEqual([])
+      }
+    },
+  )
+
   it('selects only the requested target and removes replaced document groups', () => {
     const index = createWorkspaceReferenceIndex()
     const first = batch('workspace-a', 'r1', 'file:///a.xml', 1, 'reference')

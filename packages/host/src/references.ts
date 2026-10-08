@@ -61,8 +61,8 @@ const validSpan = (span: SourceSpan): boolean => {
   return byte || text
 }
 
-function validateOccurrence(value: ReferenceOccurrence, batch: ReferenceOccurrenceBatch): void {
-  referenceTargetKey(value.target)
+function validateOccurrence(value: ReferenceOccurrence, batch: ReferenceOccurrenceBatch): string {
+  const key = referenceTargetKey(value.target)
   if (
     !bounded(value.source.uri) ||
     value.source.uri !== batch.sourceUri ||
@@ -79,6 +79,7 @@ function validateOccurrence(value: ReferenceOccurrence, batch: ReferenceOccurren
   ) {
     throw new TypeError('reference occurrence is invalid')
   }
+  return key
 }
 
 const declarationOf = (occurrence: ReferenceOccurrence): ResolvedReferenceDeclaration => ({
@@ -164,7 +165,18 @@ export function createWorkspaceReferenceIndex(): WorkspaceReferenceIndex {
       ) {
         throw new TypeError('reference occurrence batch is invalid')
       }
-      for (const occurrence of batch.occurrences) validateOccurrence(occurrence, batch)
+      // Build privately so an invalid batch cannot replace the current context or revision.
+      const byTarget = new Map<string, ReferenceOccurrence[]>()
+      const frozen = Object.freeze(
+        batch.occurrences.map(item => {
+          const key = validateOccurrence(item, batch)
+          const occurrence = Object.freeze({ ...item })
+          const group = byTarget.get(key)
+          if (group === undefined) byTarget.set(key, [occurrence])
+          else group.push(occurrence)
+          return occurrence
+        }),
+      )
       if (contextId !== undefined && contextId !== batch.contextId) clear()
       contextId = batch.contextId
       if (contextRevision !== undefined && contextRevision !== batch.contextRevision) {
@@ -175,14 +187,6 @@ export function createWorkspaceReferenceIndex(): WorkspaceReferenceIndex {
         generation += 1
       }
       contextRevision = batch.contextRevision
-      const frozen = Object.freeze(batch.occurrences.map(item => Object.freeze({ ...item })))
-      const byTarget = new Map<string, ReferenceOccurrence[]>()
-      for (const occurrence of frozen) {
-        const key = referenceTargetKey(occurrence.target)
-        const group = byTarget.get(key)
-        if (group === undefined) byTarget.set(key, [occurrence])
-        else group.push(occurrence)
-      }
       byDocument.set(batch.sourceUri, frozen)
       targetsByDocument.set(batch.sourceUri, byTarget)
       completenessByDocument.set(batch.sourceUri, batch.semanticComplete)
