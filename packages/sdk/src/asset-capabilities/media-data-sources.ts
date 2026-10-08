@@ -57,6 +57,13 @@ export interface RasterImageInfo {
    * index as `gray8` (a team-colour ramp reads them; a resource id names the plane `#plane=indices`).
    */
   readonly indexed?: true
+  /**
+   * The palette files (`isotem.pal`, `temperat.pal`) an indexed image can be drawn with besides its
+   * own choice: `readRegion` with `palette` colours it with that one. A game draws one file with the
+   * palette its use asks (Red Alert 2 ore lies in the theater palette, a tree of the same theater
+   * file kind in the isometric one); a resource id names it `#palette=temperat.pal`.
+   */
+  readonly palettes?: readonly string[]
 }
 
 export interface RasterAtlasRegion {
@@ -81,6 +88,8 @@ export interface RasterRegionRequest {
   readonly pixelFormat: RasterPixelFormat
   /** `indices`: each pixel's palette index instead of its colour, `gray8` (`RasterImageInfo.indexed`). */
   readonly plane?: 'indices'
+  /** One of `RasterImageInfo.palettes`: the colours instead of the image's own palette choice. */
+  readonly palette?: string
   readonly maxBytes: number
 }
 

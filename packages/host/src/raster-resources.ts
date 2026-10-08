@@ -167,20 +167,27 @@ function ownedCompressedTexture(
 /**
  * What a logical raster id names after its last `#` (resourceIdParameters): a named atlas area
  * (`textures/tex.gaf#region=Metal01`), one frame of a many-frame image (`gi.shp#frame=3`), or both
- * (an area of that frame), and its palette indices instead of its colours (`#plane=indices`). A
+ * (an area of that frame), its palette indices instead of its colours (`#plane=indices`), and the
+ * palette file an indexed image is drawn with (`ore01.tem#frame=3&palette=temperat.pal`). A
  * parameter list of other words stays part of the name, as before; a frame that is no nonnegative
- * integer, or another plane, is refused rather than read as a name.
+ * integer, another plane or a palette that is no `.pal` file name is refused rather than read as a
+ * name.
  */
 export function rasterIdParameters(
   logicalId: string,
-): Readonly<{ name: string; region?: string; frame?: number; plane?: 'indices' }> {
+): Readonly<{ name: string; region?: string; frame?: number; plane?: 'indices'; palette?: string }> {
   const { name, parameters } = resourceIdParameters(logicalId)
   const keys = Object.keys(parameters)
-  if (keys.length === 0 || keys.some(key => key !== 'region' && key !== 'frame' && key !== 'plane'))
+  if (
+    keys.length === 0 ||
+    keys.some(key => key !== 'region' && key !== 'frame' && key !== 'plane' && key !== 'palette')
+  )
     return { name: logicalId }
-  const { region, frame, plane } = parameters
+  const { region, frame, plane, palette } = parameters
   if (plane !== undefined && plane !== 'indices')
     throw new TypeError('raster id plane must be indices')
+  if (palette !== undefined && !/^[A-Za-z0-9_.-]{1,60}\.pal$/u.test(palette))
+    throw new TypeError('raster id palette must name a .pal file')
   if (region !== undefined && region.length === 0)
     throw new TypeError('raster id region must name an area')
   if (
@@ -193,6 +200,7 @@ export function rasterIdParameters(
     ...(region === undefined ? {} : { region }),
     ...(frame === undefined ? {} : { frame: Number(frame) }),
     ...(plane === undefined ? {} : { plane: 'indices' as const }),
+    ...(palette === undefined ? {} : { palette }),
   }
 }
 
@@ -291,6 +299,8 @@ export function createSubjectRasterResources(
       let frameOnly: number | undefined
       /** The image's palette indices (`#plane=indices`), at level 0: a ramp reads them. */
       let indices = false
+      /** The palette an indexed image is drawn with (`#palette=temperat.pal`), one it lists. */
+      let palette: string | undefined
       try {
         let source: ArtifactByteSource
         let hint: { path?: string; mediaType?: string } = {}
@@ -324,6 +334,7 @@ export function createSubjectRasterResources(
           atlasRegion = parameters.region
           frameOnly = parameters.frame
           indices = parameters.plane === 'indices'
+          palette = parameters.palette
           // indices are never averaged into a smaller level
           if (indices) selection = { ...selection, mipLevel: 0 }
           if (frameOnly !== undefined && (selection.frame ?? 0) !== 0)
@@ -423,9 +434,19 @@ export function createSubjectRasterResources(
             'The image stores no palette indices to read.',
             provenance,
           )
+        if (
+          palette !== undefined &&
+          !(info.palettes ?? []).some(name => name.toLowerCase() === palette!.toLowerCase())
+        )
+          return refusal(
+            'x3.host/raster-palette-missing',
+            `The image cannot be drawn with the palette ${palette}.`,
+            provenance,
+          )
         const compressedPlan =
           compressedFormats.size === 0 ||
           indices ||
+          palette !== undefined ||
           atlasRegion !== undefined ||
           frameOnly !== undefined ||
           raster.value.readCompressed === undefined ||
@@ -500,6 +521,7 @@ export function createSubjectRasterResources(
               ...(indices
                 ? { pixelFormat: 'gray8' as const, plane: 'indices' as const }
                 : { pixelFormat: 'rgba8' as const }),
+              ...(palette === undefined ? {} : { palette }),
               maxBytes,
             },
             signal,
@@ -566,6 +588,7 @@ export function createSubjectRasterResources(
               ...(indices
                 ? { pixelFormat: 'gray8' as const, plane: 'indices' as const }
                 : { pixelFormat: 'rgba8' as const }),
+              ...(palette === undefined ? {} : { palette }),
               maxBytes: remaining,
             },
             signal,
