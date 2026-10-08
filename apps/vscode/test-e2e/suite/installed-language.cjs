@@ -1042,12 +1042,19 @@ exports.run = async function run() {
         uris.data,
         positionOf(documents.data, 'id="Marine"', 'id="'.length + 2),
       )
-      return result.length >= 1 &&
-        result.every(item => locationUri(item)?.toString() === uris.data.toString())
-        ? result
-        : undefined
+      receipt.dataReferenceLocations = receiptLocations(folder, result)
+      const includesPosition = (uri, position) => result.some(item => {
+        const range = item.range ?? item.targetSelectionRange ?? item.targetRange
+        return sameDocument(locationUri(item), uri) && range !== undefined &&
+          new vscode.Range(range.start, range.end).contains(position)
+      })
+      // References span languages: require the actual parent and localization usages,
+      // instead of rejecting a correct answer merely because it reaches another file.
+      return includesPosition(uris.data, positionOf(documents.data, 'parent="Marine"', 'parent="'.length + 2)) &&
+        includesPosition(uris.strings, positionOf(documents.strings, 'Unit/Name/Marine', 'Unit/Name/'.length + 2))
+        ? result : undefined
     })
-    if (dataReferences === undefined) throw new Error('Data references missed the parent relation')
+    if (dataReferences === undefined) throw new Error('Data references missed the parent or localization relation')
 
     const stringsHover = await waitFor(async () => {
       const text = hoverText(
