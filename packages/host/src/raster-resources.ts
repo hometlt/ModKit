@@ -175,7 +175,13 @@ function ownedCompressedTexture(
  */
 export function rasterIdParameters(
   logicalId: string,
-): Readonly<{ name: string; region?: string; frame?: number; plane?: 'indices'; palette?: string }> {
+): Readonly<{
+  name: string
+  region?: string
+  frame?: number
+  plane?: 'indices'
+  palette?: string
+}> {
   const { name, parameters } = resourceIdParameters(logicalId)
   const keys = Object.keys(parameters)
   if (
