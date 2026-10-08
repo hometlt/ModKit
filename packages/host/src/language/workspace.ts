@@ -1973,8 +1973,10 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
     ),
   )
   const advertisedRoutes = languageProviderRoutes(options.services.inventory)
+  // Identity and revision descriptions of several languages must coexist: a 4 MiB cap
+  // evicted unchanged contexts on every language switch in a real dependency closure.
   const contextTokens = createLanguageContextTokenCache(
-    Math.min(sourceCaptureMaxBytes, 4 * 1_024 * 1_024),
+    Math.min(sourceCaptureMaxBytes, 16 * 1_024 * 1_024),
   )
   // Provider instances may answer differently for the primary document or request limits. Keep
   // their validated indexes apart, rather than replacing the last language's index on every switch.
