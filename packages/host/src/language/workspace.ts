@@ -90,6 +90,7 @@ import { expandSubjectReferenceCompletions } from './subject-completion.js'
 import {
   languageImmutableCapture,
   languageWorkspaceContextToken,
+  createLanguageContextTokenCache,
   languageDocumentSnapshot,
   languageDocumentTextToken,
   validatedLanguageWorkspaceSemanticInputs,
@@ -1972,6 +1973,9 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
     ),
   )
   const advertisedRoutes = languageProviderRoutes(options.services.inventory)
+  const contextTokens = createLanguageContextTokenCache(
+    Math.min(sourceCaptureMaxBytes, 4 * 1_024 * 1_024),
+  )
   // Provider instances may answer differently for the primary document or request limits. Keep
   // their validated indexes apart, rather than replacing the last language's index on every switch.
   const indexedOccurrences: Readonly<{
@@ -2064,6 +2068,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
 
   const invalidateFeatures = (reason: string): void => {
     workspaceGeneration += 1
+    contextTokens.clear()
     indexedOccurrences.length = 0
     referenceIndexBytes = 0
     referenceAnswers.length = 0
@@ -2438,25 +2443,28 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         modContext === undefined
           ? undefined
           : Object.freeze({
-              id: languageWorkspaceContextToken({
+              id: contextTokens.token({
                 sourceContextId: sourceContext?.id,
                 documents: documentOrigins
-                  .map(origin => ({
-                    uri: origin.uri,
-                    layerId: origin.layerId,
-                    logicalId: origin.logicalId,
-                    precedence: origin.precedence,
-                  }))
-                  .sort((left, right) =>
-                    compareUtf8(canonicalJsonStringify(left), canonicalJsonStringify(right)),
-                  ),
+                  .map(origin => {
+                    const identity = {
+                      uri: origin.uri,
+                      layerId: origin.layerId,
+                      logicalId: origin.logicalId,
+                      precedence: origin.precedence,
+                    }
+                    // Sorting compares this exact encoding repeatedly; compute it once per origin.
+                    return { identity, order: canonicalJsonStringify(identity) }
+                  })
+                  .sort((left, right) => compareUtf8(left.order, right.order))
+                  .map(item => item.identity),
                 semanticInputs: semanticInputs.map(input => ({
                   kind: input.kind,
                   id: input.id,
                 })),
                 ...(modContext === undefined ? {} : { modContext: modContext.scope }),
               }),
-              revision: languageWorkspaceContextToken({
+              revision: contextTokens.token({
                 sourceRevision: sourceContext?.revision,
                 semanticInputs: semanticInputs.map(input => ({
                   kind: input.kind,

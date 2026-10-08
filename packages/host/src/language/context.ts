@@ -235,14 +235,56 @@ const fnv64 = (bytes: Uint8Array, low: number, high: number, reverse: boolean): 
   return high.toString(16).padStart(8, '0') + low.toString(16).padStart(8, '0')
 }
 
+const tokenForCanonicalJson = (canonical: string): string => {
+  const bytes = encoder.encode(canonical)
+  return `language-context-v1:${fnv64(bytes, 0x84222325, 0xcbf29ce4, false)}${fnv64(bytes, 0xcbf29ce4, 0x84222325, true)}`
+}
+
+/** Bounded workspace-local memo of exact canonical descriptions, never caller object identities. */
+export function createLanguageContextTokenCache(maxBytes: number): Readonly<{
+  token(value: unknown): string
+  clear(): void
+}> {
+  const entries = new Map<string, Readonly<{ token: string; bytes: number }>>()
+  let retainedBytes = 0
+  return {
+    token(value) {
+      // Re-serialize every call: changed content under an unchanged revision must still be seen.
+      const canonical = canonicalJsonStringify(value)
+      const held = entries.get(canonical)
+      if (held !== undefined) {
+        entries.delete(canonical)
+        entries.set(canonical, held)
+        return held.token
+      }
+      const token = tokenForCanonicalJson(canonical)
+      const bytes = 256 + 2 * (canonical.length + token.length)
+      if (bytes <= maxBytes) {
+        while (entries.size >= 16 || retainedBytes + bytes > maxBytes) {
+          const oldest = entries.entries().next().value
+          if (oldest === undefined) break
+          entries.delete(oldest[0])
+          retainedBytes -= oldest[1].bytes
+        }
+        entries.set(canonical, { token, bytes })
+        retainedBytes += bytes
+      }
+      return token
+    },
+    clear() {
+      entries.clear()
+      retainedBytes = 0
+    },
+  }
+}
+
 /** Compact deterministic identity for a canonical host-owned language context description. */
 export const languageWorkspaceContextToken = (value: unknown): string => {
   const validated =
     typeof value === 'object' && value !== null ? validatedContextCopies.get(value) : undefined
   const semantic = validated !== undefined && 'input' in validated ? validated : undefined
   if (semantic?.token !== undefined) return semantic.token
-  const bytes = encoder.encode(canonicalJsonStringify(value))
-  const token = `language-context-v1:${fnv64(bytes, 0x84222325, 0xcbf29ce4, false)}${fnv64(bytes, 0xcbf29ce4, 0x84222325, true)}`
+  const token = tokenForCanonicalJson(canonicalJsonStringify(value))
   if (semantic !== undefined) semantic.token = token
   return token
 }
