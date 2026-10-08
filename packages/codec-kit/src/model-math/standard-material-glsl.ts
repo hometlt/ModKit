@@ -131,6 +131,8 @@ export interface StandardMaterialDefines {
   tonemap?: boolean
   /** The environment value is multiplied by the base colour before its op (StandardMaterialModel). */
   environmentTintByBase?: boolean
+  /** The team colour mask mixes the base colour before light (StandardMaterialModel.teamColorMaskMix). */
+  teamColorMaskMix?: boolean
   /** The grazing fade of StandardMaterialModel.edgeFadeOut, a compile-time constant. */
   edgeFadeOut?: number
 }
@@ -283,6 +285,7 @@ export function buildMaterialDefines(
       ? { linearColor: true, ...(material.tonemap === undefined ? {} : { tonemap: true }) }
       : {}),
     ...(material.environmentTintByBase === true ? { environmentTintByBase: true } : {}),
+    ...(material.teamColorMaskMix === true ? { teamColorMaskMix: true } : {}),
     ...(material.edgeFadeOut === undefined ? {} : { edgeFadeOut: material.edgeFadeOut }),
   }
 }
@@ -308,6 +311,7 @@ export function canonicalDefineKey(defines: StandardMaterialDefines): string {
     `${defines.sceneLighting ? ';scene' : ''}` +
     `${defines.pbr ? ';pbr' : ''}${defines.linearColor ? ';linear' : ''}${defines.tonemap ? ';tonemap' : ''}` +
     `${defines.environmentTintByBase ? ';envbase' : ''}` +
+    `${defines.teamColorMaskMix ? ';tcmix' : ''}` +
     `${defines.edgeFadeOut === undefined ? '' : `;edge=${defines.edgeFadeOut}`}`
   )
 }
@@ -353,6 +357,20 @@ export function standardBlendModeName(
 }
 
 // ── CPU mirror (D4) — the exact layer math as TypeScript ─────────────────────
+
+/**
+ * Warcraft III Reforged's HD team colour (`teamColorMaskMix`, the shader's ORM-alpha mix): the hue
+ * moves toward the team colour by sqrt(mask) and the brightness toward min(max(base), max(team))
+ * by 0.95·mask², the hue then scaled to that brightness. Mask 0 leaves the base as it is.
+ */
+export function teamColorMaskMixCpu(base: Vec3, team: Vec3, mask: number): Vec3 {
+  const m = Math.min(1, Math.max(0, mask))
+  const hue: Vec3 = [base[0] + (team[0] - base[0]) * Math.sqrt(m), base[1] + (team[1] - base[1]) * Math.sqrt(m), base[2] + (team[2] - base[2]) * Math.sqrt(m)]
+  const baseBright = Math.max(...base)
+  const bright = baseBright + (Math.min(baseBright, Math.max(...team)) - baseBright) * 0.95 * mask * mask
+  const hueBright = Math.max(...hue)
+  return hueBright > 0 ? [hue[0] * (bright / hueBright), hue[1] * (bright / hueBright), hue[2] * (bright / hueBright)] : hue
+}
 
 /** chooseChannel (1.5, layers.glsl.ts): 0 RGB(alpha→1), 1 RGBA, 2 AAAA, 3 RRRR, 4 GGGG, 5 BBBB. */
 export function chooseChannelCpu(
@@ -532,6 +550,8 @@ export interface CpuPixelInput {
   environmentMultipliers?: Vec3
   /** The environment value is multiplied by the base colour before its op. */
   environmentTintByBase?: boolean
+  /** The team colour mask mixes the base colour before light (StandardMaterialModel.teamColorMaskMix). */
+  teamColorMaskMix?: boolean
   /** StandardMaterialModel.edgeFadeOut, on `viewDir`. */
   edgeFadeOut?: number
   specMode: 0 | 1
@@ -722,6 +742,9 @@ export function composeStandardPixelCpu(input: CpuPixelInput): CpuPixelResult {
       teamColor,
     )
   }
+  // Warcraft III Reforged HD: the mask mixes the base colour toward the team colour before light.
+  if (layers.teamColorMask && input.teamColorMaskMix === true)
+    color = [...teamColorMaskMixCpu(color, teamColor, computeLayerColorCpu(layers.teamColorMask, teamColor)[0])]
   // lightMap (×2.0) and AO multiply into the diffuse term (1.8).
   if (layers.lightMap) {
     const lm = computeLayerColorCpu(layers.lightMap, teamColor)
@@ -948,7 +971,7 @@ export function composeStandardPixelCpu(input: CpuPixelInput): CpuPixelResult {
 
   // Common masked team-colour operation. Unlike M3's per-layer teamColorMode, the red-channel
   // mask performs grain merge after lighting.
-  if (layers.teamColorMask) {
+  if (layers.teamColorMask && input.teamColorMaskMix !== true) {
     const mask = computeLayerColorCpu(layers.teamColorMask, teamColor)[0]
     final = [
       final[0] + (teamColor[0] - 0.5) * mask,
@@ -1178,6 +1201,14 @@ function combineExpression(op: LayerColorOp, colorVar: string, resultVar: string
 }
 
 const SHARED_FRAGMENT_HELPERS = `
+vec3 teamColorMaskMix(vec3 base, vec3 team, float mask) {
+  vec3 hue = mix(base, team, sqrt(clamp(mask, 0.0, 1.0)));
+  float baseBright = max(base.r, max(base.g, base.b));
+  float bright = mix(baseBright, min(baseBright, max(team.r, max(team.g, team.b))), 0.95 * mask * mask);
+  float hueBright = max(hue.r, max(hue.g, hue.b));
+  return hueBright > 0.0 ? hue * (bright / hueBright) : hue;
+}
+
 vec4 chooseChannel(float channel, vec4 texel) {
   if (channel == 3.0) {
     texel = texel.rrrr;
@@ -1432,6 +1463,8 @@ export function buildStandardFragmentSource(
     body.push('  vec4 decalColor = computeLayer_decal();')
     body.push(`  ${combineExpression(decal.op, 'decalColor', 'color')}`)
   }
+  if (layerBySlot.has('teamColorMask') && defines.teamColorMaskMix)
+    body.push('  color = teamColorMaskMix(color, u_teamColor, computeLayer_teamColorMask().r);')
   if (layerBySlot.has('lightMap')) body.push('  color *= computeLayer_lightMap().rgb * 2.0;')
   if (layerBySlot.has('ao')) body.push('  color *= computeLayer_ao().rgb;')
 
@@ -1623,7 +1656,7 @@ export function buildStandardFragmentSource(
       `  float edgeFade = smoothstep(0.0, ${glslFloat(defines.edgeFadeOut)}, abs(normalize(v_viewDir).z));`,
       defines.modAlpha ? '  fade *= edgeFade;' : '  final.a *= edgeFade;',
     )
-  if (layerBySlot.has('teamColorMask')) {
+  if (layerBySlot.has('teamColorMask') && !defines.teamColorMaskMix) {
     body.push('  float teamColorMask = computeLayer_teamColorMask().r;')
     body.push('  final.rgb += (u_teamColor - vec3(0.5)) * teamColorMask;')
   }

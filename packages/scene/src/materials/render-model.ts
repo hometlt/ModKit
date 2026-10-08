@@ -284,7 +284,7 @@ function validateStandard(value: unknown, path: string, signal?: AbortSignal) {
   flags(
     material,
     path,
-    ['depthPrepass', 'specularEnergyConservation', 'environmentTintByBase'],
+    ['depthPrepass', 'specularEnergyConservation', 'environmentTintByBase', 'teamColorMaskMix'],
     true,
   )
   for (const key of ['sourceFlags', 'sourceAdditionalFlags', 'materialClass'])
