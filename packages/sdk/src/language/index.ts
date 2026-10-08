@@ -481,8 +481,7 @@ export interface LanguageModContextSemanticContextRequirement {
 }
 
 export type LanguageSemanticContextRequirement =
-  | LanguageKnowledgeSemanticContextRequirement
-  | LanguageModContextSemanticContextRequirement
+  LanguageKnowledgeSemanticContextRequirement | LanguageModContextSemanticContextRequirement
 
 /** Versioned host-owned mod/dependency context shared by every language provider. */
 export interface LanguageWorkspaceContext {
@@ -583,6 +582,9 @@ export interface LanguageCodeActionsRequest extends LanguageFeatureRequest {
   readonly maxEdits: number
 }
 
+/** Features that may explicitly prove they need only the live document and provider schema. */
+export type LanguageDocumentLocalFeature = 'documentSymbols' | 'foldingRanges' | 'formatting'
+
 /** Activated provider surface. It is deliberately independent of any LSP transport package. */
 export interface LanguageProvider {
   readonly contract: typeof LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT
@@ -600,6 +602,13 @@ export interface LanguageProvider {
    * caller's maxDocuments bound and marks truncated snapshots incomplete.
    */
   readonly workspaceLanguageIds?: readonly string[]
+  /**
+   * Opt-in per feature: receive only the current document, without a workspace scan or ModContext.
+   * The workspace context stays semantically incomplete; providers must judge the completeness of
+   * the local result themselves. Omission keeps the full workspace, including on older hosts.
+   * Never declare a feature here if its answer depends on inherited values or other documents.
+   */
+  readonly documentLocalFeatures?: readonly LanguageDocumentLocalFeature[]
   analyze(request: LanguageAnalysisRequest): Promise<LanguageAnalysis>
   /**
    * Optional proof that completion at this position needs only the live document and provider

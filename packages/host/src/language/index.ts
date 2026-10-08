@@ -261,6 +261,7 @@ export const LANGUAGE_DOCUMENT_CONTRACT_DEFINITION: ServiceContractDefinitionSpe
         'contract',
         'languageIds',
         'workspaceLanguageIds',
+        'documentLocalFeatures',
         'semanticInputs',
         'semanticContextRequirements',
       ]),
@@ -562,12 +563,20 @@ export type LanguageProviderResolution =
 function isLanguageProvider(value: unknown): value is LanguageProvider {
   const record = recordOf(value)
   const workspaceLanguageIds = record?.['workspaceLanguageIds']
+  const documentLocalFeatures = record?.['documentLocalFeatures']
   const semanticInputs = record?.['semanticInputs']
   const semanticContextRequirements = record?.['semanticContextRequirements']
   return (
     record?.['contract'] === LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT &&
     Array.isArray(record['languageIds']) &&
     record['languageIds'].every(item => typeof item === 'string') &&
+    (documentLocalFeatures === undefined ||
+      (Array.isArray(documentLocalFeatures) &&
+        documentLocalFeatures.length <= 3 &&
+        new Set(documentLocalFeatures).size === documentLocalFeatures.length &&
+        documentLocalFeatures.every(
+          item => item === 'documentSymbols' || item === 'foldingRanges' || item === 'formatting',
+        ))) &&
     (workspaceLanguageIds === undefined ||
       (Array.isArray(workspaceLanguageIds) &&
         workspaceLanguageIds.length > 0 &&

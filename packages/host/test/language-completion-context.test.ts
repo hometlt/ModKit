@@ -13,6 +13,7 @@ import {
 } from '../src/index.js'
 import {
   createLanguageWorkspace,
+  LANGUAGE_DOCUMENT_CONTRACT_DEFINITION,
   type LanguageWorkspaceDocumentSource,
 } from '../src/language/index.js'
 import { composeLanguageDocumentSources } from '../src/content-dependency-operations.js'
@@ -21,6 +22,7 @@ import { composeLanguageDocumentSources } from '../src/content-dependency-operat
 async function fixture(
   selector?: LanguageProvider['completionContext'],
   analysis?: LanguageProvider['analyze'],
+  localFeatures?: LanguageProvider['documentLocalFeatures'],
 ) {
   const completion = vi.fn<NonNullable<LanguageProvider['completion']>>(async () => ({
     items: [{ label: 'schema-field', kind: 'field' as const }],
@@ -39,6 +41,10 @@ async function fixture(
         symbols: [],
       })),
     completion,
+    documentSymbols: vi.fn(async () => ({ symbols: [], isIncomplete: false })),
+    foldingRanges: vi.fn(async () => ({ ranges: [], isIncomplete: false })),
+    formatting: vi.fn(async () => ({ edits: [], isComplete: true as const })),
+    ...(localFeatures === undefined ? {} : { documentLocalFeatures: localFeatures }),
     ...(selector === undefined ? {} : { completionContext: selector }),
   }
   const extension = defineLinkedExtension({
@@ -146,8 +152,48 @@ async function fixture(
   const document = { uri: 'memory://test.fixture', languageId: 'fixture', version: 1, text: '<' }
   expect((await workspace.synchronize({ languageId: 'fixture', document })).state).toBe('resolved')
   const request = { uri: document.uri, documentVersion: 1, position: { line: 0, character: 1 } }
-  return { workspace, snapshot, completion, request, document }
+  return { workspace, snapshot, completion, request, document, provider }
 }
+
+it.each(['documentSymbols', 'foldingRanges', 'formatting'] as const)(
+  'reads only the live document for opted-in %s, keeping workspace features fresh',
+  async feature => {
+    const f = await fixture(undefined, undefined, [feature])
+    try {
+      await f.workspace.synchronize({
+        languageId: 'fixture',
+        document: { ...f.document, uri: 'memory://other.fixture', text: 'other mod' },
+      })
+      if (feature === 'formatting') {
+        await f.workspace.formatting({ ...f.request, options: { tabSize: 2, insertSpaces: true } })
+      } else await f.workspace[feature](f.request)
+      expect(f.snapshot).not.toHaveBeenCalled()
+      const request = vi.mocked(f.provider[feature]!).mock.calls[0]![0]
+      expect(request.workspaceDocuments).toEqual([f.document])
+      expect(request.workspaceContext?.semanticComplete).toBe(false)
+      expect(request.workspaceContext?.modContext).toBeUndefined()
+      await f.workspace.completion(f.request)
+      expect(f.snapshot).toHaveBeenCalledTimes(1)
+      expect(f.completion.mock.calls[0]![0].workspaceDocuments).toHaveLength(2)
+    } finally {
+      await f.workspace.shutdown()
+    }
+  },
+)
+
+it('keeps the full source for a provider without a document-local declaration', async () => {
+  const f = await fixture()
+  try {
+    await f.workspace.documentSymbols(f.request)
+    expect(f.snapshot).toHaveBeenCalledTimes(1)
+  } finally {
+    await f.workspace.shutdown()
+  }
+})
+
+it('advertises the document-local declaration across the provider execution boundary', () => {
+  expect(LANGUAGE_DOCUMENT_CONTRACT_DEFINITION.surface?.fields).toContain('documentLocalFeatures')
+})
 
 it('scopes a feature to its mod and edited dependency while other open mods stay loaded', async () => {
   const test = await fixture()

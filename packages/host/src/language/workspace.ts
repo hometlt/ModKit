@@ -44,6 +44,7 @@ import {
   type LanguageDiagnosticList,
   type LanguageDocument,
   type LanguageDocumentSymbolList,
+  type LanguageDocumentLocalFeature,
   type LanguageFeatureRequest,
   type LanguageFormattingOptions,
   type LanguageHover,
@@ -2158,6 +2159,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
     preferCachedSemanticContext = false,
     discoverCompletionContext = false,
     maxAllowedResults = LANGUAGE_MAX_RESULTS,
+    localFeature?: LanguageDocumentLocalFeature,
   ): Promise<Value | undefined> => {
     const entry = requireFeatureEntry(workspaceRequest, positioned, maxAllowedResults)
     throwIfAborted(workspaceRequest.signal)
@@ -2198,7 +2200,9 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
     featureControllers.add(controller)
     const unlink = linkedSignal(controller, workspaceRequest.signal)
     try {
-      let documentOnly = false
+      let documentOnly =
+        localFeature !== undefined &&
+        entry.resolution.provider.documentLocalFeatures?.includes(localFeature) === true
       if (
         discoverCompletionContext &&
         preferCachedSemanticContext &&
@@ -2417,7 +2421,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
           entry.uri,
         )
       }
-      // A document-only completion reads no workspace: its context is never complete.
+      // A document-only feature reads no workspace: its context is never complete.
       const semanticComplete = baseSemanticComplete && !documentOnly
       let modContext: LanguageWorkspaceModContext | undefined
       if (!documentOnly) {
@@ -3492,6 +3496,10 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         (provider, feature) => provider.formatting?.({ ...feature, options: providerOptions }),
         validateTextEditList,
         { options: providerOptions },
+        false,
+        false,
+        LANGUAGE_MAX_RESULTS,
+        'formatting',
       )
     },
 
@@ -3591,6 +3599,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         false,
         false,
         LANGUAGE_MAX_DOCUMENT_RESULTS,
+        'foldingRanges',
       )
     },
 
@@ -3741,6 +3750,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         false,
         false,
         LANGUAGE_MAX_DOCUMENT_RESULTS,
+        'documentSymbols',
       )
     },
 
