@@ -612,12 +612,21 @@ export interface LanguageProvider {
    */
   readonly documentLocalFeatures?: readonly LanguageDocumentLocalFeature[]
   /**
-   * Read semantic hover from the synchronized ModContext instead of a workspace snapshot. The
-   * request keeps the live document, host/provider semantic inputs (including locales) and server
+   * Read opted-in semantic features from the synchronized ModContext instead of a workspace snapshot.
+   * Requests keep the live document, host/provider semantic inputs (including locales) and server
    * revision/completeness; dependency values and provenance come from that server. Without a
-   * loaded server the host supplies the usual bounded snapshot. Older hosts ignore this opt-in.
+   * loaded server the host supplies the usual bounded snapshot. Omission keeps that path. The
+   * provider and Host must support the same feature vocabulary; install compatible SDK/Host artifacts.
    */
-  readonly modContextFeatures?: readonly 'hover'[]
+  readonly modContextFeatures?: readonly ('hover' | 'completion')[]
+  /**
+   * Optional position-specific proof for opted-in completion. False keeps the bounded snapshot
+   * (for example completion that needs an asset listing); omission accepts the feature declaration.
+   * This check reads only the live document and provider schema, before the server is requested.
+   */
+  modContextCompletionApplies?(
+    request: Pick<LanguagePositionRequest, 'document' | 'position' | 'signal'>,
+  ): Promise<boolean>
   analyze(request: LanguageAnalysisRequest): Promise<LanguageAnalysis>
   /**
    * Optional proof that completion at this position needs only the live document and provider

@@ -4,9 +4,9 @@
  * This is deliberately a coordinator over the existing service contract, not a second language
  * composition root. A successful `open` owns exactly one provider lease until `close`/`shutdown`;
  * `change` only replaces analysis work for that document and never re-resolves the provider.
- * Snapshot features revalidate source documents and provenance. Opted-in semantic hover instead
- * reads a synchronized retained ModContext and checks its revision before returning; standalone
- * documents retain the snapshot path. The server owns dependency values and provenance. Only
+ * Snapshot features revalidate source documents and provenance. Opted-in hover/semantic completion
+ * read the synchronized retained ModContext and check its revision; standalone or
+ * position-specific fallback keeps the snapshot path. The server owns values/provenance. Only
  * unchanged immutable captures may be retained within the caller's bounded workspace allowance;
  * retention never changes the documents, authority or completeness forwarded to a provider.
  * Whole-document projections use their own bounded result ceiling; interactive completion and
@@ -2175,7 +2175,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
     preferCachedSemanticContext = false,
     discoverCompletionContext = false,
     maxAllowedResults = LANGUAGE_MAX_RESULTS,
-    inputFeature?: LanguageDocumentLocalFeature | 'hover',
+    inputFeature?: LanguageDocumentLocalFeature | 'hover' | 'completion',
   ): Promise<Value | undefined> => {
     const entry = requireFeatureEntry(workspaceRequest, positioned, maxAllowedResults)
     throwIfAborted(workspaceRequest.signal)
@@ -2219,6 +2219,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
       let documentOnly =
         inputFeature !== undefined &&
         inputFeature !== 'hover' &&
+        inputFeature !== 'completion' &&
         entry.resolution.provider.documentLocalFeatures?.includes(inputFeature) === true
       if (
         discoverCompletionContext &&
@@ -2237,10 +2238,26 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         documentOnly = context === 'document'
       }
       let modContext: LanguageWorkspaceModContext | undefined
-      const readsModContext =
+      let readsModContext =
         !documentOnly &&
-        inputFeature === 'hover' &&
+        (inputFeature === 'hover' || inputFeature === 'completion') &&
         entry.resolution.provider.modContextFeatures?.includes(inputFeature) === true
+      if (
+        readsModContext &&
+        inputFeature === 'completion' &&
+        entry.resolution.provider.modContextCompletionApplies !== undefined
+      ) {
+        const applies = await entry.resolution.provider.modContextCompletionApplies({
+          document: entry.document,
+          position: (workspaceRequest as LanguageWorkspacePositionRequest).position,
+          signal: controller.signal,
+        })
+        throwIfAborted(controller.signal)
+        if (typeof applies !== 'boolean') {
+          invalidFeature('language provider returned an invalid ModContext completion applicability', entry.uri)
+        }
+        readsModContext = applies
+      }
       if (readsModContext) {
         modContext = await requestModContext(entry, controller.signal)
         throwIfAborted(controller.signal)
@@ -3348,6 +3365,8 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         { position: request.position },
         request.semanticContextPolicy === 'cached',
         true,
+        LANGUAGE_MAX_RESULTS,
+        'completion',
       )
     },
 

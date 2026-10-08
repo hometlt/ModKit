@@ -294,6 +294,95 @@ describe('the loaded mod servers of a language workspace', () => {
     await workspace.shutdown()
   }, 30_000)
 
+  it('serves retained completion and keeps position-specific and standalone snapshots', async () => {
+    const chain = server()
+    const servers = createLanguageModContexts({ contexts: [chain.context] })
+    let snapshots = 0
+    let applies: unknown = true
+    let changeRevision = false
+    let proofs = 0
+    const provider: LanguageProvider = {
+      contract: LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT,
+      languageIds: ['sc2-data'],
+      modContextFeatures: ['hover', 'completion'],
+      semanticContextRequirements: [{ kind: 'mod-context', gameId: 'test/game' }],
+      analyze: async ({ document: open }) => ({
+        documentUri: open.uri,
+        documentVersion: open.version,
+        tokens: [],
+        diagnostics: [],
+        symbols: [],
+      }),
+      async modContextCompletionApplies(request) {
+        proofs += 1
+        expect(request.position).toEqual({ line: 0, character: 1 })
+        return applies as boolean
+      },
+      hover: async () => ({ markdown: 'hover' }),
+      async completion(request) {
+        if (applies === true && request.document.uri === MOD_UNITS_URI) {
+          expect(request.workspaceDocuments).toEqual([request.document])
+        }
+        if (changeRevision) await servers.invalidate()
+        return {
+          items: [
+            { label: request.workspaceContext?.modContext?.revision ?? 'standalone', kind: 'field' },
+          ],
+          isIncomplete: false,
+        }
+      },
+    }
+    const workspace = await languageWorkspace(provider, () => {}, servers, {
+      documentSource: {
+        async snapshot() {
+          snapshots += 1
+          return { documents: [], isComplete: false }
+        },
+      },
+    })
+    try {
+      await workspace.synchronize({
+        languageId: 'sc2-data',
+        document: document(MOD_UNITS_URI, '<edited/>'),
+      })
+      const request = { uri: MOD_UNITS_URI, documentVersion: 1, position: { line: 0, character: 1 } }
+      for (const semanticContextPolicy of ['fresh', 'cached'] as const) {
+        expect(await workspace.completion({ ...request, semanticContextPolicy })).toMatchObject({
+          items: [{ label: '1' }],
+        })
+      }
+      expect(snapshots).toBe(0)
+      expect(chain.changes).toHaveLength(1)
+      expect(proofs).toBe(2)
+      expect(await workspace.hover(request)).toMatchObject({ markdown: 'hover' })
+      expect(proofs).toBe(2)
+      expect(snapshots).toBe(0)
+      applies = false
+      await workspace.completion(request)
+      expect(snapshots).toBe(1)
+      applies = 'invalid'
+      await expect(workspace.completion(request)).rejects.toThrow(
+        'invalid ModContext completion applicability',
+      )
+      expect(snapshots).toBe(1)
+      applies = true
+      const standalone = 'file:///C:/Other/UnitData.xml'
+      await workspace.synchronize({
+        languageId: 'sc2-data',
+        document: document(standalone, '<Catalog/>'),
+      })
+      expect(await workspace.completion({ ...request, uri: standalone })).toMatchObject({
+        items: [{ label: 'standalone' }],
+      })
+      expect(snapshots).toBe(2)
+      changeRevision = true
+      await expect(workspace.completion(request)).rejects.toThrow('operation cancelled')
+      expect(snapshots).toBe(2)
+    } finally {
+      await workspace.shutdown()
+    }
+  }, 30_000)
+
   it('places a document in the layer that holds it, the opened mod on disk writable', () => {
     const chain = server()
     const servers = createLanguageModContexts({ contexts: [chain.context] })

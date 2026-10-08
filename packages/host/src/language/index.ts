@@ -286,6 +286,11 @@ export const LANGUAGE_DOCUMENT_CONTRACT_DEFINITION: ServiceContractDefinitionSpe
           optional: true,
           signal: Object.freeze({ arg: 0, key: 'signal' }),
         }),
+        modContextCompletionApplies: Object.freeze({
+          kind: 'value',
+          optional: true,
+          signal: Object.freeze({ arg: 0, key: 'signal' }),
+        }),
         referenceIndexApplies: Object.freeze({
           kind: 'value',
           optional: true,
@@ -579,8 +584,9 @@ function isLanguageProvider(value: unknown): value is LanguageProvider {
     record['languageIds'].every(item => typeof item === 'string') &&
     (modContextFeatures === undefined ||
       (Array.isArray(modContextFeatures) &&
-        modContextFeatures.length <= 1 &&
-        modContextFeatures.every(item => item === 'hover'))) &&
+        modContextFeatures.length <= 2 &&
+        new Set(modContextFeatures).size === modContextFeatures.length &&
+        modContextFeatures.every(item => item === 'hover' || item === 'completion'))) &&
     (documentLocalFeatures === undefined ||
       (Array.isArray(documentLocalFeatures) &&
         documentLocalFeatures.length <= 3 &&
@@ -597,6 +603,8 @@ function isLanguageProvider(value: unknown): value is LanguageProvider {
     (semanticInputs === undefined || validProviderSemanticInputs(semanticInputs)) &&
     (record['completionContext'] === undefined ||
       typeof record['completionContext'] === 'function') &&
+    (record['modContextCompletionApplies'] === undefined ||
+      typeof record['modContextCompletionApplies'] === 'function') &&
     (record['referenceIndexApplies'] === undefined ||
       typeof record['referenceIndexApplies'] === 'function') &&
     (semanticContextRequirements === undefined ||
