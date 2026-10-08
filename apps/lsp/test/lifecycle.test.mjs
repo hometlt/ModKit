@@ -12,6 +12,7 @@ function harness({
   blockDiagnostics = false,
   blockAllDiagnostics = false,
   blockCompletion = false,
+  completionItems = [],
 } = {}) {
   const handlers = new Map()
   const calls = []
@@ -117,7 +118,11 @@ function harness({
         request.signal.aborted,
       ])
       if (blockDiagnostics) calls.push(['completion-documents', [...current.keys()]])
-      return { items: [], isIncomplete: false }
+      return { items: completionItems, isIncomplete: false }
+    },
+    resolveCompletion: async request => {
+      calls.push(['resolve-completion', request.item])
+      return { ...request.item, documentation: `${request.item.documentation ?? ''}\nResolved` }
     },
     hover: async request => ({ markdown: String(request.documentVersion) }),
     documentSymbols: async request => {
@@ -241,6 +246,59 @@ test('queued notifications retain their own text/version and close before reopen
       ['close', uri],
       ['open', uri, 1, 'reopened'],
     ])
+  } finally {
+    await h.server.close()
+  }
+})
+
+test('completion sends one description and reconstructs the exact provider item on resolve', async () => {
+  const range = { start: { line: 0, character: 0 }, end: { line: 0, character: 2 } }
+  const item = {
+    label: 'icon', kind: 'file', detail: 'texture asset',
+    documentation: 'Full documentation for the selected texture. '.repeat(2048),
+    insertText: 'Assets/icon.dds', insertTextFormat: 'plain-text', replacementRange: range,
+    sortText: '0_icon', filterText: 'Assets/icon', preselect: true, commitCharacters: ['"'],
+    retrigger: true, deprecated: true, asset: { path: 'Assets/icon.dds' },
+  }
+  const h = harness({ withCompletion: true, completionItems: [item] })
+  h.open(1, 'one')
+  h.release()
+  try {
+    const answer = await h.request('onCompletion', {
+      textDocument: { uri }, position: { line: 0, character: 1 },
+    })
+    const native = answer.items[0]
+    assert.equal(native.detail, item.detail)
+    assert.deepEqual(native.documentation, { kind: 'markdown', value: item.documentation })
+    assert.deepEqual(native.textEdit, { range, newText: item.insertText })
+    // Descriptions stay visible even for clients that never call resolve. They no longer occupy
+    // the opaque metadata a second time; identity, edits and provider-owned assets remain there.
+    assert.ok(Buffer.byteLength(JSON.stringify(answer)) < Buffer.byteLength(item.documentation) + 1600)
+    const resolved = await h.request('onCompletionResolve', native)
+    assert.deepEqual(h.calls.find(call => call[0] === 'resolve-completion')[1], item)
+    assert.equal(resolved.documentation.value, `${item.documentation}\nResolved`)
+    assert.deepEqual(resolved.textEdit, native.textEdit)
+    assert.deepEqual(resolved.data.item.asset, item.asset)
+  } finally {
+    await h.server.close()
+  }
+})
+
+test('completion resolve accepts string descriptions and legacy metadata-only descriptions', async () => {
+  const item = { label: 'entry', kind: 'value', detail: 'class', documentation: 'full docs' }
+  const h = harness({ withCompletion: true, completionItems: [item] })
+  h.open(1, 'one')
+  h.release()
+  try {
+    const answer = await h.request('onCompletion', {
+      textDocument: { uri }, position: { line: 0, character: 1 },
+    })
+    const native = answer.items[0]
+    await h.request('onCompletionResolve', { ...native, documentation: 'full docs' })
+    assert.deepEqual(h.calls.filter(call => call[0] === 'resolve-completion').at(-1)[1], item)
+    const { detail: _detail, documentation: _documentation, ...legacy } = native
+    await h.request('onCompletionResolve', { ...legacy, data: { ...native.data, item } })
+    assert.deepEqual(h.calls.filter(call => call[0] === 'resolve-completion').at(-1)[1], item)
   } finally {
     await h.server.close()
   }

@@ -172,11 +172,17 @@ const diagnosticOf = (value: LanguageDiagnostic): Diagnostic => ({
  * A language command as an LSP command: the client runs `modkit.runLanguageCommand` with the
  * command itself as its one argument (the Modkit client opens the card, graph or place).
  */
-/** A completion item carries its own request, so completionItem/resolve can ask again. */
+/** A completion item carries its request; displayed descriptions are reused at resolve. */
 interface CompletionResolveData {
   readonly uri: string
   readonly position: Position
   readonly item: LanguageCompletionItem
+}
+
+/** Keep provider-specific identity/edits/assets for resolve without copying displayed descriptions. */
+function completionResolveItem(item: LanguageCompletionItem): LanguageCompletionItem {
+  const { detail: _detail, documentation: _documentation, ...identity } = item
+  return identity
 }
 
 export const LSP_LANGUAGE_COMMAND = 'modkit.runLanguageCommand'
@@ -939,7 +945,7 @@ export function createModkitLanguageServer(
                   data: {
                     uri: params.textDocument.uri,
                     position: params.position,
-                    item,
+                    item: completionResolveItem(item),
                   } satisfies CompletionResolveData,
                 }) satisfies CompletionItem,
             ),
@@ -951,9 +957,15 @@ export function createModkitLanguageServer(
       const data = native.data as CompletionResolveData | undefined
       if (data === undefined || typeof data.uri !== 'string') return native
       await requireFeature(data.uri, 'completion', signal)
+      const documentation =
+        typeof native.documentation === 'string' ? native.documentation : native.documentation?.value
       const value = await options.workspace.resolveCompletion({
         ...positionRequest(data.uri, data.position, signal),
-        item: data.item,
+        item: {
+          ...data.item,
+          ...(native.detail === undefined ? {} : { detail: native.detail }),
+          ...(documentation === undefined ? {} : { documentation }),
+        },
       })
       if (value === undefined) return native
       return {
