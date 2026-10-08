@@ -325,7 +325,7 @@ const fixture = defineLinkedExtension({
       provides: ['common.language/document-analysis'],
       createProvider: (_selection: unknown, context?: { readonly settings?: unknown }) => {
         providerSettings = context?.settings
-        return { value: provider, release: async () => undefined }
+        return { value: providerFactory(), release: async () => undefined }
       },
     },
   },
@@ -333,6 +333,7 @@ const fixture = defineLinkedExtension({
 
 let services: LanguageHostServices
 let providerSettings: unknown
+let providerFactory = (): LanguageProvider => provider
 
 beforeAll(async () => {
   const linked = linkedExtensionInputs([fixture])
@@ -1066,6 +1067,207 @@ describe('language subject completion lifecycle', () => {
     }
   })
 
+  it.each([false, true])(
+    'retains isolated reference indexes across documents (new provider instances: %s)',
+    async fresh => {
+      const original = provider.referenceOccurrences
+      if (original === undefined) throw new Error('the fixture provider publishes occurrences')
+      const asked = new Map<string, number>()
+      provider.referenceOccurrences = request => {
+        asked.set(request.document.uri, (asked.get(request.document.uri) ?? 0) + 1)
+        return original(request)
+      }
+      if (fresh) providerFactory = () => ({ ...provider })
+      const origin = (document: LanguageDocument): LanguageWorkspaceDocumentOrigin => ({
+        uri: document.uri,
+        layerId: 'fixture:workspace',
+        logicalId: document.uri,
+        precedence: 0,
+        sourceRevision: String(document.version),
+        readOnly: false,
+      })
+      const workspace = await openWorkspace(
+        { open: async () => undefined },
+        false,
+        undefined,
+        origin,
+        undefined,
+        'indexed-declaration',
+      )
+      const other = 'file:///workspace/other.lang'
+      try {
+        await workspace.open({
+          ...languageRequest(1),
+          document: { ...languageRequest(1, 'indexed-declaration').document, uri: other },
+        })
+        for (const uri of [DOCUMENT_URI, other, DOCUMENT_URI, other]) {
+          await expect(
+            workspace.definition({ ...completionRequest(), uri }),
+          ).resolves.toMatchObject({
+            locations: [{ uri }],
+          })
+        }
+        expect([...asked.values()]).toEqual([1, 1])
+        for (const maxResults of [1, 8, 1, 8]) {
+          await workspace.definition({ ...completionRequest(), maxResults })
+        }
+        expect([...asked.values()]).toEqual([2, 1])
+        await workspace.change(languageRequest(2, 'indexed-declaration edited'))
+        await workspace.definition({ ...completionRequest(), documentVersion: 2 })
+        await workspace.definition({ ...completionRequest(), uri: other })
+        expect([...asked.values()]).toEqual([3, 2])
+      } finally {
+        provider.referenceOccurrences = original
+        providerFactory = () => provider
+        await workspace.shutdown()
+      }
+    },
+  )
+
+  it('does not retain a reference index beyond the workspace byte allowance', async () => {
+    const original = provider.referenceOccurrences
+    if (original === undefined) throw new Error('the fixture provider publishes occurrences')
+    let asked = 0
+    provider.referenceOccurrences = request => {
+      asked += 1
+      return original(request)
+    }
+    const workspace = await openWorkspace(
+      { open: async () => undefined },
+      false,
+      undefined,
+      document => ({
+        uri: document.uri,
+        layerId: 'workspace',
+        logicalId: 'fixture',
+        precedence: 0,
+        sourceRevision: '1',
+        readOnly: false,
+      }),
+      undefined,
+      'indexed-declaration',
+      { ...budgets, maxInputBytes: 1024n },
+    )
+    try {
+      for (let call = 0; call < 2; call += 1) {
+        await expect(
+          workspace.definition({
+            ...completionRequest(),
+            position: { line: 0, character: call },
+          }),
+        ).resolves.toMatchObject({
+          locations: [{ uri: DOCUMENT_URI }],
+        })
+      }
+      expect(asked).toBe(2)
+    } finally {
+      provider.referenceOccurrences = original
+      await workspace.shutdown()
+    }
+  })
+
+  it('reuses exact navigation answers after index eviction without sharing mutable results', async () => {
+    const original = provider.referenceOccurrences
+    if (original === undefined) throw new Error('the fixture provider publishes occurrences')
+    const asked = new Map<string, number>()
+    provider.referenceOccurrences = request => {
+      asked.set(request.document.uri, (asked.get(request.document.uri) ?? 0) + 1)
+      return original(request)
+    }
+    const workspace = await openWorkspace(
+      { open: async () => undefined },
+      false,
+      undefined,
+      document => ({
+        uri: document.uri,
+        layerId: 'workspace',
+        logicalId: document.uri,
+        precedence: 0,
+        sourceRevision: String(document.version),
+        readOnly: false,
+      }),
+      undefined,
+      'indexed-declaration',
+    )
+    const others = Array.from({ length: 8 }, (_, i) => `file:///workspace/other-${i}.lang`)
+    try {
+      for (const uri of others) {
+        await workspace.open({
+          ...languageRequest(1),
+          document: { ...languageRequest(1, 'indexed-declaration').document, uri },
+        })
+      }
+      const first = await workspace.definition(completionRequest())
+      for (const uri of others) await workspace.definition({ ...completionRequest(), uri })
+      const cached = await workspace.definition(completionRequest())
+      expect(cached).toEqual(first)
+      expect(cached).not.toBe(first)
+      expect(cached?.locations).not.toBe(first?.locations)
+      expect(asked.get(DOCUMENT_URI)).toBe(1)
+      await workspace.definition({ ...completionRequest(), position: { line: 0, character: 1 } })
+      expect(asked.get(DOCUMENT_URI)).toBe(2)
+      await workspace.change(languageRequest(2, 'indexed-declaration edited'))
+      await workspace.definition({ ...completionRequest(), documentVersion: 2 })
+      expect(asked.get(DOCUMENT_URI)).toBe(3)
+    } finally {
+      provider.referenceOccurrences = original
+      await workspace.shutdown()
+    }
+  })
+
+  it('does not publish reference batches returned after invalidation', async () => {
+    const original = provider.referenceOccurrences
+    if (original === undefined) throw new Error('the fixture provider publishes occurrences')
+    let entered = (): void => undefined
+    let finish = (): void => undefined
+    const started = new Promise<void>(resolve => {
+      entered = resolve
+    })
+    const gate = new Promise<void>(resolve => {
+      finish = resolve
+    })
+    let asked = 0
+    provider.referenceOccurrences = async request => {
+      asked += 1
+      if (asked === 1) {
+        entered()
+        await gate
+      }
+      return original(request)
+    }
+    const workspace = await openWorkspace(
+      { open: async () => undefined },
+      false,
+      undefined,
+      document => ({
+        uri: document.uri,
+        layerId: 'workspace',
+        logicalId: 'fixture',
+        precedence: 0,
+        sourceRevision: '1',
+        readOnly: false,
+      }),
+      undefined,
+      'indexed-declaration',
+    )
+    try {
+      const pending = workspace.definition(completionRequest())
+      const cancelled = expect(pending).rejects.toThrow()
+      await started
+      workspace.invalidate('dependency changed')
+      finish()
+      await cancelled
+      await expect(workspace.definition(completionRequest())).resolves.toMatchObject({
+        locations: [{ uri: DOCUMENT_URI }],
+      })
+      expect(asked).toBe(2)
+    } finally {
+      finish()
+      provider.referenceOccurrences = original
+      await workspace.shutdown()
+    }
+  })
+
   it.each([
     {
       name: 'complete dependency context',
@@ -1338,12 +1540,6 @@ describe('language subject completion lifecycle', () => {
     }
   })
 
-
-
-
-
-
-
   it('preserves the bounded reason when semantic input validation fails', async () => {
     const workspace = await openWorkspace(
       { open: async () => undefined },
@@ -1362,7 +1558,6 @@ describe('language subject completion lifecycle', () => {
       await workspace.shutdown()
     }
   })
-
 
   it('changes semantic revision when a host-owned input changes without editing the buffer', async () => {
     let localeRevision = 'locale:enUS:1'

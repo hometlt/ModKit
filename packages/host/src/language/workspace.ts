@@ -1972,22 +1972,28 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
     ),
   )
   const advertisedRoutes = languageProviderRoutes(options.services.inventory)
-  const referenceIndex = createWorkspaceReferenceIndex()
-  /*
-   * The provider whose occurrence batches the reference index last took in full, and for which
-   * snapshot. Batches are a function of the snapshot — its context id and revision digest every
-   * document, origin and semantic input — so asking the same provider again for the same snapshot
-   * would only send, validate and index the same batches once more (tens of megabytes for a mod
-   * closure). Another provider's batches, a new snapshot or an invalidation forget it.
-   */
-  let indexedOccurrences:
-    | Readonly<{
-        provider: LanguageProvider
-        contextId: string
-        contextRevision: string
-        batches: number
-      }>
-    | undefined
+  // Provider instances may answer differently for the primary document or request limits. Keep
+  // their validated indexes apart, rather than replacing the last language's index on every switch.
+  const indexedOccurrences: Readonly<{
+    provider: LanguageProvider
+    documentUri: string
+    contextId: string
+    contextRevision: string
+    maxDocuments: number
+    maxResults: number
+    bytes: number
+    index: ReturnType<typeof createWorkspaceReferenceIndex>
+  }>[] = []
+  let referenceIndexBytes = 0
+  // Full closure indexes can evict one another. Keep small exact-query answers separately so a
+  // repeated navigation does not transfer and rebuild a large index just to find the same span.
+  const referenceAnswers: Readonly<{
+    provider: LanguageProvider
+    key: string
+    serialized: string | undefined
+    bytes: number
+  }>[] = []
+  let referenceAnswerBytes = 0
   const featureControllers = new Set<AbortController>()
   /*
    * Content tokens of the semantic inputs this owner validated. Such an input is a deep-frozen copy
@@ -2058,8 +2064,10 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
 
   const invalidateFeatures = (reason: string): void => {
     workspaceGeneration += 1
-    referenceIndex.clear()
-    indexedOccurrences = undefined
+    indexedOccurrences.length = 0
+    referenceIndexBytes = 0
+    referenceAnswers.length = 0
+    referenceAnswerBytes = 0
     for (const controller of featureControllers) controller.abort(reason)
     featureControllers.clear()
   }
@@ -2458,7 +2466,9 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
                 semanticComplete,
                 ...(modContext === undefined
                   ? {}
-                  : { modContext: { revision: modContext.revision, complete: modContext.complete } }),
+                  : {
+                      modContext: { revision: modContext.revision, complete: modContext.complete },
+                    }),
                 documents: snapshotDocuments.map(document => ({
                   uri: document.uri,
                   version: document.version,
@@ -2905,17 +2915,70 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
       return undefined
     }
     const context = feature.workspaceContext
+    const answerKey = JSON.stringify([
+      feature.document.uri,
+      context.id,
+      context.revision,
+      feature.maxDocuments,
+      feature.maxResults,
+      position.line,
+      position.character,
+      mode,
+      includeDeclaration,
+    ])
+    const answerAt = referenceAnswers.findIndex(
+      answer => answer.provider === provider && answer.key === answerKey,
+    )
+    const answer = referenceAnswers[answerAt]
+    if (answer !== undefined) {
+      referenceAnswers.splice(answerAt, 1)
+      referenceAnswers.push(answer)
+      // Decode an owner-produced answer so a caller cannot mutate a retained result.
+      return answer.serialized === undefined
+        ? undefined
+        : (JSON.parse(answer.serialized) as LanguageLocationList)
+    }
+    const retainAnswer = (value: LanguageLocationList | undefined): typeof value => {
+      const serialized = value === undefined ? undefined : JSON.stringify(value)
+      const bytes = 256 + 2 * (answerKey.length + (serialized?.length ?? 0))
+      const budget = Math.min(sourceCaptureMaxBytes, 1_024 * 1_024)
+      if (bytes > budget) return value
+      const priorAt = referenceAnswers.findIndex(
+        prior => prior.provider === provider && prior.key === answerKey,
+      )
+      const prior = referenceAnswers[priorAt]
+      if (prior !== undefined) {
+        referenceAnswers.splice(priorAt, 1)
+        referenceAnswerBytes -= prior.bytes
+      }
+      while (referenceAnswers.length >= 128 || referenceAnswerBytes + bytes > budget) {
+        const oldest = referenceAnswers.shift()
+        if (oldest === undefined) break
+        referenceAnswerBytes -= oldest.bytes
+      }
+      referenceAnswers.push({ provider, key: answerKey, serialized, bytes })
+      referenceAnswerBytes += bytes
+      return value
+    }
     const byUri = new Map(feature.workspaceDocuments.map(document => [document.uri, document]))
-    const held =
-      indexedOccurrences !== undefined &&
-      indexedOccurrences.provider === provider &&
-      indexedOccurrences.contextId === context.id &&
-      indexedOccurrences.contextRevision === context.revision
-        ? indexedOccurrences
-        : undefined
+    const heldAt = indexedOccurrences.findIndex(
+      held =>
+        held.provider === provider &&
+        held.documentUri === feature.document.uri &&
+        held.contextId === context.id &&
+        held.contextRevision === context.revision &&
+        held.maxDocuments === feature.maxDocuments &&
+        held.maxResults === feature.maxResults,
+    )
+    const held = indexedOccurrences[heldAt]
+    const referenceIndex = held?.index ?? createWorkspaceReferenceIndex()
     if (held === undefined) {
-      indexedOccurrences = undefined
+      const generation = workspaceGeneration
       const batches = await provider.referenceOccurrences(feature)
+      throwIfAborted(feature.signal)
+      if (generation !== workspaceGeneration) {
+        throw new OperationCancelledError('stale language reference occurrences')
+      }
       if (!Array.isArray(batches) || batches.length > feature.maxDocuments) {
         invalidFeature(
           'language provider returned invalid reference occurrence batches',
@@ -2941,18 +3004,55 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         }
         referenceIndex.replace(batch)
       }
-      // Replacing is synchronous, so the index now holds exactly these batches for their sources.
-      indexedOccurrences = Object.freeze({
-        provider,
-        contextId: context.id,
-        contextRevision: context.revision,
-        batches: batches.length,
-      })
-    } else if (held.batches > feature.maxDocuments) {
-      invalidFeature(
-        'language provider returned invalid reference occurrence batches',
-        feature.document.uri,
-      )
+      // Account for retained text and index bookkeeping. Oversized answers remain usable for this
+      // call, but do not stay resident. This uses the existing bounded workspace byte allowance.
+      const bytes =
+        JSON.stringify(batches).length * 2 +
+        referenceIndex.snapshot().occurrences * 192 +
+        batches.length * 256
+      if (bytes <= sourceCaptureMaxBytes) {
+        // Replace stale revisions or a slot filled by a concurrent identical request. Keep distinct
+        // request limits separate so alternating bounded queries can reuse their own valid index.
+        for (let at = indexedOccurrences.length - 1; at >= 0; at -= 1) {
+          const prior = indexedOccurrences[at]
+          if (
+            prior !== undefined &&
+            prior.provider === provider &&
+            prior.documentUri === feature.document.uri &&
+            (prior.contextId !== context.id ||
+              prior.contextRevision !== context.revision ||
+              (prior.maxDocuments === feature.maxDocuments &&
+                prior.maxResults === feature.maxResults))
+          ) {
+            referenceIndexBytes -= prior.bytes
+            indexedOccurrences.splice(at, 1)
+          }
+        }
+        while (
+          indexedOccurrences.length >= 8 ||
+          referenceIndexBytes + bytes > sourceCaptureMaxBytes
+        ) {
+          const oldest = indexedOccurrences.shift()
+          if (oldest === undefined) break
+          referenceIndexBytes -= oldest.bytes
+        }
+        indexedOccurrences.push(
+          Object.freeze({
+            provider,
+            documentUri: feature.document.uri,
+            contextId: context.id,
+            contextRevision: context.revision,
+            maxDocuments: feature.maxDocuments,
+            maxResults: feature.maxResults,
+            bytes,
+            index: referenceIndex,
+          }),
+        )
+        referenceIndexBytes += bytes
+      }
+    } else {
+      indexedOccurrences.splice(heldAt, 1)
+      indexedOccurrences.push(held)
     }
     const sourceLines = feature.document.text.split('\n')
     const cursorOffset =
@@ -2976,14 +3076,14 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         const r = (right.source.span as Readonly<Record<string, unknown>>)['utf16Length'] as number
         return l - r
       })[0]
-    if (atCursor === undefined) return undefined
+    if (atCursor === undefined) return retainAnswer(undefined)
     const occurrences = referenceIndex.occurrences(atCursor.target)
     let selected: readonly Pick<ReferenceOccurrence, 'source' | 'role'>[]
     if (mode === 'definition') {
       const resolution = referenceIndex.resolveIndexed(atCursor.target)
       // An occurrence index may recognize a cross-language reference before it owns the target's
       // declaration. Let the provider's direct definition resolver answer that case.
-      if (resolution.state !== 'resolved') return undefined
+      if (resolution.state !== 'resolved') return retainAnswer(undefined)
       selected = [...[resolution.declaration], ...resolution.shadowedDeclarations].map(item => ({
         source: item.source,
         role: 'declaration' as const,
@@ -2995,11 +3095,11 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
       const range = occurrenceRange(item as ReferenceOccurrence, document)
       return range === undefined ? [] : [{ uri: item.source.uri, range }]
     })
-    return {
+    return retainAnswer({
       locations: locations.slice(0, feature.maxResults),
       isIncomplete:
         locations.length > feature.maxResults || !referenceIndex.snapshot().semanticComplete,
-    }
+    })
   }
 
   return Object.freeze({

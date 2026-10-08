@@ -91,6 +91,9 @@ const declarationOf = (occurrence: ReferenceOccurrence): ResolvedReferenceDeclar
 export function createWorkspaceReferenceIndex(): WorkspaceReferenceIndex {
   const membership = createReferenceIndex()
   const byDocument = new Map<string, readonly ReferenceOccurrence[]>()
+  // Keep each document's validated occurrences grouped by target. A query should visit the
+  // matching occurrences, not re-encode every target in a large catalog or script file.
+  const targetsByDocument = new Map<string, ReadonlyMap<string, readonly ReferenceOccurrence[]>>()
   const completenessByDocument = new Map<string, boolean>()
   let contextId: string | undefined
   let contextRevision: string | undefined
@@ -100,6 +103,7 @@ export function createWorkspaceReferenceIndex(): WorkspaceReferenceIndex {
   const clear = (): void => {
     membership.clear()
     byDocument.clear()
+    targetsByDocument.clear()
     completenessByDocument.clear()
     contextId = undefined
     contextRevision = undefined
@@ -109,12 +113,10 @@ export function createWorkspaceReferenceIndex(): WorkspaceReferenceIndex {
 
   const indexed = (target: ReferenceTargetAddress): readonly ReferenceOccurrence[] => {
     if (contextId === undefined) return Object.freeze([])
-    const key = `${contextId}\0${referenceTargetKey(target)}`
+    const targetKey = referenceTargetKey(target)
+    const key = `${contextId}\0${targetKey}`
     return Object.freeze(
-      membership
-        .referencing(key)
-        .flatMap(uri => byDocument.get(uri) ?? [])
-        .filter(occurrence => referenceTargetKey(occurrence.target) === referenceTargetKey(target)),
+      membership.referencing(key).flatMap(uri => targetsByDocument.get(uri)?.get(targetKey) ?? []),
     )
   }
 
@@ -168,23 +170,33 @@ export function createWorkspaceReferenceIndex(): WorkspaceReferenceIndex {
       if (contextRevision !== undefined && contextRevision !== batch.contextRevision) {
         membership.clear()
         byDocument.clear()
+        targetsByDocument.clear()
         completenessByDocument.clear()
         generation += 1
       }
       contextRevision = batch.contextRevision
       const frozen = Object.freeze(batch.occurrences.map(item => Object.freeze({ ...item })))
+      const byTarget = new Map<string, ReferenceOccurrence[]>()
+      for (const occurrence of frozen) {
+        const key = referenceTargetKey(occurrence.target)
+        const group = byTarget.get(key)
+        if (group === undefined) byTarget.set(key, [occurrence])
+        else group.push(occurrence)
+      }
       byDocument.set(batch.sourceUri, frozen)
+      targetsByDocument.set(batch.sourceUri, byTarget)
       completenessByDocument.set(batch.sourceUri, batch.semanticComplete)
       semanticComplete = [...completenessByDocument.values()].every(Boolean)
       membership.set(
         batch.sourceUri,
-        frozen.map(item => `${batch.contextId}\0${referenceTargetKey(item.target)}`),
+        [...byTarget.keys()].map(key => `${batch.contextId}\0${key}`),
       )
       generation += 1
     },
     remove(sourceUri) {
       membership.remove(sourceUri)
       byDocument.delete(sourceUri)
+      targetsByDocument.delete(sourceUri)
       completenessByDocument.delete(sourceUri)
       semanticComplete =
         completenessByDocument.size > 0 && [...completenessByDocument.values()].every(Boolean)

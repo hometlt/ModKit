@@ -57,6 +57,30 @@ const batch = (
 })
 
 describe('workspace typed reference index', () => {
+  it('selects only the requested target and removes replaced document groups', () => {
+    const index = createWorkspaceReferenceIndex()
+    const first = batch('workspace-a', 'r1', 'file:///a.xml', 1, 'reference')
+    const marine = first.occurrences[0]
+    if (marine === undefined) throw new Error('fixture needs an occurrence')
+    const medic = { ...marine, target: { ...marine.target, id: 'Medic' } }
+    index.replace({ ...first, occurrences: [marine, medic, marine] })
+    index.replace(batch('workspace-a', 'r1', 'file:///b.xml', 1, 'reference'))
+    expect(index.occurrences(marine.target).map(item => item.source.uri)).toEqual([
+      'file:///a.xml',
+      'file:///a.xml',
+      'file:///b.xml',
+    ])
+    expect(index.occurrences(medic.target)).toEqual([medic])
+    index.replace({ ...first, occurrences: [medic] })
+    expect(index.occurrences(marine.target).map(item => item.source.uri)).toEqual(['file:///b.xml'])
+    index.remove(first.sourceUri)
+    expect(index.occurrences(medic.target)).toEqual([])
+    expect(index.snapshot()).toMatchObject({ documents: 1, targets: 1, occurrences: 1 })
+    index.clear()
+    expect(index.occurrences(marine.target)).toEqual([])
+    expect(index.snapshot()).toMatchObject({ documents: 0, targets: 0, occurrences: 0 })
+  })
+
   it('keeps occurrences, selects the strongest declaration and reports shadowing', () => {
     const index = createWorkspaceReferenceIndex()
     index.replace(batch('workspace-a', 'r1', 'content://base/unit.xml', 0, 'declaration'))
