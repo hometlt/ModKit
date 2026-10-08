@@ -1011,6 +1011,58 @@ describe('language subject completion lifecycle', () => {
     }
   })
 
+  it('skips typed indexing only when the owner proves the position is outside its occurrences', async () => {
+    const original = provider.referenceOccurrences!
+    const occurrences = vi.fn(original)
+    provider.referenceOccurrences = occurrences
+    const applies = vi.fn(async (request: { document: LanguageDocument }) =>
+      request.document.text.startsWith('indexed-'),
+    )
+    provider.referenceIndexApplies = applies
+    const workspace = await openWorkspace(
+      { open: async () => undefined },
+      false,
+      undefined,
+      document => ({
+        uri: document.uri,
+        layerId: 'fixture:workspace',
+        logicalId: 'main.lang',
+        precedence: 0,
+        sourceRevision: String(document.version),
+        readOnly: false,
+      }),
+    )
+    try {
+      await workspace.definition(completionRequest())
+      await workspace.definition(completionRequest())
+      expect(applies).toHaveBeenCalledTimes(1)
+      expect(occurrences).not.toHaveBeenCalled()
+      await workspace.change(languageRequest(2, 'indexed-declaration'))
+      const value = await workspace.definition({ ...completionRequest(), documentVersion: 2 })
+      expect(value?.locations[0]?.uri).toBe(DOCUMENT_URI)
+      expect(applies).toHaveBeenCalledTimes(2)
+      expect(occurrences).toHaveBeenCalledTimes(1)
+    } finally {
+      provider.referenceOccurrences = original
+      delete provider.referenceIndexApplies
+      await workspace.shutdown()
+    }
+  })
+
+  it('rejects an invalid applicability answer rather than silently dropping typed references', async () => {
+    provider.referenceIndexApplies = async () => 'false' as unknown as boolean
+    const workspace = await openWorkspace({ open: async () => undefined })
+    try {
+      await expect(workspace.definition(completionRequest())).rejects.toMatchObject({
+        code: 'x3.host/language-provider-failed',
+        context: { error: 'language provider returned an invalid reference index applicability' },
+      })
+    } finally {
+      delete provider.referenceIndexApplies
+      await workspace.shutdown()
+    }
+  })
+
   it('asks the provider for occurrences once per snapshot and again after an edit', async () => {
     const original = provider.referenceOccurrences
     if (original === undefined) throw new Error('the fixture provider publishes occurrences')

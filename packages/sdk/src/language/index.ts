@@ -650,6 +650,14 @@ export interface LanguageProvider {
   referenceOccurrences?(
     request: LanguageFeatureRequest,
   ): Promise<readonly ReferenceOccurrenceBatch[]>
+  /**
+   * Optional local proof that this position can name an occurrence emitted by referenceOccurrences.
+   * False skips only the typed index; normal provider definition/references still run. Return true
+   * whenever uncertain. Omission preserves full indexing. This must use the same occurrence owner.
+   */
+  referenceIndexApplies?(
+    request: Pick<LanguagePositionRequest, 'document' | 'position' | 'signal'>,
+  ): Promise<boolean>
 }
 
 /** JSON-safe route advertised by a provider contribution. */

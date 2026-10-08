@@ -285,6 +285,11 @@ export const LANGUAGE_DOCUMENT_CONTRACT_DEFINITION: ServiceContractDefinitionSpe
           optional: true,
           signal: Object.freeze({ arg: 0, key: 'signal' }),
         }),
+        referenceIndexApplies: Object.freeze({
+          kind: 'value',
+          optional: true,
+          signal: Object.freeze({ arg: 0, key: 'signal' }),
+        }),
         hover: Object.freeze({
           kind: 'value',
           optional: true,
@@ -586,6 +591,8 @@ function isLanguageProvider(value: unknown): value is LanguageProvider {
     (semanticInputs === undefined || validProviderSemanticInputs(semanticInputs)) &&
     (record['completionContext'] === undefined ||
       typeof record['completionContext'] === 'function') &&
+    (record['referenceIndexApplies'] === undefined ||
+      typeof record['referenceIndexApplies'] === 'function') &&
     (semanticContextRequirements === undefined ||
       validProviderSemanticContextRequirements(semanticContextRequirements)) &&
     typeof record['analyze'] === 'function'

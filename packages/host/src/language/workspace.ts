@@ -2974,6 +2974,21 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
       referenceAnswerBytes += bytes
       return value
     }
+    if (provider.referenceIndexApplies !== undefined) {
+      const applies = await provider.referenceIndexApplies({
+        document: feature.document,
+        position,
+        ...(feature.signal === undefined ? {} : { signal: feature.signal }),
+      })
+      throwIfAborted(feature.signal)
+      if (typeof applies !== 'boolean') {
+        invalidFeature(
+          'language provider returned an invalid reference index applicability',
+          feature.document.uri,
+        )
+      }
+      if (!applies) return retainAnswer(undefined)
+    }
     const byUri = new Map(feature.workspaceDocuments.map(document => [document.uri, document]))
     const heldAt = indexedOccurrences.findIndex(
       held =>
