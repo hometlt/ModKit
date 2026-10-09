@@ -360,11 +360,15 @@ const resolvedSubjectIdSchema = z.string().min(1).max(512)
 const openResolvedWorkspaceInput = z
   .object({
     gameId: z.string().min(1).max(128),
-    directories: z.array(z.string().min(1).max(4_096)).min(1).max(16),
+    directories: z.array(z.string().min(1).max(4_096)).min(1).max(16).optional(),
+    target: z.string().min(1).max(4_096).optional(),
     locales: z.array(z.string().min(2).max(16)).min(1).max(8).default(['enUS']),
     maxRequirements: z.number().int().min(1).max(512).default(512),
   })
   .strict()
+  .refine(request => (request.target === undefined) !== (request.directories === undefined), {
+    message: 'provide exactly one of target or directories',
+  })
 const jsonScalar = z.union([z.string().max(65_536), z.number(), z.boolean(), z.null()])
 const proposeResolvedEditInput = z
   .object({
@@ -1143,13 +1147,25 @@ export function createModkitMcpServer(host: ModkitMcpHostPort): ModkitMcpServerR
     {
       title: 'Open a resolved mod workspace for editing',
       description:
-        'Resolve sibling mod directories (dependencies first, active mod last) into one host-owned data workspace whose resolved subjects can be edited. Requires --allow-edits. Close it with close_subject.',
+        'Open a package target using its loader-owned dependency chain, or explicit sibling directories (dependencies first, active mod last), as one host-owned editable data workspace. Provide exactly one mode. Requires --allow-edits. Close it with close_subject.',
       inputSchema: openResolvedWorkspaceInput,
       outputSchema: envelopeSchema,
       annotations: { ...readOnlyAnnotations, idempotentHint: false },
     },
     (request, context) =>
-      safeTool(() => runtime.openResolvedWorkspace(request, context.mcpReq.signal)),
+      safeTool(() =>
+        runtime.openResolvedWorkspace(
+          {
+            gameId: request.gameId,
+            locales: request.locales,
+            maxRequirements: request.maxRequirements,
+            ...(request.target === undefined
+              ? { directories: request.directories! }
+              : { target: request.target }),
+          },
+          context.mcpReq.signal,
+        ),
+      ),
   )
   server.registerTool(
     'modkit.propose_resolved_edit',

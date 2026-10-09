@@ -52,9 +52,12 @@ beforeAll(async () => {
   await mkdir(join(dir('C'), 'Base.SC2Data', 'GameData'), { recursive: true })
   await writeFile(join(dir('A'), UNIT_DATA), baseXml)
   await writeFile(join(dir('C'), UNIT_DATA), activeXml)
+  const receiptPath = process.env.MODKIT_TEST_SC2_INSTALLED_RECEIPT
+  const extensions = receiptPath === undefined ? [resolve(blizzard, 'starcraft2')]
+    : (JSON.parse(await readFile(receiptPath, 'utf8')) as { roots: readonly { root: string }[] }).roots.map(item => item.root)
   host = await createHostMcpPort({
     roots: [root],
-    extensions: [resolve(blizzard, 'starcraft2')],
+    extensions,
     allowEdits: true,
   })
   app = createModkitMcpServer(host)

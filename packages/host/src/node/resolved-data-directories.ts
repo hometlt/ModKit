@@ -1,21 +1,30 @@
 /**
- * Resolved-data editing over loose mod directories.
+ * [MK] Core resolved-data editing over loader-owned package chains or explicit loose directories.
  *
  * A value a user sees on a resolved subject may come from any mod in the dependency chain, so a
  * write to it is a workspace-level change: the game's resolved-data provider picks (or asks for) the
  * destination document in the active mod, the host binds that choice to exact file targets, the
  * format writer turns it into a plan, and the one host commit coordinator applies it. Nothing here
- * knows a game; the provider is selected by `gameId`.
+ * knows a game; the provider is selected by `gameId`. Canonical inputs use the existing Data
+ * workspace adapter; only the active confined host directory is writable. Physical bytes must
+ * match context reads, read-only dependencies retain content-hash guards, and saved inputs refresh
+ * before prepare/commit/replay. Refusal/close releases contexts, resources, selector, writers and
+ * history backend. Packed active packages are not writable here; provider analysis still owns its
+ * bounded workspace snapshot and is not yet projected from the loader's retained Data session.
  */
 
 import { createHash, randomUUID } from 'node:crypto'
-import { readdir } from 'node:fs/promises'
-import { basename, dirname, join, relative, resolve, sep } from 'node:path'
+import { readdir, realpath } from 'node:fs/promises'
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 
 import { canonicalJsonStringify, ModkitError, type Diagnostic } from '@modkit/core'
 import {
   resolveModWorkspaceGraph,
+  revisionId,
   type AssetEditPlan,
+  type ArtifactNamespaceSource,
+  type ModWorkspaceLock,
+  type ResourceSessionPort,
   type ChangeSet,
   type CommitCoordinator,
   type DataEditIntent,
@@ -28,6 +37,11 @@ import {
   type Writer,
 } from '@modkit/sdk'
 import {
+  HOST_LAYER_SOURCE_ID,
+  modContextLayerPathKey,
+  type ModContext,
+} from '@modkit/vfs/content-sources'
+import {
   analyzeResolvedDataWorkspace,
   createResolvedDataSubjectSelectorLease,
   type DataWorkspaceFileLister,
@@ -35,13 +49,14 @@ import {
   type ResolvedDataGraphIsolationPlanRequest,
   type ResolvedDataWorkspaceLimits,
 } from '../data/index.js'
-import { createCommitCoordinator, createGrantSnapshot } from '../editing.js'
+import { createCommitCoordinator, createGrantSnapshot, type EditingBackend } from '../editing.js'
 import {
   createEvidenceRegistry,
   serviceProviderFidelityEvidenceRecord,
 } from '../editing-evidence.js'
 import type { CompanionOrigin } from '../input-resolution.js'
 import { createResourceSession } from '../resource-session.js'
+import { createModContextDataWorkspaceInputs } from '../mod-context-data-workspace.js'
 import { createHostServiceResolver } from '../service-leases.js'
 import { createFilesystemCompanionOrigin } from './companion-origin.js'
 import { openDirectoryArtifactSource } from './directory-artifact-source.js'
@@ -60,6 +75,196 @@ export interface OpenDirectoryResolvedDataWorkspaceRequest {
   readonly limits: ResolvedDataWorkspaceLimits
   readonly budgets: ResourceBudget
   readonly signal?: AbortSignal
+}
+
+/** Canonical package chain; this function owns context disposal, including refusal and failure. */
+export interface OpenModContextResolvedDataWorkspaceRequest extends Omit<
+  OpenDirectoryResolvedDataWorkspaceRequest,
+  'directories'
+> {
+  readonly context: ModContext
+  /** Reopen the same target/settings/session through its owner to verify current dependency order. */
+  readonly reopenContext: () => Promise<ModContext>
+}
+
+/**
+ * Keep loader-owned order/provenance, bind only the active loose package to the existing Node
+ * editing authority. Packed dependencies stay read-only. A stale/unsaved context read is refused
+ * before it can acquire a physical revision; namespace confinement also rejects escaping links.
+ */
+export async function openModContextResolvedDataWorkspace(
+  request: OpenModContextResolvedDataWorkspaceRequest,
+): ReturnType<typeof openDirectoryResolvedDataWorkspace> {
+  let disposeInputs: (() => Promise<void>) | undefined
+  try {
+    request.signal?.throwIfAborted()
+    if (request.context.gameId !== request.gameId)
+      throw new TypeError('context game does not match the requested workspace')
+    if (request.context.invalidate === undefined)
+      throw new TypeError(
+        'resolved editing requires saved-context invalidation for dependency revision guards',
+      )
+    const active = request.context.layers.at(-1)
+    if (
+      active?.role !== 'primary' ||
+      active.sourceId !== HOST_LAYER_SOURCE_ID ||
+      !isAbsolute(active.sourcePath)
+    ) {
+      throw new ModkitError({
+        code: RESOLVED_DATA_EDIT_UNAVAILABLE,
+        message: 'resolved editing requires an active package directory on the host filesystem',
+      })
+    }
+    const directory = await realpath(active.sourcePath)
+    const grantedRoots = await Promise.all(request.roots.map(root => realpath(root)))
+    if (
+      !grantedRoots.some(root => {
+        const child = relative(root, directory)
+        return (
+          child === '' || (child !== '..' && !child.startsWith(`..${sep}`) && !isAbsolute(child))
+        )
+      })
+    )
+      throw new TypeError('resolved workspace package must be inside configured roots')
+    const rootSource = await openDirectoryArtifactSource(directory, {
+      fileUriPolicy: 'physical',
+      ...(request.signal === undefined ? {} : { signal: request.signal }),
+    })
+    const namespace = await rootSource.openNamespace(request.signal)
+    disposeInputs = async () => {
+      await Promise.allSettled([namespace.release(), request.context.dispose()])
+    }
+    // Only sources actually read through this context can become dependency guards. Hashes bind
+    // saved bytes, rather than treating a context identity or an overlay epoch as a file revision.
+    const guards = new Map<string, { layerId: string; path: string }>()
+    let bindingFailure: unknown
+    const contentRevision = (bytes: Uint8Array) =>
+      revisionId(`content-hash.sha256:${createHash('sha256').update(bytes).digest('hex')}`)
+    /** Source addresses/order are authoritative; opaque layer ids need not survive reopening. */
+    const topologyOf = (context: ModContext) =>
+      canonicalJsonStringify({
+        gameId: context.gameId,
+        unresolved: [...context.unresolved],
+        layers: context.layers.map(layer => ({
+          sourceId: layer.sourceId,
+          path: modContextLayerPathKey(layer, layer.sourcePath),
+          caseSensitive: layer.caseSensitive === true,
+          role: layer.role,
+          provenance: layer.provenance,
+          ...(layer.kind === undefined ? {} : { kind: layer.kind }),
+          ...(layer.fingerprint === undefined ? {} : { fingerprint: layer.fingerprint }),
+        })),
+      })
+    const topology = topologyOf(request.context)
+    const inputs = createModContextDataWorkspaceInputs(request.context, {
+      async sourceBinding(layerId, path, virtual, signal) {
+        const bytes = await virtual.read(0n, Number(virtual.size), signal)
+        if (layerId !== active.id) {
+          guards.set(virtual.ref.id, { layerId, path })
+          return Object.freeze({
+            value: Object.freeze({ ...virtual, revision: contentRevision(bytes) }),
+            release: async () => undefined,
+          })
+        }
+        let lease: Awaited<ReturnType<typeof namespace.value.open>> | undefined
+        try {
+          lease = await namespace.value.open(path, signal)
+          const source = lease.value
+          if (source.kind !== 'bytes' || source.size !== BigInt(bytes.byteLength))
+            throw new Error('context bytes differ from the saved editing source')
+          const actual = await source.read(0n, bytes.byteLength, signal)
+          if (actual.byteLength !== bytes.byteLength || Buffer.compare(actual, bytes) !== 0) {
+            throw new Error('context bytes differ from the saved editing source')
+          }
+          return lease
+        } catch (error) {
+          bindingFailure = error
+          await lease?.release()
+          throw error
+        }
+      },
+    })
+    disposeInputs = async () => {
+      await Promise.allSettled([
+        inputs.resources.dispose(),
+        namespace.release(),
+        request.context.dispose(),
+      ])
+      guards.clear()
+    }
+    /** Revision-only capability: the common coordinator never receives write authority here. */
+    const guardBackend: EditingBackend = {
+      profile: {
+        backendId: 'mod-context-read-guards',
+        guarantees: ['best-effort'],
+        supportsPrepare: false,
+        supportsRollback: false,
+        supportsJournal: false,
+        supportsRename: false,
+      },
+      writable: false,
+      async currentRevision(target, signal) {
+        signal?.throwIfAborted()
+        const binding = guards.get(target.ownerSource.id)
+        if (binding === undefined) throw new TypeError('unknown mod-context revision guard')
+        const bytes = await request.context.read(binding.layerId, binding.path, 64 * 1024 * 1024)
+        signal?.throwIfAborted()
+        const revision = contentRevision(bytes)
+        return {
+          bindings: { [target.ownerSource.id]: revision },
+          compositionFingerprint: canonicalJsonStringify({
+            topology: 'single',
+            bindingId: target.ownerSource.id,
+            source: { id: target.ownerSource.id, uri: target.ownerSource.uri },
+            revision,
+          }),
+        }
+      },
+      async apply() {
+        throw new TypeError('mod-context dependency guards are read-only')
+      },
+    }
+    return await openResolvedDataWorkspaceAuthority(
+      { ...request, roots: grantedRoots },
+      {
+        lock: inputs.workspace,
+        resources: inputs.resources,
+        listFiles: inputs.listFiles,
+        rootSource,
+        activeSourcePath: inputs.workspace.loadOrder.at(-1)!.sourcePath,
+        dispose: disposeInputs,
+        guardBackendFor: sourceId => (guards.has(sourceId) ? guardBackend : undefined),
+        // Re-read saved inputs at every transaction boundary, including missed watcher events.
+        beforeRevisionChecks: async () => {
+          await request.context.invalidate!()
+          const current = await request.reopenContext()
+          try {
+            if (topologyOf(current) !== topology)
+              throw new ModkitError({
+                code: 'x3.host/resolved-data-context-chain-changed',
+                message:
+                  'The package dependency chain changed. Reopen the resolved workspace before editing or replaying history.',
+              })
+          } finally {
+            await current.dispose()
+          }
+        },
+        verifyReadBindings() {
+          if (bindingFailure !== undefined)
+            throw new ModkitError({
+              code: 'x3.host/resolved-data-source-binding-failed',
+              message:
+                'The package context could not bind its saved bytes to confined editing sources. Refresh and reopen the workspace.',
+              cause: bindingFailure,
+            })
+        },
+      },
+    )
+  } catch (error) {
+    if (disposeInputs === undefined) await request.context.dispose()
+    else await disposeInputs()
+    throw error
+  }
 }
 
 export type ResolvedDataChangeRequest =
@@ -93,6 +298,8 @@ export interface DirectoryResolvedDataWorkspace {
   readonly snapshotId: string
   readonly activeRootId: string
   readonly rootIds: readonly string[]
+  /** Confined logical prefix for explicit targetDocument paths in the active mod. */
+  readonly activeSourcePath?: string
   readonly selector: SubjectSelectorSource
   readonly editing: ResolvedDataEditingAuthority
   readonly diagnostics: readonly Diagnostic[]
@@ -178,25 +385,6 @@ export async function openDirectoryResolvedDataWorkspace(
   const rootSource = await openDirectoryArtifactSource(active)
   // The session is pinned to the active mod's namespace revision observed at open.
   const resources = createResourceSession({ origin, revision: rootSource.revision })
-  const rootTarget = {
-    targetId: rootSource.ref.id,
-    subjectUri: rootSource.ref.uri,
-    ownerSource: rootSource.ref,
-    semanticPath: [],
-    expectedRevision: {
-      bindings: { [rootSource.ref.id]: rootSource.revision },
-      namespaceRevision: rootSource.revision,
-      compositionFingerprint: canonicalJsonStringify({
-        topology: 'namespace',
-        root: { id: rootSource.ref.id, uri: rootSource.ref.uri },
-        revision: rootSource.revision,
-      }),
-    },
-  }
-  const readGrant: PermissionGrant = {
-    id: `resolved-directories-read:${randomUUID()}`,
-    classes: [],
-  }
   const directoryOf = new Map(directories.map(directory => [rootIdOf(directory), directory]))
   const listFiles: DataWorkspaceFileLister = async (rootId, prefix, maximum, signal) => {
     const directory = directoryOf.get(rootId)
@@ -219,6 +407,54 @@ export async function openDirectoryResolvedDataWorkspace(
       ? { paths: paths.slice(0, maximum), complete: false }
       : { paths, complete: true }
   }
+  // Both manual chains and loader-owned packages enter the same analyzer/writer/history owner.
+  try {
+    return await openResolvedDataWorkspaceAuthority(request, {
+      lock,
+      resources,
+      listFiles,
+      rootSource,
+      activeSourcePath: basename(active),
+      dispose: () => resources.dispose(),
+    })
+  } catch (error) {
+    await resources.dispose()
+    throw error
+  }
+}
+
+/** One editing implementation for both workspace sources; inputs retain their original authority. */
+async function openResolvedDataWorkspaceAuthority(
+  request: Omit<OpenDirectoryResolvedDataWorkspaceRequest, 'directories'>,
+  inputs: {
+    readonly lock: ModWorkspaceLock
+    readonly resources: ResourceSessionPort
+    readonly listFiles: DataWorkspaceFileLister
+    readonly rootSource: ArtifactNamespaceSource
+    readonly activeSourcePath: string
+    readonly dispose: () => Promise<void>
+    readonly guardBackendFor?: (sourceId: string) => EditingBackend | undefined
+    readonly beforeRevisionChecks?: () => Promise<void>
+    readonly verifyReadBindings?: () => void
+  },
+): ReturnType<typeof openDirectoryResolvedDataWorkspace> {
+  const { lock, resources, listFiles, rootSource } = inputs
+  const rootTarget = {
+    targetId: rootSource.ref.id,
+    subjectUri: rootSource.ref.uri,
+    ownerSource: rootSource.ref,
+    semanticPath: [],
+    expectedRevision: {
+      bindings: { [rootSource.ref.id]: rootSource.revision },
+      namespaceRevision: rootSource.revision,
+      compositionFingerprint: canonicalJsonStringify({
+        topology: 'namespace',
+        root: { id: rootSource.ref.id, uri: rootSource.ref.uri },
+        revision: rootSource.revision,
+      }),
+    },
+  }
+  const readGrant: PermissionGrant = { id: `resolved-workspace-read:${randomUUID()}`, classes: [] }
   const analyzed = await analyzeResolvedDataWorkspace({
     services: request.services,
     grant: readGrant,
@@ -230,12 +466,18 @@ export async function openDirectoryResolvedDataWorkspace(
     limits: request.limits,
     listFiles,
     writableRoots: [
-      { rootId: lock.activeRootId, sourcePath: basename(active), target: rootTarget },
+      { rootId: lock.activeRootId, sourcePath: inputs.activeSourcePath, target: rootTarget },
     ],
     ...(request.signal === undefined ? {} : { signal: request.signal }),
   })
+  try {
+    inputs.verifyReadBindings?.()
+  } catch (error) {
+    if (analyzed.state === 'resolved') await analyzed.release()
+    throw error
+  }
   if (analyzed.state === 'unresolved') {
-    await resources.dispose()
+    await inputs.dispose()
     return { state: 'unresolved', diagnostics: analyzed.diagnostics }
   }
   const selector = createResolvedDataSubjectSelectorLease(analyzed, {
@@ -247,7 +489,7 @@ export async function openDirectoryResolvedDataWorkspace(
   const buildEditChange = analyzed.buildEditChange
   if (selector === undefined || buildEditChange === undefined) {
     await analyzed.release()
-    await resources.dispose()
+    await inputs.dispose()
     return {
       state: 'unresolved',
       diagnostics: [
@@ -350,9 +592,9 @@ export async function openDirectoryResolvedDataWorkspace(
   }
   let grantSnapshot = issue()
   let live = true
-  const coordinator = createCommitCoordinator({
+  const ownerCoordinator = createCommitCoordinator({
     payloads,
-    backendFor: () => backend,
+    backendFor: sourceId => inputs.guardBackendFor?.(sourceId) ?? backend,
     evidenceFor,
     isGrantValid: grant => live && issued.has(grant.snapshotId),
     digest: value =>
@@ -361,6 +603,40 @@ export async function openDirectoryResolvedDataWorkspace(
         .digest('hex'),
     verifyStagedPayload: (ref, signal) => payloads.verify(ref, signal),
   })
+  /** Keep one transaction owner; canonical read guards refresh before its live revision checks. */
+  /** Respect close/cancellation before refreshing a read capability for a live transaction. */
+  const refreshGuardInputs = async (signal?: AbortSignal) => {
+    signal?.throwIfAborted()
+    if (!live)
+      throw new ModkitError({
+        code: RESOLVED_DATA_EDIT_UNAVAILABLE,
+        message: 'the resolved-data workspace is closed',
+      })
+    await inputs.beforeRevisionChecks!()
+    signal?.throwIfAborted()
+  }
+  const coordinator: CommitCoordinator =
+    inputs.beforeRevisionChecks === undefined
+      ? ownerCoordinator
+      : {
+          async prepare(plan, options) {
+            await refreshGuardInputs(options.signal)
+            return ownerCoordinator.prepare(plan, options)
+          },
+          async commit(prepared, options) {
+            await refreshGuardInputs(options.signal)
+            return ownerCoordinator.commit(prepared, options)
+          },
+          async undo(transactionId, options) {
+            await refreshGuardInputs(options.signal)
+            return ownerCoordinator.undo(transactionId, options)
+          },
+          async redo(transactionId, options) {
+            await refreshGuardInputs(options.signal)
+            return ownerCoordinator.redo(transactionId, options)
+          },
+          discardHistory: transactionId => ownerCoordinator.discardHistory(transactionId),
+        }
 
   const planChange = async (
     change: ResolvedDataChangeRequest,
@@ -431,6 +707,7 @@ export async function openDirectoryResolvedDataWorkspace(
       snapshotId: analyzed.snapshot.snapshotId,
       activeRootId: lock.activeRootId,
       rootIds: Object.freeze(lock.loadOrder.map(root => root.rootId)),
+      activeSourcePath: inputs.activeSourcePath,
       selector: selector.value,
       editing: Object.freeze({
         coordinator,
@@ -452,7 +729,7 @@ export async function openDirectoryResolvedDataWorkspace(
         ])
         await Promise.allSettled(writerReleases.map(release => release()))
         await Promise.allSettled([analyzed.release(), backend.dispose(), payloads.dispose()])
-        await resources.dispose()
+        await inputs.dispose()
       },
     }),
   }

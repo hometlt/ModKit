@@ -4,7 +4,8 @@
  * ContentSources owns packages, dependency order and session views; Host owns codecs, resource
  * budgets and transactions. Saved writes refresh those existing contexts, including Undo/Redo.
  * No game parser/model is implemented here. Sessions/subjects and owned services release on close;
- * standalone editing remains bounded and separate from the unfinished canonical editing migration.
+ * Explicit package targets use loader-owned inputs and the same guarded editing authority as
+ * manual directory chains. Retained-model projection for Data analysis remains unfinished.
  */
 import { createHash, randomUUID } from 'node:crypto'
 import { open, realpath, stat } from 'node:fs/promises'
@@ -47,6 +48,7 @@ import {
   createNodeMapPreviewResourcePlanResolver,
   type ModkitOpened,
   openDirectoryResolvedDataWorkspace,
+  openModContextResolvedDataWorkspace,
   withSharedModContexts,
   type DirectoryResolvedDataWorkspace,
   type ResolvedDataChangeRequest,
@@ -273,13 +275,15 @@ export interface McpLanguageSession {
 export type McpResolvedDataWorkspace = DirectoryResolvedDataWorkspace
 export type McpResolvedChange = ResolvedDataChangeRequest
 
-export interface McpResolvedWorkspaceRequest {
+export type McpResolvedWorkspaceRequest = Readonly<{
   readonly gameId: string
-  /** Absolute sibling mod directories in load order; the last one is the writable active mod. */
-  readonly directories: readonly string[]
   readonly locales: readonly string[]
   readonly maxRequirements: number
-}
+}> &
+  (
+    | Readonly<{ directories: readonly string[]; target?: never }>
+    | Readonly<{ target: string; directories?: never }>
+  )
 
 /** A subject's mod context as the game's loader opens it: layers in load order, and what is missing. */
 export interface McpModContext {
@@ -1270,6 +1274,55 @@ export async function createHostMcpPort(
     ...(configuration.allowEdits === true
       ? {
           async openResolvedDataWorkspace(resolvedRequest, signal) {
+            const common = {
+              services: modkit.services,
+              gameId: resolvedRequest.gameId,
+              roots,
+              locales: resolvedRequest.locales,
+              limits: {
+                ...MCP_MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY.limits,
+                maxRequirements: resolvedRequest.maxRequirements,
+              },
+              budgets: mapPreviewBudget,
+              ...(signal === undefined ? {} : { signal }),
+            }
+            if (resolvedRequest.target !== undefined) {
+              if (
+                resolvedRequest.directories !== undefined ||
+                openModContext === undefined ||
+                contentSources?.locateModPackage === undefined
+              ) {
+                throw new TypeError(
+                  'package resolved editing requires configured content sources and exactly one target',
+                )
+              }
+              if (
+                !isAbsolute(resolvedRequest.target) ||
+                !inside(roots, resolve(resolvedRequest.target))
+              ) {
+                throw new TypeError('resolved workspace target must be inside configured roots')
+              }
+              const target = resolve(resolvedRequest.target)
+              if ((await contentSources.locateModPackage(target)).kind !== 'package') {
+                throw new TypeError('resolved workspace target must belong to a package')
+              }
+              const contextRequest = {
+                schemaVersion: 1 as const,
+                target,
+                locales: resolvedRequest.locales,
+                // A saved editing transaction never consumes an editor's unsaved session view.
+                sessionId: `mcp-resolved:${randomUUID()}`,
+                ...(configuration.baseMods === undefined
+                  ? {}
+                  : { baseMods: configuration.baseMods }),
+              }
+              const context = await openModContext(contextRequest)
+              return openModContextResolvedDataWorkspace({ ...common, context,
+                reopenContext: () => openModContext(contextRequest),
+              })
+            }
+            if (resolvedRequest.directories === undefined)
+              throw new TypeError('resolved editing requires target or directories')
             const directories = resolvedRequest.directories.map(directory => {
               if (!isAbsolute(directory) || !inside(roots, resolve(directory))) {
                 throw new TypeError(
@@ -1279,17 +1332,8 @@ export async function createHostMcpPort(
               return resolve(directory)
             })
             return openDirectoryResolvedDataWorkspace({
-              services: modkit.services,
-              gameId: resolvedRequest.gameId,
+              ...common,
               directories,
-              roots,
-              locales: resolvedRequest.locales,
-              limits: {
-                ...MCP_MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY.limits,
-                maxRequirements: resolvedRequest.maxRequirements,
-              },
-              budgets: mapPreviewBudget,
-              ...(signal === undefined ? {} : { signal }),
             })
           },
         }

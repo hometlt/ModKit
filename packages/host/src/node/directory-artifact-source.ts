@@ -29,6 +29,8 @@ import {
 const PATH_ENCODER = new TextEncoder()
 
 export interface DirectoryArtifactSourceOptions {
+  /** Editing inputs use physical file URIs/stat revisions; subject browsing keeps namespace URIs. */
+  readonly fileUriPolicy?: 'namespace' | 'physical'
   /** Unique entries exposed during the lifetime of this source. */
   readonly maxEntries?: number
   /** Maximum logical path depth below the selected directory. */
@@ -242,7 +244,7 @@ export async function openDirectoryArtifactSource(
               })
             }
             const value = await openFileArtifactSource(child.absolute, {
-              uri: childRef.uri,
+              ...(options.fileUriPolicy === 'physical' ? {} : { uri: childRef.uri }),
               ...(options.onRead === undefined ? {} : { onRead: options.onRead }),
               ...(options.onStream === undefined ? {} : { onStream: options.onStream }),
               ...(openSignal === undefined ? {} : { signal: openSignal }),

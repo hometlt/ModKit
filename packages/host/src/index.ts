@@ -230,6 +230,7 @@ export { openModContextLayerSource } from './mod-context-layer-source.js'
 export {
   createModContextDataWorkspaceInputs,
   type ModContextDataWorkspaceInputs,
+  type ModContextDataSourceBinding,
   type ModContextNestedRoot,
 } from './mod-context-data-workspace.js'
 export {

@@ -1,6 +1,7 @@
 import { mkdtemp, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { afterEach, describe, expect, it } from 'vitest'
 import { openDirectoryArtifactSource, openPathArtifactSource } from '@modkit/host/node'
 import { fileSystemRevisionToken } from '@modkit/vfs/providers/file'
@@ -21,6 +22,23 @@ async function fixture(): Promise<string> {
 }
 
 describe('bounded filesystem directory artifact source', () => {
+  it('binds editing files to physical identities and detects same-size external changes', async () => {
+    const directory = await fixture()
+    const source = await openDirectoryArtifactSource(directory, { fileUriPolicy: 'physical' })
+    const namespace = await source.openNamespace()
+    const opened = await namespace.value.open('Triggers')
+    try {
+      expect(opened.value.ref.uri).toBe(pathToFileURL(join(directory, 'Triggers')).href)
+      if (opened.value.kind !== 'bytes') throw new TypeError('expected bytes')
+      await writeFile(join(directory, 'Triggers'), 'changed bytes')
+      await expect(opened.value.read(0n, 13)).rejects.toMatchObject({
+        code: 'x3.host/source-revision-changed',
+      })
+    } finally {
+      await opened.release()
+      await namespace.release()
+    }
+  })
   it('uses the exact filesystem provider revision dialect for directory edits', async () => {
     const directory = await fixture()
     const source = await openDirectoryArtifactSource(directory)

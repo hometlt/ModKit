@@ -1235,6 +1235,32 @@ describe('MCP v2 adapter', () => {
     ])
   })
 
+  it('accepts one explicit resolved workspace source and rejects ambiguous or absent sources before opening', async () => {
+    const requests: unknown[] = []
+    const { client } = await connected({
+      ...fakeHost().host,
+      async openResolvedDataWorkspace(request) {
+        requests.push(request)
+        return { state: 'unresolved', diagnostics: [] }
+      },
+    })
+    for (const source of [{}, { target: 'C:/allowed/package', directories: ['C:/allowed/package'] }]) {
+      const result = await client.callTool({
+        name: 'modkit.open_resolved_workspace', arguments: { gameId: 'fixture/game', ...source },
+      })
+      expect(result.isError).toBe(true)
+    }
+    expect(requests).toEqual([])
+    for (const source of [{ target: 'C:/allowed/package' }, { directories: ['C:/allowed/package'] }]) {
+      const result = await client.callTool({
+        name: 'modkit.open_resolved_workspace', arguments: { gameId: 'fixture/game', ...source },
+      })
+      expect(structured(result).data).toEqual({ state: 'unresolved' })
+      expect(requests.at(-1)).toEqual({ gameId: 'fixture/game', locales: ['enUS'], maxRequirements: 512, ...source })
+    }
+    expect(requests).toHaveLength(2)
+  })
+
   it('projects the generic service-operation catalog and invocation without domain branches', async () => {
     const descriptor = {
       schemaVersion: 1 as const,

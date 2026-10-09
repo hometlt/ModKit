@@ -89,6 +89,36 @@ const MCP_MAX_EDIT_PLANS = 64
 const MCP_EDIT_PLAN_TTL_MS = 15 * 60 * 1_000
 const MCP_MAX_LANGUAGE_SESSIONS = 32
 
+/** Display written revisions; large read-guard vectors remain in the Host's full receipt/history. */
+function projectEditReceipt(receipt: CommitReceipt) {
+  if (receipt.before.length <= 8 && receipt.after.length <= 8)
+    return { value: receipt, capped: false }
+  const written = new Set(receipt.writes.map(write => write.source.id))
+  const before = receipt.before.filter(revision =>
+    Object.keys(revision.bindings).some(id => written.has(id)),
+  )
+  const after = receipt.after.filter(revision =>
+    Object.keys(revision.bindings).some(id => written.has(id)),
+  )
+  return {
+    value: {
+      ...receipt,
+      before,
+      after,
+      omittedReadGuardsBefore: receipt.before.length - before.length,
+      omittedReadGuardsAfter: receipt.after.length - after.length,
+    },
+    capped: true,
+  }
+}
+
+/** Preserve transaction state/id for follow-up actions under the protocol's bounded projection. */
+function projectEditResult(result: CommitResult) {
+  if (result.state === 'not-applied') return { value: result, capped: false }
+  const receipt = projectEditReceipt(result.receipt)
+  return { value: { ...result, receipt: receipt.value }, capped: receipt.capped }
+}
+
 export class McpOperationError extends Error {
   constructor(
     readonly code: string,
@@ -112,8 +142,12 @@ async function renderLayerGrid(grid: MapLayerGrid, signal: AbortSignal) {
     white = Math.max(white, value)
   }
   const span = white - black
-  const values = grid.values.map(value => (span === 0 ? 0 : Math.round(((value - black) * 255) / span)))
-  const image = mcpImage(await greyGridToPng({ width: grid.width, height: grid.height, values }, 255, signal))
+  const values = grid.values.map(value =>
+    span === 0 ? 0 : Math.round(((value - black) * 255) / span),
+  )
+  const image = mcpImage(
+    await greyGridToPng({ width: grid.width, height: grid.height, values }, 255, signal),
+  )
   if (image === undefined)
     throw new McpOperationError('x3.mcp/render-too-large', 'The drawn layer exceeds the MCP image limit.')
   return { image, legend: { kind: 'grey', blackSample: black, whiteSample: white } }
@@ -2298,6 +2332,7 @@ export class ModkitMcpRuntime {
         receipt: result.receipt,
       })
     }
+    const projected = projectEditResult(result)
     return envelope({
       snapshotId:
         result.state === 'not-applied'
@@ -2305,12 +2340,17 @@ export class ModkitMcpRuntime {
           : `transaction:${result.receipt.transactionId}`,
       completeness:
         result.state === 'committed'
-          ? 'complete'
+          ? projected.capped
+            ? 'capped'
+            : 'complete'
           : result.state === 'not-applied'
             ? 'invalid'
             : 'partial',
-      diagnostics: result.state === 'not-applied' ? result.diagnostics : await this.refreshCommittedSources(result),
-      data: { planHandle, result },
+      diagnostics:
+        result.state === 'not-applied'
+          ? result.diagnostics
+          : await this.refreshCommittedSources(result),
+      data: { planHandle, result: projected.value },
     })
   }
 
@@ -2319,10 +2359,14 @@ export class ModkitMcpRuntime {
       .map(item => item.receipt)
       .sort((left, right) => right.committedAt.localeCompare(left.committedAt))
       .slice(0, limit)
+    const projected = items.map(projectEditReceipt)
     return envelope({
       snapshotId: `edit-history:${fingerprint(items.map(item => item.transactionId))}`,
-      completeness: items.length < this.editHistory.size ? 'capped' : 'complete',
-      data: { total: this.editHistory.size, items },
+      completeness:
+        items.length < this.editHistory.size || projected.some(item => item.capped)
+          ? 'capped'
+          : 'complete',
+      data: { total: this.editHistory.size, items: projected.map(item => item.value) },
     })
   }
 
@@ -2358,11 +2402,16 @@ export class ModkitMcpRuntime {
         this.editHistory.set(result.receipt.transactionId, { ...history, receipt: result.receipt })
       }
     }
+    const projected = projectEditResult(result)
     return envelope({
       snapshotId: `transaction:${transactionId}:${action}`,
-      completeness: result.state === 'not-applied' ? 'invalid' : 'complete',
-      diagnostics: result.state === 'not-applied' ? result.diagnostics : await this.refreshCommittedSources(result),
-      data: { transactionId, action, result },
+      completeness:
+        result.state === 'not-applied' ? 'invalid' : projected.capped ? 'capped' : 'complete',
+      diagnostics:
+        result.state === 'not-applied'
+          ? result.diagnostics
+          : await this.refreshCommittedSources(result),
+      data: { transactionId, action, result: projected.value },
     })
   }
 
@@ -2402,7 +2451,7 @@ export class ModkitMcpRuntime {
     )
   }
 
-  /** Open a host-owned resolved-data workspace over loose mod directories (active mod last). */
+  /** Open loader-owned package inputs or an explicit directory chain with one editing owner. */
   async openResolvedWorkspace(
     request: McpResolvedWorkspaceRequest,
     signal: AbortSignal,
@@ -2450,6 +2499,7 @@ export class ModkitMcpRuntime {
         handle,
         activeRootId: workspace.activeRootId,
         rootIds: workspace.rootIds,
+        ...(workspace.activeSourcePath === undefined ? {} : { activeSourcePath: workspace.activeSourcePath }),
         totalSubjects: summary.totalSubjects,
         subjects: subjects.items,
       },
@@ -2564,10 +2614,24 @@ export class ModkitMcpRuntime {
       expiresAt,
       prepared: undefined,
     })
-    const projected = boundedJson({ preview, plan: summarizeEditPlan(plan) })
+    // Full dependency guards stay in the retained plan. A retail chain must not consume the
+    // response's character budget before its state/planHandle, preventing prepare or discard.
+    const guards = 'guards' in preview ? preview.guards : []
+    const previewCapped = guards.length > 8
+    const projected = boundedJson({
+      preview: previewCapped
+        ? {
+            ...preview,
+            guards: guards.slice(0, 8),
+            guardCount: guards.length,
+            guardsComplete: false,
+          }
+        : preview,
+      plan: summarizeEditPlan(plan),
+    })
     return envelope({
       snapshotId: workspace.snapshotId,
-      completeness: projected.capped ? 'capped' : 'complete',
+      completeness: projected.capped || previewCapped ? 'capped' : 'complete',
       diagnostics: [
         {
           code: 'x3.mcp/edit-not-committed',

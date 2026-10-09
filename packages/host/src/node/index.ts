@@ -176,9 +176,11 @@ export {
 } from './index-caches.js'
 export {
   openDirectoryResolvedDataWorkspace,
+  openModContextResolvedDataWorkspace,
   RESOLVED_DATA_EDIT_UNAVAILABLE,
   type DirectoryResolvedDataWorkspace,
   type OpenDirectoryResolvedDataWorkspaceRequest,
+  type OpenModContextResolvedDataWorkspaceRequest,
   type ResolvedDataChangeRequest,
   type ResolvedDataEditingAuthority,
 } from './resolved-data-directories.js'

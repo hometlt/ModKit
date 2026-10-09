@@ -34,6 +34,17 @@ export interface ModContextDataWorkspaceInputs {
   readonly listFiles: DataWorkspaceFileLister
 }
 
+/** Optional Host binding of a context read to a revision-pinned source for existing editing. */
+export interface ModContextDataSourceBinding {
+  /** Return only a source whose pinned bytes equal this context read; undefined keeps it virtual. */
+  (
+    layerId: string,
+    path: string,
+    source: ArtifactByteSource,
+    signal?: AbortSignal,
+  ): Promise<Lease<ArtifactSource> | undefined>
+}
+
 export interface ModContextNestedRoot {
   /** Existing package layer whose listed directory contains another package (for example a map in a campaign). */
   readonly parentLayerId: string
@@ -48,7 +59,10 @@ export interface ModContextNestedRoot {
  */
 export function createModContextDataWorkspaceInputs(
   context: ModContext,
-  options?: { readonly nestedRoot?: ModContextNestedRoot },
+  options?: {
+    readonly nestedRoot?: ModContextNestedRoot
+    readonly sourceBinding?: ModContextDataSourceBinding
+  },
 ): ModContextDataWorkspaceInputs {
   if (context.schemaVersion !== 1 || context.layers.length === 0 || context.layers.length > 256) {
     throw new TypeError('Data workspace requires a nonempty ModContext v1')
@@ -274,7 +288,13 @@ export function createModContextDataWorkspaceInputs(
           yield bytes.slice(start, end)
         },
       })
-      return Object.freeze({ value: source, release: async () => undefined })
+      const bound = await options?.sourceBinding?.(
+        item.readLayerId,
+        [item.readPrefix, item.relative].filter(Boolean).join('/'),
+        source,
+        signal,
+      )
+      return bound ?? Object.freeze({ value: source, release: async () => undefined })
     },
   })
   const listFiles: DataWorkspaceFileLister = async (rootId, prefix, maximum, signal) => {
