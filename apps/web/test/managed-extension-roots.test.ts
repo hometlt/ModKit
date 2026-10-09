@@ -1,12 +1,14 @@
 import { webcrypto } from 'node:crypto'
 import { createHostComposition, EXTENSION_DISABLED_CODE } from '@modkit/host'
 import { describe, expect, it } from 'vitest'
+import { compressPortable } from '../../../packages/codec-kit/src/compression/bounded.js'
 
 import { createWebExtensionSubjectCatalog } from '../src/extension-subjects.js'
 import { createWebTopology, WEB_MAIN_REALM } from '../src/index.js'
 import {
   combineLoadedExtensionRoots,
   isCanonicalBase64,
+  inspectPortableExtensionBundle,
   loadManagedExtensionRoots,
   MANAGED_EXTENSION_BUNDLE_FAILURE_CODES,
 } from '../src/managed-extension-roots.js'
@@ -189,6 +191,29 @@ class FakeManagedStorage implements BrowserExtensionStorage {
 }
 
 describe('downloaded browser extension roots', () => {
+  it('loads gzip through the same verified root/module owners and refuses decoded growth without losing siblings', async () => {
+    const json = new TextEncoder().encode(embeddedMultiRootBundle())
+    const gzip = await compressPortable(json, 'gzip')
+    expect(await inspectPortableExtensionBundle(gzip, { maxDocumentBytes: json.length })).toEqual([
+      'org.example/dependency', 'org.example/consumer',
+    ])
+    await expect(inspectPortableExtensionBundle(gzip, { maxDocumentBytes: json.length - 1 })).rejects.toMatchObject({ code: 'extension-manager/artifact-document-limit' })
+    const storage = new FakeManagedStorage([record({ id: 'org.example/toolkit' })], new Map([['org.example/toolkit', gzip]]))
+    const loaded = await loadManagedExtensionRoots(storage, { subtle, maxRepositoryDocumentBytes: json.length })
+    const baseline = await loadManagedExtensionRoots(new FakeManagedStorage([record({ id: 'org.example/toolkit' })], new Map([['org.example/toolkit', embeddedMultiRootBundle()]])), { subtle })
+    expect(loaded.coordinates).toEqual(baseline.coordinates)
+    expect(loaded.moduleMap).toEqual(baseline.moduleMap)
+    expect(loaded.failures).toEqual([])
+    const mixed = new FakeManagedStorage([record({ id: 'org.example/toolkit' }), record()], new Map<string, string | Uint8Array>([
+      ['org.example/toolkit', gzip], ['org.example/codec', embeddedBundle()],
+    ]))
+    const refused = await loadManagedExtensionRoots(mixed, { subtle, maxRepositoryDocumentBytes: json.length - 1 })
+    expect(refused.coordinates).toEqual(['org.example/codec'])
+    expect(refused.failures).toHaveLength(1)
+    const cancelled = new AbortController()
+    cancelled.abort(new Error('cancelled package load'))
+    await expect(loadManagedExtensionRoots(storage, { subtle, signal: cancelled.signal })).rejects.toThrow('cancelled package load')
+  })
   it('validates release-sized base64 without a recursive regular expression', () => {
     const encoded = 'AAAA'.repeat(1_000_000)
     expect(isCanonicalBase64(encoded)).toBe(true)

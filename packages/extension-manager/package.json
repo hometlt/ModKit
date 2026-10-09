@@ -47,6 +47,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@modkit/codec-kit": "workspace:*",
     "@modkit/sdk": "workspace:*",
     "@modkit/vfs": "workspace:*"
   }

@@ -3,7 +3,9 @@
  *
  * Construction is inert. `client.snapshot()` reaches only Cache Storage and IndexedDB;
  * `CatalogSource.refresh()` is the sole registry read, and `ArtifactAcquirer.acquire()` is reached
- * only by explicit install/update. Trust and install policy remain in the common client.
+ * only by explicit install/update. Trust and install policy remain in the common client. Portable
+ * JSON/gzip uses the common bounded decoder after transport SHA verification; Cache Storage retains
+ * original verified bytes. Decoded document, transport and host file budgets remain independent.
  */
 
 import {
@@ -125,6 +127,7 @@ export interface BrowserExtensionManagerFactoryOptions {
   readonly resolveBrowserFile?: (uri: string) => unknown
   readonly maxCatalogBytes?: number
   readonly maxArtifactBytes?: number
+  readonly maxRepositoryDocumentBytes?: number
   /** `null` explicitly disables the platform default; useful for a fail-closed capability test. */
   readonly locks?: BrowserExtensionLockManager | null
 }
@@ -420,7 +423,15 @@ export function createBrowserExtensionManager(
       if (!(artifact.bytes instanceof Uint8Array) || typeof artifact.integrity !== 'string') {
         throw new Error('browser ArtifactStore requires verified in-memory bytes')
       }
-      const roots = inspectPortableExtensionBundle(artifact.bytes)
+      // Hash/decode/persist one pinned copy across async crypto and decompression.
+      const transportBytes = new Uint8Array(artifact.bytes)
+      const integrity = await sha256(subtle, transportBytes)
+      if (integrity !== artifact.integrity || (request.integrity !== undefined && integrity !== request.integrity)) {
+        throw new Error('browser artifact bytes changed after acquisition')
+      }
+      const roots = await inspectPortableExtensionBundle(transportBytes, {
+        ...(options.maxRepositoryDocumentBytes === undefined ? {} : { maxDocumentBytes: options.maxRepositoryDocumentBytes }),
+      })
       const declaredRoots = [...request.entry.extensions].sort()
       const portableRoots = [...roots].sort()
       if (
@@ -437,7 +448,7 @@ export function createBrowserExtensionManager(
         version: request.entry.version,
         digest,
         sourceUrl: request.entry.source.uri,
-        bytes: artifact.bytes,
+        bytes: transportBytes,
         roots: roots.map(expectedId => ({ expectedId })),
         displayName: request.entry.displayName,
         publisher: request.entry.publisher,

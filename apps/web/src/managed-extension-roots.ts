@@ -2,7 +2,9 @@
  * Bridge from digest-verified downloaded packages to the browser host's existing extension-root
  * loader.
  *
- * The portable browser package is one UTF-8 `modkit.repository.json` response. Every enabled
+ * The portable browser package is UTF-8 `modkit.repository.json`, optionally gzip transported.
+ * The common manager byte decoder bounds decoded JSON; transport digest/cache identity is retained.
+ * Every enabled
  * repository entry must carry `id` and `files`, where each file value is base64. A path-only entry
  * is meaningful on Node but cannot name bytes inside a browser Cache Storage response, so it is
  * diagnosed and refused. Embedded files become structural in-memory directory handles and then
@@ -13,7 +15,7 @@
  * byte source; the host's worker backend remains the only component allowed to evaluate one.
  */
 
-import { normalizeRepositoryManifest } from '@modkit/extension-manager/browser'
+import { decodeRepositoryArtifact, normalizeRepositoryManifest, type RepositoryArtifactDecodeOptions } from '@modkit/extension-manager/browser'
 import type { BrowserFetchLike, BrowserSubtleCryptoLike } from '@modkit/host/browser'
 import {
   loadUserExtensionRoots,
@@ -54,6 +56,7 @@ export interface LoadManagedExtensionRootsOptions {
   readonly claimed?: readonly string[]
   readonly maxFiles?: number
   readonly maxTotalBytes?: number
+  readonly maxRepositoryDocumentBytes?: number
   readonly signal?: AbortSignal
 }
 
@@ -222,8 +225,12 @@ function embeddedHandle(
 }
 
 /** Strict package-level validation used by the common manager's ArtifactStore adapter. */
-export function inspectPortableExtensionBundle(bytes: Uint8Array): readonly string[] {
-  const text = new TextDecoder('utf-8', { fatal: true }).decode(bytes)
+export async function inspectPortableExtensionBundle(
+  bytes: Uint8Array,
+  options: RepositoryArtifactDecodeOptions = {},
+): Promise<readonly string[]> {
+  const decoded = await decodeRepositoryArtifact(bytes, options)
+  const text = new TextDecoder('utf-8', { fatal: true }).decode(decoded)
   const normalized = normalizeRepositoryManifest(JSON.parse(text) as unknown)
   if (!isNormalizedRepositoryManifest(normalized)) {
     throw new Error('repository normalizer returned an unsupported document')
@@ -286,10 +293,14 @@ export async function loadManagedExtensionRoots(
 
     let document: unknown
     try {
-      const bytes = await response.arrayBuffer()
+      const bytes = await decodeRepositoryArtifact(new Uint8Array(await response.arrayBuffer()), {
+        ...(options.maxRepositoryDocumentBytes === undefined ? {} : { maxDocumentBytes: options.maxRepositoryDocumentBytes }),
+        ...(options.signal === undefined ? {} : { signal: options.signal }),
+      })
       const text = new TextDecoder('utf-8', { fatal: true }).decode(bytes)
       document = JSON.parse(text) as unknown
     } catch (error) {
+      options.signal?.throwIfAborted()
       failures.push(
         failure(
           record,

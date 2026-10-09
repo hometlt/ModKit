@@ -30,8 +30,30 @@ Node and browser discovery use one interpretation. Invalid references are reject
 This reduces artifact transfer size, not installed disk usage: installation still writes regular
 files into each root, verifies the original artifact integrity and package identities, and charges
 **every materialized copy** against byte and file-count limits. It introduces no links, remote blob
-fetches or external dependencies. Sign the compact artifact's digest, not its expanded JSON.
+fetches or external blob dependencies. Sign the compact artifact's digest, not its expanded JSON.
 Old manager versions cannot read format 2; publish such artifacts only for compatible consumers.
+
+Managed Node and Web installation also accepts gzip around the same format-1 or format-2 JSON.
+`decodeRepositoryArtifact` delegates to `@modkit/codec-kit/compression/bounded`; it does not add a
+second manifest schema or decompressor. Catalog `source.bytes` and SHA-256 describe the original
+transport, including gzip. Verification precedes decoding, and browser storage retains those
+original digest-pinned bytes for offline reload. Consumers supporting only JSON require a plain
+artifact; publish gzip only for consumers that support this byte boundary.
+
+The decoded JSON ceiling defaults to 256 MiB, independently of download and expanded embedded-file
+limits. Node manager/store and Web factory/load options expose `maxRepositoryDocumentBytes`;
+the shared decoder uses `maxDocumentBytes`. Limit exhaustion and malformed gzip refuse installation,
+without publishing partial roots or replacing an installed package. Node still writes regular
+per-root files; gzip does not deduplicate installed bytes or change runtime module identity.
+
+```sh
+modkit-extensions compact --input built.bundle.json --out selected.json.gz --compression gzip \
+  --extension example/codec --extension example/container
+```
+
+`compact` defaults to JSON, can read either transport, and refuses existing output files. Use
+`--max-document-bytes` for an explicitly larger builder input; include the entire required runtime
+root set. The CLI does not build sources, discover missing dependencies, sign or publish artifacts.
 
 ## Local workspace
 

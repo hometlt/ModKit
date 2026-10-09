@@ -2,6 +2,7 @@ import { createHash, webcrypto } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { compressPortable } from '../../../packages/codec-kit/src/compression/bounded.js'
 import {
   extensionCatalogSigningBytes,
   type ExtensionRegistryCatalog,
@@ -629,6 +630,39 @@ describe('common extension manager browser adapter', () => {
     )
     await runtime.dispose()
     // Installs, verifies and loads every portable root; that outgrew the default five seconds.
+  }, 60_000)
+
+  it('installs signed gzip, retains its transport digest, reopens offline and refuses decoded growth', async () => {
+    const json = portableBundle()
+    const bundle = await compressPortable(json, 'gzip')
+    const pair = await keyPair()
+    const catalog = await signedCatalog(bundle, pair)
+    const cdn = fakeCdn(new Map([
+      [CATALOG_URL, new TextEncoder().encode(JSON.stringify(catalog))], [PACKAGE_URL, bundle],
+    ]))
+    const options = {
+      locks: immediateLocks, indexedDB: fakeIndexedDb(), cacheStorage: new FakeCacheStorage(),
+      registry: { catalogUri: CATALOG_URL, trustedPublicKeys: { 'org.example/release': pair.publicKey } },
+      fetch: cdn.fetch, allowedOrigins: ['https://cdn.example.invalid'], crypto: subtle,
+    }
+    const runtime = createBrowserExtensionManager({ ...options, maxRepositoryDocumentBytes: json.length })
+    await runtime.client.refresh()
+    await runtime.client.install('org.example/toolkit')
+    const stored = (await runtime.storage.list())[0]
+    expect(stored?.digest).toBe(digest(bundle).slice('sha256:'.length))
+    const cached = await runtime.storage.openInstalled('org.example/toolkit')
+    expect(new Uint8Array(await cached!.arrayBuffer())).toEqual(bundle)
+    const reads = cdn.calls.length
+    const loaded = await loadManagedExtensionRoots(runtime.storage, { subtle: subtle as never, maxRepositoryDocumentBytes: json.length })
+    expect(loaded.failures).toEqual([])
+    expect(loaded.coordinates).toEqual(['org.example/codec-a', 'org.example/codec-b'])
+    expect(cdn.calls).toHaveLength(reads)
+    await runtime.dispose()
+    const refused = createBrowserExtensionManager({ ...options, indexedDB: fakeIndexedDb(), cacheStorage: new FakeCacheStorage(), maxRepositoryDocumentBytes: json.length - 1 })
+    await refused.client.refresh()
+    await expect(refused.client.install('org.example/toolkit')).rejects.toMatchObject({ code: 'extension-manager/artifact-document-limit' })
+    expect(await refused.storage.list()).toEqual([])
+    await refused.dispose()
   }, 60_000)
 
   it('refuses catalog/package root mismatch before persistence', async () => {

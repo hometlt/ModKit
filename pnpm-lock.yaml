@@ -473,6 +473,9 @@ importers:
 
   packages/extension-manager:
     dependencies:
+      '@modkit/codec-kit':
+        specifier: workspace:*
+        version: link:../codec-kit
       '@modkit/sdk':
         specifier: workspace:*
         version: link:../sdk

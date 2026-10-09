@@ -1,4 +1,6 @@
 export type * from './public-types.js'
+export { decodeRepositoryArtifact, DEFAULT_REPOSITORY_DOCUMENT_MAX_BYTES } from './repository-artifact.js'
+export type { RepositoryArtifactDecodeOptions } from './repository-artifact.js'
 export {
   ExtensionManagerError,
   compactRepositoryManifest,

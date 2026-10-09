@@ -1,3 +1,12 @@
+/**
+ * Node extension-manager owner for signed catalog acquisition, confined VFS/local/HTTP artifacts,
+ * origin and transport SHA verification, and private managed/linked package and enablement stores.
+ * Existing v1/v2 repositories and bounded gzip transport materialize ordinary regular files with
+ * independent decoded-document/entry/expanded-byte limits, package identity and immutable-tree
+ * validation. Serialized atomic publication retains prior artifacts for recovery; remove cleans
+ * unreferenced managed trees. Composition preserves injected ports, trust policy and lifecycle;
+ * it does not evaluate game extensions or provide installed-file deduplication.
+ */
 import {
   createHash,
   createPublicKey,
@@ -18,6 +27,7 @@ import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 import { createExtensionManagerClient } from './client.js'
+import { decodeRepositoryArtifact, DEFAULT_REPOSITORY_DOCUMENT_MAX_BYTES } from './repository-artifact.js'
 import {
   extensionCatalogSigningBytes,
   parseExtensionCatalog,
@@ -73,6 +83,7 @@ interface UnknownRecord extends Record<string, unknown> {
 interface ArtifactLimits {
   readonly maxEntries: number
   readonly maxMaterializedBytes: number
+  readonly maxRepositoryDocumentBytes: number
 }
 
 const CATALOG_STATE = 'catalog.v1.json'
@@ -1218,14 +1229,9 @@ function decodeEmbedded(encoded: unknown, label: string): Buffer {
   return bytes
 }
 
-function portableManifest(artifact: unknown, entry: ExtensionCatalogCandidate) {
-  if (!record(artifact) || artifact.kind !== 'portable-repository') {
-    fail('extension-manager/artifact-invalid', 'artifact must be a portable repository')
-  }
-  if (!(artifact.bytes instanceof Uint8Array)) {
-    fail('extension-manager/artifact-invalid', 'portable repository bytes are missing')
-  }
-  const manifest = normalizeRepositoryManifest(jsonBytes(artifact.bytes, 'portable repository'))
+/** Normalize decoded repository bytes and enforce the catalog's exact enabled root set. */
+function portableManifest(bytes: Uint8Array, entry: ExtensionCatalogCandidate) {
+  const manifest = normalizeRepositoryManifest(jsonBytes(bytes, 'portable repository'))
   const entries = new Map()
   for (const item of manifest.extensions) {
     if (item.id === undefined || !item.enabled) continue
@@ -1262,7 +1268,14 @@ async function materializePortable(
   limits: ArtifactLimits,
 ) {
   const { entry, artifact } = request
-  const { entries } = portableManifest(artifact, entry)
+  if (!record(artifact) || artifact.kind !== 'portable-repository') {
+    fail('extension-manager/artifact-invalid', 'artifact must be a portable repository')
+  }
+  if (!(artifact.bytes instanceof Uint8Array)) {
+    fail('extension-manager/artifact-invalid', 'portable repository bytes are missing')
+  }
+  // The caller's typed array stays mutable across asynchronous decode. Pin the bytes we verify.
+  const transportBytes = new Uint8Array(artifact.bytes as Uint8Array)
   if (!SHA256_INTEGRITY.test(request.integrity ?? '')) {
     fail(
       'extension-manager/integrity-missing',
@@ -1271,7 +1284,7 @@ async function materializePortable(
     )
   }
   const actualIntegrity = `sha256:${createHash('sha256')
-    .update((artifact as { readonly bytes: Uint8Array }).bytes)
+    .update(transportBytes)
     .digest('hex')}`
   if (actualIntegrity !== request.integrity) {
     fail(
@@ -1284,6 +1297,10 @@ async function materializePortable(
       },
     )
   }
+  const decoded = await decodeRepositoryArtifact(transportBytes, {
+    maxDocumentBytes: limits.maxRepositoryDocumentBytes,
+  })
+  const { entries } = portableManifest(decoded, entry)
   const artifactKey = createHash('sha256')
     .update(`${entry.id}\0${entry.version}\0${actualIntegrity}`)
     .digest('hex')
@@ -1503,6 +1520,11 @@ export function createNodeArtifactStore(
       512 * 1024 * 1024,
       'maxMaterializedBytes',
     ),
+    maxRepositoryDocumentBytes: positiveSafeInteger(
+      options.maxRepositoryDocumentBytes,
+      DEFAULT_REPOSITORY_DOCUMENT_MAX_BYTES,
+      'maxRepositoryDocumentBytes',
+    ),
   })
   const write = serialized()
 
@@ -1672,6 +1694,9 @@ export function createNodeExtensionManager(
     options.artifactStore ??
     createNodeArtifactStore({
       root,
+      ...(options.maxRepositoryDocumentBytes === undefined
+        ? {}
+        : { maxRepositoryDocumentBytes: options.maxRepositoryDocumentBytes }),
       ...(options.maxEntries === undefined ? {} : { maxEntries: options.maxEntries }),
       ...(options.maxMaterializedBytes === undefined
         ? {}

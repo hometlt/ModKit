@@ -247,6 +247,8 @@ export interface NodeArtifactStoreOptions {
   readonly root: string
   readonly maxEntries?: number
   readonly maxMaterializedBytes?: number
+  /** Decoded JSON ceiling, independent of transport and expanded embedded-file limits. */
+  readonly maxRepositoryDocumentBytes?: number
 }
 
 export declare function createNodeArtifactStore(options: NodeArtifactStoreOptions): ArtifactStore
@@ -269,6 +271,8 @@ export interface CreateNodeExtensionManagerOptions {
   readonly channels?: readonly ('stable' | 'preview' | 'development')[]
   readonly maxCatalogBytes?: number
   readonly maxArtifactBytes?: number
+  /** Forwarded to the default managed store; custom stores own their decoding policy. */
+  readonly maxRepositoryDocumentBytes?: number
   readonly maxEntries?: number
   readonly maxMaterializedBytes?: number
   readonly catalogSource?: CatalogSource

@@ -1,8 +1,15 @@
 #!/usr/bin/env node
 
+/** Extension-manager CLI for discovery, roots/locks and explicit portable root selection. Compact
+ * preserves v1/v2 semantics and defaults to JSON; optional gzip delegates to codec-kit and shares
+ * the bounded artifact decoder for input. Exclusive writes refuse replacing existing outputs.
+ * This command does not build, sign, publish or infer missing runtime dependencies. */
+
 import { resolve } from 'node:path'
 import { readFile, writeFile } from 'node:fs/promises'
 import { compactRepositoryManifest, normalizeRepositoryManifest } from './schema.js'
+import { decodeRepositoryArtifact } from './repository-artifact.js'
+import { compressPortable } from '@modkit/codec-kit/compression/bounded'
 
 import { discoverNodeExtensionRoots, extensionLockDocument, writeExtensionLock } from './node.js'
 import type { NodeExtensionDiscoveryOptions } from './node-types.js'
@@ -22,6 +29,8 @@ Options:
   --input <path>    Input bundle for compact (format 1 or 2)
   --out <path>      New output file for compact; existing files are refused
   --extension <id>  Root to keep; repeat for a complete runtime set (default: all)
+  --compression <json|gzip>  Compact output transport (default: json)
+  --max-document-bytes <bytes>  Decoded input JSON ceiling (default: 256 MiB)
   -h, --help        Show this help
 `
 
@@ -56,6 +65,8 @@ function argumentsOf(argv: readonly string[]): CliOptions {
 async function compactCommand(argv: readonly string[]): Promise<void> {
   let input: string | undefined
   let output: string | undefined
+  let compression: 'json' | 'gzip' | undefined
+  let maxDocumentBytes: number | undefined
   const selected = new Set<string>()
   for (let index = 0; index < argv.length; index += 2) {
     const flag = argv[index]
@@ -64,12 +75,16 @@ async function compactCommand(argv: readonly string[]): Promise<void> {
     if (flag === '--input' && input === undefined) input = value
     else if (flag === '--out' && output === undefined) output = value
     else if (flag === '--extension' && !selected.has(value)) selected.add(value)
+    else if (flag === '--compression' && compression === undefined && (value === 'json' || value === 'gzip')) compression = value
+    else if (flag === '--max-document-bytes' && maxDocumentBytes === undefined) maxDocumentBytes = Number(value)
     else throw new Error(`unknown or repeated argument: ${flag} ${value}`)
   }
   if (input === undefined || output === undefined)
     throw new Error('compact requires --input and --out')
-  const original = await readFile(resolve(input), 'utf8')
-  const manifest = normalizeRepositoryManifest(JSON.parse(original))
+  const original = await decodeRepositoryArtifact(await readFile(resolve(input)), {
+    ...(maxDocumentBytes === undefined ? {} : { maxDocumentBytes }),
+  })
+  const manifest = normalizeRepositoryManifest(JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(original)))
   for (const id of selected) {
     if (!manifest.extensions.some(entry => entry.id === id))
       throw new Error(`unknown extension: ${id}`)
@@ -81,10 +96,11 @@ async function compactCommand(argv: readonly string[]): Promise<void> {
     throw new Error('compact requires embedded files for every selected root')
   }
   const compact = compactRepositoryManifest({ ...manifest, extensions })
-  const bytes = new TextEncoder().encode(`${JSON.stringify(compact)}\n`)
+  const json = new TextEncoder().encode(`${JSON.stringify(compact)}\n`)
+  const bytes = compression === 'gzip' ? await compressPortable(json, 'gzip') : json
   await writeFile(resolve(output), bytes, { flag: 'wx' })
   process.stdout.write(
-    `${JSON.stringify({ output: resolve(output), bytes: bytes.byteLength, roots: extensions.map(entry => entry.id), blobs: compact.blobs.length })}\n`,
+    `${JSON.stringify({ output: resolve(output), bytes: bytes.byteLength, documentBytes: json.byteLength, compression: compression ?? 'json', roots: extensions.map(entry => entry.id), blobs: compact.blobs.length })}\n`,
   )
 }
 
