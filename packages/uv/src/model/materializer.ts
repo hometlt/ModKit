@@ -129,7 +129,7 @@ export interface ModelProjection {
     readonly batches: readonly {
       readonly name?: string
       readonly materialId: string
-      readonly orientation: 'camera' | 'axis' | 'plane'
+      readonly orientation: 'camera' | 'axis' | 'plane' | 'ribbon'
       readonly atlas?: readonly [number, number]
     }[]
     readonly tracks: readonly {
@@ -809,7 +809,7 @@ function bakedParticlesOf(
     const material = materialIndexById.get(batch.materialId)
     if (material === undefined)
       fail(`baked particle batch ${String(index)} names the unknown material ${batch.materialId}`)
-    if (!['camera', 'axis', 'plane'].includes(batch.orientation))
+    if (!['camera', 'axis', 'plane', 'ribbon'].includes(batch.orientation))
       fail(`baked particle batch ${String(index)} has no known orientation`)
     if (
       batch.atlas !== undefined &&

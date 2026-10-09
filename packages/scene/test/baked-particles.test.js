@@ -106,3 +106,27 @@ test('a track that does not loop ends; an axis card spans its axis across the vi
   const [primitive] = createUvmEffectFrame(document, { ...options(binary), time: 0 }).primitives
   assert.deepEqual([...primitive.positions], [-0.5, 1, -5, 0.5, 1, -5, 0.5, -1, -5, -0.5, -1, -5])
 })
+
+test('a ribbon batch joins its points into a strip whose quads share their edges', () => {
+  // three points along x, strip 7, half width 0.5, u 0, 1, 2; seen from the origin down -z
+  const point = (x, u) => [x, 0, -5, 0.5, 0, u, 1, 1, 1, 1, 0, 7, 0, 0, 0, 0, 1]
+  const { document, binary } = documentOf('ribbon', false, [
+    ...point(0, 0),
+    ...point(0, 0),
+    ...point(1, 1),
+    ...point(2, 2),
+  ])
+  // frame 1 holds the three points of the strip
+  const [primitive] = createUvmEffectFrame(document, {
+    ...options(binary),
+    time: 1 / 15,
+  }).primitives
+  assert.equal(primitive.positions.length, 24)
+  const corners = [...primitive.positions].map(value => Math.round(value * 1000) / 1000)
+  const quads = [corners.slice(0, 12), corners.slice(12, 24)].sort((a, b) => a[0] - b[0])
+  // each quad spans its segment, half a unit to either side of the strip
+  assert.deepEqual(quads[0], [0, -0.5, -5, 1, -0.5, -5, 1, 0.5, -5, 0, 0.5, -5])
+  // the second quad starts on the first one's end edge
+  assert.deepEqual(quads[1].slice(0, 3), quads[0].slice(3, 6))
+  assert.deepEqual(quads[1].slice(9, 12), quads[0].slice(6, 9))
+})

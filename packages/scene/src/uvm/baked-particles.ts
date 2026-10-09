@@ -5,7 +5,8 @@
  * Owner: [MK] Core (scene). `readUvmBakedParticles` reads and checks the extension and its
  * accessors once per document; `bakedParticleSprites` picks the frame of a track for a clock and
  * builds each sprite's quad in the effect geometry form (UvmParticleGeometryEntry: four corners,
- * triangles 0 1 2 and 0 2 3), in the `spaceNode` frame, oriented to a camera given in that frame.
+ * triangles 0 1 2 and 0 2 3), in the `spaceNode` frame, oriented to a camera given in that frame; a
+ * `ribbon` batch's points become the quads of camera-facing strips that share their edges.
  * The effect frame (effects.ts) batches them per draw with the effect material path. Limits: a
  * frame draws at most `maxSprites` sprites, the first ones; nothing interpolates between frames.
  */
@@ -21,7 +22,7 @@ const SPRITE_FLOATS = 17
 
 export interface UvmBakedParticleBatch {
   readonly material: number
-  readonly orientation: 'camera' | 'axis' | 'plane'
+  readonly orientation: 'camera' | 'axis' | 'plane' | 'ribbon'
   readonly atlas: readonly [number, number]
 }
 
@@ -71,7 +72,12 @@ export function readUvmBakedParticles(
   const batches = array(extension, 'batches').map((entry): UvmBakedParticleBatch => {
     const batch = object(entry, 'baked particle batch')
     const orientation = batch['orientation']
-    if (orientation !== 'camera' && orientation !== 'axis' && orientation !== 'plane')
+    if (
+      orientation !== 'camera' &&
+      orientation !== 'axis' &&
+      orientation !== 'plane' &&
+      orientation !== 'ribbon'
+    )
       throw new TypeError('baked particle batch has no known orientation')
     const atlas = batch['atlas'] === undefined ? [1, 1] : array(batch, 'atlas')
     if (
@@ -155,6 +161,105 @@ const unit = (v: Vec3): Vec3 | undefined => {
 }
 
 /**
+ * A ribbon frame's quads (SPEC_UVM §13.4): the points `first .. last - 1` in strips of consecutive
+ * points of one strip number (`axis` x), each point's edge `p ± S` with
+ * `S = unit(T × to-camera) × half width`, `T` from the previous point to the next; one quad between
+ * neighbours from their edges, so neighbouring quads share them. `u` is the point's rotation value
+ * (wrapping with a 1 × 1 atlas, else 0..1 across the quad's first point's cell), `v` runs 0 on `+S` to
+ * 1 on `-S`; each corner takes its point's colour. A point whose side vanishes (the strip seen down its
+ * direction) takes its neighbour's side; a strip of one point draws nothing.
+ */
+function ribbonQuads(
+  values: Float32Array,
+  first: number,
+  last: number,
+  batch: UvmBakedParticleBatch,
+  camera: { readonly position: Vec3 },
+  emitter: number,
+  out: UvmParticleGeometryEntry[],
+): void {
+  const [columns, rows] = batch.atlas
+  const point = (index: number): Vec3 => {
+    const at = index * SPRITE_FLOATS
+    return [values[at]!, values[at + 1]!, values[at + 2]!]
+  }
+  const strip = (index: number) => values[index * SPRITE_FLOATS + 11]!
+  let start = first
+  while (start < last) {
+    let stop = start + 1
+    while (stop < last && strip(stop) === strip(start)) stop++
+    // the side of each point of the strip [start, stop)
+    const sides: (Vec3 | undefined)[] = []
+    for (let index = start; index < stop; index++) {
+      const p = point(index),
+        before = point(Math.max(start, index - 1)),
+        after = point(Math.min(stop - 1, index + 1))
+      const along: Vec3 = [after[0] - before[0], after[1] - before[1], after[2] - before[2]]
+      const toCamera: Vec3 = [
+        camera.position[0] - p[0],
+        camera.position[1] - p[1],
+        camera.position[2] - p[2],
+      ]
+      const across = unit(cross(along, toCamera))
+      sides.push(
+        across === undefined ? undefined : scale(across, values[index * SPRITE_FLOATS + 3]!),
+      )
+    }
+    for (let at = 0; at < sides.length; at++)
+      sides[at] ??= sides[at - 1] ?? sides.find(side => side !== undefined)
+    for (let index = start; index + 1 < stop; index++) {
+      const a = index - start
+      const sideA = sides[a],
+        sideB = sides[a + 1]
+      if (sideA === undefined || sideB === undefined) continue
+      const pa = point(index),
+        pb = point(index + 1)
+      const positions = new Float32Array(12)
+      ;[
+        [pa, sideA, 1],
+        [pb, sideB, 1],
+        [pb, sideB, -1],
+        [pa, sideA, -1],
+      ].forEach(([p, side, sign], corner) => {
+        for (let axis = 0; axis < 3; axis++)
+          positions[corner * 3 + axis] =
+            (p as Vec3)[axis]! + (side as Vec3)[axis]! * (sign as number)
+      })
+      const atA = index * SPRITE_FLOATS,
+        atB = atA + SPRITE_FLOATS
+      let ua = values[atA + 5]!,
+        ub = values[atB + 5]!,
+        v0 = 0,
+        v1 = 1
+      if (columns > 1 || rows > 1) {
+        const cell = Math.max(0, Math.trunc(values[atA + 10]!))
+        const column = cell % columns,
+          row = Math.floor(cell / columns) % rows
+        const clamp = (u: number) => Math.min(1, Math.max(0, u))
+        ua = (column + clamp(ua)) / columns
+        ub = (column + clamp(ub)) / columns
+        v0 = row / rows
+        v1 = (row + 1) / rows
+      }
+      const colors = new Float32Array(16)
+      colors.set(values.subarray(atA + 6, atA + 10), 0)
+      colors.set(values.subarray(atB + 6, atB + 10), 4)
+      colors.set(values.subarray(atB + 6, atB + 10), 8)
+      colors.set(values.subarray(atA + 6, atA + 10), 12)
+      out.push({
+        emitter,
+        slot: index,
+        positions,
+        indices: Uint32Array.of(0, 1, 2, 0, 2, 3),
+        textureCoordinates: Float32Array.of(ua, v0, ub, v0, ub, v1, ua, v1),
+        colors,
+      })
+    }
+    start = stop
+  }
+}
+
+/**
  * The quads of a track's frame at `time` (seconds into its clip): frame ⌊time × frameRate⌋, wrapped
  * on a looping track and nothing past the end of another. `camera` is the view's right, up and
  * position in the `spaceNode` frame. A sprite whose side or up vector vanishes (an axis-aligned card
@@ -181,6 +286,10 @@ export function bakedParticleSprites(
   const values = track.sprites
   const sprites: UvmParticleGeometryEntry[] = []
   const last = Math.min(end, first + maxSprites)
+  if (batch.orientation === 'ribbon') {
+    ribbonQuads(values, first, last, batch, camera, track.batch, sprites)
+    return { sprites, dropped: end - last }
+  }
   for (let index = first; index < last; index++) {
     const at = index * SPRITE_FLOATS
     const position: Vec3 = [values[at]!, values[at + 1]!, values[at + 2]!]
