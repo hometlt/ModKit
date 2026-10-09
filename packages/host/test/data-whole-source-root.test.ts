@@ -1,6 +1,7 @@
 import { beforeAll, expect, it } from 'vitest'
 import { uint64 } from '@modkit/core'
-import { createHostTopology, revisionId, type ResourceSessionPort } from '@modkit/sdk'
+import { createHostTopology, revisionId, type ResourceSessionPort, type ContributionContext,
+  type ModContextQueryPort } from '@modkit/sdk'
 import { RESOLVED_DATA_WORKSPACE_CONTRACT } from '@modkit/sdk/data'
 import type { DataWorkspacePlan } from '@modkit/sdk/data'
 import type { ModWorkspaceLock } from '@modkit/sdk/mods'
@@ -51,6 +52,7 @@ const budgets = {
 let analysed: readonly string[] | undefined
 let creationCandidates: DataWorkspacePlan['creationCandidates']
 let resourceReads = 0
+let receivedPort: ModContextQueryPort | undefined
 
 const notUsed = async () => {
   throw new Error('not used')
@@ -137,7 +139,10 @@ const fixture = defineLinkedExtension({
     './src/data-provider.js': {
       abiVersion: 1,
       provides: ['common.data/resolved-workspace'],
-      createProvider: () => ({ value: provider, release: async () => undefined }),
+      createProvider: (_selection: unknown, context: ContributionContext) => {
+        receivedPort = context.modContexts
+        return { value: provider, release: async () => undefined }
+      },
     },
   },
 })
@@ -188,10 +193,12 @@ const resources = {
 async function runAnalysis(
   root: { rootId: string; sourcePath: string; caseSensitive?: boolean },
   candidates?: DataWorkspacePlan['creationCandidates'],
+  contextServices = services,
 ) {
   analysed = undefined
   resourceReads = 0
   creationCandidates = candidates
+  receivedPort = undefined
   const workspace = {
     schemaVersion: 1,
     workspaceId: 'westwood',
@@ -204,7 +211,7 @@ async function runAnalysis(
     complete: true,
   } as unknown as ModWorkspaceLock
   return analyzeResolvedDataWorkspace({
-    services,
+    services: contextServices,
     grant: { id: 'whole-source-root-test', classes: [] },
     budgets,
     workspace,
@@ -226,6 +233,16 @@ it('reads a document under a root that is its whole source (a game installation 
   const result = await runAnalysis({ rootId: 'game', sourcePath: '' })
   expect(analysed).toEqual(['rulesmd.ini'])
   expect(result.diagnostics.map(item => item.message)).toContain('analysed')
+})
+
+it('forwards the optional canonical query capability to a generic root Data provider and preserves standalone absence', async () => {
+  const port: ModContextQueryPort = { query: async (_scope, question) => question }
+  const result = await runAnalysis({ rootId: 'game', sourcePath: '' }, undefined,
+    { ...services, modContexts: port, preferTrustedInProcess: true })
+  expect(result.diagnostics.map(item => item.message)).toContain('analysed')
+  expect(await receivedPort?.query('fixture-scope', { question: true })).toEqual({ question: true })
+  await runAnalysis({ rootId: 'game', sourcePath: '' })
+  expect(receivedPort).toBeUndefined()
 })
 
 it.each([

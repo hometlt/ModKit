@@ -3,8 +3,8 @@
  * coherent through commit/Undo/Redo. The producer receipt/config are explicit opt-in corpus
  * inputs; the test only writes its own temporary mod and caches. No archives/game files are read
  * directly. Both explicit directory chains and canonical package inputs use exact guards/writer/
- * history. Package tests cover stale source refusal/disposal and missed dependency saves; provider
- * analysis is not claimed to reuse the loader's retained Data model by this input-binding proof.
+ * history. Package tests cover stale source refusal/disposal, missed dependency saves and added
+ * dependency catalog names; the retained-projection route has separate work/provenance proof.
  */
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -81,6 +81,7 @@ describe.runIf(receiptPath !== undefined && configPath !== undefined)(
           const before = emptyActive ? undefined : await readFile(source)
           let staleRead = false
           let staleReleases = 0
+          const projectionActions: string[] = []
           const sources = packageMode
             ? await loadContentSources(localConfig, join(root, 'content-source-storage'))
             : undefined
@@ -94,7 +95,20 @@ describe.runIf(receiptPath !== undefined && configPath !== undefined)(
                         request: Parameters<NonNullable<typeof sources.openModContext>>[0],
                       ) => {
                         const context = await target.openModContext!(request)
-                        if (!staleRead) return context
+                        if (!staleRead) {
+                          // A Proxy cannot replace a frozen context's non-configurable methods.
+                          // Copy descriptors so live getters and the original methods survive.
+                          const descriptors = Object.getOwnPropertyDescriptors(context)
+                          if (context.query !== undefined) descriptors['query'] = {
+                            enumerable: true,
+                            value: async (question: Parameters<NonNullable<typeof context.query>>[0], signal?: AbortSignal) => {
+                              const request = question as { kind?: unknown; action?: unknown }
+                              if (request.kind === 'data.workspace') projectionActions.push(String(request.action))
+                              return context.query!(question, signal)
+                            },
+                          }
+                          return Object.freeze(Object.create(Object.getPrototypeOf(context), descriptors)) as typeof context
+                        }
                         return {
                           ...context,
                           read: async (layerId: string, path: string, maxBytes: number) =>
@@ -220,6 +234,12 @@ describe.runIf(receiptPath !== undefined && configPath !== undefined)(
             },
           })
           expect(proposal['state']).toBe('planned')
+          if (packageMode) {
+            expect(projectionActions.filter(action => action === 'describe')).toHaveLength(2)
+            expect(projectionActions.filter(action => action === 'open')).toHaveLength(2)
+            expect(projectionActions.filter(action => action === 'close')).toHaveLength(2)
+            expect(projectionActions).toContain('page')
+          } else expect(projectionActions).toEqual([])
           if (emptyActive) await expect(readFile(source)).rejects.toMatchObject({ code: 'ENOENT' })
           else expect(await readFile(source)).toEqual(before)
           const prepared = await call('modkit.prepare_edit', { planHandle: proposal['planHandle'] })
@@ -254,6 +274,17 @@ describe.runIf(receiptPath !== undefined && configPath !== undefined)(
             ).toBe('not-applied')
             expect(await readFile(source)).toEqual(written)
             await writeFile(join(base, UNIT_DATA), xml(45))
+            // A new dependency catalog was never read, but its bounded listing was pinned.
+            const extra = join(base, 'Base.SC2Data', 'GameData', 'ArchitectureNew.xml')
+            await writeFile(extra, '<Catalog><CUnit id="AddedWithoutWatcher"/></Catalog>')
+            const addedInput = await client.callTool({
+              name: 'modkit.undo_edit',
+              arguments: { transactionId: transaction.receipt.transactionId },
+            })
+            expect((addedInput.structuredContent as McpEnvelope).diagnostics.map(item => item.code))
+              .toContain('x3.host/resolved-data-context-inputs-changed')
+            expect(await readFile(source)).toEqual(written)
+            await rm(extra)
             const metadata = await readFile(join(active, 'DocumentInfo'))
             await writeFile(join(active, 'DocumentInfo'), '<DocInfo><Dependencies/></DocInfo>')
             const changedChain = await client.callTool({

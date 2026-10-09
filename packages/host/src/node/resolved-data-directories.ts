@@ -9,8 +9,10 @@
  * workspace adapter; only the active confined host directory is writable. Physical bytes must
  * match context reads, read-only dependencies retain content-hash guards, and saved inputs refresh
  * before prepare/commit/replay. Refusal/close releases contexts, resources, selector, writers and
- * history backend. Packed active packages are not writable here; provider analysis still owns its
- * bounded workspace snapshot and is not yet projected from the loader's retained Data session.
+ * history backend. Packed active packages are not writable here. A root-scoped JSON query port
+ * lets trusted providers project the loader's retained Data model through the existing resolver;
+ * generic directory callers keep their standalone provider analysis. Read-only directory listings
+ * are pinned as well as read bytes, so added dependency inputs cannot escape missed-watcher checks.
  */
 
 import { createHash, randomUUID } from 'node:crypto'
@@ -21,6 +23,8 @@ import { canonicalJsonStringify, ModkitError, type Diagnostic } from '@modkit/co
 import {
   resolveModWorkspaceGraph,
   revisionId,
+  isJsonValue,
+  type ModContextQueryPort,
   type AssetEditPlan,
   type ArtifactNamespaceSource,
   type ModWorkspaceLock,
@@ -43,6 +47,7 @@ import {
 } from '@modkit/vfs/content-sources'
 import {
   analyzeResolvedDataWorkspace,
+  type DataHostServices,
   createResolvedDataSubjectSelectorLease,
   type DataWorkspaceFileLister,
   type ResolvedDataEditPlanRequest,
@@ -96,6 +101,7 @@ export async function openModContextResolvedDataWorkspace(
   request: OpenModContextResolvedDataWorkspaceRequest,
 ): ReturnType<typeof openDirectoryResolvedDataWorkspace> {
   let disposeInputs: (() => Promise<void>) | undefined
+  let contextDisposed = false
   try {
     request.signal?.throwIfAborted()
     if (request.context.gameId !== request.gameId)
@@ -132,6 +138,7 @@ export async function openModContextResolvedDataWorkspace(
     })
     const namespace = await rootSource.openNamespace(request.signal)
     disposeInputs = async () => {
+      contextDisposed = true
       await Promise.allSettled([namespace.release(), request.context.dispose()])
     }
     // Only sources actually read through this context can become dependency guards. Hashes bind
@@ -184,13 +191,39 @@ export async function openModContextResolvedDataWorkspace(
         }
       },
     })
+    const listingGuards = new Map<string, {
+      rootId: string; prefix: string; maximum: number; fingerprint: string
+    }>()
+    /** Compare declared bounded input names under the root's own case policy, ignoring order. */
+    const listingFingerprint = (rootId: string, listed: Awaited<ReturnType<DataWorkspaceFileLister>>) => {
+      const root = inputs.workspace.loadOrder.find(root => root.rootId === rootId)
+      if (root === undefined) throw new TypeError('unknown dependency listing root')
+      return canonicalJsonStringify({ complete: listed.complete,
+        paths: listed.paths.map(path => root.caseSensitive === true ? path : path.toLowerCase()).sort(),
+      })
+    }
+    /** Only read-only listings are pinned: active creation/deletion remains with editing history. */
+    const listFiles: DataWorkspaceFileLister = async (rootId, prefix, maximum, signal) => {
+      const listed = await inputs.listFiles(rootId, prefix, maximum, signal)
+      if (rootId !== inputs.workspace.activeRootId) {
+        const key = canonicalJsonStringify([rootId, prefix, maximum])
+        const fingerprint = listingFingerprint(rootId, listed)
+        const known = listingGuards.get(key)
+        if (known !== undefined && known.fingerprint !== fingerprint)
+          throw new Error('package dependency input listing changed during analysis')
+        listingGuards.set(key, { rootId, prefix, maximum, fingerprint })
+      }
+      return listed
+    }
     disposeInputs = async () => {
+      contextDisposed = true
       await Promise.allSettled([
         inputs.resources.dispose(),
         namespace.release(),
         request.context.dispose(),
       ])
       guards.clear()
+      listingGuards.clear()
     }
     /** Revision-only capability: the common coordinator never receives write authority here. */
     const guardBackend: EditingBackend = {
@@ -224,12 +257,39 @@ export async function openModContextResolvedDataWorkspace(
         throw new TypeError('mod-context dependency guards are read-only')
       },
     }
+    /** Preserve the existing physical-binding refusal before any canonical semantic question. */
+    const verifyReadBindings = () => {
+      if (bindingFailure !== undefined)
+        throw new ModkitError({
+          code: 'x3.host/resolved-data-source-binding-failed',
+          message: 'The package context could not bind its saved bytes to confined editing sources. Refresh and reopen the workspace.',
+          cause: bindingFailure,
+        })
+    }
+    const modContexts: ModContextQueryPort | undefined = request.context.query === undefined ? undefined : {
+      /** Carry only JSON questions to this live selected context, never another workspace. */
+      async query(scope, question, signal) {
+        signal?.throwIfAborted()
+        if (contextDisposed || scope !== request.context.contextId || inputs.resources.state() !== 'live')
+          throw new TypeError('resolved Data mod-context scope is closed or foreign')
+        verifyReadBindings()
+        if (!isJsonValue(question)) throw new TypeError('a mod context question must be JSON')
+        const answer = await request.context.query!(question, signal)
+        signal?.throwIfAborted()
+        if (contextDisposed || inputs.resources.state() !== 'live')
+          throw new TypeError('resolved Data mod-context scope closed during the question')
+        if (!isJsonValue(answer)) throw new TypeError('a mod context answer must be JSON')
+        return answer
+      },
+    }
+    const services: NodeSubjectServices & Pick<DataHostServices, 'modContexts' | 'preferTrustedInProcess'> =
+      modContexts === undefined ? request.services : { ...request.services, modContexts, preferTrustedInProcess: true }
     return await openResolvedDataWorkspaceAuthority(
-      { ...request, roots: grantedRoots },
+      { ...request, services, roots: grantedRoots },
       {
         lock: inputs.workspace,
         resources: inputs.resources,
-        listFiles: inputs.listFiles,
+        listFiles,
         rootSource,
         activeSourcePath: inputs.workspace.loadOrder.at(-1)!.sourcePath,
         dispose: disposeInputs,
@@ -248,16 +308,16 @@ export async function openModContextResolvedDataWorkspace(
           } finally {
             await current.dispose()
           }
+          for (const guard of listingGuards.values()) {
+            const listed = await inputs.listFiles(guard.rootId, guard.prefix, guard.maximum)
+            if (listingFingerprint(guard.rootId, listed) !== guard.fingerprint)
+              throw new ModkitError({
+                code: 'x3.host/resolved-data-context-inputs-changed',
+                message: 'The package dependency input listing changed. Reopen the resolved workspace before editing or replaying history.',
+              })
+          }
         },
-        verifyReadBindings() {
-          if (bindingFailure !== undefined)
-            throw new ModkitError({
-              code: 'x3.host/resolved-data-source-binding-failed',
-              message:
-                'The package context could not bind its saved bytes to confined editing sources. Refresh and reopen the workspace.',
-              cause: bindingFailure,
-            })
-        },
+        verifyReadBindings,
       },
     )
   } catch (error) {

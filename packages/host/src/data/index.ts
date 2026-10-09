@@ -65,6 +65,7 @@ import type {
   SubjectCalculationsSource,
   ResourceBudget,
   ResourceSessionPort,
+  ModContextQueryPort,
   RevisionId,
   RuntimeTarget,
   ServiceContractDefinitionRegistry,
@@ -331,6 +332,10 @@ export interface DataHostServices {
   readonly target: RuntimeTarget
   readonly executionBackends: ExecutionBackendRegistry
   readonly serviceDefinitions?: ServiceContractDefinitionRegistry
+  /** Optional root-provider questions to the caller's live, scoped canonical mod context. */
+  readonly modContexts?: ModContextQueryPort
+  /** Use existing gate-eligible placement; isolated/untrusted services keep their policy. */
+  readonly preferTrustedInProcess?: boolean
 }
 
 export interface ResolveDataCatalogRequest extends DataCatalogRequestFacet {
@@ -494,6 +499,8 @@ export async function resolveResolvedDataWorkspace(
     definitions,
     grant: request.grant,
     budgets: request.budgets,
+    ...(request.services.modContexts === undefined ? {} : { modContexts: request.services.modContexts }),
+    ...(request.services.preferTrustedInProcess === true ? { preferTrustedInProcess: true } : {}),
     ...(request.signal === undefined ? {} : { signal: request.signal }),
   })
   try {
