@@ -1,4 +1,12 @@
-/** Host definition, exact game-id matcher and activation adapter for semantic catalogs. */
+/**
+ * Format-neutral semantic Data owner: exact game-id service activation, bounded workspace plans,
+ * revision-pinned ResourceSession inputs, live Data facets, typed prepare/validation and edit guards.
+ * SDK catalogs and resolved-workspace providers supply game schemas/values; Host confines ordered
+ * reads and separate active-root creation destinations using declared source case policies.
+ * Writers/history and resource leases retain their existing owners, budgets and cancellation.
+ * Prospective destinations grant no permission and consume no read slots; provider fallback remains
+ * available without ModContext. Host contains no publisher-specific catalog names or resolver.
+ */
 
 import {
   canonicalJsonStringify,
@@ -1309,6 +1317,7 @@ function comparableLocale(value: string): string {
   return value.replace(/[-_]/gu, '').toLocaleLowerCase()
 }
 
+/** Validate bounded provider reads/destinations before I/O; destinations never expand write grants. */
 function validateWorkspacePlan(
   plan: DataWorkspacePlan,
   workspace: ModWorkspaceLock,
@@ -1325,6 +1334,35 @@ function validateWorkspacePlan(
     throw new TypeError('resolved data provider returned an invalid or mismatched workspace plan')
   }
   const roots = new Map(workspace.loadOrder.map((root, index) => [root.rootId, { root, index }]))
+  /** Confine both reads and prospective destinations using the source's declared case policy. */
+  const validateDocumentPath = (rootId: string, value: string, label: string) => {
+    const root = roots.get(rootId)
+    if (root === undefined) throw new TypeError(`${label} names unknown root`)
+    // An empty root denotes its whole source, including game installation layers.
+    const rootPath = root.root.sourcePath === '' ? '' : confinedPath(root.root.sourcePath, `${label}.root`)
+    const path = confinedPath(value, `${label}.path`)
+    const foldedRoot = root.root.caseSensitive === true ? rootPath : rootPath.toLocaleLowerCase()
+    const foldedPath = root.root.caseSensitive === true ? path : path.toLocaleLowerCase()
+    if (rootPath !== '' && foldedPath !== foldedRoot && !foldedPath.startsWith(`${foldedRoot}/`)) {
+      throw new TypeError(`${label} escapes its root`)
+    }
+    return { ...root, path: foldedPath }
+  }
+  if (plan.creationCandidates !== undefined) {
+    if (!Array.isArray(plan.creationCandidates) || plan.creationCandidates.length > maximum) {
+      throw new TypeError('workspace data creation candidates exceed the plan budget or are invalid')
+    }
+    const seen = new Set<string>()
+    for (const candidate of plan.creationCandidates) {
+      if (candidate?.rootId !== workspace.activeRootId) {
+        throw new TypeError('workspace data creation candidate must name the active root')
+      }
+      const { path } = validateDocumentPath(candidate.rootId, candidate.path, 'workspace data creation candidate')
+      const key = `${candidate.rootId}\0${path}`
+      if (seen.has(key)) throw new TypeError('workspace data creation candidate is duplicated')
+      seen.add(key)
+    }
+  }
   const logical = new Map(
     (workspace.logicalRoots ?? [...workspace.loadOrder].reverse()).map((root, index) => [
       root.rootId,
@@ -1357,25 +1395,11 @@ function validateWorkspacePlan(
       throw new TypeError(`workspace data requirement ${requirement.requirementId} is duplicated`)
     }
     requirementIds.add(requirement.requirementId)
-    const root = roots.get(requirement.rootId)
-    if (root === undefined) {
-      throw new TypeError(
-        `workspace data requirement ${requirement.requirementId} names unknown root`,
-      )
-    }
-    // an empty root is its whole source (a game installation's layer): any path lies under it
-    const rootPath =
-      root.root.sourcePath === ''
-        ? ''
-        : confinedPath(root.root.sourcePath, `${requirement.requirementId}.root`)
-    const path = confinedPath(requirement.path, `${requirement.requirementId}.path`)
-    const foldedRoot = root.root.caseSensitive === true ? rootPath : rootPath.toLocaleLowerCase()
-    const foldedPath = root.root.caseSensitive === true ? path : path.toLocaleLowerCase()
-    if (rootPath !== '' && foldedPath !== foldedRoot && !foldedPath.startsWith(`${foldedRoot}/`)) {
-      throw new TypeError(
-        `workspace data requirement ${requirement.requirementId} escapes its root`,
-      )
-    }
+    const root = validateDocumentPath(
+      requirement.rootId,
+      requirement.path,
+      `workspace data requirement ${requirement.requirementId}`,
+    )
     // A usage document only names entities: it takes no part in catalog or locale precedence.
     if (requirement.kind === 'usage') continue
     if (requirement.kind === 'catalog') {

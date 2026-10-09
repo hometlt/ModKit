@@ -121,6 +121,14 @@ export interface DataWorkspacePlan {
   readonly gameId: string
   readonly analyzerId: string
   readonly requirements: readonly DataWorkspaceDocumentRequirement[]
+  /**
+   * Prospective documents in the active root, including names absent from a complete listing.
+   * These are edit destinations, never read requirements or permission grants. The host confines
+   * and bounds them; the existing editor still checks writable roots and namespace revisions.
+   */
+  readonly creationCandidates?: readonly Readonly<
+    Pick<DataWorkspaceDocumentRequirement, 'rootId' | 'path'>
+  >[]
   readonly diagnostics: readonly DataCatalogDiagnostic[]
   readonly complete: boolean
   /**

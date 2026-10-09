@@ -33,7 +33,7 @@ describe.runIf(receiptPath !== undefined && configPath !== undefined)(
   'installed SC2 MCP saved/language coherence',
   () => {
     it.each(['directories', 'target', 'target-empty'] as const)(
-      'keeps %s workspace transactions or creation refusals exact',
+      'keeps %s workspace transactions and namespace creation exact',
       async mode => {
         const emptyActive = mode === 'target-empty'
         const packageMode = mode !== 'directories'
@@ -210,32 +210,6 @@ describe.runIf(receiptPath !== undefined && configPath !== undefined)(
           }
           workspace = opened['handle'] as string
           expect(workspace).toBeTypeOf('string')
-          if (emptyActive) {
-            // The existing planner supplies no absent catalog candidate after a complete listing.
-            // Preserve its refusal; enabling native creation is a separate provider-plan change.
-            const refused = await client.callTool({
-              name: 'modkit.propose_resolved_edit',
-              arguments: {
-                handle: workspace,
-                change: {
-                  kind: 'field',
-                  subjectId: 'Unit/ArchitectureMarine',
-                  fieldPath: ['LifeMax'],
-                  intent: { kind: 'set-field', value: '60' },
-                  targetDocument: {
-                    rootId: opened['activeRootId'],
-                    path: `${String(opened['activeSourcePath'])}/Base.SC2Data/GameData/UnitData.xml`,
-                  },
-                },
-              },
-            })
-            expect(
-              (refused.structuredContent as McpEnvelope).diagnostics.map(item => item.code),
-            ).toContain('x3.mcp/resolved-edit-unavailable')
-            await expect(readFile(source)).rejects.toMatchObject({ code: 'ENOENT' })
-            expect(await readFile(join(base, UNIT_DATA), 'utf8')).toBe(xml(45))
-            return
-          }
           const proposal = await call('modkit.propose_resolved_edit', {
             handle: workspace,
             change: {
@@ -246,7 +220,8 @@ describe.runIf(receiptPath !== undefined && configPath !== undefined)(
             },
           })
           expect(proposal['state']).toBe('planned')
-          expect(await readFile(source)).toEqual(before)
+          if (emptyActive) await expect(readFile(source)).rejects.toMatchObject({ code: 'ENOENT' })
+          else expect(await readFile(source)).toEqual(before)
           const prepared = await call('modkit.prepare_edit', { planHandle: proposal['planHandle'] })
           expect(prepared['state'], JSON.stringify(prepared)).toBe('ready')
           const committed = await call('modkit.commit_edit', { planHandle: proposal['planHandle'] })
@@ -295,7 +270,8 @@ describe.runIf(receiptPath !== undefined && configPath !== undefined)(
             transactionId: transaction.receipt.transactionId,
           })
           expect(undone['result']).toMatchObject({ state: 'committed' })
-          expect(await readFile(source)).toEqual(before)
+          if (emptyActive) await expect(readFile(source)).rejects.toMatchObject({ code: 'ENOENT' })
+          else expect(await readFile(source)).toEqual(before)
           await hover(50)
           const redone = await call('modkit.redo_edit', {
             transactionId: transaction.receipt.transactionId,

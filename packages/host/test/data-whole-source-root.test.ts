@@ -2,6 +2,7 @@ import { beforeAll, expect, it } from 'vitest'
 import { uint64 } from '@modkit/core'
 import { createHostTopology, revisionId, type ResourceSessionPort } from '@modkit/sdk'
 import { RESOLVED_DATA_WORKSPACE_CONTRACT } from '@modkit/sdk/data'
+import type { DataWorkspacePlan } from '@modkit/sdk/data'
 import type { ModWorkspaceLock } from '@modkit/sdk/mods'
 import {
   analyzeResolvedDataWorkspace,
@@ -48,6 +49,8 @@ const budgets = {
 
 /** What the provider was handed to analyse: the paths of its documents. */
 let analysed: readonly string[] | undefined
+let creationCandidates: DataWorkspacePlan['creationCandidates']
+let resourceReads = 0
 
 const notUsed = async () => {
   throw new Error('not used')
@@ -65,10 +68,11 @@ const provider = {
       {
         requirementId: 'catalog:game:rulesmd.ini',
         rootId: 'game',
-        path: 'rulesmd.ini',
+        path: `${request.workspace.loadOrder[0]?.sourcePath === '' ? '' : `${request.workspace.loadOrder[0]?.sourcePath}/`}rulesmd.ini`,
         kind: 'catalog',
       },
     ],
+    ...(creationCandidates === undefined ? {} : { creationCandidates }),
     diagnostics: [],
     complete: true,
   }),
@@ -159,6 +163,7 @@ const rules = new TextEncoder().encode('[General]\n')
 const resources = {
   state: () => 'live',
   async resolve() {
+    resourceReads += 1
     return {
       state: 'resolved',
       revision,
@@ -179,8 +184,14 @@ const resources = {
   },
 } as unknown as ResourceSessionPort
 
-it('reads a document under a root that is its whole source (a game installation layer)', async () => {
-  const root = { rootId: 'game', sourcePath: '' }
+/** Exercise the public activation/validation/read path with an independently declared destination. */
+async function runAnalysis(
+  root: { rootId: string; sourcePath: string; caseSensitive?: boolean },
+  candidates?: DataWorkspacePlan['creationCandidates'],
+) {
+  analysed = undefined
+  resourceReads = 0
+  creationCandidates = candidates
   const workspace = {
     schemaVersion: 1,
     workspaceId: 'westwood',
@@ -192,7 +203,7 @@ it('reads a document under a root that is its whole source (a game installation 
     diagnostics: [],
     complete: true,
   } as unknown as ModWorkspaceLock
-  const result = await analyzeResolvedDataWorkspace({
+  return analyzeResolvedDataWorkspace({
     services,
     grant: { id: 'whole-source-root-test', classes: [] },
     budgets,
@@ -209,6 +220,35 @@ it('reads a document under a root that is its whole source (a game installation 
       maxPageSize: 8,
     },
   })
+}
+
+it('reads a document under a root that is its whole source (a game installation layer)', async () => {
+  const result = await runAnalysis({ rootId: 'game', sourcePath: '' })
   expect(analysed).toEqual(['rulesmd.ini'])
   expect(result.diagnostics.map(item => item.message)).toContain('analysed')
+})
+
+it.each([
+  { root: { rootId: 'game', sourcePath: '' }, candidates: [{ rootId: 'other', path: 'x.xml' }], error: /active root/u },
+  { root: { rootId: 'game', sourcePath: '' }, candidates: [{ rootId: 'game', path: '../x.xml' }], error: /workspace root/u },
+  { root: { rootId: 'game', sourcePath: 'Mods/Mod' }, candidates: [{ rootId: 'game', path: 'Mods/Other/x.xml' }], error: /escapes its root/u },
+  { root: { rootId: 'game', sourcePath: 'Mods/Mod', caseSensitive: true }, candidates: [{ rootId: 'game', path: 'mods/mod/x.xml' }], error: /escapes its root/u },
+  { root: { rootId: 'game', sourcePath: '' }, candidates: [{ rootId: 'game', path: 'X.xml' }, { rootId: 'game', path: 'x.xml' }], error: /duplicated/u },
+  { root: { rootId: 'game', sourcePath: '' }, candidates: Array.from({ length: 9 }, (_, index) => ({ rootId: 'game', path: `${index}.xml` })), error: /budget/u },
+  { root: { rootId: 'game', sourcePath: '' }, candidates: null as unknown as DataWorkspacePlan['creationCandidates'], error: /invalid/u },
+])('refuses invalid creation candidates before reading resources: $error', async ({ root, candidates, error }) => {
+  const result = await runAnalysis(root, candidates)
+  expect(result.diagnostics.map(item => item.message).join('\n')).toMatch(error)
+  expect(resourceReads).toBe(0)
+  expect(analysed).toBeUndefined()
+})
+
+it.each([
+  { root: { rootId: 'game', sourcePath: 'Mods/Mod' }, candidates: [{ rootId: 'game', path: 'mods/mod/New.xml' }] },
+  { root: { rootId: 'game', sourcePath: '', caseSensitive: true }, candidates: [{ rootId: 'game', path: 'X.xml' }, { rootId: 'game', path: 'x.xml' }] },
+])('valid creation candidates request no additional reads: $root', async ({ root, candidates }) => {
+  const result = await runAnalysis(root, candidates)
+  expect(result.diagnostics.map(item => item.message)).toContain('analysed')
+  expect(analysed).toEqual([`${root.sourcePath === '' ? '' : `${root.sourcePath}/`}rulesmd.ini`])
+  expect(resourceReads).toBe(1)
 })
