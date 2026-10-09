@@ -100,3 +100,12 @@ it('refuses offsets that do not reach the sprite count and clips it does not kno
     /unknown clip/,
   )
 })
+
+it('writes the space node a projection names for its sprites', () => {
+  const given = projection([0, 1], sprite(1)) as unknown as { bakedParticles: object }
+  const written = materializeUvmCore(
+    { ...given, bakedParticles: { ...given.bakedParticles, spaceNodeId: 'root' } } as never,
+    request,
+  ) as unknown as { document: { extensions: Record<string, { spaceNode?: number }> } }
+  expect(written.document.extensions['UV_game_baked_particles']?.spaceNode).toBe(0)
+})

@@ -119,10 +119,12 @@ export interface ModelProjection {
    * `UV_game_baked_particles` (SPEC_UVM §13.4): each batch names its material by `materialId`,
    * each track its clip by `clipId` (written as the clip's sequence index) and its batch by index.
    * `frames` holds frame-count + 1 ascending sprite offsets from 0, `sprites` 17 floats per sprite
-   * (position, half size, rotation, colour, atlas cell, axis, normal) in the source frame, like the
-   * geometry: the materializer names its innermost frame node `spaceNode`.
+   * (position, half size, rotation, colour, atlas cell, axis, normal) in the frame of the node
+   * `spaceNodeId` names — without one, in the source frame, like the geometry: the materializer
+   * names its innermost frame node `spaceNode`.
    */
   readonly bakedParticles?: {
+    readonly spaceNodeId?: string
     readonly frameRate: number
     readonly batches: readonly {
       readonly name?: string
@@ -786,6 +788,7 @@ const BAKED_SPRITE_FLOATS = 17
  */
 function bakedParticlesOf(
   projection: ModelProjection,
+  nodeIndexById: ReadonlyMap<string, number>,
   materialIndexById: ReadonlyMap<string, number>,
   sourceFrameNode: number | undefined,
   addAccessor: (values: Float32Array | Uint32Array, type: 'VEC3' | 'SCALAR') => number,
@@ -794,6 +797,10 @@ function bakedParticlesOf(
   if (given === undefined) return undefined
   if (!(Number.isFinite(given.frameRate) && given.frameRate > 0))
     fail('baked particles need a positive frame rate')
+  const spaceNode =
+    given.spaceNodeId === undefined ? sourceFrameNode : nodeIndexById.get(given.spaceNodeId)
+  if (given.spaceNodeId !== undefined && spaceNode === undefined)
+    fail(`baked particles name the unknown space node ${given.spaceNodeId}`)
   // the clip's sequence, as writeUvmAnimations numbers it
   const sequenceByClip = new Map(
     (projection.animations ?? []).map((clip, index) => [clip.id, clip.sequenceIndex ?? index]),
@@ -848,7 +855,7 @@ function bakedParticlesOf(
   }
   if (tracks.length === 0) return undefined
   return {
-    ...(sourceFrameNode === undefined ? {} : { spaceNode: sourceFrameNode }),
+    ...(spaceNode === undefined ? {} : { spaceNode }),
     frameRate: given.frameRate,
     batches,
     tracks,
@@ -2397,6 +2404,7 @@ export function materializeUvmCore(
   )
   const bakedParticles = bakedParticlesOf(
     projection,
+    nodeIndexById,
     materialIndexById,
     sourceFrameNode,
     addAccessor,
