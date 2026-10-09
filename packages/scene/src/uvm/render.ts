@@ -750,7 +750,10 @@ async function prepareNestedUvmRender(
     return uv === undefined ? primitive : { ...primitive, textureCoordinates: uv }
   })
   let modelParticles: readonly ModelParticleInstance[] = []
-  if (field(document['extensions'], 'UV_game_effects') !== undefined) {
+  if (
+    field(document['extensions'], 'UV_game_effects') !== undefined ||
+    field(document['extensions'], 'UV_game_baked_particles') !== undefined
+  ) {
     const projectorReceivers = primitives.slice()
     // Emitters sample historical node poses while seeking. Avoid deforming mesh buffers for each
     // simulation step; this sampler has the same rig and nodes but no geometry.

@@ -18,6 +18,7 @@ import { readEffectProjectors } from './effect-projectors.js'
 import { captureCollisionSplats, type UvmCollisionSplat } from './collision-splats.js'
 import type { EffectParticleCollisionProvider } from '@modkit/codec-kit/model-math/effects-sim'
 import { readUvmEffectFields } from './effect-fields.js'
+import { bakedParticleSprites, readUvmBakedParticles } from './baked-particles.js'
 import type { JsonObject, JsonValue } from '@modkit/sdk'
 import type {
   SceneRendererDiagnostic,
@@ -313,7 +314,124 @@ interface UvmEffectLane {
 const sameInputs = (left: readonly unknown[], right: readonly unknown[]) =>
   left.length === right.length && left.every((value, index) => value === right[index])
 
+/**
+ * One frame of a document's effects: the simulated emitters of UV_game_effects (effectFrameOf) and
+ * the sprites of UV_game_baked_particles for the clip and clock (bakedParticleFrame), each needing
+ * the view to face the camera.
+ */
 export function createUvmEffectFrame(
+  document: JsonObject,
+  options: UvmEffectFrameOptions & { readonly cache?: UvmEffectFrameCache },
+) {
+  const frame = effectFrameOf(document, options)
+  const baked = bakedParticleFrame(document, options, frame.primitives.length)
+  if (baked === undefined) return frame
+  return {
+    ...frame,
+    primitives: [...frame.primitives, ...baked.primitives],
+    materials: [...frame.materials, ...baked.materials],
+    diagnostics: [...frame.diagnostics, ...baked.diagnostics],
+  }
+}
+
+/** Sprites a baked frame draws at most, whatever the track holds (SPEC_UVM §13.4). */
+const MAX_BAKED_SPRITES = 65_536
+
+/**
+ * The baked sprites of the frame's clip (`sequenceIndex`) at its clock: one primitive per batch,
+ * back to front, in the `spaceNode` frame, with the batch's material taken through the effect
+ * material path (emitterMaterial). Undefined for a document without baked particles; nothing
+ * without a clip or a view.
+ */
+function bakedParticleFrame(
+  document: JsonObject,
+  options: UvmEffectFrameOptions,
+  primitivesBefore: number,
+):
+  | {
+      readonly primitives: SceneRendererPrimitive[]
+      readonly materials: SceneRendererMaterial[]
+      readonly diagnostics: SceneRendererDiagnostic[]
+    }
+  | undefined {
+  const { signal } = options
+  const baked = readUvmBakedParticles(document, options.binary, options.maxBytes, signal)
+  if (baked === undefined) return undefined
+  const primitives: SceneRendererPrimitive[] = [],
+    materials: SceneRendererMaterial[] = [],
+    diagnostics: SceneRendererDiagnostic[] = []
+  const view = options.viewMatrix
+  const tracks = baked.tracks.filter(track => track.sequence === options.sequenceIndex)
+  if (view === undefined || tracks.length === 0) return { primitives, materials, diagnostics }
+  const toWorld =
+    baked.spaceNode === undefined
+      ? IDENTITY_MATERIAL_FRAME
+      : Array.from(
+          options.nodeTransformsAt(options.time).get(`node-${baked.spaceNode}`) ??
+            IDENTITY_MATERIAL_FRAME,
+        )
+  const toLocal = invertMaterialFrame(toWorld)
+  const direction = (value: Vec3): Vec3 =>
+    normalize(
+      [0, 1, 2].map(
+        row =>
+          number(toLocal[row], 0) * value[0] +
+          number(toLocal[row + 4], 0) * value[1] +
+          number(toLocal[row + 8], 0) * value[2],
+      ) as unknown as Vec3,
+    )
+  const camera = {
+    right: direction([number(view[0], 0), number(view[4], 0), number(view[8], 0)]),
+    up: direction([number(view[1], 0), number(view[5], 0), number(view[9], 0)]),
+    position: transform(transform([0, 0, 0], invertMaterialFrame(Array.from(view))), toLocal),
+  }
+  const materialById = new Map(options.materials.map(material => [material.id, material]))
+  const depth = viewDepthRow(view, toWorld)
+  for (const track of tracks) {
+    signal?.throwIfAborted()
+    const batch = baked.batches[track.batch]!
+    const base = materialById.get(`material-${batch.material}`)
+    if (base === undefined) throw new TypeError('baked particle material absent')
+    const { sprites, dropped } = bakedParticleSprites(
+      baked,
+      track,
+      options.time,
+      camera,
+      MAX_BAKED_SPRITES,
+    )
+    if (dropped > 0)
+      diagnostics.push({
+        severity: 'warning',
+        code: 'common.uvm/baked-particles-capped',
+        message: `${String(dropped)} baked sprites of batch ${String(track.batch)} exceed the frame's ${String(MAX_BAKED_SPRITES)}`,
+      })
+    if (sprites.length === 0) continue
+    const material = emitterMaterial(
+      base,
+      `uvm-baked-particles-${String(track.batch)}`,
+      undefined,
+      undefined,
+      options.maxNodes - primitivesBefore - primitives.length,
+      options.maxBytes,
+      signal,
+    )
+    if (material === undefined) continue
+    if (!materials.includes(material)) materials.push(material)
+    // a material program takes the colour as a tint in 0..1 (emitterSprites)
+    if (material.simpleEffect === undefined)
+      for (const sprite of sprites)
+        for (let at = 0; at < sprite.colors.length; at++)
+          sprite.colors[at] = Math.min(1, Math.max(0, sprite.colors[at]!))
+    primitives.push({
+      ...emitterSprites(track.batch, sprites, material, depth, toWorld),
+      id: `uvm-baked-particles-${String(track.batch)}`,
+    })
+  }
+  return { primitives, materials, diagnostics }
+}
+
+/** UV_game_effects of one frame (see createUvmEffectFrame). */
+function effectFrameOf(
   document: JsonObject,
   options: UvmEffectFrameOptions & { readonly cache?: UvmEffectFrameCache },
 ) {

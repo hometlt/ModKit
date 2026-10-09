@@ -52,7 +52,8 @@ export function createUvmEffectSource(
   sequenceIndex?: number,
 ): UvmEffectSource | undefined {
   const { document, binary } = readUvmContainer(bytes)
-  if (field(document['extensions'], 'UV_game_effects') === undefined) return undefined
+  const baked = field(document['extensions'], 'UV_game_baked_particles') !== undefined
+  if (field(document['extensions'], 'UV_game_effects') === undefined && !baked) return undefined
   const { scene, rig } = readUvmModel(document, binary, { maxScalarBytes: MAX_BYTES })
   const clip =
     sequenceIndex === undefined
@@ -143,7 +144,7 @@ export function createUvmEffectSource(
   const frames = createUvmEffectFrameCache()
   return Object.freeze<UvmEffectSource>({
     hasProjectors: entries('projectors').length > 0,
-    liveEffects: entries('particles').length + entries('ribbons').length > 0,
+    liveEffects: baked || entries('particles').length + entries('ribbons').length > 0,
     projectionsFollowTime,
     project: (time, materials, receivers, cache) =>
       createUvmProjectorFrame(document, {
@@ -190,12 +191,16 @@ type ScenePoseClip = NonNullable<Parameters<typeof createModelSceneSampler>[1]>[
 
 /**
  * Scene node ids an effect names: every `node` and `spaceNode` index in UV_game_effects (emitters,
- * ribbons, projectors, fields, spline ends) and the nodes that carry collision volumes.
+ * ribbons, projectors, fields, spline ends), the `spaceNode` of UV_game_baked_particles and the
+ * nodes that carry collision volumes.
  */
 function effectNodeIds(document: JsonObject): Set<string> {
   const nodes = Array.isArray(document['nodes']) ? document['nodes'] : []
   const ids = new Set<string>()
-  const pending: unknown[] = [field(document['extensions'], 'UV_game_effects')]
+  const pending: unknown[] = [
+    field(document['extensions'], 'UV_game_effects'),
+    field(document['extensions'], 'UV_game_baked_particles'),
+  ]
   while (pending.length > 0) {
     const value = pending.pop()
     if (Array.isArray(value)) for (const item of value) pending.push(item)

@@ -115,6 +115,30 @@ export interface ModelProjection {
     readonly extras?: UvmJsonObject
   }
   /**
+   * Sprites a scripted effect system drew (a PopcornFX effect), written on the root as
+   * `UV_game_baked_particles` (SPEC_UVM §13.4): each batch names its material by `materialId`,
+   * each track its clip by `clipId` (written as the clip's sequence index) and its batch by index.
+   * `frames` holds frame-count + 1 ascending sprite offsets from 0, `sprites` 17 floats per sprite
+   * (position, half size, rotation, colour, atlas cell, axis, normal) in the source frame, like the
+   * geometry: the materializer names its innermost frame node `spaceNode`.
+   */
+  readonly bakedParticles?: {
+    readonly frameRate: number
+    readonly batches: readonly {
+      readonly name?: string
+      readonly materialId: string
+      readonly orientation: 'camera' | 'axis' | 'plane'
+      readonly atlas?: readonly [number, number]
+    }[]
+    readonly tracks: readonly {
+      readonly clipId: string
+      readonly batch: number
+      readonly loop?: boolean
+      readonly frames: Uint32Array
+      readonly sprites: Float32Array
+    }[]
+  }
+  /**
    * Cameras, each on a projection node (glTF `node.camera`) that places it looking down its local
    * −z with +y up. `camera` is the glTF camera object; its clip distances, and an orthographic
    * camera's magnification, are in metres, since glTF views through a camera without its node's
@@ -748,6 +772,86 @@ function effectsOf(
     ...(sourceFrameNode === undefined ? {} : { spaceNode: sourceFrameNode }),
     ...Object.fromEntries(families),
     ...(given.extras === undefined ? {} : { extras: structuredClone(given.extras) }),
+  }
+}
+
+/** Floats a baked sprite takes in `UV_game_baked_particles` (SPEC_UVM §13.4). */
+const BAKED_SPRITE_FLOATS = 17
+
+/**
+ * The projection's baked particles as `UV_game_baked_particles`: batch materials and track clips
+ * turned into the document's material and sequence indices, offsets and sprites into accessors.
+ * Refused when an id names nothing written, the offsets do not run from 0 up to the sprite count,
+ * or a value is not finite. A track with no sprites is left out.
+ */
+function bakedParticlesOf(
+  projection: ModelProjection,
+  materialIndexById: ReadonlyMap<string, number>,
+  sourceFrameNode: number | undefined,
+  addAccessor: (values: Float32Array | Uint32Array, type: 'VEC3' | 'SCALAR') => number,
+): UvmJsonObject | undefined {
+  const given = projection.bakedParticles
+  if (given === undefined) return undefined
+  if (!(Number.isFinite(given.frameRate) && given.frameRate > 0))
+    fail('baked particles need a positive frame rate')
+  // the clip's sequence, as writeUvmAnimations numbers it
+  const sequenceByClip = new Map(
+    (projection.animations ?? []).map((clip, index) => [clip.id, clip.sequenceIndex ?? index]),
+  )
+  const batches = given.batches.map((batch, index) => {
+    const material = materialIndexById.get(batch.materialId)
+    if (material === undefined)
+      fail(`baked particle batch ${String(index)} names the unknown material ${batch.materialId}`)
+    if (!['camera', 'axis', 'plane'].includes(batch.orientation))
+      fail(`baked particle batch ${String(index)} has no known orientation`)
+    if (
+      batch.atlas !== undefined &&
+      !(
+        batch.atlas.length === 2 &&
+        batch.atlas.every(cells => Number.isSafeInteger(cells) && cells >= 1)
+      )
+    )
+      fail(`baked particle batch ${String(index)} has an invalid atlas`)
+    return {
+      ...(batch.name === undefined ? {} : { name: batch.name }),
+      material,
+      orientation: batch.orientation,
+      ...(batch.atlas === undefined ? {} : { atlas: [...batch.atlas] }),
+    }
+  })
+  const tracks: UvmJsonObject[] = []
+  for (const [index, track] of given.tracks.entries()) {
+    const label = `baked particle track ${String(index)}`
+    const sequence = sequenceByClip.get(track.clipId)
+    if (sequence === undefined) fail(`${label} names the unknown clip ${track.clipId}`)
+    if (!Number.isSafeInteger(track.batch) || batches[track.batch] === undefined)
+      fail(`${label} names no batch`)
+    const { frames, sprites } = track
+    const count = sprites.length / BAKED_SPRITE_FLOATS
+    if (
+      !Number.isInteger(count) ||
+      frames.length < 2 ||
+      frames[0] !== 0 ||
+      frames[frames.length - 1] !== count ||
+      frames.some((offset, at) => at > 0 && offset < frames[at - 1]!)
+    )
+      fail(`${label} needs frame offsets running from 0 up to its sprite count`)
+    if (!sprites.every(Number.isFinite)) fail(`${label} has values that are not finite`)
+    if (count === 0) continue
+    tracks.push({
+      sequence,
+      batch: track.batch,
+      ...(track.loop === true ? { loop: true } : {}),
+      frames: addAccessor(Uint32Array.from(frames), 'SCALAR'),
+      sprites: addAccessor(Float32Array.from(sprites), 'SCALAR'),
+    })
+  }
+  if (tracks.length === 0) return undefined
+  return {
+    ...(sourceFrameNode === undefined ? {} : { spaceNode: sourceFrameNode }),
+    frameRate: given.frameRate,
+    batches,
+    tracks,
   }
 }
 
@@ -1741,7 +1845,10 @@ export function materializeUvmCore(
 
   // A node's camera rule, as `UV_node_billboard` schema 1 (scene `uvm/billboards.ts` reads it back).
   let billboardNodes = 0
-  const nodeBillboard = (id: string, billboard: NonNullable<ModelNode['billboard']>): UvmJsonObject => {
+  const nodeBillboard = (
+    id: string,
+    billboard: NonNullable<ModelNode['billboard']>,
+  ): UvmJsonObject => {
     if (billboard.mode === 'inverse-camera') {
       const rotations: readonly (readonly number[])[] = billboard.basisRotations
       if (rotations.length > 4) fail(`node «${id}» billboard needs at most four basis rotations`)
@@ -1848,7 +1955,8 @@ export function materializeUvmCore(
       entry.matrix = transform
     }
     const socket = socketByNodeId.get(node.id)
-    const billboard = node.billboard === undefined ? undefined : nodeBillboard(node.id, node.billboard)
+    const billboard =
+      node.billboard === undefined ? undefined : nodeBillboard(node.id, node.billboard)
     if (billboard !== undefined) billboardNodes += 1
     if (socket !== undefined || billboard !== undefined)
       entry.extensions = {
@@ -2208,11 +2316,15 @@ export function materializeUvmCore(
   )
   // One line per clip and reason: the receipt names every channel, and a line per channel (Thor:
   // 1 766 float32-rounding notes) outgrew every reader's diagnostic budget.
-  const clipLosses = new Map<string, { readonly clipId: string; readonly reason: string; count: number }>()
+  const clipLosses = new Map<
+    string,
+    { readonly clipId: string; readonly reason: string; count: number }
+  >()
   for (const loss of animation?.losses ?? []) {
     const key = `${loss.clipId}\u0000${loss.reason}`
     const entry = clipLosses.get(key)
-    if (entry === undefined) clipLosses.set(key, { clipId: loss.clipId, reason: loss.reason, count: 1 })
+    if (entry === undefined)
+      clipLosses.set(key, { clipId: loss.clipId, reason: loss.reason, count: 1 })
     else entry.count += 1
   }
   for (const { clipId, reason, count } of clipLosses.values())
@@ -2254,33 +2366,40 @@ export function materializeUvmCore(
       undefined,
       'clip and target identities are positional; native frame indices, provenance, bounds and movement speed are not glTF TRS fields',
     )
-  // emission meshes take accessors, so the effects are written before the buffer is closed
+  // emission meshes and baked sprites take accessors, so they are written before the buffer is closed
+  const addAccessor = (values: Float32Array | Uint32Array, type: 'VEC3' | 'SCALAR') => {
+    const index = accessors.length
+    if (type === 'VEC3') {
+      const bounds = boundsOf(values)
+      accessors.push({
+        bufferView: buffers.push(values),
+        componentType: FLOAT,
+        count: values.length / 3,
+        type,
+        min: bounds.min,
+        max: bounds.max,
+      })
+    } else
+      accessors.push({
+        bufferView: buffers.push(values),
+        componentType: values instanceof Float32Array ? FLOAT : UINT32,
+        count: values.length,
+        type,
+      })
+    return index
+  }
   const effects = effectsOf(
     projection,
     nodeIndexById,
     materialIndexById,
     sourceFrameNode,
-    (values, type) => {
-      const index = accessors.length
-      if (type === 'VEC3') {
-        const bounds = boundsOf(values)
-        accessors.push({
-          bufferView: buffers.push(values),
-          componentType: FLOAT,
-          count: values.length / 3,
-          type,
-          min: bounds.min,
-          max: bounds.max,
-        })
-      } else
-        accessors.push({
-          bufferView: buffers.push(values),
-          componentType: UINT32,
-          count: values.length,
-          type,
-        })
-      return index
-    },
+    addAccessor,
+  )
+  const bakedParticles = bakedParticlesOf(
+    projection,
+    materialIndexById,
+    sourceFrameNode,
+    addAccessor,
   )
   const binary = buffers.build()
   const gameExtensions = gameExtensionsOf(projection)
@@ -2325,12 +2444,14 @@ export function materializeUvmCore(
       ...(cameras.some(camera => camera['extensions'] !== undefined) ? ['UV_scene_camera'] : []),
       ...(collisionNodes === 0 ? [] : ['UV_game_collision']),
       ...(effects === undefined ? [] : ['UV_game_effects']),
+      ...(bakedParticles === undefined ? [] : ['UV_game_baked_particles']),
       ...gameExtensions.map(([name]) => name),
     ],
     extensions: {
       ...Object.fromEntries(gameExtensions),
       ...(sceneLights === undefined ? {} : { UV_scene_lights: sceneLights }),
       ...(effects === undefined ? {} : { UV_game_effects: effects }),
+      ...(bakedParticles === undefined ? {} : { UV_game_baked_particles: bakedParticles }),
       ...(unitsExtension === undefined ? {} : { UV_units: unitsExtension }),
       ...(lodSelection === undefined ? {} : { MODKITX_lod_selection: lodSelection }),
       ...(visibility.length === 0 ? {} : { UV_game_variants: { visibility } }),

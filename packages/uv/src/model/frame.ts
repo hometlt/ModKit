@@ -216,7 +216,7 @@ export function removeUvmFrameWrappers(
     for (const channel of array(animation, 'channels'))
       outside(field(field(channel, 'target'), 'node'), 'an animation target')
   const sourceFrame = removed.at(-1)
-  const spaced = ['UV_game_effects', 'UV_scene_lights']
+  const spaced = ['UV_game_effects', 'UV_game_baked_particles', 'UV_scene_lights']
   for (const name of spaced) {
     const space = field(extensions[name], 'spaceNode')
     if (space !== sourceFrame) outside(space, `${name} spaceNode`)

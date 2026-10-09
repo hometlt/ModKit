@@ -204,7 +204,7 @@ export function removeUvmSceneFrame(
     if (index === frameIndex) throw new TypeError(`${label} cannot retain the removed scene frame`)
     return index > frameIndex ? index - 1 : index
   }
-  for (const name of ['UV_game_effects', 'UV_scene_lights']) {
+  for (const name of ['UV_game_effects', 'UV_game_baked_particles', 'UV_scene_lights']) {
     if (extensions[name] === undefined) continue
     const extension = object(extensions[name], name)
     if (extension['spaceNode'] === frameIndex) {
