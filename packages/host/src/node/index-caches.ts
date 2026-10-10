@@ -31,7 +31,7 @@ function manifestOf(value: unknown): IndexCacheManifest | undefined {
   if (typeof value !== 'object' || value === null) return undefined
   const item = value as Record<string, unknown>
   return typeof item['game'] === 'string' &&
-    (item['kind'] === 'names' || item['kind'] === 'content') &&
+    (item['kind'] === 'names' || item['kind'] === 'content' || item['kind'] === 'data') &&
     typeof item['installation'] === 'string' &&
     (item['product'] === undefined || typeof item['product'] === 'string')
     ? (item as unknown as IndexCacheManifest)

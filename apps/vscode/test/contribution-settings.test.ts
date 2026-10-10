@@ -82,14 +82,17 @@ describe('configuredContributionSettings', () => {
 
   it('reads the setting into the sdk switches and reports a malformed switch', () => {
     const { switches, problems } = configuredIndexCaches({
-      s2: { content: false },
+      s2: { content: false, data: false },
       d3: { names: 'no' },
     })
 
-    expect(switches).toEqual({ s2: { content: false }, d3: {} })
+    expect(switches).toEqual({ s2: { content: false, data: false }, d3: {} })
     // the sdk's one rule: an absent product or kind stays enabled
     expect(indexCacheEnabled(switches, 's2', 'content')).toBe(false)
     expect(indexCacheEnabled(switches, 's2', 'names')).toBe(true)
+    // parsed mod data (StarCraft II chain Data) is its own kind
+    expect(indexCacheEnabled(switches, 's2', 'data')).toBe(false)
+    expect(indexCacheEnabled(switches, 'd3', 'data')).toBe(true)
     expect(indexCacheEnabled(switches, 'wow', 'content')).toBe(true)
     expect(problems).toEqual(["modkit.indexCaches['d3'].names must be true or false"])
     expect(configuredIndexCaches([1]).problems).toHaveLength(1)

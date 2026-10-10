@@ -438,7 +438,11 @@
         "modkit.indexCaches": {
           "additionalProperties": {
             "additionalProperties": false,
-            "properties": { "content": { "type": "boolean" }, "names": { "type": "boolean" } },
+            "properties": {
+              "content": { "type": "boolean" },
+              "data": { "type": "boolean" },
+              "names": { "type": "boolean" }
+            },
             "type": "object"
           },
           "default": {},
@@ -509,6 +513,32 @@
           "default": false,
           "markdownDescription": "%configuration.showHiddenEntries.description%",
           "type": "boolean"
+        },
+        "modkit.starcraft2.cachedMods": {
+          "default": ["Liberty", "Void", "VoidMulti"],
+          "items": {
+            "enum": [
+              "Core",
+              "Liberty",
+              "LibertyMulti",
+              "Swarm",
+              "SwarmMulti",
+              "Void",
+              "VoidMulti",
+              "VoidPrologue",
+              "AlliedCommanders",
+              "NovaStoryAssets",
+              "War3",
+              "War3Data",
+              "WarCoop",
+              "Challenges",
+              "BalanceMulti"
+            ],
+            "type": "string"
+          },
+          "markdownDescription": "%configuration.starcraft2.cachedMods.description%",
+          "type": "array",
+          "uniqueItems": true
         }
       }
     },

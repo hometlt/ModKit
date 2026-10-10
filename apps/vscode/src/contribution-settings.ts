@@ -51,7 +51,7 @@ export function configuredIndexCaches(value: unknown): {
   readonly switches: IndexCacheSwitches
   readonly problems: readonly string[]
 } {
-  const switches: Record<string, { names?: boolean; content?: boolean }> = {}
+  const switches: Record<string, { names?: boolean; content?: boolean; data?: boolean }> = {}
   const problems: string[] = []
   if (value !== undefined && value !== null && !isRecord(value))
     problems.push('modkit.indexCaches must be an object keyed by game product')
@@ -60,8 +60,8 @@ export function configuredIndexCaches(value: unknown): {
       problems.push(`modkit.indexCaches['${product}'] must be an object`)
       continue
     }
-    const turned: { names?: boolean; content?: boolean } = {}
-    for (const kind of ['names', 'content'] as const) {
+    const turned: { names?: boolean; content?: boolean; data?: boolean } = {}
+    for (const kind of ['names', 'content', 'data'] as const) {
       if (typeof entry[kind] === 'boolean') turned[kind] = entry[kind]
       else if (entry[kind] !== undefined)
         problems.push(`modkit.indexCaches['${product}'].${kind} must be true or false`)

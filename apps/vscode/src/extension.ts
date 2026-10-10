@@ -1328,9 +1328,20 @@ async function activateModkit(
           userHome: homedir(),
         },
       )
-      if (installationDirectory === undefined && configured === undefined) return undefined
+      // StarCraft II keeps the Data parses of these stock mods' chains (owner decision 10.10)
+      const cachedMods =
+        extension === 'blizzard/starcraft2'
+          ? vscode.workspace.getConfiguration('modkit').get<unknown>('starcraft2.cachedMods')
+          : undefined
+      const kept =
+        Array.isArray(cachedMods) && cachedMods.every(item => typeof item === 'string')
+          ? { cachedMods }
+          : undefined
+      if (installationDirectory === undefined && configured === undefined && kept === undefined)
+        return undefined
       return {
         ...(installationDirectory === undefined ? {} : { installationDirectory }),
+        ...kept,
         ...configured,
       }
     }
@@ -12198,7 +12209,9 @@ async function activateModkit(
             description: localizer.text(
               cache.manifest.kind === 'names'
                 ? 'vscode.indexCaches.names'
-                : 'vscode.indexCaches.content',
+                : cache.manifest.kind === 'data'
+                  ? 'vscode.indexCaches.data'
+                  : 'vscode.indexCaches.content',
               { size: mebibytes(cache.bytes) },
             ),
             detail: cache.manifest.installation,

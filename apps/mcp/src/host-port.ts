@@ -9,7 +9,7 @@
  */
 import { createHash, randomUUID } from 'node:crypto'
 import { open, realpath, stat } from 'node:fs/promises'
-import { basename, extname, isAbsolute, relative, resolve } from 'node:path'
+import { basename, extname, isAbsolute, join, relative, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { diagnostic, type Diagnostic } from '@modkit/core'
 import {
@@ -533,6 +533,8 @@ export async function createHostMcpPort(
       const local = await loadContentSources(
         configuration.contentSourceConfig,
         configuration.contentSourceStorage,
+        // one directory of index caches beside the storage, as VS Code keeps beside its own
+        { indexCacheDirectory: join(configuration.contentSourceStorage, 'index-cache') },
       )
       // The machine's shared mod server holds the mod contexts for every client (owner decision
       // 07.10); this process opens them itself when the server cannot be reached.
@@ -544,6 +546,7 @@ export async function createHostMcpPort(
               extensionRoots: [],
               storage: configuration.contentSourceStorage,
               configPath: configuration.contentSourceConfig,
+              indexCacheDirectory: join(configuration.contentSourceStorage, 'index-cache'),
               ...(onDiagnostic === undefined
                 ? {}
                 : {

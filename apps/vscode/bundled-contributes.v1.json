@@ -479,7 +479,9 @@
       },
       "modkit.installationSearchFolders": {
         "type": "array",
-        "items": { "type": "string" },
+        "items": {
+          "type": "string"
+        },
         "default": [
           "Program Files",
           "Program Files (x86)",
@@ -603,11 +605,44 @@
             },
             "content": {
               "type": "boolean"
+            },
+            "data": {
+              "type": "boolean"
             }
           },
           "additionalProperties": false
         },
         "markdownDescription": "%configuration.indexCaches.description%"
+      },
+      "modkit.starcraft2.cachedMods": {
+        "type": "array",
+        "default": [
+          "Liberty",
+          "Void",
+          "VoidMulti"
+        ],
+        "uniqueItems": true,
+        "items": {
+          "type": "string",
+          "enum": [
+            "Core",
+            "Liberty",
+            "LibertyMulti",
+            "Swarm",
+            "SwarmMulti",
+            "Void",
+            "VoidMulti",
+            "VoidPrologue",
+            "AlliedCommanders",
+            "NovaStoryAssets",
+            "War3",
+            "War3Data",
+            "WarCoop",
+            "Challenges",
+            "BalanceMulti"
+          ]
+        },
+        "markdownDescription": "%configuration.starcraft2.cachedMods.description%"
       },
       "modkit.locale": {
         "type": "string",
