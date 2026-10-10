@@ -47,6 +47,7 @@ import {
   type LanguageDocument,
   type LanguageDocumentSymbolList,
   type LanguageDocumentLocalFeature,
+  type LanguageModContextFeature,
   type LanguageFeatureRequest,
   type LanguageFormattingOptions,
   type LanguageHover,
@@ -2082,6 +2083,11 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
     bytes: number
   }>[] = []
   let referenceAnswerBytes = 0
+  /*
+   * Requests a provider answers from its synchronized ModContext carry only the live document: the
+   * typed reference index, built from snapshot occurrences, has nothing to index for them.
+   */
+  const modContextServed = new WeakSet<LanguageFeatureRequest>()
   const featureControllers = new Set<AbortController>()
   /*
    * Content tokens of the semantic inputs this owner validated. Such an input is a deep-frozen copy
@@ -2132,11 +2138,15 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
     const place = registry.placeOf(entry.uri, requirement.gameId)
     if (place === undefined) return undefined
     try {
-      return await registry.synchronize(
+      const synchronized = await registry.synchronize(
         place.scope,
         [...documents.values()].map(open => open.document),
         signal,
       )
+      return Object.freeze({
+        ...synchronized,
+        document: Object.freeze({ layerId: place.layerId, path: place.path }),
+      })
     } catch (error) {
       if (isCancellation(error)) throw error
       throwIfAborted(signal)
@@ -2254,7 +2264,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
     preferCachedSemanticContext = false,
     discoverCompletionContext = false,
     maxAllowedResults = LANGUAGE_MAX_RESULTS,
-    inputFeature?: LanguageDocumentLocalFeature | 'hover' | 'completion',
+    inputFeature?: LanguageDocumentLocalFeature | LanguageModContextFeature,
   ): Promise<Value | undefined> => {
     const entry = requireFeatureEntry(workspaceRequest, positioned, maxAllowedResults)
     throwIfAborted(workspaceRequest.signal)
@@ -2299,6 +2309,8 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         inputFeature !== undefined &&
         inputFeature !== 'hover' &&
         inputFeature !== 'completion' &&
+        inputFeature !== 'definition' &&
+        inputFeature !== 'references' &&
         entry.resolution.provider.documentLocalFeatures?.includes(inputFeature) === true
       if (
         discoverCompletionContext &&
@@ -2319,7 +2331,10 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
       let modContext: LanguageWorkspaceModContext | undefined
       let readsModContext =
         !documentOnly &&
-        (inputFeature === 'hover' || inputFeature === 'completion') &&
+        (inputFeature === 'hover' ||
+          inputFeature === 'completion' ||
+          inputFeature === 'definition' ||
+          inputFeature === 'references') &&
         entry.resolution.provider.modContextFeatures?.includes(inputFeature) === true
       if (
         readsModContext &&
@@ -2334,6 +2349,23 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         throwIfAborted(controller.signal)
         if (typeof applies !== 'boolean') {
           invalidFeature('language provider returned an invalid ModContext completion applicability', entry.uri)
+        }
+        readsModContext = applies
+      }
+      if (
+        readsModContext &&
+        (inputFeature === 'definition' || inputFeature === 'references') &&
+        entry.resolution.provider.modContextFeatureApplies !== undefined
+      ) {
+        const applies = await entry.resolution.provider.modContextFeatureApplies({
+          feature: inputFeature,
+          document: entry.document,
+          position: (workspaceRequest as LanguageWorkspacePositionRequest).position,
+          signal: controller.signal,
+        })
+        throwIfAborted(controller.signal)
+        if (typeof applies !== 'boolean') {
+          invalidFeature('language provider returned an invalid ModContext feature applicability', entry.uri)
         }
         readsModContext = applies
       }
@@ -2644,6 +2676,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         signal: controller.signal,
       }) as LanguageFeatureRequest
       options.observeWorkspaceContext?.(workspaceContext, entry.uri)
+      if (modContextOnly) modContextServed.add(providerRequest)
       const pending = call(entry.resolution.provider, providerRequest)
       if (pending === undefined) return undefined
       let candidate: unknown
@@ -3062,7 +3095,11 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
     mode: 'definition' | 'references',
     includeDeclaration = false,
   ): Promise<LanguageLocationList | undefined> => {
-    if (provider.referenceOccurrences === undefined || feature.workspaceContext === undefined) {
+    if (
+      provider.referenceOccurrences === undefined ||
+      feature.workspaceContext === undefined ||
+      modContextServed.has(feature)
+    ) {
       return undefined
     }
     const context = feature.workspaceContext
@@ -3551,6 +3588,10 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         },
         validateLocationList,
         { position: request.position },
+        false,
+        false,
+        LANGUAGE_MAX_RESULTS,
+        'definition',
       )
     },
 
@@ -3586,6 +3627,10 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
             ? {}
             : { includeDeclaration: request.includeDeclaration }),
         },
+        false,
+        false,
+        LANGUAGE_MAX_RESULTS,
+        'references',
       )
     },
 

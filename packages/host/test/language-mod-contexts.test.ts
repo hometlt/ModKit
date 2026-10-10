@@ -4,7 +4,7 @@
  * reads it and taken away when they close, a provider's questions carried there with the files the
  * answer names given the URIs the host uses, and every server told when files change on disk.
  */
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { uint64 } from '@modkit/core'
 import { createHostTopology, type ContributionContext, type JsonValue } from '@modkit/sdk'
 import { LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT, type LanguageProvider } from '@modkit/sdk/language'
@@ -318,6 +318,69 @@ describe('the loaded mod servers of a language workspace', () => {
     incomplete = true
     expect(await workspace.hover(request)).toMatchObject({ markdown: '2:ruRU' })
     expect(snapshots).toBe(0)
+    await workspace.shutdown()
+  }, 30_000)
+
+  it('serves opted-in definition and references from the server with the document place, or a snapshot where the provider declines', async () => {
+    const chain = server()
+    const servers = createLanguageModContexts({ contexts: [chain.context] })
+    let snapshots = 0
+    let applies = true
+    const asked: string[] = []
+    const occurrences = vi.fn(async () => [])
+    const location = (uri: string) => ({ uri, range: { start: { line: 0, character: 0 }, end: { line: 0, character: 1 } } })
+    const provider: LanguageProvider = {
+      contract: LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT,
+      languageIds: ['sc2-data'],
+      modContextFeatures: ['definition', 'references'],
+      semanticContextRequirements: [{ kind: 'mod-context', gameId: 'test/game' }],
+      analyze: async ({ document: open }) => ({
+        documentUri: open.uri,
+        documentVersion: open.version,
+        tokens: [],
+        diagnostics: [],
+        symbols: [],
+      }),
+      async modContextFeatureApplies(request) {
+        asked.push(request.feature)
+        return applies
+      },
+      referenceOccurrences: occurrences,
+      async definition(request) {
+        return { locations: [location(snapshots > 0 ? 'snapshot:' : 'served:')], isIncomplete: false }
+      },
+      async references(request) {
+        // Both paths name the document's place in the chain; only the served one skips the snapshot.
+        const place = request.workspaceContext?.modContext?.document
+        if (snapshots === 0) expect(request.workspaceDocuments).toEqual([request.document])
+        return {
+          locations: [location(snapshots > 0 ? 'snapshot:' : `served:${place?.layerId}/${place?.path}`)],
+          isIncomplete: false,
+        }
+      },
+    }
+    const workspace = await languageWorkspace(provider, () => {}, servers, {
+      documentSource: {
+        async snapshot() {
+          snapshots += 1
+          return { documents: [], isComplete: true }
+        },
+      },
+    })
+    await workspace.synchronize({ languageId: 'sc2-data', document: document(MOD_UNITS_URI, '<edited/>') })
+    const request = { uri: MOD_UNITS_URI, documentVersion: 1, position: { line: 0, character: 1 } }
+    expect((await workspace.definition(request))?.locations.map(item => item.uri)).toEqual(['served:'])
+    const references = await workspace.references({ ...request, includeDeclaration: true })
+    expect(references?.locations[0]?.uri).toBe(`served:layer:1/${UNITS}`)
+    expect(snapshots).toBe(0)
+    // The typed index is built from snapshot occurrences; a served request has none to give.
+    expect(occurrences).not.toHaveBeenCalled()
+    expect(asked).toEqual(['definition', 'references'])
+    applies = false
+    expect((await workspace.references({ ...request, includeDeclaration: true }))?.locations.map(item => item.uri))
+      .toEqual(['snapshot:'])
+    expect(snapshots).toBe(1)
+    expect(occurrences).toHaveBeenCalled()
     await workspace.shutdown()
   }, 30_000)
 
@@ -657,7 +720,9 @@ describe('the loaded mod servers of a language workspace', () => {
       position: { line: 0, character: 1 },
     })
     const { scope } = servers.placeOf(MOD_UNITS_URI)!
-    expect(seen).toEqual([{ scope, gameId: 'test/game', revision: '1', complete: true }])
+    expect(seen).toEqual([
+      { scope, gameId: 'test/game', revision: '1', complete: true, document: { layerId: 'layer:1', path: UNITS } },
+    ])
     expect(chain.changes).toEqual([[{ layerId: 'layer:1', path: UNITS, text: edited }]])
     expect(JSON.parse(hover!.markdown)).toMatchObject({ revision: '1' })
     expect(chain.questions).toEqual([{ kind: 'data.ids' }])

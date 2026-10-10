@@ -503,7 +503,12 @@ export interface LanguageWorkspaceModContext {
   readonly gameId: string
   readonly revision: string
   readonly complete: boolean
+  /** Where the request's document lies in that chain, as the server addresses its files. */
+  readonly document?: Readonly<{ layerId: string; path: string }>
 }
+
+/** Features a provider may answer from the synchronized ModContext instead of a snapshot. */
+export type LanguageModContextFeature = 'hover' | 'completion' | 'definition' | 'references'
 
 /**
  * Bounded inputs for one semantic request. `workspaceDocuments` includes `document` and never
@@ -618,7 +623,7 @@ export interface LanguageProvider {
    * loaded server the host supplies the usual bounded snapshot. Omission keeps that path. The
    * provider and Host must support the same feature vocabulary; install compatible SDK/Host artifacts.
    */
-  readonly modContextFeatures?: readonly ('hover' | 'completion')[]
+  readonly modContextFeatures?: readonly LanguageModContextFeature[]
   /**
    * Optional position-specific proof for opted-in completion. False keeps the bounded snapshot
    * (for example completion that needs an asset listing); omission accepts the feature declaration.
@@ -626,6 +631,16 @@ export interface LanguageProvider {
    */
   modContextCompletionApplies?(
     request: Pick<LanguagePositionRequest, 'document' | 'position' | 'signal'>,
+  ): Promise<boolean>
+  /**
+   * Optional position-specific proof for opted-in definition and references, read like
+   * `modContextCompletionApplies` from the live document alone: false keeps the bounded snapshot
+   * (for example a position whose answer needs the other languages of the workspace).
+   */
+  modContextFeatureApplies?(
+    request: Pick<LanguagePositionRequest, 'document' | 'position' | 'signal'> & {
+      readonly feature: 'definition' | 'references'
+    },
   ): Promise<boolean>
   analyze(request: LanguageAnalysisRequest): Promise<LanguageAnalysis>
   /**
