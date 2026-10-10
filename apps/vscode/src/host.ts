@@ -146,6 +146,7 @@ import {
   withExtensionEnabled,
   withExtensionRoot,
   withoutExtension,
+  trustedExtensionRules,
   type BundledCatalogRoot,
   type DirectoryProbe,
   type ExtensionRootRequestLike,
@@ -393,6 +394,11 @@ export interface VsCodeSubjectHostOptions {
   readonly configuredDisabledContributions?: unknown
   /** Raw value of `modkit.disabledExtensions`; disabled roots remain inspectable. */
   readonly configuredDisabledExtensions?: unknown
+  /**
+   * Raw value of `modkit.trustedExtensions` (owner decision 10.10): roots that run in this process
+   * instead of an isolated worker. Undefined trusts nothing.
+   */
+  readonly configuredTrustedExtensions?: unknown
   /** Raw value of `modkit.contributionSettings`, exactly as the editor returned it. */
   readonly configuredContributionSettings?: unknown
   /** The host storage this window may cache into; each contribution gets a subdirectory. */
@@ -478,6 +484,7 @@ export async function createVsCodeSubjectHost(
     ...configured.roots,
   ])
   const managedRequests = options.managedExtensions ?? []
+  const trust = trustedExtensionRules(options.configuredTrustedExtensions, path => resolve(path))
   const managedCoordinateCounts = new Map<string, number>()
   for (const request of managedRequests) {
     managedCoordinateCounts.set(
@@ -503,34 +510,53 @@ export async function createVsCodeSubjectHost(
   )
 
   /*
-   * The first-party catalog is `bundled`, but deliberately without `allowTrustedInProcess`: the VS
-   * Code extension host is a Node process shared with every other installed extension, and running
-   * a codec on that thread would put a third party's parser beside everybody's language servers.
-   * Portable variants resolve for the `node-worker` realm instead, which is what the topology's
-   * third realm exists for.
+   * The first-party catalog is `bundled`. It was deliberately loaded without
+   * `allowTrustedInProcess` (the VS Code extension host is a Node process shared with every other
+   * installed extension); since the owner decision of 10.10 the user decides in
+   * `modkit.trustedExtensions` which roots run here for speed: `bundled` the shipped catalog, a
+   * coordinate, a folder, or `*`. Everything else still resolves for the `node-worker` realm.
+   * A trusted root that is not the catalog loads through the same trusted path as `createModkit`'s
+   * `--trust-extensions` roots; its contributions still need a `trusted-in-process` variant.
    */
-  const bundled = await loadExtensionRoots(catalogRoots, { origin: 'bundled' })
-  const installed = await loadExtensionRoots(staticRequests, {
-    origin: 'installed',
+  const bundled = await loadExtensionRoots(catalogRoots, {
+    origin: 'bundled',
+    ...(trust.bundled ? { allowTrustedInProcess: true } : {}),
+  })
+  const trustedStatic = await loadExtensionRoots(staticRequests.filter(request => trust.trusts(request)), {
+    origin: 'bundled',
+    allowTrustedInProcess: true,
     claimed: [...VSCODE_BUILTIN_MODULES.coordinates, ...bundled.coordinates],
+  })
+  const installed = await loadExtensionRoots(staticRequests.filter(request => !trust.trusts(request)), {
+    origin: 'installed',
+    claimed: [...VSCODE_BUILTIN_MODULES.coordinates, ...bundled.coordinates, ...trustedStatic.coordinates],
   })
   /*
    * Managed roots are a separate final group: a package may never shadow the build, workspace or
    * a hand-authored `modkit.extensions` root. `loadExtensionRoots` reports the exact conflicting
    * coordinate and rejects the managed root, so the ambiguity is visible and fail-closed.
    */
-  const managed = await loadExtensionRoots(uniqueManagedRequests, {
+  const earlier = [
+    ...VSCODE_BUILTIN_MODULES.coordinates,
+    ...bundled.coordinates,
+    ...trustedStatic.coordinates,
+    ...installed.coordinates,
+  ]
+  const trustedManaged = await loadExtensionRoots(uniqueManagedRequests.filter(request => trust.trusts(request)), {
+    origin: 'bundled',
+    allowTrustedInProcess: true,
+    claimed: earlier,
+  })
+  const managed = await loadExtensionRoots(uniqueManagedRequests.filter(request => !trust.trusts(request)), {
     origin: 'installed',
-    claimed: [
-      ...VSCODE_BUILTIN_MODULES.coordinates,
-      ...bundled.coordinates,
-      ...installed.coordinates,
-    ],
+    claimed: [...earlier, ...trustedManaged.coordinates],
   })
   const extensionInputs: readonly ExtensionInput[] = [
     ...VSCODE_BUILTIN_MODULES.inputs,
     ...bundled.inputs,
+    ...trustedStatic.inputs,
     ...installed.inputs,
+    ...trustedManaged.inputs,
     ...managed.inputs,
   ]
   const contributionSettings = configuredContributionSettings({
@@ -639,12 +665,19 @@ export async function createVsCodeSubjectHost(
 
   const extensions: VsCodeExtensionReport = Object.freeze({
     bundled: bundled.coordinates,
-    installed: Object.freeze([...installed.coordinates, ...managed.coordinates]),
-    managed: managed.coordinates,
+    installed: Object.freeze([
+      ...trustedStatic.coordinates,
+      ...installed.coordinates,
+      ...trustedManaged.coordinates,
+      ...managed.coordinates,
+    ]),
+    managed: Object.freeze([...trustedManaged.coordinates, ...managed.coordinates]),
     failures: Object.freeze([
       ...bundled.failures,
+      ...trustedStatic.failures,
       ...installed.failures,
       ...managedDuplicateFailures,
+      ...trustedManaged.failures,
       ...managed.failures,
     ]),
     // a malformed `modkit.disabledContributions` is the user's setting too, so it is reported in
@@ -652,6 +685,7 @@ export async function createVsCodeSubjectHost(
     problems: Object.freeze([
       ...catalogProblems,
       ...configured.problems,
+      ...trust.problems,
       ...switchedOffExtensions.problems,
       ...switchedOff.problems,
     ]),

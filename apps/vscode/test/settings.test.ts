@@ -28,6 +28,7 @@ import type { ShellRequest, ShellSettingsView } from '../src/bridge.js'
 import {
   configuredDisabledContributions,
   configuredDisabledExtensions,
+  trustedExtensionRules,
   describeConfiguredExtensions,
   withContributionDisabled,
   withContributionsDisabled,
@@ -709,4 +710,32 @@ describe('a folder that is not an extension', () => {
       await served.close('junk probe over')
     }
   }, 120_000)
+})
+
+describe('modkit.trustedExtensions (owner decision 10.10)', () => {
+  const resolvePath = (path: string) => path
+  it('trusts the shipped catalog, coordinates, folders and everything by keyword', () => {
+    const rules = trustedExtensionRules(
+      ['bundled', 'blizzard/starcraft2', 'C:\\MODDING', 'not a coordinate'],
+      resolvePath,
+    )
+    expect(rules.bundled).toBe(true)
+    expect(rules.trusts({ root: 'D:/Other/ext', expectedId: 'blizzard/starcraft2' })).toBe(true)
+    expect(rules.trusts({ root: 'D:/Other/ext', expectedId: 'ea/sage' })).toBe(false)
+    expect(rules.trusts({ root: 'c:/modding/.acceptance/modkit-extensions-ea/sage' })).toBe(true)
+    expect(rules.trusts({ root: 'C:/MODDINGX/ext' })).toBe(false)
+    expect(rules.problems).toHaveLength(1)
+    const everything = trustedExtensionRules(['*'], resolvePath)
+    expect(everything.bundled).toBe(true)
+    expect(everything.trusts({ root: 'anywhere' })).toBe(true)
+  })
+
+  it('trusts nothing when unset or empty, and reports a malformed setting', () => {
+    for (const value of [undefined, []]) {
+      const rules = trustedExtensionRules(value, resolvePath)
+      expect(rules.bundled).toBe(false)
+      expect(rules.trusts({ root: 'C:/MODDING/ext', expectedId: 'blizzard/starcraft2' })).toBe(false)
+    }
+    expect(trustedExtensionRules('bundled', resolvePath).problems).toHaveLength(1)
+  })
 })

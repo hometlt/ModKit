@@ -696,6 +696,7 @@ async function activateModkit(
     configuredContributionSettings: vscode.workspace
       .getConfiguration('modkit')
       .get('contributionSettings'),
+    configuredTrustedExtensions: vscode.workspace.getConfiguration('modkit').get('trustedExtensions'),
     // Where a contribution may keep what it wants between windows (a parsed index, a digest
     // table). One subdirectory per contribution id; the host names it, the contribution fills it.
     contributionCacheDirectory: join(context.globalStorageUri.fsPath, 'contribution-cache'),
@@ -3141,6 +3142,7 @@ async function activateModkit(
         if (
           !event.affectsConfiguration('modkit.contentSourceConfig') &&
           !event.affectsConfiguration('modkit.indexCaches') &&
+          !event.affectsConfiguration('modkit.starcraft2.cachedMods') &&
           !event.affectsConfiguration('modkit.contentSourceOptions') &&
           !event.affectsConfiguration('modkit.sharedModServer')
         )
@@ -5983,6 +5985,7 @@ async function activateModkit(
     vscode.workspace.onDidChangeConfiguration(event => {
       if (
         event.affectsConfiguration('modkit.extensions') ||
+        event.affectsConfiguration('modkit.trustedExtensions') ||
         event.affectsConfiguration('modkit.disabledExtensions') ||
         event.affectsConfiguration('modkit.disabledContributions')
       ) {

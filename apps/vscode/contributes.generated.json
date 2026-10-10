@@ -643,6 +643,15 @@
         "markdownDescription": "%configuration.starcraft2.cachedMods.description%",
         "type": "array",
         "uniqueItems": true
+      },
+      "modkit.trustedExtensions": {
+        "default": ["bundled"],
+        "items": {
+          "type": "string"
+        },
+        "markdownDescription": "%configuration.trustedExtensions.description%",
+        "type": "array",
+        "uniqueItems": true
       }
     }
   },

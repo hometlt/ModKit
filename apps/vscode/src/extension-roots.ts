@@ -315,6 +315,55 @@ export function configuredDisabledExtensions(value: unknown): {
 }
 
 /**
+ * `modkit.trustedExtensions` read (owner decision 10.10): which roots run in the Host process
+ * instead of an isolated worker, for speed. An entry is `bundled` (the first-party catalog this
+ * build ships), `*` (every root), an extension coordinate (`publisher/id`, matched by a root's
+ * expected coordinate — managed packages always carry one), or an absolute folder whose roots are
+ * all trusted (the workspace a team builds its extensions in). A root runs in-process only when it
+ * is trusted here *and* its contribution declares a `trusted-in-process` variant.
+ */
+export interface TrustedExtensionRules {
+  readonly bundled: boolean
+  /** Whether a root (resolved absolute path, optional expected coordinate) is trusted. */
+  trusts(request: ExtensionRootRequestLike): boolean
+  readonly problems: readonly string[]
+}
+
+export function trustedExtensionRules(
+  value: unknown,
+  resolvePath: (path: string) => string,
+): TrustedExtensionRules {
+  const problems: string[] = []
+  const entries = value === undefined || value === null ? [] : value
+  if (!Array.isArray(entries)) problems.push('modkit.trustedExtensions must be an array of strings')
+  const items = (Array.isArray(entries) ? entries : []).filter((item, index) => {
+    if (typeof item === 'string' && item.trim().length > 0) return true
+    problems.push(`modkit.trustedExtensions[${String(index)}] must be a non-empty string`)
+    return false
+  }) as string[]
+  const key = (path: string) => resolvePath(path).replaceAll('\\', '/').replace(/\/+$/u, '').toLowerCase()
+  const all = items.some(item => item.trim() === '*')
+  const ids = new Set<string>()
+  const folders: string[] = []
+  for (const raw of items.map(item => item.trim())) {
+    if (raw === '*' || raw === 'bundled') continue
+    if (/^[A-Za-z]:[\\/]|^[\\/]/u.test(raw)) folders.push(key(raw))
+    else if (/^[\w.-]+\/[\w.-]+$/u.test(raw)) ids.add(normalizeModkitIdentifier(raw))
+    else problems.push(`modkit.trustedExtensions: «${raw}» is no coordinate or absolute folder`)
+  }
+  return Object.freeze({
+    bundled: all || items.some(item => item.trim() === 'bundled'),
+    trusts(request: ExtensionRootRequestLike) {
+      if (all) return true
+      if (request.expectedId !== undefined && ids.has(normalizeModkitIdentifier(request.expectedId))) return true
+      const root = key(request.root)
+      return folders.some(folder => root === folder || root.startsWith(`${folder}/`))
+    },
+    problems: Object.freeze(problems),
+  })
+}
+
+/**
  * One entry of `modkit.extensions` as a settings surface shows it.
  *
  * `index` is the position in the raw setting, and it is the only handle the webview ever gets: the

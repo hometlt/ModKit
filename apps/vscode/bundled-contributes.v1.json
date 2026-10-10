@@ -444,6 +444,17 @@
           ]
         }
       },
+      "modkit.trustedExtensions": {
+        "type": "array",
+        "default": [
+          "bundled"
+        ],
+        "uniqueItems": true,
+        "items": {
+          "type": "string"
+        },
+        "markdownDescription": "%configuration.trustedExtensions.description%"
+      },
       "modkit.extensionRegistry": {
         "type": "string",
         "default": "",
