@@ -1,5 +1,5 @@
 import { expect, it, vi } from 'vitest'
-import { OperationCancelledError, uint64 } from '@modkit/core'
+import { canonicalJsonStringify, compareUtf8, OperationCancelledError, uint64 } from '@modkit/core'
 import { createHostTopology } from '@modkit/sdk'
 import { LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT, type LanguageProvider } from '@modkit/sdk/language'
 import {
@@ -17,6 +17,7 @@ import {
   type LanguageWorkspaceDocumentSource,
 } from '../src/language/index.js'
 import { composeLanguageDocumentSources } from '../src/content-dependency-operations.js'
+import { languageDocumentTextToken, languageWorkspaceContextToken } from '../src/language/context.js'
 
 /** Activate a public language provider with a controllable source and observed feature requests. */
 async function fixture(
@@ -369,6 +370,107 @@ it('retains captured source documents while revalidating text, metadata and sour
     expect(captured(7)).not.toBe(captured(5))
     expect(captured(7)?.text).toBe(closed.text)
     expect(f.snapshot).toHaveBeenCalledTimes(8)
+  } finally {
+    await f.workspace.shutdown()
+  }
+})
+
+it('derives context identity and revision exactly from every document, origin and input', async () => {
+  const f = await fixture()
+  const closed = ['b', 'a', 'c'].map(name => ({
+    uri: `memory://${name}.fixture`,
+    languageId: 'fixture',
+    version: 1,
+    text: `closed ${name}`,
+  }))
+  const origins = new Map(
+    [f.document, ...closed].map((document, index) => [
+      document.uri,
+      {
+        uri: document.uri,
+        layerId: index === 0 ? 'mod' : 'base',
+        logicalId: document.uri.slice('memory://'.length),
+        precedence: index === 0 ? 1 : 0,
+        sourceRevision: 'revision:1',
+        readOnly: index !== 0,
+      } as Record<string, unknown>,
+    ]),
+  )
+  f.snapshot.mockImplementation(async () => ({
+    documents: closed.map(document => ({ ...document })),
+    isComplete: true,
+    workspaceContext: {
+      id: 'fixture-source',
+      revision: 'source:1',
+      semanticComplete: true,
+      documentOrigins: [...origins.values()].map(origin => ({ ...origin })),
+      semanticInputs: [],
+    },
+  }))
+  /** The tokens of the whole description, rendered at once as the workspace always did before. */
+  const expected = (call: number) => {
+    const request = f.completion.mock.calls[call]![0]
+    const context = request.workspaceContext!
+    const byUri = new Map(context.documentOrigins.map(origin => [origin.uri, origin]))
+    return {
+      id: languageWorkspaceContextToken({
+        sourceContextId: 'fixture-source',
+        documents: context.documentOrigins
+          .map(origin => ({
+            uri: origin.uri,
+            layerId: origin.layerId,
+            logicalId: origin.logicalId,
+            precedence: origin.precedence,
+          }))
+          .sort((left, right) =>
+            compareUtf8(canonicalJsonStringify(left), canonicalJsonStringify(right)),
+          ),
+        semanticInputs: context.semanticInputs.map(input => ({ kind: input.kind, id: input.id })),
+      }),
+      revision: languageWorkspaceContextToken({
+        sourceRevision: 'source:1',
+        semanticInputs: context.semanticInputs.map(input => ({
+          kind: input.kind,
+          id: input.id,
+          contentRevision: languageWorkspaceContextToken(input),
+        })),
+        semanticComplete: context.semanticComplete,
+        documents: request.workspaceDocuments.map(document => ({
+          uri: document.uri,
+          version: document.version,
+          contentRevision: languageDocumentTextToken(document),
+          origin: byUri.get(document.uri),
+        })),
+      }),
+    }
+  }
+  const actual = (call: number) => {
+    const context = f.completion.mock.calls[call]![0].workspaceContext!
+    return { id: context.id, revision: context.revision }
+  }
+  try {
+    await f.workspace.completion(f.request)
+    await f.workspace.completion(f.request)
+    expect(actual(0)).toEqual(expected(0))
+    expect(actual(1)).toEqual(actual(0))
+    // The same captured document under a changed origin: both are re-rendered, never reused.
+    origins.get(closed[1]!.uri)!['sourceRevision'] = 'revision:2'
+    await f.workspace.completion(f.request)
+    expect(actual(2)).toEqual(expected(2))
+    expect(actual(2).id).toBe(actual(1).id)
+    expect(actual(2).revision).not.toBe(actual(1).revision)
+    origins.get(closed[0]!.uri)!['layerId'] = 'other'
+    await f.workspace.completion(f.request)
+    expect(actual(3)).toEqual(expected(3))
+    expect(actual(3).id).not.toBe(actual(2).id)
+    origins.get(closed[2]!.uri)!['overlay'] = false
+    await f.workspace.completion(f.request)
+    expect(actual(4)).toEqual(expected(4))
+    expect(actual(4).revision).not.toBe(actual(3).revision)
+    closed[0]!.text = 'changed b'
+    await f.workspace.completion(f.request)
+    expect(actual(5)).toEqual(expected(5))
+    expect(actual(5).revision).not.toBe(actual(4).revision)
   } finally {
     await f.workspace.shutdown()
   }

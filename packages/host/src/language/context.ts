@@ -240,37 +240,51 @@ const tokenForCanonicalJson = (canonical: string): string => {
   return `language-context-v1:${fnv64(bytes, 0x84222325, 0xcbf29ce4, false)}${fnv64(bytes, 0xcbf29ce4, 0x84222325, true)}`
 }
 
+/**
+ * A canonical JSON rendering (as `canonicalJsonStringify` produced it, at the top level) as it reads
+ * nested `depth` levels deep inside a larger canonical value, without its final newline: every line
+ * after the first gains the deeper indentation. Lets an owner assemble one exact canonical
+ * description from fragments it rendered once.
+ */
+export function canonicalJsonAtDepth(canonical: string, depth: number): string {
+  const body = canonical.endsWith('\n') ? canonical.slice(0, -1) : canonical
+  return depth === 0 ? body : body.replaceAll('\n', `\n${'  '.repeat(depth)}`)
+}
+
 /** Bounded workspace-local memo of exact canonical descriptions, never caller object identities. */
 export function createLanguageContextTokenCache(maxBytes: number): Readonly<{
   token(value: unknown): string
+  /** The token of an exact canonical description the caller assembled itself. */
+  canonicalToken(canonical: string): string
   clear(): void
 }> {
   const entries = new Map<string, Readonly<{ token: string; bytes: number }>>()
   let retainedBytes = 0
+  const canonicalToken = (canonical: string): string => {
+    const held = entries.get(canonical)
+    if (held !== undefined) {
+      entries.delete(canonical)
+      entries.set(canonical, held)
+      return held.token
+    }
+    const token = tokenForCanonicalJson(canonical)
+    const bytes = 256 + 2 * (canonical.length + token.length)
+    if (bytes <= maxBytes) {
+      while (entries.size >= 16 || retainedBytes + bytes > maxBytes) {
+        const oldest = entries.entries().next().value
+        if (oldest === undefined) break
+        entries.delete(oldest[0])
+        retainedBytes -= oldest[1].bytes
+      }
+      entries.set(canonical, { token, bytes })
+      retainedBytes += bytes
+    }
+    return token
+  }
   return {
-    token(value) {
-      // Re-serialize every call: changed content under an unchanged revision must still be seen.
-      const canonical = canonicalJsonStringify(value)
-      const held = entries.get(canonical)
-      if (held !== undefined) {
-        entries.delete(canonical)
-        entries.set(canonical, held)
-        return held.token
-      }
-      const token = tokenForCanonicalJson(canonical)
-      const bytes = 256 + 2 * (canonical.length + token.length)
-      if (bytes <= maxBytes) {
-        while (entries.size >= 16 || retainedBytes + bytes > maxBytes) {
-          const oldest = entries.entries().next().value
-          if (oldest === undefined) break
-          entries.delete(oldest[0])
-          retainedBytes -= oldest[1].bytes
-        }
-        entries.set(canonical, { token, bytes })
-        retainedBytes += bytes
-      }
-      return token
-    },
+    // Re-serialize every call: changed content under an unchanged revision must still be seen.
+    token: value => canonicalToken(canonicalJsonStringify(value)),
+    canonicalToken,
     clear() {
       entries.clear()
       retainedBytes = 0

@@ -91,6 +91,7 @@ import {
 } from './index.js'
 import { expandSubjectReferenceCompletions } from './subject-completion.js'
 import {
+  canonicalJsonAtDepth,
   languageImmutableCapture,
   languageWorkspaceContextToken,
   createLanguageContextTokenCache,
@@ -1963,6 +1964,84 @@ function validatedWorkspaceContext(
   return Object.freeze({ ...context, documentOrigins: Object.freeze(origins), semanticInputs })
 }
 
+/*
+ * A request's context identity and revision describe every snapshot document (thousands in a mod
+ * chain). Their canonical description is assembled from per-document fragments rendered once and
+ * kept per Host-owned immutable document copy, together with the exact origin fields they were
+ * rendered from; every request still compares those fields and re-renders on any difference. The
+ * assembled string is byte-identical to `canonicalJsonStringify` of the whole description, so the
+ * tokens are unchanged. Documents that are not Host captures are rendered on every request.
+ */
+interface DocumentFragments {
+  readonly origin: LanguageWorkspaceDocumentOrigin | undefined
+  readonly identityOrder: string | undefined
+  readonly identity: string | undefined
+  readonly revision: string
+}
+const documentFragmentCache = new WeakMap<LanguageDocument, DocumentFragments>()
+const sameOrigin = (
+  left: LanguageWorkspaceDocumentOrigin | undefined,
+  right: LanguageWorkspaceDocumentOrigin | undefined,
+): boolean =>
+  left === right ||
+  (left !== undefined &&
+    right !== undefined &&
+    left.uri === right.uri &&
+    left.layerId === right.layerId &&
+    left.logicalId === right.logicalId &&
+    left.precedence === right.precedence &&
+    left.sourceRevision === right.sourceRevision &&
+    left.readOnly === right.readOnly &&
+    left.overlay === right.overlay)
+function documentFragments(
+  document: LanguageDocument,
+  origin: LanguageWorkspaceDocumentOrigin | undefined,
+): DocumentFragments {
+  const cached = documentFragmentCache.get(document)
+  if (cached !== undefined && sameOrigin(cached.origin, origin)) return cached
+  const identity =
+    origin === undefined
+      ? undefined
+      : {
+          uri: origin.uri,
+          layerId: origin.layerId,
+          logicalId: origin.logicalId,
+          precedence: origin.precedence,
+        }
+  const identityOrder = identity === undefined ? undefined : canonicalJsonStringify(identity)
+  const fragments: DocumentFragments = Object.freeze({
+    origin,
+    identityOrder,
+    identity: identityOrder === undefined ? undefined : canonicalJsonAtDepth(identityOrder, 2),
+    revision: canonicalJsonAtDepth(
+      canonicalJsonStringify({
+        uri: document.uri,
+        version: document.version,
+        contentRevision: languageDocumentTextToken(document),
+        origin,
+      }),
+      2,
+    ),
+  })
+  if (languageImmutableCapture(document)) documentFragmentCache.set(document, fragments)
+  return fragments
+}
+const DOCUMENTS_SENTINEL = '\0modkit-workspace-documents\0'
+/**
+ * `canonicalJsonStringify(value)` for a description whose first key is `documents`, the array whose
+ * depth-two element renderings are given; undefined when the description is not of that shape.
+ */
+function canonicalWithDocuments(
+  value: Readonly<Record<string, unknown>>,
+  fragments: readonly string[],
+): string | undefined {
+  const head = `{\n  "documents": ${JSON.stringify(DOCUMENTS_SENTINEL)}`
+  const rest = canonicalJsonStringify({ ...value, documents: DOCUMENTS_SENTINEL })
+  if (!rest.startsWith(head)) return undefined
+  const array = fragments.length === 0 ? '[]' : `[\n    ${fragments.join(',\n    ')}\n  ]`
+  return `{\n  "documents": ${array}${rest.slice(head.length)}`
+}
+
 /** Create a single-provider v1 document lifecycle coordinator. */
 export function createLanguageWorkspace(options: LanguageWorkspaceOptions): LanguageWorkspace {
   const documents = new Map<string, OpenDocument>()
@@ -2474,6 +2553,38 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
       const semanticComplete = modContextOnly
         ? modContext!.complete && !callerIncomplete
         : baseSemanticComplete && !documentOnly
+      const fragments = snapshotDocuments.map(document =>
+        documentFragments(document, originsByUri.get(document.uri)),
+      )
+      // Origins in snapshot order; each one's identity sorts by its exact canonical encoding.
+      const identities = fragments
+        .filter(item => item.identityOrder !== undefined)
+        .sort((left, right) => compareUtf8(left.identityOrder!, right.identityOrder!))
+      const idDescription = {
+        sourceContextId: sourceContext?.id,
+        semanticInputs: semanticInputs.map(input => ({ kind: input.kind, id: input.id })),
+        ...(modContext === undefined ? {} : { modContext: modContext.scope }),
+      }
+      const revisionDescription = {
+        sourceRevision: sourceContext?.revision,
+        semanticInputs: semanticInputs.map(input => ({
+          kind: input.kind,
+          id: input.id,
+          contentRevision: semanticInputToken(input),
+        })),
+        semanticComplete,
+        ...(modContext === undefined
+          ? {}
+          : { modContext: { revision: modContext.revision, complete: modContext.complete } }),
+      }
+      const canonicalId = canonicalWithDocuments(
+        idDescription,
+        identities.map(item => item.identity!),
+      )
+      const canonicalRevision = canonicalWithDocuments(
+        revisionDescription,
+        fragments.map(item => item.revision),
+      )
       const workspaceContext =
         sourceContext === undefined &&
         documentOrigins.length === 0 &&
@@ -2481,47 +2592,33 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         modContext === undefined
           ? undefined
           : Object.freeze({
-              id: contextTokens.token({
-                sourceContextId: sourceContext?.id,
-                documents: documentOrigins
-                  .map(origin => {
-                    const identity = {
-                      uri: origin.uri,
-                      layerId: origin.layerId,
-                      logicalId: origin.logicalId,
-                      precedence: origin.precedence,
-                    }
-                    // Sorting compares this exact encoding repeatedly; compute it once per origin.
-                    return { identity, order: canonicalJsonStringify(identity) }
-                  })
-                  .sort((left, right) => compareUtf8(left.order, right.order))
-                  .map(item => item.identity),
-                semanticInputs: semanticInputs.map(input => ({
-                  kind: input.kind,
-                  id: input.id,
-                })),
-                ...(modContext === undefined ? {} : { modContext: modContext.scope }),
-              }),
-              revision: contextTokens.token({
-                sourceRevision: sourceContext?.revision,
-                semanticInputs: semanticInputs.map(input => ({
-                  kind: input.kind,
-                  id: input.id,
-                  contentRevision: semanticInputToken(input),
-                })),
-                semanticComplete,
-                ...(modContext === undefined
-                  ? {}
-                  : {
-                      modContext: { revision: modContext.revision, complete: modContext.complete },
-                    }),
-                documents: snapshotDocuments.map(document => ({
-                  uri: document.uri,
-                  version: document.version,
-                  contentRevision: languageDocumentTextToken(document),
-                  origin: originsByUri.get(document.uri),
-                })),
-              }),
+              id:
+                canonicalId === undefined
+                  ? contextTokens.token({
+                      ...idDescription,
+                      documents: identities.map(item => {
+                        const origin = item.origin!
+                        return {
+                          uri: origin.uri,
+                          layerId: origin.layerId,
+                          logicalId: origin.logicalId,
+                          precedence: origin.precedence,
+                        }
+                      }),
+                    })
+                  : contextTokens.canonicalToken(canonicalId),
+              revision:
+                canonicalRevision === undefined
+                  ? contextTokens.token({
+                      ...revisionDescription,
+                      documents: snapshotDocuments.map(document => ({
+                        uri: document.uri,
+                        version: document.version,
+                        contentRevision: languageDocumentTextToken(document),
+                        origin: originsByUri.get(document.uri),
+                      })),
+                    })
+                  : contextTokens.canonicalToken(canonicalRevision),
               semanticComplete,
               documentOrigins,
               semanticInputs,
