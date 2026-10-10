@@ -589,14 +589,15 @@ function isLanguageProvider(value: unknown): value is LanguageProvider {
     record['languageIds'].every(item => typeof item === 'string') &&
     (modContextFeatures === undefined ||
       (Array.isArray(modContextFeatures) &&
-        modContextFeatures.length <= 4 &&
+        modContextFeatures.length <= 5 &&
         new Set(modContextFeatures).size === modContextFeatures.length &&
         modContextFeatures.every(
           item =>
             item === 'hover' ||
             item === 'completion' ||
             item === 'definition' ||
-            item === 'references',
+            item === 'references' ||
+            item === 'signatureHelp',
         ))) &&
     (documentLocalFeatures === undefined ||
       (Array.isArray(documentLocalFeatures) &&

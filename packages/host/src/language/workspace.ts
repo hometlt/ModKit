@@ -1147,6 +1147,19 @@ function validLooseRange(range: LanguageRange | undefined): boolean {
   )
 }
 
+/** Whether a feature is one a provider may opt into answering from the loaded mod's server. */
+function isModContextFeature(
+  feature: LanguageDocumentLocalFeature | LanguageModContextFeature,
+): feature is LanguageModContextFeature {
+  return (
+    feature === 'hover' ||
+    feature === 'completion' ||
+    feature === 'definition' ||
+    feature === 'references' ||
+    feature === 'signatureHelp'
+  )
+}
+
 function invalidFeature(message: string, uri: string): never {
   throw workspaceError(LANGUAGE_FEATURE_INVALID, message, { uri })
 }
@@ -2307,10 +2320,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
     try {
       let documentOnly =
         inputFeature !== undefined &&
-        inputFeature !== 'hover' &&
-        inputFeature !== 'completion' &&
-        inputFeature !== 'definition' &&
-        inputFeature !== 'references' &&
+        !isModContextFeature(inputFeature) &&
         entry.resolution.provider.documentLocalFeatures?.includes(inputFeature) === true
       if (
         discoverCompletionContext &&
@@ -2331,10 +2341,8 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
       let modContext: LanguageWorkspaceModContext | undefined
       let readsModContext =
         !documentOnly &&
-        (inputFeature === 'hover' ||
-          inputFeature === 'completion' ||
-          inputFeature === 'definition' ||
-          inputFeature === 'references') &&
+        inputFeature !== undefined &&
+        isModContextFeature(inputFeature) &&
         entry.resolution.provider.modContextFeatures?.includes(inputFeature) === true
       if (
         readsModContext &&
@@ -2354,7 +2362,9 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
       }
       if (
         readsModContext &&
-        (inputFeature === 'definition' || inputFeature === 'references') &&
+        inputFeature !== undefined &&
+        isModContextFeature(inputFeature) &&
+        inputFeature !== 'completion' &&
         entry.resolution.provider.modContextFeatureApplies !== undefined
       ) {
         const applies = await entry.resolution.provider.modContextFeatureApplies({
@@ -3566,6 +3576,10 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         (provider, feature) => provider.signatureHelp?.({ ...feature, position: request.position }),
         validateSignatureHelp,
         { position: request.position },
+        false,
+        false,
+        LANGUAGE_MAX_RESULTS,
+        'signatureHelp',
       )
     },
 

@@ -508,7 +508,12 @@ export interface LanguageWorkspaceModContext {
 }
 
 /** Features a provider may answer from the synchronized ModContext instead of a snapshot. */
-export type LanguageModContextFeature = 'hover' | 'completion' | 'definition' | 'references'
+export type LanguageModContextFeature =
+  | 'hover'
+  | 'completion'
+  | 'definition'
+  | 'references'
+  | 'signatureHelp'
 
 /**
  * Bounded inputs for one semantic request. `workspaceDocuments` includes `document` and never
@@ -633,13 +638,14 @@ export interface LanguageProvider {
     request: Pick<LanguagePositionRequest, 'document' | 'position' | 'signal'>,
   ): Promise<boolean>
   /**
-   * Optional position-specific proof for opted-in definition and references, read like
-   * `modContextCompletionApplies` from the live document alone: false keeps the bounded snapshot
-   * (for example a position whose answer needs the other languages of the workspace).
+   * Optional position-specific proof for opted-in hover, signature help, definition and
+   * references, read like `modContextCompletionApplies` from the live document alone: false keeps
+   * the bounded snapshot (for example a position whose answer needs the other languages of the
+   * workspace). Omission accepts the feature declaration.
    */
   modContextFeatureApplies?(
     request: Pick<LanguagePositionRequest, 'document' | 'position' | 'signal'> & {
-      readonly feature: 'definition' | 'references'
+      readonly feature: Exclude<LanguageModContextFeature, 'completion'>
     },
   ): Promise<boolean>
   analyze(request: LanguageAnalysisRequest): Promise<LanguageAnalysis>

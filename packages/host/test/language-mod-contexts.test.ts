@@ -384,6 +384,58 @@ describe('the loaded mod servers of a language workspace', () => {
     await workspace.shutdown()
   }, 30_000)
 
+  it('serves opted-in hover and signature help from the server, or a snapshot where the provider declines', async () => {
+    const chain = server()
+    const servers = createLanguageModContexts({ contexts: [chain.context] })
+    let snapshots = 0
+    let applies = true
+    const asked: string[] = []
+    const source = (request: { readonly workspaceDocuments: readonly unknown[]; readonly document: unknown }) =>
+      snapshots > 0 ? 'snapshot' : request.workspaceDocuments.length === 1 ? 'served' : 'unexpected'
+    const provider: LanguageProvider = {
+      contract: LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT,
+      languageIds: ['sc2-data'],
+      modContextFeatures: ['hover', 'signatureHelp'],
+      semanticContextRequirements: [{ kind: 'mod-context', gameId: 'test/game' }],
+      analyze: async ({ document: open }) => ({
+        documentUri: open.uri,
+        documentVersion: open.version,
+        tokens: [],
+        diagnostics: [],
+        symbols: [],
+      }),
+      async modContextFeatureApplies(request) {
+        asked.push(request.feature)
+        return applies
+      },
+      async hover(request) {
+        const place = request.workspaceContext?.modContext?.document
+        return { markdown: `${source(request)}:${place?.layerId ?? ''}` }
+      },
+      async signatureHelp(request) {
+        return { signatures: [{ label: source(request), parameters: [] }], activeSignature: 0, activeParameter: 0 }
+      },
+    }
+    const workspace = await languageWorkspace(provider, () => {}, servers, {
+      documentSource: {
+        async snapshot() {
+          snapshots += 1
+          return { documents: [], isComplete: true }
+        },
+      },
+    })
+    await workspace.synchronize({ languageId: 'sc2-data', document: document(MOD_UNITS_URI, '<edited/>') })
+    const request = { uri: MOD_UNITS_URI, documentVersion: 1, position: { line: 0, character: 1 } }
+    expect((await workspace.hover(request))?.markdown).toBe('served:layer:1')
+    expect((await workspace.signatureHelp(request))?.signatures[0]?.label).toBe('served')
+    expect(snapshots).toBe(0)
+    expect(asked).toEqual(['hover', 'signatureHelp'])
+    applies = false
+    expect((await workspace.signatureHelp(request))?.signatures[0]?.label).toBe('snapshot')
+    expect(snapshots).toBe(1)
+    await workspace.shutdown()
+  }, 30_000)
+
   it('keeps bounded snapshots for standalone hover and rejects answers after a server revision changes', async () => {
     const chain = server()
     const servers = createLanguageModContexts({ contexts: [chain.context] })
