@@ -221,18 +221,33 @@ export function validatedLanguageWorkspaceSemanticInputs(
   )
 }
 
+/**
+ * FNV-1a 64 over the bytes (backwards when `reverse`). The state is four 16-bit limbs so every
+ * step stays in small integers: the prime 0x100000001b3 is 2^40 + 0x1b3, so a limb times 0x1b3
+ * carries into the next limb and limbs 0 and 1 shifted by 8 add the 2^40 term to limbs 2 and 3.
+ * Cold language contexts hash every dependency text once (about 100 MB for an SC2 chain).
+ */
 const fnv64 = (bytes: Uint8Array, low: number, high: number, reverse: boolean): string => {
-  for (let index = 0; index < bytes.length; index += 1) {
-    const offset = reverse ? bytes.length - index - 1 : index
-    low = (low ^ (bytes[offset] as number)) >>> 0
-    // The FNV prime is 0x100000001b3. Keep its exact 64-bit product in two words;
-    // low * 0x1b3 fits in Number's integer precision, including its carry.
-    const product = low * 0x1b3
-    high =
-      (Math.imul(high, 0x1b3) + Math.imul(low, 0x100) + Math.floor(product / 0x100000000)) >>> 0
-    low = product >>> 0
+  let a = low & 0xffff
+  let b = low >>> 16
+  let c = high & 0xffff
+  let d = high >>> 16
+  const step = (byte: number): void => {
+    a ^= byte
+    const t0 = a * 0x1b3
+    const t1 = b * 0x1b3 + (t0 >>> 16)
+    const t2 = c * 0x1b3 + (t1 >>> 16) + (a << 8)
+    const t3 = d * 0x1b3 + (t2 >>> 16) + (b << 8)
+    a = t0 & 0xffff
+    b = t1 & 0xffff
+    c = t2 & 0xffff
+    d = t3 & 0xffff
   }
-  return high.toString(16).padStart(8, '0') + low.toString(16).padStart(8, '0')
+  if (reverse) for (let index = bytes.length - 1; index >= 0; index -= 1) step(bytes[index] as number)
+  else for (let index = 0; index < bytes.length; index += 1) step(bytes[index] as number)
+  const hex = (upper: number, lower: number): string =>
+    ((upper * 0x10000 + lower) >>> 0).toString(16).padStart(8, '0')
+  return hex(d, c) + hex(b, a)
 }
 
 const tokenForCanonicalJson = (canonical: string): string => {

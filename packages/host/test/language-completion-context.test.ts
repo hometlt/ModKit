@@ -604,3 +604,33 @@ it('cancels context selection when a newer document supersedes the request', asy
     await f.workspace.shutdown()
   }
 })
+
+/** FNV-1a 64 with BigInt, independent of the Host's limb arithmetic. */
+const referenceFnv64 = (bytes: Uint8Array, seed: bigint, reverse: boolean): string => {
+  let hash = seed
+  for (let index = 0; index < bytes.length; index += 1) {
+    hash ^= BigInt(bytes[reverse ? bytes.length - 1 - index : index] as number)
+    hash = (hash * 0x100000001b3n) & 0xffffffffffffffffn
+  }
+  return hash.toString(16).padStart(16, '0')
+}
+
+it('keeps language-context-v1 tokens equal to the FNV-1a 64 reference and the earlier tokens', () => {
+  const earlier: readonly (readonly [string, string])[] = [
+    ['', 'language-context-v1:d50abe17d888c9dd0a08bcf94523054e'],
+    ['MapScript.galaxy', 'language-context-v1:89dc7befdff4cc5c439a2ad2a825f37f'],
+    ['Ünïcødé — 星际争霸 \u{1F680}\n"q"', 'language-context-v1:baa8bba79b54bd22374760a484098f25'],
+  ]
+  for (const [text, token] of earlier) expect(languageWorkspaceContextToken(text)).toBe(token)
+  let state = 7
+  const noisy = Array.from({ length: 70_000 }, () => {
+    state = (state * 1103515245 + 12345) >>> 0
+    return String.fromCharCode(32 + (state >>> 24) % 0x2fd0)
+  }).join('')
+  for (const value of ['x', 'ÿ'.repeat(3), noisy, { kind: 'k', list: [1, 'ü', null] }]) {
+    const bytes = new TextEncoder().encode(canonicalJsonStringify(value))
+    expect(languageWorkspaceContextToken(value)).toBe(
+      `language-context-v1:${referenceFnv64(bytes, 0xcbf29ce484222325n, false)}${referenceFnv64(bytes, 0x84222325cbf29ce4n, true)}`,
+    )
+  }
+})
