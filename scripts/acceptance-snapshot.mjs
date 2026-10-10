@@ -39,7 +39,7 @@ const REPOSITORIES = [
   'modkit-extensions-blizzard',
   'modkit-extensions-warzone',
   'modkit-extensions-ea',
-  'modkit-extensions-spring',
+  'modkit-extensions-annihilation',
   'modkit-extensions-other',
   'modkit-extensions-realitypump',
   'modkit-extensions-idsoftware',

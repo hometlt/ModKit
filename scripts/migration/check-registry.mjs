@@ -114,6 +114,8 @@ const resolvedProductPath = value => {
   if (portable.startsWith('extensions/opensource/spring/')) {
     return path.join(
       externalRepositoryRoot(repoRoot, 'spring'),
+      'extensions',
+      'spring-recoil',
       portable.slice('extensions/opensource/spring/'.length),
     )
   }
@@ -478,7 +480,7 @@ const OWNER_EXTERNAL_DIRECTORIES = [
   // modkit-extensions-warzone (MODKIT_WARZONE_ROOT / sources.warzone): one family, one skill.
   'extensions/opensource/warzone-2100',
   'extensions/opensource/warzone-2100/.agents/skills/modkit-warzone',
-  // modkit-extensions-spring (MODKIT_SPRING_ROOT / sources.spring): one family.
+  // modkit-extensions-annihilation (MODKIT_SPRING_ROOT / sources.spring): one family.
   'extensions/opensource/spring',
   // modkit-extensions-other (MODKIT_OTHER_EXTENSIONS_ROOT / sources.other): each entry is a real
   // top-level extensions/<family> directory in that checkout, verified to carry real codec sources
@@ -489,7 +491,6 @@ const OWNER_EXTERNAL_DIRECTORIES = [
   'extensions/adobe-flash',
   'extensions/annihilation-gas-powered',
   'extensions/audiokinetic-wwise',
-  'extensions/cavedog-total-annihilation',
   'extensions/epic-games-unreal-engine',
   'extensions/firelight-fmod',
   'extensions/microsoft-age-series',
@@ -504,6 +505,9 @@ const OWNER_EXTERNAL_DIRECTORIES = [
   'extensions/ubisoft-heroes-6',
   'extensions/uncommon-documents',
   'extensions/unity-engine',
+  // modkit-extensions-annihilation: Total Annihilation moved from Other (2026-10-10) without
+  // changing its logical owner ID.
+  'extensions/cavedog-total-annihilation',
   // modkit-extensions-realitypump: Earth moved from Other without changing logical owner IDs.
   'extensions/realitypump-earth-2150',
   'extensions/realitypump-earth2160',

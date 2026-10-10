@@ -11,7 +11,7 @@ export const algorithmRepositories = [
   'modkit-extensions-blizzard',
   'modkit-extensions-ea',
   'modkit-extensions-other',
-  'modkit-extensions-spring',
+  'modkit-extensions-annihilation',
   'modkit-extensions-warzone',
 ]
 export const SC2_ALGORITHM_PRODUCTION_TSCONFIG =

@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "codec": "gaf",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 5,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "source-feature-audit",
+    "oracle": "every export of the MK2 source (references/modkitmk2/extensions/cavedog/total-annihilation/codecs/gaf at 1a14ba4eddd0ae88de273348ebd44cfb98a0581d) and its manifest, against the MK3 module that carries it",
+    "suite": "modkit-extensions-other/test/behavior/k1-ta-receipts.test.ts",
+    "samples": [
+      {
+        "name": "armcom.gaf",
+        "builder": "modkit-extensions-other/test/behavior/ta-fixtures.ts#gaf(GAF_SAMPLE)",
+        "sha256": "47929d843686626e2b2529d0147026b8997bd3c89e26eb84cb6b359c0165976e"
+      },
+      {
+        "name": "totala1.hpi",
+        "builder": "modkit-extensions-other/test/behavior/synthetic-archives.ts#hpi",
+        "sha256": "41a1191e54314ffd8e55d214c046ec92f06ee13a495d1ceac6b54fb6a80590b6"
+      },
+      {
+        "name": "mk2 codec.manifest.json",
+        "fixture": "references/modkitmk2/extensions/cavedog/total-annihilation/codecs/gaf/codec.manifest.json",
+        "sha256LF": "ec8f1aa650d88728c8fb461c581ca1126ce7b3f325aec719b3998b575341ab3a"
+      },
+      {
+        "name": "mk2 src/index.ts",
+        "fixture": "references/modkitmk2/extensions/cavedog/total-annihilation/codecs/gaf/src/index.ts",
+        "sha256LF": "6174156d59b8c2029276731206fcd5673f0c58531d17c51c057f91ba978946ba"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "mk2-source:src/index.ts#describeGaf",
+      "verdict": "identical",
+      "resultDigest": "ab6689df4fe61888eaccca855a13b1787bed7fcdda8804c0d740f420887f21a4",
+      "mk3Operation": "view.inspect (version, entries)"
+    },
+    {
+      "id": "mk2-source:src/index.ts#gafSpec",
+      "verdict": "identical",
+      "resultDigest": "620dc1a1e5e125d4a5d3ee8ced2c20eebd331dc3aa60cf60c87410d027c56db1",
+      "mk3Operation": "spec.formatRefs[0].label, spec.match.extensions"
+    },
+    {
+      "id": "mk2-source:src/index.ts#gafCodec",
+      "verdict": "identical",
+      "resultDigest": "153c9dbcc7025ecd7e50ce6d83f1995233dfc636bc869098e3a8d84288fd938a",
+      "mk3Operation": "gaf/gaf.ts detectGaf"
+    },
+    {
+      "id": "mk2-manifest:match.extensions",
+      "verdict": "identical",
+      "resultDigest": "cf2e214a77f421acb2fc5b439295e18910ea1c7a59aebb8b42eb741f5a0ce5ac",
+      "mk3Operation": "spec.match.extensions"
+    },
+    {
+      "id": "mk2-manifest:operations",
+      "verdict": "identical",
+      "resultDigest": "1d793f1fb7b50a79002e7b37b280040285b7b7c9bacb53cacd14d7e5d6a2f8b8",
+      "mk3Operation": "view.inspect"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/gaf/audit",
+      "kind": "audit",
+      "adapterOperation": "source-feature-audit",
+      "targetOperation": "source-feature-audit",
+      "handlerId": "source-feature-audit",
+      "contribution": "modkit-extensions-other/extensions/cavedog-total-annihilation/contributions/codec-gaf.json",
+      "executed": true,
+      "caseIds": [
+        "mk2-source:src/index.ts#describeGaf",
+        "mk2-source:src/index.ts#gafSpec",
+        "mk2-source:src/index.ts#gafCodec",
+        "mk2-manifest:match.extensions",
+        "mk2-manifest:operations"
+      ]
+    }
+  ]
+}

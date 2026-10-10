@@ -1,0 +1,105 @@
+{
+  "schemaVersion": 1,
+  "codec": "ta-hpi",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 6,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "source-feature-audit",
+    "oracle": "every export of the MK2 source (references/modkitmk2/extensions/cavedog/total-annihilation/codecs/ta-hpi at 1a14ba4eddd0ae88de273348ebd44cfb98a0581d) and its manifest, against the MK3 module that carries it",
+    "suite": "modkit-extensions-other/test/behavior/k1-ta-receipts.test.ts",
+    "samples": [
+      {
+        "name": "minimal.ta-hpi",
+        "fixture": "modkit-extensions-other/test/fixtures/mk2-synthetic/minimal.ta-hpi",
+        "sha256": "b0f7413add1f1c9653dfc3b1b8e4c5373f3d061849eabdd7b2b880768a358dd6"
+      },
+      {
+        "name": "totala1.hpi",
+        "builder": "modkit-extensions-other/test/behavior/synthetic-archives.ts#hpi",
+        "sha256": "41a1191e54314ffd8e55d214c046ec92f06ee13a495d1ceac6b54fb6a80590b6"
+      },
+      {
+        "name": "compact.hpi",
+        "builder": "modkit-extensions-other/test/behavior/synthetic-archives.ts#hpiCompact",
+        "sha256": "52e45a2e4e93233f97381cf465241b3dfef13787b92c776116e05fb7990010f8"
+      },
+      {
+        "name": "armcom.gaf",
+        "builder": "modkit-extensions-other/test/behavior/ta-fixtures.ts#gaf(GAF_SAMPLE)",
+        "sha256": "47929d843686626e2b2529d0147026b8997bd3c89e26eb84cb6b359c0165976e"
+      },
+      {
+        "name": "mk2 codec.manifest.json",
+        "fixture": "references/modkitmk2/extensions/cavedog/total-annihilation/codecs/ta-hpi/codec.manifest.json",
+        "sha256LF": "3456467c5467cb40d1f9e1a8d369c5a4c6fda77cb54ee8a1cb2e883cae3f6dfb"
+      },
+      {
+        "name": "mk2 src/index.ts",
+        "fixture": "references/modkitmk2/extensions/cavedog/total-annihilation/codecs/ta-hpi/src/index.ts",
+        "sha256LF": "2ef9f172a69e2882619052314e940fee0a2c03a680cfe2e6a6f3b1e9c2ec352d"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "mk2-source:isTaHpi",
+      "verdict": "identical",
+      "resultDigest": "cbabd242d8f49e511af70fd6f8592000af8898e43c2cdba1a8e8893e654a86ea",
+      "mk3Operation": "ta-hpi/hpi.ts detectHpi"
+    },
+    {
+      "id": "mk2-source:parseTaHpiArchive+TaHpiEntry+TaHpiArchive",
+      "verdict": "identical",
+      "resultDigest": "e9189ab7cc004903d55f3aed405d210dd4b8bcfaac192a65ae124a889d0a67d5",
+      "mk3Operation": "ta-hpi/hpi.ts readHpiIndex"
+    },
+    {
+      "id": "mk2-source:default totalAnnihilationHpiCodec.describe",
+      "verdict": "identical",
+      "resultDigest": "7b0bb864625e3af4de9f7e37e73a12b37c171e8f35abe868a747475a81840861",
+      "mk3Operation": "view.inspect (layout, entries)"
+    },
+    {
+      "id": "mk2-source:default totalAnnihilationHpiCodec.open",
+      "verdict": "identical",
+      "resultDigest": "58e4b28fa57fdbb3d6b8d9c31433ae91b9a1dadb8c54897075090b98ef0b70a5",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "mk2-manifest:match.extensions",
+      "verdict": "identical",
+      "resultDigest": "18c608dcb9691d8640bf385db60591009c13875a6cf0794b165676bc71e4dfb8",
+      "mk3Operation": "spec.match.extensions"
+    },
+    {
+      "id": "mk2-manifest:operations",
+      "verdict": "identical",
+      "resultDigest": "5881c43f59c5a0191863ac18e485b0fdd5237dfb4584c8529e7361bf0db39d02",
+      "mk3Operation": "view.inspect, container.extract"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/ta-hpi/audit",
+      "kind": "audit",
+      "adapterOperation": "source-feature-audit",
+      "targetOperation": "source-feature-audit",
+      "handlerId": "source-feature-audit",
+      "contribution": "modkit-extensions-other/extensions/cavedog-total-annihilation/contributions/codec-ta-hpi.json",
+      "executed": true,
+      "caseIds": [
+        "mk2-source:isTaHpi",
+        "mk2-source:parseTaHpiArchive+TaHpiEntry+TaHpiArchive",
+        "mk2-source:default totalAnnihilationHpiCodec.describe",
+        "mk2-source:default totalAnnihilationHpiCodec.open",
+        "mk2-manifest:match.extensions",
+        "mk2-manifest:operations"
+      ]
+    }
+  ]
+}

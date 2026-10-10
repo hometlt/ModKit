@@ -6,7 +6,7 @@ const REPOSITORIES = [
   'modkit-extensions-blizzard',
   'modkit-extensions-ea',
   'modkit-extensions-other',
-  'modkit-extensions-spring',
+  'modkit-extensions-annihilation',
   'modkit-extensions-warzone',
 ]
 

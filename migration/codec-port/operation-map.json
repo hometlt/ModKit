@@ -871,7 +871,7 @@
       "targetOperation": "view.inspect"
     },
     {
-      "contribution": "modkit-extensions-other/extensions/cavedog-total-annihilation/contributions/codec-gaf.json",
+      "contribution": "modkit-extensions-annihilation/extensions/total-annihilation/contributions/codec-gaf.json",
       "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/gaf/operation/image.inspect",
       "status": "adapted",
@@ -2597,7 +2597,7 @@
       "targetOperation": null
     },
     {
-      "contribution": "modkit-extensions-spring/contributions/codec-spring-rapid.json",
+      "contribution": "modkit-extensions-annihilation/extensions/spring-recoil/contributions/codec-spring-rapid.json",
       "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/spring-rapid/operation/archive.inspect",
       "status": "adapted",
@@ -2618,7 +2618,7 @@
       "targetOperation": null
     },
     {
-      "contribution": "modkit-extensions-spring/contributions/codec-spring-vfs.json",
+      "contribution": "modkit-extensions-annihilation/extensions/spring-recoil/contributions/codec-spring-vfs.json",
       "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/spring-vfs/operation/view.inspect",
       "status": "adapted",
@@ -2692,14 +2692,14 @@
       "targetOperation": null
     },
     {
-      "contribution": "modkit-extensions-other/extensions/cavedog-total-annihilation/contributions/codec-ta-hpi.json",
+      "contribution": "modkit-extensions-annihilation/extensions/total-annihilation/contributions/codec-ta-hpi.json",
       "handlerId": "extract-entry",
       "id": "legacy/codec-manifest/modkit/ta-hpi/operation/archive.extract",
       "status": "adapted",
       "targetOperation": "container.extract"
     },
     {
-      "contribution": "modkit-extensions-other/extensions/cavedog-total-annihilation/contributions/codec-ta-hpi.json",
+      "contribution": "modkit-extensions-annihilation/extensions/total-annihilation/contributions/codec-ta-hpi.json",
       "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/ta-hpi/operation/archive.inspect",
       "status": "adapted",

@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "codec": "ta-hpi",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 6,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "container.extract",
+    "oracle": "the summary and the entry bytes written into each synthetic archive",
+    "suite": "modkit-extensions-other/test/behavior/k1-archive-receipts.test.ts",
+    "samples": [
+      {
+        "name": "minimal.ta-hpi",
+        "fixture": "modkit-extensions-other/test/fixtures/mk2-synthetic/minimal.ta-hpi",
+        "sha256": "b0f7413add1f1c9653dfc3b1b8e4c5373f3d061849eabdd7b2b880768a358dd6"
+      },
+      {
+        "name": "totala1.hpi",
+        "builder": "modkit-extensions-other/test/behavior/synthetic-archives.ts#hpi"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:minimal.ta-hpi:stored.txt:container.extract",
+      "verdict": "identical",
+      "resultDigest": "87b04e58961f9a99d853d4046a0b5b793e7c3e4bbd21f5aca8fb17c20cdb1d8b",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:minimal.ta-hpi:lz77.txt:container.extract",
+      "verdict": "identical",
+      "resultDigest": "17c95f6338d1b0f9484b174d4a1eda54c56b39a0772909cfb6a25a6c3bb9abcb",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:minimal.ta-hpi:zlib.txt:container.extract",
+      "verdict": "identical",
+      "resultDigest": "1f4ecb1ad651fc7ae84a0147b3b89872b25482155ba6ea1e9cbcd86fe190322a",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:totala1.hpi:units/ARMCOM.FBI:container.extract",
+      "verdict": "identical",
+      "resultDigest": "72610843917063914b1dfdd38940bd46a86693e9db96ae4ea7bcee587c1d27d0",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:totala1.hpi:scripts/armcom.cob:container.extract",
+      "verdict": "identical",
+      "resultDigest": "4cf992ed2efa8210cddec986a069097e63807aecd459a7daa83150d543fea481",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:totala1.hpi:objects3d/armcom.3do:container.extract",
+      "verdict": "identical",
+      "resultDigest": "79bec8a21f61f440815bb21f8ce6c00b9f905b0600d1f62f9ba7212132381825",
+      "mk3Operation": "container.extract"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/ta-hpi/operation/archive.extract",
+      "kind": "operation",
+      "legacyOperation": "archive.extract",
+      "adapterOperation": "container.extract",
+      "targetOperation": "container.extract",
+      "handlerId": "extract-entry",
+      "contribution": "modkit-extensions-other/extensions/cavedog-total-annihilation/contributions/codec-ta-hpi.json",
+      "executed": true,
+      "caseIds": [
+        "synthetic:minimal.ta-hpi:stored.txt:container.extract",
+        "synthetic:minimal.ta-hpi:lz77.txt:container.extract",
+        "synthetic:minimal.ta-hpi:zlib.txt:container.extract",
+        "synthetic:totala1.hpi:units/ARMCOM.FBI:container.extract",
+        "synthetic:totala1.hpi:scripts/armcom.cob:container.extract",
+        "synthetic:totala1.hpi:objects3d/armcom.3do:container.extract"
+      ]
+    }
+  ]
+}

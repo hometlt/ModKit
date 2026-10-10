@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "codec": "gaf",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "view.inspect",
+    "oracle": "the sequences, frame counts and atlas of the frames written into the synthetic GAF",
+    "suite": "modkit-extensions-other/test/behavior/k1-ta-receipts.test.ts",
+    "samples": [
+      {
+        "name": "armcom.gaf",
+        "builder": "modkit-extensions-other/test/behavior/ta-fixtures.ts#gaf(GAF_SAMPLE)",
+        "sha256": "47929d843686626e2b2529d0147026b8997bd3c89e26eb84cb6b359c0165976e"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:armcom.gaf:view.inspect",
+      "verdict": "identical",
+      "resultDigest": "b1b48b4c83b2c5fca193ba8a3581268b3e68c91c67b36a4642c54d40bdc09145",
+      "mk3Operation": "view.inspect"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/gaf/operation/image.inspect",
+      "kind": "operation",
+      "legacyOperation": "image.inspect",
+      "adapterOperation": "view.inspect",
+      "targetOperation": "view.inspect",
+      "handlerId": "inspect",
+      "contribution": "modkit-extensions-other/extensions/cavedog-total-annihilation/contributions/codec-gaf.json",
+      "executed": true,
+      "caseIds": ["synthetic:armcom.gaf:view.inspect"]
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "codec": "spring-s3o",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 3,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "source-feature-audit",
+    "oracle": "the MK2 format record (references/modkitmk2/extensions/opensource/spring/codecs/spring-s3o at 1a14ba4eddd0ae88de273348ebd44cfb98a0581d; no source files), against the MK3 contribution and game profile",
+    "suite": "modkit-extensions-spring/test/k1-receipts.test.ts",
+    "samples": [
+      {
+        "name": "mk2 codecs/spring-s3o/codec.manifest.json",
+        "fixture": "references/modkitmk2/extensions/opensource/spring/codecs/spring-s3o/codec.manifest.json",
+        "sha256LF": "4e9fa60d451eec4c632de6110c7384d2ab6bea5cfe7da86b86de380505286b83"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "mk2-manifest:match.extensions",
+      "verdict": "identical",
+      "resultDigest": "87e37c29d54c1f965e1a23fd7b9ba579283090a3deb02ca895cd9b7013cc62c0",
+      "mk3Operation": "spec.match.extensions"
+    },
+    {
+      "id": "mk2-manifest:status+capabilities",
+      "verdict": "identical",
+      "resultDigest": "ad8f471e438669d904411e5d818d1635c6a52dfaf21ae0406b1a85608e3eed53",
+      "mk3Operation": "view.inspect, model.export-uvm"
+    },
+    {
+      "id": "mk2-manifest:testedGames",
+      "verdict": "identical",
+      "resultDigest": "678230409150314179435d607a6532239f08e4f2ede1bbcae27a2d3b11eb4efa",
+      "mk3Operation": "subjects/games/beyond-all-reason.json"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/spring-s3o/audit",
+      "kind": "audit",
+      "adapterOperation": "source-feature-audit",
+      "targetOperation": "source-feature-audit",
+      "handlerId": "source-feature-audit",
+      "contribution": "modkit-extensions-spring/contributions/codec-spring-s3o.json",
+      "executed": true,
+      "caseIds": [
+        "mk2-manifest:match.extensions",
+        "mk2-manifest:status+capabilities",
+        "mk2-manifest:testedGames"
+      ]
+    }
+  ]
+}

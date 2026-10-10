@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "codec": "ta-hpi",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 2,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "view.inspect",
+    "oracle": "the summary and the entry bytes written into each synthetic archive",
+    "suite": "modkit-extensions-other/test/behavior/k1-archive-receipts.test.ts",
+    "samples": [
+      {
+        "name": "minimal.ta-hpi",
+        "fixture": "modkit-extensions-other/test/fixtures/mk2-synthetic/minimal.ta-hpi",
+        "sha256": "b0f7413add1f1c9653dfc3b1b8e4c5373f3d061849eabdd7b2b880768a358dd6"
+      },
+      {
+        "name": "totala1.hpi",
+        "builder": "modkit-extensions-other/test/behavior/synthetic-archives.ts#hpi"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:minimal.ta-hpi:view.inspect",
+      "verdict": "identical",
+      "resultDigest": "f886b46b78dd63be78ae54b7eebe8813cebdd863aaaf49751e6f3f3a34be591a",
+      "mk3Operation": "view.inspect"
+    },
+    {
+      "id": "synthetic:totala1.hpi:view.inspect",
+      "verdict": "identical",
+      "resultDigest": "2f17956915861eaf8cacd82bad61bdb3cc85cdcbfb0d818a4b61fc3636b6680f",
+      "mk3Operation": "view.inspect"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/ta-hpi/operation/archive.inspect",
+      "kind": "operation",
+      "legacyOperation": "archive.inspect",
+      "adapterOperation": "view.inspect",
+      "targetOperation": "view.inspect",
+      "handlerId": "inspect",
+      "contribution": "modkit-extensions-other/extensions/cavedog-total-annihilation/contributions/codec-ta-hpi.json",
+      "executed": true,
+      "caseIds": ["synthetic:minimal.ta-hpi:view.inspect", "synthetic:totala1.hpi:view.inspect"]
+    }
+  ]
+}

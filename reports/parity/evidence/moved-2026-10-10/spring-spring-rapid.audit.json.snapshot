@@ -1,0 +1,117 @@
+{
+  "schemaVersion": 1,
+  "codec": "spring-rapid",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 7,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "source-feature-audit",
+    "oracle": "every export of the MK2 source (references/modkitmk2/extensions/opensource/spring/codecs/spring-rapid at 1a14ba4eddd0ae88de273348ebd44cfb98a0581d), against the MK3 module that carries it, on an authored rapid package",
+    "suite": "modkit-extensions-spring/test/k1-receipts.test.ts",
+    "samples": [
+      {
+        "name": "mk2 codecs/spring-rapid/codec.manifest.json",
+        "fixture": "references/modkitmk2/extensions/opensource/spring/codecs/spring-rapid/codec.manifest.json",
+        "sha256LF": "1fc3c5896524d635c2c37d0aaa50d953a09309a2094b932a202c5d846835a7e8"
+      },
+      {
+        "name": "mk2 codecs/spring-rapid/src/crc32.ts",
+        "fixture": "references/modkitmk2/extensions/opensource/spring/codecs/spring-rapid/src/crc32.ts",
+        "sha256LF": "aab8398b1675b036d16cea062b1c9c7c8a8785b454f93e044909c8a1568c9b65"
+      },
+      {
+        "name": "mk2 codecs/spring-rapid/src/index.ts",
+        "fixture": "references/modkitmk2/extensions/opensource/spring/codecs/spring-rapid/src/index.ts",
+        "sha256LF": "b2417bc455b2539acabdb3a5e6a3a7b72ba524bf807fc61ebaf2d90585cc4e60"
+      },
+      {
+        "name": "mk2 codecs/spring-rapid/src/node.ts",
+        "fixture": "references/modkitmk2/extensions/opensource/spring/codecs/spring-rapid/src/node.ts",
+        "sha256LF": "50e87c7b99603729b3700e486624a3f3b40e2c83cf37c49a34ce423328e58242"
+      },
+      {
+        "name": "mk2 codecs/spring-rapid/src/pool.ts",
+        "fixture": "references/modkitmk2/extensions/opensource/spring/codecs/spring-rapid/src/pool.ts",
+        "sha256LF": "bb88baeb04101fa6e567b764e28daa81ff5beee075ad0c37511a0bf68652f051"
+      },
+      {
+        "name": "mk2 codecs/spring-rapid/src/rapid.ts",
+        "fixture": "references/modkitmk2/extensions/opensource/spring/codecs/spring-rapid/src/rapid.ts",
+        "sha256LF": "f1951da2d0a3480bd302ded064a5137ef8a9d46d12a40a44c33e917c86aed3f8"
+      },
+      {
+        "name": "mk2 codecs/spring-rapid/src/sdp.ts",
+        "fixture": "references/modkitmk2/extensions/opensource/spring/codecs/spring-rapid/src/sdp.ts",
+        "sha256LF": "10ef7b8804d8ef9fd817c19f6277da264384fef2996495526bdf4858ea56b7df"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "mk2-source:src/crc32.ts#crc32",
+      "verdict": "identical",
+      "resultDigest": "913a1e496ee0e3006ea301487eec90a9fcca932b9f30adce8fcf7329ccae0087",
+      "mk3Operation": "@modkit/codec-kit/checksum crc32"
+    },
+    {
+      "id": "mk2-source:src/sdp.ts#readSdp+parseSdpRecords",
+      "verdict": "identical",
+      "resultDigest": "914c7fcda153a0148de22e9d825b7fc2b80763f888460387a0f8aa0df50a6945",
+      "mk3Operation": "@modkit/vfs/providers/rapid/manifest parseRapidManifest"
+    },
+    {
+      "id": "mk2-source:src/sdp.ts#poolPath",
+      "verdict": "identical",
+      "resultDigest": "fff16c293fcaf534c09578a999c5f0db06fd273fd11eaff12c78f4b0158a1b30",
+      "mk3Operation": "@modkit/vfs/providers/rapid (pool/<md5[0..2]>/<md5[2..]>.gz)"
+    },
+    {
+      "id": "mk2-source:src/pool.ts#RapidPackageReader",
+      "verdict": "identical",
+      "resultDigest": "e8cba02bc16c285f25bd3c82b50cb973f68abdd828dd74698de29ef8cec02203",
+      "mk3Operation": "@modkit/vfs/providers/rapid RapidMount list/open with md5 check"
+    },
+    {
+      "id": "mk2-source:src/pool.ts#poolBlobMissing+describeRapidPackage",
+      "verdict": "identical",
+      "resultDigest": "7c6170aab3058dd633ee2e1c762c5bad6bb10a62f6736e16d2c7934c09bf558c",
+      "mk3Operation": "@modkit/vfs/providers/rapid rapidMissingBlobs"
+    },
+    {
+      "id": "mk2-source:src/rapid.ts#parseRepos+parseVersions+versionsByTag+tagRepo",
+      "verdict": "identical",
+      "resultDigest": "25aabf360636542c0234f7a8565c847f16935d6abc017fb498af409a44783bc7",
+      "mk3Operation": "src/spring-rapid/distribution.ts"
+    },
+    {
+      "id": "mk2-source:src/node.ts#listRapidPackages+openRapidPackage+resolveRapidTag",
+      "verdict": "identical",
+      "resultDigest": "fe6d5a2069fec6b6dc2e3139ef94689efa438143cfe98cddd9ca08c2fe2d000d",
+      "mk3Operation": "src/game/content-sources.ts, src/game/installation.ts"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/spring-rapid/audit",
+      "kind": "audit",
+      "adapterOperation": "source-feature-audit",
+      "targetOperation": "source-feature-audit",
+      "handlerId": "source-feature-audit",
+      "contribution": "modkit-extensions-spring/contributions/codec-spring-rapid.json",
+      "executed": true,
+      "caseIds": [
+        "mk2-source:src/crc32.ts#crc32",
+        "mk2-source:src/sdp.ts#readSdp+parseSdpRecords",
+        "mk2-source:src/sdp.ts#poolPath",
+        "mk2-source:src/pool.ts#RapidPackageReader",
+        "mk2-source:src/pool.ts#poolBlobMissing+describeRapidPackage",
+        "mk2-source:src/rapid.ts#parseRepos+parseVersions+versionsByTag+tagRepo",
+        "mk2-source:src/node.ts#listRapidPackages+openRapidPackage+resolveRapidTag"
+      ]
+    }
+  ]
+}

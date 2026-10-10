@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "codec": "spring-rapid",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 2,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "view.inspect",
+    "oracle": "the records written into the authored .sdp",
+    "suite": "modkit-extensions-spring/test/k1-receipts.test.ts",
+    "samples": []
+  },
+  "cases": [
+    {
+      "id": "authored.sdp:view.inspect",
+      "verdict": "identical",
+      "resultDigest": "d4735e3a265e16eee03f59718b9b5d03019c07d8b6c51f90da3a666eec13ab35",
+      "mk3Operation": "view.inspect"
+    },
+    {
+      "id": "authored.sdp:namespace-entry-source",
+      "verdict": "identical",
+      "resultDigest": "3251f1628cda600efcc9227a0450027232a29e74ec185cd9180dc689cd964a1a",
+      "mk3Operation": "view.namespace-entry-source"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/spring-rapid/operation/archive.inspect",
+      "kind": "operation",
+      "legacyOperation": "archive.inspect",
+      "adapterOperation": "view.inspect",
+      "targetOperation": "view.inspect",
+      "handlerId": "inspect",
+      "contribution": "modkit-extensions-spring/contributions/codec-spring-rapid.json",
+      "executed": true,
+      "caseIds": ["authored.sdp:view.inspect", "authored.sdp:namespace-entry-source"]
+    }
+  ]
+}

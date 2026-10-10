@@ -1390,6 +1390,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/gaf.audit.json",
+          "sha256": "95793e717d12e27d361f2619b300aeea558de88b342fd0d25e2873a230283ae7",
+          "snapshotPath": "modkit-core/reports/parity/evidence/moved-2026-10-10/other-gaf.audit.json.snapshot",
+          "movedTo": "modkit-extensions-annihilation/extensions/total-annihilation/test/receipts/k1/gaf.audit.json"
+        },
+        {
+          "path": "modkit-extensions-annihilation/extensions/total-annihilation/test/receipts/k1/gaf.audit.json",
           "sha256": "95793e717d12e27d361f2619b300aeea558de88b342fd0d25e2873a230283ae7"
         }
       ],
@@ -1400,6 +1406,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/gaf.image-inspect.json",
+          "sha256": "7e498abc9fdb838ca41ad75f6b157209a292c10233796951a3fd42510a780dd1",
+          "snapshotPath": "modkit-core/reports/parity/evidence/moved-2026-10-10/other-gaf.image-inspect.json.snapshot",
+          "movedTo": "modkit-extensions-annihilation/extensions/total-annihilation/test/receipts/k1/gaf.image-inspect.json"
+        },
+        {
+          "path": "modkit-extensions-annihilation/extensions/total-annihilation/test/receipts/k1/gaf.image-inspect.json",
           "sha256": "7e498abc9fdb838ca41ad75f6b157209a292c10233796951a3fd42510a780dd1"
         }
       ],
@@ -7289,6 +7301,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-spring/test/receipts/k1/spring-rapid.audit.json",
+          "sha256": "234e9394bba4fd9468983cdf3e6739e931fa0460faab1b328b73cb40e9cd8c24",
+          "snapshotPath": "modkit-core/reports/parity/evidence/moved-2026-10-10/spring-spring-rapid.audit.json.snapshot",
+          "movedTo": "modkit-extensions-annihilation/extensions/spring-recoil/test/receipts/k1/spring-rapid.audit.json"
+        },
+        {
+          "path": "modkit-extensions-annihilation/extensions/spring-recoil/test/receipts/k1/spring-rapid.audit.json",
           "sha256": "234e9394bba4fd9468983cdf3e6739e931fa0460faab1b328b73cb40e9cd8c24"
         }
       ],
@@ -7316,6 +7334,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-spring/test/receipts/k1/spring-rapid.archive-inspect.json",
+          "sha256": "641468b1314110d055235602013a2c200fcc122c3e1c12e1aae6858cf93ef077",
+          "snapshotPath": "modkit-core/reports/parity/evidence/moved-2026-10-10/spring-spring-rapid.archive-inspect.json.snapshot",
+          "movedTo": "modkit-extensions-annihilation/extensions/spring-recoil/test/receipts/k1/spring-rapid.archive-inspect.json"
+        },
+        {
+          "path": "modkit-extensions-annihilation/extensions/spring-recoil/test/receipts/k1/spring-rapid.archive-inspect.json",
           "sha256": "641468b1314110d055235602013a2c200fcc122c3e1c12e1aae6858cf93ef077"
         }
       ],
@@ -7326,6 +7350,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-spring/test/receipts/k1/spring-s3o.audit.json",
+          "sha256": "81ef99464decf253bc5d01caf5953a4c86fd361db599194a3544df33547159b7",
+          "snapshotPath": "modkit-core/reports/parity/evidence/moved-2026-10-10/spring-spring-s3o.audit.json.snapshot",
+          "movedTo": "modkit-extensions-annihilation/extensions/spring-recoil/test/receipts/k1/spring-s3o.audit.json"
+        },
+        {
+          "path": "modkit-extensions-annihilation/extensions/spring-recoil/test/receipts/k1/spring-s3o.audit.json",
           "sha256": "81ef99464decf253bc5d01caf5953a4c86fd361db599194a3544df33547159b7"
         }
       ],
@@ -7336,6 +7366,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-spring/test/receipts/k1/spring-vfs.audit.json",
+          "sha256": "67ffe44cd3add4c3a71aa96a6940ebaaea81ee5be18dd0cf2c549a64b68b629d",
+          "snapshotPath": "modkit-core/reports/parity/evidence/moved-2026-10-10/spring-spring-vfs.audit.json.snapshot",
+          "movedTo": "modkit-extensions-annihilation/extensions/spring-recoil/test/receipts/k1/spring-vfs.audit.json"
+        },
+        {
+          "path": "modkit-extensions-annihilation/extensions/spring-recoil/test/receipts/k1/spring-vfs.audit.json",
           "sha256": "67ffe44cd3add4c3a71aa96a6940ebaaea81ee5be18dd0cf2c549a64b68b629d"
         }
       ],
@@ -7380,6 +7416,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-spring/test/receipts/k1/spring-vfs.view-inspect.json",
+          "sha256": "7985a65689c7253e99d4d7a233d814a467b4d5333dcd4cc9de33bb159aa62919",
+          "snapshotPath": "modkit-core/reports/parity/evidence/moved-2026-10-10/spring-spring-vfs.view-inspect.json.snapshot",
+          "movedTo": "modkit-extensions-annihilation/extensions/spring-recoil/test/receipts/k1/spring-vfs.view-inspect.json"
+        },
+        {
+          "path": "modkit-extensions-annihilation/extensions/spring-recoil/test/receipts/k1/spring-vfs.view-inspect.json",
           "sha256": "7985a65689c7253e99d4d7a233d814a467b4d5333dcd4cc9de33bb159aa62919"
         }
       ],
@@ -7500,6 +7542,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/ta-hpi.audit.json",
+          "sha256": "5b97f7349ee2a2fab6ff08121799178f93d79e64d254c1ff425652947efe5b09",
+          "snapshotPath": "modkit-core/reports/parity/evidence/moved-2026-10-10/other-ta-hpi.audit.json.snapshot",
+          "movedTo": "modkit-extensions-annihilation/extensions/total-annihilation/test/receipts/k1/ta-hpi.audit.json"
+        },
+        {
+          "path": "modkit-extensions-annihilation/extensions/total-annihilation/test/receipts/k1/ta-hpi.audit.json",
           "sha256": "5b97f7349ee2a2fab6ff08121799178f93d79e64d254c1ff425652947efe5b09"
         }
       ],
@@ -7510,6 +7558,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/ta-hpi-archive.extract.json",
+          "sha256": "f002eecd0b2f0eab6e68c7be634b34a1580e532671ed5ba633b3781a474d7813",
+          "snapshotPath": "modkit-core/reports/parity/evidence/moved-2026-10-10/other-ta-hpi-archive.extract.json.snapshot",
+          "movedTo": "modkit-extensions-annihilation/extensions/total-annihilation/test/receipts/k1/ta-hpi-archive.extract.json"
+        },
+        {
+          "path": "modkit-extensions-annihilation/extensions/total-annihilation/test/receipts/k1/ta-hpi-archive.extract.json",
           "sha256": "f002eecd0b2f0eab6e68c7be634b34a1580e532671ed5ba633b3781a474d7813"
         }
       ],
@@ -7520,6 +7574,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/ta-hpi-archive.inspect.json",
+          "sha256": "3f72c21819ef48d7b34890eee568bdadf8d218171f6e365ea09247aa4258a9a0",
+          "snapshotPath": "modkit-core/reports/parity/evidence/moved-2026-10-10/other-ta-hpi-archive.inspect.json.snapshot",
+          "movedTo": "modkit-extensions-annihilation/extensions/total-annihilation/test/receipts/k1/ta-hpi-archive.inspect.json"
+        },
+        {
+          "path": "modkit-extensions-annihilation/extensions/total-annihilation/test/receipts/k1/ta-hpi-archive.inspect.json",
           "sha256": "3f72c21819ef48d7b34890eee568bdadf8d218171f6e365ea09247aa4258a9a0"
         }
       ],

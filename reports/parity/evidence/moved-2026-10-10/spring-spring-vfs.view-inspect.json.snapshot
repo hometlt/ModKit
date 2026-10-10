@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "codec": "spring-vfs",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 2,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "view.inspect",
+    "oracle": "the metadata MK2 references/modkitmk2/extensions/opensource/spring/codecs/spring-vfs/src/metadata.ts derives (versionedName, sectionForModType, depend, replace) from authored modinfo.lua and mapinfo.lua",
+    "suite": "modkit-extensions-spring/test/k1-receipts.test.ts",
+    "samples": [
+      {
+        "name": "mk2 codecs/spring-vfs/src/metadata.ts",
+        "fixture": "references/modkitmk2/extensions/opensource/spring/codecs/spring-vfs/src/metadata.ts",
+        "sha256LF": "d3153652f40cfdf2fb7d53ac8f37e94849a40ed83faa0ebf5b90389046a4d206"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "authored.modinfo.lua:view.inspect",
+      "verdict": "identical",
+      "resultDigest": "ecb7a8d60d8f1687ccfb3844c0737f9153f9a0c267eb9b740456ba69c43b47bc",
+      "mk3Operation": "view.inspect"
+    },
+    {
+      "id": "authored.mapinfo.lua:view.inspect",
+      "verdict": "identical",
+      "resultDigest": "6e7d85c908b5d29255e4543a3b7c06f772ee62c902b2410c8b86748e3d435e6e",
+      "mk3Operation": "view.inspect"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/spring-vfs/operation/view.inspect",
+      "kind": "operation",
+      "legacyOperation": "view.inspect",
+      "adapterOperation": "view.inspect",
+      "targetOperation": "view.inspect",
+      "handlerId": "inspect",
+      "contribution": "modkit-extensions-spring/contributions/codec-spring-vfs.json",
+      "executed": true,
+      "caseIds": ["authored.modinfo.lua:view.inspect", "authored.mapinfo.lua:view.inspect"]
+    }
+  ]
+}

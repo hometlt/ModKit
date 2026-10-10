@@ -172,6 +172,40 @@ test('archiving accepted evidence requires a verified current proof and keeps th
   assert.match((await checkLedger(state)).join('\n'), /evidence needs a path and sha256/u)
 })
 
+test('evidence that moved to another path unchanged is archived with movedTo and keeps the ratchet', async t => {
+  const state = await acceptedFixture(t)
+  const previous = structuredClone(state.ledger)
+  const bytes = await readFile(path.join(state.root, 'receipt.json'))
+  await writeFile(path.join(state.root, 'before.json'), bytes)
+  await mkdir(path.join(state.root, 'moved'), { recursive: true })
+  await writeFile(path.join(state.root, 'moved', 'receipt.json'), bytes)
+  await rm(path.join(state.root, 'receipt.json'))
+  const archived = { ...previous.protectedEvidence[0], snapshotPath: 'before.json' }
+  const moved = { path: 'moved/receipt.json', sha256: hash(bytes) }
+  const set = evidence => {
+    for (const entry of state.ledger.entries) entry.evidence = structuredClone(evidence)
+    state.ledger.protectedEvidence = structuredClone(evidence)
+  }
+  // Without movedTo the archive still asks for the old path.
+  set([archived, moved])
+  assert.match(
+    (await checkLedger({ ...state, previous })).join('\n'),
+    /archived proof needs current evidence/u,
+  )
+  set([{ ...archived, movedTo: 'moved/receipt.json' }, moved])
+  assert.deepEqual(await checkLedger({ ...state, previous }), [])
+  // A move keeps the bytes: different bytes at the new path are not the same proof.
+  await writeFile(path.join(state.root, 'moved', 'receipt.json'), '{}')
+  set([
+    { ...archived, movedTo: 'moved/receipt.json' },
+    { path: 'moved/receipt.json', sha256: hash('{}') },
+  ])
+  assert.match(
+    (await checkLedger({ ...state, previous })).join('\n'),
+    /archived proof needs current evidence/u,
+  )
+})
+
 test('publication identity survives an isolated repository snapshot path', async t => {
   const workspace = await mkdtemp(path.join(os.tmpdir(), 'modkit-publication-workspace-'))
   t.after(() => rm(workspace, { recursive: true, force: true }))

@@ -54,13 +54,25 @@ export async function readEvidence(root, reference) {
   return bytes
 }
 
+/**
+ * An archived proof (`snapshotPath`) keeps its original bytes and needs current evidence beside it:
+ * the same path re-proved (the file changed in place), or, for a file that moved to another
+ * repository path unchanged, `movedTo` naming that path with the same digest.
+ */
 function checkEvidenceSnapshots(references, fail) {
-  for (const reference of references)
-    if (
-      reference?.snapshotPath !== undefined &&
-      !references.some(item => item?.path === reference.path && item?.snapshotPath === undefined)
-    )
-      fail(`archived proof needs current evidence: ${reference.path}`)
+  for (const reference of references) {
+    if (reference?.snapshotPath === undefined) continue
+    const current =
+      reference.movedTo === undefined
+        ? references.some(item => item?.path === reference.path && item?.snapshotPath === undefined)
+        : references.some(
+            item =>
+              item?.path === reference.movedTo &&
+              item?.snapshotPath === undefined &&
+              item?.sha256 === reference.sha256,
+          )
+    if (!current) fail(`archived proof needs current evidence: ${reference.path}`)
+  }
 }
 
 /** Contracts whose manifests a ledger row may name: codecs, and service providers for writer rows. */

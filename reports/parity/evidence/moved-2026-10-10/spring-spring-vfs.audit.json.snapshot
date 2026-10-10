@@ -1,0 +1,119 @@
+{
+  "schemaVersion": 1,
+  "codec": "spring-vfs",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 8,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "source-feature-audit",
+    "oracle": "every export of the MK2 source (references/modkitmk2/extensions/opensource/spring/codecs/spring-vfs at 1a14ba4eddd0ae88de273348ebd44cfb98a0581d), against the MK3 module that carries it, on an authored installation (rapid packages, a zip map, base archives of two engines). Not carried: a read restricted to chosen sections (a SpringVfsMode other than the default); MK2 mapped no Lua mode letter to it and nothing in MK3 reads by section",
+    "suite": "modkit-extensions-spring/test/k1-receipts.test.ts",
+    "samples": [
+      {
+        "name": "mk2 codecs/spring-vfs/codec.manifest.json",
+        "fixture": "references/modkitmk2/extensions/opensource/spring/codecs/spring-vfs/codec.manifest.json",
+        "sha256LF": "c321d1eb865ce7186056b26ce34c212b89bc747dfb6bc096ade0e2853ed65aa1"
+      },
+      {
+        "name": "mk2 codecs/spring-vfs/src/index.ts",
+        "fixture": "references/modkitmk2/extensions/opensource/spring/codecs/spring-vfs/src/index.ts",
+        "sha256LF": "ecd07100a0837f1f74eecfbcf6b82a22da4baaea79117e3ba37132663c567f7e"
+      },
+      {
+        "name": "mk2 codecs/spring-vfs/src/metadata.ts",
+        "fixture": "references/modkitmk2/extensions/opensource/spring/codecs/spring-vfs/src/metadata.ts",
+        "sha256LF": "d3153652f40cfdf2fb7d53ac8f37e94849a40ed83faa0ebf5b90389046a4d206"
+      },
+      {
+        "name": "mk2 codecs/spring-vfs/src/mount.ts",
+        "fixture": "references/modkitmk2/extensions/opensource/spring/codecs/spring-vfs/src/mount.ts",
+        "sha256LF": "963fdeba110e5261c2c8d624bec32cbdf0b42da0d4364706c4a2ee83d13a5ba2"
+      },
+      {
+        "name": "mk2 codecs/spring-vfs/src/node.ts",
+        "fixture": "references/modkitmk2/extensions/opensource/spring/codecs/spring-vfs/src/node.ts",
+        "sha256LF": "7d367eee17541410ede62968d439d897f9768eb5115d1fe23280f85baf4c723b"
+      },
+      {
+        "name": "mk2 codecs/spring-vfs/src/resolve.ts",
+        "fixture": "references/modkitmk2/extensions/opensource/spring/codecs/spring-vfs/src/resolve.ts",
+        "sha256LF": "0c9b2f33604dadd52774bd296ddb6f3cb590396841b4850099d836f80ad66ebd"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "mk2-source:src/metadata.ts#MOD_TYPE+sectionForModType+versionedName",
+      "verdict": "identical",
+      "resultDigest": "fff55f9c5cec03762c514462b3f2acd26842b826e5252fc7d63943a043477da8",
+      "mk3Operation": "src/spring-vfs/info.ts readSpringArchiveInfo"
+    },
+    {
+      "id": "mk2-source:src/metadata.ts#readArchiveData+archiveDataFromTable",
+      "verdict": "identical",
+      "resultDigest": "cbf81dfafcccff95a2adbadecb8bdbdbac48db78baf67a30b016641b8bb74f0c",
+      "mk3Operation": "view.inspect (modkit/spring-vfs)"
+    },
+    {
+      "id": "mk2-source:src/metadata.ts#implicitDependencies",
+      "verdict": "identical",
+      "resultDigest": "57b6f76de75a2db2ecfe3caf31edfe219ff2898676d05414f318d9edc2b2452d",
+      "mk3Operation": "ContentSources.openModContext (src/game/content-sources.ts)"
+    },
+    {
+      "id": "mk2-source:src/resolve.ts#buildArchiveIndex+resolveLoadOrder",
+      "verdict": "identical",
+      "resultDigest": "e3f985d6d735ca6231150168b1f461eb15afdf379bdaf1639a8543ee9d9e1e17",
+      "mk3Operation": "ContentSources.openModContext (src/game/content-sources.ts)"
+    },
+    {
+      "id": "mk2-source:src/mount.ts#SpringVfs+SPRING_DEFAULT_MODE",
+      "verdict": "identical",
+      "resultDigest": "35ac73f0a33a83cb3ccf5cd9cf1bbaea033e9f0121de4103723e365c2c4e50f3",
+      "mk3Operation": "ModContext.locate/read/files (src/game/content-sources.ts)"
+    },
+    {
+      "id": "mk2-source:src/node.ts#scanDataRoot+readArchiveMetadata+mountSpringGame+mountLoadOrder",
+      "verdict": "identical",
+      "resultDigest": "9a8689e740025bc3b9d3f3f3166219b6a377fc21104d071bfbb41b416bba92a2",
+      "mk3Operation": "ContentSources.openModContext with baseMods (src/game/content-sources.ts)"
+    },
+    {
+      "id": "mk2-source:src/index.ts#SPRING_INFO_FILES",
+      "verdict": "identical",
+      "resultDigest": "496428035f129afe53b21f8d653caebae7c186b624d4bd69ad5e1ba52bbe4067",
+      "mk3Operation": "spec.match.pathGlobs (modkit/spring-vfs)"
+    },
+    {
+      "id": "mk2-manifest:operations",
+      "verdict": "identical",
+      "resultDigest": "f9afa62de0f6f7a82c5cb94371289465cba67717dd79bea77196ed72535cf34f",
+      "mk3Operation": "view.inspect; ContentSources.openModContext"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/spring-vfs/audit",
+      "kind": "audit",
+      "adapterOperation": "source-feature-audit",
+      "targetOperation": "source-feature-audit",
+      "handlerId": "source-feature-audit",
+      "contribution": "modkit-extensions-spring/contributions/codec-spring-vfs.json",
+      "executed": true,
+      "caseIds": [
+        "mk2-source:src/metadata.ts#MOD_TYPE+sectionForModType+versionedName",
+        "mk2-source:src/metadata.ts#readArchiveData+archiveDataFromTable",
+        "mk2-source:src/metadata.ts#implicitDependencies",
+        "mk2-source:src/resolve.ts#buildArchiveIndex+resolveLoadOrder",
+        "mk2-source:src/mount.ts#SpringVfs+SPRING_DEFAULT_MODE",
+        "mk2-source:src/node.ts#scanDataRoot+readArchiveMetadata+mountSpringGame+mountLoadOrder",
+        "mk2-source:src/index.ts#SPRING_INFO_FILES",
+        "mk2-manifest:operations"
+      ]
+    }
+  ]
+}
