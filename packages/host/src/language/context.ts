@@ -100,8 +100,16 @@ export function languageImmutableCapture(value: object): boolean {
   return validatedContextCopies.has(value)
 }
 
-/** Capture primitive document fields; only copies made by this owner can reuse their text token. */
-export function languageDocumentSnapshot(document: LanguageDocument): LanguageDocument {
+/**
+ * Capture primitive document fields; only copies made by this owner can reuse their text token.
+ * `contentIdentity` names the text by where it comes from when its source guarantees that name
+ * holds one content (a content-source file under a provider fingerprint: CASC's installation build,
+ * owner decision 10.10); the text token is then that identity's token, and the text is never hashed.
+ */
+export function languageDocumentSnapshot(
+  document: LanguageDocument,
+  options?: { readonly contentIdentity?: string },
+): LanguageDocument {
   const metadata = validatedContextCopies.get(document)
   if (metadata !== undefined && 'document' in metadata) return metadata.document
   const copy = Object.freeze({
@@ -111,7 +119,12 @@ export function languageDocumentSnapshot(document: LanguageDocument): LanguageDo
     text: document.text,
     ...(document.dialect === undefined ? {} : { dialect: document.dialect }),
   })
-  validatedContextCopies.set(copy, { document: copy })
+  validatedContextCopies.set(copy, {
+    document: copy,
+    ...(options?.contentIdentity === undefined
+      ? {}
+      : { textToken: languageWorkspaceContextToken({ contentIdentity: options.contentIdentity }) }),
+  })
   return copy
 }
 

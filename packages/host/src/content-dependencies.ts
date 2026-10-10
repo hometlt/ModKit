@@ -920,6 +920,10 @@ export function createContentDependencyLanguageDocumentSource(
         totalBytes += bytes.byteLength
         const uri = contentSourceUri(candidate.mount.sourceId, candidate.path)
         const previous = revisions.get(uri)
+        // Under a provider fingerprint the file's place names its bytes: token it by that, unhashed.
+        const identity = fingerprinted(candidate.mount)
+          ? { contentIdentity: JSON.stringify([candidate.mount.sourceId, candidate.mount.fingerprint, candidate.path]) }
+          : undefined
         const captured =
           previous?.document?.text === text &&
           previous.document.languageId === languageId &&
@@ -931,7 +935,7 @@ export function createContentDependencyLanguageDocumentSource(
                 version: previous?.version ?? 1,
                 text,
                 ...(dialect === undefined ? {} : { dialect }),
-              })
+              }, identity)
         const signature = languageWorkspaceContextToken({
           mountRevision: String(candidate.mount.revision),
           languageId,
@@ -947,7 +951,7 @@ export function createContentDependencyLanguageDocumentSource(
         const document =
           version === captured.version
             ? captured
-            : languageDocumentSnapshot({ ...captured, version })
+            : languageDocumentSnapshot({ ...captured, version }, identity)
         // An all-ASCII text is a one-byte string in the engine; any other may take two bytes a unit.
         const retainedBytes = bytes.byteLength === text.length ? text.length : text.length * 2
         retainedDocumentBytes -= previous?.bytes ?? 0

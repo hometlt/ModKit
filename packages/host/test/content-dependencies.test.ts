@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { ContentDependencyResolution, ContentSources } from '@modkit/vfs/content-sources'
 import { createContentDependencyLanguageDocumentSource } from '../src/content-dependencies.js'
+import { languageDocumentTextToken, languageWorkspaceContextToken } from '../src/language/context.js'
 
 const encoder = new TextEncoder()
 const files = new Map([
@@ -76,6 +77,53 @@ const withoutFingerprints = (value: ContentDependencyResolution): ContentDepende
 })
 
 describe('content dependency language documents', () => {
+  it('names a fingerprinted capture by its place instead of hashing its text, and hashes the rest', async () => {
+    const request = {
+      document: { uri: 'file:///active.xml', languageId: 'sc2-data', version: 1, text: '' },
+      workspaceDocuments: [],
+      workspaceDocumentOrigins: [],
+      workspaceLanguageIds: ['sc2-data'],
+      maxDocuments: 10,
+      signal: new AbortController().signal,
+    }
+    const routes = [{ languageId: 'sc2-data', extension: 'xml' }]
+    // A listing with the folders between a mount and its files.
+    const nested: ContentSources = {
+      ...contentSources(),
+      async list(_sourceId, path) {
+        const prefix = `${path}/`
+        const children = new Map<string, { path: string; name: string; directory: boolean; size?: number }>()
+        for (const [file, bytes] of files) {
+          if (!file.startsWith(prefix)) continue
+          const [head, ...rest] = file.slice(prefix.length).split('/')
+          const child = `${prefix}${head}`
+          children.set(child, rest.length === 0
+            ? { path: child, name: head!, directory: false, size: bytes.byteLength }
+            : { path: child, name: head!, directory: true })
+        }
+        return [...children.values()]
+      },
+    }
+    const fingerprinted = await createContentDependencyLanguageDocumentSource({
+      contentSources: nested, resolution, routes,
+    }).snapshot(request)
+    expect(fingerprinted.documents.length).toBeGreaterThan(0)
+    for (const document of fingerprinted.documents) {
+      const path = document.uri.slice('content-source://cache/'.length)
+      const mount = resolution.mounts.find(item => path.startsWith(`${item.sourcePath}/`))!
+      expect(languageDocumentTextToken(document)).toBe(
+        languageWorkspaceContextToken({ contentIdentity: JSON.stringify(['cache', mount.fingerprint, path]) }),
+      )
+    }
+    const plain = await createContentDependencyLanguageDocumentSource({
+      contentSources: nested, resolution: withoutFingerprints(resolution), routes,
+    }).snapshot(request)
+    expect(plain.documents.length).toBe(fingerprinted.documents.length)
+    for (const document of plain.documents) {
+      expect(languageDocumentTextToken(document)).toBe(languageWorkspaceContextToken(document.text))
+    }
+  })
+
   it('admits an edited open dependency by mount identity without reading its disk copy', async () => {
     const source = createContentDependencyLanguageDocumentSource({
       contentSources: {
