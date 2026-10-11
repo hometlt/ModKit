@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import type { SceneRendererTexture } from '@modkit/sdk/renderer'
+import { sceneTexturePixels } from '../src/render/compressed-textures.js'
 import { createWorldWebGlPlan } from '../src/world/webgl.js'
 import { renderWorldHeadless, worldHeadlessScene } from '../src/world/headless.js'
 
@@ -56,9 +58,14 @@ describe('headless terrain overlay coverage', () => {
     expect(Math.max(...v)).toBeCloseTo(0.8)
   })
 
-  it.each(['texture', 'coverage'] as const)(
-    'uses corner coverage and the %s alpha policy',
-    async policy => {
+  it.each([
+    { policy: 'texture', storage: 'rgba' },
+    { policy: 'coverage', storage: 'rgba' },
+    { policy: 'texture', storage: 'bc3' },
+    { policy: 'coverage', storage: 'bc3' },
+  ] as const)(
+    'uses corner coverage and the $policy alpha policy with $storage storage',
+    async ({ policy, storage }) => {
       const items = [
         [0, 0],
         [1, 0],
@@ -78,7 +85,43 @@ describe('headless terrain overlay coverage', () => {
         uvwPosition: { x: x!, y: 0, z: y! },
       }))
       const texture = { id: 'ground', width: 1, height: 1, rgba: Uint8Array.of(255, 0, 0, 255) }
-      const upper = { ...texture, id: 'upper', rgba: Uint8Array.of(0, 0, 255, 0) }
+      // Transparent blue DXT5 block: real game textures carry blocks and an empty rgba buffer.
+      const blocks = Uint8Array.of(0, 0, 0, 0, 0, 0, 0, 0, 31, 0, 31, 0, 0, 0, 0, 0)
+      const upper: SceneRendererTexture =
+        storage === 'rgba'
+          ? { ...texture, id: 'upper', rgba: Uint8Array.of(0, 0, 255, 0) }
+          : {
+              id: 'upper',
+              width: 4,
+              height: 4,
+              rgba: new Uint8Array(0),
+              compressed: {
+                schemaVersion: 1,
+                format: 'bc3-rgba-unorm',
+                dimensions: { width: 4, height: 4, depth: 1 },
+                mipLevelCount: 1,
+                layerCount: 1,
+                faceCount: 1,
+                colorSpace: 'unknown',
+                alphaMode: 'unknown',
+                block: { width: 4, height: 4, depth: 1, bytes: 16 },
+                subresources: [
+                  {
+                    mipLevel: 0,
+                    layer: 0,
+                    face: 0,
+                    depthSlice: 0,
+                    width: 4,
+                    height: 4,
+                    depth: 1,
+                    data: blocks,
+                  },
+                ],
+                source: { codecId: 'dds', containerFormat: 'dds', preservation: 'source-bytes' },
+              },
+            }
+      const originalPixels = sceneTexturePixels(upper).slice()
+      const originalBlocks = blocks.slice()
       const plan = createWorldWebGlPlan({
         items: [
           ...items,
@@ -117,8 +160,19 @@ describe('headless terrain overlay coverage', () => {
       expect(plan.terrainDecalTriangles[0]!.overlayAlpha).toBe(
         policy === 'coverage' ? policy : undefined,
       )
-      expect(upper.rgba[3]).toBe(0)
-      expect(headless.textures!.at(-1)!.rgba[3]).toBe(policy === 'coverage' ? 255 : 0)
+      const renderedTexture = headless.textures!.at(-1)!
+      const renderedPixels = sceneTexturePixels(renderedTexture)
+      expect(sceneTexturePixels(upper)).toEqual(originalPixels)
+      expect(blocks).toEqual(originalBlocks)
+      if (storage === 'bc3') expect(upper.rgba).toHaveLength(0)
+      expect(renderedPixels[3]).toBe(policy === 'coverage' ? 255 : 0)
+      if (policy === 'coverage') expect(renderedTexture.compressed).toBeUndefined()
+      else expect(renderedTexture.compressed).toBe(upper.compressed)
+      for (let index = 0; index < renderedPixels.length; index += 4) {
+        expect(Array.from(renderedPixels.slice(index, index + 3))).toEqual(
+          Array.from(originalPixels.slice(index, index + 3)),
+        )
+      }
       expect(Array.from(plan.terrainDecalTriangles[0]!.colors)).toEqual(before)
       for (let index = 0; index < before.length; index += 4) {
         expect(Array.from(converted.slice(index, index + 4))).toEqual([

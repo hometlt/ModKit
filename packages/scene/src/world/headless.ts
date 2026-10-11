@@ -2,7 +2,8 @@
  * A map world rendered without a GPU (MW7): the world plan as one headless scene. The models stand
  * as the plan places them, with the materials and programs the world draws them with; the ground,
  * decals and water are primitives of their batches, with their team colours and blending. Terrain
- * overlay coverage is translated from the world shader's red channel into vertex alpha. A blended
+ * overlay coverage is translated from the world shader's red channel into vertex alpha; compressed
+ * coverage textures are decoded before their texture alpha is made opaque. A blended
  * ground draws its strongest layer, not the blend: the headless renderer has no splat program. It is
  * the viewer's geometry, textures and light, not its picture: no shadows, tone mapping, screen
  * effects or texture filtering, so colours come out brighter than the viewer shows them.
@@ -18,6 +19,7 @@ import type {
 } from '@modkit/sdk/renderer'
 import { TEAM_COLOR_BLENDS } from '@modkit/codec-kit/model-math/color-remap'
 import { renderHeadless } from '../render/headless.js'
+import { sceneTexturePixels } from '../render/compressed-textures.js'
 import {
   createWorldWebGlCameraFrame,
   worldMaterialLight,
@@ -160,9 +162,11 @@ export function worldHeadlessScene(plan: WorldWebGlPlan): Readonly<{
     if (batch.overlayAlpha !== 'coverage') return batch.texture
     let texture = coverageTextures.get(batch.texture)
     if (texture === undefined) {
-      const rgba = batch.texture.rgba.slice()
+      const rgba = sceneTexturePixels(batch.texture).slice()
       for (let index = 3; index < rgba.length; index += 4) rgba[index] = 255
-      texture = { ...batch.texture, rgba }
+      // A compressed descriptor takes precedence over rgba: omit it on this derived copy.
+      const { compressed: _compressed, ...source } = batch.texture
+      texture = { ...source, rgba }
       coverageTextures.set(batch.texture, texture)
     }
     return texture
