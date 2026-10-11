@@ -7,6 +7,7 @@
  */
 import type { CredentialPort } from './credentials.js'
 import type { IndexCacheSwitches } from './index-caches.js'
+import type { ContractResolverPort } from './service-contracts.js'
 
 export type RegistryHive = 'HKLM' | 'HKCU'
 
@@ -46,6 +47,13 @@ export interface ContentSourceModuleContext {
   readonly installationProbes?: InstallationProbes
   /** The credential broker's port for the module's own extension (its declared credentials). */
   readonly credentials?: CredentialPort
+  /**
+   * Host-authorized service resolution for this module's extension (for example an optional
+   * compression decoder). Modules release each acquired lease; the host owns the resolver
+   * and keeps it alive until the content sources have been disposed. Absent on hosts without
+   * service resolution; never construct a decoder or bypass the activation gate as a fallback.
+   */
+  readonly contracts?: ContractResolverPort
   /** The host's one directory of index caches (see `index-caches.ts`), shared with codecs. */
   readonly indexCacheDirectory?: string
   /** The user's index cache switches per product; read them with `indexCacheEnabled`. */

@@ -1,3 +1,10 @@
+/**
+ * Host-owned Node composition of declared/configured content-source modules. Resolves only
+ * contained extension entrypoints, preserves selected installation options, deduplicates roots,
+ * supplies shared probes/cache/language routes and extension-scoped credential/service ports.
+ * Disposes already-loaded modules on failure; service resolution/activation remains owned by
+ * createHostServiceResolver, not by this loader. No game-specific discovery or decoder lives here.
+ */
 import { readFile, realpath } from 'node:fs/promises'
 import { isAbsolute, join, relative, resolve } from 'node:path'
 import { composeContentSources, type ContentSources } from '@modkit/vfs/content-sources'
@@ -6,7 +13,7 @@ import {
   loadContentSources,
   readContentSourceConfig,
 } from '@modkit/vfs/content-sources/node'
-import type { CredentialPort, IndexCacheSwitches, InstallationProbes } from '@modkit/sdk'
+import type { ContractResolverPort, CredentialPort, IndexCacheSwitches, InstallationProbes } from '@modkit/sdk'
 import { createLanguageFileClassifier, type LanguageProviderRoute } from '../language/workspace.js'
 import { createNodeInstallationProbes } from './installation-probes.js'
 
@@ -26,6 +33,8 @@ export interface ResolveContentSourcesOptions {
   readonly installationProbes?: InstallationProbes
   /** The credential port of one extension (`publisher/id`), handed to that extension's module. */
   readonly credentials?: (extension: string) => CredentialPort | undefined
+  /** Host-authorized resolver for one extension; its lifetime must cover the returned sources. */
+  readonly contracts?: (extension: string) => ContractResolverPort | undefined
   /** The host's one directory of index caches, handed to every module (shared with codecs). */
   readonly indexCacheDirectory?: string
   /** The user's index cache switches per product, handed to every module. */
@@ -52,10 +61,16 @@ export async function resolveContentSources(
       ? {}
       : { languageFiles: createLanguageFileClassifier(options.languageRoutes) }),
   }
-  // a module reaches only its own extension's credentials; an unowned configuration gets none
+  // A module receives only its own authority; an unowned configuration gets neither port.
+  /** Supplies extension-scoped authority without granting a port to an unowned configuration. */
   const contextOf = (extension: string | undefined) => {
     const credentials = extension === undefined ? undefined : options.credentials?.(extension)
-    return credentials === undefined ? context : { ...context, credentials }
+    const contracts = extension === undefined ? undefined : options.contracts?.(extension)
+    return {
+      ...context,
+      ...(credentials === undefined ? {} : { credentials }),
+      ...(contracts === undefined ? {} : { contracts }),
+    }
   }
   if (config !== undefined && config.extension === undefined) {
     return loadContentSources(options.configPath, options.storage, context)
@@ -101,6 +116,7 @@ export async function resolveContentSources(
   return parts.length === 0 ? undefined : composeContentSources(parts)
 }
 
+/** Reads an extension's declared module and refuses a path outside its artifact root. */
 async function declaredModule(
   root: string,
 ): Promise<{ readonly extension: string; readonly module: string } | undefined> {

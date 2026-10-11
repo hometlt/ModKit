@@ -35,6 +35,7 @@ async function extension(name: string, contentSources: string | undefined): Prom
       roots: [{ id: ${JSON.stringify(`${name}:root`)}, label: JSON.stringify(options.installationDirectory ?? null), region: 'local', kind: 'local',
         probes: context?.installationProbes?.name ?? typeof context?.installationProbes,
         credentials: context?.credentials?.name ?? null,
+        contracts: context?.contracts?.name ?? null,
         names: context?.indexCaches?.s2?.names ?? null,
         languages: ['Base.SC2Data/MapScript.galaxy', 'Base.SC2Data/UI/Layout/Hud.SC2Layout', 'Readme.md']
           .map(path => context?.languageFiles?.(path) ?? null), options }] }),
@@ -47,6 +48,33 @@ async function extension(name: string, contentSources: string | undefined): Prom
 }
 
 describe('the content sources extensions declare', () => {
+  it('passes only the host-selected service port to each owned module', async () => {
+    const first = await extension('service-owned', 'dist/sources.mjs')
+    const second = await extension('service-unavailable', 'dist/sources.mjs')
+    const calls: string[] = []
+    const sources = await resolveContentSources({
+      extensionRoots: [first, second], storage: join(work, 'storage'),
+      contracts: owner => {
+        calls.push(owner)
+        return owner === 'example/service-owned' ? ({ name: 'authorized-resolver' } as never) : undefined
+      },
+    })
+    try {
+      expect(calls).toEqual(['example/service-owned', 'example/service-unavailable'])
+      expect((await sources?.snapshot())?.roots).toMatchObject([
+        { contracts: 'authorized-resolver' }, { contracts: null },
+      ])
+    } finally { await sources?.dispose() }
+    const configPath = join(work, 'unowned-services.json')
+    await writeFile(configPath, JSON.stringify({ module: join(first, 'dist/sources.mjs'), options: {} }))
+    const unowned = await resolveContentSources({
+      extensionRoots: [], configPath, storage: join(work, 'storage'),
+      contracts: () => { throw new Error('unowned module must not request authority') },
+    })
+    try {
+      expect((await unowned?.snapshot())?.roots).toMatchObject([{ contracts: null }])
+    } finally { await unowned?.dispose() }
+  })
   it("hands every module the host's language classifier over the inventory's routes", async () => {
     const sc2 = await extension('classified', 'dist/sources.mjs')
     const routes = [
