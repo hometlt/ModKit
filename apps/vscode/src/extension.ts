@@ -1352,6 +1352,8 @@ async function activateModkit(
       const indexCaches = configuredIndexCaches(
         vscode.workspace.getConfiguration('modkit').get('indexCaches'),
       ).switches
+      // the language routes, by which a mod server's language sets classify their files
+      const languageRoutes = languageProviderRoutes(host.services.host.inventory)
       contentSources = foundInstallations().then(found =>
         resolveContentSources({
           extensionRoots: extensionRootPaths(),
@@ -1359,6 +1361,7 @@ async function activateModkit(
           storage,
           indexCacheDirectory,
           indexCaches,
+          languageRoutes,
           moduleOptions: extension => moduleOptionsOf(extension, found),
           // each extension's module reaches only the credentials that extension declared
           credentials: extension => host.services.credentials?.portFor(extension),
@@ -1378,6 +1381,7 @@ async function activateModkit(
                   storage,
                   indexCacheDirectory,
                   indexCaches,
+                  languageRoutes,
                   moduleOptions: Object.fromEntries(
                     [
                       ...new Set(

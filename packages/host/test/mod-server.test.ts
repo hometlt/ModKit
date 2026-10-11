@@ -5,7 +5,7 @@
  * the daemon's token is refused; the daemon notices when no client is left. A client that cannot
  * reach a daemon opens its contexts itself.
  */
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -423,6 +423,15 @@ describe('the shared mod server', () => {
     expect(idle).toBe(1)
   })
 
+  it("names a daemon by the client's language routes too", () => {
+    const options = { extensionRoots: [], storage: 'C:/storage' }
+    const routes = [{ languageId: 'galaxy', extension: 'galaxy' }]
+    expect(modServerAddress({ ...options, languageRoutes: routes }, 'C:/d').digest)
+      .not.toBe(modServerAddress(options, 'C:/d').digest)
+    expect(modServerAddress({ ...options, languageRoutes: routes }, 'C:/d').digest)
+      .toBe(modServerAddress({ ...options, languageRoutes: [...routes] }, 'C:/d').digest)
+  })
+
   it('opens mod contexts on the shared server, and in the client when no daemon can be reached', async () => {
     const { options, directory, chain } = await daemon()
     const local = chainSources()
@@ -443,6 +452,10 @@ describe('the shared mod server', () => {
     })
     const started = Date.now()
     const fallback = await unreachable.openModContext!(request)
+    // The daemon's options travel in a file the address names, not on its command line.
+    const written = JSON.parse(await readFile(join(directory, `mod-server-${modServerAddress({
+      extensionRoots: [join(directory, 'nothing')], storage: directory }, directory).digest}.sources.json`), 'utf8'))
+    expect(written).toEqual({ extensionRoots: [join(directory, 'nothing')], storage: directory })
     expect(Date.now() - started).toBeLessThan(10_000)
     expect(local.opened).toBe(1)
     expect(reasons).toHaveLength(1)

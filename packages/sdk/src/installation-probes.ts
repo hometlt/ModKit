@@ -50,4 +50,15 @@ export interface ContentSourceModuleContext {
   readonly indexCacheDirectory?: string
   /** The user's index cache switches per product; read them with `indexCacheEnabled`. */
   readonly indexCaches?: IndexCacheSwitches
+  /**
+   * The host's language of a file by its path, over the language routes of the host's inventory
+   * (`@modkit/host/language` `createLanguageFileClassifier`): a module that reads language
+   * documents itself — a mod server's language sets — classifies them as the host's language
+   * snapshot does. `candidates` lists the languages an ambiguous route claims.
+   */
+  readonly languageFiles?: (path: string) => {
+    readonly languageId?: string
+    readonly dialect?: string
+    readonly candidates: readonly string[]
+  }
 }

@@ -7,6 +7,7 @@ import {
   readContentSourceConfig,
 } from '@modkit/vfs/content-sources/node'
 import type { CredentialPort, IndexCacheSwitches, InstallationProbes } from '@modkit/sdk'
+import { createLanguageFileClassifier, type LanguageProviderRoute } from '../language/workspace.js'
 import { createNodeInstallationProbes } from './installation-probes.js'
 
 export interface ResolveContentSourcesOptions {
@@ -29,6 +30,8 @@ export interface ResolveContentSourcesOptions {
   readonly indexCacheDirectory?: string
   /** The user's index cache switches per product, handed to every module. */
   readonly indexCaches?: IndexCacheSwitches
+  /** The inventory's language routes; every module gets their classifier (`languageFiles`). */
+  readonly languageRoutes?: readonly LanguageProviderRoute[]
 }
 
 /**
@@ -45,6 +48,9 @@ export async function resolveContentSources(
       ? {}
       : { indexCacheDirectory: options.indexCacheDirectory }),
     ...(options.indexCaches === undefined ? {} : { indexCaches: options.indexCaches }),
+    ...(options.languageRoutes === undefined
+      ? {}
+      : { languageFiles: createLanguageFileClassifier(options.languageRoutes) }),
   }
   // a module reaches only its own extension's credentials; an unowned configuration gets none
   const contextOf = (extension: string | undefined) => {

@@ -7,6 +7,7 @@ import { compareUtf8 } from '@modkit/core'
 import type { AnyDescriptor } from '@modkit/sdk'
 import { composeLanguageDocumentSources, resolveContentLanguageSources } from '@modkit/host'
 import {
+  createLanguageFileClassifier,
   createLanguageModContexts,
   createLanguageWorkspace,
   languageProviderRoutes,
@@ -77,8 +78,12 @@ export async function runModkitLsp(argv: readonly string[]) {
       : await loadContentSources(
           configuration.contentSourceConfig,
           configuration.contentSourceStorage,
-          // one directory of index caches beside the storage, as VS Code keeps beside its own
-          { indexCacheDirectory: join(configuration.contentSourceStorage, 'index-cache') },
+          // one directory of index caches beside the storage, as VS Code keeps beside its own; the
+          // language routes, by which a mod server's language sets classify their files
+          {
+            indexCacheDirectory: join(configuration.contentSourceStorage, 'index-cache'),
+            languageFiles: createLanguageFileClassifier(routes),
+          },
         )
           .then(local =>
             // The machine's shared mod server holds the mod contexts for every client (owner
@@ -90,6 +95,7 @@ export async function runModkitLsp(argv: readonly string[]) {
                   storage: configuration.contentSourceStorage!,
                   configPath: configuration.contentSourceConfig!,
                   indexCacheDirectory: join(configuration.contentSourceStorage!, 'index-cache'),
+                  languageRoutes: routes,
                   onFallback: error =>
                     process.stderr.write(
                       `modkit-lsp: shared mod server unavailable, mod contexts open here: ${error instanceof Error ? error.message : String(error)}\n`,

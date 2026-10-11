@@ -30,7 +30,7 @@ import { createHash, randomBytes, timingSafeEqual } from 'node:crypto'
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { connect, createServer, type Server, type Socket } from 'node:net'
 import { homedir, userInfo } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { ModkitError } from '@modkit/core'
 import type { IndexCacheSwitches } from '@modkit/sdk'
@@ -41,6 +41,7 @@ import type {
   ModContextRequest,
 } from '@modkit/vfs/content-sources'
 import { createEndpoint, type Endpoint, type RemoteCapability } from '../execution/endpoint.js'
+import type { LanguageProviderRoute } from '../language/workspace.js'
 import { framePortFromJsonPort } from '../execution/frame-json.js'
 import { protocolLimits } from '../execution/protocol.js'
 import { createSurfaceRegistry, type CapabilitySurface } from '../execution/surface.js'
@@ -97,6 +98,8 @@ export interface ModServerSourcesOptions {
   readonly indexCacheDirectory?: string
   /** The user's index cache switches per product. */
   readonly indexCaches?: IndexCacheSwitches
+  /** The client inventory's language routes, which the daemon's modules classify files by. */
+  readonly languageRoutes?: readonly LanguageProviderRoute[]
 }
 
 /** The address of the daemon for one set of content source options. */
@@ -110,6 +113,7 @@ export function modServerAddress(options: ModServerSourcesOptions, directory = m
       options.moduleOptions ?? null,
       options.indexCacheDirectory ?? null,
       options.indexCaches ?? null,
+      options.languageRoutes ?? null,
     ]))
     .digest('hex')
     .slice(0, 24)
@@ -589,16 +593,22 @@ export function withSharedModContexts(sources: ContentSources, options: SharedMo
     } catch {
       // No daemon yet: start one, and wait until it listens.
       const script = options.daemonScript ?? defaultDaemonScript()
+      // The options travel in a file beside the token: an inventory's language routes can outgrow
+      // a command line (32 767 characters on Windows). The address digest names them.
+      const sourcesFile = join(dirname(address.tokenFile), `mod-server-${address.digest}.sources.json`)
+      await mkdir(dirname(sourcesFile), { recursive: true })
+      await writeFile(sourcesFile, JSON.stringify({
+        extensionRoots: options.extensionRoots,
+        storage: options.storage,
+        ...(options.configPath === undefined ? {} : { configPath: options.configPath }),
+        ...(options.moduleOptions === undefined ? {} : { moduleOptions: options.moduleOptions }),
+        ...(options.indexCacheDirectory === undefined ? {} : { indexCacheDirectory: options.indexCacheDirectory }),
+        ...(options.indexCaches === undefined ? {} : { indexCaches: options.indexCaches }),
+        ...(options.languageRoutes === undefined ? {} : { languageRoutes: options.languageRoutes }),
+      }))
       const child = spawn(options.nodePath ?? process.execPath, [script, JSON.stringify({
         address: { pipe: address.pipe, tokenFile: address.tokenFile },
-        sources: {
-          extensionRoots: options.extensionRoots,
-          storage: options.storage,
-          ...(options.configPath === undefined ? {} : { configPath: options.configPath }),
-          ...(options.moduleOptions === undefined ? {} : { moduleOptions: options.moduleOptions }),
-          ...(options.indexCacheDirectory === undefined ? {} : { indexCacheDirectory: options.indexCacheDirectory }),
-          ...(options.indexCaches === undefined ? {} : { indexCaches: options.indexCaches }),
-        },
+        sourcesFile,
       })], {
         detached: true,
         stdio: 'ignore',

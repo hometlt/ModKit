@@ -35,7 +35,9 @@ async function extension(name: string, contentSources: string | undefined): Prom
       roots: [{ id: ${JSON.stringify(`${name}:root`)}, label: JSON.stringify(options.installationDirectory ?? null), region: 'local', kind: 'local',
         probes: context?.installationProbes?.name ?? typeof context?.installationProbes,
         credentials: context?.credentials?.name ?? null,
-        names: context?.indexCaches?.s2?.names ?? null, options }] }),
+        names: context?.indexCaches?.s2?.names ?? null,
+        languages: ['Base.SC2Data/MapScript.galaxy', 'Base.SC2Data/UI/Layout/Hud.SC2Layout', 'Readme.md']
+          .map(path => context?.languageFiles?.(path) ?? null), options }] }),
     connect: noop, disconnect: noop, search: async () => [], add: noop, remove: noop, refresh: noop,
     list: async () => [], read: async () => new Uint8Array(), dispose: noop,
   }
@@ -45,6 +47,26 @@ async function extension(name: string, contentSources: string | undefined): Prom
 }
 
 describe('the content sources extensions declare', () => {
+  it("hands every module the host's language classifier over the inventory's routes", async () => {
+    const sc2 = await extension('classified', 'dist/sources.mjs')
+    const routes = [
+      { languageId: 'galaxy', extension: 'galaxy' },
+      { languageId: 'sc2-layout', extension: 'sc2layout' },
+    ]
+    const sources = await resolveContentSources({ extensionRoots: [sc2], storage: join(work, 'storage'), languageRoutes: routes })
+    const root = (await sources?.snapshot())?.roots[0] as { languages?: unknown }
+    expect(root.languages).toEqual([
+      { languageId: 'galaxy', candidates: ['galaxy'] },
+      { languageId: 'sc2-layout', candidates: ['sc2-layout'] },
+      { candidates: [] },
+    ])
+    await sources?.dispose()
+    // Without routes a module gets no classifier.
+    const plain = await resolveContentSources({ extensionRoots: [sc2], storage: join(work, 'storage') })
+    expect(((await plain?.snapshot())?.roots[0] as { languages?: unknown }).languages).toEqual([null, null, null])
+    await plain?.dispose()
+  })
+
   it('loads every declared module and composes them, with the options the host gives each', async () => {
     const sc2 = await extension('sc2', 'dist/sources.mjs')
     const roblox = await extension('roblox', './dist/sources.mjs')

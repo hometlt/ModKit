@@ -27,6 +27,7 @@ import {
 } from '@modkit/host'
 import { discoverGameInstallations } from '@modkit/host/games'
 import {
+  createLanguageFileClassifier,
   createLanguageModContexts,
   createLanguageWorkspace,
   languageWorkspaceContextToken,
@@ -530,11 +531,16 @@ export async function createHostMcpPort(
     configuration.contentSourceStorage !== undefined
   ) {
     try {
+      // the language routes, by which a mod server's language sets classify their files
+      const languageRoutes = languageProviderRoutes(modkit.services.inventory)
       const local = await loadContentSources(
         configuration.contentSourceConfig,
         configuration.contentSourceStorage,
         // one directory of index caches beside the storage, as VS Code keeps beside its own
-        { indexCacheDirectory: join(configuration.contentSourceStorage, 'index-cache') },
+        {
+          indexCacheDirectory: join(configuration.contentSourceStorage, 'index-cache'),
+          languageFiles: createLanguageFileClassifier(languageRoutes),
+        },
       )
       // The machine's shared mod server holds the mod contexts for every client (owner decision
       // 07.10); this process opens them itself when the server cannot be reached.
@@ -547,6 +553,7 @@ export async function createHostMcpPort(
               storage: configuration.contentSourceStorage,
               configPath: configuration.contentSourceConfig,
               indexCacheDirectory: join(configuration.contentSourceStorage, 'index-cache'),
+              languageRoutes,
               ...(onDiagnostic === undefined
                 ? {}
                 : {

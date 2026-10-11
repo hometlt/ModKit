@@ -4,9 +4,10 @@
  * — without credentials, which stay with clients. It leaves after a while without connected clients.
  * A second daemon of the same set finds the address taken and leaves at once.
  *
- * Argument: one JSON object `{ address: { pipe, tokenFile }, sources: ModServerSourcesOptions,
- * idleMs? }`, as `withSharedModContexts` passes it.
+ * Argument: one JSON object `{ address: { pipe, tokenFile }, sources?: ModServerSourcesOptions,
+ * sourcesFile?, idleMs? }`; `withSharedModContexts` writes the sources to `sourcesFile`.
  */
+import { readFileSync } from 'node:fs'
 import type { ContentSources } from '@modkit/vfs/content-sources'
 import { serveModServer, type ModServerAddress, type ModServerSourcesOptions } from './mod-server.js'
 
@@ -17,7 +18,17 @@ interface DaemonOptions {
 }
 
 async function main(): Promise<void> {
-  const options = JSON.parse(process.argv[2] ?? '{}') as DaemonOptions
+  const argument = JSON.parse(process.argv[2] ?? '{}') as Omit<DaemonOptions, 'sources'> & {
+    readonly sources?: ModServerSourcesOptions
+    readonly sourcesFile?: string
+  }
+  const options = {
+    ...argument,
+    sources: argument.sources ??
+      (typeof argument.sourcesFile === 'string'
+        ? JSON.parse(readFileSync(argument.sourcesFile, 'utf8')) as ModServerSourcesOptions
+        : undefined),
+  } as DaemonOptions
   if (typeof options.address?.pipe !== 'string' || typeof options.address.tokenFile !== 'string' ||
       !Array.isArray(options.sources?.extensionRoots) || typeof options.sources.storage !== 'string') {
     process.exitCode = 2
@@ -40,6 +51,7 @@ async function main(): Promise<void> {
           ? {}
           : { indexCacheDirectory: options.sources.indexCacheDirectory }),
         ...(options.sources.indexCaches === undefined ? {} : { indexCaches: options.sources.indexCaches }),
+        ...(options.sources.languageRoutes === undefined ? {} : { languageRoutes: options.sources.languageRoutes }),
       }),
     ))
   let leaving = false
