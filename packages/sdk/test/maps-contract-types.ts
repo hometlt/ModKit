@@ -7,6 +7,13 @@ import type {
   MapSemanticProviderModule,
   WorldSceneSource,
 } from '@modkit/sdk/maps'
+import type {
+  MapLatticeCoverage,
+  MapSemanticSnapshot,
+  ResolvedMapWorkspaceSnapshot,
+  WorldSceneObjectItem,
+  WorldSceneTerrainItem,
+} from '../src/maps/index.js'
 import type { DataSourceOf } from '@modkit/sdk/data-sources'
 import type { TypedServiceContractRequest } from '@modkit/sdk/service-contracts'
 
@@ -59,6 +66,27 @@ export type StandardWorldSceneLookup = DataSourceOf<'common.view/world-scene-sou
 export type StandardWorldSceneProof = StandardWorldSceneLookup extends WorldSceneSource
   ? true
   : never
+
+export const latticeCoverage = {
+  objects: [{
+    objectId: 7,
+    coordinateSpaceId: 'map-native',
+    roles: ['resource'],
+    resourceKind: 'mineral',
+    blocked: [],
+    outline: [[{ x: 2, y: 3 }, { x: 3, y: 3 }, { x: 3, y: 4 }]],
+  }],
+  cliffFaces: { coordinateSpaceId: 'height-grid', cells: [] },
+} as const satisfies MapLatticeCoverage
+
+export type ResolvedLatticeCoverage = ResolvedMapWorkspaceSnapshot['latticeCoverage']
+export type WorldObjectLatticeCoverage = WorldSceneObjectItem['latticeCoverage']
+export type WorldObjectUvwLatticeCoverage = WorldSceneObjectItem['uvwLatticeCoverage']
+export type WorldTerrainCliffFace = WorldSceneTerrainItem['cliffFace']
+export const semanticAnalysisRemainsUnchanged: 'latticeCoverage' extends keyof MapSemanticSnapshot
+  ? never
+  : true = true
+
 export const snapshot = analysis.open({
   workspaceId: 'workspace',
   gameId: 'example/game',

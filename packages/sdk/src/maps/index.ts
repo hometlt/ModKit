@@ -1528,6 +1528,36 @@ export interface MapWorldCamera {
   readonly drawDistance?: number
 }
 
+/** Absolute horizontal vertices in a declared world-candidate coordinate space. */
+export type MapLatticePolygon = readonly Readonly<{ x: number; y: number }>[]
+
+/** Publisher-resolved object coverage. Omitted channels are unknown; `[]` means known empty. */
+export interface MapLatticeObjectCoverage {
+  /** One of `MapWorldCandidateDescriptor.coordinateSpaces`; never inferred from the object position. */
+  readonly coordinateSpaceId: string
+  /** Game-neutral roles for the lattice; absence means the publisher has not classified the object. */
+  readonly roles?: readonly ('resource' | 'destructible' | 'start')[]
+  /** Publisher-specific resource kind, meaningful only together with the snapshot's `gameId`. */
+  readonly resourceKind?: string
+  readonly blocked?: readonly MapLatticePolygon[]
+  readonly noBuild?: readonly MapLatticePolygon[]
+  readonly vision?: readonly MapLatticePolygon[]
+  readonly nearResources?: readonly MapLatticePolygon[]
+  readonly outline?: readonly MapLatticePolygon[]
+}
+
+/** Exact, bounded lattice annotations from resolved game data, not inferred from geometry. */
+export interface MapLatticeCoverage {
+  /** An absent entry means unknown coverage for that object; an empty list means no known entries. */
+  readonly objects?: readonly (MapLatticeObjectCoverage & Readonly<{ objectId: number }>)[]
+  /** Complete cliff-face classification of the height-grid cells; absence means unknown. */
+  readonly cliffFaces?: Readonly<{
+    readonly coordinateSpaceId: 'height-grid'
+    /** `[]` means the publisher has established that no cell is a cliff face. */
+    readonly cells: readonly Readonly<{ x: number; y: number }>[]
+  }>
+}
+
 /** Additive result; `semantic` is the untouched authoritative semantic-analysis@1 snapshot. */
 export interface ResolvedMapWorkspaceSnapshot {
   readonly schemaVersion: 1
@@ -1545,6 +1575,8 @@ export interface ResolvedMapWorkspaceSnapshot {
   readonly terrainTransform?: MapTerrainNativeTransform
   readonly uvwTransform?: MapWorldCanonicalTransform
   readonly lighting?: MapWorldLightingSummary
+  /** Authored/resolved lattice facts; absence never licenses a renderer to guess coverage. */
+  readonly latticeCoverage?: MapLatticeCoverage
   /** The game's view of the world, when the publisher knows it. */
   readonly camera?: MapWorldCamera
   readonly worldCandidate: MapWorldCandidateDescriptor
@@ -1700,6 +1732,8 @@ export interface WorldSceneTerrainItem extends MapTerrainSample {
   readonly id: string
   readonly layerId: string
   readonly coordinateSpaceId: string
+  /** Complete publisher classification: true/false for a cell, absent when unknown. */
+  readonly cliffFace?: boolean
   /** Present only when a validated exact native terrain transform was admitted for this snapshot. */
   readonly mapNativePosition?: MapPosition
   /** Present only when the host validated a measured map-native to canonical UVW transform. */
@@ -1775,6 +1809,10 @@ export interface WorldSceneObjectItem extends MapPlacedObject {
   readonly id: string
   readonly layerId: string
   readonly coordinateSpaceId: string
+  /** Publisher geometry and roles in their declared coordinate space; no inferred bbox. */
+  readonly latticeCoverage?: MapLatticeObjectCoverage
+  /** The same polygons projected by the host only through a validated UVW transform. */
+  readonly uvwLatticeCoverage?: Omit<MapLatticeObjectCoverage, 'coordinateSpaceId' | 'roles' | 'resourceKind'>
   /** Stable join into the resources facet when this object names a catalog entity. */
   readonly resourceId?: string
   readonly resourceIds?: readonly string[]
