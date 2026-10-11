@@ -911,8 +911,8 @@ export interface MapTerrainMaterialSample {
     readonly tile: Readonly<{ readonly column: number; readonly row: number }>
     /**
      * An upper layer's coverage at the cell's corners, local (0,0), (1,0), (1,1), (0,1), 0..1, times
-     * its tile's alpha (SAGE blends: 0 or 1 by blend direction). Linear over each of the cell's two
-     * triangles; where one corner differs from the other three, the cell is cut along the diagonal
+     * its tile's alpha unless the material selects `overlayAlpha: 'coverage'`. Linear over each
+     * of the cell's two triangles; where one corner differs from the other three, the cell is cut along the diagonal
      * between that corner's neighbours, so a diagonal blend runs straight (Generals WorldHeightMap,
      * OpenSAGE Terrain.frag). Absent: 1 at every corner.
      */
@@ -923,6 +923,8 @@ export interface MapTerrainMaterialSample {
 export interface MapTerrainMaterialDefinition {
   readonly materialId: string
   readonly label?: string
+  /** Upper-layer opacity: corner coverage times texture alpha (default), or coverage alone. */
+  readonly overlayAlpha?: 'texture' | 'coverage'
   /**
    * The base colour texture is an atlas of square tiles in `rows` rows, as many columns as its
    * aspect gives, column 0 and row 0 at the top left; cells name a tile in `layers`. `tileTop` is the

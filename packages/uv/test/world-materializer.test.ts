@@ -567,6 +567,7 @@ describe('production world to UVW materializer', () => {
               materials: materialIds.map((materialId, sourceIndex) => ({
                 materialId,
                 sourceIndex,
+                ...(sourceIndex === 1 ? { overlayAlpha: 'coverage' as const } : {}),
                 ...(sourceIndex === 1 ? { baseColorFactor: [0.5, 0.25, 1, 1] as const } : {}),
               })),
             }, {
@@ -611,6 +612,7 @@ describe('production world to UVW materializer', () => {
     const result = await materializeWorldToUvw(materialSource, { ...options, maxFacetItems: 8 })
     expect(result.state).toBe('materialized')
     if (result.state !== 'materialized') return
+    expect(result.lostFields).toContainEqual({ path: 'world.terrain-materials.materials.overlayAlpha', count: 1 })
     const layer = parseUvwProfile(result.bytes).spaces[0]?.layers.find(item => item.kind === 'terrain-materials')
     expect(layer?.kind).toBe('terrain-materials')
     if (layer?.kind !== 'terrain-materials') return
@@ -657,6 +659,7 @@ describe('production world to UVW materializer', () => {
     const rasterResult = await materializeWorldToUvw(rasterSource, { ...options, maxFacetItems: 8 })
     expect(rasterResult.state).toBe('materialized')
     if (rasterResult.state === 'materialized') {
+      expect(rasterResult.lostFields).toContainEqual({ path: 'world.terrain-materials.materials.overlayAlpha', count: 1 })
       const raster = parseUvwProfile(rasterResult.bytes).spaces[0]?.layers.find(item => item.kind === 'terrain-materials')
       expect(raster?.kind).toBe('terrain-materials')
       if (raster?.kind === 'terrain-materials') {

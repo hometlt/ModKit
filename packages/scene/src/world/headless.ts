@@ -1,7 +1,8 @@
 /**
  * A map world rendered without a GPU (MW7): the world plan as one headless scene. The models stand
  * as the plan places them, with the materials and programs the world draws them with; the ground,
- * decals and water are primitives of their batches, with their team colours and blending. A blended
+ * decals and water are primitives of their batches, with their team colours and blending. Terrain
+ * overlay coverage is translated from the world shader's red channel into vertex alpha. A blended
  * ground draws its strongest layer, not the blend: the headless renderer has no splat program. It is
  * the viewer's geometry, textures and light, not its picture: no shadows, tone mapping, screen
  * effects or texture filtering, so colours come out brighter than the viewer shows them.
@@ -130,6 +131,19 @@ function prefixed(
   }
 }
 
+/** Translate world-overlay coverage (red) and ambient occlusion (alpha) into renderer RGBA. */
+function terrainOverlayColors(colors: Float32Array): Float32Array {
+  const converted = new Float32Array(colors.length)
+  for (let index = 0; index < colors.length; index += 4) {
+    const ao = colors[index + 3]!
+    converted[index] = ao
+    converted[index + 1] = ao
+    converted[index + 2] = ao
+    converted[index + 3] = colors[index]!
+  }
+  return converted
+}
+
 /** The world plan as one scene of the headless renderer. */
 export function worldHeadlessScene(plan: WorldWebGlPlan): Readonly<{
   scene: SceneRendererScene
@@ -140,6 +154,19 @@ export function worldHeadlessScene(plan: WorldWebGlPlan): Readonly<{
   const diagnostics: SceneRendererDiagnostic[] = []
   // batch textures by object: two batches' textures may share an id and not their texels
   const textures: SceneRendererTexture[] = []
+  const coverageTextures = new Map<SceneRendererTexture, SceneRendererTexture>()
+  // Coverage-only overlays keep RGB but ignore source alpha; cache a copy without mutating texels.
+  const overlayTexture = (batch: WorldWebGlTexturedBatch): SceneRendererTexture => {
+    if (batch.overlayAlpha !== 'coverage') return batch.texture
+    let texture = coverageTextures.get(batch.texture)
+    if (texture === undefined) {
+      const rgba = batch.texture.rgba.slice()
+      for (let index = 3; index < rgba.length; index += 4) rgba[index] = 255
+      texture = { ...batch.texture, rgba }
+      coverageTextures.set(batch.texture, texture)
+    }
+    return texture
+  }
   const textureIds = new Map<SceneRendererTexture, string>()
   const textureId = (texture: SceneRendererTexture) => {
     let id = textureIds.get(texture)
@@ -231,10 +258,10 @@ export function worldHeadlessScene(plan: WorldWebGlPlan): Readonly<{
   plan.terrainDecalTriangles.forEach((batch, index) =>
     ground(
       `world/decal-${String(index)}`,
-      batch,
+      { ...batch, colors: terrainOverlayColors(batch.colors) },
       { alphaMode: 'blend', depthWrite: false },
       batch.textureCoordinates,
-      batch.texture,
+      overlayTexture(batch),
     ),
   )
   plan.transparentTexturedTriangles.forEach((batch, index) =>

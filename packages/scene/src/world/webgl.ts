@@ -298,6 +298,7 @@ interface MutableBatch {
 }
 
 interface MutableTexturedBatch extends MutableBatch {
+  readonly overlayAlpha?: MapTerrainMaterialDefinition['overlayAlpha']
   readonly textureCoordinates: number[]
   readonly secondaryTextureCoordinates?: number[]
   /**
@@ -407,6 +408,7 @@ export interface WorldWebGlShadowControlledBatch extends WorldWebGlBatch {
 }
 
 export interface WorldWebGlTexturedBatch extends WorldWebGlBatch {
+  readonly overlayAlpha?: MapTerrainMaterialDefinition['overlayAlpha']
   readonly textureCoordinates: Float32Array
   readonly secondaryTextureCoordinates?: Float32Array
   readonly atlas?: AtlasGrid
@@ -2430,6 +2432,7 @@ function frozenTexturedBatch(source: MutableTexturedBatch): WorldWebGlTexturedBa
       ? {}
       : { secondaryTextureCoordinates: Float32Array.from(source.secondaryTextureCoordinates) }),
     texture: source.texture,
+    ...(source.overlayAlpha === undefined ? {} : { overlayAlpha: source.overlayAlpha }),
     ...(source.atlas === undefined ? {} : { atlas: source.atlas }),
     ...(source.normalTexture === undefined ? {} : { normalTexture: source.normalTexture }),
     ...(source.normalSwizzle === undefined ? {} : { normalSwizzle: source.normalSwizzle }),
@@ -6518,12 +6521,14 @@ function prepareWorldStaticTerrain(
           normalTexture?.id ?? '',
           specularTexture?.id ?? '',
           atlas === undefined ? '' : 'atlas',
+          definition?.overlayAlpha ?? 'texture',
         ].join(String.fromCharCode(0))
         decalDepths.set(key, depth)
         const target = decals.get(key) ?? {
           ...batch(),
           textureCoordinates: [],
           texture,
+          ...(definition?.overlayAlpha === undefined ? {} : { overlayAlpha: definition.overlayAlpha }),
           ...(atlas === undefined ? {} : { atlas, secondaryTextureCoordinates: [] }),
           ...(normalTexture === undefined
             ? {}
@@ -6780,7 +6785,14 @@ function prepareWorldStaticTerrain(
         textured.set(key, target)
         const uv = (local: readonly [number, number]) =>
           groundLayer !== undefined && material?.atlas !== undefined
-            ? atlasTileUv(local, material.atlas, texture, groundLayer.tile)
+            ? atlasTileUv(
+                materialSample?.cornerUv === undefined
+                  ? local
+                  : terrainSurfaceUv({ x: 0, y: 0 }, local, materialSample, undefined),
+                material.atlas,
+                texture,
+                groundLayer.tile,
+              )
             : terrainSurfaceUv(item, local, materialSample, material?.uvTransform)
         const [uvA, uvB, uvC, uvD] = patch.locals.map(uv) as [
           readonly [number, number],
@@ -8811,6 +8823,7 @@ uniform float terrainSpecularGloss;
 // A decal tile over the ground, lit as the ground is: AO in colour alpha, the terrain diffuse and
 // specular, its own normal map and a specular map of its own.
 uniform float terrainDecal;
+uniform float terrainDecalCoverageOnly;
 uniform float terrainDecalSpecularTextured;
 uniform sampler2D terrainDecalSpecularMap;
 // How normalMap spells the normal: 0 RGB, 1 X in alpha and Y in green (DXN), 2 RGB with Y against v.
@@ -9135,10 +9148,11 @@ void main() {
   vec4 surface = vertexColor;
   float terrainSpecular = 0.0;
   // A terrain surface's colour alpha is its AO; a decal's red is its coverage at the cell's corners,
-  // which the texture's own alpha multiplies.
+  // multiplied by texture alpha unless the publisher specifies coverage alone.
   if (terrainDecal > 0.5) surface = vec4(1.0, 1.0, 1.0, vertexColor.r);
   else if (terrainSurface) surface.a = 1.0;
   if (textured > 0.5) surface *= baseColorSample(textureCoordinate);
+  if (terrainDecal > 0.5 && terrainDecalCoverageOnly > 0.5) surface.a = vertexColor.r;
   if (teamColorMode > 0.5) {
     vec3 teamMask = vec3(1.0);
     vec3 team = teamColor;
@@ -13236,6 +13250,7 @@ function drawWorldWebGlWithResources(
     // The clock of animated water: waves on planes and detail waves on the surface triangles.
     worldUniform1f(gl, program, 'waterTime', input.timeSeconds ?? 0)
     worldUniform1f(gl, program, 'terrainDecal', 0)
+    worldUniform1f(gl, program, 'terrainDecalCoverageOnly', 0)
     worldUniform1f(gl, program, 'terrainSpecularGloss', 0)
     worldUniform1f(gl, program, 'normalSwizzle', 0)
     worldUniform1f(gl, program, 'waterWavesMode', 0)
@@ -13358,6 +13373,7 @@ function drawWorldWebGlWithResources(
       worldUniform1f(gl, program, 'rasterSplatTextured', 0)
       worldUniform1f(gl, program, 'terrainDecal', 1)
       for (const item of plan.terrainDecalTriangles) {
+        worldUniform1f(gl, program, 'terrainDecalCoverageOnly', item.overlayAlpha === 'coverage' ? 1 : 0)
         if (item.specularTexture === undefined) {
           worldUniform1f(gl, program, 'terrainDecalSpecularTextured', 0)
         } else {
@@ -13368,6 +13384,7 @@ function drawWorldWebGlWithResources(
         drawTexturedBatch(resources, program, item)
       }
       worldUniform1f(gl, program, 'terrainDecal', 0)
+      worldUniform1f(gl, program, 'terrainDecalCoverageOnly', 0)
       bindSentinelTexture2d(resources, TERRAIN_DECAL_SPECULAR_UNIT)
       gl.disable(gl.BLEND)
       gl.depthMask(true)

@@ -339,6 +339,13 @@ async function reconstructLayer(
 ): Promise<UvwHeightfieldSpaceLayer> {
   const id = layer.localLayerId ?? localId(layer.layerId)
   const label = layerLabel(layer)
+  // UVW currently cannot retain the publisher's overlay alpha policy; report the visual loss.
+  const coverageMaterials = layer.materials?.filter(material => material.overlayAlpha === 'coverage').length ?? 0
+  if (coverageMaterials > 0 && state.lostFields !== undefined)
+    state.lostFields.set(
+      'world.terrain-materials.materials.overlayAlpha',
+      (state.lostFields.get('world.terrain-materials.materials.overlayAlpha') ?? 0) + coverageMaterials,
+    )
   // UVW holds no derivation: a raster the publisher approximated reads there as the map's own
   const presentationRasters =
     layer.weightRasters?.filter(raster => raster.derivation === 'presentation').length ?? 0
