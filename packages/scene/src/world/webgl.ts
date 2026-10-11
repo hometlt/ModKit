@@ -1,3 +1,10 @@
+/**
+ * Core common world renderer: retained terrain/atlas/blend/decal geometry, clipped water,
+ * objects and UVM material instances, billboards, picking, lighting and camera plans for WebGL
+ * and the headless adapter. Native publishers may request a presentation-only model reflection;
+ * convex upper-layer clipping preserves the original ground triangles and all their varyings.
+ * Format parsing and source placement data remain with the publisher.
+ */
 import {
   Box3,
   OrthographicCamera,
@@ -1303,11 +1310,13 @@ function pushTexturedTriangle(
 
 type WaterGroundVertex = readonly [number, number, number]
 
-function clipWaterPolygon(
-  source: readonly WaterGroundVertex[],
-  distance: (vertex: WaterGroundVertex) => number,
-): WaterGroundVertex[] {
-  const output: WaterGroundVertex[] = []
+/** One half-plane pass, shared by water and clipped terrain layers; preserve all vertex varyings. */
+function clipPolygon<T>(
+  source: readonly T[],
+  distance: (vertex: T) => number,
+  interpolate: (a: T, b: T, amount: number) => T,
+): T[] {
+  const output: T[] = []
   for (let index = 0; index < source.length; index += 1) {
     const current = source[index]!
     const next = source[(index + 1) % source.length]!
@@ -1316,14 +1325,54 @@ function clipWaterPolygon(
     if (currentDistance >= 0) output.push(current)
     if (currentDistance >= 0 !== nextDistance >= 0) {
       const amount = currentDistance / (currentDistance - nextDistance)
-      output.push([
-        current[0] + (next[0] - current[0]) * amount,
-        current[1] + (next[1] - current[1]) * amount,
-        current[2] + (next[2] - current[2]) * amount,
-      ])
+      output.push(interpolate(current, next, amount))
     }
   }
   return output
+}
+
+function clipWaterPolygon(
+  source: readonly WaterGroundVertex[],
+  distance: (vertex: WaterGroundVertex) => number,
+): WaterGroundVertex[] {
+  return clipPolygon(source, distance, (a, b, t) => [
+    a[0] + (b[0] - a[0]) * t,
+    a[1] + (b[1] - a[1]) * t,
+    a[2] + (b[2] - a[2]) * t,
+  ])
+}
+
+/** Bounded convex overlay polygons: validating turns also accepts either source winding. */
+function overlayPolygonSense(polygon: readonly (readonly [number, number])[]): number {
+  if (
+    polygon.length < 3 ||
+    polygon.length > 8 ||
+    polygon.some(p => p.length !== 2 || p.some(v => !Number.isFinite(v)))
+  )
+    throw new TypeError('terrain overlay polygon must have 3..8 finite vertices')
+  let sense = 0
+  for (let i = 0; i < polygon.length; i += 1) {
+    const a = polygon[i]!,
+      b = polygon[(i + 1) % polygon.length]!,
+      c = polygon[(i + 2) % polygon.length]!
+    const turn = (b[0] - a[0]) * (c[1] - b[1]) - (b[1] - a[1]) * (c[0] - b[0])
+    if (Math.abs(turn) < 1e-12) continue
+    if (sense !== 0 && sense !== Math.sign(turn))
+      throw new TypeError('terrain overlay polygon must be convex')
+    sense = Math.sign(turn)
+  }
+  if (sense === 0) throw new TypeError('terrain overlay polygon has zero area')
+  for (let i = 0; i < polygon.length; i += 1) {
+    const a = polygon[i]!,
+      b = polygon[(i + 1) % polygon.length]!
+    if (
+      polygon.some(
+        p => sense * ((b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0])) < -1e-12,
+      )
+    )
+      throw new TypeError('terrain overlay polygon must be convex')
+  }
+  return sense
 }
 
 function clippedWaterGroundPolygon(
@@ -2018,7 +2067,16 @@ function instanceVertex(
       cosine * scaled[2] - sine * scaled[0],
     ]
   }
-  return [translation[0] + rotated[0], translation[1] + rotated[1], translation[2] + rotated[2]]
+  return [
+    translation[0] + rotated[0],
+    translation[1] + rotated[1],
+    translation[2] + modelReflectionZ(item) * rotated[2],
+  ]
+}
+
+/** Match the publisher's native preview frame without changing its authored placements. */
+function modelReflectionZ(item: WorldSceneObjectItem): 1 | -1 {
+  return item.uvwPosition === undefined && item.presentationModelReflection === 'z' ? -1 : 1
 }
 
 function primitiveTriangles(
@@ -2753,6 +2811,7 @@ function worldModelSceneMaterials(
 function worldObjectTransform(
   item: WorldSceneObjectItem,
   translation: readonly [number, number, number],
+  reflect = true,
 ): Float32Array {
   const scale = item.uvwScale ?? item.scale ?? { x: 1, y: 1, z: 1 }
   const rotation =
@@ -2772,6 +2831,8 @@ function worldObjectTransform(
     rotation[4 + row] = (rotation[4 + row] ?? 0) * scale.y
     rotation[8 + row] = (rotation[8 + row] ?? 0) * scale.z
   }
+  const reflection = reflect ? modelReflectionZ(item) : 1
+  for (const column of [0, 4, 8]) rotation[column + 2] = rotation[column + 2]! * reflection
   rotation[12] = translation[0]
   rotation[13] = translation[1]
   rotation[14] = translation[2]
@@ -3015,11 +3076,23 @@ function worldModelCamera(input: WorldWebGlInput, item: WorldSceneObjectItem) {
   // x = up × z; the elevation stays short of a right angle, so it never vanishes
   const length = Math.hypot(z[0], z[2])
   const x = [z[2] / length, 0, -z[0] / length] as const
-  const y = [z[1] * x[2] - z[2] * x[1], z[2] * x[0] - z[0] * x[2], z[0] * x[1] - z[1] * x[0]]
-  const toModel = invertQuat(decomposeMatrix4(worldObjectTransform(item, [0, 0, 0])).rotation)
-  const eye = rotateQuaternion([z[0] * 1e4, z[1] * 1e4, z[2] * 1e4], toModel)
+  const y = [
+    z[1] * x[2] - z[2] * x[1],
+    z[2] * x[0] - z[0] * x[2],
+    z[0] * x[1] - z[1] * x[0],
+  ] as const
+  // A quaternion cannot hold a reflection: reflect the camera vectors first, then undo yaw.
+  const reflection = modelReflectionZ(item)
+  const toModel = invertQuat(
+    decomposeMatrix4(worldObjectTransform(item, [0, 0, 0], false)).rotation,
+  )
+  const eye = rotateQuaternion([z[0] * 1e4, z[1] * 1e4, reflection * z[2] * 1e4], toModel)
+  const cameraBasis =
+    reflection === 1
+      ? [...x, ...y, ...z]
+      : [-x[0], -x[1], x[2], y[0], y[1], -y[2], z[0], z[1], -z[2]]
   return Object.freeze({
-    rotation: multiplyQuat(toModel, quaternionFromRotationMatrix([...x, ...y, ...z])),
+    rotation: multiplyQuat(toModel, quaternionFromRotationMatrix(cameraBasis)),
     position: eye,
   })
 }
@@ -6494,6 +6567,7 @@ function prepareWorldStaticTerrain(
         ) => readonly [number, number],
         atlasLayer = false,
         cornerAlpha?: readonly [number, number, number, number],
+        polygon?: readonly (readonly [number, number])[],
       ) => {
         const definition = input.terrainMaterials?.find(
           candidate => candidate.materialId === materialId,
@@ -6556,6 +6630,46 @@ function prepareWorldStaticTerrain(
           cornerAo[corner]!,
         ]) as unknown as [WorldColor, WorldColor, WorldColor, WorldColor]
         for (const index of [0, 1] as const) {
+          if (polygon !== undefined) {
+            const sense = overlayPolygonSense(polygon)
+            // [local xy, world xyz, uv, coverage/AO rgba, normal xyz]. Clip the original
+            // triangle's varyings, rather than resampling bilinear heights on its diagonal.
+            let vertices: number[][] = patch.split[index].map(corner => [
+              ...patch.locals[corner]!,
+              ...quad[corner]!,
+              ...uvs[corner]!,
+              ...aoColors[corner]!,
+              ...cornerNormals[corner]!,
+            ])
+            for (let edge = 0; edge < polygon.length && vertices.length >= 3; edge += 1) {
+              const a = polygon[edge]!,
+                b = polygon[(edge + 1) % polygon.length]!
+              vertices = clipPolygon(
+                vertices,
+                v => sense * ((b[0] - a[0]) * (v[1]! - a[1]) - (b[1] - a[1]) * (v[0]! - a[0])),
+                (a, b, t) => a.map((value, axis) => value + (b[axis]! - value) * t),
+              )
+            }
+            for (let corner = 1; corner + 1 < vertices.length; corner += 1) {
+              const triangle = [vertices[0]!, vertices[corner]!, vertices[corner + 1]!]
+              const tuples = <T>(from: number, count: number) =>
+                triangle.map(v => v.slice(from, from + count)) as T
+              pushTexturedTriangle(
+                target,
+                tuples<Parameters<typeof pushTexturedTriangle>[1]>(2, 3),
+                tuples<Parameters<typeof pushTexturedTriangle>[2]>(5, 2),
+                tuples<Parameters<typeof pushTexturedTriangle>[3]>(7, 4),
+                tuples<Parameters<typeof pushTexturedTriangle>[4]>(11, 3),
+              )
+              pushCellCoordinates(
+                target,
+                item,
+                tuples<readonly (readonly [number, number])[]>(0, 2),
+              )
+              terrainDecalTriangles += 1
+            }
+            continue
+          }
           pushTexturedTriangle(
             target,
             tri(quad, index),
@@ -6565,7 +6679,7 @@ function prepareWorldStaticTerrain(
           )
           pushCellCoordinates(target, item, tri(patch.locals, index))
         }
-        terrainDecalTriangles += 2
+        if (polygon === undefined) terrainDecalTriangles += 2
       }
       const groundLayer = materialSample?.layers?.[0]
       const drawUpperLayers = () =>
@@ -6576,11 +6690,14 @@ function prepareWorldStaticTerrain(
               layer.materialId,
               index + 1,
               (local, definition, texture) =>
-                definition.atlas === undefined
-                  ? terrainSurfaceUv(item, local, undefined, definition.uvTransform)
-                  : atlasTileUv(local, definition.atlas, texture, layer.tile),
-              true,
+                layer.cornerUv !== undefined
+                  ? terrainSurfaceUv({ x: 0, y: 0 }, local, { cornerUv: layer.cornerUv }, undefined)
+                  : definition.atlas === undefined
+                    ? terrainSurfaceUv(item, local, undefined, definition.uvTransform)
+                    : atlasTileUv(local, definition.atlas, texture, layer.tile),
+              layer.cornerUv === undefined,
               layer.cornerAlpha,
+              layer.clipPolygon,
             ),
           )
       const drawDecal = () => {
@@ -12304,7 +12421,9 @@ export function worldShadowRangeEye(
   width: number,
   height: number,
   requested?: WorldWebGlCamera,
-): Readonly<{ eye: readonly [number, number, number]; distance: number; reachable: boolean }> | undefined {
+):
+  | Readonly<{ eye: readonly [number, number, number]; distance: number; reachable: boolean }>
+  | undefined {
   const range = plan.light.shadowRange
   if (range === undefined || !(range.distance > 0) || !(range.fieldOfViewDegrees > 0)) return undefined
   const { camera, radius } = cameraFor(plan, width, height, requested)

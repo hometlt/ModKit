@@ -121,6 +121,19 @@ it('a camera-facing node turns with the orbit camera; the terrain and the zoom l
     [createWorldWebGlPlan(yawed), 0],
   ])
     assert.ok(facing(value, turn) > 0.999, `the card faces the eye (cos ${facing(value, turn)})`)
+  for (const yaw of [0, 0.7, -1.2]) {
+    for (const turn of [0, 1]) {
+      const reflected = turned({
+        ...input,
+        items: input.items.map(item => item === card ? {
+          ...card, uvwPosition: undefined, rotation: yaw, nativeRotationUnit: 'radians',
+          presentationModelReflection: 'z',
+        } : item),
+      }, turn)
+      const plan = createWorldWebGlPlan(reflected)
+      assert.ok(facing(plan, turn) > 0.999, 'the reflected native card faces the eye')
+    }
+  }
 })
 
 it('the renderer keeps its plan as the camera turns unless a model faces the camera', () => {

@@ -696,6 +696,13 @@ export interface MapPlacedObject {
    */
   readonly presentationRotation?: number
   /**
+   * Reflect a canonical model's Z after its instance rotation/scale, before translation, in a
+   * native preview whose (x, y, z-up) positions are drawn as (x, z, +y). A right-handed Z-up
+   * publisher needs this to match UVM's (x, z, -y) model frame. Ignored for canonical UVW
+   * placements; source coordinates, rotation and exported geometry remain authored.
+   */
+  readonly presentationModelReflection?: 'z'
+  /**
    * How far below the object's ground its foundation reaches, in world units: the vertices at or
    * below its origin (object-local y ≤ 0) are drawn that much lower, so a defence or tree on a slope
    * meets the ground on its low side (Warzone 2100 `stretch`, tcmask_instanced.vert). Presentation
@@ -917,6 +924,14 @@ export interface MapTerrainMaterialSample {
      * OpenSAGE Terrain.frag). Absent: 1 at every corner.
      */
     readonly cornerAlpha?: readonly [number, number, number, number]
+    /** Upper-layer UVs at the cell corners; override this layer's atlas tile mapping. */
+    readonly cornerUv?: MapTerrainMaterialSample['cornerUv']
+    /**
+     * A convex clipping polygon, 3..8 finite vertices in cell-local coordinates. May extend
+     * outside 0..1: the upper layer intersects it with each existing ground triangle (roads/markings).
+     * Either winding is accepted; a zero-area or non-convex polygon is invalid.
+     */
+    readonly clipPolygon?: readonly (readonly [number, number])[]
   }>[]
 }
 
