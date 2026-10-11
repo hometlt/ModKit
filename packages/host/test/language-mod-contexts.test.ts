@@ -436,6 +436,57 @@ describe('the loaded mod servers of a language workspace', () => {
     await workspace.shutdown()
   }, 30_000)
 
+  it("serves an opted-in document's diagnostics from the server without a position proof", async () => {
+    const chain = server()
+    const servers = createLanguageModContexts({ contexts: [chain.context] })
+    let snapshots = 0
+    const asked: string[] = []
+    const provider: LanguageProvider = {
+      contract: LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT,
+      languageIds: ['sc2-data'],
+      modContextFeatures: ['diagnostics'],
+      semanticContextRequirements: [{ kind: 'mod-context', gameId: 'test/game' }],
+      analyze: async ({ document: open }) => ({
+        documentUri: open.uri,
+        documentVersion: open.version,
+        tokens: [],
+        diagnostics: [],
+        symbols: [],
+      }),
+      async modContextFeatureApplies(request) {
+        asked.push(request.feature)
+        return false
+      },
+      async diagnostics(request) {
+        const place = request.workspaceContext?.modContext?.document
+        const served = request.workspaceDocuments.length === 1 && place !== undefined
+        return {
+          diagnostics: [{
+            range: { start: { line: 0, character: 0 }, end: { line: 0, character: 1 } },
+            severity: 'warning',
+            message: served ? `served:${place.layerId}` : 'snapshot',
+          }],
+          isIncomplete: false,
+        }
+      },
+    }
+    const workspace = await languageWorkspace(provider, () => {}, servers, {
+      documentSource: {
+        async snapshot() {
+          snapshots += 1
+          return { documents: [], isComplete: true }
+        },
+      },
+    })
+    await workspace.synchronize({ languageId: 'sc2-data', document: document(MOD_UNITS_URI, '<edited/>') })
+    const report = await workspace.diagnostics({ uri: MOD_UNITS_URI, documentVersion: 1 })
+    expect(report?.diagnostics.map(item => item.message)).toEqual(['served:layer:1'])
+    // No snapshot, and no position-specific proof is asked of a whole document's diagnostics.
+    expect(snapshots).toBe(0)
+    expect(asked).toEqual([])
+    await workspace.shutdown()
+  }, 30_000)
+
   it('keeps bounded snapshots for standalone hover and rejects answers after a server revision changes', async () => {
     const chain = server()
     const servers = createLanguageModContexts({ contexts: [chain.context] })

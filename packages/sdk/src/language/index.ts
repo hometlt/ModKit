@@ -507,13 +507,18 @@ export interface LanguageWorkspaceModContext {
   readonly document?: Readonly<{ layerId: string; path: string }>
 }
 
-/** Features a provider may answer from the synchronized ModContext instead of a snapshot. */
+/**
+ * Features a provider may answer from the synchronized ModContext instead of a snapshot.
+ * `diagnostics` is the open document's (not project) diagnostics; it has no position, so no
+ * position-specific proof applies to it.
+ */
 export type LanguageModContextFeature =
   | 'hover'
   | 'completion'
   | 'definition'
   | 'references'
   | 'signatureHelp'
+  | 'diagnostics'
 
 /**
  * Bounded inputs for one semantic request. `workspaceDocuments` includes `document` and never
@@ -645,7 +650,7 @@ export interface LanguageProvider {
    */
   modContextFeatureApplies?(
     request: Pick<LanguagePositionRequest, 'document' | 'position' | 'signal'> & {
-      readonly feature: Exclude<LanguageModContextFeature, 'completion'>
+      readonly feature: Exclude<LanguageModContextFeature, 'completion' | 'diagnostics'>
     },
   ): Promise<boolean>
   analyze(request: LanguageAnalysisRequest): Promise<LanguageAnalysis>

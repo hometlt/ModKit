@@ -1156,7 +1156,8 @@ function isModContextFeature(
     feature === 'completion' ||
     feature === 'definition' ||
     feature === 'references' ||
-    feature === 'signatureHelp'
+    feature === 'signatureHelp' ||
+    feature === 'diagnostics'
   )
 }
 
@@ -2365,6 +2366,8 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         inputFeature !== undefined &&
         isModContextFeature(inputFeature) &&
         inputFeature !== 'completion' &&
+        // a document's diagnostics have no position to prove
+        inputFeature !== 'diagnostics' &&
         entry.resolution.provider.modContextFeatureApplies !== undefined
       ) {
         const applies = await entry.resolution.provider.modContextFeatureApplies({
@@ -4087,6 +4090,11 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
           }
         },
         validateDiagnosticList,
+        {},
+        false,
+        false,
+        LANGUAGE_MAX_RESULTS,
+        'diagnostics',
       )
     },
 
