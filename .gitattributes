@@ -86,5 +86,8 @@ packages/codec-kit/src/legacy/entity-cards/address.ts -text
 packages/codec-kit/src/legacy/entity-cards/index.ts -text
 # Vendored third-party source: src/lib/brotli/PROVENANCE.json pins its bytes.
 packages/codec-kit/src/lib/brotli/** -text
+# Vendored jxrlib (native/jpegxr/PROVENANCE.json) and the WASM its build.mjs generates from it.
+packages/codec-kit/native/jpegxr/** -text
+packages/codec-kit/src/lib/jpegxr/** -text
 /packages/extension-manager/generated/offline-release/blizzard-starcraft2-suite-0.1.0.bundle.json filter=lfs diff=lfs merge=lfs -text
 /apps/web/dist-app/managed-packages/blizzard-starcraft2-suite-0.1.0.bundle.json filter=lfs diff=lfs merge=lfs -text

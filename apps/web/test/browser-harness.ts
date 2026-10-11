@@ -160,6 +160,9 @@ export const nodeModuleMap: Readonly<Record<string, string>> = Object.freeze({
   '@modkit/codec-kit/compression/brotli': pathToFileURL(
     join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'compression', 'brotli.js'),
   ).href,
+  '@modkit/codec-kit/raster/jpegxr': pathToFileURL(
+    join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'raster', 'jpegxr.js'),
+  ).href,
   '@modkit/codec-kit/container/zip': pathToFileURL(
     join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'container', 'zip.js'),
   ).href,

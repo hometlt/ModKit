@@ -1,0 +1,279 @@
+{
+  "schemaVersion": 1,
+  "library": "jxrlib, Microsoft JPEG XR reference codec (C), as kept in brion/jpegxr",
+  "license": "BSD-3-Clause",
+  "licenseFile": "LICENSE",
+  "source": {
+    "repository": "https://github.com/brion/jpegxr",
+    "commit": "c4c7bc8168ceb20fe029c445ddb45b017a007acd",
+    "archive": "https://github.com/brion/jpegxr/archive/c4c7bc8168ceb20fe029c445ddb45b017a007acd.zip",
+    "archiveSha256": "82a7919a8ad90da8aa7eaabedd96cc11a345918c663d847c09b57b3a4e73afbd"
+  },
+  "decision": "Requested by GAME-QUAKE for Wolfenstein: The New Order virtual-texture pages (headerless JPEG XR); the user approved downloading the source archive and building Modkit's own WASM in the Core session on 2026-10-11 (the npm jpegxr@0.3.0 build does not decode alpha).",
+  "consumer": "build.mjs compiles the decoder and modkit_jxr.c (Modkit's shim: alpha decoding, container bounds, no encoder exports, no file system) to WebAssembly and writes it base64-encoded to src/lib/jpegxr/wasm.ts; src/raster/jpegxr.ts loads it on first decode.",
+  "modkitFiles": [
+    "modkit_jxr.c",
+    "build.mjs"
+  ],
+  "files": [
+    {
+      "path": "jxrlib/common/include/guiddef.h",
+      "source": "jxrlib/common/include/guiddef.h",
+      "sha256": "27d078813ff4af22d2d9d9f978e691e2932489d3d7b34f1a7c640b5c2a697fa1",
+      "edit": "none"
+    },
+    {
+      "path": "jxrlib/common/include/wmsal.h",
+      "source": "jxrlib/common/include/wmsal.h",
+      "sha256": "469cf7a1e020ae8ec8654fab72db254607209a9aa36099ffdd20f2534ae2dbcc",
+      "edit": "none"
+    },
+    {
+      "path": "jxrlib/common/include/wmspecstring.h",
+      "source": "jxrlib/common/include/wmspecstring.h",
+      "sha256": "f0eb89c98c8b714db86574693bcdbd063d31f1c8413e88040fda7f964fe74dcc",
+      "edit": "none"
+    },
+    {
+      "path": "jxrlib/common/include/wmspecstrings_adt.h",
+      "source": "jxrlib/common/include/wmspecstrings_adt.h",
+      "sha256": "6c776c23561cef872aaf5a4de0e25893e49dfb6406b420c73e74d9398efad721",
+      "edit": "none"
+    },
+    {
+      "path": "jxrlib/common/include/wmspecstrings_strict.h",
+      "source": "jxrlib/common/include/wmspecstrings_strict.h",
+      "sha256": "0cc20974649883ec1ad6ff1c236a74f44c6ca9ae4b66dd4569dffb596e9136e7",
+      "edit": "none"
+    },
+    {
+      "path": "jxrlib/common/include/wmspecstrings_undef.h",
+      "source": "jxrlib/common/include/wmspecstrings_undef.h",
+      "sha256": "0a57bd7685ae636c032883c48407b807f466a96df14b2cd86c9be769ab5e024d",
+      "edit": "none"
+    },
+    {
+      "path": "jxrlib/image/decode/JXRTranscode.c",
+      "source": "jxrlib/image/decode/JXRTranscode.c",
+      "sha256": "183ddfc45e2619afa592b3f679f8920cbe7eadc46600f6b0ff7d2cb1c48be7ac",
+      "edit": "none"
+    },
+    {
+      "path": "jxrlib/image/decode/decode.c",
+      "source": "jxrlib/image/decode/decode.c",
+      "sha256": "95ab99ca40e31aac6498cf5ea3389be42d8e976a3f4d5d49b9ac489e6faa923c",
+      "edit": "none"
+    },
+    {
+      "path": "jxrlib/image/decode/decode.h",
+      "source": "jxrlib/image/decode/decode.h",
+      "sha256": "b1f879e91c7febbc250f5709cfcc9dc530392e94efec645b30ce2e261f4001a3",
+      "edit": "none"
+    },
+    {
+      "path": "jxrlib/image/decode/postprocess.c",
+      "source": "jxrlib/image/decode/postprocess.c",
+      "sha256": "5c7525cf137504bd0ed4b0d20085d41b1cf92917b82769a2ca254b4b751cc00f",
+      "edit": "none"
+    },
+    {
+      "path": "jxrlib/image/decode/segdec.c",
+      "source": "jxrlib/image/decode/segdec.c",
+      "sha256": "0c7a25e70bfcc8d21b279ec870df69ea0541efdfe7ac6987fa77508ea8f6f6ac",
+      "edit": "none"
+    },
+    {
+      "path": "jxrlib/image/decode/strInvTransform.c",
+      "source": "jxrlib/image/decode/strInvTransform.c",
+      "sha256": "84a7770289ba3e393609e44a52db49b8c909b2c4a96e44f06e7d1097ce75bd90",
+      "edit": "none"
+    },
+    {
+      "path": "jxrlib/image/decode/strPredQuantDec.c",
+      "source": "jxrlib/image/decode/strPredQuantDec.c",
+      "sha256": "15baa24b037b921ee018759a69a5eb82264fafcd5b4e6e298c062890038ec13d",
+      "edit": "none"
+    },
+    {
+      "path": "jxrlib/image/decode/strdec.c",
+      "source": "jxrlib/image/decode/strdec.c",
+      "sha256": "b601c90c0150d2d0ea1fa1738904d91f479a3b5499f6dc7c25b7574c04da01c1",
+      "edit": "none"
+    },
+    {
+      "path": "jxrlib/image/decode/strdec_x86.c",
+      "source": "jxrlib/image/decode/strdec_x86.c",
+      "sha256": "c79e4bc9c949b8d06911f6e4fbad02c78e459d230addd7fdcc611a83e2c985f4",
+      "edit": "none"
+    },
+    {
+      "path": "jxrlib/image/encode/encode.c",
+      "source": "jxrlib/image/encode/encode.c",
+      "sha256": "c2e967457afbd85bf39ae9704cdb3d2a691bde9fffb277dae1c37246b9df4f1c",
+      "edit": "none"
+    },
+    {
+      "path": "jxrlib/image/encode/encode.h",
+      "source": "jxrlib/image/encode/encode.h",
+      "sha256": "1ae45e75483b8fe2df5307a548d7f7e1315e43499c1c735330892b2a2ffd42cd",
+      "edit": "none"
+    },
+    {
+      "path": "jxrlib/image/encode/segenc.c",
+      "source": "jxrlib/image/encode/segenc.c",
+      "sha256": "2f37b8c4b50d4695a2665a77ba0ebdbfd6154c591b28d4fb0afdaed9aafae5c7",
+      "edit": "none"
+    },
+    {
+      "path": "jxrlib/image/encode/strFwdTransform.c",
+      "source": "jxrlib/image/encode/strFwdTransform.c",
+      "sha256": "ad98e7df756de566d6a0d38393ecbb835646227838854a23ff1ce8d81be4e517",
+      "edit": "none"
+    },
+    {
+      "path": "jxrlib/image/encode/strPredQuantEnc.c",
+      "source": "jxrlib/image/encode/strPredQuantEnc.c",
+      "sha256": "8148093bb67ecc1ab6fe10701868e653f4e25cb8aac890c128b24bdcde569672",
+      "edit": "none"
+    },
+    {
+      "path": "jxrlib/image/encode/strenc.c",
+      "source": "jxrlib/image/encode/strenc.c",
+      "sha256": "cdcc8185c80b8a692006b5c5d47cb04f7b9709b8efc889bee9b5a6abf403317f",
+      "edit": "none"
+    },
+    {
+      "path": "jxrlib/image/encode/strenc_x86.c",
+      "source": "jxrlib/image/encode/strenc_x86.c",
+      "sha256": "a26724b31cca9e52e5bb8a42e55e78b26bf8e43cd780b1025c1b81c21228d010",
+      "edit": "none"
+    },
+    {
+      "path": "jxrlib/image/sys/adapthuff.c",
+      "source": "jxrlib/image/sys/adapthuff.c",
+      "sha256": "286923dccdc64424a6fde75873686dd035c7bc0f9893b5936075c2c5ec181803",
+      "edit": "none"
+    },
+    {
+      "path": "jxrlib/image/sys/ansi.h",
+      "source": "jxrlib/image/sys/ansi.h",
+      "sha256": "b388a2617b50a0c540398413f89f81779d9e67eb403721f6edcc5bbe646eb219",
+      "edit": "none"
+    },
+    {
+      "path": "jxrlib/image/sys/common.h",
+      "source": "jxrlib/image/sys/common.h",
+      "sha256": "1bd7ef25ba26857070bbc4608730cccce77e8ce8c200ecf8577903195ba73967",
+      "edit": "none"
+    },
+    {
+      "path": "jxrlib/image/sys/image.c",
+      "source": "jxrlib/image/sys/image.c",
+      "sha256": "2ee5ebff2dd7669e7a4786af7f3ec815ea92e87dc362a06f8a232e19f15cb8a1",
+      "edit": "none"
+    },
+    {
+      "path": "jxrlib/image/sys/perfTimer.h",
+      "source": "jxrlib/image/sys/perfTimer.h",
+      "sha256": "9d8e61b1f15fbd58100c17264748f0a1980a1906aabf1f0549d2c7cc1913c3af",
+      "edit": "none"
+    },
+    {
+      "path": "jxrlib/image/sys/perfTimerANSI.c",
+      "source": "jxrlib/image/sys/perfTimerANSI.c",
+      "sha256": "38b958689819457ffbe5c133d4259c5847a656b90dd1fc4e4216d9f2075e978c",
+      "edit": "none"
+    },
+    {
+      "path": "jxrlib/image/sys/strPredQuant.c",
+      "source": "jxrlib/image/sys/strPredQuant.c",
+      "sha256": "3bb780e35792db0f66a6b0f604e6f8d25b805a9a6003662c3215ded57eec6c21",
+      "edit": "none"
+    },
+    {
+      "path": "jxrlib/image/sys/strTransform.c",
+      "source": "jxrlib/image/sys/strTransform.c",
+      "sha256": "8a6fcf89e32847ab841ec8b45772a2d0d909b26a2041fa134ef0a6ad39dc4628",
+      "edit": "none"
+    },
+    {
+      "path": "jxrlib/image/sys/strTransform.h",
+      "source": "jxrlib/image/sys/strTransform.h",
+      "sha256": "8a8cbd56cd8b8ba0f9ba4107e0620e7397dd161c80fda290b1881eff6bed0ee2",
+      "edit": "none"
+    },
+    {
+      "path": "jxrlib/image/sys/strcodec.c",
+      "source": "jxrlib/image/sys/strcodec.c",
+      "sha256": "1d767f74cb9b206c3b4b0029ef4b58f25c3d80ec3902c40eecf60748066e2513",
+      "edit": "none"
+    },
+    {
+      "path": "jxrlib/image/sys/strcodec.h",
+      "source": "jxrlib/image/sys/strcodec.h",
+      "sha256": "836afd4627d8d5564243047e60889fab8e6fe60a6971bed1e8a3c10ab57f4262",
+      "edit": "none"
+    },
+    {
+      "path": "jxrlib/image/sys/windowsmediaphoto.h",
+      "source": "jxrlib/image/sys/windowsmediaphoto.h",
+      "sha256": "82fd5d81e3cccef933259c6da5f36b0bf167a6a09869bd2b016d2fc6aaa843a2",
+      "edit": "none"
+    },
+    {
+      "path": "jxrlib/image/sys/xplatform_image.h",
+      "source": "jxrlib/image/sys/xplatform_image.h",
+      "sha256": "78ee66db1bd78e031543fe6786257b92a8c73cfabddb298ddefaa7cb99f85e96",
+      "edit": "none"
+    },
+    {
+      "path": "jxrlib/image/x86/x86.h",
+      "source": "jxrlib/image/x86/x86.h",
+      "sha256": "ce6ce11bffe833d8139622825252317e93c74fd83a9cbd194064c9986fee39db",
+      "edit": "none"
+    },
+    {
+      "path": "jxrlib/jxrgluelib/JXRGlue.c",
+      "source": "jxrlib/jxrgluelib/JXRGlue.c",
+      "sha256": "91ab5fbc2af5d4c5cde58ff7cab9b87101edebae747b200288c4cf9729749e21",
+      "edit": "none"
+    },
+    {
+      "path": "jxrlib/jxrgluelib/JXRGlue.h",
+      "source": "jxrlib/jxrgluelib/JXRGlue.h",
+      "sha256": "2fc098c469cf012a8619b8b0b081f908441860043e35f463af61387b53c808b8",
+      "edit": "none"
+    },
+    {
+      "path": "jxrlib/jxrgluelib/JXRGlueJxr.c",
+      "source": "jxrlib/jxrgluelib/JXRGlueJxr.c",
+      "sha256": "7195422df9f7847494bf5169af5ae546701edd203075f9d58f525e0d90e6c994",
+      "edit": "none"
+    },
+    {
+      "path": "jxrlib/jxrgluelib/JXRGluePFC.c",
+      "source": "jxrlib/jxrgluelib/JXRGluePFC.c",
+      "sha256": "ffbfd72e8c5cf8753779b9580bd10e9b048e9574e98a38320fcf6b3c31351af0",
+      "edit": "none"
+    },
+    {
+      "path": "jxrlib/jxrgluelib/JXRMeta.c",
+      "source": "jxrlib/jxrgluelib/JXRMeta.c",
+      "sha256": "3071a315bfe73d27ac306f60731103e6d493fbfe387523da14cf0d64304b6af9",
+      "edit": "none"
+    },
+    {
+      "path": "jxrlib/jxrgluelib/JXRMeta.h",
+      "source": "jxrlib/jxrgluelib/JXRMeta.h",
+      "sha256": "e7467597e20e1f949743490378d3fe93ebc5e5fece0fa2248c9300e9f153f1fc",
+      "edit": "none"
+    },
+    {
+      "path": "LICENSE",
+      "source": "license.md",
+      "sha256": "f7a19d880e5c4cd98701970ae9550775b66fce292e7946b4af6a15f4887151d6",
+      "sourceSha256": "f7a19d880e5c4cd98701970ae9550775b66fce292e7946b4af6a15f4887151d6",
+      "edit": "renamed"
+    }
+  ]
+}

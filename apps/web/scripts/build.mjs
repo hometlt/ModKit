@@ -299,6 +299,14 @@ const workerBuild = await build({
       'compression',
       'brotli.js',
     ),
+    'vendor/codec-kit/raster/jpegxr': join(
+      repoRoot,
+      'packages',
+      'codec-kit',
+      'dist',
+      'raster',
+      'jpegxr.js',
+    ),
     'vendor/codec-kit/container/zip': join(
       repoRoot,
       'packages',

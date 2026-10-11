@@ -18,6 +18,8 @@ packages/sdk/src/manifest/validators.generated/
 packages/sdk/src/host-facilities.generated.ts
 # Vendored third-party source: its PROVENANCE.json pins the bytes.
 packages/codec-kit/src/lib/brotli/
+packages/codec-kit/native/jpegxr/
+packages/codec-kit/src/lib/jpegxr/
 dist/
 dist-app/
 node_modules/

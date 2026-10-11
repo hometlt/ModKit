@@ -198,6 +198,10 @@
       "types": "./dist/compression/brotli.d.ts",
       "default": "./dist/compression/brotli.js"
     },
+    "./raster/jpegxr": {
+      "types": "./dist/raster/jpegxr.d.ts",
+      "default": "./dist/raster/jpegxr.js"
+    },
     "./container/zip": {
       "types": "./dist/container/zip.d.ts",
       "default": "./dist/container/zip.js"
@@ -252,7 +256,8 @@
     "MK2-SKINNING-KERNELS.json",
     "MK2-DIGEST-KERNELS.json",
     "README.md",
-    "src/lib/brotli/LICENSE"
+    "src/lib/brotli/LICENSE",
+    "native/jpegxr/LICENSE"
   ],
   "dependencies": {
     "draco3d": "1.5.7",
