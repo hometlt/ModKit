@@ -349,7 +349,12 @@ function rasterizeTriangle(
   surface: Surface,
   uvs: Triangle<readonly [number, number]> | undefined,
   normals: Triangle<Vec3> | undefined,
-  materialDraw?: { readonly draw: MaterialDraw; readonly vertices: Triangle<MaterialVertex> },
+  materialDraw?: {
+    readonly draw: MaterialDraw
+    readonly vertices: Triangle<MaterialVertex>
+    /** The triangle's vertex tint (`vertexTints`), flat as WebGL takes it. */
+    readonly vertexTint?: readonly [number, number, number, number]
+  },
   depthBias?: SceneDepthBias,
   colors?: Triangle<Vec4>,
   tint: readonly [number, number, number, number] = [1, 1, 1, 1],
@@ -362,8 +367,18 @@ function rasterizeTriangle(
 ) {
   const [first, second, third] = vertices
   const effect = surface.simpleEffect
-  const materialTint =
+  const primitiveColor =
     materialDraw === undefined ? undefined : primitiveTint(materialDraw.draw.primitive)
+  const vertexTint = materialDraw?.vertexTint
+  const materialTint =
+    primitiveColor === undefined || vertexTint === undefined
+      ? primitiveColor
+      : (primitiveColor.map((value, channel) => value * vertexTint[channel]!) as [
+          number,
+          number,
+          number,
+          number,
+        ])
   const polygonOffset = headlessDepthBias(
     vertices,
     depthBias ?? materialDraw?.draw.primitive.depthBias,
@@ -803,8 +818,21 @@ function renderMaterialDraw(
     return
   }
   const mirrored = materialMirrors(materialModelMatrix(primitive))
+  // Many sprites of one tint each drawn as one primitive (effect particles, baked PopcornFX):
+  // the WebGL program takes the tint flat from the triangle's last vertex, and so does this.
+  const vertexTints = primitiveVertexTints(primitive)
   for (const indices of elements) {
     context.signal?.throwIfAborted()
+    const tintAt = (primitive.indices?.[indices[2]] ?? indices[2]) * 4
+    const vertexTint =
+      vertexTints === undefined
+        ? undefined
+        : ([
+            vertexTints[tintAt] ?? 1,
+            vertexTints[tintAt + 1] ?? 1,
+            vertexTints[tintAt + 2] ?? 1,
+            vertexTints[tintAt + 3] ?? 1,
+          ] as const)
     const source: Triangle<MaterialVertex> = [
       geometry.vertex(primitive.indices?.[indices[0]] ?? indices[0]),
       geometry.vertex(primitive.indices?.[indices[1]] ?? indices[1]),
@@ -836,7 +864,7 @@ function renderMaterialDraw(
         DEFAULT_SURFACE,
         undefined,
         undefined,
-        { draw, vertices: [a, b, c] },
+        { draw, vertices: [a, b, c], ...(vertexTint === undefined ? {} : { vertexTint }) },
         undefined,
         undefined,
         undefined,
@@ -1316,4 +1344,4 @@ export function createProvider(selection: { readonly contract: string; readonly 
     release: async () => undefined,
   })
 }
-import { primitiveTint } from './tint.js'
+import { primitiveTint, primitiveVertexTints } from './tint.js'

@@ -417,11 +417,17 @@ function bakedParticleFrame(
     )
     if (material === undefined) continue
     if (!materials.includes(material)) materials.push(material)
-    // a material program takes the colour as a tint in 0..1 (emitterSprites)
+    // A material program multiplies the texel by the colour and clamps what it draws, so the
+    // colour keeps its range: PopcornFX bakes HDR colours (the Infernal's fire is (1.3, 2.8, 0.3)
+    // over a grey flipbook), and clamped first they turned yellow, then white where they overlap.
+    // Alpha stays a coverage in 0..1.
     if (material.simpleEffect === undefined)
       for (const sprite of sprites)
         for (let at = 0; at < sprite.colors.length; at++)
-          sprite.colors[at] = Math.min(1, Math.max(0, sprite.colors[at]!))
+          sprite.colors[at] =
+            at % 4 === 3
+              ? Math.min(1, Math.max(0, sprite.colors[at]!))
+              : Math.max(0, sprite.colors[at]!)
     primitives.push({
       ...emitterSprites(track.batch, sprites, material, depth, toWorld),
       id: `uvm-baked-particles-${String(track.batch)}`,
@@ -1469,11 +1475,14 @@ function emitterSprites(
     transform: Float32Array.from(toWorld),
   }
   if (material.simpleEffect !== undefined) return { ...primitive, colors }
-  // As a sprite's tint (primitiveTint): four components in 0..1. Only as the tint: as vertex
+  // As a sprite's tint (primitiveTint): RGB finite and non-negative — an HDR colour brightens
+  // its texel past 1 before the draw clamps — and alpha in 0..1. Only as the tint: as vertex
   // colours too, a material using them took each sprite's colour and alpha twice.
-  for (const value of colors)
-    if (!(value >= 0 && value <= 1))
-      throw new TypeError('primitive tint requires four finite components in 0..1')
+  for (let at = 0; at < colors.length; at++) {
+    const value = colors[at]!
+    if (!(value >= 0 && Number.isFinite(value) && (at % 4 !== 3 || value <= 1)))
+      throw new TypeError('primitive tint requires finite non-negative RGB and alpha in 0..1')
+  }
   return {
     ...primitive,
     ...spriteFrames(positions, textureCoordinates, indices),
