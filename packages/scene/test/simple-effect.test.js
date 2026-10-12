@@ -165,3 +165,27 @@ test('an emitter over a material with no program of its own draws through the si
   assert.equal(foreign.simpleEffect.blend, 'blend')
   assert.equal(foreign.simpleEffect.textureResource, undefined)
 })
+test('an emitter over a plain additive material keeps its blend pass', async () => {
+  const { effectSurfaceMaterial } = await import('../src/uvm/projector-material.js')
+  // a material whose UV_game_material.blendMode is additive: render.ts gives it its simple pass
+  const glow = {
+    id: 'material-1',
+    baseColor: [1, 1, 1, 1],
+    alphaMode: 'blend',
+    shading: 'unlit',
+    shader: { id: 'sage/particle-system', parameters: {} },
+    simpleEffect: {
+      blend: 'additive',
+      depthTest: true,
+      depthWrite: false,
+      doubleSided: true,
+      alphaCutoff: 0,
+      wrapU: 'repeat',
+      wrapV: 'repeat',
+    },
+  }
+  const sprite = effectSurfaceMaterial(glow, 'sprite', 10000, 1048576, 'Texture/FXCloud.dds')
+  assert.equal(sprite.simpleEffect.blend, 'additive')
+  assert.equal(sprite.simpleEffect.depthWrite, false)
+  assert.equal(sprite.simpleEffect.textureResource, 'Texture/FXCloud.dds')
+})

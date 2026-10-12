@@ -108,6 +108,9 @@ function simpleEffectMaterial(
   if (base.shader === undefined || base.shader.id !== 'modkit.render-material.v1') {
     const { shader: _shader, ...plain } = base
     const listed = layerListTexture(base.shader)
+    // A material with a blend pass of its own (UV_game_material.blendMode: additive, modulate)
+    // keeps it: from its alpha mode alone an additive glow drew as a black card.
+    const own = base.simpleEffect
     return {
       ...plain,
       id,
@@ -115,17 +118,18 @@ function simpleEffectMaterial(
       baseColor: [1, 1, 1, alpha],
       simpleEffect: {
         blend:
-          base.alphaMode === 'mask'
+          own?.blend ??
+          (base.alphaMode === 'mask'
             ? 'alpha-test'
             : base.alphaMode === 'blend'
               ? 'blend'
-              : 'opaque',
-        depthTest: true,
-        depthWrite: base.alphaMode !== 'blend',
+              : 'opaque'),
+        depthTest: own?.depthTest ?? true,
+        depthWrite: own?.depthWrite ?? base.alphaMode !== 'blend',
         doubleSided: base.doubleSided === true,
         alphaCutoff: base.alphaMode === 'mask' ? (base.alphaCutoff ?? 0.5) : 0,
-        wrapU: 'repeat',
-        wrapV: 'repeat',
+        wrapU: own?.wrapU ?? 'repeat',
+        wrapV: own?.wrapV ?? 'repeat',
         ...(listed === undefined ? {} : { textureResource: listed }),
       },
     }
