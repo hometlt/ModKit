@@ -148,6 +148,8 @@ it('decodes a game material its own layers and leaves the unneeded base-colour f
   assert.deepEqual(requested, ['layer.dds'])
   assert.ok(frame.statistics.fragments > 0)
   assert.ok(!frame.diagnostics.some(item => item.code === 'common.scene/material-texture-unresolved'))
+  // Nor does the renderer hear of the fallback it was never handed.
+  assert.ok(!frame.diagnostics.some(item => item.code === 'modkit.headless/texture-missing'))
 })
 
 it('still decodes the base-colour fallback of a game material whose layers are unresolved', async () => {

@@ -1040,6 +1040,7 @@ async function prepareNestedUvmRender(
         'common.uvm/texture-unresolved',
         `Texture ${index} has no decoded texels available from the resource host.`,
       )
+  const carriedTextureIds = new Set([...textures.values()].map(texture => texture.id))
   const request: SceneRenderRequest = {
     outputKind: 'rgba8',
     viewport: { width, height },
@@ -1054,10 +1055,18 @@ async function prepareNestedUvmRender(
       primitives,
       materials: materials
         .filter(material => activeMaterials.has(material.id))
-        .map(material => ({
-          ...material,
-          textureBindings: acquiredMaterials.bindings(material.id),
-        })),
+        .map(material => {
+          const bound = { ...material, textureBindings: acquiredMaterials.bindings(material.id) }
+          // A material its shader draws needs no base-colour fallback, which was not decoded.
+          if (
+            !drawnByShader.has(material.id) ||
+            material.baseColorTexture === undefined ||
+            carriedTextureIds.has(material.baseColorTexture)
+          )
+            return bound
+          const { baseColorTexture: _fallback, ...drawn } = bound
+          return drawn
+        }),
       textures: [...textures.values(), ...acquiredMaterials.textures],
       materialContext,
     },
