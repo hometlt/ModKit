@@ -184,13 +184,13 @@ describe('common world source native visual facets', () => {
     }))
     objects.push({ kind: 'doodad', objectId: 4, position: { x: 1, y: 1, z: 3 }, heightReference: 'terrain-relative' })
     objects.push({ kind: 'doodad', objectId: 5, position: { x: 2, y: 1, z: 3 }, heightReference: 'terrain-relative' })
+    const { terrainMaterials: _materials, ...snapshotWithoutMaterials } = snapshot
     const fixture: ResolvedMapWorkspaceSnapshot = {
-      ...snapshot,
+      ...snapshotWithoutMaterials,
       semantic: { ...snapshot.semantic, objects, terrain: {
         ...snapshot.semantic.terrain!, minimumHeightBase: 130, maximumHeightBase: 270,
         samples: [270, 130, 270, 270].map((heightBase, index) => ({ x: index % 2, y: Math.floor(index / 2), heightBase, heightAdjustment: 0, mask: 0 })),
       } },
-      terrainMaterials: undefined,
       terrainTransform: {
         schemaVersion: 1, snapshotId: snapshot.snapshotId, descriptorVersion: 1,
         heightMap: { dim: [2, 2], offset: { x: 0, y: 0, z: 0 }, scale: { x: 1, y: 1, z: 1 } },

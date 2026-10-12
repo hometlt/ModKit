@@ -94,6 +94,7 @@ describe('the resources of the mod a subject belongs to, for an ordinary open', 
     const lease = await origin.open('native-alias.bimage')
     const opened = lease.value
     expect(opened.containerContext).toEqual({ resourceHash: 'abcd' })
+    if (opened.kind !== 'bytes') throw new Error('resolved companion must be a byte source')
     expect(await opened.read(0n, 1)).toEqual(new Uint8Array([7]))
     expect(readWithContext).toHaveBeenCalledWith('l0', 'image.bimage', 64 * 1024 * 1024)
     expect(read).not.toHaveBeenCalled()

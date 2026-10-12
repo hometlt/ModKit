@@ -1,4 +1,5 @@
 import { expect, it } from 'vitest'
+import type { WorldSceneItem } from '@modkit/sdk/maps'
 import { mapQualificationTupleBytes, type ResolvedMapWorkspaceSnapshot } from '@modkit/sdk/maps'
 import {
   createCandidateWorldSceneLease,
@@ -282,7 +283,7 @@ it('joins validated lattice facts by objectId and projects only with an admitted
     'terrain',
   )
   expect(
-    empty.find(item => item.facet === 'terrain' && item.x === 0 && item.y === 0)?.cliffFace,
+    empty.find((item): item is Extract<WorldSceneItem, { facet: 'terrain' }> => item.facet === 'terrain' && item.x === 0 && item.y === 0)?.cliffFace,
   ).toBe(false)
   expect(() =>
     createCandidateWorldSceneLease(

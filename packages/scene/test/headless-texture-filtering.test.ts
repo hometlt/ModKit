@@ -32,7 +32,7 @@ async function sample(u: number, v: number, settings: Partial<SceneRendererTextu
 it.each([undefined, 'linear'] as const)(
   'bilinearly filters the base route with %s filter',
   async filter => {
-    expect(await sample(0.5, 0.5, { filter })).toEqual([128, 128, 128, 255])
+    expect(await sample(0.5, 0.5, filter === undefined ? {} : { filter })).toEqual([128, 128, 128, 255])
   },
 )
 

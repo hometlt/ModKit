@@ -1,7 +1,7 @@
 import { expect, it, vi } from 'vitest'
 import { canonicalJsonStringify, compareUtf8, OperationCancelledError, uint64 } from '@modkit/core'
 import { createHostTopology } from '@modkit/sdk'
-import { LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT, type LanguageProvider } from '@modkit/sdk/language'
+import { LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT, type LanguageProvider, type LanguageWorkspaceDocumentOrigin } from '@modkit/sdk/language'
 import {
   createBundledServiceDefinitionRegistry,
   createExecutionBackendRegistry,
@@ -393,7 +393,7 @@ it('derives context identity and revision exactly from every document, origin an
     version: 1,
     text: `closed ${name}`,
   }))
-  const origins = new Map(
+  const origins = new Map<string, { -readonly [Key in keyof LanguageWorkspaceDocumentOrigin]: LanguageWorkspaceDocumentOrigin[Key] }>(
     [f.document, ...closed].map((document, index) => [
       document.uri,
       {
@@ -403,7 +403,7 @@ it('derives context identity and revision exactly from every document, origin an
         precedence: index === 0 ? 1 : 0,
         sourceRevision: 'revision:1',
         readOnly: index !== 0,
-      } as Record<string, unknown>,
+      },
     ]),
   )
   f.snapshot.mockImplementation(async () => ({
@@ -435,11 +435,11 @@ it('derives context identity and revision exactly from every document, origin an
           .sort((left, right) =>
             compareUtf8(canonicalJsonStringify(left), canonicalJsonStringify(right)),
           ),
-        semanticInputs: context.semanticInputs.map(input => ({ kind: input.kind, id: input.id })),
+        semanticInputs: (context.semanticInputs ?? []).map(input => ({ kind: input.kind, id: input.id })),
       }),
       revision: languageWorkspaceContextToken({
         sourceRevision: 'source:1',
-        semanticInputs: context.semanticInputs.map(input => ({
+        semanticInputs: (context.semanticInputs ?? []).map(input => ({
           kind: input.kind,
           id: input.id,
           contentRevision: languageWorkspaceContextToken(input),

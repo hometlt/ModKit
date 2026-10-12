@@ -94,9 +94,10 @@ describe('native model preview frame', () => {
 
   it('does not reflect canonical placements, or other publishers without the field', () => {
     const native = object(0)
+    const { presentationModelReflection: _reflection, ...otherPublisher } = native
     for (const item of [
       { ...native, uvwPosition: { x: 10, y: 30, z: 20 } },
-      { ...native, presentationModelReflection: undefined },
+      otherPublisher,
     ]) {
       const plan = createWorldWebGlPlan({
         items: [item],
