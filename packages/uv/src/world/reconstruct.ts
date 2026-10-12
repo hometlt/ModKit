@@ -239,7 +239,15 @@ const PLACING_FIELDS = [
  */
 const KEPT_FIELDS: Readonly<Record<string, ReadonlySet<string>>> = Object.freeze({
   terrain: new Set(['x', 'y', 'heightBase', 'heightAdjustment', 'uvwPosition']),
-  'terrain-materials': new Set(['x', 'y', 'uvwPosition', 'weights', 'textureIndex', 'uvTransform']),
+  'terrain-materials': new Set([
+    'x',
+    'y',
+    'uvwPosition',
+    'weights',
+    'textureIndex',
+    'uvTransform',
+    'cornerUv',
+  ]),
   cliffs: new Set(['x', 'y', 'uvwPosition', 'level', 'authored']),
   water: new Set([
     'minimum',
@@ -483,6 +491,7 @@ async function reconstructLayer(
           ),
         ),
         ...(raw.uvTransform === undefined ? {} : { uvTransform: raw.uvTransform }),
+        ...(raw.cornerUv === undefined ? {} : { cornerUv: raw.cornerUv }),
       })
     }
     if (values.some(value => value === undefined))

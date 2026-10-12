@@ -82,6 +82,13 @@ export interface UvwTerrainMaterialWeight {
 export interface UvwTerrainMaterialSample {
   readonly weights: readonly UvwTerrainMaterialWeight[]
   readonly uvTransform?: UvwUvTransform
+  /** Authored cell-corner UVs, replacing the sample transform without clamping. */
+  readonly cornerUv?: readonly [
+    readonly [number, number],
+    readonly [number, number],
+    readonly [number, number],
+    readonly [number, number],
+  ]
 }
 
 /** Package-owned exact RGBA weight raster; channels follow materialIds order. */
@@ -868,7 +875,7 @@ function terrainMaterialsLayer(
             cells.map((cellValue, columnIndex) => {
               const cellPath = `${rowPath}[${String(columnIndex)}]`
               const cell = record(cellValue, cellPath, state, depth + 3)
-              exactKeys(cell, ['weights', 'uvTransform'], ['weights'], cellPath)
+              exactKeys(cell, ['weights', 'uvTransform', 'cornerUv'], ['weights'], cellPath)
               const weights = array(cell['weights'], `${cellPath}.weights`, state, depth + 4)
               if (weights.length === 0)
                 fail('material sample must contain at least one weight', cellPath)
@@ -902,8 +909,23 @@ function terrainMaterialsLayer(
                 return Object.freeze({ materialId, weight: amount })
               })
               if (Math.abs(total - 1) > 1e-6) fail('material weights must sum to one', cellPath)
+              const corners =
+                cell['cornerUv'] === undefined
+                  ? undefined
+                  : array(cell['cornerUv'], `${cellPath}.cornerUv`, state, depth + 4)
+              if (corners !== undefined && corners.length !== 4)
+                fail('expected exactly four corner UV pairs', `${cellPath}.cornerUv`)
               return Object.freeze({
                 weights: Object.freeze(parsed),
+                ...(corners === undefined
+                  ? {}
+                  : {
+                      cornerUv: Object.freeze(
+                        corners.map((corner, index) =>
+                          vec2(corner, `${cellPath}.cornerUv[${String(index)}]`, state, depth + 5),
+                        ),
+                      ) as NonNullable<UvwTerrainMaterialSample['cornerUv']>,
+                    }),
                 ...(cell['uvTransform'] === undefined
                   ? {}
                   : {

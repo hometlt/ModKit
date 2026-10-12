@@ -30,6 +30,64 @@ function errorCode(run: () => unknown): string | undefined {
 }
 
 describe('UVW 1.0 production document', () => {
+  it('retains admitted corner UVs through parsing, source pages and generic reconstruction', async () => {
+    const input = JSON.parse(
+      new TextDecoder().decode(await fixture('uvw-profile-renderable-world.uvw.json')),
+    )
+    const layer = input.spaces[0].layers.find(
+      (layer: { kind: string }) => layer.kind === 'terrain-materials',
+    )
+    const corners = [
+      [-0.25, 1.5],
+      [0.75, 1.25],
+      [1.125, -0.5],
+      [0.125, -0.75],
+    ]
+    layer.samples[0][0].cornerUv = corners
+    layer.samples[0][0].uvTransform = { offset: [0.2, 0.3], scale: [2, -1], rotation: 0.5 }
+    const document = validateUvwProfile(input)
+    expect(parseUvwProfile(serializeUvwProfile(document))).toEqual(canonicalizeUvwProfile(document))
+    const source = createUvwWorldSceneSource(document, {
+      snapshotId: 'cliff-uv-fixture',
+      maxPageSize: 32,
+    })
+    const layers = await source.page({ facet: 'layers', limit: 32 })
+    const materials = layers.items.find(
+      item => item.facet === 'layers' && item.kind === 'terrain-materials',
+    )!
+    const page = await source.page({
+      facet: 'terrain-materials',
+      layerId: materials.layerId,
+      lod: 'exact',
+      limit: 32,
+    })
+    expect(page.items[0]).toMatchObject({
+      cornerUv: corners,
+      uvTransform: layer.samples[0][0].uvTransform,
+    })
+    const reconstructed = await materializeWorldToUvw(source, {
+      maxPageItems: 32,
+      maxTerrainItems: 1000,
+      maxFacetItems: 1000,
+      maxOutputBytes: 1 << 20,
+    })
+    expect(reconstructed.state, JSON.stringify(reconstructed.refusals)).toBe('materialized')
+    if (reconstructed.state !== 'materialized') return
+    const reopened = parseUvwProfile(reconstructed.bytes)
+    const result = reopened.spaces[0]!.layers.find(layer => layer.kind === 'terrain-materials')!
+    expect(result.kind === 'terrain-materials' && result.samples?.[0]?.[0]?.cornerUv).toEqual(
+      corners,
+    )
+    expect(reconstructed.lostFields.some(field => field.path.endsWith('.cornerUv'))).toBe(false)
+    const malformed = structuredClone(input)
+    malformed.spaces[0].layers.find(
+      (layer: { kind: string }) => layer.kind === 'terrain-materials',
+    ).samples[0][0].cornerUv = [[0, 0]]
+    expect(() => validateUvwProfile(malformed)).toThrow(/four corner UV/)
+    layer.samples[0][0].cornerUv[0][0] = Number.POSITIVE_INFINITY
+    expect(() => validateUvwProfile(input)).toThrow()
+  })
+
   it('preserves the published player roster and exact starts through source materialization', async () => {
     const document = parseUvwProfile(await fixture('uvw-players.uvw.json'))
     const originalSpace = document.spaces[0]

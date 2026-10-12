@@ -218,6 +218,7 @@ function recordItems(
                 textureName: material.label ?? material.id,
                 weights: Object.freeze(weights.map(weight => Object.freeze({ ...weight }))),
                 ...(sample.uvTransform === undefined ? {} : { uvTransform: sample.uvTransform }),
+                ...(sample.cornerUv === undefined ? {} : { cornerUv: sample.cornerUv }),
                 uvwPosition,
               }),
             ]
