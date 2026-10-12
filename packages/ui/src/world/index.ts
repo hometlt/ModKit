@@ -393,7 +393,9 @@ export async function inspectCandidateWorld(
         continue
       }
       for (const component of item.modelComponents) {
-        ;(component.parentId === undefined ? rootResources : childResources).add(component.resourceId)
+        ;(component.parentId === undefined ? rootResources : childResources).add(
+          component.resourceId,
+        )
       }
     }
   }
@@ -446,7 +448,10 @@ export async function inspectCandidateWorld(
     ...requestedResources.slice(maxModels),
     ...resourceItems.filter(item => !requestedResources.includes(item)),
   ]) {
-    models.set(item.id, omitted(item, `World preview model limit ${String(maxModels)} omitted resource`))
+    models.set(
+      item.id,
+      omitted(item, `World preview model limit ${String(maxModels)} omitted resource`),
+    )
   }
   // What converted models actually hold; a texture that several cliff pieces share counts once.
   const counted = new WeakSet<ArrayBufferView>()
@@ -535,7 +540,8 @@ export async function inspectCandidateWorld(
   const retryBytes = (result: WorldSceneModelResult, textureBytes: number): number | undefined => {
     let uvmBytes: number | undefined
     for (const item of result.diagnostics) {
-      const required = (item.data as { readonly requiredBytes?: unknown } | undefined)?.requiredBytes
+      const required = (item.data as { readonly requiredBytes?: unknown } | undefined)
+        ?.requiredBytes
       if (item.code === 'x3.host/model-resource-too-large' && typeof required === 'number')
         uvmBytes = required
       else if (item.code === 'x3.host/resource-budget-exceeded' && result.state === 'converted')
@@ -1052,7 +1058,8 @@ const flattenedWorldLayers = new WeakMap<
 
 function flattenedWorldLayersOf(layers: readonly CandidateWorldViewerLayer[]) {
   let flattened = flattenedWorldLayers.get(layers)
-  if (flattened === undefined) flattenedWorldLayers.set(layers, (flattened = flattenWorldLayers(layers)))
+  if (flattened === undefined)
+    flattenedWorldLayers.set(layers, (flattened = flattenWorldLayers(layers)))
   return flattened
 }
 
@@ -1060,7 +1067,10 @@ function flattenedWorldLayersOf(layers: readonly CandidateWorldViewerLayer[]) {
 /** Overlay facets the viewer can switch off; the terrain, water and objects always draw. */
 export type WorldOverlayFacet = 'regions' | 'navigation' | 'gateways'
 const WORLD_OVERLAY_FACETS: readonly WorldOverlayFacet[] = ['regions', 'navigation', 'gateways']
-const shownItemsCache = new WeakMap<readonly WorldSceneItem[], Map<string, readonly WorldSceneItem[]>>()
+const shownItemsCache = new WeakMap<
+  readonly WorldSceneItem[],
+  Map<string, readonly WorldSceneItem[]>
+>()
 
 /**
  * The items without the hidden overlay facets. The same filtered array comes back for the same
@@ -1636,7 +1646,9 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
       }
       const overlayButtons = new Map(
         WORLD_OVERLAY_FACETS.map(facet => {
-          const button = element(toolbar, 'button', { text: overlayLabels[facet] }) as HTMLButtonElement
+          const button = element(toolbar, 'button', {
+            text: overlayLabels[facet],
+          }) as HTMLButtonElement
           button.type = 'button'
           button.hidden = true
           button.dataset['worldOverlay'] = facet
@@ -1654,6 +1666,9 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
         camera: localizer.text('viewer.worldKindCamera'),
       }
       const latticeLabels = { ...kindLabels, ramp: localizer.text('viewer.worldRamp') }
+      const latticeSpace = element(toolbar, 'select') as HTMLSelectElement
+      latticeSpace.hidden = true
+      latticeSpace.setAttribute('aria-label', 'Lattice coordinate space')
       const canvas = element(stage, 'canvas', { part: 'model.canvas' }) as HTMLCanvasElement
       const latticeCanvas = element(stage, 'canvas', { part: 'model.canvas' }) as HTMLCanvasElement
       canvas.width = 720
@@ -1693,6 +1708,7 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
       let viewUndecided = options.initialView === 'auto'
       let latticePlan: WorldLatticePlan | undefined
       let latticeLayers: CandidateWorldViewerModel['layers'] | undefined
+      let latticeSpaceIds = ''
       let loading = false
       // the frame the last 3D draw measured its camera in, and a pending ask for the ground in view
       let lastFrame: WorldWebGlFrame | undefined
@@ -1763,11 +1779,38 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
         return times
       }
       const redraw = () => {
+        if (currentModel !== undefined) {
+          const spaces = [
+            ...new Set(
+              currentModel.layers.flatMap(layer =>
+                layer.layer.kind === 'terrain' && layer.layer.spaceId !== undefined
+                  ? [layer.layer.spaceId]
+                  : [],
+              ),
+            ),
+          ]
+          const ids = spaces.join('\0')
+          if (ids !== latticeSpaceIds) {
+            latticeSpaceIds = ids
+            latticeSpace.replaceChildren(
+              ...spaces.map(id => {
+                const option = latticeSpace.ownerDocument.createElement('option')
+                option.value = id
+                option.textContent =
+                  currentModel?.info.canonicalArtifact?.spaces.find(space => space.id === id)
+                    ?.label ?? id
+                return option
+              }),
+            )
+            latticeSpace.hidden = spaces.length < 2
+            latticeLayers = undefined
+          }
+        }
         if (viewUndecided && currentModel !== undefined) {
-          const items = currentModel.layers.flatMap(layer => layer.page.items)
+          const items = currentModel.layers.flatMap(layer => [layer.layer, ...layer.page.items])
           if (items.some(item => item.facet === 'terrain')) {
             viewUndecided = false
-            latticePlan = createWorldLatticePlan(items)
+            latticePlan = createWorldLatticePlan(items, latticeSpace.value || undefined)
             latticeLayers = currentModel.layers
             if (latticePlan.flat) viewMode = '3d'
           }
@@ -1780,7 +1823,8 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
           if (viewMode === 'lattice') {
             if (latticeLayers !== currentModel.layers) {
               latticePlan = createWorldLatticePlan(
-                currentModel.layers.flatMap(layer => layer.page.items),
+                currentModel.layers.flatMap(layer => [layer.layer, ...layer.page.items]),
+                latticeSpace.value || undefined,
               )
               latticeLayers = currentModel.layers
             }
@@ -1807,6 +1851,10 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
         setViewerText(editStatus, edit.message ?? (edit.status === 'preview' ? 'Move preview' : ''))
         saveMove.disabled = edit.status !== 'preview'
       }
+      latticeSpace.addEventListener('change', () => {
+        latticeLayers = undefined
+        redraw()
+      })
       const syncAnimationLoop = () => {
         const requestFrame = view?.requestAnimationFrame.bind(view)
         const cancelFrame = view?.cancelAnimationFrame.bind(view)

@@ -11,7 +11,13 @@ import {
   type CandidateWorldViewerModel,
   type WorldLoadProgress,
 } from '../src/world/index.js'
-import { createWorldLatticePlan, worldLatticeColor, worldLatticeObjectAt } from '../src/world/lattice.js'
+import {
+  createWorldLatticePlan,
+  drawWorldLattice,
+  WORLD_CLIFF_FACE_COLOR,
+  worldLatticeColor,
+  worldLatticeObjectAt,
+} from '../src/world/lattice.js'
 
 function fixture(log: string[] = []): CandidateWorldSceneSource {
   const items: WorldSceneItem[] = [
@@ -68,7 +74,12 @@ function fixture(log: string[] = []): CandidateWorldSceneSource {
       layerId: 'resources',
       kind: 'uvm' as const,
       objectIds: id === 'tree' ? ['2', '3', '4'] : ['1'],
-      modelResource: { id, role: 'sidecar' as const, scopes: ['workspace-dependency-layer'] as const, logicalId: id },
+      modelResource: {
+        id,
+        role: 'sidecar' as const,
+        scopes: ['workspace-dependency-layer'] as const,
+        logicalId: id,
+      },
       resolved: false,
     })),
   ]
@@ -215,7 +226,8 @@ describe('progressive world preview', () => {
     // A click on the drawn point selects it; one far from every point selects nothing.
     const canvas = { width: 64, height: 64 }
     const hits = new Set<number | undefined>()
-    for (let y = 0; y < 64; y += 2) for (let x = 0; x < 64; x += 2) hits.add(worldLatticeObjectAt(canvas, plan, x, y))
+    for (let y = 0; y < 64; y += 2)
+      for (let x = 0; x < 64; x += 2) hits.add(worldLatticeObjectAt(canvas, plan, x, y))
     expect(hits).toEqual(new Set([2, undefined]))
     expect(worldLatticeObjectAt(canvas, plan, 0, 0)).toBeUndefined()
     expect(worldLatticeColor(0, 0, 1, true)).toContain('207')
@@ -253,5 +265,161 @@ describe('progressive world preview', () => {
         [0, 1],
       ],
     ])
+  })
+
+  it('keeps explicit cliff faces, mixed roles and disconnected coverage in one compatible space', async () => {
+    const source = fixture()
+    const items = (
+      await Promise.all(
+        ['terrain', 'cliffs', 'objects'].map(facet =>
+          source.page({ facet: facet as 'terrain', limit: 16 }),
+        ),
+      )
+    ).flatMap(page => page.items)
+    const polygon = [
+      { x: 0, y: 0 },
+      { x: 0.3, y: 0 },
+      { x: 0.3, y: 0.3 },
+    ]
+    const distant = [
+      { x: 0.6, y: 0.6 },
+      { x: 1, y: 0.6 },
+      { x: 1, y: 1 },
+    ]
+    const published: WorldSceneItem[] = items.map(item =>
+      item.facet === 'terrain' && item.x === 0 && item.y === 0
+        ? { ...item, cliffFace: true }
+        : item.facet === 'objects' && item.objectId === 2
+          ? {
+              ...item,
+              latticeCoverage: {
+                coordinateSpaceId: 'map-native',
+                roles: ['resource', 'destructible'],
+                resourceKind: 'oil',
+              },
+              uvwLatticeCoverage: { blocked: [polygon, distant], noBuild: [], outline: [polygon] },
+            }
+          : item,
+    )
+    const plan = createWorldLatticePlan(published)
+    expect(plan.cliffFaces).toEqual([
+      [
+        [0, 0],
+        [1, 0],
+        [1, 1],
+        [0, 1],
+      ],
+    ])
+    expect(plan.objects[0]?.roles).toEqual(['resource', 'destructible'])
+    expect(plan.objects[0]?.coverage?.blocked).toHaveLength(2)
+    expect(plan.objects[0]?.coverage?.noBuild).toEqual([])
+    const fills: string[] = []
+    const strokes: string[] = []
+    const labels: string[] = []
+    const context = {
+      fillStyle: '',
+      strokeStyle: '',
+      lineWidth: 0,
+      font: '',
+      textBaseline: '',
+      clearRect() {},
+      beginPath() {},
+      moveTo() {},
+      lineTo() {},
+      closePath() {},
+      arc() {},
+      rect() {},
+      fillRect() {},
+      fill() {
+        fills.push(this.fillStyle)
+      },
+      stroke() {
+        strokes.push(this.strokeStyle)
+      },
+      fillText(value: string) {
+        labels.push(value)
+      },
+      measureText(value: string) {
+        return { width: value.length * 6 }
+      },
+      createLinearGradient() {
+        return { addColorStop() {} }
+      },
+    }
+    drawWorldLattice(
+      { width: 160, height: 160, getContext: () => context } as unknown as HTMLCanvasElement,
+      plan,
+    )
+    expect(fills).toContain(WORLD_CLIFF_FACE_COLOR)
+    expect(strokes).toContain('#ed583e')
+    expect(labels).toContain('oil')
+    const otherSpace: WorldSceneItem = {
+      ...published.find(item => item.facet === 'objects' && item.objectId === 2)!,
+      id: 'other',
+      layerId: 'other-objects',
+      objectId: 9,
+      uvwPosition: { x: 10.75, y: 0, z: 0.5 },
+    } as WorldSceneItem
+    const otherTerrain = published.flatMap(item =>
+      item.facet === 'terrain'
+        ? [
+            {
+              ...item,
+              id: `other-${item.id}`,
+              layerId: 'other-terrain',
+              cliffFace: false,
+              uvwPosition: { ...item.uvwPosition!, x: item.uvwPosition!.x + 10 },
+            },
+          ]
+        : [],
+    )
+    const layer = (
+      layerId: string,
+      kind: 'terrain' | 'cliffs' | 'objects',
+      spaceId: string,
+    ): WorldSceneLayerItem => ({
+      facet: 'layers',
+      id: layerId,
+      layerId,
+      kind,
+      state: 'available',
+      itemCount: 1,
+      lods: ['exact'],
+      spaceId,
+    })
+    const withSpaces = createWorldLatticePlan([
+      layer('terrain', 'terrain', 'a'),
+      layer('cliffs', 'cliffs', 'a'),
+      layer('objects', 'objects', 'a'),
+      layer('other-terrain', 'terrain', 'b'),
+      layer('other-objects', 'objects', 'b'),
+      ...published,
+      ...otherTerrain,
+      otherSpace,
+    ])
+    expect(withSpaces.objects.map(object => object.objectId)).toEqual([2])
+    expect(withSpaces.cliffFaces).toHaveLength(1)
+    const secondSpace = createWorldLatticePlan(
+      [
+        layer('terrain', 'terrain', 'a'),
+        layer('cliffs', 'cliffs', 'a'),
+        layer('objects', 'objects', 'a'),
+        layer('other-terrain', 'terrain', 'b'),
+        layer('other-objects', 'objects', 'b'),
+        ...published,
+        ...otherTerrain,
+        otherSpace,
+      ],
+      'b',
+    )
+    expect(secondSpace.cells).toHaveLength(1)
+    expect(secondSpace.objects.map(object => object.objectId)).toEqual([9])
+    expect(secondSpace.cliffFaces).toEqual([])
+    const objectsOnly = createWorldLatticePlan(
+      [layer('other-objects', 'objects', 'b'), otherSpace],
+      'b',
+    )
+    expect(objectsOnly.objects[0]?.point).toEqual([10.75, 0.5])
+    expect(objectsOnly.objects[0]?.coverage?.blocked).toHaveLength(2)
   })
 })

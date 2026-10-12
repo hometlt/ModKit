@@ -1,4 +1,7 @@
-/** Generic structural adapter from authoritative map semantics to a paged publisher candidate. */
+/** Host-owned, read-only map-world source from resolved map semantics (SDK maps contract).
+ * Publishes native facts and only projects UVW positions/coverage through admitted transforms.
+ * Rejects malformed lattice coverage; does not infer gameplay masks, edit maps or decode assets.
+ */
 
 import { diagnostic } from '@modkit/core'
 import { mapQualificationTupleBytes } from '@modkit/sdk'
@@ -17,6 +20,7 @@ import type {
   Lease,
   LogicalResourceRequirement,
   MapTerrainMaterialDefinition,
+  MapLatticeObjectCoverage,
   MapTerrainNativeTransform,
   MapTerrainSample,
   MapPlacedObject,
@@ -185,21 +189,29 @@ function regionShape(shape: {
   const center = numericPair(parameters['center'])
   const radiusValue = parameters['radius']
   const radius = radiusValue === undefined ? undefined : Number(radiusValue)
-  const corner = (short: string, long: string) =>
-    numericPair(parameters[short] ?? parameters[long])
+  const corner = (short: string, long: string) => numericPair(parameters[short] ?? parameters[long])
   const first = corner('min', 'minimum')
   const second = corner('max', 'maximum')
   const box =
     first === undefined || second === undefined
       ? undefined
       : {
-          minimum: Object.freeze({ x: Math.min(first.x, second.x), y: Math.min(first.y, second.y) }),
-          maximum: Object.freeze({ x: Math.max(first.x, second.x), y: Math.max(first.y, second.y) }),
+          minimum: Object.freeze({
+            x: Math.min(first.x, second.x),
+            y: Math.min(first.y, second.y),
+          }),
+          maximum: Object.freeze({
+            x: Math.max(first.x, second.x),
+            y: Math.max(first.y, second.y),
+          }),
         }
   if ((type === 'rect' || type === 'rectangle') && box !== undefined)
     return Object.freeze({ kind: 'rectangle', ...box, rawParameters: parameters })
   if (type === 'diamond' && box !== undefined) {
-    const middle = { x: (box.minimum.x + box.maximum.x) / 2, y: (box.minimum.y + box.maximum.y) / 2 }
+    const middle = {
+      x: (box.minimum.x + box.maximum.x) / 2,
+      y: (box.minimum.y + box.maximum.y) / 2,
+    }
     return Object.freeze({
       kind: 'polygon',
       points: Object.freeze([
@@ -368,6 +380,66 @@ function canonicalPosition(
     return value === 0 ? 0 : value
   }
   return Object.freeze({ x: axis('x'), y: axis('y'), z: axis('z') })
+}
+
+/** Admit authored lattice polygons without changing their declared native coordinate space. */
+function admittedLatticeCoverage(
+  snapshot: ResolvedMapWorkspaceSnapshot,
+): ReadonlyMap<number, MapLatticeObjectCoverage> {
+  const spaces = new Set(snapshot.worldCandidate.coordinateSpaces.map(space => space.id))
+  const objects = new Set(snapshot.semantic.objects.map(object => object.objectId))
+  const result = new Map<number, MapLatticeObjectCoverage>()
+  for (const entry of snapshot.latticeCoverage?.objects ?? []) {
+    if (
+      !Number.isSafeInteger(entry.objectId) ||
+      !objects.has(entry.objectId) ||
+      result.has(entry.objectId)
+    )
+      throw new TypeError('lattice coverage has an unknown or duplicate objectId')
+    if (!spaces.has(entry.coordinateSpaceId))
+      throw new TypeError('lattice coverage has an undeclared coordinate space')
+    if (
+      entry.roles?.some(role => !['resource', 'destructible', 'start'].includes(role)) ||
+      (entry.resourceKind !== undefined &&
+        (typeof entry.resourceKind !== 'string' || entry.resourceKind.length === 0))
+    )
+      throw new TypeError('lattice coverage has an invalid role or resource kind')
+    const channels = ['blocked', 'noBuild', 'vision', 'nearResources', 'outline'] as const
+    for (const channel of channels)
+      for (const polygon of entry[channel] ?? []) {
+        if (
+          polygon.length < 3 ||
+          polygon.some(point => !Number.isFinite(point.x) || !Number.isFinite(point.y))
+        )
+          throw new TypeError(`lattice coverage has an invalid ${channel} polygon`)
+      }
+    const copiedChannels = Object.fromEntries(
+      channels.flatMap(channel =>
+        entry[channel] === undefined
+          ? []
+          : [
+              [
+                channel,
+                Object.freeze(
+                  entry[channel].map(polygon =>
+                    Object.freeze(polygon.map(point => Object.freeze({ x: point.x, y: point.y }))),
+                  ),
+                ),
+              ],
+            ],
+      ),
+    )
+    result.set(
+      entry.objectId,
+      Object.freeze({
+        coordinateSpaceId: entry.coordinateSpaceId,
+        ...(entry.roles === undefined ? {} : { roles: Object.freeze([...entry.roles]) }),
+        ...(entry.resourceKind === undefined ? {} : { resourceKind: entry.resourceKind }),
+        ...copiedChannels,
+      }),
+    )
+  }
+  return result
 }
 
 function canonicalObjectRotation(
@@ -764,6 +836,77 @@ export function createCandidateWorldSceneLease(
     admitted.transform !== undefined && corpusRefusal !== undefined
       ? { transform: undefined, refusal: corpusRefusal }
       : admitted
+  const latticeObjects = admittedLatticeCoverage(snapshot)
+  const cliffFaces = snapshot.latticeCoverage?.cliffFaces
+  let cliffFaceCells: ReadonlySet<string> | undefined
+  if (cliffFaces !== undefined) {
+    if (
+      cliffFaces.coordinateSpaceId !== 'height-grid' ||
+      !terrainExact ||
+      terrainSummary === undefined
+    )
+      throw new TypeError('cliff-face coverage requires an exact height grid')
+    const cells = new Set<string>()
+    for (const cell of cliffFaces.cells) {
+      if (
+        !Number.isSafeInteger(cell.x) ||
+        !Number.isSafeInteger(cell.y) ||
+        cell.x < 0 ||
+        cell.y < 0 ||
+        cell.x >= terrainSummary.width - 1 ||
+        cell.y >= terrainSummary.height - 1
+      )
+        throw new TypeError('cliff-face coverage has an out-of-grid cell')
+      const key = `${cell.x}:${cell.y}`
+      if (cells.has(key)) throw new TypeError('cliff-face coverage has a duplicate cell')
+      cells.add(key)
+    }
+    cliffFaceCells = cells
+  }
+  /** Project only horizontal polygons whose native axes are proved by this lease's transforms. */
+  const projectLatticeCoverage = (
+    coverage: MapLatticeObjectCoverage,
+  ): WorldSceneObjectItem['uvwLatticeCoverage'] | undefined => {
+    if (
+      uvwTransform === undefined ||
+      uvwTransform.axes.x.sourceAxis === 'z' ||
+      uvwTransform.axes.z.sourceAxis === 'z' ||
+      (coverage.coordinateSpaceId !== 'map-native' &&
+        (coverage.coordinateSpaceId !== 'height-grid' || terrainTransform === undefined))
+    )
+      return undefined
+    const point = (source: Readonly<{ x: number; y: number }>) => {
+      const native =
+        coverage.coordinateSpaceId === 'height-grid' && terrainTransform !== undefined
+          ? {
+              x:
+                terrainTransform.heightMap.offset.x + source.x * terrainTransform.heightMap.scale.x,
+              y:
+                terrainTransform.heightMap.offset.y + source.y * terrainTransform.heightMap.scale.y,
+              z: 0,
+            }
+          : { x: source.x, y: source.y, z: 0 }
+      const projected = canonicalPosition(native, uvwTransform)
+      return Object.freeze({ x: projected.x, y: projected.z })
+    }
+    const channels = ['blocked', 'noBuild', 'vision', 'nearResources', 'outline'] as const
+    return Object.freeze(
+      Object.fromEntries(
+        channels.flatMap(channel =>
+          coverage[channel] === undefined
+            ? []
+            : [
+                [
+                  channel,
+                  Object.freeze(
+                    coverage[channel].map(polygon => Object.freeze(polygon.map(point))),
+                  ),
+                ],
+              ],
+        ),
+      ),
+    )
+  }
   const terrainLod = terrainExact ? ('exact' as const) : ('sampled' as const)
   const terrainMaterialExact =
     snapshot.terrainMaterials?.exact === true &&
@@ -867,6 +1010,11 @@ export function createCandidateWorldSceneLease(
         coordinateSpaceId: 'height-grid',
         lod: terrainLod,
         ...item,
+        ...(cliffFaceCells === undefined ||
+        item.x >= terrainSummary!.width - 1 ||
+        item.y >= terrainSummary!.height - 1
+          ? {}
+          : { cliffFace: cliffFaceCells.has(`${item.x}:${item.y}`) }),
         ...(mapNativePosition === undefined ? {} : { mapNativePosition }),
         ...(mapNativePosition === undefined || uvwTransform === undefined
           ? {}
@@ -983,7 +1131,9 @@ export function createCandidateWorldSceneLease(
       )
       const groundHeight = terrainHeightAt(item.position, semantic.terrain, terrainTransform)
       const mapNativePresentationPosition =
-        groundHeight === undefined || item.heightReference === undefined || item.heightReference === 'absolute'
+        groundHeight === undefined ||
+        item.heightReference === undefined ||
+        item.heightReference === 'absolute'
           ? item.position
           : Object.freeze({
               ...item.position,
@@ -1001,12 +1151,17 @@ export function createCandidateWorldSceneLease(
           resourceId: modelResourceId(component.resourceId),
         }),
       )
+      const latticeCoverage = latticeObjects.get(item.objectId)
+      const uvwLatticeCoverage =
+        latticeCoverage === undefined ? undefined : projectLatticeCoverage(latticeCoverage)
       return Object.freeze({
         facet: 'objects' as const,
         id,
         layerId: objectLayerId,
         coordinateSpaceId: 'map-native',
         ...item,
+        ...(latticeCoverage === undefined ? {} : { latticeCoverage }),
+        ...(uvwLatticeCoverage === undefined ? {} : { uvwLatticeCoverage }),
         ...(mapNativePresentationPosition === item.position
           ? {}
           : { mapNativePresentationPosition }),
@@ -1017,9 +1172,7 @@ export function createCandidateWorldSceneLease(
               ...(uvwRotation === undefined ? {} : { uvwRotation }),
               uvwScale: canonicalObjectScale(item.scale, uvwTransform),
             }),
-        ...(ref === undefined
-          ? {}
-          : { resourceId: objectResourceId(ref, item.modelResource) }),
+        ...(ref === undefined ? {} : { resourceId: objectResourceId(ref, item.modelResource) }),
         ...(compoundResourceIds.length === 0
           ? {}
           : { resourceIds: Object.freeze(compoundResourceIds) }),
@@ -1110,7 +1263,10 @@ export function createCandidateWorldSceneLease(
   >()
   const cliffPieceObjectIds = new Map<string, string[]>()
   for (const item of cliffPieceObjects)
-    cliffPieceObjectIds.set(item.typeId!, [...(cliffPieceObjectIds.get(item.typeId!) ?? []), item.id])
+    cliffPieceObjectIds.set(item.typeId!, [
+      ...(cliffPieceObjectIds.get(item.typeId!) ?? []),
+      item.id,
+    ])
   for (const [modelId, objectIds] of cliffPieceObjectIds) {
     const model = cliffPieceModels.get(modelId)!
     resourceJoins.set(cliffModelResourceId(modelId), {
@@ -1224,9 +1380,15 @@ export function createCandidateWorldSceneLease(
             ambientColor: snapshot.lighting.ambientColor,
             ambientIntensity: snapshot.lighting.ambientIntensity,
             directional: snapshot.lighting.directional,
-            ...(snapshot.lighting.terrain === undefined ? {} : { terrain: snapshot.lighting.terrain }),
-            ...(snapshot.lighting.toneMapping === undefined ? {} : { toneMapping: snapshot.lighting.toneMapping }),
-            ...(snapshot.lighting.shadowRange === undefined ? {} : { shadowRange: snapshot.lighting.shadowRange }),
+            ...(snapshot.lighting.terrain === undefined
+              ? {}
+              : { terrain: snapshot.lighting.terrain }),
+            ...(snapshot.lighting.toneMapping === undefined
+              ? {}
+              : { toneMapping: snapshot.lighting.toneMapping }),
+            ...(snapshot.lighting.shadowRange === undefined
+              ? {}
+              : { shadowRange: snapshot.lighting.shadowRange }),
             ...(snapshot.lighting.fog === undefined ? {} : { fog: snapshot.lighting.fog }),
           }),
         ],
@@ -2141,11 +2303,13 @@ export function createCandidateWorldSceneLease(
                   return resourceId === requestedResourceId && frame !== undefined ? [frame] : []
                 }),
                 ...[
-                  ...(candidate.detailWaves?.normalResourceIds ?? []).map((resourceId, index) =>
-                    [resourceId, candidate.detailWaves?.normalResources[index]] as const,
+                  ...(candidate.detailWaves?.normalResourceIds ?? []).map(
+                    (resourceId, index) =>
+                      [resourceId, candidate.detailWaves?.normalResources[index]] as const,
                   ),
-                  ...(candidate.detailWaves?.foamResourceIds ?? []).map((resourceId, index) =>
-                    [resourceId, candidate.detailWaves?.foamResources?.[index]] as const,
+                  ...(candidate.detailWaves?.foamResourceIds ?? []).map(
+                    (resourceId, index) =>
+                      [resourceId, candidate.detailWaves?.foamResources?.[index]] as const,
                   ),
                 ].flatMap(([resourceId, resource]) =>
                   resourceId === requestedResourceId && resource !== undefined ? [resource] : [],
