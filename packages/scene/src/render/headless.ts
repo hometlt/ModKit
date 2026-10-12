@@ -50,6 +50,7 @@ import { shadeMaterial, interpolateMaterialVertex } from './material-sampling.js
 import { sceneTextureBytes } from '../textures/cube.js'
 import { sceneTexturePixels } from './compressed-textures.js'
 import { requiresEnvironmentEye, snapshotEyePosition } from '../materials/environment.js'
+import type { WorldWebGlSplatBatch } from '../world/webgl.js'
 type Vec3 = readonly [number, number, number]
 type Vec4 = readonly [number, number, number, number]
 type Triangle<T> = readonly [T, T, T]
@@ -92,6 +93,7 @@ interface RasterContext {
   triangles: number
   fragments: number
   signal: AbortSignal | undefined
+  splats?: ReadonlyMap<string, Readonly<{ batch: WorldWebGlSplatBatch; overlay: boolean }>>
 }
 import { SCENE_RENDERER_CONTRACT } from '@modkit/sdk/renderer'
 
@@ -277,6 +279,55 @@ function sampleTexture(texture: SceneRendererTexture, u: number, v: number): Vec
   )
 }
 
+/** The world plan's splat varying values at one fragment; weights are normalized per draw. */
+function sampleSplat(
+  splat: Readonly<{ batch: WorldWebGlSplatBatch; overlay: boolean }>,
+  indices: Triangle<number>,
+  weights: Triangle<number>,
+): Readonly<{ color: Vec3; coverage: number }> | undefined {
+  const { batch } = splat
+  const varying = (buffer: Float32Array, components: number, component: number) =>
+    weights[0] * (buffer[indices[0] * components + component] ?? 0) +
+    weights[1] * (buffer[indices[1] * components + component] ?? 0) +
+    weights[2] * (buffer[indices[2] * components + component] ?? 0)
+  const uv = (buffer: Float32Array): readonly [number, number] => [
+    varying(buffer, 2, 0), varying(buffer, 2, 1),
+  ]
+  if (batch.maskTexture !== undefined && batch.maskTextureCoordinates !== undefined) {
+    const mask = sampleTexture(batch.maskTexture, ...uv(batch.maskTextureCoordinates))
+    if (mask[Math.max(0, Math.min(3, batch.maskChannel ?? 3))]! >= 0.5) return undefined
+  }
+  const layerWeights: number[] = []
+  const raster = batch.weightTextures !== undefined && batch.weightTextureCoordinates !== undefined
+  if (raster) {
+    const coordinates = uv(batch.weightTextureCoordinates)
+    for (const texture of batch.weightTextures) layerWeights.push(...sampleTexture(texture, ...coordinates))
+  } else {
+    for (let layer = 0; layer < batch.textures.length; layer += 1) {
+      const buffer = layer < 4 ? batch.textureWeights0 : batch.textureWeights1
+      layerWeights.push(varying(buffer, 4, layer % 4))
+    }
+  }
+  let coverage = 0
+  for (let layer = 0; layer < batch.textures.length; layer += 1) coverage += layerWeights[layer] ?? 0
+  if (coverage <= 0) {
+    if (splat.overlay) return { color: [0, 0, 0], coverage: 0 }
+    // The WebGL weight-map path chooses layer zero for an empty texel.
+    if (!raster) return { color: [0, 0, 0], coverage: 1 }
+    layerWeights[0] = coverage = 1
+  }
+  const mixed = [0, 0, 0]
+  for (const [layer, texture] of batch.textures.entries()) {
+    const share = (layerWeights[layer] ?? 0) / coverage
+    if (share <= 0) continue
+    const texel = sampleTexture(texture, ...uv(batch.textureCoordinates[layer]!))
+    const tint = batch.layerColors?.[layer] ?? [1, 1, 1]
+    for (const channel of [0, 1, 2] as const)
+      mixed[channel] = (mixed[channel] ?? 0) + texel[channel] * tint[channel] * share
+  }
+  return { color: mixed as unknown as Vec3, coverage: splat.overlay ? Math.min(1, coverage) : 1 }
+}
+
 function rasterizeTriangle(
   context: RasterContext,
   vertices: Triangle<Vertex>,
@@ -291,6 +342,7 @@ function rasterizeTriangle(
   mirrored = false,
   /** The primitive's TANGENT at the corners (world xyz, handedness w), for a normal map. */
   tangents?: Triangle<Vec4>,
+  splat?: Readonly<{ batch: WorldWebGlSplatBatch; overlay: boolean; indices: Triangle<number> }>,
 ) {
   const [first, second, third] = vertices
   const effect = surface.simpleEffect
@@ -428,6 +480,21 @@ function rasterizeTriangle(
         alpha = Math.fround(
           alpha * ((a * colors[0][3] + b * colors[1][3] + c * colors[2][3]) / sum),
         )
+      }
+      const splatWeights: Triangle<number> | undefined = splat === undefined ? undefined : (() => {
+        const perspective = [firstWeight * first.invW, secondWeight * second.invW, thirdWeight * third.invW] as const
+        const sum = perspective[0] + perspective[1] + perspective[2]
+        return sum <= 1e-9 ? undefined : perspective.map(value => value / sum) as unknown as Triangle<number>
+      })()
+      if (splat !== undefined) {
+        if (splatWeights === undefined) continue
+        const sampled = sampleSplat(splat, splat.indices, splatWeights)
+        if (sampled === undefined || sampled.coverage <= 0) continue
+        red *= sampled.color[0]
+        green *= sampled.color[1]
+        blue *= sampled.color[2]
+        // Terrain diffuse alpha is specular data; only an overlay raster's weight is coverage.
+        alpha = sampled.coverage
       }
       let maskTexel: Vec4 | undefined
       let pbrTexels: {
@@ -576,6 +643,13 @@ function rasterizeTriangle(
         red *= shade * light.color[0]
         green *= shade * light.color[1]
         blue *= shade * light.color[2]
+      }
+      // A terrain splat carries published ambient occlusion in vertex alpha, not transparency.
+      if (splat !== undefined && colors !== undefined) {
+        const ao = splatWeights![0] * colors[0][3] + splatWeights![1] * colors[1][3] + splatWeights![2] * colors[2][3]
+        red *= ao
+        green *= ao
+        blue *= ao
       }
       red *= tint[0]
       green *= tint[1]
@@ -939,6 +1013,7 @@ function renderPrimitive(context: RasterContext, primitive: SceneRendererPrimiti
     primitive.materialId === undefined
       ? DEFAULT_SURFACE
       : (context.materials.get(primitive.materialId) ?? DEFAULT_SURFACE)
+  const splat = context.splats?.get(primitive.id)
   const colorBuffer = readSimpleEffectColors(primitive)
   // every texture of the base route reads these UVs: the base colour, a team mask, pbr maps
   const sampled =
@@ -1028,12 +1103,16 @@ function renderPrimitive(context: RasterContext, primitive: SceneRendererPrimiti
             ),
             tangentBuffer[index * 4 + 3] ?? 1,
           ]) as unknown as Triangle<Vec4>),
+      splat === undefined ? undefined : { ...splat, indices: indices as unknown as Triangle<number> },
     )
   }
 }
 
 /** Deterministic DOM-free implementation of the portable scene-renderer contract. */
-export async function renderHeadless(request: SceneRenderRequest): Promise<SceneRenderFrame> {
+export async function renderHeadless(
+  request: SceneRenderRequest,
+  splats?: ReadonlyMap<string, Readonly<{ batch: WorldWebGlSplatBatch; overlay: boolean }>>,
+): Promise<SceneRenderFrame> {
   request.signal?.throwIfAborted()
   if (request.outputKind !== 'rgba8') {
     throw new TypeError(`headless renderer cannot produce ${request.outputKind}`)
@@ -1079,6 +1158,7 @@ export async function renderHeadless(request: SceneRenderRequest): Promise<Scene
     triangles: 0,
     fragments: 0,
     signal: request.signal,
+    ...(splats === undefined ? {} : { splats }),
   }
   for (const draw of sceneMaterialDraws(
     scene.primitives,

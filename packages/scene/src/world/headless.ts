@@ -3,10 +3,10 @@
  * as the plan places them, with the materials and programs the world draws them with; the ground,
  * decals and water are primitives of their batches, with their team colours and blending. Terrain
  * overlay coverage is translated from the world shader's red channel into vertex alpha; compressed
- * coverage textures are decoded before their texture alpha is made opaque. A blended
- * ground draws its strongest layer, not the blend: the headless renderer has no splat program. It is
- * the viewer's geometry, textures and light, not its picture: no shadows, tone mapping, screen
- * effects or mip/anisotropic filtering; bilinear texture sampling follows each texture's filter.
+ * coverage textures are decoded before their texture alpha is made opaque. Blended ground samples
+ * the world plan's splat layers and weight rasters per fragment. It is
+ * the viewer's geometry, base textures and light, not its picture: no shadows, splat normal/specular
+ * maps, tone mapping, screen effects or mip/anisotropic filtering; bilinear sampling follows each texture's filter.
  */
 import type {
   SceneRenderFrame,
@@ -27,6 +27,7 @@ import {
   type WorldWebGlBatch,
   type WorldWebGlCamera,
   type WorldWebGlPlan,
+  type WorldWebGlSplatBatch,
   type WorldWebGlTexturedBatch,
   worldWebGlPosedScene,
 } from './webgl.js'
@@ -150,10 +151,12 @@ function terrainOverlayColors(colors: Float32Array): Float32Array {
 export function worldHeadlessScene(plan: WorldWebGlPlan): Readonly<{
   scene: SceneRendererScene
   diagnostics: readonly SceneRendererDiagnostic[]
+  splats: ReadonlyMap<string, Readonly<{ batch: WorldWebGlSplatBatch; overlay: boolean }>>
 }> {
   const primitives: SceneRendererPrimitive[] = []
   const materials: SceneRendererMaterial[] = []
   const diagnostics: SceneRendererDiagnostic[] = []
+  const splats = new Map<string, Readonly<{ batch: WorldWebGlSplatBatch; overlay: boolean }>>()
   // batch textures by object: two batches' textures may share an id and not their texels
   const textures: SceneRendererTexture[] = []
   const coverageTextures = new Map<SceneRendererTexture, SceneRendererTexture>()
@@ -233,31 +236,26 @@ export function worldHeadlessScene(plan: WorldWebGlPlan): Readonly<{
       batch.texture,
     ),
   )
-  let approximated = 0
   plan.splatTriangles.forEach((batch, index) => {
-    // the layer that holds most of the batch's weight stands for the blend
-    const totals = batch.textures.map((_, layer) => {
-      const weights = layer < 4 ? batch.textureWeights0 : batch.textureWeights1
-      let total = 0
-      for (let vertex = layer % 4; vertex < weights.length; vertex += 4) total += weights[vertex]!
-      return total
-    })
-    const strongest = totals.indexOf(Math.max(...totals))
-    if (strongest < 0) return
-    if (batch.textures.length > 1) approximated += 1
-    ground(
-      `world/splat-${String(index)}`,
-      batch,
-      {},
-      batch.textureCoordinates[strongest],
-      batch.textures[strongest],
-    )
+    const id = `world/splat-${String(index)}`
+    splats.set(id, { batch, overlay: false })
+    ground(id, batch, {})
   })
-  if (approximated > 0)
+  plan.splatOverlayTriangles.forEach((batch, index) => {
+    const id = `world/splat-overlay-${String(index)}`
+    splats.set(id, { batch, overlay: true })
+    ground(id, batch, { alphaMode: 'blend', depthWrite: false })
+  })
+  const unshadedDetails = [...plan.splatTriangles, ...plan.splatOverlayTriangles].filter(
+    batch =>
+      batch.normalTextures.some(texture => texture !== undefined) ||
+      batch.specularTextures?.some(texture => texture !== undefined),
+  ).length
+  if (unshadedDetails > 0)
     diagnostics.push({
       severity: 'information',
-      code: 'x3.scene/world-headless-splat-strongest-layer',
-      message: `${String(approximated)} blended ground batches drawn by their strongest layer`,
+      code: 'x3.scene/world-headless-splat-detail-omitted',
+      message: `${String(unshadedDetails)} blended ground batches omit normal/specular texture detail`,
     })
   plan.terrainDecalTriangles.forEach((batch, index) =>
     ground(
@@ -331,6 +329,7 @@ export function worldHeadlessScene(plan: WorldWebGlPlan): Readonly<{
       ambientLight: light.ambientColor,
     }),
     diagnostics: Object.freeze(diagnostics),
+    splats,
   })
 }
 
@@ -348,7 +347,7 @@ export async function renderWorldHeadless(
   plan: WorldWebGlPlan,
   options: WorldHeadlessOptions,
 ): Promise<SceneRenderFrame> {
-  const { scene, diagnostics } = worldHeadlessScene(plan)
+  const { scene, diagnostics, splats } = worldHeadlessScene(plan)
   const frame = createWorldWebGlCameraFrame(plan, options.width, options.height, options.camera)
   const rendered = await renderHeadless({
     scene,
@@ -357,7 +356,7 @@ export async function renderWorldHeadless(
     outputKind: 'rgba8',
     clearColor: options.clearColor ?? [0, 0, 0, 1],
     ...(options.signal === undefined ? {} : { signal: options.signal }),
-  })
+  }, splats)
   return Object.freeze({
     ...rendered,
     diagnostics: Object.freeze([...diagnostics, ...rendered.diagnostics]),
