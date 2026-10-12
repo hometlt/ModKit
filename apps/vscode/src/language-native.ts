@@ -142,6 +142,34 @@ const isPosition = (value: unknown): value is LanguagePosition =>
   (value as LanguagePosition).character >= 0
 
 /**
+ * The namespace and id a language command names an entity by (`Unit/Marine`, the id its facts use —
+ * sdk `LanguageCommand`), or undefined for any other subject id: a `modkit-subject:` or `file:`
+ * address, a content-source place or a host path.
+ */
+export function languageEntityAddress(
+  subjectId: string,
+): { readonly kind: string; readonly id: string } | undefined {
+  if (/^[a-z][\w+.-]*:/iu.test(subjectId) || subjectId.startsWith('/') || subjectId.startsWith('\\'))
+    return undefined
+  const slash = subjectId.indexOf('/')
+  const kind = subjectId.slice(0, slash)
+  const id = subjectId.slice(slash + 1)
+  return slash > 0 && /^[^/\\\s]+$/u.test(kind) && /^[^/\\\s]+$/u.test(id) ? { kind, id } : undefined
+}
+
+/**
+ * Whether a Resources row is the entity a language command names: the row's kind is the namespace
+ * and its label the id, as an entity row of a loaded mod is published, and it carries the subject
+ * the card opens on.
+ */
+export function isLanguageEntityRow(
+  facts: { readonly kind?: string; readonly label?: string; readonly subjectId?: string },
+  address: { readonly kind: string; readonly id: string },
+): boolean {
+  return facts.subjectId !== undefined && facts.kind === address.kind && facts.label === address.id
+}
+
+/**
  * Where a provider's command leads, or undefined for anything outside the closed set. The argument
  * reaches the command through a lens, an action or a hover link, so it is checked, not trusted.
  */

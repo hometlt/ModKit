@@ -4,6 +4,7 @@ import { type UiLocalizer } from '@modkit/ui/localization'
 
 import type { TreeDataSource, TreeNodeFacts, TreeNodeRef } from '@modkit/sdk'
 import { type VsCodeServed } from './host.js'
+import { isLanguageEntityRow, languageEntityAddress } from './language-native.js'
 
 /** How many children of one resource node the view will render before it says it stopped. */
 export const RESOURCE_CHILD_LIMIT = 20_000
@@ -97,6 +98,30 @@ export class ResourcesView implements vscode.TreeDataProvider<ResourceTreeNode>,
     const served = await this.loaded()
     if (served === undefined) return false
     return (await served.navigate(node.facts.subjectId, node.facts.range, stage)) !== false
+  }
+
+  /**
+   * The row of the entity a language command names (`Unit/Marine`) across the loaded mods, found
+   * by its id without asking, so a hover or lens link opens the same card a click on the row does.
+   * Undefined for any other subject id, or when no loaded mod lists it.
+   */
+  async findEntity(subjectId: string): Promise<ResourceTreeNode | undefined> {
+    const address = languageEntityAddress(subjectId)
+    if (address === undefined) return undefined
+    const served = await this.loaded()
+    const lease = await served?.openTreeDataSource()
+    if (lease === undefined) return undefined
+    try {
+      let seen = 0
+      for await (const ref of lease.value.search({ pattern: address.id })) {
+        const facts = await lease.value.facts(ref)
+        if (isLanguageEntityRow(facts, address)) return Object.freeze({ kind: 'resource' as const, ref, facts })
+        if (++seen >= 1000) break
+      }
+      return undefined
+    } finally {
+      await lease.release()
+    }
   }
 
   /**

@@ -8469,6 +8469,10 @@ async function activateModkit(
           })
           return true
         }
+        // An entity the provider names by its facts' id (`Unit/Marine`) opens as its Resources row
+        // does: the package editor then shows the card, not the package itself.
+        const entity = await resourcesView.findEntity(target.subjectId)
+        if (entity !== undefined) return resourcesView.open(entity, target.stage)
         // an entity of the active document's workspace, on the view the provider named
         const host = await loadedModResources()
         if (host === undefined) {

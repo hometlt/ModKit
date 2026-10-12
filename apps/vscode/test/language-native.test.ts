@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 import {
   associatedLanguageOf,
   completionKindName,
+  isLanguageEntityRow,
   languageCommandTarget,
+  languageEntityAddress,
   rebaseLanguageSnapshot,
 } from '../src/language-native.js'
 
@@ -197,5 +199,30 @@ describe('the language adapter', () => {
     expect(
       associatedLanguageOf(associations, document('Custom/MyData.xml', 'json', catalog)),
     ).toBeUndefined()
+  })
+
+  it('reads the entity a language command names, and nothing else', () => {
+    expect(languageEntityAddress('Unit/Marine')).toEqual({ kind: 'Unit', id: 'Marine' })
+    for (const other of [
+      'modkit-subject://blizzard%2Fsc2-data/Unit/Marine',
+      'content-source://local:casc/Mods/Liberty.SC2Mod',
+      'file:///c:/mods/Probe.SC2Mod',
+      'C:\\mods\\Probe.SC2Mod',
+      '/mods/Probe.SC2Mod',
+      'Unit',
+      'Unit/',
+      '/Marine',
+      'Base.SC2Data/GameData/UnitData.xml',
+    ])
+      expect(languageEntityAddress(other)).toBeUndefined()
+  })
+
+  it('matches the Resources row of that entity by kind and label', () => {
+    const address = { kind: 'Unit', id: 'ParityMarine' }
+    const subjectId = 'modkit-subject://blizzard%2Fsc2-data/Unit/ParityMarine'
+    expect(isLanguageEntityRow({ kind: 'Unit', label: 'ParityMarine', subjectId }, address)).toBe(true)
+    expect(isLanguageEntityRow({ kind: 'Weapon', label: 'ParityMarine', subjectId }, address)).toBe(false)
+    expect(isLanguageEntityRow({ kind: 'Unit', label: 'Marine', subjectId }, address)).toBe(false)
+    expect(isLanguageEntityRow({ kind: 'Unit', label: 'ParityMarine' }, address)).toBe(false)
   })
 })
