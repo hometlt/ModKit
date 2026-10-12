@@ -380,6 +380,7 @@ describe('containerEntryLayer', () => {
     const found: string[] = []
     const unnamed = {
       path: 'patch/hidden.txt',
+      context: { hash: 'lookup-hash' },
       size: BigInt(stored.byteLength),
       storage: { kind: 'stored' as const, offset: 4n, length: BigInt(stored.byteLength) },
     }
@@ -391,6 +392,7 @@ describe('containerEntryLayer', () => {
         entries: [
           {
             path: 'Data/Stored.txt',
+            context: { hash: 'listed-hash' },
             size: BigInt(stored.byteLength),
             storage: { kind: 'stored', offset: 4n, length: BigInt(stored.byteLength) },
           },
@@ -415,7 +417,7 @@ describe('containerEntryLayer', () => {
     )
     expect(layer.id).toBe('fixture.cntr')
     expect(layer.entries).toEqual([
-      { path: 'Data/Stored.txt', size: stored.byteLength },
+      { path: 'Data/Stored.txt', size: stored.byteLength, context: { hash: 'listed-hash' } },
       { path: 'data/zlib.txt', size: plain.byteLength, hidden: true },
     ])
     const decode = (bytes: Uint8Array) => new TextDecoder().decode(bytes)
@@ -424,6 +426,7 @@ describe('containerEntryLayer', () => {
     await expect(layer.read('data/zlib.txt', 16)).rejects.toThrow(/budget/u)
     expect(await layer.lookup?.('Patch/Hidden.txt')).toEqual({
       path: 'patch/hidden.txt',
+      context: { hash: 'lookup-hash' },
       size: stored.byteLength,
     })
     expect(decode(await layer.read('patch/hidden.txt', 64))).toBe('hello, stored entry')

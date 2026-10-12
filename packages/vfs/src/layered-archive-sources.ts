@@ -24,6 +24,7 @@ import type {
   ContentSourceRoot,
   ContentSources,
   ContentSourceSnapshot,
+  ContentSourceRead,
   ModContext,
   ModContextLayer,
   ModContextRequest,
@@ -38,6 +39,9 @@ export interface LayerArchiveEntry {
   /** What the listing shows, when the archive knows it before reading. */
   readonly size?: number
   readonly hidden?: true
+  /** Native inert facts; never mixed with a different layer's winning bytes. Host validates JSON. */
+  /** Immutable facts owned by this entry; providers must not mutate them during a read lease. */
+  readonly context?: unknown
 }
 
 export interface LayerArchive {
@@ -83,6 +87,8 @@ export interface ArchiveLayers {
   shadowedBy(path: string): readonly LayerOrigin[]
   /** The copy at `rank`, a hidden one too; the served copy by default. */
   read(path: string, maxBytes: number, rank?: number): Promise<Uint8Array>
+  /** Atomic read of a selected copy and its opaque entry facts; no repeated winner lookup. */
+  readWithContext(path: string, maxBytes: number, rank?: number): Promise<ContentSourceRead>
 }
 
 /**
@@ -117,6 +123,7 @@ interface Copy {
   readonly path: string
   readonly size?: number
   readonly hidden?: true
+  readonly context?: unknown
 }
 
 /** A path of the tree: spelled as the highest archive that names it, and every copy of it. */
@@ -186,6 +193,7 @@ function copyOf(
     path,
     ...(entry.size === undefined ? {} : { size: entry.size }),
     ...(entry.hidden === true ? { hidden: true } : {}),
+    ...(entry.context === undefined ? {} : { context: entry.context }),
   }
 }
 
@@ -231,6 +239,20 @@ async function merge(archives: readonly LayerArchive[], label: string): Promise<
       return [{ key, file }]
     })
   const readCopy = (copy: Copy, maxBytes: number) => copy.archive.read(copy.path, maxBytes)
+  /** Resolves one listed, explicit-rank or hashed copy; both byte APIs share exactly this precedence. */
+  const resolveCopy = async (path: string, rank?: number): Promise<Copy> => {
+    const copies = merged.get(keyOf(path))?.copies ?? []
+    const copy = rank === undefined ? copies[0] : copies.find(item => item.rank === rank)
+    if (copy !== undefined) return copy
+    if (rank === undefined) {
+      for (const [index, archive] of archives.entries()) {
+        const found = await archive.lookup?.(normalized(path))
+        if (found !== undefined) return copyOf(archive, index, found, normalized(path))
+      }
+      throw new RangeError(`${label} has no file «${path}»`)
+    }
+    throw new RangeError(`${archives[rank]?.id ?? `archive ${String(rank)}`} holds no «${path}»`)
+  }
   const layers: ArchiveLayers = {
     archives: archives.map(archive => archive.id),
     shadowedCount,
@@ -240,19 +262,13 @@ async function merge(archives: readonly LayerArchive[], label: string): Promise<
     },
     shadowedBy: path => (merged.get(keyOf(path))?.copies ?? []).slice(1).map(origin),
     async read(path, maxBytes, rank) {
-      const copies = merged.get(keyOf(path))?.copies ?? []
-      const copy = rank === undefined ? copies[0] : copies.find(item => item.rank === rank)
-      if (copy !== undefined) return readCopy(copy, maxBytes)
-      if (rank === undefined) {
-        // a file no archive names, found by hash: highest first
-        for (const [index, archive] of archives.entries()) {
-          const found = await archive.lookup?.(normalized(path))
-          if (found !== undefined)
-            return readCopy(copyOf(archive, index, found, normalized(path)), maxBytes)
-        }
-        throw new RangeError(`${label} has no file «${path}»`)
-      }
-      throw new RangeError(`${archives[rank]?.id ?? `archive ${String(rank)}`} holds no «${path}»`)
+      return readCopy(await resolveCopy(path, rank), maxBytes)
+    },
+    /** Keeps the chosen Copy even if its asynchronous read refreshes the source's tree. */
+    async readWithContext(path, maxBytes, rank) {
+      const copy = await resolveCopy(path, rank)
+      const bytes = await readCopy(copy, maxBytes)
+      return { bytes, ...(copy.context === undefined ? {} : { context: copy.context }) }
     },
   }
   return { archives, rows, children: childrenOf(rows.map(row => row.file)), layers }
@@ -448,6 +464,10 @@ export function createLayeredArchiveContentSources(
     async read(sourceId, path, maxBytes) {
       return (await open(sourceId)).layers.read(path, maxBytes)
     },
+    /** Native metadata is selected by the same retained layered tree as the file bytes. */
+    async readWithContext(sourceId, path, maxBytes) {
+      return (await open(sourceId)).layers.readWithContext(path, maxBytes)
+    },
     async files(sourceId, path, query) {
       if (!Number.isSafeInteger(query.limit) || query.limit < 1 || query.limit > 10_000)
         throw new RangeError('Invalid file page limit')
@@ -497,7 +517,7 @@ export function createLayeredArchiveContentSources(
  * layers and adds what only it knows (`query` for its data); this is the rest, once.
  */
 export function layeredModContext(
-  sources: Pick<LayeredArchiveContentSources, 'files' | 'read'>,
+  sources: Pick<LayeredArchiveContentSources, 'files' | 'read' | 'readWithContext'>,
   context: {
     readonly gameId: string
     readonly contextId: string
@@ -583,6 +603,23 @@ export function layeredModContext(
       return 'file' in content
         ? sources.read(sourceId, normalized(content.file), maxBytes)
         : sources.read(content.root, spelled, maxBytes)
+    },
+    /** Reads only a validated member of this retained layer and its own context, never a lower copy's. */
+    async readWithContext(layerId, path, maxBytes) {
+      const spelled = (await namesOf(layerId)).get(keyOf(path))
+      if (spelled === undefined)
+        throw new RangeError(`«${path}» is not a file of layer «${layerId}»`)
+      const { content, sourceId } = byId.get(layerId)!
+      if ('archive' in content) {
+        const entry = content.archive.entries.find(item => keyOf(item.path) === keyOf(spelled))
+        const bytes = await content.archive.read(entry?.path ?? spelled, maxBytes)
+        return { bytes, ...(entry?.context === undefined ? {} : { context: entry.context }) }
+      }
+      const root = 'file' in content ? sourceId : content.root
+      const nativePath = 'file' in content ? normalized(content.file) : spelled
+      return sources.readWithContext === undefined
+        ? { bytes: await sources.read(root, nativePath, maxBytes) }
+        : sources.readWithContext(root, nativePath, maxBytes)
     },
     async locate(path) {
       for (const layer of [...context.layers].reverse()) {

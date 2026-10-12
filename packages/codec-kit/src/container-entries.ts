@@ -503,6 +503,7 @@ export interface ContainerLayerEntry {
   readonly path: string
   readonly size: number
   readonly hidden?: true
+  readonly context?: ContainerEntry['context']
 }
 
 /**
@@ -522,6 +523,7 @@ const layerEntry = (entry: ContainerEntry): ContainerLayerEntry => ({
   path: entry.path,
   size: Number(entry.size),
   ...(entry.hidden === true ? { hidden: true } : {}),
+  ...(entry.context === undefined ? {} : { context: entry.context }),
 })
 
 /**

@@ -251,6 +251,8 @@ interface ArtifactSourceBase {
   readonly ref: AssetSourceRef
   /** Snapshot pinned by the host for the lifetime of the lease. */
   readonly revision: RevisionId
+  /** Host-snapshotted inert facts from this exact entry, pinned into its resource revision. */
+  readonly containerContext?: JsonValue
 }
 
 /** Host-owned lazy byte source. Consumers release the enclosing lease, never this value. */

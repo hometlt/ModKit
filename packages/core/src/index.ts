@@ -54,6 +54,13 @@ export { compareUtf8, sortedUtf8, uniqueSortedUtf8 } from './ordering.js'
 export { deepFreeze } from './immutability.js'
 export { canonicalJsonStringify } from './canonical-json.js'
 export {
+  snapshotJson,
+  type JsonSnapshotBudget,
+  type JsonSnapshotOptions,
+  type JsonPrimitive,
+  type JsonValue,
+} from './json-snapshot.js'
+export {
   CANCELLED_CODE,
   OperationCancelledError,
   throwIfAborted,

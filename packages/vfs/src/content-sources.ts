@@ -1,4 +1,12 @@
-/** Serializable desktop source catalogue. Credentials and VFS mounts stay in the host. */
+/** Serializable desktop source catalogue. Credentials and VFS mounts stay in the host.
+ * Optional atomic byte/context reads carry opaque native entry facts to the Host; VFS does not
+ * interpret or validate these facts. Host owns bounded JSON snapshots and their revision identity.
+ */
+export interface ContentSourceRead {
+  readonly bytes: Uint8Array
+  /** Inert entry facts from the same winning copy; Host validates/snapshots before codec exposure. */
+  readonly context?: unknown
+}
 export interface ContentSourceConnection {
   readonly id: string
   readonly accountId: string
@@ -261,6 +269,8 @@ export interface ModContext {
   ): Promise<ModContextPage<string>>
   /** Bytes of one listed file; a path the layer does not list is refused. */
   read(layerId: string, path: string, maxBytes: number): Promise<Uint8Array>
+  /** Atomic optional companion read; old loaders need not implement metadata. */
+  readWithContext?(layerId: string, path: string, maxBytes: number): Promise<ContentSourceRead>
   /** The layer that serves a layer-relative path, the last layer that has it winning. */
   locate(path: string): Promise<{ readonly layerId: string; readonly path: string } | undefined>
   /**
@@ -346,6 +356,8 @@ export interface ContentSources {
     options?: ContentSourceListOptions,
   ): Promise<readonly ContentSourceEntry[]>
   read(sourceId: string, path: string, maxBytes: number): Promise<Uint8Array>
+  /** Reads bytes and opaque entry facts from one winning copy, without a second metadata lookup. */
+  readWithContext?(sourceId: string, path: string, maxBytes: number): Promise<ContentSourceRead>
   /**
    * The entry at exactly `path`, also one no listing names yet: a source that fetches on demand
    * (Roblox assets from the CDN) answers for an asset it has not downloaded, which `read` then
@@ -825,6 +837,13 @@ export function composeContentSources(given: readonly ContentSources[]): Content
     },
     async read(sourceId, path, maxBytes) {
       return (await bySource(sourceId)).read(sourceId, path, maxBytes)
+    },
+    /** Keeps native entry context when the owning provider supports it; legacy reads stay valid. */
+    async readWithContext(sourceId, path, maxBytes) {
+      const part = await bySource(sourceId)
+      return part.readWithContext === undefined
+        ? { bytes: await part.read(sourceId, path, maxBytes) }
+        : part.readWithContext(sourceId, path, maxBytes)
     },
     async lookup(sourceId, path) {
       const part = await bySource(sourceId)

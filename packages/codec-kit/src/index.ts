@@ -275,6 +275,8 @@ export interface ContainerEntry {
   readonly hidden?: true
   /** What the entry holds when its name has no extension; the host selects its codec by it. */
   readonly mediaType?: string
+  /** Inert native entry facts for atomic content-source reads, not a container-wide index dump. */
+  readonly context?: JsonValue
 }
 
 /**

@@ -67,6 +67,39 @@ const context = (request: ModContextRequest): ModContext =>
   }) as unknown as ModContext
 
 describe('the resources of the mod a subject belongs to, for an ordinary open', () => {
+  it('keeps entry facts when a native alias is located through its mod context', async () => {
+    const read = vi.fn(async () => new Uint8Array([99]))
+    const readWithContext = vi.fn(async () => ({
+      bytes: new Uint8Array([7]),
+      context: { resourceHash: 'abcd' },
+    }))
+    const origin = createContentAssetOrigin({
+      contentSources: sources({
+        async openModContext(request) {
+          return {
+            ...context(request),
+            read,
+            readWithContext,
+            locate: async () => ({ layerId: 'l0', path: 'image.bimage' }),
+          }
+        },
+      }),
+      target: 'C:/Games/model.mesh',
+    })
+    for await (const _entry of origin.enumerate('workspace-dependency-layer', {
+      prefix: 'native-alias.bimage',
+    })) {
+      // A companion first resolves the alias through the same enumeration route as codecs.
+    }
+    const lease = await origin.open('native-alias.bimage')
+    const opened = lease.value
+    expect(opened.containerContext).toEqual({ resourceHash: 'abcd' })
+    expect(await opened.read(0n, 1)).toEqual(new Uint8Array([7]))
+    expect(readWithContext).toHaveBeenCalledWith('l0', 'image.bimage', 64 * 1024 * 1024)
+    expect(read).not.toHaveBeenCalled()
+    await lease.release()
+  })
+
   it('allows a bounded root enumeration without allowing an empty file identity', async () => {
     const origin = createContentAssetOrigin({
       contentSources: sources({

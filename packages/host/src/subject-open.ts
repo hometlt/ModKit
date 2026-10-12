@@ -1642,6 +1642,11 @@ async function openSubjectDirectWith(
                     })
                   },
                 })
+          // Explicit parent context wins; entry-origin facts otherwise travel with their byte source.
+          const containerContext =
+            options.containerContext === undefined
+              ? options.source.containerContext
+              : options.containerContext
           return Object.freeze({
             contracts,
             ...(settings === undefined ? {} : { settings }),
@@ -1655,9 +1660,7 @@ async function openSubjectDirectWith(
                   catalog: Object.freeze({ entities: catalog.entities, strings: catalog.strings }),
                 }),
             ...(credentials === undefined ? {} : { credentials }),
-            ...(options.containerContext === undefined
-              ? {}
-              : { containerContext: options.containerContext }),
+            ...(containerContext === undefined ? {} : { containerContext }),
             logicalResources: createSubjectLogicalResources({
               state: record.logicalState,
               budget: effectiveBudget,

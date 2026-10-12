@@ -62,3 +62,21 @@ it('opens an asset by its exact path before any listing names it', async () => {
   expect(lookups).toEqual(['assets/mesh/123'])
   await expect(origin!.open('mesh/404')).rejects.toThrow(/content dependency has no entry/)
 })
+
+it('retains atomic entry metadata when the content source supports it', async () => {
+  const source = onDemand([])
+  const origin = createContentDependencyAssetOrigin({
+    contentSources: {
+      ...source,
+      async read() { throw new Error('must use the atomic read') },
+      async readWithContext(_sourceId, path) {
+        expect(path).toBe('assets/mesh/123')
+        return { bytes: new Uint8Array([3]), context: { hash: 'resource-hash' } }
+      },
+    },
+    resolution,
+  })
+  const lease = await origin!.open('mesh/123')
+  expect(lease.value.containerContext).toEqual({ hash: 'resource-hash' })
+  await lease.release()
+})

@@ -355,16 +355,17 @@ function createContentDependencyOrigin(
       const relative = relativeRequest(mount, qualifiedIn(mount))
       if (relative === undefined || relative === '')
         throw new RangeError(`content dependency has no file ${normalized}`)
-      const bytes = await contentSources.read(
-        mount.sourceId,
-        joinPath(mount.sourcePath, relative),
-        maximumEntryBytes,
-      )
+      const path = joinPath(mount.sourcePath, relative)
+      const read =
+        contentSources.readWithContext === undefined
+          ? { bytes: await contentSources.read(mount.sourceId, path, maximumEntryBytes) }
+          : await contentSources.readWithContext(mount.sourceId, path, maximumEntryBytes)
       const uri = contentSourceUri(mount.sourceId, joinPath(mount.sourcePath, relative))
       const source = artifactByteSourceFromBytes(
         Object.freeze({ id: `${mount.rootId}:${normalized}`, uri }),
         mount.revision,
-        bytes,
+        read.bytes,
+        read.context,
       )
       return Object.freeze({ value: source, release: async () => undefined })
     },
@@ -464,7 +465,11 @@ export function createContentDependencyLanguageDocumentSource(
    * workspace's languages and the layers' root files), not every path of every layer again.
    */
   let replayedIndex:
-    | Readonly<{ listings: readonly KeptListing[]; paths: ReadonlyMap<string, number>; bytes: number }>
+    | Readonly<{
+        listings: readonly KeptListing[]
+        paths: ReadonlyMap<string, number>
+        bytes: number
+      }>
     | undefined
   /** A kept file no route claims: its place in the index is all a snapshot needs of it. */
   const UNROUTED: Readonly<{ route: FileRoute; uri: string }> = Object.freeze({
@@ -482,7 +487,10 @@ export function createContentDependencyLanguageDocumentSource(
    */
   const trimDocumentCaptures = (): void => {
     const allowance = () =>
-      maxWorkspaceBytes - (retainedPathIndex?.bytes ?? 0) - keptListingBytes - (replayedIndex?.bytes ?? 0)
+      maxWorkspaceBytes -
+      (retainedPathIndex?.bytes ?? 0) -
+      keptListingBytes -
+      (replayedIndex?.bytes ?? 0)
     for (const entry of revisions.values()) {
       if (retainedDocumentBytes <= allowance()) return
       if (entry.taken === generation) continue
@@ -922,20 +930,29 @@ export function createContentDependencyLanguageDocumentSource(
         const previous = revisions.get(uri)
         // Under a provider fingerprint the file's place names its bytes: token it by that, unhashed.
         const identity = fingerprinted(candidate.mount)
-          ? { contentIdentity: JSON.stringify([candidate.mount.sourceId, candidate.mount.fingerprint, candidate.path]) }
+          ? {
+              contentIdentity: JSON.stringify([
+                candidate.mount.sourceId,
+                candidate.mount.fingerprint,
+                candidate.path,
+              ]),
+            }
           : undefined
         const captured =
           previous?.document?.text === text &&
           previous.document.languageId === languageId &&
           previous.document.dialect === dialect
             ? previous.document
-            : languageDocumentSnapshot({
-                uri,
-                languageId,
-                version: previous?.version ?? 1,
-                text,
-                ...(dialect === undefined ? {} : { dialect }),
-              }, identity)
+            : languageDocumentSnapshot(
+                {
+                  uri,
+                  languageId,
+                  version: previous?.version ?? 1,
+                  text,
+                  ...(dialect === undefined ? {} : { dialect }),
+                },
+                identity,
+              )
         const signature = languageWorkspaceContextToken({
           mountRevision: String(candidate.mount.revision),
           languageId,

@@ -10,6 +10,51 @@ const options = {
 } as const
 
 describe('checked RandomAccessSource → ArtifactByteSource bridge', () => {
+  it('pins immutable metadata and includes its canonical content in the revision', async () => {
+    const source = createMemorySource('memory:test', new Uint8Array(1))
+    const context = { b: 2, a: { hash: '1234' } }
+    const first = await artifactByteSourceFromRandomAccess(source, {
+      ...options,
+      containerContext: context,
+    })
+    const reordered = await artifactByteSourceFromRandomAccess(source, {
+      ...options,
+      containerContext: { a: { hash: '1234' }, b: 2 },
+    })
+    context.a.hash = 'changed'
+    expect(first.containerContext).toEqual({ a: { hash: '1234' }, b: 2 })
+    expect(Object.isFrozen(first.containerContext)).toBe(true)
+    expect(first.revision).toBe(reordered.revision)
+    const changed = await artifactByteSourceFromRandomAccess(source, {
+      ...options,
+      containerContext: context,
+    })
+    expect(changed.revision).not.toBe(first.revision)
+    expect((await artifactByteSourceFromRandomAccess(source, options)).revision).toBe(
+      options.revision,
+    )
+  })
+
+  it('refuses executable and oversized metadata before exposing a source', async () => {
+    let calls = 0
+    const getter = Object.defineProperty({}, 'x', {
+      enumerable: true,
+      get() {
+        calls++
+        return 1
+      },
+    })
+    for (const containerContext of [getter, { x: NaN }, { x: 1n }, { x: 'x'.repeat(65536) }]) {
+      await expect(
+        artifactByteSourceFromRandomAccess(createMemorySource('memory:test', new Uint8Array(1)), {
+          ...options,
+          containerContext,
+        }),
+      ).rejects.toThrow()
+    }
+    expect(calls).toBe(0)
+  })
+
   it('preserves exact bigint ranges and bounded streaming', async () => {
     const source = createMemorySource('memory:test', Uint8Array.from([0, 1, 2, 3, 4, 5]))
     const bridged = await artifactByteSourceFromRandomAccess(source, options)

@@ -353,7 +353,9 @@ export function createContentAssetOrigin(request: ContentAssetOriginRequest): Co
    */
   const located = new Map<
     string,
-    Promise<Readonly<{ uri: string; revision: string; bytes: Uint8Array }> | undefined>
+    Promise<
+      Readonly<{ uri: string; revision: string; bytes: Uint8Array; context?: unknown }> | undefined
+    >
   >()
   const locate = (path: string) => {
     const key = path.toLowerCase()
@@ -374,7 +376,10 @@ export function createContentAssetOrigin(request: ContentAssetOriginRequest): Co
           const place = await context.locate(path)
           if (place === undefined) return undefined
           const layer = context.layers.find(item => item.id === place.layerId)
-          const bytes = await context.read(place.layerId, place.path, maximumEntryBytes)
+          const read =
+            context.readWithContext === undefined
+              ? { bytes: await context.read(place.layerId, place.path, maximumEntryBytes) }
+              : await context.readWithContext(place.layerId, place.path, maximumEntryBytes)
           const at = `${layer?.sourcePath ?? place.layerId}/${place.path}`
           return Object.freeze({
             uri:
@@ -382,7 +387,8 @@ export function createContentAssetOrigin(request: ContentAssetOriginRequest): Co
                 ? `mod-context-layer:${encodeURIComponent(place.layerId)}/${place.path.split('/').map(encodeURIComponent).join('/')}`
                 : `content-source://${encodeURIComponent(layer.sourceId)}/${at.split('/').map(encodeURIComponent).join('/')}`,
             revision: layer?.fingerprint ?? `${context.contextId}\0${at}`,
-            bytes,
+            bytes: read.bytes,
+            ...(read.context === undefined ? {} : { context: read.context }),
           })
         } finally {
           await context.dispose()
@@ -423,6 +429,7 @@ export function createContentAssetOrigin(request: ContentAssetOriginRequest): Co
           Object.freeze({ id: `mod-context:${path}`, uri: asset.uri }),
           revisionIdFromRef({ kind: 'provider-token', value: asset.revision }),
           asset.bytes,
+          asset.context,
         )
         return Object.freeze({ value: source, release: async () => undefined })
       }

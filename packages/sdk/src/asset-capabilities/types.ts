@@ -8,6 +8,7 @@
 import { isQualifiedId } from '@modkit/core'
 import type {
   Diagnostic as CoreDiagnostic,
+  JsonValue,
   OperationId,
   SourceSpan,
   SourceSpanWire,
@@ -28,8 +29,7 @@ import {
   type SourceRef,
 } from '../subjects/refs.js'
 
-export type JsonPrimitive = null | boolean | number | string
-export type JsonValue = JsonPrimitive | readonly JsonValue[] | { readonly [key: string]: JsonValue }
+export type { JsonPrimitive, JsonValue } from '@modkit/core'
 
 /**
  * Whether `value` is JSON data: null, booleans, strings, finite numbers, and arrays and plain

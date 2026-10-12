@@ -80,6 +80,30 @@ function chain(log: Log): LayerArchive[] {
 }
 
 describe('archives as the one tree a game reads', () => {
+  it('reads bytes and metadata from one selected copy, including an explicit lower rank', async () => {
+    const make = (id: string, context?: unknown): LayerArchive => ({
+      id,
+      entries: [{ path: 'Image.bimage', size: 1, ...(context === undefined ? {} : { context }) }],
+      async read() {
+        return text(id)
+      },
+      close() {},
+    })
+    const sources = createLayeredArchiveContentSources('Game', [
+      {
+        root: root('local:game'),
+        open: async () => [make('patch'), make('base', { hash: 'base-hash' })],
+      },
+    ])
+    const top = await sources.readWithContext!('local:game', 'image.bimage', 64)
+    expect(decode(top.bytes)).toBe('patch')
+    expect(top.context).toBeUndefined()
+    const lower = await (await sources.layers('local:game')).readWithContext('IMAGE.bimage', 64, 1)
+    expect(decode(lower.bytes)).toBe('base')
+    expect(lower.context).toEqual({ hash: 'base-hash' })
+    await sources.dispose()
+  })
+
   it('serves each path from the highest archive and spells it as the highest names it', async () => {
     const log: Log = { closed: [], lookups: [] }
     const sources = createLayeredArchiveContentSources('Game', [

@@ -4,16 +4,42 @@
  * `RandomAccessSource` is intentionally limited to JavaScript-safe numeric offsets while
  * `ArtifactByteSource` exposes bigint wire/runtime coordinates. The bridge rejects anything that
  * cannot be represented exactly; it never rounds an offset or silently truncates a range.
+ * Optional inert entry context is snapshotted with the canonical JSON owner (64KiB/4096 nodes/
+ * depth16), rejected if executable/lossy, and included in the pinned revision. No native semantics.
  */
 
-import { ModkitError, throwIfAborted } from '@modkit/core'
-import type { ArtifactByteSource, AssetSourceRef, RevisionId } from '@modkit/sdk'
+import { canonicalJsonStringify, ModkitError, snapshotJson, throwIfAborted } from '@modkit/core'
+import {
+  revisionIdFromRef,
+  type ArtifactByteSource,
+  type AssetSourceRef,
+  type RevisionId,
+} from '@modkit/sdk'
 import type { RandomAccessSource } from '@modkit/vfs'
 
 export interface ArtifactByteSourceBridgeOptions {
   readonly ref: AssetSourceRef
   readonly revision: RevisionId
   readonly signal?: AbortSignal
+  readonly containerContext?: unknown
+}
+
+/** Pins a bounded immutable native metadata snapshot to the same source revision as its byte lease. */
+function pinnedEntryContext(revision: RevisionId, value: unknown) {
+  if (value === undefined) return { revision }
+  const containerContext = snapshotJson(value, {
+    maxDepth: 16,
+    maxNodes: 4096,
+    maxBytes: 65536,
+    sortKeys: true,
+  })
+  return {
+    revision: revisionIdFromRef({
+      kind: 'provider-token',
+      value: `${revision}\0entry-context:${canonicalJsonStringify(containerContext)}`,
+    }),
+    containerContext,
+  }
 }
 
 function invalidRange(
@@ -105,7 +131,7 @@ export async function artifactByteSourceFromRandomAccess(
   const bridged: ArtifactByteSource = {
     kind: 'bytes',
     ref,
-    revision: options.revision,
+    ...pinnedEntryContext(options.revision, options.containerContext),
     size,
     async read(offset, length, signal) {
       throwIfAborted(signal)
@@ -176,11 +202,12 @@ export function artifactByteSourceFromBytes(
   ref: AssetSourceRef,
   revision: RevisionId,
   bytes: Uint8Array,
+  containerContext?: unknown,
 ): ArtifactByteSource {
   return Object.freeze({
     kind: 'bytes',
     ref,
-    revision,
+    ...pinnedEntryContext(revision, containerContext),
     size: BigInt(bytes.byteLength),
     async read(offset: bigint, length: number, readSignal?: AbortSignal) {
       throwIfAborted(readSignal)
