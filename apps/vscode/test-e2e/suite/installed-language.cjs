@@ -215,11 +215,17 @@ async function probeInstalledCasc(receipt, resultPath, gameRoot, extensionApi) {
   )
   const commands = (lenses ?? []).map(lens => lens.command).filter(Boolean)
   state.codeLenses = { count: lenses?.length ?? 0, marine: [], last: [] }
+  // A command names an entity by its card's subject id (`modkit-subject://<scope>/Unit/Marine`)
+  // or, from an older provider, by `Unit/Marine`; both are compared as `Unit/Marine`.
+  const entityKeyOf = subjectId => {
+    const match = /^modkit-subject:\/\/[^/]+\/([^/]+)\/([^/]+)$/u.exec(subjectId ?? '')
+    return match === null ? subjectId : `${decodeURIComponent(match[1])}/${decodeURIComponent(match[2])}`
+  }
   const subjectIdsFor = view =>
     new Set(
       commands
         .filter(command => command.arguments?.[0]?.view === view)
-        .map(command => command.arguments[0].subjectId),
+        .map(command => entityKeyOf(command.arguments[0].subjectId)),
     )
   const cardIds = subjectIdsFor('card')
   const graphIds = subjectIdsFor('graph')
@@ -238,14 +244,14 @@ async function probeInstalledCasc(receipt, resultPath, gameRoot, extensionApi) {
     ['last', lastEntity],
   ]) {
     state.codeLenses[key] = commands
-      .filter(command => command.arguments?.[0]?.subjectId === `Unit/${id}`)
+      .filter(command => entityKeyOf(command.arguments?.[0]?.subjectId) === `Unit/${id}`)
       .map(command => ({ title: command.title, view: command.arguments[0].view }))
     if (!state.codeLenses[key].some(command => command.view === 'card'))
       throw new Error(`Native CASC CodeLens omitted the card at Unit/${id}`)
   }
   const card = commands.find(
     command =>
-      command.arguments?.[0]?.subjectId === 'Unit/Marine' && command.arguments[0].view === 'card',
+      entityKeyOf(command.arguments?.[0]?.subjectId) === 'Unit/Marine' && command.arguments[0].view === 'card',
   )
   if (
     !(await measured('Marine-card-command', () =>

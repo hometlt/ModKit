@@ -82,8 +82,10 @@ export interface LanguageDiagnosticRelatedInformation {
 
 /**
  * What a lens or a code action asks the application to do, from a closed set it runs with its own
- * UI: open an entity of the document's workspace (its card, relation graph or resolved view, by
- * the id its facts use, `Unit/Marine`), or open a place.
+ * UI: open an entity of the document's workspace (its card, relation graph or resolved view), or
+ * open a place. An entity is named by the subject id its card opens on (`subjectIdFor`, as
+ * `modkit-subject://blizzard%2Fsc2-data/Unit/Marine`), which the application opens directly, or by
+ * the id its facts use (`Unit/Marine`), which the application has to find among the loaded mods.
  */
 export type LanguageCommand =
   | {
