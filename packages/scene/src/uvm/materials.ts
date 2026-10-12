@@ -11,8 +11,8 @@ import {
   MATERIAL_LAYERS_SHADER,
   RENDER_MATERIAL_SHADER,
 } from '../materials/index.js'
-import { field, object, string } from './values.js'
-import { uvmImageTexels, type UvmImage } from './images.js'
+import { array, field, object, string } from './values.js'
+import { uvmImageResourceId, uvmImageTexels, type UvmImage } from './images.js'
 
 /**
  * A material whose only texture statement is its neutral layer list (MATERIAL_LAYERS_SHADER).
@@ -227,6 +227,81 @@ export function uvmMaterialTeamColor(
       ...common,
     },
     maskTexture: index,
+  }
+}
+
+// The program's channel selection for a team colour mask channel: AAAA, RRRR, GGGG, BBBB.
+const PROGRAM_MASK_CHANNELS: Readonly<Record<string, number>> = { a: 2, r: 3, g: 4, b: 5 }
+
+/**
+ * UV_game_material_team_color drawn by a material program (С1): a `modkit.render-material.v1`
+ * standard program that states no team colour reading of its own gains the extension's mask as
+ * its `teamColorMask` layer — the image the mask texture names, by the extension's channel, on the
+ * base colour's UVs (`uvSource` = `texCoord`) — and its blend and strength, which the program draws
+ * before light by the one formula (codec-kit `teamColorChannel`). `whole` is a white layer.
+ * Undefined when the program already reads a team colour (`teamColorMaskMix`, `teamColorBlend`, a
+ * `teamColorMask` layer), when the material is not a standard program, or for a per-channel mask
+ * (`rgb`), which a program mask, one weight per texel, cannot state.
+ */
+export function uvmProgramTeamColor(
+  document: JsonObject,
+  shader: SceneRendererMaterial['shader'],
+  team: SceneRendererTeamColor | undefined,
+  maskTexture: number | undefined,
+  texCoord: number,
+): SceneRendererMaterial['shader'] {
+  if (team === undefined || shader?.id !== RENDER_MATERIAL_SHADER) return undefined
+  const renderModel = field(shader.parameters as JsonObject, 'renderModel')
+  const standard = renderModel === undefined ? undefined : field(renderModel, 'standard')
+  if (standard === undefined || renderModel === undefined) return undefined
+  const program = object(standard, 'standard material program')
+  const layers = object(program['layers'] ?? {}, 'standard material layers')
+  if (
+    program['teamColorMaskMix'] === true ||
+    program['teamColorBlend'] !== undefined ||
+    layers['teamColorMask'] !== undefined
+  )
+    return undefined
+  let texturePath: string | null = null
+  let channels = PROGRAM_MASK_CHANNELS['r']!
+  if (team.mask !== 'whole') {
+    const channel = PROGRAM_MASK_CHANNELS[team.mask.channel]
+    if (channel === undefined || maskTexture === undefined) return undefined
+    const textures = array(document, 'textures')
+    const source = field(textures[maskTexture], 'source')
+    if (typeof source !== 'number') return undefined
+    texturePath = uvmImageResourceId(document, source)
+    channels = channel
+  }
+  const mask = {
+    slot: 'teamColorMask',
+    texturePath,
+    ...(texturePath === null ? { constantColor: { value: [1, 1, 1, 1] } } : {}),
+    uvSource: texCoord,
+    channels,
+    op: 0,
+    teamColorMode: 0,
+    invert: false,
+    clampResult: false,
+    wrapX: true,
+    wrapY: true,
+  }
+  return {
+    id: shader.id,
+    parameters: {
+      ...shader.parameters,
+      renderModel: {
+        ...object(renderModel, 'render model parameters'),
+        standard: {
+          ...program,
+          layers: { ...layers, teamColorMask: mask },
+          teamColorBlend: team.blend,
+          ...(team.strength === undefined || team.strength === 1
+            ? {}
+            : { teamColorStrength: team.strength }),
+        },
+      },
+    },
   }
 }
 

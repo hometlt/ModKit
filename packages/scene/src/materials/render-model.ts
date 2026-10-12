@@ -8,6 +8,7 @@ import type {
 import { isStandardLayerSlot } from '@modkit/codec-kit/legacy/models/material'
 import type { RenderScalarAnimationTrack } from '@modkit/codec-kit/legacy/models'
 import { sampleTrackValue } from '@modkit/codec-kit/model-math/sequence-pose'
+import { TEAM_COLOR_BLENDS } from '@modkit/codec-kit/model-math/color-remap'
 import { WORLD_PROJECTION_UV_SOURCES } from '@modkit/uv/model/frame'
 import { materialFrame } from './frame.js'
 import type { NormalBlendPolicy } from './normal-blending.js'
@@ -304,6 +305,21 @@ function validateStandard(value: unknown, path: string, signal?: AbortSignal) {
     !(finite(material['edgeFadeOut'], `${path}.edgeFadeOut`) > 0)
   )
     throw new TypeError(`${path}.edgeFadeOut must be positive`)
+  // UV_game_material_team_color as the program draws it: the teamColorMask layer before light
+  if (material['teamColorBlend'] !== undefined) {
+    if (!TEAM_COLOR_BLENDS.includes(material['teamColorBlend'] as never))
+      throw new TypeError(`${path}.teamColorBlend is unknown`)
+    if (material['teamColorMaskMix'] === true)
+      throw new TypeError(
+        `${path}.teamColorBlend and teamColorMaskMix are two readings of one mask`,
+      )
+  }
+  if (material['teamColorStrength'] !== undefined) {
+    if (material['teamColorBlend'] === undefined)
+      throw new TypeError(`${path}.teamColorStrength needs teamColorBlend`)
+    if (!(finite(material['teamColorStrength'], `${path}.teamColorStrength`) >= 0))
+      throw new TypeError(`${path}.teamColorStrength must be nonnegative`)
+  }
   if (material['parallaxHeight'] !== undefined)
     animated(material['parallaxHeight'], `${path}.parallaxHeight`, 1, signal)
   const factors = material['normalBlendFactors']

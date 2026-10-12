@@ -213,6 +213,14 @@ export interface StandardMaterialModel {
    */
   teamColorMaskMix?: boolean
   /**
+   * The team colour mask (layer `teamColorMask`, its channel-selected red) colours the base colour
+   * before light by the one formula of `UV_game_material_team_color` (codec-kit `teamColorChannel`):
+   * `multiply`, `add`, `replace`, `overlay` or `lerp`, weighed by `teamColorStrength` (default 1).
+   * It replaces both other readings of the mask; not with `teamColorMaskMix`.
+   */
+  teamColorBlend?: 'multiply' | 'add' | 'replace' | 'overlay' | 'lerp'
+  teamColorStrength?: number
+  /**
    * Fade at grazing angles: smoothstep(0, edgeFadeOut, |N·V|) on the geometric normal multiplies an
    * additive material's colour (its fade) and any other material's alpha (Kane's Wrath DefaultW3D
    * `EdgeFadeOut`). A layer's fresnel cannot state it: its curve is a power, and it scales the layer.

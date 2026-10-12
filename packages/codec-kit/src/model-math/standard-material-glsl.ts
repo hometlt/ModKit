@@ -9,6 +9,12 @@ import type {
 } from '../legacy/models/material.js'
 import { linearToSrgb, srgbToLinear } from '../raster/ops.js'
 import { PBR_GLSL, SRGB_GLSL, shadePbr, tonemap, TONEMAP_GLSL, type TonemapCurve } from './pbr.js'
+import {
+  TEAM_COLOR_BLENDS,
+  TEAM_COLOR_GLSL,
+  teamColorChannel,
+  type TeamColorBlend,
+} from './color-remap.js'
 
 /**
  * P4-S4 — shared SC2 standard-material shader builder + CPU mirror
@@ -133,6 +139,9 @@ export interface StandardMaterialDefines {
   environmentTintByBase?: boolean
   /** The team colour mask mixes the base colour before light (StandardMaterialModel.teamColorMaskMix). */
   teamColorMaskMix?: boolean
+  /** StandardMaterialModel.teamColorBlend and its strength, compile-time constants. */
+  teamColorBlend?: TeamColorBlend
+  teamColorStrength?: number
   /** The grazing fade of StandardMaterialModel.edgeFadeOut, a compile-time constant. */
   edgeFadeOut?: number
 }
@@ -286,6 +295,12 @@ export function buildMaterialDefines(
       : {}),
     ...(material.environmentTintByBase === true ? { environmentTintByBase: true } : {}),
     ...(material.teamColorMaskMix === true ? { teamColorMaskMix: true } : {}),
+    ...(material.teamColorBlend === undefined
+      ? {}
+      : {
+          teamColorBlend: material.teamColorBlend,
+          teamColorStrength: material.teamColorStrength ?? 1,
+        }),
     ...(material.edgeFadeOut === undefined ? {} : { edgeFadeOut: material.edgeFadeOut }),
   }
 }
@@ -312,6 +327,7 @@ export function canonicalDefineKey(defines: StandardMaterialDefines): string {
     `${defines.pbr ? ';pbr' : ''}${defines.linearColor ? ';linear' : ''}${defines.tonemap ? ';tonemap' : ''}` +
     `${defines.environmentTintByBase ? ';envbase' : ''}` +
     `${defines.teamColorMaskMix ? ';tcmix' : ''}` +
+    `${defines.teamColorBlend === undefined ? '' : `;tcb=${defines.teamColorBlend},${defines.teamColorStrength ?? 1}`}` +
     `${defines.edgeFadeOut === undefined ? '' : `;edge=${defines.edgeFadeOut}`}`
   )
 }
@@ -552,6 +568,9 @@ export interface CpuPixelInput {
   environmentTintByBase?: boolean
   /** The team colour mask mixes the base colour before light (StandardMaterialModel.teamColorMaskMix). */
   teamColorMaskMix?: boolean
+  /** StandardMaterialModel.teamColorBlend and teamColorStrength. */
+  teamColorBlend?: TeamColorBlend
+  teamColorStrength?: number
   /** StandardMaterialModel.edgeFadeOut, on `viewDir`. */
   edgeFadeOut?: number
   specMode: 0 | 1
@@ -745,6 +764,17 @@ export function composeStandardPixelCpu(input: CpuPixelInput): CpuPixelResult {
   // Warcraft III Reforged HD: the mask mixes the base colour toward the team colour before light.
   if (layers.teamColorMask && input.teamColorMaskMix === true)
     color = [...teamColorMaskMixCpu(color, teamColor, computeLayerColorCpu(layers.teamColorMask, teamColor)[0])]
+  // UV_game_material_team_color: the mask colours the base before light by the one formula.
+  else if (layers.teamColorMask && input.teamColorBlend !== undefined) {
+    const mask = computeLayerColorCpu(layers.teamColorMask, teamColor)[0]
+    const blend = input.teamColorBlend,
+      strength = input.teamColorStrength ?? 1
+    color = [
+      teamColorChannel(color[0], mask, teamColor[0], blend, strength),
+      teamColorChannel(color[1], mask, teamColor[1], blend, strength),
+      teamColorChannel(color[2], mask, teamColor[2], blend, strength),
+    ]
+  }
   // lightMap (×2.0) and AO multiply into the diffuse term (1.8).
   if (layers.lightMap) {
     const lm = computeLayerColorCpu(layers.lightMap, teamColor)
@@ -971,7 +1001,11 @@ export function composeStandardPixelCpu(input: CpuPixelInput): CpuPixelResult {
 
   // Common masked team-colour operation. Unlike M3's per-layer teamColorMode, the red-channel
   // mask performs grain merge after lighting.
-  if (layers.teamColorMask && input.teamColorMaskMix !== true) {
+  if (
+    layers.teamColorMask &&
+    input.teamColorMaskMix !== true &&
+    input.teamColorBlend === undefined
+  ) {
     const mask = computeLayerColorCpu(layers.teamColorMask, teamColor)[0]
     final = [
       final[0] + (teamColor[0] - 0.5) * mask,
@@ -1398,6 +1432,7 @@ export function buildStandardFragmentSource(
   if (defines.pbr) parts.push(PBR_GLSL)
   if (defines.linearColor) parts.push(SRGB_GLSL)
   if (defines.tonemap) parts.push(TONEMAP_GLSL)
+  if (defines.teamColorBlend !== undefined) parts.push(TEAM_COLOR_GLSL)
   if (hasDecodedNormal) parts.push(normalDecodeGlsl(defines.normalMapFormat))
   for (const layer of defines.layers) parts.push(layerFunction(layer))
 
@@ -1465,6 +1500,10 @@ export function buildStandardFragmentSource(
   }
   if (layerBySlot.has('teamColorMask') && defines.teamColorMaskMix)
     body.push('  color = teamColorMaskMix(color, u_teamColor, computeLayer_teamColorMask().r);')
+  else if (layerBySlot.has('teamColorMask') && defines.teamColorBlend !== undefined)
+    body.push(
+      `  color = modkitTeamColor(color, vec3(computeLayer_teamColorMask().r), u_teamColor, ${TEAM_COLOR_BLENDS.indexOf(defines.teamColorBlend)}, ${glslFloat(defines.teamColorStrength ?? 1)});`,
+    )
   if (layerBySlot.has('lightMap')) body.push('  color *= computeLayer_lightMap().rgb * 2.0;')
   if (layerBySlot.has('ao')) body.push('  color *= computeLayer_ao().rgb;')
 
@@ -1656,7 +1695,11 @@ export function buildStandardFragmentSource(
       `  float edgeFade = smoothstep(0.0, ${glslFloat(defines.edgeFadeOut)}, abs(normalize(v_viewDir).z));`,
       defines.modAlpha ? '  fade *= edgeFade;' : '  final.a *= edgeFade;',
     )
-  if (layerBySlot.has('teamColorMask') && !defines.teamColorMaskMix) {
+  if (
+    layerBySlot.has('teamColorMask') &&
+    !defines.teamColorMaskMix &&
+    defines.teamColorBlend === undefined
+  ) {
     body.push('  float teamColorMask = computeLayer_teamColorMask().r;')
     body.push('  final.rgb += (u_teamColor - vec3(0.5)) * teamColorMask;')
   }

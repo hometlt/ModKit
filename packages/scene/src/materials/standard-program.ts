@@ -73,6 +73,11 @@ export interface MaterialFrameOptions extends MaterialLighting {
 
 /** `a^0 = 1`: a diffuse team-color layer resolves to its texel RGB with alpha 1. */
 function withoutDiffuseTeamColor(material: SceneStandardMaterial): SceneStandardMaterial {
+  // an object without a team colour: UV_game_material_team_color's mask colours nothing either
+  if (material.teamColorBlend !== undefined) {
+    const { teamColorBlend: _blend, teamColorStrength: _strength, ...rest } = material
+    material = Object.freeze(rest)
+  }
   if (!Object.values(material.layers).some(layer => layer.teamColorMode === 1)) return material
   const layers: StandardMaterialModel['layers'] = {}
   for (const [slot, layer] of Object.entries(material.layers))
@@ -747,6 +752,12 @@ function shade(
       : { environmentMultipliers: material.environmentMultipliers }),
     ...(material.environmentTintByBase === true ? { environmentTintByBase: true } : {}),
     ...(material.teamColorMaskMix === true ? { teamColorMaskMix: true } : {}),
+    ...(material.teamColorBlend === undefined
+      ? {}
+      : {
+          teamColorBlend: material.teamColorBlend,
+          teamColorStrength: material.teamColorStrength ?? 1,
+        }),
     ...(material.edgeFadeOut === undefined ? {} : { edgeFadeOut: material.edgeFadeOut }),
     ...(material.emissiveTint === undefined ? {} : { emissiveTint: material.emissiveTint }),
     ...(material.normalBlendFactors === undefined

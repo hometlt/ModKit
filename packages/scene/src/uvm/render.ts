@@ -56,6 +56,7 @@ import {
   uvmMaterialPbr,
   uvmMaterialShader,
   uvmMaterialTeamColor,
+  uvmProgramTeamColor,
   uvmMaterialResources,
   acquireUvmMaterialTextures,
 } from './materials.js'
@@ -704,6 +705,14 @@ async function prepareNestedUvmRender(
           `Material ${index} uses shading features beyond the current base-color scene contract.`,
         )
       const team = uvmMaterialTeamColor(material, texCoord)
+      // a material program draws the team colour itself, in place of the base route (С1)
+      const programTeam = uvmProgramTeamColor(
+        document,
+        shader,
+        team.teamColor,
+        team.maskTexture,
+        texCoord,
+      )
       if (team.unrendered !== undefined)
         warn(
           'common.uvm/team-color-unrendered',
@@ -726,8 +735,14 @@ async function prepareNestedUvmRender(
         ...(textureIndex === undefined ? {} : { baseColorTexture: `uvm-texture-${textureIndex}` }),
         doubleSided: material['doubleSided'] === true,
         ...uvmMaterialDrawOrder(material),
-        ...(team.teamColor === undefined ? {} : { teamColor: team.teamColor }),
-        ...(shader === undefined ? {} : { shader }),
+        ...(team.teamColor === undefined || programTeam !== undefined
+          ? {}
+          : { teamColor: team.teamColor }),
+        ...(programTeam !== undefined
+          ? { shader: programTeam }
+          : shader === undefined
+            ? {}
+            : { shader }),
         ...(simpleEffect === undefined ? {} : { simpleEffect }),
       }
     },
