@@ -1,9 +1,11 @@
 /** Host-owned, read-only map-world source from resolved map semantics (SDK maps contract).
  * Publishes native facts and only projects UVW positions/coverage through admitted transforms.
  * Rejects malformed lattice coverage; does not infer gameplay masks, edit maps or decode assets.
+ * Relative/surface object heights use the common drawn-cell triangles rather than a bilinear surface.
  */
 
 import { diagnostic } from '@modkit/core'
+import { terrainCellHeight } from './terrain.js'
 import { mapQualificationTupleBytes } from '@modkit/sdk'
 import {
   MODEL_FACET_ITEM_CAP,
@@ -20,6 +22,7 @@ import type {
   Lease,
   LogicalResourceRequirement,
   MapTerrainMaterialDefinition,
+  MapTerrainMaterialSample,
   MapLatticeObjectCoverage,
   MapTerrainNativeTransform,
   MapTerrainSample,
@@ -300,10 +303,12 @@ function terrainMapNativePosition(
   })
 }
 
+/** Query a bounded exact height grid using the same diagonal policy as the world renderer. */
 function terrainHeightAt(
   position: Readonly<{ x: number; y: number }>,
   terrain: NonNullable<ResolvedMapWorkspaceSnapshot['semantic']['terrain']> | undefined,
   transform: MapTerrainNativeTransform | undefined,
+  materials: ReadonlyMap<string, MapTerrainMaterialSample>,
 ): number | undefined {
   if (transform === undefined || terrain === undefined || !hasExactTerrainGrid(terrain))
     return undefined
@@ -327,9 +332,10 @@ function terrainHeightAt(
   const ty = gridY - y0
   const height = (x: number, y: number): number =>
     terrainMapNativePosition(terrain.samples[y * terrain.width + x]!, transform).z
-  const lower = height(x0, y0) * (1 - tx) + height(x1, y0) * tx
-  const upper = height(x0, y1) * (1 - tx) + height(x1, y1) * tx
-  return lower * (1 - ty) + upper * ty
+  return terrainCellHeight(
+    [height(x0, y0), height(x1, y0), height(x1, y1), height(x0, y1)], tx, ty,
+    materials.get(`${x0}:${y0}`)?.layers,
+  )
 }
 
 /**
@@ -1048,6 +1054,9 @@ export function createCandidateWorldSceneLease(
   const terrainByGrid = new Map(
     allTerrain.map(item => [`${String(item.x)}:${String(item.y)}`, item] as const),
   )
+  const materialSamplesByGrid = new Map(
+    (snapshot.terrainMaterials?.samples ?? []).map(item => [`${item.x}:${item.y}`, item] as const),
+  )
   const terrainMaterials: readonly WorldSceneItem[] = Object.freeze(
     (snapshot.terrainMaterials?.samples ?? []).map(item => {
       const terrainItem = terrainByGrid.get(`${String(item.x)}:${String(item.y)}`)
@@ -1129,7 +1138,7 @@ export function createCandidateWorldSceneLease(
         item.nativeRotationUnit,
         item.nativeRotationSense,
       )
-      const groundHeight = terrainHeightAt(item.position, semantic.terrain, terrainTransform)
+      const groundHeight = terrainHeightAt(item.position, semantic.terrain, terrainTransform, materialSamplesByGrid)
       const mapNativePresentationPosition =
         groundHeight === undefined ||
         item.heightReference === undefined ||

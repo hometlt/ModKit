@@ -4,6 +4,7 @@
  * and the headless adapter. Native publishers may request a presentation-only model reflection;
  * convex upper-layer clipping preserves the original ground triangles and all their varyings.
  * Terrain-only depth bias leaves coplanar surface models visible without changing their placement.
+ * The Host-owned cell split also supplies object placement heights; texture coverage preserves ground shape.
  * Format parsing and source placement data remain with the publisher.
  */
 import {
@@ -17,6 +18,7 @@ import {
 } from 'three'
 import { waterDepthColor, WATER_SHORE_FADE, WATER_COLOR_FALLOFF } from '../render/water-color.js'
 import { applyWebGlDepthBias, TERRAIN_DEPTH_BIAS } from '../render/depth-bias.js'
+import { terrainCellSplit, TERRAIN_SPLIT_AC as SPLIT_AC, TERRAIN_SPLIT_BD as SPLIT_BD } from '@modkit/host/maps'
 import type {
   MapModelComponentPlacement,
   MapTerrainMaterialDefinition,
@@ -6411,12 +6413,11 @@ function prepareWorldStaticTerrain(
     ]
     // Cut along the diagonal with the smaller height difference, so 45° cliff and ramp edges in
     // either direction stay straight instead of zig-zagging across fixed-diagonal cells; a layer
-    // whose coverage singles out one corner cuts it off (MapTerrainMaterialSample.layers).
-    const split =
-      cornerAlphaSplit(materialByCell.get(`${item.x}:${item.y}`)) ??
-      (Math.abs(corners[0][1] - corners[2][1]) <= Math.abs(corners[1][1] - corners[3][1])
-        ? SPLIT_AC
-        : SPLIT_BD)
+    // whose coverage singles out one corner cuts it off only when that preserves the ground plane.
+    const split = terrainCellSplit(
+      corners.map(corner => corner[1]) as [number, number, number, number],
+      materialByCell.get(`${item.x}:${item.y}`)?.layers,
+    )
     drawnCells.set(`${item.x}:${item.y}`, {
       item,
       patches: [
@@ -13954,41 +13955,6 @@ export function drawWorldWebGl(
   } finally {
     renderer.dispose()
   }
-}
-
-/**
- * Quad [a, b, c, d] split along a–c or b–d, both wound so the face normal points up.
- *
- * The scene mirrors the map's Y into -Z, which flips the handedness: the map-order winding made
- * every terrain face normal point down, so the key light's N·L was zero and terrain was lit by
- * ambient alone. Culling is off, so nothing looked missing — it just looked flat.
- */
-const SPLIT_AC = [
-  [0, 1, 2],
-  [0, 2, 3],
-] as const
-const SPLIT_BD = [
-  [1, 2, 3],
-  [1, 3, 0],
-] as const
-
-/**
- * The diagonal a cell is cut along when an upper layer's corner coverage singles out one corner: the
- * one between that corner's neighbours, so the blend runs straight across the corner's triangle.
- */
-function cornerAlphaSplit(
-  sample: MapTerrainMaterialSample | undefined,
-): typeof SPLIT_AC | typeof SPLIT_BD | undefined {
-  for (const layer of sample?.layers?.slice(1) ?? []) {
-    const alpha = layer.cornerAlpha
-    if (alpha === undefined) continue
-    const odd = alpha.findIndex((value, corner) => {
-      const others = alpha.filter((_, index) => index !== corner)
-      return others.every(other => other === others[0] && other !== value)
-    })
-    if (odd >= 0) return odd % 2 === 0 ? SPLIT_BD : SPLIT_AC
-  }
-  return undefined
 }
 
 /** Directionals past the key light that the world shader sums (SC2 rigs ship Key, Fill, Back). */

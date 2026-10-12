@@ -177,6 +177,38 @@ const snapshot: ResolvedMapWorkspaceSnapshot = {
 }
 
 describe('common world source native visual facets', () => {
+  it('keeps shoreline object heights on drawn triangles and preserves authored height policies', async () => {
+    const objects = (['terrain-relative', 'terrain-surface', 'absolute', undefined] as const).map((heightReference, objectId) => ({
+      kind: 'doodad' as const, objectId, position: { x: 0.51, y: 0.58, z: 3 },
+      ...(heightReference === undefined ? {} : { heightReference }),
+    }))
+    objects.push({ kind: 'doodad', objectId: 4, position: { x: 1, y: 1, z: 3 }, heightReference: 'terrain-relative' })
+    objects.push({ kind: 'doodad', objectId: 5, position: { x: 2, y: 1, z: 3 }, heightReference: 'terrain-relative' })
+    const fixture: ResolvedMapWorkspaceSnapshot = {
+      ...snapshot,
+      semantic: { ...snapshot.semantic, objects, terrain: {
+        ...snapshot.semantic.terrain!, minimumHeightBase: 130, maximumHeightBase: 270,
+        samples: [270, 130, 270, 270].map((heightBase, index) => ({ x: index % 2, y: Math.floor(index / 2), heightBase, heightAdjustment: 0, mask: 0 })),
+      } },
+      terrainMaterials: undefined,
+      terrainTransform: {
+        schemaVersion: 1, snapshotId: snapshot.snapshotId, descriptorVersion: 1,
+        heightMap: { dim: [2, 2], offset: { x: 0, y: 0, z: 0 }, scale: { x: 1, y: 1, z: 1 } },
+        bounds: { coordinateSpaceId: 'map-native', minimum: { x: 0, y: 0, z: 130 }, maximum: { x: 1, y: 1, z: 270 } },
+        source: { terrainDocumentPath: 'terrain', format: 'fixture', heightEncoding: 'f64' },
+        mapping: { horizontal: 'offset-plus-grid-index-times-scale', vertical: 'direct-base-times-scale-plus-offset' },
+      },
+    }
+    const lease = createSourceWorldSceneLease(fixture, [], 64)
+    try {
+      const info = await lease.value.info()
+      const facet = info.facets.find(f => f.facet === 'objects')!
+      const page = await lease.value.page({ facet: 'objects', layerId: facet.layerId, limit: 64 })
+      const placed = page.items.filter(i => i.facet === 'objects')
+      expect(placed.map(i => i.mapNativePresentationPosition?.z ?? i.position.z)).toEqual([273, 270, 3, 3, 273, 3])
+      expect(placed.map(i => i.position)).toEqual(objects.map(i => i.position))
+    } finally { await lease.release() }
+  })
   it('draws derived cliff pieces from the first resolving candidate with its yaw baked in', async () => {
     const requirement = (logicalId: string) => ({
       id: `cliff:${logicalId}`,

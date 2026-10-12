@@ -112,6 +112,7 @@ import {
 } from './world-source.js'
 
 export { createCandidateWorldSceneLease, nativeWorldWindow } from './world-source.js'
+export { terrainCellSplit, terrainCellHeight, TERRAIN_SPLIT_AC, TERRAIN_SPLIT_BD } from './terrain.js'
 export {
   worldSceneModel,
   worldSceneModelLimits,
