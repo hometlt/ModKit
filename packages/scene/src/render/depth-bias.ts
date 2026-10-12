@@ -3,6 +3,8 @@ export interface SceneDepthBias {
   readonly slopeScale: number
   readonly units: number
 }
+/** Terrain writes slightly farther depth so coplanar surface models win without moving geometry. */
+export const TERRAIN_DEPTH_BIAS: SceneDepthBias = Object.freeze({ slopeScale: 0.1, units: 1 })
 export function readSceneDepthBias(value: SceneDepthBias | undefined): SceneDepthBias | undefined {
   if (value === undefined) return undefined
   if (!Number.isFinite(value.slopeScale) || !Number.isFinite(value.units))

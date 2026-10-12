@@ -3,6 +3,7 @@
  * objects and UVM material instances, billboards, picking, lighting and camera plans for WebGL
  * and the headless adapter. Native publishers may request a presentation-only model reflection;
  * convex upper-layer clipping preserves the original ground triangles and all their varyings.
+ * Terrain-only depth bias leaves coplanar surface models visible without changing their placement.
  * Format parsing and source placement data remain with the publisher.
  */
 import {
@@ -15,6 +16,7 @@ import {
   Vector3,
 } from 'three'
 import { waterDepthColor, WATER_SHORE_FADE, WATER_COLOR_FALLOFF } from '../render/water-color.js'
+import { applyWebGlDepthBias, TERRAIN_DEPTH_BIAS } from '../render/depth-bias.js'
 import type {
   MapModelComponentPlacement,
   MapTerrainMaterialDefinition,
@@ -650,6 +652,9 @@ export interface WorldWebGlPlan {
   /** The first this many triangles of `transparentTriangles` are the water the planes replace. */
   readonly transparentWaterTriangles: number
   readonly opaqueTriangles: WorldWebGlBatch
+  /** Static terrain prefixes, before any model triangles/batches are appended. */
+  readonly terrainOpaqueVertices?: number
+  readonly terrainTexturedBatches?: number
   /** Height-field cells cut from the drawn ground under cliff pieces: shadow casters only. */
   readonly terrainShadowCasters: Float32Array
   /** Opaque model triangles separated only when a material disables casting or receiving. */
@@ -8732,6 +8737,8 @@ export function createWorldWebGlPlan(
       9
   const plan: WorldWebGlPlan = Object.freeze({
     opaqueTriangles,
+    terrainOpaqueVertices: preparation.opaqueTriangles.positions.length / 3,
+    terrainTexturedBatches: preparation.texturedTriangles.length,
     terrainShadowCasters: preparation.terrainShadowCasters,
     waterSurfaceDepth,
     waterPlanes: Object.freeze(waterPlanes),
@@ -10914,13 +10921,14 @@ function drawBatch(
   mode: number,
   cacheKey: object = source,
   range?: WorldWebGlTransparentRange,
+  vertexRange?: Readonly<{ first: number; count: number }>,
 ) {
   const count = source.positions.length / 3
   if (count === 0) return
   const gl = resources.gl
   const drawSelected = (vertices: number) => {
     if (range === undefined) {
-      gl.drawArrays(mode, 0, vertices)
+      gl.drawArrays(mode, vertexRange?.first ?? 0, vertexRange?.count ?? vertices)
       return
     }
     let buffer = resources.indexBuffers.get(range.indices)
@@ -13455,12 +13463,20 @@ function drawWorldWebGlWithResources(
     worldUniform1f(gl, program, 'splatTextured', 0)
     worldUniform1f(gl, program, 'alphaCutoff', 0)
     worldUniform1f(gl, program, 'shadowReceiver', 1)
-    drawBatch(resources, program, plan.opaqueTriangles, gl.TRIANGLES)
+    const terrainVertices = plan.terrainOpaqueVertices ?? 0
+    applyWebGlDepthBias(gl, TERRAIN_DEPTH_BIAS)
+    if (terrainVertices > 0) drawBatch(resources, program, plan.opaqueTriangles, gl.TRIANGLES,
+      plan.opaqueTriangles, undefined, { first: 0, count: terrainVertices })
+    applyWebGlDepthBias(gl, undefined)
+    if (terrainVertices < plan.opaqueTriangles.positions.length / 3)
+      drawBatch(resources, program, plan.opaqueTriangles, gl.TRIANGLES,
+        plan.opaqueTriangles, undefined, { first: terrainVertices, count: plan.opaqueTriangles.positions.length / 3 - terrainVertices })
     for (const item of plan.shadowControlledOpaqueTriangles) {
       worldUniform1f(gl, program, 'shadowReceiver', item.receiveShadows ? 1 : 0)
       drawBatch(resources, program, item, gl.TRIANGLES)
     }
-    for (const item of plan.texturedTriangles) {
+    for (const [index, item] of plan.texturedTriangles.entries()) {
+      applyWebGlDepthBias(gl, index < (plan.terrainTexturedBatches ?? 0) ? TERRAIN_DEPTH_BIAS : undefined)
       worldUniform1f(gl, program, 'shadowReceiver', item.receiveShadows === false ? 0 : 1)
       drawTexturedBatch(resources, program, item)
     }
@@ -13469,8 +13485,7 @@ function drawWorldWebGlWithResources(
     // (terrain.cpp: polygon offset 0.1, 1): what lies flat on it, such as a structure's base plate,
     // wins the tie instead of fighting it. Its later raster groups and decal tiles share the offset,
     // so they still meet it at LEQUAL.
-    gl.enable(gl.POLYGON_OFFSET_FILL)
-    gl.polygonOffset(TERRAIN_DEPTH_OFFSET.factor, TERRAIN_DEPTH_OFFSET.units)
+    applyWebGlDepthBias(gl, TERRAIN_DEPTH_BIAS)
     for (const item of plan.splatTriangles) drawSplatBatch(resources, program, item)
     if (plan.splatOverlayTriangles.length > 0 || plan.terrainDecalTriangles.length > 0) {
       // Later raster groups and decal tiles blend over the ground where it lies, before water as
@@ -13991,8 +14006,6 @@ const WATER_CAUSTICS_UNIT = 10
 const WATER_NORMAL_UNIT = 11
 /** A terrain decal tile's specular map; a 2D sentinel for every other draw. */
 const TERRAIN_DECAL_SPECULAR_UNIT = 12
-/** How much farther the ground writes its depth than it lies (glPolygonOffset factor, units). */
-const TERRAIN_DEPTH_OFFSET = Object.freeze({ factor: 0.1, units: 1 })
 /** Detail-wave water: its second normal image and its two foam masks; 2D sentinels otherwise. */
 const WATER_DETAIL_NORMAL_UNIT = 13
 const WATER_DETAIL_FOAM_UNIT = 14

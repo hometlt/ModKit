@@ -9,6 +9,7 @@
  * the viewer's geometry, base textures and light, not its picture: no shadows, splat normal/specular
  * maps, tone mapping, screen effects or mip/anisotropic filtering; bilinear sampling follows each texture's filter.
  * Untextured water uses the common depth tint/shore fade against the opaque scene, including models.
+ * Terrain-only depth bias preserves coplanar surface models without changing their coordinates.
  * Wave normals, caustics and shadows remain GPU-only.
  */
 import type {
@@ -23,6 +24,7 @@ import type {
 import { TEAM_COLOR_BLENDS } from '@modkit/codec-kit/model-math/color-remap'
 import { renderHeadless } from '../render/headless.js'
 import { sceneTexturePixels } from '../render/compressed-textures.js'
+import { TERRAIN_DEPTH_BIAS, type SceneDepthBias } from '../render/depth-bias.js'
 import {
   createWorldWebGlCameraFrame,
   worldMaterialLight,
@@ -205,6 +207,7 @@ export function worldHeadlessScene(plan: WorldWebGlPlan): Readonly<{
     material: Omit<SceneRendererMaterial, 'id' | 'baseColor'>,
     textureCoordinates?: Float32Array,
     texture?: SceneRendererTexture,
+    depthBias?: SceneDepthBias,
   ) => {
     if (batch.positions.length < 9) return
     primitives.push({
@@ -215,6 +218,7 @@ export function worldHeadlessScene(plan: WorldWebGlPlan): Readonly<{
       colors: batch.colors,
       ...(textureCoordinates === undefined ? {} : { textureCoordinates }),
       materialId: id,
+      ...(depthBias === undefined ? {} : { depthBias }),
     })
     materials.push({
       id,
@@ -241,7 +245,19 @@ export function worldHeadlessScene(plan: WorldWebGlPlan): Readonly<{
           ),
         }),
   })
-  ground('world/ground', plan.opaqueTriangles, {})
+  const terrainVertices = plan.terrainOpaqueVertices ?? 0
+  const terrainDepthBias = terrainVertices > 0 || (plan.terrainTexturedBatches ?? 0) > 0 || plan.splatTriangles.length > 0
+    ? TERRAIN_DEPTH_BIAS : undefined
+  if (terrainVertices > 0) ground('world/ground', {
+    positions: plan.opaqueTriangles.positions.subarray(0, terrainVertices * 3),
+    normals: plan.opaqueTriangles.normals.subarray(0, terrainVertices * 3),
+    colors: plan.opaqueTriangles.colors.subarray(0, terrainVertices * 4),
+  }, {}, undefined, undefined, TERRAIN_DEPTH_BIAS)
+  ground(terrainVertices === 0 ? 'world/ground' : 'world/opaque-models', {
+    positions: plan.opaqueTriangles.positions.subarray(terrainVertices * 3),
+    normals: plan.opaqueTriangles.normals.subarray(terrainVertices * 3),
+    colors: plan.opaqueTriangles.colors.subarray(terrainVertices * 4),
+  }, {})
   plan.texturedTriangles.forEach((batch, index) =>
     ground(
       `world/textured-${String(index)}`,
@@ -249,12 +265,13 @@ export function worldHeadlessScene(plan: WorldWebGlPlan): Readonly<{
       textured(batch),
       batch.textureCoordinates,
       batch.texture,
+      index < (plan.terrainTexturedBatches ?? 0) ? TERRAIN_DEPTH_BIAS : undefined,
     ),
   )
   plan.splatTriangles.forEach((batch, index) => {
     const id = `world/splat-${String(index)}`
     splats.set(id, { batch, overlay: false })
-    ground(id, batch, {})
+    ground(id, batch, {}, undefined, undefined, TERRAIN_DEPTH_BIAS)
   })
   plan.splatOverlayTriangles.forEach((batch, index) => {
     const id = `world/splat-overlay-${String(index)}`
@@ -263,7 +280,7 @@ export function worldHeadlessScene(plan: WorldWebGlPlan): Readonly<{
       alphaMode: 'blend',
       depthWrite: false,
       priority: transparentPriority + index - plan.splatOverlayTriangles.length - plan.terrainDecalTriangles.length - 1,
-    })
+    }, undefined, undefined, terrainDepthBias)
   })
   const unshadedDetails = [...plan.splatTriangles, ...plan.splatOverlayTriangles].filter(
     batch =>
@@ -288,6 +305,7 @@ export function worldHeadlessScene(plan: WorldWebGlPlan): Readonly<{
       },
       batch.textureCoordinates,
       overlayTexture(batch),
+      terrainDepthBias,
     ),
   )
   plan.transparentTexturedTriangles.forEach((batch, index) =>
