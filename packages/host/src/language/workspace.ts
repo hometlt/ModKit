@@ -1157,7 +1157,7 @@ function isModContextFeature(
     feature === 'definition' ||
     feature === 'references' ||
     feature === 'signatureHelp' ||
-    feature === 'diagnostics' || feature === 'prepareRename' || feature === 'rename'
+    feature === 'diagnostics' || feature === 'prepareRename' || feature === 'rename' || feature === 'projectDiagnostics'
   )
 }
 
@@ -2346,7 +2346,8 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         isModContextFeature(inputFeature) &&
         entry.resolution.provider.modContextFeatures?.includes(inputFeature) === true
       // Older registries cannot validate unopened write targets without their bounded snapshot.
-      if (inputFeature === 'rename' && modContextsNow()?.readEditTarget === undefined) readsModContext = false
+      if ((inputFeature === 'rename' || inputFeature === 'projectDiagnostics') && modContextsNow()?.readEditTarget === undefined) readsModContext = false
+      if (inputFeature === 'projectDiagnostics' && entry.resolution.provider.projectDiagnostics === undefined) readsModContext = false
       if (
         readsModContext &&
         inputFeature === 'completion' &&
@@ -2370,6 +2371,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         inputFeature !== 'completion' &&
         // a document's diagnostics have no position to prove
         inputFeature !== 'diagnostics' &&
+        inputFeature !== 'projectDiagnostics' &&
         entry.resolution.provider.modContextFeatureApplies !== undefined
       ) {
         const applies = await entry.resolution.provider.modContextFeatureApplies({
@@ -2728,6 +2730,10 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
       }
       const validated = await validate(candidate, providerRequest)
       throwIfAborted(controller.signal)
+      if (modContextOnly && (inputFeature === 'rename' || inputFeature === 'projectDiagnostics')) {
+        const current = await requestModContext(entry, controller.signal)
+        if (current?.scope !== modContext!.scope || current.revision !== modContext!.revision) throw new OperationCancelledError('stale validated mod result')
+      }
       if (
         generation !== workspaceGeneration ||
         documents.get(entry.uri) !== entry ||
@@ -4036,6 +4042,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         request,
         false,
         async (provider, feature) => {
+          if (modContextServed.has(feature) && provider.projectDiagnostics !== undefined) return provider.projectDiagnostics(feature)
           const writable = new Set(
             (feature.workspaceContext?.documentOrigins ?? [])
               .filter(origin => !origin.readOnly)
@@ -4077,8 +4084,41 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
           }
           return { documents: found, isIncomplete }
         },
-        (value, feature) => {
+        async (value, feature) => {
           const result = value as LanguageProjectDiagnostics
+          if (modContextServed.has(feature)) {
+            if (typeof result !== 'object' || result === null || !Array.isArray(result.documents) ||
+                result.documents.length > feature.maxDocuments || typeof result.isIncomplete !== 'boolean') {
+              invalidFeature('served project diagnostics are invalid or unbounded', feature.document.uri)
+            }
+            const context = feature.workspaceContext!.modContext!
+            const seen = new Set<string>()
+            const validated: LanguageProjectDiagnostics['documents'][number][] = []
+            let bytes = 0
+            let diagnosticCount = 0
+            for (const item of result.documents) {
+              throwIfAborted(feature.signal)
+              if (!boundedContextText(item?.uri) || seen.has(item.uri) || !Number.isSafeInteger(item.version) || item.version < 0) {
+                invalidFeature('served project diagnostics named an invalid document', feature.document.uri)
+              }
+              seen.add(item.uri)
+              const open = documents.get(item.uri)
+              if (item.version !== (open?.document.version ?? 0)) invalidFeature('project diagnostic document version is stale', feature.document.uri)
+              const target = await modContextsNow()!.readEditTarget!(context.scope, context.revision, item.uri, feature.signal, true)
+              if (target === undefined) invalidFeature('project diagnostic target is outside its mod', feature.document.uri)
+              bytes += target.text.length * 2
+              if (bytes > sourceCaptureMaxBytes) invalidFeature('project diagnostic targets exceed the workspace budget', feature.document.uri)
+              if (!Array.isArray(item.diagnostics) || item.diagnostics.length > feature.maxResults ||
+                  !item.diagnostics.every((diagnostic: LanguageDiagnostic) => validDiagnostic(diagnostic, lineLengths(target.text)))) {
+                invalidFeature('served project diagnostics contain invalid ranges', feature.document.uri)
+              }
+              diagnosticCount += item.diagnostics.length
+              if (diagnosticCount > feature.maxResults) invalidFeature('project diagnostic report exceeds its result budget', feature.document.uri)
+              // Open buffers already receive diagnostics through their own lifecycle.
+              if (!documents.has(item.uri)) validated.push(item)
+            }
+            return { documents: validated, isIncomplete: result.isIncomplete }
+          }
           const texts = new Map(feature.workspaceDocuments.map(item => [item.uri, item.text]))
           const valid =
             typeof result === 'object' &&
@@ -4103,6 +4143,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
             )
           return result
         },
+        {}, false, false, LANGUAGE_MAX_RESULTS, 'projectDiagnostics',
       )
     },
 

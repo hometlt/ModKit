@@ -396,6 +396,8 @@ export const LANGUAGE_DOCUMENT_CONTRACT_DEFINITION: ServiceContractDefinitionSpe
           optional: true,
           signal: Object.freeze({ arg: 0, key: 'signal' }),
         }),
+        projectDiagnostics: Object.freeze({ kind: 'value', optional: true,
+          signal: Object.freeze({ arg: 0, key: 'signal' }) }),
         referenceOccurrences: Object.freeze({
           kind: 'value',
           optional: true,
@@ -589,7 +591,7 @@ function isLanguageProvider(value: unknown): value is LanguageProvider {
     record['languageIds'].every(item => typeof item === 'string') &&
     (modContextFeatures === undefined ||
       (Array.isArray(modContextFeatures) &&
-        modContextFeatures.length <= 8 &&
+        modContextFeatures.length <= 9 &&
         new Set(modContextFeatures).size === modContextFeatures.length &&
         modContextFeatures.every(
           item =>
@@ -598,7 +600,7 @@ function isLanguageProvider(value: unknown): value is LanguageProvider {
             item === 'definition' ||
             item === 'references' ||
             item === 'signatureHelp' ||
-            item === 'diagnostics' || item === 'prepareRename' || item === 'rename',
+            item === 'diagnostics' || item === 'prepareRename' || item === 'rename' || item === 'projectDiagnostics',
         ))) &&
     (documentLocalFeatures === undefined ||
       (Array.isArray(documentLocalFeatures) &&

@@ -51,7 +51,7 @@ export interface LanguageModContextPlace {
 
 export interface LanguageModContexts {
   /** Read only a planned edit target in this chain, under its synchronized revision and authority. */
-  readEditTarget?(scope: string, revision: string, uri: string, signal?: AbortSignal): Promise<{
+  readEditTarget?(scope: string, revision: string, uri: string, signal?: AbortSignal, readOnlyText?: boolean): Promise<{
     readonly text: string; readonly layerId: string; readonly path: string; readonly readOnly: boolean
   } | undefined>
   /** The server whose chain holds a document, and the file it is there; the opened package wins. */
@@ -369,7 +369,7 @@ export function createLanguageModContexts(
       const documents = (answer as { readonly documents?: unknown }).documents
       if (!Array.isArray(documents)) return answer
       const kind = (question as { readonly kind?: unknown } | null)?.kind
-      const rename = typeof kind === 'string' && kind.endsWith('.rename')
+      const rename = typeof kind === 'string' && (kind.endsWith('.rename') || kind === 'language.verify')
       const layers = new Map(context.layers.map(layer => [layer.id, layer]))
       const openByPlace = new Map<string, Pushed>()
       if (rename) for (const known of pushed.values()) {
@@ -393,14 +393,14 @@ export function createLanguageModContexts(
       }) as JsonValue
     },
 
-    async readEditTarget(scope, revision, uri, signal) {
+    async readEditTarget(scope, revision, uri, signal, readOnlyText = false) {
       const entry = entryOf(scope)
       const place = placeIn(entry, uri)
       if (place === undefined || place.path.split(/[\\/]/u).some(part => part === '..' || part === '.')) return undefined
       if (entry.context.revision !== revision) throw new OperationCancelledError('edit target belongs to another mod revision')
       signal?.throwIfAborted()
       // The existing edit validator rejects this authority before range checks; no read is needed.
-      if (!place.writable) return Object.freeze({ text: '', layerId: place.layerId, path: place.path, readOnly: true })
+      if (!place.writable && !readOnlyText) return Object.freeze({ text: '', layerId: place.layerId, path: place.path, readOnly: true })
       const text = decoder.decode(await entry.context.read(place.layerId, place.path, maxDocumentBytes))
       signal?.throwIfAborted()
       if (entry.context.revision !== revision) throw new OperationCancelledError('edit target changed while being read')

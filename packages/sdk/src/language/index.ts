@@ -521,6 +521,7 @@ export type LanguageModContextFeature =
   | 'diagnostics'
   | 'prepareRename'
   | 'rename'
+  | 'projectDiagnostics'
 
 /**
  * Bounded inputs for one semantic request. `workspaceDocuments` includes `document` and never
@@ -652,7 +653,7 @@ export interface LanguageProvider {
    */
   modContextFeatureApplies?(
     request: Pick<LanguagePositionRequest, 'document' | 'position' | 'signal'> & {
-      readonly feature: Exclude<LanguageModContextFeature, 'completion' | 'diagnostics'>
+      readonly feature: Exclude<LanguageModContextFeature, 'completion' | 'diagnostics' | 'projectDiagnostics'>
     },
   ): Promise<boolean>
   analyze(request: LanguageAnalysisRequest): Promise<LanguageAnalysis>
@@ -692,6 +693,8 @@ export interface LanguageProvider {
   documentSymbols?(request: LanguageFeatureRequest): Promise<LanguageDocumentSymbolList>
   workspaceSymbols?(request: LanguageWorkspaceSymbolsRequest): Promise<LanguageWorkspaceSymbolList>
   diagnostics?(request: LanguageFeatureRequest): Promise<LanguageDiagnosticList>
+  /** Project diagnostics from the retained context; documents are validated by Host. */
+  projectDiagnostics?(request: LanguageFeatureRequest): Promise<LanguageProjectDiagnosticList>
   /** Typed owner-authored occurrences used by the host cross-module reference index. */
   referenceOccurrences?(
     request: LanguageFeatureRequest,
@@ -704,6 +707,16 @@ export interface LanguageProvider {
   referenceIndexApplies?(
     request: Pick<LanguagePositionRequest, 'document' | 'position' | 'signal'>,
   ): Promise<boolean>
+}
+
+/** Bounded diagnostics of project documents, including files not open in an editor. */
+export interface LanguageProjectDiagnosticList {
+  readonly documents: readonly {
+    readonly uri: string
+    readonly version: number
+    readonly diagnostics: readonly LanguageDiagnostic[]
+  }[]
+  readonly isIncomplete: boolean
 }
 
 /** JSON-safe route advertised by a provider contribution. */

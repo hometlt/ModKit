@@ -125,6 +125,40 @@ const document = (uri: string, text: string, version = 1) => ({
 })
 
 describe('the loaded mod servers of a language workspace', () => {
+  it('validates closed project reports without a chain snapshot and rejects foreign ranges and identities', async () => {
+    const chain = server()
+    const other = 'Base.SC2Data/GameData/Other.xml'
+    const otherUri = `file:///C:/Mods/Mine.SC2Mod/${other}`
+    const read = vi.fn(async () => encoder.encode('Marine'))
+    chain.context.read = read
+    const servers = createLanguageModContexts({ contexts: [chain.context] })
+    let target = otherUri, end = 6
+    const provider: LanguageProvider = {
+      contract: LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT, languageIds: ['sc2-data'],
+      modContextFeatures: ['projectDiagnostics'], semanticContextRequirements: [{ kind: 'mod-context', gameId: 'test/game' }],
+      analyze: async ({ document: doc }) => ({ documentUri: doc.uri, documentVersion: doc.version, tokens: [], symbols: [], diagnostics: [] }),
+      async projectDiagnostics(request) {
+        expect(request.workspaceDocuments).toEqual([request.document])
+        return { isIncomplete: false, documents: [{ uri: target, version: 0, diagnostics: [{ severity: 'warning', message: 'example',
+          range: { start: { line: 0, character: 0 }, end: { line: 0, character: end } } }] }] }
+      },
+    }
+    const snapshot = vi.fn(async () => ({ documents: [], isComplete: true }))
+    const workspace = await languageWorkspace(provider, () => {}, servers, { documentSource: { snapshot } })
+    await workspace.synchronize({ languageId: 'sc2-data', document: document(MOD_UNITS_URI, '<edited/>') })
+    await servers.synchronize(servers.placeOf(MOD_UNITS_URI)!.scope, [document(MOD_UNITS_URI, '<edited/>')])
+    read.mockClear()
+    const request = { uri: MOD_UNITS_URI, documentVersion: 1 }
+    expect((await workspace.projectDiagnostics(request))?.documents[0]?.uri).toBe(otherUri)
+    expect(snapshot).not.toHaveBeenCalled()
+    expect(read.mock.calls).toHaveLength(1)
+    end = 7
+    await expect(workspace.projectDiagnostics(request)).rejects.toThrow(/invalid ranges/u)
+    target = 'file:///C:/Elsewhere/Other.xml'
+    await expect(workspace.projectDiagnostics(request)).rejects.toThrow(/outside its mod/u)
+    await workspace.shutdown()
+  }, 30_000)
+
   it('keeps proven local rename preparation ahead of mod and snapshot preparation', async () => {
     const chain = server()
     const registry = createLanguageModContexts({ contexts: [chain.context] })
