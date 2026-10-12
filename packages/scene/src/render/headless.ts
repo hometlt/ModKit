@@ -43,6 +43,7 @@ import {
   sceneMaterialDraws,
   blendMaterialPixel,
   materialIsSolid,
+  materialIsTerrainOverlay,
   type MaterialDraw,
 } from './material-draws.js'
 import {
@@ -496,11 +497,20 @@ function rasterizeTriangle(
           alpha * ((a * colors[0][3] + b * colors[1][3] + c * colors[2][3]) / sum),
         )
       }
-      const splatWeights: Triangle<number> | undefined = splat === undefined ? undefined : (() => {
-        const perspective = [firstWeight * first.invW, secondWeight * second.invW, thirdWeight * third.invW] as const
-        const sum = perspective[0] + perspective[1] + perspective[2]
-        return sum <= 1e-9 ? undefined : perspective.map(value => value / sum) as unknown as Triangle<number>
-      })()
+      const splatWeights: Triangle<number> | undefined =
+        splat === undefined
+          ? undefined
+          : (() => {
+              const perspective = [
+                firstWeight * first.invW,
+                secondWeight * second.invW,
+                thirdWeight * third.invW,
+              ] as const
+              const sum = perspective[0] + perspective[1] + perspective[2]
+              return sum <= 1e-9
+                ? undefined
+                : (perspective.map(value => value / sum) as unknown as Triangle<number>)
+            })()
       if (splat !== undefined) {
         if (splatWeights === undefined) continue
         const sampled = sampleSplat(splat, splat.indices, splatWeights)
@@ -1159,6 +1169,7 @@ export async function renderHeadless(
   request: SceneRenderRequest,
   splats?: ReadonlyMap<string, Readonly<{ batch: WorldWebGlSplatBatch; overlay: boolean }>>,
   water?: ReadonlyMap<string, number>,
+  terrain?: ReadonlySet<string>,
 ): Promise<SceneRenderFrame> {
   request.signal?.throwIfAborted()
   if (request.outputKind !== 'rgba8') {
@@ -1222,18 +1233,46 @@ export async function renderHeadless(
           ),
         }),
   }
-  for (const draw of sceneMaterialDraws(
+  const draws = sceneMaterialDraws(
     scene.primitives,
     scene.materials ?? [],
     programs,
     context.viewProjection,
     diagnostics,
     request.clearColor?.[3] ?? 0,
-  )) {
+  )
+  const overlays =
+    terrain === undefined
+      ? []
+      : draws.filter(draw => !terrain.has(draw.primitive.id) && materialIsTerrainOverlay(draw))
+  const overlaySet = new Set(overlays)
+  const ground = terrain === undefined ? [] : draws.filter(draw => terrain.has(draw.primitive.id))
+  const ordered =
+    overlays.length === 0
+      ? draws
+      : [
+          ...ground,
+          ...overlays,
+          ...draws.filter(draw => !terrain!.has(draw.primitive.id) && !overlaySet.has(draw)),
+        ]
+  // Independent road depth ignores terrain but preserves front/back and overlapping road surfaces.
+  let terrainDepth: Float32Array | undefined
+  for (const draw of ordered) {
+    const overlay = overlaySet.has(draw)
+    if (overlay && terrainDepth === undefined) {
+      terrainDepth = context.depth
+      context.depth = new Float32Array(width * height).fill(Infinity)
+    } else if (!overlay && terrainDepth !== undefined) {
+      for (let pixel = 0; pixel < context.depth.length; pixel += 1)
+        if (context.depth[pixel] === Infinity) context.depth[pixel] = terrainDepth[pixel]!
+      terrainDepth = undefined
+    }
     // Opaque geometry supplies the bottom, before blended draws can change its depth.
     if (
       context.water !== undefined &&
       context.opaqueDepth === undefined &&
+      !overlay &&
+      !terrain?.has(draw.primitive.id) &&
       (draw.program === undefined
         ? context.materials.get(draw.primitive.materialId ?? '')?.alpha.mode === 'blend'
         : !materialIsSolid(draw.program))

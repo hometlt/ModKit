@@ -141,8 +141,7 @@ export const materialCanInstance = (program: StandardMaterialProgram) =>
  * unique (a world whose models carry one texture path at different reduced sizes).
  */
 export type MaterialTextureHandles =
-  | ReadonlyMap<string, WebGLTexture>
-  | ((texture: SceneRendererTexture) => WebGLTexture | undefined)
+  ReadonlyMap<string, WebGLTexture> | ((texture: SceneRendererTexture) => WebGLTexture | undefined)
 
 /**
  * Skin palettes (see ModelSceneSkin) live in one float texture of this many texels a row, four a
@@ -271,6 +270,7 @@ export function materialWebGlDraws(
     colorMask?: boolean
     depthMask?: boolean
     depthTest?: boolean
+    depthFunction?: number
     depthBias?: string
     cull?: boolean
     /** The winding culling keeps: CCW, or CW for a mirrored model (glTF). */
@@ -704,7 +704,10 @@ export function materialWebGlDraws(
     const ambient = light?.ambient ?? 0.25
     gl.uniform3f(uniform('u_sceneLightColor'), color[0], color[1], color[2])
     gl.uniform3fv(uniform('u_sceneSpecularColor'), light?.specularColor ?? color.slice(0, 3))
-    gl.uniform3fv(uniform('u_sceneAmbientColor'), light?.ambientColor ?? [ambient, ambient, ambient])
+    gl.uniform3fv(
+      uniform('u_sceneAmbientColor'),
+      light?.ambientColor ?? [ambient, ambient, ambient],
+    )
     for (let index = 0; index < 2; index++) {
       const fill = light?.fills?.[index]
       const direction = fill?.direction ?? [0, 0, 0]
@@ -738,7 +741,10 @@ export function materialWebGlDraws(
       sampler,
       free
         ? SHADOW_MAP_UNIT
-        : Math.max(0, source.textures.findIndex(binding => binding.dimension !== 'cube')),
+        : Math.max(
+            0,
+            source.textures.findIndex(binding => binding.dimension !== 'cube'),
+          ),
     )
     gl.uniform1f(uniform('u_sceneShadowEnabled'), shadow !== undefined && free ? 1 : 0)
     if (shadow === undefined || !free) return
@@ -782,6 +788,7 @@ export function materialWebGlDraws(
     depthOnly: boolean,
     state: SequenceState,
     mirrored: boolean,
+    depthCompare?: 'always',
   ) => {
     const color = !depthOnly
     if (state.colorMask !== color) {
@@ -795,8 +802,12 @@ export function materialWebGlDraws(
     }
     if (state.depthTest !== true) {
       gl.enable(gl.DEPTH_TEST)
-      gl.depthFunc(gl.LEQUAL)
       state.depthTest = true
+    }
+    const depthFunction = depthCompare === 'always' ? gl.ALWAYS : gl.LEQUAL
+    if (state.depthFunction !== depthFunction) {
+      gl.depthFunc(depthFunction)
+      state.depthFunction = depthFunction
     }
     const bias = primitive.depthBias
     const biasKey = bias === undefined ? '' : `${bias.slopeScale}:${bias.units}`
@@ -879,6 +890,7 @@ export function materialWebGlDraws(
       gl.activeTexture(gl.TEXTURE0 + state.lastUnit)
     gl.bindVertexArray(null)
     gl.colorMask(true, true, true, true)
+    if (state.depthFunction === gl.ALWAYS) gl.depthFunc(gl.LEQUAL)
     gl.disable(gl.CULL_FACE)
   }
   const bindTextureUnits = (lease: WebGlMaterialProgram, state: SequenceState) => {
@@ -1046,6 +1058,7 @@ export function materialWebGlDraws(
       draw.depthOnly === true,
       state,
       model !== undefined && materialMirrors(model),
+      draw.depthCompare,
     )
     return submit(mode, primitive, instances?.count)
   }
@@ -1336,16 +1349,19 @@ function buildLeaseShaderSources(
   if (source.twoSided) {
     const main = fragment.search(/void main\s*\(\s*\)/u)
     if (main >= 0) {
-      const body = fragment.slice(main).replace(
-        /vec3 normal\s*=\s*/u,
-        match => `${match}(gl_FrontFacing ? 1.0 : -1.0) * `,
-      )
+      const body = fragment
+        .slice(main)
+        .replace(/vec3 normal\s*=\s*/u, match => `${match}(gl_FrontFacing ? 1.0 : -1.0) * `)
       fragment = fragment.slice(0, main) + body
     }
   }
   const worldShading = source.normalBlendPolicy !== undefined || source.normalMapSpace === 'object'
   if (source.defines.sceneLighting) {
-    fragment = fragment.replace('uniform vec3 u_sceneLightColor;', 'uniform vec3 u_sceneLightColor;\nuniform vec3 u_sceneSpecularColor;')
+    fragment = fragment
+      .replace(
+        'uniform vec3 u_sceneLightColor;',
+        'uniform vec3 u_sceneLightColor;\nuniform vec3 u_sceneSpecularColor;',
+      )
       .replace('spec * u_sceneLightColor;', 'spec * u_sceneSpecularColor;')
     const lambert = (direction: string) => source.defines.doubleLambert
       ? `clamp(-1.0 + 2.0 * dot(normal, ${direction}), 0.0, 1.0)`
@@ -1354,7 +1370,8 @@ function buildLeaseShaderSources(
       uniform vec3 u_sceneFillColor0, u_sceneFillColor1;
       ${worldShading ? 'uniform vec3 u_sceneFillWorldDirection0, u_sceneFillWorldDirection1;' : 'in vec3 v_sceneFillDir0, v_sceneFillDir1;'}
       ${SCENE_SHADOW_FRAGMENT}
-    `)
+    `,
+      )
       .replace(
         'vec3 shaded = color * (u_sceneAmbientColor',
         'float sceneKeyShade = sceneKeyShadow(max(dot(normal, v_lightDir), 0.0));\n  vec3 sceneKeyLight = u_sceneLightColor * sceneKeyShade;\n  vec3 shaded = color * (u_sceneAmbientColor',
@@ -1370,7 +1387,8 @@ function buildLeaseShaderSources(
       .replace('u_sceneAmbientColor + u_sceneLightColor * lambert',
       `u_sceneAmbientColor + sceneKeyLight * lambert +
        u_sceneFillColor0 * ${lambert(worldShading ? 'u_sceneFillWorldDirection0' : 'v_sceneFillDir0')} +
-       u_sceneFillColor1 * ${lambert(worldShading ? 'u_sceneFillWorldDirection1' : 'v_sceneFillDir1')}`)
+       u_sceneFillColor1 * ${lambert(worldShading ? 'u_sceneFillWorldDirection1' : 'v_sceneFillDir1')}`,
+      )
   }
   const samplers: string[] = []
   const declarations: string[] = []

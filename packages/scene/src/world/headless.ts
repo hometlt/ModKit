@@ -158,11 +158,13 @@ export function worldHeadlessScene(plan: WorldWebGlPlan): Readonly<{
   diagnostics: readonly SceneRendererDiagnostic[]
   splats: ReadonlyMap<string, Readonly<{ batch: WorldWebGlSplatBatch; overlay: boolean }>>
   water: ReadonlyMap<string, number>
+  terrain: ReadonlySet<string>
 }> {
   const primitives: SceneRendererPrimitive[] = []
   const materials: SceneRendererMaterial[] = []
   const diagnostics: SceneRendererDiagnostic[] = []
   const water = new Map<string, number>()
+  const terrain = new Set<string>()
   // Terrain always precedes transparent models, including authored negative-priority effects.
   let transparentPriority = 0
   for (const batch of plan.transparentTexturedTriangles)
@@ -208,8 +210,10 @@ export function worldHeadlessScene(plan: WorldWebGlPlan): Readonly<{
     textureCoordinates?: Float32Array,
     texture?: SceneRendererTexture,
     depthBias?: SceneDepthBias,
+    terrainSurface = false,
   ) => {
     if (batch.positions.length < 9) return
+    if (terrainSurface) terrain.add(id)
     primitives.push({
       id,
       topology: 'triangles',
@@ -246,18 +250,33 @@ export function worldHeadlessScene(plan: WorldWebGlPlan): Readonly<{
         }),
   })
   const terrainVertices = plan.terrainOpaqueVertices ?? 0
-  const terrainDepthBias = terrainVertices > 0 || (plan.terrainTexturedBatches ?? 0) > 0 || plan.splatTriangles.length > 0
-    ? TERRAIN_DEPTH_BIAS : undefined
-  if (terrainVertices > 0) ground('world/ground', {
-    positions: plan.opaqueTriangles.positions.subarray(0, terrainVertices * 3),
-    normals: plan.opaqueTriangles.normals.subarray(0, terrainVertices * 3),
-    colors: plan.opaqueTriangles.colors.subarray(0, terrainVertices * 4),
-  }, {}, undefined, undefined, TERRAIN_DEPTH_BIAS)
-  ground(terrainVertices === 0 ? 'world/ground' : 'world/opaque-models', {
-    positions: plan.opaqueTriangles.positions.subarray(terrainVertices * 3),
-    normals: plan.opaqueTriangles.normals.subarray(terrainVertices * 3),
-    colors: plan.opaqueTriangles.colors.subarray(terrainVertices * 4),
-  }, {})
+  const terrainDepthBias =
+    terrainVertices > 0 || (plan.terrainTexturedBatches ?? 0) > 0 || plan.splatTriangles.length > 0
+      ? TERRAIN_DEPTH_BIAS
+      : undefined
+  if (terrainVertices > 0)
+    ground(
+      'world/ground',
+      {
+        positions: plan.opaqueTriangles.positions.subarray(0, terrainVertices * 3),
+        normals: plan.opaqueTriangles.normals.subarray(0, terrainVertices * 3),
+        colors: plan.opaqueTriangles.colors.subarray(0, terrainVertices * 4),
+      },
+      {},
+      undefined,
+      undefined,
+      TERRAIN_DEPTH_BIAS,
+      true,
+    )
+  ground(
+    terrainVertices === 0 ? 'world/ground' : 'world/opaque-models',
+    {
+      positions: plan.opaqueTriangles.positions.subarray(terrainVertices * 3),
+      normals: plan.opaqueTriangles.normals.subarray(terrainVertices * 3),
+      colors: plan.opaqueTriangles.colors.subarray(terrainVertices * 4),
+    },
+    {},
+  )
   plan.texturedTriangles.forEach((batch, index) =>
     ground(
       `world/textured-${String(index)}`,
@@ -266,21 +285,35 @@ export function worldHeadlessScene(plan: WorldWebGlPlan): Readonly<{
       batch.textureCoordinates,
       batch.texture,
       index < (plan.terrainTexturedBatches ?? 0) ? TERRAIN_DEPTH_BIAS : undefined,
+      index < (plan.terrainTexturedBatches ?? 0),
     ),
   )
   plan.splatTriangles.forEach((batch, index) => {
     const id = `world/splat-${String(index)}`
     splats.set(id, { batch, overlay: false })
-    ground(id, batch, {}, undefined, undefined, TERRAIN_DEPTH_BIAS)
+    ground(id, batch, {}, undefined, undefined, TERRAIN_DEPTH_BIAS, true)
   })
   plan.splatOverlayTriangles.forEach((batch, index) => {
     const id = `world/splat-overlay-${String(index)}`
     splats.set(id, { batch, overlay: true })
-    ground(id, batch, {
-      alphaMode: 'blend',
-      depthWrite: false,
-      priority: transparentPriority + index - plan.splatOverlayTriangles.length - plan.terrainDecalTriangles.length - 1,
-    }, undefined, undefined, terrainDepthBias)
+    ground(
+      id,
+      batch,
+      {
+        alphaMode: 'blend',
+        depthWrite: false,
+        priority:
+          transparentPriority +
+          index -
+          plan.splatOverlayTriangles.length -
+          plan.terrainDecalTriangles.length -
+          1,
+      },
+      undefined,
+      undefined,
+      terrainDepthBias,
+      true,
+    )
   })
   const unshadedDetails = [...plan.splatTriangles, ...plan.splatOverlayTriangles].filter(
     batch =>
@@ -306,6 +339,7 @@ export function worldHeadlessScene(plan: WorldWebGlPlan): Readonly<{
       batch.textureCoordinates,
       overlayTexture(batch),
       terrainDepthBias,
+      true,
     ),
   )
   plan.transparentTexturedTriangles.forEach((batch, index) =>
@@ -388,6 +422,7 @@ export function worldHeadlessScene(plan: WorldWebGlPlan): Readonly<{
     diagnostics: Object.freeze(diagnostics),
     splats,
     water,
+    terrain,
   })
 }
 
@@ -405,7 +440,7 @@ export async function renderWorldHeadless(
   plan: WorldWebGlPlan,
   options: WorldHeadlessOptions,
 ): Promise<SceneRenderFrame> {
-  const { scene, diagnostics, splats, water } = worldHeadlessScene(plan)
+  const { scene, diagnostics, splats, water, terrain } = worldHeadlessScene(plan)
   const frame = createWorldWebGlCameraFrame(plan, options.width, options.height, options.camera)
   const rendered = await renderHeadless(
     {
@@ -418,6 +453,7 @@ export async function renderWorldHeadless(
     },
     splats,
     water,
+    terrain,
   )
   return Object.freeze({
     ...rendered,

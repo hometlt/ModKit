@@ -111,7 +111,7 @@ export function createWorldToneMapper(gl: WebGL2RenderingContext) {
       }
       return pow(clamp(1.0 - blocked / 12.0, 0.0, 1.0), max(aoSettings.w, 0.0));
     }
-    // Shaders/Common.fx FogDensity: density · exp((start − y) · falloff) integrated from the eye to the
+    // Shaders/Common.fx FogDensity: density Â· exp((start âˆ’ y) Â· falloff) integrated from the eye to the
     // surface, clamped to 0..1. Written as the closed integral, which is the same value wherever
     // Common.fx does not clamp its exponent, so a far eye does not underflow to no fog.
     float heightFog(vec3 p) {
@@ -182,13 +182,13 @@ export function createWorldToneMapper(gl: WebGL2RenderingContext) {
       }
       if (depthCopyWidth !== width || depthCopyHeight !== height) {
         gl.bindTexture(gl.TEXTURE_2D, depthCopy)
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.DEPTH_COMPONENT24, width, height, 0, gl.DEPTH_COMPONENT, gl.UNSIGNED_INT, null)
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.DEPTH24_STENCIL8, width, height, 0, gl.DEPTH_STENCIL, gl.UNSIGNED_INT_24_8, null)
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
         gl.bindFramebuffer(gl.FRAMEBUFFER, depthCopyFramebuffer)
-        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, depthCopy, 0)
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT, gl.TEXTURE_2D, depthCopy, 0)
         if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE)
           throw new Error('world scene depth copy framebuffer is incomplete')
         depthCopyWidth = width
@@ -212,12 +212,12 @@ export function createWorldToneMapper(gl: WebGL2RenderingContext) {
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
         gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0)
         gl.bindTexture(gl.TEXTURE_2D, depth)
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.DEPTH_COMPONENT24, w, h, 0, gl.DEPTH_COMPONENT, gl.UNSIGNED_INT, null)
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.DEPTH24_STENCIL8, w, h, 0, gl.DEPTH_STENCIL, gl.UNSIGNED_INT_24_8, null)
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
-        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, depth, 0)
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT, gl.TEXTURE_2D, depth, 0)
         if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE)
           throw new Error('world HDR framebuffer is incomplete')
         width = w

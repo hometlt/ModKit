@@ -60,9 +60,17 @@ function activeLayers(material: SceneStandardMaterial): StandardMaterialLayer[] 
  * `screen-distortion` only refracts what is already drawn behind it (heat haze);
  * `terrain-projection` shows the underlying terrain surface on the geometry. Neither has a color
  * of its own, so a renderer without that pass draws nothing rather than an approximated surface.
+ * `terrain-overlay` retains surface color/shading; the world schedules its solid passes above
+ * terrain and below other models, using independent overlay depth without moving any vertices.
  */
-export type RenderMaterialPresentation = 'surface' | 'screen-distortion' | 'terrain-projection'
-const PRESENTATIONS: readonly string[] = ['surface', 'screen-distortion', 'terrain-projection']
+export type RenderMaterialPresentation =
+  'surface' | 'screen-distortion' | 'terrain-projection' | 'terrain-overlay'
+const PRESENTATIONS: readonly string[] = [
+  'surface',
+  'screen-distortion',
+  'terrain-projection',
+  'terrain-overlay',
+]
 
 export interface RenderMaterialSampler {
   /** Stable, deduplicated logical resource ids, in authored pass/layer order. */
@@ -389,7 +397,7 @@ export function createRenderMaterialSampler(
     throw new TypeError('unsupported render material presentation')
   // ponytail: no distortion or terrain-projection pass exists yet, so those materials sample to no
   // color passes and acquire no textures; add the passes (and their resources) when a renderer draws them.
-  const colorless = presentation !== 'surface'
+  const colorless = presentation === 'screen-distortion' || presentation === 'terrain-projection'
   const worldToMaterial =
     model['worldToMaterial'] === undefined ? undefined : materialFrame(model['worldToMaterial'])
   let priority: number | undefined

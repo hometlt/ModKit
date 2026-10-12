@@ -10,6 +10,8 @@ import { prepareMaterialGeometry } from './material-geometry.js'
 import { primitiveFade, primitiveVertexTints } from './tint.js'
 
 export interface MaterialDraw {
+  /** Internal world overlay seed pass; still writes actual geometry depth. */
+  readonly depthCompare?: 'always'
   readonly primitive: SceneRendererPrimitive
   readonly material?: SceneMaterialPrograms
   readonly program?: StandardMaterialProgram
@@ -19,6 +21,12 @@ export interface MaterialDraw {
 }
 export const materialIsSolid = (program: StandardMaterialProgram) =>
   program.blend === 'opaque' || program.blend === 'alpha-test'
+
+/** Only solid color/depth passes participate; translucent passes retain their ordinary scheduling. */
+export const materialIsTerrainOverlay = (draw: MaterialDraw) =>
+  draw.material?.presentation === 'terrain-overlay' &&
+  draw.program !== undefined &&
+  materialIsSolid(draw.program)
 
 type PreparedGeometry = Readonly<{
   primitive: SceneRendererPrimitive

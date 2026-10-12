@@ -206,6 +206,7 @@ export function createStandardMaterialPrograms(
   let shapes: Readonly<{ lighting: MaterialFrameOptions; passes: readonly PassShape[] }> | undefined
   return Object.freeze({
     resources: sampler.resources,
+    presentation: sampler.presentation,
     usesSceneEnvironment: sampler.usesSceneEnvironment,
     sample(
       time: MaterialSampleTime,

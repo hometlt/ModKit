@@ -5,6 +5,7 @@
  * convex upper-layer clipping preserves the original ground triangles and all their varyings.
  * Terrain-only depth bias leaves coplanar surface models visible without changing their placement.
  * The Host-owned cell split also supplies object placement heights; texture coverage preserves ground shape.
+ * Terrain-overlay materials cover ground with independent self-depth; ordinary models still occlude them.
  * Format parsing and source placement data remain with the publisher.
  */
 import {
@@ -18,7 +19,11 @@ import {
 } from 'three'
 import { waterDepthColor, WATER_SHORE_FADE, WATER_COLOR_FALLOFF } from '../render/water-color.js'
 import { applyWebGlDepthBias, TERRAIN_DEPTH_BIAS } from '../render/depth-bias.js'
-import { terrainCellSplit, TERRAIN_SPLIT_AC as SPLIT_AC, TERRAIN_SPLIT_BD as SPLIT_BD } from '@modkit/host/maps'
+import {
+  terrainCellSplit,
+  TERRAIN_SPLIT_AC as SPLIT_AC,
+  TERRAIN_SPLIT_BD as SPLIT_BD,
+} from '@modkit/host/maps'
 import type {
   MapModelComponentPlacement,
   MapTerrainMaterialDefinition,
@@ -87,6 +92,7 @@ import {
 } from '../render/material-skin.js'
 import {
   materialIsSolid,
+  materialIsTerrainOverlay,
   sameMaterialGeometry,
   sceneMaterialDraws,
   type MaterialDraw,
@@ -1156,7 +1162,9 @@ function worldObjectTime(
     !durationSeconds
   )
     return time
-  return time + ((stringHash(item.id) % RANDOM_START_PHASES) / RANDOM_START_PHASES) * durationSeconds
+  return (
+    time + ((stringHash(item.id) % RANDOM_START_PHASES) / RANDOM_START_PHASES) * durationSeconds
+  )
 }
 
 /**
@@ -2020,7 +2028,11 @@ function instanceNormal(
       transform[2]! * x + transform[6]! * y + transform[10]! * z,
     ]
   const scale = item.uvwScale ?? item.scale ?? { x: 1, y: 1, z: 1 }
-  const rotated = instanceVertex([x / scale.x, y / scale.y, z / scale.z], { ...item, uvwScale: { x: 1, y: 1, z: 1 } }, [0, 0, 0])
+  const rotated = instanceVertex(
+    [x / scale.x, y / scale.y, z / scale.z],
+    { ...item, uvwScale: { x: 1, y: 1, z: 1 } },
+    [0, 0, 0],
+  )
   const length = Math.hypot(rotated[0], rotated[1], rotated[2])
   return length > 1e-9 && Number.isFinite(length)
     ? [rotated[0] / length, rotated[1] / length, rotated[2] / length]
@@ -2745,7 +2757,10 @@ function worldGltfSceneMaterial(
  * route does (the GPU path and the CPU sampler take a numbered set 0 before `textureCoordinates`);
  * without the set, no coordinates, as the fallback draws such a primitive untextured.
  */
-function worldUvSetPrimitive<P extends SceneRendererPrimitive>(primitive: P, uvSet: number | undefined): P {
+function worldUvSetPrimitive<P extends SceneRendererPrimitive>(
+  primitive: P,
+  uvSet: number | undefined,
+): P {
   if (uvSet === undefined) return primitive
   const coordinates = primitive.textureCoordinateSets?.find(set => set.set === uvSet)?.coordinates
   const { textureCoordinates, textureCoordinateSets, ...rest } = primitive
@@ -5021,7 +5036,11 @@ function sameBatchTemplate(left: object, right: object): boolean {
 interface WorldPlanBatches {
   readonly batches: ReadonlyMap<
     string,
-    { readonly template: object; readonly writes: readonly WorldBatchWrite[]; readonly frozen: unknown }
+    {
+      readonly template: object
+      readonly writes: readonly WorldBatchWrite[]
+      readonly frozen: unknown
+    }
   >
   readonly water: readonly WorldBatchWrite[]
   readonly waterSurfaceDepth: Float32Array
@@ -6061,12 +6080,18 @@ function prepareWorldStaticTerrain(
                       undefined,
                       definition.uvTransform,
                     ),
-                  ) as [readonly [number, number], readonly [number, number], readonly [number, number]],
+                  ) as [
+                    readonly [number, number],
+                    readonly [number, number],
+                    readonly [number, number],
+                  ],
               ),
               [],
               // The mesh's own normals, as PSTerrainDoodad lights the ground on a cliff: face normals
               // showed every facet of the rock through the ground.
-              order.map(corner => instanceNormal(primitive, triangle[corner]!, item) ?? normal) as unknown as CliffTriangle,
+              order.map(
+                corner => instanceNormal(primitive, triangle[corner]!, item) ?? normal,
+              ) as unknown as CliffTriangle,
               grid.map(([x, y]) => terrainAoAt(x, y)),
             )
             maskTarget.weightTextureCoordinates!.push(
@@ -6320,7 +6345,9 @@ function prepareWorldStaticTerrain(
                 ],
             ),
             [],
-            triangle.map(index => instanceNormal(primitive, index, item) ?? normal) as unknown as CliffTriangle,
+            triangle.map(
+              index => instanceNormal(primitive, index, item) ?? normal,
+            ) as unknown as CliffTriangle,
             grid.map(([x, y]) => terrainAoAt(x, y)),
           )
           target.weightTextureCoordinates!.push(
@@ -6455,7 +6482,11 @@ function prepareWorldStaticTerrain(
       const { positions, normals } = target
       for (let index = 0; index * 3 < positions.length; index += 1) {
         if (normals[index * 3 + 1]! < 0.5) continue
-        const key = cliffPointKey(positions[index * 3]!, positions[index * 3 + 1]!, positions[index * 3 + 2]!)
+        const key = cliffPointKey(
+          positions[index * 3]!,
+          positions[index * 3 + 1]!,
+          positions[index * 3 + 2]!,
+        )
         let entry = pooled.get(key)
         if (entry === undefined) pooled.set(key, (entry = { sum: [0, 0, 0], members: [] }))
         entry.sum[0] += normals[index * 3]!
@@ -6496,7 +6527,10 @@ function prepareWorldStaticTerrain(
     for (const [key, mesh] of meshNormals) {
       const ground = unit(vertexNormals.get(key)!)
       const floor = unit(mesh)
-      vertexNormals.set(key, unit([ground[0] + floor[0], ground[1] + floor[1], ground[2] + floor[2]]))
+      vertexNormals.set(
+        key,
+        unit([ground[0] + floor[0], ground[1] + floor[1], ground[2] + floor[2]]),
+      )
     }
     for (const { key, target, index } of edges) {
       const shared = vertexNormals.get(key)!
@@ -6835,7 +6869,9 @@ function prepareWorldStaticTerrain(
               ? undefined
               : input.terrainTextures?.get(layer.definition.specularResourceId),
           ),
-          normalSwizzles: resolvedSplat.map(layer => normalSwizzleOf(layer.definition.normalEncoding)),
+          normalSwizzles: resolvedSplat.map(layer =>
+            normalSwizzleOf(layer.definition.normalEncoding),
+          ),
           layerColors,
           specularGloss: resolvedSplat.some(layer => layer.definition.specularEncoding === 'gloss'),
         }
@@ -7467,9 +7503,11 @@ export function createWorldWebGlPlan(
   // Capture before models append their transparent geometry: particles must not become AO surfaces.
   const previousBatches =
     previousPlan === undefined ? undefined : worldPlanBatches.get(previousPlan)
-  const waterWrites = [transparent, ...transparentTextured.values(), ...multipliedWater.values()].flatMap(
-    writesOf,
-  )
+  const waterWrites = [
+    transparent,
+    ...transparentTextured.values(),
+    ...multipliedWater.values(),
+  ].flatMap(writesOf)
   const waterSurfaceDepth =
     previousBatches !== undefined && sameWrites(previousBatches.water, waterWrites)
       ? previousBatches.waterSurfaceDepth
@@ -8411,8 +8449,17 @@ export function createWorldWebGlPlan(
       const selected = item.objectId === input.selectedObjectId
       // A point or camera has no model by design: marked only on request (editorMarkers). It is not
       // retained either way, so the next plan follows the request.
-      if (selected || input.editorMarkers === true || (item.kind !== 'point' && item.kind !== 'camera')) {
-        pushVertex(points, translation, [0, 1, 0], selected ? [1, 0.9, 0.1, 1] : colorHash(item.kind))
+      if (
+        selected ||
+        input.editorMarkers === true ||
+        (item.kind !== 'point' && item.kind !== 'camera')
+      ) {
+        pushVertex(
+          points,
+          translation,
+          [0, 1, 0],
+          selected ? [1, 0.9, 0.1, 1] : colorHash(item.kind),
+        )
         diagnosticPlaceholders += 1
       }
       retainable = false
@@ -8664,9 +8711,17 @@ export function createWorldWebGlPlan(
   // Each shared batch from its writes, or the previous plan's batch when its writes are the same.
   const currentBatches = new Map<
     string,
-    { readonly template: object; readonly writes: readonly WorldBatchWrite[]; readonly frozen: unknown }
+    {
+      readonly template: object
+      readonly writes: readonly WorldBatchWrite[]
+      readonly frozen: unknown
+    }
   >()
-  const frozenWrites = <T>(name: string, template: object, build: (writes: readonly WorldBatchWrite[]) => T): T => {
+  const frozenWrites = <T>(
+    name: string,
+    template: object,
+    build: (writes: readonly WorldBatchWrite[]) => T,
+  ): T => {
     const writes = writesOf(template)
     const previous = previousBatches?.batches.get(name)
     const frozen =
@@ -10854,7 +10909,11 @@ function renderWorldShadowMap(
     const sceneCamera = {
       viewProjection,
       viewMatrix: Float32Array.from(lightCamera.matrixWorldInverse.elements),
-      eyePosition: [lightCamera.position.x, lightCamera.position.y, lightCamera.position.z] as const,
+      eyePosition: [
+        lightCamera.position.x,
+        lightCamera.position.y,
+        lightCamera.position.z,
+      ] as const,
     }
     const draw = (group: readonly WorldShadowCaster[]) =>
       drawWorldShadowCasters(resources, program, plan, group, sceneCamera, passes)
@@ -13466,18 +13525,23 @@ function drawWorldWebGlWithResources(
     worldUniform1f(gl, program, 'shadowReceiver', 1)
     const terrainVertices = plan.terrainOpaqueVertices ?? 0
     applyWebGlDepthBias(gl, TERRAIN_DEPTH_BIAS)
-    if (terrainVertices > 0) drawBatch(resources, program, plan.opaqueTriangles, gl.TRIANGLES,
-      plan.opaqueTriangles, undefined, { first: 0, count: terrainVertices })
+    if (terrainVertices > 0)
+      drawBatch(
+        resources,
+        program,
+        plan.opaqueTriangles,
+        gl.TRIANGLES,
+        plan.opaqueTriangles,
+        undefined,
+        { first: 0, count: terrainVertices },
+      )
     applyWebGlDepthBias(gl, undefined)
-    if (terrainVertices < plan.opaqueTriangles.positions.length / 3)
-      drawBatch(resources, program, plan.opaqueTriangles, gl.TRIANGLES,
-        plan.opaqueTriangles, undefined, { first: terrainVertices, count: plan.opaqueTriangles.positions.length / 3 - terrainVertices })
-    for (const item of plan.shadowControlledOpaqueTriangles) {
-      worldUniform1f(gl, program, 'shadowReceiver', item.receiveShadows ? 1 : 0)
-      drawBatch(resources, program, item, gl.TRIANGLES)
-    }
     for (const [index, item] of plan.texturedTriangles.entries()) {
-      applyWebGlDepthBias(gl, index < (plan.terrainTexturedBatches ?? 0) ? TERRAIN_DEPTH_BIAS : undefined)
+      if (index >= (plan.terrainTexturedBatches ?? 0)) continue
+      applyWebGlDepthBias(
+        gl,
+        index < (plan.terrainTexturedBatches ?? 0) ? TERRAIN_DEPTH_BIAS : undefined,
+      )
       worldUniform1f(gl, program, 'shadowReceiver', item.receiveShadows === false ? 0 : 1)
       drawTexturedBatch(resources, program, item)
     }
@@ -13502,7 +13566,12 @@ function drawWorldWebGlWithResources(
       worldUniform1f(gl, program, 'rasterSplatTextured', 0)
       worldUniform1f(gl, program, 'terrainDecal', 1)
       for (const item of plan.terrainDecalTriangles) {
-        worldUniform1f(gl, program, 'terrainDecalCoverageOnly', item.overlayAlpha === 'coverage' ? 1 : 0)
+        worldUniform1f(
+          gl,
+          program,
+          'terrainDecalCoverageOnly',
+          item.overlayAlpha === 'coverage' ? 1 : 0,
+        )
         if (item.specularTexture === undefined) {
           worldUniform1f(gl, program, 'terrainDecalSpecularTextured', 0)
         } else {
@@ -13586,9 +13655,78 @@ function drawWorldWebGlWithResources(
       cameraState(input.camera),
       worldViewRectangle(plan, cameraState(input.camera), canvas.width / canvas.height),
     )
-    if (solidSequence.length > 0) {
+    const overlays = solidSequence.filter(entry => materialIsTerrainOverlay(entry.draw))
+    if (overlays.length > 0) {
+      // Seed only pixels with no road depth yet. A second LEQUAL pass resolves self-occlusion;
+      // later road draws also test the depth of existing roads, never the replaced terrain.
+      gl.enable(gl.STENCIL_TEST)
+      try {
+        gl.stencilMask(1)
+        gl.clearStencil(0)
+        gl.clear(gl.STENCIL_BUFFER_BIT)
+        gl.stencilOp(gl.KEEP, gl.KEEP, gl.REPLACE)
+        gl.stencilFunc(gl.NOTEQUAL, 1, 1)
+        resources.materialDraws.drawSequence(
+          overlays.map(entry => ({
+            ...entry,
+            draw: { ...entry.draw, depthCompare: 'always' as const },
+          })),
+          sceneCamera,
+          sceneLight,
+          worldCurrentPrograms.get(plan)?.passes,
+        )
+        gl.stencilMask(0)
+        gl.stencilFunc(gl.EQUAL, 1, 1)
+        gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP)
+        resources.materialDraws.drawSequence(
+          overlays,
+          sceneCamera,
+          sceneLight,
+          worldCurrentPrograms.get(plan)?.passes,
+        )
+      } finally {
+        gl.disable(gl.STENCIL_TEST)
+        gl.stencilMask(0xff)
+        gl.depthFunc(gl.LEQUAL)
+      }
+    }
+    // Ordinary geometry must follow terrain overlays, retaining its real depth occlusion.
+    gl.useProgram(program)
+    gl.depthFunc(gl.LEQUAL)
+    gl.depthMask(true)
+    gl.disable(gl.BLEND)
+    applyWebGlDepthBias(gl, undefined)
+    worldUniform1f(gl, program, 'splatTextured', 0)
+    worldUniform1f(gl, program, 'rasterSplatTextured', 0)
+    if (terrainVertices < plan.opaqueTriangles.positions.length / 3)
+      drawBatch(
+        resources,
+        program,
+        plan.opaqueTriangles,
+        gl.TRIANGLES,
+        plan.opaqueTriangles,
+        undefined,
+        {
+          first: terrainVertices,
+          count: plan.opaqueTriangles.positions.length / 3 - terrainVertices,
+        },
+      )
+    for (const item of plan.shadowControlledOpaqueTriangles) {
+      worldUniform1f(gl, program, 'shadowReceiver', item.receiveShadows ? 1 : 0)
+      drawBatch(resources, program, item, gl.TRIANGLES)
+    }
+    for (const [index, item] of plan.texturedTriangles.entries()) {
+      if (index < (plan.terrainTexturedBatches ?? 0)) continue
+      worldUniform1f(gl, program, 'shadowReceiver', item.receiveShadows === false ? 0 : 1)
+      drawTexturedBatch(resources, program, item)
+    }
+    const ordinary =
+      overlays.length === 0
+        ? solidSequence
+        : solidSequence.filter(entry => !materialIsTerrainOverlay(entry.draw))
+    if (ordinary.length > 0) {
       resources.materialDraws.drawSequence(
-        solidSequence,
+        ordinary,
         sceneCamera,
         sceneLight,
         worldCurrentPrograms.get(plan)?.passes,
@@ -13646,7 +13784,12 @@ function drawWorldWebGlWithResources(
       worldUniform1f(gl, program, 'splatTextured', 0)
       worldUniform1f(gl, program, 'alphaCutoff', 0)
       gl.disable(gl.POLYGON_OFFSET_FILL)
-      gl.uniform3f(uniformLocation(gl, program, 'waterViewForward'), forward.x, forward.y, forward.z)
+      gl.uniform3f(
+        uniformLocation(gl, program, 'waterViewForward'),
+        forward.x,
+        forward.y,
+        forward.z,
+      )
       for (const plane of plan.waterPlanes) {
         worldUniform1f(gl, program, 'waterFalloff', plane.colorFalloff)
         worldUniform1f(gl, program, 'shadowReceiver', plane.receiveShadows ? 1 : 0)
@@ -13660,7 +13803,11 @@ function drawWorldWebGlWithResources(
               : 0
           bindTexture2d(resources, caustics.frames[frame]!, WATER_CAUSTICS_UNIT)
           worldUniform1f(gl, program, 'causticsMode', 1)
-          gl.uniform2f(uniformLocation(gl, program, 'causticsScale'), caustics.scale[0], caustics.scale[1])
+          gl.uniform2f(
+            uniformLocation(gl, program, 'causticsScale'),
+            caustics.scale[0],
+            caustics.scale[1],
+          )
           worldUniform1f(gl, program, 'causticsFalloff', caustics.falloff)
         }
         const waves = plane.waves
@@ -13668,9 +13815,17 @@ function drawWorldWebGlWithResources(
         else {
           bindTexture2d(resources, waves.texture, WATER_NORMAL_UNIT)
           worldUniform1f(gl, program, 'waterWavesMode', 1)
-          gl.uniform2f(uniformLocation(gl, program, 'waterWaveTiling'), waves.tiling[0], waves.tiling[1])
+          gl.uniform2f(
+            uniformLocation(gl, program, 'waterWaveTiling'),
+            waves.tiling[0],
+            waves.tiling[1],
+          )
           gl.uniform4f(uniformLocation(gl, program, 'waterWaveScroll'), ...waves.scroll)
-          gl.uniform2f(uniformLocation(gl, program, 'waterSpecular'), waves.specularity, waves.specularScale)
+          gl.uniform2f(
+            uniformLocation(gl, program, 'waterSpecular'),
+            waves.specularity,
+            waves.specularScale,
+          )
           worldUniform1f(gl, program, 'waterTime', input.timeSeconds ?? 0)
         }
         drawBatch(resources, program, plane.batch, gl.TRIANGLES)
@@ -13832,6 +13987,7 @@ export function createWorldWebGlRenderer(
     alpha: false,
     antialias: true,
     depth: true,
+    stencil: true,
     preserveDrawingBuffer: false,
   })
   if (!isWebGl2(context)) return undefined

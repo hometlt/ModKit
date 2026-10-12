@@ -23,6 +23,8 @@ import {
 } from '../materials/index.js'
 
 export interface SceneMaterialPrograms {
+  /** World-only scheduling; ordinary model rendering still draws the same color passes. */
+  readonly presentation?: import('../materials/render-model.js').RenderMaterialPresentation
   readonly passes: readonly StandardMaterialProgram[]
   readonly textures: ReadonlyMap<string, SceneRendererTexture>
 }
@@ -328,7 +330,11 @@ export function createSceneMaterialProgramSampler(
         // draws of it at other clocks group together and keep their GPU lease.
         let programs = entry.last
         if (programs?.passes !== passes)
-          entry.last = programs = Object.freeze({ passes, textures: entry.bound })
+          entry.last = programs = Object.freeze({
+            passes,
+            textures: entry.bound,
+            presentation: entry.sampler.presentation,
+          })
         results.set(entry.material.id, programs)
       }
       return results
