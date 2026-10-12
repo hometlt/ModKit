@@ -159,12 +159,30 @@ export function worldHeadlessScene(plan: WorldWebGlPlan): Readonly<{
   splats: ReadonlyMap<string, Readonly<{ batch: WorldWebGlSplatBatch; overlay: boolean }>>
   water: ReadonlyMap<string, number>
   terrain: ReadonlySet<string>
+  materialLighting?: ReadonlyMap<string, Pick<SceneRendererScene, 'lights' | 'ambientLight'>>
 }> {
   const primitives: SceneRendererPrimitive[] = []
   const materials: SceneRendererMaterial[] = []
   const diagnostics: SceneRendererDiagnostic[] = []
   const water = new Map<string, number>()
   const terrain = new Set<string>()
+  const materialLighting = new Map<string, Pick<SceneRendererScene, 'lights' | 'ambientLight'>>()
+  const modelRig = worldMaterialLight(plan)
+  const modelLighting = {
+    ambientLight: modelRig.ambientColor,
+    lights: [
+      {
+        type: 'directional' as const,
+        direction: modelRig.direction,
+        color: [modelRig.color[0], modelRig.color[1], modelRig.color[2]] as const,
+      },
+      ...modelRig.fills.map(fill => ({
+        type: 'directional' as const,
+        direction: fill.direction,
+        color: fill.color,
+      })),
+    ],
+  }
   // Terrain always precedes transparent models, including authored negative-priority effects.
   let transparentPriority = 0
   for (const batch of plan.transparentTexturedTriangles)
@@ -399,7 +417,11 @@ export function worldHeadlessScene(plan: WorldWebGlPlan): Readonly<{
     materials.push(...own.materials)
     textures.push(...own.textures)
   })
-  const light = worldMaterialLight(plan)
+  if (plan.objectLight !== undefined)
+    for (const material of materials)
+      if (!terrain.has(material.id) && !water.has(material.id))
+        materialLighting.set(material.id, modelLighting)
+  const light = worldMaterialLight(plan, 'terrain')
   return Object.freeze({
     scene: Object.freeze({
       primitives: Object.freeze(primitives),
@@ -423,6 +445,7 @@ export function worldHeadlessScene(plan: WorldWebGlPlan): Readonly<{
     splats,
     water,
     terrain,
+    ...(materialLighting.size === 0 ? {} : { materialLighting }),
   })
 }
 
@@ -440,7 +463,7 @@ export async function renderWorldHeadless(
   plan: WorldWebGlPlan,
   options: WorldHeadlessOptions,
 ): Promise<SceneRenderFrame> {
-  const { scene, diagnostics, splats, water, terrain } = worldHeadlessScene(plan)
+  const { scene, diagnostics, splats, water, terrain, materialLighting } = worldHeadlessScene(plan)
   const frame = createWorldWebGlCameraFrame(plan, options.width, options.height, options.camera)
   const rendered = await renderHeadless(
     {
@@ -454,6 +477,7 @@ export async function renderWorldHeadless(
     splats,
     water,
     terrain,
+    materialLighting,
   )
   return Object.freeze({
     ...rendered,

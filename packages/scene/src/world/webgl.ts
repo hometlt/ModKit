@@ -702,6 +702,7 @@ export interface WorldWebGlPlan {
     minimum: readonly [number, number, number]
     maximum: readonly [number, number, number]
   }>
+  readonly objectLight?: WorldWebGlPlan['light']
   readonly light: Readonly<{
     toneMapping?: WorldToneMapping
     terrain?: WorldTerrainLighting
@@ -5768,10 +5769,17 @@ function prepareWorldStaticTerrain(
   let terrainTexturedTriangles = 0
   let terrainSplatFallbackCells = 0
   let terrainDecalTriangles = 0
-  const terrainMinimumX = Math.min(...terrain.map(item => item.x))
-  const terrainMaximumX = Math.max(...terrain.map(item => item.x))
-  const terrainMinimumY = Math.min(...terrain.map(item => item.y))
-  const terrainMaximumY = Math.max(...terrain.map(item => item.y))
+  // Full maps can exceed the engine's function-argument limit; visit samples without spreading them.
+  let terrainMinimumX = Infinity,
+    terrainMaximumX = -Infinity
+  let terrainMinimumY = Infinity,
+    terrainMaximumY = -Infinity
+  for (const item of terrain) {
+    terrainMinimumX = Math.min(terrainMinimumX, item.x)
+    terrainMaximumX = Math.max(terrainMaximumX, item.x)
+    terrainMinimumY = Math.min(terrainMinimumY, item.y)
+    terrainMaximumY = Math.max(terrainMaximumY, item.y)
+  }
   /**
    * The exact raster splat, two weight rasters (eight layers) per draw. The first group is the
    * ground; each later one blends over it with the share of the weights its layers hold, so with
@@ -6462,7 +6470,9 @@ function prepareWorldStaticTerrain(
       ],
     })
     for (const triangle of split) {
-      const normal = faceNormal(corners[triangle[0]]!, corners[triangle[1]]!, corners[triangle[2]]!)
+      let normal = faceNormal(corners[triangle[0]]!, corners[triangle[1]]!, corners[triangle[2]]!)
+      // Row directions differ between publishers; height-field surface normals always face up.
+      if (normal[1] < 0) normal = [-normal[0], -normal[1], -normal[2]]
       for (const corner of triangle) addVertexNormal(cornerKeys[corner]!, normal)
     }
   }
@@ -7513,7 +7523,9 @@ export function createWorldWebGlPlan(
       ? previousBatches.waterSurfaceDepth
       : worldWaterSurfaceDepth(waterWrites)
 
-  const objects = worldFacetItems(facets, 'objects')
+  const objects = worldFacetItems(facets, 'objects').filter(
+    item => item.presentationHidden !== true,
+  )
   const projectorGround = preparation.projectorReceivers
   const projectorCliffs = preparation.projectorCliffReceivers
   let modelTriangles = 0
@@ -8816,6 +8828,9 @@ export function createWorldWebGlPlan(
       objects: Object.freeze(objectPickMeshes.map(item => item.pick)),
     }),
     bounds: Object.freeze({ minimum: Object.freeze(minimum), maximum: Object.freeze(maximum) }),
+    ...(unlit || lighting?.objects === undefined
+      ? {}
+      : { objectLight: worldObjectLight(lighting.objects, lighting.coordinateSpaceId) }),
     light: Object.freeze({
       ...(lighting?.toneMapping === undefined ? {} : { toneMapping: lighting.toneMapping }),
       ...(lighting?.terrain === undefined || unlit ? {} : { terrain: lighting.terrain }),
@@ -12527,15 +12542,82 @@ export function worldFogEye(
   return [camera.position.x, camera.position.y, camera.position.z] as const
 }
 
+/** Common fallback surface uniforms; water/terrain keep their own rig. */
+function uploadWorldLight(
+  gl: WebGL2RenderingContext,
+  program: WebGLProgram,
+  light: WorldWebGlPlan['light'],
+) {
+  gl.uniform3fv(uniformLocation(gl, program, 'ambientColor'), Float32Array.from(light.ambient))
+  worldUniform1f(gl, program, 'ambientIntensity', light.ambientIntensity)
+  gl.uniform3fv(uniformLocation(gl, program, 'lightDirection'), Float32Array.from(light.direction))
+  gl.uniform3fv(uniformLocation(gl, program, 'lightColor'), Float32Array.from(light.color))
+  worldUniform1f(gl, program, 'lightIntensity', light.intensity)
+  const fills = light.fills.slice(0, MAXIMUM_FILL_LIGHTS)
+  for (let index = 0; index < MAXIMUM_FILL_LIGHTS; index += 1) {
+    const fill = fills[index]
+    worldUniform1f(
+      gl,
+      program,
+      `fillUsesVertexAo${String(index)}`,
+      fill?.useAmbientOcclusion === false ? 0 : 1,
+    )
+    gl.uniform3fv(
+      uniformLocation(gl, program, `fillLightDirection${String(index)}`),
+      Float32Array.from(fill?.direction ?? [0, 0, 0]),
+    )
+    gl.uniform3fv(
+      uniformLocation(gl, program, `fillLightRadiance${String(index)}`),
+      Float32Array.from(
+        fill === undefined ? [0, 0, 0] : fill.color.map(channel => channel * fill.intensity),
+      ),
+    )
+  }
+
+  worldUniform1f(gl, program, 'keyUsesVertexAo', light.useAmbientOcclusion === false ? 0 : 1)
+  gl.uniform3fv(
+    uniformLocation(gl, program, 'lightSpecularRadiance'),
+    (light.specularColor ?? light.color).map(v => v * (light.specularIntensity ?? light.intensity)),
+  )
+}
+
+/** Separate objects use the same neutral light vocabulary and native-axis mapping as terrain. */
+function worldObjectLight(
+  rig: NonNullable<import('@modkit/sdk/maps').WorldSceneLightingItem['objects']>,
+  space: string,
+): WorldWebGlPlan['light'] {
+  const vector = (v: readonly [number, number, number]): readonly [number, number, number] =>
+    space === 'map-native' ? [v[0], v[2], v[1]] : v
+  const key = rig.directional[0]
+  return Object.freeze({
+    ambient: rig.ambientColor,
+    ambientIntensity: rig.ambientIntensity,
+    direction: key === undefined ? ([-0.45, -1, -0.35] as const) : vector(key.direction),
+    color: key?.color ?? ([1, 1, 1] as const),
+    intensity: key?.intensity ?? 0,
+    specularColor: key?.specularColor ?? key?.color ?? ([1, 1, 1] as const),
+    specularIntensity: key?.specularIntensity ?? key?.intensity ?? 0,
+    fills: Object.freeze(
+      rig.directional
+        .slice(1, 1 + MAXIMUM_FILL_LIGHTS)
+        .map(light => ({ ...light, direction: vector(light.direction) })),
+    ),
+  })
+}
+
 /** Model material light: key color × intensity plus the authored ambient color, as terrain uses. */
-export function worldMaterialLight(plan: WorldWebGlPlan) {
-  const { direction, color, intensity, ambient, ambientIntensity } = plan.light
+export function worldMaterialLight(
+  plan: WorldWebGlPlan,
+  surface: 'objects' | 'terrain' = 'objects',
+) {
+  const rig = surface === 'objects' ? (plan.objectLight ?? plan.light) : plan.light
+  const { direction, color, intensity, ambient, ambientIntensity } = rig
   return {
     // World facets carry the emitted ray; materialGeometry expects surface-to-light.
     direction: [-direction[0], -direction[1], -direction[2]] as const,
     color: [color[0] * intensity, color[1] * intensity, color[2] * intensity, 1] as const,
-    specularColor: (plan.light.specularColor ?? color).map(
-      value => value * (plan.light.specularIntensity ?? intensity),
+    specularColor: (rig.specularColor ?? color).map(
+      value => value * (rig.specularIntensity ?? intensity),
     ) as [number, number, number],
     ambient: ambientIntensity,
     ambientColor: [
@@ -12543,7 +12625,7 @@ export function worldMaterialLight(plan: WorldWebGlPlan) {
       ambient[1] * ambientIntensity,
       ambient[2] * ambientIntensity,
     ] as const,
-    fills: plan.light.fills.map(fill => ({
+    fills: rig.fills.map(fill => ({
       direction: [-fill.direction[0], -fill.direction[1], -fill.direction[2]] as const,
       color: fill.color.map(value => value * fill.intensity) as [number, number, number],
     })),
@@ -12920,7 +13002,12 @@ function groupWorldMaterialDraws(plan: WorldWebGlPlan, shadow: boolean): WorldWe
       const pose = skin === undefined ? undefined : (skins?.get(skin) ?? skin)
       const own = draw.primitive.transform
       const placed = own === undefined ? undefined : transforms?.get(own)
-      if (key === undefined || geometryKey === undefined) {
+      // Instanced draws select one CCW front face; mirrored placements need the existing CW draw path.
+      if (
+        key === undefined ||
+        geometryKey === undefined ||
+        materialMirrors(placed ?? materialModelMatrix(draw.primitive))
+      ) {
         singles.push(worldPosedDraw(draw, pose === skin ? undefined : pose, placed))
         continue
       }
@@ -13458,37 +13545,7 @@ function drawWorldWebGlWithResources(
     worldUniform1i(gl, program, 'terrainSpecularMaps', 8)
     const viewProjection = sceneCamera.viewProjection
     gl.uniformMatrix4fv(uniformLocation(gl, program, 'viewProjection'), false, viewProjection)
-    gl.uniform3fv(
-      uniformLocation(gl, program, 'ambientColor'),
-      Float32Array.from(plan.light.ambient),
-    )
-    worldUniform1f(gl, program, 'ambientIntensity', plan.light.ambientIntensity)
-    gl.uniform3fv(
-      uniformLocation(gl, program, 'lightDirection'),
-      Float32Array.from(plan.light.direction),
-    )
-    gl.uniform3fv(uniformLocation(gl, program, 'lightColor'), Float32Array.from(plan.light.color))
-    worldUniform1f(gl, program, 'lightIntensity', plan.light.intensity)
-    const fills = plan.light.fills.slice(0, MAXIMUM_FILL_LIGHTS)
-    for (let index = 0; index < MAXIMUM_FILL_LIGHTS; index += 1) {
-      const fill = fills[index]
-      worldUniform1f(
-        gl,
-        program,
-        `fillUsesVertexAo${String(index)}`,
-        fill?.useAmbientOcclusion === false ? 0 : 1,
-      )
-      gl.uniform3fv(
-        uniformLocation(gl, program, `fillLightDirection${String(index)}`),
-        Float32Array.from(fill?.direction ?? [0, 0, 0]),
-      )
-      gl.uniform3fv(
-        uniformLocation(gl, program, `fillLightRadiance${String(index)}`),
-        Float32Array.from(
-          fill === undefined ? [0, 0, 0] : fill.color.map(channel => channel * fill.intensity),
-        ),
-      )
-    }
+    uploadWorldLight(gl, program, plan.light)
     if (shadow === undefined) {
       worldUniform1f(gl, program, 'shadowEnabled', 0)
     } else {
@@ -13692,6 +13749,7 @@ function drawWorldWebGlWithResources(
     }
     // Ordinary geometry must follow terrain overlays, retaining its real depth occlusion.
     gl.useProgram(program)
+    if (plan.objectLight !== undefined) uploadWorldLight(gl, program, plan.objectLight)
     gl.depthFunc(gl.LEQUAL)
     gl.depthMask(true)
     gl.disable(gl.BLEND)
@@ -13750,6 +13808,7 @@ function drawWorldWebGlWithResources(
     // Water over the HDR target is drawn as zone planes against a copy of the opaque depth: its
     // shoreline follows the drawn ground and cliff meshes, not steps of the height grid (see
     // WorldWebGlWaterPlane). Without that target the terrain-clipped water stays.
+    if (plan.objectLight !== undefined) uploadWorldLight(gl, program, plan.light)
     const waterByDepth =
       resources.toneMapper !== undefined &&
       plan.light.toneMapping !== undefined &&
@@ -13887,6 +13946,16 @@ function drawWorldWebGlWithResources(
         }
         gl.enable(gl.BLEND)
         gl.depthMask(false)
+      }
+      if (plan.objectLight !== undefined) {
+        const first = item.range.indices[item.range.first] ?? 0
+        uploadWorldLight(
+          gl,
+          program,
+          item.kind === 'untextured' && first < plan.transparentWaterTriangles * 3
+            ? plan.light
+            : plan.objectLight,
+        )
       }
       if (batchAdditive !== additive)
         gl.blendFunc(gl.SRC_ALPHA, additive ? gl.ONE : gl.ONE_MINUS_SRC_ALPHA)

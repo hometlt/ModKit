@@ -362,3 +362,32 @@ it('keeps an object by the models of the plan it builds on, whatever was built i
   assert.notEqual(sceneOf(back), sceneOf(blended))
   assert.equal(worldMaterialBatchesOf(back).transparentScenes.length, 0)
 })
+
+it('keeps mirrored native placements on the CW single-draw path in color and shadow passes', () => {
+  const native = objectId => ({
+    ...item(objectId, 'rock', objectId),
+    uvwPosition: undefined,
+    coordinateSpaceId: 'map-native',
+    presentationModelReflection: 'z',
+  })
+  const plan = createWorldWebGlPlan({ items: [native(1), native(2), item(3, 'rock', 3)], models })
+  for (const shadow of [false, true]) {
+    const b = worldMaterialBatchesOf(plan, shadow)
+    assert.equal(b.singles.length, 2)
+    assert.equal(b.groups.length, 1)
+    assert.equal(b.groups[0].instances.count, 1)
+    for (const d of b.singles) assert.ok(d.primitive.transform[10] < 0)
+  }
+})
+
+it('retains a hidden placement as input but omits its geometry and picking in the chosen preview state', () => {
+  const kept = item(1, 'rock', 0),
+    hidden = { ...item(2, 'rock', 3), presentationHidden: true }
+  const input = { items: [kept, hidden], models }
+  const plan = createWorldWebGlPlan(input)
+  assert.equal(input.items.length, 2)
+  assert.equal(plan.stats.objectInstances, 1)
+  assert.equal(plan.picking.objects.length, 1)
+  const batch = worldMaterialBatchesOf(plan)
+  assert.equal(batch.groups[0].instances.count, 1)
+})

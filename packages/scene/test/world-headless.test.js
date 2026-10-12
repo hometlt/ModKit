@@ -194,3 +194,114 @@ it("carries a batch's team colour and additive blending into the headless scene"
   const [r, g, b] = frame.rgba.subarray((16 * 32 + 16) * 4, (16 * 32 + 16) * 4 + 3)
   assert.ok(b > 100 && r < 60 && g < 60, `the middle is ${[r, g, b]}`)
 })
+
+it('CPU object lighting affects program and fallback models while terrain stays on its own rig', async () => {
+  const white = { ...texture, rgba: Uint8Array.of(255, 255, 255, 255) }
+  const lit = structuredClone(material)
+  lit.shader.parameters.renderModel.standard.unshaded = false
+  const lighting = {
+    facet: 'lighting',
+    id: 'light',
+    layerId: 'lighting',
+    coordinateSpaceId: 'uvw',
+    ambientColor: [1, 0, 0],
+    ambientIntensity: 1,
+    directional: [{ id: 'terrain-key', direction: [0, -1, 0], color: [0, 0, 0], intensity: 0 }],
+    objects: {
+      ambientColor: [0, 0, 1],
+      ambientIntensity: 1,
+      directional: [{ id: 'object-key', direction: [0, -1, 0], color: [0, 0, 0], intensity: 0 }],
+    },
+  }
+  for (const program of [true, false]) {
+    const m = program
+      ? lit
+      : {
+          id: 'surface',
+          layers: [{ slot: 'diffuse', resourceId: white.id }],
+          baseColorFactor: [1, 1, 1, 1],
+        }
+    const plan = createWorldWebGlPlan({
+      items: [
+        ...terrain,
+        ...terrain.map(t => ({
+          facet: 'terrain-materials',
+          id: 'm:' + t.id,
+          layerId: 'materials',
+          coordinateSpaceId: 'height-grid',
+          x: t.x,
+          y: t.y,
+          weights: [{ materialId: 'white', weight: 1 }],
+        })),
+        object,
+        lighting,
+      ],
+      terrainMaterials: [{ materialId: 'white', baseColorFactor: [1, 1, 1, 1] }],
+      models: new Map([['post', { ...model, materials: [m], textures: [white] }]]),
+    })
+    const scene = worldHeadlessScene(plan)
+    assert.deepEqual(scene.scene.ambientLight, [1, 0, 0])
+    assert.ok(scene.materialLighting.size > 0)
+    assert.ok([...scene.materialLighting.keys()].some(id => id.startsWith('model-')))
+    assert.equal(scene.materialLighting.has('world/ground'), false)
+    const { renderHeadless } = await import('../src/render/headless.ts')
+    const { createWorldWebGlCameraFrame } = await import('../src/world/webgl.ts')
+    // Explicitly lit base surfaces exercise both rigs; world CPU ground remains unlit by default.
+    const litScene = {
+      ...scene.scene,
+      materials: scene.scene.materials.map(m =>
+        m.id === 'world/ground' || (!program && m.id.startsWith('model-'))
+          ? { ...m, shading: 'lambert' }
+          : m,
+      ),
+    }
+    const image = await renderHeadless(
+      {
+        scene: litScene,
+        camera: createWorldWebGlCameraFrame(plan, 64, 64),
+        viewport: { width: 64, height: 64 },
+        outputKind: 'rgba8',
+      },
+      scene.splats,
+      scene.water,
+      scene.terrain,
+      scene.materialLighting,
+    )
+    let blue = 0,
+      red = 0
+    for (let i = 0; i < image.rgba.length; i += 4) {
+      if (image.rgba[i + 2] > 50 && image.rgba[i] < 20) blue++
+      if (image.rgba[i] > 50 && image.rgba[i + 2] < 20) red++
+    }
+    assert.ok(blue > 3, 'object is blue, including fallback material')
+    assert.ok(red > 3, 'terrain remains red')
+  }
+})
+
+it('assigns the object rig to raw CPU fallback batches as well as prefixed model materials', () => {
+  const raw = {
+    ...model,
+    materials: [],
+    primitives: model.primitives.map(p => ({ ...p, materialId: undefined })),
+  }
+  const plan = createWorldWebGlPlan({
+    items: [
+      ...terrain,
+      object,
+      {
+        facet: 'lighting',
+        id: 'l',
+        layerId: 'light',
+        coordinateSpaceId: 'uvw',
+        ambientColor: [1, 0, 0],
+        ambientIntensity: 1,
+        directional: [],
+        objects: { ambientColor: [0, 0, 1], ambientIntensity: 1, directional: [] },
+      },
+    ],
+    models: new Map([['post', raw]]),
+  })
+  const scene = worldHeadlessScene(plan)
+  assert.deepEqual(scene.materialLighting.get('world/opaque-models').ambientLight, [0, 0, 1])
+  assert.equal(scene.materialLighting.has('world/ground'), false)
+})

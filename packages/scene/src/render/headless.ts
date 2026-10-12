@@ -36,6 +36,7 @@ import type {
   SceneRendererPrimitive,
   SceneRendererDirectionalLight,
   SceneRendererDiagnostic,
+  SceneRendererScene,
 } from '@modkit/sdk/renderer'
 import { materialAlpha, straightenAlpha, type MaterialAlpha } from './alpha.js'
 import { prepareSceneMaterialPrograms } from './materials.js'
@@ -1198,6 +1199,7 @@ export async function renderHeadless(
   splats?: ReadonlyMap<string, Readonly<{ batch: WorldWebGlSplatBatch; overlay: boolean }>>,
   water?: ReadonlyMap<string, number>,
   terrain?: ReadonlySet<string>,
+  materialLighting?: ReadonlyMap<string, Pick<SceneRendererScene, 'lights' | 'ambientLight'>>,
 ): Promise<SceneRenderFrame> {
   request.signal?.throwIfAborted()
   if (request.outputKind !== 'rgba8') {
@@ -1285,7 +1287,14 @@ export async function renderHeadless(
         ]
   // Independent road depth ignores terrain but preserves front/back and overlapping road surfaces.
   let terrainDepth: Float32Array | undefined
+  const defaultLighting = context.previewLighting
+  const materialRigs = new Map(
+    [...(materialLighting ?? [])].map(
+      ([id, rig]) => [id, readPreviewLighting(rig.lights, rig.ambientLight)] as const,
+    ),
+  )
   for (const draw of ordered) {
+    context.previewLighting = materialRigs.get(draw.primitive.materialId ?? '') ?? defaultLighting
     const overlay = overlaySet.has(draw)
     if (overlay && terrainDepth === undefined) {
       terrainDepth = context.depth

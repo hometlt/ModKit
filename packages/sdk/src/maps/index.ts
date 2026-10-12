@@ -702,6 +702,8 @@ export interface MapPlacedObject {
    * placements; source coordinates, rotation and exported geometry remain authored.
    */
   readonly presentationModelReflection?: 'z'
+  /** Hide this placement in the chosen preview state while retaining its authored facts. */
+  readonly presentationHidden?: true
   /**
    * How far below the object's ground its foundation reaches, in world units: the vertices at or
    * below its origin (object-local y ≤ 0) are drawn that much lower, so a defence or tree on a slope
@@ -1486,6 +1488,8 @@ export interface WorldHeightFog {
 
 /** One resolved, renderer-neutral world-lighting environment for a map snapshot. */
 export interface MapWorldLightingSummary {
+  /** Optional object rig in the same coordinate space; omission uses the world rig. */
+  readonly objects?: WorldObjectLighting
   /**
    * `unlit`: the game shows tiles and sprites as stored, their shading painted in (Dune 2000,
    * Tiberian Sun): the world draws each texel times `unlitColor` (default white), without light
@@ -1907,6 +1911,7 @@ export interface WorldSceneResourceItem {
 }
 
 export interface WorldSceneLightingItem {
+  readonly objects?: WorldObjectLighting
   readonly facet: 'lighting'
   readonly id: string
   readonly layerId: string
@@ -1941,6 +1946,12 @@ export interface WorldToneMapping {
   readonly colorization?: WorldColorization
   readonly ambientOcclusion?: WorldAmbientOcclusion
 }
+
+/** A separate object rig shares the ordinary ambient/directional vocabulary. */
+export type WorldObjectLighting = Pick<
+  MapWorldLightingSummary,
+  'ambientColor' | 'ambientIntensity' | 'directional'
+>
 
 export interface WorldTerrainLighting {
   readonly specularExponent: number
