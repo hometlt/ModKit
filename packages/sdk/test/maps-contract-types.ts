@@ -10,6 +10,8 @@ import type {
 import type {
   MapLatticeCoverage,
   MapSemanticSnapshot,
+  MapTerrainCellPatch,
+  MapTerrainCellPatchTriangle,
   ResolvedMapWorkspaceSnapshot,
   WorldSceneObjectItem,
   WorldSceneTerrainItem,
@@ -83,7 +85,21 @@ export type ResolvedLatticeCoverage = ResolvedMapWorkspaceSnapshot['latticeCover
 export type WorldObjectLatticeCoverage = WorldSceneObjectItem['latticeCoverage']
 export type WorldObjectUvwLatticeCoverage = WorldSceneObjectItem['uvwLatticeCoverage']
 export type WorldTerrainCliffFace = WorldSceneTerrainItem['cliffFace']
+export const nativeCenterFan = {
+  x: 3,
+  y: 5,
+  coordinateSpaceId: 'publisher/native-cell',
+  center: { x: 448, y: 704, z: 12 },
+  triangles: [[4, 1, 0], [4, 2, 1], [4, 3, 2], [4, 0, 3]],
+} as const satisfies MapTerrainCellPatch
+// @ts-expect-error The local vertex set ends at centre index 4.
+export const invalidPatchTriangle: MapTerrainCellPatchTriangle = [4, 5, 0]
+export type ResolvedTerrainCellPatches = ResolvedMapWorkspaceSnapshot['terrainCellPatches']
+export type WorldTerrainCellPatch = WorldSceneTerrainItem['presentationCellPatch']
 export const semanticAnalysisRemainsUnchanged: 'latticeCoverage' extends keyof MapSemanticSnapshot
+  ? never
+  : true = true
+export const semanticGridRemainsUnchanged: 'terrainCellPatches' extends keyof MapSemanticSnapshot
   ? never
   : true = true
 

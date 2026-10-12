@@ -1558,6 +1558,31 @@ export interface MapLatticeCoverage {
   }>
 }
 
+/** The four height-grid cell corners in order (0,0), (1,0), (1,1), (0,1), then its centre. */
+export type MapTerrainCellPatchVertex = 0 | 1 | 2 | 3 | 4
+export type MapTerrainCellPatchTriangle = readonly [
+  MapTerrainCellPatchVertex,
+  MapTerrainCellPatchVertex,
+  MapTerrainCellPatchVertex,
+]
+
+/** One publisher-authored presentation fan; it never changes the authoritative height grid. */
+export interface MapTerrainCellPatch {
+  /** Lower-left cell key in `height-grid`, not coordinates of `center`. */
+  readonly x: number
+  readonly y: number
+  /** A declared `worldCandidate.coordinateSpaces` id for the absolute `center`. */
+  readonly coordinateSpaceId: string
+  readonly center: MapPosition
+  /** Exactly four triangles over corners 0..3 and centre 4; the host validates coverage and winding. */
+  readonly triangles: readonly [
+    MapTerrainCellPatchTriangle,
+    MapTerrainCellPatchTriangle,
+    MapTerrainCellPatchTriangle,
+    MapTerrainCellPatchTriangle,
+  ]
+}
+
 /** Additive result; `semantic` is the untouched authoritative semantic-analysis@1 snapshot. */
 export interface ResolvedMapWorkspaceSnapshot {
   readonly schemaVersion: 1
@@ -1577,6 +1602,9 @@ export interface ResolvedMapWorkspaceSnapshot {
   readonly lighting?: MapWorldLightingSummary
   /** Authored/resolved lattice facts; absence never licenses a renderer to guess coverage. */
   readonly latticeCoverage?: MapLatticeCoverage
+  /** Sparse presentation patches: absent cells keep unknown native topology, not an inferred fan.
+   * The host rejects duplicate/out-of-range keys and more than `(width - 1) * (height - 1)` cells. */
+  readonly terrainCellPatches?: readonly MapTerrainCellPatch[]
   /** The game's view of the world, when the publisher knows it. */
   readonly camera?: MapWorldCamera
   readonly worldCandidate: MapWorldCandidateDescriptor
@@ -1734,6 +1762,11 @@ export interface WorldSceneTerrainItem extends MapTerrainSample {
   readonly coordinateSpaceId: string
   /** Complete publisher classification: true/false for a cell, absent when unknown. */
   readonly cliffFace?: boolean
+  /** Patch for the cell starting at this sample, joined by its height-grid `(x,y)` key. */
+  readonly presentationCellPatch?: Omit<MapTerrainCellPatch, 'x' | 'y'> & Readonly<{
+    /** Only after a validated transform from the patch's declared coordinate space to UVW. */
+    readonly uvwCenter?: MapPosition
+  }>
   /** Present only when a validated exact native terrain transform was admitted for this snapshot. */
   readonly mapNativePosition?: MapPosition
   /** Present only when the host validated a measured map-native to canonical UVW transform. */
