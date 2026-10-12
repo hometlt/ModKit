@@ -4,8 +4,11 @@
  * Existing v1/v2 repositories and bounded gzip transport materialize ordinary regular files with
  * independent decoded-document/entry/expanded-byte limits, package identity and immutable-tree
  * validation. Serialized atomic publication retains prior artifacts for recovery; remove cleans
- * unreferenced managed trees. Composition preserves injected ports, trust policy and lifecycle;
- * it does not evaluate game extensions or provide installed-file deduplication.
+ * unreferenced managed trees. Within one managed artifact a file whose bytes equal an already
+ * materialized file is a hard link to it (the same runtime libraries ship in every root of a suite),
+ * falling back to a copy where the volume refuses links; every path stays an ordinary regular file,
+ * so tree digests, limits and package identity are unchanged. Composition preserves injected ports,
+ * trust policy and lifecycle; it does not evaluate game extensions or share files between artifacts.
  */
 import {
   createHash,
@@ -22,7 +25,7 @@ import {
   realpathSync,
   statSync,
 } from 'node:fs'
-import { mkdir, open, readFile, rename, rm, writeFile } from 'node:fs/promises'
+import { link, mkdir, open, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
@@ -1312,12 +1315,26 @@ async function materializePortable(
   const roots = []
   let fileCount = 0
   let materializedBytes = 0
+  // The first staged path of each distinct non-empty content in this artifact.
+  const firstByContent = new Map<string, string>()
   try {
     for (const [index, expectedId] of entry.extensions.entries()) {
       const rootPath = confined(stage, 'roots', String(index))
       await mkdir(rootPath, { recursive: true })
       const names = new Set()
       const writes: { path: string; bytes: Uint8Array }[] = []
+      const links: { path: string; target: string; bytes: Uint8Array }[] = []
+      // After the writes they point at have settled: a hard link, or a copy where links are refused.
+      const flushLinks = async (): Promise<void> => {
+        for (const { path, target, bytes } of links.splice(0)) {
+          await mkdir(dirname(path), { recursive: true })
+          try {
+            await link(target, path)
+          } catch {
+            await writeFile(path, bytes, { flag: 'wx', mode: 0o600 })
+          }
+        }
+      }
       // Settle the whole bounded batch before throwing, so cleanup cannot race unfinished writes.
       const flushWrites = async (): Promise<void> => {
         const outcomes = await Promise.allSettled(
@@ -1356,10 +1373,19 @@ async function materializePortable(
           })
         }
         const path = confined(rootPath, safeName)
+        const content =
+          bytes.byteLength === 0 ? undefined : createHash('sha256').update(bytes).digest('hex')
+        const target = content === undefined ? undefined : firstByContent.get(content)
+        if (target !== undefined) {
+          links.push({ path, target, bytes })
+          continue
+        }
+        if (content !== undefined) firstByContent.set(content, path)
         writes.push({ path, bytes })
         if (writes.length === 8) await flushWrites()
       }
       await flushWrites()
+      await flushLinks()
       await packageIdentity(rootPath, expectedId)
       roots.push(
         Object.freeze({

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { createHash, generateKeyPairSync, sign } from 'node:crypto'
-import { existsSync } from 'node:fs'
+import { existsSync, lstatSync, statSync } from 'node:fs'
 import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { createServer } from 'node:http'
 import { tmpdir } from 'node:os'
@@ -838,6 +838,60 @@ test('portable store accepts canonical empty base64 for zero-byte embedded files
   })
 
   assert.equal((await readFile(join(installed.roots[0].root, 'empty.dat'))).byteLength, 0)
+})
+
+test('portable store materializes identical files of one artifact once, as hard links', async t => {
+  const fixture = await temporaryDirectory(t)
+  const privateState = join(fixture, 'private')
+  const ids = ['example.publisher/first', 'example.publisher/second']
+  const library = Buffer.from('export const shared = 1\n'.repeat(64)).toString('base64')
+  const bytes = Buffer.from(
+    JSON.stringify({
+      schemaVersion: 1,
+      extensions: ids.map(id => ({
+        id,
+        files: {
+          'package.json': Buffer.from(packageJson(id)).toString('base64'),
+          'node_modules/lib/index.js': library,
+          'node_modules/lib/copy.js': library,
+          'empty.dat': '',
+        },
+      })),
+    }),
+  )
+  const store = createNodeArtifactStore({ root: privateState })
+  const installed = await store.install({
+    entry: {
+      id: 'example.publisher/suite',
+      displayName: 'Example suite',
+      publisher: 'example.publisher',
+      version: '1.0.0',
+      extensions: ids,
+      source: { kind: 'bundle', uri: 'memory://registry/suite.json', trust: { mode: 'signed' } },
+      remote: false,
+      trusted: true,
+    },
+    artifact: { kind: 'portable-repository', bytes },
+    integrity: `sha256:${createHash('sha256').update(bytes).digest('hex')}`,
+  })
+
+  const paths = installed.roots.flatMap(root => [
+    join(root.root, 'node_modules', 'lib', 'index.js'),
+    join(root.root, 'node_modules', 'lib', 'copy.js'),
+  ])
+  const expected = Buffer.from(library, 'base64')
+  for (const path of paths) {
+    assert.deepEqual(await readFile(path), expected)
+    assert.ok(lstatSync(path).isFile())
+  }
+  const identities = paths.map(path => statSync(path, { bigint: true }))
+  assert.equal(new Set(identities.map(info => `${info.dev}:${info.ino}`)).size, 1)
+  assert.equal(identities[0].nlink, 4n)
+  // Empty files are never linked, and each package keeps its own manifest.
+  for (const root of installed.roots) {
+    assert.equal(statSync(join(root.root, 'empty.dat')).nlink, 1)
+    assert.equal(statSync(join(root.root, 'package.json')).nlink, 1)
+  }
 })
 
 test('portable store validates large embedded base64 without regex stack overflow', async t => {
