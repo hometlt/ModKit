@@ -369,7 +369,7 @@ export function createLanguageModContexts(
       const documents = (answer as { readonly documents?: unknown }).documents
       if (!Array.isArray(documents)) return answer
       const kind = (question as { readonly kind?: unknown } | null)?.kind
-      const rename = typeof kind === 'string' && (kind.endsWith('.rename') || kind === 'language.verify')
+      const rename = typeof kind === 'string' && (kind.endsWith('.rename') || kind === 'language.verify' || kind === 'language.feature')
       const layers = new Map(context.layers.map(layer => [layer.id, layer]))
       const openByPlace = new Map<string, Pushed>()
       if (rename) for (const known of pushed.values()) {

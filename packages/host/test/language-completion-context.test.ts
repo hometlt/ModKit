@@ -198,6 +198,16 @@ it('advertises the document-local declaration across the provider execution boun
   expect(LANGUAGE_DOCUMENT_CONTRACT_DEFINITION.surface?.methods).toHaveProperty('modContextCompletionApplies')
 })
 
+it('resolves an already complete item without capturing a chain and keeps diagnostic fallback', async () => {
+  const f = await fixture()
+  try {
+    const item = { label: 'schema-field', kind: 'field' as const }
+    expect(await f.workspace.resolveCompletion({ ...f.request, item })).toEqual(item)
+    expect(f.snapshot).not.toHaveBeenCalled()
+    expect(await f.workspace.diagnostics(f.request)).toMatchObject({ diagnostics: [] })
+  } finally { await f.workspace.shutdown() }
+})
+
 it('scopes a feature to its mod and edited dependency while other open mods stay loaded', async () => {
   const test = await fixture()
   const dependency = {

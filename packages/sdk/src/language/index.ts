@@ -522,6 +522,11 @@ export type LanguageModContextFeature =
   | 'prepareRename'
   | 'rename'
   | 'projectDiagnostics'
+  | 'workspaceSymbols'
+  | 'codeLenses'
+  | 'codeActions'
+  | 'documentColors'
+  | 'documentSymbols'
 
 /**
  * Bounded inputs for one semantic request. `workspaceDocuments` includes `document` and never
@@ -604,6 +609,7 @@ export interface LanguageCodeActionsRequest extends LanguageFeatureRequest {
 
 /** Features that may explicitly prove they need only the live document and provider schema. */
 export type LanguageDocumentLocalFeature = 'documentSymbols' | 'foldingRanges' | 'formatting' | 'prepareRename'
+  | 'codeActions' | 'documentColors' | 'colorPresentations' | 'onTypeFormatting'
 
 /** Activated provider surface. It is deliberately independent of any LSP transport package. */
 export interface LanguageProvider {
@@ -653,7 +659,7 @@ export interface LanguageProvider {
    */
   modContextFeatureApplies?(
     request: Pick<LanguagePositionRequest, 'document' | 'position' | 'signal'> & {
-      readonly feature: Exclude<LanguageModContextFeature, 'completion' | 'diagnostics' | 'projectDiagnostics'>
+      readonly feature: Exclude<LanguageModContextFeature, 'completion' | 'diagnostics' | 'projectDiagnostics' | 'workspaceSymbols' | 'codeLenses' | 'codeActions' | 'documentColors' | 'documentSymbols'>
     },
   ): Promise<boolean>
   analyze(request: LanguageAnalysisRequest): Promise<LanguageAnalysis>

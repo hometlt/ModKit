@@ -138,6 +138,7 @@ export function modContextResolution(context: ModContext): ContentDependencyReso
 }
 
 interface SubjectClosures {
+  readonly serverResolutions: ReadonlySet<ContentDependencyResolution>
   readonly resolutions: readonly ContentDependencyResolution[]
   readonly diagnostics: readonly Diagnostic[]
   readonly complete: boolean
@@ -232,6 +233,7 @@ async function subjectClosures(request: {
 }): Promise<SubjectClosures> {
   const { contentSources, signal } = request
   const resolutions: ContentDependencyResolution[] = []
+  const serverResolutions = new Set<ContentDependencyResolution>()
   const diagnostics: Diagnostic[] = []
   const contexts: ModContext[] = []
   let complete = request.subjects.length > 0
@@ -256,9 +258,11 @@ async function subjectClosures(request: {
     else {
       complete &&= closure.resolution.complete
       resolutions.push(closure.resolution)
+      if (closure.context?.languageModel === 'server' && closure.context.query !== undefined) serverResolutions.add(closure.resolution)
     }
   }
   return Object.freeze({
+    serverResolutions,
     resolutions: Object.freeze(resolutions.filter(resolution => resolution.mounts.length > 0)),
     diagnostics: Object.freeze(diagnostics),
     complete,
@@ -484,7 +488,7 @@ export async function resolveContentLanguageSources(
   const closures = await subjectClosures(request)
   return Object.freeze({
     sources: Object.freeze(
-      closures.resolutions.map(resolution =>
+      closures.resolutions.filter(resolution => !closures.serverResolutions.has(resolution)).map(resolution =>
         createContentDependencyLanguageDocumentSource({
           contentSources,
           resolution,

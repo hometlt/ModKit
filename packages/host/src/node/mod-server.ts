@@ -58,7 +58,7 @@ const sig = { signal: 'last' } as const
 
 const servedContextSurface: CapabilitySurface = {
   ...ABI_SERVED_MOD_CONTEXT,
-  fields: ['schemaVersion', 'gameId', 'contextId', 'sessionId', 'generation', 'layers', 'unresolved', 'diagnostics', 'revision',
+  fields: ['schemaVersion', 'gameId', 'contextId', 'sessionId', 'generation', 'languageModel', 'layers', 'unresolved', 'diagnostics', 'revision',
     'canQuery', 'canOverlay', 'canInvalidate', 'canPrepare'],
   methods: {
     files: { kind: 'value', arity: 2 },
@@ -249,6 +249,7 @@ function connectionService(sources: Pick<ContentSources, 'openModContext'>) {
     contextId: context.contextId,
     sessionId: context.sessionId,
     generation: context.generation,
+    languageModel: context.languageModel,
     layers: context.layers,
     unresolved: context.unresolved,
     diagnostics: context.diagnostics,
@@ -456,6 +457,7 @@ function remoteContext(remote: RemoteCapability, generation: string): ModContext
     contextId: String(data['contextId']),
     generation: JSON.stringify([generation, data['generation'] ?? null]),
     ...(typeof data['sessionId'] === 'string' ? { sessionId: data['sessionId'] } : {}),
+    ...(data['languageModel'] === 'server' ? { languageModel: 'server' as const } : {}),
     layers: (data['layers'] ?? []) as ModContext['layers'],
     unresolved: (data['unresolved'] ?? []) as ModContext['unresolved'],
     diagnostics: (data['diagnostics'] ?? []) as ModContext['diagnostics'],

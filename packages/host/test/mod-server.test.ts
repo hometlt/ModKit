@@ -160,6 +160,18 @@ async function daemon(idleMs?: number, onIdle?: () => void) {
 const request = { schemaVersion: 1 as const, target: 'C:/Mods/Mine.SC2Mod' }
 
 describe('the shared mod server', () => {
+  it('transfers authoritative language ownership across the daemon boundary', async () => {
+    const { address, chain } = await daemon()
+    const open = chain.sources.openModContext!.bind(chain.sources)
+    chain.sources.openModContext = async request => ({ ...await open(request), languageModel: 'server' })
+    const client = await connectModServer(address)
+    try {
+      const context = await client.openModContext(request)
+      expect(context.languageModel).toBe('server')
+      await context.dispose()
+    } finally { await client.close() }
+  })
+
   it('keeps the client session but replaces its transport generation after reconnecting', async () => {
     const { options, directory } = await daemon()
     const local = chainSources()

@@ -591,7 +591,7 @@ function isLanguageProvider(value: unknown): value is LanguageProvider {
     record['languageIds'].every(item => typeof item === 'string') &&
     (modContextFeatures === undefined ||
       (Array.isArray(modContextFeatures) &&
-        modContextFeatures.length <= 9 &&
+        modContextFeatures.length <= 14 &&
         new Set(modContextFeatures).size === modContextFeatures.length &&
         modContextFeatures.every(
           item =>
@@ -600,14 +600,16 @@ function isLanguageProvider(value: unknown): value is LanguageProvider {
             item === 'definition' ||
             item === 'references' ||
             item === 'signatureHelp' ||
-            item === 'diagnostics' || item === 'prepareRename' || item === 'rename' || item === 'projectDiagnostics',
+            item === 'diagnostics' || item === 'prepareRename' || item === 'rename' || item === 'projectDiagnostics' ||
+            item === 'workspaceSymbols' || item === 'codeLenses' || item === 'codeActions' || item === 'documentColors' || item === 'documentSymbols',
         ))) &&
     (documentLocalFeatures === undefined ||
       (Array.isArray(documentLocalFeatures) &&
-        documentLocalFeatures.length <= 4 &&
+        documentLocalFeatures.length <= 8 &&
         new Set(documentLocalFeatures).size === documentLocalFeatures.length &&
         documentLocalFeatures.every(
-          item => item === 'documentSymbols' || item === 'foldingRanges' || item === 'formatting' || item === 'prepareRename',
+          item => item === 'documentSymbols' || item === 'foldingRanges' || item === 'formatting' || item === 'prepareRename' ||
+            item === 'codeActions' || item === 'documentColors' || item === 'colorPresentations' || item === 'onTypeFormatting',
         ))) &&
     (workspaceLanguageIds === undefined ||
       (Array.isArray(workspaceLanguageIds) &&

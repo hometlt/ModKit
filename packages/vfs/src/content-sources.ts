@@ -246,6 +246,12 @@ export interface ModContextPage<T> {
 
 export interface ModContext {
   readonly schemaVersion: 1
+  /**
+   * The retained server owns every semantic language feature of this game's contexts. Hosts keeping
+   * this context must not create a parallel chain-document source. Omit until every installed
+   * language consumer is migrated; standalone callers without a kept server retain the legacy path.
+   */
+  readonly languageModel?: 'server'
   readonly gameId: string
   /** Stable for the same target, settings, source path policies and session; revision tracks edits. */
   readonly contextId: string

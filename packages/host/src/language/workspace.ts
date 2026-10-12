@@ -1149,7 +1149,7 @@ function validLooseRange(range: LanguageRange | undefined): boolean {
 
 /** Whether a feature is one a provider may opt into answering from the loaded mod's server. */
 function isModContextFeature(
-  feature: LanguageDocumentLocalFeature | LanguageModContextFeature,
+  feature: keyof LanguageProvider,
 ): feature is LanguageModContextFeature {
   return (
     feature === 'hover' ||
@@ -1157,7 +1157,8 @@ function isModContextFeature(
     feature === 'definition' ||
     feature === 'references' ||
     feature === 'signatureHelp' ||
-    feature === 'diagnostics' || feature === 'prepareRename' || feature === 'rename' || feature === 'projectDiagnostics'
+    feature === 'diagnostics' || feature === 'prepareRename' || feature === 'rename' || feature === 'projectDiagnostics' ||
+    feature === 'workspaceSymbols' || feature === 'codeLenses' || feature === 'codeActions' || feature === 'documentColors' || feature === 'documentSymbols'
   )
 }
 
@@ -2278,10 +2279,13 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
     preferCachedSemanticContext = false,
     discoverCompletionContext = false,
     maxAllowedResults = LANGUAGE_MAX_RESULTS,
-    inputFeature?: LanguageDocumentLocalFeature | LanguageModContextFeature,
+    inputFeature?: keyof LanguageProvider,
   ): Promise<Value | undefined> => {
     const entry = requireFeatureEntry(workspaceRequest, positioned, maxAllowedResults)
     throwIfAborted(workspaceRequest.signal)
+    // Optional unsupported features need no semantic input; outline/project fallback still exists.
+    if (inputFeature !== undefined && inputFeature !== 'documentSymbols' && inputFeature !== 'diagnostics' && inputFeature !== 'projectDiagnostics' &&
+        typeof entry.resolution.provider[inputFeature] !== 'function') return undefined
     const maxResults = boundedInteger(
       workspaceRequest.maxResults,
       LANGUAGE_DEFAULT_MAX_RESULTS,
@@ -2321,8 +2325,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
     try {
       let documentOnly =
         inputFeature !== undefined &&
-        (inputFeature === 'prepareRename' || !isModContextFeature(inputFeature)) &&
-        entry.resolution.provider.documentLocalFeatures?.includes(inputFeature) === true
+        entry.resolution.provider.documentLocalFeatures?.some(feature => feature === inputFeature) === true
       if (
         discoverCompletionContext &&
         preferCachedSemanticContext &&
@@ -2346,7 +2349,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         isModContextFeature(inputFeature) &&
         entry.resolution.provider.modContextFeatures?.includes(inputFeature) === true
       // Older registries cannot validate unopened write targets without their bounded snapshot.
-      if ((inputFeature === 'rename' || inputFeature === 'projectDiagnostics') && modContextsNow()?.readEditTarget === undefined) readsModContext = false
+      if ((inputFeature === 'rename' || inputFeature === 'codeActions' || inputFeature === 'projectDiagnostics') && modContextsNow()?.readEditTarget === undefined) readsModContext = false
       if (inputFeature === 'projectDiagnostics' && entry.resolution.provider.projectDiagnostics === undefined) readsModContext = false
       if (
         readsModContext &&
@@ -2372,6 +2375,8 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         // a document's diagnostics have no position to prove
         inputFeature !== 'diagnostics' &&
         inputFeature !== 'projectDiagnostics' &&
+        inputFeature !== 'workspaceSymbols' && inputFeature !== 'codeLenses' && inputFeature !== 'codeActions' && inputFeature !== 'documentColors' &&
+        inputFeature !== 'documentSymbols' &&
         entry.resolution.provider.modContextFeatureApplies !== undefined
       ) {
         const applies = await entry.resolution.provider.modContextFeatureApplies({
@@ -2730,7 +2735,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
       }
       const validated = await validate(candidate, providerRequest)
       throwIfAborted(controller.signal)
-      if (modContextOnly && (inputFeature === 'rename' || inputFeature === 'projectDiagnostics')) {
+      if (modContextOnly && (inputFeature === 'rename' || inputFeature === 'codeActions' || inputFeature === 'projectDiagnostics')) {
         const current = await requestModContext(entry, controller.signal)
         if (current?.scope !== modContext!.scope || current.revision !== modContext!.revision) throw new OperationCancelledError('stale validated mod result')
       }
@@ -2857,11 +2862,11 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
       workspaceContext: { ...request.workspaceContext!, documentOrigins: [...origins.values()] } }, maxEdits, true)
   }
 
-  const validateCodeActionList = (
+  const validateCodeActionList = async (
     value: unknown,
     request: LanguageFeatureRequest,
     maxEdits: number,
-  ): LanguageCodeActionList => {
+  ): Promise<LanguageCodeActionList> => {
     const list = value as LanguageCodeActionList
     if (
       typeof list !== 'object' ||
@@ -2927,7 +2932,8 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
             request.document.uri,
           )
         }
-        validateWorkspaceEdit(edit, request, maxEdits, true)
+        if (modContextServed.has(request)) await validateServedWorkspaceEdit(edit, request, maxEdits)
+        else validateWorkspaceEdit(edit, request, maxEdits, true)
       }
     }
     return list
@@ -3577,7 +3583,12 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
     async resolveCompletion(
       request: LanguageWorkspacePositionRequest & { readonly item: LanguageCompletionItem },
     ): Promise<LanguageCompletionItem | undefined> {
-      const resolved = await invokeFeature(
+      const entry = requireFeatureEntry(request, true)
+      throwIfAborted(request.signal)
+      const item = recordOf(request.item)
+      if (item === undefined || !validCompletionItem(item, lineLengths(entry.document.text))) invalidFeature('invalid completion item', request.uri)
+      // An item without a provider resolver is already complete; its picture does not need a chain scan.
+      const resolved = entry.resolution.provider.resolveCompletion === undefined ? request.item : await invokeFeature(
         request,
         true,
         (provider, feature) =>
@@ -3816,6 +3827,8 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         validateOnTypeEditResult,
         { position: request.position, ch: request.ch, options: providerOptions },
         request.semanticContextPolicy === 'cached',
+        false, LANGUAGE_MAX_RESULTS, 'onTypeFormatting',
+
       )
     },
 
@@ -3831,6 +3844,8 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         false,
         false,
         LANGUAGE_MAX_DOCUMENT_RESULTS,
+        'documentColors',
+
       )
     },
 
@@ -3846,6 +3861,8 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         false,
         false,
         LANGUAGE_MAX_DOCUMENT_RESULTS,
+        'codeLenses',
+
       )
     },
 
@@ -3877,6 +3894,8 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         false,
         false,
         LANGUAGE_MAX_DOCUMENT_RESULTS,
+        'documentLinks',
+
       )
     },
 
@@ -3890,6 +3909,8 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
           provider.documentHighlights?.({ ...feature, position: request.position }),
         validateDocumentHighlights,
         { position: request.position },
+        false, false, LANGUAGE_MAX_RESULTS, 'documentHighlights',
+
       )
     },
 
@@ -3910,6 +3931,8 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         (provider, feature) => provider.inlayHints?.({ ...feature, range: request.range }),
         validateInlayHints,
         { range: request.range },
+        false, false, LANGUAGE_MAX_RESULTS, 'inlayHints',
+
       )
     },
 
@@ -3940,6 +3963,8 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         (provider, feature) => provider.colorPresentations?.({ ...feature, color, range }),
         validateColorPresentations,
         { color, range },
+        false, false, LANGUAGE_MAX_RESULTS, 'colorPresentations',
+
       )
     },
 
@@ -3985,6 +4010,8 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
           }),
         (value, feature) => validateCodeActionList(value, feature, maxEdits),
         { range, diagnostics, maxEdits },
+        false, false, LANGUAGE_MAX_RESULTS, 'codeActions',
+
       )
     },
 
@@ -4032,6 +4059,8 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         (provider, feature) => provider.workspaceSymbols?.({ ...feature, query: request.query }),
         validateWorkspaceSymbols,
         { query: request.query },
+        false, false, LANGUAGE_MAX_RESULTS, 'workspaceSymbols',
+
       )
     },
 

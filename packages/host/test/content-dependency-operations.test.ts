@@ -65,6 +65,25 @@ const wizards: ModContextLayer = { id: 'l2', displayName: 'wizards', sourceId: '
 const sibling: ModContextLayer = { id: 'l3', displayName: 'Assets', sourceId: 'host', sourcePath: 'C:/Work/Assets.SC2Mod', role: 'dependency', provenance: 'declared' }
 
 describe('subject closures through mod contexts', () => {
+  it('omits the parallel chain source only when the caller retains an authoritative query server', async () => {
+    const openModContext = vi.fn(async (request: ModContextRequest): Promise<ModContext> => ({ ...context(request, [core]),
+      languageModel: 'server', query: async () => ({}) }))
+    const request = { contentSources: sources(openModContext), routes: [],
+      limits: { maxDocumentBytes: 1024, maxWorkspaceBytes: 4096, maxEntries: 8 },
+      subjects: [{ descriptor: { subjectUri: 'file:///C:/one' } }] }
+    const served = await resolveContentLanguageSources({ ...request, keepContexts: true })
+    expect(served.sources).toEqual([])
+    expect(served.contexts).toHaveLength(1)
+    expect(served.dependenciesComplete).toBe(true)
+    const standalone = await resolveContentLanguageSources(request)
+    expect(standalone.sources).toHaveLength(1)
+    const legacy = await resolveContentLanguageSources({ ...request, keepContexts: true,
+      contentSources: sources(async request => ({ ...context(request, [core]), languageModel: 'server' })) })
+    expect(legacy.sources).toHaveLength(1)
+    await Promise.all(served.contexts!.map(context => context.dispose()))
+    await Promise.all(legacy.contexts!.map(context => context.dispose()))
+  })
+
   it('forwards one explicit workspace scope to every subject in a language projection', async () => {
     const openModContext = vi.fn(async (request: ModContextRequest) => context(request, [core]))
     await resolveContentLanguageSources({
