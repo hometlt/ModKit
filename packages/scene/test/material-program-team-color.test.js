@@ -78,6 +78,9 @@ it('mixes the team colour into a program by its mask before light (П9, С1)', a
   pixel.forEach((value, channel) =>
     assert.ok(Math.abs(value - Math.round(expected[channel] * 255)) <= 1, `${channel}: ${value}`),
   )
+  // a frame without a team colour draws the program's own default
+  const fallback = await centre({ ...mixed, teamColorDefault: [0, 0.2, 1] })
+  assert.deepEqual(fallback, pixel)
   // a strength without a blend is no reading of the mask
   await assert.rejects(
     centre(program({ teamColorStrength: 2 }), [0, 0.2, 1]),
@@ -90,12 +93,17 @@ it('turns UV_game_material_team_color into the program mask of the image it name
     images: [{ uri: 'unittextures/Arm_color.dds' }, { uri: 'unittextures/Arm_other.dds' }],
     textures: [{ source: 1 }, { source: 0 }],
   }
-  const team = { mask: { texture: 'uvm-texture-1', channel: 'a' }, blend: 'lerp' }
+  const team = {
+    mask: { texture: 'uvm-texture-1', channel: 'a' },
+    blend: 'lerp',
+    defaultColor: [0, 0, 1],
+  }
   const drawn = uvmProgramTeamColor(document, shader(program()), team, 1, 0)
   const standard = drawn.parameters.renderModel.standard
   assert.equal(drawn.parameters.nativeShader, 'spring.s3o')
   assert.equal(standard.teamColorBlend, 'lerp')
   assert.equal(standard.teamColorStrength, undefined)
+  assert.deepEqual(standard.teamColorDefault, [0, 0, 1])
   assert.deepEqual(
     [standard.layers.teamColorMask.texturePath, standard.layers.teamColorMask.channels],
     ['unittextures/Arm_color.dds', 2],

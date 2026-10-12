@@ -24,6 +24,7 @@ const layer = (slot: string, texel: readonly number[], channels = 0) => ({
 })
 const base = [0.2, 0.4, 0.6, 0.75]
 const team = [0.1, 0.3, 1] as const
+const team3 = team
 const input = (extra: object = {}, mask = 0.75) =>
   ({
     layers: {
@@ -73,10 +74,35 @@ it('colours the base by the team colour formula before light, in place of the gr
   expect(none.slice(0, 3).map(value => Number(value.toFixed(6)))).toEqual([0.2, 0.4, 0.6])
 })
 
+it('mixes the team colour into the emissive layers by the same mask (teamColorEmissive)', () => {
+  // BAR's glow is its team-coloured albedo: emissive1 is the colour texture, the mask its red
+  const glowing = (extra: object) =>
+    composeStandardPixelCpu(
+      input({
+        teamColorBlend: 'lerp',
+        unshaded: false,
+        layers: {
+          diffuse: layer('diffuse', base),
+          teamColorMask: layer('teamColorMask', [0, 0, 0, 0.75], 2),
+          emissive1: layer('emissive1', base),
+          emissiveMask: layer('emissiveMask', [1, 1, 1, 1]),
+        },
+        ...extra,
+      }),
+    ).rgba
+  const plain = glowing({})
+  const team = glowing({ teamColorEmissive: true })
+  for (const channel of [0, 1, 2]) {
+    const tinted = teamColorChannel(base[channel]!, 0.75, team3[channel]!, 'lerp', 1)
+    expect(team[channel]! - plain[channel]!).toBeCloseTo(tinted - base[channel]!, 6)
+  }
+})
+
 it('draws the same formula in GLSL, its blend and strength in the program key', () => {
   const material = {
     layers: {
       diffuse: { ...layer('diffuse', base), texel: undefined },
+      emissive1: { ...layer('emissive1', base), texel: undefined },
       teamColorMask: { ...layer('teamColorMask', base, 2), texel: undefined },
     },
     blendMode: 0,
@@ -94,12 +120,14 @@ it('draws the same formula in GLSL, its blend and strength in the program key', 
     usesVertexAlpha: false,
     teamColorBlend: 'add',
     teamColorStrength: 3,
+    teamColorEmissive: true,
   } as never
   const defines = buildMaterialDefines(material)
-  expect(canonicalDefineKey(defines)).toContain(';tcb=add,3')
+  expect(canonicalDefineKey(defines)).toContain(';tcb=add,3,e')
   const source = buildStandardFragmentSource(defines)
   expect(source).toContain('vec3 modkitTeamColor(')
   expect(source).toContain('color = modkitTeamColor(color, vec3(computeLayer_teamColorMask().r)')
+  expect(source).toContain('emis1Color.rgb = modkitTeamColor(emis1Color.rgb')
   // the grain merge is not drawn on top
   expect(source).not.toContain('final.rgb += (u_teamColor - vec3(0.5)) * teamColorMask;')
 })

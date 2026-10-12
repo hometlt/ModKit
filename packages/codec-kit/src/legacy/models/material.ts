@@ -221,6 +221,14 @@ export interface StandardMaterialModel {
   teamColorBlend?: 'multiply' | 'add' | 'replace' | 'overlay' | 'lerp'
   teamColorStrength?: number
   /**
+   * The emissive layers take the team colour by the same mask and formula as the base, before
+   * their colour enters the light (BAR adds its team-coloured albedo as the glow). Without
+   * `teamColorBlend` it has nothing to read and changes nothing.
+   */
+  teamColorEmissive?: boolean
+  /** The team colour drawn when the frame names none (`UV_game_material_team_color.defaultColor`). */
+  teamColorDefault?: [number, number, number]
+  /**
    * Fade at grazing angles: smoothstep(0, edgeFadeOut, |N·V|) on the geometric normal multiplies an
    * additive material's colour (its fade) and any other material's alpha (Kane's Wrath DefaultW3D
    * `EdgeFadeOut`). A layer's fresnel cannot state it: its curve is a power, and it scales the layer.

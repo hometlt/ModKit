@@ -239,6 +239,8 @@ const PROGRAM_MASK_CHANNELS: Readonly<Record<string, number>> = { a: 2, r: 3, g:
  * its `teamColorMask` layer — the image the mask texture names, by the extension's channel, on the
  * base colour's UVs (`uvSource` = `texCoord`) — and its blend and strength, which the program draws
  * before light by the one formula (codec-kit `teamColorChannel`). `whole` is a white layer.
+ * The extension's `defaultColor` becomes the program's `teamColorDefault`, drawn when the frame
+ * names no team colour.
  * Undefined when the program already reads a team colour (`teamColorMaskMix`, `teamColorBlend`, a
  * `teamColorMask` layer), when the material is not a standard program, or for a per-channel mask
  * (`rgb`), which a program mask, one weight per texel, cannot state.
@@ -299,6 +301,9 @@ export function uvmProgramTeamColor(
           ...(team.strength === undefined || team.strength === 1
             ? {}
             : { teamColorStrength: team.strength }),
+          ...(team.defaultColor === undefined
+            ? {}
+            : { teamColorDefault: [...team.defaultColor] }),
         },
       },
     },

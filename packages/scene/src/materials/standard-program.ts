@@ -270,9 +270,18 @@ export function createStandardMaterialPrograms(
               lighting.sceneLighting === true,
             )
           passShapes.push(shape)
+          // a frame without a team colour draws the material's own default (teamColorDefault)
+          const own = prepared.material.teamColorDefault
           return compilePass(
             prepared,
-            { teamColor, ambient, terrainTiling },
+            {
+              teamColor:
+                lighting.teamColor === undefined && own !== undefined
+                  ? (Object.freeze([...finiteVector(own, 3, 'team color default')]) as Vec3)
+                  : teamColor,
+              ambient,
+              terrainTiling,
+            },
             shape,
             sampler.worldToMaterial,
             environment,
@@ -757,6 +766,7 @@ function shade(
       : {
           teamColorBlend: material.teamColorBlend,
           teamColorStrength: material.teamColorStrength ?? 1,
+          ...(material.teamColorEmissive === true ? { teamColorEmissive: true } : {}),
         }),
     ...(material.edgeFadeOut === undefined ? {} : { edgeFadeOut: material.edgeFadeOut }),
     ...(material.emissiveTint === undefined ? {} : { emissiveTint: material.emissiveTint }),

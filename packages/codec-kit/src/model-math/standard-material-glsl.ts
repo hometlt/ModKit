@@ -142,6 +142,8 @@ export interface StandardMaterialDefines {
   /** StandardMaterialModel.teamColorBlend and its strength, compile-time constants. */
   teamColorBlend?: TeamColorBlend
   teamColorStrength?: number
+  /** StandardMaterialModel.teamColorEmissive, with a teamColorBlend only. */
+  teamColorEmissive?: boolean
   /** The grazing fade of StandardMaterialModel.edgeFadeOut, a compile-time constant. */
   edgeFadeOut?: number
 }
@@ -300,6 +302,7 @@ export function buildMaterialDefines(
       : {
           teamColorBlend: material.teamColorBlend,
           teamColorStrength: material.teamColorStrength ?? 1,
+          ...(material.teamColorEmissive === true ? { teamColorEmissive: true } : {}),
         }),
     ...(material.edgeFadeOut === undefined ? {} : { edgeFadeOut: material.edgeFadeOut }),
   }
@@ -327,7 +330,7 @@ export function canonicalDefineKey(defines: StandardMaterialDefines): string {
     `${defines.pbr ? ';pbr' : ''}${defines.linearColor ? ';linear' : ''}${defines.tonemap ? ';tonemap' : ''}` +
     `${defines.environmentTintByBase ? ';envbase' : ''}` +
     `${defines.teamColorMaskMix ? ';tcmix' : ''}` +
-    `${defines.teamColorBlend === undefined ? '' : `;tcb=${defines.teamColorBlend},${defines.teamColorStrength ?? 1}`}` +
+    `${defines.teamColorBlend === undefined ? '' : `;tcb=${defines.teamColorBlend},${defines.teamColorStrength ?? 1}${defines.teamColorEmissive === true ? ',e' : ''}`}` +
     `${defines.edgeFadeOut === undefined ? '' : `;edge=${defines.edgeFadeOut}`}`
   )
 }
@@ -571,6 +574,8 @@ export interface CpuPixelInput {
   /** StandardMaterialModel.teamColorBlend and teamColorStrength. */
   teamColorBlend?: TeamColorBlend
   teamColorStrength?: number
+  /** StandardMaterialModel.teamColorEmissive. */
+  teamColorEmissive?: boolean
   /** StandardMaterialModel.edgeFadeOut, on `viewDir`. */
   edgeFadeOut?: number
   specMode: 0 | 1
@@ -796,13 +801,33 @@ export function composeStandardPixelCpu(input: CpuPixelInput): CpuPixelResult {
           value[3],
         ]
       : [value[0], value[1], value[2], value[3]]
+  // teamColorEmissive: an emissive layer's colour takes the team colour as the base did
+  const emissiveTeam =
+    layers.teamColorMask && input.teamColorBlend !== undefined && input.teamColorEmissive === true
+      ? {
+          mask: computeLayerColorCpu(layers.teamColorMask, teamColor)[0],
+          blend: input.teamColorBlend,
+          strength: input.teamColorStrength ?? 1,
+        }
+      : undefined
+  const emissiveLayer = (sample: CpuLayerSample): [number, number, number, number] => {
+    const value = computeLayerColorCpu(sample, teamColor)
+    if (emissiveTeam === undefined) return inPipeline(value)
+    const { mask, blend, strength } = emissiveTeam
+    return inPipeline([
+      teamColorChannel(value[0], mask, teamColor[0], blend, strength),
+      teamColorChannel(value[1], mask, teamColor[1], blend, strength),
+      teamColorChannel(value[2], mask, teamColor[2], blend, strength),
+      value[3],
+    ])
+  }
   // Emissive branch (standard.frag.ts:47–75, ported exactly).
   const applyEmissive = (base: [number, number, number]): [number, number, number] => {
     let final: [number, number, number] = [base[0], base[1], base[2]]
     let addEmissive = false
     let emissive: [number, number, number] = [0, 0, 0]
     if (layers.emissive1) {
-      const temp = inPipeline(computeLayerColorCpu(layers.emissive1, teamColor))
+      const temp = emissiveLayer(layers.emissive1)
       const op = layers.emissive1.op
       if (op === 0 || op === 1 || op === 3) {
         final = combineLayerColorCpu(op, temp, final, teamColor)
@@ -812,7 +837,7 @@ export function composeStandardPixelCpu(input: CpuPixelInput): CpuPixelResult {
       }
     }
     if (layers.emissive2) {
-      const temp = inPipeline(computeLayerColorCpu(layers.emissive2, teamColor))
+      const temp = emissiveLayer(layers.emissive2)
       const op = layers.emissive2.op
       if (!addEmissive && (op === 0 || op === 1 || op === 3)) {
         final = combineLayerColorCpu(op, temp, final, teamColor)
@@ -1519,8 +1544,18 @@ export function buildStandardFragmentSource(
     if (!emis1 && !emis2) return lines
     lines.push(`${indent}vec3 emissive = vec3(0.0);`)
     lines.push(`${indent}bool addEmissive = false;`)
+    // teamColorEmissive: an emissive layer's colour takes the team colour as the base did
+    const team = (name: string): string[] =>
+      defines.teamColorEmissive === true &&
+      defines.teamColorBlend !== undefined &&
+      layerBySlot.has('teamColorMask')
+        ? [
+            `${indent}${name}.rgb = modkitTeamColor(${name}.rgb, vec3(computeLayer_teamColorMask().r), u_teamColor, ${TEAM_COLOR_BLENDS.indexOf(defines.teamColorBlend)}, ${glslFloat(defines.teamColorStrength ?? 1)});`,
+          ]
+        : []
     if (emis1) {
       lines.push(`${indent}vec4 emis1Color = computeLayer_emissive1();`)
+      lines.push(...team('emis1Color'))
       lines.push(...inPipeline(indent, 'emis1Color'))
       if (emis1.op === 0 || emis1.op === 1 || emis1.op === 3) {
         lines.push(`${indent}${combineExpression(emis1.op, 'emis1Color', target)}`)
@@ -1531,6 +1566,7 @@ export function buildStandardFragmentSource(
     }
     if (emis2) {
       lines.push(`${indent}vec4 emis2Color = computeLayer_emissive2();`)
+      lines.push(...team('emis2Color'))
       lines.push(...inPipeline(indent, 'emis2Color'))
       // The emis2 mod/mod2x/lerp fold only applies when emis1 didn't latch (reference asymmetry).
       if (emis2.op === 0 || emis2.op === 1 || emis2.op === 3) {

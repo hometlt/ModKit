@@ -293,12 +293,18 @@ function validateStandard(value: unknown, path: string, signal?: AbortSignal) {
   flags(
     material,
     path,
-    ['depthPrepass', 'specularEnergyConservation', 'environmentTintByBase', 'teamColorMaskMix'],
+    [
+      'depthPrepass',
+      'specularEnergyConservation',
+      'environmentTintByBase',
+      'teamColorMaskMix',
+      'teamColorEmissive',
+    ],
     true,
   )
   for (const key of ['sourceFlags', 'sourceAdditionalFlags', 'materialClass'])
     if (material[key] !== undefined) integer(material[key], `${path}.${key}`, 0, 0xffffffff)
-  for (const key of ['environmentMultipliers', 'emissiveTint'])
+  for (const key of ['environmentMultipliers', 'emissiveTint', 'teamColorDefault'])
     if (material[key] !== undefined) vector(material[key], `${path}.${key}`, 3)
   if (
     material['edgeFadeOut'] !== undefined &&
