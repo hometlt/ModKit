@@ -589,7 +589,7 @@ function isLanguageProvider(value: unknown): value is LanguageProvider {
     record['languageIds'].every(item => typeof item === 'string') &&
     (modContextFeatures === undefined ||
       (Array.isArray(modContextFeatures) &&
-        modContextFeatures.length <= 6 &&
+        modContextFeatures.length <= 8 &&
         new Set(modContextFeatures).size === modContextFeatures.length &&
         modContextFeatures.every(
           item =>
@@ -598,14 +598,14 @@ function isLanguageProvider(value: unknown): value is LanguageProvider {
             item === 'definition' ||
             item === 'references' ||
             item === 'signatureHelp' ||
-            item === 'diagnostics',
+            item === 'diagnostics' || item === 'prepareRename' || item === 'rename',
         ))) &&
     (documentLocalFeatures === undefined ||
       (Array.isArray(documentLocalFeatures) &&
-        documentLocalFeatures.length <= 3 &&
+        documentLocalFeatures.length <= 4 &&
         new Set(documentLocalFeatures).size === documentLocalFeatures.length &&
         documentLocalFeatures.every(
-          item => item === 'documentSymbols' || item === 'foldingRanges' || item === 'formatting',
+          item => item === 'documentSymbols' || item === 'foldingRanges' || item === 'formatting' || item === 'prepareRename',
         ))) &&
     (workspaceLanguageIds === undefined ||
       (Array.isArray(workspaceLanguageIds) &&

@@ -125,6 +125,78 @@ const document = (uri: string, text: string, version = 1) => ({
 })
 
 describe('the loaded mod servers of a language workspace', () => {
+  it('keeps proven local rename preparation ahead of mod and snapshot preparation', async () => {
+    const chain = server()
+    const registry = createLanguageModContexts({ contexts: [chain.context] })
+    const synchronize = vi.fn(registry.synchronize)
+    const servers = { ...registry, synchronize }
+    const provider: LanguageProvider = {
+      contract: LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT, languageIds: ['sc2-data'],
+      documentLocalFeatures: ['prepareRename'], modContextFeatures: ['prepareRename'],
+      semanticContextRequirements: [{ kind: 'mod-context', gameId: 'test/game' }],
+      analyze: async ({ document: doc }) => ({ documentUri: doc.uri, documentVersion: doc.version, tokens: [], symbols: [], diagnostics: [] }),
+      async prepareRename(request) {
+        expect(request.workspaceDocuments).toEqual([request.document])
+        expect(request.workspaceContext?.modContext).toBeUndefined()
+        return { range: { start: { line: 0, character: 0 }, end: { line: 0, character: 3 } }, placeholder: 'id' }
+      },
+    }
+    const snapshot = vi.fn(async () => ({ documents: [], isComplete: true }))
+    const workspace = await languageWorkspace(provider, () => {}, servers, { documentSource: { snapshot } })
+    await workspace.synchronize({ languageId: 'sc2-data', document: document(MOD_UNITS_URI, '<edited/>') })
+    expect(await workspace.prepareRename({ uri: MOD_UNITS_URI, documentVersion: 1, position: { line: 0, character: 1 } })).toMatchObject({ placeholder: 'id' })
+    expect(snapshot).not.toHaveBeenCalled()
+    expect(synchronize).not.toHaveBeenCalled()
+    await workspace.shutdown()
+  }, 30_000)
+
+  it('maps rename plans to the open URI and version under the layer case policy', async () => {
+    const chain = server()
+    const servers = createLanguageModContexts({ contexts: [chain.context], uriOf: target => typeof target === 'string' ? `file:///${target}` : undefined })
+    const uri = 'file:///c:/Mods/Mine.SC2Mod/base.sc2data/GameData/unitDATA.xml'
+    const { scope } = servers.placeOf(uri)!
+    await servers.synchronize(scope, [document(uri, '<edited/>', 19)])
+    const answer = await servers.query(scope, { kind: 'language.rename' }) as { documents: { uri?: string; documentVersion?: number }[] }
+    expect(answer.documents[1]).toMatchObject({ uri, documentVersion: 19 })
+    await servers.dispose()
+  })
+
+  it('validates a served rename through only its changed targets and keeps read-only/confinement guards', async () => {
+    const chain = server()
+    const originalRead = chain.context.read.bind(chain.context)
+    const other = 'Base.SC2Data/GameData/Other.xml'
+    const otherUri = `file:///C:/Mods/Mine.SC2Mod/${other}`
+    const read = vi.fn(async (layerId: string, path: string, bytes: number) =>
+      path === other ? encoder.encode('Marine') : originalRead(layerId, path, bytes))
+    chain.context.read = read
+    const servers = createLanguageModContexts({ contexts: [chain.context] })
+    let target = otherUri
+    const provider: LanguageProvider = {
+      contract: LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT, languageIds: ['sc2-data'],
+      modContextFeatures: ['rename'], semanticContextRequirements: [{ kind: 'mod-context', gameId: 'test/game' }],
+      analyze: async ({ document: doc }) => ({ documentUri: doc.uri, documentVersion: doc.version, tokens: [], symbols: [], diagnostics: [] }),
+      async rename(request) {
+        expect(request.workspaceDocuments).toEqual([request.document])
+        return { isComplete: true, documentChanges: [{ uri: target, documentVersion: 0,
+          edits: [{ range: { start: { line: 0, character: 0 }, end: { line: 0, character: 6 } }, newText: 'Medic' }] }] }
+      },
+    }
+    const snapshot = vi.fn(async () => ({ documents: [], isComplete: true }))
+    const workspace = await languageWorkspace(provider, () => {}, servers, { documentSource: { snapshot } })
+    await workspace.synchronize({ languageId: 'sc2-data', document: document(MOD_UNITS_URI, '<edited/>') })
+    await servers.synchronize(servers.placeOf(MOD_UNITS_URI)!.scope, [document(MOD_UNITS_URI, '<edited/>')])
+    read.mockClear()
+    const request = { uri: MOD_UNITS_URI, documentVersion: 1, position: { line: 0, character: 1 }, newName: 'Medic' }
+    expect((await workspace.rename(request))?.documentChanges[0]?.uri).toBe(otherUri)
+    expect(snapshot).not.toHaveBeenCalled()
+    expect(read.mock.calls.map(call => call[1])).toEqual([other])
+    target = 'file:///C:/Elsewhere/Other.xml'
+    await expect(workspace.rename(request)).rejects.toThrow(/outside its mod/u)
+    target = 'content-source://local%3Acasc/Mods/Core.SC2Mod/Base.SC2Data/GameData/Other.xml'
+    await expect(workspace.rename(request)).rejects.toThrow(/read-only/u)
+    await workspace.shutdown()
+  }, 30_000)
+
   it('retries unchanged buffers after a rejected overlay delivery', async () => {
     const chain = server()
     let attempts = 0

@@ -26,6 +26,7 @@
  * The host knows no game: questions and answers are the game's JSON, checked to be JSON.
  */
 import { isJsonValue, type JsonValue } from '@modkit/sdk'
+import { OperationCancelledError } from '@modkit/core'
 import type { LanguageDocument, LanguageWorkspaceModContext } from '@modkit/sdk/language'
 import {
   HOST_LAYER_SOURCE_ID,
@@ -49,6 +50,10 @@ export interface LanguageModContextPlace {
 }
 
 export interface LanguageModContexts {
+  /** Read only a planned edit target in this chain, under its synchronized revision and authority. */
+  readEditTarget?(scope: string, revision: string, uri: string, signal?: AbortSignal): Promise<{
+    readonly text: string; readonly layerId: string; readonly path: string; readonly readOnly: boolean
+  } | undefined>
   /** The server whose chain holds a document, and the file it is there; the opened package wins. */
   placeOf(uri: string, gameId?: string): LanguageModContextPlace | undefined
   /** Bring these open buffers to the server of `scope`, and name its state for a request. */
@@ -99,6 +104,7 @@ interface Entry {
 
 /** What the server holds for one open buffer. */
 interface Pushed {
+  readonly version: number
   readonly scope: string
   readonly uri: string
   readonly layerId: string
@@ -291,14 +297,17 @@ export function createLanguageModContexts(
           open.add(document.uri)
           const key = pushedKey(scope, document.uri)
           const known = pushed.get(key)
-          if (known !== undefined && known.text === document.text) continue
+          if (known !== undefined && known.text === document.text) {
+            delivered.set(key, Object.freeze({ ...known, version: document.version }))
+            continue
+          }
           if (
             known === undefined &&
             (await diskText(context, place.layerId, place.path)) === document.text
           ) {
             delivered.set(
               key,
-              Object.freeze({ ...place, uri: document.uri, text: document.text, overlaid: false }),
+              Object.freeze({ ...place, uri: document.uri, text: document.text, version: document.version, overlaid: false }),
             )
             continue
           }
@@ -307,7 +316,7 @@ export function createLanguageModContexts(
           )
           delivered.set(
             key,
-            Object.freeze({ ...place, uri: document.uri, text: document.text, overlaid: true }),
+            Object.freeze({ ...place, uri: document.uri, text: document.text, version: document.version, overlaid: true }),
           )
         }
         // A buffer of this server the editor no longer has open: its text leaves.
@@ -359,17 +368,43 @@ export function createLanguageModContexts(
       if (typeof answer !== 'object' || answer === null || Array.isArray(answer)) return answer
       const documents = (answer as { readonly documents?: unknown }).documents
       if (!Array.isArray(documents)) return answer
+      const kind = (question as { readonly kind?: unknown } | null)?.kind
+      const rename = typeof kind === 'string' && kind.endsWith('.rename')
+      const layers = new Map(context.layers.map(layer => [layer.id, layer]))
+      const openByPlace = new Map<string, Pushed>()
+      if (rename) for (const known of pushed.values()) {
+        const layer = layers.get(known.layerId)
+        if (known.scope === scope && layer !== undefined) openByPlace.set(
+          `${known.layerId}\0${modContextLayerPathKey(layer, `${layer.sourcePath}/${known.path}`)}`, known)
+      }
       return Object.freeze({
         ...answer,
         documents: Object.freeze(
           documents.map(item => {
             const record = item as { readonly layerId?: unknown; readonly path?: unknown } | null
             if (typeof record?.layerId !== 'string' || typeof record.path !== 'string') return item
-            const uri = fileUri(context, record.layerId, record.path)
-            return uri === undefined ? item : Object.freeze({ ...(item as object), uri })
+            const layer = layers.get(record.layerId)
+            const open = layer === undefined ? undefined : openByPlace.get(`${record.layerId}\0${modContextLayerPathKey(layer, `${layer.sourcePath}/${record.path}`)}`)
+            const uri = open?.uri ?? fileUri(context, record.layerId, record.path)
+            return uri === undefined ? item : Object.freeze({ ...(item as object), uri,
+              ...(rename ? { documentVersion: open?.version ?? 0 } : {}) })
           }),
         ),
       }) as JsonValue
+    },
+
+    async readEditTarget(scope, revision, uri, signal) {
+      const entry = entryOf(scope)
+      const place = placeIn(entry, uri)
+      if (place === undefined || place.path.split(/[\\/]/u).some(part => part === '..' || part === '.')) return undefined
+      if (entry.context.revision !== revision) throw new OperationCancelledError('edit target belongs to another mod revision')
+      signal?.throwIfAborted()
+      // The existing edit validator rejects this authority before range checks; no read is needed.
+      if (!place.writable) return Object.freeze({ text: '', layerId: place.layerId, path: place.path, readOnly: true })
+      const text = decoder.decode(await entry.context.read(place.layerId, place.path, maxDocumentBytes))
+      signal?.throwIfAborted()
+      if (entry.context.revision !== revision) throw new OperationCancelledError('edit target changed while being read')
+      return Object.freeze({ text, layerId: place.layerId, path: place.path, readOnly: !place.writable })
     },
 
     replace(key, contexts) {

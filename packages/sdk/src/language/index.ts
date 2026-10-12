@@ -519,6 +519,8 @@ export type LanguageModContextFeature =
   | 'references'
   | 'signatureHelp'
   | 'diagnostics'
+  | 'prepareRename'
+  | 'rename'
 
 /**
  * Bounded inputs for one semantic request. `workspaceDocuments` includes `document` and never
@@ -600,7 +602,7 @@ export interface LanguageCodeActionsRequest extends LanguageFeatureRequest {
 }
 
 /** Features that may explicitly prove they need only the live document and provider schema. */
-export type LanguageDocumentLocalFeature = 'documentSymbols' | 'foldingRanges' | 'formatting'
+export type LanguageDocumentLocalFeature = 'documentSymbols' | 'foldingRanges' | 'formatting' | 'prepareRename'
 
 /** Activated provider surface. It is deliberately independent of any LSP transport package. */
 export interface LanguageProvider {

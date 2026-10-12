@@ -1157,7 +1157,7 @@ function isModContextFeature(
     feature === 'definition' ||
     feature === 'references' ||
     feature === 'signatureHelp' ||
-    feature === 'diagnostics'
+    feature === 'diagnostics' || feature === 'prepareRename' || feature === 'rename'
   )
 }
 
@@ -2321,7 +2321,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
     try {
       let documentOnly =
         inputFeature !== undefined &&
-        !isModContextFeature(inputFeature) &&
+        (inputFeature === 'prepareRename' || !isModContextFeature(inputFeature)) &&
         entry.resolution.provider.documentLocalFeatures?.includes(inputFeature) === true
       if (
         discoverCompletionContext &&
@@ -2345,6 +2345,8 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         inputFeature !== undefined &&
         isModContextFeature(inputFeature) &&
         entry.resolution.provider.modContextFeatures?.includes(inputFeature) === true
+      // Older registries cannot validate unopened write targets without their bounded snapshot.
+      if (inputFeature === 'rename' && modContextsNow()?.readEditTarget === undefined) readsModContext = false
       if (
         readsModContext &&
         inputFeature === 'completion' &&
@@ -2815,6 +2817,38 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
       )
     }
     return edit
+  }
+
+  /** Validate only a served rename's changed files under the Host's existing range/authority rules. */
+  const validateServedWorkspaceEdit = async (
+    value: unknown, request: LanguageFeatureRequest, maxEdits: number,
+  ): Promise<LanguageWorkspaceEdit | undefined> => {
+    if (!modContextServed.has(request) || value === undefined) return validateWorkspaceEdit(value, request, maxEdits, true)
+    const edit = value as LanguageWorkspaceEdit
+    if (edit === null || !Array.isArray(edit.documentChanges) || edit.documentChanges.length > request.maxDocuments) {
+      invalidFeature('served rename returned an invalid or unbounded edit', request.document.uri)
+    }
+    const context = request.workspaceContext!.modContext!
+    const registry = modContextsNow()!
+    const targets = new Map(request.workspaceDocuments.map(document => [document.uri, document]))
+    const origins = new Map(request.workspaceContext!.documentOrigins.map(origin => [origin.uri, origin]))
+    let bytes = 0
+    const seen = new Set<string>()
+    for (const change of edit.documentChanges) {
+      if (!boundedContextText(change?.uri) || seen.has(change.uri)) invalidFeature('served rename returned an invalid target', request.document.uri)
+      seen.add(change.uri)
+      const target = await registry.readEditTarget!(context.scope, context.revision, change.uri, request.signal)
+      throwIfAborted(request.signal)
+      if (target === undefined) invalidFeature('served rename target is outside its mod', request.document.uri)
+      bytes += target.text.length * 2
+      if (bytes > sourceCaptureMaxBytes) invalidFeature('served rename targets exceed the workspace budget', request.document.uri)
+      const open = documents.get(change.uri)
+      targets.set(change.uri, open?.document ?? Object.freeze({ uri: change.uri, text: target.text, version: 0, languageId: request.document.languageId }))
+      origins.set(change.uri, Object.freeze({ uri: change.uri, layerId: target.layerId, logicalId: target.path,
+        precedence: 0, sourceRevision: context.revision, readOnly: target.readOnly }))
+    }
+    return validateWorkspaceEdit(value, { ...request, workspaceDocuments: [...targets.values()],
+      workspaceContext: { ...request.workspaceContext!, documentOrigins: [...origins.values()] } }, maxEdits, true)
   }
 
   const validateCodeActionList = (
@@ -3660,6 +3694,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         (provider, feature) => provider.prepareRename?.({ ...feature, position: request.position }),
         validatePreparation,
         { position: request.position },
+        false, false, LANGUAGE_MAX_RESULTS, 'prepareRename',
       )
     },
 
@@ -3696,8 +3731,9 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
             newName: request.newName,
             maxEdits,
           }),
-        (value, feature) => validateWorkspaceEdit(value, feature, maxEdits, true),
+        (value, feature) => validateServedWorkspaceEdit(value, feature, maxEdits),
         { position: request.position, newName: request.newName, maxEdits },
+        false, false, LANGUAGE_MAX_RESULTS, 'rename',
       )
     },
 

@@ -214,20 +214,20 @@ const documentSymbolOf = (value: LanguageSymbol): DocumentSymbol => ({
   ...(value.children === undefined ? {} : { children: value.children.map(documentSymbolOf) }),
 })
 
-const workspaceEditOf = (value: LanguageWorkspaceEdit): WorkspaceEdit => ({
+const workspaceEditOf = (value: LanguageWorkspaceEdit, isOpen: (uri: string) => boolean): WorkspaceEdit => ({
   documentChanges: value.documentChanges.map(change => ({
-    textDocument: { uri: change.uri, version: change.documentVersion },
+    textDocument: { uri: change.uri, version: isOpen(change.uri) ? change.documentVersion : null },
     edits: change.edits.map(edit => TextEdit.replace(edit.range, edit.newText)),
   })),
 })
 
-const codeActionOf = (value: LanguageCodeAction): CodeAction => ({
+const codeActionOf = (value: LanguageCodeAction, isOpen: (uri: string) => boolean): CodeAction => ({
   title: value.title,
   ...(value.kind === undefined
     ? {}
     : { kind: value.kind === 'rewrite' ? CodeActionKind.RefactorRewrite : value.kind }),
   ...(value.isPreferred === undefined ? {} : { isPreferred: value.isPreferred }),
-  ...(value.edit === undefined ? {} : { edit: workspaceEditOf(value.edit) }),
+  ...(value.edit === undefined ? {} : { edit: workspaceEditOf(value.edit, isOpen) }),
   ...(value.command === undefined ? {} : { command: commandOf(value.title, value.command) }),
   ...(value.disabledReason === undefined ? {} : { disabled: { reason: value.disabledReason } }),
 })
@@ -1068,7 +1068,7 @@ export function createModkitLanguageServer(
         newName: params.newName,
         maxEdits: maxResults,
       } satisfies LanguageWorkspaceRenameRequest)
-      return value === undefined ? null : workspaceEditOf(value)
+      return value === undefined ? null : workspaceEditOf(value, uri => documents.get(uri) !== undefined)
     }),
   )
   connection.onDocumentFormatting((params: DocumentFormattingParams, token) =>
@@ -1265,7 +1265,7 @@ export function createModkitLanguageServer(
         diagnostics,
         maxEdits: maxResults,
       } satisfies LanguageWorkspaceCodeActionsRequest)
-      return value?.actions.map(codeActionOf) ?? []
+      return value?.actions.map(action => codeActionOf(action, uri => documents.get(uri) !== undefined)) ?? []
     }),
   )
   connection.onDocumentSymbol((params, token) =>

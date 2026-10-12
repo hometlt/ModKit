@@ -7,8 +7,21 @@ const disposable = () => ({ dispose: noop })
 const token = { isCancellationRequested: false, onCancellationRequested: disposable }
 const uri = 'untitled:Main.fixturelang'
 
+test('rename keeps the captured open version and uses null for an unopened LSP target', async () => {
+  const h = harness({ withRename: true })
+  h.open(7, 'Marine')
+  h.release()
+  try {
+    const edit = await h.request('onRenameRequest', { textDocument: { uri }, position: { line: 0, character: 0 }, newName: 'Medic' })
+    assert.deepEqual(edit.documentChanges.map(change => change.textDocument.version), [7, null])
+  } finally {
+    await h.server.close()
+  }
+})
+
 function harness({
   withCompletion = false,
+  withRename = false,
   blockDiagnostics = false,
   blockAllDiagnostics = false,
   blockCompletion = false,
@@ -106,7 +119,7 @@ function harness({
     },
     capabilities: async uri =>
       current.has(uri)
-        ? { features: ['hover', 'workspace-symbols', 'code-lenses', ...(withCompletion ? ['completion'] : [])] }
+        ? { features: ['hover', 'workspace-symbols', 'code-lenses', ...(withCompletion ? ['completion'] : []), ...(withRename ? ['rename'] : [])] }
         : undefined,
     completion: async request => {
       completionEntered()
@@ -125,6 +138,10 @@ function harness({
       return { ...request.item, documentation: `${request.item.documentation ?? ''}\nResolved` }
     },
     hover: async request => ({ markdown: String(request.documentVersion) }),
+    rename: async request => ({ isComplete: true, documentChanges: [
+      { uri: request.uri, documentVersion: request.documentVersion, edits: [{ range: { start: { line: 0, character: 0 }, end: { line: 0, character: 1 } }, newText: request.newName }] },
+      { uri: 'file:///closed.fixturelang', documentVersion: 0, edits: [{ range: { start: { line: 0, character: 0 }, end: { line: 0, character: 1 } }, newText: request.newName }] },
+    ] }),
     documentSymbols: async request => {
       const range = { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } }
       return { symbols: [{ name: String(request.documentVersion), kind: 'variable', range, selectionRange: range }], isIncomplete: false }
