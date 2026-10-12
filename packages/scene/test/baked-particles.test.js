@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { createUvmEffectFrame } from '../src/uvm/effects.js'
+import { createUvmProjectorFrame } from '../src/uvm/projectors.js'
 
 // UV_game_baked_particles (SPEC_UVM §13.4): the frame of the clip's track for the clock, each
 // sprite a quad of its half size about its position, its atlas cell's UVs and its colour.
@@ -129,4 +130,20 @@ test('a ribbon batch joins its points into a strip whose quads share their edges
   // the second quad starts on the first one's end edge
   assert.deepEqual(quads[1].slice(0, 3), quads[0].slice(3, 6))
   assert.deepEqual(quads[1].slice(9, 12), quads[0].slice(6, 9))
+})
+
+test('a model that bakes its particles and states no effects of its own has no projectors', () => {
+  // renderUvm reads projectors whenever a model has effects or baked particles; a Reforged hero
+  // bakes its PopcornFX emitters and has no PRE2/RIBB, so UV_game_effects is absent.
+  const { document } = documentOf('camera', true, sprite([0, 0, 0]))
+  const frame = createUvmProjectorFrame(document, {
+    receivers: [],
+    nodeTransforms: new Map(),
+    activeNodes: new Set(['node-0']),
+    materials: [],
+    maxBytes: 1 << 20,
+    maxNodes: 1000,
+    warn: () => {},
+  })
+  assert.deepEqual(frame, { primitives: [], materials: [] })
 })

@@ -257,7 +257,9 @@ export function createUvmProjectorFrame(document: JsonObject, options: Options) 
   options.signal?.throwIfAborted()
   for (const value of [options.maxBytes, options.maxNodes])
     if (!Number.isSafeInteger(value) || value < 0) throw new RangeError('invalid projector budget')
-  const effect = object(object(document['extensions'], 'extensions')['UV_game_effects'], 'effects')
+  // A model may bake its particles (UV_game_baked_particles) and state no effects of its own.
+  const declared = object(document['extensions'], 'extensions')['UV_game_effects']
+  const effect = declared === undefined ? {} : object(declared, 'effects')
   const nodes = array(document, 'nodes'),
     projectors = array(effect, 'projectors')
   const primitives: (SceneRendererPrimitive & {
