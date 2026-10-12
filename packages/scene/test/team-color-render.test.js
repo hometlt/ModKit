@@ -35,28 +35,33 @@ const albedo = {
 }
 const mask = { id: 'mask', width: 2, height: 1, rgba: Uint8Array.of(0, 0, 0, 255, 0, 0, 0, 0) }
 
-it('draws UV_game_material_team_color where its mask weighs, in the draw team colour (П9)', async () => {
-  const frame = await draw(
-    {
-      baseColor: [1, 1, 1, 1],
-      baseColorTexture: 'albedo',
-      teamColor: { mask: { texture: 'mask', channel: 'a' }, blend: 'lerp' },
-    },
-    [albedo, mask],
-    [1, 0, 0],
-  )
-  assert.deepEqual(pixel(frame, 1), [255, 0, 0, 255])
-  assert.deepEqual(pixel(frame, 6), [255, 255, 255, 255])
-  // without a team colour, the extension's default; `whole` tints all of it, alpha its own
-  const tinted = await draw(
-    {
-      baseColor: [0.5, 0.5, 0.5, 1],
-      teamColor: { mask: 'whole', blend: 'multiply', defaultColor: [0, 1, 0] },
-    },
-    [],
-  )
-  assert.deepEqual(pixel(tinted, 1), [0, 128, 0, 255])
-})
+for (const filter of ['nearest', 'linear'])
+  it(`draws UV_game_material_team_color with ${filter} mask filtering (П9)`, async () => {
+    const frame = await draw(
+      {
+        baseColor: [1, 1, 1, 1],
+        baseColorTexture: 'albedo',
+        teamColor: { mask: { texture: 'mask', channel: 'a' }, blend: 'lerp' },
+      },
+      [albedo, { ...mask, filter }],
+      [1, 0, 0],
+    )
+    // At these pixel centres linear sampling weighs the two mask texels 7/8 and 1/8.
+    assert.deepEqual(pixel(frame, 1), filter === 'nearest' ? [255, 0, 0, 255] : [255, 32, 32, 255])
+    assert.deepEqual(
+      pixel(frame, 6),
+      filter === 'nearest' ? [255, 255, 255, 255] : [255, 223, 223, 255],
+    )
+    // without a team colour, the extension's default; `whole` tints all of it, alpha its own
+    const tinted = await draw(
+      {
+        baseColor: [0.5, 0.5, 0.5, 1],
+        teamColor: { mask: 'whole', blend: 'multiply', defaultColor: [0, 1, 0] },
+      },
+      [],
+    )
+    assert.deepEqual(pixel(tinted, 1), [0, 128, 0, 255])
+  })
 
 it('reads the team colour a UVM material states, and says what the base route cannot draw', () => {
   const material = extension => ({ extensions: { UV_game_material_team_color: extension } })

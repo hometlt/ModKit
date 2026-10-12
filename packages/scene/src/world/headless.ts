@@ -6,7 +6,7 @@
  * coverage textures are decoded before their texture alpha is made opaque. A blended
  * ground draws its strongest layer, not the blend: the headless renderer has no splat program. It is
  * the viewer's geometry, textures and light, not its picture: no shadows, tone mapping, screen
- * effects or texture filtering, so colours come out brighter than the viewer shows them.
+ * effects or mip/anisotropic filtering; bilinear texture sampling follows each texture's filter.
  */
 import type {
   SceneRenderFrame,

@@ -1,3 +1,4 @@
+/** CPU scene rasterizer. Texture sampling shares material-program filtering, wrapping and decoding. */
 import { readSimpleEffectColors } from './effect-colors.js'
 import {
   readPreviewLighting,
@@ -265,23 +266,15 @@ function lambert(normal: Vec3, light: Light) {
   return Math.min(1, light.ambient + (1 - light.ambient) * cosine)
 }
 
-/** Nearest-neighbour sample, in the texture's own top-left-origin space. */
+/** Sample in top-left-origin UV space with the same filter as material programs. */
 function sampleTexture(texture: SceneRendererTexture, u: number, v: number): Vec4 {
-  const wrap = (value: number, extent: number, mode: string) => {
-    if (!Number.isFinite(value)) return 0
-    if (mode === 'clamp') return Math.min(extent - 1, Math.max(0, Math.floor(value * extent)))
-    const index = Math.floor(value * extent) % extent
-    return index < 0 ? index + extent : index
-  }
-  const x = wrap(u, texture.width, texture.wrapU ?? 'repeat')
-  const y = wrap(v, texture.height, texture.wrapV ?? 'repeat')
-  const offset = (y * texture.width + x) * 4
-  return [
-    (texture.rgba[offset] ?? 255) / 255,
-    (texture.rgba[offset + 1] ?? 255) / 255,
-    (texture.rgba[offset + 2] ?? 255) / 255,
-    (texture.rgba[offset + 3] ?? 255) / 255,
-  ]
+  return sampleMaterialTexture(
+    texture,
+    Number.isFinite(u) ? u : 0.5 / texture.width,
+    Number.isFinite(v) ? v : 0.5 / texture.height,
+    texture.wrapU ?? 'repeat',
+    texture.wrapV ?? 'repeat',
+  )
 }
 
 function rasterizeTriangle(
