@@ -4,9 +4,11 @@
  * This is deliberately a coordinator over the existing service contract, not a second language
  * composition root. A successful `open` owns exactly one provider lease until `close`/`shutdown`;
  * `change` only replaces analysis work for that document and never re-resolves the provider.
- * Snapshot features revalidate source documents and provenance. Opted-in hover/semantic completion
- * read the synchronized retained ModContext and check its revision; standalone or
- * position-specific fallback keeps the snapshot path. The server owns values/provenance. Only
+ * Opted-in semantic features read the retained ModContext and check its revision. Rename/code-action
+ * plans and closed-file diagnostic reports validate bounded targets without capturing the chain.
+ * Proven document-local and unsupported operations never scan it. Standalone/legacy snapshot
+ * features still revalidate source documents and provenance; authoritative servers have no parallel
+ * dependency source. The server owns values/provenance. Only
  * unchanged immutable captures may be retained within the caller's bounded workspace allowance;
  * retention never changes the documents, authority or completeness forwarded to a provider.
  * Whole-document projections use their own bounded result ceiling; interactive completion and
