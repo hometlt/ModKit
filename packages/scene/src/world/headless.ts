@@ -2,11 +2,14 @@
  * A map world rendered without a GPU (MW7): the world plan as one headless scene. The models stand
  * as the plan places them, with the materials and programs the world draws them with; the ground,
  * decals and water are primitives of their batches, with their team colours and blending. Terrain
- * overlay coverage is translated from the world shader's red channel into vertex alpha; compressed
+ * overlay coverage is translated from the world shader's red channel into vertex alpha, retaining
+ * terrain painter order before water; compressed
  * coverage textures are decoded before their texture alpha is made opaque. Blended ground samples
  * the world plan's splat layers and weight rasters per fragment. It is
  * the viewer's geometry, base textures and light, not its picture: no shadows, splat normal/specular
  * maps, tone mapping, screen effects or mip/anisotropic filtering; bilinear sampling follows each texture's filter.
+ * Untextured water uses the common depth tint/shore fade against the opaque scene, including models.
+ * Wave normals, caustics and shadows remain GPU-only.
  */
 import type {
   SceneRenderFrame,
@@ -152,10 +155,22 @@ export function worldHeadlessScene(plan: WorldWebGlPlan): Readonly<{
   scene: SceneRendererScene
   diagnostics: readonly SceneRendererDiagnostic[]
   splats: ReadonlyMap<string, Readonly<{ batch: WorldWebGlSplatBatch; overlay: boolean }>>
+  water: ReadonlyMap<string, number>
 }> {
   const primitives: SceneRendererPrimitive[] = []
   const materials: SceneRendererMaterial[] = []
   const diagnostics: SceneRendererDiagnostic[] = []
+  const water = new Map<string, number>()
+  // Terrain always precedes transparent models, including authored negative-priority effects.
+  let transparentPriority = 0
+  for (const batch of plan.transparentTexturedTriangles)
+    transparentPriority = Math.min(transparentPriority, batch.priority ?? 0)
+  for (const scene of plan.modelMaterialScenes) {
+    for (const material of scene.materials)
+      transparentPriority = Math.min(transparentPriority, material.priority ?? 0)
+    for (const programs of scene.programs.values()) for (const pass of programs.passes)
+      transparentPriority = Math.min(transparentPriority, pass.priority)
+  }
   const splats = new Map<string, Readonly<{ batch: WorldWebGlSplatBatch; overlay: boolean }>>()
   // batch textures by object: two batches' textures may share an id and not their texels
   const textures: SceneRendererTexture[] = []
@@ -244,7 +259,11 @@ export function worldHeadlessScene(plan: WorldWebGlPlan): Readonly<{
   plan.splatOverlayTriangles.forEach((batch, index) => {
     const id = `world/splat-overlay-${String(index)}`
     splats.set(id, { batch, overlay: true })
-    ground(id, batch, { alphaMode: 'blend', depthWrite: false })
+    ground(id, batch, {
+      alphaMode: 'blend',
+      depthWrite: false,
+      priority: transparentPriority + index - plan.splatOverlayTriangles.length - plan.terrainDecalTriangles.length - 1,
+    })
   })
   const unshadedDetails = [...plan.splatTriangles, ...plan.splatOverlayTriangles].filter(
     batch =>
@@ -261,7 +280,12 @@ export function worldHeadlessScene(plan: WorldWebGlPlan): Readonly<{
     ground(
       `world/decal-${String(index)}`,
       { ...batch, colors: terrainOverlayColors(batch.colors) },
-      { alphaMode: 'blend', depthWrite: false },
+      // Terrain layers use painter order on the GPU; depth sorting whole batches hides roads.
+      {
+        alphaMode: 'blend',
+        depthWrite: false,
+        priority: transparentPriority + index - plan.terrainDecalTriangles.length - 1,
+      },
       batch.textureCoordinates,
       overlayTexture(batch),
     ),
@@ -294,7 +318,22 @@ export function worldHeadlessScene(plan: WorldWebGlPlan): Readonly<{
       batch.texture,
     ),
   )
-  ground('world/transparent', plan.transparentTriangles, { alphaMode: 'blend', depthWrite: false })
+  const waterVertices = plan.waterPlanes.length === 0 ? 0 : plan.transparentWaterTriangles * 3
+  ground(
+    'world/transparent',
+    {
+      ...plan.transparentTriangles,
+      positions: plan.transparentTriangles.positions.subarray(waterVertices * 3),
+      normals: plan.transparentTriangles.normals.subarray(waterVertices * 3),
+      colors: plan.transparentTriangles.colors.subarray(waterVertices * 4),
+    },
+    { alphaMode: 'blend', depthWrite: false },
+  )
+  plan.waterPlanes.forEach((plane, index) => {
+    const id = `world/water-${index}`
+    water.set(id, plane.colorFalloff)
+    ground(id, plane.batch, { alphaMode: 'blend', depthWrite: false, shading: 'unlit' })
+  })
   plan.modelMaterialScenes.forEach((kept, index) => {
     // A scene kept from an earlier plan draws in this plan's poses.
     const scene = worldWebGlPosedScene(plan, kept)
@@ -330,6 +369,7 @@ export function worldHeadlessScene(plan: WorldWebGlPlan): Readonly<{
     }),
     diagnostics: Object.freeze(diagnostics),
     splats,
+    water,
   })
 }
 
@@ -347,16 +387,20 @@ export async function renderWorldHeadless(
   plan: WorldWebGlPlan,
   options: WorldHeadlessOptions,
 ): Promise<SceneRenderFrame> {
-  const { scene, diagnostics, splats } = worldHeadlessScene(plan)
+  const { scene, diagnostics, splats, water } = worldHeadlessScene(plan)
   const frame = createWorldWebGlCameraFrame(plan, options.width, options.height, options.camera)
-  const rendered = await renderHeadless({
-    scene,
-    camera: frame,
-    viewport: { width: options.width, height: options.height },
-    outputKind: 'rgba8',
-    clearColor: options.clearColor ?? [0, 0, 0, 1],
-    ...(options.signal === undefined ? {} : { signal: options.signal }),
-  }, splats)
+  const rendered = await renderHeadless(
+    {
+      scene,
+      camera: frame,
+      viewport: { width: options.width, height: options.height },
+      outputKind: 'rgba8',
+      clearColor: options.clearColor ?? [0, 0, 0, 1],
+      ...(options.signal === undefined ? {} : { signal: options.signal }),
+    },
+    splats,
+    water,
+  )
   return Object.freeze({
     ...rendered,
     diagnostics: Object.freeze([...diagnostics, ...rendered.diagnostics]),

@@ -1,4 +1,9 @@
-/** CPU scene rasterizer. Texture sampling shares material-program filtering, wrapping and decoding. */
+/**
+ * [MK] Core CPU scene rasterizer: material programs and base/PBR draws, alpha/depth, texture
+ * filtering, terrain splats and opaque-scene-depth water. Programs use the legacy light or the
+ * modern rig's ambient and first directional; the base route retains the full preview-light rig.
+ * Shadows, water wave normals and caustics require the GPU renderer.
+ */
 import { readSimpleEffectColors } from './effect-colors.js'
 import {
   readPreviewLighting,
@@ -49,6 +54,8 @@ import {
 import { shadeMaterial, interpolateMaterialVertex } from './material-sampling.js'
 import { sceneTextureBytes } from '../textures/cube.js'
 import { sceneTexturePixels } from './compressed-textures.js'
+import { invertMaterialFrame } from '../materials/frame.js'
+import { waterDepthColor } from './water-color.js'
 import { requiresEnvironmentEye, snapshotEyePosition } from '../materials/environment.js'
 import type { WorldWebGlSplatBatch } from '../world/webgl.js'
 type Vec3 = readonly [number, number, number]
@@ -79,6 +86,9 @@ interface Surface {
   teamMask?: SceneRendererTexture
 }
 interface RasterContext {
+  water?: ReadonlyMap<string, number>
+  inverseViewProjection?: Float32Array
+  opaqueDepth?: Float32Array
   width: number
   height: number
   frame: Uint8Array
@@ -249,14 +259,18 @@ function faceNormal(first: Vertex, second: Vertex, third: Vertex) {
  * intended facing, and a one-sided term would render half of a real model black. `abs` costs the
  * ability to distinguish inside from outside, which this renderer never had anyway.
  */
-/** Same per-draw scene light colors as the WebGL material provider (light color, gray ambient). */
-function sceneLightColors(light: Light | undefined) {
-  return light === undefined
-    ? undefined
-    : {
-        ambientColor: [light.ambient, light.ambient, light.ambient] as Vec3,
-        lightColor: [light.color[0], light.color[1], light.color[2]] as Vec3,
-      }
+/** Consistent legacy precedence, otherwise the modern rig's ambient and primary directional. */
+function sceneLightColors(light: Light | undefined, rig: PreviewLighting | undefined) {
+  if (light !== undefined)
+    return {
+      ambientColor: [light.ambient, light.ambient, light.ambient] as Vec3,
+      lightColor: [light.color[0], light.color[1], light.color[2]] as Vec3,
+    }
+  if (rig === undefined) return undefined
+  return {
+    ambientColor: rig.ambient,
+    lightColor: rig.lights.find(item => item.type === 'directional')?.color ?? ([0, 0, 0] as Vec3),
+  }
 }
 
 function lambert(normal: Vec3, light: Light) {
@@ -343,6 +357,7 @@ function rasterizeTriangle(
   /** The primitive's TANGENT at the corners (world xyz, handedness w), for a normal map. */
   tangents?: Triangle<Vec4>,
   splat?: Readonly<{ batch: WorldWebGlSplatBatch; overlay: boolean; indices: Triangle<number> }>,
+  waterFalloff?: number,
 ) {
   const [first, second, third] = vertices
   const effect = surface.simpleEffect
@@ -442,7 +457,7 @@ function rasterizeTriangle(
           draw.program,
           draw.material.textures,
           fragment,
-          sceneLightColors(context.light),
+          sceneLightColors(context.light, context.previewLighting),
         )
         if (!shaded.alphaTestPassed) continue
         if (draw.depthOnly || materialIsSolid(draw.program)) context.depth[pixel] = sampleDepth
@@ -495,6 +510,28 @@ function rasterizeTriangle(
         blue *= sampled.color[2]
         // Terrain diffuse alpha is specular data; only an overlay raster's weight is coverage.
         alpha = sampled.coverage
+      }
+      if (
+        waterFalloff !== undefined &&
+        context.inverseViewProjection !== undefined &&
+        context.opaqueDepth !== undefined
+      ) {
+        const sceneDepth = context.opaqueDepth[pixel]!
+        const bottom = multiplyPoint(
+          context.inverseViewProjection,
+          (sampleX / context.width) * 2 - 1,
+          1 - (sampleY / context.height) * 2,
+          sceneDepth,
+          1,
+        )
+        // Clear depth is open water, not a fabricated sea-floor height.
+        const waterDepth =
+          !Number.isFinite(sceneDepth) || Math.abs(bottom[3]) < 1e-9
+            ? Number.POSITIVE_INFINITY
+            : first.world[1] - bottom[1] / bottom[3]
+        if (waterDepth <= 0) continue
+        const shadedWater = waterDepthColor([red, green, blue, alpha], waterDepth, waterFalloff)
+        ;[red, green, blue, alpha] = shadedWater
       }
       let maskTexel: Vec4 | undefined
       let pbrTexels: {
@@ -646,7 +683,10 @@ function rasterizeTriangle(
       }
       // A terrain splat carries published ambient occlusion in vertex alpha, not transparency.
       if (splat !== undefined && colors !== undefined) {
-        const ao = splatWeights![0] * colors[0][3] + splatWeights![1] * colors[1][3] + splatWeights![2] * colors[2][3]
+        const ao =
+          splatWeights![0] * colors[0][3] +
+          splatWeights![1] * colors[1][3] +
+          splatWeights![2] * colors[2][3]
         red *= ao
         green *= ao
         blue *= ao
@@ -731,7 +771,10 @@ function renderMaterialDraw(
     geometry = materialGeometry(
       primitive,
       request.camera,
-      request.scene.light,
+      request.scene.light ?? {
+        direction: context.previewLighting?.lights.find(item => item.type === 'directional')
+          ?.direction ?? [0, 0, 1],
+      },
       draw.program?.worldToMaterial,
       draw.program?.environment !== undefined,
       draw.program?.normalBlendPolicy !== undefined || draw.program?.normalMapSpace === 'object',
@@ -1103,7 +1146,10 @@ function renderPrimitive(context: RasterContext, primitive: SceneRendererPrimiti
             ),
             tangentBuffer[index * 4 + 3] ?? 1,
           ]) as unknown as Triangle<Vec4>),
-      splat === undefined ? undefined : { ...splat, indices: indices as unknown as Triangle<number> },
+      splat === undefined
+        ? undefined
+        : { ...splat, indices: indices as unknown as Triangle<number> },
+      context.water?.get(primitive.id),
     )
   }
 }
@@ -1112,6 +1158,7 @@ function renderPrimitive(context: RasterContext, primitive: SceneRendererPrimiti
 export async function renderHeadless(
   request: SceneRenderRequest,
   splats?: ReadonlyMap<string, Readonly<{ batch: WorldWebGlSplatBatch; overlay: boolean }>>,
+  water?: ReadonlyMap<string, number>,
 ): Promise<SceneRenderFrame> {
   request.signal?.throwIfAborted()
   if (request.outputKind !== 'rgba8') {
@@ -1137,10 +1184,17 @@ export async function renderHeadless(
   clearFrame(frame, color(request.clearColor ?? DEFAULT_CLEAR_COLOR, 'clearColor'))
   const diagnostics: SceneRendererDiagnostic[] = []
   const textures = textureTable(scene.textures)
+  const materialContext =
+    scene.lights === undefined
+      ? scene.materialContext
+      : {
+          ...scene.materialContext,
+          sceneLighting: scene.materialContext?.sceneLighting ?? true,
+        }
   const programs = prepareSceneMaterialPrograms(
     scene.materials ?? [],
     textures,
-    scene.materialContext,
+    materialContext,
     diagnostics,
     request.signal,
   )
@@ -1150,7 +1204,7 @@ export async function renderHeadless(
     frame,
     depth,
     viewProjection: matrix(camera.viewProjection, 'camera viewProjection'),
-    materials: materialSurfaces(scene.materials, textures, diagnostics, scene.materialContext),
+    materials: materialSurfaces(scene.materials, textures, diagnostics, materialContext),
     light: sceneLight(scene.light),
     previewLighting: readPreviewLighting(scene.lights, scene.ambientLight),
     eye: snapshotEyePosition(camera.eyePosition),
@@ -1159,6 +1213,14 @@ export async function renderHeadless(
     fragments: 0,
     signal: request.signal,
     ...(splats === undefined ? {} : { splats }),
+    ...(water === undefined || water.size === 0
+      ? {}
+      : {
+          water,
+          inverseViewProjection: Float32Array.from(
+            invertMaterialFrame(Array.from(camera.viewProjection)),
+          ),
+        }),
   }
   for (const draw of sceneMaterialDraws(
     scene.primitives,
@@ -1168,6 +1230,15 @@ export async function renderHeadless(
     diagnostics,
     request.clearColor?.[3] ?? 0,
   )) {
+    // Opaque geometry supplies the bottom, before blended draws can change its depth.
+    if (
+      context.water !== undefined &&
+      context.opaqueDepth === undefined &&
+      (draw.program === undefined
+        ? context.materials.get(draw.primitive.materialId ?? '')?.alpha.mode === 'blend'
+        : !materialIsSolid(draw.program))
+    )
+      context.opaqueDepth = context.depth.slice()
     if (draw.program === undefined) renderPrimitive(context, draw.primitive)
     else renderMaterialDraw(context, draw, request)
   }

@@ -14,6 +14,7 @@ import {
   Vector2,
   Vector3,
 } from 'three'
+import { waterDepthColor, WATER_SHORE_FADE, WATER_COLOR_FALLOFF } from '../render/water-color.js'
 import type {
   MapModelComponentPlacement,
   MapTerrainMaterialDefinition,
@@ -1608,17 +1609,10 @@ function waterVertexColor(
   // `CWater.State.ColorFallOff` is a rate per unit of depth (MK2 and the stock value 0.1). Read as
   // the depth to full colour, Amphion's resolved 0.1 made its sea opaque Avernus green past 0.3
   // deep, where the editor shows the sand through a teal sea and the ponds as a purple wash.
-  const saturation = 1 - Math.exp(-depth * (material?.colorFalloff ?? WATER_COLOR_FALLOFF))
   // Shorelines fade over the last few centimetres of depth, not half a unit: maps flood wide flats
   // that sit barely under the surface (Amphion's sea floor is 0.1-0.25 below it), and a long ramp
   // left them almost transparent and speckled along the clipped edge.
-  const shore = Math.min(1, depth / WATER_SHORE_FADE)
-  return [
-    color[0] * (1 - 0.35 * saturation),
-    color[1] * (1 - 0.35 * saturation),
-    color[2] * (1 - 0.35 * saturation),
-    (color[3] + (1 - color[3]) * saturation) * shore,
-  ]
+  return waterDepthColor(color, depth, material?.colorFalloff ?? WATER_COLOR_FALLOFF)
 }
 
 /** The colour darkened by the ground's occlusion at a vertex (occludedLikeTerrain). */
@@ -14007,9 +14001,7 @@ const WATER_DETAIL_SECOND_FOAM_UNIT = 15
 const WATER_DEFAULT_COLOR = [0.12, 0.52, 0.82, 0.48] as const
 
 /** Depth (world units) over which a shoreline reaches the water's own opacity. */
-const WATER_SHORE_FADE = 0.04
 /** `ColorFallOff` of the stock CWater templates: saturation rate per unit of water depth. */
-const WATER_COLOR_FALLOFF = 0.1
 
 /** World units per water clipping bucket, and how far a terrain cell reaches past its corner. */
 const WATER_BUCKET_SIZE = 8
