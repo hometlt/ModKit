@@ -57,6 +57,7 @@ import {
   uvmMaterialShader,
   uvmMaterialTeamColor,
   uvmProgramTeamColor,
+  uvmProgramWithoutLayers,
   uvmMaterialResources,
   acquireUvmMaterialTextures,
 } from './materials.js'
@@ -990,13 +991,32 @@ async function prepareNestedUvmRender(
     suppliedResources,
   )
   for (const texture of acquiredMaterials.textures) remainingDecodedBytes -= texture.rgba.length
+  // A program whose unresolved textures only refine its shading draws without them
+  // (uvmProgramWithoutLayers) rather than falling back to the base colour.
+  const trimmed = new Set<string>()
+  for (const [index, material] of materials.entries()) {
+    if (!activeMaterials.has(material.id)) continue
+    const bound = new Set(acquiredMaterials.bindings(material.id).map(item => item.resourceId))
+    const unresolved = new Set(
+      (materialResources.get(material.id) ?? []).filter(resource => !bound.has(resource)),
+    )
+    const without = uvmProgramWithoutLayers(material.shader, unresolved)
+    if (without === undefined) continue
+    materials[index] = { ...material, shader: without.shader }
+    trimmed.add(material.id)
+    warn(
+      'common.uvm/material-layer-dropped',
+      `Material ${material.id} is drawn without its ${without.dropped.join(', ')} layer: ${[...unresolved].join(', ')} did not resolve.`,
+    )
+  }
   const drawnByShader = new Set(
     materials
       .filter(
         material =>
           material.shader?.id === RENDER_MATERIAL_SHADER &&
-          (materialResources.get(material.id) ?? []).length ===
-            acquiredMaterials.bindings(material.id).length,
+          (trimmed.has(material.id) ||
+            (materialResources.get(material.id) ?? []).length ===
+              acquiredMaterials.bindings(material.id).length),
       )
       .map(material => material.id),
   )
@@ -1012,8 +1032,10 @@ async function prepareNestedUvmRender(
     if (!fallbackTextures.has(image.texture) || failedImages.has(image.image)) continue
     let decoded = decodedImages.get(image.image)
     if (decoded === undefined && rasterResources !== undefined) {
+      // its most detailed mip that fits, as a program's layers come: a 4096² fallback at mip 0
+      // (64 MiB) left a BAR Legion unit white
       const result = await rasterResources.read(
-        { ...image.source, maxBytes: remainingDecodedBytes },
+        { ...image.source, maxBytes: remainingDecodedBytes, selection: { mipLevel: 'fit' } },
         signal,
       )
       signal?.throwIfAborted()
@@ -1025,11 +1047,13 @@ async function prepareNestedUvmRender(
         })
       if (result.state === 'decoded') {
         try {
-          if (result.info.width * result.info.height * 4 > remainingDecodedBytes)
+          // the chosen level's size, not the image's
+          const { width, height } = result.region
+          if (width * height * 4 > remainingDecodedBytes)
             throw new RangeError('decoded UVM images exceed budget')
-          const rgba = uvmImageTexels(result)
+          const rgba = uvmImageTexels({ ...result, info: { ...result.info, width, height } })
           remainingDecodedBytes -= rgba.length
-          decoded = { width: result.info.width, height: result.info.height, rgba }
+          decoded = { width, height, rgba }
           decodedImages.set(image.image, decoded)
         } catch (error) {
           warn(

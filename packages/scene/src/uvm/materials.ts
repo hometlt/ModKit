@@ -1,4 +1,4 @@
-import type { JsonObject, RasterResourcePort } from '@modkit/sdk'
+import type { JsonObject, JsonValue, RasterResourcePort } from '@modkit/sdk'
 import type {
   SceneRendererDiagnostic,
   SceneRendererMaterial,
@@ -307,6 +307,62 @@ export function uvmProgramTeamColor(
         },
       },
     },
+  }
+}
+
+// Layers a standard program draws without: a missing normal map leaves the geometric normal.
+const DISPENSABLE_PROGRAM_LAYERS = new Set([
+  'normal',
+  'normalBlend1',
+  'normalBlend2',
+  'normalBlend1Mask',
+  'normalBlend2Mask',
+])
+
+/**
+ * A standard program without the layers whose textures did not resolve, when each of them only
+ * refines the shading (DISPENSABLE_PROGRAM_LAYERS): it still draws its colour, metal and glow,
+ * where the base-colour fallback would lose them all — BAR's Legion normal maps (89 MB, past the
+ * host's per-entry read) took their whole units to it. Undefined when an unresolved texture feeds
+ * any other layer, or the shader is not a standard program.
+ */
+export function uvmProgramWithoutLayers(
+  shader: SceneRendererMaterial['shader'],
+  unresolved: ReadonlySet<string>,
+): Readonly<{ shader: NonNullable<SceneRendererMaterial['shader']>; dropped: string[] }> | undefined {
+  if (unresolved.size === 0 || shader?.id !== RENDER_MATERIAL_SHADER) return undefined
+  const renderModel = field(shader.parameters as JsonObject, 'renderModel')
+  const standard = renderModel === undefined ? undefined : field(renderModel, 'standard')
+  if (standard === undefined || renderModel === undefined) return undefined
+  const program = object(standard, 'standard material program')
+  const layers = object(program['layers'] ?? {}, 'standard material layers')
+  const kept: Record<string, JsonValue> = {}
+  const dropped: string[] = []
+  for (const [slot, layer] of Object.entries(layers)) {
+    const path = field(layer, 'texturePath')
+    if (typeof path !== 'string' || !unresolved.has(path)) kept[slot] = layer as JsonValue
+    else if (DISPENSABLE_PROGRAM_LAYERS.has(slot)) dropped.push(slot)
+    else return undefined
+  }
+  if (dropped.length === 0) return undefined
+  const { tangentGeneration, ...rest } = program
+  const normalKept = Object.keys(kept).some(slot => DISPENSABLE_PROGRAM_LAYERS.has(slot))
+  return {
+    shader: {
+      id: shader.id,
+      parameters: {
+        ...shader.parameters,
+        renderModel: {
+          ...object(renderModel, 'render model parameters'),
+          standard: {
+            ...rest,
+            ...(normalKept && tangentGeneration !== undefined ? { tangentGeneration } : {}),
+            layers: kept,
+          },
+        },
+      },
+    },
+    dropped,
   }
 }
 
