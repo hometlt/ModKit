@@ -69,6 +69,31 @@ function vector(
   return result
 }
 
+/** Transform owned triangle geometry without changing UVs, colors, influences or material identity.
+ * Normals use inverse transpose; mirrored frames reverse winding and tangent handedness. */
+export function transformUvmPrimitiveGeometry(
+  primitive: { readonly positions: Float32Array; readonly indices: ArrayLike<number>; readonly normals?: Float32Array; readonly tangents?: Float32Array },
+  matrix: readonly number[],
+) {
+  const {positions,indices,normals,tangents}=primitive,vertices=positions.length/3
+  if(matrix.length!==16||!matrix.every(Number.isFinite)||[3,7,11].some(i=>matrix[i]!==0)||matrix[15]!==1)
+    throw new TypeError('geometry transform requires a finite affine matrix')
+  if(!positions.length||positions.length%3||indices.length%3||normals&&normals.length!==positions.length||tangents&&tangents.length!==vertices*4)
+    throw new TypeError('geometry transform vector counts differ')
+  const ownedIndices=Array.from(indices)
+  if(ownedIndices.some(i=>!Number.isSafeInteger(i)||i<0||i>=vertices))throw new RangeError('geometry transform index is outside primitive')
+  const inverse=invertMaterialFrame(matrix),normal=Array.from({length:16},(_,i)=>inverse[(i%4)*4+Math.floor(i/4)]!)
+  const determinant=at(matrix,0)*(at(matrix,5)*at(matrix,10)-at(matrix,9)*at(matrix,6))-
+    at(matrix,4)*(at(matrix,1)*at(matrix,10)-at(matrix,9)*at(matrix,2))+
+    at(matrix,8)*(at(matrix,1)*at(matrix,6)-at(matrix,5)*at(matrix,2))
+  if(determinant<0)for(let i=0;i<ownedIndices.length;i+=3)[ownedIndices[i+1],ownedIndices[i+2]]=[ownedIndices[i+2]!,ownedIndices[i+1]!]
+  const result={positions:vector(positions,3,matrix,false),indices:ownedIndices,
+    ...(normals?{normals:vector(normals,3,normal,true)}:{}),
+    ...(tangents?{tangents:vector(tangents,4,matrix,true)}:{})}
+  if(determinant<0&&result.tangents)for(let i=3;i<result.tangents.length;i+=4)result.tangents[i]=-result.tangents[i]!
+  return result
+}
+
 /** Explicit anonymous static scene correspondence. Node transforms/instances become owned draw
  * geometry; labels, rigs, clips and unsupported extensions refuse instead of disappearing. */
 export function projectUvmStaticModel(
@@ -267,16 +292,9 @@ export function projectUvmStaticModel(
     visited.add(id)
     const node = byNode.get(id)
     if (!node) throw new TypeError('static node absent')
-    const matrix = multiplyMaterialFrames(parent, node.transform),
-      inverse = invertMaterialFrame(matrix)
-    const normal = Array.from(
-      { length: 16 },
-      (_, index) => inverse[(index % 4) * 4 + Math.floor(index / 4)] ?? 0,
-    )
-    const determinant =
-      at(matrix, 0) * (at(matrix, 5) * at(matrix, 10) - at(matrix, 9) * at(matrix, 6)) -
-      at(matrix, 4) * (at(matrix, 1) * at(matrix, 10) - at(matrix, 9) * at(matrix, 2)) +
-      at(matrix, 8) * (at(matrix, 1) * at(matrix, 6) - at(matrix, 5) * at(matrix, 2))
+    const matrix = multiplyMaterialFrames(parent, node.transform)
+    // Validate helper nodes too: a singular ancestor is invalid even without a draw.
+    invertMaterialFrame(matrix)
     for (const meshId of node.meshIds) {
       const mesh = byMesh.get(meshId)
       if (!mesh) throw new TypeError('static mesh absent')
@@ -289,32 +307,20 @@ export function projectUvmStaticModel(
           material => material.id === primitive.materialId,
         )
         if (materialIndex < 0) throw new TypeError('static primitive material absent')
-        const positions = vector(primitive.positions, 3, matrix, false),
-          indices = [...primitive.indices]
-        if (determinant < 0)
-          for (let index = 0; index < indices.length; index += 3) {
-            const a = indices[index + 1],
-              b = indices[index + 2]
-            if (a === undefined || b === undefined)
-              throw new TypeError('static triangle incomplete')
-            indices[index + 1] = b
-            indices[index + 2] = a
-          }
+        const geometry = transformUvmPrimitiveGeometry({
+          positions: primitive.positions, indices: primitive.indices,
+          ...(primitive.normals ? { normals: primitive.normals } : {}),
+          ...(primitive.tangents ? { tangents: primitive.tangents } : {}),
+        }, matrix)
         const record: Record<string, JsonValue> = {
           name: node.name ?? mesh.name ?? `Primitive_${output.length}`,
           primitiveTopology: 'triangles',
           materialIndex,
-          positions,
-          indices,
+          positions: geometry.positions,
+          indices: geometry.indices,
         }
-        if (primitive.normals) record['normals'] = vector(primitive.normals, 3, normal, true)
-        if (primitive.tangents) {
-          const tangents = vector(primitive.tangents, 4, matrix, true)
-          if (determinant < 0)
-            for (let index = 3; index < tangents.length; index += 4)
-              tangents[index] = -(tangents[index] ?? 1)
-          record['tangents'] = tangents
-        }
+        if (geometry.normals) record['normals'] = geometry.normals
+        if (geometry.tangents) record['tangents'] = geometry.tangents
         if (primitive.colors) record['colors'] = [...primitive.colors]
         for (const set of primitive.textureCoordinateSets ?? [])
           record[set.set === 0 ? 'uvs' : `uvs${set.set}`] = [...set.coordinates]

@@ -20,3 +20,6 @@ export type {
   MaterialTextureBinding,
   StandardMaterialProgram,
 } from './standard-program.js'
+
+// Shared affine frames for geometry correspondence and material evaluation.
+export { invertMaterialFrame, multiplyMaterialFrames, IDENTITY_MATERIAL_FRAME } from './frame.js'

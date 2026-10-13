@@ -319,3 +319,23 @@ test('how a clip plays and its events ride on the rig clip, an event joint as it
     { timeSeconds: 0.9, name: 'sound' },
   ])
 })
+
+test('primitive affine correspondence preserves normals, winding and source arrays', async()=>{
+  const {transformUvmPrimitiveGeometry}=await import('../src/uvm/static-model.js')
+  const p={positions:Float32Array.of(0,0,0,1,0,0,0,1,0),indices:Uint16Array.of(0,1,2),
+    normals:Float32Array.of(0,0,1,0,0,1,0,0,1),tangents:Float32Array.of(1,0,0,1,1,0,0,1,1,0,0,1)}
+  const before=structuredClone(p)
+  const r=transformUvmPrimitiveGeometry(p,[-2,0,0,0,0,3,0,0,0,0,4,0,5,6,7,1])
+  assert.deepEqual(r.positions,[5,6,7,3,6,7,5,9,7]);assert.deepEqual(r.indices,[0,2,1])
+  assert.deepEqual(r.normals,[0,0,1,0,0,1,0,0,1]);assert.deepEqual(r.tangents,[-1,0,0,-1,-1,0,0,-1,-1,0,0,-1])
+  assert.deepEqual(p,before)
+  assert.throws(()=>transformUvmPrimitiveGeometry(p,new Array(16).fill(0)))
+  assert.throws(()=>transformUvmPrimitiveGeometry({...p,indices:[0,1,3]},translate(0,0,0)))
+  assert.throws(()=>transformUvmPrimitiveGeometry({...p,normals:Float32Array.of(0,0,0)},translate(0,0,0)))
+})
+
+test('normal generation retains inert unused vertices but refuses cancelling drawn faces',async()=>{
+  const {generateUvmVertexNormals}=await import('../src/uvm/normals.js')
+  assert.deepEqual([...generateUvmVertexNormals([0,0,0,1,0,0,0,1,0,9,9,9],[0,1,2])],[0,0,1,0,0,1,0,0,1,0,0,1])
+  assert.throws(()=>generateUvmVertexNormals([0,0,0,1,0,0,0,1,0],[0,1,2,0,2,1]),/degenerate/)
+})

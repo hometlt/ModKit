@@ -1,5 +1,6 @@
 /** Build smooth unit vertex normals for an indexed triangle primitive. Face vectors are weighted by
- * area before normalization, so triangulation does not bias a shared vertex. */
+ * area before normalization, so triangulation does not bias a shared vertex. Unreferenced vertices
+ * receive an inert unit normal; a referenced vertex with cancelled/degenerate faces still refuses. */
 export function generateUvmVertexNormals(
   positions: ArrayLike<number>,
   indices: ArrayLike<number>,
@@ -10,6 +11,7 @@ export function generateUvmVertexNormals(
     throw new TypeError('normal generation requires indexed triangle positions')
   const vertices = positions.length / 3
   const result = new Float64Array(positions.length)
+  const referenced = new Uint8Array(vertices)
   for (let triangle = 0; triangle < indices.length; triangle += 3) {
     if ((triangle & 0x3fff) === 0) signal?.throwIfAborted()
     const a = indices[triangle]!, b = indices[triangle + 1]!, c = indices[triangle + 2]!
@@ -21,6 +23,7 @@ export function generateUvmVertexNormals(
     const nx = aby * acz - abz * acy, ny = abz * acx - abx * acz, nz = abx * acy - aby * acx
     if (![nx, ny, nz].every(Number.isFinite)) throw new RangeError('normal generation exceeds the finite range')
     for (const vertex of [a, b, c]) {
+      referenced[vertex] = 1
       result[vertex * 3] = result[vertex * 3]! + nx
       result[vertex * 3 + 1] = result[vertex * 3 + 1]! + ny
       result[vertex * 3 + 2] = result[vertex * 3 + 2]! + nz
@@ -28,6 +31,12 @@ export function generateUvmVertexNormals(
   }
   const normals = new Float32Array(result.length)
   for (let vertex = 0; vertex < vertices; vertex += 1) {
+    if (!referenced[vertex]) {
+      if (![positions[vertex*3], positions[vertex*3+1], positions[vertex*3+2]].every(Number.isFinite))
+        throw new TypeError('normal generation encountered nonfinite unused positions')
+      normals[vertex*3+2] = 1
+      continue
+    }
     const x = result[vertex * 3]!, y = result[vertex * 3 + 1]!, z = result[vertex * 3 + 2]!
     const length = Math.hypot(x, y, z)
     if (!Number.isFinite(length) || length === 0)
