@@ -1,3 +1,5 @@
+/** Core-owned UVP map packaging and detached reopen: resources used by weights, ordered tiles,
+ * rasters, water and authored models; excluded partial facets do not demand unused media. */
 import { canonicalJsonStringify, compareUtf8, ModkitError } from '@modkit/core'
 import { createZipArchive, type ZipWriteBudget } from '@modkit/codec-kit/container/zip'
 import { sha256Hex } from '@modkit/codec-kit/crypto/digest'
@@ -969,12 +971,6 @@ export async function materializeWorldToUvpMap(
   }
   const materialized = await materializeWorldToUvw(source, options)
   if (materialized.state === 'refused') return materialized
-  if (source.texture === undefined) {
-    return refuse(
-      'texture-route-missing',
-      'world source does not expose terrain texture acquisition',
-    )
-  }
   try {
     const layerCatalog = await drainLayerCatalog(
       source,
@@ -1001,19 +997,29 @@ export async function materializeWorldToUvpMap(
     let ordinal = 0
     for (const catalog of catalogs) {
       const target = outputMaterialLayer(materialized.document, catalog)
+      // A visual catalog may accompany a deliberately excluded partial geometry/material facet.
+      if (target === undefined && materialized.excludedFacetIds.includes('world.terrain-materials'))
+        continue
       if (target === undefined)
         throw new TypeError(
           `cannot join terrain material catalog ${catalog.layerId} to materialized UVW`,
         )
       const usedMaterialIds = new Set([
         ...(target.layer.samples ?? []).flatMap(row =>
-          row.flatMap(sample => sample.weights.map(weight => weight.materialId)),
+          row.flatMap(sample => [
+            ...(sample.weights ?? []).map(weight => weight.materialId),
+            ...(sample.layers ?? []).map(layer => layer.materialId),
+          ]),
         ),
         ...(target.layer.weightRasters ?? []).flatMap(raster => raster.materialIds),
       ])
       for (const material of catalog.materials ?? []) {
-        if (!usedMaterialIds.has(material.materialId)) continue
-        if (!target.layer.materials.some(candidate => candidate.id === material.materialId))
+        if (!usedMaterialIds.has(localId(material.materialId, 'material'))) continue
+        if (
+          !target.layer.materials.some(
+            candidate => candidate.id === localId(material.materialId, 'material'),
+          )
+        )
           throw new TypeError(
             `material ${material.materialId} is absent from output layer ${target.layer.id}`,
           )
@@ -1026,6 +1032,11 @@ export async function materializeWorldToUvpMap(
           if (resourceId === undefined) continue
           let encoded = encodedBySource.get(resourceId)
           if (encoded === undefined) {
+            if (source.texture === undefined)
+              return refuse(
+                'texture-route-missing',
+                'world source does not expose terrain texture acquisition',
+              )
             const result = await source.texture(
               resourceId,
               { maxBytes: options.maxTextureBytes },
@@ -1057,7 +1068,7 @@ export async function materializeWorldToUvpMap(
               outputSpaceId: target.spaceId,
               outputLayerId: target.layer.id,
               layerKind: 'terrain-materials',
-              materialId: material.materialId,
+              materialId: localId(material.materialId, 'material'),
               channel,
               sourceResourceId: resourceId,
               localResourceId: encoded.localResourceId,
@@ -1083,6 +1094,11 @@ export async function materializeWorldToUvpMap(
           )
         let encoded = encodedBySource.get(raster.resourceId)
         if (encoded === undefined) {
+          if (source.texture === undefined)
+            return refuse(
+              'texture-route-missing',
+              'world source does not expose terrain texture acquisition',
+            )
           const result = await source.texture(
             raster.resourceId,
             { maxBytes: options.maxTextureBytes },
@@ -1154,6 +1170,11 @@ export async function materializeWorldToUvpMap(
           if (resourceId === undefined) continue
           let encoded = encodedBySource.get(resourceId)
           if (encoded === undefined) {
+            if (source.texture === undefined)
+              return refuse(
+                'texture-route-missing',
+                'world source does not expose terrain texture acquisition',
+              )
             const result = await source.texture(
               resourceId,
               { maxBytes: options.maxTextureBytes },
@@ -1220,6 +1241,7 @@ export async function materializeWorldToUvpMap(
     let modelTotal = 0
     for (const catalog of layerCatalog.filter(layer => layer.kind === 'objects')) {
       const target = outputObjectLayer(materialized.document, catalog)
+      if (target === undefined && materialized.excludedFacetIds.includes('world.objects')) continue
       if (target === undefined)
         throw new TypeError(`cannot join object catalog ${catalog.layerId} to materialized UVW`)
       const objects = await drainLayerItems(

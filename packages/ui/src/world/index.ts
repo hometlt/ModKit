@@ -807,7 +807,7 @@ export function selectWorldObject(
   state: WorldEditState,
   object: WorldSceneObjectItem | undefined,
 ): WorldEditState {
-  if (object === undefined)
+  if (object === undefined || object.derivedFrom !== undefined)
     return Object.freeze({ sourceRevision: state.sourceRevision, status: 'idle' })
   const position = Object.freeze({ ...object.position })
   return Object.freeze({

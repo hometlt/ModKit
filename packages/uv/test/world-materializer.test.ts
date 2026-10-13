@@ -152,6 +152,161 @@ function source(pageSize: number, sourceInfo = info): CandidateWorldSceneSource 
 const options = Object.freeze({ maxPageItems: 4, maxTerrainItems: 4, maxOutputBytes: 64_000 })
 
 describe('production world to UVW materializer', () => {
+  it('reverses native material cells and their corners while keeping terminal padding terminal', async () => {
+    const measured: CandidateWorldSceneInfo = {
+      ...info,
+      uvwTransform: {
+        ...info.uvwTransform!,
+        heightfield: {
+          columns: 3,
+          rows: 3,
+          cellSize: 1,
+          origin: [0, 0, -2],
+          sourceRowOrder: 'reverse',
+        },
+        bounds: {
+          coordinateSpaceId: 'uvw-canonical',
+          minimum: { x: 0, y: 0, z: -2 },
+          maximum: { x: 2, y: 8, z: 0 },
+        },
+      },
+      facets: [
+        { facet: 'terrain', layerId, state: 'available', itemCount: 9, lods: ['exact'] },
+        {
+          facet: 'terrain-materials',
+          layerId: 'materials',
+          state: 'available',
+          itemCount: 9,
+          lods: ['exact'],
+        },
+      ],
+    }
+    const alpha = [0, 0.25, 0.5, 1] as const
+    const uv = [
+      [0, 0],
+      [2, 0],
+      [2, 3],
+      [0, 3],
+    ] as const
+    const native: CandidateWorldSceneSource = {
+      ...source(32),
+      info: async () => measured,
+      page: async request => {
+        const selected: WorldSceneItem[] =
+          request.facet === 'layers'
+            ? [
+                {
+                  facet: 'layers',
+                  id: 'materials',
+                  layerId: 'materials',
+                  kind: 'terrain-materials',
+                  coordinateSpaceId: 'height-grid',
+                  lods: ['exact'],
+                  grid: {
+                    columns: 3,
+                    rows: 3,
+                    cellSize: 1,
+                    origin: [0, 0, -2],
+                    coordinateSpaceId: 'uvw-canonical',
+                  },
+                  materials: [{ materialId: 'grass', atlas: { rows: 4 } }],
+                },
+              ]
+            : Array.from({ length: 9 }, (_, index) => {
+                const x = index % 3,
+                  y = Math.floor(index / 3)
+                return request.facet === 'terrain'
+                  ? terrain(x, y, index, 0 - y)
+                  : ({
+                      facet: 'terrain-materials',
+                      id: String(index),
+                      layerId: 'materials',
+                      coordinateSpaceId: 'height-grid',
+                      lod: 'exact',
+                      x,
+                      y,
+                      textureIndex: index,
+                      uvwPosition: { x, y: 0, z: 0 - y },
+                      ...(y === 2 || x === 2
+                        ? { weights: [{ materialId: 'grass', weight: 1 }] }
+                        : {
+                            cornerUv: uv,
+                            layers: [
+                              {
+                                materialId: 'grass',
+                                tile: { column: x, row: y },
+                                cornerAlpha: alpha,
+                              },
+                              {
+                                materialId: 'grass',
+                                tile: { column: 2, row: 2 },
+                                clipPolygon: [
+                                  [0, 0],
+                                  [1, 0],
+                                  [0, 1],
+                                ],
+                              },
+                            ],
+                          }),
+                    } as WorldSceneItem)
+              })
+        return { snapshotId, facet: request.facet, state: 'available', items: selected }
+      },
+    }
+    const result = await materializeWorldToUvw(native, {
+      ...options,
+      maxPageItems: 32,
+      maxTerrainItems: 9,
+      maxFacetItems: 32,
+    })
+    if (result.state !== 'materialized') throw new Error(JSON.stringify(result.refusals))
+    const material = result.document.spaces[0]!.layers.find(
+      layer => layer.kind === 'terrain-materials',
+    )!
+    if (material.kind !== 'terrain-materials') throw new Error('missing materials')
+    expect(material.samples?.[0]?.[0]?.layers?.[0]).toEqual({
+      materialId: 'grass',
+      tile: { column: 0, row: 1 },
+      cornerAlpha: [1, 0.5, 0.25, 0],
+    })
+    expect(material.samples?.[1]?.[0]?.layers?.[0]?.tile.row).toBe(0)
+    expect(material.samples?.[0]?.[0]?.cornerUv).toEqual([uv[3], uv[2], uv[1], uv[0]])
+    expect(material.samples?.[2]?.[0]?.layers).toBeUndefined()
+    expect(material.materials[0]?.atlas).toEqual({ rows: 4, tileTop: 'local-y-0' })
+    expect(result.lostFields).toContainEqual({
+      path: 'world.terrain-materials.layers.clipPolygon',
+      count: 4,
+    })
+    const reopened = await materializeWorldToUvw(
+      createUvwWorldSceneSource(result.document, { snapshotId: 'detached', maxPageSize: 32 }),
+      { ...options, maxPageItems: 32, maxTerrainItems: 9, maxFacetItems: 32 },
+    )
+    expect(reopened.state).toBe('materialized')
+    if (reopened.state === 'materialized') expect(reopened.bytes).toEqual(result.bytes)
+    const bad = {
+      ...native,
+      page: async (request: WorldScenePageRequest) => {
+        const page = await native.page(request)
+        return {
+          ...page,
+          items: page.items.map((item, index) =>
+            item.facet === 'terrain-materials' && index === 0 ? { ...item, y: -1 } : item,
+          ),
+        }
+      },
+    }
+    expect(
+      (
+        await materializeWorldToUvw(bad, {
+          ...options,
+          maxPageItems: 32,
+          maxTerrainItems: 9,
+          maxFacetItems: 32,
+        })
+      ).state,
+    ).toBe('refused')
+  })
+
   it('is deterministic across page sizes and reopens as the current spaces profile', async () => {
     const one = await materializeWorldToUvw(source(1), options)
     const three = await materializeWorldToUvw(source(3), options)
@@ -292,12 +447,17 @@ describe('production world to UVW materializer', () => {
               object('native:start-1', false),
               object('native:tree-1', true),
               object('native:cliff-1', true, { derivedFrom: 'cliffs' }),
+              object('native:preview-1', true, { derivedFrom: 'objects' }),
             ],
           })
         return terrainSource.page(request)
       },
     }
-    const result = await materializeWorldToUvw(objectSource, { ...options, maxFacetItems: 64 })
+    const result = await materializeWorldToUvw(objectSource, {
+      ...options,
+      maxPageItems: 8,
+      maxFacetItems: 64,
+    })
     if (result.state !== 'materialized') throw new Error(JSON.stringify(result.refusals))
     expect(result.excludedFacetIds).not.toContain('world.objects')
     expect(result.omittedObjects).toBe(2)

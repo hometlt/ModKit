@@ -1,4 +1,6 @@
-/** Production reader and canonical writer for the UVW 1.0 heightfield profile. */
+/** Core-owned reader and canonical writer for the normative UVW 1.0 heightfield profile:
+ * bounded validation, weights/rasters, ordered atlas tiles with corner coverage and sample UVs.
+ * Per-layer custom UVs/clips and coverage-only texture alpha are not part of this profile. */
 
 import { canonicalJsonStringify, compareUtf8, ModkitError } from '@modkit/core'
 import type { MapModelComponentPlacement } from '@modkit/sdk'
@@ -66,6 +68,8 @@ export interface UvwTerrainMaterial {
   readonly label?: string
   readonly classification?: string
   readonly sourceIndex?: number
+  /** Square atlas tiles; omission preserves the texture owner's default orientation. */
+  readonly atlas?: Readonly<{ rows: number; tileTop?: 'local-y-1' | 'local-y-0' }>
   /** glTF `baseColorFactor`: linear RGBA 0..1 multiplying the base colour, or the colour itself. */
   readonly baseColorFactor?: readonly [number, number, number, number]
   readonly baseColorResourceId?: string
@@ -79,8 +83,16 @@ export interface UvwTerrainMaterialWeight {
   readonly weight: number
 }
 
+export interface UvwTerrainTileLayer {
+  readonly materialId: string
+  readonly tile: Readonly<{ column: number; row: number }>
+  readonly cornerAlpha?: readonly [number, number, number, number]
+}
+
 export interface UvwTerrainMaterialSample {
-  readonly weights: readonly UvwTerrainMaterialWeight[]
+  readonly weights?: readonly UvwTerrainMaterialWeight[]
+  /** Authored bottom-to-top order; replaces weights for drawing, retaining them as source data. */
+  readonly layers?: readonly UvwTerrainTileLayer[]
   readonly uvTransform?: UvwUvTransform
   /** Authored cell-corner UVs, replacing the sample transform without clamping. */
   readonly cornerUv?: readonly [
@@ -786,6 +798,7 @@ function terrainMaterialsLayer(
         'label',
         'classification',
         'sourceIndex',
+        'atlas',
         'baseColorFactor',
         'baseColorResourceId',
         'normalResourceId',
@@ -819,8 +832,20 @@ function terrainMaterialsLayer(
       material[key] === undefined
         ? undefined
         : layerId(material[key], `${materialPath}.${key}`, state, depth + 3)
+    let atlas: UvwTerrainMaterial['atlas']
+    if (material['atlas'] !== undefined) {
+      const atlasPath = `${materialPath}.atlas`
+      const value = record(material['atlas'], atlasPath, state, depth + 3)
+      exactKeys(value, ['rows', 'tileTop'], ['rows'], atlasPath)
+      const rows = integerAtLeast(value['rows'], 1, `${atlasPath}.rows`, state, depth + 4)
+      const tileTop = value['tileTop']
+      if (tileTop !== undefined && tileTop !== 'local-y-1' && tileTop !== 'local-y-0')
+        fail('invalid atlas tileTop', `${atlasPath}.tileTop`)
+      atlas = Object.freeze({ rows, ...(tileTop === undefined ? {} : { tileTop }) })
+    }
     return Object.freeze({
       id: materialId,
+      ...(atlas === undefined ? {} : { atlas }),
       ...(material['label'] === undefined
         ? {}
         : { label: string(material['label'], `${materialPath}.label`, state, depth + 3) }),
@@ -875,13 +900,18 @@ function terrainMaterialsLayer(
             cells.map((cellValue, columnIndex) => {
               const cellPath = `${rowPath}[${String(columnIndex)}]`
               const cell = record(cellValue, cellPath, state, depth + 3)
-              exactKeys(cell, ['weights', 'uvTransform', 'cornerUv'], ['weights'], cellPath)
-              const weights = array(cell['weights'], `${cellPath}.weights`, state, depth + 4)
-              if (weights.length === 0)
+              exactKeys(cell, ['weights', 'layers', 'uvTransform', 'cornerUv'], [], cellPath)
+              if (cell['weights'] === undefined && cell['layers'] === undefined)
+                fail('material sample requires weights or layers', cellPath)
+              const weights =
+                cell['weights'] === undefined
+                  ? undefined
+                  : array(cell['weights'], `${cellPath}.weights`, state, depth + 4)
+              if (weights?.length === 0)
                 fail('material sample must contain at least one weight', cellPath)
               let total = 0
               const seen = new Set<string>()
-              const parsed = weights.map((weightValue, weightIndex): UvwTerrainMaterialWeight => {
+              const parsed = weights?.map((weightValue, weightIndex): UvwTerrainMaterialWeight => {
                 const weightPath = `${cellPath}.weights[${String(weightIndex)}]`
                 const weight = record(weightValue, weightPath, state, depth + 5)
                 exactKeys(weight, ['materialId', 'weight'], ['materialId', 'weight'], weightPath)
@@ -908,7 +938,62 @@ function terrainMaterialsLayer(
                 total += amount
                 return Object.freeze({ materialId, weight: amount })
               })
-              if (Math.abs(total - 1) > 1e-6) fail('material weights must sum to one', cellPath)
+              if (weights !== undefined && Math.abs(total - 1) > 1e-6)
+                fail('material weights must sum to one', cellPath)
+              const layers =
+                cell['layers'] === undefined
+                  ? undefined
+                  : array(cell['layers'], `${cellPath}.layers`, state, depth + 4)
+              if (layers !== undefined && (layers.length === 0 || layers.length > 256))
+                fail('material layers must contain 1..256 entries', `${cellPath}.layers`)
+              const parsedLayers = layers?.map((value, index): UvwTerrainTileLayer => {
+                const entryPath = `${cellPath}.layers[${String(index)}]`
+                const entry = record(value, entryPath, state, depth + 5)
+                exactKeys(
+                  entry,
+                  ['materialId', 'tile', 'cornerAlpha'],
+                  ['materialId', 'tile'],
+                  entryPath,
+                )
+                const materialId = layerId(
+                  entry['materialId'],
+                  `${entryPath}.materialId`,
+                  state,
+                  depth + 6,
+                )
+                if (!materialIds.has(materialId))
+                  fail(
+                    `unknown materialId ${JSON.stringify(materialId)}`,
+                    `${entryPath}.materialId`,
+                  )
+                const tile = record(entry['tile'], `${entryPath}.tile`, state, depth + 6)
+                exactKeys(tile, ['column', 'row'], ['column', 'row'], `${entryPath}.tile`)
+                const column = integerAtLeast(
+                  tile['column'],
+                  0,
+                  `${entryPath}.tile.column`,
+                  state,
+                  depth + 7,
+                )
+                const row = integerAtLeast(
+                  tile['row'],
+                  0,
+                  `${entryPath}.tile.row`,
+                  state,
+                  depth + 7,
+                )
+                const cornerAlpha =
+                  entry['cornerAlpha'] === undefined
+                    ? undefined
+                    : vec4(entry['cornerAlpha'], `${entryPath}.cornerAlpha`, state, depth + 6)
+                if (cornerAlpha?.some(value => value < 0 || value > 1))
+                  fail('corner alpha must lie in [0, 1]', `${entryPath}.cornerAlpha`)
+                return Object.freeze({
+                  materialId,
+                  tile: Object.freeze({ column, row }),
+                  ...(cornerAlpha === undefined ? {} : { cornerAlpha }),
+                })
+              })
               const corners =
                 cell['cornerUv'] === undefined
                   ? undefined
@@ -916,7 +1001,8 @@ function terrainMaterialsLayer(
               if (corners !== undefined && corners.length !== 4)
                 fail('expected exactly four corner UV pairs', `${cellPath}.cornerUv`)
               return Object.freeze({
-                weights: Object.freeze(parsed),
+                ...(parsed === undefined ? {} : { weights: Object.freeze(parsed) }),
+                ...(parsedLayers === undefined ? {} : { layers: Object.freeze(parsedLayers) }),
                 ...(corners === undefined
                   ? {}
                   : {
@@ -2359,11 +2445,15 @@ export function canonicalizeUvwProfile(
                                     row.map(cell =>
                                       Object.freeze({
                                         ...cell,
-                                        weights: Object.freeze(
-                                          [...cell.weights].sort((left, right) =>
-                                            compareUtf8(left.materialId, right.materialId),
-                                          ),
-                                        ),
+                                        ...(cell.weights === undefined
+                                          ? {}
+                                          : {
+                                              weights: Object.freeze(
+                                                [...cell.weights].sort((left, right) =>
+                                                  compareUtf8(left.materialId, right.materialId),
+                                                ),
+                                              ),
+                                            }),
                                       }),
                                     ),
                                   ),

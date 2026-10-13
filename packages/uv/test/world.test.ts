@@ -30,6 +30,52 @@ function errorCode(run: () => unknown): string | undefined {
 }
 
 describe('UVW 1.0 production document', () => {
+  it('retains layers-only atlas samples and inactive weights without sorting authored layers', async () => {
+    const input = JSON.parse(
+      new TextDecoder().decode(await fixture('uvw-profile-renderable-world.uvw.json')),
+    )
+    const layer = input.spaces[0].layers.find(
+      (item: { kind: string }) => item.kind === 'terrain-materials',
+    )
+    const materialId = layer.materials[0].id
+    layer.materials[0].atlas = { rows: 4, tileTop: 'local-y-0' }
+    const layers = [
+      { materialId, tile: { column: 2, row: 3 }, cornerAlpha: [0, 0.25, 0.75, 1] },
+      { materialId, tile: { column: 0, row: 1 }, cornerAlpha: [1, 0, 1, 0] },
+    ]
+    layer.samples[0][0] = { layers }
+    layer.samples[0][1].layers = layers.slice().reverse()
+    const document = parseUvwProfile(serializeUvwProfile(validateUvwProfile(input)))
+    const source = createUvwWorldSceneSource(document, {
+      snapshotId: 'ordered-tiles',
+      maxPageSize: 32,
+    })
+    const result = await materializeWorldToUvw(source, {
+      maxPageItems: 32,
+      maxTerrainItems: 1000,
+      maxFacetItems: 1000,
+      maxOutputBytes: 1 << 20,
+    })
+    expect(result.state, JSON.stringify(result.refusals)).toBe('materialized')
+    if (result.state !== 'materialized') return
+    const rebuilt = result.document.spaces[0]!.layers.find(
+      item => item.kind === 'terrain-materials',
+    )!
+    if (rebuilt.kind !== 'terrain-materials') throw new Error('missing material layer')
+    expect(rebuilt.samples?.[0]?.[0]).toEqual({ layers })
+    expect(rebuilt.samples?.[0]?.[1]).toEqual(layer.samples[0][1])
+    expect(rebuilt.materials[0]?.atlas).toEqual(layer.materials[0].atlas)
+    expect(result.lostFields.some(field => field.path.endsWith('.layers'))).toBe(false)
+    const bad = structuredClone(input)
+    const sample = bad.spaces[0].layers.find(
+      (item: { kind: string }) => item.kind === 'terrain-materials',
+    ).samples[0][0]
+    sample.layers[0].cornerAlpha[0] = 2
+    expect(() => validateUvwProfile(bad)).toThrow()
+    sample.layers = []
+    expect(() => validateUvwProfile(bad)).toThrow()
+  })
+
   it('retains admitted corner UVs through parsing, source pages and generic reconstruction', async () => {
     const input = JSON.parse(
       new TextDecoder().decode(await fixture('uvw-profile-renderable-world.uvw.json')),

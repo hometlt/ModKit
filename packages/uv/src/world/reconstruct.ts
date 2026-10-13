@@ -1,3 +1,5 @@
+/** Core-owned reconstruction of qualified world facets into normative UVW. Preserves admitted
+ * atlas tiles/coverage, corrects native reverse-row cell anchors, and reports unsupported fields. */
 import type {
   CandidateWorldSceneInfo,
   CandidateWorldSceneSource,
@@ -247,6 +249,7 @@ const KEPT_FIELDS: Readonly<Record<string, ReadonlySet<string>>> = Object.freeze
     'textureIndex',
     'uvTransform',
     'cornerUv',
+    'layers',
   ]),
   cliffs: new Set(['x', 'y', 'uvwPosition', 'level', 'authored']),
   water: new Set([
@@ -317,6 +320,14 @@ function noteLostFields(
     for (const [key, value] of Object.entries(record))
       if (value !== undefined && !PLACING_FIELDS.includes(key) && !kept.has(key))
         add(`world.${kind}.${key}`)
+    if (item.facet === 'terrain-materials') {
+      if (item.layers?.[0]?.cornerUv !== undefined || item.layers?.[0]?.clipPolygon !== undefined)
+        add('world.terrain-materials.layers (base not representable)')
+      for (const layer of item.layers ?? []) {
+        if (layer.cornerUv !== undefined) add('world.terrain-materials.layers.cornerUv')
+        if (layer.clipPolygon !== undefined) add('world.terrain-materials.layers.clipPolygon')
+      }
+    }
     if (kind !== 'objects') continue
     // only resources the UVW package holds are written; a model named only by the host is not
     const object = item as WorldSceneObjectItem
@@ -392,6 +403,7 @@ async function reconstructLayer(
               ? {}
               : { classification: material.classification }),
             ...(material.sourceIndex === undefined ? {} : { sourceIndex: material.sourceIndex }),
+            ...(material.atlas === undefined ? {} : { atlas: material.atlas }),
             ...(material.baseColorFactor === undefined
               ? {}
               : { baseColorFactor: material.baseColorFactor }),
@@ -470,28 +482,86 @@ async function reconstructLayer(
       )
     }
     const values = new Array<UvwTerrainMaterialSample | undefined>(grid.columns * grid.rows)
+    const reverseCells =
+      info.canonicalArtifact === undefined &&
+      info.uvwTransform?.heightfield.sourceRowOrder === 'reverse'
+    // Native vertex-sized material grids anchor cells at the south-west vertex. Reversing
+    // vertices alone moves each cell one row north; the terminal padding row stays terminal.
+    if (
+      reverseCells &&
+      (grid.rows !== info.uvwTransform!.heightfield.rows ||
+        grid.columns !== info.uvwTransform!.heightfield.columns)
+    )
+      throw new TypeError('UVW reverse material grid must match the qualified vertex grid')
+    const corners = <T>(value: readonly T[] | undefined): readonly T[] | undefined =>
+      value === undefined || !reverseCells ? value : [value[3]!, value[2]!, value[1]!, value[0]!]
     for (const raw of items) {
       if (raw.facet !== 'terrain-materials' || raw.lod !== 'exact')
         throw new TypeError('UVW canonical terrain-material item is invalid')
-      const index = canonicalGridIndex(raw, grid)
+      if (reverseCells) gridIndex(raw, grid.columns, grid.rows)
+      const index = reverseCells
+        ? gridIndex(
+            { x: raw.x, y: raw.y === grid.rows - 1 ? raw.y : grid.rows - 2 - raw.y },
+            grid.columns,
+            grid.rows,
+          )
+        : canonicalGridIndex(raw, grid)
       if (values[index] !== undefined)
         throw new TypeError('UVW canonical terrain-material grid contains a duplicate coordinate')
-      const weights = raw.weights ?? [
-        Object.freeze({
-          materialId:
-            definitions.find(item => item.sourceIndex === raw.textureIndex)?.materialId ??
-            definitions[0]!.materialId,
-          weight: 1,
-        }),
-      ]
+      // A clipped/custom-UV layer cannot become an ordinary full-cell tile without changing its footprint.
+      const base = raw.layers?.[0]
+      const layers =
+        base?.cornerUv !== undefined || base?.clipPolygon !== undefined
+          ? undefined
+          : raw.layers?.filter(
+              layer => layer.cornerUv === undefined && layer.clipPolygon === undefined,
+            )
+      if (reverseCells && raw.uvTransform !== undefined)
+        throw new TypeError('UVW reverse material sample transform is not qualified')
+      const weights =
+        raw.weights ??
+        (layers !== undefined && layers.length > 0
+          ? undefined
+          : [
+              Object.freeze({
+                materialId:
+                  definitions.find(item => item.sourceIndex === raw.textureIndex)?.materialId ??
+                  definitions[0]!.materialId,
+                weight: 1,
+              }),
+            ])
       values[index] = Object.freeze({
-        weights: Object.freeze(
-          weights.map(weight =>
-            Object.freeze({ materialId: localId(weight.materialId, 'material'), weight: weight.weight }),
-          ),
-        ),
+        ...(weights === undefined
+          ? {}
+          : {
+              weights: Object.freeze(
+                weights.map(weight =>
+                  Object.freeze({
+                    materialId: localId(weight.materialId, 'material'),
+                    weight: weight.weight,
+                  }),
+                ),
+              ),
+            }),
+        ...(layers === undefined || layers.length === 0
+          ? {}
+          : {
+              layers: Object.freeze(
+                layers.map(layer =>
+                  Object.freeze({
+                    materialId: localId(layer.materialId, 'material'),
+                    tile: layer.tile,
+                    ...(layer.cornerAlpha === undefined
+                      ? {}
+                      : { cornerAlpha: corners(layer.cornerAlpha) as typeof layer.cornerAlpha }),
+                  }),
+                ),
+              ),
+            }),
         ...(raw.uvTransform === undefined ? {} : { uvTransform: raw.uvTransform }),
-        ...(raw.cornerUv === undefined ? {} : { cornerUv: raw.cornerUv }),
+        ...(raw.cornerUv === undefined
+          ? {}
+          : { cornerUv: corners(raw.cornerUv) as typeof raw.cornerUv }),
       })
     }
     if (values.some(value => value === undefined))
@@ -516,6 +586,19 @@ async function reconstructLayer(
               ? {}
               : { classification: material.classification }),
             ...(material.sourceIndex === undefined ? {} : { sourceIndex: material.sourceIndex }),
+            ...(material.atlas === undefined
+              ? {}
+              : {
+                  atlas: reverseCells
+                    ? {
+                        ...material.atlas,
+                        tileTop:
+                          material.atlas.tileTop === 'local-y-0'
+                            ? ('local-y-1' as const)
+                            : ('local-y-0' as const),
+                      }
+                    : material.atlas,
+                }),
             ...(material.baseColorFactor === undefined
               ? {}
               : { baseColorFactor: material.baseColorFactor }),

@@ -1,3 +1,5 @@
+/** Core-owned standalone UVW world source: paged geometry, authored tile order/atlas/coverage,
+ * weights, UVs and package resources; no game installation or publisher dependency. */
 import { diagnostic } from '@modkit/core'
 import type { RasterResourcePort, RasterResourceResult, SceneRendererTexture } from '@modkit/sdk'
 import { WORLD_SCENE_SOURCE_CONTRACT } from '@modkit/sdk/maps'
@@ -200,11 +202,12 @@ function recordItems(
             const uvwPosition = gridPosition(layer.origin, layer.cellSize, x, y)
             if (!inBounds(uvwPosition, bounds)) return []
             const weights = sample.weights
-            const dominant = [...weights].sort(
+            const dominant = [...(weights ?? [])].sort(
               (left, right) =>
                 right.weight - left.weight || left.materialId.localeCompare(right.materialId),
-            )[0]!
-            const material = layer.materials[materialIndex.get(dominant.materialId) ?? 0]!
+            )[0]
+            const materialId = sample.layers?.[0]?.materialId ?? dominant!.materialId
+            const material = layer.materials[materialIndex.get(materialId) ?? 0]!
             return [
               Object.freeze({
                 facet: 'terrain-materials' as const,
@@ -216,7 +219,12 @@ function recordItems(
                 y,
                 textureIndex: material.sourceIndex ?? materialIndex.get(material.id) ?? 0,
                 textureName: material.label ?? material.id,
-                weights: Object.freeze(weights.map(weight => Object.freeze({ ...weight }))),
+                ...(weights === undefined
+                  ? {}
+                  : {
+                      weights: Object.freeze(weights.map(weight => Object.freeze({ ...weight }))),
+                    }),
+                ...(sample.layers === undefined ? {} : { layers: sample.layers }),
                 ...(sample.uvTransform === undefined ? {} : { uvTransform: sample.uvTransform }),
                 ...(sample.cornerUv === undefined ? {} : { cornerUv: sample.cornerUv }),
                 uvwPosition,
@@ -647,6 +655,7 @@ export function createUvwWorldSceneSource(
                     ...(material.sourceIndex === undefined
                       ? {}
                       : { sourceIndex: material.sourceIndex }),
+                    ...(material.atlas === undefined ? {} : { atlas: material.atlas }),
                     ...(material.baseColorFactor === undefined
                       ? {}
                       : { baseColorFactor: material.baseColorFactor }),

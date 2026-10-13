@@ -1118,6 +1118,10 @@ describe('generic publisher-candidate world harness', () => {
     }
     expect(pickWorldObject(model, { x: 10.1, y: 20.1 }, 1)?.objectId).toBe(7)
     const selected = selectWorldObject(createWorldEditState('revision-1'), object)
+    expect(selectWorldObject(selected, { ...object, derivedFrom: 'objects' })).toEqual({
+      sourceRevision: 'revision-1',
+      status: 'idle',
+    })
     const preview = previewWorldObjectMove(selected, { x: 3, y: -2 })
     expect(preview).toMatchObject({ status: 'preview', preview: { x: 13, y: 18, z: 2 } })
     expect(rejectWorldObjectMove(preview, 'stale revision', true)).toMatchObject({

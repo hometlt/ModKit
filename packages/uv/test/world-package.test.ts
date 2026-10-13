@@ -133,6 +133,7 @@ function sourceWithWeightRaster() {
           const { samples: _samples, ...withoutSamples } = layer
           return {
             ...withoutSamples,
+            materials: layer.materials.map(material => ({ ...material, atlas: { rows: 2 } })),
             weightRasters: [
               {
                 resourceId: 'source-weights',
@@ -357,6 +358,78 @@ const options = {
 }
 
 describe('portable UVP map bundle', () => {
+  it('packages geometry without a texture route, but still refuses missing required texture acquisition', async () => {
+    const geometry = {
+      ...document,
+      spaces: document.spaces.map(space => ({
+        ...space,
+        layers: space.layers.filter(layer => layer.kind === 'heightfield'),
+      })),
+    }
+    const raw = createUvwWorldSceneSource(geometry, { snapshotId: 'geometry-only' })
+    const { texture: _texture, ...withoutTexture } = raw
+    expect((await materializeWorldToUvpMap(withoutTexture, options)).state).toBe('materialized')
+    const { texture: _required, ...missingTexture } = source()
+    expect((await materializeWorldToUvpMap(missingTexture, options)).refusalCodes).toEqual([
+      'texture-route-missing',
+    ])
+  })
+
+  it('packages texture closure for layers-only atlas samples and reopens without the source', async () => {
+    const layered: UvwProfileDocument = {
+      ...document,
+      spaces: document.spaces.map(space => ({
+        ...space,
+        layers: space.layers.map(layer =>
+          layer.kind !== 'terrain-materials'
+            ? layer
+            : {
+                ...layer,
+                materials: layer.materials.map(material => ({ ...material, atlas: { rows: 2 } })),
+                samples: Array.from({ length: 2 }, () =>
+                  Array.from({ length: 2 }, () => ({
+                    layers: [
+                      {
+                        materialId: 'grass',
+                        tile: { column: 1, row: 1 },
+                        cornerAlpha: [0, 0.25, 0.5, 1] as const,
+                      },
+                    ],
+                  })),
+                ),
+              },
+        ),
+      })),
+    }
+    const original = createUvwWorldSceneSource(layered, {
+      snapshotId: 'layer-closure',
+      rasterResources,
+      embeddedResources: new Map([['uvw-resource:main/source-grass', { bytes: Uint8Array.of(1) }]]),
+    })
+    const packed = await materializeWorldToUvpMap(original, options)
+    expect(packed.state).toBe('materialized')
+    if (packed.state !== 'materialized') throw new Error(JSON.stringify(packed.refusals))
+    expect(packed.packagedTextureCount).toBe(1)
+    const reopened = await openUvpMapBundle(packed.entries, {
+      snapshotId: 'detached-layers',
+      rasterResources,
+    })
+    const material = reopened.document.spaces[0]!.layers.find(
+      layer => layer.kind === 'terrain-materials',
+    )!
+    if (material.kind !== 'terrain-materials') throw new Error('missing materials')
+    expect(material.samples?.[0]?.[0]).toEqual(
+      layered.spaces[0]!.layers.find(layer => layer.kind === 'terrain-materials')!
+        .samples?.[0]?.[0],
+    )
+    expect(material.materials[0]?.atlas).toEqual({ rows: 2 })
+    const decoded = await reopened.source.texture?.('uvw-resource:main/terrain-media-0000', {
+      maxBytes: 1024,
+    })
+    expect(decoded?.state).toBe('decoded')
+    if (decoded?.state === 'decoded') expect(decoded.texture.rgba).toEqual(rgba)
+  })
+
   it('packages both independent water texture channels and reopens them without the source', async () => {
     const packed = await materializeWorldToUvpMap(sourceWithDualWaterTextures(), options)
     expect(packed.state).toBe('materialized')
@@ -409,6 +482,7 @@ describe('portable UVP map bundle', () => {
       layer => layer.kind === 'terrain-materials',
     )
     expect(materialLayer?.samples).toBeUndefined()
+    expect(materialLayer?.materials[0]?.atlas).toEqual({ rows: 2 })
     expect(materialLayer?.weightRasters).toEqual([
       {
         resourceId: 'terrain-media-0001',

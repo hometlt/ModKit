@@ -669,6 +669,8 @@ export interface MapModelComponentPlacement {
 }
 
 export interface MapPlacedObject {
+  /** Presentation-only geometry derived from a native facet; never exported as an authored placement. */
+  readonly derivedFrom?: 'cliffs' | 'objects'
   readonly kind: MapObjectKind
   readonly objectId: number
   /** Source-authored id when it exists separately from the workspace-unique object identity. */
@@ -1862,7 +1864,7 @@ export interface WorldSceneObjectItem extends MapPlacedObject {
   readonly uvwRotation?: readonly [number, number, number, number]
   readonly uvwScale?: MapPosition
   /** Presentation-only instance generated from another facet; never exported or edited as an object. */
-  readonly derivedFrom?: 'cliffs'
+  readonly derivedFrom?: 'cliffs' | 'objects'
 }
 
 export interface WorldSceneRegionShape {
