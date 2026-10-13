@@ -6,6 +6,7 @@
  * Terrain-only depth bias leaves coplanar surface models visible without changing their placement.
  * The Host-owned cell split also supplies object placement heights; texture coverage preserves ground shape.
  * Terrain-overlay materials cover ground with independent self-depth; ordinary models still occlude them.
+ * Authored water polygons use Three's triangulator and the shared clipper for depth planes and fallback surfaces.
  * Format parsing and source placement data remain with the publisher.
  */
 import {
@@ -14,6 +15,7 @@ import {
   PerspectiveCamera,
   Raycaster,
   Sphere,
+  ShapeUtils,
   Vector2,
   Vector3,
 } from 'three'
@@ -1397,6 +1399,8 @@ function clippedWaterGroundPolygon(
   minimum: Readonly<{ x: number; z: number }>,
   maximum: Readonly<{ x: number; z: number }>,
   elevation: number,
+  boundary?: readonly WaterGroundVertex[],
+  clipGround = true,
 ): readonly WaterGroundVertex[] {
   let polygon: WaterGroundVertex[] = [...triangle]
   for (const distance of [
@@ -1406,10 +1410,23 @@ function clippedWaterGroundPolygon(
     (vertex: WaterGroundVertex) => maximum.z - vertex[2],
     // Only a hair under the surface: Amphion's ponds are dips of 0.1-0.3 in a flat that sits 0.09
     // above the water, and a 0.05 margin clipped them away entirely.
-    (vertex: WaterGroundVertex) => elevation - 0.005 - vertex[1],
+    ...(clipGround ? [(vertex: WaterGroundVertex) => elevation - 0.005 - vertex[1]] : []),
   ]) {
     polygon = clipWaterPolygon(polygon, distance)
     if (polygon.length < 3) return []
+  }
+  if (boundary !== undefined) {
+    const points = boundary.map(p => [p[0], p[2]] as const)
+    const sense = overlayPolygonSense(points)
+    for (let i = 0; i < points.length; i++) {
+      const a = points[i]!,
+        b = points[(i + 1) % points.length]!
+      polygon = clipWaterPolygon(
+        polygon,
+        p => sense * ((b[0] - a[0]) * (p[2] - a[1]) - (b[1] - a[1]) * (p[0] - a[0])),
+      )
+      if (polygon.length < 3) return []
+    }
   }
   return polygon
 }
@@ -1436,6 +1453,7 @@ function clippedWaterGround(
   minimum: Readonly<{ x: number; z: number }>,
   maximum: Readonly<{ x: number; z: number }>,
   elevation: number,
+  boundaries?: readonly (readonly WaterGroundVertex[])[],
 ): Float64Array {
   let ground = worldWaterGround.get(preparation)
   if (ground === undefined) {
@@ -1449,7 +1467,7 @@ function clippedWaterGround(
     }
     worldWaterGround.set(preparation, (ground = { buckets, zones: new Map() }))
   }
-  const key = `${minimum.x}:${minimum.z}:${maximum.x}:${maximum.z}:${elevation}`
+  const key = `${minimum.x}:${minimum.z}:${maximum.x}:${maximum.z}:${elevation}:${JSON.stringify(boundaries)}`
   const cached = ground.zones.get(key)
   if (cached !== undefined) return cached
   const { terrainByCell } = preparation
@@ -1486,9 +1504,17 @@ function clippedWaterGround(
             Math.min(...triangle.map(vertex => vertex[2])) > maximum.z
           )
             continue
-          const polygon = clippedWaterGroundPolygon(triangle, minimum, maximum, elevation)
-          for (let index = 1; index + 1 < polygon.length; index += 1)
-            values.push(...polygon[0]!, ...polygon[index]!, ...polygon[index + 1]!)
+          for (const boundary of boundaries ?? [undefined]) {
+            const polygon = clippedWaterGroundPolygon(
+              triangle,
+              minimum,
+              maximum,
+              elevation,
+              boundary,
+            )
+            for (let index = 1; index + 1 < polygon.length; index += 1)
+              values.push(...polygon[0]!, ...polygon[index]!, ...polygon[index + 1]!)
+          }
         }
       }
   const triangles = Float64Array.from(values)
@@ -1525,12 +1551,13 @@ function worldWaterZone(
   elevation: number,
   timeSeconds: number,
   detail?: WorldWebGlWaterDetail,
+  boundary?: readonly Readonly<{ x: number; z: number }>[],
 ): WorldWaterZone {
   let byMaterial = worldWaterZones.get(preparation)
   if (byMaterial === undefined) worldWaterZones.set(preparation, (byMaterial = new WeakMap()))
   let zones = byMaterial.get(material ?? NO_WATER_MATERIAL)
   if (zones === undefined) byMaterial.set(material ?? NO_WATER_MATERIAL, (zones = new Map()))
-  const key = `${minimum.x}:${minimum.z}:${maximum.x}:${maximum.z}:${elevation}`
+  const key = `${minimum.x}:${minimum.z}:${maximum.x}:${maximum.z}:${elevation}:${JSON.stringify(boundary)}`
   const textured = material !== undefined && texture !== undefined
   const time =
     textured && (material.scroll ?? []).some(value => value !== 0) ? timeSeconds : undefined
@@ -1543,17 +1570,58 @@ function worldWaterZone(
     cached.detail === detail
   )
     return cached
+  // Three's existing triangulator preserves concave authored shorelines. All water paths use
+  // these same non-overlapping pieces, including the GPU scene-depth plane and CPU fallback.
+  let boundaries: readonly (readonly WaterGroundVertex[])[] | undefined
+  if (boundary !== undefined) {
+    if (
+      boundary.length < 3 ||
+      boundary.length > 65536 ||
+      boundary.some(p => !Number.isFinite(p.x) || !Number.isFinite(p.z))
+    )
+      throw new TypeError('water boundary must contain 3..65536 finite points')
+    const points = boundary.map(p => new Vector2(p.x, p.z))
+    boundaries = ShapeUtils.triangulateShape(points, []).map(indices =>
+      indices.map(i => [points[i]!.x, elevation, points[i]!.y] as const),
+    )
+  }
+  const surfacePieces =
+    boundaries ??
+    ([
+      [
+        [minimum.x, elevation, minimum.z],
+        [maximum.x, elevation, maximum.z],
+        [maximum.x, elevation, minimum.z],
+      ],
+      [
+        [minimum.x, elevation, minimum.z],
+        [minimum.x, elevation, maximum.z],
+        [maximum.x, elevation, maximum.z],
+      ],
+    ] as readonly (readonly WaterGroundVertex[])[])
+  const surfaceTriangles: [WaterGroundVertex, WaterGroundVertex, WaterGroundVertex][] = []
+  for (const piece of surfacePieces) {
+    const clipped = clippedWaterGroundPolygon(
+      piece as [WaterGroundVertex, WaterGroundVertex, WaterGroundVertex],
+      minimum,
+      maximum,
+      elevation,
+      undefined,
+      false,
+    )
+    for (let i = 1; i + 1 < clipped.length; i++) {
+      const a = clipped[0]!, b = clipped[i]!, c = clipped[i + 1]!
+      const turn = (b[0] - a[0]) * (c[2] - a[2]) - (b[2] - a[2]) * (c[0] - a[0])
+      surfaceTriangles.push(turn > 0 ? [a, c, b] : [a, b, c])
+    }
+  }
   let plane: WorldBatchWrite | undefined
   if (!textured) {
     // The same zone as a plane at its elevation, for a renderer that measures the depth under the
     // water against the drawn scene instead of the height grid (see WorldWebGlWaterPlane).
     const written = batch()
     const color = material?.color ?? WATER_DEFAULT_COLOR
-    const a = [minimum.x, elevation, minimum.z] as const
-    const b = [maximum.x, elevation, minimum.z] as const
-    const c = [maximum.x, elevation, maximum.z] as const
-    const d = [minimum.x, elevation, maximum.z] as const
-    for (const vertex of [a, c, b, a, d, c])
+    for (const vertex of surfaceTriangles.flat())
       pushVertex(written, vertex, WATER_SURFACE_NORMAL, color)
     plane = written
   }
@@ -1592,7 +1660,7 @@ function worldWaterZone(
   }
   let emitted = false
   if (material?.shorelineMode === 'terrain-clipped' && preparation.terrain.length > 0) {
-    const ground = clippedWaterGround(preparation, minimum, maximum, elevation)
+    const ground = clippedWaterGround(preparation, minimum, maximum, elevation, boundaries)
     for (let offset = 0; offset < ground.length; offset += 9) {
       push([
         [ground[offset]!, ground[offset + 1]!, ground[offset + 2]!],
@@ -1602,13 +1670,10 @@ function worldWaterZone(
       emitted = true
     }
   } else {
-    const a = [minimum.x, elevation - 1, minimum.z] as const
-    const b = [maximum.x, elevation - 1, minimum.z] as const
-    const c = [maximum.x, elevation - 1, maximum.z] as const
-    const d = [minimum.x, elevation - 1, maximum.z] as const
-    push([a, c, b])
-    push([a, d, c])
-    emitted = true
+    const lower = (p: WaterGroundVertex): WaterGroundVertex => [p[0], elevation - 1, p[2]]
+    for (const triangle of surfaceTriangles)
+      push([lower(triangle[0]), lower(triangle[1]), lower(triangle[2])])
+    emitted = surfaceTriangles.length > 0
   }
   const zone = Object.freeze({ texture, secondaryTexture, time, plane, triangles, emitted, detail })
   zones.set(key, zone)
@@ -7487,6 +7552,7 @@ export function createWorldWebGlPlan(
       elevation,
       timeSeconds,
       detail,
+      item.uvwPolygon ?? item.polygon?.map(p => ({ x: p.x, z: p.y })),
     )
     if (zone.plane !== undefined) {
       const key = material?.materialId ?? ''

@@ -1036,6 +1036,8 @@ export interface MapWaterZone {
   readonly templateId: string
   readonly minimum: Readonly<{ x: number; y: number }>
   readonly maximum: Readonly<{ x: number; y: number }>
+  /** Ordered simple surface boundary in the native horizontal frame; bounds remain for culling. */
+  readonly polygon?: readonly Readonly<{ x: number; y: number }>[]
   /** Undefined until the publisher resolves a water template or authored vertical coordinate. */
   readonly elevation?: number
   /** Stable join into MapWaterSummary.materials when visual parameters resolved. */
@@ -1828,6 +1830,7 @@ export interface WorldSceneWaterItem extends MapWaterZone {
   readonly coordinateSpaceId: string
   readonly uvwMinimum?: Readonly<{ readonly x: number; readonly z: number }>
   readonly uvwMaximum?: Readonly<{ readonly x: number; readonly z: number }>
+  readonly uvwPolygon?: readonly Readonly<{ x: number; z: number }>[]
   readonly uvwElevation?: number
   readonly materialId?: string
 }

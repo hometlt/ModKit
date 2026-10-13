@@ -1106,6 +1106,19 @@ export function createCandidateWorldSceneLease(
                 z: Math.max(...canonicalCorners.map(corner => corner.z)),
               }),
               uvwElevation: canonicalCorners[0]!.y,
+              ...(item.polygon === undefined
+                ? {}
+                : {
+                    uvwPolygon: Object.freeze(
+                      item.polygon.map(point => {
+                        const p = canonicalPosition(
+                          { x: point.x, y: point.y, z: item.elevation! },
+                          uvwTransform!,
+                        )
+                        return Object.freeze({ x: p.x, z: p.z })
+                      }),
+                    ),
+                  }),
             }),
       })
     }),
