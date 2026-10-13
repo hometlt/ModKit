@@ -6795,10 +6795,12 @@ function prepareWorldStaticTerrain(
       const drawUpperLayers = () =>
         materialSample?.layers
           ?.slice(1)
-          .forEach((layer, index) =>
+          .forEach((layer, index) => {
+            if (layer.drawOrder !== undefined && (!Number.isSafeInteger(layer.drawOrder) || layer.drawOrder < 0))
+              throw new TypeError('terrain layer drawOrder must be a nonnegative safe integer')
             drawOverlay(
               layer.materialId,
-              index + 1,
+              layer.drawOrder ?? index + 1,
               (local, definition, texture) =>
                 layer.cornerUv !== undefined
                   ? terrainSurfaceUv({ x: 0, y: 0 }, local, { cornerUv: layer.cornerUv }, undefined)
@@ -6808,8 +6810,8 @@ function prepareWorldStaticTerrain(
               layer.cornerUv === undefined,
               layer.cornerAlpha,
               layer.clipPolygon,
-            ),
-          )
+            )
+          })
       const drawDecal = () => {
         const decal = materialSample?.decal
         if (decal === undefined) return

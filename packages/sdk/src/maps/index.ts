@@ -919,6 +919,9 @@ export interface MapTerrainMaterialSample {
    */
   readonly layers?: readonly Readonly<{
     readonly materialId: string
+    /** Optional publisher-wide upper-layer painter order, independent of per-cell layer count.
+     * Nonnegative safe integer, bottom first; absent retains the local array order. */
+    readonly drawOrder?: number
     readonly tile: Readonly<{ readonly column: number; readonly row: number }>
     /**
      * An upper layer's coverage at the cell's corners, local (0,0), (1,0), (1,1), (0,1), 0..1, times

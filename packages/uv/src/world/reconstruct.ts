@@ -324,6 +324,7 @@ function noteLostFields(
       if (item.layers?.[0]?.cornerUv !== undefined || item.layers?.[0]?.clipPolygon !== undefined)
         add('world.terrain-materials.layers (base not representable)')
       for (const layer of item.layers ?? []) {
+        if (layer.drawOrder !== undefined) add('world.terrain-materials.layers.drawOrder')
         if (layer.cornerUv !== undefined) add('world.terrain-materials.layers.cornerUv')
         if (layer.clipPolygon !== undefined) add('world.terrain-materials.layers.clipPolygon')
       }

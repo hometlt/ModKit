@@ -33,6 +33,21 @@ const texture = (id, width = 1, height = 1, rgba = [128, 128, 128, 255]) => ({
 })
 
 describe('world terrain overlays', () => {
+  it('keeps publisher-wide overlay order independent of blend and road counts in each cell', () => {
+    const terrain=Array.from({length:6},(_,i)=>({...cell()[0],id:`order:${i}`,x:i%3,y:Math.floor(i/3),uvwPosition:{x:i%3,y:0,z:Math.floor(i/3)}}))
+    const layer=(materialId,drawOrder)=>({materialId,tile:{column:0,row:0},...(drawOrder===undefined?{}:{drawOrder})})
+    const make = order => createWorldWebGlPlan({
+      items:[...terrain,
+        {facet:'terrain-materials',id:'m:0',layerId:'materials',coordinateSpaceId:'height-grid',x:0,y:0,layers:[layer('base'),layer('blend'),layer('low',order),layer('high',11)]},
+        {facet:'terrain-materials',id:'m:1',layerId:'materials',coordinateSpaceId:'height-grid',x:1,y:0,layers:[layer('base'),layer('low',order),layer('high',11)]}],
+      terrainMaterials:['base','blend','low','high'].map(materialId=>({materialId,baseColorResourceId:materialId})),
+      terrainTextures:new Map(['base','blend','low','high'].map(id=>[id,texture(id)])),
+    })
+    const p=make(10)
+    assert.deepEqual(p.terrainDecalTriangles.map(b=>b.texture.id),['blend','low','high'])
+    assert.equal(p.terrainDecalTriangles[1].positions.length,36,'low overlay shares one global batch across both cells')
+    for(const bad of [-1,NaN,Infinity,.5])assert.throws(()=>make(bad),/drawOrder/)
+  })
   it('draws weight rasters past eight layers as a group blended over the first', () => {
     const materials = Array.from({ length: 10 }, (_, index) => ({
       materialId: `ground-${index}`,

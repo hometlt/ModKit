@@ -240,6 +240,7 @@ describe('production world to UVW materializer', () => {
                               {
                                 materialId: 'grass',
                                 tile: { column: 2, row: 2 },
+                                drawOrder: 10,
                                 clipPolygon: [
                                   [0, 0],
                                   [1, 0],
@@ -275,6 +276,10 @@ describe('production world to UVW materializer', () => {
     expect(material.materials[0]?.atlas).toEqual({ rows: 4, tileTop: 'local-y-0' })
     expect(result.lostFields).toContainEqual({
       path: 'world.terrain-materials.layers.clipPolygon',
+      count: 4,
+    })
+    expect(result.lostFields).toContainEqual({
+      path: 'world.terrain-materials.layers.drawOrder',
       count: 4,
     })
     const reopened = await materializeWorldToUvw(
