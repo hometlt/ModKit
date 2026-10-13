@@ -133,7 +133,7 @@ export function projectUvmRigModel(
     usedMeshes = new Set<number>()
   const sceneRoots = array(object(array(document, 'scenes')[0], 'scene'), 'nodes')
   const reachable = new Set<number>()
-  const visit = (node: number, depth = 0, jointAncestor = false): void => {
+  const visit = (node: number, depth = 0): void => {
     if (
       !Number.isSafeInteger(node) ||
       node < 0 ||
@@ -144,13 +144,9 @@ export function projectUvmRigModel(
       throw new TypeError('rig scene has invalid/repeated nodes')
     signal?.throwIfAborted()
     reachable.add(node)
-    if (jointAncestor && object(nodes[node], 'node')['mesh'] !== undefined)
-      throw new TypeError(
-        'a skinned mesh below an animated joint needs an instance-frame correspondence',
-      )
     for (const child of array(object(nodes[node], 'node'), 'children')) {
       if (typeof child !== 'number') throw new TypeError('invalid child index')
-      visit(child, depth + 1, jointAncestor || jointIds.has(`node-${node}`))
+      visit(child, depth + 1)
     }
   }
   for (const root of sceneRoots) {
@@ -276,13 +272,17 @@ export function projectUvmRigModel(
   // (the static projection below composes it into the vertices), into every inverse bind
   // (IBM' = IBM * F^-1, so J * IBM' * (F * v) = J * IBM * v) and into the root joints' rest poses
   // and tracks. A target that reads vertices as bind-pose model space then sees the same model.
-  const worldAbove = (node: number): readonly number[] => {
+  // Skin positions use joint globals * IBM; a mesh's animated joint ancestors are not
+  // an additional geometry frame. Only the shared non-joint model frame is baked below.
+  const worldAbove = (node: number, skinInstance = false): readonly number[] => {
     let matrix: readonly number[] = IDENTITY_MATERIAL_FRAME
-    for (let parent = nodeParents.get(node); parent !== undefined; parent = nodeParents.get(parent))
+    for (let parent = nodeParents.get(node); parent !== undefined; parent = nodeParents.get(parent)) {
+      if (skinInstance && jointIds.has(`node-${parent}`)) continue
       matrix = multiplyMaterialFrames(
         required(parsed.scene.nodes[parent], 'scene node').transform,
         matrix,
       )
+    }
     return matrix
   }
   const nodeIndexOf = (id: string): number => Number(id.slice('node-'.length))
@@ -293,7 +293,7 @@ export function projectUvmRigModel(
   )
   const modelFrame = worldAbove(nodeIndexOf(required([...rootNodeIds][0], 'root joint')))
   for (const node of [...[...rootNodeIds].map(nodeIndexOf), ...meshNodeIndices])
-    if (worldAbove(node).some((value, index) => value !== modelFrame[index]))
+    if (worldAbove(node, meshNodeIndices.includes(node)).some((value, index) => value !== modelFrame[index]))
       throw new TypeError('rig joints and meshes must share one model frame')
   const frame = identity(modelFrame) ? undefined : similarityFrame(modelFrame)
   const unframe = frame === undefined ? undefined : invertMaterialFrame(modelFrame)

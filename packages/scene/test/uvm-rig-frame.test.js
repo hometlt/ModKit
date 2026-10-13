@@ -202,6 +202,41 @@ test('a source coordinate frame over the skeleton is baked, keeping every world 
   )
 })
 
+test('identity skinned mesh below either joint keeps world positions without double ancestry', () => {
+  for (const parent of [1, 2]) {
+    const source = framedRig()
+    source.document.nodes[3].children = [1]
+    source.document.nodes[parent].children = [...(source.document.nodes[parent].children ?? []), 0]
+    const result = projectUvmRigModel(source, budget)
+    const sibling = projectUvmRigModel(framedRig(), budget)
+    assert.deepEqual(result.restPoses, sibling.restPoses)
+    assert.deepEqual(result.model.meshes[0].positions, sibling.model.meshes[0].positions)
+    const [root, tip] = result.restPoses, mesh = result.model.meshes[0]
+    const track = result.model.animations[0].nodeTracks.find(entry => entry.boneIndex === 0).translation
+    for (const time of [0, .25, 1]) {
+      const translation = track.keys[0].vector.map((v, i) => v * (1-time) + track.keys[1].vector[i] * time)
+      const worlds = [trs({...root, translation})]
+      worlds.push(multiplyMaterialFrames(worlds[0], trs(tip)))
+      for (let vertex = 0; vertex < 3; vertex++) {
+        const bone = mesh.boneIndices[vertex * 4], matrix = multiplyMaterialFrames(worlds[bone], result.restPoses[bone].inverseBindMatrix)
+        const p = mesh.positions.slice(vertex * 3, vertex * 3 + 3)
+        const actual = [0,1,2].map(axis => matrix[axis]*p[0]+matrix[axis+4]*p[1]+matrix[axis+8]*p[2]+matrix[axis+12])
+        // Independent glTF skin expectation: F * (original vertex + animated root delta).
+        const native = [[0,0,0],[1,0,0],[0,0,4]][vertex], q = [native[0], native[1], native[2]+time]
+        const expected = [0,1,2].map(axis => FRAME[axis]*q[0]+FRAME[axis+4]*q[1]+FRAME[axis+8]*q[2]+FRAME[axis+12])
+        close(actual, expected, `joint ${parent}, t ${time}, vertex ${vertex}`)
+      }
+    }
+    source.document.nodes[0].translation = [1,0,0]
+    assert.throws(() => projectUvmRigModel(source, budget), /frames must be identity/)
+    source.document.nodes[0].translation = [0,0,0]
+    const helper = source.document.nodes.length
+    source.document.nodes.push({name:'Nonidentity mesh helper',translation:[1,0,0],children:[0]})
+    source.document.nodes[parent].children = source.document.nodes[parent].children.map(id => id===0?helper:id)
+    assert.throws(() => projectUvmRigModel(source, budget), /frames must be identity/)
+  }
+})
+
 test('a cubic root track keeps its tangents, turned by the frame and not moved by it', () => {
   const cubic = { leaving: [0, 1, 0], arriving: [1, 0, 0] }
   const result = projectUvmRigModel(framedRig(FRAME, { cubic }), budget)
