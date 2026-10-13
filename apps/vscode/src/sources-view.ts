@@ -1,7 +1,7 @@
 /** The Sources tree view. */
 import { existsSync } from 'node:fs'
 import * as vscode from 'vscode'
-import { type ContentSources } from '@modkit/vfs/content-sources'
+import { type ContentSourceModuleInfo, type ContentSources } from '@modkit/vfs/content-sources'
 import { type UiLocalizer } from '@modkit/ui/localization'
 
 import { type SelectedContentSource } from './workbench-workflows.js'
@@ -49,6 +49,9 @@ export class SourcesView implements vscode.TreeDataProvider<SourceTreeNode>, vsc
       readonly region: string
     }[] = () => [],
     private readonly storage: () => Promise<ReadonlyMap<string, string>> = async () => new Map(),
+    /** Content-source modules not started yet: a row each, which starts it when selected. */
+    private readonly pendingModules: () => Promise<readonly ContentSourceModuleInfo[]> = async () =>
+      [],
   ) {}
 
   dispose(): void {
@@ -105,6 +108,12 @@ export class SourcesView implements vscode.TreeDataProvider<SourceTreeNode>, vsc
       item.command = {
         command: 'modkit.sources.signIn',
         title: this.localizer.text('vscode.sources.signIn'),
+        arguments: [node],
+      }
+    } else if (node.kind === 'pending-module') {
+      item.command = {
+        command: 'modkit.sources.startModule',
+        title: this.localizer.text('vscode.sources.startModule'),
         arguments: [node],
       }
     } else if (node.kind === 'provider-root') {
@@ -195,6 +204,7 @@ export class SourcesView implements vscode.TreeDataProvider<SourceTreeNode>, vsc
         knownConnections: this.knownConnections(),
         rememberedRoots: this.rememberedRoots(),
         storage: await this.storage(),
+        pendingModules: await this.pendingModules().catch(() => []),
         ...(provider.snapshot === undefined ? {} : { providerSnapshot: provider.snapshot }),
         ...(provider.problem === undefined ? {} : { providerProblem: provider.problem }),
         text: {
@@ -220,6 +230,8 @@ export class SourcesView implements vscode.TreeDataProvider<SourceTreeNode>, vsc
           myPublications: this.localizer.text('vscode.sources.myPublications'),
           publicCatalogue: this.localizer.text('vscode.sources.publicCatalogue'),
           localFolders: this.localizer.text('vscode.sources.localFolders'),
+          pendingModules: this.localizer.text('vscode.sources.pendingModules'),
+          pendingModule: this.localizer.text('vscode.sources.pendingModule'),
         },
       }),
     ]

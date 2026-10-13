@@ -155,6 +155,113 @@ describe('several extensions’ content sources as one catalogue', () => {
   })
 })
 
+describe('content-source modules that start when first needed', () => {
+  /** A deferred module that counts its starts; `fail` makes the next start throw once. */
+  const deferred = (name: string, extra: Partial<ContentSources> = {}) => {
+    const state = { starts: 0, fail: false }
+    return {
+      state,
+      module: {
+        id: `test/${name}`,
+        label: name,
+        async load() {
+          if (state.fail) {
+            state.fail = false
+            throw new Error(`${name} cannot start`)
+          }
+          state.starts += 1
+          return part(name, extra)
+        },
+      },
+    }
+  }
+
+  it('leaves a pending module out of the snapshot until a call needs it', async () => {
+    const wc3 = deferred('wc3')
+    const composed = composeContentSources([part('sc2')], [wc3.module])
+    expect((await composed.snapshot()).roots.map(root => root.id)).toEqual(['sc2:root'])
+    expect(composed.pendingModules?.()).toEqual([{ id: 'test/wc3', label: 'wc3' }])
+    expect(wc3.state.starts).toBe(0)
+    expect((await composed.list('sc2:root', ''))[0]?.path).toBe('sc2 listed sc2:root')
+    expect(wc3.state.starts).toBe(0)
+    // a source id only the pending module names starts it, once
+    expect((await composed.list('wc3:root', ''))[0]?.path).toBe('wc3 listed wc3:root')
+    expect((await composed.read('wc3:root', 'x', 8)).length).toBe(3)
+    expect(wc3.state.starts).toBe(1)
+    expect(composed.pendingModules?.()).toEqual([])
+    expect((await composed.snapshot()).roots.map(root => root.id)).toEqual(['sc2:root', 'wc3:root'])
+    await expect(composed.list('nobody:root', '')).rejects.toThrow(/no content source module owns/)
+  })
+
+  it('starts one on request and passes over one that cannot start, trying it again later', async () => {
+    const broken = deferred('broken')
+    const wz = deferred('wz')
+    broken.state.fail = true
+    const composed = composeContentSources([], [broken.module, wz.module])
+    // the first pending module fails; the id is found in the next one
+    expect((await composed.list('wz:root', ''))[0]?.path).toBe('wz listed wz:root')
+    expect(composed.pendingModules?.().map(item => item.id)).toEqual(['test/broken'])
+    await composed.startModule?.('test/broken')
+    expect(broken.state.starts).toBe(1)
+    expect(composed.pendingModules?.()).toEqual([])
+    await expect(composed.startModule?.('test/none')).rejects.toThrow(/no content source module/)
+  })
+
+  it('offers a host path to pending modules only when no started one accepts it', async () => {
+    const roblox = deferred('roblox', {
+      openModContext: async () => context('roblox/roblox'),
+      locateModPackage: async target =>
+        String(target).endsWith('.rbxl')
+          ? { kind: 'package', sourceId: 'host', path: String(target), displayName: 'place' }
+          : { kind: 'foreign' },
+    })
+    const composed = composeContentSources(
+      [
+        part('sc2', {
+          openModContext: async () => context('blizzard/starcraft-2'),
+          locateModPackage: async target =>
+            String(target).endsWith('.SC2Mod')
+              ? { kind: 'package', sourceId: 'host', path: String(target), displayName: 'mod' }
+              : String(target).endsWith('.galaxy')
+                ? { kind: 'loose' }
+                : { kind: 'foreign' },
+        }),
+      ],
+      [roblox.module],
+    )
+    // offered while the module is pending: every optional method stays
+    expect(composed.openModContext).toBeDefined()
+    expect((await composed.openModContext!({ schemaVersion: 1, target: 'C:/Work/A.SC2Mod' })).gameId).toBe(
+      'blizzard/starcraft-2',
+    )
+    expect((await composed.locateModPackage!('C:/Work/Script.galaxy')).kind).toBe('loose')
+    expect(roblox.state.starts).toBe(0)
+    expect((await composed.openModContext!({ schemaVersion: 1, target: 'C:/Work/Place.rbxl' })).gameId).toBe(
+      'roblox/roblox',
+    )
+    expect(roblox.state.starts).toBe(1)
+    expect((await composed.locateModPackage!('C:/Work/notes.bin')).kind).toBe('missing')
+  })
+
+  it('carries the Runtime preparer of a module once it starts and disposes what started', async () => {
+    let disposed = 0
+    const wz = deferred('wz', {
+      runtimePreparer: { gameId: 'warzone/2100' },
+      dispose: async () => {
+        disposed += 1
+      },
+    } as Partial<ContentSources>)
+    const composed = composeContentSources([part('sc2')], [wz.module]) as ContentSources & {
+      readonly runtimePreparers?: readonly { readonly gameId: string }[]
+    }
+    expect(composed.runtimePreparers).toEqual([])
+    await composed.startModule?.('test/wz')
+    expect(composed.runtimePreparers?.map(item => item.gameId)).toEqual(['warzone/2100'])
+    await composed.dispose()
+    expect(disposed).toBe(1)
+  })
+})
+
 describe('hidden entries of a content source', () => {
   const source = (hiddenPaths?: readonly string[]) =>
     composeContentSources([

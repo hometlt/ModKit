@@ -404,7 +404,30 @@ export interface ContentSources {
    * decides both. Asynchronous because it checks the sources.
    */
   locateModPackage?(target: ModContextTarget, signal?: AbortSignal): Promise<ModPackagePlacement>
+  /**
+   * Modules of a composed catalogue that have not started yet ({@link DeferredContentSources}):
+   * what a host shows as a game it can start. Absent when every module started with the catalogue.
+   */
+  pendingModules?(): readonly ContentSourceModuleInfo[]
+  /** Start one pending module now; its regions and roots are in the next snapshot. */
+  startModule?(id: string): Promise<void>
   dispose(): void | Promise<void>
+}
+
+/** A content-source module as a host names it before it starts. */
+export interface ContentSourceModuleInfo {
+  /** The extension that declares the module (`publisher/id`). */
+  readonly id: string
+  /** What a host shows for it: the extension's display name. */
+  readonly label: string
+}
+
+/**
+ * A module a composed catalogue loads only when it is first needed (owner decision 13.10): a game
+ * the window does not touch neither imports its module nor looks for its installation.
+ */
+export interface DeferredContentSources extends ContentSourceModuleInfo {
+  load(): Promise<ContentSources>
 }
 
 /** What a host may choose about a publication. Both publication calls take the same options. */
@@ -736,10 +759,64 @@ export async function callContentSources(
  * places it in a package, else to the first part that opens contexts (a loose file opens inside
  * that game's base mods, as a single provider did). One part is returned as it is, save that every
  * part's listings leave hidden entries out unless asked (`includeHidden`).
+ *
+ * `deferred` modules start when first needed: a call keyed by an id no started module names starts
+ * them in order until one names it, and a host path no started module places (in a package or
+ * loose) is offered to them the same way; `startModule` starts one on request. Until then they are
+ * in no snapshot (`pendingModules` names them). A module that fails to start stays pending and is
+ * tried again by the next call that needs it.
  */
-export function composeContentSources(given: readonly ContentSources[]): ContentSources {
-  const parts = given.map(withHiddenEntries)
-  if (parts.length === 1) return parts[0]!
+export function composeContentSources(
+  given: readonly ContentSources[],
+  deferred: readonly DeferredContentSources[] = [],
+): ContentSources {
+  if (given.length === 1 && deferred.length === 0) return withHiddenEntries(given[0]!)
+  interface Slot {
+    part?: ContentSources
+    readonly module?: DeferredContentSources
+    loading?: Promise<ContentSources> | undefined
+  }
+  const slots: Slot[] = [
+    ...given.map(part => ({ part: withHiddenEntries(part) })),
+    ...deferred.map(module => ({ module })),
+  ]
+  let disposed = false
+  /** The started modules, in declaration order: started ones first, deferred ones as they start. */
+  const started = (): ContentSources[] => slots.flatMap(slot => (slot.part ? [slot.part] : []))
+  const pending = (): Slot[] => slots.filter(slot => slot.part === undefined)
+  const start = (slot: Slot): Promise<ContentSources> => {
+    if (slot.part !== undefined) return Promise.resolve(slot.part)
+    slot.loading ??= slot.module!.load().then(
+      async loaded => {
+        if (disposed) {
+          await loaded.dispose()
+          throw new Error('the content sources were disposed while a module started')
+        }
+        slot.part = withHiddenEntries(loaded)
+        return slot.part
+      },
+      (error: unknown) => {
+        slot.loading = undefined
+        throw error
+      },
+    )
+    return slot.loading
+  }
+  /**
+   * Start pending modules in order until `found` answers for one; undefined when none does. A
+   * module that cannot start is passed over, so one broken game never blocks another's file.
+   */
+  const firstPending = async <T>(
+    found: (part: ContentSources) => Promise<T | undefined>,
+  ): Promise<T | undefined> => {
+    for (const slot of pending()) {
+      const part = await start(slot).catch(() => undefined)
+      if (part === undefined) continue
+      const answer = await found(part)
+      if (answer !== undefined) return answer
+    }
+    return undefined
+  }
   const owners = {
     region: new Map<string, ContentSources>(),
     connection: new Map<string, ContentSources>(),
@@ -750,7 +827,7 @@ export function composeContentSources(given: readonly ContentSources[]): Content
   let publisher: ContentSources | undefined
   const snapshot = async (): Promise<ContentSourceSnapshot> => {
     const taken = await Promise.all(
-      parts.map(async part => ({ part, snapshot: await part.snapshot() })),
+      started().map(async part => ({ part, snapshot: await part.snapshot() })),
     )
     for (const map of [owners.region, owners.connection, owners.source]) map.clear()
     const claim = (
@@ -780,7 +857,15 @@ export function composeContentSources(given: readonly ContentSources[]): Content
   }
   const owner = async (map: Map<string, ContentSources>, id: string): Promise<ContentSources> => {
     if (!map.has(id) && map !== owners.result) await snapshot()
-    const part = map.get(id)
+    // an id no started module names may be a pending module's: start them until one names it
+    const part =
+      map.get(id) ??
+      (map === owners.result
+        ? undefined
+        : await firstPending(async () => {
+            await snapshot()
+            return map.get(id)
+          }))
     if (part === undefined) throw new RangeError(`no content source module owns «${id}»`)
     return part
   }
@@ -793,18 +878,22 @@ export function composeContentSources(given: readonly ContentSources[]): Content
     return (method as (...args: unknown[]) => unknown).bind(part)
   }
   // A host path goes to the module that places it in a package, else to the first that accepts it
-  // loose; a module that calls it foreign or missing never receives it. One that cannot place targets
-  // is asked only when no module accepted the path.
+  // loose; a module that calls it foreign or missing never receives it. Pending modules are asked
+  // only when no started one accepted it, and one that cannot place targets only after them.
   const hostTarget = async (target: string): Promise<ContentSources | undefined> => {
     let loose: ContentSources | undefined
-    for (const part of parts) {
+    for (const part of started()) {
       const placement = await part.locateModPackage?.(target)
       if (placement?.kind === 'package') return part
       if (placement?.kind === 'loose') loose ??= part
     }
     return (
       loose ??
-      parts.find(part => part.openModContext !== undefined && part.locateModPackage === undefined)
+      (await firstPending(async part => {
+        const placement = await part.locateModPackage?.(target)
+        return placement?.kind === 'package' || placement?.kind === 'loose' ? part : undefined
+      })) ??
+      started().find(part => part.openModContext !== undefined && part.locateModPackage === undefined)
     )
   }
   const composed: ContentSources = {
@@ -831,7 +920,7 @@ export function composeContentSources(given: readonly ContentSources[]): Content
       // the host's own files (a mod folder on disk) belong to no part: each part that read them
       // forgets them; a part that never did refuses, and only all refusing is a failure
       if (sourceId === HOST_LAYER_SOURCE_ID) {
-        const outcomes = await Promise.allSettled(parts.map(part => part.refresh(sourceId)))
+        const outcomes = await Promise.allSettled(started().map(part => part.refresh(sourceId)))
         const refused = outcomes.filter(outcome => outcome.status === 'rejected')
         if (refused.length === outcomes.length && refused[0] !== undefined) throw refused[0].reason
         return
@@ -916,27 +1005,58 @@ export function composeContentSources(given: readonly ContentSources[]): Content
           : part.locateModPackage(target, signal)
       }
       let loose = false
-      for (const part of parts) {
+      for (const part of started()) {
         const placement = await part.locateModPackage?.(target, signal)
         if (placement?.kind === 'package') return placement
         if (placement?.kind === 'loose') loose = true
       }
-      return loose ? { kind: 'loose' } : { kind: 'missing' }
+      if (loose) return { kind: 'loose' }
+      const placed = await firstPending(async part => {
+        const placement = await part.locateModPackage?.(target, signal)
+        return placement?.kind === 'package' || placement?.kind === 'loose' ? placement : undefined
+      })
+      return placed ?? { kind: 'missing' }
+    },
+    pendingModules() {
+      return pending().map(slot => ({ id: slot.module!.id, label: slot.module!.label }))
+    },
+    async startModule(id) {
+      const slot = slots.find(item => item.module?.id === id)
+      if (slot === undefined) throw new RangeError(`no content source module «${id}»`)
+      await start(slot)
     },
     async dispose() {
-      await Promise.all(parts.map(part => part.dispose()))
+      disposed = true
+      const loading = slots.flatMap(slot =>
+        slot.part === undefined && slot.loading !== undefined ? [slot.loading] : [],
+      )
+      await Promise.all([
+        ...started().map(part => part.dispose()),
+        ...loading.map(promise => promise.then(() => undefined, () => undefined)),
+      ])
     },
   }
-  // A client offers a command only when the method exists: keep just what some part supports.
+  // A client offers a command only when the method exists: keep just what some part supports. A
+  // pending module's methods are not known before it starts, so with one pending every one stays.
   for (const key of OPTIONAL_CONTENT_SOURCE_METHODS) {
-    if (!parts.some(part => part[key] !== undefined))
+    if (deferred.length === 0 && !started().some(part => part[key] !== undefined))
       delete (composed as Partial<ContentSources>)[key]
   }
+  if (deferred.length === 0) {
+    delete (composed as Partial<ContentSources>).pendingModules
+    delete (composed as Partial<ContentSources>).startModule
+  }
   // Each game's Runtime preparer; the host picks the one for the opened context's game.
-  const runtimePreparers = parts.flatMap(part => {
-    const preparer = (part as { readonly runtimePreparer?: unknown }).runtimePreparer
-    return preparer === undefined ? [] : [preparer]
-  })
+  const preparers = (): unknown[] =>
+    started().flatMap(part => {
+      const preparer = (part as { readonly runtimePreparer?: unknown }).runtimePreparer
+      return preparer === undefined ? [] : [preparer]
+    })
+  if (deferred.length > 0) {
+    // a module that starts later brings its preparer with it
+    return Object.defineProperty(composed, 'runtimePreparers', { get: preparers, enumerable: true })
+  }
+  const runtimePreparers = preparers()
   return runtimePreparers.length === 0 ? composed : Object.assign(composed, { runtimePreparers })
 }
 

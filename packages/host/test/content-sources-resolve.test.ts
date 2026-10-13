@@ -125,6 +125,34 @@ describe('the content sources extensions declare', () => {
     await sources?.dispose()
   })
 
+  it('starts a module the host defers only when the catalogue needs it, asking its options then', async () => {
+    const sc2 = await extension('eager', 'dist/sources.mjs')
+    const wc3 = await extension('deferred', 'dist/sources.mjs')
+    const asked: string[] = []
+    const sources = await resolveContentSources({
+      extensionRoots: [sc2, wc3],
+      storage: join(work, 'storage'),
+      startOnDemand: extension => extension === 'example/deferred',
+      // a deferred module's options may be found only when it starts (its installation)
+      moduleOptions: async extension => {
+        asked.push(extension)
+        return extension === 'example/deferred' ? { installationDirectory: 'C:/Games/WC3' } : undefined
+      },
+    })
+    expect(asked).toEqual(['example/eager'])
+    expect(sources?.pendingModules?.()).toEqual([{ id: 'example/deferred', label: 'example/deferred' }])
+    expect((await sources?.snapshot())?.roots.map(root => root.id)).toEqual(['eager:root'])
+    expect(asked).toEqual(['example/eager'])
+    // a call naming the deferred module's source starts it with the options asked now
+    expect(await sources?.list('deferred:root', '')).toEqual([])
+    expect(asked).toEqual(['example/eager', 'example/deferred'])
+    expect((await sources?.snapshot())?.roots.map(root => [root.id, root.label])).toEqual([
+      ['eager:root', 'null'],
+      ['deferred:root', '"C:/Games/WC3"'],
+    ])
+    await sources?.dispose()
+  })
+
   it('composes one module per extension when two roots carry the same one', async () => {
     const live = await extension('twin', 'dist/sources.mjs')
     const snapshot = join(work, 'snapshot')

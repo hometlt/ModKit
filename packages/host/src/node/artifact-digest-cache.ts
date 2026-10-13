@@ -13,9 +13,11 @@
  * state it recorded. A missing, unreadable or version-mismatched cache file is simply not used.
  *
  * The host does not choose where it lives: an application installs a path (VS Code hands it its
- * own global storage), or there is no cache at all.
+ * own global storage), or there is no cache at all. A record of a root that is no longer on disk (a
+ * moved workspace, a replaced snapshot) is dropped when the cache is read, so the file does not
+ * grow with every path a root ever had.
  */
-import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 
 /** Bumped when the record shape or the fingerprint rule changes. */
@@ -60,7 +62,8 @@ function entries(): Map<string, ArtifactDigestRecord> {
         typeof record.artifactDigest === 'string' &&
         typeof record.fileDigests === 'object'
       ) {
-        loaded.set(root, record)
+        if (existsSync(root)) loaded.set(root, record)
+        else dirty = true
       }
     }
   } catch {

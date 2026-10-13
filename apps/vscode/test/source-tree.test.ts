@@ -25,6 +25,8 @@ const text: SourceTreeText = {
   myPublications: 'My published mods',
   publicCatalogue: 'Public mods',
   localFolders: 'Local folders',
+  pendingModules: 'Not started',
+  pendingModule: 'starts when needed',
 }
 
 const providerSnapshot = {
@@ -363,5 +365,44 @@ describe('a public catalogue row', () => {
     })
     expect(find(tree, 'provider-root:public:us')?.contextValue).toBe('modkitSource.publicRoot')
     expect(find(tree, 'provider-root:mine:account')?.contextValue).toBe('modkitSource.providerRoot')
+  })
+
+  it('lists the games whose sources have not started, each row starting its module', () => {
+    const find = (nodes: readonly SourceTreeNode[], id: string): SourceTreeNode | undefined => {
+      for (const node of nodes) {
+        if (node.id === id) return node
+        const found = find(node.children ?? [], id)
+        if (found !== undefined) return found
+      }
+      return undefined
+    }
+    const tree = createSourceTree({
+      workspaceFolders: [],
+      selectedInstallations: [installation],
+      mountedProviderRootIds: new Set(),
+      providerSnapshot,
+      pendingModules: [
+        { id: 'blizzard/warcraft-3', label: 'Warcraft III' },
+        { id: 'ea/sage', label: 'C&C SAGE' },
+      ],
+      text,
+    })
+    const group = find(tree, 'provider:pending')
+    expect(group?.label).toBe('Not started')
+    expect(group?.children?.map(node => [node.kind, node.label, node.moduleId])).toEqual([
+      ['pending-module', 'C&C SAGE', 'ea/sage'],
+      ['pending-module', 'Warcraft III', 'blizzard/warcraft-3'],
+    ])
+    // an installation row names its game, whose sources start before it opens
+    expect(find(tree, `installation:${installation.normalizedPath}`)?.gameId).toBe(installation.gameId)
+    const none = createSourceTree({
+      workspaceFolders: [],
+      selectedInstallations: [],
+      mountedProviderRootIds: new Set(),
+      providerSnapshot,
+      pendingModules: [],
+      text,
+    })
+    expect(find(none, 'provider:pending')).toBeUndefined()
   })
 })

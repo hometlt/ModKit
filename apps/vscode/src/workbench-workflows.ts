@@ -303,6 +303,20 @@ export function gameLocales(configured: unknown, displayLanguage: string): reado
   return Object.freeze([...new Set([...(chosen === undefined ? [] : [chosen]), 'enUS'])])
 }
 
+/** The games one extension's installation discovery names (`publisher/id` of the extension). */
+export function extensionInstallationGameIds(inventory: unknown, extension: string): readonly string[] {
+  return Object.freeze([...(installationGameIdsByExtension(inventory).get(extension) ?? [])])
+}
+
+/** The extensions whose installation discovery names `gameId`, as the offer facts say. */
+export function installationExtensions(inventory: unknown, gameId: string): readonly string[] {
+  return Object.freeze(
+    [...installationGameIdsByExtension(inventory)]
+      .filter(([, games]) => games.includes(gameId))
+      .map(([extension]) => extension),
+  )
+}
+
 /** The installation-discovery game ids of each extension, keyed by its `publisher/id`. */
 function installationGameIdsByExtension(
   inventory: unknown,

@@ -100,6 +100,8 @@ export interface ModServerSourcesOptions {
   readonly indexCaches?: IndexCacheSwitches
   /** The client inventory's language routes, which the daemon's modules classify files by. */
   readonly languageRoutes?: readonly LanguageProviderRoute[]
+  /** Extensions (`publisher/id`) whose modules start only when a request needs them, as the client's. */
+  readonly startOnDemand?: readonly string[]
 }
 
 /** The address of the daemon for one set of content source options. */
@@ -114,6 +116,7 @@ export function modServerAddress(options: ModServerSourcesOptions, directory = m
       options.indexCacheDirectory ?? null,
       options.indexCaches ?? null,
       options.languageRoutes ?? null,
+      ...(options.startOnDemand === undefined ? [] : [[...options.startOnDemand].sort()]),
     ]))
     .digest('hex')
     .slice(0, 24)
@@ -607,6 +610,7 @@ export function withSharedModContexts(sources: ContentSources, options: SharedMo
         ...(options.indexCacheDirectory === undefined ? {} : { indexCacheDirectory: options.indexCacheDirectory }),
         ...(options.indexCaches === undefined ? {} : { indexCaches: options.indexCaches }),
         ...(options.languageRoutes === undefined ? {} : { languageRoutes: options.languageRoutes }),
+        ...(options.startOnDemand === undefined ? {} : { startOnDemand: options.startOnDemand }),
       }))
       const child = spawn(options.nodePath ?? process.execPath, [script, JSON.stringify({
         address: { pipe: address.pipe, tokenFile: address.tokenFile },

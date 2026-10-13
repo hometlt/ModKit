@@ -226,6 +226,11 @@
       "icon": "$(plug)"
     },
     {
+      "command": "modkit.sources.startModule",
+      "title": "%command.startContentSourceModule%",
+      "icon": "$(debug-start)"
+    },
+    {
       "command": "modkit.sources.revealLocal",
       "title": "%command.revealLocalSource%",
       "icon": "$(folder)"
@@ -470,6 +475,13 @@
         "default": true,
         "scope": "machine",
         "markdownDescription": "%configuration.sharedModServer.description%"
+      },
+      "modkit.contentSourcesOnStartup": {
+        "type": "array",
+        "items": { "type": "string" },
+        "default": ["blizzard/starcraft2"],
+        "scope": "machine",
+        "markdownDescription": "%configuration.contentSourcesOnStartup.description%"
       },
       "modkit.baseMods": {
         "type": "object",
@@ -1140,6 +1152,10 @@
       },
       {
         "command": "modkit.sources.openInstallation",
+        "when": "false"
+      },
+      {
+        "command": "modkit.sources.startModule",
         "when": "false"
       },
       {

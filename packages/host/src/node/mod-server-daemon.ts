@@ -35,6 +35,7 @@ async function main(): Promise<void> {
     return
   }
   const moduleOptions = options.sources.moduleOptions
+  const onDemand = new Set(options.sources.startOnDemand ?? [])
   // Publish the authenticated endpoint before importing game sources. Otherwise a slow source
   // initialization makes clients time out and initialize the same sources in their own process.
   let sources: Promise<ContentSources | undefined> | undefined
@@ -52,6 +53,7 @@ async function main(): Promise<void> {
           : { indexCacheDirectory: options.sources.indexCacheDirectory }),
         ...(options.sources.indexCaches === undefined ? {} : { indexCaches: options.sources.indexCaches }),
         ...(options.sources.languageRoutes === undefined ? {} : { languageRoutes: options.sources.languageRoutes }),
+        ...(onDemand.size === 0 ? {} : { startOnDemand: (extension: string) => onDemand.has(extension) }),
       }),
     ))
   let leaving = false

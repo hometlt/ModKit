@@ -12,6 +12,8 @@ import {
   gameLocales,
   installationSearchFolders,
   installationGameIds,
+  extensionInstallationGameIds,
+  installationExtensions,
   logLevelOf,
   installationsAtFolder,
   regionsToConnect,
@@ -288,6 +290,11 @@ describe('generic source lifecycle', () => {
       undefined,
     )
     expect(selectedInstallationDirectory(inventory, [alpha], 'org.example/beta')).toBe(undefined)
+    // the games of one extension, and the extensions of one game: what starts a deferred module
+    expect(extensionInstallationGameIds(inventory, 'org.example/alpha')).toEqual([alpha.gameId])
+    expect(extensionInstallationGameIds(inventory, 'org.example/images')).toEqual([])
+    expect(installationExtensions(inventory, beta.gameId)).toEqual(['org.example/beta'])
+    expect(installationExtensions(inventory, 'nobody/none')).toEqual([])
 
     // none selected: the found one holding a workspace folder or an open file, else the only one
     // found (v85: Arena.mmx inside an RA2 nobody had chosen read no installation)

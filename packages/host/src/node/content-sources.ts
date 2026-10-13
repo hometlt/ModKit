@@ -2,12 +2,18 @@
  * Host-owned Node composition of declared/configured content-source modules. Resolves only
  * contained extension entrypoints, preserves selected installation options, deduplicates roots,
  * supplies shared probes/cache/language routes and extension-scoped credential/service ports.
+ * A module the host names in `startOnDemand` is composed deferred (vfs `DeferredContentSources`):
+ * it is imported, and asked for its options, only when the catalogue first needs it.
  * Disposes already-loaded modules on failure; service resolution/activation remains owned by
  * createHostServiceResolver, not by this loader. No game-specific discovery or decoder lives here.
  */
 import { readFile, realpath } from 'node:fs/promises'
 import { isAbsolute, join, relative, resolve } from 'node:path'
-import { composeContentSources, type ContentSources } from '@modkit/vfs/content-sources'
+import {
+  composeContentSources,
+  type ContentSources,
+  type DeferredContentSources,
+} from '@modkit/vfs/content-sources'
 import {
   loadContentSourceModule,
   loadContentSources,
@@ -27,8 +33,23 @@ export interface ResolveContentSourcesOptions {
   readonly configPath?: string
   /** Host storage; modules get `<storage>/cache` and `<storage>/state`. */
   readonly storage: string
-  /** Host options for one extension (`publisher/id`), overriding its configured defaults. */
-  readonly moduleOptions?: (extension: string) => Readonly<Record<string, unknown>> | undefined
+  /**
+   * Host options for one extension (`publisher/id`), overriding its configured defaults. Asked when
+   * that extension's module loads, so a deferred module's options (its installation) may be found
+   * only then.
+   */
+  readonly moduleOptions?: (
+    extension: string,
+  ) =>
+    | Readonly<Record<string, unknown>>
+    | undefined
+    | Promise<Readonly<Record<string, unknown>> | undefined>
+  /**
+   * Whether an extension's module starts only when the catalogue first needs it (owner decision
+   * 13.10): a call naming one of its sources, a host path no started module accepts, or
+   * `startModule`. Undefined starts every module with the catalogue.
+   */
+  readonly startOnDemand?: (extension: string) => boolean
   /** Platform probes handed to every module; defaults to this host's `createNodeInstallationProbes()`. */
   readonly installationProbes?: InstallationProbes
   /** The credential port of one extension (`publisher/id`), handed to that extension's module. */
@@ -77,14 +98,25 @@ export async function resolveContentSources(
   }
   const seen = new Set<string>()
   const parts: ContentSources[] = []
+  const deferred: DeferredContentSources[] = []
+  /** Load one module now, or name it to load when the catalogue first needs it. */
+  const compose = async (
+    extension: string,
+    label: string,
+    load: () => Promise<ContentSources>,
+  ): Promise<void> => {
+    if (options.startOnDemand?.(extension) === true) deferred.push({ id: extension, label, load })
+    else parts.push(await load())
+  }
   try {
     if (config !== undefined && config.extension !== undefined) {
-      parts.push(
-        await loadContentSourceModule(
+      const extension = config.extension
+      await compose(extension, extension, async () =>
+        loadContentSourceModule(
           config.module,
-          { ...config.options, ...options.moduleOptions?.(config.extension) },
+          { ...config.options, ...(await options.moduleOptions?.(extension)) },
           options.storage,
-          contextOf(config.extension),
+          contextOf(extension),
         ),
       )
     }
@@ -100,10 +132,10 @@ export async function resolveContentSources(
       seen.add(declared.extension)
       // ponytail: one shared cache/state folder, as the single provider had; modules keep their own
       // file names apart. Give each module its own folder if two ever collide.
-      parts.push(
-        await loadContentSourceModule(
+      await compose(declared.extension, declared.label, async () =>
+        loadContentSourceModule(
           declared.module,
-          options.moduleOptions?.(declared.extension) ?? {},
+          (await options.moduleOptions?.(declared.extension)) ?? {},
           options.storage,
           contextOf(declared.extension),
         ),
@@ -113,13 +145,17 @@ export async function resolveContentSources(
     await Promise.all(parts.map(part => part.dispose()))
     throw error
   }
-  return parts.length === 0 ? undefined : composeContentSources(parts)
+  return parts.length === 0 && deferred.length === 0
+    ? undefined
+    : composeContentSources(parts, deferred)
 }
 
 /** Reads an extension's declared module and refuses a path outside its artifact root. */
 async function declaredModule(
   root: string,
-): Promise<{ readonly extension: string; readonly module: string } | undefined> {
+): Promise<
+  { readonly extension: string; readonly label: string; readonly module: string } | undefined
+> {
   let manifest: unknown
   try {
     manifest = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'))
@@ -135,5 +171,11 @@ async function declaredModule(
   if (isAbsolute(declared) || inside.startsWith('..') || isAbsolute(inside)) {
     throw new TypeError(`${root}: modkit.contentSources must stay inside the extension root`)
   }
-  return { extension: `${String(block?.['publisher'])}/${String(block?.['id'])}`, module }
+  const extension = `${String(block?.['publisher'])}/${String(block?.['id'])}`
+  const presentation = block?.['presentation'] as { readonly displayName?: unknown } | undefined
+  const label =
+    typeof presentation?.displayName === 'string' && presentation.displayName.length > 0
+      ? presentation.displayName
+      : extension
+  return { extension, label, module }
 }

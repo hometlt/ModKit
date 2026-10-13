@@ -374,6 +374,11 @@
       "icon": "$(sign-out)"
     },
     {
+      "command": "modkit.sources.startModule",
+      "title": "%command.startContentSourceModule%",
+      "icon": "$(debug-start)"
+    },
+    {
       "command": "modkit.sources.unmount",
       "title": "%command.unmountContentSource%",
       "icon": "$(debug-disconnect)"
@@ -445,6 +450,15 @@
         "default": {},
         "markdownDescription": "%configuration.contentSourceOptions.description%",
         "type": "object"
+      },
+      "modkit.contentSourcesOnStartup": {
+        "default": ["blizzard/starcraft2"],
+        "items": {
+          "type": "string"
+        },
+        "markdownDescription": "%configuration.contentSourcesOnStartup.description%",
+        "scope": "machine",
+        "type": "array"
       },
       "modkit.contributionSettings": {
         "additionalProperties": {
@@ -1094,6 +1108,10 @@
       },
       {
         "command": "modkit.sources.revealLocal",
+        "when": "false"
+      },
+      {
+        "command": "modkit.sources.startModule",
         "when": "false"
       },
       {

@@ -259,6 +259,8 @@ createDiagnosticJournal,
 GAME_LOCALES,
 gameLocales,
 installationGameIds,
+extensionInstallationGameIds,
+installationExtensions,
 logLevelOf,
 diagnosticsReport,
 installationSearchFolders,
@@ -1228,12 +1230,33 @@ async function activateModkit(
   context.subscriptions.push(containerChanges)
   // The same Explorer accepts local containers and remote VFS roots. This adapter owns no login protocol.
   let contentSources: Promise<ContentSources | undefined> | undefined
+  /** Installations found per game for the current composition; a recomposition forgets them. */
+  const foundByGame = new Map<string, Promise<readonly SelectedContentSource[]>>()
   /** The roots the inventory loaded, one per extension, for the content-source modules they declare. */
   const extensionRootPaths = (): string[] => contentSourceRoots(host.services.host.inventory)
   const resetContentSources = (): void => {
     const previous = contentSources
     contentSources = undefined
+    foundByGame.clear()
     void previous?.then(source => source?.dispose()).catch(() => undefined)
+  }
+  /**
+   * The extensions whose content sources start with the catalogue (`modkit.contentSourcesOnStartup`);
+   * every other module starts when the window first needs it (owner decision 13.10).
+   */
+  const contentSourcesOnStartup = (): ReadonlySet<string> => {
+    const value = vscode.workspace.getConfiguration('modkit').get<unknown>('contentSourcesOnStartup')
+    return new Set(
+      Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [],
+    )
+  }
+  /** Start the pending content-source modules of the extensions that discover `gameId`. */
+  const startGameContentSources = async (gameId: string): Promise<void> => {
+    const sources = await requireContentSources()
+    const pending = new Set((sources.pendingModules?.() ?? []).map(module => module.id))
+    for (const extension of installationExtensions(host.services.host.inventory, gameId)) {
+      if (pending.has(extension)) await sources.startModule?.(extension)
+    }
   }
   /*
    * The confirmed installations of every game none is selected for, and where this window works:
@@ -1242,33 +1265,43 @@ async function activateModkit(
    * them. ponytail: a file opened later in another installation keeps the composed one until the
    * sources are composed again; choosing it in «Select Game Installation» does that.
    */
-  const foundInstallations = async (): Promise<{
+  /** The confirmed installations of one game, as its extension's discovery proves them. */
+  const discoverFound = async (gameId: string): Promise<readonly SelectedContentSource[]> => {
+    const searched = await searchedInstallationFolders()
+    const searchPaths = searched?.found[gameId] ?? []
+    const discovery = await discoverGameInstallations({
+      services: host.services,
+      gameId,
+      ...(searchPaths.length === 0 ? {} : { searchPaths }),
+      maxCandidates: 32,
+      grant: {
+        id: 'vscode-content-source-installations',
+        classes:
+          process.platform === 'win32' ? ['filesystem-read', 'process-launch'] : ['filesystem-read'],
+      },
+      budgets: GAME_DISCOVERY_BUDGET,
+    }).catch(() => undefined)
+    return discovery?.state === 'discovered'
+      ? discovery.result.installations.map(selectedContentSource)
+      : []
+  }
+  const foundInstallations = async (
+    wanted: readonly string[] = installationGameIds(host.services.host.inventory),
+  ): Promise<{
     readonly installations: readonly SelectedContentSource[]
     readonly anchors: readonly string[]
   }> => {
     const chosen = new Set(presentSources().map(source => source.gameId))
-    const games = installationGameIds(host.services.host.inventory).filter(id => !chosen.has(id))
-    const searched = await searchedInstallationFolders()
+    const games = wanted.filter(id => !chosen.has(id))
+    // one discovery per game and composition: a module that starts later asks only for its own
     const found = await Promise.all(
-      games.map(async gameId => {
-        const searchPaths = searched?.found[gameId] ?? []
-        const discovery = await discoverGameInstallations({
-          services: host.services,
-          gameId,
-          ...(searchPaths.length === 0 ? {} : { searchPaths }),
-          maxCandidates: 32,
-          grant: {
-            id: 'vscode-content-source-installations',
-            classes:
-              process.platform === 'win32'
-                ? ['filesystem-read', 'process-launch']
-                : ['filesystem-read'],
-          },
-          budgets: GAME_DISCOVERY_BUDGET,
-        }).catch(() => undefined)
-        return discovery?.state === 'discovered'
-          ? discovery.result.installations.map(selectedContentSource)
-          : []
+      games.map(gameId => {
+        let discovered = foundByGame.get(gameId)
+        if (discovered === undefined) {
+          discovered = discoverFound(gameId)
+          foundByGame.set(gameId, discovered)
+        }
+        return discovered
       }),
     )
     const tabs = vscode.window.tabGroups.all.flatMap(group => group.tabs)
@@ -1347,26 +1380,48 @@ async function activateModkit(
       }
     }
     if (contentSources === undefined) {
-      const finished = timing.phase('content sources (every extension that declares them)')
+      const finished = timing.phase('content sources (the modules that start with the window)')
       // the user's per-product switches: a module keeps no name index its product turned off
       const indexCaches = configuredIndexCaches(
         vscode.workspace.getConfiguration('modkit').get('indexCaches'),
       ).switches
       // the language routes, by which a mod server's language sets classify their files
       const languageRoutes = languageProviderRoutes(host.services.host.inventory)
-      contentSources = foundInstallations().then(found =>
-        resolveContentSources({
-          extensionRoots: extensionRootPaths(),
-          ...(configured === undefined ? {} : { configPath: configured }),
-          storage,
-          indexCacheDirectory,
-          indexCaches,
-          languageRoutes,
-          moduleOptions: extension => moduleOptionsOf(extension, found),
-          // each extension's module reaches only the credentials that extension declared
-          credentials: extension => host.services.credentials?.portFor(extension),
-        }).then(created =>
-          created === undefined
+      const inventory = host.services.host.inventory
+      const extensions = [
+        ...new Set(inventory.extensions.map(item => `${item.manifest.publisher}/${item.manifest.id}`)),
+      ]
+      // Only the modules the user starts with load now; another game's start when the window first
+      // needs it — a file of it, one of its sources, its row in Sources (owner decision 13.10).
+      const startup = contentSourcesOnStartup()
+      const onDemand = extensions.filter(extension => !startup.has(extension))
+      // A module's installation is looked for when it starts, among its own games only.
+      const foundFor = (extension: string) =>
+        foundInstallations(extensionInstallationGameIds(inventory, extension))
+      contentSources = resolveContentSources({
+        extensionRoots: extensionRootPaths(),
+        ...(configured === undefined ? {} : { configPath: configured }),
+        storage,
+        indexCacheDirectory,
+        indexCaches,
+        languageRoutes,
+        moduleOptions: async extension => moduleOptionsOf(extension, await foundFor(extension)),
+        startOnDemand: extension => !startup.has(extension),
+        // each extension's module reaches only the credentials that extension declared
+        credentials: extension => host.services.credentials?.portFor(extension),
+      }).then(async created => {
+        // the shared server gets the options as far as they are known: a module that starts there
+        // later without a chosen installation looks for its own
+        const known = await Promise.all(
+          extensions.map(async extension => {
+            const options = moduleOptionsOf(
+              extension,
+              startup.has(extension) ? await foundFor(extension) : undefined,
+            )
+            return options === undefined ? [] : [[extension, options] as const]
+          }),
+        )
+        return created === undefined
             ? undefined
             : // a context that takes a while says so in the status bar, as MK2's did (plan 0.8)
               announceModContexts(
@@ -1382,18 +1437,8 @@ async function activateModkit(
                   indexCacheDirectory,
                   indexCaches,
                   languageRoutes,
-                  moduleOptions: Object.fromEntries(
-                    [
-                      ...new Set(
-                        host.services.host.inventory.extensions.map(
-                          item => `${item.manifest.publisher}/${item.manifest.id}`,
-                        ),
-                      ),
-                    ].flatMap(extension => {
-                      const options = moduleOptionsOf(extension, found)
-                      return options === undefined ? [] : [[extension, options] as const]
-                    }),
-                  ),
+                  moduleOptions: Object.fromEntries(known.flat()),
+                  ...(onDemand.length === 0 ? {} : { startOnDemand: onDemand }),
                   daemonScript: join(extensionRoot, 'dist-app', 'mod-server-daemon.js'),
                   onFallback: error =>
                     log(`[mod-server] unavailable, this window loads its mods: ${String(error)}`),
@@ -1414,9 +1459,8 @@ async function activateModkit(
                       4_000,
                     ),
                 },
-              ),
-        ),
-      )
+              )
+      })
       void contentSources.finally(finished).catch(() => undefined)
       // Tickets and keys kept before the broker move into it once the sources say whose they are.
       void contentSources
@@ -2024,6 +2068,8 @@ async function activateModkit(
       }
       return rows
     },
+    // the modules waiting to start, from the sources the snapshot above composed
+    async () => (await contentSources?.catch(() => undefined))?.pendingModules?.() ?? [],
   )
   const sourceFileSystem: vscode.FileSystemProvider = {
     onDidChangeFile: sourceChanges.event,
@@ -3165,6 +3211,23 @@ async function activateModkit(
         const show = showHiddenEntries()
         for (const served of live) served.bridge.emit({ op: 'show-hidden', show })
       }),
+      vscode.commands.registerCommand('modkit.sources.startModule', async (argument: unknown) => {
+        const id =
+          typeof argument === 'object' && argument !== null
+            ? (argument as { readonly moduleId?: unknown }).moduleId
+            : argument
+        if (typeof id !== 'string') throw new TypeError('A content source module must be selected')
+        try {
+          await (await requireContentSources()).startModule?.(id)
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error)
+          log(`[content sources] ${id} did not start: ${message}`)
+          void vscode.window.showWarningMessage(
+            localizer.text('vscode.sources.moduleNotStarted', { reason: message }),
+          )
+        }
+        sourcesView.refresh()
+      }),
       vscode.commands.registerCommand('modkit.sources.open', async (argument: unknown) => {
         const row =
           typeof argument === 'object' && argument !== null
@@ -3180,14 +3243,21 @@ async function activateModkit(
         async (argument: unknown) => {
           const row =
             typeof argument === 'object' && argument !== null
-              ? (argument as { readonly uri?: unknown; readonly label?: unknown })
+              ? (argument as {
+                  readonly uri?: unknown
+                  readonly label?: unknown
+                  readonly gameId?: unknown
+                })
               : undefined
           if (typeof row?.uri !== 'string' || typeof row.label !== 'string') {
             throw new TypeError('A selected game installation must be provided')
           }
           try {
             // A content source that already reads this installation's storage answers for it:
-            // mounting it as a container would index and hold the same storage a second time.
+            // mounting it as a container would index and hold the same storage a second time. A
+            // game whose sources have not started yet starts them now.
+            if (typeof row.gameId === 'string')
+              await startGameContentSources(row.gameId).catch(() => undefined)
             const served = await sourceServingInstallation(row.uri)
             if (served !== undefined) return await openContentSourceRoot(served)
             return await openContainerPath(row.uri, row.label)

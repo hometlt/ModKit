@@ -14,6 +14,7 @@ const ROW_ONLY = [
   'modkit.resources.goToDeclaration',
   'modkit.sources.open',
   'modkit.sources.openInstallation',
+  'modkit.sources.startModule',
   'modkit.sources.revealLocal',
   'modkit.sources.editCopy',
   'modkit.sources.unmount',

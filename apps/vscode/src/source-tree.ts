@@ -7,7 +7,7 @@
  * `TreeItem`s and commands.
  */
 import { contentSourceRootServes } from '@modkit/host'
-import type { ContentSourceSnapshot } from '@modkit/vfs/content-sources'
+import type { ContentSourceModuleInfo, ContentSourceSnapshot } from '@modkit/vfs/content-sources'
 
 import type { SelectedContentSource } from './workbench-workflows.js'
 
@@ -41,10 +41,21 @@ export interface SourceTreeText {
   readonly myPublications: string
   readonly publicCatalogue: string
   readonly localFolders: string
+  /** The group of games whose sources start when first needed. */
+  readonly pendingModules: string
+  /** What such a game's row says: it starts on its own, or when selected. */
+  readonly pendingModule: string
 }
 
 export type SourceTreeNodeKind =
-  'group' | 'workspace' | 'installation' | 'connection' | 'provider-root' | 'publication' | 'notice'
+  | 'group'
+  | 'workspace'
+  | 'installation'
+  | 'connection'
+  | 'provider-root'
+  | 'publication'
+  | 'pending-module'
+  | 'notice'
 
 export interface SourceTreeNode {
   readonly kind: SourceTreeNodeKind
@@ -63,6 +74,10 @@ export interface SourceTreeNode {
   readonly cached?: boolean
   /** An account this machine knows but is not connected to; selecting the row signs in. */
   readonly offlineAccount?: { readonly region: string; readonly accountId: string }
+  /** Installation rows: the game whose sources read it, started before the installation opens. */
+  readonly gameId?: string
+  /** Pending-module rows: the extension whose content sources selecting the row starts. */
+  readonly moduleId?: string
   readonly children?: readonly SourceTreeNode[]
 }
 
@@ -88,6 +103,8 @@ export interface SourceTreeInput {
   }[]
   readonly providerSnapshot?: ContentSourceSnapshot
   readonly providerProblem?: string
+  /** Content-source modules that start when first needed and have not yet. */
+  readonly pendingModules?: readonly ContentSourceModuleInfo[]
   readonly text: SourceTreeText
 }
 
@@ -187,6 +204,7 @@ export function createSourceTree(input: SourceTreeInput): readonly SourceTreeNod
         contextValue: `modkitSource.installation${mounting ? '.mounting' : mounted ? '.mounted' : ''}`,
         uri: source.installPath,
         normalizedPath: source.normalizedPath,
+        gameId: source.gameId,
       })
     })
 
@@ -356,6 +374,33 @@ export function createSourceTree(input: SourceTreeInput): readonly SourceTreeNod
           description: String(remaining.length),
           icon: 'database',
           children: Object.freeze(remaining),
+        }),
+      )
+    }
+    // Games whose sources wait for the window to need them; selecting one starts it now.
+    const pendingModules = [...(input.pendingModules ?? [])]
+      .sort((left, right) => compareText(left.label, right.label) || compareText(left.id, right.id))
+      .map(module =>
+        Object.freeze({
+          kind: 'pending-module' as const,
+          id: `pending-module:${module.id}`,
+          label: module.label,
+          description: input.text.pendingModule,
+          tooltip: module.id,
+          icon: 'debug-start',
+          contextValue: 'modkitSource.pendingModule',
+          moduleId: module.id,
+        }),
+      )
+    if (pendingModules.length > 0) {
+      providerChildren.push(
+        Object.freeze({
+          kind: 'group',
+          id: 'provider:pending',
+          label: input.text.pendingModules,
+          description: String(pendingModules.length),
+          icon: 'debug-pause',
+          children: Object.freeze(pendingModules),
         }),
       )
     }
