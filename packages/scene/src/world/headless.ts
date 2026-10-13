@@ -12,6 +12,7 @@
  * Terrain-only depth bias preserves coplanar surface models without changing their coordinates.
  * Wave normals, caustics and shadows remain GPU-only.
  */
+import type { WorldVisibilityBounds } from './world-visibility.js'
 import type {
   SceneRenderFrame,
   SceneRendererDiagnostic,
@@ -446,6 +447,7 @@ export function worldHeadlessScene(plan: WorldWebGlPlan): Readonly<{
 }
 
 export interface WorldHeadlessOptions {
+  readonly visibilityBounds?: WorldVisibilityBounds
   readonly width: number
   readonly height: number
   /** The world viewer's orbit camera (azimuth, elevation, zoom, target); its default when absent. */
@@ -467,7 +469,7 @@ export async function renderWorldHeadless(
       camera: frame,
       viewport: { width: options.width, height: options.height },
       outputKind: 'rgba8',
-      clearColor: options.clearColor ?? [0, 0, 0, 1],
+      clearColor: options.visibilityBounds === undefined ? options.clearColor ?? [0, 0, 0, 1] : [0, 0, 0, 1],
       ...(options.signal === undefined ? {} : { signal: options.signal }),
     },
     splats,
@@ -477,6 +479,7 @@ export async function renderWorldHeadless(
     new Set(scene.primitives
       .filter(p => p.id.startsWith('world/decal-') || p.id.startsWith('world/splat-overlay-'))
       .map(p => p.id)),
+    options.visibilityBounds,
   )
   return Object.freeze({
     ...rendered,

@@ -60,6 +60,7 @@ import { invertMaterialFrame } from '../materials/frame.js'
 import { waterDepthColor } from './water-color.js'
 import { requiresEnvironmentEye, snapshotEyePosition } from '../materials/environment.js'
 import type { WorldWebGlSplatBatch } from '../world/webgl.js'
+import { checkedWorldVisibilityBounds, worldPointVisible, type WorldVisibilityBounds } from '../world/world-visibility.js'
 type Vec3 = readonly [number, number, number]
 type Vec4 = readonly [number, number, number, number]
 type Triangle<T> = readonly [T, T, T]
@@ -88,6 +89,7 @@ interface Surface {
   teamMask?: SceneRendererTexture
 }
 interface RasterContext {
+  visibilityBounds?: WorldVisibilityBounds | undefined
   water?: ReadonlyMap<string, number>
   inverseViewProjection?: Float32Array
   opaqueDepth?: Float32Array
@@ -454,6 +456,11 @@ function rasterizeTriangle(
       )
       const pixel = y * context.width + x
       if (effect?.depthTest !== false && sampleDepth > (context.depth[pixel] as number)) continue
+      if (context.visibilityBounds !== undefined) {
+        const p = multiplyPoint(context.inverseViewProjection!, (sampleX / context.width) * 2 - 1,
+          1 - (sampleY / context.height) * 2, rawDepth, 1)
+        if (!worldPointVisible(context.visibilityBounds, [p[0] / p[3], p[1] / p[3], p[2] / p[3]])) continue
+      }
       if (materialDraw !== undefined) {
         const { draw, vertices: attributes } = materialDraw
         if (draw.program === undefined || draw.material === undefined)
@@ -1201,8 +1208,10 @@ export async function renderHeadless(
   terrain?: ReadonlySet<string>,
   materialLighting?: ReadonlyMap<string, Pick<SceneRendererScene, 'lights' | 'ambientLight'>>,
   terrainPainterLayers?: ReadonlySet<string>,
+  visibilityBounds?: WorldVisibilityBounds,
 ): Promise<SceneRenderFrame> {
   request.signal?.throwIfAborted()
+  checkedWorldVisibilityBounds(visibilityBounds)
   if (request.outputKind !== 'rgba8') {
     throw new TypeError(`headless renderer cannot produce ${request.outputKind}`)
   }
@@ -1241,6 +1250,7 @@ export async function renderHeadless(
     request.signal,
   )
   const context: RasterContext = {
+    visibilityBounds,
     width,
     height,
     frame,
@@ -1255,10 +1265,10 @@ export async function renderHeadless(
     fragments: 0,
     signal: request.signal,
     ...(splats === undefined ? {} : { splats }),
-    ...(water === undefined || water.size === 0
+    ...(water === undefined || water.size === 0 ? {} : { water }),
+    ...(visibilityBounds === undefined && (water === undefined || water.size === 0)
       ? {}
       : {
-          water,
           inverseViewProjection: Float32Array.from(
             invertMaterialFrame(Array.from(camera.viewProjection)),
           ),

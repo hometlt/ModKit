@@ -95,6 +95,24 @@ const object = {
   resourceId: 'post',
 }
 
+it('keeps complete geometry while opaque boundary fog hides exterior ground and models', async () => {
+  for (const blendMode of [0,1,2]) {
+  const variant={...model,materials:[{...material,shader:{...material.shader,parameters:{renderModel:{version:1,standard:{...material.shader.parameters.renderModel.standard,blendMode}}}}}]}
+  const input={items:[...terrain,object],models:new Map([['post',variant]])}
+  const plan=createWorldWebGlPlan(input)
+  const options={width:64,height:48,clearColor:[1,1,1,1]}
+  const before=await renderWorldHeadless(plan,options)
+  const hidden=await renderWorldHeadless(plan,{...options,visibilityBounds:[10,10,20,20]})
+  for(let p=0;p<hidden.rgba.length;p+=4)assert.deepEqual([...hidden.rgba.subarray(p,p+4)],[0,0,0,255])
+  const partial=await renderWorldHeadless(plan,{...options,visibilityBounds:[0,0,1,4]})
+  let ground=0
+  for(let p=0;p<partial.rgba.length;p+=4){const[r,g,b,a]=partial.rgba.subarray(p,p+4);assert.equal(a,255);assert.ok(!(r-g>60&&r-b>60),'the transformed solid/blended/additive red model outside the rectangle must not leak');if(r+g+b>0)ground++}
+  assert.ok(ground>0,'visible ground remains')
+  assert.deepEqual((await renderWorldHeadless(plan,options)).rgba,before.rgba,'normal rendering is unchanged after a masked render')
+  assert.ok(worldHeadlessScene(plan).scene.primitives.some(p=>p.id.startsWith('model-0/')),'visibility does not remove models from the plan')
+  }
+})
+
 it('renders a world plan without a GPU: its ground and its models as the plan places them', async () => {
   const plan = createWorldWebGlPlan({
     items: [...terrain, object],

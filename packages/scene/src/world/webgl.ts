@@ -122,7 +122,11 @@ import { DEFAULT_SCENE_ENVIRONMENT } from '../materials/environment.js'
 import { createWorldToneMapper } from './tone-mapping.js'
 import { transparentOrderLevels } from './transparent-order.js'
 
+import { WORLD_VISIBILITY_GLSL, bindWorldVisibility, checkedWorldVisibilityBounds, type WorldVisibilityBounds } from './world-visibility.js'
+
 export interface WorldWebGlInput {
+  /** Render-only visible X/Z rectangle; outside fragments and background are opaque black. */
+  readonly visibilityBounds?: WorldVisibilityBounds
   readonly items: readonly WorldSceneItem[]
   readonly models?: ReadonlyMap<string, WorldSceneModelResult>
   /** Material catalog and host-decoded raster resources for terrain shading. */
@@ -9052,6 +9056,7 @@ void main() {
 
 const FRAGMENT_SHADER = `#version 300 es
 precision highp float;
+${WORLD_VISIBILITY_GLSL}
 precision highp sampler2DArray;
 in vec3 worldNormal;
 in vec3 worldPosition;
@@ -9320,6 +9325,7 @@ vec3 fillLight(vec3 resolvedNormal, vec3 direction, vec3 radiance) {
   return radiance * max(0.0, dot(resolvedNormal, normalize(-direction)));
 }
 void main() {
+  if (!worldPointVisible(worldPosition)) discard;
   if (waterDetailMode > 0.5) {
     outColor = detailWater();
     return;
@@ -13521,6 +13527,7 @@ function drawWorldWebGlWithResources(
 ): WorldWebGlStats {
   if (resources.disposed) throw new TypeError('world WebGL renderer is disposed')
   const gl = resources.gl
+  const visibilityBounds = checkedWorldVisibilityBounds(input.visibilityBounds)
   harvestGpuTimer(resources)
   const startedAt = globalThis.performance?.now() ?? Date.now()
   const plan = retainedWorldPlan(input, resources, made =>
@@ -13549,12 +13556,14 @@ function drawWorldWebGlWithResources(
       resources.toneMapper?.begin(canvas.width, canvas.height)
     }
     gl.viewport(0, 0, canvas.width, canvas.height)
-    gl.clearColor(0.035, 0.055, 0.075, 1)
+    if (visibilityBounds === undefined) gl.clearColor(0.035, 0.055, 0.075, 1)
+    else gl.clearColor(0, 0, 0, plan.light.toneMapping !== undefined && resources.toneMapper !== undefined ? 0 : 1)
     gl.clearDepth(1)
     gl.enable(gl.DEPTH_TEST)
     gl.depthFunc(gl.LEQUAL)
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
     gl.useProgram(program)
+    bindWorldVisibility(gl, program, visibilityBounds)
     // Active sampler types must never share a texture unit, including draws whose shader branches
     // do not sample them. Reserve a stable layout before the first opaque batch is submitted.
     worldUniform1i(gl, program, 'terrainMaps', 0)
@@ -13804,6 +13813,7 @@ function drawWorldWebGlWithResources(
           sceneCamera,
           sceneLight,
           worldCurrentPrograms.get(plan)?.passes,
+          { visibilityBounds },
         )
         gl.stencilMask(0)
         gl.stencilFunc(gl.EQUAL, 1, 1)
@@ -13813,6 +13823,7 @@ function drawWorldWebGlWithResources(
           sceneCamera,
           sceneLight,
           worldCurrentPrograms.get(plan)?.passes,
+          { visibilityBounds },
         )
       } finally {
         gl.disable(gl.STENCIL_TEST)
@@ -13861,6 +13872,7 @@ function drawWorldWebGlWithResources(
         sceneCamera,
         sceneLight,
         worldCurrentPrograms.get(plan)?.passes,
+        { visibilityBounds },
       )
       gl.useProgram(program)
       gl.disable(gl.POLYGON_OFFSET_FILL)
@@ -14004,6 +14016,7 @@ function drawWorldWebGlWithResources(
           sceneCamera,
           sceneLight,
           worldCurrentPrograms.get(plan)?.passes,
+          { visibilityBounds },
         )
         batchAdditive = undefined
         continue
@@ -14085,6 +14098,7 @@ function drawWorldWebGlWithResources(
         fog === undefined
           ? undefined
           : { fog, eye: worldFogEye(plan, canvas.width, canvas.height, input.camera) },
+        visibilityBounds !== undefined,
       )
     }
     assertNoWebGlError(resources, 'postprocess pass')

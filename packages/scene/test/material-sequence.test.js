@@ -16,6 +16,18 @@ const source = {
   twoSided: false,
 }
 const material = { textures: new Map([['albedo', { id: 'albedo.png' }]]) }
+
+it('resets boundary visibility for an ordinary sequence sharing the same material program', () => {
+  const {gl,uniforms}=context()
+  const renderer=materialWebGlDraws(gl,new Map([['albedo.png',{}]]),{checkEachDraw:false})
+  const draws=[{draw:{primitive:mesh('visible'),program:source,material}}]
+  renderer.drawSequence(draws,camera,undefined,undefined,{visibilityBounds:[-1,-2,3,4]})
+  assert.equal(uniforms.get('u_worldVisibilityEnabled'),1)
+  renderer.drawSequence(draws,camera)
+  assert.equal(uniforms.get('u_worldVisibilityEnabled'),0)
+  const fragment=leaseShaderSources(source,material).fragmentSource
+  assert.ok(fragment.includes('if(!worldPointVisible(v_sceneWorldPosition))discard;materialMain()'))
+})
 const mesh = id => ({
   id,
   topology: 'triangles',

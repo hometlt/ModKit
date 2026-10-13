@@ -1,4 +1,5 @@
 import { applyWebGlDepthBias } from './depth-bias.js'
+import { WORLD_VISIBILITY_GLSL, bindWorldVisibility, checkedWorldVisibilityBounds, type WorldVisibilityBounds } from '../world/world-visibility.js'
 import type {
   SceneRendererCamera,
   SceneRendererDirectionalLight,
@@ -920,6 +921,7 @@ export function materialWebGlDraws(
     frame: MaterialFrame,
     state: SequenceState,
     programs: MaterialSequencePrograms | undefined,
+    visibilityBounds?: WorldVisibilityBounds,
   ): number => {
     const { program: leased, material, primitive } = draw
     if (leased === undefined || material === undefined) throw new TypeError('missing GPU material')
@@ -1035,6 +1037,7 @@ export function materialWebGlDraws(
       programWorldToMaterial.set(program, worldToMaterial)
     }
     bindFrameUniforms(program, source, frame)
+    bindWorldVisibility(gl, program, visibilityBounds)
     if (source.defines.sceneLighting === true) {
       const shadow = frame.light?.shadow
       if (shadow !== undefined && source.textures.length <= SHADOW_MAP_UNIT)
@@ -1073,15 +1076,17 @@ export function materialWebGlDraws(
     camera: SceneRendererCamera,
     light?: MaterialSceneLight,
     programs?: MaterialSequencePrograms,
+    options?: Readonly<{ visibilityBounds?: WorldVisibilityBounds | undefined }>,
   ): number => {
     const frame = frameOf(camera, light)
+    const visibilityBounds = checkedWorldVisibilityBounds(options?.visibilityBounds)
     const state: SequenceState = { units: [], constants: new Map() }
     let triangles = 0
     try {
       // A pass without the world's shadow (the shadow pass draws into that map) leaves no shadow map
       // on a unit its programs sample.
       if (light?.shadow === undefined && shadowUnitTexture !== null) bindShadowMap(null, state)
-      for (const item of draws) triangles += drawInSequence(item, frame, state, programs)
+      for (const item of draws) triangles += drawInSequence(item, frame, state, programs, visibilityBounds)
     } finally {
       restore(state)
     }
@@ -1414,10 +1419,12 @@ function buildLeaseShaderSources(
   )
   const fragmentSource =
     fragment.replace(/void main\s*\(\s*\)/, 'void materialMain()') +
+    (fragment.includes('in vec3 v_sceneWorldPosition') ? '' : '\nin vec3 v_sceneWorldPosition;\n') +
+    WORLD_VISIBILITY_GLSL +
     // Per-vertex tints arrive flat: a sprite's four corners hold its one tint, exactly.
     (stages.tinted
-      ? '\nuniform vec4 u_instanceTint;\nflat in vec4 v_vertexTint;\nvoid main(){materialMain();materialColor*=u_instanceTint*v_vertexTint;'
-      : '\nuniform vec4 u_instanceTint;\nvoid main(){materialMain();materialColor*=u_instanceTint;') +
+      ? '\nuniform vec4 u_instanceTint;\nflat in vec4 v_vertexTint;\nvoid main(){if(!worldPointVisible(v_sceneWorldPosition))discard;materialMain();materialColor*=u_instanceTint*v_vertexTint;'
+      : '\nuniform vec4 u_instanceTint;\nvoid main(){if(!worldPointVisible(v_sceneWorldPosition))discard;materialMain();materialColor*=u_instanceTint;') +
     // An additive pass blends ONE, ONE: a tint's alpha (a particle's lifecycle alpha) fades its
     // colour here, as the material's own fade already did (modAlpha).
     (source.defines.modAlpha === true

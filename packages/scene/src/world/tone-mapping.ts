@@ -60,6 +60,7 @@ export function createWorldToneMapper(gl: WebGL2RenderingContext) {
     uniform vec4 fogParameters;
     uniform vec3 fogColor;
     uniform vec3 fogEye;
+    uniform float blackEmptyBackground;
     out vec4 outColor;
     vec3 positionAt(vec2 coord) {
       // NEAREST depth belongs to a texel centre, not the continuous kernel coordinate.
@@ -126,6 +127,10 @@ export function createWorldToneMapper(gl: WebGL2RenderingContext) {
       return clamp(integral, 0.0, 1.0);
     }
     void main() {
+      if (blackEmptyBackground > 0.5 && texture(image, uv).a <= 0.0) {
+        outColor = vec4(0.0, 0.0, 0.0, 1.0);
+        return;
+      }
       vec3 color = max(texture(image, uv).rgb, vec3(0.0)) * occlusion();
       // PSFog.fx: the lit colour is replaced by the fog colour by that weight, before tone mapping.
       if (fogParameters.w > 0.0 && texture(depthMap, uv).r < 0.999999)
@@ -232,12 +237,14 @@ export function createWorldToneMapper(gl: WebGL2RenderingContext) {
       settings: WorldToneMapping,
       viewProjection?: Float32Array,
       fog?: Readonly<{ fog: WorldHeightFog; eye: readonly [number, number, number] }>,
+      blackEmptyBackground = false,
     ) {
       gl.bindFramebuffer(gl.FRAMEBUFFER, null)
       gl.disable(gl.DEPTH_TEST)
       gl.disable(gl.BLEND)
       gl.disable(gl.CULL_FACE)
       gl.useProgram(program)
+      gl.uniform1f(uniformLocation(gl, program, 'blackEmptyBackground'), blackEmptyBackground ? 1 : 0)
       gl.bindVertexArray(vao)
       gl.activeTexture(gl.TEXTURE0)
       gl.bindTexture(gl.TEXTURE_2D, texture)

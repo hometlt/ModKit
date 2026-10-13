@@ -809,10 +809,12 @@ ${skinned ? skinDeclarations(placementAttributes) : ''}${tinted ? 'in vec4 a_ver
 ${defines.usesVertexAlpha || defines.usesVertexColor ? 'in vec4 a_color; out vec4 v_vertexColor;' : ''}
 out vec3 v_normal, v_lightDir, v_halfVec, v_viewDir, v_viewPosition, v_viewNormal;
 out vec3 v_modelPosition, v_modelNormal, v_worldPosition, v_worldNormal;
-${worldGeometry ? 'out vec3 v_sceneWorldPosition, v_sceneWorldNormal, v_sceneWorldTangent, v_sceneWorldBitangent;\n' : ''}out vec4 v_clipPosition;
+out vec3 v_sceneWorldPosition;
+${worldGeometry ? 'out vec3 v_sceneWorldNormal, v_sceneWorldTangent, v_sceneWorldBitangent;\n' : ''}out vec4 v_clipPosition;
 vec3 unit(vec3 v,vec3 fallback){float len=length(v);return len>1e-9?v/len:fallback;}
 ${placementAttributes ? PLACEMENT_DECLARATIONS : ''}void main(){${placementAttributes ? placementLocals(worldGeometry) : ''}${skinned ? SKIN_LOCALS : ''}
   vec4 world=${name.model}*vec4(${position},1.0);
+  v_sceneWorldPosition=world.xyz;
   vec3 view=(${name.modelView}*vec4(${position},1.0)).xyz;
   vec3 n=unit(${name.viewNormal}*${normal},vec3(0.0,0.0,1.0));
   vec3 rawT=mat3(${name.modelView})*${tangent}.xyz;
@@ -831,7 +833,7 @@ ${
   vec3 sceneRawT=mat3(${name.model})*${tangent}.xyz;
   vec3 sceneFallback=unit(cross(abs(sceneN.z)<0.9?vec3(0.0,0.0,1.0):vec3(0.0,1.0,0.0),sceneN),vec3(1.0,0.0,0.0));
   vec3 sceneT=unit(sceneRawT-sceneN*dot(sceneN,sceneRawT),sceneFallback);
-  v_sceneWorldPosition=world.xyz;v_sceneWorldNormal=sceneN;v_sceneWorldTangent=sceneT;
+  v_sceneWorldNormal=sceneN;v_sceneWorldTangent=sceneT;
   v_sceneWorldBitangent=cross(sceneN,sceneT)*(${tangent}.w<0.0?-1.0:1.0)*${name.objectOrientation};
 `
     : ''
