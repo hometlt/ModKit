@@ -1,3 +1,8 @@
+/** UVM/core subject codec: bounded validation/inspection, common document edits and export.
+ * Native output is delegated to common.model/native-encoder; per-call conversion diagnostics
+ * travel through Host reportDiagnostic with bytes. No native-format or source-game branches.
+ * Render/resource/edit ownership remains in the shared Scene/UV/Host services.
+ * Manifest: extensions/models/contributions/codec-uvm.json; Node and worker use this module. */
 import { validateUvmDocument } from '@modkit/uv/model/validation'
 import { DEFAULT_UVM_CONTAINER_BUDGET, readUvmContainer } from '@modkit/uv/model/container'
 import {
@@ -185,6 +190,8 @@ function nativeExportHandler(bytes, context) {
       )
         throw new TypeError(`native model encoder returned an invalid ${request.formatId} result`)
       // the encoder's extension and media type name the file the application writes
+      for (const diagnostic of encoded.diagnostics ?? [])
+        operationContext.reportDiagnostic?.(diagnostic)
       return {
         kind: 'bytes',
         value: encoded.bytes,

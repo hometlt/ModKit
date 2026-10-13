@@ -1,6 +1,7 @@
 /** Format-neutral export of a UVM scene into an installed native model format. */
 
 import type { JsonValue } from './asset-capabilities/types.js'
+import type { Diagnostic } from '@modkit/core'
 import type { ServiceProviderModule } from './runtime-abi.js'
 
 export const NATIVE_MODEL_ENCODER_CONTRACT = 'common.model/native-encoder' as const
@@ -26,6 +27,8 @@ export interface NativeModelEncodeResult {
   readonly extension: string
   readonly mediaType?: string
   readonly bytes: Uint8Array
+  /** Format conversion losses; the caller reports these with the export operation result. */
+  readonly diagnostics?: readonly Diagnostic[]
 }
 
 export interface NativeModelEncoder {

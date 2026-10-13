@@ -37,3 +37,4 @@ export {
   UVM_ORDERED_EULER_CHAINS,
 } from './ordered-euler-chains.js'
 export type { UvmOrderedEulerChain } from './ordered-euler-chains.js'
+export { uvmImageResourceId } from './images.js'
