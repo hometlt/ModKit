@@ -278,6 +278,17 @@ async function probeInstalledCasc(receipt, resultPath, gameRoot, extensionApi) {
   }, 60_000)
   if (cardTab === undefined)
     throw new Error('Native CASC Marine card command opened no subject tab')
+  // The tab must show Marine's card, not its package or another document (the page logs the entity
+  // its card stage opened on).
+  const cardShown = await waitFor(() =>
+    extensionApi.diagnostics().find(line => {
+      const shown = /page card shown (\S+): /u.exec(line)
+      return shown !== null && entityKeyOf(shown[1]) === 'Unit/Marine'
+    }),
+  60_000)
+  if (cardShown === undefined)
+    throw new Error('Native CASC Marine card command did not show the Marine card')
+  state.cardShown = cardShown
   state.cardTab = {
     label: cardTab.label,
     uri: cardTab.input.uri.toString(),

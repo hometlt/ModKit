@@ -1438,8 +1438,13 @@ async function mount(
       dataSources?.some(item => item.contract === SUBJECT_SELECTOR_CONTRACT) === true
     ) {
       requestedCard = target
+      const started = performance.now()
       try {
-        if (await editors.showView('card')) return
+        if (await editors.showView('card')) {
+          // Which entity the card stage opened on: the installed acceptance reads this line.
+          bridge.emit({ op: 'timing', name: `card shown ${target}`, milliseconds: performance.now() - started })
+          return
+        }
       } finally {
         requestedCard = undefined
       }

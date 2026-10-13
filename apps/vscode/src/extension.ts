@@ -520,9 +520,8 @@ async function activateModkit(
     }),
   )
   /** Where the time goes on the paths a person waits on; see `./timing.ts`. */
-  const timing = createPhaseLog(line => {
-    output.appendLine(line)
-  })
+  // Through the log, so the journal (the extension API's diagnostics) carries the timings too.
+  const timing = createPhaseLog(line => log(line))
   /** Zoom, channel, dimensions, format and size of the viewer in the active Modkit editor. */
   const viewerStatusBar = createViewerStatusBar()
   context.subscriptions.push(viewerStatusBar)
@@ -6112,6 +6111,17 @@ async function activateModkit(
     hint: vscode.DiagnosticSeverity.Hint,
   })
 
+  /** Informational host notes about execution and provider choice, not about the subject itself. */
+  const HOST_MECHANICS_DIAGNOSTICS: ReadonlySet<string> = new Set([
+    'x3.host/worker-shared-process',
+    'x3.host/worker-realm-ready',
+    'x3.host/permission-degraded',
+    'x3.host/renderer-selected',
+    'x3.host/map-preview-preparation-selected',
+    'x3.host/map-preview-preparation-unresolved',
+    'x3.host/map-preview-content-sources-selected',
+  ])
+
   /** What has already been said about each subject, so a repeat does not stack up. */
   const problemsFor = new Map<string, vscode.Diagnostic[]>()
   const publishedSubjectDiagnostics: {
@@ -6148,6 +6158,12 @@ async function activateModkit(
     publishedSubjectDiagnostics.push(item)
     if (item.code === 'x3.host/map-preview-installation-ambiguous') offerInstallationChoice()
     if (item.path === undefined) return
+    // Where code runs and which provider was or was not chosen says nothing about the file: the
+    // log keeps it, Problems lists only what is about the subject.
+    if (HOST_MECHANICS_DIAGNOSTICS.has(item.code) && (item.severity === 'information' || item.severity === 'hint')) {
+      log(`[subject] ${item.severity} ${item.code}: ${item.message}`)
+      return
+    }
     // Either kind of subject, on the same panel: a finding about a member of an archive is shown
     // against the member, addressed by the URI the Explorer already shows it under.
     const uri = subjectUriOf(item.path)
