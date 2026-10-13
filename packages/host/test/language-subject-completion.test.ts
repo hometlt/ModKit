@@ -1601,7 +1601,8 @@ describe('language subject completion lifecycle', () => {
       () => [{ kind: 'schema', id: 'fixture/schema@1', revision: 'conflicting-schema' }],
     )
     try {
-      await expect(workspace.hover(completionRequest())).rejects.toMatchObject({
+      // a feature the provider implements: an unsupported one is answered without semantic inputs
+      await expect(workspace.completion(completionRequest())).rejects.toMatchObject({
         code: 'x3.host/language-feature-invalid',
         message:
           'language workspace semantic inputs are invalid or conflicting: language workspace semantic input schema/fixture/schema@1 conflicts',

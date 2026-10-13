@@ -162,7 +162,7 @@ describe('VS Code map preview binding', () => {
     expect(factoryCall).toContain('subjects: host.services')
     // installations come from the person's choice in Games and the folder search, never from a
     // path written into the code
-    expect(factoryCall).toContain('selectedSources.map(')
+    expect(factoryCall).toContain('presentSources().map(')
     expect(factoryCall).toContain('searchedInstallationFolders()')
     expect(factoryCall).not.toMatch(/['"`][A-Za-z]:[\\/]/u)
     expect(source).toContain('mapPreviewResourcePlanResolver,')

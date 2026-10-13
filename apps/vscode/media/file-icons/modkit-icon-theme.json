@@ -98,6 +98,16 @@
     "war3-fdf": "_modkit_sc2layout"
   },
   "fileExtensions": {
+    "bimage": "_modkit_image",
+    "bmd6model": "_modkit_model",
+    "fbi": "_modkit_db",
+    "index": "_modkit_archive",
+    "m2": "_modkit_model",
+    "md2": "_modkit_model",
+    "md5b": "_modkit_model",
+    "md5mesh": "_modkit_model",
+    "mtr": "_modkit_document",
+    "pkb": "_modkit_fx",
     "galaxy": "_modkit_galaxy",
     "SC2Layout": "_modkit_sc2layout",
     "sc2layout": "_modkit_sc2layout",
