@@ -1,5 +1,6 @@
 /** Core-owned UVP map packaging and detached reopen: resources used by weights, ordered tiles,
- * rasters, water and authored models; excluded partial facets do not demand unused media. */
+ * rasters, water and authored models; excluded partial facets do not demand unused media.
+ * Admitted world node/sample budgets survive resource binding and detached source creation. */
 import { canonicalJsonStringify, compareUtf8, ModkitError } from '@modkit/core'
 import { createZipArchive, type ZipWriteBudget } from '@modkit/codec-kit/container/zip'
 import { sha256Hex } from '@modkit/codec-kit/crypto/digest'
@@ -24,6 +25,7 @@ import {
   type UvwHeightfieldSpaceLayer,
   type UvwObjectsLayer,
   type UvwProfileDocument,
+  type UvwParseLimits,
   type UvwResource,
   type UvwResourcesLayer,
   type UvwTerrainMaterial,
@@ -676,6 +678,7 @@ function rewriteDocument(
   document: UvwProfileDocument,
   bindings: readonly PortableBinding[],
   weightBindings: readonly PortableWeightRasterBinding[],
+  limits: UvwParseLimits,
 ): UvwProfileDocument {
   const perSpace = new Map<string, (PortableBinding | PortableWeightRasterBinding)[]>()
   for (const binding of [...bindings, ...weightBindings]) {
@@ -807,12 +810,13 @@ function rewriteDocument(
       return { ...space, layers }
     }),
   }
-  return canonicalizeUvwProfile(value)
+  return canonicalizeUvwProfile(value, limits)
 }
 
 function rewriteObjectModels(
   document: UvwProfileDocument,
   bindings: readonly PortableObjectModelBinding[],
+  limits: UvwParseLimits,
 ): UvwProfileDocument {
   const bySpace = new Map<string, PortableObjectModelBinding[]>()
   for (const binding of bindings) {
@@ -939,7 +943,7 @@ function rewriteObjectModels(
       }
       return { ...space, layers }
     }),
-  })
+  }, limits)
 }
 
 export async function materializeWorldToUvpMap(
@@ -1362,15 +1366,18 @@ export async function materializeWorldToUvpMap(
       if (bound.size !== target.layer.instances.length)
         throw new TypeError(`object layer ${catalog.layerId} changed during UVP materialization`)
     }
-    let document = rewriteDocument(materialized.document, bindings, weightBindings)
-    document = rewriteObjectModels(document, objectBindings)
-    const worldBytes = serializeUvwProfile(document, {
-      maxBytes: options.maxOutputBytes,
-      maxSamples: Math.max(
-        options.maxTerrainItems + (options.maxFacetItems ?? options.maxTerrainItems),
-        DEFAULT_UVW_PARSE_LIMITS.maxSamples,
-      ),
+    // Retain the materializer's admitted limits while binding media and models.
+    const worldLimits = {
+      maxNodes: Math.max(DEFAULT_UVW_PARSE_LIMITS.maxNodes, options.maxOutputBytes),
+      maxSamples: Math.max(options.maxTerrainItems + (options.maxFacetItems ?? options.maxTerrainItems),
+        DEFAULT_UVW_PARSE_LIMITS.maxSamples),
       ...(options.signal === undefined ? {} : { signal: options.signal }),
+    }
+    let document = rewriteDocument(materialized.document, bindings, weightBindings, worldLimits)
+    document = rewriteObjectModels(document, objectBindings, worldLimits)
+    const worldBytes = serializeUvwProfile(document, {
+      ...worldLimits,
+      maxBytes: options.maxOutputBytes,
     })
     const uniqueMedia = new Map<
       string,
@@ -1514,9 +1521,11 @@ export async function openUvpMapBundle(
   const worldBytes = entries.get(worldContent.path)!
   if (worldBytes.byteLength > (options.maxWorldBytes ?? 64 * 1024 * 1024))
     fail('x3.uv/uvp-budget-exceeded', 'UVW document exceeds its byte budget', worldContent.path)
-  const document = parseUvwProfile(worldBytes, {
+  const worldLimits = {
     maxBytes: options.maxWorldBytes ?? 64 * 1024 * 1024,
-  })
+    maxNodes: Math.max(DEFAULT_UVW_PARSE_LIMITS.maxNodes, options.maxWorldBytes ?? 64 * 1024 * 1024),
+  }
+  const document = parseUvwProfile(worldBytes, worldLimits)
   const packagedResources = new Map(
     manifest.contents
       .filter(content => content.family === 'media' || content.family === 'uvm')
@@ -1577,6 +1586,7 @@ export async function openUvpMapBundle(
     manifest,
     document,
     source: createUvwWorldSceneSource(document, {
+      limits: worldLimits,
       snapshotId: options.snapshotId,
       mapId: manifest.id,
       embeddedResources: embedded,

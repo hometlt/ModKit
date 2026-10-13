@@ -123,6 +123,41 @@ function source() {
   })
 }
 
+it('retains the admitted node budget through UVP media binding and detached reopen', async () => {
+  const n = 200, maxBytes = 128 * 1024 * 1024
+  const large: UvwProfileDocument = {
+    ...document,
+    spaces: document.spaces.map(space => ({ ...space, bounds: { min: [0, 0, 0], max: [n - 1, 1, n - 1] },
+      layers: space.layers.map(layer => layer.kind === 'heightfield' ? { ...layer, columns: n, rows: n,
+        samples: Array.from({ length: n }, () => Array(n).fill(0)) } :
+        layer.kind === 'terrain-materials' ? { ...layer, columns: n, rows: n,
+          materials: layer.materials.map(material => ({ ...material, atlas: { rows: 2 } })),
+          samples: Array.from({ length: n }, () => Array.from({ length: n }, () => ({
+            weights: [{ materialId: 'grass', weight: 1 }], layers: [
+              { materialId: 'grass', tile: { column: 0, row: 0 }, cornerAlpha: [1, 1, 1, 1] as const },
+              { materialId: 'grass', tile: { column: 1, row: 1 }, cornerAlpha: [0, 0.5, 1, 0.5] as const },
+            ],
+          }))) } : layer),
+    })),
+  }
+  const original = createUvwWorldSceneSource(large, { snapshotId: 'large-material-grid',
+    limits: { maxNodes: maxBytes }, rasterResources,
+    embeddedResources: new Map([['uvw-resource:main/source-grass', { bytes: Uint8Array.of(1) }]]),
+  })
+  const packed = await materializeWorldToUvpMap(original, { ...options, maxPageItems: 4096,
+    maxTerrainItems: n * n, maxFacetItems: 2 * n * n + 128, maxOutputBytes: maxBytes })
+  if (packed.state !== 'materialized') throw new Error(JSON.stringify(packed.refusals))
+  expect(packed.state).toBe('materialized')
+  const reopened = await openUvpMapBundle(packed.entries, { snapshotId: 'detached-large', maxWorldBytes: maxBytes })
+  const materials = reopened.document.spaces[0]!.layers.find(layer => layer.kind === 'terrain-materials')!
+  if (materials.kind !== 'terrain-materials') throw new Error('missing materials')
+  expect(materials.samples!.length).toBe(n)
+  expect(materials.samples![n - 1]![n - 1]!.layers).toEqual(large.spaces[0]!.layers
+    .filter(layer => layer.kind === 'terrain-materials')[0]!.samples![n - 1]![n - 1]!.layers)
+  expect(reopened.embeddedResources.size).toBe(1)
+  await expect(openUvpMapBundle(packed.entries, { snapshotId: 'too-small', maxWorldBytes: 1 })).rejects.toThrow('byte budget')
+}, 30000)
+
 function sourceWithWeightRaster() {
   const rasterDocument: UvwProfileDocument = {
     ...document,
