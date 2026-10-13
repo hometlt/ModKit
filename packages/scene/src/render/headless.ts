@@ -1200,6 +1200,7 @@ export async function renderHeadless(
   water?: ReadonlyMap<string, number>,
   terrain?: ReadonlySet<string>,
   materialLighting?: ReadonlyMap<string, Pick<SceneRendererScene, 'lights' | 'ambientLight'>>,
+  terrainPainterLayers?: ReadonlySet<string>,
 ): Promise<SceneRenderFrame> {
   request.signal?.throwIfAborted()
   if (request.outputKind !== 'rgba8') {
@@ -1276,17 +1277,24 @@ export async function renderHeadless(
       ? []
       : draws.filter(draw => !terrain.has(draw.primitive.id) && materialIsTerrainOverlay(draw))
   const overlaySet = new Set(overlays)
-  const ground = terrain === undefined ? [] : draws.filter(draw => terrain.has(draw.primitive.id))
+  const ground = terrain === undefined ? [] : draws.filter(draw =>
+    terrain.has(draw.primitive.id) && !terrainPainterLayers?.has(draw.primitive.id),
+  )
+  const painter = draws.filter(draw => terrainPainterLayers?.has(draw.primitive.id))
   const ordered =
-    overlays.length === 0
+    overlays.length === 0 && painter.length === 0
       ? draws
       : [
           ...ground,
+          ...painter,
           ...overlays,
-          ...draws.filter(draw => !terrain!.has(draw.primitive.id) && !overlaySet.has(draw)),
+          ...draws.filter(draw =>
+            !terrain?.has(draw.primitive.id) && !terrainPainterLayers?.has(draw.primitive.id) && !overlaySet.has(draw),
+          ),
         ]
   // Independent road depth ignores terrain but preserves front/back and overlapping road surfaces.
   let terrainDepth: Float32Array | undefined
+  const painterDepth = painter.length === 0 ? undefined : new Float32Array(width * height).fill(Infinity)
   const defaultLighting = context.previewLighting
   const materialRigs = new Map(
     [...(materialLighting ?? [])].map(
@@ -1315,8 +1323,11 @@ export async function renderHeadless(
         : !materialIsSolid(draw.program))
     )
       context.opaqueDepth = context.depth.slice()
+    const savedDepth = context.depth
+    if (terrainPainterLayers?.has(draw.primitive.id)) context.depth = painterDepth!
     if (draw.program === undefined) renderPrimitive(context, draw.primitive)
     else renderMaterialDraw(context, draw, request)
+    if (terrainPainterLayers?.has(draw.primitive.id)) context.depth = savedDepth
   }
   straightenAlpha(frame)
   return Object.freeze({

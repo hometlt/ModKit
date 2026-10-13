@@ -7,6 +7,7 @@
  * The Host-owned cell split also supplies object placement heights; texture coverage preserves ground shape.
  * Terrain-overlay materials cover ground with independent self-depth; ordinary models still occlude them.
  * Authored water polygons use Three's triangulator and the shared clipper for depth planes and fallback surfaces.
+ * Upper terrain layers use a painter phase without depth writes; later models still use ground depth.
  * Format parsing and source placement data remain with the publisher.
  */
 import {
@@ -13671,13 +13672,16 @@ function drawWorldWebGlWithResources(
     worldUniform1f(gl, program, 'shadowReceiver', 1)
     // The ground writes its depth a little farther than it lies, as Warzone 2100 writes its terrain
     // (terrain.cpp: polygon offset 0.1, 1): what lies flat on it, such as a structure's base plate,
-    // wins the tie instead of fighting it. Its later raster groups and decal tiles share the offset,
-    // so they still meet it at LEQUAL.
+    // wins the tie instead of fighting it. Base raster splats share this terrain offset;
+    // later groups and decal tiles instead use the explicit painter phase below.
     applyWebGlDepthBias(gl, TERRAIN_DEPTH_BIAS)
     for (const item of plan.splatTriangles) drawSplatBatch(resources, program, item)
     if (plan.splatOverlayTriangles.length > 0 || plan.terrainDecalTriangles.length > 0) {
-      // Later raster groups and decal tiles blend over the ground where it lies, before water as
-      // the game draws them: the same triangles at the same depth, so LEQUAL keeps them.
+      // Upper terrain layers are a painter pass over ground. Clipping produces different
+      // triangles, so equal polygon offsets do not guarantee equal rasterized depth.
+      // Models are drawn later and still occlude these layers using the unchanged ground depth.
+      applyWebGlDepthBias(gl, undefined)
+      gl.depthFunc(gl.ALWAYS)
       gl.enable(gl.BLEND)
       gl.blendEquation(gl.FUNC_ADD)
       gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
@@ -13709,6 +13713,7 @@ function drawWorldWebGlWithResources(
       bindSentinelTexture2d(resources, TERRAIN_DECAL_SPECULAR_UNIT)
       gl.disable(gl.BLEND)
       gl.depthMask(true)
+      gl.depthFunc(gl.LEQUAL)
     }
     gl.disable(gl.POLYGON_OFFSET_FILL)
     if (plan.multipliedWaterTriangles.length > 0) {

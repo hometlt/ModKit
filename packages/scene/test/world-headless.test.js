@@ -129,6 +129,29 @@ it('renders a world plan without a GPU: its ground and its models as the plan pl
   assert.ok(Math.abs(redX / red - 32) < 6, `the model drawn around x ${redX / red}`)
 })
 
+it('paints terrain decals above the ground without hiding later models or changing ground depth', async () => {
+  const plan = createWorldWebGlPlan({items: [...terrain, object],models:new Map([['post',model]])})
+  const ground = plan.opaqueTriangles
+  const positions = ground.positions.slice(0,plan.terrainOpaqueVertices*3)
+  for(let i=1;i<positions.length;i+=3)positions[i]-=.01
+  const overlay = {...ground,positions,normals:ground.normals.slice(0,positions.length),
+    colors:Float32Array.from({length:positions.length/3*4},(_,i)=>i%4===3?1:1),
+    textureCoordinates:new Float32Array(positions.length/3*2),
+    texture:{id:'green-road',width:1,height:1,rgba:Uint8Array.of(0,255,0,255)}}
+  const painter = {...plan,terrainDecalTriangles:[overlay]}
+  const base=await renderWorldHeadless(plan,{width:64,height:48})
+  const frame=await renderWorldHeadless(painter,{width:64,height:48})
+  let green=0,red=0,baseRed=0
+  for(let i=0;i<frame.rgba.length;i+=4){
+    if(frame.rgba[i+1]>frame.rgba[i]*2&&frame.rgba[i+1]>frame.rgba[i+2]*2)green++
+    if(frame.rgba[i]>150&&frame.rgba[i+1]<60&&frame.rgba[i+2]<60)red++
+    if(base.rgba[i]>150&&base.rgba[i+1]<60&&base.rgba[i+2]<60)baseRed++
+  }
+  assert.ok(green>64*48*.05,'clipped decal wins against terrain depth')
+  assert.equal(red,baseRed,'ordinary model occlusion remains intact')
+  assert.equal(worldHeadlessScene(painter).scene.primitives.find(p=>p.id==='world/decal-0').depthBias,undefined)
+})
+
 it("carries a batch's team colour and additive blending into the headless scene", async () => {
   const plan = createWorldWebGlPlan({ items: terrain })
   // a texture and a mask that share an id and not their texels

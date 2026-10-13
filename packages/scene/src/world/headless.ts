@@ -268,10 +268,6 @@ export function worldHeadlessScene(plan: WorldWebGlPlan): Readonly<{
         }),
   })
   const terrainVertices = plan.terrainOpaqueVertices ?? 0
-  const terrainDepthBias =
-    terrainVertices > 0 || (plan.terrainTexturedBatches ?? 0) > 0 || plan.splatTriangles.length > 0
-      ? TERRAIN_DEPTH_BIAS
-      : undefined
   if (terrainVertices > 0)
     ground(
       'world/ground',
@@ -329,7 +325,7 @@ export function worldHeadlessScene(plan: WorldWebGlPlan): Readonly<{
       },
       undefined,
       undefined,
-      terrainDepthBias,
+      undefined,
       true,
     )
   })
@@ -356,7 +352,7 @@ export function worldHeadlessScene(plan: WorldWebGlPlan): Readonly<{
       },
       batch.textureCoordinates,
       overlayTexture(batch),
-      terrainDepthBias,
+      undefined,
       true,
     ),
   )
@@ -478,6 +474,9 @@ export async function renderWorldHeadless(
     water,
     terrain,
     materialLighting,
+    new Set(scene.primitives
+      .filter(p => p.id.startsWith('world/decal-') || p.id.startsWith('world/splat-overlay-'))
+      .map(p => p.id)),
   )
   return Object.freeze({
     ...rendered,
