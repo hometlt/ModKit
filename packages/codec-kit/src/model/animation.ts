@@ -450,7 +450,8 @@ export interface ModelAnimationExtent {
 /**
  * Compile a facet clip once, then sample without rebuilding its tracks each frame.
  * Time is sequence-local seconds; the caller controls sequence looping. Concurrent channels wrap
- * by their own duration. Descriptive channels without a declared interpolation are refused.
+ * by their own duration. An explicit global time samples concurrent channels independently; when
+ * omitted they retain the sequence-local clock. Descriptive channels without interpolation refuse.
  * `sample` returns frozen values; `sampleInto` writes the same values into arrays the caller keeps
  * from sample to sample, for a pose made every frame (an animated map poses every placed unit).
  */
@@ -459,12 +460,21 @@ export function createModelAnimationSampler(
   budget?: JsonSnapshotBudget,
   signal?: AbortSignal,
 ): {
-  sample(timeSeconds: number, signal?: AbortSignal): readonly ModelAnimationValue[]
+  sample(
+    timeSeconds: number,
+    signal?: AbortSignal,
+    globalTimeSeconds?: number,
+  ): readonly ModelAnimationValue[]
   /**
    * Each channel's value at a time into `values[index]` (an array made where there is none), in
    * the order of `channels`: the values `sample` returns, overwritten by the next call.
    */
-  sampleInto(timeSeconds: number, values: number[][], signal?: AbortSignal): void
+  sampleInto(
+    timeSeconds: number,
+    values: number[][],
+    signal?: AbortSignal,
+    globalTimeSeconds?: number,
+  ): void
   /** What each value is (its target, kind and axis), in the order of `sample` and `sampleInto`. */
   readonly channels: readonly Omit<ModelAnimationValue, 'value'>[]
   /** What every value of channel `index` stays within (ModelAnimationExtent), made when first asked for. */
@@ -561,14 +571,30 @@ export function createModelAnimationSampler(
         arcs: Object.freeze(arcs),
       }))
     },
-    sample(timeSeconds: number, requestSignal?: AbortSignal): readonly ModelAnimationValue[] {
+    sample(
+      timeSeconds: number,
+      requestSignal?: AbortSignal,
+      globalTimeSeconds?: number,
+    ): readonly ModelAnimationValue[] {
       if (requestSignal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
       finite(timeSeconds, 'sample time')
+      if (
+        globalTimeSeconds !== undefined &&
+        (!Number.isFinite(globalTimeSeconds) || globalTimeSeconds < 0)
+      )
+        throw new TypeError('global time must be finite and nonnegative')
       // a value of one shape per channel, without a closure or a spread
       const values: ModelAnimationValue[] = []
       for (const { channel, track, options } of tracks) {
         if (requestSignal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
-        const value = Object.freeze(sampleTrackValue(track, timeSeconds, [], options))
+        const value = Object.freeze(
+          sampleTrackValue(
+            track,
+            channel.concurrent ? (globalTimeSeconds ?? timeSeconds) : timeSeconds,
+            [],
+            options,
+          ),
+        )
         values.push(
           Object.freeze(
             channel.axis === undefined
@@ -579,14 +605,29 @@ export function createModelAnimationSampler(
       }
       return Object.freeze(values)
     },
-    sampleInto(timeSeconds: number, values: number[][], requestSignal?: AbortSignal): void {
+    sampleInto(
+      timeSeconds: number,
+      values: number[][],
+      requestSignal?: AbortSignal,
+      globalTimeSeconds?: number,
+    ): void {
       if (requestSignal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
       finite(timeSeconds, 'sample time')
+      if (
+        globalTimeSeconds !== undefined &&
+        (!Number.isFinite(globalTimeSeconds) || globalTimeSeconds < 0)
+      )
+        throw new TypeError('global time must be finite and nonnegative')
       for (let index = 0; index < tracks.length; index++) {
         if (requestSignal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
-        const { track, options } = tracks[index]!
+        const { channel, track, options } = tracks[index]!
         // sampleTrackValue sets the length and every element, so a kept array ends as a new one
-        sampleTrackValue(track, timeSeconds, (values[index] ??= []), options)
+        sampleTrackValue(
+          track,
+          channel.concurrent ? (globalTimeSeconds ?? timeSeconds) : timeSeconds,
+          (values[index] ??= []),
+          options,
+        )
       }
     },
   })

@@ -256,3 +256,97 @@ test('malformed selections, absent targets and sequence-by-bone budgets reject b
     /whole-bone/,
   )
 })
+
+test('explicit global clock is shared by clips while local blend times and historical offsets stay separate', () => {
+  const first = clip('first-clock', [
+    channel('translation', [0, 0, 0], [4, 0, 0], { concurrent: true, wrapSeconds: 1 }),
+  ])
+  const second = clip('second-clock', [
+    channel('translation', [0, 0, 0], [8, 0, 0], { concurrent: true, wrapSeconds: 1 }),
+  ])
+  const selected = [
+    { clip: first, time: 0.25, weight: 1 },
+    { clip: second, time: 0.75, weight: 1 },
+  ]
+  const sampler = createModelPoseBlendSampler({ bindings, hierarchyId: 'rig', samples: selected })
+  const x = pose => pose.bones.find(bone => bone.boneIndex === 9).worldMatrix[12]
+  assert.equal(x(sampler.sample()), 3.5)
+  assert.equal(x(sampler.sample(0, undefined, 0.75)), 4.5)
+  assert.equal(x(sampler.sample(-0.5, undefined, 0.75)), 4.5)
+  assert.equal(x(sampler.sample(-0.5)), 1)
+  assert.equal(x(sampler.sample(0, undefined, 0)), 0)
+  for (const invalid of [-1, NaN, Infinity, null, '0'])
+    assert.throws(() => sampler.sample(0, undefined, invalid), /global time/)
+  assert.throws(() => sampler.sample(0, AbortSignal.abort(), 0.75), { name: 'AbortError' })
+  const nodes = createModelSkeletonNodes(bindings, 'rig').map(node => ({
+    ...node,
+    childIds: [...node.childIds],
+    meshIds: [],
+  }))
+  nodes.find(node => node.id === 'node-3').childIds.push('socket')
+  nodes.find(node => node.id === 'node-9').meshIds.push('mesh')
+  nodes.push({ id: 'socket', childIds: [], meshIds: [], transform: matrix(0, 1) })
+  const projection = {
+    nodes,
+    meshes: [{ id: 'mesh', primitiveIds: ['triangle'] }],
+    skeleton: bindings,
+    primitives: [
+      {
+        id: 'triangle',
+        hierarchyId: 'rig',
+        topology: 'triangles',
+        positions: Float32Array.of(10, 0, 0, 10, 2, 0, 11, 1, 0),
+        boneIndices: Uint16Array.of(9, 9, 9, 9, 3, 9, 9, 9, 9, 3, 9, 9),
+        boneWeights: Float32Array.of(1, 0, 0, 0, 1, 0, 0, 0, 0.25, 0.75, 0, 0),
+      },
+    ],
+  }
+  const scene = createModelSceneSampler(projection, { poseSamples: selected, poseTime: 0.5 })
+  const current = scene.sample(0.5, undefined, undefined, 0.75)
+  assert.deepEqual(current.diagnostics, [])
+  assert.equal(current.primitives[0].positions[0], 4.5)
+  assert.deepEqual([...current.nodeTransforms.get('socket')].slice(12, 15), [4.5, 3, 0])
+  assert.equal(scene.sample(0.5).primitives[0].positions[0], 3.5)
+  assert.equal(scene.sample(0, undefined, undefined, 0.75).primitives[0].positions[0], 4.5)
+  const primary = createModelSceneSampler(projection, { clip: first })
+  const primaryPose = primary.sample(0.25, undefined, undefined, 0.75)
+  assert.equal(primaryPose.primitives[0].positions[0], 3)
+  assert.deepEqual([...primaryPose.nodeTransforms.get('socket')].slice(12, 15), [3, 3, 0])
+  assert.equal(primary.sample(0.25).primitives[0].positions[0], 1)
+})
+
+test('rigid pose blending offsets ordinary channels without shifting explicit global time', () => {
+  const rest = { translation: [0, 0, 0], rotation: [0, 0, 0, 1], scale: [1, 1, 1] }
+  const make = (id, scale) =>
+    clip(id, [
+      {
+        ...channel('translation', [0, 0, 0], [scale, 0, 0], { concurrent: true, wrapSeconds: 1 }),
+        target: 'parent',
+      },
+      { ...channel('translation', [0, 0, 0], [0, scale, 0]), target: 'child' },
+    ])
+  const scene = createModelSceneSampler(
+    {
+      nodes: [
+        { id: 'parent', childIds: ['child'], meshIds: [], transform: identity },
+        { id: 'child', childIds: [], meshIds: [], transform: identity },
+      ],
+      meshes: [],
+      primitives: [],
+      nodePoses: ['parent', 'child'].map(nodeId => ({ nodeId, localPose: rest })),
+    },
+    {
+      poseSamples: [
+        { clip: make('a', 4), time: 0.25, weight: 1 },
+        { clip: make('b', 8), time: 0.75, weight: 1 },
+      ],
+      poseTime: 0.5,
+    },
+  )
+  const position = (local, global) =>
+    [...scene.sample(local, undefined, undefined, global).nodeTransforms.get('child')].slice(12, 15)
+  assert.deepEqual(position(0.5, 0.75), [4.5, 3.5, 0])
+  assert.deepEqual(position(0, 0.75), [4.5, 1, 0])
+  assert.deepEqual(position(0.5), [3.5, 3.5, 0])
+  assert.deepEqual(position(0), [1, 1, 0])
+})

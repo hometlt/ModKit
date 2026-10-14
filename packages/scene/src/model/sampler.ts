@@ -493,6 +493,7 @@ export function createModelSceneSampler(
         sample(
           time: number,
           signal?: AbortSignal,
+          globalTimeSeconds?: number,
         ): { readonly bones: readonly ModelBonePoseSample[] }
       }
       matrices: ReturnType<typeof createModelPoseSampler> | undefined
@@ -641,8 +642,8 @@ export function createModelSceneSampler(
         blended === undefined
           ? present(primarySampler, 'primary pose sampler')
           : {
-              sample: (time: number, requestSignal?: AbortSignal) =>
-                blended.sample(time - poseTime, requestSignal),
+              sample: (time: number, requestSignal?: AbortSignal, globalTimeSeconds?: number) =>
+                blended.sample(time - poseTime, requestSignal, globalTimeSeconds),
             }
       sampler.sample(0, signal)
       poseSamplers.set(hierarchyId, { sampler, matrices: primarySampler })
@@ -1150,9 +1151,20 @@ export function createModelSceneSampler(
      */
     bounds: (): ModelSceneBounds | undefined =>
       (bounds === undefined ? (bounds = clipSphere()) : bounds) ?? undefined,
-    sample(timeSeconds: number, requestSignal?: AbortSignal, camera?: ModelSceneCamera) {
+    /** Local time and optional independent concurrent clock; the camera keeps its existing slot. */
+    sample(
+      timeSeconds: number,
+      requestSignal?: AbortSignal,
+      camera?: ModelSceneCamera,
+      globalTimeSeconds?: number,
+    ) {
       if (!Number.isFinite(timeSeconds)) throw new TypeError('scene time must be finite')
       if (requestSignal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
+      if (
+        globalTimeSeconds !== undefined &&
+        (!Number.isFinite(globalTimeSeconds) || globalTimeSeconds < 0)
+      )
+        throw new TypeError('global time must be finite and nonnegative')
       const cameraRotation =
         camera?.rotation === undefined ? billboardCamera : sampleRotation(camera.rotation)
       const cameraPosition =
@@ -1165,7 +1177,7 @@ export function createModelSceneSampler(
       if (visibilitySampler !== undefined) {
         const hidden = new Set(storedHidden)
         fades = new Map()
-        for (const value of visibilitySampler.sample(timeSeconds, requestSignal))
+        for (const value of visibilitySampler.sample(timeSeconds, requestSignal, globalTimeSeconds))
           if (primitiveIds.has(value.target)) {
             const visibility = value.value[0] ?? 0
             if (visibility > 0) hidden.delete(value.target)
@@ -1177,16 +1189,20 @@ export function createModelSceneSampler(
       let nodeWeights: Map<string, readonly number[]> | undefined
       if (morphSampler !== undefined) {
         nodeWeights = new Map()
-        for (const value of morphSampler.sample(timeSeconds, requestSignal))
+        for (const value of morphSampler.sample(timeSeconds, requestSignal, globalTimeSeconds))
           if (value.value.length === morphTargetCounts.get(value.target))
             nodeWeights.set(value.target, value.value)
       }
-      const localPoses = nodeSampler?.sample(timeSeconds, requestSignal)
+      const localPoses = nodeSampler?.sample(timeSeconds, requestSignal, globalTimeSeconds)
       const poses: ScenePose[] = []
       for (const hierarchy of hierarchies) {
         const { frame } = hierarchy
         if (hierarchy.matrices !== undefined) {
-          const sampled = hierarchy.matrices.sampleMatrices(timeSeconds, requestSignal)
+          const sampled = hierarchy.matrices.sampleMatrices(
+            timeSeconds,
+            requestSignal,
+            globalTimeSeconds,
+          )
           const { bones } = hierarchy.matrices
           for (let slot = 0; slot < bones.length; slot++) {
             const world = new Float32Array(16)
@@ -1199,7 +1215,7 @@ export function createModelSceneSampler(
           continue
         }
         const pose = applyModelBillboards(
-          hierarchy.sampler.sample(timeSeconds, requestSignal).bones,
+          hierarchy.sampler.sample(timeSeconds, requestSignal, globalTimeSeconds).bones,
           hierarchy.bindings,
           billboards,
           cameraRotation,

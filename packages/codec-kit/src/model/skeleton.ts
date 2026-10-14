@@ -346,15 +346,21 @@ export function createModelPoseSampler({
   readonly budget?: JsonSnapshotBudget
   readonly signal?: AbortSignal
 }): {
+  /** Sequence-local time; explicit global time affects concurrent channels only. */
   sample(
     timeSeconds: number,
     signal?: AbortSignal,
+    globalTimeSeconds?: number,
   ): {
     readonly bones: readonly ModelBonePoseSample[]
     readonly channels: readonly ModelAnimationValue[]
   }
   /** The pose `sample` makes at a time, as matrices (ModelPoseMatrices). */
-  sampleMatrices(timeSeconds: number, signal?: AbortSignal): ModelPoseMatrices
+  sampleMatrices(
+    timeSeconds: number,
+    signal?: AbortSignal,
+    globalTimeSeconds?: number,
+  ): ModelPoseMatrices
   /** The bones of every pose, in its order. */
   readonly bones: readonly ModelPoseBone[]
   /**
@@ -551,19 +557,34 @@ export function createModelPoseSampler({
         }),
       ),
     ),
-    sample(timeSeconds: number, requestSignal?: AbortSignal) {
+    sample(timeSeconds: number, requestSignal?: AbortSignal, globalTimeSeconds?: number) {
       if (requestSignal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
       if (!Number.isFinite(timeSeconds)) throw new TypeError('pose time must be finite')
-      const channels = animation?.sample(timeSeconds, requestSignal) ?? Object.freeze([])
+      if (
+        globalTimeSeconds !== undefined &&
+        (!Number.isFinite(globalTimeSeconds) || globalTimeSeconds < 0)
+      )
+        throw new TypeError('global time must be finite and nonnegative')
+      const channels =
+        animation?.sample(timeSeconds, requestSignal, globalTimeSeconds) ?? Object.freeze([])
       restPose()
       for (let index = 0; index < channels.length; index++) assign(index, channels[index]!.value)
       compose(scratch, requestSignal)
       return Object.freeze({ bones: frozenPose(scratch), channels })
     },
-    sampleMatrices(timeSeconds: number, requestSignal?: AbortSignal): ModelPoseMatrices {
+    sampleMatrices(
+      timeSeconds: number,
+      requestSignal?: AbortSignal,
+      globalTimeSeconds?: number,
+    ): ModelPoseMatrices {
       if (requestSignal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
       if (!Number.isFinite(timeSeconds)) throw new TypeError('pose time must be finite')
-      animation?.sampleInto(timeSeconds, values, requestSignal)
+      if (
+        globalTimeSeconds !== undefined &&
+        (!Number.isFinite(globalTimeSeconds) || globalTimeSeconds < 0)
+      )
+        throw new TypeError('global time must be finite and nonnegative')
+      animation?.sampleInto(timeSeconds, values, requestSignal, globalTimeSeconds)
       restPose()
       for (let index = 0; index < targets.length; index++) assign(index, values[index]!)
       const matrices = new Float32Array(bones.length * 32)
@@ -684,6 +705,7 @@ export function createModelPoseBlendSampler({
     sample(
       timeOffset = 0,
       requestSignal?: AbortSignal,
+      globalTimeSeconds?: number,
     ): {
       readonly bones: readonly ModelBonePoseSample[]
       readonly channels: readonly ModelAnimationValue[]
@@ -691,6 +713,12 @@ export function createModelPoseBlendSampler({
       signal?.throwIfAborted()
       requestSignal?.throwIfAborted()
       if (!Number.isFinite(timeOffset)) throw new TypeError('pose blend offset must be finite')
+      if (
+        globalTimeSeconds !== undefined &&
+        (!Number.isFinite(globalTimeSeconds) || globalTimeSeconds < 0)
+      )
+        throw new TypeError('global time must be finite and nonnegative')
+      // Leave an omitted global clock omitted: each clip then keeps its own offset local clock.
       const inputs: SequencePoseBlendSample[] = compiled.map(({ sample, sampler }) => {
         requestSignal?.throwIfAborted()
         const time = sample.time + timeOffset
@@ -707,7 +735,7 @@ export function createModelPoseBlendSampler({
                 scale: constant(rest.scale),
               }
         })
-        for (const value of sampler.sample(time, requestSignal)) {
+        for (const value of sampler.sample(time, requestSignal, globalTimeSeconds)) {
           const slot = byNode.get(value.target),
             ordinal = slot === undefined ? undefined : ordinals.get(slot)
           const target = ordinal === undefined ? undefined : tracks[ordinal]

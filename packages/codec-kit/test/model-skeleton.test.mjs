@@ -410,3 +410,55 @@ test("the extent of a pose sampler composes each bone's bounds down its hierarch
   const sine = 2 * 0.31622776601683794 * 0.9486832980505139
   near(center.subarray(root, root + 3), [2 * (1 - 2 * 0.1), 2 * sine, 0])
 })
+
+test('local child and concurrent parent clocks agree across pose and matrix paths', () => {
+  const bindings = [bone(3, 9, [0, 0, 0], identity), bone(9, null, [0, 0, 0], identity)]
+  const move = {
+    id: 'clocks',
+    name: 'clocks',
+    kind: 'animation',
+    provenance: 'direct',
+    frames: 2,
+    channels: [
+      {
+        target: 'joint/9',
+        kind: 'translation',
+        concurrent: true,
+        wrapSeconds: 1,
+        firstFrame: 0,
+        lastFrame: 1,
+        interpolation: 'linear',
+        samples: [
+          { frame: 0, timeSeconds: 0, value: [0, 0, 0] },
+          { frame: 1, timeSeconds: 1, value: [4, 0, 0] },
+        ],
+      },
+      {
+        target: 'joint/3',
+        kind: 'translation',
+        firstFrame: 0,
+        lastFrame: 1,
+        interpolation: 'linear',
+        samples: [
+          { frame: 0, timeSeconds: 0, value: [0, 0, 0] },
+          { frame: 1, timeSeconds: 1, value: [0, 4, 0] },
+        ],
+      },
+    ],
+  }
+  const sampler = createModelPoseSampler({ bindings, hierarchyId: 'rig', clip: move })
+  const pose = sampler.sample(0.25, undefined, 0.75)
+  assert.deepEqual(pose.bones[0].worldMatrix.slice(12, 15), [3, 1, 0])
+  assert.deepEqual(pose.bones[0].skinningMatrix.slice(12, 15), [3, 1, 0])
+  assert.deepEqual(sampler.sampleMatrices(0.25, undefined, 0.75).pose(), pose.bones)
+  assert.deepEqual(sampler.sample(0.25).bones[0].worldMatrix.slice(12, 15), [1, 1, 0])
+  assert.deepEqual(sampler.sample(0.25, undefined, 0).bones[0].worldMatrix.slice(12, 15), [0, 1, 0])
+  const noClip = createModelPoseSampler({ bindings, hierarchyId: 'rig' })
+  for (const invalid of [-1, NaN, Infinity, null, '0']) {
+    assert.throws(() => noClip.sample(0, undefined, invalid), /global time/)
+    assert.throws(() => noClip.sampleMatrices(0, undefined, invalid), /global time/)
+  }
+  assert.throws(() => sampler.sampleMatrices(0.25, AbortSignal.abort(), 0.75), {
+    name: 'AbortError',
+  })
+})

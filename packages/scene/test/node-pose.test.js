@@ -95,3 +95,91 @@ test('primitive visibility channels hide only their exact portable target at the
   assert.deepEqual(sampler.sample(1).primitives.map(item => item.id), ['visible'])
   assert.deepEqual(sampler.sample(1).diagnostics, [])
 })
+
+test('independent global node clocks preserve matrix parents, sockets and camera argument', () => {
+  const clocks = {
+    ...clip,
+    channels: clip.channels.map((channel, index) =>
+      index === 0 ? { ...channel, concurrent: true, wrapSeconds: 1 } : channel,
+    ),
+  }
+  const sampler = createModelSceneSampler(projection(), { clip: clocks })
+  const camera = { rotation: [0, 0, 0, 1], position: [1, 2, 3] }
+  assert.deepEqual(
+    [...sampler.sample(0.25, undefined, camera, 0.75).nodeTransforms.get('tip')].slice(12, 15),
+    [15, 3, 7],
+  )
+  assert.deepEqual([...sampler.sample(0.25).nodeTransforms.get('tip')].slice(12, 15), [13, 3, 7])
+  assert.deepEqual(
+    [...sampler.sample(0.25, undefined, camera, 0).nodeTransforms.get('tip')].slice(12, 15),
+    [12, 3, 7],
+  )
+  for (const invalid of [-1, NaN, Infinity, null, '0'])
+    assert.throws(() => sampler.sample(0.25, undefined, camera, invalid), /global time/)
+  assert.throws(() => sampler.sample(0.25, AbortSignal.abort(), camera, 0.75), {
+    name: 'AbortError',
+  })
+  const empty = createModelSceneSampler({ nodes: [], meshes: [], primitives: [] })
+  assert.throws(() => empty.sample(0, undefined, undefined, -1), /global time/)
+})
+
+test('concurrent morph and visibility use global time while ordinary channels stay local', () => {
+  const source = {
+    nodes: [{ ...node('root', []), meshIds: ['mesh'] }],
+    meshes: [{ id: 'mesh', primitiveIds: ['body', 'marker'] }],
+    primitives: ['body', 'marker'].map(id => ({
+      id,
+      topology: 'triangles',
+      positions: Float32Array.from([0, 0, 0, 1, 0, 0, 0, 1, 0]),
+      ...(id === 'body'
+        ? { morphTargets: [{ positions: Float32Array.from([0, 4, 0, 0, 0, 0, 0, 0, 0]) }] }
+        : {}),
+    })),
+  }
+  const tracks = [
+    {
+      target: 'root',
+      kind: 'weights',
+      samples: [
+        { frame: 0, timeSeconds: 0, value: [0] },
+        { frame: 1, timeSeconds: 1, value: [1] },
+      ],
+    },
+    {
+      target: 'marker',
+      kind: 'visibility',
+      samples: [
+        { frame: 0, timeSeconds: 0, value: [1] },
+        { frame: 1, timeSeconds: 0.5, value: [0] },
+      ],
+    },
+  ]
+  const create = concurrent =>
+    createModelSceneSampler(source, {
+      clip: {
+        ...clip,
+        channels: tracks.map(track => ({
+          ...track,
+          firstFrame: 0,
+          lastFrame: 1,
+          interpolation: track.kind === 'visibility' ? 'step' : 'linear',
+          ...(concurrent ? { concurrent: true, wrapSeconds: 1 } : {}),
+        })),
+      },
+    })
+  const sampler = create(true)
+  const global = sampler.sample(0.25, undefined, undefined, 0.75)
+  assert.deepEqual(
+    global.primitives.map(p => p.id),
+    ['body'],
+  )
+  assert.equal(global.primitives[0].positions[1], 3)
+  assert.equal(sampler.sample(0.25).primitives[0].positions[1], 1)
+  assert.equal(sampler.sample(0.25, undefined, undefined, 0).primitives[0].positions[1], 0)
+  const local = create(false).sample(0.25, undefined, undefined, 0.75)
+  assert.equal(local.primitives[0].positions[1], 1)
+  assert.deepEqual(
+    local.primitives.map(p => p.id),
+    ['body', 'marker'],
+  )
+})

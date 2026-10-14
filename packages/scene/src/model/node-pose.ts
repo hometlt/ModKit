@@ -62,10 +62,14 @@ export function createNodePoseSampler(
           samples: options.poseSamples.map(sample => ({ ...sample, clip: select(sample.clip) })),
         })
   return {
-    sample(time: number, signal?: AbortSignal) {
+    sample(time: number, signal?: AbortSignal, globalTimeSeconds?: number) {
       return new Map(
         sampler
-          .sample(options.poseSamples === undefined ? time : time - options.poseTime, signal)
+          .sample(
+            options.poseSamples === undefined ? time : time - options.poseTime,
+            signal,
+            globalTimeSeconds,
+          )
           .bones.map(node => [node.nodeId, node.worldMatrix]),
       )
     },

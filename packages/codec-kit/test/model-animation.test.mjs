@@ -370,3 +370,86 @@ test('the extent of a channel holds every value it takes, whatever the time', ()
   assert.equal(sampler.extent(0), extents[0])
   assert.throws(() => sampler.extent(5), RangeError)
 })
+
+test('explicit global time separates concurrent channels and preserves local sampling', () => {
+  const source = clip([
+    channel('translation', 'linear', [
+      [0, 0, 0],
+      [4, 0, 0],
+    ]),
+    channel(
+      'scale',
+      'linear',
+      [
+        [0, 0, 0],
+        [4, 0, 0],
+      ],
+      { concurrent: true, wrapSeconds: 1 },
+    ),
+    channel('visibility', 'linear', [[0], [4]], { concurrent: true, wrapSeconds: 0.5 }),
+  ])
+  const sampler = createModelAnimationSampler(source)
+  const values = []
+  const sampled = sampler.sample(0.25, undefined, 0.75)
+  assert.deepEqual(
+    sampled.map(item => item.value[0]),
+    [1, 3, 1],
+  )
+  sampler.sampleInto(0.25, values, undefined, 0.75)
+  assert.deepEqual(
+    values,
+    sampled.map(item => item.value),
+  )
+  assert.deepEqual(
+    sampler.sample(0.25).map(item => item.value[0]),
+    [1, 1, 1],
+  )
+  assert.deepEqual(
+    sampler.sample(0.25, undefined, 0).map(item => item.value[0]),
+    [1, 0, 0],
+  )
+  assert.deepEqual(
+    sampler.sample(1, undefined, 0.75).map(item => item.value[0]),
+    [4, 3, 1],
+  )
+  assert.deepEqual(
+    sampler.sample(-0.25).map(item => item.value[0]),
+    [0, 0, 0],
+  )
+  assert.deepEqual(
+    sampler.sample(-0.25, undefined, 0.75).map(item => item.value[0]),
+    [0, 3, 1],
+  )
+  assert.deepEqual(
+    sampler.sample(0.25, undefined, 1).map(item => item.value[0]),
+    [1, 0, 0],
+  )
+})
+
+test('global time validates even empty clips, with owned output and cancellation intact', () => {
+  for (const source of [
+    clip([]),
+    clip([
+      channel(
+        'translation',
+        'linear',
+        [
+          [0, 0, 0],
+          [4, 0, 0],
+        ],
+        { concurrent: true },
+      ),
+    ]),
+  ]) {
+    const sampler = createModelAnimationSampler(source)
+    for (const invalid of [-1, NaN, Infinity, -Infinity, null, '0']) {
+      assert.throws(() => sampler.sample(0.25, undefined, invalid), /global time/)
+      assert.throws(() => sampler.sampleInto(0.25, [], undefined, invalid), /global time/)
+    }
+    assert.throws(() => sampler.sample(0.25, AbortSignal.abort(), 0.75), { name: 'AbortError' })
+    assert.throws(() => sampler.sampleInto(0.25, [], AbortSignal.abort(), 0.75), {
+      name: 'AbortError',
+    })
+    assert.deepEqual(sampler.sample(0.25, undefined, 0), sampler.sample(0))
+  }
+})
