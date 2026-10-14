@@ -16,9 +16,15 @@ The existing `@modkit/codec-kit/texture` worker route remains; bundler/runtime c
 the new relative module when building the common artifact.
 
 Core contains unrelated uncommitted work, including codec-kit legacy material and web subject
-changes. No common dist or vendor was built over it. Integrator must arrange a clean scoped
-build/pack/install and verify actual installed exports before idsoftware imports this new helper.
-Do not bypass it with private source imports or a second transform in the extension.
+changes. No common live dist was built over it. idsoftware built codec-kit from a clean git archive
+of `bab4dd6beff84e35dc7cee46c9e16b4728223824` in C:/MKTEMP with references disabled (existing public
+peer declarations), packed exact peer versions and updated only its codec-kit vendor. Frozen/offline
+install and its root/idtech6 builds pass; installed cdf97 JS/declarations match candidate bytes.
+The existing public texture export is used, not a private source import. Common live dist/browser
+worker integration remains the Integrator's pending scope; no VSIX/acceptance was rebuilt.
 
-Native coefficient evidence is in idsoftware handoff: 42 WBP tiles, 11800320 coefficient bytes
-through Host/RAD, but no inverse-wavelet pixel reconstruction or animated model acceptance yet.
+Native pixel receipt is now `C:/MKTEMP/idsoftware-idtech6/installation-2026-10-14T15-30-27-366Z/receipt.json`:
+WBP Soldier normal mips2048/1024/512 decoded through Host/RAD + public CDF97. 512px atlas viewed
+against native BC5 256px mip; no visible seams. This is RGBA preview without BC requantization,
+not numerical native oracle or full-resolution proof (mip0 missing). Extension serial100/100 tests.
+Animated model/UVM/gallery acceptance is still incomplete.
