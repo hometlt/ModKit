@@ -25,6 +25,7 @@ import { assertTerrainAtlas, assertDerivedCliffObject } from './uvw-terrain-atla
 import { assertUnlitLighting } from './uvw-unlit.ts'
 import { assertUvwObjectPresentation, assertUvwCamera } from './uvm-presentation.ts'
 import { assertUvwPlayers } from './uvw-players.ts'
+import { assertUvwLattice } from './uvw-lattice.ts'
 
 /** One violated rule, named by the id the vectors use. */
 export class UvwRuleError extends TypeError {
@@ -74,9 +75,11 @@ export function assertUvwProfile(document) {
       }
       assertUvwBody(space, true, source === document ? undefined : source)
     }
+    assertUvwLattice(document.spaces, source === document ? document.uv?.version : '1.0')
     return source
   }
   assertUvwBody(document, false)
+  assertUvwLattice([document], document.uv?.version)
   return source
 }
 
@@ -454,7 +457,7 @@ function assertObjects(layer, layers) {
   const instances = []
   for (const instance of layer.instances) {
     if (!keys(instance, ['id', 'objectKind', 'position', 'rotation', 'scale', 'resourceIds'],
-      ['modelComponents', 'typeId', 'player', 'variation', 'name', 'derivedFrom', 'presentationTint', 'presentationAnimation'])
+      ['modelComponents', 'typeId', 'player', 'variation', 'name', 'derivedFrom', 'presentationTint', 'presentationAnimation', 'latticeCoverage'])
       || !id(instance.id)
       || !['unit', 'structure', 'feature', 'doodad', 'point', 'camera'].includes(instance.objectKind)
       || !vector(instance.position, 3) || !quaternion(instance.rotation)

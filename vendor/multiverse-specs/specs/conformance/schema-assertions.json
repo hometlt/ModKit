@@ -2110,6 +2110,204 @@
     {"id": "record-make-needs-args", "document": "behavior/fixtures/uvb-module-transient-record.uvb.json", "pointer": "", "schemaId": "https://modkitx.org/uvb/2.0/uvb.module.schema.json", "expect": "invalid", "mutations": [{"op":"set","path":"functions.0.body.1","value":{"op":"record.make","dst":1,"type":"Command"}}]},
     {"id": "record-get-needs-field", "document": "behavior/fixtures/uvb-module-transient-record.uvb.json", "pointer": "", "schemaId": "https://modkitx.org/uvb/2.0/uvb.module.schema.json", "expect": "invalid", "mutations": [{"op":"set","path":"functions.0.body.5","value":{"op":"record.get","dst":5,"a":4}}]},
     {"id": "record-set-needs-value", "document": "behavior/fixtures/uvb-module-transient-record.uvb.json", "pointer": "", "schemaId": "https://modkitx.org/uvb/2.0/uvb.module.schema.json", "expect": "invalid", "mutations": [{"op":"set","path":"functions.0.body.4","value":{"op":"record.set","dst":4,"a":1,"field":"label"}}]},
-    {"id": "record-field-name-domain", "document": "behavior/fixtures/uvb-module-transient-record.uvb.json", "pointer": "", "schemaId": "https://modkitx.org/uvb/2.0/uvb.module.schema.json", "expect": "invalid", "mutations": [{"op":"set","path":"functions.0.body.2.field","value":"../label"}]}
+    {"id": "record-field-name-domain", "document": "behavior/fixtures/uvb-module-transient-record.uvb.json", "pointer": "", "schemaId": "https://modkitx.org/uvb/2.0/uvb.module.schema.json", "expect": "invalid", "mutations": [{"op":"set","path":"functions.0.body.2.field","value":"../label"}]},
+    {
+      "id": "lattice/profile/valid",
+      "document": "world/fixtures/uvw-lattice.uvw.json",
+      "pointer": "",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json",
+      "expect": "valid"
+    },
+    {
+      "id": "lattice/profile/future-version-syntax",
+      "document": "world/fixtures/uvw-lattice.uvw.json",
+      "pointer": "",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json",
+      "expect": "valid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "uv.version",
+          "value": "1.1"
+        }
+      ]
+    },
+    {
+      "id": "lattice/profile/unknown-coverage-field",
+      "document": "world/fixtures/uvw-lattice.uvw.json",
+      "pointer": "",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "spaces.0.layers.0.instances.1.latticeCoverage.unknown",
+          "value": true
+        }
+      ]
+    },
+    {
+      "id": "lattice/profile/unknown-point-field",
+      "document": "world/fixtures/uvw-lattice.uvw.json",
+      "pointer": "",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "spaces.0.layers.0.instances.1.latticeCoverage.blocked.0.0.z",
+          "value": 3
+        }
+      ]
+    },
+    {
+      "id": "lattice/profile/duplicate-role",
+      "document": "world/fixtures/uvw-lattice.uvw.json",
+      "pointer": "",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "spaces.0.layers.0.instances.1.latticeCoverage.roles",
+          "value": [
+            "resource",
+            "resource"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "lattice/profile/unknown-role",
+      "document": "world/fixtures/uvw-lattice.uvw.json",
+      "pointer": "",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "spaces.0.layers.0.instances.1.latticeCoverage.roles",
+          "value": [
+            "unknown"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "lattice/profile/short-polygon",
+      "document": "world/fixtures/uvw-lattice.uvw.json",
+      "pointer": "",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "spaces.0.layers.0.instances.1.latticeCoverage.blocked",
+          "value": [
+            [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 1,
+                "y": 1
+              }
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "lattice/profile/scope-without-kind",
+      "document": "world/fixtures/uvw-lattice.uvw.json",
+      "pointer": "",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "spaces.0.layers.0.instances.0.latticeCoverage.resourceKindScope",
+          "value": "example/game"
+        }
+      ]
+    },
+    {
+      "id": "lattice/profile/kind-without-scope",
+      "document": "world/fixtures/uvw-lattice.uvw.json",
+      "pointer": "",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "spaces.0.layers.0.instances.0.latticeCoverage.resourceKind",
+          "value": "energy"
+        }
+      ]
+    },
+    {
+      "id": "lattice/profile/unknown-cliff-field",
+      "document": "world/fixtures/uvw-lattice.uvw.json",
+      "pointer": "",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "spaces.0.layers.1.cliffFaces.0.extra",
+          "value": false
+        }
+      ]
+    },
+    {
+      "id": "lattice/profile/negative-cell",
+      "document": "world/fixtures/uvw-lattice.uvw.json",
+      "pointer": "",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "spaces.0.layers.1.cliffFaces.0.x",
+          "value": -1
+        }
+      ]
+    },
+    {
+      "id": "lattice/profile/fractional-cell",
+      "document": "world/fixtures/uvw-lattice.uvw.json",
+      "pointer": "",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "spaces.0.layers.1.cliffFaces.0.x",
+          "value": 0.5
+        }
+      ]
+    },
+    {
+      "id": "lattice/profile/known-empty",
+      "document": "world/fixtures/uvw-lattice.uvw.json",
+      "pointer": "",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json",
+      "expect": "valid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "spaces.0.layers.1.cliffFaces",
+          "value": []
+        }
+      ]
+    },
+    {
+      "id": "lattice/gltf/valid",
+      "document": "world/fixtures/uvw-lattice.uvw.gltf",
+      "pointer": "",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "valid"
+    }
   ]
 }

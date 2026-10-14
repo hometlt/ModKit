@@ -263,6 +263,117 @@
         { "$ref": "#/$defs/lightingLayer" }
       ]
     },
+    "latticePolygons": {
+      "description": "Absolute publisher polygons in parent-space horizontal coordinates: x is UVW X and y is UVW Z. Authored polygon/vertex order is retained; no object-local transform, clipping, bbox or collision inference. Omission means unknown; [] means known empty.",
+      "type": "array",
+      "maxItems": 1048576,
+      "items": {
+        "type": "array",
+        "minItems": 3,
+        "maxItems": 1048576,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "x",
+            "y"
+          ],
+          "properties": {
+            "x": {
+              "type": "number"
+            },
+            "y": {
+              "type": "number"
+            }
+          }
+        }
+      }
+    },
+    "objectLatticeCoverage": {
+      "description": "Publisher-proven lattice annotations in the enclosing UVW space. Profile version 1.0 owns this wire vocabulary. This is not navigation or runtime collision State; omitted facts have no implied defaults.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "roles": {
+          "description": "Neutral publisher classifications. Omitted is unknown; [] is a declared empty role set. Order is retained.",
+          "type": "array",
+          "maxItems": 3,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "resource",
+              "destructible",
+              "start"
+            ]
+          }
+        },
+        "resourceKind": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096,
+          "pattern": "^[^\\u0000-\\u001f\\u007f]+$",
+          "description": "Exact source label, meaningful only within resourceKindScope. Never an implicit universal resource or lookup instruction."
+        },
+        "resourceKindScope": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024,
+          "pattern": "^[^\\u0000-\\u001f\\u007f]+$",
+          "description": "Exact gameId of the source resolved snapshot. The writer must receive this fact, never infer it from a map id, path or label. The standalone artifact preserves it; it grants no resource access."
+        },
+        "blocked": {
+          "description": "Publisher-proven movement-blocking coverage; not an implicit Runtime navigation grant.",
+          "$ref": "#/$defs/latticePolygons"
+        },
+        "noBuild": {
+          "description": "Publisher-proven construction/placement exclusion coverage.",
+          "$ref": "#/$defs/latticePolygons"
+        },
+        "vision": {
+          "description": "Publisher-proven vision-blocking coverage.",
+          "$ref": "#/$defs/latticePolygons"
+        },
+        "nearResources": {
+          "description": "Publisher-proven resource-proximity coverage; no distance or radius is inferred.",
+          "$ref": "#/$defs/latticePolygons"
+        },
+        "outline": {
+          "description": "Publisher-proven display outline; never a substitute gameplay footprint.",
+          "$ref": "#/$defs/latticePolygons"
+        }
+      },
+      "dependentRequired": {
+        "resourceKind": [
+          "resourceKindScope"
+        ],
+        "resourceKindScope": [
+          "resourceKind"
+        ]
+      }
+    },
+    "heightfieldCliffFaces": {
+      "description": "Complete effective cliff-face classification of the parent heightfield quads. Listed cells are true and all other cells false; absence is unknown, [] is proven all-false. Unique canonical y-then-x cell order, x<columns-1, y<rows-1. No inference from native levels, slope or presentation meshes.",
+      "type": "array",
+      "maxItems": 1048576,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "x",
+          "y"
+        ],
+        "properties": {
+          "x": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "y": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
     "heightfieldLayer": {
       "type": "object",
       "additionalProperties": false,
@@ -276,6 +387,7 @@
         "samples"
       ],
       "properties": {
+        "cliffFaces": { "$ref": "#/$defs/heightfieldCliffFaces" },
         "id": { "type": "string", "minLength": 1 },
         "kind": { "const": "heightfield" },
         "label": { "type": "string" },
@@ -666,6 +778,7 @@
         "resourceIds"
       ],
       "properties": {
+        "latticeCoverage": { "$ref": "#/$defs/objectLatticeCoverage" },
         "id": {
           "$ref": "#/$defs/localId"
         },

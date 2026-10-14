@@ -3,16 +3,16 @@
   "schemaVersion": "multiverse-specs-pin-1",
   "source": {
     "repository": "multiverse (sibling repository)",
-    "commit": "ac66490c11d14bc452f773c54a88c38b0d9d4152",
-    "subject": "specs(uvm): ribbon batches of baked particles draw camera-facing strips",
-    "committedOn": "2026-10-09T08:23:52+04:00"
+    "commit": "940ea49a52257418c258fc1014e6fe188a6d61a1",
+    "subject": "Preserve publisher-proven lattice annotations in the UVW contract",
+    "committedOn": "2026-10-14T23:13:16+04:00"
   },
   "generator": "scripts/specs-pin.mjs",
   "generatedFrom": "git objects, not the sibling working tree",
   "prefix": "specs/",
   "counts": {
-    "files": 298,
-    "bytes": 2026807
+    "files": 302,
+    "bytes": 2067385
   },
   "files": [
     {
@@ -182,8 +182,8 @@
     },
     {
       "path": "specs/conformance/schema-assertions.json",
-      "bytes": 100093,
-      "digest": "sha256:82dc39d0476dd289669b56f73f30e81fd394cf02b3c9917938116cea6824d9ab"
+      "bytes": 105735,
+      "digest": "sha256:226f6d3d485e820ddd3b95bc34779aee6de89285ebd087b87eec3ee3c7498c05"
     },
     {
       "path": "specs/conformance/state/vectors.json",
@@ -247,8 +247,8 @@
     },
     {
       "path": "specs/conformance/uvw/vectors.json",
-      "bytes": 7444,
-      "digest": "sha256:490dca4583599b05bd8f13ee65a741cd20d22264d471ee3c559d7309f015cf19"
+      "bytes": 9404,
+      "digest": "sha256:826c378caa73c6b21bad69d749b701348619c736d797615f3c4b4cd0dd4ef200"
     },
     {
       "path": "specs/conformance/verified-composition/vectors.json",
@@ -1211,6 +1211,16 @@
       "digest": "sha256:3b4ede8b9d5361635f8c401d6bdbbfe704df11888c0ead768d9a0a5727579f80"
     },
     {
+      "path": "specs/tools/uvw-lattice.test.mjs",
+      "bytes": 8019,
+      "digest": "sha256:bcb2c82fe25373eb0e60849f6f1a9c4837c519f5562f4ee09f9f2940b2a3362f"
+    },
+    {
+      "path": "specs/tools/uvw-lattice.ts",
+      "bytes": 6323,
+      "digest": "sha256:30330a4a12bf077b48a4cc22d7e8425d922fd74dbed246e3dab4578ed7c93cb3"
+    },
+    {
       "path": "specs/tools/uvw-materials.mjs",
       "bytes": 11535,
       "digest": "sha256:98510ae649eb27ae9757e3b73a51518fb04f84c46073f5ea48fc5de9cba432d0"
@@ -1232,8 +1242,8 @@
     },
     {
       "path": "specs/tools/uvw-profile.mjs",
-      "bytes": 43625,
-      "digest": "sha256:9f6877db758336a54ba1af454ae9207a8e88f1c107ff5f65369d5d041392adff"
+      "bytes": 43839,
+      "digest": "sha256:49b3f751dd1b49d410729028ba96610cd52b630997b631d78b6e7fd52c57a0f9"
     },
     {
       "path": "specs/tools/uvw-raster-preview.mjs",
@@ -1307,8 +1317,8 @@
     },
     {
       "path": "specs/world/SPEC_UVW_GLTF.md",
-      "bytes": 24051,
-      "digest": "sha256:064c4929d86d11d899b9e1b71965f07dc57cbff1a5b6660f356b720f5ee47477"
+      "bytes": 24577,
+      "digest": "sha256:836f8b24426099e27d1b2f205911676140ec410a41ba44ae15beaa1b576c86f7"
     },
     {
       "path": "specs/world/SPEC_UVW_GLTF_PAGES.md",
@@ -1317,8 +1327,8 @@
     },
     {
       "path": "specs/world/SPEC_UVW_PROFILE.md",
-      "bytes": 23962,
-      "digest": "sha256:1f460a77e75d46cb530fd344ec73a34574b16559248ff5f895129182863820f9"
+      "bytes": 27932,
+      "digest": "sha256:295532e18554ef761fe29cc491032d0ea2c3d354fffdafecb9f50be4598444db"
     },
     {
       "path": "specs/world/fixtures/invalid/connections-not-empty.uvw.json",
@@ -1416,6 +1426,16 @@
       "digest": "sha256:578ef8350f28edea5fc38b95da3d0a9baba291cb58b08b42b4ca74f1de32494e"
     },
     {
+      "path": "specs/world/fixtures/uvw-lattice.uvw.gltf",
+      "bytes": 5383,
+      "digest": "sha256:48ed96230c8bccaa7d386f5e4663bba3b50821aeffd049a2d892ef3a30dbf2cd"
+    },
+    {
+      "path": "specs/world/fixtures/uvw-lattice.uvw.json",
+      "bytes": 4334,
+      "digest": "sha256:e98ae0c6eb55c3ce5a551941a57ec8a6646086d65ebd62455b5e41a3613a5554"
+    },
+    {
       "path": "specs/world/fixtures/uvw-players.uvw.json",
       "bytes": 1257,
       "digest": "sha256:a78fd1d1a054bfaa674099907e02481b7f2f878f46b045004bb96510cc6bd8aa"
@@ -1502,8 +1522,8 @@
     },
     {
       "path": "specs/world/schema/uvw.profile.v1.schema.json",
-      "bytes": 37895,
-      "digest": "sha256:3d08a9c9c5d3a35816b4d377bf83f7008c135bbfbb59db93673cfb0b3813bdc1"
+      "bytes": 42102,
+      "digest": "sha256:bf250fdabc5827fa43250019778037bc45331b1d7d488bcd7a84a1c8cd6fdc7e"
     }
   ]
 }

@@ -329,3 +329,67 @@ The current bounded executor accepts at most 256 identities and 128 UTF-8 bytes
 per address. The format's wider budgets are intentional: consumers exceeding
 their supported profile return a typed refusal and never truncate the table.
 No UVB, save or kernel ABI change is implied by these optional metadata fields.
+
+## Publisher-proven lattice annotations (addendum 14.10.2026)
+
+Optional `objects.instances[].latticeCoverage` and `heightfield.cliffFaces`
+retain the existing neutral SDK lattice facts in profile 1.0. They share the
+spatial schema in both JSON and `UV_world_graph`; there is no game-specific
+UVW dialect, new topology, renderer, navigation grant or mutable State.
+
+`latticeCoverage.roles` is an optional unique array of `resource`,
+`destructible`, `start`. Each optional channel `blocked`, `noBuild`, `vision`,
+`nearResources`, `outline` is an array of publisher-proven polygons with at
+least three finite `{x,y}` vertices. Coordinates are absolute in the enclosing
+space: `x` is local UVW X and the SDK horizontal `y` is local UVW Z. They are
+not object-relative and must not be rotated, mirrored or scaled again from
+the instance transform. Preserve polygon and vertex order, including winding,
+negative coordinates and coverage crossing map bounds; do not guess, clip,
+merge or replace it with a mesh bounding box.
+
+A missing annotation, role array or channel is unknown. `roles:[]` is a
+classified empty role set; a channel `[]` is known empty. Other omitted
+channels remain unknown. Even `{}` preserves the existence of an annotation
+whose channels were not classified. There are no implicit defaults.
+
+`resourceKind` and `resourceKindScope` are optional together. The kind retains
+the exact source label and case; the scope is the **actual resolved source
+snapshot.gameId**, not a guessed namespace, map id, path or enum. The writer
+must receive that fact from its owning publisher/Host. A standalone artifact
+retains both strings without needing the source game installed. Unknown
+source scope is an explicit conversion loss/refusal, never a synthesized
+namespace. The format validator checks the declared pair; it cannot prove the
+provenance of a game id. Neither a scope nor kind authorizes resource access
+or defines a universal economy type. Scope permits 1..1024 and kind 1..4096
+Unicode code points, without surrounding whitespace or control characters.
+
+`heightfield.cliffFaces` is a complete effective classification represented
+by a unique canonical row-major array of `{x,y}` cliff cells (order y, then x).
+Cell indices satisfy `0 <= x < columns-1`, `0 <= y < rows-1`; terminal sample
+vertices are not cells. Listed cells are true and all other quads false.
+Omission means unknown; `[]` means a proved all-false classification.
+Incomplete source observations cannot be encoded as a complete set. The
+exporter maps native **cell** coordinates through its already-proven terrain
+transform exactly once: a reflected row uses `(rows-2)-y`, not the sample
+formula `(rows-1)-y`. Native terrain types/levels, slope and generated cliff
+meshes do not establish these facts. No-data holes do not invent a
+classification or permission to erase published cells.
+
+Each annotation, polygon, vertex and listed cliff cell consumes one item
+from a combined limit of 1048576 per UVW document, shared across spaces.
+Consumers may apply stricter acquisition and memory budgets. Unknown
+annotation/point/cell fields, malformed polygons, duplicate roles or cells,
+noncanonical cell order, unscoped kinds and out-of-grid cells refuse; nothing
+is silently dropped.
+
+The schema marker retains its existing syntactic version pattern; schema-valid
+future version strings do not imply admission. Reference lattice admission
+refuses non-1.0 profile versions.
+
+This is an additive profile-1.0 amendment. Existing files acquire no default
+fields and retain their canonical bytes/digests. Old strict readers refuse
+the new fields until their coordinated update; exporters must not pretend
+such a reader preserved the annotations. The legacy candidate reuses the
+same layer definitions where applicable. The frozen behavior/session ABI and
+WASM do not change. Normative artifact and spatial/glTF round-trip tests do
+not establish Core codec/source, native publisher or PNG acceptance.

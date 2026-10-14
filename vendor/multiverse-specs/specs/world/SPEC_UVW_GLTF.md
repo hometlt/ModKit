@@ -376,3 +376,11 @@ full-world preservation and product checks, not after this spatial fixture.
 Object instances preserve `presentationTint` and `presentationAnimation` from the
 one shared spatial schema; see [initial presentation](SPEC_UVW_PROFILE.md#initial-object-presentation-core-relay-0210).
 These fields are not glTF node animation channels or new gameplay state.
+
+Lattice annotations use the same referenced `objectInstance.latticeCoverage`
+and `heightfield.cliffFaces` definitions as the spatial profile. See the
+[14.10 lattice addendum](SPEC_UVW_PROFILE.md#publisher-proven-lattice-annotations-addendum-14102026).
+They stay inside the parent's `UV_world_graph` space, retaining exact cell
+indices, absolute horizontal polygons and declared source-game scope through
+spatial-to-glTF-to-spatial conversion. Do not move them into glTF mesh geometry
+or use model bounds to reconstruct them.

@@ -166,6 +166,87 @@
       "note": "native flags must refer to positions inside the same UVW space",
       "mutations": [{ "op": "set", "path": "spaces.0.layers.0.cellSize", "value": 2 }],
       "rule": "layer-within-bounds"
+    },
+    {
+      "id": "lattice/accept",
+      "expect": "accept",
+      "fixture": "uvw-lattice.uvw.json",
+      "note": "Neutral proven lattice metadata; no publisher, installation, geometry inference or renderer.",
+      "mutations": []
+    },
+    {
+      "id": "lattice/future-version",
+      "expect": "reject",
+      "fixture": "uvw-lattice.uvw.json",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "uv.version",
+          "value": "1.1"
+        }
+      ],
+      "rule": "uvw-lattice-profile-version"
+    },
+    {
+      "id": "lattice/out-of-grid",
+      "expect": "reject",
+      "fixture": "uvw-lattice.uvw.json",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "spaces.0.layers.1.cliffFaces.0.x",
+          "value": 3
+        }
+      ],
+      "rule": "uvw-lattice-cliff-cells"
+    },
+    {
+      "id": "lattice/noncanonical-cells",
+      "expect": "reject",
+      "fixture": "uvw-lattice.uvw.json",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "spaces.0.layers.1.cliffFaces",
+          "value": [
+            {
+              "x": 0,
+              "y": 1
+            },
+            {
+              "x": 2,
+              "y": 0
+            }
+          ]
+        }
+      ],
+      "rule": "uvw-lattice-cell-order"
+    },
+    {
+      "id": "lattice/unknown-field",
+      "expect": "reject",
+      "fixture": "uvw-lattice.uvw.json",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "spaces.0.layers.0.instances.1.latticeCoverage.unknown",
+          "value": true
+        }
+      ],
+      "rule": "uvw-lattice-shape"
+    },
+    {
+      "id": "lattice/missing-scope",
+      "expect": "reject",
+      "fixture": "uvw-lattice.uvw.json",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "spaces.0.layers.0.instances.1.latticeCoverage.resourceKindScope",
+          "value": ""
+        }
+      ],
+      "rule": "uvw-lattice-resource-scope"
     }
   ]
 }
