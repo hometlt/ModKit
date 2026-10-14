@@ -10,6 +10,7 @@ import { isFoundationValueType } from './uv-executable-values.ts'
  */
 
 import { classifyUvbConstant } from './uvb-constant.mjs'
+import { validateValueTypeDeclarations } from './uv-value.mjs'
 import { intrinsicKey, indexRegistry, opaqueValueType, opaqueSignature, opaqueRefusal } from './uv-contract-verifier.ts'
 export { verifyCharts } from './uv-contract-verifier.ts'
 
@@ -160,7 +161,8 @@ function verifyResultObligations(fn, bound, functions) {
 /** Path-sensitive register types for the specified UVB 1.1 core. Instructions with no admitted
  * operand rule refuse instead of inheriting whatever types happen to occupy their registers.
  */
-function verifyTypedRegisters(fn, bound, functions, major) {
+function verifyTypedRegisters(fn, bound, functions, major, declarations) {
+  const records = new Map(declarations.map(record => [record.name, record]))
   const body = fn.body
   const inputs = Array(body.length).fill(undefined)
   inputs[0] = new Map(fn.params.map((type, register) => [register, type]))
@@ -180,7 +182,40 @@ function verifyTypedRegisters(fn, bound, functions, major) {
     }
     let error
     let errorBranchState
+    if (major === 2 && instruction.field !== undefined
+      && !['record.get', 'record.set', 'record.has', 'record.clear'].includes(instruction.op))
+      return refusal(index, 'Only named record field operations may carry field')
     switch (instruction.op) {
+      case 'record.make': {
+        if (Object.keys(instruction).some(key => !['op', 'dst', 'type', 'args', 'source'].includes(key))) {
+          error = refusal(index, 'record.make has extraneous operands'); break
+        }
+        const record = records.get(instruction.type)
+        const fields = record?.fields.filter(field => !field.optional)
+        error = major === 2 && fields && instruction.args?.length === fields.length
+          && fields.every((field, at) => expect(instruction.args[at], field.type))
+          ? dst(record.name) : refusal(index, 'record.make needs the exact required fields in declaration order')
+        break
+      }
+      case 'record.get': case 'record.set': case 'record.has': case 'record.clear': {
+        if (major !== 2) {
+          error = { rule: 'type-rule-unavailable', message: `${fn.name}[${index}]: record operands require UVB 2` }; break
+        }
+        if (Object.keys(instruction).some(key => !['op', 'dst', 'a', 'field', 'source',
+          ...(instruction.op === 'record.set' ? ['b'] : [])].includes(key))) {
+          error = refusal(index, 'record operation has extraneous operands'); break
+        }
+        const record = records.get(typeAt(instruction.a))
+        const field = record?.fields.find(field => field.name === instruction.field)
+        if (major !== 2 || !field) error = refusal(index, 'record operation needs a declared record field')
+        else if (instruction.op === 'record.get') error = dst(field.type)
+        else if (instruction.op === 'record.has') error = dst('bool')
+        else if (instruction.op === 'record.clear') error = field.optional
+          ? dst(record.name) : refusal(index, 'record.clear cannot remove a required field')
+        else error = expect(instruction.b, field.type)
+          ? dst(record.name) : refusal(index, 'record.set requires the exact field type')
+        break
+      }
       case 'const':
         if (!['i64', 'fixed64', 'bool', 'strref'].includes(instruction.type)) {
           error = { rule: 'type-rule-unavailable',
@@ -422,13 +457,16 @@ function verifyTypedRegisters(fn, bound, functions, major) {
 function verifyNominalDeclarations(module, registry, bound, major) {
   const declarations = new Map()
   const registryTypes = new Map((registry.types ?? []).map(type => [type.name, type]))
+  try { validateValueTypeDeclarations(module.types ?? []) }
+  catch (error) { return { rule: 'nominal-type-mismatch', message: error.message } }
   for (const declared of module.types ?? []) {
     if (declarations.has(declared.name))
       return { rule: 'nominal-type-mismatch', message: `${declared.name} is declared twice` }
     declarations.set(declared.name, declared)
     const standard = registryTypes.get(declared.name)
-    if (standard === undefined)
+    if (standard === undefined && major === 1)
       return { rule: 'nominal-type-unresolved', message: `${declared.name} has no registry declaration` }
+    if (standard === undefined) continue // UVB 2 authored nominal identity is local to this module.
     if (major === 1 && standard.fields.some(field => field.optional === true))
       return { rule: 'nominal-optional-unrepresentable',
         message: `${declared.name} has optional fields absent from UVB 1.1 binary record declarations` }
@@ -553,6 +591,8 @@ export function verifyModule(module, registry, options = {}) {
     }
     bound.push(row)
   }
+  const nominalFailure = major === 2 ? verifyNominalDeclarations(module, registry, bound, major) : undefined
+  if (nominalFailure !== undefined) return { refusal: nominalFailure }
   const functions = new Map(module.functions.map(fn => [fn.name, fn]))
   if (functions.size !== module.functions.length)
     return { refusal: { rule: 'duplicate-function', message: `module ${module.namespace} declares a function twice` } }
@@ -608,11 +648,13 @@ export function verifyModule(module, registry, options = {}) {
     if (registerFailure !== undefined) return { refusal: registerFailure }
     const resultFailure = verifyResultObligations(fn, bound, functions)
     if (resultFailure !== undefined) return { refusal: resultFailure }
-    const typeFailure = verifyTypedRegisters(fn, bound, functions, major)
+    const typeFailure = verifyTypedRegisters(fn, bound, functions, major, module.types ?? [])
     if (typeFailure !== undefined) return { refusal: typeFailure }
   }
-  const nominalFailure = verifyNominalDeclarations(module, registry, bound, major)
-  if (nominalFailure !== undefined) return { refusal: nominalFailure }
+  if (major === 1) {
+    const nominalFailure = verifyNominalDeclarations(module, registry, bound, major)
+    if (nominalFailure !== undefined) return { refusal: nominalFailure }
+  }
   const callFailure = verifyCallDepth(functions, options.maxCallDepth)
   if (callFailure !== undefined) return { refusal: callFailure }
   return { verified: true, bound: bound.map(intrinsicKey) }

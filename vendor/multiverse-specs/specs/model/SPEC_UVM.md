@@ -186,6 +186,7 @@ migration notes.
 | `UV_animation_layers`         | document root            | Additive/override layers with bone masks                                        |
 | `KHR_animation_pointer`       | animation channel target | Channels targeting extension properties                                         |
 | `UV_game_effects`             | document root            | Particles, ribbons, forces, warps, projectors                                   |
+| `UV_game_baked_particles`     | document root            | Sprites a scripted effect system drew, per clip and frame                       |
 | `UV_game_collision`           | node                     | Collision primitives and meshes                                                 |
 | `MSFT_lod`                    | node/material            | Standard glTF LOD topology (`ids`)                                              |
 | `MODKITX_lod_selection`       | document root            | Incubating selection/hysteresis beside official topology                        |
@@ -1190,6 +1191,75 @@ The profile changes _interpretation_, not just presence. MDX emitters simulate i
 space by default while M3 emitters are bone-anchored; the same numeric parameters produce
 different motion. `modelSpace` and `boneAnchored` are separate booleans for exactly this
 reason.
+
+### 13.4 Baked particles
+
+Some effect systems are programs rather than parameter sets: a PopcornFX effect (Warcraft III
+Reforged) runs compiled scripts over particle streams, with spawners, events and samplers, and no
+fixed set of emitter properties describes it. A writer that can run such a system records what it
+drew instead: `UV_game_baked_particles` is a document-root extension holding, for each clip, the
+sprites of each frame the source system produced, sampled at a fixed rate. It is presentation
+data, not a simulation: a consumer draws the frame for the clock and never steps anything.
+
+```json
+{
+  "extensions": {
+    "UV_game_baked_particles": {
+      "spaceNode": 2,
+      "frameRate": 15,
+      "batches": [
+        { "name": "fire", "material": 4, "orientation": "camera", "atlas": [4, 4] }
+      ],
+      "tracks": [
+        { "sequence": 0, "batch": 0, "loop": true, "frames": 11, "sprites": 12 }
+      ]
+    }
+  }
+}
+```
+
+- `spaceNode` names the node whose world transform maps sprite positions and vectors; a writer
+  that materialises a source frame (`UV_units`, up axis) names its innermost frame node, so
+  sprites stay in source units and axes. Without it sprites are in scene space.
+- A **batch** is one draw: a glTF `material` (texture, blend, alpha mode), an `orientation`
+  and the texture's `atlas` grid `[columns, rows]` (default `[1, 1]`), cells counted row by row
+  from the image's top left.
+- A **track** holds one batch's sprites over one clip: `sequence` is the clip's
+  `sourceSequenceIndex` in `UV_game_animation_clips` (a clip without motion has no glTF animation
+  but keeps its sequence), the clock the clip's other sequence tracks use.
+  `frames` is a `SCALAR` `UNSIGNED_INT` accessor of `F + 1` ascending sprite offsets: frame `f`
+  covers the clock `[f / frameRate, (f + 1) / frameRate)` and holds the sprites
+  `frames[f] .. frames[f + 1] - 1`. `sprites` is a `SCALAR` `FLOAT` accessor of 17 values per
+  sprite: position (3), half width and half height (2), rotation in radians (1), colour RGBA
+  multiplying the texture (4), atlas cell (1), axis (3), normal (3).
+- Past the last frame a `loop` track starts again at frame 0; any other track draws nothing.
+  A clip without a track of a batch draws nothing of it.
+
+A sprite is a quad around its position with a side vector `S` and an up vector `U`:
+
+| `orientation` | `U`                                                         | `S`                                     |
+| ------------- | ----------------------------------------------------------- | --------------------------------------- |
+| `camera`      | camera up × half height, turned by rotation about the view  | camera right × half width, turned alike |
+| `axis`        | the axis itself (the half extent along the card)            | unit(axis × to-camera) × half width     |
+| `plane`       | unit(axis) × half height, turned by rotation about normal   | unit(U × normal) × half width            |
+
+Corners are `position ± S ± U`; texture coordinates span the atlas cell with `v` growing from
+`U` toward `-U`.
+
+A `ribbon` batch draws camera-facing strips instead of quads. A frame's sprites are the points of
+its strips in order along each strip; consecutive sprites with the same strip number (`axis` x)
+make one strip. A point carries its position, its half width (half width), its texture coordinate
+along the strip `u` (the rotation value), colour and atlas cell; half height, `axis` y and z and
+`normal` are unused. At each point the strip's edge is `position ± S`, with
+`S = unit(T × to-camera) × half width` and `T` the direction from the previous point to the next
+(from or to the point itself at the strip's ends). Between consecutive points the consumer draws
+one quad from their edges, so neighbouring quads share their edge. `v` runs from 0 on the `+S`
+edge to 1 on the `-S` edge; with a `[1, 1]` atlas `u` is the texture coordinate as given (the
+texture repeats along the strip), with more cells `u` in 0..1 spans the cell of the quad's first
+point. A strip of one point draws nothing. A consumer bounds the sprites it draws per frame regardless of the track; a
+writer bounds what it bakes and records thinned frames or dropped sprites in `UV_provenance`.
+Baked particles never require the extension: a consumer that ignores it draws the model without
+them, so writers **MUST NOT** list it in `extensionsRequired`.
 
 ## 14. Collision and physics
 

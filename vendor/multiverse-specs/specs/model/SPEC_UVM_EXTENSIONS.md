@@ -39,6 +39,7 @@ consumer that ignores it loses.
 | [`UV_animation_layers`](#uv_animation_layers)                               | root                     | All clips treated as full-body overrides                              |
 | [`KHR_animation_pointer`](#khr_animation_pointer)                           | animation channel target | Static authored values used (see Khronos registry)                    |
 | [`UV_game_effects`](#uv_game_effects)                                       | root                     | No particles, ribbons or projectors                                   |
+| [`UV_game_baked_particles`](#uv_game_baked_particles)                       | root                     | No baked sprites                                                      |
 | [`UV_game_collision`](#uv_game_collision)                                   | node                     | No collision; consumer may fall back to mesh bounds                   |
 | `MSFT_lod` (external Microsoft extension)                                   | node/material            | Highest detail only; lower LODs ignored                               |
 | [`MODKITX_lod_selection`](#incubating-lod-selection-batching-and-impostors) | root                     | Standard LOD chain remains; custom selection policy unavailable       |
@@ -591,6 +592,24 @@ Collapsing the two into one flag produces visibly wrong motion for one of the tw
 `lifetimeDecayTo`), `attenuationDistance`, `active`, `layer`, `flags`.
 
 ---
+
+## `UV_game_baked_particles`
+
+Attaches to: document root. Semantics: [SPEC_UVM §13.4](SPEC_UVM.md#134-baked-particles).
+Schema: [`uvm.baked-particles.schema.json`](schema/uvm.baked-particles.schema.json).
+
+| Property    | Type     | Required | Default | Description                                               |
+| ----------- | -------- | -------- | ------- | --------------------------------------------------------- |
+| `spaceNode` | integer  | no       | —       | Node whose world transform maps sprite positions          |
+| `frameRate` | number   | yes      | —       | Frames per second of every track, > 0                     |
+| `batches`   | object[] | yes      | —       | `{ name?, material, orientation, atlas? }`                |
+| `tracks`    | object[] | yes      | —       | `{ sequence, batch, loop?, frames, sprites }` (accessors)  |
+
+`orientation` is `camera`, `axis`, `plane` or `ribbon` (points of camera-facing strips, strip
+number in `axis` x, `u` along the strip in the rotation value); `atlas` is `[columns, rows]`, default `[1, 1]`.
+`frames` is a `SCALAR` `UNSIGNED_INT` accessor of frame-count + 1 sprite offsets, `sprites` a
+`SCALAR` `FLOAT` accessor of 17 values per sprite: position, half size, rotation, colour, atlas
+cell, axis, normal.
 
 ## `UV_game_collision`
 

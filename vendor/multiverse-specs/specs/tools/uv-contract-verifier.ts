@@ -5,6 +5,11 @@ import eventRegistry from '../runtime/events.v1.json' with { type: 'json' }
 import { scenarioVersion } from './uv-scenario-version.ts'
 
 interface Parameter { readonly type: string; readonly optional?: boolean }
+/** Wire declaration shared by the compiler and verifier; value bytes remain owned by uv-value. */
+export interface NominalRecordDeclaration {
+  readonly name: string
+  readonly fields: readonly { readonly name: string; readonly type: string; readonly optional?: boolean }[]
+}
 export interface Intrinsic {
   readonly id: string; readonly version: number; readonly params: readonly Parameter[]
   readonly returns: string; readonly capability: string

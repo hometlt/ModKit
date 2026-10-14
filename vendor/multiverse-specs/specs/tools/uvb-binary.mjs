@@ -37,8 +37,10 @@
  * Binary 2.0 retains the envelope and section order, uses version bytes 02 00, appends
  * one 0/1 optionality byte to each record field in section 4, and appends value.box/unbox
  * and result.value-or-false/list.empty/option.unwrap-or-branch/fixed.parse-decimal/
- * result.value-or/pos.make/value.expect/option.none/option.some/result.expect to the
- * version-2-only opcode table.
+ * result.value-or/pos.make/value.expect/option.none/option.some/result.expect and
+ * record.make/has/clear to the version-2-only opcode table. Version 2 also appends
+ * flag bit 10: `field` UTF-8 string, after args. record.get/set retain opcodes 6/7;
+ * their named-field operands require version 2. Version 1 retains ten flags.
  *
  * Dependency-free and browser-portable: the identity digest uses Web Crypto.
  */
@@ -58,9 +60,10 @@ export const OPCODES = [
 ]
 const V2_OPCODES = [...OPCODES, 'value.box', 'value.unbox', 'result.value-or-false',
   'list.empty', 'option.unwrap-or-branch', 'fixed.parse-decimal', 'result.value-or', 'pos.make',
-  'value.expect', 'option.none', 'option.some', 'result.expect']
+  'value.expect', 'option.none', 'option.some', 'result.expect', 'record.make', 'record.has', 'record.clear']
 
 const FIELDS = ['dst', 'a', 'b', 'value', 'type', 'target', 'budget', 'function', 'intrinsicIndex', 'args']
+const V2_FIELDS = [...FIELDS, 'field']
 const MAGIC = [0x55, 0x56, 0x42, 0x00]
 const BUDGET_MODES = ['typed-error']
 
@@ -180,7 +183,8 @@ const encodeInstruction = (w, instruction, sourceMap, functionIndex, instruction
   if (opcode < 0) throw new Error(`unknown op ${instruction.op}`)
   w.u8(opcode)
   let flags = 0
-  FIELDS.forEach((field, index) => {
+  if (major === 1 && instruction.field !== undefined) throw new Error('record fields require UVB 2.0')
+  ;(major === 2 ? V2_FIELDS : FIELDS).forEach((field, index) => {
     if (instruction[field] !== undefined) flags |= 1 << index
   })
   w.u16(flags)
@@ -201,6 +205,7 @@ const encodeInstruction = (w, instruction, sourceMap, functionIndex, instruction
     w.u32(instruction.args.length)
     for (const arg of instruction.args) w.u32(arg)
   }
+  if (instruction.field !== undefined) w.string(instruction.field)
   if (instruction.source !== undefined) {
     sourceMap.push({ functionIndex, instructionIndex, file: instruction.source.file, line: instruction.source.line })
   }
@@ -304,7 +309,7 @@ const decodeInstruction = (r, major) => {
   const flags = r.u16()
   // unused flag bits must be zero: otherwise two different byte sequences would decode to one
   // module and the identity digest would stop being an identity
-  if (flags >= 1 << FIELDS.length) throw new Error(`unknown field flags ${flags}`)
+  if (flags >= 1 << (major === 2 ? V2_FIELDS : FIELDS).length) throw new Error(`unknown field flags ${flags}`)
   const has = index => (flags & (1 << index)) !== 0
   if (has(0)) instruction.dst = r.u32()
   if (has(1)) instruction.a = r.u32()
@@ -324,6 +329,7 @@ const decodeInstruction = (r, major) => {
     instruction.args = []
     for (let i = 0; i < n; i += 1) instruction.args.push(r.u32())
   }
+  if (has(10)) instruction.field = r.string()
   return instruction
 }
 

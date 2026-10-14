@@ -396,6 +396,26 @@
       "note": "a colour key matches stored bytes, so a key stated as linear floats is refused rather than rounded"
     },
     {
+      "document": "model/examples/uv_game_baked_particles.json",
+      "pointer": "/fire",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.baked-particles.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "model/examples/uv_game_baked_particles.json",
+      "pointer": "/noRate",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.baked-particles.schema.json",
+      "expect": "invalid",
+      "note": "frames are placed on the clock by the frame rate, so a bake without one is refused"
+    },
+    {
+      "document": "model/examples/uv_game_baked_particles.json",
+      "pointer": "/unknownOrientation",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.baked-particles.schema.json",
+      "expect": "invalid",
+      "note": "a sprite orientation outside camera, axis, plane and ribbon has no stated corners"
+    },
+    {
       "document": "model/examples/siege_tank.uvm.gltf",
       "pointer": "/animations/1/extensions/UV_game_animation_clips",
       "schemaId": "https://modkitx.org/uvm/1.0/uvm.animation.schema.json#clips",
@@ -2085,6 +2105,11 @@
     {"id": "world-camera-orthographic-no-fov", "document": "model/fixtures/uvm-camera-cases.json", "pointer": "/orthographicPreset", "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/camera", "expect": "invalid", "mutations": [{"op":"set","path":"fieldOfViewDegrees","value":70}]},
     {"id": "gltf-camera-use-spatial-owner", "document": "world/fixtures/uvw-gltf-spatial.uvw.gltf", "pointer": "", "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json", "expect": "valid", "mutations": [{"op":"set","path":"extensions.UV_world_graph.spaces.0.camera","value":{"projection":"orthographic","azimuthDegrees":45,"elevationDegrees":30}}]},
     {"id": "gltf-camera-invalid-domain", "document": "world/fixtures/uvw-gltf-spatial.uvw.gltf", "pointer": "", "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json", "expect": "invalid", "mutations": [{"op":"set","path":"extensions.UV_world_graph.spaces.0.camera","value":{"projection":"perspective","drawDistance":-1}}]},
-    {"id": "spatial-camera-preserved", "document": "world/fixtures/uvw-players.uvw.json", "pointer": "", "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json", "expect": "valid", "mutations": [{"op":"set","path":"spaces.0.camera","value":{"projection":"perspective","fieldOfViewDegrees":70}}]}
+    {"id": "spatial-camera-preserved", "document": "world/fixtures/uvw-players.uvw.json", "pointer": "", "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json", "expect": "valid", "mutations": [{"op":"set","path":"spaces.0.camera","value":{"projection":"perspective","fieldOfViewDegrees":70}}]},
+    {"id": "transient-record-operands", "document": "behavior/fixtures/uvb-module-transient-record.uvb.json", "pointer": "", "schemaId": "https://modkitx.org/uvb/2.0/uvb.module.schema.json", "expect": "valid"},
+    {"id": "record-make-needs-args", "document": "behavior/fixtures/uvb-module-transient-record.uvb.json", "pointer": "", "schemaId": "https://modkitx.org/uvb/2.0/uvb.module.schema.json", "expect": "invalid", "mutations": [{"op":"set","path":"functions.0.body.1","value":{"op":"record.make","dst":1,"type":"Command"}}]},
+    {"id": "record-get-needs-field", "document": "behavior/fixtures/uvb-module-transient-record.uvb.json", "pointer": "", "schemaId": "https://modkitx.org/uvb/2.0/uvb.module.schema.json", "expect": "invalid", "mutations": [{"op":"set","path":"functions.0.body.5","value":{"op":"record.get","dst":5,"a":4}}]},
+    {"id": "record-set-needs-value", "document": "behavior/fixtures/uvb-module-transient-record.uvb.json", "pointer": "", "schemaId": "https://modkitx.org/uvb/2.0/uvb.module.schema.json", "expect": "invalid", "mutations": [{"op":"set","path":"functions.0.body.4","value":{"op":"record.set","dst":4,"a":1,"field":"label"}}]},
+    {"id": "record-field-name-domain", "document": "behavior/fixtures/uvb-module-transient-record.uvb.json", "pointer": "", "schemaId": "https://modkitx.org/uvb/2.0/uvb.module.schema.json", "expect": "invalid", "mutations": [{"op":"set","path":"functions.0.body.2.field","value":"../label"}]}
   ]
 }

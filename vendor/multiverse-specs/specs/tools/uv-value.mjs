@@ -50,6 +50,11 @@ function declarationsByName(declarations) {
   return byName
 }
 
+/** Validate declarations through the canonical value type owner, without manufacturing values. */
+export function validateValueTypeDeclarations(declarations) {
+  declarationsByName(declarations)
+}
+
 function concreteType(name, declarations, depth = 0) {
   if (typeof name !== 'string' || name.length > 128 || depth > MAX_DEPTH)
     throw new RangeError('value type exceeds its grammar or depth budget')

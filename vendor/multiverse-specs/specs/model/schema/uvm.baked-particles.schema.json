@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modkitx.org/uvm/1.0/uvm.baked-particles.schema.json",
+  "title": "UV_game_baked_particles",
+  "description": "Sprites a scripted effect system drew, per clip, batch and frame (SPEC_UVM 13.4). Presentation data: consumers draw the frame for the clock and never simulate.",
+  "type": "object",
+  "required": [
+    "frameRate",
+    "batches",
+    "tracks"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "spaceNode": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "frameRate": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "batches": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "material",
+          "orientation"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "material": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "orientation": {
+            "enum": [
+              "camera",
+              "axis",
+              "plane",
+              "ribbon"
+            ]
+          },
+          "atlas": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "minItems": 2,
+            "maxItems": 2
+          }
+        }
+      }
+    },
+    "tracks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "sequence",
+          "batch",
+          "frames",
+          "sprites"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "sequence": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "batch": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "loop": {
+            "type": "boolean",
+            "default": false
+          },
+          "frames": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sprites": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    }
+  }
+}

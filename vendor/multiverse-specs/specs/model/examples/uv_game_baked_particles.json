@@ -1,0 +1,45 @@
+{
+  "fire": {
+    "spaceNode": 2,
+    "frameRate": 15,
+    "batches": [
+      {
+        "name": "fire",
+        "material": 4,
+        "orientation": "camera",
+        "atlas": [
+          4,
+          4
+        ]
+      }
+    ],
+    "tracks": [
+      {
+        "sequence": 0,
+        "batch": 0,
+        "loop": true,
+        "frames": 11,
+        "sprites": 12
+      }
+    ]
+  },
+  "noRate": {
+    "batches": [
+      {
+        "material": 4,
+        "orientation": "camera"
+      }
+    ],
+    "tracks": []
+  },
+  "unknownOrientation": {
+    "frameRate": 15,
+    "batches": [
+      {
+        "material": 4,
+        "orientation": "sphere"
+      }
+    ],
+    "tracks": []
+  }
+}

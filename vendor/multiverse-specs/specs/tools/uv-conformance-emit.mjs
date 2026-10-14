@@ -258,6 +258,26 @@ write('conformance', 'schema-assertions.json', {
       note: 'a colour key matches stored bytes, so a key stated as linear floats is refused rather than rounded',
     },
     {
+      document: 'model/examples/uv_game_baked_particles.json',
+      pointer: '/fire',
+      schemaId: 'https://modkitx.org/uvm/1.0/uvm.baked-particles.schema.json',
+      expect: 'valid',
+    },
+    {
+      document: 'model/examples/uv_game_baked_particles.json',
+      pointer: '/noRate',
+      schemaId: 'https://modkitx.org/uvm/1.0/uvm.baked-particles.schema.json',
+      expect: 'invalid',
+      note: 'frames are placed on the clock by the frame rate, so a bake without one is refused',
+    },
+    {
+      document: 'model/examples/uv_game_baked_particles.json',
+      pointer: '/unknownOrientation',
+      schemaId: 'https://modkitx.org/uvm/1.0/uvm.baked-particles.schema.json',
+      expect: 'invalid',
+      note: 'a sprite orientation outside camera, axis, plane and ribbon has no stated corners',
+    },
+    {
       document: 'model/examples/siege_tank.uvm.gltf',
       pointer: '/animations/1/extensions/UV_game_animation_clips',
       schemaId: 'https://modkitx.org/uvm/1.0/uvm.animation.schema.json#clips',

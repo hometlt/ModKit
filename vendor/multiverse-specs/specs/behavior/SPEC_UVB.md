@@ -111,10 +111,19 @@ version, never a fix.
   Registry records with optional fields (`Filter`, `OrderInfo`) cannot be represented faithfully
   by this type section and refuse verification. Their presence semantics require a versioned
   type-table amendment; this does not alter frozen 1.1 bytes.
+- The executable kernel retains each module's admitted type table with its functions;
+  it does not validate and discard section 4. Registered names, field order, concrete
+  types and optionality must match the intrinsic registry even for unused declarations.
+  Rust declarations are generated from that registry by `runtime/kernel/generate-types.mjs`;
+  `--check` is mandatory in the foundation gate. A `pos.make` instruction requires a
+  captured `Pos` declaration even when the function's parameters and return are primitive.
+  This is independent kernel admission; typed transient record operations are specified
+  in AMENDMENT_TYPED_VALUE, while record boxing/State remain unadmitted.
 - Binary 2.0 uses version bytes `02 00`, appends one 0/1 optionality byte per
   record field, and appends `value.box`/`value.unbox`,
   `result.value-or-false`, `list.empty`, `option.unwrap-or-branch`, and
-  `fixed.parse-decimal`, `result.value-or`, `pos.make`, and `value.expect`
+  `fixed.parse-decimal`, `result.value-or`, `pos.make`, `value.expect`, and
+  `record.make`/`record.has`/`record.clear`
   to its own opcode table. `option.unwrap-or-branch a,dst,target` takes
   `ref<K>?`; the fall-through writes `ref<K>` to `dst`, while the missing
   branch writes nothing. The current kernel admits `K=def` only. Its
@@ -189,7 +198,8 @@ An invalid module refuses composition naming function, instruction and — via t
 optional source map — the Luau projection line.
 The current reference verifier checks definite initialization, path-sensitive types for
 `const`/`move`, calls, return, branches, arithmetic, comparisons, boolean logic, list reads and
-result handling. It refuses unadmitted operand rules such as `list.set`, `record.set` and
+result handling and the UVB 2 transient named-field record operations. It refuses
+unadmitted operand rules such as `list.set` and
 `result.err`; recursive calls refuse until the VM has bounded call frames. Acyclic internal
 calls have a statically computed longest path, optionally capped by `maxCallDepth`. The
 admitted Rust foundation VM executes acyclic calls and structured `loop` headers with

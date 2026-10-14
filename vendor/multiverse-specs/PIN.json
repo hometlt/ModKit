@@ -3,16 +3,16 @@
   "schemaVersion": "multiverse-specs-pin-1",
   "source": {
     "repository": "multiverse (sibling repository)",
-    "commit": "f55ba529412ea4b8720c028a2c0f2071467e04ea",
-    "subject": "Define source frame qualification boundaries and register portable camera contracts",
-    "committedOn": "2026-10-02T11:44:44+04:00"
+    "commit": "ac66490c11d14bc452f773c54a88c38b0d9d4152",
+    "subject": "specs(uvm): ribbon batches of baked particles draw camera-facing strips",
+    "committedOn": "2026-10-09T08:23:52+04:00"
   },
   "generator": "scripts/specs-pin.mjs",
   "generatedFrom": "git objects, not the sibling working tree",
   "prefix": "specs/",
   "counts": {
-    "files": 290,
-    "bytes": 1998411
+    "files": 298,
+    "bytes": 2026807
   },
   "files": [
     {
@@ -27,13 +27,13 @@
     },
     {
       "path": "specs/behavior/AMENDMENT_TYPED_VALUE.md",
-      "bytes": 16808,
-      "digest": "sha256:e78259b6127ee0f2bbf069c8695588a1b053d3f66203ca891f71772906b2e2fc"
+      "bytes": 20307,
+      "digest": "sha256:c03218291220f1b1d3681814c1fe47962f03f4c700c351181af43ce66869c456"
     },
     {
       "path": "specs/behavior/SPEC_UVB.md",
-      "bytes": 13485,
-      "digest": "sha256:4e1d689330e9f700ea4c4bd907b1c76b8dd5f4f0e47f87ba77883ab3a9857f7a"
+      "bytes": 14260,
+      "digest": "sha256:806bbba37405800dad520f46f215155d636cc060cfa9793dc36105fc2312912b"
     },
     {
       "path": "specs/behavior/fixtures/invalid/float-op.uvb.json",
@@ -61,6 +61,11 @@
       "digest": "sha256:3373a66c160ae4e6b021786e9d463f2019863540d45c9cc9bb4360ace7afa39b"
     },
     {
+      "path": "specs/behavior/fixtures/uvb-module-nominal-table.uvb",
+      "bytes": 641,
+      "digest": "sha256:663310e9f347b35bd01c138ef9d034a6b9267bac8afccc1d805d19a4aee86315"
+    },
+    {
       "path": "specs/behavior/fixtures/uvb-module-nullable-entity.uvb.json",
       "bytes": 2541,
       "digest": "sha256:a5994e3fdc1176e156ca08426b856e0eb7ad9d875427afd705563790e03b6b6d"
@@ -74,6 +79,11 @@
       "path": "specs/behavior/fixtures/uvb-module-result-expect.uvb.json",
       "bytes": 934,
       "digest": "sha256:0eef73ff6634aa0f6fbb5f3eb61786f9201a8f351127ad0ceffccd9aec6db322"
+    },
+    {
+      "path": "specs/behavior/fixtures/uvb-module-transient-record.uvb.json",
+      "bytes": 1014,
+      "digest": "sha256:0d21fd0ec9aff2043768b975828c7a3b3fbcf235b124d7495ff6fe847ff3e8fb"
     },
     {
       "path": "specs/behavior/fixtures/uvb-module-typed-value.uvb.json",
@@ -91,14 +101,29 @@
       "digest": "sha256:c605ff524bfd0422c1c855a8f0c076bbb7bc5be0b2045509928c6806a5b07f2d"
     },
     {
+      "path": "specs/behavior/fixtures/uvb-record-private-equality.uvb",
+      "bytes": 209,
+      "digest": "sha256:75d107f7a8dd856fe7a0846e0d793280be41ee681c3f2ec16e72a5ddd8f559b4"
+    },
+    {
+      "path": "specs/behavior/fixtures/uvb-record-scope-0.uvb",
+      "bytes": 219,
+      "digest": "sha256:c9777d5bb8588da4b255a423ff054aa34a0b53c2959d709028686ec6212d2014"
+    },
+    {
+      "path": "specs/behavior/fixtures/uvb-record-scope-1.uvb",
+      "bytes": 179,
+      "digest": "sha256:b95a3200b7bdf8066a37ef51022da74706816844d62f99a68a1deb6e041d7815"
+    },
+    {
       "path": "specs/behavior/schema/uvb.module.v1.schema.json",
       "bytes": 10590,
       "digest": "sha256:8a3de5b2f23f99e56f1fa31a5cd731fa75d26e834a7dea6ad9aaa28411082079"
     },
     {
       "path": "specs/behavior/schema/uvb.module.v2.schema.json",
-      "bytes": 14362,
-      "digest": "sha256:7380c0eacb7ee1ca7d8ff7c8d45da035c536cf01453b792f12cce820297d1bcf"
+      "bytes": 15589,
+      "digest": "sha256:59723a94f6b33708ea2d347523813faf9f4e843ecdda2cf2a06da13aecd92ea4"
     },
     {
       "path": "specs/campaign/SPEC_UVC.md",
@@ -157,8 +182,8 @@
     },
     {
       "path": "specs/conformance/schema-assertions.json",
-      "bytes": 97787,
-      "digest": "sha256:9946daca8d0670144bb1fba9457530d7e4b0bfb8a382289e67701238089d405d"
+      "bytes": 100093,
+      "digest": "sha256:82dc39d0476dd289669b56f73f30e81fd394cf02b3c9917938116cea6824d9ab"
     },
     {
       "path": "specs/conformance/state/vectors.json",
@@ -337,8 +362,8 @@
     },
     {
       "path": "specs/model/SPEC_UVM.md",
-      "bytes": 82761,
-      "digest": "sha256:5bdd38e74e3d543f3452bd206214ca34b1411f1723719b73e5ce03cbe8d0aa4b"
+      "bytes": 87304,
+      "digest": "sha256:5a65300b4108ab26ec5c3e3391a39045783bd800936a61e301d60096784bf850"
     },
     {
       "path": "specs/model/SPEC_UVM_CONVERSION.md",
@@ -347,13 +372,18 @@
     },
     {
       "path": "specs/model/SPEC_UVM_EXTENSIONS.md",
-      "bytes": 66925,
-      "digest": "sha256:ab7f7a2398884de6fe68988fe256cceba4b678676a7948683a225a77d14f64e6"
+      "bytes": 68386,
+      "digest": "sha256:456669942f0b47cd17d81bc9fda860d3a332731911b4eba87a60bba765d4981b"
     },
     {
       "path": "specs/model/examples/siege_tank.uvm.gltf",
       "bytes": 21798,
       "digest": "sha256:493470b8c6d42cb3eeae8ad32798261af38b16f6f99159715aea397e55d045ff"
+    },
+    {
+      "path": "specs/model/examples/uv_game_baked_particles.json",
+      "bytes": 677,
+      "digest": "sha256:b3160c342fa7182925da22d1055f89927a83a4d77cd2047c8d7dad13e71a301c"
     },
     {
       "path": "specs/model/examples/uv_texture_color_key.json",
@@ -414,6 +444,11 @@
       "path": "specs/model/schema/uvm.asset.schema.json",
       "bytes": 3577,
       "digest": "sha256:7f3577a4fea3c4e8dce6a013b29eeecf60fc1506518419cfabf5601d33bfa9fd"
+    },
+    {
+      "path": "specs/model/schema/uvm.baked-particles.schema.json",
+      "bytes": 2171,
+      "digest": "sha256:2d316163266611f224457ada0034a1758471bf50aa1b4ad1d812257197ce094e"
     },
     {
       "path": "specs/model/schema/uvm.batching.schema.json",
@@ -607,8 +642,13 @@
     },
     {
       "path": "specs/runtime/SPEC_PLAYER_RESOURCES.md",
-      "bytes": 3651,
-      "digest": "sha256:de1e6b926b9f3c34e89a0191c515f1ec1b61139a159557f82ff72249aa0633bc"
+      "bytes": 3829,
+      "digest": "sha256:cb8fdd5340983a92c637b134a3246f8aa3a2098a13097013b446b35aaea5a3b4"
+    },
+    {
+      "path": "specs/runtime/SPEC_PLAYER_TECHNOLOGIES.md",
+      "bytes": 3448,
+      "digest": "sha256:ecc68376fcd5645e9600e3ad71854e62f3ac2dd7feaa1c2fa400edf970aed225"
     },
     {
       "path": "specs/runtime/events.v1.json",
@@ -907,8 +947,8 @@
     },
     {
       "path": "specs/tools/uv-conformance-emit.mjs",
-      "bytes": 27903,
-      "digest": "sha256:1038ad154fc258ca46e74e8b18b44fd425f5b95aa13a6875cc4aff6a8e1ddfcf"
+      "bytes": 28724,
+      "digest": "sha256:c2fde00ef488e149155fc61fbfd9e6f8557dc0bf1d9b5ed554faec12713b6515"
     },
     {
       "path": "specs/tools/uv-conformance.mjs",
@@ -917,8 +957,8 @@
     },
     {
       "path": "specs/tools/uv-contract-verifier.ts",
-      "bytes": 21990,
-      "digest": "sha256:a60878ee8010b8cc580c40f55411cae1a67ca4eb2bf4820e4a4b92263c338d61"
+      "bytes": 22267,
+      "digest": "sha256:3d55638d6f7aa54d588caabb83aa8f9eb90d1c8a59b318ea279b45b90dbd0832"
     },
     {
       "path": "specs/tools/uv-coordinates.test.mjs",
@@ -927,8 +967,8 @@
     },
     {
       "path": "specs/tools/uv-executable-profile.ts",
-      "bytes": 4729,
-      "digest": "sha256:cf48efe858318640bea5939562c5b5b7f7e8d3e1978cc91b842da33c78ff0a66"
+      "bytes": 5861,
+      "digest": "sha256:e84a5037fb6e6bc8a85d1c252bb1893791bf2c53bb9afd66c9949151adc30d84"
     },
     {
       "path": "specs/tools/uv-executable-values.ts",
@@ -1012,13 +1052,13 @@
     },
     {
       "path": "specs/tools/uv-value.d.mts",
-      "bytes": 327,
-      "digest": "sha256:27f759b184f8ca763ae331a658a9d8cfd0b3e70c0ca60ceaa5efbba2b853142f"
+      "bytes": 413,
+      "digest": "sha256:0d342b95afec1ef9179e93b6310ab76712a3a63dec1f0781ebefc3cc7283d057"
     },
     {
       "path": "specs/tools/uv-value.mjs",
-      "bytes": 10399,
-      "digest": "sha256:528d543651987fd250d29d09fd2a9d928302160599c1ee3685d690c61e5adf46"
+      "bytes": 10598,
+      "digest": "sha256:729a8c19b0628cc7db5b9037c9e7bd146df2f07e431f1fe68439cf435741fb20"
     },
     {
       "path": "specs/tools/uv-value.test.mjs",
@@ -1032,8 +1072,8 @@
     },
     {
       "path": "specs/tools/uv-verify.mjs",
-      "bytes": 31203,
-      "digest": "sha256:59807c0fd5b210891ec1e4f7fff4d7e56a756d04b8b5faaa040b0cf4ec0028d8"
+      "bytes": 33968,
+      "digest": "sha256:7ca7ba21985d99a960924c60c88f02e85b1791b07f086e4b78d389f47b9bf8ee"
     },
     {
       "path": "specs/tools/uv-world-instances.mjs",
@@ -1052,8 +1092,8 @@
     },
     {
       "path": "specs/tools/uvb-binary.mjs",
-      "bytes": 17096,
-      "digest": "sha256:4035722d48e47f19df18f452de043e951ff7f84d400c0db430d62c0d7689ab5d"
+      "bytes": 17665,
+      "digest": "sha256:a529e58d3b1e89190d33063a154d09b17b9b7993e69fd8c6d407eac3cf1629f0"
     },
     {
       "path": "specs/tools/uvb-constant.mjs",

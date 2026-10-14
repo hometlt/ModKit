@@ -1,0 +1,24 @@
+{
+  "uv": { "format": "UVB", "version": "2.0" },
+  "namespace": "example.transient-record",
+  "requires": { "intrinsics": [] },
+  "types": [{ "name": "Command", "fields": [
+    { "name": "index", "type": "i64" },
+    { "name": "label", "type": "strref", "optional": true }
+  ] }],
+  "functions": [{
+    "name": "run", "params": [], "returns": "i64", "registers": 8,
+    "effects": { "reads": [], "writes": [] },
+    "body": [
+      { "op": "const", "dst": 0, "type": "i64", "value": 7 },
+      { "op": "record.make", "dst": 1, "type": "Command", "args": [0] },
+      { "op": "record.has", "dst": 2, "a": 1, "field": "label" },
+      { "op": "const", "dst": 3, "type": "strref", "value": "move" },
+      { "op": "record.set", "dst": 4, "a": 1, "b": 3, "field": "label" },
+      { "op": "record.get", "dst": 5, "a": 4, "field": "label" },
+      { "op": "record.clear", "dst": 6, "a": 4, "field": "label" },
+      { "op": "record.get", "dst": 7, "a": 6, "field": "index" },
+      { "op": "ret", "a": 7 }
+    ]
+  }]
+}

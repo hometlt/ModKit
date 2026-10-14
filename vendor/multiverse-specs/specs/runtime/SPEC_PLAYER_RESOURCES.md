@@ -23,8 +23,8 @@ not a guessed game-specific policy in this primitive.
 Set/add return `Ok(true)` when applied, including a successful unchanged value.
 An undeclared player or invalid resource name returns `Err("invalid-reference")`
 without mutation. Reads with such inputs trap with invalid-reference. Overflow,
-instruction fuel, snapshot-size failure and the global budget of 4096 nonzero
-accounts trap and roll back the whole execution transaction. Existing entries
+instruction fuel, snapshot-size failure and the aggregate budget of 4096 nonzero
+accounts plus authored technology flags trap and roll back the whole execution transaction. Existing entries
 can be changed or removed at that account limit. Explicit `mv.require(result)`
 statements provide the same checked error/rollback semantics as other writes.
 A behavior can implement an atomic transfer by checking its policy, then issuing
@@ -37,8 +37,10 @@ Nothing here changes a player's authenticated account or control binding.
 
 ## Save and admission
 
-Profiles requiring any of these operations emit the existing public subsystem
-name `players`, section version 1. Its private payload is `u32 count`, followed by
+Profiles requiring these operations without technology operations emit the public
+subsystem name `players`, section version 1. Profiles requiring technologies use
+the same table in version 2, followed by their flags (SPEC_PLAYER_TECHNOLOGIES.md).
+The resource table is `u32 count`, followed by
 rows of `u64 player ID`, `u32 UTF-8 name length`, name bytes and `i64 Q32.32 amount`.
 Rows are strictly sorted by player ID then UTF-8 name; duplicates, zero entries,
 unknown players, invalid names and excess counts are refused atomically even when
@@ -54,4 +56,4 @@ the changed WASM digest requires the usual matching package hop.
 
 This is an executed generic account primitive. It does not establish native SC2
 or Warzone resource semantics, player payments for assembly jobs, production,
-technologies, alliances, automatic regeneration or a complete economy.
+native technology rules, alliances, automatic regeneration or a complete economy.

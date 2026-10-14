@@ -98,6 +98,12 @@ list/record operations run only after a successful unbox.
 
 The module carries a canonical type table (including nominal record fields) under its identity
 digest. Two structurally equal records with different nominal names remain different types.
+The current executable kernel retains the admitted module table alongside its functions.
+For its existing registered names, the complete declaration (including unused records)
+must match the single intrinsic registry. Rust's checked declarations are generated, not
+another hand-maintained schema. The transient record amendment below admits module-local
+identities and typed construction/access. Record boxing, public record arguments/results and
+record State remain outside executable admission; native ability/order semantics are separate.
 Binary 2.0 retains the UVB envelope and section ordering, changes the two version bytes to
 `02 00`, and appends one `u8` per section-4 record field after its name and type: `00` means
 required, `01` means optional, all other values refuse. It appends `value.box` and
@@ -108,8 +114,48 @@ have runtime semantics for bool/i64/fixed64/strref and the five concrete referen
 table must encode record-field optionality and value presence. UVB 1.1 stores only
 field name/type, so registry records such as `Filter` and `OrderInfo` cannot be admitted through
 that binary even when their names and required field types match. Absent optional fields are
-distinct from a present default value; the VM and canonical State encoding must preserve that
-distinction across calls, snapshots and restore.
+distinct from a present default value. The transient VM preserves that distinction across
+internal calls; persistent record State and its snapshot encoding remain unadmitted.
+
+### Typed transient nominal records (02.10)
+
+UVB 2 admits declarations from the canonical Lua AST type-alias nodes. Registered names
+are reserved and must match the intrinsic registry; authored names are module-local.
+Equal names and layouts in two modules do not establish assignability. Functions retain
+their immutable type table, and the independent Rust boundary checks the table witness
+before a record crosses a call. Different modules may share registry-defined nominal types
+only through their identical canonical declarations. No global authored type interning.
+
+All five operations reuse the existing canonical TypedValue codec and declaration order:
+
+| Operation | Exact operands | Result |
+| --- | --- | --- |
+| `record.make` (opcode 43) | `dst,type,args` | Declared nominal type; args supply all required fields in declaration order, optional fields start absent. |
+| `record.get` (opcode 6) | `dst,a,field` | Exact declared field type; absent optional field traps with `invalid-reference`. |
+| `record.set` (opcode 7) | `dst,a,b,field` | New record of the source type, with this exact-typed field present. Source remains unchanged. |
+| `record.has` (opcode 44) | `dst,a,field` | `bool` presence; required fields always present. |
+| `record.clear` (opcode 45) | `dst,a,field` | New record with an optional field absent; clearing a required field refuses admission. |
+
+The UVB 2 instruction flags append bit 10 (`field`, UTF-8 string, encoded after args).
+Make flags are 529, get/has/clear 1027 and set 1031. UVB 1.1 opcodes/flags/fixtures
+are unchanged; named-field operations are not admitted in that version. Extraneous
+operands, undeclared fields and field-type mismatches refuse verification/admission.
+Nominal equality has no admitted rule; the independent VM does not silently assign
+Rust structural equality to record operands supplied through a private binding.
+
+Each record is bounded to 4096 canonical encoded bytes. One top-level invocation shares
+a cumulative 65536-byte record allocation allowance across its internal calls; failed
+writes/constructions roll back the entire State transaction. These are encoded-byte
+budgets, not a claim about exact host heap size. Existing codec depth/field/string limits
+and VM instruction/call budgets remain in force. Nested record fields and `Pos` reuse
+their existing typed representation; absent field and present nullable-reference None
+are distinct. Record copies are immutable; repeated reads do not mutate source values.
+
+These values live in VM registers/internal calls only. Public execute/event entrypoints
+with record parameters or results refuse before effects. No generic box/unbox, persistent
+UVS variable, event payload, public JSON/MVEX representation or new save section is
+introduced. Primitive entrypoints may call record helpers and return a scalar. Native
+AbilityCommand/OrderTargetingPoint lowering and command execution are not implied.
 
 The proposed structural verifier now accepts concrete `list<Filter>` and nested lists, with a
 maximum of 16 list/result type layers and 128 characters per type spelling. It refuses
