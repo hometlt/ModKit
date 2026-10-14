@@ -151,6 +151,7 @@ export interface InspectionContext {
   readonly credentials?: ContributionContext['credentials']
   /** What the enclosing container hands this subject (see ContainerEntryTable.nestedContext). */
   readonly containerContext?: ContributionContext['containerContext']
+  readonly catalog?: ContributionContext['catalog']
   readonly modelResources?: ContributionContext['modelResources']
   readonly logicalResources?: ContributionContext['logicalResources']
   readonly budget: ResourceBudget
@@ -363,6 +364,7 @@ export interface NamespaceInspectionContext {
   readonly credentials?: ContributionContext['credentials']
   /** What the enclosing container hands this subject (see ContainerEntryTable.nestedContext). */
   readonly containerContext?: ContributionContext['containerContext']
+  readonly catalog?: ContributionContext['catalog']
   readonly modelResources?: ContributionContext['modelResources']
   readonly logicalResources?: ContributionContext['logicalResources']
   readonly budget: ResourceBudget
@@ -1535,6 +1537,9 @@ export function createInspectionCodec(
               ? {}
               : {
                   contracts: contributionContext.contracts,
+                  ...(contributionContext.catalog === undefined
+                    ? {}
+                    : { catalog: contributionContext.catalog }),
                   ...(contributionContext.modelResources === undefined
                     ? {}
                     : { modelResources: contributionContext.modelResources }),
@@ -1698,6 +1703,9 @@ export function createInspectionCodec(
             ? {}
             : {
                 contracts: contributionContext.contracts,
+                ...(contributionContext.catalog === undefined
+                  ? {}
+                  : { catalog: contributionContext.catalog }),
                 ...(contributionContext.modelResources === undefined
                   ? {}
                   : { modelResources: contributionContext.modelResources }),
