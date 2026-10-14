@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { materializeUvmCore } from '@modkit/uv/model/materializer'
+import { readUvmContainer, packUvmGlb } from '@modkit/uv/model/container'
 import { projectUvmStaticModel } from '../src/uvm/static-model.js'
 
 const renderModel = {
@@ -39,8 +40,8 @@ const renderModel = {
   },
 }
 
-test('static authoring reads a program material that also states the glTF look (П7)', () => {
-  const { document, binary } = materializeUvmCore(
+function materialFixture(program = renderModel) {
+  return materializeUvmCore(
     {
       info: {
         scenes: 1,
@@ -79,7 +80,7 @@ test('static authoring reads a program material that also states the glTF look (
           emissiveFactor: [0.25, 0, 0],
           depthWrite: false,
           priority: 3,
-          shader: { id: 'modkit.render-material.v1', parameters: { renderModel } },
+          shader: { id: 'modkit.render-material.v1', parameters: { renderModel: program } },
         },
       ],
     },
@@ -90,12 +91,77 @@ test('static authoring reads a program material that also states the glTF look (
       options: { assetId: 'fixture/static-unlit', sourceFormat: 'json' },
     },
   )
+}
+
+test('static authoring reads a program material that also states the glTF look (П7)', () => {
+  const { document, binary } = materialFixture()
   assert.ok(document.extensionsUsed.includes('KHR_materials_unlit'))
   const projected = projectUvmStaticModel(
     { document, binary },
     { maxScalarBytes: 1 << 24, maxNodes: 10_000 },
   )
   assert.equal(projected.materialRequirements.length, 1)
+})
+
+function projectEncoded(program) {
+  const { document, binary } = materialFixture(program)
+  return projectUvmStaticModel(readUvmContainer(packUvmGlb(document, binary)), {
+    maxScalarBytes: 1 << 24,
+    maxNodes: 10_000,
+  })
+}
+
+test('static authoring preserves the complete colorless screen-distortion requirements after GLB reopen', () => {
+  const program = structuredClone(renderModel)
+  program.presentation = 'screen-distortion'
+  program.standard.priority = 7
+  program.standard.layers.diffuse.texturePath = 'Textures/distortion.dds'
+  program.standard.layers.diffuse.constantColor.value = [0.2, 0.4, 0.6, 0.8]
+  const projected = projectEncoded(program)
+  assert.deepEqual(projected.materialRequirements, [
+    {
+      name: 'Material_0',
+      presentation: program.presentation,
+      standard: program.standard,
+    },
+  ])
+})
+
+test('colorless screen-distortion still validates the authored standard material', () => {
+  const program = structuredClone(renderModel)
+  program.presentation = 'screen-distortion'
+  program.standard.blendMode = 'invalid'
+  assert.throws(() => projectEncoded(program), /blendMode/)
+})
+
+test('screen-distortion cannot bypass the composite authoring refusal', () => {
+  const program = {
+    version: 1,
+    presentation: 'screen-distortion',
+    composite: {
+      priority: 0,
+      passes: [{ material: renderModel.standard, alphaFactor: { value: 1 } }],
+    },
+  }
+  assert.throws(() => projectEncoded(program), /requires a standard RenderMaterial v1/)
+})
+
+test('terrain-projection remains outside static colorless authoring', () => {
+  assert.throws(
+    () => projectEncoded({ ...renderModel, presentation: 'terrain-projection' }),
+    /requires one material pass/,
+  )
+})
+
+test('explicit surface still preserves its single standard pass after GLB reopen', () => {
+  const projected = projectEncoded({ ...renderModel, presentation: 'surface' })
+  assert.deepEqual(projected.materialRequirements, [
+    {
+      name: 'Material_0',
+      presentation: 'surface',
+      standard: renderModel.standard,
+    },
+  ])
 })
 
 test('a static projection accepts a document that declares clip events (the rig path writes them)', () => {

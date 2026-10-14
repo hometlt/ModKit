@@ -267,7 +267,13 @@ export function projectUvmStaticModel(
       { maxDepth: 96, maxNodes: budget.maxNodes, maxBytes: budget.maxScalarBytes },
       signal,
     ).sample({ time: 0 }, signal)
-    if (sampled.length !== 1) throw new TypeError('static authoring requires one material pass')
+    // Distortion has no color pass, but its validated program is still authored data.
+    const colorlessStandard =
+      sampled.length === 0 &&
+      render['presentation'] === 'screen-distortion' &&
+      render['standard'] !== undefined
+    if (sampled.length !== 1 && !colorlessStandard)
+      throw new TypeError('static authoring requires one material pass')
     // Every authored material field remains a requirement for the native encoder's read-back check.
     return snapshotJson(
       { name: material['name'] ?? `Material_${index}`, ...fields },
