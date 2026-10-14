@@ -6,11 +6,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
   extensions: [
     {
       artifact: {
-        artifactDigest: 'sha256:a97cf8ec1bb03d0586108ba86bc84d1d85af4cbebdac40ba07ec5db31ceaafbb',
+        artifactDigest: 'sha256:392da6ba2829dd68f60e1977858e87f37f56e73689e3133f84249604af62ce74',
         fileDigests: {
           'MIGRATION-NOTES-common-archives.json':
             'sha256:dad1661bd7d3800df373542606577665551e655b84269097ba78d83df766c146',
-          'README.md': 'sha256:0205c7ae47b0673cc0398760119d36f185db6626de9abf150260632c978e9612',
+          'README.md': 'sha256:08fc5dd4262079cc8a7df45b4aacfc9856e268b45aad235002d34c919eaf44bb',
           'contributions/codec-7z.json':
             'sha256:121a2c62b1e0cadc0f4e3fcfaf6ef91933426a7c3ea05c78eced64ad19289a3a',
           'contributions/codec-brotli.json':
@@ -36,7 +36,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-xz.json':
             'sha256:6332df36e6b978b98e3485f305d6f604b86eb044de879e770cc4da364d98222b',
           'contributions/codec-zip.json':
-            'sha256:d6a304ed0a1538a9e61f036d72446c94b851b2c3a74c18f5f8e91d1b4ed3e652',
+            'sha256:e49c4428af98ce23ee40b7373041e702d7c32c207870bfe43859f4c527df832f',
           'contributions/codec-zstd.json':
             'sha256:1258b78a58b3e3a3c2d8adb4bc72fc293e4fa54451958ac00daf5d86cbabc723',
           'package.json': 'sha256:22b13492a21840e0e8f1fa47faea0666aef15762a216a215b776613454403a8f',
@@ -72,7 +72,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/zip/codec.d.ts':
             'sha256:485220b02f8ce3dc36fe23ffa2b4f389c6ee1650f73f07578b55faffcb10990e',
           'src/zip/codec.js':
-            'sha256:c29bec2b7f51993232e4b51a9d4c308b8bcdc3115f3f72cd9fd3829c4fee63e9',
+            'sha256:9bd110ce3d1610c618449a803258d32f5f37a57825f75b4f7d4520c3892ca6bb',
           'src/zstd/codec.js':
             'sha256:3617cd41c7cf1c42939514e5cf6c007a255303342d7991345fe1d385d9503256',
           'test/fixtures/7z/bcj.7z':
@@ -110,12 +110,12 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'test/zip-hidden.test.ts':
             'sha256:38e12409f86d927ffc60882595f30bfd414579b403e6edc4ea453f21d89fe555',
           'test/zip-ranges.test.ts':
-            'sha256:baf3dd25d7654bff4f52cda446d8477664efcf39c3012c658161e8534c3e2852',
+            'sha256:e8192137ef4a3e9752c5fae014bec3ae9104ee5b65ef168ca541735fbe4c8b85',
           'test/zstd.test.ts':
             'sha256:a814b2b79429fdb935cc6ff97424f5838e838266d8c83c8b453b510186cff3f9',
         },
         inventoryRecordId:
-          'artifact:sha256:a97cf8ec1bb03d0586108ba86bc84d1d85af4cbebdac40ba07ec5db31ceaafbb',
+          'artifact:sha256:392da6ba2829dd68f60e1977858e87f37f56e73689e3133f84249604af62ce74',
       },
       artifactRoot: 'extensions/archives/',
       containers: {
@@ -222,7 +222,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         ],
         [
           'contributions/codec-zip.json',
-          'sha256:d6a304ed0a1538a9e61f036d72446c94b851b2c3a74c18f5f8e91d1b4ed3e652',
+          'sha256:e49c4428af98ce23ee40b7373041e702d7c32c207870bfe43859f4c527df832f',
         ],
         [
           'contributions/codec-zstd.json',
@@ -1850,6 +1850,22 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                 maxScalarBytes: 104857600,
               },
               fidelityEvidence: [
+                {
+                  claim: {
+                    preservesUnknownData: true,
+                    roundTrip: 'semantic',
+                  },
+                  conformanceProfile: 'modkit/codec-contribution-v1',
+                  corpusDigest:
+                    'sha256:074c4c3faeaada1c9a80fa41cabcd806c3d9ecad4610365a08040fd7af74fe0e',
+                  corpusId: 'modkit/extensions/archives/test/zip-ranges.test.ts',
+                  evidenceId: 'zip64-canonical-reassembly-v1',
+                  formatId: 'zip',
+                  inputClass: 'zip64-canonical-single-disk',
+                  optionsFingerprint: 'options:stored-additions',
+                  provenAt: '2026-10-14T17:31:34Z',
+                  representationId: 'archive-namespace',
+                },
                 {
                   claim: {
                     preservesUnknownData: true,
@@ -11743,7 +11759,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:3405851adfb8023db2d1bb99e8eb7c9065f531e71665fa11c23ccffb0a07db7e',
+        artifactDigest: 'sha256:ec135b9b384952234e77843be95475bd24f5e33c4e019ab962fcfbea93cc21b5',
         fileDigests: {
           'MIGRATION-NOTES-common-models.json':
             'sha256:73367753b07cddb1f194f0004a5b01a0722f1f761771925f7f21d136ac050359',
@@ -11776,11 +11792,13 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:bbc2f2d6f35d35b3f33b6491bf5315e9d19baad8a272a971ba41b1e024821011',
           'src/stl/codec.js':
             'sha256:e254cdaec34a6da9f1bb2c7b43a9532f606c2bc4ccd558bfeb104b46e3d5a7fc',
+          'src/uvm/codec.d.ts':
+            'sha256:e235b383896ad899bb7de9756317055df63e6de83f298c0c232ed09cfaacd1b3',
           'src/uvm/codec.js':
             'sha256:5e7f1a7c76e8c585b3427ccfb40d62f7d9905d91b43169eddb9ac363b2bcda30',
         },
         inventoryRecordId:
-          'artifact:sha256:3405851adfb8023db2d1bb99e8eb7c9065f531e71665fa11c23ccffb0a07db7e',
+          'artifact:sha256:ec135b9b384952234e77843be95475bd24f5e33c4e019ab962fcfbea93cc21b5',
       },
       artifactRoot: 'extensions/models/',
       containers: {
@@ -12811,6 +12829,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         'src/obj/codec.js',
         'src/ply/codec.js',
         'src/stl/codec.js',
+        'src/uvm/codec.d.ts',
         'src/uvm/codec.js',
       ],
       name: 'models',

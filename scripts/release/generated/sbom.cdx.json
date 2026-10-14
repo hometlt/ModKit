@@ -2,6 +2,30 @@
   "bomFormat": "CycloneDX",
   "components": [
     {
+      "bom-ref": "pkg:npm/%40logtape/logtape@2.2.4",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "@logtape/logtape",
+      "properties": [
+        {
+          "name": "modkit:artifacts",
+          "value": "platform"
+        },
+        {
+          "name": "modkit:metadata-source",
+          "value": "npm:@logtape/logtape"
+        }
+      ],
+      "purl": "pkg:npm/%40logtape/logtape@2.2.4",
+      "type": "library",
+      "version": "2.2.4"
+    },
+    {
       "bom-ref": "pkg:npm/%40modkit/automation-host@0.1.0",
       "name": "@modkit/automation-host",
       "properties": [
@@ -188,7 +212,7 @@
       "properties": [
         {
           "name": "modkit:artifacts",
-          "value": "platform"
+          "value": "common,platform"
         },
         {
           "name": "modkit:metadata-source",
@@ -263,7 +287,7 @@
       "properties": [
         {
           "name": "modkit:artifacts",
-          "value": "platform"
+          "value": "common,platform"
         },
         {
           "name": "modkit:metadata-source",
@@ -398,6 +422,30 @@
       "version": "8.20.0"
     },
     {
+      "bom-ref": "pkg:npm/commander@6.2.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "commander",
+      "properties": [
+        {
+          "name": "modkit:artifacts",
+          "value": "platform"
+        },
+        {
+          "name": "modkit:metadata-source",
+          "value": "npm:commander"
+        }
+      ],
+      "purl": "pkg:npm/commander@6.2.1",
+      "type": "library",
+      "version": "6.2.1"
+    },
+    {
       "bom-ref": "pkg:npm/dompurify@3.4.8",
       "licenses": [
         {
@@ -420,6 +468,30 @@
       "purl": "pkg:npm/dompurify@3.4.8",
       "type": "library",
       "version": "3.4.8"
+    },
+    {
+      "bom-ref": "pkg:npm/draco3d@1.5.7",
+      "licenses": [
+        {
+          "license": {
+            "name": "Apache-2.0"
+          }
+        }
+      ],
+      "name": "draco3d",
+      "properties": [
+        {
+          "name": "modkit:artifacts",
+          "value": "platform"
+        },
+        {
+          "name": "modkit:metadata-source",
+          "value": "npm:draco3d"
+        }
+      ],
+      "purl": "pkg:npm/draco3d@1.5.7",
+      "type": "library",
+      "version": "1.5.7"
     },
     {
       "bom-ref": "pkg:npm/es-module-lexer@1.7.0",
@@ -470,7 +542,7 @@
       "version": "3.1.3"
     },
     {
-      "bom-ref": "pkg:npm/fast-uri@3.1.6",
+      "bom-ref": "pkg:npm/fast-uri@3.1.5",
       "licenses": [
         {
           "license": {
@@ -489,9 +561,57 @@
           "value": "npm:fast-uri"
         }
       ],
-      "purl": "pkg:npm/fast-uri@3.1.6",
+      "purl": "pkg:npm/fast-uri@3.1.5",
       "type": "library",
-      "version": "3.1.6"
+      "version": "3.1.5"
+    },
+    {
+      "bom-ref": "pkg:npm/fast-xml-parser@4.5.6",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "fast-xml-parser",
+      "properties": [
+        {
+          "name": "modkit:artifacts",
+          "value": "platform"
+        },
+        {
+          "name": "modkit:metadata-source",
+          "value": "npm:fast-xml-parser"
+        }
+      ],
+      "purl": "pkg:npm/fast-xml-parser@4.5.6",
+      "type": "library",
+      "version": "4.5.6"
+    },
+    {
+      "bom-ref": "pkg:npm/fzstd@0.1.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "fzstd",
+      "properties": [
+        {
+          "name": "modkit:artifacts",
+          "value": "platform"
+        },
+        {
+          "name": "modkit:metadata-source",
+          "value": "npm:fzstd"
+        }
+      ],
+      "purl": "pkg:npm/fzstd@0.1.1",
+      "type": "library",
+      "version": "0.1.1"
     },
     {
       "bom-ref": "pkg:npm/json-schema-traverse@1.0.0",
@@ -686,6 +806,30 @@
       "version": "1.0.0"
     },
     {
+      "bom-ref": "pkg:npm/modkit-extension-java@1.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "modkit-extension-java",
+      "properties": [
+        {
+          "name": "modkit:artifacts",
+          "value": "platform"
+        },
+        {
+          "name": "modkit:metadata-source",
+          "value": "apps/web/dist-app/extensions/java/package.json"
+        }
+      ],
+      "purl": "pkg:npm/modkit-extension-java@1.0.0",
+      "type": "library",
+      "version": "1.0.0"
+    },
+    {
       "bom-ref": "pkg:npm/modkit-extension-models@1.0.0",
       "licenses": [
         {
@@ -782,6 +926,30 @@
       "version": "0.56.0"
     },
     {
+      "bom-ref": "pkg:npm/pako@2.1.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "(MIT AND Zlib)"
+          }
+        }
+      ],
+      "name": "pako",
+      "properties": [
+        {
+          "name": "modkit:artifacts",
+          "value": "platform"
+        },
+        {
+          "name": "modkit:metadata-source",
+          "value": "npm:pako"
+        }
+      ],
+      "purl": "pkg:npm/pako@2.1.0",
+      "type": "library",
+      "version": "2.1.0"
+    },
+    {
       "bom-ref": "pkg:npm/require-from-string@2.0.2",
       "licenses": [
         {
@@ -804,6 +972,30 @@
       "purl": "pkg:npm/require-from-string@2.0.2",
       "type": "library",
       "version": "2.0.2"
+    },
+    {
+      "bom-ref": "pkg:npm/seek-bzip@2.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "seek-bzip",
+      "properties": [
+        {
+          "name": "modkit:artifacts",
+          "value": "platform"
+        },
+        {
+          "name": "modkit:metadata-source",
+          "value": "npm:seek-bzip"
+        }
+      ],
+      "purl": "pkg:npm/seek-bzip@2.0.0",
+      "type": "library",
+      "version": "2.0.0"
     },
     {
       "bom-ref": "pkg:npm/smol-toml@1.8.0",
@@ -830,6 +1022,54 @@
       "version": "1.8.0"
     },
     {
+      "bom-ref": "pkg:npm/strnum@1.1.2",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "strnum",
+      "properties": [
+        {
+          "name": "modkit:artifacts",
+          "value": "platform"
+        },
+        {
+          "name": "modkit:metadata-source",
+          "value": "npm:strnum"
+        }
+      ],
+      "purl": "pkg:npm/strnum@1.1.2",
+      "type": "library",
+      "version": "1.1.2"
+    },
+    {
+      "bom-ref": "pkg:npm/texture2ddecoder-wasm@1.2.2",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "texture2ddecoder-wasm",
+      "properties": [
+        {
+          "name": "modkit:artifacts",
+          "value": "platform"
+        },
+        {
+          "name": "modkit:metadata-source",
+          "value": "npm:texture2ddecoder-wasm"
+        }
+      ],
+      "purl": "pkg:npm/texture2ddecoder-wasm@1.2.2",
+      "type": "library",
+      "version": "1.2.2"
+    },
+    {
       "bom-ref": "pkg:npm/three@0.180.0",
       "licenses": [
         {
@@ -852,6 +1092,126 @@
       "purl": "pkg:npm/three@0.180.0",
       "type": "library",
       "version": "0.180.0"
+    },
+    {
+      "bom-ref": "pkg:npm/vscode-jsonrpc@9.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "vscode-jsonrpc",
+      "properties": [
+        {
+          "name": "modkit:artifacts",
+          "value": "platform"
+        },
+        {
+          "name": "modkit:metadata-source",
+          "value": "npm:vscode-jsonrpc"
+        }
+      ],
+      "purl": "pkg:npm/vscode-jsonrpc@9.0.0",
+      "type": "library",
+      "version": "9.0.0"
+    },
+    {
+      "bom-ref": "pkg:npm/vscode-languageserver-protocol@3.18.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "vscode-languageserver-protocol",
+      "properties": [
+        {
+          "name": "modkit:artifacts",
+          "value": "platform"
+        },
+        {
+          "name": "modkit:metadata-source",
+          "value": "npm:vscode-languageserver-protocol"
+        }
+      ],
+      "purl": "pkg:npm/vscode-languageserver-protocol@3.18.1",
+      "type": "library",
+      "version": "3.18.1"
+    },
+    {
+      "bom-ref": "pkg:npm/vscode-languageserver-textdocument@1.0.13",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "vscode-languageserver-textdocument",
+      "properties": [
+        {
+          "name": "modkit:artifacts",
+          "value": "platform"
+        },
+        {
+          "name": "modkit:metadata-source",
+          "value": "npm:vscode-languageserver-textdocument"
+        }
+      ],
+      "purl": "pkg:npm/vscode-languageserver-textdocument@1.0.13",
+      "type": "library",
+      "version": "1.0.13"
+    },
+    {
+      "bom-ref": "pkg:npm/vscode-languageserver-types@3.18.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "vscode-languageserver-types",
+      "properties": [
+        {
+          "name": "modkit:artifacts",
+          "value": "platform"
+        },
+        {
+          "name": "modkit:metadata-source",
+          "value": "npm:vscode-languageserver-types"
+        }
+      ],
+      "purl": "pkg:npm/vscode-languageserver-types@3.18.0",
+      "type": "library",
+      "version": "3.18.0"
+    },
+    {
+      "bom-ref": "pkg:npm/vscode-languageserver@10.0.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "vscode-languageserver",
+      "properties": [
+        {
+          "name": "modkit:artifacts",
+          "value": "platform"
+        },
+        {
+          "name": "modkit:metadata-source",
+          "value": "npm:vscode-languageserver"
+        }
+      ],
+      "purl": "pkg:npm/vscode-languageserver@10.0.1",
+      "type": "library",
+      "version": "10.0.1"
     },
     {
       "bom-ref": "pkg:npm/yaml@2.9.0",
@@ -880,6 +1240,10 @@
   ],
   "dependencies": [
     {
+      "dependsOn": [],
+      "ref": "pkg:npm/%40logtape/logtape@2.2.4"
+    },
+    {
       "dependsOn": [
         "pkg:npm/%40modkit/core@0.1.0",
         "pkg:npm/%40modkit/host@0.1.0",
@@ -890,15 +1254,25 @@
     {
       "dependsOn": [
         "pkg:npm/%40modkit/host@0.1.0",
+        "pkg:npm/%40modkit/sdk@0.1.0",
         "pkg:npm/monaco-editor@0.56.0"
       ],
       "ref": "pkg:npm/%40modkit/code@1.0.0"
     },
     {
       "dependsOn": [
+        "pkg:npm/%40logtape/logtape@2.2.4",
         "pkg:npm/%40modkit/core@0.1.0",
         "pkg:npm/%40modkit/host@0.1.0",
-        "pkg:npm/%40modkit/sdk@0.1.0"
+        "pkg:npm/%40modkit/sdk@0.1.0",
+        "pkg:npm/draco3d@1.5.7",
+        "pkg:npm/fast-xml-parser@4.5.6",
+        "pkg:npm/fzstd@0.1.1",
+        "pkg:npm/pako@2.1.0",
+        "pkg:npm/seek-bzip@2.0.0",
+        "pkg:npm/texture2ddecoder-wasm@1.2.2",
+        "pkg:npm/vscode-languageserver-textdocument@1.0.13",
+        "pkg:npm/vscode-languageserver@10.0.1"
       ],
       "ref": "pkg:npm/%40modkit/codec-kit@1.0.0"
     },
@@ -915,12 +1289,14 @@
         "pkg:npm/%40modkit/scene@1.0.0",
         "pkg:npm/%40modkit/sdk@0.1.0",
         "pkg:npm/%40modkit/ui@0.1.0",
-        "pkg:npm/%40modkit/uv@1.0.0"
+        "pkg:npm/%40modkit/uv@1.0.0",
+        "pkg:npm/%40modkit/vfs@0.1.0"
       ],
       "ref": "pkg:npm/%40modkit/electron-app@0.1.0"
     },
     {
       "dependsOn": [
+        "pkg:npm/%40modkit/codec-kit@1.0.0",
         "pkg:npm/%40modkit/sdk@0.1.0",
         "pkg:npm/%40modkit/vfs@0.1.0"
       ],
@@ -938,6 +1314,7 @@
     },
     {
       "dependsOn": [
+        "pkg:npm/%40modkit/codec-kit@1.0.0",
         "pkg:npm/%40modkit/core@0.1.0",
         "pkg:npm/%40modkit/host@0.1.0",
         "pkg:npm/%40modkit/scene@1.0.0",
@@ -954,14 +1331,18 @@
         "pkg:npm/%40modkit/scene@1.0.0",
         "pkg:npm/%40modkit/sdk@0.1.0",
         "pkg:npm/%40modkit/ui@0.1.0",
-        "pkg:npm/%40modkit/uv@1.0.0"
+        "pkg:npm/%40modkit/uv@1.0.0",
+        "pkg:npm/%40modkit/vfs@0.1.0"
       ],
       "ref": "pkg:npm/%40modkit/modkit-vscode@0.1.0"
     },
     {
       "dependsOn": [
+        "pkg:npm/%40modkit/codec-kit@1.0.0",
+        "pkg:npm/%40modkit/core@0.1.0",
         "pkg:npm/%40modkit/host@0.1.0",
         "pkg:npm/%40modkit/sdk@0.1.0",
+        "pkg:npm/%40modkit/uv@1.0.0",
         "pkg:npm/three@0.180.0"
       ],
       "ref": "pkg:npm/%40modkit/scene@1.0.0"
@@ -983,14 +1364,19 @@
     },
     {
       "dependsOn": [
+        "pkg:npm/%40modkit/codec-kit@1.0.0",
         "pkg:npm/%40modkit/core@0.1.0",
+        "pkg:npm/%40modkit/scene@1.0.0",
         "pkg:npm/%40modkit/sdk@0.1.0"
       ],
       "ref": "pkg:npm/%40modkit/ui@0.1.0"
     },
     {
       "dependsOn": [
-        "pkg:npm/%40modkit/host@0.1.0"
+        "pkg:npm/%40modkit/codec-kit@1.0.0",
+        "pkg:npm/%40modkit/core@0.1.0",
+        "pkg:npm/%40modkit/host@0.1.0",
+        "pkg:npm/%40modkit/sdk@0.1.0"
       ],
       "ref": "pkg:npm/%40modkit/uv@1.0.0"
     },
@@ -1028,17 +1414,25 @@
     {
       "dependsOn": [
         "pkg:npm/fast-deep-equal@3.1.3",
-        "pkg:npm/fast-uri@3.1.6",
+        "pkg:npm/fast-uri@3.1.5",
         "pkg:npm/json-schema-traverse@1.0.0",
         "pkg:npm/require-from-string@2.0.2"
       ],
       "ref": "pkg:npm/ajv@8.20.0"
     },
     {
+      "dependsOn": [],
+      "ref": "pkg:npm/commander@6.2.1"
+    },
+    {
       "dependsOn": [
         "pkg:npm/%40types/trusted-types@2.0.7"
       ],
       "ref": "pkg:npm/dompurify@3.4.8"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:npm/draco3d@1.5.7"
     },
     {
       "dependsOn": [],
@@ -1050,7 +1444,17 @@
     },
     {
       "dependsOn": [],
-      "ref": "pkg:npm/fast-uri@3.1.6"
+      "ref": "pkg:npm/fast-uri@3.1.5"
+    },
+    {
+      "dependsOn": [
+        "pkg:npm/strnum@1.1.2"
+      ],
+      "ref": "pkg:npm/fast-xml-parser@4.5.6"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:npm/fzstd@0.1.1"
     },
     {
       "dependsOn": [],
@@ -1111,8 +1515,17 @@
     {
       "dependsOn": [
         "pkg:npm/%40modkit/codec-kit@1.0.0",
-        "pkg:npm/%40modkit/host@0.1.0",
         "pkg:npm/%40modkit/sdk@0.1.0"
+      ],
+      "ref": "pkg:npm/modkit-extension-java@1.0.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:npm/%40modkit/codec-kit@1.0.0",
+        "pkg:npm/%40modkit/host@0.1.0",
+        "pkg:npm/%40modkit/scene@1.0.0",
+        "pkg:npm/%40modkit/sdk@0.1.0",
+        "pkg:npm/%40modkit/uv@1.0.0"
       ],
       "ref": "pkg:npm/modkit-extension-models@1.0.0"
     },
@@ -1141,7 +1554,17 @@
     },
     {
       "dependsOn": [],
+      "ref": "pkg:npm/pako@2.1.0"
+    },
+    {
+      "dependsOn": [],
       "ref": "pkg:npm/require-from-string@2.0.2"
+    },
+    {
+      "dependsOn": [
+        "pkg:npm/commander@6.2.1"
+      ],
+      "ref": "pkg:npm/seek-bzip@2.0.0"
     },
     {
       "dependsOn": [],
@@ -1149,7 +1572,40 @@
     },
     {
       "dependsOn": [],
+      "ref": "pkg:npm/strnum@1.1.2"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:npm/texture2ddecoder-wasm@1.2.2"
+    },
+    {
+      "dependsOn": [],
       "ref": "pkg:npm/three@0.180.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:npm/vscode-jsonrpc@9.0.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:npm/vscode-jsonrpc@9.0.0",
+        "pkg:npm/vscode-languageserver-types@3.18.0"
+      ],
+      "ref": "pkg:npm/vscode-languageserver-protocol@3.18.1"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:npm/vscode-languageserver-textdocument@1.0.13"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:npm/vscode-languageserver-types@3.18.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:npm/vscode-languageserver-protocol@3.18.1"
+      ],
+      "ref": "pkg:npm/vscode-languageserver@10.0.1"
     },
     {
       "dependsOn": [],

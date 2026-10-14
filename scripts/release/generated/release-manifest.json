@@ -6,8 +6,8 @@
       "file": "artifacts/modkit-platform.tar",
       "id": "platform",
       "kind": "application-and-package-bundle",
-      "sha256": "sha256:2d3bbe19bbefd1b034cbaa16eda3dab27375ed8123f72b457713edc4e34095c7",
-      "size": 64055296
+      "sha256": "sha256:2fb47d8c5184e51d3d3d4974e12e2feff0e652ac87f3bd9e00c71f58b67b78e6",
+      "size": 290349056
     },
     {
       "catalog": [
@@ -30,7 +30,7 @@
           ],
           "coordinate": "modkit/archives",
           "root": "extensions/archives",
-          "sourceDigest": "sha256:0cb356a96ed9a541422f37e686793925900400b0471e547941146d01e3883c93"
+          "sourceDigest": "sha256:392da6ba2829dd68f60e1977858e87f37f56e73689e3133f84249604af62ce74"
         },
         {
           "contributions": [
@@ -43,7 +43,7 @@
           ],
           "coordinate": "modkit/audio",
           "root": "extensions/audio",
-          "sourceDigest": "sha256:859afeaeca94d2dfd67338c1a9c235861b86a76cfcc0d8defad8ba605211ebca"
+          "sourceDigest": "sha256:8494b6c6db1b99ec992e2af3e937ffe4e1102816ed557f525cb3c5b7b8e655e9"
         },
         {
           "contributions": [
@@ -51,10 +51,13 @@
             "modkit/csv-syntax-default",
             "modkit/ini-syntax-contract",
             "modkit/ini-syntax-default",
+            "modkit/slk-syntax-contract",
+            "modkit/slk-syntax-default",
             "modkit/text-csv",
             "modkit/text-delimited-writer",
             "modkit/text-ini",
             "modkit/text-ini-writer",
+            "modkit/text-slk",
             "modkit/text-toml",
             "modkit/text-toml-writer",
             "modkit/text-tsv",
@@ -73,7 +76,7 @@
           ],
           "coordinate": "modkit/data",
           "root": "extensions/data",
-          "sourceDigest": "sha256:20e1cf4f6a7f6b7b5716c05bfaf25aa5a0af650cf2b8e6f1c863260a93441b0b"
+          "sourceDigest": "sha256:b911274fe39a3b3df7482b8921f78d723ad24416ccd02edb565fa31e001660d0"
         },
         {
           "contributions": [
@@ -86,7 +89,7 @@
           ],
           "coordinate": "modkit/documents",
           "root": "extensions/documents",
-          "sourceDigest": "sha256:c5f1c036b70833f3f5425039db0101a41885a9d7c9b3c7f87fef677e5498028e"
+          "sourceDigest": "sha256:334324b2ccc7fd04b777667316e916a7613eb64a958791d639b86e01c03f05d4"
         },
         {
           "contributions": [
@@ -97,6 +100,7 @@
             "modkit/bmp",
             "modkit/cur",
             "modkit/dds",
+            "modkit/dds-encoder-writer",
             "modkit/exr",
             "modkit/gif",
             "modkit/hdr",
@@ -116,7 +120,7 @@
           ],
           "coordinate": "modkit/images",
           "root": "extensions/images",
-          "sourceDigest": "sha256:77485d8227d0e5bd39284cf673c48b34324fb56d5ab7935d3e944a48acc01a74"
+          "sourceDigest": "sha256:24a4fe214632233787bc4d1551a1d57563ab15c4ed47b3a78adcbafb6200bf39"
         },
         {
           "contributions": [
@@ -129,17 +133,18 @@
           ],
           "coordinate": "modkit/models",
           "root": "extensions/models",
-          "sourceDigest": "sha256:0fbf0fab122104ae4b475a517b6cb161ae350ebd13ce6194a4d795468c3e72de"
+          "sourceDigest": "sha256:ec135b9b384952234e77843be95475bd24f5e33c4e019ab962fcfbea93cc21b5"
         },
         {
           "contributions": [
             "modkit/emf",
+            "modkit/vector-font",
             "modkit/vector-svg",
             "modkit/wmf"
           ],
           "coordinate": "modkit/vector",
           "root": "extensions/vector",
-          "sourceDigest": "sha256:35c72e642e3137361d1156a55da46c707f6cf5a8cb496e3a6c0747af8bc695a7"
+          "sourceDigest": "sha256:a636f59a41fe03f795aa28dab27e3186e9b059c15d2a76268bc00a21557ef062"
         },
         {
           "contributions": [
@@ -152,14 +157,14 @@
           ],
           "coordinate": "modkit/video",
           "root": "extensions/video",
-          "sourceDigest": "sha256:234da4501402ba810b30b90ca44f7d8098d45f790bd2b8ed926879f6e0e4c80c"
+          "sourceDigest": "sha256:a8d4522fa867d525ba50536d90e0b588d910ffa9c6e6a2b96b37c4d8ad008dd1"
         }
       ],
       "file": "artifacts/modkit-common.tar",
       "id": "common",
       "kind": "common-extension-bundle",
-      "sha256": "sha256:982a47b06187ca5dd0e6dfbc02570c55fd72bf58ae60634f698ec835862ce7cc",
-      "size": 1425920
+      "sha256": "sha256:345caa4f90a42c5a9e2fe4f0c02e1269f5780ff9f2ad3dc831a07ef465035b58",
+      "size": 1910784
     }
   ],
   "composition": {
@@ -169,27 +174,27 @@
     "catalogSources": [
       {
         "path": "apps/electron/generated/bundled-catalog.cjs",
-        "sha256": "sha256:32601bcb1af566ebdd2a07ac73b66583c7a5181c84bf234269d52fb8934546f9"
+        "sha256": "sha256:673dca04fe7958cfe2db6bbb8f054b0e397c0dbe64ab948d44f5450bfc5ba166"
       },
       {
         "path": "apps/vscode/generated/bundled-catalog.json",
-        "sha256": "sha256:524d203e12786fe041c4a1447ce22e0646e5826fa94b32f8399180fbadd9072d"
+        "sha256": "sha256:7874ccaade083701d1546b237a102adfabb82ec3c0bd8deb3bfccf70506e6d77"
       },
       {
         "path": "apps/web/generated/extension-catalog.js",
-        "sha256": "sha256:8460dd72d59182f8a85d7fee0a04356271ebea586d40854c524f226bf6b5ede6"
+        "sha256": "sha256:391582969feca161cba6e5e127035c85723646c937a9857f24e56dc402a0eaa7"
       },
       {
         "path": "config/build-composition.json",
-        "sha256": "sha256:9c2e21885a37a38502b15f96a0d10af0e681c754be62f22d44ac9c62ef858de9"
+        "sha256": "sha256:d06b42e67014baa662f686d1bf70bf7ef2fa499ae1043e2db7ba02f7a2c4a7ae"
       },
       {
         "path": "scripts/app-extension-sets.mjs",
-        "sha256": "sha256:02ff494931168173d911d7d3c9d92f399f2036fd3f60ea4362389559e66ed916"
+        "sha256": "sha256:ed2446d57382a13966c10f0971cb5772511b34e5989b2d1772abaa2b4b0a2d39"
       },
       {
         "path": "scripts/bundle-hashes.json",
-        "sha256": "sha256:1ba67b74ebe4fca12e1ecb512927c50822158786948b60ba95c89860a63eef85"
+        "sha256": "sha256:65ab10202e383dc60bdc24398354c5d3783f0f319dc21c3e07bed8b0727fb24f"
       }
     ],
     "closure": "mk3-ga",
@@ -208,7 +213,7 @@
   },
   "licenseNotices": {
     "file": "LICENSE-NOTICES.txt",
-    "sha256": "sha256:cb026fb419df3821b55d1b4eb77601d8850ee3ca5ee4d9945e60b7ecec29a580"
+    "sha256": "sha256:996fbc30f0ebd2bb73644858fce08ae211452ef5da57eb20ff8d788ee4a41b7f"
   },
   "release": {
     "authenticode": false,
@@ -218,7 +223,7 @@
       "cleanMachineInstaller": true,
       "instructions": {
         "file": "INSTALL.md",
-        "sha256": "sha256:3481b4a72dff5b9fc18646108a4baa31c631b5d169f24f78774fa75b5191f8a7"
+        "sha256": "sha256:fba1aeb4c064f902aad439c7f4ea50bb4ac2afa504f2c67bbbb0009a50b9922b"
       },
       "kind": "verified-versioned-local-store",
       "remainder": null
@@ -229,7 +234,7 @@
   "sbom": {
     "file": "sbom.cdx.json",
     "format": "CycloneDX-1.5",
-    "sha256": "sha256:2ee6bebb819c044af2e9f76df875e7d2d073dcd02d23e4e640ba7ab4d54a2ba3"
+    "sha256": "sha256:d148c0e81d530f3e58843541aad6b582de27fc4b1c6d16562c16df319cf1923c"
   },
   "schemaVersion": "release-manifest-1",
   "signing": {
