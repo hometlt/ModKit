@@ -32,7 +32,7 @@
       ]
     }
   ],
-  "contributionCount": 256,
+  "contributionCount": 261,
   "inventorySha256": "08c3bdad48056914277c7f95a0f97ef4feb85c8ec86a2fa8faf47bd7f9817e8c",
   "legacyCount": 206,
   "rows": [
@@ -1006,8 +1006,8 @@
       "candidates": [
         {
           "id": "modkit/gaf",
-          "path": "extensions/cavedog-total-annihilation/contributions/codec-gaf.json",
-          "repository": "other"
+          "path": "extensions/total-annihilation/contributions/codec-gaf.json",
+          "repository": "spring"
         }
       ],
       "codec": "gaf",
@@ -1092,7 +1092,7 @@
         {
           "id": "modkit/grey-goo-alo",
           "path": "extensions/petroglyph-glyphx/contributions/codec-grey-goo-alo.json",
-          "repository": "other"
+          "repository": "petroglyph"
         }
       ],
       "codec": "grey-goo-alo",
@@ -1651,7 +1651,7 @@
         {
           "id": "modkit/petroglyph-meg",
           "path": "extensions/petroglyph-glyphx/contributions/codec-petroglyph-meg.json",
-          "repository": "other"
+          "repository": "petroglyph"
         }
       ],
       "codec": "petroglyph-meg",
@@ -1889,7 +1889,7 @@
         {
           "id": "modkit/relic",
           "path": "extensions/relic-essence/contributions/codec-relic.json",
-          "repository": "other"
+          "repository": "relic"
         }
       ],
       "codec": "relic",
@@ -1917,7 +1917,7 @@
         {
           "id": "modkit/relic-sga",
           "path": "extensions/relic-essence/contributions/codec-relic-sga.json",
-          "repository": "other"
+          "repository": "relic"
         }
       ],
       "codec": "relic-sga",
@@ -1934,7 +1934,7 @@
         {
           "id": "modkit/relic-sgm",
           "path": "extensions/relic-essence/contributions/codec-relic-sgm.json",
-          "repository": "other"
+          "repository": "relic"
         }
       ],
       "codec": "relic-sgm",
@@ -1951,7 +1951,7 @@
         {
           "id": "modkit/relic-ucs",
           "path": "extensions/relic-essence/contributions/codec-relic-ucs.json",
-          "repository": "other"
+          "repository": "relic"
         }
       ],
       "codec": "relic-ucs",
@@ -1968,7 +1968,7 @@
         {
           "id": "modkit/relic-whm",
           "path": "extensions/relic-essence/contributions/codec-relic-whm.json",
-          "repository": "other"
+          "repository": "relic"
         }
       ],
       "codec": "relic-whm",
@@ -1985,7 +1985,7 @@
         {
           "id": "modkit/rgt",
           "path": "extensions/relic-essence/contributions/codec-rgt.json",
-          "repository": "other"
+          "repository": "relic"
         }
       ],
       "codec": "rgt",
@@ -2002,7 +2002,7 @@
         {
           "id": "modkit/rrtex",
           "path": "extensions/relic-essence/contributions/codec-rrtex.json",
-          "repository": "other"
+          "repository": "relic"
         }
       ],
       "codec": "rrtex",
@@ -2019,7 +2019,7 @@
         {
           "id": "modkit/rsh",
           "path": "extensions/relic-essence/contributions/codec-rsh.json",
-          "repository": "other"
+          "repository": "relic"
         }
       ],
       "codec": "rsh",
@@ -2053,7 +2053,7 @@
         {
           "id": "modkit/rtx",
           "path": "extensions/relic-essence/contributions/codec-rtx.json",
-          "repository": "other"
+          "repository": "relic"
         }
       ],
       "codec": "rtx",
@@ -2362,7 +2362,7 @@
       "candidates": [
         {
           "id": "modkit/spring-rapid",
-          "path": "contributions/codec-spring-rapid.json",
+          "path": "extensions/spring-recoil/contributions/codec-spring-rapid.json",
           "repository": "spring"
         }
       ],
@@ -2379,7 +2379,7 @@
       "candidates": [
         {
           "id": "modkit/spring-s3o",
-          "path": "contributions/codec-spring-s3o.json",
+          "path": "extensions/spring-recoil/contributions/codec-spring-s3o.json",
           "repository": "spring"
         }
       ],
@@ -2396,7 +2396,7 @@
       "candidates": [
         {
           "id": "modkit/spring-vfs",
-          "path": "contributions/codec-spring-vfs.json",
+          "path": "extensions/spring-recoil/contributions/codec-spring-vfs.json",
           "repository": "spring"
         }
       ],
@@ -2481,7 +2481,7 @@
         {
           "id": "modkit/supcom-scm",
           "path": "extensions/annihilation-gas-powered/contributions/codec-supcom-scm.json",
-          "repository": "other"
+          "repository": "gas-powered"
         }
       ],
       "codec": "supcom-scm",
@@ -2531,8 +2531,8 @@
       "candidates": [
         {
           "id": "modkit/ta-hpi",
-          "path": "extensions/cavedog-total-annihilation/contributions/codec-ta-hpi.json",
-          "repository": "other"
+          "path": "extensions/total-annihilation/contributions/codec-ta-hpi.json",
+          "repository": "spring"
         }
       ],
       "codec": "ta-hpi",
@@ -3217,7 +3217,13 @@
       "status": "pending"
     },
     {
-      "candidates": [],
+      "candidates": [
+        {
+          "id": "blizzard/wow-m2",
+          "path": "blizzard-world-of-warcraft/contributions/codec-wow-m2.json",
+          "repository": "blizzard"
+        }
+      ],
       "codec": "wow-m2",
       "family": "other",
       "featureAudit": "pending",
@@ -3249,7 +3255,7 @@
         {
           "id": "modkit/wtp",
           "path": "extensions/relic-essence/contributions/codec-wtp.json",
-          "repository": "other"
+          "repository": "relic"
         }
       ],
       "codec": "wtp",

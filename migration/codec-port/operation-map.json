@@ -976,7 +976,7 @@
       "targetOperation": null
     },
     {
-      "contribution": "modkit-extensions-other/extensions/petroglyph-glyphx/contributions/codec-grey-goo-alo.json",
+      "contribution": "modkit-extensions-petroglyph/extensions/petroglyph-glyphx/contributions/codec-grey-goo-alo.json",
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/grey-goo-alo/operation/model.read",
       "status": "adapted",
@@ -1610,14 +1610,14 @@
       "targetOperation": null
     },
     {
-      "contribution": "modkit-extensions-other/extensions/petroglyph-glyphx/contributions/codec-petroglyph-meg.json",
+      "contribution": "modkit-extensions-petroglyph/extensions/petroglyph-glyphx/contributions/codec-petroglyph-meg.json",
       "handlerId": "extract-entry",
       "id": "legacy/codec-manifest/modkit/petroglyph-meg/operation/archive.extract",
       "status": "adapted",
       "targetOperation": "container.extract"
     },
     {
-      "contribution": "modkit-extensions-other/extensions/petroglyph-glyphx/contributions/codec-petroglyph-meg.json",
+      "contribution": "modkit-extensions-petroglyph/extensions/petroglyph-glyphx/contributions/codec-petroglyph-meg.json",
       "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/petroglyph-meg/operation/archive.inspect",
       "status": "adapted",
@@ -1846,21 +1846,21 @@
       "targetOperation": "model.render"
     },
     {
-      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-relic-sga.json",
+      "contribution": "modkit-extensions-relic/extensions/relic-essence/contributions/codec-relic-sga.json",
       "handlerId": "extract-entry",
       "id": "legacy/codec-manifest/modkit/relic-sga/operation/archive.extract",
       "status": "adapted",
       "targetOperation": "container.extract"
     },
     {
-      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-relic-sga.json",
+      "contribution": "modkit-extensions-relic/extensions/relic-essence/contributions/codec-relic-sga.json",
       "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/relic-sga/operation/archive.inspect",
       "status": "adapted",
       "targetOperation": "view.inspect"
     },
     {
-      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-relic-sgm.json",
+      "contribution": "modkit-extensions-relic/extensions/relic-essence/contributions/codec-relic-sgm.json",
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/relic-sgm/operation/model.read",
       "status": "adapted",
@@ -1878,7 +1878,7 @@
       "targetOperation": "model.render"
     },
     {
-      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-relic-whm.json",
+      "contribution": "modkit-extensions-relic/extensions/relic-essence/contributions/codec-relic-whm.json",
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/relic-whm/operation/model.read",
       "status": "adapted",
@@ -1896,28 +1896,28 @@
       "targetOperation": "model.render"
     },
     {
-      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-relic.json",
+      "contribution": "modkit-extensions-relic/extensions/relic-essence/contributions/codec-relic.json",
       "handlerId": "extract-entry",
       "id": "legacy/codec-manifest/modkit/relic/operation/archive.extract",
       "status": "adapted",
       "targetOperation": "container.extract"
     },
     {
-      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-relic.json",
+      "contribution": "modkit-extensions-relic/extensions/relic-essence/contributions/codec-relic.json",
       "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/relic/operation/archive.inspect",
       "status": "adapted",
       "targetOperation": "view.inspect"
     },
     {
-      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-rgt.json",
+      "contribution": "modkit-extensions-relic/extensions/relic-essence/contributions/codec-rgt.json",
       "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/rgt/operation/image.inspect",
       "status": "adapted",
       "targetOperation": "view.inspect"
     },
     {
-      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-rgt.json",
+      "contribution": "modkit-extensions-relic/extensions/relic-essence/contributions/codec-rgt.json",
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/rgt/operation/image.read",
       "status": "adapted",
@@ -1928,7 +1928,7 @@
       "targetOperation": null
     },
     {
-      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/writer-relic-texture.json",
+      "contribution": "modkit-extensions-relic/extensions/relic-essence/contributions/writer-relic-texture.json",
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/rgt/operation/image.write",
       "status": "adapted",
@@ -1940,28 +1940,28 @@
       }
     },
     {
-      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-rrtex.json",
+      "contribution": "modkit-extensions-relic/extensions/relic-essence/contributions/codec-rrtex.json",
       "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/rrtex/operation/image.inspect",
       "status": "adapted",
       "targetOperation": "view.inspect"
     },
     {
-      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-rrtex.json",
+      "contribution": "modkit-extensions-relic/extensions/relic-essence/contributions/codec-rrtex.json",
       "handlerId": "extract-entry",
       "id": "legacy/codec-manifest/modkit/rrtex/operation/image.read",
       "status": "adapted",
       "targetOperation": "container.extract"
     },
     {
-      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-rsh.json",
+      "contribution": "modkit-extensions-relic/extensions/relic-essence/contributions/codec-rsh.json",
       "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/rsh/operation/image.inspect",
       "status": "adapted",
       "targetOperation": "view.inspect"
     },
     {
-      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-rsh.json",
+      "contribution": "modkit-extensions-relic/extensions/relic-essence/contributions/codec-rsh.json",
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/rsh/operation/image.read",
       "status": "adapted",
@@ -1972,7 +1972,7 @@
       "targetOperation": null
     },
     {
-      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/writer-relic-texture.json",
+      "contribution": "modkit-extensions-relic/extensions/relic-essence/contributions/writer-relic-texture.json",
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/rsh/operation/image.write",
       "status": "adapted",
@@ -2012,14 +2012,14 @@
       "targetOperation": null
     },
     {
-      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-rtx.json",
+      "contribution": "modkit-extensions-relic/extensions/relic-essence/contributions/codec-rtx.json",
       "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/rtx/operation/image.inspect",
       "status": "adapted",
       "targetOperation": "view.inspect"
     },
     {
-      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-rtx.json",
+      "contribution": "modkit-extensions-relic/extensions/relic-essence/contributions/codec-rtx.json",
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/rtx/operation/image.read",
       "status": "adapted",
@@ -2030,7 +2030,7 @@
       "targetOperation": null
     },
     {
-      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/writer-relic-texture.json",
+      "contribution": "modkit-extensions-relic/extensions/relic-essence/contributions/writer-relic-texture.json",
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/rtx/operation/image.write",
       "status": "adapted",
@@ -2653,7 +2653,7 @@
       "targetOperation": null
     },
     {
-      "contribution": "modkit-extensions-other/extensions/annihilation-gas-powered/contributions/codec-supcom-scm.json",
+      "contribution": "modkit-extensions-gas-powered/extensions/annihilation-gas-powered/contributions/codec-supcom-scm.json",
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/supcom-scm/operation/model.read",
       "status": "adapted",
@@ -3307,14 +3307,14 @@
       "targetOperation": "view.inspect"
     },
     {
-      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-wtp.json",
+      "contribution": "modkit-extensions-relic/extensions/relic-essence/contributions/codec-wtp.json",
       "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/wtp/operation/image.inspect",
       "status": "adapted",
       "targetOperation": "view.inspect"
     },
     {
-      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-wtp.json",
+      "contribution": "modkit-extensions-relic/extensions/relic-essence/contributions/codec-wtp.json",
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/wtp/operation/image.read",
       "status": "adapted",
@@ -3325,7 +3325,7 @@
       "targetOperation": null
     },
     {
-      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/writer-relic-texture.json",
+      "contribution": "modkit-extensions-relic/extensions/relic-essence/contributions/writer-relic-texture.json",
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/wtp/operation/image.write",
       "status": "adapted",

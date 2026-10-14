@@ -27,7 +27,10 @@ export async function portContext({ discoverRepositories = false } = {}) {
       await import('./external-extension-roots.mjs')
     repositories.push(
       { id: 'core', directory: coreRoot, workspaceRelativeRoot: path.basename(coreRoot) },
-      ...['blizzard', 'warzone', 'ea', 'spring', 'other', 'realitypump'].map(id => {
+      ...[
+        'blizzard', 'warzone', 'ea', 'spring', 'other', 'realitypump',
+        'petroglyph', 'relic', 'gas-powered',
+      ].map(id => {
         const descriptor = externalRepositoryDescriptor(id, workspaceRoot)
         return {
           id,
