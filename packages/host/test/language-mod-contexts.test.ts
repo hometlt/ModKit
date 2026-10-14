@@ -910,7 +910,7 @@ describe('the loaded mod servers of a language workspace', () => {
 
   it('coalesces background preparation and does not prepare different keys simultaneously', async () => {
     const first = server(), second = server()
-    second.context = { ...second.context, id: 'other', target: 'C:/Mods/Other.SC2Mod' }
+    second.context = { ...second.context, target: 'C:/Mods/Other.SC2Mod' }
     let finish!: () => void
     let started!: () => void
     const running = new Promise<void>(resolve => { started = resolve })
