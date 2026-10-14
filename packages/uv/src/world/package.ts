@@ -1160,8 +1160,9 @@ export async function materializeWorldToUvpMap(
         ),
       )
       for (const material of catalog.waterMaterials ?? []) {
-        if (!usedMaterialIds.has(material.materialId)) continue
-        if (!target.layer.materials?.some(candidate => candidate.id === material.materialId))
+        const targetId = localId(material.materialId, 'material')
+        if (!usedMaterialIds.has(targetId)) continue
+        if (!target.layer.materials?.some(candidate => candidate.id === targetId))
           throw new TypeError(
             `water material ${material.materialId} is absent from output layer ${target.layer.id}`,
           )
@@ -1210,7 +1211,7 @@ export async function materializeWorldToUvpMap(
               outputSpaceId: target.spaceId,
               outputLayerId: target.layer.id,
               layerKind: 'water',
-              materialId: material.materialId,
+              materialId: targetId,
               channel,
               sourceResourceId: resourceId,
               localResourceId: encoded.localResourceId,

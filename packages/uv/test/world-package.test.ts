@@ -498,6 +498,39 @@ describe('portable UVP map bundle', () => {
     }
   })
 
+  it('joins prefixed water catalog IDs to portable media and reopens texture bytes', async () => {
+    const original = sourceWithDualWaterTextures()
+    const source = {
+      ...original,
+      async page(request: Parameters<typeof original.page>[0], signal?: AbortSignal) {
+        const page = await original.page(request, signal)
+        if (request.facet !== 'layers' || page.state !== 'available') return page
+        return { ...page, items: page.items.map(item => item.kind === 'water' ? {
+          ...item, waterMaterials: item.waterMaterials?.map(material => ({
+            ...material, materialId: `native:${material.materialId}`,
+          })),
+        } : item) }
+      },
+    }
+    const packed = await materializeWorldToUvpMap(source, options)
+    expect(packed.state).toBe('materialized')
+    if (packed.state !== 'materialized') throw new Error(JSON.stringify(packed.refusals))
+    expect(packed.packagedTextureCount).toBe(3)
+    const reopened = await openUvpMapBundle(packed.entries, {
+      snapshotId: 'prefixed-water', rasterResources,
+    })
+    const water = reopened.document.spaces[0]?.layers.find(layer => layer.kind === 'water')
+    expect(water?.materials?.[0]).toMatchObject({
+      id: 'water-surface', baseColorResourceId: 'water-media-0001',
+      secondaryColorResourceId: 'water-media-0002',
+    })
+    for (const id of ['water-media-0001', 'water-media-0002']) {
+      const texture = await reopened.source.texture?.(`uvw-resource:main/${id}`, { maxBytes: 1024 })
+      expect(texture?.state).toBe('decoded')
+      if (texture?.state === 'decoded') expect(texture.texture.rgba).toEqual(rgba)
+    }
+  })
+
   it('packages and independently reopens exact RGBA terrain weight rasters', async () => {
     const packed = await materializeWorldToUvpMap(sourceWithWeightRaster(), options)
     expect(packed.state).toBe('materialized')
