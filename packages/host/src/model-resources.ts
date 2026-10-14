@@ -24,6 +24,7 @@ import {
 import type { OpenSubjectResult } from './subject-open.js'
 import { createModelProjectionCache, modelProjectionKey } from './model-projection-cache.js'
 import { resourceIdParameters } from './resource-id.js'
+import { createModelDependencyResources } from './resource-session.js'
 
 /** Host-local profiling hook, deliberately outside the codec/worker SDK contracts. */
 export interface ModelResourceProfile {
@@ -193,6 +194,10 @@ export function createSubjectModelResources(options: Options): ModelResourcePort
         )
       if (units !== undefined && (!Number.isFinite(units) || units <= 0))
         return refuse('Model conversion metersPerSourceUnit must be positive and finite.')
+      if (request.animationResources !== undefined && (!Array.isArray(request.animationResources) || request.animationResources.length > 64))
+        return refuse('Model animation attachment list exceeds 64 resources.')
+      if (request.animationNames !== undefined && (!Array.isArray(request.animationNames) || request.animationNames.length < 1 || request.animationNames.length > 128 || request.animationNames.some(name => typeof name !== 'string' || name.length < 1 || name.length > 512)))
+        return refuse('Model animation names require 1..128 non-empty names of at most 512 characters.')
       const resources = options.state.resources
       if (resources === undefined) return refuse('The subject has no model resource origin.')
       if (resources !== projectionResources) {
@@ -308,6 +313,19 @@ export function createSubjectModelResources(options: Options): ModelResourcePort
         )
         if (operation === undefined)
           throw new TypeError('the resource does not publish model.export-uvm')
+        if (request.animationResources !== undefined) {
+          const schema = operation.inputSchema?.document
+          const properties = schema !== null && typeof schema === 'object' && !Array.isArray(schema) ? (schema as import('@modkit/sdk').JsonObject)['properties'] : undefined
+          if (properties === null || typeof properties !== 'object' || Array.isArray(properties) || !Object.hasOwn(properties, 'animationResources'))
+            throw new TypeError('The model codec does not advertise explicit animation attachments.')
+        }
+        if (request.animationNames !== undefined) {
+          const schema = operation.inputSchema?.document
+          const properties = schema !== null && typeof schema === 'object' && !Array.isArray(schema)
+            ? (schema as import('@modkit/sdk').JsonObject)['properties'] : undefined
+          if (properties === null || typeof properties !== 'object' || Array.isArray(properties) || !Object.hasOwn(properties, 'animationNames'))
+            throw new TypeError('The model codec does not advertise animation sequence selection.')
+        }
         const sourceKey = [
           source.ref.id,
           opened.descriptor.revision,
@@ -317,10 +335,12 @@ export function createSubjectModelResources(options: Options): ModelResourcePort
           `metersPerSourceUnit=${units === undefined ? 'source-unit' : String(units)}`,
           // each parameter set is a model of its own
           ...(parameterised ? [`parameters=${canonicalJsonStringify(parameters)}`] : []),
+          ...(request.animationResources === undefined ? [] : [`animations=${canonicalJsonStringify(request.animationResources)}`]),
+          ...(request.animationNames === undefined ? [] : [`animationNames=${canonicalJsonStringify(request.animationNames)}`]),
         ].join('|')
         projection = await timed('projectionWaitMs', () =>
           projections.claim(
-            resources === options.state.resources
+            request.animationResources === undefined && request.animationNames === undefined && resources === options.state.resources
               ? modelProjectionKey(opened, source, sourceKey, resolution.provenance.logicalId)
               : undefined,
             signal,
@@ -340,6 +360,8 @@ export function createSubjectModelResources(options: Options): ModelResourcePort
               operation.handlerId,
               {
                 schemaVersion: 1,
+                ...(request.animationResources === undefined ? {} : { animationResources: request.animationResources.map(item => ({ ...item })) }),
+                ...(request.animationNames === undefined ? {} : { animationNames: [...request.animationNames] }),
                 ...(units === undefined ? {} : { metersPerSourceUnit: units }),
                 ...(parameterised ? { parameters } : {}),
               } satisfies ModelExportUvmInput,
@@ -379,7 +401,8 @@ export function createSubjectModelResources(options: Options): ModelResourcePort
         let resourceReferences: Lease<ModelResourceRefsSource> | undefined
         let sockets: Lease<ModelSocketSource> | undefined
         let sceneDiagnostic: ReturnType<typeof diagnostic> | undefined
-        let sceneResources = opened.resources
+        const sceneResources = createModelDependencyResources(resources, opened.resources)
+        if (sceneResources !== resources) releases.push(() => sceneResources.dispose())
         try {
           const uvmPath = resolution.provenance.logicalId.replace(/(?:\.[^./]+)?$/u, '.uvm')
           const uvmOpened = await timed('reopenUvmMs', () =>
@@ -401,9 +424,8 @@ export function createSubjectModelResources(options: Options): ModelResourcePort
           releases.push(() => uvmOpened.session.dispose())
           // The reopened UVM is an in-memory projection of the native model. Its subject-local
           // resource origin can resolve the synthetic .uvm itself, but it does not own the M3's
-          // game-logical DDS/M3A companions. Keep the native model overlay when one was captured;
-          // only fall back to the UVM origin for a codec that supplied no native resource port.
-          sceneResources = sceneResources ?? uvmOpened.resources
+          // game-logical DDS/M3A companions. Relative scopes keep the native model origin;
+          // namespace scopes keep the requesting subject's full dependency overlay.
           const facetsStarted = performance.now()
           try {
             const acquiredScene = await uvmOpened.session.dataSource(

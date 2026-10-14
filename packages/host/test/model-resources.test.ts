@@ -38,6 +38,9 @@ function fixture(
     beforeUvmOpen?: () => void
     uvmBytes?: Uint8Array
     exportWarning?: boolean
+    advertiseAnimationNames?: boolean
+    advertiseAnimationResources?: boolean
+    onExportInput?: (input: unknown) => void
   } = {},
 ) {
   let nativeClosed = 0,
@@ -411,6 +414,24 @@ function fixture(
               handlerId: 'convert',
               state: 'available',
               mutatesSource: settings.mutates ?? false,
+              ...(settings.advertiseAnimationNames || settings.advertiseAnimationResources
+                ? {
+                    inputSchema: {
+                      $ref: 'test/animation-selection',
+                      document: {
+                        type: 'object',
+                        properties: {
+                          ...(settings.advertiseAnimationNames
+                            ? { animationNames: { type: 'array', items: { type: 'string' } } }
+                            : {}),
+                          ...(settings.advertiseAnimationResources
+                            ? { animationResources: { type: 'array', items: { type: 'object' } } }
+                            : {}),
+                        },
+                      },
+                    },
+                  }
+                : {}),
             },
           ],
         },
@@ -424,11 +445,13 @@ function fixture(
               async invoke(handler: string, input: unknown, options?: { signal?: AbortSignal }) {
                 invokes++
                 expect(handler).toBe('convert')
-                expect(input).toEqual(
-                  settings.omitUnits
-                    ? { schemaVersion: 1 }
-                    : { schemaVersion: 1, metersPerSourceUnit: settings.units ?? 0.01 },
-                )
+                if (settings.onExportInput) settings.onExportInput(input)
+                else
+                  expect(input).toEqual(
+                    settings.omitUnits
+                      ? { schemaVersion: 1 }
+                      : { schemaVersion: 1, metersPerSourceUnit: settings.units ?? 0.01 },
+                  )
                 await settings.beforeInvoke?.(options?.signal)
                 options?.signal?.throwIfAborted()
                 settings.afterInvoke?.()
@@ -898,4 +921,90 @@ it('disposes a subject during single-flight work without retaining its completed
   expect(leases.map(lease => lease.value.result.state)).toEqual(['unresolved', 'unresolved'])
   expect(f.counts()).toMatchObject({ invokes: 1, nativeClosed: 2 })
   expect(f.state.reservedBytes).toBe(0)
+})
+
+it('forwards selected animation names and isolates selected/default projection caches', async () => {
+  const inputs: unknown[] = []
+  const f = fixture({
+    cacheable: true,
+    uvmScene: true,
+    uvmFacets: true,
+    advertiseAnimationNames: true,
+    onExportInput: input => inputs.push(input),
+  })
+  for (const animationNames of [['Stand'], ['Walk'], undefined, ['Stand'], undefined]) {
+    const lease = await f.port.acquire({
+      ...request,
+      ...(animationNames === undefined ? {} : { animationNames }),
+    })
+    expect(lease.value.result.state).toBe('converted')
+    await lease.release()
+  }
+  expect(inputs).toEqual([
+    { schemaVersion: 1, metersPerSourceUnit: 0.01, animationNames: ['Stand'] },
+    { schemaVersion: 1, metersPerSourceUnit: 0.01, animationNames: ['Walk'] },
+    { schemaVersion: 1, metersPerSourceUnit: 0.01 },
+    { schemaVersion: 1, metersPerSourceUnit: 0.01, animationNames: ['Stand'] },
+  ])
+  expect(f.profiles.map(profile => profile.cache)).toEqual(['bypass', 'bypass', 'miss', 'bypass', 'hit'])
+  await f.owned[0]!()
+})
+
+it('forwards advertised animation attachments and bypasses projection cache', async () => {
+  const inputs: unknown[] = []
+  const f = fixture({
+    cacheable: true,
+    advertiseAnimationResources: true,
+    onExportInput: input => inputs.push(input),
+  })
+  const animationResources = [{
+    id: 'walk',
+    logicalId: 'Walk.m3a',
+    role: 'sidecar' as const,
+    scopes: ['sibling-directory' as const],
+  }]
+  for (let index = 0; index < 2; index++) {
+    const lease = await f.port.acquire({ ...request, animationResources })
+    expect(lease.value.result.state).toBe('converted')
+    await lease.release()
+  }
+  expect(inputs).toEqual([
+    { schemaVersion: 1, metersPerSourceUnit: 0.01, animationResources },
+    { schemaVersion: 1, metersPerSourceUnit: 0.01, animationResources },
+  ])
+  expect(f.profiles.map(profile => profile.cache)).toEqual(['bypass', 'bypass'])
+  await f.owned[0]!()
+})
+
+it('refuses animation inputs not advertised by the native conversion', async () => {
+  const f = fixture()
+  for (const extra of [
+    { animationNames: ['Stand'] },
+    { animationResources: [{ id: 'walk', logicalId: 'Walk.m3a', role: 'sidecar' as const, scopes: ['sibling-directory' as const] }] },
+  ]) {
+    const lease = await f.port.acquire({ ...request, ...extra })
+    expect(lease.value.result.state).toBe('unresolved')
+    await lease.release()
+  }
+  expect(f.counts().invokes).toBe(0)
+})
+
+it('rejects unbounded or empty animation selections before native acquisition', async () => {
+  const f = fixture({ advertiseAnimationNames: true, advertiseAnimationResources: true })
+  for (const extra of [
+    { animationNames: [] },
+    { animationNames: [''] },
+    { animationNames: Array.from({ length: 129 }, () => 'Stand') },
+    { animationResources: Array.from({ length: 65 }, (_, index) => ({
+      id: `clip-${index}`,
+      logicalId: 'Walk.m3a',
+      role: 'sidecar' as const,
+      scopes: ['sibling-directory' as const],
+    })) },
+  ]) {
+    const lease = await f.port.acquire({ ...request, ...extra })
+    expect(lease.value.result.state).toBe('unresolved')
+    await lease.release()
+  }
+  expect(f.counts().opens).toBe(0)
 })

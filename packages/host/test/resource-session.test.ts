@@ -19,6 +19,7 @@ import {
 } from '@modkit/sdk'
 import {
   createResourceSession,
+  createModelDependencyResources,
   DEFAULT_RESOURCE_SESSION_LIMITS,
   RESOURCE_BUDGET_EXCEEDED,
   RESOURCE_CYCLE_DETECTED,
@@ -1083,4 +1084,165 @@ describe('resource session — alternatives', () => {
       await session.dispose()
     }
   })
+})
+
+describe('model dependency resources — caller context', () => {
+  function ports(
+    nativeFiles: string[],
+    parentFiles: string[],
+    nativeScopes: InputSearchScope[] = ['sibling-directory', 'enclosing-container'],
+    parentScopes: InputSearchScope[] = ['current-mount', 'workspace-dependency-layer', 'explicit-user-selection'],
+  ) {
+    const nativeOrigin = fakeOrigin(nativeFiles, { scopes: nativeScopes })
+    const parentOrigin = fakeOrigin(parentFiles, { scopes: parentScopes })
+    const native = createResourceSession({ origin: nativeOrigin, revision: SESSION_REVISION, sessionId: 'native' })
+    const parent = createResourceSession({ origin: parentOrigin, revision: SESSION_REVISION, sessionId: 'parent' })
+    const calls: string[] = []
+    const wrapped = (port: typeof native, name: string) => ({
+      ...port,
+      resolve: async (req: LogicalResourceRequirement, signal?: AbortSignal) => {
+        calls.push(`${name}:${req.scopes.join(',')}`)
+        return port.resolve(req, signal)
+      },
+    })
+    return {
+      native,
+      parent,
+      nativeOrigin,
+      parentOrigin,
+      calls,
+      view: createModelDependencyResources(wrapped(parent, 'parent'), wrapped(native, 'native')),
+    }
+  }
+
+  it.each([
+    ['sibling-directory', 'workspace-dependency-layer'],
+    ['workspace-dependency-layer', 'sibling-directory'],
+    ['enclosing-container', 'current-mount'],
+    ['current-mount', 'enclosing-container'],
+    ['explicit-user-selection', 'enclosing-container'],
+  ] as InputSearchScope[][])('preserves requested priority with conflicts in both contexts (%s)', async (...scopes) => {
+    const p = ports(['textures/shared.dds'], ['textures/shared.dds'])
+    try {
+      const result = await p.view.resolve({ ...requirement('conflict', 'textures/shared.dds'), scopes })
+      expect(result.state).toBe('resolved')
+      expect(p.calls).toEqual([`${['sibling-directory', 'enclosing-container'].includes(scopes[0]!) ? 'native' : 'parent'}:${scopes[0]}`])
+      if (result.state === 'resolved') await result.lease.release()
+    } finally {
+      await p.view.dispose()
+      await p.native.dispose()
+      await p.parent.dispose()
+    }
+  })
+
+  it('finds a workspace-only DDS after a native miss without widening scopes', async () => {
+    const p = ports([], ['textures/workspace.dds'])
+    try {
+      const result = await p.view.resolve({
+        ...requirement('workspace', 'textures/workspace.dds'),
+        scopes: ['sibling-directory', 'workspace-dependency-layer'],
+      })
+      expect(result.state).toBe('resolved')
+      expect(p.calls).toEqual(['native:sibling-directory', 'parent:workspace-dependency-layer'])
+      if (result.state === 'resolved') await result.lease.release()
+    } finally {
+      await p.view.dispose()
+      await p.native.dispose()
+      await p.parent.dispose()
+    }
+  })
+
+  it.each([RESOURCE_NOT_ALLOWLISTED, RESOURCE_BUDGET_EXCEEDED, RESOURCE_PATH_REFUSED])(
+    'stops at terminal native refusal %s', async code => {
+      const p = ports([], ['textures/shared.dds'])
+      const refusing = {
+        ...p.native,
+        resolve: async (req: LogicalResourceRequirement) => ({
+          state: 'unresolved',
+          reason: 'not-allowlisted',
+          diagnostic: { code, severity: 'error', message: 'refused' },
+          provenance: {
+            requirementId: req.id,
+            logicalId: req.logicalId,
+            role: req.role,
+            state: 'unresolved',
+            reason: 'not-allowlisted',
+            scopes: req.scopes,
+            cached: false,
+          },
+        } as ResourceResolution),
+      }
+      const view = createModelDependencyResources({
+        ...p.parent,
+        resolve: async (req: LogicalResourceRequirement) => {
+          p.calls.push('parent')
+          return p.parent.resolve(req)
+        },
+      }, refusing)
+      try {
+        const result = await view.resolve({
+          ...requirement('terminal', 'textures/shared.dds'),
+          scopes: ['sibling-directory', 'workspace-dependency-layer'],
+        })
+        expect(result.state).toBe('unresolved')
+        expect(p.calls).toEqual([])
+      } finally {
+        await view.dispose()
+        await p.native.dispose()
+        await p.parent.dispose()
+      }
+    },
+  )
+
+  it('borrows sessions and leases without taking disposal ownership', async () => {
+    const p = ports(['textures/shared.dds'], [])
+    const result = await p.view.resolve({
+      ...requirement('borrow', 'textures/shared.dds'),
+      scopes: ['sibling-directory'],
+    })
+    expect(result.state).toBe('resolved')
+    await p.view.dispose()
+    expect(p.native.state()).toBe('live')
+    expect(p.parent.state()).toBe('live')
+    expect(p.nativeOrigin.counts.releases).toBe(0)
+    await expect(p.view.resolve(requirement('closed', 'textures/shared.dds'))).rejects.toThrow(/disposed/)
+    if (result.state === 'resolved') await result.lease.release()
+    expect(p.nativeOrigin.counts.releases).toBe(1)
+    await p.native.dispose()
+    await p.parent.dispose()
+    expect(p.nativeOrigin.counts.releases).toBe(1)
+  })
+})
+
+it('releases a pending borrowed resolution if its model dependency view is disposed', async () => {
+  const nativeOrigin = fakeOrigin(['textures/pending.dds'], { scopes: ['sibling-directory'] })
+  const parentOrigin = fakeOrigin(['textures/pending.dds'], { scopes: ['workspace-dependency-layer'] })
+  const native = createResourceSession({ origin: nativeOrigin, revision: SESSION_REVISION })
+  const parent = createResourceSession({ origin: parentOrigin, revision: SESSION_REVISION })
+  let complete!: (result: ResourceResolution) => void
+  const pending = new Promise<ResourceResolution>(resolve => { complete = resolve })
+  let fallbacks = 0
+  const view = createModelDependencyResources({
+    ...parent,
+    resolve: async (req: LogicalResourceRequirement) => {
+      fallbacks++
+      return parent.resolve(req)
+    },
+  }, { ...native, resolve: async () => pending })
+  const req = requirement('pending', 'textures/pending.dds', {
+    scopes: ['sibling-directory', 'workspace-dependency-layer'],
+  })
+  const request = view.resolve(req)
+  await view.dispose()
+  const result = await native.resolve({ ...req, scopes: ['sibling-directory'] })
+  expect(result.state).toBe('resolved')
+  complete(result)
+  await expect(request).rejects.toThrow(/disposed/)
+  expect(nativeOrigin.counts.releases).toBe(1)
+  expect(fallbacks).toBe(0)
+  expect(native.state()).toBe('live')
+  expect(parent.state()).toBe('live')
+  await native.dispose()
+  await parent.dispose()
+  expect(nativeOrigin.counts.releases).toBe(1)
 })

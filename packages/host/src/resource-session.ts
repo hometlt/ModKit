@@ -597,3 +597,48 @@ export function createResourceSession(options: ResourceSessionOptions): Resource
     },
   }
 }
+
+
+/**
+ * A model keeps its native relative namespace and the requesting subject's dependency overlay.
+ * Both sessions are borrowed: their owner releases them; this view never widens requested scopes.
+ */
+export function createModelDependencyResources(
+  requesting: ResourceSessionPort,
+  native: ResourceSessionPort | undefined,
+): ResourceSessionPort {
+  if (native === undefined || native === requesting) return requesting
+  let closed = false
+  const records: ResourceProvenanceRecord[] = []
+  return Object.freeze({
+    sessionId: `${requesting.sessionId}/model-dependencies/${native.sessionId}`,
+    revision: requesting.revision,
+    ...(native.primaryLogicalId === undefined ? {} : { primaryLogicalId: native.primaryLogicalId }),
+    state: () => closed ? 'disposed' as const : 'live' as const,
+    provenance: () => Object.freeze([...records]),
+    async dispose() { closed = true },
+    async resolve(requirement: LogicalResourceRequirement, signal?: AbortSignal) {
+      const captured = Object.freeze({ ...requirement, scopes: Object.freeze([...requirement.scopes]) })
+      if (closed) throw new TypeError('model dependency resource view is disposed')
+      if (captured.scopes.length === 0) return requesting.resolve(captured, signal)
+      let last: ResourceResolution | undefined
+      for (const scope of captured.scopes) {
+        throwIfAborted(signal)
+        const port = scope === 'sibling-directory' || scope === 'enclosing-container' ? native : requesting
+        last = await port.resolve({ ...captured, scopes: [scope] }, signal)
+        if (closed) {
+          if (last.state === 'resolved') await last.lease.release()
+          throw new TypeError('model dependency resource view is disposed')
+        }
+        if (last.provenance !== undefined) records.push(last.provenance)
+        if (last.state === 'resolved') return last
+        // Missing scopes may fall through; confinement, permission and budget refusals may not.
+        const missing = last.reason === undefined
+          ? last.diagnostic.code === RESOURCE_NOT_FOUND || last.diagnostic.code === RESOURCE_SCOPE_UNSUPPORTED
+          : last.reason === 'not-found' || last.reason === 'scope-unsupported'
+        if (!missing) return last
+      }
+      return last!
+    },
+  })
+}
