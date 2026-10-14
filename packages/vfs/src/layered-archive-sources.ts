@@ -77,6 +77,8 @@ export interface LayerOrigin {
 }
 
 export interface ArchiveLayers {
+  /** Exact membership, including unlisted lazy keys, without reading payload bytes. */
+  lookup?(path: string): Promise<LayerArchiveEntry | undefined>
   /** Archive ids, highest priority first. */
   readonly archives: readonly string[]
   /** Paths whose copy in a lower archive a higher one hides. */
@@ -239,8 +241,8 @@ async function merge(archives: readonly LayerArchive[], label: string): Promise<
       return [{ key, file }]
     })
   const readCopy = (copy: Copy, maxBytes: number) => copy.archive.read(copy.path, maxBytes)
-  /** Resolves one listed, explicit-rank or hashed copy; both byte APIs share exactly this precedence. */
-  const resolveCopy = async (path: string, rank?: number): Promise<Copy> => {
+  /** Resolves exact membership without treating lookup failure as absence or reading payload bytes. */
+  const findCopy = async (path: string, rank?: number): Promise<Copy | undefined> => {
     const copies = merged.get(keyOf(path))?.copies ?? []
     const copy = rank === undefined ? copies[0] : copies.find(item => item.rank === rank)
     if (copy !== undefined) return copy
@@ -249,8 +251,14 @@ async function merge(archives: readonly LayerArchive[], label: string): Promise<
         const found = await archive.lookup?.(normalized(path))
         if (found !== undefined) return copyOf(archive, index, found, normalized(path))
       }
-      throw new RangeError(`${label} has no file «${path}»`)
     }
+    return undefined
+  }
+  /** Both byte APIs retain the established missing-file refusal over the same winning copy. */
+  const resolveCopy = async (path: string, rank?: number): Promise<Copy> => {
+    const copy = await findCopy(path, rank)
+    if (copy !== undefined) return copy
+    if (rank === undefined) throw new RangeError(`${label} has no file «${path}»`)
     throw new RangeError(`${archives[rank]?.id ?? `archive ${String(rank)}`} holds no «${path}»`)
   }
   const layers: ArchiveLayers = {
@@ -261,6 +269,16 @@ async function merge(archives: readonly LayerArchive[], label: string): Promise<
       return first === undefined ? undefined : origin(first)
     },
     shadowedBy: path => (merged.get(keyOf(path))?.copies ?? []).slice(1).map(origin),
+    /** Exposes only membership facts of the same copy the byte APIs would serve. */
+    async lookup(path) {
+      const copy = await findCopy(path)
+      return copy === undefined ? undefined : {
+        path: copy.path,
+        ...(copy.size === undefined ? {} : { size: copy.size }),
+        ...(copy.hidden === true ? { hidden: true } : {}),
+        ...(copy.context === undefined ? {} : { context: copy.context }),
+      }
+    },
     async read(path, maxBytes, rank) {
       return readCopy(await resolveCopy(path, rank), maxBytes)
     },
@@ -464,6 +482,15 @@ export function createLayeredArchiveContentSources(
     async read(sourceId, path, maxBytes) {
       return (await open(sourceId)).layers.read(path, maxBytes)
     },
+    /** Retained root membership uses the canonical layered lookup, including lazy keys. */
+    async lookup(sourceId, path) {
+      const entry = await (await open(sourceId)).layers.lookup!(path)
+      return entry === undefined ? undefined : {
+        path: entry.path, name: entry.path.slice(entry.path.lastIndexOf('/') + 1), directory: false,
+        ...(entry.size === undefined ? {} : { size: entry.size }),
+        ...(entry.hidden === true ? { hidden: true } : {}),
+      }
+    },
     /** Native metadata is selected by the same retained layered tree as the file bytes. */
     async readWithContext(sourceId, path, maxBytes) {
       return (await open(sourceId)).layers.readWithContext(path, maxBytes)
@@ -512,12 +539,12 @@ export function createLayeredArchiveContentSources(
 /**
  * A mod context over layered sources, lowest layer first, the opened one last: each layer's names
  * listed once for the context's life (hidden entries left out), pages of them narrowed by prefix
- * without case, a read refused for a name its layer does not list, `locate` answered by the
- * highest layer that lists the path, opened archives closed on `dispose`. The game decides the
+ * without case, exact lazy membership admitted without expanding listings, `locate` answered by
+ * the highest layer that holds the path, opened archives closed on `dispose`. The game decides the
  * layers and adds what only it knows (`query` for its data); this is the rest, once.
  */
 export function layeredModContext(
-  sources: Pick<LayeredArchiveContentSources, 'files' | 'read' | 'readWithContext'>,
+  sources: Pick<LayeredArchiveContentSources, 'files' | 'read' | 'readWithContext' | 'lookup'>,
   context: {
     readonly gameId: string
     readonly contextId: string
@@ -569,6 +596,26 @@ export function layeredModContext(
     }
     return names
   }
+  /** Resolves listed or exact lazy membership in one layer, preserving hidden-entry refusal. */
+  const member = async (layerId: string, path: string,
+    knownNames?: ReadonlyMap<string, string>): Promise<LayerArchiveEntry | undefined> => {
+    const names = knownNames ?? await namesOf(layerId)
+    const layer = byId.get(layerId)!
+    const spelled = names.get(keyOf(path))
+    const { content } = layer
+    if ('archive' in content) {
+      const listedEntry = content.archive.entries.find(item => keyOf(item.path) === keyOf(path))
+      const entry = listedEntry ?? await content.archive.lookup?.(normalized(path))
+      if (entry?.hidden === true) return undefined
+      return entry ?? (spelled === undefined ? undefined : { path: spelled })
+    }
+    if (spelled !== undefined) return { path: spelled }
+    if ('root' in content) {
+      const entry = await sources.lookup?.(content.root, normalized(path))
+      return entry?.hidden === true ? undefined : entry
+    }
+    return undefined
+  }
   return {
     schemaVersion: 1,
     gameId: context.gameId,
@@ -592,39 +639,40 @@ export function layeredModContext(
         : { items }
     },
     async read(layerId, path, maxBytes) {
-      const spelled = (await namesOf(layerId)).get(keyOf(path))
-      if (spelled === undefined)
+      const entry = await member(layerId, path)
+      if (entry === undefined)
         throw new RangeError(`«${path}» is not a file of layer «${layerId}»`)
       const { content, sourceId } = byId.get(layerId)!
       if ('archive' in content) {
-        const entry = content.archive.entries.find(item => keyOf(item.path) === keyOf(spelled))
-        return content.archive.read(entry?.path ?? spelled, maxBytes)
+        return content.archive.read(entry.path, maxBytes)
       }
       return 'file' in content
         ? sources.read(sourceId, normalized(content.file), maxBytes)
-        : sources.read(content.root, spelled, maxBytes)
+        : sources.read(content.root, entry.path, maxBytes)
     },
     /** Reads only a validated member of this retained layer and its own context, never a lower copy's. */
     async readWithContext(layerId, path, maxBytes) {
-      const spelled = (await namesOf(layerId)).get(keyOf(path))
-      if (spelled === undefined)
+      const entry = await member(layerId, path)
+      if (entry === undefined)
         throw new RangeError(`«${path}» is not a file of layer «${layerId}»`)
       const { content, sourceId } = byId.get(layerId)!
       if ('archive' in content) {
-        const entry = content.archive.entries.find(item => keyOf(item.path) === keyOf(spelled))
-        const bytes = await content.archive.read(entry?.path ?? spelled, maxBytes)
-        return { bytes, ...(entry?.context === undefined ? {} : { context: entry.context }) }
+        const bytes = await content.archive.read(entry.path, maxBytes)
+        return { bytes, ...(entry.context === undefined ? {} : { context: entry.context }) }
       }
       const root = 'file' in content ? sourceId : content.root
-      const nativePath = 'file' in content ? normalized(content.file) : spelled
+      const nativePath = 'file' in content ? normalized(content.file) : entry.path
       return sources.readWithContext === undefined
         ? { bytes: await sources.read(root, nativePath, maxBytes) }
         : sources.readWithContext(root, nativePath, maxBytes)
     },
     async locate(path) {
       for (const layer of [...context.layers].reverse()) {
-        const spelled = (await namesOf(layer.id).catch(() => undefined))?.get(keyOf(path))
-        if (spelled !== undefined) return { layerId: layer.id, path: spelled }
+        // Preserve listing-failure tolerance; a corrupt exact lookup is not an absent entry.
+        const names = await namesOf(layer.id).catch(() => undefined)
+        if (names === undefined) continue
+        const entry = await member(layer.id, path, names)
+        if (entry !== undefined) return { layerId: layer.id, path: entry.path }
       }
       return undefined
     },

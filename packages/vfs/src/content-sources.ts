@@ -273,7 +273,7 @@ export interface ModContext {
     layerId: string,
     page: { readonly cursor?: string; readonly limit: number; readonly prefix?: string },
   ): Promise<ModContextPage<string>>
-  /** Bytes of one listed file; a path the layer does not list is refused. */
+  /** Bytes of one confirmed layer member (listed or exact lazy lookup); absent paths are refused. */
   read(layerId: string, path: string, maxBytes: number): Promise<Uint8Array>
   /** Atomic optional companion read; old loaders need not implement metadata. */
   readWithContext?(layerId: string, path: string, maxBytes: number): Promise<ContentSourceRead>

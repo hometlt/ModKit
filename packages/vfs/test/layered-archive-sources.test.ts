@@ -371,6 +371,41 @@ describe('the mod context of a layered installation', () => {
     await loose.dispose()
   })
 
+  it('locates exact lazy root/archive members without expanding listings or losing winner context', async () => {
+    const reads: string[] = []
+    /** A lazy-only archive whose lookup validates membership but never reads payload bytes. */
+    const lazy = (id: string, value: number): LayerArchive => ({
+      id, entries: [],
+      async lookup(path) {
+        if (path === 'hidden') return { path, hidden: true }
+        if (path === 'broken') throw new Error('corrupt lazy index')
+        return path.toLowerCase() === 'exact.bin' ? { path: 'Exact.bin', context: { owner: id } } : undefined
+      },
+      async read(path) { reads.push(`${id}:${path}`); return new Uint8Array([value]) },
+      async close() {},
+    })
+    const sources = createLayeredArchiveContentSources('Lazy', [{
+      root: root('local:lazy'), open: async () => [lazy('patch', 2), lazy('base', 1)],
+    }], { modContext: { gameId: 'test/lazy' } })
+    const context = await sources.openModContext!({ schemaVersion: 1, target: { sourceId: 'local:lazy', path: '' } })
+    expect(await context.locate('exact.bin')).toEqual({ layerId: 'installation', path: 'exact.bin' })
+    expect(reads).toEqual([])
+    expect((await context.files('installation', { limit: 10 })).items).toEqual([])
+    expect(await context.readWithContext!('installation', 'EXACT.BIN', 8)).toEqual({ bytes: new Uint8Array([2]), context: { owner: 'patch' } })
+    expect(await context.locate('missing')).toBeUndefined()
+    expect(await context.locate('hidden')).toBeUndefined()
+    await expect(context.read('installation', 'hidden', 8)).rejects.toThrow('not a file')
+    await expect(context.locate('broken')).rejects.toThrow('corrupt lazy index')
+    const direct = layeredModContext(sources, { gameId: 'test/lazy', contextId: 'archive', layers: [{
+      id: 'archive', displayName: 'Archive', sourceId: 'host', sourcePath: '', role: 'primary',
+      provenance: 'opened', kind: 'package', content: { archive: lazy('opened', 3) },
+    }] })
+    expect(await direct.locate('exact.bin')).toEqual({ layerId: 'archive', path: 'Exact.bin' })
+    expect(await direct.readWithContext!('archive', 'exact.bin', 8)).toEqual({ bytes: new Uint8Array([3]), context: { owner: 'opened' } })
+    await expect(direct.read('archive', 'hidden', 8)).rejects.toThrow('not a file')
+    await direct.dispose(); await context.dispose(); await sources.dispose()
+  })
+
   it('reads an opened archive over the installation, without its hidden entries, and closes it', async () => {
     const log: Log = { closed: [], lookups: [] }
     const sources = createLayeredArchiveContentSources('Game', [
