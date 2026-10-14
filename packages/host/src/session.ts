@@ -155,7 +155,7 @@ function snapshotOutput(output: OperationOutput): OperationOutput {
       // a file name extension and a media type travel with the bytes when they are plausible ones
       return Object.freeze({
         kind: 'bytes',
-        value: output.value.slice(),
+        value: Uint8Array.from(output.value),
         ...(typeof output.extension === 'string' &&
         /^[A-Za-z0-9][A-Za-z0-9._-]{0,31}$/u.test(output.extension)
           ? { extension: output.extension }

@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { Buffer } from 'node:buffer'
 import { OperationCancelledError, diagnostic, type Diagnostic } from '@modkit/core'
 import {
   revisionId,
@@ -118,6 +119,47 @@ async function diagnosticSession(handler: HostOperationHandler, limit = 2) {
     },
   }).session
 }
+
+describe('operation binary output ownership', () => {
+  it.each([
+    ['Uint8Array', () => Uint8Array.of(1, 2, 3)],
+    ['offset Uint8Array', () => Uint8Array.of(90, 1, 2, 3, 91).subarray(1, 4)],
+    ['Buffer', () => Buffer.from([1, 2, 3])],
+    ['offset Buffer', () => Buffer.from([90, 1, 2, 3, 91]).subarray(1, 4)],
+  ] as const)(
+    'copies the visible range of %s independently in both directions',
+    async (_name, create) => {
+      const producer = create()
+      const session = await diagnosticSession(async () => ({
+        kind: 'bytes',
+        value: producer,
+        extension: 'uvm',
+        mediaType: 'model/gltf-binary',
+      }))
+      try {
+        const result = await session.operations().invoke('good', null)
+        if (result.state !== 'ok' || result.output.kind !== 'bytes')
+          throw new Error('expected binary output')
+        const published = result.output.value
+        expect(Array.from(published)).toEqual([1, 2, 3])
+        expect(result.output).toMatchObject({ extension: 'uvm', mediaType: 'model/gltf-binary' })
+        producer[0] = 77
+        expect(Array.from(published)).toEqual([1, 2, 3])
+        published[1] = 88
+        expect(Array.from(producer)).toEqual([77, 2, 3])
+        const next = await session.operations().invoke('good', null)
+        if (next.state !== 'ok' || next.output.kind !== 'bytes')
+          throw new Error('expected next binary output')
+        expect(Array.from(next.output.value)).toEqual([77, 2, 3])
+        producer[2] = 99
+        expect(Array.from(next.output.value)).toEqual([77, 2, 3])
+        expect(Array.from(published)).toEqual([1, 88, 3])
+      } finally {
+        await session.dispose()
+      }
+    },
+  )
+})
 
 describe('operation diagnostics accompanying binary output', () => {
   it('owns per-call diagnostics and ignores reports after completion', async () => {
