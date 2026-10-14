@@ -25,6 +25,10 @@
       "types": "./dist/model/container.d.ts",
       "default": "./dist/model/container.js"
     },
+    "./model/portable": {
+      "types": "./dist/model/portable.d.ts",
+      "default": "./dist/model/portable.js"
+    },
     "./model/frame": {
       "types": "./dist/model/frame.d.ts",
       "default": "./dist/model/frame.js"
