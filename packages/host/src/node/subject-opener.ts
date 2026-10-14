@@ -71,7 +71,7 @@ export interface PathSubjectOpenerOptions {
    */
   readonly contentSources?: ContentSources | ((path: string) => Promise<ContentSources | undefined>)
   /** Packages a file outside any package opens inside, per host path. */
-  readonly baseMods?: BaseModSetting
+  readonly baseMods?: BaseModSetting | ((path: string) => BaseModSetting | undefined)
 }
 
 export const DEFAULT_SUBJECT_OPEN_BUDGET: ResourceBudget = Object.freeze({
@@ -162,6 +162,7 @@ export function createPathSubjectOpener(options: PathSubjectOpenerOptions): Subj
       typeof options.contentSources === 'function'
         ? await options.contentSources(path)
         : options.contentSources
+    const baseMods = typeof options.baseMods === 'function' ? options.baseMods(path) : options.baseMods
     // An installation folder a content-source root reads opens as that root (storageOf): its tree
     // through the root's one reader, not a second reader of the storage through a folder codec.
     const served =
@@ -216,7 +217,7 @@ export function createPathSubjectOpener(options: PathSubjectOpenerOptions): Subj
             createContentAssetOrigin({
               contentSources,
               target: path,
-              ...(options.baseMods === undefined ? {} : { baseMods: options.baseMods }),
+              ...(baseMods === undefined ? {} : { baseMods }),
               onDiagnostic: item => companionDiagnostics.push(item),
             }),
           ]),

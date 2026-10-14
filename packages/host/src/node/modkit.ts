@@ -323,7 +323,14 @@ export async function createModkit(options: ModkitOptions): Promise<Modkit> {
     // the window's content sources: an installation folder opens as the root that reads it
     ...(options.subjectCatalog === undefined
       ? {}
-      : { contentSources: options.subjectCatalog.contentSources }),
+      : {
+          contentSources: options.subjectCatalog.contentSources,
+          // Catalog answers and the models they name must use the same package overlay.
+          baseMods: (path: string) => {
+            const mods = options.subjectCatalog?.baseMods?.(path)
+            return mods === undefined ? undefined : { '*': mods }
+          },
+        }),
   })
 
   return Object.freeze({

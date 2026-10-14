@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { ContentSourceEntry, ContentSources } from '@modkit/vfs/content-sources'
-import { createModkit } from '@modkit/host/node'
+import { createModkit } from '../src/node/modkit.js'
 import { createPathSubjectOpener } from '../src/node/subject-opener.js'
 import type { SubjectServices } from '../src/subject-services.js'
 
@@ -136,16 +136,24 @@ describe('an installation folder a content-source root reads (storageOf)', () =>
   it('opens through the library facade too, from the window content sources (MCP)', async () => {
     const folder = await mkdtemp(join(tmpdir(), 'modkit-storage-root-'))
     temporary.push(folder)
+    const baseModTargets: unknown[] = []
     const modkit = await createModkit({
       extensions: [],
       roots: [folder],
-      subjectCatalog: { contentSources: async () => installation(folder, false) },
+      subjectCatalog: {
+        contentSources: async () => installation(folder, false),
+        baseMods: target => {
+          baseModTargets.push(target)
+          return ['Mods/Liberty.SC2Mod']
+        },
+      },
     })
     try {
       const opened = await modkit.open(folder)
       expect(opened.snapshot.state).toBe('opened')
       if (opened.snapshot.state !== 'opened') return
       expect(opened.snapshot.selected.contributionId).toBe('x3.host/content-source-root')
+      expect(baseModTargets).toEqual([folder])
       await opened.close()
     } finally {
       await modkit.close()
