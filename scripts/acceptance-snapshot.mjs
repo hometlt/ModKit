@@ -9,9 +9,9 @@
  * references. The acceptance profile (run-vscode-modkit.ps1) loads these copies instead; nothing
  * but this script writes to them.
  *
- *   node modkit-core/scripts/acceptance-snapshot.mjs [--repo modkit-extensions-blizzard] [--rebuild]
+ *   node modkit-core/scripts/acceptance-snapshot.mjs [--repo modkit-extensions-blizzard [--ref <commit>]] [--rebuild]
  *
- * A copy is moved to the repository's current HEAD, reinstalled when its lockfile changed and
+ * A copy is moved to the repository's current HEAD (or the selected repository's --ref), reinstalled when its lockfile changed and
  * rebuilt when its commit changed (or with --rebuild). Uncommitted work never reaches it. A copy
  * that does not build keeps no `.acceptance-built` marker, and the launcher uses the live repository
  * for it.
@@ -63,12 +63,16 @@ const argument = name => {
 const only = argument('--repo')
 if (process.argv.includes('--repo') && !REPOSITORIES.includes(only))
   throw new Error(`unknown acceptance repository: ${only}`)
+const pinnedRef = argument('--ref')
+if (process.argv.includes('--ref') &&
+  (only === undefined || pinnedRef === undefined || pinnedRef.trim() === '' || pinnedRef.startsWith('--')))
+  throw new Error('--ref requires --repo and a nonempty commit reference')
 const rebuild = process.argv.includes('--rebuild')
 
 const run = (command, args, cwd, capture = false) => {
   const result = spawnSync(command, args, {
     cwd,
-    shell: process.platform === 'win32',
+    shell: process.platform === 'win32' && command !== 'git',
     encoding: 'utf8',
     stdio: capture ? ['ignore', 'pipe', 'pipe'] : 'inherit',
   })
@@ -101,7 +105,9 @@ for (const repository of REPOSITORIES) {
   const live = join(coding, repository)
   if (!existsSync(join(live, '.git'))) continue
   const target = join(snapshotRoot, repository)
-  const head = git(live, 'rev-parse', 'HEAD')
+  const head = pinnedRef === undefined
+    ? git(live, 'rev-parse', 'HEAD')
+    : git(live, 'rev-parse', '--verify', '--end-of-options', `${pinnedRef}^{commit}`)
   const marker = join(target, '.acceptance-built')
   console.log(`== ${repository} @ ${head.slice(0, 8)}`)
   try {
