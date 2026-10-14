@@ -885,6 +885,64 @@ describe('the loaded mod servers of a language workspace', () => {
     await contexts.dispose()
   })
 
+  it('lets an active editor query finish before starting background preparation', async () => {
+    const chain = server()
+    let finish!: (value: JsonValue) => void
+    const answer = new Promise<JsonValue>(resolve => { finish = resolve })
+    const prepare = vi.fn(async () => {})
+    Object.assign(chain.context, { prepare, query: () => answer })
+    const contexts = createLanguageModContexts({ contexts: [chain.context] })
+    const warming = contexts.prepare(undefined, true)
+    const pending = contexts.query(contexts.placeOf(`file:///C:/Mods/Mine.SC2Mod/${UNITS}`)!.scope, { kind: 'test' })
+    try {
+      await new Promise(resolve => setTimeout(resolve, 0))
+      expect(prepare).not.toHaveBeenCalled()
+      finish(null)
+      await pending
+      await warming
+      expect(prepare).toHaveBeenCalledTimes(1)
+    } finally {
+      finish(null)
+      await Promise.allSettled([pending, warming])
+      await contexts.dispose()
+    }
+  })
+
+  it('coalesces background preparation and does not prepare different keys simultaneously', async () => {
+    const first = server(), second = server()
+    second.context = { ...second.context, id: 'other', target: 'C:/Mods/Other.SC2Mod' }
+    let finish!: () => void
+    let started!: () => void
+    const running = new Promise<void>(resolve => { started = resolve })
+    const gate = new Promise<void>(resolve => { finish = resolve })
+    const prepareFirst = vi.fn(async () => { started(); await gate })
+    const prepareSecond = vi.fn(async () => {})
+    Object.assign(first.context, { prepare: prepareFirst })
+    Object.assign(second.context, { prepare: prepareSecond })
+    const contexts = createLanguageModContexts()
+    contexts.replace('first', [first.context]); contexts.replace('second', [second.context])
+    const tasks = [contexts.prepare('first', true), contexts.prepare('first', true), contexts.prepare('second', true)]
+    try {
+      await running
+      expect(prepareFirst).toHaveBeenCalledTimes(1)
+      expect(prepareSecond).not.toHaveBeenCalled()
+      finish()
+      await Promise.all(tasks)
+      expect(prepareSecond).toHaveBeenCalledTimes(1)
+    } finally { finish(); await Promise.allSettled(tasks); await contexts.dispose() }
+  })
+
+  it('skips queued background preparation when the registry is disposed', async () => {
+    const chain = server()
+    const prepare = vi.fn(async () => {})
+    Object.assign(chain.context, { prepare })
+    const contexts = createLanguageModContexts({ contexts: [chain.context] })
+    const warming = contexts.prepare(undefined, true)
+    await contexts.dispose()
+    await warming
+    expect(prepare).not.toHaveBeenCalled()
+  })
+
   it('replaces a lost transport generation even when the chain and session identity stay the same', async () => {
     const first = server()
     Object.defineProperty(first.context, 'generation', { value: 'connection-1' })

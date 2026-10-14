@@ -73,8 +73,8 @@ export interface LanguageModContexts {
   replace(key: string, contexts: readonly ModContext[]): void
   /** Files changed on disk: every server lists and reads its chain again. */
   invalidate(): Promise<void>
-  /** Prepare one opened key, or all retained servers when omitted; failures remain query-owned. */
-  prepare(key?: string): Promise<void>
+  /** Prepare a key/all servers; background work yields to active queries and runs sequentially. */
+  prepare(key?: string, background?: boolean): Promise<void>
   dispose(): Promise<void>
 }
 
@@ -165,6 +165,10 @@ export function createLanguageModContexts(
   const pushed = new Map<string, Pushed>()
   const pushedKey = (scope: string, uri: string): string => JSON.stringify([scope, uri])
   let disposed = false
+  let activeQueries = 0
+  const idle = new Set<() => void>()
+  const warming = new Map<string | undefined, Promise<void>>()
+  let warmQueue: Promise<void> = Promise.resolve()
   /** One change of the servers' buffers or contexts at a time, in the order asked for. */
   let queue: Promise<unknown> = Promise.resolve()
   const serially = <Value>(work: () => Promise<Value>): Promise<Value> => {
@@ -361,7 +365,13 @@ export function createLanguageModContexts(
       if (context.query === undefined)
         throw new TypeError(`the loaded mod ${scope} answers no questions`)
       if (!isJsonValue(question)) throw new TypeError('a mod context question must be JSON')
-      const answer = await context.query(question, signal)
+      activeQueries += 1
+      let answer: unknown
+      try { answer = await context.query(question, signal) }
+      finally {
+        activeQueries -= 1
+        if (activeQueries === 0) { for (const resolve of idle) resolve(); idle.clear() }
+      }
       signal?.throwIfAborted()
       if (!isJsonValue(answer))
         throw new TypeError('a mod context answered with something other than JSON')
@@ -449,7 +459,25 @@ export function createLanguageModContexts(
       })
     },
 
-    async prepare(key) {
+    async prepare(key, background = false) {
+      if (background) {
+        const existing = warming.get(key)
+        if (existing !== undefined) return existing
+        const task = warmQueue.then(async () => {
+          // Let requests already queued by activation enter before optional CPU-heavy preparation.
+          await new Promise<void>(resolve => setTimeout(resolve, 0))
+          for (const entry of entries.filter(entry => key === undefined || entry.key === key)) {
+            while (activeQueries > 0 && !disposed) await new Promise<void>(resolve => idle.add(resolve))
+            if (disposed || !entries.includes(entry)) continue
+            try { await entry.context.prepare?.() } catch { /* A later query owns the failure. */ }
+          }
+        })
+        warming.set(key, task)
+        warmQueue = task.catch(() => {})
+        const release = () => { if (warming.get(key) === task) warming.delete(key) }
+        void task.then(release, release)
+        return task
+      }
       // Not in the buffers' queue: building a chain's Data must not hold up an edit reaching it.
       await Promise.allSettled(entries.filter(entry => key === undefined || entry.key === key)
         .map(entry => entry.context.prepare?.()))
@@ -458,6 +486,8 @@ export function createLanguageModContexts(
     async dispose() {
       if (disposed) return
       disposed = true
+      for (const resolve of idle) resolve()
+      idle.clear()
       const closing = entries
       entries = []
       await serially(async () => {

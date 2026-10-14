@@ -7333,8 +7333,8 @@ async function activateModkit(
         signal: request.signal,
       })
       languageModContexts.replace(scope?.contextId ?? loose ?? '', projected.contexts ?? [])
-      // Warm this opened scope; unrelated retained mods must not compete with its first answer.
-      void languageModContexts.prepare(scope?.contextId ?? loose ?? '')
+      // Optional warming yields to editor queries and does not fan out across retained scopes.
+      void languageModContexts.prepare(scope?.contextId ?? loose ?? '', true)
       for (const item of projected.diagnostics) {
         log(`[language-context] ${item.severity} ${item.code}: ${item.message}`)
       }
