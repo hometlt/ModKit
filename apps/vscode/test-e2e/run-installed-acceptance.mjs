@@ -36,6 +36,7 @@ import { release as osRelease, tmpdir } from 'node:os'
 import { basename, delimiter, dirname, join, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { chromium } from 'playwright-core'
+import { installedPackageOptions } from './installed-package-options.mjs'
 
 import {
   assertFormatSmokeWebviewResult,
@@ -47,6 +48,7 @@ const here = dirname(fileURLToPath(import.meta.url))
 const appRoot = resolve(here, '..')
 const repoRoot = resolve(appRoot, '..', '..')
 const argumentsList = process.argv.slice(2)
+const externalPackages = installedPackageOptions(argumentsList)
 const argument = flag => {
   const index = argumentsList.indexOf(flag)
   return index < 0 ? undefined : argumentsList[index + 1]
@@ -296,7 +298,7 @@ writeFileSync(corruptDdsPath, Buffer.concat([Buffer.from('DDS ', 'ascii'), Buffe
 writeFileSync(
   workspaceFile,
   // Exports land in the workspace's modkit-export folder: no Save As dialog stops the run.
-  `${JSON.stringify({ folders: [{ path: basename(workspace) }], settings: { 'modkit.askExportLocation': false } }, null, 2)}\n`,
+  `${JSON.stringify({ folders: [{ path: basename(workspace) }], settings: { 'modkit.askExportLocation': false, ...externalPackages.settings } }, null, 2)}\n`,
 )
 
 const startedAt = new Date().toISOString()
@@ -305,6 +307,7 @@ const receipt = {
   schemaVersion: 1,
   startedAt,
   artifact: { path: portablePath(artifactPath), sha256: null },
+  selectedPackageCatalog: externalPackages.catalog,
   environment: {
     os: { platform: process.platform, architecture: process.arch, release: osRelease() },
     node: process.versions.node,
