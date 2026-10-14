@@ -26,7 +26,87 @@ export function modelAnimationNameMatchScore(name: string, requested: string): n
   const properties = new Set(name.toLowerCase().split(/\s+/u).filter(Boolean))
   const wanted = new Set(requested.toLowerCase().split(/\s+/u).filter(Boolean))
   return wanted.size > 0 && [...wanted].every(property => properties.has(property))
-    ? properties.size - wanted.size : undefined
+    ? properties.size - wanted.size
+    : undefined
+}
+
+/** Sequence-local length, retaining an explicit zero; descriptive clips without keys have zero length. */
+export function modelAnimationDurationSeconds(clip: ModelAnimationClip): number {
+  return (
+    clip.durationSeconds ??
+    clip.channels.reduce(
+      (end, channel) =>
+        (channel.samples ?? []).reduce((last, key) => Math.max(last, key.timeSeconds ?? 0), end),
+      0,
+    )
+  )
+}
+
+/** Resolve full-weight sparse overrides with existing interpolation, leaving absent channels
+ * to lower layers or the model's local rest pose. Later authored layers win equal-priority ties,
+ * as in layeredClip. The returned clip is one immutable frame. */
+export function sampleModelAnimationLayers(
+  layers: readonly {
+    readonly clip: ModelAnimationClip
+    readonly timeSeconds: number
+    readonly loop: boolean
+    readonly priority: number
+  }[],
+  budget?: JsonSnapshotBudget,
+  signal?: AbortSignal,
+): ModelAnimationClip {
+  if (layers.length < 1 || layers.length > 32)
+    throw new RangeError('animation layers require 1..32 entries')
+  const channels = new Map<string, { priority: number; channel: ModelAnimationChannel }>()
+  for (const layer of layers) {
+    signal?.throwIfAborted()
+    if (
+      !Number.isFinite(layer.timeSeconds) ||
+      layer.timeSeconds < 0 ||
+      !Number.isFinite(layer.priority)
+    )
+      throw new TypeError('invalid animation layer clock/priority')
+    const duration = modelAnimationDurationSeconds(layer.clip)
+    const time = layer.loop && duration > 0 ? layer.timeSeconds % duration : layer.timeSeconds
+    for (const value of createModelAnimationSampler(layer.clip, budget, signal).sample(
+      time,
+      signal,
+    )) {
+      const key = JSON.stringify([value.target, value.kind, value.axis ?? null])
+      const previous = channels.get(key)
+      if (previous !== undefined && previous.priority > layer.priority) continue
+      channels.set(key, {
+        priority: layer.priority,
+        channel: {
+          target: value.target,
+          kind: value.kind,
+          ...(value.axis === undefined ? {} : { axis: value.axis }),
+          firstFrame: 0,
+          lastFrame: 0,
+          interpolation: 'step',
+          samples: [{ frame: 0, timeSeconds: 0, value: value.value }],
+        },
+      })
+    }
+  }
+  return snapshotModelAnimations(
+    [
+      {
+        id:
+          'resolved-layers:' +
+          JSON.stringify(
+            layers.map(layer => [layer.clip.id, layer.timeSeconds, layer.loop, layer.priority]),
+          ),
+        name: 'Resolved sparse animation layers',
+        kind: 'rest-pose',
+        provenance: 'direct',
+        frames: 1,
+        channels: [...channels.values()].map(entry => entry.channel),
+      },
+    ],
+    budget,
+    signal,
+  )[0]!
 }
 
 /**
@@ -226,12 +306,7 @@ export function layeredClip(clips: readonly ModelAnimationClip[]): ModelAnimatio
   for (const { clip } of ranked) {
     const speed = clip.speedScale ?? 1
     if (!(speed > 0) || !Number.isFinite(speed)) throw new TypeError('clip speed must be positive')
-    const lastKey = clip.channels.reduce(
-      (end, channel) =>
-        (channel.samples ?? []).reduce((last, key) => Math.max(last, key.timeSeconds ?? 0), end),
-      0,
-    )
-    const length = (clip.durationSeconds ?? lastKey) / speed
+    const length = modelAnimationDurationSeconds(clip) / speed
     longest = Math.max(longest, length)
     const looping = (clip.loop ?? (clip.looping === true ? 'loop' : 'once')) === 'loop'
     if (looping && length > 0) periods.push(Math.max(1, Math.round(length * 1000)))

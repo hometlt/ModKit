@@ -10,6 +10,7 @@
  * maps, tone mapping, screen effects or mip/anisotropic filtering; bilinear sampling follows each texture's filter.
  * Untextured water uses the common depth tint/shore fade against the opaque scene, including models.
  * Terrain-only depth bias preserves coplanar surface models without changing their coordinates.
+ * GPU skin palettes are baked with the shared material-skin owner before CPU primitive copies.
  * Wave normals, caustics and shadows remain GPU-only.
  */
 import type { WorldVisibilityBounds } from './world-visibility.js'
@@ -24,6 +25,7 @@ import type {
 } from '@modkit/sdk/renderer'
 import { TEAM_COLOR_BLENDS } from '@modkit/codec-kit/model-math/color-remap'
 import { renderHeadless } from '../render/headless.js'
+import { materialPosedPrimitive } from '../render/material-skin.js'
 import { sceneTexturePixels } from '../render/compressed-textures.js'
 import { TERRAIN_DEPTH_BIAS, type SceneDepthBias } from '../render/depth-bias.js'
 import {
@@ -406,7 +408,9 @@ export function worldHeadlessScene(plan: WorldWebGlPlan): Readonly<{
     const scene = worldWebGlPosedScene(plan, kept)
     const own = prefixed(
       `model-${String(index)}/`,
-      scene.primitives,
+      // WebGL consumes the palette in its vertex shader; the CPU rasterizer needs the same
+      // deformation baked before prefixed() copies away the private skin association.
+      scene.primitives.map(materialPosedPrimitive),
       scene.materials,
       scene.textures,
     )

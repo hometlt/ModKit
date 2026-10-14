@@ -2,6 +2,8 @@ import assert from 'node:assert/strict'
 import { it } from 'node:test'
 import { createModelSkeletonNodes } from '@modkit/codec-kit/model/skeleton'
 import { createModelSceneSampler } from '../src/model/sampler.js'
+import { materialPosedPrimitive } from '../src/render/material-skin.js'
+import { renderWorldHeadless } from '../src/world/headless.js'
 import {
   DEFAULT_WORLD_WEBGL_CAMERA,
   createWorldWebGlPlan,
@@ -649,4 +651,102 @@ it('keeps a skin moved in place: its scenes, drawn, picked and framed where it s
     const anew = fresh.createWorldWebGlPlan(input(time))
     assert.equal(drawn(same, plan), drawn(fresh, anew), `${time}`)
   }
+})
+
+it('poses layered skinned geometry with the same GPU palette and CPU vertices as one resolved clip', async () => {
+  const body = {
+    ...clip,
+    id: 'body',
+    name: 'Body',
+    channels: clip.channels.filter(c => c.kind === 'rotation'),
+  }
+  const upper = {
+    ...clip,
+    id: 'upper',
+    name: 'Upper',
+    channels: clip.channels.filter(c => c.kind === 'translation'),
+  }
+  const layeredModel = { ...model, animations: [body, upper] }
+  const actor = {
+    ...world(0).items[0],
+    presentationAnimation: {
+      name: 'Body',
+      groups: [],
+      loop: false,
+      speed: 1,
+      layers: [
+        { name: 'Body', groups: [], timeSeconds: 1, loop: false, priority: 0 },
+        { name: 'Upper', groups: [], timeSeconds: 0.25, loop: false, priority: 5 },
+      ],
+    },
+  }
+  const plan = createWorldWebGlPlan({
+    ...world(0),
+    items: [actor],
+    models: new Map([['skinned', layeredModel]]),
+  })
+  const resolved = {
+    ...clip,
+    id: 'expected',
+    kind: 'rest-pose',
+    frames: 1,
+    channels: [
+      {
+        target: 'node-9',
+        kind: 'translation',
+        firstFrame: 0,
+        lastFrame: 0,
+        interpolation: 'step',
+        samples: [{ frame: 0, timeSeconds: 0, value: [10, 0.75, 0] }],
+      },
+      {
+        target: 'node-9',
+        kind: 'rotation',
+        firstFrame: 0,
+        lastFrame: 0,
+        interpolation: 'step',
+        samples: [{ frame: 0, timeSeconds: 0, value: [0, 0, Math.SQRT1_2, Math.SQRT1_2] }],
+      },
+    ],
+  }
+  const scene = { nodes, meshes: model.meshes, primitives: [skin], skeleton: bindings }
+  const gpu = createModelSceneSampler(scene, { clip: resolved, skinning: 'gpu' }).sample(0)
+    .primitives[0]
+  const cpu = createModelSceneSampler(scene, { clip: resolved }).sample(0).primitives[0]
+  const drawn = plan.modelMaterialScenes.flatMap(s => s.primitives)[0]
+  assert.equal(drawn.positions, skin.positions)
+  assert.deepEqual([...drawn.skin.palette], [...gpu.skin.palette])
+  assert.notDeepEqual(
+    [...drawn.skin.palette],
+    [...createModelSceneSampler(scene, { skinning: 'gpu' }).sample(0).primitives[0].skin.palette],
+  )
+  const posed = materialPosedPrimitive(
+    worldWebGlPosedScene(plan, plan.modelMaterialScenes[0]).primitives[0],
+  )
+  assert.deepEqual([...posed.positions], [...cpu.positions])
+  assert.deepEqual(
+    [...plan.picking.objects[0].primitives[0].primitive.positions],
+    [...cpu.positions],
+  )
+  const expected = createWorldWebGlPlan({
+    ...world(0),
+    models: new Map([
+      ['skinned', { ...model, nodes: [], skeleton: [], primitives: [cpu], animations: [] }],
+    ]),
+  })
+  assert.deepEqual(
+    [...materialPosedPrimitive(expected.modelMaterialScenes[0].primitives[0]).positions],
+    [...cpu.positions],
+  )
+  const options = {
+    width: 64,
+    height: 64,
+    camera: { ...DEFAULT_WORLD_WEBGL_CAMERA, frame: expected.stats.frame },
+  }
+  const [actualPixels, expectedPixels] = await Promise.all([
+    renderWorldHeadless(plan, options),
+    renderWorldHeadless(expected, options),
+  ])
+  assert.deepEqual(actualPixels.rgba, expectedPixels.rgba)
+  assert.ok(actualPixels.rgba.some((value, index) => index % 4 !== 3 && value > 0))
 })
