@@ -4,3 +4,4 @@ export { renderWorldHeadless, worldHeadlessScene, type WorldHeadlessOptions } fr
 export { createEmbeddedUvmWorldModelDecoder } from './embedded-uvm.js'
 export { colorKeyedTexture, presentWorldModelTextures } from './color-keys.js'
 export { SCENE_COMPRESSED_TEXTURE_FORMATS } from '../render/compressed-textures.js'
+export { materializeTerrainOverlayModels, type TerrainOverlayModelInput, type TerrainOverlayModelOptions } from './terrain-overlay-model.js'
