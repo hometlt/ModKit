@@ -22,6 +22,8 @@ test('ordered overlay chunks preserve slope, UVs and coverage without mutating s
   assert.equal(standard.priority,3);assert.equal(standard.blendMode,1)
   assert.equal(standard.usesVertexAlpha,true);assert.equal(standard.usesVertexColor,false)
   assert.equal(standard.layers.alpha1.channels,2)
+  assert.equal(standard.layers.diffuse.channels,0)
+  assert.equal(standard.layers.alpha1.texturePath,source.texturePath)
   assert.deepEqual(chunks.map(c=>writeUvmContainer(c)),materializeTerrainOverlayModels(source,options).models.map(c=>writeUvmContainer(c)))
 })
 

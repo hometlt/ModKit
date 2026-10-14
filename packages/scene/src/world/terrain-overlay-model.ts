@@ -100,7 +100,8 @@ export function materializeTerrainOverlayModels(
       colors[vertex * 4 + 3] = input.coverage[retained[start + vertex]!]!
     }
     const diffuse = {
-      slot: 'diffuse', texturePath: input.texturePath, uvSource: 0, channels: input.textureAlpha === 'ignore' ? 0 : 1,
+      // Coverage is carried by alpha1 and COLOR_0; diffuse contributes RGB only.
+      slot: 'diffuse', texturePath: input.texturePath, uvSource: 0, channels: 0,
       op: 6, teamColorMode: 0, invert: false, clampResult: false, wrapX: true, wrapY: true,
     }
     const source: UvmContainer = {
