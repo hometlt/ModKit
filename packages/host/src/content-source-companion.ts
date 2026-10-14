@@ -3,8 +3,8 @@
  * portable twin of the filesystem origin for a file on disk. A model opened from `local:earth-2160`
  * finds its skin and motions next to it (`sibling-directory`), a path from the source's root
  * (`current-mount`) and the assets of the container folder it sits in (`enclosing-container`) —
- * listed with `ContentSources.list` and read with `ContentSources.read`, one folder at a time, no
- * recursive walk. Its mod's resources stay with `createContentAssetOrigin`
+ * found by exact `ContentSources.lookup` where available, otherwise listed one folder at a time;
+ * bytes come from `ContentSources.read`, with no recursive walk. Its mod's resources stay with `createContentAssetOrigin`
  * (`workspace-dependency-layer`), layered behind this origin.
  */
 
@@ -89,7 +89,7 @@ export function containerMarkersOf(
 }
 
 export interface ContentSourceCompanionOriginOptions {
-  readonly contentSources: Pick<ContentSources, 'list' | 'read'>
+  readonly contentSources: Pick<ContentSources, 'list' | 'read' | 'lookup'>
   /** The subject: a file of one content source. */
   readonly target: { readonly sourceId: string; readonly path: string }
   /** As the filesystem origin takes them: {@link containerExtensionsOf} and its siblings. */
@@ -195,8 +195,38 @@ export function createContentSourceCompanionOrigin(
     enumeration: CompanionEnumerationOptions,
     signal?: AbortSignal,
   ): AsyncIterable<CompanionOriginEntry> {
+    throwIfAborted(signal)
     const prefix = enumeration.prefix.replaceAll('\\', '/')
     const parent = prefix.slice(0, prefix.lastIndexOf('/') + 1)
+    if (enumeration.exactPath === true && contentSources.lookup !== undefined) {
+      const requested = join(base, normalized(prefix))
+      let entry: ContentSourceEntry | undefined
+      try {
+        entry = await contentSources.lookup(sourceId, requested)
+      } catch {
+        // Lookup is optional; a failed probe must not replace the existing one-folder listing.
+        throwIfAborted(signal)
+      }
+      throwIfAborted(signal)
+      if (entry !== undefined && !entry.directory) {
+        const canonical = normalized(entry.path)
+        if (fold(canonical) !== fold(requested))
+          throw new TypeError('content-source lookup returned an entry outside the requested path')
+        const logicalId = base === '' ? canonical : canonical.slice(base.length + 1)
+        if (
+          scope === 'sibling-directory' ||
+          (fold(canonical) !== fold(primary) && !yielded.has(fold(logicalId)))
+        ) {
+          if (scope !== 'sibling-directory') yielded.add(fold(logicalId))
+          located.set(fold(logicalId), base)
+          yield Object.freeze({
+            logicalId,
+            ...(entry.size === undefined ? {} : { size: BigInt(entry.size) }),
+          })
+        }
+        return
+      }
+    }
     for (const entry of await list(join(base, normalized(parent)))) {
       throwIfAborted(signal)
       if (entry.directory) continue
@@ -263,7 +293,7 @@ export function createContentSourceCompanionOrigin(
 }
 
 export interface ContentSourceInputResolverOptions {
-  readonly contentSources: Pick<ContentSources, 'list' | 'read'>
+  readonly contentSources: Pick<ContentSources, 'list' | 'read' | 'lookup'>
   readonly target: { readonly sourceId: string; readonly path: string }
   /** The inventory the subject is resolved against: container scopes and `expected` traits. */
   readonly inventory: Inventory

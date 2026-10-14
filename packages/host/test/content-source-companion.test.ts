@@ -71,6 +71,186 @@ async function read(origin: CompanionOrigin, logicalId: string) {
 }
 
 describe('companions of a file in a content source', () => {
+  it('uses exact lookup for a hidden qualified path without listing its folder', async () => {
+    const backing = source(files)
+    let lookups = 0
+    const origin = createContentSourceCompanionOrigin({
+      contentSources: {
+        ...backing,
+        async list() {
+          throw new Error('listing unavailable')
+        },
+        async lookup(_sourceId, path) {
+          lookups++
+          expect(path).toBe('Textures/e_bl_ac_08.DDS')
+          return {
+            path: 'Textures/E_BL_AC_08.dds',
+            name: 'E_BL_AC_08.dds',
+            directory: false,
+            size: 7,
+          }
+        },
+      },
+      target: { sourceId: 'local:game', path: 'Models/E_HERO_01.msh' },
+    })
+    const found: string[] = []
+    for await (const entry of origin.enumerate('current-mount', {
+      prefix: 'Textures/e_bl_ac_08.DDS',
+      exactPath: true,
+    }))
+      found.push(entry.logicalId)
+    expect(found).toEqual(['Textures/E_BL_AC_08.dds'])
+    expect(lookups).toBe(1)
+    expect(await read(origin, found[0]!)).toBe('texture')
+  })
+
+  it('keeps listing as the fallback for absent lookup and for partial prefixes', async () => {
+    const backing = source(files)
+    let lookups = 0
+    const origin = createContentSourceCompanionOrigin({
+      contentSources: {
+        ...backing,
+        async lookup() {
+          lookups++
+          return undefined
+        },
+      },
+      target: { sourceId: 'local:game', path: 'Models/E_HERO_01.msh' },
+    })
+    const exact: string[] = []
+    for await (const entry of origin.enumerate('current-mount', {
+      prefix: 'Textures/E_BL_AC_08.dds',
+      exactPath: true,
+    }))
+      exact.push(entry.logicalId)
+    expect(exact).toEqual(['Textures/E_BL_AC_08.dds'])
+    expect(lookups).toBe(1)
+    expect(await ids(origin, 'sibling-directory', 'E_HERO_01.m')).toEqual([
+      'E_HERO_01.mot',
+      'E_HERO_01.msh',
+    ])
+    expect(lookups).toBe(1)
+  })
+
+  it('keeps primary exclusion and the first container asset root on exact lookup', async () => {
+    const layered = {
+      ...files,
+      'Mods/Foo.SC2Mod/Assets/Textures/marine.dds': 'later duplicate',
+    }
+    const backing = source(layered)
+    const origin = createContentSourceCompanionOrigin({
+      contentSources: {
+        ...backing,
+        async lookup(_sourceId, path) {
+          const found = Object.entries(layered).find(
+            ([name]) => name.toLowerCase() === path.toLowerCase(),
+          )
+          return found === undefined
+            ? undefined
+            : {
+                path: found[0],
+                name: found[0].split('/').at(-1)!,
+                directory: false,
+                size: text.encode(found[1]).byteLength,
+              }
+        },
+      },
+      target: {
+        sourceId: 'local:game',
+        path: 'Mods/Foo.SC2Mod/Base.SC2Assets/Assets/Units/marine.m3',
+      },
+      containerExtensions: ['sc2mod'],
+      containerAssetRoots: { sc2mod: ['*.SC2Assets', ''] },
+    })
+    const found: string[] = []
+    for await (const entry of origin.enumerate('enclosing-container', {
+      prefix: 'Assets/Textures/marine.dds',
+      exactPath: true,
+    }))
+      found.push(entry.logicalId)
+    expect(found).toEqual(['Assets/Textures/marine.dds'])
+    expect(await read(origin, found[0]!)).toBe('marine texture')
+
+    const primary = createContentSourceCompanionOrigin({
+      contentSources: {
+        ...source(files),
+        async lookup(_sourceId, path) {
+          return { path, name: 'E_HERO_01.msh', directory: false }
+        },
+      },
+      target: { sourceId: 'local:game', path: 'Models/E_HERO_01.msh' },
+    })
+    const excluded: string[] = []
+    for await (const entry of primary.enumerate('current-mount', {
+      prefix: 'Models/E_HERO_01.msh',
+      exactPath: true,
+    }))
+      excluded.push(entry.logicalId)
+    expect(excluded).toEqual([])
+  })
+
+  it('rejects foreign lookup entries and respects cancellation after lookup', async () => {
+    const backing = source(files)
+    const foreign = createContentSourceCompanionOrigin({
+      contentSources: {
+        ...backing,
+        async lookup() {
+          return { path: 'Other/skin.dds', name: 'skin.dds', directory: false }
+        },
+      },
+      target: { sourceId: 'local:game', path: 'Models/E_HERO_01.msh' },
+    })
+    const foreignRead = async () => {
+      for await (const _ of foreign.enumerate('current-mount', {
+        prefix: 'Textures/E_BL_AC_08.dds',
+        exactPath: true,
+      }))
+        void _
+    }
+    await expect(foreignRead()).rejects.toThrow(/outside the requested path/u)
+
+    const failed = createContentSourceCompanionOrigin({
+      contentSources: {
+        ...backing,
+        async lookup() {
+          throw new Error('lookup failed')
+        },
+      },
+      target: { sourceId: 'local:game', path: 'Models/E_HERO_01.msh' },
+    })
+    const recovered: string[] = []
+    for await (const entry of failed.enumerate('current-mount', {
+      prefix: 'Textures/E_BL_AC_08.dds',
+      exactPath: true,
+    }))
+      recovered.push(entry.logicalId)
+    expect(recovered).toEqual(['Textures/E_BL_AC_08.dds'])
+
+    const controller = new AbortController()
+    const cancelled = createContentSourceCompanionOrigin({
+      contentSources: {
+        ...backing,
+        async lookup() {
+          controller.abort()
+          throw new Error('lookup interrupted')
+        },
+      },
+      target: { sourceId: 'local:game', path: 'Models/E_HERO_01.msh' },
+    })
+    const cancelledRead = async () => {
+      for await (const _ of cancelled.enumerate(
+        'current-mount',
+        {
+          prefix: 'Textures/E_BL_AC_08.dds',
+          exactPath: true,
+        },
+        controller.signal,
+      ))
+        void _
+    }
+    await expect(cancelledRead()).rejects.toMatchObject({ name: 'OperationCancelledError' })
+  })
+
   it('finds what lies next to the file and under the source root', async () => {
     const origin = createContentSourceCompanionOrigin({
       contentSources: source(files),

@@ -74,6 +74,7 @@ interface Counters {
   readonly opened: string[]
   /** Listing prefixes the resolver asked this backend to narrow to. */
   readonly prefixes: string[]
+  readonly exactPaths: boolean[]
 }
 
 interface FakeOriginOptions {
@@ -101,6 +102,7 @@ function fakeOrigin(options: FakeOriginOptions): {
     doubleRelease: false,
     opened: [],
     prefixes: [],
+    exactPaths: [],
   }
   const scopes = options.scopes ?? (['sibling-directory'] as const)
   const origin: CompanionOrigin = Object.freeze({
@@ -114,6 +116,7 @@ function fakeOrigin(options: FakeOriginOptions): {
     ): AsyncIterable<CompanionOriginEntry> {
       counters.enumerations += 1
       counters.prefixes.push(enumeration.prefix)
+      counters.exactPaths.push(enumeration.exactPath === true)
       if (!scopes.includes(scope)) return
       let index = 0
       for (const logicalId of options.entries) {
@@ -740,26 +743,40 @@ describe('companion input resolution — names and patterns', () => {
   })
 
   it.each([
-    ['a bare name says nothing about location', ['bowl.tga'], ''],
-    ['a directory-qualified pattern narrows to it', ['assets/textures/*.dds'], 'assets/textures/'],
+    ['a bare name says nothing about location', ['bowl.tga'], '', false],
+    ['a root-qualified name retains legacy listing', ['./bowl.tga'], '', false],
+    [
+      'a directory-qualified pattern narrows to it',
+      ['assets/textures/*.dds'],
+      'assets/textures/',
+      false,
+    ],
     [
       'a wildcard-free pattern narrows to itself',
       ['assets/textures/alpha2.dds'],
       'assets/textures/alpha2.dds',
+      true,
     ],
     [
       'patterns agree only as far as they agree',
       ['assets/textures/*.dds', 'assets/textures/*.tga'],
       'assets/textures/',
+      false,
     ],
     [
       'disagreeing patterns fall back to their common directory',
       ['assets/textures/*.dds', 'assets/models/*.dds'],
       'assets/',
+      false,
     ],
-    ['one bare pattern widens the whole requirement', ['assets/textures/*.dds', 'bowl.tga'], ''],
-    ['a partial segment narrows only to its parent', ['assets/tex*'], 'assets/'],
-  ])('derives the listing prefix so that %s', async (_label, patterns, expected) => {
+    [
+      'one bare pattern widens the whole requirement',
+      ['assets/textures/*.dds', 'bowl.tga'],
+      '',
+      false,
+    ],
+    ['a partial segment narrows only to its parent', ['assets/tex*'], 'assets/', false],
+  ])('derives the listing prefix so that %s', async (_label, patterns, expected, exactPath) => {
     /*
      * The prefix is a hint the resolver derives from the codec's own patterns, and it is the only
      * reason a 666k-entry namespace can be searched under a four-thousand-entry budget. It must
@@ -784,6 +801,7 @@ describe('companion input resolution — names and patterns', () => {
       ),
     )
     expect(counters.prefixes).toEqual([expected])
+    expect(counters.exactPaths).toEqual([exactPath])
   })
 
   it('resolves several exact paths within a two-entry budget despite thousands of adjacent resources', async () => {
@@ -815,7 +833,27 @@ describe('companion input resolution — names and patterns', () => {
       paths.map(path => `skin#${path}`),
     )
     expect(counters.prefixes).toEqual(paths)
+    expect(counters.exactPaths).toEqual([true, true])
     expect(counters.entries).toBe(2)
+  })
+
+  it('reuses an exact-path enumeration for two requirements without widening it', async () => {
+    const { origin, counters } = fakeOrigin({
+      entries: ['assets/a.dds'],
+      honorPrefix: true,
+    })
+    const resolve = companionResolver(origin)
+    await resolve(
+      context(
+        bundlePlan([
+          requirement({ id: 'first', role: 'texture', patterns: ['assets/a.dds'] }),
+          requirement({ id: 'second', role: 'texture', patterns: ['assets/a.dds'] }),
+        ]),
+        byteSource('primary.vxl'),
+      ),
+    )
+    expect(counters.prefixes).toEqual(['assets/a.dds'])
+    expect(counters.exactPaths).toEqual([true])
   })
 
   it('still enforces the entry budget when an origin ignores exact-path hints', async () => {

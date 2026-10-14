@@ -133,6 +133,8 @@ export interface CompanionEnumerationOptions {
    * what any of them mean.
    */
   readonly prefix: string
+  /** The compiled patterns prove this is one complete, qualified path, not merely a prefix. */
+  readonly exactPath?: boolean
   /**
    * The literal start every pattern gives the entry's *name* inside `prefix` (`Zombie_` of
    * `anim/Zombie_*.ani`), when they agree. A hint like `prefix`: a backend that can drop other
@@ -381,6 +383,8 @@ function compilePatterns(
   readonly test: (logicalId: string) => boolean
   /** Listing hint for backends whose namespace is too large to enumerate whole. */
   readonly prefixes: readonly string[]
+  /** Every pattern names a complete path below a declared directory. */
+  readonly exactPaths: boolean
   /** The literal name start inside a single directory prefix; see CompanionEnumerationOptions. */
   readonly namePrefix: string
 } {
@@ -447,6 +451,9 @@ function compilePatterns(
       return expressions.some(item => item.expression.test(item.whole ? logicalId : name))
     },
     prefixes: enumerationPrefixes(bodies, caseSensitivity),
+    exactPaths: bodies.every(
+      pattern => pattern.replaceAll('\\', '/').includes('/') && !/[*?]/u.test(pattern),
+    ),
     namePrefix: enumerationNamePrefix(bodies, caseSensitivity),
   }
 }
@@ -740,8 +747,9 @@ export function createCompanionInputResolver(
       scope: InputSearchScope,
       prefix: string,
       namePrefix = '',
+      exactPath = false,
     ): Promise<readonly string[]> => {
-      const key = canonicalJsonStringify([scope, prefix, namePrefix])
+      const key = canonicalJsonStringify([scope, prefix, namePrefix, exactPath])
       const cached = enumerated.get(key)
       if (cached !== undefined) return cached
       const ids: string[] = []
@@ -754,7 +762,11 @@ export function createCompanionInputResolver(
         let taken = 0
         for await (const entry of origin.enumerate(
           scope,
-          namePrefix === '' ? { prefix } : { prefix, namePrefix },
+          {
+            prefix,
+            ...(namePrefix === '' ? {} : { namePrefix }),
+            ...(exactPath ? { exactPath: true } : {}),
+          },
           signal,
         )) {
           checkpoint(`enumerate:${scope}`)
@@ -842,7 +854,12 @@ export function createCompanionInputResolver(
       for (const [rank, scope] of usable.entries()) {
         for (const prefix of patterns.prefixes) {
           const namePrefix = patterns.prefixes.length === 1 ? patterns.namePrefix : ''
-          for (const logicalId of await enumerateScope(scope, prefix, namePrefix)) {
+          for (const logicalId of await enumerateScope(
+            scope,
+            prefix,
+            namePrefix,
+            patterns.exactPaths,
+          )) {
             if (
               scope === 'explicit-user-selection' &&
               !(explicit?.[requirement.id] ?? []).some(
