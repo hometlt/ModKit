@@ -15,6 +15,20 @@ export const DEFAULT_MODEL_ANIMATION_BUDGET: JsonSnapshotBudget = Object.freeze(
   maxBytes: 134_217_728,
 })
 
+/** Native animation names can be property sets ("Stand Talk"); compare their tokens without
+ * tying the generic sampling layer to any game's file layout. */
+export function modelAnimationNameMatches(name: string, requested: string): boolean {
+  return modelAnimationNameMatchScore(name, requested) !== undefined
+}
+
+/** Fewest extra properties wins; undefined means no match. Equal scores retain authored order. */
+export function modelAnimationNameMatchScore(name: string, requested: string): number | undefined {
+  const properties = new Set(name.toLowerCase().split(/\s+/u).filter(Boolean))
+  const wanted = new Set(requested.toLowerCase().split(/\s+/u).filter(Boolean))
+  return wanted.size > 0 && [...wanted].every(property => properties.has(property))
+    ? properties.size - wanted.size : undefined
+}
+
 /**
  * The keys without those equal to both neighbours: linear, spherical and step interpolation
  * between equal values give that value, so the track plays the same. A held run keeps its first
