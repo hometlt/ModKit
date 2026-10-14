@@ -129,6 +129,10 @@
       "types": "./dist/uvm/render.d.ts",
       "default": "./dist/uvm/render.js"
     },
+    "./uvm/images": {
+      "types": "./dist/uvm/images.d.ts",
+      "default": "./dist/uvm/images.js"
+    },
     "./uvm/normals": {
       "types": "./dist/uvm/normals.d.ts",
       "default": "./dist/uvm/normals.js"
