@@ -38,7 +38,13 @@ export {
 export type { ModelBonePoseSample } from './model/skeleton.js'
 export { snapshotModelAnimations, createModelAnimationSampler } from './model/animation.js'
 export type { ModelAnimationValue } from './model/animation.js'
-export { modelPrimitiveByteLength } from './model/geometry.js'
+export {
+  modelPrimitiveByteLength,
+  decodeVl32,
+  voxelSurface,
+  type VoxelGrid,
+  type VoxelGeometryOptions,
+} from './model/geometry.js'
 import { contributionSettingsFor } from '@modkit/sdk'
 import type { ArtifactSource, DataSourceRefWire } from '@modkit/sdk'
 import type {
