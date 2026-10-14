@@ -424,8 +424,9 @@ export interface ModelAnimationValue {
  * What every value of one channel stays within, whatever the time (createModelAnimationSampler's
  * `extent`), as sampleTrackValue makes it: at and beyond its ends a key, between two keys the first
  * (step), a convex combination of them or a cubic within the Bezier control points of the keys and
- * their tangents (linear, cubic-spline), or a unit quaternion on the arc between them (a channel of
- * quaternions, spherical-linear with keys four wide).
+ * their tangents (linear, non-quaternion cubic-spline), or a unit quaternion on the arc between them
+ * (spherical-linear with keys four wide). Cubic rotations normalize their nonzero interior values;
+ * their hull also includes the unit box, conservatively covering those values and zero.
  */
 export interface ModelAnimationExtent {
   /** The number of components of its keys. */
@@ -435,7 +436,7 @@ export interface ModelAnimationExtent {
    * (`hull`), or one on an arc of `arcs` (`arc`).
    */
   readonly between: 'step' | 'hull' | 'arc'
-  /** The keys, and a cubic's inner control points. */
+  /** The keys and cubic controls; normalized cubic rotations also include a conservative unit box. */
   readonly points: readonly (readonly number[])[]
   /**
    * The keys of an `arc` channel in pairs, each and the next, the second turned to the first's side
@@ -490,7 +491,12 @@ export function createModelAnimationSampler(
     }
     // what each sample tells sampleTrackValue of the channel
     const options = {
-      isQuat: channel.interpolation === 'spherical-linear',
+      isQuat:
+        channel.interpolation === 'spherical-linear' ||
+        (channel.interpolation === 'cubic-spline' &&
+          channel.kind === 'rotation' &&
+          channel.axis === undefined &&
+          track.keys[0]?.vector.length === 4),
       wrapSeconds: channel.concurrent ? channel.wrapSeconds : undefined,
     }
     return { channel, track, options }
@@ -540,6 +546,13 @@ export function createModelAnimationSampler(
           for (let axis = 0; axis < 4; axis++) dot += key.vector[axis]! * next.vector[axis]!
           arcs.push([key.vector, dot < 0 ? next.vector.map(x => -x) : next.vector])
         }
+      }
+      if (track.lineType === CUBIC_SPLINE_LINE_TYPE && options.isQuat && width === 4) {
+        // Normalization can leave the raw Bezier hull. These corners contain every unit quaternion
+        // (and zero); keep the authored keys/controls too, since boundary samples remain unnormalized.
+        // This deliberately widens culling bounds rather than assuming a cubic follows a shortest arc.
+        for (let corner = 0; corner < 16; corner++)
+          points.push([0, 1, 2, 3].map(axis => (corner & (1 << axis) ? 1 : -1)))
       }
       return (extents[index] = Object.freeze({
         width,

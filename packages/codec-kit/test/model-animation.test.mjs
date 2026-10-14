@@ -170,6 +170,117 @@ test('values sampled into kept arrays are those sample makes, in the order of ch
   assert.throws(() => sampler.sampleInto(0, values, AbortSignal.abort()), { name: 'AbortError' })
 })
 
+test('cubic rotation normalizes interiors and retains authored tracks with conservative extents', () => {
+  const values = [
+    [1, 0, 0, 0],
+    [-0.8, 0, 0, 0.6],
+    [0, 0, -0.8, 0.6],
+  ]
+  const rotation = channel('rotation', 'cubic-spline', values, {
+    samples: values.map((value, frame) => ({
+      frame,
+      timeSeconds: [0, 0.75, 2.5][frame],
+      value,
+      inTangent: [0, 0, 0, 0],
+      outTangent: [0, 0, 0, 0],
+    })),
+  })
+  const authored = clip([rotation])
+  const before = structuredClone(authored)
+  const sampler = createModelAnimationSampler(authored)
+  const extent = sampler.extent(0)
+  assert.equal(extent.between, 'hull')
+  assert.deepEqual(extent.arcs, [])
+  for (const value of values)
+    assert.ok(extent.points.some(point => point.every((x, i) => x === value[i])))
+  for (const time of [0.1, 0.375, 0.7, 0.8, 1.625, 2.49]) {
+    const sampled = sampler.sample(time)[0].value
+    const into = []
+    sampler.sampleInto(time, into)
+    assert.deepEqual(into[0], sampled)
+    assert.ok(Math.abs(Math.hypot(...sampled) - 1) < 1e-12)
+    for (let axis = 0; axis < 4; axis++) {
+      assert.ok(sampled[axis] >= Math.min(...extent.points.map(point => point[axis])))
+      assert.ok(sampled[axis] <= Math.max(...extent.points.map(point => point[axis])))
+    }
+  }
+  assert.ok(Math.abs(sampler.sample(0.375)[0].value[0] - 1 / Math.sqrt(10)) < 1e-12)
+  assert.ok(Math.abs(sampler.sample(0.375)[0].value[3] - 3 / Math.sqrt(10)) < 1e-12)
+  assert.deepEqual(authored, before)
+  assert.deepEqual(
+    snapshotModelAnimations([authored])[0].channels[0].samples,
+    before.channels[0].samples,
+  )
+})
+
+test('cubic quaternion dispatch does not change linear, step, nonrotation or axis channels', () => {
+  const values = [
+    [1, 0, 0, 0],
+    [-0.8, 0, 0, 0.6],
+  ]
+  const cubic = channel('rotation', 'cubic-spline', values, {
+    samples: values.map((value, frame) => ({
+      frame,
+      timeSeconds: frame,
+      value,
+      inTangent: [0, 0, 0, 0],
+      outTangent: [0, 0, 0, 0],
+    })),
+  })
+  const controls = [
+    channel('rotation', 'linear', values),
+    { ...cubic, kind: 'scale' },
+    { ...cubic, kind: 'node.rotation' },
+    { ...cubic, kind: 'bone.rotation' },
+    { ...cubic, axis: 'x' },
+  ]
+  for (const control of controls) {
+    const sampler = createModelAnimationSampler(clip([control]))
+    const value = sampler.sample(0.5)[0].value
+    assert.ok(Math.abs(value[0] - 0.1) < 1e-12)
+    assert.ok(Math.abs(value[3] - 0.3) < 1e-12)
+    assert.ok(Math.hypot(...value) < 0.32)
+    assert.ok(sampler.extent(0).points.length < 16)
+  }
+  assert.deepEqual(
+    createModelAnimationSampler(clip([channel('rotation', 'step', values)])).sample(0.5)[0].value,
+    values[0],
+  )
+  const spherical = createModelAnimationSampler(
+    clip([channel('rotation', 'spherical-linear', values)]),
+  )
+  assert.ok(Math.abs(Math.hypot(...spherical.sample(0.5)[0].value) - 1) < 1e-12)
+  assert.ok(spherical.sample(0.5)[0].value[3] < 0)
+  assert.equal(spherical.extent(0).between, 'arc')
+})
+
+test('cubic rotation preserves zero and nonunit boundary samples and raw tangent extents', () => {
+  const values = [
+    [0, 0, 0, 2],
+    [0, 0, 0, -2],
+  ]
+  const rotation = channel('rotation', 'cubic-spline', values, {
+    samples: values.map((value, frame) => ({
+      frame,
+      timeSeconds: frame,
+      value,
+      inTangent: [0, 0, 0, 0],
+      outTangent: [0, 0, 0, 0],
+    })),
+  })
+  const sampler = createModelAnimationSampler(clip([rotation]))
+  assert.deepEqual(sampler.sample(0.5)[0].value, [0, 0, 0, 0])
+  assert.deepEqual(sampler.sample(-1)[0].value, values[0])
+  assert.deepEqual(sampler.sample(1)[0].value, values[1])
+  const single = { ...rotation, samples: rotation.samples.slice(0, 1) }
+  assert.deepEqual(createModelAnimationSampler(clip([single])).sample(0.5)[0].value, values[0])
+  const overshoot = structuredClone(rotation)
+  overshoot.samples[0].outTangent = [12, 0, 0, 0]
+  const extent = createModelAnimationSampler(clip([overshoot])).extent(0)
+  assert.ok(extent.points.some(point => point[0] === 4 && point[3] === 2))
+  assert.ok(extent.points.some(point => point[3] === -2))
+})
+
 test('the extent of a channel holds every value it takes, whatever the time', () => {
   const cubic = (value, inTangent, outTangent) => ({ value, inTangent, outTangent })
   const sampler = createModelAnimationSampler(
