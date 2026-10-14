@@ -1,5 +1,6 @@
 /** Format-neutral, read-only 2D lattice for published WorldScene facets (SDK maps contract).
  * Draws height, authored contours/ramps, explicit cliff faces and multi-channel object coverage.
+ * The opt-in overview profile outlines published cliff coverage and fills known object outlines.
  * Uses no model/texture ports and never infers gameplay masks or native export capability.
  */
 import type {
@@ -19,6 +20,8 @@ interface LatticeVertex {
   readonly ramp?: boolean
 }
 export interface WorldLatticePlan {
+  /** Omission retains the original lattice presentation. No gameplay semantics change. */
+  readonly style?: 'overview'
   readonly cells: readonly {
     readonly vertices: Quad<LatticeVertex>
     readonly colors: Quad<string>
@@ -28,6 +31,8 @@ export interface WorldLatticePlan {
   readonly ramps: readonly Quad<Point>[]
   /** Explicit publisher cliff-face cells, independent of level contours and ramps. */
   readonly cliffFaces: readonly Quad<Point>[]
+  /** Layer-local exposed edges of published cliff quads, not inferred native cliff lines. */
+  readonly cliffBoundaries?: readonly (readonly [Point, Point])[]
   readonly objects: readonly {
     readonly point: Point
     readonly objectId: number
@@ -78,10 +83,53 @@ export function worldLatticeColor(
   return submerged ? `hsl(207 48% ${18 + value * 22}%)` : `hsl(90 23% ${25 + value * 48}%)`
 }
 
+/** A continuous brown height palette; only published water coverage produces blue ground. */
+function overviewColor(
+  height: number,
+  minimum: number,
+  maximum: number,
+  submerged: boolean,
+): string {
+  if (submerged) return worldLatticeColor(height, minimum, maximum, true)
+  const value = Math.max(0, Math.min(1, (height - minimum) / Math.max(1e-6, maximum - minimum)))
+  return `hsl(${28 + value * 8} 48% ${18 + value * 60}%)`
+}
+
+/** Cancel layer-local shared edges; retain holes and ignore repeated published cells. */
+function recordCliffBoundary(
+  layerId: string,
+  x: number,
+  y: number,
+  quad: Quad<LatticeVertex>,
+  edges: Map<string, readonly [Point, Point]>,
+  cells: Set<string>,
+): void {
+  const cell = JSON.stringify([layerId, x, y])
+  if (cells.has(cell)) return
+  cells.add(cell)
+  const corners = [`${x},${y}`, `${x + 1},${y}`, `${x + 1},${y + 1}`, `${x},${y + 1}`] as const
+  for (const [a, b] of [
+    [0, 1],
+    [1, 2],
+    [2, 3],
+    [3, 0],
+  ] as const) {
+    const first = corners[a],
+      second = corners[b]
+    const key = JSON.stringify([layerId, ...(first < second ? [first, second] : [second, first])])
+    if (edges.has(key)) edges.delete(key)
+    else edges.set(key, [quad[a].point, quad[b].point])
+  }
+}
+
+/** Build one neutral plan; the overview profile changes presentation of published facts only. */
 export function createWorldLatticePlan(
   items: readonly WorldSceneItem[],
   selectedSpaceId?: string,
+  style: 'lattice' | 'overview' = 'lattice',
 ): WorldLatticePlan {
+  if (style !== 'lattice' && style !== 'overview')
+    throw new TypeError('Unknown world lattice style')
   const layerSpaces = new Map(
     items.flatMap(item =>
       item.facet === 'layers' && item.spaceId !== undefined
@@ -182,6 +230,8 @@ export function createWorldLatticePlan(
   const contours: (readonly [Point, Point])[] = []
   const ramps: Quad<Point>[] = []
   const cliffFaces: Quad<Point>[] = []
+  const cliffEdges = style === 'overview' ? new Map<string, readonly [Point, Point]>() : undefined
+  const cliffCells = style === 'overview' ? new Set<string>() : undefined
   for (const item of terrain) {
     const at = (dx: number, dy: number) =>
       vertices.get(`${item.layerId}:${item.x + dx}:${item.y + dy}`)
@@ -194,11 +244,19 @@ export function createWorldLatticePlan(
     cells.push({
       vertices: quad,
       colors: quad.map(vertex =>
-        worldLatticeColor(vertex.height, minimumHeight, maximumHeight, submerged(vertex)),
+        (style === 'overview' ? overviewColor : worldLatticeColor)(
+          vertex.height,
+          minimumHeight,
+          maximumHeight,
+          submerged(vertex),
+        ),
       ) as unknown as Quad<string>,
     })
-    if (item.cliffFace === true)
+    if (item.cliffFace === true) {
       cliffFaces.push(quad.map(vertex => vertex.point) as unknown as Quad<Point>)
+      if (cliffEdges !== undefined && cliffCells !== undefined)
+        recordCliffBoundary(item.layerId, item.x, item.y, quad, cliffEdges, cliffCells)
+    }
     if (quad.some(vertex => vertex.ramp === true)) {
       // Ramp ground rises between the levels without a cliff: its cells carry no cliff line.
       ramps.push(quad.map(vertex => vertex.point) as unknown as Quad<Point>)
@@ -294,6 +352,7 @@ export function createWorldLatticePlan(
     objects,
     bounds: Number.isFinite(minX) ? [minX, minY, maxX, maxY] : [0, 0, 1, 1],
     flat: cells.length > 0 && minimumHeight === maximumHeight,
+    ...(style === 'overview' ? { style, cliffBoundaries: [...cliffEdges!.values()] } : {}),
   }
 }
 
@@ -334,6 +393,7 @@ export function worldLatticeObjectAt(
   return best
 }
 
+/** Draw either presentation with the same coordinates, published facets and selection behavior. */
 export function drawWorldLattice(
   canvas: HTMLCanvasElement,
   plan: WorldLatticePlan,
@@ -360,9 +420,14 @@ export function drawWorldLattice(
   const context = canvas.getContext('2d')
   if (context === null) throw new TypeError('2D lattice canvas is unavailable')
   const screen = latticeScreen(canvas, plan)
+  const overview = plan.style === 'overview'
   context.clearRect(0, 0, canvas.width, canvas.height)
+  if (overview) {
+    context.fillStyle = '#0f172a'
+    context.fillRect(0, 0, canvas.width, canvas.height)
+  }
   context.lineWidth = 0.35
-  context.strokeStyle = 'rgba(15, 25, 25, 0.18)'
+  context.strokeStyle = overview ? 'rgba(255, 255, 255, 0.08)' : 'rgba(15, 25, 25, 0.18)'
   for (const cell of plan.cells) {
     const points = cell.vertices.map(vertex => screen(vertex.point)) as unknown as Quad<Point>
     let low: 0 | 1 | 2 | 3 = 0,
@@ -402,6 +467,15 @@ export function drawWorldLattice(
     context.fill()
   }
   context.lineWidth = 1.4
+  if (overview && (plan.cliffBoundaries?.length ?? 0) > 0) {
+    context.strokeStyle = '#fff'
+    context.beginPath()
+    for (const [a, b] of plan.cliffBoundaries!) {
+      context.moveTo(...screen(a))
+      context.lineTo(...screen(b))
+    }
+    context.stroke()
+  }
   context.strokeStyle = '#d8dec4'
   context.beginPath()
   for (const [a, b] of plan.contours) {
@@ -420,7 +494,7 @@ export function drawWorldLattice(
     for (const channel of Object.keys(channelColors) as (keyof typeof channelColors)[]) {
       const polygons = object.coverage?.[channel]
       if (polygons === undefined) continue
-      context.strokeStyle = channelColors[channel]
+      context.strokeStyle = overview && channel === 'outline' ? '#141414' : channelColors[channel]
       context.lineWidth = channel === 'outline' ? 1.5 : 1
       for (const polygon of polygons) {
         if (polygon.length < 3) continue
@@ -428,6 +502,14 @@ export function drawWorldLattice(
         context.moveTo(...screen(polygon[0]!))
         for (const point of polygon.slice(1)) context.lineTo(...screen(point))
         context.closePath()
+        if (overview && channel === 'outline') {
+          context.fillStyle = object.roles?.includes('resource')
+            ? WORLD_LATTICE_ROLE_COLORS.resource
+            : object.roles?.includes('destructible')
+              ? '#fff'
+              : '#b8b8b8'
+          context.fill()
+        }
         context.stroke()
       }
     }
@@ -480,7 +562,7 @@ export function drawWorldLattice(
   ]
   if (kinds.length === 0) return
   const defaultLabels: Readonly<Partial<Record<(typeof kinds)[number], string>>> = {
-    cliffFace: 'Cliff face',
+    cliffFace: overview ? 'Cliff coverage boundary' : 'Cliff face',
     blocked: 'Blocked footprint',
     noBuild: 'No-build footprint',
     vision: 'Vision blocker',
@@ -501,7 +583,9 @@ export function drawWorldLattice(
       kind === 'ramp'
         ? WORLD_RAMP_COLOR
         : kind === 'cliffFace'
-          ? WORLD_CLIFF_FACE_COLOR
+          ? overview
+            ? '#fff'
+            : WORLD_CLIFF_FACE_COLOR
           : kind in WORLD_LATTICE_ROLE_COLORS
             ? WORLD_LATTICE_ROLE_COLORS[kind as keyof typeof WORLD_LATTICE_ROLE_COLORS]
             : kind in channelColors

@@ -5,7 +5,7 @@
 //
 //   node scripts/render-world-payload.mjs --payload <dir> --out <dir> [--cameras <file>] [--size 1280x900]
 //        [--backend gpu|swiftshader] [--time 0] [--shadows 1] [--terrain-only]
-//        [--benchmark 12] [--animation-step 0.25] [--lattice] [--geometry-only]
+//        [--benchmark 12] [--animation-step 0.25] [--lattice] [--lattice-style lattice|overview] [--geometry-only]
 //
 // cameras file: [{ "name": "overview", "azimuth": 0.785, "elevation": 0.52, "zoom": 1, "target": [0,0,0] }]
 import {
@@ -38,6 +38,7 @@ const { values } = parseArgs({
     'terrain-only': { type: 'boolean', default: false },
     'geometry-only': { type: 'boolean', default: false },
     lattice: { type: 'boolean', default: false },
+    'lattice-style': { type: 'string' },
     'lighting-effects': { type: 'string', default: '1' },
     ssao: { type: 'string', default: '1' },
     benchmark: { type: 'string', default: '0' },
@@ -46,6 +47,11 @@ const { values } = parseArgs({
 })
 if (values.payload === undefined || values.out === undefined)
   throw new TypeError('--payload and --out are required')
+const latticeStyle = values['lattice-style'] ?? 'lattice'
+if (latticeStyle !== 'lattice' && latticeStyle !== 'overview')
+  throw new TypeError('--lattice-style must be lattice or overview')
+if (values['lattice-style'] !== undefined && !values.lattice)
+  throw new TypeError('--lattice-style requires --lattice')
 const payloadDir = resolve(values.payload)
 const outDir = resolve(values.out)
 const [width, height] = values.size.split('x').map(Number)
@@ -92,13 +98,13 @@ const bundled = await build({
       }
       const canvas = document.querySelector('canvas');
       if (${values.lattice}) {
-        const plan = createWorldLatticePlan(payload.items);
+        const plan = createWorldLatticePlan(payload.items, undefined, ${JSON.stringify(latticeStyle)});
         globalThis.worldRenderer = {
-          glRenderer: 'Canvas2D lattice',
+          glRenderer: ${JSON.stringify(latticeStyle === 'overview' ? 'Canvas2D map overview' : 'Canvas2D lattice')},
           draw() {
             const started = performance.now();
             drawWorldLattice(canvas, plan);
-            return { stats: { latticeCells: plan.cells.length, contours: plan.contours.length, objectMarkers: plan.objects.length },
+            return { stats: { latticeCells: plan.cells.length, contours: plan.contours.length, ...(plan.style === 'overview' ? { cliffBoundaryEdges: plan.cliffBoundaries.length } : {}), objectMarkers: plan.objects.length },
               renderer: {}, milliseconds: performance.now() - started };
           },
           async benchmark() { throw new Error('Use --benchmark 0 for lattice screenshots'); },
@@ -283,6 +289,7 @@ try {
       terrainOnly: values['terrain-only'] ?? false,
       geometryOnly: values['geometry-only'],
       lattice: values.lattice,
+      ...(values.lattice && latticeStyle === 'overview' ? { latticeStyle } : {}),
       cameras,
     },
     payloadDir,

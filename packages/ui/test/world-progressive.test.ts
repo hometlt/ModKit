@@ -15,6 +15,7 @@ import {
   createWorldLatticePlan,
   drawWorldLattice,
   WORLD_CLIFF_FACE_COLOR,
+  WORLD_LATTICE_ROLE_COLORS,
   worldLatticeColor,
   worldLatticeObjectAt,
 } from '../src/world/lattice.js'
@@ -421,5 +422,205 @@ describe('progressive world preview', () => {
     )
     expect(objectsOnly.objects[0]?.point).toEqual([10.75, 0.5])
     expect(objectsOnly.objects[0]?.coverage?.blocked).toHaveLength(2)
+  })
+})
+
+/** Grid identities stay native while the canonical frame has unequal, reflected cell axes. */
+function overviewGrid(
+  columns: number,
+  rows: number,
+  faces: readonly string[],
+  layerId = 'terrain',
+): WorldSceneItem[] {
+  return Array.from({ length: columns * rows }, (_, index) => {
+    const x = index % columns,
+      y = Math.floor(index / columns)
+    return {
+      facet: 'terrain',
+      id: `${layerId}-${x}-${y}`,
+      layerId,
+      coordinateSpaceId: 'height-grid',
+      lod: 'exact',
+      x,
+      y,
+      heightBase: x,
+      heightAdjustment: 0,
+      mask: 0,
+      uvwPosition: { x: 10 + 2 * x, y: x, z: 20 - 3 * y },
+      ...(x < columns - 1 && y < rows - 1 ? { cliffFace: faces.includes(`${x},${y}`) } : {}),
+    }
+  })
+}
+
+/** Record polygon fills separately from point markers and legend symbols. */
+function overviewCanvas() {
+  const fills: { color: string; polygon: boolean }[] = []
+  const strokes: string[] = []
+  let polygon = false
+  const context = {
+    fillStyle: '',
+    strokeStyle: '',
+    lineWidth: 0,
+    font: '',
+    textBaseline: '',
+    clearRect() {},
+    fillRect() {},
+    moveTo() {},
+    closePath() {},
+    beginPath() {
+      polygon = false
+    },
+    lineTo() {
+      polygon = true
+    },
+    arc() {
+      polygon = false
+    },
+    rect() {
+      polygon = true
+    },
+    fill() {
+      fills.push({ color: String(this.fillStyle), polygon })
+    },
+    stroke() {
+      strokes.push(this.strokeStyle)
+    },
+    fillText() {},
+    measureText(value: string) {
+      return { width: value.length * 6 }
+    },
+    createLinearGradient() {
+      return { addColorStop() {} }
+    },
+  }
+  return {
+    fills,
+    strokes,
+    canvas: { width: 200, height: 200, getContext: () => context } as unknown as HTMLCanvasElement,
+  }
+}
+
+describe('world lattice overview profile', () => {
+  it('keeps the default plan intact and changes only opt-in presentation', () => {
+    const items = overviewGrid(3, 2, ['0,0', '1,0'])
+    const legacy = createWorldLatticePlan(items)
+    expect(createWorldLatticePlan(items, undefined, 'lattice')).toEqual(legacy)
+    expect(legacy).not.toHaveProperty('style')
+    expect(legacy).not.toHaveProperty('cliffBoundaries')
+    expect(legacy.cells[0]?.colors[0]).toContain('hsl(90 ')
+    const overview = createWorldLatticePlan(items, undefined, 'overview')
+    expect(overview.style).toBe('overview')
+    expect(overview.cells.map(cell => cell.vertices)).toEqual(
+      legacy.cells.map(cell => cell.vertices),
+    )
+    expect(overview.cliffFaces).toEqual(legacy.cliffFaces)
+    expect(overview.contours).toEqual(legacy.contours)
+    expect(overview.cells[0]?.colors[0]).toContain('hsl(28 ')
+    expect(() => createWorldLatticePlan(items, undefined, 'other' as 'overview')).toThrow(
+      'Unknown world lattice style',
+    )
+  })
+
+  it('removes only shared edges and does not cancel a duplicate published cell twice', () => {
+    const items = overviewGrid(3, 2, ['0,0', '1,0'])
+    const plan = createWorldLatticePlan([...items, items[0]!], undefined, 'overview')
+    expect(plan.cliffBoundaries).toHaveLength(6)
+    expect(plan.cliffBoundaries).not.toContainEqual([
+      [12, 20],
+      [12, 17],
+    ])
+    expect(plan.cliffBoundaries).not.toContainEqual([
+      [12, 17],
+      [12, 20],
+    ])
+    expect(plan.cliffBoundaries).toContainEqual([
+      [10, 20],
+      [12, 20],
+    ])
+  })
+
+  it('retains the inner hole and a disconnected island without adding closure edges', () => {
+    const faces = ['0,0', '1,0', '2,0', '0,1', '2,1', '0,2', '1,2', '2,2', '5,0']
+    const plan = createWorldLatticePlan(overviewGrid(7, 4, faces), undefined, 'overview')
+    // 12 outer grid edges + 4 hole edges + 4 isolated-cell edges.
+    expect(plan.cliffBoundaries).toHaveLength(20)
+    expect(plan.cliffBoundaries).toContainEqual([
+      [14, 17],
+      [12, 17],
+    ])
+    expect(plan.cliffBoundaries).toContainEqual([
+      [20, 20],
+      [22, 20],
+    ])
+  })
+
+  it('keeps coincident published faces in different layers independent', () => {
+    const plan = createWorldLatticePlan(
+      [...overviewGrid(2, 2, ['0,0'], 'a'), ...overviewGrid(2, 2, ['0,0'], 'b')],
+      undefined,
+      'overview',
+    )
+    expect(plan.cliffFaces).toHaveLength(2)
+    expect(plan.cliffBoundaries).toHaveLength(8)
+  })
+
+  it('does not turn level contours into white published-coverage boundaries', async () => {
+    const source = fixture()
+    const items = (
+      await Promise.all(
+        ['terrain', 'cliffs'].map(facet => source.page({ facet: facet as 'terrain', limit: 16 })),
+      )
+    ).flatMap(page => page.items)
+    const plan = createWorldLatticePlan(items, undefined, 'overview')
+    expect(plan.contours).toHaveLength(1)
+    expect(plan.cliffBoundaries).toEqual([])
+    const draw = overviewCanvas()
+    drawWorldLattice(draw.canvas, plan)
+    expect(draw.strokes).toContain('#d8dec4')
+    expect(draw.strokes).not.toContain('#fff')
+  })
+
+  it('fills known outlines while unknown and known-empty resource outlines stay point markers', () => {
+    const outline = [
+      { x: 10, y: 20 },
+      { x: 11, y: 20 },
+      { x: 11, y: 19 },
+    ]
+    const objects: WorldSceneItem[] = ['resource', 'destructible', 'resource', 'resource'].map(
+      (role, index) => ({
+        facet: 'objects',
+        id: `object-${index}`,
+        layerId: 'objects',
+        coordinateSpaceId: 'map-native',
+        objectId: index + 1,
+        kind: 'feature',
+        resourceId: `resource-${index}`,
+        position: { x: 0, y: 0, z: 0 },
+        uvwPosition: { x: 10.5, y: 0, z: 19.5 },
+        latticeCoverage: {
+          coordinateSpaceId: 'map-native',
+          roles: [role as 'resource' | 'destructible'],
+        },
+        ...(index < 2
+          ? { uvwLatticeCoverage: { outline: [outline] } }
+          : index === 3
+            ? { uvwLatticeCoverage: { outline: [] } }
+            : {}),
+      }),
+    )
+    const plan = createWorldLatticePlan(
+      [...overviewGrid(2, 2, []), ...objects],
+      undefined,
+      'overview',
+    )
+    const draw = overviewCanvas()
+    drawWorldLattice(draw.canvas, plan)
+    expect(
+      draw.fills.filter(fill => fill.polygon && fill.color === WORLD_LATTICE_ROLE_COLORS.resource),
+    ).toHaveLength(1)
+    expect(draw.fills.filter(fill => fill.polygon && fill.color === '#fff')).toHaveLength(1)
+    expect(plan.objects[2]?.coverage).toBeUndefined()
+    expect(plan.objects[3]?.coverage?.outline).toEqual([])
+    expect(draw.strokes).toContain('#141414')
   })
 })
