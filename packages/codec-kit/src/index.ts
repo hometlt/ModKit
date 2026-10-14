@@ -44,6 +44,11 @@ export {
   voxelSurface,
   type VoxelGrid,
   type VoxelGeometryOptions,
+  bindVoxelCellsToParts,
+  type VoxelBindingPoint,
+  type VoxelBindingTriangle,
+  type VoxelBindingOptions,
+  type VoxelPartBinding,
 } from './model/geometry.js'
 import { contributionSettingsFor } from '@modkit/sdk'
 import type { ArtifactSource, DataSourceRefWire } from '@modkit/sdk'

@@ -1,9 +1,10 @@
 /** Portable cell decoding and exposed-face geometry shared by model voxelization adapters.
  * This is an in-memory grid, not a UVM/UVW serialization or a mesh-to-voxel backend.
  * VL32 uses big-endian signed xyz and ARGB8; output colours are RGBA8. Surface cells with alpha
- * below 128 are omitted; other alpha becomes opaque. Duplicate coordinates use the last colour.
+ * below 128 are omitted; other alpha becomes opaque. Duplicate coordinates use the last opaque colour.
  * Grid corners are integer positions, +Y up at the consuming adapter; no source-unit conversion.
- * Allocations and loops are bounded/cancellable. Parts must be meshed separately to retain joints.
+ * Counts and loops are bounded/cancellable; output-byte limits do not bound the full JS heap.
+ * Parts must be meshed separately to retain joints.
  */
 
 export interface VoxelGrid {

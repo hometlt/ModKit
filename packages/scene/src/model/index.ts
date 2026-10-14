@@ -10,6 +10,11 @@ export { expandOrderedEulerNode, type OrderedEulerKey } from './ordered-euler.js
 export { decomposeMatrix4 } from './billboard-math.js'
 export { modelMaterialTeamColor } from './team-color.js'
 export {
+  createVoxelBindingSurface,
+  type VoxelSkinSurfaceMesh,
+  type VoxelSkinSurfaceOptions,
+} from './voxel-surface.js'
+export {
   applyModelBillboards,
   applyModelFaceCameraBillboard,
   billboardCameraRotation,
