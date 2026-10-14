@@ -231,6 +231,9 @@ export const nodeModuleMap: Readonly<Record<string, string>> = Object.freeze({
   '@modkit/uv/model/frame': pathToFileURL(
     join(repositoryRoot, 'packages', 'uv', 'dist', 'model', 'frame.js'),
   ).href,
+  '@modkit/uv/model/portable': pathToFileURL(
+    join(repositoryRoot, 'packages', 'uv', 'dist', 'model', 'portable.js'),
+  ).href,
   '@modkit/uv/model/materializer': pathToFileURL(
     join(repositoryRoot, 'packages', 'uv', 'dist', 'model', 'materializer.js'),
   ).href,

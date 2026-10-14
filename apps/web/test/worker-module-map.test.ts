@@ -12,6 +12,7 @@ describe('PWA worker module surface', () => {
       '@modkit/sdk/model-encoding': 'vendor/sdk/model-encoding.js',
       '@modkit/sdk/templates': 'vendor/sdk/templates/index.js',
       '@modkit/uv/model/container': 'vendor/uv/model/container.js',
+      '@modkit/uv/model/portable': 'vendor/uv/model/portable.js',
       '@modkit/uv/model/validation': 'vendor/uv/model/validation.js',
       'modkit-extension-archives/formats/zip/codec':
         'vendor/modkit-extension-archives/formats/zip/codec.js',
