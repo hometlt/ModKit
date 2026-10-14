@@ -152,11 +152,15 @@ export function embedPortableUvmImages(
       unsupported.push(logicalId)
       return image
     }
+    const name = image['name']
+    if (name !== undefined && typeof name !== 'string')
+      throw new TypeError(`UVM image ${index} name must be a string`)
     additions.push(payload)
     const { uri: _uri, ...rest } = image
     void _uri
     return {
       ...rest,
+      name: name === undefined || name === '' ? logicalId : name,
       bufferView: (views?.length ?? 0) + additions.length - 1,
       mimeType: payload.mimeType,
     }
