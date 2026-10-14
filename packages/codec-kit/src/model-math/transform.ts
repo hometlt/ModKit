@@ -17,6 +17,48 @@ export function normalizeQuat(
 }
 
 /**
+ * Shortest-path normalized linear interpolation of `[x, y, z, w]` components.
+ * Blends the supplied components before normalization; unequal endpoint magnitudes affect
+ * the weights. The result follows a's hemisphere (including at t = 1), not constant angular speed.
+ * Requires four finite components, finite norms > 1e-12 and finite t in [0, 1].
+ * Invalid or degenerate input/result throws RangeError instead of substituting an identity.
+ */
+export function nlerpQuaternion(
+  a: readonly number[],
+  b: readonly number[],
+  t: number,
+): [number, number, number, number] {
+  if (!Number.isFinite(t) || t < 0 || t > 1)
+    throw new RangeError('Quaternion interpolation fraction must be finite and in [0, 1]')
+  const lengths: number[] = []
+  for (const value of [a, b]) {
+    if (value.length !== 4)
+      throw new RangeError('Quaternion interpolation requires four finite components')
+    for (let i = 0; i < 4; i += 1)
+      if (!Number.isFinite(value[i]))
+        throw new RangeError('Quaternion interpolation requires four finite components')
+    const length = Math.hypot(value[0]!, value[1]!, value[2]!, value[3]!)
+    if (!Number.isFinite(length) || length <= 1e-12)
+      throw new RangeError('Quaternion interpolation requires finite norms greater than 1e-12')
+    lengths.push(length)
+  }
+  // Normalize only the dot operands, preventing overflow without changing the blend weights.
+  let dot = 0
+  for (let i = 0; i < 4; i += 1) dot += (a[i]! / lengths[0]!) * (b[i]! / lengths[1]!)
+  const weightB = dot < 0 ? -t : t
+  const result: [number, number, number, number] = [
+    (1 - t) * a[0]! + weightB * b[0]!,
+    (1 - t) * a[1]! + weightB * b[1]!,
+    (1 - t) * a[2]! + weightB * b[2]!,
+    (1 - t) * a[3]! + weightB * b[3]!,
+  ]
+  const length = Math.hypot(...result)
+  if (!Number.isFinite(length) || length <= 1e-12)
+    throw new RangeError('Quaternion interpolation produced a degenerate result')
+  return normalizeQuat(result)
+}
+
+/**
  * Translation, unit rotation quaternion `[x, y, z, w]` and per-axis scale of a column-major matrix,
  * so that T·R·S reproduces it: a reflection (negative determinant) reads as a negative x scale, and
  * a zero column as a zero scale on that axis, its rotation axis completed from the other two (a
