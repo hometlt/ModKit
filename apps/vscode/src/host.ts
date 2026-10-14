@@ -720,13 +720,15 @@ export async function createVsCodeSubjectHost(
                   options.subjectCatalog,
                   target,
                 )
+                const selectedBaseMods =
+                  typeof baseMods === 'function' ? baseMods(resolve(target)) : baseMods
                 return contentSources === undefined
                   ? []
                   : [
                       createContentAssetOrigin({
                         contentSources,
                         target: resolve(target),
-                        ...(baseMods === undefined ? {} : { baseMods }),
+                        ...(selectedBaseMods === undefined ? {} : { baseMods: selectedBaseMods }),
                       }),
                     ]
               },
