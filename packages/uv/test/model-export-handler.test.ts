@@ -3,6 +3,7 @@ import { createUvmExportHandler } from '../src/model/export-handler.js'
 import { readUvmContainer } from '../src/model/container.js'
 import type { InspectionContext } from '@modkit/codec-kit'
 import type { ModelProjection } from '../src/model/materializer.js'
+import type { Diagnostic } from '@modkit/core'
 
 const projection: ModelProjection = {
   info: {
@@ -72,6 +73,22 @@ it('preserves explicit scale opt-in and rejects invalid requests', async () => {
   await expect(
     scaled({ schemaVersion: 1, metersPerSourceUnit: null }, {} as never),
   ).rejects.toThrow(/positive/u)
+})
+
+it('reports the canonical structured projection receipt without changing exported bytes', async () => {
+  const diagnostics: Diagnostic[] = []
+  const handler = createUvmExportHandler(projection, context, fixed)
+  const plain = await handler({ schemaVersion: 1 }, {})
+  const reported = await handler({ schemaVersion: 1 }, {
+    reportDiagnostic(value) { diagnostics.push(value) },
+  })
+  expect(reported).toEqual(plain)
+  expect(diagnostics).toHaveLength(1)
+  expect(diagnostics[0]).toMatchObject({ code: 'common.uvm/export-projection-receipt', severity: 'information',
+    data: { profile: 'UVM/core@1.0', subjectRevision: context.source.revision,
+      materializer: { options: { assetId: 'fixture/triangle', sourceFormat: 'fixture-fixed' } } },
+  })
+  expect((diagnostics[0]!.data as { diff: unknown[] }).diff.length).toBeGreaterThan(0)
 })
 
 it('honors source cancellation when no invocation signal is supplied', async () => {

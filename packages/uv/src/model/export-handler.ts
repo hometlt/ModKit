@@ -1,5 +1,6 @@
 /** Shared read-only model.export-uvm operation adapter; native projection stays with its codec. */
 import type { InspectionContext, InspectionResult } from '@modkit/codec-kit'
+import { diagnostic } from '@modkit/core'
 import type { MaterializationOptions, ModelProjection } from './materializer.js'
 
 export interface UvmExportOptions {
@@ -70,6 +71,9 @@ export function createUvmExportHandler(
         ...(signal === undefined ? {} : { signal }),
       },
     )
+    // Preserve the canonical conversion evidence through the existing bounded operation diagnostic seam.
+    invocation.reportDiagnostic?.(diagnostic('information', 'common.uvm/export-projection-receipt',
+      'Canonical UVM projection receipt for this export.', undefined, result.receipt))
     return { kind: 'bytes', value: result.bytes.slice() }
   }
 }
