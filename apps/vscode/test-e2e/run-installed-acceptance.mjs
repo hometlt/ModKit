@@ -37,6 +37,10 @@ import { basename, delimiter, dirname, join, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { chromium } from 'playwright-core'
 import { installedPackageOptions } from './installed-package-options.mjs'
+import {
+  collectFailureDiagnostics,
+  webviewDocumentExpression,
+} from './installed-cdp-diagnostics.mjs'
 
 import {
   assertFormatSmokeWebviewResult,
@@ -2513,24 +2517,6 @@ async function webviewValues(port, expression) {
   return values
 }
 
-const webviewDocumentExpression = body => `(() => {
-  const candidates = [{ doc: document, win: globalThis }];
-  for (const frame of document.querySelectorAll('iframe')) {
-    try {
-      if (frame.contentDocument && frame.contentWindow) {
-        candidates.push({ doc: frame.contentDocument, win: frame.contentWindow });
-      }
-    } catch (error) { void error; }
-  }
-  for (const candidate of candidates) {
-    try {
-      const value = (${body})(candidate.doc, candidate.win);
-      if (value !== undefined && value !== null) return value;
-    } catch (error) { void error; }
-  }
-  return undefined;
-})()`
-
 /**
  * Put keyboard focus back on the workbench before a workbench shortcut is pressed.
  *
@@ -3819,8 +3805,10 @@ async function launchGeneration(generation) {
     acceptance = await readAcceptance()
   }
 
-  if (acceptance === undefined)
+  if (acceptance === undefined) {
+    receipt.ddsFailureDiagnostics = await collectFailureDiagnostics(port)
     throw new Error('installed DDS webview published no machine-readable subject receipt')
+  }
   assertA7(acceptance.a7)
 
   await waitFor(
