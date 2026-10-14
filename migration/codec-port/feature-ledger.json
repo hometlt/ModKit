@@ -5882,7 +5882,12 @@
         },
         {
           "path": "modkit-core/packages/host/test/content-dependency-operations.test.ts",
-          "sha256": "00b4a52bb3528d1a7e3f5ecdbf9424151a5cfb4f54e7cb26e9226380392480d4"
+          "sha256": "00b4a52bb3528d1a7e3f5ecdbf9424151a5cfb4f54e7cb26e9226380392480d4",
+          "snapshotPath": "modkit-core/reports/parity/evidence/sc2-content-dependency-operations-2026-09-24.test.ts.snapshot"
+        },
+        {
+          "path": "modkit-core/packages/host/test/content-dependency-operations.test.ts",
+          "sha256": "8423cee5b236cbb71cfb15ef32318f448f08e5f8f1fb35eccb61647d9f0f5255"
         },
         {
           "path": "modkit-extensions-blizzard/starcraft2/modules/mod/test/workspace/mod-contexts.test.ts",
@@ -5920,7 +5925,12 @@
         },
         {
           "path": "modkit-core/packages/host/test/content-dependency-operations.test.ts",
-          "sha256": "00b4a52bb3528d1a7e3f5ecdbf9424151a5cfb4f54e7cb26e9226380392480d4"
+          "sha256": "00b4a52bb3528d1a7e3f5ecdbf9424151a5cfb4f54e7cb26e9226380392480d4",
+          "snapshotPath": "modkit-core/reports/parity/evidence/sc2-content-dependency-operations-2026-09-24.test.ts.snapshot"
+        },
+        {
+          "path": "modkit-core/packages/host/test/content-dependency-operations.test.ts",
+          "sha256": "8423cee5b236cbb71cfb15ef32318f448f08e5f8f1fb35eccb61647d9f0f5255"
         },
         {
           "path": "modkit-extensions-blizzard/starcraft2/modules/mod/test/workspace/mod-contexts.test.ts",

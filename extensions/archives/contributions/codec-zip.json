@@ -275,6 +275,21 @@
           "roundTrip": "semantic",
           "preservesUnknownData": true
         },
+        "evidenceId": "zip64-canonical-reassembly-v1",
+        "corpusId": "modkit/extensions/archives/test/zip-ranges.test.ts",
+        "corpusDigest": "sha256:074c4c3faeaada1c9a80fa41cabcd806c3d9ecad4610365a08040fd7af74fe0e",
+        "conformanceProfile": "modkit/codec-contribution-v1",
+        "optionsFingerprint": "options:stored-additions",
+        "inputClass": "zip64-canonical-single-disk",
+        "provenAt": "2026-10-14T17:31:34Z"
+      },
+      {
+        "formatId": "zip",
+        "representationId": "archive-namespace",
+        "claim": {
+          "roundTrip": "semantic",
+          "preservesUnknownData": true
+        },
         "evidenceId": "zip-verbatim-reassembly-v1",
         "corpusId": "modkit/packages/host/test/archive-edits.test.ts",
         "corpusDigest": "none:proof-suite",
