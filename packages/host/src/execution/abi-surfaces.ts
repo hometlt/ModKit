@@ -381,6 +381,7 @@ const modelResourceAssetSurface = {
     acquire: modelAcquire,
     readRaster: { kind: 'value', ...sig },
     sceneInfo: { kind: 'value', optional: true, ...sig },
+    cameraReferences: { kind: 'value', optional: true, ...sig },
     nodes: { kind: 'value', optional: true, ...sig },
     meshes: { kind: 'value', optional: true, ...sig },
     primitive: { kind: 'value', optional: true, ...sig },

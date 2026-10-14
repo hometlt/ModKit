@@ -480,11 +480,15 @@ export async function worldSceneModel(
       continue
     }
     textureBytes += bytes
-    textures.push(texture)
+    // Worker replies transfer their buffers. Keep the cached pixels/blocks owned by this
+    // lease so another frame (or model sharing the texture) can publish them again.
+    textures.push(Object.freeze(structuredClone(texture)))
   }
+  const cameraPage = await facet(asset.cameraReferences?.bind(asset), maxNodes)
   return Object.freeze({
     state: 'converted' as const,
     sourceKey: result.sourceKey,
+    ...(cameraPage === undefined ? {} : { cameras: Object.freeze([...cameraPage.items]) }),
     uvmBytes: result.bytes.slice(),
     ...(graph === undefined
       ? {}

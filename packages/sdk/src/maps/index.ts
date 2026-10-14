@@ -17,6 +17,7 @@ import type {
 } from '../asset-capabilities/media-data-sources.js'
 import type {
   ModelAnimationClip,
+  ModelCameraRef,
   ModelBoneBinding,
   ModelMaterialRef,
   ModelResourceRef,
@@ -739,6 +740,16 @@ export interface MapPlacedObject {
      * copies of one model do not animate in lockstep. The renderer picks a stable phase per object.
      */
     readonly randomStart?: boolean
+    /** Resolved sparse overrides. Higher priority wins per channel; equal priorities retain
+     * authored order. Clocks are seconds local to each clip, already scaled by the publisher.
+     * This profile supports full-weight hard overrides, not weighted/additive blending. */
+    readonly layers?: readonly {
+      readonly name: string
+      readonly groups: readonly string[]
+      readonly loop: boolean
+      readonly timeSeconds: number
+      readonly priority: number
+    }[]
   }
   readonly modules?: number
   readonly name?: string
@@ -2063,6 +2074,7 @@ export type WorldSceneModelResult =
       /** Independently reopened UVM artifact owned by this result; portable packagers must use
        * these bytes rather than reconstructing geometry from the native session. */
       readonly uvmBytes?: Uint8Array
+      readonly cameras?: readonly ModelCameraRef[]
       readonly nodes?: readonly ModelNode[]
       readonly skeleton?: readonly ModelBoneBinding[]
       readonly animations?: readonly ModelAnimationClip[]
@@ -2115,6 +2127,8 @@ export interface WorldSceneFrame {
   readonly objects: readonly WorldSceneObjectItem[]
   readonly animationTimes?: readonly Readonly<{ objectId: number; seconds: number }>[]
   readonly camera?: WorldSceneCamera
+  /** Camera selected on a loaded model; common scene resolves it after the same animation pose. */
+  readonly modelCamera?: { readonly objectId: number; readonly cameraIndex: number; readonly fieldOfViewAxis?: 'horizontal' | 'vertical' }
   readonly diagnostics: readonly Diagnostic[]
   readonly complete: boolean
 }

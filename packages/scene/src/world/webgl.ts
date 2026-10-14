@@ -12,6 +12,7 @@
  */
 import {
   Box3,
+  Matrix4,
   OrthographicCamera,
   PerspectiveCamera,
   Raycaster,
@@ -34,6 +35,7 @@ import type {
   MapTerrainWeightRaster,
   MapWaterMaterialDefinition,
   WorldSceneItem,
+  WorldSceneCamera,
   WorldSceneModelResult,
   WorldSceneObjectItem,
   WorldSceneTerrainItem,
@@ -51,6 +53,10 @@ import type {
   SceneRendererTexture,
 } from '@modkit/sdk'
 import { boundsOf } from '@modkit/codec-kit/model/bounds'
+import { sampleModelAnimationLayers, animationSnapshotBudget, modelAnimationNameMatchScore } from '@modkit/codec-kit/model/animation'
+import { readUvmContainer } from '@modkit/uv/model/container'
+import { resolveUvmCamera } from '../uvm/cameras.js'
+import type { WorldSceneFrame } from '@modkit/sdk/maps'
 import { invertAffine, linearStretch } from '@modkit/codec-kit/model-math/transform'
 import {
   TEAM_COLOR_BLENDS,
@@ -158,6 +164,8 @@ export interface WorldWebGlInput {
 }
 
 export interface WorldWebGlCamera {
+  /** Exact source lens; orbit fields remain its derived direction for culling and sorting. */
+  readonly source?: WorldSceneCamera
   readonly azimuth: number
   readonly elevation: number
   readonly zoom: number
@@ -1105,7 +1113,14 @@ export function worldModelAnimation(
   if (byItem === undefined) selectedWorldModelAnimations.set(result, (byItem = new WeakMap()))
   const cached = byItem.get(item)
   if (cached !== undefined) return cached ?? undefined
-  const clip = selectWorldModelAnimation(result, item)
+  const layers = item.presentationAnimation?.layers
+  const selectedLayers = layers?.flatMap(layer => {
+    const clip = selectWorldModelAnimation(result, { ...item, presentationAnimation: { name: layer.name, groups: layer.groups, loop: layer.loop, speed: 1 } })
+    return clip === undefined ? [] : [{ clip, timeSeconds: layer.timeSeconds, loop: layer.loop, priority: layer.priority }]
+  })
+  const clip = selectedLayers === undefined || selectedLayers.length === 0 ? selectWorldModelAnimation(result, item)
+    : sampleModelAnimationLayers(selectedLayers, animationSnapshotBudget(selectedLayers.map(layer => layer.clip)))
+  if (selectedLayers !== undefined && selectedLayers.length > 0 && clip !== undefined) composedWorldModelAnimations.add(clip)
   byItem.set(item, clip ?? null)
   return clip
 }
@@ -1123,14 +1138,12 @@ function selectWorldModelAnimation(
   // An SC2 sequence name is a set of animation properties: a request for "Work" plays "Stand Work"
   // (InvisibleWalkablePlatform8x8 hides itself in it), the clip holding every requested property
   // with the fewest others; the first such clip when several tie.
-  const wanted = requested.split(/\s+/u).filter(Boolean)
   let best: NonNullable<typeof result.animations>[number] | undefined
   let extra = Number.POSITIVE_INFINITY
   for (const clip of result.animations ?? []) {
-    const properties = new Set((clip.name ?? '').toLowerCase().split(/\s+/u).filter(Boolean))
-    if (!wanted.every(property => properties.has(property))) continue
-    const others = properties.size - new Set(wanted).size
-    if (others < extra) {
+    const others = modelAnimationNameMatchScore(clip.name ?? '', requested)
+    if (others === undefined) continue
+    if (others < extra || (others === extra && best?.channels.length === 0 && clip.channels.length > 0)) {
       best = clip
       extra = others
     }
@@ -2683,9 +2696,7 @@ const record = (value: unknown): JsonRecord | undefined =>
 /**
  * Materials as this world presents them.
  *
- * A composite material (`renderModel.composite`, SC2 CMP_) layers standard passes and has no
- * program of its own, so it drew opaque with whatever base texture it listed (Amphion's sewer water
- * effect became a black plane). Its first pass is a standard material and stands in for it.
+ * Ordinary composite materials retain all authored passes for the common material sampler.
  *
  * A cliff piece's blend material uses alpha as a terrain blend mask, not transparency: its floor and
  * top are alpha 0 and the terrain is drawn there, and rock edges fade into the ground. Drawn blended
@@ -2703,17 +2714,11 @@ function presentationMaterials(
     const firstPass = record(record(Array.isArray(passes) ? passes[0] : undefined)?.['material'])
     let standard = record(renderModel?.['standard'])
     let out = ref
-    if (firstPass !== undefined && ref.shader !== undefined) {
+    if (cliff && firstPass !== undefined && ref.shader !== undefined) {
       standard = firstPass
       const blend = typeof firstPass['blendMode'] === 'number' ? firstPass['blendMode'] : 0
       const { composite: _composite, ...surfaceModel } = renderModel ?? {}
       void _composite
-      const animatedComposite = Object.values(record(firstPass['layers']) ?? {}).some(raw => {
-        const layer = record(raw)
-        return ['colorAdd', 'colorMultiply', 'uvOffset', 'uvAngle', 'uvTiling'].some(key =>
-          Array.isArray(record(layer?.[key])?.['sequenceTracks']),
-        )
-      })
       out = {
         ...ref,
         ...(blend === 0 ? {} : { alphaMode: 'blend' as const }),
@@ -2721,10 +2726,7 @@ function presentationMaterials(
           ...ref.shader,
           parameters: {
             ...parameters,
-            // Animated water/effect composites need the complete sequence vocabulary. Static
-            // legacy composites keep the established textured fallback until every CMP_ family
-            // has material parity; compiling those today turns authored transparent areas black.
-            renderModel: animatedComposite ? { ...surfaceModel, standard } : { standard },
+            renderModel: { ...surfaceModel, standard },
           },
         },
       }
@@ -3075,6 +3077,9 @@ const worldModelSceneSamplers = new WeakMap<
   WorldModelSample['result'],
   Map<string, ReturnType<typeof createModelSceneSampler>>
 >()
+// Frame clips must not accumulate in the retained per-model map over an unlimited timeline.
+const composedWorldModelAnimations = new WeakSet<object>()
+const composedWorldModelSamplers = new WeakMap<object, ReturnType<typeof createModelSceneSampler>>()
 
 /**
  * The scene sampler of one model and clip. Building it (rig, skin deformers, clip tracks) cost more
@@ -3087,11 +3092,16 @@ function worldModelSceneSampler(
   let samplers = worldModelSceneSamplers.get(result)
   if (samplers === undefined) worldModelSceneSamplers.set(result, (samplers = new Map()))
   const key = clip?.id ?? ''
-  let sampler = samplers.get(key)
+  const composed = clip !== undefined && composedWorldModelAnimations.has(clip)
+  let sampler = composed ? composedWorldModelSamplers.get(clip!) : samplers.get(key)
   if (sampler === undefined) {
     sampler = createModelSceneSampler(
       {
         nodes: result.nodes ?? [],
+        // Meshless cameras and rigid props animate node TRS through the existing pose owner.
+        nodePoses: (result.nodes ?? []).filter(node => node.trs !== undefined &&
+          !(result.skeleton ?? []).some(binding => binding.nodeId === node.id))
+          .map(node => ({ nodeId: node.id, localPose: node.trs! })),
         meshes: result.meshes,
         primitives: result.primitives,
         ...(result.skeleton === undefined ? {} : { skeleton: result.skeleton }),
@@ -3104,7 +3114,8 @@ function worldModelSceneSampler(
         skinning: 'gpu',
       },
     )
-    samplers.set(key, sampler)
+    if (composed) composedWorldModelSamplers.set(clip!, sampler)
+    else samplers.set(key, sampler)
   }
   return sampler
 }
@@ -4351,7 +4362,7 @@ function worldKeptPoseSphere(
       let center: readonly [number, number, number] | undefined
       let radius: number | undefined = 0
       for (const { sample, animation } of pose.models) {
-        const clip = animation?.kind === 'animation' ? animation : undefined
+        const clip = animation?.kind === 'animation' || animation?.kind === 'rest-pose' ? animation : undefined
         const bounds = worldModelSceneSampler(sample.result, clip).bounds()
         if (bounds === undefined) {
           radius = undefined
@@ -5482,12 +5493,12 @@ function selectAnimatedGeometry(
   // invalidate the terrain every frame.
   return (
     (result.nodes?.length ?? 0) > 0 &&
-    clip?.kind === 'animation' &&
-    clip.channels.some(
+    (clip?.kind === 'animation' || item.presentationAnimation?.layers !== undefined) &&
+    (clip?.channels.some(
       channel =>
         ['translation', 'rotation', 'scale', 'visibility', 'weights'].includes(channel.kind) &&
         (channel.samples?.length ?? 0) > 0,
-    )
+    ) ?? false)
   )
 }
 
@@ -7446,7 +7457,7 @@ export function createWorldWebGlPlan(
       (camera === undefined ? '' : `\u0000${camera.rotation.join(',')}`)
     const shared = planSamples.get(sharedKey)
     if (shared !== undefined) return shared
-    const clip = selected?.kind === 'animation' ? selected : undefined
+    const clip = selected?.kind === 'animation' || selected?.kind === 'rest-pose' ? selected : undefined
     const sample =
       (result.nodes?.length ?? 0) === 0
         ? { primitives: result.primitives, nodeTransforms: new Map<string, Float32Array>() }
@@ -11500,13 +11511,14 @@ function isWebGl2(value: unknown): value is WebGL2RenderingContext {
 
 function cameraState(value: WorldWebGlCamera | undefined): WorldWebGlCamera {
   const source = value ?? DEFAULT_WORLD_WEBGL_CAMERA
+  if (source.source !== undefined) validateSourceCamera(source.source)
   const perspective = source.projection === 'perspective'
   if (
     (source.projection !== undefined && source.projection !== 'orthographic' && !perspective) ||
     !Number.isFinite(source.azimuth) ||
     !Number.isFinite(source.elevation) ||
-    source.elevation <= (perspective ? 0.03 - Math.PI / 2 : 0.03) ||
-    source.elevation >= Math.PI / 2 - 0.03 ||
+    (source.source === undefined && source.elevation <= (perspective ? 0.03 - Math.PI / 2 : 0.03)) ||
+    (source.source === undefined && source.elevation >= Math.PI / 2 - 0.03) ||
     (source.fieldOfView !== undefined &&
       !(source.fieldOfView >= 0.1 && source.fieldOfView <= 2.8)) ||
     (source.far !== undefined && !(Number.isFinite(source.far) && source.far > 0)) ||
@@ -11526,6 +11538,63 @@ function cameraState(value: WorldWebGlCamera | undefined): WorldWebGlCamera {
     throw new TypeError('world WebGL camera is outside its finite orbit/zoom domain')
   }
   return source
+}
+
+function validateSourceCamera(camera: WorldSceneCamera): void {
+  const vectors = [camera.eye, camera.target, camera.up]
+  if (!vectors.every(vector => vector.length === 3 && vector.every(Number.isFinite)) ||
+      (camera.roll !== undefined && !Number.isFinite(camera.roll)) ||
+      !(sourceCameraVerticalFov(camera, 1) > 0 && sourceCameraVerticalFov(camera, 1) < Math.PI) ||
+      !(Number.isFinite(camera.near) && camera.near > 0) ||
+      !(Number.isFinite(camera.far) && camera.far > camera.near)) {
+    throw new TypeError('source camera requires finite vectors and a valid perspective lens')
+  }
+  const forward = new Vector3(...camera.target).sub(new Vector3(...camera.eye))
+  if (forward.lengthSq() < 1e-20 || forward.clone().cross(new Vector3(...camera.up)).lengthSq() < 1e-20)
+    throw new TypeError('source camera has a degenerate eye/target/up basis')
+}
+
+/** The same authored eye/target/up lens for CPU and WebGL, independent of scene bounds. */
+export function worldWebGlCameraFromSource(source: WorldSceneCamera): WorldWebGlCamera {
+  validateSourceCamera(source)
+  const direction = new Vector3(...source.eye).sub(new Vector3(...source.target)).normalize()
+  return { ...DEFAULT_WORLD_WEBGL_CAMERA, source, projection: 'perspective',
+    azimuth: Math.atan2(direction.z, direction.x), elevation: Math.asin(direction.y) }
+}
+
+const modelCameraDocuments = new WeakMap<object, ReturnType<typeof readUvmContainer>>()
+/** Resolve a neutral model camera using the same clip clock, bone pose and instance as geometry. */
+export function worldWebGlCameraFromModel(input: WorldWebGlInput,
+  request: NonNullable<WorldSceneFrame['modelCamera']>): WorldWebGlCamera {
+  const item=input.items.find((item): item is WorldSceneObjectItem => item.facet==='objects' && item.objectId===request.objectId)
+  const result=item?.resourceId===undefined ? undefined : input.models?.get(item.resourceId)
+  if (item===undefined || result?.state!=='converted' || result.uvmBytes===undefined)
+    throw new TypeError('selected model camera resource is unresolved')
+  let container=modelCameraDocuments.get(result)
+  if(container===undefined) {container=readUvmContainer(result.uvmBytes);modelCameraDocuments.set(result,container)}
+  const document=container.document, nodes=document['nodes']
+  if(!Array.isArray(nodes)) throw new TypeError('model camera nodes absent')
+  const nativeCamera = result.cameras?.[request.cameraIndex]
+  if(nativeCamera?.projectedCameraIndex===null) throw new TypeError('Requested model camera is not projected into UVM')
+  const projectedCameraIndex=nativeCamera?.projectedCameraIndex ?? request.cameraIndex
+  const index=nodes.findIndex(n => n!==null && typeof n==='object' && !Array.isArray(n) && n['camera']===projectedCameraIndex)
+  if(index<0) throw new TypeError('requested model camera index is unavailable')
+  const clip=worldModelAnimation(result,item)
+  const time=worldObjectTime(input,item,clip!==undefined,clip?.durationSeconds)
+  const sample=worldModelSceneSampler(result,clip).sample(time)
+  const instance=new Matrix4().fromArray(worldObjectTransform(item,objectPosition(item,input)))
+  const transforms=new Map([...sample.nodeTransforms].map(([id,m])=>[id,Float32Array.from(new Matrix4().multiplyMatrices(instance,new Matrix4().fromArray(m)).elements)]))
+  const resolved=resolveUvmCamera(document,{node:index},{aspect:1,nodeTransforms:transforms,
+    activeNodes:new Set(transforms.keys()),maxBytes:64*1024*1024,maxNodes:1000000,time,
+    ...(clip?.sequenceIndex===undefined?{}:{sequenceIndex:clip.sequenceIndex})})
+  if(resolved.viewMatrix===undefined) throw new TypeError('model camera view matrix absent')
+  const world=new Matrix4().fromArray(resolved.viewMatrix).invert()
+  const lens=new Matrix4().multiplyMatrices(new Matrix4().fromArray(resolved.viewProjection),world).elements
+  const angle=2*Math.atan(1/lens[5]!),near=lens[14]!/(lens[10]!-1),far=lens[14]!/(lens[10]!+1)
+  const m=world.elements,eye:[number,number,number]=[m[12]!,m[13]!,m[14]!]
+  return worldWebGlCameraFromSource({eye,target:[eye[0]-m[8]!,eye[1]-m[9]!,eye[2]-m[10]!],
+    up:[m[4]!,m[5]!,m[6]!],near,far,
+    ...((request.fieldOfViewAxis ?? nativeCamera?.fieldOfViewAxis)==='horizontal'?{horizontalFieldOfView:angle}:{verticalFieldOfView:angle})})
 }
 
 /**
@@ -12396,12 +12465,33 @@ export function worldWebGlCameraFromMap(
   })
 }
 
+/** Resolve an authored horizontal lens at the actual viewport; vertical lenses are unchanged. */
+function sourceCameraVerticalFov(camera: WorldSceneCamera, aspect: number): number {
+  if (camera.horizontalFieldOfView !== undefined && camera.verticalFieldOfView !== undefined)
+    throw new TypeError('source camera lens must specify exactly one FOV axis')
+  const angle = camera.horizontalFieldOfView ?? camera.verticalFieldOfView
+  if (!(angle > 0 && angle < Math.PI)) throw new TypeError('source camera lens angle is invalid')
+  return camera.horizontalFieldOfView === undefined
+    ? angle
+    : 2 * Math.atan(Math.tan(angle / 2) / aspect)
+}
+
 /**
  * Where a view's eye stands: the target in its frame, the unit vector from the target to the eye,
  * the height the view shows at the target, and the eye's distance - three frame radii for the
  * orthographic view, the distance at which a perspective lens frames that height.
  */
-function cameraPose(frame: WorldWebGlFrame, view: WorldWebGlCamera) {
+function cameraPose(frame: WorldWebGlFrame, view: WorldWebGlCamera, aspect = 1) {
+  if (view.source !== undefined) {
+    const source = view.source
+    const center = new Vector3(...source.target)
+    const toEye = new Vector3(...source.eye).sub(center)
+    const distance = toEye.length()
+    const fieldOfView = sourceCameraVerticalFov(source, aspect)
+    return { center, toEye: toEye.normalize(), distance, perspective: true,
+      fieldOfView, far: source.far,
+      halfHeight: distance * Math.tan(fieldOfView / 2) }
+  }
   const center = new Vector3(...frame.center).add(new Vector3(...view.target))
   const horizontal = Math.cos(view.elevation)
   const toEye = new Vector3(
@@ -12459,7 +12549,7 @@ export function worldViewGroundWindow(
   const view = cameraState(requested)
   if (!(aspect > 0) || !Number.isFinite(aspect))
     throw new TypeError('a world view aspect is positive and finite')
-  const pose = cameraPose(frame, view)
+  const pose = cameraPose(frame, view, aspect)
   const { center, toEye, halfHeight } = pose
   // the camera's own axes as lookAt with +Y up makes them
   const right = new Vector3(0, 1, 0).cross(toEye).normalize()
@@ -12522,17 +12612,18 @@ function cameraFor(
   const radius = frame.radius
   const visibleRadius = radius / view.zoom
   const aspect = width / height
-  const pose = cameraPose(frame, view)
+  const pose = cameraPose(frame, view, aspect)
   if (pose.perspective) {
     const lens = new PerspectiveCamera(
       (pose.fieldOfView * 180) / Math.PI,
       aspect,
-      Math.max(0.01, pose.far / 100_000),
+      view.source?.near ?? Math.max(0.01, pose.far / 100_000),
       pose.far,
     )
-    lens.position.copy(center).addScaledVector(pose.toEye, pose.distance)
-    lens.up.set(0, 1, 0)
-    lens.lookAt(center)
+    lens.position.copy(pose.center).addScaledVector(pose.toEye, pose.distance)
+    lens.up.set(view.source?.up[0] ?? 0, view.source?.up[1] ?? 1, view.source?.up[2] ?? 0)
+    lens.lookAt(pose.center)
+    if (view.source?.roll !== undefined) lens.rotateZ(view.source.roll)
     lens.updateMatrixWorld(true)
     lens.updateProjectionMatrix()
     return Object.freeze({ camera: lens, radius })

@@ -599,6 +599,10 @@ export interface ModelLightSource {
  * depth of field, bokeh, focus ranges — stays in `properties`.
  */
 export interface ModelCameraRef {
+  /** Authored lens convention supplied by the model codec; omitted for canonical vertical glTF. */
+  readonly fieldOfViewAxis?: 'horizontal' | 'vertical'
+  /** Exact camera index in model.export-uvm; null means this native camera is not projected. */
+  readonly projectedCameraIndex?: number | null
   readonly id: string
   readonly name?: string
   readonly nodeId?: string

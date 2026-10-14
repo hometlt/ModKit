@@ -11,6 +11,8 @@ import {
   presentWorldModelTextures,
   orbitWorldWebGlCamera,
   worldWebGlCameraFromMap,
+  worldWebGlCameraFromSource,
+  worldWebGlCameraFromModel,
   panWorldWebGlCamera,
   pickWorldWebGl,
   SCENE_COMPRESSED_TEXTURE_FORMATS,
@@ -27,6 +29,7 @@ import type {
   CandidateWorldSceneInfo,
   CandidateWorldSceneSource,
   WorldSceneItem,
+  WorldSceneFrame,
   WorldSceneLayerItem,
   WorldSceneModelResult,
   WorldSceneObjectItem,
@@ -1142,13 +1145,21 @@ function worldTeamRampsOf(
 export function candidateWorldWebGlInput(
   model: CandidateWorldViewerModel,
   hiddenOverlays?: ReadonlySet<WorldOverlayFacet>,
+  frame?: WorldSceneFrame,
 ): WorldWebGlInput {
+  if (frame !== undefined && (frame.snapshotId !== model.snapshotId ||
+      !Number.isFinite(frame.timeMs) || frame.timeMs < 0))
+    throw new TypeError('world frame does not belong to this snapshot or time domain')
   const flattened = flattenedWorldLayersOf(model.layers)
   // objects of a player slot take its colour (an object's own presentationTeamColor still wins)
   const teamColors = worldTeamColorsOf(model.info)
   const teamRamps = worldTeamRampsOf(model.info)
-  return {
-    items: shownWorldItems(flattened.items, hiddenOverlays),
+  const input: WorldWebGlInput = {
+    items: shownWorldItems(frame === undefined ? flattened.items :
+      [...flattened.items.filter(item => item.facet !== 'objects'), ...frame.objects], hiddenOverlays),
+    ...(frame === undefined ? {} : { timeSeconds: frame.timeMs / 1000,
+      animationTimes: new Map(frame.animationTimes?.map(item => [item.objectId, item.seconds])),
+      ...(frame.camera === undefined ? {} : { camera: worldWebGlCameraFromSource(frame.camera) }) }),
     ...(teamColors.size === 0 ? {} : { teamColors }),
     ...(teamRamps.size === 0 ? {} : { teamRamps }),
     ...(model.models === undefined ? {} : { models: model.models }),
@@ -1157,6 +1168,7 @@ export function candidateWorldWebGlInput(
     terrainWeightRasters: flattened.terrainWeightRasters,
     ...(model.terrainTextures === undefined ? {} : { terrainTextures: model.terrainTextures }),
   }
+  return frame?.modelCamera === undefined || frame.camera !== undefined ? input : { ...input, camera: worldWebGlCameraFromModel(input, frame.modelCamera) }
 }
 
 export function drawCandidateWorld(

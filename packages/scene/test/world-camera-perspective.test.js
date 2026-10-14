@@ -9,6 +9,8 @@ import {
   orbitWorldWebGlCamera,
   worldViewGroundWindow,
   worldWebGlCameraFromMap,
+  worldWebGlCameraFromSource,
+  worldWebGlCameraFromModel,
 } from '../src/world/webgl.js'
 
 // a flat ground of `size` x `size` cells from the origin
@@ -36,6 +38,65 @@ const perspective = { ...DEFAULT_WORLD_WEBGL_CAMERA, projection: 'perspective' }
 const distance = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2])
 const close = (actual, expected, digits = 9) =>
   actual.forEach((value, index) => assert.ok(Math.abs(value - expected[index]) < 10 ** -digits))
+
+it('keeps an authored lens independent of world bounds and applies camera roll', () => {
+  const source = {
+    eye: [1, 2, 3],
+    target: [1, 2, 0],
+    up: [0, 1, 0],
+    verticalFieldOfView: Math.PI / 3,
+    near: 0.001,
+    far: 100,
+  }
+  const view = worldWebGlCameraFromSource(source)
+  const first = createWorldWebGlCameraFrame(plan, 64, 48, view)
+  const other = createWorldWebGlCameraFrame(
+    createWorldWebGlPlan({ items: ground(80) }),
+    64,
+    48,
+    view,
+  )
+  close(first.eyePosition, source.eye)
+  close(first.viewProjection, other.viewProjection)
+  const rolled = createWorldWebGlCameraFrame(
+    plan,
+    64,
+    48,
+    worldWebGlCameraFromSource({ ...source, roll: Math.PI / 2 }),
+  )
+  close(rolled.eyePosition, source.eye)
+  assert.notDeepEqual(rolled.viewMatrix, first.viewMatrix)
+  // A point to the camera's right moves down after +90 degrees of local roll.
+  const project = matrix => {
+    const point = [2, 2, 0, 1]
+    const clip = [0, 1, 2, 3].map(row =>
+      point.reduce((sum, value, column) => sum + value * matrix[column * 4 + row], 0),
+    )
+    return [clip[0] / clip[3], clip[1] / clip[3]]
+  }
+  close(project(first.viewProjection), [Math.sqrt(3) / 4, 0], 6)
+  close(project(rolled.viewProjection), [0, -Math.sqrt(3) / 3], 6)
+  assert.throws(() => worldWebGlCameraFromSource({ ...source, target: source.eye }), /degenerate/)
+  assert.throws(() => worldWebGlCameraFromSource({ ...source, far: source.near }), /lens/)
+})
+
+it('preserves horizontal FOV across viewport aspect ratios', () => {
+  const source = {
+    eye: [0, 0, 3],
+    target: [0, 0, 0],
+    up: [0, 1, 0],
+    horizontalFieldOfView: Math.PI / 2,
+    near: 0.01,
+    far: 100,
+  }
+  const view = worldWebGlCameraFromSource(source)
+  const square = createWorldWebGlCameraFrame(plan, 100, 100, view)
+  const wide = createWorldWebGlCameraFrame(plan, 200, 100, view)
+  assert.ok(Math.abs(square.viewProjection[0] - wide.viewProjection[0]) < 1e-6)
+  assert.ok(Math.abs(wide.viewProjection[5] - 2 * square.viewProjection[5]) < 1e-6)
+  assert.throws(() => worldWebGlCameraFromSource({ ...source, horizontalFieldOfView: 7 }), /lens/)
+  assert.throws(() => worldWebGlCameraFromSource({ ...source, verticalFieldOfView: 1 }), /FOV axis/)
+})
 
 it('places a perspective eye where its lens frames the orthographic height at the target (MW6)', () => {
   const frame = plan.stats.frame
@@ -146,4 +207,105 @@ it("opens on the game's view of its world: an orthographic preset or a perspecti
   assert.ok(down.elevation < Math.PI / 2)
   createWorldWebGlCameraFrame(plan, 64, 48, down)
   assert.equal(worldWebGlCameraFromMap(undefined), DEFAULT_WORLD_WEBGL_CAMERA)
+})
+
+it('samples a meshless model camera on its moving parent and applies the world instance', () => {
+  const identity = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
+  const rest = { translation: [0, 0, 0], rotation: [0, 0, 0, 1], scale: [1, 1, 1] }
+  const child = [...identity]
+  child[14] = 3
+  const document = {
+    asset: { version: '2.0' },
+    nodes: [{ children: [1] }, { camera: 0, translation: [0, 0, 3] }],
+    cameras: [{ type: 'perspective', perspective: { yfov: Math.PI / 3, znear: 0.1, zfar: 100 } }],
+  }
+  const model = {
+    state: 'converted',
+    sourceKey: 'camera-test',
+    meshes: [],
+    primitives: [],
+    diagnostics: [],
+    complete: true,
+    uvmBytes: new TextEncoder().encode(JSON.stringify(document)),
+    nodes: [
+      { id: 'node-0', childIds: ['node-1'], meshIds: [], transform: identity, trs: rest },
+      { id: 'node-1', childIds: [], meshIds: [], transform: child },
+    ],
+    animations: [
+      {
+        id: 'move',
+        name: 'Move',
+        kind: 'animation',
+        provenance: 'direct',
+        frames: 2,
+        durationSeconds: 1,
+        channels: [
+          {
+            target: 'node-0',
+            kind: 'translation',
+            firstFrame: 0,
+            lastFrame: 1,
+            interpolation: 'linear',
+            samples: [
+              { frame: 0, timeSeconds: 0, value: [0, 0, 0] },
+              { frame: 1, timeSeconds: 1, value: [2, 0, 0] },
+            ],
+          },
+        ],
+      },
+    ],
+  }
+  const actor = {
+    facet: 'objects',
+    id: 'actor',
+    objectId: 1,
+    layerId: 'objects',
+    coordinateSpaceId: 'test',
+    kind: 'doodad',
+    resourceId: 'camera',
+    position: { x: 10, y: 0, z: 0 },
+    uvwPosition: { x: 10, y: 0, z: 0 },
+    presentationAnimation: { name: 'Move', loop: false, speed: 1, groups: [] },
+  }
+  const input = { items: [actor], models: new Map([['camera', model]]) }
+  const first = worldWebGlCameraFromModel(
+    { ...input, timeSeconds: 0 },
+    { objectId: 1, cameraIndex: 0 },
+  )
+  const last = worldWebGlCameraFromModel(
+    { ...input, timeSeconds: 1 },
+    { objectId: 1, cameraIndex: 0 },
+  )
+  close(first.source.eye, [10, 0, 3], 6)
+  close(last.source.eye, [12, 0, 3], 6)
+  close(last.source.target, [12, 0, 2], 6)
+  assert.throws(
+    () => worldWebGlCameraFromModel(input, { objectId: 1, cameraIndex: 1 }),
+    /index is unavailable/,
+  )
+  const mappedModel = {
+    ...model,
+    cameras: [{ projectedCameraIndex: null }, { projectedCameraIndex: 0 }],
+  }
+  const mappedInput = { ...input, timeSeconds: 1, models: new Map([['camera', mappedModel]]) }
+  const mapped = worldWebGlCameraFromModel(mappedInput, { objectId: 1, cameraIndex: 1 })
+  close(mapped.source.eye, last.source.eye, 6)
+  close(mapped.source.target, last.source.target, 6)
+  assert.throws(
+    () => worldWebGlCameraFromModel(mappedInput, { objectId: 1, cameraIndex: 0 }),
+    /not projected into UVM/,
+  )
+  const halfTurn = Math.SQRT1_2
+  const rolledModel = {
+    ...mappedModel,
+    nodes: [
+      { ...model.nodes[0], trs: { ...rest, rotation: [0, 0, halfTurn, halfTurn] } },
+      model.nodes[1],
+    ],
+  }
+  const rolled = worldWebGlCameraFromModel(
+    { ...mappedInput, models: new Map([['camera', rolledModel]]) },
+    { objectId: 1, cameraIndex: 1 },
+  )
+  close(rolled.source.up, [-1, 0, 0], 6)
 })
