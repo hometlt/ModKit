@@ -740,16 +740,6 @@ export interface MapPlacedObject {
      * copies of one model do not animate in lockstep. The renderer picks a stable phase per object.
      */
     readonly randomStart?: boolean
-    /** Resolved sparse overrides. Higher priority wins per channel; equal priorities retain
-     * authored order. Clocks are seconds local to each clip, already scaled by the publisher.
-     * This profile supports full-weight hard overrides, not weighted/additive blending. */
-    readonly layers?: readonly {
-      readonly name: string
-      readonly groups: readonly string[]
-      readonly loop: boolean
-      readonly timeSeconds: number
-      readonly priority: number
-    }[]
   }
   readonly modules?: number
   readonly name?: string

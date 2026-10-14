@@ -19,11 +19,6 @@ import type { LogicalResourceRequirement } from './resource-session.js'
 import type { RasterResourceRequest, RasterResourceResult } from './raster-resources.js'
 
 export interface ModelResourceRequest {
-  /** Explicit authored animation assets; the native model codec validates compatibility. */
-  readonly animationResources?: readonly LogicalResourceRequirement[]
-  /** Optional presentation subset of native sequence selectors. A codec must advertise semantics;
-   * omission preserves its full export. Does not alter the source or imply a lossless export. */
-  readonly animationNames?: readonly string[]
   readonly requirement: LogicalResourceRequirement
   readonly maxBytes: number
   /** Explicit native conversion scale. Omit when the source does not prove physical meters. */
@@ -32,8 +27,6 @@ export interface ModelResourceRequest {
 
 /** The input a codec's `model.export-uvm` operation receives from the host's model resources. */
 export interface ModelExportUvmInput {
-  readonly animationResources?: readonly LogicalResourceRequirement[]
-  readonly animationNames?: readonly string[]
   readonly schemaVersion: 1
   readonly metersPerSourceUnit?: number
   /**

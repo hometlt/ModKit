@@ -53,7 +53,6 @@ import type {
   SceneRendererTexture,
 } from '@modkit/sdk'
 import { boundsOf } from '@modkit/codec-kit/model/bounds'
-import { sampleModelAnimationLayers, animationSnapshotBudget, modelAnimationNameMatchScore } from '@modkit/codec-kit/model/animation'
 import { readUvmContainer } from '@modkit/uv/model/container'
 import { resolveUvmCamera } from '../uvm/cameras.js'
 import type { WorldSceneFrame } from '@modkit/sdk/maps'
@@ -1113,14 +1112,7 @@ export function worldModelAnimation(
   if (byItem === undefined) selectedWorldModelAnimations.set(result, (byItem = new WeakMap()))
   const cached = byItem.get(item)
   if (cached !== undefined) return cached ?? undefined
-  const layers = item.presentationAnimation?.layers
-  const selectedLayers = layers?.flatMap(layer => {
-    const clip = selectWorldModelAnimation(result, { ...item, presentationAnimation: { name: layer.name, groups: layer.groups, loop: layer.loop, speed: 1 } })
-    return clip === undefined ? [] : [{ clip, timeSeconds: layer.timeSeconds, loop: layer.loop, priority: layer.priority }]
-  })
-  const clip = selectedLayers === undefined || selectedLayers.length === 0 ? selectWorldModelAnimation(result, item)
-    : sampleModelAnimationLayers(selectedLayers, animationSnapshotBudget(selectedLayers.map(layer => layer.clip)))
-  if (selectedLayers !== undefined && selectedLayers.length > 0 && clip !== undefined) composedWorldModelAnimations.add(clip)
+  const clip = selectWorldModelAnimation(result, item)
   byItem.set(item, clip ?? null)
   return clip
 }
@@ -1138,12 +1130,14 @@ function selectWorldModelAnimation(
   // An SC2 sequence name is a set of animation properties: a request for "Work" plays "Stand Work"
   // (InvisibleWalkablePlatform8x8 hides itself in it), the clip holding every requested property
   // with the fewest others; the first such clip when several tie.
+  const wanted = requested.split(/\s+/u).filter(Boolean)
   let best: NonNullable<typeof result.animations>[number] | undefined
   let extra = Number.POSITIVE_INFINITY
   for (const clip of result.animations ?? []) {
-    const others = modelAnimationNameMatchScore(clip.name ?? '', requested)
-    if (others === undefined) continue
-    if (others < extra || (others === extra && best?.channels.length === 0 && clip.channels.length > 0)) {
+    const properties = new Set((clip.name ?? '').toLowerCase().split(/\s+/u).filter(Boolean))
+    if (!wanted.every(property => properties.has(property))) continue
+    const others = properties.size - new Set(wanted).size
+    if (others < extra) {
       best = clip
       extra = others
     }
@@ -2696,7 +2690,9 @@ const record = (value: unknown): JsonRecord | undefined =>
 /**
  * Materials as this world presents them.
  *
- * Ordinary composite materials retain all authored passes for the common material sampler.
+ * A composite material (`renderModel.composite`, SC2 CMP_) layers standard passes and has no
+ * program of its own, so it drew opaque with whatever base texture it listed (Amphion's sewer water
+ * effect became a black plane). Its first pass is a standard material and stands in for it.
  *
  * A cliff piece's blend material uses alpha as a terrain blend mask, not transparency: its floor and
  * top are alpha 0 and the terrain is drawn there, and rock edges fade into the ground. Drawn blended
@@ -2714,11 +2710,17 @@ function presentationMaterials(
     const firstPass = record(record(Array.isArray(passes) ? passes[0] : undefined)?.['material'])
     let standard = record(renderModel?.['standard'])
     let out = ref
-    if (cliff && firstPass !== undefined && ref.shader !== undefined) {
+    if (firstPass !== undefined && ref.shader !== undefined) {
       standard = firstPass
       const blend = typeof firstPass['blendMode'] === 'number' ? firstPass['blendMode'] : 0
       const { composite: _composite, ...surfaceModel } = renderModel ?? {}
       void _composite
+      const animatedComposite = Object.values(record(firstPass['layers']) ?? {}).some(raw => {
+        const layer = record(raw)
+        return ['colorAdd', 'colorMultiply', 'uvOffset', 'uvAngle', 'uvTiling'].some(key =>
+          Array.isArray(record(layer?.[key])?.['sequenceTracks']),
+        )
+      })
       out = {
         ...ref,
         ...(blend === 0 ? {} : { alphaMode: 'blend' as const }),
@@ -2726,7 +2728,10 @@ function presentationMaterials(
           ...ref.shader,
           parameters: {
             ...parameters,
-            renderModel: { ...surfaceModel, standard },
+            // Animated water/effect composites need the complete sequence vocabulary. Static
+            // legacy composites keep the established textured fallback until every CMP_ family
+            // has material parity; compiling those today turns authored transparent areas black.
+            renderModel: animatedComposite ? { ...surfaceModel, standard } : { standard },
           },
         },
       }
@@ -3077,9 +3082,6 @@ const worldModelSceneSamplers = new WeakMap<
   WorldModelSample['result'],
   Map<string, ReturnType<typeof createModelSceneSampler>>
 >()
-// Frame clips must not accumulate in the retained per-model map over an unlimited timeline.
-const composedWorldModelAnimations = new WeakSet<object>()
-const composedWorldModelSamplers = new WeakMap<object, ReturnType<typeof createModelSceneSampler>>()
 
 /**
  * The scene sampler of one model and clip. Building it (rig, skin deformers, clip tracks) cost more
@@ -3092,8 +3094,7 @@ function worldModelSceneSampler(
   let samplers = worldModelSceneSamplers.get(result)
   if (samplers === undefined) worldModelSceneSamplers.set(result, (samplers = new Map()))
   const key = clip?.id ?? ''
-  const composed = clip !== undefined && composedWorldModelAnimations.has(clip)
-  let sampler = composed ? composedWorldModelSamplers.get(clip!) : samplers.get(key)
+  let sampler = samplers.get(key)
   if (sampler === undefined) {
     sampler = createModelSceneSampler(
       {
@@ -3114,8 +3115,7 @@ function worldModelSceneSampler(
         skinning: 'gpu',
       },
     )
-    if (composed) composedWorldModelSamplers.set(clip!, sampler)
-    else samplers.set(key, sampler)
+    samplers.set(key, sampler)
   }
   return sampler
 }
@@ -4362,7 +4362,7 @@ function worldKeptPoseSphere(
       let center: readonly [number, number, number] | undefined
       let radius: number | undefined = 0
       for (const { sample, animation } of pose.models) {
-        const clip = animation?.kind === 'animation' || animation?.kind === 'rest-pose' ? animation : undefined
+        const clip = animation?.kind === 'animation' ? animation : undefined
         const bounds = worldModelSceneSampler(sample.result, clip).bounds()
         if (bounds === undefined) {
           radius = undefined
@@ -5493,12 +5493,12 @@ function selectAnimatedGeometry(
   // invalidate the terrain every frame.
   return (
     (result.nodes?.length ?? 0) > 0 &&
-    (clip?.kind === 'animation' || item.presentationAnimation?.layers !== undefined) &&
-    (clip?.channels.some(
+    clip?.kind === 'animation' &&
+    clip.channels.some(
       channel =>
         ['translation', 'rotation', 'scale', 'visibility', 'weights'].includes(channel.kind) &&
         (channel.samples?.length ?? 0) > 0,
-    ) ?? false)
+    )
   )
 }
 
@@ -7457,7 +7457,7 @@ export function createWorldWebGlPlan(
       (camera === undefined ? '' : `\u0000${camera.rotation.join(',')}`)
     const shared = planSamples.get(sharedKey)
     if (shared !== undefined) return shared
-    const clip = selected?.kind === 'animation' || selected?.kind === 'rest-pose' ? selected : undefined
+    const clip = selected?.kind === 'animation' ? selected : undefined
     const sample =
       (result.nodes?.length ?? 0) === 0
         ? { primitives: result.primitives, nodeTransforms: new Map<string, Float32Array>() }

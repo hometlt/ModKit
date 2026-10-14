@@ -480,9 +480,7 @@ export async function worldSceneModel(
       continue
     }
     textureBytes += bytes
-    // Worker replies transfer their buffers. Keep the cached pixels/blocks owned by this
-    // lease so another frame (or model sharing the texture) can publish them again.
-    textures.push(Object.freeze(structuredClone(texture)))
+    textures.push(texture)
   }
   const cameraPage = await facet(asset.cameraReferences?.bind(asset), maxNodes)
   return Object.freeze({
