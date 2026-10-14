@@ -26,7 +26,7 @@
         "modkit/xz",
         "modkit/zstd"
       ],
-      "digest": "sha256:9196634b88c4475fbed5e3924796a3d78f62e524ee39287b2ac8107736e1e991"
+      "digest": "sha256:a97cf8ec1bb03d0586108ba86bc84d1d85af4cbebdac40ba07ec5db31ceaafbb"
     },
     {
       "name": "audio",
@@ -41,7 +41,7 @@
         "modkit/m4a",
         "modkit/wav"
       ],
-      "digest": "sha256:c2e844edcefd48c22b1d25da66ff9c5412b2728c53655087138ae986bed322dd"
+      "digest": "sha256:8494b6c6db1b99ec992e2af3e937ffe4e1102816ed557f525cb3c5b7b8e655e9"
     },
     {
       "name": "data",
@@ -76,7 +76,7 @@
         "modkit/yaml-syntax-contract",
         "modkit/yaml-syntax-default"
       ],
-      "digest": "sha256:ebeff7f72f64e9225eb5d718a0579225c049977ecbe9af7f240e8bf35bc3b5f6"
+      "digest": "sha256:b911274fe39a3b3df7482b8921f78d723ad24416ccd02edb565fa31e001660d0"
     },
     {
       "name": "documents",
@@ -91,7 +91,7 @@
         "modkit/ods",
         "modkit/odt"
       ],
-      "digest": "sha256:a5c58e6b0030d3a5cce0339b9a471ad012b2878b10735a1a21094e4c9f00d835"
+      "digest": "sha256:334324b2ccc7fd04b777667316e916a7613eb64a958791d639b86e01c03f05d4"
     },
     {
       "name": "images",
@@ -124,7 +124,7 @@
         "modkit/tiff",
         "modkit/webp"
       ],
-      "digest": "sha256:1ebe842c452ee4ece061fb315afd53d04dffb52e2986fa88a356dc59d22df639"
+      "digest": "sha256:24a4fe214632233787bc4d1551a1d57563ab15c4ed47b3a78adcbafb6200bf39"
     },
     {
       "name": "java",
@@ -132,7 +132,7 @@
       "declared": true,
       "coordinate": "modkit/java",
       "contributions": ["modkit/java-class"],
-      "digest": "sha256:52660c4f067bf7314586f6f149963611a3277cf300558a29b13b0bedefc50f02"
+      "digest": "sha256:ff26a54c6f8a8f0e2427ed1a1d7f4f0b2538b98621f183d67c77f0583cba3e37"
     },
     {
       "name": "lua",
@@ -140,7 +140,7 @@
       "declared": true,
       "coordinate": "modkit/lua",
       "contributions": ["modkit/lua-language"],
-      "digest": "sha256:f6a0d5f69558fb601329e30cb4d64045560c37c8e453db6b1a0ff9f9e6f4ceee"
+      "digest": "sha256:d0da0a0c415e6239ec05cb5baf05962a4eb6583d24d423a5f8cb4e7d66ac2027"
     },
     {
       "name": "models",
@@ -155,7 +155,7 @@
         "modkit/ply",
         "modkit/stl"
       ],
-      "digest": "sha256:bf6e76f13dc2dc25fef08a484447f26708d9119c7b92360fd31604c150267748"
+      "digest": "sha256:3405851adfb8023db2d1bb99e8eb7c9065f531e71665fa11c23ccffb0a07db7e"
     },
     {
       "name": "translation",
@@ -163,7 +163,7 @@
       "declared": true,
       "coordinate": "modkit/translation",
       "contributions": ["modkit/translation"],
-      "digest": "sha256:24969c260bd0b8403cb0edb0c092ccc09fdc3a3bc25d9189ee69d6f7665de58e"
+      "digest": "sha256:e720bc71afe83252fd221585a45a85a0164a2779345c6f7ded45415382590fd2"
     },
     {
       "name": "vector",
@@ -171,7 +171,7 @@
       "declared": true,
       "coordinate": "modkit/vector",
       "contributions": ["modkit/emf", "modkit/vector-font", "modkit/vector-svg", "modkit/wmf"],
-      "digest": "sha256:882cd7b8a2d3609276c20b50428af5553a4e164531aa181cf243ee93f6ffef0b"
+      "digest": "sha256:a636f59a41fe03f795aa28dab27e3186e9b059c15d2a76268bc00a21557ef062"
     },
     {
       "name": "video",
@@ -186,7 +186,7 @@
         "modkit/video-webm",
         "modkit/wmv"
       ],
-      "digest": "sha256:a816f21ad06b3d7e9b9d29c92f7fa8aa0b72adc7775c97e4b0d79dd88718c3e6"
+      "digest": "sha256:a8d4522fa867d525ba50536d90e0b588d910ffa9c6e6a2b96b37c4d8ad008dd1"
     }
   ]
 }
