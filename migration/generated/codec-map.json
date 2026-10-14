@@ -2662,7 +2662,7 @@
         {
           "id": "modkit/unity",
           "path": "extensions/unity-engine/contributions/codec-unity.json",
-          "repository": "other"
+          "repository": "unity"
         }
       ],
       "codec": "unity",
@@ -2679,7 +2679,7 @@
         {
           "id": "modkit/unity-assets",
           "path": "extensions/unity-engine/contributions/codec-unity-assets.json",
-          "repository": "other"
+          "repository": "unity"
         }
       ],
       "codec": "unity-assets",
@@ -2696,7 +2696,7 @@
         {
           "id": "modkit/unity-mesh",
           "path": "extensions/unity-engine/contributions/codec-unity-mesh.json",
-          "repository": "other"
+          "repository": "unity"
         }
       ],
       "codec": "unity-mesh",
@@ -2713,7 +2713,7 @@
         {
           "id": "modkit/unity-ress",
           "path": "extensions/unity-engine/contributions/codec-unity-ress.json",
-          "repository": "other"
+          "repository": "unity"
         }
       ],
       "codec": "unity-ress",
@@ -2730,7 +2730,7 @@
         {
           "id": "modkit/unityfs",
           "path": "extensions/unity-engine/contributions/codec-unityfs.json",
-          "repository": "other"
+          "repository": "unity"
         }
       ],
       "codec": "unityfs",

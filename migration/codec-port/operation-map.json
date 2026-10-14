@@ -2865,21 +2865,21 @@
       "targetOperation": "view.inspect"
     },
     {
-      "contribution": "modkit-extensions-other/extensions/unity-engine/contributions/codec-unity-assets.json",
+      "contribution": "modkit-extensions-unity/extensions/unity-engine/contributions/codec-unity-assets.json",
       "handlerId": "extract-entry",
       "id": "legacy/codec-manifest/modkit/unity-assets/operation/archive.extract",
       "status": "adapted",
       "targetOperation": "container.extract"
     },
     {
-      "contribution": "modkit-extensions-other/extensions/unity-engine/contributions/codec-unity-assets.json",
+      "contribution": "modkit-extensions-unity/extensions/unity-engine/contributions/codec-unity-assets.json",
       "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/unity-assets/operation/archive.inspect",
       "status": "adapted",
       "targetOperation": "view.inspect"
     },
     {
-      "contribution": "modkit-extensions-other/extensions/unity-engine/contributions/codec-unity-mesh.json",
+      "contribution": "modkit-extensions-unity/extensions/unity-engine/contributions/codec-unity-mesh.json",
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/unity-mesh/operation/model.read",
       "status": "adapted",
@@ -2897,28 +2897,28 @@
       "targetOperation": "model.render"
     },
     {
-      "contribution": "modkit-extensions-other/extensions/unity-engine/contributions/codec-unity-ress.json",
+      "contribution": "modkit-extensions-unity/extensions/unity-engine/contributions/codec-unity-ress.json",
       "handlerId": "extract-entry",
       "id": "legacy/codec-manifest/modkit/unity-ress/operation/archive.extract",
       "status": "adapted",
       "targetOperation": "container.extract"
     },
     {
-      "contribution": "modkit-extensions-other/extensions/unity-engine/contributions/codec-unity-ress.json",
+      "contribution": "modkit-extensions-unity/extensions/unity-engine/contributions/codec-unity-ress.json",
       "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/unity-ress/operation/archive.inspect",
       "status": "adapted",
       "targetOperation": "view.inspect"
     },
     {
-      "contribution": "modkit-extensions-other/extensions/unity-engine/contributions/codec-unity.json",
+      "contribution": "modkit-extensions-unity/extensions/unity-engine/contributions/codec-unity.json",
       "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/unity/operation/image.inspect",
       "status": "adapted",
       "targetOperation": "view.inspect"
     },
     {
-      "contribution": "modkit-extensions-other/extensions/unity-engine/contributions/codec-unity.json",
+      "contribution": "modkit-extensions-unity/extensions/unity-engine/contributions/codec-unity.json",
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/unity/operation/image.read",
       "status": "adapted",
@@ -2929,14 +2929,14 @@
       "targetOperation": null
     },
     {
-      "contribution": "modkit-extensions-other/extensions/unity-engine/contributions/codec-unityfs.json",
+      "contribution": "modkit-extensions-unity/extensions/unity-engine/contributions/codec-unityfs.json",
       "handlerId": "extract-entry",
       "id": "legacy/codec-manifest/modkit/unityfs/operation/archive.extract",
       "status": "adapted",
       "targetOperation": "container.extract"
     },
     {
-      "contribution": "modkit-extensions-other/extensions/unity-engine/contributions/codec-unityfs.json",
+      "contribution": "modkit-extensions-unity/extensions/unity-engine/contributions/codec-unityfs.json",
       "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/unityfs/operation/archive.inspect",
       "status": "adapted",

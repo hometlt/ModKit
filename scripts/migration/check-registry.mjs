@@ -750,6 +750,10 @@ function deriveX3Facts() {
     ['spring', externalRepositoryRoot(repoRoot, 'spring')],
     ['other', externalRepositoryRoot(repoRoot, 'other')],
     ['realitypump', externalRepositoryRoot(repoRoot, 'realitypump')],
+    ['petroglyph', externalRepositoryRoot(repoRoot, 'petroglyph')],
+    ['relic', externalRepositoryRoot(repoRoot, 'relic')],
+    ['gas-powered', externalRepositoryRoot(repoRoot, 'gas-powered')],
+    ['unity', externalRepositoryRoot(repoRoot, 'unity')],
   ].flatMap(([repository, root]) =>
     // Manifests sit at any depth (blizzard: starcraft2/modules/<area>/codecs/<name>/codec.json);
     // test fixtures may reuse real ids and are not contributions.
