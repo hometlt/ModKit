@@ -1699,6 +1699,8 @@ interface WorldSceneInfoBase {
   readonly maturity: 'publisher-candidate'
   readonly snapshotId: string
   readonly mapId: string
+  /** The native publisher's game namespace, when known; standalone UVW may omit it. */
+  readonly gameId?: string
   readonly coordinateSpaces: MapWorldCandidateDescriptor['coordinateSpaces']
   readonly crossSpaceTransforms: MapWorldCandidateDescriptor['crossSpaceTransforms']
   readonly bounds: readonly WorldSceneFacetBounds[]
@@ -1866,7 +1868,7 @@ export interface WorldSceneObjectItem extends MapPlacedObject {
   readonly layerId: string
   readonly coordinateSpaceId: string
   /** Publisher geometry and roles in their declared coordinate space; no inferred bbox. */
-  readonly latticeCoverage?: MapLatticeObjectCoverage
+  readonly latticeCoverage?: MapLatticeObjectCoverage & Readonly<{ resourceKindScope?: string }>
   /** The same polygons projected by the host only through a validated UVW transform. */
   readonly uvwLatticeCoverage?: Omit<MapLatticeObjectCoverage, 'coordinateSpaceId' | 'roles' | 'resourceKind'>
   /** Stable join into the resources facet when this object names a catalog entity. */

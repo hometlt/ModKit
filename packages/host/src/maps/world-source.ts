@@ -1766,6 +1766,7 @@ export function createCandidateWorldSceneLease(
     maturity: snapshot.worldCandidate.maturity,
     snapshotId: snapshot.snapshotId,
     mapId: snapshot.mapId,
+    gameId: snapshot.gameId,
     coordinateSpaces: snapshot.worldCandidate.coordinateSpaces,
     crossSpaceTransforms: Object.freeze(
       snapshot.worldCandidate.crossSpaceTransforms.map(item => {

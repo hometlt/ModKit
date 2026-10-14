@@ -12,7 +12,7 @@ import {
   type UvwBasis,
   type UvwProfileDocument,
 } from './index.js'
-import { reconstructAdditionalExactLayers, reconstructCanonicalUvw } from './reconstruct.js'
+import { cliffFacesFromTerrain, reconstructAdditionalExactLayers, reconstructCanonicalUvw } from './reconstruct.js'
 
 export type WorldUvwRefusalCode =
   | 'invalid-budget'
@@ -467,6 +467,13 @@ export async function materializeWorldToUvw(
     )
     return finish()
   }
+  let cliffFaces: ReturnType<typeof cliffFacesFromTerrain>
+  try {
+    cliffFaces = cliffFacesFromTerrain(items, columns, rows, sourceRowOrder)
+  } catch (error) {
+    refuse('terrain-grid-invalid', String(error), 'page.items.cliffFace')
+    return finish()
+  }
 
   const outputBasis: UvwBasis = Object.freeze({
     handedness: 'right',
@@ -518,6 +525,7 @@ export async function materializeWorldToUvw(
             cellSize,
             origin,
             ...(noDataValue === undefined ? {} : { noDataValue }),
+            ...(cliffFaces === undefined ? {} : { cliffFaces }),
             samples: Object.freeze(samples.map(row => Object.freeze(row))),
           }),
           ...additional.layers,

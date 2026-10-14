@@ -16,6 +16,7 @@ import type {
   UvwProfileDocument,
   UvwRegionShape,
   UvwTerrainMaterialSample,
+  UvwObjectLatticeCoverage,
 } from './index.js'
 
 export interface CanonicalUvwReconstructionOptions {
@@ -32,6 +33,30 @@ export interface CanonicalUvwReconstruction {
 
 function finite(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value)
+}
+
+/** A complete publisher classification is carried by cell anchors, not boundary vertices. */
+export function cliffFacesFromTerrain(
+  items: readonly WorldSceneTerrainItem[],
+  columns: number,
+  rows: number,
+  sourceRowOrder: 'forward' | 'reverse',
+): readonly Readonly<{ x: number; y: number }>[] | undefined {
+  const cells: { x: number; y: number }[] = []
+  let known = 0
+  for (const item of items) {
+    if (item.cliffFace === undefined) continue
+    if (typeof item.cliffFace !== 'boolean' || item.x >= columns - 1 || item.y >= rows - 1)
+      throw new TypeError('cliff classification must name an interior heightfield cell')
+    known += 1
+    if (item.cliffFace)
+      cells.push({ x: item.x, y: sourceRowOrder === 'reverse' ? rows - 2 - item.y : item.y })
+  }
+  if (known === 0) return undefined
+  if (known !== (columns - 1) * (rows - 1))
+    throw new TypeError('cliff classification is incomplete')
+  cells.sort((left, right) => left.y - right.y || left.x - right.x)
+  return Object.freeze(cells.map(cell => Object.freeze(cell)))
 }
 
 /** A source id as a UVW id: its last `:` segment when already one, else `<prefix>-<slug>`. */
@@ -240,7 +265,7 @@ const PLACING_FIELDS = [
  * the receipt names it with how many items had it (lostFields).
  */
 const KEPT_FIELDS: Readonly<Record<string, ReadonlySet<string>>> = Object.freeze({
-  terrain: new Set(['x', 'y', 'heightBase', 'heightAdjustment', 'uvwPosition']),
+  terrain: new Set(['x', 'y', 'heightBase', 'heightAdjustment', 'uvwPosition', 'cliffFace']),
   'terrain-materials': new Set([
     'x',
     'y',
@@ -291,12 +316,37 @@ const KEPT_FIELDS: Readonly<Record<string, ReadonlySet<string>>> = Object.freeze
     'modelComponents',
     'presentationTint',
     'presentationAnimation',
+    'latticeCoverage',
+    'uvwLatticeCoverage',
   ]),
 })
 
 /** A tint UVW holds: multiplication factors within 0..1. */
 const unitTint = (tint: readonly number[]): boolean =>
   tint.every(factor => Number.isFinite(factor) && factor >= 0 && factor <= 1)
+
+const LATTICE_CHANNELS = ['blocked', 'noBuild', 'vision', 'nearResources', 'outline'] as const
+
+function objectLatticeForUvw(
+  item: WorldSceneObjectItem,
+  info: CandidateWorldSceneInfo,
+): UvwObjectLatticeCoverage | undefined {
+  const native = item.latticeCoverage
+  const projected = item.uvwLatticeCoverage
+  if (native === undefined && projected === undefined) return undefined
+  if (native !== undefined && LATTICE_CHANNELS.some(channel => native[channel] !== undefined && projected?.[channel] === undefined))
+    throw new TypeError('publisher lattice polygons have no proved UVW projection')
+  const kind = native?.resourceKind
+  const scope = native?.resourceKindScope ?? info.gameId
+  if ((kind !== undefined && scope === undefined) || (native?.resourceKindScope !== undefined && kind === undefined))
+    throw new TypeError('publisher resource kind has no exact game scope')
+  return Object.freeze({
+    ...(native?.roles === undefined ? {} : { roles: native.roles }),
+    ...(kind === undefined ? {} : { resourceKind: kind, resourceKindScope: scope! }),
+    ...Object.fromEntries(LATTICE_CHANNELS.flatMap(channel => projected?.[channel] === undefined
+      ? [] : [[channel, projected[channel]]])),
+  })
+}
 
 /** Counts, per facet field, the items whose field the UVW leaves out (see KEPT_FIELDS). */
 function noteLostFields(
@@ -462,6 +512,9 @@ async function reconstructLayer(
     }
     if (values.some(value => value === undefined))
       throw new TypeError('UVW canonical terrain has holes without noDataValue')
+    const cliffFaces = cliffFacesFromTerrain(
+      items as readonly WorldSceneTerrainItem[], grid.columns, grid.rows, 'forward',
+    )
     return Object.freeze({
       id,
       kind: 'heightfield',
@@ -471,6 +524,7 @@ async function reconstructLayer(
       cellSize: grid.cellSize,
       origin: grid.origin,
       ...(fill === undefined ? {} : { noDataValue: fill }),
+      ...(cliffFaces === undefined ? {} : { cliffFaces }),
       samples: gridRows(values as number[], grid.columns, grid.rows),
     })
   }
@@ -805,6 +859,7 @@ async function reconstructLayer(
           }
           seenInstances.add(instanceId)
           const scale = item.uvwScale ?? { x: 1, y: 1, z: 1 }
+          const latticeCoverage = objectLatticeForUvw(item, info)
           return [
             Object.freeze({
               id: instanceId,
@@ -849,6 +904,7 @@ async function reconstructLayer(
               ...(item.presentationAnimation === undefined
                 ? {}
                 : { presentationAnimation: item.presentationAnimation }),
+              ...(latticeCoverage === undefined ? {} : { latticeCoverage }),
             }),
           ]
         }),

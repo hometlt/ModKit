@@ -5,6 +5,7 @@
 import { canonicalJsonStringify, compareUtf8, ModkitError } from '@modkit/core'
 import type { MapModelComponentPlacement } from '@modkit/sdk'
 import type {
+  MapLatticeObjectCoverage,
   MapWorldCamera,
   WorldPlayer,
   WorldStartPosition,
@@ -54,6 +55,8 @@ export interface UvwHeightfieldLayer {
   readonly cellSize: number
   readonly origin: readonly [number, number, number]
   readonly noDataValue?: number
+  /** Complete classified cells; absent is unknown and [] proves all cells are non-cliff. */
+  readonly cliffFaces?: readonly Readonly<{ x: number; y: number }>[]
   readonly samples: readonly (readonly number[])[]
 }
 
@@ -205,7 +208,11 @@ export interface UvwObjectInstance {
   /** RGB multiplication factors 0..1 of the object's model, not player colour or opacity. */
   readonly presentationTint?: readonly [number, number, number]
   readonly presentationAnimation?: UvwPresentationAnimation
+  readonly latticeCoverage?: UvwObjectLatticeCoverage
 }
+
+export type UvwObjectLatticeCoverage = Omit<MapLatticeObjectCoverage, 'coordinateSpaceId'> &
+  Readonly<{ resourceKindScope?: string }>
 
 export interface UvwObjectsLayer {
   readonly schemaVersion: 1
@@ -359,6 +366,15 @@ interface ValidationBudget {
   readonly signal?: AbortSignal
   nodes: number
   samples: number
+  annotations: number
+}
+
+const MAX_LATTICE_ANNOTATIONS = 1_048_576
+
+function annotation(state: ValidationBudget, count: number, path: string): void {
+  state.annotations += count
+  if (state.annotations > MAX_LATTICE_ANNOTATIONS)
+    fail('UVW lattice annotations exceed 1048576 records/vertices/cells', path, 'x3.uv/uvw-budget-exceeded')
 }
 
 const ID_PATTERN = /^[a-z][a-z0-9-]*$/u
@@ -385,6 +401,7 @@ function budget(options: UvwParseLimits): ValidationBudget {
     ...(options.signal === undefined ? {} : { signal: options.signal }),
     nodes: 0,
     samples: 0,
+    annotations: 0,
   }
 }
 
@@ -685,7 +702,7 @@ function heightfieldLayer(
   const item = record(value, path, state, depth)
   exactKeys(
     item,
-    ['id', 'kind', 'label', 'columns', 'rows', 'cellSize', 'origin', 'noDataValue', 'samples'],
+    ['id', 'kind', 'label', 'columns', 'rows', 'cellSize', 'origin', 'noDataValue', 'cliffFaces', 'samples'],
     ['id', 'kind', 'columns', 'rows', 'cellSize', 'origin', 'samples'],
     path,
   )
@@ -723,6 +740,28 @@ function heightfieldLayer(
     item['noDataValue'] === undefined
       ? undefined
       : finite(item['noDataValue'], `${path}.noDataValue`, state, depth + 1)
+  let cliffFaces: UvwHeightfieldLayer['cliffFaces']
+  if (Object.hasOwn(item, 'cliffFaces')) {
+    const cliffPath = `${path}.cliffFaces`
+    annotation(state, 1, cliffPath)
+    const values = array(item['cliffFaces'], cliffPath, state, depth + 1)
+    if (values.length > MAX_LATTICE_ANNOTATIONS) fail('too many cliff cells', cliffPath)
+    annotation(state, values.length, cliffPath)
+    let previousX = -1
+    let previousY = -1
+    cliffFaces = Object.freeze(values.map((value, index) => {
+      const cellPath = `${cliffPath}[${String(index)}]`
+      const cell = record(value, cellPath, state, depth + 2)
+      exactKeys(cell, ['x', 'y'], ['x', 'y'], cellPath)
+      const x = integerAtLeast(cell['x'], 0, `${cellPath}.x`, state, depth + 3)
+      const y = integerAtLeast(cell['y'], 0, `${cellPath}.y`, state, depth + 3)
+      if (x >= columns - 1 || y >= rows - 1 || y < previousY || (y === previousY && x <= previousX))
+        fail('cliff cells must be interior, unique and ordered by y then x', cellPath)
+      previousX = x
+      previousY = y
+      return Object.freeze({ x, y })
+    }))
+  }
   return Object.freeze({
     id,
     kind: 'heightfield',
@@ -732,6 +771,7 @@ function heightfieldLayer(
     cellSize: positive(item['cellSize'], `${path}.cellSize`, state, depth + 1),
     origin: vec3(item['origin'], `${path}.origin`, state, depth + 1),
     ...(noDataValue === undefined ? {} : { noDataValue }),
+    ...(cliffFaces === undefined ? {} : { cliffFaces }),
     samples: Object.freeze(samples),
   })
 }
@@ -1450,6 +1490,61 @@ const OBJECT_KINDS = new Set<UvwObjectKind>([
   'camera',
 ])
 
+const LATTICE_CHANNELS = ['blocked', 'noBuild', 'vision', 'nearResources', 'outline'] as const
+
+function latticeLabel(value: unknown, maximum: number, path: string, state: ValidationBudget, depth: number): string {
+  const result = string(value, path, state, depth)
+  let length = 0
+  for (const _ of result) if (++length > maximum) fail('lattice label is too long', path)
+  if (length === 0 || result.trim() !== result || /[\u0000-\u001f\u007f]/u.test(result))
+    fail('lattice label is invalid', path)
+  return result
+}
+
+function objectLatticeCoverage(
+  value: unknown, path: string, state: ValidationBudget, depth: number,
+): UvwObjectLatticeCoverage {
+  annotation(state, 1, path)
+  const entry = record(value, path, state, depth)
+  exactKeys(entry, ['roles', 'resourceKind', 'resourceKindScope', ...LATTICE_CHANNELS], [], path)
+  const output: Record<string, unknown> = {}
+  if (Object.hasOwn(entry, 'roles')) {
+    const roles = array(entry['roles'], `${path}.roles`, state, depth + 1)
+    if (roles.length > 3 || new Set(roles).size !== roles.length ||
+        roles.some(role => role !== 'resource' && role !== 'destructible' && role !== 'start'))
+      fail('lattice roles must be unique neutral labels', `${path}.roles`)
+    output['roles'] = Object.freeze([...roles])
+  }
+  if (Object.hasOwn(entry, 'resourceKind') || Object.hasOwn(entry, 'resourceKindScope')) {
+    output['resourceKind'] = latticeLabel(entry['resourceKind'], 4096, `${path}.resourceKind`, state, depth + 1)
+    output['resourceKindScope'] = latticeLabel(entry['resourceKindScope'], 1024, `${path}.resourceKindScope`, state, depth + 1)
+  }
+  for (const channel of LATTICE_CHANNELS) {
+    if (!Object.hasOwn(entry, channel)) continue
+    const channelPath = `${path}.${channel}`
+    const polygons = array(entry[channel], channelPath, state, depth + 1)
+    if (polygons.length > MAX_LATTICE_ANNOTATIONS) fail('too many lattice polygons', channelPath)
+    annotation(state, polygons.length, channelPath)
+    output[channel] = Object.freeze(polygons.map((value, index) => {
+      const polygonPath = `${channelPath}[${String(index)}]`
+      const vertices = array(value, polygonPath, state, depth + 2)
+      if (vertices.length < 3 || vertices.length > MAX_LATTICE_ANNOTATIONS)
+        fail('lattice polygon needs at least three bounded vertices', polygonPath)
+      annotation(state, vertices.length, polygonPath)
+      return Object.freeze(vertices.map((vertex, vertexIndex) => {
+        const pointPath = `${polygonPath}[${String(vertexIndex)}]`
+        const point = record(vertex, pointPath, state, depth + 3)
+        exactKeys(point, ['x', 'y'], ['x', 'y'], pointPath)
+        return Object.freeze({
+          x: finite(point['x'], `${pointPath}.x`, state, depth + 4),
+          y: finite(point['y'], `${pointPath}.y`, state, depth + 4),
+        })
+      }))
+    }))
+  }
+  return Object.freeze(output) as UvwObjectLatticeCoverage
+}
+
 function objectsLayer(
   value: unknown,
   path: string,
@@ -1485,6 +1580,7 @@ function objectsLayer(
           'name',
           'presentationTint',
           'presentationAnimation',
+          'latticeCoverage',
         ],
         ['id', 'objectKind', 'position', 'rotation', 'scale', 'resourceIds'],
         instancePath,
@@ -1639,6 +1735,9 @@ function objectsLayer(
               state,
               depth + 3,
             )
+      const latticeCoverage = Object.hasOwn(instance, 'latticeCoverage')
+        ? objectLatticeCoverage(instance['latticeCoverage'], `${instancePath}.latticeCoverage`, state, depth + 3)
+        : undefined
       return Object.freeze({
         id: layerId(instance['id'], `${instancePath}.id`, state, depth + 3),
         objectKind,
@@ -1657,6 +1756,7 @@ function objectsLayer(
         ...(optionalString('name') === undefined ? {} : { name: optionalString('name')! }),
         ...(presentationTint === undefined ? {} : { presentationTint }),
         ...(presentationAnimation === undefined ? {} : { presentationAnimation }),
+        ...(latticeCoverage === undefined ? {} : { latticeCoverage }),
       })
     },
   )

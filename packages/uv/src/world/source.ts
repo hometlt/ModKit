@@ -67,6 +67,7 @@ interface LayerRecord {
   readonly layer: UvwHeightfieldSpaceLayer
   readonly itemCount: number
   readonly contentRevision: string
+  readonly cliffCells?: ReadonlySet<number>
 }
 
 function positiveLimit(value: number, maximum: number): number {
@@ -317,6 +318,22 @@ function recordItems(
                     y: instance.scale[1],
                     z: instance.scale[2],
                   }),
+                  ...(instance.latticeCoverage === undefined
+                    ? {}
+                    : {
+                        latticeCoverage: Object.freeze({
+                          coordinateSpaceId,
+                          ...instance.latticeCoverage,
+                        }),
+                        uvwLatticeCoverage: Object.freeze({
+                          ...Object.fromEntries(
+                            (['blocked', 'noBuild', 'vision', 'nearResources', 'outline'] as const)
+                              .flatMap(channel => instance.latticeCoverage?.[channel] === undefined
+                                ? []
+                                : [[channel, instance.latticeCoverage[channel]]]),
+                          ),
+                        }),
+                      }),
                   resourceIds: Object.freeze(
                     instance.resourceIds.map(id => worldResourceId(record.space.id, id)),
                   ),
@@ -580,6 +597,9 @@ export function createUvwWorldSceneSource(
         layer,
         itemCount: layerItemCount(layer),
         contentRevision: contentRevision(layer),
+        ...(layer.kind !== 'heightfield' || layer.cliffFaces === undefined
+          ? {}
+          : { cliffCells: new Set(layer.cliffFaces.map(cell => cell.y * layer.columns + cell.x)) }),
       })
     }),
   )
@@ -988,6 +1008,9 @@ export function createUvwWorldSceneSource(
             heightBase: sample,
             heightAdjustment: 0,
             mask: 0,
+            ...(record.cliffCells === undefined || x >= record.layer.columns - 1 || y >= record.layer.rows - 1
+              ? {}
+              : { cliffFace: record.cliffCells.has(y * record.layer.columns + x) }),
             uvwPosition,
             lod: 'exact',
           }),
