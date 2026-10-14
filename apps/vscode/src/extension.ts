@@ -7333,8 +7333,8 @@ async function activateModkit(
         signal: request.signal,
       })
       languageModContexts.replace(scope?.contextId ?? loose ?? '', projected.contexts ?? [])
-      // The scope's server builds its Data while the snapshot is composed.
-      void languageModContexts.prepare()
+      // Warm this opened scope; unrelated retained mods must not compete with its first answer.
+      void languageModContexts.prepare(scope?.contextId ?? loose ?? '')
       for (const item of projected.diagnostics) {
         log(`[language-context] ${item.severity} ${item.code}: ${item.message}`)
       }

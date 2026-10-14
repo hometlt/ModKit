@@ -865,6 +865,26 @@ describe('the loaded mod servers of a language workspace', () => {
     await expect(servers.query(scope, { kind: 'data.authoring' })).rejects.toThrow(/no loaded mod/u)
   })
 
+  it('prepares only the opened key without warming unrelated retained mods', async () => {
+    const first = server()
+    const second = server()
+    Object.defineProperty(second.context, 'contextId', { value: 'another chain' })
+    const prepareFirst = vi.fn(async () => {})
+    const prepareSecond = vi.fn(async () => {})
+    Object.assign(first.context, { prepare: prepareFirst })
+    Object.assign(second.context, { prepare: prepareSecond })
+    const contexts = createLanguageModContexts()
+    contexts.replace('first', [first.context])
+    contexts.replace('second', [second.context])
+    await contexts.prepare('second')
+    expect(prepareFirst).not.toHaveBeenCalled()
+    expect(prepareSecond).toHaveBeenCalledTimes(1)
+    await contexts.prepare()
+    expect(prepareFirst).toHaveBeenCalledTimes(1)
+    expect(prepareSecond).toHaveBeenCalledTimes(2)
+    await contexts.dispose()
+  })
+
   it('replaces a lost transport generation even when the chain and session identity stay the same', async () => {
     const first = server()
     Object.defineProperty(first.context, 'generation', { value: 'connection-1' })

@@ -73,8 +73,8 @@ export interface LanguageModContexts {
   replace(key: string, contexts: readonly ModContext[]): void
   /** Files changed on disk: every server lists and reads its chain again. */
   invalidate(): Promise<void>
-  /** Every server builds what its first question needs now (`ModContext.prepare`); failures are its own. */
-  prepare(): Promise<void>
+  /** Prepare one opened key, or all retained servers when omitted; failures remain query-owned. */
+  prepare(key?: string): Promise<void>
   dispose(): Promise<void>
 }
 
@@ -449,9 +449,10 @@ export function createLanguageModContexts(
       })
     },
 
-    async prepare() {
+    async prepare(key) {
       // Not in the buffers' queue: building a chain's Data must not hold up an edit reaching it.
-      await Promise.allSettled(entries.map(entry => entry.context.prepare?.()))
+      await Promise.allSettled(entries.filter(entry => key === undefined || entry.key === key)
+        .map(entry => entry.context.prepare?.()))
     },
 
     async dispose() {
