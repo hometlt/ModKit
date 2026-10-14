@@ -224,6 +224,7 @@ const modelSceneSourceSurface = {
 
 const worldSceneSourceSurface = {
   methods: {
+    frame: { kind: 'value', optional: true, ...sig },
     info: cancellableValue,
     page: cancellableValue,
     model: { kind: 'value', optional: true, ...sig },

@@ -1486,6 +1486,14 @@ function borrowCommonWorldScene(candidate: CandidateWorldSceneSource): Lease<Wor
   const source: WorldSceneSource = Object.freeze({
     contract: WORLD_SCENE_SOURCE_CONTRACT,
     major: 1,
+    ...(candidate.frame === undefined ? {} : {
+      async frame(timeMs: number, signal?: AbortSignal) {
+        assertLive(signal)
+        const frame = await candidate.frame!(timeMs, signal)
+        assertLive(signal)
+        return frame
+      },
+    }),
     // a refinable world names a new snapshot once refined
     get snapshotId() {
       return candidate.snapshotId

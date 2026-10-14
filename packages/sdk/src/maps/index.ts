@@ -2106,17 +2106,39 @@ export interface WorldScenePage {
   readonly reason?: string
 }
 
-/**
- * Structural candidate surface consumed by the generic Block 15 harness.
- *
- * It intentionally has no ContractMap augmentation and no common.view coordinate. Block 18 may
- * admit a common contract only through the documented adapter/dual-publish transition.
- */
+/** Immutable presentation sample. Objects replace the objects facet for this frame only;
+ * resources and the authored world remain unchanged. Times are milliseconds, poses use UVW axes.
+ * No clock, marker execution or native edit is implied by sampling. */
+export interface WorldSceneFrame {
+  readonly snapshotId: string
+  readonly timeMs: number
+  readonly objects: readonly WorldSceneObjectItem[]
+  readonly animationTimes?: readonly Readonly<{ objectId: number; seconds: number }>[]
+  readonly camera?: WorldSceneCamera
+  readonly diagnostics: readonly Diagnostic[]
+  readonly complete: boolean
+}
+
+/** Perspective lens in world coordinates. The authored FOV axis is explicit; angles are radians. */
+export type WorldSceneCamera = {
+  readonly eye: readonly [number, number, number]
+  readonly target: readonly [number, number, number]
+  readonly up: readonly [number, number, number]
+  readonly roll?: number
+  readonly near: number
+  readonly far: number
+} & (
+  | { readonly verticalFieldOfView: number; readonly horizontalFieldOfView?: never }
+  | { readonly horizontalFieldOfView: number; readonly verticalFieldOfView?: never }
+)
+
+/** Structural candidate surface; the common view contract is exposed by its Host adapter. */
 export interface CandidateWorldSceneSource {
   readonly contract: string
   readonly major: 1
   readonly snapshotId: string
   info(signal?: AbortSignal): Promise<CandidateWorldSceneInfo>
+  frame?(timeMs: number, signal?: AbortSignal): Promise<WorldSceneFrame>
   page(request: WorldScenePageRequest, signal?: AbortSignal): Promise<WorldScenePage>
   /** Lazily converts one joined native model through the standard host model-resource route. */
   model?(
@@ -2156,6 +2178,8 @@ export interface WorldSceneSource {
   readonly major: 1
   readonly snapshotId: string
   info(signal?: AbortSignal): Promise<WorldSceneInfo>
+  /** Pure sampling; independent concurrent requests must not move a transport or change pages. */
+  frame?(timeMs: number, signal?: AbortSignal): Promise<WorldSceneFrame>
   page(request: WorldScenePageRequest, signal?: AbortSignal): Promise<WorldScenePage>
   /** Optional while publisher-candidate sources migrate; absence means explicit placeholders. */
   model?(
