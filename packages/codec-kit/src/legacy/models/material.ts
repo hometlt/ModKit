@@ -10,6 +10,12 @@ export type LayerChannelSelect = 0 | 1 | 2 | 3 | 4 | 5
 
 export type NormalMapFormat = 'dxt5nm' | 'bc5' | 'rgb8' | 'luminance-alpha'
 
+export type RenderTextureChannel = 0 | 1 | 2 | 3 | 4 | 5 | 6
+
+export function isRenderTextureChannel(value: unknown): value is RenderTextureChannel {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= 6
+}
+
 export type StandardLayerSlot =
   | 'diffuse'
   /**
@@ -114,6 +120,8 @@ export interface StandardMaterialLayer {
   slot: StandardLayerSlot
   /** null → constant color layer (LAYR flags & 0x400 use color_value). */
   texturePath: string | null
+  /** Frame-local render target sampled by this layer; independent of uvSource and material masks. */
+  renderTextureChannel?: RenderTextureChannel
   constantColor?: AnimatedColor
   /** Raw LAYR.uv_source value; renderers map per the P4 table 1.4. */
   uvSource: number
