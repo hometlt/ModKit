@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { blendSimpleEffectPixel, applySimpleEffectState } from '../src/render/simple-effect.js'
+import {
+  blendSimpleEffectPixel,
+  applySimpleEffectState,
+  readSimpleEffect,
+} from '../src/render/simple-effect.js'
 import { projectorMaterial } from '../src/uvm/projector-material.js'
 import { renderHeadless } from '../src/render/headless.js'
 import { uvmMaterialResources } from '../src/uvm/materials.js'
@@ -20,6 +24,7 @@ test('all simple-effect blend equations preserve their distinct source factors',
     blend: [128, 96, 160, 255],
     premultiplied: [192, 128, 255, 255],
     additive: [192, 144, 255, 255],
+    'additive-one-one': [255, 192, 255, 255],
     'add-alpha': [192, 160, 224, 255],
     modulate: [64, 32, 96, 255],
     modulate2x: [128, 64, 192, 255],
@@ -30,7 +35,7 @@ test('all simple-effect blend equations preserve their distinct source factors',
     assert.deepEqual([...output], rgba, blend)
   }
 })
-test('simple effect WebGL state uses SRC_COLOR additive and independent depth flags', () => {
+test('simple effect WebGL distinguishes legacy SRC_COLOR and ONE additive with independent depth flags', () => {
   const calls = [],
     gl = {
       DEPTH_TEST: 1,
@@ -46,15 +51,33 @@ test('simple effect WebGL state uses SRC_COLOR additive and independent depth fl
       blendEquation: v => calls.push(['equation', v]),
       blendFuncSeparate: (...v) => calls.push(['blend', ...v]),
     }
-  applySimpleEffectState(gl, { ...state, blend: 'additive', depthTest: false, depthWrite: true })
-  assert.deepEqual(calls, [
-    ['disable', 1],
-    ['depth', true],
-    ['disable', 2],
-    ['equation', 4],
-    ['enable', 3],
-    ['blend', 5, 6, 7, 6],
-  ])
+  for (const [blend, sourceFactor] of [
+    ['additive', gl.SRC_COLOR],
+    ['additive-one-one', gl.ONE],
+  ]) {
+    calls.length = 0
+    applySimpleEffectState(gl, { ...state, blend, depthTest: false, depthWrite: true })
+    assert.deepEqual(calls, [
+      ['disable', 1],
+      ['depth', true],
+      ['disable', 2],
+      ['equation', 4],
+      ['enable', 3],
+      ['blend', sourceFactor, gl.ONE, gl.ZERO, gl.ONE],
+    ])
+  }
+})
+
+test('normative additive adds RGB once while legacy additive and destination alpha remain unchanged', () => {
+  for (const [blend, red] of [
+    ['additive', 104],
+    ['additive-one-one', 168],
+  ]) {
+    const effect = readSimpleEffect({ ...state, blend })
+    const frame = Uint8Array.of(40, 50, 60, 91)
+    blendSimpleEffectPixel(frame, 0, [0.5, 0, 0, 0.25], effect)
+    assert.deepEqual([...frame], [red, 50, 60, 91])
+  }
 })
 test('ordinary projectors select the pinned preview texture and preserve the authored shader', () => {
   const standard = {

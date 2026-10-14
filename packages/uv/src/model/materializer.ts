@@ -29,6 +29,7 @@ import type { UvmJsonObject, UvmJsonValue } from './legacy/rig-types.js'
 import { prepareUvmSkeleton, writeUvmSkinAttributes, writeUvmAnimations } from './rig.js'
 import { materializeUvmAnimationMaterialTargets } from './animation-materials.js'
 import { uvmSceneFrameInverse, withMaterialFrame } from './frame.js'
+import { isUvmGameBlendMode, type UvmGameBlendMode } from './validation/materials.js'
 export interface ModelProjection {
   readonly info: ModelSceneInfo
   readonly nodes?: readonly ModelNode[]
@@ -238,23 +239,6 @@ interface UvmTextureColorKeyValue {
 const colorChannel = (value: unknown): value is number =>
   typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= 255
 
-/** `UV_game_material.blendMode` values of SPEC_UVM_EXTENSIONS; any other name stays in extras. */
-const UVM_GAME_BLEND_MODES = [
-  'opaque',
-  'alpha-blend',
-  'alpha-test',
-  'additive',
-  'add-alpha',
-  'modulate',
-  'modulate2x',
-  'alpha-key',
-  'screen',
-  'subtract',
-] as const
-type UvmGameBlendMode = (typeof UVM_GAME_BLEND_MODES)[number]
-const isUvmGameBlendMode = (value: unknown): value is UvmGameBlendMode =>
-  (UVM_GAME_BLEND_MODES as readonly unknown[]).includes(value)
-
 export interface MaterializationOptions {
   readonly digest?: (bytes: Uint8Array) => string
   /** Bounds the aggregate material definitions, including shader keys and composite passes. */
@@ -395,12 +379,13 @@ export interface UvmMaterial {
   extensions?: {
     KHR_materials_unlit?: Record<string, never>
     UV_game_material?: {
-      shader: string
       blendMode?: UvmGameBlendMode
       depthWrite?: boolean
       sortPriority?: number
-      params: NonNullable<ModelMaterialRef['shader']>['parameters']
-    }
+    } & (
+      | { shader: string; params: NonNullable<ModelMaterialRef['shader']>['parameters'] }
+      | { shader?: never; params?: never }
+    )
     UV_game_material_team_color?: UvmTeamColorExtension
   }
   extras?: {
@@ -1542,23 +1527,27 @@ export function materializeUvmCore(
     if (Object.keys(fields).length > 0)
       target.extras = { modkit: { material: { version: 1, fields } } }
     const artifactContracts: string[] = []
-    if (shader !== undefined) {
-      // the publisher's blend equation, when it is one the extension names (an additive light cone
-      // is black where it adds nothing: without it, the reader draws a black card)
-      const blendMode = fields['blendMode']
-      const { depthWrite, priority } = fields
+    // Fixed-function state does not imply a shader. Missing fields remain absent, so the
+    // reader inherits the glTF material rather than receiving invented opaque/depth defaults.
+    const blendMode = fields['blendMode']
+    const { depthWrite, priority } = fields
+    const fixedState = {
+      ...(isUvmGameBlendMode(blendMode) ? { blendMode } : {}),
+      ...(depthWrite === undefined ? {} : { depthWrite }),
+      // The extension's integer order; a fractional priority stays in extras only.
+      ...(priority !== undefined && Number.isSafeInteger(priority)
+        ? { sortPriority: priority }
+        : {}),
+    }
+    if (shader !== undefined || Object.keys(fixedState).length > 0) {
       target.extensions = {
-        UV_game_material: {
-          shader: shader.id,
-          ...(isUvmGameBlendMode(blendMode) ? { blendMode } : {}),
-          ...(depthWrite === undefined ? {} : { depthWrite }),
-          // the extension's integer order; a fractional priority stays in extras only
-          ...(priority !== undefined && Number.isSafeInteger(priority)
-            ? { sortPriority: priority }
-            : {}),
-          params: shader.parameters,
-        },
+        UV_game_material:
+          shader === undefined
+            ? fixedState
+            : { shader: shader.id, ...fixedState, params: shader.parameters },
       }
+    }
+    if (shader !== undefined) {
       const renderModel = shader.parameters['renderModel']
       if (renderModel !== null && typeof renderModel === 'object' && !Array.isArray(renderModel)) {
         const snapshot = renderModel as Readonly<Record<string, unknown>>

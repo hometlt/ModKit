@@ -1,6 +1,23 @@
 import type { JsonObject, JsonValue } from '@modkit/sdk'
 import { array, field, object, nonBlank, finite, oneOf } from './values.js'
 
+/** `UV_game_material.blendMode` values; other native equations stay in extras. */
+const UVM_GAME_BLEND_MODES = [
+  'opaque',
+  'alpha-blend',
+  'alpha-test',
+  'additive',
+  'add-alpha',
+  'modulate',
+  'modulate2x',
+  'alpha-key',
+  'screen',
+  'subtract',
+] as const
+export type UvmGameBlendMode = (typeof UVM_GAME_BLEND_MODES)[number]
+export const isUvmGameBlendMode = (value: unknown): value is UvmGameBlendMode =>
+  (UVM_GAME_BLEND_MODES as readonly unknown[]).includes(value)
+
 export function validateGameMaterialMetadata(
   document: JsonObject,
   used: readonly JsonValue[],
@@ -19,8 +36,26 @@ export function validateGameMaterialMetadata(
       throw new TypeError(`${label} is not declared in extensionsUsed`)
     }
     const gameMaterial = object(extension, label)
-    if (!nonBlank(gameMaterial['shader']))
-      throw new TypeError(`${label} requires a shader identity`)
+    if (Object.hasOwn(gameMaterial, 'shader')) {
+      if (!nonBlank(gameMaterial['shader']))
+        throw new TypeError(`${label} requires a shader identity`)
+    } else {
+      const keys = Object.keys(gameMaterial)
+      if (
+        keys.length === 0 ||
+        keys.some(
+          key =>
+            (key !== 'blendMode' && key !== 'depthWrite' && key !== 'sortPriority') ||
+            gameMaterial[key] === undefined,
+        )
+      )
+        throw new TypeError(`${label} requires nonempty fixed state or a shader identity`)
+      if (
+        Object.hasOwn(gameMaterial, 'blendMode') &&
+        !isUvmGameBlendMode(gameMaterial['blendMode'])
+      )
+        throw new TypeError(`${label} has an unknown fixed-state blend mode`)
+    }
     if (gameMaterial['depthWrite'] !== undefined && typeof gameMaterial['depthWrite'] !== 'boolean')
       throw new TypeError(`${label} depthWrite must be boolean`)
     if (

@@ -62,9 +62,11 @@ export function uvmMaterialBlendEffect(
   const data = object(extension, 'game material')
   const mode = data['blendMode']
   const blend =
-    mode === 'additive' || mode === 'add-alpha' || mode === 'modulate' || mode === 'modulate2x'
-      ? mode
-      : undefined
+    mode === 'additive'
+      ? 'additive-one-one'
+      : mode === 'add-alpha' || mode === 'modulate' || mode === 'modulate2x'
+        ? mode
+        : undefined
   if (blend === undefined) return undefined
   const renderModel = field(object(data['params'] ?? {}, 'game material parameters'), 'renderModel')
   if (
@@ -368,13 +370,14 @@ export function uvmProgramWithoutLayers(
 
 export function uvmMaterialShader(material: JsonObject): SceneRendererMaterial['shader'] {
   const extension = field(material['extensions'], 'UV_game_material')
-  if (extension === undefined) {
+  const data = extension === undefined ? undefined : object(extension, 'game material')
+  // Fixed state does not replace the renderer's existing neutral-layer program.
+  if (data === undefined || !Object.hasOwn(data, 'shader')) {
     const layers = layerList(material)
     return layers.length === 0
       ? undefined
       : { id: MATERIAL_LAYERS_SHADER, parameters: { renderModel: { layers } } }
   }
-  const data = object(extension, 'game material')
   const parameters = object(data['params'] ?? {}, 'game material parameters')
   return {
     id: string(data['shader'], 'game material shader'),

@@ -8,6 +8,8 @@ import type { SceneMaterialPrograms } from './materials.js'
 import { alphaDrawOrder, depthSortedTriangles, materialAlpha } from './alpha.js'
 import { prepareMaterialGeometry } from './material-geometry.js'
 import { primitiveFade, primitiveVertexTints } from './tint.js'
+import { materialIsSolid } from './simple-effect.js'
+export { materialIsSolid, blendMaterialPixel } from './simple-effect.js'
 
 export interface MaterialDraw {
   /** Internal world overlay seed pass; still writes actual geometry depth. */
@@ -19,8 +21,6 @@ export interface MaterialDraw {
   /** False when the primitive's material takes no shadow of the world (MaterialSceneLight.shadow). */
   readonly receiveShadows?: boolean
 }
-export const materialIsSolid = (program: StandardMaterialProgram) =>
-  program.blend === 'opaque' || program.blend === 'alpha-test'
 
 /** Only solid color/depth passes participate; translucent passes retain their ordinary scheduling. */
 export const materialIsTerrainOverlay = (draw: MaterialDraw) =>
@@ -294,42 +294,4 @@ export function sceneMaterialDraws(
       : entry
   })
   return [...prepasses, ...draws]
-}
-
-/** RGBA8 target blend equations match WebGL's normalized framebuffer, including destination alpha. */
-export function blendMaterialPixel(
-  frame: Uint8Array,
-  offset: number,
-  rgba: readonly [number, number, number, number],
-  program: StandardMaterialProgram,
-  /** The primitive's fade (primitiveFade): a solid pass below 1 is blended by it. */
-  fade = 1,
-): void {
-  const fading = fade < 1 && materialIsSolid(program)
-  const clamp = (value: number) => Math.max(0, Math.min(1, value)),
-    a = clamp(fading ? fade : rgba[3]),
-    mode = fading ? 'blend' : program.blend
-  for (let channel = 0; channel < 3; channel++) {
-    const source = clamp(rgba[channel] ?? 0),
-      dest = (frame[offset + channel] ?? 0) / 255
-    const value =
-      mode === 'blend'
-        ? source * a + dest * (1 - a)
-        : mode === 'premultiplied'
-          ? source + dest * (1 - a)
-          : mode === 'additive'
-            ? source + dest
-            : mode === 'add-alpha'
-              ? source * a + dest
-              : mode === 'modulate'
-                ? source * dest
-                : mode === 'modulate2x'
-                  ? 2 * source * dest
-                  : source
-    frame[offset + channel] = Math.round(clamp(value) * 255)
-  }
-  // A solid pass covers the pixel whole (an alpha-tested fragment that survived is opaque).
-  if (materialIsSolid(program) && !fading) frame[offset + 3] = 255
-  else if (mode === 'blend' || mode === 'premultiplied')
-    frame[offset + 3] = Math.round((a + ((frame[offset + 3] ?? 0) / 255) * (1 - a)) * 255)
 }

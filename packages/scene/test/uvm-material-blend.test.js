@@ -11,7 +11,7 @@ const gameMaterial = (fields, extra = {}) => ({
 
 it('draws an additive UV_game_material as a simple effect that writes no depth', () => {
   assert.deepEqual(uvmMaterialBlendEffect(gameMaterial({ blendMode: 'additive' }), repeat), {
-    blend: 'additive',
+    blend: 'additive-one-one',
     depthTest: true,
     depthWrite: false,
     doubleSided: false,

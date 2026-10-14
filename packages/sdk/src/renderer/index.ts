@@ -106,8 +106,17 @@ export interface SceneRendererSimpleEffect {
     readonly angle: number
     readonly threshold: number
   }
+  /** `additive` retains SRC_COLOR, ONE; `additive-one-one` adds source RGB without weighting. */
   readonly blend:
-    'opaque' | 'alpha-test' | 'blend' | 'premultiplied' | 'additive' | 'add-alpha' | 'modulate' | 'modulate2x'
+    | 'opaque'
+    | 'alpha-test'
+    | 'blend'
+    | 'premultiplied'
+    | 'additive'
+    | 'additive-one-one'
+    | 'add-alpha'
+    | 'modulate'
+    | 'modulate2x'
   readonly depthTest: boolean
   readonly depthWrite: boolean
   readonly doubleSided: boolean

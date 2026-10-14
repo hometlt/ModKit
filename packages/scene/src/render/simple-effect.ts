@@ -1,4 +1,5 @@
 import type { SceneRendererMaterial, SceneRendererSimpleEffect } from '@modkit/sdk/renderer'
+import type { StandardMaterialProgram } from '../materials/index.js'
 
 /** Unlit texel-times-RGBA pass. Blend names describe equations, not native material types. */
 export type SimpleEffectState = SceneRendererSimpleEffect
@@ -7,9 +8,17 @@ export function readSimpleEffect(
 ): SimpleEffectState | undefined {
   if (value === undefined) return undefined
   if (
-    !['opaque', 'alpha-test', 'blend', 'premultiplied', 'additive', 'add-alpha', 'modulate', 'modulate2x'].includes(
-      value.blend,
-    ) ||
+    ![
+      'opaque',
+      'alpha-test',
+      'blend',
+      'premultiplied',
+      'additive',
+      'additive-one-one',
+      'add-alpha',
+      'modulate',
+      'modulate2x',
+    ].includes(value.blend) ||
     ![value.depthTest, value.depthWrite, value.doubleSided].every(v => typeof v === 'boolean') ||
     !Number.isFinite(value.alphaCutoff) ||
     value.alphaCutoff < 0 ||
@@ -103,6 +112,9 @@ export function applySimpleEffectState(gl: WebGL2RenderingContext, state: Simple
     case 'additive':
       gl.blendFuncSeparate(gl.SRC_COLOR, gl.ONE, gl.ZERO, gl.ONE)
       break
+    case 'additive-one-one':
+      gl.blendFuncSeparate(gl.ONE, gl.ONE, gl.ZERO, gl.ONE)
+      break
     case 'add-alpha':
       gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE, gl.ZERO, gl.ONE)
       break
@@ -121,6 +133,10 @@ export function blendSimpleEffectPixel(
   rgba: readonly [number, number, number, number],
   state: SimpleEffectState,
 ): void {
+  if (state.blend === 'additive-one-one') {
+    blendMaterialPixel(frame, offset, rgba, { blend: 'additive' })
+    return
+  }
   const clamp = (v: number) => Math.max(0, Math.min(1, v)),
     a = clamp(rgba[3]),
     solid = simpleEffectSolid(state)
@@ -145,4 +161,45 @@ export function blendSimpleEffectPixel(
   if (solid) frame[offset + 3] = Math.round(a * 255)
   else if (state.blend === 'blend' || state.blend === 'premultiplied')
     frame[offset + 3] = Math.round(clamp(a + ((frame[offset + 3] ?? 0) / 255) * (1 - a)) * 255)
+}
+
+export const materialIsSolid = (program: Pick<StandardMaterialProgram, 'blend'>) =>
+  program.blend === 'opaque' || program.blend === 'alpha-test'
+
+/** RGBA8 target blend equations match WebGL's normalized framebuffer, including destination alpha. */
+export function blendMaterialPixel(
+  frame: Uint8Array,
+  offset: number,
+  rgba: readonly [number, number, number, number],
+  program: Pick<StandardMaterialProgram, 'blend'>,
+  /** The primitive's fade (primitiveFade): a solid pass below 1 is blended by it. */
+  fade = 1,
+): void {
+  const fading = fade < 1 && materialIsSolid(program)
+  const clamp = (value: number) => Math.max(0, Math.min(1, value)),
+    a = clamp(fading ? fade : rgba[3]),
+    mode = fading ? 'blend' : program.blend
+  for (let channel = 0; channel < 3; channel++) {
+    const source = clamp(rgba[channel] ?? 0),
+      dest = (frame[offset + channel] ?? 0) / 255
+    const value =
+      mode === 'blend'
+        ? source * a + dest * (1 - a)
+        : mode === 'premultiplied'
+          ? source + dest * (1 - a)
+          : mode === 'additive'
+            ? source + dest
+            : mode === 'add-alpha'
+              ? source * a + dest
+              : mode === 'modulate'
+                ? source * dest
+                : mode === 'modulate2x'
+                  ? 2 * source * dest
+                  : source
+    frame[offset + channel] = Math.round(clamp(value) * 255)
+  }
+  // A solid pass covers the pixel whole (an alpha-tested fragment that survived is opaque).
+  if (materialIsSolid(program) && !fading) frame[offset + 3] = 255
+  else if (mode === 'blend' || mode === 'premultiplied')
+    frame[offset + 3] = Math.round((a + ((frame[offset + 3] ?? 0) / 255) * (1 - a)) * 255)
 }

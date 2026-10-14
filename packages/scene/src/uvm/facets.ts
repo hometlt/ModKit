@@ -349,10 +349,15 @@ function decodeMaterialRefs(document: JsonObject): readonly ModelMaterialRef[] {
       (metallicStated !== undefined || roughnessStated !== undefined) &&
       (metallic !== 0 || roughness !== 1)
     // a document from elsewhere states these only in its game material
-    const gameMaterial = field(material['extensions'], 'UV_game_material')
+    const gameMaterialValue = field(material['extensions'], 'UV_game_material')
+    const gameMaterial =
+      gameMaterialValue === undefined ? undefined : object(gameMaterialValue, 'game material')
+    const blendMode = field(gameMaterial, 'blendMode')
     const depthWrite = field(gameMaterial, 'depthWrite')
     const sortPriority = field(gameMaterial, 'sortPriority')
+    const shader = field(gameMaterial, 'shader')
     return Object.freeze({
+      ...(typeof blendMode === 'string' ? { blendMode } : {}),
       ...(typeof depthWrite === 'boolean' ? { depthWrite } : {}),
       ...(typeof sortPriority === 'number' ? { priority: sortPriority } : {}),
       ...fields,
@@ -372,18 +377,12 @@ function decodeMaterialRefs(document: JsonObject): readonly ModelMaterialRef[] {
         ? {}
         : { alphaCutoff: typeof alphaCutoff === 'number' ? alphaCutoff : 0.5 }),
       ...(contracts.length === 0 ? {} : { contracts: Object.freeze(contracts) }),
-      ...(field(material['extensions'], 'UV_game_material') === undefined
+      ...(gameMaterial === undefined || !Object.hasOwn(gameMaterial, 'shader')
         ? {}
         : {
             shader: {
-              id: string(
-                field(field(material['extensions'], 'UV_game_material'), 'shader'),
-                'shader identity',
-              ),
-              parameters: object(
-                field(field(material['extensions'], 'UV_game_material'), 'params') ?? {},
-                'UVM shader parameters',
-              ),
+              id: string(shader, 'shader identity'),
+              parameters: object(field(gameMaterial, 'params') ?? {}, 'UVM shader parameters'),
             },
           }),
     })
