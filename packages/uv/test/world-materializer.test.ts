@@ -200,7 +200,8 @@ describe('production world to UVW materializer', () => {
                   id: 'materials',
                   layerId: 'materials',
                   kind: 'terrain-materials',
-                  coordinateSpaceId: 'height-grid',
+                  state: 'available',
+                  itemCount: 9,
                   lods: ['exact'],
                   grid: {
                     columns: 3,
@@ -783,7 +784,7 @@ describe('production world to UVW materializer', () => {
     if (layer?.kind !== 'terrain-materials') return
     expect(layer.materials.map(material => material.id)).toEqual(['material-ground-a-red', 'material-ground-a-yellow'])
     expect(layer.materials.map(material => material.baseColorFactor)).toEqual([[0.5, 0.25, 1, 1], undefined])
-    expect(layer.samples?.[0]?.map(sample => sample.weights[0]?.materialId)).toEqual([
+    expect(layer.samples?.[0]?.map(sample => sample.weights?.[0]?.materialId)).toEqual([
       'material-ground-a-yellow', 'material-ground-a-red',
     ])
     const water = parseUvwProfile(result.bytes).spaces[0]?.layers.find(item => item.kind === 'water')

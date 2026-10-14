@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import { expect, it } from 'vitest'
+import { revisionId, type ArtifactByteSource, type ContributionContext, type SingleAssetInput } from '@modkit/sdk'
 import { createCodec } from '../../../extensions/models/src/uvm/codec.js'
 
 it('reports native encoder losses with the UVM byte operation and releases the provider', async () => {
@@ -12,13 +13,16 @@ it('reports native encoder losses with the UVM byte operation and releases the p
       expect(request.uvm).toEqual(Uint8Array.from(bytes))
       return { formatId: 'test-native', extension: 'native', bytes: Uint8Array.of(1, 2, 3), diagnostics: [diagnostic] }
     } }
-  const codec = createCodec({ contracts: { async resolve() { return { value: encoder, release: async () => { released++ } } } } })
-  const source = { kind: 'bytes', ref: { id: 'fixture', uri: 'memory:uvm-native-export' },
-    revision: 'provider-token:export', size: BigInt(bytes.length),
-    async read(offset: bigint, length: number) { return bytes.slice(Number(offset), Number(offset) + length) } }
-  const input = { originKind: 'single', primaryBindingId: 'content',
-    revisions: { topology: 'single', revision: source.revision },
+  const codec = createCodec({ contracts: { async resolve() { return { value: encoder, release: async () => { released++ } } } } } as unknown as ContributionContext)
+  const source: ArtifactByteSource = { kind: 'bytes', ref: { id: 'fixture', uri: 'memory:uvm-native-export' },
+    revision: revisionId('provider-token:export'), size: BigInt(bytes.length),
+    async read(offset: bigint, length: number) { return bytes.slice(Number(offset), Number(offset) + length) },
+    async *stream(range) { yield bytes.slice(Number(range?.offset ?? 0n), Number((range?.offset ?? 0n) + (range?.length ?? BigInt(bytes.length)))) } }
+  const input: SingleAssetInput = { originKind: 'single', primaryBindingId: 'content',
+    revisions: { topology: 'single', revision: source.revision,
+      bindings: [{ bindingId: 'content', revision: source.revision }], compositionFingerprint: 'fixture:uvm-native-export' },
     bindings: [{ bindingId: 'content', role: 'content', source: source.ref, sourceKind: 'candidate', ownership: 'owned', revision: source.revision }],
+    bindingsFor() { return [] },
     async openBinding() { return { value: source, release: async () => undefined } } }
   const session = await codec.open(input, 'full', { maxInputBytes: 16_777_216n, maxScalarBytes: 16_777_216,
     maxDepth: 96, maxNodes: 100000, maxDiagnostics: 10 })

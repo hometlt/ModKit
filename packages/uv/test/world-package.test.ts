@@ -505,10 +505,11 @@ describe('portable UVP map bundle', () => {
       async page(request: Parameters<typeof original.page>[0], signal?: AbortSignal) {
         const page = await original.page(request, signal)
         if (request.facet !== 'layers' || page.state !== 'available') return page
-        return { ...page, items: page.items.map(item => item.kind === 'water' ? {
-          ...item, waterMaterials: item.waterMaterials?.map(material => ({
+        return { ...page, items: page.items.map(item => item.facet === 'layers' && item.kind === 'water' ? {
+          ...item,
+          ...(item.waterMaterials === undefined ? {} : { waterMaterials: item.waterMaterials.map(material => ({
             ...material, materialId: `native:${material.materialId}`,
-          })),
+          })) }),
         } : item) }
       },
     }

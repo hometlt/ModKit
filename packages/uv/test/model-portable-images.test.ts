@@ -19,6 +19,13 @@ const source = () =>
     new Uint8Array(),
   )
 
+function viewRange(view: Record<string, number> | undefined): { offset: number; length: number } {
+  const offset = view?.byteOffset
+  const length = view?.byteLength
+  if (offset === undefined || length === undefined) throw new Error('missing image buffer view range')
+  return { offset, length }
+}
+
 describe('portable UVM image closure', () => {
   it('embeds exact PNG bytes in GLB without external image URI', () => {
     const result = embedPortableUvmImages(source(), [
@@ -32,10 +39,10 @@ describe('portable UVM image closure', () => {
     if (result.state !== 'portable') return
     const output = readUvmContainer(result.bytes)
     const image = (output.document['images'] as Record<string, unknown>[])[0]!
-    const view = (output.document['bufferViews'] as Record<string, number>[])[0]!
+    const { offset, length } = viewRange((output.document['bufferViews'] as Record<string, number>[])[0])
     expect(output.format).toBe('glb')
     expect(image).toEqual({ bufferView: 0, mimeType: 'image/png' })
-    expect([...output.binary.slice(view.byteOffset, view.byteOffset + view.byteLength)]).toEqual([
+    expect([...output.binary.slice(offset, offset + length)]).toEqual([
       ...png,
     ])
     expect((output.document['buffers'] as { byteLength: number }[])[0]!.byteLength).toBe(
@@ -92,8 +99,8 @@ describe('portable UVM image closure', () => {
     expect(result.state).toBe('portable')
     if (result.state !== 'portable') return
     const output = readUvmContainer(result.bytes)
-    const view = (output.document['bufferViews'] as Record<string, number>[])[0]!
-    expect([...output.binary.slice(view.byteOffset, view.byteOffset + view.byteLength)]).toEqual([
+    const { offset, length } = viewRange((output.document['bufferViews'] as Record<string, number>[])[0])
+    expect([...output.binary.slice(offset, offset + length)]).toEqual([
       ...ktx2,
     ])
   })
@@ -115,11 +122,12 @@ describe('portable UVM image closure', () => {
     if (result.state !== 'portable') return
     const output = readUvmContainer(result.bytes)
     const views = output.document['bufferViews'] as Record<string, number>[]
+    const { offset, length } = viewRange(views[1])
     expect(views[0]).toEqual({ buffer: 0, byteOffset: 0, byteLength: 4 })
-    expect(views[1]!.byteOffset % 4).toBe(0)
+    expect(offset % 4).toBe(0)
     expect([...output.binary.slice(0, 4)]).toEqual([1, 2, 3, 4])
     expect([
-      ...output.binary.slice(views[1]!.byteOffset, views[1]!.byteOffset + views[1]!.byteLength),
+      ...output.binary.slice(offset, offset + length),
     ]).toEqual([...png])
   })
 
