@@ -49,3 +49,13 @@ it('accepts every finite float32 and refuses NaN and the infinities, at any offs
     )
   }
 })
+
+it('publishes MODEL facing for both uniform and instance vertex stages', async () => {
+  const { sceneMaterialVertexSource } = await import('../src/render/material-geometry.js')
+  for (const instances of [false, true]) {
+    const source = sceneMaterialVertexSource({ uvSetCount: 1 }, false, false, instances)
+    assert.match(source, /flat out float v_sceneModelOrientation;/u)
+    assert.match(source, new RegExp('v_sceneModelOrientation=sceneOrientationOf\\(mat3\\(' + (instances ? 'model' : 'u_model') + '\\)\\);', 'u'))
+    assert.equal((source.match(/float sceneOrientationOf\(/gu) ?? []).length, 1)
+  }
+})

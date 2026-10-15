@@ -723,7 +723,6 @@ export function prepareMaterialGeometry(
 const PLACEMENT_DECLARATIONS = `uniform mat4 u_view, u_worldToMaterial;
 in vec4 a_instanceMatrix0, a_instanceMatrix1, a_instanceMatrix2, a_instanceMatrix3;
 mat3 sceneCofactor(mat3 m){return mat3(cross(m[1],m[2]),cross(m[2],m[0]),cross(m[0],m[1]));}
-float sceneOrientationOf(mat3 m){return dot(m[0],cross(m[1],m[2]))<0.0?-1.0:1.0;}
 `
 
 function placementLocals(worldGeometry: boolean): string {
@@ -810,11 +809,15 @@ ${defines.usesVertexAlpha || defines.usesVertexColor ? 'in vec4 a_color; out vec
 out vec3 v_normal, v_lightDir, v_halfVec, v_viewDir, v_viewPosition, v_viewNormal;
 out vec3 v_modelPosition, v_modelNormal, v_worldPosition, v_worldNormal;
 out vec3 v_sceneWorldPosition;
+flat out float v_sceneModelOrientation;
 ${worldGeometry ? 'out vec3 v_sceneWorldNormal, v_sceneWorldTangent, v_sceneWorldBitangent;\n' : ''}out vec4 v_clipPosition;
 vec3 unit(vec3 v,vec3 fallback){float len=length(v);return len>1e-9?v/len:fallback;}
+float sceneOrientationOf(mat3 m){return dot(m[0],cross(m[1],m[2]))<0.0?-1.0:1.0;}
 ${placementAttributes ? PLACEMENT_DECLARATIONS : ''}void main(){${placementAttributes ? placementLocals(worldGeometry) : ''}${skinned ? SKIN_LOCALS : ''}
   vec4 world=${name.model}*vec4(${position},1.0);
   v_sceneWorldPosition=world.xyz;
+  // Logical authored facing is independent of the view and material coordinate frames.
+  v_sceneModelOrientation=sceneOrientationOf(mat3(${name.model}));
   vec3 view=(${name.modelView}*vec4(${position},1.0)).xyz;
   vec3 n=unit(${name.viewNormal}*${normal},vec3(0.0,0.0,1.0));
   vec3 rawT=mat3(${name.modelView})*${tangent}.xyz;

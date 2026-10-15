@@ -34,7 +34,7 @@ function context({ uniforms = false } = {}) {
   const calls = new Map(),
     live = { vao: new Set(), buffer: new Set(), program: new Set() },
     uniformCalls = []
-  let vao, arrayBuffer, depthMask, colorMask, blendFunction
+  let vao, arrayBuffer, depthMask, colorMask, blendFunction, frontFace
   const constants = new Map(),
     enabled = new Set(),
     submissions = []
@@ -65,6 +65,7 @@ function context({ uniforms = false } = {}) {
     ZERO: 0,
     BACK: 1029,
     CCW: 2305,
+    CW: 2304,
     LEQUAL: 515,
     FUNC_ADD: 32774,
     VERTEX_SHADER: 35633,
@@ -127,7 +128,7 @@ function context({ uniforms = false } = {}) {
     },
     depthFunc: noop,
     cullFace: noop,
-    frontFace: noop,
+    frontFace: value => { frontFace = value },
     blendEquation: noop,
     polygonOffset: noop,
     bindSampler: noop,
@@ -151,6 +152,7 @@ function context({ uniforms = false } = {}) {
       depthMask,
       colorMask,
       blendFunction,
+      frontFace,
       enabled: new Set(enabled),
     })
   }
@@ -398,4 +400,21 @@ it('draws a kept draw with the uniform values of the program it stands for', () 
   drawKept(undefined)
   assert.deepEqual(valuesOf('u_alpha'), [0.75, 0.5, 0.25])
   assert.equal(renderer.programCompilations(), 1)
+})
+
+it('resets front-facing state for two-sided draws after mirrored culling and restores CCW', () => {
+  const { gl, submissions } = context()
+  const renderer = materialWebGlDraws(gl, new Map(), { checkEachDraw: false })
+  const mirrored = identity.slice()
+  mirrored[0] = -1
+  const culled = draw({ ...primitive(), transform: mirrored })
+  const twoSided = draw(primitive(), { ...source, twoSided: true })
+  renderer.drawSequence([{ draw: culled }, { draw: twoSided }, { draw: culled }], camera)
+  assert.deepEqual(submissions.map(s => s.frontFace), [gl.CW, gl.CCW, gl.CW])
+  assert.deepEqual(submissions.map(s => s.enabled.has(gl.CULL_FACE)), [true, false, true])
+  // Restore applies to the shared context even if the final draw was mirrored and culled.
+  renderer.draw(twoSided, camera)
+  assert.equal(submissions.at(-1).frontFace, gl.CCW)
+  assert.equal(submissions.at(-1).enabled.has(gl.CULL_FACE), false)
+  renderer.release()
 })

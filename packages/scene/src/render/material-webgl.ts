@@ -818,13 +818,15 @@ export function materialWebGlDraws(
     }
     const cull = !source.twoSided
     // glTF: a node whose world matrix mirrors (negative determinant) has clockwise front faces
-    const front = mirrored ? gl.CW : gl.CCW
-    if (state.cull !== cull || (cull && state.frontFace !== front)) {
+    const front = cull && mirrored ? gl.CW : gl.CCW
+    if (state.frontFace !== front) {
+      gl.frontFace(front)
+      state.frontFace = front
+    }
+    if (state.cull !== cull) {
       if (cull) {
         gl.enable(gl.CULL_FACE)
         gl.cullFace(gl.BACK)
-        gl.frontFace(front)
-        state.frontFace = front
       } else gl.disable(gl.CULL_FACE)
       state.cull = cull
     }
@@ -893,6 +895,7 @@ export function materialWebGlDraws(
     gl.colorMask(true, true, true, true)
     if (state.depthFunction === gl.ALWAYS) gl.depthFunc(gl.LEQUAL)
     gl.disable(gl.CULL_FACE)
+    if (state.frontFace !== gl.CCW) gl.frontFace(gl.CCW)
   }
   const bindTextureUnits = (lease: WebGlMaterialProgram, state: SequenceState) => {
     // Only what changes is set: a unit keeps its texture and its sampler apart (materials mostly
@@ -1356,8 +1359,8 @@ function buildLeaseShaderSources(
     if (main >= 0) {
       const body = fragment
         .slice(main)
-        .replace(/vec3 normal\s*=\s*/u, match => `${match}(gl_FrontFacing ? 1.0 : -1.0) * `)
-      fragment = fragment.slice(0, main) + body
+        .replace(/vec3 normal\s*=\s*/u, match => `${match}((gl_FrontFacing == (v_sceneModelOrientation > 0.0)) ? 1.0 : -1.0) * `)
+      fragment = fragment.slice(0, main) + 'flat in float v_sceneModelOrientation;\n' + body
     }
   }
   const worldShading = source.normalBlendPolicy !== undefined || source.normalMapSpace === 'object'
