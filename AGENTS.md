@@ -18,6 +18,18 @@
 
 ## Проверки
 
+Зависимости, названные содержимым карты, планирует прежний `common.map/resolved-workspace`.
+Его optional `expandPlan` получает прочитанные документы и возвращает append-only план.
+Один Host `readWindow` и один `readResourceBytes` выполняют все раунды через тот же
+ResourceSession: прежние requirements/order/scope, analyzer и window неизменны, лимиты
+документов/байтов/диагностик суммарные, каждое непустое расширение расходует maxRequirements.
+Новый dependency участвует в прежнем snapshot fingerprint и освобождении leases. Signal,
+path confinement и validation используют прежних владельцев. Даже in-process provider получает
+отдельные data snapshots через native structuredClone; его правки не меняют прочитанные
+bytes/identity. Surface объявляет метод optional для старых providers; отдельный decoder,
+private filesystem resolver или параллельный цикл загрузки в игре не создавать. Worker и
+product acceptance не следует объявлять по linked in-process source qualification.
+
 Игровые числовые поля UVW `game-raster` и SDK facet `game-raster` используют существующие
 UV reader/reconstruction/UVP и общий native grid admission Host. Native map.layers остаётся
 единственным владельцем декодирования и записи значений. Publisher обязан объявить

@@ -630,6 +630,13 @@ export interface ResolvedMapWorkspacePlanRequest {
   readonly signal?: AbortSignal
 }
 
+/** Additive dependency discovery after prior reads; all reads remain with the Host ResourceSession. */
+export interface ResolvedMapWorkspacePlanExpansionRequest extends ResolvedMapWorkspacePlanRequest {
+  readonly plan: ResolvedMapWorkspacePlan
+  readonly documents: readonly MapSemanticDocument[]
+  readonly unresolvedRequirementIds: readonly string[]
+}
+
 export interface ResolvedMapWorkspacePlan {
   readonly schemaVersion: 1
   readonly workspaceId: string
@@ -2543,6 +2550,11 @@ export interface ResolvedMapWorkspaceAnalysis {
   readonly analyzerId: string
   readonly gameIds: readonly string[]
   plan(request: ResolvedMapWorkspacePlanRequest): Promise<ResolvedMapWorkspacePlan>
+  /** Append dependencies named by loaded documents. Return the unchanged requirement list to stop.
+   * Prior requirements/order, map identity and window are immutable. maxRequirements and byte
+   * budgets cover the whole expansion, not each round. Legacy providers omit this method.
+   */
+  expandPlan?(request: ResolvedMapWorkspacePlanExpansionRequest): Promise<ResolvedMapWorkspacePlan>
   analyze(request: ResolvedMapWorkspaceAnalysisRequest): Promise<ResolvedMapWorkspaceSnapshot>
 }
 

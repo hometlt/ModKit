@@ -297,6 +297,11 @@ export const RESOLVED_MAP_WORKSPACE_CONTRACT_DEFINITION: ServiceContractDefiniti
           signal: Object.freeze({ arg: 0, key: 'signal' }),
           limits: Object.freeze({ maxBytes: 4_194_304, maxStringLength: 1_048_576 }),
         }),
+        expandPlan: Object.freeze({
+          kind: 'value', optional: true,
+          signal: Object.freeze({ arg: 0, key: 'signal' }),
+          limits: Object.freeze({ maxBytes: 33_554_432, maxStringLength: 4_194_304 }),
+        }),
         analyze: Object.freeze({
           kind: 'value',
           signal: Object.freeze({ arg: 0, key: 'signal' }),
@@ -540,6 +545,7 @@ function isResolvedMapWorkspace(value: unknown): value is ResolvedMapWorkspaceAn
     nonEmptyString(record['analyzerId']) &&
     stringList(record['gameIds']) !== undefined &&
     typeof record['plan'] === 'function' &&
+    (record['expandPlan'] === undefined || typeof record['expandPlan'] === 'function') &&
     typeof record['analyze'] === 'function'
   )
 }
@@ -1124,18 +1130,23 @@ export async function analyzeResolvedMapWorkspace(
       signal?: AbortSignal,
       holds?: MapWorldWindow,
     ) => {
-      const plan = await resolution.workspace.plan({
+      let plan = structuredClone(await resolution.workspace.plan({
         workspace: request.workspace,
         maxRequirements: limits.maxRequirements,
         ...(window === undefined ? {} : { window }),
         ...(signal === undefined ? {} : { signal }),
-      })
+      }))
       validateWorkspacePlan(plan, request.workspace, limits.maxRequirements)
-      const found = plan.diagnostics.map(item =>
+      const found = plan.diagnostics.slice(0, limits.maxDiagnostics + 1).map(item =>
         diagnostic(item.severity, item.code, item.message, undefined, {
           analyzerId: plan.analyzerId,
         }),
       )
+      // Retain one overflow item for the existing truncation marker, across all read rounds.
+      const retainFinding = (item: Diagnostic) => {
+        if (found.length <= limits.maxDiagnostics && !found.some(prior =>
+          prior.code === item.code && prior.severity === item.severity && prior.message === item.message)) found.push(item)
+      }
       if (
         !plan.complete ||
         (holds !== undefined && plan.window !== undefined && windowCovers(holds, plan.window))
@@ -1147,34 +1158,68 @@ export async function analyzeResolvedMapWorkspace(
       const readDigests = new Map<string, string>()
       const unresolvedRequirementIds: string[] = []
       let totalBytes = 0
-      for (const requirement of plan.requirements) {
-        signal?.throwIfAborted()
-        const loaded = await readResourceBytes(
-          request.resources,
-          requirement,
-          limits.maxDocumentBytes,
-          limits.maxTotalBytes - totalBytes,
-          signal,
-        )
-        totalBytes += loaded.consumedBytes
-        if (loaded.state === 'unresolved') {
-          found.push(loaded.diagnostic)
-          unresolvedRequirementIds.push(requirement.requirementId)
-          continue
-        }
-        if (totalBytes > limits.maxTotalBytes) {
-          throw new TypeError(
-            `workspace map documents exceed maxTotalBytes ${limits.maxTotalBytes}`,
+      let readCount = 0
+      // Every nonterminal expansion adds a requirement, so maxRequirements also bounds rounds.
+      for (;;) {
+        for (const requirement of plan.requirements.slice(readCount)) {
+          signal?.throwIfAborted()
+          const loaded = await readResourceBytes(
+            request.resources,
+            requirement,
+            limits.maxDocumentBytes,
+            limits.maxTotalBytes - totalBytes,
+            signal,
+          )
+          totalBytes += loaded.consumedBytes
+          if (loaded.state === 'unresolved') {
+            retainFinding(loaded.diagnostic)
+            unresolvedRequirementIds.push(requirement.requirementId)
+            continue
+          }
+          if (totalBytes > limits.maxTotalBytes) {
+            throw new TypeError(
+              `workspace map documents exceed maxTotalBytes ${limits.maxTotalBytes}`,
+            )
+          }
+          documents.push(loaded.document)
+          readDigests.set(
+            requirement.path.slice(requirement.path.lastIndexOf('/') + 1).toLowerCase(),
+            loaded.contentFingerprint,
+          )
+          revisions.push(
+            `${requirement.requirementId}:${requirement.path}@${String(loaded.revision)}#${loaded.contentFingerprint}`,
           )
         }
-        documents.push(loaded.document)
-        readDigests.set(
-          requirement.path.slice(requirement.path.lastIndexOf('/') + 1).toLowerCase(),
-          loaded.contentFingerprint,
-        )
-        revisions.push(
-          `${requirement.requirementId}:${requirement.path}@${String(loaded.revision)}#${loaded.contentFingerprint}`,
-        )
+        readCount = plan.requirements.length
+        signal?.throwIfAborted()
+        if (request.resources.state() !== 'live') throw new Error('resource session was disposed during map planning')
+        if (resolution.workspace.expandPlan === undefined) break
+        // In-process providers share a realm: readonly types alone do not preserve read identity.
+        const input = structuredClone({ workspace: request.workspace, plan, documents, unresolvedRequirementIds })
+        const expanded = structuredClone(await resolution.workspace.expandPlan({
+          ...input, maxRequirements: limits.maxRequirements,
+          ...(window === undefined ? {} : { window: { ...window } }), ...(signal === undefined ? {} : { signal }),
+        }))
+        signal?.throwIfAborted()
+        validateWorkspacePlan(expanded, request.workspace, limits.maxRequirements)
+        if (expanded.analyzerId !== plan.analyzerId ||
+          (expanded.window === undefined) !== (plan.window === undefined) ||
+          (expanded.window !== undefined && plan.window !== undefined &&
+            !(windowCovers(expanded.window, plan.window) && windowCovers(plan.window, expanded.window))) ||
+          expanded.requirements.length < readCount ||
+          plan.requirements.some((prior, index) => {
+            const next = expanded.requirements[index]!
+            return prior.requirementId !== next.requirementId || prior.path !== next.path || prior.kind !== next.kind ||
+              prior.required !== next.required || (prior.scope ?? 'map-root') !== (next.scope ?? 'map-root')
+          })) throw new TypeError('workspace map expansion must preserve prior reads, analyzer and window')
+        for (const item of expanded.diagnostics) {
+          if (found.length > limits.maxDiagnostics) break
+          retainFinding(diagnostic(item.severity, item.code, item.message, undefined, { analyzerId: expanded.analyzerId }))
+        }
+        const stable = expanded.requirements.length === readCount
+        plan = expanded
+        if (!plan.complete) return { complete: false as const, diagnostics: found }
+        if (stable) break
       }
       if (request.resources.state() !== 'live') {
         throw new Error('resource session was disposed while workspace map documents were loading')
