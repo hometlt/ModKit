@@ -6,6 +6,10 @@ import { validateAnimationPointers } from './animation.js'
 import { validateUvmAnimationClips } from '../animation-clips.js'
 import { validateGameMaterialMetadata, validateTeamColorMetadata } from './materials.js'
 import { validateTextureColorKeys } from './textures.js'
+import { validateUvmSceneCamera } from './cameras.js'
+
+export { validateUvmSceneCamera } from './cameras.js'
+export { readUvmEffectAnimation } from './effect-tracks.js'
 
 export {
   readUvmTextureAlpha,
@@ -64,4 +68,6 @@ export function validateUvmDocument(
   validateEffectsMetadata(document, used, signal)
   validateAnimationPointers(document, used, signal)
   validateUvmAnimationClips(document, signal)
+  for (const camera of array(document, 'cameras'))
+    validateUvmSceneCamera(camera, used, undefined, signal)
 }

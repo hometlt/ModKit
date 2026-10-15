@@ -8,6 +8,7 @@ import {
 } from 'three'
 import type { JsonObject, SceneRendererCamera } from '@modkit/sdk'
 import { snapshotJson } from '@modkit/codec-kit/json-snapshot'
+import { validateUvmSceneCamera } from '@modkit/uv/model/validation'
 import { array, field, object, safeIndex } from './values.js'
 import { sampleUvmSceneProperties } from './scene-properties.js'
 import { snapshotEyePosition } from '../materials/environment.js'
@@ -227,6 +228,7 @@ export function resolveUvmCamera(
     snapshotJson(cameras[cameraIndex], snapshotBudget, options.signal),
     'camera',
   )
+  validateUvmSceneCamera(camera, array(document, 'extensionsUsed'), options.maxNodes, options.signal)
   const world = affine(options.nodeTransforms.get(id))
   const position = new Vector3(),
     rotation = new Quaternion(),
@@ -248,12 +250,6 @@ export function resolveUvmCamera(
     let perspective = object(camera['perspective'], 'perspective camera')
     const animation = field(field(camera['extensions'], 'UV_scene_camera'), 'sequenceAnimation')
     if (animation !== undefined) {
-      const extension = object(field(camera['extensions'], 'UV_scene_camera'), 'scene camera')
-      if (
-        extension['version'] !== 1 ||
-        Object.keys(extension).some(key => !['version', 'sequenceAnimation'].includes(key))
-      )
-        throw new TypeError('invalid UV_scene_camera')
       const sampled = sampleUvmSceneProperties(
         animation,
         {

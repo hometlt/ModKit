@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { readUvmContainer } from '../src/model/container.js'
+import type { JsonObject } from '@modkit/sdk'
+import { validateUvmDocument } from '../src/model/validation/index.js'
+import { readUvmContainer, writeUvmContainer } from '../src/model/container.js'
 import { removeUvmFrameWrappers, uvmSceneFrameMatrix } from '../src/model/frame.js'
 import { materializeUvmCore } from '../src/model/materializer.js'
 
@@ -398,5 +400,103 @@ describe('lights, effects and cameras in the source frame', () => {
         request(),
       ),
     ).toThrow(/reflected/)
+  })
+})
+
+
+describe('portable camera v1 document admission', () => {
+  const track = (extra: JsonObject = {}): JsonObject => ({
+    sequenceIndex: 7,
+    track: { lineType: 1, globalSeqId: null, keys: [
+      { frame: 0, vector: [0.5] }, { frame: 1, vector: [1] },
+    ] },
+    ...extra,
+  })
+  const cameraOf = (document: JsonObject): JsonObject => {
+    const cameras = document['cameras']
+    if (!Array.isArray(cameras)) throw new TypeError('fixture cameras missing')
+    const camera = cameras[0]
+    if (camera === null || typeof camera !== 'object' || Array.isArray(camera))
+      throw new TypeError('fixture camera missing')
+    return camera as JsonObject
+  }
+  const fixture = () => {
+    const written = materializeUvmCore(projection({ cameras: [{
+      nodeId: 'tip',
+      camera: { type: 'perspective', perspective: { yfov: 1, znear: 0.1, zfar: 10 } },
+      sequenceAnimation: { yfov: [track()] },
+    }] }), request())
+    return { written, opened: readUvmContainer(written.bytes) }
+  }
+  const extension = (document: JsonObject, value: JsonObject | null): JsonObject => ({
+    ...document, cameras: [{ ...cameraOf(document), extensions: { UV_scene_camera: value } }],
+  })
+  it('validates actual materializer bytes and reopens local, concurrent and numeric-id lens tracks unchanged', () => {
+    const { written, opened } = fixture(), original = written.bytes.slice()
+    for (const extra of [{}, { concurrent: true, wrapSeconds: 2 }, {
+      track: { lineType: 1, globalSeqId: 4, keys: [{ frame: 0, vector: [0.7] }] },
+    }, { track: { lineType: 2, globalSeqId: null, keys: [
+      { frame: 0, vector: [1], outTan: [20] }, { frame: 1, vector: [1], inTan: [-20] },
+    ] } }]) {
+      const document = extension(opened.document, { version: 1, sequenceAnimation: { yfov: [track(extra)] } })
+      const before = structuredClone(document)
+      const bytes = writeUvmContainer({ ...opened, document }), reopened = readUvmContainer(bytes)
+      expect(() => validateUvmDocument(reopened.document, { binaryByteLength: reopened.binary.byteLength })).not.toThrow()
+      expect(reopened.document).toEqual(document)
+      expect(document).toEqual(before)
+      expect(writeUvmContainer(reopened)).toEqual(bytes)
+    }
+    expect(written.bytes).toEqual(original)
+    expect(() => validateUvmDocument(extension(opened.document, { version: 1, sequenceAnimation: {} }))).not.toThrow()
+    const { extensions: _extensions, ...legacyCamera } = cameraOf(opened.document)
+    expect(() => validateUvmDocument({ ...opened.document, cameras: [legacyCamera] })).not.toThrow()
+  })
+  const invalid: readonly [string, JsonObject | null][] = [
+    ['unknown version without tracks', { version: 2 }],
+    ['unknown version with tracks', { version: 2, sequenceAnimation: {} }],
+    ['required animation absent', { version: 1 }],
+    ['null extension', null],
+    ['unknown extension field', { version: 1, sequenceAnimation: {}, unknownProbe: true }],
+    ['null animation', { version: 1, sequenceAnimation: null }],
+    ['unknown lens property', { version: 1, sequenceAnimation: { xmag: [] } }],
+    ['absent far-plane default', { version: 1, sequenceAnimation: { zfar: [track()] } }],
+    ['vector width', { version: 1, sequenceAnimation: { yfov: [track({ track: {
+      lineType: 1, globalSeqId: null, keys: [{ frame: 0, vector: [0.5, 1] }],
+    } })] } }],
+    ['missing explicit global id', { version: 1, sequenceAnimation: { yfov: [track({ track: {
+      lineType: 1, keys: [{ frame: 0, vector: [0.5] }],
+    } })] } }],
+    ['zero key angle', { version: 1, sequenceAnimation: { yfov: [track({ track: {
+      lineType: 1, globalSeqId: null, keys: [{ frame: 0, vector: [0] }],
+    } })] } }],
+    ['pi key angle', { version: 1, sequenceAnimation: { yfov: [track({ track: {
+      lineType: 1, globalSeqId: null, keys: [{ frame: 0, vector: [Math.PI] }],
+    } })] } }],
+  ]
+  for (const [label, value] of invalid) it(`refuses ${label} after GLB reopen`, () => {
+    const { opened, written } = fixture(), original = written.bytes.slice()
+    let document = extension(opened.document, value)
+    if (label === 'absent far-plane default') document = {
+      ...document, cameras: [{ ...cameraOf(document), perspective: { yfov: 1, znear: 0.1 } }],
+    }
+    const before = structuredClone(document), bytes = writeUvmContainer({ ...opened, document })
+    const reopened = readUvmContainer(bytes)
+    expect(() => validateUvmDocument(reopened.document, { binaryByteLength: reopened.binary.byteLength })).toThrow()
+    expect(document).toEqual(before)
+    expect(written.bytes).toEqual(original)
+  })
+  it('checks undeclared, nonselected and orthographic camera extensions and static lens domains', () => {
+    const { opened } = fixture(), camera = cameraOf(opened.document)
+    const bad = { ...camera, extensions: { UV_scene_camera: { version: 2 } } }
+    for (const document of [
+      { ...opened.document, extensionsUsed: ['UV_asset', 'UV_provenance'] },
+      { ...opened.document, cameras: [camera, bad] },
+      { ...opened.document, cameras: [{ ...camera, type: 'orthographic' }] },
+      ...[{ yfov: 0, znear: 1, zfar: 10 }, { yfov: Math.PI, znear: 1, zfar: 10 },
+        { yfov: 1, znear: 0, zfar: 10 }, { yfov: 1, znear: 10, zfar: 10 },
+        { yfov: 1, znear: 1, zfar: 1e100 }].map(perspective => ({
+          ...opened.document, cameras: [{ ...camera, perspective }],
+        })),
+    ]) expect(() => validateUvmDocument(document)).toThrow()
   })
 })

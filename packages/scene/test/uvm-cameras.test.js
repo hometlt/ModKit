@@ -54,6 +54,7 @@ it('samples portable camera projection tracks from the selected sequence clock',
     },
   }]
   const animated = structuredClone(doc)
+  animated.extensionsUsed = ['UV_scene_camera']
   animated.cameras[0].extensions = {
     UV_scene_camera: {
       version: 1,
@@ -227,6 +228,7 @@ it('camera properties keep ordinary local time and independently wrap concurrent
     },
   ]
   const animated = structuredClone(doc)
+  animated.extensionsUsed = ['UV_scene_camera']
   animated.cameras[0].extensions = {
     UV_scene_camera: {
       version: 1,
@@ -255,4 +257,79 @@ it('camera properties keep ordinary local time and independently wrap concurrent
     close(choose({ globalTime }).viewProjection, expected(localGlobal).viewProjection)
   close(choose({}).viewProjection, expected(0.25).viewProjection)
   assert.throws(() => choose({ globalTime: -1 }), /global time/)
+})
+
+
+it('refuses every present malformed camera extension before choosing a projection branch', () => {
+  const invalid = [
+    { version: 2 }, { version: 2, sequenceAnimation: {} }, { version: 1 }, null,
+    { version: 1, sequenceAnimation: {}, unknownProbe: true },
+    { version: 1, sequenceAnimation: null },
+    { version: 1, sequenceAnimation: { xmag: [] } },
+    { version: 1, sequenceAnimation: { yfov: [{ sequenceIndex: 0, track: {
+      lineType: 1, keys: [{ frame: 0, vector: [0.5] }],
+    } }] } },
+    { version: 1, sequenceAnimation: { yfov: [{ sequenceIndex: 0, track: {
+      lineType: 1, globalSeqId: null, keys: [{ frame: 0, vector: [0.5, 1] }],
+    } }] } },
+  ]
+  for (const extension of invalid) {
+    const document = structuredClone(doc)
+    document.extensionsUsed = ['UV_scene_camera']
+    document.cameras[0].extensions = { UV_scene_camera: extension }
+    const before = structuredClone(document)
+    assert.throws(() => resolveUvmCamera(document, { node: 0 }, options), TypeError)
+    assert.deepEqual(document, before)
+  }
+  const orthographic = { ...doc, extensionsUsed: ['UV_scene_camera'], cameras: [{
+    type: 'orthographic', orthographic: { xmag: 2, ymag: 2, znear: 0, zfar: 8 },
+    extensions: { UV_scene_camera: { version: 1, sequenceAnimation: {} } },
+  }] }
+  assert.throws(() => resolveUvmCamera(orthographic, { node: 0 }, options), /lens type/)
+  const undeclared = structuredClone(doc)
+  undeclared.cameras[0].extensions = { UV_scene_camera: { version: 1, sequenceAnimation: {} } }
+  assert.throws(() => resolveUvmCamera(undeclared, { node: 0 }, options), /extensionsUsed/)
+})
+it('preserves declared static/legacy, explicit concurrent clocks and numeric global ids without resolving native ids', () => {
+  const camera = structuredClone(doc)
+  camera.extensionsUsed = ['UV_scene_camera']
+  camera.cameras[0].extensions = { UV_scene_camera: { version: 1, sequenceAnimation: {} } }
+  close(resolveUvmCamera(camera, { node: 0 }, options).viewProjection,
+    resolveUvmCamera(doc, { node: 0 }, options).viewProjection)
+  camera.cameras[0].extensions.UV_scene_camera.sequenceAnimation.yfov = [{
+    sequenceIndex: 7, concurrent: true, wrapSeconds: 1,
+    track: { lineType: 1, globalSeqId: 4, keys: [
+      { frame: 0, vector: [Math.PI / 3] }, { frame: 1, vector: [Math.PI / 2] },
+    ] },
+  }]
+  const sample = (time, globalTime, sequenceIndex) => resolveUvmCamera(camera, { node: 0 }, {
+    ...options, time, globalTime, sequenceIndex,
+  }).viewProjection
+  close(sample(0, 0.5, 7), sample(50, 1.5, 7))
+  close(sample(0, 0.5, undefined), resolveUvmCamera(doc, { node: 0 }, options).viewProjection)
+  const bytes = JSON.stringify(camera)
+  assert.throws(() => resolveUvmCamera(camera, { node: 0 }, { ...options, maxNodes: 1 }), /maxNodes/)
+  assert.equal(JSON.stringify(camera), bytes)
+})
+
+it('refuses sampled cubic lens overshoot and crossing clip planes without rejecting valid control keys', () => {
+  const camera = structuredClone(doc)
+  camera.extensionsUsed = ['UV_scene_camera']
+  const entry = (lineType, keys) => [{ sequenceIndex: 7, track: { lineType, globalSeqId: null, keys } }]
+  for (const [lineType, outgoing, incoming] of [[2, 20, -20], [3, 10, 10]]) {
+    camera.cameras[0].extensions = { UV_scene_camera: { version: 1, sequenceAnimation: {
+      yfov: entry(lineType, [
+        { frame: 0, vector: [1], outTan: [outgoing] },
+        { frame: 1, vector: [1], inTan: [incoming] },
+      ]),
+    } } }
+    assert.doesNotThrow(() => resolveUvmCamera(camera, { node: 0 }, { ...options, time: 0, sequenceIndex: 7 }))
+    assert.throws(() => resolveUvmCamera(camera, { node: 0 }, { ...options, time: 0.5, sequenceIndex: 7 }), /yfov/)
+  }
+  camera.cameras[0].extensions = { UV_scene_camera: { version: 1, sequenceAnimation: {
+    znear: entry(1, [{ frame: 0, vector: [2] }, { frame: 1, vector: [10] }]),
+    zfar: entry(1, [{ frame: 0, vector: [9] }, { frame: 1, vector: [1] }]),
+  } } }
+  assert.doesNotThrow(() => resolveUvmCamera(camera, { node: 0 }, { ...options, time: 0, sequenceIndex: 7 }))
+  assert.throws(() => resolveUvmCamera(camera, { node: 0 }, { ...options, time: 0.5, sequenceIndex: 7 }), /zfar/)
 })
