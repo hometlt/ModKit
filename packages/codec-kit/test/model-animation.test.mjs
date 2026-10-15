@@ -269,7 +269,7 @@ test('cubic rotation preserves zero and nonunit boundary samples and raw tangent
     })),
   })
   const sampler = createModelAnimationSampler(clip([rotation]))
-  assert.deepEqual(sampler.sample(0.5)[0].value, [0, 0, 0, 0])
+  assert.throws(() => sampler.sample(0.5), { name: 'RangeError', message: 'cubic quaternion sample has zero or non-finite length' })
   assert.deepEqual(sampler.sample(-1)[0].value, values[0])
   assert.deepEqual(sampler.sample(1)[0].value, values[1])
   const single = { ...rotation, samples: rotation.samples.slice(0, 1) }
@@ -452,4 +452,59 @@ test('global time validates even empty clips, with owned output and cancellation
     })
     assert.deepEqual(sampler.sample(0.25, undefined, 0), sampler.sample(0))
   }
+})
+
+import { sampleTrackValue, CUBIC_SPLINE_LINE_TYPE } from '../dist/model-math/sequence-pose.js'
+import { createModelPoseSampler } from '../dist/model/skeleton.js'
+const invalidCubicMessage = 'cubic quaternion sample has zero or non-finite length'
+const invalidCubic = { name: 'RangeError', message: invalidCubicMessage }
+const oppositeRotation = (other = [0, 0, 0, -1]) => channel('rotation', 'cubic-spline', [[0, 0, 0, 1], other], {
+  samples: [[0, 0, 0, 1], other].map((value, frame) => ({ frame, timeSeconds: frame, value, inTangent: [0, 0, 0, 0], outTangent: [0, 0, 0, 0] })),
+})
+test('zero CUBIC quaternion interior refuses direct and public samples without endpoint sign changes', () => {
+  const authored = clip([oppositeRotation()]), before = structuredClone(authored)
+  const sampler = createModelAnimationSampler(authored)
+  const track = { lineType: CUBIC_SPLINE_LINE_TYPE, keys: authored.channels[0].samples.map(sample => ({ frame: sample.timeSeconds, vector: sample.value, inTan: sample.inTangent, outTan: sample.outTangent })) }
+  assert.throws(() => sampleTrackValue(track, .5, [], { isQuat: true }), invalidCubic)
+  assert.throws(() => sampler.sample(.5), invalidCubic)
+  assert.deepEqual(sampler.sample(0)[0].value, [0, 0, 0, 1])
+  assert.deepEqual(sampler.sample(1)[0].value, [0, 0, 0, -1])
+  assert.deepEqual(authored, before)
+})
+test('finite CUBIC inputs whose arithmetic overflows refuse as a quaternion only', () => {
+  const track = { lineType: CUBIC_SPLINE_LINE_TYPE, keys: [
+    { frame: 0, vector: [0, 0, 0, 1], outTan: [Number.MAX_VALUE, 0, 0, 0] },
+    { frame: 16, vector: [0, 0, 0, 1], inTan: [-Number.MAX_VALUE, 0, 0, 0] },
+  ] }
+  assert.throws(() => sampleTrackValue(track, 8, [], { isQuat: true }), invalidCubic)
+  assert.equal(sampleTrackValue(track, 8, [])[0], Infinity)
+})
+test('arbitrarily small nonzero signed CUBIC interior remains valid without an epsilon or sign flip', () => {
+  const sampler = createModelAnimationSampler(clip([oppositeRotation([1e-14, 0, 0, -1])]))
+  assert.deepEqual(sampler.sample(.5)[0].value, [1, 0, 0, 0])
+  assert.deepEqual(sampler.sample(1)[0].value, [1e-14, 0, 0, -1])
+})
+test('sampleInto refuses after earlier translation and recovers on the next valid sample', () => {
+  const sampler = createModelAnimationSampler(clip([channel('translation', 'linear', [[0, 0, 0], [4, 0, 0]]), oppositeRotation()]))
+  const previous = sampler.sample(.25), snapshot = structuredClone(previous), scratch = []
+  assert.throws(() => sampler.sampleInto(.5, scratch), invalidCubic)
+  // Scratch is invalid after a throw; no transactional/immutable borrowed-buffer guarantee.
+  sampler.sampleInto(.25, scratch)
+  assert.deepEqual(scratch, [[1, 0, 0], [0, 0, 0, 1]])
+  assert.deepEqual(previous, snapshot)
+  assert.deepEqual(sampler.sample(.25), previous)
+  assert.throws(() => sampler.sample(.5, AbortSignal.abort()), { name: 'AbortError' })
+})
+test('public pose and matrix sampling refuse invalid rotation without publishing a partial composed frame', () => {
+  const bindings = [{ partId: 'part/0', nodeId: 'node-a', hierarchyId: 'rig', boneIndex: 0, parentBoneIndex: null, boneName: null, provenance: 'direct', localPose: { translation: [0, 0, 0], rotation: [0, 0, 0, 1], scale: [1, 1, 1] } }]
+  const source = clip([channel('translation', 'linear', [[0, 0, 0], [4, 0, 0]]), oppositeRotation()])
+  const sampler = createModelPoseSampler({ bindings, hierarchyId: 'rig', clip: source })
+  const previous = sampler.sample(.25), snapshot = structuredClone(previous)
+  let published = previous
+  assert.throws(() => { published = sampler.sample(.5) }, invalidCubic)
+  assert.equal(published, previous)
+  assert.throws(() => sampler.sampleMatrices(.5), invalidCubic)
+  assert.deepEqual(sampler.sample(.25), previous)
+  assert.equal(sampler.sampleMatrices(.25).matrices[12], 1)
+  assert.deepEqual(previous, snapshot)
 })

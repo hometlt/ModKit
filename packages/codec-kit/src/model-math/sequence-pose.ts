@@ -79,7 +79,9 @@ export function sampleTrackValue(
         h11 * span * (kb.inTan?.[i] ?? 0)
     if (options.isQuat && out.length === 4) {
       const len = Math.hypot(out[0]!, out[1]!, out[2]!, out[3]!)
-      if (len > 0) for (let i = 0; i < 4; i += 1) out[i]! /= len
+      if (len === 0 || !Number.isFinite(len))
+        throw new RangeError('cubic quaternion sample has zero or non-finite length')
+      for (let i = 0; i < 4; i += 1) out[i]! /= len
     }
     return out
   }
