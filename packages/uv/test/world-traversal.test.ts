@@ -60,7 +60,7 @@ it('refuses invalid directed topology, repeated classes, displaced grids, incomp
   mesh.spaces[0].topology = 'mesh'
   mesh.spaces[0].layers = [mesh.spaces[0].layers[1], { schemaVersion: 1, id: 'objects', kind: 'objects', instances: [] }]
   delete mesh.spaces[0].layers[0].surfaceLayerId
-  expect(() => validateUvwProfile(mesh)).toThrow('traversal requires heightfield')
+  expect(validateUvwProfile(mesh).spaces[0]!.layers.find(layer => layer.kind === 'traversal')).not.toHaveProperty('surfaceLayerId')
   const overBudget = await fixture()
   expect(() => validateUvwProfile(overBudget, { maxSamples: 25 })).toThrow('maxSamples')
 })

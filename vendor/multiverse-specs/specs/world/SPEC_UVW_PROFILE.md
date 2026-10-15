@@ -48,10 +48,12 @@ document is exactly a profile document with its body wrapped as that single spac
   and initial `lighting`. Every added family is independently versioned with `schemaVersion: 1`.
 - Mesh-space layers reuse the same objects, resources, regions, water, navigation, gateways and
   lighting bodies. At least one objects layer declares the model geometry (it may be empty).
-  Scalar heightfields, their terrain-material catalogs and cliffs are forbidden: no flat ground,
-  hidden terrain or block volume is fabricated. Bounds and basis remain explicitly authored.
+  Ground-role heightfields, terrain-material catalogs and cliff grids are forbidden: no flat
+  ground or block volume is fabricated. Explicit query-role heightfields are non-rendered
+  authored sampling data; see the role contract below. Bounds and basis remain explicitly authored.
   Object and resource identities, TRS, animation and media closure have exactly the existing rules.
-  Navigation describes only explicitly published static flags; no surface is inferred from a mesh.
+  Navigation describes explicitly published static flags; traversal may reference an authored
+  query surface. No surface or movement policy is inferred from a mesh.
   A native source declares `topology: mesh`; absence retains the heightfield contract. An unqualified
   coordinate frame still refuses export. The transform's existing sampling-grid metadata does not
   create a heightfield layer in a mesh space.
@@ -267,7 +269,7 @@ The legacy candidate envelope does not gain this profile-only field.
    not a terrain-derived resolution. Only a qualified, complete square canonical grid is admitted
    as exact; sampled, skewed or displaced data remains explicitly partial. Cell-centre sample
    positions are retained as such, never moved to the corners of the terrain grid.
-9. `traversal` is the portable, static movement graph for one `classId` inside one heightfield
+9. `traversal` is the portable, static movement graph for one `classId` inside one admitted
    space; another class uses another layer. `origin` is the lower `x/z` corner of cell `(0,0)`,
    so its extent is `columns × rows × cellSize` (unlike heightfield sample extent). `walkable`
    is a boolean cell grid. `exits` is a directed adjacency mask per cell:
@@ -479,3 +481,20 @@ polygons describe presentation, not classification inferred by the consumer.
 Absent playableArea is unknown; a present polygon has at least three vertices.
 Materialization and reopen MUST preserve the annotation, or explicitly refuse/report
 the unsupported annotation; it MUST NOT silently disappear on a round trip.
+
+### Heightfield roles and model-based traversal surfaces
+
+`heightfield.role` is `ground` or `query`; omission means `ground`. Ground requires at least
+2×2 samples and supplies rendered terrain. Query is the same scalar-grid representation and
+sampler, with at least 1×1 samples, and is never rendered as terrain. It cannot carry
+`cliffFaces` or `latticeOverview`. Its samples are absolute canonical y; origin.y remains a
+reference plane. Existing noData, bounds, budgets and exact-page rules apply.
+
+A heightfield space still requires ground. A mesh space still requires objects and forbids
+ground, terrain-material catalogs and cliff grids; it may also carry query-role heightfields.
+Traversal may reference that same-space layer through the existing `surfaceLayerId`.
+Do not infer passability from model geometry or native flags. Multiple floors for one class,
+support identities, clearance and volumetric movement are not represented by this amendment.
+At a singleton axis the surface exists only on that authored coordinate; no extrapolation,
+padding samples or invented edge heights are allowed. Runtime uses its one existing Q32.32
+bilinear sampler, with a repeated corner only at the actual outer edge.

@@ -18,6 +18,19 @@
 
 ## Проверки
 
+Heightfield `role: query` — явно объявленная поверхность запросов, никогда не ground.
+Один UV reader и один scalar reconstruction хранят ground и query; SDK/source различают
+terrain/surfaces facets, чтобы любой renderer не создавал землю. Query допускает singleton
+оси, NoData и именованную surfaceLayerId для traversal даже в mesh-пространстве. Native
+querySurfaces использует существующий native grid owner, один canonical point frame и
+вертикальное преобразование того же frame. Не дополнять образцы и не угадывать высоты по mesh.
+Runtime использует прежний Q32.32 Heightfield sampler без нового wire-кодека. Singleton
+существует только на исходной оси; supports, 3D clearance и перекрывающиеся этажи не заявлены.
+Catalog itemCount и visited coordinates проверяются отдельно от NoData fill: потери страниц
+и дубли не становятся допустимыми пустотами. Production UVP raw/logical digest bridge остаётся
+открытым требованием; ручное rebinding в probe не означает продуктовую совместимость.
+
+
 Independent cliffs используют SDK `MapNativeSampleGrid` и существующий Host grid
 admission, собственные positions/grid/revision; уровни не являются высотами или traversal.
 Только SDK `isTerrainBoundCliffItem` разрешает двум render consumers старый fallback стен

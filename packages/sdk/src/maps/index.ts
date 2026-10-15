@@ -1390,10 +1390,24 @@ export interface MapTraversalSample {
   readonly exits: number
 }
 
+/** Non-rendered native scalar surface, independent of the visible world topology. */
+export interface MapQuerySurfaceSummary {
+  readonly id: string
+  readonly exact: boolean
+  readonly width: number
+  readonly height: number
+  readonly cellCount: number
+  readonly trailingBytes: number
+  readonly grid: MapNativeSampleGrid
+  /** Heights use the native vertical axis selected by the admitted world frame. */
+  readonly samples: readonly Readonly<{ x: number; y: number; height: number }>[]
+  readonly noDataValue?: number
+}
+
 export interface MapTraversalSummary {
   readonly classId: string
-  /** The common native Host currently materializes its one authored heightfield as `terrain`. */
-  readonly surfaceLayerId?: 'terrain'
+  /** `terrain` or a declared querySurfaces local id in this snapshot. */
+  readonly surfaceLayerId?: string
   readonly exact: boolean
   readonly width: number
   readonly height: number
@@ -1668,6 +1682,7 @@ export interface ResolvedMapWorkspaceSnapshot {
   readonly semantic: MapSemanticSnapshot
   readonly navigation?: MapNavigationSummary
   readonly traversals?: readonly MapTraversalSummary[]
+  readonly querySurfaces?: readonly MapQuerySurfaceSummary[]
   readonly gateways?: MapGatewaySummary
   readonly terrainMaterials?: MapTerrainMaterialSummary
   readonly water?: MapWaterSummary
@@ -1692,6 +1707,7 @@ export interface ResolvedMapWorkspaceSnapshot {
 export type WorldSceneFacet =
   | 'layers'
   | 'terrain'
+  | 'surfaces'
   | 'terrain-materials'
   | 'water'
   | 'cliffs'
@@ -1810,6 +1826,8 @@ export interface WorldSceneLayerItem {
   /** Portable class and optional same-space local heightfield layer id; no native flags mapping. */
   readonly traversal?: Readonly<{ readonly classId: string; readonly surfaceLayerId?: string }>
   /** Native navigation vocabulary, retained independently of any portable traversal policy. */
+  /** Explicit scalar heightfield purpose; query surfaces are non-rendered. */
+  readonly heightfieldRole?: 'ground' | 'query'
   readonly navigationFlagEncoding?: string
   /** Validated overview geometry in canonical UVW horizontal x/z coordinates. */
   readonly latticeOverview?: MapLatticeOverview
@@ -1876,6 +1894,11 @@ export interface WorldSceneTerrainItem extends MapTerrainSample {
    * the tuple has been converted into map-native or canonical UVW coordinates.
    */
   readonly lod: 'sampled' | 'exact'
+}
+
+/** Non-rendered scalar-grid samples; shares the heightfield sample contract and reconstruction. */
+export interface WorldSceneSurfaceItem extends Omit<WorldSceneTerrainItem, 'facet'> {
+  readonly facet: 'surfaces'
 }
 
 export interface WorldSceneNavigationItem extends MapNavigationSample {
@@ -2235,6 +2258,7 @@ export interface WorldColorization {
 export type WorldSceneItem =
   | WorldSceneLayerItem
   | WorldSceneTerrainItem
+  | WorldSceneSurfaceItem
   | WorldSceneTerrainMaterialItem
   | WorldSceneWaterItem
   | WorldSceneCliffItem

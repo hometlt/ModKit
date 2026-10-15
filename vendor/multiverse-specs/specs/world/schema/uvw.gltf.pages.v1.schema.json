@@ -807,11 +807,11 @@
         },
         "columns": {
           "type": "integer",
-          "minimum": 2
+          "minimum": 1
         },
         "rows": {
           "type": "integer",
-          "minimum": 2
+          "minimum": 1
         },
         "cellSize": {
           "type": "number",
@@ -825,8 +825,37 @@
         },
         "samples": {
           "$ref": "#/$defs/pageGrid"
+        },
+        "role": {
+          "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/heightfieldLayer/properties/role"
         }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "not": {
+              "properties": {
+                "role": {
+                  "const": "query"
+                }
+              },
+              "required": [
+                "role"
+              ]
+            }
+          },
+          "then": {
+            "properties": {
+              "columns": {
+                "minimum": 2
+              },
+              "rows": {
+                "minimum": 2
+              }
+            }
+          }
+        }
+      ]
     },
     "navigationLayerPaged": {
       "type": "object",

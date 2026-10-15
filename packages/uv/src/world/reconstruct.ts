@@ -8,6 +8,7 @@ import type {
   WorldSceneLayerItem,
   WorldSceneObjectItem,
   WorldSceneTerrainItem,
+  WorldSceneSurfaceItem,
 } from '@modkit/sdk/maps'
 
 import type {
@@ -545,16 +546,22 @@ async function reconstructLayer(
   }
   const items = await drain(source, info, layer.kind, layer.layerId, options, state)
   if (state.lostFields !== undefined) noteLostFields(layer.kind, items, state.lostFields)
-  if (layer.kind === 'terrain') {
+  if (layer.kind === 'terrain' || layer.kind === 'surfaces') {
+    if ((layer.kind === 'terrain' && layer.heightfieldRole === 'query') ||
+      (layer.kind === 'surfaces' && layer.heightfieldRole !== undefined && layer.heightfieldRole !== 'query'))
+      throw new TypeError('heightfield role conflicts with its published facet')
     const grid = layer.grid
     if (grid === undefined)
       throw new TypeError('UVW canonical terrain layer is missing exact grid metadata')
     const fill = grid.noDataValue
     const values = new Array<number | undefined>(grid.columns * grid.rows).fill(fill)
+    if (items.length !== layer.itemCount)
+      throw new TypeError('UVW canonical heightfield sample count differs from its catalog')
+    const seen = new Set<number>()
     for (const raw of items) {
-      const item = raw as WorldSceneTerrainItem
+      const item = raw as WorldSceneTerrainItem | WorldSceneSurfaceItem
       if (
-        item.facet !== 'terrain' ||
+        item.facet !== layer.kind ||
         item.lod !== 'exact' ||
         item.uvwPosition === undefined ||
         !finite(item.uvwPosition.y)
@@ -562,18 +569,20 @@ async function reconstructLayer(
         throw new TypeError('UVW canonical terrain item is invalid')
       }
       const index = gridIndex(item, grid.columns, grid.rows)
-      if (values[index] !== fill)
+      if (seen.has(index))
         throw new TypeError('UVW canonical terrain grid contains a duplicate coordinate')
+      seen.add(index)
       values[index] = item.uvwPosition.y
     }
     if (values.some(value => value === undefined))
       throw new TypeError('UVW canonical terrain has holes without noDataValue')
-    const cliffFaces = cliffFacesFromTerrain(
+    const cliffFaces = layer.kind === 'surfaces' ? undefined : cliffFacesFromTerrain(
       items as readonly WorldSceneTerrainItem[], grid.columns, grid.rows, 'forward',
     )
     return Object.freeze({
       id,
       kind: 'heightfield',
+      ...(layer.kind === 'surfaces' ? { role: 'query' as const } : layer.heightfieldRole === undefined ? {} : { role: layer.heightfieldRole }),
       ...label,
       columns: grid.columns,
       rows: grid.rows,
@@ -1196,6 +1205,7 @@ export async function reconstructAdditionalExactLayers(
   }
   const supported = new Set([
     'navigation',
+    'surfaces',
     'traversal',
     'terrain-materials',
     'cliffs',

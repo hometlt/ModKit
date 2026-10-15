@@ -3,16 +3,16 @@
   "schemaVersion": "multiverse-specs-pin-1",
   "source": {
     "repository": "multiverse (sibling repository)",
-    "commit": "fcda87f748f252798300ebd084dd109e8e5a7950",
-    "subject": "feat(uvw): retain scoped native navigation vocabularies",
-    "committedOn": "2026-10-15T21:42:40+04:00"
+    "commit": "1b93f2123302b635feafdc7e02129cd4b085e888",
+    "subject": "feat(uvw): retain non-rendered query surfaces in model worlds",
+    "committedOn": "2026-10-15T23:48:59+04:00"
   },
   "generator": "scripts/specs-pin.mjs",
   "generatedFrom": "git objects, not the sibling working tree",
   "prefix": "specs/",
   "counts": {
-    "files": 317,
-    "bytes": 2199240
+    "files": 319,
+    "bytes": 2211806
   },
   "files": [
     {
@@ -182,8 +182,8 @@
     },
     {
       "path": "specs/conformance/schema-assertions.json",
-      "bytes": 152664,
-      "digest": "sha256:7d01cb6a538b220a93f63cd2b370ae21b947e6ebb7bf81594647d0dd9ec6ae29"
+      "bytes": 154661,
+      "digest": "sha256:bf613fd21ea94e994d29face7fd3e8e492fa99c054943192e5f9b34b00b06098"
     },
     {
       "path": "specs/conformance/state/vectors.json",
@@ -1292,8 +1292,13 @@
     },
     {
       "path": "specs/tools/uvw-profile.mjs",
-      "bytes": 45310,
-      "digest": "sha256:09666954dcd3036e46dd34204ce85216c175170ff8c18fc429ce8f45eb34c6e0"
+      "bytes": 46093,
+      "digest": "sha256:bfa13879b70771e7f3ad58afacc0278098ad2bcce5211826442b960b9ca933a2"
+    },
+    {
+      "path": "specs/tools/uvw-query-surface.test.mjs",
+      "bytes": 3163,
+      "digest": "sha256:4f5d726c9b9a9131a887dd5f4cca02173e7be62980bdc9a970165d366ed506ae"
     },
     {
       "path": "specs/tools/uvw-raster-preview.mjs",
@@ -1377,8 +1382,8 @@
     },
     {
       "path": "specs/world/SPEC_UVW_PROFILE.md",
-      "bytes": 34797,
-      "digest": "sha256:b6182e0e5c427d1ae6aaa2d253d227da0ec532c28edc79a27275287e81111668"
+      "bytes": 36167,
+      "digest": "sha256:3238d8ff3600bb8f5e755fe8dc9fa534c460e37c4bb4c393b1142f542668b97c"
     },
     {
       "path": "specs/world/fixtures/invalid/connections-not-empty.uvw.json",
@@ -1516,6 +1521,11 @@
       "digest": "sha256:c1bd38ee97e633bcc604d1b0679d4f67a6add599bd88898e6384a2c7fc7977a2"
     },
     {
+      "path": "specs/world/fixtures/uvw-profile-query-surface.uvw.json",
+      "bytes": 2272,
+      "digest": "sha256:437edc45c27a15e64d2a2ae6d4db8e911cfec2e664c01dc8d11d509008e7fbaa"
+    },
+    {
       "path": "specs/world/fixtures/uvw-profile-renderable-world.uvw.json",
       "bytes": 7717,
       "digest": "sha256:b55ecca46b83d67089facae5d28a17847246dd88eca7a2f4086811074234273e"
@@ -1587,8 +1597,8 @@
     },
     {
       "path": "specs/world/schema/uvw.gltf.pages.v1.schema.json",
-      "bytes": 24279,
-      "digest": "sha256:99967155b33a925dec2e9ea22fa5dd5b74c63ea399fa99dbfb07e8c197c5e64b"
+      "bytes": 24948,
+      "digest": "sha256:4a4a7cf213f2f3a4c8c852cb339834f31b634fbf3b31a587aba3ef3916d709bc"
     },
     {
       "path": "specs/world/schema/uvw.gltf.v1.schema.json",
@@ -1597,8 +1607,8 @@
     },
     {
       "path": "specs/world/schema/uvw.profile.v1.schema.json",
-      "bytes": 53070,
-      "digest": "sha256:7cc4d82072b06d929262d71d0655d4cd3244c7ac8ac877c85491f5b9453d05ac"
+      "bytes": 55382,
+      "digest": "sha256:21e2912153fc9d3e2759ecea87d1486650627a29b6a02124f779f717fa4ae186"
     }
   ]
 }

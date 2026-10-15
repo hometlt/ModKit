@@ -13,6 +13,7 @@ import type {
   WorldSceneModelResult,
   WorldSceneSource,
   WorldSceneTerrainItem,
+  WorldSceneSurfaceItem,
   WorldSceneTextureRequest,
 } from '@modkit/sdk/maps'
 
@@ -161,7 +162,7 @@ function layerItemCount(layer: UvwHeightfieldSpaceLayer): number {
 }
 
 function worldFacet(layer: UvwHeightfieldSpaceLayer): Exclude<WorldSceneLayerItem['kind'], never> {
-  return layer.kind === 'heightfield' ? 'terrain' : layer.kind
+  return layer.kind === 'heightfield' ? layer.role === 'query' ? 'surfaces' : 'terrain' : layer.kind
 }
 
 function worldResourceId(spaceId: string, resourceId: string): string {
@@ -237,7 +238,7 @@ function recordItems(
       )
     }
     case 'cliffs': {
-      const terrain = record.space.layers.find(candidate => candidate.kind === 'heightfield')
+      const terrain = record.space.layers.find((candidate): candidate is UvwHeightfieldLayer => candidate.kind === 'heightfield' && candidate.role !== 'query')
       const terrainBound = terrain !== undefined && layer.cellSize === terrain.cellSize &&
         layer.columns <= terrain.columns && layer.rows <= terrain.rows &&
         layer.origin.every((value, index) => value === terrain.origin[index])
@@ -665,6 +666,7 @@ export function createUvwWorldSceneSource(
         contentRevision: record.contentRevision,
         spaceId: record.space.id,
         localLayerId: record.layer.id,
+        ...(record.layer.kind === 'heightfield' && record.layer.role !== undefined ? { heightfieldRole: record.layer.role } : {}),
         ...(record.layer.kind === 'heightfield' && record.layer.latticeOverview !== undefined ? {latticeOverview:record.layer.latticeOverview} : {}),
         ...(record.layer.kind === 'traversal' ? { traversal: Object.freeze({ classId: record.layer.classId,
           ...(record.layer.surfaceLayerId === undefined ? {} : { surfaceLayerId: record.layer.surfaceLayerId }) }) } : {}),
@@ -1005,7 +1007,8 @@ export function createUvwWorldSceneSource(
       let offset = cursorOffset(request.cursor, options.snapshotId, requestKey)
       if (offset > total)
         throw new TypeError('UVW terrain cursor offset is outside the heightfield')
-      const items: WorldSceneTerrainItem[] = []
+      const sampleFacet = record.layer.role === 'query' ? 'surfaces' as const : 'terrain' as const
+      const items: (WorldSceneTerrainItem | WorldSceneSurfaceItem)[] = []
       while (offset < total && items.length < limit) {
         if ((offset & 0xfff) === 0) signal?.throwIfAborted()
         const x = offset % record.layer.columns
@@ -1030,7 +1033,7 @@ export function createUvwWorldSceneSource(
         }
         items.push(
           Object.freeze({
-            facet: 'terrain',
+            facet: sampleFacet,
             id: `${record.id}:${String(x)}:${String(y)}`,
             layerId: record.id,
             coordinateSpaceId: record.coordinateSpaceId,
@@ -1049,7 +1052,7 @@ export function createUvwWorldSceneSource(
       }
       return Object.freeze({
         snapshotId: options.snapshotId,
-        facet: 'terrain',
+        facet: sampleFacet,
         state: 'available' as const,
         items: Object.freeze(items),
         ...(offset < total ? { nextCursor: cursor(options.snapshotId, requestKey, offset) } : {}),

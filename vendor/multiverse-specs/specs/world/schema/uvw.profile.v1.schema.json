@@ -198,16 +198,67 @@
       "allOf": [
         { "$ref": "#/$defs/spatialSpace" },
         { "properties": { "topology": { "const": "heightfield" },
-          "layers": { "contains": { "properties": { "kind": { "const": "heightfield" } }, "required": ["kind"] } } } }
+          "layers": {
+            "contains": {
+              "properties": {
+                "kind": {
+                  "const": "heightfield"
+                },
+                "role": {
+                  "not": {
+                    "const": "query"
+                  }
+                }
+              },
+              "required": [
+                "kind"
+              ]
+            }
+          }
+        }
+      }
       ]
     },
     "meshSpace": {
-      "description": "Visible geometry is carried by objects and their UVM resources, not a scalar ground. No voxel or inferred navigation semantics.",
+      "description": "Visible geometry is carried by objects/UVM; optional query-role heightfields provide non-rendered sampling data. No inferred voxel, overlap or support semantics.",
       "allOf": [
         { "$ref": "#/$defs/spatialSpace" },
         { "properties": { "topology": { "const": "mesh" }, "layers": {
           "contains": { "properties": { "kind": { "const": "objects" } }, "required": ["kind"] },
-          "items": { "not": { "properties": { "kind": { "enum": ["heightfield", "terrain-materials", "cliffs"] } }, "required": ["kind"] } }
+          "items": {
+            "not": {
+              "anyOf": [
+                {
+                  "properties": {
+                    "kind": {
+                      "enum": [
+                        "terrain-materials",
+                        "cliffs"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "kind"
+                  ]
+                },
+                {
+                  "properties": {
+                    "kind": {
+                      "const": "heightfield"
+                    },
+                    "role": {
+                      "not": {
+                        "const": "query"
+                      }
+                    }
+                  },
+                  "required": [
+                    "kind"
+                  ]
+                }
+              ]
+            }
+          }
         } } }
       ]
     },
@@ -438,22 +489,75 @@
         "id": { "type": "string", "minLength": 1 },
         "kind": { "const": "heightfield" },
         "label": { "type": "string" },
-        "columns": { "type": "integer", "minimum": 2 },
-        "rows": { "type": "integer", "minimum": 2 },
+        "columns": { "type": "integer", "minimum": 1 },
+        "rows": { "type": "integer", "minimum": 1 },
         "cellSize": { "type": "number", "exclusiveMinimum": 0 },
         "origin": { "$ref": "#/$defs/vec3" },
         "noDataValue": { "type": "number" },
         "samples": {
           "$comment": "row-major: `rows` arrays of `columns` numbers. Sample counts, not cell counts — the usual off-by-one.",
           "type": "array",
-          "minItems": 2,
+          "minItems": 1,
           "items": {
             "type": "array",
-            "minItems": 2,
+            "minItems": 1,
             "items": { "type": "number" }
           }
+        },
+        "role": {
+          "enum": [
+            "ground",
+            "query"
+          ],
+          "description": "Omission means rendered ground. Query is non-rendered scalar surface data, sampled by reference; never a second terrain mesh."
         }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "role": {
+                "const": "query"
+              }
+            },
+            "required": [
+              "role"
+            ]
+          },
+          "then": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "cliffFaces"
+                  ]
+                },
+                {
+                  "required": [
+                    "latticeOverview"
+                  ]
+                }
+              ]
+            }
+          },
+          "else": {
+            "properties": {
+              "columns": {
+                "minimum": 2
+              },
+              "rows": {
+                "minimum": 2
+              },
+              "samples": {
+                "minItems": 2,
+                "items": {
+                  "minItems": 2
+                }
+              }
+            }
+          }
+        }
+      ]
     },
     "vec2": {
       "type": "array",

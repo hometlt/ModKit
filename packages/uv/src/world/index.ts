@@ -50,6 +50,7 @@ export interface UvwBounds {
 }
 
 export interface UvwHeightfieldLayer {
+  readonly role?: 'ground' | 'query'
   /** Semantic overview annotation in canonical x/z; never a baked raster image. */
   readonly latticeOverview?: MapLatticeOverview
   readonly id: string
@@ -740,7 +741,7 @@ function heightfieldLayer(
   const item = record(value, path, state, depth)
   exactKeys(
     item,
-    ['id', 'kind', 'label', 'columns', 'rows', 'cellSize', 'origin', 'noDataValue', 'cliffFaces', 'samples', 'latticeOverview'],
+    ['id', 'kind', 'role', 'label', 'columns', 'rows', 'cellSize', 'origin', 'noDataValue', 'cliffFaces', 'samples', 'latticeOverview'],
     ['id', 'kind', 'columns', 'rows', 'cellSize', 'origin', 'samples'],
     path,
   )
@@ -750,8 +751,12 @@ function heightfieldLayer(
     item['label'] === undefined
       ? undefined
       : string(item['label'], `${path}.label`, state, depth + 1)
-  const columns = integerAtLeast(item['columns'], 2, `${path}.columns`, state, depth + 1)
-  const rows = integerAtLeast(item['rows'], 2, `${path}.rows`, state, depth + 1)
+  const role = item['role']
+  if (role !== undefined && role !== 'ground' && role !== 'query') fail('invalid heightfield role', `${path}.role`)
+  if (role === 'query' && (item['cliffFaces'] !== undefined || item['latticeOverview'] !== undefined))
+    fail('query surface cannot authorize terrain presentation', path)
+  const columns = integerAtLeast(item['columns'], role === 'query' ? 1 : 2, `${path}.columns`, state, depth + 1)
+  const rows = integerAtLeast(item['rows'], role === 'query' ? 1 : 2, `${path}.rows`, state, depth + 1)
   const count = columns * rows
   if (!Number.isSafeInteger(count) || count > state.maxSamples - state.samples) {
     fail(
@@ -763,13 +768,13 @@ function heightfieldLayer(
   state.samples += count
   const samplesValue = array(item['samples'], `${path}.samples`, state, depth + 1)
   if (samplesValue.length !== rows) fail(`expected ${String(rows)} sample rows`, `${path}.samples`)
-  const samples = samplesValue.map((rowValue, rowIndex) => {
+  const samples = Array.from(samplesValue, (rowValue, rowIndex) => {
     if ((rowIndex & 0xff) === 0) state.signal?.throwIfAborted()
     const rowPath = `${path}.samples[${String(rowIndex)}]`
     const row = array(rowValue, rowPath, state, depth + 2)
     if (row.length !== columns) fail(`expected ${String(columns)} samples`, rowPath)
     return Object.freeze(
-      row.map((sample, columnIndex) =>
+      Array.from(row, (sample, columnIndex) =>
         finite(sample, `${rowPath}[${String(columnIndex)}]`, state, depth + 3),
       ),
     )
@@ -803,6 +808,7 @@ function heightfieldLayer(
   return Object.freeze({
     id,
     kind: 'heightfield',
+    ...(role === undefined ? {} : { role }),
     ...(label === undefined ? {} : { label }),
     columns,
     rows,
@@ -2406,10 +2412,10 @@ function space(
     if (ids.has(entry.id)) fail(`duplicate layer id ${JSON.stringify(entry.id)}`, `${path}.layers`)
     ids.add(entry.id)
   }
-  if (topology === 'heightfield' && !layers.some(entry => entry.kind === 'heightfield')) {
+  if (topology === 'heightfield' && !layers.some(entry => entry.kind === 'heightfield' && entry.role !== 'query')) {
     fail('heightfield space must contain at least one heightfield layer', `${path}.layers`)
   }
-  if (topology === 'mesh' && layers.some(entry => ['heightfield', 'terrain-materials', 'cliffs'].includes(entry.kind)))
+  if (topology === 'mesh' && layers.some(entry => ['terrain-materials', 'cliffs'].includes(entry.kind) || (entry.kind === 'heightfield' && entry.role !== 'query')))
     fail('mesh space cannot contain a scalar ground or its terrain catalogs', `${path}.layers`)
   if (topology === 'mesh' && !layers.some(entry => entry.kind === 'objects'))
     fail('mesh space must declare an objects layer for its model geometry', `${path}.layers`)
@@ -2432,7 +2438,7 @@ function space(
   }
   const spaceBounds = bounds(item['bounds'], `${path}.bounds`, state, depth + 1)
   for (const entry of layers) {
-    if (entry.kind !== 'navigation' && entry.kind !== 'cliffs') continue
+    if (entry.kind !== 'navigation' && entry.kind !== 'cliffs' && !(entry.kind === 'heightfield' && entry.role === 'query')) continue
     const maxX = entry.origin[0] + (entry.columns - 1) * entry.cellSize
     const maxZ = entry.origin[2] + (entry.rows - 1) * entry.cellSize
     const tolerance = 1e-9
@@ -2440,12 +2446,16 @@ function space(
       entry.origin[0] < spaceBounds.min[0] - tolerance || maxX > spaceBounds.max[0] + tolerance ||
       entry.origin[2] < spaceBounds.min[2] - tolerance || maxZ > spaceBounds.max[2] + tolerance)
       fail(`${entry.kind} grid extends beyond its space`, `${path}.layers.${entry.id}`)
+    if (entry.kind === 'heightfield') {
+      for (const row of entry.samples) for (const value of row)
+        if (value !== entry.noDataValue && (value < spaceBounds.min[1] - tolerance || value > spaceBounds.max[1] + tolerance))
+          fail('query surface elevations extend beyond its space', `${path}.layers.${entry.id}.samples`)
+    }
   }
   const traversalClasses = new Set<string>()
   for (const entry of layers) {
     if (entry.kind !== 'traversal') continue
     const entryPath = `${path}.layers.${entry.id}`
-    if (topology !== 'heightfield') fail('traversal requires heightfield topology', entryPath)
     if (traversalClasses.has(entry.classId)) fail('duplicate traversal class', entryPath)
     traversalClasses.add(entry.classId)
     const maxX = entry.origin[0] + entry.columns * entry.cellSize

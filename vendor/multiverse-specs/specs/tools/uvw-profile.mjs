@@ -76,9 +76,9 @@ export function assertUvwProfile(document) {
       if (space?.topology !== 'heightfield' && space?.topology !== 'mesh') {
         refuse('topology-not-admitted', 'UVW profile 1 admits heightfield and model-based mesh spaces')
       }
-      if (space.topology === 'heightfield' && !space.layers?.some(layer => layer.kind === 'heightfield'))
+      if (space.topology === 'heightfield' && !space.layers?.some(layer => layer.kind === 'heightfield' && layer.role !== 'query'))
         refuse('heightfield-missing', 'a heightfield space needs its scalar ground')
-      if (space.topology === 'mesh' && (space.layers?.some(layer => ['heightfield', 'terrain-materials', 'cliffs'].includes(layer.kind))
+      if (space.topology === 'mesh' && (space.layers?.some(layer => ['terrain-materials', 'cliffs'].includes(layer.kind) || (layer.kind === 'heightfield' && layer.role !== 'query'))
         || !space.layers?.some(layer => layer.kind === 'objects')))
         refuse('mesh-layer-set', 'a mesh space declares objects and cannot invent scalar ground or its catalogs')
       assertUvwBody(space, true, source === document ? undefined : source)
@@ -716,6 +716,13 @@ function assertNavigation(layer, bounds) {
 /** The geometry rules of the one facet this profile defines. */
 function assertHeightfield(layer, bounds) {
   const { id, columns, rows, cellSize, origin, samples } = layer
+  const minimum = layer.role === 'query' ? 1 : 2
+  if ((layer.role !== undefined && !['ground', 'query'].includes(layer.role)) ||
+    !Number.isSafeInteger(columns) || columns < minimum || !Number.isSafeInteger(rows) || rows < minimum ||
+    !Number.isFinite(cellSize) || cellSize <= 0 || !Array.isArray(samples))
+    refuse('heightfield-role-grid', `heightfield «${id}» has an invalid role or grid`)
+  if (layer.role === 'query' && (layer.cliffFaces !== undefined || layer.latticeOverview !== undefined))
+    refuse('query-surface-presentation', 'a query heightfield cannot authorize terrain presentation')
   if (samples.length !== rows) {
     refuse(
       'sample-grid-matches',
@@ -723,6 +730,7 @@ function assertHeightfield(layer, bounds) {
     )
   }
   for (const [index, row] of samples.entries()) {
+    if (!Array.isArray(row)) refuse('sample-grid-matches', `heightfield «${id}» has a missing row`)
     if (row.length !== columns) {
       refuse(
         'sample-grid-matches',

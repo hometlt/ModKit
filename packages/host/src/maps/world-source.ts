@@ -31,6 +31,8 @@ import type {
   MapPosition,
   MapNavigationSummary,
   MapCliffSummary,
+  MapQuerySurfaceSummary,
+  WorldSceneSurfaceItem,
   MapTraversalSummary,
   WorldSceneTraversalItem,
   WorldSceneLayerItem,
@@ -890,15 +892,47 @@ function admittedCliffGrid(cliffs: MapCliffSummary | undefined, transform: MapWo
   return admitted
 }
 
-function admittedTraversalGrid(traversal: MapTraversalSummary, transform: MapWorldCanonicalTransform | undefined, topology: string | undefined): Readonly<{
+function admittedQuerySurface(published: MapQuerySurfaceSummary, transform: MapWorldCanonicalTransform | undefined): Readonly<{
+  grid?: NonNullable<WorldSceneLayerItem['grid']>
+  values?: readonly WorldSceneSurfaceItem[]
+  reason?: string
+}> {
+  const refuse = (reason: string) => ({ reason: `exact query surface refused: ${reason}` })
+  if (published.trailingBytes !== 0) return refuse('unrepresented native bytes')
+  const admitted = admittedNativeSampleGrid(published, transform)
+  if (admitted.grid === undefined || admitted.positions === undefined || transform === undefined)
+    return refuse(admitted.reason ?? 'not a complete exact grid in a qualified frame')
+  const { grid, positions } = admitted
+  const heightAt = (height: number) => canonicalPosition({ x: 0, y: 0, z: 0,
+    [transform.axes.y.sourceAxis]: height }, transform).y
+  if (published.noDataValue !== undefined && !Number.isFinite(published.noDataValue)) return refuse('invalid NoData marker')
+  const noDataValue = published.noDataValue === undefined ? undefined : heightAt(published.noDataValue)
+  if (noDataValue !== undefined && !Number.isFinite(noDataValue)) return refuse('non-finite transformed NoData marker')
+  const values: WorldSceneSurfaceItem[] = []
+  for (const [index, sample] of published.samples.entries()) {
+    if (!Number.isFinite(sample.height)) return refuse('non-finite native height')
+    const height = heightAt(sample.height)
+    if (!Number.isFinite(height)) return refuse('non-finite projected height')
+    const absent = sample.height === published.noDataValue
+    if (!absent && (height < transform.bounds.minimum.y - 1e-9 || height > transform.bounds.maximum.y + 1e-9))
+      return refuse('heights extend beyond qualified world bounds')
+    const point = positions[index]!
+    const x = Math.round((point.x - grid.origin[0]) / grid.cellSize), y = Math.round((point.z - grid.origin[2]) / grid.cellSize)
+    if (!absent && height === noDataValue) return refuse('projected NoData marker collides with a valid height')
+    if (!absent) values.push(Object.freeze({ facet: 'surfaces', id: `world.surfaces:${published.id}:${x}:${y}`,
+      layerId: `world.surfaces:${published.id}`, coordinateSpaceId: 'uvw-canonical', lod: 'exact', x, y,
+      heightBase: height, heightAdjustment: 0, mask: 0, uvwPosition: Object.freeze({ ...point, y: height }) }))
+  }
+  return { grid: Object.freeze({ ...grid, ...(noDataValue === undefined ? {} : { noDataValue }) }), values: Object.freeze(values) }
+}
+
+function admittedTraversalGrid(traversal: MapTraversalSummary, transform: MapWorldCanonicalTransform | undefined, topology: string | undefined, querySurfaces: ReadonlyMap<string, ReturnType<typeof admittedQuerySurface>>): Readonly<{
   grid?: NonNullable<WorldSceneLayerItem['grid']>
   values?: readonly Readonly<Pick<WorldSceneTraversalItem, 'x' | 'y' | 'walkable' | 'exits' | 'uvwPosition'>>[]
   reason?: string
 }> {
   const refuse = (reason: string) => ({ reason: `exact traversal refused: ${reason}` })
   if (traversal.trailingBytes !== 0) return refuse('native trailing bytes are not represented by the traversal grid')
-  if (topology !== undefined && topology !== 'heightfield') return refuse('portable traversal requires heightfield topology')
-  if (traversal.surfaceLayerId !== undefined && traversal.surfaceLayerId !== 'terrain') return refuse('the native Host exposes only the terrain surface')
   const admitted = admittedNativeSampleGrid(traversal, transform)
   if (admitted.grid === undefined || admitted.positions === undefined || admitted.directions === undefined)
     return refuse(admitted.reason ?? 'the publisher did not provide a complete exact grid')
@@ -910,7 +944,10 @@ function admittedTraversalGrid(traversal: MapTraversalSummary, transform: MapWor
     origin[1] < transform.bounds.minimum.y - 1e-9 || origin[1] > transform.bounds.maximum.y + 1e-9)
     return refuse('the cell footprint extends beyond the qualified world bounds')
   if (traversal.surfaceLayerId !== undefined) {
-    const surface = transform.heightfield
+    const surface = traversal.surfaceLayerId === 'terrain'
+      ? topology === 'mesh' ? undefined : transform.heightfield
+      : querySurfaces.get(traversal.surfaceLayerId)?.grid
+    if (surface === undefined) return refuse('the selected surface is unavailable or not admitted')
     if (grid.origin[0] < surface.origin[0] - 1e-9 || grid.origin[2] < surface.origin[2] - 1e-9 ||
       grid.origin[0] + (grid.columns - 1) * grid.cellSize > surface.origin[0] + (surface.columns - 1) * surface.cellSize + 1e-9 ||
       grid.origin[2] + (grid.rows - 1) * grid.cellSize > surface.origin[2] + (surface.rows - 1) * surface.cellSize + 1e-9)
@@ -1506,13 +1543,23 @@ export function createCandidateWorldSceneLease(
       }),
     ),
   )
+  const surfaceIds = new Set<string>()
+  const surfaceRecords = (snapshot.querySurfaces ?? []).map(published => {
+    if (!/^[a-z][a-z0-9-]*$/u.test(published.id) || published.id === 'terrain' || surfaceIds.has(published.id))
+      throw new TypeError('query surface ids must be unique local ids distinct from terrain')
+    surfaceIds.add(published.id)
+    const admission = admittedQuerySurface(published, uvwTransform)
+    return { id: `world.surfaces:${published.id}`, published, admission,
+      contentRevision: layerContentRevision(admission.values ?? [], JSON.stringify(admission.grid)) }
+  })
+  const querySurfaces = new Map(surfaceRecords.map(record => [record.published.id, record.admission]))
   const traversalClasses = new Set<string>()
   const traversalRecords = (snapshot.traversals ?? []).map(published => {
     if (!/^[a-z][a-z0-9-]*$/u.test(published.classId) || traversalClasses.has(published.classId))
       throw new TypeError('native traversal classes must have unique local ids')
     traversalClasses.add(published.classId)
     const id = `${layerId('traversal')}:${published.classId}`
-    const admission = admittedTraversalGrid(published, uvwTransform, snapshot.worldCandidate.topology)
+    const admission = admittedTraversalGrid(published, uvwTransform, snapshot.worldCandidate.topology, querySurfaces)
     const items: readonly WorldSceneTraversalItem[] = Object.freeze((admission.values ?? []).map(cell => Object.freeze({
       facet: 'traversal' as const, id: `${id}:${cell.x}:${cell.y}`, layerId: id,
       coordinateSpaceId: 'uvw-canonical', lod: 'exact' as const, ...cell })))
@@ -1813,6 +1860,11 @@ export function createCandidateWorldSceneLease(
         ? { reason: 'publisher reported navigation unavailable' }
         : navigationAdmission.grid === undefined ? { reason: navigationAdmission.reason ?? 'native flags are sampled and their bit semantics remain publisher-defined' } : {}),
     }),
+    ...surfaceRecords.map(record => Object.freeze({ facet: 'surfaces' as const, layerId: record.id,
+      state: record.admission.grid === undefined ? 'partial' as const : 'available' as const,
+      itemCount: record.admission.values?.length ?? record.published.cellCount,
+      lods: Object.freeze(record.admission.grid === undefined ? [] : ['exact']), contentRevision: record.contentRevision,
+      ...(record.admission.grid === undefined ? { reason: record.admission.reason ?? 'query surface is not admitted' } : {}) })),
     ...traversalRecords.map(record => Object.freeze({ facet: 'traversal' as const, layerId: record.id,
       state: record.admission.grid === undefined ? 'partial' as const : 'available' as const,
       itemCount: record.published.cellCount, lods: Object.freeze(record.admission.grid === undefined ? [] : ['exact']),
@@ -1864,6 +1916,11 @@ export function createCandidateWorldSceneLease(
               })(),
               ([x,y]) => { const point=canonicalPosition({x,y,z:0},uvwTransform);return [point.x,point.z] },
             ) } : {}),
+        ...(item.facet === 'surfaces' ? (() => {
+          const record = surfaceRecords.find(record => record.id === item.layerId)!
+          return { localLayerId: record.published.id, heightfieldRole: 'query' as const,
+            ...(record.admission.grid === undefined ? {} : { grid: record.admission.grid }) }
+        })() : {}),
         ...(item.facet === 'traversal' ? (() => {
           const record = traversalRecords.find(record => record.id === item.layerId)!
           return { localLayerId: record.localLayerId, traversal: record.metadata,
@@ -1935,6 +1992,7 @@ export function createCandidateWorldSceneLease(
     ['regions', regions],
     ['resources', resources],
     ['navigation', navigation],
+    ...(surfaceRecords.length === 0 ? [] : [['surfaces', Object.freeze(surfaceRecords.flatMap(record => record.admission.values ?? []))] as const]),
     ...(traversalRecords.length === 0 ? [] : [['traversal', Object.freeze(traversalRecords.flatMap(record => record.items))] as const]),
     ['gateways', gateways],
     ['lighting', lighting],
@@ -2179,7 +2237,7 @@ export function createCandidateWorldSceneLease(
       positiveLimit(request.limit, maxPageSize)
       cursorOffset(request.cursor, snapshot.snapshotId, canonicalQuery(request))
       const facetItems = byFacet.get(request.facet)
-      const items = request.facet === 'traversal' ? facetItems?.filter(item => item.layerId === request.layerId) : facetItems
+      const items = (request.facet === 'traversal' || request.facet === 'surfaces') ? facetItems?.filter(item => item.layerId === request.layerId) : facetItems
       if (items === undefined) {
         return Promise.resolve(
           Object.freeze({
@@ -2191,12 +2249,12 @@ export function createCandidateWorldSceneLease(
           }),
         )
       }
-      const facetState = facets.find(item => item.facet === request.facet && (request.facet !== 'traversal' || item.layerId === request.layerId))
+      const facetState = facets.find(item => item.facet === request.facet && (!['traversal', 'surfaces'].includes(request.facet) || item.layerId === request.layerId))
       if (request.facet !== 'layers') {
         if (request.layerId !== facetState?.layerId) {
           throw new TypeError(`world facet ${request.facet} requires its exact layerId`)
         }
-        if (request.facet === 'traversal' && (facetState?.state !== 'available' || request.lod !== 'exact'))
+        if ((request.facet === 'traversal' || request.facet === 'surfaces') && (facetState?.state !== 'available' || request.lod !== 'exact'))
           return Object.freeze({ snapshotId: snapshot.snapshotId, facet: request.facet, state: 'unsupported' as const,
             items: Object.freeze([]), reason: facetState?.reason ?? 'traversal only pages admitted exact cells' })
         const expectedLod =
@@ -2263,7 +2321,7 @@ export function createCandidateWorldSceneLease(
                   item.position.y <= bounds.maximumY
                 )
               }
-              const canonical = item.facet === 'traversal' || (item.facet === 'cliffs' && snapshot.cliffs?.grid !== undefined)
+              const canonical = item.facet === 'traversal' || item.facet === 'surfaces' || (item.facet === 'cliffs' && snapshot.cliffs?.grid !== undefined)
                 ? item.uvwPosition : undefined
               if (canonical !== undefined) {
                 return canonical.x >= bounds.minimumX && canonical.x <= bounds.maximumX &&
