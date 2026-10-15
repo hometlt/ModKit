@@ -84,15 +84,16 @@ typedef struct CAdaptiveHuffman
   Context structures
 ************************************************************************************/
 typedef struct CAdaptiveModel {
-    Int     m_iFlcState[2];
-    Int     m_iFlcBits[2];
+    Int     m_iFlcState[3];
+    Int     m_iFlcBits[3];
     BAND    m_band;
+    Bool    bModkitHdp; /* Explicit independent-component HD Photo dialect; standard uses Y/UV. */
 } CAdaptiveModel;
 
 typedef struct CCBPModel {
-    Int     m_iCount0[2];
-    Int     m_iCount1[2];
-    Int     m_iState[2];
+    Int     m_iCount0[3];
+    Int     m_iCount1[3];
+    Int     m_iState[3];
 } CCBPModel;
 
 /*************************************************************************

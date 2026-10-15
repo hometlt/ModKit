@@ -643,7 +643,7 @@ static _FORCEINLINE Int DecodeCoeffs (CWMImageStrCodec * pSC, CCodingContext *pC
     PixelI  *pCoeffs;
     Int i, iBlock, iSubblock, iNBlocks = 4;
     Int iModelBits = pContext->m_aModelAC.m_iFlcBits[0];
-    Int aLaplacianMean[2] = { 0, 0}, *pLM = aLaplacianMean + 0;
+    Int aLaplacianMean[3] = { 0, 0, 0}, *pLM = aLaplacianMean + 0;
     const Int *pOrder = dctIndex[0];
     const Int iOrient = pSC->MBInfo.iOrientation;
     Bool bChroma = FALSE;
@@ -674,6 +674,8 @@ static _FORCEINLINE Int DecodeCoeffs (CWMImageStrCodec * pSC, CCodingContext *pC
 
     for (i = 0; i < iPlanes; i++) {
         Int iIndex = 0, iNumNonZero;
+        if(pSC->WMISCP.bModkitHdp)
+            pScan = pSC->MBInfo.componentOrientation[i] == 1 ? pContext->m_aScanVert : pContext->m_aScanHoriz;
 
         if(pSC->WMISCP.sbSubband != SB_NO_FLEXBITS)
             readIS_L1(pSC, pIOFL);
@@ -705,7 +707,7 @@ static _FORCEINLINE Int DecodeCoeffs (CWMImageStrCodec * pSC, CCodingContext *pC
 
                 /** read AC values **/
                 assert (pSC->m_Dparam->bSkipFlexbits == 0 || pSC->WMISCP.bfBitstreamFormat == FREQUENCY || pSC->WMISCP.sbSubband == SB_NO_FLEXBITS);
-                iNumNonZero = DecodeBlockAdaptive ((iCBPCY & 1), bChroma, pContext->m_pAHexpt,
+                iNumNonZero = DecodeBlockAdaptive ((iCBPCY & 1), bChroma && !(pSC->WMISCP.bModkitHdp && cf == NCOMPONENT), pContext->m_pAHexpt,
                     pIO, pIOFL, pCoeffs, pScan, iModelBits, pContext->m_iTrimFlexBits,
                     iQP, pOrder, pSC->m_Dparam->bSkipFlexbits);
                 if(iNumNonZero > 16) // something is wrong!
@@ -714,8 +716,9 @@ static _FORCEINLINE Int DecodeCoeffs (CWMImageStrCodec * pSC, CCodingContext *pC
                 (*pLM) += iNumNonZero;
             }
             if (iBlock == 3) {
-                iModelBits = pContext->m_aModelAC.m_iFlcBits[1];
-                pLM = aLaplacianMean + 1;
+                Int model = pSC->WMISCP.bModkitHdp && i > 0 ? 2 : 1;
+                iModelBits = pContext->m_aModelAC.m_iFlcBits[model];
+                pLM = aLaplacianMean + model;
                 bChroma = TRUE;
             }
         }
@@ -789,7 +792,7 @@ Int DecodeMacroblockLowpass (CWMImageStrCodec * pSC, CCodingContext *pContext,
     BitIOInfo* pIO = pContext->m_pIOLP;
     Int iModelBits = pContext->m_aModelLP.m_iFlcBits[0];
     Int aRLCoeffs[32], iNumNonzero = 0, iIndex = 0;
-    Int aLaplacianMean[2] = { 0, 0}, *pLM = aLaplacianMean;
+    Int aLaplacianMean[3] = { 0, 0, 0}, *pLM = aLaplacianMean;
     Int iChannel, iCBP = 0;
 #ifndef ARMOPT_BITIO    // ARM opt always uses 32-bit version of getBits
     U32 (*getBits)(BitIOInfo* pIO, U32 cBits) = _getBit16;
@@ -860,7 +863,8 @@ Int DecodeMacroblockLowpass (CWMImageStrCodec * pSC, CCodingContext *pContext,
     }
 
 #ifndef ARMOPT_BITIO    // ARM opt always uses 32-bit version of getBits
-    if (pContext->m_aModelLP.m_iFlcBits[0] > 14 || pContext->m_aModelLP.m_iFlcBits[1] > 14) {
+    if (pContext->m_aModelLP.m_iFlcBits[0] > 14 || pContext->m_aModelLP.m_iFlcBits[1] > 14 ||
+        (pSC->WMISCP.bModkitHdp && pContext->m_aModelLP.m_iFlcBits[2] > 14)) {
         getBits = getBit32;
     }
 #endif
@@ -869,7 +873,7 @@ Int DecodeMacroblockLowpass (CWMImageStrCodec * pSC, CCodingContext *pContext,
         PixelI *pCoeffs = aDC[iChannel];
 
         if (iCBP & 1) {
-            iNumNonzero = DecodeBlock (iChannel > 0, aRLCoeffs, pContext->m_pAHexpt,
+            iNumNonzero = DecodeBlock (iChannel > 0 && (!pSC->WMISCP.bModkitHdp || cf == YUV_444), aRLCoeffs, pContext->m_pAHexpt,
                 CTDC, pIO, 1 + 9 * ((cf == YUV_420) && (iChannel == 1))
                 + ((cf == YUV_422) && (iChannel == 1)));
 
@@ -974,8 +978,8 @@ Int DecodeMacroblockLowpass (CWMImageStrCodec * pSC, CCodingContext *pContext,
                 }
             }
         }
-        pLM = aLaplacianMean + 1;
-        iModelBits = pContext->m_aModelLP.m_iFlcBits[1];
+        pLM = aLaplacianMean + (pSC->WMISCP.bModkitHdp && iChannel > 0 ? 2 : 1);
+        iModelBits = pContext->m_aModelLP.m_iFlcBits[pSC->WMISCP.bModkitHdp && iChannel > 0 ? 2 : 1];
 
         iCBP >>= 1;
     }
@@ -1017,7 +1021,7 @@ Int DecodeMacroblockDC(CWMImageStrCodec * pSC, CCodingContext *pContext, Int iMB
     const Int iChannels = (Int) pSC->m_param.cNumChannels;
     BitIOInfo* pIO = pContext->m_pIODC;
     Int iIndex, i;
-    Int aLaplacianMean[2] = { 0, 0}, *pLM = aLaplacianMean;
+    Int aLaplacianMean[3] = { 0, 0, 0}, *pLM = aLaplacianMean;
     Int iModelBits = pContext->m_aModelDC.m_iFlcBits[0];
     struct CAdaptiveHuffman *pAH;
     Int iQDCY, iQDCU, iQDCV;
@@ -1059,8 +1063,8 @@ Int DecodeMacroblockDC(CWMImageStrCodec * pSC, CCodingContext *pContext, Int iMB
                 iQDCY = -iQDCY;
             pMBInfo->iBlockDC[i][0] = iQDCY;
 
-            pLM = aLaplacianMean + 1;
-            iModelBits = pContext->m_aModelDC.m_iFlcBits[1];
+            pLM = aLaplacianMean + (pSC->WMISCP.bModkitHdp && i > 0 ? 2 : 1);
+            iModelBits = pContext->m_aModelDC.m_iFlcBits[pSC->WMISCP.bModkitHdp && i > 0 ? 2 : 1];
         }
     }
     else {
@@ -1098,6 +1102,10 @@ Int DecodeMacroblockDC(CWMImageStrCodec * pSC, CCodingContext *pContext, Int iMB
             iQDCU = -iQDCU;
         pMBInfo->iBlockDC[1][0] = iQDCU;
 
+        if(pSC->WMISCP.bModkitHdp) {
+            pLM = aLaplacianMean + 2;
+            iModelBits = pContext->m_aModelDC.m_iFlcBits[2];
+        }
         if (iQDCV) {
             iQDCV = DecodeSignificantAbsLevel(pContext->m_pAHexpt[4], pIO) - 1;
             *pLM += 1;

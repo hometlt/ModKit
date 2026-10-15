@@ -96,6 +96,11 @@ Void predDCACDec(CWMImageStrCodec * pSC)
     Int ii;
 
     for(ii = 0; ii < iChannels; ii ++){
+        if(pSC->WMISCP.bModkitHdp && cf == NCOMPONENT && ii > 0) {
+            iDCACPredMode = getDCACPredModeChannel(pSC, mbX, ii);
+            iDCPredMode = iDCACPredMode & 3;
+            iADPredMode = iDCACPredMode & 12;
+        }
         pOrg = pMBInfo->iBlockDC[ii];//[dcBlkIdx + (i >> 4)]; // current DC block
 
         /* DC prediction */
@@ -177,6 +182,10 @@ Void predDCACDec(CWMImageStrCodec * pSC)
     }
 
     pMBInfo->iOrientation = 2 - getACPredMode(pMBInfo, cf);
+    if(pSC->WMISCP.bModkitHdp) {
+        for(ii = 0; ii < iChannels; ii++)
+            pMBInfo->componentOrientation[ii] = cf == NCOMPONENT ? 2 - getACPredModeChannel(pMBInfo, cf, ii) : pMBInfo->iOrientation;
+    }
 }
 
 /*************************************************************************
@@ -194,6 +203,8 @@ Void predACDec(CWMImageStrCodec * pSC)
 
     /* AC prediction */
     for(i = 0; i < iChannels; i++){
+        if(pSC->WMISCP.bModkitHdp)
+            iACPredMode = 2 - pMBInfo->componentOrientation[i];
         // prediction only happens inside MB
         PixelI* pSrc = pSC->p1MBbuffer[i];//0 == i ? pSC->pY1 : (1 == i ? pSC->pU1 : pSC->pV1);
 
@@ -344,7 +355,7 @@ static Int predCBPCDec(CWMImageStrCodec * pSC, Int iCBP, size_t mbX, size_t mbY,
 {
     Int iNOrig;
     const int iNDiff = AVG_NDIFF;
-    size_t c1 = c ? 1 : 0;
+    size_t c1 = pSC->WMISCP.bModkitHdp ? c : (c ? 1 : 0);
 
     UNREFERENCED_PARAMETER( mbY );
 

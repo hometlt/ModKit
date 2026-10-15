@@ -11,8 +11,11 @@
  * - {@link jpegXrFileFromHeaderless}: the file for a codestream whose writer cut off the image
  *   header (id Tech virtual-texture pages keep only the plane headers and one spatial tile), so
  *   no codec rebuilds that header itself.
+ * - {@link decodeJpegXrComponents}: explicit raw 1..3 component bytes, no ICC or game-specific
+ *   YCoCg/normal conversion. Optional `hdphoto-independent` selects the independently coded
+ *   spatial, subversion-1, overlap-1/no-flexbits/no-alpha HD Photo dialect; never auto-detected.
  *
- * Not decoded: 16-bit, fixed, float, CMYK, n-component and premultiplied formats
+ * Not decoded: 16-bit, fixed, float, CMYK, premultiplied formats, n-component RGBA conversion
  * ({@link JPEGXR_UNSUPPORTED}); writing JPEG XR.
  */
 import type { RgbaImage } from './image.js'
@@ -25,13 +28,26 @@ export const JPEGXR_UNSUPPORTED = 'codec-kit/jpegxr-unsupported'
 export const JPEGXR_OUTPUT_LIMIT = 'codec-kit/jpegxr-output-limit'
 
 export interface JpegXrDecodeOptions {
-  /** Upper bound on the RGBA output (width × height × 4); checked before anything is decoded. */
+  /** Positive safe-integer byte bound: RGBA width×height×4, or raw width×height×componentCount. */
   readonly maxOutputBytes: number
   readonly signal?: AbortSignal
 }
 
 /** Decode one JPEG XR file into RGBA8. */
 export type JpegXrDecoder = (file: Uint8Array, options: JpegXrDecodeOptions) => RgbaImage
+
+/** Interleaved biased 8-bit codestream components, not implicitly RGB or alpha. */
+export interface JpegXrComponentImage {
+  readonly width: number
+  readonly height: number
+  readonly componentCount: 1 | 2 | 3
+  readonly pixels: Uint8Array
+}
+
+export interface JpegXrComponentDecodeOptions extends JpegXrDecodeOptions {
+  /** Default standard JPEG XR; HDP has a deliberately narrow, explicitly admitted profile. */
+  readonly dialect?: 'jpegxr' | 'hdphoto-independent'
+}
 
 /** A codestream without its image header: what the header would have said, and the rest. */
 export interface HeaderlessJpegXr {
@@ -43,6 +59,8 @@ export interface HeaderlessJpegXr {
   readonly alpha: boolean
   /** Codec sub-version: 0 the original operators (HD Photo, id Tech pages), 1 JPEG XR. Default 0. */
   readonly subVersion?: 0 | 1
+  /** Default RGBA-compatible file. Components uses gray or generic n-channel container output. */
+  readonly output?: 'rgba' | 'components'
   /** Everything after the image header: plane header(s), header-size word and the spatial tile. */
   readonly planes: Uint8Array
 }
@@ -52,7 +70,7 @@ interface JxrExports {
   __wasm_call_ctors(): void
   malloc(size: number): number
   free(pointer: number): void
-  mk_jxr_open(buffer: number, bytes: number): number
+  mk_jxr_open(buffer: number, bytes: number, mode: number): number
   mk_jxr_info(handle: number, out: number): number
   mk_jxr_copy(handle: number, dest: number, stride: number): number
   mk_jxr_close(handle: number): void
@@ -61,6 +79,7 @@ interface JxrExports {
 // jxrlib COLORFORMAT, BITDEPTH_BITS and pixel-format GUIDs (GUID_PKPixelFormat…, last byte varies).
 const Y_ONLY = 0
 const CF_RGB = 7
+const NCOMPONENT = 6
 const BD_8 = 1
 const FLAG_ALPHA = 1
 const FLAG_BGR = 2
@@ -70,9 +89,23 @@ const PIXEL_FORMAT_GUID = [
 ]
 const PIXEL_FORMAT_24BPP_RGB = 0x0d
 const PIXEL_FORMAT_32BPP_BGRA = 0x0f
+const PIXEL_FORMAT_8BPP_GRAY = 0x08
+const PIXEL_FORMAT_24BPP_COMPONENTS = 0x20
 
-let loaded: Promise<JpegXrDecoder> | undefined
+interface NativeImage {
+  readonly width: number
+  readonly height: number
+  readonly componentCount: number
+  readonly pixels: Uint8Array
+}
+type NativeDecoder = (
+  file: Uint8Array,
+  options: JpegXrComponentDecodeOptions,
+  raw: boolean,
+) => NativeImage
+let loaded: Promise<NativeDecoder> | undefined
 
+/** Retain stable caller-visible error codes without replacing the native error category. */
 function coded(error: Error, code: string): Error {
   Object.defineProperty(error, 'code', { value: code, enumerable: true })
   return error
@@ -146,11 +179,22 @@ function toRgba(native: Uint8Array, count: number, bitsPerPixel: number, flags: 
  * The JPEG XR decoder, loaded once per realm on first use. A decoder trap (a corrupt codestream
  * jxrlib asserts on) drops the instance, so the next call starts from a fresh one.
  */
-export function loadJpegXrDecoder(): Promise<JpegXrDecoder> {
+function loadNativeDecoder(): Promise<NativeDecoder> {
   loaded ??= instantiate().then(first => {
     let wasm: JxrExports | undefined = first
-    return (file, options) => {
+    return (file, options, raw) => {
       options.signal?.throwIfAborted()
+      if (!Number.isSafeInteger(options.maxOutputBytes) || options.maxOutputBytes < 1)
+        throw coded(
+          new RangeError('JPEG XR needs a positive safe-integer output bound'),
+          JPEGXR_OUTPUT_LIMIT,
+        )
+      if (
+        options.dialect !== undefined &&
+        options.dialect !== 'jpegxr' &&
+        options.dialect !== 'hdphoto-independent'
+      )
+        throw coded(new TypeError('unknown JPEG XR dialect'), JPEGXR_UNSUPPORTED)
       const exports =
         wasm ??
         (() => {
@@ -168,21 +212,28 @@ export function loadJpegXrDecoder(): Promise<JpegXrDecoder> {
       try {
         const input = alloc(Math.max(1, file.byteLength))
         new Uint8Array(exports.memory.buffer).set(file, input)
-        handle = exports.mk_jxr_open(input, file.byteLength)
+        handle = exports.mk_jxr_open(
+          input,
+          file.byteLength,
+          (raw ? 2 : 0) | (options.dialect === 'hdphoto-independent' ? 1 : 0),
+        )
         if (handle === 0) throw coded(new TypeError('not a decodable JPEG XR file'), JPEGXR_INVALID)
         const info = alloc(7 * 4)
         if (exports.mk_jxr_info(handle, info) !== 0)
           throw coded(new TypeError('JPEG XR pixel format is unknown'), JPEGXR_UNSUPPORTED)
-        const [width, height, bitsPerPixel, , colorFormat, bitDepth, flags] = new Int32Array(
-          exports.memory.buffer.slice(info, info + 7 * 4),
-        ) as unknown as number[]
+        const [width, height, bitsPerPixel, channels, colorFormat, bitDepth, flags] =
+          new Int32Array(exports.memory.buffer.slice(info, info + 7 * 4)) as unknown as number[]
         if (
           bitDepth !== BD_8 ||
           (flags! & FLAG_PREMULTIPLIED) !== 0 ||
-          !(
-            (colorFormat === Y_ONLY && bitsPerPixel === 8) ||
-            (colorFormat === CF_RGB && (bitsPerPixel === 24 || bitsPerPixel === 32))
-          )
+          !(raw
+            ? colorFormat === NCOMPONENT &&
+              channels! >= 1 &&
+              channels! <= 3 &&
+              bitsPerPixel === channels! * 8 &&
+              flags === 0
+            : (colorFormat === Y_ONLY && bitsPerPixel === 8) ||
+              (colorFormat === CF_RGB && (bitsPerPixel === 24 || bitsPerPixel === 32)))
         ) {
           throw coded(
             new TypeError(
@@ -191,7 +242,13 @@ export function loadJpegXrDecoder(): Promise<JpegXrDecoder> {
             JPEGXR_UNSUPPORTED,
           )
         }
-        if (width! * height! * 4 > options.maxOutputBytes) {
+        const bytes = width! * height! * (raw ? channels! : 4)
+        if (
+          width! < 1 ||
+          height! < 1 ||
+          !Number.isSafeInteger(bytes) ||
+          bytes > options.maxOutputBytes
+        ) {
           throw coded(
             new RangeError(
               `JPEG XR image ${width}x${height} exceeds its ${options.maxOutputBytes}-byte bound`,
@@ -199,14 +256,21 @@ export function loadJpegXrDecoder(): Promise<JpegXrDecoder> {
             JPEGXR_OUTPUT_LIMIT,
           )
         }
-        const stride = (width! * bitsPerPixel!) >> 3
+        const stride = width! * (bitsPerPixel! / 8)
         const out = alloc(Math.max(1, stride * height!))
         if (exports.mk_jxr_copy(handle, out, stride) !== 0)
           throw coded(new TypeError('JPEG XR codestream does not decode'), JPEGXR_INVALID)
         const native = new Uint8Array(exports.memory.buffer, out, stride * height!)
-        const pixels = toRgba(native, width! * height!, bitsPerPixel!, flags!)
+        const pixels = raw
+          ? native.slice()
+          : toRgba(native, width! * height!, bitsPerPixel!, flags!)
         options.signal?.throwIfAborted()
-        return { width: width!, height: height!, pixels }
+        return {
+          width: width!,
+          height: height!,
+          pixels,
+          componentCount: channels!,
+        }
       } catch (error) {
         if (isCoded(error)) throw error
         // a trap leaves jxrlib's heap undefined: drop the instance, report the file
@@ -227,6 +291,33 @@ export function loadJpegXrDecoder(): Promise<JpegXrDecoder> {
   return loaded
 }
 
+/** Load the standard RGBA decoder over the same per-realm WASM lifecycle as raw decoding. */
+export async function loadJpegXrDecoder(): Promise<JpegXrDecoder> {
+  const decode = await loadNativeDecoder()
+  return (file, options) => {
+    const image = decode(file, options, false)
+    return {
+      width: image.width,
+      height: image.height,
+      pixels: image.pixels,
+    }
+  }
+}
+
+/** Decode raw 8-bit components within their actual byte bound; color semantics stay with callers. */
+export async function decodeJpegXrComponents(
+  file: Uint8Array,
+  options: JpegXrComponentDecodeOptions,
+): Promise<JpegXrComponentImage> {
+  const image = (await loadNativeDecoder())(file, options, true)
+  return {
+    width: image.width,
+    height: image.height,
+    componentCount: image.componentCount as 1 | 2 | 3,
+    pixels: image.pixels,
+  }
+}
+
 /** Decode one JPEG XR file into RGBA8 ({@link loadJpegXrDecoder}). */
 export async function decodeJpegXr(
   file: Uint8Array,
@@ -237,9 +328,11 @@ export async function decodeJpegXr(
 
 /**
  * The JPEG XR file for a headerless codestream: the 16-byte image header (short header, long
- * words, spatial order, no tiling and no index table, RGB 8-bit output) rebuilt in front of the
+ * words, spatial order, no tiling and no index table, 8-bit output) rebuilt in front of the
  * planes, inside the minimal container jxrlib reads (pixel format 32bpp BGRA with alpha, 24bpp
- * RGB without; {@link decodeJpegXr} returns RGBA either way).
+ * RGB without; {@link decodeJpegXr} returns RGBA either way). Explicit components selects gray
+ * or generic three-slot storage (T.832 defines no two-channel GUID); the plane header remains
+ * authoritative for {@link decodeJpegXrComponents}' actual 1/2/3-component count and tight stride.
  */
 export function jpegXrFileFromHeaderless(input: HeaderlessJpegXr): Uint8Array {
   const { width, height, overlap, alpha, planes } = input
@@ -247,12 +340,29 @@ export function jpegXrFileFromHeaderless(input: HeaderlessJpegXr): Uint8Array {
     throw new RangeError('a JPEG XR image has a positive width and height')
   if (width > 65536 || height > 65536)
     throw new RangeError('a short JPEG XR header holds at most 65536 pixels on a side')
+  if (
+    ![0, 1, 2].includes(overlap) ||
+    (input.subVersion !== undefined && ![0, 1].includes(input.subVersion))
+  )
+    throw new RangeError('unsupported JPEG XR overlap or subversion')
+  if (input.output !== undefined && input.output !== 'rgba' && input.output !== 'components')
+    throw new TypeError('unknown JPEG XR output representation')
+  let components = 0
+  if (input.output === 'components') {
+    if (alpha || planes.length < 2)
+      throw new TypeError('raw JPEG XR components require a complete non-alpha plane header')
+    const format = planes[0]! >> 5
+    components =
+      format === Y_ONLY ? 1 : format === 3 ? 3 : format === NCOMPONENT ? (planes[1]! >> 4) + 1 : 0
+    if (components < 1 || components > 3)
+      throw new TypeError('raw JPEG XR supports only 1..3 components')
+  }
   const codestream = new Uint8Array(16 + planes.byteLength)
   codestream.set(new TextEncoder().encode('WMPHOTO\0'))
   codestream[8] = 0x10 | (input.subVersion ?? 0)
   codestream[9] = overlap & 3
   codestream[10] = 0xc0 | (alpha ? 1 : 0)
-  codestream[11] = 0x71
+  codestream[11] = components ? (components === 1 ? 0x01 : 0x61) : 0x71
   const header = new DataView(codestream.buffer)
   header.setUint16(12, width - 1)
   header.setUint16(14, height - 1)
@@ -261,7 +371,13 @@ export function jpegXrFileFromHeaderless(input: HeaderlessJpegXr): Uint8Array {
     codestream,
     width,
     height,
-    alpha ? PIXEL_FORMAT_32BPP_BGRA : PIXEL_FORMAT_24BPP_RGB,
+    components
+      ? components === 1
+        ? PIXEL_FORMAT_8BPP_GRAY
+        : PIXEL_FORMAT_24BPP_COMPONENTS
+      : alpha
+        ? PIXEL_FORMAT_32BPP_BGRA
+        : PIXEL_FORMAT_24BPP_RGB,
   )
 }
 

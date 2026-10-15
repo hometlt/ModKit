@@ -150,6 +150,7 @@ Int AllocateCodingContextDec(CWMImageStrCodec *pSC, Int iNumContexts)
             }
         }
 
+        pContext->m_aModelDC.bModkitHdp = pSC->WMISCP.bModkitHdp;
         ResetCodingContextDec(pContext);
     }
 

@@ -165,8 +165,14 @@ Void freePredInfo(CWMImageStrCodec *pSC)
 /* get AC prediction mode: 0(from left) 1(from top) 2(none) */
 Int getACPredMode(CWMIMBInfo * pMBInfo, COLORFORMAT cf)
 {
+    return getACPredModeChannel(pMBInfo, cf, 0);
+}
+
+/* Same prediction metric with an explicit component for independent HDP planes. */
+Int getACPredModeChannel(CWMIMBInfo * pMBInfo, COLORFORMAT cf, size_t channel)
+{
     //Int blkIdx = (cf == Y_ONLY ? 16 : (cf == YUV_420 ? 24 : (cf == YUV_422 ? 32 : 48)));
-    PixelI * pCoeffs = pMBInfo->iBlockDC[0];
+    PixelI * pCoeffs = pMBInfo->iBlockDC[channel];
     Int StrH = abs(pCoeffs[1]) + abs(pCoeffs[2]) + abs(pCoeffs[3]);
     Int StrV = abs(pCoeffs[4]) + abs(pCoeffs[8]) + abs(pCoeffs[12]);
 
@@ -193,6 +199,12 @@ Int getACPredMode(CWMIMBInfo * pMBInfo, COLORFORMAT cf)
 /* get DCAC prediction mode: 0(from left) 1(from top) 2(none) */
 Int getDCACPredMode(CWMImageStrCodec *pSC, size_t mbX)
 {
+    return getDCACPredModeChannel(pSC, mbX, 0);
+}
+
+/* Keep the standard predictor while allowing HDP NCOMPONENT's own neighbor history. */
+Int getDCACPredModeChannel(CWMImageStrCodec *pSC, size_t mbX, size_t channel)
+{
     Int iDCMode, iADMode = 2;  // DC: 0(left) 1(top) 2(mean) 3(no)
                                // AD: 0(left) 1(top) 2(no)
 
@@ -207,7 +219,7 @@ Int getDCACPredMode(CWMImageStrCodec *pSC, size_t mbX)
     }
     else{
         COLORFORMAT cf = pSC->m_param.cfColorFormat;
-        Int iL = pSC->PredInfo[0][mbX - 1].iDC, iT = pSC->PredInfoPrevRow[0][mbX].iDC, iTL = pSC->PredInfoPrevRow[0][mbX - 1].iDC;
+        Int iL = pSC->PredInfo[channel][mbX - 1].iDC, iT = pSC->PredInfoPrevRow[channel][mbX].iDC, iTL = pSC->PredInfoPrevRow[channel][mbX - 1].iDC;
         Int StrH, StrV;
 
         if(cf == Y_ONLY || cf == NCOMPONENT){ // CMYK uses YUV metric
@@ -225,9 +237,9 @@ Int getDCACPredMode(CWMImageStrCodec *pSC, size_t mbX)
         iDCMode = (StrH * ORIENT_WEIGHT < StrV ? 1 : (StrV * ORIENT_WEIGHT < StrH ? 0 : 2));
     }
 
-    if(iDCMode == 1 && pSC->MBInfo.iQIndexLP == pSC->PredInfoPrevRow[0][mbX].iQPIndex)
+    if(iDCMode == 1 && pSC->MBInfo.iQIndexLP == pSC->PredInfoPrevRow[channel][mbX].iQPIndex)
         iADMode = 1;
-    if(iDCMode == 0 && pSC->MBInfo.iQIndexLP == pSC->PredInfo[0][mbX - 1].iQPIndex)
+    if(iDCMode == 0 && pSC->MBInfo.iQIndexLP == pSC->PredInfo[channel][mbX - 1].iQPIndex)
         iADMode = 0;
 
     return (iDCMode + (iADMode << 2));

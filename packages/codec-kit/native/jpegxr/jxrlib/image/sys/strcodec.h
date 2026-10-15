@@ -204,6 +204,7 @@ typedef struct tagCWMIQuantizer {
 typedef struct tagCWMIMBInfo {
     I32 iBlockDC[MAX_CHANNELS][16];
     I32 iOrientation;
+    I32 componentOrientation[MAX_CHANNELS]; /* HDP NCOMPONENT predicts each component separately. */
     Int iCBP[MAX_CHANNELS];
     Int iDiffCBP[MAX_CHANNELS];
     U8 iQIndexLP; // 0 - 15
@@ -620,7 +621,9 @@ const static Int blkIdxByRow[4][4] = {{0, 1, 4, 5}, {2, 3, 6, 7}, {8, 9, 12, 13}
 const static Int blkIdxByColumn[4][4] = {{0, 2, 8, 10}, {1, 3, 9, 11},{4, 6, 12, 14},{5, 7, 13, 15}};
 
 Int getACPredMode(CWMIMBInfo *, COLORFORMAT);
+Int getACPredModeChannel(CWMIMBInfo *, COLORFORMAT, size_t);
 Int getDCACPredMode(CWMImageStrCodec *, size_t);
+Int getDCACPredModeChannel(CWMImageStrCodec *, size_t, size_t);
 Void updatePredInfo(CWMImageStrCodec* pSC, CWMIMBInfo *, size_t, COLORFORMAT);
 
 Int AllocateCodingContextDec(struct CWMImageStrCodec *pSC, Int iNumContexts);

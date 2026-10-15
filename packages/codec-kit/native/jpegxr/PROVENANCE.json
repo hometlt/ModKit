@@ -61,8 +61,9 @@
     {
       "path": "jxrlib/image/decode/decode.c",
       "source": "jxrlib/image/decode/decode.c",
-      "sha256": "95ab99ca40e31aac6498cf5ea3389be42d8e976a3f4d5d49b9ac489e6faa923c",
-      "edit": "none"
+      "sha256": "1d5d2481d5a9faefc87b54f4b5ce550de77045dc9f555d07d859d1fddbdf708f",
+      "sourceSha256": "95ab99ca40e31aac6498cf5ea3389be42d8e976a3f4d5d49b9ac489e6faa923c",
+      "edit": "Modkit opt-in independent-component HDP dialect; standard JPEG XR arithmetic and entrypoints preserved (2026-10-15)"
     },
     {
       "path": "jxrlib/image/decode/decode.h",
@@ -79,20 +80,23 @@
     {
       "path": "jxrlib/image/decode/segdec.c",
       "source": "jxrlib/image/decode/segdec.c",
-      "sha256": "0c7a25e70bfcc8d21b279ec870df69ea0541efdfe7ac6987fa77508ea8f6f6ac",
-      "edit": "none"
+      "sha256": "504f8628ff7af87f8cf0ba5812d471ee26bdda5764d005b9e799cf7664be8afb",
+      "sourceSha256": "0c7a25e70bfcc8d21b279ec870df69ea0541efdfe7ac6987fa77508ea8f6f6ac",
+      "edit": "Modkit opt-in independent-component HDP dialect; standard JPEG XR arithmetic and entrypoints preserved (2026-10-15)"
     },
     {
       "path": "jxrlib/image/decode/strInvTransform.c",
       "source": "jxrlib/image/decode/strInvTransform.c",
-      "sha256": "84a7770289ba3e393609e44a52db49b8c909b2c4a96e44f06e7d1097ce75bd90",
-      "edit": "none"
+      "sha256": "22258aa903afa16a72fe612bb68bd3df864db31b2bfd0ffc07f4615e699f953a",
+      "sourceSha256": "84a7770289ba3e393609e44a52db49b8c909b2c4a96e44f06e7d1097ce75bd90",
+      "edit": "Modkit opt-in independent-component HDP dialect; standard JPEG XR arithmetic and entrypoints preserved (2026-10-15)"
     },
     {
       "path": "jxrlib/image/decode/strPredQuantDec.c",
       "source": "jxrlib/image/decode/strPredQuantDec.c",
-      "sha256": "15baa24b037b921ee018759a69a5eb82264fafcd5b4e6e298c062890038ec13d",
-      "edit": "none"
+      "sha256": "5937c762d6e69053d03090b7cbdb25d6d207e9ce5d641197e439f56f18fe1292",
+      "sourceSha256": "15baa24b037b921ee018759a69a5eb82264fafcd5b4e6e298c062890038ec13d",
+      "edit": "Modkit opt-in independent-component HDP dialect; standard JPEG XR arithmetic and entrypoints preserved (2026-10-15)"
     },
     {
       "path": "jxrlib/image/decode/strdec.c",
@@ -163,14 +167,16 @@
     {
       "path": "jxrlib/image/sys/common.h",
       "source": "jxrlib/image/sys/common.h",
-      "sha256": "1bd7ef25ba26857070bbc4608730cccce77e8ce8c200ecf8577903195ba73967",
-      "edit": "none"
+      "sha256": "2e3311c86be174e5e5a10882e47a3dd76384b58862fa9309e854d30cb9539ed2",
+      "sourceSha256": "1bd7ef25ba26857070bbc4608730cccce77e8ce8c200ecf8577903195ba73967",
+      "edit": "Modkit opt-in independent-component HDP dialect; standard JPEG XR arithmetic and entrypoints preserved (2026-10-15)"
     },
     {
       "path": "jxrlib/image/sys/image.c",
       "source": "jxrlib/image/sys/image.c",
-      "sha256": "2ee5ebff2dd7669e7a4786af7f3ec815ea92e87dc362a06f8a232e19f15cb8a1",
-      "edit": "none"
+      "sha256": "91ba72ed54565fe515d54a3e3c39bd84eb8d2d3ca21632c1a87f846644a8102c",
+      "sourceSha256": "2ee5ebff2dd7669e7a4786af7f3ec815ea92e87dc362a06f8a232e19f15cb8a1",
+      "edit": "Modkit opt-in independent-component HDP dialect; standard JPEG XR arithmetic and entrypoints preserved (2026-10-15)"
     },
     {
       "path": "jxrlib/image/sys/perfTimer.h",
@@ -187,8 +193,9 @@
     {
       "path": "jxrlib/image/sys/strPredQuant.c",
       "source": "jxrlib/image/sys/strPredQuant.c",
-      "sha256": "3bb780e35792db0f66a6b0f604e6f8d25b805a9a6003662c3215ded57eec6c21",
-      "edit": "none"
+      "sha256": "7235c89c30ac1528d6db47736b35dd0d3db783037ec8391968edb11a74994bb6",
+      "sourceSha256": "3bb780e35792db0f66a6b0f604e6f8d25b805a9a6003662c3215ded57eec6c21",
+      "edit": "Modkit opt-in independent-component HDP dialect; standard JPEG XR arithmetic and entrypoints preserved (2026-10-15)"
     },
     {
       "path": "jxrlib/image/sys/strTransform.c",
@@ -211,14 +218,16 @@
     {
       "path": "jxrlib/image/sys/strcodec.h",
       "source": "jxrlib/image/sys/strcodec.h",
-      "sha256": "836afd4627d8d5564243047e60889fab8e6fe60a6971bed1e8a3c10ab57f4262",
-      "edit": "none"
+      "sha256": "3357adabb9e3bd3aeb02c5e771a6aef5af0e870a662d3f4c0610051d37c631b5",
+      "sourceSha256": "836afd4627d8d5564243047e60889fab8e6fe60a6971bed1e8a3c10ab57f4262",
+      "edit": "Modkit opt-in independent-component HDP dialect; standard JPEG XR arithmetic and entrypoints preserved (2026-10-15)"
     },
     {
       "path": "jxrlib/image/sys/windowsmediaphoto.h",
       "source": "jxrlib/image/sys/windowsmediaphoto.h",
-      "sha256": "82fd5d81e3cccef933259c6da5f36b0bf167a6a09869bd2b016d2fc6aaa843a2",
-      "edit": "none"
+      "sha256": "0010d285a2f49a9ca250aff4571e864456bdeca0d92b6d9ec539626093e65b0c",
+      "sourceSha256": "82fd5d81e3cccef933259c6da5f36b0bf167a6a09869bd2b016d2fc6aaa843a2",
+      "edit": "Modkit opt-in independent-component HDP dialect; standard JPEG XR arithmetic and entrypoints preserved (2026-10-15)"
     },
     {
       "path": "jxrlib/image/sys/xplatform_image.h",

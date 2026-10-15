@@ -39,8 +39,9 @@ static Void invOddOdd(PixelI *, PixelI *, PixelI *, PixelI *);
 static Void invOddOddPost(PixelI *, PixelI *, PixelI *, PixelI *);
 static Void invOdd(PixelI *, PixelI *, PixelI *, PixelI *);
 static Void strHSTdec(PixelI *, PixelI *, PixelI *, PixelI *);
+static Void strHSTdecMode(PixelI *, PixelI *, PixelI *, PixelI *, Bool);
 static Void strHSTdec1(PixelI *, PixelI *);
-static Void strHSTdec1_alternate(PixelI *, PixelI *);
+static Void strHSTdec1_alternate(PixelI *, PixelI *, Bool);
 static Void strHSTdec1_edge(PixelI *pa, PixelI *pd);
 
 /** IDCT stuff **/
@@ -249,9 +250,13 @@ Void strPost4(PixelI *pa, PixelI *pb, PixelI *pc, PixelI *pd)
     *pd = d;
 }
 
-Void strPost4_alternate(PixelI *pa, PixelI *pb, PixelI *pc, PixelI *pd)
+static Void strPost4_alternateMode(PixelI *pa, PixelI *pb, PixelI *pc, PixelI *pd, Bool hdp)
 {
     PixelI a, b, c, d;
+    if(hdp) {
+        strPost4(pa, pb, pc, pd);
+        return;
+    }
     a = *pa;
     b = *pb;
     c = *pc;
@@ -386,7 +391,7 @@ Void strPost4x4Stage1(PixelI* p, Int iOffset, Int iHPQP, Bool bHPAbsent)
     strPost4x4Stage1Split(p, p + 16, iOffset, iHPQP, bHPAbsent);
 }
 
-Void strPost4x4Stage1Split_alternate(PixelI *p0, PixelI *p1, Int iOffset)
+static Void strPost4x4Stage1Split_alternateMode(PixelI *p0, PixelI *p1, Int iOffset, Bool hdp)
 {
     PixelI *p2 = p0 + 72 - iOffset;
     PixelI *p3 = p1 + 64 - iOffset;
@@ -409,14 +414,20 @@ Void strPost4x4Stage1Split_alternate(PixelI *p0, PixelI *p1, Int iOffset)
     IROTATE1(p2[0], p2[2]);
 
     /** butterfly **/
-    strHSTdec1_alternate(p0 + 0, p3 + 0);
-    strHSTdec1_alternate(p0 + 1, p3 + 1);
-    strHSTdec1_alternate(p0 + 2, p3 + 2);
-    strHSTdec1_alternate(p0 + 3, p3 + 3);
-    strHSTdec(p0 + 0, p2 + 0, p1 + 0, p3 + 0);
-    strHSTdec(p0 + 1, p2 + 1, p1 + 1, p3 + 1);
-    strHSTdec(p0 + 2, p2 + 2, p1 + 2, p3 + 2);
-    strHSTdec(p0 + 3, p2 + 3, p1 + 3, p3 + 3);
+    strHSTdec1_alternate(p0 + 0, p3 + 0, hdp);
+    strHSTdec1_alternate(p0 + 1, p3 + 1, hdp);
+    strHSTdec1_alternate(p0 + 2, p3 + 2, hdp);
+    strHSTdec1_alternate(p0 + 3, p3 + 3, hdp);
+    strHSTdecMode(p0 + 0, p2 + 0, p1 + 0, p3 + 0, hdp);
+    strHSTdecMode(p0 + 1, p2 + 1, p1 + 1, p3 + 1, hdp);
+    strHSTdecMode(p0 + 2, p2 + 2, p1 + 2, p3 + 2, hdp);
+    strHSTdecMode(p0 + 3, p2 + 3, p1 + 3, p3 + 3, hdp);
+}
+
+/* Preserve the standard entry points used by the optional upstream x86 decoder. */
+Void strPost4x4Stage1Split_alternate(PixelI *p0, PixelI *p1, Int iOffset)
+{
+    strPost4x4Stage1Split_alternateMode(p0, p1, iOffset, FALSE);
 }
 
 Void strPost4x4Stage1_alternate(PixelI* p, Int iOffset)
@@ -470,7 +481,7 @@ Void strPost4x4Stage2Split(PixelI* p0, PixelI* p1)
     strHSTdec(p0 - 16, p1 -  64, p0 +  48, p1 +  0);
 }
 
-Void strPost4x4Stage2Split_alternate(PixelI* p0, PixelI* p1)
+static Void strPost4x4Stage2Split_alternateMode(PixelI* p0, PixelI* p1, Bool hdp)
 {
     /** buttefly **/
     strDCT2x2dn(p0 - 96, p0 +  96, p1 - 112, p1 + 80);
@@ -488,15 +499,20 @@ Void strPost4x4Stage2Split_alternate(PixelI* p0, PixelI* p1)
     IROTATE1(p1[-48], p1[-112]);
     
     /** butterfly **/
-    strHSTdec1_alternate(p0 - 96, p1 + 80);
-    strHSTdec1_alternate(p0 - 32, p1 + 16);
-    strHSTdec1_alternate(p0 - 80, p1 + 64);
-    strHSTdec1_alternate(p0 - 16, p1 +  0);
+    strHSTdec1_alternate(p0 - 96, p1 + 80, hdp);
+    strHSTdec1_alternate(p0 - 32, p1 + 16, hdp);
+    strHSTdec1_alternate(p0 - 80, p1 + 64, hdp);
+    strHSTdec1_alternate(p0 - 16, p1 +  0, hdp);
 
-    strHSTdec(p0 - 96, p1 - 112, p0 +  96, p1 + 80);
-    strHSTdec(p0 - 32, p1 -  48, p0 +  32, p1 + 16);
-    strHSTdec(p0 - 80, p1 - 128, p0 + 112, p1 + 64);
-    strHSTdec(p0 - 16, p1 -  64, p0 +  48, p1 +  0);
+    strHSTdecMode(p0 - 96, p1 - 112, p0 +  96, p1 + 80, hdp);
+    strHSTdecMode(p0 - 32, p1 -  48, p0 +  32, p1 + 16, hdp);
+    strHSTdecMode(p0 - 80, p1 - 128, p0 + 112, p1 + 64, hdp);
+    strHSTdecMode(p0 - 16, p1 -  64, p0 +  48, p1 +  0, hdp);
+}
+
+Void strPost4x4Stage2Split_alternate(PixelI *p0, PixelI *p1)
+{
+    strPost4x4Stage2Split_alternateMode(p0, p1, FALSE);
 }
 
 /** 
@@ -521,7 +537,7 @@ static Void strHSTdec1(PixelI *pa, PixelI *pd)
     *pd = d;
 }
 
-static Void strHSTdec1_alternate(PixelI *pa, PixelI *pd)
+static Void strHSTdec1_alternate(PixelI *pa, PixelI *pd, Bool hdp)
 {
     /** different realization : does rescaling as well! **/
     PixelI a, d;
@@ -530,6 +546,14 @@ static Void strHSTdec1_alternate(PixelI *pa, PixelI *pd)
 
     a += d;
     d = (a >> 1) - d;
+    if(hdp) {
+        a += (d * 3 + 8) >> 4;
+        d += (a * 3 + 4) >> 5;
+        a += (d * 3 + 8) >> 4;
+        *pa = a;
+        *pd = d;
+        return;
+    }
     a += (d * 3 + 0) >> 3;
     d += (a * 3 + 0) >> 4;
     //a += (d * 3 + 4) >> 3;
@@ -568,6 +592,11 @@ static Void strHSTdec1_edge (PixelI *pa, PixelI *pd)
 
 static Void strHSTdec(PixelI *pa, PixelI *pb, PixelI *pc, PixelI *pd)
 {
+    strHSTdecMode(pa, pb, pc, pd, FALSE);
+}
+
+static Void strHSTdecMode(PixelI *pa, PixelI *pb, PixelI *pc, PixelI *pd, Bool hdp)
+{
     /** different realization : does rescaling as well! **/
     PixelI a, b, c, d;
     a = *pa;
@@ -576,7 +605,8 @@ static Void strHSTdec(PixelI *pa, PixelI *pb, PixelI *pc, PixelI *pd)
     d = *pd;
 
     b -= c;
-    a += (d * 3 + 4) >> 3;
+    if(!hdp)
+        a += (d * 3 + 4) >> 3;
 
     d -= (b >> 1);
     c = ((a - b) >> 1) - c;
@@ -1168,6 +1198,12 @@ Int  invTransformMacroblock(CWMImageStrCodec * pSC)
 
 Int  invTransformMacroblock_alteredOperators_hard(CWMImageStrCodec * pSC)
 {
+    const Bool hdp = pSC->WMISCP.bModkitHdp;
+    /* Keep one traversal and thread the per-image dialect only through private operators. */
+#define strPost4_alternate(a,b,c,d) strPost4_alternateMode(a,b,c,d,hdp)
+#define strPost4x4Stage1Split_alternate(a,b,c) strPost4x4Stage1Split_alternateMode(a,b,c,hdp)
+#define strPost4x4Stage1_alternate(a,b) strPost4x4Stage1Split_alternateMode(a,(a)+16,b,hdp)
+#define strPost4x4Stage2Split_alternate(a,b) strPost4x4Stage2Split_alternateMode(a,b,hdp)
     const OVERLAP olOverlap = pSC->WMISCP.olOverlap;
     const COLORFORMAT cfColorFormat = pSC->m_param.cfColorFormat;
     // const BITDEPTH_BITS bdBitDepth = pSC->WMII.bdBitDepth;
@@ -1886,3 +1922,7 @@ Int  invTransformMacroblock_alteredOperators_hard(CWMImageStrCodec * pSC)
 
     return ICERR_OK;
 }
+#undef strPost4_alternate
+#undef strPost4x4Stage1Split_alternate
+#undef strPost4x4Stage1_alternate
+#undef strPost4x4Stage2Split_alternate

@@ -97,13 +97,17 @@ Void UpdateModelMB (COLORFORMAT cf, Int iChannels, Int iLaplacianMean[], CAdapti
     else if (cf == YUV_422) {
         iLaplacianMean[1] *= aWeight2[3 + (pModel->m_band) - BAND_DC];
     }
+    else if (pModel->bModkitHdp) {
+        iLaplacianMean[1] *= aWeight0[pModel->m_band - BAND_DC];
+        iLaplacianMean[2] *= aWeight0[pModel->m_band - BAND_DC];
+    }
     else {
         iLaplacianMean[1] *= aWeight1[pModel->m_band - BAND_DC][iChannels - 1];
         if (pModel->m_band == BAND_AC)
             iLaplacianMean[1] >>= 4;
     }
 
-    for (j = 0; j < 2; j++) {
+    for (j = 0; j < (pModel->bModkitHdp ? 3 : 2); j++) {
         Int iLM = iLaplacianMean[j];
         Int iMS = pModel->m_iFlcState[j];
         Int iDelta = (iLM - MODELWEIGHT) >> 2;
@@ -147,24 +151,26 @@ Void UpdateModelMB (COLORFORMAT cf, Int iChannels, Int iLaplacianMean[], CAdapti
 
 Void ResetCodingContext(CCodingContext *pContext)
 {
+    const Bool hdp = pContext->m_aModelDC.bModkitHdp;
     // reset bit reduction models
     memset (&(pContext->m_aModelAC), 0, sizeof(CAdaptiveModel));  
     pContext->m_aModelAC.m_band = BAND_AC;
 
     memset (&(pContext->m_aModelLP), 0, sizeof(CAdaptiveModel));  
     pContext->m_aModelLP.m_band = BAND_LP;
-    pContext->m_aModelLP.m_iFlcBits[0] = pContext->m_aModelLP.m_iFlcBits[1] = 4;
+    pContext->m_aModelLP.m_iFlcBits[0] = pContext->m_aModelLP.m_iFlcBits[1] = pContext->m_aModelLP.m_iFlcBits[2] = 4;
 
     memset (&(pContext->m_aModelDC), 0, sizeof(CAdaptiveModel));  
     pContext->m_aModelDC.m_band = BAND_DC;
-    pContext->m_aModelDC.m_iFlcBits[0] = pContext->m_aModelDC.m_iFlcBits[1] = 8;
+    pContext->m_aModelDC.m_iFlcBits[0] = pContext->m_aModelDC.m_iFlcBits[1] = pContext->m_aModelDC.m_iFlcBits[2] = 8;
+    pContext->m_aModelDC.bModkitHdp = pContext->m_aModelLP.bModkitHdp = pContext->m_aModelAC.bModkitHdp = hdp;
 
     // reset CBP models
     pContext->m_iCBPCountMax = pContext->m_iCBPCountZero = 1;
 
-    pContext->m_aCBPModel.m_iCount0[0] = pContext->m_aCBPModel.m_iCount0[1] = -4;
-    pContext->m_aCBPModel.m_iCount1[0] = pContext->m_aCBPModel.m_iCount1[1] = 4;
-    pContext->m_aCBPModel.m_iState[0] = pContext->m_aCBPModel.m_iState[1] = 0;
+    pContext->m_aCBPModel.m_iCount0[0] = pContext->m_aCBPModel.m_iCount0[1] = pContext->m_aCBPModel.m_iCount0[2] = -4;
+    pContext->m_aCBPModel.m_iCount1[0] = pContext->m_aCBPModel.m_iCount1[1] = pContext->m_aCBPModel.m_iCount1[2] = 4;
+    pContext->m_aCBPModel.m_iState[0] = pContext->m_aCBPModel.m_iState[1] = pContext->m_aCBPModel.m_iState[2] = 0;
 }
 
 /*************************************************************************

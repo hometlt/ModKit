@@ -356,6 +356,7 @@ typedef struct tagCWMImageInfo {
 } CWMImageInfo;
 
 typedef struct tagCWMIStrCodecParam {
+    Bool bModkitHdp; /* Modkit opt-in dialect; never inferred from ordinary JPEG XR headers. */
     Bool bVerbose;
 
     // for macroblock quantization (DQUANT)
