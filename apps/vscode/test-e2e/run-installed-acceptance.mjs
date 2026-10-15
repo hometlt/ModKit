@@ -37,6 +37,7 @@ import { basename, delimiter, dirname, join, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { chromium } from 'playwright-core'
 import { installedPackageOptions } from './installed-package-options.mjs'
+import { readInstalledA7Inventory, assertInstalledA7 } from './installed-a7-inventory.mjs'
 import {
   collectFailureDiagnostics,
   webviewDocumentExpression,
@@ -235,6 +236,7 @@ const formatSmokeRoots = Object.freeze({
   ),
 })
 let installedExtensionRoot
+let installedA7Inventory
 let formatSmokeAuthority
 let formatSmokeCases
 let formatSmokeAuthoritySha256
@@ -2799,43 +2801,6 @@ async function observeCorruptInputRefusal(page, port, timeoutMs = 60_000) {
   )
 }
 
-function assertA7(a7) {
-  for (const field of [
-    'expectedRoots',
-    'loadedRoots',
-    'missingRoots',
-    'unexpectedRoots',
-    'expectedContributions',
-    'loadedContributions',
-    'missingContributions',
-    'unexpectedContributions',
-    'loadErrors',
-  ]) {
-    if (!Array.isArray(a7?.[field])) throw new Error(`A7 receipt has no ${field} array`)
-  }
-  if (a7.expectedRoots.length !== 9 || a7.loadedRoots.length !== 9) {
-    throw new Error(
-      `A7 expected/loaded roots are ${a7.expectedRoots.length}/${a7.loadedRoots.length}, not 9/9`,
-    )
-  }
-  if (a7.expectedContributions.length !== 90 || a7.loadedContributions.length !== 90) {
-    throw new Error(
-      `A7 expected/loaded contributions are ${a7.expectedContributions.length}/${a7.loadedContributions.length}, not 90/90`,
-    )
-  }
-  for (const field of [
-    'missingRoots',
-    'unexpectedRoots',
-    'missingContributions',
-    'unexpectedContributions',
-    'loadErrors',
-  ]) {
-    if (a7[field].length !== 0)
-      throw new Error(`A7 ${field} is not empty: ${JSON.stringify(a7[field])}`)
-  }
-  if (a7.verdict !== 'pass') throw new Error(`A7 verdict is ${String(a7.verdict)}, not pass`)
-}
-
 function assertDds(probe) {
   const selected = probe.acceptance?.subject?.selected
   const identity = probe.acceptance?.subject?.descriptor?.identity
@@ -3809,7 +3774,7 @@ async function launchGeneration(generation) {
     receipt.ddsFailureDiagnostics = await collectFailureDiagnostics(port)
     throw new Error('installed DDS webview published no machine-readable subject receipt')
   }
-  assertA7(acceptance.a7)
+  assertInstalledA7(acceptance.a7, installedA7Inventory)
 
   await waitFor(
     async () => {
@@ -4346,6 +4311,8 @@ try {
   packageVsix()
   identifyArtifact()
   installVsix()
+  installedA7Inventory = await readInstalledA7Inventory(installedExtensionRoot)
+  receipt.a7Authority = installedA7Inventory.authority
   await launchGeneration(1)
   receipt.restart.attempted = true
   await launchGeneration(2)
