@@ -236,7 +236,11 @@ function recordItems(
         ),
       )
     }
-    case 'cliffs':
+    case 'cliffs': {
+      const terrain = record.space.layers.find(candidate => candidate.kind === 'heightfield')
+      const terrainBound = terrain !== undefined && layer.cellSize === terrain.cellSize &&
+        layer.columns <= terrain.columns && layer.rows <= terrain.rows &&
+        layer.origin.every((value, index) => value === terrain.origin[index])
       return Object.freeze(
         layer.levels.flatMap((row, y) =>
           row.flatMap((level, x) => {
@@ -247,7 +251,7 @@ function recordItems(
                     facet: 'cliffs' as const,
                     id: `${record.id}:${String(x)}:${String(y)}`,
                     layerId: record.id,
-                    coordinateSpaceId: 'height-grid' as const,
+                    coordinateSpaceId: terrainBound ? 'height-grid' as const : 'uvw-canonical' as const,
                     lod: 'exact' as const,
                     x,
                     y,
@@ -260,6 +264,7 @@ function recordItems(
           }),
         ),
       )
+    }
     case 'water':
       return Object.freeze(
         layer.zones.flatMap(zone => {

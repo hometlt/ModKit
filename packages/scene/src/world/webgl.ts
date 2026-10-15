@@ -1,3 +1,4 @@
+import { isTerrainBoundCliffItem } from '@modkit/sdk/maps'
 /**
  * Core common world renderer: retained terrain/atlas/blend/decal geometry, clipped water,
  * objects and UVM material instances, billboards, picking, lighting and camera plans for WebGL
@@ -7130,7 +7131,7 @@ function prepareWorldStaticTerrain(
   }
   const allCliffModelsResolved =
     cliffObjects.length > 0 && resolvedCliffObjects === cliffObjects.length
-  const cliffs = input.items.filter(item => item.facet === 'cliffs')
+  const cliffs = input.items.filter(isTerrainBoundCliffItem)
   const cliffByCell = new Map(cliffs.map(item => [`${item.x}:${item.y}`, item]))
   for (const item of cliffs) {
     for (const [dx, dy] of [

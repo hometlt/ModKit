@@ -18,6 +18,15 @@
 
 ## Проверки
 
+Independent cliffs используют SDK `MapNativeSampleGrid` и существующий Host grid
+admission, собственные positions/grid/revision; уровни не являются высотами или traversal.
+Только SDK `isTerrainBoundCliffItem` разрешает двум render consumers старый fallback стен
+по вершинам terrain. UV source публикует независимую классификацию canonical-координатами;
+совпадения локальных индексов недостаточно для связи с рельефом. Поля без explicit grid
+сохраняют существующую привязку через готовые terrain tuples, без нового point mapper.
+Числовые/булевы grid readers обходят все позиции, включая holes прямого JS-входа.
+
+
 Native traversal и navigation используют один `MapNativeSampleGrid` в SDK и один
 `admittedNativeSampleGrid` в Host. Игра явно публикует статическую политику класса;
 Host преобразует направления column/row в canonical x/z один раз через тот же frame,

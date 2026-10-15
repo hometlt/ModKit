@@ -1235,12 +1235,12 @@ function numericGrid(
   const rowValues = array(value, path, state, depth)
   if (rowValues.length !== rows) fail(`expected ${String(rows)} rows`, path)
   return Object.freeze(
-    rowValues.map((rowValue, rowIndex) => {
+    Array.from(rowValues, (rowValue, rowIndex) => {
       const rowPath = `${path}[${String(rowIndex)}]`
       const cells = array(rowValue, rowPath, state, depth + 1)
       if (cells.length !== columns) fail(`expected ${String(columns)} samples`, rowPath)
       return Object.freeze(
-        cells.map((cell, columnIndex) =>
+        Array.from(cells, (cell, columnIndex) =>
           integer
             ? integerAtLeast(cell, 0, `${rowPath}[${String(columnIndex)}]`, state, depth + 2)
             : finite(cell, `${rowPath}[${String(columnIndex)}]`, state, depth + 2),
@@ -1261,12 +1261,12 @@ function booleanGrid(
   const rowValues = array(value, path, state, depth)
   if (rowValues.length !== rows) fail(`expected ${String(rows)} rows`, path)
   return Object.freeze(
-    rowValues.map((rowValue, rowIndex) => {
+    Array.from(rowValues, (rowValue, rowIndex) => {
       const rowPath = `${path}[${String(rowIndex)}]`
       const cells = array(rowValue, rowPath, state, depth + 1)
       if (cells.length !== columns) fail(`expected ${String(columns)} samples`, rowPath)
       return Object.freeze(
-        cells.map((cell, columnIndex) =>
+        Array.from(cells, (cell, columnIndex) =>
           booleanValue(cell, `${rowPath}[${String(columnIndex)}]`, state, depth + 2),
         ),
       )
@@ -2432,14 +2432,14 @@ function space(
   }
   const spaceBounds = bounds(item['bounds'], `${path}.bounds`, state, depth + 1)
   for (const entry of layers) {
-    if (entry.kind !== 'navigation') continue
+    if (entry.kind !== 'navigation' && entry.kind !== 'cliffs') continue
     const maxX = entry.origin[0] + (entry.columns - 1) * entry.cellSize
     const maxZ = entry.origin[2] + (entry.rows - 1) * entry.cellSize
     const tolerance = 1e-9
     if (!Number.isFinite(maxX) || !Number.isFinite(maxZ) ||
       entry.origin[0] < spaceBounds.min[0] - tolerance || maxX > spaceBounds.max[0] + tolerance ||
       entry.origin[2] < spaceBounds.min[2] - tolerance || maxZ > spaceBounds.max[2] + tolerance)
-      fail('navigation grid extends beyond its space', `${path}.layers.${entry.id}`)
+      fail(`${entry.kind} grid extends beyond its space`, `${path}.layers.${entry.id}`)
   }
   const traversalClasses = new Set<string>()
   for (const entry of layers) {

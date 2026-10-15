@@ -30,6 +30,7 @@ import type {
   MapPlacedObject,
   MapPosition,
   MapNavigationSummary,
+  MapCliffSummary,
   MapTraversalSummary,
   WorldSceneTraversalItem,
   WorldSceneLayerItem,
@@ -812,13 +813,12 @@ export async function worldTransformCorpusRefusal(
 
 /** One owner for complete independent native grids. Value semantics are validated by each facet. */
 function admittedNativeSampleGrid(
-  navigation: Pick<MapNavigationSummary, 'exact' | 'width' | 'height' | 'cellCount' | 'trailingBytes' | 'grid'> &
+  navigation: Pick<MapNavigationSummary, 'exact' | 'width' | 'height' | 'cellCount' | 'grid'> &
     Readonly<{ samples: readonly Readonly<{ x: number; y: number }>[] }>,
   transform: MapWorldCanonicalTransform | undefined,
 ): Readonly<{ grid?: NonNullable<WorldSceneLayerItem['grid']>; positions?: readonly MapPosition[]; directions?: readonly number[]; reason?: string }> {
   if (navigation?.exact !== true) return {}
   const reject = (reason: string) => Object.freeze({ reason: `exact grid refused: ${reason}` })
-  if (navigation.trailingBytes !== 0) return reject('native trailing bytes are not represented by the flags grid')
   if (transform === undefined) return reject('the native world frame is not qualified')
   const { width, height, cellCount, samples, grid } = navigation
   if (!Number.isSafeInteger(width) || width < 1 || !Number.isSafeInteger(height) || height < 1 ||
@@ -873,10 +873,21 @@ function admittedNativeSampleGrid(
 
 function admittedNavigationGrid(navigation: ResolvedMapWorkspaceSnapshot['navigation'], transform: MapWorldCanonicalTransform | undefined): ReturnType<typeof admittedNativeSampleGrid> {
   if (navigation?.exact !== true) return {}
+  if (navigation.trailingBytes !== 0) return { reason: 'exact navigation refused: native trailing bytes are not represented by the flags grid' }
   if (!isNavigationFlagEncoding(navigation.flagEncoding)) return { reason: 'exact navigation refused: the flags vocabulary is not versioned and publisher-scoped' }
   if (navigation.samples.some(item => !Number.isSafeInteger(item.flags) || item.flags < 0))
     return { reason: 'exact navigation refused: a native flags value is invalid' }
   return admittedNativeSampleGrid(navigation, transform)
+}
+
+function admittedCliffGrid(cliffs: MapCliffSummary | undefined, transform: MapWorldCanonicalTransform | undefined): ReturnType<typeof admittedNativeSampleGrid> {
+  if (cliffs?.grid === undefined) return {}
+  const admitted = admittedNativeSampleGrid(cliffs, transform)
+  if (admitted.grid === undefined) return { reason: admitted.reason ?? 'exact cliffs refused: the publisher did not provide a complete exact grid' }
+  if (cliffs.samples.some(sample => !Number.isSafeInteger(sample.level) || sample.level < 0 || typeof sample.authored !== 'boolean' ||
+    (sample.ramp !== undefined && typeof sample.ramp !== 'boolean')))
+    return { reason: 'exact cliffs refused: a cliff classification is invalid' }
+  return admitted
 }
 
 function admittedTraversalGrid(traversal: MapTraversalSummary, transform: MapWorldCanonicalTransform | undefined, topology: string | undefined): Readonly<{
@@ -885,6 +896,7 @@ function admittedTraversalGrid(traversal: MapTraversalSummary, transform: MapWor
   reason?: string
 }> {
   const refuse = (reason: string) => ({ reason: `exact traversal refused: ${reason}` })
+  if (traversal.trailingBytes !== 0) return refuse('native trailing bytes are not represented by the traversal grid')
   if (topology !== undefined && topology !== 'heightfield') return refuse('portable traversal requires heightfield topology')
   if (traversal.surfaceLayerId !== undefined && traversal.surfaceLayerId !== 'terrain') return refuse('the native Host exposes only the terrain surface')
   const admitted = admittedNativeSampleGrid(traversal, transform)
@@ -1052,7 +1064,8 @@ export function createCandidateWorldSceneLease(
         raster.rgba?.byteLength === raster.width * raster.height * 4,
     )
   const terrainMaterialLod = terrainMaterialExact ? ('exact' as const) : ('sampled' as const)
-  const cliffExact =
+  const cliffAdmission = admittedCliffGrid(snapshot.cliffs, uvwTransform)
+  const cliffExact = snapshot.cliffs?.grid !== undefined ? cliffAdmission.grid !== undefined :
     snapshot.cliffs?.exact === true &&
     (uvwTransform === undefined ||
       (snapshot.cliffs.width <= uvwTransform.heightfield.columns &&
@@ -1247,18 +1260,19 @@ export function createCandidateWorldSceneLease(
     item => item.facet === 'water' && item.elevation === undefined,
   ).length
   const cliffs: readonly WorldSceneItem[] = Object.freeze(
-    (snapshot.cliffs?.samples ?? []).map(item => {
+    (snapshot.cliffs?.samples ?? []).map((item, index) => {
       const terrainItem = terrainByGrid.get(`${String(item.x)}:${String(item.y)}`)
+      const position = snapshot.cliffs?.grid === undefined
+        ? terrainItem?.facet === 'terrain' ? terrainItem.uvwPosition : undefined
+        : cliffAdmission.positions?.[index]
       return Object.freeze({
+        ...item,
         facet: 'cliffs' as const,
         id: `${cliffLayerId}:sample:${String(item.x)}:${String(item.y)}`,
         layerId: cliffLayerId,
-        coordinateSpaceId: 'height-grid' as const,
+        coordinateSpaceId: snapshot.cliffs?.grid === undefined ? 'height-grid' as const : 'uvw-canonical' as const,
         lod: cliffLod,
-        ...item,
-        ...(terrainItem?.facet === 'terrain' && terrainItem.uvwPosition !== undefined
-          ? { uvwPosition: terrainItem.uvwPosition }
-          : {}),
+        ...(position === undefined ? {} : { uvwPosition: position }),
       })
     }),
   )
@@ -1565,7 +1579,7 @@ export function createCandidateWorldSceneLease(
       snapshot.terrainMaterials?.weightRasters ?? [],
     ),
     water: layerContentRevision(water),
-    cliffs: layerContentRevision(cliffs),
+    cliffs: layerContentRevision(cliffs, snapshot.cliffs?.grid === undefined ? undefined : JSON.stringify(cliffAdmission.grid)),
     objects: layerContentRevision(objects),
     regions: layerContentRevision(regions),
     resources: layerContentRevision(resources),
@@ -1708,7 +1722,7 @@ export function createCandidateWorldSceneLease(
           ? {}
           : {
               reason:
-                'publisher cliff grid is sampled or does not match the admitted UVW heightfield grid',
+                cliffAdmission.reason ?? 'publisher cliff grid is sampled or does not match the admitted UVW heightfield grid',
             }),
     }),
     Object.freeze({
@@ -1855,6 +1869,7 @@ export function createCandidateWorldSceneLease(
           return { localLayerId: record.localLayerId, traversal: record.metadata,
             ...(record.admission.grid === undefined ? {} : { grid: record.admission.grid }) }
         })() : {}),
+        ...(item.facet === 'cliffs' && cliffAdmission.grid !== undefined ? { grid: cliffAdmission.grid } : {}),
         ...(item.facet === 'navigation' ? {
           ...(navigationAdmission.grid === undefined ? {} : { grid: navigationAdmission.grid }),
           ...(snapshot.navigation?.flagEncoding === undefined ? {} : { navigationFlagEncoding: snapshot.navigation.flagEncoding }),
@@ -1866,7 +1881,7 @@ export function createCandidateWorldSceneLease(
         ...(uvwTransform !== undefined &&
         (item.facet === 'terrain' ||
           item.facet === 'terrain-materials' ||
-          item.facet === 'cliffs') &&
+          (item.facet === 'cliffs' && snapshot.cliffs?.grid === undefined)) &&
         item.state === 'available' &&
         (item.lods.includes('exact') ||
           (item.facet === 'terrain-materials' && item.lods.includes('raster-exact')))
@@ -2248,9 +2263,11 @@ export function createCandidateWorldSceneLease(
                   item.position.y <= bounds.maximumY
                 )
               }
-              if (item.facet === 'traversal') {
-                return item.uvwPosition.x >= bounds.minimumX && item.uvwPosition.x <= bounds.maximumX &&
-                  item.uvwPosition.z >= bounds.minimumY && item.uvwPosition.z <= bounds.maximumY
+              const canonical = item.facet === 'traversal' || (item.facet === 'cliffs' && snapshot.cliffs?.grid !== undefined)
+                ? item.uvwPosition : undefined
+              if (canonical !== undefined) {
+                return canonical.x >= bounds.minimumX && canonical.x <= bounds.maximumX &&
+                  canonical.z >= bounds.minimumY && canonical.z <= bounds.maximumY
               }
               if (item.facet === 'water') {
                 return !(

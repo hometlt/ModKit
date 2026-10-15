@@ -754,8 +754,8 @@ async function reconstructLayer(
     const grid = layer.grid
     if (grid === undefined)
       throw new TypeError('UVW canonical cliffs layer is missing grid metadata')
-    const levels = new Array<number | undefined>(grid.columns * grid.rows)
-    const authored = new Array<boolean | undefined>(grid.columns * grid.rows)
+    const levels = new Array<number | undefined>(grid.columns * grid.rows).fill(undefined)
+    const authored = new Array<boolean | undefined>(grid.columns * grid.rows).fill(undefined)
     for (const raw of items) {
       if (raw.facet !== 'cliffs' || raw.lod !== 'exact')
         throw new TypeError('UVW canonical cliff item is invalid')

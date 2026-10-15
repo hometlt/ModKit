@@ -1,3 +1,4 @@
+import { isTerrainBoundCliffItem } from '@modkit/sdk/maps'
 /** Bounded, game-neutral inspection harness for publisher-qualified world candidates. */
 
 import { diagnostic, type Diagnostic } from '@modkit/core'
@@ -1360,7 +1361,7 @@ export function drawCandidateWorld(
   let cliffEdges = 0
   const cliffs = model.layers
     .flatMap(layer => layer.page.items)
-    .filter(item => item.facet === 'cliffs')
+    .filter(isTerrainBoundCliffItem)
   const cliffByCell = new Map(cliffs.map(item => [`${item.x}:${item.y}`, item]))
   context.strokeStyle = '#2d2017'
   context.lineWidth = 2

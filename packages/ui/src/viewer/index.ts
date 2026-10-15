@@ -286,10 +286,10 @@ export function diagnosticsBySeverity(
   for (const item of diagnostics) unique.set(item.id, item)
   const values = [...unique.values()]
   return Object.freeze({
-    error: Object.freeze(values.filter(item => item.severity === 'error')),
-    warning: Object.freeze(values.filter(item => item.severity === 'warning')),
-    information: Object.freeze(values.filter(item => item.severity === 'information')),
-    hint: Object.freeze(values.filter(item => item.severity === 'hint')),
+    error: Object.freeze(values.filter(item => item['severity'] === 'error')),
+    warning: Object.freeze(values.filter(item => item['severity'] === 'warning')),
+    information: Object.freeze(values.filter(item => item['severity'] === 'information')),
+    hint: Object.freeze(values.filter(item => item['severity'] === 'hint')),
   })
 }
 

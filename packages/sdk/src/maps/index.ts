@@ -1213,13 +1213,15 @@ export interface MapCliffPiece {
 
 /** Native synchronized cliff levels. Geometry remains explicit publisher-candidate data. */
 export interface MapCliffSummary {
+  /** Explicit independent native sample grid. Omission retains the legacy height-grid mapping. */
+  readonly grid?: MapNativeSampleGrid
   readonly version: number
   readonly width: number
   readonly height: number
   readonly cellCount: number
   readonly samples: readonly MapCliffSample[]
   readonly exact: boolean
-  /** Presentation-only cliff meshes; they are drawn with the world but never exported as objects. */
+  /** Presentation-only pieces; UVW may retain admitted meshes as doodads marked derivedFrom: cliffs. */
   readonly pieceModels?: readonly MapCliffPieceModel[]
   readonly pieces?: readonly MapCliffPiece[]
 }
@@ -1933,9 +1935,14 @@ export interface WorldSceneCliffItem extends MapCliffSample {
   readonly facet: 'cliffs'
   readonly id: string
   readonly layerId: string
-  readonly coordinateSpaceId: 'height-grid'
+  readonly coordinateSpaceId: 'height-grid' | 'uvw-canonical'
   readonly lod: 'sampled' | 'exact'
   readonly uvwPosition?: MapPosition
+}
+
+/** Only a declared height-grid relationship permits the legacy terrain-derived cliff fallback. */
+export function isTerrainBoundCliffItem(item: WorldSceneItem): item is WorldSceneCliffItem {
+  return item.facet === 'cliffs' && item.coordinateSpaceId === 'height-grid'
 }
 
 export interface WorldSceneObjectItem extends MapPlacedObject {
