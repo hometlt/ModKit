@@ -1,0 +1,26 @@
+diff --git a/src/format/qb.cpp b/src/format/qb.cpp
+index 6f9197f..f0fcb0a 100644
+--- a/src/format/qb.cpp
++++ b/src/format/qb.cpp
+@@ -236,7 +236,7 @@ ReadResult Reader::readUncompressed(Voxel64 buffer[], usize bufferLength) noexce
+     const auto voxelsLeftInMatrixCount = matVolume - index;
+     if (voxelsLeftInMatrixCount == 0) return ReadResult::nextObject();
+ 
+-    const auto tmpBufferSize = std::min(bufferLength, voxelsLeftInMatrixCount);
++    const auto tmpBufferSize = std::min<u64>(bufferLength, voxelsLeftInMatrixCount);
+     const auto tmpBuffer = std::make_unique<u8[]>(tmpBufferSize * sizeof(u32));
+     const auto *tmpBufferPtr = reinterpret_cast<u8 *>(tmpBuffer.get());
+ 
+diff --git a/src/stream.cpp b/src/stream.cpp
+index 92cdf87..5b6839b 100644
+--- a/src/stream.cpp
++++ b/src/stream.cpp
+@@ -117,7 +117,7 @@ void ByteArrayOutputStream::write(const u8 data[], size_t length)
+         return;
+     }
+ 
+-    size_t overwriteLength = std::min(size() - pos, length);
++    size_t overwriteLength = std::min<u64>(size() - pos, length);
+     size_t pushLength = length - overwriteLength;
+ 
+     auto overwriteTarget = static_cast<std::vector<u8> *>(sink)->begin() + static_cast<ptrdiff_t>(pos);

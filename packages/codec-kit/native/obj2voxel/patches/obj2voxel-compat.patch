@@ -1,0 +1,28 @@
+diff --git a/src/3rd_party/tinyobj.hpp b/src/3rd_party/tinyobj.hpp
+deleted file mode 120000
+index d88b291..0000000
+--- a/src/3rd_party/tinyobj.hpp
++++ /dev/null
+@@ -1 +0,0 @@
+-../../tinyobjloader/tiny_obj_loader.h
+\ No newline at end of file
+diff --git a/src/3rd_party/tinyobj.hpp b/src/3rd_party/tinyobj.hpp
+new file mode 100644
+index 0000000..ebbe20f
+--- /dev/null
++++ b/src/3rd_party/tinyobj.hpp
+@@ -0,0 +1 @@
++#include "../../tinyobjloader/tiny_obj_loader.h"
+diff --git a/src/obj2voxel.cpp b/src/obj2voxel.cpp
+index 4bf308f..3aa0ab1 100644
+--- a/src/obj2voxel.cpp
++++ b/src/obj2voxel.cpp
+@@ -829,7 +829,7 @@ void obj2voxel_set_triangle_colored(obj2voxel_triangle *triangle, const float ve
+ {
+     VXIO_DEBUG_ASSERT_NOTNULL(triangle);
+     VXIO_DEBUG_ASSERT_NOTNULL(vertices);
+-    triangle->type = obj2voxel::TriangleType::MATERIALLESS;
++    triangle->type = obj2voxel::TriangleType::UNTEXTURED;
+     triangle->v[0] = obj2voxel::Vec3{vertices + 0};
+     triangle->v[1] = obj2voxel::Vec3{vertices + 3};
+     triangle->v[2] = obj2voxel::Vec3{vertices + 6};
