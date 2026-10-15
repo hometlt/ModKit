@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { isModkitError } from '@modkit/core'
 import { decodePngSamples } from '@modkit/codec-kit/raster'
 import type { RasterResourcePort } from '@modkit/sdk'
+import type { WorldSceneItem } from '@modkit/sdk/maps'
 import { materializeUvmCore } from '../src/model/materializer.js'
 import { readUvmContainer } from '../src/model/container.js'
 import { createEmbeddedUvmWorldModelDecoder } from '../../scene/src/world/embedded-uvm.js'
@@ -404,6 +405,67 @@ const options = {
 }
 
 describe('portable UVP map bundle', () => {
+  for (const partial of [false, true]) {
+    it(`clears only fully packaged native object resource field losses (partial=${String(partial)})`, async () => {
+      const base = sourceWithModel(false, true)
+      const native = {
+        ...base,
+        async info() {
+          const { canonicalArtifact: _canonicalArtifact, ...info } = await base.info()
+          return { ...info, topology: 'mesh' as const,
+            uvwTransform: {
+              schemaVersion: 1 as const, snapshotId: info.snapshotId,
+              sourceCoordinateSpaceId: 'map-native' as const, targetCoordinateSpaceId: 'uvw-canonical' as const,
+              basis: { handedness: 'right' as const, upAxis: 'y' as const, forwardAxis: '+z' as const,
+                unit: 'meter' as const },
+              axes: { x: { sourceAxis: 'x' as const, scale: 1, offset: 0 },
+                y: { sourceAxis: 'z' as const, scale: 1, offset: 0 },
+                z: { sourceAxis: 'y' as const, scale: 1, offset: 0 } },
+              heightfield: { columns: 1, rows: 1, cellSize: 1,
+                origin: [0, 0, 0] as const, sourceRowOrder: 'forward' as const },
+              bounds: { coordinateSpaceId: 'uvw-canonical' as const,
+                minimum: { x: 0, y: 0, z: 0 }, maximum: { x: 1, y: 1, z: 1 } },
+              proof: { kind: 'adapter-qualification' as const, method: 'sealed-legacy-differential' as const,
+                oracle: 'synthetic native model receipt fixture', corpus: 'one mesh instance',
+                sourceDigests: { input: `sha256:${'1'.repeat(64)}` as const }, tupleCount: 1,
+                comparison: 'ieee-754-binary64-exact' as const,
+                nativeTupleDigest: `sha256:${'2'.repeat(64)}` as const,
+                canonicalTupleDigest: `sha256:${'3'.repeat(64)}` as const },
+            } }
+        },
+        async page(request: Parameters<typeof base.page>[0]) {
+          const page = await base.page(request)
+          if (request.facet !== 'objects') return page
+          const items = page.items.flatMap<WorldSceneItem>(item => {
+            if (item.facet !== 'objects') return [item]
+            const body = { ...item, resourceId: 'native:body', resourceIds: ['native:body'],
+              modelComponents: [{ id: 'body', resourceId: 'native:body' }] }
+            return partial ? [body, { ...body, id: `${item.id}-partial`,
+              resourceIds: ['native:body', 'native:missing'], modelComponents: [
+                ...body.modelComponents, { id: 'missing', resourceId: 'native:missing' },
+              ] }] : [body]
+          })
+          return { ...page, items }
+        },
+        async model(resourceId: string) {
+          if (resourceId === 'native:body') return base.model('uvw-resource:main/source-model')
+          return { state: 'unresolved' as const, diagnostics: [] }
+        },
+      }
+      const scalar = await import('../src/world/materializer.js').then(module =>
+        module.materializeWorldToUvw(native, options))
+      if (scalar.state !== 'materialized') throw new Error(JSON.stringify(scalar.refusals))
+      expect(scalar.lostFields.find(field => field.path === 'world.objects.resourceIds (not packaged)')?.count)
+        .toBe(partial ? 2 : 1)
+      const packed = await materializeWorldToUvpMap(native, options)
+      if (packed.state !== 'materialized') throw new Error(JSON.stringify(packed.refusals))
+      expect(packed.packagedModelCount).toBe(1)
+      expect(packed.lostFields.find(field => field.path === 'world.objects.resourceIds (not packaged)')?.count)
+        .toBe(partial ? 1 : undefined)
+      expect(packed.unpackagedModelResourceIds).toEqual(partial ? ['native:missing'] : [])
+      expect(packed.omittedObjects).toBe(0)
+    })
+  }
   it('refuses a generated model texture ID that would overwrite an authored resource', async () => {
     const result = await materializeWorldToUvpMap(sourceWithModel(false, true, true), options)
     expect(result.state).toBe('refused')

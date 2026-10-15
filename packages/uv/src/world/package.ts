@@ -33,7 +33,7 @@ import {
   type UvwWaterLayer,
 } from './index.js'
 import { materializeWorldToUvw, type WorldUvwMaterializationOptions } from './materializer.js'
-import { isRetainedWorldObject, localId } from './reconstruct.js'
+import { hasUnpackagedWorldObjectResources, isRetainedWorldObject, localId } from './reconstruct.js'
 import { createUvwWorldSceneSource } from './source.js'
 
 const MANIFEST_PATH = 'uvp.manifest.json'
@@ -1270,6 +1270,7 @@ export async function materializeWorldToUvpMap(
     const objectBindings: PortableObjectModelBinding[] = []
     const unpackagedModelResourceIds = new Set<string>()
     const unpackagedModelTextureIds = new Set<string>()
+    let packagedObjectResourceFields = 0
     const modelBySource = new Map<
       string,
       Omit<
@@ -1407,6 +1408,12 @@ export async function materializeWorldToUvpMap(
             }),
           )
         }
+        // The scalar UVW receipt predates media binding. Clear its provisional field loss only
+        // when every reference is now retained; a partly packaged assembly still loses the field.
+        if (hasUnpackagedWorldObjectResources(object) &&
+            !hasUnpackagedWorldObjectResources(object,
+              id => id.startsWith('uvw-resource:') || modelBySource.has(id)))
+          packagedObjectResourceFields++
       }
       if (bound.size !== target.layer.instances.length)
         throw new TypeError(`object layer ${catalog.layerId} changed during UVP materialization`)
@@ -1503,7 +1510,9 @@ export async function materializeWorldToUvpMap(
       ]),
       omittedObjects: materialized.omittedObjects,
       lostFields: Object.freeze(materialized.lostFields.flatMap(field => {
-        const count = field.count - (packagedWaterFieldCounts.get(field.path) ?? 0)
+        const retained = field.path === 'world.objects.resourceIds (not packaged)'
+          ? packagedObjectResourceFields : (packagedWaterFieldCounts.get(field.path) ?? 0)
+        const count = field.count - retained
         return count > 0 ? [Object.freeze({ path: field.path, count })] : []
       })),
       refusalCodes: Object.freeze([]) as readonly [],

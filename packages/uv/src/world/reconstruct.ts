@@ -376,6 +376,15 @@ export function isRetainedWorldObject(item: Pick<WorldSceneObjectItem, 'derivedF
   return item.derivedFrom === undefined || item.derivedFrom === 'cliffs'
 }
 
+/** One object-field loss, even when several references in that field are unresolved. */
+export function hasUnpackagedWorldObjectResources(
+  object: Pick<WorldSceneObjectItem, 'resourceIds' | 'modelComponents'>,
+  isPackaged: (id: string) => boolean = id => id.startsWith('uvw-resource:'),
+): boolean {
+  return (object.resourceIds ?? []).some(id => !isPackaged(id)) ||
+    (object.modelComponents ?? []).some(component => !isPackaged(component.resourceId))
+}
+
 /** One field-loss counter for source items and material catalogs; false and zero remain facts. */
 function noteUnretainedFields(
   kind: string,
@@ -433,12 +442,7 @@ function noteLostFields(
       add('world.objects.presentationRotation')
     if (object.presentationTint !== undefined && !unitTint(object.presentationTint))
       add('world.objects.presentationTint (outside 0..1)')
-    if (
-      (object.resourceIds ?? []).some(id => !id.startsWith('uvw-resource:')) ||
-      (object.modelComponents ?? []).some(
-        component => !component.resourceId.startsWith('uvw-resource:'),
-      )
-    )
+    if (hasUnpackagedWorldObjectResources(object))
       add('world.objects.resourceIds (not packaged)')
   }
 }
