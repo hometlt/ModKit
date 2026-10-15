@@ -124,6 +124,9 @@ export const nodeModuleMap: Readonly<Record<string, string>> = Object.freeze({
   '@modkit/codec-kit/text': pathToFileURL(
     join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'text', 'index.js'),
   ).href,
+  '@modkit/codec-kit/graph/weighted-distance': pathToFileURL(
+    join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'graph', 'weighted-distance.js'),
+  ).href,
   '@modkit/codec-kit/checksum': pathToFileURL(
     join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'checksum', 'index.js'),
   ).href,

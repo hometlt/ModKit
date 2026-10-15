@@ -506,7 +506,7 @@ describe('world lattice overview profile', () => {
     const legacy = createWorldLatticePlan(items)
     expect(createWorldLatticePlan(items, undefined, 'lattice')).toEqual(legacy)
     expect(legacy).not.toHaveProperty('style')
-    expect(legacy).not.toHaveProperty('cliffBoundaries')
+    expect(legacy).not.toHaveProperty('cliffMidlines')
     expect(legacy.cells[0]?.colors[0]).toContain('hsl(90 ')
     const overview = createWorldLatticePlan(items, undefined, 'overview')
     expect(overview.style).toBe('overview')
@@ -521,50 +521,25 @@ describe('world lattice overview profile', () => {
     )
   })
 
-  it('removes only shared edges and does not cancel a duplicate published cell twice', () => {
-    const items = overviewGrid(3, 2, ['0,0', '1,0'])
-    const plan = createWorldLatticePlan([...items, items[0]!], undefined, 'overview')
-    expect(plan.cliffBoundaries).toHaveLength(6)
-    expect(plan.cliffBoundaries).not.toContainEqual([
-      [12, 20],
-      [12, 17],
-    ])
-    expect(plan.cliffBoundaries).not.toContainEqual([
-      [12, 17],
-      [12, 20],
-    ])
-    expect(plan.cliffBoundaries).toContainEqual([
-      [10, 20],
-      [12, 20],
-    ])
+  it('does not invent banks from cliff coverage without complete neighboring terrain', () => {
+    const plan = createWorldLatticePlan(overviewGrid(3, 2, ['0,0', '1,0']), undefined, 'overview')
+    expect(plan.cliffMidlines).toEqual([])
+    expect(plan.cliffMidlineStats?.oneBankComponents).toBe(1)
+    expect(plan.cliffFaces).toHaveLength(2)
   })
 
-  it('retains the inner hole and a disconnected island without adding closure edges', () => {
-    const faces = ['0,0', '1,0', '2,0', '0,1', '2,1', '0,2', '1,2', '2,2', '5,0']
-    const plan = createWorldLatticePlan(overviewGrid(7, 4, faces), undefined, 'overview')
-    // 12 outer grid edges + 4 hole edges + 4 isolated-cell edges.
-    expect(plan.cliffBoundaries).toHaveLength(20)
-    expect(plan.cliffBoundaries).toContainEqual([
-      [14, 17],
-      [12, 17],
-    ])
-    expect(plan.cliffBoundaries).toContainEqual([
-      [20, 20],
-      [22, 20],
-    ])
-  })
-
-  it('keeps coincident published faces in different layers independent', () => {
+  it('keeps missing-bank diagnostics separate for coincident layers', () => {
     const plan = createWorldLatticePlan(
       [...overviewGrid(2, 2, ['0,0'], 'a'), ...overviewGrid(2, 2, ['0,0'], 'b')],
       undefined,
       'overview',
     )
     expect(plan.cliffFaces).toHaveLength(2)
-    expect(plan.cliffBoundaries).toHaveLength(8)
+    expect(plan.cliffMidlineStats?.components).toBe(2)
+    expect(plan.cliffMidlines).toEqual([])
   })
 
-  it('does not turn level contours into white published-coverage boundaries', async () => {
+  it('uses authored level contours without inventing derived bank lines', async () => {
     const source = fixture()
     const items = (
       await Promise.all(
@@ -573,11 +548,10 @@ describe('world lattice overview profile', () => {
     ).flatMap(page => page.items)
     const plan = createWorldLatticePlan(items, undefined, 'overview')
     expect(plan.contours).toHaveLength(1)
-    expect(plan.cliffBoundaries).toEqual([])
+    expect(plan.cliffMidlines).toEqual([])
     const draw = overviewCanvas()
     drawWorldLattice(draw.canvas, plan)
-    expect(draw.strokes).toContain('#d8dec4')
-    expect(draw.strokes).not.toContain('#fff')
+    expect(draw.strokes).toContain('#fff')
   })
 
   it('fills known outlines while unknown and known-empty resource outlines stay point markers', () => {

@@ -227,6 +227,14 @@ const workerBuild = await build({
       'sha1-digest.js',
     ),
     'vendor/codec-kit/json-edit': join(repoRoot, 'packages', 'codec-kit', 'dist', 'json-edit.js'),
+    'vendor/codec-kit/graph/weighted-distance': join(
+      repoRoot,
+      'packages',
+      'codec-kit',
+      'dist',
+      'graph',
+      'weighted-distance.js',
+    ),
     'vendor/codec-kit/checksum/index': join(
       repoRoot,
       'packages',

@@ -1,6 +1,6 @@
 /** Format-neutral, read-only 2D lattice for published WorldScene facets (SDK maps contract).
  * Draws height, authored contours/ramps, explicit cliff faces and multi-channel object coverage.
- * The opt-in overview profile outlines published cliff coverage and fills known object outlines.
+ * The opt-in overview profile draws a derived bank midline inside published cliff coverage and fills known object outlines.
  * Uses no model/texture ports and never infers gameplay masks or native export capability.
  */
 import type {
@@ -9,6 +9,12 @@ import type {
   WorldSceneItem,
   WorldSceneTerrainItem,
 } from '@modkit/sdk/maps'
+
+import {
+  deriveCliffMidlines,
+  type CliffLatticeQuad,
+  type CliffMidlineStats,
+} from './lattice-cliffs.js'
 
 type Point = readonly [number, number]
 type Quad<Value> = readonly [Value, Value, Value, Value]
@@ -31,8 +37,9 @@ export interface WorldLatticePlan {
   readonly ramps: readonly Quad<Point>[]
   /** Explicit publisher cliff-face cells, independent of level contours and ramps. */
   readonly cliffFaces: readonly Quad<Point>[]
-  /** Layer-local exposed edges of published cliff quads, not inferred native cliff lines. */
-  readonly cliffBoundaries?: readonly (readonly [Point, Point])[]
+  /** Derived top-down bank bisectors, not native cliff levels or navigation facts. */
+  readonly cliffMidlines?: readonly (readonly [Point, Point])[]
+  readonly cliffMidlineStats?: Readonly<CliffMidlineStats>
   readonly objects: readonly {
     readonly point: Point
     readonly objectId: number
@@ -93,33 +100,6 @@ function overviewColor(
   if (submerged) return worldLatticeColor(height, minimum, maximum, true)
   const value = Math.max(0, Math.min(1, (height - minimum) / Math.max(1e-6, maximum - minimum)))
   return `hsl(${28 + value * 8} 48% ${18 + value * 60}%)`
-}
-
-/** Cancel layer-local shared edges; retain holes and ignore repeated published cells. */
-function recordCliffBoundary(
-  layerId: string,
-  x: number,
-  y: number,
-  quad: Quad<LatticeVertex>,
-  edges: Map<string, readonly [Point, Point]>,
-  cells: Set<string>,
-): void {
-  const cell = JSON.stringify([layerId, x, y])
-  if (cells.has(cell)) return
-  cells.add(cell)
-  const corners = [`${x},${y}`, `${x + 1},${y}`, `${x + 1},${y + 1}`, `${x},${y + 1}`] as const
-  for (const [a, b] of [
-    [0, 1],
-    [1, 2],
-    [2, 3],
-    [3, 0],
-  ] as const) {
-    const first = corners[a],
-      second = corners[b]
-    const key = JSON.stringify([layerId, ...(first < second ? [first, second] : [second, first])])
-    if (edges.has(key)) edges.delete(key)
-    else edges.set(key, [quad[a].point, quad[b].point])
-  }
 }
 
 /** Build one neutral plan; the overview profile changes presentation of published facts only. */
@@ -230,8 +210,7 @@ export function createWorldLatticePlan(
   const contours: (readonly [Point, Point])[] = []
   const ramps: Quad<Point>[] = []
   const cliffFaces: Quad<Point>[] = []
-  const cliffEdges = style === 'overview' ? new Map<string, readonly [Point, Point]>() : undefined
-  const cliffCells = style === 'overview' ? new Set<string>() : undefined
+  const cliffQuads: CliffLatticeQuad[] = []
   for (const item of terrain) {
     const at = (dx: number, dy: number) =>
       vertices.get(`${item.layerId}:${item.x + dx}:${item.y + dy}`)
@@ -241,6 +220,16 @@ export function createWorldLatticePlan(
       d = at(0, 1)
     if (a === undefined || b === undefined || c === undefined || d === undefined) continue
     const quad: Quad<LatticeVertex> = [a, b, c, d]
+    if (style === 'overview')
+      cliffQuads.push({
+        layerId: item.layerId,
+        x: item.x,
+        y: item.y,
+        vertices: quad,
+        ...(item.cliffFace === undefined ? {} : { cliffFace: item.cliffFace }),
+        ramp: quad.some(vertex => vertex.ramp === true),
+        authoredLevels: quad.some(vertex => vertex.level !== undefined),
+      })
     cells.push({
       vertices: quad,
       colors: quad.map(vertex =>
@@ -254,8 +243,6 @@ export function createWorldLatticePlan(
     })
     if (item.cliffFace === true) {
       cliffFaces.push(quad.map(vertex => vertex.point) as unknown as Quad<Point>)
-      if (cliffEdges !== undefined && cliffCells !== undefined)
-        recordCliffBoundary(item.layerId, item.x, item.y, quad, cliffEdges, cliffCells)
     }
     if (quad.some(vertex => vertex.ramp === true)) {
       // Ramp ground rises between the levels without a cliff: its cells carry no cliff line.
@@ -352,7 +339,12 @@ export function createWorldLatticePlan(
     objects,
     bounds: Number.isFinite(minX) ? [minX, minY, maxX, maxY] : [0, 0, 1, 1],
     flat: cells.length > 0 && minimumHeight === maximumHeight,
-    ...(style === 'overview' ? { style, cliffBoundaries: [...cliffEdges!.values()] } : {}),
+    ...(style === 'overview'
+      ? (() => {
+          const midline = deriveCliffMidlines(cliffQuads)
+          return { style, cliffMidlines: midline.segments, cliffMidlineStats: midline.stats }
+        })()
+      : {}),
   }
 }
 
@@ -467,16 +459,16 @@ export function drawWorldLattice(
     context.fill()
   }
   context.lineWidth = 1.4
-  if (overview && (plan.cliffBoundaries?.length ?? 0) > 0) {
+  if (overview && (plan.cliffMidlines?.length ?? 0) > 0) {
     context.strokeStyle = '#fff'
     context.beginPath()
-    for (const [a, b] of plan.cliffBoundaries!) {
+    for (const [a, b] of plan.cliffMidlines!) {
       context.moveTo(...screen(a))
       context.lineTo(...screen(b))
     }
     context.stroke()
   }
-  context.strokeStyle = '#d8dec4'
+  context.strokeStyle = overview ? '#fff' : '#d8dec4'
   context.beginPath()
   for (const [a, b] of plan.contours) {
     context.moveTo(...screen(a))
@@ -562,7 +554,7 @@ export function drawWorldLattice(
   ]
   if (kinds.length === 0) return
   const defaultLabels: Readonly<Partial<Record<(typeof kinds)[number], string>>> = {
-    cliffFace: overview ? 'Cliff coverage boundary' : 'Cliff face',
+    cliffFace: overview ? 'Derived cliff midline' : 'Cliff face',
     blocked: 'Blocked footprint',
     noBuild: 'No-build footprint',
     vision: 'Vision blocker',

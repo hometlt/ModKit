@@ -13,6 +13,10 @@
       "types": "./dist/editing.d.ts",
       "default": "./dist/editing.js"
     },
+    "./graph/weighted-distance": {
+      "types": "./dist/graph/weighted-distance.d.ts",
+      "default": "./dist/graph/weighted-distance.js"
+    },
     "./graph/isolation": {
       "types": "./dist/graph-isolation.d.ts",
       "default": "./dist/graph-isolation.js"
