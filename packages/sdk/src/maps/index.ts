@@ -1671,6 +1671,7 @@ export type WorldSceneFacet =
   | 'regions'
   | 'resources'
   | 'navigation'
+  | 'traversal'
   | 'gateways'
   | 'lighting'
 export type WorldSceneLayerKind = Exclude<WorldSceneFacet, 'layers'>
@@ -1778,6 +1779,8 @@ export interface WorldSceneInfo extends WorldSceneInfoBase {
 }
 
 export interface WorldSceneLayerItem {
+  /** Portable class and optional same-space local heightfield layer id; no native flags mapping. */
+  readonly traversal?: Readonly<{ readonly classId: string; readonly surfaceLayerId?: string }>
   /** Native navigation vocabulary, retained independently of any portable traversal policy. */
   readonly navigationFlagEncoding?: string
   /** Validated overview geometry in canonical UVW horizontal x/z coordinates. */
@@ -1854,6 +1857,21 @@ export interface WorldSceneNavigationItem extends MapNavigationSample {
   readonly coordinateSpaceId: string
   readonly lod: 'sampled' | 'exact'
   readonly uvwPosition?: MapPosition
+}
+
+/** Portable authored topology; direction bits use canonical x/z, never native flag bits. */
+export interface WorldSceneTraversalItem {
+  readonly facet: 'traversal'
+  readonly id: string
+  readonly layerId: string
+  readonly coordinateSpaceId: string
+  readonly lod: 'exact'
+  readonly x: number
+  readonly y: number
+  readonly walkable: boolean
+  readonly exits: number
+  /** Cell centre; the catalog grid origin is the lower corner. */
+  readonly uvwPosition: MapPosition
 }
 
 export interface WorldSceneGatewayItem extends MapGatewaySegment {
@@ -2188,6 +2206,7 @@ export type WorldSceneItem =
   | WorldSceneWaterItem
   | WorldSceneCliffItem
   | WorldSceneNavigationItem
+  | WorldSceneTraversalItem
   | WorldSceneGatewayItem
   | WorldSceneObjectItem
   | WorldSceneRegionItem

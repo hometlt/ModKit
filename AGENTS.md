@@ -18,6 +18,14 @@
 
 ## Проверки
 
+Portable traversal UVW использует существующий нормативный directed four-neighbour
+контракт: один classId на слой, один слой класса в пространстве heightfield. SDK maps
+публикует клетки и class/surface metadata; UV — единственный Core reader/reconstruction.
+Каталог хранит lower-corner origin, элементы — центры клеток. Ссылка surfaceLayerId
+сохраняет local id слоя высот того же пространства. Этот слой не создаёт pathfinder,
+не выводится из native flags и не доказывает динамическую или диагональную проходимость.
+
+
 Навигация с родными флагами переносится через существующий world source/reconstruction.
 Точный фасет требует полной сетки, явных origin/steps, квалифицированного frame и
 versioned publisher-scoped flagEncoding (проверяет SDK isNavigationFlagEncoding).

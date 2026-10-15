@@ -303,6 +303,7 @@ const KEPT_FIELDS: Readonly<Record<string, ReadonlySet<string>>> = Object.freeze
   ]),
   regions: new Set(['regionId', 'name', 'color', 'shapes', 'uvwShapes']),
   navigation: new Set(['x', 'y', 'flags', 'uvwPosition']),
+  traversal: new Set(['x', 'y', 'walkable', 'exits', 'uvwPosition']),
   gateways: new Set(['x1', 'y1', 'x2', 'y2', 'uvwStart', 'uvwEnd']),
   lighting: new Set(['ambientColor', 'ambientIntensity', 'toneMapping', 'terrain', 'directional']),
   objects: new Set([
@@ -1025,6 +1026,25 @@ async function reconstructLayer(
       samples: gridRows(values as number[], grid.columns, grid.rows),
     })
   }
+  if (layer.kind === 'traversal') {
+    const grid = layer.grid, metadata = layer.traversal
+    if (grid === undefined || metadata === undefined)
+      throw new TypeError('UVW traversal lacks grid or class metadata')
+    const cells = new Array<{ walkable: boolean; exits: number } | undefined>(grid.columns * grid.rows).fill(undefined)
+    const centreGrid = { ...grid, origin: [grid.origin[0] + grid.cellSize / 2, grid.origin[1], grid.origin[2] + grid.cellSize / 2] as const }
+    for (const raw of items) {
+      if (raw.facet !== 'traversal' || raw.lod !== 'exact') throw new TypeError('UVW traversal item is not exact')
+      const index = canonicalGridIndex(raw, centreGrid)
+      if (cells[index] !== undefined) throw new TypeError('UVW traversal has duplicate cells')
+      cells[index] = { walkable: raw.walkable, exits: raw.exits }
+    }
+    if (cells.some(cell => cell === undefined)) throw new TypeError('UVW traversal is incomplete')
+    return Object.freeze({ schemaVersion: 1, id, kind: 'traversal', ...label,
+      classId: metadata.classId, ...(metadata.surfaceLayerId === undefined ? {} : { surfaceLayerId: metadata.surfaceLayerId }),
+      columns: grid.columns, rows: grid.rows, cellSize: grid.cellSize, origin: grid.origin,
+      walkable: gridRows(cells.map(cell => cell!.walkable), grid.columns, grid.rows),
+      exits: gridRows(cells.map(cell => cell!.exits), grid.columns, grid.rows) })
+  }
   if (layer.kind === 'gateways') {
     return Object.freeze({
       schemaVersion: 1,
@@ -1176,6 +1196,7 @@ export async function reconstructAdditionalExactLayers(
   }
   const supported = new Set([
     'navigation',
+    'traversal',
     'terrain-materials',
     'cliffs',
     'water',

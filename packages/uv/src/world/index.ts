@@ -298,6 +298,22 @@ export interface UvwNavigationLayer {
   readonly samples: readonly (readonly number[])[]
 }
 
+/** Portable static graph for one class; origin is a cell corner, not a sample centre. */
+export interface UvwTraversalLayer {
+  readonly schemaVersion: 1
+  readonly id: string
+  readonly kind: 'traversal'
+  readonly label?: string
+  readonly classId: string
+  readonly surfaceLayerId?: string
+  readonly columns: number
+  readonly rows: number
+  readonly cellSize: number
+  readonly origin: readonly [number, number, number]
+  readonly walkable: readonly (readonly boolean[])[]
+  readonly exits: readonly (readonly number[])[]
+}
+
 export interface UvwGatewaySegment {
   readonly id: string
   /** Segment endpoints in the canonical horizontal x/z plane. */
@@ -344,6 +360,7 @@ export type UvwHeightfieldSpaceLayer =
   | UvwResourcesLayer
   | UvwRegionsLayer
   | UvwNavigationLayer
+  | UvwTraversalLayer
   | UvwGatewaysLayer
   | UvwLightingLayer
 
@@ -2032,6 +2049,34 @@ function navigationLayer(
   })
 }
 
+function traversalLayer(value: unknown, path: string, state: ValidationBudget, depth: number): UvwTraversalLayer {
+  const item = record(value, path, state, depth)
+  exactKeys(item, ['schemaVersion', 'id', 'kind', 'label', 'classId', 'surfaceLayerId', 'columns', 'rows', 'cellSize', 'origin', 'walkable', 'exits'],
+    ['schemaVersion', 'id', 'kind', 'classId', 'columns', 'rows', 'cellSize', 'origin', 'walkable', 'exits'], path)
+  schemaVersionOne(item, path, state, depth + 1)
+  literal(item['kind'], 'traversal', `${path}.kind`, state, depth + 1)
+  const columns = integerAtLeast(item['columns'], 1, `${path}.columns`, state, depth + 1)
+  const rows = integerAtLeast(item['rows'], 1, `${path}.rows`, state, depth + 1)
+  gridBudget(columns, rows, `${path}.walkable`, state)
+  gridBudget(columns, rows, `${path}.exits`, state)
+  const label = labelOf(item, path, state, depth + 1)
+  const walkable = booleanGrid(item['walkable'], columns, rows, `${path}.walkable`, state, depth + 1)
+  const exits = numericGrid(item['exits'], columns, rows, `${path}.exits`, state, depth + 1, true)
+  const directions = [[1, 0, 1], [-1, 0, 2], [0, 1, 4], [0, -1, 8]] as const
+  for (let z = 0; z < rows; z += 1) for (let x = 0; x < columns; x += 1) {
+    const passable = walkable[z]?.[x], mask = exits[z]?.[x]
+    if (typeof passable !== 'boolean' || typeof mask !== 'number' || !Number.isSafeInteger(mask) || mask < 0 ||
+      mask > 15 || (!passable && mask !== 0)) fail('invalid traversal exit mask or cell', `${path}.exits[${z}][${x}]`)
+    for (const [dx, dz, bit] of directions) if ((mask & bit) !== 0 && walkable[z + dz]?.[x + dx] !== true)
+      fail('traversal exit must reach a walkable in-bounds cell', `${path}.exits[${z}][${x}]`)
+  }
+  return Object.freeze({ schemaVersion: 1, id: layerId(item['id'], `${path}.id`, state, depth + 1), kind: 'traversal',
+    ...(label === undefined ? {} : { label }), classId: layerId(item['classId'], `${path}.classId`, state, depth + 1),
+    ...(item['surfaceLayerId'] === undefined ? {} : { surfaceLayerId: layerId(item['surfaceLayerId'], `${path}.surfaceLayerId`, state, depth + 1) }),
+    columns, rows, cellSize: positive(item['cellSize'], `${path}.cellSize`, state, depth + 1),
+    origin: vec3(item['origin'], `${path}.origin`, state, depth + 1), walkable, exits })
+}
+
 function gatewaysLayer(
   value: unknown,
   path: string,
@@ -2197,6 +2242,8 @@ function layer(
       return regionsLayer(value, path, state, depth)
     case 'navigation':
       return navigationLayer(value, path, state, depth)
+    case 'traversal':
+      return traversalLayer(value, path, state, depth)
     case 'gateways':
       return gatewaysLayer(value, path, state, depth)
     case 'lighting':
@@ -2393,6 +2440,30 @@ function space(
       entry.origin[0] < spaceBounds.min[0] - tolerance || maxX > spaceBounds.max[0] + tolerance ||
       entry.origin[2] < spaceBounds.min[2] - tolerance || maxZ > spaceBounds.max[2] + tolerance)
       fail('navigation grid extends beyond its space', `${path}.layers.${entry.id}`)
+  }
+  const traversalClasses = new Set<string>()
+  for (const entry of layers) {
+    if (entry.kind !== 'traversal') continue
+    const entryPath = `${path}.layers.${entry.id}`
+    if (topology !== 'heightfield') fail('traversal requires heightfield topology', entryPath)
+    if (traversalClasses.has(entry.classId)) fail('duplicate traversal class', entryPath)
+    traversalClasses.add(entry.classId)
+    const maxX = entry.origin[0] + entry.columns * entry.cellSize
+    const maxZ = entry.origin[2] + entry.rows * entry.cellSize
+    const tolerance = 1e-9
+    if (!Number.isFinite(maxX) || !Number.isFinite(maxZ) || entry.origin[0] < spaceBounds.min[0] - tolerance ||
+      entry.origin[2] < spaceBounds.min[2] - tolerance || maxX > spaceBounds.max[0] + tolerance || maxZ > spaceBounds.max[2] + tolerance ||
+      entry.origin[1] < spaceBounds.min[1] - tolerance || entry.origin[1] > spaceBounds.max[1] + tolerance)
+      fail('traversal grid extends beyond its space', entryPath)
+    if (entry.surfaceLayerId !== undefined) {
+      const surface = layers.find(candidate => candidate.id === entry.surfaceLayerId)
+      if (surface?.kind !== 'heightfield') fail('traversal surface must be a heightfield in the same space', entryPath)
+      if (entry.origin[0] + entry.cellSize / 2 < surface.origin[0] - tolerance ||
+        entry.origin[2] + entry.cellSize / 2 < surface.origin[2] - tolerance ||
+        entry.origin[0] + (entry.columns - 0.5) * entry.cellSize > surface.origin[0] + (surface.columns - 1) * surface.cellSize + tolerance ||
+        entry.origin[2] + (entry.rows - 0.5) * entry.cellSize > surface.origin[2] + (surface.rows - 1) * surface.cellSize + tolerance)
+        fail('traversal surface does not cover cell centres', entryPath)
+    }
   }
   const resourceIds = new Set(
     layers.flatMap(entry =>

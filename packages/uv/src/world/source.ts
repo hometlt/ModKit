@@ -151,6 +151,7 @@ function layerItemCount(layer: UvwHeightfieldSpaceLayer): number {
     case 'regions':
       return layer.regions.length
     case 'navigation':
+    case 'traversal':
       return layer.columns * layer.rows
     case 'gateways':
       return layer.segments.length
@@ -460,6 +461,13 @@ function recordItems(
           }),
         ),
       )
+    case 'traversal':
+      return Object.freeze(layer.walkable.flatMap((row, y) => row.flatMap((walkable, x) => {
+        const uvwPosition = gridPosition(layer.origin, layer.cellSize, x + 0.5, y + 0.5)
+        return inBounds(uvwPosition, bounds) ? [Object.freeze({ facet: 'traversal' as const,
+          id: `${record.id}:${x}:${y}`, layerId: record.id, coordinateSpaceId, lod: 'exact' as const,
+          x, y, walkable, exits: layer.exits[y]![x]!, uvwPosition })] : []
+      })))
     case 'gateways':
       return Object.freeze(
         layer.segments.flatMap(segment => {
@@ -653,6 +661,8 @@ export function createUvwWorldSceneSource(
         spaceId: record.space.id,
         localLayerId: record.layer.id,
         ...(record.layer.kind === 'heightfield' && record.layer.latticeOverview !== undefined ? {latticeOverview:record.layer.latticeOverview} : {}),
+        ...(record.layer.kind === 'traversal' ? { traversal: Object.freeze({ classId: record.layer.classId,
+          ...(record.layer.surfaceLayerId === undefined ? {} : { surfaceLayerId: record.layer.surfaceLayerId }) }) } : {}),
         ...(record.layer.kind === 'navigation' && record.layer.flagEncoding !== undefined ? { navigationFlagEncoding: record.layer.flagEncoding } : {}),
         ...('columns' in record.layer && 'cellSize' in record.layer && 'origin' in record.layer
           ? {
