@@ -97,6 +97,7 @@ export async function composeModelParticles(
     readonly label: string
     readonly prefix: string
   } = { id: 'model-particle', label: 'Model particles', prefix: 'model-particle' },
+  parentGlobalTime?: number,
 ): Promise<{
   primitives: SceneRendererPrimitive[]
   materials: SceneRendererMaterial[]
@@ -214,6 +215,7 @@ export async function composeModelParticles(
           viewport: { ...parent.viewport },
           camera: { ...camera, ...(childEye === undefined ? {} : { eyePosition: childEye }) },
           time: instance.ageSeconds,
+          ...(parentGlobalTime === undefined ? {} : { globalTime: parentGlobalTime }),
           ...(parent.scene.materialContext === undefined
             ? {}
             : {

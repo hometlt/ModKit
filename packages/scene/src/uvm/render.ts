@@ -82,11 +82,14 @@ export interface UvmRenderOptions extends UvmFrameOptions {
 
 /** Read a UVM frame, then invoke the selected standard scene renderer. The request is inert JSON:
  * {schemaVersion:1, viewport:{width,height}, camera:{viewProjection:[16 numbers],viewMatrix?,eyePosition?},
- *  sceneIndex?, modelState?, clipId?, time?, poseSamples?:[{clipId,time,weight,additive?}], materialContext?:{teamColor?,teamColorIntensity?,ambient?,environment?}, collisions?, shadows?, clearColor?, rendererId?, lighting?:'unlit'|'material'}.
+ *  sceneIndex?, modelState?, clipId?, time?, globalTime?, poseSamples?:[{clipId,time,weight,additive?}], materialContext?:{teamColor?,teamColorIntensity?,ambient?,environment?}, collisions?, shadows?, clearColor?, rendererId?, lighting?:'unlit'|'material'}.
  * `lighting: 'material'` shades glTF materials with their own metallic-roughness (`pbr`); KHR_materials_unlit stays unlit.
  * A `clipId` is the `id` of a clip in `UV_game_animation_clips` or the publisher's own id it keeps as
  * `sourceId`, or `animation-<index>` of a glTF animation when the document has no clip catalog;
- * `time` is seconds.
+ * `time` is explicit clip-local seconds. Optional `globalTime` is the independent concurrent-track
+ * coordinate; omission retains the previous per-sample clocks. Neither clock implies looping.
+ * Different clocks refuse historical particles/ribbons, including inactive definitions and nested
+ * resources. No playback history is inferred; static projectors and baked frames keep their parsers.
  * Native extras are never interpreted here. Unsupported material/effect rendering is reported.
  */
 export interface PreparedUvmRender {
@@ -199,6 +202,7 @@ async function prepareNestedUvmRender(
           'clipId',
           'poseSamples',
           'time',
+          'globalTime',
           'collisions',
           'shadows',
           'clearColor',
@@ -252,6 +256,7 @@ async function prepareNestedUvmRender(
   )
     throw new TypeError('material ambient must contain four components in 0..1')
   const time = input['time'] ?? 0,
+    globalTime = input['globalTime'],
     clipId = input['clipId'],
     rendererId = input['rendererId'],
     modelState = input['modelState'] ?? 'base'
@@ -259,6 +264,8 @@ async function prepareNestedUvmRender(
     typeof time !== 'number' ||
     !Number.isFinite(time) ||
     time < 0 ||
+    (globalTime !== undefined &&
+      (typeof globalTime !== 'number' || !Number.isFinite(globalTime) || globalTime < 0)) ||
     (clipId !== undefined && (typeof clipId !== 'string' || !clipId)) ||
     (rendererId !== undefined && (typeof rendererId !== 'string' || !rendererId)) ||
     typeof modelState !== 'string' ||
@@ -314,10 +321,17 @@ async function prepareNestedUvmRender(
         ...(signal === undefined ? {} : { signal }),
       })
       const read = { document: container.document, binary: container.binary }
-      if (cache !== undefined) cache.container = read
       return read
     })()
   const { document, binary } = parsed
+  if (globalTime !== undefined && globalTime !== time) {
+    // Bounded validation above owns the array shapes. Reject definitions conservatively, even if
+    // inactive: two sample coordinates do not describe an emitter's historical trajectory.
+    const effects = field(document['extensions'], 'UV_game_effects')
+    if (array(effects, 'particles').length > 0 || array(effects, 'ribbons').length > 0)
+      throw new TypeError('independent clocks do not support historical particles or ribbons')
+  }
+  if (cache !== undefined) cache.container = parsed
   const units = field(document['extensions'], 'UV_units')
   const metersPerSourceUnit = units === undefined ? 1 : field(units, 'metersPerSourceUnit')
   if (
@@ -500,7 +514,7 @@ async function prepareNestedUvmRender(
       { maxDepth: budget.maxDepth, maxNodes: budget.maxNodes, maxBytes: stageBytes },
       signal,
     )
-    for (const sampled of visibilitySampler.sample(time, signal))
+    for (const sampled of visibilitySampler.sample(time, signal, globalTime))
       visible.set(sampled.target, (sampled.value[0] ?? 0) > 0)
   }
   const sequence = clip?.sequenceIndex
@@ -514,7 +528,7 @@ async function prepareNestedUvmRender(
   // face turned from the light black.
   const materialContext: SceneRendererMaterialContext = {
     sceneLighting: true,
-    time,
+    time: globalTime ?? time,
     sequenceTime: time,
     ...(sequence === undefined ? {} : { sequenceIndex: sequence }),
     ...(team === undefined ? {} : { teamColor: [team[0] ?? 0, team[1] ?? 0, team[2] ?? 0] }),
@@ -546,7 +560,7 @@ async function prepareNestedUvmRender(
                 }),
             ...(signal === undefined ? {} : { signal }),
           },
-        ).sample(time, signal).nodeTransforms
+        ).sample(time, signal, undefined, globalTime).nodeTransforms
   const { viewProjection, viewMatrix, eyePosition } = resolveUvmCamera(document, camera, {
     aspect: width / height,
     nodeTransforms: cameraPose,
@@ -554,6 +568,7 @@ async function prepareNestedUvmRender(
     maxBytes: stageBytes,
     maxNodes: budget.maxNodes,
     time,
+    ...(globalTime === undefined ? {} : { globalTime }),
     ...(clip?.sequenceIndex === undefined ? {} : { sequenceIndex: clip.sequenceIndex }),
     ...(signal === undefined ? {} : { signal }),
   })
@@ -595,11 +610,12 @@ async function prepareNestedUvmRender(
           }),
       ...(signal === undefined ? {} : { signal }),
     },
-  ).sample(time, signal)
+  ).sample(time, signal, undefined, globalTime)
   const sceneLights = readUvmSceneLights(document, sample.nodeTransforms, activeNodes, {
     maxBytes: stageBytes,
     maxNodes: budget.maxNodes,
     time,
+    ...(globalTime === undefined ? {} : { globalTime }),
     ...(clip?.sequenceIndex === undefined ? {} : { sequenceIndex: clip.sequenceIndex }),
     ...(signal === undefined ? {} : { signal }),
   })
@@ -809,7 +825,9 @@ async function prepareNestedUvmRender(
       maxBytes: stageBytes,
       maxNodes: budget.maxNodes,
       maxDiagnostics: budget.maxDiagnostics,
-      nodeTransformsAt: time => effectPose.sample(time, signal).nodeTransforms,
+      nodeTransformsAt: step =>
+        effectPose.sample(step, signal, undefined, globalTime === undefined ? undefined : step)
+          .nodeTransforms,
       ...(viewMatrix === undefined ? {} : { viewMatrix }),
       ...(signal === undefined ? {} : { signal }),
     })
@@ -825,6 +843,7 @@ async function prepareNestedUvmRender(
       activeNodes,
       materials,
       time,
+      ...(globalTime === undefined ? {} : { globalTime }),
       ...(sequence === undefined ? {} : { sequenceIndex: sequence }),
       maxBytes:
         stageBytes -
@@ -1137,6 +1156,7 @@ async function prepareNestedUvmRender(
     nestedBudget,
     prepareNestedUvmRender,
     { id: 'model-state', label: 'Model states', prefix: 'model-state' },
+    globalTime,
   )
   const stateApplied = modelStateNested.composedInstances > 0
   const nested = await composeModelParticles(
@@ -1146,6 +1166,8 @@ async function prepareNestedUvmRender(
     depth,
     nestedBudget,
     prepareNestedUvmRender,
+    undefined,
+    globalTime,
   )
   if (
     diagnostics.length + modelStateNested.diagnostics.length + nested.diagnostics.length >

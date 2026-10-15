@@ -13,12 +13,18 @@ export function sampleUvmSceneProperties(
   defaults: Readonly<Record<string, number | readonly number[]>>,
   options: {
     readonly time: number
+    readonly globalTime?: number
     readonly sequenceIndex?: number
     readonly maxKeys: number
     readonly signal?: AbortSignal
   },
 ): Readonly<Record<string, number | readonly number[]>> {
   if (!Number.isFinite(options.time)) throw new TypeError('scene property time must be finite')
+  if (
+    options.globalTime !== undefined &&
+    (!Number.isFinite(options.globalTime) || options.globalTime < 0)
+  )
+    throw new TypeError('global time must be finite and nonnegative')
   const parsed = readUvmEffectAnimation(
     source as JsonObject,
     true,
@@ -47,9 +53,26 @@ export function sampleUvmSceneProperties(
         }
       }
     }
-    output[key] = typeof fallback === 'number'
-      ? sampleEffectSequenceScalar(entries, undefined, sequence, options.time, fallback)
-      : Array.from(sampleEffectSequenceVector(entries, sequence, options.time, fallback))
+    output[key] =
+      typeof fallback === 'number'
+        ? sampleEffectSequenceScalar(
+            entries,
+            undefined,
+            sequence,
+            options.time,
+            fallback,
+            options.globalTime,
+          )
+        : Array.from(
+            sampleEffectSequenceVector(
+              entries,
+              sequence,
+              options.time,
+              fallback,
+              undefined,
+              options.globalTime,
+            ),
+          )
   }
   return Object.freeze(output)
 }

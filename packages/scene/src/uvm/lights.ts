@@ -14,6 +14,7 @@ export function readUvmSceneLights(
     maxBytes: number
     maxNodes: number
     time?: number
+    globalTime?: number
     sequenceIndex?: number
     signal?: AbortSignal
   },
@@ -61,6 +62,7 @@ export function readUvmSceneLights(
       defaults as Readonly<Record<string, number | readonly number[]>>,
       {
         time: options.time ?? 0,
+        ...(options.globalTime === undefined ? {} : { globalTime: options.globalTime }),
         ...(options.sequenceIndex === undefined ? {} : { sequenceIndex: options.sequenceIndex }),
         maxKeys: options.maxNodes,
         ...(options.signal === undefined ? {} : { signal: options.signal }),

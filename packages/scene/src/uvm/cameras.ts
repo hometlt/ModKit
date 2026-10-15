@@ -157,6 +157,7 @@ export interface UvmCameraOptions {
   readonly maxNodes: number
   /** Selected common clip clock for portable camera-property animation. */
   readonly time?: number
+  readonly globalTime?: number
   readonly sequenceIndex?: number
   readonly signal?: AbortSignal
 }
@@ -264,6 +265,7 @@ export function resolveUvmCamera(
         },
         {
           time: options.time ?? 0,
+          ...(options.globalTime === undefined ? {} : { globalTime: options.globalTime }),
           ...(options.sequenceIndex === undefined ? {} : { sequenceIndex: options.sequenceIndex }),
           maxKeys: options.maxNodes,
           ...(options.signal === undefined ? {} : { signal: options.signal }),

@@ -177,3 +177,48 @@ test('actual CPU preview renderer consumes directional lights without requiring 
   })
   assert.deepEqual([...frame.rgba], Array(4).fill([255, 128, 64, 255]).flat())
 })
+
+test('light vector and scalar properties share independent global and ordinary local clocks', () => {
+  const track = (a, b, concurrent) => [
+    {
+      sequenceIndex: 3,
+      ...(concurrent ? { concurrent: true, wrapSeconds: 1 } : {}),
+      track: {
+        lineType: 1,
+        globalSeqId: null,
+        keys: [
+          { frame: 0, vector: a },
+          { frame: 1, vector: b },
+        ],
+      },
+    },
+  ]
+  const light = {
+    ...point,
+    animationDefaults: { color: [0, 0, 0], intensity: 1 },
+    sequenceAnimation: {
+      color: track([0, 0, 0], [4, 0, 0], true),
+      intensity: track([1], [3], false),
+    },
+  }
+  const doc = {
+    asset: { version: '2.0' },
+    nodes: [{}],
+    extensions: { UV_scene_lights: { version: 1, spaceNode: 0, lights: [light] } },
+  }
+  const frame = identity.slice()
+  frame[12] = 5
+  const choose = extra =>
+    readUvmSceneLights(doc, new Map([['node-0', frame]]), new Set(['node-0']), {
+      maxBytes: 100000,
+      maxNodes: 1000,
+      time: 0.25,
+      sequenceIndex: 3,
+      ...extra,
+    }).lights[0]
+  assert.deepEqual(choose({ globalTime: 0.75 }).color, [4.5, 0, 0])
+  assert.deepEqual(choose({ globalTime: 0 }).color, [0, 0, 0])
+  assert.deepEqual(choose({}).color, [1.5, 0, 0])
+  assert.deepEqual(choose({ globalTime: 0.75 }).position, [5, 0, 2])
+  assert.throws(() => choose({ globalTime: -1 }), /global time/)
+})

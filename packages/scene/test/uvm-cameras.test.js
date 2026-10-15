@@ -210,3 +210,49 @@ it('draws sprite frames with an orthographic camera at a facing, a pitch and a p
     }),
   )
 })
+
+it('camera properties keep ordinary local time and independently wrap concurrent global time', () => {
+  const track = (a, b, concurrent) => [
+    {
+      sequenceIndex: 7,
+      ...(concurrent ? { concurrent: true, wrapSeconds: 1 } : {}),
+      track: {
+        lineType: 1,
+        globalSeqId: null,
+        keys: [
+          { frame: 0, vector: [a] },
+          { frame: 1, vector: [b] },
+        ],
+      },
+    },
+  ]
+  const animated = structuredClone(doc)
+  animated.cameras[0].extensions = {
+    UV_scene_camera: {
+      version: 1,
+      sequenceAnimation: {
+        yfov: track(1, 2, true),
+        znear: track(1, 2, false),
+      },
+    },
+  }
+  const choose = values =>
+    resolveUvmCamera(animated, { node: 0 }, { ...options, time: 0.25, sequenceIndex: 7, ...values })
+  const expected = global =>
+    resolveUvmCamera(
+      {
+        nodes: doc.nodes,
+        cameras: [{ type: 'perspective', perspective: { yfov: 1 + global, znear: 1.25, zfar: 9 } }],
+      },
+      { node: 0 },
+      options,
+    )
+  for (const [globalTime, localGlobal] of [
+    [0.75, 0.75],
+    [0, 0],
+    [1.25, 0.25],
+  ])
+    close(choose({ globalTime }).viewProjection, expected(localGlobal).viewProjection)
+  close(choose({}).viewProjection, expected(0.25).viewProjection)
+  assert.throws(() => choose({ globalTime: -1 }), /global time/)
+})

@@ -3425,11 +3425,18 @@ function effectSequenceTrack(
 function effectTrackTime(
   entry: { concurrent?: boolean; wrapSeconds?: number } | undefined,
   time: number,
+  globalTimeSeconds?: number,
 ): number {
+  if (
+    globalTimeSeconds !== undefined &&
+    (!Number.isFinite(globalTimeSeconds) || globalTimeSeconds < 0)
+  )
+    throw new TypeError('global time must be finite and nonnegative')
+  const clock = entry?.concurrent ? (globalTimeSeconds ?? time) : time
   const wrap = entry?.concurrent ? entry.wrapSeconds : undefined
   return typeof wrap === 'number' && Number.isFinite(wrap) && wrap > 0
-    ? ((time % wrap) + wrap) % wrap
-    : time
+    ? ((clock % wrap) + wrap) % wrap
+    : clock
 }
 
 export function sampleEffectSequenceScalar(
@@ -3438,10 +3445,12 @@ export function sampleEffectSequenceScalar(
   sequenceId: EffectSequenceId,
   time: number,
   fallback: number,
+  globalTimeSeconds?: number,
 ): number {
   const entry = effectSequenceTrack(sequenceTracks, sequenceId)
+  const sampleTime = effectTrackTime(entry, time, globalTimeSeconds)
   return entry
-    ? sampleScalar(entry.track, effectTrackTime(entry, time), fallback)
+    ? sampleScalar(entry.track, sampleTime, fallback)
     : sampleScalar(legacyTrack, time, fallback)
 }
 
@@ -3455,9 +3464,10 @@ export function sampleEffectSequenceVector(
   time: number,
   fallback: readonly number[],
   out: Float32Array = new Float32Array(fallback.length),
+  globalTimeSeconds?: number,
 ): Float32Array {
   const entry = effectSequenceTrack(sequenceTracks, sequenceId)
-  const sampleTime = effectTrackTime(entry, time)
+  const sampleTime = effectTrackTime(entry, time, globalTimeSeconds)
   for (let component = 0; component < fallback.length && component < out.length; component += 1) {
     out[component] = entry
       ? sampleTrackComponent(entry.track, sampleTime, component, fallback[component] ?? 0)

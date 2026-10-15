@@ -89,3 +89,65 @@ test('another receiver buffer or material is projected anew, even with the same 
   const elsewhere = project(still, createUvmProjectorFrameCache())
   assert.notEqual(elsewhere.primitives[0].positions, first.primitives[0].positions)
 })
+
+test('projector cached geometry and scalar state sample distinct global clocks at the same local time', () => {
+  const track = (a, b, concurrent) => [
+    {
+      sequenceIndex: 3,
+      ...(concurrent ? { concurrent: true, wrapSeconds: 1 } : {}),
+      track: {
+        lineType: 1,
+        globalSeqId: null,
+        keys: [
+          { frame: 0, vector: a },
+          { frame: 1, vector: b },
+        ],
+      },
+    },
+  ]
+  const doc = structuredClone(document)
+  doc.extensions.UV_game_effects.trackTimeUnit = 'seconds'
+  doc.extensions.UV_game_effects.projectors[0].sequenceAnimation = {
+    offset: track([0, 0, 0], [2, 0, 0], true),
+    boxOffsetXRight: track([1], [3], false),
+  }
+  const cache = createUvmProjectorFrameCache()
+  const choose = (globalTime, kept = cache) =>
+    createUvmProjectorFrame(doc, {
+      receivers: [ground],
+      nodeTransforms: new Map([['node-0', Float32Array.from(still)]]),
+      activeNodes: new Set(['node-0']),
+      materials: [base],
+      maxBytes: 1 << 20,
+      maxNodes: 1000,
+      warn: () => {},
+      time: 0.25,
+      sequenceIndex: 3,
+      ...(globalTime === undefined ? {} : { globalTime }),
+      ...(kept ? { cache: kept } : {}),
+    })
+  const first = choose(0.75),
+    zero = choose(0)
+  assert.notDeepEqual(first.primitives[0].positions, zero.primitives[0].positions)
+  assert.deepEqual(first, choose(0.75, null))
+  assert.deepEqual(zero, choose(0, null))
+  assert.deepEqual(choose(undefined), choose(0.25, null))
+  const localWidths = structuredClone(doc)
+  localWidths.extensions.UV_game_effects.projectors[0].boxOffsetXRight = 1.5
+  delete localWidths.extensions.UV_game_effects.projectors[0].sequenceAnimation.boxOffsetXRight
+  assert.deepEqual(
+    first,
+    createUvmProjectorFrame(localWidths, {
+      receivers: [ground],
+      nodeTransforms: new Map([['node-0', Float32Array.from(still)]]),
+      activeNodes: new Set(['node-0']),
+      materials: [base],
+      maxBytes: 1 << 20,
+      maxNodes: 1000,
+      warn: () => {},
+      time: 0.25,
+      globalTime: 0.75,
+      sequenceIndex: 3,
+    }),
+  )
+})

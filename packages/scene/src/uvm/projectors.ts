@@ -76,6 +76,7 @@ interface Options {
   readonly maxBytes: number
   readonly maxNodes: number
   readonly time?: number
+  readonly globalTime?: number
   readonly sequenceIndex?: number
   readonly signal?: AbortSignal
   readonly warn: (message: string) => void
@@ -356,6 +357,8 @@ export function createUvmProjectorFrame(document: JsonObject, options: Options) 
                   options.sequenceIndex ?? null,
                   time,
                   vec(entry[key]),
+                  undefined,
+                  options.globalTime,
                 ),
               ]
             : sampleEffectSequenceScalar(
@@ -364,6 +367,7 @@ export function createUvmProjectorFrame(document: JsonObject, options: Options) 
                 options.sequenceIndex ?? null,
                 time,
                 scalar(entry[key]),
+                options.globalTime,
               )
       }
     }
