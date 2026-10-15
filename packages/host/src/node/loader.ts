@@ -305,23 +305,33 @@ export async function loadExtensionDirectory(
   if (normalized.manifest) {
     throwIfAborted(signal)
     const expansion = expandContributionManifests(normalized.manifest.contributionManifests, files)
-    for (const entry of expansion.entries) {
-      const documentPath = join(dir, entry.path)
-      const document = await readJsonIfExists(documentPath)
-      if (document !== undefined) {
+    // Use the same bounded IO as hashing. Settled reads retain the first declared error rather
+    // than whichever malformed document happened to finish first; the inventory order is unchanged.
+    await inOrder(
+      expansion.entries,
+      IO_WIDTH,
+      async entry => {
+        try {
+          const documentPath = join(dir, entry.path)
+          const document = await readJsonIfExists(documentPath)
+          // The artifact walk already hashed these files; retain the existing fallback for a
+          // document not covered by that walk rather than leaving its digest absent.
+          const value = document === undefined ? undefined : ([
+            document, initial.fileDigests[entry.path] ?? sha256(await readFile(documentPath)),
+          ] as const)
+          return { status: 'fulfilled' as const, value }
+        } catch (reason) {
+          return { status: 'rejected' as const, reason }
+        }
+      },
+      (entry, result) => {
+        if (result.status === 'rejected') throw result.reason
+        if (result.value === undefined) return
+        const [document, digest] = result.value
         documents.set(entry.path, document)
-        /*
-         * The artifact walk above already hashed every file of this tree, this document among
-         * them; reading and hashing it a second time is the same answer for twice the I/O. A file
-         * the walk did not cover (it cannot happen for a declared document inside the root) is
-         * still hashed here rather than left without a digest.
-         */
-        documentDigests.set(
-          entry.path,
-          initial.fileDigests[entry.path] ?? sha256(await readFile(documentPath)),
-        )
-      }
-    }
+        documentDigests.set(entry.path, digest)
+      },
+    )
   }
   const initialArtifactDigest = initial.artifactDigest
   const artifactRoot = pathToFileURL(`${dir}${sep}`)
