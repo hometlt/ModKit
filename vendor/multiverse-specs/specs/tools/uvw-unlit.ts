@@ -4,6 +4,6 @@ export function assertUnlitLighting(layer: Record<string, unknown>): void {
     throw new TypeError('lighting-value: Unsupported lighting model')
   const color = layer['unlitColor']
   if (color !== undefined && (!Array.isArray(color) || color.length !== 3
-    || color.some(value => typeof value !== 'number' || !Number.isFinite(value) || value < 0 || value > 1)))
-    throw new TypeError('lighting-value: unlitColor must be linear RGB in 0..1')
+    || color.some(value => typeof value !== 'number' || !Number.isFinite(value) || value < 0)))
+    throw new TypeError('lighting-value: unlitColor must be non-negative finite linear RGB')
 }

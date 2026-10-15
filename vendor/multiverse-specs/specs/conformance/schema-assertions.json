@@ -21,6 +21,11 @@
     "world/schema"
   ],
   "assertions": [
+    {"document":"world/fixtures/uvw-unlit.uvw.json","pointer":"","schemaId":"https://modkitx.dev/specs/world/uvw.profile.v1.schema.json","id":"uvw-unlit-hdr-valid","expect":"valid"},
+    {"document":"world/fixtures/uvw-unlit.uvw.json","pointer":"","schemaId":"https://modkitx.dev/specs/world/uvw.profile.v1.schema.json","id":"uvw-lit-inactive-hdr-valid","expect":"valid","mutations":[{"op":"set","path":"spaces.0.layers.1.model","value":"lit"}]},
+    {"document":"world/fixtures/uvw-unlit.uvw.json","pointer":"","schemaId":"https://modkitx.dev/specs/world/uvw.profile.v1.schema.json","id":"uvw-unlit-unknown-model","expect":"invalid","mutations":[{"op":"set","path":"spaces.0.layers.1.model","value":"none"}]},
+    {"document":"world/fixtures/uvw-unlit.uvw.json","pointer":"","schemaId":"https://modkitx.dev/specs/world/uvw.profile.v1.schema.json","id":"uvw-unlit-negative-gain","expect":"invalid","mutations":[{"op":"set","path":"spaces.0.layers.1.unlitColor","value":[-1,1,1]}]},
+    {"document":"world/fixtures/uvw-unlit.uvw.json","pointer":"","schemaId":"https://modkitx.dev/specs/world/uvw.profile.v1.schema.json","id":"uvw-unlit-short-vector","expect":"invalid","mutations":[{"op":"set","path":"spaces.0.layers.1.unlitColor","value":[1,1]}]},
     {"document":"world/fixtures/uvw-game-rasters.uvw.json","pointer":"","schemaId":"https://modkitx.dev/specs/world/uvw.profile.v1.schema.json","id":"uvw-game-rasters-valid","expect":"valid"},
     {"document":"world/fixtures/uvw-game-rasters.uvw.json","pointer":"","schemaId":"https://modkitx.dev/specs/world/uvw.profile.v1.schema.json","id":"uvw-game-raster-unscoped-meaning","expect":"invalid","mutations":[{"op":"set","path":"spaces.0.layers.2.valueMeaning","value":"metal"}]},
     {"document":"world/fixtures/uvw-game-rasters.uvw.json","pointer":"","schemaId":"https://modkitx.dev/specs/world/uvw.profile.v1.schema.json","id":"uvw-game-raster-unknown-type","expect":"invalid","mutations":[{"op":"set","path":"spaces.0.layers.2.valueType","value":"u64"}]},

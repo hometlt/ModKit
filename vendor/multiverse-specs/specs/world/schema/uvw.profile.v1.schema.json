@@ -1265,9 +1265,9 @@
         },
         "unlitColor": {
           "type": "array", "minItems": 3, "maxItems": 3,
-          "items": {"type": "number", "minimum": 0, "maximum": 1},
+          "items": {"type": "number", "minimum": 0},
           "default": [1, 1, 1],
-          "description": "Linear RGB multiplier in unlit, after texture color-space decoding. Omitted white is interpreted without rewriting bytes."
+          "description": "Non-negative finite linear RGB multiplier in unlit, after texture color-space decoding; values above one are retained without clamping. Omitted white is interpreted without rewriting bytes."
         },
         "ambientColor": {
           "$ref": "#/$defs/vec3"

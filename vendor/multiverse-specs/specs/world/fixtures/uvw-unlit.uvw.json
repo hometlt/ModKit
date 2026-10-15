@@ -1,0 +1,89 @@
+{
+  "uv": {
+    "format": "UVW",
+    "version": "1.0",
+    "status": "profile"
+  },
+  "connections": [],
+  "spaces": [
+    {
+      "id": "main",
+      "topology": "heightfield",
+      "basis": {
+        "handedness": "right",
+        "upAxis": "y",
+        "forwardAxis": "+z",
+        "unit": "meter"
+      },
+      "bounds": {
+        "min": [
+          0,
+          0,
+          0
+        ],
+        "max": [
+          1,
+          0,
+          1
+        ]
+      },
+      "layers": [
+        {
+          "id": "ground",
+          "kind": "heightfield",
+          "columns": 2,
+          "rows": 2,
+          "cellSize": 1,
+          "origin": [
+            0,
+            0,
+            0
+          ],
+          "samples": [
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              0
+            ]
+          ]
+        },
+        {
+          "schemaVersion": 1,
+          "id": "lighting",
+          "kind": "lighting",
+          "model": "unlit",
+          "unlitColor": [
+            2,
+            0,
+            0.5
+          ],
+          "ambientColor": [
+            0.2,
+            0.3,
+            0.4
+          ],
+          "ambientIntensity": 0.3,
+          "directional": [
+            {
+              "id": "sun",
+              "direction": [
+                0,
+                -1,
+                0
+              ],
+              "color": [
+                1,
+                1,
+                1
+              ],
+              "intensity": 0.8
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

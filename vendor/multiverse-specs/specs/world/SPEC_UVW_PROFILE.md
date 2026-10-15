@@ -237,8 +237,10 @@ The legacy candidate envelope does not gain this profile-only field.
    publisher-defined flags; portable flag meaning requires a separately named mapping.
    Gateways are directed-independent line segments in the local `(x,z)` plane. Lighting is
    only the initial ambient/directional environment. Optional `model: "lit" | "unlit"`
-   defaults to lit. Unlit draws texture/base color times `unlitColor`, a linear RGB multiplier
-   in `0..1` defaulting to white, after texture color-space decoding. Ambient/directional light,
+   defaults to lit. Unlit draws texture/base color times `unlitColor`, a non-negative finite
+   linear RGB multiplier defaulting to white, after texture color-space decoding. Values above
+   one are retained without clamping (for example, a publisher's ambient/level gain); the display
+   pipeline may still tone-map or clip the resulting radiance. Ambient/directional light,
    shadows and highlights do not apply in unlit; other authored light settings remain valid,
    preserved inactive data. This layer policy covers the world's presentation, including objects
    and water, and does not modify gameplay, traversal, alpha coverage or texture bytes. Display

@@ -309,7 +309,7 @@ const KEPT_FIELDS: Readonly<Record<string, ReadonlySet<string>>> = Object.freeze
   traversal: new Set(['x', 'y', 'walkable', 'exits', 'uvwPosition']),
   'game-raster': new Set(['x','y','value','uvwPosition']),
   gateways: new Set(['x1', 'y1', 'x2', 'y2', 'uvwStart', 'uvwEnd']),
-  lighting: new Set(['ambientColor', 'ambientIntensity', 'toneMapping', 'terrain', 'directional']),
+  lighting: new Set(['ambientColor', 'ambientIntensity', 'toneMapping', 'terrain', 'directional', 'model', 'unlitColor']),
   objects: new Set([
     'kind',
     'objectId',
@@ -1107,6 +1107,8 @@ async function reconstructLayer(
       id,
       kind: 'lighting',
       ...label,
+      ...(environment.model === undefined ? {} : { model: environment.model }),
+      ...(environment.unlitColor === undefined ? {} : { unlitColor: environment.unlitColor }),
       ambientColor: environment.ambientColor,
       ambientIntensity: environment.ambientIntensity,
       ...(environment.toneMapping === undefined ? {} : { toneMapping: environment.toneMapping }),

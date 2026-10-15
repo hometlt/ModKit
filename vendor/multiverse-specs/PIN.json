@@ -3,16 +3,16 @@
   "schemaVersion": "multiverse-specs-pin-1",
   "source": {
     "repository": "multiverse (sibling repository)",
-    "commit": "f5fc69389b0c67c30810d930eaba298e99d4f49d",
-    "subject": "feat(uvw): preserve independent typed game rasters",
-    "committedOn": "2026-10-16T00:28:06+04:00"
+    "commit": "1366e9d517c029c870c2898a014307680e4379be",
+    "subject": "fix(uvw): retain nonnegative unlit presentation gain",
+    "committedOn": "2026-10-16T02:48:20+04:00"
   },
   "generator": "scripts/specs-pin.mjs",
   "generatedFrom": "git objects, not the sibling working tree",
   "prefix": "specs/",
   "counts": {
-    "files": 321,
-    "bytes": 2235249
+    "files": 323,
+    "bytes": 2240365
   },
   "files": [
     {
@@ -182,8 +182,8 @@
     },
     {
       "path": "specs/conformance/schema-assertions.json",
-      "bytes": 156545,
-      "digest": "sha256:d2df931819540b074a2618881a8901f87dd2d8d8f718c20ee193f70512737d51"
+      "bytes": 157794,
+      "digest": "sha256:838ca3b19808b6d70635646edf74308150d9a85aee6f1869ba47123090de7cf9"
     },
     {
       "path": "specs/conformance/state/vectors.json",
@@ -447,8 +447,8 @@
     },
     {
       "path": "specs/model/fixtures/uvm-variants.profile.json",
-      "bytes": 2126,
-      "digest": "sha256:3bb1c1b8b4d0b05370de94b90d0ab2c37f5c22a902d5c096e0dd375a3e190876"
+      "bytes": 2127,
+      "digest": "sha256:6d2119fc1ba7e8fabbea8a8b22824e465501b6deea5aa257decc642c58c55dcf"
     },
     {
       "path": "specs/model/schema/gltf.material.profile.schema.json",
@@ -1321,9 +1321,14 @@
       "digest": "sha256:f4b8963b0118dd2119386969a7e777fc326701530e9ae527e11f44aa101119ff"
     },
     {
+      "path": "specs/tools/uvw-unlit.test.mjs",
+      "bytes": 2062,
+      "digest": "sha256:0fb117b19c49063fed2c1149ac6481f6c6e18ac9c90af805432eefae6bda6d4d"
+    },
+    {
       "path": "specs/tools/uvw-unlit.ts",
-      "bytes": 635,
-      "digest": "sha256:2def6159a5c06aa2e58e193892c9aaa2e602af7740befddebef03bfbce5ba865"
+      "bytes": 634,
+      "digest": "sha256:c73951083aadd789df1c10565ffcffb6f8c09ead0ced9464551a1a50deebddbd"
     },
     {
       "path": "specs/world/ADR-WORLD-001-sc2-map-native-to-uvw.md",
@@ -1387,8 +1392,8 @@
     },
     {
       "path": "specs/world/SPEC_UVW_PROFILE.md",
-      "bytes": 37746,
-      "digest": "sha256:f01324bfe22dd946ef15890219ce9dea173a7ee2b3a746b85854eddd1b621761"
+      "bytes": 37930,
+      "digest": "sha256:53f5525d5d139f08b0ef7f126fcff5b37d2a3b0c2b2f5ec60903f6c96902424b"
     },
     {
       "path": "specs/world/fixtures/invalid/connections-not-empty.uvw.json",
@@ -1581,6 +1586,11 @@
       "digest": "sha256:3f32a08c7980b6367227c643d61f7f2a9ed66b4abdba50e56e653c203ff3e264"
     },
     {
+      "path": "specs/world/fixtures/uvw-unlit.uvw.json",
+      "bytes": 1567,
+      "digest": "sha256:7c07fe2316d45e3aff4e911470218c2f96e38b015a5ff1c39588b70ab933bb0a"
+    },
+    {
       "path": "specs/world/fixtures/uvw-water-material.json",
       "bytes": 230,
       "digest": "sha256:4c7ab5b88ea871a6f8e0e4e097217cbb03a83916daeb326257c31d4d4d166bd4"
@@ -1617,8 +1627,8 @@
     },
     {
       "path": "specs/world/schema/uvw.profile.v1.schema.json",
-      "bytes": 64330,
-      "digest": "sha256:b57b0ec0894ecbba9f6a74c823b4412f0ed6c9352db5da7391e69801a6e6d939"
+      "bytes": 64384,
+      "digest": "sha256:4d6f5631ca201fc05414786871fcd18e2f5b80cb282d010e69c96fc1373901f5"
     }
   ]
 }

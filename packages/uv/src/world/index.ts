@@ -16,6 +16,7 @@ import type {
   WorldStartPosition,
   WorldToneMapping,
   WorldTerrainLighting,
+  MapWorldLightingSummary,
 } from '@modkit/sdk/maps'
 
 export const UVW_PROFILE_FORMAT = 'UVW' as const
@@ -355,7 +356,7 @@ export interface UvwDirectionalLight {
   readonly useAmbientOcclusion?: boolean
 }
 
-export interface UvwLightingLayer {
+export interface UvwLightingLayer extends Pick<MapWorldLightingSummary, 'model' | 'unlitColor'> {
   readonly schemaVersion: 1
   readonly id: string
   readonly kind: 'lighting'
@@ -2204,12 +2205,16 @@ function lightingLayer(
   const item = record(value, path, state, depth)
   exactKeys(
     item,
-    ['schemaVersion', 'id', 'kind', 'label', 'ambientColor', 'ambientIntensity', 'directional', 'toneMapping', 'terrain'],
+    ['schemaVersion', 'id', 'kind', 'label', 'ambientColor', 'ambientIntensity', 'directional', 'toneMapping', 'terrain', 'model', 'unlitColor'],
     ['schemaVersion', 'id', 'kind', 'ambientColor', 'ambientIntensity', 'directional'],
     path,
   )
   schemaVersionOne(item, path, state, depth + 1)
   literal(item['kind'], 'lighting', `${path}.kind`, state, depth + 1)
+  const model = item['model']
+  if (model !== undefined && model !== 'lit' && model !== 'unlit') fail('invalid lighting model', `${path}.model`)
+  const unlitColor = item['unlitColor'] === undefined ? undefined : vec3(item['unlitColor'], `${path}.unlitColor`, state, depth + 1)
+  if (unlitColor?.some(component => component < 0)) fail('unlitColor components must be non-negative', `${path}.unlitColor`)
   const ambientColor = vec3(item['ambientColor'], `${path}.ambientColor`, state, depth + 1)
   if (ambientColor.some(component => component < 0 || component > 1))
     fail('ambientColor components must be between zero and one', `${path}.ambientColor`)
@@ -2260,6 +2265,8 @@ function lightingLayer(
     id: layerId(item['id'], `${path}.id`, state, depth + 1),
     kind: 'lighting',
     ...(label === undefined ? {} : { label }),
+    ...(model === undefined ? {} : { model }),
+    ...(unlitColor === undefined ? {} : { unlitColor }),
     ambientColor,
     ambientIntensity,
     directional: Object.freeze(directional),

@@ -515,6 +515,8 @@ function recordItems(
           id: `${record.id}:environment`,
           layerId: record.id,
           coordinateSpaceId,
+          ...(layer.model === undefined ? {} : { model: layer.model }),
+          ...(layer.unlitColor === undefined ? {} : { unlitColor: layer.unlitColor }),
           ambientColor: layer.ambientColor,
           ambientIntensity: layer.ambientIntensity,
           ...(layer.toneMapping === undefined ? {} : { toneMapping: layer.toneMapping }),
