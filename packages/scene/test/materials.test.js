@@ -61,6 +61,46 @@ const close = (actual, expected) => {
   )
 }
 
+it('adopts scene lighting per typed lit standard pass while preserving PBR and unshaded passes', () => {
+  const lit = material({ unshaded: false })
+  const pbr = material({ unshaded: false, lightingModel: 'pbr-metallic-roughness' })
+  const unshaded = material()
+  const sampler = createStandardMaterialPrograms({ renderModel: { version: 1, composite: {
+    priority: 0, passes: [lit, pbr, unshaded].map(material => ({ material, alphaFactor: { value: 1 } })),
+  } } }, { budget })
+  const flags = lighting => sampler.sample({ time: 0 }, lighting).map(p => p.defines.sceneLighting === true)
+  assert.deepEqual(flags({}), [false, false, false])
+  const mutable = { autoSceneLighting: true }
+  assert.deepEqual(flags(mutable), [true, false, false])
+  mutable.sceneLighting = false
+  assert.deepEqual(flags(mutable), [false, false, false])
+  delete mutable.sceneLighting
+  assert.deepEqual(flags(mutable), [true, false, false])
+  delete mutable.autoSceneLighting
+  assert.deepEqual(flags(mutable), [false, false, false])
+  assert.deepEqual(flags({ autoSceneLighting: true, sceneLighting: true }), [true, true, true])
+})
+
+it('forwards automatic standard lighting through the existing instance owner and respects opt-outs', () => {
+  const definition = (id, standard, context) => ({ id, baseColor: [1, 1, 1, 1],
+    shader: { id: 'modkit.render-material.v1', parameters: parameters(standard) },
+    ...(context === undefined ? {} : { context }),
+  })
+  const lit = material({ unshaded: false })
+  const pbr = material({ unshaded: false, lightingModel: 'pbr-metallic-roughness' })
+  const definitions = [definition('lit', lit), definition('pbr', pbr), definition('unshaded', material()),
+    definition('instance-default', lit, { time: 0 }),
+    definition('instance-false', lit, { sceneLighting: false }),
+    definition('instance-pbr', pbr, { time: 0 })]
+  const sampler = createSceneMaterialProgramSampler(definitions, new Map())
+  const flags = context => [...sampler.sample(context, []).values()].map(m => m.passes[0].defines.sceneLighting === true)
+  assert.deepEqual(flags({ autoSceneLighting: true }), [true, false, false, true, false, false])
+  assert.deepEqual(flags({ autoSceneLighting: true, sceneLighting: false }), [false, false, false, false, false, false])
+  assert.deepEqual(flags({ autoSceneLighting: true, sceneLighting: true }), [true, true, true, true, false, true])
+  assert.deepEqual(flags({}), [false, false, false, false, false, false])
+  assert.throws(() => sampler.sample({ autoSceneLighting: 1 }, []), /automatic material scene lighting/u)
+})
+
 it('keeps cube and legacy atlas programs separate in the same material sampler cache', () => {
   const sampler = createStandardMaterialPrograms(
     parameters(

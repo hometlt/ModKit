@@ -25,6 +25,9 @@ import { materialSkinOf } from './material-skin.js'
 import { primitiveFade, primitiveVertexTints } from './tint.js'
 import { primitiveVertexPlacements } from './vertex-placements.js'
 import { WORLD_SHADOW_GLSL, type WorldShadowReceiver } from './world-shadow.js'
+import {
+  LIGHT_GEOMETRY_GLSL, bindPreviewLighting, readPreviewLighting, type PreviewLighting,
+} from './preview-lighting.js'
 
 /**
  * The vertex and fragment stages a draw needs beyond its material's: a skin posed on the GPU
@@ -33,25 +36,27 @@ import { WORLD_SHADOW_GLSL, type WorldShadowReceiver } from './world-shadow.js'
 interface MaterialStages {
   readonly skinned: boolean
   readonly tinted: boolean
+  readonly spatial?: boolean
   /** The program cache's key for these stages. */
   readonly key: string
 }
 
 /** The four stage choices, made once: a draw asks for its stages every frame. */
-const STAGES: readonly (readonly MaterialStages[])[] = [false, true].map(skinned =>
-  Object.freeze(
+const STAGES: readonly (readonly (readonly MaterialStages[])[])[] = [false,true].map(spatial =>
+  [false, true].map(skinned => Object.freeze(
     [false, true].map(tinted =>
-      Object.freeze({ skinned, tinted, key: `${String(skinned)}|${String(tinted)}` }),
+      Object.freeze({ skinned, tinted, spatial,
+        key: `${String(skinned)}|${String(tinted)}${spatial?'|spatial':''}` }),
     ),
-  ),
+  )),
 )
 
-const materialStagesOf = (primitive: MaterialDraw['primitive']): MaterialStages =>
-  STAGES[materialSkinOf(primitive) === undefined ? 0 : 1]![
+const materialStagesOf = (primitive: MaterialDraw['primitive'], spatial = false): MaterialStages =>
+  STAGES[spatial?1:0]![materialSkinOf(primitive) === undefined ? 0 : 1]![
     primitiveVertexTints(primitive) === undefined ? 0 : 1
   ]!
 
-const PLAIN_STAGES = STAGES[0]![0]!
+const PLAIN_STAGES = STAGES[0]![0]![0]!
 
 const stagesKey = (stages: MaterialStages) => stages.key
 import { requiresEnvironmentEye, snapshotEyePosition } from '../materials/environment.js'
@@ -282,6 +287,7 @@ export function materialWebGlDraws(
     readonly serial: number
     readonly camera: SceneRendererCamera
     readonly light: MaterialSceneLight | undefined
+    readonly spatialLighting: PreviewLighting | undefined
     readonly geometry: ReturnType<typeof materialFrameGeometry>
     readonly eyePosition: ReturnType<typeof snapshotEyePosition>
     worldLighting(): ReturnType<typeof materialFrameGeometry>['worldLighting']
@@ -300,7 +306,10 @@ export function materialWebGlDraws(
   /** The frame of a camera and light; equal values keep the serial, so programs keep their uploads. */
   const frameOf = (camera: SceneRendererCamera, light: MaterialSceneLight | undefined) => {
     const eyePosition = snapshotEyePosition(camera.eyePosition)
+    const spatialLighting = light?.spatialLighting === undefined ? undefined :
+      readPreviewLighting(light.spatialLighting.lights,light.spatialLighting.ambient)
     const lightJson =
+      spatialLighting === undefined && lastFrame?.spatialLighting === undefined &&
       lastFrameValues !== undefined && light === lastFrameValues.light
         ? lastFrameValues.lightJson
         : JSON.stringify(light ?? null)
@@ -318,6 +327,7 @@ export function materialWebGlDraws(
         serial: frameSerial,
         camera,
         light,
+        spatialLighting,
         geometry: materialFrameGeometry(camera, light, false),
         eyePosition,
         worldLighting: () => (lighting ??= materialFrameGeometry(camera, light, true).worldLighting),
@@ -693,6 +703,10 @@ export function materialWebGlDraws(
         ? frame.worldLighting()
         : undefined,
     )
+    if (frame.spatialLighting !== undefined) {
+      bindPreviewLighting(gl,program,frame.spatialLighting)
+      gl.uniform1i(uniform('u_sceneDirectLightCount'),3+frame.spatialLighting.lights.length)
+    }
     programFrames.set(program, frame.serial)
   }
   const bindSceneLight = (
@@ -953,7 +967,9 @@ export function materialWebGlDraws(
     if (mode === undefined || instances?.count === 0) return 0
     const model = instances === undefined && !placed ? materialModelMatrix(primitive) : undefined
     const skin = materialSkinOf(primitive)
-    const lease = leaseFor(leased, material, materialStagesOf(primitive))
+    const spatial = frame.spatialLighting !== undefined && source.defines.sceneLighting === true &&
+      source.defines.pbr !== true && !source.defines.unshaded
+    const lease = leaseFor(leased, material, materialStagesOf(primitive,spatial))
     const program = lease.program
     const geometry = bindGeometry(program, leased, primitive, instances?.matrices, state)
     if (state.program !== program) {
@@ -1137,13 +1153,15 @@ export function materialWebGlDraws(
       })
     },
     /** Link every program these draws still need in one parallel batch, before any of them draws. */
-    warm(draws: Iterable<MaterialDraw>): number {
+    warm(draws: Iterable<MaterialDraw>, spatialLighting = false): number {
       // Each variant's shader pair is one object (leaseShaderSources keeps it); equal sources of two
       // pairs link once, the second finds the first in the program cache.
       const sources = new Set<Readonly<{ vertexSource: string; fragmentSource: string }>>()
       for (const draw of draws) {
         if (draw.program === undefined || draw.material === undefined) continue
-        const stages = materialStagesOf(draw.primitive)
+        const stages = materialStagesOf(draw.primitive, spatialLighting &&
+          draw.program.defines.sceneLighting === true && draw.program.defines.pbr !== true &&
+          !draw.program.defines.unshaded)
         if (programs.get(stagesKey(stages))?.has(draw.program) === true) continue
         sources.add(leaseShaderSources(draw.program, draw.material, stages))
       }
@@ -1286,6 +1304,8 @@ export function materialWebGlDraws(
 export type MaterialSceneLight = SceneRendererDirectionalLight & {
   readonly ambientColor?: readonly [number, number, number]
   readonly specularColor?: readonly [number, number, number]
+  /** Additional admitted direct lights; the key/fills and their shadow remain distinct. */
+  readonly spatialLighting?: PreviewLighting
   /** The world's shadow of the key light (render/world-shadow.ts); none where it is absent. */
   readonly shadow?: WorldShadowReceiver
   readonly fills?: readonly {
@@ -1337,10 +1357,13 @@ export function leaseShaderSources(
     key += `|${resource}=${texture.filter ?? 'linear'}`
   let variants = leasedShaderSources.get(source.defines)
   if (variants === undefined) leasedShaderSources.set(source.defines, (variants = new Map()))
+  const fragment = stages.spatial === true
+    ? source.fragmentSourceForSceneLights?.() : source.fragmentSource
+  if (fragment === undefined) throw new TypeError('material has no spatial lighting variant')
   const cached = variants.get(key)
-  if (cached !== undefined && cached.fragment === source.fragmentSource) return cached.sources
+  if (cached !== undefined && cached.fragment === fragment) return cached.sources
   const sources = buildLeaseShaderSources(source, material, stages)
-  variants.set(key, Object.freeze({ fragment: source.fragmentSource, sources }))
+  variants.set(key, Object.freeze({ fragment, sources }))
   return sources
 }
 
@@ -1353,7 +1376,8 @@ function buildLeaseShaderSources(
   for (const [resource, texture] of material.textures)
     filters.set(resource, texture.filter ?? 'linear')
   // Opaque passes replace the target but the public framebuffer still stores premultiplied RGB.
-  let fragment = source.fragmentSource
+  let fragment = stages.spatial === true ? source.fragmentSourceForSceneLights?.() : source.fragmentSource
+  if (fragment === undefined) throw new TypeError('material has no spatial lighting variant')
   if (source.twoSided) {
     const main = fragment.search(/void main\s*\(\s*\)/u)
     if (main >= 0) {
@@ -1364,7 +1388,40 @@ function buildLeaseShaderSources(
     }
   }
   const worldShading = source.normalBlendPolicy !== undefined || source.normalMapSpace === 'object'
-  if (source.defines.sceneLighting) {
+  if (stages.spatial === true) {
+    const frameDeclarations = fragment.includes('uniform vec3 u_sceneLightDirection,') ? '' :
+      'uniform vec3 u_sceneLightDirection, u_sceneLightingEye, u_sceneLightingViewDirection;\nuniform float u_sceneLightingOrthographic;'
+    fragment = fragment.replace('void main() {',`
+      ${frameDeclarations}
+      uniform vec3 u_sceneSpecularColor, u_sceneFillColor0, u_sceneFillColor1;
+      uniform vec3 u_sceneFillWorldDirection0, u_sceneFillWorldDirection1;
+      uniform vec3 previewDirections[4], previewColors[4], previewPositions[4];
+      uniform int previewTypes[4];
+      uniform vec4 previewFades[4];
+      uniform vec2 previewCones[4];
+      ${SCENE_SHADOW_FRAGMENT}
+      ${LIGHT_GEOMETRY_GLSL}
+      vec3 sceneDirectUnit(vec3 value){float size=length(value);return size>1e-8?value/size:vec3(0.0,0.0,1.0);}
+      vec3 sceneDirectNormal(vec3 normal){return ${worldShading ? 'normal' : 'sceneDirectUnit(mat3(v_sceneWorldTangent,v_sceneWorldBitangent,v_sceneWorldNormal)*normal)'};}
+      void sceneDirectLight(int index, vec3 normal, out vec3 direction, out vec3 halfVector,
+          out vec3 diffuseColor, out vec3 specularColor){
+        vec3 eye=u_sceneLightingOrthographic>0.5?u_sceneLightingViewDirection:sceneDirectUnit(u_sceneLightingEye-v_sceneWorldPosition);
+        if(index==0){
+          direction=u_sceneLightDirection;
+          float shade=sceneKeyShadow(max(dot(normal,direction),0.0));
+          diffuseColor=u_sceneLightColor*shade;specularColor=u_sceneSpecularColor*shade;
+        }else if(index<3){
+          direction=index==1?u_sceneFillWorldDirection0:u_sceneFillWorldDirection1;
+          diffuseColor=index==1?u_sceneFillColor0:u_sceneFillColor1;specularColor=vec3(0.0);
+        }else{
+          int at=index-3;vec3 v;float d,attenuation;
+          sceneLightGeometry(previewTypes[at],previewDirections[at],previewPositions[at],previewFades[at],previewCones[at],v_sceneWorldPosition,v,d,attenuation);
+          direction=d>0.0?v/d:vec3(0.0);diffuseColor=previewColors[at]*attenuation;specularColor=diffuseColor;
+        }
+        halfVector=-sceneDirectUnit(eye+direction);
+      }
+    \nvoid main() {`)
+  } else if (source.defines.sceneLighting) {
     fragment = fragment
       .replace(
         'uniform vec3 u_sceneLightColor;',
@@ -1451,6 +1508,7 @@ function buildLeaseShaderSources(
     true,
     stages.skinned,
     stages.tinted,
+    stages.spatial === true,
   )
   return { vertexSource, fragmentSource, filters }
 }

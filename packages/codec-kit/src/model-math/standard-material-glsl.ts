@@ -37,6 +37,22 @@ export type Vec2 = readonly [number, number]
 export type Vec3 = readonly [number, number, number]
 export type Vec4 = readonly [number, number, number, number]
 
+/** Evaluated direct light in the shading frame; spatial admission belongs to the renderer. */
+export interface CpuDirectLight {
+  readonly direction: Vec3
+  readonly halfVector: Vec3
+  readonly diffuseColor: Vec3
+  readonly specularColor: Vec3
+}
+
+/** Primary inputs retain environment semantics; optional direct samples replace direct light only. */
+export interface CpuSceneLighting {
+  readonly ambientColor: Vec3
+  readonly lightColor: Vec3
+  readonly lights?: readonly CpuDirectLight[]
+  readonly normal?: Vec3
+}
+
 /** All SC2 standard-material layers consumed by the shared fragment composition. */
 export const FRAGMENT_LAYER_SLOTS: readonly StandardLayerSlot[] = [
   'diffuse',
@@ -553,7 +569,7 @@ export interface CpuPixelInput {
   halfVec?: Vec3
   ambient?: Vec4
   /** The `sceneLighting` define: color × (ambientColor + lightColor × lambert), no viewer ambient. */
-  sceneLighting?: { readonly ambientColor: Vec3; readonly lightColor: Vec3 }
+  sceneLighting?: CpuSceneLighting
   teamColor?: Vec3
   vertexColor?: Vec4
   usesVertexColor?: boolean
@@ -926,21 +942,30 @@ export function composeStandardPixelCpu(input: CpuPixelInput): CpuPixelResult {
 
   // Mirrors the GLSL specularBlock: gloss alpha squared, the FakeEnergyConservingSpec dim, the
   // sign(N·L) gate.
-  const specularCpu = (lambert: number): [number, number, number] => {
+  let specularTerms: { color: Vec4; power: number; energy: number } | undefined
+  const specularCpu = (
+    lambert: number,
+    half: Vec3 = halfVec,
+    surface: Vec3 = normal,
+  ): [number, number, number] => {
     if (!layers.specular || !(lambert > 0)) return [0, 0, 0]
-    const specColor = computeLayerColorCpu(layers.specular, teamColor)
-    let power = input.specularity
-    if (layers.gloss) {
-      const gloss = computeLayerColorCpu(layers.gloss, teamColor)[3]
-      power *= gloss * gloss
+    if (specularTerms === undefined) {
+      const color = computeLayerColorCpu(layers.specular, teamColor)
+      let power = input.specularity
+      if (layers.gloss) {
+        const gloss = computeLayerColorCpu(layers.gloss, teamColor)[3]
+        power *= gloss * gloss
+      }
+      let energy = 1
+      if (input.specularEnergyConservation === true) {
+        const p = Math.min(Math.max(power, 1), 512)
+        energy = clamp01(-0.000004444 * p * p + 0.004333 * p + 0.0020834)
+      }
+      specularTerms = { color, power, energy }
     }
-    let energy = 1
-    if (input.specularEnergyConservation === true) {
-      const p = Math.min(Math.max(power, 1), 512)
-      energy = clamp01(-0.000004444 * p * p + 0.004333 * p + 0.0020834)
-    }
+    const { color: specColor, power, energy } = specularTerms
     const factor =
-      Math.pow(Math.max(-dot3(halfVec, normal), 0), Math.max(power, 1)) * input.specMult * energy
+      Math.pow(Math.max(-dot3(half, surface), 0), Math.max(power, 1)) * input.specMult * energy
     return input.specMode === 1
       ? [specColor[3] * factor, specColor[3] * factor, specColor[3] * factor]
       : [specColor[0] * factor, specColor[1] * factor, specColor[2] * factor]
@@ -985,7 +1010,25 @@ export function composeStandardPixelCpu(input: CpuPixelInput): CpuPixelResult {
     const lit = (channel: 0 | 1 | 2) =>
       color[channel] * (scene.ambientColor[channel] + scene.lightColor[channel] * lambert) +
       spec[channel] * scene.lightColor[channel]
-    const rgb = applyEmissive(applyEnvironment([lit(0), lit(1), lit(2)], lambert, spec))
+    let direct: [number, number, number] = [lit(0), lit(1), lit(2)]
+    if (scene.lights !== undefined) {
+      direct = [
+        color[0] * scene.ambientColor[0],
+        color[1] * scene.ambientColor[1],
+        color[2] * scene.ambientColor[2],
+      ]
+      const surface = scene.normal ?? normal
+      for (const light of scene.lights) {
+        const nl = dot3(surface, light.direction)
+        const diffuse = input.doubleLambert ? clamp01(-1 + 2 * nl) : Math.max(nl, 0)
+        const highlight = specularCpu(diffuse, light.halfVector, surface)
+        for (const channel of [0, 1, 2] as const)
+          direct[channel] +=
+            color[channel] * light.diffuseColor[channel] * diffuse +
+            highlight[channel] * light.specularColor[channel]
+      }
+    }
+    const rgb = applyEmissive(applyEnvironment(direct, lambert, spec))
     final = [final[0] + rgb[0], final[1] + rgb[1], final[2] + rgb[2], final[3]]
   } else {
     const nl = dot3(normal, lightDir)
@@ -1389,6 +1432,8 @@ export interface FragmentSourceOptions {
    * (Three.js ShaderMaterial injects `precision highp float;`).
    */
   precision?: string | null
+  /** Renderer supplies sceneDirectNormal/sceneDirectLight; default keeps the original shader. */
+  directLights?: boolean
 }
 
 /**
@@ -1438,6 +1483,12 @@ export function buildStandardFragmentSource(
   if (defines.sceneLighting) {
     parts.push('uniform vec3 u_sceneAmbientColor;')
     parts.push('uniform vec3 u_sceneLightColor;')
+    if (options.directLights === true && !defines.pbr && !defines.unshaded)
+      parts.push(
+        'uniform int u_sceneDirectLightCount;',
+        'vec3 sceneDirectNormal(vec3 normal);',
+        'void sceneDirectLight(int index, vec3 normal, out vec3 direction, out vec3 halfVector, out vec3 diffuseColor, out vec3 specularColor);',
+      )
   }
   parts.push('uniform float u_specularity;')
   parts.push('uniform float u_specMult;')
@@ -1628,6 +1679,8 @@ export function buildStandardFragmentSource(
   // psmaterial.fx MaterialSpecularity: a gloss layer scales the exponent by its alpha squared;
   // FakeEnergyConservingSpec dims the colour by a polynomial of that exponent. The highlight is
   // gated where the key light does not reach (lambert, already remapped for double Lambert).
+  const specularFactor = (half = 'v_halfVec', normal = 'normal', lambert = 'lambert') =>
+    `${lambert} > 0.0 ? pow(max(-dot(${half}, ${normal}), 0.0), max(specPower, 1.0)) * u_specMult * specEnergy : 0.0`
   const specularBlock = (indent: string): string[] => {
     if (!layerBySlot.has('specular')) return [`${indent}vec3 spec = vec3(0.0);`]
     return [
@@ -1645,7 +1698,7 @@ export function buildStandardFragmentSource(
             `${indent}float specEnergy = clamp(-0.000004444 * specClamped * specClamped + 0.004333 * specClamped + 0.0020834, 0.0, 1.0);`,
           ]
         : [`${indent}float specEnergy = 1.0;`]),
-      `${indent}float specFactor = lambert > 0.0 ? pow(max(-dot(v_halfVec, normal), 0.0), max(specPower, 1.0)) * u_specMult * specEnergy : 0.0;`,
+      `${indent}float specFactor = ${specularFactor()};`,
       defines.specMode === 1
         ? `${indent}vec3 spec = vec3(specColor.a) * specFactor;`
         : `${indent}vec3 spec = specColor.rgb * specFactor;`,
@@ -1698,9 +1751,31 @@ export function buildStandardFragmentSource(
     )
     body.push(...specularBlock('  '))
     // Blinn with the sign(N·L) gate (lightingmodels.fx): the highlight is not scaled by N·L.
-    body.push(
-      '  vec3 shaded = color * (u_sceneAmbientColor + u_sceneLightColor * lambert) + spec * u_sceneLightColor;',
-    )
+    if (options.directLights === true) {
+      body.push(
+        '  vec3 shaded = color * u_sceneAmbientColor;',
+        '  vec3 directNormal = sceneDirectNormal(normal);',
+        '  for (int lightIndex = 0; lightIndex < u_sceneDirectLightCount; ++lightIndex) {',
+        '    vec3 direction, halfVector, diffuseColor, specularColor;',
+        '    sceneDirectLight(lightIndex, directNormal, direction, halfVector, diffuseColor, specularColor);',
+        defines.doubleLambert
+          ? '    float directLambert = clamp(-1.0 + 2.0 * dot(directNormal, direction), 0.0, 1.0);'
+          : '    float directLambert = max(dot(directNormal, direction), 0.0);',
+        ...(layerBySlot.has('specular')
+          ? [
+              `    float directSpecFactor = ${specularFactor('halfVector', 'directNormal', 'directLambert')};`,
+              defines.specMode === 1
+                ? '    vec3 directSpec = vec3(specColor.a) * directSpecFactor;'
+                : '    vec3 directSpec = specColor.rgb * directSpecFactor;',
+            ]
+          : ['    vec3 directSpec = vec3(0.0);']),
+        '    shaded += color * diffuseColor * directLambert + directSpec * specularColor;',
+        '  }',
+      )
+    } else
+      body.push(
+        '  vec3 shaded = color * (u_sceneAmbientColor + u_sceneLightColor * lambert) + spec * u_sceneLightColor;',
+      )
     body.push(...environmentBlock('  ', 'shaded', 'lambert', 'spec'))
     body.push(...emissiveBlock('  ', 'shaded'))
     body.push('  final.rgb += shaded;')

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { it } from 'node:test'
 
-import { prepareMaterialGeometry } from '../src/render/material-geometry.js'
+import { prepareMaterialGeometry, materialGeometry, sceneMaterialVertexSource } from '../src/render/material-geometry.js'
 
 const triangle = (positions, normals = Float32Array.of(0, 0, 1, 0, 0, 1, 0, 0, 1)) => ({
   id: 'triangle',
@@ -48,6 +48,25 @@ it('accepts every finite float32 and refuses NaN and the infinities, at any offs
       /invalid material vertex attributes/,
     )
   }
+})
+
+it('publishes true scene-world position and mirrored basis only when explicitly requested',()=>{
+  const primitive={...triangle(withLast(0)),
+    transform:Float32Array.of(-2,0,0,0,0,3,0,0,0,0,0.5,0,4,5,6,1)}
+  const camera={viewProjection:Float32Array.of(1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1)}
+  const uvFrame=[1,0,0,0,0,1,0,0,0,0,1,0,100,0,0,1]
+  const legacy=materialGeometry(primitive,camera,undefined,uvFrame)
+  assert.equal(legacy.vertex(1).environment,undefined)
+  const vertex=materialGeometry(primitive,camera,undefined,uvFrame,false,false,true).vertex(1)
+  assert.deepEqual(vertex.worldPosition,[102,5,6])
+  assert.deepEqual(vertex.environment.position,[2,5,6])
+  assert.deepEqual(vertex.environment.tangent,[-1,0,0])
+  assert.deepEqual(vertex.environment.bitangent.map(value=>value===0?0:value),[0,1,0])
+  const defines={layers:[],uvSetCount:1}
+  assert.doesNotMatch(sceneMaterialVertexSource(defines),/out vec3 v_sceneWorldNormal,/)
+  for(const skinned of [false,true])
+    assert.match(sceneMaterialVertexSource(defines,false,false,true,skinned,false,true),
+      /out vec3 v_sceneWorldNormal, v_sceneWorldTangent, v_sceneWorldBitangent/)
 })
 
 it('publishes MODEL facing for both uniform and instance vertex stages', async () => {

@@ -350,12 +350,13 @@ export function materialGeometry(
   worldToMaterial?: readonly number[],
   environmentEnabled = false,
   worldShading = false,
+  spatialLightingGeometry = false,
 ) {
   const model = affine(primitive.transform, 'model transform')
   const { view, lightDirection, orthographic, worldLighting } = materialFrameGeometry(
     camera,
     light,
-    worldShading,
+    worldShading || spatialLightingGeometry,
   )
   const modelView = new Float32Array(16)
   multiplyMat4(modelView, 0, view, 0, model, 0)
@@ -373,7 +374,8 @@ export function materialGeometry(
     throw new TypeError('material world transform exceeds float32')
   const worldNormal = normalMatrix(materialWorld),
     viewNormal = normalMatrix(modelView)
-  const environmentNormal = environmentEnabled || worldShading ? normalMatrix(model) : undefined
+  const environmentNormal =
+    environmentEnabled || worldShading || spatialLightingGeometry ? normalMatrix(model) : undefined
   const environmentEye = snapshotEyePosition(camera.eyePosition)
   if (environmentNormal !== undefined && !environmentNormal.matrix.every(Number.isFinite))
     throw new TypeError('scene world normal matrix exceeds float32')
@@ -770,8 +772,9 @@ export function sceneMaterialVertexSource(
   placementAttributes = false,
   skinned = false,
   tinted = false,
+  spatialLightingGeometry = false,
 ): string {
-  const worldGeometry = environmentEnabled || worldShading
+  const worldGeometry = environmentEnabled || worldShading || spatialLightingGeometry
   // The vertex as the stage reads it: its attributes, or its skinned pose.
   const position = skinned ? 'skinPosition' : 'a_position'
   const normal = skinned ? 'skinNormal' : 'a_normal'

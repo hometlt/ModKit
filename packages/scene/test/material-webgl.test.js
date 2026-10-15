@@ -418,3 +418,27 @@ it('resets front-facing state for two-sided draws after mirrored culling and res
   assert.equal(submissions.at(-1).enabled.has(gl.CULL_FACE), false)
   renderer.release()
 })
+
+it('changes back to legacy when the retained light object loses its spatial rig', () => {
+  const { gl } = context()
+  const renderer = materialWebGlDraws(gl, new Map(), { checkEachDraw: false })
+  const program = {
+    ...source, defines: { uvSetCount: 1, sceneLighting: true },
+    fragmentSourceForSceneLights: () => source.fragmentSource,
+  }
+  const keptDraw = draw(primitive(), program)
+  const light = {
+    direction: [0, 0, 1], color: [0, 0, 0, 1], ambient: 0,
+    spatialLighting: { lights: [{ type: 'point', direction: [0, 0, 1], position: [0, 0, 2], color: [1, 1, 1] }], ambient: [0, 0, 0] },
+  }
+  const rig = light.spatialLighting
+  renderer.draw(keptDraw, camera, light)
+  assert.equal(renderer.programCompilations(), 1)
+  delete light.spatialLighting
+  renderer.draw(keptDraw, camera, light)
+  assert.equal(renderer.programCompilations(), 2)
+  light.spatialLighting = rig
+  renderer.draw(keptDraw, camera, light)
+  assert.equal(renderer.programCompilations(), 2)
+  renderer.release()
+})

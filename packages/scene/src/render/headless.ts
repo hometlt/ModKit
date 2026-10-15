@@ -482,6 +482,8 @@ function rasterizeTriangle(
           draw.material.textures,
           fragment,
           sceneLightColors(context.light, context.previewLighting),
+          context.light === undefined && context.previewLighting?.lights.some(light => light.type !== 'directional')
+            ? context.previewLighting : undefined,
         )
         if (!shaded.alphaTestPassed) continue
         if (draw.depthOnly || materialIsSolid(draw.program)) context.depth[pixel] = sampleDepth
@@ -811,6 +813,8 @@ function renderMaterialDraw(
       draw.program?.worldToMaterial,
       draw.program?.environment !== undefined,
       draw.program?.normalBlendPolicy !== undefined || draw.program?.normalMapSpace === 'object',
+      context.light === undefined && context.previewLighting?.lights.some(light => light.type !== 'directional') === true &&
+        draw.program?.defines.sceneLighting === true && draw.program.defines.pbr !== true && !draw.program.defines.unshaded,
     )
   const elements = triangleElements(
     primitive.topology,

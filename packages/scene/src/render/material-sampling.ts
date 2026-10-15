@@ -10,12 +10,14 @@ import {
   type Vec2,
   type Vec3,
   type Vec4,
+  type CpuSceneLighting,
 } from '@modkit/codec-kit/model-math/standard-material-glsl'
 import type { StandardMaterialProgram } from '../materials/index.js'
 import { dot, unit, type MaterialVertex } from './material-geometry.js'
 import { sampleMaterialTexture } from './materials.js'
 import { sampleCubeTexture } from '../textures/cube.js'
 import { environmentVector, isEnvironmentBinding } from '../materials/environment.js'
+import { sampleLightGeometry, type PreviewLighting } from './preview-lighting.js'
 
 const components = (v: Vec3, axis: number): Vec2 =>
   axis === 0 ? [v[1], v[2]] : axis === 1 ? [v[0], v[2]] : [v[0], v[1]]
@@ -200,10 +202,14 @@ export function shadeMaterial(
   program: StandardMaterialProgram,
   textures: ReadonlyMap<string, SceneRendererTexture>,
   vertex: MaterialVertex,
-  sceneLighting?: { readonly ambientColor: Vec3; readonly lightColor: Vec3 },
+  sceneLighting?: CpuSceneLighting,
+  spatialLighting?: PreviewLighting,
 ) {
   const texels: Partial<Record<StandardLayerSlot, Vec4>> = {}
   let worldNormal: Vec3 | undefined
+  let sampledNormal: Vec3 | undefined
+  const directLights = spatialLighting !== undefined && program.defines.sceneLighting === true &&
+    program.defines.pbr !== true && !program.defines.unshaded
   const read = (layer: StandardLayerDefines, parallax: Vec2): Vec4 => {
     const binding = program.textures.find(binding => binding.slot === layer.slot)
     const texture = binding === undefined ? undefined : textures.get(binding.resourceId)
@@ -244,7 +250,7 @@ export function shadeMaterial(
   if (
     program.environment !== undefined ||
     program.normalBlendPolicy !== undefined ||
-    program.normalMapSpace === 'object'
+    program.normalMapSpace === 'object' || directLights
   ) {
     const frame = vertex.environment
     if (frame === undefined) throw new TypeError('environment material requires world geometry')
@@ -261,10 +267,12 @@ export function shadeMaterial(
         bitangent: [matrix[3] ?? 0, matrix[4] ?? 0, matrix[5] ?? 0],
         normal: [matrix[6] ?? 0, matrix[7] ?? 0, matrix[8] ?? 0],
       })
+      sampledNormal = worldNormal
     } else if (program.normalBlendPolicy !== undefined)
-      worldNormal = program.sampleNormal(pixel, frame)
+      sampledNormal = worldNormal = program.sampleNormal(pixel, frame)
     else {
       const n = program.sampleNormal(pixel)
+      sampledNormal = n
       worldNormal = unit([
         frame.tangent[0] * n[0] + frame.bitangent[0] * n[1] + frame.normal[0] * n[2],
         frame.tangent[1] * n[0] + frame.bitangent[1] * n[1] + frame.normal[1] * n[2],
@@ -299,10 +307,34 @@ export function shadeMaterial(
     halfVector = [-half[0], -half[1], -half[2]]
     viewDirection = eye
   }
+  let pixelLighting = sceneLighting
+  if (directLights) {
+    const frame = vertex.environment, lighting = frame?.worldLighting
+    if (frame === undefined || lighting === undefined || worldNormal === undefined)
+      throw new TypeError('spatial material lighting requires scene-world geometry')
+    const eye = lighting.orthographic ? lighting.viewDirection : unit([
+      lighting.eyePosition[0] - frame.position[0],
+      lighting.eyePosition[1] - frame.position[1],
+      lighting.eyePosition[2] - frame.position[2],
+    ])
+    pixelLighting = {
+      ...(sceneLighting ?? {ambientColor:spatialLighting.ambient,lightColor:[0,0,0] as const}),
+      normal: worldNormal,
+      lights: spatialLighting.lights.map(light => {
+        const {vector,distance,attenuation} = sampleLightGeometry(light,frame.position)
+        const direction: Vec3 = distance === 0 ? [0,0,0] :
+          [vector[0]/distance,vector[1]/distance,vector[2]/distance]
+        const half = unit([eye[0]+direction[0],eye[1]+direction[1],eye[2]+direction[2]])
+        const color: Vec3 = [light.color[0]*attenuation,light.color[1]*attenuation,light.color[2]*attenuation]
+        return {direction,halfVector:[-half[0],-half[1],-half[2]] as Vec3,diffuseColor:color,specularColor:color}
+      }),
+    }
+  }
   return program.shade({
     texels,
     normal: [0, 0, 1],
-    ...((program.normalBlendPolicy === undefined && program.normalMapSpace !== 'object') ||
+    ...(directLights && sampledNormal !== undefined ? {shadingNormal:sampledNormal} :
+    (program.normalBlendPolicy === undefined && program.normalMapSpace !== 'object') ||
     worldNormal === undefined
       ? {}
       : { shadingNormal: worldNormal }),
@@ -312,7 +344,7 @@ export function shadeMaterial(
     viewNormal: vertex.viewNormal,
     eyeToVertex: vertex.viewPosition,
     vertexColor: vertex.color,
-    ...(sceneLighting === undefined ? {} : { sceneLighting }),
+    ...(pixelLighting === undefined ? {} : { sceneLighting: pixelLighting }),
   })
 }
 

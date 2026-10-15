@@ -17,6 +17,7 @@ import {
   standardBlendModeName,
   type CpuLayerSample,
   type CpuPixelResult,
+  type CpuSceneLighting,
   type Vec3,
   type Vec4,
   type StandardMaterialDefines,
@@ -64,6 +65,8 @@ export interface MaterialFrameOptions extends MaterialLighting {
   readonly textureDimensions?: ReadonlyMap<string, '2d' | 'cube'>
   readonly environment?: SceneRendererEnvironment
   readonly sceneLighting?: boolean
+  /** Adopt scene lighting for lit standard passes only; explicit false remains an opt-out. */
+  readonly autoSceneLighting?: boolean
   /**
    * Exponent on the texel alpha of diffuse team-color layers (`lerp(team, texel, a^intensity)`),
    * default 1. 0 means the object carries no team color: those layers keep the texel color.
@@ -133,7 +136,7 @@ export interface MaterialPixel extends MaterialLighting {
   readonly eyeToVertex?: Vec3
   readonly vertexColor?: Vec4
   /** Per-draw scene light colors for programs compiled with scene lighting. */
-  readonly sceneLighting?: { readonly ambientColor: Vec3; readonly lightColor: Vec3 }
+  readonly sceneLighting?: CpuSceneLighting
 }
 
 export interface MaterialTextureBinding {
@@ -150,6 +153,8 @@ export interface StandardMaterialProgram {
   readonly key: string
   readonly vertexSource: string
   readonly fragmentSource: string
+  /** Same material pipeline, lazily compiled for renderer-evaluated spatial light samples. */
+  readonly fragmentSourceForSceneLights?: () => string
   readonly uniforms: Readonly<Record<string, number | readonly number[]>>
   readonly textures: readonly MaterialTextureBinding[]
   readonly defines: StandardMaterialDefines
@@ -259,6 +264,10 @@ export function createStandardMaterialPrograms(
               ),
             ),
           }
+          const sceneLighting = lighting.sceneLighting === true ||
+            (lighting.autoSceneLighting === true && lighting.sceneLighting !== false &&
+              !prepared.material.unshaded &&
+              prepared.material.lightingModel !== 'pbr-metallic-roughness')
           const shape =
             kept?.[index] ??
             passShape(
@@ -267,7 +276,7 @@ export function createStandardMaterialPrograms(
               normalFormats,
               textureDimensions,
               environment,
-              lighting.sceneLighting === true,
+              sceneLighting,
             )
           passShapes.push(shape)
           // a frame without a team colour draws the material's own default (teamColorDefault)
@@ -285,7 +294,7 @@ export function createStandardMaterialPrograms(
             shape,
             sampler.worldToMaterial,
             environment,
-            lighting.sceneLighting === true,
+            sceneLighting,
           )
         }),
       )
@@ -356,6 +365,8 @@ function sameMaterialFrame(left: MaterialFrameOptions, right: MaterialFrameOptio
     (left.environment === undefined) === (right.environment === undefined) &&
     sameVector(environment(left), environment(right)) &&
     (left.sceneLighting === true) === (right.sceneLighting === true) &&
+      (left.autoSceneLighting === true && left.sceneLighting !== false) ===
+        (right.autoSceneLighting === true && right.sceneLighting !== false) &&
     (left.teamColorIntensity ?? 1) === (right.teamColorIntensity ?? 1)
   )
 }
@@ -426,6 +437,7 @@ interface PassShape {
   readonly worldEnvironment: boolean
   readonly key: string
   readonly compiled: ShaderSources
+  readonly directFragment: () => string
 }
 
 function passShape(
@@ -435,6 +447,7 @@ function passShape(
   textureDimensions: ReadonlyMap<string, '2d' | 'cube'>,
   environment: SceneRendererEnvironment | undefined,
   sceneLighting: boolean,
+  directLights = false,
 ): PassShape {
   const normalFormats = materialNormalFormats(material, bindings)
   const objectSpaceNormal = material.normalMapSpace === 'object'
@@ -482,12 +495,16 @@ function passShape(
       .map(binding => `;cube=${binding.slot}`)
       .join('') +
     (worldEnvironment ? ';environment=world' : '') +
-    (policy === undefined ? '' : `;normals=signed-two-detail;mask2=${policy.secondMask}`)
+    (policy === undefined ? '' : `;normals=signed-two-detail;mask2=${policy.secondMask}`) +
+    (directLights ? ';direct-lights' : '')
   let compiled = sources.get(key)
   if (compiled === undefined) {
     let fragmentSource =
       '#version 300 es\n' +
-      buildStandardFragmentSource(defines, { precision: 'precision highp float;' })
+      buildStandardFragmentSource(defines, {
+        precision: 'precision highp float;',
+        ...(directLights ? { directLights: true } : {}),
+      })
         .replaceAll('varying ', 'in ')
         .replaceAll('texture2D(', 'texture(')
         .replace('void main() {', 'out vec4 materialColor;\nvoid main() {')
@@ -509,17 +526,21 @@ function passShape(
       worldEnvironment,
       policy !== undefined,
     )
-    if (worldEnvironment || policy !== undefined || objectSpaceNormal)
+    if (worldEnvironment || policy !== undefined || objectSpaceNormal || directLights)
       fragmentSource = fragmentSource.replace(
         'precision highp float;',
         `precision highp float;\n${WORLD_NORMAL_VARYINGS}`,
       )
     const vertexSource =
-      worldEnvironment || policy !== undefined || objectSpaceNormal
+      worldEnvironment || policy !== undefined || objectSpaceNormal || directLights
         ? sceneMaterialVertexSource(
             defines,
             worldEnvironment,
             policy !== undefined || objectSpaceNormal,
+            false,
+            false,
+            false,
+            directLights,
           )
         : '#version 300 es\nprecision highp float;\n' +
           buildStandardVertexSource(defines)
@@ -531,6 +552,7 @@ function passShape(
     compiled = Object.freeze({ vertexSource, fragmentSource, defines: Object.freeze(defines) })
     sources.set(key, compiled)
   }
+  let directFragment: string | undefined
   return Object.freeze({
     normalFormats,
     defines,
@@ -539,6 +561,12 @@ function passShape(
     worldEnvironment,
     key,
     compiled,
+    directFragment: () =>
+      directLights
+        ? compiled.fragmentSource
+        : (directFragment ??= passShape(
+            material, sources, bindings, textureDimensions, environment, sceneLighting, true,
+          ).compiled.fragmentSource),
   })
 }
 
@@ -661,6 +689,7 @@ function compilePass(
   return Object.freeze({
     key,
     ...compiled,
+    fragmentSourceForSceneLights: shape.directFragment,
     uniforms: Object.freeze(uniforms),
     textures,
     blend: standardBlendModeName(material.blendMode, material.alphaTestThreshold),

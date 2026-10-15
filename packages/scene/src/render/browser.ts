@@ -460,6 +460,16 @@ export async function renderBrowser(request: SceneRenderRequest): Promise<SceneR
     throw new TypeError('WebGL renderer uniforms are unavailable')
   }
   const diagnostics: SceneRendererDiagnostic[] = []
+  const preview = readPreviewLighting(request.scene.lights, request.scene.ambientLight)
+  const spatial = request.scene.light === undefined &&
+    preview?.lights.some(light => light.type !== 'directional') === true
+  const materialContext = spatial
+    ? {...request.scene.materialContext,autoSceneLighting:true}
+    : request.scene.materialContext
+  const materialLight = spatial ? {
+    direction: preview.lights.find(light => light.type === 'directional')?.direction ?? [0,0,1] as const,
+    color: [0,0,0,1] as const,ambient:0,ambientColor:preview.ambient,spatialLighting:preview,
+  } : request.scene.light
   const textures = new Map<string, WebGLTexture>()
   const gameDraws = materialWebGlDraws(gl, textures, { mipmaps: true })
   try {
@@ -471,7 +481,7 @@ export async function renderBrowser(request: SceneRenderRequest): Promise<SceneR
           .filter(texture => textures.has(texture.id))
           .map(texture => [texture.id, texture]),
       ),
-      request.scene.materialContext,
+      materialContext,
       diagnostics,
       request.signal,
     )
@@ -545,7 +555,6 @@ export async function renderBrowser(request: SceneRenderRequest): Promise<SceneR
       }
     }
     const light = normalizedLight(request.scene.light)
-    const preview = readPreviewLighting(request.scene.lights, request.scene.ambientLight)
     const clear: SceneRendererColor = request.clearColor ?? [0, 0, 0, 0]
     gl.viewport(0, 0, width, height)
     gl.clearColor(clear[0] * clear[3], clear[1] * clear[3], clear[2] * clear[3], clear[3])
@@ -578,7 +587,8 @@ export async function renderBrowser(request: SceneRenderRequest): Promise<SceneR
       request.signal?.throwIfAborted()
       applyWebGlDepthBias(gl, primitive.depthBias)
       if (draw.program !== undefined) {
-        triangles += gameDraws.draw(draw, request.camera, request.scene.light)
+        triangles += gameDraws.draw(draw, request.camera,
+          draw.program.defines.pbr === true ? request.scene.light : materialLight)
         continue
       }
       gl.useProgram(program)

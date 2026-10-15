@@ -76,3 +76,48 @@ test('the GLSL program carries the same dim only when the material states it', (
   assert.doesNotMatch(plain, /0\.004333/u)
   assert.match(dimmed, /0\.004333 \* specClamped/u)
 })
+
+test('direct lights accumulate diffuse and independent highlights in their shading frame', () => {
+  const lighting = {
+    ambientColor: [0, 0, 0], lightColor: [0, 0, 0], normal: [1, 0, 0],
+    lights: [
+      { direction: [1, 0, 0], halfVector: [-1, 0, 0], diffuseColor: [1, 0, 0], specularColor: [0.25, 0, 0] },
+      { direction: [1, 0, 0], halfVector: [0, 0, -1], diffuseColor: [0, 0.5, 0], specularColor: [0, 1, 0] },
+      { direction: [-1, 0, 0], halfVector: [-1, 0, 0], diffuseColor: [1, 1, 1], specularColor: [1, 1, 1] },
+    ],
+  }
+  const result = composeStandardPixelCpu({
+    layers: { diffuse: layer('diffuse', [0.5, 0.5, 0.5, 0.4]), specular: layer('specular', [1, 1, 1, 1]) },
+    sceneLighting: lighting, vertexNormal: [0, 0, 1], ambient: [0, 0, 0, 0],
+    specularity: 20, specMult: 1, emisMult: 0, specMode: 0,
+    unshaded: false, doubleLambert: false, clampOutput: false,
+  })
+  assert.deepEqual(result.rgba, [0.75, 0.25, 0, 0.4])
+})
+
+test('empty direct samples retain ambient, emissive and alpha once', () => {
+  const input = {
+    layers: { diffuse: layer('diffuse', [0.2, 0.4, 0.6, 0.3]), emissive1: layer('emissive1', [0.3, 0.2, 0.1, 1]) },
+    sceneLighting: { ambientColor: [0.5, 0.5, 0.5], lightColor: [0, 0, 0], lights: [] },
+    ambient: [0, 0, 0, 0], specularity: 20, specMult: 1, emisMult: 1, specMode: 0,
+    unshaded: false, doubleLambert: false, clampOutput: false,
+  }
+  const zero = {direction:[0,0,1],halfVector:[0,0,-1],diffuseColor:[0,0,0],specularColor:[0,0,0]}
+  const empty = composeStandardPixelCpu(input).rgba
+  const multiple = composeStandardPixelCpu({...input,sceneLighting:{...input.sceneLighting,lights:[zero,zero]}}).rgba
+  assert.deepEqual(multiple, empty)
+  for (let i=0;i<4;i++) assert.ok(Math.abs(empty[i]-[0.4,0.4,0.4,0.3][i])<1e-12)
+})
+
+test('environment influence keeps primary diffuse and RGB specular under local lights', () => {
+  const input = {
+    layers: { diffuse: layer('diffuse', [0,0,0,1]), specular: layer('specular', [0.2,0.4,0.6,1]), envi: layer('envi', [1,1,1,1]) },
+    sceneLighting: { ambientColor: [0,0,0], lightColor: [0,0,0], lights: [] },
+    environmentMultipliers:[0,0,1], ambient:[0,0,0,0], vertexNormal:[0,0,1], lightDir:[0,0,1], halfVec:[0,0,-1],
+    specularity:20,specMult:1,emisMult:0,specMode:0,unshaded:false,doubleLambert:false,clampOutput:false,
+  }
+  const base = composeStandardPixelCpu(input).rgba
+  const zero = {direction:[1,0,0],halfVector:[-1,0,0],diffuseColor:[0,0,0],specularColor:[0,0,0]}
+  assert.deepEqual(base,[0.2,0.4,0.6,1])
+  assert.deepEqual(composeStandardPixelCpu({...input,sceneLighting:{...input.sceneLighting,normal:[1,0,0],lights:[zero,zero]}}).rgba,base)
+})

@@ -40,6 +40,8 @@ const MATERIAL_BUDGET = { maxDepth: 128, maxNodes: 1_000_000, maxBytes: 64 * 102
  */
 export type SceneMaterialContext = SceneRendererMaterialContext & {
   readonly terrainTiling?: readonly [number, number, number, number]
+  /** Internal preparation request; each typed standard pass owns its adoption decision. */
+  readonly autoSceneLighting?: boolean
 }
 
 /** Shared CPU/GPU interpretation of shader identity, playback and already acquired resources. */
@@ -273,6 +275,8 @@ export function createSceneMaterialProgramSampler(
               ...(context?.sceneLighting === true && entry.context.sceneLighting === undefined
                 ? { sceneLighting: true }
                 : {}),
+              ...(context?.autoSceneLighting === true && context.sceneLighting !== false &&
+                entry.context.sceneLighting !== false ? { autoSceneLighting: true } : {}),
               ...(context?.terrainTiling === undefined
                 ? {}
                 : { terrainTiling: context.terrainTiling }),
@@ -301,6 +305,8 @@ export function createSceneMaterialProgramSampler(
               ...(context?.teamColor === undefined ? {} : { teamColor: context.teamColor }),
               ...(context?.ambient === undefined ? {} : { ambient: context.ambient }),
               ...(context?.sceneLighting === true ? { sceneLighting: true } : {}),
+              ...(context?.autoSceneLighting === true && context.sceneLighting !== false
+                ? { autoSceneLighting: true } : {}),
               ...(context?.terrainTiling === undefined
                 ? {}
                 : { terrainTiling: context.terrainTiling }),
@@ -344,6 +350,8 @@ export function createSceneMaterialProgramSampler(
 
 function validateMaterialContext(context: SceneMaterialContext | undefined) {
   if (context === undefined) return
+  if (context.autoSceneLighting !== undefined && typeof context.autoSceneLighting !== 'boolean')
+    throw new TypeError('invalid automatic material scene lighting')
   const tiling = context.terrainTiling
   if (
     tiling !== undefined &&
