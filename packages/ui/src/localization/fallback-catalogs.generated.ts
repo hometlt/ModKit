@@ -981,6 +981,7 @@ export const WORLD_FALLBACK_MESSAGES = {
   'viewer.worldLoadingObjects': 'Loading object models',
   'viewer.worldLoadingTextures': 'Loading terrain textures',
   'viewer.worldNavigation': 'Navigation',
+  'viewer.worldOrbitCamera': 'Orbit camera',
   'viewer.worldOverlays': 'Overlays',
   'viewer.worldPerspective': 'Perspective',
   'viewer.worldPerspectiveHint':
@@ -989,6 +990,7 @@ export const WORLD_FALLBACK_MESSAGES = {
   'viewer.worldRamp': 'Ramps',
   'viewer.worldRegions': 'Regions',
   'viewer.worldSaveMove': 'Save selected move',
+  'viewer.worldSourceCamera': 'Source camera',
   'viewer.worldSummary': '{map} · {layers} layers · {items} items{bounded}',
   'viewer.worldView': 'Map view',
 } as const satisfies UiMessageCatalog

@@ -28,7 +28,7 @@ import {
   candidateWorldWebGlInput,
   type CandidateWorldViewerModel,
 } from '@modkit/ui/world'
-import { createWorldWebGlPlan, worldHeadlessScene, createWorldWebGlCameraFrame } from '@modkit/scene/world'
+import { createWorldWebGlPlan, worldHeadlessScene, createWorldWebGlCameraFrame, type WorldWebGlInput, type WorldWebGlRenderer } from '@modkit/scene/world'
 import { renderHeadless } from '@modkit/scene/render/headless'
 
 const contract = 'example.publisher/world-source'
@@ -134,6 +134,30 @@ describe('sampled lighting through the common world bridge', () => {
     ;(a.ambientColor as unknown as number[])[2] = 0
     expect(first.items.find(item => item.facet === 'lighting')).toMatchObject({ ambientColor: [0, 0, 1] })
     expect(first.items.find(item => item.facet === 'objects')).toBe(object)
+  })
+
+  it('draws the sampled pose, light, camera and clock together while preserving explicit orbit and static clocks', async () => {
+    const world = await model([object, lighting('static', [1, 0, 0])])
+    const sampled = { ...frame(lighting('sample', [0, 0, 1]), 1489),
+      objects: [{ ...object, objectId: 2, id: 'object:2', position: { x: 7, y: 0, z: 2 } }],
+      animationTimes: [{ objectId: 2, seconds: 0.812 }] }
+    let input: WorldWebGlInput | undefined
+    const renderer = { draw(value: WorldWebGlInput) { input = value; return {} } } as unknown as WorldWebGlRenderer
+    const canvas = {} as HTMLCanvasElement
+    const wallClock = new Map([[1, 999]])
+    drawCandidateWorld(canvas, world, undefined, undefined, wallClock, 999, renderer, undefined, sampled)
+    expect(input!.items.filter(item => item.facet === 'objects')).toEqual(sampled.objects)
+    expect(input!.items.find(item => item.facet === 'lighting')).toMatchObject({ id: 'sample' })
+    expect(input!.timeSeconds).toBe(1.489)
+    expect([...input!.animationTimes!]).toEqual([[2, 0.812]])
+    expect(input!.camera?.source?.eye).toEqual(sampled.camera!.eye)
+    const orbit = { azimuth: 0.25, elevation: 0.4, zoom: 2, target: [0, 0, 0] as const }
+    drawCandidateWorld(canvas, world, undefined, orbit, wallClock, 999, renderer, undefined, sampled)
+    expect(input!.camera).toBe(orbit)
+    drawCandidateWorld(canvas, world, undefined, orbit, wallClock, 999, renderer)
+    expect(input!.timeSeconds).toBe(999)
+    expect(input!.animationTimes).toBe(wallClock)
+    expect(input!.items.filter(item => item.facet === 'objects')).toEqual([object])
   })
 
   it('refuses frame accessors without running them, null, undeclared axes and profile overflow', async () => {
@@ -265,11 +289,11 @@ describe('generic publisher-candidate world harness', () => {
         yield { kind: 'snapshot', snapshot: { ...snapshot, positionMs: 500 } }
       },
     }
-    let refreshes = 0
-    await watchTransportedWorld(transport, async () => {
-      refreshes += 1
+    const times: number[] = []
+    await watchTransportedWorld(transport, async value => {
+      times.push(value.positionMs)
     })
-    expect(refreshes).toBe(2)
+    expect(times).toEqual([0, 500])
   })
 
   it('consumes an arbitrary publisher structurally with bounded layer/item requests', async () => {

@@ -45,6 +45,7 @@ import type {
   OperationSession,
   SceneRendererPrimitive,
   SceneRendererTexture,
+  TransportSnapshot,
   TransportSource,
 } from '@modkit/sdk'
 import { admitWorldSceneLighting, WORLD_SCENE_SOURCE_CONTRACT } from '@modkit/sdk/maps'
@@ -1191,17 +1192,19 @@ export function drawCandidateWorld(
   timeSeconds = 0,
   renderer?: WorldWebGlRenderer,
   hiddenOverlays?: ReadonlySet<WorldOverlayFacet>,
+  frame?: WorldSceneFrame,
 ): WorldRenderStats {
   const selectedObjectId = typeof selection === 'number' ? selection : selection?.selectedObjectId
   const webGlInput = {
-    ...candidateWorldWebGlInput(model, hiddenOverlays),
+    ...candidateWorldWebGlInput(model, hiddenOverlays, frame),
     ...(selectedObjectId === undefined ? {} : { selectedObjectId }),
     ...(typeof selection !== 'object' || selection.preview === undefined
       ? {}
       : { previewPosition: selection.preview }),
     ...(camera === undefined ? {} : { camera }),
-    ...(animationTimes === undefined ? {} : { animationTimes }),
-    timeSeconds,
+    ...(frame === undefined ? {
+      ...(animationTimes === undefined ? {} : { animationTimes }), timeSeconds,
+    } : {}),
     shadows: true,
   }
   const webGlStats = renderer?.draw(webGlInput) ?? drawWorldWebGl(canvas, webGlInput)
@@ -1217,12 +1220,10 @@ export function drawCandidateWorld(
   canvas.height = height
   context.clearRect(0, 0, width, height)
 
-  const points = model.layers.flatMap(layer =>
-    layer.page.items.flatMap(item => {
+  const points = webGlInput.items.flatMap(item => {
       const point = previewPoint(item)
       return point === undefined ? [] : [point]
-    }),
-  )
+    })
   const emptyStats = Object.freeze({
     terrainTriangles: 0,
     terrainTexturedTriangles: 0,
@@ -1384,9 +1385,7 @@ export function drawCandidateWorld(
   }
 
   const colors = WORLD_OBJECT_KIND_COLORS
-  const objectItems = model.layers.flatMap(layer =>
-    layer.page.items.filter((item): item is WorldSceneObjectItem => item.facet === 'objects'),
-  )
+  const objectItems = webGlInput.items.filter((item): item is WorldSceneObjectItem => item.facet === 'objects')
   let modelTriangles = 0
   for (const item of objectItems) {
     const previewPosition =
@@ -1430,7 +1429,7 @@ export function drawCandidateWorld(
                   ...(clip === undefined ? {} : { clip }),
                   maxBytes: 64 * 1024 * 1024,
                 },
-              ).sample(animationTimes?.get(item.objectId) ?? 0).primitives
+              ).sample(webGlInput.animationTimes?.get(item.objectId) ?? 0).primitives
         const scale = item.scale ?? { x: 1, y: 1, z: 1 }
         const rotation = item.rotation ?? 0
         const cosine = Math.cos(rotation)
@@ -1601,12 +1600,12 @@ export interface WorldViewerModuleOptions {
  */
 export async function watchTransportedWorld(
   transport: TransportSource,
-  render: () => Promise<void>,
+  render: (snapshot: TransportSnapshot) => Promise<void>,
   signal?: AbortSignal,
 ): Promise<void> {
   try {
     for await (const event of transport.events(signal)) {
-      if (event.kind === 'snapshot') await render()
+      if (event.kind === 'snapshot') await render(event.snapshot)
     }
   } catch (error) {
     if (!signal?.aborted) throw error
@@ -1660,6 +1659,13 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
       perspectiveButton.dataset['worldProjection'] = 'perspective'
       perspectiveButton.title = localizer.text('viewer.worldPerspectiveHint')
       perspectiveButton.setAttribute('aria-pressed', 'false')
+      const cameraMode = element(toolbar, 'select') as HTMLSelectElement
+      cameraMode.setAttribute('aria-label', localizer.text('viewer.worldKindCamera'))
+      for (const [value, key] of [['orbit', 'viewer.worldOrbitCamera'], ['source', 'viewer.worldSourceCamera']] as const) {
+        const option = element(cameraMode, 'option', { text: localizer.text(key) }) as HTMLOptionElement
+        option.value = value
+      }
+      cameraMode.disabled = true
       // Overlays the 3D view can hide; each button shows once the map publishes that facet.
       const hiddenOverlays = new Set<WorldOverlayFacet>()
       const overlayLabels: Readonly<Record<WorldOverlayFacet, string>> = {
@@ -1726,6 +1732,12 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
       let renderRevision = 0
       let descriptor = args.descriptor
       let currentModel: CandidateWorldViewerModel | undefined
+      let currentFrame: WorldSceneFrame | undefined
+      let latestTransport: TransportSnapshot | undefined
+      // Picking follows the objects that were drawn, including actors absent from static pages.
+      const shownObjects = () => currentFrame?.objects ?? currentModel?.layers.flatMap(layer => layer.page.items) ?? []
+      let frameScope: ViewerMountScope | undefined
+      scope.cleanup(() => frameScope?.close())
       let viewMode: 'lattice' | '3d' =
         options.initialView === 'auto' ? 'lattice' : (options.initialView ?? '3d')
       let viewUndecided = options.initialView === 'auto'
@@ -1759,7 +1771,7 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
       let animationFrame: number | undefined
       const animate = options.animations !== false
       const currentWorldTime = () =>
-        animate ? (view?.performance.now() ?? Date.now()) / 1000 - worldEpoch : 0
+        currentFrame === undefined ? (animate ? (view?.performance.now() ?? Date.now()) / 1000 - worldEpoch : 0) : currentFrame.timeMs / 1000
       const hasAnimatedWater = () =>
         animate &&
         currentModel?.layers.some(layer =>
@@ -1771,6 +1783,7 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
           ),
         ) === true
       const currentAnimationTimes = () => {
+        if (currentFrame !== undefined) return new Map(currentFrame.animationTimes?.map(item => [item.objectId, item.seconds]))
         const times = new Map<number, number>()
         if (currentModel === undefined || !animate) return times
         const now = (view?.performance.now() ?? Date.now()) / 1000
@@ -1830,7 +1843,8 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
           }
         }
         if (viewUndecided && currentModel !== undefined) {
-          const items = currentModel.layers.flatMap(layer => [layer.layer, ...layer.page.items])
+            const items = [...currentModel.layers.map(layer => layer.layer),
+              ...candidateWorldWebGlInput(currentModel, hiddenOverlays, currentFrame).items]
           if (items.some(item => item.facet === 'terrain')) {
             viewUndecided = false
             latticePlan = createWorldLatticePlan(items, latticeSpace.value || undefined)
@@ -1846,7 +1860,8 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
           if (viewMode === 'lattice') {
             if (latticeLayers !== currentModel.layers) {
               latticePlan = createWorldLatticePlan(
-                currentModel.layers.flatMap(layer => [layer.layer, ...layer.page.items]),
+                [...currentModel.layers.map(layer => layer.layer),
+                  ...candidateWorldWebGlInput(currentModel, hiddenOverlays, currentFrame).items],
                 latticeSpace.value || undefined,
               )
               latticeLayers = currentModel.layers
@@ -1859,11 +1874,12 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
               canvas,
               currentModel,
               edit,
-              camera,
+              cameraMode.value === 'source' ? undefined : camera,
               currentAnimationTimes(),
               currentWorldTime(),
               webGlRenderer,
               hiddenOverlays,
+              currentFrame,
             )
             canvas.dataset['worldRenderer'] = webGlRenderer === undefined ? 'isometric-2d' : 'webgl'
             lastFrame = stats.frame
@@ -1883,6 +1899,7 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
         const cancelFrame = view?.cancelAnimationFrame.bind(view)
         if (
           viewMode !== '3d' ||
+          currentFrame !== undefined ||
           loading ||
           (currentAnimationTimes().size === 0 && !hasAnimatedWater()) ||
           requestFrame === undefined
@@ -1899,8 +1916,40 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
           syncAnimationLoop()
         })
       }
+      // The existing viewer scope owns each sample; a later seek cancels and supersedes it.
+      const sampleFrame = async (positionMs: number) => {
+        const source = lease.value as WorldSceneSource, model = currentModel
+        if (source.frame === undefined || model === undefined) return
+        const previous = frameScope, request = new ViewerMountScope(scope.signal)
+        frameScope = request
+        await previous?.close()
+        try {
+          if (request.signal.aborted) return
+          const frame = await source.frame(positionMs, request.signal)
+          if (request.signal.aborted || frameScope !== request || currentModel !== model) return
+          if (frame.snapshotId !== model.snapshotId || frame.timeMs !== positionMs)
+            throw new TypeError('sampled world frame does not match its snapshot and requested time')
+          currentFrame = frame
+          if (edit.selectedObjectId !== undefined && !frame.objects.some(item => item.objectId === edit.selectedObjectId))
+            edit = selectWorldObject(createWorldEditState(descriptor.revision), undefined)
+          cameraMode.disabled = frame.camera === undefined && frame.modelCamera === undefined
+          if (cameraMode.disabled) cameraMode.value = 'orbit'
+          latticeLayers = undefined
+          syncAnimationLoop()
+          redraw()
+        } catch (error) {
+          if (!request.signal.aborted) throw error
+        } finally {
+          await request.close()
+          if (frameScope === request) frameScope = undefined
+        }
+      }
       const render = async () => {
         const revision = ++renderRevision
+        const previousFrame = frameScope
+        frameScope = undefined
+        void previousFrame?.close()
+        currentFrame = undefined
         loading = true
         syncAnimationLoop()
         setState(stage, ['loading'])
@@ -1940,10 +1989,15 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
         if (revision !== renderRevision || scope.signal.aborted) return
         loading = false
         currentModel = model
+        currentFrame = undefined
         takeGameCamera(model)
+        if ((lease.value as WorldSceneSource).frame !== undefined) {
+          const snapshot = latestTransport ?? await (transportLease?.value as TransportSource | undefined)?.snapshot(scope.signal)
+          await sampleFrame((latestTransport ?? snapshot)?.positionMs ?? 0)
+          if (revision !== renderRevision || scope.signal.aborted) return
+        }
         if (edit.selectedObjectId !== undefined) {
-          const refreshed = model.layers
-            .flatMap(layer => layer.page.items)
+          const refreshed = shownObjects()
             .find(
               (item): item is WorldSceneObjectItem =>
                 item.facet === 'objects' && item.objectId === edit.selectedObjectId,
@@ -2037,8 +2091,7 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
       const onPointer = (event: PointerEvent) => {
         if (event.button !== 0 || event.altKey) return
         if (currentModel === undefined) return
-        const objects = currentModel.layers
-          .flatMap(layer => layer.page.items)
+        const objects = shownObjects()
           .filter((item): item is WorldSceneObjectItem => item.facet === 'objects')
         if (objects.length === 0) return
         const rect = canvas.getBoundingClientRect()
@@ -2079,8 +2132,7 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
           edit,
           objectId === undefined
             ? undefined
-            : currentModel.layers
-                .flatMap(layer => layer.page.items)
+            : shownObjects()
                 .find(
                   (item): item is WorldSceneObjectItem =>
                     item.facet === 'objects' && item.objectId === objectId,
@@ -2098,6 +2150,7 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
         | undefined
       const onCameraPointerDown = (event: PointerEvent) => {
         if (event.button !== 1 && event.button !== 2 && !event.altKey) return
+        cameraMode.value = 'orbit'
         event.preventDefault()
         drag = {
           pointerId: event.pointerId,
@@ -2114,8 +2167,7 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
         drag.x = event.clientX
         drag.y = event.clientY
         const worldInput = {
-          items: currentModel.layers.flatMap(layer => layer.page.items),
-          ...(currentModel.models === undefined ? {} : { models: currentModel.models }),
+          ...candidateWorldWebGlInput(currentModel, hiddenOverlays, currentFrame),
           camera,
         }
         // a perspective eye looks around from where it stands; the orbit turns about its target
@@ -2191,12 +2243,14 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
       }
       const onWheel = (event: WheelEvent) => {
         event.preventDefault()
+        cameraMode.value = 'orbit'
         camera = zoomWorldWebGlCamera(camera, event.deltaY)
         redraw()
         focusSoon()
       }
       const onContextMenu = (event: Event) => event.preventDefault()
       const onPerspective = () => {
+        cameraMode.value = 'orbit'
         const perspective = camera.projection !== 'perspective'
         camera = Object.freeze({
           ...camera,
@@ -2214,6 +2268,7 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
             ? WORLD_FLIGHT_KEYS[event.key.toLowerCase()]
             : undefined
         if (flight !== undefined) {
+          cameraMode.value = 'orbit'
           event.preventDefault()
           // a tenth of the height in view per key press: slow up close, fast over the whole map
           const step = ((camera.frame ?? lastFrame)?.radius ?? 1) / camera.zoom / 10
@@ -2276,6 +2331,7 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
       canvas.addEventListener('contextmenu', onContextMenu)
       canvas.addEventListener('keydown', onKey)
       perspectiveButton.addEventListener('click', onPerspective)
+      cameraMode.addEventListener('change', redraw)
       saveMove.addEventListener('click', onSave)
       scope.cleanup(() => {
         latticeButton.removeEventListener('click', onLattice)
@@ -2292,10 +2348,22 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
         canvas.removeEventListener('contextmenu', onContextMenu)
         canvas.removeEventListener('keydown', onKey)
         perspectiveButton.removeEventListener('click', onPerspective)
+        cameraMode.removeEventListener('change', redraw)
         saveMove.removeEventListener('click', onSave)
       })
 
       // Return the mount immediately: closing/switching views must be able to cancel asset loading.
+      // Sampled worlds receive seeks during the first frame and catalog refinement as well.
+      if (transportLease !== undefined && (lease.value as WorldSceneSource).frame !== undefined)
+        void watchTransportedWorld(transportLease.value as TransportSource, async snapshot => {
+          latestTransport = snapshot
+          if (loading || currentModel === undefined) return
+          void sampleFrame(snapshot.positionMs).catch(error => {
+            if (!scope.signal.aborted) setViewerText(readout, String(error))
+          })
+        }, scope.signal).catch(error => {
+          if (!scope.signal.aborted) setViewerText(readout, String(error))
+        })
       void render()
         .then(async () => {
           // a world shown before its catalog answered: the answered world, read over the shown one.
@@ -2313,7 +2381,7 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
                   : false,
               )
           if (refined === true && !scope.signal.aborted) await render()
-          if (transportLease === undefined || scope.signal.aborted) return
+          if (transportLease === undefined || scope.signal.aborted || source.frame !== undefined) return
           await watchTransportedWorld(transportLease.value as TransportSource, render, scope.signal)
         })
         .catch(error => {

@@ -245,6 +245,8 @@ const EN_MESSAGES = Object.freeze({
   'viewer.worldLattice': 'Lattice 2D',
   'viewer.world3d': '3D preview',
   'viewer.worldPerspective': 'Perspective',
+  'viewer.worldSourceCamera': 'Source camera',
+  'viewer.worldOrbitCamera': 'Orbit camera',
   'viewer.worldPerspectiveHint':
     'Look around with the right mouse button; fly with W, A, S, D, Q and E',
   'viewer.worldSaveMove': 'Save selected move',
@@ -1318,6 +1320,8 @@ const RU_MESSAGES: Readonly<Record<CoreUiMessageKey, string>> = Object.freeze({
   'viewer.worldLattice': 'Сетка высот 2D',
   'viewer.world3d': '3D-превью',
   'viewer.worldPerspective': 'Перспектива',
+  'viewer.worldSourceCamera': 'Камера источника',
+  'viewer.worldOrbitCamera': 'Орбитальная камера',
   'viewer.worldPerspectiveHint': 'Осмотреться — правой кнопкой мыши; лететь — W, A, S, D, Q и E',
   'viewer.worldSaveMove': 'Сохранить перемещение',
   'viewer.worldLoadingGeometry': 'Загрузка геометрии ландшафта',
