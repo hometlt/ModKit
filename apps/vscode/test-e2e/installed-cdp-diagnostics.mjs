@@ -33,6 +33,99 @@ export function redactDiagnosticText(value) {
     .slice(0, 2000)
 }
 
+/** Read-only canvas inspection: no resizing, drawing, or context fallback that changes rendering. */
+export function imageDiagnosticDocument(doc, win) {
+  const selects = Array.from(doc.querySelectorAll('select'))
+    .slice(0, 8)
+    .map(select => ({
+      selected: String(select.selectedOptions?.[0]?.textContent ?? '').slice(0, 120),
+      options: Array.from(select.options)
+        .slice(0, 32)
+        .map(option => String(option.textContent ?? '').slice(0, 120)),
+    }))
+  const canvases = Array.from(doc.querySelectorAll('canvas'))
+    .slice(0, 8)
+    .map(canvas => {
+      const result = {
+        part: canvas.getAttribute('data-mk-part'),
+        width: canvas.width,
+        height: canvas.height,
+        cssWidth: canvas.clientWidth,
+        cssHeight: canvas.clientHeight,
+        context: 'unavailable',
+      }
+      try {
+        const context = canvas.getContext('2d')
+        if (context) {
+          result.context = '2d'
+          if (canvas.width > 0 && canvas.height > 0) {
+            result.sampleBytes = context.getImageData(0, 0, 1, 1).data.byteLength
+          }
+        }
+      } catch (error) {
+        result.readError = String(error?.message ?? error).slice(0, 2000)
+      }
+      return result
+    })
+  return {
+    text: (doc.body?.innerText ?? '').slice(0, 2000),
+    receiptPresent: !!win.__MODKIT_ACCEPTANCE__,
+    selects,
+    canvases,
+  }
+}
+
+/** Frozen Fit never enlarges: sample the fixture's 16 centered texels, not the viewport backing store. */
+export function displayedDdsRaster(doc, win) {
+  const canvas = doc.querySelector('[data-mk-part="image.canvas"]')
+  const stage = doc.querySelector('[data-mk-part="image"]')
+  if (!(canvas instanceof win.HTMLCanvasElement) || !stage) return undefined
+  if (
+    !Array.from(doc.querySelectorAll('dd')).some(item =>
+      /^4\s*×\s*4$/u.test(item.textContent?.trim() ?? ''),
+    )
+  )
+    return undefined
+  const box = stage.getBoundingClientRect()
+  const width = Math.max(1, Math.round(box.width)),
+    height = Math.max(1, Math.round(box.height))
+  const ratio = win.devicePixelRatio || 1
+  if (
+    width < 16 ||
+    height < 16 ||
+    canvas.width !== Math.round(width * ratio) ||
+    canvas.height !== Math.round(height * ratio)
+  )
+    return undefined
+  const context = canvas.getContext('2d')
+  if (!context) return undefined
+  const x = Math.round((width - 4) / 2),
+    y = Math.round((height - 4) / 2)
+  for (let row = 0; row < 4; row++)
+    for (let column = 0; column < 4; column++) {
+      const pixel = context.getImageData(
+        Math.floor((x + column + 0.5) * ratio),
+        Math.floor((y + row + 0.5) * ratio),
+        1,
+        1,
+      ).data
+      if (pixel[0] !== 255 || pixel[1] !== 0 || pixel[2] !== 0 || pixel[3] !== 255) return undefined
+    }
+  const outside = context.getImageData(0, 0, 1, 1).data
+  if (outside[0] === 255 && outside[1] === 0 && outside[2] === 0 && outside[3] === 255)
+    return undefined
+  return {
+    width: 4,
+    height: 4,
+    pixelBytes: 64,
+    opaquePixels: 16,
+    evidence: 'centered-1csspx-texels-exact-red',
+    viewportWidth: canvas.width,
+    viewportHeight: canvas.height,
+    devicePixelRatio: ratio,
+  }
+}
+
 export function probeFailureTarget(target, Socket = WebSocket) {
   return new Promise(resolve => {
     const contexts = []
@@ -59,10 +152,7 @@ export function probeFailureTarget(target, Socket = WebSocket) {
             id: 2,
             method: 'Runtime.evaluate',
             params: {
-              expression: webviewDocumentExpression(
-                `(doc, win) => ({ text: (doc.body?.innerText ?? '').slice(0, 2000), receiptPresent: !!win.__MODKIT_ACCEPTANCE__ })`,
-                true,
-              ),
+              expression: webviewDocumentExpression(imageDiagnosticDocument.toString(), true),
               returnByValue: true,
             },
           }),
@@ -95,6 +185,22 @@ export function probeFailureTarget(target, Socket = WebSocket) {
                           depth: item.depth === 0 ? 0 : 1,
                           text: redactDiagnosticText(item.value?.text),
                           receiptPresent: item.value?.receiptPresent === true,
+                          selects: (item.value?.selects ?? []).slice(0, 8).map(select => ({
+                            selected: redactDiagnosticText(select.selected),
+                            options: select.options.slice(0, 32).map(redactDiagnosticText),
+                          })),
+                          canvases: (item.value?.canvases ?? []).slice(0, 8).map(canvas => ({
+                            part: redactDiagnosticText(canvas.part),
+                            width: canvas.width,
+                            height: canvas.height,
+                            cssWidth: canvas.cssWidth,
+                            cssHeight: canvas.cssHeight,
+                            context: canvas.context,
+                            sampleBytes: canvas.sampleBytes,
+                            ...(canvas.readError === undefined
+                              ? {}
+                              : { readError: redactDiagnosticText(canvas.readError) }),
+                          })),
                         }))
                       : [],
                   },

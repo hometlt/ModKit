@@ -6,6 +6,8 @@ import {
   probeFailureTarget,
   redactDiagnosticText,
   webviewDocumentExpression,
+  imageDiagnosticDocument,
+  displayedDdsRaster,
 } from './installed-cdp-diagnostics.mjs'
 
 test('empty target list and fetch errors remain distinguishable', async () => {
@@ -23,6 +25,89 @@ test('empty target list and fetch errors remain distinguishable', async () => {
     }),
     { status: 'target-list-unavailable' },
   )
+})
+
+test('DDS probe samples native 4x4 exact-red texels from a centered viewport at multiple DPRs; backgrounds cannot pass', () => {
+  for (const ratio of [1, 1.5, 2]) {
+    let mode = 'image'
+    class Canvas {
+      width = Math.round(101 * ratio)
+      height = Math.round(77 * ratio)
+      getContext() {
+        return {
+          getImageData: (x, y) => {
+            const inside =
+              x >= Math.round((101 - 4) / 2) * ratio &&
+              x < (Math.round((101 - 4) / 2) + 4) * ratio &&
+              y >= Math.round((77 - 4) / 2) * ratio &&
+              y < (Math.round((77 - 4) / 2) + 4) * ratio
+            return {
+              data: Uint8Array.from(
+                mode === 'all-red' || (mode === 'image' && inside)
+                  ? [255, 0, 0, 255]
+                  : [120, 120, 120, 255],
+              ),
+            }
+          },
+        }
+      }
+    }
+    const canvas = new Canvas()
+    const doc = {
+      querySelector: selector =>
+        selector.includes('image.canvas')
+          ? canvas
+          : { getBoundingClientRect: () => ({ width: 101, height: 77 }) },
+      querySelectorAll: () => [{ textContent: '4 × 4' }],
+    }
+    const win = { HTMLCanvasElement: Canvas, devicePixelRatio: ratio }
+    const result = displayedDdsRaster(doc, win)
+    assert.equal(result.pixelBytes, 64)
+    assert.equal(result.opaquePixels, 16)
+    assert.equal(result.viewportWidth, Math.round(101 * ratio))
+    mode = 'checker'
+    assert.equal(displayedDdsRaster(doc, win), undefined)
+    mode = 'all-red'
+    assert.equal(displayedDdsRaster(doc, win), undefined)
+    mode = 'image'
+    doc.querySelectorAll = () => [{ textContent: '8 × 8' }]
+    assert.equal(displayedDdsRaster(doc, win), undefined)
+  }
+})
+
+test('image diagnostics retain stage, viewport canvas dimensions and read failures without resizing', () => {
+  const canvas = {
+    width: 800,
+    height: 600,
+    clientWidth: 400,
+    clientHeight: 300,
+    getAttribute: () => 'image.canvas',
+    getContext: () => ({
+      getImageData: () => {
+        throw new Error('tainted token=private')
+      },
+    }),
+  }
+  const doc = {
+    body: { innerText: 'DDS' },
+    querySelectorAll: selector =>
+      selector === 'canvas'
+        ? [canvas]
+        : [
+            {
+              selectedOptions: [{ textContent: 'Image' }],
+              options: [{ textContent: 'Image' }, { textContent: 'Metadata' }],
+            },
+          ],
+  }
+  const result = imageDiagnosticDocument(doc, {})
+  assert.equal(result.selects[0].selected, 'Image')
+  assert.equal(result.canvases[0].width, 800)
+  assert.equal(result.canvases[0].context, '2d')
+  assert.equal(redactDiagnosticText(result.canvases[0].readError), 'tainted token=<redacted>')
+  assert.equal(canvas.width, 800)
+  canvas.getContext = () => null
+  assert.equal(imageDiagnosticDocument(doc, {}).canvases[0].context, 'unavailable')
 })
 
 test('shared document traversal observes an iframe receipt and its DDS error, not only top', () => {

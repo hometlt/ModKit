@@ -41,6 +41,7 @@ import { readInstalledA7Inventory, assertInstalledA7 } from './installed-a7-inve
 import {
   collectFailureDiagnostics,
   webviewDocumentExpression,
+  displayedDdsRaster,
 } from './installed-cdp-diagnostics.mjs'
 
 import {
@@ -3776,7 +3777,7 @@ async function launchGeneration(generation) {
   }
   assertInstalledA7(acceptance.a7, installedA7Inventory)
 
-  await waitFor(
+  const imageStageSelected = await waitFor(
     async () => {
       const values = await webviewValues(
         port,
@@ -3804,16 +3805,12 @@ async function launchGeneration(generation) {
         port,
         webviewDocumentExpression(
           `(doc, win) => {
-            const canvas = doc.querySelector('[data-mk-part="image.canvas"]');
-            if (!(canvas instanceof win.HTMLCanvasElement) || canvas.width <= 0 || canvas.height <= 0) return undefined;
-            const pixels = canvas.getContext('2d')?.getImageData(0, 0, canvas.width, canvas.height).data;
-            if (!pixels) return undefined;
-            let opaquePixels = 0;
-            for (let index = 3; index < pixels.length; index += 4) if (pixels[index] > 0) opaquePixels += 1;
+            const raster = (${displayedDdsRaster.toString()})(doc, win);
+            if (!raster) return undefined;
             return {
               acceptance: JSON.parse(JSON.stringify(win.__MODKIT_ACCEPTANCE__)),
               stages: Array.from(doc.querySelectorAll('select option')).map(item => (item.textContent || '').trim()),
-              raster: { width: canvas.width, height: canvas.height, pixelBytes: pixels.byteLength, opaquePixels },
+              raster,
               text: (doc.body?.innerText || '').slice(0, 4000),
             };
           }`,
@@ -3829,8 +3826,20 @@ async function launchGeneration(generation) {
     },
     { timeoutMs: 60_000, stepMs: 500 },
   )
-  if (probe === undefined)
+  if (probe === undefined) {
+    receipt.ddsRasterFailure = {
+      imageStageSelected: imageStageSelected === true,
+      diagnostics: await collectFailureDiagnostics(port),
+    }
+    try {
+      mkdirSync(dirname(screenshotPath), { recursive: true })
+      await page.screenshot({ path: screenshotPath, fullPage: false })
+      receipt.ddsRasterFailure.screenshot = portablePath(screenshotPath)
+    } catch {
+      receipt.ddsRasterFailure.screenshotError = 'screenshot capture failed'
+    }
     throw new Error('installed DDS Image stage rendered no readable raster canvas')
+  }
   assertDds(probe)
   if (generation === 1) await page.screenshot({ path: screenshotPath, fullPage: false })
 
