@@ -192,6 +192,34 @@ it('keeps the full source for a provider without a document-local declaration', 
   }
 })
 
+it('validates many document symbols without rescanning their shared text for each symbol', async () => {
+  const f = await fixture(undefined, undefined, ['documentSymbols'])
+  const range = { start: { line: 0, character: 0 }, end: { line: 0, character: 1 } }
+  const symbol = { name: 'entry', kind: 'class' as const, range, selectionRange: range }
+  const provider = vi.mocked(f.provider.documentSymbols!)
+  const split = vi.spyOn(String.prototype, 'split')
+  try {
+    provider.mockResolvedValue({ symbols: [symbol], isIncomplete: false })
+    await f.workspace.documentSymbols(f.request)
+    const single = split.mock.calls.filter(call => String(call[0]) === '\n').length
+    f.workspace.invalidate('provider response changed')
+    split.mockClear()
+    provider.mockResolvedValue({ symbols: Array.from({ length: 32 }, () => symbol), isIncomplete: false })
+    expect((await f.workspace.documentSymbols(f.request))?.symbols).toHaveLength(32)
+    expect(split.mock.calls.filter(call => String(call[0]) === '\n')).toHaveLength(single)
+
+    f.workspace.invalidate('provider response changed')
+    provider.mockResolvedValue({
+      symbols: [{ ...symbol, children: [{ ...symbol, range: { ...range, end: { line: 0, character: 2 } } }] }],
+      isIncomplete: false,
+    })
+    await expect(f.workspace.documentSymbols(f.request)).rejects.toThrow(/invalid or unbounded document symbols/u)
+  } finally {
+    split.mockRestore()
+    await f.workspace.shutdown()
+  }
+})
+
 it('advertises the document-local declaration across the provider execution boundary', () => {
   expect(LANGUAGE_DOCUMENT_CONTRACT_DEFINITION.surface?.fields).toContain('documentLocalFeatures')
   expect(LANGUAGE_DOCUMENT_CONTRACT_DEFINITION.surface?.fields).toContain('modContextFeatures')

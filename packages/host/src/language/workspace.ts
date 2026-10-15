@@ -1592,13 +1592,15 @@ function validateDocumentSymbols(
   if (typeof list === 'object' && list !== null && Array.isArray(list.symbols)) {
     for (const symbol of list.symbols) countSymbol(symbol)
   }
+  // All symbols address the same snapshot; scan its lines once for the whole response.
+  let lengths: readonly number[] | undefined
   if (
     typeof list !== 'object' ||
     list === null ||
     !Array.isArray(list.symbols) ||
     count > request.maxResults ||
     typeof list.isIncomplete !== 'boolean' ||
-    !list.symbols.every(symbol => validSymbol(symbol, lineLengths(request.document.text)))
+    !list.symbols.every(symbol => validSymbol(symbol, lengths ??= lineLengths(request.document.text)))
   ) {
     invalidFeature(
       'language provider returned invalid or unbounded document symbols',
