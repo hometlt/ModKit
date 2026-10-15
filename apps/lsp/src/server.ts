@@ -984,7 +984,7 @@ export function createModkitLanguageServer(
     }),
   )
   connection.onHover((params, token) =>
-    withSignal(token, async signal => {
+    withInteractiveSignal(token, async signal => {
       await requireFeature(params.textDocument.uri, 'hover', signal)
       const value = await options.workspace.hover(
         positionRequest(params.textDocument.uri, params.position, signal),
@@ -1012,7 +1012,7 @@ export function createModkitLanguageServer(
     }),
   )
   connection.onSignatureHelp((params, token) =>
-    withSignal(token, async signal => {
+    withInteractiveSignal(token, async signal => {
       await requireFeature(params.textDocument.uri, 'signature-help', signal)
       const value = await options.workspace.signatureHelp(
         positionRequest(params.textDocument.uri, params.position, signal),
@@ -1038,7 +1038,7 @@ export function createModkitLanguageServer(
     }),
   )
   connection.onDefinition((params, token) =>
-    withSignal(token, async signal => {
+    withInteractiveSignal(token, async signal => {
       await requireFeature(params.textDocument.uri, 'definition', signal)
       const value = await options.workspace.definition(
         positionRequest(params.textDocument.uri, params.position, signal),
@@ -1047,7 +1047,7 @@ export function createModkitLanguageServer(
     }),
   )
   connection.onReferences((params, token) =>
-    withSignal(token, async signal => {
+    withInteractiveSignal(token, async signal => {
       await requireFeature(params.textDocument.uri, 'references', signal)
       const value = await options.workspace.references({
         ...positionRequest(params.textDocument.uri, params.position, signal),

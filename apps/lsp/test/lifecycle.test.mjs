@@ -52,6 +52,8 @@ function harness({
   blockCompletion = false,
   completionItems = [],
   clientInitialized,
+  workspaceOverrides = {},
+  additionalFeatures = [],
 } = {}) {
   const handlers = new Map()
   const calls = []
@@ -146,7 +148,7 @@ function harness({
     },
     capabilities: async uri =>
       current.has(uri)
-        ? { features: ['hover', 'workspace-symbols', 'code-lenses', ...(withCompletion ? ['completion'] : []), ...(withRename ? ['rename'] : [])] }
+        ? { features: ['hover', 'workspace-symbols', 'code-lenses', ...additionalFeatures, ...(withCompletion ? ['completion'] : []), ...(withRename ? ['rename'] : [])] }
         : undefined,
     completion: async request => {
       completionEntered()
@@ -183,6 +185,7 @@ function harness({
       }
     },
     workspaceSymbols: async () => ({ symbols: [], isIncomplete: false }),
+    ...workspaceOverrides,
     close: async uri => {
       calls.push(['close', uri])
       current.delete(uri)
@@ -505,6 +508,55 @@ test('background diagnostics wait until a long interactive request finishes', as
     await h.server.close()
   }
 })
+
+for (const [method, feature, handler] of [
+  ['hover', 'hover', 'onHover'],
+  ['signatureHelp', 'signature-help', 'onSignatureHelp'],
+  ['definition', 'definition', 'onDefinition'],
+  ['references', 'references', 'onReferences'],
+]) {
+  test(`${feature} interrupts background diagnostics and lets them resume after the answer`, async () => {
+    let entered, finish
+    const started = new Promise(resolve => { entered = resolve })
+    const gate = new Promise(resolve => { finish = resolve })
+    const h = harness({
+      blockDiagnostics: true,
+      additionalFeatures: [feature],
+      workspaceOverrides: { [method]: async request => {
+        entered(request)
+        await gate
+        return undefined
+      } },
+    })
+    h.open(1, 'one')
+    h.release()
+    await h.diagnosticsStarted
+    const answer = h.request(handler, {
+      textDocument: { uri }, position: { line: 0, character: 1 },
+      context: { includeDeclaration: true },
+    })
+    try {
+      const request = await started
+      assert.equal(request.documentVersion, 1)
+      assert.equal(request.signal.aborted, false)
+      assert.equal(h.diagnosticRequests[0].signal.aborted, true)
+      h.releaseDiagnostics()
+      const diagnostics = h.request('diagnostic', { textDocument: { uri } })
+      await new Promise(resolve => setTimeout(resolve, 225))
+      assert.equal(h.diagnosticRequests.length, 1)
+      finish()
+      assert.equal(await answer, null)
+      await diagnostics
+      assert.equal(h.diagnosticRequests.length, 2)
+      assert.equal(h.diagnosticRequests[1].signal.aborted, false)
+    } finally {
+      finish()
+      h.releaseDiagnostics()
+      await answer
+      await h.server.close()
+    }
+  })
+}
 
 test('workspace diagnostics wait for pending opens before enumerating documents', async () => {
   const h = harness()
