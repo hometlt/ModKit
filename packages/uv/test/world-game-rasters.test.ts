@@ -190,3 +190,23 @@ function nativeFrame(): ResolvedMapWorkspaceSnapshot {
     unresolvedRequirementIds: [], diagnostics: [], diagnosticsTruncated: false, complete: true,
   }
 }
+
+it('keeps native raster names separate from ground, navigation and reserved fallback names across detached UVP', async () => {
+  const lease = createCandidateWorldSceneLease({ ...nativeSnapshot(), gameRasters:
+    ['terrain', 'terrain-game-raster', 'item-main-navigation'].map(id => raster(id, 2, 2, 0.5)) }, [], 4)
+  try {
+    const packed = await materializeWorldToUvpMap(lease.value, options)
+    if (packed.state !== 'materialized') throw new Error(JSON.stringify(packed.refusals))
+    const layers = packed.document.spaces[0]!.layers
+    expect(new Set(layers.map(layer => layer.id)).size).toBe(layers.length)
+    expect(layers.find(layer => layer.kind === 'heightfield')?.id).toBe('terrain')
+    expect(layers.find(layer => layer.kind === 'navigation')?.id).toBe('item-main-navigation')
+    expect(layers.filter(layer => layer.kind === 'game-raster').map(layer => layer.id).sort()).toEqual([
+      'terrain-game-raster-2', 'terrain-game-raster', 'item-main-navigation-game-raster',
+    ].sort())
+    const opened = await openUvpMapBundle(packed.entries, { snapshotId: 'collision-free-reopen' })
+    const again = await materializeWorldToUvw(opened.source, options)
+    if (again.state !== 'materialized') throw new Error(JSON.stringify(again.refusals))
+    expect(again.document).toEqual(packed.document)
+  } finally { await lease.release() }
+})

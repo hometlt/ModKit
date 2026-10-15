@@ -520,7 +520,7 @@ export async function materializeWorldToUvw(
       maxPageItems: options.maxPageItems,
       maxFacetItems,
       ...(options.signal === undefined ? {} : { signal: options.signal }),
-    })
+    }, ground === undefined ? [] : [ground.id])
     pageRequests += additional.pageRequests
   } catch (error) {
     if (cancelled(options.signal)) refuse('cancelled', 'UVW facet materialization was cancelled')

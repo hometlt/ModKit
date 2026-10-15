@@ -1213,6 +1213,7 @@ export async function reconstructAdditionalExactLayers(
   source: CandidateWorldSceneSource,
   info: CandidateWorldSceneInfo,
   options: CanonicalUvwReconstructionOptions,
+  reservedLayerIds: readonly string[] = [],
 ): Promise<AdditionalExactLayers> {
   const state = {
     pageRequests: 0,
@@ -1256,13 +1257,36 @@ export async function reconstructAdditionalExactLayers(
       throw new TypeError('world layer catalog contains a non-layer item')
     return item
   })
+  // Native opaque field names can coincide with ground or other facets. Preserve existing
+  // names where possible and reserve every preferred name before allocating a fallback.
+  // Canonical UVW uses the separate reconstruction path and retains authored identities.
+  const preferredIds = new Set([...reservedLayerIds, ...catalog.flatMap(layer => {
+    const id = layer.localLayerId ?? localId(layer.layerId)
+    return layer.kind === 'terrain-materials' ? [id, `${id}-weight-resources`] : [id]
+  })])
+  const occupiedIds = new Set([...reservedLayerIds, ...catalog.flatMap(layer => {
+    const id = layer.localLayerId ?? localId(layer.layerId)
+    if (layer.kind === 'game-raster') return []
+    return layer.kind === 'terrain-materials' ? [id, `${id}-weight-resources`] : [id]
+  })])
   const layers: UvwHeightfieldSpaceLayer[] = []
   const retainedLayerIds: string[] = []
   for (const facet of candidates) {
     const layer = catalog.find(item => item.layerId === facet.layerId && item.kind === facet.facet)
     if (layer === undefined)
       throw new TypeError(`exact ${facet.facet} facet is absent from the world layer catalog`)
-    const reconstructed = await reconstructLayer(source, info, layer, 'main', options, state)
+    let selected = layer
+    if (layer.kind === 'game-raster') {
+      const preferred = layer.localLayerId ?? localId(layer.layerId)
+      let id = preferred
+      if (occupiedIds.has(id)) {
+        id = `${preferred}-game-raster`
+        for (let suffix = 2; preferredIds.has(id); suffix += 1) id = `${preferred}-game-raster-${suffix}`
+      }
+      occupiedIds.add(id); preferredIds.add(id)
+      selected = { ...layer, localLayerId: id }
+    }
+    const reconstructed = await reconstructLayer(source, info, selected, 'main', options, state)
     layers.push(reconstructed)
     if (reconstructed.kind === 'terrain-materials' && reconstructed.weightRasters !== undefined) {
       layers.push(
