@@ -904,7 +904,7 @@ export const validateServiceProviderContributionSemantics: SpecSemanticValidator
       return
     }
     const writerFacet = facet as Readonly<Record<string, JsonValue>>
-    if (writerFacet.providerId !== manifest.id) {
+    if (writerFacet['providerId'] !== manifest.id) {
       diagnostics.push(
         diagnostic(
           'error',
@@ -914,7 +914,7 @@ export const validateServiceProviderContributionSemantics: SpecSemanticValidator
         ),
       )
     }
-    if (writerFacet.fidelityEvidenceId !== evidence.evidenceId) {
+    if (writerFacet['fidelityEvidenceId'] !== evidence.evidenceId) {
       diagnostics.push(
         diagnostic(
           'error',
@@ -924,12 +924,12 @@ export const validateServiceProviderContributionSemantics: SpecSemanticValidator
         ),
       )
     }
-    if (writerFacet.minimumRoundTrip !== evidence.claim.roundTrip) {
+    if (writerFacet['minimumRoundTrip'] !== evidence.claim.roundTrip) {
       diagnostics.push(
         diagnostic(
           'error',
           'x3.sdk/writer-evidence-claim-mismatch',
-          `writer evidence ${evidence.evidenceId} claims ${evidence.claim.roundTrip}, but offer ${evidence.offerId} declares ${String(writerFacet.minimumRoundTrip)}`,
+          `writer evidence ${evidence.evidenceId} claims ${evidence.claim.roundTrip}, but offer ${evidence.offerId} declares ${String(writerFacet['minimumRoundTrip'])}`,
           ['spec', 'fidelityEvidence', index, 'claim', 'roundTrip'],
         ),
       )
