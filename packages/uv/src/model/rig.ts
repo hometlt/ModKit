@@ -243,7 +243,10 @@ export function writeUvmAnimations(
    */
   hiddenPrimitives: readonly { readonly mesh: number; readonly primitive: number }[] = [],
 ) {
-  const clips = snapshotModelAnimations(source, budget, signal)
+  // Validate every clip first, then release consumed snapshot payloads while encoding.
+  const clips: (ModelAnimationClip | undefined)[] = [
+    ...snapshotModelAnimations(source, budget, signal),
+  ]
   const animations: UvmJsonObject[] = []
   const catalog: UvmJsonObject[] = []
   const sequenceIndices = new Set<number>()
@@ -254,7 +257,9 @@ export function writeUvmAnimations(
     visibilityIndices.set(`${target.mesh}/${target.primitive}/visibility`, visibility.length)
     visibility.push({ mesh: target.mesh, primitive: target.primitive, value: 0 })
   }
-  for (const [clipIndex, clip] of clips.entries()) {
+  for (let clipIndex = 0; clipIndex < clips.length; clipIndex++) {
+    const clip = clips[clipIndex]!
+    clips[clipIndex] = undefined
     const sequenceIndex = clip.sequenceIndex ?? clipIndex
     if (sequenceIndices.has(sequenceIndex))
       refuse('clips require distinct material sequence indices')
