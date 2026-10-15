@@ -110,18 +110,20 @@ export async function loadContentSourceModule(
  * What Windows marks hidden under `root`: `/`-separated paths relative to it, of files and folders
  * (everything under a hidden folder is hidden too — the caller's rule, as in {@link hiddenPathMatcher}).
  * This is the one rule of what is hidden on disk; a name starting with a dot is not hidden. One
- * `dir` call for the whole tree; empty on other systems, and when `dir` cannot tell.
+ * `dir` call for the whole tree by default; `recursive: false` reads only the immediate children.
+ * Empty on other systems, and when `dir` cannot tell.
  */
 export async function windowsHiddenPaths(
   root: string,
   signal?: AbortSignal,
+  options: { readonly recursive?: boolean } = {},
 ): Promise<ReadonlySet<string>> {
   if (process.platform !== 'win32') return new Set()
   // `/u`: the listing comes as UTF-16, so names outside the console code page survive
   const listing = await new Promise<string>(resolveListing => {
     execFile(
       'cmd.exe',
-      ['/d', '/u', '/c', 'dir', '/a:h', '/s', '/b', root],
+      ['/d', '/u', '/c', 'dir', '/a:h', ...(options.recursive === false ? [] : ['/s']), '/b', root],
       {
         encoding: 'buffer',
         windowsHide: true,
@@ -134,7 +136,8 @@ export async function windowsHiddenPaths(
   signal?.throwIfAborted()
   const hidden = new Set<string>()
   for (const line of listing.split(/\r?\n/u)) {
-    const path = relative(root, line.trim())
+    const name = line.trim()
+    const path = relative(root, options.recursive === false ? join(root, name) : name)
     if (line.trim() !== '' && path !== '' && !path.startsWith('..') && !isAbsolute(path))
       hidden.add(path.split(sep).join('/'))
   }

@@ -62,12 +62,17 @@ describe('what Windows marks hidden on disk', () => {
       await writeFile(join(mods, '.minecraft', 'options.txt'), 'o')
       await writeFile(join(mods, 'desktop.ini'), 'd')
       await writeFile(join(mods, 'mod.txt'), 'm')
+      await writeFile(join(mods, '.minecraft', 'hidden.txt'), 'h')
       const attrib = promisify(execFile)
       await attrib('attrib', ['+h', join(mods, 'AppData')])
       await attrib('attrib', ['+h', join(mods, 'desktop.ini')])
-      expect([...(await windowsHiddenPaths(mods))].sort()).toEqual(['AppData', 'desktop.ini'])
+      await attrib('attrib', ['+h', join(mods, '.minecraft', 'hidden.txt')])
+      expect([...(await windowsHiddenPaths(mods))].sort()).toEqual(['.minecraft/hidden.txt', 'AppData', 'desktop.ini'])
+      expect([...(await windowsHiddenPaths(mods, undefined, { recursive: false }))].sort())
+        .toEqual(['AppData', 'desktop.ini'])
       const layer = await folderLayer(mods)
       expect(layer.entries).toEqual([
+        { path: '.minecraft/hidden.txt', hidden: true },
         { path: '.minecraft/options.txt' },
         { path: 'AppData/deep/save.dat', hidden: true },
         { path: 'desktop.ini', hidden: true },
