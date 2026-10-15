@@ -1,4 +1,4 @@
-/** Core-owned reader and canonical writer for the normative UVW 1.0 heightfield profile:
+/** Core-owned reader and canonical writer for the normative UVW 1.0 spatial profile:
  * bounded validation, weights/rasters, ordered atlas tiles with corner coverage and sample UVs.
  * Per-layer custom UVs/clips and coverage-only texture alpha are not part of this profile. */
 
@@ -340,9 +340,9 @@ export type UvwHeightfieldSpaceLayer =
   | UvwGatewaysLayer
   | UvwLightingLayer
 
-export interface UvwHeightfieldSpace {
+export interface UvwSpace {
   readonly id: string
-  readonly topology: 'heightfield'
+  readonly topology: 'heightfield' | 'mesh'
   readonly label?: string
   readonly basis: UvwBasis
   readonly bounds: UvwBounds
@@ -358,6 +358,9 @@ export interface UvwHeightfieldSpace {
 
 export type UvwPlayer = WorldPlayer
 export type UvwStartPosition = WorldStartPosition
+
+/** Historical public name; both spatial profiles use one body and one parser. */
+export type UvwHeightfieldSpace = UvwSpace
 
 export interface UvwProfileDocument {
   readonly $comment?: string
@@ -2303,7 +2306,7 @@ function space(
 ): UvwHeightfieldSpace {
   const item = record(value, path, state, depth)
   const topology = string(item['topology'], `${path}.topology`, state, depth + 1)
-  if (topology !== 'heightfield')
+  if (topology !== 'heightfield' && topology !== 'mesh')
     fail(
       `space topology ${JSON.stringify(topology)} is reserved but unsupported by UVW 1.0`,
       `${path}.topology`,
@@ -2331,9 +2334,13 @@ function space(
     if (ids.has(entry.id)) fail(`duplicate layer id ${JSON.stringify(entry.id)}`, `${path}.layers`)
     ids.add(entry.id)
   }
-  if (!layers.some(entry => entry.kind === 'heightfield')) {
+  if (topology === 'heightfield' && !layers.some(entry => entry.kind === 'heightfield')) {
     fail('heightfield space must contain at least one heightfield layer', `${path}.layers`)
   }
+  if (topology === 'mesh' && layers.some(entry => ['heightfield', 'terrain-materials', 'cliffs'].includes(entry.kind)))
+    fail('mesh space cannot contain a scalar ground or its terrain catalogs', `${path}.layers`)
+  if (topology === 'mesh' && !layers.some(entry => entry.kind === 'objects'))
+    fail('mesh space must declare an objects layer for its model geometry', `${path}.layers`)
   const players =
     item['players'] === undefined
       ? undefined
@@ -2434,7 +2441,7 @@ function space(
   }
   return Object.freeze({
     id,
-    topology: 'heightfield',
+    topology,
     ...(label === undefined ? {} : { label }),
     basis: basis(item['basis'], `${path}.basis`, state, depth + 1),
     bounds: bounds(item['bounds'], `${path}.bounds`, state, depth + 1),

@@ -153,25 +153,71 @@
       "description": "Explicit initial presentation clip request. Stable per-object visual phase does not consume gameplay RNG."
     },
     "space": {
-      "$comment": "topology names the whole catalog so the day a publisher lands the name is already taken by the right thing (the candidate's own reservation pattern); only heightfield is admitted by this version — the oneOf below is the single gate to widen.",
+      "$comment": "topology names the whole catalog so the day a publisher lands the name is already taken by the right thing (the candidate's own reservation pattern); heightfield and model-based mesh are admitted; other topologies remain reserved.",
       "type": "object",
       "required": ["id", "topology"],
       "properties": {
         "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
         "topology": {
-          "enum": ["heightfield", "tile-grid", "node-graph", "volume"]
+          "enum": ["heightfield", "mesh", "tile-grid", "node-graph", "volume"]
         },
         "label": { "type": "string" }
       },
-      "oneOf": [{ "$ref": "#/$defs/heightfieldSpace" }]
+      "oneOf": [{ "$ref": "#/$defs/heightfieldSpace" }, { "$ref": "#/$defs/meshSpace" }]
     },
     "heightfieldSpace": {
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/spatialSpace/properties/id"
+        },
+        "topology": {
+          "$ref": "#/$defs/heightfieldSpace/allOf/1/properties/topology"
+        },
+        "label": {
+          "$ref": "#/$defs/spatialSpace/properties/label"
+        },
+        "basis": {
+          "$ref": "#/$defs/spatialSpace/properties/basis"
+        },
+        "bounds": {
+          "$ref": "#/$defs/spatialSpace/properties/bounds"
+        },
+        "players": {
+          "$ref": "#/$defs/spatialSpace/properties/players"
+        },
+        "startPositions": {
+          "$ref": "#/$defs/spatialSpace/properties/startPositions"
+        },
+        "camera": {
+          "$ref": "#/$defs/spatialSpace/properties/camera"
+        },
+        "layers": {
+          "$ref": "#/$defs/spatialSpace/properties/layers"
+        }
+      },
+      "allOf": [
+        { "$ref": "#/$defs/spatialSpace" },
+        { "properties": { "topology": { "const": "heightfield" },
+          "layers": { "contains": { "properties": { "kind": { "const": "heightfield" } }, "required": ["kind"] } } } }
+      ]
+    },
+    "meshSpace": {
+      "description": "Visible geometry is carried by objects and their UVM resources, not a scalar ground. No voxel or inferred navigation semantics.",
+      "allOf": [
+        { "$ref": "#/$defs/spatialSpace" },
+        { "properties": { "topology": { "const": "mesh" }, "layers": {
+          "contains": { "properties": { "kind": { "const": "objects" } }, "required": ["kind"] },
+          "items": { "not": { "properties": { "kind": { "enum": ["heightfield", "terrain-materials", "cliffs"] } }, "required": ["kind"] } }
+        } } }
+      ]
+    },
+    "spatialSpace": {
       "type": "object",
       "additionalProperties": false,
       "required": ["id", "topology", "basis", "bounds", "layers"],
       "properties": {
         "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
-        "topology": { "const": "heightfield" },
+        "topology": { "enum": ["heightfield", "mesh"] },
         "label": { "type": "string" },
         "basis": { "$ref": "#/$defs/basis" },
         "bounds": {

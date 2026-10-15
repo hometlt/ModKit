@@ -70,9 +70,14 @@ export function assertUvwProfile(document) {
       refuse('space-order-canonical', 'spaces must be ordered by id in UTF-8 byte order')
     }
     for (const space of document.spaces) {
-      if (space?.topology !== 'heightfield') {
-        refuse('topology-not-admitted', 'UVW profile 1 admits only heightfield spaces')
+      if (space?.topology !== 'heightfield' && space?.topology !== 'mesh') {
+        refuse('topology-not-admitted', 'UVW profile 1 admits heightfield and model-based mesh spaces')
       }
+      if (space.topology === 'heightfield' && !space.layers?.some(layer => layer.kind === 'heightfield'))
+        refuse('heightfield-missing', 'a heightfield space needs its scalar ground')
+      if (space.topology === 'mesh' && (space.layers?.some(layer => ['heightfield', 'terrain-materials', 'cliffs'].includes(layer.kind))
+        || !space.layers?.some(layer => layer.kind === 'objects')))
+        refuse('mesh-layer-set', 'a mesh space declares objects and cannot invent scalar ground or its catalogs')
       assertUvwBody(space, true, source === document ? undefined : source)
     }
     assertUvwLattice(document.spaces, source === document ? document.uv?.version : '1.0')
@@ -106,6 +111,8 @@ function buildUvwGltf(document, { materialPolicies = [], resourceMappings = [],
   catch { refuse('uvw-gltf-source', 'Migration requires a finite plain JSON source document') }
   assertUvwProfile(document)
   // Work on one private snapshot: source arrays and material records remain untouched on refusal.
+  if (document.spaces.some(space => space.topology === 'mesh'))
+    refuse('uvw-gltf-topology', 'Mesh model-resource migration into the glTF envelope is not qualified')
   const spaces = structuredClone(document.spaces)
   if (!preserveSource && spaces.some(space => space.layers.some(layer => layer.weightRasters !== undefined)))
     refuse('uvw-gltf-layer', 'Raster weights require addressed resource and sampling policy migration')

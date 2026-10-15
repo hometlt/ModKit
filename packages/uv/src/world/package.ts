@@ -15,7 +15,7 @@ import {
   type WorldSceneObjectItem,
   type WorldSceneLayerItem,
 } from '@modkit/sdk/maps'
-import { readUvmContainer, uvmImageLogicalId, writeUvmContainer } from '../model/container.js'
+import { readUvmContainer, uvmImageResourceId, writeUvmContainer } from '../model/container.js'
 
 import {
   DEFAULT_UVW_PARSE_LIMITS,
@@ -598,14 +598,14 @@ async function makePortableUvm(
       }),
   )
   /** The logical id of every external image, for those that come without texels. */
-  const externalImages = (Array.isArray(images) ? images : []).flatMap(candidate =>
+  const externalImages = (Array.isArray(images) ? images : []).flatMap((candidate, index) =>
     typeof candidate === 'object' &&
     candidate !== null &&
     !Array.isArray(candidate) &&
     typeof (candidate as Record<string, unknown>)['uri'] === 'string' &&
     !((candidate as Record<string, unknown>)['uri'] as string).startsWith('data:') &&
     (candidate as Record<string, unknown>)['bufferView'] === undefined
-      ? [uvmImageLogicalId((candidate as Record<string, unknown>)['uri'] as string)]
+      ? [uvmImageResourceId(container.document, index)]
       : [],
   )
   if (portableTextures.length === 0)
@@ -638,11 +638,11 @@ async function makePortableUvm(
       return image
     if (typeof image['uri'] !== 'string')
       throw new TypeError(`UVM image ${String(imageIndex)} has no portable payload or URI`)
-    const key = normalizedResourceName(uvmImageLogicalId(image['uri']))
+    const key = normalizedResourceName(uvmImageResourceId(container.document, imageIndex))
     const texture = textureByName.get(key)
     const portable = portableByName.get(key)
     if (texture === undefined || portable === undefined) {
-      missing.push(uvmImageLogicalId(image['uri']))
+      missing.push(uvmImageResourceId(container.document, imageIndex))
       return image
     }
     matched.add(key)
@@ -864,6 +864,18 @@ function rewriteObjectModels(
           })
         }
       }
+      // A reopened package already owns these media IDs. Reuse only the exact addressed bytes;
+      // a generated name must never overwrite an unrelated authored resource.
+      for (const layer of space.layers) {
+        if (layer.kind !== 'resources') continue
+        for (const resource of layer.resources) {
+          const portable = portableResources.get(resource.id)
+          if (portable === undefined || replacedLocalResources.has(resource.id)) continue
+          if (resource.kind !== portable.kind || resource.uri !== portable.uri || resource.digest !== portable.digest)
+            throw new TypeError(`portable object resource id collides with authored resource ${resource.id}`)
+          portableResources.set(resource.id, resource)
+        }
+      }
       let foundResourceLayer = false
       const layers = space.layers.map((layer): UvwHeightfieldSpaceLayer => {
         if (layer.kind === 'objects') {
@@ -924,13 +936,14 @@ function rewriteObjectModels(
             }),
           }
         }
-        if (layer.kind === 'resources' && !foundResourceLayer) {
+        if (layer.kind === 'resources') {
+          const additions = foundResourceLayer ? [] : [...portableResources.values()]
           foundResourceLayer = true
           return {
             ...layer,
             resources: Object.freeze([
-              ...layer.resources.filter(resource => !replacedLocalResources.has(resource.id)),
-              ...portableResources.values(),
+              ...layer.resources.filter(resource => !replacedLocalResources.has(resource.id) && !portableResources.has(resource.id)),
+              ...additions,
             ]),
           }
         }

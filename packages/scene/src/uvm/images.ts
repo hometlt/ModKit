@@ -1,5 +1,6 @@
 import type { JsonObject, RasterResourceRequest, RasterResourceResult } from '@modkit/sdk'
-import { uvmImageLogicalId } from '@modkit/uv/model/container'
+import { uvmImageLogicalId, uvmImageResourceId } from '@modkit/uv/model/container'
+export { uvmImageResourceId } from '@modkit/uv/model/container'
 import {
   readUvmTextureAlpha,
   readUvmTextureColorKeys,
@@ -16,16 +17,6 @@ export interface UvmImage {
 
 export interface UvmTextureImage extends UvmImage {
   readonly texture: number
-}
-
-/** Shared identity for a material layer and its package-owned decoded image. */
-export function uvmImageResourceId(document: JsonObject, index: number): string {
-  const images = array(document, 'images')
-  const image = object(images[safeIndex(index, images.length, 'image')], 'image')
-  if (typeof image['name'] === 'string' && image['name'].length > 0) return image['name']
-  if (typeof image['uri'] === 'string' && !image['uri'].startsWith('data:'))
-    return uvmImageLogicalId(image['uri'])
-  return `uvm-image-${index}`
 }
 
 /** Texels with their stored alpha ignored (UV_texture_alpha): every one opaque, before a colour key. */

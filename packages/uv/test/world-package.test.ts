@@ -320,7 +320,7 @@ const modelBytes = materializeUvmCore(
   },
 ).bytes
 
-function sourceWithModel(derivedCliff = false) {
+function sourceWithModel(derivedCliff = false, meshOnly = false, reservedTextureId = false) {
   const main = document.spaces[0]!
   const resourceLayer = main.layers.find(layer => layer.kind === 'resources')!
   if (resourceLayer.kind !== 'resources') throw new Error('fixture resource layer missing')
@@ -353,13 +353,20 @@ function sourceWithModel(derivedCliff = false) {
             resources: [
               ...resourceLayer.resources,
               { id: 'source-model', kind: 'uvm', uri: 'source/model.uvm.glb' },
+              ...(reservedTextureId ? [{ id: 'object-model-0000-texture-0000', kind: 'media' as const,
+                uri: 'authored/unrelated.png' }] : []),
             ],
           },
         ],
       },
     ],
   }
-  const base = createUvwWorldSceneSource(modelDocument, {
+  const portableDocument = meshOnly ? { ...modelDocument, spaces: modelDocument.spaces.map(space => ({ ...space,
+    topology: 'mesh' as const,
+    layers: space.layers.filter(layer => !['heightfield', 'terrain-materials', 'cliffs'].includes(layer.kind))
+      .map(layer => layer.kind === 'resources' ? { ...layer, resources: layer.resources.filter(resource => resource.id !== 'source-grass') } : layer),
+  })) } : modelDocument
+  const base = createUvwWorldSceneSource(portableDocument, {
     snapshotId: 'model-source-snapshot',
     embeddedResources: new Map([['uvw-resource:main/source-grass', { bytes: Uint8Array.of(1) }]]),
     rasterResources,
@@ -397,6 +404,36 @@ const options = {
 }
 
 describe('portable UVP map bundle', () => {
+  it('refuses a generated model texture ID that would overwrite an authored resource', async () => {
+    const result = await materializeWorldToUvpMap(sourceWithModel(false, true, true), options)
+    expect(result.state).toBe('refused')
+    if (result.state === 'refused') expect(result.refusals[0]?.message).toContain('collides with authored resource')
+  })
+  it('packages a mesh world without inventing a heightfield and reopens its embedded model', async () => {
+    const packed = await materializeWorldToUvpMap(sourceWithModel(false, true), options)
+    if (packed.state !== 'materialized') throw new Error(JSON.stringify(packed.refusals))
+    expect(packed.packagedModelCount).toBe(1)
+    expect(packed.observedTerrainItems).toBe(0)
+    const reopened = await openUvpMapBundle(new Map([...packed.entries].map(([path, bytes]) => [path, bytes.slice()])),
+      { snapshotId: 'detached-mesh-world', rasterResources,
+        modelDecoder: createEmbeddedUvmWorldModelDecoder(rasterResources) })
+    expect(reopened.document.spaces[0]?.topology).toBe('mesh')
+    expect(reopened.document.spaces[0]?.layers.some(layer => layer.kind === 'heightfield')).toBe(false)
+    const roundTrip = await materializeWorldToUvpMap(reopened.source, options)
+    expect(roundTrip.state, roundTrip.state === 'refused' ? JSON.stringify(roundTrip.refusals) : '').toBe('materialized')
+    if (roundTrip.state !== 'materialized') throw new Error('mesh world repackaging failed')
+    expect(roundTrip.entries).toEqual(packed.entries)
+    const catalog = await reopened.source.page({ facet: 'layers', limit: 16 })
+    const layer = catalog.items.find(item => item.facet === 'layers' && item.kind === 'objects')
+    if (layer?.facet !== 'layers') throw new Error('mesh world objects missing')
+    const page = await reopened.source.page({ facet: 'objects', layerId: layer.layerId, limit: 16 })
+    const item = page.items[0]
+    if (item?.facet !== 'objects') throw new Error('mesh world instance missing')
+    const model = await reopened.source.model!(item.resourceIds?.[0]!, {
+      maxBytes: 1 << 20, maxMeshes: 8, maxPrimitives: 8, maxPrimitiveBytes: 1 << 20,
+    })
+    expect(model.state).toBe('converted')
+  })
   it('packages derived cliff presentation models and retains their non-authored marker on reopen', async () => {
     const packed = await materializeWorldToUvpMap(sourceWithModel(true), options)
     if (packed.state !== 'materialized') throw new Error(JSON.stringify(packed.refusals))

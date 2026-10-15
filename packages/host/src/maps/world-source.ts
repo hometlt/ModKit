@@ -1766,6 +1766,7 @@ export function createCandidateWorldSceneLease(
   ])
   const info: CandidateWorldSceneInfo = Object.freeze({
     contract: snapshot.worldCandidate.contract,
+    ...(snapshot.worldCandidate.topology === undefined ? {} : { topology: snapshot.worldCandidate.topology }),
     major: snapshot.worldCandidate.major,
     maturity: snapshot.worldCandidate.maturity,
     snapshotId: snapshot.snapshotId,
@@ -1991,6 +1992,7 @@ export function createCandidateWorldSceneLease(
   }
   const source: CandidateWorldSceneSource = Object.freeze({
     contract: snapshot.worldCandidate.contract,
+    ...(snapshot.worldCandidate.topology === undefined ? {} : { topology: snapshot.worldCandidate.topology }),
     major: snapshot.worldCandidate.major,
     snapshotId: snapshot.snapshotId,
     async info(signal?: AbortSignal) {

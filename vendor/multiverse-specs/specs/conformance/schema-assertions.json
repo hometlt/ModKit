@@ -3545,6 +3545,103 @@
       "pointer": "/extensions/UV_game_animation_clips",
       "schemaId": "https://modkitx.org/uvm/1.0/uvm.animation.schema.json#catalog",
       "expect": "valid"
+    },
+    {
+      "id": "mesh-world/base",
+      "document": "world/fixtures/uvw-profile-mesh-world.uvw.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json",
+      "expect": "valid"
+    },
+    {
+      "id": "mesh-world/heightfield-needs-ground",
+      "document": "world/fixtures/uvw-profile-mesh-world.uvw.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "spaces.0.topology",
+          "value": "heightfield"
+        }
+      ]
+    },
+    {
+      "id": "mesh-world/reserved-volume",
+      "document": "world/fixtures/uvw-profile-mesh-world.uvw.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "spaces.0.topology",
+          "value": "volume"
+        }
+      ]
+    },
+    {
+      "id": "mesh-world/missing-object-layer",
+      "document": "world/fixtures/uvw-profile-mesh-world.uvw.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "spaces.0.layers",
+          "value": [
+            {
+              "id": "models",
+              "kind": "resources",
+              "schemaVersion": 1,
+              "resources": [
+                {
+                  "id": "chunk",
+                  "kind": "uvm",
+                  "uri": "models/chunk.uvm.glb"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mesh-world/invented-ground",
+      "document": "world/fixtures/uvw-profile-mesh-world.uvw.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "spaces.0.layers.0",
+          "value": {
+            "id": "ground",
+            "kind": "heightfield",
+            "columns": 2,
+            "rows": 2,
+            "origin": [
+              0,
+              0,
+              0
+            ],
+            "cellSize": 1,
+            "samples": [
+              [
+                0,
+                0
+              ],
+              [
+                0,
+                0
+              ]
+            ]
+          }
+        }
+      ]
     }
   ]
 }

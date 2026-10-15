@@ -1127,7 +1127,7 @@ export async function reconstructCanonicalUvw(
     spaces.push(
       Object.freeze({
         id: space.id,
-        topology: 'heightfield' as const,
+        topology: space.topology ?? 'heightfield',
         ...(space.label === undefined ? {} : { label: space.label }),
         basis,
         bounds: space.bounds,

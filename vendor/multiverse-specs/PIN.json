@@ -3,16 +3,16 @@
   "schemaVersion": "multiverse-specs-pin-1",
   "source": {
     "repository": "multiverse (sibling repository)",
-    "commit": "61f972d2ffae859191d734ed56b87fc200b84b58",
-    "subject": "Define terrain image-channel conventions without guessing glTF conversion",
-    "committedOn": "2026-10-15T19:46:11+04:00"
+    "commit": "2e31c29ee1e76544864571fd061abf0712d68d9e",
+    "subject": "feat(uvw): admit explicitly model-based mesh spaces",
+    "committedOn": "2026-10-15T20:48:11+04:00"
   },
   "generator": "scripts/specs-pin.mjs",
   "generatedFrom": "git objects, not the sibling working tree",
   "prefix": "specs/",
   "counts": {
-    "files": 313,
-    "bytes": 2169667
+    "files": 315,
+    "bytes": 2178811
   },
   "files": [
     {
@@ -182,8 +182,8 @@
     },
     {
       "path": "specs/conformance/schema-assertions.json",
-      "bytes": 145491,
-      "digest": "sha256:519748087cb80797a8b6df5a8e61b4f54e4f1c25f9e63f9370ac9f5325702a2a"
+      "bytes": 148048,
+      "digest": "sha256:6ad790e96dc34874014001188b8451dd984479bd5accde4fe9a3a9fec47f9990"
     },
     {
       "path": "specs/conformance/state/vectors.json",
@@ -1266,6 +1266,11 @@
       "digest": "sha256:4b925bf596c4c3fe03dd7b4de9591cb1c477bc09d09290ee2334d09ab9ade41d"
     },
     {
+      "path": "specs/tools/uvw-mesh-world.test.mjs",
+      "bytes": 1462,
+      "digest": "sha256:4c37f3d191f5feb986e53965612d109d3fc4a744daa39c93c63d099a5a56307f"
+    },
+    {
       "path": "specs/tools/uvw-players.ts",
       "bytes": 5705,
       "digest": "sha256:3182fe90d2e569d8f27f6550dcc118c771fdc743d181f0067ee30443f5db3200"
@@ -1282,8 +1287,8 @@
     },
     {
       "path": "specs/tools/uvw-profile.mjs",
-      "bytes": 43964,
-      "digest": "sha256:7381481400b51bcaeaeb8dd852f2ed34578c18c0793b25373a22203990d81471"
+      "bytes": 44689,
+      "digest": "sha256:df15422e29c3fe7ed9d8e05db3e1df1b2ec9ed8beee112fcab32ad36f42d3e51"
     },
     {
       "path": "specs/tools/uvw-raster-preview.mjs",
@@ -1367,8 +1372,8 @@
     },
     {
       "path": "specs/world/SPEC_UVW_PROFILE.md",
-      "bytes": 30471,
-      "digest": "sha256:deefa9cb77fe9418e88e7550e67d7451edb47b51a594c5fc90755603592e84e5"
+      "bytes": 31653,
+      "digest": "sha256:e23496d32f1a14a978b3e02895c9787ca766e3c6b339b23f9ec28207fde86f49"
     },
     {
       "path": "specs/world/fixtures/invalid/connections-not-empty.uvw.json",
@@ -1491,6 +1496,11 @@
       "digest": "sha256:5f49d0bb06355571e746ce575bb9402da8ab9d664987a79a8587f85090cc193e"
     },
     {
+      "path": "specs/world/fixtures/uvw-profile-mesh-world.uvw.json",
+      "bytes": 1465,
+      "digest": "sha256:63106f5d8c38846e3af3deab56a1f08e195a0c5c5963fc7f2b39224d9e68b9fd"
+    },
+    {
       "path": "specs/world/fixtures/uvw-profile-navigation.uvw.json",
       "bytes": 687,
       "digest": "sha256:c1bd38ee97e633bcc604d1b0679d4f67a6add599bd88898e6384a2c7fc7977a2"
@@ -1577,8 +1587,8 @@
     },
     {
       "path": "specs/world/schema/uvw.profile.v1.schema.json",
-      "bytes": 43319,
-      "digest": "sha256:13ef3b235b9be989e0c57131b694b77516d75b57f8ca8b6ac93cd19a34d2ee28"
+      "bytes": 45072,
+      "digest": "sha256:ff024c7b6a3f3f0412c974f0342d74da96d40f2e7f48067ab8aee65860783c3c"
     }
   ]
 }

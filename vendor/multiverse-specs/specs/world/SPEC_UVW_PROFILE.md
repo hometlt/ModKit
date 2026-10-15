@@ -38,7 +38,7 @@ document is exactly a profile document with its body wrapped as that single spac
 
 ## 2. What this version admits
 
-- Topologies: `heightfield`. `tile-grid`, `node-graph` and `volume` are reserved names:
+- Topologies: `heightfield` and model-based `mesh`. `tile-grid`, `node-graph` and `volume` are reserved names:
   taken so the day a publisher lands the name is already right, refused until their
   amendment.
 - Heightfield-space layers: scalar `heightfield`; exact `terrain-materials` blends;
@@ -46,6 +46,18 @@ document is exactly a profile document with its body wrapped as that single spac
   `resources` (`uvm` or media); `regions`; exact native-flag `navigation`; portable
   static `traversal` for one movement class; gateway segments;
   and initial `lighting`. Every added family is independently versioned with `schemaVersion: 1`.
+- Mesh-space layers reuse the same objects, resources, regions, water, navigation, gateways and
+  lighting bodies. At least one objects layer declares the model geometry (it may be empty).
+  Scalar heightfields, their terrain-material catalogs and cliffs are forbidden: no flat ground,
+  hidden terrain or block volume is fabricated. Bounds and basis remain explicitly authored.
+  Object and resource identities, TRS, animation and media closure have exactly the existing rules.
+  Navigation describes only explicitly published static flags; no surface is inferred from a mesh.
+  A native source declares `topology: mesh`; absence retains the heightfield contract. An unqualified
+  coordinate frame still refuses export. The transform's existing sampling-grid metadata does not
+  create a heightfield layer in a mesh space.
+  This is the model presentation of Minecraft blocks or Diablo scene geometry, not an editable
+  Minecraft block palette, volume topology, native writer or simulation guarantee. glTF spatial
+  migration currently refuses mesh spaces explicitly until its model-resource mapping is qualified.
 - Connections: **reserved at zero entries.** The amendment defines `portal` (point
   anchors, pass rules, affine mapping including scale — the Minecraft 1:8 case lives
   here) and `seam` (boundary gluing including self-seams for wrap/torus worlds) and
@@ -97,7 +109,7 @@ The legacy candidate envelope does not gain this profile-only field.
 
 ## 5. Heightfield-space layer rules
 
-1. Every space contains at least one scalar heightfield. `columns` and `rows` count
+1. Every `heightfield` space contains at least one scalar heightfield; a `mesh` space contains none. `columns` and `rows` count
    samples, not quads; grids are row-major in the space-local canonical `(x,z)` frame.
    A height equal to `noDataValue` is missing ground, not an extremely low vertex.
 2. `terrain-materials` stores normalized non-empty sparse weights, ordered atlas tile

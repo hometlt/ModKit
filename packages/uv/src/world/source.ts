@@ -889,6 +889,7 @@ export function createUvwWorldSceneSource(
         document.spaces.map(space =>
           Object.freeze({
             id: space.id,
+            ...(space.topology === 'heightfield' ? {} : { topology: space.topology }),
             ...(space.label === undefined ? {} : { label: space.label }),
             basis: space.basis,
             bounds: space.bounds,

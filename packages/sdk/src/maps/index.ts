@@ -1387,6 +1387,8 @@ export interface MapGatewaySummary {
 }
 
 export interface MapWorldCandidateDescriptor {
+  /** Explicit spatial topology; omission retains the existing heightfield contract. Mesh never invents ground. */
+  readonly topology?: 'heightfield' | 'mesh'
   /** Publisher-qualified candidate coordinate. This is deliberately not an admitted common ID. */
   readonly contract: string
   readonly major: 1
@@ -1695,6 +1697,8 @@ export interface WorldStartPosition {
 }
 
 interface WorldSceneInfoBase {
+  /** Native publisher declaration, forwarded unchanged by Host; omission means heightfield. */
+  readonly topology?: 'heightfield' | 'mesh'
   readonly major: 1
   readonly maturity: 'publisher-candidate'
   readonly snapshotId: string
@@ -1724,6 +1728,7 @@ interface WorldSceneInfoBase {
     readonly version: '1.0'
     readonly spaces: readonly Readonly<{
       readonly id: string
+      readonly topology?: 'heightfield' | 'mesh'
       readonly label?: string
       readonly basis: ProjectionBasis
       readonly bounds: Readonly<{

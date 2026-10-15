@@ -154,6 +154,43 @@ function source(pageSize: number, sourceInfo = info): CandidateWorldSceneSource 
 const options = Object.freeze({ maxPageItems: 4, maxTerrainItems: 4, maxOutputBytes: 64_000 })
 
 describe('production world to UVW materializer', () => {
+  it('exports an explicitly declared native mesh world through the same facet reconstruction', async () => {
+    const objectLayerId = 'native:objects'
+    const meshInfo: CandidateWorldSceneInfo = { ...info, topology: 'mesh',
+      facets: [{ facet: 'objects', layerId: objectLayerId, state: 'available', itemCount: 1, lods: ['exact'] }],
+    }
+    const requested: string[] = []
+    const native: CandidateWorldSceneSource = { ...source(4, meshInfo),
+      async page(request) {
+        requested.push(request.facet)
+        const selected: readonly WorldSceneItem[] = request.facet === 'layers' ? [{
+          facet: 'layers', id: objectLayerId, layerId: objectLayerId, kind: 'objects',
+          state: 'available', itemCount: 1, lods: ['exact'],
+        }] : request.facet === 'objects' ? [{
+          facet: 'objects', id: 'native:mesh-piece', layerId: objectLayerId,
+          coordinateSpaceId: 'map-native', kind: 'doodad', objectId: 0,
+          position: { x: 0, y: 0, z: 0 }, uvwPosition: { x: 0, y: 0, z: 0 },
+          uvwRotation: [0, 0, 0, 1], resourceIds: [],
+        }] : []
+        return { snapshotId, facet: request.facet, state: 'available', items: selected }
+      },
+    }
+    const result = await materializeWorldToUvw(native, options)
+    expect(result.state).toBe('materialized')
+    if (result.state !== 'materialized') throw new Error(JSON.stringify(result.refusals))
+    expect(result.document.spaces[0]?.topology).toBe('mesh')
+    expect(result.document.spaces[0]?.layers.some(layer => layer.kind === 'heightfield')).toBe(false)
+    expect(requested).not.toContain('terrain')
+    expect(result.observedTerrainItems).toBe(0)
+    const missingProof = await materializeWorldToUvw({ ...native,
+      async info() { const { uvwTransform: _transform, ...unqualified } = meshInfo; return unqualified },
+    }, options)
+    expect(missingProof.state === 'refused' ? missingProof.refusalCodes : []).toContain('canonical-transform-missing')
+    const conflicting = await materializeWorldToUvw({ ...native,
+      info: async () => ({ ...meshInfo, facets: [...meshInfo.facets, ...info.facets] }),
+    }, options)
+    expect(conflicting.state === 'refused' ? conflicting.refusalCodes : []).toContain('mesh-terrain-conflict')
+  })
   it('reverses native material cells and their corners while keeping terminal padding terminal', async () => {
     const measured: CandidateWorldSceneInfo = {
       ...info,

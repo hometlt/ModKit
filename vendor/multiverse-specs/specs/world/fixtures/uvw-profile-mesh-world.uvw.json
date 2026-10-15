@@ -1,0 +1,77 @@
+{
+  "uv": {
+    "format": "UVW",
+    "version": "1.0",
+    "status": "profile"
+  },
+  "connections": [],
+  "spaces": [
+    {
+      "id": "main",
+      "topology": "mesh",
+      "basis": {
+        "handedness": "right",
+        "upAxis": "y",
+        "forwardAxis": "+z",
+        "unit": "source-unit",
+        "sourceUnit": "example-world-unit"
+      },
+      "bounds": {
+        "min": [
+          -16,
+          -64,
+          -16
+        ],
+        "max": [
+          16,
+          320,
+          16
+        ]
+      },
+      "layers": [
+        {
+          "id": "models",
+          "kind": "resources",
+          "schemaVersion": 1,
+          "resources": [
+            {
+              "id": "chunk",
+              "kind": "uvm",
+              "uri": "models/chunk.uvm.glb"
+            }
+          ]
+        },
+        {
+          "id": "objects",
+          "kind": "objects",
+          "schemaVersion": 1,
+          "instances": [
+            {
+              "id": "chunk-0",
+              "objectKind": "doodad",
+              "position": [
+                0,
+                0,
+                0
+              ],
+              "rotation": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "scale": [
+                1,
+                1,
+                1
+              ],
+              "resourceIds": [
+                "chunk"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

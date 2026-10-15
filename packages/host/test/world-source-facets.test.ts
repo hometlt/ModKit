@@ -697,7 +697,8 @@ describe('common world source native visual facets', () => {
     }
     const objectsOf = async (transform: typeof uvwTransform | undefined) => {
       const lease = createSourceWorldSceneLease(
-        { ...rest, semantic, ...(transform === undefined ? {} : { uvwTransform: transform }) },
+        { ...rest, semantic, worldCandidate: { ...rest.worldCandidate, topology: 'mesh' },
+          ...(transform === undefined ? {} : { uvwTransform: transform }) },
         [],
         64,
       )
@@ -705,12 +706,21 @@ describe('common world source native visual facets', () => {
         const info = await lease.value.info()
         const facet = info.facets.find(item => item.facet === 'objects')!
         const page = await lease.value.page({ facet: 'objects', layerId: facet.layerId, limit: 64 })
-        return { info, facet, items: page.items }
+        const exported = await materializeWorldToUvw(lease.value, {
+          maxPageItems: 64, maxTerrainItems: 4, maxFacetItems: 64, maxOutputBytes: 128_000,
+        })
+        return { info, facet, items: page.items, exported }
       } finally {
         await lease.release()
       }
     }
     const placed = await objectsOf(uvwTransform)
+    expect(placed.info.topology).toBe('mesh')
+    expect(placed.exported.state).toBe('materialized')
+    if (placed.exported.state === 'materialized') {
+      expect(placed.exported.document.spaces[0]?.topology).toBe('mesh')
+      expect(placed.exported.document.spaces[0]?.layers.some(layer => layer.kind === 'heightfield')).toBe(false)
+    }
     expect((placed.info as { uvwTransformRefusal?: string }).uvwTransformRefusal).toBeUndefined()
     expect(placed.info.uvwTransform?.axes.z.scale).toBe(-1)
     const marine = placed.items.find(item => item.facet === 'objects' && item.objectId === 7)

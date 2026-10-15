@@ -30,6 +30,18 @@ function errorCode(run: () => unknown): string | undefined {
 }
 
 describe('UVW 1.0 production document', () => {
+  it('admits model-based mesh spaces and refuses scalar ground or a missing geometry layer', async () => {
+    const input = JSON.parse(new TextDecoder().decode(await fixture('uvw-profile-renderable-world.uvw.json')))
+    const space = input.spaces[0]
+    const ground = space.layers.find((layer: { kind: string }) => layer.kind === 'heightfield')
+    space.topology = 'mesh'
+    space.layers = space.layers.filter((layer: { kind: string }) => ['objects', 'resources', 'lighting'].includes(layer.kind))
+    expect(validateUvwProfile(input).spaces[0]?.topology).toBe('mesh')
+    space.layers.push(ground)
+    expect(() => validateUvwProfile(input)).toThrow(/mesh space/)
+    space.layers = space.layers.filter((layer: { kind: string }) => !['heightfield', 'objects'].includes(layer.kind))
+    expect(() => validateUvwProfile(input)).toThrow(/objects layer/)
+  })
   it('validates water frame sequences and resource closure without deduplicating frames', async () => {
     const input = JSON.parse(new TextDecoder().decode(await fixture('uvw-profile-renderable-world.uvw.json')))
     const water = input.spaces[0].layers.find((layer: { kind: string }) => layer.kind === 'water')

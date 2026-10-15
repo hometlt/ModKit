@@ -10,6 +10,7 @@ import {
   canonicalizeUvwProfile,
   serializeUvwProfile,
   type UvwBasis,
+  type UvwHeightfieldLayer,
   type UvwProfileDocument,
 } from './index.js'
 import { cliffFacesFromTerrain, reconstructAdditionalExactLayers, reconstructCanonicalUvw } from './reconstruct.js'
@@ -20,6 +21,8 @@ export type WorldUvwRefusalCode =
   | 'source-info-failed'
   | 'source-identity-mismatch'
   | 'exact-terrain-missing'
+  | 'world-topology-unsupported'
+  | 'mesh-terrain-conflict'
   | 'canonical-transform-missing'
   | 'canonical-transform-invalid'
   | 'source-page-failed'
@@ -98,7 +101,7 @@ function close(left: number, right: number): boolean {
   return Math.abs(left - right) <= tolerance
 }
 
-function validTransform(transform: MapWorldCanonicalTransform, snapshotId: string): boolean {
+function validTransform(transform: MapWorldCanonicalTransform, snapshotId: string, topology: 'heightfield' | 'mesh'): boolean {
   const count = transform.heightfield.columns * transform.heightfield.rows
   return (
     transform.schemaVersion === 1 &&
@@ -113,9 +116,9 @@ function validTransform(transform: MapWorldCanonicalTransform, snapshotId: strin
         transform.basis.sourceUnit.length > 0 &&
         transform.basis.metersPerUnit === undefined)) &&
     Number.isSafeInteger(transform.heightfield.columns) &&
-    transform.heightfield.columns >= 2 &&
+    transform.heightfield.columns >= (topology === 'mesh' ? 1 : 2) &&
     Number.isSafeInteger(transform.heightfield.rows) &&
-    transform.heightfield.rows >= 2 &&
+    transform.heightfield.rows >= (topology === 'mesh' ? 1 : 2) &&
     Number.isSafeInteger(count) &&
     finite(transform.heightfield.cellSize) &&
     transform.heightfield.cellSize > 0 &&
@@ -126,7 +129,7 @@ function validTransform(transform: MapWorldCanonicalTransform, snapshotId: strin
 }
 
 /**
- * Materialize one publisher-qualified, fully measured exact heightfield into the current UVW
+ * Materialize a publisher-qualified heightfield or explicitly declared model-based mesh world into UVW
  * spaces envelope. The function is browser-safe and refuses every missing proof explicitly.
  */
 export async function materializeWorldToUvw(
@@ -251,16 +254,25 @@ export async function materializeWorldToUvw(
       return finish()
     }
   }
+  const topology = info.topology ?? 'heightfield'
+  if (topology !== 'heightfield' && topology !== 'mesh') {
+    refuse('world-topology-unsupported', 'the publisher declared an unsupported UVW topology', 'info.topology')
+    return finish()
+  }
   const exact = info.facets.filter(
     facet =>
       facet.facet === 'terrain' && facet.state === 'available' && facet.lods.includes('exact'),
   )
-  if (exact.length !== 1) {
+  if (topology === 'heightfield' && exact.length !== 1) {
     refuse(
       'exact-terrain-missing',
       'UVW base profile requires exactly one available exact terrain layer',
       'info.facets',
     )
+  }
+  if (topology === 'mesh' && info.facets.some(facet => facet.facet === 'terrain' &&
+    (facet.state === 'available' || facet.state === 'partial'))) {
+    refuse('mesh-terrain-conflict', 'a mesh publisher must not declare a scalar terrain facet', 'info.facets')
   }
   const transform = info.uvwTransform
   if (transform === undefined && info.uvwTransformRefusal !== undefined) {
@@ -275,204 +287,215 @@ export async function materializeWorldToUvw(
       'world source does not prove a map-native to UVW canonical transform',
       'info.uvwTransform',
     )
-  } else if (!validTransform(transform, info.snapshotId)) {
+  } else if (!validTransform(transform, info.snapshotId, topology)) {
     refuse(
       'canonical-transform-invalid',
       'world source UVW transform is incomplete or invalid',
       'info.uvwTransform',
     )
   }
-  if (refusals.length > 0 || transform === undefined || exact[0] === undefined) return finish()
+  if (refusals.length > 0 || transform === undefined) return finish()
+  const expectedMinimum = transform.bounds.minimum
+  const expectedMaximum = transform.bounds.maximum
+  let ground: UvwHeightfieldLayer | undefined
+  if (topology === 'heightfield') {
+    if (exact[0] === undefined) return finish()
 
-  // A terrain layer leaves out the samples where there is no ground (a Roblox air column, a cell
-  // outside a Westwood map's diamond) and declares the sentinel its grid writes there instead.
-  let noDataValue: number | undefined
-  try {
-    let layerCursor: string | undefined
-    const layerCursors = new Set<string>()
-    do {
-      pageRequests += 1
-      const page = await source.page(
-        {
-          facet: 'layers',
-          ...(layerCursor === undefined ? {} : { cursor: layerCursor }),
-          limit: options.maxPageItems,
-        },
-        options.signal,
-      )
-      const layer = page.items.find(
-        item => item.facet === 'layers' && item.layerId === exact[0]?.layerId,
-      )
-      if (layer?.facet === 'layers') {
-        noDataValue = layer.grid?.noDataValue
-        break
-      }
-      layerCursor = page.nextCursor
-      if (layerCursor !== undefined && layerCursors.has(layerCursor)) break
-      if (layerCursor !== undefined) layerCursors.add(layerCursor)
-    } while (layerCursor !== undefined)
-  } catch (error) {
-    if (cancelled(options.signal))
-      refuse('cancelled', 'UVW materialization was cancelled while reading layers')
-    else refuse('source-page-failed', `layer catalogue page failed: ${String(error)}`)
-    return finish()
-  }
-  if (noDataValue !== undefined && !finite(noDataValue)) {
-    refuse('terrain-grid-invalid', 'terrain noDataValue must be finite', 'layers.grid.noDataValue')
-    return finish()
-  }
-
-  const items: WorldSceneTerrainItem[] = []
-  const seenCursors = new Set<string>()
-  let cursor: string | undefined
-  do {
-    options.signal?.throwIfAborted()
+    // A terrain layer leaves out the samples where there is no ground (a Roblox air column, a cell
+    // outside a Westwood map's diamond) and declares the sentinel its grid writes there instead.
+    let noDataValue: number | undefined
     try {
-      pageRequests += 1
-      const page = await source.page(
-        {
-          facet: 'terrain',
-          layerId: exact[0].layerId,
-          lod: 'exact',
-          ...(cursor === undefined ? {} : { cursor }),
-          limit: options.maxPageItems,
-        },
-        options.signal,
-      )
-      if (
-        page.snapshotId !== info.snapshotId ||
-        page.facet !== 'terrain' ||
-        page.state !== 'available' ||
-        page.items.length > options.maxPageItems ||
-        page.items.some(
-          item =>
-            item.facet !== 'terrain' || item.layerId !== exact[0]?.layerId || item.lod !== 'exact',
+      let layerCursor: string | undefined
+      const layerCursors = new Set<string>()
+      do {
+        pageRequests += 1
+        const page = await source.page(
+          {
+            facet: 'layers',
+            ...(layerCursor === undefined ? {} : { cursor: layerCursor }),
+            limit: options.maxPageItems,
+          },
+          options.signal,
         )
-      ) {
-        refuse('page-invalid', 'exact terrain page identity, state or items are invalid', 'page')
-        break
-      }
-      observedTerrainItems += page.items.length
-      if (observedTerrainItems > options.maxTerrainItems) {
-        refuse(
-          'terrain-budget-exceeded',
-          'exact terrain drain exceeded maxTerrainItems',
-          'page.items',
+        const layer = page.items.find(
+          item => item.facet === 'layers' && item.layerId === exact[0]?.layerId,
         )
-        break
-      }
-      items.push(...(page.items as readonly WorldSceneTerrainItem[]))
-      const next = page.nextCursor
-      if (next !== undefined && (next === cursor || seenCursors.has(next))) {
-        refuse('cursor-cycle', 'exact terrain paging repeated a cursor', 'page.nextCursor')
-        break
-      }
-      if (next !== undefined) seenCursors.add(next)
-      cursor = next
+        if (layer?.facet === 'layers') {
+          noDataValue = layer.grid?.noDataValue
+          break
+        }
+        layerCursor = page.nextCursor
+        if (layerCursor !== undefined && layerCursors.has(layerCursor)) break
+        if (layerCursor !== undefined) layerCursors.add(layerCursor)
+      } while (layerCursor !== undefined)
     } catch (error) {
       if (cancelled(options.signal))
-        refuse('cancelled', 'UVW materialization was cancelled while reading terrain')
-      else refuse('source-page-failed', `exact terrain page failed: ${String(error)}`)
-      break
+        refuse('cancelled', 'UVW materialization was cancelled while reading layers')
+      else refuse('source-page-failed', `layer catalogue page failed: ${String(error)}`)
+      return finish()
     }
-  } while (cursor !== undefined)
-  if (refusals.length > 0) return finish()
+    if (noDataValue !== undefined && !finite(noDataValue)) {
+      refuse('terrain-grid-invalid', 'terrain noDataValue must be finite', 'layers.grid.noDataValue')
+      return finish()
+    }
 
-  const { columns, rows, cellSize, origin, sourceRowOrder } = transform.heightfield
-  const expectedCount = columns * rows
-  if (noDataValue === undefined ? items.length !== expectedCount : items.length > expectedCount) {
-    refuse(
-      'terrain-grid-invalid',
-      `exact terrain layer has ${String(items.length)} items; expected ${String(expectedCount)}`,
-      'page.items',
-    )
-    return finish()
-  }
-  const grid = new Array<WorldSceneTerrainItem | undefined>(expectedCount)
-  for (const item of items) {
-    if (
-      !Number.isSafeInteger(item.x) ||
-      !Number.isSafeInteger(item.y) ||
-      item.x < 0 ||
-      item.x >= columns ||
-      item.y < 0 ||
-      item.y >= rows ||
-      item.uvwPosition === undefined ||
-      !Object.values(item.uvwPosition).every(finite)
-    ) {
+    const items: WorldSceneTerrainItem[] = []
+    const seenCursors = new Set<string>()
+    let cursor: string | undefined
+    do {
+      options.signal?.throwIfAborted()
+      try {
+        pageRequests += 1
+        const page = await source.page(
+          {
+            facet: 'terrain',
+            layerId: exact[0].layerId,
+            lod: 'exact',
+            ...(cursor === undefined ? {} : { cursor }),
+            limit: options.maxPageItems,
+          },
+          options.signal,
+        )
+        if (
+          page.snapshotId !== info.snapshotId ||
+          page.facet !== 'terrain' ||
+          page.state !== 'available' ||
+          page.items.length > options.maxPageItems ||
+          page.items.some(
+            item =>
+              item.facet !== 'terrain' || item.layerId !== exact[0]?.layerId || item.lod !== 'exact',
+          )
+        ) {
+          refuse('page-invalid', 'exact terrain page identity, state or items are invalid', 'page')
+          break
+        }
+        observedTerrainItems += page.items.length
+        if (observedTerrainItems > options.maxTerrainItems) {
+          refuse(
+            'terrain-budget-exceeded',
+            'exact terrain drain exceeded maxTerrainItems',
+            'page.items',
+          )
+          break
+        }
+        items.push(...(page.items as readonly WorldSceneTerrainItem[]))
+        const next = page.nextCursor
+        if (next !== undefined && (next === cursor || seenCursors.has(next))) {
+          refuse('cursor-cycle', 'exact terrain paging repeated a cursor', 'page.nextCursor')
+          break
+        }
+        if (next !== undefined) seenCursors.add(next)
+        cursor = next
+      } catch (error) {
+        if (cancelled(options.signal))
+          refuse('cancelled', 'UVW materialization was cancelled while reading terrain')
+        else refuse('source-page-failed', `exact terrain page failed: ${String(error)}`)
+        break
+      }
+    } while (cursor !== undefined)
+    if (refusals.length > 0) return finish()
+
+    const { columns, rows, cellSize, origin, sourceRowOrder } = transform.heightfield
+    const expectedCount = columns * rows
+    if (noDataValue === undefined ? items.length !== expectedCount : items.length > expectedCount) {
       refuse(
         'terrain-grid-invalid',
-        'terrain item has invalid grid or canonical coordinates',
+        `exact terrain layer has ${String(items.length)} items; expected ${String(expectedCount)}`,
         'page.items',
       )
       return finish()
     }
-    const index = item.y * columns + item.x
-    if (grid[index] !== undefined) {
-      refuse('terrain-grid-invalid', 'terrain grid contains a duplicate coordinate', 'page.items')
-      return finish()
-    }
-    grid[index] = item
-  }
-
-  const samples: number[][] = []
-  let minimumY = Infinity
-  let maximumY = -Infinity
-  for (let outputRow = 0; outputRow < rows; outputRow += 1) {
-    const sourceRow = sourceRowOrder === 'reverse' ? rows - 1 - outputRow : outputRow
-    const row: number[] = []
-    for (let x = 0; x < columns; x += 1) {
-      const item = grid[sourceRow * columns + x]
-      if (item === undefined && noDataValue !== undefined) {
-        row.push(noDataValue)
-        continue
-      }
-      const position = item?.uvwPosition
+    const grid = new Array<WorldSceneTerrainItem | undefined>(expectedCount)
+    for (const item of items) {
       if (
-        position === undefined ||
-        !close(position.x, origin[0] + x * cellSize) ||
-        !close(position.z, origin[2] + outputRow * cellSize)
+        !Number.isSafeInteger(item.x) ||
+        !Number.isSafeInteger(item.y) ||
+        item.x < 0 ||
+        item.x >= columns ||
+        item.y < 0 ||
+        item.y >= rows ||
+        item.uvwPosition === undefined ||
+        !Object.values(item.uvwPosition).every(finite)
       ) {
         refuse(
-          'canonical-grid-mismatch',
-          'canonical positions do not form the declared scalar heightfield',
-          'info.uvwTransform.heightfield',
+          'terrain-grid-invalid',
+          'terrain item has invalid grid or canonical coordinates',
+          'page.items',
         )
         return finish()
       }
-      if (position.y === noDataValue) {
-        refuse('terrain-grid-invalid', 'a ground height equals the noDataValue', 'page.items')
+      const index = item.y * columns + item.x
+      if (grid[index] !== undefined) {
+        refuse('terrain-grid-invalid', 'terrain grid contains a duplicate coordinate', 'page.items')
         return finish()
       }
-      row.push(position.y)
-      minimumY = Math.min(minimumY, position.y)
-      maximumY = Math.max(maximumY, position.y)
+      grid[index] = item
     }
-    samples.push(row)
-  }
-  const expectedMinimum = transform.bounds.minimum
-  const expectedMaximum = transform.bounds.maximum
-  if (
-    !same(origin[0], expectedMinimum.x) ||
-    !same(origin[2], expectedMinimum.z) ||
-    !same(origin[0] + (columns - 1) * cellSize, expectedMaximum.x) ||
-    !same(origin[2] + (rows - 1) * cellSize, expectedMaximum.z) ||
-    !same(minimumY, expectedMinimum.y) ||
-    !same(maximumY, expectedMaximum.y)
-  ) {
-    refuse(
-      'canonical-grid-mismatch',
-      'materialized terrain bounds do not match the proved transform',
-      'info.uvwTransform.bounds',
-    )
-    return finish()
-  }
-  let cliffFaces: ReturnType<typeof cliffFacesFromTerrain>
-  try {
-    cliffFaces = cliffFacesFromTerrain(items, columns, rows, sourceRowOrder)
-  } catch (error) {
-    refuse('terrain-grid-invalid', String(error), 'page.items.cliffFace')
-    return finish()
+
+    const samples: number[][] = []
+    let minimumY = Infinity
+    let maximumY = -Infinity
+    for (let outputRow = 0; outputRow < rows; outputRow += 1) {
+      const sourceRow = sourceRowOrder === 'reverse' ? rows - 1 - outputRow : outputRow
+      const row: number[] = []
+      for (let x = 0; x < columns; x += 1) {
+        const item = grid[sourceRow * columns + x]
+        if (item === undefined && noDataValue !== undefined) {
+          row.push(noDataValue)
+          continue
+        }
+        const position = item?.uvwPosition
+        if (
+          position === undefined ||
+          !close(position.x, origin[0] + x * cellSize) ||
+          !close(position.z, origin[2] + outputRow * cellSize)
+        ) {
+          refuse(
+            'canonical-grid-mismatch',
+            'canonical positions do not form the declared scalar heightfield',
+            'info.uvwTransform.heightfield',
+          )
+          return finish()
+        }
+        if (position.y === noDataValue) {
+          refuse('terrain-grid-invalid', 'a ground height equals the noDataValue', 'page.items')
+          return finish()
+        }
+        row.push(position.y)
+        minimumY = Math.min(minimumY, position.y)
+        maximumY = Math.max(maximumY, position.y)
+      }
+      samples.push(row)
+    }
+    if (
+      !same(origin[0], expectedMinimum.x) ||
+      !same(origin[2], expectedMinimum.z) ||
+      !same(origin[0] + (columns - 1) * cellSize, expectedMaximum.x) ||
+      !same(origin[2] + (rows - 1) * cellSize, expectedMaximum.z) ||
+      !same(minimumY, expectedMinimum.y) ||
+      !same(maximumY, expectedMaximum.y)
+    ) {
+      refuse(
+        'canonical-grid-mismatch',
+        'materialized terrain bounds do not match the proved transform',
+        'info.uvwTransform.bounds',
+      )
+      return finish()
+    }
+    let cliffFaces: ReturnType<typeof cliffFacesFromTerrain>
+    try {
+      cliffFaces = cliffFacesFromTerrain(items, columns, rows, sourceRowOrder)
+    } catch (error) {
+      refuse('terrain-grid-invalid', String(error), 'page.items.cliffFace')
+      return finish()
+    }
+
+    ground = Object.freeze({
+      id: 'terrain', kind: 'heightfield', label: 'Ground', columns, rows, cellSize, origin,
+      ...(noDataValue === undefined ? {} : { noDataValue }),
+      ...(cliffFaces === undefined ? {} : { cliffFaces }),
+      samples: Object.freeze(samples.map(row => Object.freeze(row))),
+    })
   }
 
   const outputBasis: UvwBasis = Object.freeze({
@@ -509,25 +532,14 @@ export async function materializeWorldToUvw(
     spaces: Object.freeze([
       Object.freeze({
         id: 'main',
-        topology: 'heightfield',
+        topology,
         basis: outputBasis,
         bounds: Object.freeze({
           min: Object.freeze([expectedMinimum.x, expectedMinimum.y, expectedMinimum.z] as const),
           max: Object.freeze([expectedMaximum.x, expectedMaximum.y, expectedMaximum.z] as const),
         }),
         layers: Object.freeze([
-          Object.freeze({
-            id: 'terrain',
-            kind: 'heightfield',
-            label: 'Ground',
-            columns,
-            rows,
-            cellSize,
-            origin,
-            ...(noDataValue === undefined ? {} : { noDataValue }),
-            ...(cliffFaces === undefined ? {} : { cliffFaces }),
-            samples: Object.freeze(samples.map(row => Object.freeze(row))),
-          }),
+          ...(ground === undefined ? [] : [ground]),
           ...additional.layers,
         ]),
         // the publisher's game-view preset, as its snapshot states it (spaces[].camera)
@@ -547,7 +559,7 @@ export async function materializeWorldToUvw(
     })
     const digest = await sha256Hex(bytes)
     options.signal?.throwIfAborted()
-    const retained = new Set(['terrain', ...additional.retainedFacets])
+    const retained = new Set([...(ground === undefined ? [] : ['terrain']), ...additional.retainedFacets])
     const excludedFacetIds = Object.freeze(
       info.facets
         .filter(facet => !retained.has(facet.facet))

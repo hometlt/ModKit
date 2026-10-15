@@ -1,6 +1,7 @@
 import type { JsonObject } from '@modkit/sdk'
 import { snapshotJson } from '@modkit/codec-kit/json-snapshot'
 import { decodeUvmContainer, isGlb } from './legacy/container-kernels.js'
+import { array, object, safeIndex } from './validation/values.js'
 
 const GLB_MAGIC = 0x46546c67
 const JSON_CHUNK = 0x4e4f534a
@@ -238,4 +239,14 @@ export function uvmImageLogicalId(uri: string): string {
   } catch {
     return uri
   }
+}
+
+/** Shared authored identity for material references, decoded images and UVP repackaging. */
+export function uvmImageResourceId(document: JsonObject, index: number): string {
+  const images = array(document, 'images')
+  const image = object(images[safeIndex(index, images.length, 'image')], 'image')
+  if (typeof image['name'] === 'string' && image['name'].length > 0) return image['name']
+  if (typeof image['uri'] === 'string' && !image['uri'].startsWith('data:'))
+    return uvmImageLogicalId(image['uri'])
+  return `uvm-image-${index}`
 }
