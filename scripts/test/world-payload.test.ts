@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { encodeWorldPayload, worldRenderSource } from '../lib/world-payload.mjs'
 import { reviveWorldPayload } from '../lib/world-payload-revive.mjs'
+import { createWorldLatticePlan } from '../../packages/ui/src/world/lattice.js'
 
 /** The bytes world.bin would hold. */
 function binaryOf(chunks: readonly Uint8Array[], byteLength: number): ArrayBuffer {
@@ -14,6 +15,26 @@ function binaryOf(chunks: readonly Uint8Array[], byteLength: number): ArrayBuffe
 }
 
 describe('world payload', () => {
+  it('retains sibling layer identities so overview space selection keeps objects and picking', () => {
+    const overview = {
+      provenance: { method: 'fixture', quality: 'derived', complete: true },
+      raster: { columns: 1, rows: 1, origin: [0, 0], columnStep: [1, 0], rowStep: [0, 1],
+        elevation: [[[1, 0]]], palette: [{ value: 0, color: [0, 0, 0] }, { value: 1, color: [255, 255, 255] }] },
+      lines: [], markers: [],
+    }
+    const ground = { facet: 'layers', id: 'ground', layerId: 'ground', kind: 'terrain', spaceId: 'main', latticeOverview: overview }
+    const objects = { facet: 'layers', id: 'objects', layerId: 'objects', kind: 'objects', spaceId: 'main' }
+    const object = { facet: 'objects', id: 'unit', layerId: 'objects', kind: 'unit', objectId: 7,
+      position: { x: 0.5, y: 0, z: 0.5 }, uvwPosition: { x: 0.5, y: 0, z: 0.5 } }
+    const source = worldRenderSource({ layers: [
+      { layer: ground, page: { items: [] } }, { layer: objects, page: { items: [object] } },
+    ], models: new Map() })
+    expect(source.items).toEqual([ground, objects, object])
+    const plan = createWorldLatticePlan(source.items, 'main', 'overview')
+    expect(plan.publishedOverview).toEqual(overview)
+    expect(plan.objects.map(item => item.objectId)).toEqual([7])
+  })
+
   it('reads back as written: shared arrays stay one object, each starts 8-byte aligned', () => {
     const positions = Float32Array.of(0, 1, 2)
     const value = {

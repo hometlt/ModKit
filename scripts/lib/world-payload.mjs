@@ -24,10 +24,13 @@ function declaresEffects(bytes) {
  */
 export function worldRenderSource(inspected, { objects = () => true } = {}) {
   const players = inspected.info?.players ?? []
+  // An overview selects a canonical space. Keep its sibling layer identities too, so objects
+  // and picking in that space do not disappear merely because only terrain has the annotation.
+  const retainLayerMetadata = inspected.layers.some(layer => layer.layer.latticeOverview !== undefined)
   const items = inspected.layers
-    .flatMap(layer => [...(layer.layer.latticeOverview === undefined ? [] : [layer.layer]), ...layer.page.items])
+    .flatMap(layer => [...(retainLayerMetadata ? [layer.layer] : []), ...layer.page.items])
     .flatMap(item => {
-      if (item.facet === 'resources' || (item.facet === 'layers' && item.latticeOverview === undefined)) return []
+      if (item.facet === 'resources' || (item.facet === 'layers' && !retainLayerMetadata)) return []
       if (item.facet !== 'objects') return [item]
       if (!objects(item)) return []
       const { catalog: _catalog, ...renderItem } = item
