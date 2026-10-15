@@ -1086,8 +1086,8 @@ function terrainMaterialsLayer(
       : array(item['weightRasters'], `${path}.weightRasters`, state, depth + 1)
   if (samples === undefined && (rasterValues === undefined || rasterValues.length === 0))
     fail('terrain materials layer must contain samples or weightRasters', path)
-  if (rasterValues !== undefined && (rasterValues.length === 0 || rasterValues.length > 2))
-    fail('terrain materials layer must contain one or two weight rasters', `${path}.weightRasters`)
+  if (rasterValues !== undefined && (rasterValues.length === 0 || rasterValues.length > 16))
+    fail('terrain materials layer must contain one to sixteen weight rasters', `${path}.weightRasters`)
   const rasterResourceIds = new Set<string>()
   const rasterMaterialIds = new Set<string>()
   const weightRasters = rasterValues?.map((rasterValue, rasterIndex): UvwTerrainWeightRaster => {

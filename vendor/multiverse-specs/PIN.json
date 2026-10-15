@@ -3,16 +3,16 @@
   "schemaVersion": "multiverse-specs-pin-1",
   "source": {
     "repository": "multiverse (sibling repository)",
-    "commit": "92cc07f5c9a719184e10a1bfdda444ba10955014",
-    "subject": "Publish numeric emissive-gain animation targets in UVM",
-    "committedOn": "2026-10-15T07:49:55+04:00"
+    "commit": "d813d1f7c70ac136f1a862a8af0ed9e282a2018c",
+    "subject": "Preserve up to 64 terrain material weight channels in UVW",
+    "committedOn": "2026-10-15T19:23:30+04:00"
   },
   "generator": "scripts/specs-pin.mjs",
   "generatedFrom": "git objects, not the sibling working tree",
   "prefix": "specs/",
   "counts": {
-    "files": 312,
-    "bytes": 2152811
+    "files": 313,
+    "bytes": 2163299
   },
   "files": [
     {
@@ -182,8 +182,8 @@
     },
     {
       "path": "specs/conformance/schema-assertions.json",
-      "bytes": 139733,
-      "digest": "sha256:e437d9e4d415115893d28dd167ec4bac9ee285225d113eb5920618dc64e4c478"
+      "bytes": 142860,
+      "digest": "sha256:6ed8bf4da33f23f2a0fe713138d07233ad1bc8fbf421714f842aa63ad26e5719"
     },
     {
       "path": "specs/conformance/state/vectors.json",
@@ -1237,13 +1237,13 @@
     },
     {
       "path": "specs/tools/uvw-gltf.mjs",
-      "bytes": 17745,
-      "digest": "sha256:8bd688b9bd7b4e0457a6e7aa176594df1e6bae6a091202889600e76a61ffef9d"
+      "bytes": 17816,
+      "digest": "sha256:850dda7d58b48b9abcc157c66f5a4b3deb7bf94bee05ad56eb9a196467ea9c34"
     },
     {
       "path": "specs/tools/uvw-gltf.test.mjs",
-      "bytes": 60793,
-      "digest": "sha256:3b4ede8b9d5361635f8c401d6bdbbfe704df11888c0ead768d9a0a5727579f80"
+      "bytes": 63385,
+      "digest": "sha256:6eb5001f77ffab6de967de445038745ad439252589c82bda1b484324c8b96271"
     },
     {
       "path": "specs/tools/uvw-lattice.test.mjs",
@@ -1357,8 +1357,8 @@
     },
     {
       "path": "specs/world/SPEC_UVW_GLTF.md",
-      "bytes": 24783,
-      "digest": "sha256:3cc1592566356fc5f691e09d4f7a324fe34e4500e4eacaf375d6cca637972f93"
+      "bytes": 24997,
+      "digest": "sha256:28a34f5762a1396c7b8b5d7fc7d637bd5b14d8764e541b4567c37433445c4be7"
     },
     {
       "path": "specs/world/SPEC_UVW_GLTF_PAGES.md",
@@ -1367,8 +1367,8 @@
     },
     {
       "path": "specs/world/SPEC_UVW_PROFILE.md",
-      "bytes": 29567,
-      "digest": "sha256:ffe8a0d0234e67c7785ad2b6bfc07ce0f4b5e9c034f38291dfc7a35d5d6c41c6"
+      "bytes": 29707,
+      "digest": "sha256:fe9cf5256b6e6ec137afb879770d0b9cade5e18672828be2575bad13719e6d39"
     },
     {
       "path": "specs/world/fixtures/invalid/connections-not-empty.uvw.json",
@@ -1536,6 +1536,11 @@
       "digest": "sha256:dfc8562aa466d8378341b72435aeeb813844ef083388d7006a841203d7f77ef8"
     },
     {
+      "path": "specs/world/fixtures/uvw-terrain-weight-raster-capacity.json",
+      "bytes": 4341,
+      "digest": "sha256:3f32a08c7980b6367227c643d61f7f2a9ed66b4abdba50e56e653c203ff3e264"
+    },
+    {
       "path": "specs/world/fixtures/uvw-water-material.json",
       "bytes": 230,
       "digest": "sha256:4c7ab5b88ea871a6f8e0e4e097217cbb03a83916daeb326257c31d4d4d166bd4"
@@ -1562,18 +1567,18 @@
     },
     {
       "path": "specs/world/schema/uvw.gltf.pages.v1.schema.json",
-      "bytes": 24133,
-      "digest": "sha256:ec9aeed226a6861f89e87ea0fb23fcf000b15b5dd02720b5f311f642ad580d16"
+      "bytes": 24134,
+      "digest": "sha256:ce1227e451c79d1aaae7463e923f94393a4a8b175b71c4dc7cb276ce47553d58"
     },
     {
       "path": "specs/world/schema/uvw.gltf.v1.schema.json",
-      "bytes": 13052,
-      "digest": "sha256:54aaa9970e57602eed087d10110c6a42e8a4778dfffae8ee59e50b32fa330a88"
+      "bytes": 13053,
+      "digest": "sha256:d7d8d9dbbe7f9804613524fa93e11a502b80283fcc87252646cbb6136af49d84"
     },
     {
       "path": "specs/world/schema/uvw.profile.v1.schema.json",
-      "bytes": 42656,
-      "digest": "sha256:59b4f39ef59dc05797e810aa226b064e97dddc0066ab48e2925380b869ce5ffe"
+      "bytes": 42657,
+      "digest": "sha256:6803e5b7a86ac149d0ef1567dba55b40370580c59294240d90c9c7b992a33ccf"
     }
   ]
 }

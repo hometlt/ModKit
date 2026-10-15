@@ -782,6 +782,49 @@ test('raw terrain weight rasters have explicit sampling, byte closure and zero-s
     error => error.rule === 'uvw-gltf-raster-authoring')
 })
 
+test('sixteen terrain weight rasters retain all 64 channels in the existing glTF migration', () => {
+  for (const count of [3, 4, 6, 16]) {
+    const source = materialSource(), paint = source.spaces[0].layers[0]
+    delete paint.samples
+    paint.materials = Array.from({ length: count * 4 }, (_, index) => ({ id: `material-${String(index).padStart(2, '0')}` }))
+    paint.weightRasters = Array.from({ length: count }, (_, index) => ({
+      resourceId: `weights-${String(index).padStart(2, '0')}`, width: 2, height: 2,
+      materialIds: paint.materials.slice(index * 4, index * 4 + 4).map(material => material.id),
+      encoding: 'rgba8-unorm', normalization: 'sum',
+    }))
+    source.spaces[0].layers.splice(1, 0, { schemaVersion: 1, id: 'resources', kind: 'resources',
+      resources: paint.weightRasters.map(raster => ({ id: raster.resourceId, kind: 'media',
+        uri: `../media/${raster.resourceId}.rgba` })) })
+    const options = { sourcePath: 'worlds/source.uvw.json', targetPath: 'worlds/target.uvw.gltf',
+      materialPolicies: [
+        ...paint.materials.map(material => ({ ...materialPolicies[0], materialId: material.id })),
+        materialPolicies[2],
+      ],
+      resourceMappings: paint.weightRasters.map(raster => ({ spaceId: 'main', layerId: 'resources',
+        resourceId: raster.resourceId, outputs: [{ usage: 'weight-rgba8',
+          uri: `../media/${raster.resourceId}.rgba`, encoding: 'rgba8-unorm' }] })),
+      rasterPolicies: [{ spaceId: 'main', layerId: 'paint', sampling: {
+        coordinates: 'material-grid-extent', filter: 'bilinear', wrap: 'clamp',
+        normalization: 'sum', zeroSum: { mode: 'refuse' },
+      } }],
+    }
+    const before = jcsStringify(source)
+    const prepared = prepareUvwGltfMigration(source, options)
+    assert.equal(assertUvwProfile(prepared.document), prepared.document)
+    const migrated = prepared.document.extensions.UV_world_graph.spaces[0].layers[0]
+    assert.deepEqual(migrated.weightRasters, paint.weightRasters)
+    assert.equal(migrated.materials.length, count * 4)
+    assert.equal(jcsStringify(source), before)
+    const bad = structuredClone(prepared.document)
+    const layer = bad.extensions.UV_world_graph.spaces[0].layers[0]
+    layer.weightRasters.push({ ...layer.weightRasters[0], resourceId: 'overflow' })
+    if (count === 16) assert.throws(() => assertUvwProfile(bad), /uvw-gltf-raster-grid/)
+    layer.weightRasters.pop()
+    layer.weightRasters[count - 1].materialIds[0] = layer.weightRasters[0].materialIds[0]
+    assert.throws(() => assertUvwProfile(bad), /uvw-gltf-raster-grid/)
+  }
+})
+
 test('mixed inline/raster source needs byte-proved preview equivalence before migration', async () => {
   const source = materialSource(), paint = source.spaces[0].layers[0]
   paint.samples = Array.from({ length: 2 }, () => Array.from({ length: 2 }, () =>

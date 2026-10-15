@@ -1,0 +1,213 @@
+{
+  "rasters": [
+    {
+      "resourceId": "weights-00",
+      "width": 2,
+      "height": 2,
+      "materialIds": [
+        "material-00",
+        "material-01",
+        "material-02",
+        "material-03"
+      ],
+      "encoding": "rgba8-unorm",
+      "normalization": "sum"
+    },
+    {
+      "resourceId": "weights-01",
+      "width": 2,
+      "height": 2,
+      "materialIds": [
+        "material-04",
+        "material-05",
+        "material-06",
+        "material-07"
+      ],
+      "encoding": "rgba8-unorm",
+      "normalization": "sum"
+    },
+    {
+      "resourceId": "weights-02",
+      "width": 2,
+      "height": 2,
+      "materialIds": [
+        "material-08",
+        "material-09",
+        "material-10",
+        "material-11"
+      ],
+      "encoding": "rgba8-unorm",
+      "normalization": "sum"
+    },
+    {
+      "resourceId": "weights-03",
+      "width": 2,
+      "height": 2,
+      "materialIds": [
+        "material-12",
+        "material-13",
+        "material-14",
+        "material-15"
+      ],
+      "encoding": "rgba8-unorm",
+      "normalization": "sum"
+    },
+    {
+      "resourceId": "weights-04",
+      "width": 2,
+      "height": 2,
+      "materialIds": [
+        "material-16",
+        "material-17",
+        "material-18",
+        "material-19"
+      ],
+      "encoding": "rgba8-unorm",
+      "normalization": "sum"
+    },
+    {
+      "resourceId": "weights-05",
+      "width": 2,
+      "height": 2,
+      "materialIds": [
+        "material-20",
+        "material-21",
+        "material-22",
+        "material-23"
+      ],
+      "encoding": "rgba8-unorm",
+      "normalization": "sum"
+    },
+    {
+      "resourceId": "weights-06",
+      "width": 2,
+      "height": 2,
+      "materialIds": [
+        "material-24",
+        "material-25",
+        "material-26",
+        "material-27"
+      ],
+      "encoding": "rgba8-unorm",
+      "normalization": "sum"
+    },
+    {
+      "resourceId": "weights-07",
+      "width": 2,
+      "height": 2,
+      "materialIds": [
+        "material-28",
+        "material-29",
+        "material-30",
+        "material-31"
+      ],
+      "encoding": "rgba8-unorm",
+      "normalization": "sum"
+    },
+    {
+      "resourceId": "weights-08",
+      "width": 2,
+      "height": 2,
+      "materialIds": [
+        "material-32",
+        "material-33",
+        "material-34",
+        "material-35"
+      ],
+      "encoding": "rgba8-unorm",
+      "normalization": "sum"
+    },
+    {
+      "resourceId": "weights-09",
+      "width": 2,
+      "height": 2,
+      "materialIds": [
+        "material-36",
+        "material-37",
+        "material-38",
+        "material-39"
+      ],
+      "encoding": "rgba8-unorm",
+      "normalization": "sum"
+    },
+    {
+      "resourceId": "weights-10",
+      "width": 2,
+      "height": 2,
+      "materialIds": [
+        "material-40",
+        "material-41",
+        "material-42",
+        "material-43"
+      ],
+      "encoding": "rgba8-unorm",
+      "normalization": "sum"
+    },
+    {
+      "resourceId": "weights-11",
+      "width": 2,
+      "height": 2,
+      "materialIds": [
+        "material-44",
+        "material-45",
+        "material-46",
+        "material-47"
+      ],
+      "encoding": "rgba8-unorm",
+      "normalization": "sum"
+    },
+    {
+      "resourceId": "weights-12",
+      "width": 2,
+      "height": 2,
+      "materialIds": [
+        "material-48",
+        "material-49",
+        "material-50",
+        "material-51"
+      ],
+      "encoding": "rgba8-unorm",
+      "normalization": "sum"
+    },
+    {
+      "resourceId": "weights-13",
+      "width": 2,
+      "height": 2,
+      "materialIds": [
+        "material-52",
+        "material-53",
+        "material-54",
+        "material-55"
+      ],
+      "encoding": "rgba8-unorm",
+      "normalization": "sum"
+    },
+    {
+      "resourceId": "weights-14",
+      "width": 2,
+      "height": 2,
+      "materialIds": [
+        "material-56",
+        "material-57",
+        "material-58",
+        "material-59"
+      ],
+      "encoding": "rgba8-unorm",
+      "normalization": "sum"
+    },
+    {
+      "resourceId": "weights-15",
+      "width": 2,
+      "height": 2,
+      "materialIds": [
+        "material-60",
+        "material-61",
+        "material-62",
+        "material-63"
+      ],
+      "encoding": "rgba8-unorm",
+      "normalization": "sum"
+    }
+  ],
+  "empty": []
+}

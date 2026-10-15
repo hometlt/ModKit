@@ -262,7 +262,8 @@ function assertRasterGrid(layer, ids, resources, bounds) {
     || origin[0] < bounds.min[0] - 1e-9 || origin[2] < bounds.min[2] - 1e-9
     || origin[0] + (columns - 1) * cellSize > bounds.max[0] + 1e-9
     || origin[2] + (rows - 1) * cellSize > bounds.max[2] + 1e-9
-    || !Array.isArray(weightRasters) || weightRasters.length < 1 || weightRasters.length > 2)
+    || !Array.isArray(weightRasters) || weightRasters.length < 1
+    || weightRasters.length > schema.$defs.terrainMaterialsLayer.properties.weightRasters.maxItems)
     refuse('uvw-gltf-raster-grid', `Invalid raster grid ${layer.id}`)
   const materials = new Set(), rasterIds = new Set()
   for (const raster of weightRasters) {

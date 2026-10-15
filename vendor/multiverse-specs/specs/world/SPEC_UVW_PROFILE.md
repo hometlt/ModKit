@@ -101,9 +101,11 @@ The legacy candidate envelope does not gain this profile-only field.
    samples, not quads; grids are row-major in the space-local canonical `(x,z)` frame.
    A height equal to `noDataValue` is missing ground, not an extremely low vertex.
 2. `terrain-materials` stores normalized non-empty sparse weights, ordered atlas tile
-   layers per sample, one or two compact `rgba8-unorm` weight rasters, or retained combinations
+   layers per sample, one to sixteen compact `rgba8-unorm` weight rasters, or retained combinations
    of these source facets. A raster declares one to four
-   material ids in RGBA channel order; consumers divide all declared channel values by their
+   material ids in RGBA channel order (at most 64 distinct raster channels per layer).
+   The sum normalization spans all rasters in the layer, not each raster separately;
+   consumers divide all declared channel values by their
    sum, with the first channel as the deterministic all-zero fallback. The glTF profile
    instead requires an explicit zero-sum policy: refusal or a named material. Raster dimensions are
    independent of the height sample grid (for example SC2 uses 2048×2048 weights for a

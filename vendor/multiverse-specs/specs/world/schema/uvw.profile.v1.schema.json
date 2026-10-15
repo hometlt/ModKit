@@ -644,7 +644,7 @@
         "weightRasters": {
           "type": "array",
           "minItems": 1,
-          "maxItems": 2,
+          "maxItems": 16,
           "items": { "$ref": "#/$defs/terrainWeightRaster" }
         }
       }

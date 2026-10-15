@@ -168,7 +168,7 @@
         "samples": { "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/materialWeightGrid" },
         "weightAuthoring": { "const": "raster" },
         "weightRasters": {
-          "type": "array", "minItems": 1, "maxItems": 2,
+          "type": "array", "minItems": 1, "maxItems": 16,
           "items": { "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/terrainWeightRaster" }
         },
         "rasterSampling": {

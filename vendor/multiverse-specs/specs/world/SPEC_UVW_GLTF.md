@@ -117,8 +117,11 @@ still refuses per-material textures/`uvTransform` and resource layers. The expli
 preparer maps them with caller policies and preserves retained source fields;
 its result alone is not proof of matching native pixels.
 
-The opt-in raster path stores `weightAuthoring:"raster"` and one or two
-`weightRasters` instead of inline `samples`. A mixed legacy source requires an
+The opt-in raster path stores `weightAuthoring:"raster"` and one to sixteen
+`weightRasters` instead of inline `samples` (up to 64 distinct material channels,
+normalized together across the entire layer). Readers pinned to the earlier two-raster
+limit must refuse larger layers; exporters must not truncate them to eight materials.
+A mixed legacy source requires an
 addressed `rasterPolicies[].inlinePreview` policy with
 `role:"assert-equivalent-preview"` and `maxAbsError` in `[0,1/255]`; otherwise
 migration refuses it. Structural preparation only records the source `samples`
