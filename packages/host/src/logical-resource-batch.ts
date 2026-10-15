@@ -13,7 +13,7 @@ import { logicalResourceDeadline } from './logical-resource-deadline.js'
 type Refusal = Extract<LogicalResourceReadBatchResult, { state: 'refused' }>
 type Unavailable = 'context-unavailable' | 'permission-missing' | undefined
 
-/** Shared across all batches on one subject, including calls still cleaning up after a timeout. */
+/** Shared worker slots, including reserved starts and calls still cleaning up after a timeout. */
 export interface LogicalResourceBatchState {
   activeReads: number
   reservedBytes: bigint
@@ -239,78 +239,95 @@ export async function readLogicalResourceBatch(
   const read = async (
     item: LogicalResourceReadBatchItem,
     itemSignal: AbortSignal,
+    permit: (typeof permits)[number],
   ): Promise<LogicalResourceReadOutcome> => {
-    if (context.state.activeReads >= 4) {
-      fail('budget-exceeded', 'The subject has no free resource read slots.')
-      itemSignal.throwIfAborted()
-    }
-    context.state.activeReads += 1
+    permit.busy = true
     const reservation = { bytes: 0n, settled: false }
     reservations.add(reservation)
     try {
       return await readResolved(item, itemSignal, reservation)
     } finally {
-      context.state.activeReads -= 1
+      permit.busy = false
+      if (permit.retired) releasePermit(permit)
       reservation.settled = true
       if (closed) releaseReservation(reservation)
     }
   }
+  // Reserve synchronously: another batch may arrive before deadline callbacks start workers.
+  const workerCount = Math.min(captured.concurrency, captured.items.length, 4 - context.state.activeReads)
+  if (workerCount <= 0)
+    return refused('budget-exceeded', 'The subject has no free resource read slots.')
+  const permits = Array.from({ length: workerCount }, () => ({ busy: false, retired: false, released: false }))
+  const releasePermit = (permit: (typeof permits)[number]): void => {
+    if (permit.released) return
+    permit.released = true
+    context.state.activeReads -= 1
+  }
+  const retirePermit = (permit: (typeof permits)[number]): void => {
+    permit.retired = true
+    if (!permit.busy) releasePermit(permit)
+  }
+  context.state.activeReads += workerCount
   const onAbort = (): void => controller.abort(signal?.reason)
   signal?.addEventListener('abort', onAbort, { once: true })
   if (signal?.aborted) onAbort()
   try {
     const completion = await logicalResourceDeadline(
       async batchSignal => {
-        const worker = async (): Promise<void> => {
-          while (cursor < captured.items.length) {
-            batchSignal.throwIfAborted()
-            const index = cursor++
-            const item = captured.items[index]
-            if (item === undefined) throw new TypeError('Captured batch item is absent.')
-            try {
-              const result = await logicalResourceDeadline(
-                itemSignal => read(item, itemSignal),
-                captured.readTimeoutMs,
-                batchSignal,
-              )
-              if (result.state === 'deadline-exceeded') {
-                results[index] = deadlineOutcome('The resource read exceeded its duration ceiling.')
-                // An uncooperative backend may still be running: do not reuse this slot.
-                return
-              }
-              results[index] = result.value
-            } catch (error) {
+        const worker = async (permit: (typeof permits)[number]): Promise<void> => {
+          try {
+            while (cursor < captured.items.length) {
               batchSignal.throwIfAborted()
-              const after = context.unavailable()
-              if (after !== undefined) {
-                fail(after, 'The read context is no longer authorized.')
-                return
-              }
-              const code =
-                error !== null && typeof error === 'object' && 'code' in error
-                  ? error.code
-                  : undefined
-              if (
-                typeof code === 'string' &&
-                (code.includes('budget-exceeded') || code.includes('revision-changed'))
-              ) {
-                fail(
-                  code.includes('revision-changed') ? 'source-revision-changed' : 'budget-exceeded',
-                  'The host refused a staged resource read.',
+              if (permit.retired) return
+              const index = cursor++
+              const item = captured.items[index]
+              if (item === undefined) throw new TypeError('Captured batch item is absent.')
+              try {
+                const result = await logicalResourceDeadline(
+                  itemSignal => read(item, itemSignal, permit),
+                  captured.readTimeoutMs,
+                  batchSignal,
                 )
-                return
+                if (result.state === 'deadline-exceeded') {
+                  results[index] = deadlineOutcome('The resource read exceeded its duration ceiling.')
+                  // An uncooperative backend may still be running: do not reuse this slot.
+                  return
+                }
+                results[index] = result.value
+              } catch (error) {
+                batchSignal.throwIfAborted()
+                const after = context.unavailable()
+                if (after !== undefined) {
+                  fail(after, 'The read context is no longer authorized.')
+                  return
+                }
+                const code =
+                  error !== null && typeof error === 'object' && 'code' in error
+                    ? error.code
+                    : undefined
+                if (
+                  typeof code === 'string' &&
+                  (code.includes('budget-exceeded') || code.includes('revision-changed'))
+                ) {
+                  fail(
+                    code.includes('revision-changed') ? 'source-revision-changed' : 'budget-exceeded',
+                    'The host refused a staged resource read.',
+                  )
+                  return
+                }
+                results[index] = Object.freeze({
+                  state: 'unresolved',
+                  reason: 'read-failed',
+                  message: 'The resource could not be read.',
+                })
               }
-              results[index] = Object.freeze({
-                state: 'unresolved',
-                reason: 'read-failed',
-                message: 'The resource could not be read.',
-              })
             }
+          } finally {
+            // A timed-out worker keeps its permit until the underlying lease cleanup settles.
+            retirePermit(permit)
           }
         }
-        await Promise.all(
-          Array.from({ length: Math.min(captured.concurrency, captured.items.length) }, worker),
-        )
+        await Promise.all(permits.map(worker))
       },
       captured.totalTimeoutMs,
       controller.signal,
@@ -341,6 +358,8 @@ export async function readLogicalResourceBatch(
   } finally {
     signal?.removeEventListener('abort', onAbort)
     closed = true
+    // Includes permits whose deadline callback never started because cancellation won the race.
+    for (const permit of permits) retirePermit(permit)
     for (const reservation of reservations) {
       if (reservation.settled) releaseReservation(reservation)
     }

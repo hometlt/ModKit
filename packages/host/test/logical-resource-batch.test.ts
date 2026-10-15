@@ -177,6 +177,95 @@ describe('host-owned resource batch', () => {
     gate.resolve(lease.resolution)
     expect(await first).toMatchObject({ state: 'complete', bytes: 16n })
   })
+  it('uses the remaining slots while a timed-out resolver is still cleaning up', async () => {
+    vi.useFakeTimers()
+    const gate = deferred<ResourceResolution>()
+    const late = resolved('held')
+    const resolve = vi.fn(async (req: LogicalResourceRequirement) =>
+      req.id === 'held' ? gate.promise : resolved(req.id).resolution)
+    const f = fixture(resolve)
+    const first = f.port.readBatch(request(['held']))
+    await vi.advanceTimersByTimeAsync(100)
+    expect(await first).toMatchObject({ state: 'complete', items: [{ reason: 'deadline-exceeded' }] })
+    expect(await f.port.readBatch(request(['1', '2', '3', '4', '5', '6', '7']))).toMatchObject({
+      state: 'complete', bytes: 28n,
+    })
+    expect(late.release).not.toHaveBeenCalled()
+    gate.resolve(late.resolution)
+    await vi.advanceTimersByTimeAsync(0)
+    expect(late.release).toHaveBeenCalledTimes(1)
+    expect(await f.port.readBatch(request(['8', '9', '10', '11']))).toMatchObject({ state: 'complete', bytes: 16n })
+  })
+  it('reserves remaining workers atomically before simultaneous batches yield', async () => {
+    vi.useFakeTimers()
+    const gate = deferred<undefined>()
+    const resolve = vi.fn(async (req: LogicalResourceRequirement) => {
+      await gate.promise
+      return resolved(req.id).resolution
+    })
+    const f = fixture(resolve)
+    const first = f.port.readBatch(request(['1', '2', '3']))
+    const second = f.port.readBatch(request(['4', '5', '6', '7', '8', '9', '10']))
+    await vi.advanceTimersByTimeAsync(0)
+    expect(resolve).toHaveBeenCalledTimes(4)
+    expect(await f.port.readBatch(request(['11']))).toMatchObject({ state: 'refused', reason: 'budget-exceeded' })
+    expect(resolve).toHaveBeenCalledTimes(4)
+    gate.resolve(undefined)
+    expect(await first).toMatchObject({ state: 'complete', bytes: 12n })
+    expect(await second).toMatchObject({ state: 'complete', bytes: 28n })
+  })
+  it('retains a timed-out slot through lease release while using the other slots', async () => {
+    vi.useFakeTimers()
+    const releaseGate = deferred<undefined>()
+    const late = resolved('held')
+    late.release.mockImplementation(async () => releaseGate.promise)
+    const f = fixture(async req => req.id === 'held' ? late.resolution : resolved(req.id).resolution)
+    const first = f.port.readBatch(request(['held']))
+    await vi.advanceTimersByTimeAsync(100)
+    expect(await first).toMatchObject({ state: 'complete', items: [{ reason: 'deadline-exceeded' }] })
+    expect(await f.port.readBatch(request(['1', '2', '3', '4', '5', '6', '7']))).toMatchObject({ state: 'complete', bytes: 28n })
+    releaseGate.resolve(undefined)
+    await vi.advanceTimersByTimeAsync(0)
+    expect(await f.port.readBatch(request(['8', '9', '10', '11']))).toMatchObject({ state: 'complete', bytes: 16n })
+    expect(late.release).toHaveBeenCalledTimes(1)
+  })
+  it('refunds unused permits once when cancelled before backend callbacks start', async () => {
+    vi.useFakeTimers()
+    const resolve = vi.fn(async (req: LogicalResourceRequirement) => resolved(req.id).resolution)
+    const f = fixture(resolve)
+    const controller = new AbortController()
+    const first = f.port.readBatch(request(['1', '2', '3', '4']), controller.signal)
+    controller.abort()
+    await expect(first).rejects.toMatchObject({ name: 'AbortError' })
+    expect(resolve).not.toHaveBeenCalled()
+    const gate = deferred<undefined>()
+    resolve.mockImplementation(async req => {
+      await gate.promise
+      return resolved(req.id).resolution
+    })
+    const next = f.port.readBatch(request(['5', '6', '7', '8']))
+    await vi.advanceTimersByTimeAsync(0)
+    expect(resolve).toHaveBeenCalledTimes(4)
+    expect(await f.port.readBatch(request(['9']))).toMatchObject({ state: 'refused', reason: 'budget-exceeded' })
+    gate.resolve(undefined)
+    expect(await next).toMatchObject({ state: 'complete', bytes: 16n })
+  })
+  it('keeps reservations isolated between subject ports', async () => {
+    vi.useFakeTimers()
+    const gate = deferred<undefined>()
+    const resolve = vi.fn(async (req: LogicalResourceRequirement) => {
+      await gate.promise
+      return resolved(req.id).resolution
+    })
+    const firstPort = fixture(resolve), secondPort = fixture(resolve)
+    const first = firstPort.port.readBatch(request(['1', '2', '3', '4']))
+    const second = secondPort.port.readBatch(request(['5', '6', '7', '8']))
+    await vi.advanceTimersByTimeAsync(0)
+    expect(resolve).toHaveBeenCalledTimes(8)
+    gate.resolve(undefined)
+    expect(await first).toMatchObject({ state: 'complete', bytes: 16n })
+    expect(await second).toMatchObject({ state: 'complete', bytes: 16n })
+  })
   it('caps active work at four and returns source order after out-of-order completion', async () => {
     const pending = Array.from({ length: 6 }, () => deferred<Uint8Array>())
     const leases = pending.map((p, index) => resolved(String(index), async () => p.promise))
