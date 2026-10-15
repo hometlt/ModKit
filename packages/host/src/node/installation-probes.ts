@@ -128,6 +128,8 @@ export function createNodeInstallationProbes(
           // no default value in this view
         }
       }
+      // The second view only fills missing values; it cannot replace an answered one.
+      if (names.every(name => found[name] !== undefined)) break
     }
     return Object.freeze(found)
   }

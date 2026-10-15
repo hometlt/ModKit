@@ -12,6 +12,36 @@ const work = await mkdtemp(join(tmpdir(), 'modkit-installation-probes-'))
 afterAll(() => rm(work, { recursive: true, force: true }))
 
 describe('installation probes of a desktop host', () => {
+  it('does not launch the 32-bit query after the 64-bit view answers every requested value', async () => {
+    const calls: string[][] = []
+    const probes = createNodeInstallationProbes({
+      platform: 'win32',
+      async runRegistry(args) {
+        calls.push([...args])
+        return '    InstallPath    REG_SZ    C:/Games/Game\n    Version    REG_SZ    1.2\n'
+      },
+    })
+    expect(await probes.registryValues('HKLM', 'SOFTWARE\\Game', ['InstallPath', 'Version']))
+      .toEqual({ InstallPath: 'C:/Games/Game', Version: '1.2' })
+    expect(calls).toEqual([['query', 'HKLM\\SOFTWARE\\Game', '/reg:64']])
+  })
+
+  it('retains the 32-bit fallback and 64-bit priority when the first view is incomplete', async () => {
+    const calls: string[][] = []
+    const probes = createNodeInstallationProbes({
+      platform: 'win32',
+      async runRegistry(args) {
+        calls.push([...args])
+        return args.includes('/reg:64')
+          ? '    InstallPath    REG_SZ    C:/Games/64\n'
+          : '    InstallPath    REG_SZ    C:/Games/32\n    Version    REG_SZ    1.2\n'
+      },
+    })
+    expect(await probes.registryValues('HKLM', 'SOFTWARE\\Game', ['InstallPath', 'Version']))
+      .toEqual({ InstallPath: 'C:/Games/64', Version: '1.2' })
+    expect(calls).toHaveLength(2)
+  })
+
   it('finds a Steam app through libraryfolders.vdf and its app manifest', async () => {
     const steam = join(work, 'Steam')
     const library = join(work, 'SteamLibrary')
@@ -118,9 +148,11 @@ describe('installation probes of a desktop host', () => {
   })
 
   it('reads a key with a colon and its default value under a localized name', async () => {
+    const calls: string[][] = []
     const probes = createNodeInstallationProbes({
       platform: 'win32',
       async runRegistry(args) {
+        calls.push([...args])
         if (!args.includes('/reg:64')) return ''
         return args.includes('/ve')
           ? '    (По умолчанию)    REG_SZ    D:/Games/Dune 2000\r\n'
@@ -133,5 +165,9 @@ describe('installation probes of a desktop host', () => {
         'Language',
       ]),
     ).toEqual({ '': 'D:/Games/Dune 2000', Language: 'ru' })
+    expect(calls).toEqual([
+      ['query', 'HKLM\\SOFTWARE\\Dune 2000: Gruntmods Edition', '/reg:64'],
+      ['query', 'HKLM\\SOFTWARE\\Dune 2000: Gruntmods Edition', '/ve', '/reg:64'],
+    ])
   })
 })
