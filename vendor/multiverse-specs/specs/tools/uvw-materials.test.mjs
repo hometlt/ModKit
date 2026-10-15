@@ -67,6 +67,25 @@ test('projected terrain equals the material fixture checked by the shared schema
   assert.deepEqual(result.material, expected)
 })
 
+test('terrain image encoding metadata never silently becomes a different glTF channel convention', () => {
+  for (const normalEncoding of ['rgb-inverted-y', 'xy-in-alpha-green']) {
+    const source = { id: 'ground', normalResourceId: 'normal', normalEncoding }
+    const before = JSON.stringify(source)
+    assert.throws(() => projectUvwMaterial('terrain', source, policy, resources), /material-terrain-encoding/)
+    assert.equal(JSON.stringify(source), before)
+  }
+  assert.throws(() => projectUvwMaterial('terrain', {
+    id: 'ground', specularResourceId: 'specular', specularEncoding: 'gloss',
+  }, { ...policy, specularEncoding: 'strength-alpha' }, resources), /material-terrain-encoding/)
+  const rgb = projectUvwMaterial('terrain', {
+    id: 'ground', normalResourceId: 'normal', normalEncoding: 'rgb',
+  }, policy, resources)
+  assert.equal(rgb.material.normalTexture.index, 0)
+  assert.equal(rgb.retained.normalEncoding, 'rgb')
+  for (const field of ['normalEncoding', 'specularEncoding'])
+    assert.throws(() => projectUvwMaterial('terrain', { id: 'ground', [field]: 'guess' }, policy), /material-terrain-encoding/)
+})
+
 test('UV pivot conversion preserves corners, centres, reflections and nonuniform scale', () => {
   const apply = (uv, t, c) => {
     const x = (uv[0] - c) * t.scale[0], y = (uv[1] - c) * t.scale[1]

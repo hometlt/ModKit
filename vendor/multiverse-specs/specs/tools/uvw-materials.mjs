@@ -40,6 +40,15 @@ export function projectUvwMaterial(kind, source, policy, resources = {}) {
     refuse('material-source-field', 'Unknown or mixed legacy/glTF fields cannot be dropped')
   // Refuse non-JSON input before any projection. Neither source nor policy is mutated.
   try { jcsStringify(source) } catch { refuse('material-source', 'Source must be finite JSON') }
+  if (kind === 'terrain') {
+    for (const field of ['normalEncoding', 'specularEncoding'])
+      if (source[field] !== undefined && !known[field].enum.includes(source[field]))
+        refuse('material-terrain-encoding', `Unknown ${field}`)
+    // A texture binding is an address, not proof of channel conversion or native BRDF parity.
+    if ((source.normalResourceId !== undefined && source.normalEncoding !== undefined && source.normalEncoding !== 'rgb')
+      || (source.specularResourceId !== undefined && source.specularEncoding === 'gloss'))
+      refuse('material-terrain-encoding', 'Native normal/gloss channels need a qualified conversion before glTF material projection')
+  }
   if (!policy || !unit(policy.metallicFactor) || !unit(policy.roughnessFactor)
     || !['OPAQUE', 'MASK', 'BLEND'].includes(policy.alphaMode)
     || (policy.alphaCutoff !== undefined && (!finite(policy.alphaCutoff) || policy.alphaCutoff < 0))

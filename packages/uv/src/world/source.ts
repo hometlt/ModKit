@@ -709,6 +709,8 @@ export function createUvwWorldSceneSource(
                     ...(material.uvTransform === undefined
                       ? {}
                       : { uvTransform: material.uvTransform }),
+                    ...(material.normalEncoding === undefined ? {} : { normalEncoding: material.normalEncoding }),
+                    ...(material.specularEncoding === undefined ? {} : { specularEncoding: material.specularEncoding }),
                   }),
                 ),
               ),

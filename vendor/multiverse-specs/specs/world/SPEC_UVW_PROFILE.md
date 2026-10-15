@@ -115,6 +115,15 @@ The legacy candidate envelope does not gain this profile-only field.
    offset is post-transform translation, scale components are non-zero and rotation is
    in radians. This order represents Warzone per-tile X/Y flips and quarter-turns
    without native flag leakage and also covers SC2 layer tiling/rotation.
+   Each terrain material may retain its image-channel conventions. `normalEncoding` is
+   `rgb` (omission), `rgb-inverted-y` (Y opposes texture v), or `xy-in-alpha-green`
+   (X in alpha, Y in green, positive Z reconstructed). `specularEncoding` is `color`
+   (omission) or `gloss`: the red sample g contributes g squared times a lobe whose
+   exponent is the terrain specular exponent times (1 minus g squared), multiplied
+   by the light-facing normal term. These fields are independent of image resource IDs;
+   an omitted default stays omitted. They do not authorize treating native gloss as
+   glTF roughness or native normal channels as ordinary glTF RGB normals. A target
+   projector without qualified conversion must refuse those active texture semantics.
    Each terrain material may carry `baseColorFactor`: four linear, straight
    RGBA numbers in `[0,1]`, interpreted as `[1,1,1,1]` when absent. The factor
    multiplies the linear base-color texture sample; with no texture, it supplies

@@ -271,6 +271,7 @@ const KEPT_FIELDS: Readonly<Record<string, ReadonlySet<string>>> = Object.freeze
     'materialId', 'label', 'classification', 'sourceIndex', 'atlas', 'baseColorFactor',
     'baseColorResourceId', 'baseColorResource', 'normalResourceId', 'normalResource',
     'specularResourceId', 'specularResource', 'uvTransform', 'overlayAlpha',
+    'normalEncoding', 'specularEncoding',
   ]),
   'water.materials': new Set([
     'materialId', 'label', 'classification', 'shorelineMode', 'color',
@@ -507,6 +508,8 @@ async function reconstructLayer(
               ? {}
               : { specularResourceId: resource(material.specularResourceId)! }),
             ...(material.uvTransform === undefined ? {} : { uvTransform: material.uvTransform }),
+            ...(material.normalEncoding === undefined ? {} : { normalEncoding: material.normalEncoding }),
+            ...(material.specularEncoding === undefined ? {} : { specularEncoding: material.specularEncoding }),
           }),
         ),
       ),
@@ -706,6 +709,8 @@ async function reconstructLayer(
               ? {}
               : { specularResourceId: resources(material.specularResourceId)! }),
             ...(material.uvTransform === undefined ? {} : { uvTransform: material.uvTransform }),
+            ...(material.normalEncoding === undefined ? {} : { normalEncoding: material.normalEncoding }),
+            ...(material.specularEncoding === undefined ? {} : { specularEncoding: material.specularEncoding }),
           }),
         ),
       ),

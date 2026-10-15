@@ -3,16 +3,16 @@
   "schemaVersion": "multiverse-specs-pin-1",
   "source": {
     "repository": "multiverse (sibling repository)",
-    "commit": "d813d1f7c70ac136f1a862a8af0ed9e282a2018c",
-    "subject": "Preserve up to 64 terrain material weight channels in UVW",
-    "committedOn": "2026-10-15T19:23:30+04:00"
+    "commit": "61f972d2ffae859191d734ed56b87fc200b84b58",
+    "subject": "Define terrain image-channel conventions without guessing glTF conversion",
+    "committedOn": "2026-10-15T19:46:11+04:00"
   },
   "generator": "scripts/specs-pin.mjs",
   "generatedFrom": "git objects, not the sibling working tree",
   "prefix": "specs/",
   "counts": {
     "files": 313,
-    "bytes": 2163299
+    "bytes": 2169667
   },
   "files": [
     {
@@ -182,8 +182,8 @@
     },
     {
       "path": "specs/conformance/schema-assertions.json",
-      "bytes": 142860,
-      "digest": "sha256:6ed8bf4da33f23f2a0fe713138d07233ad1bc8fbf421714f842aa63ad26e5719"
+      "bytes": 145491,
+      "digest": "sha256:519748087cb80797a8b6df5a8e61b4f54e4f1c25f9e63f9370ac9f5325702a2a"
     },
     {
       "path": "specs/conformance/state/vectors.json",
@@ -1257,13 +1257,13 @@
     },
     {
       "path": "specs/tools/uvw-materials.mjs",
-      "bytes": 11535,
-      "digest": "sha256:98510ae649eb27ae9757e3b73a51518fb04f84c46073f5ea48fc5de9cba432d0"
+      "bytes": 12222,
+      "digest": "sha256:cb0ff464b3c83d396e691b1168103c67a5be763a5d015457c35e64bda510d881"
     },
     {
       "path": "specs/tools/uvw-materials.test.mjs",
-      "bytes": 12613,
-      "digest": "sha256:2158badd1619df680081d97d80de6d2861bf5cccfe179052fae45ed64212a300"
+      "bytes": 13744,
+      "digest": "sha256:4b925bf596c4c3fe03dd7b4de9591cb1c477bc09d09290ee2334d09ab9ade41d"
     },
     {
       "path": "specs/tools/uvw-players.ts",
@@ -1357,8 +1357,8 @@
     },
     {
       "path": "specs/world/SPEC_UVW_GLTF.md",
-      "bytes": 24997,
-      "digest": "sha256:28a34f5762a1396c7b8b5d7fc7d637bd5b14d8764e541b4567c37433445c4be7"
+      "bytes": 25490,
+      "digest": "sha256:0d7608fbff0d5e6f9b5d2c6edb7948eea20d76382760b387872b011d2ad143d6"
     },
     {
       "path": "specs/world/SPEC_UVW_GLTF_PAGES.md",
@@ -1367,8 +1367,8 @@
     },
     {
       "path": "specs/world/SPEC_UVW_PROFILE.md",
-      "bytes": 29707,
-      "digest": "sha256:fe9cf5256b6e6ec137afb879770d0b9cade5e18672828be2575bad13719e6d39"
+      "bytes": 30471,
+      "digest": "sha256:deefa9cb77fe9418e88e7550e67d7451edb47b51a594c5fc90755603592e84e5"
     },
     {
       "path": "specs/world/fixtures/invalid/connections-not-empty.uvw.json",
@@ -1577,8 +1577,8 @@
     },
     {
       "path": "specs/world/schema/uvw.profile.v1.schema.json",
-      "bytes": 42657,
-      "digest": "sha256:6803e5b7a86ac149d0ef1567dba55b40370580c59294240d90c9c7b992a33ccf"
+      "bytes": 43319,
+      "digest": "sha256:13ef3b235b9be989e0c57131b694b77516d75b57f8ca8b6ac93cd19a34d2ee28"
     }
   ]
 }

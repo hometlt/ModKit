@@ -788,8 +788,6 @@ describe('production world to UVW materializer', () => {
     if (result.state !== 'materialized') return
     expect(result.lostFields).toContainEqual({ path: 'world.terrain-materials.materials.overlayAlpha', count: 1 })
     const catalogLosses = [
-      { path: 'world.terrain-materials.materials.normalEncoding', count: 2 },
-      { path: 'world.terrain-materials.materials.specularEncoding', count: 1 },
       ...['compositing', 'occludedLikeTerrain', 'causticsFalloff', 'normalResourceId', 'causticsFrameResourceIds']
         .map(field => ({ path: `world.water.materials.${field}`, count: 1 })),
     ]
@@ -800,6 +798,9 @@ describe('production world to UVW materializer', () => {
     expect(layer?.kind).toBe('terrain-materials')
     if (layer?.kind !== 'terrain-materials') return
     expect(layer.materials.map(material => material.id)).toEqual(['material-ground-a-red', 'material-ground-a-yellow'])
+    expect(layer.materials.map(material => material.normalEncoding)).toEqual(['rgb-inverted-y', 'rgb-inverted-y'])
+    expect(layer.materials.map(material => material.specularEncoding)).toEqual(['gloss', undefined])
+    expect(result.lostFields.some(field => /(?:normal|specular)Encoding$/.test(field.path))).toBe(false)
     expect(layer.materials.map(material => material.baseColorFactor)).toEqual([[0.5, 0.25, 1, 1], undefined])
     expect(layer.samples?.[0]?.map(sample => sample.weights?.[0]?.materialId)).toEqual([
       'material-ground-a-yellow', 'material-ground-a-red',
@@ -848,6 +849,7 @@ describe('production world to UVW materializer', () => {
       expect(raster?.kind).toBe('terrain-materials')
       if (raster?.kind === 'terrain-materials') {
         expect(raster.weightRasters?.[0]?.materialIds).toEqual(['material-ground-a-yellow', 'material-ground-a-red'])
+        expect(raster.materials.map(material => material.normalEncoding)).toEqual(['rgb-inverted-y', 'rgb-inverted-y'])
         expect(raster.materials.find(material => material.id === 'material-ground-a-red')?.baseColorFactor)
           .toEqual([0.5, 0.25, 1, 1])
       }

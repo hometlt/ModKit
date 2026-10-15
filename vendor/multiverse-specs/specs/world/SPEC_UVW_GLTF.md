@@ -117,6 +117,13 @@ still refuses per-material textures/`uvTransform` and resource layers. The expli
 preparer maps them with caller policies and preserves retained source fields;
 its result alone is not proof of matching native pixels.
 
+Legacy terrain `normalEncoding` and `specularEncoding` describe source image channels,
+not texture addresses. The current standard glTF material projector refuses active
+inverted/swizzled normal images and native gloss: a named texture binding alone does
+not prove channel conversion or BRDF equivalence. Explicit ordinary RGB metadata remains
+in the addressed retained source fields. These refusals preserve the source; they do not
+silently replace the native convention with glTF defaults.
+
 The opt-in raster path stores `weightAuthoring:"raster"` and one to sixteen
 `weightRasters` instead of inline `samples` (up to 64 distinct material channels,
 normalized together across the entire layer). Readers pinned to the earlier two-raster

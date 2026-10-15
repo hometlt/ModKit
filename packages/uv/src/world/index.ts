@@ -77,7 +77,11 @@ export interface UvwTerrainMaterial {
   readonly baseColorFactor?: readonly [number, number, number, number]
   readonly baseColorResourceId?: string
   readonly normalResourceId?: string
+  /** Tangent normal channels; omission is RGB with Y along the texture's v direction. */
+  readonly normalEncoding?: 'rgb' | 'rgb-inverted-y' | 'xy-in-alpha-green'
   readonly specularResourceId?: string
+  /** Omission is specular colour; gloss uses the terrain shader's red-channel convention. */
+  readonly specularEncoding?: 'color' | 'gloss'
   readonly uvTransform?: UvwUvTransform
 }
 
@@ -844,7 +848,9 @@ function terrainMaterialsLayer(
         'baseColorFactor',
         'baseColorResourceId',
         'normalResourceId',
+        'normalEncoding',
         'specularResourceId',
+        'specularEncoding',
         'uvTransform',
       ],
       ['id'],
@@ -874,6 +880,13 @@ function terrainMaterialsLayer(
       material[key] === undefined
         ? undefined
         : layerId(material[key], `${materialPath}.${key}`, state, depth + 3)
+    const normalEncoding = material['normalEncoding']
+    if (normalEncoding !== undefined && normalEncoding !== 'rgb' &&
+      normalEncoding !== 'rgb-inverted-y' && normalEncoding !== 'xy-in-alpha-green')
+      fail('invalid terrain normalEncoding', `${materialPath}.normalEncoding`)
+    const specularEncoding = material['specularEncoding']
+    if (specularEncoding !== undefined && specularEncoding !== 'color' && specularEncoding !== 'gloss')
+      fail('invalid terrain specularEncoding', `${materialPath}.specularEncoding`)
     let atlas: UvwTerrainMaterial['atlas']
     if (material['atlas'] !== undefined) {
       const atlasPath = `${materialPath}.atlas`
@@ -909,9 +922,11 @@ function terrainMaterialsLayer(
       ...(optionalId('normalResourceId') === undefined
         ? {}
         : { normalResourceId: optionalId('normalResourceId')! }),
+      ...(normalEncoding === undefined ? {} : { normalEncoding }),
       ...(optionalId('specularResourceId') === undefined
         ? {}
         : { specularResourceId: optionalId('specularResourceId')! }),
+      ...(specularEncoding === undefined ? {} : { specularEncoding }),
       ...(material['uvTransform'] === undefined
         ? {}
         : {

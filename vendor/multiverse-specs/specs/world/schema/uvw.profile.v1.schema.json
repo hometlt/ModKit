@@ -511,7 +511,15 @@
         },
         "baseColorResourceId": { "$ref": "#/$defs/localId" },
         "normalResourceId": { "$ref": "#/$defs/localId" },
+        "normalEncoding": {
+          "description": "Tangent normal image channels: RGB XYZ with Y along texture v (default), RGB with inverted Y, or X in alpha/Y in green with positive Z reconstructed. Omitted defaults are not injected.",
+          "enum": ["rgb", "rgb-inverted-y", "xy-in-alpha-green"]
+        },
         "specularResourceId": { "$ref": "#/$defs/localId" },
+        "specularEncoding": {
+          "description": "Specular colour (default), or native terrain gloss in red: g squared scales a lobe whose exponent is terrain exponent times (1 minus g squared). This is not a glTF roughness or specular-strength channel. Omitted defaults are not injected.",
+          "enum": ["color", "gloss"]
+        },
         "uvTransform": { "$ref": "#/$defs/uvTransform" }
       }
     },
