@@ -7,6 +7,31 @@ const disposable = () => ({ dispose: noop })
 const token = { isCancellationRequested: false, onCancellationRequested: disposable }
 const uri = 'untitled:Main.fixturelang'
 
+test('optional preparation starts once after client initialization and preserves watched-file registration', async () => {
+  let preparations = 0
+  const h = harness({ clientInitialized: () => { preparations++ } })
+  try {
+    assert.equal(preparations, 0)
+    await h.request('onInitialize', {
+      capabilities: { workspace: { didChangeWatchedFiles: { dynamicRegistration: true } } },
+    })
+    assert.equal(preparations, 0)
+    await h.request('onInitialized', {})
+    assert.equal(preparations, 1)
+    assert.ok(h.calls.some(call => call[0] === 'register-watchers'))
+    await h.request('onInitialized', {})
+    assert.equal(preparations, 1)
+  } finally { await h.server.close() }
+})
+
+test('a closed server does not begin optional preparation on a late initialized notification', async () => {
+  let preparations = 0
+  const h = harness({ clientInitialized: () => { preparations++ } })
+  await h.server.close()
+  await h.request('onInitialized', {})
+  assert.equal(preparations, 0)
+})
+
 test('rename keeps the captured open version and uses null for an unopened LSP target', async () => {
   const h = harness({ withRename: true })
   h.open(7, 'Marine')
@@ -26,6 +51,7 @@ function harness({
   blockAllDiagnostics = false,
   blockCompletion = false,
   completionItems = [],
+  clientInitialized,
 } = {}) {
   const handlers = new Map()
   const calls = []
@@ -55,6 +81,7 @@ function harness({
   const connection = new Proxy(
     {
       console: { error: message => calls.push(['error', message]), warn: noop },
+      client: { register: async () => { calls.push(['register-watchers']) } },
       languages: {
         diagnostics: { on: handler => handlers.set('diagnostic', handler) },
         inlayHint: { on: handler => handlers.set('inlayHint', handler) },
@@ -173,6 +200,7 @@ function harness({
     maxDocuments: 4,
     maxDocumentBytes: 1024,
     maxWorkspaceBytes: 4096,
+    ...(clientInitialized === undefined ? {} : { clientInitialized }),
   })
   server.listen()
   return {

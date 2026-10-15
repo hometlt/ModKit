@@ -154,8 +154,6 @@ export async function runModkitLsp(argv: readonly string[]) {
       uriOf: target => (typeof target === 'string' ? pathToFileURL(target).href : undefined),
       maxDocumentBytes: configuration.maxDocumentBytes,
     })
-    // The servers build their Data while the client starts up; the first request finds it ready.
-    void modContexts.prepare()
     for (const item of projected.diagnostics)
       process.stderr.write(errorLine(item.code, item.message))
     dependencySources.push(...projected.sources)
@@ -210,7 +208,13 @@ export async function runModkitLsp(argv: readonly string[]) {
     maxDocuments: configuration.maxDocuments,
     maxDocumentBytes: configuration.maxDocumentBytes,
     maxWorkspaceBytes: configuration.maxWorkspaceBytes,
-    ...(modContexts === undefined ? {} : { filesChanged: () => modContexts!.invalidate() }),
+    ...(modContexts === undefined ? {} : {
+      filesChanged: () => modContexts!.invalidate(),
+      clientInitialized: () => {
+        // Optional warming starts after the handshake and yields to queries through the shared owner.
+        void modContexts!.prepare(undefined, true)
+      },
+    }),
   })
   server.listen()
   let closed: Promise<void> | undefined

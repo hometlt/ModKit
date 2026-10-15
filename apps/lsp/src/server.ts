@@ -272,6 +272,8 @@ export interface ModkitLanguageServerOptions {
   readonly connection?: Connection
   /** Files inside the roots changed on disk: the loaded mods' servers read them again first. */
   readonly filesChanged?: () => Promise<void>
+  /** Schedule optional background work after the client handshake; never block readiness on it. */
+  readonly clientInitialized?: () => void
 }
 
 export interface RunningModkitLanguageServer {
@@ -317,6 +319,7 @@ export function createModkitLanguageServer(
   const encoder = new TextEncoder()
   let supportsDynamicWatchedFiles = false
   let shutDown = false
+  let clientReady = false
   const completionTriggerCharacters = languageProviderTriggerCharacters(
     options.routes,
     'completion',
@@ -786,6 +789,9 @@ export function createModkitLanguageServer(
     } satisfies InitializeResult
   })
   connection.onInitialized(async () => {
+    if (shutDown || clientReady) return
+    clientReady = true
+    options.clientInitialized?.()
     if (!supportsDynamicWatchedFiles) return
     await connection.client.register(DidChangeWatchedFilesNotification.type, {
       watchers: options.roots.map(root => ({
