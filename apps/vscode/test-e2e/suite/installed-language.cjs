@@ -1357,11 +1357,25 @@ exports.run = async function run() {
       throw new Error('Undo fixture did not regain the Galaxy editor focus')
     if (!receipt.undoProbe.focusedWindow)
       throw new Error('Native Undo fixture lost its test-window focus')
-    await vscode.commands.executeCommand('undo')
+    // Keep renderer focus restoration and the focus-routed Undo in one command sequence.
+    await vscode.commands.executeCommand('runCommands', {
+      commands: [
+        'workbench.action.focusWindow',
+        'workbench.action.focusActiveEditorGroup',
+        'undo',
+      ],
+    })
     if (await waitFor(() => documents.galaxy.getText() === originalGalaxyText)) {
       // The undo restored the dependency call before any save.
     } else {
       receipt.undoProbe.afterText = documents.galaxy.getText()
+      receipt.undoProbe.afterVersion = documents.galaxy.version
+      receipt.undoProbe.afterActiveUri = vscode.window.activeTextEditor?.document.uri.toString()
+      receipt.undoProbe.afterFocusedWindow = vscode.window.state.focused
+      receipt.undoProbe.activeTab = vscode.window.tabGroups.activeTabGroup.activeTab?.label
+      receipt.undoProbe.dirtyDocuments = vscode.workspace.textDocuments
+        .filter(document => document.isDirty)
+        .map(document => ({ uri: document.uri.toString(), version: document.version }))
       throw new Error('undo did not restore the unsaved Galaxy overlay')
     }
     receipt.undoProbe.afterVersion = documents.galaxy.version
