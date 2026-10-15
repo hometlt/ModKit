@@ -1,4 +1,12 @@
-/** Host-composed execution mechanisms. Security admission remains in security/gate.ts. */
+/** Host-composed execution mechanisms; artifact security admission stays in security/gate.ts.
+ * Optional trusted Node worker capacity belongs to one composition-root registry shared across
+ * subjects/activations/generations, not a per-document/client allowance. Pending and warm live
+ * realms remain charged; only an actual resolved Node exit or known pre-spawner rollback frees
+ * capacity. Root close is terminal, with uncertain exit retained. This does not bound memory/RSS,
+ * supervise browser exit or expose a voxel operation; no new public package/barrel export.
+ * Existing unconfigured generic backends retain their behavior. A bounded client must require
+ * explicit root policy. Global-symbol captured owners preserve separately bundled Host identity.
+ */
 
 import { ModkitError, throwIfAborted } from '@modkit/core'
 import type {
@@ -10,6 +18,8 @@ import type {
 import type { ActivationTicket } from '../security/gate.js'
 
 export interface ExecutionBackendActivation {
+  /** Trusted registry-owned allowance, never chosen by an activation/job. Node only for now. */
+  readonly workerAdmission?: WorkerRealmAdmission | undefined
   /** A gate-issued ticket that has already passed identity/digest/target checks. */
   readonly ticket: ActivationTicket
   readonly entrypoint: URL
@@ -63,6 +73,27 @@ interface BackendBinding {
   readonly activate: ExecutionBackend['activate']
 }
 
+/** One pending/spawned generation; only the existing Node realm owner reports its actual exit. */
+export interface WorkerRealmReservation {
+  /** Refuse a root closed while asynchronous pre-spawn work was pending. */
+  beginSpawn(): void
+  /** Attach the actual Node exit promise, not a reply, release or terminate acknowledgement. */
+  observeExit(exit: Promise<unknown>, terminate: () => Promise<unknown>): void
+  /** Refund only before entering the spawner; a thrown spawn call is not proof no Worker exists. */
+  rollbackBeforeSpawn(): void
+}
+
+/** Shared by every subject/activation/generation under one trusted composition root. */
+export interface WorkerRealmAdmission {
+  reserve(): WorkerRealmReservation
+}
+
+interface RegistryLifetime {
+  readonly admission: WorkerRealmAdmission | undefined
+  readonly closed: boolean
+  close(): Promise<void>
+}
+
 const PROFILE_VALUES: readonly ExecutionProfile[] = Object.freeze([
   'browser-sandbox',
   'worker-brokered',
@@ -79,6 +110,92 @@ const PROFILE_VALUES: readonly ExecutionProfile[] = Object.freeze([
  * still carries no bindings and is refused.
  */
 const REGISTRY_BINDINGS = Symbol.for('x3.host/execution-backend-registry-bindings')
+// Like the bindings, carry the actual owner object across separately published Host bundles.
+const REGISTRY_LIFETIME = Symbol.for('x3.host/execution-backend-registry-lifetime')
+
+/** Read the captured owner, never reconstruct an allowance from a client or a copied registry. */
+function lifetimeOf(registry: ExecutionBackendRegistry): RegistryLifetime {
+  const lifetime = (registry as unknown as Record<symbol, unknown>)[REGISTRY_LIFETIME]
+  if (bindingsOf(registry) === undefined || lifetime === undefined)
+    throw invalid('execution backend registry was not created by this host')
+  return lifetime as RegistryLifetime
+}
+
+/** Root policy is opt-in; pending generations and warm live workers both occupy slots. */
+function registryLifetime(maxWorkerRealms: number | undefined): RegistryLifetime {
+  if (maxWorkerRealms !== undefined &&
+      (!Number.isSafeInteger(maxWorkerRealms) || maxWorkerRealms < 1))
+    throw invalid('maxWorkerRealms must be a positive safe integer')
+  let closed = false
+  let closing: Promise<void> | undefined
+  const held = new Set<{ done: Promise<void>; stop?: () => Promise<unknown> }>()
+  const admission: WorkerRealmAdmission | undefined = maxWorkerRealms === undefined ? undefined : Object.freeze({
+    /** Reserve synchronously, before a generation can start digest/graph I/O or spawn. */
+    reserve(): WorkerRealmReservation {
+      if (closed) throw invalid('execution backend root is closed')
+      if (held.size >= maxWorkerRealms) throw new ModkitError({
+        code: 'x3.host/worker-capacity-exceeded', message: 'host root worker capacity is occupied',
+        retryability: 'never',
+      })
+      let finish!: () => void
+      const record: { done: Promise<void>; stop?: () => Promise<unknown> } = {
+        done: new Promise<void>(resolve => { finish = resolve }),
+      }
+      held.add(record)
+      let phase: 'pending' | 'spawning' | 'running' | 'finished' = 'pending'
+      /** A completed reservation cannot release a later generation's slot. */
+      const release = (): void => { held.delete(record); phase = 'finished'; finish() }
+      return Object.freeze({
+        /** Root closure wins even when it occurred during the digest await. */
+        beginSpawn(): void {
+          if (phase !== 'pending' || closed) throw invalid('worker reservation cannot spawn')
+          phase = 'spawning'
+        },
+        /** Only resolution of the real exit promise refunds; rejection stays charged. */
+        observeExit(exit: Promise<unknown>, terminate: () => Promise<unknown>): void {
+          if (phase !== 'spawning') throw invalid('worker reservation cannot observe exit')
+          phase = 'running'
+          record.stop = terminate
+          void exit.then(release, () => undefined)
+          if (closed) void Promise.resolve().then(terminate).catch(() => undefined)
+        },
+        /** Only the trusted pre-spawn path can prove no Worker construction was attempted. */
+        rollbackBeforeSpawn(): void {
+          if (phase === 'running' || phase === 'spawning')
+            throw invalid('a spawned or uncertain worker needs observed exit')
+          if (phase !== 'finished') release()
+        },
+      })
+    },
+  })
+  return Object.freeze({
+    admission,
+    get closed() { return closed },
+    /** Close admission immediately; stop through existing owners, wait on exit/never-spawned rollback. */
+    close(): Promise<void> {
+      if (closing !== undefined) return closing
+      closed = true
+      const pending = [...held]
+      for (const record of pending)
+        if (record.stop !== undefined) void Promise.resolve().then(record.stop).catch(() => undefined)
+      closing = Promise.all(pending.map(record => record.done)).then(() => undefined)
+      return closing
+    },
+  })
+}
+
+/** Future bounded kernel clients must require this existing root, never create their own budget. */
+export function requireWorkerRealmAdmission(registry: ExecutionBackendRegistry): WorkerRealmAdmission {
+  const lifetime = lifetimeOf(registry)
+  if (lifetime.closed || lifetime.admission === undefined)
+    throw invalid('an open host root with explicit worker policy is required')
+  return lifetime.admission
+}
+
+/** Terminal root teardown; does not reset the allowance or infer exit from a release/acknowledgement. */
+export function closeExecutionBackendRegistry(registry: ExecutionBackendRegistry): Promise<void> {
+  return lifetimeOf(registry).close()
+}
 
 function bindingsOf(
   registry: ExecutionBackendRegistry,
@@ -93,8 +210,9 @@ function invalid(message: string): ModkitError {
 
 export function createExecutionBackendRegistry(
   backends: readonly ExecutionBackend[],
-  options: { readonly inProcessTarget?: RuntimeTarget } = {},
+  options: { readonly inProcessTarget?: RuntimeTarget; readonly maxWorkerRealms?: number } = {},
 ): ExecutionBackendRegistry {
+  const lifetime = registryLifetime(options.maxWorkerRealms)
   const bindings = new Map<ExecutionProfile, BackendBinding>()
   for (const [index, backend] of backends.entries()) {
     if (typeof backend !== 'object' || backend === null) {
@@ -125,7 +243,7 @@ export function createExecutionBackendRegistry(
     ): boolean {
       try {
         const binding = bindings.get(profile)
-        if (binding === undefined || variant.executionProfile !== profile) return false
+        if (lifetime.closed || binding === undefined || variant.executionProfile !== profile) return false
         return binding.supports(target, variant) === true
       } catch {
         return false
@@ -138,6 +256,7 @@ export function createExecutionBackendRegistry(
     writable: false,
     configurable: false,
   })
+  Object.defineProperty(registry, REGISTRY_LIFETIME, { value: lifetime })
   return Object.freeze(registry)
 }
 
@@ -151,6 +270,8 @@ export async function activateExecutionBackend(
   if (bindings === undefined) {
     throw invalid('execution backend registry was not created by this host')
   }
+  const lifetime = lifetimeOf(registry)
+  if (lifetime.closed) throw invalid('execution backend root is closed')
   const profile = context.variant.executionProfile
   const binding = bindings.get(profile)
   if (binding === undefined || !registry.supports(profile, context.target, context.variant)) {
@@ -162,6 +283,8 @@ export async function activateExecutionBackend(
   }
   const raw = await binding.activate({
     ...context,
+    // Overwrite a caller-supplied admission value even for an unconfigured root.
+    workerAdmission: lifetime.admission,
     entrypoint: new URL(context.entrypoint.href),
     artifactRoot: new URL(context.artifactRoot.href),
   })

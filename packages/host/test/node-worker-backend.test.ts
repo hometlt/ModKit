@@ -9,7 +9,31 @@ import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSy
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+
+// Force a setup failure AFTER an actual Worker exists, without adding a production callback seam.
+const workerSetupFault = vi.hoisted(() => ({
+  failStdout: false, constructions: 0, beforeThrow: undefined as (() => void) | undefined,
+  last: undefined as { threadId: number; exited: boolean; code?: number } | undefined,
+}))
+vi.mock('node:worker_threads', async importOriginal => {
+  const actual = await importOriginal<typeof import('node:worker_threads')>()
+  return { ...actual, Worker: class extends actual.Worker {
+    constructor(...args: ConstructorParameters<typeof actual.Worker>) {
+      super(...args)
+      workerSetupFault.constructions++
+      if (!workerSetupFault.failStdout) return
+      workerSetupFault.failStdout = false
+      const observation = { threadId: this.threadId, exited: false, code: undefined as number | undefined }
+      workerSetupFault.last = observation
+      this.once('exit', code => { observation.exited = true; observation.code = code })
+      Object.defineProperty(this, 'stdout', { get() {
+        workerSetupFault.beforeThrow?.()
+        throw new Error('forced post-construction stream setup failure')
+      } })
+    }
+  } }
+})
 import type { Diagnostic } from '@modkit/core'
 import type {
   AssetInput,
@@ -22,6 +46,8 @@ import type {
 import {
   activateExecutionBackend,
   createExecutionBackendRegistry,
+  closeExecutionBackendRegistry,
+  requireWorkerRealmAdmission,
   type ExecutionBackendActivation,
   type ExecutionModuleLease,
 } from '../src/execution/backend.js'
@@ -80,6 +106,89 @@ function activation(
 
 const leases: ExecutionModuleLease[] = []
 const tempDirs: string[] = []
+
+describe('node worker backend — root-wide admission before digest/spawn', () => {
+  it('a real post-construction setup failure stays charged until that thread actually exits', async () => {
+    const root = createExecutionBackendRegistry([backend()], { maxWorkerRealms: 1 })
+    const admission = requireWorkerRealmAdmission(root)
+    let checkedBeforeExit = false
+    workerSetupFault.failStdout = true
+    workerSetupFault.beforeThrow = () => {
+      expect(workerSetupFault.last?.threadId).toBeGreaterThan(0)
+      expect(workerSetupFault.last?.exited).toBe(false)
+      expect(() => admission.reserve()).toThrow(/capacity is occupied/u)
+      checkedBeforeExit = true
+    }
+    try {
+      await expect(activateExecutionBackend(root, activation(new URL('codec.mjs', fixtureRoot))))
+        .rejects.toThrow(/setup failed after construction/u)
+      expect(checkedBeforeExit).toBe(true)
+      await closeExecutionBackendRegistry(root)
+      expect(workerSetupFault.last?.exited).toBe(true)
+      expect(Number.isInteger(workerSetupFault.last?.code)).toBe(true)
+      console.info('A4_NODE_SETUP_EXIT', JSON.stringify({ ...workerSetupFault.last, checkedBeforeExit }))
+    } finally {
+      workerSetupFault.failStdout = false
+      workerSetupFault.beforeThrow = undefined
+    }
+  }, 20_000)
+
+  it('a reentrant trusted surfaces callback can close the root before the spawner is entered', async () => {
+    let root!: ReturnType<typeof createExecutionBackendRegistry>, closing!: Promise<void>
+    const before = workerSetupFault.constructions
+    const b = createNodeWorkerBackend({ bootstrapUrl, foreignSurfaces: () => {
+      closing = closeExecutionBackendRegistry(root)
+      return []
+    } })
+    root = createExecutionBackendRegistry([b], { maxWorkerRealms: 1 })
+    await expect(activateExecutionBackend(root, activation(new URL('codec.mjs', fixtureRoot))))
+      .rejects.toThrow(/cannot spawn/u)
+    await closing
+    expect(workerSetupFault.constructions).toBe(before)
+  }, 20_000)
+  it('holds a pending digest slot, refunds pre-spawn failure, and shares later worker capacity', async () => {
+    let rejectDigest!: (reason: Error) => void, digestEntered!: () => void
+    let firstDigest = true
+    const entered = new Promise<void>(resolve => { digestEntered = resolve })
+    const waiting = new Promise<void>((_resolve, reject) => { rejectDigest = reject })
+    const b = createNodeWorkerBackend({ bootstrapUrl, afterEntrypointDigest: async () => {
+      if (firstDigest) { firstDigest = false; digestEntered(); await waiting }
+    } })
+    const root = createExecutionBackendRegistry([b], { maxWorkerRealms: 1 })
+    const opening = activateExecutionBackend(root, activation(new URL('codec.mjs', fixtureRoot)))
+    const refusal = expect(opening).rejects.toThrow('digest refused')
+    await entered
+    await expect(activateExecutionBackend(root, activation(new URL('codec.mjs', fixtureRoot))))
+      .rejects.toMatchObject({ code: 'x3.host/worker-capacity-exceeded' })
+    rejectDigest(new Error('digest refused'))
+    await refusal
+    const lease = await activateExecutionBackend(root, activation(new URL('codec.mjs', fixtureRoot)))
+    leases.push(lease)
+    expect(() => requireWorkerRealmAdmission(root).reserve()).toThrow(/capacity is occupied/u)
+    await lease.release()
+    const unused = requireWorkerRealmAdmission(root).reserve()
+    unused.rollbackBeforeSpawn()
+    await closeExecutionBackendRegistry(root)
+  }, 20_000)
+
+  it('closing the root during a digest await prevents a worker being constructed afterward', async () => {
+    let continueDigest!: () => void, digestEntered!: () => void
+    const entered = new Promise<void>(resolve => { digestEntered = resolve })
+    const waiting = new Promise<void>(resolve => { continueDigest = resolve })
+    const b = createNodeWorkerBackend({ bootstrapUrl, afterEntrypointDigest: async () => {
+      digestEntered(); await waiting
+    } })
+    const root = createExecutionBackendRegistry([b], { maxWorkerRealms: 1 })
+    const opening = activateExecutionBackend(root, activation(new URL('codec.mjs', fixtureRoot)))
+    const refusal = expect(opening).rejects.toThrow(/cannot spawn/u)
+    await entered
+    const closing = closeExecutionBackendRegistry(root)
+    continueDigest()
+    await refusal
+    await closing
+    expect(() => requireWorkerRealmAdmission(root)).toThrow(/open host root/u)
+  }, 20_000)
+})
 
 describe('node worker backend — standard language provider', () => {
   it('carries entity commands and focused completion documentation through the public surface', async () => {
@@ -656,6 +765,31 @@ describe('node worker backend — restart is a new generation of the same sessio
   }
   const crashy = new URL('crashy.mjs', fixtureRoot)
   const sourceNamed = (path: string) => ({ ...byteSource([1, 2, 3]), ref: { kind: 'file', path } })
+
+  it('a failed restart load does not reuse the consumed initial reservation on the next restart', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'x3-admission-restart-'))
+    tempDirs.push(dir)
+    copyFileSync(crashy, join(dir, 'crashy.mjs'))
+    const artifactRoot = pathToFileURL(`${dir}/`)
+    const entrypoint = new URL('crashy.mjs', artifactRoot)
+    const root = createExecutionBackendRegistry([backend([], { maxRestartsPerLease: 2 })],
+      { maxWorkerRealms: 1 })
+    const lease = await activateExecutionBackend(root, activation(entrypoint, artifactRoot))
+    leases.push(lease)
+    const createCodec = lease.module['createCodec'] as (c: ContributionContext) => ProbeCodec
+    await expect(createCodec(context([])).probe({ source: sourceNamed('/crash'), plan: {} }))
+      .rejects.toMatchObject({ code: 'x3.host/rpc-peer-exited' })
+    writeFileSync(join(dir, 'crashy.mjs'), 'export const abiVersion = 999\n')
+    await expect(createCodec(context([])).probe({ source: sourceNamed('/failed-load'), plan: {} }))
+      .rejects.toMatchObject({ code: 'x3.host/artifact-digest-mismatch' })
+    copyFileSync(crashy, join(dir, 'crashy.mjs'))
+    const result = await createCodec(context([])).probe({ source: sourceNamed('/ok'), plan: {} })
+    expect(result['confidence']).toBe(1)
+    await lease.release()
+    const unused = requireWorkerRealmAdmission(root).reserve()
+    unused.rollbackBeforeSpawn()
+    await closeExecutionBackendRegistry(root)
+  }, 30_000)
 
   it('after the worker died, the next createCodec brings up generation 2; the old codec stays dead and no handle travels', async () => {
     const diagnostics: Diagnostic[] = []

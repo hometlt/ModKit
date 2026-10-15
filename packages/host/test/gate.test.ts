@@ -26,6 +26,83 @@ import {
 // White-box import: the free issuer is deliberately NOT part of the package surface, so
 // the provenance test reaches it through the module it lives in.
 import { issueActivationTicket, PROBE_OPERATION } from '../src/security/gate.js'
+import {
+  createExecutionBackendRegistry as createAdmissionRegistry,
+  requireWorkerRealmAdmission,
+  closeExecutionBackendRegistry,
+} from '../src/execution/backend.js'
+
+describe('composition-root Node worker admission', () => {
+  it('requires explicit trusted policy and rejects forged or spread roots', () => {
+    expect(() => requireWorkerRealmAdmission(createAdmissionRegistry([]))).toThrow(/explicit worker policy/u)
+    for (const maxWorkerRealms of [0, -1, NaN, Infinity, 1.5, Number.MAX_SAFE_INTEGER + 1])
+      expect(() => createAdmissionRegistry([], { maxWorkerRealms })).toThrow(/positive safe integer/u)
+    const root = createAdmissionRegistry([], { maxWorkerRealms: 1 })
+    expect(() => requireWorkerRealmAdmission({ ...root })).toThrow(/not created by this host/u)
+  })
+
+  it('charges pending reservations across clients and refunds only demonstrably unspawned work', async () => {
+    const root = createAdmissionRegistry([], { maxWorkerRealms: 1 })
+    const a = requireWorkerRealmAdmission(root), b = requireWorkerRealmAdmission(root)
+    expect(a).toBe(b)
+    const pending = a.reserve()
+    expect(() => b.reserve()).toThrow(/capacity is occupied/u)
+    pending.rollbackBeforeSpawn()
+    pending.rollbackBeforeSpawn()
+    const next = b.reserve()
+    expect(() => a.reserve()).toThrow(/capacity is occupied/u)
+    next.rollbackBeforeSpawn()
+    await closeExecutionBackendRegistry(root)
+    expect(() => a.reserve()).toThrow(/root is closed/u)
+    expect(() => requireWorkerRealmAdmission(root)).toThrow(/open host root/u)
+  })
+
+  it('does not refund from a terminate acknowledgement, and observes actual exit exactly once', async () => {
+    const root = createAdmissionRegistry([], { maxWorkerRealms: 1 })
+    const admission = requireWorkerRealmAdmission(root)
+    const reservation = admission.reserve()
+    let exit!: () => void, stops = 0, closed = false
+    const observedExit = new Promise<void>(resolve => { exit = resolve })
+    reservation.beginSpawn()
+    reservation.observeExit(observedExit, async () => { stops++ })
+    expect(() => reservation.rollbackBeforeSpawn()).toThrow(/observed exit/u)
+    const closing = closeExecutionBackendRegistry(root).then(() => { closed = true })
+    await Promise.resolve(); await Promise.resolve()
+    expect(stops).toBe(1)
+    expect(closed).toBe(false)
+    expect(() => admission.reserve()).toThrow(/root is closed/u)
+    exit()
+    await closing
+    expect(closed).toBe(true)
+    await closeExecutionBackendRegistry(root)
+    expect(stops).toBe(1)
+  })
+
+  it('root close is terminal while digest work is still pending, with no constructor permission', async () => {
+    const root = createAdmissionRegistry([], { maxWorkerRealms: 1 })
+    const reservation = requireWorkerRealmAdmission(root).reserve()
+    let closed = false
+    const closing = closeExecutionBackendRegistry(root).then(() => { closed = true })
+    await Promise.resolve()
+    expect(closed).toBe(false)
+    expect(() => reservation.beginSpawn()).toThrow(/cannot spawn/u)
+    reservation.rollbackBeforeSpawn()
+    await closing
+    expect(closed).toBe(true)
+  })
+
+  it('a rejected exit observer is uncertain, not a capacity refund', async () => {
+    const root = createAdmissionRegistry([], { maxWorkerRealms: 1 })
+    const admission = requireWorkerRealmAdmission(root), reservation = admission.reserve()
+    reservation.beginSpawn()
+    reservation.observeExit(Promise.reject(new Error('not an exit observation')), async () => undefined)
+    await Promise.resolve()
+    expect(() => admission.reserve()).toThrow(/capacity is occupied/u)
+    // Do not await close: uncertain work deliberately remains charged with a terminal root.
+    void closeExecutionBackendRegistry(root)
+    expect(() => admission.reserve()).toThrow(/root is closed/u)
+  })
+})
 
 /**
  * Security negative suite (R4, post-audit): every path that must NOT reach an import.

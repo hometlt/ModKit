@@ -26,6 +26,9 @@
  * host capabilities (with their data fields), the returned codec/session/data-source objects are
  * the RPC core's materialized proxies.
  *
+ * Optional registry-owned admission counts pending and live/warm Node generations across subjects;
+ * shutdown/restart retain the same supervisor and only actual Node exit refunds occupied slots.
+ * This is not the future one-job voxel client or a browser capacity policy.
  * Honest positioning (§0 of the threat model, decision 1 of §8): this is failure and protocol
  * isolation, not a security sandbox — the worker shares the process. Every activation reports
  * `x3.host/worker-shared-process` through `onDiagnostic`.
@@ -51,13 +54,14 @@ import type {
   ExecutionBackend,
   ExecutionBackendActivation,
   ExecutionModuleLease,
+  WorkerRealmReservation,
 } from '../execution/backend.js'
 import {
   DEFAULT_WORKER_BACKEND_POLICY,
   type WorkerBackendPolicy,
 } from '../execution/worker-policy.js'
 import { moduleAdapter, type ConsumerRealm } from '../execution/consumer-adapters.js'
-import { spawnWorkerRealm, type WorkerRealm } from './worker-realm.js'
+import { spawnWorkerRealm, WorkerRealmSetupError, type WorkerRealm } from './worker-realm.js'
 
 export const WORKER_SHARED_PROCESS_DIAGNOSTIC = 'x3.host/worker-shared-process'
 export const WORKER_RESTARTED_DIAGNOSTIC = 'x3.host/worker-restarted'
@@ -155,11 +159,30 @@ export function createNodeWorkerBackend(options: NodeWorkerBackendOptions = {}):
     context: ExecutionBackendActivation,
     session: string,
     generation: number,
+    reservation: WorkerRealmReservation | undefined,
   ): Spawned {
     let terminations = 0
-    const definitions = foreignSurfaces()
-    const surfaces = options.surfaces ?? createStandardSurfaceRegistry({ definitions })
-    const worker = spawnWorkerRealm({
+    let definitions: readonly DataSourceSurfaceSource[]
+    let surfaces: SurfaceRegistry
+    let worker: WorkerRealm
+    try {
+      definitions = foreignSurfaces()
+      surfaces = options.surfaces ?? createStandardSurfaceRegistry({ definitions })
+    } catch (error) {
+      reservation?.rollbackBeforeSpawn()
+      throw error
+    }
+    // beginSpawn can fail due to root close; no spawner has been entered in that case.
+    try {
+      reservation?.beginSpawn()
+    } catch (error) {
+      reservation?.rollbackBeforeSpawn()
+      throw error
+    }
+    // spawnWorkerRealm is not proven atomic after Worker construction. A thrown call therefore
+    // remains charged as uncertain; do not infer that its Worker constructor never succeeded.
+    try {
+      worker = spawnWorkerRealm({
       bootstrap: bootstrapUrl,
       session,
       generation,
@@ -180,7 +203,14 @@ export function createNodeWorkerBackend(options: NodeWorkerBackendOptions = {}):
       onStderr: text =>
         report({ code: 'x3.host/worker-stderr', severity: 'warning', message: text }),
       name: `x3-worker:${context.ticket.contributionId}#${generation}`,
-    })
+      })
+    } catch (error) {
+      if (error instanceof WorkerRealmSetupError)
+        reservation?.observeExit(error.exit, () => error.terminate())
+      throw error
+    }
+    reservation?.observeExit(worker.exit, () => worker.terminate())
+    try {
     let terminating: Promise<void> | undefined
     const terminate = (reason: string): Promise<void> => {
       terminating ??= (async () => {
@@ -219,6 +249,11 @@ export function createNodeWorkerBackend(options: NodeWorkerBackendOptions = {}):
       }
     })
     return { generation, worker, endpoint, terminate }
+    } catch (error) {
+      // Endpoint/diagnostic setup failure still owns a live worker; only its exit refunds capacity.
+      void worker.terminate().catch(() => undefined)
+      throw error
+    }
   }
 
   /**
@@ -256,6 +291,10 @@ export function createNodeWorkerBackend(options: NodeWorkerBackendOptions = {}):
   }
 
   async function activate(context: ExecutionBackendActivation): Promise<ExecutionModuleLease> {
+    // Reserve before the initial digest and trusted digest hook can yield to another activation.
+    const initialReservation = context.workerAdmission?.reserve()
+    let initialTransferred = false
+    try {
     if (context.entrypoint.protocol !== 'file:') {
       throw new ModkitError({
         code: 'x3.host/execution-load-rejected',
@@ -283,7 +322,9 @@ export function createNodeWorkerBackend(options: NodeWorkerBackendOptions = {}):
       }
       generation += 1
       const spawnedAt = performance.now()
-      const spawned = spawn(context, session, generation)
+      const reservation = initialTransferred ? context.workerAdmission?.reserve() : initialReservation
+      initialTransferred = true
+      const spawned = spawn(context, session, generation, reservation)
       try {
         const loaded = await watched(spawned, () =>
           spawned.endpoint.load(
@@ -383,6 +424,10 @@ export function createNodeWorkerBackend(options: NodeWorkerBackendOptions = {}):
     }
     const module = moduleAdapter(context.ticket.contributionId, first.root, realm, consumerWatch)
     return Object.freeze({ module, release })
+    } catch (error) {
+      if (!initialTransferred) initialReservation?.rollbackBeforeSpawn()
+      throw error
+    }
   }
 
   return Object.freeze({ profile: 'worker-brokered', supports, activate })

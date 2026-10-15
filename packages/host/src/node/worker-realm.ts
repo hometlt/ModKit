@@ -10,6 +10,9 @@
  * harness and the conformance kit's real-thread pair spawn through it as well, so what the kit
  * and the hostile-worker acceptance prove is literally the production spawn path and adapter
  * (acc-12), not a look-alike.
+ * Exit observation is installed before fallible stream/port setup. Partial-setup failures request
+ * termination and carry that actual exit promise to the admission owner; a terminate reply alone
+ * never proves exit. A throw before any observable handle remains an uncertain admission charge.
  */
 
 import { fileURLToPath } from 'node:url'
@@ -56,6 +59,19 @@ export interface WorkerRealm {
 
 const DEFAULT_OUTPUT_CAP = 64 * 1024
 
+/** A real Worker exists but realm setup failed; only this actual exit observation permits refund. */
+export class WorkerRealmSetupError extends Error {
+  /** Carry trusted existing-owner cleanup and actual exit evidence, never caller callbacks. */
+  constructor(
+    cause: unknown,
+    readonly exit: Promise<WorkerRealmExit>,
+    readonly terminate: () => Promise<number>,
+  ) {
+    super('Node worker realm setup failed after construction', { cause })
+    this.name = 'WorkerRealmSetupError'
+  }
+}
+
 function capped(
   stream: NodeJS.ReadableStream | null,
   sink: ((text: string) => void) | undefined,
@@ -81,6 +97,7 @@ function capped(
   })
 }
 
+/** Spawn once; propagate actual exit evidence for observable post-construction setup failures. */
 export function spawnWorkerRealm(spawn: WorkerRealmSpawn): WorkerRealm {
   const channel = new MessageChannel()
   const cap = spawn.outputCapBytes ?? DEFAULT_OUTPUT_CAP
@@ -103,8 +120,6 @@ export function spawnWorkerRealm(spawn: WorkerRealmSpawn): WorkerRealm {
     trackUnmanagedFds: true,
     ...(spawn.name === undefined ? {} : { name: spawn.name }),
   })
-  capped(worker.stdout, spawn.onStdout, cap, outState)
-  capped(worker.stderr, spawn.onStderr, cap, errState)
   let exited = false
   let lastError: Error | undefined
   const exit = new Promise<WorkerRealmExit>(resolve => {
@@ -118,8 +133,22 @@ export function spawnWorkerRealm(spawn: WorkerRealmSpawn): WorkerRealm {
       resolve(lastError === undefined ? { code } : { code, error: lastError })
     })
   })
-  const port = framePortFromMessagePort(channel.port1)
   let terminating: Promise<number> | undefined
+  /** The existing Worker remains the termination owner, including partial-setup failures. */
+  const terminate = (): Promise<number> => {
+    terminating ??= worker.terminate()
+    return terminating
+  }
+  let port: FramePort
+  try {
+    // Register exit/error BEFORE fallible stream/adapter setup, so a partial realm stays observable.
+    capped(worker.stdout, spawn.onStdout, cap, outState)
+    capped(worker.stderr, spawn.onStderr, cap, errState)
+    port = framePortFromMessagePort(channel.port1)
+  } catch (error) {
+    void terminate().catch(() => undefined)
+    throw new WorkerRealmSetupError(error, exit, terminate)
+  }
   return {
     threadId: worker.threadId,
     port,
@@ -130,9 +159,6 @@ export function spawnWorkerRealm(spawn: WorkerRealmSpawn): WorkerRealm {
     get outputTruncated() {
       return outState.truncated || errState.truncated
     },
-    terminate() {
-      terminating ??= worker.terminate()
-      return terminating
-    },
+    terminate,
   }
 }
