@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { materializeUvmCore } from '../src/model/materializer.js'
+import { readUvmContainer } from '../src/model/container.js'
+import { readUvmAccessor } from '../src/model/accessor.js'
+import { readUvmKeyTimes } from '../src/model/key-times.js'
+import type { JsonObject, ModelAnimationChannel } from '@modkit/sdk'
 
 const request = {
   scope: { scopeId: 'model-interchange-v1', version: '1.0.0' },
@@ -128,11 +132,89 @@ describe('morph targets in UVM', () => {
       ],
     } as never
     const written = materializeUvmCore(animated, request) as unknown as {
-      document: { animations: { channels: { target: { node: number; path: string } }[] }[] }
+      document: {
+        animations: { channels: { sampler: number; target: { node: number; path: string } }[] }[]
+      }
     }
-    expect(written.document.animations[0]!.channels[0]!.target).toEqual({
-      node: 0,
-      path: 'weights',
+    expect(written.document.animations[0]!.channels[0]).toEqual({
+      sampler: 0,
+      target: { node: 0, path: 'weights' },
     })
   })
+
+  it.each(['step', 'linear'] as const)(
+    'preserves independent clocks and exact authored times in reopened %s weights',
+    interpolation => {
+      const base = projection({
+        morphTargets: [{ positions: new Float32Array(9) }],
+      }) as unknown as { info: object }
+      const channel: ModelAnimationChannel = {
+        target: 'face',
+        kind: 'weights',
+        firstFrame: 0,
+        lastFrame: 1,
+        interpolation,
+        concurrent: true,
+        wrapSeconds: 2,
+        repeatCount: 3,
+        samples: [
+          { frame: 0, timeSeconds: 0.1, value: [0] },
+          { frame: 1, timeSeconds: 0.9, value: [1] },
+        ],
+      }
+      const animated = {
+        ...base,
+        info: { ...base.info, animations: 1 },
+        animations: [
+          {
+            id: 'talk',
+            name: 'talk',
+            kind: 'animation',
+            provenance: 'direct',
+            frames: 2,
+            channels: [channel],
+          },
+        ],
+      }
+      const before = structuredClone(animated)
+      const written = materializeUvmCore(animated as never, request)
+      const reopened = readUvmContainer(written.bytes)
+      const animation = (reopened.document['animations'] as JsonObject[])[0]!
+      const encoded = (animation['channels'] as JsonObject[])[0]!
+      const metadata = (encoded['extras'] as JsonObject)['uv'] as JsonObject
+      expect(metadata).toEqual({
+        concurrent: true,
+        wrapSeconds: 2,
+        repeatCount: 3,
+        keyTimes: { version: 1, seconds: [0.1, 0.9] },
+      })
+      const sampler = (animation['samplers'] as JsonObject[])[0]!
+      expect(sampler['interpolation']).toBe(interpolation.toUpperCase())
+      const budget = { maxScalarBytes: 1 << 20 }
+      const input = readUvmAccessor(
+        reopened.document,
+        reopened.binary,
+        sampler['input'],
+        budget,
+        'animation time',
+      )
+      expect([...input.values]).toEqual([Math.fround(0.1), Math.fround(0.9)])
+      expect(
+        readUvmKeyTimes(metadata['keyTimes'], {
+          values: input.values,
+          maxScalarBytes: budget.maxScalarBytes,
+        }),
+      ).toEqual([0.1, 0.9])
+      expect([
+        ...readUvmAccessor(
+          reopened.document,
+          reopened.binary,
+          sampler['output'],
+          budget,
+          'animation weights',
+        ).values,
+      ]).toEqual([0, 1])
+      expect(animated).toEqual(before)
+    },
+  )
 })

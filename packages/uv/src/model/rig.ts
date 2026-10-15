@@ -429,7 +429,21 @@ export function writeUvmAnimations(
           'SCALAR',
           5126,
         )
-        channels.push({ sampler: samplers.length, target: { node, path: 'weights' } })
+        const uv = {
+          ...(channel.concurrent === true
+            ? {
+                concurrent: true,
+                ...(channel.wrapSeconds === undefined ? {} : { wrapSeconds: channel.wrapSeconds }),
+                ...(channel.repeatCount === undefined ? {} : { repeatCount: channel.repeatCount }),
+              }
+            : {}),
+          ...uvmKeyTimesMetadata(samples.map(sample => sample.timeSeconds!)),
+        }
+        channels.push({
+          sampler: samplers.length,
+          target: { node, path: 'weights' },
+          ...(Object.keys(uv).length ? { extras: { uv } } : {}),
+        })
         samplers.push({
           input,
           output,
