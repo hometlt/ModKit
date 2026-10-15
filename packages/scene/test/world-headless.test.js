@@ -288,11 +288,11 @@ it('CPU object lighting affects program and fallback models while terrain stays 
     assert.equal(scene.materialLighting.has('world/ground'), false)
     const { renderHeadless } = await import('../src/render/headless.ts')
     const { createWorldWebGlCameraFrame } = await import('../src/world/webgl.ts')
-    // Explicitly lit base surfaces exercise both rigs; world CPU ground remains unlit by default.
+    // Ground uses the world rig; the raw fallback model below opts into that same lighting.
     const litScene = {
       ...scene.scene,
       materials: scene.scene.materials.map(m =>
-        m.id === 'world/ground' || (!program && m.id.startsWith('model-'))
+        !program && m.id.startsWith('model-')
           ? { ...m, shading: 'lambert' }
           : m,
       ),

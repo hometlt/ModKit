@@ -3,6 +3,11 @@ import { createWorldWebGlPlan } from '../src/world/webgl.js'
 import { renderWorldHeadless, worldHeadlessScene } from '../src/world/headless.js'
 import { TERRAIN_DEPTH_BIAS } from '../src/render/depth-bias.js'
 
+// These tests isolate depth and painter order from the world's default light.
+const neutralLighting = { facet: 'lighting' as const, id: 'light', layerId: 'lighting',
+  coordinateSpaceId: 'uvw-canonical', model: 'unlit' as const,
+  ambientColor: [1, 1, 1] as const, ambientIntensity: 1, directional: [] }
+
 const batch = (z = 0) => ({
   positions: Float32Array.of(0, 0, z, 1, 0, z, 1, 0, z + 1, 0, 0, z, 1, 0, z + 1, 0, 0, z + 1),
   normals: Float32Array.from({ length: 18 }, (_, i) => (i % 3 === 1 ? 1 : 0)),
@@ -17,7 +22,7 @@ const textured = (id: string, rgba: Uint8Array, z = 0) => ({
 it('keeps a coplanar surface model visible over atlas terrain without moving it', async () => {
   const model = batch()
   for (let i = 0; i < model.colors.length; i += 4) { model.colors[i] = 1; model.colors[i + 1] = 0; model.colors[i + 2] = 0 }
-  const plan = { ...createWorldWebGlPlan({ items: [] }), opaqueTriangles: model, terrainOpaqueVertices: 0,
+  const plan = { ...createWorldWebGlPlan({ items: [neutralLighting] }), opaqueTriangles: model, terrainOpaqueVertices: 0,
     texturedTriangles: [textured('ground', Uint8Array.of(0, 255, 0, 255))], terrainTexturedBatches: 1 }
   const converted = worldHeadlessScene(plan).scene.primitives
   expect(converted.find(p => p.id === 'world/ground')!.depthBias).toBeUndefined()
@@ -35,7 +40,7 @@ it('splits terrain prefixes without biasing model tails or water', () => {
   const a = batch(), b = batch(0.25)
   const joined = { positions: Float32Array.from([...a.positions, ...b.positions]),
     normals: Float32Array.from([...a.normals, ...b.normals]), colors: Float32Array.from([...a.colors, ...b.colors]) }
-  const plan = { ...createWorldWebGlPlan({ items: [] }), opaqueTriangles: joined, terrainOpaqueVertices: 6,
+  const plan = { ...createWorldWebGlPlan({ items: [neutralLighting] }), opaqueTriangles: joined, terrainOpaqueVertices: 6,
     texturedTriangles: [textured('terrain', Uint8Array.of(255, 255, 255, 255)), textured('model', Uint8Array.of(255, 0, 0, 255))], terrainTexturedBatches: 1,
     transparentTriangles: batch(),
   }
@@ -51,7 +56,7 @@ it.each([Math.PI / 2, -Math.PI / 2])(
   'keeps overlay painter order independent of camera %s',
   async azimuth => {
     const plan = {
-      ...createWorldWebGlPlan({ items: [] }),
+      ...createWorldWebGlPlan({ items: [neutralLighting] }),
       texturedTriangles: [textured('ground', Uint8Array.of(255, 0, 0, 255))],
       terrainTexturedBatches: 1,
       terrainDecalTriangles: [
@@ -82,7 +87,7 @@ it.each([Math.PI / 2, -Math.PI / 2])(
 
 it('replaces only the clipped-water prefix and retains non-water transparent triangles', () => {
   const original = {
-    ...createWorldWebGlPlan({ items: [] }),
+    ...createWorldWebGlPlan({ items: [neutralLighting] }),
     transparentTriangles: batch(),
     transparentWaterTriangles: 1,
   }
@@ -102,7 +107,7 @@ it('replaces only the clipped-water prefix and retains non-water transparent tri
 })
 
 it('places terrain layers before negative-priority transparent effects', () => {
-  const plan = { ...createWorldWebGlPlan({ items: [] }),
+  const plan = { ...createWorldWebGlPlan({ items: [neutralLighting] }),
     terrainDecalTriangles: [textured('ground', Uint8Array.of(0, 255, 0, 255))],
     transparentTexturedTriangles: [{ ...textured('effect', Uint8Array.of(255, 0, 0, 128)), blendMode: 'blend' as const, priority: -100, receiveShadows: false }],
   }

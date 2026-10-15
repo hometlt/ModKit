@@ -248,6 +248,7 @@ export function worldHeadlessScene(plan: WorldWebGlPlan): Readonly<{
     materials.push({
       id,
       baseColor: [1, 1, 1, 1],
+      shading: 'lambert',
       doubleSided: true,
       ...material,
       ...(texture === undefined ? {} : { baseColorTexture: textureId(texture) }),
