@@ -1,6 +1,7 @@
 import type { JsonObject, JsonValue } from '@modkit/sdk'
 import { snapshotJson, type JsonSnapshotBudget } from '@modkit/codec-kit/json-snapshot'
 import type {
+  AnimatedScalar,
   AnimatedValueTracks,
   StandardMaterialModel,
   StandardMaterialLayer,
@@ -45,12 +46,17 @@ export interface SceneStandardMaterial extends StandardMaterialModel {
   readonly tangentGeneration?: MaterialTangentGeneration
 }
 
+/** Authored JSON is sampled before it reaches the numeric renderer vocabulary. */
+type AuthoredSceneStandardMaterial = Omit<SceneStandardMaterial, 'emisMult'> & {
+  readonly emisMult: number | AnimatedScalar
+}
+
 export interface MaterialTangentGeneration {
   /** TEXCOORD_0 through TEXCOORD_4. Explicit missing inputs refuse instead of selecting another set. */
   readonly texCoord: number
 }
 
-function activeLayers(material: SceneStandardMaterial): StandardMaterialLayer[] {
+function activeLayers(material: AuthoredSceneStandardMaterial): StandardMaterialLayer[] {
   return Object.values(material.layers).filter(
     layer => layer.slot !== 'normalBlend2Mask' || material.normalBlendPolicy?.secondMask !== false,
   )
@@ -277,8 +283,10 @@ function validateStandard(value: unknown, path: string, signal?: AbortSignal) {
   }
   integer(material['blendMode'], `${path}.blendMode`, 0, 6)
   integer(material['specMode'], `${path}.specMode`, 0, 1)
-  for (const key of ['priority', 'specularity', 'specMult', 'emisMult'])
+  for (const key of ['priority', 'specularity', 'specMult'])
     finite(material[key], `${path}.${key}`)
+  if (typeof material['emisMult'] === 'number') finite(material['emisMult'], `${path}.emisMult`)
+  else animated(material['emisMult'], `${path}.emisMult`, 1, signal)
   const threshold = finite(material['alphaTestThreshold'], `${path}.alphaTestThreshold`)
   if (threshold < 0 || threshold > 1)
     throw new TypeError(`${path}.alphaTestThreshold must be in 0..1`)
@@ -424,7 +432,7 @@ export function createRenderMaterialSampler(
     model['worldToMaterial'] === undefined ? undefined : materialFrame(model['worldToMaterial'])
   let priority: number | undefined
   let passes: readonly {
-    material: SceneStandardMaterial
+    material: AuthoredSceneStandardMaterial
     alphaFactor: { value: number } & AnimatedValueTracks
   }[]
   if (model['composite'] !== undefined) {
@@ -448,7 +456,7 @@ export function createRenderMaterialSampler(
     validateStandard(model['standard'], 'standard material', signal)
     passes = [
       {
-        material: withSceneEnvironment(model['standard'] as unknown as SceneStandardMaterial),
+        material: withSceneEnvironment(model['standard'] as unknown as AuthoredSceneStandardMaterial),
         alphaFactor: { value: 1 },
       },
     ]
@@ -510,7 +518,7 @@ export function createRenderMaterialSampler(
 }
 
 /** The program binds a `sceneEnvironment` layer as the scene's environment resource. */
-function withSceneEnvironment(material: SceneStandardMaterial): SceneStandardMaterial {
+function withSceneEnvironment(material: AuthoredSceneStandardMaterial): AuthoredSceneStandardMaterial {
   const envi = material.layers.envi as
     (StandardMaterialLayer & { sceneEnvironment?: true }) | undefined
   if (envi?.sceneEnvironment !== true) return material
@@ -556,7 +564,7 @@ function sampleAnimated<T extends number | readonly number[]>(
  * layer no clock reaches is kept as one frozen copy.
  */
 const layerPlans = new WeakMap<
-  SceneStandardMaterial,
+  AuthoredSceneStandardMaterial,
   readonly Readonly<{
     slot: string
     layer: StandardMaterialLayer
@@ -568,7 +576,7 @@ const layerPlans = new WeakMap<
 const tracked = (value: AnimatedValueTracks | undefined) =>
   value !== undefined && (value.track !== undefined || value.sequenceTracks !== undefined)
 
-function materialLayerPlan(material: SceneStandardMaterial) {
+function materialLayerPlan(material: AuthoredSceneStandardMaterial) {
   let plan = layerPlans.get(material)
   if (plan === undefined) {
     plan = Object.freeze(
@@ -591,7 +599,7 @@ function materialLayerPlan(material: SceneStandardMaterial) {
 }
 
 function sampleMaterial(
-  material: SceneStandardMaterial,
+  material: AuthoredSceneStandardMaterial,
   time: MaterialSampleTime,
   signal?: AbortSignal,
 ): SceneStandardMaterial {
@@ -617,6 +625,9 @@ function sampleMaterial(
   }
   return Object.freeze({
     ...material,
+    emisMult: typeof material.emisMult === 'number'
+      ? material.emisMult
+      : sampleAnimated(material.emisMult, time).value,
     layers: Object.freeze(layers),
     ...(material.parallaxHeight === undefined
       ? {}

@@ -1147,10 +1147,13 @@ export function createCandidateWorldSceneLease(
       const id = `${objectLayerId}:object:${String(item.objectId)}`
       const ref = item.catalog?.ref
       const uvwRotation = canonicalObjectRotation(
-        item.presentationRotation ?? item.rotation,
+        item.rotation,
         item.nativeRotationUnit,
         item.nativeRotationSense,
       )
+      const uvwPresentationRotation = item.presentationRotation === undefined
+        ? undefined
+        : canonicalObjectRotation(item.presentationRotation, item.nativeRotationUnit, item.nativeRotationSense)
       const groundHeight = terrainHeightAt(item.position, semantic.terrain, terrainTransform, materialSamplesByGrid)
       const mapNativePresentationPosition =
         groundHeight === undefined ||
@@ -1192,6 +1195,7 @@ export function createCandidateWorldSceneLease(
           : {
               uvwPosition: canonicalPosition(mapNativePresentationPosition, uvwTransform),
               ...(uvwRotation === undefined ? {} : { uvwRotation }),
+              ...(uvwPresentationRotation === undefined ? {} : { uvwPresentationRotation }),
               uvwScale: canonicalObjectScale(item.scale, uvwTransform),
             }),
         ...(ref === undefined ? {} : { resourceId: objectResourceId(ref, item.modelResource) }),

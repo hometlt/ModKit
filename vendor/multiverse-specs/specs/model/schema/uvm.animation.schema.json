@@ -192,7 +192,41 @@
                 }
               }
             },
-            "additionalProperties": false
+            "additionalProperties": false,
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "path": {
+                      "pattern": "^/renderModel/(?:standard|composite/passes/(?:0|[1-9][0-9]*)/material)/emisMult$"
+                    }
+                  }
+                },
+                "then": {
+                  "description": "The two published emissive-gain paths have numeric scalar defaults and width-one key vectors. Signed finite float32-compatible admission and the path whitelist are semantic reader requirements in SPEC_UVM 12.2, not implied by this JSON number shape.",
+                  "properties": {
+                    "value": { "type": "number" },
+                    "sequenceTracks": {
+                      "items": {
+                        "properties": {
+                          "track": {
+                            "properties": {
+                              "keys": {
+                                "items": {
+                                  "properties": {
+                                    "vector": { "minItems": 1, "maxItems": 1 }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            ]
           }
         }
       },

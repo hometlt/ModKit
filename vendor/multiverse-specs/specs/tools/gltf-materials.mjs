@@ -1,4 +1,5 @@
 /** Shared reference checks for schema-valid glTF materials. No image reads or renderer. */
+import { assertUvmMaterialState } from './uvm-fixed-function.ts'
 import gameSchema from '../model/schema/uvm.material.schema.json' with { type: 'json' }
 import { assertGltfShadowFlags } from './gltf-material-flags.ts'
 import { assertUvmTeamColor, assertUvmTexturePresentation, assertUvmTeamColorAnimations } from './uvm-presentation.ts'
@@ -113,6 +114,7 @@ export function assertGltfMaterialReferences(document) {
     }
     const game = material.extensions?.UV_game_material
     if (game !== undefined) {
+      assertUvmMaterialState(game)
       assertGltfShadowFlags(game)
       if (game.shader === 'uv.water.surface@1') assertWaterSurface(game)
       const layers = [...(game.layers ?? []), ...(game.passes ?? []).flatMap(pass => pass.layers ?? [])]

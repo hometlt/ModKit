@@ -1,6 +1,8 @@
 import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
+import { revisionId, type ArtifactByteSource, type AssetInput, type ContributionContext, type ResourceBudget } from '@modkit/sdk'
+import { createCodec as createRotationCodec } from '../src/world/codec.js'
 
 import type {
   CandidateWorldSceneInfo,
@@ -964,4 +966,96 @@ describe('the game-view preset of a world (spaces[].camera)', () => {
     ])
       expect(() => parseUvwProfile(withCamera(value)), JSON.stringify(value)).toThrow()
   })
+})
+
+
+describe('UVW authored rotation and optional absolute visual orientation', () => {
+  const authored = [0, Math.sin(Math.PI / 12), 0, Math.cos(Math.PI / 12)] as const
+  const shown = [0, Math.SQRT1_2, 0, Math.SQRT1_2] as const
+  async function fixture(presentation: unknown) {
+    const raw = JSON.parse(await readFile(fileURLToPath(new URL(
+      '../../../vendor/multiverse-specs/specs/world/fixtures/uvw-profile-renderable-world.uvw.json', import.meta.url,
+    )), 'utf8')) as { spaces: { layers: { kind: string; instances?: Record<string, unknown>[] }[] }[] }
+    const instance = raw.spaces[0]!.layers.find(layer => layer.kind === 'objects')!.instances![0]!
+    instance['rotation'] = authored
+    if (presentation !== undefined) instance['presentationRotation'] = presentation
+    return new TextEncoder().encode(JSON.stringify(raw))
+  }
+
+  it.each([
+    undefined, [0, 0, 0, 1], authored, shown, [0, -Math.SQRT1_2, 0, -Math.SQRT1_2],
+    [Math.SQRT1_2, 0, 0, Math.SQRT1_2],
+  ])('preserves presence and full XYZW through source pages and wire roundtrip (%j)', async presentation => {
+    const doc = parseUvwProfile(await fixture(presentation))
+    const original = serializeUvwProfile(doc)
+    const layer = doc.spaces[0]!.layers.find(layer => layer.kind === 'objects')!
+    if (layer.kind !== 'objects') throw new Error('missing objects')
+    expect(layer.instances[0]!.rotation).toEqual(authored)
+    expect(Object.hasOwn(layer.instances[0]!, 'presentationRotation')).toBe(presentation !== undefined)
+    expect(layer.instances[0]!.presentationRotation).toEqual(presentation)
+    for (const pageSize of [1, 7]) {
+      const reopened = createUvwWorldSceneSource(doc, { snapshotId: 'rotations', maxPageSize: pageSize })
+      const sourceInfo = await reopened.info()
+      const page = await reopened.page({ facet: 'objects', layerId: sourceInfo.facets.find(f => f.facet === 'objects')!.layerId, limit: pageSize })
+      const object = page.items.find(item => item.facet === 'objects' && item.id.endsWith(':instance-a'))
+      if (object?.facet !== 'objects') throw new Error('missing first object')
+      expect(object.uvwRotation).toEqual(authored)
+      expect(object.uvwPresentationRotation).toEqual(presentation)
+      const result = await materializeWorldToUvw(reopened, { maxPageItems: pageSize, maxTerrainItems: 128, maxFacetItems: 128, maxOutputBytes: 256000 })
+      if (result.state !== 'materialized') throw new Error(JSON.stringify(result))
+      expect(result.bytes).toEqual(original)
+      expect(result.lostFields).toEqual([])
+    }
+  })
+
+  it.each([null, 0, 'identity', [], [0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 2],
+    [NaN, 0, 0, 1], [Infinity, 0, 0, 1], [0, 0, '0', 1], [0, 0, 0, 1, 0],
+  ])('refuses invalid optional quaternion %j', async invalid => {
+    const bytes = await fixture(invalid)
+    expect(() => parseUvwProfile(bytes)).toThrow()
+  })
+
+  it('preserves both rotations and unrelated fields through the real position-edit codec handler', async () => {
+    const bytes = await fixture(shown)
+    const original = bytes.slice()
+    const revision = revisionId('content-hash.sha256:rotation-codec-fixture')
+    const budgets: ResourceBudget = { maxInputBytes: 64000000n, maxDepth: 64, maxNodes: 1000000, maxScalarBytes: 128000000, maxDiagnostics: 1000 }
+    const context: ContributionContext = {
+      budgets, diagnostics: { report: () => undefined },
+      contracts: {
+        async resolve() { throw new Error('no service dependency expected') },
+        async resolveUnknown() { throw new Error('no service dependency expected') },
+      },
+    }
+    const asset: ArtifactByteSource = {
+      kind: 'bytes', ref: { id: 'rotation-fixture', uri: 'memory://world/rotation.uvw' }, revision, size: BigInt(bytes.length),
+      async read(offset, length, signal) { signal?.throwIfAborted(); return bytes.slice(Number(offset), Number(offset) + length) },
+      async *stream() { yield bytes },
+    }
+    const binding = { sourceKind: 'candidate' as const, bindingId: 'content', role: 'content', ownership: 'owned' as const, source: asset.ref, revision }
+    const input: AssetInput = {
+      originKind: 'single', bindings: [binding], primaryBindingId: 'content',
+      revisions: { topology: 'single', revision, bindings: [{ bindingId: 'content', revision }], compositionFingerprint: 'rotation-codec-fixture' },
+      bindingsFor: () => [], async openBinding() { return { value: asset, async release() {} } },
+    }
+    const session = await createRotationCodec(context).open(input, 'full', budgets)
+    try {
+      const request = { expectedSourceRevision: revision, edits: [{ kind: 'object.update', objectId: 0, patch: { position: { x: 4.25, y: 5.5, z: 6.75 } } }] }
+      const edited = await session.operations().invoke('edit-uvw-document', request)
+      if (edited.state !== 'ok' || edited.output.kind !== 'edit-plan') throw new Error('no edit plan')
+      expect(edited.output.plan.edits).toHaveLength(1)
+      const replacement = edited.output.plan.edits[0]
+      if (replacement?.operation !== 'replace' || replacement.payload.kind !== 'inline') throw new Error('no owned replacement bytes')
+      const beforeLayer = parseUvwProfile(bytes).spaces[0]!.layers.find(layer => layer.kind === 'objects')!
+      const afterLayer = parseUvwProfile(replacement.payload.bytes).spaces[0]!.layers.find(layer => layer.kind === 'objects')!
+      if (beforeLayer.kind !== 'objects' || afterLayer.kind !== 'objects') throw new Error('missing objects')
+      const { position: _beforePosition, ...unchangedBefore } = beforeLayer.instances[0]!
+      const { position: afterPosition, ...unchangedAfter } = afterLayer.instances[0]!
+      expect(afterPosition).toEqual([4.25, 5.5, 6.75])
+      expect(unchangedAfter).toEqual(unchangedBefore)
+      expect(afterLayer.instances[1]).toEqual(beforeLayer.instances[1])
+      await expect(session.operations().invoke('edit-uvw-document', { ...request, expectedSourceRevision: 'content-hash.sha256:stale' })).rejects.toThrow(/stale.*revision/iu)
+      expect(bytes).toEqual(original)
+    } finally { await session.dispose() }
+  }, 20_000) // Same bound as the existing source-backed UVW codec integration cases.
 })

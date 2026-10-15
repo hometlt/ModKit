@@ -945,12 +945,47 @@ and determines its width. `sequenceTracks` retains the common material track rep
 references catalog sequence indices. The allowed paths are standard or composite-pass layer
 animation properties (`constantColor`, `colorMultiply`, `colorAdd`, `alphaFactor`, `uvOffset`,
 `uvAngle`, `uvTiling`, `uvTriplanarOffset`, `uvTriplanarScale`, `flipbook/frame`), plus
-`parallaxHeight`, `normalBlendFactors/0..7`, and composite-pass `alphaFactor`.
+`parallaxHeight`, `normalBlendFactors/0..7`, composite-pass `alphaFactor`, and the emissive
+gain paths specified below.
 These slots are binding descriptions, not active glTF materials: they carry no texture/image
 indices, resolve no resources, and do not create geometry. Native static metadata that common
 glTF/UVM structures cannot represent remains in bounded publisher extras. A UVM document never
 retains the native source blob. Current shared material playback supports step/linear
 tracks with explicit sequence clocks; unsupported interpolation MUST be refused or reported.
+
+The published emissive-gain paths are exactly `/renderModel/standard/emisMult` and
+`/renderModel/composite/passes/N/material/emisMult`, where `N` is the existing zero-based,
+canonical decimal pass index (`0` or a nonzero digit followed by digits). Their width is one.
+This is the existing common material's **post-texture-decoding emission multiplier**;
+layer `colorMultiply`, whole-object tint or alpha multiplication is not an equivalent carrier.
+It introduces no native-specific parameter, shader or new sampler.
+
+Static `emisMult` remains a number. An active animated source uses the existing
+`{value, sequenceTracks}` scalar convention; the inactive material-target property above uses
+a **numeric** `value`, not `[value]`. Every key retains an **array** `vector` of exactly one
+number. Defaults and components MUST be finite and remain finite when rounded to IEEE 754
+binary32 (for example `Number.isFinite(value) && Number.isFinite(Math.fround(value))`).
+Negative, zero and HDR gains above one are permitted. Do not impose a nonnegative bound,
+clamp, normalize or quantize authored values. The JSON Schema narrows the new defaults/key
+widths only; the semantic reader must enforce the published paths and finite binary32 domain.
+
+Sampling MUST produce a **number** in that same domain before CPU composition, cache publication
+or numeric uniform upload. Gain animation is sampled even when no layer is animated and makes
+the material time-dependent; a sampled gain must not be cached as its authored default.
+The current common post-decode math and alpha handling are unchanged.
+An animated initial zero does not make a referenced emissive texture unused; retain its
+existing resource closure rather than pruning it from the captured material.
+
+STEP/LINEAR use the explicit catalog sequence index. Ordinary keys use sequence-local time;
+selected `concurrent: true` tracks use their positive `wrapSeconds` and elapsed material time
+independently of clip-local looping. Sparse/missing or unselected sequences retain the captured
+common numeric default; no sequence zero or first key is selected implicitly. The existing
+active legacy `track` precedence is unchanged, and legacy-fallback attachment refusal remains.
+These rules do not qualify native global tracks without selection, cubic interpolation,
+outside-key/default behavior or native HDR/GPU equivalence. A native publisher must preserve
+its separately authored static fallback in `value` after qualifying its semantics; it must
+not infer that fallback from the first key, hardcode one, or treat a lossy native projection
+as an oracle. Unsupported exact native export/playback requires refusal or explicit losses.
 
 Bundle attachment requires explicit source/destination clip ids and sequence indices, node and
 primitive mappings, and material mappings. An inactive slot is selected with

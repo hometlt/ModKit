@@ -247,6 +247,148 @@
         }
       ],
       "rule": "uvw-lattice-resource-scope"
+    },
+    {
+      "id": "presentation-rotation/json",
+      "expect": "accept",
+      "fixture": "uvw-presentation-rotation.uvw.json",
+      "mutations": []
+    },
+    {
+      "id": "presentation-rotation/gltf",
+      "expect": "accept",
+      "fixture": "uvw-presentation-rotation.uvw.gltf",
+      "mutations": []
+    },
+    {
+      "id": "presentation-rotation/absent",
+      "expect": "accept",
+      "fixture": "uvw-presentation-rotation.uvw.json",
+      "mutations": [
+        {
+          "op": "delete",
+          "path": "spaces.0.layers.0.instances.0.presentationRotation"
+        }
+      ]
+    },
+    {
+      "id": "presentation-rotation/identity",
+      "expect": "accept",
+      "fixture": "uvw-presentation-rotation.uvw.json",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "spaces.0.layers.0.instances.0.presentationRotation",
+          "value": [
+            0,
+            0,
+            0,
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "id": "presentation-rotation/null",
+      "expect": "reject",
+      "fixture": "uvw-presentation-rotation.uvw.json",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "spaces.0.layers.0.instances.0.presentationRotation",
+          "value": null
+        }
+      ],
+      "rule": "objects-instance"
+    },
+    {
+      "id": "presentation-rotation/width",
+      "expect": "reject",
+      "fixture": "uvw-presentation-rotation.uvw.json",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "spaces.0.layers.0.instances.0.presentationRotation",
+          "value": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "rule": "objects-instance"
+    },
+    {
+      "id": "presentation-rotation/zero",
+      "expect": "reject",
+      "fixture": "uvw-presentation-rotation.uvw.json",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "spaces.0.layers.0.instances.0.presentationRotation",
+          "value": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "rule": "objects-instance"
+    },
+    {
+      "id": "presentation-rotation/nonunit",
+      "expect": "reject",
+      "fixture": "uvw-presentation-rotation.uvw.json",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "spaces.0.layers.0.instances.0.presentationRotation",
+          "value": [
+            0,
+            0,
+            0,
+            2
+          ]
+        }
+      ],
+      "rule": "objects-instance"
+    },
+    {
+      "id": "presentation-rotation/component",
+      "expect": "reject",
+      "fixture": "uvw-presentation-rotation.uvw.json",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "spaces.0.layers.0.instances.0.presentationRotation",
+          "value": [
+            0,
+            "0",
+            0,
+            1
+          ]
+        }
+      ],
+      "rule": "objects-instance"
+    },
+    {
+      "id": "presentation-rotation/unknown",
+      "expect": "reject",
+      "fixture": "uvw-presentation-rotation.uvw.json",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "spaces.0.layers.0.instances.0.presentationQuaternion",
+          "value": [
+            0,
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "rule": "objects-instance"
     }
   ]
 }

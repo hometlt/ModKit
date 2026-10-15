@@ -282,7 +282,7 @@ Attaches to: material.
 
 | Property          | Type     | Required | Default  | Description                                                                                                    |
 | ----------------- | -------- | -------- | -------- | -------------------------------------------------------------------------------------------------------------- |
-| `shader`          | string   | yes      | —        | Namespaced shader identity, e.g. `sc2.standard`, `mdx.layer`, `w3d.vertex-material`                            |
+| `shader`          | string   | branch   | —        | Actual nonempty source shader identity; required for the shader-bearing branch and `params`, absent from state-only packets                            |
 | `blendMode`       | string   | no       | `opaque` | `opaque`, `alpha-blend`, `alpha-test`, `additive`, `add-alpha`, `modulate`, `modulate2x`, `alpha-key`, `screen`, `subtract` |
 | `alphaCutoff`     | number   | no       | `0.5`    | For `alpha-test`                                                                                               |
 | `cull`            | string   | no       | `back`   | `back`, `front`, `none`                                                                                        |
@@ -294,6 +294,49 @@ Attaches to: material.
 | `layers`          | object[] | no       | `[]`     | Layer stack, see below                                                                                         |
 | `passes`          | object[] | no       | —        | Multi-pass composite; each entry has its own `blendMode`, `layers`                                             |
 | `params`          | object   | no       | `{}`     | Shader-specific scalar/vector parameters                                                                       |
+
+### Shaderless fixed-function state (addendum 14.10.2026)
+
+The **existing** `UV_game_material` admits two disjoint branches:
+
+1. A shader-bearing packet has the actual nonempty `shader` identity and
+   keeps all existing fields, layer/pass rules, defaults, water profiles and
+   scoped `params`. Schema-valid unknown native shaders remain descriptive;
+   naming one does not establish renderer support.
+2. A state-only packet has **no shader property**, contains at least one of
+   `blendMode`, `depthWrite`, `sortPriority`, and contains **only** those three
+   fields. Their types and value vocabulary are the existing definitions.
+   `{}`, orphan `params` (even `{}`), passes, layers and other fields do not
+   enter through this narrow branch. Source `priority` maps to the existing
+   wire name `sortPriority`; no second priority/blend-state field is created.
+
+`params` remains the exact name for shader-specific parameters and requires
+a real declared shader identity. Writers must not invent a placeholder shader
+to encode fixed-function state, nor copy a shaderless source's extras into
+`params`. Neither branch creates a shader registry or execution permission.
+
+For the state-only branch **only present fields override** the base glTF
+material. Missing fields inherit that material's existing state; the table's
+shader-bearing defaults do not inject an opaque blend or depth mask into
+a shaderless BLEND material. Explicit false and zero are preserved. Writers
+emit factual normalized source state and keep a usable PBR/alphaMode fallback.
+Validators and serializers inject no shader, params or default bytes.
+
+This is an additive extension-union amendment under the existing draft
+UVM/core 1.0 marker and `UV_game_material` identity. No old shader-bearing
+packet is reinterpreted, apart from rejecting an empty string that cannot name
+a shader. Existing valid fixtures/golden bytes and prior refusals remain
+unchanged. Old strict extension schemas require shader and therefore reject
+state-only packets: a coordinated consumer/schema pin update is required for
+full material fidelity. A generic consumer may use the existing PBR fallback
+but must not claim native additive/order/depth parity. Do not add a required
+UV extension: UVM/core's existing `extensionsRequired` refusal is unchanged.
+
+The schema and reference validator prove wire/GLB preservation, not a Core
+materializer or real draw. Preserving raw fields in typed extras is not data
+loss; failing to apply additive is a rendering loss that needs a truthful
+receipt. Current evidence establishes that particular loss, not all state
+fields being broken.
 
 Layer object:
 
@@ -383,7 +426,11 @@ Every selectable glTF animation is linked exactly once. An absent animation link
 material-only or truly empty sequence without invalid empty glTF animations. Explicit absolute or
 global effect timelines can remain outside the selectable catalog. Catalog sequence indices are
 the material timeline keys, independent of glTF and catalog ordering. See SPEC_UVM §12.2 for the
-binding path whitelist and atomic attachment rules. `uvm.animation.schema.json#catalog` describes
+published path whitelist, including existing post-decode scalar `emisMult` at standard and
+composite-pass materials. Its animated numeric default and width-one array keys retain the
+signed finite-binary32-compatible domain; sampled material output stays numeric. This does
+not qualify native global-without-selection/default/cubic or GPU playback semantics. Attachment
+remains explicit and atomic as specified there. `uvm.animation.schema.json#catalog` describes
 the root shape; the existing `#clips` anchor continues to describe animation-attached metadata.
 
 Animation-attached payload:

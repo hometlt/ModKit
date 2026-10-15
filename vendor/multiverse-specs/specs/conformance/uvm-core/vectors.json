@@ -202,6 +202,49 @@
           "value": 1
         }
       ]
+    },
+    {
+      "id": "fixed-state/pack",
+      "expect": "accept",
+      "fixture": "uvm-fixed-function-state.uvm.gltf",
+      "mutations": [],
+      "glbByteLength": 1432,
+      "glbDigest": "sha256:63475def2e92db9e6519e9f304557c97bfe4e3830b2a5c0581726ee29fba5f1a"
+    },
+    {
+      "id": "fixed-state/orphan-params",
+      "expect": "reject",
+      "fixture": "uvm-fixed-function-state.uvm.gltf",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "materials.0.extensions.UV_game_material.params",
+          "value": {}
+        }
+      ],
+      "reason": "material-state-only-fields"
+    },
+    {
+      "id": "fixed-state/empty",
+      "expect": "reject",
+      "fixture": "uvm-fixed-function-state.uvm.gltf",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "materials.0.extensions.UV_game_material",
+          "value": {}
+        }
+      ],
+      "reason": "material-state-only-fields"
+    },
+    {
+      "id": "emis-mult/inactive-targets",
+      "expect": "accept",
+      "fixture": "uvm-emis-mult-targets.uvm.gltf",
+      "mutations": [],
+      "glbByteLength": 1688,
+      "glbDigest": "sha256:cea91e15b366d9369f7dd9344c862c3d10fe5900b87b4cd3cb95132a286fbe38",
+      "note": "Inert standard/composite width-one gain carrier; byte preservation, not sampling/native fidelity."
     }
   ]
 }

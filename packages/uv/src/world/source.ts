@@ -313,6 +313,9 @@ function recordItems(
                   }),
                   uvwPosition,
                   uvwRotation: instance.rotation,
+                  ...(instance.presentationRotation === undefined
+                    ? {}
+                    : { uvwPresentationRotation: instance.presentationRotation }),
                   uvwScale: Object.freeze({
                     x: instance.scale[0],
                     y: instance.scale[1],

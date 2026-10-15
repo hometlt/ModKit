@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import type { ResolvedMapWorkspaceSnapshot } from '@modkit/sdk/maps'
+import { mapQualificationTupleBytes, type ResolvedMapWorkspaceSnapshot } from '@modkit/sdk/maps'
+import { writeFile } from 'node:fs/promises'
+import { materializeWorldToUvw, parseUvwProfile, createUvwWorldSceneSource } from '@modkit/uv/world'
 import { createCandidateWorldSceneLease } from '@modkit/host'
 import { createCandidateWorldSceneLease as createSourceWorldSceneLease } from '../src/maps/world-source.js'
 
@@ -1271,5 +1273,224 @@ describe('common world source native visual facets', () => {
     } finally {
       await lease.release()
     }
+  })
+})
+
+const sha256 = async (bytes: Uint8Array) =>
+  `sha256:${[...new Uint8Array(await crypto.subtle.digest('SHA-256', bytes.slice()))]
+    .map(byte => byte.toString(16).padStart(2, '0'))
+    .join('')}` as const
+
+const MAP_DIGEST = `sha256:${'d'.repeat(64)}` as const
+
+/** A 2 x 2 map whose transform's proof was qualified on this very map (its `fixture.map`). */
+async function rotationCorpus(): Promise<ResolvedMapWorkspaceSnapshot> {
+  const samples = Array.from({ length: 4 }, (_, index) => ({
+    x: index % 2,
+    y: Math.floor(index / 2),
+    heightBase: index,
+    heightAdjustment: 0,
+    mask: 0,
+  }))
+  // native (x, y, height) in sample order; canonical (x, height, -y) row by row from the last row
+  const native = samples.map(sample => [sample.x, sample.y, sample.heightBase] as const)
+  const canonical = [2, 3, 0, 1].map(index => {
+    const [x, y, z] = native[index]!
+    return [x, z, -y === 0 ? 0 : -y] as const
+  })
+  return {
+    schemaVersion: 1,
+    workspaceId: 'workspace',
+    gameId: 'example/game',
+    mapId: 'fixture.map',
+    analyzerId: 'fixture',
+    snapshotId: 'snapshot-1',
+    semantic: {
+      schemaVersion: 1,
+      workspaceId: 'workspace',
+      gameId: 'example/game',
+      mapId: 'fixture.map',
+      analyzerId: 'fixture',
+      documentPaths: [],
+      terrain: {
+        version: 1,
+        width: 2,
+        height: 2,
+        cellCount: 4,
+        minimumHeightBase: 0,
+        maximumHeightBase: 3,
+        minimumHeightAdjustment: 0,
+        maximumHeightAdjustment: 0,
+        trailingBytes: 0,
+        samples,
+      },
+      objects: [],
+      regions: [],
+      diagnostics: [],
+    },
+    terrainTransform: {
+      schemaVersion: 1,
+      snapshotId: 'snapshot-1',
+      descriptorVersion: 1,
+      heightMap: { dim: [2, 2], offset: { x: 0, y: 0, z: 0 }, scale: { x: 1, y: 1, z: 1 } },
+      bounds: {
+        coordinateSpaceId: 'map-native',
+        minimum: { x: 0, y: 0, z: 0 },
+        maximum: { x: 1, y: 1, z: 3 },
+      },
+      source: { terrainDocumentPath: 'fixture.map', format: 'fixture', heightEncoding: 'f64' },
+      mapping: {
+        horizontal: 'offset-plus-grid-index-times-scale',
+        vertical: 'direct-base-times-scale-plus-offset',
+      },
+    },
+    uvwTransform: {
+      schemaVersion: 1,
+      snapshotId: 'snapshot-1',
+      sourceCoordinateSpaceId: 'map-native',
+      targetCoordinateSpaceId: 'uvw-canonical',
+      basis: {
+        handedness: 'right',
+        upAxis: 'y',
+        forwardAxis: '+z',
+        unit: 'source-unit',
+        sourceUnit: 'fixture-unit',
+      },
+      axes: {
+        x: { sourceAxis: 'x', scale: 1, offset: 0 },
+        y: { sourceAxis: 'z', scale: 1, offset: 0 },
+        z: { sourceAxis: 'y', scale: -1, offset: 0 },
+      },
+      heightfield: {
+        columns: 2,
+        rows: 2,
+        cellSize: 1,
+        origin: [0, 0, -1],
+        sourceRowOrder: 'reverse',
+      },
+      bounds: {
+        coordinateSpaceId: 'uvw-canonical',
+        minimum: { x: 0, y: 0, z: -1 },
+        maximum: { x: 1, y: 3, z: 0 },
+      },
+      proof: {
+        kind: 'adapter-qualification',
+        method: 'third-party-reference-differential',
+        oracle: 'fixture',
+        corpus: 'fixture.map',
+        sourceDigests: { 'fixture.map': MAP_DIGEST },
+        tupleCount: 4,
+        comparison: 'ieee-754-binary64-exact',
+        nativeTupleDigest: await sha256(mapQualificationTupleBytes(native)),
+        canonicalTupleDigest: await sha256(mapQualificationTupleBytes(canonical)),
+      },
+    },
+    worldCandidate: {
+      contract: 'example/world',
+      major: 1,
+      maturity: 'publisher-candidate',
+      coordinateSpaces: [],
+      crossSpaceTransforms: [],
+      unknownFacets: [],
+    },
+    unresolvedRequirementIds: [],
+    diagnostics: [],
+    diagnosticsTruncated: false,
+    complete: true,
+  } as unknown as ResolvedMapWorkspaceSnapshot
+}
+
+
+
+describe('independent authored and absolute presentation rotations (Host constructor witness)', () => {
+  const cases = [
+    { unit: 'degrees' as const, authored: 30, presented: 90 },
+    { unit: 'radians' as const, authored: Math.PI / 6, presented: Math.PI / 2 },
+    { unit: 'uint16-turn' as const, authored: 65536 / 12, presented: 16384 },
+  ].flatMap(item => (['counter-clockwise', 'clockwise'] as const).map(sense => ({ ...item, sense })))
+
+  it.each(cases)('keeps authored and presentation apart for $unit/$sense', async ({ unit, authored, presented, sense }) => {
+    const base = await rotationCorpus()
+    const lease = createCandidateWorldSceneLease({ ...base, semantic: { ...base.semantic, objects: [{
+      kind: 'feature', objectId: 7, position: { x: 0.5, y: 0.5, z: 0 },
+      rotation: authored, presentationRotation: presented, nativeRotationUnit: unit, nativeRotationSense: sense,
+    }] } }, [], 64)
+    try {
+      const info = await lease.value.info()
+      const facet = info.facets.find(item => item.facet === 'objects')!
+      const page = await lease.value.page({ facet: 'objects', layerId: facet.layerId, limit: 64 })
+      const object = page.items.find(item => item.facet === 'objects')
+      if (object?.facet !== 'objects') throw new Error('missing placed object')
+      const sign = sense === 'clockwise' ? -1 : 1
+      expect(object.rotation).toBe(authored)
+      expect(object.presentationRotation).toBe(presented)
+      expect(object.uvwRotation?.[1]).toBeCloseTo(sign * Math.sin(Math.PI / 12), 14)
+      expect(object.uvwRotation?.[3]).toBeCloseTo(Math.cos(Math.PI / 12), 14)
+      expect(object.uvwPresentationRotation?.[1]).toBeCloseTo(sign * Math.sin(Math.PI / 4), 14)
+      expect(object.uvwPresentationRotation?.[3]).toBeCloseTo(Math.cos(Math.PI / 4), 14)
+    } finally { await lease.release() }
+  })
+
+  it.each([undefined, 0, 30])('preserves override presence for %s degrees', async presentation => {
+    const base = await rotationCorpus()
+    const lease = createCandidateWorldSceneLease({ ...base, semantic: { ...base.semantic, objects: [{
+      kind: 'feature', objectId: 7, position: { x: 0.5, y: 0.5, z: 0 }, rotation: 30,
+      nativeRotationUnit: 'degrees', ...(presentation === undefined ? {} : { presentationRotation: presentation }),
+    }] } }, [], 64)
+    try {
+      const info = await lease.value.info()
+      const page = await lease.value.page({ facet: 'objects', layerId: info.facets.find(f => f.facet === 'objects')!.layerId, limit: 64 })
+      const object = page.items.find(item => item.facet === 'objects')
+      if (object?.facet !== 'objects') throw new Error('missing placed object')
+      expect(Object.hasOwn(object, 'uvwPresentationRotation')).toBe(presentation !== undefined)
+      expect(object.uvwRotation?.[1]).toBeCloseTo(Math.sin(Math.PI / 12), 14)
+      if (presentation === 0) expect(object.uvwPresentationRotation).toEqual([0, 0, 0, 1])
+      if (presentation === 30) expect(object.uvwPresentationRotation).toEqual(object.uvwRotation)
+    } finally { await lease.release() }
+  })
+
+  it.each([NaN, Infinity, -Infinity])('does not replace valid authored rotation with invalid presentation %s', async presentationRotation => {
+    const base = await rotationCorpus()
+    const lease = createCandidateWorldSceneLease({ ...base, semantic: { ...base.semantic, objects: [{
+      kind: 'feature', objectId: 7, position: { x: 0.5, y: 0.5, z: 0 }, rotation: 30,
+      nativeRotationUnit: 'degrees', presentationRotation,
+    }] } }, [], 64)
+    try {
+      const result = await materializeWorldToUvw(lease.value, { maxPageItems: 64, maxTerrainItems: 64, maxFacetItems: 64, maxOutputBytes: 256000 })
+      if (result.state !== 'materialized') throw new Error(JSON.stringify(result))
+      const layer = result.document.spaces[0]!.layers.find(layer => layer.kind === 'objects')!
+      if (layer.kind !== 'objects') throw new Error('missing objects')
+      expect(layer.instances[0]!.rotation[1]).toBeCloseTo(Math.sin(Math.PI / 12), 14)
+      expect(layer.instances[0]).not.toHaveProperty('presentationRotation')
+      expect(result.lostFields.filter(field => field.path === 'world.objects.presentationRotation')).toEqual([
+        { path: 'world.objects.presentationRotation', count: 1 },
+      ])
+    } finally { await lease.release() }
+  })
+
+  it('keeps both orientations through encoded UVW, reopen and rematerialize', async () => {
+    const base = await rotationCorpus()
+    const lease = createCandidateWorldSceneLease({ ...base, semantic: { ...base.semantic, objects: [{
+      kind: 'feature', objectId: 7, position: { x: 0.5, y: 0.5, z: 0 }, rotation: 30,
+      presentationRotation: 90, nativeRotationUnit: 'degrees', nativeRotationSense: 'counter-clockwise',
+    }] } }, [], 64)
+    const limits = { maxPageItems: 64, maxTerrainItems: 64, maxFacetItems: 64, maxOutputBytes: 256000 }
+    try {
+      const result = await materializeWorldToUvw(lease.value, limits)
+      if (result.state !== 'materialized') throw new Error(JSON.stringify(result))
+      const doc = parseUvwProfile(result.bytes)
+      const layer = doc.spaces[0]!.layers.find(layer => layer.kind === 'objects')!
+      if (layer.kind !== 'objects') throw new Error('missing objects')
+      expect(layer.instances[0]!.rotation).toEqual([0, Math.sin(Math.PI / 12), 0, Math.cos(Math.PI / 12)])
+      expect(layer.instances[0]!.presentationRotation).toEqual([0, Math.sin(Math.PI / 4), 0, Math.cos(Math.PI / 4)])
+      expect(result.lostFields.map(field => field.path)).not.toContain('world.objects.presentationRotation')
+      const reopened = createUvwWorldSceneSource(doc, { snapshotId: 'rotation-reopen', maxPageSize: 64 })
+      const again = await materializeWorldToUvw(reopened, limits)
+      if (again.state !== 'materialized') throw new Error(JSON.stringify(again))
+      expect(again.bytes).toEqual(result.bytes)
+      // Optional private verification output; default test runs perform no file writes.
+      const witness = process.env['ROTATION_WITNESS_FILE']
+      if (witness !== undefined) await writeFile(witness, result.bytes)
+    } finally { await lease.release() }
   })
 })

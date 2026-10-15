@@ -2308,6 +2308,1224 @@
       "pointer": "",
       "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
       "expect": "valid"
+    },
+    {
+      "id": "fixed-state/state",
+      "document": "model/fixtures/uvm-fixed-function-cases.json",
+      "pointer": "/state",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.material.schema.json#gameMaterial",
+      "expect": "valid"
+    },
+    {
+      "id": "fixed-state/blendOnly",
+      "document": "model/fixtures/uvm-fixed-function-cases.json",
+      "pointer": "/blendOnly",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.material.schema.json#gameMaterial",
+      "expect": "valid"
+    },
+    {
+      "id": "fixed-state/depthOnly",
+      "document": "model/fixtures/uvm-fixed-function-cases.json",
+      "pointer": "/depthOnly",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.material.schema.json#gameMaterial",
+      "expect": "valid"
+    },
+    {
+      "id": "fixed-state/priorityOnly",
+      "document": "model/fixtures/uvm-fixed-function-cases.json",
+      "pointer": "/priorityOnly",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.material.schema.json#gameMaterial",
+      "expect": "valid"
+    },
+    {
+      "id": "fixed-state/shaderMinimal",
+      "document": "model/fixtures/uvm-fixed-function-cases.json",
+      "pointer": "/shaderMinimal",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.material.schema.json#gameMaterial",
+      "expect": "valid"
+    },
+    {
+      "id": "fixed-state/shaderFull",
+      "document": "model/fixtures/uvm-fixed-function-cases.json",
+      "pointer": "/shaderFull",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.material.schema.json#gameMaterial",
+      "expect": "valid"
+    },
+    {
+      "id": "fixed-state/empty",
+      "document": "model/fixtures/uvm-fixed-function-cases.json",
+      "pointer": "/state",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.material.schema.json#gameMaterial",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "delete",
+          "path": "blendMode"
+        },
+        {
+          "op": "delete",
+          "path": "depthWrite"
+        },
+        {
+          "op": "delete",
+          "path": "sortPriority"
+        }
+      ]
+    },
+    {
+      "id": "fixed-state/orphan-params",
+      "document": "model/fixtures/uvm-fixed-function-cases.json",
+      "pointer": "/state",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.material.schema.json#gameMaterial",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "delete",
+          "path": "blendMode"
+        },
+        {
+          "op": "delete",
+          "path": "depthWrite"
+        },
+        {
+          "op": "delete",
+          "path": "sortPriority"
+        },
+        {
+          "op": "set",
+          "path": "params",
+          "value": {}
+        }
+      ]
+    },
+    {
+      "id": "fixed-state/state-and-params",
+      "document": "model/fixtures/uvm-fixed-function-cases.json",
+      "pointer": "/state",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.material.schema.json#gameMaterial",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "delete",
+          "path": "blendMode"
+        },
+        {
+          "op": "delete",
+          "path": "depthWrite"
+        },
+        {
+          "op": "delete",
+          "path": "sortPriority"
+        },
+        {
+          "op": "set",
+          "path": "blendMode",
+          "value": "additive"
+        },
+        {
+          "op": "set",
+          "path": "params",
+          "value": {}
+        }
+      ]
+    },
+    {
+      "id": "fixed-state/scope-alias",
+      "document": "model/fixtures/uvm-fixed-function-cases.json",
+      "pointer": "/state",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.material.schema.json#gameMaterial",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "delete",
+          "path": "blendMode"
+        },
+        {
+          "op": "delete",
+          "path": "depthWrite"
+        },
+        {
+          "op": "delete",
+          "path": "sortPriority"
+        },
+        {
+          "op": "set",
+          "path": "blendMode",
+          "value": "additive"
+        },
+        {
+          "op": "set",
+          "path": "parameters",
+          "value": {}
+        }
+      ]
+    },
+    {
+      "id": "fixed-state/priority-alias",
+      "document": "model/fixtures/uvm-fixed-function-cases.json",
+      "pointer": "/state",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.material.schema.json#gameMaterial",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "delete",
+          "path": "blendMode"
+        },
+        {
+          "op": "delete",
+          "path": "depthWrite"
+        },
+        {
+          "op": "delete",
+          "path": "sortPriority"
+        },
+        {
+          "op": "set",
+          "path": "priority",
+          "value": 7
+        }
+      ]
+    },
+    {
+      "id": "fixed-state/naked-layers",
+      "document": "model/fixtures/uvm-fixed-function-cases.json",
+      "pointer": "/state",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.material.schema.json#gameMaterial",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "delete",
+          "path": "blendMode"
+        },
+        {
+          "op": "delete",
+          "path": "depthWrite"
+        },
+        {
+          "op": "delete",
+          "path": "sortPriority"
+        },
+        {
+          "op": "set",
+          "path": "blendMode",
+          "value": "additive"
+        },
+        {
+          "op": "set",
+          "path": "layers",
+          "value": []
+        }
+      ]
+    },
+    {
+      "id": "fixed-state/naked-pass",
+      "document": "model/fixtures/uvm-fixed-function-cases.json",
+      "pointer": "/state",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.material.schema.json#gameMaterial",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "delete",
+          "path": "blendMode"
+        },
+        {
+          "op": "delete",
+          "path": "depthWrite"
+        },
+        {
+          "op": "delete",
+          "path": "sortPriority"
+        },
+        {
+          "op": "set",
+          "path": "sortPriority",
+          "value": 7
+        },
+        {
+          "op": "set",
+          "path": "passes",
+          "value": []
+        }
+      ]
+    },
+    {
+      "id": "fixed-state/outside-narrow-state",
+      "document": "model/fixtures/uvm-fixed-function-cases.json",
+      "pointer": "/state",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.material.schema.json#gameMaterial",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "delete",
+          "path": "blendMode"
+        },
+        {
+          "op": "delete",
+          "path": "depthWrite"
+        },
+        {
+          "op": "delete",
+          "path": "sortPriority"
+        },
+        {
+          "op": "set",
+          "path": "cull",
+          "value": "none"
+        }
+      ]
+    },
+    {
+      "id": "fixed-state/null-shader",
+      "document": "model/fixtures/uvm-fixed-function-cases.json",
+      "pointer": "/state",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.material.schema.json#gameMaterial",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "delete",
+          "path": "blendMode"
+        },
+        {
+          "op": "delete",
+          "path": "depthWrite"
+        },
+        {
+          "op": "delete",
+          "path": "sortPriority"
+        },
+        {
+          "op": "set",
+          "path": "shader",
+          "value": null
+        },
+        {
+          "op": "set",
+          "path": "blendMode",
+          "value": "additive"
+        }
+      ]
+    },
+    {
+      "id": "fixed-state/empty-shader",
+      "document": "model/fixtures/uvm-fixed-function-cases.json",
+      "pointer": "/state",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.material.schema.json#gameMaterial",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "delete",
+          "path": "blendMode"
+        },
+        {
+          "op": "delete",
+          "path": "depthWrite"
+        },
+        {
+          "op": "delete",
+          "path": "sortPriority"
+        },
+        {
+          "op": "set",
+          "path": "shader",
+          "value": ""
+        },
+        {
+          "op": "set",
+          "path": "params",
+          "value": {}
+        }
+      ]
+    },
+    {
+      "id": "fixed-state/bad-shader-params",
+      "document": "model/fixtures/uvm-fixed-function-cases.json",
+      "pointer": "/state",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.material.schema.json#gameMaterial",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "delete",
+          "path": "blendMode"
+        },
+        {
+          "op": "delete",
+          "path": "depthWrite"
+        },
+        {
+          "op": "delete",
+          "path": "sortPriority"
+        },
+        {
+          "op": "set",
+          "path": "shader",
+          "value": "example.standard"
+        },
+        {
+          "op": "set",
+          "path": "params",
+          "value": []
+        }
+      ]
+    },
+    {
+      "id": "fixed-state/unknown-blend",
+      "document": "model/fixtures/uvm-fixed-function-cases.json",
+      "pointer": "/state",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.material.schema.json#gameMaterial",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "delete",
+          "path": "blendMode"
+        },
+        {
+          "op": "delete",
+          "path": "depthWrite"
+        },
+        {
+          "op": "delete",
+          "path": "sortPriority"
+        },
+        {
+          "op": "set",
+          "path": "blendMode",
+          "value": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "fixed-state/bad-depth",
+      "document": "model/fixtures/uvm-fixed-function-cases.json",
+      "pointer": "/state",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.material.schema.json#gameMaterial",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "delete",
+          "path": "blendMode"
+        },
+        {
+          "op": "delete",
+          "path": "depthWrite"
+        },
+        {
+          "op": "delete",
+          "path": "sortPriority"
+        },
+        {
+          "op": "set",
+          "path": "depthWrite",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "id": "fixed-state/fractional-priority",
+      "document": "model/fixtures/uvm-fixed-function-cases.json",
+      "pointer": "/state",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.material.schema.json#gameMaterial",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "delete",
+          "path": "blendMode"
+        },
+        {
+          "op": "delete",
+          "path": "depthWrite"
+        },
+        {
+          "op": "delete",
+          "path": "sortPriority"
+        },
+        {
+          "op": "set",
+          "path": "sortPriority",
+          "value": 0.5
+        }
+      ]
+    },
+    {
+      "id": "fixed-state/old-shader-unknown-field",
+      "document": "model/fixtures/uvm-fixed-function-cases.json",
+      "pointer": "/state",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.material.schema.json#gameMaterial",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "delete",
+          "path": "blendMode"
+        },
+        {
+          "op": "delete",
+          "path": "depthWrite"
+        },
+        {
+          "op": "delete",
+          "path": "sortPriority"
+        },
+        {
+          "op": "set",
+          "path": "shader",
+          "value": "example.standard"
+        },
+        {
+          "op": "set",
+          "path": "unknown",
+          "value": true
+        }
+      ]
+    },
+    {
+      "id": "fixed-state/full-model-extension",
+      "document": "model/fixtures/uvm-fixed-function-state.uvm.gltf",
+      "pointer": "/materials/0/extensions/UV_game_material",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.material.schema.json#gameMaterial",
+      "expect": "valid"
+    },
+    {
+      "id": "world-dual-rotation/json",
+      "document": "world/fixtures/uvw-presentation-rotation.uvw.json",
+      "pointer": "",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json",
+      "expect": "valid"
+    },
+    {
+      "id": "world-dual-rotation/gltf",
+      "document": "world/fixtures/uvw-presentation-rotation.uvw.gltf",
+      "pointer": "",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "valid"
+    },
+    {
+      "id": "world-dual-rotation/null",
+      "document": "world/fixtures/uvw-presentation-rotation.uvw.json",
+      "pointer": "/spaces/0/layers/0/instances/0",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/objectInstance",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "presentationRotation",
+          "value": null
+        }
+      ]
+    },
+    {
+      "id": "world-dual-rotation/width",
+      "document": "world/fixtures/uvw-presentation-rotation.uvw.json",
+      "pointer": "/spaces/0/layers/0/instances/0",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/objectInstance",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "presentationRotation",
+          "value": [
+            0,
+            0,
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "id": "world-dual-rotation/long",
+      "document": "world/fixtures/uvw-presentation-rotation.uvw.json",
+      "pointer": "/spaces/0/layers/0/instances/0",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/objectInstance",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "presentationRotation",
+          "value": [
+            0,
+            0,
+            0,
+            1,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "id": "world-dual-rotation/component",
+      "document": "world/fixtures/uvw-presentation-rotation.uvw.json",
+      "pointer": "/spaces/0/layers/0/instances/0",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/objectInstance",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "presentationRotation",
+          "value": [
+            0,
+            false,
+            0,
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "id": "world-dual-rotation/absent",
+      "document": "world/fixtures/uvw-presentation-rotation.uvw.json",
+      "pointer": "/spaces/0/layers/0/instances/0",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/objectInstance",
+      "expect": "valid",
+      "mutations": [
+        {
+          "op": "delete",
+          "path": "presentationRotation"
+        }
+      ]
+    },
+    {
+      "id": "world-dual-rotation/gltf-width",
+      "document": "world/fixtures/uvw-presentation-rotation.uvw.gltf",
+      "pointer": "",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.gltf.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "extensions.UV_world_graph.spaces.0.layers.0.instances.0.presentationRotation",
+          "value": [
+            0,
+            0,
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "id": "emis-mult/standard/valid",
+      "document": "model/fixtures/uvm-emis-mult-cases.json",
+      "pointer": "/standard",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.animation.schema.json#/$defs/materialTarget",
+      "expect": "valid",
+      "mutations": []
+    },
+    {
+      "id": "emis-mult/standard/negative",
+      "document": "model/fixtures/uvm-emis-mult-cases.json",
+      "pointer": "/standard",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.animation.schema.json#/$defs/materialTarget",
+      "expect": "valid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "properties.0.value",
+          "value": -2
+        }
+      ]
+    },
+    {
+      "id": "emis-mult/standard/zero",
+      "document": "model/fixtures/uvm-emis-mult-cases.json",
+      "pointer": "/standard",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.animation.schema.json#/$defs/materialTarget",
+      "expect": "valid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "properties.0.value",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "id": "emis-mult/standard/hdr",
+      "document": "model/fixtures/uvm-emis-mult-cases.json",
+      "pointer": "/standard",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.animation.schema.json#/$defs/materialTarget",
+      "expect": "valid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "properties.0.value",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "id": "emis-mult/standard/finite-roundable",
+      "document": "model/fixtures/uvm-emis-mult-cases.json",
+      "pointer": "/standard",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.animation.schema.json#/$defs/materialTarget",
+      "expect": "valid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "properties.0.value",
+          "value": 3.4028235e+38
+        }
+      ]
+    },
+    {
+      "id": "emis-mult/standard/default-null",
+      "document": "model/fixtures/uvm-emis-mult-cases.json",
+      "pointer": "/standard",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.animation.schema.json#/$defs/materialTarget",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "properties.0.value",
+          "value": null
+        }
+      ]
+    },
+    {
+      "id": "emis-mult/standard/default-object",
+      "document": "model/fixtures/uvm-emis-mult-cases.json",
+      "pointer": "/standard",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.animation.schema.json#/$defs/materialTarget",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "properties.0.value",
+          "value": {}
+        }
+      ]
+    },
+    {
+      "id": "emis-mult/standard/default-empty-array",
+      "document": "model/fixtures/uvm-emis-mult-cases.json",
+      "pointer": "/standard",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.animation.schema.json#/$defs/materialTarget",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "properties.0.value",
+          "value": []
+        }
+      ]
+    },
+    {
+      "id": "emis-mult/standard/default-one-array",
+      "document": "model/fixtures/uvm-emis-mult-cases.json",
+      "pointer": "/standard",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.animation.schema.json#/$defs/materialTarget",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "properties.0.value",
+          "value": [
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "id": "emis-mult/standard/default-two-array",
+      "document": "model/fixtures/uvm-emis-mult-cases.json",
+      "pointer": "/standard",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.animation.schema.json#/$defs/materialTarget",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "properties.0.value",
+          "value": [
+            1,
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "id": "emis-mult/standard/default-string",
+      "document": "model/fixtures/uvm-emis-mult-cases.json",
+      "pointer": "/standard",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.animation.schema.json#/$defs/materialTarget",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "properties.0.value",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "id": "emis-mult/standard/default-bool",
+      "document": "model/fixtures/uvm-emis-mult-cases.json",
+      "pointer": "/standard",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.animation.schema.json#/$defs/materialTarget",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "properties.0.value",
+          "value": true
+        }
+      ]
+    },
+    {
+      "id": "emis-mult/standard/key-empty",
+      "document": "model/fixtures/uvm-emis-mult-cases.json",
+      "pointer": "/standard",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.animation.schema.json#/$defs/materialTarget",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "properties.0.sequenceTracks.0.track.keys.0.vector",
+          "value": []
+        }
+      ]
+    },
+    {
+      "id": "emis-mult/standard/key-wide",
+      "document": "model/fixtures/uvm-emis-mult-cases.json",
+      "pointer": "/standard",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.animation.schema.json#/$defs/materialTarget",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "properties.0.sequenceTracks.0.track.keys.0.vector",
+          "value": [
+            1,
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "id": "emis-mult/standard/key-number",
+      "document": "model/fixtures/uvm-emis-mult-cases.json",
+      "pointer": "/standard",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.animation.schema.json#/$defs/materialTarget",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "properties.0.sequenceTracks.0.track.keys.0.vector",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "id": "emis-mult/standard/key-null",
+      "document": "model/fixtures/uvm-emis-mult-cases.json",
+      "pointer": "/standard",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.animation.schema.json#/$defs/materialTarget",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "properties.0.sequenceTracks.0.track.keys.0.vector",
+          "value": null
+        }
+      ]
+    },
+    {
+      "id": "emis-mult/standard/key-object",
+      "document": "model/fixtures/uvm-emis-mult-cases.json",
+      "pointer": "/standard",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.animation.schema.json#/$defs/materialTarget",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "properties.0.sequenceTracks.0.track.keys.0.vector",
+          "value": {}
+        }
+      ]
+    },
+    {
+      "id": "emis-mult/standard/key-string-component",
+      "document": "model/fixtures/uvm-emis-mult-cases.json",
+      "pointer": "/standard",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.animation.schema.json#/$defs/materialTarget",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "properties.0.sequenceTracks.0.track.keys.0.vector",
+          "value": [
+            "2"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "emis-mult/standard/concurrent-key-width",
+      "document": "model/fixtures/uvm-emis-mult-cases.json",
+      "pointer": "/standard",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.animation.schema.json#/$defs/materialTarget",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "properties.0.sequenceTracks.1.track.keys.2.vector",
+          "value": [
+            0,
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "id": "emis-mult/standard/unknown-field",
+      "document": "model/fixtures/uvm-emis-mult-cases.json",
+      "pointer": "/standard",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.animation.schema.json#/$defs/materialTarget",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "properties.0.gain",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "id": "emis-mult/composite/valid",
+      "document": "model/fixtures/uvm-emis-mult-cases.json",
+      "pointer": "/composite",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.animation.schema.json#/$defs/materialTarget",
+      "expect": "valid",
+      "mutations": []
+    },
+    {
+      "id": "emis-mult/composite/negative",
+      "document": "model/fixtures/uvm-emis-mult-cases.json",
+      "pointer": "/composite",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.animation.schema.json#/$defs/materialTarget",
+      "expect": "valid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "properties.0.value",
+          "value": -2
+        }
+      ]
+    },
+    {
+      "id": "emis-mult/composite/zero",
+      "document": "model/fixtures/uvm-emis-mult-cases.json",
+      "pointer": "/composite",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.animation.schema.json#/$defs/materialTarget",
+      "expect": "valid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "properties.0.value",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "id": "emis-mult/composite/hdr",
+      "document": "model/fixtures/uvm-emis-mult-cases.json",
+      "pointer": "/composite",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.animation.schema.json#/$defs/materialTarget",
+      "expect": "valid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "properties.0.value",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "id": "emis-mult/composite/finite-roundable",
+      "document": "model/fixtures/uvm-emis-mult-cases.json",
+      "pointer": "/composite",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.animation.schema.json#/$defs/materialTarget",
+      "expect": "valid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "properties.0.value",
+          "value": 3.4028235e+38
+        }
+      ]
+    },
+    {
+      "id": "emis-mult/composite/default-null",
+      "document": "model/fixtures/uvm-emis-mult-cases.json",
+      "pointer": "/composite",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.animation.schema.json#/$defs/materialTarget",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "properties.0.value",
+          "value": null
+        }
+      ]
+    },
+    {
+      "id": "emis-mult/composite/default-object",
+      "document": "model/fixtures/uvm-emis-mult-cases.json",
+      "pointer": "/composite",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.animation.schema.json#/$defs/materialTarget",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "properties.0.value",
+          "value": {}
+        }
+      ]
+    },
+    {
+      "id": "emis-mult/composite/default-empty-array",
+      "document": "model/fixtures/uvm-emis-mult-cases.json",
+      "pointer": "/composite",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.animation.schema.json#/$defs/materialTarget",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "properties.0.value",
+          "value": []
+        }
+      ]
+    },
+    {
+      "id": "emis-mult/composite/default-one-array",
+      "document": "model/fixtures/uvm-emis-mult-cases.json",
+      "pointer": "/composite",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.animation.schema.json#/$defs/materialTarget",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "properties.0.value",
+          "value": [
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "id": "emis-mult/composite/default-two-array",
+      "document": "model/fixtures/uvm-emis-mult-cases.json",
+      "pointer": "/composite",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.animation.schema.json#/$defs/materialTarget",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "properties.0.value",
+          "value": [
+            1,
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "id": "emis-mult/composite/default-string",
+      "document": "model/fixtures/uvm-emis-mult-cases.json",
+      "pointer": "/composite",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.animation.schema.json#/$defs/materialTarget",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "properties.0.value",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "id": "emis-mult/composite/default-bool",
+      "document": "model/fixtures/uvm-emis-mult-cases.json",
+      "pointer": "/composite",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.animation.schema.json#/$defs/materialTarget",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "properties.0.value",
+          "value": true
+        }
+      ]
+    },
+    {
+      "id": "emis-mult/composite/key-empty",
+      "document": "model/fixtures/uvm-emis-mult-cases.json",
+      "pointer": "/composite",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.animation.schema.json#/$defs/materialTarget",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "properties.0.sequenceTracks.0.track.keys.0.vector",
+          "value": []
+        }
+      ]
+    },
+    {
+      "id": "emis-mult/composite/key-wide",
+      "document": "model/fixtures/uvm-emis-mult-cases.json",
+      "pointer": "/composite",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.animation.schema.json#/$defs/materialTarget",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "properties.0.sequenceTracks.0.track.keys.0.vector",
+          "value": [
+            1,
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "id": "emis-mult/composite/key-number",
+      "document": "model/fixtures/uvm-emis-mult-cases.json",
+      "pointer": "/composite",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.animation.schema.json#/$defs/materialTarget",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "properties.0.sequenceTracks.0.track.keys.0.vector",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "id": "emis-mult/composite/key-null",
+      "document": "model/fixtures/uvm-emis-mult-cases.json",
+      "pointer": "/composite",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.animation.schema.json#/$defs/materialTarget",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "properties.0.sequenceTracks.0.track.keys.0.vector",
+          "value": null
+        }
+      ]
+    },
+    {
+      "id": "emis-mult/composite/key-object",
+      "document": "model/fixtures/uvm-emis-mult-cases.json",
+      "pointer": "/composite",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.animation.schema.json#/$defs/materialTarget",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "properties.0.sequenceTracks.0.track.keys.0.vector",
+          "value": {}
+        }
+      ]
+    },
+    {
+      "id": "emis-mult/composite/key-string-component",
+      "document": "model/fixtures/uvm-emis-mult-cases.json",
+      "pointer": "/composite",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.animation.schema.json#/$defs/materialTarget",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "properties.0.sequenceTracks.0.track.keys.0.vector",
+          "value": [
+            "2"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "emis-mult/composite/concurrent-key-width",
+      "document": "model/fixtures/uvm-emis-mult-cases.json",
+      "pointer": "/composite",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.animation.schema.json#/$defs/materialTarget",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "properties.0.sequenceTracks.1.track.keys.2.vector",
+          "value": [
+            0,
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "id": "emis-mult/composite/unknown-field",
+      "document": "model/fixtures/uvm-emis-mult-cases.json",
+      "pointer": "/composite",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.animation.schema.json#/$defs/materialTarget",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "properties.0.gain",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "id": "emis-mult/unrelated-scalar-array-unchanged",
+      "document": "model/fixtures/uvm-emis-mult-cases.json",
+      "pointer": "/legacyVectorDefault",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.animation.schema.json#/$defs/materialTarget",
+      "expect": "valid"
+    },
+    {
+      "id": "emis-mult/composite-pass12-number",
+      "document": "model/fixtures/uvm-emis-mult-cases.json",
+      "pointer": "/composite",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.animation.schema.json#/$defs/materialTarget",
+      "expect": "valid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "properties.0.path",
+          "value": "/renderModel/composite/passes/12/material/emisMult"
+        },
+        {
+          "op": "set",
+          "path": "properties.0.value",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "id": "emis-mult/composite-pass12-array",
+      "document": "model/fixtures/uvm-emis-mult-cases.json",
+      "pointer": "/composite",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.animation.schema.json#/$defs/materialTarget",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "properties.0.path",
+          "value": "/renderModel/composite/passes/12/material/emisMult"
+        },
+        {
+          "op": "set",
+          "path": "properties.0.value",
+          "value": [
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "id": "emis-mult/full-catalog",
+      "document": "model/fixtures/uvm-emis-mult-targets.uvm.gltf",
+      "pointer": "/extensions/UV_game_animation_clips",
+      "schemaId": "https://modkitx.org/uvm/1.0/uvm.animation.schema.json#catalog",
+      "expect": "valid"
     }
   ]
 }

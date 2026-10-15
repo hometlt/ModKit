@@ -457,10 +457,11 @@ function assertObjects(layer, layers) {
   const instances = []
   for (const instance of layer.instances) {
     if (!keys(instance, ['id', 'objectKind', 'position', 'rotation', 'scale', 'resourceIds'],
-      ['modelComponents', 'typeId', 'player', 'variation', 'name', 'derivedFrom', 'presentationTint', 'presentationAnimation', 'latticeCoverage'])
+      ['modelComponents', 'typeId', 'player', 'variation', 'name', 'derivedFrom', 'presentationTint', 'presentationAnimation', 'presentationRotation', 'latticeCoverage'])
       || !id(instance.id)
       || !['unit', 'structure', 'feature', 'doodad', 'point', 'camera'].includes(instance.objectKind)
       || !vector(instance.position, 3) || !quaternion(instance.rotation)
+      || (instance.presentationRotation !== undefined && !quaternion(instance.presentationRotation))
       || !vector(instance.scale, 3) || instance.scale.some(value => value === 0)
       || !Array.isArray(instance.resourceIds) || !instance.resourceIds.every(id)
       || !ordered(instance.resourceIds)

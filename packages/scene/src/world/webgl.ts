@@ -2140,6 +2140,11 @@ function objectYaw(item: WorldSceneObjectItem): number {
   return item.nativeRotationSense === 'clockwise' ? -radians : radians
 }
 
+/** Presentation is an absolute visual override, independent of the authored orientation. */
+function visualObjectRotation(item: WorldSceneObjectItem): WorldSceneObjectItem['uvwRotation'] {
+  return item.uvwPresentationRotation ?? item.uvwRotation
+}
+
 function instanceVertex(
   point: readonly [number, number, number],
   item: WorldSceneObjectItem,
@@ -2152,7 +2157,8 @@ function instanceVertex(
     point[2] * scale.z,
   ]
   let rotated: readonly [number, number, number]
-  if (item.uvwRotation !== undefined) rotated = rotateQuaternion(scaled, item.uvwRotation)
+  const visualRotation = visualObjectRotation(item)
+  if (visualRotation !== undefined) rotated = rotateQuaternion(scaled, visualRotation)
   else {
     // a right-handed turn about +Y, as worldObjectTransform turns the same object
     const yaw = objectYaw(item)
@@ -2914,8 +2920,9 @@ function worldObjectTransform(
   reflect = true,
 ): Float32Array {
   const scale = item.uvwScale ?? item.scale ?? { x: 1, y: 1, z: 1 }
+  const visualRotation = visualObjectRotation(item)
   const rotation =
-    item.uvwRotation === undefined
+    visualRotation === undefined
       ? componentLocalTransform({
           id: 'world-object',
           resourceId: 'world-object',
@@ -2924,7 +2931,7 @@ function worldObjectTransform(
       : componentLocalTransform({
           id: 'world-object',
           resourceId: 'world-object',
-          rotation: item.uvwRotation,
+          rotation: visualRotation,
         })
   for (const row of [0, 1, 2]) {
     rotation[row] = (rotation[row] ?? 0) * scale.x

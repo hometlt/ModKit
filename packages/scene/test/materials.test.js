@@ -787,3 +787,105 @@ it('keeps the programs object of a material without tracks across the clocks of 
   const blue = sampler.sample({ time: 1, teamColor: [0, 0, 1] }, [])
   assert.notEqual(blue.get('surface'), early.get('surface'))
 })
+
+
+it('samples material-level emissive gain even with static layers and preserves its resource closure', () => {
+  const authored = parameters(material({
+    emisMult: { value: 7, sequenceTracks: [{ sequenceIndex: 3, track: track([0], [2]) }] },
+    layers: { emissive1: layer('emissive1', { texturePath: 'glow.dds' }) },
+  }))
+  const before = structuredClone(authored)
+  const sampler = createRenderMaterialSampler(authored, budget)
+  assert.equal(sampler.timeless, false)
+  assert.deepEqual(sampler.resources, ['glow.dds'])
+  const programs = createStandardMaterialPrograms(authored, { budget })
+  for (const [time, gain] of [[0, 0], [0.5, 0.5], [2, 2], [0, 0]]) {
+    const moment = { time, sequenceTime: time, sequenceIndex: 3 }
+    assert.equal(sampler.sample(moment)[0].material.emisMult, gain)
+    const pass = programs.sample(moment)[0]
+    assert.equal(typeof pass.uniforms.u_emisMult, 'number')
+    assert.equal(pass.uniforms.u_emisMult, gain)
+    assert.equal(pass.textures.some(binding => binding.resourceId === 'glow.dds'), true)
+  }
+  assert.equal(sampler.sample({ time: 1 })[0].material.emisMult, 7)
+  assert.equal(sampler.sample({ time: 1, sequenceIndex: 99 })[0].material.emisMult, 7)
+  assert.deepEqual(authored, before)
+  authored.renderModel.standard.emisMult.sequenceTracks[0].track.keys[1].vector[0] = 99
+  assert.equal(sampler.sample({ time: 2, sequenceIndex: 3 })[0].material.emisMult, 2)
+})
+
+it('keeps emissive gain local and concurrent clocks distinct for standard and composite passes', () => {
+  const local = material({ emisMult: { value: -0.5, sequenceTracks: [
+    { sequenceIndex: 0, track: track([0], [2]) },
+  ] } })
+  const global = material({ emisMult: { value: 8, sequenceTracks: [
+    { sequenceIndex: 0, concurrent: true, wrapSeconds: 2, track: track([0], [2]) },
+  ] } })
+  const sampler = createRenderMaterialSampler({ renderModel: { version: 1, composite: {
+    priority: 0, passes: [{ material: local, alphaFactor: { value: 1 } },
+      { material: global, alphaFactor: { value: 1 } }],
+  } } }, budget)
+  assert.deepEqual(sampler.sample({ time: 2.5, sequenceTime: 1, sequenceIndex: 0 })
+    .map(pass => pass.material.emisMult), [1, 0.5])
+  for (const sequenceIndex of [undefined, 9])
+    assert.deepEqual(sampler.sample({ time: 2.5, sequenceIndex })
+      .map(pass => pass.material.emisMult), [-0.5, 8])
+  const legacy = createRenderMaterialSampler(parameters(material({
+    emisMult: { value: 9, track: track([0], [2]) },
+  })), budget)
+  assert.equal(legacy.sample({ time: 1 })[0].material.emisMult, 1)
+  assert.equal(legacy.sample({ time: 2.5, sequenceTime: 0.5 })[0].material.emisMult, 0.5)
+})
+
+it('keeps signed static emissive gain and finite float32 validation at the numeric sample boundary', () => {
+  for (const gain of [0, 1, -0.5, 2, Math.fround(3e38)])
+    for (const value of [gain, { value: gain }]) {
+      const sampler = createRenderMaterialSampler(parameters(material({ emisMult: value })), budget)
+      assert.equal(sampler.timeless, true)
+      assert.equal(sampler.sample({ time: 0 })[0].material.emisMult, gain)
+      assert.equal(program(material({ emisMult: value })).uniforms.u_emisMult, gain)
+    }
+  for (const value of [NaN, Infinity, -Infinity, 1e40, null, [], {}, { value: null },
+    { value: [1] }, { value: 1e40 }, { value: 0, track: track([0, 1], [2, 3]) },
+    { value: 0, track: track([0], [Infinity]) },
+    { value: 0, sequenceTracks: [{ sequenceIndex: 0, track: track([0], [2]) },
+      { sequenceIndex: 0, track: track([1], [3]) }] },
+    { value: 0, sequenceTracks: [{ sequenceIndex: 0, concurrent: true, track: track([0], [2]) }] }])
+    assert.throws(() => createRenderMaterialSampler(parameters(material({ emisMult: value })), budget))
+})
+
+it('applies sampled emissive gain after decode and leaves HDR and alpha in the existing CPU kernel', () => {
+  const base = material({
+    lightingModel: 'pbr-metallic-roughness', colorPipeline: 'linear-srgb',
+    specMult: 0, clampOutput: false, unshaded: false,
+    layers: {
+      diffuse: layer('diffuse', { constantColor: { value: [0, 0, 0, 0.4] }, clampResult: false }),
+      emissive1: layer('emissive1', { texturePath: 'glow.dds', clampResult: false }),
+    },
+  })
+  delete base.layers.emissive1.constantColor
+  const gainProgram = (standard, time) => createStandardMaterialPrograms(parameters(standard), { budget })
+    .sample(time, { sceneLighting: true, ambient: [0, 0, 0, 0] })[0]
+  const shade = (pass, texel = 0.5) => pass.shade({
+    texels: { emissive1: [texel, texel, texel, 0.3] },
+    sceneLighting: { ambientColor: [0, 0, 0], lightColor: [0, 0, 0] },
+  }).rgba
+  const gain = { value: 1, track: track([0], [2]) }
+  for (const time of [0, 0.5, 2]) {
+    const animated = gainProgram({ ...base, emisMult: gain }, { time })
+    const staticPass = gainProgram({ ...base, emisMult: time }, { time })
+    assert.equal(animated.uniforms.u_emisMult, time)
+    close(shade(animated), shade(staticPass))
+  }
+  const post = shade(gainProgram({ ...base, emisMult: gain }, { time: 2 }))
+  const pre = shade(gainProgram({ ...base, emisMult: 1, layers: { ...base.layers,
+    emissive1: { ...base.layers.emissive1, colorMultiply: { value: 2 } },
+  } }, { time: 2 }))
+  // Lit linear-sRGB programs encode the post-decode result for display at their output.
+  const encoded = 1.055 * Math.pow(0.4280822809644651, 1 / 2.4) - 0.055
+  close(post, [encoded, encoded, encoded, 0.4])
+  assert.ok(pre[0] - post[0] > 0.3)
+  const hdr = { ...base, emisMult: gain, lightingModel: 'm3', colorPipeline: 'm3', unshaded: true }
+  close(shade(gainProgram(hdr, { time: 2 }), 1), [2, 2, 2, 0.4])
+  close(shade(gainProgram({ ...hdr, clampOutput: true }, { time: 2 }), 1), [1, 1, 1, 0.4])
+})

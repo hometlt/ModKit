@@ -198,6 +198,8 @@ export interface UvwObjectInstance {
   readonly objectKind: UvwObjectKind
   readonly position: readonly [number, number, number]
   readonly rotation: readonly [number, number, number, number]
+  /** Optional absolute visual orientation; authored rotation remains independent. */
+  readonly presentationRotation?: readonly [number, number, number, number]
   readonly scale: readonly [number, number, number]
   readonly resourceIds: readonly string[]
   readonly modelComponents?: readonly MapModelComponentPlacement[]
@@ -1571,6 +1573,7 @@ function objectsLayer(
           'objectKind',
           'position',
           'rotation',
+          'presentationRotation',
           'scale',
           'resourceIds',
           'modelComponents',
@@ -1597,6 +1600,11 @@ function objectsLayer(
       const magnitude = Math.hypot(...rotation)
       if (Math.abs(magnitude - 1) > 1e-6)
         fail('object rotation quaternion must have unit length', `${instancePath}.rotation`)
+      const presentationRotation = instance['presentationRotation'] === undefined
+        ? undefined
+        : vec4(instance['presentationRotation'], `${instancePath}.presentationRotation`, state, depth + 3)
+      if (presentationRotation !== undefined && Math.abs(Math.hypot(...presentationRotation) - 1) > 1e-6)
+        fail('object rotation quaternion must have unit length', `${instancePath}.presentationRotation`)
       const scale = vec3(instance['scale'], `${instancePath}.scale`, state, depth + 3)
       if (scale.some(component => component === 0))
         fail('object scale components must be non-zero', `${instancePath}.scale`)
@@ -1743,6 +1751,7 @@ function objectsLayer(
         objectKind,
         position: vec3(instance['position'], `${instancePath}.position`, state, depth + 3),
         rotation,
+        ...(presentationRotation === undefined ? {} : { presentationRotation }),
         scale,
         resourceIds: Object.freeze(resourceIds),
         ...(modelComponents === undefined

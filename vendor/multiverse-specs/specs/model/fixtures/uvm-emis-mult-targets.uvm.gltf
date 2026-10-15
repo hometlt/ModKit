@@ -1,0 +1,194 @@
+{
+  "asset": {
+    "version": "2.0",
+    "generator": "multiverse/specs common emissive-gain carrier fixture",
+    "extras": {
+      "uv": {
+        "format": "UVM",
+        "version": "1.0",
+        "profile": "core"
+      }
+    }
+  },
+  "extensionsUsed": [
+    "UV_asset",
+    "UV_provenance",
+    "UV_game_animation_clips"
+  ],
+  "extensions": {
+    "UV_asset": {
+      "id": "fixture/uvm-emis-mult-targets",
+      "class": "prop",
+      "coreRenderable": false
+    },
+    "UV_provenance": {
+      "source": {
+        "format": "fixture",
+        "file": "emis-mult.fixture"
+      },
+      "importer": {
+        "id": "org.multiverse/uvm-contract-fixture",
+        "version": "1.0.0"
+      },
+      "lost": []
+    },
+    "UV_game_animation_clips": {
+      "clips": [
+        {
+          "id": "sequence-0",
+          "name": "Ordinary",
+          "durationSeconds": 1,
+          "sourceSequenceIndex": 0
+        },
+        {
+          "id": "sequence-1",
+          "name": "Concurrent",
+          "durationSeconds": 1,
+          "sourceSequenceIndex": 1
+        }
+      ],
+      "materialTargets": [
+        {
+          "id": "standard-gain",
+          "properties": [
+            {
+              "path": "/renderModel/standard/emisMult",
+              "value": -0.5,
+              "sequenceTracks": [
+                {
+                  "sequenceIndex": 0,
+                  "track": {
+                    "lineType": 1,
+                    "globalSeqId": null,
+                    "keys": [
+                      {
+                        "frame": 0,
+                        "vector": [
+                          0
+                        ]
+                      },
+                      {
+                        "frame": 0.5,
+                        "vector": [
+                          2
+                        ]
+                      },
+                      {
+                        "frame": 1,
+                        "vector": [
+                          -1
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "sequenceIndex": 1,
+                  "concurrent": true,
+                  "wrapSeconds": 1,
+                  "track": {
+                    "lineType": 1,
+                    "globalSeqId": null,
+                    "keys": [
+                      {
+                        "frame": 0,
+                        "vector": [
+                          0
+                        ]
+                      },
+                      {
+                        "frame": 0.5,
+                        "vector": [
+                          2
+                        ]
+                      },
+                      {
+                        "frame": 1,
+                        "vector": [
+                          -1
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "composite-gain",
+          "properties": [
+            {
+              "path": "/renderModel/composite/passes/0/material/emisMult",
+              "value": 0,
+              "sequenceTracks": [
+                {
+                  "sequenceIndex": 0,
+                  "track": {
+                    "lineType": 1,
+                    "globalSeqId": null,
+                    "keys": [
+                      {
+                        "frame": 0,
+                        "vector": [
+                          0
+                        ]
+                      },
+                      {
+                        "frame": 0.5,
+                        "vector": [
+                          2
+                        ]
+                      },
+                      {
+                        "frame": 1,
+                        "vector": [
+                          -1
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "sequenceIndex": 1,
+                  "concurrent": true,
+                  "wrapSeconds": 1,
+                  "track": {
+                    "lineType": 1,
+                    "globalSeqId": null,
+                    "keys": [
+                      {
+                        "frame": 0,
+                        "vector": [
+                          0
+                        ]
+                      },
+                      {
+                        "frame": 0.5,
+                        "vector": [
+                          2
+                        ]
+                      },
+                      {
+                        "frame": 1,
+                        "vector": [
+                          -1
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "buffers": [
+    {
+      "byteLength": 4,
+      "uri": "data:application/octet-stream;base64,AAAAAA=="
+    }
+  ]
+}

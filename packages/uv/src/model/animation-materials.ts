@@ -29,7 +29,7 @@ const ordinal = '(?:0|[1-9]\\d*)'
 const standard = `(?:standard|composite/passes/${ordinal}/material)`
 const layerPath = new RegExp(`^/renderModel/${standard}/layers/([^/]+)/(.*)$`, 'u')
 const scalarPath = new RegExp(
-  `^/renderModel/(?:${standard}/(?:parallaxHeight|normalBlendFactors/[0-7])|composite/passes/${ordinal}/alphaFactor)$`,
+  `^/renderModel/(?:${standard}/(?:emisMult|parallaxHeight|normalBlendFactors/[0-7])|composite/passes/${ordinal}/alphaFactor)$`,
   'u',
 )
 
@@ -83,6 +83,8 @@ function readTargets(value: unknown, signal?: AbortSignal): readonly UvmAnimatio
             'animation material property requires a unique published path and sequenceTracks',
           )
         paths.add(path)
+        if (path.endsWith('/emisMult') && typeof property['value'] !== 'number')
+          throw new TypeError('emissive gain default must be a numeric scalar')
         const value = vector(property['value'], width, true)
         const sequences = new Set<number>()
         const sequenceTracks = property['sequenceTracks'].map(candidate => {
@@ -167,6 +169,11 @@ export function materializeUvmAnimationMaterialTargets(
       if (depth > budget.maxDepth)
         throw new RangeError('animation material target exceeds maxDepth')
       if (uvmAnimationMaterialPropertyWidth(path) !== undefined && value !== undefined) {
+        // These two admitted paths also retain their legacy numeric static form.
+        if (path.endsWith('/emisMult') && typeof value === 'number') {
+          vector(value, 1, true)
+          return
+        }
         const property = object(value, 'material animation property')
         if (array(property, 'sequenceTracks').length > 0)
           properties.push({

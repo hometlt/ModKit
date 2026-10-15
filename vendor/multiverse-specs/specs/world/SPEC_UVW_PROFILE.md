@@ -175,7 +175,25 @@ The legacy candidate envelope does not gain this profile-only field.
    must report the facet partial and may not serialize that zone as exact UVW. A layer without the
    material catalog retains the original v1 compatibility rule: `materialId` may name a terrain
    material or media resource directly.
-5. Object transforms are canonical local position, unit quaternion and non-zero scale.
+5. Object transforms are canonical local position, authored unit XYZW `rotation` quaternion
+   and non-zero scale. Optional `presentationRotation` is an **absolute** unit XYZW quaternion
+   in the same canonical space-local frame. Drawing, visual picking and culling use
+   `presentationRotation` when present, otherwise `rotation`; the quaternions are never
+   multiplied together. The chosen visual transform also applies to model-component/socket
+   placement and visual bounds. The override does not change authored/native facing,
+   collision, traversal or gameplay orientation. Native source conventions and snapping
+   are resolved by their publisher, never inferred by the UVW reader.
+   Admission uses the same unit-quaternion tolerance as `rotation` (squared norm within
+   `1e-6` of one). Neither read nor migration normalizes, quantizes or changes quaternion
+   signs. An explicit identity, equal-valued or sign-equivalent override is retained; absence
+   is never filled with an authored default. Canonical bytes retain the existing JCS
+   negative-zero policy. An authored-rotation edit leaves an explicit override unchanged;
+   a presentation edit does not overwrite `rotation`.
+   A consumer unable to retain an explicit override must refuse an exact visual-world
+   conversion or report its omission once per object as `world.objects.presentationRotation`,
+   including equal-valued overrides. It may not silently overwrite authored rotation or
+   hide the field in private extras. Old strict readers can reject the new field; a consumer
+   must qualify support against its pinned schema and semantic reader before publishing it.
    `resourceIds` are stable joins to confined `uvm`/media paths. Optional `modelComponents`
    gives persistent component instances stable ids and may attach a child to an exact socket of
    another component with the paired `parentId`/`parentSocketId` fields. Component ids are unique,
@@ -261,7 +279,8 @@ it is not target editor/game load evidence.
 
 ## Initial object presentation (Core relay 02.10)
 
-`objectInstance` admits optional `presentationTint` and `presentationAnimation`.
+`objectInstance` admits optional `presentationTint`, `presentationAnimation` and
+`presentationRotation` (the absolute visual override specified in rule 5).
 They are shared metadata in the same object schema for both legacy profile and the
 glTF envelope. Migration and reconstruction preserve them exactly; missing consumer
 support is reported as conversion loss, not silent removal.

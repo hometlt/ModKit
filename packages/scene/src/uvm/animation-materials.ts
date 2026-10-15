@@ -26,6 +26,9 @@ function properties(params: JsonObject): Map<string, JsonObject> {
   }
   const standard = (candidate: unknown, path: string) => {
     const material = object(candidate, 'standard material')
+    const gain = material['emisMult']
+    // A local wrapper preserves the numeric default when selected tracks are attached.
+    add(typeof gain === 'number' ? { value: gain } : gain, `${path}/emisMult`)
     add(material['parallaxHeight'], `${path}/parallaxHeight`)
     for (const [index, value] of array(material, 'normalBlendFactors').entries())
       add(value, `${path}/normalBlendFactors/${index}`)

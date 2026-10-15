@@ -306,6 +306,7 @@ const KEPT_FIELDS: Readonly<Record<string, ReadonlySet<string>>> = Object.freeze
     'mapNativePresentationPosition',
     'uvwPosition',
     'uvwRotation',
+    'uvwPresentationRotation',
     'uvwScale',
     'derivedFrom',
     'typeId',
@@ -382,6 +383,8 @@ function noteLostFields(
     if (kind !== 'objects') continue
     // only resources the UVW package holds are written; a model named only by the host is not
     const object = item as WorldSceneObjectItem
+    if (object.presentationRotation !== undefined && object.uvwPresentationRotation === undefined)
+      add('world.objects.presentationRotation')
     if (object.presentationTint !== undefined && !unitTint(object.presentationTint))
       add('world.objects.presentationTint (outside 0..1)')
     if (
@@ -870,6 +873,9 @@ async function reconstructLayer(
                 item.uvwPosition.z,
               ] as const),
               rotation: item.uvwRotation,
+              ...(item.uvwPresentationRotation === undefined
+                ? {}
+                : { presentationRotation: item.uvwPresentationRotation }),
               scale: Object.freeze([scale.x, scale.y, scale.z] as const),
               resourceIds: Object.freeze(
                 (item.resourceIds ?? []).flatMap(resourceId =>

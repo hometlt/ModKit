@@ -1,0 +1,208 @@
+{
+  "$comment": "Common carrier fixtures only; neither selected samples nor native MDX/GPU/default oracles. Semantic finite-binary32 validation belongs to the existing Core reader.",
+  "standard": {
+    "id": "standard-gain",
+    "properties": [
+      {
+        "path": "/renderModel/standard/emisMult",
+        "value": -0.5,
+        "sequenceTracks": [
+          {
+            "sequenceIndex": 0,
+            "track": {
+              "lineType": 1,
+              "globalSeqId": null,
+              "keys": [
+                {
+                  "frame": 0,
+                  "vector": [
+                    0
+                  ]
+                },
+                {
+                  "frame": 0.5,
+                  "vector": [
+                    2
+                  ]
+                },
+                {
+                  "frame": 1,
+                  "vector": [
+                    -1
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "sequenceIndex": 1,
+            "concurrent": true,
+            "wrapSeconds": 1,
+            "track": {
+              "lineType": 1,
+              "globalSeqId": null,
+              "keys": [
+                {
+                  "frame": 0,
+                  "vector": [
+                    0
+                  ]
+                },
+                {
+                  "frame": 0.5,
+                  "vector": [
+                    2
+                  ]
+                },
+                {
+                  "frame": 1,
+                  "vector": [
+                    -1
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "composite": {
+    "id": "composite-gain",
+    "properties": [
+      {
+        "path": "/renderModel/composite/passes/0/material/emisMult",
+        "value": 0,
+        "sequenceTracks": [
+          {
+            "sequenceIndex": 0,
+            "track": {
+              "lineType": 1,
+              "globalSeqId": null,
+              "keys": [
+                {
+                  "frame": 0,
+                  "vector": [
+                    0
+                  ]
+                },
+                {
+                  "frame": 0.5,
+                  "vector": [
+                    2
+                  ]
+                },
+                {
+                  "frame": 1,
+                  "vector": [
+                    -1
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "sequenceIndex": 1,
+            "concurrent": true,
+            "wrapSeconds": 1,
+            "track": {
+              "lineType": 1,
+              "globalSeqId": null,
+              "keys": [
+                {
+                  "frame": 0,
+                  "vector": [
+                    0
+                  ]
+                },
+                {
+                  "frame": 0.5,
+                  "vector": [
+                    2
+                  ]
+                },
+                {
+                  "frame": 1,
+                  "vector": [
+                    -1
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "legacyVectorDefault": {
+    "id": "legacy-parallax",
+    "properties": [
+      {
+        "path": "/renderModel/standard/parallaxHeight",
+        "value": [
+          1
+        ],
+        "sequenceTracks": [
+          {
+            "sequenceIndex": 0,
+            "track": {
+              "lineType": 1,
+              "globalSeqId": null,
+              "keys": [
+                {
+                  "frame": 0,
+                  "vector": [
+                    0
+                  ]
+                },
+                {
+                  "frame": 0.5,
+                  "vector": [
+                    2
+                  ]
+                },
+                {
+                  "frame": 1,
+                  "vector": [
+                    -1
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "sequenceIndex": 1,
+            "concurrent": true,
+            "wrapSeconds": 1,
+            "track": {
+              "lineType": 1,
+              "globalSeqId": null,
+              "keys": [
+                {
+                  "frame": 0,
+                  "vector": [
+                    0
+                  ]
+                },
+                {
+                  "frame": 0.5,
+                  "vector": [
+                    2
+                  ]
+                },
+                {
+                  "frame": 1,
+                  "vector": [
+                    -1
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "finiteRoundable": 3.4028235e+38,
+  "overflow": 3.5e+38
+}

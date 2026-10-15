@@ -1,11 +1,12 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { revisionId, type ModelAnimationClip } from '@modkit/sdk'
+import { revisionId, type ModelAnimationClip, type JsonValue } from '@modkit/sdk'
 import {
   composeUvmAnimationBundle,
   attachUvmAnimationBundle,
   type UvmAnimationAttachmentRequest,
 } from '../../scene/src/uvm/animation-attachment.js'
 import { openUvmDocument } from '../../scene/src/uvm/document.js'
+import { createRenderMaterialSampler } from '../../scene/src/materials/render-model.js'
 import { renderUvm } from '../../scene/src/uvm/render.js'
 import { readUvmModel } from '../../scene/src/uvm/model.js'
 import {
@@ -632,5 +633,133 @@ describe('UVM bundle animation through the ordinary shared renderer', () => {
     for (let offset = 0; offset < frame.rgba.length; offset += 4)
       if (frame.rgba[offset + 3] === 255)
         expect([...frame.rgba.slice(offset, offset + 4)]).toEqual([0, 255, 0, 255])
+  })
+})
+
+
+describe('emissive gain animation attachment', () => {
+  const scalarBudget = { maxDepth: 64, maxNodes: 100000, maxBytes: 10000000 }
+  const paramsOf = (container: ReturnType<typeof animationFixtureBase>) => record(record(
+    record(needed(records(container.document['materials'])[0]))['extensions'],
+  )['UV_game_material'])['params']
+  const fixture = (composite: boolean, animated: boolean, gainOverride?: JsonValue): ReturnType<typeof animationFixtureBase> => {
+    const container = animationFixtureBase()
+    const params = record(paramsOf(container)), model = record(params['renderModel'])
+    const gain = gainOverride === undefined ? (animated ? { value: -0.5, sequenceTracks: [{ sequenceIndex: 3,
+      track: { lineType: 1, globalSeqId: null,
+        keys: [{ frame: 0, vector: [0] }, { frame: 1, vector: [2] }] },
+    }] } : 1.5) : gainOverride
+    const standard = { ...record(model['standard']), emisMult: gain }
+    const { standard: _standard, ...withoutStandard } = model
+    void _standard
+    const renderModel = composite
+      ? { ...withoutStandard, composite: { priority: 0, passes: [{ material: standard, alphaFactor: { value: 1 } }] } }
+      : { ...model, standard }
+    const extensions = record(container.document['extensions'])
+    return { ...container, document: { ...container.document,
+      materials: records(container.document['materials']).map(value => ({ ...value,
+        extensions: { ...record(value['extensions']), UV_game_material: {
+          ...record(record(value['extensions'])['UV_game_material']), params: { ...params, renderModel },
+        } },
+      })),
+      extensions: { ...extensions, UV_game_animation_clips: {
+        ...record(extensions['UV_game_animation_clips']), ...(animated ? { clips: [
+          { id: 'gain', name: 'Gain', durationSeconds: 1, sourceSequenceIndex: 3 },
+        ] } : {}),
+      } },
+    } }
+  }
+  const gainOf = (params: unknown, composite: boolean) => {
+    const model = record(record(params)['renderModel'])
+    return composite
+      ? record(needed(records(record(model['composite'])['passes'])[0])['material'])['emisMult']
+      : record(model['standard'])['emisMult']
+  }
+  const mapping = (inactive: boolean): UvmAnimationAttachmentRequest => ({
+    id: 'gain-bundle', clips: [{ sourceId: 'gain', id: 'attached-gain', sequenceIndex: 41 }],
+    materials: [{ sourceKind: inactive ? 'animation-target' : 'material', source: 0, target: 0 }],
+  })
+  it.each([[false, false], [true, false], [false, true], [true, true]] as const)(
+    'owns numeric fallback through encoded %s composite / %s inactive attachment and reopen', async (composite, inactive) => {
+      const base = fixture(composite, false)
+      let source = fixture(composite, true)
+      if (inactive) {
+        const params = record(paramsOf(source))
+        const targets = materializeUvmAnimationMaterialTargets([{ id: 'gain-slot', shader: {
+          id: 'modkit.render-material.v1', parameters: params,
+        } }])
+        const catalog = record(record(source.document['extensions'])['UV_game_animation_clips'])
+        source = { ...source, document: { asset: source.document['asset']!, buffers: source.document['buffers']!,
+          extensionsUsed: ['UV_asset', 'UV_provenance', 'UV_game_animation_clips'],
+          extensions: { ...record(source.document['extensions']),
+            UV_game_animation_clips: { ...catalog, materialTargets: JSON.parse(JSON.stringify(targets)) },
+          },
+        } }
+      }
+      const originalBase = writeUvmContainer(base), originalSource = writeUvmContainer(source)
+      // Both inputs are parsed bytes, not the original facet JSON used to make them.
+      const document = openUvmDocument(originalBase)
+      const parsedSource = readUvmContainer(originalSource)
+      try {
+        await attachUvmAnimationBundle(document, 0, parsedSource, mapping(inactive))
+        const written = document.serialize(1), reopened = readUvmContainer(written)
+        validateUvmDocument(reopened.document, { binaryByteLength: reopened.binary.byteLength })
+        const model = readUvmModel(reopened.document, reopened.binary, animationBudget)
+        expect(model.rig.clips.map(clip => [clip.id, clip.sequenceIndex])).toEqual([
+          ['base-empty', 0], ['attached-gain', 41],
+        ])
+        const params = record(paramsOf(reopened)), gain = record(gainOf(params, composite))
+        expect(gain['value']).toBe(1.5)
+        expect(records(gain['sequenceTracks']).map(track => track['sequenceIndex'])).toEqual([41])
+        const sampler = createRenderMaterialSampler(params, scalarBudget)
+        expect(sampler.sample({ time: 0.5, sequenceIndex: 41 })[0]!.material.emisMult).toBe(1)
+        expect(sampler.sample({ time: 0.5, sequenceIndex: 0 })[0]!.material.emisMult).toBe(1.5)
+        expect(sampler.sample({ time: 0.5 })[0]!.material.emisMult).toBe(1.5)
+        expect(sampler.sample({ time: 0.5, sequenceIndex: 41 })[0]!.material.emisMult).toBe(1)
+        expect(writeUvmContainer(reopened)).toEqual(written)
+        expect(writeUvmContainer(base)).toEqual(originalBase)
+        expect(writeUvmContainer(source)).toEqual(originalSource)
+        expect(writeUvmContainer(parsedSource)).toEqual(originalSource)
+        document.undo(1)
+        expect(document.serialize(2)).toEqual(originalBase)
+        document.redo(2)
+        expect(document.serialize(3)).toEqual(written)
+      } finally { document.dispose() }
+    },
+  )
+  it('keeps numeric source properties inert without selected tracks', async () => {
+    const base = fixture(false, false), source = fixture(false, true, 7)
+    const before = writeUvmContainer(base), sourceBefore = writeUvmContainer(source)
+    const output = await composeUvmAnimationBundle(base, source, mapping(false))
+    expect(gainOf(paramsOf(output.container), false)).toBe(1.5)
+    expect(writeUvmContainer(base)).toEqual(before)
+    expect(writeUvmContainer(source)).toEqual(sourceBefore)
+  })
+  it('refuses absent parent, malformed target, duplicate sequences and legacy fallback atomically', async () => {
+    for (const kind of ['parent', 'null', 'width', 'collision', 'legacy', 'mapping'] as const) {
+      let gain: JsonValue | undefined
+      if (kind === 'null') gain = null
+      if (kind === 'width') gain = { value: [1, 2] }
+      if (kind === 'collision') gain = { value: 1.5, sequenceTracks: [
+          { sequenceIndex: 41, track: { lineType: 1, globalSeqId: null,
+            keys: [{ frame: 0, vector: [1] }] } },
+        ] }
+      if (kind === 'legacy') gain = { value: 1.5, track: {
+        lineType: 1, globalSeqId: null, keys: [{ frame: 0, vector: [1] }],
+      } }
+      let base = fixture(kind === 'parent', false, gain)
+      const source = fixture(false, true)
+      if (kind === 'collision') base = { ...base, document: { ...base.document,
+        extensions: { ...record(base.document['extensions']), UV_game_animation_clips: { clips: [
+          { id: 'base-empty', name: 'Base', durationSeconds: 1, sourceSequenceIndex: 0 },
+          { id: 'existing', name: 'Existing', durationSeconds: 1, sourceSequenceIndex: 41 },
+        ] } },
+      } }
+      const before = writeUvmContainer(base), sourceBefore = writeUvmContainer(source)
+      await expect(composeUvmAnimationBundle(base, source,
+        kind === 'mapping' ? { ...mapping(false), materials: [] } : mapping(false))).rejects.toThrow()
+      expect(writeUvmContainer(base)).toEqual(before)
+      expect(writeUvmContainer(source)).toEqual(sourceBefore)
+    }
   })
 })

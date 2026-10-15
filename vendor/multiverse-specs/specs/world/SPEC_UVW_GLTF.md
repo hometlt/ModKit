@@ -373,8 +373,11 @@ provide a declared visual fallback and nodes/meshes with their resource closure;
 binary pages and GLB separately. Core and game writers switch only after their
 full-world preservation and product checks, not after this spatial fixture.
 
-Object instances preserve `presentationTint` and `presentationAnimation` from the
-one shared spatial schema; see [initial presentation](SPEC_UVW_PROFILE.md#initial-object-presentation-core-relay-0210).
+Object instances preserve `presentationTint`, `presentationAnimation` and
+`presentationRotation` from the one shared spatial schema; see
+[initial presentation](SPEC_UVW_PROFILE.md#initial-object-presentation-core-relay-0210).
+The optional rotation is an absolute local visual override, not a multiplier of authored
+`rotation`; both quaternions retain their exact values through migration and reconstruction.
 These fields are not glTF node animation channels or new gameplay state.
 
 Lattice annotations use the same referenced `objectInstance.latticeCoverage`

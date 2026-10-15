@@ -800,6 +800,11 @@
           "$ref": "#/$defs/vec3"
         },
         "rotation": {
+          "description": "Authored unit XYZW quaternion in the canonical space-local frame; presentationRotation never replaces it.",
+          "$ref": "#/$defs/vec4"
+        },
+        "presentationRotation": {
+          "description": "Optional absolute presentation unit XYZW quaternion in the same local frame as rotation. Draw, visual picking and culling use this quaternion when present, otherwise rotation; never multiply the two. Does not change authored facing, navigation or collision. Explicit identity/equal overrides remain authored data.",
           "$ref": "#/$defs/vec4"
         },
         "scale": {

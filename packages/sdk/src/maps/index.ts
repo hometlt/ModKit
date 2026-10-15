@@ -1877,7 +1877,10 @@ export interface WorldSceneObjectItem extends MapPlacedObject {
   /** Render-time map-native position after applying an explicit terrain height reference. */
   readonly mapNativePresentationPosition?: MapPosition
   readonly uvwPosition?: MapPosition
+  /** Authored local orientation in canonical UVW coordinates (unit quaternion XYZW). */
   readonly uvwRotation?: readonly [number, number, number, number]
+  /** Absolute visual orientation override; does not compose with or replace authored rotation. */
+  readonly uvwPresentationRotation?: readonly [number, number, number, number]
   readonly uvwScale?: MapPosition
   /** Presentation-only instance generated from another facet; never exported or edited as an object. */
   readonly derivedFrom?: 'cliffs' | 'objects'

@@ -1,0 +1,38 @@
+{
+  "state": {
+    "blendMode": "additive",
+    "depthWrite": true,
+    "sortPriority": 7
+  },
+  "blendOnly": {
+    "blendMode": "add-alpha"
+  },
+  "depthOnly": {
+    "depthWrite": false
+  },
+  "priorityOnly": {
+    "sortPriority": 0
+  },
+  "shaderMinimal": {
+    "shader": "example.standard"
+  },
+  "shaderFull": {
+    "shader": "example.standard",
+    "blendMode": "add-alpha",
+    "depthWrite": false,
+    "sortPriority": -7,
+    "cull": "none",
+    "depthTest": false,
+    "castShadows": false,
+    "receiveShadows": false,
+    "layers": [],
+    "passes": [],
+    "params": {
+      "nativeScale": [
+        1,
+        2,
+        3
+      ]
+    }
+  }
+}

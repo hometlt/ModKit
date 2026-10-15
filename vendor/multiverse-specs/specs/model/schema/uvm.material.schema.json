@@ -555,10 +555,50 @@
       "$anchor": "gameMaterial",
       "title": "UV_game_material",
       "type": "object",
-      "required": ["shader"],
+      "description": "Existing shader-bearing materials, or a nonempty state-only packet containing only blendMode/depthWrite/sortPriority. Shaderless omitted fields inherit the base glTF material state; no shader or default bytes are injected.",
+      "oneOf": [
+        {
+          "required": [
+            "shader"
+          ]
+        },
+        {
+          "not": {
+            "required": [
+              "shader"
+            ]
+          },
+          "propertyNames": {
+            "enum": [
+              "blendMode",
+              "depthWrite",
+              "sortPriority"
+            ]
+          },
+          "anyOf": [
+            {
+              "required": [
+                "blendMode"
+              ]
+            },
+            {
+              "required": [
+                "depthWrite"
+              ]
+            },
+            {
+              "required": [
+                "sortPriority"
+              ]
+            }
+          ]
+        }
+      ],
+      "dependentRequired": { "params": ["shader"] },
       "properties": {
         "shader": {
           "type": "string",
+          "minLength": 1,
           "description": "Namespaced shader identity; scopes the `params` vocabulary.",
           "examples": ["sc2.standard", "mdx.layer", "w3d.vertex-material"]
         },

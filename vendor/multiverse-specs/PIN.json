@@ -3,16 +3,16 @@
   "schemaVersion": "multiverse-specs-pin-1",
   "source": {
     "repository": "multiverse (sibling repository)",
-    "commit": "940ea49a52257418c258fc1014e6fe188a6d61a1",
-    "subject": "Preserve publisher-proven lattice annotations in the UVW contract",
-    "committedOn": "2026-10-14T23:13:16+04:00"
+    "commit": "92cc07f5c9a719184e10a1bfdda444ba10955014",
+    "subject": "Publish numeric emissive-gain animation targets in UVM",
+    "committedOn": "2026-10-15T07:49:55+04:00"
   },
   "generator": "scripts/specs-pin.mjs",
   "generatedFrom": "git objects, not the sibling working tree",
   "prefix": "specs/",
   "counts": {
-    "files": 302,
-    "bytes": 2067385
+    "files": 312,
+    "bytes": 2152811
   },
   "files": [
     {
@@ -182,8 +182,8 @@
     },
     {
       "path": "specs/conformance/schema-assertions.json",
-      "bytes": 105735,
-      "digest": "sha256:226f6d3d485e820ddd3b95bc34779aee6de89285ebd087b87eec3ee3c7498c05"
+      "bytes": 139733,
+      "digest": "sha256:e437d9e4d415115893d28dd167ec4bac9ee285225d113eb5920618dc64e4c478"
     },
     {
       "path": "specs/conformance/state/vectors.json",
@@ -212,8 +212,8 @@
     },
     {
       "path": "specs/conformance/uvm-core/vectors.json",
-      "bytes": 6482,
-      "digest": "sha256:ef9e7eb590aa32be93f4e0871411f56efed6cb2ed3a6916d4971841b3db6a929"
+      "bytes": 7813,
+      "digest": "sha256:57466826b08397f228e608557b2ebd3dd454fb9541af1e2cc135da95219419ee"
     },
     {
       "path": "specs/conformance/uvp-composition/vectors.json",
@@ -247,8 +247,8 @@
     },
     {
       "path": "specs/conformance/uvw/vectors.json",
-      "bytes": 9404,
-      "digest": "sha256:826c378caa73c6b21bad69d749b701348619c736d797615f3c4b4cd0dd4ef200"
+      "bytes": 12749,
+      "digest": "sha256:1b6512727073a3273031950898d385f00126c1b2c41ee56065a5b1927493e2f1"
     },
     {
       "path": "specs/conformance/verified-composition/vectors.json",
@@ -362,8 +362,8 @@
     },
     {
       "path": "specs/model/SPEC_UVM.md",
-      "bytes": 87304,
-      "digest": "sha256:5a65300b4108ab26ec5c3e3391a39045783bd800936a61e301d60096784bf850"
+      "bytes": 90023,
+      "digest": "sha256:565f0d40500ebfe45c66d7a2dbc64de2c3e3629c3fdce7312af6338ada3ed052"
     },
     {
       "path": "specs/model/SPEC_UVM_CONVERSION.md",
@@ -372,8 +372,8 @@
     },
     {
       "path": "specs/model/SPEC_UVM_EXTENSIONS.md",
-      "bytes": 68386,
-      "digest": "sha256:456669942f0b47cd17d81bc9fda860d3a332731911b4eba87a60bba765d4981b"
+      "bytes": 71416,
+      "digest": "sha256:806bf0553aaa66e56812ba31c58d9a179b81e7e31209589d79c711de3bb603b6"
     },
     {
       "path": "specs/model/examples/siege_tank.uvm.gltf",
@@ -421,6 +421,26 @@
       "digest": "sha256:b431b48e2baf2977b1bc70cf701711ae5f84e7a37df80c9324b994b8ba100b06"
     },
     {
+      "path": "specs/model/fixtures/uvm-emis-mult-cases.json",
+      "bytes": 4787,
+      "digest": "sha256:49823a917a5c3c7d1a9cc8ded2aa6973be872f1d4885b5404cfc40f3bc55d2f7"
+    },
+    {
+      "path": "specs/model/fixtures/uvm-emis-mult-targets.uvm.gltf",
+      "bytes": 5027,
+      "digest": "sha256:edd8d2965410d94d58e1a1a8e6c960861f25a8ba87ee8c25b2abf7cdfc44e8f1"
+    },
+    {
+      "path": "specs/model/fixtures/uvm-fixed-function-cases.json",
+      "bytes": 655,
+      "digest": "sha256:201dd22f03f822d5164fa71be1ee9c78579a3bd1000970c33f45c973bc48bb9c"
+    },
+    {
+      "path": "specs/model/fixtures/uvm-fixed-function-state.uvm.gltf",
+      "bytes": 2479,
+      "digest": "sha256:a22be4596a87f1279443fb0cf831ffc6400dd4789683e952082b769284913a83"
+    },
+    {
       "path": "specs/model/fixtures/uvm-presentation-cases.json",
       "bytes": 5229,
       "digest": "sha256:79112cc2050b7546cc852a389f9c1724ec38c9605b2f1a2ef7304b60b7b3ab2b"
@@ -437,8 +457,8 @@
     },
     {
       "path": "specs/model/schema/uvm.animation.schema.json",
-      "bytes": 16691,
-      "digest": "sha256:2bacb81a3ede67759799763d2268c81fb876427beb83bb82e8faa61cc39a1022"
+      "bytes": 18099,
+      "digest": "sha256:9196b5e5030937e6270cc0aa324c4bd1205206b9e9e30c66f5d88a2892cb042d"
     },
     {
       "path": "specs/model/schema/uvm.asset.schema.json",
@@ -482,8 +502,8 @@
     },
     {
       "path": "specs/model/schema/uvm.material.schema.json",
-      "bytes": 18110,
-      "digest": "sha256:477c4d87417e636d13e0994ae80b692010245f67681073aac273a02f05dd5438"
+      "bytes": 19126,
+      "digest": "sha256:ea49883a1e7b6dff318a59839ddfd9ea504e7806f5894ab4431fee89e2d1c093"
     },
     {
       "path": "specs/model/schema/uvm.model-states.schema.json",
@@ -887,8 +907,8 @@
     },
     {
       "path": "specs/tools/gltf-materials.mjs",
-      "bytes": 8480,
-      "digest": "sha256:6d2eab4901ec822544811be436adf526c06f820f03eea73afb8717d97fcb6745"
+      "bytes": 8580,
+      "digest": "sha256:95f19c104e0cc187712a55a0acff4813072825f2c664d3170bf98618cea87d1b"
     },
     {
       "path": "specs/tools/model-interchange.mjs",
@@ -1106,6 +1126,21 @@
       "digest": "sha256:7bbbee3044ca92e71ea5e94428fdb445bdc5776ecdb36103f75c931923b0cb72"
     },
     {
+      "path": "specs/tools/uvm-emis-mult.test.mjs",
+      "bytes": 4520,
+      "digest": "sha256:90cba575a4eb085585364a397920368f0287a6809e65ef5e823ae701a35c58bc"
+    },
+    {
+      "path": "specs/tools/uvm-fixed-function.test.mjs",
+      "bytes": 6110,
+      "digest": "sha256:d2ac5e2bf88106d2a8053dc3b63bcfda5415619a40d857b9136da67e1724e3b9"
+    },
+    {
+      "path": "specs/tools/uvm-fixed-function.ts",
+      "bytes": 2432,
+      "digest": "sha256:27aa3da5f57cd3b094f5a8c61d15619463a0bc4d90e5f377b11aed7964fba886"
+    },
+    {
       "path": "specs/tools/uvm-presentation-browser.ts",
       "bytes": 1147,
       "digest": "sha256:7fb83fabdf14c88745a6fd35e72f0161375c7dbc932d0bea522a0bf450bd8124"
@@ -1236,14 +1271,19 @@
       "digest": "sha256:3182fe90d2e569d8f27f6550dcc118c771fdc743d181f0067ee30443f5db3200"
     },
     {
+      "path": "specs/tools/uvw-presentation-rotation.test.mjs",
+      "bytes": 5801,
+      "digest": "sha256:f8c9f7666ad5a30060e61af43e293e51d565887b218bb88f73f56e6070689347"
+    },
+    {
       "path": "specs/tools/uvw-profile.d.mts",
       "bytes": 1594,
       "digest": "sha256:4fbcc93cefa90d9b25390c83791af04e266d8885e941c4fac83957da40cb4afc"
     },
     {
       "path": "specs/tools/uvw-profile.mjs",
-      "bytes": 43839,
-      "digest": "sha256:49b3f751dd1b49d410729028ba96610cd52b630997b631d78b6e7fd52c57a0f9"
+      "bytes": 43964,
+      "digest": "sha256:7381481400b51bcaeaeb8dd852f2ed34578c18c0793b25373a22203990d81471"
     },
     {
       "path": "specs/tools/uvw-raster-preview.mjs",
@@ -1317,8 +1357,8 @@
     },
     {
       "path": "specs/world/SPEC_UVW_GLTF.md",
-      "bytes": 24577,
-      "digest": "sha256:836f8b24426099e27d1b2f205911676140ec410a41ba44ae15beaa1b576c86f7"
+      "bytes": 24783,
+      "digest": "sha256:3cc1592566356fc5f691e09d4f7a324fe34e4500e4eacaf375d6cca637972f93"
     },
     {
       "path": "specs/world/SPEC_UVW_GLTF_PAGES.md",
@@ -1327,8 +1367,8 @@
     },
     {
       "path": "specs/world/SPEC_UVW_PROFILE.md",
-      "bytes": 27932,
-      "digest": "sha256:295532e18554ef761fe29cc491032d0ea2c3d354fffdafecb9f50be4598444db"
+      "bytes": 29567,
+      "digest": "sha256:ffe8a0d0234e67c7785ad2b6bfc07ce0f4b5e9c034f38291dfc7a35d5d6c41c6"
     },
     {
       "path": "specs/world/fixtures/invalid/connections-not-empty.uvw.json",
@@ -1441,6 +1481,16 @@
       "digest": "sha256:a78fd1d1a054bfaa674099907e02481b7f2f878f46b045004bb96510cc6bd8aa"
     },
     {
+      "path": "specs/world/fixtures/uvw-presentation-rotation.uvw.gltf",
+      "bytes": 2378,
+      "digest": "sha256:88317e436e526daca5305da1d9007349ab19d7b07271e192693fa88290ea7f92"
+    },
+    {
+      "path": "specs/world/fixtures/uvw-presentation-rotation.uvw.json",
+      "bytes": 1770,
+      "digest": "sha256:5f49d0bb06355571e746ce575bb9402da8ab9d664987a79a8587f85090cc193e"
+    },
+    {
       "path": "specs/world/fixtures/uvw-profile-navigation.uvw.json",
       "bytes": 687,
       "digest": "sha256:c1bd38ee97e633bcc604d1b0679d4f67a6add599bd88898e6384a2c7fc7977a2"
@@ -1522,8 +1572,8 @@
     },
     {
       "path": "specs/world/schema/uvw.profile.v1.schema.json",
-      "bytes": 42102,
-      "digest": "sha256:bf250fdabc5827fa43250019778037bc45331b1d7d488bcd7a84a1c8cd6fdc7e"
+      "bytes": 42656,
+      "digest": "sha256:59b4f39ef59dc05797e810aa226b064e97dddc0066ab48e2925380b869ce5ffe"
     }
   ]
 }

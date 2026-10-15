@@ -1,0 +1,93 @@
+{
+  "uv": {
+    "format": "UVW",
+    "version": "1.0",
+    "status": "profile"
+  },
+  "spaces": [
+    {
+      "id": "main",
+      "topology": "heightfield",
+      "basis": {
+        "handedness": "right",
+        "upAxis": "y",
+        "forwardAxis": "+z",
+        "unit": "meter",
+        "metersPerUnit": 1,
+        "unitsPerCell": 1
+      },
+      "bounds": {
+        "min": [
+          0,
+          0,
+          0
+        ],
+        "max": [
+          4,
+          4,
+          4
+        ]
+      },
+      "layers": [
+        {
+          "schemaVersion": 1,
+          "id": "objects",
+          "kind": "objects",
+          "instances": [
+            {
+              "id": "split",
+              "objectKind": "unit",
+              "position": [
+                1,
+                0,
+                1
+              ],
+              "rotation": [
+                0,
+                0.25881904510252074,
+                0,
+                0.9659258262890683
+              ],
+              "presentationRotation": [
+                0,
+                0.7071067811865475,
+                0,
+                0.7071067811865476
+              ],
+              "scale": [
+                1,
+                1,
+                1
+              ],
+              "resourceIds": []
+            }
+          ]
+        },
+        {
+          "id": "terrain",
+          "kind": "heightfield",
+          "columns": 2,
+          "rows": 2,
+          "cellSize": 4,
+          "origin": [
+            0,
+            0,
+            0
+          ],
+          "noDataValue": -9999,
+          "samples": [
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              0
+            ]
+          ]
+        }
+      ]
+    }
+  ],
+  "connections": []
+}

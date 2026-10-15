@@ -6,6 +6,7 @@ import {
   createWorldWebGlCameraFrame,
   createWorldWebGlTransparentDrawPlan,
   createWorldWebGlPlan,
+  worldWebGlCameraFromModel,
   orbitWorldWebGlCamera,
   panWorldWebGlCamera,
   pickWorldWebGl,
@@ -1578,4 +1579,126 @@ describe('common world WebGL plan', () => {
         ?.kind === 'terrain',
     )
   })
+})
+
+
+describe('absolute visual object orientation', () => {
+  const authored = [0, Math.sin(Math.PI / 12), 0, Math.cos(Math.PI / 12)]
+  const shown = [0, Math.SQRT1_2, 0, Math.SQRT1_2]
+  const near = (actual, expected) => {
+    assert.equal(actual.length, expected.length)
+    expected.forEach((value, index) => assert.ok(Math.abs(actual[index] - value) < 1e-5, `${index}: ${actual[index]} != ${value}`))
+  }
+  function plan(presentation, compound = false) {
+    const identity = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
+    const body = {
+      state: 'converted',
+      sourceKey: 'body',
+      diagnostics: [],
+      complete: true,
+      nodes: [
+        { id: 'root', childIds: ['socket'], meshIds: ['body-mesh'], transform: identity },
+        {
+          id: 'socket',
+          childIds: [],
+          meshIds: [],
+          transform: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 3, 2, 1, 1],
+        },
+      ],
+      meshes: [{ id: 'body-mesh', primitiveIds: ['body-triangle'] }],
+      primitives: [
+        {
+          id: 'body-triangle',
+          topology: 'triangles',
+          positions: Float32Array.from([0, 0, 0, 1, 0, 0, 0, 1, 0]),
+        },
+      ],
+      sockets: [{ id: 'connector-1', nodeId: 'socket', role: 'attach' }],
+    }
+    const tool = {
+      state: 'converted',
+      sourceKey: 'tool',
+      diagnostics: [],
+      complete: true,
+      meshes: [],
+      primitives: [
+        {
+          id: 'tool-triangle',
+          topology: 'triangles',
+          positions: Float32Array.from([0, 0, 0, 1, 0, 0, 0, 1, 0]),
+        },
+      ],
+    }
+
+    return createWorldWebGlPlan({
+      items: [{ facet: 'objects', id: 'rotated', layerId: 'objects', coordinateSpaceId: 'uvw', kind: 'unit',
+        objectId: 10, position: { x: 0, y: 0, z: 0 }, uvwPosition: { x: 0, y: 0, z: 0 },
+        uvwRotation: authored, ...(presentation === undefined ? {} : { uvwPresentationRotation: presentation }),
+        resourceIds: compound ? ['body', 'tool'] : ['body'],
+        ...(compound ? { modelComponents: [
+          { id: 'body-instance', resourceId: 'body' },
+          { id: 'tool-instance', resourceId: 'tool', parentId: 'body-instance', parentSocketId: 'connector-1', rotation: [0, 0, 1, 0] },
+        ] } : {}),
+      }],
+      models: new Map([['body', body], ['tool', tool]]),
+    })
+  }
+  it('draws and picks absolute90 instead of authored30 plus90', () => {
+    const result = plan(shown)
+    near(Array.from(result.opaqueTriangles.positions), [0,0,0, 0,0,-1, 0,1,0])
+    near(Array.from(result.picking.objects[0].triangles), Array.from(result.opaqueTriangles.positions))
+    near(result.bounds.minimum, [0,0,-1])
+    near(result.bounds.maximum, [0,1,0])
+  })
+  it('preserves omission/equal/identity and signed/non-yaw overrides', () => {
+    near(Array.from(plan(undefined).opaqueTriangles.positions), [0,0,0, Math.cos(Math.PI/6),0,-0.5, 0,1,0])
+    near(Array.from(plan(authored).opaqueTriangles.positions), Array.from(plan(undefined).opaqueTriangles.positions))
+    near(Array.from(plan([0,0,0,1]).opaqueTriangles.positions), [0,0,0, 1,0,0, 0,1,0])
+    near(Array.from(plan([0,-Math.SQRT1_2,0,-Math.SQRT1_2]).opaqueTriangles.positions), Array.from(plan(shown).opaqueTriangles.positions))
+    const full = plan([Math.SQRT1_2,0,0,Math.SQRT1_2])
+    near(Array.from(full.opaqueTriangles.positions), [0,0,0, 1,0,0, 0,0,1])
+    near(Array.from(full.picking.objects[0].triangles), Array.from(full.opaqueTriangles.positions))
+  })
+  it('uses the same absolute orientation for socket/component draw and picking', () => {
+    const result = plan(shown, true)
+    near(Array.from(result.opaqueTriangles.positions.slice(9)), [1,2,-3, 1,2,-2, 1,1,-3])
+    near(Array.from(result.picking.objects[0].triangles), Array.from(result.opaqueTriangles.positions))
+  })
+})
+
+
+it('keeps the model camera on the same absolute instance orientation as drawing and picking', () => {
+  const identity = [1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]
+  const child = [...identity]
+  child[14] = 3
+  const model = {
+    state: 'converted', sourceKey: 'camera-model', complete: true, diagnostics: [],
+    uvmBytes: new TextEncoder().encode(JSON.stringify({
+      asset: { version: '2.0' }, nodes: [{ children: [1] }, { camera: 0, translation: [0,0,3] }],
+      cameras: [{ type: 'perspective', perspective: { yfov: 1, znear: 0.1, zfar: 100 } }],
+    })),
+    nodes: [
+      { id: 'node-0', childIds: ['node-1'], meshIds: ['mesh'], transform: identity },
+      { id: 'node-1', childIds: [], meshIds: [], transform: child },
+    ],
+    meshes: [{ id: 'mesh', primitiveIds: ['triangle'] }],
+    primitives: [{ id: 'triangle', topology: 'triangles', positions: Float32Array.of(0,0,0, 1,0,0, 0,1,0) }],
+  }
+  const item = {
+    facet: 'objects', id: 'camera-object', objectId: 1, layerId: 'objects', coordinateSpaceId: 'uvw', kind: 'unit',
+    resourceId: 'model', position: { x: 10, y: 0, z: 0 }, uvwPosition: { x: 10, y: 0, z: 0 },
+    uvwRotation: [0, Math.sin(Math.PI / 12), 0, Math.cos(Math.PI / 12)],
+    uvwPresentationRotation: [0, Math.SQRT1_2, 0, Math.SQRT1_2],
+  }
+  const input = { items: [item], models: new Map([['model', model]]) }
+  const plan = createWorldWebGlPlan(input)
+  const camera = worldWebGlCameraFromModel(input, { objectId: 1, cameraIndex: 0 })
+  assert.ok(camera, 'the model camera must be available')
+  const near = (actual, expected) => {
+    assert.equal(actual.length, expected.length)
+    expected.forEach((value, index) => assert.ok(Math.abs(actual[index] - value) < 1e-5, `${index}: ${actual[index]} != ${value}`))
+  }
+  near(camera.source.eye, [13,0,0])
+  near(Array.from(plan.opaqueTriangles.positions), [10,0,0, 10,0,-1, 10,1,0])
+  near(Array.from(plan.picking.objects[0].triangles), Array.from(plan.opaqueTriangles.positions))
 })
