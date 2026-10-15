@@ -34,6 +34,41 @@ function strip(width = 3, rotate = 0): CliffLatticeQuad[] {
   return result
 }
 describe('shared bank-distance cliff midline', () => {
+  it('keeps an internal bank when one transverse endpoint has a flat shoulder', () => {
+    const quads = strip(4).map(q => ({
+      ...q,
+      vertices: q.vertices.map(v => {
+        const x = v.point[0] / 2,
+          y = -v.point[1] / 3
+        return { ...v, height: x === 3 && y === 2 ? 0 : Math.min(40, Math.abs(x - 4) * 20) }
+      }) as unknown as CliffLatticeQuad['vertices'],
+    }))
+    const result = deriveCliffMidlines(quads)
+    expect(result.stats.internalBankEdges).toBeGreaterThanOrEqual(3)
+    expect(result.stats.oneBankComponents).toBe(0)
+    expect(result.segments.some(s => s.every(p => p[0] < 8))).toBe(true)
+    expect(result.segments.some(s => s.every(p => p[0] > 8))).toBe(true)
+  })
+  it.each([false, true])(
+    'retains both cliffs of an internal %s ridge/trough without an unflagged bank',
+    inverted => {
+      const quads = strip(4).map(q => ({
+        ...q,
+        vertices: q.vertices.map(v => {
+          const x = v.point[0] / 2
+          const height = Math.min(40, Math.abs(x - 4) * 20)
+          return { ...v, height: inverted ? 40 - height : height }
+        }) as unknown as CliffLatticeQuad['vertices'],
+      }))
+      const result = deriveCliffMidlines(quads)
+      expect(result.stats.internalBankEdges).toBe(3)
+      expect(result.stats.oneBankComponents).toBe(0)
+      const xs = new Set(result.segments.flatMap(segment => segment.map(p => p[0])))
+      expect([...xs].sort((a, b) => a - b)).toEqual([6, 10])
+      expect(result.fills.length).toBeGreaterThan(0)
+      for (const fill of result.fills) expect(fill.height).toBe(fill.side === 'low' ? 0 : 40)
+    },
+  )
   it('partitions the entire slope into bank-height fills with no area overlap or holes', () => {
     const plan = deriveCliffMidlines(strip(3))
     const area = (points: readonly (readonly [number, number])[]) =>
@@ -124,6 +159,7 @@ describe('shared bank-distance cliff midline', () => {
     'draws ONE centered line across a %i-cell uniform slope without seams',
     width => {
       const plan = deriveCliffMidlines(strip(width))
+      expect(plan.stats.internalBankEdges).toBe(0)
       expect(plan.stats.budgetExceeded).toBe(false)
       expect(plan.segments.length).toBeGreaterThan(0)
       for (const segment of plan.segments)

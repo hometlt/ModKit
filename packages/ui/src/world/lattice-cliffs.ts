@@ -30,6 +30,7 @@ export interface CliffMidlineStats {
   flatCells: number
   ambiguousCells: number
   mixedBoundaryVertices: number
+  internalBankEdges: number
   unknownBoundaryEdges: number
   nodes: number
   edges: number
@@ -84,6 +85,7 @@ export function deriveCliffMidlines(quads: readonly CliffLatticeQuad[]): {
     flatCells: 0,
     ambiguousCells: 0,
     mixedBoundaryVertices: 0,
+    internalBankEdges: 0,
     unknownBoundaryEdges: 0,
     nodes: 0,
     edges: 0,
@@ -221,8 +223,35 @@ export function deriveCliffMidlines(quads: readonly CliffLatticeQuad[]): {
           const q = component[i]!,
             indices = grid[i]!
           for (const [a, b, c, d, dx, dy] of SIDES) {
-            if (members.has(key(q.x + dx, q.y + dy))) continue
             const neighbor = layer.get(key(q.x + dx, q.y + dy))
+            if (members.has(key(q.x + dx, q.y + dy))) {
+              // A narrow trough/ridge can lie entirely inside the cliff mask. Both incident
+              // slopes must rise/fall from both edge endpoints; a monotone slope adds no bank.
+              const changes = [
+                q.vertices[c].height - q.vertices[a].height,
+                q.vertices[d].height - q.vertices[b].height,
+                neighbor!.vertices[a].height - q.vertices[a].height,
+                neighbor!.vertices[b].height - q.vertices[b].height,
+              ]
+              // Across-bank change must dominate along-bank variation at both endpoints.
+              const along = Math.abs(q.vertices[a].height - q.vertices[b].height)
+              const low =
+                changes.every(change => change >= along) &&
+                changes[0]! + changes[1]! > 2 * along &&
+                changes[2]! + changes[3]! > 2 * along
+              const high =
+                changes.every(change => change <= -along) &&
+                changes[0]! + changes[1]! < -2 * along &&
+                changes[2]! + changes[3]! < -2 * along
+              if (low || high) {
+                const midpoint = dx === 0 ? indices[dy < 0 ? 1 : 7]! : indices[dx < 0 ? 3 : 5]!
+                const bank = low ? 1 : 2
+                if (nodes[midpoint]!.bank === 0) stats.internalBankEdges++
+                nodes[midpoint]!.bank |= bank
+                nodes[midpoint]!.bankHeight = (q.vertices[a].height + q.vertices[b].height) / 2
+              }
+              continue
+            }
             if (neighbor?.cliffFace !== false || neighbor.ramp) {
               stats.unknownBoundaryEdges++
               continue
