@@ -769,6 +769,66 @@ describe('the loaded mod servers of a language workspace', () => {
     expect(servers.placeOf(MOD_UNITS_URI, 'another/game')).toBeUndefined()
   })
 
+  it.each([false, true])('drops a cancelled buffer batch before applying it (more documents: %s)', async more => {
+    const chain = server()
+    const servers = createLanguageModContexts({ contexts: [chain.context] })
+    const { scope } = servers.placeOf(MOD_UNITS_URI)!
+    let entered!: () => void
+    let resume!: () => void
+    const reading = new Promise<void>(resolve => { entered = resolve })
+    const held = new Promise<void>(resolve => { resume = resolve })
+    const original = chain.context.read.bind(chain.context)
+    const reads = vi.spyOn(chain.context, 'read').mockImplementationOnce(async (layer, path, maximum) => {
+      entered()
+      await held
+      return original(layer, path, maximum)
+    })
+    const controller = new AbortController()
+    const buffers = [document(MOD_UNITS_URI, '<obsolete/>')]
+    if (more) buffers.push(document(MOD_UNITS_URI.replace('UnitData.xml', 'ActorData.xml'), '<obsolete/>'))
+    const obsolete = servers.synchronize(scope, buffers, controller.signal)
+    const cancelled = expect(obsolete).rejects.toMatchObject({ name: 'AbortError' })
+    await reading
+    controller.abort()
+    const current = servers.synchronize(scope, [document(MOD_UNITS_URI, '<current/>', 2)])
+    resume()
+    await cancelled
+    await current
+    expect(reads.mock.calls.map(call => call[1])).toEqual([UNITS, UNITS])
+    expect(chain.changes).toEqual([[{ layerId: 'layer:1', path: UNITS, text: '<current/>' }]])
+    expect(chain.context.revision).toBe('1')
+    await servers.dispose()
+  })
+
+  it('retains an acknowledged buffer batch when its caller cancels during submission', async () => {
+    const chain = server()
+    const servers = createLanguageModContexts({ contexts: [chain.context] })
+    const { scope } = servers.placeOf(MOD_UNITS_URI)!
+    let entered!: () => void
+    let resume!: () => void
+    const submitting = new Promise<void>(resolve => { entered = resolve })
+    const held = new Promise<void>(resolve => { resume = resolve })
+    const original = chain.context.overlay!.bind(chain.context)
+    const overlay = vi.fn(original).mockImplementationOnce(async changes => {
+      entered()
+      await held
+      return original(changes)
+    })
+    Object.defineProperty(chain.context, 'overlay', { value: overlay })
+    const reads = vi.spyOn(chain.context, 'read')
+    const controller = new AbortController()
+    const edited = [document(MOD_UNITS_URI, '<edited/>')]
+    const sending = servers.synchronize(scope, edited, controller.signal)
+    await submitting
+    controller.abort()
+    resume()
+    expect((await sending).revision).toBe('1')
+    await servers.synchronize(scope, edited)
+    expect(reads).toHaveBeenCalledTimes(1)
+    expect(chain.changes).toEqual([[{ layerId: 'layer:1', path: UNITS, text: '<edited/>' }]])
+    await servers.dispose()
+  })
+
   it('brings unsaved buffers to the server, not those equal to the disk, and takes closed ones away', async () => {
     const chain = server()
     const servers = createLanguageModContexts({ contexts: [chain.context] })

@@ -9,7 +9,9 @@
  * - brings the editor's open buffers to the server before a request reads it (`synchronize`): the
  *   unsaved text of a file on the host's disk goes over that file (`ModContext.overlay`); a buffer
  *   equal to the file on disk is not sent; delivery is remembered only after server acknowledgement,
- *   so failed additions/removals retry. A buffer that is gone takes its text away (`release`);
+ *   so failed additions/removals retry. Cancellation stops obsolete batches between saved reads
+ *   and before submission; an accepted batch is remembered even if its caller has cancelled.
+ *   A buffer that is gone takes its text away (`release`);
  * - carries a provider's questions to the server (`query`) and completes the files the answer
  *   names (`documents: [{ layerId, path }]`) with the URI the workspace uses for them, so a
  *   provider never builds one;
@@ -296,6 +298,7 @@ export function createLanguageModContexts(
         const delivered = new Map<string, Pushed | undefined>()
         const open = new Set<string>()
         for (const document of documents.slice(0, MAX_SCOPE_DOCUMENTS)) {
+          signal?.throwIfAborted()
           const place = placeIn(entry, document.uri)
           if (place === undefined || !place.writable || context.overlay === undefined) continue
           open.add(document.uri)
@@ -332,6 +335,8 @@ export function createLanguageModContexts(
         }
         // An empty overlay asks this session's revision now: a save or another reader in the same
         // session may have changed its state since this workspace last heard.
+        // Cancel before submission; once accepted, its acknowledgement must still be recorded.
+        signal?.throwIfAborted()
         await context.overlay?.(changes)
         // A rejected batch leaves the last acknowledged state intact for the next request.
         for (const [key, known] of delivered) {
