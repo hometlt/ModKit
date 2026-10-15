@@ -304,7 +304,7 @@ export function createResourceSession(options: ResourceSessionOptions): Resource
       let entries = 0
       for await (const entry of origin.enumerate(
         scope,
-        { prefix: byName ? '' : normalized },
+        { prefix: byName ? '' : normalized, ...(!byName ? { exactPath: true } : {}) },
         signal,
       )) {
         entries += 1

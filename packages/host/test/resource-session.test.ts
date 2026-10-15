@@ -1246,3 +1246,78 @@ it('releases a pending borrowed resolution if its model dependency view is dispo
   await parent.dispose()
   expect(nativeOrigin.counts.releases).toBe(1)
 })
+
+import { createContentSourceCompanionOrigin } from '../src/content-source-companion.js'
+
+describe('late resource session — existing content-source exact path owner', () => {
+  function exactFixture(mode: 'hidden' | 'miss' | 'unsupported' | 'refused' = 'hidden') {
+    const counts = { lookup: 0, list: 0, read: 0 }
+    const refusal = Object.assign(new Error('provider refused'), { code: 'x3.fixture/access-denied' })
+    const contentSources = {
+      async lookup(_root: string, path: string) {
+        counts.lookup += 1
+        if (mode === 'unsupported') throw new Error('ordinary unsupported probe')
+        if (mode === 'refused') throw refusal
+        return mode === 'miss' ? undefined : { path, name: '2468', directory: false, size: 3 }
+      },
+      async list(_root: string, path: string) {
+        counts.list += 1
+        expect(path).toBe('filedataid')
+        return mode === 'hidden' ? [] : [{ path: 'filedataid/2468', name: '2468', directory: false, size: 3 }]
+      },
+      async read(_root: string, path: string) {
+        counts.read += 1
+        expect(path.toLowerCase()).toBe('filedataid/2468')
+        return Uint8Array.of(1, 2, 3)
+      },
+    }
+    return { counts, refusal, origin: createContentSourceCompanionOrigin({ contentSources, target: { sourceId: 'fixture', path: 'filedataid/126487' } }) }
+  }
+
+  it('late actual factory resolves a hidden full path through lookup without listing', async () => {
+    const fixture = exactFixture()
+    const session = createResourceSession({ origin: fixture.origin, revision: SESSION_REVISION })
+    try {
+      const result = await session.resolve(requirement('hidden-no-extension', 'filedataid/2468'))
+      expect(result.state).toBe('resolved')
+      expect(fixture.counts).toEqual({ lookup: 1, list: 0, read: 1 })
+      if (result.state === 'resolved') {
+        expect(await result.lease.value.read(0n, 3)).toEqual(Uint8Array.of(1, 2, 3))
+        await result.lease.release()
+      }
+    } finally { await session.dispose() }
+  })
+
+  it.each(['miss', 'unsupported'] as const)('retains ordinary %s lookup listing fallback', async mode => {
+    const fixture = exactFixture(mode)
+    const session = createResourceSession({ origin: fixture.origin, revision: SESSION_REVISION })
+    try {
+      const result = await session.resolve(requirement('fallback', 'filedataid/2468'))
+      expect(result.state).toBe('resolved')
+      expect(fixture.counts).toEqual({ lookup: 1, list: 1, read: 1 })
+      if (result.state === 'resolved') await result.lease.release()
+    } finally { await session.dispose() }
+  })
+
+  it('does not bypass a structured lookup refusal through a successful listing', async () => {
+    const fixture = exactFixture('refused')
+    const session = createResourceSession({ origin: fixture.origin, revision: SESSION_REVISION })
+    try {
+      await expect(session.resolve(requirement('denied', 'filedataid/2468'))).rejects.toBe(fixture.refusal)
+      expect(fixture.counts).toEqual({ lookup: 1, list: 0, read: 0 })
+    } finally { await session.dispose() }
+  })
+
+  it('preserves case policy and cancellation before entering the provider', async () => {
+    const fixture = exactFixture()
+    const session = createResourceSession({ origin: fixture.origin, revision: SESSION_REVISION })
+    try {
+      await expect(session.resolve(requirement('aborted', 'filedataid/2468'), AbortSignal.abort())).rejects.toMatchObject({ code: CANCELLED_CODE })
+      expect(fixture.counts).toEqual({ lookup: 0, list: 0, read: 0 })
+      const result = await session.resolve(requirement('case', 'FileDataID/2468'))
+      expect(result.state).toBe('resolved')
+      expect(fixture.counts).toEqual({ lookup: 1, list: 0, read: 1 })
+      if (result.state === 'resolved') await result.lease.release()
+    } finally { await session.dispose() }
+  })
+})
