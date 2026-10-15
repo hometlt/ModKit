@@ -317,7 +317,7 @@ const modelBytes = materializeUvmCore(
   },
 ).bytes
 
-function sourceWithModel() {
+function sourceWithModel(derivedCliff = false) {
   const main = document.spaces[0]!
   const resourceLayer = main.layers.find(layer => layer.kind === 'resources')!
   if (resourceLayer.kind !== 'resources') throw new Error('fixture resource layer missing')
@@ -336,6 +336,7 @@ function sourceWithModel() {
               {
                 id: 'triangle',
                 objectKind: 'doodad',
+                ...(derivedCliff ? { derivedFrom: 'cliffs' as const } : {}),
                 position: [0.5, 0, 0.5],
                 rotation: [0, 0, 0, 1],
                 scale: [1, 1, 1],
@@ -393,6 +394,29 @@ const options = {
 }
 
 describe('portable UVP map bundle', () => {
+  it('packages derived cliff presentation models and retains their non-authored marker on reopen', async () => {
+    const packed = await materializeWorldToUvpMap(sourceWithModel(true), options)
+    if (packed.state !== 'materialized') throw new Error(JSON.stringify(packed.refusals))
+    expect(packed.packagedModelCount).toBe(1)
+    const reopened = await openUvpMapBundle(new Map([...packed.entries].map(([name, bytes]) =>
+      [name, Uint8Array.from(bytes)])), { snapshotId: 'detached-cliff', rasterResources,
+      modelDecoder: createEmbeddedUvmWorldModelDecoder(rasterResources) })
+    const layer = reopened.document.spaces[0]!.layers.find(item => item.kind === 'objects')
+    if (layer?.kind !== 'objects') throw new Error('missing cliff layer')
+    expect(layer.instances[0]).toMatchObject({ derivedFrom: 'cliffs', objectKind: 'doodad' })
+    expect(layer.instances[0]!.resourceIds).toHaveLength(1)
+    const catalog = await reopened.source.page({ facet: 'layers', limit: 16 })
+    const objectLayer = catalog.items.find(item => item.facet === 'layers' && item.kind === 'objects')
+    if (objectLayer?.facet !== 'layers') throw new Error('missing cliff catalog layer')
+    const page = await reopened.source.page({ facet: 'objects', layerId: objectLayer.layerId, limit: 16 })
+    expect(page.items[0]).toMatchObject({ facet: 'objects', kind: 'doodad', derivedFrom: 'cliffs' })
+    const resourceId = page.items[0]?.facet === 'objects' ? page.items[0].resourceIds?.[0] : undefined
+    if (resourceId === undefined) throw new Error('missing packaged cliff model')
+    const model = await reopened.source.model!(resourceId, {
+      maxBytes: 1024 * 1024, maxMeshes: 8, maxPrimitives: 8, maxPrimitiveBytes: 1024 * 1024,
+    })
+    expect(model.state).toBe('converted')
+  })
   it('packages geometry without a texture route, but still refuses missing required texture acquisition', async () => {
     const geometry = {
       ...document,

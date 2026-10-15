@@ -454,7 +454,7 @@ describe('production world to UVW materializer', () => {
               object('native:tree-1', true),
               object('native:start-1', false),
               object('native:tree-1', true),
-              object('native:cliff-1', true, { derivedFrom: 'cliffs' }),
+              object('native:cliff-1', true, { derivedFrom: 'cliffs', kind: 'doodad' }),
               object('native:preview-1', true, { derivedFrom: 'objects' }),
             ],
           })
@@ -470,7 +470,8 @@ describe('production world to UVW materializer', () => {
     expect(result.excludedFacetIds).not.toContain('world.objects')
     expect(result.omittedObjects).toBe(2)
     const layer = result.document.spaces[0]?.layers.find(item => item.kind === 'objects')
-    expect(layer?.kind === 'objects' && layer.instances.map(instance => instance.id)).toEqual(['tree-1'])
+    expect(layer?.kind === 'objects' && layer.instances.map(instance => instance.id)).toEqual(['cliff-1', 'tree-1'])
+    expect(layer?.kind === 'objects' && layer.instances[0]?.derivedFrom).toBe('cliffs')
   })
 
   it('names in its receipt every field of a kept facet the UVW leaves out (П23)', async () => {

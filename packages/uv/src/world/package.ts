@@ -33,7 +33,7 @@ import {
   type UvwWaterLayer,
 } from './index.js'
 import { materializeWorldToUvw, type WorldUvwMaterializationOptions } from './materializer.js'
-import { localId } from './reconstruct.js'
+import { isRetainedWorldObject, localId } from './reconstruct.js'
 import { createUvwWorldSceneSource } from './source.js'
 
 const MANIFEST_PATH = 'uvp.manifest.json'
@@ -1258,14 +1258,14 @@ export async function materializeWorldToUvpMap(
         options.signal,
       )
       // Joined by the instance id the UVW gave each object, as the reconstruction names it: the
-      // canonical UVW sorts instances, and an object it left out (a cliff piece, no canonical
+      // canonical UVW sorts instances, and an object it left out (a helper, no canonical
       // place, a repeated id) has no instance to bind.
       const instanceIndexById = new Map(
         target.layer.instances.map((instance, index) => [instance.id, index] as const),
       )
       const bound = new Set<number>()
       for (const object of objects) {
-        if (object.derivedFrom !== undefined) continue
+        if (!isRetainedWorldObject(object)) continue
         const instanceIndex = instanceIndexById.get(localId(object.id, 'instance'))
         if (instanceIndex === undefined || bound.has(instanceIndex)) continue
         bound.add(instanceIndex)

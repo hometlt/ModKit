@@ -200,6 +200,8 @@ export interface UvwPresentationAnimation {
 export interface UvwObjectInstance {
   readonly id: string
   readonly objectKind: UvwObjectKind
+  /** Generated cliff/ramp geometry remains visible but is not a separate authored placement. */
+  readonly derivedFrom?: 'cliffs'
   readonly position: readonly [number, number, number]
   readonly rotation: readonly [number, number, number, number]
   /** Optional absolute visual orientation; authored rotation remains independent. */
@@ -1586,6 +1588,7 @@ function objectsLayer(
         [
           'id',
           'objectKind',
+          'derivedFrom',
           'position',
           'rotation',
           'presentationRotation',
@@ -1611,6 +1614,9 @@ function objectsLayer(
       ) as UvwObjectKind
       if (!OBJECT_KINDS.has(objectKind))
         fail(`unsupported object kind ${JSON.stringify(objectKind)}`, `${instancePath}.objectKind`)
+      const derivedFrom = instance['derivedFrom']
+      if (derivedFrom !== undefined && (derivedFrom !== 'cliffs' || objectKind !== 'doodad'))
+        fail('only a doodad may be a derived cliff presentation piece', `${instancePath}.derivedFrom`)
       const rotation = vec4(instance['rotation'], `${instancePath}.rotation`, state, depth + 3)
       const magnitude = Math.hypot(...rotation)
       if (Math.abs(magnitude - 1) > 1e-6)
@@ -1764,6 +1770,7 @@ function objectsLayer(
       return Object.freeze({
         id: layerId(instance['id'], `${instancePath}.id`, state, depth + 3),
         objectKind,
+        ...(derivedFrom === undefined ? {} : { derivedFrom }),
         position: vec3(instance['position'], `${instancePath}.position`, state, depth + 3),
         rotation,
         ...(presentationRotation === undefined ? {} : { presentationRotation }),

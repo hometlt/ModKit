@@ -303,6 +303,7 @@ function recordItems(
                   layerId: record.id,
                   coordinateSpaceId,
                   kind: instance.objectKind,
+                  ...(instance.derivedFrom === undefined ? {} : { derivedFrom: instance.derivedFrom }),
                   objectId: instanceIndex,
                   position: uvwPosition,
                   sourcePositionDimensions: 3 as const,

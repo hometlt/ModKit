@@ -30,6 +30,24 @@ function errorCode(run: () => unknown): string | undefined {
 }
 
 describe('UVW 1.0 production document', () => {
+  it('admits only generated cliff doodads and preserves their marker without creating authored placements', async () => {
+    const input = JSON.parse(new TextDecoder().decode(await fixture('uvw-profile-renderable-world.uvw.json')))
+    const objects = input.spaces[0].layers.find((item: { kind: string }) => item.kind === 'objects')
+    const item = objects.instances[0]
+    item.objectKind = 'doodad'
+    item.derivedFrom = 'cliffs'
+    const parsed = parseUvwProfile(serializeUvwProfile(validateUvwProfile(input)))
+    const layer = parsed.spaces[0]!.layers.find(row => row.kind === 'objects')!
+    if (layer.kind !== 'objects') throw new Error('missing fixture objects')
+    expect(layer.instances.find(row => row.id === item.id)?.derivedFrom).toBe('cliffs')
+    for (const invalid of ['objects', 'terrain', '', null, 1]) {
+      item.derivedFrom = invalid
+      expect(() => validateUvwProfile(input)).toThrow(/derived cliff/)
+    }
+    item.derivedFrom = 'cliffs'
+    item.objectKind = 'unit'
+    expect(() => validateUvwProfile(input)).toThrow(/derived cliff/)
+  })
   it('retains layers-only atlas samples and inactive weights without sorting authored layers', async () => {
     const input = JSON.parse(
       new TextDecoder().decode(await fixture('uvw-profile-renderable-world.uvw.json')),

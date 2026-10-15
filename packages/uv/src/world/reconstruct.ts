@@ -364,6 +364,13 @@ function objectLatticeForUvw(
   })
 }
 
+/** Cliff presentation meshes have their own UVW marker; assembled-object helper instances do not. */
+export function isRetainedWorldObject(item: Pick<WorldSceneObjectItem, 'derivedFrom' | 'kind'>): boolean {
+  if (item.derivedFrom === 'cliffs' && item.kind !== 'doodad')
+    throw new TypeError('only a doodad may be a derived cliff presentation piece')
+  return item.derivedFrom === undefined || item.derivedFrom === 'cliffs'
+}
+
 /** One field-loss counter for source items and material catalogs; false and zero remain facts. */
 function noteUnretainedFields(
   kind: string,
@@ -390,10 +397,10 @@ function noteLostFields(
   const add = (path: string) => lost.set(path, (lost.get(path) ?? 0) + 1)
   for (const item of items) {
     const record = item as unknown as Readonly<Record<string, unknown>>
-    // a presentation-only instance belongs to its source facet and is never exported; an object
+    // An assembled-object helper belongs to its source facet and is never exported; an object
     // without a canonical place is left out whole (omittedObjects)
     if (
-      record['derivedFrom'] !== undefined ||
+      (kind === 'objects' && !isRetainedWorldObject(item as WorldSceneObjectItem)) ||
       (kind === 'objects' &&
         (record['uvwPosition'] === undefined || record['uvwRotation'] === undefined))
     )
@@ -888,8 +895,7 @@ async function reconstructLayer(
         items.flatMap(raw => {
           const item = raw as WorldSceneObjectItem
           if (item.facet !== 'objects') throw new TypeError('UVW object layer item is not an object')
-          // Presentation-only instances (authored cliff meshes) belong to their source facet.
-          if (item.derivedFrom !== undefined) return []
+          if (!isRetainedWorldObject(item)) return []
           // An object without a canonical place (a 2D unit) or a repeated id is lost alone and
           // counted, not the whole facet with it.
           const instanceId = localId(item.id, 'instance')
@@ -908,6 +914,7 @@ async function reconstructLayer(
             Object.freeze({
               id: instanceId,
               objectKind: item.kind,
+              ...(item.derivedFrom === 'cliffs' ? { derivedFrom: 'cliffs' as const } : {}),
               position: Object.freeze([
                 item.uvwPosition.x,
                 item.uvwPosition.y,
