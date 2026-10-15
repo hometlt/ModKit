@@ -265,6 +265,20 @@ const PLACING_FIELDS = [
  * the receipt names it with how many items had it (lostFields).
  */
 const KEPT_FIELDS: Readonly<Record<string, ReadonlySet<string>>> = Object.freeze({
+  // Resource requirements are lookup context for retained IDs, not an additional authored field.
+  // overlayAlpha has the value-sensitive coverage loss check in reconstructLayer below.
+  'terrain-materials.materials': new Set([
+    'materialId', 'label', 'classification', 'sourceIndex', 'atlas', 'baseColorFactor',
+    'baseColorResourceId', 'baseColorResource', 'normalResourceId', 'normalResource',
+    'specularResourceId', 'specularResource', 'uvTransform', 'overlayAlpha',
+  ]),
+  'water.materials': new Set([
+    'materialId', 'label', 'classification', 'shorelineMode', 'color',
+    'baseColorResourceId', 'baseColorResource', 'secondaryColorResourceId', 'secondaryColorResource',
+    'uvScale', 'scroll', 'colorFalloff', 'specularity', 'specularScale', 'reflectivityPower',
+    'normalResource', 'causticsResourceId', 'causticsResource', 'causticsFrameResources',
+    'causticsScale', 'causticsFramesPerSecond', 'receiveShadows',
+  ]),
   terrain: new Set(['x', 'y', 'heightBase', 'heightAdjustment', 'uvwPosition', 'cliffFace']),
   'terrain-materials': new Set([
     'x',
@@ -349,6 +363,21 @@ function objectLatticeForUvw(
   })
 }
 
+/** One field-loss counter for source items and material catalogs; false and zero remain facts. */
+function noteUnretainedFields(
+  kind: string,
+  record: Readonly<Record<string, unknown>>,
+  lost: Map<string, number>,
+): void {
+  const kept = KEPT_FIELDS[kind]
+  if (kept === undefined) return
+  for (const [key, value] of Object.entries(record))
+    if (value !== undefined && !PLACING_FIELDS.includes(key) && !kept.has(key)) {
+      const path = `world.${kind}.${key}`
+      lost.set(path, (lost.get(path) ?? 0) + 1)
+    }
+}
+
 /** Counts, per facet field, the items whose field the UVW leaves out (see KEPT_FIELDS). */
 function noteLostFields(
   kind: string,
@@ -368,9 +397,7 @@ function noteLostFields(
         (record['uvwPosition'] === undefined || record['uvwRotation'] === undefined))
     )
       continue
-    for (const [key, value] of Object.entries(record))
-      if (value !== undefined && !PLACING_FIELDS.includes(key) && !kept.has(key))
-        add(`world.${kind}.${key}`)
+    noteUnretainedFields(kind, record, lost)
     if (item.facet === 'terrain-materials') {
       if (item.layers?.[0]?.cornerUv !== undefined || item.layers?.[0]?.clipPolygon !== undefined)
         add('world.terrain-materials.layers (base not representable)')
@@ -412,6 +439,15 @@ async function reconstructLayer(
 ): Promise<UvwHeightfieldSpaceLayer> {
   const id = layer.localLayerId ?? localId(layer.layerId)
   const label = layerLabel(layer)
+  // Catalog metadata does not travel in facet pages. Count it once per material, including
+  // raster-only layers that return before draining any terrain-material sample pages.
+  if (state.lostFields !== undefined) {
+    const catalog = layer.kind === 'terrain-materials' ? layer.materials
+      : layer.kind === 'water' ? layer.waterMaterials : undefined
+    for (const material of catalog ?? [])
+      noteUnretainedFields(`${layer.kind}.materials`,
+        material as unknown as Readonly<Record<string, unknown>>, state.lostFields)
+  }
   // UVW currently cannot retain the publisher's overlay alpha policy; report the visual loss.
   const coverageMaterials = layer.materials?.filter(material => material.overlayAlpha === 'coverage').length ?? 0
   if (coverageMaterials > 0 && state.lostFields !== undefined)

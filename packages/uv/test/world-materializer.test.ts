@@ -736,12 +736,18 @@ describe('production world to UVW materializer', () => {
                 materialId,
                 sourceIndex,
                 ...(sourceIndex === 1 ? { overlayAlpha: 'coverage' as const } : {}),
+                normalEncoding: 'rgb-inverted-y' as const,
+                ...(sourceIndex === 1 ? { specularEncoding: 'gloss' as const } : {}),
                 ...(sourceIndex === 1 ? { baseColorFactor: [0.5, 0.25, 1, 1] as const } : {}),
               })),
             }, {
               facet: 'layers', id: 'native:water', layerId: 'native:water',
               kind: 'water', state: 'available', itemCount: 1, lods: ['exact'],
-              waterMaterials: [{ materialId: 'pool_blue', color: [0, 0, 1, 1] }],
+              waterMaterials: [{ materialId: 'pool_blue', color: [0, 0, 1, 1],
+                compositing: 'multiply', occludedLikeTerrain: false,
+                causticsFalloff: 0, normalResourceId: 'water-normal',
+                causticsFrameResourceIds: ['frame-1', 'frame-2'],
+              }],
             }],
           })
         if (request.facet === 'terrain-materials')
@@ -781,6 +787,15 @@ describe('production world to UVW materializer', () => {
     expect(result.state).toBe('materialized')
     if (result.state !== 'materialized') return
     expect(result.lostFields).toContainEqual({ path: 'world.terrain-materials.materials.overlayAlpha', count: 1 })
+    const catalogLosses = [
+      { path: 'world.terrain-materials.materials.normalEncoding', count: 2 },
+      { path: 'world.terrain-materials.materials.specularEncoding', count: 1 },
+      ...['compositing', 'occludedLikeTerrain', 'causticsFalloff', 'normalResourceId', 'causticsFrameResourceIds']
+        .map(field => ({ path: `world.water.materials.${field}`, count: 1 })),
+    ]
+    expect(result.lostFields).toEqual(expect.arrayContaining(catalogLosses))
+    expect(result.lostFields.map(field => field.path)).not.toContain('world.water.materials.color')
+    expect(result.lostFields.map(field => field.path)).not.toContain('world.terrain-materials.materials.baseColorFactor')
     const layer = parseUvwProfile(result.bytes).spaces[0]?.layers.find(item => item.kind === 'terrain-materials')
     expect(layer?.kind).toBe('terrain-materials')
     if (layer?.kind !== 'terrain-materials') return
@@ -828,6 +843,7 @@ describe('production world to UVW materializer', () => {
     expect(rasterResult.state).toBe('materialized')
     if (rasterResult.state === 'materialized') {
       expect(rasterResult.lostFields).toContainEqual({ path: 'world.terrain-materials.materials.overlayAlpha', count: 1 })
+      expect(rasterResult.lostFields).toEqual(expect.arrayContaining(catalogLosses))
       const raster = parseUvwProfile(rasterResult.bytes).spaces[0]?.layers.find(item => item.kind === 'terrain-materials')
       expect(raster?.kind).toBe('terrain-materials')
       if (raster?.kind === 'terrain-materials') {
