@@ -745,8 +745,8 @@ export function createLanguageSessionController(
         }
         tracked.synchronizedGeneration = generation
         markSynchronized()
-        // Analysis is intentionally idle-delayed. Completion and on-type formatting only need the
-        // synchronized live snapshot and should enter the provider worker before background work.
+        // Analysis is intentionally idle-delayed. Interactive features use the synchronized live
+        // snapshot; the common Host still resolves each feature's complete semantic inputs.
         const idle = semanticDiagnosticsDelayMs()
         if (idle > 0) {
           await waitWithSignal(
@@ -980,6 +980,7 @@ export function createLanguageSessionController(
     ...(signal === undefined ? {} : { signal }),
   })
 
+  /** Accept current editor overlays without awaiting the separate background analysis task. */
   const prepareInteractive = async (
     document: EditorLanguageDocument,
     signal?: AbortSignal,
@@ -1141,16 +1142,10 @@ export function createLanguageSessionController(
       position: LanguagePosition,
       signal?: AbortSignal,
     ): Promise<LanguageHover | undefined> {
-      const result = await ensure(document, signal)
-      if (result === undefined) return undefined
-      return options.workspace.hover({
-        uri: document.uri,
-        documentVersion: document.version,
-        position,
-        maxResults: EDITOR_MAX_RESULTS,
-        maxDocuments: EDITOR_MAX_DOCUMENTS,
-        ...(signal === undefined ? {} : { signal }),
-      })
+      return withInteractive(async () => {
+        if (!(await prepareInteractive(document, signal))) return undefined
+        return options.workspace.hover({ ...featureRequest(document, signal), position })
+      }, signal)
     },
 
     async signatureHelp(
@@ -1158,16 +1153,10 @@ export function createLanguageSessionController(
       position: LanguagePosition,
       signal?: AbortSignal,
     ): Promise<LanguageSignatureHelp | undefined> {
-      const result = await ensure(document, signal)
-      if (result === undefined) return undefined
-      return options.workspace.signatureHelp({
-        uri: document.uri,
-        documentVersion: document.version,
-        position,
-        maxResults: EDITOR_MAX_RESULTS,
-        maxDocuments: EDITOR_MAX_DOCUMENTS,
-        ...(signal === undefined ? {} : { signal }),
-      })
+      return withInteractive(async () => {
+        if (!(await prepareInteractive(document, signal))) return undefined
+        return options.workspace.signatureHelp({ ...featureRequest(document, signal), position })
+      }, signal)
     },
 
     async definition(
@@ -1175,16 +1164,10 @@ export function createLanguageSessionController(
       position: LanguagePosition,
       signal?: AbortSignal,
     ): Promise<LanguageLocationList | undefined> {
-      const result = await ensure(document, signal)
-      if (result === undefined) return undefined
-      return options.workspace.definition({
-        uri: document.uri,
-        documentVersion: document.version,
-        position,
-        maxResults: EDITOR_MAX_RESULTS,
-        maxDocuments: EDITOR_MAX_DOCUMENTS,
-        ...(signal === undefined ? {} : { signal }),
-      })
+      return withInteractive(async () => {
+        if (!(await prepareInteractive(document, signal))) return undefined
+        return options.workspace.definition({ ...featureRequest(document, signal), position })
+      }, signal)
     },
 
     async references(
@@ -1193,17 +1176,10 @@ export function createLanguageSessionController(
       includeDeclaration: boolean,
       signal?: AbortSignal,
     ): Promise<LanguageLocationList | undefined> {
-      const result = await ensure(document, signal)
-      if (result === undefined) return undefined
-      return options.workspace.references({
-        uri: document.uri,
-        documentVersion: document.version,
-        position,
-        includeDeclaration,
-        maxResults: EDITOR_MAX_RESULTS,
-        maxDocuments: EDITOR_MAX_DOCUMENTS,
-        ...(signal === undefined ? {} : { signal }),
-      })
+      return withInteractive(async () => {
+        if (!(await prepareInteractive(document, signal))) return undefined
+        return options.workspace.references({ ...featureRequest(document, signal), position, includeDeclaration })
+      }, signal)
     },
 
     async prepareRename(

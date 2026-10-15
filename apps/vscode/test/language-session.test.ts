@@ -774,7 +774,7 @@ describe('VS Code-free language session controller', () => {
     await controller.shutdown()
   })
 
-  it.each(['completion', 'resolveCompletion', 'onTypeFormatting'] as const)(
+  it.each(['completion', 'resolveCompletion', 'onTypeFormatting', 'hover', 'signatureHelp', 'definition', 'references'] as const)(
     'keeps background analysis idle for the full duration of %s',
     async feature => {
       vi.useFakeTimers()
@@ -805,10 +805,14 @@ describe('VS Code-free language session controller', () => {
           ? controller.completion(document, position)
           : feature === 'resolveCompletion'
             ? controller.resolveCompletion(document, position, { label: 'Catalog', kind: 'class' })
-            : controller.onTypeFormatting(document, position, '=', {
-                tabSize: 2,
-                insertSpaces: true,
-              })
+            : feature === 'references'
+              ? controller.references(document, position, true)
+              : feature === 'hover' || feature === 'signatureHelp' || feature === 'definition'
+                ? controller[feature](document, position)
+                : controller.onTypeFormatting(document, position, '=', {
+                    tabSize: 2,
+                    insertSpaces: true,
+                  })
       try {
         await vi.advanceTimersByTimeAsync(100)
         expect(invoked).toHaveBeenCalledOnce()
@@ -1133,6 +1137,9 @@ describe('VS Code-free language session controller', () => {
     'resolveCompletion',
     'onTypeFormatting',
     'hover',
+    'signatureHelp',
+    'definition',
+    'references',
     'rename',
     'verify',
   ] as const)(
@@ -1161,6 +1168,9 @@ describe('VS Code-free language session controller', () => {
       vi.spyOn(workspace, 'resolveCompletion').mockImplementation(read)
       vi.spyOn(workspace, 'onTypeFormatting').mockImplementation(read)
       vi.spyOn(workspace, 'hover').mockImplementation(read)
+      vi.spyOn(workspace, 'signatureHelp').mockImplementation(read)
+      vi.spyOn(workspace, 'definition').mockImplementation(read)
+      vi.spyOn(workspace, 'references').mockImplementation(read)
       vi.spyOn(workspace, 'rename').mockImplementation(read)
       vi.spyOn(workspace, 'diagnostics').mockImplementation(read)
       const controller = createLanguageSessionController({
@@ -1185,6 +1195,9 @@ describe('VS Code-free language session controller', () => {
         onTypeFormatting: () =>
           controller.onTypeFormatting(primary, position, '=', { tabSize: 2, insertSpaces: true }),
         hover: () => controller.hover(primary, position),
+        signatureHelp: () => controller.signatureHelp(primary, position),
+        definition: () => controller.definition(primary, position),
+        references: () => controller.references(primary, position, true),
         rename: () => controller.rename(primary, position, 'New'),
         verify: () => controller.verify(primary),
       }
