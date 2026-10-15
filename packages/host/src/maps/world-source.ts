@@ -29,6 +29,9 @@ import type {
   MapTerrainSample,
   MapPlacedObject,
   MapPosition,
+  MapNavigationSummary,
+  MapTraversalSummary,
+  WorldSceneTraversalItem,
   WorldSceneLayerItem,
   MapTerrainWeightRaster,
   MapWorldCamera,
@@ -807,31 +810,29 @@ export async function worldTransformCorpusRefusal(
   return undefined
 }
 
-/** Admit only complete publisher navigation with a measured independent native grid.
- * The existing canonical point mapper supplies all coordinates; no flag semantics are inferred.
- * Non-square, skewed, vertical or incomplete layouts remain partial rather than being repaired. */
-function admittedNavigationGrid(
-  navigation: ResolvedMapWorkspaceSnapshot['navigation'],
+/** One owner for complete independent native grids. Value semantics are validated by each facet. */
+function admittedNativeSampleGrid(
+  navigation: Pick<MapNavigationSummary, 'exact' | 'width' | 'height' | 'cellCount' | 'trailingBytes' | 'grid'> &
+    Readonly<{ samples: readonly Readonly<{ x: number; y: number }>[] }>,
   transform: MapWorldCanonicalTransform | undefined,
-): Readonly<{ grid?: NonNullable<WorldSceneLayerItem['grid']>; positions?: readonly MapPosition[]; reason?: string }> {
+): Readonly<{ grid?: NonNullable<WorldSceneLayerItem['grid']>; positions?: readonly MapPosition[]; directions?: readonly number[]; reason?: string }> {
   if (navigation?.exact !== true) return {}
-  const reject = (reason: string) => Object.freeze({ reason: `exact navigation refused: ${reason}` })
+  const reject = (reason: string) => Object.freeze({ reason: `exact grid refused: ${reason}` })
   if (navigation.trailingBytes !== 0) return reject('native trailing bytes are not represented by the flags grid')
   if (transform === undefined) return reject('the native world frame is not qualified')
-  if (!isNavigationFlagEncoding(navigation.flagEncoding)) return reject('the flags vocabulary is not versioned and publisher-scoped')
   const { width, height, cellCount, samples, grid } = navigation
   if (!Number.isSafeInteger(width) || width < 1 || !Number.isSafeInteger(height) || height < 1 ||
     !Number.isSafeInteger(width * height) || cellCount !== width * height || samples.length !== cellCount)
-    return reject('the flags grid is not complete')
+    return reject('the sample grid is not complete')
   const vector = (value: unknown): value is MapPosition => value !== null && typeof value === 'object' &&
     (['x', 'y', 'z'] as const).every(axis => Number.isFinite((value as MapPosition)[axis]))
   if (grid?.coordinateSpaceId !== 'map-native' || !vector(grid.origin) || !vector(grid.columnStep) || !vector(grid.rowStep))
     return reject('native sample origin and steps are missing or invalid')
   const seen = new Set<number>()
   for (const item of samples) {
-    if (!Number.isSafeInteger(item.x) || !Number.isSafeInteger(item.y) || item.x < 0 || item.x >= width ||
-      item.y < 0 || item.y >= height || !Number.isSafeInteger(item.flags) || item.flags < 0)
-      return reject('a native sample or flags value is invalid')
+    if (item === undefined || item === null || !Number.isSafeInteger(item.x) || !Number.isSafeInteger(item.y) || item.x < 0 || item.x >= width ||
+      item.y < 0 || item.y >= height)
+      return reject('a native sample coordinate is invalid')
     const index = item.y * width + item.x
     if (seen.has(index)) return reject('a native sample coordinate is repeated')
     seen.add(index)
@@ -856,14 +857,71 @@ function admittedNavigationGrid(
   const maximumX = Math.max(origin.x, end.x), maximumZ = Math.max(origin.z, end.z)
   if (!vector(end) || minimumX < transform.bounds.minimum.x - 1e-9 || maximumX > transform.bounds.maximum.x + 1e-9 ||
     minimumZ < transform.bounds.minimum.z - 1e-9 || maximumZ > transform.bounds.maximum.z + 1e-9)
-    return reject('the navigation grid extends beyond the qualified world bounds')
+    return reject('the sample grid extends beyond the qualified world bounds')
   const positions = samples.map(item => Object.freeze(position(item.x, item.y)))
   if (!positions.every(vector)) return reject('a projected sample is not finite')
   return Object.freeze({
     grid: Object.freeze({ columns: swapped ? height : width, rows: swapped ? width : height,
       cellSize, origin: Object.freeze([minimumX, origin.y, minimumZ] as const), coordinateSpaceId: 'uvw-canonical' }),
     positions: Object.freeze(positions),
+    directions: Object.freeze([cx > 0 ? 1 : cx < 0 ? 2 : cz > 0 ? 4 : 8,
+      cx > 0 ? 2 : cx < 0 ? 1 : cz > 0 ? 8 : 4,
+      rx > 0 ? 1 : rx < 0 ? 2 : rz > 0 ? 4 : 8,
+      rx > 0 ? 2 : rx < 0 ? 1 : rz > 0 ? 8 : 4]),
   })
+}
+
+function admittedNavigationGrid(navigation: ResolvedMapWorkspaceSnapshot['navigation'], transform: MapWorldCanonicalTransform | undefined): ReturnType<typeof admittedNativeSampleGrid> {
+  if (navigation?.exact !== true) return {}
+  if (!isNavigationFlagEncoding(navigation.flagEncoding)) return { reason: 'exact navigation refused: the flags vocabulary is not versioned and publisher-scoped' }
+  if (navigation.samples.some(item => !Number.isSafeInteger(item.flags) || item.flags < 0))
+    return { reason: 'exact navigation refused: a native flags value is invalid' }
+  return admittedNativeSampleGrid(navigation, transform)
+}
+
+function admittedTraversalGrid(traversal: MapTraversalSummary, transform: MapWorldCanonicalTransform | undefined, topology: string | undefined): Readonly<{
+  grid?: NonNullable<WorldSceneLayerItem['grid']>
+  values?: readonly Readonly<Pick<WorldSceneTraversalItem, 'x' | 'y' | 'walkable' | 'exits' | 'uvwPosition'>>[]
+  reason?: string
+}> {
+  const refuse = (reason: string) => ({ reason: `exact traversal refused: ${reason}` })
+  if (topology !== undefined && topology !== 'heightfield') return refuse('portable traversal requires heightfield topology')
+  if (traversal.surfaceLayerId !== undefined && traversal.surfaceLayerId !== 'terrain') return refuse('the native Host exposes only the terrain surface')
+  const admitted = admittedNativeSampleGrid(traversal, transform)
+  if (admitted.grid === undefined || admitted.positions === undefined || admitted.directions === undefined)
+    return refuse(admitted.reason ?? 'the publisher did not provide a complete exact grid')
+  const { grid, positions, directions } = admitted
+  const origin = [grid.origin[0] - grid.cellSize / 2, grid.origin[1], grid.origin[2] - grid.cellSize / 2] as const
+  const maxX = origin[0] + grid.columns * grid.cellSize, maxZ = origin[2] + grid.rows * grid.cellSize
+  if (transform === undefined || origin[0] < transform.bounds.minimum.x - 1e-9 || maxX > transform.bounds.maximum.x + 1e-9 ||
+    origin[2] < transform.bounds.minimum.z - 1e-9 || maxZ > transform.bounds.maximum.z + 1e-9 ||
+    origin[1] < transform.bounds.minimum.y - 1e-9 || origin[1] > transform.bounds.maximum.y + 1e-9)
+    return refuse('the cell footprint extends beyond the qualified world bounds')
+  if (traversal.surfaceLayerId !== undefined) {
+    const surface = transform.heightfield
+    if (grid.origin[0] < surface.origin[0] - 1e-9 || grid.origin[2] < surface.origin[2] - 1e-9 ||
+      grid.origin[0] + (grid.columns - 1) * grid.cellSize > surface.origin[0] + (surface.columns - 1) * surface.cellSize + 1e-9 ||
+      grid.origin[2] + (grid.rows - 1) * grid.cellSize > surface.origin[2] + (surface.rows - 1) * surface.cellSize + 1e-9)
+      return refuse('the heightfield does not cover traversal cell centres')
+  }
+  const cells = new Map(traversal.samples.map(cell => [cell.y * traversal.width + cell.x, cell]))
+  for (const cell of traversal.samples) {
+    if (typeof cell.walkable !== 'boolean' || !Number.isSafeInteger(cell.exits) || cell.exits < 0 || cell.exits > 15 || (!cell.walkable && cell.exits !== 0))
+      return refuse('a traversal cell or exits mask is invalid')
+    for (const [dx, dy, bit] of [[1, 0, 1], [-1, 0, 2], [0, 1, 4], [0, -1, 8]] as const) {
+      if ((cell.exits & bit) === 0) continue
+      const x = cell.x + dx, y = cell.y + dy
+      if (x < 0 || x >= traversal.width || y < 0 || y >= traversal.height || cells.get(y * traversal.width + x)?.walkable !== true)
+        return refuse('a directed edge leaves the walkable native grid')
+    }
+  }
+  const values = traversal.samples.map((cell, index) => {
+    const uvwPosition = positions[index]!
+    const exits = directions.reduce((mask, canonical, direction) => (cell.exits & (1 << direction)) === 0 ? mask : mask | canonical, 0)
+    return Object.freeze({ x: Math.round((uvwPosition.x - grid.origin[0]) / grid.cellSize),
+      y: Math.round((uvwPosition.z - grid.origin[2]) / grid.cellSize), walkable: cell.walkable, exits, uvwPosition })
+  })
+  return { grid: Object.freeze({ ...grid, origin }), values: Object.freeze(values) }
 }
 
 /** Creates a lease whose release makes every page/cursor stale immediately. */
@@ -1434,6 +1492,20 @@ export function createCandidateWorldSceneLease(
       }),
     ),
   )
+  const traversalClasses = new Set<string>()
+  const traversalRecords = (snapshot.traversals ?? []).map(published => {
+    if (!/^[a-z][a-z0-9-]*$/u.test(published.classId) || traversalClasses.has(published.classId))
+      throw new TypeError('native traversal classes must have unique local ids')
+    traversalClasses.add(published.classId)
+    const id = `${layerId('traversal')}:${published.classId}`
+    const admission = admittedTraversalGrid(published, uvwTransform, snapshot.worldCandidate.topology)
+    const items: readonly WorldSceneTraversalItem[] = Object.freeze((admission.values ?? []).map(cell => Object.freeze({
+      facet: 'traversal' as const, id: `${id}:${cell.x}:${cell.y}`, layerId: id,
+      coordinateSpaceId: 'uvw-canonical', lod: 'exact' as const, ...cell })))
+    const metadata = Object.freeze({ classId: published.classId, ...(published.surfaceLayerId === undefined ? {} : { surfaceLayerId: published.surfaceLayerId }) })
+    return Object.freeze({ id, localLayerId: `traversal-${published.classId}`, published, admission, items, metadata,
+      contentRevision: layerContentRevision(items, JSON.stringify({ metadata, grid: admission.grid })) })
+  })
   const gateways: readonly WorldSceneItem[] = Object.freeze(
     (snapshot.gateways?.segments ?? []).map(item => {
       const uvwStart =
@@ -1727,6 +1799,11 @@ export function createCandidateWorldSceneLease(
         ? { reason: 'publisher reported navigation unavailable' }
         : navigationAdmission.grid === undefined ? { reason: navigationAdmission.reason ?? 'native flags are sampled and their bit semantics remain publisher-defined' } : {}),
     }),
+    ...traversalRecords.map(record => Object.freeze({ facet: 'traversal' as const, layerId: record.id,
+      state: record.admission.grid === undefined ? 'partial' as const : 'available' as const,
+      itemCount: record.published.cellCount, lods: Object.freeze(record.admission.grid === undefined ? [] : ['exact']),
+      contentRevision: record.contentRevision,
+      ...(record.admission.grid === undefined ? { reason: record.admission.reason ?? 'publisher traversal is not admitted' } : {}) })),
     Object.freeze({
       facet: 'gateways' as const,
       layerId: gatewayLayerId,
@@ -1773,6 +1850,11 @@ export function createCandidateWorldSceneLease(
               })(),
               ([x,y]) => { const point=canonicalPosition({x,y,z:0},uvwTransform);return [point.x,point.z] },
             ) } : {}),
+        ...(item.facet === 'traversal' ? (() => {
+          const record = traversalRecords.find(record => record.id === item.layerId)!
+          return { localLayerId: record.localLayerId, traversal: record.metadata,
+            ...(record.admission.grid === undefined ? {} : { grid: record.admission.grid }) }
+        })() : {}),
         ...(item.facet === 'navigation' ? {
           ...(navigationAdmission.grid === undefined ? {} : { grid: navigationAdmission.grid }),
           ...(snapshot.navigation?.flagEncoding === undefined ? {} : { navigationFlagEncoding: snapshot.navigation.flagEncoding }),
@@ -1838,6 +1920,7 @@ export function createCandidateWorldSceneLease(
     ['regions', regions],
     ['resources', resources],
     ['navigation', navigation],
+    ...(traversalRecords.length === 0 ? [] : [['traversal', Object.freeze(traversalRecords.flatMap(record => record.items))] as const]),
     ['gateways', gateways],
     ['lighting', lighting],
   ])
@@ -2080,7 +2163,8 @@ export function createCandidateWorldSceneLease(
       assertLive(signal)
       positiveLimit(request.limit, maxPageSize)
       cursorOffset(request.cursor, snapshot.snapshotId, canonicalQuery(request))
-      const items = byFacet.get(request.facet)
+      const facetItems = byFacet.get(request.facet)
+      const items = request.facet === 'traversal' ? facetItems?.filter(item => item.layerId === request.layerId) : facetItems
       if (items === undefined) {
         return Promise.resolve(
           Object.freeze({
@@ -2092,11 +2176,14 @@ export function createCandidateWorldSceneLease(
           }),
         )
       }
-      const facetState = facets.find(item => item.facet === request.facet)
+      const facetState = facets.find(item => item.facet === request.facet && (request.facet !== 'traversal' || item.layerId === request.layerId))
       if (request.facet !== 'layers') {
         if (request.layerId !== facetState?.layerId) {
           throw new TypeError(`world facet ${request.facet} requires its exact layerId`)
         }
+        if (request.facet === 'traversal' && (facetState?.state !== 'available' || request.lod !== 'exact'))
+          return Object.freeze({ snapshotId: snapshot.snapshotId, facet: request.facet, state: 'unsupported' as const,
+            items: Object.freeze([]), reason: facetState?.reason ?? 'traversal only pages admitted exact cells' })
         const expectedLod =
           request.facet === 'terrain'
             ? terrainLod
@@ -2160,6 +2247,10 @@ export function createCandidateWorldSceneLease(
                   item.position.y >= bounds.minimumY &&
                   item.position.y <= bounds.maximumY
                 )
+              }
+              if (item.facet === 'traversal') {
+                return item.uvwPosition.x >= bounds.minimumX && item.uvwPosition.x <= bounds.maximumX &&
+                  item.uvwPosition.z >= bounds.minimumY && item.uvwPosition.z <= bounds.maximumY
               }
               if (item.facet === 'water') {
                 return !(

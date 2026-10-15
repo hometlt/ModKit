@@ -1173,7 +1173,7 @@ export async function reconstructCanonicalUvw(
 
 export interface AdditionalExactLayers {
   readonly layers: readonly UvwHeightfieldSpaceLayer[]
-  readonly retainedFacets: readonly string[]
+  readonly retainedLayerIds: readonly string[]
   readonly pageRequests: number
   readonly observedItems: number
   /** Objects left out alone: no canonical place (a 2D unit) or a repeated id. */
@@ -1216,7 +1216,7 @@ export async function reconstructAdditionalExactLayers(
   if (candidates.length === 0) {
     return Object.freeze({
       layers: Object.freeze([]),
-      retainedFacets: Object.freeze([]),
+      retainedLayerIds: Object.freeze([]),
       pageRequests: 0,
       observedItems: 0,
       omittedObjects: 0,
@@ -1229,7 +1229,7 @@ export async function reconstructAdditionalExactLayers(
     return item
   })
   const layers: UvwHeightfieldSpaceLayer[] = []
-  const retainedFacets: string[] = []
+  const retainedLayerIds: string[] = []
   for (const facet of candidates) {
     const layer = catalog.find(item => item.layerId === facet.layerId && item.kind === facet.facet)
     if (layer === undefined)
@@ -1255,11 +1255,11 @@ export async function reconstructAdditionalExactLayers(
         }),
       )
     }
-    retainedFacets.push(facet.facet)
+    retainedLayerIds.push(facet.layerId)
   }
   return Object.freeze({
     layers: Object.freeze(layers),
-    retainedFacets: Object.freeze(retainedFacets),
+    retainedLayerIds: Object.freeze(retainedLayerIds),
     pageRequests: state.pageRequests,
     observedItems: state.observedItems,
     omittedObjects: state.omittedObjects,

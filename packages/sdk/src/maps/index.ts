@@ -1371,18 +1371,43 @@ export function isNavigationFlagEncoding(value: unknown): value is string {
     /^[a-z0-9][a-z0-9._-]*\/[a-z0-9][a-z0-9._/-]*@[1-9][0-9]*$/u.test(value)
 }
 
+/** Native position of sample (0,0) and independent index-axis steps; not a cell corner. */
+export interface MapNativeSampleGrid {
+  readonly coordinateSpaceId: 'map-native'
+  readonly origin: MapPosition
+  readonly columnStep: MapPosition
+  readonly rowStep: MapPosition
+}
+
+/** Publisher-derived movement policy, not a reinterpretation of unknown navigation flags. */
+export interface MapTraversalSample {
+  readonly x: number
+  readonly y: number
+  readonly walkable: boolean
+  /** Directed index-space edges: 1=+column, 2=-column, 4=+row, 8=-row. Host maps them to UVW. */
+  readonly exits: number
+}
+
+export interface MapTraversalSummary {
+  readonly classId: string
+  /** The common native Host currently materializes its one authored heightfield as `terrain`. */
+  readonly surfaceLayerId?: 'terrain'
+  readonly exact: boolean
+  readonly width: number
+  readonly height: number
+  readonly cellCount: number
+  readonly trailingBytes: number
+  readonly grid: MapNativeSampleGrid
+  readonly samples: readonly MapTraversalSample[]
+}
+
 /** Bounded summary of a publisher-native navigation grid. */
 export interface MapNavigationSummary {
   /** Only true for a complete grid; omission retains the historical sampled summary. */
   readonly exact?: boolean
   readonly flagEncoding?: string
   /** Native position of sample (0,0), not the corner of its cell; steps are independent of terrain. */
-  readonly grid?: Readonly<{
-    readonly coordinateSpaceId: 'map-native'
-    readonly origin: MapPosition
-    readonly columnStep: MapPosition
-    readonly rowStep: MapPosition
-  }>
+  readonly grid?: MapNativeSampleGrid
   readonly version: number
   readonly width: number
   readonly height: number
@@ -1640,6 +1665,7 @@ export interface ResolvedMapWorkspaceSnapshot {
   readonly snapshotId: string
   readonly semantic: MapSemanticSnapshot
   readonly navigation?: MapNavigationSummary
+  readonly traversals?: readonly MapTraversalSummary[]
   readonly gateways?: MapGatewaySummary
   readonly terrainMaterials?: MapTerrainMaterialSummary
   readonly water?: MapWaterSummary

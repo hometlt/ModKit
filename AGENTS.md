@@ -18,6 +18,15 @@
 
 ## Проверки
 
+Native traversal и navigation используют один `MapNativeSampleGrid` в SDK и один
+`admittedNativeSampleGrid` в Host. Игра явно публикует статическую политику класса;
+Host преобразует направления column/row в canonical x/z один раз через тот же frame,
+что и позиции. Сетка хранит центры образцов, UVW traversal — угол клетки. Направления
+не выводятся из родных navigation flags. Несколько классов имеют отдельные layerId,
+cursor и contentRevision. UV reconstruction отмечает сохранённые layerId, чтобы точный
+класс не скрывал потерю частичного; excluded traversal помечается идентификатором слоя.
+
+
 Portable traversal UVW использует существующий нормативный directed four-neighbour
 контракт: один classId на слой, один слой класса в пространстве heightfield. SDK maps
 публикует клетки и class/surface metadata; UV — единственный Core reader/reconstruction.

@@ -562,11 +562,11 @@ export async function materializeWorldToUvw(
     })
     const digest = await sha256Hex(bytes)
     options.signal?.throwIfAborted()
-    const retained = new Set([...(ground === undefined ? [] : ['terrain']), ...additional.retainedFacets])
+    const retained = new Set([...(ground === undefined ? [] : info.facets.filter(facet => facet.facet === 'terrain').map(facet => facet.layerId)), ...additional.retainedLayerIds])
     const excludedFacetIds = Object.freeze(
       info.facets
-        .filter(facet => !retained.has(facet.facet))
-        .map(facet => `world.${facet.facet}`)
+        .filter(facet => !retained.has(facet.layerId))
+        .map(facet => facet.facet === 'traversal' ? `world.traversal/${facet.layerId}` : `world.${facet.facet}`)
         .concat(info.unknownFacets.map(facet => `world.unknown.${facet}`))
         .sort(),
     )
