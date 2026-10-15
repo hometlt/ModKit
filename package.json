@@ -8,7 +8,7 @@
     "node": ">=22"
   },
   "scripts": {
-    "typecheck": "tsc -b && tsc -p tsconfig.tooling.json",
+    "typecheck": "tsc -b && node packages/codec-kit/native/obj2voxel/copy-runtime.mjs && tsc -p tsconfig.tooling.json",
     "ts-strict:check": "node scripts/migration/check-ts-strict.mjs",
     "surfaces:check": "node scripts/migration/check-surfaces.mjs --scope m1-fixtures && node scripts/migration/check-surfaces.mjs --scope m7-foundation",
     "algorithms:check": "node scripts/migration/check-algorithms.mjs",

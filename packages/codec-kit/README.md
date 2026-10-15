@@ -5,6 +5,33 @@ boundaries and pending surfaces are documented in `adr/ADR-CODEC-001-legacy-kit.
 Build with `pnpm --filter @modkit/codec-kit build` before `pnpm --filter @modkit/codec-kit test`;
 the permanent test command executes the compiled public modules and real compression/WASM fixtures.
 
+## Pinned raw voxel kernel
+
+`@modkit/codec-kit/model/voxel-kernel` exports `createPinnedVoxelKernel(trustedLimits?)`.
+Construction captures limits without loading WASM. The frozen handle's `run(input, signal?)`
+consumes one attempt, including a refused/failed attempt, and snapshots input before its first await.
+Admitted input is triangle RGB or one already-baked REPEAT atlas; alpha refuses by default, with
+explicit discard recorded as a loss. Output owns canonical opaque cells, the A1 grid-to-source
+transform, counts, losses and cumulative explicit typed-buffer accounting. This is not a UVM/UVW
+serializer, material baker, Minecraft exporter, native encoder or Host operation.
+
+The pinned obj2voxel source, patches, compiler flags and licenses are recorded in
+`native/obj2voxel/PROVENANCE.json`; runtime packs retain its primary LICENSE and fourteen notices.
+Owned embedded bytes are checked with the existing SHA-256 owner before compilation. The trusted
+adapter replaces only the private proof-notification import with a fixed no-op, leaving the official
+runtime/stubs intact; no job callback, factory, path or URL is accepted. WASM linear memory has a
+separate 128 MiB maximum: neither this nor the explicit-buffer budget bounds total heap/RSS.
+Signals are cooperative at JS/boundary checks, not hard cancellation during synchronous WASM.
+Worker termination, session capacity and public operations remain with the Host owner.
+
+Both package build and root typecheck run `native/obj2voxel/copy-runtime.mjs` after TypeScript.
+The helper byte-copies official `.mjs` and `.d.mts` into `dist/lib/obj2voxel`, verifying their hashes.
+An explicitly invoked private `tsc -b` reference build does **not** run package hooks: invoke this
+same helper from the private package before import or pack. TypeScript-only output is not a complete
+runtime closure. Do not use `allowJs` to reprint the pinned glue or fetch/rebuild native code at runtime.
+Source rebuilding uses a separately installed pinned SDK; network isolation and full independent
+hash-pinning of that SDK/sysroot have not been established by the asset qualification.
+
 Optional runtime helper for small, portable inspection codecs. It owns only format-neutral
 probe/open/session plumbing and generic tree/transport adapters. Format parsing stays inside the
 extension that owns that format.

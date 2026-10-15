@@ -45,6 +45,10 @@
       "types": "./dist/model/geometry.d.ts",
       "default": "./dist/model/geometry.js"
     },
+    "./model/voxel-kernel": {
+      "types": "./dist/model/voxel-kernel.d.ts",
+      "default": "./dist/model/voxel-kernel.js"
+    },
     "./json-snapshot": {
       "types": "./dist/json-snapshot.d.ts",
       "default": "./dist/json-snapshot.js"
@@ -257,7 +261,9 @@
     "MK2-DIGEST-KERNELS.json",
     "README.md",
     "src/lib/brotli/LICENSE",
-    "native/jpegxr/LICENSE"
+    "native/jpegxr/LICENSE",
+    "native/obj2voxel/LICENSE",
+    "native/obj2voxel/notices"
   ],
   "dependencies": {
     "draco3d": "1.5.7",
@@ -287,7 +293,7 @@
     }
   },
   "scripts": {
-    "build": "tsc -b",
+    "build": "tsc -b && node native/obj2voxel/copy-runtime.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "clean": "tsc -b --clean",
     "test": "node --test test/*.test.mjs && node --test test/raster-jpeg.test.ts",

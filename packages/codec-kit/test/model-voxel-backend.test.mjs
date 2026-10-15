@@ -1,11 +1,52 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { readFileSync, writeFileSync, mkdirSync, mkdtempSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { tmpdir } from 'node:os'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 const { snapshotVoxelBackendRequest: snapshot, voxelBackendLimits, DEFAULT_VOXEL_BACKEND_LIMITS } = await import(
   process.env.MODKIT_VOXEL_BACKEND_MODULE ?? '../dist/model/voxel-backend.js'
 )
 const triangle = () => new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0])
 const rgb = () => ({ geometry: { kind: 'triangle-rgb', positions: triangle(), triangleRgb: new Float32Array([1, 0, 0]) }, resolution: 16 })
 const atlas = () => ({ geometry: { kind: 'baked-atlas', positions: triangle(), uvs: new Float32Array([.25, .25, .25, .75, .75, .25]), atlas: { width: 2, height: 1, rgba: new Uint8Array([255, 0, 0, 255, 0, 0, 255, 255]) }, sampler: 'repeat' }, resolution: 16 })
+const kernelUrl = new URL(process.env.MODKIT_VOXEL_KERNEL_MODULE ?? '../dist/model/voxel-kernel.js', import.meta.url)
+const { createPinnedVoxelKernel } = await import(kernelUrl.href)
+
+/** Copy only this compiled kernel's dependency closure, never a live dist tree or game fixture. */
+function kernelFixture(change) {
+  const temporary = process.env.MODKIT_TEST_TEMP ?? (process.platform === 'win32' ? 'C:/MKTEMP' : tmpdir())
+  mkdirSync(temporary, { recursive: true })
+  const root = mkdtempSync(join(temporary, 'modkit-voxel-kernel-'))
+  const files = ['model/voxel-kernel.js', 'model/voxel-backend.js', 'model/voxel.js', 'binary.js',
+    'crypto/digest.js', 'legacy/core/index.js', 'legacy/core/errors.js',
+    'lib/obj2voxel/wasm.js', 'lib/obj2voxel/obj2voxel.mjs']
+  for (const path of files) {
+    let source = readFileSync(new URL('../' + path, kernelUrl), 'utf8')
+    source = change(path, source)
+    mkdirSync(dirname(join(root, path)), { recursive: true })
+    writeFileSync(join(root, path), source)
+  }
+  writeFileSync(join(root, 'package.json'), '{"type":"module"}\n')
+  return import(pathToFileURL(join(root, 'model/voxel-kernel.js')).href)
+}
+
+/** Private altered-glue fixture for native pointer/count validation, not a runtime injection API. */
+function mockNative(change = '') {
+  return `export default async function () {
+    let next = 64;
+    const module = { HEAPU8: new Uint8Array(32*1024**2),
+      _malloc(bytes) { const p=next; next+=bytes+16;
+        const fresh=new Uint8Array(module.HEAPU8.length+65536);fresh.set(module.HEAPU8);module.HEAPU8=fresh;return p; },
+      _free() {},
+      _proof_run(positions,colours) {
+        if(new Float32Array(module.HEAPU8.buffer,positions,9)[3]!==1 || new Float32Array(module.HEAPU8.buffer,colours,3)[0]!==1)throw Error('stale input heap');
+        const fresh=new Uint8Array(module.HEAPU8.length+65536);fresh.set(module.HEAPU8);module.HEAPU8=fresh;
+        const output=new DataView(fresh.buffer,4096,16);output.setUint32(12,0xffff0000,true);return 0; },
+      _proof_count() {return 1;}, _proof_output() {return 4096;}
+    };${change};return module;
+  }`
+}
 
 test('RGB snapshot owns buffers and metadata with exact live/copy allocation accounting', () => {
   const input = rgb(), result = snapshot(input)
@@ -140,4 +181,102 @@ test('boundary import contains no instantiation/loader behavior', async () => {
     const module = await import(fresh.href)
     assert.equal(module.snapshotVoxelBackendRequest(rgb()).triangles, 1)
   } finally { WebAssembly.instantiate = instantiate }
+})
+
+test('kernel import and construction never compile/instantiate and copy trusted limits immediately', async () => {
+  const compile = WebAssembly.compile, Instance = WebAssembly.Instance
+  WebAssembly.compile = () => { throw Error('eager compile') }
+  WebAssembly.Instance = class { constructor() { throw Error('eager instance') } }
+  let kernel
+  try {
+    const fresh = new URL(kernelUrl); fresh.searchParams.set('lazy-kernel', '1')
+    const { createPinnedVoxelKernel: create } = await import(fresh.href)
+    const limits = { maxRawCells: 1 }; kernel = create(limits); limits.maxRawCells = 1000
+    assert(Object.isFrozen(kernel)); assert.deepEqual(Object.keys(kernel), ['run'])
+  } finally { WebAssembly.compile = compile; WebAssembly.Instance = Instance }
+  await assert.rejects(kernel.run(rgb()), /C ABI/)
+})
+
+test('real pinned C ABI never reads a hostile global proof notification', async () => {
+  const original = Object.getOwnPropertyDescriptor(globalThis, 'proofEntered')
+  let reads = 0
+  Object.defineProperty(globalThis, 'proofEntered', { configurable: true, get() { reads++; throw Error('ambient proof getter') } })
+  try {
+    const result = await createPinnedVoxelKernel().run(rgb())
+    assert.equal(result.rawCells, 136); assert.equal(result.uniqueCells, 136)
+    assert.equal(result.identicalDuplicates, 0); assert.equal(reads, 0)
+    for (let i = 0; i < result.grid.colors.length; i += 4) assert.deepEqual([...result.grid.colors.subarray(i, i + 4)], [255, 0, 0, 255])
+  } finally {
+    if (original) Object.defineProperty(globalThis, 'proofEntered', original)
+    else delete globalThis.proofEntered
+  }
+})
+
+test('kernel snapshots before loading, owns output, and consumes concurrent/repeated attempts', async () => {
+  const value = rgb(), kernel = createPinnedVoxelKernel(), pending = kernel.run(value)
+  value.geometry.positions.fill(99); value.geometry.triangleRgb.fill(0); value.resolution = 2
+  await assert.rejects(kernel.run(rgb()), /consumed/)
+  const result = await pending
+  assert.equal(result.uniqueCells, 136); assert.equal(result.transform.cellSize, 1 / 15.5)
+  assert.equal(result.grid.colors[0], 255); assert.equal(result.grid.colors[1], 0)
+  assert(Object.isFrozen(result) && Object.isFrozen(result.allocation))
+  const next = await createPinnedVoxelKernel().run(rgb())
+  result.grid.colors.fill(0); result.grid.positions.fill(999)
+  assert.equal(next.grid.colors[0], 255); assert.notEqual(next.grid.positions[0], 999)
+  const invalid = createPinnedVoxelKernel()
+  await assert.rejects(invalid.run({}), /resolution/)
+  await assert.rejects(invalid.run(rgb()), /consumed/)
+  const aborted = createPinnedVoxelKernel()
+  await assert.rejects(aborted.run(rgb(), AbortSignal.abort()), { name: 'AbortError' })
+  await assert.rejects(aborted.run(rgb()), /consumed/)
+})
+
+test('actual atlas alpha remains default refusal or an explicit structured loss', async () => {
+  const value = atlas(); value.geometry.atlas.rgba[3] = 0
+  await assert.rejects(createPinnedVoxelKernel().run(value), /alpha refused/)
+  value.geometry.alphaPolicy = 'discard-explicitly'
+  const result = await createPinnedVoxelKernel().run(value)
+  assert.deepEqual(result.losses, ['texture-alpha-discarded'])
+  assert.equal(result.uniqueCells, 136)
+  assert(result.allocation.accountedBytes > 984734)
+})
+
+test('digest mismatch refuses before any WebAssembly compilation', async () => {
+  const { createPinnedVoxelKernel: create } = await kernelFixture((path, source) => path === 'lib/obj2voxel/wasm.js'
+    ? source.replace('AGFzbQE', 'BGFzbQE') : source)
+  let calls = 0; const original = WebAssembly.compile
+  WebAssembly.compile = async (...args) => { calls++; return original(...args) }
+  try { await assert.rejects(create().run(rgb()), /digest mismatch/); assert.equal(calls, 0) }
+  finally { WebAssembly.compile = original }
+})
+
+test('unexpected WASM imports refuse before the trusted glue factory is instantiated', async () => {
+  const original = WebAssembly.Module.imports
+  WebAssembly.Module.imports = module => [...original(module), { module: 'env', name: 'ambient_authority', kind: 'function' }]
+  try { await assert.rejects(createPinnedVoxelKernel().run(rgb()), /unexpected.*imports/) }
+  finally { WebAssembly.Module.imports = original }
+})
+
+test('fresh heap views survive growth at every malloc and after the C ABI run', async () => {
+  const { createPinnedVoxelKernel: create } = await kernelFixture((path, source) => path.endsWith('obj2voxel.mjs') ? mockNative() : source)
+  const result = await create().run(rgb())
+  assert.equal(result.uniqueCells, 1); assert.deepEqual([...result.grid.colors], [255, 0, 0, 255])
+  // A1 input96 + pinned asset/digest984734 + owned raw16 + further canonical52 = 984898.
+  assert.equal(result.allocation.accountedBytes, 984898)
+  assert.equal(result.allocation.allocatedBytes, result.allocation.accountedBytes - 48)
+  assert.equal((await create({ maxAccountedBytes: 984898 }).run(rgb())).allocation.accountedBytes, 984898)
+  await assert.rejects(create({ maxAccountedBytes: 984897 }).run(rgb()), /accounted buffer/)
+})
+
+test('native OOM, zero/misaligned pointers, empty/overflow counts and bad ranges refuse atomically', async () => {
+  for (const change of [
+    'module._malloc=()=>0', 'module._malloc=()=>3', 'module._malloc=()=>{throw new WebAssembly.RuntimeError("OOM")}',
+    'module._proof_count=()=>0', 'module._proof_count=()=>2097153', 'module._proof_output=()=>module.HEAPU8.byteLength-8',
+    'module._proof_run=()=>102',
+  ]) {
+    const { createPinnedVoxelKernel: create } = await kernelFixture((path, source) => path.endsWith('obj2voxel.mjs') ? mockNative(change) : source)
+    const kernel = create()
+    await assert.rejects(kernel.run(rgb()), /pointer|OOM|count|C ABI/)
+    await assert.rejects(kernel.run(rgb()), /consumed/)
+  }
 })

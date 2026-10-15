@@ -27,6 +27,14 @@
       "unpatchedSha256": null
     },
     {
+      "path": "native/obj2voxel/copy-runtime.mjs",
+      "sha256": "41e2cf83f3a14701f87e8334e358e457b6da958b70ce2945b135748248ab3139",
+      "bytes": 1684,
+      "role": "first-party-pinned-runtime-asset-byte-copy",
+      "upstreamPin": null,
+      "unpatchedSha256": null
+    },
+    {
       "path": "native/obj2voxel/emit-assets.mjs",
       "sha256": "860a7e27f82eb90b9bec1725d076f14eebeb846498d81f3156f4301f64926d7a",
       "bytes": 3691,
