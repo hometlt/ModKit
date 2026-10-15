@@ -140,27 +140,62 @@ export function withModelEffectLayer(
 }
 
 /**
- * A raster port that reads each logical texture once. The scene asks for an effect's textures on
- * every frame; without this each frame would decode them again through the host.
+ * Retains successful logical textures and shares their root-owned in-flight reads across frames.
+ * Unresolved reads can be retried; cancelling one frame only ends that frame's wait.
  */
 export function rememberingRasterPort(
   port: RasterResourcePort,
   signal: AbortSignal,
 ): RasterResourcePort {
   const read = new Map<string, Promise<RasterResourceResult>>()
+  if (!signal.aborted) signal.addEventListener('abort', () => read.clear(), { once: true })
   return {
-    read(request: RasterResourceRequest) {
+    async read(request: RasterResourceRequest, callerSignal?: AbortSignal) {
+      signal.throwIfAborted()
+      callerSignal?.throwIfAborted()
       // an embedded image is the caller's own bytes; only a named resource is worth keeping
-      if (request.kind !== 'logical') return port.read(request, signal)
-      const { kind, requirement, maxBytes, selection, compressedFormats } = request
-      const key = JSON.stringify({ kind, requirement, maxBytes, selection, compressedFormats })
-      let answer = read.get(key)
-      if (answer === undefined) {
-        answer = port.read(request, signal)
-        read.set(key, answer)
-        answer.catch(() => read.delete(key))
+      let answer: Promise<RasterResourceResult>
+      if (request.kind !== 'logical') {
+        const combined =
+          callerSignal === undefined ? signal : AbortSignal.any([signal, callerSignal])
+        answer = port.read(request, combined)
+      } else {
+        const { kind, requirement, maxBytes, selection, compressedFormats } = request
+        const key = JSON.stringify({ kind, requirement, maxBytes, selection, compressedFormats })
+        const kept = read.get(key)
+        if (kept !== undefined) answer = kept
+        else {
+          answer = port.read(request, signal)
+          if (!signal.aborted) read.set(key, answer)
+          const pending = answer
+          const forget = () => {
+            if (read.get(key) === pending) read.delete(key)
+          }
+          void answer.then(value => {
+            if (signal.aborted || value.state === 'unresolved') forget()
+          }, forget)
+        }
       }
-      return answer
+      let cleanup = () => {}
+      try {
+        const value = await new Promise<RasterResourceResult>((resolve, reject) => {
+          const onAbort = () => reject(signal.aborted ? signal.reason : callerSignal?.reason)
+          signal.addEventListener('abort', onAbort, { once: true })
+          callerSignal?.addEventListener('abort', onAbort, { once: true })
+          cleanup = () => {
+            signal.removeEventListener('abort', onAbort)
+            callerSignal?.removeEventListener('abort', onAbort)
+          }
+          // Observe the provider even when it ignores cancellation and settles after our waiter.
+          void answer.then(resolve, reject)
+          if (signal.aborted || callerSignal?.aborted) onAbort()
+        })
+        signal.throwIfAborted()
+        callerSignal?.throwIfAborted()
+        return value
+      } finally {
+        cleanup()
+      }
     },
   }
 }
