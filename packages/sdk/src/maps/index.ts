@@ -1368,9 +1368,51 @@ export interface MapNavigationSample {
 }
 
 /** A versioned, publisher-scoped flags vocabulary; no portable walkability is inferred. */
-export function isNavigationFlagEncoding(value: unknown): value is string {
+export function isVersionedPublisherId(value: unknown): value is string {
   return typeof value === 'string' && value.length <= 1024 && !/\s/u.test(value) &&
     /^[a-z0-9][a-z0-9._-]*\/[a-z0-9][a-z0-9._/-]*@[1-9][0-9]*$/u.test(value)
+}
+
+/** Existing public navigation entry aliases the same publisher-id owner. */
+export const isNavigationFlagEncoding = isVersionedPublisherId
+
+export type GameRasterValueType = 'u8' | 'u16' | 'u32' | 'i32' | 'f64'
+export interface GameRasterValueMetadata {
+  /** Versioned publisher vocabulary; numeric equality does not establish cross-game meaning. */
+  readonly valueMeaning: string
+  readonly valueType: GameRasterValueType
+  readonly sampling: 'vertex' | 'cell'
+  readonly minimum: number
+  readonly maximum: number
+  readonly unit?: string
+  readonly valueScale?: number
+  readonly valueOffset?: number
+  readonly noDataValue?: number
+  readonly categories?: readonly MapLayerCategory[]
+}
+
+/** Scalar storage admission, without normalization, category inference or game policy. */
+export function isGameRasterValue(value: unknown, type: GameRasterValueType): value is number {
+  if (typeof value !== 'number' || !Number.isFinite(value) || Object.is(value, -0)) return false
+  if (type === 'f64') return true
+  if (!Number.isSafeInteger(value)) return false
+  switch (type) {
+    case 'u8': return value >= 0 && value <= 255
+    case 'u16': return value >= 0 && value <= 65535
+    case 'u32': return value >= 0 && value <= 4294967295
+    case 'i32': return value >= -2147483648 && value <= 2147483647
+    default: return false
+  }
+}
+
+/** Native map.layers remains the parser/writer owner. This is its measured whole-grid publication. */
+export interface MapGameRasterSummary {
+  readonly descriptor: MapLayerDescriptor
+  readonly values: MapLayerGrid
+  readonly metadata: Pick<GameRasterValueMetadata, 'valueMeaning' | 'valueType' | 'noDataValue'>
+  readonly exact: boolean
+  readonly trailingBytes: number
+  readonly grid: MapNativeSampleGrid
 }
 
 /** Native position of sample (0,0) and independent index-axis steps; not a cell corner. */
@@ -1683,6 +1725,7 @@ export interface ResolvedMapWorkspaceSnapshot {
   readonly navigation?: MapNavigationSummary
   readonly traversals?: readonly MapTraversalSummary[]
   readonly querySurfaces?: readonly MapQuerySurfaceSummary[]
+  readonly gameRasters?: readonly MapGameRasterSummary[]
   readonly gateways?: MapGatewaySummary
   readonly terrainMaterials?: MapTerrainMaterialSummary
   readonly water?: MapWaterSummary
@@ -1715,6 +1758,7 @@ export type WorldSceneFacet =
   | 'regions'
   | 'resources'
   | 'navigation'
+  | 'game-raster'
   | 'traversal'
   | 'gateways'
   | 'lighting'
@@ -1828,6 +1872,7 @@ export interface WorldSceneLayerItem {
   /** Native navigation vocabulary, retained independently of any portable traversal policy. */
   /** Explicit scalar heightfield purpose; query surfaces are non-rendered. */
   readonly heightfieldRole?: 'ground' | 'query'
+  readonly gameRaster?: GameRasterValueMetadata
   readonly navigationFlagEncoding?: string
   /** Validated overview geometry in canonical UVW horizontal x/z coordinates. */
   readonly latticeOverview?: MapLatticeOverview
@@ -1899,6 +1944,18 @@ export interface WorldSceneTerrainItem extends MapTerrainSample {
 /** Non-rendered scalar-grid samples; shares the heightfield sample contract and reconstruction. */
 export interface WorldSceneSurfaceItem extends Omit<WorldSceneTerrainItem, 'facet'> {
   readonly facet: 'surfaces'
+}
+
+export interface WorldSceneGameRasterItem {
+  readonly facet: 'game-raster'
+  readonly id: string
+  readonly layerId: string
+  readonly coordinateSpaceId: 'uvw-canonical'
+  readonly lod: 'exact'
+  readonly x: number
+  readonly y: number
+  readonly value: number
+  readonly uvwPosition: MapPosition
 }
 
 export interface WorldSceneNavigationItem extends MapNavigationSample {
@@ -2259,6 +2316,7 @@ export type WorldSceneItem =
   | WorldSceneLayerItem
   | WorldSceneTerrainItem
   | WorldSceneSurfaceItem
+  | WorldSceneGameRasterItem
   | WorldSceneTerrainMaterialItem
   | WorldSceneWaterItem
   | WorldSceneCliffItem

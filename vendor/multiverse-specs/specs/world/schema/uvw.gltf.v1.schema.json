@@ -39,7 +39,17 @@
     }
   },
   "$defs": {
-    "spatialLayerKinds": { "enum": ["heightfield", "cliffs", "objects", "regions", "gateways", "lighting", "navigation", "traversal"] },
+    "spatialLayerKinds": { "enum": [
+        "heightfield",
+        "cliffs",
+        "objects",
+        "regions",
+        "gateways",
+        "lighting",
+        "navigation",
+        "traversal",
+        "game-raster"
+      ] },
     "image": {
       "type": "object", "additionalProperties": false, "required": ["uri", "mimeType"],
       "properties": {
@@ -222,17 +232,42 @@
           "contains": { "type": "object", "required": ["kind"], "properties": { "kind": { "const": "heightfield" } } },
           "items": {
             "oneOf": [
-              { "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/heightfieldLayer" },
-              { "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/cliffsLayer" },
-              { "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/objectsLayer" },
-              { "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/regionsLayer" },
-              { "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/gatewaysLayer" },
-              { "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/lightingLayer" },
-              { "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/navigationLayer" },
-              { "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/traversalLayer" },
-              { "$ref": "#/$defs/terrainMaterialsLayer" },
-              { "$ref": "#/$defs/waterLayer" },
-              { "$ref": "#/$defs/resourcesLayer" }
+              {
+                "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/heightfieldLayer"
+              },
+              {
+                "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/cliffsLayer"
+              },
+              {
+                "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/objectsLayer"
+              },
+              {
+                "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/regionsLayer"
+              },
+              {
+                "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/gatewaysLayer"
+              },
+              {
+                "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/lightingLayer"
+              },
+              {
+                "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/navigationLayer"
+              },
+              {
+                "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/traversalLayer"
+              },
+              {
+                "$ref": "#/$defs/terrainMaterialsLayer"
+              },
+              {
+                "$ref": "#/$defs/waterLayer"
+              },
+              {
+                "$ref": "#/$defs/resourcesLayer"
+              },
+              {
+                "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/gameRasterLayer"
+              }
             ]
           }
         }

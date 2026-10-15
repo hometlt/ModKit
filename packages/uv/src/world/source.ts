@@ -153,6 +153,7 @@ function layerItemCount(layer: UvwHeightfieldSpaceLayer): number {
       return layer.regions.length
     case 'navigation':
     case 'traversal':
+    case 'game-raster':
       return layer.columns * layer.rows
     case 'gateways':
       return layer.segments.length
@@ -467,6 +468,14 @@ function recordItems(
           }),
         ),
       )
+    case 'game-raster':
+      return Object.freeze(layer.samples.flatMap((row, y) => row.flatMap((value, x) => {
+        const centre = layer.sampling === 'cell' ? 0.5 : 0
+        const uvwPosition = gridPosition(layer.origin, layer.cellSize, x + centre, y + centre)
+        return inBounds(uvwPosition, bounds) ? [Object.freeze({ facet: 'game-raster' as const,
+          id: `${record.id}:${x}:${y}`, layerId: record.id, coordinateSpaceId: 'uvw-canonical' as const,
+          lod: 'exact' as const, x, y, value, uvwPosition })] : []
+      })))
     case 'traversal':
       return Object.freeze(layer.walkable.flatMap((row, y) => row.flatMap((walkable, x) => {
         const uvwPosition = gridPosition(layer.origin, layer.cellSize, x + 0.5, y + 0.5)
@@ -668,6 +677,11 @@ export function createUvwWorldSceneSource(
         localLayerId: record.layer.id,
         ...(record.layer.kind === 'heightfield' && record.layer.role !== undefined ? { heightfieldRole: record.layer.role } : {}),
         ...(record.layer.kind === 'heightfield' && record.layer.latticeOverview !== undefined ? {latticeOverview:record.layer.latticeOverview} : {}),
+        ...(record.layer.kind === 'game-raster' ? { gameRaster: (() => {
+          const { schemaVersion: _version, id: _id, kind: _kind, label: _label, columns: _columns, rows: _rows,
+            cellSize: _size, origin: _origin, samples: _samples, ...metadata } = record.layer
+          return Object.freeze(metadata)
+        })() } : {}),
         ...(record.layer.kind === 'traversal' ? { traversal: Object.freeze({ classId: record.layer.classId,
           ...(record.layer.surfaceLayerId === undefined ? {} : { surfaceLayerId: record.layer.surfaceLayerId }) }) } : {}),
         ...(record.layer.kind === 'navigation' && record.layer.flagEncoding !== undefined ? { navigationFlagEncoding: record.layer.flagEncoding } : {}),

@@ -26,8 +26,8 @@ import { assertUnlitLighting } from './uvw-unlit.ts'
 import { assertUvwObjectPresentation, assertUvwCamera } from './uvm-presentation.ts'
 import { assertUvwPlayers } from './uvw-players.ts'
 import worldSchema from '../world/schema/uvw.profile.v1.schema.json' with { type: 'json' }
-const navigationFlagShape = worldSchema.$defs.navigationLayer.properties.flagEncoding
-const navigationFlagPattern = new RegExp(navigationFlagShape.pattern, 'u')
+const worldPublisherIdShape = worldSchema.$defs.versionedPublisherId
+const worldPublisherIdPattern = new RegExp(worldPublisherIdShape.pattern, 'u')
 import { assertUvwLattice } from './uvw-lattice.ts'
 
 /** One violated rule, named by the id the vectors use. */
@@ -403,6 +403,7 @@ function assertUvwBody(document, profile, gltf) {
     if (layer.kind === 'gateways') assertGateways(layer)
     if (layer.kind === 'lighting') assertLighting(layer)
     if (layer.kind === 'navigation') assertNavigation(layer, document.bounds)
+    if (layer.kind === 'game-raster') assertGameRaster(layer, document.bounds)
     if (layer.kind === 'traversal') {
       if (!profile)
         refuse('traversal-profile-only', 'portable traversal requires the UVW profile space envelope')
@@ -685,8 +686,8 @@ function assertTraversal(layer, bounds, layers) {
  */
 function assertNavigation(layer, bounds) {
   if (layer.flagEncoding !== undefined && (typeof layer.flagEncoding !== 'string' ||
-    layer.flagEncoding.length < navigationFlagShape.minLength || layer.flagEncoding.length > navigationFlagShape.maxLength ||
-    !navigationFlagPattern.test(layer.flagEncoding)))
+    layer.flagEncoding.length < worldPublisherIdShape.minLength || layer.flagEncoding.length > worldPublisherIdShape.maxLength ||
+    !worldPublisherIdPattern.test(layer.flagEncoding)))
     refuse('navigation-flag-encoding', 'native navigation flags need a versioned publisher vocabulary')
   const { id, columns, rows, cellSize, origin, samples } = layer
   if (!Number.isSafeInteger(columns) || columns < 1 || !Number.isSafeInteger(rows) || rows < 1
@@ -711,6 +712,50 @@ function assertNavigation(layer, bounds) {
       refuse('layer-within-bounds', `navigation layer «${id}» extends beyond its space`)
     }
   }
+}
+
+/** Publisher-native scalar fields; native map.layers owns decoding and writes. */
+function assertGameRaster(layer, bounds) {
+  const allowed = ['schemaVersion','id','kind','label','columns','rows','cellSize','origin','samples','valueMeaning','valueType','sampling','minimum','maximum','unit','valueScale','valueOffset','noDataValue','categories']
+  const { columns, rows, cellSize, origin, samples, valueType, minimum, maximum } = layer
+  const shape = worldPublisherIdShape
+  if (Object.keys(layer).some(key => !allowed.includes(key)) || layer.schemaVersion !== 1 ||
+    !/^[a-z][a-z0-9-]*$/.test(layer.id ?? '') || (layer.label !== undefined && typeof layer.label !== 'string') ||
+    typeof layer.valueMeaning !== 'string' || layer.valueMeaning.length > shape.maxLength ||
+    layer.valueMeaning.length < shape.minLength || !worldPublisherIdPattern.test(layer.valueMeaning) ||
+    !['u8','u16','u32','i32','f64'].includes(valueType) || !['cell','vertex'].includes(layer.sampling) ||
+    !Number.isSafeInteger(columns) || columns < 1 || !Number.isSafeInteger(rows) || rows < 1 ||
+    !Number.isFinite(cellSize) || cellSize <= 0 || !Array.isArray(origin) || origin.length !== 3 || Array.from(origin).some(value => !Number.isFinite(value)))
+    refuse('game-raster-metadata', 'Game rasters require exact geometry, storage and a versioned publisher meaning')
+  const range = { u8: [0,255], u16: [0,65535], u32: [0,4294967295], i32: [-2147483648,2147483647] }[valueType]
+  const valid = value => typeof value === 'number' && Number.isFinite(value) && !Object.is(value, -0) &&
+    (range === undefined || (Number.isSafeInteger(value) && value >= range[0] && value <= range[1]))
+  if (!valid(minimum) || !valid(maximum) || maximum < minimum || (layer.noDataValue !== undefined && !valid(layer.noDataValue)))
+    refuse('game-raster-values', 'Invalid raster numeric bounds or NoData value')
+  if (!Array.isArray(samples) || samples.length !== rows) refuse('sample-grid-matches', 'Incomplete game raster rows')
+  for (const row of samples) {
+    if (!Array.isArray(row) || row.length !== columns) refuse('sample-grid-matches', 'Incomplete game raster columns')
+    for (const value of row) if (!valid(value) || (value !== layer.noDataValue && (value < minimum || value > maximum)))
+      refuse('game-raster-values', 'Raster sample is outside its declared numeric type or range')
+  }
+  if ((layer.unit !== undefined && (typeof layer.unit !== 'string' || !layer.unit || layer.unit.length > 1024)) ||
+    ['valueScale','valueOffset'].some(key => layer[key] !== undefined && !Number.isFinite(layer[key])))
+    refuse('game-raster-metadata', 'Invalid declared unit or scaling')
+  if (layer.categories !== undefined) {
+    if (!Array.isArray(layer.categories)) refuse('game-raster-categories', 'Legend must be an array')
+    const seen = new Set()
+    for (const entry of layer.categories) {
+      if (!entry || Object.keys(entry).some(key => !['value','label','color'].includes(key)) || !valid(entry.value) ||
+        entry.value < minimum || entry.value > maximum || seen.has(entry.value) || typeof entry.label !== 'string' ||
+        (entry.color !== undefined && (typeof entry.color !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(entry.color))))
+        refuse('game-raster-categories', 'Invalid or repeated publisher category')
+      seen.add(entry.value)
+    }
+  }
+  const edge = layer.sampling === 'cell' ? 0 : 1
+  if (bounds !== undefined && (origin[0] < bounds.min[0] - EPSILON || origin[2] < bounds.min[2] - EPSILON ||
+    origin[0] + (columns - edge) * cellSize > bounds.max[0] + EPSILON || origin[2] + (rows - edge) * cellSize > bounds.max[2] + EPSILON))
+    refuse('layer-within-bounds', 'Game raster footprint extends outside its space')
 }
 
 /** The geometry rules of the one facet this profile defines. */

@@ -18,6 +18,18 @@
 
 ## Проверки
 
+Игровые числовые поля UVW `game-raster` и SDK facet `game-raster` используют существующие
+UV reader/reconstruction/UVP и общий native grid admission Host. Native map.layers остаётся
+единственным владельцем декодирования и записи значений. Publisher обязан объявить
+versioned valueMeaning, numeric valueType, cell/vertex sampling и границы значений;
+единицы/scale/offset/NoData/упорядоченная легенда сохраняются без пересчёта и вывода
+навигации или материала. Общий SDK `isVersionedPublisherId` имеет прежний публичный alias
+`isNavigationFlagEncoding`, это одна функция. `isGameRasterValue` — один Core numeric admission;
+existing f64-le exact pages хранят все допустимые значения без нового wire codec.
+Reconstruction использует один canonicalGridIndex для vertex/cell. Потери и cursors
+разделяются по layerId; неизвестный target vocabulary требует mapping либо явных потерь.
+Игровые mutations/query policies и native publishers не подтверждены общим transport.
+
 Canonical JSON имеет одного Core owner `canonicalJsonStringify`: прежний L6 default
 сохраняет UTF8 order/pretty/LF/undefined omission, явный profile:jcs реализует RFC8785
 UTF16 order/compact/strict JSON. Второй encoder UVP не создавать. `parseJsonDocument`

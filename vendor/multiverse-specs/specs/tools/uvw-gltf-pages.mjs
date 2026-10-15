@@ -13,6 +13,7 @@ const maxAllBufferBytes = 256 * 1024 * 1024
 const maxScalars = 16_000_000
 const fields = Object.freeze({ heightfield: { samples: 'f64-le' },
   navigation: { samples: 'u32-le' },
+  'game-raster': { samples: 'f64-le' },
   traversal: { walkable: 'bool-lsb0', exits: 'u8' } })
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value)
 const exactKeys = (value, required) => object(value) && Object.keys(value).length === required.length

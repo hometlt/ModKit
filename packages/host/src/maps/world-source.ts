@@ -7,7 +7,7 @@ import { projectLatticeOverview } from '@modkit/sdk/maps'
 
 import { diagnostic } from '@modkit/core'
 import { terrainCellHeight } from './terrain.js'
-import { mapQualificationTupleBytes, isNavigationFlagEncoding } from '@modkit/sdk'
+import { mapQualificationTupleBytes, isNavigationFlagEncoding, isVersionedPublisherId, isGameRasterValue } from '@modkit/sdk'
 import {
   MODEL_FACET_ITEM_CAP,
   positiveLimit,
@@ -32,6 +32,9 @@ import type {
   MapNavigationSummary,
   MapCliffSummary,
   MapQuerySurfaceSummary,
+  MapGameRasterSummary,
+  GameRasterValueMetadata,
+  WorldSceneGameRasterItem,
   WorldSceneSurfaceItem,
   MapTraversalSummary,
   WorldSceneTraversalItem,
@@ -892,6 +895,61 @@ function admittedCliffGrid(cliffs: MapCliffSummary | undefined, transform: MapWo
   return admitted
 }
 
+function admittedGameRaster(published: MapGameRasterSummary, transform: MapWorldCanonicalTransform | undefined): Readonly<{
+  grid?: NonNullable<WorldSceneLayerItem['grid']>
+  metadata?: GameRasterValueMetadata
+  values?: readonly WorldSceneGameRasterItem[]
+  reason?: string
+}> {
+  const refuse = (reason: string) => ({ reason: `exact game raster refused: ${reason}` })
+  const { descriptor, values, metadata } = published
+  if (published.trailingBytes !== 0) return refuse('unrepresented native bytes')
+  if (!isVersionedPublisherId(metadata.valueMeaning) || !['u8','u16','u32','i32','f64'].includes(metadata.valueType))
+    return refuse('unknown publisher vocabulary or numeric storage')
+  if (descriptor.sampling !== 'cell' && descriptor.sampling !== 'vertex') return refuse('sample location is not declared')
+  if (values.layer !== descriptor.id || values.width !== descriptor.width || values.height !== descriptor.height ||
+    (values.x !== undefined && values.x !== 0) || (values.y !== undefined && values.y !== 0)) return refuse('native map.layers window is not the complete declared layer')
+  if (!isGameRasterValue(descriptor.minimum, metadata.valueType) || !isGameRasterValue(descriptor.maximum, metadata.valueType) || descriptor.minimum > descriptor.maximum)
+    return refuse('invalid declared value range')
+  if (metadata.noDataValue !== undefined && !isGameRasterValue(metadata.noDataValue, metadata.valueType)) return refuse('invalid NoData marker')
+  if (descriptor.unit !== undefined && (!descriptor.unit || descriptor.unit.length > 1024)) return refuse('invalid unit')
+  for (const scalar of [descriptor.valueScale, descriptor.valueOffset]) if (scalar !== undefined && !Number.isFinite(scalar)) return refuse('invalid declared scale or offset')
+  const categories = descriptor.categories
+  if (categories !== undefined && (new Set(categories.map(entry => entry.value)).size !== categories.length || categories.some(entry =>
+    !isGameRasterValue(entry.value, metadata.valueType) || entry.value < descriptor.minimum || entry.value > descriptor.maximum ||
+    typeof entry.label !== 'string' || (entry.color !== undefined && !/^#[0-9a-fA-F]{6}$/u.test(entry.color)))))
+    return refuse('invalid category legend')
+  const samples = Array.from(values.values, (value, index) => ({ x: index % descriptor.width, y: Math.floor(index / descriptor.width), value }))
+  if (samples.some(sample => !isGameRasterValue(sample.value, metadata.valueType) ||
+    (sample.value !== metadata.noDataValue && (sample.value < descriptor.minimum || sample.value > descriptor.maximum))))
+    return refuse('native sample is outside declared type or range')
+  const admitted = admittedNativeSampleGrid({ exact: published.exact, width: descriptor.width, height: descriptor.height,
+    cellCount: descriptor.width * descriptor.height, grid: published.grid, samples }, transform)
+  if (admitted.grid === undefined || admitted.positions === undefined || transform === undefined)
+    return refuse(admitted.reason ?? 'not a complete exact grid in a qualified frame')
+  const { grid, positions } = admitted
+  const half = descriptor.sampling === 'cell' ? grid.cellSize / 2 : 0
+  const origin = [grid.origin[0] - half, grid.origin[1], grid.origin[2] - half] as const
+  const maxX = grid.origin[0] + (grid.columns - 1) * grid.cellSize + half
+  const maxZ = grid.origin[2] + (grid.rows - 1) * grid.cellSize + half
+  if (origin[0] < transform.bounds.minimum.x - 1e-9 || origin[2] < transform.bounds.minimum.z - 1e-9 ||
+    maxX > transform.bounds.maximum.x + 1e-9 || maxZ > transform.bounds.maximum.z + 1e-9)
+    return refuse('the declared sample footprint extends beyond world bounds')
+  const retained = Object.freeze({ ...metadata, sampling: descriptor.sampling, minimum: descriptor.minimum, maximum: descriptor.maximum,
+    ...(descriptor.unit === undefined ? {} : { unit: descriptor.unit }),
+    ...(descriptor.valueScale === undefined ? {} : { valueScale: descriptor.valueScale }),
+    ...(descriptor.valueOffset === undefined ? {} : { valueOffset: descriptor.valueOffset }),
+    ...(categories === undefined ? {} : { categories: Object.freeze(categories.map(entry => Object.freeze({ ...entry }))) }) })
+  const id = `world.game-raster:${descriptor.id}`
+  return { grid: Object.freeze({ ...grid, origin }), metadata: retained,
+    values: Object.freeze(samples.map((sample, index) => {
+      const point = positions[index]!
+      return Object.freeze({ facet: 'game-raster' as const, id: `${id}:${sample.x}:${sample.y}`, layerId: id,
+        coordinateSpaceId: 'uvw-canonical' as const, lod: 'exact' as const, value: sample.value,
+        x: Math.round((point.x - grid.origin[0]) / grid.cellSize), y: Math.round((point.z - grid.origin[2]) / grid.cellSize), uvwPosition: point })
+    })) }
+}
+
 function admittedQuerySurface(published: MapQuerySurfaceSummary, transform: MapWorldCanonicalTransform | undefined): Readonly<{
   grid?: NonNullable<WorldSceneLayerItem['grid']>
   values?: readonly WorldSceneSurfaceItem[]
@@ -1543,6 +1601,15 @@ export function createCandidateWorldSceneLease(
       }),
     ),
   )
+  const rasterIds = new Set<string>()
+  const rasterRecords = (snapshot.gameRasters ?? []).map(published => {
+    if (!/^[a-z][a-z0-9-]*$/u.test(published.descriptor.id) || rasterIds.has(published.descriptor.id))
+      throw new TypeError('game raster ids must be unique local ids')
+    rasterIds.add(published.descriptor.id)
+    const admission = admittedGameRaster(published, uvwTransform)
+    return { id: `world.game-raster:${published.descriptor.id}`, published, admission,
+      contentRevision: layerContentRevision(admission.values ?? [], JSON.stringify({ metadata: admission.metadata, grid: admission.grid })) }
+  })
   const surfaceIds = new Set<string>()
   const surfaceRecords = (snapshot.querySurfaces ?? []).map(published => {
     if (!/^[a-z][a-z0-9-]*$/u.test(published.id) || published.id === 'terrain' || surfaceIds.has(published.id))
@@ -1860,6 +1927,11 @@ export function createCandidateWorldSceneLease(
         ? { reason: 'publisher reported navigation unavailable' }
         : navigationAdmission.grid === undefined ? { reason: navigationAdmission.reason ?? 'native flags are sampled and their bit semantics remain publisher-defined' } : {}),
     }),
+    ...rasterRecords.map(record => Object.freeze({ facet: 'game-raster' as const, layerId: record.id,
+      state: record.admission.grid === undefined ? 'partial' as const : 'available' as const,
+      itemCount: record.published.descriptor.width * record.published.descriptor.height,
+      lods: Object.freeze(record.admission.grid === undefined ? [] : ['exact']), contentRevision: record.contentRevision,
+      ...(record.admission.grid === undefined ? { reason: record.admission.reason ?? 'game raster is not admitted' } : {}) })),
     ...surfaceRecords.map(record => Object.freeze({ facet: 'surfaces' as const, layerId: record.id,
       state: record.admission.grid === undefined ? 'partial' as const : 'available' as const,
       itemCount: record.admission.values?.length ?? record.published.cellCount,
@@ -1916,6 +1988,12 @@ export function createCandidateWorldSceneLease(
               })(),
               ([x,y]) => { const point=canonicalPosition({x,y,z:0},uvwTransform);return [point.x,point.z] },
             ) } : {}),
+        ...(item.facet === 'game-raster' ? (() => {
+          const record = rasterRecords.find(record => record.id === item.layerId)!
+          return { localLayerId: record.published.descriptor.id, label: record.published.descriptor.label,
+            ...(record.admission.metadata === undefined ? {} : { gameRaster: record.admission.metadata }),
+            ...(record.admission.grid === undefined ? {} : { grid: record.admission.grid }) }
+        })() : {}),
         ...(item.facet === 'surfaces' ? (() => {
           const record = surfaceRecords.find(record => record.id === item.layerId)!
           return { localLayerId: record.published.id, heightfieldRole: 'query' as const,
@@ -1992,6 +2070,7 @@ export function createCandidateWorldSceneLease(
     ['regions', regions],
     ['resources', resources],
     ['navigation', navigation],
+    ...(rasterRecords.length === 0 ? [] : [['game-raster', Object.freeze(rasterRecords.flatMap(record => record.admission.values ?? []))] as const]),
     ...(surfaceRecords.length === 0 ? [] : [['surfaces', Object.freeze(surfaceRecords.flatMap(record => record.admission.values ?? []))] as const]),
     ...(traversalRecords.length === 0 ? [] : [['traversal', Object.freeze(traversalRecords.flatMap(record => record.items))] as const]),
     ['gateways', gateways],
@@ -2237,7 +2316,7 @@ export function createCandidateWorldSceneLease(
       positiveLimit(request.limit, maxPageSize)
       cursorOffset(request.cursor, snapshot.snapshotId, canonicalQuery(request))
       const facetItems = byFacet.get(request.facet)
-      const items = (request.facet === 'traversal' || request.facet === 'surfaces') ? facetItems?.filter(item => item.layerId === request.layerId) : facetItems
+      const items = (['traversal','surfaces','game-raster'].includes(request.facet)) ? facetItems?.filter(item => item.layerId === request.layerId) : facetItems
       if (items === undefined) {
         return Promise.resolve(
           Object.freeze({
@@ -2249,12 +2328,12 @@ export function createCandidateWorldSceneLease(
           }),
         )
       }
-      const facetState = facets.find(item => item.facet === request.facet && (!['traversal', 'surfaces'].includes(request.facet) || item.layerId === request.layerId))
+      const facetState = facets.find(item => item.facet === request.facet && (!['traversal', 'surfaces', 'game-raster'].includes(request.facet) || item.layerId === request.layerId))
       if (request.facet !== 'layers') {
         if (request.layerId !== facetState?.layerId) {
           throw new TypeError(`world facet ${request.facet} requires its exact layerId`)
         }
-        if ((request.facet === 'traversal' || request.facet === 'surfaces') && (facetState?.state !== 'available' || request.lod !== 'exact'))
+        if ((['traversal','surfaces','game-raster'].includes(request.facet)) && (facetState?.state !== 'available' || request.lod !== 'exact'))
           return Object.freeze({ snapshotId: snapshot.snapshotId, facet: request.facet, state: 'unsupported' as const,
             items: Object.freeze([]), reason: facetState?.reason ?? 'traversal only pages admitted exact cells' })
         const expectedLod =
@@ -2321,7 +2400,7 @@ export function createCandidateWorldSceneLease(
                   item.position.y <= bounds.maximumY
                 )
               }
-              const canonical = item.facet === 'traversal' || item.facet === 'surfaces' || (item.facet === 'cliffs' && snapshot.cliffs?.grid !== undefined)
+              const canonical = item.facet === 'traversal' || item.facet === 'surfaces' || item.facet === 'game-raster' || (item.facet === 'cliffs' && snapshot.cliffs?.grid !== undefined)
                 ? item.uvwPosition : undefined
               if (canonical !== undefined) {
                 return canonical.x >= bounds.minimumX && canonical.x <= bounds.maximumX &&

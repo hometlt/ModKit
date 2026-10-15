@@ -159,12 +159,14 @@ function canonicalGridIndex(
     readonly uvwPosition?: Readonly<{ readonly x: number; readonly z: number }>
   },
   grid: NonNullable<WorldSceneLayerItem['grid']>,
+  sampling: 'vertex' | 'cell' = 'vertex',
 ): number {
+  const offset = sampling === 'cell' ? grid.cellSize / 2 : 0
   if (item.uvwPosition === undefined) return gridIndex(item, grid.columns, grid.rows)
-  const x = Math.round((item.uvwPosition.x - grid.origin[0]) / grid.cellSize)
-  const y = Math.round((item.uvwPosition.z - grid.origin[2]) / grid.cellSize)
-  const expectedX = grid.origin[0] + x * grid.cellSize
-  const expectedZ = grid.origin[2] + y * grid.cellSize
+  const x = Math.round((item.uvwPosition.x - (grid.origin[0] + offset)) / grid.cellSize)
+  const y = Math.round((item.uvwPosition.z - (grid.origin[2] + offset)) / grid.cellSize)
+  const expectedX = (grid.origin[0] + offset) + x * grid.cellSize
+  const expectedZ = (grid.origin[2] + offset) + y * grid.cellSize
   const tolerance = Number.EPSILON * Math.max(1, Math.abs(expectedX), Math.abs(expectedZ)) * 8
   if (
     Math.abs(item.uvwPosition.x - expectedX) > tolerance ||
@@ -305,6 +307,7 @@ const KEPT_FIELDS: Readonly<Record<string, ReadonlySet<string>>> = Object.freeze
   regions: new Set(['regionId', 'name', 'color', 'shapes', 'uvwShapes']),
   navigation: new Set(['x', 'y', 'flags', 'uvwPosition']),
   traversal: new Set(['x', 'y', 'walkable', 'exits', 'uvwPosition']),
+  'game-raster': new Set(['x','y','value','uvwPosition']),
   gateways: new Set(['x1', 'y1', 'x2', 'y2', 'uvwStart', 'uvwEnd']),
   lighting: new Set(['ambientColor', 'ambientIntensity', 'toneMapping', 'terrain', 'directional']),
   objects: new Set([
@@ -1035,15 +1038,29 @@ async function reconstructLayer(
       samples: gridRows(values as number[], grid.columns, grid.rows),
     })
   }
+  if (layer.kind === 'game-raster') {
+    const grid = layer.grid, metadata = layer.gameRaster
+    if (grid === undefined || metadata === undefined) throw new TypeError('game raster lacks grid or value metadata')
+    const values = new Array<number | undefined>(grid.columns * grid.rows).fill(undefined)
+    for (const raw of items) {
+      if (raw.facet !== 'game-raster' || raw.lod !== 'exact') throw new TypeError('game raster item is not exact')
+      const index = canonicalGridIndex(raw, grid, metadata.sampling)
+      if (values[index] !== undefined) throw new TypeError('game raster contains duplicate coordinates')
+      values[index] = raw.value
+    }
+    if (values.some(value => value === undefined)) throw new TypeError('game raster is incomplete')
+    return Object.freeze({ schemaVersion: 1, id, kind: 'game-raster', ...label, ...metadata,
+      columns: grid.columns, rows: grid.rows, cellSize: grid.cellSize, origin: grid.origin,
+      samples: gridRows(values as number[], grid.columns, grid.rows) })
+  }
   if (layer.kind === 'traversal') {
     const grid = layer.grid, metadata = layer.traversal
     if (grid === undefined || metadata === undefined)
       throw new TypeError('UVW traversal lacks grid or class metadata')
     const cells = new Array<{ walkable: boolean; exits: number } | undefined>(grid.columns * grid.rows).fill(undefined)
-    const centreGrid = { ...grid, origin: [grid.origin[0] + grid.cellSize / 2, grid.origin[1], grid.origin[2] + grid.cellSize / 2] as const }
     for (const raw of items) {
       if (raw.facet !== 'traversal' || raw.lod !== 'exact') throw new TypeError('UVW traversal item is not exact')
-      const index = canonicalGridIndex(raw, centreGrid)
+      const index = canonicalGridIndex(raw, grid, 'cell')
       if (cells[index] !== undefined) throw new TypeError('UVW traversal has duplicate cells')
       cells[index] = { walkable: raw.walkable, exits: raw.exits }
     }
@@ -1205,6 +1222,7 @@ export async function reconstructAdditionalExactLayers(
   }
   const supported = new Set([
     'navigation',
+    'game-raster',
     'surfaces',
     'traversal',
     'terrain-materials',

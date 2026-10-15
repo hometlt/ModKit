@@ -1,0 +1,175 @@
+{
+  "uv": {
+    "format": "UVW",
+    "version": "1.0",
+    "status": "profile"
+  },
+  "connections": [],
+  "spaces": [
+    {
+      "id": "main",
+      "topology": "heightfield",
+      "basis": {
+        "handedness": "right",
+        "upAxis": "y",
+        "forwardAxis": "+z",
+        "unit": "meter",
+        "metersPerUnit": 1
+      },
+      "bounds": {
+        "min": [
+          0,
+          0,
+          -1
+        ],
+        "max": [
+          1,
+          0,
+          0
+        ]
+      },
+      "layers": [
+        {
+          "schemaVersion": 1,
+          "id": "attributes",
+          "kind": "game-raster",
+          "label": "attributes",
+          "columns": 2,
+          "rows": 2,
+          "cellSize": 1,
+          "origin": [
+            0,
+            7,
+            -1
+          ],
+          "samples": [
+            [
+              -2147483648,
+              2147483647
+            ],
+            [
+              -1,
+              0
+            ]
+          ],
+          "valueMeaning": "example/attributes@1",
+          "valueType": "i32",
+          "sampling": "vertex",
+          "minimum": -2147483648,
+          "maximum": 2147483647
+        },
+        {
+          "schemaVersion": 1,
+          "id": "grass",
+          "kind": "game-raster",
+          "label": "grass",
+          "columns": 4,
+          "rows": 4,
+          "cellSize": 0.25,
+          "origin": [
+            0,
+            0,
+            -1
+          ],
+          "samples": [
+            [
+              1,
+              0,
+              1,
+              0
+            ],
+            [
+              0,
+              1,
+              0,
+              1
+            ],
+            [
+              1,
+              0,
+              255,
+              0
+            ],
+            [
+              0,
+              0,
+              1,
+              0
+            ]
+          ],
+          "valueMeaning": "example/grass@1",
+          "valueType": "u8",
+          "sampling": "cell",
+          "minimum": 0,
+          "maximum": 1,
+          "noDataValue": 255,
+          "categories": [
+            {
+              "value": 1,
+              "label": "authored grass",
+              "color": "#00ff00"
+            },
+            {
+              "value": 0,
+              "label": "none"
+            }
+          ]
+        },
+        {
+          "schemaVersion": 1,
+          "id": "metal",
+          "kind": "game-raster",
+          "label": "metal",
+          "columns": 2,
+          "rows": 2,
+          "cellSize": 0.5,
+          "origin": [
+            0,
+            0,
+            -1
+          ],
+          "samples": [
+            [
+              2,
+              3
+            ],
+            [
+              0,
+              1
+            ]
+          ],
+          "valueMeaning": "example/metal@1",
+          "valueType": "u8",
+          "sampling": "cell",
+          "minimum": 0,
+          "maximum": 255,
+          "unit": "example-amount",
+          "valueScale": 0.25,
+          "valueOffset": 2
+        },
+        {
+          "id": "terrain",
+          "kind": "heightfield",
+          "columns": 2,
+          "rows": 2,
+          "cellSize": 1,
+          "origin": [
+            0,
+            0,
+            -1
+          ],
+          "samples": [
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              0
+            ]
+          ]
+        }
+      ]
+    }
+  ]
+}

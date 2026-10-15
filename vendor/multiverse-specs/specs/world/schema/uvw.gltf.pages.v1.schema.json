@@ -183,7 +183,8 @@
         "gateways",
         "lighting",
         "navigation",
-        "traversal"
+        "traversal",
+        "game-raster"
       ]
     },
     "image": {
@@ -710,6 +711,9 @@
               },
               {
                 "$ref": "#/$defs/traversalLayerPaged"
+              },
+              {
+                "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/gameRasterLayer"
               }
             ]
           }

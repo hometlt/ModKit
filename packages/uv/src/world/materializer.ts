@@ -566,7 +566,7 @@ export async function materializeWorldToUvw(
     const excludedFacetIds = Object.freeze(
       info.facets
         .filter(facet => !retained.has(facet.layerId))
-        .map(facet => facet.facet === 'traversal' ? `world.traversal/${facet.layerId}` : `world.${facet.facet}`)
+        .map(facet => (facet.facet === 'traversal' || facet.facet === 'game-raster') ? `world.${facet.facet}/${facet.layerId}` : `world.${facet.facet}`)
         .concat(info.unknownFacets.map(facet => `world.unknown.${facet}`))
         .sort(),
     )

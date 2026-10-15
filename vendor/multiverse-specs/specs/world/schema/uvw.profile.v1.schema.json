@@ -341,23 +341,49 @@
             "navigation",
             "traversal",
             "gateways",
-            "lighting"
+            "lighting",
+            "game-raster"
           ]
         },
         "label": { "type": "string" }
       },
       "oneOf": [
-        { "$ref": "#/$defs/heightfieldLayer" },
-        { "$ref": "#/$defs/terrainMaterialsLayer" },
-        { "$ref": "#/$defs/cliffsLayer" },
-        { "$ref": "#/$defs/waterLayer" },
-        { "$ref": "#/$defs/objectsLayer" },
-        { "$ref": "#/$defs/resourcesLayer" },
-        { "$ref": "#/$defs/regionsLayer" },
-        { "$ref": "#/$defs/navigationLayer" },
-        { "$ref": "#/$defs/traversalLayer" },
-        { "$ref": "#/$defs/gatewaysLayer" },
-        { "$ref": "#/$defs/lightingLayer" }
+        {
+          "$ref": "#/$defs/heightfieldLayer"
+        },
+        {
+          "$ref": "#/$defs/terrainMaterialsLayer"
+        },
+        {
+          "$ref": "#/$defs/cliffsLayer"
+        },
+        {
+          "$ref": "#/$defs/waterLayer"
+        },
+        {
+          "$ref": "#/$defs/objectsLayer"
+        },
+        {
+          "$ref": "#/$defs/resourcesLayer"
+        },
+        {
+          "$ref": "#/$defs/regionsLayer"
+        },
+        {
+          "$ref": "#/$defs/navigationLayer"
+        },
+        {
+          "$ref": "#/$defs/traversalLayer"
+        },
+        {
+          "$ref": "#/$defs/gatewaysLayer"
+        },
+        {
+          "$ref": "#/$defs/lightingLayer"
+        },
+        {
+          "$ref": "#/$defs/gameRasterLayer"
+        }
       ]
     },
     "latticePolygons": {
@@ -1111,7 +1137,9 @@
         "samples"
       ],
       "properties": {
-        "flagEncoding": {"type": "string", "minLength": 1, "maxLength": 1024, "pattern": "^[a-z0-9][a-z0-9._-]*/[a-z0-9][a-z0-9._/-]*@[1-9][0-9]*(?![\\s\\S])", "description": "Versioned publisher-scoped native flags vocabulary. Absence in older worlds is unknown, never a portable walkability grant."},
+        "flagEncoding": {
+          "$ref": "#/$defs/versionedPublisherId"
+        },
         "schemaVersion": { "const": 1 },
         "id": { "$ref": "#/$defs/localId" },
         "kind": { "const": "navigation" },
@@ -1683,6 +1711,339 @@
           "raster",
           "lines",
           "markers"
+        ]
+      },
+      "versionedPublisherId": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 1024,
+        "pattern": "^[a-z0-9][a-z0-9._-]*/[a-z0-9][a-z0-9._/-]*@[1-9][0-9]*(?![\\s\\S])",
+        "description": "Versioned publisher-scoped native flags vocabulary. Absence in older worlds is unknown, never a portable walkability grant."
+      },
+      "gameRasterLayer": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "schemaVersion",
+          "id",
+          "kind",
+          "columns",
+          "rows",
+          "cellSize",
+          "origin",
+          "samples",
+          "valueMeaning",
+          "valueType",
+          "sampling",
+          "minimum",
+          "maximum"
+        ],
+        "properties": {
+          "schemaVersion": {
+            "const": 1
+          },
+          "id": {
+            "$ref": "#/$defs/localId"
+          },
+          "kind": {
+            "const": "game-raster"
+          },
+          "label": {
+            "type": "string"
+          },
+          "columns": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "rows": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "cellSize": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "origin": {
+            "$ref": "#/$defs/vec3"
+          },
+          "samples": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "number"
+              }
+            }
+          },
+          "valueMeaning": {
+            "$ref": "#/$defs/versionedPublisherId"
+          },
+          "valueType": {
+            "enum": [
+              "u8",
+              "u16",
+              "u32",
+              "i32",
+              "f64"
+            ]
+          },
+          "sampling": {
+            "enum": [
+              "vertex",
+              "cell"
+            ]
+          },
+          "minimum": {
+            "type": "number"
+          },
+          "maximum": {
+            "type": "number"
+          },
+          "unit": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024
+          },
+          "valueScale": {
+            "type": "number"
+          },
+          "valueOffset": {
+            "type": "number"
+          },
+          "noDataValue": {
+            "type": "number"
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "value",
+                "label"
+              ],
+              "properties": {
+                "value": {
+                  "type": "number"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "color": {
+                  "type": "string",
+                  "pattern": "^#[0-9a-fA-F]{6}$"
+                }
+              }
+            }
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "valueType": {
+                  "const": "u8"
+                }
+              },
+              "required": [
+                "valueType"
+              ]
+            },
+            "then": {
+              "properties": {
+                "minimum": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 255
+                },
+                "maximum": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 255
+                },
+                "noDataValue": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 255
+                },
+                "samples": {
+                  "items": {
+                    "items": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 255
+                    }
+                  }
+                },
+                "categories": {
+                  "items": {
+                    "properties": {
+                      "value": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 255
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "valueType": {
+                  "const": "u16"
+                }
+              },
+              "required": [
+                "valueType"
+              ]
+            },
+            "then": {
+              "properties": {
+                "minimum": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 65535
+                },
+                "maximum": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 65535
+                },
+                "noDataValue": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 65535
+                },
+                "samples": {
+                  "items": {
+                    "items": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 65535
+                    }
+                  }
+                },
+                "categories": {
+                  "items": {
+                    "properties": {
+                      "value": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 65535
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "valueType": {
+                  "const": "u32"
+                }
+              },
+              "required": [
+                "valueType"
+              ]
+            },
+            "then": {
+              "properties": {
+                "minimum": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 4294967295
+                },
+                "maximum": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 4294967295
+                },
+                "noDataValue": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 4294967295
+                },
+                "samples": {
+                  "items": {
+                    "items": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 4294967295
+                    }
+                  }
+                },
+                "categories": {
+                  "items": {
+                    "properties": {
+                      "value": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 4294967295
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "valueType": {
+                  "const": "i32"
+                }
+              },
+              "required": [
+                "valueType"
+              ]
+            },
+            "then": {
+              "properties": {
+                "minimum": {
+                  "type": "integer",
+                  "minimum": -2147483648,
+                  "maximum": 2147483647
+                },
+                "maximum": {
+                  "type": "integer",
+                  "minimum": -2147483648,
+                  "maximum": 2147483647
+                },
+                "noDataValue": {
+                  "type": "integer",
+                  "minimum": -2147483648,
+                  "maximum": 2147483647
+                },
+                "samples": {
+                  "items": {
+                    "items": {
+                      "type": "integer",
+                      "minimum": -2147483648,
+                      "maximum": 2147483647
+                    }
+                  }
+                },
+                "categories": {
+                  "items": {
+                    "properties": {
+                      "value": {
+                        "type": "integer",
+                        "minimum": -2147483648,
+                        "maximum": 2147483647
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
         ]
       }
   }

@@ -498,3 +498,23 @@ support identities, clearance and volumetric movement are not represented by thi
 At a singleton axis the surface exists only on that authored coordinate; no extrapolation,
 padding samples or invented edge heights are allowed. Runtime uses its one existing Q32.32
 bilinear sampler, with a repeated corner only at the actual outer edge.
+
+### Publisher game-value rasters
+
+`game-raster` v1 carries one exact scalar layer from a game's map.layers owner: a versioned
+publisher `valueMeaning`, numeric `valueType` (u8/u16/u32/i32/f64), minimum/maximum and optional
+NoData, unit, valueScale/valueOffset and ordered category legend. Missing unit/scale does not
+license an inferred physical amount. Values are retained verbatim; declared scaling is metadata,
+not baked into samples. Equality of numbers or labels does not authorize cross-game mapping.
+Negative zero, non-finite values, unsafe storage casts, duplicate categories and incomplete grids
+refuse. NoData must fit its storage type but may lie outside the normal declared value range.
+
+The grid is independent of ground and other raster resolutions. `sampling: cell` uses lower-corner
+origin and an extent of columns×rows cells; sample positions are centres. `sampling: vertex`
+uses sample(0,0) origin and spans (columns−1)×(rows−1) intervals. Origin.y is a reference plane,
+not a terrain height. Raster values do not create navigation, traversal, vegetation, materials or
+rendered geometry. Game mutation is Runtime state, not a write to this immutable authored layer.
+Inline, glTF and paged forms reuse existing scalar grids; exact pages store samples as f64-le,
+which exactly represents all admitted integer types. Decoded storage/range/bounds rules still apply.
+Native target writers must explicitly map the publisher vocabulary or report refusal/loss; copying
+metal, spice or terrain-class numbers into another game's pathing flags is not a conversion.

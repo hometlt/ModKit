@@ -6,7 +6,8 @@ import type { MapLatticeOverview } from '@modkit/sdk/maps'
 
 import { canonicalJsonStringify, parseJsonDocument, compareUtf8, ModkitError } from '@modkit/core'
 import type { MapModelComponentPlacement } from '@modkit/sdk'
-import { isNavigationFlagEncoding } from '@modkit/sdk/maps'
+import { isNavigationFlagEncoding, isVersionedPublisherId, isGameRasterValue } from '@modkit/sdk/maps'
+import type { GameRasterValueMetadata, GameRasterValueType } from '@modkit/sdk/maps'
 import type {
   MapLatticeObjectCoverage,
   MapWorldCamera,
@@ -315,6 +316,19 @@ export interface UvwTraversalLayer {
   readonly exits: readonly (readonly number[])[]
 }
 
+export interface UvwGameRasterLayer extends GameRasterValueMetadata {
+  readonly schemaVersion: 1
+  readonly id: string
+  readonly kind: 'game-raster'
+  readonly label?: string
+  readonly columns: number
+  readonly rows: number
+  readonly cellSize: number
+  /** Cell lower corner for cell sampling, sample(0,0) position for vertex sampling. */
+  readonly origin: readonly [number, number, number]
+  readonly samples: readonly (readonly number[])[]
+}
+
 export interface UvwGatewaySegment {
   readonly id: string
   /** Segment endpoints in the canonical horizontal x/z plane. */
@@ -361,6 +375,7 @@ export type UvwHeightfieldSpaceLayer =
   | UvwResourcesLayer
   | UvwRegionsLayer
   | UvwNavigationLayer
+  | UvwGameRasterLayer
   | UvwTraversalLayer
   | UvwGatewaysLayer
   | UvwLightingLayer
@@ -2083,6 +2098,59 @@ function traversalLayer(value: unknown, path: string, state: ValidationBudget, d
     origin: vec3(item['origin'], `${path}.origin`, state, depth + 1), walkable, exits })
 }
 
+function gameRasterLayer(value: unknown, path: string, state: ValidationBudget, depth: number): UvwGameRasterLayer {
+  const item = record(value, path, state, depth)
+  exactKeys(item, ['schemaVersion','id','kind','label','columns','rows','cellSize','origin','samples','valueMeaning','valueType','sampling','minimum','maximum','unit','valueScale','valueOffset','noDataValue','categories'],
+    ['schemaVersion','id','kind','columns','rows','cellSize','origin','samples','valueMeaning','valueType','sampling','minimum','maximum'], path)
+  schemaVersionOne(item, path, state, depth + 1)
+  literal(item['kind'], 'game-raster', `${path}.kind`, state, depth + 1)
+  if (!isVersionedPublisherId(item['valueMeaning'])) fail('game raster needs a versioned publisher value meaning', `${path}.valueMeaning`)
+  const valueType = item['valueType'] as GameRasterValueType
+  if (!['u8','u16','u32','i32','f64'].includes(valueType)) fail('unknown game raster valueType', `${path}.valueType`)
+  const sampling = item['sampling']
+  if (sampling !== 'vertex' && sampling !== 'cell') fail('unknown game raster sampling', `${path}.sampling`)
+  const scalar = (raw: unknown, field: string) => {
+    const value = finite(raw, `${path}.${field}`, state, depth + 1)
+    if (!isGameRasterValue(raw, valueType)) fail('value is outside declared raster storage type', `${path}.${field}`)
+    return value
+  }
+  const minimum = scalar(item['minimum'], 'minimum'), maximum = scalar(item['maximum'], 'maximum')
+  if (maximum < minimum) fail('game raster minimum exceeds maximum', path)
+  const noDataValue = item['noDataValue'] === undefined ? undefined : scalar(item['noDataValue'], 'noDataValue')
+  const columns = integerAtLeast(item['columns'], 1, `${path}.columns`, state, depth + 1)
+  const rows = integerAtLeast(item['rows'], 1, `${path}.rows`, state, depth + 1)
+  gridBudget(columns, rows, `${path}.samples`, state)
+  const samples = numericGrid(item['samples'], columns, rows, `${path}.samples`, state, depth + 1)
+  // Validate the original samples too: finite() canonicalizes negative zero for other world fields.
+  const original = item['samples'] as number[][]
+  for (let y = 0; y < rows; y += 1) for (let x = 0; x < columns; x += 1) {
+    const value = original[y]![x]!
+    if (!isGameRasterValue(value, valueType) || (value !== noDataValue && (value < minimum || value > maximum)))
+      fail('game raster sample is outside its declared type or range', `${path}.samples[${y}][${x}]`)
+  }
+  const categories = item['categories'] === undefined ? undefined : array(item['categories'], `${path}.categories`, state, depth + 1).map((raw, index) => {
+    const at = `${path}.categories[${index}]`, entry = record(raw, at, state, depth + 2)
+    exactKeys(entry, ['value','label','color'], ['value','label'], at)
+    const value = scalar(entry['value'], `categories[${index}].value`)
+    if (value < minimum || value > maximum) fail('category outside declared range', at)
+    const label = string(entry['label'], `${at}.label`, state, depth + 3)
+    const color = entry['color'] === undefined ? undefined : string(entry['color'], `${at}.color`, state, depth + 3)
+    if (color !== undefined && !/^#[0-9a-fA-F]{6}$/u.test(color)) fail('category color is not #rrggbb', at)
+    return Object.freeze({ value, label, ...(color === undefined ? {} : { color }) })
+  })
+  if (categories !== undefined && new Set(categories.map(entry => entry.value)).size !== categories.length) fail('duplicate game raster category', path)
+  const label = labelOf(item, path, state, depth + 1)
+  const unit = item['unit'] === undefined ? undefined : string(item['unit'], `${path}.unit`, state, depth + 1)
+  if (unit !== undefined && (!unit || unit.length > 1024)) fail('invalid raster unit', `${path}.unit`)
+  return Object.freeze({ schemaVersion: 1, id: layerId(item['id'], `${path}.id`, state, depth + 1), kind: 'game-raster',
+    ...(label === undefined ? {} : { label }), valueMeaning: item['valueMeaning'], valueType, sampling, minimum, maximum,
+    ...(unit === undefined ? {} : { unit }),
+    ...(item['valueScale'] === undefined ? {} : { valueScale: finite(item['valueScale'], `${path}.valueScale`, state, depth + 1) }),
+    ...(item['valueOffset'] === undefined ? {} : { valueOffset: finite(item['valueOffset'], `${path}.valueOffset`, state, depth + 1) }),
+    ...(noDataValue === undefined ? {} : { noDataValue }), ...(categories === undefined ? {} : { categories: Object.freeze(categories) }),
+    columns, rows, cellSize: positive(item['cellSize'], `${path}.cellSize`, state, depth + 1), origin: vec3(item['origin'], `${path}.origin`, state, depth + 1), samples })
+}
+
 function gatewaysLayer(
   value: unknown,
   path: string,
@@ -2248,6 +2316,8 @@ function layer(
       return regionsLayer(value, path, state, depth)
     case 'navigation':
       return navigationLayer(value, path, state, depth)
+    case 'game-raster':
+      return gameRasterLayer(value, path, state, depth)
     case 'traversal':
       return traversalLayer(value, path, state, depth)
     case 'gateways':
@@ -2438,9 +2508,10 @@ function space(
   }
   const spaceBounds = bounds(item['bounds'], `${path}.bounds`, state, depth + 1)
   for (const entry of layers) {
-    if (entry.kind !== 'navigation' && entry.kind !== 'cliffs' && !(entry.kind === 'heightfield' && entry.role === 'query')) continue
-    const maxX = entry.origin[0] + (entry.columns - 1) * entry.cellSize
-    const maxZ = entry.origin[2] + (entry.rows - 1) * entry.cellSize
+    if (entry.kind !== 'navigation' && entry.kind !== 'cliffs' && entry.kind !== 'game-raster' && !(entry.kind === 'heightfield' && entry.role === 'query')) continue
+    const extension = entry.kind === 'game-raster' && entry.sampling === 'cell' ? 0 : 1
+    const maxX = entry.origin[0] + (entry.columns - extension) * entry.cellSize
+    const maxZ = entry.origin[2] + (entry.rows - extension) * entry.cellSize
     const tolerance = 1e-9
     if (!Number.isFinite(maxX) || !Number.isFinite(maxZ) ||
       entry.origin[0] < spaceBounds.min[0] - tolerance || maxX > spaceBounds.max[0] + tolerance ||

@@ -3,16 +3,16 @@
   "schemaVersion": "multiverse-specs-pin-1",
   "source": {
     "repository": "multiverse (sibling repository)",
-    "commit": "1b93f2123302b635feafdc7e02129cd4b085e888",
-    "subject": "feat(uvw): retain non-rendered query surfaces in model worlds",
-    "committedOn": "2026-10-15T23:48:59+04:00"
+    "commit": "f5fc69389b0c67c30810d930eaba298e99d4f49d",
+    "subject": "feat(uvw): preserve independent typed game rasters",
+    "committedOn": "2026-10-16T00:28:06+04:00"
   },
   "generator": "scripts/specs-pin.mjs",
   "generatedFrom": "git objects, not the sibling working tree",
   "prefix": "specs/",
   "counts": {
-    "files": 319,
-    "bytes": 2211806
+    "files": 321,
+    "bytes": 2235249
   },
   "files": [
     {
@@ -182,8 +182,8 @@
     },
     {
       "path": "specs/conformance/schema-assertions.json",
-      "bytes": 154661,
-      "digest": "sha256:bf613fd21ea94e994d29face7fd3e8e492fa99c054943192e5f9b34b00b06098"
+      "bytes": 156545,
+      "digest": "sha256:d2df931819540b074a2618881a8901f87dd2d8d8f718c20ee193f70512737d51"
     },
     {
       "path": "specs/conformance/state/vectors.json",
@@ -1211,6 +1211,11 @@
       "digest": "sha256:66f1d3d5314055d53deb763962ad21d5b98f84948e2623b67536cff16c78c3ad"
     },
     {
+      "path": "specs/tools/uvw-game-rasters.test.mjs",
+      "bytes": 3033,
+      "digest": "sha256:bae3dba7ee40822702dc31e532611fa03f243c3274c5199701be1fd8744d80e4"
+    },
+    {
       "path": "specs/tools/uvw-gltf-migration.d.mts",
       "bytes": 904,
       "digest": "sha256:3c74aae89840198a5b997db46f6853338b051a3824b94e9f9c3b741da8bccac6"
@@ -1222,8 +1227,8 @@
     },
     {
       "path": "specs/tools/uvw-gltf-pages.mjs",
-      "bytes": 8923,
-      "digest": "sha256:29514126d98b9280bfde27887108d54edfd2d02055ccf9ade9a843f1fef0cf20"
+      "bytes": 8963,
+      "digest": "sha256:26a049124d442635eb84d9eef9bd6ffc85708d52fa83981d78d8988d6c11eaf8"
     },
     {
       "path": "specs/tools/uvw-gltf-pages.test.mjs",
@@ -1292,8 +1297,8 @@
     },
     {
       "path": "specs/tools/uvw-profile.mjs",
-      "bytes": 46093,
-      "digest": "sha256:bfa13879b70771e7f3ad58afacc0278098ad2bcce5211826442b960b9ca933a2"
+      "bytes": 49905,
+      "digest": "sha256:077d161e4813243d56322ce1e97c00f69070e972f086cdba7a747d0a704b6390"
     },
     {
       "path": "specs/tools/uvw-query-surface.test.mjs",
@@ -1382,8 +1387,8 @@
     },
     {
       "path": "specs/world/SPEC_UVW_PROFILE.md",
-      "bytes": 36167,
-      "digest": "sha256:3238d8ff3600bb8f5e755fe8dc9fa534c460e37c4bb4c393b1142f542668b97c"
+      "bytes": 37746,
+      "digest": "sha256:f01324bfe22dd946ef15890219ce9dea173a7ee2b3a746b85854eddd1b621761"
     },
     {
       "path": "specs/world/fixtures/invalid/connections-not-empty.uvw.json",
@@ -1419,6 +1424,11 @@
       "path": "specs/world/fixtures/uvw-exact-pages.json",
       "bytes": 719,
       "digest": "sha256:a228bf80ed0f075f0b5bc9b4814fafce50a90e18dbf709b73b8b7cdfc0a65dd4"
+    },
+    {
+      "path": "specs/world/fixtures/uvw-game-rasters.uvw.json",
+      "bytes": 3417,
+      "digest": "sha256:80eb84ecb83e8f7240b0eab143e6c9e1e3522551661082f83697986312019ddf"
     },
     {
       "path": "specs/world/fixtures/uvw-gltf-cliffs.uvw.gltf",
@@ -1597,18 +1607,18 @@
     },
     {
       "path": "specs/world/schema/uvw.gltf.pages.v1.schema.json",
-      "bytes": 24948,
-      "digest": "sha256:4a4a7cf213f2f3a4c8c852cb339834f31b634fbf3b31a587aba3ef3916d709bc"
+      "bytes": 25112,
+      "digest": "sha256:efe20f6151db5908d84e9e3a3c6dd09648ee2d2405a80210c63f380c68f0bfbb"
     },
     {
       "path": "specs/world/schema/uvw.gltf.v1.schema.json",
-      "bytes": 13053,
-      "digest": "sha256:d7d8d9dbbe7f9804613524fa93e11a502b80283fcc87252646cbb6136af49d84"
+      "bytes": 13619,
+      "digest": "sha256:bc4eab56acc2e2a9a193bb90d50713a3efb2d185a5ff4c90f4285787c3802672"
     },
     {
       "path": "specs/world/schema/uvw.profile.v1.schema.json",
-      "bytes": 55382,
-      "digest": "sha256:21e2912153fc9d3e2759ecea87d1486650627a29b6a02124f779f717fa4ae186"
+      "bytes": 64330,
+      "digest": "sha256:b57b0ec0894ecbba9f6a74c823b4412f0ed6c9352db5da7391e69801a6e6d939"
     }
   ]
 }
