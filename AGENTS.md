@@ -39,8 +39,9 @@ querySurfaces использует существующий native grid owner, �
 Runtime использует прежний Q32.32 Heightfield sampler без нового wire-кодека. Singleton
 существует только на исходной оси; supports, 3D clearance и перекрывающиеся этажи не заявлены.
 Catalog itemCount и visited coordinates проверяются отдельно от NoData fill: потери страниц
-и дубли не становятся допустимыми пустотами. Production UVP raw/logical digest bridge остаётся
-открытым требованием; ручное rebinding в probe не означает продуктовую совместимость.
+и дубли не становятся допустимыми пустотами. UVP logical identity bridge реализован
+`1f4679e1`: writer/open используют один normative digest, direct Runtime receipt проходит
+без rebinding. Native game rules, корпус и сборка ещё требуют квалификации.
 
 
 Independent cliffs используют SDK `MapNativeSampleGrid` и существующий Host grid
