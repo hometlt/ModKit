@@ -23,3 +23,12 @@ Twenty additional product codecs now live in this package: ANI, ASTC, AVIF, Basi
 EXR, GIF, HDR, ICO, KTX/KTX2, PAL, PCX, PKM, PVR, TGA, TIFF and WebP. The older JPG and PNG
 staging routes were retired in favour of the richer native JPEG/PNG contributions already here.
 Historical decisions remain in inert `MIGRATION-NOTES-common-images.json`.
+
+## RGBA sequence export
+
+`formats/gif/encode` (`encodeGif`) and `formats/webp/encode` (`encodeWebp`) export
+async RGBA frame sequences through an injected bounded backend. Their codec entrypoints also
+re-export these functions. GIF owns palette generation and centisecond timing; WebP owns animated
+WebP encoding. Both loop indefinitely. The desktop Host backend uses the user's installed ffmpeg;
+format modules never spawn processes. This is generation of new media, not native source editing
+or a format-writer capability. MCP `world_scene` composes these exporters with the shared renderer.

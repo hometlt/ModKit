@@ -155,6 +155,8 @@ export {
 } from './installation-search.js'
 export {
   createNodeVideoFrameDecoder,
+  createNodeRgbaSequenceEncoder,
+  type NodeRgbaSequenceEncodeRequest,
   findFfmpeg,
   parsePam,
   type NodeVideoFrameDecoderOptions,

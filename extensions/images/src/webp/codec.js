@@ -182,3 +182,6 @@ const definition = Object.freeze({
 
 export const abiVersion = 1
 export const createCodec = context => createInspectionCodec(definition, context)
+
+// Programmatic sequence export; native document editing remains a separate capability.
+export { encodeWebp } from '../../dist/webp/encode.js'

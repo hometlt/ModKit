@@ -1,13 +1,27 @@
 {
   "files": [],
   "references": [
-    { "path": "packages/codec-kit" },
-    { "path": "packages/scene" },
-    { "path": "packages/uv" },
-    { "path": "packages/extension-manager" },
-    { "path": "packages/code" },
-    { "path": "extensions/lua" },
-    { "path": "extensions/java" },
+    {
+      "path": "packages/codec-kit"
+    },
+    {
+      "path": "packages/scene"
+    },
+    {
+      "path": "packages/uv"
+    },
+    {
+      "path": "packages/extension-manager"
+    },
+    {
+      "path": "packages/code"
+    },
+    {
+      "path": "extensions/lua"
+    },
+    {
+      "path": "extensions/java"
+    },
     {
       "path": "packages/core"
     },
@@ -49,6 +63,12 @@
     },
     {
       "path": "packages/testkit"
+    },
+    {
+      "path": "extensions/images"
+    },
+    {
+      "path": "extensions/video"
     }
   ]
 }

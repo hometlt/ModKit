@@ -3,7 +3,8 @@
  * ffmpeg is not shipped (a build with the common decoders is GPL/LGPL, and the LGPL prebuilt WASM
  * builds leave H.264 out); the host finds it at `ffmpegPath` or on PATH, and offers no decoder
  * without it. The frame leaves ffmpeg as PAM — a text header over raw RGBA — so the host needs no
- * image codec. Codecs never start processes: this is the one place a frame decoder runs.
+ * image codec. Codecs never start processes: this owns bounded decoding and RGBA sequence encoding.
+ * GIF/WebP/OGV modules own encoding arguments; callers stream frames with backpressure.
  */
 import { spawn } from 'node:child_process'
 import { createHash } from 'node:crypto'
@@ -163,15 +164,20 @@ function run(
   maxOutput: number,
   timeoutMs: number,
   signal: AbortSignal | undefined,
+  input?: AsyncIterable<Uint8Array>,
 ): Promise<Uint8Array> {
+  signal?.throwIfAborted()
   return new Promise((resolve, reject) => {
-    const child = spawn(executable, args, { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] })
+    const child = spawn(executable, args, { windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] })
     const chunks: Buffer[] = []
+    const stopped = new AbortController()
     let size = 0
     let stderr = ''
     let refusal: Error | undefined
+    let inputComplete = input === undefined
     const stop = (error: Error) => {
       refusal ??= error
+      stopped.abort(error)
       child.kill()
     }
     const timer = setTimeout(
@@ -180,21 +186,137 @@ function run(
     )
     const abort = () => stop(new DOMException('operation cancelled', 'AbortError'))
     signal?.addEventListener('abort', abort, { once: true })
+    if (signal?.aborted) abort()
     child.stdout.on('data', (chunk: Buffer) => {
       size += chunk.byteLength
       if (size > maxOutput) stop(new RangeError(`the decoded frame exceeds ${maxOutput} bytes`))
       else chunks.push(chunk)
     })
     child.stderr.on('data', (chunk: Buffer) => {
-      if (stderr.length < 4096) stderr += chunk.toString('utf8')
+      if (stderr.length < 4096) stderr += chunk.toString('utf8').slice(0, 4096 - stderr.length)
     })
     child.on('error', error => stop(failed(`ffmpeg could not start: ${error.message}`)))
+    child.stdin.on('error', error => stop(error))
+    // One frame at a time, respecting pipe backpressure; never retain a raw movie in memory.
+    void (async () => {
+      if (input !== undefined) {
+        const iterator = input[Symbol.asyncIterator]()
+        const cancelled = new Promise<never>((_, fail) => {
+          const abortInput = () => fail(stopped.signal.reason)
+          if (stopped.signal.aborted) abortInput()
+          else stopped.signal.addEventListener('abort', abortInput, { once: true })
+        })
+        try {
+          for (;;) {
+            const next = await Promise.race([iterator.next(), cancelled])
+            if (next.done) break
+            stopped.signal.throwIfAborted()
+            // Own the bytes until the pipe consumes them; producers may reuse their frame buffer.
+            await Promise.race([
+              new Promise<void>((written, fail) => {
+                child.stdin.write(Buffer.from(next.value), error => error ? fail(error) : written())
+              }),
+              cancelled,
+            ])
+          }
+        } finally {
+          // A pending producer next() may defer return(); cancellation cannot force its completion.
+          void iterator.return?.().catch(() => {})
+        }
+      }
+      inputComplete = true
+      child.stdin.end()
+    })().catch(error => stop(error instanceof Error ? error : new Error(String(error))))
     child.on('close', code => {
+      stopped.abort(new Error('ffmpeg closed'))
       clearTimeout(timer)
       signal?.removeEventListener('abort', abort)
       if (refusal !== undefined) reject(refusal)
       else if (code !== 0) reject(failed(`ffmpeg exited ${code}: ${stderr.trim().slice(0, 1024)}`))
+      else if (!inputComplete) reject(failed('ffmpeg closed before the input sequence completed'))
       else resolve(Buffer.concat(chunks))
     })
   })
+}
+
+/** Node media owner: bounded raw RGBA sequence encoding using installed ffmpeg.
+ * No game semantics, file staging, downloader or browser dependency; callers supply sampled frames.
+ * Trusted format exporters supply output arguments; never accept these from an MCP/tool request.
+ */
+export function createNodeRgbaSequenceEncoder(options: NodeVideoFrameDecoderOptions = {}) {
+  const ffmpeg = findFfmpeg(options)
+  if (ffmpeg === undefined) return undefined
+  const timeoutMs = options.timeoutMs ?? 180_000
+  return Object.freeze({
+    async encode(request: NodeRgbaSequenceEncodeRequest): Promise<Uint8Array> {
+      const { width, height, fps, frameCount, signal } = request
+      if (
+        !Number.isInteger(width) ||
+        !Number.isInteger(height) ||
+        width < 1 ||
+        height < 1 ||
+        width > 2048 ||
+        height > 2048 ||
+        !Number.isFinite(fps) ||
+        fps < 1 ||
+        fps > 50 ||
+        !Number.isInteger(frameCount) ||
+        frameCount < 1 ||
+        frameCount > 300 ||
+        width * height * frameCount > 64_000_000 ||
+        !Number.isSafeInteger(request.maxBytes) ||
+        request.maxBytes < 1 ||
+        request.maxBytes > 64 * 1024 * 1024
+      )
+        throw new RangeError('animation exceeds format, dimensions, FPS, frame or byte budget')
+      signal?.throwIfAborted()
+      async function* frames() {
+        let count = 0
+        for await (const rgba of request.frames) {
+          signal?.throwIfAborted()
+          if (++count > frameCount || rgba.byteLength !== width * height * 4)
+            throw new RangeError('animation frame count or RGBA dimensions differ from the request')
+          yield rgba
+        }
+        if (count !== frameCount) throw new RangeError('animation has fewer frames than requested')
+      }
+      return run(
+        ffmpeg,
+        [
+          '-v',
+          'error',
+          '-nostdin',
+          '-f',
+          'rawvideo',
+          '-pixel_format',
+          'rgba',
+          '-video_size',
+          `${width}x${height}`,
+          '-framerate',
+          String(fps),
+          '-i',
+          'pipe:0',
+          '-an',
+          ...request.outputArguments,
+          'pipe:1',
+        ],
+        request.maxBytes,
+        timeoutMs,
+        signal,
+        frames(),
+      )
+    },
+  })
+}
+
+export interface NodeRgbaSequenceEncodeRequest {
+  /** Only trusted format implementations supply ffmpeg output switches. */
+  readonly outputArguments: readonly string[]
+  readonly width: number
+  readonly height: number
+  readonly fps: number
+  readonly frameCount: number
+  readonly maxBytes: number
+  readonly frames: AsyncIterable<Uint8Array>
+  readonly signal?: AbortSignal
 }
