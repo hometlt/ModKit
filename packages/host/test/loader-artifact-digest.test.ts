@@ -138,9 +138,9 @@ describe('an extension root loaded without holding the thread', () => {
     )
     // the inventory's listing leaves build output out; the artifact keeps it
     expect(loaded.files).toEqual(['a/b/c.js', 'a/z.json', 'b.txt'])
-    // the synchronous verification of a codec open agrees with it
-    expect(loaded.artifact?.verifyArtifactDigest(loaded.artifact.artifactDigest)).toBe(true)
+    // asynchronous verification of a codec open agrees with it
+    expect(await loaded.artifact?.verifyArtifactDigest(loaded.artifact.artifactDigest)).toBe(true)
     await writeFile(join(root, 'b.txt'), 'changed')
-    expect(loaded.artifact?.verifyArtifactDigest(loaded.artifact.artifactDigest)).toBe(false)
+    expect(await loaded.artifact?.verifyArtifactDigest(loaded.artifact.artifactDigest)).toBe(false)
   })
 })

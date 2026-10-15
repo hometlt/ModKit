@@ -6,7 +6,7 @@
  */
 
 import { createHash, type Hash } from 'node:crypto'
-import { existsSync, readdirSync, readFileSync, statSync, watch } from 'node:fs'
+import { existsSync, readdirSync, watch } from 'node:fs'
 import { readdir, readFile, stat } from 'node:fs/promises'
 import { join, relative, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -34,21 +34,7 @@ export function listFilesRecursive(root: string): string[] {
 const byName = (a: { readonly name: string }, b: { readonly name: string }): number =>
   a.name < b.name ? -1 : a.name > b.name ? 1 : 0
 
-function listArtifactFiles(root: string): string[] {
-  const out: string[] = []
-  const walk = (dir: string): void => {
-    for (const entry of readdirSync(dir, { withFileTypes: true }).sort(byName)) {
-      if (entry.name === 'node_modules' || entry.name === '.git') continue
-      const path = join(dir, entry.name)
-      if (entry.isDirectory()) walk(path)
-      else out.push(relative(root, path).split(sep).join('/'))
-    }
-  }
-  walk(root)
-  return out
-}
-
-/** listArtifactFiles without holding the thread: the same files in the same order. */
+/** Sorted artifact paths, including build output, without holding the thread. */
 async function listArtifactFilesAsync(root: string): Promise<string[]> {
   const out: string[] = []
   const walk = async (dir: string): Promise<void> => {
@@ -93,19 +79,6 @@ interface ArtifactDigests {
   readonly fileDigests: Readonly<Record<string, string>>
 }
 
-/**
- * One walk yields both the tree digest (paths + contents, the inventory identity) and per-file
- * digests: an execution backend that evaluates files inside a worker verifies each one against
- * this map right before evaluation, closing the window between the gate's check and the load.
- */
-function artifactDigests(root: string): ArtifactDigests {
-  const hash = createHash('sha256')
-  const fileDigests: Record<string, string> = {}
-  for (const path of listArtifactFiles(root))
-    hashArtifactFile(hash, fileDigests, path, readFileSync(join(root, path)))
-  return { artifactDigest: `sha256:${hash.digest('hex')}`, fileDigests: Object.freeze(fileDigests) }
-}
-
 /** One file of the tree digest (length-prefixed path and contents) and its own digest. */
 function hashArtifactFile(
   hash: Hash,
@@ -124,7 +97,7 @@ function hashArtifactFile(
   fileDigests[path] = sha256(contents)
 }
 
-/** artifactDigests over a listing, reading files in parallel: the same digests. */
+/** Tree and per-file digests from one ordered listing with bounded asynchronous reads. */
 async function artifactDigestsAsync(
   root: string,
   listed: readonly string[],
@@ -147,6 +120,8 @@ const verifiedDigests = new Map<
 /** Roots whose recursive watcher reported no change since their fingerprint was taken. */
 const unchangedRoots = new Set<string>()
 const watchedRoots = new Set<string>()
+/** Digest work is shared, never the comparison with a caller's expected digest. */
+const pendingVerifications = new Map<string, Promise<string>>()
 
 function watchArtifactRoot(root: string): void {
   if (watchedRoots.has(root)) return
@@ -171,23 +146,6 @@ function watchArtifactRoot(root: string): void {
   }
 }
 
-/**
- * Current artifact digest, re-hashed only when a file was added, removed, resized or touched.
- * Activation verifies the artifact on every codec open; hashing every file each time dominated
- * model loading (a 4700-file extension costs ~0.5 s per open, many opens per model). A recursive
- * watcher skips even the stat walk until something under the root changes.
- */
-/** Paths, sizes and modification times: the cheap evidence that contents are unchanged. */
-function statFingerprint(
-  root: string,
-  listed: readonly string[] = listArtifactFiles(root),
-): string {
-  const fingerprint = createHash('sha256')
-  for (const path of listed)
-    fingerprint.update(fingerprintLine(path, statSync(join(root, path), { bigint: true })))
-  return fingerprint.digest('hex')
-}
-
 const fingerprintLine = (
   path: string,
   info: { readonly size: bigint; readonly mtimeNs: bigint },
@@ -204,21 +162,7 @@ async function statFingerprintAsync(root: string, listed: readonly string[]): Pr
   return fingerprint.digest('hex')
 }
 
-/**
- * Digests of this root, from the cheapest source that is still evidence.
- *
- * In-process memory first, then the application's persistent cache (a window start otherwise
- * re-hashes every file of every root), then the files themselves. A record is admitted only when
- * the stat fingerprint matches, so anything that changed is hashed again.
- */
-function digestsFor(root: string, listed?: readonly string[]): ArtifactDigests {
-  const fingerprint = statFingerprint(root, listed)
-  return (
-    knownDigests(root, fingerprint) ?? rememberDigests(root, fingerprint, artifactDigests(root))
-  )
-}
-
-/** digestsFor without holding the thread, for loading a root. */
+/** Reuse memory or persistent digests only at the current stat fingerprint, otherwise hash. */
 async function digestsForAsync(root: string, listed: readonly string[]): Promise<ArtifactDigests> {
   const fingerprint = await statFingerprintAsync(root, listed)
   return (
@@ -255,12 +199,35 @@ function rememberDigests(
   return digests
 }
 
-function artifactDigest(root: string): string {
+/** Full async verification; watcher events invalidate a scan before its digest can be admitted. */
+function artifactDigest(root: string): Promise<string> {
+  const running = pendingVerifications.get(root)
+  if (running !== undefined) return running
   const live = verifiedDigests.get(root)
-  if (live !== undefined && unchangedRoots.has(root)) return live.digests.artifactDigest
+  if (live !== undefined && unchangedRoots.has(root)) return Promise.resolve(live.digests.artifactDigest)
   watchArtifactRoot(root)
-  if (watchedRoots.has(root)) unchangedRoots.add(root)
-  return digestsFor(root).artifactDigest
+  const pending = (async () => {
+    try {
+      // One retry handles an event queued before/during the scan; continuous writes fail closed.
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const watching = watchedRoots.has(root)
+        if (watching) unchangedRoots.add(root)
+        const listed = await listArtifactFilesAsync(root)
+        const digests = await digestsForAsync(root, listed)
+        if (!watching || unchangedRoots.has(root)) return digests.artifactDigest
+        verifiedDigests.delete(root)
+      }
+      throw new Error(`artifact changed during verification: ${root}`)
+    } catch (error) {
+      unchangedRoots.delete(root)
+      verifiedDigests.delete(root)
+      throw error
+    }
+  })()
+  pendingVerifications.set(root, pending)
+  const release = (): void => { pendingVerifications.delete(root) }
+  void pending.then(release, release)
+  return pending
 }
 
 async function readJsonIfExists(path: string): Promise<unknown> {
@@ -346,7 +313,7 @@ export async function loadExtensionDirectory(
       artifactDigest: initialArtifactDigest,
       artifactRoot,
       fileDigests: initial.fileDigests,
-      verifyArtifactDigest: expected => artifactDigest(dir) === expected,
+      verifyArtifactDigest: async expected => (await artifactDigest(dir)) === expected,
     },
   }
 }
