@@ -3,8 +3,6 @@
 import { realpath } from 'node:fs/promises'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { compareUtf8 } from '@modkit/core'
-import type { AnyDescriptor } from '@modkit/sdk'
 import { composeLanguageDocumentSources, resolveContentLanguageSources } from '@modkit/host'
 import {
   createLanguageFileClassifier,
@@ -19,7 +17,6 @@ import {
   loadContentSources,
   withSharedModContexts,
   workerBackendPolicy,
-  type ModkitOpened,
 } from '@modkit/host/node'
 import { ConfigurationError, modkitLspUsage, parseModkitLspConfiguration } from './config.js'
 import { createFilesystemLanguageDocumentSource } from '@modkit/host/node'
@@ -107,29 +104,10 @@ export async function runModkitLsp(argv: readonly string[]) {
             await modkit.close()
             throw error
           })
-  const openedRoots: ModkitOpened[] = []
-  let openedSubjectDescriptors: AnyDescriptor[] = []
   const dependencySources = []
   /** The roots' mod contexts, kept open as the loaded mods' servers (owner decision 07.10). */
   let modContexts: LanguageModContexts | undefined
   if (contentSources !== undefined) {
-    // A root that opens as no subject (a folder of scripts) still opens inside its base mods.
-    const looseRoots: string[] = []
-    for (const root of roots) {
-      const opened = await modkit.open(root)
-      if (opened.session === undefined) {
-        looseRoots.push(root)
-        continue
-      }
-      openedRoots.push(opened)
-    }
-    const openedRootSessions = openedRoots.map(opened => {
-      if (opened.session === undefined) throw new Error('opened root lost its subject session')
-      return opened.session
-    })
-    openedSubjectDescriptors = await Promise.all(
-      openedRootSessions.map(session => session.descriptor()),
-    )
     const projected = await resolveContentLanguageSources({
       contentSources,
       routes,
@@ -138,14 +116,8 @@ export async function runModkitLsp(argv: readonly string[]) {
         maxWorkspaceBytes: configuration.maxWorkspaceBytes,
         maxEntries: 65_536,
       },
-      subjects: [
-        ...openedRootSessions.map((_session, index) => {
-          const descriptor = openedSubjectDescriptors[index]
-          if (descriptor === undefined) throw new Error('opened root descriptor is missing')
-          return { descriptor }
-        }),
-        ...looseRoots.map(root => ({ descriptor: { subjectUri: pathToFileURL(root).href } })),
-      ],
+      // Context owners resolve packages and loose roots from their URI; no subject codec is needed.
+      subjects: roots.map(root => ({ descriptor: { subjectUri: pathToFileURL(root).href } })),
       ...(configuration.baseMods.length === 0 ? {} : { baseMods: { '*': configuration.baseMods } }),
       keepContexts: true,
     })
@@ -182,21 +154,6 @@ export async function runModkitLsp(argv: readonly string[]) {
         revision: languageWorkspaceContextToken(configuration.locales),
         payload: Object.freeze({ locales: [...configuration.locales] }),
       }),
-      ...(openedSubjectDescriptors.length === 0
-        ? []
-        : [
-            Object.freeze({
-              kind: 'subject-set',
-              id: languageWorkspaceContextToken(
-                openedSubjectDescriptors.map(item => item.subjectUri).sort(compareUtf8),
-              ),
-              revision: languageWorkspaceContextToken(
-                openedSubjectDescriptors
-                  .map(item => ({ subjectUri: item.subjectUri, revision: item.revision }))
-                  .sort((left, right) => compareUtf8(left.subjectUri, right.subjectUri)),
-              ),
-            }),
-          ]),
     ]),
     documentOrigin: document => filesystemSource.origin(document),
   })
@@ -223,7 +180,6 @@ export async function runModkitLsp(argv: readonly string[]) {
     close(): Promise<void> {
       closed ??= (async () => {
         await server.close()
-        for (const opened of openedRoots) await opened.close()
         await modContexts?.dispose()
         await contentSources?.dispose()
         await modkit.close()
