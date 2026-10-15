@@ -5,7 +5,7 @@ import {
   applySimpleEffectState,
   readSimpleEffect,
 } from '../src/render/simple-effect.js'
-import { projectorMaterial } from '../src/uvm/projector-material.js'
+import { projectorMaterial, effectSurfaceMaterial } from '../src/uvm/projector-material.js'
 import { renderHeadless } from '../src/render/headless.js'
 import { uvmMaterialResources } from '../src/uvm/materials.js'
 const state = {
@@ -211,4 +211,178 @@ test('an emitter over a plain additive material keeps its blend pass', async () 
   assert.equal(sprite.simpleEffect.blend, 'additive')
   assert.equal(sprite.simpleEffect.depthWrite, false)
   assert.equal(sprite.simpleEffect.textureResource, 'Texture/FXCloud.dds')
+})
+
+const spriteStandard = unshaded => ({
+  layers: {
+    diffuse: {
+      slot: 'diffuse',
+      texturePath: 'white',
+      channels: 0,
+      op: 2,
+      teamColorMode: 0,
+      uvSource: 6,
+      invert: false,
+      clampResult: true,
+      wrapX: true,
+      wrapY: true,
+    },
+  },
+  blendMode: 0,
+  priority: 7,
+  specularity: 0,
+  specMult: 0,
+  emisMult: 0,
+  specMode: 0,
+  alphaTestThreshold: 0,
+  twoSided: false,
+  unshaded,
+  doubleLambert: false,
+  clampOutput: false,
+  usesVertexColor: false,
+  usesVertexAlpha: false,
+})
+const spriteMaterial = renderModel => ({
+  id: 'source',
+  baseColor: [1, 1, 1, 1],
+  textureBindings: [{ resourceId: 'white', textureId: 'white' }],
+  shader: { id: 'modkit.render-material.v1', parameters: { renderModel } },
+})
+
+test('sprite programs preserve publisher lighting and other material state while adapting sides and atlas UVs', () => {
+  for (const unshaded of [false, true]) {
+    const standard = spriteStandard(unshaded)
+    const source = spriteMaterial({ version: 1, standard })
+    const before = structuredClone(source)
+    const sprite = effectSurfaceMaterial(source, 'sprite', 10000, 1048576, 'white')
+    assert.deepEqual(source, before)
+    assert.equal(sprite.id, 'sprite')
+    assert.equal(sprite.doubleSided, true)
+    assert.equal(sprite.simpleEffect, undefined)
+    assert.deepEqual(sprite.shader.parameters.renderModel.standard, {
+      ...standard,
+      twoSided: true,
+      layers: { diffuse: { ...standard.layers.diffuse, uvSource: 0 } },
+    })
+    assert.deepEqual(sprite.textureBindings, source.textureBindings)
+  }
+})
+
+test('composite sprite passes keep their individual publisher lighting and alpha', () => {
+  const standards = [spriteStandard(false), spriteStandard(true)]
+  const source = spriteMaterial({
+    version: 1,
+    composite: {
+      priority: 12,
+      passes: standards.map((material, i) => ({ material, alphaFactor: { value: i ? 0.5 : 1 } })),
+    },
+  })
+  const before = structuredClone(source)
+  const sprite = effectSurfaceMaterial(source, 'sprite', 10000, 1048576, 'white')
+  assert.deepEqual(source, before)
+  const composite = sprite.shader.parameters.renderModel.composite
+  assert.equal(composite.priority, 12)
+  assert.deepEqual(
+    composite.passes.map(pass => pass.material.unshaded),
+    [false, true],
+  )
+  for (let i = 0; i < standards.length; i++) {
+    assert.deepEqual(composite.passes[i].material, {
+      ...standards[i],
+      twoSided: true,
+      layers: { diffuse: { ...standards[i].layers.diffuse, uvSource: 0 } },
+    })
+    assert.deepEqual(
+      composite.passes[i].alphaFactor,
+      before.shader.parameters.renderModel.composite.passes[i].alphaFactor,
+    )
+  }
+})
+
+test('sprite lighting preservation retains validation, texture fallback and colorless refusal', () => {
+  const standard = spriteStandard(false)
+  const source = spriteMaterial({ version: 1, standard })
+  const fallback = effectSurfaceMaterial(source, 'fallback', 10000, 1048576, 'other')
+  assert.equal(fallback.simpleEffect.textureResource, 'other')
+  assert.equal(fallback.simpleEffect.doubleSided, true)
+  const plain = effectSurfaceMaterial(
+    { id: 'plain', baseColor: [1, 1, 1, 1] },
+    'plain-sprite',
+    10000,
+    1048576,
+  )
+  assert.equal(plain.shading, 'unlit')
+  assert.equal(plain.simpleEffect.doubleSided, true)
+  for (const presentation of ['screen-distortion', 'terrain-projection'])
+    assert.equal(
+      effectSurfaceMaterial(
+        spriteMaterial({ version: 1, presentation, standard }),
+        'colorless',
+        10000,
+        1048576,
+      ),
+      undefined,
+    )
+  assert.throws(
+    () =>
+      effectSurfaceMaterial(
+        spriteMaterial({ version: 1, standard: { ...standard, unshaded: 'false' } }),
+        'invalid',
+        10000,
+        1048576,
+      ),
+    /unshaded|boolean/,
+  )
+  assert.throws(
+    () =>
+      effectSurfaceMaterial(source, 'cancelled', 10000, 1048576, undefined, AbortSignal.abort()),
+    { name: 'AbortError' },
+  )
+})
+
+test('headless sprite programs respond to ambient light only when the publisher requests lighting', async () => {
+  const identity = Float32Array.of(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
+  const draw = async (unshaded, ambient) => {
+    const material = effectSurfaceMaterial(
+      spriteMaterial({ version: 1, standard: spriteStandard(unshaded) }),
+      'sprite',
+      10000,
+      1048576,
+      'white',
+    )
+    const frame = await renderHeadless({
+      outputKind: 'rgba8',
+      viewport: { width: 2, height: 2 },
+      camera: { viewProjection: identity },
+      scene: {
+        materialContext: { sceneLighting: true },
+        lights: [],
+        ambientLight: ambient,
+        textures: [{ id: 'white', width: 1, height: 1, rgba: Uint8Array.of(255, 255, 255, 255) }],
+        materials: [material],
+        primitives: [
+          {
+            id: 'quad',
+            materialId: 'sprite',
+            topology: 'triangles',
+            positions: Float32Array.of(-1, -1, 0, 1, -1, 0, 1, 1, 0, -1, 1, 0),
+            normals: Float32Array.of(0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1),
+            textureCoordinates: Float32Array.of(0, 0, 1, 0, 1, 1, 0, 1),
+            indices: Uint32Array.of(0, 1, 2, 0, 2, 3),
+          },
+        ],
+      },
+    })
+    assert(frame.statistics.fragments > 0)
+    assert(
+      !frame.diagnostics.some(
+        item => item.severity === 'error' || item.code.includes('shader-unsupported'),
+      ),
+    )
+    return [...frame.rgba.slice(0, 4)]
+  }
+  assert.deepEqual(await draw(false, [0.2, 0.4, 0.6]), [51, 102, 153, 255])
+  assert.deepEqual(await draw(false, [0.6, 0.4, 0.2]), [153, 102, 51, 255])
+  assert.deepEqual(await draw(true, [0.2, 0.4, 0.6]), [255, 255, 255, 255])
+  assert.deepEqual(await draw(true, [0.6, 0.4, 0.2]), [255, 255, 255, 255])
 })
