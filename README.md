@@ -1,152 +1,136 @@
-# Modkit MK3
+# Modkit
 
-Modkit MK3 — локальная платформа для просмотра, проверки и изменения игровых ресурсов. Текущий
-Focused Product GA объединяет общие форматы, StarCraft II и Warzone 2100 через единый набор
-приложений, а игровые расширения загружает из отдельных репозиториев.
+**A universal platform for exploring, inspecting, editing, and converting digital assets.**
 
-Это локальный GA для личной проверки владельцем проекта. Он не является публичным выпуском,
-публикацией npm-пакетов или готовым системным установщиком. Подтверждённая матрица сейчас
-ограничена Windows x64; Linux и macOS ещё не прошли итоговую проверку.
+Modkit brings files, archives, structured data, media, and 3D content into a shared workspace.
+It combines a resource explorer, format-aware tools, code editing, visual previews, and automation
+so you can follow an asset from its container to its dependencies and exported result.
 
-## Что входит в Focused Product GA
+Use it to inspect an unfamiliar file, work on a game mod, explore a collection of resources,
+convert supported assets, or build repeatable processing workflows. Format-specific capabilities
+come from extensions; the platform provides the workspace and a consistent way to use them.
 
-| Профиль                    | Назначение                                                        |
-| -------------------------- | ----------------------------------------------------------------- |
-| `common-documents`         | Основные текстовые и офисные документы без игровых расширений     |
-| `universal-asset-explorer` | Общие архивы, изображения, звук, видео, модели и редакторы        |
-| `sc2-mod-studio`           | Архивы, данные, карты, модели и рабочие пространства StarCraft II |
-| `warzone-2100-studio`      | Архивы, данные, карты и модели Warzone 2100                       |
-| `headless-mod-ci`          | Проверка общих ресурсов без графического приложения               |
+## What you can do
 
-Профиль описывает состав поставки, а не отдельную копию приложения. Общая платформа находится в
-этом репозитории, а расширения игр остаются независимыми поставками со своими лицензиями.
+### Explore files and archives
 
-## Быстрый старт из чистого checkout
+- Browse local folders and supported archive formats through one resource explorer.
+- Open nested content without managing a separate extraction workflow for every format.
+- Inspect resource metadata, detected formats, available operations, and diagnostics.
+- Follow related resources and dependencies within the selected workspace.
 
-Нужны Node.js 22 или новее и pnpm 10 или новее. Все команды выполняются из корня репозитория.
+### Preview and work with assets
 
-```powershell
-corepack enable
-corepack prepare pnpm@10 --activate
+- View images and textures, play supported audio and video, and inspect documents.
+- Preview 3D models, materials, skeletons, and animation clips.
+- Explore supported map and world data through visual layers and object inspection.
+- Extract or export resources and convert between formats supported by the loaded extensions.
+
+### Edit code and structured data
+
+- Work with text, scripts, configuration, and format-aware data views.
+- Use language features such as diagnostics, completion, navigation, and references where the
+  selected language extension provides them.
+- Inspect relationships, inherited values, and source provenance when a format exposes them.
+- Apply supported edits through revision-aware operations, with undo and redo where available.
+
+### Automate workflows
+
+- Use command-line tools for inspection, conversion, and scripted processing.
+- Connect AI assistants through the Model Context Protocol (MCP).
+- Use language services through LSP-compatible tools.
+- Build headless workflows that use the same format operations as the interactive applications.
+
+Available operations depend on the format, extension, and application configuration. Conversion
+can be partial: unsupported features and data loss should be reported rather than hidden.
+
+## Choose your workspace
+
+| Interface                            | Use it for                                                               |
+| ------------------------------------ | ------------------------------------------------------------------------ |
+| [Desktop application](apps/electron) | A dedicated asset workspace with the resource explorer and visual tools  |
+| [Web application](apps/web)          | The browser-based interface and portable asset workflows                 |
+| [VS Code extension](apps/vscode)     | Working with assets alongside source code and project files              |
+| [Command line](apps/cli)             | Scripted inspection, extraction, conversion, and validation              |
+| [MCP server](apps/mcp)               | Giving an AI client access to configured Modkit resources and operations |
+| [Language server](apps/lsp)          | Connecting supported language features to editor clients                 |
+
+These interfaces share the platform's resource and operation model. Their available capabilities
+still depend on the extensions and permissions configured for that application.
+
+## Extend the platform
+
+Extensions add file formats, archive readers and writers, asset previews, language services,
+game integrations, and authoring operations. You can use a general asset workspace or configure
+one for a particular project without embedding every game's implementation in the platform.
+
+The repository includes general-purpose extensions for archives, images, vector graphics,
+audio, video, models, structured data, and documents. Game-specific support is distributed
+separately; the [Blizzard extensions](https://github.com/hometlt/ModKit-Blizzard) are one example.
+
+Applications can load explicitly configured extension directories or use their extension
+management interface. An extension's presence does not imply that every version or feature
+of its formats is supported; inspect its published operations and diagnostics.
+
+## Build and run from source
+
+Requirements: **Node.js 22 or newer**, **pnpm 10 or newer**, and Git.
+Windows x64 is the primary validated development environment; equivalent support on other
+operating systems is not yet established.
+
+```sh
+git clone https://github.com/hometlt/ModKit.git modkit-core
+cd modkit-core
 pnpm install --frozen-lockfile
 pnpm build
-pnpm check
 ```
 
-`pnpm build` собирает рабочее дерево, а `pnpm check` запускает полный локальный набор обязательных
-проверок. После успешной сборки PWA и Electron можно запустить из исходников:
+After building, start the browser or desktop application:
 
-```powershell
+```sh
+# Web application
 pnpm --filter @modkit/web-app app:serve
+
+# Desktop application
 pnpm --filter @modkit/electron-app start
 ```
 
-Долгоживущая документация вынесена в отдельный справочный репозиторий
-[`references/modkit-docs`](../references/modkit-docs/README.md); папка `docs` внутри ядра содержит
-только документы, которые проверяются вместе с кодом.
+For command-line usage, inspect the built CLI's available commands:
 
-## Установленные игры
-
-Игровые расширения сами проверяют известные места установки. Ручной путь можно передать через
-`MODKIT_SC2_ROOT` или `MODKIT_WARZONE_ROOT`; прежние имена `MODKITX_SC2_ROOT` и
-`MODKITX_WARZONE_ROOT` временно принимаются как устаревшие совместимые варианты. Хосты также могут
-передать упорядоченные пути через `SettingsDocument.gameInstallations`. Любой найденный путь
-принимается только после проверки маркеров соответствующей игры.
-
-Нативный запуск карты SC2 — отдельное явное действие. Хост должен подтвердить установку, карту,
-исполняемый файл и активное разрешение `process-launch`; тесты используют подменённый запускатель и
-не открывают настоящую игру.
-
-## Локальный подписанный RC
-
-RC собирается с отдельным Ed25519-ключом, проверяется публичным ключом и устанавливается в
-версионное локальное хранилище. Обновление добавляет новую неизменяемую версию, а откат снова
-активирует предыдущую без её удаления. Краткие команды есть в
-[инструкции установщика](./scripts/release/INSTALL.md).
-
-## Расширения и внешние потребители
-
-Для разработки положите репозитории расширений рядом с `modkit-core` и перечислите их в общем
-`modkit.workspace.json`. Другой путь можно задать переменной, указанной у соответствующего
-источника. Пакет `packages/extension-manager` находится в этом monorepo, но не входит в обязательную
-цепочку `core`/`sdk`/`vfs`/`host` и не содержит списка игр: он читает конфигурацию, открывает источники через VFS
-(`file:`, `memory:`, `http:`, `https:`, `browser-file:` и `rapid+file:`), проверяет профиль и
-lock-файл, а затем передаёт хосту только проверенные корни.
-
-Команда `modkit-extensions roots` показывает корни без изменения файлов, а
-`modkit-extensions lock` явно создаёт точную фиксацию версий и контрольных сумм. Приложение с
-менеджером сначала получает проверенные корни, а затем передаёт их обычному Host как installed
-extensions; сам Host не импортирует менеджер.
-
-Приложение может выбрать один из двух равноправных режимов. Обычные VS Code, Electron и PWA сборки
-включают менеджер и позволяют пользователю устанавливать расширения из каталога, а фиксированные и
-автономные сборки передают заранее импортированные расширения прямо в Host и вообще не включают
-менеджер. Host получает одинаковый проверенный inventory и не различает происхождение расширения.
-
-### Встроенные модули продукта
-
-Три возможности поставляются как обычные пакеты и выбираются приложением при сборке: `packages/code`
-содержит Monaco и рабочее место кода, `packages/scene` содержит браузерный и headless 3D-рендер,
-PNG-вывод и граф связей, а `packages/uv` содержит материализацию и запись UVM/UVT с зарезервированной
-границей UVW. Они регистрируют те же contributions и services, что внешние расширения, но не входят
-в каталог Extension Manager и не могут быть удалены пользователем как игровой кодек.
-
-Пакеты приложений задают состав явно: Electron и PWA включают `code`, `scene` и `uv`; VS Code
-использует свой редактор кода и включает `scene` и `uv`; CLI и MCP также включают только `scene` и
-`uv`. Языки, LSP, игровые форматы и альтернативные providers по-прежнему остаются внешними
-contributions; `core` не импортирует Monaco, Three.js или универсальные форматы.
-
-Сетевой список, версии, подписи и CDN-ссылки хранятся отдельно в
-`modkit-extension-registry`; исходники игр остаются в репозиториях издателей.
-
-В готовых приложениях папки расширений выбираются явно: VS Code использует настройку
-`modkit.extensions`, Electron хранит пользовательские корни в настройках, CLI принимает `--ext`,
-а MCP-сервер — `--extension` или `MODKIT_MCP_EXTENSIONS`. Хост проверяет манифест и загружает код
-через изолированный backend так же, как любое другое внешнее расширение.
-
-Реальная проверка [out-of-tree расширения](./scripts/test/out-of-tree-extension.test.ts) создаёт
-чистый внешний проект и доказывает загрузку установленного артефакта без ссылки на исходники
-workspace; подробное руководство разработчика хранится в отдельном репозитории документации.
-
-## Быстрые проверки при разработке
-
-Команда `pnpm check:fast` проверяет типы и запускает независимые тесты пакетов и
-кодеков параллельно, используя не более четырёх рабочих потоков. Проверки на
-установленных играх и старом Modkit, настоящие браузеры, упаковка npm и тесты,
-которые меняют общую сборку, остаются в полном последовательном `pnpm check`
-перед коммитом или выпуском.
-
-## Отладочный запуск из VS Code
-
-Откройте корень `modkit-core`, выберите **Run and Debug** и нужную конфигурацию `Modkit Core:*`.
-Готовые профили запускают automation-host, server, CLI, MCP stdio server, PWA в Chrome, Electron,
-VS Code Extension Host и Node-композиции Web/Electron/VS Code. Для составных приложений VS Code
-предложит выбрать набор расширений; CLI по умолчанию выполняет безопасный `host-profile`, а MCP
-получает корень workspace и common plain-text extension через переменные запуска.
-
-Те же Node-профили доступны из терминала после `pnpm build`:
-
-```powershell
-pnpm debug:automation -- --set structured-text
-pnpm debug:server -- --set full-codecs
-pnpm debug:web:composition -- --set media
-pnpm debug:electron:adapter -- --set models-and-archives
-pnpm debug:vscode:adapter -- --set documents
-pnpm debug:cli -- host-profile --json
-pnpm debug:mcp
-pnpm debug:pwa -- --set structured-text --port 4173
+```sh
+node apps/cli/dist/main.js --help
 ```
 
-Adapter-профили оставляют `globalThis.modkitDebug` в Debug Console и работают до остановки сессии.
-Профили **Electron App (real window)** и **VS Code Extension (Extension Host)** запускают настоящие
-оболочки, поэтому подходят для проверки UI, IPC и lifecycle, а не только состава Host.
+To use the MCP server, configure an allowed resource root and the required extension packages.
+See the [MCP setup guide](apps/mcp/README.md) for stdio startup, content sources, and permissions.
+Source builds are development workflows; they are not a promise of a prebuilt installer or
+identical feature coverage across applications.
 
-## Границы этой версии
+## Work with your own content
 
-- Публичный релиз и публикация пакетов выполняются владельцем отдельно после личного тестирования.
-- Подтверждена только локальная работа на Windows x64; другие системы пока не заявлены.
-- Системный установщик, ярлыки и подписанные нативные приложения не входят в текущий RC.
-- Игровой код и его лицензии не встраиваются в RC платформы; их репозитории устанавливаются рядом
-  или указываются настройкой.
-- Multiverse начинается только после отдельного решения владельца и не входит в Focused GA.
-- C&C Tiberium Wars, Red Alert 3 и Beyond All Reason отложены до этапа после Multiverse.
+Open the folder or project you want to inspect and load the extensions it needs. Game content
+is supplied by your own installation or workspace; Modkit does not include commercial game files.
+Game integrations can discover supported installations, and host settings can provide explicit
+locations when needed.
+
+Start with inspection and previews. Review the target, diagnostics, and any reported loss before
+writing or converting assets. File edits, process launches, and other effectful operations follow
+the application's configured permissions.
+
+## Development
+
+```sh
+pnpm check:fast   # Type checks and the quick test selection
+pnpm check        # Full development verification, including builds and broader checks
+```
+
+Keep format-specific logic in its extension and reuse shared resource, rendering, and editing
+services. Add focused tests for behavioral changes and preserve bounds, cancellation, and
+explicit diagnostics. Some integration checks require configured extensions, local content,
+or additional development tools.
+
+## Licensing
+
+Licenses are declared by the individual components and their third-party notices. See
+[`licenses/README.md`](licenses/README.md). External extensions retain their own licenses;
+support for a game's files does not grant rights to the game's content or trademarks.
