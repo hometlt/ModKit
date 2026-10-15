@@ -35,7 +35,7 @@ import {
  * Building an inventory validates every declared contribution manifest against its contract
  * schema, then re-serialises and freezes the normalised result — three passes over each document,
  * and a window composes more than once (the host realm, the worker realm, every container it
- * opens). The work is a pure function of the document and the registered contract set, so the
+ * opens). The work is a pure function of the document and its immutable validation policy, so the
  * second composition reads the answer instead of recomputing it.
  *
  * Keyed by the document's own text, never by a digest a caller supplied: a loader that labels two
@@ -56,17 +56,16 @@ const validatedManifests = new Map<
 /** Bounded so a long session that opens many extension sets cannot grow it without limit. */
 const VALIDATED_MANIFEST_CACHE_LIMIT = 512
 
-const registryFingerprints = new WeakMap<object, string>()
+const validationRegistryKeys = new WeakMap<object, number>()
+let nextValidationRegistryKey = 0
 
-/** The registered contract set, as the part of the cache key that is not the document. */
-function registryFingerprint(registry: ContributionContractRegistry): string {
-  const known = registryFingerprints.get(registry)
+/** Equal contract coordinates do not imply equal schemas, validators or semantic policy. */
+function validationRegistryKey(registry: object): number {
+  const known = validationRegistryKeys.get(registry)
   if (known !== undefined) return known
-  const fingerprint = canonicalJsonStringify(
-    registry.list().map(entry => [entry.contract.id, entry.contract.major, entry.mode] as const),
-  )
-  registryFingerprints.set(registry, fingerprint)
-  return fingerprint
+  const key = ++nextValidationRegistryKey
+  validationRegistryKeys.set(registry, key)
+  return key
 }
 
 /** FNV-1a over the document text: a bucket, not a claim — every hit is still compared. */
@@ -328,17 +327,17 @@ export async function buildInventory(
         // Not inert JSON: `validateContributionManifest` says so properly, and nothing is cached.
         documentText = undefined
       }
+      const validationRegistry = registry.validationRegistry()
       const cacheKey =
         documentText === undefined
           ? undefined
-          : `${registryFingerprint(registry)}|${textBucket(documentText)}`
+          : `${validationRegistryKey(validationRegistry)}|${textBucket(documentText)}`
       const cachedEntry = cacheKey === undefined ? undefined : validatedManifests.get(cacheKey)
       const cached =
         cachedEntry !== undefined && cachedEntry.text === documentText ? cachedEntry : undefined
       const validated =
         cached ??
         (await (async () => {
-          const validationRegistry = registry.validationRegistry()
           const fresh = await validateContributionManifest(document, validationRegistry)
           return {
             text: documentText ?? '',

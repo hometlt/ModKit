@@ -268,9 +268,22 @@ function builtins(): readonly ContributionContractRegistration[] {
   ]
 }
 
-/** New contribution contracts are appended as complete registrations; host code stays unchanged. */
+let defaultRegistry: ReturnType<typeof createContributionContractRegistry> | undefined
+
+/**
+ * Reuse one immutable default policy so repeated compositions share validated manifests.
+ * Custom contract sets get their own registry and never change this default.
+ */
 export function createHostContributionContractRegistry(
   additional: readonly ContributionContractRegistration[] = [],
 ) {
+  if (additional.length === 0) {
+    if (defaultRegistry === undefined) {
+      const registry = createContributionContractRegistry(builtins())
+      Object.freeze(registry.validationRegistry())
+      defaultRegistry = Object.freeze(registry)
+    }
+    return defaultRegistry
+  }
   return createContributionContractRegistry([...builtins(), ...additional])
 }
