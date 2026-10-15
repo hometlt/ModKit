@@ -1388,7 +1388,15 @@ export function createLanguageSessionController(
       document: EditorLanguageDocument,
       signal?: AbortSignal,
     ): Promise<LanguageDiagnosticList | undefined> {
-      return diagnosticsFor(document, signal, true)
+      try {
+        return await diagnosticsFor(document, signal, true)
+      } catch (error) {
+        const current = documents.get(document.uri)?.document
+        // An explicit verification may outlive a dependency revision; retry the same live buffer once.
+        if (!isCancellation(error) || signal?.aborted || state !== 'ready' ||
+            current?.version !== document.version || current.text !== document.text) throw error
+        return diagnosticsFor(document, signal, true)
+      }
     },
 
     async semanticTokens(

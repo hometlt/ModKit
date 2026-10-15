@@ -598,6 +598,30 @@ describe('VS Code-free language session controller', () => {
     await controller.shutdown()
   })
 
+  it('retries explicit verification once when only the mod context advanced', async () => {
+    const workspace = fakeWorkspace()
+    const result = { diagnostics: [], isIncomplete: false }
+    const diagnostics = vi.spyOn(workspace, 'diagnostics')
+      .mockRejectedValueOnce(new OperationCancelledError('stale mod context feature result'))
+      .mockResolvedValue(result)
+    const controller = createLanguageSessionController({ workspace, routes: [ROUTE], publishDiagnostics: () => undefined })
+    await controller.initialize()
+    await expect(controller.verify(editorDocument(1))).resolves.toEqual(result)
+    expect(diagnostics).toHaveBeenCalledTimes(2)
+    await controller.shutdown()
+  })
+
+  it('does not spin when the context keeps changing during explicit verification', async () => {
+    const workspace = fakeWorkspace()
+    const diagnostics = vi.spyOn(workspace, 'diagnostics')
+      .mockRejectedValue(new OperationCancelledError('stale mod context feature result'))
+    const controller = createLanguageSessionController({ workspace, routes: [ROUTE], publishDiagnostics: () => undefined })
+    await controller.initialize()
+    await expect(controller.verify(editorDocument(1))).rejects.toBeInstanceOf(OperationCancelledError)
+    expect(diagnostics).toHaveBeenCalledTimes(2)
+    await controller.shutdown()
+  })
+
   it('refuses stale verification before asking a provider to diagnose an older revision', async () => {
     const workspace = fakeWorkspace()
     const diagnostics = vi.spyOn(workspace, 'diagnostics')
