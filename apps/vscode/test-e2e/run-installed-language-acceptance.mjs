@@ -5,6 +5,7 @@
  * An optional installed CASC probe opens read-only game documents through the native filesystem
  * provider and exports the public diagnostics report. This is API evidence, not visual acceptance;
  * latency samples describe only the observed editor commands, not a benchmark median.
+ * --source-reset-only selects the unsaved-buffer regression instead of the full language suite.
  */
 import { createHash } from 'node:crypto'
 import { spawn } from 'node:child_process'
@@ -39,6 +40,8 @@ const reportPath = resolve(
 )
 const rootsReceipt = argument('--extension-roots-receipt')
 const cascRoot = argument('--casc-root')
+if (has('--source-reset-only') && (cascRoot === undefined || has('--casc-only')))
+  throw new Error('--source-reset-only requires --casc-root and cannot be combined with --casc-only')
 if (has('--casc-only') && cascRoot === undefined)
   throw new Error('--casc-only requires --casc-root')
 if (cascRoot !== undefined && !existsSync(resolve(cascRoot)))
@@ -283,7 +286,11 @@ async function main() {
       await runTests({
         vscodeExecutablePath: executable,
         extensionDevelopmentPath: harness,
-        extensionTestsPath: join(here, 'suite', 'installed-language.cjs'),
+        extensionTestsPath: join(
+          here,
+          'suite',
+          has('--source-reset-only') ? 'source-reset.cjs' : 'installed-language.cjs',
+        ),
         launchArgs: [
           workspace,
           '--user-data-dir',

@@ -157,7 +157,7 @@ TreeNodeFacts
 } from '@modkit/sdk'
 import { createSubjectCandidateProvider, indexCacheEnabled } from '@modkit/sdk'
 import { NATIVE_MAP_ENCODER_CONTRACT } from '@modkit/sdk/maps'
-import { isModkitError } from '@modkit/core'
+import { isCancellation, isModkitError, OperationCancelledError } from '@modkit/core'
 import {
 CONTAINER_ENTRY_EXISTS,
 CONTAINER_ENTRY_NOT_FOUND,
@@ -1229,6 +1229,9 @@ async function activateModkit(
   context.subscriptions.push(containerChanges)
   // The same Explorer accepts local containers and remote VFS roots. This adapter owns no login protocol.
   let contentSources: Promise<ContentSources | undefined> | undefined
+  let contentSourceGeneration = 0
+  /** Assigned after language initialization; retire readers before their source connection closes. */
+  let resetLanguageSourceBindings: () => Promise<void> = async () => {}
   /** Installations found per game for the current composition; a recomposition forgets them. */
   const foundByGame = new Map<string, Promise<readonly SelectedContentSource[]>>()
   /** The roots the inventory loaded, one per extension, for the content-source modules they declare. */
@@ -1236,8 +1239,11 @@ async function activateModkit(
   const resetContentSources = (): void => {
     const previous = contentSources
     contentSources = undefined
+    contentSourceGeneration += 1
     foundByGame.clear()
-    void previous?.then(source => source?.dispose()).catch(() => undefined)
+    void resetLanguageSourceBindings()
+      .finally(() => previous?.then(source => source?.dispose()))
+      .catch(error => log(`[sources] retirement failed: ${error instanceof Error ? error.message : String(error)}`))
   }
   /**
    * The extensions whose content sources start with the catalogue (`modkit.contentSourcesOnStartup`);
@@ -6556,6 +6562,7 @@ async function activateModkit(
     uri: vscode.Uri,
     signal?: AbortSignal,
   ): Promise<LiveLanguageScope | undefined> => {
+    const sourceGeneration = contentSourceGeneration
     const liveScope = liveLanguageScope(uri)
     if (liveScope !== undefined) {
       resolvedLanguageScopesByDocument.set(uri.toString(), liveScope)
@@ -6563,6 +6570,8 @@ async function activateModkit(
     }
     for (const candidate of directorySubjectCandidates(uri)) {
       const scope = await openAutomaticLanguageScope(candidate, signal)
+      if (sourceGeneration !== contentSourceGeneration)
+        throw new OperationCancelledError('content sources changed while opening a language scope')
       if (scope === undefined) continue
       resolvedLanguageScopesByDocument.set(uri.toString(), scope)
       return scope
@@ -7274,7 +7283,7 @@ async function activateModkit(
    * mod context, kept open while the window lives and replaced when the scope's context is rebuilt
    * over another chain. Documents are named here as the editor names them.
    */
-  const languageModContexts = createLanguageModContexts({
+  const createLanguageContextRegistry = () => createLanguageModContexts({
     targetOf: uri => {
       let parsed: vscode.Uri
       try {
@@ -7295,7 +7304,11 @@ async function activateModkit(
           }).toString(),
     maxDocumentBytes: Number(LANGUAGE_ACTIVATION_BUDGET.maxInputBytes),
   })
-  context.subscriptions.push({ dispose: () => void languageModContexts.dispose() })
+  let languageModContexts = createLanguageContextRegistry()
+  context.subscriptions.push({ dispose: () => {
+    resetLanguageSourceBindings = async () => {}
+    void languageModContexts.dispose()
+  } })
   const dependencyFailureNotices = new Set<string>()
   /** The snapshot one key stands for, built once and remembered; callers rebase it on their request. */
   const buildLanguageSnapshot = async (
@@ -7305,8 +7318,16 @@ async function activateModkit(
     baseMods: BaseModSetting | undefined,
     snapshotKey: string,
   ): Promise<LanguageWorkspaceDocumentSourceResult> => {
+    const sourceGeneration = contentSourceGeneration
+    const registry = languageModContexts
+    const requireCurrentSources = (): void => {
+      request.signal.throwIfAborted()
+      if (sourceGeneration !== contentSourceGeneration)
+        throw new OperationCancelledError('content sources changed while building a language snapshot')
+    }
     if (scope === undefined && loose === undefined) {
       const snapshot = await workspaceLanguageDocumentSource(undefined, false).snapshot(request)
+      requireCurrentSources()
       rememberLanguageSnapshot(snapshotKey, snapshot)
       return snapshot
     }
@@ -7332,13 +7353,18 @@ async function activateModkit(
         keepContexts: true,
         signal: request.signal,
       })
-      languageModContexts.replace(scope?.contextId ?? loose ?? '', projected.contexts ?? [])
+      if (request.signal.aborted || sourceGeneration !== contentSourceGeneration) {
+        await Promise.allSettled((projected.contexts ?? []).map(context => context.dispose()))
+        requireCurrentSources()
+      }
+      registry.replace(scope?.contextId ?? loose ?? '', projected.contexts ?? [])
       // Optional warming yields to editor queries and does not fan out across retained scopes.
-      void languageModContexts.prepare(scope?.contextId ?? loose ?? '', true)
+      void registry.prepare(scope?.contextId ?? loose ?? '', true)
       for (const item of projected.diagnostics) {
         log(`[language-context] ${item.severity} ${item.code}: ${item.message}`)
       }
     } catch (error) {
+      if (isCancellation(error)) throw error
       request.signal.throwIfAborted()
       const message = error instanceof Error ? error.message : String(error)
       const notice = `${scope?.contextId ?? loose}:${message}`
@@ -7361,6 +7387,7 @@ async function activateModkit(
       composed === undefined
         ? Object.freeze({ documents: Object.freeze([]), isComplete: false })
         : await composed.snapshot(request)
+    requireCurrentSources()
     rememberLanguageSnapshot(snapshotKey, snapshot)
     log(
       `[language-context] workspace snapshot for ${request.document.uri}: accepted=${request.workspaceLanguageIds.join(',')} open=${request.workspaceDocuments.length} additional=${snapshot.documents.length} origins=${snapshot.workspaceContext?.documentOrigins.length ?? 0}`,
@@ -7502,7 +7529,7 @@ async function activateModkit(
     workspaceBudgets: LANGUAGE_WORKSPACE_BUDGET,
     subjectCandidates: languageSubjectCandidates,
     documentSource: languageDocumentSource,
-    modContexts: languageModContexts,
+    modContexts: () => languageModContexts,
     documentOrigin: document => {
       let uri: vscode.Uri
       try {
@@ -7825,6 +7852,15 @@ async function activateModkit(
       ),
   })
   await languageController.initialize()
+  resetLanguageSourceBindings = () => {
+    const previous = languageModContexts
+    languageModContexts = createLanguageContextRegistry()
+    languageWorkspace.invalidate('content sources changed')
+    clearLanguageCaches()
+    dependencyFailureNotices.clear()
+    observedLanguageContexts.clear()
+    return previous.dispose()
+  }
   context.subscriptions.push(
     registerDocumentVerification(languageController, localizer, nativeDiagnostic, log),
   )
@@ -8620,6 +8656,7 @@ async function activateModkit(
   const shutDownLanguage = async (): Promise<void> => {
     if (languageClosed) return
     languageClosed = true
+    resetLanguageSourceBindings = async () => {}
     languageDiagnostics.clear()
     await languageController.shutdown()
   }
