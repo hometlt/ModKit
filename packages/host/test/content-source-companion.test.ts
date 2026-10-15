@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { ContentSourceEntry, ContentSources } from '@modkit/vfs/content-sources'
 import { createContentSourceCompanionOrigin } from '../src/content-source-companion.js'
 import type { CompanionOrigin } from '../src/input-resolution.js'
@@ -71,6 +71,20 @@ async function read(origin: CompanionOrigin, logicalId: string) {
 }
 
 describe('companions of a file in a content source', () => {
+  it.each(['x3.host/permission-missing', 'x3.vfs/source-revision-changed', 'EACCES', 'EPERM', 'AbortError', 'TimeoutError'])
+  ('does not turn %s from exact lookup into a listed permission', async code => {
+    const error = code.endsWith('Error') ? new DOMException('refused', code) : Object.assign(new Error('refused'), { code })
+    const backing = source(files), list = vi.fn(backing.list)
+    const origin = createContentSourceCompanionOrigin({
+      contentSources: { ...backing, list, async lookup() { throw error } },
+      target: { sourceId: 'local:game', path: 'Models/E_HERO_01.msh' },
+    })
+    const enumerate = async () => {
+      for await (const _ of origin.enumerate('current-mount', { prefix: 'Textures/E_BL_AC_08.dds', exactPath: true })) {}
+    }
+    await expect(enumerate()).rejects.toBe(error)
+    expect(list).not.toHaveBeenCalled()
+  })
   it('uses exact lookup for a hidden qualified path without listing its folder', async () => {
     const backing = source(files)
     let lookups = 0

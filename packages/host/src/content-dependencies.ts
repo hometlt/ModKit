@@ -49,6 +49,7 @@ import {
   validatedLanguageWorkspaceSemanticInputs,
 } from './language/index.js'
 import { artifactByteSourceFromBytes } from './source-bridge.js'
+import { lookupExactContentSourceFile } from './content-source-exact-lookup.js'
 import {
   normalizeCompanionLogicalId,
   type CompanionEnumerationOptions,
@@ -210,6 +211,8 @@ function createContentDependencyOrigin(
   const overlay = Object.freeze([...mounts].reverse())
   const locations = new Map<string, IndexedMount>()
   const fold = (value: string) => value.toLowerCase()
+  // A numeric layer qualifier cannot become a relative folder of another dependency mount.
+  const layerQualified = (path: string): boolean => /^content-dependencies\/\d+(?:\/|$)/iu.test(path)
   const relativeRequest = (mount: IndexedMount, logicalId: string): string | undefined => {
     if (logicalId === '') return ''
     if (fold(logicalId) === fold(mount.logicalPrefix)) return ''
@@ -220,13 +223,18 @@ function createContentDependencyOrigin(
     mount: IndexedMount,
     logicalPrefix: string,
     signal?: AbortSignal,
+    exactPath = false,
   ): Promise<readonly CompanionOriginEntry[]> => {
     throwIfAborted(signal)
     const relativePrefix = relativeRequest(mount, logicalPrefix)
     if (relativePrefix === undefined) return Object.freeze([])
     const parent = relativePrefix.slice(0, relativePrefix.lastIndexOf('/') + 1).replace(/\/$/u, '')
     let entries: readonly ContentSourceEntry[]
-    if (relativePrefix === '' && contentSources.files !== undefined) {
+    const exact = exactPath && relativePrefix !== '' && !relativePrefix.endsWith('/')
+      ? await lookupExactContentSourceFile(contentSources, mount.sourceId, joinPath(mount.sourcePath, relativePrefix), signal)
+      : undefined
+    if (exact !== undefined) entries = [exact]
+    else if (relativePrefix === '' && contentSources.files !== undefined) {
       const files: ContentSourceEntry[] = []
       const cursors = new Set<string>()
       let cursor: string | undefined
@@ -299,8 +307,9 @@ function createContentDependencyOrigin(
       const emitted = new Set<string>()
       for (const mount of overlay) {
         const rootScoped = relativeRequest(mount, prefix) !== undefined
+        if (layerQualified(prefix) && !rootScoped) continue
         const query = rootScoped ? prefix : joinPath(mount.logicalPrefix, prefix)
-        for (const found of await findEntries(mount, query, signal)) {
+        for (const found of await findEntries(mount, query, signal, enumeration.exactPath === true)) {
           // A path that names no layer is a lookup through the overlay, as ModContext.locate does:
           // it is answered in the caller's spelling, by the strongest layer that holds it.
           const entry = rootScoped
@@ -320,6 +329,9 @@ function createContentDependencyOrigin(
     async open(logicalId: string, signal?: AbortSignal): Promise<Lease<ArtifactSource>> {
       throwIfAborted(signal)
       const normalized = normalizeCompanionLogicalId(logicalId)
+      const candidates = layerQualified(normalized)
+        ? overlay.filter(candidate => relativeRequest(candidate, normalized) !== undefined)
+        : overlay
       // A layer-qualified id names its layer; any other path is relative to every layer (overlay).
       const qualifiedIn = (candidate: IndexedMount) =>
         relativeRequest(candidate, normalized) === undefined
@@ -328,13 +340,11 @@ function createContentDependencyOrigin(
       let mount = locations.get(fold(normalized))
       // the exact path first: a source that fetches on demand names an asset no listing holds yet
       if (mount === undefined && contentSources.lookup !== undefined) {
-        for (const candidate of overlay) {
+        for (const candidate of candidates) {
           const relative = relativeRequest(candidate, qualifiedIn(candidate))
           if (relative === undefined || relative === '') continue
-          const entry = await contentSources
-            .lookup(candidate.sourceId, joinPath(candidate.sourcePath, relative))
-            .catch(() => undefined)
-          throwIfAborted(signal)
+          const entry = await lookupExactContentSourceFile(contentSources, candidate.sourceId,
+            joinPath(candidate.sourcePath, relative), signal)
           if (entry !== undefined && !entry.directory) {
             mount = candidate
             break
@@ -342,7 +352,7 @@ function createContentDependencyOrigin(
         }
       }
       if (mount === undefined) {
-        for (const candidate of overlay) {
+        for (const candidate of candidates) {
           const qualified = qualifiedIn(candidate)
           const found = await findEntries(candidate, qualified, signal)
           if (found.some(entry => fold(entry.logicalId) === fold(qualified))) {

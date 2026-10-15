@@ -31,6 +31,7 @@ import {
 import type { Inventory } from './inventory.js'
 import { artifactByteSourceFromBytes } from './source-bridge.js'
 import type { SubjectInputResolver } from './subject-open.js'
+import { lookupExactContentSourceFile, normalizedContentSourcePath as normalized } from './content-source-exact-lookup.js'
 
 /**
  * Extensions of the archive formats a namespace codec opens. A loose folder named like one of them
@@ -100,7 +101,6 @@ export interface ContentSourceCompanionOriginOptions {
   readonly maximumEntryBytes?: number
 }
 
-const normalized = (path: string): string => path.replaceAll('\\', '/').replace(/^\/+|\/+$/gu, '')
 const join = (base: string, path: string): string =>
   base === '' ? path : path === '' ? base : `${base}/${path}`
 const parentOf = (path: string): string => path.slice(0, Math.max(0, path.lastIndexOf('/')))
@@ -200,18 +200,9 @@ export function createContentSourceCompanionOrigin(
     const parent = prefix.slice(0, prefix.lastIndexOf('/') + 1)
     if (enumeration.exactPath === true && contentSources.lookup !== undefined) {
       const requested = join(base, normalized(prefix))
-      let entry: ContentSourceEntry | undefined
-      try {
-        entry = await contentSources.lookup(sourceId, requested)
-      } catch {
-        // Lookup is optional; a failed probe must not replace the existing one-folder listing.
-        throwIfAborted(signal)
-      }
-      throwIfAborted(signal)
+      const entry = await lookupExactContentSourceFile(contentSources, sourceId, requested, signal)
       if (entry !== undefined && !entry.directory) {
-        const canonical = normalized(entry.path)
-        if (fold(canonical) !== fold(requested))
-          throw new TypeError('content-source lookup returned an entry outside the requested path')
+        const canonical = entry.path
         const logicalId = base === '' ? canonical : canonical.slice(base.length + 1)
         if (
           scope === 'sibling-directory' ||
