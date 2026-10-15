@@ -1308,7 +1308,7 @@ export async function renderHeadless(
         ]
   // Independent road depth ignores terrain but preserves front/back and overlapping road surfaces.
   let terrainDepth: Float32Array | undefined
-  const painterDepth = painter.length === 0 ? undefined : new Float32Array(width * height).fill(Infinity)
+  let painterDepth: Float32Array | undefined
   const defaultLighting = context.previewLighting
   const materialRigs = new Map(
     [...(materialLighting ?? [])].map(
@@ -1338,7 +1338,11 @@ export async function renderHeadless(
     )
       context.opaqueDepth = context.depth.slice()
     const savedDepth = context.depth
-    if (terrainPainterLayers?.has(draw.primitive.id)) context.depth = painterDepth!
+    if (terrainPainterLayers?.has(draw.primitive.id)) {
+      // Seed only after ground draws: cell layers test foreground terrain without changing it.
+      painterDepth ??= savedDepth.slice()
+      context.depth = painterDepth
+    }
     if (draw.program === undefined) renderPrimitive(context, draw.primitive)
     else renderMaterialDraw(context, draw, request)
     if (terrainPainterLayers?.has(draw.primitive.id)) context.depth = savedDepth

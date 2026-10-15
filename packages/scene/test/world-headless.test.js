@@ -147,25 +147,26 @@ it('renders a world plan without a GPU: its ground and its models as the plan pl
   assert.ok(Math.abs(redX / red - 32) < 6, `the model drawn around x ${redX / red}`)
 })
 
-it('paints terrain decals above the ground without hiding later models or changing ground depth', async () => {
+it('paints receiver-coincident terrain decals without hiding models or changing ground depth', async () => {
+  const width=64,height=48
   const plan = createWorldWebGlPlan({items: [...terrain, object],models:new Map([['post',model]])})
   const ground = plan.opaqueTriangles
   const positions = ground.positions.slice(0,plan.terrainOpaqueVertices*3)
-  for(let i=1;i<positions.length;i+=3)positions[i]-=.01
   const overlay = {...ground,positions,normals:ground.normals.slice(0,positions.length),
     colors:Float32Array.from({length:positions.length/3*4},(_,i)=>i%4===3?1:1),
     textureCoordinates:new Float32Array(positions.length/3*2),
     texture:{id:'green-road',width:1,height:1,rgba:Uint8Array.of(0,255,0,255)}}
   const painter = {...plan,terrainDecalTriangles:[overlay]}
-  const base=await renderWorldHeadless(plan,{width:64,height:48})
-  const frame=await renderWorldHeadless(painter,{width:64,height:48})
+  const base=await renderWorldHeadless(plan,{width,height})
+  const frame=await renderWorldHeadless(painter,{width,height})
   let green=0,red=0,baseRed=0
   for(let i=0;i<frame.rgba.length;i+=4){
     if(frame.rgba[i+1]>frame.rgba[i]*2&&frame.rgba[i+1]>frame.rgba[i+2]*2)green++
     if(frame.rgba[i]>150&&frame.rgba[i+1]<60&&frame.rgba[i+2]<60)red++
     if(base.rgba[i]>150&&base.rgba[i+1]<60&&base.rgba[i+2]<60)baseRed++
   }
-  assert.ok(green>64*48*.05,'clipped decal wins against terrain depth')
+  assert.ok(green>width*height*.05,'clipped decal wins against terrain depth')
+  assert.ok(baseRed>0,'model occlusion oracle is nonempty')
   assert.equal(red,baseRed,'ordinary model occlusion remains intact')
   assert.equal(worldHeadlessScene(painter).scene.primitives.find(p=>p.id==='world/decal-0').depthBias,undefined)
 })
@@ -345,4 +346,56 @@ it('assigns the object rig to raw CPU fallback batches as well as prefixed model
   const scene = worldHeadlessScene(plan)
   assert.deepEqual(scene.materialLighting.get('world/opaque-models').ambientLight, [0, 0, 1])
   assert.equal(scene.materialLighting.has('world/ground'), false)
+})
+
+it('keeps clipped cell layers in order and hides distant layers behind foreground terrain', async () => {
+  // A native cell layer has material and clipping coordinates, with no authored elevation.
+  function receiverInput(ridge) {
+    const items=[]
+    for(let z=0;z<5;z++)for(let x=0;x<5;x++){
+      const height=ridge&&z===3?2:0
+      items.push({...terrain[0],id:`receiver:${x}:${z}`,x,y:z,heightBase:height,
+        uvwPosition:{x,y:height,z}})
+    }
+    for(let z=0;z<4;z++)for(let x=0;x<4;x++)items.push({
+      facet:'terrain-materials',id:`layers:${x}:${z}`,layerId:'materials',
+      coordinateSpaceId:'height-grid',x,y:z,layers:[
+        {materialId:'green',tile:{column:0,row:0}},
+        ...(x===2&&z===(ridge?1:2)?[
+          {materialId:'blue',tile:{column:0,row:0},cornerAlpha:[1,1,1,1],
+            clipPolygon:[[.15,.15],[.85,.15],[.85,.85],[.15,.85]]},
+          {materialId:'yellow',tile:{column:0,row:0},cornerAlpha:[1,1,1,1],
+            clipPolygon:[[.3,.3],[.7,.3],[.7,.7],[.3,.7]]},
+        ]:[]),
+      ],
+    })
+    const texels={green:[20,170,40,255],blue:[25,45,220,255],yellow:[245,220,20,255]}
+    return {items,terrainMaterials:Object.keys(texels).map(materialId=>({
+      materialId,baseColorResourceId:materialId,atlas:{rows:1},
+    })),terrainTextures:new Map(Object.entries(texels).map(([id,rgba])=>[
+      id,{id,width:1,height:1,rgba:Uint8Array.from(rgba)},
+    ]))}
+  }
+  // Both layer colours must be visible; the later yellow layer occupies the blue layer's centre.
+  function layerPixels(frame) {
+    const counts={blue:0,yellow:0}
+    for(let i=0;i<frame.rgba.length;i+=4){
+      const [r,g,b]=frame.rgba.subarray(i,i+3)
+      if(b>100&&b>r*2&&b>g*2)counts.blue++
+      if(r>100&&g>100&&b<80)counts.yellow++
+    }
+    return counts
+  }
+  const camera=(elevation,ridge)=>({azimuth:Math.PI/2,elevation,zoom:1.5,target:[0,0,0],
+    frame:{center:[2,ridge?1:0,2],radius:3}})
+  const flat=createWorldWebGlPlan(receiverInput(false))
+  assert.equal(flat.terrainDecalTriangles.length,2,'both authored clipped layers were generated')
+  const visible=layerPixels(await renderWorldHeadless(flat,{width:128,height:96,camera:camera(1.1,false)}))
+  assert.ok(visible.blue>10&&visible.yellow>5,'clipped coincident layers and their order remain visible')
+  const ridge=createWorldWebGlPlan(receiverInput(true))
+  assert.equal(ridge.terrainDecalTriangles.length,2,'hidden-layer oracle is not empty')
+  const low=layerPixels(await renderWorldHeadless(ridge,{width:128,height:96,camera:camera(.3,true)}))
+  assert.deepEqual(low,{blue:0,yellow:0},'near terrain occludes the distant cell layers')
+  const high=layerPixels(await renderWorldHeadless(ridge,{width:128,height:96,camera:camera(.9,true)}))
+  assert.ok(high.blue>0&&high.yellow>0,'the distant layers remain visible from above the ridge')
 })

@@ -53,6 +53,7 @@ it.each([Math.PI / 2, -Math.PI / 2])(
     const plan = {
       ...createWorldWebGlPlan({ items: [] }),
       texturedTriangles: [textured('ground', Uint8Array.of(255, 0, 0, 255))],
+      terrainTexturedBatches: 1,
       terrainDecalTriangles: [
         textured('lower', Uint8Array.of(0, 0, 255, 255), 0.25),
         textured('upper', Uint8Array.of(0, 255, 0, 255)),

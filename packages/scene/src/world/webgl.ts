@@ -13797,11 +13797,11 @@ function drawWorldWebGlWithResources(
     applyWebGlDepthBias(gl, TERRAIN_DEPTH_BIAS)
     for (const item of plan.splatTriangles) drawSplatBatch(resources, program, item)
     if (plan.splatOverlayTriangles.length > 0 || plan.terrainDecalTriangles.length > 0) {
-      // Upper terrain layers are a painter pass over ground. Clipping produces different
-      // triangles, so equal polygon offsets do not guarantee equal rasterized depth.
-      // Models are drawn later and still occlude these layers using the unchanged ground depth.
+      // Cell layers share their receiver's surface; the ground's positive depth bias keeps
+      // clipped layers visible while nearer terrain still occludes distant cell layers.
+      // Models follow using the unchanged ground depth; painting layers never writes depth.
       applyWebGlDepthBias(gl, undefined)
-      gl.depthFunc(gl.ALWAYS)
+      gl.depthFunc(gl.LEQUAL)
       gl.enable(gl.BLEND)
       gl.blendEquation(gl.FUNC_ADD)
       gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
