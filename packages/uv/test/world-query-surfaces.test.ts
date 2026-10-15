@@ -49,6 +49,11 @@ it('retains model geometry and non-rendered navigation heights through detached 
   const packed = await materializeWorldToUvpMap(source, options)
   if (packed.state !== 'materialized') throw new Error(JSON.stringify(packed.refusals))
   expect(packed.packagedModelCount).toBe(1); expect(packed.observedTerrainItems).toBe(0)
+  const modelPath = [...packed.entries.keys()].find(path => path.endsWith('.uvm.glb'))!
+  const damagedModel = packed.entries.get(modelPath)!.slice()
+  damagedModel[damagedModel.length - 1] = damagedModel[damagedModel.length - 1]! ^ 1
+  const damaged = new Map(packed.entries); damaged.set(modelPath, damagedModel)
+  await expect(openUvpMapBundle(damaged, { snapshotId: 'damaged-model' })).rejects.toThrow('hash mismatch')
   const reopened = await openUvpMapBundle(new Map([...packed.entries].map(([name, bytes]) => [name, bytes.slice()])),
     { snapshotId: 'query-detached', modelDecoder: createEmbeddedUvmWorldModelDecoder() })
   const again = await materializeWorldToUvw(reopened.source, options)

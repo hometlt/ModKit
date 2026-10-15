@@ -18,6 +18,18 @@
 
 ## Проверки
 
+Canonical JSON имеет одного Core owner `canonicalJsonStringify`: прежний L6 default
+сохраняет UTF8 order/pretty/LF/undefined omission, явный profile:jcs реализует RFC8785
+UTF16 order/compact/strict JSON. Второй encoder UVP не создавать. `parseJsonDocument`
+использует native JSON.parse для синтаксиса и общий bounded token scan для duplicate keys,
+escaped aliases и Unicode; UVW и UVP manifest читаются через него. Формат UVW canonicalizes
+документ до identity. World package content.hash — domain-separated JCS `uvp/artifact/uvw@1`,
+UVM/media остаются raw SHA256. Writer и open используют одного владельца worldArtifactDigest.
+Whitespace/property order не меняют логическую идентичность; изменение значений и повторные
+ключи отказывают. Старый ошибочный raw-only UVW hash не принимается через fallback:
+нужен явный повторный экспорт/миграция. Container hash не подменяет logical artifact hash.
+
+
 Heightfield `role: query` — явно объявленная поверхность запросов, никогда не ground.
 Один UV reader и один scalar reconstruction хранят ground и query; SDK/source различают
 terrain/surfaces facets, чтобы любой renderer не создавал землю. Query допускает singleton

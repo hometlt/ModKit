@@ -1,7 +1,7 @@
 /** Core-owned UVP map packaging and detached reopen: resources used by weights, ordered tiles,
  * rasters, water and authored models; excluded partial facets do not demand unused media.
  * Admitted world node/sample budgets survive resource binding and detached source creation. */
-import { canonicalJsonStringify, compareUtf8, ModkitError } from '@modkit/core'
+import { canonicalJsonStringify, parseJsonDocument, compareUtf8, ModkitError } from '@modkit/core'
 import { createZipArchive, type ZipWriteBudget } from '@modkit/codec-kit/container/zip'
 import { sha256Hex } from '@modkit/codec-kit/crypto/digest'
 import { encodePng } from '@modkit/codec-kit/raster'
@@ -201,7 +201,7 @@ function parseManifest(bytes: Uint8Array, maximum: number): UvpMapManifest {
     fail('x3.uv/uvp-budget-exceeded', 'UVP manifest exceeds its byte budget', MANIFEST_PATH)
   let value: unknown
   try {
-    value = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes)) as unknown
+    value = parseJsonDocument(new TextDecoder('utf-8', { fatal: true }).decode(bytes))
   } catch (cause) {
     throw new ModkitError({
       code: 'x3.uv/uvp-manifest-invalid',
@@ -328,6 +328,13 @@ function worldResourceId(spaceId: string, resourceId: string): string {
 
 async function digest(bytes: Uint8Array): Promise<`sha256:${string}`> {
   return `sha256:${await sha256Hex(bytes)}`
+}
+
+/** Normative UVP JSON identity over the already canonicalized UVW owner document.
+ * Raw UVM/media integrity remains owned by digest(bytes); this is not a container hash. */
+async function worldArtifactDigest(document: UvwProfileDocument): Promise<`sha256:${string}`> {
+  return digest(new TextEncoder().encode(canonicalJsonStringify({ schemaVersion: 1,
+    domain: 'uvp/artifact/uvw@1', value: document }, { profile: 'jcs' })))
 }
 
 /**
@@ -1427,7 +1434,7 @@ export async function materializeWorldToUvpMap(
       for (const texture of model.textures) uniqueMedia.set(texture.mediaPath, texture)
     const uniqueModels = new Map([...modelBySource.values()].map(model => [model.modelPath, model]))
     const contents: UvpMapManifestContent[] = [
-      Object.freeze({ family: 'uvw', path: WORLD_PATH, hash: await digest(worldBytes) }),
+      Object.freeze({ family: 'uvw', path: WORLD_PATH, hash: await worldArtifactDigest(document) }),
       ...[...uniqueModels.values()]
         .sort((left, right) => left.modelPath.localeCompare(right.modelPath))
         .map(model =>
@@ -1463,6 +1470,8 @@ export async function materializeWorldToUvpMap(
       namespaces: Object.freeze([namespace]),
     })
     const manifestBytes = new TextEncoder().encode(`${canonicalJsonStringify(manifest)}\n`)
+    // Generated metadata must satisfy the same strict Unicode/JSON contract as detached reads.
+    parseManifest(manifestBytes, 1024 * 1024)
     const entries = new Map<string, Uint8Array>([
       [MANIFEST_PATH, manifestBytes.slice()],
       [WORLD_PATH, worldBytes.slice()],
@@ -1555,7 +1564,7 @@ export async function openUvpMapBundle(
     const bytes = entries.get(content.path)
     if (bytes === undefined)
       fail('x3.uv/uvp-entry-missing', `UVP bundle is missing ${content.path}`)
-    if ((await digest(bytes)) !== content.hash)
+    if (content.family !== 'uvw' && (await digest(bytes)) !== content.hash)
       fail('x3.uv/uvp-hash-mismatch', `UVP content hash mismatch for ${content.path}`)
   }
   const worldContent = manifest.contents.find(content => content.family === 'uvw')!
@@ -1566,7 +1575,9 @@ export async function openUvpMapBundle(
     maxBytes: options.maxWorldBytes ?? 64 * 1024 * 1024,
     maxNodes: Math.max(DEFAULT_UVW_PARSE_LIMITS.maxNodes, options.maxWorldBytes ?? 64 * 1024 * 1024),
   }
-  const document = parseUvwProfile(worldBytes, worldLimits)
+  const document = canonicalizeUvwProfile(parseUvwProfile(worldBytes, worldLimits), worldLimits)
+  if ((await worldArtifactDigest(document)) !== worldContent.hash)
+    fail('x3.uv/uvp-hash-mismatch', `UVP logical artifact hash mismatch for ${worldContent.path}`)
   const packagedResources = new Map(
     manifest.contents
       .filter(content => content.family === 'media' || content.family === 'uvm')

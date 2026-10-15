@@ -52,7 +52,7 @@ export {
 } from './source-span.js'
 export { compareUtf8, sortedUtf8, uniqueSortedUtf8 } from './ordering.js'
 export { deepFreeze } from './immutability.js'
-export { canonicalJsonStringify } from './canonical-json.js'
+export { canonicalJsonStringify, parseJsonDocument } from './canonical-json.js'
 export {
   snapshotJson,
   type JsonSnapshotBudget,

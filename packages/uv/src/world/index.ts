@@ -4,7 +4,7 @@ import type { MapLatticeOverview } from '@modkit/sdk/maps'
  * bounded validation, weights/rasters, ordered atlas tiles with corner coverage and sample UVs.
  * Per-layer custom UVs/clips and coverage-only texture alpha are not part of this profile. */
 
-import { canonicalJsonStringify, compareUtf8, ModkitError } from '@modkit/core'
+import { canonicalJsonStringify, parseJsonDocument, compareUtf8, ModkitError } from '@modkit/core'
 import type { MapModelComponentPlacement } from '@modkit/sdk'
 import { isNavigationFlagEncoding } from '@modkit/sdk/maps'
 import type {
@@ -2670,7 +2670,7 @@ export function parseUvwProfile(
   }
   let value: unknown
   try {
-    value = JSON.parse(text) as unknown
+    value = parseJsonDocument(text, options.maxDepth ?? DEFAULT_UVW_PARSE_LIMITS.maxDepth)
   } catch (cause) {
     throw new ModkitError({
       code: 'x3.uv/uvw-json-invalid',
