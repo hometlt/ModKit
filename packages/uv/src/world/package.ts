@@ -445,6 +445,8 @@ interface PortableBinding {
     | 'normalResourceId'
     | 'specularResourceId'
     | 'causticsResourceId'
+    | 'causticsFrameResourceIds'
+  readonly frameIndex?: number
   readonly sourceResourceId: string
   readonly localResourceId: string
   readonly mediaPath: string
@@ -669,7 +671,7 @@ function sourceChannel(
 
 function sourceWaterChannel(
   material: MapWaterMaterialDefinition,
-  channel: 'baseColorResourceId' | 'secondaryColorResourceId' | 'causticsResourceId',
+  channel: 'baseColorResourceId' | 'secondaryColorResourceId' | 'causticsResourceId' | 'normalResourceId',
 ): string | undefined {
   return material[channel]
 }
@@ -771,10 +773,15 @@ function rewriteDocument(
             ...layer,
             materials: layer.materials.map(material => {
               const updates = layerBindings.filter(binding => binding.materialId === material.id)
-              return updates.reduce(
-                (current, update) => ({ ...current, [update.channel]: update.localResourceId }),
-                material,
-              )
+              const frames = updates.filter(update => update.frameIndex !== undefined)
+                .sort((left, right) => left.frameIndex! - right.frameIndex!)
+              return {
+                ...updates.reduce((current, update) => update.frameIndex === undefined
+                  ? { ...current, [update.channel]: update.localResourceId } : current, material),
+                ...(frames.length === 0 ? {} : {
+                  causticsFrameResourceIds: frames.map(frame => frame.localResourceId),
+                }),
+              }
             }),
           }
         }
@@ -988,6 +995,7 @@ export async function materializeWorldToUvpMap(
     const bindings: PortableBinding[] = []
     const weightBindings: PortableWeightRasterBinding[] = []
     const unpackagedWaterResourceIds = new Set<string>()
+    const packagedWaterFieldCounts = new Map<string, number>()
     const encodedBySource = new Map<
       string,
       Readonly<{
@@ -1166,12 +1174,12 @@ export async function materializeWorldToUvpMap(
           throw new TypeError(
             `water material ${material.materialId} is absent from output layer ${target.layer.id}`,
           )
-        for (const channel of [
-          'baseColorResourceId',
-          'secondaryColorResourceId',
-          'causticsResourceId',
-        ] as const) {
-          const resourceId = sourceWaterChannel(material, channel)
+        const channels = [
+          ...(['baseColorResourceId', 'secondaryColorResourceId', 'causticsResourceId', 'normalResourceId'] as const)
+            .map(channel => ({ channel, resourceId: sourceWaterChannel(material, channel), frameIndex: undefined as number | undefined })),
+          ...(material.causticsFrameResourceIds ?? []).map((resourceId, frameIndex) => ({ channel: 'causticsFrameResourceIds' as const, resourceId, frameIndex })),
+        ]
+        for (const { channel, resourceId, frameIndex } of channels) {
           if (resourceId === undefined) continue
           let encoded = encodedBySource.get(resourceId)
           if (encoded === undefined) {
@@ -1186,6 +1194,9 @@ export async function materializeWorldToUvpMap(
               options.signal,
             )
             if (result.state !== 'decoded') {
+              if (frameIndex !== undefined)
+                return refuse('water-caustics-sequence-incomplete',
+                  `water caustics frame ${String(frameIndex)} could not be packaged: ${resourceId}`)
               unpackagedWaterResourceIds.add(resourceId)
               continue
             }
@@ -1213,6 +1224,7 @@ export async function materializeWorldToUvpMap(
               layerKind: 'water',
               materialId: targetId,
               channel,
+              ...(frameIndex === undefined ? {} : { frameIndex }),
               sourceResourceId: resourceId,
               localResourceId: encoded.localResourceId,
               mediaPath: encoded.mediaPath,
@@ -1220,6 +1232,18 @@ export async function materializeWorldToUvpMap(
               digest: encoded.digest,
             }),
           )
+        }
+        // These two fields may have been omitted by standalone UVW because their source IDs
+        // were not package-local. Count their recovery only after this material's media closed.
+        const restoredFields = [
+          ...(material.normalResourceId !== undefined && !material.normalResourceId.startsWith('uvw-resource:') &&
+            !unpackagedWaterResourceIds.has(material.normalResourceId) ? ['normalResourceId'] : []),
+          ...(material.causticsFrameResourceIds?.some(id => !id.startsWith('uvw-resource:')) === true
+            ? ['causticsFrameResourceIds'] : []),
+        ]
+        for (const field of restoredFields) {
+          const path = `world.water.materials.${field}`
+          packagedWaterFieldCounts.set(path, (packagedWaterFieldCounts.get(path) ?? 0) + 1)
         }
       }
     }
@@ -1456,7 +1480,10 @@ export async function materializeWorldToUvpMap(
         ...(unpackagedWaterResourceIds.size === 0 ? [] : ['world.water-material-resources']),
       ]),
       omittedObjects: materialized.omittedObjects,
-      lostFields: materialized.lostFields,
+      lostFields: Object.freeze(materialized.lostFields.flatMap(field => {
+        const count = field.count - (packagedWaterFieldCounts.get(field.path) ?? 0)
+        return count > 0 ? [Object.freeze({ path: field.path, count })] : []
+      })),
       refusalCodes: Object.freeze([]) as readonly [],
       refusals: Object.freeze([]) as readonly [],
     })

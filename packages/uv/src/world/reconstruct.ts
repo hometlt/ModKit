@@ -277,7 +277,7 @@ const KEPT_FIELDS: Readonly<Record<string, ReadonlySet<string>>> = Object.freeze
     'materialId', 'label', 'classification', 'shorelineMode', 'color',
     'baseColorResourceId', 'baseColorResource', 'secondaryColorResourceId', 'secondaryColorResource',
     'uvScale', 'scroll', 'colorFalloff', 'specularity', 'specularScale', 'reflectivityPower',
-    'normalResource', 'causticsResourceId', 'causticsResource', 'causticsFrameResources',
+    'normalResourceId', 'normalResource', 'causticsFrameResourceIds', 'causticsFalloff', 'causticsResourceId', 'causticsResource', 'causticsFrameResources',
     'causticsScale', 'causticsFramesPerSecond', 'receiveShadows',
   ]),
   terrain: new Set(['x', 'y', 'heightBase', 'heightAdjustment', 'uvwPosition', 'cliffFace']),
@@ -379,11 +379,17 @@ function noteUnretainedFields(
 ): void {
   const kept = KEPT_FIELDS[kind]
   if (kept === undefined) return
-  for (const [key, value] of Object.entries(record))
-    if (value !== undefined && !PLACING_FIELDS.includes(key) && !kept.has(key)) {
+  for (const [key, value] of Object.entries(record)) {
+    const unretainedWaterResource = kind === 'water.materials' && (
+      (key === 'normalResourceId' && typeof value === 'string' && !value.startsWith('uvw-resource:')) ||
+      (key === 'causticsFrameResourceIds' && Array.isArray(value) &&
+        value.some(id => typeof id !== 'string' || !id.startsWith('uvw-resource:')))
+    )
+    if (value !== undefined && !PLACING_FIELDS.includes(key) && (!kept.has(key) || unretainedWaterResource)) {
       const path = `world.${kind}.${key}`
       lost.set(path, (lost.get(path) ?? 0) + 1)
     }
+  }
 }
 
 /** Counts, per facet field, the items whose field the UVW leaves out (see KEPT_FIELDS). */
@@ -818,6 +824,10 @@ async function reconstructLayer(
                   ...(material.reflectivityPower === undefined
                     ? {}
                     : { reflectivityPower: material.reflectivityPower }),
+                  ...(resources(material.normalResourceId) === undefined ? {} : { normalResourceId: resources(material.normalResourceId)! }),
+                  ...(material.causticsFrameResourceIds === undefined || material.causticsFrameResourceIds.some(value => resources(value) === undefined)
+                    ? {} : { causticsFrameResourceIds: Object.freeze(material.causticsFrameResourceIds.map(value => resources(value)!)) }),
+                  ...(material.causticsFalloff === undefined ? {} : { causticsFalloff: material.causticsFalloff }),
                   ...(resources(material.causticsResourceId) === undefined
                     ? {}
                     : { causticsResourceId: resources(material.causticsResourceId)! }),

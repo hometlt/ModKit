@@ -777,6 +777,13 @@ export function createUvwWorldSceneSource(
                     ...(material.reflectivityPower === undefined
                       ? {}
                       : { reflectivityPower: material.reflectivityPower }),
+                    ...(material.normalResourceId === undefined ? {} : {
+                      normalResourceId: worldResourceId(record.space.id, material.normalResourceId),
+                    }),
+                    ...(material.causticsFrameResourceIds === undefined ? {} : {
+                      causticsFrameResourceIds: Object.freeze(material.causticsFrameResourceIds.map(id => worldResourceId(record.space.id, id))),
+                    }),
+                    ...(material.causticsFalloff === undefined ? {} : { causticsFalloff: material.causticsFalloff }),
                     ...(material.causticsResourceId === undefined
                       ? {}
                       : {

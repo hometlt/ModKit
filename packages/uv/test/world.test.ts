@@ -30,6 +30,25 @@ function errorCode(run: () => unknown): string | undefined {
 }
 
 describe('UVW 1.0 production document', () => {
+  it('validates water frame sequences and resource closure without deduplicating frames', async () => {
+    const input = JSON.parse(new TextDecoder().decode(await fixture('uvw-profile-renderable-world.uvw.json')))
+    const water = input.spaces[0].layers.find((layer: { kind: string }) => layer.kind === 'water')
+    const resources = input.spaces[0].layers.find((layer: { kind: string }) => layer.kind === 'resources')
+    const id = resources.resources[0].id
+    water.materials = [{ id: 'water-extra', color: [0, 0, 1, 1], normalResourceId: id,
+      causticsFrameResourceIds: [id, id], causticsFalloff: 0 }]
+    for (const zone of water.zones) zone.materialId = 'water-extra'
+    expect(() => validateUvwProfile(input)).not.toThrow()
+    for (const frames of [[], [null], ['missing-resource'], 1]) {
+      water.materials[0].causticsFrameResourceIds = frames
+      expect(() => validateUvwProfile(input)).toThrow()
+    }
+    water.materials[0].causticsFrameResourceIds = [id]
+    for (const falloff of [-1, null, '0']) {
+      water.materials[0].causticsFalloff = falloff
+      expect(() => validateUvwProfile(input)).toThrow()
+    }
+  })
   it('admits only generated cliff doodads and preserves their marker without creating authored placements', async () => {
     const input = JSON.parse(new TextDecoder().decode(await fixture('uvw-profile-renderable-world.uvw.json')))
     const objects = input.spaces[0].layers.find((item: { kind: string }) => item.kind === 'objects')

@@ -789,11 +789,12 @@ describe('production world to UVW materializer', () => {
     if (result.state !== 'materialized') return
     expect(result.lostFields).toContainEqual({ path: 'world.terrain-materials.materials.overlayAlpha', count: 1 })
     const catalogLosses = [
-      ...['compositing', 'occludedLikeTerrain', 'causticsFalloff', 'normalResourceId', 'causticsFrameResourceIds']
+      ...['compositing', 'occludedLikeTerrain', 'normalResourceId', 'causticsFrameResourceIds']
         .map(field => ({ path: `world.water.materials.${field}`, count: 1 })),
     ]
     expect(result.lostFields).toEqual(expect.arrayContaining(catalogLosses))
     expect(result.lostFields.map(field => field.path)).not.toContain('world.water.materials.color')
+    expect(result.lostFields.map(field => field.path)).not.toContain('world.water.materials.causticsFalloff')
     expect(result.lostFields.map(field => field.path)).not.toContain('world.terrain-materials.materials.baseColorFactor')
     const layer = parseUvwProfile(result.bytes).spaces[0]?.layers.find(item => item.kind === 'terrain-materials')
     expect(layer?.kind).toBe('terrain-materials')
@@ -809,6 +810,7 @@ describe('production world to UVW materializer', () => {
     const water = parseUvwProfile(result.bytes).spaces[0]?.layers.find(item => item.kind === 'water')
     expect(water?.kind).toBe('water')
     if (water?.kind === 'water') {
+      expect(water.materials?.[0]?.causticsFalloff).toBe(0)
       expect(water.materials?.[0]?.id).toBe('material-pool-blue')
       expect(water.zones[0]?.materialId).toBe('material-pool-blue')
     }

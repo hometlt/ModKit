@@ -203,7 +203,7 @@ function sourceWithWeightRaster() {
   })
 }
 
-function sourceWithDualWaterTextures() {
+function sourceWithDualWaterTextures(animated = false) {
   const main = document.spaces[0]!
   const resourceLayer = main.layers.find(layer => layer.kind === 'resources')!
   if (resourceLayer.kind !== 'resources') throw new Error('fixture resource layer missing')
@@ -229,6 +229,9 @@ function sourceWithDualWaterTextures() {
                 uvScale: [1 / 512, 1 / 512, 1 / 640, 1 / 640],
                 scroll: [1 / 80, 1 / 40, 0, -1 / 40],
                 colorFalloff: 0,
+                ...(animated ? { normalResourceId: 'source-water-primary',
+                  causticsFrameResourceIds: ['source-water-primary', 'source-water-secondary', 'source-water-primary'],
+                  causticsFramesPerSecond: 8, causticsFalloff: 0 } : {}),
               },
             ],
             zones: [
@@ -487,6 +490,70 @@ describe('portable UVP map bundle', () => {
     })
     expect(decoded?.state).toBe('decoded')
     if (decoded?.state === 'decoded') expect(decoded.texture.rgba).toEqual(rgba)
+  })
+
+  it('packages ordered repeated caustics frames and water normals without losing their channels', async () => {
+    const packed = await materializeWorldToUvpMap(sourceWithDualWaterTextures(true), options)
+    expect(packed.state).toBe('materialized')
+    if (packed.state !== 'materialized') throw new Error(JSON.stringify(packed.refusals))
+    expect(packed.packagedTextureCount).toBe(3)
+    expect(packed.unpackagedWaterResourceIds).toEqual([])
+    const reopened = await openUvpMapBundle(new Map([...packed.entries].map(([path, bytes]) => [path, bytes.slice()])),
+      { snapshotId: 'detached-animated-water', rasterResources })
+    const layer = reopened.document.spaces[0]?.layers.find(layer => layer.kind === 'water')
+    if (layer?.kind !== 'water') throw new Error('water layer missing')
+    expect(layer.materials?.[0]).toMatchObject({ normalResourceId: 'water-media-0001',
+      causticsFrameResourceIds: ['water-media-0001', 'water-media-0002', 'water-media-0001'],
+      causticsFramesPerSecond: 8, causticsFalloff: 0 })
+    const catalog = (await reopened.source.page({ facet: 'layers', limit: 32 })).items
+      .find(item => item.facet === 'layers' && item.kind === 'water')
+    expect(catalog?.facet === 'layers' ? catalog.waterMaterials?.[0] : undefined).toMatchObject({
+      normalResourceId: 'uvw-resource:main/water-media-0001',
+      causticsFrameResourceIds: ['uvw-resource:main/water-media-0001', 'uvw-resource:main/water-media-0002', 'uvw-resource:main/water-media-0001'],
+      causticsFalloff: 0 })
+    for (const id of ['water-media-0001', 'water-media-0002']) {
+      const texture = await reopened.source.texture?.(`uvw-resource:main/${id}`, { maxBytes: 1024 })
+      expect(texture?.state).toBe('decoded')
+      if (texture?.state === 'decoded') expect(texture.texture.rgba).toEqual(rgba)
+    }
+  })
+
+  it('refuses a missing caustics frame instead of shortening or reordering the sequence', async () => {
+    const original = sourceWithDualWaterTextures(true)
+    const packed = await materializeWorldToUvpMap({ ...original,
+      async texture(resourceId, request, signal) {
+        if (resourceId.endsWith('/source-water-secondary'))
+          return { state: 'unresolved' as const, diagnostics: [] }
+        return original.texture!(resourceId, request, signal)
+      },
+    }, options)
+    expect(packed.state).toBe('refused')
+    if (packed.state === 'refused') expect(packed.refusals).toContainEqual(expect.objectContaining({
+      code: 'water-caustics-sequence-incomplete',
+    }))
+  })
+
+  it('recovers nonportable water IDs without reporting successfully packaged channels as lost', async () => {
+    const original = sourceWithDualWaterTextures(true)
+    const packed = await materializeWorldToUvpMap({ ...original,
+      async page(request, signal) {
+        const page = await original.page(request, signal)
+        return { ...page, items: page.items.map(item => item.facet !== 'layers' || item.kind !== 'water' || item.waterMaterials === undefined ? item : {
+          ...item, waterMaterials: item.waterMaterials.map(material => ({ ...material,
+            normalResourceId: 'source-water-primary',
+            causticsFrameResourceIds: ['source-water-primary', 'source-water-secondary', 'source-water-primary'],
+          })),
+        }) }
+      },
+      async texture(resourceId, request, signal) {
+        return original.texture!(resourceId.startsWith('uvw-resource:') ? resourceId : `uvw-resource:main/${resourceId}`, request, signal)
+      },
+    }, options)
+    expect(packed.state).toBe('materialized')
+    if (packed.state !== 'materialized') throw new Error(JSON.stringify(packed.refusals))
+    expect(packed.lostFields.some(field => /water.materials.(normalResourceId|causticsFrameResourceIds)$/.test(field.path))).toBe(false)
+    const water = packed.document.spaces[0]?.layers.find(layer => layer.kind === 'water')
+    expect(water?.kind === 'water' ? water.materials?.[0]?.causticsFrameResourceIds?.length : undefined).toBe(3)
   })
 
   it('packages both independent water texture channels and reopens them without the source', async () => {

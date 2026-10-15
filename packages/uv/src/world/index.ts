@@ -170,6 +170,9 @@ export interface UvwWaterMaterial {
   readonly specularity?: number
   readonly specularScale?: number
   readonly reflectivityPower?: number
+  readonly normalResourceId?: string
+  readonly causticsFrameResourceIds?: readonly string[]
+  readonly causticsFalloff?: number
   readonly causticsResourceId?: string
   readonly causticsScale?: readonly [number, number]
   readonly causticsFramesPerSecond?: number
@@ -1324,6 +1327,9 @@ function waterLayer(
                 'specularity',
                 'specularScale',
                 'reflectivityPower',
+                'normalResourceId',
+                'causticsFrameResourceIds',
+                'causticsFalloff',
                 'causticsResourceId',
                 'causticsScale',
                 'causticsFramesPerSecond',
@@ -1389,6 +1395,14 @@ function waterLayer(
             const specularScale = nonnegative('specularScale')
             const reflectivityPower = positiveValue('reflectivityPower')
             const causticsFramesPerSecond = nonnegative('causticsFramesPerSecond')
+            const causticsFalloff = nonnegative('causticsFalloff')
+            const normalResourceId = material['normalResourceId'] === undefined ? undefined
+              : layerId(material['normalResourceId'], `${materialPath}.normalResourceId`, state, depth + 3)
+            const causticsFrameResourceIds = material['causticsFrameResourceIds'] === undefined ? undefined
+              : array(material['causticsFrameResourceIds'], `${materialPath}.causticsFrameResourceIds`, state, depth + 3)
+                .map((value, index) => layerId(value, `${materialPath}.causticsFrameResourceIds[${String(index)}]`, state, depth + 4))
+            if (causticsFrameResourceIds?.length === 0)
+              fail('water caustics frame sequence must not be empty', `${materialPath}.causticsFrameResourceIds`)
             return Object.freeze({
               id: layerId(material['id'], `${materialPath}.id`, state, depth + 3),
               ...(label === undefined ? {} : { label }),
@@ -1433,6 +1447,9 @@ function waterLayer(
                       depth + 3,
                     ),
                   }),
+              ...(normalResourceId === undefined ? {} : { normalResourceId }),
+              ...(causticsFrameResourceIds === undefined ? {} : { causticsFrameResourceIds: Object.freeze(causticsFrameResourceIds) }),
+              ...(causticsFalloff === undefined ? {} : { causticsFalloff }),
               ...(causticsScale === undefined ? {} : { causticsScale }),
               ...(causticsFramesPerSecond === undefined ? {} : { causticsFramesPerSecond }),
               ...(material['receiveShadows'] === undefined
@@ -2390,6 +2407,8 @@ function space(
           material.baseColorResourceId,
           material.secondaryColorResourceId,
           material.causticsResourceId,
+          material.normalResourceId,
+          ...(material.causticsFrameResourceIds ?? []),
         ]) {
           if (resourceId !== undefined && !resourceIds.has(resourceId))
             fail(
