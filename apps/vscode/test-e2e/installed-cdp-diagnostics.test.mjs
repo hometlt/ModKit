@@ -8,6 +8,7 @@ import {
   webviewDocumentExpression,
   imageDiagnosticDocument,
   displayedDdsRaster,
+  readDdsMetadata,
 } from './installed-cdp-diagnostics.mjs'
 
 test('empty target list and fetch errors remain distinguishable', async () => {
@@ -25,6 +26,75 @@ test('empty target list and fetch errors remain distinguishable', async () => {
     }),
     { status: 'target-list-unavailable' },
   )
+})
+
+test('DDS metadata follows visible sidebar sections, not unrelated filtering/writer selects', () => {
+  const sidebar = { hidden: true }
+  const makeSection = values => {
+    const body = {
+      hidden: true,
+      scrollIntoView() {},
+      getBoundingClientRect: () => ({ width: 200, height: 80 }),
+    }
+    const header = {
+      getAttribute: () => (body.hidden ? 'false' : 'true'),
+      click: () => {
+        body.hidden = false
+      },
+    }
+    return {
+      querySelector: selector => (selector.includes('section-header') ? header : body),
+      querySelectorAll: () =>
+        values.map(([label, value]) => ({
+          querySelector: tag => ({ textContent: tag === 'dt' ? label : value }),
+        })),
+    }
+  }
+  const image = makeSection([
+    ['Dimensions', '4 × 4'],
+    ['Aspect', '1.000'],
+  ])
+  const format = makeSection([
+    ['Format', 'DDS · DXT1'],
+    ['Mip levels', '1'],
+    ['Channels', '4 × 8-bit'],
+  ])
+  const doc = {
+    querySelector: selector =>
+      selector.includes('data-side')
+        ? {
+            click: () => {
+              sidebar.hidden = false
+            },
+          }
+        : selector.includes('section-id="image"')
+          ? image
+          : selector.includes('section-id="format"')
+            ? format
+            : sidebar,
+  }
+  const evidence = readDdsMetadata(doc)
+  assert.equal(evidence.surface, 'image-sidebar-metadata')
+  assert.equal(evidence.presentation, 'sidebar-sections')
+  assert.equal(evidence.image[0].value, '4 × 4')
+  assert.equal(sidebar.hidden, false)
+  const absent = { querySelector: () => null }
+  assert.equal(readDdsMetadata(absent), undefined)
+  const wrong = makeSection([
+    ['Format', 'PNG'],
+    ['Mip levels', '1'],
+    ['Channels', '4 × 8-bit'],
+  ])
+  const original = doc.querySelector
+  doc.querySelector = selector =>
+    selector.includes('section-id="format"') ? wrong : original(selector)
+  assert.equal(readDdsMetadata(doc), undefined)
+  doc.querySelector = original
+  image.querySelector('[data-mk-part="media-shell.section-body"]').getBoundingClientRect = () => ({
+    width: 0,
+    height: 0,
+  })
+  assert.equal(readDdsMetadata(doc), undefined, 'hidden layout must not pass on DOM text alone')
 })
 
 test('DDS probe samples native 4x4 exact-red texels from a centered viewport at multiple DPRs; backgrounds cannot pass', () => {

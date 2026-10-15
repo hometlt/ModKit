@@ -42,6 +42,7 @@ import {
   collectFailureDiagnostics,
   webviewDocumentExpression,
   displayedDdsRaster,
+  readDdsMetadata,
 } from './installed-cdp-diagnostics.mjs'
 
 import {
@@ -2817,13 +2818,7 @@ function assertDds(probe) {
   }
   if ((probe.raster?.opaquePixels ?? 0) <= 0)
     throw new Error('DDS raster contains no visible pixel')
-  if (
-    !Array.isArray(probe.stages) ||
-    !probe.stages.includes('Image') ||
-    !probe.stages.includes('Metadata')
-  ) {
-    throw new Error(`DDS did not expose Image and Metadata stages: ${JSON.stringify(probe.stages)}`)
-  }
+  if (probe.imageSurface !== true) throw new Error('DDS Image surface is not mounted')
 }
 
 // ------------------------------------------------------------------- Wave 2B media and editors
@@ -3775,6 +3770,19 @@ async function launchGeneration(generation) {
     receipt.ddsFailureDiagnostics = await collectFailureDiagnostics(port)
     throw new Error('installed DDS webview published no machine-readable subject receipt')
   }
+  const ddsProgress = { generation, a7: acceptance.a7, image: null, metadata: null }
+  ;(receipt.ddsProgress ??= []).push(ddsProgress)
+  const captureDdsFailure = async () => {
+    ddsProgress.failureDiagnostics = await collectFailureDiagnostics(port)
+    await page
+      .screenshot({ path: screenshotPath, fullPage: false })
+      .then(() => {
+        ddsProgress.screenshot = portablePath(screenshotPath)
+      })
+      .catch(() => {
+        ddsProgress.screenshotError = 'screenshot capture failed'
+      })
+  }
   assertInstalledA7(acceptance.a7, installedA7Inventory)
 
   const imageStageSelected = await waitFor(
@@ -3783,14 +3791,7 @@ async function launchGeneration(generation) {
         port,
         webviewDocumentExpression(
           `(doc, win) => {
-            for (const select of doc.querySelectorAll('select')) {
-              const option = Array.from(select.options).find(item => (item.textContent || '').trim() === 'Image');
-              if (!option) continue;
-              select.value = option.value;
-              select.dispatchEvent(new win.Event('change', { bubbles: true }));
-              return true;
-            }
-            return undefined;
+            return doc.querySelector('[data-mk-part="image.canvas"]') ? true : undefined;
           }`,
         ),
       )
@@ -3809,7 +3810,7 @@ async function launchGeneration(generation) {
             if (!raster) return undefined;
             return {
               acceptance: JSON.parse(JSON.stringify(win.__MODKIT_ACCEPTANCE__)),
-              stages: Array.from(doc.querySelectorAll('select option')).map(item => (item.textContent || '').trim()),
+              imageSurface: !!doc.querySelector('[data-mk-part="image"]'),
               raster,
               text: (doc.body?.innerText || '').slice(0, 4000),
             };
@@ -3840,8 +3841,20 @@ async function launchGeneration(generation) {
     }
     throw new Error('installed DDS Image stage rendered no readable raster canvas')
   }
+  ddsProgress.image = {
+    selected: probe.acceptance?.subject?.selected,
+    identity: probe.acceptance?.subject?.descriptor?.identity,
+    raster: probe.raster,
+  }
+  await page
+    .screenshot({ path: screenshotPath, fullPage: false })
+    .then(() => {
+      ddsProgress.screenshot = portablePath(screenshotPath)
+    })
+    .catch(() => {
+      ddsProgress.screenshotError = 'screenshot capture failed'
+    })
   assertDds(probe)
-  if (generation === 1) await page.screenshot({ path: screenshotPath, fullPage: false })
 
   const metadataSelected = await waitFor(
     async () => {
@@ -3849,14 +3862,7 @@ async function launchGeneration(generation) {
         port,
         webviewDocumentExpression(
           `(doc, win) => {
-            for (const select of doc.querySelectorAll('select')) {
-              const option = Array.from(select.options).find(item => (item.textContent || '').trim() === 'Metadata');
-              if (!option) continue;
-              select.value = option.value;
-              select.dispatchEvent(new win.Event('change', { bubbles: true }));
-              return true;
-            }
-            return undefined;
+            return (${readDdsMetadata.toString()})(doc) ? true : undefined;
           }`,
         ),
       )
@@ -3864,29 +3870,29 @@ async function launchGeneration(generation) {
     },
     { timeoutMs: 20_000 },
   )
-  if (metadataSelected !== true)
-    throw new Error('installed DDS Metadata stage could not be selected')
+  if (metadataSelected !== true) {
+    await captureDdsFailure()
+    throw new Error('installed DDS Metadata sidebar could not be revealed')
+  }
   const metadata = await waitFor(
     async () => {
       const values = await webviewValues(
         port,
         webviewDocumentExpression(
           `doc => {
-            const selected = Array.from(doc.querySelectorAll('select')).some(
-              select => (select.selectedOptions[0]?.textContent || '').trim() === 'Metadata',
-            );
-            if (!selected) return undefined;
-            const text = (doc.body?.innerText || '').slice(0, 4000);
-            return /dds|format|width|height/i.test(text) && text.length > 80 ? text : undefined;
+            return (${readDdsMetadata.toString()})(doc);
           }`,
         ),
       )
-      return values.find(value => typeof value === 'string')
+      return values.find(value => value?.surface === 'image-sidebar-metadata')
     },
     { timeoutMs: 20_000, stepMs: 500 },
   )
-  if (metadata === undefined)
-    throw new Error('installed DDS Metadata stage exposed no non-empty format metadata')
+  if (metadata === undefined) {
+    await captureDdsFailure()
+    throw new Error('installed DDS Metadata sidebar exposed no verified DDS format metadata')
+  }
+  ddsProgress.metadata = metadata
 
   let corruptInput = null
   if (generation === 1) {
@@ -3905,12 +3911,8 @@ async function launchGeneration(generation) {
        */
       await activateEditor(page, corruptDdsPath)
       try {
-        await chooseQuickInput(
-          page,
-          'modkit open active file in workbench',
-          /^Modkit: Open Active File in Workbench$/u,
-        )
-        corruptRoute = 'workspace open -> command palette -> Modkit: Open Active File in Workbench'
+        await reopenWithModkit(page, corruptDdsPath)
+        corruptRoute = 'workspace open -> Reopen Editor With -> Modkit Asset Preview'
       } catch (paletteError) {
         corruptRoute =
           'workspace open -> default editor association (palette route unavailable: ' +
@@ -4273,9 +4275,9 @@ async function launchGeneration(generation) {
     dds: {
       selected: probe.acceptance.subject.selected,
       identity: probe.acceptance.subject.descriptor.identity,
-      stages: probe.stages,
+      imageSurface: probe.imageSurface,
       raster: probe.raster,
-      metadataExcerpt: compact(metadata, 1_200),
+      metadata,
     },
     screenshot: generation === 1 ? portablePath(screenshotPath) : null,
     packageInstallGate: {

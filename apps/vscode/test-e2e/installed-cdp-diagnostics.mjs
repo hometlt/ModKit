@@ -126,6 +126,48 @@ export function displayedDdsRaster(doc, win) {
   }
 }
 
+/** Native custom editors expose Metadata as visible sidebar facts, not select options. */
+export function readDdsMetadata(doc) {
+  const sidebar = doc.querySelector('[data-mk-part="media-shell.sidebar"]')
+  if (!sidebar) return undefined
+  if (sidebar.hidden)
+    doc.querySelector('[data-mk-part="media-shell.toggle"][data-side="right"]')?.click()
+  const sections = ['image', 'format'].map(id =>
+    doc.querySelector(`[data-mk-part="media-shell.section"][data-section-id="${id}"]`),
+  )
+  if (sections.some(section => !section)) return undefined
+  for (const section of sections) {
+    const header = section.querySelector('[data-mk-part="media-shell.section-header"]')
+    if (header?.getAttribute('aria-expanded') === 'false') header.click()
+    const body = section.querySelector('[data-mk-part="media-shell.section-body"]')
+    if (body?.hidden !== false) return undefined
+    body.scrollIntoView({ block: 'nearest' })
+    const box = body.getBoundingClientRect()
+    if (box.width <= 0 || box.height <= 0) return undefined
+  }
+  if (sidebar.hidden) return undefined
+  const rows = sections.map(section =>
+    Array.from(section.querySelectorAll('[data-mk-part="metadata.row"]'))
+      .slice(0, 32)
+      .map(row => ({
+        label: (row.querySelector('dt')?.textContent ?? '').trim().slice(0, 120),
+        value: (row.querySelector('dd')?.textContent ?? '').trim().slice(0, 512),
+      })),
+  )
+  if (
+    !rows[0].some(row => /^4\s*×\s*4$/u.test(row.value)) ||
+    !rows[1].some(row => /\bDDS\b/iu.test(row.value)) ||
+    rows[1].filter(row => row.label && row.value).length < 3
+  )
+    return undefined
+  return {
+    surface: 'image-sidebar-metadata',
+    presentation: 'sidebar-sections',
+    image: rows[0],
+    format: rows[1],
+  }
+}
+
 export function probeFailureTarget(target, Socket = WebSocket) {
   return new Promise(resolve => {
     const contexts = []
