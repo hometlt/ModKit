@@ -1,3 +1,4 @@
+import { WORLD_MAX_TERRAIN_WEIGHT_RASTERS } from '@modkit/sdk/maps'
 import { validateLatticeOverview } from '@modkit/sdk/maps'
 import type { MapLatticeOverview } from '@modkit/sdk/maps'
 /** Core-owned reader and canonical writer for the normative UVW 1.0 spatial profile:
@@ -1168,7 +1169,7 @@ function terrainMaterialsLayer(
       : array(item['weightRasters'], `${path}.weightRasters`, state, depth + 1)
   if (samples === undefined && (rasterValues === undefined || rasterValues.length === 0))
     fail('terrain materials layer must contain samples or weightRasters', path)
-  if (rasterValues !== undefined && (rasterValues.length === 0 || rasterValues.length > 16))
+  if (rasterValues !== undefined && (rasterValues.length === 0 || rasterValues.length > WORLD_MAX_TERRAIN_WEIGHT_RASTERS))
     fail('terrain materials layer must contain one to sixteen weight rasters', `${path}.weightRasters`)
   const rasterResourceIds = new Set<string>()
   const rasterMaterialIds = new Set<string>()

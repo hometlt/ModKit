@@ -1017,6 +1017,10 @@ export interface MapTerrainMaterialDefinition {
   readonly uvTransform?: MapTerrainUvTransform
 }
 
+/** UVW terrain transport capacity: four material channels per exact RGBA weight raster. */
+export const WORLD_MAX_TERRAIN_WEIGHT_RASTERS = 16
+export const WORLD_MAX_TERRAIN_MATERIALS = WORLD_MAX_TERRAIN_WEIGHT_RASTERS * 4
+
 /**
  * GPU-ready blend raster. Channels name materials in RGBA order; with `sum` normalization the
  * weights of all of a map's rasters add up to one at each texel.

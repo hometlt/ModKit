@@ -1,3 +1,4 @@
+import { WORLD_MAX_TERRAIN_WEIGHT_RASTERS } from '@modkit/sdk/maps'
 import { isTerrainBoundCliffItem } from '@modkit/sdk/maps'
 /**
  * Core common world renderer: retained terrain/atlas/blend/decal geometry, clipped water,
@@ -1876,7 +1877,7 @@ function pushSplatTriangle(
  * Weight rasters the exact raster splat draws: two per draw (eight layers), each later draw blended
  * over the first, up to 64 layers; past that the cells fall back to their own weights.
  */
-export const WORLD_MAX_TERRAIN_WEIGHT_RASTERS = 16
+export { WORLD_MAX_TERRAIN_WEIGHT_RASTERS }
 
 /** Neutral stand-in for a splat layer whose base-color texture did not resolve. */
 const MISSING_TERRAIN_LAYER_TEXTURE: SceneRendererTexture = Object.freeze({
