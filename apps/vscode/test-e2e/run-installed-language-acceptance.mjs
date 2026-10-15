@@ -319,7 +319,8 @@ async function main() {
     console.log(`installed SC2 language acceptance: PASS; receipt ${reportPath}`)
     if (has('--keep')) console.log(`kept acceptance workspace: ${scratch}`)
   } finally {
-    if (!has('--keep')) rmSync(scratch, { recursive: true, force: true })
+    // Electron may briefly retain profile handles after the test process exits.
+    if (!has('--keep')) rmSync(scratch, { recursive: true, force: true, maxRetries: 10, retryDelay: 250 })
   }
 }
 
