@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { readPreviewLighting, samplePreviewLighting } from '../src/render/preview-lighting.js'
+import { readPreviewLighting, samplePreviewLighting, sampleLightGeometry } from '../src/render/preview-lighting.js'
 import { readUvmSceneLights } from '../src/uvm/lights.js'
 import { renderHeadless } from '../src/render/headless.js'
 
@@ -14,6 +14,47 @@ const point = {
   attenuationEnd: 4,
   decayExponent: 2,
 }
+test('neutral light geometry preserves distance, range and fade without preview material policy', () => {
+  assert.deepEqual(sampleLightGeometry(directional, [10, 20, 30]), {
+    vector: [0, 0, 1], distance: 1, attenuation: 1,
+  })
+  assert.deepEqual(sampleLightGeometry(point, [0, 0, 0]), {
+    vector: [0, 0, 2], distance: 2, attenuation: 0.25,
+  })
+  for (const [overrides, attenuation] of [
+    [{ range: 2 }, 0.25], [{ range: 1.999 }, 0], [{ range: 0 }, 0.25],
+    [{ attenuationStart: undefined }, 1], [{ attenuationEnd: undefined }, 1],
+    [{ attenuationStart: 4, attenuationEnd: 0 }, 1],
+    [{ attenuationStart: 2, attenuationEnd: 2 }, 1],
+    [{ decayExponent: 0 }, 0.5], [{ decayExponent: undefined }, 0.5],
+    [{ color: [100, 5, 3] }, 0.25],
+  ]) assert.equal(sampleLightGeometry({ ...point, ...overrides }, [0, 0, 0]).attenuation, attenuation)
+  assert.deepEqual(sampleLightGeometry({ ...point, position: [0, 0, 0] }, [0, 0, 0]), {
+    vector: [0, 0, 0], distance: 0, attenuation: 1,
+  })
+  // Preserve the sampler's existing missing-position fallback; admission still refuses it.
+  assert.deepEqual(sampleLightGeometry({ ...point, position: undefined }, [0, 0, 0]), {
+    vector: [0, 0, 1], distance: 1, attenuation: 1,
+  })
+  assert.deepEqual(sampleLightGeometry({ ...directional, direction: [0, 3, 4] }, [0, 0, 0]), {
+    vector: [0, 3, 4], distance: 5, attenuation: 1,
+  })
+})
+
+test('neutral spot geometry retains cone center, edge, equal and missing angle semantics', () => {
+  const spot = { ...point, type: 'spot', direction: [0, 0, -1], innerConeAngle: 0.4, outerConeAngle: 1.2 }
+  assert.equal(sampleLightGeometry(spot, [0, 0, 0]).attenuation, 0.25)
+  assert.equal(sampleLightGeometry({ ...spot, direction: [0, 0, 1] }, [0, 0, 0]).attenuation, 0)
+  for (const overrides of [{ innerConeAngle: undefined }, { outerConeAngle: undefined },
+    { outerConeAngle: 0 }, { innerConeAngle: 0.8, outerConeAngle: 0.8 },
+    { innerConeAngle: 1.2, outerConeAngle: 0.4 }])
+    assert.equal(sampleLightGeometry({ ...spot, ...overrides }, [0, 0, 0]).attenuation, 0.25)
+  assert.equal(sampleLightGeometry({ ...spot, position: [0, 0, 0] }, [0, 0, 0]).attenuation, 0)
+  const inner = Math.cos(0.2), outer = Math.cos(0.6), cosine = (inner + outer) / 2
+  const middle = sampleLightGeometry({ ...spot, position: [2 * Math.sqrt(1 - cosine ** 2), 0, 2 * cosine] }, [0, 0, 0])
+  assert.ok(Math.abs(middle.attenuation - 0.125) < 1e-12)
+})
+
 test('preview lighting preserves full directional, distance/decay, cone and four-light average equations', () => {
   assert.deepEqual(
     samplePreviewLighting(readPreviewLighting([directional]), [0, 0, 1], [0, 0, 0]),

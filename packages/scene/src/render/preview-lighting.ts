@@ -1,3 +1,6 @@
+/** Shared CPU/GLSL light geometry and the existing bounded preview-light policy.
+ * Spatial samples contain vector, distance and attenuation only. Admission, uniforms, preview
+ * diffuse floor, color clamping and averaging remain separate from material BRDF evaluation. */
 import type { SceneRendererLight } from '@modkit/sdk/renderer'
 
 type Vec3 = readonly [number, number, number]
@@ -82,6 +85,66 @@ export function readPreviewLighting(
   }
 }
 
+/** Spatial sample of an already admitted light. Caller owns validation and lifetime; no BRDF,
+ * normal/color policy, normalization, light-count limit or preview floor is applied here. */
+export function sampleLightGeometry(light: SceneRendererLight, position: Vec3): Readonly<{
+  vector: Vec3
+  distance: number
+  attenuation: number
+}> {
+  const local = light.type !== 'directional' && light.position !== undefined
+  const vector: Vec3 =
+    local && light.position !== undefined
+      ? [
+          light.position[0] - position[0],
+          light.position[1] - position[1],
+          light.position[2] - position[2],
+        ]
+      : light.direction
+  const distance = Math.hypot(...vector)
+  let attenuation = 1
+  if (local) {
+    if (light.range !== undefined && light.range > 0 && distance > light.range) attenuation = 0
+    else if (
+      light.attenuationStart !== undefined &&
+      light.attenuationEnd !== undefined &&
+      light.attenuationEnd > light.attenuationStart
+    ) {
+      const fade =
+        1 -
+        clamp(
+          (distance - light.attenuationStart) / (light.attenuationEnd - light.attenuationStart),
+        )
+      attenuation =
+        light.decayExponent !== undefined && light.decayExponent > 0
+          ? Math.pow(fade, light.decayExponent)
+          : fade
+    }
+    if (
+      light.type === 'spot' &&
+      light.innerConeAngle !== undefined &&
+      light.outerConeAngle !== undefined &&
+      light.outerConeAngle > 0
+    ) {
+      const inner = Math.cos(
+        Math.max(0, Math.min(light.innerConeAngle, light.outerConeAngle)) / 2,
+      )
+      const outer = Math.cos(Math.max(light.innerConeAngle, light.outerConeAngle) / 2)
+      const cosine =
+        distance > 0
+          ? -(
+              light.direction[0] * vector[0] +
+              light.direction[1] * vector[1] +
+              light.direction[2] * vector[2]
+            ) / distance
+          : 0
+      const t = clamp((cosine - outer) / (inner - outer))
+      attenuation *= inner <= outer + 1e-6 ? (cosine >= outer ? 1 : 0) : t * t * (3 - 2 * t)
+    }
+  }
+  return { vector, distance, attenuation }
+}
+
 /** Pinned MK2 fixtureLightColor/lightAttenuation/lightConeAttenuation equations
  * (webgl-core commit 1a14ba4eddd0ae88de273348ebd44cfb98a0581d). GPU uses the same bounded
  * color/decay policy here: this corrects the old GPU omission of decay and unclamped light RGB. */
@@ -91,56 +154,7 @@ export function samplePreviewLighting(rig: PreviewLighting, normal: Vec3, positi
       nLength > 0 ? [normal[0] / nLength, normal[1] / nLength, normal[2] / nLength] : [0, 0, 1]
   const total = [0, 0, 0]
   for (const light of rig.lights) {
-    const local = light.type !== 'directional' && light.position !== undefined
-    const vector: Vec3 =
-      local && light.position !== undefined
-        ? [
-            light.position[0] - position[0],
-            light.position[1] - position[1],
-            light.position[2] - position[2],
-          ]
-        : light.direction
-    const distance = Math.hypot(...vector)
-    let attenuation = 1
-    if (local) {
-      if (light.range !== undefined && light.range > 0 && distance > light.range) attenuation = 0
-      else if (
-        light.attenuationStart !== undefined &&
-        light.attenuationEnd !== undefined &&
-        light.attenuationEnd > light.attenuationStart
-      ) {
-        const fade =
-          1 -
-          clamp(
-            (distance - light.attenuationStart) / (light.attenuationEnd - light.attenuationStart),
-          )
-        attenuation =
-          light.decayExponent !== undefined && light.decayExponent > 0
-            ? Math.pow(fade, light.decayExponent)
-            : fade
-      }
-      if (
-        light.type === 'spot' &&
-        light.innerConeAngle !== undefined &&
-        light.outerConeAngle !== undefined &&
-        light.outerConeAngle > 0
-      ) {
-        const inner = Math.cos(
-          Math.max(0, Math.min(light.innerConeAngle, light.outerConeAngle)) / 2,
-        )
-        const outer = Math.cos(Math.max(light.innerConeAngle, light.outerConeAngle) / 2)
-        const cosine =
-          distance > 0
-            ? -(
-                light.direction[0] * vector[0] +
-                light.direction[1] * vector[1] +
-                light.direction[2] * vector[2]
-              ) / distance
-            : 0
-        const t = clamp((cosine - outer) / (inner - outer))
-        attenuation *= inner <= outer + 1e-6 ? (cosine >= outer ? 1 : 0) : t * t * (3 - 2 * t)
-      }
-    }
+    const { vector, distance, attenuation } = sampleLightGeometry(light, position)
     const strength =
       (distance === 0
         ? 0.25
@@ -154,8 +168,26 @@ export function samplePreviewLighting(rig: PreviewLighting, normal: Vec3, positi
   return [component(0), component(1), component(2)]
 }
 
-/** The same policy in GLSL; uniform arrays have a fixed, validated four-light ceiling. */
-export const PREVIEW_LIGHT_GLSL = `
+/** Shared spatial equations only; caller supplies its admitted fields and BRDF independently. */
+export const LIGHT_GEOMETRY_GLSL = `
+void sceneLightGeometry(int type, vec3 direction, vec3 lightPosition, vec4 f, vec2 cone,
+  vec3 position, out vec3 v, out float d, out float attenuation) {
+  bool local=type!=0;
+  v=local?lightPosition-position:direction;
+  d=length(v); attenuation=1.0;
+  if(local) {
+    if(f.x>0.0 && d>f.x) attenuation=0.0;
+    else if(f.z>f.y) { float fade=1.0-clamp((d-f.y)/(f.z-f.y),0.0,1.0); attenuation=f.w>0.0?pow(fade,f.w):fade; }
+    if(type==2 && cone.y>0.0 && cone.x>=0.0) {
+      float inner=cos(max(0.0,min(cone.x,cone.y))*0.5), outer=cos(max(cone.x,cone.y)*0.5);
+      float cosine=d>0.0?-dot(direction,v)/d:0.0;
+      attenuation*=inner<=outer+0.000001?step(outer,cosine):smoothstep(outer,inner,cosine);
+    }
+  }
+}`
+
+/** The same preview policy in GLSL; uniform arrays retain their validated four-light ceiling. */
+export const PREVIEW_LIGHT_GLSL = `${LIGHT_GEOMETRY_GLSL}
 uniform int previewLightingEnabled;
 uniform int previewLightCount;
 uniform vec3 previewAmbient;
@@ -170,20 +202,9 @@ vec3 previewLighting(vec3 normal, vec3 position) {
   float nl=length(normal); vec3 n=nl>0.0?normal/nl:vec3(0.0,0.0,1.0);
   for(int i=0;i<4;i++) {
     if(i>=previewLightCount) break;
-    bool local=previewTypes[i]!=0;
-    vec3 v=local?previewPositions[i]-position:previewDirections[i];
-    float d=length(v), attenuation=1.0;
-    if(local) {
-      vec4 f=previewFades[i];
-      if(f.x>0.0 && d>f.x) attenuation=0.0;
-      else if(f.z>f.y) { float fade=1.0-clamp((d-f.y)/(f.z-f.y),0.0,1.0); attenuation=f.w>0.0?pow(fade,f.w):fade; }
-      vec2 cone=previewCones[i];
-      if(previewTypes[i]==2 && cone.y>0.0 && cone.x>=0.0) {
-        float inner=cos(max(0.0,min(cone.x,cone.y))*0.5), outer=cos(max(cone.x,cone.y)*0.5);
-        float cosine=d>0.0?-dot(previewDirections[i],v)/d:0.0;
-        attenuation*=inner<=outer+0.000001?step(outer,cosine):smoothstep(outer,inner,cosine);
-      }
-    }
+    vec3 v; float d, attenuation;
+    sceneLightGeometry(previewTypes[i],previewDirections[i],previewPositions[i],
+      previewFades[i],previewCones[i],position,v,d,attenuation);
     float strength=(d==0.0?0.25:max(dot(n,v)/d,0.25))*attenuation;
     total+=strength*clamp(previewColors[i],0.0,1.0);
   }
