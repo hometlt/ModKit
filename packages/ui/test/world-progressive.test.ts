@@ -15,6 +15,7 @@ import {
   createWorldLatticePlan,
   drawWorldLattice,
   WORLD_CLIFF_FACE_COLOR,
+  WORLD_RAMP_COLOR,
   WORLD_LATTICE_ROLE_COLORS,
   worldLatticeColor,
   worldLatticeObjectAt,
@@ -501,6 +502,58 @@ function overviewCanvas() {
 }
 
 describe('world lattice overview profile', () => {
+  it('marks published ramps and blocked footprints without classifying unknown ground', async () => {
+    const source = fixture()
+    const items = (
+      await Promise.all(
+        ['terrain', 'cliffs'].map(facet => source.page({ facet: facet as 'terrain', limit: 16 })),
+      )
+    )
+      .flatMap(page => page.items)
+      .map(item => (item.facet === 'cliffs' && item.level === 1 ? { ...item, ramp: true } : item))
+    const plan = createWorldLatticePlan(items, undefined, 'overview')
+    expect(plan.ramps).toHaveLength(1)
+    expect(plan.contours).toEqual([])
+    expect(plan.cliffBankFills).toEqual([])
+    const draw = overviewCanvas()
+    drawWorldLattice(draw.canvas, {
+      ...plan,
+      objects: [
+        {
+          point: [0, 0],
+          objectId: 1,
+          kind: 'feature',
+          coverage: {
+            outline: [
+              [
+                [0, 0],
+                [1, 0],
+                [1, 1],
+              ],
+            ],
+            blocked: [
+              [
+                [0, 0],
+                [1, 0],
+                [1, 1],
+              ],
+            ],
+          },
+        },
+      ],
+    })
+    expect(draw.fills.some(fill => fill.polygon && fill.color === WORLD_RAMP_COLOR)).toBe(true)
+    expect(draw.fills.some(fill => fill.polygon && fill.color === 'rgba(237, 88, 62, 0.30)')).toBe(
+      true,
+    )
+    const polygonColors = draw.fills.filter(fill => fill.polygon).map(fill => fill.color)
+    expect(polygonColors.indexOf('#b8b8b8')).toBeLessThan(
+      polygonColors.indexOf('rgba(237, 88, 62, 0.30)'),
+    )
+    const unknown = overviewCanvas()
+    drawWorldLattice(unknown.canvas, plan)
+    expect(unknown.fills.some(fill => fill.color === 'rgba(237, 88, 62, 0.30)')).toBe(false)
+  })
   it('keeps the default plan intact and changes only opt-in presentation', () => {
     const items = overviewGrid(3, 2, ['0,0', '1,0'])
     const legacy = createWorldLatticePlan(items)

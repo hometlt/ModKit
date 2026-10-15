@@ -40,6 +40,11 @@ export interface WorldLatticePlan {
   /** Derived top-down bank bisectors, not native cliff levels or navigation facts. */
   readonly cliffMidlines?: readonly (readonly [Point, Point])[]
   readonly cliffMidlineStats?: Readonly<CliffMidlineStats>
+  /** Bank-height polygons share the derived line's exact endpoints. Overview only. */
+  readonly cliffBankFills?: readonly {
+    readonly points: readonly Point[]
+    readonly color: string
+  }[]
   readonly objects: readonly {
     readonly point: Point
     readonly objectId: number
@@ -342,7 +347,20 @@ export function createWorldLatticePlan(
     ...(style === 'overview'
       ? (() => {
           const midline = deriveCliffMidlines(cliffQuads)
-          return { style, cliffMidlines: midline.segments, cliffMidlineStats: midline.stats }
+          return {
+            style,
+            cliffMidlines: midline.segments,
+            cliffMidlineStats: midline.stats,
+            cliffBankFills: midline.fills.map(fill => ({
+              points: fill.points,
+              color: overviewColor(
+                fill.height,
+                minimumHeight,
+                maximumHeight,
+                submerged({ point: fill.points[0]!, height: fill.height }),
+              ),
+            })),
+          }
         })()
       : {}),
   }
@@ -450,6 +468,15 @@ export function drawWorldLattice(
     context.closePath()
     context.fill()
   }
+  // Replace the slope wash with the corresponding plateau colour on each side of the line.
+  for (const fill of plan.cliffBankFills ?? []) {
+    context.fillStyle = fill.color
+    context.beginPath()
+    context.moveTo(...screen(fill.points[0]!))
+    for (const point of fill.points.slice(1)) context.lineTo(...screen(point))
+    context.closePath()
+    context.fill()
+  }
   context.fillStyle = WORLD_RAMP_COLOR
   for (const ramp of plan.ramps) {
     context.beginPath()
@@ -482,8 +509,12 @@ export function drawWorldLattice(
     nearResources: '#36c9ca',
     outline: '#fafafa',
   } as const
+  // Put the base outline first in overview so its fill cannot hide blocked coverage.
+  const channels: readonly (keyof typeof channelColors)[] = overview
+    ? ['outline', 'blocked', 'noBuild', 'vision', 'nearResources']
+    : (Object.keys(channelColors) as (keyof typeof channelColors)[])
   for (const object of plan.objects)
-    for (const channel of Object.keys(channelColors) as (keyof typeof channelColors)[]) {
+    for (const channel of channels) {
       const polygons = object.coverage?.[channel]
       if (polygons === undefined) continue
       context.strokeStyle = overview && channel === 'outline' ? '#141414' : channelColors[channel]
@@ -500,6 +531,9 @@ export function drawWorldLattice(
             : object.roles?.includes('destructible')
               ? '#fff'
               : '#b8b8b8'
+          context.fill()
+        } else if (overview && channel === 'blocked') {
+          context.fillStyle = 'rgba(237, 88, 62, 0.30)'
           context.fill()
         }
         context.stroke()

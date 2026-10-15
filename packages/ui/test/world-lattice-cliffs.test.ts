@@ -34,6 +34,42 @@ function strip(width = 3, rotate = 0): CliffLatticeQuad[] {
   return result
 }
 describe('shared bank-distance cliff midline', () => {
+  it('partitions the entire slope into bank-height fills with no area overlap or holes', () => {
+    const plan = deriveCliffMidlines(strip(3))
+    const area = (points: readonly (readonly [number, number])[]) =>
+      Math.abs(
+        points.reduce((sum, p, i) => {
+          const q = points[(i + 1) % points.length]!
+          return sum + p[0] * q[1] - q[0] * p[1]
+        }, 0) / 2,
+      )
+    for (const side of ['low', 'high'] as const) {
+      const fills = plan.fills.filter(fill => fill.side === side)
+      expect(fills.reduce((sum, fill) => sum + area(fill.points), 0)).toBeCloseTo(27, 10)
+      for (const fill of fills) {
+        expect(fill.height).toBe(side === 'low' ? 0 : 60)
+        for (const p of fill.points) expect(side === 'low' ? p[0] <= 7 : p[0] >= 7).toBe(true)
+      }
+    }
+    const boundary = new Set(plan.fills.flatMap(fill => fill.points.map(p => JSON.stringify(p))))
+    for (const segment of plan.segments)
+      for (const p of segment) expect(boundary.has(JSON.stringify(p))).toBe(true)
+  })
+  it('takes the high side from heights rather than polygon inside/outside winding', () => {
+    const plan = deriveCliffMidlines(
+      strip(3).map(q => ({
+        ...q,
+        vertices: q.vertices.map(v => ({
+          ...v,
+          height: 60 - v.height,
+        })) as unknown as CliffLatticeQuad['vertices'],
+      })),
+    )
+    for (const fill of plan.fills) {
+      expect(fill.height).toBe(fill.side === 'low' ? 0 : 60)
+      for (const p of fill.points) expect(fill.side === 'low' ? p[0] >= 7 : p[0] <= 7).toBe(true)
+    }
+  })
   it('keeps a diagonal bank strip centered through shared cell edges', () => {
     const quads: CliffLatticeQuad[] = []
     for (let y = 0; y < 12; y++)
