@@ -304,6 +304,7 @@ export async function materializeWorldToUvw(
     // A terrain layer leaves out the samples where there is no ground (a Roblox air column, a cell
     // outside a Westwood map's diamond) and declares the sentinel its grid writes there instead.
     let noDataValue: number | undefined
+    let latticeOverview: import('@modkit/sdk/maps').MapLatticeOverview | undefined
     try {
       let layerCursor: string | undefined
       const layerCursors = new Set<string>()
@@ -322,6 +323,7 @@ export async function materializeWorldToUvw(
         )
         if (layer?.facet === 'layers') {
           noDataValue = layer.grid?.noDataValue
+          latticeOverview = layer.latticeOverview
           break
         }
         layerCursor = page.nextCursor
@@ -494,6 +496,7 @@ export async function materializeWorldToUvw(
       id: 'terrain', kind: 'heightfield', label: 'Ground', columns, rows, cellSize, origin,
       ...(noDataValue === undefined ? {} : { noDataValue }),
       ...(cliffFaces === undefined ? {} : { cliffFaces }),
+      ...(latticeOverview === undefined ? {} : {latticeOverview}),
       samples: Object.freeze(samples.map(row => Object.freeze(row))),
     })
   }

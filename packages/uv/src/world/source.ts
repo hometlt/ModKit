@@ -652,6 +652,7 @@ export function createUvwWorldSceneSource(
         contentRevision: record.contentRevision,
         spaceId: record.space.id,
         localLayerId: record.layer.id,
+        ...(record.layer.kind === 'heightfield' && record.layer.latticeOverview !== undefined ? {latticeOverview:record.layer.latticeOverview} : {}),
         ...('columns' in record.layer && 'cellSize' in record.layer && 'origin' in record.layer
           ? {
               grid: Object.freeze({

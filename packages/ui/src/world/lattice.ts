@@ -4,11 +4,14 @@
  * Uses no model/texture ports and never infers gameplay masks or native export capability.
  */
 import type {
+  MapLatticeOverview,
   MapLatticeObjectCoverage,
   MapObjectKind,
   WorldSceneItem,
   WorldSceneTerrainItem,
 } from '@modkit/sdk/maps'
+import { validateLatticeOverview } from '@modkit/sdk/maps'
+import { drawLatticeOverview } from './lattice-overview.js'
 
 import {
   deriveCliffMidlines,
@@ -26,6 +29,8 @@ interface LatticeVertex {
   readonly ramp?: boolean
 }
 export interface WorldLatticePlan {
+  /** Publisher-resolved semantic overview; absent retains the ordinary/derived lattice. */
+  readonly publishedOverview?: MapLatticeOverview
   /** Omission retains the original lattice presentation. No gameplay semantics change. */
   readonly style?: 'overview'
   readonly cells: readonly {
@@ -128,6 +133,13 @@ export function createWorldLatticePlan(
     (firstTerrain === undefined ? undefined : layerSpaces.get(firstTerrain.layerId))
   const compatible = (item: WorldSceneItem) =>
     spaceId === undefined || layerSpaces.get(item.layerId) === spaceId
+  const published = items.find(
+    item => item.facet === 'layers' && item.latticeOverview !== undefined && compatible(item),
+  )
+  const publishedOverview =
+    published?.facet === 'layers' && published.latticeOverview !== undefined
+      ? validateLatticeOverview(published.latticeOverview)
+      : undefined
   const terrain = items.filter(
     (item): item is WorldSceneTerrainItem => item.facet === 'terrain' && compatible(item),
   )
@@ -337,6 +349,7 @@ export function createWorldLatticePlan(
     ]
   })
   return {
+    ...(publishedOverview === undefined ? {} : { publishedOverview }),
     cells,
     contours,
     ramps,
@@ -435,6 +448,18 @@ export function drawWorldLattice(
   if (overview) {
     context.fillStyle = '#0f172a'
     context.fillRect(0, 0, canvas.width, canvas.height)
+  }
+  if (plan.publishedOverview !== undefined) {
+    drawLatticeOverview(canvas, plan.publishedOverview, screen, plan.cells)
+    const selected = plan.objects.find(object => object.objectId === selectedObjectId)
+    if (selected !== undefined) {
+      context.beginPath()
+      context.arc(...screen(selected.point), 6, 0, Math.PI * 2)
+      context.strokeStyle = '#ffe082'
+      context.lineWidth = 1.5
+      context.stroke()
+    }
+    return
   }
   context.lineWidth = 0.35
   context.strokeStyle = overview ? 'rgba(255, 255, 255, 0.08)' : 'rgba(15, 25, 25, 0.18)'

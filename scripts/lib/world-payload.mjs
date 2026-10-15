@@ -25,9 +25,9 @@ function declaresEffects(bytes) {
 export function worldRenderSource(inspected, { objects = () => true } = {}) {
   const players = inspected.info?.players ?? []
   const items = inspected.layers
-    .flatMap(layer => layer.page.items)
+    .flatMap(layer => [...(layer.layer.latticeOverview === undefined ? [] : [layer.layer]), ...layer.page.items])
     .flatMap(item => {
-      if (item.facet === 'resources' || item.facet === 'layers') return []
+      if (item.facet === 'resources' || (item.facet === 'layers' && item.latticeOverview === undefined)) return []
       if (item.facet !== 'objects') return [item]
       if (!objects(item)) return []
       const { catalog: _catalog, ...renderItem } = item

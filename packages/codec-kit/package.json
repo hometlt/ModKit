@@ -13,6 +13,10 @@
       "types": "./dist/editing.d.ts",
       "default": "./dist/editing.js"
     },
+    "./maps/lattice-overview": {
+      "types": "./dist/maps/lattice-overview.d.ts",
+      "default": "./dist/maps/lattice-overview.js"
+    },
     "./graph/weighted-distance": {
       "types": "./dist/graph/weighted-distance.d.ts",
       "default": "./dist/graph/weighted-distance.js"

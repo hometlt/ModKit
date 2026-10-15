@@ -1,3 +1,5 @@
+import { validateLatticeOverview } from '@modkit/sdk/maps'
+import type { MapLatticeOverview } from '@modkit/sdk/maps'
 /** Core-owned reader and canonical writer for the normative UVW 1.0 spatial profile:
  * bounded validation, weights/rasters, ordered atlas tiles with corner coverage and sample UVs.
  * Per-layer custom UVs/clips and coverage-only texture alpha are not part of this profile. */
@@ -47,6 +49,8 @@ export interface UvwBounds {
 }
 
 export interface UvwHeightfieldLayer {
+  /** Semantic overview annotation in canonical x/z; never a baked raster image. */
+  readonly latticeOverview?: MapLatticeOverview
   readonly id: string
   readonly kind: 'heightfield'
   readonly label?: string
@@ -716,7 +720,7 @@ function heightfieldLayer(
   const item = record(value, path, state, depth)
   exactKeys(
     item,
-    ['id', 'kind', 'label', 'columns', 'rows', 'cellSize', 'origin', 'noDataValue', 'cliffFaces', 'samples'],
+    ['id', 'kind', 'label', 'columns', 'rows', 'cellSize', 'origin', 'noDataValue', 'cliffFaces', 'samples', 'latticeOverview'],
     ['id', 'kind', 'columns', 'rows', 'cellSize', 'origin', 'samples'],
     path,
   )
@@ -786,6 +790,20 @@ function heightfieldLayer(
     origin: vec3(item['origin'], `${path}.origin`, state, depth + 1),
     ...(noDataValue === undefined ? {} : { noDataValue }),
     ...(cliffFaces === undefined ? {} : { cliffFaces }),
+    ...(item['latticeOverview'] === undefined ? {} : {latticeOverview: (() => {
+      try {
+        const overview = validateLatticeOverview(item['latticeOverview'],{
+          maxSamples:Math.min(4_194_304,state.maxSamples-state.samples),
+          maxRuns:MAX_LATTICE_ANNOTATIONS-state.annotations,
+          maxVertices:Math.min(500_000,MAX_LATTICE_ANNOTATIONS-state.annotations),
+          ...(state.signal===undefined?{}:{signal:state.signal}),
+        })
+        state.samples+=overview.raster.columns*overview.raster.rows
+        annotation(state,3+(overview.playableArea?.length??0)+overview.lines.reduce((sum,line)=>sum+line.points.length,0)+overview.markers.reduce((sum,marker)=>sum+marker.outline.length+1,0)+
+          [overview.raster.elevation,overview.raster.blocked,overview.raster.noBuild,overview.raster.vision].reduce((sum,rows)=>sum+(rows?.reduce((n,row)=>n+row.length,0)??0),0),`${path}.latticeOverview`)
+        return overview
+      } catch(error) { fail(`invalid lattice overview: ${String(error)}`,`${path}.latticeOverview`) }
+    })()}),
     samples: Object.freeze(samples),
   })
 }

@@ -85,8 +85,9 @@ if (executablePath === undefined) throw new Error('Chrome or Edge is required')
 const bundled = await build({
   stdin: {
     contents: `
-      import { createWorldWebGlRenderer } from './packages/scene/src/world/webgl.ts';
-      import { createWorldLatticePlan, drawWorldLattice } from './packages/ui/src/world/lattice.ts';
+      ${values.lattice
+        ? "import { createWorldLatticePlan, drawWorldLattice } from './packages/ui/src/world/lattice.ts';"
+        : "import { createWorldWebGlRenderer } from './packages/scene/src/world/webgl.ts';"}
       import { reviveWorldPayload } from './scripts/lib/world-payload-revive.mjs';
       const binary = await fetch('/world.bin').then(response => response.arrayBuffer());
       const payload = reviveWorldPayload(await fetch('/world.json').then(response => response.json()), binary);
@@ -120,7 +121,7 @@ const bundled = await build({
           draw() {
             const started = performance.now();
             drawWorldLattice(canvas, plan);
-            return { stats: { latticeCells: plan.cells.length, contours: plan.contours.length, ...(plan.style === 'overview' ? { cliffMidlineSegments: plan.cliffMidlines.length, cliffMidline: plan.cliffMidlineStats } : {}), objectMarkers: plan.objects.length },
+            return { stats: { latticeCells: plan.cells.length, contours: plan.contours.length, ...(plan.style === 'overview' ? { cliffMidlineSegments: plan.cliffMidlines.length, cliffMidline: plan.cliffMidlineStats, ...(plan.publishedOverview === undefined ? {} : { publishedOverview: { ...plan.publishedOverview.provenance, columns:plan.publishedOverview.raster.columns, rows:plan.publishedOverview.raster.rows, lines:plan.publishedOverview.lines.length, markers:plan.publishedOverview.markers.length, movementProfile:plan.publishedOverview.raster.movementProfile } }) } : {}), objectMarkers: plan.objects.length },
               renderer: {}, milliseconds: performance.now() - started };
           },
           async benchmark() { throw new Error('Use --benchmark 0 for lattice screenshots'); },

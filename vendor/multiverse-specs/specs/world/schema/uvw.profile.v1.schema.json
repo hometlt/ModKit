@@ -434,6 +434,7 @@
       ],
       "properties": {
         "cliffFaces": { "$ref": "#/$defs/heightfieldCliffFaces" },
+        "latticeOverview": { "$ref": "#/$defs/latticeOverview" },
         "id": { "type": "string", "minLength": 1 },
         "kind": { "const": "heightfield" },
         "label": { "type": "string" },
@@ -1281,6 +1282,303 @@
           }
         }
       }
-    }
+    },
+      "latticePoint": {
+        "type": "array",
+        "items": {
+          "type": "number"
+        },
+        "minItems": 2,
+        "maxItems": 2
+      },
+      "latticeRgb": {
+        "type": "array",
+        "items": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "minItems": 3,
+        "maxItems": 3
+      },
+      "latticeRun": {
+        "type": "array",
+        "prefixItems": [
+          {
+            "type": "integer",
+            "minimum": 1
+          },
+          {
+            "type": "number"
+          }
+        ],
+        "items": false,
+        "minItems": 2,
+        "maxItems": 2
+      },
+      "latticeMaskRun": {
+        "type": "array",
+        "prefixItems": [
+          {
+            "type": "integer",
+            "minimum": 1
+          },
+          {
+            "enum": [
+              0,
+              1
+            ]
+          }
+        ],
+        "items": false,
+        "minItems": 2,
+        "maxItems": 2
+      },
+      "latticeRunRows": {
+        "type": "array",
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/latticeRun"
+          },
+          "minItems": 1,
+          "maxItems": 1048576
+        },
+        "minItems": 1,
+        "maxItems": 4194304
+      },
+      "latticeMaskRows": {
+        "type": "array",
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/latticeMaskRun"
+          },
+          "minItems": 1,
+          "maxItems": 1048576
+        },
+        "minItems": 1,
+        "maxItems": 4194304
+      },
+      "latticeOverview": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "provenance": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "method": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1024
+              },
+              "quality": {
+                "enum": [
+                  "authored",
+                  "derived"
+                ]
+              },
+              "complete": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "method",
+              "quality",
+              "complete"
+            ]
+          },
+          "raster": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "columns": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "rows": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "origin": {
+                "$ref": "#/$defs/latticePoint"
+              },
+              "columnStep": {
+                "$ref": "#/$defs/latticePoint"
+              },
+              "rowStep": {
+                "$ref": "#/$defs/latticePoint"
+              },
+              "elevation": {
+                "$ref": "#/$defs/latticeRunRows"
+              },
+              "palette": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "value": {
+                      "type": "number"
+                    },
+                    "color": {
+                      "$ref": "#/$defs/latticeRgb"
+                    }
+                  },
+                  "required": [
+                    "value",
+                    "color"
+                  ]
+                },
+                "minItems": 2,
+                "maxItems": 256
+              },
+              "movementProfile": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1024
+              },
+              "blocked": {
+                "$ref": "#/$defs/latticeMaskRows"
+              },
+              "noBuild": {
+                "$ref": "#/$defs/latticeMaskRows"
+              },
+              "vision": {
+                "$ref": "#/$defs/latticeMaskRows"
+              }
+            },
+            "required": [
+              "columns",
+              "rows",
+              "origin",
+              "columnStep",
+              "rowStep",
+              "elevation",
+              "palette"
+            ]
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "role": {
+                  "enum": [
+                    "cliff",
+                    "ramp"
+                  ]
+                },
+                "points": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/latticePoint"
+                  },
+                  "minItems": 2,
+                  "maxItems": 500000
+                },
+                "closed": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "role",
+                "points",
+                "closed"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 500000
+          },
+          "markers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1024
+                },
+                "role": {
+                  "enum": [
+                    "resource",
+                    "destructible",
+                    "unit",
+                    "start"
+                  ]
+                },
+                "point": {
+                  "$ref": "#/$defs/latticePoint"
+                },
+                "outline": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/latticePoint"
+                  },
+                  "minItems": 3,
+                  "maxItems": 500000
+                },
+                "color": {
+                  "$ref": "#/$defs/latticeRgb"
+                },
+                "opacity": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "resourceKind": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1024
+                },
+                "resourceVariant": {
+                  "enum": [
+                    "ordinary",
+                    "rich"
+                  ]
+                },
+                "resourceState": {
+                  "enum": [
+                    "full",
+                    "reduced",
+                    "depleted"
+                  ]
+                },
+                "player": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "id",
+                "role",
+                "point",
+                "outline",
+                "color",
+                "opacity"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 500000
+          },
+          "playableArea": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/latticePoint"
+            },
+            "minItems": 3,
+            "maxItems": 500000
+          }
+        },
+        "required": [
+          "provenance",
+          "raster",
+          "lines",
+          "markers"
+        ]
+      }
   }
 }

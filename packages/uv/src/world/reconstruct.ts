@@ -580,6 +580,7 @@ async function reconstructLayer(
       origin: grid.origin,
       ...(fill === undefined ? {} : { noDataValue: fill }),
       ...(cliffFaces === undefined ? {} : { cliffFaces }),
+      ...(layer.latticeOverview === undefined ? {} : {latticeOverview:layer.latticeOverview}),
       samples: gridRows(values as number[], grid.columns, grid.rows),
     })
   }

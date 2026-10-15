@@ -435,3 +435,37 @@ such a reader preserved the annotations. The legacy candidate reuses the
 same layer definitions where applicable. The frozen behavior/session ABI and
 WASM do not change. Normative artifact and spatial/glTF round-trip tests do
 not establish Core codec/source, native publisher or PNG acceptance.
+
+
+### Semantic lattice overview annotation
+
+A heightfield MAY contain `latticeOverview` as defined in the normative schema.
+This optional, non-authoritative presentation annotation preserves the publisher's
+resolved surface shapes, movement masks, cliff/ramp boundaries and marker footprints.
+It MUST NOT replace heightfield samples, objects, native source data or runtime simulation.
+Consumers MUST NOT treat a missing mask as known clear or apply one movement profile
+to every category of unit. `provenance` names the analysis and explicitly reports
+authored/derived quality and completeness; it does not assert playable equivalence.
+
+Geometry uses the owning space's canonical x/z plane. Raster `origin` is the outer
+corner of sample (0,0); columnStep/rowStep are independent affine sample vectors.
+Their determinant MUST be finite and nonzero. Elevation is a presentation scalar,
+mapped through ordered finite palette anchors with sRGB byte colours. It is not
+another authoritative terrain height. Water/void colouring in a palette MUST NOT
+be interpreted as a liquid or movement rule.
+
+Every row consists of [positive run length, finite sample] pairs, totals columns,
+and all channels have exactly rows rows. Masks use only 0/1. A blocked mask requires
+an explicit publisher-qualified movementProfile. Products are bounded to 4194304
+samples per overview; all run records and geometric vertices contribute to existing
+document annotation budgets (1048576 records), with at most 500000 vertices.
+Duplicate marker ids, unordered palette anchors, invalid enums, nonfinite numbers,
+degenerate frames and mismatched row coverage MUST be rejected before raster allocation.
+
+Lines describe already-resolved separating boundaries, not perimeter guesses.
+Marker roles are neutral; resourceKind remains a scoped source label and its
+ordinary/rich and supply-state values remain separate. Colours and footprint
+polygons describe presentation, not classification inferred by the consumer.
+Absent playableArea is unknown; a present polygon has at least three vertices.
+Materialization and reopen MUST preserve the annotation, or explicitly refuse/report
+the unsupported annotation; it MUST NOT silently disappear on a round trip.

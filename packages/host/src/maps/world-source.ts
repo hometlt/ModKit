@@ -1,3 +1,4 @@
+import { projectLatticeOverview } from '@modkit/sdk/maps'
 /** Host-owned, read-only map-world source from resolved map semantics (SDK maps contract).
  * Publishes native facts and only projects UVW positions/coverage through admitted transforms.
  * Rejects malformed lattice coverage; does not infer gameplay masks, edit maps or decode assets.
@@ -1700,6 +1701,15 @@ export function createCandidateWorldSceneLease(
         id: item.layerId,
         layerId: item.layerId,
         kind: item.facet,
+        ...(item.facet === 'terrain' && snapshot.latticeCoverage?.overview !== undefined && uvwTransform !== undefined
+          ? { latticeOverview: projectLatticeOverview(
+              (() => {
+                const {coordinateSpaceId,...overview}=snapshot.latticeCoverage.overview
+                if (coordinateSpaceId !== 'map-native') throw new TypeError('Unsupported overview coordinate space')
+                return overview
+              })(),
+              ([x,y]) => { const point=canonicalPosition({x,y,z:0},uvwTransform);return [point.x,point.z] },
+            ) } : {}),
         state: item.state,
         itemCount: item.itemCount,
         lods: item.lods,

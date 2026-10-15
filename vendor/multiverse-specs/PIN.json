@@ -3,16 +3,16 @@
   "schemaVersion": "multiverse-specs-pin-1",
   "source": {
     "repository": "multiverse (sibling repository)",
-    "commit": "2e31c29ee1e76544864571fd061abf0712d68d9e",
-    "subject": "feat(uvw): admit explicitly model-based mesh spaces",
-    "committedOn": "2026-10-15T20:48:11+04:00"
+    "commit": "8adbb03d46936e3fd9d433d1044345b6adbe83a4",
+    "subject": "feat(uvw): specify bounded semantic lattice overview annotations",
+    "committedOn": "2026-10-15T21:28:37+04:00"
   },
   "generator": "scripts/specs-pin.mjs",
   "generatedFrom": "git objects, not the sibling working tree",
   "prefix": "specs/",
   "counts": {
     "files": 315,
-    "bytes": 2178811
+    "bytes": 2188728
   },
   "files": [
     {
@@ -1372,8 +1372,8 @@
     },
     {
       "path": "specs/world/SPEC_UVW_PROFILE.md",
-      "bytes": 31653,
-      "digest": "sha256:e23496d32f1a14a978b3e02895c9787ca766e3c6b339b23f9ec28207fde86f49"
+      "bytes": 33875,
+      "digest": "sha256:98d96f701a27462001acfee10aeefe0b110dc73e0afe4085d48ec2f91ce065aa"
     },
     {
       "path": "specs/world/fixtures/invalid/connections-not-empty.uvw.json",
@@ -1587,8 +1587,8 @@
     },
     {
       "path": "specs/world/schema/uvw.profile.v1.schema.json",
-      "bytes": 45072,
-      "digest": "sha256:ff024c7b6a3f3f0412c974f0342d74da96d40f2e7f48067ab8aee65860783c3c"
+      "bytes": 52767,
+      "digest": "sha256:9b3c900fd7843201230d772ecc02cd773bfcdc7039f19424e7c65c76fd82ac61"
     }
   ]
 }

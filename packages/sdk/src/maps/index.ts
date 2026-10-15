@@ -1,3 +1,8 @@
+export { validateLatticeOverview, projectLatticeOverview } from './lattice-overview.js'
+export type { LatticeOverviewLimits } from './lattice-overview.js'
+import type { MapLatticeOverview } from './lattice-overview.js'
+export type { MapLatticeOverview, LatticePoint, LatticeRgb, LatticeRunRows } from './lattice-overview.js'
+
 /** Protocol-neutral contracts for bounded semantic map opening. */
 
 import { snapshotJson, type Diagnostic } from '@modkit/core'
@@ -1572,6 +1577,8 @@ export interface MapLatticeObjectCoverage {
 
 /** Exact, bounded lattice annotations from resolved game data, not inferred from geometry. */
 export interface MapLatticeCoverage {
+  /** Native-owner overview facts; omission is unknown. Host projects geometry to UVW. */
+  readonly overview?: MapLatticeOverview & Readonly<{ coordinateSpaceId: string }>
   /** An absent entry means unknown coverage for that object; an empty list means no known entries. */
   readonly objects?: readonly (MapLatticeObjectCoverage & Readonly<{ objectId: number }>)[]
   /** Complete cliff-face classification of the height-grid cells; absence means unknown. */
@@ -1755,6 +1762,8 @@ export interface WorldSceneInfo extends WorldSceneInfoBase {
 }
 
 export interface WorldSceneLayerItem {
+  /** Validated overview geometry in canonical UVW horizontal x/z coordinates. */
+  readonly latticeOverview?: MapLatticeOverview
   readonly facet: 'layers'
   readonly id: string
   readonly layerId: string

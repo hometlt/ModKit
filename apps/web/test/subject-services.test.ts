@@ -134,6 +134,9 @@ const nodeModuleMap = {
   '@modkit/codec-kit/json-edit': pathToFileURL(
     join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'json-edit.js'),
   ).href,
+  '@modkit/codec-kit/maps/lattice-overview': pathToFileURL(
+    join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'maps', 'lattice-overview.js'),
+  ).href,
   '@modkit/codec-kit/graph/weighted-distance': pathToFileURL(
     join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'graph', 'weighted-distance.js'),
   ).href,
