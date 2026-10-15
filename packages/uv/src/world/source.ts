@@ -653,6 +653,7 @@ export function createUvwWorldSceneSource(
         spaceId: record.space.id,
         localLayerId: record.layer.id,
         ...(record.layer.kind === 'heightfield' && record.layer.latticeOverview !== undefined ? {latticeOverview:record.layer.latticeOverview} : {}),
+        ...(record.layer.kind === 'navigation' && record.layer.flagEncoding !== undefined ? { navigationFlagEncoding: record.layer.flagEncoding } : {}),
         ...('columns' in record.layer && 'cellSize' in record.layer && 'origin' in record.layer
           ? {
               grid: Object.freeze({

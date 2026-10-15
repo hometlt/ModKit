@@ -1365,8 +1365,24 @@ export interface MapNavigationSample {
   readonly flags: number
 }
 
+/** A versioned, publisher-scoped flags vocabulary; no portable walkability is inferred. */
+export function isNavigationFlagEncoding(value: unknown): value is string {
+  return typeof value === 'string' && value.length <= 1024 && !/\s/u.test(value) &&
+    /^[a-z0-9][a-z0-9._-]*\/[a-z0-9][a-z0-9._/-]*@[1-9][0-9]*$/u.test(value)
+}
+
 /** Bounded summary of a publisher-native navigation grid. */
 export interface MapNavigationSummary {
+  /** Only true for a complete grid; omission retains the historical sampled summary. */
+  readonly exact?: boolean
+  readonly flagEncoding?: string
+  /** Native position of sample (0,0), not the corner of its cell; steps are independent of terrain. */
+  readonly grid?: Readonly<{
+    readonly coordinateSpaceId: 'map-native'
+    readonly origin: MapPosition
+    readonly columnStep: MapPosition
+    readonly rowStep: MapPosition
+  }>
   readonly version: number
   readonly width: number
   readonly height: number
@@ -1762,6 +1778,8 @@ export interface WorldSceneInfo extends WorldSceneInfoBase {
 }
 
 export interface WorldSceneLayerItem {
+  /** Native navigation vocabulary, retained independently of any portable traversal policy. */
+  readonly navigationFlagEncoding?: string
   /** Validated overview geometry in canonical UVW horizontal x/z coordinates. */
   readonly latticeOverview?: MapLatticeOverview
   readonly facet: 'layers'

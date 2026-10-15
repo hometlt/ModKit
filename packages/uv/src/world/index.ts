@@ -6,6 +6,7 @@ import type { MapLatticeOverview } from '@modkit/sdk/maps'
 
 import { canonicalJsonStringify, compareUtf8, ModkitError } from '@modkit/core'
 import type { MapModelComponentPlacement } from '@modkit/sdk'
+import { isNavigationFlagEncoding } from '@modkit/sdk/maps'
 import type {
   MapLatticeObjectCoverage,
   MapWorldCamera,
@@ -284,6 +285,8 @@ export interface UvwRegionsLayer {
 }
 
 export interface UvwNavigationLayer {
+  /** Versioned publisher flags; omission in older artifacts remains unknown. */
+  readonly flagEncoding?: string
   readonly schemaVersion: 1
   readonly id: string
   readonly kind: 'navigation'
@@ -2002,12 +2005,15 @@ function navigationLayer(
   const item = record(value, path, state, depth)
   exactKeys(
     item,
-    ['schemaVersion', 'id', 'kind', 'label', 'columns', 'rows', 'cellSize', 'origin', 'samples'],
+    ['schemaVersion', 'id', 'kind', 'label', 'columns', 'rows', 'cellSize', 'origin', 'samples', 'flagEncoding'],
     ['schemaVersion', 'id', 'kind', 'columns', 'rows', 'cellSize', 'origin', 'samples'],
     path,
   )
   schemaVersionOne(item, path, state, depth + 1)
   literal(item['kind'], 'navigation', `${path}.kind`, state, depth + 1)
+  const flagEncoding = item['flagEncoding']
+  if (flagEncoding !== undefined && !isNavigationFlagEncoding(flagEncoding))
+    fail('navigation flagEncoding must name a versioned publisher vocabulary', `${path}.flagEncoding`)
   const columns = integerAtLeast(item['columns'], 1, `${path}.columns`, state, depth + 1)
   const rows = integerAtLeast(item['rows'], 1, `${path}.rows`, state, depth + 1)
   gridBudget(columns, rows, `${path}.samples`, state)
@@ -2016,6 +2022,7 @@ function navigationLayer(
     schemaVersion: 1,
     id: layerId(item['id'], `${path}.id`, state, depth + 1),
     kind: 'navigation',
+    ...(flagEncoding === undefined ? {} : { flagEncoding }),
     ...(label === undefined ? {} : { label }),
     columns,
     rows,
@@ -2376,6 +2383,17 @@ function space(
       )
     }
   }
+  const spaceBounds = bounds(item['bounds'], `${path}.bounds`, state, depth + 1)
+  for (const entry of layers) {
+    if (entry.kind !== 'navigation') continue
+    const maxX = entry.origin[0] + (entry.columns - 1) * entry.cellSize
+    const maxZ = entry.origin[2] + (entry.rows - 1) * entry.cellSize
+    const tolerance = 1e-9
+    if (!Number.isFinite(maxX) || !Number.isFinite(maxZ) ||
+      entry.origin[0] < spaceBounds.min[0] - tolerance || maxX > spaceBounds.max[0] + tolerance ||
+      entry.origin[2] < spaceBounds.min[2] - tolerance || maxZ > spaceBounds.max[2] + tolerance)
+      fail('navigation grid extends beyond its space', `${path}.layers.${entry.id}`)
+  }
   const resourceIds = new Set(
     layers.flatMap(entry =>
       entry.kind === 'resources' ? entry.resources.map(resource => resource.id) : [],
@@ -2462,7 +2480,7 @@ function space(
     topology,
     ...(label === undefined ? {} : { label }),
     basis: basis(item['basis'], `${path}.basis`, state, depth + 1),
-    bounds: bounds(item['bounds'], `${path}.bounds`, state, depth + 1),
+    bounds: spaceBounds,
     layers: Object.freeze(layers),
     ...(players === undefined ? {} : { players }),
     ...(startPositions === undefined ? {} : { startPositions }),

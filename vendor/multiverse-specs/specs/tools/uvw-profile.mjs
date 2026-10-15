@@ -25,6 +25,9 @@ import { assertTerrainAtlas, assertDerivedCliffObject } from './uvw-terrain-atla
 import { assertUnlitLighting } from './uvw-unlit.ts'
 import { assertUvwObjectPresentation, assertUvwCamera } from './uvm-presentation.ts'
 import { assertUvwPlayers } from './uvw-players.ts'
+import worldSchema from '../world/schema/uvw.profile.v1.schema.json' with { type: 'json' }
+const navigationFlagShape = worldSchema.$defs.navigationLayer.properties.flagEncoding
+const navigationFlagPattern = new RegExp(navigationFlagShape.pattern, 'u')
 import { assertUvwLattice } from './uvw-lattice.ts'
 
 /** One violated rule, named by the id the vectors use. */
@@ -681,6 +684,10 @@ function assertTraversal(layer, bounds, layers) {
  * complete and spatially bound before a game adapter may publish a traversal mapping.
  */
 function assertNavigation(layer, bounds) {
+  if (layer.flagEncoding !== undefined && (typeof layer.flagEncoding !== 'string' ||
+    layer.flagEncoding.length < navigationFlagShape.minLength || layer.flagEncoding.length > navigationFlagShape.maxLength ||
+    !navigationFlagPattern.test(layer.flagEncoding)))
+    refuse('navigation-flag-encoding', 'native navigation flags need a versioned publisher vocabulary')
   const { id, columns, rows, cellSize, origin, samples } = layer
   if (!Number.isSafeInteger(columns) || columns < 1 || !Number.isSafeInteger(rows) || rows < 1
     || !Array.isArray(samples) || samples.length !== rows

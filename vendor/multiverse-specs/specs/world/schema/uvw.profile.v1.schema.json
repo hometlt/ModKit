@@ -1007,6 +1007,7 @@
         "samples"
       ],
       "properties": {
+        "flagEncoding": {"type": "string", "minLength": 1, "maxLength": 1024, "pattern": "^[a-z0-9][a-z0-9._-]*/[a-z0-9][a-z0-9._/-]*@[1-9][0-9]*(?![\\s\\S])", "description": "Versioned publisher-scoped native flags vocabulary. Absence in older worlds is unknown, never a portable walkability grant."},
         "schemaVersion": { "const": 1 },
         "id": { "$ref": "#/$defs/localId" },
         "kind": { "const": "navigation" },

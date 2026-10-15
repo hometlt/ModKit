@@ -1001,7 +1001,7 @@ async function reconstructLayer(
     const grid = layer.grid
     if (grid === undefined)
       throw new TypeError('UVW canonical navigation layer is missing grid metadata')
-    const values = new Array<number | undefined>(grid.columns * grid.rows)
+    const values = new Array<number | undefined>(grid.columns * grid.rows).fill(undefined)
     for (const raw of items) {
       if (raw.facet !== 'navigation' || raw.lod !== 'exact')
         throw new TypeError('UVW canonical navigation item is invalid')
@@ -1016,6 +1016,7 @@ async function reconstructLayer(
       schemaVersion: 1,
       id,
       kind: 'navigation',
+      ...(layer.navigationFlagEncoding === undefined ? {} : { flagEncoding: layer.navigationFlagEncoding }),
       ...label,
       columns: grid.columns,
       rows: grid.rows,
@@ -1174,6 +1175,7 @@ export async function reconstructAdditionalExactLayers(
     lostFields: new Map<string, number>(),
   }
   const supported = new Set([
+    'navigation',
     'terrain-materials',
     'cliffs',
     'water',

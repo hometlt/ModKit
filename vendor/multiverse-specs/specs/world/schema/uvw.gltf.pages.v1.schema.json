@@ -851,6 +851,7 @@
         "kind": {
           "const": "navigation"
         },
+        "flagEncoding": { "$ref": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json#/$defs/navigationLayer/properties/flagEncoding" },
         "label": {
           "type": "string"
         },

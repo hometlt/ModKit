@@ -3642,6 +3642,125 @@
           }
         }
       ]
+    },
+    {
+      "id": "navigation-independent/base",
+      "document": "world/fixtures/uvw-navigation-independent.uvw.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json",
+      "expect": "valid"
+    },
+    {
+      "id": "navigation-independent/encoding-0",
+      "document": "world/fixtures/uvw-navigation-independent.uvw.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "spaces.0.layers.1.flagEncoding",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "id": "navigation-independent/encoding-1",
+      "document": "world/fixtures/uvw-navigation-independent.uvw.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "spaces.0.layers.1.flagEncoding",
+          "value": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "navigation-independent/encoding-2",
+      "document": "world/fixtures/uvw-navigation-independent.uvw.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "spaces.0.layers.1.flagEncoding",
+          "value": "example/pathing"
+        }
+      ]
+    },
+    {
+      "id": "navigation-independent/encoding-3",
+      "document": "world/fixtures/uvw-navigation-independent.uvw.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "spaces.0.layers.1.flagEncoding",
+          "value": "example/pathing@0"
+        }
+      ]
+    },
+    {
+      "id": "navigation-independent/encoding-4",
+      "document": "world/fixtures/uvw-navigation-independent.uvw.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "spaces.0.layers.1.flagEncoding",
+          "value": "example/pathing@1\n"
+        }
+      ]
+    },
+    {
+      "id": "navigation-independent/encoding-5",
+      "document": "world/fixtures/uvw-navigation-independent.uvw.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "spaces.0.layers.1.flagEncoding",
+          "value": true
+        }
+      ]
+    },
+    {
+      "id": "navigation-independent/encoding-6",
+      "document": "world/fixtures/uvw-navigation-independent.uvw.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "spaces.0.layers.1.flagEncoding",
+          "value": null
+        }
+      ]
+    },
+    {
+      "id": "navigation-independent/encoding-7",
+      "document": "world/fixtures/uvw-navigation-independent.uvw.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json",
+      "expect": "invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "spaces.0.layers.1.flagEncoding",
+          "value": "a/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb@1"
+        }
+      ]
     }
   ]
 }

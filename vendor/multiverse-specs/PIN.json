@@ -3,16 +3,16 @@
   "schemaVersion": "multiverse-specs-pin-1",
   "source": {
     "repository": "multiverse (sibling repository)",
-    "commit": "8adbb03d46936e3fd9d433d1044345b6adbe83a4",
-    "subject": "feat(uvw): specify bounded semantic lattice overview annotations",
-    "committedOn": "2026-10-15T21:28:37+04:00"
+    "commit": "fcda87f748f252798300ebd084dd109e8e5a7950",
+    "subject": "feat(uvw): retain scoped native navigation vocabularies",
+    "committedOn": "2026-10-15T21:42:40+04:00"
   },
   "generator": "scripts/specs-pin.mjs",
   "generatedFrom": "git objects, not the sibling working tree",
   "prefix": "specs/",
   "counts": {
-    "files": 315,
-    "bytes": 2188728
+    "files": 317,
+    "bytes": 2199240
   },
   "files": [
     {
@@ -182,8 +182,8 @@
     },
     {
       "path": "specs/conformance/schema-assertions.json",
-      "bytes": 148048,
-      "digest": "sha256:6ad790e96dc34874014001188b8451dd984479bd5accde4fe9a3a9fec47f9990"
+      "bytes": 152664,
+      "digest": "sha256:7d01cb6a538b220a93f63cd2b370ae21b947e6ebb7bf81594647d0dd9ec6ae29"
     },
     {
       "path": "specs/conformance/state/vectors.json",
@@ -1271,6 +1271,11 @@
       "digest": "sha256:4c37f3d191f5feb986e53965612d109d3fc4a744daa39c93c63d099a5a56307f"
     },
     {
+      "path": "specs/tools/uvw-navigation.test.mjs",
+      "bytes": 2209,
+      "digest": "sha256:376098c4c39b313d9ef18a6fe9ca90a4789d1c5e08068679306a841575df52eb"
+    },
+    {
       "path": "specs/tools/uvw-players.ts",
       "bytes": 5705,
       "digest": "sha256:3182fe90d2e569d8f27f6550dcc118c771fdc743d181f0067ee30443f5db3200"
@@ -1287,8 +1292,8 @@
     },
     {
       "path": "specs/tools/uvw-profile.mjs",
-      "bytes": 44689,
-      "digest": "sha256:df15422e29c3fe7ed9d8e05db3e1df1b2ec9ed8beee112fcab32ad36f42d3e51"
+      "bytes": 45310,
+      "digest": "sha256:09666954dcd3036e46dd34204ce85216c175170ff8c18fc429ce8f45eb34c6e0"
     },
     {
       "path": "specs/tools/uvw-raster-preview.mjs",
@@ -1372,8 +1377,8 @@
     },
     {
       "path": "specs/world/SPEC_UVW_PROFILE.md",
-      "bytes": 33875,
-      "digest": "sha256:98d96f701a27462001acfee10aeefe0b110dc73e0afe4085d48ec2f91ce065aa"
+      "bytes": 34797,
+      "digest": "sha256:b6182e0e5c427d1ae6aaa2d253d227da0ec532c28edc79a27275287e81111668"
     },
     {
       "path": "specs/world/fixtures/invalid/connections-not-empty.uvw.json",
@@ -1481,6 +1486,11 @@
       "digest": "sha256:e98ae0c6eb55c3ce5a551941a57ec8a6646086d65ebd62455b5e41a3613a5554"
     },
     {
+      "path": "specs/world/fixtures/uvw-navigation-independent.uvw.json",
+      "bytes": 1696,
+      "digest": "sha256:2432c4b3035fe9b4ea4f533998a6b541ae727be6a8a7dad0036163011b44167f"
+    },
+    {
       "path": "specs/world/fixtures/uvw-players.uvw.json",
       "bytes": 1257,
       "digest": "sha256:a78fd1d1a054bfaa674099907e02481b7f2f878f46b045004bb96510cc6bd8aa"
@@ -1577,8 +1587,8 @@
     },
     {
       "path": "specs/world/schema/uvw.gltf.pages.v1.schema.json",
-      "bytes": 24134,
-      "digest": "sha256:ce1227e451c79d1aaae7463e923f94393a4a8b175b71c4dc7cb276ce47553d58"
+      "bytes": 24279,
+      "digest": "sha256:99967155b33a925dec2e9ea22fa5dd5b74c63ea399fa99dbfb07e8c197c5e64b"
     },
     {
       "path": "specs/world/schema/uvw.gltf.v1.schema.json",
@@ -1587,8 +1597,8 @@
     },
     {
       "path": "specs/world/schema/uvw.profile.v1.schema.json",
-      "bytes": 52767,
-      "digest": "sha256:9b3c900fd7843201230d772ecc02cd773bfcdc7039f19424e7c65c76fd82ac61"
+      "bytes": 53070,
+      "digest": "sha256:7cc4d82072b06d929262d71d0655d4cd3244c7ac8ac877c85491f5b9453d05ac"
     }
   ]
 }

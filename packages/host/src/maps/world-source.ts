@@ -7,7 +7,7 @@ import { projectLatticeOverview } from '@modkit/sdk/maps'
 
 import { diagnostic } from '@modkit/core'
 import { terrainCellHeight } from './terrain.js'
-import { mapQualificationTupleBytes } from '@modkit/sdk'
+import { mapQualificationTupleBytes, isNavigationFlagEncoding } from '@modkit/sdk'
 import {
   MODEL_FACET_ITEM_CAP,
   positiveLimit,
@@ -28,6 +28,8 @@ import type {
   MapTerrainNativeTransform,
   MapTerrainSample,
   MapPlacedObject,
+  MapPosition,
+  WorldSceneLayerItem,
   MapTerrainWeightRaster,
   MapWorldCamera,
   MapWorldCanonicalTransform,
@@ -87,8 +89,8 @@ function layerId(kind: WorldSceneLayerKind): string {
   return `main/${kind}`
 }
 
-function layerContentRevision(items: readonly WorldSceneItem[]): string {
-  const text = JSON.stringify(items, (key, value) =>
+function layerContentRevision(items: readonly WorldSceneItem[], catalogIdentity?: string): string {
+  const text = JSON.stringify(catalogIdentity === undefined ? items : { items, catalogIdentity }, (key, value) =>
     key === 'id' || key === 'layerId' ? undefined : value,
   )
   let hash = 0x811c9dc5
@@ -805,6 +807,65 @@ export async function worldTransformCorpusRefusal(
   return undefined
 }
 
+/** Admit only complete publisher navigation with a measured independent native grid.
+ * The existing canonical point mapper supplies all coordinates; no flag semantics are inferred.
+ * Non-square, skewed, vertical or incomplete layouts remain partial rather than being repaired. */
+function admittedNavigationGrid(
+  navigation: ResolvedMapWorkspaceSnapshot['navigation'],
+  transform: MapWorldCanonicalTransform | undefined,
+): Readonly<{ grid?: NonNullable<WorldSceneLayerItem['grid']>; positions?: readonly MapPosition[]; reason?: string }> {
+  if (navigation?.exact !== true) return {}
+  const reject = (reason: string) => Object.freeze({ reason: `exact navigation refused: ${reason}` })
+  if (navigation.trailingBytes !== 0) return reject('native trailing bytes are not represented by the flags grid')
+  if (transform === undefined) return reject('the native world frame is not qualified')
+  if (!isNavigationFlagEncoding(navigation.flagEncoding)) return reject('the flags vocabulary is not versioned and publisher-scoped')
+  const { width, height, cellCount, samples, grid } = navigation
+  if (!Number.isSafeInteger(width) || width < 1 || !Number.isSafeInteger(height) || height < 1 ||
+    !Number.isSafeInteger(width * height) || cellCount !== width * height || samples.length !== cellCount)
+    return reject('the flags grid is not complete')
+  const vector = (value: unknown): value is MapPosition => value !== null && typeof value === 'object' &&
+    (['x', 'y', 'z'] as const).every(axis => Number.isFinite((value as MapPosition)[axis]))
+  if (grid?.coordinateSpaceId !== 'map-native' || !vector(grid.origin) || !vector(grid.columnStep) || !vector(grid.rowStep))
+    return reject('native sample origin and steps are missing or invalid')
+  const seen = new Set<number>()
+  for (const item of samples) {
+    if (!Number.isSafeInteger(item.x) || !Number.isSafeInteger(item.y) || item.x < 0 || item.x >= width ||
+      item.y < 0 || item.y >= height || !Number.isSafeInteger(item.flags) || item.flags < 0)
+      return reject('a native sample or flags value is invalid')
+    const index = item.y * width + item.x
+    if (seen.has(index)) return reject('a native sample coordinate is repeated')
+    seen.add(index)
+  }
+  const position = (x: number, y: number) => canonicalPosition({
+    x: grid.origin.x + x * grid.columnStep.x + y * grid.rowStep.x,
+    y: grid.origin.y + x * grid.columnStep.y + y * grid.rowStep.y,
+    z: grid.origin.z + x * grid.columnStep.z + y * grid.rowStep.z,
+  }, transform)
+  const origin = position(0, 0), column = position(1, 0), row = position(0, 1)
+  if (![origin, column, row].every(vector)) return reject('the projected frame is not finite')
+  const cx = column.x - origin.x, cz = column.z - origin.z
+  const rx = row.x - origin.x, rz = row.z - origin.z
+  const aligned = cx !== 0 && cz === 0 && rx === 0 && rz !== 0
+  const swapped = cx === 0 && cz !== 0 && rx !== 0 && rz === 0
+  if ((!aligned && !swapped) || column.y !== origin.y || row.y !== origin.y ||
+    (aligned ? Math.abs(cx) !== Math.abs(rz) : Math.abs(cz) !== Math.abs(rx)))
+    return reject('the projected samples do not form an axis-aligned square grid')
+  const cellSize = Math.abs(aligned ? cx : cz)
+  const end = position(width - 1, height - 1)
+  const minimumX = Math.min(origin.x, end.x), minimumZ = Math.min(origin.z, end.z)
+  const maximumX = Math.max(origin.x, end.x), maximumZ = Math.max(origin.z, end.z)
+  if (!vector(end) || minimumX < transform.bounds.minimum.x - 1e-9 || maximumX > transform.bounds.maximum.x + 1e-9 ||
+    minimumZ < transform.bounds.minimum.z - 1e-9 || maximumZ > transform.bounds.maximum.z + 1e-9)
+    return reject('the navigation grid extends beyond the qualified world bounds')
+  const positions = samples.map(item => Object.freeze(position(item.x, item.y)))
+  if (!positions.every(vector)) return reject('a projected sample is not finite')
+  return Object.freeze({
+    grid: Object.freeze({ columns: swapped ? height : width, rows: swapped ? width : height,
+      cellSize, origin: Object.freeze([minimumX, origin.y, minimumZ] as const), coordinateSpaceId: 'uvw-canonical' }),
+    positions: Object.freeze(positions),
+  })
+}
+
 /** Creates a lease whose release makes every page/cursor stale immediately. */
 export function createCandidateWorldSceneLease(
   snapshot: ResolvedMapWorkspaceSnapshot,
@@ -1359,15 +1420,17 @@ export function createCandidateWorldSceneLease(
         }),
       ),
   )
+  const navigationAdmission = admittedNavigationGrid(snapshot.navigation, uvwTransform)
   const navigation: readonly WorldSceneItem[] = Object.freeze(
-    (snapshot.navigation?.samples ?? []).map(item =>
+    (snapshot.navigation?.samples ?? []).map((item, index) =>
       Object.freeze({
         facet: 'navigation' as const,
         id: `${navigationLayerId}:sample:${String(item.x)}:${String(item.y)}`,
         layerId: navigationLayerId,
         coordinateSpaceId: 'navigation-grid',
-        lod: 'sampled' as const,
-        ...item,
+        lod: navigationAdmission.grid === undefined ? 'sampled' as const : 'exact' as const,
+        ...(navigationAdmission.positions?.[index] === undefined ? {} : { uvwPosition: navigationAdmission.positions[index] }),
+        x: item.x, y: item.y, flags: item.flags,
       }),
     ),
   )
@@ -1434,7 +1497,7 @@ export function createCandidateWorldSceneLease(
     objects: layerContentRevision(objects),
     regions: layerContentRevision(regions),
     resources: layerContentRevision(resources),
-    navigation: layerContentRevision(navigation),
+    navigation: layerContentRevision(navigation, snapshot.navigation?.flagEncoding),
     gateways: layerContentRevision(gateways),
     lighting: layerContentRevision(lighting),
   })
@@ -1656,13 +1719,13 @@ export function createCandidateWorldSceneLease(
     Object.freeze({
       facet: 'navigation' as const,
       layerId: navigationLayerId,
-      state: snapshot.navigation === undefined ? ('unavailable' as const) : ('partial' as const),
+      state: snapshot.navigation === undefined ? ('unavailable' as const) : navigationAdmission.grid === undefined ? ('partial' as const) : ('available' as const),
       itemCount: snapshot.navigation?.cellCount ?? 0,
-      lods: Object.freeze(snapshot.navigation === undefined ? [] : ['summary', 'sampled']),
+      lods: Object.freeze(snapshot.navigation === undefined ? [] : navigationAdmission.grid === undefined ? ['summary', 'sampled'] : ['summary', 'sampled', 'exact']),
       contentRevision: contentRevisions.navigation,
       ...(snapshot.navigation === undefined
         ? { reason: 'publisher reported navigation unavailable' }
-        : { reason: 'native flags are sampled and their bit semantics remain publisher-defined' }),
+        : navigationAdmission.grid === undefined ? { reason: navigationAdmission.reason ?? 'native flags are sampled and their bit semantics remain publisher-defined' } : {}),
     }),
     Object.freeze({
       facet: 'gateways' as const,
@@ -1710,6 +1773,10 @@ export function createCandidateWorldSceneLease(
               })(),
               ([x,y]) => { const point=canonicalPosition({x,y,z:0},uvwTransform);return [point.x,point.z] },
             ) } : {}),
+        ...(item.facet === 'navigation' ? {
+          ...(navigationAdmission.grid === undefined ? {} : { grid: navigationAdmission.grid }),
+          ...(snapshot.navigation?.flagEncoding === undefined ? {} : { navigationFlagEncoding: snapshot.navigation.flagEncoding }),
+        } : {}),
         state: item.state,
         itemCount: item.itemCount,
         lods: item.lods,
@@ -2038,9 +2105,10 @@ export function createCandidateWorldSceneLease(
               : request.facet === 'cliffs'
                 ? cliffLod
                 : request.facet === 'navigation'
-                  ? 'sampled'
+                  ? navigationAdmission.grid === undefined ? 'sampled' : 'exact'
                   : undefined
-        if (expectedLod !== undefined && request.lod !== expectedLod) {
+        if (expectedLod !== undefined && request.lod !== expectedLod &&
+          !(request.facet === 'navigation' && navigationAdmission.grid !== undefined && request.lod === 'sampled')) {
           return Promise.resolve(
             Object.freeze({
               snapshotId: snapshot.snapshotId,
@@ -2135,7 +2203,10 @@ export function createCandidateWorldSceneLease(
                 item.y <= bounds.maximumY
               )
             })
-      return Promise.resolve(pageItems(bounded, request, snapshot.snapshotId, maxPageSize))
+      const page = pageItems(bounded, request, snapshot.snapshotId, maxPageSize)
+      return Promise.resolve(request.facet === 'navigation' && navigationAdmission.grid !== undefined && request.lod === 'sampled'
+        ? Object.freeze({ ...page, items: Object.freeze(page.items.map(item => item.facet === 'navigation' ? Object.freeze({ ...item, lod: 'sampled' as const }) : item)) })
+        : page)
     },
     ...(modelResources === undefined
       ? {}

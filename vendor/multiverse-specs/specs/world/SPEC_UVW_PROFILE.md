@@ -257,6 +257,16 @@ The legacy candidate envelope does not gain this profile-only field.
    sample positions fit within the enclosing space bounds. Cross-field validation refuses a
    partial or displaced grid before any consumer maps publisher flags to a traversal policy.
    Presence of valid flags alone does not mean a cell is walkable.
+   Optional `flagEncoding` names a versioned publisher vocabulary (`namespace/name@major`),
+   retained unchanged through source catalogs, UVP, inline and paged glTF. It is not a movement
+   class. Omission in older worlds remains unknown; a converter MUST NOT infer it from units,
+   filenames or the numeric flags. A native writer must refuse a foreign/unknown vocabulary
+   unless it has a qualified explicit mapping. A legacy same-game route may retain its already
+   qualified native vocabulary, without claiming cross-game navigation preservation.
+   A complete native source supplies its own sample origin and independent column/row steps,
+   not a terrain-derived resolution. Only a qualified, complete square canonical grid is admitted
+   as exact; sampled, skewed or displaced data remains explicitly partial. Cell-centre sample
+   positions are retained as such, never moved to the corners of the terrain grid.
 9. `traversal` is the portable, static movement graph for one `classId` inside one heightfield
    space; another class uses another layer. `origin` is the lower `x/z` corner of cell `(0,0)`,
    so its extent is `columns × rows × cellSize` (unlike heightfield sample extent). `walkable`
