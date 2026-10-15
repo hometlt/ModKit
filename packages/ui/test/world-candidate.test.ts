@@ -7,6 +7,10 @@ import type {
   WorldSceneLayerItem,
   WorldScenePage,
   WorldScenePageRequest,
+  WorldSceneFrame,
+  WorldSceneLightingItem,
+  WorldSceneItem,
+  WorldSceneModelResult,
 } from '@modkit/sdk/maps'
 import { WORLD_SCENE_SOURCE_CONTRACT } from '@modkit/sdk/maps'
 import type { TransportSource } from '@modkit/sdk'
@@ -21,7 +25,11 @@ import {
   selectWorldObject,
   watchTransportedWorld,
   worldModelAssetStatus,
+  candidateWorldWebGlInput,
+  type CandidateWorldViewerModel,
 } from '@modkit/ui/world'
+import { createWorldWebGlPlan, worldHeadlessScene, createWorldWebGlCameraFrame } from '@modkit/scene/world'
+import { renderHeadless } from '@modkit/scene/render/headless'
 
 const contract = 'example.publisher/world-source'
 const snapshotId = 'example-snapshot'
@@ -74,6 +82,156 @@ const info: CandidateWorldSceneInfo = Object.freeze({
   unknownFacets: Object.freeze(['lighting']),
   lossPolicy: 'explicit-partial',
   complete: true,
+})
+
+describe('sampled lighting through the common world bridge', () => {
+  const lighting = (id: string, color: readonly [number, number, number]): WorldSceneLightingItem => ({
+    facet: 'lighting', id, layerId: 'lighting', coordinateSpaceId: 'native',
+    ambientColor: color, ambientIntensity: 1,
+    directional: [{ id: 'off', direction: [0, -1, 0], color: [0, 0, 0], intensity: 0 }],
+  })
+  const object = { facet: 'objects', id: 'object:1', layerId: layer.layerId,
+    coordinateSpaceId: 'native', kind: 'doodad', objectId: 1, resourceId: 'post',
+    position: { x: 2, y: 0, z: 2 }, uvwPosition: { x: 2, y: 0, z: 2 } } as const
+  const frame = (sample?: WorldSceneLightingItem, timeMs = 100): WorldSceneFrame => ({
+    snapshotId, timeMs, objects: [object], diagnostics: [], complete: true,
+    ...(sample === undefined ? {} : { lighting: sample }), animationTimes: [{ objectId: 1, seconds: 0.1 }],
+    camera: { eye: [2, 2, 6], target: [2, 1, 2], up: [0, 1, 0], near: 0.01, far: 100, verticalFieldOfView: 1 },
+  })
+  const model = async (items: readonly WorldSceneItem[]): Promise<CandidateWorldViewerModel> =>
+    inspectCandidateWorld({ contract, major: 1, snapshotId, info: async () => info,
+      page: async request => request.facet === 'layers'
+        ? { snapshotId, facet: 'layers', state: 'available', items: [{ ...layer,
+          materials: [{ materialId: 'white', baseColorFactor: [1, 1, 1, 1] }] }] }
+        : { snapshotId, facet: request.facet, state: 'available', items },
+    }, { maxLayers: 4, maxItemsPerLayer: 64 })
+
+  it('replaces every static light, restores absence and owns each sample without stale rig fields', async () => {
+    const staticLight = { ...lighting('static', [1, 0, 0]),
+      objects: { ambientColor: [0, 1, 0] as const, ambientIntensity: 1, directional: [] },
+      fog: { color: [0, 0, 0] as const, density: 1, falloff: 0, startingHeight: 0 } }
+    const world = await model([object, staticLight, lighting('duplicate', [0, 1, 0])])
+    const original = candidateWorldWebGlInput(world)
+    const a = lighting('a', [0, 0, 1]), b = lighting('b', [0, 1, 0])
+    const first = candidateWorldWebGlInput(world, undefined, frame(a))
+    const second = candidateWorldWebGlInput(world, undefined, frame(b)) // same time, new rig
+    expect(first.items.filter(item => item.facet === 'lighting')).toEqual([a])
+    expect(second.items.filter(item => item.facet === 'lighting')).toEqual([b])
+    expect(first.items.find(item => item.facet === 'lighting')).not.toHaveProperty('fog')
+    expect(first.items.find(item => item.facet === 'lighting')).not.toHaveProperty('objects')
+    expect(first.animationTimes?.get(1)).toBe(0.1)
+    expect(first.camera).toBeDefined()
+    const concurrent = await Promise.all([50, 10, 40].map(async time => candidateWorldWebGlInput(world, undefined, frame(a, time))))
+    expect(concurrent.map(input => input.timeSeconds)).toEqual([0.05, 0.01, 0.04])
+    expect(candidateWorldWebGlInput(world, undefined, frame()).items).toEqual([
+      ...original.items.filter(item => item.facet !== 'objects'), object,
+    ])
+    expect(candidateWorldWebGlInput(world).items).toBe(original.items)
+    expect(world.layers[0]!.page.items).toEqual([object, staticLight, lighting('duplicate', [0, 1, 0])])
+    expect(first.terrainMaterials).toBe(original.terrainMaterials)
+    expect(first.waterMaterials).toBe(original.waterMaterials)
+    expect(first.terrainWeightRasters).toBe(original.terrainWeightRasters)
+    ;(a.ambientColor as unknown as number[])[2] = 0
+    expect(first.items.find(item => item.facet === 'lighting')).toMatchObject({ ambientColor: [0, 0, 1] })
+    expect(first.items.find(item => item.facet === 'objects')).toBe(object)
+  })
+
+  it('refuses frame accessors without running them, null, undeclared axes and profile overflow', async () => {
+    const world = await model([object])
+    let reads = 0
+    const accessor = Object.defineProperty(frame(), 'lighting', { get() { reads++; return lighting('bad', [1, 0, 0]) } })
+    expect(() => candidateWorldWebGlInput(world, undefined, accessor)).toThrow(/own data/)
+    expect(reads).toBe(0)
+    expect(() => candidateWorldWebGlInput(world, undefined, { ...frame(), lighting: null } as unknown as WorldSceneFrame)).toThrow()
+    expect(() => candidateWorldWebGlInput(world, undefined, frame({ ...lighting('bad', [1, 0, 0]), coordinateSpaceId: 'unknown' }))).toThrow(/coordinateSpaceId/)
+    expect(() => candidateWorldWebGlInput(world, undefined, { ...frame(), snapshotId: 'other' })).toThrow(/snapshot/)
+    expect(() => candidateWorldWebGlInput(world, undefined, { ...frame(), timeMs: -1 })).toThrow(/time domain/)
+  })
+
+  it('changes actual lit CPU pixels on independent terrain/object rigs through the same world plan', async () => {
+    const terrain = Array.from({ length: 25 }, (_, index) => ({
+      facet: 'terrain' as const, id: `terrain:${index}`, layerId: 'terrain', coordinateSpaceId: 'native',
+      lod: 'exact' as const, x: index % 5, y: Math.floor(index / 5), heightBase: 0, heightAdjustment: 0,
+      mask: 0, uvwPosition: { x: index % 5, y: 0, z: Math.floor(index / 5) },
+    }))
+    const whiteModel: WorldSceneModelResult = { state: 'converted', sourceKey: 'post', complete: true,
+      diagnostics: [], meshes: [], primitives: [{ id: 'quad', topology: 'triangles', materialId: 'surface',
+        positions: Float32Array.from([-1, 0, 0, 1, 0, 0, 1, 2, 0, -1, 2, 0]),
+        normals: Float32Array.from([0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1]),
+        indices: Uint32Array.from([0, 1, 2, 0, 2, 3]) }],
+      materials: [{ id: 'surface', layers: [], baseColorFactor: [1, 1, 1, 1] }] }
+    const terrainWeights = terrain.map(item => ({ facet: 'terrain-materials' as const,
+      id: `material:${item.id}`, layerId: 'materials', coordinateSpaceId: 'height-grid' as const, x: item.x, y: item.y,
+      lod: 'exact' as const, textureIndex: 0, weights: [{ materialId: 'white', weight: 1 }] }))
+    const world = { ...await model([...terrain, ...terrainWeights, object, lighting('static', [0, 1, 0])]),
+      models: new Map([['post', whiteModel]]) }
+    const sampled = { ...lighting('sample', [1, 0, 0]), objects: {
+      ambientColor: [0, 0, 1] as const, ambientIntensity: 1, directional: [],
+    } }
+    const plan = createWorldWebGlPlan(candidateWorldWebGlInput(world, undefined, frame(sampled)))
+    const neutral = worldHeadlessScene(plan)
+    expect(neutral.scene.ambientLight).toEqual([1, 0, 0])
+    expect([...(neutral.materialLighting?.values() ?? [])].some(rig => JSON.stringify(rig.ambientLight) === '[0,0,1]')).toBe(true)
+    // The ordinary CPU ground/fallback defaults are unlit; opt these fixture surfaces into light.
+    const scene = { ...neutral.scene, materials: (neutral.scene.materials ?? []).map(material => ({ ...material, shading: 'lambert' as const })) }
+    const image = await renderHeadless({ scene, camera: createWorldWebGlCameraFrame(plan, 64, 64),
+      viewport: { width: 64, height: 64 }, outputKind: 'rgba8' }, neutral.splats, neutral.water,
+      neutral.terrain, neutral.materialLighting)
+    let red = 0, blue = 0
+    for (let offset = 0; offset < image.rgba.length; offset += 4) {
+      if (image.rgba[offset]! > 50 && image.rgba[offset + 2]! < 20) red++
+      if (image.rgba[offset + 2]! > 50 && image.rgba[offset]! < 20) blue++
+    }
+    expect(red).toBeGreaterThan(3)
+    expect(blue).toBeGreaterThan(3)
+
+    // Controlled emitted rays: map-native [x,y,z] becomes world [x,z,y] once; UVW stays UVW.
+    // Existing preview light has a 0.25 diffuse floor: reversal dims rather than blacks the quad.
+    const directionalPixels: number[][] = []
+    for (const [coordinateSpaceId, direction] of [
+      ['map-native', [0, -2, 0]], ['uvw', [0, 0, -2]],
+    ] as const) {
+      const counts: number[] = []
+      const energies: number[] = []
+      const declared = { ...world, info: { ...world.info, coordinateSpaces: [
+        ...world.info.coordinateSpaces, { ...world.info.coordinateSpaces[0]!, id: coordinateSpaceId },
+      ] } }
+      for (const sign of [1, -1]) {
+        const sample: WorldSceneLightingItem = { ...lighting('directional', [0, 0, 0]), coordinateSpaceId,
+          objects: { ambientColor: [0, 0, 0], ambientIntensity: 0,
+            directional: [{ id: 'blue-key', direction: direction.map(component => component * sign) as [number, number, number],
+              color: [0, 0, 1], intensity: 1 }] } }
+        const controlPlan = createWorldWebGlPlan(candidateWorldWebGlInput(declared, undefined, frame(sample)))
+        const control = worldHeadlessScene(controlPlan)
+        // Signed zero has identical ray semantics; retain every nonzero authored component.
+        expect(control.materialLighting?.get('model-0/surface')?.lights?.[0]?.direction.map(value => value + 0)).toEqual([0, 0, 2 * sign])
+        const controlImage = await renderHeadless({ scene: { ...control.scene,
+          materials: (control.scene.materials ?? []).map(material => ({ ...material, shading: 'lambert' as const })) },
+          camera: createWorldWebGlCameraFrame(controlPlan, 64, 64), viewport: { width: 64, height: 64 },
+          outputKind: 'rgba8' }, control.splats, control.water, control.terrain, control.materialLighting)
+        let lit = 0, energy = 0
+        const blueLevels = new Set<number>()
+        for (let offset = 0; offset < controlImage.rgba.length; offset += 4) {
+          energy += controlImage.rgba[offset + 2]!
+          if (controlImage.rgba[offset + 2]! > 0) {
+            blueLevels.add(controlImage.rgba[offset + 2]!)
+            expect(controlImage.rgba[offset]).toBe(0)
+            expect(controlImage.rgba[offset + 1]).toBe(0)
+          }
+          if (controlImage.rgba[offset + 2]! > 200 && controlImage.rgba[offset]! < 20) lit++
+        }
+        counts.push(lit)
+        energies.push(energy)
+        expect([...blueLevels]).toEqual([sign === 1 ? 255 : 64])
+      }
+      expect(counts[0]).toBeGreaterThan(3)
+      expect(counts[1]).toBe(0)
+      expect(energies[0]!).toBeGreaterThan(energies[1]! * 3)
+      expect(energies[1]).toBeGreaterThan(0)
+      directionalPixels.push(counts)
+    }
+    expect(directionalPixels[0]).toEqual(directionalPixels[1])
+  })
 })
 
 describe('generic publisher-candidate world harness', () => {

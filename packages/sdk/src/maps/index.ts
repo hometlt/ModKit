@@ -1,6 +1,6 @@
 /** Protocol-neutral contracts for bounded semantic map opening. */
 
-import type { Diagnostic } from '@modkit/core'
+import { snapshotJson, type Diagnostic } from '@modkit/core'
 import type { DataCatalogSnapshot, DataEntityRef, DataResolvedEntity } from '../data/index.js'
 import type { ProjectionBasis } from '../asset-capabilities/uv-projection.js'
 import type { ModWorkspaceGraphInput, ModWorkspaceLock } from '../mods/index.js'
@@ -1957,6 +1957,150 @@ export interface WorldSceneLightingItem {
   }>[]
 }
 
+/**
+ * Own one sampled lighting rig before rendering. The directional limit belongs to the caller's
+ * operation profile, not to a native format. Unknown JSON metadata is retained. Numeric checks
+ * cover settings only; independent material radiance and scene geometry remain renderer inputs.
+ */
+export function admitWorldSceneLighting(
+  value: unknown,
+  context: Readonly<{
+    declaredCoordinateSpaceIds: ReadonlySet<string>
+    maximumDirectionalLights: number
+  }>,
+  signal?: AbortSignal,
+): WorldSceneLightingItem {
+  if (!Number.isSafeInteger(context.maximumDirectionalLights) ||
+      context.maximumDirectionalLights < 0 || context.maximumDirectionalLights > 4096)
+    throw new TypeError('invalid world lighting operation profile')
+  const owned = snapshotJson(value, { maxDepth: 16, maxNodes: 4096, maxBytes: 128 * 1024 }, signal)
+  const invalid = (path: string): never => { throw new TypeError(`invalid world lighting ${path}`) }
+  const unsupported = (path: string): never => {
+    throw new RangeError(`world lighting operation profile does not support ${path}`)
+  }
+  const record = (entry: unknown, path: string): Record<string, unknown> => {
+    if (entry === null || typeof entry !== 'object' || Array.isArray(entry)) return invalid(path)
+    return entry as Record<string, unknown>
+  }
+  const scalar = (entry: unknown, path: string, minimum = -Infinity): number => {
+    if (typeof entry !== 'number' || !Number.isFinite(entry) || entry < minimum) return invalid(path)
+    if (!Number.isFinite(Math.fround(entry)) || (entry !== 0 && Math.fround(entry) === 0))
+      return unsupported(`${path} outside finite float32 settings`)
+    return entry
+  }
+  const text = (entry: unknown, path: string): string => {
+    if (typeof entry !== 'string' || entry.length === 0 || entry.length > 1024) return invalid(path)
+    return entry
+  }
+  const vector = (entry: unknown, path: string, minimum = -Infinity, maximum = Infinity): number[] => {
+    if (!Array.isArray(entry) || entry.length !== 3) return invalid(path)
+    return entry.map((component, index) => {
+      const number = scalar(component, `${path}[${index}]`, minimum)
+      if (number > maximum) return invalid(path)
+      return number
+    })
+  }
+  const boolean = (entry: unknown, path: string): void => {
+    if (typeof entry !== 'boolean') invalid(path)
+  }
+  const refuseLocal = (entry: Record<string, unknown>, path: string): void => {
+    for (const key of ['type', 'kind', 'model'])
+      if (entry[key] === 'point' || entry[key] === 'spot') unsupported(`${path}.${key}=${entry[key]}`)
+  }
+  const rig = (entry: Record<string, unknown>, path: string): void => {
+    refuseLocal(entry, path)
+    const ambient = vector(entry.ambientColor, `${path}.ambientColor`, 0)
+    const intensity = scalar(entry.ambientIntensity, `${path}.ambientIntensity`, 0)
+    const sums = ambient.map(component => scalar(component * intensity, `${path}.ambient radiance`, 0))
+    if (!Array.isArray(entry.directional)) invalid(`${path}.directional`)
+    const lights = entry.directional as unknown[]
+    if (lights.length > context.maximumDirectionalLights) unsupported(`${path}.directional count`)
+    for (const [index, light] of lights.entries()) {
+      const name = `${path}.directional[${index}]`, item = record(light, name)
+      refuseLocal(item, name)
+      text(item.id, `${name}.id`)
+      const direction = vector(item.direction, `${name}.direction`)
+      const lengthSquared = direction.reduce((sum, component) => sum + component * component, 0)
+      if (lengthSquared === 0) invalid(`${name}.direction`)
+      scalar(lengthSquared, `${name}.direction length squared`, 0)
+      const color = vector(item.color, `${name}.color`, 0)
+      const strength = scalar(item.intensity, `${name}.intensity`, 0)
+      const specular = item.specularColor === undefined ? color : vector(item.specularColor, `${name}.specularColor`, 0)
+      const specularStrength = item.specularIntensity === undefined ? strength : scalar(item.specularIntensity, `${name}.specularIntensity`, 0)
+      for (let channel = 0; channel < 3; channel++) {
+        sums[channel] = scalar(sums[channel]! + color[channel]! * strength, `${name}.radiance sum`, 0)
+        scalar(specular[channel]! * specularStrength, `${name}.specular radiance`, 0)
+      }
+      if (item.useAmbientOcclusion !== undefined) boolean(item.useAmbientOcclusion, `${name}.useAmbientOcclusion`)
+    }
+  }
+  const item = record(owned, 'item')
+  refuseLocal(item, 'item')
+  if (item.facet !== 'lighting') invalid('facet')
+  text(item.id, 'id'); text(item.layerId, 'layerId')
+  if (!context.declaredCoordinateSpaceIds.has(text(item.coordinateSpaceId, 'coordinateSpaceId')))
+    invalid('undeclared coordinateSpaceId')
+  if (item.model !== undefined && item.model !== 'lit' && item.model !== 'unlit') invalid('model')
+  if (item.unlitColor !== undefined) vector(item.unlitColor, 'unlitColor', 0)
+  rig(item, 'world')
+  if (item.objects !== undefined) rig(record(item.objects, 'objects'), 'objects')
+  if (item.terrain !== undefined) {
+    const terrain = record(item.terrain, 'terrain')
+    for (const key of ['specularExponent', 'diffuseMultiplier', 'specularMultiplier'])
+      scalar(terrain[key], `terrain.${key}`, 0)
+  }
+  if (item.shadowRange !== undefined) {
+    const shadow = record(item.shadowRange, 'shadowRange')
+    const distance = scalar(shadow.distance, 'shadowRange.distance')
+    const fov = scalar(shadow.fieldOfViewDegrees, 'shadowRange.fieldOfViewDegrees')
+    // Nonpositive values disable the existing range; positive FOV is clamped by its renderer.
+    if (distance > 0 && fov > 0)
+      scalar(1 / Math.tan(Math.min(179, fov) * Math.PI / 360), 'shadowRange reciprocal tangent', 0)
+  }
+  if (item.fog !== undefined) {
+    const fog = record(item.fog, 'fog')
+    vector(fog.color, 'fog.color', 0, 1)
+    scalar(fog.density, 'fog.density', 0)
+    const falloff = scalar(fog.falloff, 'fog.falloff')
+    scalar(scalar(fog.startingHeight, 'fog.startingHeight') * falloff, 'fog.height coefficient')
+  }
+  if (item.toneMapping !== undefined) {
+    const tone = record(item.toneMapping, 'toneMapping')
+    if (typeof tone.operator !== 'string' ||
+        !['reinhard', 'exponential', 'logarithmic', 'linear', 'filmic'].includes(tone.operator)) invalid('toneMapping.operator')
+    const exposure = scalar(tone.exposure, 'toneMapping.exposure', 0)
+    const white = scalar(tone.whitePoint, 'toneMapping.whitePoint')
+    scalar(tone.contrast, 'toneMapping.contrast', 0)
+    if (tone.operator === 'reinhard' && (white === 0 || Math.fround(white * white) === 0)) unsupported('zero Reinhard white point square')
+    if (tone.operator === 'reinhard') scalar(white * white, 'toneMapping.white point square', 0)
+    if (tone.operator === 'logarithmic') {
+      // GLSL adds the float32 uniform to 1 before taking log; a tiny double is not sufficient.
+      const denominator = Math.fround(Math.log(Math.fround(1 + Math.fround(exposure))))
+      if (!Number.isFinite(denominator) || denominator <= 0) unsupported('zero logarithmic exposure denominator')
+    }
+    if (tone.correctGamma !== undefined) boolean(tone.correctGamma, 'toneMapping.correctGamma')
+    if (tone.ambientOcclusion !== undefined) {
+      const ao = record(tone.ambientOcclusion, 'toneMapping.ambientOcclusion')
+      // Radius <=0 disables AO; the renderer owns its power and threshold epsilon semantics.
+      for (const key of ['radius', 'noOcclusion', 'fullOcclusion', 'power']) scalar(ao[key], `ambientOcclusion.${key}`)
+      scalar((ao.noOcclusion as number) - (ao.fullOcclusion as number), 'ambientOcclusion threshold span')
+    }
+    if (tone.colorization !== undefined) {
+      const color = record(tone.colorization, 'toneMapping.colorization')
+      for (const key of ['inputLow', 'inputHigh', 'inputGamma', 'outputLow', 'outputHigh', 'brightness', 'contrast', 'hue', 'saturation', 'lightness', 'blend']) scalar(color[key], `colorization.${key}`)
+      for (const key of ['saturation', 'blend']) if ((color[key] as number) < 0 || (color[key] as number) > 1) invalid(`colorization.${key}`)
+      const gamma = color.inputGamma as number
+      const exponent = gamma < 1 ? (1 - gamma) * 9 + 1 : gamma > 1 ? 1 - (gamma - 1) / 9 : 1
+      if (exponent < 0 || (color.contrast as number) < 0) unsupported('negative colorization power at zero')
+      scalar(exponent, 'colorization gamma exponent', 0)
+      scalar((color.inputHigh as number) - (color.inputLow as number), 'colorization input span')
+      const span = scalar((color.outputHigh as number) - (color.outputLow as number), 'colorization output span')
+      scalar(span * (color.brightness as number), 'colorization output coefficient')
+    }
+  }
+  return owned as unknown as WorldSceneLightingItem
+}
+
 /** Luminance-preserving HDR mapping, applied after transparent scene compositing. */
 export interface WorldToneMapping {
   readonly operator: 'reinhard' | 'exponential' | 'logarithmic' | 'linear' | 'filmic'
@@ -2127,6 +2271,8 @@ export interface WorldSceneFrame {
   readonly snapshotId: string
   readonly timeMs: number
   readonly objects: readonly WorldSceneObjectItem[]
+  /** Replaces the complete static lighting facet for this sample; omission uses static lighting. */
+  readonly lighting?: WorldSceneLightingItem
   readonly animationTimes?: readonly Readonly<{ objectId: number; seconds: number }>[]
   readonly camera?: WorldSceneCamera
   /** Camera selected on a loaded model; common scene resolves it after the same animation pose. */

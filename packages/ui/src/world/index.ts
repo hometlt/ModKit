@@ -47,7 +47,7 @@ import type {
   SceneRendererTexture,
   TransportSource,
 } from '@modkit/sdk'
-import { WORLD_SCENE_SOURCE_CONTRACT } from '@modkit/sdk/maps'
+import { admitWorldSceneLighting, WORLD_SCENE_SOURCE_CONTRACT } from '@modkit/sdk/maps'
 import type { ViewerModule } from '@modkit/sdk'
 import {
   createSurface,
@@ -1151,12 +1151,23 @@ export function candidateWorldWebGlInput(
       !Number.isFinite(frame.timeMs) || frame.timeMs < 0))
     throw new TypeError('world frame does not belong to this snapshot or time domain')
   const flattened = flattenedWorldLayersOf(model.layers)
+  // Read own data only: a producer's accessor must not run at the rendering boundary.
+  const lightingProperty = frame === undefined ? undefined : Object.getOwnPropertyDescriptor(frame, 'lighting')
+  if (lightingProperty !== undefined && !('value' in lightingProperty))
+    throw new TypeError('world frame lighting must be an own data property')
+  const lighting = lightingProperty?.value === undefined ? undefined : admitWorldSceneLighting(
+    lightingProperty.value,
+    { declaredCoordinateSpaceIds: new Set(model.info.coordinateSpaces.map(space => space.id)),
+      maximumDirectionalLights: 3 }, // Existing world profile: one key and two fills.
+  )
   // objects of a player slot take its colour (an object's own presentationTeamColor still wins)
   const teamColors = worldTeamColorsOf(model.info)
   const teamRamps = worldTeamRampsOf(model.info)
   const input: WorldWebGlInput = {
     items: shownWorldItems(frame === undefined ? flattened.items :
-      [...flattened.items.filter(item => item.facet !== 'objects'), ...frame.objects], hiddenOverlays),
+      [...flattened.items.filter(item => item.facet !== 'objects' &&
+        (lighting === undefined || item.facet !== 'lighting')), ...frame.objects,
+        ...(lighting === undefined ? [] : [lighting])], hiddenOverlays),
     ...(frame === undefined ? {} : { timeSeconds: frame.timeMs / 1000,
       animationTimes: new Map(frame.animationTimes?.map(item => [item.objectId, item.seconds])),
       ...(frame.camera === undefined ? {} : { camera: worldWebGlCameraFromSource(frame.camera) }) }),

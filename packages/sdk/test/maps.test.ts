@@ -11,6 +11,7 @@ import {
   MAP_LAYER_READ_INPUT_SCHEMA,
   MAP_LAYER_WRITE_INPUT_SCHEMA,
   mapLayerWindow,
+  admitWorldSceneLighting,
   type MapLayerDescriptor,
   type MapLayerGrid,
   type MapLayerReadRequest,
@@ -18,6 +19,90 @@ import {
 } from '@modkit/sdk/maps'
 // The host's validator for operation schemas: the one that would check these inputs.
 import { createServiceOperationSchemaValidator } from '../../host/src/service-operation-schema.js'
+
+describe('sampled world lighting admission', () => {
+  const context = { declaredCoordinateSpaceIds: new Set(['uvw']), maximumDirectionalLights: 3 }
+  const light = () => ({ facet: 'lighting', id: 'sample', layerId: 'lighting', coordinateSpaceId: 'uvw',
+    ambientColor: [0.2, 0.3, 2], ambientIntensity: 2, directional: [
+      { id: 'key', direction: [0, -2, 0], color: [3, 0.5, 1], intensity: 4,
+        specularColor: [2, 1, 0], specularIntensity: 0, useAmbientOcclusion: false },
+    ] })
+
+  it('owns nested data, preserving authored HDR values, order and inert metadata', () => {
+    const producer = { ...light(), metadata: { kind: 'spot', tags: ['native'] },
+      objects: { ambientColor: [0, 0, 0], ambientIntensity: 0, directional: [] } }
+    const admitted = admitWorldSceneLighting(producer, context)
+    producer.ambientColor[0] = 99
+    producer.directional[0]!.direction[1] = 99
+    producer.metadata.tags.push('changed')
+    expect(admitted.ambientColor).toEqual([0.2, 0.3, 2])
+    expect(admitted.directional[0]).toMatchObject({ direction: [0, -2, 0], intensity: 4, specularIntensity: 0 })
+    expect(admitted).toMatchObject({ metadata: { kind: 'spot', tags: ['native'] }, objects: { directional: [] } })
+    expect(Object.isFrozen(admitted.directional[0]!.direction)).toBe(true)
+    expect(admitted).not.toBe(producer)
+  })
+
+  it('keeps existing disabled ranges, AO epsilon, zero gamma/contrast and signed settings', () => {
+    const toneMapping = { operator: 'linear', exposure: 0, whitePoint: 0, contrast: 0,
+      correctGamma: false, ambientOcclusion: { radius: 0, noOcclusion: 0, fullOcclusion: 1, power: -1 },
+      colorization: { inputLow: 1, inputHigh: 1, inputGamma: 0, outputLow: 1, outputHigh: 0,
+        brightness: 1, contrast: 0, hue: -2, saturation: 1, lightness: -1, blend: 0 } }
+    const producer = { ...light(), toneMapping, shadowRange: { distance: 0, fieldOfViewDegrees: -1 },
+      fog: { color: [0, 0, 1], density: 0, falloff: -2, startingHeight: -3 } }
+    expect(admitWorldSceneLighting(producer, context)).toEqual(producer)
+    expect(admitWorldSceneLighting({ ...producer, shadowRange: { distance: 2, fieldOfViewDegrees: 220 } }, context).shadowRange?.fieldOfViewDegrees).toBe(220)
+  })
+
+  it.each([
+    ['null', () => null],
+    ['wrong facet', () => ({ ...light(), facet: 'objects' })],
+    ['undeclared axes', () => ({ ...light(), coordinateSpaceId: 'other' })],
+    ['empty identity', () => ({ ...light(), id: '' })],
+    ['negative intensity', () => ({ ...light(), ambientIntensity: -1 })],
+    ['bad RGB tuple', () => ({ ...light(), ambientColor: [1, 0] })],
+    ['zero direction', () => ({ ...light(), directional: [{ ...light().directional[0], direction: [0, 0, 0] }] })],
+    ['nonfinite', () => ({ ...light(), ambientIntensity: Infinity })],
+    ['shader overflow', () => ({ ...light(), ambientIntensity: 1e40 })],
+    ['radiance overflow', () => ({ ...light(), ambientColor: [3e38, 0, 0], ambientIntensity: 2 })],
+    ['specular boolean', () => ({ ...light(), directional: [{ ...light().directional[0], useAmbientOcclusion: 1 }] })],
+    ['bad object rig', () => ({ ...light(), objects: { ambientColor: [1, 0, 0] } })],
+    ['local root', () => ({ ...light(), type: 'point' })],
+    ['local directional', () => ({ ...light(), directional: [{ ...light().directional[0], kind: 'spot' }] })],
+    ['unsupported count', () => ({ ...light(), directional: Array(4).fill(light().directional[0]) })],
+    ['unsupported object count', () => ({ ...light(), objects: { ...light(), directional: Array(4).fill(light().directional[0]) } })],
+    ['bad tone', () => ({ ...light(), toneMapping: { operator: 'unknown', exposure: 1, whitePoint: 1, contrast: 1 } })],
+    ['coerced linear array', () => ({ ...light(), toneMapping: { operator: ['linear'], exposure: 1, whitePoint: 1, contrast: 1 } })],
+    ['coerced Reinhard array with zero white point', () => ({ ...light(), toneMapping: { operator: ['reinhard'], exposure: 1, whitePoint: 0, contrast: 1 } })],
+    ['non-string tone', () => ({ ...light(), toneMapping: { operator: false, exposure: 1, whitePoint: 1, contrast: 1 } })],
+    ['zero log denominator', () => ({ ...light(), toneMapping: { operator: 'logarithmic', exposure: 0, whitePoint: 1, contrast: 1 } })],
+    ['float32 zero log denominator', () => ({ ...light(), toneMapping: { operator: 'logarithmic', exposure: 1e-8, whitePoint: 1, contrast: 1 } })],
+    ['zero Reinhard white', () => ({ ...light(), toneMapping: { operator: 'reinhard', exposure: 1, whitePoint: 0, contrast: 1 } })],
+    ['bad terrain', () => ({ ...light(), terrain: { specularExponent: -1, diffuseMultiplier: 1, specularMultiplier: 1 } })],
+    ['bad fog', () => ({ ...light(), fog: { color: [2, 0, 0], density: 1, falloff: 0, startingHeight: 0 } })],
+    ['JSON bytes', () => ({ ...light(), metadata: 'x'.repeat(128 * 1024) })],
+    ['JSON nodes', () => ({ ...light(), metadata: Array(4096).fill(0) })],
+    ['JSON depth', () => ({ ...light(), metadata: Array.from({ length: 20 }).reduce<object>(nested => ({ nested }), {}) })],
+    ['JSON cycle', () => { const value = light() as ReturnType<typeof light> & { cycle?: unknown }; value.cycle = value; return value }],
+  ])('refuses %s without a lossy fallback', (_label, make) => {
+    expect(() => admitWorldSceneLighting(make(), context)).toThrow()
+  })
+
+  it('admits logarithmic exposure above the float32 addition threshold without changing it', () => {
+    const toneMapping = { operator: 'logarithmic', exposure: 2 ** -22, whitePoint: 1, contrast: 1 }
+    expect(admitWorldSceneLighting({ ...light(), toneMapping }, context).toneMapping).toEqual(toneMapping)
+  })
+
+  it('rejects getters without execution, supports cancellation and checks the trusted profile', () => {
+    let calls = 0
+    const value = { ...light(), get metadata() { calls++; return {} } }
+    expect(() => admitWorldSceneLighting(value, context)).toThrow(/accessor/)
+    expect(calls).toBe(0)
+    expect(() => admitWorldSceneLighting(light(), context, AbortSignal.abort())).toThrow(/cancel/)
+    for (const maximumDirectionalLights of [-1, 0.5, 4097, NaN])
+      expect(() => admitWorldSceneLighting(light(), { ...context, maximumDirectionalLights })).toThrow(/profile/)
+    expect(admitWorldSceneLighting({ ...light(), directional: [] }, { ...context, maximumDirectionalLights: 0 }).directional).toEqual([])
+  })
+})
 
 describe('game-neutral semantic map contract', () => {
   it('publishes stable service and matcher coordinates without game-specific ids', () => {
