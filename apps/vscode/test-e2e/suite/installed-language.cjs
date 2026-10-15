@@ -1342,15 +1342,21 @@ exports.run = async function run() {
       isIncomplete: projectVerified.isIncomplete,
     }
     await showDocument(documents.galaxy)
-    // Verify Mod opens Problems; await editor focus before dispatching the focus-routed Undo.
+    // Native Undo is focus-routed: activate the test window before restoring its editor focus.
+    await vscode.commands.executeCommand('workbench.action.focusWindow')
+    if (!(await waitFor(() => vscode.window.state.focused)))
+      throw new Error('Native Undo fixture could not focus its test window')
     await vscode.commands.executeCommand('workbench.action.focusActiveEditorGroup')
     receipt.undoProbe = {
+      focusedWindow: vscode.window.state.focused,
       activeUri: vscode.window.activeTextEditor?.document.uri.toString(),
       beforeVersion: documents.galaxy.version,
       beforeText: documents.galaxy.getText(),
     }
     if (!sameDocument(vscode.window.activeTextEditor?.document.uri, uris.galaxy))
       throw new Error('Undo fixture did not regain the Galaxy editor focus')
+    if (!receipt.undoProbe.focusedWindow)
+      throw new Error('Native Undo fixture lost its test-window focus')
     await vscode.commands.executeCommand('undo')
     if (await waitFor(() => documents.galaxy.getText() === originalGalaxyText)) {
       // The undo restored the dependency call before any save.
