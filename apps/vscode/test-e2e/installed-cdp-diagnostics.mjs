@@ -127,12 +127,14 @@ export function displayedDdsRaster(doc, win) {
 }
 
 /** Native custom editors expose Metadata as visible sidebar facts, not select options. */
-export function readDdsMetadata(doc) {
+export function readDdsMetadata(doc, win) {
+  if (win?.__MODKIT_ACCEPTANCE__?.subject?.descriptor?.identity?.formatId !== 'dds')
+    return undefined
   const sidebar = doc.querySelector('[data-mk-part="media-shell.sidebar"]')
   if (!sidebar) return undefined
   if (sidebar.hidden)
     doc.querySelector('[data-mk-part="media-shell.toggle"][data-side="right"]')?.click()
-  const sections = ['image', 'format'].map(id =>
+  const sections = ['image', 'format', 'metadata'].map(id =>
     doc.querySelector(`[data-mk-part="media-shell.section"][data-section-id="${id}"]`),
   )
   if (sections.some(section => !section)) return undefined
@@ -156,8 +158,10 @@ export function readDdsMetadata(doc) {
   )
   if (
     !rows[0].some(row => /^4\s*×\s*4$/u.test(row.value)) ||
-    !rows[1].some(row => /\bDDS\b/iu.test(row.value)) ||
-    rows[1].filter(row => row.label && row.value).length < 3
+    !rows[1].some(row => /^(?:DDS|DirectDraw Surface)(?:\s*·\s*DXT1)?$/iu.test(row.value)) ||
+    rows[1].filter(row => row.label && row.value).length < 3 ||
+    !rows[2].some(row => row.label === 'width' && row.value === '4') ||
+    !rows[2].some(row => row.label === 'height' && row.value === '4')
   )
     return undefined
   return {
@@ -165,6 +169,7 @@ export function readDdsMetadata(doc) {
     presentation: 'sidebar-sections',
     image: rows[0],
     format: rows[1],
+    headerMetadata: rows[2],
   }
 }
 

@@ -29,6 +29,10 @@ test('empty target list and fetch errors remain distinguishable', async () => {
 })
 
 test('DDS metadata follows visible sidebar sections, not unrelated filtering/writer selects', () => {
+  const win = {
+    __MODKIT_ACCEPTANCE__: { subject: { descriptor: { identity: { formatId: 'dds' } } } },
+  }
+  const read = doc => readDdsMetadata(doc, win)
   const sidebar = { hidden: true }
   const makeSection = values => {
     const body = {
@@ -55,9 +59,15 @@ test('DDS metadata follows visible sidebar sections, not unrelated filtering/wri
     ['Aspect', '1.000'],
   ])
   const format = makeSection([
-    ['Format', 'DDS · DXT1'],
-    ['Mip levels', '1'],
+    ['Format', 'DirectDraw Surface · DXT1'],
+    ['Mip levels', '3'],
     ['Channels', '4 × 8-bit'],
+    ['Colour space', 'unknown'],
+  ])
+  const headerMetadata = makeSection([
+    ['width', '4'],
+    ['height', '4'],
+    ['encoding', 'dxt1'],
   ])
   const doc = {
     querySelector: selector =>
@@ -71,15 +81,24 @@ test('DDS metadata follows visible sidebar sections, not unrelated filtering/wri
           ? image
           : selector.includes('section-id="format"')
             ? format
-            : sidebar,
+            : selector.includes('section-id="metadata"')
+              ? headerMetadata
+              : sidebar,
   }
-  const evidence = readDdsMetadata(doc)
+  const evidence = read(doc)
   assert.equal(evidence.surface, 'image-sidebar-metadata')
   assert.equal(evidence.presentation, 'sidebar-sections')
   assert.equal(evidence.image[0].value, '4 × 4')
   assert.equal(sidebar.hidden, false)
+  assert.equal(evidence.headerMetadata[0].value, '4')
+  assert.equal(
+    readDdsMetadata(doc, {
+      __MODKIT_ACCEPTANCE__: { subject: { descriptor: { identity: { formatId: 'png' } } } },
+    }),
+    undefined,
+  )
   const absent = { querySelector: () => null }
-  assert.equal(readDdsMetadata(absent), undefined)
+  assert.equal(read(absent), undefined)
   const wrong = makeSection([
     ['Format', 'PNG'],
     ['Mip levels', '1'],
@@ -88,13 +107,18 @@ test('DDS metadata follows visible sidebar sections, not unrelated filtering/wri
   const original = doc.querySelector
   doc.querySelector = selector =>
     selector.includes('section-id="format"') ? wrong : original(selector)
-  assert.equal(readDdsMetadata(doc), undefined)
+  assert.equal(read(doc), undefined)
+  doc.querySelector = original
+  const emptyHeader = makeSection([])
+  doc.querySelector = selector =>
+    selector.includes('section-id="metadata"') ? emptyHeader : original(selector)
+  assert.equal(read(doc), undefined, 'empty Header/Metadata must not pass')
   doc.querySelector = original
   image.querySelector('[data-mk-part="media-shell.section-body"]').getBoundingClientRect = () => ({
     width: 0,
     height: 0,
   })
-  assert.equal(readDdsMetadata(doc), undefined, 'hidden layout must not pass on DOM text alone')
+  assert.equal(read(doc), undefined, 'hidden layout must not pass on DOM text alone')
 })
 
 test('DDS probe samples native 4x4 exact-red texels from a centered viewport at multiple DPRs; backgrounds cannot pass', () => {

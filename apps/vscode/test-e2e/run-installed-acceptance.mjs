@@ -3862,7 +3862,7 @@ async function launchGeneration(generation) {
         port,
         webviewDocumentExpression(
           `(doc, win) => {
-            return (${readDdsMetadata.toString()})(doc) ? true : undefined;
+            return (${readDdsMetadata.toString()})(doc, win) ? true : undefined;
           }`,
         ),
       )
@@ -3879,8 +3879,8 @@ async function launchGeneration(generation) {
       const values = await webviewValues(
         port,
         webviewDocumentExpression(
-          `doc => {
-            return (${readDdsMetadata.toString()})(doc);
+          `(doc, win) => {
+            return (${readDdsMetadata.toString()})(doc, win);
           }`,
         ),
       )
