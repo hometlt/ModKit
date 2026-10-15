@@ -1,6 +1,7 @@
 /**
  * Host Resources owner for loaded ModContext v1 leases: dependency retention, explicit unload,
  * generation replacement, source-policy identity and targeted reload, paged semantic trees.
+ * Source recomposition reopens the retained targets atomically; a failed replacement is retryable.
  * Tabs borrow contexts; the session releases them. Game semantics remain provider queries.
  */
 import type { PageRequest, TreeDataSource, TreeNodeFacts, TreeNodeRef, TreeQuery } from '@modkit/sdk'
@@ -54,10 +55,12 @@ export class LoadedModResourceSessions {
   private readonly mods = new Map<string, Loaded>()
   /** Loads in flight: concurrent callers for the same target share one `openModContext`. */
   private readonly pending = new Map<string, Promise<boolean>>()
+  /** Source replacement waits for started loads; later loads use the committed connection. */
+  private reloading: Promise<void> | undefined
   private disposed = false
 
   constructor(
-    private readonly sources: Pick<ContentSources, 'openModContext'>,
+    private sources: Pick<ContentSources, 'openModContext'>,
     /** `locales` is read at every open (reloads too): the string files the contexts load. */
     private readonly options: { readonly locales?: () => readonly string[] } = {},
   ) {}
@@ -73,6 +76,7 @@ export class LoadedModResourceSessions {
   }
 
   async load(target: ModContextTarget, baseMods?: readonly string[]): Promise<boolean> {
+    while (this.reloading !== undefined) await this.reloading
     if (this.disposed) throw new Error('mod resources are disposed')
     const open = this.sources.openModContext?.bind(this.sources)
     if (open === undefined) return false
@@ -137,22 +141,37 @@ export class LoadedModResourceSessions {
     await Promise.allSettled(orphans.map(mod => mod.context.dispose()))
   }
 
-  /** Reopen all loaded contexts after their shared content source invalidated a package. */
-  async reloadAll(): Promise<void> {
-    const opened = [...this.mods.values()]
-    const replacement = new LoadedModResourceSessions(this.sources, this.options)
-    try {
-      for (const mod of opened) {
-        if (mod.opened) await replacement.load(mod.target, mod.baseMods)
+  /** Reopen loaded targets against current/replacement sources; publish only a complete replacement. */
+  reloadAll(sources?: Pick<ContentSources, 'openModContext'>): Promise<void> {
+    const previous = this.reloading
+    const reloading = (async () => {
+      await previous?.catch(() => {})
+      await Promise.allSettled([...this.pending.values()])
+      if (this.disposed) throw new Error('mod resources are disposed')
+      const nextSources = sources ?? this.sources
+      const opened = [...this.mods.values()]
+      const replacement = new LoadedModResourceSessions(nextSources, this.options)
+      try {
+        for (const mod of opened) {
+          if (mod.opened) await replacement.load(mod.target, mod.baseMods)
+        }
+        if (this.disposed) throw new Error('mod resources are disposed')
+      } catch (error) {
+        await replacement.dispose()
+        throw error
       }
-    } catch (error) {
-      await replacement.dispose()
-      throw error
+      this.sources = nextSources
+      this.mods.clear()
+      for (const [id, mod] of replacement.mods) this.mods.set(id, mod)
+      replacement.mods.clear()
+      await Promise.allSettled(opened.map(mod => mod.context.dispose()))
+    })()
+    this.reloading = reloading
+    const release = () => {
+      if (this.reloading === reloading) this.reloading = undefined
     }
-    this.mods.clear()
-    for (const [id, mod] of replacement.mods) this.mods.set(id, mod)
-    replacement.mods.clear()
-    await Promise.allSettled(opened.map(mod => mod.context.dispose()))
+    void reloading.then(release, release)
+    return reloading
   }
 
   /**

@@ -3,6 +3,107 @@ import type { ContentSources, ModContext, ModContextTarget } from '@modkit/vfs/c
 import { LoadedModResourceSessions } from '../src/mods/resource-sessions.js'
 
 describe('loaded mod resources', () => {
+  it('finishes in-flight loads before rebinding and queues new loads behind the replacement', async () => {
+    let releaseOld!: () => void, releaseNew!: () => void
+    let enterOld!: () => void, enterNew!: () => void
+    const oldGate = new Promise<void>(resolve => { releaseOld = resolve })
+    const newGate = new Promise<void>(resolve => { releaseNew = resolve })
+    const oldEntered = new Promise<void>(resolve => { enterOld = resolve })
+    const newEntered = new Promise<void>(resolve => { enterNew = resolve })
+    const calls: string[] = []
+    const source = (generation: number): Pick<ContentSources, 'openModContext'> => ({
+      async openModContext(request) {
+        const path = String(request.target)
+        calls.push(`${generation}:${path}`)
+        if (path === 'C:/Alpha.SC2Mod') {
+          if (generation === 0) { enterOld(); await oldGate }
+          else { enterNew(); await newGate }
+        }
+        return {
+          schemaVersion: 1, gameId: 'test/game', contextId: `${generation}:${path}`,
+          layers: [{ id: path, displayName: path, sourceId: 'host', sourcePath: path,
+            role: 'primary', provenance: 'opened', kind: 'package' }],
+          unresolved: [], diagnostics: [], files: async () => ({ items: [] }),
+          read: async () => new Uint8Array(), locate: async () => undefined, dispose: async () => {},
+        }
+      },
+    })
+    const sessions = new LoadedModResourceSessions(source(0))
+    const loading = sessions.load('C:/Alpha.SC2Mod')
+    await oldEntered
+    let finished = false
+    const rebinding = sessions.reloadAll(source(1)).then(() => { finished = true })
+    const lateLoad = sessions.load('C:/Beta.SC2Mod')
+    try {
+      await new Promise(resolve => setImmediate(resolve))
+      expect(finished).toBe(false)
+      expect(calls).not.toContain('0:C:/Beta.SC2Mod')
+      releaseOld()
+      await newEntered
+      expect(finished).toBe(false)
+      releaseNew()
+      await Promise.all([loading, rebinding, lateLoad])
+      expect(sessions.list().map(mod => mod.contextId)).toEqual(['1:C:/Alpha.SC2Mod', '1:C:/Beta.SC2Mod'])
+    } finally {
+      releaseOld(); releaseNew()
+      await Promise.allSettled([loading, rebinding, lateLoad])
+      await sessions.dispose()
+    }
+  })
+
+  it('rebinds the complete loaded set to replacement sources atomically, with retry on failure', async () => {
+    const released: string[] = []
+    const calls: { target: ModContextTarget; baseMods?: readonly string[]; locales?: readonly string[] }[] = []
+    let fail = false
+    const source = (generation: number): Pick<ContentSources, 'openModContext'> => ({
+      async openModContext(request) {
+        calls.push(request)
+        const path = typeof request.target === 'string' ? request.target : request.target.path
+        if (generation === 1 && fail && path.includes('Beta')) throw new Error('replacement unavailable')
+        const dependency = path.includes('Shared')
+        const layer = (name: string, role: 'dependency' | 'primary') => ({
+          id: name, displayName: name, sourceId: 'host', sourcePath: `C:/Mods/${name}.SC2Mod`,
+          kind: 'package' as const, provenance: 'opened' as const, role,
+        })
+        const name = dependency ? 'Shared' : path.includes('Alpha') ? 'Alpha' : 'Beta'
+        const contextId = `${generation}:${name}`
+        return {
+          schemaVersion: 1, gameId: 'test/game', contextId,
+          layers: [...(dependency ? [] : [layer('Shared', 'dependency')]), layer(name, 'primary')],
+          unresolved: [], diagnostics: [], files: async () => ({ items: [] }),
+          read: async () => new Uint8Array(), locate: async () => undefined,
+          dispose: async () => { released.push(contextId) },
+        }
+      },
+    })
+    const sessions = new LoadedModResourceSessions(source(0), { locales: () => ['frFR'] })
+    await sessions.load('C:/Mods/Alpha.SC2Mod', ['base/one'])
+    await sessions.load('C:/Mods/Beta.SC2Mod', ['base/two'])
+    const before = sessions.list()
+    calls.length = 0
+    fail = true
+    await expect(sessions.reloadAll(source(1))).rejects.toThrow('replacement unavailable')
+    expect(sessions.list()).toEqual(before)
+    expect(released).not.toContain('0:Alpha')
+    expect(released).toContain('1:Alpha')
+    fail = false
+    calls.length = 0
+    await sessions.reloadAll(source(1))
+    expect(sessions.list().map(mod => mod.id)).toEqual(before.map(mod => mod.id))
+    expect(sessions.list().map(mod => mod.contextId)).toEqual(['1:Shared', '1:Alpha', '1:Beta'])
+    expect(calls.filter(call => typeof call.target === 'string' && !call.target.includes('Shared')))
+      .toEqual([
+        expect.objectContaining({ target: 'C:/Mods/Alpha.SC2Mod', baseMods: ['base/one'], locales: ['frFR'] }),
+        expect.objectContaining({ target: 'C:/Mods/Beta.SC2Mod', baseMods: ['base/two'], locales: ['frFR'] }),
+      ])
+    expect(released).toContain('0:Alpha')
+    expect(released).toContain('0:Beta')
+    calls.length = 0
+    await sessions.reloadAll()
+    expect(sessions.list().every(mod => mod.contextId.startsWith('1:'))).toBe(true)
+    await sessions.dispose()
+  })
+
   it.each([
     {
       sourceId: 'strict',

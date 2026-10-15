@@ -3185,7 +3185,7 @@ async function activateModkit(
             await callContentSources(source, 'refresh', [id]).catch(() => undefined)
           }
           forgetResourcePaths()
-          await loadedSessions?.then(sessions => sessions.reloadAll())
+          if (loadedSessions !== undefined) await (await resourceSessions()).reloadAll()
           resourcesView.refresh()
         }
         forgetCacheStates(selected)
@@ -6600,14 +6600,27 @@ async function activateModkit(
     const source = await requireContentSources()
     if (loadedSessions === undefined || loadedSessionSource !== source) {
       const previous = loadedSessions
+      const previousSource = loadedSessionSource
       loadedSessionSource = source
       // Entity names in Resources come in the chosen game locale (`modkit.locale`), read per open.
-      loadedSessions = Promise.resolve(
-        new LoadedModResourceSessions(source, { locales: configuredGameLocales }),
-      )
-      // The new sessions start empty: every document must load its mod again.
+      const replacement = previous === undefined
+        ? Promise.resolve(new LoadedModResourceSessions(source, { locales: configuredGameLocales }))
+        : previous.then(async sessions => {
+          await sessions.reloadAll(source)
+          return sessions
+        })
+      loadedSessions = replacement
+      // Keep every loaded package across source settings changes, including mods with no open tab.
       forgetResourcePaths()
-      await previous?.then(sessions => sessions.dispose())
+      try {
+        await replacement
+      } catch (error) {
+        if (loadedSessions === replacement) {
+          loadedSessions = previous
+          loadedSessionSource = previousSource
+        }
+        throw error
+      }
     }
     return loadedSessions
   }
@@ -12519,7 +12532,7 @@ async function activateModkit(
      * could not see (a network drive, a file written while the window slept).
      */
     vscode.commands.registerCommand('modkit.resources.refresh', async () => {
-      const sessions = await loadedSessions
+      const sessions = await resourceSessions()
       if (sessions !== undefined && sessions.list().length > 0) {
         const source = await requireContentSources()
         forgetResourcePaths()
