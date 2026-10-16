@@ -237,3 +237,16 @@ export function multiplyAffine(left: readonly number[], right: readonly number[]
     }
   return product
 }
+
+/** Pure +Y yaw of a finite unit quaternion. Tilt is refused, never projected away.
+ * Preserves atan2's signed angle; native angle wrapping belongs to the target writer.
+ * The tolerance admits arithmetic noise only, not a visible authored tilt.
+ */
+export function pureYawQuaternion(rotation: readonly number[]): number | undefined {
+  if (rotation.length !== 4) return undefined
+  for (let i = 0; i < 4; i += 1) if (!Number.isFinite(rotation[i])) return undefined
+  const [x, y, z, w] = rotation as readonly [number, number, number, number]
+  if (Math.abs(Math.hypot(x, y, z, w) - 1) > 1e-6 ||
+      Math.abs(x) > Number.EPSILON * 32 || Math.abs(z) > Number.EPSILON * 32) return undefined
+  return 2 * Math.atan2(y, w)
+}
