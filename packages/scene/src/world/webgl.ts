@@ -3459,6 +3459,7 @@ function worldObjectMaterialMoment(
   const teamColor =
     item.presentationTeamColor ??
     (item.player === undefined ? undefined : input.teamColors?.get(item.player))
+  const teamRamp = item.player === undefined ? undefined : input.teamRamps?.get(item.player)
   const terrainTiling = worldTerrainTiling(input)
   const materialContext: SceneMaterialContext = {
     time,
@@ -3468,6 +3469,7 @@ function worldObjectMaterialMoment(
       : { sequenceIndex: selectedAnimation.sequenceIndex }),
     sceneLighting: true,
     ...(teamColor === undefined ? {} : { teamColor }),
+    ...(teamRamp === undefined ? {} : { teamRamp }),
     ...(item.presentationTeamColorIntensity === undefined
       ? {}
       : { teamColorIntensity: item.presentationTeamColorIntensity }),
@@ -3609,13 +3611,14 @@ function worldObjectProgramTemplateKey(
 ): string {
   const animation = moment.selectedAnimation?.id ?? ''
   const { teamColor } = moment
-  const { terrainTiling } = moment.materialContext
+  const { terrainTiling, teamRamp } = moment.materialContext
   let byResource = worldObjectTemplateKeys.get(item)
   const known = byResource?.get(resourceId)
   if (
     known !== undefined &&
     known.animation === animation &&
     known.teamColor === teamColor &&
+    known.teamRamp === teamRamp &&
     known.terrainTiling === terrainTiling
   )
     return known.key
@@ -3623,18 +3626,19 @@ function worldObjectProgramTemplateKey(
     resourceId,
     animation,
     teamColor?.join(',') ?? '',
+    teamRamp === undefined ? '' : JSON.stringify(teamRamp),
     item.presentationTeamColorIntensity ?? '',
     item.derivedFrom === 'cliffs' ? 'cliffs' : '',
     terrainTiling?.join(',') ?? '',
   ].join('\u0000')
   if (byResource === undefined) worldObjectTemplateKeys.set(item, (byResource = new Map()))
-  byResource.set(resourceId, Object.freeze({ animation, teamColor, terrainTiling, key }))
+  byResource.set(resourceId, Object.freeze({ animation, teamColor, teamRamp, terrainTiling, key }))
   return key
 }
 
 /**
  * Each object's last program template key per model, with what it was written from: the object's
- * team colour and the ground's tiling stay the same objects from frame to frame (the input's, as
+ * team colour, ramp and the ground's tiling stay the same objects from frame to frame (the input's, as
  * worldStaticObjectKey takes them, and worldTerrainTiling's per input), and the rest is the object's
  * own.
  */
@@ -3645,6 +3649,7 @@ const worldObjectTemplateKeys = new WeakMap<
     Readonly<{
       animation: string
       teamColor: unknown
+      teamRamp: unknown
       terrainTiling: unknown
       key: string
     }>
@@ -5303,13 +5308,15 @@ function worldStaticObjectKey(
   const teamColor =
     item.presentationTeamColor ??
     (item.player === undefined ? undefined : input.teamColors?.get(item.player))
+  const teamRamp = item.player === undefined ? undefined : input.teamRamps?.get(item.player)
   const keyed = worldObjectResourcesOf(item).keyed
   const known = worldStaticObjectKeys.get(item)
   const preparationToken = worldPreparationToken(preparation)
   if (
     known !== undefined &&
     known.preparation === preparationToken &&
-    known.teamColor === teamColor
+    known.teamColor === teamColor &&
+    known.teamRamp === teamRamp
   ) {
     // One generation reads the same result for every resource id (worldModelGenerations).
     if (known.models === models) return known.key
@@ -5320,7 +5327,8 @@ function worldStaticObjectKey(
       return known.key
     }
   }
-  const key: unknown[] = [preparationToken, teamColor?.join(',') ?? '']
+  const key: unknown[] = [preparationToken, teamColor?.join(',') ?? '',
+    teamRamp === undefined ? '' : JSON.stringify(teamRamp)]
   const results: unknown[] = []
   let timed = false
   for (const resourceId of keyed) {
@@ -5344,7 +5352,7 @@ function worldStaticObjectKey(
   else
     worldStaticObjectKeys.set(
       item,
-      Object.freeze({ preparation: preparationToken, teamColor, results, key, models }),
+      Object.freeze({ preparation: preparationToken, teamColor, teamRamp, results, key, models }),
     )
   return key
 }
@@ -5358,6 +5366,7 @@ const worldStaticObjectKeys = new WeakMap<
   Readonly<{
     preparation: unknown
     teamColor: unknown
+    teamRamp: unknown
     results: readonly unknown[]
     key: readonly unknown[]
     models: number
@@ -8164,7 +8173,7 @@ export function createWorldWebGlPlan(
           moment.teamColor,
           materialContext.teamColorIntensity,
           item.presentationTint,
-          item.player === undefined ? undefined : input.teamRamps?.get(item.player),
+          materialContext.teamRamp,
         )
         const coverage = modelMaterialCoverage(material)
         const blendMode =
