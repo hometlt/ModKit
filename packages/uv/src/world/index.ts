@@ -1,3 +1,4 @@
+export { unretainedWorldFields } from './field-loss.js'
 import { WORLD_MAX_TERRAIN_WEIGHT_RASTERS } from '@modkit/sdk/maps'
 import { validateLatticeOverview } from '@modkit/sdk/maps'
 import type { MapLatticeOverview } from '@modkit/sdk/maps'
