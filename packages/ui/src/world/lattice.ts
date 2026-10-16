@@ -523,7 +523,8 @@ export function drawWorldLattice(
     context.closePath()
     context.fill()
   }
-  context.fillStyle = WORLD_RAMP_COLOR
+  // A light wash marks slopes without turning adjacent ramp cells into bright bars.
+  context.fillStyle = overview ? 'rgba(240, 200, 120, 0.12)' : WORLD_RAMP_COLOR
   for (const ramp of plan.ramps) {
     context.beginPath()
     context.moveTo(...screen(ramp[0]!))

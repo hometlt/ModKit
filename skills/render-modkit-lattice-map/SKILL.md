@@ -81,4 +81,4 @@ For a selected movement class, read its layer catalog entry and `layerId`, then 
 `facet: "traversal"` with that id. `walkable` and directed `exits` are published facts;
 `navigation` carries opaque publisher flags and must not be substituted for traversal.
 Ramp patches live in the ground layer metadata as `latticeRamps` with `method` and
-`quality`. Warzone uses derived two-cliff passable-slope patches, not native ramp flags.
+`quality`. Warzone uses derived two-cliff slope patches with passable exits at both ends of the monotone ascent, not native ramp flags. Exact bank-distance ties use height affinity only as a secondary visual tie-break; known zero-normal-gradient boundaries are neutral, not missing data.

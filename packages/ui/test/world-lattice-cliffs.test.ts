@@ -34,6 +34,16 @@ function strip(width = 3, rotate = 0): CliffLatticeQuad[] {
   return result
 }
 describe('shared bank-distance cliff midline', () => {
+  it('treats known tangent edges as neutral without inventing a missing bank', () => {
+    const result = deriveCliffMidlines(strip())
+    expect(result.stats.neutralBoundaryEdges).toBeGreaterThan(0)
+    expect(result.stats.unknownBoundaryEdges).toBe(0)
+    expect(result.stats.ambiguousCells).toBe(0)
+    expect(result.segments.length).toBeGreaterThan(0)
+    const incomplete = deriveCliffMidlines(strip().filter(q => q.x !== 1))
+    expect(incomplete.stats.unknownBoundaryEdges).toBeGreaterThan(0)
+  })
+
   it('resolves a clipped bank at the edge of a complete rectangle without inventing missing pages', () => {
     const clipped = strip(3).filter(q => q.x >= 2)
     const result = deriveCliffMidlines(clipped)

@@ -28,9 +28,11 @@ export interface CliffMidlineStats {
   splitCornerComponents: number
   oneBankComponents: number
   flatCells: number
+  heightResolvedTies: number
   ambiguousCells: number
   mixedBoundaryVertices: number
   internalBankEdges: number
+  neutralBoundaryEdges: number
   unknownBoundaryEdges: number
   nodes: number
   edges: number
@@ -84,9 +86,11 @@ export function deriveCliffMidlines(quads: readonly CliffLatticeQuad[]): {
     splitCornerComponents: 0,
     oneBankComponents: 0,
     flatCells: 0,
+    heightResolvedTies: 0,
     ambiguousCells: 0,
     mixedBoundaryVertices: 0,
     internalBankEdges: 0,
+    neutralBoundaryEdges: 0,
     unknownBoundaryEdges: 0,
     nodes: 0,
     edges: 0,
@@ -215,8 +219,10 @@ export function deriveCliffMidlines(quads: readonly CliffLatticeQuad[]): {
               for (const [dx, dy] of [
                 [1, 0],
                 [0, 1],
+                [1, 1],
+                [-1, 1],
               ]) {
-                if (x + dx! > 2 || y + dy! > 2) continue
+                if (x + dx! < 0 || x + dx! > 2 || y + dy! > 2) continue
                 const a = indices[y * 3 + x]!,
                   b = indices[(y + dy!) * 3 + x + dx!]!,
                   id = a < b ? `${a},${b}` : `${b},${a}`
@@ -274,7 +280,8 @@ export function deriveCliffMidlines(quads: readonly CliffLatticeQuad[]): {
               q.vertices[b].height -
               (q.vertices[c].height + q.vertices[d].height)
             if (delta === 0) {
-              stats.unknownBoundaryEdges++
+              // A known edge tangent to the height gradient seeds neither bank.
+              stats.neutralBoundaryEdges++
               continue
             }
             const bank = delta > 0 ? 2 : 1
@@ -295,7 +302,7 @@ export function deriveCliffMidlines(quads: readonly CliffLatticeQuad[]): {
         const low: number[] = [],
           high: number[] = []
         // A summit/depression contained in the cliff mask has a point bank, not an edge.
-        // Require a full four-way interior graph fan and a strict extremum in every direction.
+        // Require a full eight-way interior graph fan and a strict extremum in every direction.
         const adjacent = new Map<number, number[]>()
         for (const [a,b] of edgePairs.values()) {
           adjacent.set(a,[...(adjacent.get(a) ?? []),b])
@@ -303,7 +310,7 @@ export function deriveCliffMidlines(quads: readonly CliffLatticeQuad[]): {
         }
         for (const [id, neighbors] of adjacent) {
           const node = nodes[id]!
-          if (node.bank !== 0 || neighbors.length !== 4) continue
+          if (node.bank !== 0 || neighbors.length !== 8) continue
           const changes = neighbors.map(other => nodes[other]!.height - node.height)
           if (changes.every(delta => delta > 0)) node.bank = 1
           else if (changes.every(delta => delta < 0)) node.bank = 2
@@ -386,7 +393,15 @@ export function deriveCliffMidlines(quads: readonly CliffLatticeQuad[]): {
         stats.queuePushes += lo.counters.pushes + hi.counters.pushes
         stats.peakQueue = Math.max(stats.peakQueue, lo.counters.peakQueue, hi.counters.peakQueue)
         stats.typedPeakBytes = Math.max(stats.typedPeakBytes, csrBytes + fieldBytes)
-        const values = lo.distances.map((value, i) => value - hi.distances[i]!)
+        const values = lo.distances.map((value, i) => {
+          const difference = value - hi.distances[i]!
+          if (difference !== 0) return difference
+          // Equal paths can share a bottleneck; height affinity resolves only the exact tie.
+          const affinity = Math.abs(nodes[i]!.height-lowHeights[i]!) - Math.abs(nodes[i]!.height-highHeights[i]!)
+          if (affinity === 0) return 0
+          stats.heightResolvedTies++
+          return Math.sign(affinity) * Math.max(1,value) * 1e-9
+        })
         const crossings = new Map<string, Point>(),
           seen = new Set<string>()
         /** Canonical edge interpolation makes every shared endpoint numerically identical. */
