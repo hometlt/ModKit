@@ -24,6 +24,10 @@
       "types": "./dist/world/index.d.ts",
       "default": "./dist/world/index.js"
     },
+    "./media-export": {
+      "types": "./dist/media-export/index.d.ts",
+      "default": "./dist/media-export/index.js"
+    },
     "./composition": {
       "types": "./dist/composition/index.d.ts",
       "default": "./dist/composition/index.js"

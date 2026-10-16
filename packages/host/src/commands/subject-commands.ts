@@ -23,6 +23,7 @@ import {
   type JsonObject,
   type JsonValue,
   type Lease,
+  type MediaExportRequest,
   type NamespaceEntry,
   type NamespaceEntrySource,
   type OperationResult,
@@ -547,6 +548,122 @@ const convertCommand: CommandDescriptor = {
             'operation must be an operation id',
             diagnostics,
           )
+        // a world drawn into an image, an animation, a frame set or a sprite sheet (media export),
+        // or what of it moves (`media-info`): a target the application offers, the rest of the
+        // request in the operation input
+        const mediaTarget =
+          input['operation'] === undefined &&
+          typeof input['target'] === 'string' &&
+          (input['target'] === 'media-info' ||
+            context.mediaFormats?.some(offer => offer.id === input['target']) === true)
+            ? input['target']
+            : undefined
+        if (
+          mediaTarget !== undefined &&
+          descriptor.dataSources?.some(
+            offer => offer.contract === WORLD_SCENE_SOURCE && offer.major === 1,
+          )
+        ) {
+          const options = input['operationInput']
+          if (
+            options !== undefined &&
+            (typeof options !== 'object' || options === null || Array.isArray(options))
+          )
+            return failed(
+              CONVERT_COMMAND,
+              COMMAND_INPUT_INVALID,
+              'the media request (operation input) must be a JSON object',
+              diagnostics,
+            )
+          const lease = await session.dataSource(WORLD_SCENE_SOURCE, 1)
+          try {
+            const world = lease.value as unknown as CandidateWorldSceneSource
+            if (mediaTarget === 'media-info') {
+              if (context.inspectMedia === undefined)
+                return unavailable(
+                  CONVERT_COMMAND,
+                  'this application draws no worlds to report on',
+                  'use the CLI or the desktop application',
+                  diagnostics,
+                )
+              context.progress?.({ step: 'convert', message: 'reading what of the world moves' })
+              const report = JSON.parse(
+                JSON.stringify(await context.inspectMedia(world, context.signal)),
+              ) as JsonValue
+              const wroteTo =
+                context.writeOutput === undefined
+                  ? undefined
+                  : await context.writeOutput(
+                      'media-info.json',
+                      new TextEncoder().encode(`${JSON.stringify(report, null, 1)}\n`),
+                      context.signal,
+                    )
+              return ok(
+                CONVERT_COMMAND,
+                {
+                  ref: subject.ref,
+                  via: WORLD_SCENE_SOURCE,
+                  outputKind: 'json',
+                  wroteTo: wroteTo ?? null,
+                  report,
+                },
+                diagnostics,
+              )
+            }
+            if (context.renderMedia === undefined)
+              return unavailable(
+                CONVERT_COMMAND,
+                'this application draws no worlds',
+                'use the CLI or the desktop application',
+                diagnostics,
+              )
+            const request = {
+              schemaVersion: 1,
+              width: 640,
+              height: 400,
+              ...(options as JsonObject | undefined),
+              format: mediaTarget,
+            } as unknown as MediaExportRequest
+            context.progress?.({
+              step: 'convert',
+              message: `rendering the world as ${mediaTarget}`,
+            })
+            const media = await context.renderMedia(world, request, context.signal)
+            const wroteTo =
+              context.writeOutput === undefined
+                ? undefined
+                : await context.writeOutput(
+                    `render${media.receipt.extension}`,
+                    media.bytes,
+                    context.signal,
+                  )
+            return ok(
+              CONVERT_COMMAND,
+              {
+                ref: subject.ref,
+                via: WORLD_SCENE_SOURCE,
+                outputKind: 'bytes',
+                byteLength: media.bytes.byteLength,
+                wroteTo: wroteTo ?? null,
+                receipt: JSON.parse(JSON.stringify(media.receipt)) as JsonValue,
+              },
+              [
+                ...diagnostics,
+                ...media.diagnostics.map((item): CommandDiagnostic => {
+                  const severity = item.severity
+                  return severity === 'error' ||
+                    severity === 'warning' ||
+                    severity === 'information' ||
+                    severity === 'hint'
+                    ? { code: item.code, message: item.message, severity }
+                    : { code: item.code, message: item.message }
+                }),
+              ],
+            )
+          } finally {
+            await lease.release()
+          }
+        }
         // a map world becomes UVW, or a single-file UVP with its models and textures, from the
         // world it publishes, with the receipt of what UVW lacks; a named operation runs instead
         const worldFormat =

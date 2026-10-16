@@ -14,6 +14,10 @@
     "./formats/ogv/encode": {
       "types": "./dist/ogv/encode.d.ts",
       "default": "./dist/ogv/encode.js"
+    },
+    "./media-encoders": {
+      "types": "./dist/media-encoders.d.ts",
+      "default": "./dist/media-encoders.js"
     }
   },
   "files": [

@@ -27,7 +27,14 @@
  */
 
 import type { Diagnostic } from '@modkit/core'
-import type { AssetSession, JsonValue } from '@modkit/sdk'
+import type {
+  AssetSession,
+  JsonValue,
+  MediaExportReceipt,
+  MediaExportRequest,
+  MediaFormatOffer,
+  MediaTimelineReport,
+} from '@modkit/sdk'
 import type { CandidateWorldSceneSource } from '@modkit/sdk/maps'
 import type { SubjectOpenSnapshot } from '../subject-rpc.js'
 import type { SubjectEditing } from '../subject-editing.js'
@@ -123,6 +130,13 @@ export type CommandWorldExport =
       readonly lostFields: readonly { readonly path: string; readonly count: number }[]
     }>
 
+/** What `renderMedia` gives back: the encoded file and the receipt of what it kept. */
+export interface CommandMediaExport {
+  readonly bytes: Uint8Array
+  readonly receipt: MediaExportReceipt
+  readonly diagnostics: readonly Readonly<{ code: string; message: string; severity: string }>[]
+}
+
 export interface CommandContext {
   readonly openSubject: CommandSubjectOpener
   /**
@@ -143,6 +157,25 @@ export interface CommandContext {
     source: CandidateWorldSceneSource,
     signal?: AbortSignal,
   ) => Promise<CommandWorldExport>
+  /**
+   * Media export of a world (`@modkit/ui/media-export`, which the host does not import, with the
+   * encoders of the application's format modules): `subject.convert` with a target among these
+   * offers renders the world the subject publishes — a map, a cutscene, a replay preview, a model
+   * shown as a world of one object (`openModelPreviewWorldSession`) — into that format; the
+   * operation input is the rest of the `MediaExportRequest` (size, time, camera, clips). Absent
+   * where the application draws no worlds.
+   */
+  readonly mediaFormats?: readonly MediaFormatOffer[]
+  readonly renderMedia?: (
+    source: CandidateWorldSceneSource,
+    request: MediaExportRequest,
+    signal?: AbortSignal,
+  ) => Promise<CommandMediaExport>
+  /** `subject.convert --target media-info`: what of the world moves, which clips, which formats. */
+  readonly inspectMedia?: (
+    source: CandidateWorldSceneSource,
+    signal?: AbortSignal,
+  ) => Promise<MediaTimelineReport>
   /**
    * Opens the mod context of the installation or mod a conversion writes for (`targetContext`):
    * a map encoder's catalog questions are answered from the target game there (owner decision,

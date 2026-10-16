@@ -22,6 +22,14 @@
     "./formats/webp/encode": {
       "types": "./dist/webp/encode.d.ts",
       "default": "./dist/webp/encode.js"
+    },
+    "./formats/jpeg/encode": {
+      "types": "./dist/jpeg/encode.d.ts",
+      "default": "./dist/jpeg/encode.js"
+    },
+    "./media-encoders": {
+      "types": "./dist/media-encoders.d.ts",
+      "default": "./dist/media-encoders.js"
     }
   },
   "files": [

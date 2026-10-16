@@ -1871,8 +1871,9 @@ export const MAP_PREVIEW_COORDINATOR_LIMITS = Object.freeze({
     }),
   }),
   limits: Object.freeze({
-    // Warzone 2100 reads 22 map documents (level.json and each tileset's ground and decal files).
-    maxRequirements: 32,
+    // Warzone 2100 reads 22 map documents (level.json and each tileset's ground and decal files);
+    // a Warcraft III map plans 35 (its war3map files and the object tables), refused at 32.
+    maxRequirements: 64,
     maxDocumentBytes: 33_554_432,
     maxTotalBytes: 67_108_864,
     maxObjects: 100_000,
@@ -3017,6 +3018,196 @@ export function growingWorldLease(
       await releaseShared()
     },
   })
+}
+
+/** The request of `openModelPreviewWorldSession`. */
+export interface OpenModelPreviewWorldSessionRequest {
+  readonly services: MapHostServices
+  readonly grant: PermissionGrant
+  readonly budgets: ResourceBudget
+  /**
+   * The model subject's own ResourceSession (`OpenedSubject.resources`): the model resolves in it as
+   * its own companion, its textures beside it. Borrowed: the world never disposes it.
+   */
+  readonly resources: ResourceSessionPort
+  /** The model's logical id in `resources`: its file name, or its path inside its container. */
+  readonly logicalId: string
+  /** The opened subject's URI, named by the preview's descriptor. */
+  readonly subjectUri: string
+  /** Largest page of the world source (default 1 024). */
+  readonly maxPageSize?: number
+}
+
+/**
+ * A model as a world of one object standing at the origin, as a host-owned read-only AssetSession
+ * publishing `common.view/world-scene-source`.
+ *
+ * Everything that draws, exports or animates a world — the world viewer, MCP `world_scene`, media
+ * export (`@modkit/ui/media-export`) — then draws a single model through the same route a map's
+ * models take: `createSubjectModelResources` exports it to UVM and reopens it, its textures resolve
+ * through the model's own companions, and the renderer selects and samples its clips. The object
+ * carries no presentation animation, so the world plays the model's first moving clip; a caller
+ * names another per object. No terrain, no transform: the placement is native = canonical at 0,0,0
+ * and the model keeps its own frame. Compose it with the codec session by `withMapPreviewSources`.
+ */
+export async function openModelPreviewWorldSession(
+  request: OpenModelPreviewWorldSessionRequest,
+): Promise<Readonly<{ state: 'opened'; session: AssetSession; descriptor: AnyDescriptor }>> {
+  const grant = request.grant
+  const modelState: SubjectRasterResourceState = {
+    live: true,
+    reservedBytes: 0,
+    resources: request.resources,
+  }
+  const open = (source: Parameters<typeof openSubject>[0]['source'], path: string, signal?: AbortSignal) =>
+    openSubject({
+      inventory: request.services.inventory,
+      source,
+      path,
+      target: request.services.target,
+      intent: 'full',
+      grant: { ...grant, classes: ['read-source'] },
+      budget: request.budgets,
+      executionBackends: request.services.executionBackends,
+      ...(request.services.serviceDefinitions === undefined
+        ? {}
+        : { serviceDefinitions: request.services.serviceDefinitions }),
+      ...(request.services.contributionSettings === undefined
+        ? {}
+        : { contributionSettings: request.services.contributionSettings }),
+      resourceSession: request.resources,
+      ...(signal === undefined ? {} : { signal }),
+    })
+  const modelReleases: Array<() => Promise<void>> = []
+  const modelResources = createSubjectModelResources({
+    state: modelState,
+    budget: request.budgets,
+    isAuthorized: () => modelState.live && grant.classes.includes('read-source'),
+    ancestors: [`model-preview:${request.subjectUri}@${String(request.resources.revision)}`],
+    own: release => modelReleases.push(release),
+    open,
+  })
+  const rasterResources = createSubjectRasterResources({
+    state: modelState,
+    budget: request.budgets,
+    isAuthorized: () => modelState.live && grant.classes.includes('read-source'),
+    open: (source, hint, signal) => open(source, hint.path ?? '', signal),
+  })
+  const releaseModelResources = async () => {
+    if (!modelState.live) return
+    modelState.live = false
+    const outcomes = await Promise.allSettled(modelReleases.map(release => release()))
+    const failure = outcomes.find(outcome => outcome.status === 'rejected')
+    if (failure?.status === 'rejected') throw failure.reason
+  }
+  const name = request.logicalId.split(/[/\\]/u).pop() ?? request.logicalId
+  const requirement = Object.freeze({
+    id: `model-preview:${encodeURIComponent(request.logicalId.toLowerCase())}`,
+    logicalId: request.logicalId,
+    role: 'sidecar' as const,
+    scopes: Object.freeze([
+      'sibling-directory',
+      'enclosing-container',
+      'current-mount',
+      'workspace-dependency-layer',
+    ] as const),
+  })
+  const snapshotId = `model-preview:${String(request.resources.revision)}`
+  const semantic = Object.freeze({
+    schemaVersion: 1 as const,
+    workspaceId: snapshotId,
+    gameId: 'modkit/model-preview',
+    mapId: request.logicalId,
+    analyzerId: 'x3.host/model-preview-world',
+    documentPaths: Object.freeze([]),
+    regions: Object.freeze([]),
+    objects: Object.freeze([
+      Object.freeze({
+        kind: 'unit' as const,
+        objectId: 1,
+        name,
+        position: Object.freeze({ x: 0, y: 0, z: 0 }),
+        modelResource: requirement,
+        modelResources: Object.freeze([requirement]),
+      }),
+    ]),
+    catalogQueries: Object.freeze([]),
+    resolvedCatalogObjects: 0,
+    diagnostics: Object.freeze([]),
+    complete: true,
+  })
+  const snapshot = Object.freeze({
+    schemaVersion: 1 as const,
+    workspaceId: snapshotId,
+    gameId: semantic.gameId,
+    mapId: request.logicalId,
+    analyzerId: semantic.analyzerId,
+    snapshotId,
+    semantic,
+    worldCandidate: Object.freeze({
+      topology: 'mesh' as const,
+      contract: 'x3.host/model-preview-world',
+      major: 1 as const,
+      maturity: 'publisher-candidate' as const,
+      coordinateSpaces: Object.freeze([]),
+      crossSpaceTransforms: Object.freeze([]),
+      unknownFacets: Object.freeze([]),
+    }),
+    unresolvedRequirementIds: Object.freeze([]),
+    diagnostics: Object.freeze([]),
+    diagnosticsTruncated: false,
+    complete: true,
+  }) as unknown as ResolvedMapWorkspaceSnapshot
+  const world = createCandidateWorldSceneLease(
+    snapshot,
+    [],
+    request.maxPageSize ?? 1_024,
+    modelResources,
+    releaseModelResources,
+    rasterResources,
+  )
+  try {
+    const descriptor = await assembleSubjectDescriptor({
+      schemaVersion: 2,
+      subjectUri: request.subjectUri,
+      origin: {
+        kind: 'namespace',
+        root: { id: 'model-preview', uri: request.subjectUri },
+        revision: request.resources.revision,
+      },
+      interpretation: 'none',
+      candidates: [],
+      traits: [],
+      operations: [],
+      constraints: { readOnly: true, seekable: false, randomAccess: true, trusted: false },
+      dataSources: [{ contract: WORLD_SCENE_SOURCE_CONTRACT, major: 1 }],
+      diagnostics: [],
+      revision: request.resources.revision,
+    })
+    const managed = createAssetSession({
+      revision: request.resources.revision,
+      descriptor,
+      operationDeclarations: [],
+      permissionGrant: grant,
+      handlers: new Map(),
+      async openDataSource<
+        Contract extends KnownDataSourceId,
+        Major extends DataSourceMajor<Contract>,
+      >(contract: Contract, major: Major): Promise<Lease<DataSourceOf<Contract, Major>>> {
+        if (major === 1 && contract === WORLD_SCENE_SOURCE_CONTRACT)
+          return borrowCommonWorldScene(world.value) as Lease<DataSourceOf<Contract, Major>>
+        throw new ModkitError({
+          code: 'x3.host/model-preview-data-source-unavailable',
+          message: `model preview does not publish ${contract}@${String(major)}`,
+        })
+      },
+      release: [() => world.release()],
+    })
+    return Object.freeze({ state: 'opened' as const, session: managed.session, descriptor })
+  } catch (error) {
+    await world.release().catch(() => undefined)
+    throw error
+  }
 }
 
 /**
