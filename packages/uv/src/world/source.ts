@@ -296,9 +296,13 @@ function recordItems(
             : []
         }),
       )
-    case 'objects':
+    case 'objects': {
+      const players = new Map(record.space.players?.map(player => [player.slot, player]))
       return Object.freeze(
         layer.instances.flatMap((instance, instanceIndex) => {
+          const player = instance.player === undefined ? undefined : players.get(instance.player)
+          const color = instance.presentationTeamColor ?? player?.color
+          const ramp = instance.presentationTeamRamp ?? player?.ramp
           const uvwPosition = Object.freeze({
             x: instance.position[0],
             y: instance.position[1],
@@ -366,11 +370,12 @@ function recordItems(
                   ...(instance.player === undefined ? {} : { player: instance.player }),
                   ...(instance.variation === undefined ? {} : { variation: instance.variation }),
                   ...(instance.name === undefined ? {} : { name: instance.name }),
-                  ...(instance.presentationTeamColor === undefined ? {} : {
-                    presentationTeamColor: Object.freeze(instance.presentationTeamColor.map(linearToSrgb)) as readonly [number, number, number],
-                    uvwPresentationTeamColor: instance.presentationTeamColor,
+                  ...(color === undefined ? {} : {
+                    presentationTeamColor: Object.freeze(color.map(linearToSrgb)) as readonly [number, number, number],
                   }),
-                  ...(instance.presentationTeamRamp === undefined ? {} : { presentationTeamRamp: instance.presentationTeamRamp }),
+                  ...(instance.presentationTeamColor === undefined ? {} : { uvwPresentationTeamColor: instance.presentationTeamColor }),
+                  ...(ramp === undefined ? {} : { presentationTeamRamp: ramp }),
+                  ...(instance.presentationTeamRamp === undefined ? {} : { uvwPresentationTeamRamp: instance.presentationTeamRamp }),
                   ...(instance.presentationTeamColorIntensity === undefined ? {} : { presentationTeamColorIntensity: instance.presentationTeamColorIntensity }),
                   ...(instance.presentationTint === undefined
                     ? {}
@@ -383,6 +388,7 @@ function recordItems(
             : []
         }),
       )
+    }
     case 'resources':
       return Object.freeze(
         layer.resources.map(resource =>

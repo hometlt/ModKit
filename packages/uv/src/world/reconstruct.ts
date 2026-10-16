@@ -339,6 +339,7 @@ const KEPT_FIELDS: Readonly<Record<string, ReadonlySet<string>>> = Object.freeze
     'presentationTint',
     'presentationTeamColor',
     'uvwPresentationTeamColor',
+    'uvwPresentationTeamRamp',
     'presentationTeamRamp',
     'presentationTeamColorIntensity',
     'presentationAnimation',
@@ -383,8 +384,10 @@ function objectTeamPresentation(item: WorldSceneObjectItem, info: CandidateWorld
   const encoded = item.presentationTeamColor ?? player?.color
   if (encoded !== undefined && (encoded.length !== 3 || !unitTint(encoded)))
     throw new TypeError('native team colour must be stored-sRGB RGB in 0..1')
-  const color = item.uvwPresentationTeamColor ?? encoded?.map(srgbToLinear) as readonly [number, number, number] | undefined
-  const ramp = item.presentationTeamRamp ?? player?.colorRamp
+  const color = item.uvwPresentationTeamColor ?? (info.canonicalArtifact === undefined
+    ? encoded?.map(srgbToLinear) as readonly [number, number, number] | undefined : undefined)
+  const ramp = info.canonicalArtifact === undefined
+    ? item.presentationTeamRamp ?? player?.colorRamp : item.uvwPresentationTeamRamp
   const intensity = item.presentationTeamColorIntensity
   if (intensity !== undefined && intensity !== 0 && intensity !== 1)
     throw new TypeError('team colour intensity must be 0 or 1')

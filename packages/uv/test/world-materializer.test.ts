@@ -1192,6 +1192,65 @@ describe('portable object team-colour presentation', () => {
     if (rebuilt.state !== 'materialized') throw new Error(JSON.stringify(rebuilt.refusals))
     expect(rebuilt.bytes).toEqual(serializeUvwProfile(canonical))
   })
+  async function multipleSpaceDocument() {
+    const { result } = await exported()
+    const doc = JSON.parse(new TextDecoder().decode(result.bytes))
+    const base = doc.spaces[0]
+    const objects = base.layers.find((layer: {kind: string}) => layer.kind === 'objects')
+    delete objects.instances[0].presentationTeamColor
+    delete objects.instances[0].presentationTeamRamp
+    doc.spaces = ['alpha', 'beta'].map((id, index) => ({ ...structuredClone(base), id,
+      players: [{ slot: 0, address: `explicit/${id}`, color: index ? [0.5,0.25,0.125] : [0.125,0.25,0.5],
+        ramp: shades(index ? 16 : 8) }],
+    }))
+    return doc
+  }
+  async function spaceObjects(opened: ReturnType<typeof createUvwWorldSceneSource>) {
+    const info = await opened.info()
+    const rows = []
+    for (const facet of info.facets.filter(facet => facet.facet === 'objects')) {
+      const page = await opened.page({ facet: 'objects', layerId: facet.layerId, lod: 'exact', limit: 8 })
+      for (const item of page.items) if (item.facet === 'objects') rows.push(item)
+    }
+    return rows
+  }
+  it('resolves identical slots against each object space and retains inherited canonical bytes', async () => {
+    const canonical = parseUvwProfile(new TextEncoder().encode(JSON.stringify(await multipleSpaceDocument())))
+    const opened = createUvwWorldSceneSource(canonical, { snapshotId: 'two-player-spaces' })
+    expect((await opened.info()).players).toBeUndefined()
+    const rows = await spaceObjects(opened)
+    expect(rows).toHaveLength(2)
+    expect(rows.map(row => row.player)).toEqual([0, 0])
+    expect(rows[0]!.presentationTeamColor?.[0]).toBeCloseTo(0.3885728590463344, 14)
+    expect(rows[1]!.presentationTeamColor?.[0]).toBeCloseTo(0.7353569830524495, 14)
+    expect(rows.map(row => row.presentationTeamRamp?.length)).toEqual([8, 16])
+    expect(rows.every(row => row.uvwPresentationTeamColor === undefined && row.uvwPresentationTeamRamp === undefined)).toBe(true)
+    const rebuilt = await materializeWorldToUvw(opened, { ...options, maxFacetItems: 8 })
+    if (rebuilt.state !== 'materialized') throw new Error(JSON.stringify(rebuilt.refusals))
+    expect(rebuilt.bytes).toEqual(serializeUvwProfile(canonical))
+  })
+  it('preserves explicit and inherited channels independently without recolouring unowned objects', async () => {
+    const doc = await multipleSpaceDocument()
+    const instances = doc.spaces.map((space: {layers: {kind: string; instances: Record<string, unknown>[]}[]}) => space.layers.find(layer => layer.kind === 'objects')!.instances)
+    instances[0]![0]!.presentationTeamRamp = [[0.123456789012345,0.25,0.5]]
+    instances[1]![0]!.presentationTeamColor = [0.123456789012345,0,1]
+    instances[1]![0]!.presentationTeamColorIntensity = 0
+    instances[0]!.push({ ...instances[0]![0], id: 'unowned', player: undefined, presentationTeamRamp: undefined })
+    const canonical = parseUvwProfile(new TextEncoder().encode(JSON.stringify(doc)))
+    const opened = createUvwWorldSceneSource(canonical, { snapshotId: 'mixed-space-colours' })
+    const rows = await spaceObjects(opened)
+    const unowned = rows.find(row => row.player === undefined)!
+    expect(unowned.presentationTeamColor).toBeUndefined()
+    expect(unowned.presentationTeamRamp).toBeUndefined()
+    const explicitRamp = rows.find(row => row.uvwPresentationTeamRamp !== undefined)!
+    expect(explicitRamp.presentationTeamRamp).toEqual([[0.123456789012345,0.25,0.5]])
+    const explicitColor = rows.find(row => row.uvwPresentationTeamColor !== undefined)!
+    expect(explicitColor.presentationTeamRamp).toHaveLength(16)
+    expect(explicitColor.presentationTeamColorIntensity).toBe(0)
+    const rebuilt = await materializeWorldToUvw(opened, { ...options, maxFacetItems: 8 })
+    if (rebuilt.state !== 'materialized') throw new Error(JSON.stringify(rebuilt.refusals))
+    expect(rebuilt.bytes).toEqual(serializeUvwProfile(canonical))
+  })
   it('preserves canonical exact linear overrides without an sRGB round-trip drift', async () => {
     const { result } = await exported()
     const doc = JSON.parse(new TextDecoder().decode(result.bytes))

@@ -2059,6 +2059,8 @@ export interface WorldSceneObjectItem extends MapPlacedObject {
   readonly uvwPresentationRotation?: readonly [number, number, number, number]
   /** Exact canonical linear colour retained independently from its stored-sRGB presentation. */
   readonly uvwPresentationTeamColor?: readonly [number, number, number]
+  /** Authored canonical ramp only; absent when the preview inherits its space player ramp. */
+  readonly uvwPresentationTeamRamp?: readonly (readonly [number, number, number])[]
   readonly uvwScale?: MapPosition
   /** Presentation-only instance generated from another facet; never exported or edited as an object. */
   readonly derivedFrom?: 'cliffs' | 'objects'
