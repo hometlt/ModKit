@@ -691,6 +691,7 @@ export function createUvwWorldSceneSource(
         spaceId: record.space.id,
         localLayerId: record.layer.id,
         ...(record.layer.kind === 'heightfield' && record.layer.role !== undefined ? { heightfieldRole: record.layer.role } : {}),
+        ...(record.layer.kind === 'heightfield' && record.layer.latticeRamps !== undefined ? {latticeRamps:record.layer.latticeRamps} : {}),
         ...(record.layer.kind === 'heightfield' && record.layer.latticeOverview !== undefined ? {latticeOverview:record.layer.latticeOverview} : {}),
         ...(record.layer.kind === 'game-raster' ? { gameRaster: (() => {
           const { schemaVersion: _version, id: _id, kind: _kind, label: _label, columns: _columns, rows: _rows,

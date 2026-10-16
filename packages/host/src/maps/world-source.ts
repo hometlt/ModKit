@@ -1,4 +1,5 @@
 import { projectLatticeOverview } from '@modkit/sdk/maps'
+import { validateLatticeRamps } from '@modkit/sdk/maps'
 /** Host-owned, read-only map-world source from resolved map semantics (SDK maps contract).
  * Publishes native facts and only projects UVW positions/coverage through admitted transforms.
  * Rejects malformed lattice coverage; does not infer gameplay masks, edit maps or decode assets.
@@ -1979,6 +1980,15 @@ export function createCandidateWorldSceneLease(
         id: item.layerId,
         layerId: item.layerId,
         kind: item.facet,
+          ...(item.facet === 'terrain' && snapshot.latticeCoverage?.ramps !== undefined && uvwTransform !== undefined
+            ? {latticeRamps:(() => {
+              const {coordinateSpaceId,...value}=snapshot.latticeCoverage!.ramps!
+              if(coordinateSpaceId!=='map-native')throw new TypeError('Unsupported ramp coordinate space')
+              const ramps=validateLatticeRamps(value)
+              return validateLatticeRamps({...ramps,polygons:ramps.polygons.map(polygon=>polygon.map(([x,y])=>{
+                const p=canonicalPosition({x,y,z:0},uvwTransform);return [p.x,p.z]
+              }))})
+            })()} : {}),
         ...(item.facet === 'terrain' && snapshot.latticeCoverage?.overview !== undefined && uvwTransform !== undefined
           ? { latticeOverview: projectLatticeOverview(
               (() => {

@@ -26,6 +26,21 @@ const fixture = (): MapLatticeOverview => ({
   markers: [],
 })
 describe('neutral semantic lattice overview', () => {
+  it('uses only the selected published traversal class and retains independent derived ramp provenance', () => {
+    const ground = {facet:'layers',id:'ground',layerId:'ground',kind:'terrain',state:'available',itemCount:0,lods:['exact'],spaceId:'one',
+      latticeRamps:{method:'gap',quality:'derived',polygons:[[[0,0],[1,0],[1,1]]]}}
+    const layer = (id:string) => ({facet:'layers',id,layerId:id,kind:'traversal',state:'available',itemCount:1,lods:['exact'],spaceId:'one',
+      traversal:{classId:id},grid:{columns:1,rows:1,cellSize:2,origin:[0,0,0],coordinateSpaceId:'uvw-canonical'}})
+    const cell = (id:string,walkable:boolean) => ({facet:'traversal',id:id+'-cell',layerId:id,coordinateSpaceId:'uvw-canonical',lod:'exact',
+      x:0,y:0,walkable,exits:0,uvwPosition:{x:1,y:0,z:1}})
+    const items=[ground,layer('ground-movement'),cell('ground-movement',false),layer('hover'),cell('hover',true)] as unknown as import('@modkit/sdk/maps').WorldSceneItem[]
+    const plan=createWorldLatticePlan(items,'one','overview','ground-movement')
+    expect(plan.movement?.blocked).toEqual([[[0,0],[2,0],[2,2],[0,2]]])
+    expect(plan.rampSources).toEqual([{method:'gap',quality:'derived'}])
+    expect(plan.ramps).toEqual(ground.latticeRamps.polygons)
+    expect(createWorldLatticePlan(items,'one','overview','hover').movement?.blocked).toEqual([])
+    expect(createWorldLatticePlan(items,'one','overview','absent').movement).toBeUndefined()
+  })
   it('interpolates supplied scalar palettes and never interprets zero as water or native flags', () => {
     expect([...latticeOverviewPixels(fixture())]).toEqual([51, 51, 51, 255, 255, 255, 255, 255])
   })

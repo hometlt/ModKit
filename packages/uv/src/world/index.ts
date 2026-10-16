@@ -1,5 +1,6 @@
 export { unretainedWorldFields } from './field-loss.js'
 import { WORLD_MAX_TERRAIN_WEIGHT_RASTERS } from '@modkit/sdk/maps'
+import { validateLatticeRamps, type LatticeRampAnnotations } from '@modkit/sdk/maps'
 import { validateLatticeOverview } from '@modkit/sdk/maps'
 import type { MapLatticeOverview } from '@modkit/sdk/maps'
 /** Core-owned reader and canonical writer for the normative UVW 1.0 spatial profile:
@@ -54,6 +55,7 @@ export interface UvwBounds {
 }
 
 export interface UvwHeightfieldLayer {
+  readonly latticeRamps?: LatticeRampAnnotations
   readonly role?: 'ground' | 'query'
   /** Semantic overview annotation in canonical x/z; never a baked raster image. */
   readonly latticeOverview?: MapLatticeOverview
@@ -763,7 +765,7 @@ function heightfieldLayer(
   const item = record(value, path, state, depth)
   exactKeys(
     item,
-    ['id', 'kind', 'role', 'label', 'columns', 'rows', 'cellSize', 'origin', 'noDataValue', 'cliffFaces', 'samples', 'latticeOverview'],
+    ['id', 'kind', 'role', 'label', 'columns', 'rows', 'cellSize', 'origin', 'noDataValue', 'cliffFaces', 'samples', 'latticeOverview', 'latticeRamps'],
     ['id', 'kind', 'columns', 'rows', 'cellSize', 'origin', 'samples'],
     path,
   )
@@ -775,7 +777,7 @@ function heightfieldLayer(
       : string(item['label'], `${path}.label`, state, depth + 1)
   const role = item['role']
   if (role !== undefined && role !== 'ground' && role !== 'query') fail('invalid heightfield role', `${path}.role`)
-  if (role === 'query' && (item['cliffFaces'] !== undefined || item['latticeOverview'] !== undefined))
+  if (role === 'query' && (item['cliffFaces'] !== undefined || item['latticeOverview'] !== undefined || item['latticeRamps'] !== undefined))
     fail('query surface cannot authorize terrain presentation', path)
   const columns = integerAtLeast(item['columns'], role === 'query' ? 1 : 2, `${path}.columns`, state, depth + 1)
   const rows = integerAtLeast(item['rows'], role === 'query' ? 1 : 2, `${path}.rows`, state, depth + 1)
@@ -838,6 +840,11 @@ function heightfieldLayer(
     origin: vec3(item['origin'], `${path}.origin`, state, depth + 1),
     ...(noDataValue === undefined ? {} : { noDataValue }),
     ...(cliffFaces === undefined ? {} : { cliffFaces }),
+    ...(item['latticeRamps'] === undefined ? {} : {latticeRamps:(() => {
+      const ramps=validateLatticeRamps(item['latticeRamps'],Math.min(500_000,MAX_LATTICE_ANNOTATIONS-state.annotations))
+      annotation(state,ramps.polygons.reduce((sum,p)=>sum+p.length,0),`${path}.latticeRamps`)
+      return ramps
+    })()}),
     ...(item['latticeOverview'] === undefined ? {} : {latticeOverview: (() => {
       try {
         const overview = validateLatticeOverview(item['latticeOverview'],{

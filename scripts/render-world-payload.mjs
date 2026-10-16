@@ -120,8 +120,12 @@ const bundled = await build({
           glRenderer: ${JSON.stringify(latticeStyle === 'overview' ? 'Canvas2D map overview' : 'Canvas2D lattice')},
           draw() {
             const started = performance.now();
-            drawWorldLattice(canvas, plan);
-            return { stats: { latticeCells: plan.cells.length, contours: plan.contours.length, ...(plan.style === 'overview' ? { cliffMidlineSegments: plan.cliffMidlines.length, cliffMidline: plan.cliffMidlineStats, ...(plan.publishedOverview === undefined ? {} : { publishedOverview: { ...plan.publishedOverview.provenance, columns:plan.publishedOverview.raster.columns, rows:plan.publishedOverview.raster.rows, lines:plan.publishedOverview.lines.length, markers:plan.publishedOverview.markers.length, movementProfile:plan.publishedOverview.raster.movementProfile } }) } : {}), objectMarkers: plan.objects.length },
+            const context = canvas.getContext('2d');
+            const previousFillText = context.fillText;
+            let textLabelsDrawn = 0;
+            context.fillText = function (...args) { textLabelsDrawn++; return previousFillText.apply(this, args); };
+            try { drawWorldLattice(canvas, plan); } finally { context.fillText = previousFillText; }
+            return { stats: { latticeCells: plan.cells.length, contours: plan.contours.length, ...(plan.style === 'overview' ? { cliffMidlineSegments: plan.cliffMidlines.length, cliffMidline: plan.cliffMidlineStats, ...(plan.publishedOverview === undefined ? {} : { publishedOverview: { ...plan.publishedOverview.provenance, columns:plan.publishedOverview.raster.columns, rows:plan.publishedOverview.raster.rows, lines:plan.publishedOverview.lines.length, markers:plan.publishedOverview.markers.length, movementProfile:plan.publishedOverview.raster.movementProfile } }) } : {}), rampPatches:plan.ramps.length, rampSources:plan.rampSources??[], ...(plan.movement===undefined?{}:{movement:{classId:plan.movement.classId,blockedCells:plan.movement.blocked.length}}), textLabelsDrawn, objectMarkers: plan.objects.length },
               renderer: {}, milliseconds: performance.now() - started };
           },
           async benchmark() { throw new Error('Use --benchmark 0 for lattice screenshots'); },

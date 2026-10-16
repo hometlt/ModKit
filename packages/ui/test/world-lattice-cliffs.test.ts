@@ -34,6 +34,28 @@ function strip(width = 3, rotate = 0): CliffLatticeQuad[] {
   return result
 }
 describe('shared bank-distance cliff midline', () => {
+  it('resolves a clipped bank at the edge of a complete rectangle without inventing missing pages', () => {
+    const clipped = strip(3).filter(q => q.x >= 2)
+    const result = deriveCliffMidlines(clipped)
+    expect(result.stats.oneBankComponents).toBe(0)
+    expect(result.segments.length).toBeGreaterThan(0)
+    for (const segment of result.segments)
+      for (const point of segment) expect(point[0]).toBeCloseTo(7, 10)
+    const hole = clipped.filter(q => q.x !== 3 || q.y !== 0)
+    expect(deriveCliffMidlines(hole).stats.oneBankComponents).toBeGreaterThan(0)
+  })
+  it.each([1, -1])('retains a point bank at an internal summit/depression with sign %i', sign => {
+    const quads = strip().map(q => ({ ...q,
+      cliffFace: q.x >= 2 && q.x < 4 && q.y >= 1 && q.y < 3,
+      vertices: q.vertices.map(v => ({ ...v,
+        height: v.point[0] === 6 && v.point[1] === -6 ? sign * 40 : 0,
+      })) as unknown as CliffLatticeQuad['vertices'],
+    }))
+    const result = deriveCliffMidlines(quads)
+    expect(result.stats.oneBankComponents).toBe(0)
+    expect(result.segments.length).toBeGreaterThan(0)
+    expect(new Set(result.fills.map(fill => fill.height))).toEqual(new Set([0, sign * 40]))
+  })
   it('keeps an internal bank when one transverse endpoint has a flat shoulder', () => {
     const quads = strip(4).map(q => ({
       ...q,

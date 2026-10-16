@@ -7,6 +7,37 @@ export type LatticeRgb = readonly [number, number, number]
 /** Ordered nonoverlapping runs, [positive sample count, finite scalar]; each row totals columns. */
 export type LatticeRunRows = readonly (readonly (readonly [number, number])[])[]
 
+/** Optional publisher-resolved ramp patches, independent of a full overview raster. */
+export interface LatticeRampAnnotations {
+  readonly method: string
+  readonly quality: 'authored' | 'derived'
+  readonly polygons: readonly (readonly LatticePoint[])[]
+}
+
+/** Bounded ramp-only annotation validator; no native slope/pathing interpretation. */
+export function validateLatticeRamps(value: unknown, maxVertices = 500_000): LatticeRampAnnotations {
+  if (!Number.isSafeInteger(maxVertices) || maxVertices < 0) throw new RangeError('Invalid ramp vertex budget')
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) throw new TypeError('Invalid lattice ramps')
+  const r = value as Record<string, unknown>
+  if (Object.keys(r).some(k => !['method','quality','polygons'].includes(k)) ||
+    typeof r['method'] !== 'string' || !r['method'].trim() || r['method'].length > 1024 || r['method'].includes('\0') ||
+    (r['quality']!=='authored'&&r['quality']!=='derived') || !Array.isArray(r['polygons']))
+    throw new TypeError('Invalid lattice ramps')
+  if(r['polygons'].length>Math.floor(maxVertices/3))throw new RangeError('Lattice ramp vertex budget exceeded')
+  let vertices = 0
+  const polygons = Array.from(r['polygons'],(polygon: unknown) => {
+    if (!Array.isArray(polygon) || polygon.length < 3) throw new TypeError('Invalid ramp polygon')
+    vertices += polygon.length
+    if (vertices > maxVertices) throw new RangeError('Lattice ramp vertex budget exceeded')
+    return Object.freeze(Array.from(polygon,(p: unknown): LatticePoint => {
+      if (!Array.isArray(p) || p.length !== 2 || !Array.from(p).every(v => typeof v === 'number' && Number.isFinite(v)))
+        throw new TypeError('Invalid ramp point')
+      return Object.freeze([p[0] as number,p[1] as number])
+    }))
+  })
+  return Object.freeze({method:r['method'],quality:r['quality'] as 'authored'|'derived',polygons:Object.freeze(polygons)})
+}
+
 export interface MapLatticeOverview {
   /** Identity and fidelity of the publisher's analysis; no game rule is inferred by consumers. */
   readonly provenance: Readonly<{

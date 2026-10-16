@@ -255,7 +255,7 @@ export type WorldSceneQuery =
   | { readonly view: 'export' }
   | {
       readonly view: 'page'
-      readonly facet: 'layers' | 'objects' | 'regions'
+      readonly facet: 'layers' | 'objects' | 'regions' | 'terrain' | 'cliffs' | 'navigation' | 'traversal' | 'gateways'
       readonly layerId?: string
       readonly cursor?: string
       readonly limit: number

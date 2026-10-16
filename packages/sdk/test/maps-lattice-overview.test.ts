@@ -1,6 +1,18 @@
 import { test } from 'vitest'
 import assert from 'node:assert/strict'
 import { projectLatticeOverview, validateLatticeOverview } from '../src/maps/lattice-overview.js'
+import { validateLatticeRamps } from '../src/maps/lattice-overview.js'
+
+test('independent ramp patches retain provenance and reject malformed or oversized geometry',()=>{
+ const value={method:'gap',quality:'derived',polygons:[[[0,0],[1,0],[1,1]]]}
+ assert.deepEqual(validateLatticeRamps(value),value)
+ assert.throws(()=>validateLatticeRamps(value,2),/budget/)
+ assert.throws(()=>validateLatticeRamps({...value,quality:'native-guess'}))
+ assert.throws(()=>validateLatticeRamps({...value,polygons:[[[0,0],[1,Infinity],[1,1]]]}))
+ assert.throws(()=>validateLatticeRamps({...value,extra:1}))
+ assert.throws(()=>validateLatticeRamps({...value,polygons:new Array(1)}))
+ assert.throws(()=>validateLatticeRamps({...value,polygons:[new Array(3)]}))
+})
 
 const fixture=()=>({provenance:{method:'fixture',quality:'authored',complete:true},raster:{
   columns:3,rows:2,origin:[10,20],columnStep:[2,0],rowStep:[0,-3],

@@ -629,6 +629,7 @@ async function reconstructLayer(
       ...(fill === undefined ? {} : { noDataValue: fill }),
       ...(cliffFaces === undefined ? {} : { cliffFaces }),
       ...(layer.latticeOverview === undefined ? {} : {latticeOverview:layer.latticeOverview}),
+      ...(layer.latticeRamps === undefined ? {} : {latticeRamps:layer.latticeRamps}),
       samples: gridRows(values as number[], grid.columns, grid.rows),
     })
   }

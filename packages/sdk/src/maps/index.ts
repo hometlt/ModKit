@@ -1,4 +1,7 @@
 export { validateLatticeOverview, projectLatticeOverview } from './lattice-overview.js'
+export { validateLatticeRamps } from './lattice-overview.js'
+export type { LatticeRampAnnotations } from './lattice-overview.js'
+import type { LatticeRampAnnotations } from './lattice-overview.js'
 export type { LatticeOverviewLimits } from './lattice-overview.js'
 import type { MapLatticeOverview } from './lattice-overview.js'
 export type { MapLatticeOverview, LatticePoint, LatticeRgb, LatticeRunRows } from './lattice-overview.js'
@@ -1687,8 +1690,10 @@ export interface MapLatticeObjectCoverage {
   readonly outline?: readonly MapLatticePolygon[]
 }
 
-/** Exact, bounded lattice annotations from resolved game data, not inferred from geometry. */
+/** Bounded publisher annotations; derived presentation patches explicitly retain their provenance. */
 export interface MapLatticeCoverage {
+  /** Native horizontal ramp patches with explicit authored/derived provenance. */
+  readonly ramps?: LatticeRampAnnotations & Readonly<{coordinateSpaceId:'map-native'}>
   /** Native-owner overview facts; omission is unknown. Host projects geometry to UVW. */
   readonly overview?: MapLatticeOverview & Readonly<{ coordinateSpaceId: string }>
   /** An absent entry means unknown coverage for that object; an empty list means no known entries. */
@@ -1880,6 +1885,8 @@ export interface WorldSceneInfo extends WorldSceneInfoBase {
 }
 
 export interface WorldSceneLayerItem {
+  /** Canonical x/z ramp patches retained independently of a complete overview raster. */
+  readonly latticeRamps?: LatticeRampAnnotations
   /** Portable class and optional same-space local heightfield layer id; no native flags mapping. */
   readonly traversal?: Readonly<{ readonly classId: string; readonly surfaceLayerId?: string }>
   /** Native navigation vocabulary, retained independently of any portable traversal policy. */

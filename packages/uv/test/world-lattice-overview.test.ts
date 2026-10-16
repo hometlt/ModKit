@@ -11,14 +11,16 @@ const overview:MapLatticeOverview={provenance:{method:'fixture',quality:'authore
     resourceKind:'fixture-scoped',resourceVariant:'rich',resourceState:'reduced',
   }],playableArea:[[0,0],[1,0],[1,1],[0,1]],
 }
+const rampAnnotation={method:'fixture-gap',quality:'derived' as const,polygons:[[[0,0],[1,0],[1,1],[0,1]] as const]}
 const document:UvwProfileDocument={uv:{format:'UVW',version:'1.0',status:'profile'},connections:[],spaces:[{
   id:'main',topology:'heightfield',basis:{handedness:'right',upAxis:'y',forwardAxis:'+z',unit:'meter'},
-  bounds:{min:[0,0,0],max:[1,1,1]},layers:[{id:'ground',kind:'heightfield',columns:2,rows:2,cellSize:1,origin:[0,0,0],samples:[[0,0],[1,1]],latticeOverview:overview}],
+  bounds:{min:[0,0,0],max:[1,1,1]},layers:[{id:'ground',kind:'heightfield',columns:2,rows:2,cellSize:1,origin:[0,0,0],samples:[[0,0],[1,1]],latticeOverview:overview,latticeRamps:rampAnnotation}],
 }]}
 describe('UVW semantic lattice overview',()=>{
  it('validates and canonically preserves semantic fields without converting them to an image',()=>{
   const parsed=parseUvwProfile(serializeUvwProfile(document))
   expect(parsed.spaces[0]?.layers[0]).toHaveProperty('latticeOverview',overview)
+  expect(parsed.spaces[0]?.layers[0]).toHaveProperty('latticeRamps',rampAnnotation)
  })
  it('reopens as layer metadata and survives the canonical materializer',async()=>{
   const source=createUvwWorldSceneSource(document,{snapshotId:'overview-roundtrip'})
@@ -28,6 +30,7 @@ describe('UVW semantic lattice overview',()=>{
   expect(result.state).toBe('materialized')
   if(result.state!=='materialized')throw new Error(JSON.stringify(result.refusals))
   expect(result.document.spaces[0]?.layers[0]).toHaveProperty('latticeOverview',overview)
+  expect(result.document.spaces[0]?.layers[0]).toHaveProperty('latticeRamps',rampAnnotation)
  })
  it('refuses corrupted row coverage and sample-budget overflow instead of dropping annotations',()=>{
   const corrupt=JSON.parse(JSON.stringify(document))

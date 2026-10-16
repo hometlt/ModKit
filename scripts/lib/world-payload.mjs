@@ -26,7 +26,7 @@ export function worldRenderSource(inspected, { objects = () => true } = {}) {
   const players = inspected.info?.players ?? []
   // An overview selects a canonical space. Keep its sibling layer identities too, so objects
   // and picking in that space do not disappear merely because only terrain has the annotation.
-  const retainLayerMetadata = inspected.layers.some(layer => layer.layer.latticeOverview !== undefined)
+  const retainLayerMetadata = inspected.layers.some(layer => layer.layer.latticeOverview !== undefined || layer.layer.latticeRamps !== undefined || layer.layer.traversal !== undefined)
   const items = inspected.layers
     .flatMap(layer => [...(retainLayerMetadata ? [layer.layer] : []), ...layer.page.items])
     .flatMap(item => {

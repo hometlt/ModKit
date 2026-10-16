@@ -43,6 +43,7 @@ export interface CliffMidlineStats {
 }
 interface Node {
   point: Point
+  height: number
   bank: number
   bankHeight: number
 }
@@ -125,6 +126,16 @@ export function deriveCliffMidlines(quads: readonly CliffLatticeQuad[]): {
       layer.set(id, quad)
     }
     for (const layer of layers.values()) {
+      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity
+      for (const q of layer.values()) {
+        minX = Math.min(minX,q.x); maxX = Math.max(maxX,q.x)
+        minY = Math.min(minY,q.y); maxY = Math.max(maxY,q.y)
+      }
+      // Only a complete rectangle proves a clipped outer domain, rather than a missing page/hole.
+      let sealed = Number.isSafeInteger(maxX-minX) && Number.isSafeInteger(maxY-minY) &&
+        layer.size === (maxX - minX + 1) * (maxY - minY + 1)
+      for(const q of layer.values())
+        if(!Number.isSafeInteger(q.x-minX)||!Number.isSafeInteger(q.y-minY)){sealed=false;break}
       const active = new Map<string, CliffLatticeQuad>()
       for (const [id, quad] of layer) {
         if (!quad.cliffFace || quad.ramp || quad.authoredLevels) continue
@@ -191,7 +202,7 @@ export function deriveCliffMidlines(quads: readonly CliffLatticeQuad[]): {
             p.reduce((sum, vertex, i) => sum + vertex.point[axis]! * weights[i]!, 0),
           ) as unknown as Point
           const index = nodes.length
-          nodes.push({ point, bank: 0, bankHeight: 0 })
+          nodes.push({ point, height: p.reduce((sum, vertex, i) => sum + vertex.height * weights[i]!, 0), bank: 0, bankHeight: 0 })
           ids.set(id, index)
           return index
         }
@@ -252,7 +263,9 @@ export function deriveCliffMidlines(quads: readonly CliffLatticeQuad[]): {
               }
               continue
             }
-            if (neighbor?.cliffFace !== false || neighbor.ramp) {
+            const clippedEdge = sealed && neighbor === undefined &&
+              (q.x + dx < minX || q.x + dx > maxX || q.y + dy < minY || q.y + dy > maxY)
+            if (!clippedEdge && (neighbor?.cliffFace !== false || neighbor.ramp)) {
               stats.unknownBoundaryEdges++
               continue
             }
@@ -281,6 +294,21 @@ export function deriveCliffMidlines(quads: readonly CliffLatticeQuad[]): {
         if (mixed) stats.complete = false
         const low: number[] = [],
           high: number[] = []
+        // A summit/depression contained in the cliff mask has a point bank, not an edge.
+        // Require a full four-way interior graph fan and a strict extremum in every direction.
+        const adjacent = new Map<number, number[]>()
+        for (const [a,b] of edgePairs.values()) {
+          adjacent.set(a,[...(adjacent.get(a) ?? []),b])
+          adjacent.set(b,[...(adjacent.get(b) ?? []),a])
+        }
+        for (const [id, neighbors] of adjacent) {
+          const node = nodes[id]!
+          if (node.bank !== 0 || neighbors.length !== 4) continue
+          const changes = neighbors.map(other => nodes[other]!.height - node.height)
+          if (changes.every(delta => delta > 0)) node.bank = 1
+          else if (changes.every(delta => delta < 0)) node.bank = 2
+          if (node.bank !== 0) node.bankHeight = node.height
+        }
         for (let i = 0; i < nodes.length; i++) {
           if (nodes[i]!.bank === 1) low.push(i)
           else if (nodes[i]!.bank === 2) high.push(i)

@@ -10,7 +10,7 @@ import type {
   WorldSceneItem,
   WorldSceneTerrainItem,
 } from '@modkit/sdk/maps'
-import { validateLatticeOverview } from '@modkit/sdk/maps'
+import { validateLatticeOverview, validateLatticeRamps } from '@modkit/sdk/maps'
 import { drawLatticeOverview } from './lattice-overview.js'
 
 import {
@@ -29,6 +29,8 @@ interface LatticeVertex {
   readonly ramp?: boolean
 }
 export interface WorldLatticePlan {
+  /** First complete published movement class, or an explicitly selected class; no flag inference. */
+  readonly movement?: { readonly classId: string; readonly blocked: readonly Quad<Point>[] }
   /** Publisher-resolved semantic overview; absent retains the ordinary/derived lattice. */
   readonly publishedOverview?: MapLatticeOverview
   /** Omission retains the original lattice presentation. No gameplay semantics change. */
@@ -39,7 +41,8 @@ export interface WorldLatticePlan {
   }[]
   readonly contours: readonly (readonly [Point, Point])[]
   /** Cells touching a ramp sample: the ramp's shape, drawn over the height colours. */
-  readonly ramps: readonly Quad<Point>[]
+  readonly ramps: readonly (readonly Point[])[]
+  readonly rampSources?: readonly {readonly method:string;readonly quality:'authored'|'derived'}[]
   /** Explicit publisher cliff-face cells, independent of level contours and ramps. */
   readonly cliffFaces: readonly Quad<Point>[]
   /** Derived top-down bank bisectors, not native cliff levels or navigation facts. */
@@ -117,6 +120,7 @@ export function createWorldLatticePlan(
   items: readonly WorldSceneItem[],
   selectedSpaceId?: string,
   style: 'lattice' | 'overview' = 'lattice',
+  selectedMovementClassId?: string,
 ): WorldLatticePlan {
   if (style !== 'lattice' && style !== 'overview')
     throw new TypeError('Unknown world lattice style')
@@ -133,6 +137,15 @@ export function createWorldLatticePlan(
     (firstTerrain === undefined ? undefined : layerSpaces.get(firstTerrain.layerId))
   const compatible = (item: WorldSceneItem) =>
     spaceId === undefined || layerSpaces.get(item.layerId) === spaceId
+  const movementLayer = items.find(item => item.facet === 'layers' && item.kind === 'traversal' &&
+    item.state === 'available' && item.traversal !== undefined && item.grid !== undefined && compatible(item) &&
+    (selectedMovementClassId === undefined || item.traversal.classId === selectedMovementClassId))
+  const movement = movementLayer?.facet === 'layers' && movementLayer.traversal !== undefined && movementLayer.grid !== undefined
+    ? { classId: movementLayer.traversal.classId, blocked: items.flatMap(item => {
+      if (item.facet !== 'traversal' || item.layerId !== movementLayer.layerId || item.walkable) return []
+      const half = movementLayer.grid!.cellSize / 2, { x, z } = item.uvwPosition
+      return [[[x-half,z-half],[x+half,z-half],[x+half,z+half],[x-half,z+half]] as Quad<Point>]
+    }) } : undefined
   const published = items.find(
     item => item.facet === 'layers' && item.latticeOverview !== undefined && compatible(item),
   )
@@ -225,7 +238,7 @@ export function createWorldLatticePlan(
     })
   const cells: WorldLatticePlan['cells'][number][] = []
   const contours: (readonly [Point, Point])[] = []
-  const ramps: Quad<Point>[] = []
+  const ramps: (readonly Point[])[] = []
   const cliffFaces: Quad<Point>[] = []
   const cliffQuads: CliffLatticeQuad[] = []
   for (const item of terrain) {
@@ -291,6 +304,12 @@ export function createWorldLatticePlan(
       }
     }
   }
+  const rampSources = items.flatMap(item => {
+    if(item.facet!=='layers'||item.latticeRamps===undefined||!compatible(item))return []
+    const value=validateLatticeRamps(item.latticeRamps)
+    ramps.push(...value.polygons)
+    return [{method:value.method,quality:value.quality}]
+  })
   const objects = items.flatMap(item => {
     if (item.facet !== 'objects' || item.derivedFrom === 'cliffs' || !compatible(item)) return []
     // Do not mix grid coordinates with an untransformed map-native placement.
@@ -350,9 +369,11 @@ export function createWorldLatticePlan(
   })
   return {
     ...(publishedOverview === undefined ? {} : { publishedOverview }),
+    ...(movement === undefined ? {} : { movement }),
     cells,
     contours,
     ramps,
+    ...(rampSources.length===0?{}:{rampSources}),
     cliffFaces,
     objects,
     bounds: Number.isFinite(minX) ? [minX, minY, maxX, maxY] : [0, 0, 1, 1],
@@ -505,10 +526,19 @@ export function drawWorldLattice(
   context.fillStyle = WORLD_RAMP_COLOR
   for (const ramp of plan.ramps) {
     context.beginPath()
-    context.moveTo(...screen(ramp[0]))
+    context.moveTo(...screen(ramp[0]!))
     for (const point of ramp.slice(1)) context.lineTo(...screen(point))
     context.closePath()
     context.fill()
+  }
+  if (overview && plan.movement !== undefined) {
+    context.fillStyle = 'rgba(0,0,0,0.35)'
+    for (const polygon of plan.movement.blocked) {
+      context.beginPath()
+      context.moveTo(...screen(polygon[0]))
+      for (const point of polygon.slice(1)) context.lineTo(...screen(point))
+      context.closePath(); context.fill()
+    }
   }
   context.lineWidth = 1.4
   if (overview && (plan.cliffMidlines?.length ?? 0) > 0) {
@@ -577,7 +607,7 @@ export function drawWorldLattice(
       context.arc(x + (index - 1) * 5, y - 6, 2.5, 0, Math.PI * 2)
       context.fill()
     }
-    if (object.roles?.includes('resource') && object.resourceKind !== undefined) {
+    if (!overview && object.roles?.includes('resource') && object.resourceKind !== undefined) {
       const [x, y] = screen(object.point)
       context.fillStyle = WORLD_LATTICE_ROLE_COLORS.resource
       context.font = '9px sans-serif'
@@ -589,6 +619,8 @@ export function drawWorldLattice(
       context.stroke()
     }
   }
+  // Overview is a clean cartographic image, matching the semantic overview presentation.
+  if (overview) return
   // Legend: the kinds present and ramps, in the viewer's language when the caller names them.
   const kinds: (
     | MapObjectKind
