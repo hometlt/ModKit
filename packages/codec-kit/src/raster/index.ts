@@ -1,5 +1,6 @@
 /** Raster algorithms every image codec shares: encoders for the simple formats, the PNG decoder and pixel operations. */
 export { encodeGreyPng, encodeIconDib, encodePng, encodeTga } from './encoders.js'
+export { expand5To8, rgb555ToRgb888 } from './channel-bits.js'
 export {
   decodePngSamples,
   greyDepthFor,

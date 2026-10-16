@@ -9,6 +9,8 @@
  * here.
  */
 
+import { expand5To8 } from '../raster/channel-bits.js'
+
 export type BcFormat = 'DXT1' | 'DXT3' | 'DXT5' | 'BC4' | 'BC5'
 
 /** Bytes per 4 × 4 block. */
@@ -31,13 +33,13 @@ function fillColorPalette(first: number, second: number, allowTransparent: boole
   const r1 = (second >>> 11) & 0x1f
   const g1 = (second >>> 5) & 0x3f
   const b1 = second & 0x1f
-  p[0] = (r0 << 3) | (r0 >>> 2)
+  p[0] = expand5To8(r0)
   p[1] = (g0 << 2) | (g0 >>> 4)
-  p[2] = (b0 << 3) | (b0 >>> 2)
+  p[2] = expand5To8(b0)
   p[3] = 255
-  p[4] = (r1 << 3) | (r1 >>> 2)
+  p[4] = expand5To8(r1)
   p[5] = (g1 << 2) | (g1 >>> 4)
-  p[6] = (b1 << 3) | (b1 >>> 2)
+  p[6] = expand5To8(b1)
   p[7] = 255
   if (first > second || !allowTransparent) {
     for (let c = 0; c < 3; c += 1) {

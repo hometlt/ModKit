@@ -204,6 +204,7 @@ export interface SceneRendererTeamColor {
    * its colour.
    */
   readonly ramp?: Readonly<{
+    /** Authored linear RGB shades; presentation selects its working colour space once. */
     readonly shades: readonly (readonly [number, number, number])[]
     readonly first: number
     readonly scale: number
@@ -227,7 +228,7 @@ export interface SceneRendererMaterialContext {
   readonly sequenceIndex?: number
   readonly teamColor?: readonly [number, number, number]
   /**
-   * A player's own shades for a material's indexed team-colour ramp (`SceneRendererTeamColor.ramp`),
+   * A player's own linear RGB shades for a material's indexed team-colour ramp (`SceneRendererTeamColor.ramp`),
    * used in its place when as long; another length keeps the material's shades.
    */
   readonly teamRamp?: readonly (readonly [number, number, number])[]

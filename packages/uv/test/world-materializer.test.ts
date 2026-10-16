@@ -154,6 +154,15 @@ function source(pageSize: number, sourceInfo = info): CandidateWorldSceneSource 
 const options = Object.freeze({ maxPageItems: 4, maxTerrainItems: 4, maxOutputBytes: 64_000 })
 
 describe('production world to UVW materializer', () => {
+  for (const players of [[], [{ id: 0, name: 'native side', color: [0, 0, 0] as const,
+    colorRamp: [[0, 0, 0] as const] }]]) {
+    it(`reports the native player table without inventing role addresses (${players.length} rows)`, async () => {
+      const result = await materializeWorldToUvw(source(4, { ...info, players }), options)
+      if (result.state !== 'materialized') throw new Error(JSON.stringify(result.refusals))
+      expect(result.document.spaces[0]?.players).toBeUndefined()
+      expect(result.lostFields).toContainEqual({ path: 'world.players', count: 1 })
+    })
+  }
   it('exports an explicitly declared native mesh world through the same facet reconstruction', async () => {
     const objectLayerId = 'native:objects'
     const meshInfo: CandidateWorldSceneInfo = { ...info, topology: 'mesh',

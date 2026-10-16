@@ -12,6 +12,7 @@
  * texture wrapper — belongs to the codec that owns that container.
  */
 import type { RgbaImage } from '../raster/image.js'
+import { expand5To8 } from '../raster/channel-bits.js'
 
 export type DxtEncoding = 'dxt1' | 'dxt3' | 'dxt5'
 
@@ -28,7 +29,7 @@ function expand565(value: number): Rgb {
   const red = (value >>> 11) & 0x1f
   const green = (value >>> 5) & 0x3f
   const blue = value & 0x1f
-  return [(red << 3) | (red >>> 2), (green << 2) | (green >>> 4), (blue << 3) | (blue >>> 2)]
+  return [expand5To8(red), (green << 2) | (green >>> 4), expand5To8(blue)]
 }
 
 function colorPalette(first: number, second: number, fourColor: boolean): readonly Rgb[] {

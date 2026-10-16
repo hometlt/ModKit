@@ -1,4 +1,5 @@
 import { sha256Hex } from '@modkit/codec-kit/crypto/digest'
+import { compareUtf8 } from '@modkit/core'
 import type {
   CandidateWorldSceneSource,
   MapWorldCanonicalTransform,
@@ -580,7 +581,11 @@ export async function materializeWorldToUvw(
       artifactDigest: `sha256:${digest}`,
       excludedFacetIds,
       omittedObjects: additional.omittedObjects,
-      lostFields: additional.lostFields,
+      // MapPlayer carries presentation slots, not the explicit simulation addresses required by
+      // WorldPlayer. Do not manufacture a roster or silently lose its palette, including an empty table.
+      lostFields: info.players === undefined ? additional.lostFields : Object.freeze([
+        ...additional.lostFields, Object.freeze({ path: 'world.players', count: 1 }),
+      ].sort((a, b) => compareUtf8(a.path, b.path))),
       refusalCodes: Object.freeze([]) as readonly [],
       refusals: Object.freeze([]) as readonly [],
     })

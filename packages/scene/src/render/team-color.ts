@@ -3,6 +3,7 @@ import type {
   SceneRendererMaterialContext,
   SceneRendererTexture,
 } from '@modkit/sdk/renderer'
+import { linearToSrgb } from '@modkit/codec-kit/raster'
 import {
   TEAM_COLOR_BLENDS,
   TEAM_RAMP_MAX,
@@ -23,7 +24,7 @@ export interface DrawTeamColor {
   readonly blendIndex: number
   readonly strength: number
   readonly color: readonly [number, number, number]
-  /** How the mask weighs it: its data channel, a key or an indexed ramp (codec-kit TeamMaskRule). */
+  /** Draw-space rule: indexed shades are already in stored sRGB texel space. */
   readonly rule: TeamMaskRule
 }
 
@@ -31,7 +32,7 @@ const CHANNELS = { r: 0, g: 1, b: 2, a: 3, rgb: 'rgb' } as const
 
 /**
  * The mask rule of a team colour (codec-kit TeamMaskRule): a key's thresholds per stored channel,
- * a ramp's shades — the draw's own when as long as the material's. Undefined for a ramp longer than
+ * a ramp's linear shades — the draw's own when as long as the material's. Undefined for a ramp longer than
  * renderers draw (TEAM_RAMP_MAX).
  */
 export function teamMaskRule(
@@ -61,6 +62,15 @@ export function teamMaskRule(
     }
   }
   return { mode: 'data', channel, ...tint }
+}
+
+/** Base/model/world draw routes blend stored sRGB texels before lighting. The authored ramp and
+ * instance override stay linear; convert their selected shades once at the draw boundary.
+ */
+export function teamMaskRuleForSrgb(rule: TeamMaskRule): TeamMaskRule {
+  if (rule.mode !== 'ramp' || rule.shades === undefined) return rule
+  return { ...rule, shades: rule.shades.map(shade =>
+    shade.map(linearToSrgb) as [number, number, number]) }
 }
 
 function rgb(value: unknown, label: string): readonly [number, number, number] {
@@ -108,7 +118,7 @@ export function drawTeamColor(
     blendIndex,
     strength,
     color,
-    rule,
+    rule: teamMaskRuleForSrgb(rule),
   }
 }
 

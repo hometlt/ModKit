@@ -68,7 +68,7 @@ import {
   teamColorChannel,
   type TeamMaskRule,
 } from '@modkit/codec-kit/model-math/color-remap'
-import { teamMaskRule } from '../render/team-color.js'
+import { teamMaskRule, teamMaskRuleForSrgb } from '../render/team-color.js'
 import { WORLD_SHADOW_GLSL } from '../render/world-shadow.js'
 import { createModelSceneSampler, modelMaterialTeamColor } from '../model/index.js'
 import type { ModelSceneSkin } from '../model/sampler.js'
@@ -382,7 +382,7 @@ export interface WorldBatchTeamColor {
   readonly blend: number
   readonly strength: number
   readonly color: readonly [number, number, number]
-  /** How the mask weighs it: data channel, key or indexed ramp (TEAM_MASK_GLSL). */
+  /** Data/key rule or authored linear ramp; the draw converts indexed shades to sRGB texels. */
   readonly rule: TeamMaskRule
   /** The colour is the object's tint, which then tints nothing else of the material. */
   readonly objectTint?: true
@@ -11254,7 +11254,7 @@ function drawTexturedBatch(
     worldUniform1f(gl, program, 'teamBlend', team.blend)
     worldUniform1f(gl, program, 'teamStrength', team.strength)
     gl.uniform3f(uniformLocation(gl, program, 'teamColor'), ...team.color)
-    const rule = team.rule
+    const rule = teamMaskRuleForSrgb(team.rule)
     worldUniform1f(
       gl,
       program,
