@@ -533,7 +533,7 @@ export function drawWorldLattice(
     context.fill()
   }
   if (overview && plan.movement !== undefined) {
-    context.fillStyle = 'rgba(0,0,0,0.35)'
+    context.fillStyle = 'rgba(0,0,0,0.65)'
     for (const polygon of plan.movement.blocked) {
       context.beginPath()
       context.moveTo(...screen(polygon[0]))
