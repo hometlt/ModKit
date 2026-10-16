@@ -16,6 +16,7 @@
 
 import { basename, dirname, resolve } from 'node:path'
 import { open, writeFile } from 'node:fs/promises'
+import { pathToFileURL } from 'node:url'
 import process from 'node:process'
 import {
   commandRequest,
@@ -25,22 +26,28 @@ import {
   SUBJECT_EDIT_COMMAND,
   SUBJECT_EDIT_COMMANDS,
   executeCommandRequest,
+  gameInstallationSearchOf,
   modContextCatalogEntities,
   type CommandInput,
   type CommandReceipt,
   type CommandResult,
+  type OpenedSubject,
   type SubjectOpener,
 } from '@modkit/host'
 import {
   coordinateMapPreviewAssetSession,
   MAP_PREVIEW_COORDINATOR_LIMITS,
+  openModelPreviewWorldSession,
   withMapPreviewSources,
 } from '@modkit/host/maps'
 import {
+  createContentSourceMapPreviewResourcePlanResolver,
   createModkit,
   createNodeMapPreviewResourcePlanResolver,
+  createNodeRgbaSequenceEncoder,
   createPathSubjectOpener,
   DEFAULT_SUBJECT_OPEN_BUDGET,
+  searchInstallationFolders,
   type NodeSubjectServices,
 } from '@modkit/host/node'
 import { sceneModule } from '@modkit/scene/module'
@@ -57,7 +64,7 @@ import { cliExtensionFailure } from './extension-validation.js'
 
 export const RUN_USAGE =
   'usage: modkit run <command> <file> --ext <dir> [--ext <dir>...] [--entry <path>] ' +
-  '[--target <id>] [--operation <id>] [--input <json-file>] [--commit] [--out <file>] ' +
+  '[--target <id>] [--installation <dir>...] [--operation <id>] [--input <json-file>] [--commit] [--out <file>] ' +
   '[--max-input-bytes <n|nKiB|nMiB|nGiB>] [--trust] [--format text|json|protocol-json]\n'
 
 /**
@@ -109,15 +116,52 @@ function withMapWorld(
   services: NodeSubjectServices,
   budgets: ResourceBudget,
   entry: string | undefined,
+  installations: readonly string[] = [],
+  contentSources?: () => ReturnType<typeof modkitCliInstallationSources>,
 ): SubjectOpener {
-  const resourcePlanResolver = createNodeMapPreviewResourcePlanResolver({ subjects: services })
+  // the installations a map's preview reads are found by the host's folder search, as VS Code finds
+  // them; a provider's own probes (registry, stores) still come first
+  let search: ReturnType<typeof searchInstallationFolders> | undefined
+  const games = [
+    ...new Set(gameInstallationSearchOf(services.inventory).markers.map(item => item.gameId)),
+  ]
+  const nodeResolver = createNodeMapPreviewResourcePlanResolver({
+    subjects: services,
+    // `--installation`: the user's choice among several confirmed installations, for every game
+    ...(installations.length === 0
+      ? {}
+      : {
+          configuredPaths: Object.fromEntries(
+            games.map(game => [game, installations.map(path => resolve(path))]),
+          ),
+        }),
+    searchPaths: async gameId => {
+      const wanted = gameInstallationSearchOf(services.inventory)
+      if (wanted.markers.length === 0) return undefined
+      search ??= searchInstallationFolders({
+        markers: wanted.markers,
+        searchFolders: wanted.searchFolders,
+      })
+      return (await search.catch(() => undefined))?.found[gameId]
+    },
+  })
+  // the installation's own sources answer the map's catalog (which model each object type draws)
+  const resourcePlanResolver =
+    contentSources === undefined
+      ? nodeResolver
+      : createContentSourceMapPreviewResourcePlanResolver({
+          contentSources,
+          fallback: nodeResolver,
+        })
   return async (path, signal) => {
     const opened = await opener(path, signal)
     const original = opened.session
     if (opened.snapshot.state !== 'opened' || original === undefined) return opened
+    const sources = await contentSources?.()
     const coordinate = (selectionId?: string) =>
       coordinateMapPreviewAssetSession({
         services,
+        ...(sources === undefined ? {} : { contentSources: sources }),
         grant: { id: 'modkit-cli-map-preview', classes: ['read-source', 'filesystem-read'] },
         budgets,
         original,
@@ -148,6 +192,95 @@ function withMapWorld(
   }
 }
 
+/** The largest media file `subject.convert` writes: the host ffmpeg encoder's own ceiling. */
+const MEDIA_MAX_BYTES = 64 * 1024 * 1024
+
+/**
+ * Media export draws a world: a map opens with the world its preview builds (`withMapWorld`), a
+ * cutscene or a replay publishes its own, and a model becomes a world of one object standing at the
+ * origin (`openModelPreviewWorldSession`), drawn and animated the way a map draws its models.
+ * `opened` is the subject the path opener last opened: its own ResourceSession resolves the model.
+ */
+function withMediaWorld(
+  opener: SubjectOpener,
+  opened: () => OpenedSubject | undefined,
+  services: NodeSubjectServices,
+  budgets: ResourceBudget,
+): SubjectOpener {
+  return async (path, signal) => {
+    const result = await opener(path, signal)
+    const session = result.session
+    if (result.snapshot.state !== 'opened' || session === undefined) return result
+    const offers = (await session.descriptor()).dataSources
+    const has = (contract: string) =>
+      offers.some(offer => offer.contract === contract && offer.major === 1)
+    const subject = opened()
+    if (
+      has('common.view/world-scene-source') ||
+      !has('common.view/model-scene-source') ||
+      subject?.resources === undefined
+    )
+      return result
+    const preview = await openModelPreviewWorldSession({
+      services,
+      grant: { id: 'modkit-cli-model-preview', classes: ['read-source'] },
+      budgets,
+      resources: subject.resources,
+      logicalId: basename(path),
+      subjectUri: pathToFileURL(path).href,
+    })
+    const merged = withMapPreviewSources(session, preview.session)
+    return {
+      ...result,
+      session: Object.freeze({
+        ...merged,
+        // the preview borrows the model's session: it goes first, then the model itself
+        dispose: async () => {
+          await preview.session.dispose()
+          await session.dispose()
+        },
+      }),
+    }
+  }
+}
+
+/**
+ * The media formats this CLI writes: PNG, TGA, frame sets and sprite sheets (`@modkit/ui`), GIF,
+ * WebP and JPEG (images), OGV (video) through the host's ffmpeg encoder. Loaded only for a media
+ * export, so other commands import none of it.
+ */
+async function loadMediaExport() {
+  const [media, images, video] = await Promise.all([
+    import('@modkit/ui/media-export'),
+    import('modkit-extension-images/media-encoders'),
+    import('modkit-extension-video/media-encoders'),
+  ])
+  const backend = createNodeRgbaSequenceEncoder()
+  const encoders = [
+    ...media.builtInMediaEncoders(),
+    ...images.imageMediaEncoders(backend),
+    ...video.videoMediaEncoders(backend),
+  ]
+  return { media, encoders, formats: encoders.map(encoder => encoder.offer) }
+}
+
+/**
+ * Targets that load the media formats; `subject.convert` renders only those the loaded encoders
+ * offer, and only for a subject with a world, so a texture's own `png` export stays the codec's.
+ */
+const MEDIA_TARGETS = new Set([
+  'media-info',
+  'png',
+  'tga',
+  'png-frames',
+  'sprite-sheet',
+  'gif',
+  'webp',
+  'webp-still',
+  'jpeg',
+  'ogv',
+])
+
 export type RunOutputFormat = 'text' | 'json' | 'protocol-json'
 
 export interface RunArguments {
@@ -158,6 +291,8 @@ export interface RunArguments {
   readonly target?: string
   /** `subject.convert` only: the installation or mod a map is written for (its catalog answers). */
   readonly targetContext?: string
+  /** `subject.convert` of a map: the game installation its preview reads, when several are found. */
+  readonly installations?: readonly string[]
   readonly out?: string
   readonly operation?: string
   readonly inputFile?: string
@@ -189,6 +324,7 @@ export function parseRunArguments(
   let entry: string | undefined
   let convertTarget: string | undefined
   let targetContext: string | undefined
+  const installations: string[] = []
   let out: string | undefined
   let operation: string | undefined
   let inputFile: string | undefined
@@ -218,6 +354,11 @@ export function parseRunArguments(
     } else if (argument === '--target-context') {
       targetContext = value(index + 1)
       if (targetContext === undefined) return undefined
+      index += 1
+    } else if (argument === '--installation') {
+      const next = value(index + 1)
+      if (next === undefined) return undefined
+      installations.push(next)
       index += 1
     } else if (argument === '--operation') {
       operation = value(index + 1)
@@ -255,6 +396,7 @@ export function parseRunArguments(
     return undefined
   if (commit && command !== SUBJECT_EDIT_COMMAND) return undefined
   if (targetContext !== undefined && command !== 'subject.convert') return undefined
+  if (installations.length > 0 && command !== 'subject.convert') return undefined
   // `subject.edit` opens through its own editing host; a budget flag there would be silently ignored.
   if (maxInputBytes !== undefined && command === SUBJECT_EDIT_COMMAND) return undefined
   return {
@@ -264,6 +406,7 @@ export function parseRunArguments(
     ...(entry === undefined ? {} : { entry }),
     ...(convertTarget === undefined ? {} : { target: convertTarget }),
     ...(targetContext === undefined ? {} : { targetContext }),
+    ...(installations.length === 0 ? {} : { installations }),
     ...(out === undefined ? {} : { out }),
     ...(operation === undefined ? {} : { operation }),
     ...(inputFile === undefined ? {} : { inputFile }),
@@ -406,26 +549,58 @@ export async function runCommand(
         : { ...DEFAULT_SUBJECT_OPEN_BUDGET, maxInputBytes: arguments_.maxInputBytes }
     // a named installation folder opens as the content-source root that reads it (storageOf)
     let installation: ReturnType<typeof modkitCliInstallationSources> | undefined
-    disposeAfterRun = async () => void (await (await installation)?.dispose())
+    // `--installation`: that game's sources answer a map preview's catalog and dependencies
+    let gameSources: ReturnType<typeof modkitCliInstallationSources> | undefined
+    const chosenInstallation = arguments_.installations?.[0]
+    const gameSourcesOf = (directory: string) =>
+      (gameSources ??= modkitCliInstallationSources(
+        arguments_.roots.map(root => resolve(root)),
+        resolve(directory),
+      ))
+    disposeAfterRun = async () => {
+      await (await installation)?.dispose()
+      await (await gameSources)?.dispose()
+    }
+    let lastOpened: OpenedSubject | undefined
     const pathOpener = createPathSubjectOpener({
+      onOpened: opened => void (lastOpened = opened),
       subjects: services,
       // A named file is the CLI's whole grant: it opens what argv points at, and its companions
       // beside it. Nothing is discovered, which is the CLI profile's own limit (§4.1).
       roots: [dirname(file)],
       grant: { id: 'modkit-cli', classes: ['read-source'] },
       budget,
+      // `--installation`: the game a loose file (a model extracted from it) reads its textures from
       contentSources: path =>
-        (installation ??= modkitCliInstallationSources(
-          arguments_.roots.map(root => resolve(root)),
-          path,
-        )),
+        chosenInstallation === undefined
+          ? (installation ??= modkitCliInstallationSources(
+              arguments_.roots.map(root => resolve(root)),
+              path,
+            ))
+          : gameSourcesOf(chosenInstallation),
     })
-    // A native map publishes its world through the host's map preview, as VS Code and MCP open it.
+    const mediaExport =
+      arguments_.command === 'subject.convert' && MEDIA_TARGETS.has(arguments_.target ?? '')
+        ? await loadMediaExport()
+        : undefined
+    // A native map publishes its world through the host's map preview, as VS Code and MCP open it;
+    // a media export also draws a model, as a world of one object.
+    const mapWorld = () =>
+      withMapWorld(
+        pathOpener,
+        services,
+        budget,
+        arguments_.entry,
+        arguments_.installations,
+        chosenInstallation === undefined ? undefined : () => gameSourcesOf(chosenInstallation),
+      )
     const opener =
       arguments_.command === 'subject.convert' &&
       (arguments_.target === 'uvw' || arguments_.target === 'uvp')
-        ? withMapWorld(pathOpener, services, budget, arguments_.entry)
-        : pathOpener
+        ? mapWorld()
+        : mediaExport !== undefined
+          ? withMediaWorld(mapWorld(), () => lastOpened, services, budget)
+          : pathOpener
     const input: CommandInput = {
       subject: file,
       ...(arguments_.entry === undefined ? {} : { entry: arguments_.entry }),
@@ -492,6 +667,31 @@ export async function runCommand(
           }
           return { entities, dispose }
         },
+        // `subject.convert --target png|gif|sprite-sheet|...`: the world drawn into that format;
+        // `--target media-info`: what of it moves
+        ...(mediaExport === undefined
+          ? {}
+          : {
+              mediaFormats: mediaExport.formats,
+              renderMedia: (source, request, signal) =>
+                mediaExport.media.renderWorldMedia(source, request, mediaExport.encoders, {
+                  maxBytes: MEDIA_MAX_BYTES,
+                  ...(signal === undefined ? {} : { signal }),
+                  ...(arguments_.format === 'text'
+                    ? {
+                        onProgress: (done: number, total: number) => {
+                          if (done === total || done % 10 === 0)
+                            writeStderr(`… frame ${done}/${total}\n`)
+                        },
+                      }
+                    : {}),
+                }),
+              inspectMedia: (source, signal) =>
+                mediaExport.media.inspectWorldMedia(source, {
+                  formats: mediaExport.formats,
+                  ...(signal === undefined ? {} : { signal }),
+                }),
+            }),
         // `subject.convert --target uvp`: the world with its models and textures, in one file
         worldToUvp: async (source, signal) => {
           const { materializeWorldToUvpMap, packUvpArchive } = await import('@modkit/uv/world')

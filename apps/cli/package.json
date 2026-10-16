@@ -25,6 +25,9 @@
     "@modkit/scene": "workspace:*",
     "@modkit/sdk": "workspace:*",
     "@modkit/host": "workspace:*",
-    "@modkit/uv": "workspace:*"
+    "@modkit/ui": "workspace:*",
+    "@modkit/uv": "workspace:*",
+    "modkit-extension-images": "workspace:*",
+    "modkit-extension-video": "workspace:*"
   }
 }
