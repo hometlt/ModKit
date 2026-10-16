@@ -433,6 +433,7 @@ const worldSceneInput = z.discriminatedUnion('view', [
     .object({
       handle: handleSchema,
       view: z.literal('render'),
+        visibilityBounds: z.tuple([z.number().finite(), z.number().finite(), z.number().finite(), z.number().finite()]).describe('Render-only visible [minX,minZ,maxX,maxZ] rectangle in the current renderer frame; outside is opaque black, geometry is retained.').optional(),
       width: z.number().int().min(16).max(2_048).default(1_024),
       height: z.number().int().min(16).max(2_048).default(768),
       // the world viewer's orbit: above the horizon, short of straight down

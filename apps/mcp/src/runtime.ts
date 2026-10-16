@@ -245,6 +245,8 @@ export type WorldSceneQuery =
   | { readonly view: 'image'; readonly maxSize: number }
   | {
       readonly view: 'render'
+      /** Render-only visible rectangle in the renderer's X/Z frame; geometry is retained. */
+      readonly visibilityBounds?: readonly [number, number, number, number]
       readonly width: number
       readonly height: number
       readonly azimuth?: number
@@ -1449,6 +1451,10 @@ export class ModkitMcpRuntime {
           })
         }
         if (query.view === 'render') {
+          const bounds = query.visibilityBounds
+          if (bounds !== undefined && (!Array.isArray(bounds) || bounds.length !== 4 ||
+            [bounds[0], bounds[1], bounds[2], bounds[3]].some(value => !Number.isFinite(value)) || bounds[0] >= bounds[2] || bounds[1] >= bounds[3]))
+            throw new McpOperationError('x3.mcp/invalid-visibility-bounds', 'visibilityBounds must be a finite nonempty ordered X/Z rectangle.')
           // the world as its viewer shows it, models included, drawn without a GPU (MW7); the
           // regions, navigation and gateway overlays stay off, as the game draws none of them
           const model = await inspectCandidateWorld(source, {
@@ -1468,6 +1474,7 @@ export class ModkitMcpRuntime {
             camera,
           })
           const frame = await renderWorldHeadless(plan, {
+            ...(bounds === undefined ? {} : { visibilityBounds: bounds }),
             width: query.width,
             height: query.height,
             camera,
@@ -1508,6 +1515,7 @@ export class ModkitMcpRuntime {
               height: frame.height,
               camera,
               models: { total: models.total, converted: models.converted },
+              ...(bounds === undefined ? {} : { visibilityBounds: bounds }),
             },
             images: [shown],
           })

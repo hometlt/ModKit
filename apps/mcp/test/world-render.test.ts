@@ -46,6 +46,18 @@ it('renders the world a subject publishes as its viewer shows it, from the camer
     for (let index = 0; index < samples.length; index += channels)
       if (samples[index]! + samples[index + 1]! + samples[index + 2]! > 0) lit += 1
     expect(lit).toBeGreaterThan(0)
+    const visibilityBounds = [100000, 100000, 100001, 100001]
+    const masked = await render({ visibilityBounds })
+    expect(masked.data['visibilityBounds']).toEqual(visibilityBounds)
+    for (let offset = 0; offset < masked.decoded.samples.length; offset += masked.decoded.channels) {
+      expect(Array.from(masked.decoded.samples.slice(offset, offset + 3))).toEqual([0, 0, 0])
+      if (masked.decoded.channels === 4) expect(masked.decoded.samples[offset + 3]).toBe(255)
+    }
+    expect((await render({})).decoded.samples).toEqual(shown.decoded.samples)
+    const invalid = await client.callTool({ name: 'modkit.world_scene', arguments: {
+      handle, view: 'render', width: 96, height: 64, visibilityBounds: [1, 0, 0, 1],
+    } })
+    expect(invalid.isError).toBe(true)
     // another camera draws another picture of the same world
     const turned = await render({ azimuth: 0.4, elevation: 1.2, zoom: 2 })
     expect(turned.data['camera']).toMatchObject({ azimuth: 0.4, elevation: 1.2, zoom: 2 })

@@ -140,6 +140,20 @@ For image output, return a client-readable image/artifact plus revision, camera,
 locale and fidelity as applicable. A screenshot alone cannot prove a save, successful gameplay or
 complete simulation. Use existing render sources and output lifecycle instead of another renderer.
 
+For a bounds-cropped 3D preview, inspect the running `modkit.world_scene` schema. When advertised,
+`view: "render"` accepts `visibilityBounds: [minX, minZ, maxX, maxZ]`: a finite, nonempty rectangle
+in the renderer's current X/Z frame. This reuses opaque black per-fragment boundary masking,
+not whole-object culling or an authored map edit. Omission keeps the ordinary view. Record
+the rectangle with the camera and time in the render receipt. Animation support is not part
+of this render-only change; rely on the installed operation schema, not a planned option.
+For close-ups of several areas, retain one source snapshot and record each explicit camera,
+viewport and sample time; report missing model/material resources separately from framing.
+These are 3D previews, not terrain-height lattice diagrams.
+Derive playable bounds from the native publisher, not the full terrain extent or object bounds.
+For a requested two-cell inner border, use the declared grid spacing and existing coordinate
+transform owner before insetting; distinguish canonical transforms from native-frame render
+fallbacks. Do not copy another game's axis signs, assume a cell size, or silently substitute bounds.
+
 ## Publish knowledge, then verify the product route
 
 Keep type/field descriptions, allowed values, units, references and schema revisions at their
