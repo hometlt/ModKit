@@ -1,3 +1,4 @@
+import { linearToSrgb } from '@modkit/codec-kit/raster'
 /** Core-owned standalone UVW world source: paged geometry, authored tile order/atlas/coverage,
  * weights, UVs and package resources; no game installation or publisher dependency. */
 import { diagnostic } from '@modkit/core'
@@ -365,6 +366,12 @@ function recordItems(
                   ...(instance.player === undefined ? {} : { player: instance.player }),
                   ...(instance.variation === undefined ? {} : { variation: instance.variation }),
                   ...(instance.name === undefined ? {} : { name: instance.name }),
+                  ...(instance.presentationTeamColor === undefined ? {} : {
+                    presentationTeamColor: Object.freeze(instance.presentationTeamColor.map(linearToSrgb)) as readonly [number, number, number],
+                    uvwPresentationTeamColor: instance.presentationTeamColor,
+                  }),
+                  ...(instance.presentationTeamRamp === undefined ? {} : { presentationTeamRamp: instance.presentationTeamRamp }),
+                  ...(instance.presentationTeamColorIntensity === undefined ? {} : { presentationTeamColorIntensity: instance.presentationTeamColorIntensity }),
                   ...(instance.presentationTint === undefined
                     ? {}
                     : { presentationTint: instance.presentationTint }),
@@ -944,7 +951,7 @@ export function createUvwWorldSceneSource(
               Object.freeze({
                 id: player.slot,
                 ...(player.name === undefined ? {} : { name: player.name }),
-                ...(player.color === undefined ? {} : { color: player.color }),
+                ...(player.color === undefined ? {} : { color: Object.freeze(player.color.map(linearToSrgb)) as readonly [number, number, number] }),
                 ...(player.ramp === undefined ? {} : { colorRamp: player.ramp }),
               }),
             ),

@@ -228,6 +228,10 @@ export interface UvwObjectInstance {
   /** RGB multiplication factors 0..1 of the object's model, not player colour or opacity. */
   readonly presentationTint?: readonly [number, number, number]
   readonly presentationAnimation?: UvwPresentationAnimation
+  /** Explicit visual colour, independent from simulation identity and object tint. */
+  readonly presentationTeamColor?: readonly [number, number, number]
+  readonly presentationTeamRamp?: readonly (readonly [number, number, number])[]
+  readonly presentationTeamColorIntensity?: 0 | 1
   readonly latticeCoverage?: UvwObjectLatticeCoverage
 }
 
@@ -1681,6 +1685,9 @@ function objectsLayer(
           'variation',
           'name',
           'presentationTint',
+          'presentationTeamColor',
+          'presentationTeamRamp',
+          'presentationTeamColorIntensity',
           'presentationAnimation',
           'latticeCoverage',
         ],
@@ -1836,6 +1843,14 @@ function objectsLayer(
           : vec3(instance['presentationTint'], tintPath, state, depth + 3)
       if (presentationTint?.some(factor => factor < 0 || factor > 1))
         fail('presentation tint factors must lie in 0..1', tintPath)
+      const presentationTeamColor = instance['presentationTeamColor'] === undefined ? undefined
+        : linearRgb(instance['presentationTeamColor'], `${instancePath}.presentationTeamColor`, state, depth + 3)
+      const presentationTeamRamp = instance['presentationTeamRamp'] === undefined ? undefined
+        : linearRamp(instance['presentationTeamRamp'], `${instancePath}.presentationTeamRamp`, state, depth + 3)
+      const presentationTeamColorIntensity = instance['presentationTeamColorIntensity'] === undefined ? undefined
+        : finite(instance['presentationTeamColorIntensity'], `${instancePath}.presentationTeamColorIntensity`, state, depth + 3)
+      if (presentationTeamColorIntensity !== undefined && presentationTeamColorIntensity !== 0 && presentationTeamColorIntensity !== 1)
+        fail('team colour intensity must be 0 or 1', `${instancePath}.presentationTeamColorIntensity`)
       const presentationAnimation =
         instance['presentationAnimation'] === undefined
           ? undefined
@@ -1867,6 +1882,9 @@ function objectsLayer(
           : { variation: optionalInteger('variation')! }),
         ...(optionalString('name') === undefined ? {} : { name: optionalString('name')! }),
         ...(presentationTint === undefined ? {} : { presentationTint }),
+        ...(presentationTeamColor === undefined ? {} : { presentationTeamColor }),
+        ...(presentationTeamRamp === undefined ? {} : { presentationTeamRamp }),
+        ...(presentationTeamColorIntensity === undefined ? {} : { presentationTeamColorIntensity }),
         ...(presentationAnimation === undefined ? {} : { presentationAnimation }),
         ...(latticeCoverage === undefined ? {} : { latticeCoverage }),
       })
@@ -2353,6 +2371,14 @@ function linearRgb(value: unknown, path: string, state: ValidationBudget, depth:
   return color
 }
 
+/** One exact linear-ramp reader for addressed players and visual instance overrides. */
+function linearRamp(value: unknown, path: string, state: ValidationBudget, depth: number) {
+  const shades = array(value, path, state, depth)
+  if (shades.length === 0 || shades.length > 65536)
+    fail('ramp must contain 1..65536 exact shades', path)
+  return Object.freeze(shades.map((shade, index) => linearRgb(shade, `${path}[${String(index)}]`, state, depth + 1)))
+}
+
 function playerTable(
   value: unknown,
   path: string,
@@ -2397,13 +2423,8 @@ function playerTable(
           ? undefined
           : string(row['name'], `${rowPath}.name`, state, depth + 2)
       if (name === '') fail('player name must be nonempty', `${rowPath}.name`)
-      const ramp =
-        row['ramp'] === undefined
-          ? undefined
-          : array(row['ramp'], `${rowPath}.ramp`, state, depth + 2)
-      if (ramp !== undefined && (ramp.length === 0 || ramp.length > 65536)) {
-        fail('player ramp must contain 1..65536 exact shades', `${rowPath}.ramp`)
-      }
+      const ramp = row['ramp'] === undefined ? undefined
+        : linearRamp(row['ramp'], `${rowPath}.ramp`, state, depth + 2)
       return Object.freeze({
         slot,
         address,
@@ -2411,15 +2432,7 @@ function playerTable(
         ...(row['color'] === undefined
           ? {}
           : { color: linearRgb(row['color'], `${rowPath}.color`, state, depth + 2) }),
-        ...(ramp === undefined
-          ? {}
-          : {
-              ramp: Object.freeze(
-                ramp.map((shade, shadeIndex) =>
-                  linearRgb(shade, `${rowPath}.ramp[${String(shadeIndex)}]`, state, depth + 3),
-                ),
-              ),
-            }),
+        ...(ramp === undefined ? {} : { ramp }),
       })
     }),
   )

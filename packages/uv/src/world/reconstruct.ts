@@ -1,3 +1,4 @@
+import { srgbToLinear } from '@modkit/codec-kit/raster'
 /** Core-owned reconstruction of qualified world facets into normative UVW. Preserves admitted
  * atlas tiles/coverage, corrects native reverse-row cell anchors, and reports unsupported fields. */
 import type {
@@ -336,6 +337,10 @@ const KEPT_FIELDS: Readonly<Record<string, ReadonlySet<string>>> = Object.freeze
     'resourceIds',
     'modelComponents',
     'presentationTint',
+    'presentationTeamColor',
+    'uvwPresentationTeamColor',
+    'presentationTeamRamp',
+    'presentationTeamColorIntensity',
     'presentationAnimation',
     'latticeCoverage',
     'uvwLatticeCoverage',
@@ -367,6 +372,27 @@ function objectLatticeForUvw(
     ...Object.fromEntries(LATTICE_CHANNELS.flatMap(channel => projected?.[channel] === undefined
       ? [] : [[channel, projected[channel]]])),
   })
+}
+
+/** Native player slots supply visual defaults, never simulation addresses. Canonical sources
+ * keep table inheritance intact; their explicit linear colour bypasses the encoded preview value.
+ */
+function objectTeamPresentation(item: WorldSceneObjectItem, info: CandidateWorldSceneInfo) {
+  const player = info.canonicalArtifact !== undefined || item.player === undefined ? undefined
+    : info.players?.find(player => player.id === item.player)
+  const encoded = item.presentationTeamColor ?? player?.color
+  if (encoded !== undefined && (encoded.length !== 3 || !unitTint(encoded)))
+    throw new TypeError('native team colour must be stored-sRGB RGB in 0..1')
+  const color = item.uvwPresentationTeamColor ?? encoded?.map(srgbToLinear) as readonly [number, number, number] | undefined
+  const ramp = item.presentationTeamRamp ?? player?.colorRamp
+  const intensity = item.presentationTeamColorIntensity
+  if (intensity !== undefined && intensity !== 0 && intensity !== 1)
+    throw new TypeError('team colour intensity must be 0 or 1')
+  return {
+    ...(color === undefined ? {} : { presentationTeamColor: color }),
+    ...(ramp === undefined ? {} : { presentationTeamRamp: ramp }),
+    ...(intensity === undefined ? {} : { presentationTeamColorIntensity: intensity as 0 | 1 }),
+  }
 }
 
 /** Cliff presentation meshes have their own UVW marker; assembled-object helper instances do not. */
@@ -976,6 +1002,7 @@ async function reconstructLayer(
                       ),
                     ),
                   }),
+              ...objectTeamPresentation(item, info),
               ...(item.typeId === undefined ? {} : { typeId: item.typeId }),
               ...(item.player === undefined ? {} : { player: item.player }),
               ...(item.variation === undefined ? {} : { variation: item.variation }),

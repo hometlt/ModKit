@@ -3459,7 +3459,7 @@ function worldObjectMaterialMoment(
   const teamColor =
     item.presentationTeamColor ??
     (item.player === undefined ? undefined : input.teamColors?.get(item.player))
-  const teamRamp = item.player === undefined ? undefined : input.teamRamps?.get(item.player)
+  const teamRamp = item.presentationTeamRamp ?? (item.player === undefined ? undefined : input.teamRamps?.get(item.player))
   const terrainTiling = worldTerrainTiling(input)
   const materialContext: SceneMaterialContext = {
     time,
@@ -5308,7 +5308,7 @@ function worldStaticObjectKey(
   const teamColor =
     item.presentationTeamColor ??
     (item.player === undefined ? undefined : input.teamColors?.get(item.player))
-  const teamRamp = item.player === undefined ? undefined : input.teamRamps?.get(item.player)
+  const teamRamp = item.presentationTeamRamp ?? (item.player === undefined ? undefined : input.teamRamps?.get(item.player))
   const keyed = worldObjectResourcesOf(item).keyed
   const known = worldStaticObjectKeys.get(item)
   const preparationToken = worldPreparationToken(preparation)

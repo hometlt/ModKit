@@ -1126,3 +1126,91 @@ describe('UVW authored rotation and optional absolute visual orientation', () =>
     } finally { await session.dispose() }
   }, 20_000) // Same bound as the existing source-backed UVW codec integration cases.
 })
+
+
+describe('portable object team-colour presentation', () => {
+  const shades = (count: number) => Array.from({ length: count }, (_, i) => [i / count, 0.125, 0.75] as const)
+  function nativeTeamSource(overrides: Record<string, unknown> = {}, count = 16) {
+    const id = 'native:objects'
+    const measured: CandidateWorldSceneInfo = { ...info, topology: 'mesh',
+      players: [{ id: 0, name: 'native house', color: [0.5, 0.25, 0.75], colorRamp: shades(count) }],
+      facets: [{ facet: 'objects', layerId: id, state: 'available', itemCount: 1, lods: ['exact'] }],
+    }
+    return { ...source(4, measured), async page(request: WorldScenePageRequest) {
+      const selected: readonly WorldSceneItem[] = request.facet === 'layers' ? [{
+        facet: 'layers', id, layerId: id, kind: 'objects', state: 'available', itemCount: 1, lods: ['exact'],
+      }] : request.facet === 'objects' ? [{
+        facet: 'objects', id: 'native:unit', layerId: id, coordinateSpaceId: 'map-native',
+        kind: 'unit', objectId: 0, player: 0, position: { x: 0, y: 0, z: 0 },
+        uvwPosition: { x: 0, y: 0, z: 0 }, uvwRotation: [0, 0, 0, 1], resourceIds: [], ...overrides,
+      }] : []
+      return { snapshotId, facet: request.facet, state: 'available' as const, items: selected }
+    } }
+  }
+  async function exported(overrides: Record<string, unknown> = {}, count = 16) {
+    const result = await materializeWorldToUvw(nativeTeamSource(overrides, count), options)
+    if (result.state !== 'materialized') throw new Error(JSON.stringify(result.refusals))
+    const objects = result.document.spaces[0]!.layers.find(layer => layer.kind === 'objects')!
+    if (objects.kind !== 'objects') throw new Error('missing objects')
+    return { result, instance: objects.instances[0]! }
+  }
+  for (const count of [8, 16]) {
+    it(`retains native ${count}-shade appearance independently from an addressed player roster`, async () => {
+      const { result, instance } = await exported({}, count)
+      expect(instance.presentationTeamColor).toEqual([0.21404114048223255, 0.05087608817155679, 0.5225215539683921])
+      expect(instance.presentationTeamRamp).toEqual(shades(count))
+      expect(instance.player).toBe(0)
+      expect(result.document.spaces[0]!.players).toBeUndefined()
+      expect(result.lostFields).toContainEqual({ path: 'world.players', count: 1 })
+      const opened = createUvwWorldSceneSource(result.document, { snapshotId: 'portable-colours' })
+      const rebuilt = await materializeWorldToUvw(opened, options)
+      if (rebuilt.state !== 'materialized') throw new Error(JSON.stringify(rebuilt.refusals))
+      expect(rebuilt.bytes).toEqual(result.bytes)
+    })
+  }
+  it('keeps explicit object colours, exact ramp, and zero intensity ahead of native player defaults', async () => {
+    const own = shades(8)
+    const { result, instance } = await exported({ presentationTeamColor: [0, 0, 0],
+      presentationTeamRamp: own, presentationTeamColorIntensity: 0 })
+    expect(instance.presentationTeamColor).toEqual([0, 0, 0])
+    expect(instance.presentationTeamRamp).toEqual(own)
+    expect(instance.presentationTeamColorIntensity).toBe(0)
+    expect(result.lostFields.some(field => /presentationTeam/.test(field.path))).toBe(false)
+  })
+  it('keeps canonical addressed-player defaults inherited rather than baking them into each object', async () => {
+    const { result } = await exported()
+    const doc = JSON.parse(new TextDecoder().decode(result.bytes))
+    const space = doc.spaces[0]
+    const instance = space.layers.find((layer: {kind: string}) => layer.kind === 'objects').instances[0]
+    delete instance.presentationTeamColor; delete instance.presentationTeamRamp
+    space.players = [{ slot: 0, address: 'explicit/simulation-role', color: [0.125, 0.25, 0.5], ramp: shades(8) }]
+    const canonical = parseUvwProfile(new TextEncoder().encode(JSON.stringify(doc)))
+    const opened = createUvwWorldSceneSource(canonical, { snapshotId: 'inherited-colours' })
+    const openedInfo = await opened.info()
+    expect(openedInfo.players?.[0]?.color?.[0]).toBeCloseTo(0.3885728590463344, 14)
+    const rebuilt = await materializeWorldToUvw(opened, options)
+    if (rebuilt.state !== 'materialized') throw new Error(JSON.stringify(rebuilt.refusals))
+    expect(rebuilt.bytes).toEqual(serializeUvwProfile(canonical))
+  })
+  it('preserves canonical exact linear overrides without an sRGB round-trip drift', async () => {
+    const { result } = await exported()
+    const doc = JSON.parse(new TextDecoder().decode(result.bytes))
+    doc.spaces[0].layers.find((layer: {kind: string}) => layer.kind === 'objects').instances[0].presentationTeamColor = [0.123456789012345, 0.0009, 0.99999999999999]
+    const canonical = parseUvwProfile(new TextEncoder().encode(JSON.stringify(doc)))
+    const opened = createUvwWorldSceneSource(canonical, { snapshotId: 'exact-colours' })
+    const rebuilt = await materializeWorldToUvw(opened, options)
+    if (rebuilt.state !== 'materialized') throw new Error(JSON.stringify(rebuilt.refusals))
+    expect(rebuilt.bytes).toEqual(serializeUvwProfile(canonical))
+  })
+  for (const [field, bad] of [
+    ['presentationTeamColor', [0, -0.01, 1]], ['presentationTeamRamp', []],
+    ['presentationTeamRamp', [[0, 2, 0]]], ['presentationTeamColorIntensity', 0.5],
+  ] as const) {
+    it(`refuses malformed ${field} rather than inventing a visual default`, async () => {
+      const { result } = await exported()
+      const doc = JSON.parse(new TextDecoder().decode(result.bytes))
+      doc.spaces[0].layers.find((layer: {kind: string}) => layer.kind === 'objects').instances[0][field] = bad
+      expect(() => parseUvwProfile(new TextEncoder().encode(JSON.stringify(doc)))).toThrow()
+    })
+  }
+})

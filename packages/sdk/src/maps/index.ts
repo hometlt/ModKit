@@ -729,10 +729,12 @@ export interface MapPlacedObject {
   readonly scale?: MapPosition
   readonly typeId?: string
   readonly player?: number
-  /** Explicit renderer-neutral RGB for source/team colour material channels. */
+  /** Explicit stored-sRGB RGB in 0..1 for source/team colour material channels. */
   readonly presentationTeamColor?: readonly [number, number, number]
   /** Renderer team-color intensity for this object (see `SceneRendererMaterialContext`); 0 = none. */
   readonly presentationTeamColorIntensity?: number
+  /** Exact linear RGB shades overriding the player ramp; only an equal material length applies. */
+  readonly presentationTeamRamp?: readonly (readonly [number, number, number])[]
   /**
    * Authored per-object tint: RGB 0..1 multiplying the shaded colour of the object's model, in the
    * colour space of its textures (no transfer function applied). Absent means no tint.
@@ -1551,7 +1553,7 @@ export interface MapSemanticDiagnostic {
 export interface MapPlayer {
   /** The slot objects name in `MapPlacedObject.player`. */
   readonly id: number
-  /** Team colour, RGB in 0..1 as `presentationTeamColor`. */
+  /** Team colour, stored-sRGB RGB in 0..1 as `presentationTeamColor`. */
   readonly color?: readonly [number, number, number]
   /**
    * The player's own shades for indexed team-colour ramps (`ModelTeamColorRule.ramp`), linear RGB
@@ -2055,6 +2057,8 @@ export interface WorldSceneObjectItem extends MapPlacedObject {
   readonly uvwRotation?: readonly [number, number, number, number]
   /** Absolute visual orientation override; does not compose with or replace authored rotation. */
   readonly uvwPresentationRotation?: readonly [number, number, number, number]
+  /** Exact canonical linear colour retained independently from its stored-sRGB presentation. */
+  readonly uvwPresentationTeamColor?: readonly [number, number, number]
   readonly uvwScale?: MapPosition
   /** Presentation-only instance generated from another facet; never exported or edited as an object. */
   readonly derivedFrom?: 'cliffs' | 'objects'

@@ -77,3 +77,15 @@ it('keeps the authored ramp when the player override length differs, on both wor
     else close(passes(plan)[0].uniforms.u_teamRamp.slice(0, 3), [0, 1, 0])
   }
 })
+
+for (const fallback of [false, true]) {
+  it(`prefers an object's exact ramp over player defaults on the ${fallback ? 'fallback' : 'program'} route`, () => {
+    const own = ramp(16, red)
+    const input = { items: [{ ...unit(5, 1), presentationTeamRamp: own }],
+      models: new Map([['unit', model(16, fallback)]]), teamRamps: new Map([[1, ramp(16, blue)]]) }
+    const plan = createWorldWebGlPlan(input)
+    if (fallback) assert.deepEqual(plan.texturedTriangles[0].team.rule.shades, own)
+    else close(passes(plan)[0].uniforms.u_teamRamp.slice(0, 3), encoded(red))
+    assert.deepEqual(own, ramp(16, red))
+  })
+}
