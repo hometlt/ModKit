@@ -425,7 +425,9 @@ describe('generic publisher-candidate world harness', () => {
     ).rejects.toThrow()
   })
 
-  it('acquires a joined model once through the bounded world model route', async () => {
+  // a native world names its model by a logical request; a packed UVW/UVP world by its own `uvm` resource
+  for (const packed of [false, true])
+  it(`acquires a joined model once through the bounded world model route (packed=${String(packed)})`, async () => {
     const resourceLayer = {
       facet: 'layers' as const,
       id: 'layer:resources',
@@ -463,21 +465,31 @@ describe('generic publisher-candidate world harness', () => {
             facet: 'resources',
             state: 'available',
             items: [
-              {
-                facet: 'resources',
-                id: 'resource:marine',
-                layerId: resourceLayer.layerId,
-                namespace: 'Unit',
-                entityId: 'Marine',
-                resolved: true,
-                objectIds: ['object:1'],
-                modelResource: {
-                  id: 'marine',
-                  logicalId: 'Assets/Marine.m3',
-                  role: 'sidecar',
-                  scopes: ['current-mount'],
-                },
-              },
+              packed
+                ? {
+                    facet: 'resources',
+                    id: 'resource:marine',
+                    layerId: resourceLayer.layerId,
+                    resolved: false,
+                    kind: 'uvm',
+                    uri: 'models/object-model-0000.uvm.glb',
+                    objectIds: ['object:1'],
+                  }
+                : {
+                    facet: 'resources',
+                    id: 'resource:marine',
+                    layerId: resourceLayer.layerId,
+                    namespace: 'Unit',
+                    entityId: 'Marine',
+                    resolved: true,
+                    objectIds: ['object:1'],
+                    modelResource: {
+                      id: 'marine',
+                      logicalId: 'Assets/Marine.m3',
+                      role: 'sidecar',
+                      scopes: ['current-mount'],
+                    },
+                  },
             ],
           }
         return {

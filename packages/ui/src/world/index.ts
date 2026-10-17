@@ -170,6 +170,13 @@ export interface CandidateWorldViewerModel {
   readonly loadPerformance: CandidateWorldViewerLoadPerformance
 }
 
+/**
+ * A resource the viewer loads as a model: a native logical request, or a model a portable world
+ * (UVW/UVP) packs, which carries no logical request and is asked from the source by its id.
+ */
+const isWorldModelResourceItem = (item: WorldSceneItem): item is WorldSceneResourceItem =>
+  item.facet === 'resources' && (item.modelResource !== undefined || item.kind === 'uvm')
+
 /** Count the advertised resources, including ones absent from the results map. */
 export function worldModelAssetStatus(
   model: Pick<CandidateWorldViewerModel, 'layers' | 'models'>,
@@ -180,9 +187,7 @@ export function worldModelAssetStatus(
 } {
   const ids = new Set(
     model.layers.flatMap(({ page }) =>
-      page.items.flatMap(item =>
-        item.facet === 'resources' && item.modelResource !== undefined ? [item.id] : [],
-      ),
+      page.items.flatMap(item => (isWorldModelResourceItem(item) ? [item.id] : [])),
     ),
   )
   let converted = 0
@@ -407,10 +412,7 @@ export async function inspectCandidateWorld(
   const childOnly = (id: string) => childResources.has(id) && !rootResources.has(id)
   const resourceItems = inspected
     .flatMap(item => item.page.items)
-    .filter(
-      (item): item is WorldSceneResourceItem =>
-        item.facet === 'resources' && item.modelResource !== undefined,
-    )
+    .filter(isWorldModelResourceItem)
     .filter((item, index, all) => all.findIndex(candidate => candidate.id === item.id) === index)
     .sort(
       (left, right) =>

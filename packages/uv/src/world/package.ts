@@ -652,6 +652,30 @@ function skinnedUvmDocument(document: JsonRecord, skin: readonly ModelMaterialRe
 }
 
 /**
+ * The package name of a model. A reopened package already named its models `object-model-NNNN` in
+ * this space; keeping that name keeps a repack byte-identical, whatever order the objects come in.
+ * Any other source gets the next free ordinal.
+ * ponytail: a fresh ordinal may still take a name a later reopened model keeps; the authored-resource
+ * guard then refuses the package instead of overwriting, which a mixed native+reopened space would need.
+ */
+function portableModelId(spaceId: string, sourceResourceId: string, used: ReadonlySet<string>): string {
+  const prefix = `uvw-resource:${encodeURIComponent(spaceId)}/`
+  if (sourceResourceId.startsWith(prefix)) {
+    let kept: string | undefined
+    try {
+      kept = decodeURIComponent(sourceResourceId.slice(prefix.length))
+    } catch {
+      kept = undefined
+    }
+    if (kept !== undefined && /^object-model-\d{4,}$/.test(kept) && !used.has(kept)) return kept
+  }
+  for (let ordinal = used.size; ; ordinal++) {
+    const id = `object-model-${String(ordinal).padStart(4, '0')}`
+    if (!used.has(id)) return id
+  }
+}
+
+/**
  * A converted model with its decoded textures as package media. An image that came without texels
  * (an effect name, a texture that did not decode) keeps its logical id and is named in `missing`,
  * so one texture does not cost the package the model.
@@ -659,7 +683,7 @@ function skinnedUvmDocument(document: JsonRecord, skin: readonly ModelMaterialRe
 async function makePortableUvm(
   bytes: Uint8Array,
   textures: readonly SceneRendererTexture[],
-  modelOrdinal: number,
+  modelId: string,
   signal?: AbortSignal,
   skin?: readonly ModelMaterialRef[],
 ): Promise<
@@ -685,7 +709,7 @@ async function makePortableUvm(
       .sort((left, right) => left.id.localeCompare(right.id))
       .map(async (texture, textureOrdinal): Promise<PortableModelTexture> => {
         const encoded = await encodeMedia(texture)
-        const localResourceId = `object-model-${String(modelOrdinal).padStart(4, '0')}-texture-${String(textureOrdinal).padStart(4, '0')}`
+        const localResourceId = `${modelId}-texture-${String(textureOrdinal).padStart(4, '0')}`
         const mediaPath = `media/models/${localResourceId}.png`
         return Object.freeze({
           localResourceId,
@@ -1369,6 +1393,7 @@ export async function materializeWorldToUvpMap(
         'outputSpaceId' | 'outputLayerId' | 'instanceIndex' | 'sourceResourceId'
       >
     >()
+    const usedModelIds = new Set<string>()
     const maxModels = options.maxModels ?? 256
     const maxModelBytes = options.maxModelBytes ?? 256 * 1024 * 1024
     const maxModelResourceBytes =
@@ -1459,11 +1484,12 @@ export async function materializeWorldToUvpMap(
               unpackagedModelResourceIds.add(sourceResourceId)
               continue
             }
-            const modelOrdinal = modelBySource.size
+            const localResourceId = portableModelId(target.spaceId, sourceResourceId, usedModelIds)
+            usedModelIds.add(localResourceId)
             const converted = await makePortableUvm(
               result.uvmBytes,
               result.textures ?? [],
-              modelOrdinal,
+              localResourceId,
               options.signal,
               result.materials,
             )
@@ -1476,7 +1502,6 @@ export async function materializeWorldToUvpMap(
             modelTotal += converted.bytes.byteLength
             if (modelTotal > maxModelBytes)
               throw new RangeError(`object models exceed maxModelBytes ${String(maxModelBytes)}`)
-            const localResourceId = `object-model-${String(modelOrdinal).padStart(4, '0')}`
             const modelPath = `models/${localResourceId}.uvm.glb`
             portable = Object.freeze({
               localResourceId,

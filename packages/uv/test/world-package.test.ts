@@ -392,6 +392,31 @@ function sourceWithModel(derivedCliff = false, meshOnly = false, reservedTexture
   })
 }
 
+/** The fixture as a native mesh source: no canonical document, an admitted native frame instead. */
+async function nativeMeshInfo(base: ReturnType<typeof sourceWithModel>) {
+  const { canonicalArtifact: _canonicalArtifact, ...info } = await base.info()
+  return { ...info, topology: 'mesh' as const,
+    uvwTransform: {
+      schemaVersion: 1 as const, snapshotId: info.snapshotId,
+      sourceCoordinateSpaceId: 'map-native' as const, targetCoordinateSpaceId: 'uvw-canonical' as const,
+      basis: { handedness: 'right' as const, upAxis: 'y' as const, forwardAxis: '+z' as const,
+        unit: 'meter' as const },
+      axes: { x: { sourceAxis: 'x' as const, scale: 1, offset: 0 },
+        y: { sourceAxis: 'z' as const, scale: 1, offset: 0 },
+        z: { sourceAxis: 'y' as const, scale: 1, offset: 0 } },
+      heightfield: { columns: 1, rows: 1, cellSize: 1,
+        origin: [0, 0, 0] as const, sourceRowOrder: 'forward' as const },
+      bounds: { coordinateSpaceId: 'uvw-canonical' as const,
+        minimum: { x: 0, y: 0, z: 0 }, maximum: { x: 1, y: 1, z: 1 } },
+      proof: { kind: 'adapter-qualification' as const, method: 'sealed-legacy-differential' as const,
+        oracle: 'synthetic native model receipt fixture', corpus: 'one mesh instance',
+        sourceDigests: { input: `sha256:${'1'.repeat(64)}` as const }, tupleCount: 1,
+        comparison: 'ieee-754-binary64-exact' as const,
+        nativeTupleDigest: `sha256:${'2'.repeat(64)}` as const,
+        canonicalTupleDigest: `sha256:${'3'.repeat(64)}` as const },
+    } }
+}
+
 const options = {
   packageId: 'test-vendor/portable-map',
   packageVersion: '1.0.0',
@@ -410,29 +435,7 @@ describe('portable UVP map bundle', () => {
       const base = sourceWithModel(false, true)
       const native = {
         ...base,
-        async info() {
-          const { canonicalArtifact: _canonicalArtifact, ...info } = await base.info()
-          return { ...info, topology: 'mesh' as const,
-            uvwTransform: {
-              schemaVersion: 1 as const, snapshotId: info.snapshotId,
-              sourceCoordinateSpaceId: 'map-native' as const, targetCoordinateSpaceId: 'uvw-canonical' as const,
-              basis: { handedness: 'right' as const, upAxis: 'y' as const, forwardAxis: '+z' as const,
-                unit: 'meter' as const },
-              axes: { x: { sourceAxis: 'x' as const, scale: 1, offset: 0 },
-                y: { sourceAxis: 'z' as const, scale: 1, offset: 0 },
-                z: { sourceAxis: 'y' as const, scale: 1, offset: 0 } },
-              heightfield: { columns: 1, rows: 1, cellSize: 1,
-                origin: [0, 0, 0] as const, sourceRowOrder: 'forward' as const },
-              bounds: { coordinateSpaceId: 'uvw-canonical' as const,
-                minimum: { x: 0, y: 0, z: 0 }, maximum: { x: 1, y: 1, z: 1 } },
-              proof: { kind: 'adapter-qualification' as const, method: 'sealed-legacy-differential' as const,
-                oracle: 'synthetic native model receipt fixture', corpus: 'one mesh instance',
-                sourceDigests: { input: `sha256:${'1'.repeat(64)}` as const }, tupleCount: 1,
-                comparison: 'ieee-754-binary64-exact' as const,
-                nativeTupleDigest: `sha256:${'2'.repeat(64)}` as const,
-                canonicalTupleDigest: `sha256:${'3'.repeat(64)}` as const },
-            } }
-        },
+        info: () => nativeMeshInfo(base),
         async page(request: Parameters<typeof base.page>[0]) {
           const page = await base.page(request)
           if (request.facet !== 'objects') return page
@@ -466,6 +469,43 @@ describe('portable UVP map bundle', () => {
       expect(packed.omittedObjects).toBe(0)
     })
   }
+  it('keeps the model names of a reopened package however its objects are ordered on repack', async () => {
+    // two different textured models, each on its own instance
+    const base = sourceWithModel(false, true)
+    const twoModels = {
+      ...base,
+      info: () => nativeMeshInfo(base),
+      async page(request: Parameters<typeof base.page>[0]) {
+        const page = await base.page(request)
+        if (request.facet !== 'objects') return page
+        return { ...page, items: page.items.flatMap<WorldSceneItem>(item => item.facet !== 'objects' ? [item]
+          : ['a', 'b'].map(name => ({ ...item, id: `${item.id}-${name}`, resourceId: `model-${name}`,
+            resourceIds: [`model-${name}`], modelComponents: [{ id: 'body', resourceId: `model-${name}` }] }))) }
+      },
+      async model(resourceId: string) {
+        const result = await base.model('uvw-resource:main/source-model')
+        const shade = resourceId === 'model-a' ? 10 : 200
+        return { ...result, textures: [{ id: 'texture.dds', width: 2, height: 2, rgba: new Uint8Array(16).fill(shade) }] }
+      },
+    }
+    const packed = await materializeWorldToUvpMap(twoModels, options)
+    if (packed.state !== 'materialized') throw new Error(JSON.stringify(packed.refusals))
+    expect(packed.packagedModelCount).toBe(2)
+    const reopened = await openUvpMapBundle(new Map([...packed.entries].map(([path, bytes]) => [path, bytes.slice()])),
+      { snapshotId: 'detached-two-models', rasterResources, modelDecoder: createEmbeddedUvmWorldModelDecoder(rasterResources) })
+    // the reopened world hands its objects back in the other order
+    const reversed = {
+      ...reopened.source,
+      async page(request: Parameters<typeof reopened.source.page>[0]) {
+        const page = await reopened.source.page(request)
+        return request.facet === 'objects' ? { ...page, items: [...page.items].reverse() } : page
+      },
+    }
+    const repacked = await materializeWorldToUvpMap(reversed, options)
+    expect(repacked.state, repacked.state === 'refused' ? JSON.stringify(repacked.refusals) : '').toBe('materialized')
+    if (repacked.state !== 'materialized') throw new Error('repack refused')
+    expect(repacked.entries).toEqual(packed.entries)
+  })
   it('refuses a generated model texture ID that would overwrite an authored resource', async () => {
     const result = await materializeWorldToUvpMap(sourceWithModel(false, true, true), options)
     expect(result.state).toBe('refused')
