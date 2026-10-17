@@ -334,8 +334,10 @@ test('primitive affine correspondence preserves normals, winding and source arra
   assert.throws(()=>transformUvmPrimitiveGeometry({...p,normals:Float32Array.of(0,0,0)},translate(0,0,0)))
 })
 
-test('normal generation retains inert unused vertices but refuses cancelling drawn faces',async()=>{
+test('normal generation keeps one side of cancelling faces and refuses zero-area-only vertices',async()=>{
   const {generateUvmVertexNormals}=await import('../src/uvm/normals.js')
   assert.deepEqual([...generateUvmVertexNormals([0,0,0,1,0,0,0,1,0,9,9,9],[0,1,2])],[0,0,1,0,0,1,0,0,1,0,0,1])
-  assert.throws(()=>generateUvmVertexNormals([0,0,0,1,0,0,0,1,0],[0,1,2,0,2,1]),/degenerate/)
+  // double-sided pair sharing vertices: the first (largest) face's side wins
+  assert.deepEqual([...generateUvmVertexNormals([0,0,0,1,0,0,0,1,0],[0,1,2,0,2,1])],[0,0,1,0,0,1,0,0,1])
+  assert.throws(()=>generateUvmVertexNormals([0,0,0,1,0,0,2,0,0],[0,1,2]),/degenerate/)
 })
