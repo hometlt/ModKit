@@ -94,6 +94,8 @@ const WORLD_UVP_LIMITS = Object.freeze({
   maxMediaBytes: 1024 * 1024 * 1024,
   maxModelBytes: 1024 * 1024 * 1024,
   maxArchiveBytes: 4 * 1024 * 1024 * 1024 - 1,
+  /** Distinct object models; a full SC2 ladder map holds about 500 (Amphion 513). */
+  maxModels: 4096,
 })
 
 /** A package name from a file name: lower-case letters, digits and dashes, `world` without any. */
@@ -700,6 +702,7 @@ export async function runCommand(
             maxTextureBytes: WORLD_UVP_LIMITS.maxTextureBytes,
             maxMediaBytes: WORLD_UVP_LIMITS.maxMediaBytes,
             maxModelBytes: WORLD_UVP_LIMITS.maxModelBytes,
+            maxModels: WORLD_UVP_LIMITS.maxModels,
             packageId: `modkit.local/${packageName(file)}`,
             packageVersion: '1.0.0',
             ...(signal === undefined ? {} : { signal }),

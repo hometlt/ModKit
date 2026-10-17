@@ -5,7 +5,7 @@ import { canonicalJsonStringify, parseJsonDocument, compareUtf8, ModkitError } f
 import { createZipArchive, type ZipWriteBudget } from '@modkit/codec-kit/container/zip'
 import { sha256Hex } from '@modkit/codec-kit/crypto/digest'
 import { encodePng } from '@modkit/codec-kit/raster'
-import type { RasterResourcePort, SceneRendererTexture } from '@modkit/sdk'
+import type { ModelMaterialRef, RasterResourcePort, SceneRendererTexture } from '@modkit/sdk'
 import {
   worldModelRequiredBytes,
   type CandidateWorldSceneSource,
@@ -15,7 +15,7 @@ import {
   type WorldSceneObjectItem,
   type WorldSceneLayerItem,
 } from '@modkit/sdk/maps'
-import { readUvmContainer, uvmImageResourceId, writeUvmContainer } from '../model/container.js'
+import { readUvmContainer, uvmImageResourceId, uvmImageUri, writeUvmContainer } from '../model/container.js'
 
 import {
   DEFAULT_UVW_PARSE_LIMITS,
@@ -564,6 +564,93 @@ function normalizedResourceName(value: string): string {
   return value.replaceAll('\\', '/').toLowerCase()
 }
 
+/** glTF material texture channels and the layer slot each one draws. */
+const SKIN_CHANNELS: readonly (readonly [path: readonly string[], slot: string])[] = [
+  [['pbrMetallicRoughness', 'baseColorTexture'], 'diffuse'],
+  [['normalTexture'], 'normal'],
+  [['emissiveTexture'], 'emissive-1'],
+  [['occlusionTexture'], 'ambient-occlusion'],
+]
+
+type JsonRecord = Record<string, unknown>
+const jsonRecord = (value: unknown): JsonRecord | undefined =>
+  typeof value === 'object' && value !== null && !Array.isArray(value) ? (value as JsonRecord) : undefined
+
+/**
+ * A world source may draw a model with a separately authored skin (the host's cliff
+ * `materialModel`): its materials replace the UVM's by index, and the textures delivered with the
+ * model are the skin's. The UVM still names its own images, so each material's layers (their
+ * `resourceId` by slot, the render model's layer `path` by label) and its glTF texture channels are
+ * pointed at the skin's textures, whose images are added by name. Layers the skin lacks keep their
+ * own. Returns the document unchanged when no material differs.
+ */
+function skinnedUvmDocument(document: JsonRecord, skin: readonly ModelMaterialRef[]): JsonRecord {
+  const materials = Array.isArray(document['materials']) ? document['materials'] : []
+  const images = [...(Array.isArray(document['images']) ? document['images'] : [])]
+  const textures = [...(Array.isArray(document['textures']) ? document['textures'] : [])]
+  let changed = false
+  const imageByName = new Map<string, number>()
+  images.forEach((_, index) => imageByName.set(normalizedResourceName(uvmImageResourceId(document as never, index)), index))
+  const imageFor = (resourceId: string): number => {
+    const key = normalizedResourceName(resourceId)
+    let index = imageByName.get(key)
+    if (index === undefined) {
+      index = images.length
+      images.push({ name: resourceId, uri: uvmImageUri(resourceId) })
+      imageByName.set(key, index)
+      changed = true
+    }
+    return index
+  }
+  const rewritten = materials.map((value, materialIndex) => {
+    const material = jsonRecord(value)
+    const replacement = skin[materialIndex]
+    if (material === undefined || replacement === undefined) return value
+    const slotIds = new Map((replacement.layers ?? []).flatMap(layer =>
+      layer.resourceId === undefined ? [] : [[layer.slot, layer.resourceId] as const]))
+    if (slotIds.size === 0) return value
+    const copy = structuredClone(material)
+    // The material's native layers and its render model name textures by slot and label.
+    const fields = jsonRecord(jsonRecord(jsonRecord(jsonRecord(copy['extras'])?.['modkit'])?.['material'])?.['fields'])
+    for (const layer of Array.isArray(fields?.['layers']) ? fields['layers'] : []) {
+      const entry = jsonRecord(layer)
+      const id = typeof entry?.['slot'] === 'string' ? slotIds.get(entry['slot']) : undefined
+      if (entry !== undefined && id !== undefined && entry['resourceId'] !== undefined && entry['resourceId'] !== id) {
+        entry['resourceId'] = id
+        imageFor(id)
+        changed = true
+      }
+    }
+    const renderModel = jsonRecord(jsonRecord(jsonRecord(jsonRecord(copy['extensions'])?.['UV_game_material'])?.['params'])?.['renderModel'])
+    for (const layer of Array.isArray(renderModel?.['layers']) ? renderModel['layers'] : []) {
+      const entry = jsonRecord(layer)
+      const id = typeof entry?.['label'] === 'string' ? slotIds.get(entry['label']) : undefined
+      if (entry !== undefined && id !== undefined && entry['path'] !== undefined && entry['path'] !== id) {
+        entry['path'] = id
+        imageFor(id)
+        changed = true
+      }
+    }
+    for (const [path, slot] of SKIN_CHANNELS) {
+      const id = slotIds.get(slot)
+      let holder: JsonRecord | undefined = copy
+      for (const key of path.slice(0, -1)) holder = jsonRecord(holder?.[key])
+      const reference = jsonRecord(holder?.[path.at(-1)!])
+      const old = typeof reference?.['index'] === 'number' ? jsonRecord(textures[reference['index']]) : undefined
+      if (id === undefined || reference === undefined || old === undefined) continue
+      // Already this texture (whatever the spelling of its image): nothing to change.
+      if (typeof old['source'] === 'number' && old['source'] < images.length &&
+          normalizedResourceName(uvmImageResourceId(document as never, old['source'])) === normalizedResourceName(id)) continue
+      const source = imageFor(id)
+      reference['index'] = textures.length
+      textures.push({ ...old, source })
+      changed = true
+    }
+    return copy
+  })
+  return changed ? { ...document, materials: rewritten, images, textures } : document
+}
+
 /**
  * A converted model with its decoded textures as package media. An image that came without texels
  * (an effect name, a texture that did not decode) keeps its logical id and is named in `missing`,
@@ -574,6 +661,7 @@ async function makePortableUvm(
   textures: readonly SceneRendererTexture[],
   modelOrdinal: number,
   signal?: AbortSignal,
+  skin?: readonly ModelMaterialRef[],
 ): Promise<
   Readonly<{
     readonly bytes: Uint8Array
@@ -587,7 +675,10 @@ async function makePortableUvm(
     maxDepth: 128,
     maxNodes: 1_000_000,
   }
-  const container = readUvmContainer(bytes, budget, signal)
+  const read = readUvmContainer(bytes, budget, signal)
+  const skinned = skin === undefined ? read.document
+    : (skinnedUvmDocument(read.document as JsonRecord, skin) as typeof read.document)
+  const container = skinned === read.document ? read : { ...read, document: skinned }
   const images = container.document['images']
   const portableTextures = await Promise.all(
     [...textures]
@@ -615,7 +706,7 @@ async function makePortableUvm(
       ? [uvmImageResourceId(container.document, index)]
       : [],
   )
-  if (portableTextures.length === 0)
+  if (portableTextures.length === 0 && container === read)
     return Object.freeze({
       bytes: bytes.slice(),
       textures: Object.freeze([]),
@@ -1374,6 +1465,7 @@ export async function materializeWorldToUvpMap(
               result.textures ?? [],
               modelOrdinal,
               options.signal,
+              result.materials,
             )
             for (const id of converted.missing) unpackagedModelTextureIds.add(id)
             for (const texture of converted.textures) encodedTotal += texture.bytes.byteLength

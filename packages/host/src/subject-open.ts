@@ -1494,15 +1494,16 @@ async function openSubjectDirectWith(
           item.target.environments === undefined ||
           item.target.environments.includes(target.environment),
       )
+      const codecTarget = runsInTarget
+        ? target
+        : serviceTargetFor(executionBackends, candidate.offer, target)
       const request: ProviderRequest = {
         contract: {
           contract: candidate.logicalOffer.contract,
           major: candidate.logicalOffer.major,
           range: '*',
         },
-        target: runsInTarget
-          ? target
-          : serviceTargetFor(executionBackends, candidate.offer, target),
+        target: codecTarget,
         pin: {
           providerId: candidate.offer.providerId,
           runtimeVariant: candidate.offer.runtimeVariant,
@@ -1602,6 +1603,9 @@ async function openSubjectDirectWith(
                   definitions: options.serviceDefinitions,
                   target,
                   targetFor: offer => serviceTargetFor(executionBackends, offer, target),
+                  // a codec running in-process keeps its trusted services beside it: what it hands
+                  // them (a whole world for a native encoder) never crosses a worker frame
+                  ...(codecTarget === target ? {} : { preferAlternateTarget: true }),
                   onResolved(request: FacetAwareProviderRequest, result) {
                     nestedLocks.push(buildLockEntry(request, result))
                   },

@@ -10,10 +10,6 @@ import { applyJsonEdit, type JsonEdit } from '@modkit/codec-kit/json-edit'
 import { snapshotJson } from '@modkit/codec-kit/json-snapshot'
 import { operationId, type Diagnostic } from '@modkit/core'
 import {
-  DATA_CATALOG_ENTITIES_INPUT,
-  DATA_CATALOG_QUERIES_OUTPUT,
-  type DataEntityRef,
-  type DataResolvedEntity,
   type JsonObject,
   type JsonValue,
 } from '@modkit/sdk'
@@ -24,13 +20,11 @@ import {
   MAP_LAYER_READ_OPERATION,
   MAP_LAYER_WRITE_INPUT_SCHEMA,
   MAP_LAYER_WRITE_OPERATION,
-  NATIVE_MAP_ENCODER_CONTRACT,
   WORLD_SCENE_SOURCE_CONTRACT,
   mapLayerWindow,
   type MapLayerDescriptor,
   type MapLayerGrid,
   type MapLayerReadRequest,
-  type NativeMapEncoder,
 } from '@modkit/sdk/maps'
 
 import {
@@ -40,6 +34,7 @@ import {
   serializeUvwProfile,
   type UvwHeightfieldLayer,
 } from './index.js'
+import { nativeMapExportHandler, nativeMapExportOperation } from './native-export.js'
 
 const decoder = new TextDecoder('utf-8', { fatal: false })
 
@@ -413,143 +408,6 @@ function heightGridEdits(
   return Object.freeze(edits)
 }
 
-const NATIVE_EXPORT_OPERATION = operationId('map.export-native', { contributionId: 'modkit/world-uvw' })
-
-/** The native export's form: the target map format and the encoder's own options. */
-const NATIVE_MAP_EXPORT_INPUT_SCHEMA = Object.freeze({
-  $ref: 'modkit://schemas/uvw/native-map-export.v1',
-  document: Object.freeze({
-    schemaVersion: 1,
-    forms: Object.freeze([
-      Object.freeze({
-        id: 'uvw-native-map-export',
-        label: 'Save as a game map',
-        summary: "Write this world with an installed game's map encoder.",
-        baseInput: Object.freeze({ schemaVersion: 1 }),
-        fields: Object.freeze([
-          Object.freeze({
-            key: 'formatId',
-            label: 'Target format',
-            type: Object.freeze({ kind: 'text' }),
-            inputPath: Object.freeze(['formatId']),
-            required: true,
-            description: 'Installed native map format id, for example ra2-map or minecraft-anvil.',
-          }),
-          Object.freeze({
-            key: 'options',
-            label: 'Encoder options',
-            type: Object.freeze({ kind: 'json' }),
-            inputPath: Object.freeze(['options']),
-            initial: Object.freeze({}),
-          }),
-        ]),
-      }),
-    ]),
-  }),
-})
-
-/**
- * map.export-native: the world written by the installed game's map encoder (common.map/native-
- * encoder, WT10), its losses reported with the result. This codec selects and checks; it writes no
- * game's map.
- */
-function nativeExportHandler(bytes: Uint8Array, context: InspectionContext) {
-  return async (
-    input: unknown,
-    operationContext: {
-      readonly signal?: AbortSignal
-      readonly reportDiagnostic?: (value: Diagnostic) => void
-    } = {},
-  ) => {
-    if (context.contracts === undefined)
-      throw new TypeError('host native map encoder capability is absent')
-    const request = editObject(
-      snapshotJson(
-        input,
-        {
-          maxBytes: context.budget.maxScalarBytes,
-          maxNodes: context.budget.maxNodes,
-          maxDepth: context.budget.maxDepth + 2,
-        },
-        operationContext.signal,
-      ),
-      'native map export request',
-    )
-    const formatId = request['formatId']
-    if (
-      request['schemaVersion'] !== 1 ||
-      typeof formatId !== 'string' ||
-      formatId.trim().length === 0 ||
-      Object.keys(request).some(
-        key => !['schemaVersion', 'formatId', 'options', DATA_CATALOG_ENTITIES_INPUT].includes(key),
-      )
-    )
-      throw new TypeError('native map export requires {schemaVersion: 1, formatId}')
-    // the answers to the encoder's catalog questions, when the host calls again with them
-    const answered = request[DATA_CATALOG_ENTITIES_INPUT]
-    if (answered !== undefined && !Array.isArray(answered))
-      throw new TypeError(`native map export ${DATA_CATALOG_ENTITIES_INPUT} must be a list`)
-    const signal = operationContext.signal
-    signal?.throwIfAborted()
-    const lease = await context.contracts.resolve({
-      contract: NATIVE_MAP_ENCODER_CONTRACT,
-      major: 1,
-      facet: { formatId },
-      operation: NATIVE_EXPORT_OPERATION,
-      ...(signal === undefined ? {} : { signal }),
-    })
-    try {
-      const encoder: unknown = lease.value
-      const candidate = encoder as Partial<NativeMapEncoder> | null
-      if (
-        candidate === null ||
-        typeof candidate !== 'object' ||
-        candidate.contract !== NATIVE_MAP_ENCODER_CONTRACT ||
-        candidate.formatId !== formatId ||
-        typeof candidate.encode !== 'function'
-      )
-        throw new TypeError(`resolved provider is not a ${formatId} native map encoder`)
-      const encoded = await candidate.encode({
-        uvw: bytes.slice(),
-        ...(request['options'] === undefined ? {} : { options: request['options'] as JsonValue }),
-        ...(answered === undefined
-          ? {}
-          : { catalogEntities: answered as unknown as readonly DataResolvedEntity[] }),
-        ...(signal === undefined ? {} : { signal }),
-      })
-      if (encoded === null || typeof encoded !== 'object' || encoded.formatId !== formatId)
-        throw new TypeError(`native map encoder returned an invalid ${formatId} result`)
-      // the target game's catalog first: the host answers from the target's mod context and calls again
-      if ('catalogQueries' in encoded) {
-        if (!Array.isArray(encoded.catalogQueries))
-          throw new TypeError(
-            `native map encoder asked ${formatId} catalog questions without a list`,
-          )
-        const queries: DataEntityRef[] = encoded.catalogQueries.map(ref => ({
-          namespace: ref.namespace,
-          entityId: ref.entityId,
-        }))
-        return {
-          kind: 'json' as const,
-          value: { [DATA_CATALOG_QUERIES_OUTPUT]: queries } as unknown as JsonValue,
-        }
-      }
-      if (!(encoded.bytes instanceof Uint8Array))
-        throw new TypeError(`native map encoder returned an invalid ${formatId} result`)
-      for (const item of encoded.diagnostics ?? []) operationContext.reportDiagnostic?.(item)
-      // the encoder's extension and media type name the file the application writes
-      return {
-        kind: 'bytes' as const,
-        value: encoded.bytes,
-        extension: encoded.extension,
-        ...(encoded.mediaType === undefined ? {} : { mediaType: encoded.mediaType }),
-      }
-    } finally {
-      await lease.release()
-    }
-  }
-}
-
 const definition = Object.freeze({
   id: 'modkit/world-uvw',
   operations: Object.freeze([
@@ -574,14 +432,7 @@ const definition = Object.freeze({
       requiredPermissions: Object.freeze(['read-source'] as const),
       outputKinds: Object.freeze(['bytes'] as const),
     }),
-    Object.freeze({
-      id: NATIVE_EXPORT_OPERATION,
-      handlerId: 'export-uvw-native',
-      inputSchema: NATIVE_MAP_EXPORT_INPUT_SCHEMA,
-      mutatesSource: false,
-      requiredPermissions: Object.freeze(['read-source'] as const),
-      outputKinds: Object.freeze(['bytes', 'json'] as const),
-    }),
+    nativeMapExportOperation('modkit/world-uvw', 'export-uvw-native'),
     Object.freeze({
       id: operationId(MAP_LAYERS_OPERATION, { contributionId: 'modkit/world-uvw' }),
       handlerId: 'map-layers',
@@ -716,7 +567,7 @@ const definition = Object.freeze({
             ...(context.signal === undefined ? {} : { signal: context.signal }),
           }),
         }),
-        'export-uvw-native': nativeExportHandler(bytes, context),
+        'export-uvw-native': nativeMapExportHandler(bytes, context, 'modkit/world-uvw'),
         'map-layers': async () => ({
           kind: 'json' as const,
           value: { layers: [...grids.values()].map(grid => grid.descriptor) } as unknown as JsonValue,

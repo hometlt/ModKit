@@ -1,4 +1,10 @@
 export { unretainedWorldFields } from './field-loss.js'
+export {
+  NATIVE_MAP_EXPORT_INPUT_SCHEMA,
+  nativeMapExportHandler,
+  nativeMapExportOperation,
+  type NativeMapExportContext,
+} from './native-export.js'
 import { WORLD_MAX_TERRAIN_WEIGHT_RASTERS } from '@modkit/sdk/maps'
 import { validateLatticeRamps, type LatticeRampAnnotations } from '@modkit/sdk/maps'
 import { validateLatticeOverview } from '@modkit/sdk/maps'

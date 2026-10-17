@@ -954,6 +954,57 @@ describe('portable UVP map bundle', () => {
       ['!fire', 'media/models/object-model-0000-texture-0000.png'].sort(),
     )
   })
+  it('draws a model with the skin it was drawn with, not with the images of its own UVM', async () => {
+    // The host's cliff materialModel: the skin's materials replace the mesh's by index and the
+    // textures delivered are the skin's, while the converted UVM still names its own image.
+    const layered = materializeUvmCore(
+      {
+        info: { scenes: 1, nodes: 1, meshes: 1, primitives: 1, materials: 1, textures: 1, animations: 0, geometryAccess: 'decoded' },
+        ...triangle,
+        materials: [{ id: 'material-0', layers: [{ slot: 'diffuse', resourceId: 'texture.dds' }] }],
+        resourceClosure: {
+          mode: 'content-qualified',
+          entries: [{ role: 'texture', logicalId: 'texture.dds', mediaHint: 'image/vnd-ms.dds' }],
+        },
+      },
+      {
+        scope: { scopeId: 'model-interchange-v1', version: '1.0.0' },
+        profile: 'UVM/core@1.0',
+        subjectRevision: 'provider-token:layered-model' as never,
+        options: { assetId: 'fixture/layered', sourceFormat: 'fixture' },
+      },
+    ).bytes
+    const sourceModel = sourceWithModel()
+    const packed = await materializeWorldToUvpMap(
+      {
+        ...sourceModel,
+        async model(resourceId) {
+          const converted = await sourceModel.model!(resourceId)
+          if (converted.state !== 'converted') throw new Error('fixture model did not convert')
+          return {
+            ...converted,
+            uvmBytes: layered.slice(),
+            materials: [{ id: 'material-0', layers: [{ slot: 'diffuse', resourceId: 'skin.dds' }] }],
+            resources: [{ id: 'skin.dds', role: 'texture' as const, provenance: 'reference-only' as const }],
+            textures: [{ id: 'skin.dds', width: 2, height: 2, rgba: rgba.slice() }],
+          } as typeof converted
+        },
+      },
+      options,
+    )
+    if (packed.state !== 'materialized') throw new Error(JSON.stringify(packed.refusals))
+    expect(packed.packagedModelCount).toBe(1)
+    const document = readUvmContainer(packed.entries.get('models/object-model-0000.uvm.glb')!).document as {
+      materials: { pbrMetallicRoughness: { baseColorTexture: { index: number } } }[]
+      textures: { source: number }[]
+      images: { uri: string; name?: string }[]
+    }
+    const drawn = document.images[document.textures[document.materials[0]!.pbrMetallicRoughness.baseColorTexture.index]!.source]!
+    expect(drawn.name).toBe('skin.dds')
+    expect(drawn.uri).toBe('media/models/object-model-0000-texture-0000.png')
+    // the UVM's own image stays declared, without texels
+    expect(packed.unpackagedModelTextureIds).toEqual(['texture.dds'])
+  })
 })
 
 describe('single-file UVP', () => {

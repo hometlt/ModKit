@@ -8,7 +8,8 @@
   "displayName": "Universal Verse Package",
   "limitations": [
     "Opens map packages in the single-file form (SPEC_UVP §2, a ZIP read by the core archive codec); the package is read whole within the budget.",
-    "A .uvp is not edited in place: subject.convert --target uvp writes a new package from a map's world."
+    "A .uvp is not edited in place: subject.convert --target uvp writes a new package from a map's world.",
+    "map.export-native resolves common.map/native-encoder by formatId and hands the encoder the package (repacked from the files read), so it sees the world's models and textures."
   ],
   "runtimeVariants": [
     {
@@ -89,6 +90,13 @@
         "mutatesSource": false,
         "requiredPermissions": ["read-source"],
         "outputKinds": ["none"]
+      },
+      {
+        "id": "map.export-native",
+        "handlerId": "export-uvp-native",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes", "json"]
       }
     ],
     "traitDeclarations": [
