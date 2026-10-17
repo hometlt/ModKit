@@ -118,6 +118,10 @@
       "types": "./dist/crypto/aes.d.ts",
       "default": "./dist/crypto/aes.js"
     },
+    "./crypto/salsa20": {
+      "types": "./dist/crypto/salsa20.d.ts",
+      "default": "./dist/crypto/salsa20.js"
+    },
     "./crypto/digest": {
       "types": "./dist/crypto/digest.d.ts",
       "default": "./dist/crypto/digest.js"

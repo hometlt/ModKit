@@ -202,6 +202,14 @@ const workerBuild = await build({
       'crypto',
       'blowfish.js',
     ),
+    'vendor/codec-kit/crypto/salsa20': join(
+      repoRoot,
+      'packages',
+      'codec-kit',
+      'dist',
+      'crypto',
+      'salsa20.js',
+    ),
     'vendor/codec-kit/crypto/aes': join(
       repoRoot,
       'packages',
