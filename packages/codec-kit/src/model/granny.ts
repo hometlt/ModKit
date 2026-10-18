@@ -24,7 +24,7 @@ export interface GrannyOrderedStruct {
   readonly kind: 'struct'
   readonly members: readonly { readonly name: string; readonly value: GrannyOrderedValue }[]
 }
-export interface GrannyLimits { readonly maxBytes: number; readonly maxNodes: number; readonly maxDepth: number }
+export interface GrannyLimits { readonly maxBytes: number; readonly maxNodes: number; readonly maxDepth: number; /** Cumulative decoded UTF-8 bytes, at most maxBytes; omitted uses maxBytes. */ readonly maxTextBytes?: number }
 export interface GrannyCurve { readonly degree: number; readonly knots: readonly number[]; readonly controls: readonly number[]; readonly dimension: number }
 export type GrannyTransform = { readonly flags: number; readonly position: readonly number[]; readonly orientation: readonly number[]; readonly scaleShear: readonly number[] }
 /** Dependency-neutral TRS projection; native presence bits select defaults before validation.
@@ -114,6 +114,8 @@ function grannyTransformComponents(value: GrannyReadonlyValue | GrannyTransform 
 /** Explicit packed-LE64 field access; native root offsets and admission stay with the carrier owner.
  * One owned input/limits snapshot, shared graph caches and cumulative node/materialized ceilings.
  * Input and materialized output each have the maxBytes ceiling, as with the standalone readers.
+ * maxTextBytes counts actual UTF-8 decodes, including schema labels and nested values; cached
+ * schema/object reads retain their strings without charging again. Repeated direct decodes charge.
  * Session views are frozen, retain identity and must not be edited. Any failed read closes the session.
  */
 export interface GrannyPackedReader {
@@ -203,7 +205,8 @@ export function createGrannyPackedReader(input: Uint8Array, profile: 'packed-le6
 /** Preserve mutable standalone results while protecting persistent public-session views. */
 function createPackedReader(input: Uint8Array, profile: 'packed-le64', limits: GrannyLimits,
   signal: AbortSignal | undefined, immutable: boolean) {
-  limits = { maxBytes: limits.maxBytes, maxNodes: limits.maxNodes, maxDepth: limits.maxDepth }
+  limits = { maxBytes: limits.maxBytes, maxNodes: limits.maxNodes, maxDepth: limits.maxDepth,
+    maxTextBytes: limits.maxTextBytes === undefined ? limits.maxBytes : limits.maxTextBytes }
   signal?.throwIfAborted()
   if (profile !== 'packed-le64' || !Number.isSafeInteger(limits.maxBytes) || limits.maxBytes < 0 ||
     !Number.isSafeInteger(limits.maxNodes) || limits.maxNodes < 1 ||
@@ -268,6 +271,8 @@ function createGrannyObjectReader(sections: Section[],
   charge: (bytes: number) => void, remainingNodes: () => number, immutable = false) {
   /** Seal values at their existing construction points; standalone readers retain mutable outputs. */
   function seal<T extends object>(value: T): T { if (immutable) Object.freeze(value); return value }
+  const maxTextBytes = boundedCount(limits.maxTextBytes === undefined ? limits.maxBytes : limits.maxTextBytes, limits.maxBytes, 'Granny text budget')
+  let textBytes = 0
   const pointerBytes = layout === 'packed-le64' ? 8 : 4
   const memberStride = layout === 'packed-le64' ? 44 : 32
   /** Resolve a section-local pointer only after checking its entire requested extent. */
@@ -290,10 +295,14 @@ function createGrannyObjectReader(sections: Section[],
   /** Native strings are NUL terminated within their own section and the caller scalar ceiling. */
   function string(p: Pointer | null): string {
     if (!p) return ''
-    const section = location(p, 1), end = section.bytes.indexOf(0, p[1])
-    if (end < 0 || end - p[1] > limits.maxBytes) throw new RangeError('Granny unterminated string')
-    charge((end - p[1]) * 2)
-    return new TextDecoder('utf-8', { fatal: true }).decode(section.bytes.subarray(p[1], end))
+    const section = location(p, 1)
+    // Bound scanning and decoding by the remaining native-text budget, including one terminator.
+    const tail = section.bytes.subarray(p[1], p[1] + (maxTextBytes - textBytes) + 1)
+    const length = tail.indexOf(0)
+    if (length < 0) throw new RangeError('Granny unterminated string or text budget')
+    textBytes += length
+    charge(length * 2)
+    return new TextDecoder('utf-8', { fatal: true }).decode(tail.subarray(0, length))
   }
   const types = new Map<string, { members: Member[]; size: number; building: boolean }>()
   const recordTypes = new Set<string>()

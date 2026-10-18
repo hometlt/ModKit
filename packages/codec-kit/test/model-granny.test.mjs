@@ -19,6 +19,8 @@ function fixture() {
 const limits = { maxBytes: 1<<20, maxNodes: 1000, maxDepth: 16 }
 test('Granny embedded type, section-relative name relocation and object scalar',()=>{
   assert.equal(readGranny(fixture(),limits).Value,42.5)
+  assert.equal(readGranny(fixture(),{...limits,maxTextBytes:5}).Value,42.5)
+  assert.throws(()=>readGranny(fixture(),{...limits,maxTextBytes:4}),/text budget/)
 })
 
 test('container section and relocation charges remain in the graph node budget',()=>{
