@@ -9,6 +9,7 @@
 import { boundedCount } from '../binary.js'
 import { crc32 } from '../checksum/index.js'
 import { decompressOodle1 } from '../compression/oodle1.js'
+import { normalizeQuat } from '../model-math/transform.js'
 export { unpackGrannyCurve, type GrannyCurveDomain, type GrannyExpandedCurve } from './granny-curve-codec.js'
 
 export type GrannyValue = number | string | null | GrannyValue[] | { [key: string]: GrannyValue }
@@ -16,6 +17,55 @@ export type GrannyReadonlyValue = number | string | null | readonly GrannyReadon
 export interface GrannyLimits { readonly maxBytes: number; readonly maxNodes: number; readonly maxDepth: number }
 export interface GrannyCurve { readonly degree: number; readonly knots: readonly number[]; readonly controls: readonly number[]; readonly dimension: number }
 export type GrannyTransform = { readonly flags: number; readonly position: readonly number[]; readonly orientation: readonly number[]; readonly scaleShear: readonly number[] }
+/** Dependency-neutral TRS projection; native presence bits select defaults before validation.
+ * Shear tolerance is an explicit caller policy, never an implicit lossless conversion claim.
+ */
+export interface GrannyTransformProjection {
+  readonly trs: {
+    readonly translation: [number, number, number]
+    readonly rotation: [number, number, number, number]
+    readonly scale: [number, number, number]
+  }
+  /** Greatest absolute off-diagonal coefficient discarded by this projection. */
+  readonly discardedShear: number
+  readonly normalizedRotation: boolean
+  /** The shared quaternion kernel preserves zero; a carrier must decide whether to refuse it. */
+  readonly zeroRotation: boolean
+}
+
+/** Project a native transform using the existing quaternion kernel and explicit shear admission.
+ * Returns owned component arrays. Disabled fields are not inspected; enabled fields must be dense,
+ * finite and exact-width. Negative/zero scales and quaternion sign are preserved.
+ */
+export function projectGrannyTransform(value: GrannyReadonlyValue | GrannyTransform | undefined,
+  maxAbsShear: number): GrannyTransformProjection {
+  if (!Number.isFinite(maxAbsShear) || maxAbsShear < 0) throw new RangeError('Granny shear tolerance')
+  if (value === null || typeof value !== 'object' || Array.isArray(value))
+    throw new TypeError('Granny expected transform structure')
+  const transform = value as { readonly [key: string]: unknown }, flags = transform['flags']
+  if (typeof flags !== 'number' || !Number.isFinite(flags)) throw new TypeError('Granny expected finite transform flags')
+  /** Validate each indexed component explicitly, including holes in otherwise valid arrays. */
+  function vector(field: string, width: number): number[] {
+    const values = transform[field]
+    if (!Array.isArray(values) || values.length !== width) throw new TypeError('Granny transform vector width')
+    return Array.from({ length: width }, (_, i) => {
+      const component: unknown = values[i]
+      if (typeof component !== 'number' || !Number.isFinite(component)) throw new TypeError('Granny expected finite transform component')
+      return component
+    })
+  }
+  const p = flags & 1 ? vector('position', 3) : [0, 0, 0]
+  const q = flags & 2 ? vector('orientation', 4) : [0, 0, 0, 1]
+  const s = flags & 4 ? vector('scaleShear', 9) : [1, 0, 0, 0, 1, 0, 0, 0, 1]
+  const discardedShear = Math.max(...[1, 2, 3, 5, 6, 7].map(i => Math.abs(s[i]!)))
+  if (discardedShear > maxAbsShear) throw new TypeError('Granny rest shear cannot be projected to TRS')
+  const rotation = normalizeQuat(q)
+  return {
+    trs: { translation: p as [number, number, number], rotation, scale: [s[0]!, s[4]!, s[8]!] },
+    discardedShear, normalizedRotation: rotation.some((v, i) => v !== q[i]),
+    zeroRotation: rotation.every(v => v === 0),
+  }
+}
 /** Explicit packed-LE64 field access; native root offsets and admission stay with the carrier owner.
  * One owned input/limits snapshot, shared graph caches and cumulative node/materialized ceilings.
  * Input and materialized output each have the maxBytes ceiling, as with the standalone readers.
