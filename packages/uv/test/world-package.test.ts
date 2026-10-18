@@ -5,7 +5,7 @@ import { decodePngSamples } from '@modkit/codec-kit/raster'
 import type { RasterResourcePort } from '@modkit/sdk'
 import type { WorldSceneItem } from '@modkit/sdk/maps'
 import { materializeUvmCore } from '../src/model/materializer.js'
-import { readUvmContainer } from '../src/model/container.js'
+import { readUvmContainer, writeUvmContainer } from '../src/model/container.js'
 import { createEmbeddedUvmWorldModelDecoder } from '../../scene/src/world/embedded-uvm.js'
 
 import {
@@ -1061,6 +1061,71 @@ describe('portable UVP map bundle', () => {
     expect(drawn.uri).toBe('media/models/object-model-0000-texture-0000.png')
     // the UVM's own image stays declared, without texels
     expect(packed.unpackagedModelTextureIds).toEqual(['texture.dds'])
+  })
+  it('points the render model mask layers at the skin, whatever spelling the slot has', async () => {
+    // M3 render models label the mask `alpha1` and keep standard program layers by slot, while the
+    // skin's material refs say `alpha-1`: the cliff mask must still come from the skin.
+    const base = materializeUvmCore(
+      {
+        info: { scenes: 1, nodes: 1, meshes: 1, primitives: 1, materials: 1, textures: 1, animations: 0, geometryAccess: 'decoded' },
+        ...triangle,
+        materials: [{ id: 'material-0', layers: [{ slot: 'diffuse', resourceId: 'texture.dds' }] }],
+        resourceClosure: {
+          mode: 'content-qualified',
+          entries: [{ role: 'texture', logicalId: 'texture.dds', mediaHint: 'image/vnd-ms.dds' }],
+        },
+      },
+      {
+        scope: { scopeId: 'model-interchange-v1', version: '1.0.0' },
+        profile: 'UVM/core@1.0',
+        subjectRevision: 'provider-token:masked-model' as never,
+        options: { assetId: 'fixture/masked', sourceFormat: 'fixture' },
+      },
+    ).bytes
+    const read = readUvmContainer(base)
+    const document = structuredClone(read.document) as { materials: Record<string, unknown>[] }
+    document.materials[0]!['extensions'] = {
+      UV_game_material: {
+        params: {
+          renderModel: {
+            layers: [{ label: 'alpha1', path: 'texture.dds' }],
+            standard: {
+              layers: { alpha1: { slot: 'alpha1', texturePath: 'texture.dds' }, height: { slot: 'height', texturePath: 'texture.dds' } },
+            },
+          },
+        },
+      },
+    }
+    const masked = writeUvmContainer({ ...read, document: document as never })
+    const sourceModel = sourceWithModel()
+    const packed = await materializeWorldToUvpMap(
+      {
+        ...sourceModel,
+        async model(resourceId) {
+          const converted = await sourceModel.model!(resourceId)
+          if (converted.state !== 'converted') throw new Error('fixture model did not convert')
+          return {
+            ...converted,
+            uvmBytes: masked,
+            materials: [{ id: 'material-0', layers: [{ slot: 'diffuse', resourceId: 'skin.dds' }, { slot: 'alpha-1', resourceId: 'skin.dds' }] }],
+            resources: [{ id: 'skin.dds', role: 'texture' as const, provenance: 'reference-only' as const }],
+            textures: [{ id: 'skin.dds', width: 2, height: 2, rgba: rgba.slice() }],
+          } as typeof converted
+        },
+      },
+      options,
+    )
+    if (packed.state !== 'materialized') throw new Error(JSON.stringify(packed.refusals))
+    const material = (readUvmContainer(packed.entries.get('models/object-model-0000.uvm.glb')!).document as {
+      materials: { extensions: { UV_game_material: { params: { renderModel: {
+        layers: { path: string }[]
+        standard: { layers: Record<string, { texturePath: string }> }
+      } } } } }[]
+    }).materials[0]!.extensions.UV_game_material.params.renderModel
+    expect(material.layers[0]!.path).toBe('skin.dds')
+    expect(material.standard.layers['alpha1']!.texturePath).toBe('skin.dds')
+    // a slot the skin lacks keeps its own texture
+    expect(material.standard.layers['height']!.texturePath).toBe('texture.dds')
   })
 })
 

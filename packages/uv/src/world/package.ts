@@ -591,6 +591,21 @@ const SKIN_CHANNELS: readonly (readonly [path: readonly string[], slot: string])
   [['occlusionTexture'], 'ambient-occlusion'],
 ]
 
+/**
+ * One key for a layer slot however a publisher spells it: SDK material refs say `alpha-1`,
+ * `environment-mask`, `ambient-occlusion`; render models say `alpha1`, `enviMask`, `ao`.
+ */
+const SLOT_ALIASES: Readonly<Record<string, string>> = {
+  environment: 'envi',
+  environmentmask: 'envimask',
+  light: 'lightmap',
+  ambientocclusion: 'ao',
+}
+function slotKey(slot: string): string {
+  const key = slot.replaceAll('-', '').toLowerCase()
+  return SLOT_ALIASES[key] ?? key
+}
+
 type JsonRecord = Record<string, unknown>
 const jsonRecord = (value: unknown): JsonRecord | undefined =>
   typeof value === 'object' && value !== null && !Array.isArray(value) ? (value as JsonRecord) : undefined
@@ -626,32 +641,33 @@ function skinnedUvmDocument(document: JsonRecord, skin: readonly ModelMaterialRe
     const replacement = skin[materialIndex]
     if (material === undefined || replacement === undefined) return value
     const slotIds = new Map((replacement.layers ?? []).flatMap(layer =>
-      layer.resourceId === undefined ? [] : [[layer.slot, layer.resourceId] as const]))
+      layer.resourceId === undefined ? [] : [[slotKey(layer.slot), layer.resourceId] as const]))
     if (slotIds.size === 0) return value
     const copy = structuredClone(material)
-    // The material's native layers and its render model name textures by slot and label.
+    /** Points `entry[field]` at the skin's texture of `slot`, when it names one of its own. */
+    const repoint = (entry: JsonRecord | undefined, slot: unknown, field: string): void => {
+      const id = typeof slot === 'string' ? slotIds.get(slotKey(slot)) : undefined
+      if (entry === undefined || id === undefined || entry[field] === undefined || entry[field] === id) return
+      entry[field] = id
+      imageFor(id)
+      changed = true
+    }
+    // The material's native layers and its render model (raw layers and standard program layers)
+    // name textures by slot and label.
     const fields = jsonRecord(jsonRecord(jsonRecord(jsonRecord(copy['extras'])?.['modkit'])?.['material'])?.['fields'])
     for (const layer of Array.isArray(fields?.['layers']) ? fields['layers'] : []) {
       const entry = jsonRecord(layer)
-      const id = typeof entry?.['slot'] === 'string' ? slotIds.get(entry['slot']) : undefined
-      if (entry !== undefined && id !== undefined && entry['resourceId'] !== undefined && entry['resourceId'] !== id) {
-        entry['resourceId'] = id
-        imageFor(id)
-        changed = true
-      }
+      repoint(entry, entry?.['slot'], 'resourceId')
     }
     const renderModel = jsonRecord(jsonRecord(jsonRecord(jsonRecord(copy['extensions'])?.['UV_game_material'])?.['params'])?.['renderModel'])
     for (const layer of Array.isArray(renderModel?.['layers']) ? renderModel['layers'] : []) {
       const entry = jsonRecord(layer)
-      const id = typeof entry?.['label'] === 'string' ? slotIds.get(entry['label']) : undefined
-      if (entry !== undefined && id !== undefined && entry['path'] !== undefined && entry['path'] !== id) {
-        entry['path'] = id
-        imageFor(id)
-        changed = true
-      }
+      repoint(entry, entry?.['label'], 'path')
     }
+    const standardLayers = jsonRecord(jsonRecord(renderModel?.['standard'])?.['layers'])
+    for (const [slot, layer] of Object.entries(standardLayers ?? {})) repoint(jsonRecord(layer), slot, 'texturePath')
     for (const [path, slot] of SKIN_CHANNELS) {
-      const id = slotIds.get(slot)
+      const id = slotIds.get(slotKey(slot))
       let holder: JsonRecord | undefined = copy
       for (const key of path.slice(0, -1)) holder = jsonRecord(holder?.[key])
       const reference = jsonRecord(holder?.[path.at(-1)!])
