@@ -982,6 +982,14 @@ export async function resolveModelViewerTextures(
   let remaining = maximumBytes
   let index = 0
   const textures = new Map<string, SceneRendererTexture>()
+  const lookups = new Map<string, string>(), ambiguous = new Set<string>()
+  for (const reference of references) {
+    if (reference.role !== 'texture') continue
+    const lookup = reference.logicalId ?? reference.id
+    if (lookups.has(reference.id) && lookups.get(reference.id) !== lookup) ambiguous.add(reference.id)
+    lookups.set(reference.id, lookup)
+  }
+  for (const id of ambiguous) report?.(id, 'ambiguous logical texture lookup')
   /*
    * Each texture gets its share of the budget and comes as its most detailed mip that fits: one
    * 4096² texture (64 MiB at mip 0) took the whole budget and left the model's other maps out.
@@ -990,7 +998,7 @@ export async function resolveModelViewerTextures(
   const share = Math.max(4 * 1024 * 1024, Math.floor(maximumBytes / Math.max(1, wanted.size)))
   for (const reference of references) {
     signal?.throwIfAborted()
-    if (reference.role !== 'texture' || textures.has(reference.id)) continue
+    if (reference.role !== 'texture' || textures.has(reference.id) || ambiguous.has(reference.id)) continue
     if (remaining <= 0) {
       report?.(reference.id, `over the ${maximumBytes / (1024 * 1024)} MiB the viewer reads`)
       continue
@@ -1001,7 +1009,7 @@ export async function resolveModelViewerTextures(
         kind: 'logical',
         requirement: {
           id: textureId,
-          logicalId: reference.id,
+          logicalId: reference.logicalId ?? reference.id,
           role: 'texture',
           scopes: [
             'sibling-directory',

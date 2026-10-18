@@ -20,6 +20,7 @@
     "Format0 knots remain sample indices and require explicit native time mapping."
   ],
   "sourceSha256": {
+    "LSLib/Granny/Model/Animation.cs": "70958555562c1aa6f422780ce77a44eb6b9eec1b7a880760af618a4c36fcdebf",
     "LSLib/Granny/GR2/Format.cs": "e667eea5c0718444c13d2aefd28e7b950fe4995923be094b2163451c9489466b",
     "LSLib/Granny/Model/CurveData/AnimationCurveData.cs": "67de1dc5bdb0d38aa479635375e1d74216ff3175473e6a121ffa54ad16cc9fdc",
     "LSLib/Granny/Model/CurveData/D3Constant32f.cs": "ed22797057bfa4f711d9a8390d4079c9b5f25bef15f7b4cf8f64d9e1134c7303",
@@ -39,6 +40,13 @@
     "LSLib/Granny/Model/CurveData/DaK32fC32f.cs": "98f0831044eb4191b71c098a15170b65c2daf19beb06a69123ee6b685eaa9162",
     "LSLib/Granny/Model/CurveData/DaK8uC8u.cs": "0c011b56939c3ba915599d53efb01dbda6f6391f21ca4a74a3ed0c02eb25ee8e",
     "LSLib/Granny/Model/CurveData/DaKeyframes32f.cs": "b35ab21b2a3c33077d44337c39a8a22d03a119d747e342f31b3587e6a71b95ef"
+  },
+  "identityDimensionQualification": {
+    "scope": "DaIdentity.Dimension=0 is valid when the caller supplies an explicit vector/quaternion/matrix domain. Positive conflicting dimensions still refuse.",
+    "evidence": [
+      "LSLib/Granny/Model/Animation.cs::UpgradeToGr7 creates DaIdentity without Dimension assignment",
+      "LSLib/Granny/Model/CurveData/DaIdentity.cs defines identity controls from the requested semantic getter"
+    ]
   },
   "licenseSha256": "8e0faf01cbcdeaee68817f1529ea58b5ee6a93c763ea7096bf668292419ce1a9"
 }

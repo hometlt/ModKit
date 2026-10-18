@@ -42,6 +42,9 @@ export type ModelResourceProvenance = 'reference-only' | 'companion'
 export interface ModelResourceRef {
   /** The logical name exactly as the native document spells it; never normalised or resolved. */
   readonly id: string
+  /** Publisher-qualified lookup in the Host logical namespace; omitted means id. Native identity
+   * and material joins remain id. This grants no access and does not assert a bound resource. */
+  readonly logicalId?: string
   readonly role: ModelResourceRole
   readonly provenance: ModelResourceProvenance
   /** Host-minted binding id, present only when the host actually bound this reference. */

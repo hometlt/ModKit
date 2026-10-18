@@ -159,7 +159,9 @@ export function unpackGrannyCurve(
   let knotDomain: GrannyExpandedCurve['knotDomain'] = 'native-knots'
   if (format <= 5) {
     if (format === 2) {
-      requireDimension(word(root['Dimension'], 64, 'identity dimension'))
+      const nativeDimension = word(root['Dimension'], 64, 'identity dimension')
+      // LSLib UpgradeToGr7 emits DaIdentity with Dimension=0; its domain supplies the identity.
+      if (nativeDimension !== 0) requireDimension(nativeDimension)
       result = output(1)
       result.knots[0] = 0
       if (domain.kind === 'quaternion') result.controls[3] = 1

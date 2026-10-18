@@ -6,6 +6,68 @@ import { resolveModelViewerTextures } from '../src/model/index.js'
  * textures were left out. Each texture now gets its share and the most detailed mip that fits.
  */
 describe('model viewer textures', () => {
+  it('refuses conflicting lookup paths for one native identity before reading', async () => {
+    const notes: string[] = []
+    const textures = await resolveModelViewerTextures(
+      {
+        async read() {
+          throw new Error('must not read')
+        },
+      },
+      [
+        { id: 'native', logicalId: 'art/a.ddx', role: 'texture', provenance: 'reference-only' },
+        { id: 'native', logicalId: 'art/b.ddx', role: 'texture', provenance: 'reference-only' },
+      ],
+      undefined,
+      (_id, reason) => notes.push(reason),
+    )
+    expect(textures.size).toBe(0)
+    expect(notes).toEqual(['ambiguous logical texture lookup'])
+  })
+  it('looks up a publisher path while retaining native material identity', async () => {
+    const requested: string[] = []
+    const native = '\\engine\\surface'
+    const textures = await resolveModelViewerTextures(
+      {
+        async read(request) {
+          if (request.kind !== 'logical') throw new Error('logical request required')
+          requested.push(request.requirement.logicalId)
+          return {
+            state: 'decoded',
+            info: {
+              width: 1,
+              height: 1,
+              depth: 1,
+              layers: 1,
+              faces: 1,
+              mipLevels: 1,
+              frames: 1,
+              channels: 4,
+              bitDepth: 8,
+              colorSpace: 'srgb',
+              alphaMode: 'straight',
+              orientation: 'top-left',
+              decodedAccess: true,
+            },
+            region: {
+              x: 0,
+              y: 0,
+              width: 1,
+              height: 1,
+              rowStride: 4,
+              pixelFormat: 'rgba8',
+              pixels: Uint8Array.of(1, 2, 3, 255),
+            },
+            diagnostics: [],
+          }
+        },
+      },
+      [{ id: native, logicalId: 'art/surface.ddx', role: 'texture', provenance: 'reference-only' }],
+    )
+    expect(requested).toEqual(['art/surface.ddx'])
+    expect(textures.has(native)).toBe(true)
+    expect(textures.has('art/surface.ddx')).toBe(false)
+  })
   it('asks each texture for the most detailed mip that fits its share, and takes that mip', async () => {
     const requests: { maxBytes: number; selection?: unknown }[] = []
     const textures = await resolveModelViewerTextures(
