@@ -6,6 +6,51 @@ import type {
   RasterRegion,
 } from './asset-capabilities/media-data-sources.js'
 import type { LogicalResourceRequirement, ResourceProvenanceRecord } from './resource-session.js'
+import type { SceneRendererTexture } from './renderer/index.js'
+
+/** Copy an admitted raster reply into the renderer's owned, top-left RGBA surface layout.
+ * Cube faces stay in +X,-X,+Y,-Y,+Z,-Z order; a partial cube is never a 2D texture.
+ * This transport conversion performs no decoding, sampling or material interpretation. */
+export function rasterResourceTexture(
+  id: string,
+  result: Extract<RasterResourceResult, { readonly state: 'decoded' | 'decoded-surfaces' }>,
+  maxBytes: number,
+): SceneRendererTexture | undefined {
+  const faces = result.info.faces ?? 1
+  if (!Number.isSafeInteger(maxBytes) || maxBytes < 0 || result.info.orientation === 'unknown' ||
+      (faces !== 1 && faces !== 6) || (faces === 6 && result.info.width !== result.info.height)) return undefined
+  const surfaces = result.state === 'decoded-surfaces' ? result.surfaces : [{
+    subresource: result.subresource ?? { frame: 0, mipLevel: 0, layer: 0, face: 0, slice: 0 },
+    region: result.region,
+  }]
+  const first = surfaces[0]
+  if (first === undefined || surfaces.length !== faces ||
+      !Number.isSafeInteger(first.subresource.mipLevel) || first.subresource.mipLevel < 0) return undefined
+  const { width, height } = first.region
+  const rowBytes = width * 4, faceBytes = rowBytes * height, bytes = faceBytes * faces
+  if (!Number.isSafeInteger(width) || !Number.isSafeInteger(height) || width <= 0 || height <= 0 ||
+      (faces === 6 && width !== height) || !Number.isSafeInteger(bytes) || bytes > maxBytes)
+    return undefined
+  for (const [face, surface] of surfaces.entries()) {
+    const { subresource: selected, region } = surface
+    if (selected.face !== face || selected.frame !== 0 || selected.layer !== 0 || selected.slice !== 0 ||
+        selected.mipLevel !== first.subresource.mipLevel || region.width !== width || region.height !== height ||
+        region.pixelFormat !== 'rgba8' || !Number.isSafeInteger(region.rowStride) || region.rowStride < rowBytes ||
+        region.rowStride * (height - 1) + rowBytes > region.pixels.byteLength) return undefined
+  }
+  const rgba = new Uint8Array(bytes)
+  for (const [face, { region }] of surfaces.entries()) for (let row = 0; row < height; row++) {
+    const sourceRow = result.info.orientation === 'bottom-left' ? height - row - 1 : row
+    const offset = sourceRow * region.rowStride
+    rgba.set(region.pixels.subarray(offset, offset + rowBytes), face * faceBytes + row * rowBytes)
+  }
+  return {
+    id, width, height, rgba,
+    ...(faces === 6 ? { dimension: 'cube' as const } : {}),
+    ...(result.info.channelLayout === undefined ? {} : { channelLayout: result.info.channelLayout }),
+    ...(result.info.compression === undefined ? {} : { compression: result.info.compression }),
+  }
+}
 
 export interface RasterSubresource {
   readonly frame: number

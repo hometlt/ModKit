@@ -879,6 +879,7 @@ export {
   type GameTemplatePreviewResult,
   type GameTemplateViewport,
 } from './templates/index.js'
+export { rasterResourceTexture } from './raster-resources.js'
 export type {
   RasterResourcePort,
   RasterResourceRequest,

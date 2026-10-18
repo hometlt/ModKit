@@ -42,6 +42,33 @@ const material = (options = {}) => ({
   ...options,
 })
 const parameters = (standard = material()) => ({ renderModel: { version: 1, standard } })
+
+it('keeps a surface when its alpha-zero add/lerp environment has unused animated cube UVs', () => {
+  for (const op of [2, 3]) {
+    const envi = layer('envi', { texturePath: 'environment.dds', uvSource: 2, op,
+      alphaFactor: { value: 0 }, uvAngle: { value: [0, 0, 0.7] } })
+    const sampled = createStandardMaterialPrograms(parameters(material({ layers: {
+      diffuse: layer(), envi,
+    } })), { budget }).sample({ time: 1 }, {
+      textureDimensions: new Map([['environment.dds', 'cube']]), sceneLighting: true,
+    })[0]
+    assert.equal(sampled.textures.find(binding => binding.slot === 'envi').dimension, 'cube')
+    const a = sampled.shade({ texels: { envi: [0, 0, 0, 0] } })
+    const b = sampled.shade({ texels: { envi: [100, 100, 100, 1] } })
+    assert.deepEqual(a.rgba, b.rgba)
+    assert.ok(a.rgba.some((value, channel) => channel < 3 && value > 0))
+  }
+})
+
+it('still refuses transformed cube coordinates when the environment may contribute', () => {
+  for (const options of [{ alphaFactor: { value: 1 } }, { op: 6 }, { invert: true },
+    { colorAdd: { value: 1 } }, { teamColorMode: 1 }]) {
+    const envi = layer('envi', { texturePath: 'environment.dds', uvSource: 2, op: 2,
+      alphaFactor: { value: 0 }, uvAngle: { value: [0, 0, 0.7] }, ...options })
+    const sampler = createStandardMaterialPrograms(parameters(material({ layers: { diffuse: layer(), envi } })), { budget })
+    assert.throws(() => sampler.sample({ time: 1 }, { textureDimensions: new Map([['environment.dds', 'cube']]) }), /transformed UV/u)
+  }
+})
 const track = (from, to, lineType = 1) => ({
   lineType,
   globalSeqId: null,

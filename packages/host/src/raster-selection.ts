@@ -73,7 +73,7 @@ export function compressedSelectionPlan(
   maxBytes: number,
 ): { readonly mipLevel: number; readonly bytes: number } | undefined {
   const block = blockBytes(info.compression)
-  if (block === undefined || selection.face === 'all' || info.depth !== 1) return undefined
+  if (block === undefined || (selection.face === 'all' && (info.faces ?? 1) !== 1) || info.depth !== 1) return undefined
   const stored = info.storedMipLevels ?? info.mipLevels
   const chain = (level: number) => {
     let bytes = 0

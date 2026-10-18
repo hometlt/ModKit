@@ -660,6 +660,12 @@ function compilePass(
       !(environment !== undefined && isEnvironmentBinding(binding))
     ) {
       const slot = `u_${binding.slot}`
+      const layer = defines.layers.find(layer => layer.slot === binding.slot)
+      // An add/lerp environment with identically zero alpha contributes nothing. Its stored UV
+      // animation must not reject all other surface layers when a real cube replaces face zero.
+      const inactiveEnvironment = binding.slot === 'envi' && layer !== undefined &&
+        (layer.op === 2 || layer.op === 3) && layer.teamColorMode === 0 && !layer.invert &&
+        uniforms[`${slot}AlphaFactor`] === 0 && uniforms[`${slot}Add`] === 0
       const same = (key: string, expected: readonly number[]) => {
         const value = uniforms[key]
         return (
@@ -669,10 +675,10 @@ function compilePass(
         )
       }
       if (
-        !same(`${slot}UvAngle`, [0, 0, 0]) ||
+        !inactiveEnvironment && (!same(`${slot}UvAngle`, [0, 0, 0]) ||
         !same(`${slot}UvOffset`, [0, 0]) ||
         !same(`${slot}UvTiling`, [1, 1]) ||
-        uniforms['u_parallaxHeight'] !== 0
+        uniforms['u_parallaxHeight'] !== 0)
       )
         throw new UnsupportedCubeCoordinatesError(
           `${binding.slot}: transformed UV/flipbook/parallax sampling of a cube image requires a direction-space mapping`,

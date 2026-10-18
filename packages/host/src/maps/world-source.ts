@@ -2704,14 +2704,14 @@ export function createCandidateWorldSceneLease(
                 requirement,
                 maxBytes: request.maxBytes,
                 // a texture bigger than the budget comes at the largest level that fits, not refused
-                selection: { mipLevel: 'fit' },
+                selection: { face: 'all', mipLevel: 'fit' },
                 ...(request.compressedFormats === undefined
                   ? {}
                   : { compressedFormats: request.compressedFormats }),
               },
               signal,
             )
-            if (raster.state !== 'decoded' && raster.state !== 'compressed') {
+            if (raster.state !== 'decoded' && raster.state !== 'decoded-surfaces' && raster.state !== 'compressed') {
               return Object.freeze({
                 state: 'unresolved' as const,
                 diagnostics: Object.freeze([...raster.diagnostics]),

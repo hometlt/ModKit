@@ -28,6 +28,7 @@ import type {
   ViewerModule,
 } from '@modkit/sdk'
 import { billboardCameraRotation, createModelSceneSampler } from '@modkit/scene/model'
+import { rasterResourceTexture } from '@modkit/sdk'
 import { applyColorKeyTransparency } from '@modkit/codec-kit/raster'
 import {
   loadModelStage,
@@ -1027,69 +1028,14 @@ export async function resolveModelViewerTextures(
       report?.(reference.id, `${faces} faces of ${result.info.width}×${result.info.height}`)
       continue
     }
-    const surfaces =
-      result.state === 'decoded-surfaces'
-        ? result.surfaces
-        : [
-            {
-              subresource: result.subresource ?? {
-                frame: 0,
-                mipLevel: 0,
-                layer: 0,
-                face: 0,
-                slice: 0,
-              },
-              region: result.region,
-            },
-          ]
-    // The mip the host chose: every face is that one level, of that level's size.
-    const chosen = surfaces[0]
-    if (chosen === undefined) {
-      report?.(reference.id, 'no surface')
+    // The same owned raster transport as world scenes, including mip/face/row validation.
+    const texture = rasterResourceTexture(textureId, result, remaining)
+    if (texture === undefined) {
+      report?.(reference.id, 'incomplete or invalid raster surfaces, or over the remaining texture budget')
       continue
     }
-    const { width, height } = chosen.region
-    const mipLevel = chosen.subresource.mipLevel
-    const faceBytes = width * height * 4
-    const byteLength = faceBytes * faces
-    if (surfaces.length !== faces || byteLength > remaining) {
-      report?.(reference.id, `${width}×${height}: over what is left of the viewer's budget`)
-      continue
-    }
-    const rgba = new Uint8Array(byteLength)
-    let valid = true
-    for (const [face, surface] of surfaces.entries()) {
-      const selected = surface.subresource
-      const region = surface.region
-      if (
-        selected.face !== face ||
-        selected.frame !== 0 ||
-        selected.mipLevel !== mipLevel ||
-        selected.layer !== 0 ||
-        selected.slice !== 0 ||
-        region.width !== width ||
-        region.height !== height ||
-        region.pixelFormat !== 'rgba8' ||
-        region.rowStride < region.width * 4 ||
-        region.rowStride * (region.height - 1) + region.width * 4 > region.pixels.length
-      ) {
-        valid = false
-        break
-      }
-      for (let row = 0; row < region.height; row += 1) {
-        const sourceOffset = row * region.rowStride
-        const targetOffset = face * faceBytes + row * region.width * 4
-        rgba.set(
-          region.pixels.subarray(sourceOffset, sourceOffset + region.width * 4),
-          targetOffset,
-        )
-      }
-    }
-    if (!valid) {
-      report?.(reference.id, 'a surface the viewer cannot read')
-      continue
-    }
-    remaining -= byteLength
+    const { width, height, rgba } = texture
+    remaining -= rgba.byteLength
     // a texture the game reads without its stored alpha is opaque first (UV_texture_alpha); the
     // buffer is this texture's own copy, so the texels are set in place
     if (reference.ignoreStoredAlpha === true) {

@@ -6,6 +6,7 @@
  * two never differ.
  */
 import { diagnostic, type Diagnostic } from '@modkit/core'
+import { rasterResourceTexture } from '@modkit/sdk'
 import type {
   LogicalResourceRequirement,
   ModelMaterialRef,
@@ -57,10 +58,12 @@ export function childResourceLogicalId(parentLogicalId: string, childLogicalId: 
 
 export function worldTexture(
   id: string,
-  result: Extract<RasterResourceResult, { readonly state: 'decoded' | 'compressed' }>,
+  result: Extract<RasterResourceResult, { readonly state: 'decoded' | 'decoded-surfaces' | 'compressed' }>,
 ): SceneRendererTexture | undefined {
   if (result.info.orientation === 'unknown') return undefined
   if (result.state === 'compressed') {
+    // A compressed reply carries one selected face, never an acquired cube.
+    if ((result.info.faces ?? 1) !== 1) return undefined
     // Blocks are not turned over row by row: only a top-left image arrives as its blocks.
     if (result.info.orientation !== 'top-left') return undefined
     return Object.freeze({
@@ -77,28 +80,8 @@ export function worldTexture(
       wrapV: 'repeat',
     })
   }
-  const { region } = result
-  const rowBytes = region.width * 4
-  const rgba = new Uint8Array(rowBytes * region.height)
-  for (let y = 0; y < region.height; y += 1) {
-    const sourceY = result.info.orientation === 'bottom-left' ? region.height - 1 - y : y
-    rgba.set(
-      region.pixels.subarray(sourceY * region.rowStride, sourceY * region.rowStride + rowBytes),
-      y * rowBytes,
-    )
-  }
-  return Object.freeze({
-    id,
-    width: region.width,
-    height: region.height,
-    rgba,
-    ...(result.info.channelLayout === undefined
-      ? {}
-      : { channelLayout: result.info.channelLayout }),
-    ...(result.info.compression === undefined ? {} : { compression: result.info.compression }),
-    wrapU: 'repeat',
-    wrapV: 'repeat',
-  })
+  const texture = rasterResourceTexture(id, result, Number.MAX_SAFE_INTEGER)
+  return texture === undefined ? undefined : Object.freeze({ ...texture, wrapU: 'repeat', wrapV: 'repeat' })
 }
 
 /** Bytes a world texture holds: its stored blocks, or its RGBA8 texels. */
@@ -422,17 +405,18 @@ export async function worldSceneModel(
               parentResourceId: modelRequirement.id,
             },
             maxBytes: previewTextureBytes,
-            selection: { mipLevel: 'fit' },
+            selection: { face: 'all', mipLevel: 'fit' },
             ...(compressedFormats === undefined ? {} : { compressedFormats }),
           },
           signal,
         )
-        if (raster.state !== 'decoded' && raster.state !== 'compressed')
+        if (raster.state !== 'decoded' && raster.state !== 'decoded-surfaces' && raster.state !== 'compressed')
           return Object.freeze({
             diagnostics: Object.freeze([...raster.diagnostics]),
           })
         const texture = worldTexture(reference.id, raster)
-        const mipLevel = raster.subresource?.mipLevel ?? 0
+        const mipLevel = raster.state === 'decoded-surfaces'
+          ? raster.surfaces[0]?.subresource.mipLevel ?? 0 : raster.subresource?.mipLevel ?? 0
         return Object.freeze({
           ...(texture === undefined ? {} : { texture }),
           diagnostics: Object.freeze([

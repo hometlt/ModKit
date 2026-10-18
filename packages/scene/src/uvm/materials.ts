@@ -1,4 +1,5 @@
 import type { JsonObject, JsonValue, RasterResourcePort } from '@modkit/sdk'
+import { rasterResourceTexture } from '@modkit/sdk'
 import type {
   SceneRendererDiagnostic,
   SceneRendererMaterial,
@@ -12,7 +13,7 @@ import {
   RENDER_MATERIAL_SHADER,
 } from '../materials/index.js'
 import { array, field, object, string } from './values.js'
-import { uvmImageResourceId, uvmImageTexels, type UvmImage } from './images.js'
+import { uvmImageResourceId, type UvmImage } from './images.js'
 
 /**
  * A material whose only texture statement is its neutral layer list (MATERIAL_LAYERS_SHADER).
@@ -527,57 +528,12 @@ export async function acquireUvmMaterialTextures(
         throw new TypeError('material image must contain one plane or six complete cube faces')
       if (cube && result.info.width !== result.info.height)
         throw new TypeError('cube faces must be square')
-      const surfaces =
-        result.state === 'decoded-surfaces'
-          ? result.surfaces
-          : [
-              {
-                subresource: result.subresource ?? {
-                  frame: 0,
-                  mipLevel: 0,
-                  layer: 0,
-                  face: 0,
-                  slice: 0,
-                },
-                region: result.region,
-              },
-            ]
-      if (surfaces.length !== result.info.faces)
-        throw new TypeError('raster port did not return every requested face')
-      // The level the host chose: every face is that one mip, of that mip's size.
-      const chosen = surfaces[0]!
-      const mipLevel = chosen.subresource.mipLevel
-      const { width, height } = chosen.region
-      const faceBytes = width * height * 4
-      if (faceBytes * surfaces.length > remaining)
-        throw new RangeError('decoded material textures exceed budget')
-      const rgba = new Uint8Array(faceBytes * surfaces.length)
-      for (const [face, surface] of surfaces.entries()) {
-        const selected = surface.subresource
-        if (
-          selected.face !== face ||
-          selected.mipLevel !== mipLevel ||
-          selected.frame !== 0 ||
-          selected.layer !== 0 ||
-          selected.slice !== 0 ||
-          surface.region.width !== width ||
-          surface.region.height !== height
-        )
-          throw new TypeError('raster port returned a different subresource selection')
-        rgba.set(
-          uvmImageTexels(
-            // the chosen level's size, not the image's
-            {
-              ...result,
-              state: 'decoded',
-              info: { ...result.info, width, height },
-              region: surface.region,
-            },
-            { channels: 'data' },
-          ),
-          face * faceBytes,
-        )
-      }
+      const texture = rasterResourceTexture(id, result, remaining)
+      if (texture === undefined)
+        throw new TypeError('incomplete or invalid material raster surfaces, or over the texture budget')
+      const { width, height, rgba } = texture
+      const mipLevel = result.state === 'decoded-surfaces'
+        ? result.surfaces[0]?.subresource.mipLevel ?? 0 : result.subresource?.mipLevel ?? 0
       remaining -= rgba.length
       if (mipLevel > 0)
         diagnostics.push({
