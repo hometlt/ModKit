@@ -418,7 +418,7 @@ ROOT payload:
 
 | Property          | Type     | Required | Description                                                                                                                                           |
 | ----------------- | -------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `clips`           | object[] | yes      | Complete catalog: unique `id`, `name`, `durationSeconds`, unique `sourceSequenceIndex`; optional `animation`, `sourceId`, `looping`, `kind`, `frames` |
+| `clips`           | object[] | yes      | Complete catalog: unique `id`, `name`, `durationSeconds`, unique `sourceSequenceIndex`; optional `animation`, `sourceId`, `looping`, `alwaysActive`, `repeatCount`, `kind`, `frames` |
 | `materialTargets` | object[] | no       | Inactive `{id,properties:[{path,value,sequenceTracks}]}` slots; published common material animation paths only; no resource graph                     |
 | `attachments`     | object[] | no       | Composition receipts: `id`, `mapping`, `clips`, `playbackLimitations`; source data is copied into common UVM structures                                        |
 
@@ -432,6 +432,19 @@ signed finite-binary32-compatible domain; sampled material output stays numeric.
 not qualify native global-without-selection/default/cubic or GPU playback semantics. Attachment
 remains explicit and atomic as specified there. `uvm.animation.schema.json#catalog` describes
 the root shape; the existing `#clips` anchor continues to describe animation-attached metadata.
+
+Catalog `alwaysActive` is an optional boolean, absent equivalent to false. True explicitly
+identifies a model-lifetime sequence which runs alongside selected sequences on the source's
+independent lifetime clock. Selecting that same clip MUST NOT restart its lifetime clock or
+duplicate its contribution. Membership MUST NOT be inferred from names such as `GL Stand`.
+The flag applies equally to motion and catalog-only material sequences; it does not invent
+a sequence for a source that declares none. Its `sourceSequenceIndex` still addresses the
+existing sequence-scoped material tracks. Writers and readers MUST preserve explicit false
+as well as true; consumers unable to supply the independent clock must report unsupported
+playback rather than silently claiming equivalence. `repeatCount`, when present, is a
+nonnegative integer: zero means unbounded, positive values count complete authored cycles.
+This carrier does not qualify any game's priority, blend envelope, global-effect or
+global-material-without-sequences semantics.
 
 Animation-attached payload:
 

@@ -900,6 +900,7 @@ glTF has an animation name and nothing else. Games need considerably more:
       "extensions": {
         "UV_game_animation_clips": {
           "clip": "attack",
+          "tags": ["moving"],
           "variant": "01",
           "loop": "once",
           "priority": 20,
@@ -920,12 +921,30 @@ several can play simultaneously on different bone sets; this is already modelled
 `RenderAnimation.priority` and `RenderAnimation.concurrent` in the Modkit IR. Discarding
 those fields turns a working SC2 animation set into an arbitrary list of clips.
 
+`clip` is the animation's **role** and `tags` qualify it, both from the vocabulary
+[`uvm-clip-vocabulary.v1.json`](uvm-clip-vocabulary.v1.json) (roles `idle`, `move`, `attack`,
+`death`, …; tags `ready`, `left`, `damaged`, `alternate`, …). They let a converter for another game
+pick a target clip by meaning instead of by native name. Both are OPTIONAL: a producer states a role
+only when native data states it (SAGE condition flags, an authored SC2 sequence role) and MUST NOT
+derive one from a native name; an animation whose role is unknown still carries its playback fields
+without `clip`. A native word without a canonical tag is kept as a publisher-prefixed tag
+(`sage:suppressed`, `sc2:Work`): consumers of another publisher ignore it, a round trip to the same
+publisher restores it. Role and tags of a cataloged clip live on its root catalog record (below), so a
+channel-less clip has them too; an animation-attached `clip`/`tags`, when present beside a catalog,
+MUST equal its linked record's `role`/`tags` (tags compare as a set; absent tags mean the empty set).
+This cross-record constraint is semantic validation; validating the individual schema fragments
+alone does not prove it. Words outside the published vocabulary remain unknown to that consumer:
+it preserves them and reports any unsupported conversion rather than guessing their meaning.
+Matching follows the vocabulary's `matching` rule, and an unmatched clip is reported as a
+conversion loss. An absent priority is zero; remaining ties use ascending `sourceSequenceIndex`
+from the target catalog, or animation index when there is no catalog.
+
 The document ROOT MAY also carry `UV_game_animation_clips.clips`, a complete catalog of
 selectable clips. This is distinct from the animation-attached metadata above. Each record has
 `id` (unique nonempty string), `name`, `durationSeconds` (finite, nonnegative), and
 `sourceSequenceIndex` (unique nonnegative integer). Optional fields are `animation` (glTF
-animation index), `sourceId` (original facet identity), `looping`, `kind` (`animation` or
-`rest-pose`), and `frames` (nonnegative integer).
+animation index), `sourceId` (original facet identity), `looping`, `role` and `tags` (as above),
+`kind` (`animation` or `rest-pose`), and `frames` (nonnegative integer).
 
 An absent `animation` is meaningful: a material-only or truly empty sequence remains selectable.
 Producers MUST NOT invent a bone, dummy channel, or empty glTF animation to represent it. A linked

@@ -3,16 +3,16 @@
   "schemaVersion": "multiverse-specs-pin-1",
   "source": {
     "repository": "multiverse (sibling repository)",
-    "commit": "1366e9d517c029c870c2898a014307680e4379be",
-    "subject": "fix(uvw): retain nonnegative unlit presentation gain",
-    "committedOn": "2026-10-16T02:48:20+04:00"
+    "commit": "ca6722ea69959a4fef65a1293c75be0ef47aa40b",
+    "subject": "Add UVM animation clip vocabulary",
+    "committedOn": "2026-10-19T00:50:14+04:00"
   },
   "generator": "scripts/specs-pin.mjs",
   "generatedFrom": "git objects, not the sibling working tree",
   "prefix": "specs/",
   "counts": {
-    "files": 323,
-    "bytes": 2240365
+    "files": 326,
+    "bytes": 2264799
   },
   "files": [
     {
@@ -182,8 +182,8 @@
     },
     {
       "path": "specs/conformance/schema-assertions.json",
-      "bytes": 157794,
-      "digest": "sha256:838ca3b19808b6d70635646edf74308150d9a85aee6f1869ba47123090de7cf9"
+      "bytes": 164068,
+      "digest": "sha256:8a485458241e30ac27cf4f41ce4108f488dd7d1f93c7671c00c72b287913bf3c"
     },
     {
       "path": "specs/conformance/state/vectors.json",
@@ -362,8 +362,8 @@
     },
     {
       "path": "specs/model/SPEC_UVM.md",
-      "bytes": 90023,
-      "digest": "sha256:565f0d40500ebfe45c66d7a2dbc64de2c3e3629c3fdce7312af6338ada3ed052"
+      "bytes": 91702,
+      "digest": "sha256:7f2848a3d3cd66801e05919c90876b7293e5ffc863f5cfa46a2337e0785979ba"
     },
     {
       "path": "specs/model/SPEC_UVM_CONVERSION.md",
@@ -372,8 +372,8 @@
     },
     {
       "path": "specs/model/SPEC_UVM_EXTENSIONS.md",
-      "bytes": 71416,
-      "digest": "sha256:806bf0553aaa66e56812ba31c58d9a179b81e7e31209589d79c711de3bb603b6"
+      "bytes": 72483,
+      "digest": "sha256:76c2abacecd274012047d11763e2bbde82c187452fcd95b0311c92563c43161c"
     },
     {
       "path": "specs/model/examples/siege_tank.uvm.gltf",
@@ -457,8 +457,8 @@
     },
     {
       "path": "specs/model/schema/uvm.animation.schema.json",
-      "bytes": 18099,
-      "digest": "sha256:9196b5e5030937e6270cc0aa324c4bd1205206b9e9e30c66f5d88a2892cb042d"
+      "bytes": 19627,
+      "digest": "sha256:2f042dfc0b13d8648d196513e205164e52686af014cc7ccec22a132b79a71c72"
     },
     {
       "path": "specs/model/schema/uvm.asset.schema.json",
@@ -534,6 +534,11 @@
       "path": "specs/model/schema/uvm.variants.schema.json",
       "bytes": 4541,
       "digest": "sha256:cfa130fd8b4e7584ec6e263fc5c6512b362d134ea09971c2bc12f5c4f5732c52"
+    },
+    {
+      "path": "specs/model/uvm-clip-vocabulary.v1.json",
+      "bytes": 3980,
+      "digest": "sha256:94c3ba95657b338b74bfe8110efa34b89507286e10cd6f55268bbaf1c44e4996"
     },
     {
       "path": "specs/package/SPEC_UVP.md",
@@ -967,8 +972,8 @@
     },
     {
       "path": "specs/tools/uv-conformance-emit.mjs",
-      "bytes": 28724,
-      "digest": "sha256:c2fde00ef488e149155fc61fbfd9e6f8557dc0bf1d9b5ed554faec12713b6515"
+      "bytes": 29777,
+      "digest": "sha256:c59a811a758371820e9238ded7f70fdbd504a66223696ea313957c85c46457d8"
     },
     {
       "path": "specs/tools/uv-conformance.mjs",
@@ -1121,6 +1126,11 @@
       "digest": "sha256:ca4e3d3bfaae8b90e1d5d0a75829610122cb0048667e583a18dbff41c61899cf"
     },
     {
+      "path": "specs/tools/uvm-clip-vocabulary.test.mjs",
+      "bytes": 3314,
+      "digest": "sha256:019b3608fceb1ad2e65569b080f4dc00bf532b8c970b65db80382e672569de29"
+    },
+    {
       "path": "specs/tools/uvm-core.mjs",
       "bytes": 9833,
       "digest": "sha256:7bbbee3044ca92e71ea5e94428fdb445bdc5776ecdb36103f75c931923b0cb72"
@@ -1152,8 +1162,8 @@
     },
     {
       "path": "specs/tools/uvm-presentation.ts",
-      "bytes": 17953,
-      "digest": "sha256:121d3a2daaa2c9034d30f3ef14a22c2f3d7d61759405df67e577a06e5b395845"
+      "bytes": 18430,
+      "digest": "sha256:dc671f03898410b6f349e203057bde5470d91690f5f0c5f8bdb75668a2563f42"
     },
     {
       "path": "specs/tools/uvm-profile.d.mts",
@@ -1281,6 +1291,11 @@
       "digest": "sha256:376098c4c39b313d9ef18a6fe9ca90a4789d1c5e08068679306a841575df52eb"
     },
     {
+      "path": "specs/tools/uvw-object-team-context.test.mjs",
+      "bytes": 1529,
+      "digest": "sha256:7c9ab68325228d393251a84440f972e23d8c2a3f19c398f4cb4eb6088db77e24"
+    },
+    {
       "path": "specs/tools/uvw-players.ts",
       "bytes": 5705,
       "digest": "sha256:3182fe90d2e569d8f27f6550dcc118c771fdc743d181f0067ee30443f5db3200"
@@ -1297,8 +1312,8 @@
     },
     {
       "path": "specs/tools/uvw-profile.mjs",
-      "bytes": 49905,
-      "digest": "sha256:077d161e4813243d56322ce1e97c00f69070e972f086cdba7a747d0a704b6390"
+      "bytes": 49988,
+      "digest": "sha256:bc413f10f8c4d1f1ef84de3870010c9442c8ea986f549f9c011b14f94a7c1b06"
     },
     {
       "path": "specs/tools/uvw-query-surface.test.mjs",
@@ -1392,8 +1407,8 @@
     },
     {
       "path": "specs/world/SPEC_UVW_PROFILE.md",
-      "bytes": 37930,
-      "digest": "sha256:53f5525d5d139f08b0ef7f126fcff5b37d2a3b0c2b2f5ec60903f6c96902424b"
+      "bytes": 40178,
+      "digest": "sha256:e3c0a2069034c0d63e30e98adba3819cf7c5c03fbd08caec9e995da39bbdcbdb"
     },
     {
       "path": "specs/world/fixtures/invalid/connections-not-empty.uvw.json",
@@ -1627,8 +1642,8 @@
     },
     {
       "path": "specs/world/schema/uvw.profile.v1.schema.json",
-      "bytes": 64384,
-      "digest": "sha256:4d6f5631ca201fc05414786871fcd18e2f5b80cb282d010e69c96fc1373901f5"
+      "bytes": 65586,
+      "digest": "sha256:85bfb198f48d34c3a051a0acac9de81d391a7af9d368397920abc8bfc2253ecf"
     }
   ]
 }

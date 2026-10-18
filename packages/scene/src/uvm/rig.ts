@@ -453,6 +453,8 @@ export function decodeUvmRig(
             frames: entry.frames ?? sampled?.frames ?? 0,
             channels: sampled?.channels ?? [],
             ...(entry.looping === undefined ? {} : { looping: entry.looping }),
+            ...(entry.role === undefined ? {} : { role: entry.role }),
+            ...(entry.tags === undefined ? {} : { tags: entry.tags }),
             ...(entry.repeatCount === undefined ? {} : { repeatCount: entry.repeatCount }),
           }
         })

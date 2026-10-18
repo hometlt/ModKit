@@ -1,0 +1,63 @@
+{
+  "$comment": "Machine form of SPEC_UVM §12.2 clip roles and tags. A role says what a clip does; tags qualify it. Producers map native names or flags to these words only when the native data states them; an unknown role is omitted, a native word without a canonical tag is kept as a prefixed tag (sage:suppressed). Adding a word is a minor revision of this file; renaming or removing one is a new major. nativeExamples document observed spellings; they are not a lookup table for guessing.",
+  "schemaVersion": "uvm-clip-vocabulary-1",
+  "formId": "uv.model/clip-vocabulary@1",
+  "roles": {
+    "idle": {
+      "description": "Standing still, including idle fidgets.",
+      "nativeExamples": { "sc2": ["Stand", "Stand 01"], "sage": ["NONE (default condition state)"] }
+    },
+    "move": {
+      "description": "Moving across the ground, water or air.",
+      "nativeExamples": { "sc2": ["Walk", "Walk Slow"], "sage": ["MOVING"] }
+    },
+    "attack": {
+      "description": "A weapon or melee attack.",
+      "nativeExamples": { "sc2": ["Attack", "Attack 01"], "sage": ["ATTACKING", "FIRING_A"] }
+    },
+    "death": {
+      "description": "Dying; the clip ends in the dead pose.",
+      "nativeExamples": { "sc2": ["Death"], "sage": ["DYING", "EXPLODED_FLAILING"] }
+    },
+    "birth": {
+      "description": "Appearing: trained, built, warped or spawned.",
+      "nativeExamples": { "sc2": ["Birth"], "sage": ["COMING_OUT_OF_FACTORY"] }
+    },
+    "ability": {
+      "description": "Using an ability or casting a spell.",
+      "nativeExamples": { "sc2": ["Spell"], "sage": ["RAISING_FLAG", "RAPPELLING"] }
+    },
+    "deploy": {
+      "description": "Changing form: deploying, sieging, unpacking, morphing.",
+      "nativeExamples": { "sc2": ["Morph"], "sage": ["DEPLOYED", "PACKING", "UNPACKING"] }
+    },
+    "build": {
+      "description": "Working: constructing, harvesting, producing.",
+      "nativeExamples": { "sc2": ["Work"], "sage": ["ACTIVELY_CONSTRUCTING", "AWAITING_CONSTRUCTION"] }
+    },
+    "door": {
+      "description": "A building's door or hatch opening or closing.",
+      "nativeExamples": { "sc2": ["Stand Door"], "sage": ["DOOR_1_OPENING"] }
+    },
+    "transition": {
+      "description": "A blend between two other clips, played once between them.",
+      "nativeExamples": { "sc2": ["Stand Transition"], "sage": ["TransitionState"] }
+    }
+  },
+  "tags": {
+    "ready": { "description": "Alert or engaged rather than relaxed." },
+    "victory": { "description": "Celebrating." },
+    "left": { "description": "Turning or facing left." },
+    "right": { "description": "Turning or facing right." },
+    "fast": { "description": "Faster than the plain clip of the role." },
+    "slow": { "description": "Slower than the plain clip of the role." },
+    "start": { "description": "The beginning part of a longer action (accelerating, wind-up)." },
+    "end": { "description": "The ending part of a longer action (decelerating, recovery)." },
+    "damaged": { "description": "Played while the unit is damaged." },
+    "heavy": { "description": "Stronger degree of another tag (heavily damaged)." },
+    "moving": { "description": "Performed while moving (attacking on the move)." },
+    "alternate": { "description": "An equal alternative to the plain clip of the role." },
+    "upgraded": { "description": "Played once an upgrade changes the unit's look." }
+  },
+  "matching": "A consumer choosing a target clip for a source clip takes the same known role, then the most shared canonical tags, then the fewest unshared canonical tags, then the higher priority (absent is zero). Remaining ties use ascending target catalog sourceSequenceIndex, or animation index without a catalog. Absent tags are the empty set. Prefixed tags take part only between the same publisher. A source clip without a known role, or without any target clip of its role, is reported as a loss, never matched by name. Unknown words are preserved without guessed semantics."
+}

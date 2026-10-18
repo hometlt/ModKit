@@ -224,6 +224,16 @@ export interface ModelAnimationClip {
   /** Explicit nonnegative sequence key shared with material tracks; independent of clip order. */
   readonly sequenceIndex?: number
   readonly looping?: boolean
+  /**
+   * What the clip does: one role of the UVM clip vocabulary (`idle`, `move`, `attack`, `death`…).
+   * Absent when the native data does not state it; never derived from the clip's name.
+   */
+  readonly role?: string
+  /**
+   * Qualifiers of the role, a set: canonical vocabulary words (`left`, `damaged`…) or the
+   * publisher's own words prefixed `publisher:` (`sage:suppressed`), kept verbatim.
+   */
+  readonly tags?: readonly string[]
   /** Zero means unbounded looping; a positive integer is the authored number of complete cycles. */
   readonly repeatCount?: number
   /**

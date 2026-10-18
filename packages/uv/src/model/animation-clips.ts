@@ -1,6 +1,7 @@
 import type { JsonObject } from '@modkit/sdk'
 import { array, field, integer, object, safeIndex } from './validation/values.js'
 import { readUvmAnimationMaterialTargets } from './animation-materials.js'
+import { isModelClipRole, isModelClipTags } from '@modkit/codec-kit/model/animation'
 export {
   readUvmAnimationMaterialTargets,
   materializeUvmAnimationMaterialTargets,
@@ -20,6 +21,10 @@ export interface UvmAnimationClip {
   readonly animation?: number
   readonly sourceId?: string
   readonly looping?: boolean
+  /** Vocabulary role (SPEC_UVM §12.2); absent when the producer does not know it. */
+  readonly role?: string
+  /** Canonical or `publisher:` tags, a set; absent is the empty set. */
+  readonly tags?: readonly string[]
   readonly repeatCount?: number
   readonly kind?: 'animation' | 'rest-pose'
   readonly frames?: number
@@ -277,6 +282,13 @@ export function uvmVisibilityTarget(
   return visibility[safeIndex(Number(match[1]), visibility.length, 'visibility pointer')]
 }
 
+/** Tags compare as sets: same members, order free. */
+function sameClipTags(value: unknown, tags: readonly string[]): boolean {
+  if (!isModelClipTags(value) || value.length !== tags.length) return false
+  const expected = new Set(tags)
+  return value.every(tag => expected.has(tag))
+}
+
 /** Undefined preserves legacy positional animation identities. A present catalog is complete. */
 export function readUvmAnimationClips(
   document: JsonObject,
@@ -314,12 +326,16 @@ export function readUvmAnimationClips(
       throw new TypeError('UVM clip catalog identity, duration or sequence is invalid')
     const sourceId = record['sourceId'],
       looping = record['looping'],
+      role = record['role'],
+      tags = record['tags'],
       repeatCount = record['repeatCount'],
       kind = record['kind'],
       frames = record['frames']
     if (
       (sourceId !== undefined && (typeof sourceId !== 'string' || !sourceId)) ||
       (looping !== undefined && typeof looping !== 'boolean') ||
+      (role !== undefined && !isModelClipRole(role)) ||
+      (tags !== undefined && !isModelClipTags(tags)) ||
       (repeatCount !== undefined && (!integer(repeatCount) || repeatCount < 0)) ||
       (kind !== undefined && kind !== 'animation' && kind !== 'rest-pose') ||
       (frames !== undefined && (!integer(frames) || frames < 0))
@@ -332,7 +348,17 @@ export function readUvmAnimationClips(
     if (animation !== undefined) {
       if (linked.has(animation)) throw new TypeError('UVM animation is linked by multiple clips')
       const target = object(animations[animation], 'clip animation')
-      uvmAnimationPlayback(field(target['extensions'], 'UV_game_animation_clips'))
+      const attached = field(target['extensions'], 'UV_game_animation_clips')
+      uvmAnimationPlayback(attached)
+      // an animation-attached role/tags is a copy of its catalog record's (SPEC_UVM §12.2)
+      const attachedRole = field(attached, 'clip'),
+        attachedTags = field(attached, 'tags')
+      if (
+        (attachedRole !== undefined && attachedRole !== role) ||
+        (attachedTags !== undefined &&
+          !sameClipTags(attachedTags, (tags as readonly string[] | undefined) ?? []))
+      )
+        throw new TypeError('UVM animation role or tags disagree with its clip catalog record')
       uvmAnimationEvents(
         field(target['extensions'], 'UV_game_animation_events'),
         array(document, 'nodes').length,
@@ -355,6 +381,8 @@ export function readUvmAnimationClips(
         ...(animation === undefined ? {} : { animation }),
         ...(sourceId === undefined ? {} : { sourceId }),
         ...(looping === undefined ? {} : { looping }),
+        ...(role === undefined ? {} : { role }),
+        ...(tags === undefined ? {} : { tags: Object.freeze([...tags]) }),
         ...(repeatCount === undefined ? {} : { repeatCount }),
         ...(kind === undefined ? {} : { kind }),
         ...(frames === undefined ? {} : { frames }),

@@ -247,6 +247,13 @@ export function assertUvwCamera(raw: unknown): void {
 export function assertUvwObjectPresentation(raw: unknown): void {
   const object = row(raw)
   if (object['presentationTint'] !== undefined) vector(object['presentationTint'], 3, 0, 1)
+  if (object['presentationTeamColor'] !== undefined) vector(object['presentationTeamColor'], 3, 0, 1)
+  if (object['presentationTeamRamp'] !== undefined) {
+    const ramp = list(object['presentationTeamRamp'])
+    if (!ramp.length || ramp.length > 65536) fail('Team ramp needs 1..65536 exact shades')
+    for (const shade of ramp) vector(shade, 3, 0, 1)
+  }
+  if (object['presentationTeamColorIntensity'] !== undefined) choice(object['presentationTeamColorIntensity'], [0, 1])
   if (object['presentationAnimation'] !== undefined) {
     const animation = row(object['presentationAnimation']); closed(animation, ['name', 'groups', 'loop', 'speed', 'randomStart'])
     for (const value of [animation['name'], ...list(animation['groups'])])

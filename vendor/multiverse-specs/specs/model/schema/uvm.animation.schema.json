@@ -33,6 +33,22 @@
       },
       "additionalProperties": false
     },
+    "clipRole": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*(?![\\s\\S])",
+      "description": "What the clip does, one role of uvm-clip-vocabulary.v1.json (idle, move, attack, death, ...). A producer that cannot state the role omits it; it never derives one from a native name."
+    },
+    "clipTags": {
+      "type": "array",
+      "uniqueItems": true,
+      "maxItems": 32,
+      "description": "Qualifiers of the role. An unprefixed tag is a canonical tag of uvm-clip-vocabulary.v1.json (alternate, damaged, left, ...); a prefixed one (sage:suppressed) is a publisher's own word, kept verbatim for a round trip and ignored by other consumers.",
+      "items": {
+        "type": "string",
+        "maxLength": 128,
+        "pattern": "^(?:[a-z][a-z0-9]*(-[a-z0-9]+)*|[a-z][a-z0-9-]*:[^\\s\\u0000-\\u001f\\u007f][^\\u0000-\\u001f\\u007f]*)(?![\\s\\S])"
+      }
+    },
     "catalogClip": {
       "type": "object",
       "required": [
@@ -67,6 +83,21 @@
         },
         "looping": {
           "type": "boolean"
+        },
+        "role": {
+          "$ref": "#/$defs/clipRole"
+        },
+        "tags": {
+          "$ref": "#/$defs/clipTags"
+        },
+        "alwaysActive": {
+          "type": "boolean",
+          "description": "Independent model-lifetime sequence, active alongside selected clips. Absent is false. Never infer membership from its name."
+        },
+        "repeatCount": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Authored cycle count: zero means unbounded; positive values count complete cycles."
         },
         "kind": {
           "enum": [
@@ -270,22 +301,14 @@
       "$anchor": "clips",
       "title": "UV_game_animation_clips",
       "type": "object",
-      "required": [
-        "clip"
-      ],
       "properties": {
         "clip": {
-          "type": "string",
-          "description": "Canonical lower-case clip name.",
-          "examples": [
-            "stand",
-            "walk",
-            "run",
-            "attack",
-            "death",
-            "birth",
-            "work"
-          ]
+          "$ref": "#/$defs/clipRole",
+          "description": "The animation's role (uvm-clip-vocabulary.v1.json). Absent means the producer does not know it; with a root catalog it MUST equal the linked catalog record's role."
+        },
+        "tags": {
+          "$ref": "#/$defs/clipTags",
+          "description": "With a root catalog it MUST equal the linked catalog record's tags."
         },
         "variant": {
           "type": "string"

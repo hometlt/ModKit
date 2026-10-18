@@ -39,6 +39,26 @@ const mi = await import(T + 'model-interchange.mjs')
 const { applyMutations } = await import(T + 'mutations.mjs')
 
 const write = (dir, name, value) => {
+  if (dir === 'conformance' && name === 'schema-assertions.json') {
+    // Curated regression cases live in the committed corpus, alongside the generated seed cases.
+    // Re-emitting the seed must never discard them or their additional schema directories.
+    const previous = readExisting('conformance/schema-assertions.json')
+    const key = assertion => assertion.id ?? JSON.stringify([
+      assertion.document, assertion.pointer, assertion.schemaId, assertion.mutations ?? [],
+    ])
+    const generated = new Map(value.assertions.map(assertion => [key(assertion), assertion]))
+    const retained = (previous?.assertions ?? []).map(assertion => {
+      const replacement = generated.get(key(assertion)) ?? assertion
+      generated.delete(key(assertion))
+      return replacement
+    })
+    value = {
+      ...value,
+      $comment: previous?.$comment ?? value.$comment,
+      schemaDirectories: [...new Set([...(previous?.schemaDirectories ?? []), ...value.schemaDirectories])],
+      assertions: [...retained, ...generated.values()],
+    }
+  }
   mkdirSync(SPECS + dir, { recursive: true })
   writeFileSync(SPECS + dir + '/' + name, JSON.stringify(value, null, 2) + '\n')
 }

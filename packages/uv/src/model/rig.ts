@@ -648,6 +648,8 @@ export function writeUvmAnimations(
       frames: clip.frames,
       ...(animationIndex === undefined ? {} : { animation: animationIndex }),
       ...(clip.looping === undefined ? {} : { looping: clip.looping }),
+      ...(clip.role === undefined ? {} : { role: clip.role }),
+      ...(clip.tags === undefined ? {} : { tags: [...clip.tags] }),
       ...(clip.repeatCount === undefined ? {} : { repeatCount: clip.repeatCount }),
     })
     if (animationIndex === undefined) {

@@ -15,6 +15,32 @@ export const DEFAULT_MODEL_ANIMATION_BUDGET: JsonSnapshotBudget = Object.freeze(
   maxBytes: 134_217_728,
 })
 
+const CLIP_WORD = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/u
+// eslint-disable-next-line no-control-regex
+const PUBLISHER_CLIP_WORD = /^[a-z][a-z0-9-]*:[^\s\u0000-\u001f\u007f][^\u0000-\u001f\u007f]*$/u
+
+/** A clip role as the UVM clip vocabulary spells it (`attack`, `idle`); the grammar of
+ * `uvm.animation.schema.json#/$defs/clipRole`, not membership of the published word list. */
+export function isModelClipRole(value: unknown): value is string {
+  return typeof value === 'string' && CLIP_WORD.test(value)
+}
+
+/** Clip tags as `#/$defs/clipTags` admits them: at most 32 distinct canonical words or
+ * `publisher:word` native words of at most 128 characters. */
+export function isModelClipTags(value: unknown): value is readonly string[] {
+  return (
+    Array.isArray(value) &&
+    value.length <= 32 &&
+    new Set(value).size === value.length &&
+    value.every(
+      tag =>
+        typeof tag === 'string' &&
+        tag.length <= 128 &&
+        (CLIP_WORD.test(tag) || PUBLISHER_CLIP_WORD.test(tag)),
+    )
+  )
+}
+
 /** Native animation names can be property sets ("Stand Talk"); compare their tokens without
  * tying the generic sampling layer to any game's file layout. */
 export function modelAnimationNameMatches(name: string, requested: string): boolean {
@@ -203,6 +229,10 @@ export function snapshotModelAnimations(
     }
     if (clip.looping !== undefined && typeof clip.looping !== 'boolean')
       throw new TypeError('invalid clip looping')
+    if (clip.role !== undefined && !isModelClipRole(clip.role))
+      throw new TypeError('invalid clip role')
+    if (clip.tags !== undefined && !isModelClipTags(clip.tags))
+      throw new TypeError('invalid clip tags')
     if (
       clip.repeatCount !== undefined &&
       (!Number.isSafeInteger(clip.repeatCount) || clip.repeatCount < 0)

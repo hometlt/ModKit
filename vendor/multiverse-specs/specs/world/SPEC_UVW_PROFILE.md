@@ -520,3 +520,38 @@ Inline, glTF and paged forms reuse existing scalar grids; exact pages store samp
 which exactly represents all admitted integer types. Decoded storage/range/bounds rules still apply.
 Native target writers must explicitly map the publisher vocabulary or report refusal/loss; copying
 metal, spice or terrain-class numbers into another game's pathing flags is not a conversion.
+
+## Initial object team-colour presentation (Core relay 16.10.2026)
+
+Object instances admit optional `presentationTeamColor` (linear RGB in 0..1),
+`presentationTeamRamp` (1..65536 exact ordered linear RGB shades), and
+`presentationTeamColorIntensity` (integer 0 or 1). These are visual overrides,
+independent of `player`, its simulation address, whole-object tint and opacity.
+Omission preserves player/material defaults; an explicit colour or ramp replaces
+only that channel. A ramp overrides a material only at the same complete length;
+otherwise the material retains its authored shades. No gradient is synthesized.
+Intensity zero disables team recolouring; one enables the material's existing
+coverage and blend policy. It is not an arbitrary gain or opacity.
+
+Native snapshot conversion may resolve visual player defaults into these fields
+when no portable addressed roster is available. It must preserve the native slot,
+must not invent an address, and must still report unretained roster metadata.
+An explicit object setting takes precedence over its player's visual default.
+Canonical conversion preserves table inheritance without baking defaults into
+every instance. JSON and the glTF `UV_world_graph` envelope share this shape.
+Stored-sRGB native preview colours require the common transfer conversion at the
+Core boundary; ramps are already linear and are never decoded a second time.
+Unknown source colour domains require a typed refusal or loss, not a guessed
+transfer function. This snapshot does not define gameplay or lobby bindings.
+
+
+### Independent lattice ramp patches
+
+A ground heightfield MAY carry `latticeRamps`: a bounded presentation annotation with
+`method`, authored/derived `quality`, and canonical x/z `polygons`. This does not
+assert a native ramp flag or navigation equivalence. Missing means unknown; an empty
+polygon list means the named method found none. Each polygon has at least three
+finite two-coordinate vertices; at most 500000 vertices are admitted cumulatively
+per annotation and all vertices count against the document annotation budget.
+Query surfaces cannot authorize these presentation patches. Materialization and
+reopen preserve the annotation or explicitly refuse it. No encoded image is stored.
