@@ -235,6 +235,28 @@ export function createNamespaceCompanionOrigin(
   const index = new Map<string, Map<string, IndexedEntry>>()
   const observed = new Map<string, IndexedEntry>()
 
+  /** Preserve the namespace's opaque entry identity for both exact lookup and paged listings. */
+  const remember = (entry: NamespaceEntry): IndexedEntry => {
+    const value = {
+      entryId: entry.id,
+      path: entry.path,
+      ...(entry.size === undefined ? {} : { size: entry.size }),
+      ...(entry.rangeAccess === true ? { rangeAccess: true as const } : {}),
+      ...(entry.storedRange === undefined ? {} : { storedRange: entry.storedRange }),
+      revision: entry.revision,
+    }
+    if (!observed.has(fold(entry.path))) observed.set(fold(entry.path), value)
+    return value
+  }
+
+  /** Exact paths can name hidden entries; enumeration must not replace this capability. */
+  const exact = async (path: string, signal?: AbortSignal): Promise<IndexedEntry | undefined> => {
+    throwIfAborted(signal)
+    const entry = await options.namespace.lookup?.(path, signal)
+    throwIfAborted(signal)
+    return entry?.kind === 'file' && fold(entry.path) === fold(path) ? remember(entry) : undefined
+  }
+
   /**
    * Pages one prefix out of the container, merging the spellings a literal matcher might need.
    *
@@ -282,16 +304,8 @@ export function createNamespaceCompanionOrigin(
           const key = fold(entry.path)
           // first spelling wins, deterministically, because the resolver sorts before it selects
           if (!built.has(key)) {
-            const value = {
-              entryId: entry.id,
-              path: entry.path,
-              ...(entry.size === undefined ? {} : { size: entry.size }),
-              ...(entry.rangeAccess === true ? { rangeAccess: true as const } : {}),
-              ...(entry.storedRange === undefined ? {} : { storedRange: entry.storedRange }),
-              revision: entry.revision,
-            }
+            const value = remember(entry)
             built.set(key, value)
-            if (!observed.has(key)) observed.set(key, value)
             yield value
           }
         }
@@ -319,6 +333,16 @@ export function createNamespaceCompanionOrigin(
        * answer so that change is visible when it comes.
        */
       if (scope !== 'current-mount' && scope !== 'enclosing-container') return
+      if (enumeration.exactPath === true) {
+        const entry = await exact(enumeration.prefix, signal)
+        if (entry !== undefined) {
+          yield Object.freeze({
+            logicalId: entry.path,
+            ...(entry.size === undefined ? {} : { size: entry.size }),
+          })
+          return
+        }
+      }
       /*
        * The prefix goes straight to the container's own `list(prefix, …)`. This is the difference
        * between a bounded search and a scan: a production namespace may list hundreds of thousands of entries,
@@ -344,7 +368,7 @@ export function createNamespaceCompanionOrigin(
        * measurably: resolving a texture read thousands of entries when the open re-listed its
        * folder, and 2 once it stopped.
        */
-      let entry = observed.get(fold(logicalId))
+      let entry = observed.get(fold(logicalId)) ?? (await exact(logicalId, signal))
       if (entry === undefined) {
         for await (const candidate of listing(logicalId, signal)) {
           if (fold(candidate.path) === fold(logicalId)) {
