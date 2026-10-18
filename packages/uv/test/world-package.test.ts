@@ -506,6 +506,20 @@ describe('portable UVP map bundle', () => {
     if (repacked.state !== 'materialized') throw new Error('repack refused')
     expect(repacked.entries).toEqual(packed.entries)
   })
+  it('packages a world whose terrain texture does not decode, naming the texture it left out', async () => {
+    const base = source()
+    const missing = { ...base, async texture() { return { state: 'unresolved' as const, diagnostics: [] } } }
+    const packed = await materializeWorldToUvpMap(missing, options)
+    expect(packed.state, packed.state === 'refused' ? JSON.stringify(packed.refusals) : '').toBe('materialized')
+    if (packed.state !== 'materialized') throw new Error('refused')
+    expect(packed.unpackagedTerrainResourceIds).toEqual(['uvw-resource:main/source-grass'])
+    expect(packed.excludedFacetIds).toContain('world.terrain-material-resources')
+    const reopened = await openUvpMapBundle(new Map([...packed.entries].map(([path, bytes]) => [path, bytes.slice()])),
+      { snapshotId: 'detached-untextured', rasterResources })
+    const materials = reopened.document.spaces[0]!.layers.find(layer => layer.kind === 'terrain-materials')
+    if (materials?.kind !== 'terrain-materials') throw new Error('terrain materials missing')
+    expect(materials.materials.map(material => material.baseColorResourceId)).toEqual([undefined])
+  })
   it('refuses a generated model texture ID that would overwrite an authored resource', async () => {
     const result = await materializeWorldToUvpMap(sourceWithModel(false, true, true), options)
     expect(result.state).toBe('refused')

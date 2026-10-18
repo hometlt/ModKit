@@ -203,6 +203,16 @@ export interface WorldWebGlCameraFrame {
   readonly eyePosition: readonly [number, number, number]
 }
 
+/**
+ * Draw order of a placed object: where it stands, then what it is. Source ids, resource ids and the
+ * order a source lists objects in differ between a native world and its reopened UVW; these do not.
+ */
+function worldObjectDrawKey(item: WorldSceneObjectItem): string {
+  const at = item.uvwPosition ?? item.position
+  return JSON.stringify([at.x, at.y, at.z, item.typeId ?? '', item.kind, item.player ?? null,
+    item.uvwRotation ?? null, item.uvwScale ?? null])
+}
+
 export const DEFAULT_WORLD_WEBGL_CAMERA: WorldWebGlCamera = Object.freeze({
   azimuth: (3 * Math.PI) / 4,
   elevation: 0.52,
@@ -7636,9 +7646,14 @@ export function createWorldWebGlPlan(
       ? previousBatches.waterSurfaceDepth
       : worldWaterSurfaceDepth(waterWrites)
 
-  const objects = worldFacetItems(facets, 'objects').filter(
-    item => item.presentationHidden !== true,
-  )
+  // Coplanar objects at one depth draw first-come; ordered by what they are, not by how the source
+  // listed them, the same world draws the same picture whether it is native or a reopened UVW.
+  // ponytail: one sort per plan; cache the order with the static batches if large worlds need it.
+  const objects = worldFacetItems(facets, 'objects')
+    .filter(item => item.presentationHidden !== true)
+    .map(item => [worldObjectDrawKey(item), item] as const)
+    .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
+    .map(([, item]) => item)
   const projectorGround = preparation.projectorReceivers
   const projectorCliffs = preparation.projectorCliffReceivers
   let modelTriangles = 0

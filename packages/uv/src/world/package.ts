@@ -107,6 +107,8 @@ export type WorldUvpMaterializationResult =
       readonly packagedMediaBytes: number
       readonly unpackagedModelResourceIds: readonly string[]
       readonly unpackagedWaterResourceIds: readonly string[]
+      /** Terrain textures that did not decode: their material channel is left out, as for water. */
+      readonly unpackagedTerrainResourceIds: readonly string[]
       /** Images of packaged models that came without decoded texels: kept by their logical id. */
       readonly unpackagedModelTextureIds: readonly string[]
       readonly excludedFacetIds: readonly string[]
@@ -439,6 +441,15 @@ async function drainLayerItems(
     cursor = page.nextCursor
   } while (cursor !== undefined)
   return Object.freeze(items)
+}
+
+/** A terrain material channel whose texture did not decode: the package leaves the channel out. */
+interface PortableTerrainDrop {
+  readonly outputSpaceId: string
+  readonly outputLayerId: string
+  readonly materialId: string
+  readonly channel: 'baseColorResourceId' | 'normalResourceId' | 'specularResourceId'
+  readonly sourceResourceId: string
 }
 
 interface PortableBinding {
@@ -803,9 +814,10 @@ function rewriteDocument(
   bindings: readonly PortableBinding[],
   weightBindings: readonly PortableWeightRasterBinding[],
   limits: UvwParseLimits,
+  drops: readonly PortableTerrainDrop[] = [],
 ): UvwProfileDocument {
-  const perSpace = new Map<string, (PortableBinding | PortableWeightRasterBinding)[]>()
-  for (const binding of [...bindings, ...weightBindings]) {
+  const perSpace = new Map<string, (PortableBinding | PortableWeightRasterBinding | PortableTerrainDrop)[]>()
+  for (const binding of [...bindings, ...weightBindings, ...drops]) {
     const list = perSpace.get(binding.outputSpaceId) ?? []
     list.push(binding)
     perSpace.set(binding.outputSpaceId, list)
@@ -817,7 +829,7 @@ function rewriteDocument(
       if (spaceBindings.length === 0) return space
       const portableResources: UvwResource[] = [
         ...new Map(
-          spaceBindings.map(binding => [
+          spaceBindings.flatMap(binding => 'localResourceId' in binding ? [binding] : []).map(binding => [
             binding.localResourceId,
             {
               id: binding.localResourceId,
@@ -861,15 +873,22 @@ function rewriteDocument(
           const layerWeightBindings = weightBindings.filter(
             binding => binding.outputSpaceId === space.id && binding.outputLayerId === layer.id,
           )
-          if (layerBindings.length === 0 && layerWeightBindings.length === 0) return layer
+          const layerDrops = drops.filter(
+            drop => drop.outputSpaceId === space.id && drop.outputLayerId === layer.id,
+          )
+          if (layerBindings.length === 0 && layerWeightBindings.length === 0 && layerDrops.length === 0)
+            return layer
           return {
             ...layer,
             materials: layer.materials.map((material): UvwTerrainMaterial => {
               const updates = layerBindings.filter(binding => binding.materialId === material.id)
-              return updates.reduce<UvwTerrainMaterial>(
+              const kept = updates.reduce<UvwTerrainMaterial>(
                 (current, update) => ({ ...current, [update.channel]: update.localResourceId }),
                 material,
               )
+              const dropped = new Set(layerDrops.filter(drop => drop.materialId === material.id).map(drop => drop.channel))
+              return dropped.size === 0 ? kept
+                : Object.fromEntries(Object.entries(kept).filter(([key]) => !dropped.has(key as never))) as UvwTerrainMaterial
             }),
             ...(layer.weightRasters === undefined
               ? {}
@@ -923,7 +942,8 @@ function rewriteDocument(
           }
         return layer
       })
-      if (existingResourceLayer === undefined) {
+      // a space whose only change is a dropped texture gains no empty media layer
+      if (existingResourceLayer === undefined && portableResources.length > 0) {
         let id = 'portable-media'
         let suffix = 2
         while (layers.some(layer => layer.id === id)) id = `portable-media-${String(suffix++)}`
@@ -1130,6 +1150,8 @@ export async function materializeWorldToUvpMap(
     const bindings: PortableBinding[] = []
     const weightBindings: PortableWeightRasterBinding[] = []
     const unpackagedWaterResourceIds = new Set<string>()
+    const unpackagedTerrainResourceIds = new Set<string>()
+    const terrainDrops: PortableTerrainDrop[] = []
     const packagedWaterFieldCounts = new Map<string, number>()
     const encodedBySource = new Map<
       string,
@@ -1189,10 +1211,12 @@ export async function materializeWorldToUvpMap(
               { maxBytes: options.maxTextureBytes },
               options.signal,
             )
-            if (result.state !== 'decoded')
-              throw new TypeError(
-                `terrain texture ${resourceId} could not be decoded for portable packaging`,
-              )
+            if (result.state !== 'decoded') {
+              unpackagedTerrainResourceIds.add(resourceId)
+              terrainDrops.push(Object.freeze({ outputSpaceId: target.spaceId, outputLayerId: target.layer.id,
+                materialId: localId(material.materialId, 'material'), channel, sourceResourceId: resourceId }))
+              continue
+            }
             const bytes = await encodeMedia(result.texture)
             encodedTotal += bytes.byteLength
             if (encodedTotal > options.maxMediaBytes)
@@ -1542,7 +1566,7 @@ export async function materializeWorldToUvpMap(
         DEFAULT_UVW_PARSE_LIMITS.maxSamples),
       ...(options.signal === undefined ? {} : { signal: options.signal }),
     }
-    let document = rewriteDocument(materialized.document, bindings, weightBindings, worldLimits)
+    let document = rewriteDocument(materialized.document, bindings, weightBindings, worldLimits, terrainDrops)
     document = rewriteObjectModels(document, objectBindings, worldLimits)
     const worldBytes = serializeUvwProfile(document, {
       ...worldLimits,
@@ -1617,6 +1641,7 @@ export async function materializeWorldToUvpMap(
       packagedMediaBytes: encodedTotal,
       unpackagedModelResourceIds: Object.freeze([...unpackagedModelResourceIds].sort()),
       unpackagedWaterResourceIds: Object.freeze([...unpackagedWaterResourceIds].sort()),
+      unpackagedTerrainResourceIds: Object.freeze([...unpackagedTerrainResourceIds].sort()),
       unpackagedModelTextureIds: Object.freeze([...unpackagedModelTextureIds].sort()),
       excludedFacetIds: Object.freeze([
         ...materialized.excludedFacetIds,
@@ -1624,6 +1649,7 @@ export async function materializeWorldToUvpMap(
           ? []
           : ['world.object-model-resources']),
         ...(unpackagedWaterResourceIds.size === 0 ? [] : ['world.water-material-resources']),
+        ...(unpackagedTerrainResourceIds.size === 0 ? [] : ['world.terrain-material-resources']),
       ]),
       omittedObjects: materialized.omittedObjects,
       lostFields: Object.freeze(materialized.lostFields.flatMap(field => {
