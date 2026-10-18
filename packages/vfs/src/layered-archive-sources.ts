@@ -58,11 +58,8 @@ export interface LayerArchive {
   lookup?(path: string, signal?: AbortSignal): Promise<LayerArchiveEntry | undefined>
   /** One file's bytes, whole; refuses one of more than `maxBytes`. */
   read(path: string, maxBytes: number, signal?: AbortSignal): Promise<Uint8Array>
-  /** Open one pinned file without reading it whole; its source is owned by the returned range. */
-  openRange?(
-    path: string,
-    signal?: AbortSignal,
-  ): Promise<Pick<ContentSourceRange, 'source' | 'revision'> | undefined>
+  /** Open one pinned file without reading it whole; acquired facts refine this same entry atomically. */
+  openRange?(path: string, signal?: AbortSignal): Promise<ContentSourceRange | undefined>
   close(): void | Promise<void>
 }
 
@@ -411,7 +408,11 @@ async function merge(archives: readonly LayerArchive[], label: string): Promise<
         range = {
           source: opened.source,
           revision: opened.revision,
-          ...(copy.context === undefined ? {} : { context: copy.context }),
+          ...(opened.context !== undefined
+            ? { context: opened.context }
+            : copy.context === undefined
+              ? {}
+              : { context: copy.context }),
         }
         signal?.throwIfAborted()
         return retainedRange(range, release)
@@ -847,7 +848,11 @@ export function layeredModContext(
             range = {
               source: opened.source,
               revision: opened.revision,
-              ...(entry.context === undefined ? {} : { context: entry.context }),
+              ...(opened.context !== undefined
+                ? { context: opened.context }
+                : entry.context === undefined
+                  ? {}
+                  : { context: entry.context }),
             }
         } else {
           const root = 'file' in content ? sourceId : content.root

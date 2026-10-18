@@ -65,6 +65,66 @@ function archive(id: string) {
 }
 
 describe('content source ranged leases', () => {
+  it('retains acquired facts from the winning old generation across a racing refresh', async () => {
+    const old = archive('old')
+    const next = archive('next')
+    const started = deferred<void>()
+    const finish = deferred<void>()
+    const original = old.value.openRange!
+    old.value.openRange = async (path, signal) => {
+      started.resolve()
+      await finish.promise
+      const opened = await original(path, signal)
+      return opened === undefined ? undefined : { ...opened, context: { nativeObject: 'old-77' } }
+    }
+    let opens = 0
+    const sources = createLayeredArchiveContentSources('game', [
+      { root, open: async () => [++opens === 1 ? old.value : next.value] },
+    ])
+    const opening = sources.openRangeWithContext!(root.id, 'CAB-native')
+    await started.promise
+    await sources.refresh(root.id)
+    finish.resolve()
+    const range = await opening
+    expect(range?.context).toEqual({ nativeObject: 'old-77' })
+    expect(range?.revision).toBe('native-index:old')
+    expect(await range!.source.readAt(0, 1)).toEqual(Uint8Array.of(111))
+    await range!.source.dispose()
+    expect(old.state.archiveCloses).toBe(1)
+    await sources.dispose()
+  })
+  it('preserves explicit null acquisition facts in a direct ModContext archive', async () => {
+    const item = archive('direct')
+    const original = item.value.openRange!
+    item.value.openRange = async (path, signal) => {
+      const opened = await original(path, signal)
+      return opened === undefined ? undefined : { ...opened, context: null }
+    }
+    const sources = createLayeredArchiveContentSources('game', [])
+    const context = layeredModContext(sources, {
+      gameId: 'game',
+      contextId: 'native',
+      layers: [
+        {
+          id: 'native',
+          displayName: 'native',
+          sourceId: 'host',
+          sourcePath: '',
+          role: 'primary',
+          provenance: 'opened',
+          kind: 'files',
+          content: { archive: item.value },
+        },
+      ],
+    })
+    const range = await context.openRangeWithContext!('native', 'CAB-native')
+    expect(range?.context).toBeNull()
+    await context.dispose()
+    expect(item.state.archiveCloses).toBe(0)
+    await range!.source.dispose()
+    expect(item.state.archiveCloses).toBe(1)
+    await sources.dispose()
+  })
   it('keeps the exact old generation live across refresh, with zero whole-entry reads', async () => {
     const old = archive('old')
     const next = archive('next')
