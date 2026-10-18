@@ -4,6 +4,7 @@
  * CRC, declared file/section sizes, relocation destinations, type widths, arrays, graph depth and
  * expanded bytes are checked before publication. GR2 supports stored and Oodle1 sections; Oodle0,
  * mixed marshalling and other GR2 endianness/pointer widths refuse explicitly, as do unknown types.
+ * Explicit ordered variant fields retain duplicate native names; legacy record views stay strict.
  * Facts: Granny file's own type library and header; references recorded in NOTICE.granny.md.
  */
 import { boundedCount } from '../binary.js'
@@ -14,6 +15,14 @@ export { unpackGrannyCurve, type GrannyCurveDomain, type GrannyExpandedCurve } f
 
 export type GrannyValue = number | string | null | GrannyValue[] | { [key: string]: GrannyValue }
 export type GrannyReadonlyValue = number | string | null | readonly GrannyReadonlyValue[] | { readonly [key: string]: GrannyReadonlyValue }
+/** Native order and duplicate names survive in the explicit field view, including nested structs.
+ * Transform member kind9 keeps its existing semantic component record, rather than fake fields.
+ */
+export type GrannyOrderedValue = number | string | null | readonly GrannyOrderedValue[] | GrannyTransform | GrannyOrderedStruct
+export interface GrannyOrderedStruct {
+  readonly kind: 'struct'
+  readonly members: readonly { readonly name: string; readonly value: GrannyOrderedValue }[]
+}
 export interface GrannyLimits { readonly maxBytes: number; readonly maxNodes: number; readonly maxDepth: number }
 export interface GrannyCurve { readonly degree: number; readonly knots: readonly number[]; readonly controls: readonly number[]; readonly dimension: number }
 export type GrannyTransform = { readonly flags: number; readonly position: readonly number[]; readonly orientation: readonly number[]; readonly scaleShear: readonly number[] }
@@ -78,6 +87,8 @@ export interface GrannyPackedReader {
   floats(offset: number, count: number): readonly number[]
   transform(offset: number): GrannyTransform
   variant(typeOffset: number, dataOffset: number): GrannyReadonlyValue
+  /** Ordered nested structures permit duplicate names; strict variant() keeps its record contract. */
+  variantFields(typeOffset: number, dataOffset: number): GrannyOrderedValue
 }
 type Pointer = readonly [number, number]
 interface Section { bytes: Uint8Array; view: DataView; pointers: Map<number, Pointer> }
@@ -206,6 +217,10 @@ function createPackedReader(input: Uint8Array, profile: 'packed-le64', limits: G
     transform(offset: number) { return guarded(() => { consume(); charge(16 + 17 * 8 + 3 * 8); return graph.transform(slot(offset)) }) },
     /** All roots share caches, cycle checks and the remaining cumulative budget. */
     variant(typeOffset: number, dataOffset: number) { return guarded(() => graph.object(slot(typeOffset), slot(dataOffset), 0)) },
+    /** Same schema/value engine and cumulative budgets, with an explicit duplicate-preserving view. */
+    variantFields(typeOffset: number, dataOffset: number) {
+      return guarded(() => graph.object(slot(typeOffset), slot(dataOffset), 0, 'fields') as unknown as GrannyOrderedValue)
+    },
   }
 }
 
@@ -245,18 +260,28 @@ function createGrannyObjectReader(sections: Section[],
     return new TextDecoder('utf-8', { fatal: true }).decode(section.bytes.subarray(p[1], end))
   }
   const types = new Map<string, { members: Member[]; size: number; building: boolean }>()
+  const recordTypes = new Set<string>()
+  /** Strict admission applies even to cached schemas and parsed zero/all-null element arrays. */
+  function recordType(key: string, schema: { members: Member[]; building: boolean }, depth: number): void {
+    if (schema.building || recordTypes.has(key)) return
+    if (new Set(schema.members.map(m => m.name)).size !== schema.members.length)
+      throw new TypeError('Unsupported Granny duplicate member name in record view')
+    for (const member of schema.members)
+      if (member.kind === 1) type(member.type!, depth + 1, 'record')
+    recordTypes.add(key)
+  }
   /** Read the embedded schema once, permitting reference recursion but refusing recursive inline layout. */
-  function type(p: Pointer, depth: number): { members: Member[]; size: number; building: boolean } {
+  function type(p: Pointer, depth: number, view: 'record' | 'fields'): { members: Member[]; size: number; building: boolean } {
     if (depth > limits.maxDepth) throw new RangeError('Granny type depth')
     const key = p.join(':'), prior = types.get(key)
-    if (prior) return prior
+    if (prior) { if (view === 'record') recordType(key, prior, depth); return prior }
     const result = { members: [] as Member[], size: 0, building: true }; types.set(key, result)
     for (let at = p[1]; ; at += memberStride) {
       consume(); const member: Pointer = [p[0], at], kind = word(member)
       if (kind === 0) break
       location(member, memberStride)
       const name = string(pointer(add(member, 4))), element = pointer(add(member, 4 + pointerBytes)), width = word(add(member, 4 + pointerBytes * 2)) || 1
-      if (!name || result.members.some(m => m.name === name) || width > limits.maxNodes || kind === 6 || !(kind === 1 || kind in SIZES))
+      if (!name || width > limits.maxNodes || kind === 6 || !(kind === 1 || kind in SIZES))
         throw new TypeError('Unsupported Granny member/type width')
       let size = layout === 'packed-le64' && [2, 8, 22].includes(kind) ? 8
         : layout === 'packed-le64' && [3, 4].includes(kind) ? 12
@@ -264,7 +289,7 @@ function createGrannyObjectReader(sections: Section[],
         : layout === 'packed-le64' && kind === 7 ? 20 : SIZES[kind]!
       if (kind === 1) {
         if (!element) throw new TypeError('Granny inline without type')
-        const nested = type(element, depth + 1)
+        const nested = type(element, depth + 1, view)
         if (nested.building) throw new TypeError('Granny recursive inline type')
         size = nested.size
       }
@@ -274,14 +299,15 @@ function createGrannyObjectReader(sections: Section[],
       result.size += size
     }
     result.building = false
+    if (view === 'record') recordType(key, result, depth)
     return result
   }
   const active = new Set<string>()
   const objects = new Map<string, GrannyValue>()
   /** Materialize a bounded acyclic object view; recursive extended-data cycles are refused. */
-  function object(tp: Pointer, p: Pointer, depth: number): GrannyValue {
+  function object(tp: Pointer, p: Pointer, depth: number, view: 'record' | 'fields' = 'record'): GrannyValue {
     consume(); if (depth > limits.maxDepth) throw new RangeError('Granny object depth')
-    const schema = type(tp, depth), key = `${tp.join(':')}/${p.join(':')}`
+    const schema = type(tp, depth, view), key = `${view}/${tp.join(':')}/${p.join(':')}`
     location(p, schema.size)
     if (active.has(key)) throw new TypeError('Granny cyclic object graph')
     const previous = objects.get(key)
@@ -289,42 +315,48 @@ function createGrannyObjectReader(sections: Section[],
     charge(16)
     active.add(key)
     const result: Record<string, GrannyValue> = Object.create(null)
+    const members: GrannyValue[] | undefined = view === 'fields' ? [] : undefined
     try {
       for (const m of schema.members) {
         const values: GrannyValue[] = []
-        for (let n = 0; n < m.width; n++) values.push(value(m, add(p, m.offset + n * m.size / m.width), depth + 1))
-        result[m.name] = m.width === 1 ? values[0]! : seal(values)
+        for (let n = 0; n < m.width; n++) values.push(value(m, add(p, m.offset + n * m.size / m.width), depth + 1, view))
+        const decoded = m.width === 1 ? values[0]! : seal(values)
+        if (members) {
+          consume(); charge(16)
+          members.push(seal({ name: m.name, value: decoded }))
+        } else result[m.name] = decoded
       }
+      if (members) { result['kind'] = 'struct'; result['members'] = seal(members) }
       seal(result)
       objects.set(key, result)
       return result
     } finally { active.delete(key) }
   }
   /** Decode member kinds with the admitted layout's widths and pointer authority. */
-  function value(m: Member, p: Pointer, depth: number): GrannyValue {
+  function value(m: Member, p: Pointer, depth: number, viewMode: 'record' | 'fields'): GrannyValue {
     consume()
     charge(8)
     const section = location(p, m.size / m.width), view = section.view, at = p[1]
-    if (m.kind === 1) return object(m.type!, p, depth)
+    if (m.kind === 1) return object(m.type!, p, depth, viewMode)
     if (m.kind === 8) return string(pointer(p))
-    if (m.kind === 2 || m.kind === 22) { const dest = pointer(p); return dest && m.type ? object(m.type, dest, depth) : null }
-    if (m.kind === 5) { const tp = pointer(p), dest = pointer(add(p, pointerBytes)); return tp && dest ? object(tp, dest, depth) : null }
+    if (m.kind === 2 || m.kind === 22) { const dest = pointer(p); return dest && m.type ? object(m.type, dest, depth, viewMode) : null }
+    if (m.kind === 5) { const tp = pointer(p), dest = pointer(add(p, pointerBytes)); return tp && dest ? object(tp, dest, depth, viewMode) : null }
     if (m.kind === 3 || m.kind === 4 || m.kind === 7) {
       const variant = m.kind === 7, tp = variant ? pointer(p) : m.type
       const length = word(add(p, variant ? pointerBytes : 0)), dest = pointer(add(p, variant ? pointerBytes + 4 : 4))
       if (length > remainingNodes()) throw new RangeError('Granny array node budget')
       if (length && (!dest || !tp)) throw new RangeError('Granny array pointer is absent')
       if (!dest || !tp) return seal([])
-      const elementType = type(tp, depth)
+      const elementType = type(tp, depth, viewMode)
       const size = m.kind === 4 ? pointerBytes : elementType.size
       arrayBounds(length, dest, size)
       // Granny's Real32 array element type is a one-scalar wrapper, not a semantic object.
       const scalar = elementType.members.length === 1 ? elementType.members[0] : undefined
       if (m.kind !== 4 && scalar?.kind === 10 && scalar.width === 1 && scalar.name === 'Real32')
-        return seal(Array.from({ length }, (_, i) => value(scalar, add(dest, i * size), depth)))
+        return seal(Array.from({ length }, (_, i) => value(scalar, add(dest, i * size), depth, viewMode)))
       return seal(Array.from({ length }, (_, i) => {
         const slot = add(dest, i * size), target = m.kind === 4 ? pointer(slot) : slot
-        return target ? object(tp, target, depth) : null
+        return target ? object(tp, target, depth, viewMode) : null
       }))
     }
     if (m.kind === 9) return transform(p)
