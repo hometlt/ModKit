@@ -16,6 +16,7 @@ export {
   combineNormalSpecular,
   hsvToRgb,
   linearToSrgb,
+  pasteRgba,
   resizeRgba,
   rgbToHsv,
   srgbToLinear,

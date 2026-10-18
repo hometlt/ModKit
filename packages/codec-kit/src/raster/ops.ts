@@ -20,6 +20,49 @@ function checked(image: RgbaImage): RgbaImage {
 }
 
 /**
+ * Paste `image` into `canvas` with its top-left at (`x`, `y`), clipped to the canvas. `over` (the
+ * default) blends straight alpha source-over and keeps the larger alpha; `opaque` copies RGB and
+ * sets alpha to 255 (a base layer nothing shows through). Unlike the rest of this module it writes
+ * `canvas` in place — a composite of many layers would otherwise copy the whole sheet per layer.
+ * Resample the image to its target size first (`resizeRgba`).
+ */
+export function pasteRgba(
+  canvas: RgbaImage,
+  image: RgbaImage,
+  x: number,
+  y: number,
+  mode: 'over' | 'opaque' = 'over',
+): void {
+  checked(canvas)
+  checked(image)
+  if (!Number.isInteger(x) || !Number.isInteger(y)) throw new TypeError('paste position must be integral')
+  const target = canvas.pixels
+  const source = image.pixels
+  const x0 = Math.max(0, x)
+  const x1 = Math.min(canvas.width, x + image.width)
+  for (let row = Math.max(0, y); row < Math.min(canvas.height, y + image.height); row += 1) {
+    for (let column = x0; column < x1; column += 1) {
+      const s = ((row - y) * image.width + (column - x)) * 4
+      const d = (row * canvas.width + column) * 4
+      if (mode === 'opaque') {
+        target[d] = at(source, s)
+        target[d + 1] = at(source, s + 1)
+        target[d + 2] = at(source, s + 2)
+        target[d + 3] = 255
+        continue
+      }
+      const alpha = at(source, s + 3)
+      if (alpha === 0) continue
+      const keep = 255 - alpha
+      target[d] = Math.round((at(source, s) * alpha + at(target, d) * keep) / 255)
+      target[d + 1] = Math.round((at(source, s + 1) * alpha + at(target, d + 1) * keep) / 255)
+      target[d + 2] = Math.round((at(source, s + 2) * alpha + at(target, d + 2) * keep) / 255)
+      target[d + 3] = Math.max(at(target, d + 3), alpha)
+    }
+  }
+}
+
+/**
  * Bilinear resample to an exact size.
  *
  * Sampling is at pixel centres (`(i + 0.5) * scale - 0.5`) with edge clamping, so a 1:1 resize is
