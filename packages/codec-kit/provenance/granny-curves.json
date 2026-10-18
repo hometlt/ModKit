@@ -6,6 +6,12 @@
   "license": "MIT",
   "notice": "../LICENSE.lslib",
   "scope": "Granny encoded knot/control expansion, upper-word float32 scale and quantized quaternion selectors. No interpolation, carrier or native rig policy.",
+  "transformProjection": {
+    "source": "LSLib/Granny/GR2/Format.cs::Transform.ToMatrix4",
+    "scope": "Matrix convention facts and independent oracle; existing Core composition/product kernels implement the projection, without copied LSLib matrix code.",
+    "convention": "Native row-vector S*R*T becomes column-vector T*R*transpose(S). Presence flags select identity defaults before projection.",
+    "precision": "Existing quaternion normalization; float32 T*R composition, finite affine product. Zero quaternion is reported; caller owns refusal. No canonical units/axes or engine evaluation claim."
+  },
   "supportedFormats": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 16, 17, 18],
   "unsupportedFormats": [12, 14],
   "limitations": [
@@ -14,6 +20,7 @@
     "Format0 knots remain sample indices and require explicit native time mapping."
   ],
   "sourceSha256": {
+    "LSLib/Granny/GR2/Format.cs": "e667eea5c0718444c13d2aefd28e7b950fe4995923be094b2163451c9489466b",
     "LSLib/Granny/Model/CurveData/AnimationCurveData.cs": "67de1dc5bdb0d38aa479635375e1d74216ff3175473e6a121ffa54ad16cc9fdc",
     "LSLib/Granny/Model/CurveData/D3Constant32f.cs": "ed22797057bfa4f711d9a8390d4079c9b5f25bef15f7b4cf8f64d9e1134c7303",
     "LSLib/Granny/Model/CurveData/D3I1K16uC16u.cs": "727b686dd3d8dfb3afdcf54519ea0c355b54ccee09b34064347dd7ed35cf3d5c",

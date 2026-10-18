@@ -29,3 +29,12 @@ marks its reconstruction uncertain; format 12 is conservatively refused as well.
 Float32 knot domains preserve signed ordered values. Format 0 retains sample indices;
 native time mapping is required before using a time-based sampler. Existing degree 2/3
 sampling remains provisional until independently checked against the engine.
+
+Native transform matrix convention is checked against LSLib GR2/Format.cs at that same
+revision: row-vector ScaleShear * Rotation * Translation becomes column-vector
+Translation * Rotation * transpose(ScaleShear). The implementation reuses existing Core
+composition/product kernels and shared flags/component admission; no LSLib matrix kernel
+is copied. The existing quaternion normalization policy is explicit, T*R composition is
+float32, and all nine native scale/shear coefficients participate in the affine product.
+This is separate from canonical game units, axis admission or native animation evaluation.
+Ordered variant fields preserve native duplicate names; default record views remain strict.

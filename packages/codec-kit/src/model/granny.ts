@@ -10,7 +10,8 @@
 import { boundedCount } from '../binary.js'
 import { crc32 } from '../checksum/index.js'
 import { decompressOodle1 } from '../compression/oodle1.js'
-import { normalizeQuat } from '../model-math/transform.js'
+import { multiplyAffine, normalizeQuat } from '../model-math/transform.js'
+import { composeTrsMatrix } from '../model-math/sequence-pose.js'
 export { unpackGrannyCurve, type GrannyCurveDomain, type GrannyExpandedCurve } from './granny-curve-codec.js'
 
 export type GrannyValue = number | string | null | GrannyValue[] | { [key: string]: GrannyValue }
@@ -41,6 +42,12 @@ export interface GrannyTransformProjection {
   /** The shared quaternion kernel preserves zero; a carrier must decide whether to refuse it. */
   readonly zeroRotation: boolean
 }
+export interface GrannyTransformMatrixProjection {
+  /** Column-major T·R·transpose(native scaleShear); no off-diagonal coefficient is discarded. */
+  readonly matrix: readonly number[]
+  readonly normalizedRotation: boolean
+  readonly zeroRotation: boolean
+}
 
 /** Project a native transform using the existing quaternion kernel and explicit shear admission.
  * Returns owned component arrays. Disabled fields are not inspected; enabled fields must be dense,
@@ -49,6 +56,37 @@ export interface GrannyTransformProjection {
 export function projectGrannyTransform(value: GrannyReadonlyValue | GrannyTransform | undefined,
   maxAbsShear: number): GrannyTransformProjection {
   if (!Number.isFinite(maxAbsShear) || maxAbsShear < 0) throw new RangeError('Granny shear tolerance')
+  const components = grannyTransformComponents(value), s = components.scaleShear
+  const discardedShear = Math.max(...[1, 2, 3, 5, 6, 7].map(i => Math.abs(s[i]!)))
+  if (discardedShear > maxAbsShear) throw new TypeError('Granny rest shear cannot be projected to TRS')
+  return {
+    trs: { translation: components.translation as [number, number, number], rotation: components.rotation, scale: [s[0]!, s[4]!, s[8]!] },
+    discardedShear, normalizedRotation: components.normalizedRotation, zeroRotation: components.zeroRotation,
+  }
+}
+
+/** Preserve native full scale/shear through existing composition/product kernels.
+ * Granny row-vector S·R·T becomes column-vector T·R·Sᵀ. Quaternion normalization follows the
+ * existing TRS projector; zero quaternion remains reported for the native caller to refuse.
+ * T·R uses the existing float32 composition; the affine product must remain finite.
+ */
+export function projectGrannyTransformMatrix(value: GrannyReadonlyValue | GrannyTransform | undefined): GrannyTransformMatrixProjection {
+  const components = grannyTransformComponents(value), s = components.scaleShear
+  const tr = new Float32Array(16)
+  composeTrsMatrix(tr, 0, components.translation, components.rotation, [1, 1, 1])
+  if (!tr.every(Number.isFinite)) throw new RangeError('Granny transform exceeds finite float range')
+  const matrix = multiplyAffine(Array.from(tr), [
+    s[0]!, s[1]!, s[2]!, 0,
+    s[3]!, s[4]!, s[5]!, 0,
+    s[6]!, s[7]!, s[8]!, 0,
+    0, 0, 0, 1,
+  ])
+  if (!matrix.every(Number.isFinite)) throw new RangeError('Granny matrix projection is nonfinite')
+  return { matrix, normalizedRotation: components.normalizedRotation, zeroRotation: components.zeroRotation }
+}
+
+/** One component/presence/normalization owner for both native TRS and full-matrix projections. */
+function grannyTransformComponents(value: GrannyReadonlyValue | GrannyTransform | undefined) {
   if (value === null || typeof value !== 'object' || Array.isArray(value))
     throw new TypeError('Granny expected transform structure')
   const transform = value as { readonly [key: string]: unknown }, flags = transform['flags']
@@ -66,12 +104,10 @@ export function projectGrannyTransform(value: GrannyReadonlyValue | GrannyTransf
   const p = flags & 1 ? vector('position', 3) : [0, 0, 0]
   const q = flags & 2 ? vector('orientation', 4) : [0, 0, 0, 1]
   const s = flags & 4 ? vector('scaleShear', 9) : [1, 0, 0, 0, 1, 0, 0, 0, 1]
-  const discardedShear = Math.max(...[1, 2, 3, 5, 6, 7].map(i => Math.abs(s[i]!)))
-  if (discardedShear > maxAbsShear) throw new TypeError('Granny rest shear cannot be projected to TRS')
   const rotation = normalizeQuat(q)
   return {
-    trs: { translation: p as [number, number, number], rotation, scale: [s[0]!, s[4]!, s[8]!] },
-    discardedShear, normalizedRotation: rotation.some((v, i) => v !== q[i]),
+    translation: p, rotation, scaleShear: s,
+    normalizedRotation: rotation.some((v, i) => v !== q[i]),
     zeroRotation: rotation.every(v => v === 0),
   }
 }
