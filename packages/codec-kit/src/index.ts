@@ -1259,7 +1259,7 @@ const RANGE_READ_CHUNK_BYTES = 8 * 1024 * 1024
  * What a range-mode codec reads: the opened source itself, one bounded range at a time. Memory
  * follows the ranges asked for, never the size of the source.
  */
-function rangeByteSource(source: ArtifactSource, budget: ResourceBudget): ByteRangeSource {
+export function rangeByteSource(source: ArtifactSource, budget: ResourceBudget): ByteRangeSource {
   if (source.kind !== 'bytes' || source.size === undefined) {
     throw new TypeError('range inspection codecs require a sized byte source')
   }
