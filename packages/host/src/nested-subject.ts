@@ -399,16 +399,11 @@ export async function openNestedSubject(
     const namespace = namespaceLease.value
     const entry = await findEntry(namespace, options.entryId, pageLimit, options.signal)
     // What the container hands every subject of its entries; inert JSON, bounded like any input.
-    const containerContext = await namespace.nestedContext?.(options.signal)
-    if (
-      containerContext !== undefined &&
-      BigInt(new TextEncoder().encode(JSON.stringify(containerContext)).byteLength) >
-        options.budget.maxInputBytes
-    )
-      throw new ModkitError({
-        code: 'x3.host/resource-budget-exceeded',
-        message: 'the container context exceeds the nested input budget',
-      })
+    const ownArtifact =
+      entry.rangeAccess === true && namespace.openEntryArtifactSource !== undefined
+    const containerContext = ownArtifact
+      ? undefined
+      : await namespace.nestedContext?.(options.signal)
     const primaryLogicalId =
       logicalRoots === undefined
         ? entry.path
@@ -439,31 +434,57 @@ export async function openNestedSubject(
     // An entry the container decodes by range (block-compressed, or stored in a companion) is read
     // through its own range source, also without extraction. Its companions are read the same way.
     const openStoredSource = storedEntrySource(options.parent, descriptor)
-    const entrySourceLease =
-      entry.rangeAccess === true && namespace.openEntrySource !== undefined
-        ? await namespace.openEntrySource(entry.id, options.signal)
-        : undefined
-    const rangeLease =
-      entrySourceLease === undefined &&
-      entry.storedRange !== undefined &&
-      openStoredSource !== undefined
-        ? await openStoredSource()
-        : undefined
+    const { artifactLease, entrySourceLease, rangeLease } = await (async () => {
+      try {
+        const artifactLease = ownArtifact
+          ? await namespace.openEntryArtifactSource!(entry.id, options.signal)
+          : undefined
+        const entrySourceLease =
+          artifactLease === undefined &&
+          entry.rangeAccess === true &&
+          namespace.openEntrySource !== undefined
+            ? await namespace.openEntrySource(entry.id, options.signal)
+            : undefined
+        const rangeLease =
+          artifactLease === undefined &&
+          entrySourceLease === undefined &&
+          entry.storedRange !== undefined &&
+          openStoredSource !== undefined
+            ? await openStoredSource()
+            : undefined
+        return { artifactLease, entrySourceLease, rangeLease }
+      } catch (error) {
+        await refLease.release().catch(() => undefined)
+        throw error
+      }
+    })()
     const previousRelease = release
     let refReleased = false
     const releaseAll = async (): Promise<void> => {
+      let firstError: unknown
       if (!refReleased) {
         refReleased = true
-        await refLease.release()
-        await rangeLease?.release()
-        await entrySourceLease?.release()
+        for (const lease of [refLease, rangeLease, entrySourceLease, artifactLease]) {
+          try {
+            await lease?.release()
+          } catch (error) {
+            firstError ??= error
+          }
+        }
       }
-      await previousRelease()
+      try {
+        await previousRelease()
+      } catch (error) {
+        firstError ??= error
+      }
+      if (firstError !== undefined) throw firstError
     }
 
     try {
       let source: ReturnType<typeof containerEntrySource>
-      if (entrySourceLease !== undefined) {
+      if (artifactLease !== undefined) {
+        source = artifactLease.value
+      } else if (entrySourceLease !== undefined) {
         const size = await entrySourceLease.value.size()
         source = containerEntryRangeSource(
           refLease.value,
@@ -486,6 +507,17 @@ export async function openNestedSubject(
           bytes,
         )
       }
+      const selectedContext =
+        artifactLease === undefined ? containerContext : artifactLease.value.containerContext
+      if (
+        selectedContext !== undefined &&
+        BigInt(new TextEncoder().encode(JSON.stringify(selectedContext)).byteLength) >
+          options.budget.maxInputBytes
+      )
+        throw new ModkitError({
+          code: 'x3.host/resource-budget-exceeded',
+          message: 'the container context exceeds the nested input budget',
+        })
       const originOptions = {
         namespace,
         primaryLogicalId,
@@ -589,7 +621,7 @@ export async function openNestedSubject(
           ? {}
           : { installationFiles: options.installationFiles }),
         ...(options.credentials === undefined ? {} : { credentials: options.credentials }),
-        ...(containerContext === undefined ? {} : { containerContext }),
+        ...(selectedContext === undefined ? {} : { containerContext: selectedContext }),
         ...(options.minimumConfidence === undefined
           ? {}
           : { minimumConfidence: options.minimumConfidence }),
@@ -609,11 +641,11 @@ export async function openNestedSubject(
         entry,
       })
     } catch (error) {
-      await releaseAll()
+      await releaseAll().catch(() => undefined)
       throw error
     }
   } catch (error) {
-    await release()
+    await release().catch(() => undefined)
     throw error
   }
 }

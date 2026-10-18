@@ -30,8 +30,12 @@ import {
 } from './input-resolution.js'
 import type { Inventory } from './inventory.js'
 import { artifactByteSourceFromBytes } from './source-bridge.js'
+import { openContentSourceRange } from './content-source-range.js'
 import type { SubjectInputResolver } from './subject-open.js'
-import { lookupExactContentSourceFile, normalizedContentSourcePath as normalized } from './content-source-exact-lookup.js'
+import {
+  lookupExactContentSourceFile,
+  normalizedContentSourcePath as normalized,
+} from './content-source-exact-lookup.js'
 
 /**
  * Extensions of the archive formats a namespace codec opens. A loose folder named like one of them
@@ -90,7 +94,10 @@ export function containerMarkersOf(
 }
 
 export interface ContentSourceCompanionOriginOptions {
-  readonly contentSources: Pick<ContentSources, 'list' | 'read' | 'lookup'>
+  readonly contentSources: Pick<
+    ContentSources,
+    'list' | 'read' | 'lookup' | 'readWithContext' | 'openRangeWithContext'
+  >
   /** The subject: a file of one content source. */
   readonly target: { readonly sourceId: string; readonly path: string }
   /** As the filesystem origin takes them: {@link containerExtensionsOf} and its siblings. */
@@ -267,16 +274,23 @@ export function createContentSourceCompanionOrigin(
       const id = normalizeCompanionLogicalId(logicalId)
       // ponytail: an id found in two scopes opens where it was found last
       const path = join(located.get(fold(id)) ?? directory, id)
-      const bytes = await contentSources.read(sourceId, path, maximumEntryBytes)
-      throwIfAborted(signal)
       const uri = `content-source://${encodeURIComponent(sourceId)}/${path.split('/').map(encodeURIComponent).join('/')}`
+      const ref = Object.freeze({ id: `${sourceId}:${path}`, uri })
+      const range = await openContentSourceRange(contentSources, sourceId, path, ref, signal)
+      if (range !== undefined) return range
+      const read =
+        contentSources.readWithContext === undefined
+          ? { bytes: await contentSources.read(sourceId, path, maximumEntryBytes) }
+          : await contentSources.readWithContext(sourceId, path, maximumEntryBytes)
+      throwIfAborted(signal)
       const source = artifactByteSourceFromBytes(
-        Object.freeze({ id: `${sourceId}:${path}`, uri }),
+        ref,
         revisionIdFromRef({
           kind: 'provider-token',
-          value: `${sourceId}\0${path}\0${String(bytes.byteLength)}`,
+          value: `${sourceId}\0${path}\0${String(read.bytes.byteLength)}`,
         }),
-        bytes,
+        read.bytes,
+        read.context,
       )
       return Object.freeze({ value: source, release: async () => undefined })
     },
@@ -284,7 +298,10 @@ export function createContentSourceCompanionOrigin(
 }
 
 export interface ContentSourceInputResolverOptions {
-  readonly contentSources: Pick<ContentSources, 'list' | 'read' | 'lookup'>
+  readonly contentSources: Pick<
+    ContentSources,
+    'list' | 'read' | 'lookup' | 'readWithContext' | 'openRangeWithContext'
+  >
   readonly target: { readonly sourceId: string; readonly path: string }
   /** The inventory the subject is resolved against: container scopes and `expected` traits. */
   readonly inventory: Inventory

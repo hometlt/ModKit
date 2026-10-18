@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it } from 'vitest'
 import { contractId } from '@modkit/core'
 import {
   A1_SPEC_SCHEMA_ENTRIES,
@@ -7,6 +7,8 @@ import {
   DATA_SOURCE_MATURITY,
   CONTRACT_DEFINITION_CONTRIBUTION_CONTRACT,
   ENCODED_MEDIA_SURFACE_ID,
+  ARTIFACT_SOURCE_SURFACE_ID,
+  ASSET_NAMESPACE_SURFACE_ID,
   STANDARD_DATA_SOURCE_CONTRACTS,
   STANDARD_DATA_SOURCE_SURFACES,
   createSpecSchemaRegistry,
@@ -25,6 +27,12 @@ import { METHOD_NAME_PATTERN } from '../src/schemas/patterns.js'
 import { STANDARD_DATA_SOURCE_SURFACES as SOURCE_DATA_SOURCE_SURFACES } from '../src/asset-capabilities/data-source-surfaces.js'
 
 const METHOD_NAME = new RegExp(METHOD_NAME_PATTERN, 'u')
+
+// Cold source imports compile AJV lazily; keep schema setup outside assertion deadlines.
+beforeAll(async () => {
+  await validateWithSchema(dataSourceSurfaceV1Schema, { methods: {} })
+  await validateWithSchema(dataSourceMethodSurfaceV1Schema, { kind: 'value' })
+})
 
 const definitionWith = (
   surface: DataSourceSurfaceV1Wire | undefined,
@@ -196,7 +204,11 @@ describe('NXT-103 — standard data-source surfaces', () => {
     expect(Object.keys(STANDARD_DATA_SOURCE_SURFACES).sort()).toEqual(
       [...STANDARD_DATA_SOURCE_CONTRACTS].sort(),
     )
-    expect(Object.keys(AUXILIARY_DATA_SOURCE_SURFACES)).toEqual([ENCODED_MEDIA_SURFACE_ID])
+    expect(Object.keys(AUXILIARY_DATA_SOURCE_SURFACES)).toEqual([
+      ENCODED_MEDIA_SURFACE_ID,
+      ARTIFACT_SOURCE_SURFACE_ID,
+      ASSET_NAMESPACE_SURFACE_ID,
+    ])
     expect(Object.isFrozen(STANDARD_DATA_SOURCE_SURFACES)).toBe(true)
     expect(
       Object.isFrozen(STANDARD_DATA_SOURCE_SURFACES['common.view/text-data-source'].methods),
@@ -204,7 +216,12 @@ describe('NXT-103 — standard data-source surfaces', () => {
   })
 
   it('every standard surface validates against the schema and its lease results resolve', async () => {
-    const known = new Set<string>([...STANDARD_DATA_SOURCE_CONTRACTS, ENCODED_MEDIA_SURFACE_ID])
+    const known = new Set<string>([
+      ...STANDARD_DATA_SOURCE_CONTRACTS,
+      ENCODED_MEDIA_SURFACE_ID,
+      ARTIFACT_SOURCE_SURFACE_ID,
+      ASSET_NAMESPACE_SURFACE_ID,
+    ])
     for (const [contract, surface] of [
       ...Object.entries(STANDARD_DATA_SOURCE_SURFACES),
       ...Object.entries(AUXILIARY_DATA_SOURCE_SURFACES),

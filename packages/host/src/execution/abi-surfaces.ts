@@ -21,6 +21,12 @@
  * surface comes from that contract's definition.
  */
 
+import {
+  ARTIFACT_SOURCE_SURFACE_ID,
+  ASSET_NAMESPACE_SURFACE_ID,
+  ARTIFACT_SOURCE_SURFACE,
+  ASSET_NAMESPACE_SURFACE,
+} from '@modkit/sdk'
 import type {
   ModelResourcePort,
   ModelResourceAsset,
@@ -87,8 +93,8 @@ export const ABI_CODEC = { contract: 'x3.abi/codec', major: 1 } as const
 export const ABI_ASSET_SESSION = { contract: 'x3.abi/asset-session', major: 1 } as const
 export const ABI_OPERATION_SESSION = { contract: 'x3.abi/operation-session', major: 1 } as const
 /** Union surface for `ArtifactSource` (`bytes` | `namespace`): consumers read `kind` first. */
-export const ABI_ARTIFACT_SOURCE = { contract: 'x3.abi/artifact-source', major: 1 } as const
-export const ABI_ASSET_NAMESPACE = { contract: 'x3.abi/asset-namespace', major: 1 } as const
+export const ABI_ARTIFACT_SOURCE = { contract: ARTIFACT_SOURCE_SURFACE_ID, major: 1 } as const
+export const ABI_ASSET_NAMESPACE = { contract: ASSET_NAMESPACE_SURFACE_ID, major: 1 } as const
 /** Union surface for `AssetInput` topologies: consumers read `originKind` first. */
 export const ABI_ASSET_INPUT = { contract: 'x3.abi/asset-input', major: 1 } as const
 export const ABI_DIAGNOSTIC_SINK = { contract: 'x3.abi/diagnostic-sink', major: 1 } as const
@@ -195,26 +201,16 @@ const operationSessionSurface = {
 
 const artifactSourceSurface = {
   ...ABI_ARTIFACT_SOURCE,
-  fields: ['ref', 'revision', 'kind', 'size'],
-  methods: {
-    read: { kind: 'value', optional: true, ...sig },
-    stream: { kind: 'iterable', optional: true, ...sig },
-    openNamespace: {
-      kind: 'lease',
-      result: ABI_ASSET_NAMESPACE,
-      wrapper: 'lease',
-      optional: true,
-      ...sig,
-    },
-  },
+  ...ARTIFACT_SOURCE_SURFACE,
 } as const satisfies AbiSurfaceOf<Partial<ArtifactByteSource & ArtifactNamespaceSource>>
 
 const assetNamespaceSurface = {
   ...ABI_ASSET_NAMESPACE,
+  ...ASSET_NAMESPACE_SURFACE,
   methods: {
-    list: { kind: 'iterable', batchItems: 512, ...sig },
-    readPreamble: { kind: 'value', optional: true, ...sig },
-    open: { kind: 'lease', result: ABI_ARTIFACT_SOURCE, wrapper: 'lease', ...sig },
+    ...ASSET_NAMESPACE_SURFACE.methods,
+    // RPC batching is Host policy; the method semantics remain the SDK's single definition.
+    list: { ...ASSET_NAMESPACE_SURFACE.methods.list, batchItems: 512 },
   },
 } as const satisfies AbiSurfaceOf<AssetNamespace>
 

@@ -1149,6 +1149,8 @@ function rangeEntryLease(
   signal?: AbortSignal,
 ): Promise<Lease<ArtifactSource>> | undefined {
   const { entryId, storedRange } = entry
+  if (entry.rangeAccess === true && namespace.openEntryArtifactSource !== undefined)
+    return namespace.openEntryArtifactSource(entryId, signal)
   if (entry.rangeAccess === true && namespace.openEntrySource !== undefined)
     return entryRangeLease(namespace, entryId, containerRevision, signal, () =>
       namespace.openEntrySource!(entryId, signal),

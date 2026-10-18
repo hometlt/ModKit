@@ -24,6 +24,7 @@ import type {
 } from '@modkit/vfs/content-sources'
 import { contentSourceUri } from './content-dependencies.js'
 import { assembleSubjectDescriptor, createAssetSession } from './session.js'
+import { openContentSourceRange } from './content-source-range.js'
 
 const NAMESPACE = 'common.view/namespace-entry-source'
 const EXTRACT_HANDLER = 'x3.host/content-source-root-extract'
@@ -76,7 +77,12 @@ export async function openContentSourceRootSession(
     value: `${root.id}:${root.revision ?? '-'}`,
   })
   const hidden = options.includeHidden === true ? { includeHidden: true } : {}
-  const entryOf = (path: string, kind: 'file' | 'directory', size?: number): NamespaceEntry =>
+  const entryOf = (
+    path: string,
+    kind: 'file' | 'directory',
+    size?: number,
+    rangeAccess?: true,
+  ): NamespaceEntry =>
     Object.freeze({
       id: path,
       path,
@@ -84,9 +90,15 @@ export async function openContentSourceRootSession(
       kind,
       revision,
       ...(size === undefined ? {} : { size: BigInt(size) }),
+      ...(rangeAccess === true && kind === 'file' ? { rangeAccess: true as const } : {}),
     })
   const fromListing = (item: ContentSourceEntry): NamespaceEntry =>
-    entryOf(sourcePath(item.path), item.directory ? 'directory' : 'file', item.size)
+    entryOf(
+      sourcePath(item.path),
+      item.directory ? 'directory' : 'file',
+      item.size,
+      item.rangeAccess,
+    )
   const page = <Item>(items: readonly Item[], cursor: string | undefined, limit: number) => {
     const start = cursor === undefined ? 0 : Number(cursor)
     if (!Number.isSafeInteger(start) || start < 0 || start > items.length)
@@ -127,7 +139,9 @@ export async function openContentSourceRootSession(
       if (files !== undefined) {
         return Object.freeze({
           items: Object.freeze(
-            files.items.map(file => entryOf(sourcePath(file.path), 'file', file.size)),
+            files.items.map(file =>
+              entryOf(sourcePath(file.path), 'file', file.size, file.rangeAccess),
+            ),
           ),
           ...(files.nextCursor === undefined ? {} : { nextCursor: files.nextCursor }),
         })
@@ -153,6 +167,37 @@ export async function openContentSourceRootSession(
     async openEntry(entryId) {
       const uri = contentSourceUri(root.id, sourcePath(entryId))
       return { value: Object.freeze({ id: uri, uri }), release: async () => undefined }
+    },
+    /** Preserve provider identity/context while retaining the native range through child lifetime. */
+    async openEntryArtifactSource(entryId, signal) {
+      signal?.throwIfAborted()
+      const path = sourcePath(entryId)
+      const uri = contentSourceUri(root.id, path)
+      const range = await openContentSourceRange(
+        sources,
+        root.id,
+        path,
+        Object.freeze({ id: uri, uri }),
+        signal,
+      )
+      if (range === undefined)
+        throw new RangeError(`Content source entry ${entryId} does not support ranges`)
+      return range
+    },
+    /** Legacy namespace clients keep the same ranged bytes and release the same retained lease. */
+    async openEntrySource(entryId, signal) {
+      const lease = await namespace.openEntryArtifactSource!(entryId, signal)
+      return {
+        value: {
+          async size() {
+            if (lease.value.size === undefined)
+              throw new TypeError('Content source range has no size')
+            return lease.value.size
+          },
+          read: lease.value.read.bind(lease.value),
+        },
+        release: lease.release,
+      }
     },
   }
   const descriptor = await assembleSubjectDescriptor({

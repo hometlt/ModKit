@@ -2,6 +2,16 @@
  * Optional atomic byte/context reads carry opaque native entry facts to the Host; VFS does not
  * interpret or validate these facts. Host owns bounded JSON snapshots and their revision identity.
  */
+import type { RandomAccessSource } from './source.js'
+
+/** A provider-pinned ranged file. The caller owns source.dispose(), including on bridge failure. */
+export interface ContentSourceRange {
+  readonly source: RandomAccessSource
+  /** Opaque provider revision for these leased bytes; path/size alone are not content identity. */
+  readonly revision: string
+  /** Inert facts of the same winning copy, snapshotted by Host before codec exposure. */
+  readonly context?: unknown
+}
 export interface ContentSourceRead {
   readonly bytes: Uint8Array
   /** Inert entry facts from the same winning copy; Host validates/snapshots before codec exposure. */
@@ -71,6 +81,8 @@ export interface ContentSourceSearchResult {
   readonly description: string
 }
 export interface ContentSourceEntry {
+  /** This file explicitly supports openRangeWithContext; folders do not declare it. */
+  readonly rangeAccess?: true
   readonly path: string
   readonly name: string
   readonly directory: boolean
@@ -85,6 +97,7 @@ export interface ContentSourceEntry {
 }
 /** One file of a {@link ContentSources.files} page. */
 export interface ContentSourceFile {
+  readonly rangeAccess?: true
   /** The path inside the source, spelled as {@link ContentSources.list} spells it. */
   readonly path: string
   readonly size?: number
@@ -277,6 +290,12 @@ export interface ModContext {
   read(layerId: string, path: string, maxBytes: number): Promise<Uint8Array>
   /** Atomic optional companion read; old loaders need not implement metadata. */
   readWithContext?(layerId: string, path: string, maxBytes: number): Promise<ContentSourceRead>
+  /** Optional in-process range acquisition; undefined means unsupported, never a lower-layer read. */
+  openRangeWithContext?(
+    layerId: string,
+    path: string,
+    signal?: AbortSignal,
+  ): Promise<ContentSourceRange | undefined>
   /** The layer that serves a layer-relative path, the last layer that has it winning. */
   locate(path: string): Promise<{ readonly layerId: string; readonly path: string } | undefined>
   /**
@@ -364,6 +383,17 @@ export interface ContentSources {
   read(sourceId: string, path: string, maxBytes: number): Promise<Uint8Array>
   /** Reads bytes and opaque entry facts from one winning copy, without a second metadata lookup. */
   readWithContext?(sourceId: string, path: string, maxBytes: number): Promise<ContentSourceRead>
+  /**
+   * Optional in-process acquisition without materializing the file. A returned source retains its
+   * winning archive generation through refresh/dispose until source.dispose(). Undefined means
+   * this file cannot provide ranges; callers retain their bounded legacy read policy explicitly.
+   * Source objects are not exposed by the serializable CONTENT_SOURCE_METHODS boundary.
+   */
+  openRangeWithContext?(
+    sourceId: string,
+    path: string,
+    signal?: AbortSignal,
+  ): Promise<ContentSourceRange | undefined>
   /**
    * The entry at exactly `path`, also one no listing names yet: a source that fetches on demand
    * (Roblox assets from the CDN) answers for an asset it has not downloaded, which `read` then
@@ -893,7 +923,9 @@ export function composeContentSources(
         const placement = await part.locateModPackage?.(target)
         return placement?.kind === 'package' || placement?.kind === 'loose' ? part : undefined
       })) ??
-      started().find(part => part.openModContext !== undefined && part.locateModPackage === undefined)
+      started().find(
+        part => part.openModContext !== undefined && part.locateModPackage === undefined,
+      )
     )
   }
   const composed: ContentSources = {
@@ -939,6 +971,12 @@ export function composeContentSources(
       return part.readWithContext === undefined
         ? { bytes: await part.read(sourceId, path, maxBytes) }
         : part.readWithContext(sourceId, path, maxBytes)
+    },
+    /** Range lifetime and opaque identity stay with the owning provider, never the composition. */
+    async openRangeWithContext(sourceId, path, signal) {
+      signal?.throwIfAborted()
+      const part = await bySource(sourceId)
+      return part.openRangeWithContext?.(sourceId, path, signal)
     },
     async lookup(sourceId, path) {
       const part = await bySource(sourceId)
@@ -1032,7 +1070,12 @@ export function composeContentSources(
       )
       await Promise.all([
         ...started().map(part => part.dispose()),
-        ...loading.map(promise => promise.then(() => undefined, () => undefined)),
+        ...loading.map(promise =>
+          promise.then(
+            () => undefined,
+            () => undefined,
+          ),
+        ),
       ])
     },
   }

@@ -49,6 +49,7 @@ import {
   validatedLanguageWorkspaceSemanticInputs,
 } from './language/index.js'
 import { artifactByteSourceFromBytes } from './source-bridge.js'
+import { openContentSourceRange } from './content-source-range.js'
 import { lookupExactContentSourceFile } from './content-source-exact-lookup.js'
 import {
   normalizeCompanionLogicalId,
@@ -212,7 +213,8 @@ function createContentDependencyOrigin(
   const locations = new Map<string, IndexedMount>()
   const fold = (value: string) => value.toLowerCase()
   // A numeric layer qualifier cannot become a relative folder of another dependency mount.
-  const layerQualified = (path: string): boolean => /^content-dependencies\/\d+(?:\/|$)/iu.test(path)
+  const layerQualified = (path: string): boolean =>
+    /^content-dependencies\/\d+(?:\/|$)/iu.test(path)
   const relativeRequest = (mount: IndexedMount, logicalId: string): string | undefined => {
     if (logicalId === '') return ''
     if (fold(logicalId) === fold(mount.logicalPrefix)) return ''
@@ -230,9 +232,15 @@ function createContentDependencyOrigin(
     if (relativePrefix === undefined) return Object.freeze([])
     const parent = relativePrefix.slice(0, relativePrefix.lastIndexOf('/') + 1).replace(/\/$/u, '')
     let entries: readonly ContentSourceEntry[]
-    const exact = exactPath && relativePrefix !== '' && !relativePrefix.endsWith('/')
-      ? await lookupExactContentSourceFile(contentSources, mount.sourceId, joinPath(mount.sourcePath, relativePrefix), signal)
-      : undefined
+    const exact =
+      exactPath && relativePrefix !== '' && !relativePrefix.endsWith('/')
+        ? await lookupExactContentSourceFile(
+            contentSources,
+            mount.sourceId,
+            joinPath(mount.sourcePath, relativePrefix),
+            signal,
+          )
+        : undefined
     if (exact !== undefined) entries = [exact]
     else if (relativePrefix === '' && contentSources.files !== undefined) {
       const files: ContentSourceEntry[] = []
@@ -309,7 +317,12 @@ function createContentDependencyOrigin(
         const rootScoped = relativeRequest(mount, prefix) !== undefined
         if (layerQualified(prefix) && !rootScoped) continue
         const query = rootScoped ? prefix : joinPath(mount.logicalPrefix, prefix)
-        for (const found of await findEntries(mount, query, signal, enumeration.exactPath === true)) {
+        for (const found of await findEntries(
+          mount,
+          query,
+          signal,
+          enumeration.exactPath === true,
+        )) {
           // A path that names no layer is a lookup through the overlay, as ModContext.locate does:
           // it is answered in the caller's spelling, by the strongest layer that holds it.
           const entry = rootScoped
@@ -343,8 +356,12 @@ function createContentDependencyOrigin(
         for (const candidate of candidates) {
           const relative = relativeRequest(candidate, qualifiedIn(candidate))
           if (relative === undefined || relative === '') continue
-          const entry = await lookupExactContentSourceFile(contentSources, candidate.sourceId,
-            joinPath(candidate.sourcePath, relative), signal)
+          const entry = await lookupExactContentSourceFile(
+            contentSources,
+            candidate.sourceId,
+            joinPath(candidate.sourcePath, relative),
+            signal,
+          )
           if (entry !== undefined && !entry.directory) {
             mount = candidate
             break
@@ -366,17 +383,15 @@ function createContentDependencyOrigin(
       if (relative === undefined || relative === '')
         throw new RangeError(`content dependency has no file ${normalized}`)
       const path = joinPath(mount.sourcePath, relative)
+      const uri = contentSourceUri(mount.sourceId, path)
+      const ref = Object.freeze({ id: `${mount.rootId}:${normalized}`, uri })
+      const range = await openContentSourceRange(contentSources, mount.sourceId, path, ref, signal)
+      if (range !== undefined) return range
       const read =
         contentSources.readWithContext === undefined
           ? { bytes: await contentSources.read(mount.sourceId, path, maximumEntryBytes) }
           : await contentSources.readWithContext(mount.sourceId, path, maximumEntryBytes)
-      const uri = contentSourceUri(mount.sourceId, joinPath(mount.sourcePath, relative))
-      const source = artifactByteSourceFromBytes(
-        Object.freeze({ id: `${mount.rootId}:${normalized}`, uri }),
-        mount.revision,
-        read.bytes,
-        read.context,
-      )
+      const source = artifactByteSourceFromBytes(ref, mount.revision, read.bytes, read.context)
       return Object.freeze({ value: source, release: async () => undefined })
     },
   })

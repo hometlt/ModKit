@@ -190,6 +190,8 @@ describe('standard data-source objects round-trip through the RPC core with the 
   }
   const seenEncodedArgs: unknown[][] = []
   const releasedEntries: string[] = []
+  let artifactReleases = 0
+  const artifactContext = { nativeKey: 'original' }
   const world = {
     text: {
       info: async () => ({
@@ -218,6 +220,20 @@ describe('standard data-source objects round-trip through the RPC core with the 
       openEntry: async (id: string) => ({
         value: { kind: 'entry', id, revision: 'r1' },
         release: async () => void releasedEntries.push(id),
+      }),
+      openEntryArtifactSource: async (id: string) => ({
+        value: {
+          kind: 'bytes',
+          ref: { id, uri: `native://${id}` },
+          revision: 'provider-token:native-snapshot',
+          size: 2n ** 32n,
+          containerContext: artifactContext,
+          read: async (offset: bigint, length: number) =>
+            new Uint8Array(length).fill(Number(offset & 255n)),
+        },
+        release: async () => {
+          artifactReleases += 1
+        },
       }),
     },
     audio: {
@@ -301,6 +317,35 @@ describe('standard data-source objects round-trip through the RPC core with the 
     await new Promise(resolve => setTimeout(resolve, 10))
     expect(releasedEntries).toEqual(['a'])
     expect(worker.counters().localHandles).toBe(before - 1)
+  })
+  it('transports a namespace artifact lease with native identity/context, ranges and release', async () => {
+    const { holder: root, failures } = await open()
+    const namespace = await (
+      root['namespace'] as () => Promise<{
+        openEntryArtifactSource(id: string): Promise<{
+          value: {
+            kind: string
+            ref: { id: string; uri: string }
+            revision: string
+            size: bigint
+            containerContext: unknown
+            read(offset: bigint, length: number): Promise<Uint8Array>
+          }
+          release(): Promise<void>
+        }>
+      }>
+    )()
+    const lease = await namespace.openEntryArtifactSource('CAB-native')
+    expect(lease.value.ref).toEqual({ id: 'CAB-native', uri: 'native://CAB-native' })
+    expect(lease.value.revision).toBe('provider-token:native-snapshot')
+    expect(lease.value.size).toBe(2n ** 32n)
+    artifactContext.nativeKey = 'changed after serialization'
+    expect(lease.value.containerContext).toEqual({ nativeKey: 'original' })
+    expect(await lease.value.read(2n ** 32n - 2n, 2)).toEqual(new Uint8Array([254, 254]))
+    await lease.release()
+    await lease.release()
+    expect(artifactReleases).toBe(1)
+    expect(failures).toEqual([])
   })
 
   it('AudioMediaSource.encoded(): bare lease of the auxiliary encoded-media surface, arity keeps the signal last, optional methods are absent-tolerant', async () => {

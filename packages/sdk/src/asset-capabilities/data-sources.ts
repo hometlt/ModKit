@@ -76,6 +76,7 @@ import type {
   ModelSocketSource,
 } from './model-facet-sources.js'
 import type { WorldSceneSource } from '../maps/index.js'
+import type { ArtifactByteSource } from '../runtime-abi.js'
 import type { GameTemplateTextRun } from '../templates/index.js'
 import type { ViewerWorkspaceDocument } from './presentation.js'
 export {
@@ -863,6 +864,15 @@ export interface NamespaceEntrySource {
    * an entry without `rangeAccess` (that one is extracted).
    */
   openEntrySource?(entryId: string, signal?: AbortSignal): Promise<Lease<ByteRangeSource>>
+  /**
+   * Optional provider-pinned byte source for a rangeAccess entry. Unlike the legacy range-only
+   * port it retains the entry's own ref, revision and inert containerContext. The source and its
+   * dependencies remain live until lease release; namespace-wide context is not substituted.
+   */
+  openEntryArtifactSource?(
+    entryId: string,
+    signal?: AbortSignal,
+  ): Promise<Lease<ArtifactByteSource>>
 }
 
 export interface RelationGraphNode {

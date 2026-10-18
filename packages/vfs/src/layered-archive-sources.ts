@@ -25,6 +25,7 @@ import type {
   ContentSources,
   ContentSourceSnapshot,
   ContentSourceRead,
+  ContentSourceRange,
   ModContext,
   ModContextLayer,
   ModContextRequest,
@@ -34,6 +35,7 @@ import type {
 
 /** One file an archive names, or finds by path. */
 export interface LayerArchiveEntry {
+  readonly rangeAccess?: true
   /** As the archive spells it; `\` or `/` separated. */
   readonly path: string
   /** What the listing shows, when the archive knows it before reading. */
@@ -56,6 +58,11 @@ export interface LayerArchive {
   lookup?(path: string, signal?: AbortSignal): Promise<LayerArchiveEntry | undefined>
   /** One file's bytes, whole; refuses one of more than `maxBytes`. */
   read(path: string, maxBytes: number, signal?: AbortSignal): Promise<Uint8Array>
+  /** Open one pinned file without reading it whole; its source is owned by the returned range. */
+  openRange?(
+    path: string,
+    signal?: AbortSignal,
+  ): Promise<Pick<ContentSourceRange, 'source' | 'revision'> | undefined>
   close(): void | Promise<void>
 }
 
@@ -91,6 +98,12 @@ export interface ArchiveLayers {
   read(path: string, maxBytes: number, rank?: number): Promise<Uint8Array>
   /** Atomic read of a selected copy and its opaque entry facts; no repeated winner lookup. */
   readWithContext(path: string, maxBytes: number, rank?: number): Promise<ContentSourceRead>
+  /** Same selected copy and context, retaining this generation until the returned source disposes. */
+  openRangeWithContext?(
+    path: string,
+    signal?: AbortSignal,
+    rank?: number,
+  ): Promise<ContentSourceRange | undefined>
 }
 
 /**
@@ -119,6 +132,7 @@ export interface LayeredArchiveContentSources extends ContentSources {
 }
 
 interface Copy {
+  readonly rangeAccess?: true
   readonly archive: LayerArchive
   readonly rank: number
   /** The path to ask this archive for. */
@@ -136,12 +150,15 @@ interface Merged {
 }
 
 interface Served {
+  readonly rangeAccess?: true
   readonly path: string
   readonly size?: number
   readonly hidden?: true
 }
 
 interface Tree {
+  /** Retire the generation; active ranged files delay archive closure. */
+  close(): Promise<void>
   readonly archives: readonly LayerArchive[]
   /** Every served file once, by lower-case path. */
   readonly rows: readonly { readonly key: string; readonly file: Served }[]
@@ -152,6 +169,82 @@ interface Tree {
 const normalized = (path: string): string => path.replaceAll('\\', '/').replace(/^\/+|\/+$/gu, '')
 const keyOf = (path: string): string => normalized(path).toLowerCase()
 
+/** Retire one owner while already-acquired files retain its archives; never accept a new lease. */
+function retainedClose(close: () => Promise<void>) {
+  let active = 0
+  let retired = false
+  let closing: Promise<void> | undefined
+  const idle = (): Promise<void> => {
+    if (!retired || active !== 0) return Promise.resolve()
+    return (closing ??= Promise.resolve().then(close))
+  }
+  return {
+    retain(): () => Promise<void> {
+      if (retired) throw new Error('Content source generation is retired')
+      active += 1
+      let released = false
+      return async () => {
+        if (released) return
+        released = true
+        active -= 1
+        await idle()
+      }
+    },
+    async close(): Promise<void> {
+      retired = true
+      await idle()
+    },
+  }
+}
+
+/** Transfer source ownership with idempotent cleanup and guard reads after the range is disposed. */
+function retainedRange(
+  range: ContentSourceRange,
+  release: () => Promise<void>,
+): ContentSourceRange {
+  if (
+    typeof range.revision !== 'string' ||
+    range.revision.length === 0 ||
+    range.revision.length > 65536
+  )
+    throw new TypeError('Content source range requires a bounded provider revision')
+  let disposed = false
+  let closing: Promise<void> | undefined
+  const live = () => {
+    if (disposed) throw new Error('Content source range is disposed')
+  }
+  const source = range.source
+  return {
+    ...range,
+    source: {
+      id: source.id,
+      async size(signal) {
+        live()
+        signal?.throwIfAborted()
+        return source.size(signal)
+      },
+      async readAt(offset, length, signal) {
+        live()
+        signal?.throwIfAborted()
+        return source.readAt(offset, length, signal)
+      },
+      stream(start, end, signal) {
+        live()
+        signal?.throwIfAborted()
+        return source.stream(start, end, signal)
+      },
+      dispose() {
+        if (closing !== undefined) return closing
+        disposed = true
+        closing = Promise.resolve()
+          .then(() => source.dispose())
+          .finally(release)
+        return closing
+      },
+    },
+  }
+}
+
 /** Whether `needle` occurs in `path` in order, not necessarily together — a quick-open query. */
 function inOrder(path: string, needle: string): boolean {
   let at = 0
@@ -160,7 +253,15 @@ function inOrder(path: string, needle: string): boolean {
 }
 
 async function closeAll(archives: readonly LayerArchive[]): Promise<void> {
-  for (const archive of archives) await archive.close()
+  const failures: unknown[] = []
+  for (const archive of archives) {
+    try {
+      await archive.close()
+    } catch (error) {
+      failures.push(error)
+    }
+  }
+  if (failures.length > 0) throw failures[0]
 }
 
 /** Open in native precedence order; on failure close every completed layer and retain the cause. */
@@ -193,6 +294,7 @@ function copyOf(
     archive,
     rank,
     path,
+    ...(entry.rangeAccess === true ? { rangeAccess: true as const } : {}),
     ...(entry.size === undefined ? {} : { size: entry.size }),
     ...(entry.hidden === true ? { hidden: true } : {}),
     ...(entry.context === undefined ? {} : { context: entry.context }),
@@ -202,6 +304,7 @@ function copyOf(
 const origin = (copy: Copy): LayerOrigin => ({ archive: copy.archive.id, rank: copy.rank })
 
 async function merge(archives: readonly LayerArchive[], label: string): Promise<Tree> {
+  const lifetime = retainedClose(() => closeAll(archives))
   const merged = new Map<string, Merged>()
   archives.forEach((archive, rank) => {
     for (const entry of archive.entries) {
@@ -234,6 +337,7 @@ async function merge(archives: readonly LayerArchive[], label: string): Promise<
       if (first === undefined) return []
       if (copies.length > 1) shadowedCount += 1
       const file: Served = {
+        ...(first.rangeAccess === true ? { rangeAccess: true as const } : {}),
         path: spelling,
         ...(first.size === undefined ? {} : { size: first.size }),
         ...(first.hidden === true ? { hidden: true } : {}),
@@ -272,12 +376,15 @@ async function merge(archives: readonly LayerArchive[], label: string): Promise<
     /** Exposes only membership facts of the same copy the byte APIs would serve. */
     async lookup(path) {
       const copy = await findCopy(path)
-      return copy === undefined ? undefined : {
-        path: copy.path,
-        ...(copy.size === undefined ? {} : { size: copy.size }),
-        ...(copy.hidden === true ? { hidden: true } : {}),
-        ...(copy.context === undefined ? {} : { context: copy.context }),
-      }
+      return copy === undefined
+        ? undefined
+        : {
+            path: copy.path,
+            ...(copy.rangeAccess === true ? { rangeAccess: true as const } : {}),
+            ...(copy.size === undefined ? {} : { size: copy.size }),
+            ...(copy.hidden === true ? { hidden: true } : {}),
+            ...(copy.context === undefined ? {} : { context: copy.context }),
+          }
     },
     async read(path, maxBytes, rank) {
       return readCopy(await resolveCopy(path, rank), maxBytes)
@@ -288,8 +395,42 @@ async function merge(archives: readonly LayerArchive[], label: string): Promise<
       const bytes = await readCopy(copy, maxBytes)
       return { bytes, ...(copy.context === undefined ? {} : { context: copy.context }) }
     },
+    /** Pin before lazy lookup/provider acquisition, including a refresh that races either await. */
+    async openRangeWithContext(path, signal, rank) {
+      signal?.throwIfAborted()
+      const release = lifetime.retain()
+      let range: ContentSourceRange | undefined
+      try {
+        const copy = await resolveCopy(path, rank)
+        signal?.throwIfAborted()
+        const opened = await copy.archive.openRange?.(copy.path, signal)
+        if (opened === undefined) {
+          await release()
+          return undefined
+        }
+        range = {
+          source: opened.source,
+          revision: opened.revision,
+          ...(copy.context === undefined ? {} : { context: copy.context }),
+        }
+        signal?.throwIfAborted()
+        return retainedRange(range, release)
+      } catch (error) {
+        await Promise.resolve()
+          .then(() => range?.source.dispose())
+          .catch(() => undefined)
+        await release().catch(() => undefined)
+        throw error
+      }
+    },
   }
-  return { archives, rows, children: childrenOf(rows.map(row => row.file)), layers }
+  return {
+    archives,
+    rows,
+    children: childrenOf(rows.map(row => row.file)),
+    layers,
+    close: lifetime.close,
+  }
 }
 
 /** One collator for every comparison: `localeCompare` builds one per call (6.7 s of 13.5 s on D3). */
@@ -317,6 +458,7 @@ function childrenOf(files: readonly Served[]): ReadonlyMap<string, readonly Cont
                 path,
                 name,
                 directory: false,
+                ...(file.rangeAccess === true ? { rangeAccess: true as const } : {}),
                 ...(file.size === undefined ? {} : { size: file.size }),
                 ...(file.hidden === true ? { hidden: true } : {}),
               }
@@ -359,6 +501,7 @@ export function createLayeredArchiveContentSources(
     readonly modContext?: LayeredModContextOptions
   } = {},
 ): LayeredArchiveContentSources {
+  let disposed = false
   const trees = new Map<string, Promise<Tree>>()
   const planOf = (sourceId: string): LayeredRoot => {
     const plan = roots.find(candidate => candidate.root.id === sourceId)
@@ -391,7 +534,7 @@ export function createLayeredArchiveContentSources(
     if (tree === undefined) return
     trees.delete(sourceId)
     const opened = await tree.catch(() => undefined)
-    if (opened !== undefined) await closeAll(opened.archives)
+    if (opened !== undefined) await opened.close()
   }
   const none = (what: string) => async (): Promise<never> => {
     throw new TypeError(`${label} content sources have no ${what}`)
@@ -485,15 +628,26 @@ export function createLayeredArchiveContentSources(
     /** Retained root membership uses the canonical layered lookup, including lazy keys. */
     async lookup(sourceId, path) {
       const entry = await (await open(sourceId)).layers.lookup!(path)
-      return entry === undefined ? undefined : {
-        path: entry.path, name: entry.path.slice(entry.path.lastIndexOf('/') + 1), directory: false,
-        ...(entry.size === undefined ? {} : { size: entry.size }),
-        ...(entry.hidden === true ? { hidden: true } : {}),
-      }
+      return entry === undefined
+        ? undefined
+        : {
+            path: entry.path,
+            name: entry.path.slice(entry.path.lastIndexOf('/') + 1),
+            directory: false,
+            ...(entry.rangeAccess === true ? { rangeAccess: true as const } : {}),
+            ...(entry.size === undefined ? {} : { size: entry.size }),
+            ...(entry.hidden === true ? { hidden: true } : {}),
+          }
     },
     /** Native metadata is selected by the same retained layered tree as the file bytes. */
     async readWithContext(sourceId, path, maxBytes) {
       return (await open(sourceId)).layers.readWithContext(path, maxBytes)
+    },
+    /** A file lease pins the selected tree even when refresh replaces this source id. */
+    async openRangeWithContext(sourceId, path, signal) {
+      signal?.throwIfAborted()
+      if (disposed) throw new Error('Content sources are disposed')
+      return (await open(sourceId)).layers.openRangeWithContext?.(path, signal)
     },
     async files(sourceId, path, query) {
       if (!Number.isSafeInteger(query.limit) || query.limit < 1 || query.limit > 10_000)
@@ -524,6 +678,7 @@ export function createLayeredArchiveContentSources(
     },
     refresh,
     async dispose() {
+      disposed = true
       for (const sourceId of [...trees.keys()]) await refresh(sourceId)
     },
     connect: none('accounts'),
@@ -544,7 +699,10 @@ export function createLayeredArchiveContentSources(
  * layers and adds what only it knows (`query` for its data); this is the rest, once.
  */
 export function layeredModContext(
-  sources: Pick<LayeredArchiveContentSources, 'files' | 'read' | 'readWithContext' | 'lookup'>,
+  sources: Pick<
+    LayeredArchiveContentSources,
+    'files' | 'read' | 'readWithContext' | 'openRangeWithContext' | 'lookup'
+  >,
   context: {
     readonly gameId: string
     readonly contextId: string
@@ -553,6 +711,11 @@ export function layeredModContext(
     readonly diagnostics?: readonly unknown[]
   },
 ): ModContext {
+  const lifetime = retainedClose(() =>
+    closeAll(
+      context.layers.flatMap(layer => ('archive' in layer.content ? [layer.content.archive] : [])),
+    ),
+  )
   const byId = new Map(context.layers.map(layer => [layer.id, layer]))
   if (byId.size !== context.layers.length) throw new TypeError('context layer ids repeat')
   /** Each layer's names by lower-case path, sorted, listed on first use. */
@@ -597,15 +760,18 @@ export function layeredModContext(
     return names
   }
   /** Resolves listed or exact lazy membership in one layer, preserving hidden-entry refusal. */
-  const member = async (layerId: string, path: string,
-    knownNames?: ReadonlyMap<string, string>): Promise<LayerArchiveEntry | undefined> => {
-    const names = knownNames ?? await namesOf(layerId)
+  const member = async (
+    layerId: string,
+    path: string,
+    knownNames?: ReadonlyMap<string, string>,
+  ): Promise<LayerArchiveEntry | undefined> => {
+    const names = knownNames ?? (await namesOf(layerId))
     const layer = byId.get(layerId)!
     const spelled = names.get(keyOf(path))
     const { content } = layer
     if ('archive' in content) {
       const listedEntry = content.archive.entries.find(item => keyOf(item.path) === keyOf(path))
-      const entry = listedEntry ?? await content.archive.lookup?.(normalized(path))
+      const entry = listedEntry ?? (await content.archive.lookup?.(normalized(path)))
       if (entry?.hidden === true) return undefined
       return entry ?? (spelled === undefined ? undefined : { path: spelled })
     }
@@ -640,8 +806,7 @@ export function layeredModContext(
     },
     async read(layerId, path, maxBytes) {
       const entry = await member(layerId, path)
-      if (entry === undefined)
-        throw new RangeError(`«${path}» is not a file of layer «${layerId}»`)
+      if (entry === undefined) throw new RangeError(`«${path}» is not a file of layer «${layerId}»`)
       const { content, sourceId } = byId.get(layerId)!
       if ('archive' in content) {
         return content.archive.read(entry.path, maxBytes)
@@ -653,8 +818,7 @@ export function layeredModContext(
     /** Reads only a validated member of this retained layer and its own context, never a lower copy's. */
     async readWithContext(layerId, path, maxBytes) {
       const entry = await member(layerId, path)
-      if (entry === undefined)
-        throw new RangeError(`«${path}» is not a file of layer «${layerId}»`)
+      if (entry === undefined) throw new RangeError(`«${path}» is not a file of layer «${layerId}»`)
       const { content, sourceId } = byId.get(layerId)!
       if ('archive' in content) {
         const bytes = await content.archive.read(entry.path, maxBytes)
@@ -665,6 +829,44 @@ export function layeredModContext(
       return sources.readWithContext === undefined
         ? { bytes: await sources.read(root, nativePath, maxBytes) }
         : sources.readWithContext(root, nativePath, maxBytes)
+    },
+    /** Membership and lease lifetime belong to this context; ranges never bypass a selected layer. */
+    async openRangeWithContext(layerId, path, signal) {
+      signal?.throwIfAborted()
+      const release = lifetime.retain()
+      let range: ContentSourceRange | undefined
+      try {
+        const entry = await member(layerId, path)
+        if (entry === undefined)
+          throw new RangeError(`«${path}» is not a file of layer «${layerId}»`)
+        signal?.throwIfAborted()
+        const { content, sourceId } = byId.get(layerId)!
+        if ('archive' in content) {
+          const opened = await content.archive.openRange?.(entry.path, signal)
+          if (opened !== undefined)
+            range = {
+              source: opened.source,
+              revision: opened.revision,
+              ...(entry.context === undefined ? {} : { context: entry.context }),
+            }
+        } else {
+          const root = 'file' in content ? sourceId : content.root
+          const nativePath = 'file' in content ? normalized(content.file) : entry.path
+          range = await sources.openRangeWithContext?.(root, nativePath, signal)
+        }
+        if (range === undefined) {
+          await release()
+          return undefined
+        }
+        signal?.throwIfAborted()
+        return retainedRange(range, release)
+      } catch (error) {
+        await Promise.resolve()
+          .then(() => range?.source.dispose())
+          .catch(() => undefined)
+        await release().catch(() => undefined)
+        throw error
+      }
     },
     async locate(path) {
       for (const layer of [...context.layers].reverse()) {
@@ -677,8 +879,7 @@ export function layeredModContext(
       return undefined
     },
     async dispose() {
-      for (const { content } of context.layers)
-        if ('archive' in content) await content.archive.close()
+      await lifetime.close()
     },
   }
 }

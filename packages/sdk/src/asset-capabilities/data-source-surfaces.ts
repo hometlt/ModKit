@@ -58,6 +58,7 @@ import type {
   ModelSocketSource,
 } from './model-facet-sources.js'
 import type { WorldSceneSource } from '../maps/index.js'
+import type { ArtifactByteSource, ArtifactNamespaceSource, AssetNamespace } from '../runtime-abi.js'
 
 // ---------------------------------------------------------------------------------------------
 // compile-time pin: a surface must name exactly the ABI's methods
@@ -71,6 +72,7 @@ type OptionalMethodKeys<T> = Extract<MethodKeys<T>, OptionalKeys<T>>
 
 /** The surface shape an ABI interface `T` demands: its methods, optional ones flagged. */
 export interface SurfaceOf<T> {
+  readonly fields?: readonly (Exclude<keyof T, MethodKeys<T>> & string)[]
   readonly methods: Readonly<
     Record<
       RequiredMethodKeys<T> & string,
@@ -97,6 +99,9 @@ export interface SurfaceOf<T> {
  */
 export const ENCODED_MEDIA_SURFACE_ID = 'common.view/encoded-media' as const
 export type EncodedMediaSurfaceId = typeof ENCODED_MEDIA_SURFACE_ID
+/** Existing runtime ABI ids are also closed auxiliary targets of namespace entry leases. */
+export const ARTIFACT_SOURCE_SURFACE_ID = 'x3.abi/artifact-source' as const
+export const ASSET_NAMESPACE_SURFACE_ID = 'x3.abi/asset-namespace' as const
 
 const ENCODED_MEDIA: DataSourceSurfaceRef = Object.freeze({
   contract: contractId(ENCODED_MEDIA_SURFACE_ID),
@@ -108,6 +113,36 @@ const sig = { signal: 'last' } as const
 const value = { kind: 'value' } as const
 const cancellableValue = { kind: 'value', ...sig } as const
 const iterable = { kind: 'iterable', ...sig } as const
+
+/** One canonical method/field definition for source leases in SDK and Host runtime registries. */
+export const ARTIFACT_SOURCE_SURFACE = deepFreeze({
+  fields: ['ref', 'revision', 'kind', 'size', 'containerContext'],
+  methods: {
+    read: { kind: 'value', optional: true, ...sig },
+    stream: { kind: 'iterable', optional: true, ...sig },
+    openNamespace: {
+      kind: 'lease',
+      result: { contract: contractId(ASSET_NAMESPACE_SURFACE_ID), major: 1 },
+      wrapper: 'lease',
+      optional: true,
+      ...sig,
+    },
+  },
+} as const satisfies SurfaceOf<Partial<ArtifactByteSource & ArtifactNamespaceSource>>)
+
+/** Recursive namespace→source leases resolve inside the same SDK auxiliary registry. */
+export const ASSET_NAMESPACE_SURFACE = deepFreeze({
+  methods: {
+    list: { kind: 'iterable', ...sig },
+    readPreamble: { kind: 'value', optional: true, ...sig },
+    open: {
+      kind: 'lease',
+      result: { contract: contractId(ARTIFACT_SOURCE_SURFACE_ID), major: 1 },
+      wrapper: 'lease',
+      ...sig,
+    },
+  },
+} as const satisfies SurfaceOf<AssetNamespace>)
 
 const encodedMediaSurface = {
   methods: {
@@ -174,6 +209,13 @@ const namespaceEntrySourceSurface = {
     openEntrySource: {
       kind: 'lease',
       result: { contract: contractId('common.view/byte-range-source'), major: 1 },
+      wrapper: 'lease',
+      optional: true,
+      ...sig,
+    },
+    openEntryArtifactSource: {
+      kind: 'lease',
+      result: { contract: contractId(ARTIFACT_SOURCE_SURFACE_ID), major: 1 },
       wrapper: 'lease',
       optional: true,
       ...sig,
@@ -443,12 +485,21 @@ export const STANDARD_DATA_SOURCE_SURFACES: Readonly<
 
 /** Auxiliary surfaces named by standard `lease` results but not data-source contracts themselves. */
 export const AUXILIARY_DATA_SOURCE_SURFACES: Readonly<
-  Record<EncodedMediaSurfaceId, DataSourceSurfaceV1>
+  Record<
+    EncodedMediaSurfaceId | typeof ARTIFACT_SOURCE_SURFACE_ID | typeof ASSET_NAMESPACE_SURFACE_ID,
+    DataSourceSurfaceV1
+  >
 > = deepFreeze({
   [ENCODED_MEDIA_SURFACE_ID]: encodedMediaSurface,
+  [ARTIFACT_SOURCE_SURFACE_ID]: ARTIFACT_SOURCE_SURFACE,
+  [ASSET_NAMESPACE_SURFACE_ID]: ASSET_NAMESPACE_SURFACE,
 })
 
-export type StandardSurfaceId = StandardDataSourceId | EncodedMediaSurfaceId
+export type StandardSurfaceId =
+  | StandardDataSourceId
+  | EncodedMediaSurfaceId
+  | typeof ARTIFACT_SOURCE_SURFACE_ID
+  | typeof ASSET_NAMESPACE_SURFACE_ID
 
 /**
  * Looks a standard or auxiliary surface up by wire coordinates. `undefined` for foreign
@@ -463,7 +514,12 @@ export function standardDataSourceSurfaceFor(
   if ((STANDARD_DATA_SOURCE_CONTRACTS as readonly string[]).includes(contract)) {
     return STANDARD_DATA_SOURCE_SURFACES[contract as StandardDataSourceId]
   }
-  if (contract === ENCODED_MEDIA_SURFACE_ID) return AUXILIARY_DATA_SOURCE_SURFACES[contract]
+  if (
+    contract === ENCODED_MEDIA_SURFACE_ID ||
+    contract === ARTIFACT_SOURCE_SURFACE_ID ||
+    contract === ASSET_NAMESPACE_SURFACE_ID
+  )
+    return AUXILIARY_DATA_SOURCE_SURFACES[contract]
   return undefined
 }
 
