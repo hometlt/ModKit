@@ -12,8 +12,23 @@ import { decompressOodle1 } from '../compression/oodle1.js'
 export { unpackGrannyCurve, type GrannyCurveDomain, type GrannyExpandedCurve } from './granny-curve-codec.js'
 
 export type GrannyValue = number | string | null | GrannyValue[] | { [key: string]: GrannyValue }
+export type GrannyReadonlyValue = number | string | null | readonly GrannyReadonlyValue[] | { readonly [key: string]: GrannyReadonlyValue }
 export interface GrannyLimits { readonly maxBytes: number; readonly maxNodes: number; readonly maxDepth: number }
 export interface GrannyCurve { readonly degree: number; readonly knots: readonly number[]; readonly controls: readonly number[]; readonly dimension: number }
+export type GrannyTransform = { readonly flags: number; readonly position: readonly number[]; readonly orientation: readonly number[]; readonly scaleShear: readonly number[] }
+/** Explicit packed-LE64 field access; native root offsets and admission stay with the carrier owner.
+ * One owned input/limits snapshot, shared graph caches and cumulative node/materialized ceilings.
+ * Input and materialized output each have the maxBytes ceiling, as with the standalone readers.
+ * Session views are frozen, retain identity and must not be edited. Any failed read closes the session.
+ */
+export interface GrannyPackedReader {
+  pointer(offset: number): number | null
+  string(pointerOffset: number): string | null
+  array(countOffset: number, pointerOffset: number, stride: number): readonly number[]
+  floats(offset: number, count: number): readonly number[]
+  transform(offset: number): GrannyTransform
+  variant(typeOffset: number, dataOffset: number): GrannyReadonlyValue
+}
 type Pointer = readonly [number, number]
 interface Section { bytes: Uint8Array; view: DataView; pointers: Map<number, Pointer> }
 interface Member { kind: number; name: string; type: Pointer | null; width: number; offset: number; size: number }
@@ -68,7 +83,7 @@ export function readGranny(input: Uint8Array, limits: GrannyLimits, signal?: Abo
     }
     sections.push({ bytes, view: new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength), pointers })
   }
-  return readGrannyObjectGraph(sections, [u32(52), u32(56)], [u32(60), u32(64)], limits, 'relocated-le32', consume, charge, () => limits.maxNodes - nodes)
+  return createGrannyObjectReader(sections, limits, 'relocated-le32', consume, charge, () => limits.maxNodes - nodes).object([u32(52), u32(56)], [u32(60), u32(64)], 0)
 }
 
 /** Self-describing variant with packed 64-bit offsets; this is not a GR2 container reader.
@@ -77,26 +92,81 @@ export function readGranny(input: Uint8Array, limits: GrannyLimits, signal?: Abo
  */
 export function readGrannyVariant(input: Uint8Array, typeOffset: number, dataOffset: number,
   profile: 'packed-le64', limits: GrannyLimits, signal?: AbortSignal): GrannyValue {
+  return createPackedReader(input, profile, limits, signal, false).variant(typeOffset, dataOffset)
+}
+
+/** Read untyped native roots and embedded variants through the same Granny primitive engine.
+ * The snapshot prevents cached variants from mixing revisions after the factory returns.
+ */
+export function createGrannyPackedReader(input: Uint8Array, profile: 'packed-le64',
+  limits: GrannyLimits, signal?: AbortSignal): GrannyPackedReader {
+  return createPackedReader(input, profile, limits, signal, true)
+}
+
+/** Preserve mutable standalone results while protecting persistent public-session views. */
+function createPackedReader(input: Uint8Array, profile: 'packed-le64', limits: GrannyLimits,
+  signal: AbortSignal | undefined, immutable: boolean) {
+  limits = { maxBytes: limits.maxBytes, maxNodes: limits.maxNodes, maxDepth: limits.maxDepth }
   signal?.throwIfAborted()
   if (profile !== 'packed-le64' || !Number.isSafeInteger(limits.maxBytes) || limits.maxBytes < 0 ||
     !Number.isSafeInteger(limits.maxNodes) || limits.maxNodes < 1 ||
     !Number.isSafeInteger(limits.maxDepth) || limits.maxDepth < 1 || input.length > limits.maxBytes)
     throw new RangeError('Granny variant profile/input/limits')
-  boundedCount(typeOffset, input.length, 'Granny variant root type')
-  boundedCount(dataOffset, input.length, 'Granny variant root data')
+  input = new Uint8Array(input)
   let nodes = 0, materialized = 0
   const consume = () => { signal?.throwIfAborted(); if (++nodes > limits.maxNodes) throw new RangeError('Granny node budget') }
   const charge = (bytes: number) => { materialized += bytes; if (materialized > limits.maxBytes) throw new RangeError('Granny materialized payload budget') }
   const section: Section = { bytes: input, view: new DataView(input.buffer, input.byteOffset, input.byteLength), pointers: new Map() }
-  return readGrannyObjectGraph([section], [0, typeOffset], [0, dataOffset], limits, profile, consume, charge, () => limits.maxNodes - nodes)
+  const graph = createGrannyObjectReader([section], limits, profile, consume, charge, () => limits.maxNodes - nodes, immutable)
+  let closed = false
+  /** Failed schema/object parsing cannot leave reusable partial caches in a persistent session. */
+  function guarded<T>(operation: () => T): T {
+    try {
+      signal?.throwIfAborted()
+      if (closed) throw new TypeError('Granny packed session closed after failed read')
+      return operation()
+    } catch (error) { closed = true; throw error }
+  }
+  /** Admit public byte offsets before passing them to the section-local engine. */
+  const slot = (offset: number): Pointer => [0, boundedCount(offset, input.length, 'Granny packed field')]
+  return {
+    /** Native zero remains null; every other encoded pointer is range checked. */
+    pointer(offset: number) { return guarded(() => { consume(); charge(8); return graph.pointer(slot(offset))?.[1] ?? null }) },
+    /** Preserve null versus empty UTF-8 strings while sharing native string admission. */
+    string(offset: number) { return guarded(() => { consume(); charge(8); const p = graph.pointer(slot(offset)); return p ? graph.string(p) : null }) },
+    /** Contiguous record slots; the carrier supplies its attested native stride. */
+    array(countOffset: number, pointerOffset: number, stride: number) { return guarded(() => {
+      consume(); charge(16)
+      boundedCount(stride, limits.maxBytes, 'Granny packed stride')
+      if (stride === 0) throw new RangeError('Granny packed zero stride')
+      const length = graph.word(slot(countOffset)), dest = graph.pointer(slot(pointerOffset))
+      if (length > limits.maxNodes - nodes) throw new RangeError('Granny array node budget')
+      graph.arrayBounds(length, dest, stride)
+      return Object.freeze(Array.from({ length }, (_, i) => { consume(); return dest![1] + i * stride }))
+    }) },
+    /** Charge direct finite-float output before allocating its array. */
+    floats(offset: number, count: number) { return guarded(() => {
+      boundedCount(count, limits.maxNodes - nodes - 1, 'Granny packed float count')
+      consume(); charge(16 + count * 8)
+      const result = graph.floats(slot(offset), count)
+      for (let i = 0; i < count; i++) consume()
+      return result
+    }) },
+    /** The same 68-byte flags/position/orientation/scale-shear decoder as typed members. */
+    transform(offset: number) { return guarded(() => { consume(); charge(16 + 17 * 8 + 3 * 8); return graph.transform(slot(offset)) }) },
+    /** All roots share caches, cycle checks and the remaining cumulative budget. */
+    variant(typeOffset: number, dataOffset: number) { return guarded(() => graph.object(slot(typeOffset), slot(dataOffset), 0)) },
+  }
 }
 
 /** One type/object engine for relocated LE32 containers and explicitly admitted packed variants.
  * Container node/materialized counters are passed through, retaining relocation charges.
  */
-function readGrannyObjectGraph(sections: Section[], rootType: Pointer, rootData: Pointer,
+function createGrannyObjectReader(sections: Section[],
   limits: GrannyLimits, layout: 'relocated-le32' | 'packed-le64', consume: () => void,
-  charge: (bytes: number) => void, remainingNodes: () => number): GrannyValue {
+  charge: (bytes: number) => void, remainingNodes: () => number, immutable = false) {
+  /** Seal values at their existing construction points; standalone readers retain mutable outputs. */
+  function seal<T extends object>(value: T): T { if (immutable) Object.freeze(value); return value }
   const pointerBytes = layout === 'packed-le64' ? 8 : 4
   const memberStride = layout === 'packed-le64' ? 44 : 32
   /** Resolve a section-local pointer only after checking its entire requested extent. */
@@ -173,8 +243,9 @@ function readGrannyObjectGraph(sections: Section[], rootType: Pointer, rootData:
       for (const m of schema.members) {
         const values: GrannyValue[] = []
         for (let n = 0; n < m.width; n++) values.push(value(m, add(p, m.offset + n * m.size / m.width), depth + 1))
-        result[m.name] = m.width === 1 ? values[0]! : values
+        result[m.name] = m.width === 1 ? values[0]! : seal(values)
       }
+      seal(result)
       objects.set(key, result)
       return result
     } finally { active.delete(key) }
@@ -193,21 +264,20 @@ function readGrannyObjectGraph(sections: Section[], rootType: Pointer, rootData:
       const length = word(add(p, variant ? pointerBytes : 0)), dest = pointer(add(p, variant ? pointerBytes + 4 : 4))
       if (length > remainingNodes()) throw new RangeError('Granny array node budget')
       if (length && (!dest || !tp)) throw new RangeError('Granny array pointer is absent')
-      if (!dest || !tp) return []
+      if (!dest || !tp) return seal([])
       const elementType = type(tp, depth)
       const size = m.kind === 4 ? pointerBytes : elementType.size
-      location(dest, length * size)
-      charge(length * 8)
+      arrayBounds(length, dest, size)
       // Granny's Real32 array element type is a one-scalar wrapper, not a semantic object.
       const scalar = elementType.members.length === 1 ? elementType.members[0] : undefined
       if (m.kind !== 4 && scalar?.kind === 10 && scalar.width === 1 && scalar.name === 'Real32')
-        return Array.from({ length }, (_, i) => value(scalar, add(dest, i * size), depth))
-      return Array.from({ length }, (_, i) => {
+        return seal(Array.from({ length }, (_, i) => value(scalar, add(dest, i * size), depth)))
+      return seal(Array.from({ length }, (_, i) => {
         const slot = add(dest, i * size), target = m.kind === 4 ? pointer(slot) : slot
         return target ? object(tp, target, depth) : null
-      })
+      }))
     }
-    if (m.kind === 9) return { flags: word(p), position: floats(add(p, 4), 3), orientation: floats(add(p, 16), 4), scaleShear: floats(add(p, 32), 9) }
+    if (m.kind === 9) return transform(p)
     if (m.kind === 10) { const f = view.getFloat32(at, true); if (!Number.isFinite(f)) throw new TypeError('Granny nonfinite float'); return f }
     if ([11, 13].includes(m.kind)) return view.getInt8(at)
     if ([12, 14].includes(m.kind)) return view.getUint8(at)
@@ -218,15 +288,26 @@ function readGrannyObjectGraph(sections: Section[], rootType: Pointer, rootData:
     throw new TypeError(`Unsupported Granny scalar ${m.kind}`)
   }
   /** Transform floats use the same finite-value gate as ordinary Real32 members. */
-  function floats(p: Pointer, length: number): GrannyValue[] {
+  function floats(p: Pointer, length: number): number[] {
     const section = location(p, length * 4)
-    return Array.from({ length }, (_, i) => {
+    return seal(Array.from({ length }, (_, i) => {
       const f = section.view.getFloat32(p[1] + i * 4, true)
       if (!Number.isFinite(f)) throw new TypeError('Granny nonfinite transform')
       return f
-    })
+    }))
   }
-  return object(rootType, rootData, 0)
+  /** One extent/count/output gate for typed arrays and explicit native record slots. */
+  function arrayBounds(length: number, dest: Pointer | null, size: number): void {
+    if (length && !dest) throw new RangeError('Granny array pointer is absent')
+    if (dest) location(dest, length * size)
+    charge(length * 8)
+  }
+  /** Native transform semantics are shared with direct untyped-root reads. */
+  function transform(p: Pointer) {
+    location(p, 68)
+    return seal({ flags: word(p), position: floats(add(p, 4), 3), orientation: floats(add(p, 16), 4), scaleShear: floats(add(p, 32), 9) })
+  }
+  return { object, pointer, string, word, floats, transform, arrayBounds }
 }
 
 /**

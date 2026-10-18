@@ -3,7 +3,7 @@
  * Full notice: ../../LICENSE.lslib. This expands control points, not evaluated keyframes.
  */
 import { boundedCount } from '../binary.js'
-import type { GrannyCurve, GrannyLimits, GrannyValue } from './granny.js'
+import type { GrannyCurve, GrannyLimits, GrannyReadonlyValue } from './granny.js'
 
 export interface GrannyCurveDomain {
   readonly kind: 'vector' | 'quaternion' | 'matrix3'
@@ -51,7 +51,7 @@ const QUAT_OFFSETS = [
  * Sample-index knots require native time mapping before a time-based sampler is used.
  */
 export function unpackGrannyCurve(
-  input: GrannyValue,
+  input: GrannyReadonlyValue,
   domain: GrannyCurveDomain,
   limits: Pick<GrannyLimits, 'maxBytes' | 'maxNodes'>,
   signal?: AbortSignal,
@@ -70,21 +70,21 @@ export function unpackGrannyCurve(
       throw new RangeError('Granny expanded curve budget')
   }
   /** Admit one record without inferring a missing native field. */
-  const object = (value: GrannyValue | undefined, label: string) => {
+  const object = (value: GrannyReadonlyValue | undefined, label: string) => {
     consume(1)
     if (!value || typeof value !== 'object' || Array.isArray(value))
       throw new TypeError(`Granny ${label} object required`)
-    return value
+    return value as Readonly<Record<string, GrannyReadonlyValue>>
   }
   /** Preserve finite native scalars; each visit consumes the caller's node ceiling. */
-  const number = (value: GrannyValue | undefined, label: string) => {
+  const number = (value: GrannyReadonlyValue | undefined, label: string) => {
     consume(1)
     if (typeof value !== 'number' || !Number.isFinite(value))
       throw new TypeError(`Granny ${label} finite number required`)
     return value
   }
   /** Integer fields reuse the common bounded numeric admission. */
-  const word = (value: GrannyValue | undefined, max: number, label: string) =>
+  const word = (value: GrannyReadonlyValue | undefined, max: number, label: string) =>
     boundedCount(number(value, label), max, label)
   const root = object(input, 'curve')
   const headers = NAMES.filter(name => Object.hasOwn(root, `CurveDataHeader_${name}`))
