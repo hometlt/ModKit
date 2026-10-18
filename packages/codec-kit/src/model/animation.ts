@@ -41,6 +41,42 @@ export function isModelClipTags(value: unknown): value is readonly string[] {
   )
 }
 
+/**
+ * The target clip for a source clip by the `matching` rule of the UVM clip vocabulary
+ * (`uvm-clip-vocabulary.v1.json`): the same role, then the most shared tags, then the fewest
+ * unshared canonical tags, then the higher priority (absent is zero), then the lower
+ * `sequenceIndex` (the target's position when absent). A `publisher:` tag counts only when both
+ * clips carry the identical word, so it never matches across publishers. Returns the index into
+ * `targets`, or undefined when the source has no role or no target has it: the caller reports
+ * the clip as a conversion loss and never falls back to names.
+ */
+export function matchModelClip(
+  source: Pick<ModelAnimationClip, 'role' | 'tags'>,
+  targets: readonly Pick<ModelAnimationClip, 'role' | 'tags' | 'priority' | 'sequenceIndex'>[],
+): number | undefined {
+  if (source.role === undefined) return undefined
+  const wanted = new Set(source.tags ?? [])
+  const canonical = (tag: string) => !tag.includes(':')
+  let best: { index: number; key: readonly number[] } | undefined
+  targets.forEach((target, index) => {
+    if (target.role !== source.role) return
+    const tags = new Set(target.tags ?? [])
+    const shared = [...tags].filter(tag => wanted.has(tag)).length
+    const unshared =
+      [...tags].filter(tag => canonical(tag) && !wanted.has(tag)).length +
+      [...wanted].filter(tag => canonical(tag) && !tags.has(tag)).length
+    // compared in order, smaller wins
+    const key = [-shared, unshared, -(target.priority ?? 0), target.sequenceIndex ?? index, index]
+    if (best === undefined || compareKeys(key, best.key) < 0) best = { index, key }
+  })
+  return best?.index
+}
+
+function compareKeys(a: readonly number[], b: readonly number[]): number {
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i]! - b[i]!
+  return 0
+}
+
 /** Native animation names can be property sets ("Stand Talk"); compare their tokens without
  * tying the generic sampling layer to any game's file layout. */
 export function modelAnimationNameMatches(name: string, requested: string): boolean {
