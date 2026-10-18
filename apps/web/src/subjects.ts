@@ -190,6 +190,8 @@ export const WEB_WORKER_MODULE_MAP: Readonly<Record<string, string>> = Object.fr
   '@modkit/codec-kit/model/bounds': 'vendor/codec-kit/model/bounds.js',
   '@modkit/codec-kit/model-math/transform': 'vendor/codec-kit/model-math/transform.js',
   '@modkit/codec-kit/model/skeleton': 'vendor/codec-kit/model/skeleton.js',
+  '@modkit/codec-kit/model/granny': 'vendor/codec-kit/model/granny.js',
+  '@modkit/codec-kit/compression/oodle1': 'vendor/codec-kit/compression/oodle1.js',
   '@modkit/codec-kit/model/sources': 'vendor/codec-kit/model/sources.js',
   '@modkit/codec-kit/model/animation': 'vendor/codec-kit/model/animation.js',
   '@modkit/codec-kit/binary': 'vendor/codec-kit/binary.js',

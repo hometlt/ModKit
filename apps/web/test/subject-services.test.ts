@@ -197,6 +197,12 @@ const nodeModuleMap = {
   '@modkit/codec-kit/model/skeleton': pathToFileURL(
     join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'model', 'skeleton.js'),
   ).href,
+  '@modkit/codec-kit/model/granny': pathToFileURL(
+    join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'model', 'granny.js'),
+  ).href,
+  '@modkit/codec-kit/compression/oodle1': pathToFileURL(
+    join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'compression', 'oodle1.js'),
+  ).href,
   '@modkit/codec-kit/model/sources': pathToFileURL(
     join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'model', 'sources.js'),
   ).href,

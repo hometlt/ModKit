@@ -10,6 +10,7 @@
 import {
   IMA_INDEX_TABLE as INDEX_TABLE,
   IMA_STEP_TABLE as STEP_TABLE,
+  decodeMsAdpcmBlock,
 } from '@modkit/codec-kit/audio'
 
 const clampSample = value => (value < -32_768 ? -32_768 : value > 32_767 ? 32_767 : value)
@@ -45,6 +46,14 @@ function adpcmTailFrames(bytes, channels) {
 
 /** How many whole frames the data chunk holds for this format. */
 export function frameCountFor(format, dataBytes) {
+  if (format.encoding === 'ms-adpcm') {
+    const tail = dataBytes % format.blockAlign
+    const physical = Math.floor(dataBytes / format.blockAlign) * format.samplesPerBlock +
+      (tail >= 7 * format.channels ? 2 + ((tail - 7 * format.channels) * 2) / format.channels : 0)
+    if (tail > 0 && tail < 7 * format.channels) throw new RangeError('Microsoft ADPCM truncated tail header')
+    if (format.sampleFrames !== undefined && format.sampleFrames > physical) throw new RangeError('Microsoft ADPCM fact exceeds data')
+    return Math.min(physical, format.sampleFrames ?? physical)
+  }
   if (format.encoding === 'ima-adpcm') {
     if (format.blockAlign <= 0) return 0
     const blocks = Math.floor(dataBytes / format.blockAlign)
@@ -59,6 +68,9 @@ export function frameCountFor(format, dataBytes) {
 
 /** True when this module can turn the declared format into samples. */
 export function isDecodableFormat(format) {
+  if (format.encoding === 'ms-adpcm') return format.bitsPerSample === 4 && [1, 2].includes(format.channels) &&
+    format.blockAlign >= 7 * format.channels && Array.isArray(format.coefficients) && format.coefficients.length > 0 &&
+    format.samplesPerBlock === 2 + ((format.blockAlign - 7 * format.channels) * 2) / format.channels
   if (format.encoding === 'ima-adpcm') {
     return format.bitsPerSample === 4 && format.channels > 0 && format.blockAlign > 4
   }
@@ -166,7 +178,19 @@ export function decodeWavPcm(data, format, fromFrame, requestedFrames) {
   const frameCount = Math.max(0, Math.min(requestedFrames, total - start))
   const channels = Array.from({ length: format.channels }, () => new Float32Array(frameCount))
   if (frameCount === 0) return channels
-  if (format.encoding === 'ima-adpcm') decodeImaAdpcm(data, format, start, frameCount, channels)
+  if (format.encoding === 'ms-adpcm') {
+    const first = Math.floor(start / format.samplesPerBlock), last = Math.ceil((start + frameCount) / format.samplesPerBlock)
+    for (let block = first; block < last; block++) {
+      const bytes = data.subarray(block * format.blockAlign, Math.min(data.length, (block + 1) * format.blockAlign))
+      const decoded = decodeMsAdpcmBlock(bytes, format.channels, format.coefficients, format.samplesPerBlock * format.channels * 2)
+      for (let frame = 0; frame < decoded.length / format.channels; frame++) {
+        const target = block * format.samplesPerBlock + frame - start
+        if (target < 0 || target >= frameCount) continue
+        for (let channel = 0; channel < format.channels; channel++) channels[channel][target] = decoded[frame * format.channels + channel] / 32768
+      }
+    }
+  }
+  else if (format.encoding === 'ima-adpcm') decodeImaAdpcm(data, format, start, frameCount, channels)
   else decodeLinear(data, format, start, frameCount, channels)
   return channels
 }

@@ -44,9 +44,11 @@ export function readZipByRanges(
   source: ByteRangeSource,
   budget: { readonly maxInputBytes: bigint | number; readonly maxNodes: number },
   signal?: AbortSignal,
+  options?: { readonly compatibility?: 'legacy-wrapped-entry-count' },
 ): Promise<{
   readonly entries: readonly ZipArchiveEntry[]
   readonly containerEntries: ContainerEntryTable
+  readonly diagnostics: readonly { readonly code: string; readonly severity: 'warning'; readonly message: string; readonly path: readonly string[] }[]
 }>
 
 export const abiVersion: 1

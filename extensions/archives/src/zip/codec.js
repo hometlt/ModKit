@@ -115,6 +115,7 @@ function eocdOf(tail, tailStart) {
     throw new TypeError('multi-disk ZIP archives are unsupported')
   }
   const count = u16(tail, eocd + 10)
+  if (u16(tail, eocd + 8) !== count) throw new TypeError('ZIP per-disk entry count disagrees with total')
   const centralSize = u32(tail, eocd + 12)
   const centralOffset = u32(tail, eocd + 16)
   const saturated = count === MAX_U16 || centralSize === MAX_U32 || centralOffset === MAX_U32
@@ -171,11 +172,12 @@ function withZip64Extra(extra, fields) {
 }
 
 /** Central-directory records starting at absolute `centralOffset`, parsed from their bytes. */
-function parseCentralDirectory(central, centralOffset, count, maxEntries) {
+function parseCentralDirectory(central, centralOffset, count, maxEntries, wrappedCount = false) {
   if (count > maxEntries) throw new RangeError('ZIP entry count exceeds maxNodes budget')
   const entries = []
   let offset = 0
-  for (let index = 0; index < count; index += 1) {
+  for (let index = 0; index < count || (wrappedCount && offset < central.byteLength); index += 1) {
+    if (index >= maxEntries) throw new RangeError('ZIP actual entry count exceeds maxNodes budget')
     if (offset + 46 > central.byteLength || u32(central, offset) !== ZIP_CENTRAL) {
       throw new TypeError(`invalid ZIP central-directory entry ${index}`)
     }
@@ -224,6 +226,8 @@ function parseCentralDirectory(central, centralOffset, count, maxEntries) {
   if (offset !== central.byteLength) {
     throw new TypeError('ZIP central-directory size does not match its entries')
   }
+  if (entries.length !== count && (entries.length <= MAX_U16 || entries.length % 65536 !== count))
+    throw new TypeError('ZIP legacy wrapped entry count does not match the complete directory')
   return Object.freeze(entries)
 }
 
@@ -262,7 +266,7 @@ export function parseZipArchive(bytes, maxEntries) {
  * The directory of an archive of any size, read by ranges: the tail, the ZIP64 record when there
  * is one, then the central directory (at most `maxRead` bytes).
  */
-async function readZipDirectory(read, size, maxEntries, maxRead) {
+async function readZipDirectory(read, size, maxEntries, maxRead, compatibility) {
   const tailStart = Math.max(0, size - Math.min(65_557, maxRead))
   const tailBytes = await read(tailStart, size - tailStart)
   const tail = eocdOf(tailBytes, tailStart)
@@ -286,7 +290,9 @@ async function readZipDirectory(read, size, maxEntries, maxRead) {
           directory.centralOffset - tailStart + directory.centralSize,
         )
       : await read(directory.centralOffset, directory.centralSize)
-  return parseCentralDirectory(central, directory.centralOffset, directory.count, maxEntries)
+  const wrapped = compatibility === 'legacy-wrapped-entry-count' && tail.zip64RecordOffset === undefined
+  const entries = parseCentralDirectory(central, directory.centralOffset, directory.count, maxEntries, wrapped)
+  return entries
 }
 
 /**
@@ -316,7 +322,10 @@ function localDataLocator(entry, read, size) {
  * its range `inspect` returns, so listing and extraction stay the host's. Reads at most
  * `budget.maxInputBytes` at a time; an archive of any size, ZIP64 included.
  */
-export async function readZipByRanges(byteSource, budget, signal) {
+export async function readZipByRanges(byteSource, budget, signal, options = {}) {
+  if (Object.keys(options).some(key => key !== 'compatibility') ||
+      (options.compatibility !== undefined && options.compatibility !== 'legacy-wrapped-entry-count'))
+    throw new TypeError('Unknown ZIP compatibility policy')
   const size = Number(await byteSource.size())
   const maxRead = Number(budget.maxInputBytes)
   const read = async (offset, length) => {
@@ -324,8 +333,13 @@ export async function readZipByRanges(byteSource, budget, signal) {
     if (bytes.byteLength !== length) throw new TypeError('ZIP archive is truncated')
     return bytes
   }
-  const entries = await readZipDirectory(read, size, budget.maxNodes, maxRead)
-  return { entries, containerEntries: await zipEntryTable(entries, read, size) }
+  const entries = await readZipDirectory(read, size, budget.maxNodes, maxRead, options.compatibility)
+  // A declared compatibility profile is observable even on files that happen not to need recovery.
+  const diagnostics = options.compatibility === undefined ? [] : [{
+    code: 'x3.zip/legacy-wrapped-entry-count', severity: 'warning', path: [],
+    message: 'Explicit legacy wrapped-entry-count profile: complete directory checked; actual count obeys the 16-bit EOCD congruence. Nonstandard counts are not ZIP64.',
+  }]
+  return { entries, containerEntries: await zipEntryTable(entries, read, size), diagnostics }
 }
 
 /** ZIP entries as the host's entry table: listing, extraction and in-place nested opens. */

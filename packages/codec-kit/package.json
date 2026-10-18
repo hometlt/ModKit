@@ -5,6 +5,14 @@
   "type": "module",
   "description": "Optional dependency-neutral runtime kit for small MK3 inspection codecs.",
   "exports": {
+    "./compression/oodle1": {
+      "types": "./dist/compression/oodle1.d.ts",
+      "default": "./dist/compression/oodle1.js"
+    },
+    "./model/granny": {
+      "types": "./dist/model/granny.d.ts",
+      "default": "./dist/model/granny.js"
+    },
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
@@ -269,6 +277,8 @@
   },
   "files": [
     "dist",
+    "LICENSE.liboodle",
+    "NOTICE.granny.md",
     "MK2-SKINNING-KERNELS.json",
     "MK2-DIGEST-KERNELS.json",
     "README.md",

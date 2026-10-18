@@ -1,5 +1,13 @@
 # `@modkit/codec-kit`
 
+`model/granny` reads bounded Granny v6 LE32 self-describing files (stored/Oodle1 sections,
+CRC, relocation/type/graph validation). Other pointer widths, Oodle0, mixed marshalling and
+unknown members refuse. `compression/oodle1` is the old Granny codec, bounded for output
+and accounted adaptive-model buffers; it is unrelated to modern Oodle services.
+`sampleGrannyCurve` qualifies degree 0/1; degree 2/3 evaluation remains an explicitly sampled
+approximation until native-engine curve agreement is established. See `NOTICE.granny.md`.
+`audio` also exports `decodeMsAdpcmBlock` for WAVE tag 2, using declared coefficient pairs.
+
 M1 adds explicit `legacy`, `crypto`, `compression`, and `texture` subpaths. The compatibility
 boundaries and pending surfaces are documented in `adr/ADR-CODEC-001-legacy-kit.md` in the repository.
 Build with `pnpm --filter @modkit/codec-kit build` before `pnpm --filter @modkit/codec-kit test`;

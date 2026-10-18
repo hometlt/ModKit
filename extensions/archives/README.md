@@ -1,5 +1,11 @@
 # `common/archives`
 
+`readZipByRanges` defaults to strict directory counts. The explicit fourth-argument profile
+`{ compatibility: 'legacy-wrapped-entry-count' }` admits a classic non-ZIP64 directory only
+after scanning every complete record, enforcing the actual entry budget and checking that
+its count is congruent with both EOCD counts modulo 65536. It emits a warning; malformed
+tails/counts still refuse. This read-only policy does not qualify legacy archives for editing.
+
 Archive-family reference extension. The first vertical codec is ZIP: bounded structural probe,
 central-directory validation, lazy namespace listing, and stored/deflate entry extraction.
 

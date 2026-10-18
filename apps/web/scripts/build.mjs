@@ -388,6 +388,8 @@ const workerBuild = await build({
       'model-math',
       'transform.js',
     ),
+    'vendor/codec-kit/model/granny': join(repoRoot, 'packages', 'codec-kit', 'dist', 'model', 'granny.js'),
+    'vendor/codec-kit/compression/oodle1': join(repoRoot, 'packages', 'codec-kit', 'dist', 'compression', 'oodle1.js'),
     'vendor/codec-kit/model/skeleton': join(
       repoRoot,
       'packages',

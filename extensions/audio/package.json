@@ -5,6 +5,10 @@
   "type": "module",
   "description": "Isolated MK3 audio codecs.",
   "exports": {
+    "./formats/wav/codec": {
+      "types": "./src/wav/codec.d.ts",
+      "default": "./src/wav/codec.js"
+    },
     ".": "./src/index.js",
     "./linked": "./src/linked.js",
     "./formats/mp3/codec": "./src/mp3/codec.js",

@@ -25,6 +25,7 @@ const latin1 = new TextDecoder('latin1')
 /** RIFF WAVE wFormatTag values worth naming; anything else is reported by its number. */
 const FORMAT_TAGS = Object.freeze({
   0x0001: 'pcm',
+  0x0002: 'ms-adpcm',
   0x0003: 'ieee-float',
   0x0006: 'a-law',
   0x0007: 'mu-law',
@@ -76,6 +77,16 @@ function readFormat(bytes, chunk) {
   if (chunk === undefined || chunk.bytes < 16) return undefined
   const at = chunk.start
   const tag = u16le(bytes, at)
+  let adpcm
+  if (tag === 2) {
+    if (chunk.bytes < 22) throw new TypeError('Microsoft ADPCM fmt extension is truncated')
+    const extensionBytes = u16le(bytes, at + 16), count = u16le(bytes, at + 20)
+    if (count < 1 || count > 256 || extensionBytes < 4 + count * 4 || 18 + extensionBytes > chunk.bytes)
+      throw new TypeError('Microsoft ADPCM fmt coefficient extent')
+    const signed = offset => (u16le(bytes, offset) << 16) >> 16
+    adpcm = { samplesPerBlock: u16le(bytes, at + 18),
+      coefficients: Array.from({ length: count }, (_, i) => Object.freeze([signed(at + 22 + i * 4), signed(at + 24 + i * 4)])) }
+  }
   return Object.freeze({
     tag,
     encoding: FORMAT_TAGS[tag] ?? `format-${tag}`,
@@ -84,7 +95,153 @@ function readFormat(bytes, chunk) {
     byteRate: u32le(bytes, at + 8),
     blockAlign: u16le(bytes, at + 12),
     bitsPerSample: u16le(bytes, at + 14),
+    ...adpcm,
   })
+}
+
+/** Inspect native RIFF/WAVE bytes; reused by referencing formats without creating another session. */
+export async function inspectWav(bytes, context) {
+  const chunks = readChunks(bytes, context.budget.maxNodes)
+  let format = readFormat(
+    bytes,
+    chunks.find(chunk => chunk.id === 'fmt '),
+  )
+  if (format === undefined) throw new TypeError('RIFF/WAVE carries no usable fmt chunk')
+  if (format.encoding === 'ms-adpcm') {
+    if (!isDecodableFormat(format)) throw new TypeError('Microsoft ADPCM invalid frame/block declaration')
+    const fact = chunks.find(chunk => chunk.id === 'fact')
+    if (fact !== undefined && fact.bytes < 4) throw new TypeError('Microsoft ADPCM fact is truncated')
+    if (fact !== undefined) format = Object.freeze({ ...format, sampleFrames: u32le(bytes, fact.start) })
+  }
+  const data = chunks.find(chunk => chunk.id === 'data')
+  if (data === undefined) throw new TypeError('RIFF/WAVE carries no data chunk')
+  const frames = frameCountFor(format, data.bytes)
+  const durationMs = format.encoding === 'ms-adpcm' && format.sampleRate > 0
+    ? Math.round(frames / format.sampleRate * 1000)
+    : format.byteRate > 0 ? Math.round((data.bytes / format.byteRate) * 1000) : 'unknown'
+  const decodable = isDecodableFormat(format)
+  const samples = bytes.subarray(data.start, data.start + data.bytes)
+
+  const readPcm = async (request, signal) => {
+    if (signal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
+    if (request.trackId !== 'stream-0') {
+      throw new RangeError(`unknown audio track ${String(request.trackId)}`)
+    }
+    if (typeof request.fromFrame !== 'bigint' || request.fromFrame < 0n) {
+      throw new RangeError('WAV PCM fromFrame must be a non-negative bigint')
+    }
+    if (!Number.isSafeInteger(request.frameCount) || request.frameCount < 0) {
+      throw new RangeError('WAV PCM frameCount must be a non-negative safe integer')
+    }
+    const needed = request.frameCount * format.channels * 4
+    if (!Number.isSafeInteger(needed) || needed > request.maxBytes) {
+      throw new RangeError('WAV PCM window exceeds maxBytes budget')
+    }
+    const fromFrame = Number(request.fromFrame)
+    if (!Number.isSafeInteger(fromFrame)) {
+      throw new RangeError('WAV PCM fromFrame exceeds the safe integer range')
+    }
+    const channels = decodeWavPcm(samples, format, fromFrame, request.frameCount)
+    /*
+     * Interleave into ONE buffer before answering. The boundary requires each typed array to own
+     * its whole buffer, so per-channel arrays cross as N separate payloads; one interleaved
+     * buffer is what `AudioPcmBlock` asks for and what the wire is built to carry.
+     */
+    const channelCount = channels.length
+    const decodedFrames = channels[0]?.length ?? 0
+    const interleaved = new Float32Array(decodedFrames * channelCount)
+    for (let channel = 0; channel < channelCount; channel += 1) {
+      const source = channels[channel]
+      for (let frame = 0; frame < decodedFrames; frame += 1) {
+        interleaved[frame * channelCount + channel] = source[frame]
+      }
+    }
+    return Object.freeze({
+      sampleRate: format.sampleRate,
+      fromFrame: BigInt(Math.min(fromFrame, frames)),
+      frameCount: decodedFrames,
+      channelCount,
+      samples: interleaved,
+    })
+  }
+
+  // The whole RIFF file, not the bare `data` chunk: a platform player needs the header.
+  const audio = createAudioMediaSource(
+    bytes,
+    'audio/wav',
+    {
+      durationMs,
+      seekable: true, // uncompressed frames are a constant size: any sample offset is arithmetic
+      tracks: [
+        {
+          id: 'stream-0',
+          codec: format.encoding,
+          channels: format.channels,
+          sampleRate: format.sampleRate,
+          bitrateKbps: Math.round((format.byteRate * 8) / 1000),
+          selected: true,
+        },
+      ],
+      pcmAccess: decodable,
+    },
+    ...(decodable ? [readPcm] : []),
+  )
+  const tree = createTreeDataSource({
+    kind: 'audio',
+    label: 'WAV',
+    preview: `${format.sampleRate} Hz, ${format.channels} channel(s), ${format.bitsPerSample}-bit ${format.encoding}`,
+    children: chunks.map(chunk => ({
+      kind: 'chunk',
+      label: chunk.id,
+      preview: `${chunk.bytes} bytes${chunk.truncated ? ' (truncated)' : ''} at ${chunk.start}`,
+    })),
+  })
+  return {
+    summary: {
+      format: 'wav',
+      encoding: format.encoding,
+      channels: format.channels,
+      sampleRate: format.sampleRate,
+      bitsPerSample: format.bitsPerSample,
+      frames,
+      durationMs,
+      chunks: chunks.length,
+    },
+    metadata: [
+      {
+        id: 'riff-wave',
+        label: 'RIFF/WAVE format',
+        entries: [
+          { key: 'encoding', value: format.encoding },
+          { key: 'formatTag', value: format.tag },
+          { key: 'channels', value: format.channels },
+          { key: 'sampleRate', value: format.sampleRate },
+          { key: 'bitsPerSample', value: format.bitsPerSample },
+          { key: 'byteRate', value: format.byteRate },
+          { key: 'blockAlign', value: format.blockAlign },
+          { key: 'dataBytes', value: data.bytes },
+          { key: 'frames', value: frames },
+        ],
+      },
+    ],
+    traits: [
+      { id: 'audio.streams', parameters: { count: 1, codec: format.encoding } },
+      ...(durationMs === 'unknown'
+        ? []
+        : [{ id: 'media.duration', parameters: { milliseconds: durationMs } }]),
+      { id: 'media.seekable', parameters: { constantBitrate: true } },
+      { id: 'content.binary', parameters: { bytes: String(bytes.byteLength) } },
+    ],
+    dataSources: {
+      'common.view/tree-data-source': tree,
+      'common.view/audio-media-source': audio,
+    },
+    unsupportedFeatures: [
+      ...(decodable ? [] : [`pcm-decoding-for-${format.encoding}-${format.bitsPerSample}bit`]),
+      'cue-and-playlist-chunks',
+      'broadcast-wave-metadata',
+    ],
+  }
 }
 
 const definition = Object.freeze({
@@ -99,142 +256,7 @@ const definition = Object.freeze({
     if (format === undefined) return { confidence: 0.6, kind: 'magic', note: 'riff-wave-no-fmt' }
     return { confidence: 0.98, kind: 'magic', note: `riff-wave-${format.encoding}` }
   },
-  async inspect(bytes, context) {
-    const chunks = readChunks(bytes, context.budget.maxNodes)
-    const format = readFormat(
-      bytes,
-      chunks.find(chunk => chunk.id === 'fmt '),
-    )
-    if (format === undefined) throw new TypeError('RIFF/WAVE carries no usable fmt chunk')
-    const data = chunks.find(chunk => chunk.id === 'data')
-    if (data === undefined) throw new TypeError('RIFF/WAVE carries no data chunk')
-    const durationMs =
-      format.byteRate > 0 ? Math.round((data.bytes / format.byteRate) * 1000) : 'unknown'
-    const frames = frameCountFor(format, data.bytes)
-    const decodable = isDecodableFormat(format)
-    const samples = bytes.subarray(data.start, data.start + data.bytes)
-
-    const readPcm = async (request, signal) => {
-      if (signal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
-      if (request.trackId !== 'stream-0') {
-        throw new RangeError(`unknown audio track ${String(request.trackId)}`)
-      }
-      if (typeof request.fromFrame !== 'bigint' || request.fromFrame < 0n) {
-        throw new RangeError('WAV PCM fromFrame must be a non-negative bigint')
-      }
-      if (!Number.isSafeInteger(request.frameCount) || request.frameCount < 0) {
-        throw new RangeError('WAV PCM frameCount must be a non-negative safe integer')
-      }
-      const needed = request.frameCount * format.channels * 4
-      if (!Number.isSafeInteger(needed) || needed > request.maxBytes) {
-        throw new RangeError('WAV PCM window exceeds maxBytes budget')
-      }
-      const fromFrame = Number(request.fromFrame)
-      if (!Number.isSafeInteger(fromFrame)) {
-        throw new RangeError('WAV PCM fromFrame exceeds the safe integer range')
-      }
-      const channels = decodeWavPcm(samples, format, fromFrame, request.frameCount)
-      /*
-       * Interleave into ONE buffer before answering. The boundary requires each typed array to own
-       * its whole buffer, so per-channel arrays cross as N separate payloads; one interleaved
-       * buffer is what `AudioPcmBlock` asks for and what the wire is built to carry.
-       */
-      const channelCount = channels.length
-      const decodedFrames = channels[0]?.length ?? 0
-      const interleaved = new Float32Array(decodedFrames * channelCount)
-      for (let channel = 0; channel < channelCount; channel += 1) {
-        const source = channels[channel]
-        for (let frame = 0; frame < decodedFrames; frame += 1) {
-          interleaved[frame * channelCount + channel] = source[frame]
-        }
-      }
-      return Object.freeze({
-        sampleRate: format.sampleRate,
-        fromFrame: BigInt(Math.min(fromFrame, frames)),
-        frameCount: decodedFrames,
-        channelCount,
-        samples: interleaved,
-      })
-    }
-
-    // The whole RIFF file, not the bare `data` chunk: a platform player needs the header.
-    const audio = createAudioMediaSource(
-      bytes,
-      'audio/wav',
-      {
-        durationMs,
-        seekable: true, // uncompressed frames are a constant size: any sample offset is arithmetic
-        tracks: [
-          {
-            id: 'stream-0',
-            codec: format.encoding,
-            channels: format.channels,
-            sampleRate: format.sampleRate,
-            bitrateKbps: Math.round((format.byteRate * 8) / 1000),
-            selected: true,
-          },
-        ],
-        pcmAccess: decodable,
-      },
-      ...(decodable ? [readPcm] : []),
-    )
-    const tree = createTreeDataSource({
-      kind: 'audio',
-      label: 'WAV',
-      preview: `${format.sampleRate} Hz, ${format.channels} channel(s), ${format.bitsPerSample}-bit ${format.encoding}`,
-      children: chunks.map(chunk => ({
-        kind: 'chunk',
-        label: chunk.id,
-        preview: `${chunk.bytes} bytes${chunk.truncated ? ' (truncated)' : ''} at ${chunk.start}`,
-      })),
-    })
-    return {
-      summary: {
-        format: 'wav',
-        encoding: format.encoding,
-        channels: format.channels,
-        sampleRate: format.sampleRate,
-        bitsPerSample: format.bitsPerSample,
-        frames,
-        durationMs,
-        chunks: chunks.length,
-      },
-      metadata: [
-        {
-          id: 'riff-wave',
-          label: 'RIFF/WAVE format',
-          entries: [
-            { key: 'encoding', value: format.encoding },
-            { key: 'formatTag', value: format.tag },
-            { key: 'channels', value: format.channels },
-            { key: 'sampleRate', value: format.sampleRate },
-            { key: 'bitsPerSample', value: format.bitsPerSample },
-            { key: 'byteRate', value: format.byteRate },
-            { key: 'blockAlign', value: format.blockAlign },
-            { key: 'dataBytes', value: data.bytes },
-            { key: 'frames', value: frames },
-          ],
-        },
-      ],
-      traits: [
-        { id: 'audio.streams', parameters: { count: 1, codec: format.encoding } },
-        ...(durationMs === 'unknown'
-          ? []
-          : [{ id: 'media.duration', parameters: { milliseconds: durationMs } }]),
-        { id: 'media.seekable', parameters: { constantBitrate: true } },
-        { id: 'content.binary', parameters: { bytes: String(bytes.byteLength) } },
-      ],
-      dataSources: {
-        'common.view/tree-data-source': tree,
-        'common.view/audio-media-source': audio,
-      },
-      unsupportedFeatures: [
-        ...(decodable ? [] : [`pcm-decoding-for-${format.encoding}-${format.bitsPerSample}bit`]),
-        'cue-and-playlist-chunks',
-        'broadcast-wave-metadata',
-      ],
-    }
-  },
+  inspect: inspectWav,
 })
 
 export const abiVersion = 1

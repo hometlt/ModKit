@@ -21,7 +21,7 @@
     }
   ],
   "limitations": [
-    "Decoded in-process through readPcm: linear PCM at 8/16/24/32 bits, IEEE float at 32/64 bits, and IMA ADPCM at 4 bits. Other RIFF/WAVE codecs (A-law, mu-law, MP3-in-RIFF and the rest) are reported by format tag and left to native host playback or an injected transcoder.",
+    "Decoded through readPcm: linear PCM at 8/16/24/32 bits, IEEE float at 32/64 bits, IMA ADPCM at 4 bits, and mono/stereo Microsoft ADPCM (tag 2) with declared coefficient pairs, block shape and fact frame cap. Invalid predictors, truncated headers and delta overflow refuse. Other RIFF/WAVE codecs (A-law, mu-law, MP3-in-RIFF and the rest) remain encoded-only.",
     "Declarative routing is extension-first because manifest v1 cannot express the legacy extension-or-RIFF/WAVE-sniffer behavior without making the evidence conjunctive."
   ],
   "spec": {
