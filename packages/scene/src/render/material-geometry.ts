@@ -9,6 +9,12 @@ import { snapshotEyePosition } from '../materials/environment.js'
 import { invertMaterialFrame } from '../materials/frame.js'
 import { materialSkinOf } from './material-skin.js'
 import { primitiveVertexTints } from './tint.js'
+import {
+  generateUvmVertexTangents,
+  orthogonalTangent,
+  tangentFallback,
+  triangleTangentFrame,
+} from '../uvm/normals.js'
 import type {
   StandardMaterialDefines,
   Vec2,
@@ -81,59 +87,6 @@ const read4 = (array: Float32Array, index: number): Vec4 => [
   value(array, index * 4 + 3),
 ]
 const subtract = (a: Vec3, b: Vec3): Vec3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]]
-const tangentFallback = (normal: Vec3): Vec3 =>
-  unit(cross(Math.abs(normal[2]) < 0.9 ? [0, 0, 1] : [0, 1, 0], normal), [1, 0, 0])
-
-/**
- * A triangle's face normal, tangent and bitangent: from its edges and the UV deltas at its corners
- * (`a`, `b`, `c`: the corners' offsets in `uv`), or the face's fallback frame without UVs or with a
- * degenerate UV determinant (`degenerate`).
- */
-function triangleTangentFrame(
-  p: Vec3,
-  q: Vec3,
-  r: Vec3,
-  uv: ArrayLike<number> | undefined,
-  a: number,
-  b: number,
-  c: number,
-): Readonly<{ face: Vec3; tangent: Vec3; bitangent: Vec3; degenerate: boolean }> {
-  const e1 = subtract(q, p),
-    e2 = subtract(r, p),
-    face = unit(cross(e1, e2))
-  let tangent: Vec3 = tangentFallback(face),
-    bitangent: Vec3 = cross(face, tangent)
-  if (uv === undefined) return { face, tangent, bitangent, degenerate: false }
-  const u1 = value(uv, b) - value(uv, a),
-    v1 = value(uv, b + 1) - value(uv, a + 1),
-    u2 = value(uv, c) - value(uv, a),
-    v2 = value(uv, c + 1) - value(uv, a + 1),
-    determinant = u1 * v2 - u2 * v1
-  if (!(Math.abs(determinant) > 1e-9)) return { face, tangent, bitangent, degenerate: true }
-  tangent = [
-    (e1[0] * v2 - e2[0] * v1) / determinant,
-    (e1[1] * v2 - e2[1] * v1) / determinant,
-    (e1[2] * v2 - e2[2] * v1) / determinant,
-  ]
-  bitangent = [
-    (e2[0] * u1 - e1[0] * u2) / determinant,
-    (e2[1] * u1 - e1[1] * u2) / determinant,
-    (e2[2] * u1 - e1[2] * u2) / determinant,
-  ]
-  return { face, tangent, bitangent, degenerate: false }
-}
-
-/** `tangent` made orthogonal to `normal`, with the handedness `bitangent` gives it (glTF TANGENT.w). */
-function orthogonalTangent(normal: Vec3, tangent: Vec3, bitangent: Vec3): Vec4 {
-  const n = unit(normal),
-    nt = dot(n, tangent),
-    along = unit(
-      [tangent[0] - n[0] * nt, tangent[1] - n[1] * nt, tangent[2] - n[2] * nt],
-      tangentFallback(n),
-    )
-  return [...along, dot(cross(n, along), bitangent) < 0 ? -1 : 1]
-}
-
 /**
  * The normal and tangent the material path gives each corner of the triangle `a`, `b`, `c` (vertex
  * indices) of a primitive it expands for want of them (prepareMaterialGeometry): the face normal
@@ -160,54 +113,6 @@ export function materialTriangleFrame(
   return { normal, tangent: orthogonalTangent(normal, tangent, bitangent) }
 }
 
-/**
- * Tangents of an indexed mesh, per vertex: a skin keeps its vertices, whose joints and weights are
- * theirs, so its bind pose takes each triangle's frame summed at its corners and made orthogonal to
- * the vertex's own normal there, instead of expanding into triangles of their own.
- */
-function vertexTangents(
-  positions: Float32Array,
-  normals: Float32Array,
-  uv: ArrayLike<number> | undefined,
-  triangles: Uint32Array,
-): Float32Array {
-  const count = positions.length / 3
-  const tangentSums = new Float64Array(count * 3),
-    bitangentSums = new Float64Array(count * 3)
-  for (let i = 0; i + 2 < triangles.length; i += 3) {
-    const a = value(triangles, i),
-      b = value(triangles, i + 1),
-      c = value(triangles, i + 2)
-    const frame = triangleTangentFrame(
-      read3(positions, a),
-      read3(positions, b),
-      read3(positions, c),
-      uv,
-      a * 2,
-      b * 2,
-      c * 2,
-    )
-    for (const corner of [a, b, c])
-      for (let axis = 0; axis < 3; axis++) {
-        const at = corner * 3 + axis
-        tangentSums[at] = tangentSums[at]! + frame.tangent[axis]!
-        bitangentSums[at] = bitangentSums[at]! + frame.bitangent[axis]!
-      }
-  }
-  const tangents = new Float32Array(count * 4)
-  for (let vertex = 0; vertex < count; vertex++) {
-    const sum = (sums: Float64Array): Vec3 => [
-      sums[vertex * 3]!,
-      sums[vertex * 3 + 1]!,
-      sums[vertex * 3 + 2]!,
-    ]
-    tangents.set(
-      orthogonalTangent(read3(normals, vertex), sum(tangentSums), sum(bitangentSums)),
-      vertex * 4,
-    )
-  }
-  return tangents
-}
 export function point(matrix: Float32Array, vector: Vec3, w: number): Vec4 {
   const component = (row: number) =>
     value(matrix, row) * vector[0] +
@@ -637,7 +542,7 @@ export function prepareMaterialGeometry(
   if (skin !== undefined)
     return Object.freeze({
       ...primitive,
-      tangents: vertexTangents(primitive.positions, primitive.normals!, uv, triangles),
+      tangents: generateUvmVertexTangents(primitive.positions, primitive.normals!, uv, triangles),
     })
   // One expansion per source array: UV sets that share coordinates (a sprite's UV0-3) share the
   // expanded array too, and with it one GPU buffer.
