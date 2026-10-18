@@ -1,21 +1,21 @@
-import "./chunks/chunk-EGJJI5AO.js";
+import "./chunks/chunk-PDE3HYOL.js";
 import {
   initializeGpuTextureWasmBrowser
-} from "./chunks/chunk-DSXM5VUY.js";
-import "./chunks/chunk-AZ4K26SV.js";
+} from "./chunks/chunk-RI6VHBBO.js";
+import "./chunks/chunk-JJ5NUP5R.js";
 import "./chunks/chunk-JZRDO2QW.js";
 import {
   AUXILIARY_DATA_SOURCE_SURFACES,
   STANDARD_DATA_SOURCE_SURFACES,
   STANDARD_EDITING_SURFACES
-} from "./chunks/chunk-USBGWOTH.js";
+} from "./chunks/chunk-UXGPAZZ4.js";
 import {
   ModkitError,
   OperationCancelledError,
   isModkitError,
   isQualifiedId,
   isSegment
-} from "./chunks/chunk-WMDX3O34.js";
+} from "./chunks/chunk-22GOWHCF.js";
 import "./chunks/chunk-CQ52GEHY.js";
 
 // packages/host/dist/browser/worker-entry.js
@@ -3465,6 +3465,7 @@ var modelResourceAssetSurface = {
     acquire: modelAcquire,
     readRaster: { kind: "value", ...sig },
     sceneInfo: { kind: "value", optional: true, ...sig },
+    cameraReferences: { kind: "value", optional: true, ...sig },
     nodes: { kind: "value", optional: true, ...sig },
     meshes: { kind: "value", optional: true, ...sig },
     primitive: { kind: "value", optional: true, ...sig },

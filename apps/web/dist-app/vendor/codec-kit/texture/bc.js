@@ -1,7 +1,10 @@
 import {
   bcBlockBytes,
   decodeBcSurface
-} from "../../../chunks/chunk-Y4UL3XCN.js";
+} from "../../../chunks/chunk-AZJLEPHV.js";
+import {
+  expand5To8
+} from "../../../chunks/chunk-Z2PMW7HG.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 
 // packages/codec-kit/dist/texture/bc-encode.js
@@ -13,7 +16,7 @@ function expand565(value) {
   const red = value >>> 11 & 31;
   const green = value >>> 5 & 63;
   const blue = value & 31;
-  return [red << 3 | red >>> 2, green << 2 | green >>> 4, blue << 3 | blue >>> 2];
+  return [expand5To8(red), green << 2 | green >>> 4, expand5To8(blue)];
 }
 function colorPalette(first, second, fourColor) {
   const a = expand565(first);

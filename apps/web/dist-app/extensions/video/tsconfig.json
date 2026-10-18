@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.port-strict.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "tsBuildInfoFile": "../../node_modules/.cache/tsbuildinfo/extensions-video.tsbuildinfo"
+  },
+  "include": [
+    "src/ogv/encode.ts",
+    "src/media-encoders.ts"
+  ],
+  "references": [
+    {
+      "path": "../../packages/host"
+    }
+  ]
+}

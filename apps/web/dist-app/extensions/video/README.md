@@ -14,3 +14,11 @@ Both wait for a writer provider that can rewrite those tables under evidence.
 AVI, MPEG program streams, Ogg video and WMV now ship in this product package as well. The older
 MP4 and WebM staging routes were retired in favour of the richer native contributions already
 here. Historical decisions remain in inert `MIGRATION-NOTES-common-video.json`.
+
+## OGV sequence export
+
+`formats/ogv/encode` (`encodeOgv`), also re-exported by the OGV codec, writes an async RGBA
+sequence as Ogg/Theora using an injected bounded backend. Dimensions must be even; quality is 7,
+yuv420p. The desktop Host backend runs the user's installed ffmpeg. This generates new silent
+video; it does not advertise native editing or preserve source metadata/audio. Future cutscene
+audio needs a resolved schedule with offsets, trim, gain and mixing before muxing can be enabled.

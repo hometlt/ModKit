@@ -1,7 +1,4 @@
-import "../../chunks/chunk-H6MFHEBP.js";
-import {
-  RESOLVED_DATA_WORKSPACE_CONTRACT
-} from "../../chunks/chunk-RBYIYBRS.js";
+import "../../chunks/chunk-UG2GH2M3.js";
 import {
   createTableDataSource
 } from "../../chunks/chunk-XYU4XXWE.js";
@@ -11,19 +8,23 @@ import {
   createUtf8TextDataSource,
   revisionId as revisionId2,
   toPortableProjectionReceipt
-} from "../../chunks/chunk-KL4QSMVR.js";
-import "../../chunks/chunk-3KAXL5BS.js";
+} from "../../chunks/chunk-B2GTQHX7.js";
+import {
+  RESOLVED_DATA_WORKSPACE_CONTRACT
+} from "../../chunks/chunk-RBYIYBRS.js";
+import "../../chunks/chunk-AVWJKQQU.js";
 import {
   containerEntryRevision,
   contributionSettingsFor,
   revisionId
-} from "../../chunks/chunk-USBGWOTH.js";
+} from "../../chunks/chunk-UXGPAZZ4.js";
 import {
   ModkitError,
   canonicalJsonStringify,
   createReferenceIndex,
-  diagnostic
-} from "../../chunks/chunk-WMDX3O34.js";
+  diagnostic,
+  snapshotJson
+} from "../../chunks/chunk-22GOWHCF.js";
 import "../../chunks/chunk-CQ52GEHY.js";
 
 // packages/codec-kit/src/paging.ts
@@ -78,84 +79,8 @@ function resizeRgba(image, width, height) {
   return { width, height, pixels: out };
 }
 
-// packages/codec-kit/src/json-snapshot.ts
-function utf8ByteLength(text3) {
-  let bytes = 0;
-  for (let index = 0; index < text3.length; index++) {
-    const code = text3.charCodeAt(index);
-    if (code < 128) bytes++;
-    else if (code < 2048) bytes += 2;
-    else if (code >= 55296 && code <= 56319 && text3.charCodeAt(index + 1) >= 56320 && text3.charCodeAt(index + 1) <= 57343) {
-      bytes += 4;
-      index++;
-    } else bytes += 3;
-  }
-  return bytes;
-}
-function snapshotJson(value, budget, signal) {
-  for (const limit of [budget?.maxDepth, budget?.maxNodes, budget?.maxBytes]) {
-    if (!Number.isSafeInteger(limit) || limit < 0)
-      throw new TypeError("invalid JSON snapshot budget");
-  }
-  const ancestors = /* @__PURE__ */ new Set();
-  let nodes = 0;
-  let bytes = 0;
-  const charge = (count) => {
-    bytes += count;
-    if (bytes > budget.maxBytes) throw new RangeError("JSON snapshot exceeds maxBytes");
-  };
-  const copy = (entry, depth) => {
-    if (signal?.aborted) throw new DOMException("operation cancelled", "AbortError");
-    if (depth > budget.maxDepth) throw new RangeError("JSON snapshot exceeds maxDepth");
-    if (++nodes > budget.maxNodes) throw new RangeError("JSON snapshot exceeds maxNodes");
-    if (entry === null || typeof entry === "boolean") {
-      charge(entry === false ? 5 : 4);
-      return entry;
-    }
-    if (typeof entry === "string") {
-      charge(utf8ByteLength(JSON.stringify(entry)));
-      return entry;
-    }
-    if (typeof entry === "number" && Number.isFinite(entry)) {
-      charge(JSON.stringify(entry).length);
-      return entry;
-    }
-    if (typeof entry !== "object" || entry === null) throw new TypeError("non-JSON snapshot value");
-    const prototype = Object.getPrototypeOf(entry);
-    if (!Array.isArray(entry) && prototype !== null && prototype !== Object.prototype) {
-      throw new TypeError("JSON snapshot requires plain objects");
-    }
-    if (ancestors.has(entry)) throw new TypeError("cyclic JSON snapshot");
-    ancestors.add(entry);
-    try {
-      charge(2);
-      if (Array.isArray(entry)) {
-        const result2 = [];
-        for (let index = 0; index < entry.length; index++) {
-          if (index > 0) charge(1);
-          result2.push(copy(entry[index], depth + 1));
-        }
-        return Object.freeze(result2);
-      }
-      const result = [];
-      const entries = Object.entries(entry);
-      if (budget.sortKeys)
-        entries.sort(([left], [right]) => left < right ? -1 : left > right ? 1 : 0);
-      for (const [key, item] of entries) {
-        if (item === void 0) continue;
-        charge(utf8ByteLength(JSON.stringify(key)) + 1 + (result.length > 0 ? 1 : 0));
-        result.push([key, copy(item, depth + 1)]);
-      }
-      return Object.freeze(Object.fromEntries(result));
-    } finally {
-      ancestors.delete(entry);
-    }
-  };
-  return copy(value, 0);
-}
-
 // packages/codec-kit/src/deferred-session.ts
-function deferAssetSession(revision, initialize, budget, openingSignal) {
+function deferAssetSession(revision, initialize, budget2, openingSignal) {
   const controller = new AbortController();
   const signal = openingSignal === void 0 ? controller.signal : AbortSignal.any([openingSignal, controller.signal]);
   let pending;
@@ -240,9 +165,9 @@ function deferAssetSession(revision, initialize, budget, openingSignal) {
         owned = snapshotJson(
           input,
           {
-            maxDepth: budget.maxDepth,
-            maxNodes: budget.maxNodes,
-            maxBytes: budget.maxScalarBytes
+            maxDepth: budget2.maxDepth,
+            maxNodes: budget2.maxNodes,
+            maxBytes: budget2.maxScalarBytes
           },
           options?.signal
         );
@@ -666,7 +591,7 @@ async function decodeContainerEntry(entry, maximum, readRange, signal) {
     );
   }
   if (entry.checksum?.algorithm === "crc-32") {
-    const { crc32 } = await import("../../chunks/checksum-PNIR2HFT.js");
+    const { crc32 } = await import("../../chunks/checksum-PAMNQ737.js");
     const actual = (crc32(bytes) >>> 0).toString(16).padStart(8, "0");
     if (actual !== entry.checksum.value.toLowerCase().padStart(8, "0"))
       throw new RangeError(
@@ -696,7 +621,8 @@ function readContainerEntry(entry, source, options) {
 var layerEntry = (entry) => ({
   path: entry.path,
   size: Number(entry.size),
-  ...entry.hidden === true ? { hidden: true } : {}
+  ...entry.hidden === true ? { hidden: true } : {},
+  ...entry.context === void 0 ? {} : { context: entry.context }
 });
 function containerEntryLayer(id, table, source, close = () => void 0) {
   const keyOf = table.caseSensitivity === "insensitive" ? (path) => path.toLowerCase() : (path) => path;
@@ -763,7 +689,9 @@ function sampleTrackValue(track, timeSeconds, out, options = {}) {
       out[i] = h00 * ka.vector[i] + h10 * span * (ka.outTan?.[i] ?? 0) + h01 * (kb.vector[i] ?? ka.vector[i]) + h11 * span * (kb.inTan?.[i] ?? 0);
     if (options.isQuat && out.length === 4) {
       const len = Math.hypot(out[0], out[1], out[2], out[3]);
-      if (len > 0) for (let i = 0; i < 4; i += 1) out[i] /= len;
+      if (len === 0 || !Number.isFinite(len))
+        throw new RangeError("cubic quaternion sample has zero or non-finite length");
+      for (let i = 0; i < 4; i += 1) out[i] /= len;
     }
     return out;
   }
@@ -896,8 +824,8 @@ function finite(value, label) {
   if (typeof value !== "number" || !Number.isFinite(value))
     throw new TypeError(`${label} must be finite`);
 }
-function snapshotModelAnimations(value, budget = DEFAULT_MODEL_ANIMATION_BUDGET, signal) {
-  const clips = snapshotJson(value, budget, signal);
+function snapshotModelAnimations(value, budget2 = DEFAULT_MODEL_ANIMATION_BUDGET, signal) {
+  const clips = snapshotJson(value, budget2, signal);
   if (!Array.isArray(clips)) throw new TypeError("model animations must be an array");
   const ids = /* @__PURE__ */ new Set();
   for (const clip of clips) {
@@ -968,8 +896,8 @@ function snapshotModelAnimations(value, budget = DEFAULT_MODEL_ANIMATION_BUDGET,
   }
   return clips;
 }
-function createModelAnimationSampler(clip, budget, signal) {
-  const owned = snapshotModelAnimations([clip], budget, signal)[0];
+function createModelAnimationSampler(clip, budget2, signal) {
+  const owned = snapshotModelAnimations([clip], budget2, signal)[0];
   const tracks = owned.channels.map((channel) => {
     if (channel.interpolation === void 0 || channel.samples === void 0)
       throw new TypeError("channel has no sampling semantics");
@@ -984,7 +912,7 @@ function createModelAnimationSampler(clip, budget, signal) {
       }))
     };
     const options = {
-      isQuat: channel.interpolation === "spherical-linear",
+      isQuat: channel.interpolation === "spherical-linear" || channel.interpolation === "cubic-spline" && channel.kind === "rotation" && channel.axis === void 0 && track.keys[0]?.vector.length === 4,
       wrapSeconds: channel.concurrent ? channel.wrapSeconds : void 0
     };
     return { channel, track, options };
@@ -1025,6 +953,10 @@ function createModelAnimationSampler(clip, budget, signal) {
           arcs.push([key.vector, dot < 0 ? next.vector.map((x) => -x) : next.vector]);
         }
       }
+      if (track.lineType === CUBIC_SPLINE_LINE_TYPE && options.isQuat && width === 4) {
+        for (let corner = 0; corner < 16; corner++)
+          points.push([0, 1, 2, 3].map((axis) => corner & 1 << axis ? 1 : -1));
+      }
       return extents[index] = Object.freeze({
         width,
         between,
@@ -1032,13 +964,22 @@ function createModelAnimationSampler(clip, budget, signal) {
         arcs: Object.freeze(arcs)
       });
     },
-    sample(timeSeconds, requestSignal) {
+    sample(timeSeconds, requestSignal, globalTimeSeconds) {
       if (requestSignal?.aborted) throw new DOMException("operation cancelled", "AbortError");
       finite(timeSeconds, "sample time");
+      if (globalTimeSeconds !== void 0 && (!Number.isFinite(globalTimeSeconds) || globalTimeSeconds < 0))
+        throw new TypeError("global time must be finite and nonnegative");
       const values = [];
       for (const { channel, track, options } of tracks) {
         if (requestSignal?.aborted) throw new DOMException("operation cancelled", "AbortError");
-        const value = Object.freeze(sampleTrackValue(track, timeSeconds, [], options));
+        const value = Object.freeze(
+          sampleTrackValue(
+            track,
+            channel.concurrent ? globalTimeSeconds ?? timeSeconds : timeSeconds,
+            [],
+            options
+          )
+        );
         values.push(
           Object.freeze(
             channel.axis === void 0 ? { target: channel.target, kind: channel.kind, value } : { target: channel.target, kind: channel.kind, axis: channel.axis, value }
@@ -1047,13 +988,20 @@ function createModelAnimationSampler(clip, budget, signal) {
       }
       return Object.freeze(values);
     },
-    sampleInto(timeSeconds, values, requestSignal) {
+    sampleInto(timeSeconds, values, requestSignal, globalTimeSeconds) {
       if (requestSignal?.aborted) throw new DOMException("operation cancelled", "AbortError");
       finite(timeSeconds, "sample time");
+      if (globalTimeSeconds !== void 0 && (!Number.isFinite(globalTimeSeconds) || globalTimeSeconds < 0))
+        throw new TypeError("global time must be finite and nonnegative");
       for (let index = 0; index < tracks.length; index++) {
         if (requestSignal?.aborted) throw new DOMException("operation cancelled", "AbortError");
-        const { track, options } = tracks[index];
-        sampleTrackValue(track, timeSeconds, values[index] ??= [], options);
+        const { channel, track, options } = tracks[index];
+        sampleTrackValue(
+          track,
+          channel.concurrent ? globalTimeSeconds ?? timeSeconds : timeSeconds,
+          values[index] ??= [],
+          options
+        );
       }
     }
   });
@@ -1099,8 +1047,8 @@ function frozenMatrix(matrix, offset) {
   ]);
 }
 var boneChannelKind = (kind) => kind === "translation" ? 0 : kind === "rotation" ? 1 : kind === "scale" ? 2 : -1;
-function snapshotModelSkeleton(bindings, budget = DEFAULT_MODEL_SKELETON_BUDGET, signal) {
-  const owned = snapshotJson(bindings, budget, signal);
+function snapshotModelSkeleton(bindings, budget2 = DEFAULT_MODEL_SKELETON_BUDGET, signal) {
+  const owned = snapshotJson(bindings, budget2, signal);
   if (!Array.isArray(owned)) throw new TypeError("skeleton bindings must be an array");
   for (const bone of owned) {
     if (bone === null || typeof bone !== "object" || typeof bone.partId !== "string" || !Number.isSafeInteger(bone.boneIndex) || bone.boneIndex < 0 || bone.boneName !== null && typeof bone.boneName !== "string")
@@ -1155,9 +1103,9 @@ function compileHierarchy(bindings, hierarchyId) {
   }
   return { bones, byNode, parents, order };
 }
-function createModelSkeletonNodes(bindings, hierarchyId, budget, signal) {
+function createModelSkeletonNodes(bindings, hierarchyId, budget2, signal) {
   const { bones, parents } = compileHierarchy(
-    snapshotModelSkeleton(bindings, budget, signal),
+    snapshotModelSkeleton(bindings, budget2, signal),
     hierarchyId
   );
   const children = bones.map(() => []);
@@ -1269,16 +1217,16 @@ function createModelPoseSampler({
   bindings,
   hierarchyId,
   clip,
-  budget,
+  budget: budget2,
   signal
 }) {
   const { bones, byNode, parents, order } = compileHierarchy(
-    snapshotModelSkeleton(bindings, budget, signal),
+    snapshotModelSkeleton(bindings, budget2, signal),
     hierarchyId
   );
   if (clip?.hierarchyId !== void 0 && clip.hierarchyId !== hierarchyId)
     throw new TypeError("animation belongs to a different hierarchy");
-  const animation = clip === void 0 ? void 0 : createModelAnimationSampler(clip, budget, signal);
+  const animation = clip === void 0 ? void 0 : createModelAnimationSampler(clip, budget2, signal);
   const IGNORED = -1;
   const UNBOUND = -2;
   const REPEATED = -3;
@@ -1424,19 +1372,23 @@ function createModelPoseSampler({
         })
       )
     ),
-    sample(timeSeconds, requestSignal) {
+    sample(timeSeconds, requestSignal, globalTimeSeconds) {
       if (requestSignal?.aborted) throw new DOMException("operation cancelled", "AbortError");
       if (!Number.isFinite(timeSeconds)) throw new TypeError("pose time must be finite");
-      const channels = animation?.sample(timeSeconds, requestSignal) ?? Object.freeze([]);
+      if (globalTimeSeconds !== void 0 && (!Number.isFinite(globalTimeSeconds) || globalTimeSeconds < 0))
+        throw new TypeError("global time must be finite and nonnegative");
+      const channels = animation?.sample(timeSeconds, requestSignal, globalTimeSeconds) ?? Object.freeze([]);
       restPose();
       for (let index = 0; index < channels.length; index++) assign(index, channels[index].value);
       compose(scratch, requestSignal);
       return Object.freeze({ bones: frozenPose(scratch), channels });
     },
-    sampleMatrices(timeSeconds, requestSignal) {
+    sampleMatrices(timeSeconds, requestSignal, globalTimeSeconds) {
       if (requestSignal?.aborted) throw new DOMException("operation cancelled", "AbortError");
       if (!Number.isFinite(timeSeconds)) throw new TypeError("pose time must be finite");
-      animation?.sampleInto(timeSeconds, values, requestSignal);
+      if (globalTimeSeconds !== void 0 && (!Number.isFinite(globalTimeSeconds) || globalTimeSeconds < 0))
+        throw new TypeError("global time must be finite and nonnegative");
+      animation?.sampleInto(timeSeconds, values, requestSignal, globalTimeSeconds);
       restPose();
       for (let index = 0; index < targets.length; index++) assign(index, values[index]);
       const matrices = new Float32Array(bones.length * 32);
@@ -1447,9 +1399,290 @@ function createModelPoseSampler({
   });
 }
 
+// packages/codec-kit/src/model/voxel.ts
+function budget(value, label) {
+  if (!Number.isSafeInteger(value) || value < 1) throw new RangeError(`invalid ${label}`);
+  return value;
+}
+function decodeVl32(bytes, options = {}) {
+  options.signal?.throwIfAborted();
+  const maxCells = budget(options.maxCells ?? 128 ** 3, "maxCells");
+  const maxCoordinate = budget(options.maxCoordinate ?? 128, "maxCoordinate");
+  if (bytes.byteLength % 16 !== 0) throw new RangeError("invalid upstream VL32 size");
+  const count = bytes.byteLength / 16;
+  if (count > maxCells) throw new RangeError("voxel output exceeds cell budget");
+  if (count * 16 > budget(options.maxOutputBytes ?? 256 * 1024 ** 2, "maxOutputBytes"))
+    throw new RangeError("voxel output exceeds byte budget");
+  const positions = new Int32Array(count * 3), colors = new Uint8Array(count * 4);
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  for (let i = 0; i < count; i++) {
+    if (i % 1024 === 0) options.signal?.throwIfAborted();
+    for (let k = 0; k < 3; k++) {
+      const value = view.getInt32(i * 16 + k * 4, false);
+      if (value < 0 || value > maxCoordinate) throw new RangeError("voxel outside bounded grid");
+      positions[i * 3 + k] = value;
+    }
+    colors[i * 4] = bytes[i * 16 + 13];
+    colors[i * 4 + 1] = bytes[i * 16 + 14];
+    colors[i * 4 + 2] = bytes[i * 16 + 15];
+    colors[i * 4 + 3] = bytes[i * 16 + 12];
+  }
+  return { positions, colors };
+}
+var typedPrototype = Object.getPrototypeOf(Uint8Array.prototype);
+var typedLength = Object.getOwnPropertyDescriptor(typedPrototype, "length").get;
+var typedBuffer = Object.getOwnPropertyDescriptor(typedPrototype, "buffer").get;
+var typedOffset = Object.getOwnPropertyDescriptor(typedPrototype, "byteOffset").get;
+var typedKind = Object.getOwnPropertyDescriptor(typedPrototype, Symbol.toStringTag).get;
+var arrayBytes = Object.getOwnPropertyDescriptor(ArrayBuffer.prototype, "byteLength").get;
+var resizableBuffer = Object.getOwnPropertyDescriptor(ArrayBuffer.prototype, "resizable")?.get;
+var FACES = [
+  [
+    [1, 0, 0],
+    [
+      [1, 0, 0],
+      [1, 1, 0],
+      [1, 1, 1],
+      [1, 0, 1]
+    ]
+  ],
+  [
+    [-1, 0, 0],
+    [
+      [0, 0, 1],
+      [0, 1, 1],
+      [0, 1, 0],
+      [0, 0, 0]
+    ]
+  ],
+  [
+    [0, 1, 0],
+    [
+      [0, 1, 1],
+      [1, 1, 1],
+      [1, 1, 0],
+      [0, 1, 0]
+    ]
+  ],
+  [
+    [0, -1, 0],
+    [
+      [0, 0, 0],
+      [1, 0, 0],
+      [1, 0, 1],
+      [0, 0, 1]
+    ]
+  ],
+  [
+    [0, 0, 1],
+    [
+      [1, 0, 1],
+      [1, 1, 1],
+      [0, 1, 1],
+      [0, 0, 1]
+    ]
+  ],
+  [
+    [0, 0, -1],
+    [
+      [0, 0, 0],
+      [0, 1, 0],
+      [1, 1, 0],
+      [1, 0, 0]
+    ]
+  ]
+];
+function voxelSurface(grid, options = {}) {
+  options.signal?.throwIfAborted();
+  const maxCells = budget(options.maxCells ?? 128 ** 3, "maxCells");
+  const maxBytes = budget(options.maxOutputBytes ?? 256 * 1024 ** 2, "maxOutputBytes");
+  if (!(grid.positions instanceof Int32Array) || !(grid.colors instanceof Uint8Array) || grid.positions.length % 3 !== 0 || grid.positions.length / 3 * 4 !== grid.colors.length)
+    throw new TypeError("voxel positions and RGBA colours have different cell counts");
+  const count = grid.positions.length / 3;
+  if (count > maxCells) throw new RangeError("voxel output exceeds cell budget");
+  const occupied = /* @__PURE__ */ new Map();
+  for (let i = 0; i < count; i++) {
+    if (i % 1024 === 0) options.signal?.throwIfAborted();
+    if (grid.colors[i * 4 + 3] < 128) continue;
+    const xyz = grid.positions.subarray(i * 3, i * 3 + 3);
+    if (xyz.some((v) => Math.abs(v) > 65535))
+      throw new RangeError("voxel grid exceeds exact geometry range");
+    occupied.set(`${xyz[0]},${xyz[1]},${xyz[2]}`, i);
+  }
+  if (!occupied.size) throw new RangeError("empty voxel output");
+  let faces = 0, visited = 0;
+  for (const i of occupied.values()) {
+    if (visited++ % 1024 === 0) options.signal?.throwIfAborted();
+    const x = grid.positions[i * 3], y = grid.positions[i * 3 + 1], z = grid.positions[i * 3 + 2];
+    for (const [n] of FACES) if (!occupied.has(`${x + n[0]},${y + n[1]},${z + n[2]}`)) faces++;
+    if (faces * 184 > maxBytes) throw new RangeError("voxel surface exceeds byte budget");
+  }
+  const positions = new Float32Array(faces * 12), normals = new Float32Array(faces * 12);
+  const colors = new Float32Array(faces * 16), indices = new Uint32Array(faces * 6);
+  let face = 0;
+  visited = 0;
+  for (const i of occupied.values()) {
+    if (visited++ % 1024 === 0) options.signal?.throwIfAborted();
+    const xyz = [
+      grid.positions[i * 3],
+      grid.positions[i * 3 + 1],
+      grid.positions[i * 3 + 2]
+    ];
+    for (const [normal, corners] of FACES) {
+      if (occupied.has(`${xyz[0] + normal[0]},${xyz[1] + normal[1]},${xyz[2] + normal[2]}`))
+        continue;
+      for (let v = 0; v < 4; v++) {
+        for (let k = 0; k < 3; k++) {
+          positions[face * 12 + v * 3 + k] = xyz[k] + corners[v][k];
+          normals[face * 12 + v * 3 + k] = normal[k];
+          colors[face * 16 + v * 4 + k] = grid.colors[i * 4 + k] / 255;
+        }
+        colors[face * 16 + v * 4 + 3] = 1;
+      }
+      const base = face * 4;
+      indices.set([base, base + 1, base + 2, base, base + 2, base + 3], face * 6);
+      face++;
+    }
+  }
+  return {
+    cells: occupied.size,
+    faces,
+    primitive: {
+      id: "voxels",
+      topology: "triangles",
+      positions,
+      normals,
+      colors,
+      indices
+    }
+  };
+}
+
+// packages/codec-kit/src/model/voxel-binding.ts
+function limit(value, label) {
+  if (!Number.isSafeInteger(value) || value < 0) throw new RangeError(`invalid ${label}`);
+  return value;
+}
+function bindVoxelCellsToParts(centres, triangles, partNodeIds, options) {
+  const { signal } = options;
+  signal?.throwIfAborted();
+  const threshold = options.ambiguousWeightThreshold, unweightedPolicy = options.unweightedPolicy ?? "reject";
+  if (!Number.isFinite(threshold) || threshold < 0 || threshold > 1)
+    throw new RangeError("invalid ambiguousWeightThreshold");
+  if (unweightedPolicy !== "reject" && unweightedPolicy !== "lowest-slot")
+    throw new TypeError("invalid unweightedPolicy");
+  const maxCells = limit(options.maxCells ?? 128 ** 3, "maxCells");
+  const maxTriangles = limit(options.maxTriangles ?? 25e4, "maxTriangles");
+  const maxVisits = limit(options.maxTriangleVisits ?? 1e8, "maxTriangleVisits");
+  const maxBytes = limit(options.maxOutputBytes ?? 16 * 1024 ** 2, "maxOutputBytes");
+  if (!(centres instanceof Float32Array || centres instanceof Float64Array) || centres.length % 3 !== 0)
+    throw new TypeError("cell centres must contain xyz triples");
+  const count = centres.length / 3;
+  if (count > maxCells) throw new RangeError("cell binding exceeds maxCells");
+  if (triangles.length > maxTriangles) throw new RangeError("cell binding exceeds maxTriangles");
+  if (count * 4 > maxBytes) throw new RangeError("cell binding exceeds maxOutputBytes");
+  if (partNodeIds.length > 65536) throw new RangeError("cell binding exceeds joint slot limit");
+  if (count > 0 && triangles.length === 0) throw new TypeError("voxel has no source surface");
+  if (count > 0 && triangles.length > Math.floor(maxVisits / count))
+    throw new RangeError("cell binding exceeds maxTriangleVisits");
+  for (let i = 0; i < centres.length; i++) {
+    if ((i & 1023) === 0) signal?.throwIfAborted();
+    if (!Number.isFinite(centres[i])) throw new TypeError("nonfinite cell centre");
+  }
+  for (const triangle of triangles) {
+    signal?.throwIfAborted();
+    const width = triangle.influences ?? 4;
+    if (width !== 4 && width !== 8 || triangle.vertices.length !== 3 || typeof triangle.boundsDistance !== "function" || typeof triangle.closestDistance !== "function")
+      throw new TypeError("invalid skin surface triangle");
+    for (const vertex of triangle.vertices) {
+      if (!Number.isSafeInteger(vertex) || vertex < 0 || (vertex + 1) * width > triangle.joints.length || (vertex + 1) * width > triangle.weights.length)
+        throw new TypeError("skin surface vertex is out of range");
+      for (let j = 0; j < width; j++) {
+        const at2 = vertex * width + j, slot = triangle.joints[at2], weight = triangle.weights[at2];
+        if (!Number.isSafeInteger(slot) || slot < 0 || slot > 65535 || !Number.isFinite(weight) || weight < 0 || weight > 1)
+          throw new TypeError("invalid skin surface joint or weight");
+      }
+    }
+  }
+  const slots = new Uint32Array(count), point = [0, 0, 0];
+  const bary = new Float64Array(3), chosenBary = new Float64Array(3);
+  let ambiguousCells = 0, degenerateCells = 0, zeroWeightCells = 0, maxSurfaceDistance = 0, maxDroppedWeight = 0, triangleVisits = 0;
+  for (let cell = 0; cell < count; cell++) {
+    signal?.throwIfAborted();
+    point[0] = centres[cell * 3];
+    point[1] = centres[cell * 3 + 1];
+    point[2] = centres[cell * 3 + 2];
+    let best = Infinity, chosen;
+    for (const triangle of triangles) {
+      if (triangleVisits >= maxVisits)
+        throw new RangeError("cell binding exceeds maxTriangleVisits");
+      if ((triangleVisits++ & 1023) === 0) signal?.throwIfAborted();
+      const lower = triangle.boundsDistance(point);
+      if (!Number.isFinite(lower) || lower < 0)
+        throw new TypeError("invalid surface bound distance");
+      if (lower > best) continue;
+      bary.fill(NaN);
+      const distance = triangle.closestDistance(point, bary);
+      if (!Number.isFinite(distance) || distance < 0)
+        throw new TypeError("invalid closest surface distance");
+      if (distance >= best) continue;
+      best = distance;
+      chosen = triangle;
+      chosenBary.set(bary);
+    }
+    if (chosen === void 0) throw new TypeError("voxel has no source surface");
+    const degenerate = chosenBary.every((v) => v === 0);
+    if (!chosenBary.every(Number.isFinite) || !degenerate && Math.abs(chosenBary[0] + chosenBary[1] + chosenBary[2] - 1) > 1e-6 || chosenBary.some((v) => v < -1e-6 || v > 1 + 1e-6))
+      throw new TypeError("invalid surface barycentric weights");
+    if (degenerate) degenerateCells++;
+    if (degenerate && unweightedPolicy === "reject")
+      throw new TypeError("degenerate source surface");
+    const votes = /* @__PURE__ */ new Map(), width = chosen.influences ?? 4;
+    for (let v = 0; v < 3; v++)
+      for (let j = 0; j < width; j++) {
+        const at2 = chosen.vertices[v] * width + j, slot = chosen.joints[at2];
+        const weight = chosen.weights[at2] * chosenBary[v];
+        votes.set(slot, (votes.get(slot) ?? 0) + weight);
+      }
+    const ranked = [...votes].sort((a, b) => b[1] - a[1] || a[0] - b[0]);
+    const winner = ranked[0], total = ranked.reduce((sum, entry) => sum + entry[1], 0);
+    if (total < 0 || !Number.isFinite(total)) throw new TypeError("invalid total skin weight");
+    if (total === 0) zeroWeightCells++;
+    if (total === 0 && unweightedPolicy === "reject")
+      throw new TypeError("unweighted source surface");
+    if (!partNodeIds[winner[0]])
+      throw new TypeError("unbound/identity skin slot cannot animate a cell");
+    slots[cell] = winner[0];
+    if (winner[1] < threshold) ambiguousCells++;
+    maxSurfaceDistance = Math.max(maxSurfaceDistance, best);
+    maxDroppedWeight = Math.max(
+      maxDroppedWeight,
+      total === 0 ? 1 : Math.max(0, total - winner[1]) / total
+    );
+  }
+  signal?.throwIfAborted();
+  return {
+    slots,
+    ambiguousCells,
+    maxSurfaceDistance,
+    maxDroppedWeight,
+    degenerateCells,
+    zeroWeightCells,
+    triangleVisits,
+    losses: [
+      "rigid-skin-approximation",
+      ...degenerateCells > 0 ? ["degenerate-surface-assignment"] : [],
+      ...zeroWeightCells > 0 ? ["unweighted-surface-assignment"] : []
+    ]
+  };
+}
+
 // packages/codec-kit/src/model/geometry.ts
 function modelPrimitiveByteLength(primitive) {
-  return primitive.positions.byteLength + (primitive.indices?.byteLength ?? 0) + (primitive.normals?.byteLength ?? 0) + (primitive.tangents?.byteLength ?? 0) + (primitive.colors?.byteLength ?? 0) + (primitive.boneIndices?.byteLength ?? 0) + (primitive.boneWeights?.byteLength ?? 0) + (primitive.textureCoordinates?.byteLength ?? 0) + (primitive.textureCoordinateSets?.reduce((total, channel) => total + channel.coordinates.byteLength, 0) ?? 0);
+  return primitive.positions.byteLength + (primitive.indices?.byteLength ?? 0) + (primitive.normals?.byteLength ?? 0) + (primitive.tangents?.byteLength ?? 0) + (primitive.colors?.byteLength ?? 0) + (primitive.boneIndices?.byteLength ?? 0) + (primitive.boneWeights?.byteLength ?? 0) + (primitive.textureCoordinates?.byteLength ?? 0) + (primitive.textureCoordinateSets?.reduce(
+    (total, channel) => total + channel.coordinates.byteLength,
+    0
+  ) ?? 0);
 }
 
 // packages/codec-kit/src/editing.ts
@@ -1725,8 +1958,8 @@ var optionalFields = (value, label) => {
     if (value[key] !== void 0) strings(value[key], `${label}.${key}`);
   }
 };
-function snapshotModelMaterials(value, budget = DEFAULT_MODEL_MATERIAL_BUDGET, signal) {
-  const snapshot = snapshotJson(value, { ...budget, sortKeys: true }, signal);
+function snapshotModelMaterials(value, budget2 = DEFAULT_MODEL_MATERIAL_BUDGET, signal) {
+  const snapshot = snapshotJson(value, { ...budget2, sortKeys: true }, signal);
   if (!Array.isArray(snapshot)) throw new TypeError("model materials must be an array");
   const ids = /* @__PURE__ */ new Set();
   for (const entry of snapshot) {
@@ -1883,9 +2116,9 @@ function createModelResourceRefsSource({
 function createModelSkeletonSource({
   bindings,
   hierarchies,
-  budget
+  budget: budget2
 }) {
-  const items = snapshotModelSkeleton(bindings, budget);
+  const items = snapshotModelSkeleton(bindings, budget2);
   const info = Object.freeze({
     bindings: items.length,
     named: items.filter((item) => item.boneName !== null).length,
@@ -1897,9 +2130,9 @@ function createModelSkeletonSource({
 }
 function createModelAnimationSource({
   clips,
-  budget
+  budget: budget2
 }) {
-  const items = snapshotModelAnimations(clips, budget);
+  const items = snapshotModelAnimations(clips, budget2);
   const info = Object.freeze({
     clips: items.length,
     channelled: items.filter((clip) => clip.channels.length > 0).length,
@@ -1922,9 +2155,9 @@ function createModelCollisionSource({
 function createModelMaterialSource({
   materials,
   libraries,
-  budget
+  budget: budget2
 }) {
-  const items = snapshotModelMaterials(materials, budget);
+  const items = snapshotModelMaterials(materials, budget2);
   const byContract = {};
   for (const material of items) {
     for (const contract of material.contracts ?? []) {
@@ -2059,6 +2292,31 @@ function createModelLodSource({
 }) {
   const items = [...levels].sort((a, b) => a.order - b.order).map((level) => ({ ...level, nodeIds: Object.freeze([...level.nodeIds]) }));
   return facetSource(Object.freeze({ levels: items.length }), "levels", items);
+}
+function createModelVariantSource({
+  variants
+}) {
+  const ids = /* @__PURE__ */ new Set();
+  const defaults = /* @__PURE__ */ new Set();
+  const items = variants.map((variant) => {
+    if (variant.id === "" || ids.has(variant.id))
+      throw new TypeError(`model variant id \xAB${variant.id}\xBB is empty or repeated`);
+    ids.add(variant.id);
+    if (variant.default === true) {
+      const slot = variant.slot ?? "";
+      if (defaults.has(slot)) throw new TypeError(`slot \xAB${slot}\xBB has two default variants`);
+      defaults.add(slot);
+    }
+    const hidden = new Set(variant.hidePrimitiveIds);
+    if (variant.showPrimitiveIds.some((id) => hidden.has(id)))
+      throw new TypeError(`model variant \xAB${variant.id}\xBB both shows and hides a primitive`);
+    return Object.freeze({
+      ...variant,
+      showPrimitiveIds: Object.freeze([...new Set(variant.showPrimitiveIds)]),
+      hidePrimitiveIds: Object.freeze([...hidden])
+    });
+  });
+  return facetSource(Object.freeze({ variants: items.length }), "variants", items);
 }
 
 // packages/codec-kit/src/audio/ima.ts
@@ -3409,11 +3667,11 @@ function inspectionOperations(declarations, states = []) {
   );
 }
 var READ_ALL_CHUNK_BYTES = 4 * 1024 * 1024;
-async function readAll(source, budget, signal) {
+async function readAll(source, budget2, signal) {
   if (source.kind !== "bytes" || source.size === void 0) {
     throw new TypeError("inspection codecs require a sized byte source");
   }
-  if (source.size > budget.maxInputBytes || source.size > BigInt(Number.MAX_SAFE_INTEGER)) {
+  if (source.size > budget2.maxInputBytes || source.size > BigInt(Number.MAX_SAFE_INTEGER)) {
     throw new RangeError("source exceeds the inspection budget");
   }
   const total = Number(source.size);
@@ -3446,12 +3704,12 @@ function memoryByteSource(bytes) {
 }
 var RANGE_DETECT_PREFIX_BYTES = 64 * 1024;
 var RANGE_READ_CHUNK_BYTES = 8 * 1024 * 1024;
-function rangeByteSource(source, budget) {
+function rangeByteSource(source, budget2) {
   if (source.kind !== "bytes" || source.size === void 0) {
     throw new TypeError("range inspection codecs require a sized byte source");
   }
   const size = source.size;
-  const maximum = BigInt(budget.maxInputBytes);
+  const maximum = BigInt(budget2.maxInputBytes);
   return Object.freeze({
     size: async () => size,
     async read(offset, length, readSignal) {
@@ -3520,9 +3778,9 @@ function createInspectionCodec(definition, contributionContext) {
     );
     return Object.freeze({
       ...codec,
-      async open(input, intent, budget, signal) {
+      async open(input, intent, budget2, signal) {
         signal?.throwIfAborted();
-        const ownedBudget = Object.freeze({ ...budget });
+        const ownedBudget = Object.freeze({ ...budget2 });
         return deferAssetSession(
           revisionId2(input.revisions.revision),
           (initializeSignal) => codec.open(input, intent, ownedBudget, initializeSignal),
@@ -3664,7 +3922,7 @@ function createInspectionCodec(definition, contributionContext) {
         requirements: Object.freeze([])
       });
     },
-    async open(input, intent, budget, signal) {
+    async open(input, intent, budget2, signal) {
       if (namespaceDefinition !== void 0) {
         if (input.originKind !== "namespace") {
           throw new TypeError(`${definition.id} requires a namespace input`);
@@ -3674,6 +3932,7 @@ function createInspectionCodec(definition, contributionContext) {
           const inspection = await namespaceDefinition.inspect(namespaceLease.value, {
             ...contributionContext === void 0 ? {} : {
               contracts: contributionContext.contracts,
+              ...contributionContext.catalog === void 0 ? {} : { catalog: contributionContext.catalog },
               ...contributionContext.modelResources === void 0 ? {} : { modelResources: contributionContext.modelResources },
               ...contributionContext.rasterResources === void 0 ? {} : { rasterResources: contributionContext.rasterResources },
               ...contributionContext.videoFrames === void 0 ? {} : { videoFrames: contributionContext.videoFrames },
@@ -3681,7 +3940,7 @@ function createInspectionCodec(definition, contributionContext) {
               ...contributionContext.containerContext === void 0 ? {} : { containerContext: contributionContext.containerContext },
               ...contributionContext.logicalResources === void 0 ? {} : { logicalResources: contributionContext.logicalResources }
             },
-            budget,
+            budget: budget2,
             signal,
             intent,
             settings: contributionSettingsFor(contributionContext?.settings, input.root.uri),
@@ -3737,7 +3996,7 @@ function createInspectionCodec(definition, contributionContext) {
             ...Object.entries(inspection.handlers ?? {})
           ]);
           return createAssetSession({
-            maxOperationDiagnostics: budget.maxDiagnostics,
+            maxOperationDiagnostics: budget2.maxDiagnostics,
             revision: revisionId2(input.revisions.revision),
             descriptor,
             operationDeclarations,
@@ -3772,10 +4031,10 @@ function createInspectionCodec(definition, contributionContext) {
       const sourceLease = await input.openBinding(primary.bindingId, signal);
       const source = sourceLease.value;
       try {
-        const bytes = rangeDefinition === void 0 ? await readAll(source, budget, signal) : void 0;
-        const byteSource = bytes === void 0 ? rangeByteSource(source, budget) : memoryByteSource(bytes);
+        const bytes = rangeDefinition === void 0 ? await readAll(source, budget2, signal) : void 0;
+        const byteSource = bytes === void 0 ? rangeByteSource(source, budget2) : memoryByteSource(bytes);
         const sourceSize = await byteSource.size();
-        const readable = BigInt(budget.maxInputBytes) < sourceSize ? BigInt(budget.maxInputBytes) : sourceSize;
+        const readable = BigInt(budget2.maxInputBytes) < sourceSize ? BigInt(budget2.maxInputBytes) : sourceSize;
         const prefix = bytes ?? await byteSource.read(
           0n,
           Math.min(rangeDefinition?.detectBytes ?? RANGE_DETECT_PREFIX_BYTES, Number(readable)),
@@ -3787,6 +4046,7 @@ function createInspectionCodec(definition, contributionContext) {
         const inspectionContext = {
           ...contributionContext === void 0 ? {} : {
             contracts: contributionContext.contracts,
+            ...contributionContext.catalog === void 0 ? {} : { catalog: contributionContext.catalog },
             ...contributionContext.modelResources === void 0 ? {} : { modelResources: contributionContext.modelResources },
             ...contributionContext.rasterResources === void 0 ? {} : { rasterResources: contributionContext.rasterResources },
             ...contributionContext.videoFrames === void 0 ? {} : { videoFrames: contributionContext.videoFrames },
@@ -3794,7 +4054,7 @@ function createInspectionCodec(definition, contributionContext) {
             ...contributionContext.containerContext === void 0 ? {} : { containerContext: contributionContext.containerContext },
             ...contributionContext.logicalResources === void 0 ? {} : { logicalResources: contributionContext.logicalResources }
           },
-          budget,
+          budget: budget2,
           signal,
           intent,
           settings: contributionSettingsFor(contributionContext?.settings, primary.source.uri),
@@ -3808,13 +4068,13 @@ function createInspectionCodec(definition, contributionContext) {
           scheme: definition.format.id,
           source,
           byteSource,
-          budget,
+          budget: budget2,
           // A companion the input carries (`.rfd` beside `.rfh`), read by range under the same budget.
           async companionSource(bindingId, companionSignal) {
             const lease2 = await input.openBinding(bindingId, companionSignal);
             try {
               return {
-                source: rangeByteSource(lease2.value, budget),
+                source: rangeByteSource(lease2.value, budget2),
                 release: () => lease2.release()
               };
             } catch (error) {
@@ -3909,7 +4169,7 @@ function createInspectionCodec(definition, contributionContext) {
           ...Object.entries(inspection.handlers ?? {})
         ]);
         return createAssetSession({
-          maxOperationDiagnostics: budget.maxDiagnostics,
+          maxOperationDiagnostics: budget2.maxDiagnostics,
           revision: revisionId2(input.revisions.revision),
           descriptor,
           operationDeclarations,
@@ -4015,6 +4275,7 @@ export {
   applyJsonEdit,
   assetRevisionFromInput,
   attrAt,
+  bindVoxelCellsToParts,
   codecRefusal,
   containerEntryLayer,
   convertToWav,
@@ -4037,6 +4298,7 @@ export {
   createModelSkeletonNodes,
   createModelSkeletonSource,
   createModelSocketSource,
+  createModelVariantSource,
   createProjectionReceipt,
   createRasterImageSource,
   createReferenceIndex,
@@ -4050,6 +4312,7 @@ export {
   createVectorSceneSource,
   createVideoMediaSource,
   declaredPermissionClasses,
+  decodeVl32,
   decodeXmlEntities,
   defineWriter,
   editPlanFromBinding,
@@ -4079,5 +4342,6 @@ export {
   snapshotModelAnimations,
   snapshotModelSkeleton,
   subjectFieldGroup,
-  subjectIdFor
+  subjectIdFor,
+  voxelSurface
 };

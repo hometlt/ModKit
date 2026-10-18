@@ -2,10 +2,12 @@ import {
   createProjectionReceipt
 } from "../../../chunks/chunk-EBEE75BR.js";
 import {
+  createJsonTreeSource
+} from "../../../chunks/chunk-XUPLIV47.js";
+import {
   readCollisionMesh,
-  readUvmModel,
-  uvmImageResourceId
-} from "../../../chunks/chunk-KFEXGIHH.js";
+  readUvmModel
+} from "../../../chunks/chunk-YNK72OLJ.js";
 import {
   array,
   field,
@@ -15,14 +17,14 @@ import {
   required,
   safeIndex,
   string
-} from "../../../chunks/chunk-B5TWMJRH.js";
-import "../../../chunks/chunk-EK44GR2O.js";
+} from "../../../chunks/chunk-X2UVTEN7.js";
 import {
   validateUvmDocument
-} from "../../../chunks/chunk-NHJ4I3HP.js";
+} from "../../../chunks/chunk-LINWGJ2C.js";
 import {
-  createJsonTreeSource
-} from "../../../chunks/chunk-LIDP4V2Q.js";
+  uvmImageResourceId
+} from "../../../chunks/chunk-UX2AHY32.js";
+import "../../../chunks/chunk-UAP65NYZ.js";
 import {
   createModelAnimationSource,
   createModelCollisionSource,
@@ -30,18 +32,19 @@ import {
   createModelSceneSource,
   createModelSkeletonSource,
   createModelSocketSource
-} from "../../../chunks/chunk-7RJ34GIC.js";
-import "../../../chunks/chunk-N7TDQTWE.js";
-import "../../../chunks/chunk-C4KZWCMG.js";
-import "../../../chunks/chunk-PIYTZR52.js";
+} from "../../../chunks/chunk-4TM4AYRN.js";
+import "../../../chunks/chunk-RZDO3QVS.js";
+import "../../../chunks/chunk-GG3QSH3M.js";
+import "../../../chunks/chunk-FA2R53HO.js";
 import {
   animationSnapshotBudget
-} from "../../../chunks/chunk-2W3Y5ACO.js";
-import "../../../chunks/chunk-3YDGNEY2.js";
-import "../../../chunks/chunk-WXUQLAQ3.js";
-import "../../../chunks/chunk-RUCAYZBL.js";
-import "../../../chunks/chunk-NBEJVPOY.js";
+} from "../../../chunks/chunk-DEQO4RMS.js";
+import "../../../chunks/chunk-UO2C4MBT.js";
+import "../../../chunks/chunk-ZYEJYUZ3.js";
+import "../../../chunks/chunk-ASFTMZAC.js";
 import "../../../chunks/chunk-UCBII6KW.js";
+import "../../../chunks/chunk-22GOWHCF.js";
+import "../../../chunks/chunk-NBEJVPOY.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 
 // packages/scene/dist/uvm/facets.js
@@ -256,10 +259,14 @@ function decodeMaterialRefs(document) {
     if (typeof metallic !== "number" || typeof roughness !== "number" || !(metallic >= 0 && metallic <= 1 && roughness >= 0 && roughness <= 1))
       throw new TypeError(`material ${index} metallic and roughness factors must be in 0..1`);
     const stated = (metallicStated !== void 0 || roughnessStated !== void 0) && (metallic !== 0 || roughness !== 1);
-    const gameMaterial = field(material["extensions"], "UV_game_material");
+    const gameMaterialValue = field(material["extensions"], "UV_game_material");
+    const gameMaterial = gameMaterialValue === void 0 ? void 0 : object(gameMaterialValue, "game material");
+    const blendMode = field(gameMaterial, "blendMode");
     const depthWrite = field(gameMaterial, "depthWrite");
     const sortPriority = field(gameMaterial, "sortPriority");
+    const shader = field(gameMaterial, "shader");
     return Object.freeze({
+      ...typeof blendMode === "string" ? { blendMode } : {},
       ...typeof depthWrite === "boolean" ? { depthWrite } : {},
       ...typeof sortPriority === "number" ? { priority: sortPriority } : {},
       ...fields,
@@ -275,10 +282,10 @@ function decodeMaterialRefs(document) {
       ...alphaMode === void 0 ? {} : { alphaMode },
       ...alphaMode !== "mask" ? {} : { alphaCutoff: typeof alphaCutoff === "number" ? alphaCutoff : 0.5 },
       ...contracts.length === 0 ? {} : { contracts: Object.freeze(contracts) },
-      ...field(material["extensions"], "UV_game_material") === void 0 ? {} : {
+      ...gameMaterial === void 0 || !Object.hasOwn(gameMaterial, "shader") ? {} : {
         shader: {
-          id: string(field(field(material["extensions"], "UV_game_material"), "shader"), "shader identity"),
-          parameters: object(field(field(material["extensions"], "UV_game_material"), "params") ?? {}, "UVM shader parameters")
+          id: string(shader, "shader identity"),
+          parameters: object(field(gameMaterial, "params") ?? {}, "UVM shader parameters")
         }
       }
     });

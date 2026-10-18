@@ -5,12 +5,17 @@ import {
   clipEventsBetween,
   createModelAnimationSampler,
   layeredClip,
+  modelAnimationDurationSeconds,
+  modelAnimationNameMatchScore,
+  modelAnimationNameMatches,
+  sampleModelAnimationLayers,
   snapshotModelAnimations,
   withoutHeldSamples
-} from "../../../chunks/chunk-2W3Y5ACO.js";
-import "../../../chunks/chunk-3YDGNEY2.js";
-import "../../../chunks/chunk-WXUQLAQ3.js";
+} from "../../../chunks/chunk-DEQO4RMS.js";
+import "../../../chunks/chunk-UO2C4MBT.js";
+import "../../../chunks/chunk-ZYEJYUZ3.js";
 import "../../../chunks/chunk-UCBII6KW.js";
+import "../../../chunks/chunk-22GOWHCF.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 export {
   DEFAULT_MODEL_ANIMATION_BUDGET,
@@ -19,6 +24,10 @@ export {
   clipEventsBetween,
   createModelAnimationSampler,
   layeredClip,
+  modelAnimationDurationSeconds,
+  modelAnimationNameMatchScore,
+  modelAnimationNameMatches,
+  sampleModelAnimationLayers,
   snapshotModelAnimations,
   withoutHeldSamples
 };

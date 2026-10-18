@@ -1,3 +1,6 @@
+import {
+  diagnostic
+} from "../../../chunks/chunk-22GOWHCF.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 
 // packages/uv/dist/model/export-handler.js
@@ -33,6 +36,7 @@ function createUvmExportHandler(projection, context, options) {
       ...options.animationBudget === void 0 ? {} : { animationBudget: options.animationBudget },
       ...signal === void 0 ? {} : { signal }
     });
+    invocation.reportDiagnostic?.(diagnostic("information", "common.uvm/export-projection-receipt", "Canonical UVM projection receipt for this export.", void 0, result.receipt));
     return { kind: "bytes", value: result.bytes.slice() };
   };
 }

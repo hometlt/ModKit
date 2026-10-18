@@ -20,20 +20,25 @@ import {
   plausibleTgaHeader,
   readJpegFrameInfo,
   surfaceRegionReader
-} from "../../../chunks/chunk-I5QDMBGN.js";
+} from "../../../chunks/chunk-SOI7CCUJ.js";
 import {
   applyColorKeyTransparency,
   applyRoundedAlpha,
   combineNormalSpecular,
   hsvToRgb,
   linearToSrgb,
+  pasteRgba,
   resizeRgba,
   rgbToHsv,
   srgbToLinear
-} from "../../../chunks/chunk-OX73FBBJ.js";
-import "../../../chunks/chunk-JVAXQGJ2.js";
-import "../../../chunks/chunk-KSBE5J2R.js";
+} from "../../../chunks/chunk-I4M3NPTV.js";
+import {
+  expand5To8,
+  rgb555ToRgb888
+} from "../../../chunks/chunk-Z2PMW7HG.js";
+import "../../../chunks/chunk-NRZAER5X.js";
 import "../../../chunks/chunk-UCBII6KW.js";
+import "../../../chunks/chunk-JVAXQGJ2.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 export {
   applyColorKeyTransparency,
@@ -51,6 +56,7 @@ export {
   encodeIconDib,
   encodePng,
   encodeTga,
+  expand5To8,
   findEmbeddedImage,
   greyDepthFor,
   greyGridFromPng,
@@ -59,9 +65,11 @@ export {
   linearToSrgb,
   parsePcx,
   parseTga,
+  pasteRgba,
   plausibleTgaHeader,
   readJpegFrameInfo,
   resizeRgba,
+  rgb555ToRgb888,
   rgbToHsv,
   srgbToLinear,
   surfaceRegionReader

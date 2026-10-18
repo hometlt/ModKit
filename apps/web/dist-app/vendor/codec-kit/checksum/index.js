@@ -5,8 +5,9 @@ import {
   crc32Range,
   crc32c,
   createAdler32,
-  createCrc32Msb
-} from "../../../chunks/chunk-KSBE5J2R.js";
+  createCrc32Msb,
+  jenkinsLookup2
+} from "../../../chunks/chunk-NRZAER5X.js";
 import {
   xxHash32
 } from "../../../chunks/chunk-UCBII6KW.js";
@@ -19,5 +20,6 @@ export {
   crc32c,
   createAdler32,
   createCrc32Msb,
+  jenkinsLookup2,
   xxHash32
 };

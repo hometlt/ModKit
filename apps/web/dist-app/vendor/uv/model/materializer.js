@@ -8,45 +8,47 @@ import {
 import {
   uvmSceneFrameInverse,
   withMaterialFrame
-} from "../../../chunks/chunk-OAHCSLY5.js";
+} from "../../../chunks/chunk-2A36IAEE.js";
 import {
-  packUvmGlb,
-  uvmImageUri
-} from "../../../chunks/chunk-EK44GR2O.js";
-import {
+  isUvmGameBlendMode,
   materializeUvmAnimationMaterialTargets,
   uvmAnimationEvents,
   uvmAnimationPlayback,
   uvmKeyTimesMetadata,
   uvmVisibilityPointer
-} from "../../../chunks/chunk-NHJ4I3HP.js";
+} from "../../../chunks/chunk-LINWGJ2C.js";
+import {
+  packUvmGlb,
+  uvmImageUri
+} from "../../../chunks/chunk-UX2AHY32.js";
+import "../../../chunks/chunk-UAP65NYZ.js";
+import {
+  boundsOf
+} from "../../../chunks/chunk-IF5B6DHS.js";
 import {
   DEFAULT_MODEL_MATERIAL_BUDGET,
   snapshotModelMaterials
-} from "../../../chunks/chunk-C4KZWCMG.js";
+} from "../../../chunks/chunk-GG3QSH3M.js";
 import {
   DEFAULT_MODEL_SKELETON_BUDGET,
   createModelSkeletonNodes,
   snapshotModelSkeleton
-} from "../../../chunks/chunk-PIYTZR52.js";
+} from "../../../chunks/chunk-FA2R53HO.js";
 import {
   DEFAULT_MODEL_ANIMATION_BUDGET,
   snapshotModelAnimations
-} from "../../../chunks/chunk-2W3Y5ACO.js";
-import "../../../chunks/chunk-3YDGNEY2.js";
+} from "../../../chunks/chunk-DEQO4RMS.js";
+import "../../../chunks/chunk-UO2C4MBT.js";
 import {
   composeTrsMatrix
-} from "../../../chunks/chunk-WXUQLAQ3.js";
-import {
-  boundsOf
-} from "../../../chunks/chunk-IF5B6DHS.js";
-import "../../../chunks/chunk-RUCAYZBL.js";
+} from "../../../chunks/chunk-ZYEJYUZ3.js";
+import "../../../chunks/chunk-ASFTMZAC.js";
+import "../../../chunks/chunk-UCBII6KW.js";
 import {
   isJsonValue
-} from "../../../chunks/chunk-USBGWOTH.js";
-import "../../../chunks/chunk-WMDX3O34.js";
+} from "../../../chunks/chunk-UXGPAZZ4.js";
+import "../../../chunks/chunk-22GOWHCF.js";
 import "../../../chunks/chunk-NBEJVPOY.js";
-import "../../../chunks/chunk-UCBII6KW.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 
 // packages/uv/dist/model/rig.js
@@ -217,7 +219,9 @@ function writeUvmSkinAttributes(primitive, attributes, skeleton, storage) {
   return hierarchy.skin;
 }
 function writeUvmAnimations(source, nodeIndices, boneByNode, storage, budget, signal, primitiveIndices = /* @__PURE__ */ new Map(), rigidNodeIds = /* @__PURE__ */ new Set(), morphTargetCounts = /* @__PURE__ */ new Map(), hiddenPrimitives = []) {
-  const clips = snapshotModelAnimations(source, budget, signal);
+  const clips = [
+    ...snapshotModelAnimations(source, budget, signal)
+  ];
   const animations = [];
   const catalog = [];
   const sequenceIndices = /* @__PURE__ */ new Set();
@@ -228,7 +232,9 @@ function writeUvmAnimations(source, nodeIndices, boneByNode, storage, budget, si
     visibilityIndices.set(`${target.mesh}/${target.primitive}/visibility`, visibility.length);
     visibility.push({ mesh: target.mesh, primitive: target.primitive, value: 0 });
   }
-  for (const [clipIndex, clip] of clips.entries()) {
+  for (let clipIndex = 0; clipIndex < clips.length; clipIndex++) {
+    const clip = clips[clipIndex];
+    clips[clipIndex] = void 0;
     const sequenceIndex = clip.sequenceIndex ?? clipIndex;
     if (sequenceIndices.has(sequenceIndex))
       refuse("clips require distinct material sequence indices");
@@ -327,7 +333,19 @@ function writeUvmAnimations(source, nodeIndices, boneByNode, storage, budget, si
         const times = Float32Array.from(samples, (sample) => sample.timeSeconds ?? NaN);
         const input = addAccessor(storage.buffer, storage.views, storage.accessors, times, "SCALAR", 5126, void 0, { min: [times[0] ?? 0], max: [times[times.length - 1] ?? 0] });
         const output = addAccessor(storage.buffer, storage.views, storage.accessors, Float32Array.from(samples.flatMap((sample) => sample.value)), "SCALAR", 5126);
-        channels.push({ sampler: samplers.length, target: { node, path: "weights" } });
+        const uv = {
+          ...channel.concurrent === true ? {
+            concurrent: true,
+            ...channel.wrapSeconds === void 0 ? {} : { wrapSeconds: channel.wrapSeconds },
+            ...channel.repeatCount === void 0 ? {} : { repeatCount: channel.repeatCount }
+          } : {},
+          ...uvmKeyTimesMetadata(samples.map((sample) => sample.timeSeconds))
+        };
+        channels.push({
+          sampler: samplers.length,
+          target: { node, path: "weights" },
+          ...Object.keys(uv).length ? { extras: { uv } } : {}
+        });
         samplers.push({
           input,
           output,
@@ -540,19 +558,6 @@ function texturesWithSamplers(filters, colorKeys = [], alphaIgnored = []) {
   return samplers.length === 0 ? { textures } : { textures, samplers };
 }
 var colorChannel = (value) => typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 255;
-var UVM_GAME_BLEND_MODES = [
-  "opaque",
-  "alpha-blend",
-  "alpha-test",
-  "additive",
-  "add-alpha",
-  "modulate",
-  "modulate2x",
-  "alpha-key",
-  "screen",
-  "subtract"
-];
-var isUvmGameBlendMode = (value) => UVM_GAME_BLEND_MODES.includes(value);
 var unitRgb = (value) => Array.isArray(value) && value.length === 3 && value.every((component) => typeof component === "number" && component >= 0 && component <= 1);
 function teamColorExtension(layer, mask) {
   const rule = layer.teamColor ?? {};
@@ -793,6 +798,65 @@ function effectsOf(projection, nodeIndexById, materialIndexById, sourceFrameNode
     ...sourceFrameNode === void 0 ? {} : { spaceNode: sourceFrameNode },
     ...Object.fromEntries(families),
     ...given.extras === void 0 ? {} : { extras: structuredClone(given.extras) }
+  };
+}
+var BAKED_SPRITE_FLOATS = 17;
+function bakedParticlesOf(projection, nodeIndexById, materialIndexById, sourceFrameNode, addAccessor2) {
+  const given = projection.bakedParticles;
+  if (given === void 0)
+    return void 0;
+  if (!(Number.isFinite(given.frameRate) && given.frameRate > 0))
+    fail("baked particles need a positive frame rate");
+  const spaceNode = given.spaceNodeId === void 0 ? sourceFrameNode : nodeIndexById.get(given.spaceNodeId);
+  if (given.spaceNodeId !== void 0 && spaceNode === void 0)
+    fail(`baked particles name the unknown space node ${given.spaceNodeId}`);
+  const sequenceByClip = new Map((projection.animations ?? []).map((clip, index) => [clip.id, clip.sequenceIndex ?? index]));
+  const batches = given.batches.map((batch, index) => {
+    const material = materialIndexById.get(batch.materialId);
+    if (material === void 0)
+      fail(`baked particle batch ${String(index)} names the unknown material ${batch.materialId}`);
+    if (!["camera", "axis", "plane", "ribbon"].includes(batch.orientation))
+      fail(`baked particle batch ${String(index)} has no known orientation`);
+    if (batch.atlas !== void 0 && !(batch.atlas.length === 2 && batch.atlas.every((cells) => Number.isSafeInteger(cells) && cells >= 1)))
+      fail(`baked particle batch ${String(index)} has an invalid atlas`);
+    return {
+      ...batch.name === void 0 ? {} : { name: batch.name },
+      material,
+      orientation: batch.orientation,
+      ...batch.atlas === void 0 ? {} : { atlas: [...batch.atlas] }
+    };
+  });
+  const tracks = [];
+  for (const [index, track] of given.tracks.entries()) {
+    const label = `baked particle track ${String(index)}`;
+    const sequence = sequenceByClip.get(track.clipId);
+    if (sequence === void 0)
+      fail(`${label} names the unknown clip ${track.clipId}`);
+    if (!Number.isSafeInteger(track.batch) || batches[track.batch] === void 0)
+      fail(`${label} names no batch`);
+    const { frames, sprites } = track;
+    const count = sprites.length / BAKED_SPRITE_FLOATS;
+    if (!Number.isInteger(count) || frames.length < 2 || frames[0] !== 0 || frames[frames.length - 1] !== count || frames.some((offset, at) => at > 0 && offset < frames[at - 1]))
+      fail(`${label} needs frame offsets running from 0 up to its sprite count`);
+    if (!sprites.every(Number.isFinite))
+      fail(`${label} has values that are not finite`);
+    if (count === 0)
+      continue;
+    tracks.push({
+      sequence,
+      batch: track.batch,
+      ...track.loop === true ? { loop: true } : {},
+      frames: addAccessor2(Uint32Array.from(frames), "SCALAR"),
+      sprites: addAccessor2(Float32Array.from(sprites), "SCALAR")
+    });
+  }
+  if (tracks.length === 0)
+    return void 0;
+  return {
+    ...spaceNode === void 0 ? {} : { spaceNode },
+    frameRate: given.frameRate,
+    batches,
+    tracks
   };
 }
 var LIGHT_KEYS = /* @__PURE__ */ new Set([
@@ -1231,19 +1295,20 @@ function materializeUvmCore(projection, request, { digest, materialBudget = DEFA
     if (Object.keys(fields).length > 0)
       target.extras = { modkit: { material: { version: 1, fields } } };
     const artifactContracts = [];
-    if (shader !== void 0) {
-      const blendMode = fields["blendMode"];
-      const { depthWrite, priority } = fields;
+    const blendMode = fields["blendMode"];
+    const { depthWrite, priority } = fields;
+    const fixedState = {
+      ...isUvmGameBlendMode(blendMode) ? { blendMode } : {},
+      ...depthWrite === void 0 ? {} : { depthWrite },
+      // The extension's integer order; a fractional priority stays in extras only.
+      ...priority !== void 0 && Number.isSafeInteger(priority) ? { sortPriority: priority } : {}
+    };
+    if (shader !== void 0 || Object.keys(fixedState).length > 0) {
       target.extensions = {
-        UV_game_material: {
-          shader: shader.id,
-          ...isUvmGameBlendMode(blendMode) ? { blendMode } : {},
-          ...depthWrite === void 0 ? {} : { depthWrite },
-          // the extension's integer order; a fractional priority stays in extras only
-          ...priority !== void 0 && Number.isSafeInteger(priority) ? { sortPriority: priority } : {},
-          params: shader.parameters
-        }
+        UV_game_material: shader === void 0 ? fixedState : { shader: shader.id, ...fixedState, params: shader.parameters }
       };
+    }
+    if (shader !== void 0) {
       const renderModel = shader.parameters["renderModel"];
       if (renderModel !== null && typeof renderModel === "object" && !Array.isArray(renderModel)) {
         const snapshot = renderModel;
@@ -1774,6 +1839,48 @@ function materializeUvmCore(projection, request, { digest, materialBudget = DEFA
     hiddenPrimitives
   );
   const visibility = animation?.visibility ?? hiddenPrimitives.map((target) => ({ mesh: target.mesh, primitive: target.primitive, value: 0 }));
+  const namedVariants = [];
+  {
+    const names = /* @__PURE__ */ new Set();
+    const defaults = /* @__PURE__ */ new Set();
+    const targetsOf = (variant, ids) => {
+      const seen = /* @__PURE__ */ new Set();
+      return ids.flatMap((id) => {
+        if (seen.has(id))
+          return [];
+        seen.add(id);
+        const target = primitiveIndices.get(id);
+        if (target === void 0)
+          fail(`variant \xAB${variant.id}\xBB names the unknown primitive ${id}`);
+        return [target];
+      }).sort((a, b) => a.mesh - b.mesh || a.primitive - b.primitive).map((target) => ({ mesh: target.mesh, primitive: target.primitive }));
+    };
+    for (const variant of projection.variants ?? []) {
+      if (variant.id.length === 0 || names.has(variant.id))
+        fail(`variant \xAB${variant.id}\xBB is unnamed or declared twice`);
+      names.add(variant.id);
+      if (variant.slot !== void 0 && variant.slot.length === 0)
+        fail(`variant \xAB${variant.id}\xBB names an empty slot`);
+      if (variant.default === true) {
+        if (defaults.has(variant.slot ?? ""))
+          fail(`variant \xAB${variant.id}\xBB is a second default`);
+        defaults.add(variant.slot ?? "");
+      }
+      const hidden = new Set(variant.hidePrimitiveIds);
+      if (variant.showPrimitiveIds.some((id) => hidden.has(id)))
+        fail(`variant \xAB${variant.id}\xBB both shows and hides a primitive`);
+      const show = targetsOf(variant, variant.showPrimitiveIds);
+      const hide = targetsOf(variant, variant.hidePrimitiveIds);
+      namedVariants.push({
+        name: variant.id,
+        ...variant.slot === void 0 ? {} : { slot: variant.slot },
+        ...variant.default === true ? { default: true } : {},
+        ...show.length === 0 ? {} : { showPrimitives: show },
+        ...hide.length === 0 ? {} : { hidePrimitives: hide },
+        ...variant.name === variant.id ? {} : { extras: { modkit: { label: variant.name } } }
+      });
+    }
+  }
   const animatesPointers = (animation?.animations ?? []).some((clip) => clip["channels"].some((channel) => channel["target"]?.["path"] === "pointer"));
   const clipLosses = /* @__PURE__ */ new Map();
   for (const loss of animation?.losses ?? []) {
@@ -1798,7 +1905,7 @@ function materializeUvmCore(projection, request, { digest, materialBudget = DEFA
   }
   if (animation !== void 0 && animation.animations.length > 0)
     note("common.view/model-animation-source@1", "value-differs", void 0, "clip and target identities are positional; native frame indices, provenance, bounds and movement speed are not glTF TRS fields");
-  const effects = effectsOf(projection, nodeIndexById, materialIndexById, sourceFrameNode, (values, type) => {
+  const addAccessor2 = (values, type) => {
     const index = accessors.length;
     if (type === "VEC3") {
       const bounds = boundsOf(values);
@@ -1813,12 +1920,14 @@ function materializeUvmCore(projection, request, { digest, materialBudget = DEFA
     } else
       accessors.push({
         bufferView: buffers.push(values),
-        componentType: UINT32,
+        componentType: values instanceof Float32Array ? FLOAT : UINT32,
         count: values.length,
         type
       });
     return index;
-  });
+  };
+  const effects = effectsOf(projection, nodeIndexById, materialIndexById, sourceFrameNode, addAccessor2);
+  const bakedParticles = bakedParticlesOf(projection, nodeIndexById, materialIndexById, sourceFrameNode, addAccessor2);
   const binary = buffers.build();
   const gameExtensions = gameExtensionsOf(projection);
   const sceneLights = sceneLightsOf(projection, nodeIndexById, sourceFrameNode);
@@ -1839,7 +1948,7 @@ function materializeUvmCore(projection, request, { digest, materialBudget = DEFA
       ...materials.some((material) => material.extensions?.KHR_materials_unlit !== void 0) ? ["KHR_materials_unlit"] : [],
       ...animation === void 0 || animation.catalog.length === 0 ? [] : ["UV_game_animation_clips"],
       ...animation?.animations.some((clip) => clip["extensions"]?.["UV_game_animation_events"]) ? ["UV_game_animation_events"] : [],
-      ...visibility.length === 0 ? [] : ["UV_game_variants"],
+      ...visibility.length === 0 && namedVariants.length === 0 ? [] : ["UV_game_variants"],
       ...animatesPointers ? ["KHR_animation_pointer"] : [],
       ...imageColorKeys.some((key) => key !== void 0) ? ["UV_texture_color_key"] : [],
       ...imageAlphaIgnored.includes(true) ? ["UV_texture_alpha"] : [],
@@ -1850,15 +1959,22 @@ function materializeUvmCore(projection, request, { digest, materialBudget = DEFA
       ...cameras.some((camera) => camera["extensions"] !== void 0) ? ["UV_scene_camera"] : [],
       ...collisionNodes === 0 ? [] : ["UV_game_collision"],
       ...effects === void 0 ? [] : ["UV_game_effects"],
+      ...bakedParticles === void 0 ? [] : ["UV_game_baked_particles"],
       ...gameExtensions.map(([name]) => name)
     ],
     extensions: {
       ...Object.fromEntries(gameExtensions),
       ...sceneLights === void 0 ? {} : { UV_scene_lights: sceneLights },
       ...effects === void 0 ? {} : { UV_game_effects: effects },
+      ...bakedParticles === void 0 ? {} : { UV_game_baked_particles: bakedParticles },
       ...unitsExtension === void 0 ? {} : { UV_units: unitsExtension },
       ...lodSelection === void 0 ? {} : { MODKITX_lod_selection: lodSelection },
-      ...visibility.length === 0 ? {} : { UV_game_variants: { visibility } },
+      ...visibility.length === 0 && namedVariants.length === 0 ? {} : {
+        UV_game_variants: {
+          ...namedVariants.length === 0 ? {} : { variants: namedVariants },
+          ...visibility.length === 0 ? {} : { visibility }
+        }
+      },
       ...animation === void 0 || animation.catalog.length === 0 ? {} : {
         UV_game_animation_clips: {
           clips: animation.catalog,

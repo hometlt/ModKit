@@ -14,12 +14,29 @@
     "./formats/dds/encode": "./src/dds/encode.js",
     "./writers/png-encoder": "./src/writers/png-encoder.js",
     "./writers/dds-encoder": "./src/writers/dds-encoder.js",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./formats/gif/encode": {
+      "types": "./dist/gif/encode.d.ts",
+      "default": "./dist/gif/encode.js"
+    },
+    "./formats/webp/encode": {
+      "types": "./dist/webp/encode.d.ts",
+      "default": "./dist/webp/encode.js"
+    },
+    "./formats/jpeg/encode": {
+      "types": "./dist/jpeg/encode.d.ts",
+      "default": "./dist/jpeg/encode.js"
+    },
+    "./media-encoders": {
+      "types": "./dist/media-encoders.d.ts",
+      "default": "./dist/media-encoders.js"
+    }
   },
   "files": [
     "contributions",
     "src",
-    "README.md"
+    "README.md",
+    "dist"
   ],
   "modkit": {
     "schemaVersion": 1,
@@ -51,5 +68,8 @@
     "@modkit/sdk": {
       "optional": true
     }
+  },
+  "scripts": {
+    "build": "tsc -b tsconfig.json"
   }
 }

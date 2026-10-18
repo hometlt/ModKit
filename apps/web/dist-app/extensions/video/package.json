@@ -10,12 +10,21 @@
     "./formats/mp4/codec": "./src/mp4/codec.js",
     "./formats/webm/codec": "./src/webm/codec.js",
     "./formats/*/codec": "./src/*/codec.js",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./formats/ogv/encode": {
+      "types": "./dist/ogv/encode.d.ts",
+      "default": "./dist/ogv/encode.js"
+    },
+    "./media-encoders": {
+      "types": "./dist/media-encoders.d.ts",
+      "default": "./dist/media-encoders.js"
+    }
   },
   "files": [
     "contributions",
     "src",
-    "README.md"
+    "README.md",
+    "dist"
   ],
   "modkit": {
     "schemaVersion": 1,
@@ -47,5 +56,8 @@
     "@modkit/sdk": {
       "optional": true
     }
+  },
+  "scripts": {
+    "build": "tsc -b tsconfig.json"
   }
 }

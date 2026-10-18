@@ -4,12 +4,13 @@ import {
   createModelPoseSampler,
   createModelSkeletonNodes,
   snapshotModelSkeleton
-} from "../../../chunks/chunk-PIYTZR52.js";
-import "../../../chunks/chunk-2W3Y5ACO.js";
-import "../../../chunks/chunk-3YDGNEY2.js";
-import "../../../chunks/chunk-WXUQLAQ3.js";
-import "../../../chunks/chunk-RUCAYZBL.js";
+} from "../../../chunks/chunk-FA2R53HO.js";
+import "../../../chunks/chunk-DEQO4RMS.js";
+import "../../../chunks/chunk-UO2C4MBT.js";
+import "../../../chunks/chunk-ZYEJYUZ3.js";
+import "../../../chunks/chunk-ASFTMZAC.js";
 import "../../../chunks/chunk-UCBII6KW.js";
+import "../../../chunks/chunk-22GOWHCF.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 export {
   DEFAULT_MODEL_SKELETON_BUDGET,

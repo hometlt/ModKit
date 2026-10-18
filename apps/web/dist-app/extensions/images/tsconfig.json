@@ -1,0 +1,19 @@
+{
+  "extends": "../../tsconfig.port-strict.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "tsBuildInfoFile": "../../node_modules/.cache/tsbuildinfo/extensions-images.tsbuildinfo"
+  },
+  "include": [
+    "src/gif/encode.ts",
+    "src/webp/encode.ts",
+    "src/jpeg/encode.ts",
+    "src/media-encoders.ts"
+  ],
+  "references": [
+    {
+      "path": "../../packages/host"
+    }
+  ]
+}

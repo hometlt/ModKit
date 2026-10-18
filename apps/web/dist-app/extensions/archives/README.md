@@ -22,14 +22,16 @@ remove → rename → add.
 The plan is one whole-source `replace` with an inline payload: a freshly assembled archive.
 Nothing is recompressed. Every untouched entry's local header, compressed data and
 central-directory record are copied **verbatim**; only the local-header offset inside the central
-record is rewritten. Method, CRC-32, sizes, timestamps, extra fields, entry comments and the
+record or ZIP64 offset extra is rewritten. Method, CRC-32, sizes, timestamps, extra fields, entry comments and the
 archive comment survive. Added entries and `edit.content` replacements are stored (method 0) with
 a freshly computed CRC-32 and a deterministic DOS-epoch timestamp; `edit.content` keeps the
-entry's original timestamp, attributes, extra fields and comment.
+entry's original timestamp, attributes, other extra fields and comment. Replaced entries lose
+stale ZIP64 size/offset extras; the common writer regenerates any required ZIP64 metadata.
 
 Fidelity is claimed as `semantic`. `preservesUnknownData` is `true` only when the input has a
 canonical layout — entries contiguous from offset 0 in central-directory order, the directory
-immediately after them, the EOCD immediately after that and nothing trailing — because only then
+immediately after them, the EOCD (or the fixed ZIP64 end record, locator and EOCD) immediately
+after that and nothing trailing — because only then
 does re-assembly provably keep every byte the archive carried. Otherwise it is `false` and the
 plan says why.
 
@@ -38,16 +40,26 @@ plan says why.
 An archive the re-assembler cannot copy safely is refused before any bytes are produced, and the
 descriptor carries the reason as a diagnostic:
 
-- `x3.codec/zip-edit-zip64` — a ZIP64 end-of-central-directory locator, or an entry whose
-  size/offset lives in a ZIP64 extended-information extra field;
+- `x3.codec/zip-edit-zip64` — unsupported or inconsistent ZIP64 metadata, noncanonical ZIP64
+  layout, duplicate/truncated ZIP64 extras, multi-disk entries or extensible end records;
 - `x3.codec/zip-edit-encrypted` — an entry with the encryption or strong-encryption flag;
 - `x3.codec/zip-edit-layout` — data before the first entry (a self-extracting stub), duplicate
   entry paths, a malformed extra field, or a streaming data descriptor that disagrees with the
   central directory.
 
-Results that would themselves need ZIP64 (more than 65535 entries, or more than 4 GiB of output)
-are refused too, as is anything beyond the open budget's `maxInputBytes` / `maxNodes`, and a
-payload beyond `maxScalarBytes`.
+Canonical single-disk ZIP64 archives are editable within the existing full-byte `maxInputBytes`
+budget (1 GiB in the contribution). ZIP64 count sentinels begin at 65535 entries. Both classic
+and ZIP64 signed/unsigned data descriptors are checked against the central directory; streamed
+ZIP64 local size placeholders are accepted only with a matching descriptor. Untouched local
+blocks, unknown extras, comments and the fixed ZIP64 end record's creator/required versions
+survive. Local-header-only ZIP64 and offset-only ZIP64 extras use the same editor. Archives
+larger than the edit budget remain readable by ranges, but edits fail before a plan is produced.
+Actual edits over 4 GiB are not qualified. Output must fit `maxInputBytes` / `maxNodes`, and each
+payload must fit `maxScalarBytes`.
+
+The ZIP64 preservation corpus is `test/zip-ranges.test.ts`, including an independent Python
+`zipfile` forced-ZIP64 input. `packages/codec-kit/test/container-zip.test.ts` covers classic ZIP,
+the 65534/65535/65536 entry boundaries and ZIP64 header sizes without allocating 4 GiB payloads.
 
 Fourteen additional product codecs now live in this package: 7z, Brotli, BZip2, CAB, DMG, GZip,
 ISO, LZMA, PE, PlayStation XA, RAR, TAR, XZ and Zstandard. The older ZIP staging route was retired

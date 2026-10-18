@@ -1,13 +1,19 @@
 import {
+  readUvmEffectAnimation,
   readUvmTextureAlpha,
   readUvmTextureColorKeys,
-  validateUvmDocument
-} from "../../../chunks/chunk-NHJ4I3HP.js";
-import "../../../chunks/chunk-C4KZWCMG.js";
-import "../../../chunks/chunk-3YDGNEY2.js";
+  validateUvmDocument,
+  validateUvmSceneCamera
+} from "../../../chunks/chunk-LINWGJ2C.js";
+import "../../../chunks/chunk-UAP65NYZ.js";
+import "../../../chunks/chunk-GG3QSH3M.js";
+import "../../../chunks/chunk-UO2C4MBT.js";
+import "../../../chunks/chunk-22GOWHCF.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 export {
+  readUvmEffectAnimation,
   readUvmTextureAlpha,
   readUvmTextureColorKeys,
-  validateUvmDocument
+  validateUvmDocument,
+  validateUvmSceneCamera
 };

@@ -1,18 +1,18 @@
 import {
   PROJECTION_RECEIPT_METADATA_ID
 } from "../../../../chunks/chunk-EBEE75BR.js";
+import "../../../../chunks/chunk-EJGE47SQ.js";
+import "../../../../chunks/chunk-I4M3NPTV.js";
 import {
   pageStart
-} from "../../../../chunks/chunk-7RJ34GIC.js";
-import "../../../../chunks/chunk-N7TDQTWE.js";
-import "../../../../chunks/chunk-C4KZWCMG.js";
-import "../../../../chunks/chunk-PIYTZR52.js";
-import "../../../../chunks/chunk-2W3Y5ACO.js";
-import {
-  snapshotJson
-} from "../../../../chunks/chunk-3YDGNEY2.js";
-import "../../../../chunks/chunk-WXUQLAQ3.js";
-import "../../../../chunks/chunk-EJGE47SQ.js";
+} from "../../../../chunks/chunk-4TM4AYRN.js";
+import "../../../../chunks/chunk-RZDO3QVS.js";
+import "../../../../chunks/chunk-GG3QSH3M.js";
+import "../../../../chunks/chunk-FA2R53HO.js";
+import "../../../../chunks/chunk-DEQO4RMS.js";
+import "../../../../chunks/chunk-UO2C4MBT.js";
+import "../../../../chunks/chunk-ZYEJYUZ3.js";
+import "../../../../chunks/chunk-ASFTMZAC.js";
 import {
   assembleZipArchive,
   zipCentralRecord,
@@ -20,37 +20,36 @@ import {
   zipLocalHeader,
   zipNeedsUtf8Flag,
   zipStoredEntry
-} from "../../../../chunks/chunk-3QROJW6M.js";
-import "../../../../chunks/chunk-OX73FBBJ.js";
-import "../../../../chunks/chunk-RUCAYZBL.js";
-import "../../../../chunks/chunk-IPABFL2T.js";
+} from "../../../../chunks/chunk-SMLN4X6H.js";
+import "../../../../chunks/chunk-VBRWZEEU.js";
+import {
+  crc32
+} from "../../../../chunks/chunk-NRZAER5X.js";
+import "../../../../chunks/chunk-UCBII6KW.js";
 import {
   decompressBounded
 } from "../../../../chunks/chunk-JVAXQGJ2.js";
-import "../../../../chunks/chunk-RBYIYBRS.js";
 import {
   assembleSubjectDescriptor,
   createAssetSession,
   createUtf8TextDataSource,
   revisionId as revisionId2,
   toPortableProjectionReceipt
-} from "../../../../chunks/chunk-KL4QSMVR.js";
-import "../../../../chunks/chunk-3KAXL5BS.js";
+} from "../../../../chunks/chunk-B2GTQHX7.js";
+import "../../../../chunks/chunk-RBYIYBRS.js";
+import "../../../../chunks/chunk-AVWJKQQU.js";
 import {
   containerEntryRevision,
   contributionSettingsFor,
   revisionId
-} from "../../../../chunks/chunk-USBGWOTH.js";
+} from "../../../../chunks/chunk-UXGPAZZ4.js";
 import {
   ModkitError,
   canonicalJsonStringify,
-  diagnostic
-} from "../../../../chunks/chunk-WMDX3O34.js";
+  diagnostic,
+  snapshotJson
+} from "../../../../chunks/chunk-22GOWHCF.js";
 import "../../../../chunks/chunk-L5WKTLBK.js";
-import {
-  crc32
-} from "../../../../chunks/chunk-KSBE5J2R.js";
-import "../../../../chunks/chunk-UCBII6KW.js";
 import "../../../../chunks/chunk-CQ52GEHY.js";
 
 // packages/codec-kit/dist/deferred-session.js
@@ -1018,6 +1017,7 @@ function createInspectionCodec(definition2, contributionContext) {
           const inspection = await namespaceDefinition.inspect(namespaceLease.value, {
             ...contributionContext === void 0 ? {} : {
               contracts: contributionContext.contracts,
+              ...contributionContext.catalog === void 0 ? {} : { catalog: contributionContext.catalog },
               ...contributionContext.modelResources === void 0 ? {} : { modelResources: contributionContext.modelResources },
               ...contributionContext.rasterResources === void 0 ? {} : { rasterResources: contributionContext.rasterResources },
               ...contributionContext.videoFrames === void 0 ? {} : { videoFrames: contributionContext.videoFrames },
@@ -1126,6 +1126,7 @@ function createInspectionCodec(definition2, contributionContext) {
         const inspectionContext = {
           ...contributionContext === void 0 ? {} : {
             contracts: contributionContext.contracts,
+            ...contributionContext.catalog === void 0 ? {} : { catalog: contributionContext.catalog },
             ...contributionContext.modelResources === void 0 ? {} : { modelResources: contributionContext.modelResources },
             ...contributionContext.rasterResources === void 0 ? {} : { rasterResources: contributionContext.rasterResources },
             ...contributionContext.videoFrames === void 0 ? {} : { videoFrames: contributionContext.videoFrames },
@@ -1592,16 +1593,25 @@ function localBlockRange(bytes, entry) {
 }
 function descriptorLength(bytes, entry, dataEnd) {
   if ((entry.flags & FLAG_DESCRIPTOR) === 0) return 0;
-  const signed = dataEnd + 4 <= bytes.byteLength && u32(bytes, dataEnd) === ZIP_DESCRIPTOR;
-  const at = signed ? dataEnd + 4 : dataEnd;
-  if (at + 12 > bytes.byteLength)
-    throw new TypeError(`the data descriptor of \xAB${entry.name}\xBB is truncated`);
-  if (u32(bytes, at) !== entry.crc || u32(bytes, at + 4) !== entry.compressedSize || u32(bytes, at + 8) !== entry.size) {
-    throw new TypeError(
-      `the data descriptor of \xAB${entry.name}\xBB disagrees with the central directory`
-    );
+  const local = entry.localOffset;
+  const extraAt = local + 30 + u16(bytes, local + 26);
+  const localExtra = bytes.subarray(extraAt, extraAt + u16(bytes, local + 28));
+  const centralExtra = centralFieldsOf(bytes, entry).extraBytes;
+  const wide = extraFieldIds(localExtra).includes(EXTRA_ZIP64) || extraFieldIds(centralExtra).includes(EXTRA_ZIP64);
+  const size = wide ? 20 : 12;
+  const candidates = [];
+  for (const signatureBytes of [0, 4]) {
+    if (signatureBytes && u32(bytes, dataEnd) !== ZIP_DESCRIPTOR) continue;
+    const at = dataEnd + signatureBytes;
+    if (at + size > bytes.byteLength) continue;
+    if (u32(bytes, at) === entry.crc && (wide ? u64(bytes, at + 4) : u32(bytes, at + 4)) === entry.compressedSize && (wide ? u64(bytes, at + 12) : u32(bytes, at + 8)) === entry.size)
+      candidates.push(signatureBytes + size);
   }
-  return (signed ? 4 : 0) + 12;
+  if (candidates.length !== 1)
+    throw new TypeError(
+      `the data descriptor of \xAB${entry.name}\xBB is truncated, ambiguous or disagrees with the central directory`
+    );
+  return candidates[0];
 }
 function centralFieldsOf(bytes, entry) {
   const at = entry.centralOffset;
@@ -1621,6 +1631,7 @@ function centralFieldsOf(bytes, entry) {
     diskStart: u16(bytes, at + 34),
     internalAttributes: u16(bytes, at + 36),
     externalAttributes: u32(bytes, at + 38),
+    localOffset: u32(bytes, at + 42),
     nameBytes: bytes.subarray(nameAt, extraAt),
     extraBytes: bytes.subarray(extraAt, commentAt),
     commentBytes: bytes.subarray(commentAt, at + entry.centralLength)
@@ -1635,6 +1646,40 @@ function extraFieldIds(extra) {
   }
   if (cursor !== extra.byteLength) throw new TypeError("a ZIP extra field is malformed");
   return ids;
+}
+function checkedZip64Extra(extra, expected, allowZero = false) {
+  const ids = extraFieldIds(extra);
+  const count = ids.filter((id) => id === EXTRA_ZIP64).length;
+  if (count > 1) throw new TypeError("duplicate ZIP64 extra fields");
+  if (count === 0) {
+    if (expected.length) throw new TypeError("ZIP64 extra field is missing");
+    return;
+  }
+  let at = 0;
+  while (u16(extra, at) !== EXTRA_ZIP64) at += 4 + u16(extra, at + 2);
+  if (u16(extra, at + 2) !== expected.length * 8)
+    throw new TypeError("unsupported or malformed ZIP64 extra field");
+  expected.forEach((value, index) => {
+    const actual = u64(extra, at + 4 + index * 8);
+    if (actual !== value && !(allowZero && actual === 0))
+      throw new TypeError("ZIP64 extra field disagrees with the directory");
+  });
+}
+function withoutZip64Extra(extra) {
+  extraFieldIds(extra);
+  const parts = [];
+  for (let at2 = 0; at2 < extra.byteLength; ) {
+    const end = at2 + 4 + u16(extra, at2 + 2);
+    if (u16(extra, at2) !== EXTRA_ZIP64) parts.push(extra.subarray(at2, end));
+    at2 = end;
+  }
+  const result = new Uint8Array(parts.reduce((sum, part) => sum + part.byteLength, 0));
+  let at = 0;
+  for (const part of parts) {
+    result.set(part, at);
+    at += part.byteLength;
+  }
+  return result;
 }
 function verbatimEntry(bytes, entry, range) {
   return Object.freeze({
@@ -1691,7 +1736,9 @@ function restoredEntry(bytes, entry, range, data) {
     compressedSize: data.byteLength,
     size: data.byteLength,
     nameBytes: bytes.subarray(range.start + 30, range.start + 30 + range.nameLength),
-    extraBytes: bytes.subarray(range.start + 30 + range.nameLength, range.dataOffset)
+    extraBytes: withoutZip64Extra(
+      bytes.subarray(range.start + 30 + range.nameLength, range.dataOffset)
+    )
   });
   return Object.freeze({
     name: entry.name,
@@ -1702,13 +1749,16 @@ function restoredEntry(bytes, entry, range, data) {
       method: STORED,
       crc,
       compressedSize: data.byteLength,
-      size: data.byteLength
+      size: data.byteLength,
+      extraBytes: withoutZip64Extra(fields.extraBytes),
+      localOffset: 0
     })
   });
 }
 var refusal = (code, message) => Object.freeze({ code, message });
 var messageOf = (error) => error instanceof Error ? error.message : String(error);
 function archiveEditModel(bytes, entries) {
+  let zip64 = false;
   try {
     const eocd = findEocd(bytes);
     if (eocd < 0) throw new TypeError("the end-of-central-directory record is missing");
@@ -1716,11 +1766,15 @@ function archiveEditModel(bytes, entries) {
     if (eocd + 22 + commentLength > bytes.byteLength) {
       throw new TypeError("the archive comment is truncated");
     }
-    if (eocd >= 20 && u32(bytes, eocd - 20) === ZIP64_LOCATOR) {
-      return refusal(
-        "x3.codec/zip-edit-zip64",
-        "this archive carries a ZIP64 end-of-central-directory locator; editing it needs a dedicated ZIP64 codec profile"
-      );
+    const tail = eocdOf(bytes, 0);
+    zip64 = tail.zip64RecordOffset !== void 0;
+    const directory = zip64 ? zip64DirectoryOf(bytes.subarray(tail.zip64RecordOffset, tail.zip64RecordOffset + 56)) : tail;
+    if (u16(bytes, eocd + 8) !== u16(bytes, eocd + 10))
+      throw new TypeError("ZIP disk entry counts disagree");
+    if (zip64) {
+      const recordAt = tail.zip64RecordOffset;
+      if (u32(bytes, eocd - 16) !== 0 || u32(bytes, eocd - 4) !== 1 || u64(bytes, recordAt + 4) !== 44 || recordAt + 56 !== eocd - 20 || u64(bytes, recordAt + 24) !== directory.count || tail.count !== MAX_U16 && tail.count !== directory.count || tail.centralSize !== MAX_U32 && tail.centralSize !== directory.centralSize || tail.centralOffset !== MAX_U32 && tail.centralOffset !== directory.centralOffset)
+        throw new TypeError("unsupported or inconsistent ZIP64 end records");
     }
     const ranges = /* @__PURE__ */ new Map();
     const names = /* @__PURE__ */ new Set();
@@ -1729,12 +1783,6 @@ function archiveEditModel(bytes, entries) {
         return refusal(
           "x3.codec/zip-edit-encrypted",
           `\xAB${entry.name}\xBB is encrypted; this codec never re-assembles an archive it cannot read`
-        );
-      }
-      if (entry.compressedSize === MAX_U32 || entry.size === MAX_U32 || entry.localOffset === MAX_U32) {
-        return refusal(
-          "x3.codec/zip-edit-zip64",
-          `\xAB${entry.name}\xBB stores its size or offset in a ZIP64 extended-information field; editing it needs a dedicated ZIP64 codec profile`
         );
       }
       if (names.has(entry.name)) {
@@ -1747,16 +1795,33 @@ function archiveEditModel(bytes, entries) {
       const range = localBlockRange(bytes, entry);
       const fields = centralFieldsOf(bytes, entry);
       const localExtra = bytes.subarray(range.start + 30 + range.nameLength, range.dataOffset);
-      if (extraFieldIds(fields.extraBytes).includes(EXTRA_ZIP64) || extraFieldIds(localExtra).includes(EXTRA_ZIP64)) {
-        return refusal(
-          "x3.codec/zip-edit-zip64",
-          `\xAB${entry.name}\xBB carries a ZIP64 extended-information extra field; editing it needs a dedicated ZIP64 codec profile`
-        );
-      }
+      zip64 ||= extraFieldIds(fields.extraBytes).includes(EXTRA_ZIP64) || extraFieldIds(localExtra).includes(EXTRA_ZIP64);
+      if (fields.diskStart !== 0) throw new TypeError("multi-disk ZIP entry is unsupported");
+      checkedZip64Extra(fields.extraBytes, [
+        ...fields.size === MAX_U32 ? [entry.size] : [],
+        ...fields.compressedSize === MAX_U32 ? [entry.compressedSize] : [],
+        ...u32(bytes, entry.centralOffset + 42) === MAX_U32 ? [entry.localOffset] : []
+      ]);
+      const localSize = u32(bytes, range.start + 22);
+      const localCompressed = u32(bytes, range.start + 18);
+      const localZip64 = localSize === MAX_U32 || localCompressed === MAX_U32;
+      if (localZip64 && (localSize !== MAX_U32 || localCompressed !== MAX_U32))
+        throw new TypeError("ZIP64 local sizes must both use sentinels");
+      checkedZip64Extra(
+        localExtra,
+        localZip64 ? [entry.size, entry.compressedSize] : [],
+        (entry.flags & FLAG_DESCRIPTOR) !== 0
+      );
+      const localName = bytes.subarray(range.start + 30, range.start + 30 + range.nameLength);
+      if (localName.length !== fields.nameBytes.length || localName.some((byte, index) => byte !== fields.nameBytes[index]) || u16(bytes, range.start + 6) !== entry.flags || u16(bytes, range.start + 8) !== entry.method)
+        throw new TypeError("local header name, flags or method disagrees with the directory");
+      const descriptor = (entry.flags & FLAG_DESCRIPTOR) !== 0;
+      const matches = (raw, expected) => raw === expected || descriptor && raw === 0;
+      if (!matches(u32(bytes, range.start + 14), entry.crc) || !localZip64 && (!matches(localSize, entry.size) || !matches(localCompressed, entry.compressedSize)))
+        throw new TypeError("local header CRC or sizes disagree with the directory");
       ranges.set(entry.id, range);
     }
-    const centralOffset = u32(bytes, eocd + 16);
-    const centralSize = u32(bytes, eocd + 12);
+    const { centralOffset, centralSize } = directory;
     let prefix = centralOffset;
     for (const entry of entries) prefix = Math.min(prefix, ranges.get(entry.id)?.start ?? 0);
     if (prefix !== 0) {
@@ -1773,23 +1838,26 @@ function archiveEditModel(bytes, entries) {
       if (range.start !== cursor) contiguous = false;
       cursor = range.end;
     }
-    const canonical = contiguous && cursor === centralOffset && centralOffset + centralSize === eocd && eocd + 22 + commentLength === bytes.byteLength;
+    const canonical = contiguous && cursor === centralOffset && centralOffset + centralSize === (tail.zip64RecordOffset ?? eocd) && eocd + 22 + commentLength === bytes.byteLength;
+    if (zip64 && !canonical) throw new TypeError("non-canonical ZIP64 layout cannot be preserved");
     return Object.freeze({
       ranges,
       canonical,
+      zip64,
+      zip64EndRecord: tail.zip64RecordOffset === void 0 ? void 0 : bytes.slice(tail.zip64RecordOffset, tail.zip64RecordOffset + 56),
       comment: bytes.slice(eocd + 22, eocd + 22 + commentLength)
     });
   } catch (error) {
     return refusal(
-      "x3.codec/zip-edit-layout",
+      zip64 ? "x3.codec/zip-edit-zip64" : "x3.codec/zip-edit-layout",
       `this archive cannot be re-assembled safely: ${messageOf(error)}`
     );
   }
 }
 var PRESERVED_NOTES = Object.freeze([
-  "untouched entries keep their local header, compressed data and central-directory record byte for byte; only the local-header offset inside the central record is rewritten",
+  "untouched entries keep their local header, compressed data and central-directory record byte for byte; only the local-header offset in the central record or its ZIP64 extra is rewritten",
   "compression method, CRC-32, sizes, timestamps, extra fields, entry comments and the archive comment are preserved; nothing is recompressed",
-  "added and replaced entries are stored (method 0) with a freshly computed CRC-32 and the DOS-epoch timestamp"
+  "added and replaced entries are stored (method 0) with a freshly computed CRC-32; additions use the DOS-epoch timestamp, replacements retain their timestamp and remove stale ZIP64 metadata"
 ]);
 var NON_CANONICAL_NOTE = "this archive is not a canonical ZIP layout (gaps between entries, reordered entries or trailing bytes): re-assembly keeps only what the central directory references";
 function fidelityFor(canonical) {
@@ -2018,7 +2086,13 @@ function editStructureHandler(bytes, entries, model, budget, input) {
       planned.push(zipStoredEntry(item.path, item.bytes));
     }
     if (planned.length === 0) throw new TypeError("edit.structure would leave an empty archive");
-    const assembled = assembleZipArchive(planned, usableModel.comment, budget);
+    const assembled = assembleZipArchive(
+      planned,
+      usableModel.comment,
+      budget,
+      usableModel.zip64,
+      usableModel.zip64EndRecord
+    );
     return editPlanOutput(
       input,
       assembled,
@@ -2046,7 +2120,13 @@ function editContentHandler(bytes, entries, model, budget, input) {
       if (range === void 0) throw new TypeError(`\xAB${entry.name}\xBB has no readable local block`);
       return entry.id === target.id ? restoredEntry(bytes, entry, range, data) : verbatimEntry(bytes, entry, range);
     });
-    const assembled = assembleZipArchive(planned, usableModel.comment, budget);
+    const assembled = assembleZipArchive(
+      planned,
+      usableModel.comment,
+      budget,
+      usableModel.zip64,
+      usableModel.zip64EndRecord
+    );
     return editPlanOutput(
       input,
       assembled,
@@ -2153,7 +2233,13 @@ function containerPackHandler(bytes, entries, model, budget, input, source) {
     ];
     return editPlanOutput(
       input,
-      assembleZipArchive(planned, usableModel.comment, budget),
+      assembleZipArchive(
+        planned,
+        usableModel.comment,
+        budget,
+        usableModel.zip64,
+        usableModel.zip64EndRecord
+      ),
       usableModel,
       `zip-container-pack:${summary.join(";")}`,
       summary.join(", ")

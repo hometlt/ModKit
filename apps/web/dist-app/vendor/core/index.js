@@ -26,10 +26,12 @@ import {
   isTraitId,
   isUInt64String,
   operationId,
+  parseJsonDocument,
   parseQualifiedId,
   parseSemver,
   parseVersionRange,
   satisfiesRange,
+  snapshotJson,
   sortedUtf8,
   sourceSpanSchema,
   throwIfAborted,
@@ -37,7 +39,7 @@ import {
   uint64,
   uniqueSortedUtf8,
   versionRangeTargetsMajor
-} from "../../chunks/chunk-WMDX3O34.js";
+} from "../../chunks/chunk-22GOWHCF.js";
 import "../../chunks/chunk-CQ52GEHY.js";
 export {
   CANCELLED_CODE,
@@ -67,10 +69,12 @@ export {
   isTraitId,
   isUInt64String,
   operationId,
+  parseJsonDocument,
   parseQualifiedId,
   parseSemver,
   parseVersionRange,
   satisfiesRange,
+  snapshotJson,
   sortedUtf8,
   sourceSpanSchema,
   throwIfAborted,

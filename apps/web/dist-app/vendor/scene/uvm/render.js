@@ -5,6 +5,8 @@ import {
   IDENTITY_MATERIAL_FRAME,
   MATERIAL_LAYERS_SHADER,
   RENDER_MATERIAL_SHADER,
+  TEAM_COLOR_BLENDS,
+  TEAM_COLOR_GLSL,
   applyModelBillboards,
   applyModelFaceCameraBillboard,
   billboardCameraRotation,
@@ -17,65 +19,48 @@ import {
   readUvmShadowMeshBindings,
   snapshotEnvironment,
   snapshotEyePosition,
-  snapshotModelBillboards
-} from "../../../chunks/chunk-X3HH3SFD.js";
+  snapshotModelBillboards,
+  teamColorChannel
+} from "../../../chunks/chunk-YUYP52OD.js";
 import "../../../chunks/chunk-X6TJ64VW.js";
-import "../../../chunks/chunk-OAHCSLY5.js";
+import "../../../chunks/chunk-2A36IAEE.js";
 import {
-  opaqueTexels,
-  prepareUvmImages,
-  prepareUvmTextureImages,
   readCollisionMesh,
-  readUvmModel,
-  uvmImageFilters,
-  uvmImageResourceId,
-  uvmImageTexels
-} from "../../../chunks/chunk-KFEXGIHH.js";
+  readUvmModel
+} from "../../../chunks/chunk-YNK72OLJ.js";
 import {
   array,
   field,
   finiteArray,
   object,
+  opaqueTexels,
+  prepareUvmImages,
+  prepareUvmTextureImages,
   required,
   safeIndex,
   string,
+  uvmImageFilters,
+  uvmImageTexels,
   vector3,
   vector4
-} from "../../../chunks/chunk-B5TWMJRH.js";
-import {
-  readUvmContainer
-} from "../../../chunks/chunk-EK44GR2O.js";
+} from "../../../chunks/chunk-X2UVTEN7.js";
 import {
   readUvmAccessor,
   readUvmAnimationClips,
+  readUvmEffectAnimation,
+  readUvmNamedVariants,
   readUvmPrimitiveVisibility,
   readUvmTextureAlpha,
   readUvmTextureColorKeys,
-  validateUvmDocument
-} from "../../../chunks/chunk-NHJ4I3HP.js";
+  uvmVariantHiddenPrimitives,
+  validateUvmDocument,
+  validateUvmSceneCamera
+} from "../../../chunks/chunk-LINWGJ2C.js";
 import {
-  modelPrimitiveByteLength
-} from "../../../chunks/chunk-N7TDQTWE.js";
-import "../../../chunks/chunk-C4KZWCMG.js";
-import {
-  createModelPoseBlendSampler,
-  createModelPoseSampler,
-  snapshotModelSkeleton
-} from "../../../chunks/chunk-PIYTZR52.js";
-import {
-  animationSnapshotBudget,
-  clipEventsBetween,
-  createModelAnimationSampler
-} from "../../../chunks/chunk-2W3Y5ACO.js";
-import {
-  snapshotJson
-} from "../../../chunks/chunk-3YDGNEY2.js";
-import {
-  createModelSkinDeformer
-} from "../../../chunks/chunk-SRJNXB3H.js";
-import {
-  multiplyMat4
-} from "../../../chunks/chunk-WXUQLAQ3.js";
+  readUvmContainer,
+  uvmImageResourceId
+} from "../../../chunks/chunk-UX2AHY32.js";
+import "../../../chunks/chunk-UAP65NYZ.js";
 import {
   DEFAULT_EFFECT_SIMULATION_OPTIONS,
   MAX_EFFECT_SPLINE_DIVISIONS,
@@ -87,26 +72,49 @@ import {
   writeEffectParticleRenderOrigin,
   writeEffectParticleRenderPosition,
   writeEffectRibbonRingPositions
-} from "../../../chunks/chunk-QHSSFB5M.js";
+} from "../../../chunks/chunk-AY6M7WCH.js";
 import {
   encodePng
-} from "../../../chunks/chunk-I5QDMBGN.js";
+} from "../../../chunks/chunk-SOI7CCUJ.js";
 import {
   applyColorKeyTransparency,
   linearToSrgb,
   srgbToLinear
-} from "../../../chunks/chunk-OX73FBBJ.js";
+} from "../../../chunks/chunk-I4M3NPTV.js";
+import "../../../chunks/chunk-Z2PMW7HG.js";
+import {
+  modelPrimitiveByteLength
+} from "../../../chunks/chunk-RZDO3QVS.js";
+import "../../../chunks/chunk-GG3QSH3M.js";
+import {
+  createModelPoseBlendSampler,
+  createModelPoseSampler,
+  snapshotModelSkeleton
+} from "../../../chunks/chunk-FA2R53HO.js";
+import {
+  animationSnapshotBudget,
+  clipEventsBetween,
+  createModelAnimationSampler
+} from "../../../chunks/chunk-DEQO4RMS.js";
+import "../../../chunks/chunk-UO2C4MBT.js";
+import {
+  multiplyMat4
+} from "../../../chunks/chunk-ZYEJYUZ3.js";
+import {
+  createModelSkinDeformer
+} from "../../../chunks/chunk-FQ7XRTBR.js";
 import {
   linearStretch,
   multiplyAffine
-} from "../../../chunks/chunk-RUCAYZBL.js";
+} from "../../../chunks/chunk-ASFTMZAC.js";
+import "../../../chunks/chunk-NRZAER5X.js";
+import "../../../chunks/chunk-UCBII6KW.js";
 import "../../../chunks/chunk-JVAXQGJ2.js";
 import {
-  diagnostic
-} from "../../../chunks/chunk-WMDX3O34.js";
+  diagnostic,
+  snapshotJson
+} from "../../../chunks/chunk-22GOWHCF.js";
 import "../../../chunks/chunk-NBEJVPOY.js";
-import "../../../chunks/chunk-KSBE5J2R.js";
-import "../../../chunks/chunk-UCBII6KW.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 
 // packages/scene/dist/uvm/pose-samples.js
@@ -186,7 +194,7 @@ function modelParticleMatrix(instance) {
     throw new RangeError("model particle matrix exceeds finite range");
   return matrix;
 }
-async function composeModelParticles(instances, parent, options, depth, maxBytes, prepare, purpose = { id: "model-particle", label: "Model particles", prefix: "model-particle" }) {
+async function composeModelParticles(instances, parent, options, depth, maxBytes, prepare, purpose = { id: "model-particle", label: "Model particles", prefix: "model-particle" }, parentGlobalTime) {
   const primitives = [], materials = [], textures = [], diagnostics = [];
   let composedInstances = 0;
   const warn = (message) => {
@@ -274,6 +282,7 @@ async function composeModelParticles(instances, parent, options, depth, maxBytes
         viewport: { ...parent.viewport },
         camera: { ...camera, ...childEye === void 0 ? {} : { eyePosition: childEye } },
         time: instance.ageSeconds,
+        ...parentGlobalTime === void 0 ? {} : { globalTime: parentGlobalTime },
         ...parent.scene.materialContext === void 0 ? {} : {
           materialContext: {
             ...parent.scene.materialContext.teamColor === void 0 ? {} : { teamColor: parent.scene.materialContext.teamColor },
@@ -400,85 +409,52 @@ function readPreviewLighting(lights, ambient) {
     })
   };
 }
-
-// packages/scene/dist/uvm/effect-tracks.js
-function readUvmEffectAnimation(value2, sequence, timeUnit, maxKeys, signal) {
-  const output = {};
-  let keysRead = 0;
-  const track = (input) => {
-    const record = object(input, "effect track");
-    if (Object.keys(record).some((key) => !["keys", "lineType", "globalSeqId"].includes(key)))
-      throw new TypeError("unknown effect track field");
-    const lineType = record["lineType"], globalSeqId = record["globalSeqId"] ?? null;
-    if (typeof lineType !== "number" || ![0, 1, 2, 3].includes(lineType) || globalSeqId !== null && (typeof globalSeqId !== "number" || !Number.isSafeInteger(globalSeqId) || globalSeqId < 0))
-      throw new TypeError("invalid effect track interpolation or global sequence");
-    const rawKeys = record["keys"];
-    if (!Array.isArray(rawKeys))
-      throw new TypeError("effect track keys must be an array");
-    keysRead += rawKeys.length;
-    if (keysRead > maxKeys)
-      throw new RangeError("effect animation key budget exceeded");
-    let previous = -Infinity, arity;
-    const keys = rawKeys.map((value3) => {
-      signal?.throwIfAborted();
-      const key = object(value3, "effect animation key"), frame = key["frame"];
-      if (Object.keys(key).some((name) => !["frame", "vector", "inTan", "outTan"].includes(name)) || typeof frame !== "number" || !Number.isFinite(frame) || frame < previous)
-        throw new TypeError("effect key frames must be finite and ordered");
-      previous = frame;
-      const result = {
-        frame: frame / (timeUnit === "milliseconds" ? 1e3 : 1)
-      };
-      for (const name of ["vector", "inTan", "outTan"]) {
-        const vector7 = key[name];
-        if (vector7 === void 0 && name !== "vector")
-          continue;
-        if (!Array.isArray(vector7) || vector7.length < 1 || vector7.length > 4 || vector7.some((component) => typeof component !== "number" || !Number.isFinite(component)))
-          throw new TypeError("effect key values must be finite vectors of arity 1..4");
-        arity ??= vector7.length;
-        if (vector7.length !== arity)
-          throw new TypeError("effect track vector/tangent arity differs");
-        result[name] = [...vector7];
-      }
-      return result;
-    });
-    return { lineType, globalSeqId, keys };
-  };
-  for (const [property, propertyValue] of Object.entries(object(value2, "effect animation"))) {
-    signal?.throwIfAborted();
-    if (!sequence) {
-      output[property] = track(propertyValue);
-      continue;
+var LIGHT_GEOMETRY_GLSL = `
+void sceneLightGeometry(int type, vec3 direction, vec3 lightPosition, vec4 f, vec2 cone,
+  vec3 position, out vec3 v, out float d, out float attenuation) {
+  bool local=type!=0;
+  v=local?lightPosition-position:direction;
+  d=length(v); attenuation=1.0;
+  if(local) {
+    if(f.x>0.0 && d>f.x) attenuation=0.0;
+    else if(f.z>f.y) { float fade=1.0-clamp((d-f.y)/(f.z-f.y),0.0,1.0); attenuation=f.w>0.0?pow(fade,f.w):fade; }
+    if(type==2 && cone.y>0.0 && cone.x>=0.0) {
+      float inner=cos(max(0.0,min(cone.x,cone.y))*0.5), outer=cos(max(cone.x,cone.y)*0.5);
+      float cosine=d>0.0?-dot(direction,v)/d:0.0;
+      attenuation*=inner<=outer+0.000001?step(outer,cosine):smoothstep(outer,inner,cosine);
     }
-    if (!Array.isArray(propertyValue))
-      throw new TypeError("effect sequence tracks must be an array");
-    const indices = /* @__PURE__ */ new Set();
-    output[property] = propertyValue.map((value3) => {
-      const entry = object(value3, "effect sequence track"), index = entry["sequenceIndex"];
-      if (typeof index !== "number" || !Number.isSafeInteger(index) || index < 0 || indices.has(index))
-        throw new TypeError("effect sequence indices must be unique nonnegative integers");
-      indices.add(index);
-      if (Object.keys(entry).some((key) => !["sequenceIndex", "track", "concurrent", "wrapSeconds"].includes(key)))
-        throw new TypeError("unknown effect sequence track field");
-      const concurrent = entry["concurrent"], wrap = entry["wrapSeconds"];
-      if (concurrent !== void 0 && typeof concurrent !== "boolean" || wrap !== void 0 && (typeof wrap !== "number" || !Number.isFinite(wrap) || wrap <= 0))
-        throw new TypeError("invalid effect concurrent timeline");
-      if (entry["track"] === void 0)
-        throw new TypeError("effect sequence track is missing");
-      return {
-        sequenceIndex: index,
-        track: track(entry["track"]),
-        ...concurrent === void 0 ? {} : { concurrent },
-        ...wrap === void 0 ? {} : { wrapSeconds: wrap }
-      };
-    });
   }
-  return output;
-}
+}`;
+var PREVIEW_LIGHT_GLSL = `${LIGHT_GEOMETRY_GLSL}
+uniform int previewLightingEnabled;
+uniform int previewLightCount;
+uniform vec3 previewAmbient;
+uniform vec3 previewDirections[4];
+uniform vec3 previewColors[4];
+uniform vec3 previewPositions[4];
+uniform int previewTypes[4];
+uniform vec4 previewFades[4];
+uniform vec2 previewCones[4];
+vec3 previewLighting(vec3 normal, vec3 position) {
+  vec3 total=vec3(0.0);
+  float nl=length(normal); vec3 n=nl>0.0?normal/nl:vec3(0.0,0.0,1.0);
+  for(int i=0;i<4;i++) {
+    if(i>=previewLightCount) break;
+    vec3 v; float d, attenuation;
+    sceneLightGeometry(previewTypes[i],previewDirections[i],previewPositions[i],
+      previewFades[i],previewCones[i],position,v,d,attenuation);
+    float strength=(d==0.0?0.25:max(dot(n,v)/d,0.25))*attenuation;
+    total+=strength*clamp(previewColors[i],0.0,1.0);
+  }
+  return clamp(previewAmbient+total/float(max(1,previewLightCount)),0.0,1.0);
+}`;
 
 // packages/scene/dist/uvm/scene-properties.js
 function sampleUvmSceneProperties(source, defaults, options) {
   if (!Number.isFinite(options.time))
     throw new TypeError("scene property time must be finite");
+  if (options.globalTime !== void 0 && (!Number.isFinite(options.globalTime) || options.globalTime < 0))
+    throw new TypeError("global time must be finite and nonnegative");
   const parsed = readUvmEffectAnimation(source, true, "seconds", options.maxKeys, options.signal);
   for (const key of Object.keys(parsed))
     if (!Object.hasOwn(defaults, key))
@@ -501,7 +477,7 @@ function sampleUvmSceneProperties(source, defaults, options) {
         }
       }
     }
-    output[key] = typeof fallback === "number" ? sampleEffectSequenceScalar(entries, void 0, sequence, options.time, fallback) : Array.from(sampleEffectSequenceVector(entries, sequence, options.time, fallback));
+    output[key] = typeof fallback === "number" ? sampleEffectSequenceScalar(entries, void 0, sequence, options.time, fallback, options.globalTime) : Array.from(sampleEffectSequenceVector(entries, sequence, options.time, fallback, void 0, options.globalTime));
   }
   return Object.freeze(output);
 }
@@ -535,6 +511,7 @@ function readUvmSceneLights(document2, transforms, activeNodes, options) {
       throw new TypeError("invalid scene light animation defaults");
     const sampled = sampleUvmSceneProperties(animation, defaults, {
       time: options.time ?? 0,
+      ...options.globalTime === void 0 ? {} : { globalTime: options.globalTime },
       ...options.sequenceIndex === void 0 ? {} : { sequenceIndex: options.sequenceIndex },
       maxKeys: options.maxNodes,
       ...options.signal === void 0 ? {} : { signal: options.signal }
@@ -560,8 +537,8 @@ function readUvmSceneLights(document2, transforms, activeNodes, options) {
     throw new TypeError("invalid scene light world frame");
   const column = (offset) => [matrix[offset] ?? 0, matrix[offset + 1] ?? 0, matrix[offset + 2] ?? 0];
   const columns = [column(0), column(4), column(8)];
-  const scale = Math.hypot(...columns[0]);
-  if (scale <= 1e-8 || columns.some((v) => Math.abs(Math.hypot(...v) - scale) > 1e-5 * scale))
+  const scale2 = Math.hypot(...columns[0]);
+  if (scale2 <= 1e-8 || columns.some((v) => Math.abs(Math.hypot(...v) - scale2) > 1e-5 * scale2))
     throw new TypeError("scene light frame requires uniform scale");
   for (const [a, b] of [
     [0, 1],
@@ -569,7 +546,7 @@ function readUvmSceneLights(document2, transforms, activeNodes, options) {
     [1, 2]
   ]) {
     const first = columns[a], second = columns[b];
-    if (Math.abs(first[0] * second[0] + first[1] * second[1] + first[2] * second[2]) > 1e-5 * scale * scale)
+    if (Math.abs(first[0] * second[0] + first[1] * second[1] + first[2] * second[2]) > 1e-5 * scale2 * scale2)
       throw new TypeError("scene light frame must be orthogonal");
   }
   const transform2 = (v, point) => {
@@ -580,9 +557,9 @@ function readUvmSceneLights(document2, transforms, activeNodes, options) {
     ...light,
     direction: transform2(light.direction, false),
     ...light.position === void 0 ? {} : { position: transform2(light.position, true) },
-    ...light.range === void 0 ? {} : { range: light.range * scale },
-    ...light.attenuationStart === void 0 ? {} : { attenuationStart: light.attenuationStart * scale },
-    ...light.attenuationEnd === void 0 ? {} : { attenuationEnd: light.attenuationEnd * scale }
+    ...light.range === void 0 ? {} : { range: light.range * scale2 },
+    ...light.attenuationStart === void 0 ? {} : { attenuationStart: light.attenuationStart * scale2 },
+    ...light.attenuationEnd === void 0 ? {} : { attenuationEnd: light.attenuationEnd * scale2 }
   }));
   const result = readPreviewLighting(world, rig.ambient);
   if (result === void 0)
@@ -773,7 +750,7 @@ function shadePbr(surface, normal, view, light, ambient) {
   const r2 = roughness * -0.572 + 1.04;
   const r3 = roughness * 0.022 - 0.04;
   const a004 = Math.min(r0 * r0, 2 ** (-9.28 * nDotV)) * r0 + r1;
-  const scale = a004 * -1.04 + r2;
+  const scale2 = a004 * -1.04 + r2;
   const bias = a004 * 1.04 + r3;
   const occlusion = surface.occlusion ?? 1;
   return [0, 1, 2].map((channel) => {
@@ -782,7 +759,7 @@ function shadePbr(surface, normal, view, light, ambient) {
     const f0 = 0.04 + (base - 0.04) * metallic;
     const fresnel = f0 + (1 - f0) * (1 - vDotH) ** 5;
     const direct = ((1 - fresnel) * diffuse + Math.PI * fresnel * d * visibility) * light.color[channel] * nDotL;
-    const environment = ambient[channel] * (diffuse + f0 * scale + bias) * occlusion;
+    const environment = ambient[channel] * (diffuse + f0 * scale2 + bias) * occlusion;
     return direct + environment + (surface.emissive?.[channel] ?? 0);
   });
 }
@@ -981,12 +958,18 @@ function buildMaterialDefines(material, options = {}) {
     // an unshaded material is drawn as stored, without light to sum linearly
     ...material.lightingModel === "pbr-metallic-roughness" && material.colorPipeline === "linear-srgb" && !material.unshaded ? { linearColor: true, ...material.tonemap === void 0 ? {} : { tonemap: true } } : {},
     ...material.environmentTintByBase === true ? { environmentTintByBase: true } : {},
+    ...material.teamColorMaskMix === true ? { teamColorMaskMix: true } : {},
+    ...material.teamColorBlend === void 0 ? {} : {
+      teamColorBlend: material.teamColorBlend,
+      teamColorStrength: material.teamColorStrength ?? 1,
+      ...material.teamColorEmissive === true ? { teamColorEmissive: true } : {}
+    },
     ...material.edgeFadeOut === void 0 ? {} : { edgeFadeOut: material.edgeFadeOut }
   };
 }
 function canonicalDefineKey(defines) {
   const layerKeys = defines.layers.map((layer) => `${layer.slot}:${layer.hasTexture ? "t" : "c"}${layer.uvSource}.${layer.channels}.${layer.op}.${layer.teamColorMode}${layer.invert ? "i" : ""}${layer.clampResult ? "k" : ""}${layer.hasColorMultiply ? "m" : ""}${layer.hasColorAdd ? "a" : ""}${layer.hasAlphaFactor ? "f" : ""}${layer.hasUvTransform ? "u" : ""}${layer.fresnel ? `;fr=${layer.fresnel.mode},${layer.fresnel.exponent},${layer.fresnel.min},${layer.fresnel.maxOffset},${layer.fresnel.transformMode},${layer.fresnel.localTransform ? 1 : 0},${layer.fresnel.doNotMirror ? 1 : 0},${layer.fresnel.translation.join(",")},${layer.fresnel.invertMask.join(",")},${layer.fresnel.rotation.join(",")}` : ""}${layer.angleLookup ? `;al=${layer.angleLookup.u},${layer.angleLookup.v},${layer.angleLookup.exponent ?? 1},${layer.angleLookup.row ?? 0}` : ""}`).join("|");
-  return `layers[${layerKeys}];n=${defines.normalMapFormat}.${defines.normalMapSpace};spec=${defines.specMode};${defines.unshaded ? "U" : ""}${defines.doubleLambert ? "D" : ""}${defines.clampOutput ? "C" : ""}${defines.usesVertexColor ? "vc" : ""}${defines.usesVertexAlpha ? "va" : ""}${defines.modAlpha ? "ma" : ""}${defines.alphaTest ? "at" : ""}${defines.specularEnergyConservation ? "ec" : ""};uv=${defines.uvSetCount};${defines.gpuSkinning ? "skin" : ""}${defines.hardwareInstancing ? "inst" : ""}${defines.bakedPoseInstancing ? "baked" : ""}${defines.sceneLighting ? ";scene" : ""}${defines.pbr ? ";pbr" : ""}${defines.linearColor ? ";linear" : ""}${defines.tonemap ? ";tonemap" : ""}${defines.environmentTintByBase ? ";envbase" : ""}${defines.edgeFadeOut === void 0 ? "" : `;edge=${defines.edgeFadeOut}`}`;
+  return `layers[${layerKeys}];n=${defines.normalMapFormat}.${defines.normalMapSpace};spec=${defines.specMode};${defines.unshaded ? "U" : ""}${defines.doubleLambert ? "D" : ""}${defines.clampOutput ? "C" : ""}${defines.usesVertexColor ? "vc" : ""}${defines.usesVertexAlpha ? "va" : ""}${defines.modAlpha ? "ma" : ""}${defines.alphaTest ? "at" : ""}${defines.specularEnergyConservation ? "ec" : ""};uv=${defines.uvSetCount};${defines.gpuSkinning ? "skin" : ""}${defines.hardwareInstancing ? "inst" : ""}${defines.bakedPoseInstancing ? "baked" : ""}${defines.sceneLighting ? ";scene" : ""}${defines.pbr ? ";pbr" : ""}${defines.linearColor ? ";linear" : ""}${defines.tonemap ? ";tonemap" : ""}${defines.environmentTintByBase ? ";envbase" : ""}${defines.teamColorMaskMix ? ";tcmix" : ""}${defines.teamColorBlend === void 0 ? "" : `;tcb=${defines.teamColorBlend},${defines.teamColorStrength ?? 1}${defines.teamColorEmissive === true ? ",e" : ""}`}${defines.edgeFadeOut === void 0 ? "" : `;edge=${defines.edgeFadeOut}`}`;
 }
 function standardBlendModeName(blendMode, alphaTestThreshold) {
   switch (blendMode) {
@@ -1005,6 +988,14 @@ function standardBlendModeName(blendMode, alphaTestThreshold) {
     default:
       return alphaTestThreshold > 0 ? "alpha-test" : "opaque";
   }
+}
+function teamColorMaskMixCpu(base, team, mask) {
+  const m = Math.min(1, Math.max(0, mask));
+  const hue = [base[0] + (team[0] - base[0]) * Math.sqrt(m), base[1] + (team[1] - base[1]) * Math.sqrt(m), base[2] + (team[2] - base[2]) * Math.sqrt(m)];
+  const baseBright = Math.max(...base);
+  const bright = baseBright + (Math.min(baseBright, Math.max(...team)) - baseBright) * 0.95 * mask * mask;
+  const hueBright = Math.max(...hue);
+  return hueBright > 0 ? [hue[0] * (bright / hueBright), hue[1] * (bright / hueBright), hue[2] * (bright / hueBright)] : hue;
 }
 function chooseChannelCpu(channels, texel) {
   switch (channels) {
@@ -1175,6 +1166,17 @@ function composeStandardPixelCpu(input) {
   if (layers.decal) {
     color = combineLayerColorCpu(layers.decal.op, computeLayerColorCpu(layers.decal, teamColor), color, teamColor);
   }
+  if (layers.teamColorMask && input.teamColorMaskMix === true)
+    color = [...teamColorMaskMixCpu(color, teamColor, computeLayerColorCpu(layers.teamColorMask, teamColor)[0])];
+  else if (layers.teamColorMask && input.teamColorBlend !== void 0) {
+    const mask = computeLayerColorCpu(layers.teamColorMask, teamColor)[0];
+    const blend = input.teamColorBlend, strength = input.teamColorStrength ?? 1;
+    color = [
+      teamColorChannel(color[0], mask, teamColor[0], blend, strength),
+      teamColorChannel(color[1], mask, teamColor[1], blend, strength),
+      teamColorChannel(color[2], mask, teamColor[2], blend, strength)
+    ];
+  }
   if (layers.lightMap) {
     const lm = computeLayerColorCpu(layers.lightMap, teamColor);
     color = [color[0] * lm[0] * 2, color[1] * lm[1] * 2, color[2] * lm[2] * 2];
@@ -1190,12 +1192,29 @@ function composeStandardPixelCpu(input) {
     srgbToLinear(clamp012(value2[2])),
     value2[3]
   ] : [value2[0], value2[1], value2[2], value2[3]];
+  const emissiveTeam = layers.teamColorMask && input.teamColorBlend !== void 0 && input.teamColorEmissive === true ? {
+    mask: computeLayerColorCpu(layers.teamColorMask, teamColor)[0],
+    blend: input.teamColorBlend,
+    strength: input.teamColorStrength ?? 1
+  } : void 0;
+  const emissiveLayer = (sample) => {
+    const value2 = computeLayerColorCpu(sample, teamColor);
+    if (emissiveTeam === void 0)
+      return inPipeline(value2);
+    const { mask, blend, strength } = emissiveTeam;
+    return inPipeline([
+      teamColorChannel(value2[0], mask, teamColor[0], blend, strength),
+      teamColorChannel(value2[1], mask, teamColor[1], blend, strength),
+      teamColorChannel(value2[2], mask, teamColor[2], blend, strength),
+      value2[3]
+    ]);
+  };
   const applyEmissive = (base) => {
     let final2 = [base[0], base[1], base[2]];
     let addEmissive = false;
     let emissive = [0, 0, 0];
     if (layers.emissive1) {
-      const temp = inPipeline(computeLayerColorCpu(layers.emissive1, teamColor));
+      const temp = emissiveLayer(layers.emissive1);
       const op = layers.emissive1.op;
       if (op === 0 || op === 1 || op === 3) {
         final2 = combineLayerColorCpu(op, temp, final2, teamColor);
@@ -1205,7 +1224,7 @@ function composeStandardPixelCpu(input) {
       }
     }
     if (layers.emissive2) {
-      const temp = inPipeline(computeLayerColorCpu(layers.emissive2, teamColor));
+      const temp = emissiveLayer(layers.emissive2);
       const op = layers.emissive2.op;
       if (!addEmissive && (op === 0 || op === 1 || op === 3)) {
         final2 = combineLayerColorCpu(op, temp, final2, teamColor);
@@ -1274,21 +1293,26 @@ function composeStandardPixelCpu(input) {
   };
   const scene = input.sceneLighting;
   let final = scene === void 0 && input.pbr === void 0 ? [ambient[0], ambient[1], ambient[2], ambient[3]] : [0, 0, 0, 0];
-  const specularCpu = (lambert) => {
+  let specularTerms;
+  const specularCpu = (lambert, half = halfVec, surface = normal) => {
     if (!layers.specular || !(lambert > 0))
       return [0, 0, 0];
-    const specColor = computeLayerColorCpu(layers.specular, teamColor);
-    let power = input.specularity;
-    if (layers.gloss) {
-      const gloss = computeLayerColorCpu(layers.gloss, teamColor)[3];
-      power *= gloss * gloss;
+    if (specularTerms === void 0) {
+      const color2 = computeLayerColorCpu(layers.specular, teamColor);
+      let power2 = input.specularity;
+      if (layers.gloss) {
+        const gloss = computeLayerColorCpu(layers.gloss, teamColor)[3];
+        power2 *= gloss * gloss;
+      }
+      let energy2 = 1;
+      if (input.specularEnergyConservation === true) {
+        const p = Math.min(Math.max(power2, 1), 512);
+        energy2 = clamp012(-4444e-9 * p * p + 4333e-6 * p + 20834e-7);
+      }
+      specularTerms = { color: color2, power: power2, energy: energy2 };
     }
-    let energy = 1;
-    if (input.specularEnergyConservation === true) {
-      const p = Math.min(Math.max(power, 1), 512);
-      energy = clamp012(-4444e-9 * p * p + 4333e-6 * p + 20834e-7);
-    }
-    const factor = Math.pow(Math.max(-dot3(halfVec, normal), 0), Math.max(power, 1)) * input.specMult * energy;
+    const { color: specColor, power, energy } = specularTerms;
+    const factor = Math.pow(Math.max(-dot3(half, surface), 0), Math.max(power, 1)) * input.specMult * energy;
     return input.specMode === 1 ? [specColor[3] * factor, specColor[3] * factor, specColor[3] * factor] : [specColor[0] * factor, specColor[1] * factor, specColor[2] * factor];
   };
   if (input.pbr !== void 0 && !input.unshaded) {
@@ -1317,7 +1341,23 @@ function composeStandardPixelCpu(input) {
     const lambert = input.doubleLambert ? clamp012(-1 + 2 * nl) : Math.max(nl, 0);
     const spec = specularCpu(lambert);
     const lit = (channel) => color[channel] * (scene.ambientColor[channel] + scene.lightColor[channel] * lambert) + spec[channel] * scene.lightColor[channel];
-    const rgb = applyEmissive(applyEnvironment([lit(0), lit(1), lit(2)], lambert, spec));
+    let direct = [lit(0), lit(1), lit(2)];
+    if (scene.lights !== void 0) {
+      direct = [
+        color[0] * scene.ambientColor[0],
+        color[1] * scene.ambientColor[1],
+        color[2] * scene.ambientColor[2]
+      ];
+      const surface = scene.normal ?? normal;
+      for (const light of scene.lights) {
+        const nl2 = dot3(surface, light.direction);
+        const diffuse = input.doubleLambert ? clamp012(-1 + 2 * nl2) : Math.max(nl2, 0);
+        const highlight = specularCpu(diffuse, light.halfVector, surface);
+        for (const channel of [0, 1, 2])
+          direct[channel] += color[channel] * light.diffuseColor[channel] * diffuse + highlight[channel] * light.specularColor[channel];
+      }
+    }
+    const rgb = applyEmissive(applyEnvironment(direct, lambert, spec));
     final = [final[0] + rgb[0], final[1] + rgb[1], final[2] + rgb[2], final[3]];
   } else {
     const nl = dot3(normal, lightDir);
@@ -1349,7 +1389,7 @@ function composeStandardPixelCpu(input) {
     else
       final[3] *= edge;
   }
-  if (layers.teamColorMask) {
+  if (layers.teamColorMask && input.teamColorMaskMix !== true && input.teamColorBlend === void 0) {
     const mask = computeLayerColorCpu(layers.teamColorMask, teamColor)[0];
     final = [
       final[0] + (teamColor[0] - 0.5) * mask,
@@ -1438,9 +1478,9 @@ function transformUvExpression(layer, base, angleComponent, parallax) {
 function triplanarUvExpression(layer, position, axis, parallax) {
   let transformedPosition = position;
   if (layer.hasUvTransform) {
-    const scale = layerUniformName(layer.slot, "UvTriplanarScale");
+    const scale2 = layerUniformName(layer.slot, "UvTriplanarScale");
     const offset = layerUniformName(layer.slot, "UvTriplanarOffset");
-    transformedPosition = `((${position} + ${offset}) * ${scale})`;
+    transformedPosition = `((${position} + ${offset}) * ${scale2})`;
   }
   const base = planarUvExpression(transformedPosition, axis);
   return transformUvExpression(layer, base, axisComponent(axis), parallax);
@@ -1545,6 +1585,14 @@ function combineExpression(op, colorVar, resultVar) {
   }
 }
 var SHARED_FRAGMENT_HELPERS = `
+vec3 teamColorMaskMix(vec3 base, vec3 team, float mask) {
+  vec3 hue = mix(base, team, sqrt(clamp(mask, 0.0, 1.0)));
+  float baseBright = max(base.r, max(base.g, base.b));
+  float bright = mix(baseBright, min(baseBright, max(team.r, max(team.g, team.b))), 0.95 * mask * mask);
+  float hueBright = max(hue.r, max(hue.g, hue.b));
+  return hueBright > 0.0 ? hue * (bright / hueBright) : hue;
+}
+
 vec4 chooseChannel(float channel, vec4 texel) {
   if (channel == 3.0) {
     texel = texel.rrrr;
@@ -1689,6 +1737,8 @@ function buildStandardFragmentSource(defines, options = {}) {
   if (defines.sceneLighting) {
     parts.push("uniform vec3 u_sceneAmbientColor;");
     parts.push("uniform vec3 u_sceneLightColor;");
+    if (options.directLights === true && !defines.pbr && !defines.unshaded)
+      parts.push("uniform int u_sceneDirectLightCount;", "vec3 sceneDirectNormal(vec3 normal);", "void sceneDirectLight(int index, vec3 normal, out vec3 direction, out vec3 halfVector, out vec3 diffuseColor, out vec3 specularColor);");
   }
   parts.push("uniform float u_specularity;");
   parts.push("uniform float u_specMult;");
@@ -1718,6 +1768,8 @@ function buildStandardFragmentSource(defines, options = {}) {
     parts.push(SRGB_GLSL);
   if (defines.tonemap)
     parts.push(TONEMAP_GLSL);
+  if (defines.teamColorBlend !== void 0)
+    parts.push(TEAM_COLOR_GLSL);
   if (hasDecodedNormal)
     parts.push(normalDecodeGlsl(defines.normalMapFormat));
   for (const layer of defines.layers)
@@ -1767,6 +1819,10 @@ function buildStandardFragmentSource(defines, options = {}) {
     body.push("  vec4 decalColor = computeLayer_decal();");
     body.push(`  ${combineExpression(decal.op, "decalColor", "color")}`);
   }
+  if (layerBySlot.has("teamColorMask") && defines.teamColorMaskMix)
+    body.push("  color = teamColorMaskMix(color, u_teamColor, computeLayer_teamColorMask().r);");
+  else if (layerBySlot.has("teamColorMask") && defines.teamColorBlend !== void 0)
+    body.push(`  color = modkitTeamColor(color, vec3(computeLayer_teamColorMask().r), u_teamColor, ${TEAM_COLOR_BLENDS.indexOf(defines.teamColorBlend)}, ${glslFloat(defines.teamColorStrength ?? 1)});`);
   if (layerBySlot.has("lightMap"))
     body.push("  color *= computeLayer_lightMap().rgb * 2.0;");
   if (layerBySlot.has("ao"))
@@ -1780,8 +1836,12 @@ function buildStandardFragmentSource(defines, options = {}) {
       return lines;
     lines.push(`${indent}vec3 emissive = vec3(0.0);`);
     lines.push(`${indent}bool addEmissive = false;`);
+    const team = (name) => defines.teamColorEmissive === true && defines.teamColorBlend !== void 0 && layerBySlot.has("teamColorMask") ? [
+      `${indent}${name}.rgb = modkitTeamColor(${name}.rgb, vec3(computeLayer_teamColorMask().r), u_teamColor, ${TEAM_COLOR_BLENDS.indexOf(defines.teamColorBlend)}, ${glslFloat(defines.teamColorStrength ?? 1)});`
+    ] : [];
     if (emis1) {
       lines.push(`${indent}vec4 emis1Color = computeLayer_emissive1();`);
+      lines.push(...team("emis1Color"));
       lines.push(...inPipeline(indent, "emis1Color"));
       if (emis1.op === 0 || emis1.op === 1 || emis1.op === 3) {
         lines.push(`${indent}${combineExpression(emis1.op, "emis1Color", target)}`);
@@ -1792,6 +1852,7 @@ function buildStandardFragmentSource(defines, options = {}) {
     }
     if (emis2) {
       lines.push(`${indent}vec4 emis2Color = computeLayer_emissive2();`);
+      lines.push(...team("emis2Color"));
       lines.push(...inPipeline(indent, "emis2Color"));
       if (emis2.op === 0 || emis2.op === 1 || emis2.op === 3) {
         lines.push(`${indent}if (!addEmissive) {`);
@@ -1839,6 +1900,7 @@ function buildStandardFragmentSource(defines, options = {}) {
     }
     return lines;
   };
+  const specularFactor = (half = "v_halfVec", normal = "normal", lambert = "lambert") => `${lambert} > 0.0 ? pow(max(-dot(${half}, ${normal}), 0.0), max(specPower, 1.0)) * u_specMult * specEnergy : 0.0`;
   const specularBlock = (indent) => {
     if (!layerBySlot.has("specular"))
       return [`${indent}vec3 spec = vec3(0.0);`];
@@ -1853,7 +1915,7 @@ function buildStandardFragmentSource(defines, options = {}) {
         `${indent}float specClamped = clamp(specPower, 1.0, 512.0);`,
         `${indent}float specEnergy = clamp(-0.000004444 * specClamped * specClamped + 0.004333 * specClamped + 0.0020834, 0.0, 1.0);`
       ] : [`${indent}float specEnergy = 1.0;`],
-      `${indent}float specFactor = lambert > 0.0 ? pow(max(-dot(v_halfVec, normal), 0.0), max(specPower, 1.0)) * u_specMult * specEnergy : 0.0;`,
+      `${indent}float specFactor = ${specularFactor()};`,
       defines.specMode === 1 ? `${indent}vec3 spec = vec3(specColor.a) * specFactor;` : `${indent}vec3 spec = specColor.rgb * specFactor;`
     ];
   };
@@ -1876,7 +1938,13 @@ function buildStandardFragmentSource(defines, options = {}) {
   } else if (defines.sceneLighting) {
     body.push(defines.doubleLambert ? "  float lambert = clamp(-1.0 + 2.0 * dot(normal, v_lightDir), 0.0, 1.0);" : "  float lambert = max(dot(normal, v_lightDir), 0.0);");
     body.push(...specularBlock("  "));
-    body.push("  vec3 shaded = color * (u_sceneAmbientColor + u_sceneLightColor * lambert) + spec * u_sceneLightColor;");
+    if (options.directLights === true) {
+      body.push("  vec3 shaded = color * u_sceneAmbientColor;", "  vec3 directNormal = sceneDirectNormal(normal);", "  for (int lightIndex = 0; lightIndex < u_sceneDirectLightCount; ++lightIndex) {", "    vec3 direction, halfVector, diffuseColor, specularColor;", "    sceneDirectLight(lightIndex, directNormal, direction, halfVector, diffuseColor, specularColor);", defines.doubleLambert ? "    float directLambert = clamp(-1.0 + 2.0 * dot(directNormal, direction), 0.0, 1.0);" : "    float directLambert = max(dot(directNormal, direction), 0.0);", ...layerBySlot.has("specular") ? [
+        `    float directSpecFactor = ${specularFactor("halfVector", "directNormal", "directLambert")};`,
+        defines.specMode === 1 ? "    vec3 directSpec = vec3(specColor.a) * directSpecFactor;" : "    vec3 directSpec = specColor.rgb * directSpecFactor;"
+      ] : ["    vec3 directSpec = vec3(0.0);"], "    shaded += color * diffuseColor * directLambert + directSpec * specularColor;", "  }");
+    } else
+      body.push("  vec3 shaded = color * (u_sceneAmbientColor + u_sceneLightColor * lambert) + spec * u_sceneLightColor;");
     body.push(...environmentBlock("  ", "shaded", "lambert", "spec"));
     body.push(...emissiveBlock("  ", "shaded"));
     body.push("  final.rgb += shaded;");
@@ -1904,7 +1972,7 @@ function buildStandardFragmentSource(defines, options = {}) {
   body.push("  final.a = alpha * u_materialAlpha;");
   if (defines.edgeFadeOut !== void 0)
     body.push(`  float edgeFade = smoothstep(0.0, ${glslFloat(defines.edgeFadeOut)}, abs(normalize(v_viewDir).z));`, defines.modAlpha ? "  fade *= edgeFade;" : "  final.a *= edgeFade;");
-  if (layerBySlot.has("teamColorMask")) {
+  if (layerBySlot.has("teamColorMask") && !defines.teamColorMaskMix && defines.teamColorBlend === void 0) {
     body.push("  float teamColorMask = computeLayer_teamColorMask().r;");
     body.push("  final.rgb += (u_teamColor - vec3(0.5)) * teamColorMask;");
   }
@@ -2094,8 +2162,6 @@ function effectSurfaceMaterial(base, id, maxNodes, maxBytes, texturePath, signal
     return {
       ...standard,
       twoSided: true,
-      // ponytail: every sprite unlit until effects carry the emitter's lit flag (M3 LitParts)
-      unshaded: true,
       ...layers === void 0 ? {} : {
         layers: Object.fromEntries(Object.entries(object(layers, "standard layers")).map(([slot, raw]) => {
           const layer = object(raw, `standard layer ${slot}`);
@@ -2130,19 +2196,20 @@ function simpleEffectMaterial(base, id, alpha, maxNodes, maxBytes, signal) {
   if (base.shader === void 0 || base.shader.id !== "modkit.render-material.v1") {
     const { shader: _shader, ...plain } = base;
     const listed = layerListTexture(base.shader);
+    const own = base.simpleEffect;
     return {
       ...plain,
       id,
       shading: "unlit",
       baseColor: [1, 1, 1, alpha],
       simpleEffect: {
-        blend: base.alphaMode === "mask" ? "alpha-test" : base.alphaMode === "blend" ? "blend" : "opaque",
-        depthTest: true,
-        depthWrite: base.alphaMode !== "blend",
+        blend: own?.blend ?? (base.alphaMode === "mask" ? "alpha-test" : base.alphaMode === "blend" ? "blend" : "opaque"),
+        depthTest: own?.depthTest ?? true,
+        depthWrite: own?.depthWrite ?? base.alphaMode !== "blend",
         doubleSided: base.doubleSided === true,
         alphaCutoff: base.alphaMode === "mask" ? base.alphaCutoff ?? 0.5 : 0,
-        wrapU: "repeat",
-        wrapV: "repeat",
+        wrapU: own?.wrapU ?? "repeat",
+        wrapV: own?.wrapV ?? "repeat",
         ...listed === void 0 ? {} : { textureResource: listed }
       }
     };
@@ -2584,14 +2651,14 @@ function projectorAnimation(value2, timeUnit, maxKeys, signal) {
       }
     }
   }
-  const read = Object.freeze({ parsed, keys, work });
+  const read2 = Object.freeze({ parsed, keys, work });
   if (owner !== void 0) {
     let units = projectorAnimations.get(owner);
     if (units === void 0)
       projectorAnimations.set(owner, units = /* @__PURE__ */ new Map());
-    units.set(timeUnit, read);
+    units.set(timeUnit, read2);
   }
-  return read;
+  return read2;
 }
 var bufferIds = /* @__PURE__ */ new WeakMap();
 var bufferIdCount = 0;
@@ -2634,7 +2701,8 @@ function createUvmProjectorFrame(document2, options) {
   for (const value2 of [options.maxBytes, options.maxNodes])
     if (!Number.isSafeInteger(value2) || value2 < 0)
       throw new RangeError("invalid projector budget");
-  const effect = object(object(document2["extensions"], "extensions")["UV_game_effects"], "effects");
+  const declared = object(document2["extensions"], "extensions")["UV_game_effects"];
+  const effect = declared === void 0 ? {} : object(declared, "effects");
   const nodes = array(document2, "nodes"), projectors = array(effect, "projectors");
   const primitives = [];
   const materials = [];
@@ -2697,8 +2765,8 @@ function createUvmProjectorFrame(document2, options) {
       for (const [key, list] of Object.entries(animation.parsed)) {
         const tracks2 = list;
         entry[key] = key === "offset" ? [
-          ...sampleEffectSequenceVector(tracks2, options.sequenceIndex ?? null, time, vec(entry[key]))
-        ] : sampleEffectSequenceScalar(tracks2, void 0, options.sequenceIndex ?? null, time, scalar(entry[key]));
+          ...sampleEffectSequenceVector(tracks2, options.sequenceIndex ?? null, time, vec(entry[key]), void 0, options.globalTime)
+        ] : sampleEffectSequenceScalar(tracks2, void 0, options.sequenceIndex ?? null, time, scalar(entry[key]), options.globalTime);
       }
     }
     if (scalar(entry["active"]) <= 0)
@@ -9037,14 +9105,14 @@ var Matrix4 = class _Matrix4 {
    * @param {Vector3} scale - The scale vector.
    * @return {Matrix4} A reference to this matrix.
    */
-  compose(position, quaternion, scale) {
+  compose(position, quaternion, scale2) {
     const te = this.elements;
     const x = quaternion._x, y = quaternion._y, z = quaternion._z, w = quaternion._w;
     const x2 = x + x, y2 = y + y, z2 = z + z;
     const xx = x * x2, xy = x * y2, xz = x * z2;
     const yy = y * y2, yz = y * z2, zz = z * z2;
     const wx = w * x2, wy = w * y2, wz = w * z2;
-    const sx = scale.x, sy = scale.y, sz = scale.z;
+    const sx = scale2.x, sy = scale2.y, sz = scale2.z;
     te[0] = (1 - (yy + zz)) * sx;
     te[1] = (xy + wz) * sx;
     te[2] = (xz - wy) * sx;
@@ -9076,7 +9144,7 @@ var Matrix4 = class _Matrix4 {
    * @param {Vector3} scale - The scale vector.
    * @return {Matrix4} A reference to this matrix.
    */
-  decompose(position, quaternion, scale) {
+  decompose(position, quaternion, scale2) {
     const te = this.elements;
     let sx = _v1$5.set(te[0], te[1], te[2]).length();
     const sy = _v1$5.set(te[4], te[5], te[6]).length();
@@ -9100,9 +9168,9 @@ var Matrix4 = class _Matrix4 {
     _m1$2.elements[9] *= invSZ;
     _m1$2.elements[10] *= invSZ;
     quaternion.setFromRotationMatrix(_m1$2);
-    scale.x = sx;
-    scale.y = sy;
-    scale.z = sz;
+    scale2.x = sx;
+    scale2.y = sy;
+    scale2.z = sz;
     return this;
   }
   /**
@@ -9658,7 +9726,7 @@ var Object3D = class _Object3D extends EventDispatcher {
     const position = new Vector3();
     const rotation = new Euler();
     const quaternion = new Quaternion();
-    const scale = new Vector3(1, 1, 1);
+    const scale2 = new Vector3(1, 1, 1);
     function onRotationChange() {
       quaternion.setFromEuler(rotation, false);
     }
@@ -9713,7 +9781,7 @@ var Object3D = class _Object3D extends EventDispatcher {
       scale: {
         configurable: true,
         enumerable: true,
-        value: scale
+        value: scale2
       },
       /**
        * Represents the object's model-view matrix.
@@ -16445,11 +16513,12 @@ function resolveUvmCamera(document2, input, options) {
     throw new TypeError("camera node is outside the selected scene");
   const node = object(nodes[nodeIndex], "camera node"), cameraIndex = safeIndex(node["camera"], cameras.length, "camera");
   const camera = object(snapshotJson(cameras[cameraIndex], snapshotBudget, options.signal), "camera");
+  validateUvmSceneCamera(camera, array(document2, "extensionsUsed"), options.maxNodes, options.signal);
   const world = affine(options.nodeTransforms.get(id));
-  const position = new Vector3(), rotation = new Quaternion(), scale = new Vector3();
-  world.decompose(position, rotation, scale);
-  const reconstructed = new Matrix4().compose(position, rotation, scale);
-  if ([scale.x, scale.y, scale.z].some((value2) => !(value2 > 0)) || world.elements.some((value2, index) => Math.abs(value2 - (reconstructed.elements[index] ?? 0)) > 1e-6 * Math.max(1, Math.abs(value2))))
+  const position = new Vector3(), rotation = new Quaternion(), scale2 = new Vector3();
+  world.decompose(position, rotation, scale2);
+  const reconstructed = new Matrix4().compose(position, rotation, scale2);
+  if ([scale2.x, scale2.y, scale2.z].some((value2) => !(value2 > 0)) || world.elements.some((value2, index) => Math.abs(value2 - (reconstructed.elements[index] ?? 0)) > 1e-6 * Math.max(1, Math.abs(value2))))
     throw new TypeError("camera frame shear/reflection is unsupported");
   const view = new Matrix4().compose(position, rotation, new Vector3(1, 1, 1)).invert();
   let projection2;
@@ -16457,15 +16526,13 @@ function resolveUvmCamera(document2, input, options) {
     let perspective = object(camera["perspective"], "perspective camera");
     const animation = field(field(camera["extensions"], "UV_scene_camera"), "sequenceAnimation");
     if (animation !== void 0) {
-      const extension = object(field(camera["extensions"], "UV_scene_camera"), "scene camera");
-      if (extension["version"] !== 1 || Object.keys(extension).some((key) => !["version", "sequenceAnimation"].includes(key)))
-        throw new TypeError("invalid UV_scene_camera");
       const sampled = sampleUvmSceneProperties(animation, {
         yfov: positive(perspective["yfov"], "camera yfov"),
         znear: positive(perspective["znear"], "camera znear"),
         ...perspective["zfar"] === void 0 ? {} : { zfar: positive(perspective["zfar"], "camera zfar") }
       }, {
         time: options.time ?? 0,
+        ...options.globalTime === void 0 ? {} : { globalTime: options.globalTime },
         ...options.sequenceIndex === void 0 ? {} : { sequenceIndex: options.sequenceIndex },
         maxKeys: options.maxNodes,
         ...options.signal === void 0 ? {} : { signal: options.signal }
@@ -16534,8 +16601,8 @@ function createNodePoseSampler(nodes, options) {
     samples: options.poseSamples.map((sample) => ({ ...sample, clip: select(sample.clip) }))
   });
   return {
-    sample(time, signal) {
-      return new Map(sampler.sample(options.poseSamples === void 0 ? time : time - options.poseTime, signal).bones.map((node) => [node.nodeId, node.worldMatrix]));
+    sample(time, signal, globalTimeSeconds) {
+      return new Map(sampler.sample(options.poseSamples === void 0 ? time : time - options.poseTime, signal, globalTimeSeconds).bones.map((node) => [node.nodeId, node.worldMatrix]));
     }
   };
 }
@@ -16919,7 +16986,7 @@ function createModelSceneSampler(projection2, options = {}) {
         }))
       });
       const sampler = blended === void 0 ? present(primarySampler, "primary pose sampler") : {
-        sample: (time, requestSignal) => blended.sample(time - poseTime, requestSignal)
+        sample: (time, requestSignal, globalTimeSeconds) => blended.sample(time - poseTime, requestSignal, globalTimeSeconds)
       };
       sampler.sample(0, signal);
       poseSamplers.set(hierarchyId, { sampler, matrices: primarySampler });
@@ -17291,11 +17358,14 @@ function createModelSceneSampler(projection2, options = {}) {
      * the clip's extents do not bound. A view that cannot see that sphere sees none of its poses.
      */
     bounds: () => (bounds === void 0 ? bounds = clipSphere() : bounds) ?? void 0,
-    sample(timeSeconds, requestSignal, camera) {
+    /** Local time and optional independent concurrent clock; the camera keeps its existing slot. */
+    sample(timeSeconds, requestSignal, camera, globalTimeSeconds) {
       if (!Number.isFinite(timeSeconds))
         throw new TypeError("scene time must be finite");
       if (requestSignal?.aborted)
         throw new DOMException("operation cancelled", "AbortError");
+      if (globalTimeSeconds !== void 0 && (!Number.isFinite(globalTimeSeconds) || globalTimeSeconds < 0))
+        throw new TypeError("global time must be finite and nonnegative");
       const cameraRotation = camera?.rotation === void 0 ? billboardCamera : sampleRotation(camera.rotation);
       const cameraPosition = camera?.position === void 0 ? billboardPosition : samplePosition(camera.position);
       const animatedWorlds = /* @__PURE__ */ new Map();
@@ -17304,7 +17374,7 @@ function createModelSceneSampler(projection2, options = {}) {
       if (visibilitySampler !== void 0) {
         const hidden = new Set(storedHidden);
         fades = /* @__PURE__ */ new Map();
-        for (const value2 of visibilitySampler.sample(timeSeconds, requestSignal))
+        for (const value2 of visibilitySampler.sample(timeSeconds, requestSignal, globalTimeSeconds))
           if (primitiveIds.has(value2.target)) {
             const visibility2 = value2.value[0] ?? 0;
             if (visibility2 > 0)
@@ -17319,16 +17389,16 @@ function createModelSceneSampler(projection2, options = {}) {
       let nodeWeights;
       if (morphSampler !== void 0) {
         nodeWeights = /* @__PURE__ */ new Map();
-        for (const value2 of morphSampler.sample(timeSeconds, requestSignal))
+        for (const value2 of morphSampler.sample(timeSeconds, requestSignal, globalTimeSeconds))
           if (value2.value.length === morphTargetCounts.get(value2.target))
             nodeWeights.set(value2.target, value2.value);
       }
-      const localPoses = nodeSampler?.sample(timeSeconds, requestSignal);
+      const localPoses = nodeSampler?.sample(timeSeconds, requestSignal, globalTimeSeconds);
       const poses = [];
       for (const hierarchy of hierarchies) {
         const { frame } = hierarchy;
         if (hierarchy.matrices !== void 0) {
-          const sampled = hierarchy.matrices.sampleMatrices(timeSeconds, requestSignal);
+          const sampled = hierarchy.matrices.sampleMatrices(timeSeconds, requestSignal, globalTimeSeconds);
           const { bones } = hierarchy.matrices;
           for (let slot = 0; slot < bones.length; slot++) {
             const world = new Float32Array(16);
@@ -17340,7 +17410,7 @@ function createModelSceneSampler(projection2, options = {}) {
           poses.push({ hierarchy, sampled, bones: () => sampled.pose() });
           continue;
         }
-        const pose = applyModelBillboards(hierarchy.sampler.sample(timeSeconds, requestSignal).bones, hierarchy.bindings, billboards, cameraRotation, frame, billboardBytes, requestSignal, cameraPosition);
+        const pose = applyModelBillboards(hierarchy.sampler.sample(timeSeconds, requestSignal, globalTimeSeconds).bones, hierarchy.bindings, billboards, cameraRotation, frame, billboardBytes, requestSignal, cameraPosition);
         for (const bone of pose) {
           const world = new Float32Array(16);
           multiplyMat4(world, 0, frame, 0, bone.worldMatrix, 0);
@@ -19386,8 +19456,8 @@ function addVec3(a, b) {
 function subVec3(a, b) {
   return [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
 }
-function scaleVec3(value2, scale) {
-  return [value2[0] * scale, value2[1] * scale, value2[2] * scale];
+function scaleVec3(value2, scale2) {
+  return [value2[0] * scale2, value2[1] * scale2, value2[2] * scale2];
 }
 function lengthVec3(value2) {
   return Math.hypot(value2[0], value2[1], value2[2]);
@@ -19479,9 +19549,9 @@ function createUvmRibbonGeometry(state, emitters, options) {
       writeEffectRibbonRingPositions(positions, point * ring, 3, center, tangent, up, camera, width * 0.5, emitter.ribbonType, emitter.sides, emitter.starRatio);
       const rgba = [0, 1, 2].map((component) => clamp3(curve(colorStages.map((value2) => finite4(value2[component])), phase, emitter.colorTimeMiddle ?? 0.5))).concat(clamp3(clamp3(curve(alphaStages, phase, emitter.colorTimeMiddle ?? 0.5)) * finite4(state.alphas[slot2])));
       const textureSlot = finite4(state.textureSlots[slot2]), cellX = textureSlot % columns / columns, cellY = Math.floor(textureSlot / columns) % rows / rows;
-      for (let cross3 = 0; cross3 < ring; cross3++) {
-        const vertex = point * ring + cross3;
-        textureCoordinates[vertex * 2] = cellX + cross3 / Math.max(1, ring - 1) / columns;
+      for (let cross4 = 0; cross4 < ring; cross4++) {
+        const vertex = point * ring + cross4;
+        textureCoordinates[vertex * 2] = cellX + cross4 / Math.max(1, ring - 1) / columns;
         textureCoordinates[vertex * 2 + 1] = cellY + point / (count - 1) / rows;
         colors.set(rgba, vertex * 4);
       }
@@ -19563,7 +19633,6 @@ var HIGH_HALF = new Uint8Array(Uint16Array.of(1).buffer)[0] === 1 ? 1 : 0;
 var PLACEMENT_DECLARATIONS = `uniform mat4 u_view, u_worldToMaterial;
 in vec4 a_instanceMatrix0, a_instanceMatrix1, a_instanceMatrix2, a_instanceMatrix3;
 mat3 sceneCofactor(mat3 m){return mat3(cross(m[1],m[2]),cross(m[2],m[0]),cross(m[0],m[1]));}
-float sceneOrientationOf(mat3 m){return dot(m[0],cross(m[1],m[2]))<0.0?-1.0:1.0;}
 `;
 function placementLocals(worldGeometry) {
   return `
@@ -19586,8 +19655,8 @@ var SKIN_LOCALS = `
   mat4 skin=skinMatrix(a_skinJoints.x)*a_skinWeights.x+skinMatrix(a_skinJoints.y)*a_skinWeights.y+skinMatrix(a_skinJoints.z)*a_skinWeights.z+skinMatrix(a_skinJoints.w)*a_skinWeights.w;
   vec3 skinPosition=(skin*vec4(a_position,1.0)).xyz,skinNormal=mat3(skin)*a_normal;
   vec4 skinTangent=vec4(mat3(skin)*a_tangent.xyz,a_tangent.w);`;
-function sceneMaterialVertexSource(defines, environmentEnabled = false, worldShading = false, placementAttributes = false, skinned = false, tinted = false) {
-  const worldGeometry = environmentEnabled || worldShading;
+function sceneMaterialVertexSource(defines, environmentEnabled = false, worldShading = false, placementAttributes = false, skinned = false, tinted = false, spatialLightingGeometry = false) {
+  const worldGeometry = environmentEnabled || worldShading || spatialLightingGeometry;
   const position = skinned ? "skinPosition" : "a_position";
   const normal = skinned ? "skinNormal" : "a_normal";
   const tangent = skinned ? "skinTangent" : "a_tangent";
@@ -19621,10 +19690,16 @@ ${skinned ? skinDeclarations(placementAttributes) : ""}${tinted ? "in vec4 a_ver
 ${defines.usesVertexAlpha || defines.usesVertexColor ? "in vec4 a_color; out vec4 v_vertexColor;" : ""}
 out vec3 v_normal, v_lightDir, v_halfVec, v_viewDir, v_viewPosition, v_viewNormal;
 out vec3 v_modelPosition, v_modelNormal, v_worldPosition, v_worldNormal;
-${worldGeometry ? "out vec3 v_sceneWorldPosition, v_sceneWorldNormal, v_sceneWorldTangent, v_sceneWorldBitangent;\n" : ""}out vec4 v_clipPosition;
+out vec3 v_sceneWorldPosition;
+flat out float v_sceneModelOrientation;
+${worldGeometry ? "out vec3 v_sceneWorldNormal, v_sceneWorldTangent, v_sceneWorldBitangent;\n" : ""}out vec4 v_clipPosition;
 vec3 unit(vec3 v,vec3 fallback){float len=length(v);return len>1e-9?v/len:fallback;}
+float sceneOrientationOf(mat3 m){return dot(m[0],cross(m[1],m[2]))<0.0?-1.0:1.0;}
 ${placementAttributes ? PLACEMENT_DECLARATIONS : ""}void main(){${placementAttributes ? placementLocals(worldGeometry) : ""}${skinned ? SKIN_LOCALS : ""}
   vec4 world=${name.model}*vec4(${position},1.0);
+  v_sceneWorldPosition=world.xyz;
+  // Logical authored facing is independent of the view and material coordinate frames.
+  v_sceneModelOrientation=sceneOrientationOf(mat3(${name.model}));
   vec3 view=(${name.modelView}*vec4(${position},1.0)).xyz;
   vec3 n=unit(${name.viewNormal}*${normal},vec3(0.0,0.0,1.0));
   vec3 rawT=mat3(${name.modelView})*${tangent}.xyz;
@@ -19641,7 +19716,7 @@ ${worldGeometry ? `  vec3 sceneN=unit(${name.objectNormal}*${normal},vec3(0.0,0.
   vec3 sceneRawT=mat3(${name.model})*${tangent}.xyz;
   vec3 sceneFallback=unit(cross(abs(sceneN.z)<0.9?vec3(0.0,0.0,1.0):vec3(0.0,1.0,0.0),sceneN),vec3(1.0,0.0,0.0));
   vec3 sceneT=unit(sceneRawT-sceneN*dot(sceneN,sceneRawT),sceneFallback);
-  v_sceneWorldPosition=world.xyz;v_sceneWorldNormal=sceneN;v_sceneWorldTangent=sceneT;
+  v_sceneWorldNormal=sceneN;v_sceneWorldTangent=sceneT;
   v_sceneWorldBitangent=cross(sceneN,sceneT)*(${tangent}.w<0.0?-1.0:1.0)*${name.objectOrientation};
 ` : ""}  v_modelPosition=${position};v_modelNormal=unit(${normal},vec3(0.0,0.0,1.0));
   v_worldPosition=(${name.materialWorld}*vec4(${position},1.0)).xyz;v_worldNormal=unit(${name.worldNormal}*${normal},vec3(0.0,0.0,1.0));
@@ -19902,6 +19977,236 @@ function readUvmEffectFields(effect, options) {
         update(time, sequence);
     }
   };
+}
+
+// packages/scene/dist/uvm/baked-particles.js
+var SPRITE_FLOATS = 17;
+var read = /* @__PURE__ */ new WeakMap();
+function readUvmBakedParticles(document2, binary, maxBytes, signal) {
+  const known = read.get(document2);
+  if (known !== void 0)
+    return known ?? void 0;
+  const value2 = field(document2["extensions"], "UV_game_baked_particles");
+  if (value2 === void 0) {
+    read.set(document2, null);
+    return void 0;
+  }
+  if (binary === void 0)
+    throw new TypeError("baked particles need the UVM binary chunk");
+  const extension = object(value2, "UV_game_baked_particles");
+  const frameRate = extension["frameRate"];
+  if (typeof frameRate !== "number" || !(frameRate > 0) || !Number.isFinite(frameRate))
+    throw new TypeError("baked particles need a positive frame rate");
+  const nodes = Array.isArray(document2["nodes"]) ? document2["nodes"].length : 0;
+  const materials = Array.isArray(document2["materials"]) ? document2["materials"].length : 0;
+  const batches = array(extension, "batches").map((entry) => {
+    const batch = object(entry, "baked particle batch");
+    const orientation = batch["orientation"];
+    if (orientation !== "camera" && orientation !== "axis" && orientation !== "plane" && orientation !== "ribbon")
+      throw new TypeError("baked particle batch has no known orientation");
+    const atlas = batch["atlas"] === void 0 ? [1, 1] : array(batch, "atlas");
+    if (atlas.length !== 2 || !atlas.every((cells) => Number.isSafeInteger(cells) && Number(cells) >= 1))
+      throw new TypeError("baked particle batch atlas must be two positive integers");
+    return {
+      material: safeIndex(batch["material"], materials, "baked particle material"),
+      orientation,
+      atlas: [Number(atlas[0]), Number(atlas[1])]
+    };
+  });
+  let bytes = 0;
+  const tracks2 = array(extension, "tracks").map((entry) => {
+    signal?.throwIfAborted();
+    const track = object(entry, "baked particle track");
+    const sequence = track["sequence"];
+    if (!Number.isSafeInteger(sequence) || Number(sequence) < 0)
+      throw new TypeError("baked particle track needs a sequence");
+    const frames = readUvmAccessor(document2, binary, track["frames"], { maxScalarBytes: maxBytes - bytes }, "indices", signal);
+    bytes += frames.values.byteLength;
+    const sprites = readUvmAccessor(document2, binary, track["sprites"], { maxScalarBytes: maxBytes - bytes }, "baked particle sprites", signal);
+    bytes += sprites.values.byteLength;
+    const values = sprites.values;
+    const count = values.length / SPRITE_FLOATS;
+    const offsets = frames.values;
+    if (!(values instanceof Float32Array) || sprites.width !== 1 || !Number.isInteger(count) || offsets.length < 2 || offsets[0] !== 0 || offsets[offsets.length - 1] !== count || offsets.some((offset, at) => at > 0 && offset < offsets[at - 1]) || !values.every(Number.isFinite))
+      throw new TypeError("baked particle track needs finite sprites and offsets from 0 to their count");
+    return {
+      sequence: Number(sequence),
+      batch: safeIndex(track["batch"], batches.length, "baked particle batch"),
+      loop: track["loop"] === true,
+      frames: offsets,
+      sprites: values
+    };
+  });
+  const spaceNode = extension["spaceNode"] === void 0 ? void 0 : safeIndex(extension["spaceNode"], nodes, "baked particle spaceNode");
+  const result = { ...spaceNode === void 0 ? {} : { spaceNode }, frameRate, batches, tracks: tracks2 };
+  read.set(document2, result);
+  return result;
+}
+var scale = (v, s) => [v[0] * s, v[1] * s, v[2] * s];
+var cross3 = (a, b) => [
+  a[1] * b[2] - a[2] * b[1],
+  a[2] * b[0] - a[0] * b[2],
+  a[0] * b[1] - a[1] * b[0]
+];
+var unit5 = (v) => {
+  const length = Math.hypot(v[0], v[1], v[2]);
+  return length > 0 ? scale(v, 1 / length) : void 0;
+};
+function ribbonQuads(values, first, last, batch, camera, emitter, out) {
+  const [columns, rows] = batch.atlas;
+  const point = (index) => {
+    const at = index * SPRITE_FLOATS;
+    return [values[at], values[at + 1], values[at + 2]];
+  };
+  const strip = (index) => values[index * SPRITE_FLOATS + 11];
+  let start = first;
+  while (start < last) {
+    let stop = start + 1;
+    while (stop < last && strip(stop) === strip(start))
+      stop++;
+    const sides = [];
+    for (let index = start; index < stop; index++) {
+      const p = point(index), before = point(Math.max(start, index - 1)), after = point(Math.min(stop - 1, index + 1));
+      const along = [after[0] - before[0], after[1] - before[1], after[2] - before[2]];
+      const toCamera = [
+        camera.position[0] - p[0],
+        camera.position[1] - p[1],
+        camera.position[2] - p[2]
+      ];
+      const across = unit5(cross3(along, toCamera));
+      sides.push(across === void 0 ? void 0 : scale(across, values[index * SPRITE_FLOATS + 3]));
+    }
+    for (let at = 0; at < sides.length; at++)
+      sides[at] ??= sides[at - 1] ?? sides.find((side) => side !== void 0);
+    for (let index = start; index + 1 < stop; index++) {
+      const a = index - start;
+      const sideA = sides[a], sideB = sides[a + 1];
+      if (sideA === void 0 || sideB === void 0)
+        continue;
+      const pa = point(index), pb = point(index + 1);
+      const positions = new Float32Array(12);
+      [
+        [pa, sideA, 1],
+        [pb, sideB, 1],
+        [pb, sideB, -1],
+        [pa, sideA, -1]
+      ].forEach(([p, side, sign], corner) => {
+        for (let axis = 0; axis < 3; axis++)
+          positions[corner * 3 + axis] = p[axis] + side[axis] * sign;
+      });
+      const atA = index * SPRITE_FLOATS, atB = atA + SPRITE_FLOATS;
+      let ua = values[atA + 5], ub = values[atB + 5], v0 = 0, v1 = 1;
+      if (columns > 1 || rows > 1) {
+        const cell = Math.max(0, Math.trunc(values[atA + 10]));
+        const column = cell % columns, row = Math.floor(cell / columns) % rows;
+        const clamp4 = (u) => Math.min(1, Math.max(0, u));
+        ua = (column + clamp4(ua)) / columns;
+        ub = (column + clamp4(ub)) / columns;
+        v0 = row / rows;
+        v1 = (row + 1) / rows;
+      }
+      const colors = new Float32Array(16);
+      colors.set(values.subarray(atA + 6, atA + 10), 0);
+      colors.set(values.subarray(atB + 6, atB + 10), 4);
+      colors.set(values.subarray(atB + 6, atB + 10), 8);
+      colors.set(values.subarray(atA + 6, atA + 10), 12);
+      out.push({
+        emitter,
+        slot: index,
+        positions,
+        indices: Uint32Array.of(0, 1, 2, 0, 2, 3),
+        textureCoordinates: Float32Array.of(ua, v0, ub, v0, ub, v1, ua, v1),
+        colors
+      });
+    }
+    start = stop;
+  }
+}
+function bakedParticleSprites(baked, track, time, camera, maxSprites) {
+  const frameCount = track.frames.length - 1;
+  let frame = Math.floor(time * baked.frameRate + 1e-6);
+  if (frame < 0)
+    frame = 0;
+  if (frame >= frameCount) {
+    if (!track.loop || frameCount === 0)
+      return { sprites: [], dropped: 0 };
+    frame %= frameCount;
+  }
+  const first = track.frames[frame];
+  const end = track.frames[frame + 1];
+  const batch = baked.batches[track.batch];
+  const [columns, rows] = batch.atlas;
+  const values = track.sprites;
+  const sprites = [];
+  const last = Math.min(end, first + maxSprites);
+  if (batch.orientation === "ribbon") {
+    ribbonQuads(values, first, last, batch, camera, track.batch, sprites);
+    return { sprites, dropped: end - last };
+  }
+  for (let index = first; index < last; index++) {
+    const at = index * SPRITE_FLOATS;
+    const position = [values[at], values[at + 1], values[at + 2]];
+    const width = values[at + 3], height = values[at + 4], rotation = values[at + 5];
+    const cosine = Math.cos(rotation), sine = Math.sin(rotation);
+    const axis = [values[at + 11], values[at + 12], values[at + 13]];
+    const normal = [values[at + 14], values[at + 15], values[at + 16]];
+    let side, up;
+    if (batch.orientation === "camera") {
+      const { right: r, up: u } = camera;
+      side = scale([r[0] * cosine + u[0] * sine, r[1] * cosine + u[1] * sine, r[2] * cosine + u[2] * sine], width);
+      up = scale([u[0] * cosine - r[0] * sine, u[1] * cosine - r[1] * sine, u[2] * cosine - r[2] * sine], height);
+    } else if (batch.orientation === "axis") {
+      up = axis;
+      const toCamera = [
+        camera.position[0] - position[0],
+        camera.position[1] - position[1],
+        camera.position[2] - position[2]
+      ];
+      const across = unit5(cross3(axis, toCamera));
+      side = across === void 0 ? void 0 : scale(across, width);
+    } else {
+      const n = unit5(normal), along = unit5(axis);
+      if (n !== void 0 && along !== void 0) {
+        const turned = unit5([
+          along[0] * cosine + cross3(n, along)[0] * sine,
+          along[1] * cosine + cross3(n, along)[1] * sine,
+          along[2] * cosine + cross3(n, along)[2] * sine
+        ]);
+        const across = turned === void 0 ? void 0 : unit5(cross3(turned, n));
+        if (turned !== void 0 && across !== void 0) {
+          up = scale(turned, height);
+          side = scale(across, width);
+        }
+      }
+    }
+    if (side === void 0 || up === void 0)
+      continue;
+    const positions = new Float32Array(12);
+    [
+      [-1, 1],
+      [1, 1],
+      [1, -1],
+      [-1, -1]
+    ].forEach(([s, u], corner) => {
+      for (let axisIndex = 0; axisIndex < 3; axisIndex++)
+        positions[corner * 3 + axisIndex] = position[axisIndex] + side[axisIndex] * s + up[axisIndex] * u;
+    });
+    const cell = Math.max(0, Math.trunc(values[at + 10]));
+    const column = cell % columns, row = Math.floor(cell / columns) % rows;
+    const u0 = column / columns, u1 = (column + 1) / columns, v0 = row / rows, v1 = (row + 1) / rows;
+    const colors = new Float32Array(16);
+    for (let corner = 0; corner < 4; corner++)
+      colors.set(values.subarray(at + 6, at + 10), corner * 4);
+    sprites.push({
+      emitter: track.batch,
+      slot: index,
+      positions,
+      indices: Uint32Array.of(0, 1, 2, 0, 2, 3),
+      textureCoordinates: Float32Array.of(u0, v0, u1, v0, u1, v1, u0, v1),
+      colors
+    });
+  }
+  return { sprites, dropped: end - last };
 }
 
 // packages/scene/dist/uvm/effect-modes.js
@@ -20181,6 +20486,70 @@ function snapshotUvmEffectExtension(document2, budget, signal) {
 var CACHED_EFFECT_SIMULATIONS = 10;
 var sameInputs = (left, right) => left.length === right.length && left.every((value2, index) => value2 === right[index]);
 function createUvmEffectFrame(document2, options) {
+  const frame = effectFrameOf(document2, options);
+  const baked = bakedParticleFrame(document2, options, frame.primitives.length);
+  if (baked === void 0)
+    return frame;
+  return {
+    ...frame,
+    primitives: [...frame.primitives, ...baked.primitives],
+    materials: [...frame.materials, ...baked.materials],
+    diagnostics: [...frame.diagnostics, ...baked.diagnostics]
+  };
+}
+var MAX_BAKED_SPRITES = 65536;
+function bakedParticleFrame(document2, options, primitivesBefore) {
+  const { signal } = options;
+  const baked = readUvmBakedParticles(document2, options.binary, options.maxBytes, signal);
+  if (baked === void 0)
+    return void 0;
+  const primitives = [], materials = [], diagnostics = [];
+  const view = options.viewMatrix;
+  const tracks2 = baked.tracks.filter((track) => track.sequence === options.sequenceIndex);
+  if (view === void 0 || tracks2.length === 0)
+    return { primitives, materials, diagnostics };
+  const toWorld = baked.spaceNode === void 0 ? IDENTITY_MATERIAL_FRAME : Array.from(options.nodeTransformsAt(options.time).get(`node-${baked.spaceNode}`) ?? IDENTITY_MATERIAL_FRAME);
+  const toLocal = invertMaterialFrame(toWorld);
+  const direction = (value2) => normalize2([0, 1, 2].map((row) => number(toLocal[row], 0) * value2[0] + number(toLocal[row + 4], 0) * value2[1] + number(toLocal[row + 8], 0) * value2[2]));
+  const camera = {
+    right: direction([number(view[0], 0), number(view[4], 0), number(view[8], 0)]),
+    up: direction([number(view[1], 0), number(view[5], 0), number(view[9], 0)]),
+    position: transform(transform([0, 0, 0], invertMaterialFrame(Array.from(view))), toLocal)
+  };
+  const materialById = new Map(options.materials.map((material) => [material.id, material]));
+  const depth = viewDepthRow(view, toWorld);
+  for (const track of tracks2) {
+    signal?.throwIfAborted();
+    const batch = baked.batches[track.batch];
+    const base = materialById.get(`material-${batch.material}`);
+    if (base === void 0)
+      throw new TypeError("baked particle material absent");
+    const { sprites, dropped } = bakedParticleSprites(baked, track, options.time, camera, MAX_BAKED_SPRITES);
+    if (dropped > 0)
+      diagnostics.push({
+        severity: "warning",
+        code: "common.uvm/baked-particles-capped",
+        message: `${String(dropped)} baked sprites of batch ${String(track.batch)} exceed the frame's ${String(MAX_BAKED_SPRITES)}`
+      });
+    if (sprites.length === 0)
+      continue;
+    const material = emitterMaterial(base, `uvm-baked-particles-${String(track.batch)}`, void 0, void 0, options.maxNodes - primitivesBefore - primitives.length, options.maxBytes, signal);
+    if (material === void 0)
+      continue;
+    if (!materials.includes(material))
+      materials.push(material);
+    if (material.simpleEffect === void 0)
+      for (const sprite of sprites)
+        for (let at = 0; at < sprite.colors.length; at++)
+          sprite.colors[at] = at % 4 === 3 ? Math.min(1, Math.max(0, sprite.colors[at])) : Math.max(0, sprite.colors[at]);
+    primitives.push({
+      ...emitterSprites(track.batch, sprites, material, depth, toWorld),
+      id: `uvm-baked-particles-${String(track.batch)}`
+    });
+  }
+  return { primitives, materials, diagnostics };
+}
+function effectFrameOf(document2, options) {
   const { signal, cache } = options;
   signal?.throwIfAborted();
   const primitives = [], materials = [];
@@ -20907,9 +21276,11 @@ function emitterSprites(index, sprites, material, depth, toWorld) {
   };
   if (material.simpleEffect !== void 0)
     return { ...primitive, colors };
-  for (const value2 of colors)
-    if (!(value2 >= 0 && value2 <= 1))
-      throw new TypeError("primitive tint requires four finite components in 0..1");
+  for (let at = 0; at < colors.length; at++) {
+    const value2 = colors[at];
+    if (!(value2 >= 0 && Number.isFinite(value2) && (at % 4 !== 3 || value2 <= 1)))
+      throw new TypeError("primitive tint requires finite non-negative RGB and alpha in 0..1");
+  }
   return {
     ...primitive,
     ...spriteFrames(positions, textureCoordinates, indices),
@@ -21064,12 +21435,12 @@ vec3 sceneObjectHalfVector(){
   return -sceneObjectUnit(eye+u_sceneLightDirection);
 }`);
 }
-var unit5 = (v, threshold = 1e-8) => {
+var unit6 = (v, threshold = 1e-8) => {
   const length = Math.hypot(...v);
   return length > threshold ? [v[0] / length, v[1] / length, v[2] / length] : [0, 0, 1];
 };
 function normalInBasis(value2, basis) {
-  return unit5(basis === void 0 ? value2 : [
+  return unit6(basis === void 0 ? value2 : [
     basis.tangent[0] * value2[0] + basis.bitangent[0] * value2[1] + basis.normal[0] * value2[2],
     basis.tangent[1] * value2[0] + basis.bitangent[1] * value2[1] + basis.normal[1] * value2[2],
     basis.tangent[2] * value2[0] + basis.bitangent[2] * value2[1] + basis.normal[2] * value2[2]
@@ -21080,7 +21451,7 @@ function blendSignedNormals(base, first, second, maskSum, basis) {
   const source = normalInBasis(base, basis);
   const detail = normalInBasis(factor < 0 ? first : second, basis);
   const weight = factor * factor;
-  return unit5([
+  return unit6([
     source[0] + (detail[0] - source[0]) * weight,
     source[1] + (detail[1] - source[1]) * weight,
     source[2] + (detail[2] - source[2]) * weight
@@ -21152,6 +21523,10 @@ vec3 sceneSignedHalfVector() {
 
 // packages/scene/dist/materials/standard-program.js
 function withoutDiffuseTeamColor(material) {
+  if (material.teamColorBlend !== void 0) {
+    const { teamColorBlend: _blend, teamColorStrength: _strength, ...rest } = material;
+    material = Object.freeze(rest);
+  }
   if (!Object.values(material.layers).some((layer) => layer.teamColorMode === 1))
     return material;
   const layers = {};
@@ -21190,6 +21565,7 @@ function createStandardMaterialPrograms(parameters, options) {
   let shapes;
   return Object.freeze({
     resources: sampler.resources,
+    presentation: sampler.presentation,
     usesSceneEnvironment: sampler.usesSceneEnvironment,
     sample(time, lighting = {}, signal) {
       if (sampler.timeless && last !== void 0 && sameMaterialFrame(last.lighting, lighting)) {
@@ -21222,9 +21598,15 @@ function createStandardMaterialPrograms(parameters, options) {
           ...pass,
           material: emissiveBlendThroughRgb(specularOfTeamColor(intensity === 0 ? withoutDiffuseTeamColor(pass.material) : pass.material))
         };
-        const shape = kept?.[index] ?? passShape(prepared.material, sources, normalFormats, textureDimensions, environment, lighting.sceneLighting === true);
+        const sceneLighting = lighting.sceneLighting === true || lighting.autoSceneLighting === true && lighting.sceneLighting !== false && !prepared.material.unshaded && prepared.material.lightingModel !== "pbr-metallic-roughness";
+        const shape = kept?.[index] ?? passShape(prepared.material, sources, normalFormats, textureDimensions, environment, sceneLighting);
         passShapes.push(shape);
-        return compilePass(prepared, { teamColor, ambient, terrainTiling }, shape, sampler.worldToMaterial, environment, lighting.sceneLighting === true);
+        const own = prepared.material.teamColorDefault;
+        return compilePass(prepared, {
+          teamColor: lighting.teamColor === void 0 && own !== void 0 ? Object.freeze([...finiteVector(own, 3, "team color default")]) : teamColor,
+          ambient,
+          terrainTiling
+        }, shape, sampler.worldToMaterial, environment, sceneLighting);
       }));
       if (kept === void 0)
         shapes = Object.freeze({
@@ -21275,7 +21657,7 @@ function sameMaterialFrame(left, right) {
     return true;
   };
   const environment = (frame) => frame.environment?.worldToEnvironment;
-  return sameVector(left.teamColor, right.teamColor) && sameVector(left.ambient, right.ambient) && sameVector(left.terrainTiling, right.terrainTiling) && sameMap(left.normalMapFormats, right.normalMapFormats) && sameMap(left.textureDimensions, right.textureDimensions) && left.environment === void 0 === (right.environment === void 0) && sameVector(environment(left), environment(right)) && left.sceneLighting === true === (right.sceneLighting === true) && (left.teamColorIntensity ?? 1) === (right.teamColorIntensity ?? 1);
+  return sameVector(left.teamColor, right.teamColor) && sameVector(left.ambient, right.ambient) && sameVector(left.terrainTiling, right.terrainTiling) && sameMap(left.normalMapFormats, right.normalMapFormats) && sameMap(left.textureDimensions, right.textureDimensions) && left.environment === void 0 === (right.environment === void 0) && sameVector(environment(left), environment(right)) && left.sceneLighting === true === (right.sceneLighting === true) && (left.autoSceneLighting === true && left.sceneLighting !== false) === (right.autoSceneLighting === true && right.sceneLighting !== false) && (left.teamColorIntensity ?? 1) === (right.teamColorIntensity ?? 1);
 }
 var UNIFORM_DEFAULTS = Object.freeze({
   one2: Object.freeze([1, 1]),
@@ -21308,7 +21690,7 @@ function layerUniformsOf(slot) {
   }
   return names;
 }
-function passShape(material, sources, bindings, textureDimensions, environment, sceneLighting) {
+function passShape(material, sources, bindings, textureDimensions, environment, sceneLighting, directLights = false) {
   const normalFormats = materialNormalFormats(material, bindings);
   const objectSpaceNormal = material.normalMapSpace === "object";
   const defines = buildMaterialDefines(material, {
@@ -21336,10 +21718,13 @@ function passShape(material, sources, bindings, textureDimensions, environment, 
   }
   const worldEnvironment = environment !== void 0 && textures.some(isEnvironmentBinding);
   const policy = material.normalBlendPolicy;
-  const key = canonicalDefineKey(defines) + (normalFormats === void 0 ? "" : `;normals=${NORMAL_SLOTS.map((slot) => normalFormats[slot]).join(",")}`) + textures.filter((binding) => binding.dimension === "cube").map((binding) => `;cube=${binding.slot}`).join("") + (worldEnvironment ? ";environment=world" : "") + (policy === void 0 ? "" : `;normals=signed-two-detail;mask2=${policy.secondMask}`);
+  const key = canonicalDefineKey(defines) + (normalFormats === void 0 ? "" : `;normals=${NORMAL_SLOTS.map((slot) => normalFormats[slot]).join(",")}`) + textures.filter((binding) => binding.dimension === "cube").map((binding) => `;cube=${binding.slot}`).join("") + (worldEnvironment ? ";environment=world" : "") + (policy === void 0 ? "" : `;normals=signed-two-detail;mask2=${policy.secondMask}`) + (directLights ? ";direct-lights" : "");
   let compiled = sources.get(key);
   if (compiled === void 0) {
-    let fragmentSource = "#version 300 es\n" + buildStandardFragmentSource(defines, { precision: "precision highp float;" }).replaceAll("varying ", "in ").replaceAll("texture2D(", "texture(").replace("void main() {", "out vec4 materialColor;\nvoid main() {").replaceAll("gl_FragColor", "materialColor");
+    let fragmentSource = "#version 300 es\n" + buildStandardFragmentSource(defines, {
+      precision: "precision highp float;",
+      ...directLights ? { directLights: true } : {}
+    }).replaceAll("varying ", "in ").replaceAll("texture2D(", "texture(").replace("void main() {", "out vec4 materialColor;\nvoid main() {").replaceAll("gl_FragColor", "materialColor");
     if (normalFormats !== void 0)
       fragmentSource = normalLayerShader(fragmentSource, normalFormats);
     if (policy !== void 0)
@@ -21347,16 +21732,17 @@ function passShape(material, sources, bindings, textureDimensions, environment, 
     if (objectSpaceNormal)
       fragmentSource = objectSpaceNormalLayerShader(fragmentSource);
     fragmentSource = cubeLayerShader(fragmentSource, defines, textures, worldEnvironment, policy !== void 0);
-    if (worldEnvironment || policy !== void 0 || objectSpaceNormal)
+    if (worldEnvironment || policy !== void 0 || objectSpaceNormal || directLights)
       fragmentSource = fragmentSource.replace("precision highp float;", `precision highp float;
 ${WORLD_NORMAL_VARYINGS}`);
-    const vertexSource = worldEnvironment || policy !== void 0 || objectSpaceNormal ? sceneMaterialVertexSource(defines, worldEnvironment, policy !== void 0 || objectSpaceNormal) : "#version 300 es\nprecision highp float;\n" + buildStandardVertexSource(defines).replaceAll("attribute ", "in ").replaceAll("varying ", "out ").replaceAll("texture2D(", "texture(");
+    const vertexSource = worldEnvironment || policy !== void 0 || objectSpaceNormal || directLights ? sceneMaterialVertexSource(defines, worldEnvironment, policy !== void 0 || objectSpaceNormal, false, false, false, directLights) : "#version 300 es\nprecision highp float;\n" + buildStandardVertexSource(defines).replaceAll("attribute ", "in ").replaceAll("varying ", "out ").replaceAll("texture2D(", "texture(");
     for (const layer of defines.layers)
       Object.freeze(layer);
     Object.freeze(defines.layers);
     compiled = Object.freeze({ vertexSource, fragmentSource, defines: Object.freeze(defines) });
     sources.set(key, compiled);
   }
+  let directFragment;
   return Object.freeze({
     normalFormats,
     defines,
@@ -21364,7 +21750,8 @@ ${WORLD_NORMAL_VARYINGS}`);
     diagnostics: Object.freeze(diagnostics),
     worldEnvironment,
     key,
-    compiled
+    compiled,
+    directFragment: () => directLights ? compiled.fragmentSource : directFragment ??= passShape(material, sources, bindings, textureDimensions, environment, sceneLighting, true).compiled.fragmentSource
   });
 }
 function compilePass(pass, lighting, shape, worldToMaterial, environment, sceneLighting) {
@@ -21413,7 +21800,7 @@ function compilePass(pass, lighting, shape, worldToMaterial, environment, sceneL
       const { rows, cols } = layer.flipbook;
       const frame = (Math.floor(layer.flipbook.frame.value) % (rows * cols) + rows * cols) % (rows * cols);
       const frameSize = layer.flipbook.frameSize;
-      const beforeTiling = (cell, scale) => scale === 0 ? 0 : cell / scale;
+      const beforeTiling = (cell, scale2) => scale2 === 0 ? 0 : cell / scale2;
       if (frameSize === void 0) {
         uniforms[names.uvTiling] = [tiling[0] / cols, tiling[1] / rows];
         uniforms[names.uvOffset] = [
@@ -21448,6 +21835,7 @@ function compilePass(pass, lighting, shape, worldToMaterial, environment, sceneL
   return Object.freeze({
     key,
     ...compiled,
+    fragmentSourceForSceneLights: shape.directFragment,
     uniforms: Object.freeze(uniforms),
     textures,
     blend: standardBlendModeName(material.blendMode, material.alphaTestThreshold),
@@ -21516,6 +21904,12 @@ function shade(material, alpha, lighting, pixel, normalFormats, sceneLighting = 
     ...normalFormats === void 0 && material.normalMapFormat === void 0 ? {} : { normalMapFormat: normalFormats === void 0 ? material.normalMapFormat : "rgb8" },
     ...material.environmentMultipliers === void 0 ? {} : { environmentMultipliers: material.environmentMultipliers },
     ...material.environmentTintByBase === true ? { environmentTintByBase: true } : {},
+    ...material.teamColorMaskMix === true ? { teamColorMaskMix: true } : {},
+    ...material.teamColorBlend === void 0 ? {} : {
+      teamColorBlend: material.teamColorBlend,
+      teamColorStrength: material.teamColorStrength ?? 1,
+      ...material.teamColorEmissive === true ? { teamColorEmissive: true } : {}
+    },
     ...material.edgeFadeOut === void 0 ? {} : { edgeFadeOut: material.edgeFadeOut },
     ...material.emissiveTint === void 0 ? {} : { emissiveTint: material.emissiveTint },
     ...material.normalBlendFactors === void 0 ? {} : {
@@ -21602,8 +21996,8 @@ function sampleNormal(material, lighting, pixel, formats, basis) {
     return mask === void 0 ? [1, 0, 0, 0] : computeLayerColorCpu(mask, team);
   };
   const maskFactors = (index) => {
-    const read = (channel) => material.normalBlendFactors?.[index * 4 + channel]?.value ?? (channel === 0 ? 1 : 0);
-    return [read(0), read(1), read(2), read(3)];
+    const read2 = (channel) => material.normalBlendFactors?.[index * 4 + channel]?.value ?? (channel === 0 ? 1 : 0);
+    return [read2(0), read2(1), read2(2), read2(3)];
   };
   const maskWeight = (index) => {
     const weights = maskValue(index);
@@ -21659,7 +22053,7 @@ function uvmMaterialBlendEffect(material, wrap) {
     return void 0;
   const data = object(extension, "game material");
   const mode = data["blendMode"];
-  const blend = mode === "additive" || mode === "add-alpha" || mode === "modulate" || mode === "modulate2x" ? mode : void 0;
+  const blend = mode === "additive" ? "additive-one-one" : mode === "add-alpha" || mode === "modulate" || mode === "modulate2x" ? mode : void 0;
   if (blend === void 0)
     return void 0;
   const renderModel = field(object(data["params"] ?? {}, "game material parameters"), "renderModel");
@@ -21687,7 +22081,7 @@ function uvmMaterialDrawOrder(material) {
 function uvmMaterialPbr(material, baseTexCoord) {
   const pbr = object(material["pbrMetallicRoughness"] ?? {}, "PBR material");
   const unrendered = [];
-  const unit6 = (value2, fallback, label) => {
+  const unit7 = (value2, fallback, label) => {
     const result = value2 ?? fallback;
     if (typeof result !== "number" || !Number.isFinite(result) || result < 0 || result > 1)
       throw new TypeError(`material ${label} must be in 0..1`);
@@ -21720,12 +22114,12 @@ function uvmMaterialPbr(material, baseTexCoord) {
     throw new TypeError("material normal texture scale must be finite");
   return {
     pbr: {
-      metallic: unit6(pbr["metallicFactor"], 1, "metallicFactor"),
-      roughness: unit6(pbr["roughnessFactor"], 1, "roughnessFactor"),
+      metallic: unit7(pbr["metallicFactor"], 1, "metallicFactor"),
+      roughness: unit7(pbr["roughnessFactor"], 1, "roughnessFactor"),
       ...metallicRoughnessTexture === void 0 ? {} : { metallicRoughnessTexture },
       ...occlusionTexture === void 0 ? {} : {
         occlusionTexture,
-        occlusionStrength: unit6(field(occlusion, "strength"), 1, "occlusion strength")
+        occlusionStrength: unit7(field(occlusion, "strength"), 1, "occlusion strength")
       },
       ...emissive === void 0 ? {} : { emissive: [emissive[0], emissive[1], emissive[2]] },
       ...emissiveTexture === void 0 ? {} : { emissiveTexture },
@@ -21782,13 +22176,117 @@ function uvmMaterialTeamColor(material, baseTexCoord) {
     maskTexture: index
   };
 }
+var PROGRAM_MASK_CHANNELS = { a: 2, r: 3, g: 4, b: 5 };
+function uvmProgramTeamColor(document2, shader, team, maskTexture, texCoord) {
+  if (team === void 0 || shader?.id !== RENDER_MATERIAL_SHADER)
+    return void 0;
+  const renderModel = field(shader.parameters, "renderModel");
+  const standard = renderModel === void 0 ? void 0 : field(renderModel, "standard");
+  if (standard === void 0 || renderModel === void 0)
+    return void 0;
+  const program = object(standard, "standard material program");
+  const layers = object(program["layers"] ?? {}, "standard material layers");
+  if (program["teamColorMaskMix"] === true || program["teamColorBlend"] !== void 0 || layers["teamColorMask"] !== void 0)
+    return void 0;
+  let texturePath = null;
+  let channels = PROGRAM_MASK_CHANNELS["r"];
+  if (team.mask !== "whole") {
+    const channel = PROGRAM_MASK_CHANNELS[team.mask.channel];
+    if (channel === void 0 || maskTexture === void 0)
+      return void 0;
+    const textures = array(document2, "textures");
+    const source = field(textures[maskTexture], "source");
+    if (typeof source !== "number")
+      return void 0;
+    texturePath = uvmImageResourceId(document2, source);
+    channels = channel;
+  }
+  const mask = {
+    slot: "teamColorMask",
+    texturePath,
+    ...texturePath === null ? { constantColor: { value: [1, 1, 1, 1] } } : {},
+    uvSource: texCoord,
+    channels,
+    op: 0,
+    teamColorMode: 0,
+    invert: false,
+    clampResult: false,
+    wrapX: true,
+    wrapY: true
+  };
+  return {
+    id: shader.id,
+    parameters: {
+      ...shader.parameters,
+      renderModel: {
+        ...object(renderModel, "render model parameters"),
+        standard: {
+          ...program,
+          layers: { ...layers, teamColorMask: mask },
+          teamColorBlend: team.blend,
+          ...team.strength === void 0 || team.strength === 1 ? {} : { teamColorStrength: team.strength },
+          ...team.defaultColor === void 0 ? {} : { teamColorDefault: [...team.defaultColor] }
+        }
+      }
+    }
+  };
+}
+var DISPENSABLE_PROGRAM_LAYERS = /* @__PURE__ */ new Set([
+  "normal",
+  "normalBlend1",
+  "normalBlend2",
+  "normalBlend1Mask",
+  "normalBlend2Mask"
+]);
+function uvmProgramWithoutLayers(shader, unresolved) {
+  if (unresolved.size === 0 || shader?.id !== RENDER_MATERIAL_SHADER)
+    return void 0;
+  const renderModel = field(shader.parameters, "renderModel");
+  const standard = renderModel === void 0 ? void 0 : field(renderModel, "standard");
+  if (standard === void 0 || renderModel === void 0)
+    return void 0;
+  const program = object(standard, "standard material program");
+  const layers = object(program["layers"] ?? {}, "standard material layers");
+  const kept = {};
+  const dropped = [];
+  for (const [slot, layer] of Object.entries(layers)) {
+    const path = field(layer, "texturePath");
+    if (typeof path !== "string" || !unresolved.has(path))
+      kept[slot] = layer;
+    else if (DISPENSABLE_PROGRAM_LAYERS.has(slot))
+      dropped.push(slot);
+    else
+      return void 0;
+  }
+  if (dropped.length === 0)
+    return void 0;
+  const { tangentGeneration, ...rest } = program;
+  const normalKept = Object.keys(kept).some((slot) => DISPENSABLE_PROGRAM_LAYERS.has(slot));
+  return {
+    shader: {
+      id: shader.id,
+      parameters: {
+        ...shader.parameters,
+        renderModel: {
+          ...object(renderModel, "render model parameters"),
+          standard: {
+            ...rest,
+            ...normalKept && tangentGeneration !== void 0 ? { tangentGeneration } : {},
+            layers: kept
+          }
+        }
+      }
+    },
+    dropped
+  };
+}
 function uvmMaterialShader(material) {
   const extension = field(material["extensions"], "UV_game_material");
-  if (extension === void 0) {
+  const data = extension === void 0 ? void 0 : object(extension, "game material");
+  if (data === void 0 || !Object.hasOwn(data, "shader")) {
     const layers = layerList(material);
     return layers.length === 0 ? void 0 : { id: MATERIAL_LAYERS_SHADER, parameters: { renderModel: { layers } } };
   }
-  const data = object(extension, "game material");
   const parameters = object(data["params"] ?? {}, "game material parameters");
   return {
     id: string(data["shader"], "game material shader"),
@@ -21996,12 +22494,14 @@ async function prepareNestedUvmRender(bytes, value2, options, depth, cache) {
     "clipId",
     "poseSamples",
     "time",
+    "globalTime",
     "collisions",
     "shadows",
     "clearColor",
     "rendererId",
     "sceneIndex",
     "modelState",
+    "variants",
     "materialContext",
     "lighting"
   ].includes(key)))
@@ -22025,9 +22525,10 @@ async function prepareNestedUvmRender(bytes, value2, options, depth, cache) {
     throw new TypeError("team color must contain three components in 0..1");
   if (ambient !== void 0 && (!finiteArray(ambient, 4) || ambient.some((value3) => value3 < 0 || value3 > 1)))
     throw new TypeError("material ambient must contain four components in 0..1");
-  const time = input["time"] ?? 0, clipId = input["clipId"], rendererId = input["rendererId"], modelState = input["modelState"] ?? "base";
-  if (typeof time !== "number" || !Number.isFinite(time) || time < 0 || clipId !== void 0 && (typeof clipId !== "string" || !clipId) || rendererId !== void 0 && (typeof rendererId !== "string" || !rendererId) || typeof modelState !== "string" || modelState.length === 0 || input["collisions"] !== void 0 && typeof input["collisions"] !== "boolean" || input["shadows"] !== void 0 && typeof input["shadows"] !== "boolean")
-    throw new TypeError("invalid render time, clip, renderer or collision option");
+  const time = input["time"] ?? 0, globalTime = input["globalTime"], clipId = input["clipId"], rendererId = input["rendererId"], modelState = input["modelState"] ?? "base";
+  if (typeof time !== "number" || !Number.isFinite(time) || time < 0 || globalTime !== void 0 && (typeof globalTime !== "number" || !Number.isFinite(globalTime) || globalTime < 0) || clipId !== void 0 && (typeof clipId !== "string" || !clipId) || rendererId !== void 0 && (typeof rendererId !== "string" || !rendererId) || typeof modelState !== "string" || modelState.length === 0 || input["collisions"] !== void 0 && typeof input["collisions"] !== "boolean" || input["shadows"] !== void 0 && typeof input["shadows"] !== "boolean" || input["variants"] !== void 0 && (!Array.isArray(input["variants"]) || input["variants"].some((name) => typeof name !== "string" || name.length === 0)))
+    throw new TypeError("invalid render time, clip, renderer, variant or collision option");
+  const chosenVariants = input["variants"] ?? [];
   const clearColor = input["clearColor"] === void 0 ? void 0 : vector4(input["clearColor"]);
   if (clearColor?.some((component) => component < 0 || component > 1))
     throw new RangeError("render clearColor must be in 0..1");
@@ -22057,12 +22558,17 @@ async function prepareNestedUvmRender(bytes, value2, options, depth, cache) {
       binaryByteLength: container.binary.length,
       ...signal === void 0 ? {} : { signal }
     });
-    const read = { document: container.document, binary: container.binary };
-    if (cache !== void 0)
-      cache.container = read;
-    return read;
+    const read2 = { document: container.document, binary: container.binary };
+    return read2;
   })();
   const { document: document2, binary } = parsed;
+  if (globalTime !== void 0 && globalTime !== time) {
+    const effects = field(document2["extensions"], "UV_game_effects");
+    if (array(effects, "particles").length > 0 || array(effects, "ribbons").length > 0)
+      throw new TypeError("independent clocks do not support historical particles or ribbons");
+  }
+  if (cache !== void 0)
+    cache.container = parsed;
   const units = field(document2["extensions"], "UV_units");
   const metersPerSourceUnit = units === void 0 ? 1 : field(units, "metersPerSourceUnit");
   if (typeof metersPerSourceUnit !== "number" || !Number.isFinite(metersPerSourceUnit) || metersPerSourceUnit <= 0)
@@ -22167,15 +22673,17 @@ async function prepareNestedUvmRender(bytes, value2, options, depth, cache) {
   const visibilityChannels = clip?.channels.filter((channel) => channel.kind === "visibility") ?? [];
   if (clip !== void 0 && visibilityChannels.length > 0) {
     const visibilitySampler = createModelAnimationSampler({ ...clip, channels: visibilityChannels }, { maxDepth: budget.maxDepth, maxNodes: budget.maxNodes, maxBytes: stageBytes }, signal);
-    for (const sampled of visibilitySampler.sample(time, signal))
+    for (const sampled of visibilitySampler.sample(time, signal, globalTime))
       visible.set(sampled.target, (sampled.value[0] ?? 0) > 0);
   }
+  for (const id of uvmVariantHiddenPrimitives(readUvmNamedVariants(document2, signal), chosenVariants))
+    visible.set(id, false);
   const sequence = clip?.sequenceIndex;
   if (sequence !== void 0 && (typeof sequence !== "number" || !Number.isSafeInteger(sequence) || sequence < 0))
     throw new TypeError("invalid material source sequence index");
   const materialContext = {
     sceneLighting: true,
-    time,
+    time: globalTime ?? time,
     sequenceTime: time,
     ...sequence === void 0 ? {} : { sequenceIndex: sequence },
     ...team === void 0 ? {} : { teamColor: [team[0] ?? 0, team[1] ?? 0, team[2] ?? 0] },
@@ -22199,7 +22707,7 @@ async function prepareNestedUvmRender(bytes, value2, options, depth, cache) {
       }
     },
     ...signal === void 0 ? {} : { signal }
-  }).sample(time, signal).nodeTransforms;
+  }).sample(time, signal, void 0, globalTime).nodeTransforms;
   const { viewProjection, viewMatrix, eyePosition } = resolveUvmCamera(document2, camera, {
     aspect: width / height,
     nodeTransforms: cameraPose,
@@ -22207,6 +22715,7 @@ async function prepareNestedUvmRender(bytes, value2, options, depth, cache) {
     maxBytes: stageBytes,
     maxNodes: budget.maxNodes,
     time,
+    ...globalTime === void 0 ? {} : { globalTime },
     ...clip?.sequenceIndex === void 0 ? {} : { sequenceIndex: clip.sequenceIndex },
     ...signal === void 0 ? {} : { signal }
   });
@@ -22234,11 +22743,12 @@ async function prepareNestedUvmRender(bytes, value2, options, depth, cache) {
       }
     },
     ...signal === void 0 ? {} : { signal }
-  }).sample(time, signal);
+  }).sample(time, signal, void 0, globalTime);
   const sceneLights = readUvmSceneLights(document2, sample.nodeTransforms, activeNodes, {
     maxBytes: stageBytes,
     maxNodes: budget.maxNodes,
     time,
+    ...globalTime === void 0 ? {} : { globalTime },
     ...clip?.sequenceIndex === void 0 ? {} : { sequenceIndex: clip.sequenceIndex },
     ...signal === void 0 ? {} : { signal }
   });
@@ -22307,6 +22817,7 @@ async function prepareNestedUvmRender(bytes, value2, options, depth, cache) {
     else if (material["normalTexture"] !== void 0 || material["emissiveTexture"] !== void 0 || pbr["metallicRoughnessTexture"] !== void 0)
       warn("common.uvm/material-features-unrendered", `Material ${index} uses shading features beyond the current base-color scene contract.`);
     const team2 = uvmMaterialTeamColor(material, texCoord);
+    const programTeam = uvmProgramTeamColor(document2, shader, team2.teamColor, team2.maskTexture, texCoord);
     if (team2.unrendered !== void 0)
       warn("common.uvm/team-color-unrendered", `Material ${index} team colour is not drawn: ${team2.unrendered}.`);
     const simpleEffect = uvmMaterialBlendEffect(material, () => {
@@ -22323,8 +22834,8 @@ async function prepareNestedUvmRender(bytes, value2, options, depth, cache) {
       ...textureIndex === void 0 ? {} : { baseColorTexture: `uvm-texture-${textureIndex}` },
       doubleSided: material["doubleSided"] === true,
       ...uvmMaterialDrawOrder(material),
-      ...team2.teamColor === void 0 ? {} : { teamColor: team2.teamColor },
-      ...shader === void 0 ? {} : { shader },
+      ...team2.teamColor === void 0 || programTeam !== void 0 ? {} : { teamColor: team2.teamColor },
+      ...programTeam !== void 0 ? { shader: programTeam } : shader === void 0 ? {} : { shader },
       ...simpleEffect === void 0 ? {} : { simpleEffect }
     };
   });
@@ -22343,7 +22854,7 @@ async function prepareNestedUvmRender(bytes, value2, options, depth, cache) {
     return uv === void 0 ? primitive : { ...primitive, textureCoordinates: uv };
   });
   let modelParticles = [];
-  if (field(document2["extensions"], "UV_game_effects") !== void 0) {
+  if (field(document2["extensions"], "UV_game_effects") !== void 0 || field(document2["extensions"], "UV_game_baked_particles") !== void 0) {
     const projectorReceivers = primitives.slice();
     const effectPose = createModelSceneSampler({
       nodes: scene.nodes.map((node) => ({ ...node, meshIds: [] })),
@@ -22374,7 +22885,7 @@ async function prepareNestedUvmRender(bytes, value2, options, depth, cache) {
       maxBytes: stageBytes,
       maxNodes: budget.maxNodes,
       maxDiagnostics: budget.maxDiagnostics,
-      nodeTransformsAt: (time2) => effectPose.sample(time2, signal).nodeTransforms,
+      nodeTransformsAt: (step) => effectPose.sample(step, signal, void 0, globalTime === void 0 ? void 0 : step).nodeTransforms,
       ...viewMatrix === void 0 ? {} : { viewMatrix },
       ...signal === void 0 ? {} : { signal }
     });
@@ -22390,6 +22901,7 @@ async function prepareNestedUvmRender(bytes, value2, options, depth, cache) {
       activeNodes,
       materials,
       time,
+      ...globalTime === void 0 ? {} : { globalTime },
       ...sequence === void 0 ? {} : { sequenceIndex: sequence },
       maxBytes: stageBytes - effects.collisionSplats.length * 256 - effects.primitives.reduce((sum, primitive) => sum + primitive.positions.byteLength + (primitive.indices?.byteLength ?? 0) + (primitive.textureCoordinates?.byteLength ?? 0) + (primitive.colors?.byteLength ?? 0), 0),
       maxNodes: budget.maxNodes - effects.primitives.length - effects.collisionSplats.length,
@@ -22498,7 +23010,20 @@ async function prepareNestedUvmRender(bytes, value2, options, depth, cache) {
   const acquiredMaterials = await acquireUvmMaterialTextures(materialResources, rasterResources, remainingDecodedBytes, diagnostics, signal, uvmImageFilters(document2), materialImageSources, suppliedResources);
   for (const texture of acquiredMaterials.textures)
     remainingDecodedBytes -= texture.rgba.length;
-  const drawnByShader = new Set(materials.filter((material) => material.shader?.id === RENDER_MATERIAL_SHADER && (materialResources.get(material.id) ?? []).length === acquiredMaterials.bindings(material.id).length).map((material) => material.id));
+  const trimmed = /* @__PURE__ */ new Set();
+  for (const [index, material] of materials.entries()) {
+    if (!activeMaterials.has(material.id))
+      continue;
+    const bound = new Set(acquiredMaterials.bindings(material.id).map((item) => item.resourceId));
+    const unresolved = new Set((materialResources.get(material.id) ?? []).filter((resource) => !bound.has(resource)));
+    const without = uvmProgramWithoutLayers(material.shader, unresolved);
+    if (without === void 0)
+      continue;
+    materials[index] = { ...material, shader: without.shader };
+    trimmed.add(material.id);
+    warn("common.uvm/material-layer-dropped", `Material ${material.id} is drawn without its ${without.dropped.join(", ")} layer: ${[...unresolved].join(", ")} did not resolve.`);
+  }
+  const drawnByShader = new Set(materials.filter((material) => material.shader?.id === RENDER_MATERIAL_SHADER && (trimmed.has(material.id) || (materialResources.get(material.id) ?? []).length === acquiredMaterials.bindings(material.id).length)).map((material) => material.id));
   const fallbackTextures = new Set(primitives.flatMap((primitive) => drawnByShader.has(primitive.materialId ?? "") ? [] : drawnTextures(primitive.materialId)));
   const decodedImages = /* @__PURE__ */ new Map();
   const failedImages = /* @__PURE__ */ new Set();
@@ -22508,7 +23033,7 @@ async function prepareNestedUvmRender(bytes, value2, options, depth, cache) {
       continue;
     let decoded2 = decodedImages.get(image.image);
     if (decoded2 === void 0 && rasterResources !== void 0) {
-      const result = await rasterResources.read({ ...image.source, maxBytes: remainingDecodedBytes }, signal);
+      const result = await rasterResources.read({ ...image.source, maxBytes: remainingDecodedBytes, selection: { mipLevel: "fit" } }, signal);
       signal?.throwIfAborted();
       for (const item of result.diagnostics)
         diagnostics.push({
@@ -22518,11 +23043,12 @@ async function prepareNestedUvmRender(bytes, value2, options, depth, cache) {
         });
       if (result.state === "decoded") {
         try {
-          if (result.info.width * result.info.height * 4 > remainingDecodedBytes)
+          const { width: width2, height: height2 } = result.region;
+          if (width2 * height2 * 4 > remainingDecodedBytes)
             throw new RangeError("decoded UVM images exceed budget");
-          const rgba = uvmImageTexels(result);
+          const rgba = uvmImageTexels({ ...result, info: { ...result.info, width: width2, height: height2 } });
           remainingDecodedBytes -= rgba.length;
-          decoded2 = { width: result.info.width, height: result.info.height, rgba };
+          decoded2 = { width: width2, height: height2, rgba };
           decodedImages.set(image.image, decoded2);
         } catch (error) {
           warn("common.uvm/image-unrendered", error instanceof Error ? error.message : "Invalid decoded image");
@@ -22542,6 +23068,7 @@ async function prepareNestedUvmRender(bytes, value2, options, depth, cache) {
   for (const index of fallbackTextures)
     if (!textures.has(index))
       warn("common.uvm/texture-unresolved", `Texture ${index} has no decoded texels available from the resource host.`);
+  const carriedTextureIds = new Set([...textures.values()].map((texture) => texture.id));
   const request = {
     outputKind: "rgba8",
     viewport: { width, height },
@@ -22554,10 +23081,13 @@ async function prepareNestedUvmRender(bytes, value2, options, depth, cache) {
       ...sceneLights ?? {},
       light: previewKeyLight(viewMatrix),
       primitives,
-      materials: materials.filter((material) => activeMaterials.has(material.id)).map((material) => ({
-        ...material,
-        textureBindings: acquiredMaterials.bindings(material.id)
-      })),
+      materials: materials.filter((material) => activeMaterials.has(material.id)).map((material) => {
+        const bound = { ...material, textureBindings: acquiredMaterials.bindings(material.id) };
+        if (!drawnByShader.has(material.id) || material.baseColorTexture === void 0 || carriedTextureIds.has(material.baseColorTexture))
+          return bound;
+        const { baseColorTexture: _fallback, ...drawn2 } = bound;
+        return drawn2;
+      }),
       textures: [...textures.values(), ...acquiredMaterials.textures],
       materialContext
     },
@@ -22579,9 +23109,9 @@ async function prepareNestedUvmRender(bytes, value2, options, depth, cache) {
       swapYZ: false,
       transform: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
     }
-  ], request, options, depth, nestedBudget, prepareNestedUvmRender, { id: "model-state", label: "Model states", prefix: "model-state" });
+  ], request, options, depth, nestedBudget, prepareNestedUvmRender, { id: "model-state", label: "Model states", prefix: "model-state" }, globalTime);
   const stateApplied = modelStateNested.composedInstances > 0;
-  const nested = await composeModelParticles(stateApplied ? [] : modelParticles, request, options, depth, nestedBudget, prepareNestedUvmRender);
+  const nested = await composeModelParticles(stateApplied ? [] : modelParticles, request, options, depth, nestedBudget, prepareNestedUvmRender, void 0, globalTime);
   if (diagnostics.length + modelStateNested.diagnostics.length + nested.diagnostics.length > budget.maxDiagnostics)
     throw new RangeError("UVM render diagnostics exceed maxDiagnostics");
   const basePrimitives = stateApplied ? modelStateNested.primitives : request.scene.primitives;

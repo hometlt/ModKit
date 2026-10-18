@@ -1,4 +1,6 @@
-import "../../../chunks/chunk-EGJJI5AO.js";
+import {
+  synthesizeCdf97
+} from "../../../chunks/chunk-PDE3HYOL.js";
 import {
   decode_astc,
   decode_atc_rgb4,
@@ -21,7 +23,7 @@ import {
   initializeGpuTextureWasmBrowser,
   unpack_crunch,
   unpack_unity_crunch
-} from "../../../chunks/chunk-DSXM5VUY.js";
+} from "../../../chunks/chunk-RI6VHBBO.js";
 import {
   DEFAULT_MAX_RGBA8_DECODE_BYTES,
   assertRgba8DecodeWithinLimit,
@@ -34,12 +36,12 @@ import {
   halfFloatToNumber,
   normalizedSampleToByte,
   wrapDx10Dds
-} from "../../../chunks/chunk-AZ4K26SV.js";
+} from "../../../chunks/chunk-JJ5NUP5R.js";
 import {
   ascii,
   byteView
 } from "../../../chunks/chunk-JZRDO2QW.js";
-import "../../../chunks/chunk-WMDX3O34.js";
+import "../../../chunks/chunk-22GOWHCF.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 export {
   DEFAULT_MAX_RGBA8_DECODE_BYTES,
@@ -73,6 +75,7 @@ export {
   halfFloatToNumber,
   initializeGpuTextureWasmBrowser,
   normalizedSampleToByte,
+  synthesizeCdf97,
   unpack_crunch,
   unpack_unity_crunch,
   wrapDx10Dds

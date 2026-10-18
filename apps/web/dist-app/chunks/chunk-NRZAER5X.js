@@ -1,0 +1,159 @@
+// packages/codec-kit/dist/compression/adler32.js
+function createAdler32() {
+  let a = 1;
+  let b = 0;
+  return Object.freeze({
+    update(bytes) {
+      if (!(bytes instanceof Uint8Array))
+        throw new TypeError("Adler-32 input must be bytes");
+      for (const byte of bytes) {
+        a = (a + byte) % 65521;
+        b = (b + a) % 65521;
+      }
+    },
+    digest() {
+      return (b << 16 | a) >>> 0;
+    }
+  });
+}
+function adler32(bytes) {
+  const checksum = createAdler32();
+  checksum.update(bytes);
+  return checksum.digest();
+}
+
+// packages/codec-kit/dist/checksum/lookup2.js
+var GOLDEN_RATIO = 2654435769;
+function mix(state) {
+  let [a, b, c] = state;
+  a = a - b - c >>> 0;
+  a = (a ^ c >>> 13) >>> 0;
+  b = b - c - a >>> 0;
+  b = (b ^ a << 8) >>> 0;
+  c = c - a - b >>> 0;
+  c = (c ^ b >>> 13) >>> 0;
+  a = a - b - c >>> 0;
+  a = (a ^ c >>> 12) >>> 0;
+  b = b - c - a >>> 0;
+  b = (b ^ a << 16) >>> 0;
+  c = c - a - b >>> 0;
+  c = (c ^ b >>> 5) >>> 0;
+  a = a - b - c >>> 0;
+  a = (a ^ c >>> 3) >>> 0;
+  b = b - c - a >>> 0;
+  b = (b ^ a << 10) >>> 0;
+  c = c - a - b >>> 0;
+  c = (c ^ b >>> 15) >>> 0;
+  state[0] = a;
+  state[1] = b;
+  state[2] = c;
+}
+function jenkinsLookup2(bytes) {
+  const state = [GOLDEN_RATIO, GOLDEN_RATIO, 0];
+  const length = bytes.byteLength;
+  const byte = (index) => bytes[index];
+  let offset = 0;
+  for (; length - offset >= 12; offset += 12) {
+    const view = new DataView(bytes.buffer, bytes.byteOffset + offset, 12);
+    state[0] = state[0] + view.getUint32(0, true) >>> 0;
+    state[1] = state[1] + view.getUint32(4, true) >>> 0;
+    state[2] = state[2] + view.getUint32(8, true) >>> 0;
+    mix(state);
+  }
+  state[2] = state[2] + length >>> 0;
+  const rest = length - offset;
+  for (let index = 0; index < rest; index += 1) {
+    const register = index < 4 ? 0 : index < 8 ? 1 : 2;
+    const shift = index < 8 ? index % 4 * 8 : (index - 8) % 4 * 8 + 8;
+    state[register] = state[register] + byte(offset + index) * 2 ** shift >>> 0;
+  }
+  mix(state);
+  return state[2];
+}
+
+// packages/codec-kit/dist/checksum/index.js
+var crcTable = (() => {
+  const table = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) {
+      c = c & 1 ? 3988292384 ^ c >>> 1 : c >>> 1;
+    }
+    table[n] = c >>> 0;
+  }
+  return table;
+})();
+function crc32(data) {
+  let crc = 4294967295;
+  for (let i = 0; i < data.length; i++) {
+    crc = (crcTable[(crc ^ data[i]) & 255] ^ crc >>> 8) >>> 0;
+  }
+  return (crc ^ 4294967295) >>> 0;
+}
+function crc32Range(bytes, start, end) {
+  return crc32(bytes.subarray(start, end));
+}
+var CASTAGNOLI = (() => {
+  const table = new Uint32Array(256);
+  for (let n = 0; n < 256; n += 1) {
+    let c = n;
+    for (let k = 0; k < 8; k += 1)
+      c = c & 1 ? c >>> 1 ^ 2197175160 : c >>> 1;
+    table[n] = c >>> 0;
+  }
+  return table;
+})();
+function crc32c(bytes, start = 0, end = bytes.byteLength) {
+  let crc = 4294967295;
+  for (let index = start; index < end; index += 1)
+    crc = crc >>> 8 ^ CASTAGNOLI[(crc ^ (bytes[index] ?? 0)) & 255];
+  return (crc ^ 4294967295) >>> 0;
+}
+var EDC = (() => {
+  const table = new Uint32Array(256);
+  for (let n = 0; n < 256; n += 1) {
+    let c = n;
+    for (let k = 0; k < 8; k += 1)
+      c = c & 1 ? c >>> 1 ^ 3623976961 : c >>> 1;
+    table[n] = c >>> 0;
+  }
+  return table;
+})();
+function cdRomEdc(bytes) {
+  let edc = 0;
+  for (const byte of bytes)
+    edc = (edc >>> 8 ^ EDC[(edc ^ byte) & 255]) >>> 0;
+  return edc;
+}
+var FORWARD = (() => {
+  const table = new Uint32Array(256);
+  for (let n = 0; n < 256; n += 1) {
+    let c = n << 24;
+    for (let k = 0; k < 8; k += 1)
+      c = c & 2147483648 ? c << 1 ^ 79764919 : c << 1;
+    table[n] = c >>> 0;
+  }
+  return table;
+})();
+function createCrc32Msb({ init = 4294967295, xorOut = 4294967295 } = {}) {
+  let crc = init >>> 0;
+  return {
+    update(byte, count = 1) {
+      for (let index = 0; index < count; index += 1) {
+        crc = (crc << 8 ^ FORWARD[(crc >>> 24 ^ byte) & 255]) >>> 0;
+      }
+    },
+    digest: () => (crc ^ xorOut) >>> 0
+  };
+}
+
+export {
+  createAdler32,
+  adler32,
+  jenkinsLookup2,
+  crc32,
+  crc32Range,
+  crc32c,
+  cdRomEdc,
+  createCrc32Msb
+};

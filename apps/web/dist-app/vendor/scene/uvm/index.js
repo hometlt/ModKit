@@ -8,22 +8,16 @@ import {
   readUvmBillboards,
   readUvmModelStates,
   readUvmShadowMeshBindings
-} from "../../../chunks/chunk-X3HH3SFD.js";
+} from "../../../chunks/chunk-YUYP52OD.js";
 import "../../../chunks/chunk-X6TJ64VW.js";
-import "../../../chunks/chunk-OAHCSLY5.js";
+import "../../../chunks/chunk-2A36IAEE.js";
 import {
   array,
   field,
   object,
   required,
   safeIndex
-} from "../../../chunks/chunk-B5TWMJRH.js";
-import {
-  DEFAULT_UVM_CONTAINER_BUDGET,
-  checkUvmContainerBudget,
-  readUvmContainer,
-  writeUvmContainer
-} from "../../../chunks/chunk-EK44GR2O.js";
+} from "../../../chunks/chunk-X2UVTEN7.js";
 import {
   readUvmAccessor,
   readUvmAnimationClips,
@@ -32,13 +26,23 @@ import {
   uvmVisibilityPointer,
   uvmVisibilityTarget,
   validateUvmDocument
-} from "../../../chunks/chunk-NHJ4I3HP.js";
-import "../../../chunks/chunk-C4KZWCMG.js";
+} from "../../../chunks/chunk-LINWGJ2C.js";
+import {
+  DEFAULT_UVM_CONTAINER_BUDGET,
+  checkUvmContainerBudget,
+  readUvmContainer,
+  uvmImageResourceId,
+  writeUvmContainer
+} from "../../../chunks/chunk-UX2AHY32.js";
+import "../../../chunks/chunk-UAP65NYZ.js";
+import "../../../chunks/chunk-I4M3NPTV.js";
+import "../../../chunks/chunk-GG3QSH3M.js";
+import "../../../chunks/chunk-UO2C4MBT.js";
+import "../../../chunks/chunk-ZYEJYUZ3.js";
+import "../../../chunks/chunk-ASFTMZAC.js";
 import {
   snapshotJson
-} from "../../../chunks/chunk-3YDGNEY2.js";
-import "../../../chunks/chunk-WXUQLAQ3.js";
-import "../../../chunks/chunk-RUCAYZBL.js";
+} from "../../../chunks/chunk-22GOWHCF.js";
 import "../../../chunks/chunk-NBEJVPOY.js";
 import {
   applyJsonEdit
@@ -294,6 +298,8 @@ function properties(params) {
   };
   const standard = (candidate, path) => {
     const material = object(candidate, "standard material");
+    const gain = material["emisMult"];
+    add(typeof gain === "number" ? { value: gain } : gain, `${path}/emisMult`);
     add(material["parallaxHeight"], `${path}/parallaxHeight`);
     for (const [index, value] of array(material, "normalBlendFactors").entries())
       add(value, `${path}/normalBlendFactors/${index}`);
@@ -1147,5 +1153,6 @@ export {
   readUvmBillboards,
   readUvmModelStates,
   readUvmOrderedEulerChains,
-  readUvmShadowMeshBindings
+  readUvmShadowMeshBindings,
+  uvmImageResourceId
 };
