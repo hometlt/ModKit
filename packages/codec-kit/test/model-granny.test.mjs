@@ -20,6 +20,11 @@ const limits = { maxBytes: 1<<20, maxNodes: 1000, maxDepth: 16 }
 test('Granny embedded type, section-relative name relocation and object scalar',()=>{
   assert.equal(readGranny(fixture(),limits).Value,42.5)
 })
+
+test('container section and relocation charges remain in the graph node budget',()=>{
+  assert.throws(()=>readGranny(fixture(),{...limits,maxNodes:4}),/node budget/)
+  assert.equal(readGranny(fixture(),{...limits,maxNodes:6}).Value,42.5)
+})
 test('Granny refuses CRC, section range, missing pointer, nonfinite and budgets',()=>{
   const bad=fixture();bad[224]^=1
   assert.throws(()=>readGranny(bad,limits),/CRC/)

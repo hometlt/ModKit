@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "upstream": "https://github.com/Norbyte/lslib",
+  "revision": "6f5f6987d10d8485876b8368431c948e4dea4f83",
+  "revisionDate": "2026-03-31T12:51:47+02:00",
+  "license": "MIT",
+  "notice": "../LICENSE.lslib",
+  "scope": "Granny encoded knot/control expansion, upper-word float32 scale and quantized quaternion selectors. No interpolation, carrier or native rig policy.",
+  "supportedFormats": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 16, 17, 18],
+  "unsupportedFormats": [12, 14],
+  "limitations": [
+    "D9I1 family is outside this profile; upstream format14 contains an uncertainty TODO, format12 is conservatively refused.",
+    "Expanded controls are not evaluated keyframes. Degree2/3 engine sampling needs independent qualification.",
+    "Format0 knots remain sample indices and require explicit native time mapping."
+  ],
+  "sourceSha256": {
+    "LSLib/Granny/Model/CurveData/AnimationCurveData.cs": "67de1dc5bdb0d38aa479635375e1d74216ff3175473e6a121ffa54ad16cc9fdc",
+    "LSLib/Granny/Model/CurveData/D3Constant32f.cs": "ed22797057bfa4f711d9a8390d4079c9b5f25bef15f7b4cf8f64d9e1134c7303",
+    "LSLib/Granny/Model/CurveData/D3I1K16uC16u.cs": "727b686dd3d8dfb3afdcf54519ea0c355b54ccee09b34064347dd7ed35cf3d5c",
+    "LSLib/Granny/Model/CurveData/D3I1K32fC32f.cs": "49b97401b8173f943de4787652f0d36904b15e294912598d22f1e1f3df172fe0",
+    "LSLib/Granny/Model/CurveData/D3I1K8uC8u.cs": "d800560443236d4d6a212dff33946ae20feedbd622b5480c98baecde59c76c50",
+    "LSLib/Granny/Model/CurveData/D3K16uC16u.cs": "e8f12e3bcc7b9df2a54aee81afe5cbecf95f91f0b856666680e4bb7bcc91ee5f",
+    "LSLib/Granny/Model/CurveData/D3K8uC8u.cs": "5877bdf59e979c7388652df504c5baf26dce03e47d8df116570b75604a615afd",
+    "LSLib/Granny/Model/CurveData/D4Constant32f.cs": "e0282114bc82ec629b1e369e8e3fb8fe6c00adc55e012053d45ff74e210bb3e7",
+    "LSLib/Granny/Model/CurveData/D4nK16uC15u.cs": "12ca2e373d0268aeea2b9980e920bfba9c0bc7519976d96df7fecf233baa5355",
+    "LSLib/Granny/Model/CurveData/D4nK8uC7u.cs": "72b0324c2b4eeba8298ab3306d4b31d397941445deb263fe805d9c7d9cc4c145",
+    "LSLib/Granny/Model/CurveData/D9I3K16uC16u.cs": "08994d85815d7078b44ceada6b88237346b5f1e88ad06546f11dc3ca84790f48",
+    "LSLib/Granny/Model/CurveData/D9I3K8uC8u.cs": "563de3130ab890272c69dddad009167f080d73e8d23f1b4efc2f70c0ee56e1a3",
+    "LSLib/Granny/Model/CurveData/DaConstant32f.cs": "948bfeca1fe61316bbf2a2d5f43c92e2ca0a8c739f9a5b1f6c79ece35879bf27",
+    "LSLib/Granny/Model/CurveData/DaIdentity.cs": "c096f667c941ee85c7539e130031e1501ea4a73f196bd0faba65f0cd9b6ce797",
+    "LSLib/Granny/Model/CurveData/DaK16uC16u.cs": "f7a6a37dc6500ddb4c5a551e6c04fd62366e399baef2d72d73dd5036ad3db141",
+    "LSLib/Granny/Model/CurveData/DaK32fC32f.cs": "98f0831044eb4191b71c098a15170b65c2daf19beb06a69123ee6b685eaa9162",
+    "LSLib/Granny/Model/CurveData/DaK8uC8u.cs": "0c011b56939c3ba915599d53efb01dbda6f6391f21ca4a74a3ed0c02eb25ee8e",
+    "LSLib/Granny/Model/CurveData/DaKeyframes32f.cs": "b35ab21b2a3c33077d44337c39a8a22d03a119d747e342f31b3587e6a71b95ef"
+  },
+  "licenseSha256": "8e0faf01cbcdeaee68817f1529ea58b5ee6a93c763ea7096bf668292419ce1a9"
+}

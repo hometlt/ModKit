@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "upstream": "https://github.com/coconutbird/ensemble-formats",
+  "revision": "5e30fff926be55fb3f311aad5e3b8ad858ccd2ef",
+  "license": "MIT",
+  "licenseDeclaration": "Cargo workspace.package and inherited crate manifests; the pinned tree has no root LICENSE file.",
+  "notice": "../licenses/ensemble-formats-MIT.txt",
+  "scope": "Explicit packed-LE64 type-member layout facts. The generic object/type/value engine remains the existing Core Granny owner; no generic upstream object graph copied. Native file_info/carrier admission remains with each game.",
+  "sourceSha256": {
+    "crates/ugx/src/reader/granny/extended_data.rs": "a1a9671dc31fe055f87ae17e7db96188006018ce507e8b955a7f1ed84ac621a5",
+    "crates/uax/src/types.rs": "b48871ffdaac28d46a846f15a2bb6339d198b61cc04844491edd2a7b87af15a8"
+  }
+}

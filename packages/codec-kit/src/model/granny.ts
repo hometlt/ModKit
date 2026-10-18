@@ -1,12 +1,15 @@
 /**
- * Granny v6 LE32 container and self-describing object reader. Shared format owner, no game paths.
+ * Granny v6 LE32 container and shared self-describing object reader. Packed LE64 variants require
+ * explicit root offsets/profile; native carriers and roots remain with their format owner.
  * CRC, declared file/section sizes, relocation destinations, type widths, arrays, graph depth and
- * expanded bytes are checked before publication. Supports stored and Oodle1 sections; Oodle0,
- * mixed marshalling, other endianness/pointer widths and unknown member types refuse explicitly.
+ * expanded bytes are checked before publication. GR2 supports stored and Oodle1 sections; Oodle0,
+ * mixed marshalling and other GR2 endianness/pointer widths refuse explicitly, as do unknown types.
  * Facts: Granny file's own type library and header; references recorded in NOTICE.granny.md.
  */
+import { boundedCount } from '../binary.js'
 import { crc32 } from '../checksum/index.js'
 import { decompressOodle1 } from '../compression/oodle1.js'
+export { unpackGrannyCurve, type GrannyCurveDomain, type GrannyExpandedCurve } from './granny-curve-codec.js'
 
 export type GrannyValue = number | string | null | GrannyValue[] | { [key: string]: GrannyValue }
 export interface GrannyLimits { readonly maxBytes: number; readonly maxNodes: number; readonly maxDepth: number }
@@ -65,6 +68,37 @@ export function readGranny(input: Uint8Array, limits: GrannyLimits, signal?: Abo
     }
     sections.push({ bytes, view: new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength), pointers })
   }
+  return readGrannyObjectGraph(sections, [u32(52), u32(56)], [u32(60), u32(64)], limits, 'relocated-le32', consume, charge, () => limits.maxNodes - nodes)
+}
+
+/** Self-describing variant with packed 64-bit offsets; this is not a GR2 container reader.
+ * Explicit profile: little endian, 44-byte type members, no alignment padding, zero null pointers.
+ * The caller owns native carrier/root admission. Other layouts and null sentinels are refused.
+ */
+export function readGrannyVariant(input: Uint8Array, typeOffset: number, dataOffset: number,
+  profile: 'packed-le64', limits: GrannyLimits, signal?: AbortSignal): GrannyValue {
+  signal?.throwIfAborted()
+  if (profile !== 'packed-le64' || !Number.isSafeInteger(limits.maxBytes) || limits.maxBytes < 0 ||
+    !Number.isSafeInteger(limits.maxNodes) || limits.maxNodes < 1 ||
+    !Number.isSafeInteger(limits.maxDepth) || limits.maxDepth < 1 || input.length > limits.maxBytes)
+    throw new RangeError('Granny variant profile/input/limits')
+  boundedCount(typeOffset, input.length, 'Granny variant root type')
+  boundedCount(dataOffset, input.length, 'Granny variant root data')
+  let nodes = 0, materialized = 0
+  const consume = () => { signal?.throwIfAborted(); if (++nodes > limits.maxNodes) throw new RangeError('Granny node budget') }
+  const charge = (bytes: number) => { materialized += bytes; if (materialized > limits.maxBytes) throw new RangeError('Granny materialized payload budget') }
+  const section: Section = { bytes: input, view: new DataView(input.buffer, input.byteOffset, input.byteLength), pointers: new Map() }
+  return readGrannyObjectGraph([section], [0, typeOffset], [0, dataOffset], limits, profile, consume, charge, () => limits.maxNodes - nodes)
+}
+
+/** One type/object engine for relocated LE32 containers and explicitly admitted packed variants.
+ * Container node/materialized counters are passed through, retaining relocation charges.
+ */
+function readGrannyObjectGraph(sections: Section[], rootType: Pointer, rootData: Pointer,
+  limits: GrannyLimits, layout: 'relocated-le32' | 'packed-le64', consume: () => void,
+  charge: (bytes: number) => void, remainingNodes: () => number): GrannyValue {
+  const pointerBytes = layout === 'packed-le64' ? 8 : 4
+  const memberStride = layout === 'packed-le64' ? 44 : 32
   /** Resolve a section-local pointer only after checking its entire requested extent. */
   function location(p: Pointer, size: number): Section {
     const section = sections[p[0]]
@@ -75,7 +109,13 @@ export function readGranny(input: Uint8Array, limits: GrannyLimits, signal?: Abo
   for (const section of sections) for (const p of section.pointers.values()) location(p, 0)
   const add = (p: Pointer, offset: number): Pointer => [p[0], p[1] + offset]
   const word = (p: Pointer) => location(p, 4).view.getUint32(p[1], true)
-  const pointer = (p: Pointer): Pointer | null => location(p, 4).pointers.get(p[1]) ?? null
+  const pointer = (p: Pointer): Pointer | null => {
+    const section = location(p, pointerBytes)
+    if (layout === 'relocated-le32') return section.pointers.get(p[1]) ?? null
+    const encoded = section.view.getBigUint64(p[1], true)
+    if (encoded === 0n) return null
+    return [p[0], boundedCount(Number(encoded), section.bytes.length, 'Granny packed pointer')]
+  }
   /** Native strings are NUL terminated within their own section and the caller scalar ceiling. */
   function string(p: Pointer | null): string {
     if (!p) return ''
@@ -91,14 +131,17 @@ export function readGranny(input: Uint8Array, limits: GrannyLimits, signal?: Abo
     const key = p.join(':'), prior = types.get(key)
     if (prior) return prior
     const result = { members: [] as Member[], size: 0, building: true }; types.set(key, result)
-    for (let at = p[1]; ; at += 32) {
+    for (let at = p[1]; ; at += memberStride) {
       consume(); const member: Pointer = [p[0], at], kind = word(member)
       if (kind === 0) break
-      location(member, 32)
-      const name = string(pointer(add(member, 4))), element = pointer(add(member, 8)), width = word(add(member, 12)) || 1
+      location(member, memberStride)
+      const name = string(pointer(add(member, 4))), element = pointer(add(member, 4 + pointerBytes)), width = word(add(member, 4 + pointerBytes * 2)) || 1
       if (!name || result.members.some(m => m.name === name) || width > limits.maxNodes || kind === 6 || !(kind === 1 || kind in SIZES))
         throw new TypeError('Unsupported Granny member/type width')
-      let size = SIZES[kind]!
+      let size = layout === 'packed-le64' && [2, 8, 22].includes(kind) ? 8
+        : layout === 'packed-le64' && [3, 4].includes(kind) ? 12
+        : layout === 'packed-le64' && kind === 5 ? 16
+        : layout === 'packed-le64' && kind === 7 ? 20 : SIZES[kind]!
       if (kind === 1) {
         if (!element) throw new TypeError('Granny inline without type')
         const nested = type(element, depth + 1)
@@ -136,7 +179,7 @@ export function readGranny(input: Uint8Array, limits: GrannyLimits, signal?: Abo
       return result
     } finally { active.delete(key) }
   }
-  /** Decode each documented LE32 member kind using the file schema and relocation authority. */
+  /** Decode member kinds with the admitted layout's widths and pointer authority. */
   function value(m: Member, p: Pointer, depth: number): GrannyValue {
     consume()
     charge(8)
@@ -144,15 +187,15 @@ export function readGranny(input: Uint8Array, limits: GrannyLimits, signal?: Abo
     if (m.kind === 1) return object(m.type!, p, depth)
     if (m.kind === 8) return string(pointer(p))
     if (m.kind === 2 || m.kind === 22) { const dest = pointer(p); return dest && m.type ? object(m.type, dest, depth) : null }
-    if (m.kind === 5) { const tp = pointer(p), dest = pointer(add(p, 4)); return tp && dest ? object(tp, dest, depth) : null }
+    if (m.kind === 5) { const tp = pointer(p), dest = pointer(add(p, pointerBytes)); return tp && dest ? object(tp, dest, depth) : null }
     if (m.kind === 3 || m.kind === 4 || m.kind === 7) {
       const variant = m.kind === 7, tp = variant ? pointer(p) : m.type
-      const length = word(add(p, variant ? 4 : 0)), dest = pointer(add(p, variant ? 8 : 4))
-      if (length > limits.maxNodes - nodes) throw new RangeError('Granny array node budget')
+      const length = word(add(p, variant ? pointerBytes : 0)), dest = pointer(add(p, variant ? pointerBytes + 4 : 4))
+      if (length > remainingNodes()) throw new RangeError('Granny array node budget')
       if (length && (!dest || !tp)) throw new RangeError('Granny array pointer is absent')
       if (!dest || !tp) return []
       const elementType = type(tp, depth)
-      const size = m.kind === 4 ? 4 : elementType.size
+      const size = m.kind === 4 ? pointerBytes : elementType.size
       location(dest, length * size)
       charge(length * 8)
       // Granny's Real32 array element type is a one-scalar wrapper, not a semantic object.
@@ -183,7 +226,7 @@ export function readGranny(input: Uint8Array, limits: GrannyLimits, signal?: Abo
       return f
     })
   }
-  return object([u32(52), u32(56)], [u32(60), u32(64)], 0)
+  return object(rootType, rootData, 0)
 }
 
 /**
