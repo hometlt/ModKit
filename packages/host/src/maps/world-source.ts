@@ -99,16 +99,22 @@ function layerId(kind: WorldSceneLayerKind): string {
   return `main/${kind}`
 }
 
-function layerContentRevision(items: readonly WorldSceneItem[], catalogIdentity?: string): string {
-  const text = JSON.stringify(catalogIdentity === undefined ? items : { items, catalogIdentity }, (key, value) =>
-    key === 'id' || key === 'layerId' ? undefined : value,
-  )
-  let hash = 0x811c9dc5
+/** FNV-1a 32 over UTF-16 code units, continuing from `hash`; the content revisions and cursors share it. */
+function fnv1a32(text: string, hash = 0x811c9dc5): number {
   for (let index = 0; index < text.length; index += 1) {
     hash ^= text.charCodeAt(index)
     hash = Math.imul(hash, 0x01000193)
   }
-  return `fnv1a32:${(hash >>> 0).toString(16).padStart(8, '0')}:${items.length}`
+  return hash
+}
+
+const hex32 = (hash: number) => (hash >>> 0).toString(16).padStart(8, '0')
+
+function layerContentRevision(items: readonly WorldSceneItem[], catalogIdentity?: string): string {
+  const text = JSON.stringify(catalogIdentity === undefined ? items : { items, catalogIdentity }, (key, value) =>
+    key === 'id' || key === 'layerId' ? undefined : value,
+  )
+  return `fnv1a32:${hex32(fnv1a32(text))}:${items.length}`
 }
 
 function terrainMaterialContentRevision(
@@ -119,18 +125,14 @@ function terrainMaterialContentRevision(
     [items, rasters.map(({ rgba: _rgba, ...metadata }) => metadata)],
     (key, value) => (key === 'id' || key === 'layerId' ? undefined : value),
   )
-  let hash = 0x811c9dc5
-  for (let index = 0; index < text.length; index += 1) {
-    hash ^= text.charCodeAt(index)
-    hash = Math.imul(hash, 0x01000193)
-  }
+  let hash = fnv1a32(text)
   for (const raster of rasters) {
     for (const value of raster.rgba ?? []) {
       hash ^= value
       hash = Math.imul(hash, 0x01000193)
     }
   }
-  return `fnv1a32:${(hash >>> 0).toString(16).padStart(8, '0')}:${items.length}:${rasters.length}`
+  return `fnv1a32:${hex32(hash)}:${items.length}:${rasters.length}`
 }
 
 function canonicalQuery(request: WorldScenePageRequest): string {
@@ -156,27 +158,27 @@ function canonicalQuery(request: WorldScenePageRequest): string {
   ])
 }
 
+/**
+ * A cursor names its snapshot and query by fingerprint and length, not by their text: a map
+ * snapshot id carries every document revision, and a cursor holding it outgrew what MCP accepts.
+ * ponytail: 32-bit fingerprint plus length; a colliding stale cursor would page the new snapshot.
+ */
+const cursorTag = (text: string) => `${hex32(fnv1a32(text))}.${text.length}`
+
 function cursor(snapshotId: string, query: string, offset: number): string {
-  return `${encodeURIComponent(snapshotId)}|${encodeURIComponent(query)}|${String(offset)}`
+  return `${cursorTag(snapshotId)}|${cursorTag(query)}|${String(offset)}`
 }
 
 function cursorOffset(value: string | undefined, snapshotId: string, query: string): number {
   if (value === undefined) return 0
   const parts = value.split('|')
   if (parts.length !== 3) throw new TypeError('world cursor is malformed')
-  let cursorSnapshot: string
-  let cursorQuery: string
-  try {
-    cursorSnapshot = decodeURIComponent(parts[0] ?? '')
-    cursorQuery = decodeURIComponent(parts[1] ?? '')
-  } catch {
-    throw new TypeError('world cursor is malformed')
-  }
+  const [cursorSnapshot, cursorQuery] = parts
   const offset = Number(parts[2])
-  if (cursorSnapshot !== snapshotId) {
+  if (cursorSnapshot !== cursorTag(snapshotId)) {
     throw new TypeError('world cursor belongs to another or stale source snapshot')
   }
-  if (cursorQuery !== query || !Number.isSafeInteger(offset) || offset < 0) {
+  if (cursorQuery !== cursorTag(query) || !Number.isSafeInteger(offset) || offset < 0) {
     throw new TypeError('world cursor does not match the requested layer, LOD or spatial query')
   }
   return offset

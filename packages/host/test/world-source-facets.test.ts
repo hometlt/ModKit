@@ -875,6 +875,8 @@ describe('common world source native visual facets', () => {
       expect(first.nextCursor).toBeDefined()
       const cursor = first.nextCursor
       if (cursor === undefined) throw new Error('terrain page did not return a continuation cursor')
+      // a map snapshot id names every document revision; the cursor must not carry it (MCP caps cursors)
+      expect(cursor.length).toBeLessThan(64)
 
       const second = await longLease.value.page({
         facet: 'terrain',

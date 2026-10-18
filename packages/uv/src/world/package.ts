@@ -339,6 +339,14 @@ async function worldArtifactDigest(document: UvwProfileDocument): Promise<`sha25
     domain: 'uvp/artifact/uvw@1', value: document }, { profile: 'jcs' })))
 }
 
+/** Why a texture did not decode, for a refusal: its first diagnostic (a missing codec, say), or nothing. */
+function textureFailureReason(result: {
+  readonly diagnostics?: readonly { readonly code: string; readonly message: string }[]
+}): string {
+  const first = result.diagnostics?.[0]
+  return first === undefined ? '' : ` (${first.code}: ${first.message})`
+}
+
 /**
  * A decoded texture as package media: PNG, which the glTF form of UVW reads (SPEC_UVW_GLTF; the
  * TGA this wrote before was not a glTF image).
@@ -1277,7 +1285,7 @@ export async function materializeWorldToUvpMap(
           )
           if (result.state !== 'decoded')
             throw new TypeError(
-              `terrain weight raster ${raster.resourceId} could not be decoded for portable packaging`,
+              `terrain weight raster ${raster.resourceId} could not be decoded for portable packaging${textureFailureReason(result)}`,
             )
           if (result.texture.width !== raster.width || result.texture.height !== raster.height)
             throw new TypeError(
@@ -1355,7 +1363,7 @@ export async function materializeWorldToUvpMap(
             if (result.state !== 'decoded') {
               if (frameIndex !== undefined)
                 return refuse('water-caustics-sequence-incomplete',
-                  `water caustics frame ${String(frameIndex)} could not be packaged: ${resourceId}`)
+                  `water caustics frame ${String(frameIndex)} could not be packaged: ${resourceId}${textureFailureReason(result)}`)
               unpackagedWaterResourceIds.add(resourceId)
               continue
             }

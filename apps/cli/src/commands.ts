@@ -188,9 +188,25 @@ function withMapWorld(
       }
       preview = await coordinate(chosen.candidateId)
     }
-    return preview.state === 'opened'
-      ? { ...opened, session: withMapPreviewSources(original, preview.session) }
-      : opened
+    if (preview.state === 'opened')
+      return { ...opened, session: withMapPreviewSources(original, preview.session) }
+    if (preview.state !== 'unresolved') return opened
+    // a map whose world did not build says why: without this a command answered only that the
+    // subject publishes no map world (a timed-out analysis among the reasons)
+    return {
+      ...opened,
+      snapshot: {
+        ...opened.snapshot,
+        diagnostics: [
+          ...opened.snapshot.diagnostics,
+          ...preview.diagnostics.map(item => ({
+            code: item.code,
+            message: item.message,
+            ...(item.severity === undefined ? {} : { severity: item.severity }),
+          })),
+        ],
+      },
+    }
   }
 }
 

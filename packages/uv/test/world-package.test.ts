@@ -676,13 +676,16 @@ describe('portable UVP map bundle', () => {
     const packed = await materializeWorldToUvpMap({ ...original,
       async texture(resourceId, request, signal) {
         if (resourceId.endsWith('/source-water-secondary'))
-          return { state: 'unresolved' as const, diagnostics: [] }
+          return { state: 'unresolved' as const, diagnostics: [{ code: 'x3.host/raster-codec-unavailable',
+            message: 'no installed codec decodes this image', severity: 'error' as const }] }
         return original.texture!(resourceId, request, signal)
       },
     }, options)
     expect(packed.state).toBe('refused')
+    // the refusal names why the frame did not decode, not only which frame
     if (packed.state === 'refused') expect(packed.refusals).toContainEqual(expect.objectContaining({
       code: 'water-caustics-sequence-incomplete',
+      message: expect.stringContaining('x3.host/raster-codec-unavailable'),
     }))
   })
 
