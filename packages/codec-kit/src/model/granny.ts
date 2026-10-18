@@ -119,6 +119,9 @@ function grannyTransformComponents(value: GrannyReadonlyValue | GrannyTransform 
  * Session views are frozen, retain identity and must not be edited. Any failed read closes the session.
  */
 export interface GrannyPackedReader {
+  /** Already charged materialization/node counters, excluding the separately bounded input.
+   * A frozen snapshot; reading usage never spends budget or reopens a failed session. */
+  usage(): Readonly<{ bytes: number; nodes: number }>
   pointer(offset: number): number | null
   string(pointerOffset: number): string | null
   array(countOffset: number, pointerOffset: number, stride: number): readonly number[]
@@ -230,6 +233,8 @@ function createPackedReader(input: Uint8Array, profile: 'packed-le64', limits: G
   /** Admit public byte offsets before passing them to the section-local engine. */
   const slot = (offset: number): Pointer => [0, boundedCount(offset, input.length, 'Granny packed field')]
   return {
+    /** Downstream format stages share these counters instead of starting another full budget. */
+    usage() { return guarded(() => Object.freeze({ bytes: materialized, nodes })) },
     /** Native zero remains null; every other encoded pointer is range checked. */
     pointer(offset: number) { return guarded(() => { consume(); charge(8); return graph.pointer(slot(offset))?.[1] ?? null }) },
     /** Preserve null versus empty UTF-8 strings while sharing native string admission. */
