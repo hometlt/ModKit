@@ -51,6 +51,7 @@ import {
   openDirectoryResolvedDataWorkspace,
   openModContextResolvedDataWorkspace,
   withSharedModContexts,
+  workerBackendPolicy,
   type DirectoryResolvedDataWorkspace,
   type ResolvedDataChangeRequest,
 } from '@modkit/host/node'
@@ -511,6 +512,9 @@ export async function createHostMcpPort(
     intent: 'inspect',
     // A map or mod folder reads files beyond the 64 MiB default; the open deadline stays.
     budget: { ...DEFAULT_SUBJECT_OPEN_BUDGET, ...mapPreviewBudget },
+    // a render or export may convert hundreds of models on a busy machine: one worker call may take
+    // up to the host ceiling instead of the 120 s default, which dropped models from a render
+    policy: workerBackendPolicy({ defaultCallDeadlineMs: 600_000 }),
     ...(onDiagnostic === undefined ? {} : { onDiagnostic }),
     // An operation that names catalog entities is answered from its subject's mod context.
     subjectCatalog: {

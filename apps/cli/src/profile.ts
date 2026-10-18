@@ -62,7 +62,11 @@ export const MODKIT_CLI_REALM = 'modkit.app.cli/main'
 /** Worker threads of the CLI process: where portable (`worker-brokered`) variants run. */
 export const MODKIT_CLI_WORKER_REALM = 'modkit.app.cli/worker'
 
-/** Worker policy of the CLI (a short-lived tool: small heaps, short deadlines). */
+/**
+ * Worker policy of the CLI (a short-lived tool: small heaps). Its deadlines are the host ceilings:
+ * a batch conversion is allowed to be long (an SC2 map analysis took 142 s on a busy machine and
+ * 30 s dropped the map's world), and the user stops a run that should not go on.
+ */
 export const MODKIT_CLI_WORKER_POLICY: WorkerBackendPolicy = workerBackendPolicy({
   resourceLimits: {
     maxOldGenerationSizeMb: 512,
@@ -70,8 +74,8 @@ export const MODKIT_CLI_WORKER_POLICY: WorkerBackendPolicy = workerBackendPolicy
     codeRangeSizeMb: 64,
     stackSizeMb: 4,
   },
-  loadDeadlineMs: 15_000,
-  defaultCallDeadlineMs: 30_000,
+  loadDeadlineMs: 120_000,
+  defaultCallDeadlineMs: 600_000,
   graceMs: 1_000,
   outputCapBytes: 64 * 1024,
   maxRestartsPerLease: 1,

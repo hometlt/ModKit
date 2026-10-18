@@ -60,7 +60,9 @@ export const VSCODE_WORKER_POLICY: WorkerBackendPolicy = workerBackendPolicy({
    * in one frame; until then the clean refusal is the better failure.
    */
   loadDeadlineMs: 20_000,
-  defaultCallDeadlineMs: 60_000,
+  // a model or map conversion on a busy machine outlasts a minute; a hung worker is still stopped
+  // after three, and the editor cancels what it no longer shows
+  defaultCallDeadlineMs: 180_000,
   graceMs: 2_000,
   outputCapBytes: 256 * 1024,
   maxRestartsPerLease: 3,
