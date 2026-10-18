@@ -19,6 +19,7 @@ import {
   regionsToConnect,
   searchContainerIndex,
   selectedContentSources,
+  selectedContentSource,
   selectedInstallationDirectory,
   encoderTargetInstallations,
   withSelectedContentSource,
@@ -90,6 +91,35 @@ describe('generic source lifecycle', () => {
       { ...alpha, displayName: 'ALPHA' },
     ])
     expect(withoutSelectedContentSource([alpha, beta], alpha.normalizedPath)).toEqual([beta])
+  })
+
+  it('retains bounded verified display facts without inventing a game version', () => {
+    const selected = selectedContentSource({
+      ...beta,
+      buildUid: 'native-build',
+      origins: ['configured-path'],
+      evidence: [
+        { kind: 'engine', path: '/metadata', found: true, detail: '  Engine family 2.3  ' },
+        { kind: 'engine', path: '/metadata', found: true, detail: 'Engine family 2.3' },
+        { kind: 'missing', path: '/metadata', found: false, detail: 'Unverified fact' },
+        { kind: 'bad', path: '/metadata', found: true, detail: 'Line\nbreak' },
+        { kind: 'large', path: '/metadata', found: true, detail: 'x'.repeat(513) },
+        { kind: 'maximum', path: '/metadata', found: true, detail: 'x'.repeat(512) },
+      ],
+    })
+    expect(selected.installationDetails).toEqual(['Engine family 2.3', 'x'.repeat(512)])
+    expect(Object.isFrozen(selected.installationDetails)).toBe(true)
+    expect(selected).not.toHaveProperty('version')
+    expect(selected.buildUid).toBe('native-build')
+    expect(selectedContentSources(JSON.parse(JSON.stringify([selected])))).toEqual([selected])
+    expect(withSelectedContentSource([], selected)).toEqual([selected])
+    for (const installationDetails of [
+      [],
+      ['\0bad', '\tbad', '\u0085bad', 'bad\u2028line', 'bad\u2029line', ' '],
+      Array.from({ length: 17 }, (_, index) => String(index)),
+      [42],
+    ])
+      expect(selectedContentSources([{ ...alpha, installationDetails }])).toEqual([alpha])
   })
 
   it('selects only the installation a provider proved at the folder the user chose', () => {

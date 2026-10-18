@@ -75,6 +75,8 @@ export interface SelectedContentSource {
   readonly version?: string
   readonly buildName?: string
   readonly buildUid?: string
+  /** Bounded, provider-verified display facts; never used as game version or dependency identity. */
+  readonly installationDetails?: readonly string[]
 }
 
 const recordOf = (value: unknown): Readonly<Record<string, unknown>> | undefined =>
@@ -84,6 +86,25 @@ const recordOf = (value: unknown): Readonly<Record<string, unknown>> | undefined
 
 const nonBlank = (value: unknown): string | undefined =>
   typeof value === 'string' && value.trim().length > 0 ? value : undefined
+
+/** Admit inert single-line facts once for discovery and persisted selections; omit empty metadata. */
+function boundedInstallationDetails(value: unknown): readonly string[] | undefined {
+  if (!Array.isArray(value) || value.length > 16) return undefined
+  const details = [
+    ...new Set(
+      value
+        .filter(
+          (item): item is string =>
+            typeof item === 'string' &&
+            item.length <= 512 &&
+            item.trim().length > 0 &&
+            !/[\u0000-\u001f\u007f-\u009f\u2028\u2029]/u.test(item),
+        )
+        .map(item => item.trim()),
+    ),
+  ]
+  return details.length === 0 ? undefined : Object.freeze(details)
+}
 
 /** Parse persisted source selections without trusting workspace state. */
 export function selectedContentSources(value: unknown): readonly SelectedContentSource[] {
@@ -98,6 +119,7 @@ export function selectedContentSources(value: unknown): readonly SelectedContent
     const version = nonBlank(row?.['version'])
     const buildName = nonBlank(row?.['buildName'])
     const buildUid = nonBlank(row?.['buildUid'])
+    const installationDetails = boundedInstallationDetails(row?.['installationDetails'])
     if (
       gameId === undefined ||
       displayName === undefined ||
@@ -116,6 +138,7 @@ export function selectedContentSources(value: unknown): readonly SelectedContent
         ...(version === undefined ? {} : { version }),
         ...(buildName === undefined ? {} : { buildName }),
         ...(buildUid === undefined ? {} : { buildUid }),
+        ...(installationDetails === undefined ? {} : { installationDetails }),
       }),
     )
   }
@@ -143,6 +166,12 @@ export function withoutSelectedContentSource(
 
 /** The selection stored for one provider-verified installation. */
 export function selectedContentSource(installation: GameInstallation): SelectedContentSource {
+  const installationDetails = boundedInstallationDetails(
+    installation.evidence
+      .filter(item => item.found && item.detail !== undefined)
+      .slice(0, 16)
+      .map(item => item.detail),
+  )
   return Object.freeze({
     gameId: installation.gameId,
     displayName: installation.displayName,
@@ -151,6 +180,7 @@ export function selectedContentSource(installation: GameInstallation): SelectedC
     ...(installation.version === undefined ? {} : { version: installation.version }),
     ...(installation.buildName === undefined ? {} : { buildName: installation.buildName }),
     ...(installation.buildUid === undefined ? {} : { buildUid: installation.buildUid }),
+    ...(installationDetails === undefined ? {} : { installationDetails }),
   })
 }
 
@@ -304,7 +334,10 @@ export function gameLocales(configured: unknown, displayLanguage: string): reado
 }
 
 /** The games one extension's installation discovery names (`publisher/id` of the extension). */
-export function extensionInstallationGameIds(inventory: unknown, extension: string): readonly string[] {
+export function extensionInstallationGameIds(
+  inventory: unknown,
+  extension: string,
+): readonly string[] {
   return Object.freeze([...(installationGameIdsByExtension(inventory).get(extension) ?? [])])
 }
 

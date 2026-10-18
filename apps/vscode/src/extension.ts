@@ -10462,14 +10462,17 @@ async function activateModkit(
                 item => item.normalizedPath === source.normalizedPath,
               )
             : undefined
-        // a provider that names no version leaves nothing to add: no new selection to store
-        if (installation?.version === undefined) continue
-        enriched = withSelectedContentSource(enriched, {
+        // Native facts may exist even when the provider cannot name a game version.
+        if (installation === undefined) continue
+        const installationDetails = selectedContentSource(installation).installationDetails
+        const next = withSelectedContentSource(enriched, {
           ...source,
           ...(installation.version === undefined ? {} : { version: installation.version }),
           ...(installation.buildName === undefined ? {} : { buildName: installation.buildName }),
           ...(installation.buildUid === undefined ? {} : { buildUid: installation.buildUid }),
+          ...(installationDetails === undefined ? {} : { installationDetails }),
         })
+        if (JSON.stringify(next) !== JSON.stringify(enriched)) enriched = next
       } catch (error) {
         log(
           `[installation] could not refresh ${source.installPath}: ${
@@ -12283,7 +12286,7 @@ async function activateModkit(
             label: source.displayName,
             description:
               source.version === undefined ? source.gameId : `${source.gameId} · ${source.version}`,
-            detail: source.installPath,
+            detail: [source.installPath, ...(source.installationDetails ?? [])].join(' · '),
             source,
           }))
         const title = localizer.text('vscode.game.selectInstallation')

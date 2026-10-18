@@ -48,6 +48,27 @@ const installation = {
 }
 
 describe('VS Code Sources tree', () => {
+  it('shows verified installation facts in the tooltip while preserving the native game label and build', () => {
+    const tree = createSourceTree({
+      workspaceFolders: [],
+      selectedInstallations: [
+        {
+          ...installation,
+          version: '5.0.16',
+          buildUid: 'native-build',
+          installationDetails: ['Engine family 2.3'],
+        },
+      ],
+      mountedProviderRootIds: new Set(),
+      text,
+    })
+    const row = tree
+      .flatMap(node => node.children ?? [])
+      .flatMap(node => node.children ?? [])
+      .find(node => node.kind === 'installation')
+    expect(row?.label).toBe('StarCraft II · 5.0.16')
+    expect(row?.tooltip).toBe(`${installation.installPath}\nnative-build\nEngine family 2.3`)
+  })
   /**
    * Everything about one title lives under that title.
    *
@@ -394,7 +415,9 @@ describe('a public catalogue row', () => {
       ['pending-module', 'Warcraft III', 'blizzard/warcraft-3'],
     ])
     // an installation row names its game, whose sources start before it opens
-    expect(find(tree, `installation:${installation.normalizedPath}`)?.gameId).toBe(installation.gameId)
+    expect(find(tree, `installation:${installation.normalizedPath}`)?.gameId).toBe(
+      installation.gameId,
+    )
     const none = createSourceTree({
       workspaceFolders: [],
       selectedInstallations: [],

@@ -199,7 +199,11 @@ export function createSourceTree(input: SourceTreeInput): readonly SourceTreeNod
         id: `installation:${source.normalizedPath}`,
         label,
         description: `${source.gameId} · ${state}`,
-        tooltip: build === '' ? source.installPath : `${source.installPath}\n${build}`,
+        tooltip: [
+          source.installPath,
+          ...(build === '' ? [] : [build]),
+          ...(source.installationDetails ?? []),
+        ].join('\n'),
         icon: mounting ? 'sync~spin' : missing ? 'warning' : 'database',
         contextValue: `modkitSource.installation${mounting ? '.mounting' : mounted ? '.mounted' : ''}`,
         uri: source.installPath,
@@ -231,7 +235,10 @@ export function createSourceTree(input: SourceTreeInput): readonly SourceTreeNod
     const connectedIds = new Set(input.providerSnapshot.connections.map(item => item.accountId))
     const offlineChildren = (input.knownConnections ?? [])
       .filter(item => !connectedIds.has(item.accountId))
-      .sort((left, right) => compareText(left.accountId, right.accountId) || compareText(left.region, right.region))
+      .sort(
+        (left, right) =>
+          compareText(left.accountId, right.accountId) || compareText(left.region, right.region),
+      )
       .map(item =>
         Object.freeze({
           kind: 'connection' as const,
