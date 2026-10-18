@@ -136,6 +136,11 @@ export interface ModelBoneBinding {
   readonly nodeId?: string
   /** Authored default local pose. This is not an inverse bind matrix or a sampled animation frame. */
   readonly localPose?: ModelBoneLocalPose
+  /** Authored column-major affine 4x4 local matrix, alternative to localPose (never both).
+   * Supports static full-shear poses. Animation/blending requires an explicitly supported pose
+   * representation; a consumer must not decompose this matrix or fabricate a TRS default.
+   */
+  readonly localMatrix?: readonly number[]
   /** Column-major 4x4 matrix from model-space bind vertices into this bone's bind space. */
   readonly inverseBindMatrix?: readonly number[]
 }

@@ -1,3 +1,8 @@
+/** Shared UVM skin/animation writing from SDK model facets. Core owns pose/topology admission.
+ * Static affine local matrices retain shear; authored TRS keeps its existing animation semantics.
+ * Matrix-local rigs refuse clips instead of emitting animation against a glTF matrix node.
+ * Joint indices, inverse binds and weights remain explicit; missing data is never reconstructed.
+ */
 import type { ModelAnimationClip, ModelBoneBinding, ModelNode, ModelPrimitive } from '@modkit/sdk'
 import { snapshotModelSkeleton, createModelSkeletonNodes } from '@modkit/codec-kit/model/skeleton'
 import { snapshotModelAnimations } from '@modkit/codec-kit/model/animation'
@@ -87,7 +92,7 @@ export function prepareUvmSkeleton(
         node.transform.some((value, index) => value !== expected.transform[index])
       )
         refuse(`node ${node.id} disagrees with the bone local pose`)
-      if (!unitQuaternion(bone.localPose!.rotation))
+      if (bone.localPose !== undefined && !unitQuaternion(bone.localPose.rotation))
         refuse('bone rotation is not a unit quaternion')
       if (bone.inverseBindMatrix === undefined) refuse('bone has no explicit inverse bind matrix')
       const inverse = Float32Array.from(bone.inverseBindMatrix)
@@ -244,6 +249,8 @@ export function writeUvmAnimations(
   hiddenPrimitives: readonly { readonly mesh: number; readonly primitive: number }[] = [],
 ) {
   // Validate every clip first, then release consumed snapshot payloads while encoding.
+  if (source.length > 0 && [...boneByNode.values()].some(bone => bone.localMatrix !== undefined))
+    refuse('animation of matrix-local bones is unsupported')
   const clips: (ModelAnimationClip | undefined)[] = [
     ...snapshotModelAnimations(source, budget, signal),
   ]

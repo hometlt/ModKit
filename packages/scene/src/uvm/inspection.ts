@@ -211,7 +211,7 @@ export function createUvmInspection(
         {
           planeId: 'skeleton',
           state: rig.incompleteBindings === 0 ? 'preserved' : 'lost',
-          note: `${rig.bindings.length} positional skin bindings; ${rig.incompleteBindings} lack a TRS or direct parent join`,
+          note: `${rig.bindings.length} positional skin bindings; ${rig.incompleteBindings} lack a local pose or direct parent join`,
         },
         {
           planeId: 'animations',

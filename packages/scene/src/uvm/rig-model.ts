@@ -118,6 +118,8 @@ export function projectUvmRigModel(
     )
   if (parsed.rig.incompleteBindings || parsed.rig.bindings.length === 0)
     throw new TypeError('rig authoring requires complete TRS bindings')
+  if (parsed.rig.bindings.some(binding => binding.localMatrix !== undefined))
+    throw new TypeError('TRS rig authoring does not support matrix-local bones')
   const bindings = parsed.rig.bindings
   if (bindings.length > Math.min(65535, budget.maxNodes))
     throw new RangeError('rig bone count exceeds bounded index range')

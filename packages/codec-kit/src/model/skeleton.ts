@@ -1,3 +1,8 @@
+/** Common authored skeleton snapshots, one hierarchy validator and existing pose/skinning math.
+ * SDK ModelBoneBinding selects exactly one local TRS or column-major affine matrix for a complete
+ * bone. Matrix-local poses support static nodes/world/skin/extent; any clip or blend refuses.
+ * Native restMatrix remains descriptive. No matrix decomposition or native animation policy.
+ */
 import type { RenderBone, RenderScalarAnimationTrack } from '../legacy-model-support.js'
 import type { RenderNodeTrackSet, RenderSequence } from '../legacy/models/animation.js'
 import type { ModelAnimationClip, ModelBoneBinding, ModelNode } from '@modkit/sdk'
@@ -27,6 +32,18 @@ function vector(value: unknown, size: number, label: string): void {
     const x: unknown = value[index]
     if (typeof x !== 'number' || !Number.isFinite(x)) throw new TypeError(`invalid ${label}`)
   }
+}
+
+/** Admit an SDK localMatrix before publication: dense finite affine16 in finite Float32 range.
+ * Fixed-width validation shares the same owner at snapshot and native/UVM reader boundaries.
+ * It neither normalizes/decomposes the matrix nor allocates an owned skeleton snapshot.
+ */
+export function validateModelBoneLocalMatrix(matrix: readonly number[]): void {
+  vector(matrix, 16, 'bone local matrix')
+  if (matrix[3] !== 0 || matrix[7] !== 0 || matrix[11] !== 0 || matrix[15] !== 1)
+    throw new TypeError('bone local matrix must be affine')
+  if (!Float32Array.from(matrix).every(Number.isFinite))
+    throw new RangeError('bone local matrix exceeds finite float range')
 }
 
 /** Whether the 16 values of `matrix` from `offset` are all finite. */
@@ -74,6 +91,10 @@ export function snapshotModelSkeleton(
       vector(bone.localPose.rotation, 4, 'bone rotation')
       vector(bone.localPose.scale, 3, 'bone scale')
     }
+    if (bone.localMatrix !== undefined) {
+      if (bone.localPose !== undefined) throw new TypeError('bone local matrix and TRS are ambiguous')
+      validateModelBoneLocalMatrix(bone.localMatrix)
+    }
     if (bone.inverseBindMatrix !== undefined)
       vector(bone.inverseBindMatrix, 16, 'inverse bind matrix')
   }
@@ -90,7 +111,7 @@ function compileHierarchy(bindings: readonly ModelBoneBinding[], hierarchyId: st
   for (const [slot, bone] of bones.entries()) {
     if (
       bone.nodeId === undefined ||
-      bone.localPose === undefined ||
+      (bone.localPose === undefined && bone.localMatrix === undefined) ||
       bone.parentBoneIndex === undefined
     )
       throw new TypeError('bone has no explicit scene node, local pose or parent')
@@ -143,8 +164,9 @@ export function createModelSkeletonNodes(
   return Object.freeze(
     bones.map((bone, slot) => {
       const transform = new Float32Array(16)
-      const pose = bone.localPose!
-      composeTrsMatrix(transform, 0, pose.translation, pose.rotation, pose.scale)
+      const pose = bone.localPose
+      if (bone.localMatrix !== undefined) transform.set(bone.localMatrix)
+      else composeTrsMatrix(transform, 0, pose!.translation, pose!.rotation, pose!.scale)
       if (!transform.every(Number.isFinite))
         throw new RangeError('bone transform exceeds finite float range')
       return Object.freeze({
@@ -374,6 +396,9 @@ export function createModelPoseSampler({
     snapshotModelSkeleton(bindings, budget, signal),
     hierarchyId,
   )
+  const hasLocalMatrices = bones.some(bone => bone.localMatrix !== undefined)
+  if (hasLocalMatrices && clip !== undefined)
+    throw new TypeError('animation of matrix-local bones is unsupported')
   if (clip?.hierarchyId !== undefined && clip.hierarchyId !== hierarchyId)
     throw new TypeError('animation belongs to a different hierarchy')
   const animation =
@@ -405,7 +430,8 @@ export function createModelPoseSampler({
   const trs: (readonly number[])[] = new Array(bones.length * 3)
   const restPose = () => {
     for (let slot = 0; slot < bones.length; slot++) {
-      const rest = bones[slot]!.localPose!
+      const rest = bones[slot]!.localPose
+      if (rest === undefined) continue // Explicit matrix-local pose is composed without TRS slots.
       trs[slot * 3] = rest.translation
       trs[slot * 3 + 1] = rest.rotation
       trs[slot * 3 + 2] = rest.scale
@@ -427,7 +453,9 @@ export function createModelPoseSampler({
   const compose = (matrices: Float32Array, requestSignal?: AbortSignal) => {
     for (const slot of order) {
       if (requestSignal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
-      composeTrsMatrix(local, 0, trs[slot * 3]!, trs[slot * 3 + 1]!, trs[slot * 3 + 2]!)
+      const matrix = bones[slot]!.localMatrix
+      if (matrix !== undefined) local.set(matrix)
+      else composeTrsMatrix(local, 0, trs[slot * 3]!, trs[slot * 3 + 1]!, trs[slot * 3 + 2]!)
       const parent = parents[slot]!
       if (parent < 0) matrices.set(local, slot * 16)
       else multiplyMat4(matrices, slot * 16, matrices, parent * 16, local, 0)
@@ -471,6 +499,14 @@ export function createModelPoseSampler({
   // linear part within turnₚ·|L| + |P₀|·bend, its translation within
   // turnₚ·length + shiftₚ + |P₀|·move.
   const extentOf = (): ModelPoseExtent | undefined => {
+    if (hasLocalMatrices) {
+      // Matrix-local hierarchies here are static; the shared composition gives the exact centre.
+      restPose()
+      const matrices = new Float32Array(bones.length * 32)
+      compose(matrices, signal)
+      return Object.freeze({ center: matrices.slice(0, bones.length * 16),
+        turn: new Float64Array(bones.length), shift: new Float64Array(bones.length) })
+    }
     const channelOf = new Int32Array(bones.length * 3).fill(-1)
     for (let index = 0; index < targets.length; index++) {
       const target = targets[index]!
@@ -648,6 +684,8 @@ export function createModelPoseBlendSampler({
     snapshotModelSkeleton(captured.bindings, captureBudget, signal),
     hierarchyId,
   )
+  if (bones.some(bone => bone.localMatrix !== undefined))
+    throw new TypeError('blending matrix-local bones is unsupported')
   const pairs = bones.length * captured.samples.length
   if (
     pairs > budget.maxNodes ||

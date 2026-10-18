@@ -1,3 +1,9 @@
+/** Read UVM skin and animation facets through the shared accessor owner, preserving native order.
+ * Authored matrix nodes retain an explicit static localMatrix alternative to localPose TRS.
+ * Shared pose samplers admit static affine skins and refuse clips/blends for matrix-local bones.
+ * No matrix decomposition, native skeleton matching or invented inverse-bind data beyond glTF defaults.
+ */
+import { validateModelBoneLocalMatrix } from '@modkit/codec-kit/model/skeleton'
 import type {
   JsonObject,
   ModelAnimationChannel,
@@ -185,7 +191,9 @@ export function decodeUvmRig(
               scale: vector3(node['scale'] ?? [1, 1, 1]),
             }
           : undefined
-      if (parentBoneIndex === undefined || localPose === undefined) incompleteBindings++
+      const localMatrix = node['matrix'] === undefined ? undefined : [...required(sceneNodes[joint], 'joint scene node').transform]
+      if (localMatrix !== undefined) validateModelBoneLocalMatrix(localMatrix)
+      if (parentBoneIndex === undefined) incompleteBindings++
       // glTF explicitly specifies identity for an omitted inverseBindMatrices accessor.
       const inverseBindMatrix =
         matrices === undefined
@@ -208,6 +216,7 @@ export function decodeUvmRig(
         inverseBindMatrix,
         ...(parentBoneIndex === undefined ? {} : { parentBoneIndex }),
         ...(localPose === undefined ? {} : { localPose }),
+        ...(localMatrix === undefined ? {} : { localMatrix }),
       })
     }
   }

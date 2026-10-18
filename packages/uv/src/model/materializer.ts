@@ -1937,7 +1937,9 @@ export function materializeUvmCore(
     const transform = finite([...(node.transform ?? [])], `node ${node.id} transform`)
     if (transform.length !== 16) fail(`node «${node.id}» transform must carry 16 numbers`)
     // identity is the reader's default; writing it back would be noise, and it reopens the same
-    if (bone !== undefined) {
+    if (bone?.localMatrix !== undefined) {
+      entry.matrix = [...bone.localMatrix]
+    } else if (bone !== undefined) {
       entry.translation = [...bone.localPose!.translation]
       entry.rotation = [...bone.localPose!.rotation]
       entry.scale = [...bone.localPose!.scale]

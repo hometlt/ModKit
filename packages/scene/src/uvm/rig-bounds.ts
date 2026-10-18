@@ -1,4 +1,6 @@
 // Intended for packages/scene/src/uvm. Conservative all-time bounds; no native evaluator.
+import { validateModelBoneLocalMatrix } from '@modkit/codec-kit/model/skeleton'
+import { linearStretch } from '@modkit/codec-kit/model-math/transform'
 import type { ModelAnimationClip, ModelBoneBinding, ModelPrimitive } from '@modkit/sdk'
 
 interface Extent {
@@ -10,8 +12,9 @@ const finite = (value: number): number => {
   return value
 }
 function vector(value: readonly number[] | Float32Array, width: number): void {
-  if (value.length !== width || value.some(item => !Number.isFinite(item)))
-    throw new TypeError('rig bounds require finite declared vectors')
+  if (value.length !== width) throw new TypeError('rig bounds require finite declared vectors')
+  for (let index = 0; index < width; index++)
+    if (!Number.isFinite(value[index])) throw new TypeError('rig bounds require finite declared vectors')
 }
 /** Caller must establish identity non-joint frames and ordinary TRS inheritance. Joint
  * hierarchy/IBMs and all clips belong to the same source frame as the supplied vertices.
@@ -54,22 +57,32 @@ export function boundUvmRig(
       byName.has(id) ||
       bone.nodeId === undefined ||
       byNode.has(bone.nodeId) ||
-      pose === undefined ||
+      (pose === undefined && bone.localMatrix === undefined) ||
       matrix === undefined ||
       bone.parentBoneIndex === undefined
     )
       throw new TypeError('bounds need unique complete joint bindings')
-    vector(pose.translation, 3)
-    vector(pose.scale, 3)
-    rotation(pose.rotation)
+    if (pose !== undefined && bone.localMatrix !== undefined)
+      throw new TypeError('bounds refuse ambiguous matrix and TRS local poses')
+    if (pose !== undefined) {
+      vector(pose.translation, 3)
+      vector(pose.scale, 3)
+      rotation(pose.rotation)
+    }
+    const localMatrix = bone.localMatrix
+    if (localMatrix !== undefined) {
+      if (clips.length > 0) throw new TypeError('bounds do not animate matrix-local bones')
+      validateModelBoneLocalMatrix(localMatrix)
+    }
     vector(matrix, 16)
     if (matrix[3] !== 0 || matrix[7] !== 0 || matrix[11] !== 0 || matrix[15] !== 1)
       throw new TypeError('bounds require affine inverse bind matrices')
     byName.set(id, bone)
     byNode.set(bone.nodeId, id)
     local.set(id, {
-      translation: Math.hypot(...pose.translation) + spatialError,
-      scale: Math.max(...pose.scale.map(Math.abs)),
+      translation: (localMatrix === undefined ? Math.hypot(...pose!.translation)
+        : Math.hypot(localMatrix[12]!, localMatrix[13]!, localMatrix[14]!)) + spatialError,
+      scale: localMatrix === undefined ? Math.max(...pose!.scale.map(Math.abs)) : linearStretch(localMatrix),
     })
   }
   for (const clip of clips) {
@@ -242,6 +255,8 @@ export function boundUvmRootFrame(
 ): { readonly localRadius: number; readonly radius: number } {
   if (!Number.isSafeInteger(budget.maxNodes) || budget.maxNodes <= 0)
     throw new TypeError('invalid root bounds budget')
+  if (root.localMatrix !== undefined)
+    throw new TypeError('root frame bounds require TRS, matrix-local bones are unsupported')
   const pose = root.localPose
   if (root.parentBoneIndex !== null || root.nodeId === undefined || pose === undefined)
     throw new TypeError('root frame bounds require an explicit root local pose')
