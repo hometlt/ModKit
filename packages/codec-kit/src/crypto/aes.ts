@@ -1,8 +1,9 @@
 /**
- * AES (FIPS-197) with a 128-, 192- or 256-bit key, in ECB or CBC mode, over whole 16-byte blocks.
+ * AES (FIPS-197) with a 128-, 192- or 256-bit key. ECB/CBC use whole 16-byte blocks;
+ * CFB128 (SP 800-38A) accepts a final partial block, as used by Renegade MIX2 payloads.
  * One implementation for every game: Unreal Engine pak and IoStore containers encrypt with AES-256
  * ECB, which Web Crypto does not offer, and Petroglyph MEG archives with AES-128 CBC. Narrow on
- * purpose: these two modes, no padding, no dependency.
+ * purpose: these modes, no padding, no dependency.
  *
  * The S-box is computed from its definition (the multiplicative inverse in GF(2^8) followed by the
  * affine map) and the round tables from the S-box; nothing is typed. The FIPS-197 appendix C and
@@ -22,6 +23,9 @@ export interface AesCipher {
   /** CBC with a 16-byte initialisation vector. */
   encryptCbc(data: Uint8Array, iv: Uint8Array): Uint8Array
   decryptCbc(data: Uint8Array, iv: Uint8Array): Uint8Array
+  /** CFB with 128-bit feedback; accepts arbitrary byte lengths, without padding. */
+  encryptCfb(data: Uint8Array, iv: Uint8Array): Uint8Array
+  decryptCfb(data: Uint8Array, iv: Uint8Array): Uint8Array
 }
 
 interface Tables {
@@ -296,7 +300,30 @@ export function createAes(key: Uint8Array): AesCipher {
     ]
   }
 
+  /** CFB128 always encrypts the feedback block, including when decrypting ciphertext. */
+  const cfb = (data: Uint8Array, iv: Uint8Array, decrypt: boolean): Uint8Array => {
+    if (!(data instanceof Uint8Array)) throw new TypeError('AES input must be bytes')
+    const chain = ivBlock(iv)
+    const out = new Uint8Array(data.byteLength)
+    for (let offset = 0; offset < data.byteLength; offset += AES_BLOCK_BYTES) {
+      const block: Block = [...chain]
+      encryptBlock(block)
+      const stream = new DataView(new ArrayBuffer(AES_BLOCK_BYTES))
+      block.forEach((word, index) => stream.setUint32(index * 4, word, false))
+      const count = Math.min(AES_BLOCK_BYTES, data.byteLength - offset)
+      for (let index = 0; index < count; index += 1) out[offset + index] = (data[offset + index] ?? 0) ^ stream.getUint8(index)
+      if (count === AES_BLOCK_BYTES) {
+        const feedback = new DataView(decrypt ? data.buffer : out.buffer,
+          (decrypt ? data.byteOffset : out.byteOffset) + offset, AES_BLOCK_BYTES)
+        for (let index = 0; index < 4; index += 1) chain[index] = feedback.getUint32(index * 4, false)
+      }
+    }
+    return out
+  }
+
   return Object.freeze({
+    encryptCfb: (data: Uint8Array, iv: Uint8Array) => cfb(data, iv, false),
+    decryptCfb: (data: Uint8Array, iv: Uint8Array) => cfb(data, iv, true),
     encryptEcb: (data: Uint8Array) => each(data, encryptBlock),
     decryptEcb: (data: Uint8Array) => each(data, decryptBlock),
     encryptCbc(data: Uint8Array, iv: Uint8Array) {

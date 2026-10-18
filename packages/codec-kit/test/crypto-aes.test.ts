@@ -50,7 +50,7 @@ const CBC = [
   ],
 ] as const
 
-function platform(mode: 'ecb' | 'cbc', key: Uint8Array, iv: Uint8Array | null) {
+function platform(mode: 'ecb' | 'cbc' | 'cfb', key: Uint8Array, iv: Uint8Array | null) {
   const name = `aes-${key.byteLength * 8}-${mode}`
   const run = (cipher: ReturnType<typeof createCipheriv>, data: Uint8Array) =>
     new Uint8Array(Buffer.concat([cipher.setAutoPadding(false).update(data), cipher.final()]))
@@ -61,6 +61,23 @@ function platform(mode: 'ecb' | 'cbc', key: Uint8Array, iv: Uint8Array | null) {
 }
 
 describe('AES', () => {
+  it('matches SP 800-38A F.3.13 CFB128 and platform partial blocks without mutating views', () => {
+    const cipher = '3b3fd92eb72dad20333449f8e83cfb4ac8a64537a0b3a93fcde3cdad9f1ce58b' +
+      '26751f67a3cbb140b1808cf187a4f4dfc04b05357c5d1c0eeac4c66f9ff7f2e6'
+    const aes = createAes(hex(KEY_128))
+    expect(toHex(aes.encryptCfb(hex(PLAIN), hex(IV)))).toBe(cipher)
+    expect(toHex(aes.decryptCfb(hex(cipher), hex(IV)))).toBe(PLAIN)
+    for (const keyBytes of [16, 24, 32]) for (const size of [0, 1, 15, 16, 17, 255]) {
+      const key = new Uint8Array(randomBytes(keyBytes)), iv = hex(IV)
+      const backing = new Uint8Array(randomBytes(size + 7)), data = backing.subarray(3, 3 + size)
+      const before = backing.slice(), oracle = platform('cfb', key, iv), owner = createAes(key)
+      const encrypted = owner.encryptCfb(data, iv)
+      expect(encrypted).toEqual(oracle.encrypt(data))
+      expect(owner.decryptCfb(encrypted, iv)).toEqual(data)
+      expect(backing).toEqual(before)
+    }
+    expect(() => aes.decryptCfb(new Uint8Array(1), new Uint8Array(15))).toThrow(/16-byte/)
+  })
   it('reproduces the FIPS-197 appendix C vectors for 128-, 192- and 256-bit keys', () => {
     for (const [key, cipher] of FIPS_197) {
       const aes = createAes(hex(key))
