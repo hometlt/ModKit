@@ -1,0 +1,45 @@
+{
+  "repository": "https://github.com/RustCrypto/hashes",
+  "commit": "55b73b013fa609d611e609429c0ec839cac7afd7",
+  "component": "tiger 0.3.0",
+  "license": "MIT OR Apache-2.0; MIT selected",
+  "licenseFile": "licenses/RustCrypto-Tiger-MIT.txt",
+  "sources": [
+    {
+      "path": "tiger/src/compress.rs",
+      "sha256": "17d4bc43b81e0f685260e58692f19edcf10901b1e3c26326c1234f60d7e4ea43"
+    },
+    {
+      "path": "tiger/src/block_api.rs",
+      "sha256": "8aef618357077332eb4e6c154fa9fd3ef6da94fe50882e852c4b84665767d1f1"
+    },
+    {
+      "path": "tiger/src/tables.rs",
+      "sha256": "b3eeb4b5adb9d3c999725dbb483b06cc97c5e3dc3ea0f15a15fb2a444d0d3157"
+    },
+    {
+      "path": "tiger/src/tables.bin",
+      "sha256": "364d73427379144b709fb0565ba1536c2c32ef9b02ab6201b1aefc30857372ea"
+    },
+    {
+      "path": "tiger/LICENSE-MIT",
+      "sha256": "0a4a437e177b7eca9323e1f1a73a8185094182f25d947e401f086709db8e5db6"
+    },
+    {
+      "path": "tiger/Cargo.toml",
+      "sha256": "0f261a0a81fe8dc160ebee0a860bdf54ab55fc21295923c2b5cf24d2b3e71a9b"
+    }
+  ],
+  "changes": [
+    "Translated Tiger V1 three-pass compression to portable TypeScript BigInt with explicit unsigned 64-bit wrapping.",
+    "Replaced Rust digest framework buffering with bounded 64-byte tail and non-destructive full 24-byte digest snapshots. No Tiger2 or game-specific truncation.",
+    "S-box tables: tables.bin is exactly 1024 consecutive uint64 little-endian words; generated tiger-tables.ts preserves index order as BigInt literals in one frozen private array.",
+    "No Rust dependencies or framework code are copied into the runtime."
+  ],
+  "derivedTables": {
+    "path": "src/checksum/tiger-tables.ts",
+    "sha256": "881e9aa1ba69f6700e08bcaab0fb8ff4ff38ce2711eb3282c3f41cbfb2fb32ee",
+    "upstreamRawSha256": "364d73427379144b709fb0565ba1536c2c32ef9b02ab6201b1aefc30857372ea",
+    "mapping": "word i = uint64 little-endian at byte 8*i in upstream tables.bin; four 256-word S-boxes in source order"
+  }
+}

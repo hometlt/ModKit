@@ -43,8 +43,10 @@ test('baseline editing cannot grant new debt or modify an existing allowance', (
 test('AST finds named implementation bodies and ignores calls, comments and import declarations', () => {
   const rows = algorithmDefinitions(
     `// function crc32() {}
-    import { sha1 } from 'crypto'; crc32(bytes); const text = 'function md5() {}';
+    import { sha1 } from 'crypto'; import { tiger192, createTiger192 } from './checksum'; tiger192(bytes); createTiger192(); crc32(bytes); const text = 'function md5() {}';
     function crc32() { return 42 }
+    function tiger192(bytes) { return bytes }
+    const createTiger192 = () => ({ digest() {} });
     const inflateRaw = () => 1;
     class Parser { parseXmlDocument() { return {} } }
     const codecs = { decodeBc1: function () { return 2 } };
@@ -55,7 +57,7 @@ test('AST finds named implementation bodies and ignores calls, comments and impo
   )
   assert.deepEqual(
     rows.map(row => row.name),
-    ['crc32', 'inflateRaw', 'parseXmlDocument', 'decodeBc1', 'adler32'],
+    ['crc32', 'tiger192', 'createTiger192', 'inflateRaw', 'parseXmlDocument', 'decodeBc1', 'adler32'],
   )
 })
 

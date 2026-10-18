@@ -275,7 +275,9 @@
     "src/lib/brotli/LICENSE",
     "native/jpegxr/LICENSE",
     "native/obj2voxel/LICENSE",
-    "native/obj2voxel/notices"
+    "native/obj2voxel/notices",
+    "licenses/RustCrypto-Tiger-MIT.txt",
+    "provenance/tiger.json"
   ],
   "dependencies": {
     "draco3d": "1.5.7",
