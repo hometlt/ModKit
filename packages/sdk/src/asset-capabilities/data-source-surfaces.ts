@@ -53,6 +53,7 @@ import type {
   ModelLightSource,
   ModelNodeBehaviourSource,
   ModelLodSource,
+  ModelVariantSource,
   ModelPhysicsSource,
   ModelSocketSource,
 } from './model-facet-sources.js'
@@ -322,6 +323,13 @@ const modelLodSourceSurface = {
   },
 } as const satisfies SurfaceOf<ModelLodSource>
 
+const modelVariantSourceSurface = {
+  methods: {
+    info: cancellableValue,
+    variants: cancellableValue,
+  },
+} as const satisfies SurfaceOf<ModelVariantSource>
+
 const relationGraphSourceSurface = {
   methods: {
     summary: cancellableValue,
@@ -424,6 +432,7 @@ export const STANDARD_DATA_SOURCE_SURFACES: Readonly<
   'common.view/model-physics-source': modelPhysicsSourceSurface,
   'common.view/model-node-behaviour-source': modelNodeBehaviourSourceSurface,
   'common.view/model-lod-source': modelLodSourceSurface,
+  'common.view/model-variant-source': modelVariantSourceSurface,
   'common.view/model-socket-source': modelSocketSourceSurface,
   'common.view/relation-graph-source': relationGraphSourceSurface,
   'common.view/subject-selector-source': subjectSelectorSourceSurface,

@@ -707,6 +707,35 @@ export interface ModelLodSource {
   levels(page: PageRequest, signal?: AbortSignal): Promise<Page<ModelLodLevelRef>>
 }
 
+/**
+ * One named variant of a model's look (SPEC_UVM §15.2 `UV_game_variants`): a choice among the
+ * variants of its `slot` that shows and hides primitives of the one scene — a tank's treads as it
+ * stands, moves or turns. One variant of a slot is chosen at a time; the slot's `default` one is
+ * drawn when nothing is chosen, and the scene's own visibility is the default look. A variant
+ * without a slot is a choice of the single unnamed slot.
+ */
+export interface ModelVariantRef {
+  readonly id: string
+  /** The name the game or the publisher gives it (`moving`, `damaged`). */
+  readonly name: string
+  readonly slot?: string
+  readonly default?: boolean
+  /** Primitives (`ModelPrimitive.id`) the variant draws; the scene's stored values still apply. */
+  readonly showPrimitiveIds: readonly string[]
+  /** Primitives the variant does not draw. */
+  readonly hidePrimitiveIds: readonly string[]
+}
+
+export interface ModelVariantInfo {
+  readonly variants: number
+}
+
+/** Named variants of the look — `common.view/model-variant-source@1`. */
+export interface ModelVariantSource {
+  info(signal?: AbortSignal): Promise<ModelVariantInfo>
+  variants(page: PageRequest, signal?: AbortSignal): Promise<Page<ModelVariantRef>>
+}
+
 /** Attachment points — `common.view/model-socket-source@1`. */
 export interface ModelSocketSource {
   info(signal?: AbortSignal): Promise<ModelSocketInfo>
@@ -736,18 +765,8 @@ export interface ReservedModelFacetSource {
   readonly blockedBy: string
 }
 
-export const RESERVED_MODEL_FACET_SOURCES: readonly ReservedModelFacetSource[] = Object.freeze([
-  Object.freeze({
-    contract: 'common.view/model-variant-source',
-    major: 1,
-    minimalShape: Object.freeze([
-      'info(): { variants }',
-      'variants(page): { id, name, kind, targets }',
-    ]),
-    blockedBy:
-      'no codec publishes named variants today: UV_game_variants exists in the schema and no reader surfaces it',
-  }),
-])
+// `model-variant-source` left this list once SAGE published its tread looks (K4): none remain.
+export const RESERVED_MODEL_FACET_SOURCES: readonly ReservedModelFacetSource[] = Object.freeze([])
 
 /** True for an id this build has reserved but deliberately does not publish as a contract. */
 export function isReservedModelFacetSource(contract: string): boolean {

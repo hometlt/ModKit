@@ -11,6 +11,7 @@ import type {
   ModelEffectRef,
   ModelLightRef,
   ModelLodLevelRef,
+  ModelVariantRef,
   ModelNodeBehaviourRef,
   ModelPhysicsRef,
   ModelMaterialRef,
@@ -30,7 +31,9 @@ import { billboardCameraRotation, createModelSceneSampler } from '@modkit/scene/
 import { applyColorKeyTransparency } from '@modkit/codec-kit/raster'
 import {
   loadModelStage,
+  chooseModelVariant,
   modelLodPrimitives,
+  modelVariantSlots,
   readModelRecords,
   MODEL_MAXIMUM_RECORDS,
 } from './source.js'
@@ -246,6 +249,7 @@ export const MODEL_FACET_CONTRACTS = Object.freeze([
   'common.view/model-physics-source',
   'common.view/model-node-behaviour-source',
   'common.view/model-lod-source',
+  'common.view/model-variant-source',
 ] as const)
 
 /** Facet id → the one count worth putting on a single readout line. */
@@ -269,6 +273,7 @@ const FACET_READOUT: Readonly<Record<string, { labelKey: UiMessageKey; key: stri
       key: 'behaviours',
     },
     'common.view/model-lod-source': { labelKey: 'viewer.modelLods', key: 'levels' },
+    'common.view/model-variant-source': { labelKey: 'viewer.modelVariants', key: 'variants' },
   })
 
 /**
@@ -611,6 +616,10 @@ function facetItem(
     const item = value as ModelLodLevelRef
     return `${short(item.id)} · ${localizer.text('viewer.modelLodLevel', { order: item.order })} · ${String(item.nodeIds.length)}`
   }
+  if (contract === 'common.view/model-variant-source') {
+    const item = value as ModelVariantRef
+    return `${short(item.name)} · ${item.slot ?? '—'}${item.default === true ? ' · default' : ''} · +${String(item.showPrimitiveIds.length)} −${String(item.hidePrimitiveIds.length)}`
+  }
   const item = value as ModelSocketRef
   return `${short(item.sourceName ?? item.id)} · ${item.role} · ${item.nodeId}`
 }
@@ -629,6 +638,7 @@ const FACET_PAGE_METHOD: Readonly<Record<ModelFacetDetail['contract'], string>> 
   'common.view/model-physics-source': 'bodies',
   'common.view/model-node-behaviour-source': 'behaviours',
   'common.view/model-lod-source': 'levels',
+  'common.view/model-variant-source': 'variants',
 })
 
 export interface ModelFacetPage {
@@ -1736,6 +1746,20 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
                 else hiddenPrimitives.add(id)
           }
           if (lodLevels.length > 1) showLod(lodLevels[0])
+          /*
+           * Named variants (K4, SPEC_UVM §15.2): one choice per slot — a tank's treads standing,
+           * moving or turning. Choosing one in a slot draws again what the slot's other variants hid
+           * and hides what it hides; the slot's default is the look the viewer opens on.
+           */
+          const variants = (facetPages.get('common.view/model-variant-source')?.items ??
+            []) as readonly ModelVariantRef[]
+          const variantSlots = modelVariantSlots(variants)
+          const chooseVariant = (slot: string, id: string): void =>
+            chooseModelVariant(hiddenPrimitives, variantSlots.get(slot) ?? [], id)
+          for (const [slot, members] of variantSlots) {
+            const fallback = members.find(member => member.default === true)
+            if (fallback !== undefined) chooseVariant(slot, fallback.id)
+          }
           const primitiveBoxes = new Map<string, HTMLInputElement>()
           const syncPrimitiveBoxes = (): void => {
             for (const [id, box] of primitiveBoxes) box.checked = !hiddenPrimitives.has(id)
@@ -2281,6 +2305,35 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
               () => {
                 showLod(lodLevels.find(level => level.id === selector.value))
                 canvas.setAttribute('data-model-lod', selector.value)
+                syncPrimitiveBoxes()
+                generation++
+                redraw()
+              },
+              { signal: scope.signal },
+            )
+          }
+
+          for (const [slot, members] of variantSlots) {
+            const label = localizer.text('viewer.modelVariant', { slot: slot === '' ? '—' : slot })
+            const field = controlRow(panel.rendering, label).field
+            const selector = element(field, 'select') as HTMLSelectElement
+            selector.setAttribute('aria-label', label)
+            const fallback = members.find(member => member.default === true)
+            if (fallback === undefined) {
+              const none = element(selector, 'option', {
+                text: localizer.text('viewer.modelVariantNone'),
+              }) as HTMLOptionElement
+              none.value = ''
+            }
+            for (const member of members) {
+              const option = element(selector, 'option', { text: member.name }) as HTMLOptionElement
+              option.value = member.id
+            }
+            selector.value = fallback?.id ?? ''
+            selector.addEventListener(
+              'change',
+              () => {
+                chooseVariant(slot, selector.value)
                 syncPrimitiveBoxes()
                 generation++
                 redraw()

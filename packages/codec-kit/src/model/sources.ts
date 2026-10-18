@@ -31,6 +31,8 @@ import type {
   ModelSocketSource,
   ModelLodLevelRef,
   ModelLodSource,
+  ModelVariantRef,
+  ModelVariantSource,
 } from '@modkit/sdk'
 import type { JsonSnapshotBudget } from '../json-snapshot.js'
 import { pageStart } from '../paging.js'
@@ -474,4 +476,36 @@ export function createModelLodSource({
     .sort((a, b) => a.order - b.order)
     .map(level => ({ ...level, nodeIds: Object.freeze([...level.nodeIds]) }))
   return facetSource(Object.freeze({ levels: items.length }), 'levels', items)
+}
+
+/**
+ * Named variants of the look, in the publisher's order. Ids are unique; a slot has at most one
+ * default, and a variant neither shows and hides one primitive (SPEC_UVM §15.2).
+ */
+export function createModelVariantSource({
+  variants,
+}: {
+  readonly variants: readonly ModelVariantRef[]
+}): ModelVariantSource {
+  const ids = new Set<string>()
+  const defaults = new Set<string>()
+  const items = variants.map(variant => {
+    if (variant.id === '' || ids.has(variant.id))
+      throw new TypeError(`model variant id «${variant.id}» is empty or repeated`)
+    ids.add(variant.id)
+    if (variant.default === true) {
+      const slot = variant.slot ?? ''
+      if (defaults.has(slot)) throw new TypeError(`slot «${slot}» has two default variants`)
+      defaults.add(slot)
+    }
+    const hidden = new Set(variant.hidePrimitiveIds)
+    if (variant.showPrimitiveIds.some(id => hidden.has(id)))
+      throw new TypeError(`model variant «${variant.id}» both shows and hides a primitive`)
+    return Object.freeze({
+      ...variant,
+      showPrimitiveIds: Object.freeze([...new Set(variant.showPrimitiveIds)]),
+      hidePrimitiveIds: Object.freeze([...hidden]),
+    })
+  })
+  return facetSource(Object.freeze({ variants: items.length }), 'variants', items)
 }

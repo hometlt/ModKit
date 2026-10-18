@@ -7,6 +7,7 @@ import type {
   ModelPrimitive,
   ModelSocketRef,
   ModelLodLevelRef,
+  ModelVariantRef,
   ModelMaterialLayerRef,
   ModelMaterialRef,
   ModelBoneBinding,
@@ -43,6 +44,12 @@ export interface ModelProjection {
   readonly animations?: readonly ModelAnimationClip[]
   /** Discrete levels of detail over whole scene-root nodes (the `model-lod-source` shape). */
   readonly lods?: readonly ModelLodLevelRef[]
+  /**
+   * Named variants of the look (the `model-variant-source` shape), written as
+   * `UV_game_variants.variants` (SPEC_UVM §15.2): the id as the variant's name, a differing display
+   * name in `extras.modkit.label`, the primitives as `showPrimitives`/`hidePrimitives` targets.
+   */
+  readonly variants?: readonly ModelVariantRef[]
   readonly excludedFacetIds?: readonly string[]
   readonly resourceClosure?: {
     readonly mode: 'logical' | 'content-qualified'
@@ -2304,6 +2311,50 @@ export function materializeUvmCore(
   const visibility: readonly UvmJsonObject[] =
     animation?.visibility ??
     hiddenPrimitives.map(target => ({ mesh: target.mesh, primitive: target.primitive, value: 0 }))
+  // Named variants: one show/hide target list each, ids as the globally unique names (§15.2).
+  const namedVariants: UvmJsonObject[] = []
+  {
+    const names = new Set<string>()
+    const defaults = new Set<string>()
+    const targetsOf = (variant: ModelVariantRef, ids: readonly string[]) => {
+      const seen = new Set<string>()
+      return ids
+        .flatMap(id => {
+          if (seen.has(id)) return []
+          seen.add(id)
+          const target = primitiveIndices.get(id)
+          if (target === undefined)
+            fail(`variant «${variant.id}» names the unknown primitive ${id}`)
+          return [target]
+        })
+        .sort((a, b) => a.mesh - b.mesh || a.primitive - b.primitive)
+        .map(target => ({ mesh: target.mesh, primitive: target.primitive }))
+    }
+    for (const variant of projection.variants ?? []) {
+      if (variant.id.length === 0 || names.has(variant.id))
+        fail(`variant «${variant.id}» is unnamed or declared twice`)
+      names.add(variant.id)
+      if (variant.slot !== undefined && variant.slot.length === 0)
+        fail(`variant «${variant.id}» names an empty slot`)
+      if (variant.default === true) {
+        if (defaults.has(variant.slot ?? '')) fail(`variant «${variant.id}» is a second default`)
+        defaults.add(variant.slot ?? '')
+      }
+      const hidden = new Set(variant.hidePrimitiveIds)
+      if (variant.showPrimitiveIds.some(id => hidden.has(id)))
+        fail(`variant «${variant.id}» both shows and hides a primitive`)
+      const show = targetsOf(variant, variant.showPrimitiveIds)
+      const hide = targetsOf(variant, variant.hidePrimitiveIds)
+      namedVariants.push({
+        name: variant.id,
+        ...(variant.slot === undefined ? {} : { slot: variant.slot }),
+        ...(variant.default === true ? { default: true } : {}),
+        ...(show.length === 0 ? {} : { showPrimitives: show }),
+        ...(hide.length === 0 ? {} : { hidePrimitives: hide }),
+        ...(variant.name === variant.id ? {} : { extras: { modkit: { label: variant.name } } }),
+      })
+    }
+  }
   // A clip animates a primitive's visibility through KHR_animation_pointer; stored values alone need none.
   const animatesPointers = (animation?.animations ?? []).some(clip =>
     (clip['channels'] as readonly UvmJsonObject[]).some(
@@ -2430,7 +2481,7 @@ export function materializeUvmCore(
       )
         ? ['UV_game_animation_events']
         : []),
-      ...(visibility.length === 0 ? [] : ['UV_game_variants']),
+      ...(visibility.length === 0 && namedVariants.length === 0 ? [] : ['UV_game_variants']),
       ...(animatesPointers ? ['KHR_animation_pointer'] : []),
       ...(imageColorKeys.some(key => key !== undefined) ? ['UV_texture_color_key'] : []),
       ...(imageAlphaIgnored.includes(true) ? ['UV_texture_alpha'] : []),
@@ -2451,7 +2502,14 @@ export function materializeUvmCore(
       ...(bakedParticles === undefined ? {} : { UV_game_baked_particles: bakedParticles }),
       ...(unitsExtension === undefined ? {} : { UV_units: unitsExtension }),
       ...(lodSelection === undefined ? {} : { MODKITX_lod_selection: lodSelection }),
-      ...(visibility.length === 0 ? {} : { UV_game_variants: { visibility } }),
+      ...(visibility.length === 0 && namedVariants.length === 0
+        ? {}
+        : {
+            UV_game_variants: {
+              ...(namedVariants.length === 0 ? {} : { variants: namedVariants }),
+              ...(visibility.length === 0 ? {} : { visibility }),
+            },
+          }),
       ...(animation === undefined || animation.catalog.length === 0
         ? {}
         : {

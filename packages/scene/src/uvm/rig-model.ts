@@ -2,7 +2,11 @@
 import type { JsonObject, JsonValue, ModelBoneBinding } from '@modkit/sdk'
 import type { UvmContainer } from '@modkit/uv/model/container'
 import { snapshotJson } from '@modkit/codec-kit/json-snapshot'
-import { readUvmPrimitiveVisibility } from '@modkit/uv/model/animation-clips'
+import {
+  readUvmNamedVariants,
+  readUvmPrimitiveVisibility,
+  uvmVariantHiddenPrimitives,
+} from '@modkit/uv/model/animation-clips'
 import { readUvmModel } from './model.js'
 import { projectUvmStaticModel, type StaticModelBudget } from './static-model.js'
 import { array, object } from './values.js'
@@ -630,18 +634,19 @@ export function projectUvmRigModel(
       ...(meshTracks.size === 0 ? {} : { meshTracks: [...meshTracks.values()] }),
     }
   })
-  // A primitive the document keeps hidden until a clip shows it (UV_game_variants value 0).
-  const meshVisibility = readUvmPrimitiveVisibility(document, signal)
-    .flatMap(entry =>
-      'mesh' in entry && entry.value <= 0
-        ? [
-            {
-              meshIndex: primitiveIds.indexOf(`mesh-${entry.mesh}-primitive-${entry.primitive}`),
-              value: 0,
-            },
-          ]
-        : [],
-    )
+  // A primitive the document keeps hidden until a clip shows it (UV_game_variants value 0), and
+  // one its slot's default variant hides: a target without variants draws the default look.
+  const meshVisibility = [
+    ...new Set([
+      ...readUvmPrimitiveVisibility(document, signal).flatMap(entry =>
+        'mesh' in entry && entry.value <= 0
+          ? [`mesh-${entry.mesh}-primitive-${entry.primitive}`]
+          : [],
+      ),
+      ...uvmVariantHiddenPrimitives(readUvmNamedVariants(document, signal)),
+    ]),
+  ]
+    .map(id => ({ meshIndex: primitiveIds.indexOf(id), value: 0 }))
     .filter(entry => entry.meshIndex >= 0)
   // Bounds are the joints' reach; a primitive shown or hidden moves nothing.
   const primitiveTargets = new Set(primitiveIds)

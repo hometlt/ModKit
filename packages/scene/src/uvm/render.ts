@@ -28,7 +28,12 @@ import {
 import { snapshotJson } from '@modkit/codec-kit/json-snapshot'
 import { createModelAnimationSampler } from '@modkit/codec-kit/model/animation'
 import { readUvmContainer } from '@modkit/uv/model/container'
-import { readUvmAnimationClips, readUvmPrimitiveVisibility } from '@modkit/uv/model/animation-clips'
+import {
+  readUvmAnimationClips,
+  readUvmNamedVariants,
+  readUvmPrimitiveVisibility,
+  uvmVariantHiddenPrimitives,
+} from '@modkit/uv/model/animation-clips'
 import {
   readUvmTextureAlpha,
   readUvmTextureColorKeys,
@@ -82,7 +87,7 @@ export interface UvmRenderOptions extends UvmFrameOptions {
 
 /** Read a UVM frame, then invoke the selected standard scene renderer. The request is inert JSON:
  * {schemaVersion:1, viewport:{width,height}, camera:{viewProjection:[16 numbers],viewMatrix?,eyePosition?},
- *  sceneIndex?, modelState?, clipId?, time?, globalTime?, poseSamples?:[{clipId,time,weight,additive?}], materialContext?:{teamColor?,teamColorIntensity?,ambient?,environment?}, collisions?, shadows?, clearColor?, rendererId?, lighting?:'unlit'|'material'}.
+ *  sceneIndex?, modelState?, variants?:string[], clipId?, time?, globalTime?, poseSamples?:[{clipId,time,weight,additive?}], materialContext?:{teamColor?,teamColorIntensity?,ambient?,environment?}, collisions?, shadows?, clearColor?, rendererId?, lighting?:'unlit'|'material'}.
  * `lighting: 'material'` shades glTF materials with their own metallic-roughness (`pbr`); KHR_materials_unlit stays unlit.
  * A `clipId` is the `id` of a clip in `UV_game_animation_clips` or the publisher's own id it keeps as
  * `sourceId`, or `animation-<index>` of a glTF animation when the document has no clip catalog;
@@ -209,6 +214,7 @@ async function prepareNestedUvmRender(
           'rendererId',
           'sceneIndex',
           'modelState',
+          'variants',
           'materialContext',
           'lighting',
         ].includes(key),
@@ -271,9 +277,14 @@ async function prepareNestedUvmRender(
     typeof modelState !== 'string' ||
     modelState.length === 0 ||
     (input['collisions'] !== undefined && typeof input['collisions'] !== 'boolean') ||
-    (input['shadows'] !== undefined && typeof input['shadows'] !== 'boolean')
+    (input['shadows'] !== undefined && typeof input['shadows'] !== 'boolean') ||
+    (input['variants'] !== undefined &&
+      (!Array.isArray(input['variants']) ||
+        input['variants'].some(name => typeof name !== 'string' || name.length === 0)))
   )
-    throw new TypeError('invalid render time, clip, renderer or collision option')
+    throw new TypeError('invalid render time, clip, renderer, variant or collision option')
+  // named variants chosen over the slots' defaults (SPEC_UVM §15.2); checked against the document
+  const chosenVariants = (input['variants'] ?? []) as readonly string[]
   const clearColor = input['clearColor'] === undefined ? undefined : vector4(input['clearColor'])
   if (clearColor?.some(component => component < 0 || component > 1))
     throw new RangeError('render clearColor must be in 0..1')
@@ -517,6 +528,12 @@ async function prepareNestedUvmRender(
     for (const sampled of visibilitySampler.sample(time, signal, globalTime))
       visible.set(sampled.target, (sampled.value[0] ?? 0) > 0)
   }
+  // a variant decides which primitives may draw at all: what it hides no clip shows
+  for (const id of uvmVariantHiddenPrimitives(
+    readUvmNamedVariants(document, signal),
+    chosenVariants,
+  ))
+    visible.set(id, false)
   const sequence = clip?.sequenceIndex
   if (
     sequence !== undefined &&

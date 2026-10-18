@@ -5,7 +5,11 @@ import type {
   ModelNode,
   ModelPrimitive,
 } from '@modkit/sdk'
-import { readUvmPrimitiveVisibility } from '@modkit/uv/model/animation-clips'
+import {
+  readUvmNamedVariants,
+  readUvmPrimitiveVisibility,
+  uvmVariantHiddenPrimitives,
+} from '@modkit/uv/model/animation-clips'
 import { readUvmAccessor, type UvmAccessor, type UvmScalarBudget } from '@modkit/uv/model/accessor'
 import { composeTrsMatrix } from '@modkit/codec-kit/model-math/sequence-pose'
 import { uvmMeshSkins } from './rig.js'
@@ -74,12 +78,14 @@ export function decodeUvmGeometry(
   const animations = array(document, 'animations')
   signal?.throwIfAborted()
   const meshSkins = uvmMeshSkins(document)
-  // A primitive stored invisible is drawn only when a clip shows it (SPEC_UVM §15.2).
-  const hiddenPrimitiveIds = new Set(
-    readUvmPrimitiveVisibility(document, signal).flatMap(item =>
+  // A primitive stored invisible is drawn only when a clip shows it, and one its slot's default
+  // variant hides is not drawn until another variant is chosen (SPEC_UVM §15.2).
+  const hiddenPrimitiveIds = new Set([
+    ...readUvmPrimitiveVisibility(document, signal).flatMap(item =>
       'mesh' in item && item.value <= 0 ? [`mesh-${item.mesh}-primitive-${item.primitive}`] : [],
     ),
-  )
+    ...uvmVariantHiddenPrimitives(readUvmNamedVariants(document, signal)),
+  ])
   const primitives: ModelPrimitive[] = []
   let decodedGeometryBytes = 0
   const remaining = (): UvmScalarBudget => ({

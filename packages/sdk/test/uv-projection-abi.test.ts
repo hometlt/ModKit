@@ -29,6 +29,7 @@ const MODEL_FACETS = [
   'common.view/model-collision-source',
   'common.view/model-material-source',
   'common.view/model-lod-source',
+  'common.view/model-variant-source',
 ] as const
 
 describe('UV digests are algorithm-qualified', () => {
@@ -121,12 +122,10 @@ describe('optional model facet sources', () => {
   })
 
   it('reserves the unpublished facets without pretending they are contracts', () => {
-    // `model-effect-source` left this list once M3 and MDX published per-emitter records, and
-    // `model-lod-source` once Earth 2160 publishes its LODLevel meshes: a reservation exists to be
-    // closed, and the one that remains still has no publisher.
-    expect(RESERVED_MODEL_FACET_SOURCES.map(entry => entry.contract)).toEqual([
-      'common.view/model-variant-source',
-    ])
+    // `model-effect-source` left this list once M3 and MDX published per-emitter records,
+    // `model-lod-source` once Earth 2160 published its LODLevel meshes and `model-variant-source`
+    // once SAGE published its tread looks: a reservation exists to be closed, and none remain.
+    expect(RESERVED_MODEL_FACET_SOURCES.map(entry => entry.contract)).toEqual([])
     for (const entry of RESERVED_MODEL_FACET_SOURCES) {
       // a reserved id is not callable: it is deliberately absent from the standard registry, so a
       // manifest naming one is treated as foreign rather than as a contract this build implements

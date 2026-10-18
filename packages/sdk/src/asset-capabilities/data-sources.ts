@@ -63,6 +63,9 @@ import type {
   ModelLodInfo,
   ModelLodLevelRef,
   ModelLodSource,
+  ModelVariantInfo,
+  ModelVariantRef,
+  ModelVariantSource,
   ModelPhysicsInfo,
   ModelPhysicsRef,
   ModelPhysicsSource,
@@ -123,6 +126,9 @@ export {
   type ModelLodInfo,
   type ModelLodLevelRef,
   type ModelLodSource,
+  type ModelVariantInfo,
+  type ModelVariantRef,
+  type ModelVariantSource,
   type ModelPhysicsInfo,
   type ModelPhysicsRef,
   type ModelPhysicsSource,
@@ -1404,6 +1410,7 @@ export interface DataSourceContractMap {
   'common.view/model-physics-source': { 1: ModelPhysicsSource }
   'common.view/model-node-behaviour-source': { 1: ModelNodeBehaviourSource }
   'common.view/model-lod-source': { 1: ModelLodSource }
+  'common.view/model-variant-source': { 1: ModelVariantSource }
   'common.view/relation-graph-source': { 1: RelationGraphSource }
   'common.view/subject-selector-source': { 1: SubjectSelectorSource }
   'common.view/subject-facts-source': { 1: SubjectFactsSource }

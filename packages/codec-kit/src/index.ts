@@ -1090,6 +1090,7 @@ export {
   createModelPhysicsSource,
   createModelSocketSource,
   createModelLodSource,
+  createModelVariantSource,
 } from './model/sources.js'
 
 // ProjectionReceipt — the native → live boundary (§2.6, block 12 item 5)

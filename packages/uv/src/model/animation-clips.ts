@@ -150,6 +150,118 @@ export function readUvmPrimitiveVisibility(
   )
 }
 
+/** One named variant of `UV_game_variants.variants` (SPEC_UVM §15.2) as its primitive targets. */
+export interface UvmNamedVariant {
+  readonly name: string
+  /** The display name the writer kept in `extras.modkit.label`, else the name. */
+  readonly label: string
+  readonly slot?: string
+  readonly default?: true
+  readonly showPrimitives: readonly { readonly mesh: number; readonly primitive: number }[]
+  readonly hidePrimitives: readonly { readonly mesh: number; readonly primitive: number }[]
+}
+
+/**
+ * The named variants that show and hide primitives. Names are unique, a slot has at most one
+ * default and a variant neither shows and hides one target. A variant that replaces the whole
+ * model, attaches, swaps materials or switches nodes is read here only for its primitive lists:
+ * those parts of the contract have no consumer yet.
+ */
+export function readUvmNamedVariants(
+  document: JsonObject,
+  signal?: AbortSignal,
+): readonly UvmNamedVariant[] {
+  const value = field(field(document['extensions'], 'UV_game_variants'), 'variants')
+  if (value === undefined) return []
+  if (!Array.isArray(value)) throw new TypeError('UVM named variants must be an array')
+  if (!array(document, 'extensionsUsed').includes('UV_game_variants'))
+    throw new TypeError('UV_game_variants is not declared in extensionsUsed')
+  const meshes = array(document, 'meshes')
+  const names = new Set<string>()
+  const defaults = new Set<string>()
+  const targets = (item: JsonObject, key: string, name: string) => {
+    const seen = new Set<string>()
+    return Object.freeze(
+      array(item, key).map(candidate => {
+        const target = object(candidate, 'UVM variant primitive')
+        const mesh = safeIndex(target['mesh'], meshes.length, 'variant mesh')
+        const primitive = safeIndex(
+          target['primitive'],
+          array(meshes[mesh], 'primitives').length,
+          'variant primitive',
+        )
+        const id = `${mesh}/${primitive}`
+        if (seen.has(id)) throw new TypeError(`variant «${name}» repeats a primitive`)
+        seen.add(id)
+        return Object.freeze({ mesh, primitive })
+      }),
+    )
+  }
+  return Object.freeze(
+    value.map(candidate => {
+      signal?.throwIfAborted()
+      const item = object(candidate, 'UVM named variant')
+      const name = item['name']
+      const slot = item['slot']
+      if (typeof name !== 'string' || name.length === 0 || names.has(name))
+        throw new TypeError('UVM named variants need unique names')
+      names.add(name)
+      if (slot !== undefined && (typeof slot !== 'string' || slot.length === 0))
+        throw new TypeError(`variant «${name}» names an invalid slot`)
+      if (item['default'] !== undefined && typeof item['default'] !== 'boolean')
+        throw new TypeError(`variant «${name}» has a non-boolean default`)
+      const isDefault = item['default'] === true
+      if (isDefault) {
+        if (defaults.has(slot ?? '')) throw new TypeError(`variant «${name}» is a second default`)
+        defaults.add(slot ?? '')
+      }
+      const show = targets(item, 'showPrimitives', name)
+      const hide = targets(item, 'hidePrimitives', name)
+      const hidden = new Set(hide.map(target => `${target.mesh}/${target.primitive}`))
+      if (show.some(target => hidden.has(`${target.mesh}/${target.primitive}`)))
+        throw new TypeError(`variant «${name}» both shows and hides a primitive`)
+      const label = field(field(item['extras'], 'modkit'), 'label')
+      return Object.freeze({
+        name,
+        label: typeof label === 'string' && label.length > 0 ? label : name,
+        ...(slot === undefined ? {} : { slot: slot as string }),
+        ...(isDefault ? { default: true as const } : {}),
+        showPrimitives: show,
+        hidePrimitives: hide,
+      })
+    }),
+  )
+}
+
+/**
+ * The primitives (`mesh-<m>-primitive-<p>`) a choice of variants does not draw: per slot the chosen
+ * variant, else the slot's default, hides its `hidePrimitives`. A shown primitive is only eligible:
+ * its own stored visibility still applies (§15.2), and the scene's other primitives are untouched.
+ * `chosen` names variants, at most one per slot; an unknown name or a second of a slot throws.
+ */
+export function uvmVariantHiddenPrimitives(
+  variants: readonly UvmNamedVariant[],
+  chosen: readonly string[] = [],
+): ReadonlySet<string> {
+  const bySlot = new Map<string, UvmNamedVariant>()
+  for (const variant of variants)
+    if (variant.default === true) bySlot.set(variant.slot ?? '', variant)
+  const picked = new Set<string>()
+  for (const name of chosen) {
+    const variant = variants.find(candidate => candidate.name === name)
+    if (variant === undefined) throw new TypeError(`no variant is named ${name}`)
+    if (picked.has(variant.slot ?? ''))
+      throw new TypeError(`two variants are chosen for slot «${variant.slot ?? ''}»`)
+    picked.add(variant.slot ?? '')
+    bySlot.set(variant.slot ?? '', variant)
+  }
+  const hidden = new Set<string>()
+  for (const variant of bySlot.values())
+    for (const target of variant.hidePrimitives)
+      hidden.add(`mesh-${target.mesh}-primitive-${target.primitive}`)
+  return hidden
+}
+
 export function uvmVisibilityPointer(index: number): string {
   if (!integer(index) || index < 0) throw new TypeError('invalid visibility index')
   return `/extensions/UV_game_variants/visibility/${index}/value`

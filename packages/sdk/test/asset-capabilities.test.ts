@@ -101,6 +101,7 @@ describe('descriptor-v2 wire facts', () => {
       'common.view/model-physics-source',
       'common.view/model-node-behaviour-source',
       'common.view/model-lod-source',
+      'common.view/model-variant-source',
       'common.view/relation-graph-source',
       // P2: admitted after the field picker and language completion shared one conformance seam.
       'common.view/subject-selector-source',

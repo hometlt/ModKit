@@ -1,4 +1,5 @@
 import type {
+  ModelVariantRef,
   ModelLodLevelRef,
   ModelSceneInfo,
   ModelSceneSource,
@@ -144,4 +145,30 @@ export function modelLodPrimitives(
       return { id: level.id, order: level.order, primitiveIds }
     })
     .filter(level => level.primitiveIds.size > 0)
+}
+
+/** Named variants by slot (`''` the unnamed one), in the publisher's order. */
+export function modelVariantSlots(
+  variants: readonly ModelVariantRef[],
+): ReadonlyMap<string, readonly ModelVariantRef[]> {
+  const slots = new Map<string, ModelVariantRef[]>()
+  for (const variant of variants)
+    slots.set(variant.slot ?? '', [...(slots.get(variant.slot ?? '') ?? []), variant])
+  return slots
+}
+
+/**
+ * Chooses one variant of a slot (`''` none): what the slot's variants hid is drawn again, then the
+ * chosen one hides its primitives and draws the ones it shows. Other primitives keep their state.
+ */
+export function chooseModelVariant(
+  hidden: Set<string>,
+  members: readonly ModelVariantRef[],
+  id: string,
+): void {
+  for (const member of members)
+    for (const primitive of member.hidePrimitiveIds) hidden.delete(primitive)
+  const chosen = members.find(member => member.id === id)
+  for (const primitive of chosen?.hidePrimitiveIds ?? []) hidden.add(primitive)
+  for (const primitive of chosen?.showPrimitiveIds ?? []) hidden.delete(primitive)
 }
