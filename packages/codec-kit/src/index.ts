@@ -10,6 +10,7 @@ export {
   readContainerEntry,
   type ContainerEntryLayer,
   type ContainerLayerEntry,
+  type ContainerLayerRange,
 } from './container-entries.js'
 import type { SourceSpan } from '@modkit/core'
 import { ModkitError } from '@modkit/core'

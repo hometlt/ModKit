@@ -4,12 +4,17 @@
  * (paged by cursor, prefix-filtered) and the `container.extract` handler (one entry's decoded bytes,
  * decoded by the shared owner in `compression/*`, bounded by the entry's size and the open budget).
  * Decoders load on first use, so no codec pays for pako or WASM at import.
+ * Layered content sources reuse the same range storage owner through opt-in containerEntryLayer
+ * ranges; legacy whole-entry callers retain their existing validation and read/close behavior.
+ * The structural layer bridge does not import VFS. It pins an explicit ArtifactSource revision,
+ * checks exact numeric coordinates and releases the acquired range lease idempotently.
  */
 import {
   containerEntryRevision,
   revisionId,
   type ArtifactByteSource,
   type ByteRangeSource,
+  type Lease,
   type ResourceBudget,
 } from '@modkit/sdk'
 // A function declaration is initialised at instantiation, so this cycle with index.ts is safe.
@@ -28,9 +33,10 @@ export async function openContainerEntryLayer(
   source: ByteRangeSource,
   readTable: (source: ByteRangeSource) => Promise<ContainerEntryTable>,
   close: () => Promise<void>,
+  ranges?: Omit<Parameters<typeof containerEntryAccess>[1], 'scheme' | 'byteSource'>,
 ): Promise<ContainerEntryLayer> {
   try {
-    return containerEntryLayer(id, await readTable(source), source, close)
+    return containerEntryLayer(id, await readTable(source), source, close, ranges)
   } catch (error) {
     await Promise.resolve()
       .then(close)
@@ -330,7 +336,8 @@ export function containerEntryAccess(
   }
 
   const decodedTotal = entries.reduce((total, entry) => total + entry.size, 0n)
-  return Object.freeze({ namespace, extract, extractEntry, decodedTotal })
+  // Layer adapters use this same admitted lookup; they must not query lazy storage a second time.
+  return Object.freeze({ namespace, extract, extractEntry, decodedTotal, entryAt })
 }
 
 /** Reads a range of the container (or of the companion `bindingId` names), at most the budget. */
@@ -504,6 +511,19 @@ export interface ContainerLayerEntry {
   readonly size: number
   readonly hidden?: true
   readonly context?: ContainerEntry['context']
+  readonly rangeAccess?: true
+}
+
+/** Structural VFS port: the two peer packages deliberately do not depend on one another. */
+export interface ContainerLayerRange {
+  readonly revision: string
+  readonly source: {
+    readonly id: string
+    size(signal?: AbortSignal): Promise<number>
+    readAt(offset: number, length: number, signal?: AbortSignal): Promise<Uint8Array>
+    stream(start?: number, end?: number, signal?: AbortSignal): ReadableStream<Uint8Array>
+    dispose(): Promise<void>
+  }
 }
 
 /**
@@ -516,6 +536,7 @@ export interface ContainerEntryLayer {
   readonly entries: readonly ContainerLayerEntry[]
   lookup?(path: string, signal?: AbortSignal): Promise<ContainerLayerEntry | undefined>
   read(path: string, maxBytes: number, signal?: AbortSignal): Promise<Uint8Array>
+  openRange?(path: string, signal?: AbortSignal): Promise<ContainerLayerRange | undefined>
   close(): void | Promise<void>
 }
 
@@ -525,6 +546,90 @@ const layerEntry = (entry: ContainerEntry): ContainerLayerEntry => ({
   ...(entry.hidden === true ? { hidden: true } : {}),
   ...(entry.context === undefined ? {} : { context: entry.context }),
 })
+
+/** Adapt the existing entry lease once; exact numeric coordinates never round a bigint extent. */
+async function numericLayerRange(
+  id: string,
+  revision: string,
+  lease: Lease<ByteRangeSource>,
+  expectedSize: bigint,
+  signal?: AbortSignal,
+): Promise<ContainerLayerRange> {
+  let closing: Promise<void> | undefined
+  const dispose = () => (closing ??= Promise.resolve().then(() => lease.release()))
+  try {
+    throwIfCancelled(signal)
+    const extent = await lease.value.size()
+    if (typeof extent !== 'bigint' || extent < 0n || extent > BigInt(Number.MAX_SAFE_INTEGER))
+      throw new RangeError('Container layer range size cannot be represented exactly')
+    if (extent !== expectedSize)
+      throw new RangeError('Container layer range size differs from its entry')
+    const size = Number(extent)
+    const live = (signal?: AbortSignal) => {
+      throwIfCancelled(signal)
+      if (closing !== undefined) throw new TypeError('Container layer range is disposed')
+    }
+    const readAt = async (offset: number, length: number, signal?: AbortSignal) => {
+      live(signal)
+      if (
+        !Number.isSafeInteger(offset) ||
+        !Number.isSafeInteger(length) ||
+        offset < 0 ||
+        length < 0 ||
+        offset > size ||
+        length > size - offset
+      )
+        throw new RangeError('Container layer read is outside the entry')
+      const bytes = await lease.value.read(BigInt(offset), length, signal)
+      live(signal)
+      if (bytes.byteLength !== length) throw new RangeError('Container layer range is truncated')
+      return bytes
+    }
+    live(signal)
+    return Object.freeze({
+      revision,
+      source: Object.freeze({
+        id,
+        async size(signal?: AbortSignal) {
+          live(signal)
+          return size
+        },
+        readAt,
+        stream(start = 0, end = size, signal?: AbortSignal) {
+          live(signal)
+          if (
+            !Number.isSafeInteger(start) ||
+            !Number.isSafeInteger(end) ||
+            start < 0 ||
+            end < start ||
+            end > size
+          )
+            throw new RangeError('Container layer stream is outside the entry')
+          let at = start
+          return new ReadableStream<Uint8Array>({
+            async pull(controller) {
+              try {
+                if (at === end) {
+                  controller.close()
+                  return
+                }
+                const bytes = await readAt(at, Math.min(65536, end - at), signal)
+                at += bytes.byteLength
+                controller.enqueue(bytes)
+              } catch (error) {
+                controller.error(error)
+              }
+            },
+          })
+        },
+        dispose,
+      }),
+    })
+  } catch (error) {
+    await dispose().catch(() => undefined)
+    throw error
+  }
+}
 
 /**
  * `table` as the archive `id` of a layered content source: its entries named, a path they do not
@@ -536,6 +641,7 @@ export function containerEntryLayer(
   table: ContainerEntryTable,
   source: ByteRangeSource,
   close: () => void | Promise<void> = () => undefined,
+  ranges?: Omit<Parameters<typeof containerEntryAccess>[1], 'scheme' | 'byteSource'>,
 ): ContainerEntryLayer {
   const keyOf =
     table.caseSensitivity === 'insensitive'
@@ -543,19 +649,61 @@ export function containerEntryLayer(
       : (path: string) => path
   const byPath = new Map(table.entries.map(entry => [keyOf(entry.path), entry]))
   const find = table.find?.bind(table)
+  const access =
+    ranges === undefined
+      ? undefined
+      : containerEntryAccess(table, {
+          ...ranges,
+          scheme: 'container-layer',
+          byteSource: source,
+        })
+  const namespace = access?.namespace
+  /** Stored bytes and existing indexed/custom decoders support ranges; ordinary compression does not. */
+  const ranged = (entry: ContainerEntry): boolean =>
+    namespace !== undefined &&
+    (entry.storage.kind === 'stored' ||
+      entry.storage.kind === 'refpack' ||
+      (entry.storage.kind === 'custom' && entry.storage.rangeAccess === true))
+  const published = (entry: ContainerEntry): ContainerLayerEntry => ({
+    ...layerEntry(entry),
+    ...(ranged(entry) ? { rangeAccess: true as const } : {}),
+  })
   return {
     id,
-    entries: table.entries.map(layerEntry),
+    entries: table.entries.map(published),
     ...(find === undefined
       ? {}
       : {
           async lookup(path: string, signal?: AbortSignal) {
-            const entry = await find(path, signal)
-            return entry === undefined ? undefined : layerEntry(entry)
+            const entry =
+              access === undefined ? await find(path, signal) : await access.entryAt(path, signal)
+            return entry === undefined ? undefined : published(entry)
+          },
+        }),
+    ...(namespace === undefined
+      ? {}
+      : {
+          /** Open exactly the admitted entry through the same range decoder used by the Host namespace. */
+          async openRange(path: string, signal?: AbortSignal) {
+            throwIfCancelled(signal)
+            const entry = await access!.entryAt(path, signal)
+            if (entry === undefined) throw new RangeError(`${id} has no «${path}»`)
+            if (!ranged(entry)) return undefined
+            const lease = await namespace.openEntrySource(entry.path, signal)
+            return numericLayerRange(
+              `${id}!/${entry.path}`,
+              String(containerEntryRevision(ranges!.source.revision, entry.path, entry.size)),
+              lease,
+              entry.size,
+              signal,
+            )
           },
         }),
     async read(path, maxBytes, signal) {
-      const entry = byPath.get(keyOf(path)) ?? (await find?.(path, signal))
+      const entry =
+        access === undefined
+          ? (byPath.get(keyOf(path)) ?? (await find?.(path, signal)))
+          : await access.entryAt(path, signal)
       if (entry === undefined) throw new RangeError(`${id} has no «${path}»`)
       return readContainerEntry(
         entry,

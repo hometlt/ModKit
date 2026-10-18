@@ -1,5 +1,6 @@
 import { deflateSync } from 'node:zlib'
-import { describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it } from 'vitest'
+import { validateSubjectDescriptorV2 } from '@modkit/sdk/descriptor'
 import { CONTAINER_EXTRACT_HANDLER_ID, createInspectionCodec } from '../src/index.js'
 import {
   containerEntryAccess,
@@ -11,6 +12,8 @@ import {
 // A tiny range container: a 4-byte magic, then three entries' bytes. The codec only maps its index
 // to a ContainerEntryTable; listing and extraction come from codec-kit (S3 stage 1).
 const encoder = new TextEncoder()
+// Descriptor schema compilation is fixture setup; retain the tests' 5-second assertion limit.
+beforeAll(async () => { await validateSubjectDescriptorV2({}) })
 describe('opening a container layer', () => {
   it('releases an acquired source on parse failure and preserves the parser error', async () => {
     const cause = new Error('invalid container table')
