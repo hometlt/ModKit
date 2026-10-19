@@ -1,10 +1,17 @@
 /** Shared UVM skin/animation writing from SDK model facets. Core owns pose/topology admission.
  * Static affine local matrices retain shear; authored TRS keeps its existing animation semantics.
  * Matrix-local rigs refuse clips instead of emitting animation against a glTF matrix node.
+ * Common static frames above skin roots retain their scene graph and authored bind matrices.
+ * Transformed intermediaries and animated non-joint ancestors still require pose rebasing.
  * Joint indices, inverse binds and weights remain explicit; missing data is never reconstructed.
  */
 import type { ModelAnimationClip, ModelBoneBinding, ModelNode, ModelPrimitive } from '@modkit/sdk'
-import { snapshotModelSkeleton, createModelSkeletonNodes } from '@modkit/codec-kit/model/skeleton'
+import {
+  snapshotModelSkeleton,
+  createModelSkeletonNodes,
+  validateModelBoneLocalMatrix,
+} from '@modkit/codec-kit/model/skeleton'
+import { multiplyMat4 } from '@modkit/codec-kit/model-math/sequence-pose'
 import { snapshotModelAnimations } from '@modkit/codec-kit/model/animation'
 import type { RenderModel, RenderMesh } from '@modkit/codec-kit/legacy/models'
 import {
@@ -76,6 +83,7 @@ export function prepareUvmSkeleton(
   const skins: UvmSkin[] = []
   const groupingRoots: { skin: number; children: number[] }[] = []
   const boneByNode = new Map<string, ModelBoneBinding>()
+  const frameAncestorNodeIds = new Set<string>()
   const hierarchies = new Map<string, { skin: number; slots: ReadonlyMap<number, number> }>()
   for (const [hierarchyId, group] of [...groups].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) {
     group.sort((a, b) => a.boneIndex - b.boneIndex)
@@ -86,7 +94,9 @@ export function prepareUvmSkeleton(
       refuse('skin original joint ordinals are not unique')
     const groupNodes = new Set(group.map(bone => bone.nodeId))
     const expectedNodes = createModelSkeletonNodes(group, hierarchyId, budget, signal)
+    let rootFrame: Float32Array | undefined
     for (const [slot, expected] of expectedNodes.entries()) {
+      signal?.throwIfAborted()
       const bone = group[slot]!
       const node = nodes[nodeIndices.get(expected.id) ?? -1]
       if (!node || boneByNode.has(expected.id))
@@ -105,15 +115,21 @@ export function prepareUvmSkeleton(
         refuse('inverse bind matrix is not affine')
       let parentId = parents.get(node.id)
       const visited = new Set<string>()
+      const frame = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1])
       while (parentId !== undefined && !groupNodes.has(parentId)) {
+        signal?.throwIfAborted()
         if (visited.has(parentId)) refuse('scene ancestor cycle')
         visited.add(parentId)
         const ancestor = nodes[nodeIndices.get(parentId)!]!
-        if (
+        frameAncestorNodeIds.add(parentId)
+        if (bone.parentBoneIndex === null) {
+          // Keep the authored root frame; the scene sampler applies it once after skinning.
+          validateModelBoneLocalMatrix(ancestor.transform)
+        } else if (
           ancestor.transform.length !== 16 ||
           ancestor.transform.some((value, index) => value !== (index % 5 === 0 ? 1 : 0))
         )
-          refuse('a non-joint ancestor transform requires explicit rebasing')
+          refuse('a transformed non-joint node between bones requires explicit rebasing')
         parentId = parents.get(parentId)
       }
       if (bone.parentBoneIndex !== null) {
@@ -121,6 +137,16 @@ export function prepareUvmSkeleton(
         if (parentId !== parent.nodeId) refuse('scene and bone parents disagree')
       } else if (parentId !== undefined) {
         refuse('scene and root bone parents disagree')
+      } else {
+        // Match the sampler's parent-first Float32 composition order exactly.
+        for (const ancestorId of [...visited].reverse()) {
+          signal?.throwIfAborted()
+          multiplyMat4(frame, 0, frame, 0, nodes[nodeIndices.get(ancestorId)!]!.transform, 0)
+          validateModelBoneLocalMatrix(Array.from(frame))
+        }
+        if (rootFrame !== undefined && !rootFrame.every((value, at) => value === frame[at]))
+          refuse('skin roots require the same external frame')
+        rootFrame = frame
       }
       boneByNode.set(node.id, bone)
     }
@@ -168,7 +194,7 @@ export function prepareUvmSkeleton(
       ...(roots.length === 1 ? { skeleton: nodeIndices.get(roots[0]!.nodeId!)! } : {}),
     })
   }
-  return { skins, boneByNode, hierarchies, groupingRoots }
+  return { skins, boneByNode, hierarchies, groupingRoots, frameAncestorNodeIds }
 }
 
 export function writeUvmSkinAttributes(
@@ -252,6 +278,8 @@ export function writeUvmAnimations(
    * come first with stored value 0, and a clip's visibility channel on one animates that record.
    */
   hiddenPrimitives: readonly { readonly mesh: number; readonly primitive: number }[] = [],
+  /** Static skin-frame ancestors cannot also carry independently animated TRS. */
+  frameAncestorNodeIds: ReadonlySet<string> = new Set(),
 ) {
   // Validate every clip first, then release consumed snapshot payloads while encoding.
   if (source.length > 0 && [...boneByNode.values()].some(bone => bone.localMatrix !== undefined))
@@ -281,6 +309,11 @@ export function writeUvmAnimations(
     const targets = new Set<string>()
     for (const [index, channel] of clip.channels.entries()) {
       const path = channel.kind
+      if (
+        ['translation', 'rotation', 'scale'].includes(path) &&
+        frameAncestorNodeIds.has(channel.target)
+      )
+        refuse('animation of a non-joint skin ancestor requires pose rebasing')
       const node = nodeIndices.get(channel.target)
       const bone = boneByNode.get(channel.target)
       const width = path === 'rotation' ? 4 : 3

@@ -2309,6 +2309,7 @@ export function materializeUvmCore(
             }),
           ),
           hiddenPrimitives,
+          skeleton?.frameAncestorNodeIds,
         )
   const visibility: readonly UvmJsonObject[] =
     animation?.visibility ??
