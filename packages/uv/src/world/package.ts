@@ -833,8 +833,10 @@ async function makePortableUvm(
   const skinned = (skin === undefined ? yawed : skinnedUvmDocument(yawed, skin)) as typeof read.document
   const container = skinned === read.document ? read : { ...read, document: skinned }
   const images = container.document['images']
+  // a cube map (an environment) has no one PNG: it stays a logical id, named in `missing`
+  const planar = textures.filter(texture => (texture.dimension ?? '2d') === '2d')
   const portableTextures = await Promise.all(
-    [...textures]
+    [...planar]
       .sort((left, right) => left.id.localeCompare(right.id))
       .map(async (texture, textureOrdinal): Promise<PortableModelTexture> => {
         const encoded = await encodeMedia(texture)
@@ -867,10 +869,10 @@ async function makePortableUvm(
     })
   if (!Array.isArray(images)) throw new TypeError('textured UVM has no image declarations')
   const textureByName = new Map(
-    textures.map(texture => [normalizedResourceName(texture.id), texture]),
+    planar.map(texture => [normalizedResourceName(texture.id), texture]),
   )
   const portableByName = new Map(
-    [...textures]
+    [...planar]
       .sort((left, right) => left.id.localeCompare(right.id))
       .map(
         (texture, index) => [normalizedResourceName(texture.id), portableTextures[index]!] as const,

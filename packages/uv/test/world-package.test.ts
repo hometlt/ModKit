@@ -573,6 +573,24 @@ describe('portable UVP map bundle', () => {
     })
     expect(model.state).toBe('converted')
   })
+  it('packages a model that also draws with a cube map, leaving the cube out of the media', async () => {
+    const sourceModel = sourceWithModel()
+    const cube = { id: 'environment.dds', width: 1, height: 1, dimension: 'cube' as const, rgba: new Uint8Array(6 * 4) }
+    const packed = await materializeWorldToUvpMap(
+      {
+        ...sourceModel,
+        async model(resourceId) {
+          const converted = await sourceModel.model!(resourceId)
+          if (converted.state !== 'converted') throw new Error('fixture model did not convert')
+          return { ...converted, textures: [...converted.textures, cube] } as unknown as typeof converted
+        },
+      },
+      options,
+    )
+    if (packed.state !== 'materialized') throw new Error(JSON.stringify(packed.refusals))
+    expect([...packed.entries.keys()].filter(path => path.startsWith('media/models/'))).toHaveLength(1)
+  })
+
   it('packages geometry without a texture route, but still refuses missing required texture acquisition', async () => {
     const geometry = {
       ...document,
