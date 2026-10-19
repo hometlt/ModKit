@@ -1,4 +1,11 @@
-import type { FieldEditable, JsonValue, ProjectionReceipt } from '@modkit/sdk'
+/**
+ * Bounded UVM inspection through the existing geometry, rig, metadata and image identity owners.
+ * External image references publish independent material IDs and logical lookup paths; they do
+ * not imply bound bytes. Embedded pixels stay on the existing render/image acquisition route.
+ * Conflicting external image identities refuse; string storage uses a conservative UTF-8 ceiling.
+ * No resource I/O, native parsing or renderer. Manifest: extensions/models/contributions/codec-uvm.json.
+ */
+import type { FieldEditable, JsonValue, ModelResourceRef, ProjectionReceipt } from '@modkit/sdk'
 import type { InspectionResult } from '@modkit/codec-kit'
 import {
   createModelSceneSource,
@@ -7,12 +14,14 @@ import {
   createModelCollisionSource,
   createModelSocketSource,
   createModelMaterialSource,
+  createModelResourceRefsSource,
 } from '@modkit/codec-kit/model/sources'
 import { animationSnapshotBudget } from '@modkit/codec-kit/model/animation'
 import { createProjectionReceipt } from '@modkit/codec-kit/projection'
 import { createJsonTreeSource } from '@modkit/codec-kit/tree/json'
 import type { UvmContainer } from '@modkit/uv/model/container'
 import { validateUvmDocument } from '@modkit/uv/model/validation'
+import { uvmImageLogicalId, uvmImageResourceId } from '@modkit/uv/model/container'
 import { readUvmModel } from './model.js'
 import { readUvmFacets } from './facets.js'
 import { array, field, object, string, required } from './values.js'
@@ -89,6 +98,36 @@ export function createUvmInspection(
     ...(signal === undefined ? {} : { signal }),
   })
   const jsonNodes = countJsonNodes(document, budget, signal)
+  // Publish external lookup facts through the same image identity owner as material layers.
+  // Embedded images retain the existing render/image acquisition path; they are not file names.
+  const references: ModelResourceRef[] = []
+  const imageTargets = new Map<string, string>()
+  let referenceBytes = 0
+  let embeddedImages = 0
+  for (const [index, candidate] of array(document, 'images').entries()) {
+    signal?.throwIfAborted()
+    const image = object(candidate, 'UVM image')
+    const id = uvmImageResourceId(document, index)
+    const uri = image['uri']
+    const logicalId =
+      typeof uri === 'string' && !uri.startsWith('data:') ? uvmImageLogicalId(uri) : undefined
+    if (logicalId === undefined) embeddedImages++
+    // Repeated embedded labels retain prior inspection behavior. Only an external lookup
+    // colliding with an embedded identity would publish an ambiguous resource join.
+    const target = logicalId === undefined ? 'embedded' : `logical:${logicalId}`
+    if (imageTargets.has(id) && imageTargets.get(id) !== target)
+      throw new TypeError('UVM image identity names conflicting resource targets')
+    if (imageTargets.has(id)) continue
+    if (imageTargets.size >= budget.maxNodes)
+      throw new RangeError('UVM image references exceed maxNodes budget')
+    // Conservative UTF-8 ceiling per UTF-16 code unit; no encoded copy is allocated.
+    referenceBytes += 3 * (id.length + target.length)
+    if (referenceBytes > budget.maxScalarBytes)
+      throw new RangeError('UVM image references exceed maxScalarBytes budget')
+    imageTargets.set(id, target)
+    if (logicalId !== undefined)
+      references.push({ id, logicalId, role: 'texture', provenance: 'reference-only' })
+  }
   const { scene, rig } = readUvmModel(document, container.binary, budget, signal)
   const clipBudget = animationSnapshotBudget(rig.clips)
   const { collisions, teamColors, advancedMaterials, effects, sockets, materialRefs } =
@@ -246,8 +285,8 @@ export function createUvmInspection(
         },
         {
           planeId: 'resources',
-          state: 'lost',
-          note: `${scene.textures} texture(s) are counted from the document; this reader does not surface their references, so no resource facet is published`,
+          state: embeddedImages === 0 ? 'preserved' : 'lost',
+          note: `${references.length} external image reference(s) published without resource binding; embedded image bytes remain on the render/image acquisition path`,
         },
         {
           planeId: 'effects',
@@ -283,6 +322,11 @@ export function createUvmInspection(
     }),
     dataSources: {
       'common.view/model-scene-source': model,
+      ...(references.length === 0
+        ? {}
+        : {
+            'common.view/model-resource-refs-source': createModelResourceRefsSource({ references }),
+          }),
       ...(rig.bindings.length === 0
         ? {}
         : {

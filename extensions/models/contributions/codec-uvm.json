@@ -7,6 +7,7 @@
   "id": "modkit/model-uvm",
   "displayName": "Universal Verse Model 1.0",
   "limitations": [
+    "The resource facet publishes external image references with separate material identity and logical lookup path. It does not bind bytes or publish embedded images as filenames; embedded image acquisition remains with model.render. Conflicting external image identities are refused.",
     "model.render acquires common.render/scene-3d through the host and returns PNG with operation diagnostics. It supports explicit camera, scene and animation selection, glTF base color, vertex-color modulation, animated UV transforms, first-surface textures through ordinary host image codecs, and collision overlays. Native game shaders, full PBR, source mip/filter choice, multi-surface image selection, cube environment frames and effect simulation remain incomplete; the operation does not claim complete visual fidelity.",
     "model.export-native resolves common.model/native-encoder by formatId. The UVM codec owns target selection and validation but contains no M3, PIE or other native-format implementation."
   ],
@@ -66,6 +67,10 @@
       }
     ],
     "publishesDataSources": [
+      {
+        "contract": "common.view/model-resource-refs-source",
+        "major": 1
+      },
       {
         "contract": "common.view/model-scene-source",
         "major": 1

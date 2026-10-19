@@ -226,7 +226,7 @@ for (const reference of facets['common.view/model-resource-refs-source']?.items 
     kind: 'logical',
     requirement: {
       id: `capture-${textures.length}`,
-      logicalId: reference.id,
+      logicalId: reference.logicalId ?? reference.id,
       role: 'texture',
       scopes: [
         'sibling-directory',
