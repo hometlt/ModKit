@@ -26,7 +26,7 @@
         "modkit/xz",
         "modkit/zstd"
       ],
-      "digest": "sha256:e3691faceb53a99fa3f049523b981a8c016eb013fd4235b58902e960d7392aff"
+      "digest": "sha256:67a45905d60ea843947b7244c2d638a76235f130984b6c128e6cc4a4f30d18d3"
     },
     {
       "name": "audio",
@@ -41,7 +41,7 @@
         "modkit/m4a",
         "modkit/wav"
       ],
-      "digest": "sha256:c2e844edcefd48c22b1d25da66ff9c5412b2728c53655087138ae986bed322dd"
+      "digest": "sha256:2e77fd74bf520ddb41e2965e520ae62ab40ecb76971d5bbd706d15695ca8d0fd"
     },
     {
       "name": "data",
@@ -155,7 +155,7 @@
         "modkit/ply",
         "modkit/stl"
       ],
-      "digest": "sha256:96dfa197fddaac874c56a4ce33786331ec79eaaedbc680d43a190c2e356b287e"
+      "digest": "sha256:7baf197c9f1a6484e9e125ff3ea9a6063236b855c8e767c1a8337775d6ae4ec8"
     },
     {
       "name": "translation",

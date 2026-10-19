@@ -6,11 +6,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
   extensions: [
     {
       artifact: {
-        artifactDigest: 'sha256:e3691faceb53a99fa3f049523b981a8c016eb013fd4235b58902e960d7392aff',
+        artifactDigest: 'sha256:67a45905d60ea843947b7244c2d638a76235f130984b6c128e6cc4a4f30d18d3',
         fileDigests: {
           'MIGRATION-NOTES-common-archives.json':
             'sha256:4e1d77808583a26fb61d65d660ef09c3f4c222915c2e3581d793b202cbde4b44',
-          'README.md': 'sha256:2a978a18519e0f6818fe5f0baeb3fb408fd5b242688e0422c461d82e5746dc95',
+          'README.md': 'sha256:9f287ac1cb50ccc68e2980466a432b50b5ad1eba1118562bd6ba0f9743827a63',
           'contributions/codec-7z.json':
             'sha256:a345a253ff1158f888ff52ef5a5fc60648dd31ba3560002a9cb56cbfc93e5765',
           'contributions/codec-brotli.json':
@@ -70,9 +70,9 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/xz/codec.js':
             'sha256:7f7bf200f42316f1225842dfafa0a05bbca0354c0c2e48d23e7afa026259edea',
           'src/zip/codec.d.ts':
-            'sha256:5d7485efb4ded7b7d8691e2d07e22cf5a442bf3d436c88a3c3ff01b8298091a0',
+            'sha256:7b71169ad4cd6d5e66e4415bcc73e2991e655d24767183a8189a2ab97f8f80b6',
           'src/zip/codec.js':
-            'sha256:17b3b2ae7a158f7fd33b846c8722fc033abfdd71e942dcc7a027c00a1440b171',
+            'sha256:3851fe71e534352f03c728fec8bfbde8d20e6ca1ef0d4813c08f9e1a6c0c06cf',
           'src/zstd/codec.js':
             'sha256:b52c70fa49264a57782e3927e3d0f86ac5ec08a2df44cb000f5f558612b75240',
           'test/fixtures/7z/bcj.7z':
@@ -111,11 +111,13 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:353c75ccfca68bf7d4444c9004b85ab62e61cb3765a3bf378746034878bb9680',
           'test/zip-ranges.test.ts':
             'sha256:074c4c3faeaada1c9a80fa41cabcd806c3d9ecad4610365a08040fd7af74fe0e',
+          'test/zip-wrapped-count.test.ts':
+            'sha256:00fe9817185a36e64001b76d0c08be9a68ebbd84dd814aa089630caec0b8a96d',
           'test/zstd.test.ts':
             'sha256:74a5cab68793e3872c97feb5c564e0c4c0eae69d1f49df96d60239407ceccda8',
         },
         inventoryRecordId:
-          'artifact:sha256:e3691faceb53a99fa3f049523b981a8c016eb013fd4235b58902e960d7392aff',
+          'artifact:sha256:67a45905d60ea843947b7244c2d638a76235f130984b6c128e6cc4a4f30d18d3',
       },
       artifactRoot: 'extensions/archives/',
       containers: {
@@ -2331,6 +2333,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         'test/seven-zip-rar.test.ts',
         'test/zip-hidden.test.ts',
         'test/zip-ranges.test.ts',
+        'test/zip-wrapped-count.test.ts',
         'test/zstd.test.ts',
       ],
       name: 'archives',
@@ -2338,7 +2341,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:c2e844edcefd48c22b1d25da66ff9c5412b2728c53655087138ae986bed322dd',
+        artifactDigest: 'sha256:2e77fd74bf520ddb41e2965e520ae62ab40ecb76971d5bbd706d15695ca8d0fd',
         fileDigests: {
           'MIGRATION-NOTES-common-audio.json':
             'sha256:9208bc42ef1da984ce9776d9bed7024eaf3f797a1cd56ca193919caf142ee636',
@@ -2354,8 +2357,8 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-ogg.json':
             'sha256:eb7ddb19893b6958df00f28a4c9364205f9865e4318afe4fefca3efe9abd4fe5',
           'contributions/codec-wav.json':
-            'sha256:138a4cf3079d0e7fe1d95fc243fa23c58bbb0767f47f98c9bf65b66f46f0c7be',
-          'package.json': 'sha256:44743bfcbcf9f51ab7fb7b62e0c00343ecc962384f784b16c72d8ffc62b06d7c',
+            'sha256:cb0a1fd3328d51b99f5c7ca60455688f17dde4bad5184f9b9be3e98baffb66dc',
+          'package.json': 'sha256:ffaeac11ce4b1d4906e0281f9f98c703a0cb87691435c473bbd2a6fdcbe97c23',
           'src/aac/codec.js':
             'sha256:8fd45809559754220cde4b64a0a51d35a9e0ce60f83b1557b16041321ca4d704',
           'src/flac/codec.js':
@@ -2369,15 +2372,17 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:28719273aa436ed4f6867abba1101a01dff67096079c8fe03d6a5738f48e8d65',
           'src/ogg/codec.js':
             'sha256:4615fe83734068e90591d68c46614b158c40cd1d10466e5f320170cea719e515',
+          'src/wav/codec.d.ts':
+            'sha256:a9d490d22c553c4b317e95a3502aebc691e4f453a1276afe512b0eaec26b4683',
           'src/wav/codec.js':
-            'sha256:4f00c2a91a81f4313d0547b761999e78b8e76b3458ebf30b48f7f71cd0e89201',
+            'sha256:e15516e71657c1603b49e5b913e569cc25626a30104def87983ef08bb460281b',
           'src/wav/pcm.js':
-            'sha256:abaa57101551915968f34d1558f2eef4433a96215725e02d2ca9e352d0c807e7',
+            'sha256:ba1a414673cf80113759f01b97dc8ef22fa5ffa52516cd4b2f92d50fdcfbe5ab',
           'test/wav-pcm-decode.test.ts':
             'sha256:a27ddb84d56504378757a692e2aa8c77a3916f5f1f693d694aeff301e8071cb7',
         },
         inventoryRecordId:
-          'artifact:sha256:c2e844edcefd48c22b1d25da66ff9c5412b2728c53655087138ae986bed322dd',
+          'artifact:sha256:2e77fd74bf520ddb41e2965e520ae62ab40ecb76971d5bbd706d15695ca8d0fd',
       },
       artifactRoot: 'extensions/audio/',
       containers: {
@@ -2391,6 +2396,10 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             './formats/*/codec': './src/*/codec.js',
             './formats/mp3/codec': './src/mp3/codec.js',
             './formats/ogg/codec': './src/ogg/codec.js',
+            './formats/wav/codec': {
+              default: './src/wav/codec.js',
+              types: './src/wav/codec.d.ts',
+            },
             './linked': './src/linked.js',
             './package.json': './package.json',
           },
@@ -2450,7 +2459,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         ],
         [
           'contributions/codec-wav.json',
-          'sha256:138a4cf3079d0e7fe1d95fc243fa23c58bbb0767f47f98c9bf65b66f46f0c7be',
+          'sha256:cb0a1fd3328d51b99f5c7ca60455688f17dde4bad5184f9b9be3e98baffb66dc',
         ],
       ],
       documents: [
@@ -3216,7 +3225,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             displayName: 'WAV (RIFF)',
             id: 'modkit/wav',
             limitations: [
-              'Decoded in-process through readPcm: linear PCM at 8/16/24/32 bits, IEEE float at 32/64 bits, and IMA ADPCM at 4 bits. Other RIFF/WAVE codecs (A-law, mu-law, MP3-in-RIFF and the rest) are reported by format tag and left to native host playback or an injected transcoder.',
+              'Decoded through readPcm: linear PCM at 8/16/24/32 bits, IEEE float at 32/64 bits, IMA ADPCM at 4 bits, and mono/stereo Microsoft ADPCM (tag 2) with declared coefficient pairs, block shape and fact frame cap. Invalid predictors, truncated headers and delta overflow refuse. Other RIFF/WAVE codecs (A-law, mu-law, MP3-in-RIFF and the rest) remain encoded-only.',
               'Declarative routing is extension-first because manifest v1 cannot express the legacy extension-or-RIFF/WAVE-sniffer behavior without making the evidence conjunctive.',
             ],
             runtimeVariants: [
@@ -3343,6 +3352,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         'src/m4a/codec.js',
         'src/mp3/codec.js',
         'src/ogg/codec.js',
+        'src/wav/codec.d.ts',
         'src/wav/codec.js',
         'src/wav/pcm.js',
         'test/wav-pcm-decode.test.ts',
@@ -11825,7 +11835,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:96dfa197fddaac874c56a4ce33786331ec79eaaedbc680d43a190c2e356b287e',
+        artifactDigest: 'sha256:7baf197c9f1a6484e9e125ff3ea9a6063236b855c8e767c1a8337775d6ae4ec8',
         fileDigests: {
           'MIGRATION-NOTES-common-models.json':
             'sha256:99f5fd00c6f523fa5591fe3d91906d7ba9f87b6ed7023f02ac6cc26bf1abd646',
@@ -11841,7 +11851,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-stl.json':
             'sha256:ee73ac012b1a4470e56369d978996f718a7cbdf06f269af7044fa28df5debd2f',
           'contributions/codec-uvm.json':
-            'sha256:abd89dd1a84c2d514f0ad693cd639784cdc2283f8e8b9ea07d2ceeefdb3fbf39',
+            'sha256:b6ec80a9a420279531dec4000d087319539e7b54d5d555f3a202b35e0bc4b1bd',
           'package.json': 'sha256:241bb55d53aa0042a55ed93af63e8e045b29f0b0514ebad130d56a0993e9e34d',
           'src/dae/codec.js':
             'sha256:6c04b5a15fc45122d40ce01b5d1653c713de747c5a07695c5bb710b77262343f',
@@ -11864,7 +11874,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:a14e94c8fff4fd017530386ad7f2fa9a977e2568a2a15bcb66b63ee14d495b4f',
         },
         inventoryRecordId:
-          'artifact:sha256:96dfa197fddaac874c56a4ce33786331ec79eaaedbc680d43a190c2e356b287e',
+          'artifact:sha256:7baf197c9f1a6484e9e125ff3ea9a6063236b855c8e767c1a8337775d6ae4ec8',
       },
       artifactRoot: 'extensions/models/',
       containers: {
@@ -11939,7 +11949,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         ],
         [
           'contributions/codec-uvm.json',
-          'sha256:abd89dd1a84c2d514f0ad693cd639784cdc2283f8e8b9ea07d2ceeefdb3fbf39',
+          'sha256:b6ec80a9a420279531dec4000d087319539e7b54d5d555f3a202b35e0bc4b1bd',
         ],
       ],
       documents: [
@@ -12658,6 +12668,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             displayName: 'Universal Verse Model 1.0',
             id: 'modkit/model-uvm',
             limitations: [
+              'The resource facet publishes external image references with separate material identity and logical lookup path. It does not bind bytes or publish embedded images as filenames; embedded image acquisition remains with model.render. Conflicting external image identities are refused.',
               'model.render acquires common.render/scene-3d through the host and returns PNG with operation diagnostics. It supports explicit camera, scene and animation selection, glTF base color, vertex-color modulation, animated UV transforms, first-surface textures through ordinary host image codecs, and collision overlays. Native game shaders, full PBR, source mip/filter choice, multi-surface image selection, cube environment frames and effect simulation remain incomplete; the operation does not claim complete visual fidelity.',
               'model.export-native resolves common.model/native-encoder by formatId. The UVM codec owns target selection and validation but contains no M3, PIE or other native-format implementation.',
             ],
@@ -12792,6 +12803,10 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                 ],
               },
               publishesDataSources: [
+                {
+                  contract: 'common.view/model-resource-refs-source',
+                  major: 1,
+                },
                 {
                   contract: 'common.view/model-scene-source',
                   major: 1,
