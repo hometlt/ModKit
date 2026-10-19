@@ -48,6 +48,7 @@ import {
   DEFAULT_WORLD_WEBGL_CAMERA,
   createWorldWebGlPlan,
   renderWorldHeadless,
+  worldGlb,
   worldModelAnimation,
   worldObjectModelResources,
   type WorldWebGlCamera,
@@ -175,24 +176,62 @@ const SPRITE_SHEET_ENCODER: MediaEncoder = Object.freeze({
     ),
 })
 
+/** The world's scene as glTF; written by renderWorldMedia from the plan (`worldGlb`), not from frames. */
+const GLB_ENCODER: MediaEncoder = Object.freeze({
+  offer: Object.freeze({
+    id: 'glb',
+    label: 'glTF binary (3D scene)',
+    kind: 'scene',
+    extension: '.glb',
+    mediaType: 'model/gltf-binary',
+    alpha: true,
+    lossy: false,
+  }),
+  encode: async () =>
+    refuse('scene-direct', 'a glTF scene is written by renderWorldMedia, not encoded from frames'),
+})
+
 /** Formats that need no codec beyond codec-kit; an application adds its format modules' encoders. */
 export function builtInMediaEncoders(): readonly MediaEncoder[] {
-  return Object.freeze([PNG_ENCODER, TGA_ENCODER, PNG_FRAMES_ENCODER, SPRITE_SHEET_ENCODER])
+  return Object.freeze([PNG_ENCODER, TGA_ENCODER, PNG_FRAMES_ENCODER, SPRITE_SHEET_ENCODER, GLB_ENCODER])
 }
+
+/** Edge of the baked ground of a `scene` export when the request names none smaller (renderer ceiling). */
+const SCENE_TEXTURE_EDGE = 4096
 
 // ---------------------------------------------------------------------------------------------
 // reading a world once
 
-async function inspect(world: CandidateWorldSceneSource, signal?: AbortSignal) {
+async function inspect(
+  world: CandidateWorldSceneSource,
+  signal?: AbortSignal,
+  budget: Readonly<{ maxModelBytes: number; bytesPerModel: number; textureBytesPerModel: number }> | undefined = undefined,
+  derivedFrom: readonly string[] | undefined = undefined,
+) {
   // a map preview first shows its world before the catalog answers; an export draws the answered one
   if (world.refined !== undefined) await world.refined(signal)
   return inspectCandidateWorld(world, {
     maxLayers: WORLD_VIEWER_MAX_LAYERS,
     maxItemsPerLayer: WORLD_VIEWER_MAX_ITEMS_PER_LAYER,
     maxPageItems: MEDIA_EXPORT_LIMITS.maxPageItems,
+    ...(budget === undefined ? {} : budget),
+    ...(derivedFrom === undefined
+      ? {}
+      : { objectFilter: (item: WorldSceneObjectItem) => derivedFrom.includes(item.derivedFrom ?? '') }),
     ...(signal === undefined ? {} : { signal }),
   })
 }
+
+/**
+ * Model budgets of a scene export: a glTF keeps every texture a model draws with, where a picture of
+ * the world shares a small preview budget (a model with many textures then loses its last ones to it).
+ * Larger shares stop the world from batching its static models; this one keeps the batches.
+ */
+const SCENE_MODEL_BUDGET = Object.freeze({
+  maxModelBytes: 4 * 1024 * 1024 * 1024,
+  bytesPerModel: 12 * 1024 * 1024,
+  textureBytesPerModel: 8 * 1024 * 1024,
+})
 
 const objectItems = (model: CandidateWorldViewerModel): WorldSceneObjectItem[] =>
   model.layers.flatMap(layer =>
@@ -565,10 +604,11 @@ export async function renderWorldMedia(
       `no encoder for «${request.format}»; offered: ${encoders.map(item => item.offer.id).join(', ')}`,
     )
   const offer = encoder!.offer
+  if (offer.kind === 'scene') return worldScene(world, request, offer, options)
   const fps = checkRequest(request, offer)
   const signal = options.signal
   const maxBytes = options.maxBytes ?? 64 * 1024 * 1024
-  const model = await inspect(world, signal)
+  const model = await inspect(world, signal, undefined, request.derivedFrom)
   const { byObject, unmatched } = chosenItems(model, request.animations ?? [])
   const still = offer.kind === 'still'
   const startMs = request.startMs ?? 0
@@ -723,6 +763,61 @@ export async function renderWorldMedia(
       models: Object.freeze({ total: status.total, converted: status.converted }),
       ...(sheet === undefined ? {} : { sheet }),
       complete,
+    }),
+  })
+}
+
+/**
+ * The world at its first moment as one glTF binary: the plan the CPU renderer draws, written by the
+ * scene's `worldGlb` (ground baked into one texture of `width` pixels a side, at most 4096).
+ */
+async function worldScene(
+  world: CandidateWorldSceneSource,
+  request: MediaExportRequest,
+  offer: MediaFormatOffer,
+  options: WorldMediaOptions,
+): Promise<WorldMediaResult> {
+  const edge = Math.max(request.width, request.height)
+  if (!Number.isSafeInteger(edge) || edge < MEDIA_EXPORT_LIMITS.minEdge || edge > SCENE_TEXTURE_EDGE)
+    refuse('invalid-size', `the ground texture edge must be an integer from ${MEDIA_EXPORT_LIMITS.minEdge} to ${SCENE_TEXTURE_EDGE}`)
+  const signal = options.signal
+  const model = await inspect(world, signal, SCENE_MODEL_BUDGET, request.derivedFrom)
+  const hidden = new Set(ALL_OVERLAYS.filter(facet => !(request.overlays ?? []).includes(facet)))
+  const base = candidateWorldWebGlInput(model, hidden, undefined)
+  const plan = createWorldWebGlPlan({ ...base, timeSeconds: (request.startMs ?? 0) / 1000 })
+  const written = await worldGlb(plan, {
+    terrainTextureSize: edge,
+    maxBytes: options.maxBytes ?? 64 * 1024 * 1024,
+    ...(signal === undefined ? {} : { signal }),
+  })
+  const status = worldModelAssetStatus(model)
+  return Object.freeze({
+    bytes: written.bytes,
+    diagnostics: Object.freeze([
+      {
+        code: 'x3.media/scene-written',
+        message: `${written.stats.meshes} meshes, ${written.stats.triangles} triangles, ${written.stats.materials} materials, ${written.stats.images} images`,
+        severity: 'information',
+      },
+      ...written.diagnostics,
+    ]),
+    receipt: Object.freeze({
+      format: offer.id,
+      mediaType: offer.mediaType,
+      extension: offer.extension,
+      width: edge,
+      height: edge,
+      frames: 1,
+      fps: 1,
+      startMs: request.startMs ?? 0,
+      durationMs: 0,
+      camera: 'default',
+      alpha: true,
+      audio: false,
+      animatedObjects: 0,
+      unmatchedAnimations: Object.freeze([]),
+      models: Object.freeze({ total: status.total, converted: status.converted }),
+      complete: model.info.complete && !status.partial,
     }),
   })
 }

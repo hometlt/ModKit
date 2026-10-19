@@ -124,6 +124,13 @@ export interface CandidateWorldViewerOptions {
   readonly maxPageItems?: number
   readonly maxModels?: number
   readonly maxModelBytes?: number
+  /**
+   * One model request's bytes (UVM and textures), WORLD_VIEWER_MODEL_REQUEST_BYTES when absent, and
+   * its textures' share, WORLD_VIEWER_TEXTURE_BYTES_PER_MODEL when absent. A viewer keeps the small
+   * defaults; an export that writes every texture at its stored size asks for more.
+   */
+  readonly bytesPerModel?: number
+  readonly textureBytesPerModel?: number
   readonly maxConcurrentModelAcquisitions?: number
   /**
    * Which model resources to acquire, by resource id. Everything else is reported unresolved
@@ -131,6 +138,11 @@ export interface CandidateWorldViewerOptions {
    * map's doodad and unit models.
    */
   readonly modelResourceFilter?: (resourceId: string) => boolean
+  /**
+   * Which placed objects to keep, by item: the others are left out of the world, and their models
+   * are not asked for (an export of a map's ground and cliffs keeps `derivedFrom === 'cliffs'`).
+   */
+  readonly objectFilter?: (item: WorldSceneObjectItem) => boolean
   readonly signal?: AbortSignal
   readonly previous?: CandidateWorldViewerModel
   /** Immutable bounded snapshots; geometry is published before any texture/model request. */
@@ -294,7 +306,7 @@ export async function inspectCandidateWorld(
   }
   let layerPageRequests = 0
   const layerAcquisitionStartedAt = inspectionClock()
-  const inspected = await Promise.all(
+  const pagedLayers = await Promise.all(
     layers.map(async layer => {
       options.signal?.throwIfAborted()
       const previous = options.previous?.layers.find(
@@ -378,6 +390,22 @@ export async function inspectCandidateWorld(
     }),
   )
   const layerAcquisitionMilliseconds = elapsedInspectionMilliseconds(layerAcquisitionStartedAt)
+  // only the objects a caller keeps are drawn and only their models are asked for
+  const objectFilter = options.objectFilter
+  const inspected =
+    objectFilter === undefined
+      ? pagedLayers
+      : pagedLayers.map(entry =>
+          Object.freeze({
+            ...entry,
+            page: Object.freeze({
+              ...entry.page,
+              items: Object.freeze(
+                entry.page.items.filter(item => item.facet !== 'objects' || objectFilter(item)),
+              ),
+            }),
+          }),
+        )
   const cliffResources = new Set(
     inspected.flatMap(({ page }) =>
       page.items.flatMap(item =>
@@ -427,8 +455,14 @@ export async function inspectCandidateWorld(
       ? resourceItems
       : resourceItems.filter(item => options.modelResourceFilter!(item.id))
   const admittedResources = requestedResources.slice(0, maxModels)
-  const perModelBytes = Math.min(WORLD_VIEWER_MODEL_REQUEST_BYTES, maxModelBytes)
-  const maxTextureTotalBytes = Math.min(WORLD_VIEWER_TEXTURE_BYTES_PER_MODEL, perModelBytes)
+  const perModelBytes = Math.min(
+    positiveLimit(options.bytesPerModel ?? WORLD_VIEWER_MODEL_REQUEST_BYTES, 'bytesPerModel'),
+    maxModelBytes,
+  )
+  const maxTextureTotalBytes = Math.min(
+    positiveLimit(options.textureBytesPerModel ?? WORLD_VIEWER_TEXTURE_BYTES_PER_MODEL, 'textureBytesPerModel'),
+    perModelBytes,
+  )
   const maxTextureBytes = maxTextureTotalBytes
   const spentTextureBytes = Math.min(WORLD_VIEWER_SPENT_TEXTURE_BYTES_PER_MODEL, perModelBytes)
   const modelRequestKey = JSON.stringify({

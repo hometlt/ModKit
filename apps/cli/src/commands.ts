@@ -212,6 +212,7 @@ function withMapWorld(
 
 /** The largest media file `subject.convert` writes: the host ffmpeg encoder's own ceiling. */
 const MEDIA_MAX_BYTES = 64 * 1024 * 1024
+const SCENE_MAX_BYTES = 2 * 1024 * 1024 * 1024
 
 /**
  * Media export draws a world: a map opens with the world its preview builds (`withMapWorld`), a
@@ -297,6 +298,7 @@ const MEDIA_TARGETS = new Set([
   'webp-still',
   'jpeg',
   'ogv',
+  'glb',
 ])
 
 export type RunOutputFormat = 'text' | 'json' | 'protocol-json'
@@ -693,7 +695,8 @@ export async function runCommand(
               mediaFormats: mediaExport.formats,
               renderMedia: (source, request, signal) =>
                 mediaExport.media.renderWorldMedia(source, request, mediaExport.encoders, {
-                  maxBytes: MEDIA_MAX_BYTES,
+                  // a 3D scene holds every model's geometry and textures, not one picture
+                  maxBytes: request.format === 'glb' ? SCENE_MAX_BYTES : MEDIA_MAX_BYTES,
                   ...(signal === undefined ? {} : { signal }),
                   ...(arguments_.format === 'text'
                     ? {

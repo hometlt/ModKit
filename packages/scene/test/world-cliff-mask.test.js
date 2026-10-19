@@ -169,6 +169,17 @@ it('draws every face of a masked cliff piece as terrain, masked per pixel, inste
   assert.equal(masked.terrainShadowCasters.length / 9, 8)
   assert.ok(masked.terrainShadowCasters.every((value, index) => index % 3 !== 1 || value === 0))
   assert.ok(masked.stats.shadowCasterTriangles >= 8)
+  // A reopened UVW names the piece's packaged model by resourceIds: it shows the ground all the same.
+  const { resourceId: _single, ...byIds } = cliffItem
+  const reopened = createWorldWebGlPlan({
+    items: [...splatTerrain, { ...byIds, resourceIds: ['cliff'] }],
+    models: new Map([['cliff', piece(true)]]),
+    ...splatInput,
+  })
+  assert.equal(
+    triangles(reopened.splatTriangles.find(batch => batch.maskTexture !== undefined)),
+    3,
+  )
 })
 
 it('reads the mask through the alpha1 layer transform and keeps it with its corner', () => {

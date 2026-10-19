@@ -1,6 +1,7 @@
 export * from './webgl.js'
 export * from './top-down.js'
 export { renderWorldHeadless, renderWorldHeadlessFrame, worldHeadlessScene, type WorldHeadlessOptions } from './headless.js'
+export { worldGlb, type WorldGlbOptions, type WorldGlbResult } from './gltf.js'
 export { createEmbeddedUvmWorldModelDecoder } from './embedded-uvm.js'
 export { colorKeyedTexture, presentWorldModelTextures } from './color-keys.js'
 export { SCENE_COMPRESSED_TEXTURE_FORMATS } from '../render/compressed-textures.js'

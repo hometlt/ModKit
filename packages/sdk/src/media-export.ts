@@ -15,8 +15,12 @@
  * formats (SHP, GRP, R16): those are written by their game's own writer from a `sprite-sheet`.
  */
 
-/** What a format holds: one image, a timed animation, independent frames, or a direction × frame sheet. */
-export type MediaKind = 'still' | 'animation' | 'frames' | 'sprite-sheet'
+/**
+ * What a format holds: one image, a timed animation, independent frames, a direction × frame sheet,
+ * or the world's 3D scene itself (`scene`: a glTF binary of its geometry at one moment; the request's
+ * `width` is then the edge of the baked ground texture).
+ */
+export type MediaKind = 'still' | 'animation' | 'frames' | 'sprite-sheet' | 'scene'
 
 /** One format an application can encode, as data: callers list them, requests name `id`. */
 export interface MediaFormatOffer {
@@ -121,6 +125,12 @@ export interface MediaExportRequest {
    * `gateways`).
    */
   readonly overlays?: readonly ('regions' | 'navigation' | 'gateways')[]
+  /**
+   * Only the placed objects derived from these sources, as the world source marks them
+   * (`WorldSceneObjectItem.derivedFrom`: `cliffs` are a map's cliff and ramp pieces); the ground and
+   * water stay. Every object when absent. The others are not drawn and their models not read.
+   */
+  readonly derivedFrom?: readonly string[]
   readonly quality?: number
 }
 

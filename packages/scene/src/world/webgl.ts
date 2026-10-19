@@ -3110,6 +3110,20 @@ export function worldObjectModelResources(item: WorldSceneObjectItem): readonly 
   return worldObjectResourcesOf(item).keyed
 }
 
+/**
+ * The one model an object draws in its own frame: its resource, or else its only model when that is
+ * an unturned root (a UVP object names its model in `resourceIds`). Undefined for an assembly, whose
+ * parts sit by their component transforms.
+ */
+function worldObjectSoleModel(item: WorldSceneObjectItem): string | undefined {
+  if (item.resourceId !== undefined) return item.resourceId
+  const { keyed, components } = worldObjectResourcesOf(item)
+  const only = components.length === 1 ? components[0] : undefined
+  return keyed.length === 1 && only !== undefined && only.parentId === undefined && only.rotation === undefined
+    ? only.resourceId
+    : undefined
+}
+
 function worldObjectResourcesOf(item: WorldSceneObjectItem) {
   let resources = worldObjectResources.get(item)
   if (resources === undefined) {
@@ -6252,11 +6266,12 @@ function prepareWorldStaticTerrain(
     for (const item of input.items) {
       if (
         item.facet !== 'objects' ||
-        item.derivedFrom !== 'cliffs' ||
-        item.resourceId === undefined
+        item.derivedFrom !== 'cliffs'
       )
         continue
-      const sampled = sampleSharedModel(item.resourceId, item)
+      const model = worldObjectSoleModel(item)
+      if (model === undefined) continue
+      const sampled = sampleSharedModel(model, item)
       if (sampled === undefined) continue
       const translation = objectPosition(item, input)
       const ramp = /:ramp-[0-9]+$/u.test(item.id)
@@ -6535,13 +6550,14 @@ function prepareWorldStaticTerrain(
     for (const item of input.items) {
       if (
         item.facet !== 'objects' ||
-        item.derivedFrom === 'cliffs' ||
-        item.resourceId === undefined
+        item.derivedFrom === 'cliffs'
       )
         continue
-      const ids = terrainProjectionMaterialIds(input.models?.get(item.resourceId))
+      const model = worldObjectSoleModel(item)
+      if (model === undefined) continue
+      const ids = terrainProjectionMaterialIds(input.models?.get(model))
       if (ids.size === 0) continue
-      const sampled = sampleSharedModel(item.resourceId, item)
+      const sampled = sampleSharedModel(model, item)
       if (sampled === undefined) continue
       const translation = objectPosition(item, input)
       const target = rasterSplatBatch()
@@ -7227,12 +7243,12 @@ function prepareWorldStaticTerrain(
   // A declared resource (or the first loaded piece elsewhere) does not replace the whole map.
   const resolvedCliffBounds: { minimum: number[]; maximum: number[] }[] = []
   const cliffObjects = input.items.filter(
-    (item): item is WorldSceneObjectItem & { readonly resourceId: string } =>
-      item.facet === 'objects' && item.derivedFrom === 'cliffs' && item.resourceId !== undefined,
+    (item): item is WorldSceneObjectItem =>
+      item.facet === 'objects' && item.derivedFrom === 'cliffs' && worldObjectSoleModel(item) !== undefined,
   )
   let resolvedCliffObjects = 0
   for (const item of cliffObjects) {
-    const sampled = sampleSharedModel(item.resourceId, item)
+    const sampled = sampleSharedModel(worldObjectSoleModel(item)!, item)
     if (sampled === undefined) continue
     resolvedCliffObjects += 1
     const transform = worldObjectTransform(item, objectPosition(item, input))
@@ -10314,8 +10330,8 @@ function worldCliffItems(items: readonly WorldSceneItem[]): readonly WorldSceneO
       (cliffs = items.filter(
         (item): item is WorldSceneObjectItem =>
           item.facet === 'objects' &&
-          item.resourceId !== undefined &&
-          item.derivedFrom === 'cliffs',
+          item.derivedFrom === 'cliffs' &&
+          worldObjectSoleModel(item) !== undefined,
       )),
     )
   return cliffs
@@ -10331,9 +10347,9 @@ function worldStaticItems(input: WorldWebGlInput): readonly WorldSceneItem[] {
   return input.items.filter(
     item =>
       item.facet !== 'objects' ||
-      (item.resourceId !== undefined &&
+      (worldObjectSoleModel(item) !== undefined &&
         (item.derivedFrom === 'cliffs' ||
-          terrainProjectionMaterialIds(input.models?.get(item.resourceId)).size > 0)),
+          terrainProjectionMaterialIds(input.models?.get(worldObjectSoleModel(item)!)).size > 0)),
   )
 }
 
@@ -10352,11 +10368,12 @@ function sameWorldStaticInput(left: WorldWebGlInput, right: WorldWebGlInput): bo
   // can differ: their clocks.
   const items = staticItems ?? worldCliffItems(right.items)
   for (const item of items) {
-    if (item.facet !== 'objects' || item.resourceId === undefined) continue
+    const sole = item.facet === 'objects' ? worldObjectSoleModel(item) : undefined
+    if (item.facet !== 'objects' || sole === undefined) continue
     if (item.derivedFrom !== 'cliffs') {
       // A model that shows the ground on its surface draws with the terrain: its arrival renews it.
-      const before = left.models?.get(item.resourceId)
-      const after = right.models?.get(item.resourceId)
+      const before = left.models?.get(sole)
+      const after = right.models?.get(sole)
       if (
         before !== after &&
         (terrainProjectionMaterialIds(before).size > 0 ||
@@ -10365,8 +10382,8 @@ function sameWorldStaticInput(left: WorldWebGlInput, right: WorldWebGlInput): bo
         return false
       continue
     }
-    const model = right.models?.get(item.resourceId)
-    if (model !== left.models?.get(item.resourceId)) return false
+    const model = right.models?.get(sole)
+    if (model !== left.models?.get(sole)) return false
     const [lx, ly, lz] = objectPosition(item, left)
     const [rx, ry, rz] = objectPosition(item, right)
     if (lx !== rx || ly !== ry || lz !== rz) return false
