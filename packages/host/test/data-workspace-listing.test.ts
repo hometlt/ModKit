@@ -89,7 +89,10 @@ describe('a data plan may ask the host to list a root', () => {
   })
 
   it('a mod context lists one layer under a prefix, relative to the layer', async () => {
-    const files = ['Base.SC2Data/GameData/UnitData.xml', 'Base.SC2Data/GameData/Abil/AbilData.xml']
+    // ModContext's prefix search also matches sibling names, as installed CASC does.
+    const files = ['Base.SC2Data/GameData.xml', 'Base.SC2Data/GameData/UnitData.xml',
+      'Base.SC2Data/GameDataBackup/Other.xml', 'Base.SC2Data/GameData/Abil/AbilData.xml',
+      'Base.SC2Data/GameData.xml.backup']
     const context = {
       schemaVersion: 1,
       gameId: 'game',
@@ -116,13 +119,17 @@ describe('a data plan may ask the host to list a root', () => {
     } as unknown as ModContext
     const inputs = createModContextDataWorkspaceInputs(context)
     expect(await inputs.listFiles('mod', 'base.sc2data/gamedata', 10)).toEqual({
-      paths: files,
+      paths: [files[1], files[3]],
       complete: true,
     })
     expect(await inputs.listFiles('mod', 'base.sc2data/gamedata', 1)).toEqual({
-      paths: [files[0]],
+      paths: [files[1]],
       complete: false,
     })
+    expect(await inputs.listFiles('mod', 'base.sc2data/gamedata.xml', 1)).toEqual({
+      paths: [files[0]], complete: true,
+    })
+    expect(await inputs.listFiles('mod', '', 10)).toEqual({ paths: files, complete: true })
     await inputs.resources.dispose()
   })
 })

@@ -301,6 +301,8 @@ export function createModContextDataWorkspaceInputs(
     const item = layers.find(candidate => candidate.layer.id === rootId)
     if (item === undefined) throw new RangeError(`ModContext has no layer ${rootId}`)
     const wanted = prefix === '' ? '' : normalizeCompanionLogicalId(prefix)
+    const fold = (value: string) => item.layer.caseSensitive === true ? value : value.toLowerCase()
+    const wantedKey = fold(wanted)
     const paths: string[] = []
     let cursor: string | undefined
     do {
@@ -312,11 +314,10 @@ export function createModContextDataWorkspaceInputs(
       })
       for (const native of page.items) {
         const path = normalizeCompanionLogicalId(native)
-        const fold = (value: string) =>
-          item.layer.caseSensitive === true ? value : value.toLowerCase()
         if (item.readPrefix !== '' && !fold(path).startsWith(`${fold(item.readPrefix)}/`)) continue
         const relative = item.readPrefix === '' ? path : path.slice(item.readPrefix.length + 1)
-        if (!fold(relative).startsWith(fold(wanted))) continue
+        const key = fold(relative)
+        if (wantedKey !== '' && key !== wantedKey && !key.startsWith(`${wantedKey}/`)) continue
         if (paths.length === maximum) return { paths, complete: false }
         paths.push(relative)
       }
