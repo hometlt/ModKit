@@ -130,4 +130,19 @@ it('keeps visible cliff walls under the rock and pins their shared plateau verti
   const rampView = rampDoc.bufferViews[rampAccessor.bufferView]
   const rampNormals = new Float32Array(ramp.bytes.buffer, ramp.bytes.byteOffset + 28 + rampLength + rampView.byteOffset, rampAccessor.count * 3)
   assert.ok(rampNormals[0] > .19, 'a sloped surface keeps its authored normal')
+  const joined = await worldGlb({ ...plan, splatTriangles: [{ ...batch,
+    positions: Float32Array.of(0, 0, 0, 1, .25, 0, 0, 0, 1),
+    normals: Float32Array.of(-.24, .97, 0, -.24, .97, 0, -.24, .97, 0),
+    colors: new Float32Array(12).fill(1), maskTextureCoordinates: new Float32Array(6),
+  }, { ...plain, positions: Float32Array.of(1, .23, 0, 2, .5, 1, 0, -.02, 1) }] },
+  { terrainTextureSize: 16, maxBytes: 8 * 1024 * 1024 })
+  const joinedLength = new DataView(joined.bytes.buffer).getUint32(12, true)
+  const joinedDoc = JSON.parse(new TextDecoder().decode(joined.bytes.subarray(20, 20 + joinedLength)))
+  const joinedAccessor = joinedDoc.accessors[joinedDoc.meshes[0].primitives[0].attributes.POSITION]
+  const joinedView = joinedDoc.bufferViews[joinedAccessor.bufferView]
+  const jp = new Float32Array(joined.bytes.buffer, joined.bytes.byteOffset + 28 + joinedLength + joinedView.byteOffset,
+    joinedAccessor.count * 3)
+  assert.deepEqual(Array.from(jp.subarray(3, 9)), [1, .25, 0, 0, 0, 1], 'the ramp rim is pinned to the joined ground')
+  assert.deepEqual(Array.from(jp.subarray(9, 18)), [1, .25, 0, 2, .5, 1, 0, 0, 1],
+    'rendering offsets close without flattening the ramp or changing unrelated vertices')
 })

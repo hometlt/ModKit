@@ -476,10 +476,11 @@ export async function worldGlb(plan: WorldWebGlPlan, options: WorldGlbOptions): 
   // mesh, with its placement baked into the vertices, so a viewer loads as many draw objects and
   // shaders as there are distinct materials, not one per placed piece.
   const groups = new Map<string, MeshGroup>()
+  const joinedGround = joinGroundRims(terrainPrimitives, id => splats.get(id)?.batch.maskTexture !== undefined)
   const groundAnchors = new Set<string>()
   for (const primitive of terrainPrimitives) {
     if (isTerrainLayer(primitive.id) || splats.get(primitive.id)?.batch.maskTexture !== undefined) continue
-    const positions = placedPrimitive(primitive).positions
+    const positions = (joinedGround.get(primitive.id) ?? placedPrimitive(primitive)).positions
     for (let index = 0; index < positions.length; index += 3) groundAnchors.add(groundSeamKey(positions, index))
   }
   for (const primitive of scene.primitives) {
@@ -492,7 +493,7 @@ export async function worldGlb(plan: WorldWebGlPlan, options: WorldGlbOptions): 
     // the world draws with their terrain material) keep it, as the bake stretches on their walls
     const ground = terrain.has(primitive.id) && baked !== undefined && !primitive.id.startsWith('world/textured-')
     const mask = ground ? splats.get(primitive.id)?.batch : undefined
-    const positioned = placedPrimitive(primitive)
+    const positioned = joinedGround.get(primitive.id) ?? placedPrimitive(primitive)
     const original = ground ? flatGroundNormals(positioned) : positioned
     const placed = mask?.maskTexture === undefined ? original : groundUnderRock(original, mask, groundAnchors)
     if (placed.positions.length < 9) continue
@@ -905,6 +906,42 @@ function placedPrimitive(primitive: SceneRendererPrimitive): SceneRendererPrimit
 /** Shared plateau vertices are identified at the world renderer's small seam tolerance. */
 const groundSeamKey = (positions: Float32Array, index: number): string =>
   [0, 1, 2].map(axis => Math.round(positions[index + axis]! * 10_000)).join(':')
+
+/** Undo small rendering offsets where height-field vertices meet a cliff's ground copy. */
+function joinGroundRims(
+  primitives: readonly SceneRendererPrimitive[],
+  masked: (id: string) => boolean,
+): ReadonlyMap<string, SceneRendererPrimitive> {
+  const key = (p: Float32Array, i: number) => `${Math.round(p[i]! * 10_000)}:${Math.round(p[i + 2]! * 10_000)}`
+  const heights = new Map<string, Set<number>>()
+  for (const primitive of primitives) {
+    if (!masked(primitive.id)) continue
+    const placed = placedPrimitive(primitive), p = placed.positions, n = unitNormals(placed)
+    for (let i = 0; i < p.length; i += 3) {
+      if ((n?.[i + 1] ?? 0) < 0.5) continue
+      const at = key(p, i)
+      let values = heights.get(at)
+      if (values === undefined) heights.set(at, values = new Set())
+      values.add(p[i + 1]!)
+    }
+  }
+  const joined = new Map<string, SceneRendererPrimitive>()
+  for (const primitive of primitives) {
+    if (masked(primitive.id) || isTerrainLayer(primitive.id) || primitive.id.startsWith('world/textured-')) continue
+    const placed = placedPrimitive(primitive), p = placed.positions.slice()
+    for (let i = 0; i < p.length; i += 3) {
+      // World ground presentation separates fills by up to 0.02; preserve distinct elevations.
+      let distance = 0.021, height = p[i + 1]!
+      for (const candidate of heights.get(key(p, i)) ?? []) {
+        const delta = Math.abs(candidate - p[i + 1]!)
+        if (delta < distance) { distance = delta; height = candidate }
+      }
+      p[i + 1] = height
+    }
+    joined.set(primitive.id, { ...placed, positions: p })
+  }
+  return joined
+}
 
 /** Unindexed world ground draws shade horizontal faces alike, without borrowed cliff bevels. */
 function flatGroundNormals(primitive: SceneRendererPrimitive): SceneRendererPrimitive {
