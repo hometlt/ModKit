@@ -492,7 +492,8 @@ export async function worldGlb(plan: WorldWebGlPlan, options: WorldGlbOptions): 
     // the world draws with their terrain material) keep it, as the bake stretches on their walls
     const ground = terrain.has(primitive.id) && baked !== undefined && !primitive.id.startsWith('world/textured-')
     const mask = ground ? splats.get(primitive.id)?.batch : undefined
-    const original = placedPrimitive(primitive)
+    const positioned = placedPrimitive(primitive)
+    const original = ground ? flatGroundNormals(positioned) : positioned
     const placed = mask?.maskTexture === undefined ? original : groundUnderRock(original, mask, groundAnchors)
     if (placed.positions.length < 9) continue
     const vertices = placed.positions.length / 3
@@ -905,6 +906,22 @@ function placedPrimitive(primitive: SceneRendererPrimitive): SceneRendererPrimit
 const groundSeamKey = (positions: Float32Array, index: number): string =>
   [0, 1, 2].map(axis => Math.round(positions[index + axis]! * 10_000)).join(':')
 
+/** Unindexed world ground draws shade horizontal faces alike, without borrowed cliff bevels. */
+function flatGroundNormals(primitive: SceneRendererPrimitive): SceneRendererPrimitive {
+  const normals = unitNormals(primitive)
+  if (normals === undefined) return primitive
+  const p = primitive.positions
+  for (let from = 0; from + 8 < p.length; from += 9) {
+    const u = [0, 1, 2].map(axis => p[from + 3 + axis]! - p[from + axis]!)
+    const v = [0, 1, 2].map(axis => p[from + 6 + axis]! - p[from + axis]!)
+    const nx = u[1]! * v[2]! - u[2]! * v[1]!, ny = u[2]! * v[0]! - u[0]! * v[2]!, nz = u[0]! * v[1]! - u[1]! * v[0]!
+    const length = Math.hypot(nx, ny, nz)
+    if (length > 0 && Math.abs(ny) >= 0.999999 * length)
+      for (let corner = 0; corner < 3; corner++) normals.set([0, 1, 0], from + corner * 3)
+  }
+  return { ...primitive, normals }
+}
+
 /**
  * Opaque terrain behind an alpha-tested rock. A small inward bias avoids coincident surfaces;
  * shared plateau vertices stay fixed, so no open seam is introduced. Keeping the common opaque
@@ -940,22 +957,18 @@ function groundUnderRock(
     }
     return false
   }
-  const count = primitive.indices?.length ?? source.length / 3, kept: number[] = [], flatFaces: boolean[] = []
+  const count = primitive.indices?.length ?? source.length / 3, kept: number[] = []
   for (let corner = 0; corner + 2 < count; corner += 3) {
     const vertices = [0, 1, 2].map(offset => primitive.indices?.[corner + offset] ?? corner + offset)
     if (!canShowGround(vertices)) continue
     kept.push(...vertices)
-    const heights = vertices.map(vertex => source[vertex * 3 + 1]!)
-    flatFaces.push(Math.max(...heights) - Math.min(...heights) <= 0.0001)
   }
   const positions = new Float32Array(kept.length * 3)
   const copiedNormals = normals === undefined ? undefined : new Float32Array(kept.length * 3)
   for (const [index, vertex] of kept.entries()) {
     const from = vertex * 3, bias = anchors.has(groundSeamKey(source, from)) ? 0 : 0.001
     for (let axis = 0; axis < 3; axis++) {
-      // Flat projected ground must not inherit the neighbouring rock wall's bevel normal.
-      const normal = flatFaces[Math.floor(index / 3)] === true ? Number(axis === 1) :
-        normals?.[from + axis] ?? (axis === 1 ? 1 : 0)
+      const normal = normals?.[from + axis] ?? (axis === 1 ? 1 : 0)
       positions[index * 3 + axis] = source[from + axis]! - bias * normal
       if (copiedNormals !== undefined) copiedNormals[index * 3 + axis] = normal
     }

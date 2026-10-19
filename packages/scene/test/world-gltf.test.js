@@ -73,7 +73,7 @@ it('keeps visible cliff walls under the rock and pins their shared plateau verti
     maskChannel: 3,
   }
   const plain = { ...batch, positions: Float32Array.of(2, 0, 0, 4, 0, 0, 2, 0, 2),
-    normals: Float32Array.of(0, 1, 0, 0, 1, 0, 0, 1, 0), colors: new Float32Array(12).fill(1),
+    normals: Float32Array.of(.2, .98, 0, .2, .98, 0, .2, .98, 0), colors: new Float32Array(12).fill(1),
     textureCoordinates: [new Float32Array(6)],
     textureWeights0: Float32Array.of(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0), textureWeights1: new Float32Array(12),
     maskTexture: undefined, maskTextureCoordinates: undefined }
@@ -100,6 +100,7 @@ it('keeps visible cliff walls under the rock and pins their shared plateau verti
   const normals = new Float32Array(bin.buffer, bin.byteOffset + nv.byteOffset, na.count * 3)
   assert.deepEqual(Array.from(normals.subarray(0, 3)), [0, 1, 0], 'flat projected terrain matches the plateau normal')
   assert.deepEqual(Array.from(normals.subarray(9, 12)), [0, 0, 1], 'the vertical wall keeps its normal')
+  assert.deepEqual(Array.from(normals.subarray(18, 21)), [0, 1, 0], 'the ordinary plateau uses the same flat normal')
   const material = document.materials[primitive.material]
   assert.equal(material.alphaMode, undefined, 'terrain under the rock is opaque, with no atlas alpha filtering holes')
   const image = document.images[document.textures[material.pbrMetallicRoughness.baseColorTexture.index].source]
@@ -120,4 +121,13 @@ it('keeps visible cliff walls under the rock and pins their shared plateau verti
     maskTextureCoordinates: Float32Array.of(0, 0, 10, 0, 0, 10, 0, 0, 10, 0, 0, 10, 0, 0, 10, 0, 0, 10),
   }] }, { terrainTextureSize: 16, maxBytes: 8 * 1024 * 1024 })
   assert.equal(bounded.stats.triangles, 3, 'broad rectangles are kept conservatively rather than scanning the full mask per face')
+  const ramp = await worldGlb({ ...plan, splatTriangles: [{ ...plain,
+    positions: Float32Array.of(0, 0, 0, 1, .5, 0, 0, 0, 1),
+  }] }, { terrainTextureSize: 16, maxBytes: 8 * 1024 * 1024 })
+  const rampLength = new DataView(ramp.bytes.buffer).getUint32(12, true)
+  const rampDoc = JSON.parse(new TextDecoder().decode(ramp.bytes.subarray(20, 20 + rampLength)))
+  const rampAccessor = rampDoc.accessors[rampDoc.meshes[0].primitives[0].attributes.NORMAL]
+  const rampView = rampDoc.bufferViews[rampAccessor.bufferView]
+  const rampNormals = new Float32Array(ramp.bytes.buffer, ramp.bytes.byteOffset + 28 + rampLength + rampView.byteOffset, rampAccessor.count * 3)
+  assert.ok(rampNormals[0] > .19, 'a sloped surface keeps its authored normal')
 })
