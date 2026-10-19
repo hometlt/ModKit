@@ -788,13 +788,15 @@ describe('a member is a subject in its own right', () => {
   it('prepares an opened member as a file open prepares a map (plan 6.11)', async () => {
     const { host, archive, workspace } = await registryFor()
     const prepared: string[] = []
+    const preparedBudgets: ResourceBudget[] = []
     const containers = createContainerRegistry({
       services: host.services,
       roots: () => [workspace],
       grant: { id: 'prepared-member-test', classes: ['read-source'] },
       budget: containerBudget,
-      prepareOpened: async ({ opened }) => {
+      prepareOpened: async ({ opened, budget }) => {
         prepared.push(opened.selected.contributionId)
+        preparedBudgets.push(budget)
         // what a map preview adds when a world cannot be built
         const note = {
           severity: 'information' as const,
@@ -805,10 +807,20 @@ describe('a member is a subject in its own right', () => {
       },
     })
     cleanup.push(() => containers.dispose())
-    const answer = await containers.open(containerUriText(archive, 'hello.txt'))
+    const childBudget = { ...containerBudget, maxNodes: 50_000_000 }
+    const answer = await containers.open(
+      containerUriText(archive, 'hello.txt'),
+      undefined,
+      childBudget,
+    )
     expect(prepared).toEqual(['modkit/txt'])
+    expect(preparedBudgets).toEqual([childBudget])
     expect(answer.snapshot.diagnostics.map(item => item.code)).toContain('x3.test/prepared')
     await answer.session?.dispose()
+    const ordinary = await containers.open(containerUriText(archive, 'hello.txt'))
+    expect(ordinary.snapshot.state).toBe('opened')
+    expect(preparedBudgets).toEqual([childBudget, containerBudget])
+    await ordinary.session?.dispose()
   }, 180_000)
 
   it('asks for the places behind a member by the member’s own path (its mod’s resources)', async () => {

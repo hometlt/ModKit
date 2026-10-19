@@ -1195,6 +1195,8 @@ export function createVsCodeCommandOpener(options: {
   readonly services: NodeSubjectServices
   readonly roots: () => readonly string[]
   readonly containers?: ContainerRegistry
+  /** Explicit policy for this opener's new subjects; held container parents keep their own budget. */
+  readonly budget?: ResourceBudget
   /** The window's mod contexts; a file on disk reaches the resources of its mod through them. */
   readonly subjectCatalog?: SubjectCatalogOptions
   readonly onRead?: (event: FileArtifactReadTelemetry) => void
@@ -1202,13 +1204,14 @@ export function createVsCodeCommandOpener(options: {
   /** Open a map with the world its preview builds, under this window's open grant and budget. */
   readonly mapWorld?: Omit<VsCodeMapWorldInputs, 'services' | 'grant' | 'budgets'>
 }): SubjectOpener {
+  const budget = options.budget ?? DEFAULT_OPEN_BUDGET
   const open: SubjectOpener = async (requested, signal) => {
     if (requested.startsWith('modkit-source:')) {
       if (!options.readContentSource) throw new Error('Content source provider is unavailable')
       return contentSourceOpener(
         options.services,
         options.readContentSource,
-        DEFAULT_OPEN_BUDGET,
+        budget,
         options.subjectCatalog?.contentSources,
       )(requested, signal)
     }
@@ -1216,13 +1219,13 @@ export function createVsCodeCommandOpener(options: {
       if (options.containers === undefined) {
         throw new TypeError('this window did not compose container browsing')
       }
-      return options.containers.open(requested, signal)
+      return options.containers.open(requested, signal, options.budget)
     }
     const opener = createPathSubjectOpener({
       subjects: options.services,
       roots: options.roots(),
       grant: DEFAULT_OPEN_GRANT,
-      budget: DEFAULT_OPEN_BUDGET,
+      budget,
       ...(options.onRead === undefined ? {} : { onRead: options.onRead }),
       ...(options.onStream === undefined ? {} : { onStream: options.onStream }),
       ...(await modResources(options.subjectCatalog, requested)),
@@ -1235,7 +1238,7 @@ export function createVsCodeCommandOpener(options: {
         ...options.mapWorld,
         services: options.services,
         grant: DEFAULT_OPEN_GRANT,
-        budgets: DEFAULT_OPEN_BUDGET,
+        budgets: budget,
       })
 }
 
@@ -1279,6 +1282,12 @@ const DEFAULT_OPEN_BUDGET: ResourceBudget = Object.freeze({
   maxScalarBytes: VSCODE_MAXIMUM_SUBJECT_BYTES,
   maxDiagnostics: 10_000,
   deadlineMs: 30_000,
+})
+
+/** Sequential model thumbnails may traverse large native prefab animation graphs; byte caps stay. */
+export const VSCODE_MODEL_THUMBNAIL_OPEN_BUDGET: ResourceBudget = Object.freeze({
+  ...DEFAULT_OPEN_BUDGET,
+  maxNodes: 50_000_000,
 })
 
 /** The same confinement `createPathSubjectOpener` applies, for the listing and reading paths. */

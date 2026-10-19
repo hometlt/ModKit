@@ -191,7 +191,7 @@ export interface ContainerRegistry {
    * The member as a subject: the same snapshot a file on disk produces, so the page cannot tell
    * which of the two it asked for.
    */
-  open: SubjectOpener
+  open(requested: string, signal?: AbortSignal, budget?: ResourceBudget): ReturnType<SubjectOpener>
   /** Containers this window is holding open, for the status surfaces. */
   readonly held: () => readonly string[]
   dispose(): Promise<void>
@@ -819,13 +819,17 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
     }
   }
 
-  const prepared = (opened: OpenedSubject, signal?: AbortSignal): Promise<OpenedSubject> =>
+  const prepared = (
+    opened: OpenedSubject,
+    signal?: AbortSignal,
+    budget = options.budget,
+  ): Promise<OpenedSubject> =>
     options.prepareOpened === undefined
       ? Promise.resolve(opened)
       : options.prepareOpened({
           opened,
           grant: writeGrant(),
-          budget: options.budget,
+          budget,
           ...(signal === undefined ? {} : { signal }),
         })
 
@@ -846,6 +850,7 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
     container: string,
     entry: string,
     signal?: AbortSignal,
+    budget = options.budget,
   ): Promise<Awaited<ReturnType<SubjectOpener>>> => {
     const diagnostics: Diagnostic[] = []
     const entryId = await entryIdOf(holder, container, entry, signal)
@@ -863,7 +868,7 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
        * run. They only return plans; the host commits them back through `edit`.
        */
       grant: writeGrant(),
-      budget: options.budget,
+      budget,
       pageLimit: PAGE_LIMIT,
       onDiagnostic: item => {
         diagnostics.push(item)
@@ -885,7 +890,7 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
         }),
       }
     }
-    const opened = await prepared(nested.result, signal)
+    const opened = await prepared(nested.result, signal, budget)
     const snapshot = subjectOpenSnapshot({
       result: opened,
       sessionId: () => `container:${randomUUID()}`,
@@ -911,6 +916,7 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
     holder: HeldContainer,
     entry: string,
     signal?: AbortSignal,
+    budget = options.budget,
   ): Promise<{
     readonly answer: Awaited<ReturnType<SubjectOpener>>
     readonly releaseResources: () => Promise<void>
@@ -927,7 +933,7 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
       parent: holder.session,
       root: root.ref,
       revision: root.revision,
-      budget: options.budget,
+      budget,
       ...(signal === undefined ? {} : { signal }),
     })
     const rootLease = await composition.source.openNamespace(signal)
@@ -971,7 +977,7 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
         intent: 'full',
         target: options.services.target,
         grant: writeGrant(),
-        budget: options.budget,
+        budget,
         executionBackends: options.services.executionBackends,
         ...(options.services.serviceDefinitions === undefined
           ? {}
@@ -999,7 +1005,7 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
           releaseResources: async () => undefined,
         }
       }
-      const opened = await prepared(result, signal)
+      const opened = await prepared(result, signal, budget)
       const snapshot = subjectOpenSnapshot({
         result: opened,
         sessionId: () => `container-directory:${randomUUID()}`,
@@ -1291,7 +1297,7 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
      * temporary file on disk. The snapshot is built by the host's own mapper, the same one the path
      * opener uses, so the page receives one shape and not two.
      */
-    async open(requested, signal) {
+    async open(requested, signal, budget = options.budget) {
       const location = parseContainerUriText(requested)
       if (location === undefined) {
         throw new TypeError(`«${requested}» does not name a container member`)
@@ -1308,9 +1314,15 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
         const node = await registry.stat(location.container, location.entry, signal)
         const opened =
           node.kind === 'directory'
-            ? await openDirectory(holder, location.entry, signal)
+            ? await openDirectory(holder, location.entry, signal, budget)
             : {
-                answer: await openMember(holder, location.container, location.entry, signal),
+                answer: await openMember(
+                  holder,
+                  location.container,
+                  location.entry,
+                  signal,
+                  budget,
+                ),
                 releaseResources: async () => undefined,
               }
         const answer = opened.answer

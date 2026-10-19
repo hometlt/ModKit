@@ -15,6 +15,8 @@
  * topology.
  */
 import { createHash } from 'node:crypto'
+import { createSceneRendererPort } from '@modkit/host/renderer'
+import { MODEL_GALLERY_BUDGET } from './model-gallery.js'
 import {
 browserImageType,
 imageGalleryExtensions,
@@ -213,6 +215,7 @@ import {
 catalogCandidates,
 createVsCodeCommandOpener,
 createVsCodeSubjectHost,
+VSCODE_MODEL_THUMBNAIL_OPEN_BUDGET,
 ownedWireBytes,
 subjectKey,
 subjectLabel, type ViewerSurfaceOperation,
@@ -8733,10 +8736,11 @@ async function activateModkit(
    * one opener that takes all three kinds of ref. Requests run one at a time, so a folder of large
    * images cannot flood the codec workers.
    */
-  const galleryExtensions = imageGalleryExtensions(host.services.inventory)
+  const pictureExtensions = imageGalleryExtensions(host.services.inventory)
+  const galleryExtensions = imageGalleryExtensions(host.services.inventory, true)
   // the pictures "Convert…" is offered on in menus; a menu matches an extension as written
   void vscode.commands.executeCommand('setContext', 'modkit.pictureExtensions', [
-    ...[...galleryExtensions].flatMap(extension => [
+    ...[...pictureExtensions].flatMap(extension => [
       `.${extension}`,
       `.${extension.toUpperCase()}`,
     ]),
@@ -8747,7 +8751,22 @@ async function activateModkit(
     containers,
     subjectCatalog,
     readContentSource,
+    budget: VSCODE_MODEL_THUMBNAIL_OPEN_BUDGET,
   })
+  const modelThumbnails = {
+    budget: MODEL_GALLERY_BUDGET,
+    renderers: createSceneRendererPort({
+      // A thumbnail runs here in the extension host, not in the codec worker's target realm.
+      services: {
+        ...host.services.host,
+        ...(host.services.serviceDefinitions === undefined
+          ? {}
+          : { serviceDefinitions: host.services.serviceDefinitions }),
+      },
+      grant: { id: 'vscode-model-gallery', classes: ['read-source'] },
+      budgets: MODEL_GALLERY_BUDGET,
+    }),
+  }
   let thumbnailQueue: Promise<unknown> = Promise.resolve()
   /*
    * A picture no codec decodes to pixels (WebP and GIF publish none) but the page can decode: the
@@ -8767,7 +8786,13 @@ async function activateModkit(
   ): Promise<GalleryThumbnail | undefined> => {
     const drawn = thumbnailQueue.then(
       async () =>
-        (await renderGalleryThumbnail(thumbnailOpener, ref, maxEdge).catch(() => undefined)) ??
+        (await renderGalleryThumbnail(
+          thumbnailOpener,
+          ref,
+          maxEdge,
+          undefined,
+          modelThumbnails,
+        ).catch(() => undefined)) ??
         (await browserImageOf(ref)),
     )
     thumbnailQueue = drawn.catch(() => undefined)

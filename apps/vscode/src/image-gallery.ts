@@ -6,6 +6,7 @@
  * it shows whatever that explorer lists — archive members, folder files, content-source entries.
  */
 import type { Inventory, SubjectOpener } from '@modkit/host'
+import { renderModelGalleryThumbnail, type ModelGalleryOptions } from './model-gallery.js'
 import type {
   ByteRangeSource,
   Lease,
@@ -43,8 +44,11 @@ export function browserImageType(name: string): string | undefined {
   return dot < 0 ? undefined : BROWSER_IMAGE_TYPES[name.slice(dot + 1).toLowerCase()]
 }
 
-/** Image support comes from enabled codec contracts, including external extensions. */
-export function imageGalleryExtensions(inventory: Inventory): ReadonlySet<string> {
+/** Enabled picture codecs, with model codecs opted into the explorer separately from Convert. */
+export function imageGalleryExtensions(
+  inventory: Inventory,
+  includeModels = false,
+): ReadonlySet<string> {
   const result = new Set<string>()
   for (const extension of inventory.extensions) {
     for (const contribution of extension.contributions) {
@@ -57,9 +61,11 @@ export function imageGalleryExtensions(inventory: Inventory): ReadonlySet<string
       }
       if (
         !spec.publishesDataSources?.some(source =>
-          ['common.view/raster-image-source', 'common.view/vector-scene-source'].includes(
-            source.contract,
-          ),
+          [
+            'common.view/raster-image-source',
+            'common.view/vector-scene-source',
+            ...(includeModels ? ['common.view/model-scene-source'] : []),
+          ].includes(source.contract),
         )
       )
         continue
@@ -107,6 +113,7 @@ export async function renderGalleryThumbnail(
   ref: string,
   maxEdge = 96,
   signal?: AbortSignal,
+  models?: ModelGalleryOptions,
 ): Promise<GalleryThumbnail | undefined> {
   const opened = await open(ref, signal)
   const session = opened.session
@@ -121,7 +128,10 @@ export async function renderGalleryThumbnail(
     }
     return (
       (await rasterThumbnail(session, maxEdge, signal).catch(() => undefined)) ??
-      (await vectorThumbnail(session, signal))
+      (await vectorThumbnail(session, signal)) ??
+      (models === undefined
+        ? undefined
+        : await renderModelGalleryThumbnail(opened, models, maxEdge, signal))
     )
   } finally {
     await session.dispose()
