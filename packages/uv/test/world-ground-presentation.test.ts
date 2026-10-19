@@ -108,3 +108,20 @@ it('admits the grids only on ground, in their own shapes and ranges', async () =
   expect(mutate(ground => { ground['presentationCellHidden'] = [[true, false]] })).toThrow()
   expect(mutate(ground => { ground['baseOffsets'] = [[0, 0]] })).toThrow()
 })
+
+it('writes a world whose colorization carries palette variations, naming them among the lost fields', async () => {
+  const lit = { ...snapshot(samples(() => undefined), cliffs),
+    lighting: { coordinateSpaceId: 'map-native', ambientColor: [0.2, 0.2, 0.2] as const, ambientIntensity: 1, directional: [],
+      toneMapping: { operator: 'filmic' as const, exposure: 1, whitePoint: 2, contrast: 1,
+        colorization: { hue: 0, saturation: 0.5, lightness: 0, brightness: 1, contrast: 1, blend: 0.5, inputLow: 0, inputHigh: 1,
+          inputGamma: 1, outputLow: 0, outputHigh: 1,
+          variations: [{ command: 'red' as const, region: 'midtones' as const, steps: 2 }] } } } }
+  const lease = createCandidateWorldSceneLease(lit, [], 64)
+  try {
+    const result = await materializeWorldToUvw(lease.value, options)
+    if (result.state !== 'materialized') throw new Error(JSON.stringify(result.refusals))
+    expect(result.lostFields).toContainEqual({ path: 'world.lighting.toneMapping.colorization.variations', count: 1 })
+    const lighting = result.document.spaces[0]!.layers.find(layer => layer.kind === 'lighting')
+    expect(lighting).toMatchObject({ toneMapping: { colorization: { saturation: 0.5, blend: 0.5 } } })
+  } finally { await lease.release() }
+})

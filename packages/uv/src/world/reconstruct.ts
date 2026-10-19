@@ -1237,6 +1237,19 @@ async function reconstructLayer(
     if (items.length !== 1 || items[0]?.facet !== 'lighting')
       throw new TypeError('UVW canonical lighting layer must contain one environment')
     const environment = items[0]
+    // UVW has no colorization variations (SC2 palette steps): they are named among the lost fields
+    const toneMapping = environment.toneMapping
+    const colorization = toneMapping?.colorization
+    const variations = colorization?.variations
+    if (variations !== undefined && variations.length > 0)
+      state.lostFields?.set(
+        'world.lighting.toneMapping.colorization.variations',
+        (state.lostFields.get('world.lighting.toneMapping.colorization.variations') ?? 0) + variations.length,
+      )
+    const writtenToneMapping =
+      toneMapping === undefined || colorization === undefined || variations === undefined
+        ? toneMapping
+        : (({ variations: _variations, ...rest }) => ({ ...toneMapping, colorization: rest }))(colorization)
     const direction = canonicalLightDirection(environment.coordinateSpaceId, info.uvwTransform)
     const localDirectionalIds = environment.directional.map(light => localId(light.id, 'source'))
     const preserveDirectionalIds = environment.directional.every(
@@ -1253,7 +1266,7 @@ async function reconstructLayer(
       ...(environment.unlitColor === undefined ? {} : { unlitColor: environment.unlitColor }),
       ambientColor: environment.ambientColor,
       ambientIntensity: environment.ambientIntensity,
-      ...(environment.toneMapping === undefined ? {} : { toneMapping: environment.toneMapping }),
+      ...(writtenToneMapping === undefined ? {} : { toneMapping: writtenToneMapping }),
       ...(environment.terrain === undefined ? {} : { terrain: environment.terrain }),
       directional: Object.freeze(
         environment.directional.map((light, index) =>
