@@ -108,7 +108,11 @@ export function projectUvmRigModel(
     skins = array(document, 'skins')
   if (skins.length !== 1) throw new TypeError('rig authoring requires one explicit skin')
   const skin = object(skins[0], 'skin')
-  only(skin, ['joints', 'inverseBindMatrices', 'skeleton'], 'skin')
+  only(skin, ['joints', 'inverseBindMatrices', 'skeleton', 'extensions'], 'skin')
+  // UV_game_skeleton.sourceOrder (the materializer's native joint ordinals) is read and checked by
+  // readUvmModel; native authoring re-derives its order from the joints, so it adds nothing here.
+  if (skin['extensions'] !== undefined)
+    only(object(skin['extensions'], 'skin.extensions'), ['UV_game_skeleton'], 'skin.extensions')
   const parsed = readUvmModel(document, container.binary, budget, signal)
   // Native authoring still targets a four-wide RenderMesh contract. Rendering is eight-wide,
   // but native projection must never drop the second set or lose its stride metadata.

@@ -279,6 +279,16 @@ test('the bounds cover a cubic track that overshoots both of its keys', () => {
   assert.ok(result.bounds.radius >= farthest, `${result.bounds.radius} covers ${farthest}`)
 })
 
+test('a skin keeps the source joint order the materializer writes, nothing else', () => {
+  const plain = projectUvmRigModel(framedRig(), budget)
+  const ordered = framedRig()
+  ordered.document.skins[0].extensions = { UV_game_skeleton: { sourceOrder: [0, 1] } }
+  assert.deepEqual(projectUvmRigModel(ordered, budget).model.skeleton, plain.model.skeleton)
+  const foreign = framedRig()
+  foreign.document.skins[0].extensions = { OTHER: {} }
+  assert.throws(() => projectUvmRigModel(foreign, budget), /skin\.extensions\.OTHER is outside/)
+})
+
 test('an identity frame changes nothing', () => {
   const result = projectUvmRigModel(framedRig(translate(0, 0, 0)), budget)
   close(result.restPoses[0].translation, [0, 0, 1], 'root translation')

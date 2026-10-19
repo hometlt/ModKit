@@ -129,6 +129,7 @@ describe('world lighting rig', () => {
     assert.deepEqual(worldMaterialLight(plan).fills[0], {
       direction: [0.7, 0.19, -0.69],
       color: [0.8, 0.68, 0.55],
+      useAmbientOcclusion: true,
     })
   })
 

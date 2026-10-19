@@ -290,14 +290,16 @@ it('lights a scene-lit program with the world shadow on its own unit, per draw a
       'precision highp float; uniform sampler2D u_diffuseMap; uniform vec3 u_sceneLightColor; uniform vec3 u_sceneAmbientColor;' +
       ' in vec3 v_lightDir; void main(){ vec3 normal = vec3(0.0, 0.0, 1.0); vec3 color = vec3(1.0); vec3 spec = vec3(0.0);' +
       ' float lambert = max(dot(normal, v_lightDir), 0.0);' +
-      ' vec3 shaded = color * (u_sceneAmbientColor + u_sceneLightColor * lambert) + spec * u_sceneLightColor; }',
+      // the standard GLSL's scene-lit line (codec-kit model-math/standard-material-glsl.ts)
+      ' vec3 shaded = color * (u_sceneAmbientColor * materialAo + u_sceneLightColor * lambert * mix(1.0, materialAo, u_sceneKeyAo))' +
+      ' + spec * u_sceneLightColor * mix(1.0, materialAo, u_sceneKeyAo); }',
     defines: { uvSetCount: 1, sceneLighting: true },
   }
   // The key light's diffuse and highlight take the shadow; ambient and fills do not.
   const { fragmentSource, vertexSource } = leaseShaderSources(lit, material)
   assert.match(fragmentSource, /float sceneKeyShade = sceneKeyShadow\(max\(dot\(normal, v_lightDir\), 0\.0\)\);/)
-  assert.match(fragmentSource, /u_sceneAmbientColor \+ sceneKeyLight \* lambert \+/)
-  assert.match(fragmentSource, /spec \* \(u_sceneSpecularColor \* sceneKeyShade\);/)
+  assert.match(fragmentSource, /u_sceneAmbientColor \* materialAo \+ sceneKeyLight \* lambert \* mix\(1\.0, materialAo, u_sceneKeyAo\) \+/)
+  assert.match(fragmentSource, /spec \* \(u_sceneSpecularColor \* sceneKeyShade\) \* mix\(1\.0, materialAo, u_sceneKeyAo\);/)
   assert.match(fragmentSource, /float modkitWorldShadow\(/)
   assert.match(vertexSource, /v_sceneShadowWorld=world\.xyz;/)
 
