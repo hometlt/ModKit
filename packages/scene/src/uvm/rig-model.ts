@@ -412,10 +412,14 @@ export function projectUvmRigModel(
     const { UV_game_animation_clips: _clips, ...extensions } = detachedExtensions
     detached['extensions'] = extensions
   }
-  // the clips' declarations go with the animations they describe (their events are on those)
+  // the clips' declarations go with the animations they describe (their events are on those),
+  // the skins' source joint order with the skins
   for (const key of ['extensionsUsed', 'extensionsRequired'])
     detached[key] = array(detached, key).filter(
-      name => name !== 'UV_game_animation_clips' && name !== 'UV_game_animation_events',
+      name =>
+        name !== 'UV_game_animation_clips' &&
+        name !== 'UV_game_animation_events' &&
+        name !== 'UV_game_skeleton',
     )
   // Detached with the rig: its clips (and the animation pointers and primitive visibility they
   // drive, returned as `meshTracks`), and the joints' camera rules (returned as `billboards`).
