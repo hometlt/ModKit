@@ -996,7 +996,7 @@ describe('portable UVP map bundle', () => {
         ...sourceModel,
         async model(resourceId) {
           const converted = await sourceModel.model!(resourceId)
-          return { ...converted, uvmBytes: twoTextures.slice() } as typeof converted
+          return { ...converted, uvmBytes: twoTextures.slice() } as unknown as typeof converted
         },
       },
       options,
@@ -1044,7 +1044,7 @@ describe('portable UVP map bundle', () => {
             materials: [{ id: 'material-0', layers: [{ slot: 'diffuse', resourceId: 'skin.dds' }] }],
             resources: [{ id: 'skin.dds', role: 'texture' as const, provenance: 'reference-only' as const }],
             textures: [{ id: 'skin.dds', width: 2, height: 2, rgba: rgba.slice() }],
-          } as typeof converted
+          } as unknown as typeof converted
         },
       },
       options,
@@ -1110,7 +1110,7 @@ describe('portable UVP map bundle', () => {
             materials: [{ id: 'material-0', layers: [{ slot: 'diffuse', resourceId: 'skin.dds' }, { slot: 'alpha-1', resourceId: 'skin.dds' }] }],
             resources: [{ id: 'skin.dds', role: 'texture' as const, provenance: 'reference-only' as const }],
             textures: [{ id: 'skin.dds', width: 2, height: 2, rgba: rgba.slice() }],
-          } as typeof converted
+          } as unknown as typeof converted
         },
       },
       options,
@@ -1134,16 +1134,16 @@ describe('portable UVP map bundle', () => {
     const packed = await materializeWorldToUvpMap(
       {
         ...sourceModel,
-        async model(resourceId, request, signal) {
-          const converted = await sourceModel.model!(resourceId, request, signal)
+        async model(resourceId) {
+          const converted = await sourceModel.model!(resourceId)
           if (converted.state !== 'converted' || converted.nodes === undefined) throw new Error('fixture model has no nodes')
-          const children = new Set(converted.nodes.flatMap(node => node.childIds))
+          const children = new Set<string>(converted.nodes.flatMap(node => node.childIds ?? []))
           // yaw π about +Y: x and z of every column negate
           const turned = converted.nodes.map(node => children.has(node.id) ? node : {
             ...node,
             transform: node.transform.map((value, index) => index % 4 === 0 || index % 4 === 2 ? -value : value),
           })
-          return { ...converted, nodes: turned } as typeof converted
+          return { ...converted, nodes: turned } as unknown as typeof converted
         },
       },
       options,
