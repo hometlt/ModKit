@@ -33,6 +33,7 @@ import {
   storedEntrySource,
 } from './namespace-origin.js'
 import { createResourceSession, type ResourceSessionOptions } from './resource-session.js'
+import type { CompanionOrigin } from './input-resolution.js'
 
 const NAMESPACE_ENTRY_SOURCE = 'common.view/namespace-entry-source'
 const CONTAINER_EXTRACT = 'container.extract'
@@ -56,6 +57,8 @@ interface EntryBinding {
 export interface ContainerNamespaceComposition {
   readonly source: ArtifactNamespaceSource
   readonly descriptor: AnyDescriptor
+  /** The retained namespace as a host-owned origin, for one shared resource-session budget. */
+  resourceOrigin(maxBytes?: bigint): CompanionOrigin
   openResources(
     options: Omit<ResourceSessionOptions, 'origin'>,
   ): ReturnType<typeof createResourceSession>
@@ -855,40 +858,45 @@ export async function createContainerNamespaceComposition(
   const packHandlerId = operationHandler(descriptor, CONTAINER_PACK)
   const exportRawHandlerId = operationHandler(descriptor, EXPORT_RAW)
 
+  /** One namespace/extraction owner for standalone resources and layered post-open resources. */
+  const resourceOrigin = (requestedBytes = options.budget.maxInputBytes): CompanionOrigin => {
+    const maxSourceBytes =
+      requestedBytes < BigInt(options.budget.maxScalarBytes)
+        ? requestedBytes
+        : BigInt(options.budget.maxScalarBytes)
+    return createNamespaceCompanionOrigin({
+      namespace,
+      primaryLogicalId: '',
+      containerRevision: options.revision,
+      maxPages: options.budget.maxNodes,
+      maxSourceBytes,
+      ...(openStoredSource === undefined ? {} : { openStoredSource }),
+      async extract(entryId, signal) {
+        ensureLive(signal)
+        const result = await parentOperations.invoke(
+          extractHandlerId,
+          { entryId },
+          signal === undefined ? {} : { signal },
+        )
+        ensureLive(signal)
+        if (result.state !== 'ok' || result.output.kind !== 'bytes')
+          throw new ModkitError({
+            code: 'x3.host/container-entry-unreadable',
+            message: `container refused to extract entry «${entryId}»`,
+          })
+        return result.output.value
+      },
+    })
+  }
+
   const composition: ContainerNamespaceComposition = Object.freeze({
     source,
     descriptor,
+    resourceOrigin,
     openResources(request: Omit<ResourceSessionOptions, 'origin'>) {
-      const requestedBytes = request.limits?.maxBytes ?? options.budget.maxInputBytes
-      const maxSourceBytes =
-        requestedBytes < BigInt(options.budget.maxScalarBytes)
-          ? requestedBytes
-          : BigInt(options.budget.maxScalarBytes)
       return createResourceSession({
         ...request,
-        origin: createNamespaceCompanionOrigin({
-          namespace,
-          primaryLogicalId: '',
-          containerRevision: options.revision,
-          maxPages: options.budget.maxNodes,
-          maxSourceBytes,
-          ...(openStoredSource === undefined ? {} : { openStoredSource }),
-          async extract(entryId, signal) {
-            ensureLive(signal)
-            const result = await parentOperations.invoke(
-              extractHandlerId,
-              { entryId },
-              signal === undefined ? {} : { signal },
-            )
-            ensureLive(signal)
-            if (result.state !== 'ok' || result.output.kind !== 'bytes')
-              throw new ModkitError({
-                code: 'x3.host/container-entry-unreadable',
-                message: `container refused to extract entry «${entryId}»`,
-              })
-            return result.output.value
-          },
-        }),
+        origin: resourceOrigin(request.limits?.maxBytes),
       })
     },
     ...(packHandlerId === undefined ? {} : { packHandlerId }),
