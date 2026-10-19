@@ -358,6 +358,16 @@ function textureFailureReason(result: {
  * A decoded texture as package media: PNG, which the glTF form of UVW reads (SPEC_UVW_GLTF; the
  * TGA this wrote before was not a glTF image).
  */
+/** A decoded texture with its rows in reverse order (a reverse-row source's raster on the forward grid). */
+function rowsReversed(texture: SceneRendererTexture): SceneRendererTexture {
+  if (!(texture.rgba instanceof Uint8Array)) return texture
+  const row = texture.width * 4
+  const rgba = new Uint8Array(texture.rgba.byteLength)
+  for (let y = 0; y < texture.height; y++)
+    rgba.set(texture.rgba.subarray(y * row, (y + 1) * row), (texture.height - 1 - y) * row)
+  return { ...texture, rgba }
+}
+
 async function encodeMedia(texture: SceneRendererTexture): Promise<Uint8Array> {
   if (
     !Number.isSafeInteger(texture.width) ||
@@ -1272,6 +1282,14 @@ export async function materializeWorldToUvpMap(
     >()
     let encodedTotal = 0
     let ordinal = 0
+    // A raster's rows follow the source's height-field rows; the UVW grid is written forward
+    // (as reconstruct reverses a native source's material cells; a canonical source is forward)
+    const sourceInfo = catalogs.some(catalog => (catalog.weightRasters?.length ?? 0) > 0)
+      ? await source.info(options.signal)
+      : undefined
+    const reverseRows =
+      sourceInfo?.canonicalArtifact === undefined &&
+      sourceInfo?.uvwTransform?.heightfield.sourceRowOrder === 'reverse'
     for (const catalog of catalogs) {
       const target = outputMaterialLayer(materialized.document, catalog)
       // A visual catalog may accompany a deliberately excluded partial geometry/material facet.
@@ -1391,7 +1409,7 @@ export async function materializeWorldToUvpMap(
             throw new TypeError(
               `terrain weight raster ${raster.resourceId} decoded with unexpected dimensions`,
             )
-          const bytes = await encodeMedia(result.texture)
+          const bytes = await encodeMedia(reverseRows ? rowsReversed(result.texture) : result.texture)
           encodedTotal += bytes.byteLength
           if (encodedTotal > options.maxMediaBytes)
             throw new RangeError(

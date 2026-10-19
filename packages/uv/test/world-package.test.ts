@@ -816,6 +816,63 @@ describe('portable UVP map bundle', () => {
     if (texture?.state === 'decoded') expect(texture.texture.rgba).toEqual(rgba)
   })
 
+  it('writes the weight raster of a reverse-row native source in the forward rows of its grid', async () => {
+    const base = sourceWithWeightRaster()
+    const { canonicalArtifact: _canonicalArtifact, ...info } = await base.info()
+    const native = {
+      ...base,
+      // the native rows run the other way: native row y is the grid's row 1 - y
+      page: async (request: Parameters<typeof base.page>[0], signal?: AbortSignal) => {
+        const page = await base.page(request, signal)
+        return {
+          ...page,
+          items: page.items.map(item =>
+            (item.facet === 'terrain' || item.facet === 'terrain-materials') && 'y' in item
+              ? { ...item, y: 1 - (item.y as number) }
+              : item.facet === 'layers' && item.materials !== undefined
+                ? // only the weights matter here; the colour texture is the canonical fixture's
+                  { ...item, materials: item.materials.map(({ baseColorResourceId: _texture, ...material }) => material) }
+                : item,
+          ),
+        }
+      },
+      info: async () => ({
+        ...info,
+        uvwTransform: {
+          schemaVersion: 1 as const, snapshotId: info.snapshotId,
+          sourceCoordinateSpaceId: 'map-native' as const, targetCoordinateSpaceId: 'uvw-canonical' as const,
+          basis: { handedness: 'right' as const, upAxis: 'y' as const, forwardAxis: '+z' as const,
+            unit: 'meter' as const },
+          axes: { x: { sourceAxis: 'x' as const, scale: 1, offset: 0 },
+            y: { sourceAxis: 'z' as const, scale: 1, offset: 0 },
+            z: { sourceAxis: 'y' as const, scale: 1, offset: 0 } },
+          heightfield: { columns: 2, rows: 2, cellSize: 1,
+            origin: [0, 0, 0] as const, sourceRowOrder: 'reverse' as const },
+          bounds: { coordinateSpaceId: 'uvw-canonical' as const,
+            minimum: { x: 0, y: 0, z: 0 }, maximum: { x: 1, y: 1, z: 1 } },
+          proof: { kind: 'adapter-qualification' as const, method: 'sealed-legacy-differential' as const,
+            oracle: 'synthetic native raster fixture', corpus: 'one 2x2 grid',
+            sourceDigests: { input: `sha256:${'1'.repeat(64)}` as const }, tupleCount: 4,
+            comparison: 'ieee-754-binary64-exact' as const,
+            nativeTupleDigest: `sha256:${'2'.repeat(64)}` as const,
+            canonicalTupleDigest: `sha256:${'3'.repeat(64)}` as const },
+        },
+      }),
+    }
+    const packed = await materializeWorldToUvpMap(native, options)
+    if (packed.state !== 'materialized') throw new Error(JSON.stringify(packed.refusals))
+    const reopened = await openUvpMapBundle(
+      new Map([...packed.entries].map(([path, bytes]) => [path, bytes.slice()])),
+      { snapshotId: 'detached-reverse-raster', rasterResources },
+    )
+    const layer = reopened.document.spaces[0]?.layers.find(candidate => candidate.kind === 'terrain-materials')
+    const id = layer?.kind === 'terrain-materials' ? layer.weightRasters?.[0]?.resourceId : undefined
+    const texture = await reopened.source.texture?.(`uvw-resource:main/${String(id)}`, { maxBytes: 1024 })
+    if (texture?.state !== 'decoded') throw new Error('weight raster not decoded')
+    // the source's two rows, last first
+    expect(texture.texture.rgba).toEqual(Uint8Array.of(...rgba.slice(8), ...rgba.slice(0, 8)))
+  })
+
   it('materializes UVW plus owned texture bytes and reopens without the original source', async () => {
     const packed = await materializeWorldToUvpMap(source(), options)
     expect(packed.state).toBe('materialized')
