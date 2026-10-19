@@ -25,6 +25,7 @@ import { assertTerrainAtlas, assertDerivedCliffObject } from './uvw-terrain-atla
 import { assertUnlitLighting } from './uvw-unlit.ts'
 import { assertUvwObjectPresentation, assertUvwCamera } from './uvm-presentation.ts'
 import { assertUvwPlayers } from './uvw-players.ts'
+import { assertUvwWaterBoundary } from './uvw-water-boundary.ts'
 import worldSchema from '../world/schema/uvw.profile.v1.schema.json' with { type: 'json' }
 const worldPublisherIdShape = worldSchema.$defs.versionedPublisherId
 const worldPublisherIdPattern = new RegExp(worldPublisherIdShape.pattern, 'u')
@@ -397,6 +398,7 @@ function assertUvwBody(document, profile, gltf) {
   for (const layer of layers) {
     if (layer.kind === 'heightfield') assertHeightfield(layer, document.bounds)
     if (layer.kind === 'cliffs') assertCliffs(layer, document.bounds)
+    if (layer.kind === 'water') for (const zone of layer.zones) assertUvwWaterBoundary(zone)
     if (layer.kind === 'objects') assertObjects(layer, layers)
     if (layer.kind === 'terrain-materials') assertTerrainAtlas(layer, gltf)
     if (layer.kind === 'regions') assertRegions(layer)

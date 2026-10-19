@@ -1,4 +1,5 @@
 import { unretainedWorldFields } from './field-loss.js'
+import { waterBoundaryProblem } from './water-boundary.js'
 import { srgbToLinear } from '@modkit/codec-kit/raster'
 /** Core-owned reconstruction of qualified world facets into normative UVW. Preserves admitted
  * atlas tiles/coverage, corrects native reverse-row cell anchors, and reports unsupported fields. */
@@ -368,6 +369,8 @@ const KEPT_FIELDS: Readonly<Record<string, ReadonlySet<string>>> = Object.freeze
     'uvwMinimum',
     'uvwMaximum',
     'uvwElevation',
+    'polygon',
+    'uvwPolygon',
     'materialId',
   ]),
   regions: new Set(['regionId', 'name', 'color', 'shapes', 'uvwShapes']),
@@ -990,11 +993,27 @@ async function reconstructLayer(
           ) {
             throw new TypeError('UVW canonical water item lacks canonical bounds or elevation')
           }
+          if (raw.polygon !== undefined && raw.uvwPolygon === undefined)
+            throw new TypeError('UVW water polygon requires explicit canonical coordinates')
+          const polygon = raw.uvwPolygon?.map(point => Object.freeze([point.x, point.z] as const))
+          // The host projects corners and boundary points apart, so a point may round past the
+          // bounds by an ulp: the bounds only cull, and grow to hold the authored boundary.
+          const minimum = Object.freeze([
+            Math.min(raw.uvwMinimum.x, ...(polygon ?? []).map(point => point[0])),
+            Math.min(raw.uvwMinimum.z, ...(polygon ?? []).map(point => point[1])),
+          ] as const)
+          const maximum = Object.freeze([
+            Math.max(raw.uvwMaximum.x, ...(polygon ?? []).map(point => point[0])),
+            Math.max(raw.uvwMaximum.z, ...(polygon ?? []).map(point => point[1])),
+          ] as const)
+          const problem = polygon === undefined ? undefined : waterBoundaryProblem(polygon, minimum, maximum)
+          if (problem !== undefined) throw new TypeError(`UVW water zone ${String(raw.id)}: ${problem}`)
           return Object.freeze({
             id: localId(raw.id, 'zone'),
-            minimum: Object.freeze([raw.uvwMinimum.x, raw.uvwMinimum.z] as const),
-            maximum: Object.freeze([raw.uvwMaximum.x, raw.uvwMaximum.z] as const),
+            minimum,
+            maximum,
             elevation: raw.uvwElevation,
+            ...(polygon === undefined ? {} : { polygon: Object.freeze(polygon) }),
             ...(raw.materialId === undefined
               ? {}
               : { materialId: waterMaterials?.some(material => material.materialId === raw.materialId)

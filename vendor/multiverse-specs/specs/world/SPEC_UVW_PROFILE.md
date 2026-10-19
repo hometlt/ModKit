@@ -42,7 +42,7 @@ document is exactly a profile document with its body wrapped as that single spac
   taken so the day a publisher lands the name is already right, refused until their
   amendment.
 - Heightfield-space layers: scalar `heightfield`; exact `terrain-materials` blends;
-  synchronized `cliffs`; rectangular `water` zones; placed `objects`; confined
+  synchronized `cliffs`; rectangular or polygonal `water` zones; placed `objects`; confined
   `resources` (`uvm` or media); `regions`; exact native-flag `navigation`; portable
   static `traversal` for one movement class; gateway segments;
   and initial `lighting`. Every added family is independently versioned with `schemaVersion: 1`.
@@ -209,6 +209,21 @@ The legacy candidate envelope does not gain this profile-only field.
    must report the facet partial and may not serialize that zone as exact UVW. A layer without the
    material catalog retains the original v1 compatibility rule: `materialId` may name a terrain
    material or media resource directly.
+   A zone may carry `polygon`, its authored surface boundary: an ordered open ring of 3..4096
+   finite X/Z points in the parent space, the same frame as `minimum`/`maximum`. The ring
+   closes implicitly from the last point to the first, so no point repeats, including first and
+   last. It is simple: consecutive edges share only their vertex and do not fold back, any other
+   two edges share no point. Its area is non-zero; either winding describes the same region, and
+   writers keep the authored order. One ring has no holes: a native surface with islands is either
+   published as separate zones or reported partial, never filled. Every point lies within the
+   zone's bounds, which remain for culling and should be the ring's own bounding box. The surface
+   is the ring's interior at `elevation`; `terrain-clipped` still clips it against the terrain.
+   Without `polygon` the zone remains the rectangle. A reader or target that cannot keep the ring
+   refuses it or reports the boundary lost; it may then use the bounds rectangle only together with
+   that reported loss, never as if it were the authored boundary.
+   Arithmetic that cannot establish these checks must refuse explicitly; non-finite intermediate
+   results never authorize a boundary. Computing area relative to a ring vertex avoids cancellation
+   of small surfaces translated far from the origin.
 5. Object transforms are canonical local position, authored unit XYZW `rotation` quaternion
    and non-zero scale. Optional `presentationRotation` is an **absolute** unit XYZW quaternion
    in the same canonical space-local frame. Drawing, visual picking and culling use

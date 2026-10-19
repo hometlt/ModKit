@@ -306,6 +306,10 @@ function recordItems(
                   uvwMinimum: Object.freeze({ x: zone.minimum[0], z: zone.minimum[1] }),
                   uvwMaximum: Object.freeze({ x: zone.maximum[0], z: zone.maximum[1] }),
                   uvwElevation: zone.elevation,
+                  ...(zone.polygon === undefined ? {} : {
+                    polygon: Object.freeze(zone.polygon.map(([x, z]) => Object.freeze({ x, y: z }))),
+                    uvwPolygon: Object.freeze(zone.polygon.map(([x, z]) => Object.freeze({ x, z }))),
+                  }),
                   ...(zone.materialId === undefined ? {} : { materialId: zone.materialId }),
                 }),
               ]

@@ -17,6 +17,7 @@ import { canonicalJsonStringify, parseJsonDocument, compareUtf8, ModkitError } f
 import type { MapModelComponentPlacement } from '@modkit/sdk'
 import { isNavigationFlagEncoding, isVersionedPublisherId, isGameRasterValue } from '@modkit/sdk/maps'
 import type { GameRasterValueMetadata, GameRasterValueType } from '@modkit/sdk/maps'
+import { UVW_WATER_POLYGON_MAX_POINTS, waterBoundaryProblem } from './water-boundary.js'
 import type {
   MapLatticeObjectCoverage,
   MapWorldCamera,
@@ -186,6 +187,8 @@ export interface UvwWaterZone {
   readonly maximum: readonly [number, number]
   readonly elevation: number
   readonly materialId?: string
+  /** Explicit ordered boundary in the parent space's X/Z plane; omission keeps the rectangle. */
+  readonly polygon?: readonly (readonly [number, number])[]
 }
 
 export interface UvwWaterMaterial {
@@ -1591,7 +1594,7 @@ function waterLayer(
       const zone = record(entry, zonePath, state, depth + 2)
       exactKeys(
         zone,
-        ['id', 'minimum', 'maximum', 'elevation', 'materialId'],
+        ['id', 'minimum', 'maximum', 'elevation', 'materialId', 'polygon'],
         ['id', 'minimum', 'maximum', 'elevation'],
         zonePath,
       )
@@ -1599,11 +1602,22 @@ function waterLayer(
       const maximum = vec2(zone['maximum'], `${zonePath}.maximum`, state, depth + 3)
       if (minimum[0] > maximum[0] || minimum[1] > maximum[1])
         fail('water bounds minimum exceeds maximum', zonePath)
+      const polygonValues = zone['polygon'] === undefined ? undefined
+        : array(zone['polygon'], `${zonePath}.polygon`, state, depth + 3)
+      // the count is refused before any point is read
+      if (polygonValues !== undefined && (polygonValues.length < 3 || polygonValues.length > UVW_WATER_POLYGON_MAX_POINTS))
+        fail(`water polygon requires 3..${String(UVW_WATER_POLYGON_MAX_POINTS)} ordered points`, `${zonePath}.polygon`)
+      const polygon = polygonValues === undefined ? undefined
+        : Object.freeze(polygonValues.map((point, index) =>
+            vec2(point, `${zonePath}.polygon[${String(index)}]`, state, depth + 4)))
+      const boundaryProblem = polygon === undefined ? undefined : waterBoundaryProblem(polygon, minimum, maximum)
+      if (boundaryProblem !== undefined) fail(boundaryProblem, `${zonePath}.polygon`)
       return Object.freeze({
         id: layerId(zone['id'], `${zonePath}.id`, state, depth + 3),
         minimum,
         maximum,
         elevation: finite(zone['elevation'], `${zonePath}.elevation`, state, depth + 3),
+        ...(polygon === undefined ? {} : { polygon }),
         ...(zone['materialId'] === undefined
           ? {}
           : {

@@ -3,16 +3,16 @@
   "schemaVersion": "multiverse-specs-pin-1",
   "source": {
     "repository": "multiverse (sibling repository)",
-    "commit": "29d3e80c57f0e9c55cbe66b1efe695add07b8043",
-    "subject": "Keep ground presentation and cliff ramps in the UVW profile",
-    "committedOn": "2026-10-19T16:04:07+04:00"
+    "commit": "c5b30b2cd3810f1b54e87f5c22eab0d0eac696e7",
+    "subject": "Admit authored UVW water boundaries with checked polygon geometry",
+    "committedOn": "2026-10-19T20:24:00+04:00"
   },
   "generator": "scripts/specs-pin.mjs",
   "generatedFrom": "git objects, not the sibling working tree",
   "prefix": "specs/",
   "counts": {
-    "files": 326,
-    "bytes": 2266782
+    "files": 328,
+    "bytes": 2275818
   },
   "files": [
     {
@@ -1312,8 +1312,8 @@
     },
     {
       "path": "specs/tools/uvw-profile.mjs",
-      "bytes": 49988,
-      "digest": "sha256:bc413f10f8c4d1f1ef84de3870010c9442c8ea986f549f9c011b14f94a7c1b06"
+      "bytes": 50146,
+      "digest": "sha256:de105eba48ba02c4845ba696273e24d806b5644e50d836b8b7525614fecff827"
     },
     {
       "path": "specs/tools/uvw-query-surface.test.mjs",
@@ -1344,6 +1344,16 @@
       "path": "specs/tools/uvw-unlit.ts",
       "bytes": 634,
       "digest": "sha256:c73951083aadd789df1c10565ffcffb6f8c09ead0ced9464551a1a50deebddbd"
+    },
+    {
+      "path": "specs/tools/uvw-water-boundary.test.mjs",
+      "bytes": 3487,
+      "digest": "sha256:e35f702a2ee031ea1957b4c2d7116143014d8fcd6bd0e01b9e3d9bb9ec7aae9a"
+    },
+    {
+      "path": "specs/tools/uvw-water-boundary.ts",
+      "bytes": 3670,
+      "digest": "sha256:7c4df2ef7be4887abee3754ae7b94646a3b4efdda30e07a095642d937d7309ae"
     },
     {
       "path": "specs/world/ADR-WORLD-001-sc2-map-native-to-uvw.md",
@@ -1407,8 +1417,8 @@
     },
     {
       "path": "specs/world/SPEC_UVW_PROFILE.md",
-      "bytes": 40983,
-      "digest": "sha256:aff58af4d46e0b0d6219a28869e51d0113a41e7c9f0ee4189c4760d52199208f"
+      "bytes": 42371,
+      "digest": "sha256:f7e0a288166a366546dbcda754c6b701c5fca787596e940172abe38e91050ae7"
     },
     {
       "path": "specs/world/fixtures/invalid/connections-not-empty.uvw.json",
@@ -1642,8 +1652,8 @@
     },
     {
       "path": "specs/world/schema/uvw.profile.v1.schema.json",
-      "bytes": 66764,
-      "digest": "sha256:866f4e476404fa3042d16234b15e3c8cf695dfbd31b114c347741cef6b3bf415"
+      "bytes": 67097,
+      "digest": "sha256:719288be704a74822574755d07c67053d080f810f30dfd416f37ac5647b84c4b"
     }
   ]
 }

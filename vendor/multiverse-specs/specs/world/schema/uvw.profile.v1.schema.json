@@ -891,7 +891,14 @@
         "minimum": { "$ref": "#/$defs/vec2" },
         "maximum": { "$ref": "#/$defs/vec2" },
         "elevation": { "type": "number" },
-        "materialId": { "$ref": "#/$defs/localId" }
+        "materialId": { "$ref": "#/$defs/localId" },
+        "polygon": {
+          "description": "Ordered open ring of the surface boundary in the parent space's X/Z plane (SPEC_UVW_PROFILE water rule); omitted keeps the axis-aligned rectangle.",
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 4096,
+          "items": { "$ref": "#/$defs/vec2" }
+        }
       }
     },
     "waterMaterial": {
