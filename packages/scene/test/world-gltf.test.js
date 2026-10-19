@@ -55,18 +55,20 @@ it('keeps the full rock mask period when the diffuse texture repeats inside it',
 
 it('exports masked cliff floors and vertical walls at their original positions with complementary coverage', async () => {
   const positions = Float32Array.of(0, 0, 0, 2, 0, 0, 0, 0, 2,
-    0, 0, 0, 2, 0, 0, 0, 1, 0)
+    0, 0, 0, 2, 0, 0, 0, 1, 0,
+    4, 0, 0, 5, 0, 0, 4, 1, 0)
   const batch = {
-    positions, normals: Float32Array.from({ length: 18 }, (_, i) => i % 3 === 1 ? 1 : 0),
-    colors: new Float32Array(24).fill(1),
+    positions, normals: Float32Array.from({ length: 27 }, (_, i) => i % 3 === 1 ? 1 : 0),
+    colors: new Float32Array(36).fill(1),
     textures: [{ id: 'ground', width: 1, height: 1, rgba: Uint8Array.of(120, 90, 60, 255) }],
     normalTextures: [], normalSwizzles: [],
-    textureCoordinates: [new Float32Array(12)],
-    textureWeights0: Float32Array.from({ length: 24 }, (_, i) => i % 4 === 0 ? 1 : 0),
-    textureWeights1: new Float32Array(24),
+    textureCoordinates: [new Float32Array(18)],
+    textureWeights0: Float32Array.from({ length: 36 }, (_, i) => i % 4 === 0 ? 1 : 0),
+    textureWeights1: new Float32Array(36),
     maskTexture: { id: 'rock', width: 2, height: 1,
       rgba: Uint8Array.of(0, 0, 0, 0, 0, 0, 0, 255) },
-    maskTextureCoordinates: Float32Array.of(.1, .5, .9, .5, .1, .5, .1, .5, .9, .5, .1, .5),
+    maskTextureCoordinates: Float32Array.of(.1, .5, .9, .5, .1, .5, .1, .5, .9, .5, .1, .5,
+      .75, .5, .75, .5, .75, .5),
     maskChannel: 3,
   }
   const plan = { ...createWorldWebGlPlan({ items: [] }), splatTriangles: [batch],
@@ -78,10 +80,11 @@ it('exports masked cliff floors and vertical walls at their original positions w
   const mesh = document.meshes.find(mesh => mesh.name.includes('masked-ground'))
   assert.ok(mesh, 'a dedicated masked terrain material is exported')
   const primitive = mesh.primitives[0]
-  assert.equal(document.accessors[primitive.indices].count, 6, 'the vertical face is retained')
+  assert.equal(document.accessors[primitive.indices].count, 6,
+    'the visible vertical face is retained; the completely masked face is omitted')
   const accessor = document.accessors[primitive.attributes.POSITION]
   const view = document.bufferViews[accessor.bufferView]
-  assert.deepEqual(new Float32Array(bin.buffer, bin.byteOffset + view.byteOffset, accessor.count * 3), positions,
+  assert.deepEqual(new Float32Array(bin.buffer, bin.byteOffset + view.byteOffset, accessor.count * 3), positions.subarray(0, 18),
     'the shared plateau edge is neither sunk nor split')
   const material = document.materials[primitive.material]
   assert.equal(material.alphaMode, 'MASK')
@@ -91,4 +94,11 @@ it('exports masked cliff floors and vertical walls at their original positions w
   const pixels = decoded.samples
   assert.ok(pixels.some((v, i) => i % 4 === 3 && v === 255), 'terrain appears where rock is clear')
   assert.ok(pixels.some((v, i) => i % 4 === 3 && v < 128), 'terrain is discarded where rock is set')
+  const clearResult = await worldGlb({ ...plan, bounds: { minimum: [0, 0, 0], maximum: [6, 1, 2] },
+    splatTriangles: [{ ...batch,
+      maskTexture: { id: 'clear', width: 1024, height: 1, rgba: new Uint8Array(4096) },
+      maskTextureCoordinates: Float32Array.of(0, 0, 10, 0, 0, 10, 0, 0, 10, 0, 0, 10, 0, 0, 10, 0, 0, 10),
+    }],
+  }, { terrainTextureSize: 64, maxBytes: 8 * 1024 * 1024 })
+  assert.equal(clearResult.stats.triangles, 3, 'uniform clear coverage needs no oversized mask chart, even with repeated UVs')
 })

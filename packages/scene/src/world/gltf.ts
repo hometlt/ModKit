@@ -919,8 +919,8 @@ function placedPrimitive(primitive: SceneRendererPrimitive): SceneRendererPrimit
 
 /**
  * Bake masked terrain in padded, non-overlapping triangle charts using the existing splat
- * rasterizer. Chart density retains both the requested terrain density and the source mask's
- * texels; pages stay within the renderer's 4096 ceiling. No face is moved or discarded by slope.
+ * rasterizer. Chart density retains the requested terrain density and, where coverage varies,
+ * the source mask's texels. Pages stay within 4096; no face is moved or discarded by slope.
  */
 async function* maskedGroundCharts(
   primitive: SceneRendererPrimitive,
@@ -934,6 +934,30 @@ async function* maskedGroundCharts(
   const source = placed.positions
   const mask = batch.maskTexture!
   const maskUv = batch.maskTextureCoordinates!
+  const maskPixels = sceneTexturePixels(mask), channel = Math.max(0, Math.min(3, batch.maskChannel ?? 3))
+  // Classify the entire UV rectangle, including filter neighbours: uniform coverage needs no mask detail.
+  const coverageOf = (vertices: readonly number[]) => {
+    // Bilinear neighbours are included; a repeated interval never needs more than one full image.
+    const range = (axis: number, size: number, wrap: 'repeat' | 'clamp') => {
+      const values = vertices.map(vertex => maskUv[vertex * 2 + axis]! * size - 0.5)
+      let first = Math.floor(Math.min(...values)), last = Math.ceil(Math.max(...values))
+      if (wrap === 'clamp') {
+        first = Math.max(0, Math.min(size - 1, first)); last = Math.max(0, Math.min(size - 1, last))
+      }
+      return [first, Math.min(size, last - first + 1)] as const
+    }
+    const [x, columns] = range(0, mask.width, mask.wrapU ?? 'repeat')
+    const [y, rows] = range(1, mask.height, mask.wrapV ?? 'repeat')
+    let clear = false, covered = false
+    for (let row = 0; row < rows; row++) for (let column = 0; column < columns; column++) {
+      const u = ((x + column) % mask.width + mask.width) % mask.width
+      const v = ((y + row) % mask.height + mask.height) % mask.height
+      if (maskPixels[(v * mask.width + u) * 4 + channel]! < 128) clear = true
+      else covered = true
+      if (clear && covered) return 'mixed'
+    }
+    return clear ? 'clear' : 'covered'
+  }
   // Both sides of a plateau seam read the same bake, including decals, overlays and ground AO.
   const groundUv = Float32Array.from({ length: source.length / 3 * 2 }, (_, index) => {
     const vertex = Math.floor(index / 2), axis = index % 2
@@ -947,6 +971,8 @@ async function* maskedGroundCharts(
   for (let corner = 0; corner + 2 < count; corner += 3) {
     signal?.throwIfAborted()
     const vertices = [0, 1, 2].map(offset => placed.indices?.[corner + offset] ?? corner + offset)
+    const coverage = coverageOf(vertices)
+    if (coverage === 'covered') continue
     const a = vertices[0]!, b = vertices[1]!, c = vertices[2]!
     const ab = [0, 1, 2].map(axis => source[b * 3 + axis]! - source[a * 3 + axis]!)
     const ac = [0, 1, 2].map(axis => source[c * 3 + axis]! - source[a * 3 + axis]!)
@@ -956,7 +982,7 @@ async function* maskedGroundCharts(
     const cy = Math.sqrt(Math.max(0, ac.reduce((sum, value) => sum + value * value, 0) - cx * cx))
     if (cy < 1e-8) continue
     let scale = density
-    for (const [first, second] of [[a, b], [a, c], [b, c]] as const) {
+    if (coverage === 'mixed') for (const [first, second] of [[a, b], [a, c], [b, c]] as const) {
       const distance = Math.hypot(...[0, 1, 2].map(axis => source[second * 3 + axis]! - source[first * 3 + axis]!))
       if (distance > 0) scale = Math.max(scale, Math.hypot(
         (maskUv[second * 2]! - maskUv[first * 2]!) * mask.width,
@@ -983,23 +1009,18 @@ async function* maskedGroundCharts(
     const id = `${primitive.id}/masked-ground-${index}`
     const positions: number[] = [], normals: number[] = [], uv: number[] = []
     const atlas: number[] = []
-    const maps = new Map<Float32Array, number[]>()
-    // Extend each source varying to the chart's padded rectangle; the rasterizer owns sampling.
-    const varying = (buffer: Float32Array, width: number): Float32Array => {
-      let result = maps.get(buffer)
-      if (result === undefined) {
-        result = []
-        for (const chart of page.charts) for (const [qx, qy] of [[0, 0], [1, 0], [1, 1], [0, 0], [1, 1], [0, 1]]) {
-          const px = chart.left + (qx! * chart.width - 2) / chart.scale
-          const py = (qy! * chart.height - 2) / chart.scale
-          const wc = py / chart.cy, wb = (px - wc * chart.cx) / chart.length, wa = 1 - wb - wc
-          for (let component = 0; component < width; component++) result.push(
-            wa * buffer[chart.vertices[0]! * width + component]! +
-            wb * buffer[chart.vertices[1]! * width + component]! +
-            wc * buffer[chart.vertices[2]! * width + component]!,
-          )
-        }
-        maps.set(buffer, result)
+    // Extend source UVs to each padded rectangle; the rasterizer owns texture sampling.
+    const chartUvs = (buffer: Float32Array): Float32Array => {
+      const result: number[] = []
+      for (const chart of page.charts) for (const [qx, qy] of [[0, 0], [1, 0], [1, 1], [0, 0], [1, 1], [0, 1]]) {
+        const px = chart.left + (qx! * chart.width - 2) / chart.scale
+        const py = (qy! * chart.height - 2) / chart.scale
+        const wc = py / chart.cy, wb = (px - wc * chart.cx) / chart.length, wa = 1 - wb - wc
+        for (let component = 0; component < 2; component++) result.push(
+          wa * buffer[chart.vertices[0]! * 2 + component]! +
+          wb * buffer[chart.vertices[1]! * 2 + component]! +
+          wc * buffer[chart.vertices[2]! * 2 + component]!,
+        )
       }
       return Float32Array.from(result)
     }
@@ -1021,10 +1042,10 @@ async function* maskedGroundCharts(
       positions: Float32Array.from(atlas), normals: new Float32Array(atlas.length),
       colors: new Float32Array(atlas.length / 3 * 4).fill(1),
       textures: [ground], normalTextures: [], normalSwizzles: [], layerColors: [[1, 1, 1]],
-      textureCoordinates: [varying(groundUv, 2)],
+      textureCoordinates: [chartUvs(groundUv)],
       textureWeights0: Float32Array.from({ length: atlas.length / 3 * 4 }, (_, i) => i % 4 === 0 ? 1 : 0),
       textureWeights1: new Float32Array(atlas.length / 3 * 4),
-      maskTextureCoordinates: varying(maskUv, 2),
+      maskTextureCoordinates: chartUvs(maskUv),
     }
     // The baked colour already includes the layer weights; keep only the original inverse mask.
     const { weightTextures: _weights, weightTextureCoordinates: _coordinates, ...bakedBatch } = projected
