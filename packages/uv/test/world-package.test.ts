@@ -1127,6 +1127,43 @@ describe('portable UVP map bundle', () => {
     // a textured slot the skin lacks is the base model's own; the skin replaces the material, so it goes
     expect(material.standard.layers['height']).toBeUndefined()
   })
+  it('keeps the turn the world draws a model with as a new scene root', async () => {
+    // An SC2 cliff candidate is drawn turned onto its piece: the host turns the published root
+    // nodes and keeps the UVM bytes as converted, so the package must carry the turn itself.
+    const sourceModel = sourceWithModel()
+    const packed = await materializeWorldToUvpMap(
+      {
+        ...sourceModel,
+        async model(resourceId, request, signal) {
+          const converted = await sourceModel.model!(resourceId, request, signal)
+          if (converted.state !== 'converted' || converted.nodes === undefined) throw new Error('fixture model has no nodes')
+          const children = new Set(converted.nodes.flatMap(node => node.childIds))
+          // yaw π about +Y: x and z of every column negate
+          const turned = converted.nodes.map(node => children.has(node.id) ? node : {
+            ...node,
+            transform: node.transform.map((value, index) => index % 4 === 0 || index % 4 === 2 ? -value : value),
+          })
+          return { ...converted, nodes: turned } as typeof converted
+        },
+      },
+      options,
+    )
+    if (packed.state !== 'materialized') throw new Error(JSON.stringify(packed.refusals))
+    const model = readUvmContainer(packed.entries.get('models/object-model-0000.uvm.glb')!).document as {
+      scene?: number
+      scenes: { nodes: number[] }[]
+      nodes: { name?: string; rotation?: number[]; children?: number[] }[]
+    }
+    const root = model.nodes[model.scenes[model.scene ?? 0]!.nodes[0]!]!
+    expect(root.name).toBe('uv:world-yaw')
+    expect(root.rotation![1]).toBeCloseTo(1)
+    expect(Math.abs(root.rotation![3]!)).toBeLessThan(1e-6)
+    // an unturned model keeps its own roots
+    const plain = await materializeWorldToUvpMap(sourceWithModel(), options)
+    if (plain.state !== 'materialized') throw new Error(JSON.stringify(plain.refusals))
+    const plainModel = readUvmContainer(plain.entries.get('models/object-model-0000.uvm.glb')!).document as typeof model
+    expect(plainModel.nodes.some(node => node.name === 'uv:world-yaw')).toBe(false)
+  })
 })
 
 describe('single-file UVP', () => {

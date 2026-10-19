@@ -5,7 +5,14 @@ import { canonicalJsonStringify, parseJsonDocument, compareUtf8, ModkitError } f
 import { createZipArchive, type ZipWriteBudget } from '@modkit/codec-kit/container/zip'
 import { sha256Hex } from '@modkit/codec-kit/crypto/digest'
 import { encodePng } from '@modkit/codec-kit/raster'
-import type { ModelMaterialRef, RasterResourcePort, SceneRendererTexture } from '@modkit/sdk'
+import { composeTrsMatrix } from '@modkit/codec-kit/model-math/sequence-pose'
+import {
+  invertAffine,
+  multiplyAffine,
+  pureYawQuaternion,
+  quaternionFromRotationMatrix,
+} from '@modkit/codec-kit/model-math/transform'
+import type { ModelMaterialRef, ModelNode, RasterResourcePort, SceneRendererTexture } from '@modkit/sdk'
 import {
   worldModelRequiredBytes,
   type CandidateWorldSceneSource,
@@ -703,6 +710,66 @@ function skinnedUvmDocument(document: JsonRecord, skin: readonly ModelMaterialRe
 }
 
 /**
+ * A world source may draw a model turned about its vertical axis (an SC2 cliff candidate rotated
+ * onto its piece: the host's `yaw`): its published root nodes carry the turn, its UVM bytes do not.
+ * The packaged model is what the world draws, so the turn becomes a new scene root above the UVM's
+ * roots, leaving their own (possibly animated) transforms as authored. Unchanged when the roots
+ * are not published, not turned, or turned by anything but one pure yaw about +Y.
+ */
+function yawedUvmDocument(document: JsonRecord, nodes: readonly ModelNode[] | undefined): JsonRecord {
+  const documentNodes = Array.isArray(document['nodes']) ? document['nodes'] : undefined
+  const scenes = Array.isArray(document['scenes']) ? document['scenes'] : undefined
+  const sceneIndex = typeof document['scene'] === 'number' ? document['scene'] : 0
+  const scene = jsonRecord(scenes?.[sceneIndex])
+  const roots = Array.isArray(scene?.['nodes']) ? (scene['nodes'] as unknown[]) : undefined
+  if (nodes === undefined || documentNodes === undefined || scene === undefined || roots === undefined || roots.length === 0)
+    return document
+  const published = new Map(nodes.map(node => [node.id, node.transform]))
+  let yaw: number | undefined
+  for (const root of roots) {
+    const node = typeof root === 'number' ? jsonRecord(documentNodes[root]) : undefined
+    const turned = published.get(`node-${String(root)}`)
+    if (node === undefined || turned === undefined || turned.length !== 16) return document
+    let local: number[]
+    if (Array.isArray(node['matrix'])) local = node['matrix'] as number[]
+    else {
+      const matrix = new Float32Array(16)
+      composeTrsMatrix(matrix, 0,
+        (node['translation'] as number[] | undefined) ?? [0, 0, 0],
+        (node['rotation'] as number[] | undefined) ?? [0, 0, 0, 1],
+        (node['scale'] as number[] | undefined) ?? [1, 1, 1])
+      local = Array.from(matrix)
+    }
+    // the turn the world applied: published = turn · local
+    const turn = multiplyAffine([...turned], invertAffine(local))
+    if (Math.hypot(turn[12]!, turn[13]!, turn[14]!) > 1e-4) return document
+    const quaternion = quaternionFromRotationMatrix([0, 1, 2, 4, 5, 6, 8, 9, 10].map(index => turn[index]!))
+    const rootYaw = pureYawQuaternion(roundQuaternion(quaternion))
+    if (rootYaw === undefined || (yaw !== undefined && Math.abs(rootYaw - yaw) > 1e-4)) return document
+    yaw = rootYaw
+  }
+  if (yaw === undefined || Math.abs(Math.sin(yaw / 2)) < 1e-6) return document
+  const rotation = [0, Math.sin(yaw / 2), 0, Math.cos(yaw / 2)]
+  const index = documentNodes.length
+  const nextScenes = scenes!.map((value, at) => at === sceneIndex ? { ...scene, nodes: [index] } : value)
+  return {
+    ...document,
+    nodes: [...documentNodes, { name: 'uv:world-yaw', rotation, children: roots }],
+    scenes: nextScenes,
+  }
+}
+
+/** Single-precision noise off a pure yaw quaternion, which pureYawQuaternion refuses as tilt. */
+function roundQuaternion(value: ArrayLike<number>): number[] {
+  const out = Array.from({ length: 4 }, (_, index) => {
+    const component = value[index] ?? 0
+    return Math.abs(component) < 1e-6 ? 0 : component
+  })
+  const length = Math.hypot(...out)
+  return out.map(component => component / length)
+}
+
+/**
  * The package name of a model. A reopened package already named its models `object-model-NNNN` in
  * this space; keeping that name keeps a repack byte-identical, whatever order the objects come in.
  * Any other source gets the next free ordinal.
@@ -737,6 +804,7 @@ async function makePortableUvm(
   modelId: string,
   signal?: AbortSignal,
   skin?: readonly ModelMaterialRef[],
+  nodes?: readonly ModelNode[],
 ): Promise<
   Readonly<{
     readonly bytes: Uint8Array
@@ -751,8 +819,8 @@ async function makePortableUvm(
     maxNodes: 1_000_000,
   }
   const read = readUvmContainer(bytes, budget, signal)
-  const skinned = skin === undefined ? read.document
-    : (skinnedUvmDocument(read.document as JsonRecord, skin) as typeof read.document)
+  const yawed = yawedUvmDocument(read.document as JsonRecord, nodes)
+  const skinned = (skin === undefined ? yawed : skinnedUvmDocument(yawed, skin)) as typeof read.document
   const container = skinned === read.document ? read : { ...read, document: skinned }
   const images = container.document['images']
   const portableTextures = await Promise.all(
@@ -1556,6 +1624,7 @@ export async function materializeWorldToUvpMap(
               localResourceId,
               options.signal,
               result.materials,
+              result.nodes,
             )
             for (const id of converted.missing) unpackagedModelTextureIds.add(id)
             for (const texture of converted.textures) encodedTotal += texture.bytes.byteLength
