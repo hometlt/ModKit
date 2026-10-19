@@ -58,7 +58,8 @@ it('keeps visible cliff walls under the rock and pins their shared plateau verti
     0, 0, 0, 2, 0, 0, 0, 1, 0,
     4, 0, 0, 5, 0, 0, 4, 1, 0)
   const batch = {
-    positions, normals: Float32Array.from({ length: 27 }, (_, i) => i < 9 ? Number(i % 3 === 1) : Number(i % 3 === 2)),
+    positions, normals: Float32Array.of(.2, .98, 0, .2, .98, 0, .2, .98, 0,
+      0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1),
     colors: new Float32Array(36).fill(1),
     textures: [{ id: 'ground', width: 1, height: 1, rgba: Uint8Array.of(120, 90, 60, 255) }],
     normalTextures: [], normalSwizzles: [],
@@ -93,7 +94,12 @@ it('keeps visible cliff walls under the rock and pins their shared plateau verti
   for (const from of [3, 12]) assert.deepEqual(Array.from(written.subarray(from, from + 3)), [2, 0, 0],
     'vertices shared with the plateau stay exactly fixed')
   assert.ok(Math.abs(written[1] + .001) < 1e-7, 'floor interior sits just under rock')
+  assert.equal(written[0], 0, 'the flat floor is not pushed sideways by a bevel normal')
   assert.ok(Math.abs(written[11] + .001) < 1e-7, 'vertical wall moves inward rather than being dropped')
+  const na = document.accessors[primitive.attributes.NORMAL], nv = document.bufferViews[na.bufferView]
+  const normals = new Float32Array(bin.buffer, bin.byteOffset + nv.byteOffset, na.count * 3)
+  assert.deepEqual(Array.from(normals.subarray(0, 3)), [0, 1, 0], 'flat projected terrain matches the plateau normal')
+  assert.deepEqual(Array.from(normals.subarray(9, 12)), [0, 0, 1], 'the vertical wall keeps its normal')
   const material = document.materials[primitive.material]
   assert.equal(material.alphaMode, undefined, 'terrain under the rock is opaque, with no atlas alpha filtering holes')
   const image = document.images[document.textures[material.pbrMetallicRoughness.baseColorTexture.index].source]

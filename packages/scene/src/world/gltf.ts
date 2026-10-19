@@ -940,18 +940,24 @@ function groundUnderRock(
     }
     return false
   }
-  const count = primitive.indices?.length ?? source.length / 3, kept: number[] = []
+  const count = primitive.indices?.length ?? source.length / 3, kept: number[] = [], flatFaces: boolean[] = []
   for (let corner = 0; corner + 2 < count; corner += 3) {
     const vertices = [0, 1, 2].map(offset => primitive.indices?.[corner + offset] ?? corner + offset)
-    if (canShowGround(vertices)) kept.push(...vertices)
+    if (!canShowGround(vertices)) continue
+    kept.push(...vertices)
+    const heights = vertices.map(vertex => source[vertex * 3 + 1]!)
+    flatFaces.push(Math.max(...heights) - Math.min(...heights) <= 0.0001)
   }
   const positions = new Float32Array(kept.length * 3)
   const copiedNormals = normals === undefined ? undefined : new Float32Array(kept.length * 3)
   for (const [index, vertex] of kept.entries()) {
     const from = vertex * 3, bias = anchors.has(groundSeamKey(source, from)) ? 0 : 0.001
     for (let axis = 0; axis < 3; axis++) {
-      positions[index * 3 + axis] = source[from + axis]! - bias * (normals?.[from + axis] ?? (axis === 1 ? 1 : 0))
-      if (copiedNormals !== undefined) copiedNormals[index * 3 + axis] = normals![from + axis]!
+      // Flat projected ground must not inherit the neighbouring rock wall's bevel normal.
+      const normal = flatFaces[Math.floor(index / 3)] === true ? Number(axis === 1) :
+        normals?.[from + axis] ?? (axis === 1 ? 1 : 0)
+      positions[index * 3 + axis] = source[from + axis]! - bias * normal
+      if (copiedNormals !== undefined) copiedNormals[index * 3 + axis] = normal
     }
   }
   return { id: primitive.id, topology: 'triangles', positions,
