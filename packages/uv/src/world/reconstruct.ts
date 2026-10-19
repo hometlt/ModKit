@@ -62,6 +62,66 @@ export function cliffFacesFromTerrain(
   return Object.freeze(cells.map(cell => Object.freeze(cell)))
 }
 
+type Grid<T> = readonly (readonly T[])[]
+
+/**
+ * The ground's per-sample presentation beside its heights, in canonical row order: the painted
+ * base offset cliff pieces stand on (`baseOffsets`), vertex ambient occlusion and cut cells
+ * (`presentationCellHidden`, one per cell anchored at its sample like cliffFaces). A sample grid is
+ * written only when every published sample carries the value; a partial set is named in `partial`
+ * (field → items that had it) so the receipt reports it lost. A NoData hole takes 0 / 1.
+ */
+export function terrainPresentationFromItems(
+  items: readonly WorldSceneTerrainItem[],
+  columns: number,
+  rows: number,
+  sourceRowOrder: 'forward' | 'reverse',
+): Readonly<{
+  baseOffsets?: Grid<number>
+  ambientOcclusion?: Grid<number>
+  presentationCellHidden?: Grid<boolean>
+  partial: ReadonlyMap<string, number>
+}> {
+  const outputRow = (y: number, cellRows: number) => sourceRowOrder === 'reverse' ? cellRows - 1 - y : y
+  const partial = new Map<string, number>()
+  const sampleGrid = (field: 'baseOffset' | 'ambientOcclusion', fill: number): Grid<number> | undefined => {
+    const carrying = items.filter(item => item[field] !== undefined)
+    if (carrying.length === 0) return undefined
+    if (carrying.length !== items.length) {
+      partial.set(field, carrying.length)
+      return undefined
+    }
+    const values = new Array<number>(columns * rows).fill(fill)
+    for (const item of carrying) {
+      const value = item[field]!
+      if (!finite(value) || (field === 'ambientOcclusion' && (value < 0 || value > 1)))
+        throw new TypeError(`terrain ${field} must be finite${field === 'ambientOcclusion' ? ' in 0..1' : ''}`)
+      values[outputRow(item.y, rows) * columns + item.x] = value
+    }
+    return gridRows(values, columns, rows)
+  }
+  const baseOffsets = sampleGrid('baseOffset', 0)
+  const ambientOcclusion = sampleGrid('ambientOcclusion', 1)
+  let presentationCellHidden: Grid<boolean> | undefined
+  for (const item of items) {
+    if (item.presentationCellHidden === undefined) continue
+    if (item.x >= columns - 1 || item.y >= rows - 1)
+      throw new TypeError('a cut cell must name an interior heightfield cell')
+    const cells = (presentationCellHidden as boolean[][] | undefined) ??
+      Array.from({ length: rows - 1 }, () => new Array<boolean>(columns - 1).fill(false))
+    cells[outputRow(item.y, rows - 1)]![item.x] = true
+    presentationCellHidden = cells
+  }
+  return Object.freeze({
+    ...(baseOffsets === undefined ? {} : { baseOffsets }),
+    ...(ambientOcclusion === undefined ? {} : { ambientOcclusion }),
+    ...(presentationCellHidden === undefined
+      ? {}
+      : { presentationCellHidden: Object.freeze(presentationCellHidden.map(row => Object.freeze(row))) }),
+    partial,
+  })
+}
+
 /** A source id as a UVW id: its last `:` segment when already one, else `<prefix>-<slug>`. */
 export function localId(id: string, prefix = 'item'): string {
   const index = id.lastIndexOf(':')
@@ -285,7 +345,11 @@ const KEPT_FIELDS: Readonly<Record<string, ReadonlySet<string>>> = Object.freeze
     'normalResourceId', 'normalResource', 'causticsFrameResourceIds', 'causticsFalloff', 'causticsResourceId', 'causticsResource', 'causticsFrameResources',
     'causticsScale', 'causticsFramesPerSecond', 'receiveShadows',
   ]),
-  terrain: new Set(['x', 'y', 'heightBase', 'heightAdjustment', 'uvwPosition', 'cliffFace']),
+  // baseOffset/ambientOcclusion when every sample carries them (terrainPresentationFromItems)
+  terrain: new Set([
+    'x', 'y', 'heightBase', 'heightAdjustment', 'uvwPosition', 'cliffFace',
+    'baseOffset', 'ambientOcclusion', 'presentationCellHidden',
+  ]),
   'terrain-materials': new Set([
     'x',
     'y',
@@ -296,7 +360,7 @@ const KEPT_FIELDS: Readonly<Record<string, ReadonlySet<string>>> = Object.freeze
     'cornerUv',
     'layers',
   ]),
-  cliffs: new Set(['x', 'y', 'uvwPosition', 'level', 'authored']),
+  cliffs: new Set(['x', 'y', 'uvwPosition', 'level', 'authored', 'ramp']),
   water: new Set([
     'minimum',
     'maximum',
@@ -435,6 +499,14 @@ function noteUnretainedFields(
     const path = `world.${kind}.${key}`
     lost.set(path, (lost.get(path) ?? 0) + 1)
   }
+}
+
+/** The native ground's field losses, counted by the same policy as every other facet. */
+export function noteTerrainLostFields(
+  items: readonly WorldSceneTerrainItem[],
+  lost: Map<string, number>,
+): void {
+  noteLostFields('terrain', items, lost)
 }
 
 /** Counts, per facet field, the items whose field the UVW leaves out (see KEPT_FIELDS). */
@@ -617,6 +689,11 @@ async function reconstructLayer(
     const cliffFaces = layer.kind === 'surfaces' ? undefined : cliffFacesFromTerrain(
       items as readonly WorldSceneTerrainItem[], grid.columns, grid.rows, 'forward',
     )
+    const { partial, ...presentation } = layer.kind === 'surfaces'
+      ? { partial: new Map<string, number>() }
+      : terrainPresentationFromItems(items as readonly WorldSceneTerrainItem[], grid.columns, grid.rows, 'forward')
+    for (const [field, count] of partial)
+      state.lostFields?.set(`world.terrain.${field}`, (state.lostFields.get(`world.terrain.${field}`) ?? 0) + count)
     return Object.freeze({
       id,
       kind: 'heightfield',
@@ -628,6 +705,7 @@ async function reconstructLayer(
       origin: grid.origin,
       ...(fill === undefined ? {} : { noDataValue: fill }),
       ...(cliffFaces === undefined ? {} : { cliffFaces }),
+      ...presentation,
       ...(layer.latticeOverview === undefined ? {} : {latticeOverview:layer.latticeOverview}),
       ...(layer.latticeRamps === undefined ? {} : {latticeRamps:layer.latticeRamps}),
       samples: gridRows(values as number[], grid.columns, grid.rows),
@@ -804,6 +882,9 @@ async function reconstructLayer(
       throw new TypeError('UVW canonical cliffs layer is missing grid metadata')
     const levels = new Array<number | undefined>(grid.columns * grid.rows).fill(undefined)
     const authored = new Array<boolean | undefined>(grid.columns * grid.rows).fill(undefined)
+    // ramps: absent on a sample means not a ramp; the grid is written once any sample is one
+    const ramps = new Array<boolean>(grid.columns * grid.rows).fill(false)
+    let anyRamp = false
     for (const raw of items) {
       if (raw.facet !== 'cliffs' || raw.lod !== 'exact')
         throw new TypeError('UVW canonical cliff item is invalid')
@@ -812,6 +893,10 @@ async function reconstructLayer(
         throw new TypeError('UVW canonical cliff grid contains a duplicate coordinate')
       levels[index] = raw.level
       authored[index] = raw.authored
+      if (raw.ramp === true) {
+        ramps[index] = true
+        anyRamp = true
+      }
     }
     if (levels.some(value => value === undefined) || authored.some(value => value === undefined))
       throw new TypeError('UVW canonical cliff grid is incomplete')
@@ -826,6 +911,7 @@ async function reconstructLayer(
       origin: grid.origin,
       levels: gridRows(levels as number[], grid.columns, grid.rows),
       authored: gridRows(authored as boolean[], grid.columns, grid.rows),
+      ...(anyRamp ? { ramps: gridRows(ramps, grid.columns, grid.rows) } : {}),
     })
   }
   if (layer.kind === 'water') {

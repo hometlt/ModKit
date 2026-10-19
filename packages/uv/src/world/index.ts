@@ -76,6 +76,18 @@ export interface UvwHeightfieldLayer {
   /** Complete classified cells; absent is unknown and [] proves all cells are non-cliff. */
   readonly cliffFaces?: readonly Readonly<{ x: number; y: number }>[]
   readonly samples: readonly (readonly number[])[]
+  /**
+   * Per sample, in `samples` units: how far the painted base lies from the standard height of its
+   * cliff level. Cliff pieces authored at the standard height stand on it (SDK `baseOffset`).
+   */
+  readonly baseOffsets?: readonly (readonly number[])[]
+  /** Per sample vertex ambient occlusion, 1 unoccluded (SDK `ambientOcclusion`). */
+  readonly ambientOcclusion?: readonly (readonly number[])[]
+  /**
+   * Per cell, `rows - 1` by `columns - 1`, anchored like cliffFaces: the cell is a cut in the drawn
+   * ground (SDK `presentationCellHidden`). Presentation only; heights stay authored.
+   */
+  readonly presentationCellHidden?: readonly (readonly boolean[])[]
 }
 
 export interface UvwUvTransform {
@@ -164,6 +176,8 @@ export interface UvwCliffsLayer {
   readonly origin: readonly [number, number, number]
   readonly levels: readonly (readonly number[])[]
   readonly authored: readonly (readonly boolean[])[]
+  /** Samples on a ramp between two levels, not a cliff (SDK cliff `ramp`); absent: none are. */
+  readonly ramps?: readonly (readonly boolean[])[]
 }
 
 export interface UvwWaterZone {
@@ -771,7 +785,8 @@ function heightfieldLayer(
   const item = record(value, path, state, depth)
   exactKeys(
     item,
-    ['id', 'kind', 'role', 'label', 'columns', 'rows', 'cellSize', 'origin', 'noDataValue', 'cliffFaces', 'samples', 'latticeOverview', 'latticeRamps'],
+    ['id', 'kind', 'role', 'label', 'columns', 'rows', 'cellSize', 'origin', 'noDataValue', 'cliffFaces', 'samples', 'latticeOverview', 'latticeRamps',
+      'baseOffsets', 'ambientOcclusion', 'presentationCellHidden'],
     ['id', 'kind', 'columns', 'rows', 'cellSize', 'origin', 'samples'],
     path,
   )
@@ -783,7 +798,8 @@ function heightfieldLayer(
       : string(item['label'], `${path}.label`, state, depth + 1)
   const role = item['role']
   if (role !== undefined && role !== 'ground' && role !== 'query') fail('invalid heightfield role', `${path}.role`)
-  if (role === 'query' && (item['cliffFaces'] !== undefined || item['latticeOverview'] !== undefined || item['latticeRamps'] !== undefined))
+  if (role === 'query' && ['cliffFaces', 'latticeOverview', 'latticeRamps', 'baseOffsets', 'ambientOcclusion', 'presentationCellHidden']
+    .some(key => item[key] !== undefined))
     fail('query surface cannot authorize terrain presentation', path)
   const columns = integerAtLeast(item['columns'], role === 'query' ? 1 : 2, `${path}.columns`, state, depth + 1)
   const rows = integerAtLeast(item['rows'], role === 'query' ? 1 : 2, `${path}.rows`, state, depth + 1)
@@ -835,10 +851,28 @@ function heightfieldLayer(
       return Object.freeze({ x, y })
     }))
   }
+  const sampleGrid = (key: 'baseOffsets' | 'ambientOcclusion') => {
+    if (item[key] === undefined) return undefined
+    gridBudget(columns, rows, `${path}.${key}`, state)
+    const grid = numericGrid(item[key], columns, rows, `${path}.${key}`, state, depth + 1)
+    if (key === 'ambientOcclusion' && grid.some(row => row.some(value => value < 0 || value > 1)))
+      fail('ambient occlusion must lie in 0..1', `${path}.${key}`)
+    return grid
+  }
+  const baseOffsets = sampleGrid('baseOffsets')
+  const ambientOcclusion = sampleGrid('ambientOcclusion')
+  let presentationCellHidden: UvwHeightfieldLayer['presentationCellHidden']
+  if (item['presentationCellHidden'] !== undefined) {
+    gridBudget(columns - 1, rows - 1, `${path}.presentationCellHidden`, state)
+    presentationCellHidden = booleanGrid(item['presentationCellHidden'], columns - 1, rows - 1, `${path}.presentationCellHidden`, state, depth + 1)
+  }
   return Object.freeze({
     id,
     kind: 'heightfield',
     ...(role === undefined ? {} : { role }),
+    ...(baseOffsets === undefined ? {} : { baseOffsets }),
+    ...(ambientOcclusion === undefined ? {} : { ambientOcclusion }),
+    ...(presentationCellHidden === undefined ? {} : { presentationCellHidden }),
     ...(label === undefined ? {} : { label }),
     columns,
     rows,
@@ -1347,6 +1381,7 @@ function cliffsLayer(
       'origin',
       'levels',
       'authored',
+      'ramps',
     ],
     ['schemaVersion', 'id', 'kind', 'columns', 'rows', 'cellSize', 'origin', 'levels', 'authored'],
     path,
@@ -1368,6 +1403,9 @@ function cliffsLayer(
     origin: vec3(item['origin'], `${path}.origin`, state, depth + 1),
     levels: numericGrid(item['levels'], columns, rows, `${path}.levels`, state, depth + 1, true),
     authored: booleanGrid(item['authored'], columns, rows, `${path}.authored`, state, depth + 1),
+    ...(item['ramps'] === undefined
+      ? {}
+      : { ramps: booleanGrid(item['ramps'], columns, rows, `${path}.ramps`, state, depth + 1) }),
   })
 }
 

@@ -3,16 +3,16 @@
   "schemaVersion": "multiverse-specs-pin-1",
   "source": {
     "repository": "multiverse (sibling repository)",
-    "commit": "ca6722ea69959a4fef65a1293c75be0ef47aa40b",
-    "subject": "Add UVM animation clip vocabulary",
-    "committedOn": "2026-10-19T00:50:14+04:00"
+    "commit": "29d3e80c57f0e9c55cbe66b1efe695add07b8043",
+    "subject": "Keep ground presentation and cliff ramps in the UVW profile",
+    "committedOn": "2026-10-19T16:04:07+04:00"
   },
   "generator": "scripts/specs-pin.mjs",
   "generatedFrom": "git objects, not the sibling working tree",
   "prefix": "specs/",
   "counts": {
     "files": 326,
-    "bytes": 2264799
+    "bytes": 2266782
   },
   "files": [
     {
@@ -1407,8 +1407,8 @@
     },
     {
       "path": "specs/world/SPEC_UVW_PROFILE.md",
-      "bytes": 40178,
-      "digest": "sha256:e3c0a2069034c0d63e30e98adba3819cf7c5c03fbd08caec9e995da39bbdcbdb"
+      "bytes": 40983,
+      "digest": "sha256:aff58af4d46e0b0d6219a28869e51d0113a41e7c9f0ee4189c4760d52199208f"
     },
     {
       "path": "specs/world/fixtures/invalid/connections-not-empty.uvw.json",
@@ -1642,8 +1642,8 @@
     },
     {
       "path": "specs/world/schema/uvw.profile.v1.schema.json",
-      "bytes": 65586,
-      "digest": "sha256:85bfb198f48d34c3a051a0acac9de81d391a7af9d368397920abc8bfc2253ecf"
+      "bytes": 66764,
+      "digest": "sha256:866f4e476404fa3042d16234b15e3c8cf695dfbd31b114c347741cef6b3bf415"
     }
   ]
 }

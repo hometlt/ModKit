@@ -14,7 +14,13 @@ import {
   type UvwHeightfieldLayer,
   type UvwProfileDocument,
 } from './index.js'
-import { cliffFacesFromTerrain, reconstructAdditionalExactLayers, reconstructCanonicalUvw } from './reconstruct.js'
+import {
+  cliffFacesFromTerrain,
+  noteTerrainLostFields,
+  reconstructAdditionalExactLayers,
+  reconstructCanonicalUvw,
+  terrainPresentationFromItems,
+} from './reconstruct.js'
 
 export type WorldUvwRefusalCode =
   | 'invalid-budget'
@@ -299,6 +305,8 @@ export async function materializeWorldToUvw(
   const expectedMinimum = transform.bounds.minimum
   const expectedMaximum = transform.bounds.maximum
   let ground: UvwHeightfieldLayer | undefined
+  /** The native ground's item fields the heightfield leaves out (lostFields). */
+  const terrainLost = new Map<string, number>()
   if (topology === 'heightfield') {
     if (exact[0] === undefined) return finish()
 
@@ -488,17 +496,24 @@ export async function materializeWorldToUvw(
       return finish()
     }
     let cliffFaces: ReturnType<typeof cliffFacesFromTerrain>
+    let presentation: ReturnType<typeof terrainPresentationFromItems>
     try {
       cliffFaces = cliffFacesFromTerrain(items, columns, rows, sourceRowOrder)
+      presentation = terrainPresentationFromItems(items, columns, rows, sourceRowOrder)
     } catch (error) {
-      refuse('terrain-grid-invalid', String(error), 'page.items.cliffFace')
+      refuse('terrain-grid-invalid', String(error), 'page.items')
       return finish()
     }
+    noteTerrainLostFields(items, terrainLost)
+    for (const [field, count] of presentation.partial)
+      terrainLost.set(`world.terrain.${field}`, (terrainLost.get(`world.terrain.${field}`) ?? 0) + count)
+    const { partial: _partial, ...presentationGrids } = presentation
 
     ground = Object.freeze({
       id: 'terrain', kind: 'heightfield', label: 'Ground', columns, rows, cellSize, origin,
       ...(noDataValue === undefined ? {} : { noDataValue }),
       ...(cliffFaces === undefined ? {} : { cliffFaces }),
+      ...presentationGrids,
       ...(latticeOverview === undefined ? {} : {latticeOverview}),
       ...(latticeRamps === undefined ? {} : {latticeRamps}),
       samples: Object.freeze(samples.map(row => Object.freeze(row))),
@@ -586,8 +601,10 @@ export async function materializeWorldToUvw(
       omittedObjects: additional.omittedObjects,
       // MapPlayer carries presentation slots, not the explicit simulation addresses required by
       // WorldPlayer. Do not manufacture a roster or silently lose its palette, including an empty table.
-      lostFields: info.players === undefined ? additional.lostFields : Object.freeze([
-        ...additional.lostFields, Object.freeze({ path: 'world.players', count: 1 }),
+      lostFields: Object.freeze([
+        ...additional.lostFields,
+        ...[...terrainLost].map(([path, count]) => Object.freeze({ path, count })),
+        ...(info.players === undefined ? [] : [Object.freeze({ path: 'world.players', count: 1 })]),
       ].sort((a, b) => compareUtf8(a.path, b.path))),
       refusalCodes: Object.freeze([]) as readonly [],
       refusals: Object.freeze([]) as readonly [],

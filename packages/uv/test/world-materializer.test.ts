@@ -673,6 +673,8 @@ describe('production world to UVW materializer', () => {
     expect(result.lostFields).toEqual([
       { path: 'world.lighting.fog', count: 1 },
       { path: 'world.objects.resourceIds (not packaged)', count: 1 },
+      // the native ground's per-vertex mask has no UVW field
+      { path: 'world.terrain.mask', count: 4 },
     ])
     // the object's tint and initial clip are UVW object fields (Runtime 02.10), read back as written
     const instances = result.document.spaces[0]?.layers.flatMap(layer =>

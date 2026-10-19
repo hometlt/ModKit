@@ -513,6 +513,18 @@
         "cliffFaces": { "$ref": "#/$defs/heightfieldCliffFaces" },
         "latticeOverview": { "$ref": "#/$defs/latticeOverview" },
         "latticeRamps": { "$ref": "#/$defs/latticeRamps" },
+        "baseOffsets": {
+          "$ref": "#/$defs/numberGrid",
+          "description": "Per sample, rows by columns, in samples units: how far the painted base lies from the standard height of its cliff level. Cliff pieces authored at the standard height stand on it. Presentation; samples stay the authored heights."
+        },
+        "ambientOcclusion": {
+          "$ref": "#/$defs/numberGrid",
+          "description": "Per sample, rows by columns, vertex ambient occlusion in 0..1; 1 is unoccluded."
+        },
+        "presentationCellHidden": {
+          "$ref": "#/$defs/booleanGrid",
+          "description": "Per cell, rows - 1 by columns - 1, anchored at its lower sample like cliffFaces: true cuts the cell out of the drawn ground. Presentation only; heights stay authored."
+        },
         "id": { "type": "string", "minLength": 1 },
         "kind": { "const": "heightfield" },
         "label": { "type": "string" },
@@ -564,7 +576,10 @@
                     "latticeOverview"
                   ]
                 },
-                { "required": ["latticeRamps"] }
+                { "required": ["latticeRamps"] },
+                { "required": ["baseOffsets"] },
+                { "required": ["ambientOcclusion"] },
+                { "required": ["presentationCellHidden"] }
               ]
             }
           },
@@ -860,7 +875,11 @@
         "cellSize": { "type": "number", "exclusiveMinimum": 0 },
         "origin": { "$ref": "#/$defs/vec3" },
         "levels": { "$ref": "#/$defs/integerGrid" },
-        "authored": { "$ref": "#/$defs/booleanGrid" }
+        "authored": { "$ref": "#/$defs/booleanGrid" },
+        "ramps": {
+          "$ref": "#/$defs/booleanGrid",
+          "description": "Per sample like levels: the sample lies on a ramp rising between two levels, not a cliff. Omission means no ramps."
+        }
       }
     },
     "waterZone": {

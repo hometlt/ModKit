@@ -171,6 +171,21 @@ function worldResourceId(spaceId: string, resourceId: string): string {
   return `uvw-resource:${encodeURIComponent(spaceId)}/${encodeURIComponent(resourceId)}`
 }
 
+/** A ground sample's kept presentation (UVW baseOffsets, ambientOcclusion, cut cell anchored here). */
+function terrainPresentation(
+  layer: UvwHeightfieldLayer,
+  x: number,
+  y: number,
+): Partial<Pick<WorldSceneTerrainItem, 'baseOffset' | 'ambientOcclusion' | 'presentationCellHidden'>> {
+  const baseOffset = layer.baseOffsets?.[y]?.[x]
+  const ambientOcclusion = layer.ambientOcclusion?.[y]?.[x]
+  return {
+    ...(baseOffset === undefined ? {} : { baseOffset }),
+    ...(ambientOcclusion === undefined ? {} : { ambientOcclusion }),
+    ...(layer.presentationCellHidden?.[y]?.[x] === true ? { presentationCellHidden: true as const } : {}),
+  }
+}
+
 function gridPosition(
   origin: readonly [number, number, number],
   cellSize: number,
@@ -260,6 +275,7 @@ function recordItems(
                     y,
                     level,
                     authored: layer.authored[y]?.[x] ?? false,
+                    ...(layer.ramps?.[y]?.[x] === true ? { ramp: true } : {}),
                     uvwPosition,
                   }),
                 ]
@@ -1075,6 +1091,7 @@ export function createUvwWorldSceneSource(
             ...(record.cliffCells === undefined || x >= record.layer.columns - 1 || y >= record.layer.rows - 1
               ? {}
               : { cliffFace: record.cliffCells.has(y * record.layer.columns + x) }),
+            ...terrainPresentation(record.layer, x, y),
             uvwPosition,
             lod: 'exact',
           }),

@@ -114,6 +114,13 @@ The legacy candidate envelope does not gain this profile-only field.
 1. Every `heightfield` space contains at least one scalar heightfield; a `mesh` space contains none. `columns` and `rows` count
    samples, not quads; grids are row-major in the space-local canonical `(x,z)` frame.
    A height equal to `noDataValue` is missing ground, not an extremely low vertex.
+   A ground heightfield may keep presentation beside its heights, never on a query surface:
+   `baseOffsets` (per sample, in sample units) is how far the painted base lies from the standard
+   height of its cliff level, which cliff pieces authored at that standard height stand on;
+   `ambientOcclusion` (per sample, `0..1`, 1 unoccluded) is vertex occlusion; and
+   `presentationCellHidden` (`rows - 1` by `columns - 1`, anchored at the cell's lower sample)
+   cuts cells out of the drawn ground. None changes the authored heights, and a writer keeps a
+   grid only when every sample carries the value, reporting a partial set as lost.
 2. `terrain-materials` stores normalized non-empty sparse weights, ordered atlas tile
    layers per sample, one to sixteen compact `rgba8-unorm` weight rasters, or retained combinations
    of these source facets. A raster declares one to four
@@ -184,7 +191,9 @@ The legacy candidate envelope does not gain this profile-only field.
    composition or migration. Atlas layouts, corner UVs and coverage are
    presentation data, not traversal or gameplay classification. The glTF
    `UV_world_graph` references these same sample/atlas definitions.
-3. `cliffs` keeps exact synchronized levels and an equally sized authored mask. It
+3. `cliffs` keeps exact synchronized levels and an equally sized authored mask, and may keep
+   an equally sized `ramps` mask: samples on walkable ground rising between two levels, which a
+   view draws no cliff across. Omitted `ramps` means none. It
    does not claim a generated cliff/ramp mesh; that requires a later geometry family.
    Levels are integer classifications, not elevations in the space's length unit. Its
    `origin.y` is a reference plane and need not lie within the terrain's vertical bounds;
