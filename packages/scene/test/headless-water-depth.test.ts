@@ -24,6 +24,7 @@ const quad = (id: string, height: number, size = 1) => ({
   ),
   indices: Uint32Array.of(0, 1, 2, 0, 2, 3),
 })
+// Eye at Y=2, looking down, near=0.1 and far=10: the translation is (2*(far+near)-2*far*near)/(far-near).
 const perspective = Float32Array.of(
   1,
   0,
@@ -39,7 +40,7 @@ const perspective = Float32Array.of(
   0,
   0,
   0,
-  20 / 9.9,
+  18.2 / 9.9,
   2,
 )
 const draw = async (bottom: number, objectHeight?: number, viewProjection = projection) =>
@@ -95,3 +96,4 @@ it.each([
     expect(center(submerged)[2]).toBeGreaterThan(100)
   },
 )
+

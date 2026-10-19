@@ -133,6 +133,10 @@ export function decodeUvmRig(
     const joints = list(skin, 'joints').map(joint => index(joint, nodes.length, 'skin joint'))
     if (joints.length === 0 || new Set(joints).size !== joints.length)
       throw new TypeError('UVM skin needs unique joints')
+    const sourceOrder = field(field(skin['extensions'], 'UV_game_skeleton'), 'sourceOrder')
+    if (sourceOrder !== undefined && (!Array.isArray(sourceOrder) || sourceOrder.length !== joints.length ||
+      sourceOrder.some(value => !Number.isSafeInteger(value) || Number(value) < 0) || new Set(sourceOrder).size !== joints.length))
+      throw new TypeError('UVM skeleton sourceOrder needs one unique original ordinal per joint')
     const slots = new Map(
       joints.map((joint, slot) => [index(joint, nodes.length, 'skin joint'), slot]),
     )
@@ -210,6 +214,7 @@ export function decodeUvmRig(
         partId: `skin-${skinIndex}`,
         hierarchyId: `skin-${skinIndex}`,
         boneIndex,
+        ...(sourceOrder === undefined ? {} : { sourceBoneIndex: (sourceOrder as number[])[boneIndex]! }),
         boneName: typeof node['name'] === 'string' ? node['name'] : null,
         provenance: 'direct',
         nodeId: `node-${joint}`,
@@ -453,6 +458,7 @@ export function decodeUvmRig(
             frames: entry.frames ?? sampled?.frames ?? 0,
             channels: sampled?.channels ?? [],
             ...(entry.looping === undefined ? {} : { looping: entry.looping }),
+            ...(entry.alwaysActive === undefined ? {} : { alwaysActive: entry.alwaysActive }),
             ...(entry.role === undefined ? {} : { role: entry.role }),
             ...(entry.tags === undefined ? {} : { tags: entry.tags }),
             ...(entry.repeatCount === undefined ? {} : { repeatCount: entry.repeatCount }),

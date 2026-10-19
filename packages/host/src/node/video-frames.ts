@@ -5,6 +5,8 @@
  * without it. The frame leaves ffmpeg as PAM — a text header over raw RGBA — so the host needs no
  * image codec. Codecs never start processes: this owns bounded decoding and RGBA sequence encoding.
  * GIF/WebP/OGV modules own encoding arguments; callers stream frames with backpressure.
+ * Encoding deadlines bound each producer wait, pipe write and final flush separately: scene rendering
+ * must not consume the next frame's encoder allowance. Caller cancellation still bounds the operation.
  */
 import { spawn } from 'node:child_process'
 import { createHash } from 'node:crypto'
@@ -20,7 +22,7 @@ export interface NodeVideoFrameDecoderOptions {
   readonly ffmpegPath?: string
   readonly environment?: Readonly<Record<string, string | undefined>>
   readonly platform?: NodeJS.Platform
-  /** A frame that takes longer is refused (default 60 s). */
+  /** Decoder deadline (default 60 s); encoder progress/one frame producer wait (default 180 s). */
   readonly timeoutMs?: number
 }
 
@@ -180,10 +182,12 @@ function run(
       stopped.abort(error)
       child.kill()
     }
-    const timer = setTimeout(
-      () => stop(failed(`ffmpeg took longer than ${timeoutMs} ms`)),
-      timeoutMs,
-    )
+    let timer: ReturnType<typeof setTimeout>
+    const deadline = (phase: string) => {
+      clearTimeout(timer)
+      timer = setTimeout(() => stop(failed(`${phase} took longer than ${timeoutMs} ms`)), timeoutMs)
+    }
+    deadline('ffmpeg')
     const abort = () => stop(new DOMException('operation cancelled', 'AbortError'))
     signal?.addEventListener('abort', abort, { once: true })
     if (signal?.aborted) abort()
@@ -208,7 +212,9 @@ function run(
         })
         try {
           for (;;) {
+            deadline('RGBA frame producer')
             const next = await Promise.race([iterator.next(), cancelled])
+            if (!stopped.signal.aborted) deadline('ffmpeg')
             if (next.done) break
             stopped.signal.throwIfAborted()
             // Own the bytes until the pipe consumes them; producers may reuse their frame buffer.

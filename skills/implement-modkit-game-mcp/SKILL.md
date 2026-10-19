@@ -141,18 +141,19 @@ locale and fidelity as applicable. A screenshot alone cannot prove a save, succe
 complete simulation. Use existing render sources and output lifecycle instead of another renderer.
 
 For a bounds-cropped 3D preview, inspect the running `modkit.world_scene` schema. When advertised,
-`view: "render"` accepts `visibilityBounds: [minX, minZ, maxX, maxZ]`: a finite, nonempty rectangle
-in the renderer's current X/Z frame. This reuses opaque black per-fragment boundary masking,
-not whole-object culling or an authored map edit. Omission keeps the ordinary view. Record
-the rectangle with the camera and time in the render receipt. Animation support is not part
-of this render-only change; rely on the installed operation schema, not a planned option.
+`view: "render"` and `view: "animation"` accept `visibilityBounds: [minX, minZ, maxX, maxZ]`:
+a finite, nonempty rectangle in the renderer's current X/Z frame. This reuses opaque black
+per-fragment boundary masking, not whole-object culling or an authored map edit. Omission keeps
+the ordinary view. Record the rectangle with the camera and time in the render receipt.
 For close-ups of several areas, retain one source snapshot and record each explicit camera,
 viewport and sample time; report missing model/material resources separately from framing.
 These are 3D previews, not terrain-height lattice diagrams.
 Derive playable bounds from the native publisher, not the full terrain extent or object bounds.
-For a requested two-cell inner border, use the declared grid spacing and existing coordinate
-transform owner before insetting; distinguish canonical transforms from native-frame render
-fallbacks. Do not copy another game's axis signs, assume a cell size, or silently substitute bounds.
+If a two-cell inner border is requested, use the declared grid spacing and the existing coordinate
+transform owner before insetting; distinguish a qualified canonical transform from a native-frame
+render fallback. Do not copy another game's axis signs, assume a cell size,
+or silently substitute bounds when the publisher cannot qualify them. An older installed tool
+without this field does not support this invocation; report that gap instead of inventing a tool.
 
 ## Publish knowledge, then verify the product route
 

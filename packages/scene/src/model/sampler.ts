@@ -38,6 +38,7 @@ import type {
 import { createModelSkinDeformer } from '@modkit/codec-kit/model/skinning'
 import { modelPrimitiveByteLength } from '@modkit/codec-kit/model/geometry'
 import { createNodePoseSampler, type ModelNodePose } from './node-pose.js'
+import { applyModelAimConstraints, type ModelAimConstraint } from './aim.js'
 
 export interface ModelSceneProjection {
   readonly nodes: readonly ModelNode[]
@@ -1151,12 +1152,14 @@ export function createModelSceneSampler(
      */
     bounds: (): ModelSceneBounds | undefined =>
       (bounds === undefined ? (bounds = clipSphere()) : bounds) ?? undefined,
-    /** Local time and optional independent concurrent clock; the camera keeps its existing slot. */
+    /** Local time and optional independent concurrent clock; aim runs after animation/billboards.
+     * bounds() covers the authored clips only; callers using aim must supply posed bounds or skip culling. */
     sample(
       timeSeconds: number,
       requestSignal?: AbortSignal,
       camera?: ModelSceneCamera,
       globalTimeSeconds?: number,
+      aimConstraints: readonly ModelAimConstraint[] = [],
     ) {
       if (!Number.isFinite(timeSeconds)) throw new TypeError('scene time must be finite')
       if (requestSignal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
@@ -1197,7 +1200,7 @@ export function createModelSceneSampler(
       const poses: ScenePose[] = []
       for (const hierarchy of hierarchies) {
         const { frame } = hierarchy
-        if (hierarchy.matrices !== undefined) {
+        if (hierarchy.matrices !== undefined && aimConstraints.length === 0) {
           const sampled = hierarchy.matrices.sampleMatrices(
             timeSeconds,
             requestSignal,
@@ -1214,7 +1217,7 @@ export function createModelSceneSampler(
           poses.push({ hierarchy, sampled, bones: () => sampled.pose() })
           continue
         }
-        const pose = applyModelBillboards(
+        const billboardPose = applyModelBillboards(
           hierarchy.sampler.sample(timeSeconds, requestSignal, globalTimeSeconds).bones,
           hierarchy.bindings,
           billboards,
@@ -1224,6 +1227,7 @@ export function createModelSceneSampler(
           requestSignal,
           cameraPosition,
         )
+        const pose = applyModelAimConstraints(billboardPose, hierarchy.bindings, aimConstraints, frame, maxBytes, requestSignal)
         for (const bone of pose) {
           const world = new Float32Array(16)
           multiplyMat4(world, 0, frame, 0, bone.worldMatrix, 0)

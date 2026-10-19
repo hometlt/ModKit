@@ -7,6 +7,10 @@
  */
 import { OutputArtifacts, OutputArtifactError, OUTPUT_ARTIFACT_POLICY } from './output-artifacts.js'
 import { randomUUID } from 'node:crypto'
+import { createNodeRgbaSequenceEncoder } from '@modkit/host/node'
+import { encodeGif } from 'modkit-extension-images/formats/gif/encode'
+import { encodeWebp } from 'modkit-extension-images/formats/webp/encode'
+import { encodeOgv } from 'modkit-extension-video/formats/ogv/encode'
 import { ModkitError, type Diagnostic } from '@modkit/core'
 import { describeInventoryContributions, summarizeEditPlan } from '@modkit/host'
 import type {
@@ -37,13 +41,17 @@ import {
   type CandidateWorldSceneSource,
   type MapLayerGrid,
   type WorldSceneSource,
+  type WorldSceneModelResult,
+  type WorldSceneFrame,
 } from '@modkit/sdk/maps'
 import { encodePng, greyGridToPng } from '@modkit/codec-kit/raster'
 import {
   DEFAULT_WORLD_WEBGL_CAMERA,
   createWorldWebGlPlan,
   renderWorldHeadless,
+  renderWorldHeadlessFrame,
   renderWorldTopDown,
+  worldObjectModelResources,
 } from '@modkit/scene/world'
 import {
   WORLD_VIEWER_MAX_ITEMS_PER_LAYER,
@@ -133,8 +141,15 @@ export class McpOperationError extends Error {
  * grid's lowest to highest sample. The numbers themselves stay in the JSON.
  */
 async function renderLayerGrid(grid: MapLayerGrid, signal: AbortSignal) {
-  if (!Array.isArray(grid.values) || grid.values.length === 0 || grid.values.length !== grid.width * grid.height)
-    throw new McpOperationError('x3.mcp/render-unsupported', 'The operation did not return a layer grid.')
+  if (
+    !Array.isArray(grid.values) ||
+    grid.values.length === 0 ||
+    grid.values.length !== grid.width * grid.height
+  )
+    throw new McpOperationError(
+      'x3.mcp/render-unsupported',
+      'The operation did not return a layer grid.',
+    )
   let black = Infinity
   let white = -Infinity
   for (const value of grid.values) {
@@ -149,7 +164,10 @@ async function renderLayerGrid(grid: MapLayerGrid, signal: AbortSignal) {
     await greyGridToPng({ width: grid.width, height: grid.height, values }, 255, signal),
   )
   if (image === undefined)
-    throw new McpOperationError('x3.mcp/render-too-large', 'The drawn layer exceeds the MCP image limit.')
+    throw new McpOperationError(
+      'x3.mcp/render-too-large',
+      'The drawn layer exceeds the MCP image limit.',
+    )
   return { image, legend: { kind: 'grey', blackSample: black, whiteSample: white } }
 }
 
@@ -240,20 +258,31 @@ export type CalculationsQuery =
   | { readonly view: 'summary' }
   | { readonly view: 'calculations'; readonly cursor?: string; readonly limit: number }
 
+interface WorldRenderOptions {
+  /** Render-only visible rectangle in the renderer's X/Z frame; never culls whole objects. */
+  readonly visibilityBounds?: readonly [number, number, number, number]
+  /** Explicit model-resource selection; reuses the shared collector's admission filter. */
+  readonly resourceIds?: readonly string[]
+  readonly camera?: 'source' | 'orbit'
+  readonly width: number
+  readonly height: number
+  readonly azimuth?: number
+  readonly elevation?: number
+  readonly zoom?: number
+  readonly target?: readonly [number, number, number]
+}
+
 export type WorldSceneQuery =
   | { readonly view: 'info' }
   | { readonly view: 'image'; readonly maxSize: number }
-  | {
-      readonly view: 'render'
-      /** Render-only visible rectangle in the renderer's X/Z frame; geometry is retained. */
-      readonly visibilityBounds?: readonly [number, number, number, number]
-      readonly width: number
-      readonly height: number
-      readonly azimuth?: number
-      readonly elevation?: number
-      readonly zoom?: number
-      readonly target?: readonly [number, number, number]
-    }
+  | (WorldRenderOptions & { readonly view: 'render'; readonly timeMs?: number })
+  | (WorldRenderOptions & {
+      readonly view: 'animation'
+      readonly format: 'gif' | 'webp' | 'ogv'
+      readonly startMs: number
+      readonly durationMs: number
+      readonly fps: number
+    })
   | { readonly view: 'export' }
   | {
       readonly view: 'page'
@@ -536,9 +565,14 @@ export class ModkitMcpRuntime {
           'knowledge-search',
           'knowledge-resolve',
           ...(this.host.language === undefined ? [] : ['language']),
-          ...(this.host.openLanguageSession === undefined ? [] : [
-            'language-session-open', 'language-session-update', 'language-session-feature', 'language-session-close',
-          ]),
+          ...(this.host.openLanguageSession === undefined
+            ? []
+            : [
+                'language-session-open',
+                'language-session-update',
+                'language-session-feature',
+                'language-session-close',
+              ]),
           ...(this.host.discoverInstallations === undefined ||
           this.host.openDiscovered === undefined
             ? []
@@ -709,7 +743,8 @@ export class ModkitMcpRuntime {
         return envelope({
           snapshotId: `unresolved:${fingerprint([unresolvedIdentity])}`,
           completeness: opened.snapshot.diagnostics.some(item => item.severity === 'error')
-            ? 'invalid' : 'complete',
+            ? 'invalid'
+            : 'complete',
           diagnostics: opened.snapshot.diagnostics,
           data: opened.snapshot,
         })
@@ -1282,7 +1317,8 @@ export class ModkitMcpRuntime {
     }
     return this.withHandle(handle, signal, async entry => {
       const session = entry.opened.session
-      if (session === undefined) throw new McpOperationError('x3.mcp/no-session', 'No session exists.')
+      if (session === undefined)
+        throw new McpOperationError('x3.mcp/no-session', 'No session exists.')
       const context = await open((await session.descriptor()).subjectUri)
       return envelope({
         snapshotId: context.contextId,
@@ -1381,7 +1417,11 @@ export class ModkitMcpRuntime {
    * The subject's map world as it publishes it: `info` (coordinate spaces, facets, and `edit` —
    * the operation and object edit kind `propose_edit` takes) or one bounded page of a facet.
    */
-  async worldScene(handle: string, query: WorldSceneQuery, signal: AbortSignal): Promise<McpEnvelope> {
+  async worldScene(
+    handle: string,
+    query: WorldSceneQuery,
+    signal: AbortSignal,
+  ): Promise<McpEnvelope> {
     return this.withHandle(handle, signal, async (entry, scopedSignal) => {
       const session = entry.opened.session
       if (session === undefined)
@@ -1427,11 +1467,18 @@ export class ModkitMcpRuntime {
             }),
             { maxSize: query.maxSize },
           )
-          const shown = mcpImage(await encodePng(image.width, image.height, image.rgba, scopedSignal))
+          const shown = mcpImage(
+            await encodePng(image.width, image.height, image.rgba, scopedSignal),
+          )
           if (shown === undefined)
-            throw new McpOperationError('x3.mcp/render-too-large', 'The drawn world exceeds the MCP image limit.')
+            throw new McpOperationError(
+              'x3.mcp/render-too-large',
+              'The drawn world exceeds the MCP image limit.',
+            )
           const cut = model.layers
-            .filter(layer => layer.page.state !== 'available' || layer.page.nextCursor !== undefined)
+            .filter(
+              layer => layer.page.state !== 'available' || layer.page.nextCursor !== undefined,
+            )
             .map(layer => layer.layer.layerId)
           return envelope({
             snapshotId: model.snapshotId,
@@ -1446,79 +1493,265 @@ export class ModkitMcpRuntime {
                       severity: 'information',
                     },
                   ],
-            data: { width: image.width, height: image.height, world: image.world, objects: image.objects },
+            data: {
+              width: image.width,
+              height: image.height,
+              world: image.world,
+              objects: image.objects,
+            },
             images: [shown],
           })
         }
-        if (query.view === 'render') {
+        if (query.view === 'render' || query.view === 'animation') {
           const bounds = query.visibilityBounds
           if (bounds !== undefined && (!Array.isArray(bounds) || bounds.length !== 4 ||
             [bounds[0], bounds[1], bounds[2], bounds[3]].some(value => !Number.isFinite(value)) || bounds[0] >= bounds[2] || bounds[1] >= bounds[3]))
             throw new McpOperationError('x3.mcp/invalid-visibility-bounds', 'visibilityBounds must be a finite nonempty ordered X/Z rectangle.')
-          // the world as its viewer shows it, models included, drawn without a GPU (MW7); the
-          // regions, navigation and gateway overlays stay off, as the game draws none of them
-          const model = await inspectCandidateWorld(source, {
-            maxLayers: WORLD_VIEWER_MAX_LAYERS,
-            maxItemsPerLayer: WORLD_VIEWER_MAX_ITEMS_PER_LAYER,
-            maxPageItems: MCP_MAX_WORLD_PAGE_ITEMS,
-            signal: scopedSignal,
-          })
-          const camera = {
-            azimuth: query.azimuth ?? DEFAULT_WORLD_WEBGL_CAMERA.azimuth,
-            elevation: query.elevation ?? DEFAULT_WORLD_WEBGL_CAMERA.elevation,
-            zoom: query.zoom ?? DEFAULT_WORLD_WEBGL_CAMERA.zoom,
-            target: query.target ?? DEFAULT_WORLD_WEBGL_CAMERA.target,
-          }
-          const plan = createWorldWebGlPlan({
-            ...candidateWorldWebGlInput(model, new Set(['regions', 'navigation', 'gateways'])),
-            camera,
-          })
-          const frame = await renderWorldHeadless(plan, {
-            ...(bounds === undefined ? {} : { visibilityBounds: bounds }),
-            width: query.width,
-            height: query.height,
-            camera,
-            signal: scopedSignal,
-          })
-          const shown = mcpImage(
-            await encodePng(frame.width, frame.height, frame.rgba, scopedSignal),
+          const timeMs = query.view === 'animation' ? query.startMs : query.timeMs
+          const frameCount =
+            query.view === 'animation' ? Math.ceil((query.durationMs * query.fps) / 1000) : 1
+          if (
+            timeMs !== undefined &&
+            (!Number.isFinite(timeMs) || timeMs < 0 || timeMs > Number.MAX_SAFE_INTEGER)
           )
-          if (shown === undefined)
             throw new McpOperationError(
-              'x3.mcp/render-too-large',
-              'The drawn world exceeds the MCP image limit.',
+              'x3.mcp/invalid-time',
+              'timeMs must be a finite non-negative safe-range number.',
             )
-          const cut = model.layers
-            .filter(
-              layer => layer.page.state !== 'available' || layer.page.nextCursor !== undefined,
+          if (
+            query.view === 'animation' &&
+            (!['gif', 'webp', 'ogv'].includes(query.format) ||
+              !Number.isFinite(query.durationMs) ||
+              query.durationMs <= 0 ||
+              query.durationMs > 30000 ||
+              !Number.isFinite(query.fps) ||
+              query.fps < 1 ||
+              query.fps > 50 ||
+              frameCount > 300 ||
+              !Number.isInteger(query.width) ||
+              !Number.isInteger(query.height) ||
+              query.width < 16 ||
+              query.height < 16 ||
+              query.width > 2048 ||
+              query.height > 2048 ||
+              query.width * query.height * frameCount > 64_000_000 ||
+              query.startMs + query.durationMs > Number.MAX_SAFE_INTEGER ||
+              (query.format === 'ogv' && (query.width % 2 !== 0 || query.height % 2 !== 0)))
+          )
+            throw new McpOperationError(
+              'x3.mcp/animation-budget',
+              'Animation exceeds duration/FPS/frame/pixel limits or OGV requires even dimensions.',
             )
-            .map(layer => layer.layer.layerId)
-          const models = worldModelAssetStatus(model)
-          return envelope({
-            snapshotId: model.snapshotId,
-            completeness:
-              model.info.complete && cut.length === 0 && !models.partial ? 'complete' : 'partial',
-            diagnostics: [
-              ...frame.diagnostics,
-              ...(cut.length === 0
-                ? []
-                : [
-                    {
-                      code: 'x3.mcp/world-image-partial',
-                      message: `Drawn without the whole of these layers: ${cut.join(', ')}.`,
-                      severity: 'information',
-                    },
-                  ]),
-            ],
-            data: {
-              width: frame.width,
-              height: frame.height,
-              camera,
-              models: { total: models.total, converted: models.converted },
-              ...(bounds === undefined ? {} : { visibilityBounds: bounds }),
-            },
-            images: [shown],
-          })
+          if ((timeMs !== undefined || query.camera === 'source') && source.frame === undefined)
+            throw new McpOperationError(
+              'x3.mcp/world-frame-unavailable',
+              'This source does not provide time sampling.',
+            )
+          const useSource =
+            query.camera === 'source' || (timeMs !== undefined && query.camera !== 'orbit')
+          if (
+            useSource &&
+            [query.azimuth, query.elevation, query.zoom, query.target].some(
+              value => value !== undefined,
+            )
+          )
+            throw new McpOperationError(
+              'x3.mcp/conflicting-camera',
+              'Source camera cannot be combined with orbit overrides.',
+            )
+          const encoder = query.view === 'animation' ? createNodeRgbaSequenceEncoder() : undefined
+          if (query.view === 'animation' && encoder === undefined)
+            throw new McpOperationError(
+              'x3.mcp/encoder-unavailable',
+              'Animation export requires an installed ffmpeg on PATH.',
+            )
+          const reservation =
+            query.view === 'animation' ? this.outputs.reserve(entry.id) : undefined
+          try {
+            // Host acquisition has its own bounded service deadlines. The encoder starts its
+            // 180 s process/frame window after these resources have been acquired.
+            const drawSignal = scopedSignal
+            // Load resources once per export; samples only replace presentation state.
+            const times = Array.from({ length: frameCount }, (_, index) => query.view === 'animation'
+              ? query.startMs + index * 1000 / query.fps : timeMs ?? 0)
+            const sampledFrames = new Map<number, WorldSceneFrame>()
+            let selectedResources = query.resourceIds === undefined ? undefined : new Set(query.resourceIds)
+            if (source.frame !== undefined) {
+              // The capability wire exposes methods, not the publisher's synchronous fields.
+              // info() is authoritative for both remote sources and refinable worlds.
+              const snapshotId = (await source.info(drawSignal)).snapshotId
+              const activeResources = new Set<string>()
+              for (const at of times) {
+                drawSignal.throwIfAborted()
+                const sampled = await source.frame(at, drawSignal)
+                if (sampled.snapshotId !== snapshotId || sampled.timeMs !== at)
+                  throw new McpOperationError('x3.mcp/world-frame-invalid', 'Sampled frame does not match this snapshot and requested time.')
+                sampledFrames.set(at, sampled)
+                for (const object of sampled.objects)
+                  for (const id of worldObjectModelResources(object)) activeResources.add(id)
+              }
+              selectedResources = selectedResources === undefined ? activeResources :
+                new Set([...selectedResources].filter(id => activeResources.has(id)))
+            }
+            const model = await inspectCandidateWorld(source, {
+              maxLayers: WORLD_VIEWER_MAX_LAYERS,
+              maxItemsPerLayer: WORLD_VIEWER_MAX_ITEMS_PER_LAYER,
+              maxPageItems: MCP_MAX_WORLD_PAGE_ITEMS,
+              ...(source.frame === undefined ? {} : { maxConcurrentModelAcquisitions: 1 }),
+              ...(selectedResources === undefined ? {} : { modelResourceFilter: (id: string) => selectedResources.has(id) }),
+              signal: drawSignal,
+            })
+            const selectedModels = selectedResources === undefined ? model : { ...model,
+              layers: model.layers.map(layer => ({ ...layer, page: { ...layer.page,
+                items: layer.page.items.filter(item => item.facet !== 'resources' || selectedResources.has(item.id)) } })),
+              models: new Map<string, WorldSceneModelResult>([...(model.models ?? [])].filter(([id]) => selectedResources.has(id))) }
+            const models = worldModelAssetStatus(selectedModels)
+            const cut = model.layers
+              .filter(
+                layer => layer.page.state !== 'available' || layer.page.nextCursor !== undefined,
+              )
+              .map(layer => layer.layer.layerId)
+            let complete = model.info.complete && cut.length === 0 && !models.partial
+            const diagnostics: Diagnostic[] = []
+            const seenDiagnostics = new Set<string>()
+            const record = (items: readonly Diagnostic[]) => {
+              for (const item of items) {
+                if (query.view === 'render') {
+                  diagnostics.push(item)
+                  continue
+                }
+                const key = JSON.stringify(item)
+                if (!seenDiagnostics.has(key) && diagnostics.length < 1000) {
+                  seenDiagnostics.add(key)
+                  diagnostics.push(item)
+                }
+              }
+            }
+            record(
+              [...(selectedModels.models?.values() ?? [])].flatMap(result =>
+                result.diagnostics.filter(item => item.severity !== 'information'),
+              ),
+            )
+            if (cut.length)
+              record([
+                {
+                  code: 'x3.mcp/world-image-partial',
+                  severity: 'information',
+                  message: `Drawn without the whole of these layers: ${cut.join(', ')}.`,
+                },
+              ])
+            const draw = async (at: number) => {
+              drawSignal.throwIfAborted()
+              const sampled = sampledFrames.get(at)
+              if (sampled?.complete === false) complete = false
+              record(sampled?.diagnostics ?? [])
+              const unfiltered = candidateWorldWebGlInput(
+                model,
+                new Set(['regions', 'navigation', 'gateways']),
+                sampled,
+              )
+              const input = selectedResources === undefined ? unfiltered : { ...unfiltered,
+                items: unfiltered.items.filter(item => item.facet !== 'objects' ||
+                  worldObjectModelResources(item).some(id => selectedResources.has(id))) }
+              if (useSource && input.camera === undefined)
+                throw new McpOperationError(
+                  'x3.mcp/world-camera-unavailable',
+                  'The sampled frame has no resolved source camera; request orbit explicitly for inspection.',
+                )
+              const camera = useSource
+                ? input.camera!
+                : {
+                    azimuth: query.azimuth ?? DEFAULT_WORLD_WEBGL_CAMERA.azimuth,
+                    elevation: query.elevation ?? DEFAULT_WORLD_WEBGL_CAMERA.elevation,
+                    zoom: query.zoom ?? DEFAULT_WORLD_WEBGL_CAMERA.zoom,
+                    target: query.target ?? DEFAULT_WORLD_WEBGL_CAMERA.target,
+                  }
+              const frame = await renderWorldHeadlessFrame({ ...input, camera }, {
+                ...(bounds === undefined ? {} : { visibilityBounds: bounds }),
+                width: query.width,
+                height: query.height,
+                camera,
+                signal: drawSignal,
+              })
+              record(frame.diagnostics)
+              return { frame, camera, sampled }
+            }
+            if (query.view === 'animation') {
+              const { startMs, fps, format } = query
+              async function* frames() {
+                for (let index = 0; index < frameCount; index++)
+                  yield (await draw(startMs + (index * 1000) / fps)).frame.rgba
+              }
+              const encode = { gif: encodeGif, webp: encodeWebp, ogv: encodeOgv }[format]
+              const bytes = await encode(
+                {
+                  width: query.width,
+                  height: query.height,
+                  fps,
+                  frameCount,
+                  frames: frames(),
+                  maxBytes: OUTPUT_ARTIFACT_POLICY.maxArtifactBytes,
+                  signal: drawSignal,
+                },
+                encoder!,
+              )
+              drawSignal.throwIfAborted()
+              const outputArtifact = this.outputs.commit(reservation!, bytes, {
+                sourceRevision: String(descriptor.revision),
+                operationId: WORLD_SCENE_SOURCE_CONTRACT,
+              })
+              return envelope({
+                snapshotId: model.snapshotId,
+                completeness: complete ? 'complete' : 'partial',
+                diagnostics,
+                data: {
+                  outputArtifact,
+                  format,
+                  mediaType: format === 'ogv' ? 'video/ogg' : `image/${format}`,
+                  width: query.width,
+                  height: query.height,
+                  startMs,
+                  durationMs: (frameCount * 1000) / fps,
+                  fps,
+                  frameCount,
+                  audio: false,
+                  timing:
+                    format === 'gif'
+                      ? 'centisecond-quantized'
+                      : format === 'ogv'
+                        ? 'frame-rate'
+                        : 'millisecond-quantized',
+                  models: { total: models.total, converted: models.converted },
+                  ...(bounds === undefined ? {} : { visibilityBounds: bounds }),
+                },
+              })
+            }
+            const { frame, camera, sampled } = await draw(timeMs ?? 0)
+            const shown = mcpImage(
+              await encodePng(frame.width, frame.height, frame.rgba, drawSignal),
+            )
+            if (shown === undefined)
+              throw new McpOperationError(
+                'x3.mcp/render-too-large',
+                'The drawn world exceeds the MCP image limit.',
+              )
+            return envelope({
+              snapshotId: model.snapshotId,
+              completeness: complete ? 'complete' : 'partial',
+              diagnostics,
+              data: {
+                width: frame.width,
+                height: frame.height,
+                camera,
+                ...(sampled === undefined ? {} : { timeMs: sampled.timeMs }),
+                models: { total: models.total, converted: models.converted },
+                ...(bounds === undefined ? {} : { visibilityBounds: bounds }),
+              },
+              images: [shown],
+            })
+          } finally {
+            if (reservation !== undefined) this.outputs.cancel(reservation)
+          }
         }
         if (query.view === 'export') {
           // one UVW document of the world, kept as an output resource, and what the UVW lacks
@@ -1565,19 +1798,37 @@ export class ModkitMcpRuntime {
         const binding = `world:${handle}:${query.facet}:${query.layerId ?? ''}`
         const request = boundPageRequest(this.cursorSecret, query, source.snapshotId, binding)
         const page = await source.page(
-          { facet: query.facet, ...(query.layerId === undefined ? {} : { layerId: query.layerId }), ...request },
+          {
+            facet: query.facet,
+            ...(query.layerId === undefined ? {} : { layerId: query.layerId }),
+            ...request,
+          },
           scopedSignal,
         )
         const diagnostics: unknown[] =
           page.reason === undefined
             ? []
-            : [{ code: `x3.mcp/world-scene-${page.state}`, message: page.reason, severity: 'information' }]
-        const cursor = sourceCursor(this.cursorSecret, page.nextCursor, page.snapshotId, binding, diagnostics)
+            : [
+                {
+                  code: `x3.mcp/world-scene-${page.state}`,
+                  message: page.reason,
+                  severity: 'information',
+                },
+              ]
+        const cursor = sourceCursor(
+          this.cursorSecret,
+          page.nextCursor,
+          page.snapshotId,
+          binding,
+          diagnostics,
+        )
         return envelope({
           snapshotId: page.snapshotId,
           ...(cursor.cursor === undefined ? {} : { nextCursor: cursor.cursor }),
           completeness:
-            page.state === 'available' ? pageCompleteness(page as Page<unknown>, cursor.capped) : 'partial',
+            page.state === 'available'
+              ? pageCompleteness(page as Page<unknown>, cursor.capped)
+              : 'partial',
           diagnostics,
           data: { facet: page.facet, state: page.state, items: page.items },
         })
@@ -1641,7 +1892,8 @@ export class ModkitMcpRuntime {
               ? [
                   {
                     code: 'x3.mcp/relation-graph-invalid-upstream-cursor',
-                    message: 'Traversal stopped because the graph source returned an invalid cursor.',
+                    message:
+                      'Traversal stopped because the graph source returned an invalid cursor.',
                     severity: 'warning' as const,
                   },
                 ]
@@ -1963,10 +2215,15 @@ export class ModkitMcpRuntime {
             throw new McpOperationError('x3.mcp/no-session', 'No opened snapshot exists.')
           }
           const images: McpImage[] = []
-          const shown = result.state === 'ok' && result.output.kind === 'bytes' ? mcpImage(result.output.value) : undefined
+          const shown =
+            result.state === 'ok' && result.output.kind === 'bytes'
+              ? mcpImage(result.output.value)
+              : undefined
           if (shown !== undefined) images.push(shown)
           const rendered =
-            outputOptions.render === undefined || result.state !== 'ok' || result.output.kind !== 'json'
+            outputOptions.render === undefined ||
+            result.state !== 'ok' ||
+            result.output.kind !== 'json'
               ? undefined
               : await renderLayerGrid(result.output.value as unknown as MapLayerGrid, scopedSignal)
           if (rendered !== undefined) images.push(rendered.image)
@@ -2298,17 +2555,22 @@ export class ModkitMcpRuntime {
   /** Refresh saved-model consumers after a receipt exists; failure cannot hide a completed write. */
   private async refreshCommittedSources(result: CommitResult): Promise<readonly Diagnostic[]> {
     if (result.state === 'not-applied' || this.host.sourcesChanged === undefined) return []
-    const sources = [...new Map(result.receipt.writes.map(write => [write.source.id, write.source])).values()]
+    const sources = [
+      ...new Map(result.receipt.writes.map(write => [write.source.id, write.source])).values(),
+    ]
     if (sources.length === 0) return []
     try {
       return await this.host.sourcesChanged(sources)
     } catch {
-      return [{
-        code: 'x3.mcp/source-refresh-failed',
-        message: 'The write completed, but saved-model refresh failed. Reopen the mod before relying on derived answers.',
-        severity: 'warning',
-        path: [],
-      }]
+      return [
+        {
+          code: 'x3.mcp/source-refresh-failed',
+          message:
+            'The write completed, but saved-model refresh failed. Reopen the mod before relying on derived answers.',
+          severity: 'warning',
+          path: [],
+        },
+      ]
     }
   }
 
@@ -2507,7 +2769,9 @@ export class ModkitMcpRuntime {
         handle,
         activeRootId: workspace.activeRootId,
         rootIds: workspace.rootIds,
-        ...(workspace.activeSourcePath === undefined ? {} : { activeSourcePath: workspace.activeSourcePath }),
+        ...(workspace.activeSourcePath === undefined
+          ? {}
+          : { activeSourcePath: workspace.activeSourcePath }),
         totalSubjects: summary.totalSubjects,
         subjects: subjects.items,
       },
@@ -2787,10 +3051,13 @@ export class ModkitMcpRuntime {
       snapshotId: result.snapshotId,
       completeness:
         session.workspaceIncomplete ||
-        (typeof result.result === 'object' && result.result !== null &&
-          'isIncomplete' in result.result && result.result.isIncomplete === true) ||
+        (typeof result.result === 'object' &&
+          result.result !== null &&
+          'isIncomplete' in result.result &&
+          result.result.isIncomplete === true) ||
         result.workspaceContext?.semanticComplete === false
-          ? 'partial' : 'complete',
+          ? 'partial'
+          : 'complete',
       diagnostics: result.diagnostics,
       data: {
         sessionHandle: handle,

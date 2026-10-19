@@ -1173,6 +1173,7 @@ export function candidateWorldWebGlInput(
         (lighting === undefined || item.facet !== 'lighting')), ...frame.objects,
         ...(lighting === undefined ? [] : [lighting])], hiddenOverlays),
     ...(frame === undefined ? {} : { timeSeconds: frame.timeMs / 1000,
+      ...(frame.renderTextures === undefined ? {} : { renderTextures: frame.renderTextures }),
       animationTimes: new Map(frame.animationTimes?.map(item => [item.objectId, item.seconds])),
       ...(frame.camera === undefined ? {} : { camera: worldWebGlCameraFromSource(frame.camera) }) }),
     ...(teamColors.size === 0 ? {} : { teamColors }),

@@ -320,13 +320,16 @@ export function shadeMaterial(
     pixelLighting = {
       ...(sceneLighting ?? {ambientColor:spatialLighting.ambient,lightColor:[0,0,0] as const}),
       normal: worldNormal,
-      lights: spatialLighting.lights.map(light => {
+      lights: spatialLighting.lights.flatMap(light => {
+        const solid = program.blend === 'opaque' || program.blend === 'alpha-test'
+        if (solid ? light.affectsOpaque === false : light.affectsTransparent === false) return []
         const {vector,distance,attenuation} = sampleLightGeometry(light,frame.position)
+        if (attenuation === 0) return []
         const direction: Vec3 = distance === 0 ? [0,0,0] :
           [vector[0]/distance,vector[1]/distance,vector[2]/distance]
         const half = unit([eye[0]+direction[0],eye[1]+direction[1],eye[2]+direction[2]])
         const color: Vec3 = [light.color[0]*attenuation,light.color[1]*attenuation,light.color[2]*attenuation]
-        return {direction,halfVector:[-half[0],-half[1],-half[2]] as Vec3,diffuseColor:color,specularColor:color}
+        return [{direction,halfVector:[-half[0],-half[1],-half[2]] as Vec3,diffuseColor:color,specularColor:(light.specularColor ?? light.color).map(value => value * attenuation) as unknown as Vec3,useAmbientOcclusion:light.useAmbientOcclusion === true}]
       }),
     }
   }

@@ -386,6 +386,7 @@ const modelResourceAssetSurface = {
     materials: { kind: 'value', optional: true, ...sig },
     resourceReferences: { kind: 'value', optional: true, ...sig },
     sockets: { kind: 'value', optional: true, ...sig },
+    nodeBehaviours: { kind: 'value', optional: true, ...sig },
   },
 } as const satisfies AbiSurfaceOf<ModelResourceAsset>
 

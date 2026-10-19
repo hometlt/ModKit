@@ -128,7 +128,7 @@ export function applySimpleEffectState(gl: WebGL2RenderingContext, state: Simple
 }
 /** RGBA8 accumulation follows the common renderer's premultiplied target contract. */
 export function blendSimpleEffectPixel(
-  frame: Uint8Array,
+  frame: Uint8Array | Float32Array,
   offset: number,
   rgba: readonly [number, number, number, number],
   state: SimpleEffectState,
@@ -141,7 +141,7 @@ export function blendSimpleEffectPixel(
     a = clamp(rgba[3]),
     solid = simpleEffectSolid(state)
   for (let channel = 0; channel < 3; channel++) {
-    const source = clamp(rgba[channel] ?? 0),
+    const source = frame instanceof Float32Array ? Math.max(0, rgba[channel] ?? 0) : clamp(rgba[channel] ?? 0),
       destination = (frame[offset + channel] ?? 0) / 255
     const value = solid
       ? source * a
@@ -156,7 +156,7 @@ export function blendSimpleEffectPixel(
             : state.blend === 'modulate'
               ? source * destination
               : 2 * source * destination
-    frame[offset + channel] = Math.round(clamp(value) * 255)
+    frame[offset + channel] = frame instanceof Float32Array ? value * 255 : Math.round(clamp(value) * 255)
   }
   if (solid) frame[offset + 3] = Math.round(a * 255)
   else if (state.blend === 'blend' || state.blend === 'premultiplied')
@@ -168,7 +168,7 @@ export const materialIsSolid = (program: Pick<StandardMaterialProgram, 'blend'>)
 
 /** RGBA8 target blend equations match WebGL's normalized framebuffer, including destination alpha. */
 export function blendMaterialPixel(
-  frame: Uint8Array,
+  frame: Uint8Array | Float32Array,
   offset: number,
   rgba: readonly [number, number, number, number],
   program: Pick<StandardMaterialProgram, 'blend'>,
@@ -180,7 +180,7 @@ export function blendMaterialPixel(
     a = clamp(fading ? fade : rgba[3]),
     mode = fading ? 'blend' : program.blend
   for (let channel = 0; channel < 3; channel++) {
-    const source = clamp(rgba[channel] ?? 0),
+    const source = frame instanceof Float32Array ? Math.max(0, rgba[channel] ?? 0) : clamp(rgba[channel] ?? 0),
       dest = (frame[offset + channel] ?? 0) / 255
     const value =
       mode === 'blend'
@@ -196,7 +196,7 @@ export function blendMaterialPixel(
                 : mode === 'modulate2x'
                   ? 2 * source * dest
                   : source
-    frame[offset + channel] = Math.round(clamp(value) * 255)
+    frame[offset + channel] = frame instanceof Float32Array ? value * 255 : Math.round(clamp(value) * 255)
   }
   // A solid pass covers the pixel whole (an alpha-tested fragment that survived is opaque).
   if (materialIsSolid(program) && !fading) frame[offset + 3] = 255

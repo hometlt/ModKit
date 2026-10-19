@@ -179,3 +179,50 @@ describe('headless scene renderer', () => {
     )
   })
 })
+
+
+describe('ordinary perspective triangle clipping', () => {
+  const perspective = Float32Array.from([
+    1, 0, 0, 0, 0, 1, 0, 0, 0, 0, -11 / 9, -1, 0, 0, -20 / 9, 0,
+  ])
+  const draw = primitives => renderHeadless({
+    outputKind: 'rgba8', viewport: { width: 32, height: 32 },
+    camera: { viewProjection: perspective }, clearColor: [0, 0, 0, 0],
+    scene: { primitives, materials: [
+      { id: 'green', baseColor: [0, 1, 0, 1] },
+      { id: 'red', baseColor: [1, 0, 0, 1] },
+      { id: 'textured', baseColor: [1, 1, 1, 1], textureId: 'grid' },
+    ], textures: [{ id: 'grid', width: 2, height: 2,
+      rgba: Uint8Array.from([255, 255, 255, 255, 255, 128, 255, 255,
+        128, 255, 255, 255, 255, 255, 128, 255]), filter: 'linear' }] },
+  })
+  it('does not let a triangle behind the camera cover visible geometry', async () => {
+    const front = { id: 'front', topology: 'triangles', materialId: 'green',
+      positions: Float32Array.from([-1, -1, -2, 1, -1, -2, 1, 1, -2, -1, 1, -2]),
+      indices: Uint32Array.from([0, 1, 2, 0, 2, 3]) }
+    const behind = { id: 'behind', topology: 'triangles', materialId: 'red',
+      positions: Float32Array.from([-2, -2, 2, 2, -2, 2, 0, 2, 2]) }
+    const expected = await draw([front]), actual = await draw([front, behind])
+    assert.deepEqual(actual.rgba, expected.rgba)
+    const center = (16 * 32 + 16) * 4
+    assert.deepEqual([...actual.rgba.subarray(center, center + 4)], [0, 255, 0, 255])
+  })
+  it('clips a crossing triangle while preserving its colors and texture coordinates', async () => {
+    const crossing = { id: 'crossing', topology: 'triangles', materialId: 'textured',
+      positions: Float32Array.from([-0.8, -0.8, -2, 0.8, -0.8, -2, 0, 0.4, -0.5]),
+      colors: Float32Array.from([1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1]),
+      textureCoordinates: Float32Array.from([0, 0, 1, 0, 0.5, 1]) }
+    // Intersections of the authored edges with z=-1 (the near plane).
+    const clipped = { id: 'reference', topology: 'triangles', materialId: 'textured',
+      positions: Float32Array.from([-0.8, -0.8, -2, 0.8, -0.8, -2,
+        0.8 / 3, 0, -1, -0.8 / 3, 0, -1]),
+      colors: Float32Array.from([1, 0, 0, 1, 0, 1, 0, 1,
+        0, 1 / 3, 2 / 3, 1, 1 / 3, 0, 2 / 3, 1]),
+      textureCoordinates: Float32Array.from([0, 0, 1, 0, 2 / 3, 2 / 3, 1 / 3, 2 / 3]),
+      indices: Uint32Array.from([0, 1, 2, 0, 2, 3]) }
+    const actual = await draw([crossing]), expected = await draw([clipped])
+    assert.ok(actual.rgba.some(value => value !== 0))
+    assert.ok(actual.rgba.every((value, index) => Math.abs(value - expected.rgba[index]) <= 1))
+    assert.equal(actual.statistics.triangles, 1)
+  })
+})

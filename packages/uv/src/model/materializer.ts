@@ -2464,6 +2464,7 @@ export function materializeUvmCore(
     extensionsUsed: [
       'UV_asset',
       'UV_provenance',
+      ...((skeleton?.skins.length ?? 0) === 0 ? [] : ['UV_game_skeleton']),
       ...(socketByNodeId.size === 0 ? [] : ['UV_game_socket']),
       ...(billboardNodes === 0 ? [] : ['UV_node_billboard']),
       ...(materials.some(material => material.extensions?.UV_game_material !== undefined)

@@ -15,6 +15,7 @@ import type {
   ModelSceneSource,
   ModelSkeletonSource,
   ModelSocketSource,
+  ModelNodeBehaviourSource,
   ResourceBudget,
 } from '@modkit/sdk'
 import {
@@ -390,9 +391,14 @@ export function createSubjectModelResources(options: Options): ModelResourcePort
         }
         profile.uvmBytes = uvmBytes.byteLength
         let cameras: Lease<ModelCameraSource> | undefined
+        let behaviours: Lease<ModelNodeBehaviourSource> | undefined
         if ((opened.descriptor.dataSources ?? []).some(item => item.contract === 'common.view/model-camera-source' && item.major === 1)) {
           cameras = await opened.session.dataSource('common.view/model-camera-source', 1)
           releases.push(() => cameras!.release())
+        }
+        if ((opened.descriptor.dataSources ?? []).some(item => item.contract === 'common.view/model-node-behaviour-source' && item.major === 1)) {
+          behaviours = await opened.session.dataSource('common.view/model-node-behaviour-source', 1)
+          releases.push(() => behaviours!.release())
         }
         let scene: Lease<ModelSceneSource> | undefined
         let skeleton: Lease<ModelSkeletonSource> | undefined
@@ -526,6 +532,7 @@ export function createSubjectModelResources(options: Options): ModelResourcePort
             acquire: models.acquire,
             readRaster: rasters.read,
             ...(cameras === undefined ? {} : { cameraReferences: cameras.value.cameras.bind(cameras.value) }),
+            ...(behaviours === undefined ? {} : { nodeBehaviours: behaviours.value.behaviours.bind(behaviours.value) }),
             ...(scene === undefined
               ? {}
               : {

@@ -283,7 +283,7 @@ export async function worldSceneModel(
       ? undefined
       : readAllPages(page => read(page, signal), pageLimit, MODEL_FACET_ITEM_CAP)
   const meshPage = (await facet(asset.meshes.bind(asset), request.maxMeshes))!
-  const [nodePage, skeletonPage, animationPage, materialPage, resourcePage, socketPage] =
+  const [nodePage, skeletonPage, animationPage, materialPage, resourcePage, socketPage, behaviourPage] =
     await Promise.all([
       facet(asset.nodes?.bind(asset), maxNodes),
       facet(asset.skeletonBindings?.bind(asset), maxNodes),
@@ -291,7 +291,26 @@ export async function worldSceneModel(
       facet(asset.materials?.bind(asset), maxNodes),
       facet(asset.resourceReferences?.bind(asset), maxResources),
       facet(asset.sockets?.bind(asset), maxNodes),
+      facet(asset.nodeBehaviours?.bind(asset), maxNodes),
     ])
+  // Native aiming parts refer to original joint ordinals. UV_game_skeleton.sourceOrder is the
+  // explicit join into the independently reopened skin; never join by bone name or slot order.
+  const nodeIds = new Set(nodePage?.items.map(node => node.id))
+  const behaviourDiagnostics: Diagnostic[] = []
+  const behaviours = behaviourPage?.items.flatMap(behaviour => {
+    if (behaviour.aim === undefined) return []
+    const parts = behaviour.aim.parts.flatMap(part => {
+      const matches = nodeIds.has(part.nodeId) ? [part.nodeId] : (skeletonPage?.items ?? [])
+        .filter(binding => part.sourceBoneIndex !== undefined && binding.sourceBoneIndex === part.sourceBoneIndex)
+        .flatMap(binding => binding.nodeId === undefined ? [] : [binding.nodeId])
+      const unique = [...new Set(matches)]
+      if (unique.length === 1) return [{ ...part, nodeId: unique[0]! }]
+      behaviourDiagnostics.push(diagnostic('warning', 'x3.host/model-aim-binding-unresolved',
+        `Aiming group ${behaviour.name ?? behaviour.id}: original joint ${part.sourceBoneIndex ?? part.nodeId} has ${unique.length} projected targets.`))
+      return []
+    })
+    return parts.length === 0 ? [] : [{ ...behaviour, nodeId: parts[0]!.nodeId, nodeIds: parts.map(part => part.nodeId), aim: { parts } }]
+  })
   // A separately authored skin replaces the materials by index; the mesh's own texture
   // references are then not dependencies of what is drawn.
   let materials = materialPage?.items
@@ -464,7 +483,9 @@ export async function worldSceneModel(
       continue
     }
     textureBytes += bytes
-    textures.push(texture)
+    // Worker replies transfer their buffers. Keep the cached pixels/blocks owned by this
+    // lease so another frame (or model sharing the texture) can publish them again.
+    textures.push(Object.freeze(structuredClone(texture)))
   }
   const cameraPage = await facet(asset.cameraReferences?.bind(asset), maxNodes)
   return Object.freeze({
@@ -480,12 +501,14 @@ export async function worldSceneModel(
     ...(materials === undefined ? {} : { materials: Object.freeze([...materials]) }),
     ...(publishedResources.length === 0 ? {} : { resources: Object.freeze(publishedResources) }),
     ...(socketPage === undefined ? {} : { sockets: Object.freeze([...socketPage.items]) }),
+    ...(behaviours === undefined ? {} : { nodeBehaviours: Object.freeze(behaviours) }),
     ...(publishedResources.length === 0 ? {} : { textures: Object.freeze(textures) }),
     meshes: Object.freeze(meshes),
     primitives: Object.freeze(primitives),
     diagnostics: Object.freeze([
       ...result.diagnostics,
       ...skinDiagnostics,
+      ...behaviourDiagnostics,
       ...textureDiagnostics,
       ...(graph?.pruned === true
         ? [
@@ -505,6 +528,7 @@ export async function worldSceneModel(
       materialPage?.complete !== false &&
       resourcePage?.complete !== false &&
       socketPage?.complete !== false &&
+      behaviourPage?.complete !== false && behaviourDiagnostics.length === 0 &&
       textureReferences.length === textures.length &&
       primitives.length === allPrimitiveIds.length,
   })

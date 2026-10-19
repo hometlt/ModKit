@@ -467,7 +467,13 @@ export function validateStandardMaterial(
         message: `layer "${slotKey}" channels must be 0-5, got ${layer.channels}`,
       })
     }
-    if (layer.texturePath === null && !layer.constantColor) {
+    if (layer.renderTextureChannel !== undefined && !isRenderTextureChannel(layer.renderTextureChannel)) {
+      issues.push({
+        code: 'layer-render-texture-channel-out-of-range',
+        message: `layer "${slotKey}" renderTextureChannel must be an integer in 0-6`,
+      })
+    }
+    if (layer.texturePath === null && !layer.constantColor && layer.renderTextureChannel === undefined) {
       issues.push({
         code: 'layer-missing-source',
         message: `layer "${slotKey}" has neither a texture path nor a constant color`,

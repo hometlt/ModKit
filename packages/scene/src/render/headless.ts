@@ -1,7 +1,7 @@
 /**
  * [MK] Core CPU scene rasterizer: material programs and base/PBR draws, alpha/depth, texture
  * filtering, terrain splats and opaque-scene-depth water. Programs use the legacy light or the
- * modern rig's ambient and first directional; the base route retains the full preview-light rig.
+ * admitted material-space directional/local lights; the base route retains the preview-light rig.
  * Shadows, water wave normals and caustics require the GPU renderer.
  */
 import { readSimpleEffectColors } from './effect-colors.js'
@@ -39,7 +39,7 @@ import type {
   SceneRendererScene,
 } from '@modkit/sdk/renderer'
 import { materialAlpha, straightenAlpha, type MaterialAlpha } from './alpha.js'
-import { prepareSceneMaterialPrograms } from './materials.js'
+import { prepareSceneMaterialPrograms, type SceneMaterialPrograms } from './materials.js'
 import {
   sceneMaterialDraws,
   blendMaterialPixel,
@@ -95,7 +95,7 @@ interface RasterContext {
   opaqueDepth?: Float32Array
   width: number
   height: number
-  frame: Uint8Array
+  frame: Uint8Array | Float32Array
   depth: Float32Array
   viewProjection: Float32Array
   materials: Map<string, Surface>
@@ -153,7 +153,7 @@ function color(value: Vec4, label: string): Vec4 {
 
 const byte = (value: number) => Math.round(value * 255)
 
-function clearFrame(rgba: Uint8Array, clearColor: Vec4) {
+function clearFrame(rgba: Uint8Array | Float32Array, clearColor: Vec4) {
   const red = byte(clearColor[0] * clearColor[3])
   const green = byte(clearColor[1] * clearColor[3])
   const blue = byte(clearColor[2] * clearColor[3])
@@ -187,39 +187,38 @@ function multiplyPoint(transform: Float32Array, x: number, y: number, z: number,
   ]
 }
 
-function screenVertex(
+interface ClipVertex {
+  readonly clip: Vec4
+  readonly world: Vec3
+  /** Coordinates in the original triangle, including after frustum clipping. */
+  readonly weights: Vec3
+}
+
+function clipVertex(
   positions: Float32Array,
   index: number,
   model: Float32Array | undefined,
   viewProjection: Float32Array,
-  width: number,
-  height: number,
-): Vertex | undefined {
+  weights: Vec3,
+): ClipVertex | undefined {
   const offset = index * 3
-  const x = positions[offset]
-  const y = positions[offset + 1]
-  const z = positions[offset + 2]
+  const x = positions[offset], y = positions[offset + 1], z = positions[offset + 2]
   if (x === undefined || y === undefined || z === undefined) return undefined
   const world: Vec4 = model === undefined ? [x, y, z, 1] : multiplyPoint(model, x, y, z, 1)
   const clip = multiplyPoint(viewProjection, world[0], world[1], world[2], world[3])
-  const clipW = clip[3]
-  if (clipW === undefined || !Number.isFinite(clipW) || Math.abs(clipW) < 0.000_001) {
-    return undefined
-  }
-  const ndcX = clip[0] / clipW
-  const ndcY = clip[1] / clipW
-  const ndcZ = clip[2] / clipW
-  if (!Number.isFinite(ndcX) || !Number.isFinite(ndcY) || !Number.isFinite(ndcZ)) {
-    return undefined
-  }
-  return {
-    x: (ndcX * 0.5 + 0.5) * width,
-    y: (1 - (ndcY * 0.5 + 0.5)) * height,
-    z: ndcZ,
-    /* Reciprocal clip w, kept per vertex so attributes interpolate perspective-correctly. */
-    invW: 1 / clipW,
-    world: [world[0], world[1], world[2]],
-  }
+  if (!clip.every(Number.isFinite)) return undefined
+  return { clip, world: [world[0], world[1], world[2]], weights }
+}
+
+function weightedVector<T extends readonly number[]>(values: Triangle<T>, weights: Vec3): T {
+  return values[0].map((_, i) => values[0][i]! * weights[0] +
+    values[1][i]! * weights[1] + values[2][i]! * weights[2]) as unknown as T
+}
+
+function screenClipVertex(clip: Vec4, world: Vec3, width: number, height: number): Vertex {
+  return { x: (clip[0] / clip[3] * 0.5 + 0.5) * width,
+    y: (0.5 - clip[1] / clip[3] * 0.5) * height, z: clip[2] / clip[3],
+    invW: 1 / clip[3], world }
 }
 
 const edge = (a: Vertex, b: Vertex, x: number, y: number) =>
@@ -365,7 +364,7 @@ function rasterizeTriangle(
   mirrored = false,
   /** The primitive's TANGENT at the corners (world xyz, handedness w), for a normal map. */
   tangents?: Triangle<Vec4>,
-  splat?: Readonly<{ batch: WorldWebGlSplatBatch; overlay: boolean; indices: Triangle<number> }>,
+  splat?: Readonly<{ batch: WorldWebGlSplatBatch; overlay: boolean; indices: Triangle<number>; sourceWeights?: Triangle<Vec3> }>,
   waterFalloff?: number,
 ) {
   const [first, second, third] = vertices
@@ -489,13 +488,15 @@ function rasterizeTriangle(
         if (draw.depthOnly || materialIsSolid(draw.program)) context.depth[pixel] = sampleDepth
         if (!draw.depthOnly) {
           const multiplier = materialTint ?? [1, 1, 1, 1]
+          // The GPU's modAlpha pass attenuates additive RGB by instance fade before blending.
+          const rgbFade = draw.program.defines.modAlpha === true ? multiplier[3] : 1
           blendMaterialPixel(
             context.frame,
             pixel * 4,
             [
-              shaded.rgba[0] * multiplier[0],
-              shaded.rgba[1] * multiplier[1],
-              shaded.rgba[2] * multiplier[2],
+              shaded.rgba[0] * multiplier[0] * rgbFade,
+              shaded.rgba[1] * multiplier[1] * rgbFade,
+              shaded.rgba[2] * multiplier[2] * rgbFade,
               shaded.rgba[3] * multiplier[3],
             ],
             draw.program,
@@ -538,7 +539,8 @@ function rasterizeTriangle(
             })()
       if (splat !== undefined) {
         if (splatWeights === undefined) continue
-        const sampled = sampleSplat(splat, splat.indices, splatWeights)
+        const sampled = sampleSplat(splat, splat.indices, splat.sourceWeights === undefined
+          ? splatWeights : weightedVector(splat.sourceWeights, splatWeights))
         if (sampled === undefined || sampled.coverage <= 0) continue
         red *= sampled.color[0]
         green *= sampled.color[1]
@@ -763,8 +765,9 @@ function rasterizeTriangle(
 }
 
 /** Homogeneous clipping interpolates the same varyings later interpolated by the rasterizer. */
-function clipMaterialTriangle(vertices: Triangle<MaterialVertex>): MaterialVertex[] {
-  let polygon: MaterialVertex[] = [...vertices]
+function clipTriangle<T extends { readonly clip: Vec4 }>(vertices: Triangle<T>,
+  interpolate: (a: T, b: T, t: number) => T): T[] {
+  let polygon: T[] = [...vertices]
   for (const [axis, sign] of [
     [0, 1],
     [0, -1],
@@ -773,7 +776,7 @@ function clipMaterialTriangle(vertices: Triangle<MaterialVertex>): MaterialVerte
     [2, 1],
     [2, -1],
   ] as const) {
-    const output: MaterialVertex[] = []
+    const output: T[] = []
     for (let i = 0; i < polygon.length; i++) {
       const a = polygon[i],
         b = polygon[(i + 1) % polygon.length]
@@ -783,7 +786,7 @@ function clipMaterialTriangle(vertices: Triangle<MaterialVertex>): MaterialVerte
       if (da >= 0) output.push(a)
       if (da < 0 !== db < 0) {
         const t = da / (da - db)
-        output.push(interpolateMaterialVertex([a, b, b], [1 - t, t, 0]))
+        output.push(interpolate(a, b, t))
       }
     }
     polygon = output
@@ -850,7 +853,8 @@ function renderMaterialDraw(
       geometry.vertex(primitive.indices?.[indices[1]] ?? indices[1]),
       geometry.vertex(primitive.indices?.[indices[2]] ?? indices[2]),
     ]
-    const polygon = clipMaterialTriangle(source)
+    const polygon = clipTriangle(source, (a, b, t) =>
+      interpolateMaterialVertex([a, b, b], [1 - t, t, 0]))
     context.triangles++
     for (let i = 1; i + 1 < polygon.length; i++) {
       const a = polygon[0],
@@ -863,13 +867,9 @@ function renderMaterialDraw(
         [a, b, c].some(v => v.clip[3] < 1e-9)
       )
         continue
-      const screen = (v: MaterialVertex): Vertex => ({
-        x: ((v.clip[0] / v.clip[3]) * 0.5 + 0.5) * context.width,
-        y: (0.5 - (v.clip[1] / v.clip[3]) * 0.5) * context.height,
-        z: v.clip[2] / v.clip[3],
-        invW: 1 / v.clip[3],
-        world: v.worldPosition,
-      })
+      const screen = (v: MaterialVertex): Vertex =>
+        screenClipVertex(v.clip, v.worldPosition, context.width, context.height)
+
       context.fragments += rasterizeTriangle(
         context,
         [screen(a), screen(b), screen(c)],
@@ -1140,21 +1140,20 @@ function renderPrimitive(context: RasterContext, primitive: SceneRendererPrimiti
     if (indices.some(index => index >= vertexCount)) {
       throw new TypeError(`primitive ${primitive.id} contains an out-of-range index`)
     }
-    const vertices = indices.map(index =>
-      screenVertex(
-        primitive.positions,
-        index,
-        model,
-        context.viewProjection,
-        context.width,
-        context.height,
-      ),
+    const vertices = indices.map((index, corner) =>
+      clipVertex(primitive.positions, index, model, context.viewProjection,
+        [corner === 0 ? 1 : 0, corner === 1 ? 1 : 0, corner === 2 ? 1 : 0]),
     )
     if (vertices.some(vertex => vertex === undefined)) continue
+    const polygon = clipTriangle(vertices as unknown as Triangle<ClipVertex>, (a, b, t) => ({
+      clip: weightedVector([a.clip, b.clip, b.clip], [1 - t, t, 0]),
+      world: weightedVector([a.world, b.world, b.world], [1 - t, t, 0]),
+      weights: weightedVector([a.weights, b.weights, b.weights], [1 - t, t, 0]),
+    }))
     const uvs =
       uvBuffer === undefined
         ? undefined
-        : indices.map(index => [uvBuffer[index * 2] ?? 0, uvBuffer[index * 2 + 1] ?? 0])
+        : indices.map(index => [uvBuffer[index * 2] ?? 0, uvBuffer[index * 2 + 1] ?? 0] as const)
     const normals =
       normalBuffer === undefined
         ? undefined
@@ -1166,41 +1165,31 @@ function renderPrimitive(context: RasterContext, primitive: SceneRendererPrimiti
               normalBuffer[index * 3 + 2] ?? 0,
             ),
           )
+    const colors = colorBuffer === undefined ? undefined : indices.map(index => [
+      colorBuffer[index * 4] ?? 1, colorBuffer[index * 4 + 1] ?? 1,
+      colorBuffer[index * 4 + 2] ?? 1, colorBuffer[index * 4 + 3] ?? 1,
+    ] as Vec4)
+    const tangents = tangentBuffer === undefined ? undefined : indices.map(index => [
+      ...transformDirection(model, tangentBuffer[index * 4] ?? 0,
+        tangentBuffer[index * 4 + 1] ?? 0, tangentBuffer[index * 4 + 2] ?? 0),
+      tangentBuffer[index * 4 + 3] ?? 1,
+    ] as Vec4)
     context.triangles += 1
-    context.fragments += rasterizeTriangle(
-      context,
-      vertices as unknown as Triangle<Vertex>,
-      surface,
-      uvs as Triangle<readonly [number, number]> | undefined,
-      normals as Triangle<Vec3> | undefined,
-      undefined,
-      primitive.depthBias,
-      colorBuffer === undefined
-        ? undefined
-        : (indices.map(index => [
-            colorBuffer[index * 4] ?? 1,
-            colorBuffer[index * 4 + 1] ?? 1,
-            colorBuffer[index * 4 + 2] ?? 1,
-            colorBuffer[index * 4 + 3] ?? 1,
-          ]) as unknown as Triangle<Vec4>),
-      primitiveTint(primitive),
-      mirrored,
-      tangentBuffer === undefined
-        ? undefined
-        : (indices.map(index => [
-            ...transformDirection(
-              model,
-              tangentBuffer[index * 4] ?? 0,
-              tangentBuffer[index * 4 + 1] ?? 0,
-              tangentBuffer[index * 4 + 2] ?? 0,
-            ),
-            tangentBuffer[index * 4 + 3] ?? 1,
-          ]) as unknown as Triangle<Vec4>),
-      splat === undefined
-        ? undefined
-        : { ...splat, indices: indices as unknown as Triangle<number> },
-      context.water?.get(primitive.id),
-    )
+    for (let i = 1; i + 1 < polygon.length; i++) {
+      const corners = [polygon[0]!, polygon[i]!, polygon[i + 1]!] as const
+      if (corners.some(v => v.clip[3] < 1e-9)) continue
+      const weights = corners.map(v => v.weights) as unknown as Triangle<Vec3>
+      const varying = <T extends readonly number[]>(values: readonly T[] | undefined) =>
+        values === undefined ? undefined : weights.map(w =>
+          weightedVector(values as unknown as Triangle<T>, w)) as unknown as Triangle<T>
+      context.fragments += rasterizeTriangle(context,
+        corners.map(v => screenClipVertex(v.clip, v.world, context.width, context.height)) as unknown as Triangle<Vertex>,
+        surface, varying(uvs), varying(normals), undefined, primitive.depthBias,
+        varying(colors), primitiveTint(primitive), mirrored, varying(tangents),
+        splat === undefined ? undefined : {
+          ...splat, indices: indices as unknown as Triangle<number>, sourceWeights: weights,
+        }, context.water?.get(primitive.id))
+    }
   }
 }
 
@@ -1213,6 +1202,10 @@ export async function renderHeadless(
   materialLighting?: ReadonlyMap<string, Pick<SceneRendererScene, 'lights' | 'ambientLight'>>,
   terrainPainterLayers?: ReadonlySet<string>,
   visibilityBounds?: WorldVisibilityBounds,
+  /** Already sampled by the world at this instance's clip clock; bound texture objects stay theirs. */
+  preparedPrograms?: ReadonlyMap<string, SceneMaterialPrograms>,
+  /** Optional world postpass: float accumulation in byte units, converted to straight RGBA8 once. */
+  finalizeLinear?: (rgba: Float32Array, depth: Float32Array) => Uint8Array,
 ): Promise<SceneRenderFrame> {
   request.signal?.throwIfAborted()
   checkedWorldVisibilityBounds(visibilityBounds)
@@ -1233,7 +1226,7 @@ export async function renderHeadless(
   if (width * height > MAX_PIXELS) {
     throw new TypeError(`headless renderer refuses more than ${MAX_PIXELS} output pixels`)
   }
-  const frame = new Uint8Array(width * height * 4)
+  const frame = finalizeLinear === undefined ? new Uint8Array(width * height * 4) : new Float32Array(width * height * 4)
   const depth = new Float32Array(width * height)
   depth.fill(Number.POSITIVE_INFINITY)
   clearFrame(frame, color(request.clearColor ?? DEFAULT_CLEAR_COLOR, 'clearColor'))
@@ -1246,13 +1239,18 @@ export async function renderHeadless(
           ...scene.materialContext,
           sceneLighting: scene.materialContext?.sceneLighting ?? true,
         }
-  const programs = prepareSceneMaterialPrograms(
-    scene.materials ?? [],
+  const programs = new Map(prepareSceneMaterialPrograms(
+    (scene.materials ?? []).filter(material => !preparedPrograms?.has(material.id)),
     textures,
     materialContext,
     diagnostics,
     request.signal,
-  )
+  ))
+  for (const [id, prepared] of preparedPrograms ?? []) {
+    programs.set(id, prepared)
+    for (const pass of prepared.passes) for (const message of pass.diagnostics)
+      diagnostics.push({ code: 'common.scene/material-feature-unrendered', severity: 'warning', message: `Material ${id}: ${message}` })
+  }
   const context: RasterContext = {
     visibilityBounds,
     width,
@@ -1347,12 +1345,13 @@ export async function renderHeadless(
     else renderMaterialDraw(context, draw, request)
     if (terrainPainterLayers?.has(draw.primitive.id)) context.depth = savedDepth
   }
-  straightenAlpha(frame)
+  const output = finalizeLinear === undefined ? frame as Uint8Array : finalizeLinear(frame as Float32Array, depth)
+  if (finalizeLinear === undefined) straightenAlpha(output)
   return Object.freeze({
     outputKind: 'rgba8',
     width,
     height,
-    rgba: frame,
+    rgba: output,
     diagnostics: Object.freeze(context.diagnostics),
     statistics: Object.freeze({
       primitives: scene.primitives.length,

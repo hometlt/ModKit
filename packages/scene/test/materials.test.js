@@ -88,6 +88,25 @@ const close = (actual, expected) => {
   )
 }
 
+it('applies material AO to ambient and opted-in direct lights without darkening local light or emission', () => {
+  const p = createStandardMaterialPrograms(parameters(material({ unshaded: false, layers: {
+    diffuse: layer('diffuse', { constantColor: { value: [1, 1, 1, 1] }, op: 2 }),
+    ao: layer('ao', { constantColor: { value: [.8, .8, .8, .25] }, op: 2 }),
+    emissive1: layer('emissive1', { constantColor: { value: [.3, .3, .3, 1] }, op: 2 }),
+  } })), { budget }).sample({ time: 0 }, { sceneLighting: true })[0]
+  const local = { direction: [0, 0, 1], halfVector: [0, 0, -1], diffuseColor: [.4, .4, .4], specularColor: [0, 0, 0] }
+  const lighting = { ambientColor: [.2, .2, .2], lightColor: [0, 0, 0], lights: [
+    local, { ...local, diffuseColor: [.8, .8, .8], useAmbientOcclusion: true },
+  ] }
+  // Alpha .25 is AO, not RGB .8: .2*.25 + .4 + .8*.25 + .3 = .95.
+  close(p.shade({ sceneLighting: lighting }).rgba, [.95, .95, .95, 1])
+  close(p.shade({ sceneLighting: { ...lighting, ambientColor: [0, 0, 0], lights: [local] } }).rgba, [.7, .7, .7, 1])
+  const spatial = p.fragmentSourceForSceneLights()
+  assert.ok(spatial.includes('sceneDirectOcclusion(lightIndex, materialAo)'))
+  assert.ok(spatial.includes('float materialAo = computeLayer_ao().a;'))
+  assert.ok(!spatial.includes('color *= computeLayer_ao().rgb;'))
+})
+
 it('adopts scene lighting per typed lit standard pass while preserving PBR and unshaded passes', () => {
   const lit = material({ unshaded: false })
   const pbr = material({ unshaded: false, lightingModel: 'pbr-metallic-roughness' })
@@ -259,6 +278,25 @@ it('separates elapsed concurrent time from local clip time and sparse sequence f
   assert.equal(absent.colorMultiply.value, 7)
   assert.equal(absent.colorAdd.value, 9)
   assert.equal(absent.alphaFactor.value, 1.5)
+})
+
+it('keeps concurrent property time independent of selected layer time, priority and seek', () => {
+  const diffuse = layer('diffuse', {
+    colorMultiply: { value: 7, sequenceTracks: [{ sequenceIndex: 0, track: track([1], [3]) }] },
+    colorAdd: { value: 9, sequenceTracks: [
+      { sequenceIndex: 0, track: track([0], [2]), concurrent: true, wrapSeconds: 2 },
+    ] },
+  })
+  const sampler = createRenderMaterialSampler(parameters(material({ layers: { diffuse } })), budget)
+  const at = (time, local) => sampler.sample({ time, sequenceLayers: [
+    { sequenceIndex: 0, time: local, duration: 1, priority: 3 },
+  ] })[0].material.layers.diffuse
+  assert.equal(at(2.5, 0.25).colorAdd.value, 0.5)
+  assert.equal(at(2.5, 0.75).colorAdd.value, 0.5)
+  assert.equal(at(2.5, 0.25).colorMultiply.value, 1.25)
+  assert.equal(at(2.5, 0.75).colorMultiply.value, 1.75)
+  assert.equal(at(0.5, 0.25).colorAdd.value, 0.5)
+  assert.equal(at(1.5, 0.25).colorAdd.value, 1.5)
 })
 
 it('samples every animatable layer field, normal weights and parallax; step and hold remain exact', () => {

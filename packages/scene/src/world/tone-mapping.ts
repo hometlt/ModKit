@@ -61,6 +61,7 @@ export function createWorldToneMapper(gl: WebGL2RenderingContext) {
     uniform vec3 fogColor;
     uniform vec3 fogEye;
     uniform float blackEmptyBackground;
+    uniform float preserveAlpha;
     out vec4 outColor;
     vec3 positionAt(vec2 coord) {
       // NEAREST depth belongs to a texel centre, not the continuous kernel coordinate.
@@ -146,7 +147,7 @@ export function createWorldToneMapper(gl: WebGL2RenderingContext) {
       // HDR.fx: the colour map is read at saturate(C + 0.5 / size); texel k holds the colour k / 16.
       if (colorizationEnabled) color = texture(colorMap, clamp(color + 0.5 / 16.0, 0.0, 1.0)).rgb;
       if (correctGamma) color = pow(max(color, vec3(0.0)), vec3(1.0 / 2.2));
-      outColor = vec4(color, 1.0);
+      outColor = vec4(color, preserveAlpha > 0.5 ? texture(image, uv).a : 1.0);
     }`,
   )
   const program = gl.createProgram()!
@@ -238,13 +239,16 @@ export function createWorldToneMapper(gl: WebGL2RenderingContext) {
       viewProjection?: Float32Array,
       fog?: Readonly<{ fog: WorldHeightFog; eye: readonly [number, number, number] }>,
       blackEmptyBackground = false,
+      destination: WebGLFramebuffer | null = null,
+      keepAlpha = false,
     ) {
-      gl.bindFramebuffer(gl.FRAMEBUFFER, null)
+      gl.bindFramebuffer(gl.FRAMEBUFFER, destination)
       gl.disable(gl.DEPTH_TEST)
       gl.disable(gl.BLEND)
       gl.disable(gl.CULL_FACE)
       gl.useProgram(program)
       gl.uniform1f(uniformLocation(gl, program, 'blackEmptyBackground'), blackEmptyBackground ? 1 : 0)
+      gl.uniform1f(uniformLocation(gl, program, 'preserveAlpha'), keepAlpha ? 1 : 0)
       gl.bindVertexArray(vao)
       gl.activeTexture(gl.TEXTURE0)
       gl.bindTexture(gl.TEXTURE_2D, texture)

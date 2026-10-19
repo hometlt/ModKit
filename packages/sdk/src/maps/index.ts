@@ -30,8 +30,9 @@ import type {
   ModelMaterialRef,
   ModelResourceRef,
   ModelSocketRef,
+  ModelNodeBehaviourRef,
 } from '../asset-capabilities/model-facet-sources.js'
-import type { SceneRendererTexture } from '../renderer/index.js'
+import type { SceneRendererTexture, SceneRendererLight } from '../renderer/index.js'
 
 /** Standard service coordinate for game-specific semantic map opening. */
 export const MAP_SEMANTIC_ANALYSIS_CONTRACT = 'common.map/semantic-analysis' as const
@@ -743,11 +744,17 @@ export interface MapPlacedObject {
    * colour space of its textures (no transfer function applied). Absent means no tint.
    */
   readonly presentationTint?: readonly [number, number, number]
+  /** Per-instance coverage in 0..1, independent of material alpha; absent means 1. */
+  readonly presentationOpacity?: number
+  /** Explicit model-space aiming groups driven toward canonical world points by the source. */
+  readonly presentationAim?: readonly { readonly group: string; readonly target: readonly [number, number, number]; readonly weight: number }[]
   readonly variation?: number
   /** Authored resource amount, before any gameplay harvesting. */
   readonly resources?: number
   /** Initial animation selected by the source's resolved actor events. */
   readonly presentationAnimation?: {
+    /** Independent elapsed model-lifetime clock for automatically active model sequences. */
+    readonly globalTimeSeconds?: number
     readonly name: string
     readonly groups: readonly string[]
     readonly loop: boolean
@@ -759,13 +766,14 @@ export interface MapPlacedObject {
     readonly randomStart?: boolean
     /** Resolved sparse overrides. Higher priority wins per channel; the later authored layer
      * wins equal-priority ties. Clocks are seconds local to each clip, already scaled by the publisher.
-     * This profile supports full-weight hard overrides, not weighted/additive blending. */
+     * Fractional whole-TRS overlays interpolate against explicit lower layers; additive blending is separate. */
     readonly layers?: readonly {
       readonly name: string
       readonly groups: readonly string[]
       readonly loop: boolean
       readonly timeSeconds: number
       readonly priority: number
+      readonly weight?: number
     }[]
   }
   readonly modules?: number
@@ -2122,6 +2130,10 @@ export interface WorldSceneResourceItem {
 }
 
 export interface WorldSceneLightingItem {
+  /** Independent scene gain for ordinary lit model emission. */
+  readonly modelEmissiveMultiplier?: number
+  /** Sampled explicit world-space lights, using the common renderer vocabulary. */
+  readonly local?: readonly SceneRendererLight[]
   readonly objects?: WorldObjectLighting
   readonly facet: 'lighting'
   readonly id: string
@@ -2179,12 +2191,12 @@ export function admitWorldSceneLighting(
     return entry
   }
   const text = (entry: unknown, path: string): string => {
-    if (typeof entry !== 'string' || entry.length === 0 || entry.length > 1024) return invalid(path)
+    if (typeof entry !== 'string' || entry['length'] === 0 || entry['length'] > 1024) return invalid(path)
     return entry
   }
   const vector = (entry: unknown, path: string, minimum = -Infinity, maximum = Infinity): number[] => {
-    if (!Array.isArray(entry) || entry.length !== 3) return invalid(path)
-    return entry.map((component, index) => {
+    if (!Array.isArray(entry) || entry['length'] !== 3) return invalid(path)
+    return entry['map']((component, index) => {
       const number = scalar(component, `${path}[${index}]`, minimum)
       if (number > maximum) return invalid(path)
       return number
@@ -2199,93 +2211,120 @@ export function admitWorldSceneLighting(
   }
   const rig = (entry: Record<string, unknown>, path: string): void => {
     refuseLocal(entry, path)
-    const ambient = vector(entry.ambientColor, `${path}.ambientColor`, 0)
-    const intensity = scalar(entry.ambientIntensity, `${path}.ambientIntensity`, 0)
+    const ambient = vector(entry['ambientColor'], `${path}.ambientColor`, 0)
+    const intensity = scalar(entry['ambientIntensity'], `${path}.ambientIntensity`, 0)
     const sums = ambient.map(component => scalar(component * intensity, `${path}.ambient radiance`, 0))
-    if (!Array.isArray(entry.directional)) invalid(`${path}.directional`)
-    const lights = entry.directional as unknown[]
+    if (!Array.isArray(entry['directional'])) invalid(`${path}.directional`)
+    if (entry['local'] !== undefined) {
+      if (!Array.isArray(entry['local']) || entry['local'].length > 64) unsupported(path + '.local count')
+      for (const [index, source] of (entry['local'] as unknown[]).entries()) {
+        const name = path + '.local[' + index + ']', light = record(source, name)
+        if (!['directional', 'point', 'spot'].includes(String(light['type']))) invalid(name + '.type')
+        const axis = vector(light['direction'], name + '.direction')
+        if (axis.every(value => value === 0)) invalid(name + '.direction')
+        vector(light['color'], name + '.color', 0)
+        if (light['specularColor'] !== undefined) vector(light['specularColor'], name + '.specularColor', 0)
+        for (const key of ['affectsOpaque', 'affectsTransparent'])
+          if (light[key] !== undefined && typeof light[key] !== 'boolean') invalid(name + '.' + key)
+        if (light['type'] !== 'directional') vector(light['position'], name + '.position')
+        for (const key of ['range', 'attenuationStart', 'attenuationEnd', 'decayExponent', 'innerConeAngle', 'outerConeAngle', 'coneExponent'])
+          if (light[key] !== undefined) scalar(light[key], name + '.' + key, 0)
+      }
+    }
+    const lights = entry['directional'] as unknown[]
     if (lights.length > context.maximumDirectionalLights) unsupported(`${path}.directional count`)
     for (const [index, light] of lights.entries()) {
       const name = `${path}.directional[${index}]`, item = record(light, name)
       refuseLocal(item, name)
-      text(item.id, `${name}.id`)
-      const direction = vector(item.direction, `${name}.direction`)
+      text(item['id'], `${name}.id`)
+      const direction = vector(item['direction'], `${name}.direction`)
       const lengthSquared = direction.reduce((sum, component) => sum + component * component, 0)
       if (lengthSquared === 0) invalid(`${name}.direction`)
       scalar(lengthSquared, `${name}.direction length squared`, 0)
-      const color = vector(item.color, `${name}.color`, 0)
-      const strength = scalar(item.intensity, `${name}.intensity`, 0)
-      const specular = item.specularColor === undefined ? color : vector(item.specularColor, `${name}.specularColor`, 0)
-      const specularStrength = item.specularIntensity === undefined ? strength : scalar(item.specularIntensity, `${name}.specularIntensity`, 0)
+      const color = vector(item['color'], `${name}.color`, 0)
+      const strength = scalar(item['intensity'], `${name}.intensity`, 0)
+      const specular = item['specularColor'] === undefined ? color : vector(item['specularColor'], `${name}.specularColor`, 0)
+      const specularStrength = item['specularIntensity'] === undefined ? strength : scalar(item['specularIntensity'], `${name}.specularIntensity`, 0)
       for (let channel = 0; channel < 3; channel++) {
         sums[channel] = scalar(sums[channel]! + color[channel]! * strength, `${name}.radiance sum`, 0)
         scalar(specular[channel]! * specularStrength, `${name}.specular radiance`, 0)
       }
-      if (item.useAmbientOcclusion !== undefined) boolean(item.useAmbientOcclusion, `${name}.useAmbientOcclusion`)
+      if (item['useAmbientOcclusion'] !== undefined) boolean(item['useAmbientOcclusion'], `${name}.useAmbientOcclusion`)
     }
   }
   const item = record(owned, 'item')
+  if (item['modelEmissiveMultiplier'] !== undefined) scalar(item['modelEmissiveMultiplier'], 'modelEmissiveMultiplier', 0)
   refuseLocal(item, 'item')
-  if (item.facet !== 'lighting') invalid('facet')
-  text(item.id, 'id'); text(item.layerId, 'layerId')
-  if (!context.declaredCoordinateSpaceIds.has(text(item.coordinateSpaceId, 'coordinateSpaceId')))
+  if (item['facet'] !== 'lighting') invalid('facet')
+  text(item['id'], 'id'); text(item['layerId'], 'layerId')
+  if (!context.declaredCoordinateSpaceIds.has(text(item['coordinateSpaceId'], 'coordinateSpaceId')))
     invalid('undeclared coordinateSpaceId')
-  if (item.model !== undefined && item.model !== 'lit' && item.model !== 'unlit') invalid('model')
-  if (item.unlitColor !== undefined) vector(item.unlitColor, 'unlitColor', 0)
+  if (item['model'] !== undefined && item['model'] !== 'lit' && item['model'] !== 'unlit') invalid('model')
+  if (item['unlitColor'] !== undefined) vector(item['unlitColor'], 'unlitColor', 0)
   rig(item, 'world')
-  if (item.objects !== undefined) rig(record(item.objects, 'objects'), 'objects')
-  if (item.terrain !== undefined) {
-    const terrain = record(item.terrain, 'terrain')
+  if (item['objects'] !== undefined) rig(record(item['objects'], 'objects'), 'objects')
+  if (item['terrain'] !== undefined) {
+    const terrain = record(item['terrain'], 'terrain')
     for (const key of ['specularExponent', 'diffuseMultiplier', 'specularMultiplier'])
       scalar(terrain[key], `terrain.${key}`, 0)
   }
-  if (item.shadowRange !== undefined) {
-    const shadow = record(item.shadowRange, 'shadowRange')
-    const distance = scalar(shadow.distance, 'shadowRange.distance')
-    const fov = scalar(shadow.fieldOfViewDegrees, 'shadowRange.fieldOfViewDegrees')
+  if (item['shadowRange'] !== undefined) {
+    const shadow = record(item['shadowRange'], 'shadowRange')
+    const distance = scalar(shadow['distance'], 'shadowRange.distance')
+    const fov = scalar(shadow['fieldOfViewDegrees'], 'shadowRange.fieldOfViewDegrees')
     // Nonpositive values disable the existing range; positive FOV is clamped by its renderer.
     if (distance > 0 && fov > 0)
       scalar(1 / Math.tan(Math.min(179, fov) * Math.PI / 360), 'shadowRange reciprocal tangent', 0)
   }
-  if (item.fog !== undefined) {
-    const fog = record(item.fog, 'fog')
-    vector(fog.color, 'fog.color', 0, 1)
-    scalar(fog.density, 'fog.density', 0)
-    const falloff = scalar(fog.falloff, 'fog.falloff')
-    scalar(scalar(fog.startingHeight, 'fog.startingHeight') * falloff, 'fog.height coefficient')
+  if (item['fog'] !== undefined) {
+    const fog = record(item['fog'], 'fog')
+    vector(fog['color'], 'fog.color', 0, 1)
+    scalar(fog['density'], 'fog.density', 0)
+    const falloff = scalar(fog['falloff'], 'fog.falloff')
+    scalar(scalar(fog['startingHeight'], 'fog.startingHeight') * falloff, 'fog.height coefficient')
   }
-  if (item.toneMapping !== undefined) {
-    const tone = record(item.toneMapping, 'toneMapping')
-    if (typeof tone.operator !== 'string' ||
-        !['reinhard', 'exponential', 'logarithmic', 'linear', 'filmic'].includes(tone.operator)) invalid('toneMapping.operator')
-    const exposure = scalar(tone.exposure, 'toneMapping.exposure', 0)
-    const white = scalar(tone.whitePoint, 'toneMapping.whitePoint')
-    scalar(tone.contrast, 'toneMapping.contrast', 0)
-    if (tone.operator === 'reinhard' && (white === 0 || Math.fround(white * white) === 0)) unsupported('zero Reinhard white point square')
-    if (tone.operator === 'reinhard') scalar(white * white, 'toneMapping.white point square', 0)
-    if (tone.operator === 'logarithmic') {
+  if (item['toneMapping'] !== undefined) {
+    const tone = record(item['toneMapping'], 'toneMapping')
+    if (typeof tone['operator'] !== 'string' ||
+        !['reinhard', 'exponential', 'logarithmic', 'linear', 'filmic'].includes(tone['operator'])) invalid('toneMapping.operator')
+    const exposure = scalar(tone['exposure'], 'toneMapping.exposure', 0)
+    const white = scalar(tone['whitePoint'], 'toneMapping.whitePoint')
+    scalar(tone['contrast'], 'toneMapping.contrast', 0)
+    if (tone['operator'] === 'reinhard' && (white === 0 || Math.fround(white * white) === 0)) unsupported('zero Reinhard white point square')
+    if (tone['operator'] === 'reinhard') scalar(white * white, 'toneMapping.white point square', 0)
+    if (tone['operator'] === 'logarithmic') {
       // GLSL adds the float32 uniform to 1 before taking log; a tiny double is not sufficient.
       const denominator = Math.fround(Math.log(Math.fround(1 + Math.fround(exposure))))
       if (!Number.isFinite(denominator) || denominator <= 0) unsupported('zero logarithmic exposure denominator')
     }
-    if (tone.correctGamma !== undefined) boolean(tone.correctGamma, 'toneMapping.correctGamma')
-    if (tone.ambientOcclusion !== undefined) {
-      const ao = record(tone.ambientOcclusion, 'toneMapping.ambientOcclusion')
+    if (tone['correctGamma'] !== undefined) boolean(tone['correctGamma'], 'toneMapping.correctGamma')
+    if (tone['ambientOcclusion'] !== undefined) {
+      const ao = record(tone['ambientOcclusion'], 'toneMapping.ambientOcclusion')
       // Radius <=0 disables AO; the renderer owns its power and threshold epsilon semantics.
       for (const key of ['radius', 'noOcclusion', 'fullOcclusion', 'power']) scalar(ao[key], `ambientOcclusion.${key}`)
-      scalar((ao.noOcclusion as number) - (ao.fullOcclusion as number), 'ambientOcclusion threshold span')
+      scalar((ao['noOcclusion'] as number) - (ao['fullOcclusion'] as number), 'ambientOcclusion threshold span')
     }
-    if (tone.colorization !== undefined) {
-      const color = record(tone.colorization, 'toneMapping.colorization')
+    if (tone['colorization'] !== undefined) {
+      const color = record(tone['colorization'], 'toneMapping.colorization')
+      if (color['variations'] !== undefined) {
+        if (!Array.isArray(color['variations']) || color['variations'].length > 256) invalid('colorization.variations')
+        let work = 0
+        for (const raw of color['variations'] as unknown[]) {
+          const variation = record(raw, 'colorization variation'), steps = scalar(variation['steps'], 'variation.steps', 0)
+          if (!Number.isInteger(steps) || (work += steps) > 244) unsupported('colorization variation work')
+          if (!['green', 'yellow', 'cyan', 'red', 'blue', 'magenta', 'lighter', 'darker', 'desaturate', 'saturate'].includes(String(variation['command']))) invalid('variation.command')
+          if (!['shadows', 'midtones', 'highlights'].includes(String(variation['region']))) invalid('variation.region')
+        }
+      }
       for (const key of ['inputLow', 'inputHigh', 'inputGamma', 'outputLow', 'outputHigh', 'brightness', 'contrast', 'hue', 'saturation', 'lightness', 'blend']) scalar(color[key], `colorization.${key}`)
       for (const key of ['saturation', 'blend']) if ((color[key] as number) < 0 || (color[key] as number) > 1) invalid(`colorization.${key}`)
-      const gamma = color.inputGamma as number
+      const gamma = color['inputGamma'] as number
       const exponent = gamma < 1 ? (1 - gamma) * 9 + 1 : gamma > 1 ? 1 - (gamma - 1) / 9 : 1
-      if (exponent < 0 || (color.contrast as number) < 0) unsupported('negative colorization power at zero')
+      if (exponent < 0 || (color['contrast'] as number) < 0) unsupported('negative colorization power at zero')
       scalar(exponent, 'colorization gamma exponent', 0)
-      scalar((color.inputHigh as number) - (color.inputLow as number), 'colorization input span')
-      const span = scalar((color.outputHigh as number) - (color.outputLow as number), 'colorization output span')
-      scalar(span * (color.brightness as number), 'colorization output coefficient')
+      scalar((color['inputHigh'] as number) - (color['inputLow'] as number), 'colorization input span')
+      const span = scalar((color['outputHigh'] as number) - (color['outputLow'] as number), 'colorization output span')
+      scalar(span * (color['brightness'] as number), 'colorization output coefficient')
     }
   }
   return owned as unknown as WorldSceneLightingItem
@@ -2334,6 +2373,12 @@ export interface WorldColorization {
   readonly saturation: number
   readonly lightness: number
   readonly blend: number
+  /** Ordered palette adjustments after levels/tint; steps are bounded by admission. */
+  readonly variations?: readonly {
+    readonly command: 'green' | 'yellow' | 'cyan' | 'red' | 'blue' | 'magenta' | 'lighter' | 'darker' | 'desaturate' | 'saturate'
+    readonly region: 'shadows' | 'midtones' | 'highlights'
+    readonly steps: number
+  }[]
 }
 
 export type WorldSceneItem =
@@ -2420,6 +2465,7 @@ export type WorldSceneModelResult =
       readonly materials?: readonly ModelMaterialRef[]
       readonly resources?: readonly ModelResourceRef[]
       readonly sockets?: readonly ModelSocketRef[]
+      readonly nodeBehaviours?: readonly ModelNodeBehaviourRef[]
       readonly textures?: readonly SceneRendererTexture[]
       meshes: readonly ModelMesh[]
       primitives: readonly ModelPrimitive[]
@@ -2470,9 +2516,23 @@ export interface WorldSceneFrame {
   readonly camera?: WorldSceneCamera
   /** Camera selected on a loaded model; common scene resolves it after the same animation pose. */
   readonly modelCamera?: { readonly objectId: number; readonly cameraIndex: number; readonly fieldOfViewAxis?: 'horizontal' | 'vertical' }
+  /** Offscreen views sampled at this same frame time; ids are renderer textures, never game files. */
+  readonly renderTextures?: readonly WorldSceneRenderTexture[]
   readonly diagnostics: readonly Diagnostic[]
   readonly complete: boolean
 }
+
+/** A format-neutral material target, before final display tone/colour/gamma processing.
+ * Its model camera uses the frame's same objects and poses; camera-dependent fog stays in this view. */
+export type WorldSceneRenderTexture = Readonly<{
+  id: string
+  width?: number
+  height?: number
+  clearColor?: readonly [number, number, number, number]
+}> & (
+  | { camera: WorldSceneCamera; modelCamera?: never }
+  | { modelCamera: NonNullable<WorldSceneFrame['modelCamera']>; camera?: never }
+)
 
 /** Perspective lens in world coordinates. The authored FOV axis is explicit; angles are radians. */
 export type WorldSceneCamera = {

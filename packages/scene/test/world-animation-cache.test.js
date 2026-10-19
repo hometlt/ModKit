@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { it } from 'node:test'
 import { writeUvmContainer } from '@modkit/uv/model/container'
+import { renderWorldHeadless, worldHeadlessScene } from '../src/world/headless.js'
 import {
   DEFAULT_WORLD_WEBGL_CAMERA,
   createWorldWebGlCameraFrame,
@@ -1274,4 +1275,30 @@ it('takes whole the blocks of objects the previous plan kept, each plan equal to
     if (step.timeSeconds === 0.3 || step.timeSeconds === 1.8)
       assert.equal(plan.picking.objects[0], previous.picking.objects[0])
   }
+})
+
+it('includes shared camera-facing model effects in CPU output without duplicating their passes', async () => {
+  const plan = createWorldWebGlPlan({ ...world(), models: new Map([['actor', effectModel({ particles: true, animatedAlpha: false })]]), timeSeconds: 0.5 })
+  const camera = createWorldWebGlCameraFrame(plan, 96, 96)
+  const draws = worldModelEffectDraws(plan, camera)
+  assert.ok(draws.length > 0)
+  const expected = new Set(draws.map(entry => entry.draw.primitive))
+  const converted = worldHeadlessScene(plan, camera)
+  const effects = converted.scene.primitives.filter(p => p.id.startsWith('effect-'))
+  assert.equal(effects.length, expected.size)
+  assert.ok(effects.length > 0)
+  for (const primitive of effects) assert.ok(converted.programs.has(primitive.materialId))
+  const lit = await renderWorldHeadless(plan, { width: 96, height: 96 })
+  const absent = await renderWorldHeadless({ ...plan, modelEffects: [] }, { width: 96, height: 96 })
+  assert.notDeepEqual(lit.rgba, absent.rgba)
+  const again = await renderWorldHeadless(plan, { width: 96, height: 96 })
+  assert.deepEqual(again.rgba, lit.rgba)
+})
+
+it('reports unresolved effect geometry when the low-level CPU scene has no camera', () => {
+  const plan = createWorldWebGlPlan({ ...world(), models: new Map([['actor', effectModel({ particles: true })]]), timeSeconds: 0.5 })
+  assert.ok(plan.modelEffects.length > 0)
+  assert.ok(worldHeadlessScene(plan).diagnostics.some(d => d.code === 'x3.scene/world-headless-effects-camera-required'))
+  const camera = createWorldWebGlCameraFrame(plan, 64, 64)
+  assert.ok(!worldHeadlessScene(plan, camera).diagnostics.some(d => d.code === 'x3.scene/world-headless-effects-camera-required'))
 })

@@ -380,7 +380,7 @@ function normalizedLight(light: SceneRendererDirectionalLight | undefined) {
   })
 }
 
-function flipRows(bytes: Uint8Array, width: number, height: number) {
+export function flipRows(bytes: Uint8Array, width: number, height: number) {
   const stride = width * 4
   const out = new Uint8Array(bytes.byteLength)
   for (let row = 0; row < height; row += 1) {

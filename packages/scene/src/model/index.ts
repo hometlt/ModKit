@@ -9,6 +9,7 @@ export { preserveUnweightedVertices, type GeneratedSkinBinding } from './unweigh
 export { expandOrderedEulerNode, type OrderedEulerKey } from './ordered-euler.js'
 export { decomposeMatrix4 } from './billboard-math.js'
 export { modelMaterialTeamColor } from './team-color.js'
+export { applyModelAimConstraints, validateModelAimConstraints, type ModelAimConstraint, type ModelAimPart } from './aim.js'
 export {
   createVoxelBindingSurface,
   type VoxelSkinSurfaceMesh,

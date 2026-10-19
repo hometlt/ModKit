@@ -220,12 +220,16 @@ export interface SceneRendererEnvironment {
 }
 
 export interface SceneRendererMaterialContext {
+  /** Scene gain for ordinary lit standard materials, independent of authored material emission. */
+  readonly emissiveMultiplier?: number
   /** Elapsed time for independent concurrent material tracks. Defaults to zero. */
   readonly time?: number
   /** Clip-local time. Defaults to time. */
   readonly sequenceTime?: number
   /** The selected index in the shader vocabulary's sequence table. */
   readonly sequenceIndex?: number
+  /** Simultaneous material property sequences; the highest-priority matching property wins. */
+  readonly sequenceLayers?: readonly { readonly sequenceIndex: number; readonly time: number; readonly duration: number; readonly priority: number }[]
   readonly teamColor?: readonly [number, number, number]
   /**
    * A player's own linear RGB shades for a material's indexed team-colour ramp (`SceneRendererTeamColor.ramp`),
@@ -261,7 +265,7 @@ export interface SceneRendererDirectionalLight {
   readonly ambient?: number
 }
 
-/** Explicit world-space preview lights. The shared preview pass averages at most four lights;
+/** Explicit world-space preview lights. The shared preview pass averages at most 64 lights;
  * material-specific shaders retain their own lighting model and the primary `light` input. */
 export interface SceneRendererLight {
   readonly type: 'directional' | 'point' | 'spot'
@@ -269,6 +273,12 @@ export interface SceneRendererLight {
   readonly direction: readonly [number, number, number]
   readonly color: readonly [number, number, number]
   readonly position?: readonly [number, number, number]
+  /** Independent specular radiance; omission uses diffuse radiance for existing callers. */
+  readonly specularColor?: readonly [number, number, number]
+  readonly affectsOpaque?: boolean
+  readonly affectsTransparent?: boolean
+  /** Whether this light's diffuse/specular contribution uses the material AO layer. */
+  readonly useAmbientOcclusion?: boolean
   readonly range?: number
   readonly attenuationStart?: number
   readonly attenuationEnd?: number
@@ -276,6 +286,8 @@ export interface SceneRendererLight {
   /** Full cone angles in radians, matching the common preview vocabulary. */
   readonly innerConeAngle?: number
   readonly outerConeAngle?: number
+  /** Optional power of the linear cosine cone ramp; omission retains smoothstep. */
+  readonly coneExponent?: number
 }
 
 /** Existing decoded primitive plus an optional column-major model transform. */

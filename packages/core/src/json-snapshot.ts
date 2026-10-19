@@ -2,6 +2,8 @@
  * Core owner of bounded immutable JSON snapshots: finite primitives, plain objects and arrays,
  * UTF-8 byte/node/depth budgets, cancellation, cycle refusal, optional stable key ordering.
  * Accessors are refused without calling getters; this is data validation, not a Proxy sandbox.
+ * Reuses only snapshots minted by this owner, charging their complete size on every occurrence.
+ * Foreign frozen values still undergo admission; tighter budgets retain ordinary refusal order.
  */
 export type JsonPrimitive = null | boolean | number | string
 export type JsonValue = JsonPrimitive | readonly JsonValue[] | { readonly [key: string]: JsonValue }
@@ -46,6 +48,18 @@ function dataProperty(object: object, key: string): unknown {
   return descriptor.value
 }
 
+interface SnapshotSize {
+  readonly nodes: number
+  readonly bytes: number
+  readonly height: number
+  readonly sorted: boolean
+}
+
+// Only this owner can mint entries: Object.isFrozen alone never establishes admissible data.
+// Keep roots and large subtrees, not one metadata record for every small animation tuple.
+const ownedSnapshots = new WeakMap<object, SnapshotSize>()
+const MIN_REUSABLE_SUBTREE_NODES = 256
+
 /** Own immutable JSON data; reject lossy conversions and stop before exceeding the budget. */
 export function snapshotJson(
   value: unknown,
@@ -59,13 +73,25 @@ export function snapshotJson(
   const ancestors = new Set<object>()
   let nodes = 0
   let bytes = 0
+  let copiedHeight = 0
   const charge = (count: number): void => {
     bytes += count
     if (bytes > budget.maxBytes) throw new RangeError('JSON snapshot exceeds maxBytes')
   }
+  const finish = (result: object, depth: number, height: number, previousNodes: number, previousBytes: number): JsonValue => {
+    copiedHeight = height
+    if (depth === 0 || nodes - previousNodes >= MIN_REUSABLE_SUBTREE_NODES)
+      ownedSnapshots.set(result, {
+        nodes: nodes - previousNodes, bytes: bytes - previousBytes,
+        height, sorted: budget.sortKeys === true,
+      })
+    return result as JsonValue
+  }
   const copy = (entry: unknown, depth: number): JsonValue => {
     if (signal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
     if (depth > budget.maxDepth) throw new RangeError('JSON snapshot exceeds maxDepth')
+    const previousNodes = nodes, previousBytes = bytes
+    copiedHeight = 0
     if (++nodes > budget.maxNodes) throw new RangeError('JSON snapshot exceeds maxNodes')
     if (entry === null || typeof entry === 'boolean') {
       charge(entry === false ? 5 : 4)
@@ -81,6 +107,17 @@ export function snapshotJson(
       return entry
     }
     if (typeof entry !== 'object' || entry === null) throw new TypeError('non-JSON snapshot value')
+    const owned = ownedSnapshots.get(entry)
+    if (owned !== undefined && (!budget.sortKeys || owned.sorted) &&
+        depth + owned.height <= budget.maxDepth &&
+        previousNodes + owned.nodes <= budget.maxNodes &&
+        previousBytes + owned.bytes <= budget.maxBytes) {
+      nodes = previousNodes + owned.nodes
+      charge(owned.bytes)
+      copiedHeight = owned.height
+      return entry as JsonValue
+    }
+    // A tighter budget takes the normal walk, preserving the original first refusal as well.
     const prototype: unknown = Object.getPrototypeOf(entry)
     if (!Array.isArray(entry) && prototype !== null && prototype !== Object.prototype) {
       throw new TypeError('JSON snapshot requires plain objects')
@@ -88,14 +125,16 @@ export function snapshotJson(
     if (ancestors.has(entry)) throw new TypeError('cyclic JSON snapshot')
     ancestors.add(entry)
     try {
+      let height = 0
       charge(2)
       if (Array.isArray(entry)) {
         const result: JsonValue[] = []
         for (let index = 0; index < entry.length; index++) {
           if (index > 0) charge(1)
           result.push(copy(dataProperty(entry, String(index)), depth + 1))
+          height = Math.max(height, 1 + copiedHeight)
         }
-        return Object.freeze(result)
+        return finish(Object.freeze(result), depth, height, previousNodes, previousBytes)
       }
       const result: [string, JsonValue][] = []
       const keys = Object.keys(entry)
@@ -106,8 +145,9 @@ export function snapshotJson(
         if (item === undefined) continue
         charge(utf8ByteLength(JSON.stringify(key)) + 1 + (result.length > 0 ? 1 : 0))
         result.push([key, copy(item, depth + 1)])
+        height = Math.max(height, 1 + copiedHeight)
       }
-      return Object.freeze(Object.fromEntries(result))
+      return finish(Object.freeze(Object.fromEntries(result)), depth, height, previousNodes, previousBytes)
     } finally {
       ancestors.delete(entry)
     }

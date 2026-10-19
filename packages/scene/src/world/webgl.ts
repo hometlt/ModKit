@@ -24,6 +24,7 @@ import {
   Vector3,
 } from 'three'
 import { waterDepthColor, WATER_SHORE_FADE, WATER_COLOR_FALLOFF } from '../render/water-color.js'
+import { flipRows } from '../render/browser.js'
 import { applyWebGlDepthBias, TERRAIN_DEPTH_BIAS } from '../render/depth-bias.js'
 import {
   terrainCellSplit,
@@ -38,6 +39,7 @@ import type {
   MapWaterMaterialDefinition,
   WorldSceneItem,
   WorldSceneCamera,
+  WorldSceneRenderTexture,
   WorldSceneModelResult,
   WorldSceneObjectItem,
   WorldSceneTerrainItem,
@@ -53,6 +55,7 @@ import type {
   SceneRendererMaterial,
   SceneRendererPrimitive,
   SceneRendererTexture,
+  SceneRendererLight,
 } from '@modkit/sdk'
 import { boundsOf } from '@modkit/codec-kit/model/bounds'
 import { sampleModelAnimationLayers, animationSnapshotBudget, modelAnimationNameMatchScore } from '@modkit/codec-kit/model/animation'
@@ -72,6 +75,7 @@ import { teamMaskRule, teamMaskRuleForSrgb } from '../render/team-color.js'
 import { WORLD_SHADOW_GLSL } from '../render/world-shadow.js'
 import { createModelSceneSampler, modelMaterialTeamColor } from '../model/index.js'
 import type { ModelSceneSkin } from '../model/sampler.js'
+import { validateModelAimConstraints, type ModelAimConstraint } from '../model/aim.js'
 import {
   decomposeMatrix4,
   invertQuat,
@@ -137,6 +141,9 @@ export interface WorldWebGlInput {
   readonly visibilityBounds?: WorldVisibilityBounds
   readonly items: readonly WorldSceneItem[]
   readonly models?: ReadonlyMap<string, WorldSceneModelResult>
+  readonly renderTextures?: readonly WorldSceneRenderTexture[]
+  /** Completed offscreen views available to the shared material sampler. */
+  readonly renderTextureTargets?: ReadonlyMap<string, SceneRendererTexture>
   /** Material catalog and host-decoded raster resources for terrain shading. */
   readonly terrainMaterials?: readonly MapTerrainMaterialDefinition[]
   readonly terrainWeightRasters?: readonly MapTerrainWeightRaster[]
@@ -680,6 +687,8 @@ function waterCausticsOf(
 }
 
 export interface WorldWebGlPlan {
+  readonly localLights?: readonly SceneRendererLight[]
+  readonly renderTextureTargets?: ReadonlyMap<string, SceneRendererTexture>
   /** Visible water surface depth for screen-space effects, isolated from model transparency. */
   readonly waterSurfaceDepth: Float32Array
   /** Untextured terrain-clipped water as zone planes, for renderers that read the scene depth. */
@@ -1107,34 +1116,81 @@ export interface WorldWebGlModelMaterialScene {
 
 const batch = (): MutableBatch => ({ positions: [], normals: [], colors: [] })
 
+type WorldModelAnimationSelection = Readonly<{
+  animation: ReturnType<typeof selectWorldModelAnimation>
+  materialLayer?: Readonly<{
+    clip: NonNullable<ReturnType<typeof selectWorldModelAnimation>>
+    timeSeconds: number
+    loop: boolean
+  }>
+}>
+
 /**
  * The clip an object plays of a model, kept per model result and object: a plan asks for it several
  * times per object, and an animated map builds a plan every frame for ~10 000 objects.
  */
 const selectedWorldModelAnimations = new WeakMap<
   object,
-  WeakMap<WorldSceneObjectItem, ReturnType<typeof selectWorldModelAnimation> | null>
+  WeakMap<WorldSceneObjectItem, WorldModelAnimationSelection>
 >()
 
 /** Actor animation properties select a named sequence, not the first clip with keyframes. */
+function selectedWorldModelAnimationLayers(
+  result: Extract<WorldSceneModelResult, { state: 'converted' }>,
+  item: WorldSceneObjectItem,
+) {
+  let explicit: Parameters<typeof sampleModelAnimationLayers>[0][number][] | undefined = item.presentationAnimation?.layers?.flatMap(layer => {
+    const clip = selectWorldModelAnimation(result, { ...item, presentationAnimation: { name: layer.name, groups: layer.groups, loop: layer.loop, speed: 1 } })
+    return clip === undefined ? [] : [{ clip, timeSeconds: layer.timeSeconds, loop: layer.loop, priority: layer.priority,
+      ...(layer.weight === undefined ? {} : { weight: layer.weight }) }]
+  })
+  // Automatically active sequences need the publisher's independent model-lifetime clock.
+  // Sources without that clock keep their existing single-clip playback.
+  const globalTime = item.presentationAnimation?.globalTimeSeconds
+  if (globalTime === undefined) return explicit
+  explicit = explicit?.map(layer => ({ ...layer, globalTimeSeconds: globalTime,
+    ...(layer.clip.alwaysActive ? { timeSeconds: globalTime, loop: layer.clip.looping ?? true } : {}) }))
+  if (explicit === undefined) {
+    const clip = selectWorldModelAnimation(result, item)
+    explicit = clip === undefined ? [] : [{ clip, timeSeconds: globalTime, globalTimeSeconds: globalTime,
+      loop: item.presentationAnimation?.loop ?? clip.looping ?? false, priority: clip.priority ?? 0 }]
+  }
+  const globals = result.animations?.filter(clip => clip.alwaysActive && !explicit?.some(layer => layer.clip.id === clip.id)) ?? []
+  if (globals.length === 0) return explicit
+  return [...globals.map(clip => ({ clip, timeSeconds: globalTime, globalTimeSeconds: globalTime,
+    loop: clip.looping ?? true, priority: clip.priority ?? 0 })), ...(explicit ?? [])]
+}
+
+/** Pose consumers retain the composed clip and its existing clock. */
 export function worldModelAnimation(
   result: Extract<WorldSceneModelResult, { state: 'converted' }>,
   item: WorldSceneObjectItem,
 ) {
+  return resolveWorldModelAnimation(result, item).animation
+}
+
+/** Pose composition keeps its source clock for an unambiguous single material sequence. */
+function resolveWorldModelAnimation(
+  result: Extract<WorldSceneModelResult, { state: 'converted' }>,
+  item: WorldSceneObjectItem,
+): WorldModelAnimationSelection {
   let byItem = selectedWorldModelAnimations.get(result)
   if (byItem === undefined) selectedWorldModelAnimations.set(result, (byItem = new WeakMap()))
   const cached = byItem.get(item)
-  if (cached !== undefined) return cached ?? undefined
+  if (cached !== undefined) return cached
   const layers = item.presentationAnimation?.layers
-  const selectedLayers = layers?.flatMap(layer => {
-    const clip = selectWorldModelAnimation(result, { ...item, presentationAnimation: { name: layer.name, groups: layer.groups, loop: layer.loop, speed: 1 } })
-    return clip === undefined ? [] : [{ clip, timeSeconds: layer.timeSeconds, loop: layer.loop, priority: layer.priority }]
-  })
+  const selectedLayers = selectedWorldModelAnimationLayers(result, item)
   const clip = selectedLayers === undefined || selectedLayers.length === 0 ? selectWorldModelAnimation(result, item)
     : sampleModelAnimationLayers(selectedLayers, animationSnapshotBudget(selectedLayers.map(layer => layer.clip)))
   if (selectedLayers !== undefined && selectedLayers.length > 0 && clip !== undefined) composedWorldModelAnimations.add(clip)
-  byItem.set(item, clip ?? null)
-  return clip
+  const selection = Object.freeze({
+    animation: clip,
+    ...(layers?.length === 1 && selectedLayers?.length === 1
+      ? { materialLayer: Object.freeze(selectedLayers[0]!) }
+      : {}),
+  })
+  byItem.set(item, selection)
+  return selection
 }
 
 function selectWorldModelAnimation(
@@ -2714,9 +2770,7 @@ const record = (value: unknown): JsonRecord | undefined =>
 /**
  * Materials as this world presents them.
  *
- * A composite material (`renderModel.composite`, SC2 CMP_) layers standard passes and has no
- * program of its own, so it drew opaque with whatever base texture it listed (Amphion's sewer water
- * effect became a black plane). Its first pass is a standard material and stands in for it.
+ * Ordinary composite materials retain all authored passes for the common material sampler.
  *
  * A cliff piece's blend material uses alpha as a terrain blend mask, not transparency: its floor and
  * top are alpha 0 and the terrain is drawn there, and rock edges fade into the ground. Drawn blended
@@ -2734,17 +2788,11 @@ function presentationMaterials(
     const firstPass = record(record(Array.isArray(passes) ? passes[0] : undefined)?.['material'])
     let standard = record(renderModel?.['standard'])
     let out = ref
-    if (firstPass !== undefined && ref.shader !== undefined) {
+    if (cliff && firstPass !== undefined && ref.shader !== undefined) {
       standard = firstPass
       const blend = typeof firstPass['blendMode'] === 'number' ? firstPass['blendMode'] : 0
       const { composite: _composite, ...surfaceModel } = renderModel ?? {}
       void _composite
-      const animatedComposite = Object.values(record(firstPass['layers']) ?? {}).some(raw => {
-        const layer = record(raw)
-        return ['colorAdd', 'colorMultiply', 'uvOffset', 'uvAngle', 'uvTiling'].some(key =>
-          Array.isArray(record(layer?.[key])?.['sequenceTracks']),
-        )
-      })
       out = {
         ...ref,
         ...(blend === 0 ? {} : { alphaMode: 'blend' as const }),
@@ -2752,10 +2800,7 @@ function presentationMaterials(
           ...ref.shader,
           parameters: {
             ...parameters,
-            // Animated water/effect composites need the complete sequence vocabulary. Static
-            // legacy composites keep the established textured fallback until every CMP_ family
-            // has material parity; compiling those today turns authored transparent areas black.
-            renderModel: animatedComposite ? { ...surfaceModel, standard } : { standard },
+            renderModel: { ...surfaceModel, standard },
           },
         },
       }
@@ -2964,9 +3009,12 @@ function worldObjectTint(
   selectedObjectId: number | undefined,
 ): readonly [number, number, number, number] | undefined {
   const selected = item.objectId === selectedObjectId
-  if (item.presentationTint === undefined && !selected) return undefined
+  const opacity = item.presentationOpacity ?? 1
+  if (!Number.isFinite(opacity) || opacity < 0 || opacity > 1)
+    throw new TypeError('world object presentationOpacity must be finite in 0..1')
+  if (item.presentationTint === undefined && !selected && opacity === 1) return undefined
   const [red, green, blue] = item.presentationTint ?? [1, 1, 1]
-  return selected ? [red, green * 0.82, blue * 0.12, 1] : [red, green, blue, 1]
+  return selected ? [red, green * 0.82, blue * 0.12, opacity] : [red, green, blue, opacity]
 }
 
 function modelMaterialCoverage(material: ModelMaterialRef | undefined): Readonly<{
@@ -3148,6 +3196,26 @@ function worldModelSceneSampler(
     else samplers.set(key, sampler)
   }
   return sampler
+}
+
+/** Resolve a publisher's group against common model metadata; targets enter the model frame once. */
+function worldModelAimConstraints(input: WorldWebGlInput, item: WorldSceneObjectItem, result: WorldModelSample['result']): readonly ModelAimConstraint[] {
+  if ((item.presentationAim?.length ?? 0) === 0) return []
+  const placement = new Matrix4().fromArray(worldObjectTransform(item, objectPosition(item, input)))
+  if (Math.abs(placement.determinant()) < 1e-12) throw new TypeError('model aim object transform is singular')
+  placement.invert()
+  const constraints: ModelAimConstraint[] = []
+  for (const request of item.presentationAim!) {
+    const matches = result.nodeBehaviours?.filter(group => (group.name ?? group.id) === request.group && group.aim !== undefined) ?? []
+    // A style can name groups absent on this model (for example eyes on a helmet).
+    // Ambiguous groups cannot select a rig deterministically and must be refused.
+    if (matches.length === 0) continue
+    if (matches.length !== 1) throw new TypeError(`Object ${item.objectId}: ambiguous aiming group ${request.group}`)
+    const target = new Vector3(...request.target).applyMatrix4(placement).toArray() as [number, number, number]
+    constraints.push(...matches[0]!.aim!.parts.map(part => ({ ...part, target, weight: request.weight })))
+  }
+  validateModelAimConstraints(constraints)
+  return constraints
 }
 
 const staticModelSamples = new WeakMap<WorldModelSample['result'], Map<string, WorldModelSample>>()
@@ -3411,18 +3479,18 @@ function worldModelSceneResampler(
   result: WorldModelSample['result'],
   item: WorldSceneObjectItem,
   templateKey: string,
-  animated: boolean,
-  durationSeconds: number | undefined,
 ): WorldSceneResampler {
-  return (next, nextPrograms) =>
-    worldObjectModelPrograms(
+  return (next, nextPrograms) => {
+    const moment = worldObjectMaterialMoment(next, item, result)
+    return worldObjectModelPrograms(
       result,
       item,
       templateKey,
-      worldObjectTime(next, item, animated, durationSeconds),
-      () => worldObjectMaterialMoment(next, item, result).materialContext,
+      moment.materialTime,
+      () => moment.materialContext,
       nextPrograms,
     ).programs
+  }
 }
 
 /** The programs of a kept projected (decal) scene at another moment, sampled from its materials. */
@@ -3454,30 +3522,39 @@ function worldObjectMaterialMoment(
   item: WorldSceneObjectItem,
   result: WorldModelSample['result'],
 ) {
-  const selectedAnimation = worldModelAnimation(result, item)
+  const selection = resolveWorldModelAnimation(result, item)
+  const selectedAnimation = selection.animation
   const time = worldObjectTime(
     input,
     item,
     selectedAnimation !== undefined,
     selectedAnimation?.durationSeconds,
   )
+  const materialAnimation = selection.materialLayer?.clip ?? selectedAnimation
+  const materialTime = selection.materialLayer?.timeSeconds ?? time
   const sequenceTime =
-    selectedAnimation?.durationSeconds &&
-    (item.presentationAnimation?.loop ?? selectedAnimation.looping)
-      ? time % selectedAnimation.durationSeconds
-      : time
+    materialAnimation?.durationSeconds &&
+    (selection.materialLayer?.loop ?? item.presentationAnimation?.loop ?? materialAnimation.looping)
+      ? materialTime % materialAnimation.durationSeconds
+      : materialTime
   const teamColor =
     item.presentationTeamColor ??
     (item.player === undefined ? undefined : input.teamColors?.get(item.player))
   const teamRamp = item.presentationTeamRamp ?? (item.player === undefined ? undefined : input.teamRamps?.get(item.player))
   const terrainTiling = worldTerrainTiling(input)
   const materialContext: SceneMaterialContext = {
-    time,
+    emissiveMultiplier: worldModelEmissiveMultiplier(input),
+    // Concurrent material tracks share the model-lifetime clock with concurrent pose tracks.
+    time: item.presentationAnimation?.globalTimeSeconds ?? materialTime,
     sequenceTime,
-    ...(selectedAnimation?.sequenceIndex === undefined
+    sequenceLayers: (selectedWorldModelAnimationLayers(result, item) ?? []).filter(layer => layer.clip.sequenceIndex !== undefined)
+      .map(layer => ({ sequenceIndex: layer.clip.sequenceIndex!, time: layer.timeSeconds,
+        duration: layer.loop ? layer.clip.durationSeconds ?? 0 : 0, priority: layer.priority })),
+    ...(materialAnimation?.sequenceIndex === undefined
       ? {}
-      : { sequenceIndex: selectedAnimation.sequenceIndex }),
+      : { sequenceIndex: materialAnimation.sequenceIndex }),
     sceneLighting: true,
+    ...(input.renderTextureTargets === undefined ? {} : { renderTextureTargets: input.renderTextureTargets }),
     ...(teamColor === undefined ? {} : { teamColor }),
     ...(teamRamp === undefined ? {} : { teamRamp }),
     ...(item.presentationTeamColorIntensity === undefined
@@ -3485,7 +3562,7 @@ function worldObjectMaterialMoment(
       : { teamColorIntensity: item.presentationTeamColorIntensity }),
     ...(terrainTiling === undefined ? {} : { terrainTiling }),
   }
-  return { selectedAnimation, time, teamColor, materialContext }
+  return { selectedAnimation, time, materialAnimation, materialTime, teamColor, materialContext }
 }
 
 type WorldTerrainTiling = readonly [number, number, number, number]
@@ -3585,7 +3662,8 @@ function worldObjectModelPrograms(
   let byClock: Map<number, WorldModelPrograms> | undefined
   let retained: Map<string, WorldModelPrograms> | undefined
   let cachedMaterials: WorldModelPrograms | undefined
-  if (worldMaterialsFollowTime(result)) {
+  const sampledContext = context()
+  if (worldMaterialsFollowTime(result) || sampledContext.renderTextureTargets !== undefined) {
     byClock = planPrograms.get(templateKey)
     if (byClock === undefined) planPrograms.set(templateKey, (byClock = new Map()))
     cachedMaterials = byClock.get(time)
@@ -3597,7 +3675,7 @@ function worldObjectModelPrograms(
     const template = worldModelProgramTemplate(result, templateKey, item)
     let sampled: ReadonlyMap<string, SceneMaterialPrograms> = new Map()
     try {
-      if (template.sampler !== undefined) sampled = template.sampler.sample(context(), [])
+      if (template.sampler !== undefined) sampled = template.sampler.sample(sampledContext, [])
     } catch {
       // As above: an unsupported sample keeps the model's fallback.
       sampled = new Map()
@@ -3619,7 +3697,9 @@ function worldObjectProgramTemplateKey(
   resourceId: string,
   moment: ReturnType<typeof worldObjectMaterialMoment>,
 ): string {
-  const animation = moment.selectedAnimation?.id ?? ''
+  const animation = moment.materialAnimation === moment.selectedAnimation
+    ? (moment.selectedAnimation?.id ?? '')
+    : JSON.stringify([moment.selectedAnimation?.id, moment.materialAnimation?.id])
   const { teamColor } = moment
   const { terrainTiling, teamRamp } = moment.materialContext
   let byResource = worldObjectTemplateKeys.get(item)
@@ -3670,6 +3750,12 @@ const worldObjectTemplateKeys = new WeakMap<
  * The clocks at which an object samples its clock-following materials, one per model: the time
  * itself for one such model (most objects), which spares writing a number as text per object.
  */
+/** Scene emission gain is a frame property; it never changes the model resource or native material. */
+function worldModelEmissiveMultiplier(input: WorldWebGlInput): number {
+  const lighting = input.items.find((item): item is import('@modkit/sdk/maps').WorldSceneLightingItem => item.facet === 'lighting')
+  return lighting?.modelEmissiveMultiplier ?? 1
+}
+
 function worldObjectMaterialClock(
   item: WorldSceneObjectItem,
   input: WorldWebGlInput,
@@ -3679,12 +3765,16 @@ function worldObjectMaterialClock(
   for (const resourceId of worldObjectResourcesOf(item).keyed) {
     const result = input.models?.get(resourceId)
     if (result?.state !== 'converted' || !worldMaterialsFollowTime(result)) continue
-    const selected = worldModelAnimation(result, item)
-    const time = worldObjectTime(input, item, selected !== undefined, selected?.durationSeconds)
+    const { materialTime: time } = worldObjectMaterialMoment(input, item, result)
     models += 1
     clock = models === 1 ? time : `${clock}\u0000${time}`
   }
-  return clock
+  const gain = worldModelEmissiveMultiplier(input)
+  if (worldObjectResourcesOf(item).keyed.some(id => {
+    const result = input.models?.get(id)
+    return result?.state === 'converted' && result.animations?.some(clip => clip.alwaysActive)
+  })) clock = `${clock}\u0000global:${item.presentationAnimation?.globalTimeSeconds ?? 0}`
+  return gain === 1 ? clock : `${clock}\u0000emission:${gain}`
 }
 
 /**
@@ -4398,7 +4488,7 @@ function worldKeptPoseSphere(
       let radius: number | undefined = 0
       for (const { sample, animation } of pose.models) {
         const clip = animation?.kind === 'animation' || animation?.kind === 'rest-pose' ? animation : undefined
-        const bounds = worldModelSceneSampler(sample.result, clip).bounds()
+        const bounds = (item.presentationAim?.length ?? 0) > 0 ? undefined : worldModelSceneSampler(sample.result, clip).bounds()
         if (bounds === undefined) {
           radius = undefined
           break
@@ -5314,6 +5404,9 @@ function worldStaticObjectKey(
   preparation: unknown,
   models: number,
 ): readonly unknown[] | undefined {
+  if ((item.presentationAim?.length ?? 0) > 0) return undefined
+  // Dynamic target bindings are frame-owned; do not retain a previous target generation.
+  if (input.renderTextureTargets !== undefined) return undefined
   if (item.objectId === input.selectedObjectId) return undefined
   const teamColor =
     item.presentationTeamColor ??
@@ -7483,7 +7576,8 @@ export function createWorldWebGlPlan(
     if (result?.state !== 'converted') return undefined
     const selected = worldModelAnimation(result, item)
     const camera = worldModelFacesCamera(result) ? worldModelCamera(input, item) : undefined
-    const staticGeometry = camera === undefined && !worldModelHasAnimatedGeometry(result, item)
+    const aims = worldModelAimConstraints(input, item, result)
+    const staticGeometry = aims.length === 0 && camera === undefined && !worldModelHasAnimatedGeometry(result, item)
     const staticKey = selected?.id ?? ''
     const previousStatic = staticGeometry
       ? staticModelSamples.get(result)?.get(staticKey)
@@ -7493,6 +7587,7 @@ export function createWorldWebGlPlan(
     // instances turned alike see the camera alike
     const sharedKey =
       `${resourceId}\u0000${selected?.id ?? ''}\u0000${time}` +
+      (aims.length === 0 ? '' : `\u0000aim:${item.objectId}`) +
       (camera === undefined ? '' : `\u0000${camera.rotation.join(',')}`)
     const shared = planSamples.get(sharedKey)
     if (shared !== undefined) return shared
@@ -7500,7 +7595,7 @@ export function createWorldWebGlPlan(
     const sample =
       (result.nodes?.length ?? 0) === 0
         ? { primitives: result.primitives, nodeTransforms: new Map<string, Float32Array>() }
-        : worldModelSceneSampler(result, clip).sample(time, undefined, camera)
+        : worldModelSceneSampler(result, clip).sample(time, undefined, camera, undefined, aims)
     const current = {
       result,
       // A skin whose pose does not follow the clock is posed on the CPU once for every frame to
@@ -7722,6 +7817,8 @@ export function createWorldWebGlPlan(
   const replayBlocks =
     previousBuiltLast &&
     previous !== undefined &&
+    // Bulk reuse must obey worldStaticObjectKey's frame-owned target policy too.
+    input.renderTextureTargets === undefined &&
     models === previous.models &&
     preparation === previous.preparation &&
     input.selectedObjectId === previous.input.selectedObjectId &&
@@ -8069,13 +8166,13 @@ export function createWorldWebGlPlan(
             ) as typeof sampled.primitives)
           : sampled.primitives
       const moment = worldObjectMaterialMoment(input, item, result)
-      const { selectedAnimation, time, materialContext } = moment
+      const { selectedAnimation, time, materialTime, materialContext } = moment
       const templateKey = worldObjectProgramTemplateKey(item, component.resourceId, moment)
       const { presented, scene, programs } = worldObjectModelPrograms(
         result,
         item,
         templateKey,
-        time,
+        materialTime,
         () => materialContext,
         planPrograms,
       )
@@ -8191,8 +8288,9 @@ export function createWorldWebGlPlan(
           materialContext.teamRamp,
         )
         const coverage = modelMaterialCoverage(material)
+        const opacity = worldObjectTint(item, undefined)?.[3] ?? 1
         const blendMode =
-          coverage.mode !== 'blend'
+          coverage.mode !== 'blend' && opacity === 1
             ? undefined
             : // the world's adding blend is SrcAlpha, One: add-alpha's (UV_game_material)
               material?.blendMode === 'additive' || material?.blendMode === 'add-alpha'
@@ -8236,7 +8334,7 @@ export function createWorldWebGlPlan(
           albedo[0] * tint[0],
           albedo[1] * tint[1],
           albedo[2] * tint[2],
-          albedo[3],
+          albedo[3] * opacity,
         ]
         const vertexColors = primitive.colors
         const colorAt = (index: number): WorldColor =>
@@ -8249,7 +8347,7 @@ export function createWorldWebGlPlan(
                 base[3] * vertexColors[index * 4 + 3]!,
               ]
         const selectedColor =
-          item.objectId === input.selectedObjectId ? ([1, 0.82, 0.12, 1] as const) : undefined
+          item.objectId === input.selectedObjectId ? ([1, 0.82, 0.12, opacity] as const) : undefined
         const triangleColor = (triangle: readonly number[]): TriangleColor =>
           selectedColor ??
           (vertexColors === undefined
@@ -8291,7 +8389,8 @@ export function createWorldWebGlPlan(
                 ...(blendMode === undefined ? {} : { blendMode }),
                 castShadows: shadowPolicy.castShadows,
                 receiveShadows: shadowPolicy.receiveShadows,
-                ...(coverage.cutoff === 0 ? {} : { alphaCutoff: coverage.cutoff }),
+                // Keep the authored cutout while fading its surviving pixels.
+                ...(coverage.cutoff === 0 ? {} : { alphaCutoff: coverage.cutoff * opacity }),
                 ...(unlit ? { unlit } : {}),
                 ...(priority === 0 ? {} : { priority }),
                 ...(team === undefined ? {} : { team }),
@@ -8540,7 +8639,8 @@ export function createWorldWebGlPlan(
           shadowPrimitives: Object.freeze(materialShadowPrimitives),
           materials: scene.materials,
           programs,
-          textures: scene.textures,
+          textures: input.renderTextureTargets === undefined ? scene.textures :
+            Object.freeze([...scene.textures, ...input.renderTextureTargets.values()]),
         })
         if (shadowlessMaterials.size > 0) worldShadowlessMaterials.set(materialScene, shadowlessMaterials)
         modelMaterialScenes.push(materialScene)
@@ -8570,8 +8670,6 @@ export function createWorldWebGlPlan(
               result,
               item,
               templateKey,
-              selectedAnimation !== undefined,
-              selectedAnimation?.durationSeconds,
             ),
           )
         }
@@ -8932,6 +9030,7 @@ export function createWorldWebGlPlan(
       )) /
       9
   const plan: WorldWebGlPlan = Object.freeze({
+    ...(input.renderTextureTargets === undefined ? {} : { renderTextureTargets: input.renderTextureTargets }),
     opaqueTriangles,
     terrainOpaqueVertices: preparation.opaqueTriangles.positions.length / 3,
     terrainTexturedBatches: preparation.texturedTriangles.length,
@@ -8959,6 +9058,7 @@ export function createWorldWebGlPlan(
     ...(unlit || lighting?.objects === undefined
       ? {}
       : { objectLight: worldObjectLight(lighting.objects, lighting.coordinateSpaceId) }),
+    ...(lighting?.local === undefined ? {} : { localLights: lighting.local }),
     light: Object.freeze({
       ...(lighting?.toneMapping === undefined ? {} : { toneMapping: lighting.toneMapping }),
       ...(lighting?.terrain === undefined || unlit ? {} : { terrain: lighting.terrain }),
@@ -9636,6 +9736,7 @@ interface WorldWebGlOwnedResources {
   readonly program: WebGLProgram
   readonly shadowProgram: WebGLProgram
   toneMapper: ReturnType<typeof createWorldToneMapper>
+  offscreenTarget: WorldOffscreenTarget | undefined
   shadowTarget:
     | Readonly<{
         framebuffer: WebGLFramebuffer
@@ -10154,6 +10255,7 @@ function sameWorldPlanInputExceptAnimationTimes(
     sameArrayIdentity(left.terrainMaterials, right.terrainMaterials) &&
     sameArrayIdentity(left.terrainWeightRasters, right.terrainWeightRasters) &&
     sameWorldMap(left.terrainTextures, right.terrainTextures) &&
+    sameWorldMap(left.renderTextureTargets, right.renderTextureTargets) &&
     sameArrayIdentity(left.waterMaterials, right.waterMaterials) &&
     left.selectedObjectId === right.selectedObjectId &&
     samePreviewPosition(left.previewPosition, right.previewPosition) &&
@@ -10447,6 +10549,7 @@ function createOwnedResources(gl: WebGL2RenderingContext): WorldWebGlOwnedResour
       program,
       shadowProgram: createShadowProgram(gl),
       toneMapper: undefined,
+      offscreenTarget: undefined,
       shadowTarget: undefined,
       shadowKept: undefined,
       shadowCasterKeys: undefined,
@@ -10521,6 +10624,7 @@ function disposeOwnedResources(resources: WorldWebGlOwnedResources): void {
   resources.disposed = true
   resources.toneMapper?.dispose()
   resources.toneMapper = undefined
+  disposeWorldOffscreenTarget(resources)
   resources.lastPlanInput = undefined
   resources.lastPlan = undefined
   resources.materialPlan = undefined
@@ -11625,7 +11729,7 @@ export function worldWebGlCameraFromModel(input: WorldWebGlInput,
   if(index<0) throw new TypeError('requested model camera index is unavailable')
   const clip=worldModelAnimation(result,item)
   const time=worldObjectTime(input,item,clip!==undefined,clip?.durationSeconds)
-  const sample=worldModelSceneSampler(result,clip).sample(time)
+  const sample=worldModelSceneSampler(result,clip).sample(time, undefined, undefined, undefined, worldModelAimConstraints(input,item,result))
   const instance=new Matrix4().fromArray(worldObjectTransform(item,objectPosition(item,input)))
   const transforms=new Map([...sample.nodeTransforms].map(([id,m])=>[id,Float32Array.from(new Matrix4().multiplyMatrices(instance,new Matrix4().fromArray(m)).elements)]))
   const resolved=resolveUvmCamera(document,{node:index},{aspect:1,nodeTransforms:transforms,
@@ -12829,6 +12933,8 @@ export function worldMaterialLight(
     specularColor: (rig.specularColor ?? color).map(
       value => value * (rig.specularIntensity ?? intensity),
     ) as [number, number, number],
+    ...(plan.localLights === undefined ? {} : { spatialLighting: { lights: plan.localLights, ambient: [ambient[0] * ambientIntensity, ambient[1] * ambientIntensity, ambient[2] * ambientIntensity] as const } }),
+    useAmbientOcclusion: rig.useAmbientOcclusion ?? true,
     ambient: ambientIntensity,
     ambientColor: [
       ambient[0] * ambientIntensity,
@@ -12838,6 +12944,7 @@ export function worldMaterialLight(
     fills: rig.fills.map(fill => ({
       direction: [-fill.direction[0], -fill.direction[1], -fill.direction[2]] as const,
       color: fill.color.map(value => value * fill.intensity) as [number, number, number],
+      useAmbientOcclusion: fill.useAmbientOcclusion ?? true,
     })),
   }
 }
@@ -13655,20 +13762,140 @@ export function worldMaterialBatchesOf(
   return batches
 }
 
+/** Shared admission and camera/clock selection for CPU and GPU secondary views. */
+export function prepareWorldRenderTextureFrame(input: WorldWebGlInput, signal?: AbortSignal) {
+  const requests = input.renderTextures ?? []
+  if (requests.length > 8) throw new RangeError('world frame exceeds eight offscreen views')
+  // Neither an in-progress target nor previous-frame targets may feed a secondary view.
+  const { renderTextures: _requests, renderTextureTargets: _ready, ...base } = input
+  // A material target contains scene colour, not the final display grade. Keep fog in its
+  // own camera pass, but apply tone/colour/gamma once when the composed frame is displayed.
+  // Targets are still RGBA8; preserving radiance above one requires floating target storage.
+  const secondaryInput = { ...base, items: base.items.map(item =>
+    item.facet !== 'lighting' || (item.toneMapping === undefined && item.fog === undefined)
+      ? item
+      : { ...item, toneMapping: { operator: 'linear' as const, exposure: 1, whitePoint: 1, contrast: 1 } }) }
+  function* views() {
+    const ids = new Set<string>()
+    let pixels = 0
+    for (const request of requests) {
+      signal?.throwIfAborted()
+      const width = request.width ?? 512, height = request.height ?? 512
+      if (typeof request.id !== 'string' || !request.id || ids.has(request.id) ||
+          !Number.isInteger(width) || !Number.isInteger(height) || width < 16 || height < 16 || width > 2048 || height > 2048 ||
+          (pixels += width * height) > 4_194_304)
+        throw new RangeError('invalid or excessive offscreen view id/dimensions')
+      ids.add(request.id)
+      if ((request.camera === undefined) === (request.modelCamera === undefined))
+        throw new TypeError('offscreen view requires exactly one camera')
+      const camera = request.camera === undefined
+        ? worldWebGlCameraFromModel(base, request.modelCamera!)
+        : worldWebGlCameraFromSource(request.camera)
+      yield { id: request.id, width, height, camera, clearColor: request.clearColor ?? [0, 0, 0, 0] as const }
+    }
+  }
+  return { input: base, secondaryInput, views: views() }
+}
+
+interface WorldOffscreenTarget {
+  readonly framebuffer: WebGLFramebuffer
+  readonly texture: WebGLTexture
+  readonly depth: WebGLRenderbuffer
+  readonly width: number
+  readonly height: number
+}
+
+function disposeWorldOffscreenTarget(resources: WorldWebGlOwnedResources): void {
+  const target = resources.offscreenTarget
+  if (target === undefined) return
+  resources.gl.deleteFramebuffer(target.framebuffer)
+  resources.gl.deleteTexture(target.texture)
+  resources.gl.deleteRenderbuffer(target.depth)
+  resources.offscreenTarget = undefined
+}
+
+/** One bounded RGBA/depth target, reused across the admitted secondary views. */
+function worldOffscreenTarget(resources: WorldWebGlOwnedResources, width: number, height: number): WorldOffscreenTarget {
+  const kept = resources.offscreenTarget
+  if (kept?.width === width && kept.height === height) return kept
+  disposeWorldOffscreenTarget(resources)
+  const gl = resources.gl, framebuffer = gl.createFramebuffer(), texture = gl.createTexture(), depth = gl.createRenderbuffer()
+  if (framebuffer === null || texture === null || depth === null) {
+    if (framebuffer !== null) gl.deleteFramebuffer(framebuffer)
+    if (texture !== null) gl.deleteTexture(texture)
+    if (depth !== null) gl.deleteRenderbuffer(depth)
+    throw new TypeError('WebGL could not allocate an offscreen world target')
+  }
+  try {
+    gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer)
+    gl.activeTexture(gl.TEXTURE0)
+    gl.bindTexture(gl.TEXTURE_2D, texture)
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0)
+    gl.bindRenderbuffer(gl.RENDERBUFFER, depth)
+    gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH24_STENCIL8, width, height)
+    gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT, gl.RENDERBUFFER, depth)
+    if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE)
+      throw new TypeError('offscreen world framebuffer is incomplete')
+    resources.offscreenTarget = { framebuffer, texture, depth, width, height }
+    return resources.offscreenTarget
+  } catch (error) {
+    gl.deleteFramebuffer(framebuffer)
+    gl.deleteTexture(texture)
+    gl.deleteRenderbuffer(depth)
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null)
+    throw error
+  }
+}
+
+function drawWorldWebGlFrame(canvas: HTMLCanvasElement, input: WorldWebGlInput, resources: WorldWebGlOwnedResources): WorldWebGlStats {
+  if (resources.disposed) throw new TypeError('world WebGL renderer is disposed')
+  if ((input.renderTextures?.length ?? 0) === 0) {
+    disposeWorldOffscreenTarget(resources)
+    return drawWorldWebGlWithResources(canvas, input, resources)
+  }
+  const startedAt = globalThis.performance?.now() ?? Date.now()
+  const frame = prepareWorldRenderTextureFrame(input), targets = new Map<string, SceneRendererTexture>()
+  try {
+    for (const view of frame.views) {
+      const target = worldOffscreenTarget(resources, view.width, view.height)
+      drawWorldWebGlWithResources(target, { ...frame.secondaryInput, camera: view.camera }, resources, { target, clearColor: view.clearColor })
+      const gl = resources.gl, bottomUp = new Uint8Array(view.width * view.height * 4)
+      gl.bindFramebuffer(gl.FRAMEBUFFER, target.framebuffer)
+      gl.readPixels(0, 0, view.width, view.height, gl.RGBA, gl.UNSIGNED_BYTE, bottomUp)
+      assertNoWebGlError(resources, 'offscreen readback')
+      targets.set(view.id, { id: view.id, width: view.width, height: view.height,
+        rgba: flipRows(bottomUp, view.width, view.height), filter: 'linear' })
+    }
+    return drawWorldWebGlWithResources(canvas, { ...frame.input, renderTextureTargets: targets }, resources, { startedAt })
+  } catch (error) {
+    disposeWorldOffscreenTarget(resources)
+    throw error
+  } finally {
+    resources.gl.bindFramebuffer(resources.gl.FRAMEBUFFER, null)
+  }
+}
+
 function drawWorldWebGlWithResources(
-  canvas: HTMLCanvasElement,
+  canvas: Pick<HTMLCanvasElement, 'width' | 'height'>,
   input: WorldWebGlInput,
   resources: WorldWebGlOwnedResources,
+  output?: { readonly target?: WorldOffscreenTarget; readonly clearColor?: WorldSceneRenderTexture['clearColor']; readonly startedAt?: number },
 ): WorldWebGlStats {
   if (resources.disposed) throw new TypeError('world WebGL renderer is disposed')
   const gl = resources.gl
   const visibilityBounds = checkedWorldVisibilityBounds(input.visibilityBounds)
   harvestGpuTimer(resources)
-  const startedAt = globalThis.performance?.now() ?? Date.now()
+  const startedAt = output?.startedAt ?? globalThis.performance?.now() ?? Date.now()
+  const secondary = output?.target !== undefined
   const plan = retainedWorldPlan(input, resources, made =>
     worldPlanPosingView(made, input, canvas.width, canvas.height, {
-      width: gl.drawingBufferWidth,
-      height: gl.drawingBufferHeight,
+      width: secondary ? canvas.width : gl.drawingBufferWidth,
+      height: secondary ? canvas.height : gl.drawingBufferHeight,
     }),
   )
   const program = resources.program
@@ -13677,7 +13904,7 @@ function drawWorldWebGlWithResources(
   let gpuQueryStarted = false
   let completed = false
   try {
-    if (resources.gpuTimer !== undefined && resources.pendingGpuQuery === undefined) {
+    if (!secondary && resources.gpuTimer !== undefined && resources.pendingGpuQuery === undefined) {
       gpuQuery = gl.createQuery() ?? undefined
       if (gpuQuery !== undefined) {
         gl.beginQuery(resources.gpuTimer.TIME_ELAPSED_EXT, gpuQuery)
@@ -13686,12 +13913,14 @@ function drawWorldWebGlWithResources(
     }
     prepareWorldMaterialResources(resources, plan)
     shadow = renderWorldShadowMap(gl, plan, input, resources)
+    gl.bindFramebuffer(gl.FRAMEBUFFER, output?.target?.framebuffer ?? null)
     if (plan.light.toneMapping !== undefined) {
       resources.toneMapper ??= createWorldToneMapper(gl)
       resources.toneMapper?.begin(canvas.width, canvas.height)
     }
     gl.viewport(0, 0, canvas.width, canvas.height)
-    if (visibilityBounds === undefined) gl.clearColor(0.035, 0.055, 0.075, 1)
+    if (output?.clearColor !== undefined) gl.clearColor(...output.clearColor)
+    else if (visibilityBounds === undefined) gl.clearColor(0.035, 0.055, 0.075, 1)
     else gl.clearColor(0, 0, 0, plan.light.toneMapping !== undefined && resources.toneMapper !== undefined ? 0 : 1)
     gl.clearDepth(1)
     gl.enable(gl.DEPTH_TEST)
@@ -14233,11 +14462,13 @@ function drawWorldWebGlWithResources(
         fog === undefined
           ? undefined
           : { fog, eye: worldFogEye(plan, canvas.width, canvas.height, input.camera) },
-        visibilityBounds !== undefined,
+        visibilityBounds !== undefined && !secondary,
+        output?.target?.framebuffer ?? null,
+        secondary,
       )
     }
     assertNoWebGlError(resources, 'postprocess pass')
-    resources.frames += 1
+    if (!secondary) resources.frames += 1
     completed = true
     return Object.freeze({
       ...plan.stats,
@@ -14249,16 +14480,16 @@ function drawWorldWebGlWithResources(
       if (completed) resources.pendingGpuQuery = gpuQuery
       else if (gpuQuery !== undefined) gl.deleteQuery(gpuQuery)
     }
-    if (completed)
+    if (completed && !secondary)
       retainPerformanceSample(
         resources.cpuFrameMilliseconds,
         (globalThis.performance?.now() ?? Date.now()) - startedAt,
       )
-    if (completed) {
+    if (completed && !secondary) {
       sweepGeometry(resources)
       sweepTextures(resources)
       resources.materialDraws.sweep()
-    } else {
+    } else if (!completed) {
       resources.usedGeometry.clear()
       resources.usedIndexBuffers.clear()
       resources.usedTextures.clear()
@@ -14284,7 +14515,7 @@ export function createWorldWebGlRenderer(
   if (!isWebGl2(context)) return undefined
   const resources = createOwnedResources(context)
   return Object.freeze({
-    draw: (input: WorldWebGlInput) => drawWorldWebGlWithResources(canvas, input, resources),
+    draw: (input: WorldWebGlInput) => drawWorldWebGlFrame(canvas, input, resources),
     pick: (input: WorldWebGlInput, screen: WorldWebGlPickScreen) => {
       if (resources.disposed) throw new TypeError('world WebGL renderer is disposed')
       const plan = retainedWorldPlan(input, resources, made =>
@@ -14374,6 +14605,7 @@ export function createWorldWebGlRenderer(
             material.bufferBytesRetained +
             textures.bytes +
             shadowTargetBytesRetained +
+            (resources.offscreenTarget === undefined ? 0 : resources.offscreenTarget.width * resources.offscreenTarget.height * 8) +
             (resources.toneMapper?.bytes() ?? 0),
           gpuProgramBytesObservable: false as const,
           cpuFrameSamples: resources.cpuFrameMilliseconds.length,

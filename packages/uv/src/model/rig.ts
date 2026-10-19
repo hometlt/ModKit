@@ -32,6 +32,7 @@ export interface UvmSkin {
   joints: number[]
   inverseBindMatrices: number
   skeleton?: number
+  extensions?: { UV_game_skeleton: { sourceOrder: number[] } }
 }
 
 function refuse(message: string): never {
@@ -80,6 +81,9 @@ export function prepareUvmSkeleton(
     group.sort((a, b) => a.boneIndex - b.boneIndex)
     if (group.length > 65536) refuse('skin exceeds the unsigned 16-bit joint index range')
     const slots = new Map(group.map((bone, slot) => [bone.boneIndex, slot]))
+    const sourceOrder = group.map(bone => bone.sourceBoneIndex ?? bone.boneIndex)
+    if (new Set(sourceOrder).size !== group.length)
+      refuse('skin original joint ordinals are not unique')
     const groupNodes = new Set(group.map(bone => bone.nodeId))
     const expectedNodes = createModelSkeletonNodes(group, hierarchyId, budget, signal)
     for (const [slot, expected] of expectedNodes.entries()) {
@@ -160,6 +164,7 @@ export function prepareUvmSkeleton(
     skins.push({
       joints,
       inverseBindMatrices,
+      extensions: { UV_game_skeleton: { sourceOrder } },
       ...(roots.length === 1 ? { skeleton: nodeIndices.get(roots[0]!.nodeId!)! } : {}),
     })
   }
@@ -648,6 +653,7 @@ export function writeUvmAnimations(
       frames: clip.frames,
       ...(animationIndex === undefined ? {} : { animation: animationIndex }),
       ...(clip.looping === undefined ? {} : { looping: clip.looping }),
+      ...(clip.alwaysActive === undefined ? {} : { alwaysActive: clip.alwaysActive }),
       ...(clip.role === undefined ? {} : { role: clip.role }),
       ...(clip.tags === undefined ? {} : { tags: [...clip.tags] }),
       ...(clip.repeatCount === undefined ? {} : { repeatCount: clip.repeatCount }),

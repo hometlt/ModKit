@@ -75,7 +75,25 @@ export function colorizeWorldColor(color: readonly number[], settings: WorldColo
       ? [tintLightness, tintLightness, tintLightness]
       : hslToRgb(settings.hue, settings.saturation, tintLightness)
   const blend = settings.blend
-  return base.map((value, channel) => tint[channel]! * blend + value * (1 - blend))
+  let result = base.map((value, channel) => tint[channel]! * blend + value * (1 - blend))
+  // Operations are ordered; region membership follows the graded source lightness.
+  for (const variation of settings.variations ?? []) {
+    const l = graded
+    const weight = variation.region === 'shadows' ? l < 0.3 ? 1 : l < 0.5 ? 1 - ((l - 0.3) * 5) ** 2 : 0
+      : variation.region === 'midtones' ? l < 0.15 || l >= 0.85 ? 0 : l < 0.35 ? ((l - 0.35) * 5) ** 2 : l < 0.65 ? 1 : 1 - ((l - 0.65) * 5) ** 2
+      : l <= 0.5 ? 0 : l <= 0.7 ? ((l - 0.5) * 5) ** 2 : 1
+    const hues = { green: 1 / 3, yellow: 1 / 6, cyan: 0.5, red: 0, blue: 2 / 3, magenta: 5 / 6 }
+    for (let step = 0; step < variation.steps; step++) {
+      const [h, , light] = rgbToHsl(result[0]!, result[1]!, result[2]!)
+      const command = variation.command
+      const target = command in hues ? hslToRgb(hues[command as keyof typeof hues], 0.5, light)
+        : command === 'lighter' ? [1, 1, 1] : command === 'darker' ? [0, 0, 0]
+        : command === 'desaturate' ? [light, light, light] : hslToRgb(h, 1, light)
+      const amount = (command === 'desaturate' || command === 'saturate' ? 1 : weight) * 0.05
+      result = result.map((value, channel) => value + (target[channel]! - value) * amount)
+    }
+  }
+  return result.map(clamp)
 }
 
 /**
@@ -93,4 +111,19 @@ export function createWorldColorLut(settings: WorldColorization, size = 16): Uin
     result[offset + 3] = 255
   }
   return result
+}
+
+/** CPU equivalent of HDR.fx's clamped, linearly filtered `C + 0.5 / size` 3D lookup. */
+export function sampleWorldColorLut(lut: Uint8Array, color: readonly number[], size = 16): number[] {
+  const x = clamp(color[0]!) * size, y = clamp(color[1]!) * size, z = clamp(color[2]!) * size
+  const x0 = Math.min(size - 1, Math.floor(x)), y0 = Math.min(size - 1, Math.floor(y)), z0 = Math.min(size - 1, Math.floor(z))
+  const x1 = Math.min(size - 1, x0 + 1), y1 = Math.min(size - 1, y0 + 1), z1 = Math.min(size - 1, z0 + 1)
+  const tx = x - x0, ty = y - y0, tz = z - z0
+  const at = (r: number, g: number, b: number, channel: number) => lut[((b * size + g) * size + r) * 4 + channel]! / 255
+  const mix = (a: number, b: number, t: number) => a + (b - a) * t
+  return [0, 1, 2].map(channel => mix(
+    mix(mix(at(x0, y0, z0, channel), at(x1, y0, z0, channel), tx),
+      mix(at(x0, y1, z0, channel), at(x1, y1, z0, channel), tx), ty),
+    mix(mix(at(x0, y0, z1, channel), at(x1, y0, z1, channel), tx),
+      mix(at(x0, y1, z1, channel), at(x1, y1, z1, channel), tx), ty), tz))
 }

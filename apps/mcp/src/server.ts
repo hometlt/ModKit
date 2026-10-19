@@ -344,7 +344,11 @@ const invokeReadonlyInput = z
   .strict()
 
 /** Same shape; the operation named here is a mutating one and the answer is a plan, not a write. */
-const proposeEditInput = invokeReadonlyInput.omit({ retainOutput: true, inputArtifact: true, render: true })
+const proposeEditInput = invokeReadonlyInput.omit({
+  retainOutput: true,
+  inputArtifact: true,
+  render: true,
+})
 const editPlanHandleSchema = z.string().uuid()
 const prepareEditInput = z
   .object({
@@ -425,6 +429,21 @@ const worldSceneInput = z.discriminatedUnion('view', [
   z
     .object({
       handle: handleSchema,
+      view: z.literal('animation'),
+      visibilityBounds: z.tuple([z.number().finite(), z.number().finite(), z.number().finite(), z.number().finite()]).describe('Render-only visible [minX,minZ,maxX,maxZ] rectangle in the current renderer frame; outside is opaque black, geometry is retained.').optional(),
+      format: z.enum(['gif', 'webp', 'ogv']),
+      resourceIds: z.array(z.string().min(1).max(512)).min(1).max(256).optional(),
+      startMs: z.number().finite().min(0).max(Number.MAX_SAFE_INTEGER).default(0),
+      durationMs: z.number().finite().gt(0).max(30000),
+      fps: z.number().finite().min(1).max(50).default(10),
+      width: z.number().int().min(16).max(2048).default(640),
+      height: z.number().int().min(16).max(2048).default(360),
+      camera: z.enum(['source', 'orbit']).default('source'),
+    })
+    .strict(),
+  z
+    .object({
+      handle: handleSchema,
       view: z.literal('image'),
       maxSize: z.number().int().min(16).max(2_048).default(512),
     })
@@ -433,7 +452,10 @@ const worldSceneInput = z.discriminatedUnion('view', [
     .object({
       handle: handleSchema,
       view: z.literal('render'),
-        visibilityBounds: z.tuple([z.number().finite(), z.number().finite(), z.number().finite(), z.number().finite()]).describe('Render-only visible [minX,minZ,maxX,maxZ] rectangle in the current renderer frame; outside is opaque black, geometry is retained.').optional(),
+      visibilityBounds: z.tuple([z.number().finite(), z.number().finite(), z.number().finite(), z.number().finite()]).describe('Render-only visible [minX,minZ,maxX,maxZ] rectangle in the current renderer frame; outside is opaque black, geometry is retained.').optional(),
+      resourceIds: z.array(z.string().min(1).max(512)).min(1).max(256).optional(),
+      timeMs: z.number().finite().min(0).max(Number.MAX_SAFE_INTEGER).optional(),
+      camera: z.enum(['source', 'orbit']).optional(),
       width: z.number().int().min(16).max(2_048).default(1_024),
       height: z.number().int().min(16).max(2_048).default(768),
       // the world viewer's orbit: above the horizon, short of straight down
@@ -586,7 +608,11 @@ const toolResult = ({ images = [], ...value }: McpEnvelope): CallToolResult => (
   ...(value.completeness === 'invalid' ? { isError: true } : {}),
   content: [
     { type: 'text', text: JSON.stringify(value) },
-    ...images.map(image => ({ type: 'image' as const, data: image.data, mimeType: image.mimeType })),
+    ...images.map(image => ({
+      type: 'image' as const,
+      data: image.data,
+      mimeType: image.mimeType,
+    })),
   ],
   structuredContent: value,
 })
@@ -1011,7 +1037,7 @@ export function createModkitMcpServer(host: ModkitMcpHostPort): ModkitMcpServerR
     {
       title: 'Read a map world',
       description:
-        "Read the map world a subject publishes: info (coordinate spaces, facets and edit — the operationId and moveObjectKind that modkit.propose_edit takes to change an object, with expectedSourceRevision and edits [{ kind, objectId, patch }]), one bounded page of layers, objects, regions, terrain, cliffs, navigation, traversal or gateways, or image: the world drawn from above, north up, as an image block with each objectId's pixel box in data.objects (models drawn as placeholders), render: the world viewer's scene, models, textures and team colours included, drawn on the CPU without its shadows, tone mapping and filtering (brighter than the viewer), as an image block of width x height (azimuth and elevation in radians, zoom, target an offset from the world centre in world units; the default camera of the viewer when absent), or export: the world as one UVW document, kept as a retained output resource (data.outputArtifact), with the receipt of what the UVW leaves out (excludedFacetIds, omittedObjects, lostFields).",
+        "Read the map world a subject publishes: info (coordinate spaces, facets and edit — the operationId and moveObjectKind that modkit.propose_edit takes to change an object, with expectedSourceRevision and edits [{ kind, objectId, patch }]), one bounded page of layers, objects, regions, terrain, cliffs, navigation, traversal or gateways, or image: the world drawn from above, north up, as an image block with each objectId's pixel box in data.objects (models drawn as placeholders), render: the world viewer's scene, models, textures and team colours included, drawn on the CPU with supported HDR tone mapping, colorization and height fog; GPU shadows, screen effects and mip/anisotropic filtering are unavailable, as an image block of width x height (azimuth and elevation in radians, zoom, target an offset from the world centre in world units; the default camera of the viewer when absent; timeMs samples an animated source without playback side effects, camera source uses its authored lens and camera orbit explicitly selects the inspection camera), animation: a bounded time range exported as GIF, WebP or OGV through installed ffmpeg (startMs, durationMs, fps, width, height, camera; no audio yet; requires output-artifacts), or export: the world as one UVW document, kept as a retained output resource (data.outputArtifact), with the receipt of what the UVW leaves out (excludedFacetIds, omittedObjects, lostFields).",
       inputSchema: worldSceneInput,
       outputSchema: envelopeSchema,
       annotations: { ...readOnlyAnnotations, idempotentHint: true },

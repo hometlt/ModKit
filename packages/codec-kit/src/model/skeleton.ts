@@ -84,6 +84,8 @@ export function snapshotModelSkeleton(
       (bone.boneName !== null && typeof bone.boneName !== 'string')
     )
       throw new TypeError('invalid bone binding')
+    if (bone.sourceBoneIndex !== undefined && (!Number.isSafeInteger(bone.sourceBoneIndex) || bone.sourceBoneIndex < 0))
+      throw new TypeError('invalid original bone ordinal')
     if (bone.nodeId !== undefined && (typeof bone.nodeId !== 'string' || bone.nodeId.length === 0))
       throw new TypeError('invalid bone node id')
     if (bone.localPose !== undefined) {

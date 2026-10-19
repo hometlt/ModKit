@@ -646,7 +646,14 @@ export function materialWebGlDraws(
     if (used === undefined) usedPrograms.set(key, (used = new Set()))
     used.add(source)
     let lease = leases.get(source)
-    if (lease === undefined) {
+    // A retained pass can sample a new RTT generation without changing its shader or uniforms.
+    const changedTextures = lease !== undefined && source.textures.some((binding, unit) => {
+      const texture = material.textures.get(binding.resourceId)
+      const handle = texture === undefined ? undefined
+        : typeof textures === 'function' ? textures(texture) : textures.get(texture.id)
+      return handle !== lease!.textureUnits[unit]?.texture
+    })
+    if (lease === undefined || changedTextures) {
       const bound = new Map<string, WebGLTexture>()
       for (const [resource, texture] of material.textures) {
         const handle = typeof textures === 'function' ? textures(texture) : textures.get(texture.id)
@@ -655,7 +662,8 @@ export function materialWebGlDraws(
       }
       const shaders = leaseShaderSources(source, material, stages)
       const { vertexSource, fragmentSource, filters } = shaders
-      lease = createWebGlMaterialProgram(gl, { ...source, vertexSource, fragmentSource }, bound, {
+      // Reuse the linked shader and replace bindings only after the new lease succeeds.
+      const next = createWebGlMaterialProgram(gl, { ...source, vertexSource, fragmentSource }, bound, {
         filters,
         programCache: linked,
         programCacheKey: shaderPairCacheKey(shaders),
@@ -663,6 +671,8 @@ export function materialWebGlDraws(
         samplerCache: samplers,
         ...(options.mipmaps === true ? { mipmaps: true } : {}),
       })
+      lease?.release()
+      lease = next
       programCompilations += 1
       leases.set(source, lease)
     }
@@ -719,6 +729,7 @@ export function materialWebGlDraws(
     const ambient = light?.ambient ?? 0.25
     gl.uniform3f(uniform('u_sceneLightColor'), color[0], color[1], color[2])
     gl.uniform3fv(uniform('u_sceneSpecularColor'), light?.specularColor ?? color.slice(0, 3))
+    gl.uniform1f(uniform('u_sceneKeyAo'), light?.useAmbientOcclusion === true ? 1 : 0)
     gl.uniform3fv(
       uniform('u_sceneAmbientColor'),
       light?.ambientColor ?? [ambient, ambient, ambient],
@@ -737,6 +748,7 @@ export function materialWebGlDraws(
       gl.uniform3fv(uniform(`u_sceneFillViewDirection${index}`), inView)
       gl.uniform3fv(uniform(`u_sceneFillWorldDirection${index}`), d)
       gl.uniform3fv(uniform(`u_sceneFillColor${index}`), fill?.color ?? [0, 0, 0])
+      gl.uniform1f(uniform(`u_sceneFillAo${index}`), fill?.useAmbientOcclusion === true ? 1 : 0)
     }
   }
   /**
@@ -1304,6 +1316,7 @@ export function materialWebGlDraws(
 export type MaterialSceneLight = SceneRendererDirectionalLight & {
   readonly ambientColor?: readonly [number, number, number]
   readonly specularColor?: readonly [number, number, number]
+  readonly useAmbientOcclusion?: boolean
   /** Additional admitted direct lights; the key/fills and their shadow remain distinct. */
   readonly spatialLighting?: PreviewLighting
   /** The world's shadow of the key light (render/world-shadow.ts); none where it is absent. */
@@ -1311,6 +1324,7 @@ export type MaterialSceneLight = SceneRendererDirectionalLight & {
   readonly fills?: readonly {
     readonly direction: readonly [number, number, number]
     readonly color: readonly [number, number, number]
+    readonly useAmbientOcclusion?: boolean
   }[]
 }
 import { primitiveTint } from './tint.js'
@@ -1395,14 +1409,21 @@ function buildLeaseShaderSources(
       ${frameDeclarations}
       uniform vec3 u_sceneSpecularColor, u_sceneFillColor0, u_sceneFillColor1;
       uniform vec3 u_sceneFillWorldDirection0, u_sceneFillWorldDirection1;
-      uniform vec3 previewDirections[4], previewColors[4], previewPositions[4];
-      uniform int previewTypes[4];
-      uniform vec4 previewFades[4];
-      uniform vec2 previewCones[4];
+      uniform vec3 previewDirections[64], previewColors[64], previewPositions[64];
+      uniform int previewTypes[64];
+      uniform vec4 previewFades[64];
+      uniform vec3 previewCones[64];
+      uniform vec3 previewSpecularColors[64];
+      uniform vec2 previewAffects[64];
+      uniform float previewUsesAo[64], u_sceneFillAo0, u_sceneFillAo1;
       ${SCENE_SHADOW_FRAGMENT}
       ${LIGHT_GEOMETRY_GLSL}
       vec3 sceneDirectUnit(vec3 value){float size=length(value);return size>1e-8?value/size:vec3(0.0,0.0,1.0);}
       vec3 sceneDirectNormal(vec3 normal){return ${worldShading ? 'normal' : 'sceneDirectUnit(mat3(v_sceneWorldTangent,v_sceneWorldBitangent,v_sceneWorldNormal)*normal)'};}
+      float sceneDirectOcclusion(int index, float ao){
+        float enabled=index==0?u_sceneKeyAo:index==1?u_sceneFillAo0:index==2?u_sceneFillAo1:previewUsesAo[index-3];
+        return mix(1.0,ao,enabled);
+      }
       void sceneDirectLight(int index, vec3 normal, out vec3 direction, out vec3 halfVector,
           out vec3 diffuseColor, out vec3 specularColor){
         vec3 eye=u_sceneLightingOrthographic>0.5?u_sceneLightingViewDirection:sceneDirectUnit(u_sceneLightingEye-v_sceneWorldPosition);
@@ -1416,7 +1437,8 @@ function buildLeaseShaderSources(
         }else{
           int at=index-3;vec3 v;float d,attenuation;
           sceneLightGeometry(previewTypes[at],previewDirections[at],previewPositions[at],previewFades[at],previewCones[at],v_sceneWorldPosition,v,d,attenuation);
-          direction=d>0.0?v/d:vec3(0.0);diffuseColor=previewColors[at]*attenuation;specularColor=diffuseColor;
+          attenuation*=previewAffects[at].${source.blend === 'opaque' || source.blend === 'alpha-test' ? 'x' : 'y'};
+          direction=d>0.0?v/d:vec3(0.0);diffuseColor=previewColors[at]*attenuation;specularColor=previewSpecularColors[at]*attenuation;
         }
         halfVector=-sceneDirectUnit(eye+direction);
       }
@@ -1427,12 +1449,13 @@ function buildLeaseShaderSources(
         'uniform vec3 u_sceneLightColor;',
         'uniform vec3 u_sceneLightColor;\nuniform vec3 u_sceneSpecularColor;',
       )
-      .replace('spec * u_sceneLightColor;', 'spec * u_sceneSpecularColor;')
+      .replace('spec * u_sceneLightColor', 'spec * u_sceneSpecularColor')
     const lambert = (direction: string) => source.defines.doubleLambert
       ? `clamp(-1.0 + 2.0 * dot(normal, ${direction}), 0.0, 1.0)`
       : `max(dot(normal, ${direction}), 0.0)`
     fragment = fragment.replace('precision highp float;', `precision highp float;
       uniform vec3 u_sceneFillColor0, u_sceneFillColor1;
+      uniform float u_sceneFillAo0, u_sceneFillAo1;
       ${worldShading ? 'uniform vec3 u_sceneFillWorldDirection0, u_sceneFillWorldDirection1;' : 'in vec3 v_sceneFillDir0, v_sceneFillDir1;'}
       ${SCENE_SHADOW_FRAGMENT}
     `,
@@ -1441,7 +1464,7 @@ function buildLeaseShaderSources(
         'vec3 shaded = color * (u_sceneAmbientColor',
         'float sceneKeyShade = sceneKeyShadow(max(dot(normal, v_lightDir), 0.0));\n  vec3 sceneKeyLight = u_sceneLightColor * sceneKeyShade;\n  vec3 shaded = color * (u_sceneAmbientColor',
       )
-      .replace('spec * u_sceneSpecularColor;', 'spec * (u_sceneSpecularColor * sceneKeyShade);')
+      .replace('spec * u_sceneSpecularColor', 'spec * (u_sceneSpecularColor * sceneKeyShade)')
       .replace(
         'pbrLight, u_sceneLightColor, u_sceneAmbientColor);',
         `pbrLight, u_sceneLightColor * sceneKeyShadow(max(dot(pbrNormal, pbrLight), 0.0)), u_sceneAmbientColor);
@@ -1449,10 +1472,10 @@ function buildLeaseShaderSources(
     u_sceneFillColor0 * max(dot(pbrNormal, ${worldShading ? 'u_sceneFillWorldDirection0' : 'normalize(v_sceneFillDir0)'}), 0.0) +
     u_sceneFillColor1 * max(dot(pbrNormal, ${worldShading ? 'u_sceneFillWorldDirection1' : 'normalize(v_sceneFillDir1)'}), 0.0));`,
       )
-      .replace('u_sceneAmbientColor + u_sceneLightColor * lambert',
-      `u_sceneAmbientColor + sceneKeyLight * lambert +
-       u_sceneFillColor0 * ${lambert(worldShading ? 'u_sceneFillWorldDirection0' : 'v_sceneFillDir0')} +
-       u_sceneFillColor1 * ${lambert(worldShading ? 'u_sceneFillWorldDirection1' : 'v_sceneFillDir1')}`,
+      .replace('u_sceneAmbientColor * materialAo + u_sceneLightColor * lambert * mix(1.0, materialAo, u_sceneKeyAo)',
+      `u_sceneAmbientColor * materialAo + sceneKeyLight * lambert * mix(1.0, materialAo, u_sceneKeyAo) +
+       u_sceneFillColor0 * ${lambert(worldShading ? 'u_sceneFillWorldDirection0' : 'v_sceneFillDir0')} * mix(1.0, materialAo, u_sceneFillAo0) +
+       u_sceneFillColor1 * ${lambert(worldShading ? 'u_sceneFillWorldDirection1' : 'v_sceneFillDir1')} * mix(1.0, materialAo, u_sceneFillAo1)`,
       )
   }
   const samplers: string[] = []

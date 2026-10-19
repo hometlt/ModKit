@@ -55,4 +55,48 @@ describe('bounded JSON snapshots', () => {
     const signal = AbortSignal.abort()
     expect(() => snapshotJson(null, budget, signal)).toThrow(/cancelled/)
   })
+
+  it('reuses only its own immutable snapshots, with cancellation still observed', () => {
+    const source = { z: [1, 2], a: { x: 3 } }
+    const owned = snapshotJson(source, budget)
+    expect(snapshotJson(owned, budget)).toBe(owned)
+    source.z[0] = 9
+    expect(snapshotJson(source, budget)).not.toEqual(owned)
+    expect(() => snapshotJson(owned, budget, AbortSignal.abort())).toThrow(/cancelled/)
+
+    const nested = { x: 1 }
+    const foreign = Object.freeze({ nested })
+    const copied = snapshotJson(foreign, budget)
+    expect(copied).not.toBe(foreign)
+    nested.x = 2
+    expect(copied).toEqual({ nested: { x: 1 } })
+    const getter = Object.freeze(Object.defineProperty({}, 'x', {
+      enumerable: true, get: () => { throw new Error('getter executed') },
+    }))
+    expect(() => snapshotJson(getter, budget)).toThrow(/accessor/)
+  })
+
+  it('charges reused children per occurrence and preserves tighter-budget refusals', () => {
+    const child = snapshotJson(Array.from({ length: 100 }, (_, i) => ({ z: i, a: 'é😀' })), budget)
+    const owned = snapshotJson({ a: child, z: { nested: child } }, { ...budget, maxBytes: 100000 })
+    const plain = JSON.parse(JSON.stringify(owned))
+    const result = (value: unknown, limits: typeof budget) => {
+      try { return ['ok', JSON.stringify(snapshotJson(value, limits))] }
+      catch (error) { return [(error as Error).name, (error as Error).message] }
+    }
+    for (const maxDepth of [0, 1, 2, 3, 4, 16])
+      for (const maxNodes of [0, 1, 2, 4, 100, 302, 604, 4096])
+        for (const maxBytes of [0, 1, 2, 10, 1000, 65536]) {
+          const limits = { ...budget, maxDepth, maxNodes, maxBytes }
+          expect(result(owned, limits)).toEqual(result(plain, limits))
+        }
+  })
+
+  it('does not reuse unsorted snapshots for a request with sorted keys', () => {
+    const unsorted = snapshotJson({ z: { z: 1, a: 2 }, a: 3 }, { ...budget, sortKeys: false })
+    expect(JSON.stringify(unsorted)).toBe('{"z":{"z":1,"a":2},"a":3}')
+    const sorted = snapshotJson(unsorted, budget)
+    expect(JSON.stringify(sorted)).toBe('{"a":3,"z":{"a":2,"z":1}}')
+    expect(snapshotJson(sorted, budget)).toBe(sorted)
+  })
 })

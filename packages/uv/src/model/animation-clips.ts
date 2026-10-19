@@ -1,3 +1,5 @@
+/** Canonical UVM clip catalog, playback metadata and events (SPEC_UVM_EXTENSIONS).
+ * Lifetime membership is explicit and validated here; readers never infer it from names. */
 import type { JsonObject } from '@modkit/sdk'
 import { array, field, integer, object, safeIndex } from './validation/values.js'
 import { readUvmAnimationMaterialTargets } from './animation-materials.js'
@@ -21,6 +23,8 @@ export interface UvmAnimationClip {
   readonly animation?: number
   readonly sourceId?: string
   readonly looping?: boolean
+  /** An independent model-lifetime sequence, not a name-based selection hint. */
+  readonly alwaysActive?: boolean
   /** Vocabulary role (SPEC_UVM §12.2); absent when the producer does not know it. */
   readonly role?: string
   /** Canonical or `publisher:` tags, a set; absent is the empty set. */
@@ -326,6 +330,7 @@ export function readUvmAnimationClips(
       throw new TypeError('UVM clip catalog identity, duration or sequence is invalid')
     const sourceId = record['sourceId'],
       looping = record['looping'],
+      alwaysActive = record['alwaysActive'],
       role = record['role'],
       tags = record['tags'],
       repeatCount = record['repeatCount'],
@@ -334,6 +339,7 @@ export function readUvmAnimationClips(
     if (
       (sourceId !== undefined && (typeof sourceId !== 'string' || !sourceId)) ||
       (looping !== undefined && typeof looping !== 'boolean') ||
+      (alwaysActive !== undefined && typeof alwaysActive !== 'boolean') ||
       (role !== undefined && !isModelClipRole(role)) ||
       (tags !== undefined && !isModelClipTags(tags)) ||
       (repeatCount !== undefined && (!integer(repeatCount) || repeatCount < 0)) ||
@@ -381,6 +387,7 @@ export function readUvmAnimationClips(
         ...(animation === undefined ? {} : { animation }),
         ...(sourceId === undefined ? {} : { sourceId }),
         ...(looping === undefined ? {} : { looping }),
+        ...(alwaysActive === undefined ? {} : { alwaysActive }),
         ...(role === undefined ? {} : { role }),
         ...(tags === undefined ? {} : { tags: Object.freeze([...tags]) }),
         ...(repeatCount === undefined ? {} : { repeatCount }),

@@ -3,6 +3,8 @@ import type { ModelAnimationClip } from '@modkit/sdk'
 import { readUvmContainer } from '../src/model/container.js'
 import { materializeUvmCore } from '../src/model/materializer.js'
 import { readUvmModel } from '../../scene/src/uvm/model.js'
+import { readUvmAnimationClips } from '../src/model/animation-clips.js'
+import { worldModelAnimation } from '../../scene/src/world/webgl.js'
 
 const request = {
   scope: { scopeId: 'model-interchange-v1', version: '1.0.0' },
@@ -94,6 +96,54 @@ it('writes no playback extension for a clip that states none, and refuses an inv
   expect(written.document.animations[0]!.extensions).toBeUndefined()
   for (const extra of [{ speedScale: 0 }, { priority: 1.5 }, { blendInSeconds: -1 }])
     expect(() => materializeUvmCore(projection(clip(extra)), request)).toThrow()
+})
+
+it('preserves explicit model-lifetime membership for motion and catalog-only sequences', () => {
+  for (const alwaysActive of [undefined, false, true]) for (const materialOnly of [false, true]) {
+    const source = clip({ durationSeconds: 2, ...(alwaysActive === undefined ? {} : { alwaysActive }),
+      ...(materialOnly ? { channels: [] } : {}) })
+    const written = materializeUvmCore(projection(source), request)
+    const container = readUvmContainer(written.bytes)
+    const catalog = readUvmAnimationClips(container.document)!
+    expect(catalog[0]!.alwaysActive).toBe(alwaysActive)
+    expect(Object.hasOwn(catalog[0]!, 'alwaysActive')).toBe(alwaysActive !== undefined)
+    expect(catalog[0]!.animation === undefined).toBe(materialOnly)
+    const reopened = readUvmModel(container.document, container.binary, { maxScalarBytes: 1 << 20 })
+    expect(reopened.rig.clips[0]!.alwaysActive).toBe(alwaysActive)
+    expect(reopened.rig.clips[0]!.durationSeconds).toBe(2)
+  }
+})
+
+it('rejects nonboolean lifetime membership on both capture and UVM reopen', () => {
+  for (const alwaysActive of [1, 'true', null]) {
+    expect(() => materializeUvmCore(projection(clip({ alwaysActive } as never)), request)).toThrow()
+    const written = materializeUvmCore(projection(clip()), request)
+    const container = readUvmContainer(written.bytes)
+    const document = structuredClone(container.document)
+    ;(document['extensions'] as any)['UV_game_animation_clips'].clips[0].alwaysActive = alwaysActive
+    expect(() => readUvmAnimationClips(document)).toThrow(/metadata/)
+    expect(() => readUvmModel(document, container.binary, { maxScalarBytes: 1 << 20 })).toThrow()
+  }
+})
+
+it('reopens and composes lifetime motion with local motion without guessing by name or resetting an explicit global layer', () => {
+  const base = clip({ name: 'Attack', durationSeconds: 1, sequenceIndex: 7 })
+  const automatic = clip({ id: 'ambient', name: 'Ambient', durationSeconds: 1, sequenceIndex: 11,
+    alwaysActive: true, looping: true, channels: [{ target: 'body', kind: 'scale', firstFrame: 0, lastFrame: 1,
+      interpolation: 'linear', samples: [{ frame: 0, timeSeconds: 0, value: [1,1,1] }, { frame: 1, timeSeconds: 1, value: [3,3,3] }] }] })
+  const fake = clip({ id: 'fake', name: 'GL Stand', alwaysActive: false, sequenceIndex: 20 })
+  const source = { ...(projection(base) as any), info: { ...(projection(base) as any).info, animations: 3 }, animations: [base, automatic, fake] }
+  const written = materializeUvmCore(source as never, request)
+  const container = readUvmContainer(written.bytes)
+  const reopened = readUvmModel(container.document, container.binary, { maxScalarBytes: 1 << 20 })
+  const result = { state: 'converted', animations: reopened.rig.clips } as never
+  const layer = { name: 'Attack', groups: [], timeSeconds: 0.75, loop: true, priority: 0 }
+  for (const layers of [[layer], [layer, { ...layer, name: 'Ambient', timeSeconds: 0.9 }]]) {
+    const sampled = worldModelAnimation(result, { facet: 'objects', objectId: 1,
+      presentationAnimation: { name: 'Attack', groups: [], loop: true, speed: 1, globalTimeSeconds: 2.25, layers } } as never)!
+    expect(sampled.channels.find(channel => channel.kind === 'translation')!.samples![0]!.value).toEqual([0.75,0,0])
+    expect(sampled.channels.find(channel => channel.kind === 'scale')!.samples![0]!.value).toEqual([1.5,1.5,1.5])
+  }
 })
 
 it('carries a clip’s events to UV_game_animation_events, their node as a socket index, and back', () => {

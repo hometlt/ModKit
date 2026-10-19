@@ -122,6 +122,8 @@ export interface ModelBoneBinding {
   /** The model part this binding belongs to; ids come from the publisher's own part space. */
   readonly partId: string
   readonly boneIndex: number
+  /** Original joint ordinal retained by UV_game_skeleton.sourceOrder across a projection. */
+  readonly sourceBoneIndex?: number
   /** `null` when nothing named the bone. Never a fabricated name. */
   readonly boneName: string | null
   readonly provenance: ModelBoneProvenance
@@ -227,6 +229,8 @@ export interface ModelAnimationClip {
   /** Explicit nonnegative sequence key shared with material tracks; independent of clip order. */
   readonly sequenceIndex?: number
   readonly looping?: boolean
+  /** Independent model-lifetime sequence, active alongside explicitly selected clips. */
+  readonly alwaysActive?: boolean
   /**
    * What the clip does: one role of the UVM clip vocabulary (`idle`, `move`, `attack`, `death`…).
    * Absent when the native data does not state it; never derived from the clip's name.
@@ -688,6 +692,18 @@ export interface ModelNodeBehaviourRef {
   /** Every node the behaviour touches, for one that spans a chain or a group. */
   readonly nodeIds?: readonly string[]
   readonly properties?: readonly ModelEffectProperty[]
+  /** Named joint aiming group. A sourceBoneIndex explicitly joins an independently projected skin. */
+  readonly aim?: {
+    readonly parts: readonly {
+      readonly nodeId: string
+      readonly sourceBoneIndex?: number
+      /** Joint-local columns: forward, right, up; affine orientation matrix. */
+      readonly forwardMatrix: readonly number[]
+      /** Axis weights in 0..1; optional ordered angular limits in radians. */
+      readonly yaw: { readonly weight: number; readonly limits?: readonly [number, number] }
+      readonly pitch: { readonly weight: number; readonly limits?: readonly [number, number] }
+    }[]
+  }
 }
 
 export interface ModelNodeBehaviourInfo {

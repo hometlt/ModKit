@@ -62,6 +62,24 @@ function asset(reads: string[]) {
 }
 
 describe('world model textures', () => {
+  it('joins native aiming joints to reopened UVM by source ordinal and reports ambiguous identities', async () => {
+    const current = asset([]) as any
+    current.resourceReferences = async () => ({ items: [] })
+    current.nodes = async () => ({ items: [{ id: 'projected/0', childIds: [] }, { id: 'projected/1', childIds: [] }] })
+    current.skeletonBindings = async () => ({ items: [{ boneIndex: 0, sourceBoneIndex: 42, nodeId: 'projected/0' }] })
+    current.nodeBehaviours = async () => ({ items: [{ id: 'head', name: 'Head', nodeId: 'bone/42',
+      aim: { parts: [{ nodeId: 'bone/42', sourceBoneIndex: 42 }] } }] })
+    const options = { requirement: { id: 'model', logicalId: 'model.m3', role: 'model', scopes: ['current-mount'] } } as never
+    const first = await worldSceneModel(current, request as never, options)
+    expect(first.state === 'converted' && first.nodeBehaviours?.[0]?.aim?.parts[0]?.nodeId).toBe('projected/0')
+    current.skeletonBindings = async () => ({ items: [
+      { boneIndex: 0, sourceBoneIndex: 42, nodeId: 'projected/0' },
+      { boneIndex: 1, sourceBoneIndex: 42, nodeId: 'projected/1' },
+    ] })
+    const ambiguous = await worldSceneModel(current, request as never, options)
+    expect(ambiguous.state === 'converted' && ambiguous.nodeBehaviours).toEqual([])
+    expect(ambiguous.diagnostics.some(item => item.code === 'x3.host/model-aim-binding-unresolved')).toBe(true)
+  })
   it('reads a texture again after a refused read, not the refusal from the cache', async () => {
     const reads: string[] = []
     const textureCache = new Map()
@@ -81,5 +99,12 @@ describe('world model textures', () => {
     expect(second.state === 'converted' && second.textures?.map(texture => texture.id)).toEqual([
       'skin.png',
     ])
+    if (second.state !== 'converted') throw new Error('expected converted model')
+    const pixels = second.textures![0]!.rgba
+    structuredClone(second, { transfer: [pixels.buffer as ArrayBuffer] })
+    expect(pixels.byteLength).toBe(0)
+    const third = await worldSceneModel(asset(reads), request as never, options)
+    expect(reads).toHaveLength(2) // Reuses decoded pixels after transferring the previous reply.
+    expect(third.state === 'converted' && [...third.textures![0]!.rgba]).toEqual([9, 9, 9, 255])
   })
 })

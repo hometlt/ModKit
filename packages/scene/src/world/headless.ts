@@ -7,10 +7,12 @@
  * coverage textures are decoded before their texture alpha is made opaque. Blended ground samples
  * the world plan's splat layers and weight rasters per fragment. It is
  * the viewer's geometry, base textures and light, not its picture: no shadows, splat normal/specular
- * maps, tone mapping, screen effects or mip/anisotropic filtering; bilinear sampling follows each texture's filter.
+ * maps, screen effects or mip/anisotropic filtering; bilinear sampling follows each texture's filter.
+ * HDR scenes accumulate floating radiance and apply the shared tone/color controls and height fog once.
  * Untextured water uses the common depth tint/shore fade against the opaque scene, including models.
  * Terrain-only depth bias preserves coplanar surface models without changing their coordinates.
  * GPU skin palettes are baked with the shared material-skin owner before CPU primitive copies.
+ * Camera-facing particles and ribbons reuse the world's effect draws and prepared material programs.
  * Wave normals, caustics and shadows remain GPU-only.
  */
 import type { WorldVisibilityBounds } from './world-visibility.js'
@@ -25,6 +27,10 @@ import type {
 } from '@modkit/sdk/renderer'
 import { TEAM_COLOR_BLENDS } from '@modkit/codec-kit/model-math/color-remap'
 import { renderHeadless } from '../render/headless.js'
+import { toneMapWorldColor } from './tone-mapping.js'
+import { createWorldColorLut, sampleWorldColorLut } from './colorization.js'
+import { Matrix4, Vector3 } from 'three'
+import type { SceneMaterialPrograms } from '../render/materials.js'
 import { materialPosedPrimitive } from '../render/material-skin.js'
 import { sceneTexturePixels } from '../render/compressed-textures.js'
 import { TERRAIN_DEPTH_BIAS, type SceneDepthBias } from '../render/depth-bias.js'
@@ -36,8 +42,15 @@ import {
   type WorldWebGlCamera,
   type WorldWebGlPlan,
   type WorldWebGlSplatBatch,
+  type WorldWebGlCameraFrame,
+  type WorldWebGlModelMaterialScene,
   type WorldWebGlTexturedBatch,
   worldWebGlPosedScene,
+  worldWebGlScenePrograms,
+  worldModelEffectDraws,
+  createWorldWebGlPlan,
+  prepareWorldRenderTextureFrame,
+  type WorldWebGlInput,
 } from './webgl.js'
 
 const CHANNELS = ['r', 'g', 'b', 'a'] as const
@@ -143,6 +156,18 @@ function prefixed(
 }
 
 /** Translate world-overlay coverage (red) and ambient occlusion (alpha) into renderer RGBA. */
+/**
+ * Prepared programs the CPU rasterizer runs. A shaderless material carries the world's WebGL-only
+ * glTF program; the CPU draws it by its base route instead (createSceneMaterialProgramSampler).
+ */
+function cpuPrograms(
+  materials: readonly SceneRendererMaterial[],
+  programs: ReadonlyMap<string, SceneMaterialPrograms>,
+): [string, SceneMaterialPrograms][] {
+  const shaded = new Set(materials.filter(material => material.shader !== undefined).map(material => material.id))
+  return [...programs].filter(([id]) => shaded.has(id))
+}
+
 function terrainOverlayColors(colors: Float32Array): Float32Array {
   const converted = new Float32Array(colors.length)
   for (let index = 0; index < colors.length; index += 4) {
@@ -155,14 +180,15 @@ function terrainOverlayColors(colors: Float32Array): Float32Array {
   return converted
 }
 
-/** The world plan as one scene of the headless renderer. */
-export function worldHeadlessScene(plan: WorldWebGlPlan): Readonly<{
+/** The world plan as one CPU scene; camera-facing effects use the same frame as WebGL. */
+export function worldHeadlessScene(plan: WorldWebGlPlan, camera?: WorldWebGlCameraFrame): Readonly<{
   scene: SceneRendererScene
   diagnostics: readonly SceneRendererDiagnostic[]
   splats: ReadonlyMap<string, Readonly<{ batch: WorldWebGlSplatBatch; overlay: boolean }>>
   water: ReadonlyMap<string, number>
   terrain: ReadonlySet<string>
   materialLighting?: ReadonlyMap<string, Pick<SceneRendererScene, 'lights' | 'ambientLight'>>
+  programs: ReadonlyMap<string, SceneMaterialPrograms>
 }> {
   const primitives: SceneRendererPrimitive[] = []
   const materials: SceneRendererMaterial[] = []
@@ -170,6 +196,7 @@ export function worldHeadlessScene(plan: WorldWebGlPlan): Readonly<{
   const water = new Map<string, number>()
   const terrain = new Set<string>()
   const materialLighting = new Map<string, Pick<SceneRendererScene, 'lights' | 'ambientLight'>>()
+  const programs = new Map<string, SceneMaterialPrograms>()
   const modelRig = worldMaterialLight(plan)
   const modelLighting = {
     ambientLight: modelRig.ambientColor,
@@ -178,12 +205,17 @@ export function worldHeadlessScene(plan: WorldWebGlPlan): Readonly<{
         type: 'directional' as const,
         direction: modelRig.direction,
         color: [modelRig.color[0], modelRig.color[1], modelRig.color[2]] as const,
+        specularColor: modelRig.specularColor,
+        useAmbientOcclusion: modelRig.useAmbientOcclusion,
       },
       ...modelRig.fills.map(fill => ({
         type: 'directional' as const,
         direction: fill.direction,
         color: fill.color,
+        specularColor: [0, 0, 0] as const,
+        useAmbientOcclusion: fill.useAmbientOcclusion,
       })),
+      ...(plan.localLights ?? []),
     ],
   }
   // Terrain always precedes transparent models, including authored negative-priority effects.
@@ -407,6 +439,9 @@ export function worldHeadlessScene(plan: WorldWebGlPlan): Readonly<{
   plan.modelMaterialScenes.forEach((kept, index) => {
     // A scene kept from an earlier plan draws in this plan's poses.
     const scene = worldWebGlPosedScene(plan, kept)
+    // Programs bind acquired texture objects by logical resources, independent of scene-table ids.
+    for (const [id, prepared] of cpuPrograms(kept.materials, worldWebGlScenePrograms(plan, kept)))
+      programs.set(`model-${String(index)}/${id}`, prepared)
     const own = prefixed(
       `model-${String(index)}/`,
       // WebGL consumes the palette in its vertex shader; the CPU rasterizer needs the same
@@ -419,6 +454,27 @@ export function worldHeadlessScene(plan: WorldWebGlPlan): Readonly<{
     materials.push(...own.materials)
     textures.push(...own.textures)
   })
+  if (camera !== undefined) {
+    // One primitive may have several material passes: append its scene once, not once per draw.
+    const effects = new Map<WorldWebGlModelMaterialScene, Set<SceneRendererPrimitive>>()
+    for (const { scene, draw } of worldModelEffectDraws(plan, camera)) {
+      let selected = effects.get(scene)
+      if (selected === undefined) effects.set(scene, (selected = new Set()))
+      selected.add(draw.primitive)
+    }
+    let index = 0
+    for (const [scene, selected] of effects) {
+      const prefix = `effect-${String(index++)}/`
+      for (const [id, prepared] of cpuPrograms(scene.materials, scene.programs)) programs.set(`${prefix}${id}`, prepared)
+      const own = prefixed(prefix, [...selected].map(materialPosedPrimitive), scene.materials, scene.textures)
+      primitives.push(...own.primitives)
+      materials.push(...own.materials)
+      textures.push(...own.textures)
+    }
+  } else if (plan.modelEffects.length > 0) {
+    diagnostics.push({ severity: 'warning', code: 'x3.scene/world-headless-effects-camera-required',
+      message: 'Camera-facing world effects require a resolved camera frame.' })
+  }
   if (plan.objectLight !== undefined)
     for (const material of materials)
       if (!terrain.has(material.id) && !water.has(material.id))
@@ -434,19 +490,26 @@ export function worldHeadlessScene(plan: WorldWebGlPlan): Readonly<{
           type: 'directional' as const,
           direction: light.direction,
           color: [light.color[0], light.color[1], light.color[2]] as const,
+          specularColor: light.specularColor,
+          useAmbientOcclusion: light.useAmbientOcclusion,
         },
         ...light.fills.map(fill => ({
           type: 'directional' as const,
           direction: fill.direction,
           color: fill.color as readonly [number, number, number],
+          specularColor: [0, 0, 0] as const,
+          useAmbientOcclusion: fill.useAmbientOcclusion,
         })),
+        ...(plan.localLights ?? []),
       ]),
       ambientLight: light.ambientColor,
+      ...(plan.renderTextureTargets === undefined ? {} : { materialContext: { time: 0, renderTextureTargets: plan.renderTextureTargets } }),
     }),
     diagnostics: Object.freeze(diagnostics),
     splats,
     water,
     terrain,
+    programs,
     ...(materialLighting.size === 0 ? {} : { materialLighting }),
   })
 }
@@ -466,8 +529,10 @@ export async function renderWorldHeadless(
   plan: WorldWebGlPlan,
   options: WorldHeadlessOptions,
 ): Promise<SceneRenderFrame> {
-  const { scene, diagnostics, splats, water, terrain, materialLighting } = worldHeadlessScene(plan)
   const frame = createWorldWebGlCameraFrame(plan, options.width, options.height, options.camera)
+  const { scene, diagnostics, splats, water, terrain, materialLighting, programs } = worldHeadlessScene(plan, frame)
+  const colorization = plan.light.toneMapping?.colorization
+  const colorLut = colorization === undefined ? undefined : createWorldColorLut(colorization)
   const rendered = await renderHeadless(
     {
       scene,
@@ -485,9 +550,61 @@ export async function renderWorldHeadless(
       .filter(p => p.id.startsWith('world/decal-') || p.id.startsWith('world/splat-overlay-'))
       .map(p => p.id)),
     options.visibilityBounds,
+    programs,
+    plan.light.toneMapping === undefined && plan.light.fog === undefined ? undefined : (rgba, depth) => {
+      const output = new Uint8Array(rgba.length), settings = plan.light.toneMapping, fog = plan.light.fog
+      const inverse = new Matrix4().fromArray(frame.viewProjection).invert(), point = new Vector3()
+      const eye = frame.eyePosition
+      for (let pixel = 0; pixel < depth.length; pixel++) {
+        if ((pixel & 4095) === 0) options.signal?.throwIfAborted()
+        const offset = pixel * 4, alpha = Math.max(0, Math.min(1, rgba[offset + 3]! / 255))
+        let color = [0, 1, 2].map(channel => alpha === 0 ? 0 : rgba[offset + channel]! / (255 * alpha))
+        if (fog !== undefined && fog.density > 0 && Number.isFinite(depth[pixel]) && eye !== undefined) {
+          point.set(((pixel % options.width) + 0.5) / options.width * 2 - 1,
+            1 - (Math.floor(pixel / options.width) + 0.5) / options.height * 2, depth[pixel]!).applyMatrix4(inverse)
+          const dy = point.y - eye[1], slope = dy * fog.falloff
+          const integral = fog.density * Math.hypot(point.x - eye[0], dy, point.z - eye[2]) *
+            Math.exp(Math.max(-88, Math.min(88, (fog.startingHeight - eye[1]) * fog.falloff))) *
+            (Math.abs(slope) < 1e-8 ? 1 : -Math.expm1(-slope) / slope)
+          const amount = Math.max(0, Math.min(1, integral))
+          color = color.map((value, channel) => value + (fog.color[channel]! - value) * amount)
+        }
+        if (settings !== undefined) {
+          color = toneMapWorldColor(color, settings)
+          if (colorLut !== undefined) color = sampleWorldColorLut(colorLut, color)
+          if (settings.correctGamma) color = color.map(value => Math.pow(Math.max(0, value), 1 / 2.2))
+        }
+        for (let channel = 0; channel < 3; channel++) output[offset + channel] = alpha === 0 ? 0 : Math.round(Math.max(0, Math.min(1, color[channel]!)) * 255)
+        output[offset + 3] = Math.round(alpha * 255)
+      }
+      return output
+    },
   )
   return Object.freeze({
     ...rendered,
     diagnostics: Object.freeze([...diagnostics, ...rendered.diagnostics]),
   })
+}
+
+/** Offscreen views and the final view use the same world pass, poses and material owner. */
+export async function renderWorldHeadlessFrame(
+  input: WorldWebGlInput,
+  options: WorldHeadlessOptions,
+): Promise<SceneRenderFrame> {
+  const requests = input.renderTextures ?? []
+  if (requests.length === 0) return renderWorldHeadless(createWorldWebGlPlan(input), options)
+  const frame = prepareWorldRenderTextureFrame(input, options.signal)
+  const targets = new Map<string, SceneRendererTexture>()
+  const diagnostics: SceneRendererDiagnostic[] = []
+  for (const view of frame.views) {
+    options.signal?.throwIfAborted()
+    // Secondary views never see an in-progress target or previous-frame feedback.
+    const rendered = await renderWorldHeadless(createWorldWebGlPlan({ ...frame.secondaryInput, camera: view.camera }), {
+      ...options, width: view.width, height: view.height, camera: view.camera, clearColor: view.clearColor,
+    })
+    diagnostics.push(...rendered.diagnostics)
+    targets.set(view.id, { id: view.id, width: view.width, height: view.height, rgba: rendered.rgba, filter: 'linear' })
+  }
+  const rendered = await renderWorldHeadless(createWorldWebGlPlan({ ...frame.input, renderTextureTargets: targets }), options)
+  return { ...rendered, diagnostics: [...diagnostics, ...rendered.diagnostics] }
 }

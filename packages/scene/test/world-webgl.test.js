@@ -722,7 +722,10 @@ describe('common world WebGL plan', () => {
         id: 'water', blendMode: 'blend',
         layers: [{ slot: 'diffuse', resourceId: 'water.png', uvSource: 0 }, { slot: 'alpha1', resourceId: 'water.png', uvSource: 0 }],
         shader: { id: 'modkit.render-material.v1', parameters: {
-          renderModel: { version: 1, layers: [], composite: { priority: 0, passes: [{ material: standard, alphaFactor: { value: 1 } }] } },
+          renderModel: { version: 1, layers: [], composite: { priority: 0, passes: [
+            { material: standard, alphaFactor: { value: 1 } },
+            { material: { ...standard, layers: { diffuse: layer('diffuse') } }, alphaFactor: { value: 0.25 } },
+          ] } },
         } },
       }],
       textures: [{ id: 'water.png', width: 1, height: 1, rgba: Uint8Array.of(80, 160, 200, 255) }],
@@ -732,10 +735,21 @@ describe('common world WebGL plan', () => {
     })
     const initial = at(0), animated = at(2)
     assert.equal(initial.modelMaterialScenes.length, 1)
+    assert.equal(initial.modelMaterialScenes[0].programs.get('water').passes.length, 2)
     assert.equal(initial.transparentTexturedTriangles.length, 0)
     assert.equal(initial.modelMaterialScenes[0].programs.get('water').passes[0].blend, 'blend')
     assert.equal(initial.modelMaterialScenes[0].programs.get('water').passes[0].uniforms.u_alpha1Multiply, 0)
     assert.equal(animated.modelMaterialScenes[0].programs.get('water').passes[0].uniforms.u_alpha1Multiply, 1)
+    const staticModel = structuredClone(model)
+    staticModel.materials[0].shader.parameters.renderModel.composite.passes[0].material.layers.alpha1 = layer('alpha1')
+    const staticPlan = createWorldWebGlPlan({ items: [item], models: new Map([['water-model', staticModel]]) })
+    assert.equal(staticPlan.stats.fallbackObjects, 0)
+    assert.equal(staticPlan.modelMaterialScenes[0].programs.get('water').passes.length, 2)
+    const cliffPlan = createWorldWebGlPlan({ items: [{ ...item, derivedFrom: 'cliffs' }], models: new Map([['water-model', staticModel]]) })
+    const cliffPasses = cliffPlan.modelMaterialScenes[0].programs.get('water').passes
+    assert.equal(cliffPasses.length, 1)
+    assert.equal(cliffPasses[0].blend, 'alpha-test')
+    assert.equal(cliffPasses[0].uniforms.u_alphaTestThreshold, 0.5)
   })
 
   it('keeps alpha cutoffs and common/native shadow policy on opaque textured materials', () => {
@@ -1580,6 +1594,36 @@ describe('common world WebGL plan', () => {
     )
   })
 })
+
+it('selects populated ties and applies rest-pose geometry and bounds', () => {
+ const identity=[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]
+ const clip=(id,name,x,kind='animation')=>({id,name,kind,provenance:'direct',frames:1,durationSeconds:1,channels:x===undefined?[]:[{target:'root',kind:'translation',firstFrame:0,lastFrame:0,interpolation:'step',samples:[{frame:0,timeSeconds:0,value:[x,0,0]}]}]})
+ const item={facet:'objects',id:'actor',objectId:1,layerId:'objects',coordinateSpaceId:'uvw',kind:'unit',position:{x:0,y:0,z:0},uvwPosition:{x:0,y:0,z:0},resourceId:'model'}
+ const draw=animations=>createWorldWebGlPlan({items:[item],models:new Map([['model',{state:'converted',sourceKey:'model',diagnostics:[],complete:true,nodes:[{id:'root',childIds:[],meshIds:['mesh'],transform:identity,trs:{translation:[0,0,0],rotation:[0,0,0,1],scale:[1,1,1]}}],meshes:[{id:'mesh',primitiveIds:['triangle']}],primitives:[{id:'triangle',topology:'triangles',positions:Float32Array.of(0,0,0,1,0,0,0,1,0)}],animations}]])})
+ const chosen=draw([clip('empty','Stand'),clip('populated','Stand',3),clip('later','Stand',7)])
+ assert.deepEqual(Array.from(chosen.opaqueTriangles.positions),[3,0,0,4,0,0,3,1,0])
+ // Extra properties cannot outrank an exact empty clip.
+ assert.deepEqual(Array.from(draw([clip('exact','Stand'),clip('extra','Stand Work',9)]).opaqueTriangles.positions),[0,0,0,1,0,0,0,1,0])
+ const rest=draw([clip('rest','Stand',5,'rest-pose')])
+ assert.deepEqual(Array.from(rest.opaqueTriangles.positions),[5,0,0,6,0,0,5,1,0])
+ assert.equal(rest.bounds.minimum[0],5);assert.equal(rest.bounds.maximum[0],6)
+})
+
+
+it('uses the same sparse layer pose and independent clocks for model geometry and camera',()=>{
+ const identity=[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1],child=[...identity];child[14]=3
+ const channel=(kind,from,to)=>({target:'node-0',kind,firstFrame:0,lastFrame:1,interpolation:'linear',samples:[{frame:0,timeSeconds:0,value:from},{frame:1,timeSeconds:1,value:to}]})
+ const animations=[{id:'body',name:'Body',kind:'animation',provenance:'direct',frames:2,durationSeconds:1,channels:[channel('translation',[0,0,0],[2,0,0])]},{id:'upper',name:'Upper',kind:'animation',provenance:'direct',frames:2,durationSeconds:1,channels:[channel('scale',[1,1,1],[3,3,3])]}]
+ const model={state:'converted',sourceKey:'layered',complete:true,diagnostics:[],animations,
+ uvmBytes:new TextEncoder().encode(JSON.stringify({asset:{version:'2.0'},nodes:[{children:[1]},{camera:0,translation:[0,0,3]}],cameras:[{type:'perspective',perspective:{yfov:1,znear:.1,zfar:100}}]})),
+ nodes:[{id:'node-0',childIds:['node-1'],meshIds:['mesh'],transform:identity,trs:{translation:[0,0,0],rotation:[0,0,0,1],scale:[1,1,1]}},{id:'node-1',childIds:[],meshIds:[],transform:child}],meshes:[{id:'mesh',primitiveIds:['triangle']}],primitives:[{id:'triangle',topology:'triangles',positions:Float32Array.of(0,0,0,1,0,0,0,1,0)}]}
+ const actor={facet:'objects',id:'actor',objectId:1,layerId:'objects',coordinateSpaceId:'uvw',kind:'unit',resourceId:'model',position:{x:10,y:0,z:0},uvwPosition:{x:10,y:0,z:0},presentationAnimation:{name:'Body',groups:[],loop:true,speed:1,layers:[{name:'Body',groups:[],timeSeconds:1.25,loop:true,priority:0},{name:'Upper',groups:[],timeSeconds:.25,loop:false,priority:9}]}}
+ const input={items:[actor],models:new Map([['model',model]])}
+ const plan=createWorldWebGlPlan(input),camera=worldWebGlCameraFromModel(input,{objectId:1,cameraIndex:0})
+ assert.deepEqual(Array.from(plan.opaqueTriangles.positions),[10.5,0,0,12,0,0,10.5,1.5,0])
+ assert.deepEqual(camera.source.eye,[10.5,0,4.5])
+})
+
 
 
 describe('absolute visual object orientation', () => {

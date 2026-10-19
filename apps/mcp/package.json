@@ -30,7 +30,9 @@
     "@modkit/ui": "workspace:*",
     "@modkit/vfs": "workspace:*",
     "@modkit/uv": "workspace:*",
-    "zod": "^4.4.3"
+    "zod": "^4.4.3",
+    "modkit-extension-images": "workspace:*",
+    "modkit-extension-video": "workspace:*"
   },
   "devDependencies": {
     "@modelcontextprotocol/client": "2.0.0"

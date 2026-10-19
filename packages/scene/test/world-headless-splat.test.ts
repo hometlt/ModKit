@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { WorldWebGlSplatBatch } from '../src/world/webgl.js'
-import { createWorldWebGlPlan } from '../src/world/webgl.js'
+import { createWorldWebGlPlan, worldWebGlCameraFromSource } from '../src/world/webgl.js'
 import { renderWorldHeadless, worldHeadlessScene } from '../src/world/headless.js'
 
 const red = { id: 'red', width: 1, height: 1, rgba: Uint8Array.of(255, 0, 0, 255) }
@@ -109,3 +109,27 @@ describe('headless world splat parity', () => {
     expect(g).toBeLessThan(r! / 4)
   })
 })
+
+it('preserves source splat barycentrics when a triangle crosses the perspective near plane', async () => {
+  type Vertex = { position: number[]; red: number }
+  const a: Vertex={position:[0,0.2,-0.5],red:1}, b: Vertex={position:[-0.8,-0.7,-2],red:0}, c: Vertex={position:[0.8,-0.7,-2],red:0}
+  // near=1 intersects both A edges one third of the way from A; this is independent geometry.
+  const edge=(other:Vertex):Vertex=>({position:a.position.map((v,i)=>v+(other.position[i]!-v)/3),red:2/3})
+  const ab=edge(b), ac=edge(c)
+  const make=(vertices:Vertex[]):WorldWebGlSplatBatch=>({
+    ...batch([red,blue],[1,0]),
+    positions:Float32Array.from(vertices.flatMap(v=>v.position)),
+    normals:Float32Array.from(vertices.flatMap(()=>[0,0,1])),
+    colors:Float32Array.from(vertices.flatMap(()=>[1,1,1,1])),
+    textureCoordinates:[new Float32Array(vertices.length*2),new Float32Array(vertices.length*2)],
+    textureWeights0:Float32Array.from(vertices.flatMap(v=>[v.red,1-v.red,0,0])),
+    textureWeights1:new Float32Array(vertices.length*4),
+  })
+  const options={width:64,height:64,clearColor:[0,0,0,1] as const,camera:worldWebGlCameraFromSource({eye:[0,0,0] as const,target:[0,0,-1] as const,up:[0,1,0] as const,verticalFieldOfView:Math.PI/2,near:1,far:10})}
+  const draw=(splat:WorldWebGlSplatBatch)=>renderWorldHeadless({...basePlan,splatTriangles:[splat],splatOverlayTriangles:[]},options)
+  const actual=await draw(make([a,b,c])), expected=await draw(make([ab,b,c,ab,c,ac]))
+  expect(expected.rgba.some((value,index)=>index%4!==3&&value>20)).toBe(true)
+  const differences=actual.rgba.map((value,index)=>Math.abs(value-expected.rgba[index]!))
+  expect(Math.max(...differences)).toBeLessThanOrEqual(2)
+})
+

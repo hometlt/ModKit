@@ -4,7 +4,9 @@ import type {
   StandardLayerSlot,
   StandardMaterialModel,
   NormalMapFormat,
+  RenderTextureChannel,
 } from '@modkit/codec-kit/legacy/models/material'
+import { isRenderTextureChannel } from '@modkit/codec-kit/legacy/models/material'
 import {
   buildMaterialDefines,
   buildStandardFragmentSource,
@@ -60,6 +62,9 @@ export interface MaterialLighting {
   readonly terrainTiling?: Vec4
 }
 export interface MaterialFrameOptions extends MaterialLighting {
+  readonly emissiveMultiplier?: number
+  /** Ready offscreen targets for this pass; the currently attached target must be omitted. */
+  readonly renderTextureChannels?: readonly RenderTextureChannel[]
   /** Decoder-derived conventions by logical resource id. Authored material formats override them. */
   readonly normalMapFormats?: ReadonlyMap<string, NormalMapFormat>
   readonly textureDimensions?: ReadonlyMap<string, '2d' | 'cube'>
@@ -140,12 +145,43 @@ export interface MaterialPixel extends MaterialLighting {
 }
 
 export interface MaterialTextureBinding {
+  /** Renderer-owned target, not a file to resolve through Host. */
+  readonly renderTextureChannel?: RenderTextureChannel
   readonly dimension?: '2d' | 'cube'
   readonly slot: StandardLayerSlot
   readonly resourceId: string
   readonly uniform: string
   readonly wrapU: 'repeat' | 'clamp'
   readonly wrapV: 'repeat' | 'clamp'
+}
+
+/** Reserved renderer resource identity; never submitted to a game logical-resource resolver. */
+export function renderTextureResourceId(channel: RenderTextureChannel): string {
+  if (!isRenderTextureChannel(channel)) throw new RangeError('render texture channel must be 0-6')
+  return `render-texture:${channel}`
+}
+
+function withRenderTextures(
+  material: SceneStandardMaterial,
+  channels: readonly RenderTextureChannel[] | undefined,
+): SceneStandardMaterial {
+  if ((channels?.length ?? 0) > 7 || channels?.some(channel => !isRenderTextureChannel(channel)))
+    throw new RangeError('material frame render texture channels must be 0-6 and bounded by seven')
+  let changed = false
+  const layers = { ...material.layers }
+  for (const [slot, layer] of Object.entries(layers)) {
+    const channel = layer.renderTextureChannel
+    if (channel === undefined) continue
+    // Preserve an explicitly selected constant-color source; RTT/constant precedence is unqualified.
+    if (layer.texturePath === null && layer.constantColor !== undefined) continue
+    if (channels?.includes(channel)) {
+      layers[slot as StandardLayerSlot] = { ...layer, texturePath: renderTextureResourceId(channel) }
+      changed = true
+    } else if (layer.texturePath === null) {
+      throw new TypeError(`material ${slot} requires active render texture channel ${channel}`)
+    }
+  }
+  return changed ? { ...material, layers } : material
 }
 
 export interface StandardMaterialProgram {
@@ -247,6 +283,8 @@ export function createStandardMaterialPrograms(
       if (intensity !== 0 && intensity !== 1)
         throw new TypeError('team color intensity must be 0 or 1')
       const sampled = sampler.sample(time, signal)
+      const emissionGain = lighting.emissiveMultiplier ?? 1
+      if (!Number.isFinite(emissionGain) || emissionGain < 0) throw new TypeError('invalid scene emissive multiplier')
       const kept =
         shapes !== undefined &&
         shapes.passes.length === sampled.length &&
@@ -260,10 +298,18 @@ export function createStandardMaterialPrograms(
             ...pass,
             material: emissiveBlendThroughRgb(
               specularOfTeamColor(
-                intensity === 0 ? withoutDiffuseTeamColor(pass.material) : pass.material,
+                withRenderTextures(
+                  intensity === 0 ? withoutDiffuseTeamColor(pass.material) : pass.material,
+                  lighting.renderTextureChannels,
+                ),
               ),
             ),
           }
+          // Native ordinary standard surfaces only; unshaded/effect and alternate HDR families stay independent.
+          const material = prepared.material
+          if (!material.unshaded && material.materialClass === 0 && material.sourceFlags !== undefined &&
+              !(material.sourceFlags & 0x200) && (material.lightingModel ?? 'm3') === 'm3' && emissionGain !== 1)
+            prepared.material = { ...material, emisMult: material.emisMult * emissionGain }
           const sceneLighting = lighting.sceneLighting === true ||
             (lighting.autoSceneLighting === true && lighting.sceneLighting !== false &&
               !prepared.material.unshaded &&
@@ -316,6 +362,7 @@ export function createStandardMaterialPrograms(
 function copyMaterialFrame(lighting: MaterialFrameOptions): MaterialFrameOptions {
   return {
     ...lighting,
+    ...(lighting.renderTextureChannels === undefined ? {} : { renderTextureChannels: [...lighting.renderTextureChannels] }),
     ...(lighting.teamColor === undefined ? {} : { teamColor: [...lighting.teamColor] as Vec3 }),
     ...(lighting.ambient === undefined ? {} : { ambient: [...lighting.ambient] as Vec4 }),
     ...(lighting.terrainTiling === undefined
@@ -357,9 +404,11 @@ function sameMaterialFrame(left: MaterialFrameOptions, right: MaterialFrameOptio
   }
   const environment = (frame: MaterialFrameOptions) => frame.environment?.worldToEnvironment
   return (
+    (left.emissiveMultiplier ?? 1) === (right.emissiveMultiplier ?? 1) &&
     sameVector(left.teamColor, right.teamColor) &&
     sameVector(left.ambient, right.ambient) &&
     sameVector(left.terrainTiling, right.terrainTiling) &&
+    sameVector(left.renderTextureChannels, right.renderTextureChannels) &&
     sameMap(left.normalMapFormats, right.normalMapFormats) &&
     sameMap(left.textureDimensions, right.textureDimensions) &&
     (left.environment === undefined) === (right.environment === undefined) &&
@@ -466,6 +515,8 @@ function passShape(
         Object.freeze({
           slot,
           resourceId: layer.texturePath,
+          ...(layer.renderTextureChannel !== undefined && layer.texturePath === renderTextureResourceId(layer.renderTextureChannel)
+            ? { renderTextureChannel: layer.renderTextureChannel } : {}),
           uniform: layerUniformsOf(slot).map,
           wrapU: layer.wrapX ? 'repeat' : 'clamp',
           wrapV: layer.wrapY ? 'repeat' : 'clamp',

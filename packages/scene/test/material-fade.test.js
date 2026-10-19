@@ -81,6 +81,17 @@ it('fades a solid material program the same way', async () => {
   assert.deepEqual(await centre({ shader: program }, 0.5), [128, 0, 128, 255])
 })
 
+it('attenuates native additive RGB by instance fade without double-fading add-alpha', async () => {
+  for (const blendMode of [2, 3]) {
+    const shader = structuredClone(program)
+    shader.parameters.renderModel.standard.blendMode = blendMode
+    for (const fade of [0, 0.1, 0.2, 1]) {
+      const pixel = await centre({ shader }, fade)
+      assert.deepEqual(pixel, [Math.round(255 * fade), 0, 255, 255], `blend ${blendMode}, fade ${fade}`)
+    }
+  }
+})
+
 it('turns a visibility between 0 and 1 into the primitive fade', () => {
   const sampler = createModelSceneSampler(
     {

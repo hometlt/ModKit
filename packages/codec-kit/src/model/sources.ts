@@ -35,6 +35,7 @@ import type {
   ModelVariantSource,
 } from '@modkit/sdk'
 import type { JsonSnapshotBudget } from '../json-snapshot.js'
+import { snapshotJson } from '../json-snapshot.js'
 import { pageStart } from '../paging.js'
 import { snapshotModelMaterials } from './materials.js'
 import { snapshotModelAnimations } from './animation.js'
@@ -428,6 +429,8 @@ export function createModelNodeBehaviourSource({
 }): ModelNodeBehaviourSource {
   const items = behaviours.map(behaviour => ({
     ...behaviour,
+    ...(behaviour.aim === undefined ? {} : { aim: snapshotJson(behaviour.aim,
+      { maxDepth: 16, maxNodes: 10_000, maxBytes: 1_048_576 }) as unknown as NonNullable<ModelNodeBehaviourRef['aim']> }),
     ...(behaviour.nodeIds === undefined ? {} : { nodeIds: Object.freeze([...behaviour.nodeIds]) }),
     ...(behaviour.properties === undefined
       ? {}

@@ -43,6 +43,43 @@ const request = () => ({
   })(),
 })
 
+it('does not charge several bounded frame producer waits against a single encoder deadline', async () => {
+  vi.useFakeTimers()
+  try {
+    const { child, writes } = heldEncoder()
+    child.stdin.on('finish', () => { child.stdout.write(Buffer.from('encoded')); child.emit('close', 0) })
+    const frames = (async function* () {
+      for (let index = 0; index < 3; index++) {
+        await new Promise(resolve => setTimeout(resolve, 80))
+        yield new Uint8Array(32 * 24 * 4)
+      }
+    })()
+    const pending = encodeGif({ ...request(), frames }, createNodeRgbaSequenceEncoder({ ffmpegPath: process.execPath, timeoutMs: 100 })!)
+    for (let index = 0; index < 3; index++) {
+      await vi.advanceTimersByTimeAsync(80)
+      expect(writes).toHaveLength(index + 1)
+      writes[index]!.consume()
+      await vi.advanceTimersByTimeAsync(0)
+    }
+    expect(Buffer.from(await pending).toString()).toBe('encoded')
+    expect(child.kill).not.toHaveBeenCalled()
+  } finally { vi.useRealTimers() }
+})
+
+it('still times out when the encoder stops consuming a frame', async () => {
+  vi.useFakeTimers()
+  try {
+    const { child, writes } = heldEncoder()
+    const pending = encodeGif(request(), createNodeRgbaSequenceEncoder({ ffmpegPath: process.execPath, timeoutMs: 100 })!)
+    const rejected = expect(pending).rejects.toThrow(/ffmpeg took longer/)
+    await vi.advanceTimersByTimeAsync(0)
+    expect(writes).toHaveLength(1)
+    await vi.advanceTimersByTimeAsync(101)
+    await rejected
+    expect(child.kill).toHaveBeenCalled()
+  } finally { vi.useRealTimers() }
+})
+
 it('does not offer a backend without an installed ffmpeg', () => {
   expect(
     createNodeRgbaSequenceEncoder({ ffmpegPath: 'C:/MKTEMP/not-installed-ffmpeg.exe' }),

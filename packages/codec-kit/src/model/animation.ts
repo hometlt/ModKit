@@ -104,71 +104,118 @@ export function modelAnimationDurationSeconds(clip: ModelAnimationClip): number 
   )
 }
 
-/** Resolve full-weight sparse overrides with existing interpolation, leaving absent channels
- * to lower layers or the model's local rest pose. Later authored layers win equal-priority ties,
- * as in layeredClip. The returned clip is one immutable frame. */
+/** Sample sparse priority overlays. Omitted weights retain hard overrides; fractional whole-TRS
+ * channels interpolate against explicit lower layers; missing lower channels are refused.
+ * This defines neutral overlay interpolation, not any game's playback controller envelope. */
 export function sampleModelAnimationLayers(
   layers: readonly {
     readonly clip: ModelAnimationClip
     readonly timeSeconds: number
+    /** Independent clock for concurrent channels; local clip looping must not wrap it. */
+    readonly globalTimeSeconds?: number
     readonly loop: boolean
     readonly priority: number
+    readonly weight?: number
   }[],
   budget?: JsonSnapshotBudget,
   signal?: AbortSignal,
 ): ModelAnimationClip {
   if (layers.length < 1 || layers.length > 32)
     throw new RangeError('animation layers require 1..32 entries')
-  const channels = new Map<string, { priority: number; channel: ModelAnimationChannel }>()
-  for (const layer of layers) {
+  type Entry = { priority: number; order: number; weight: number; channel: ModelAnimationChannel; bytes: number; nodes: number }
+  // Omitted weights retain the previous one-winner working size. The new weighted profile has
+  // one aggregate retained-entry allowance, in addition to the existing per-clip sampler budget.
+  const bounded = layers.some(layer => layer.weight !== undefined)
+  const allowance = budget ?? DEFAULT_MODEL_ANIMATION_BUDGET
+  const encoder = bounded ? new TextEncoder() : undefined
+  let workingBytes = 2, workingNodes = 1
+  const channels = new Map<string, Entry[]>()
+  for (const [order, layer] of layers.entries()) {
     signal?.throwIfAborted()
-    if (
-      !Number.isFinite(layer.timeSeconds) ||
-      layer.timeSeconds < 0 ||
-      !Number.isFinite(layer.priority)
-    )
+    if (!Number.isFinite(layer.timeSeconds) || layer.timeSeconds < 0 || !Number.isFinite(layer.priority) ||
+      (layer.globalTimeSeconds !== undefined && (!Number.isFinite(layer.globalTimeSeconds) || layer.globalTimeSeconds < 0)))
       throw new TypeError('invalid animation layer clock/priority')
+    const weight = layer.weight ?? 1
+    if (!Number.isFinite(weight) || weight < 0 || weight > 1)
+      throw new TypeError('animation layer weight must be in 0..1')
     const duration = modelAnimationDurationSeconds(layer.clip)
     const time = layer.loop && duration > 0 ? layer.timeSeconds % duration : layer.timeSeconds
-    for (const value of createModelAnimationSampler(layer.clip, budget, signal).sample(
-      time,
-      signal,
-    )) {
+    for (const value of createModelAnimationSampler(layer.clip, budget, signal).sample(time, signal, layer.globalTimeSeconds)) {
+      if (weight === 0) continue
       const key = JSON.stringify([value.target, value.kind, value.axis ?? null])
-      const previous = channels.get(key)
-      if (previous !== undefined && previous.priority > layer.priority) continue
-      channels.set(key, {
-        priority: layer.priority,
-        channel: {
-          target: value.target,
-          kind: value.kind,
-          ...(value.axis === undefined ? {} : { axis: value.axis }),
-          firstFrame: 0,
-          lastFrame: 0,
-          interpolation: 'step',
-          samples: [{ frame: 0, timeSeconds: 0, value: value.value }],
-        },
-      })
+      const entries = channels.get(key) ?? []
+      // A complete higher layer makes lower candidates unreachable; discard before retaining.
+      if (entries.some(entry => entry.weight === 1 && entry.priority > layer.priority)) continue
+      if (weight === 1) for (let index = entries.length - 1; index >= 0; index--) {
+        if (entries[index]!.priority > layer.priority) continue
+        workingBytes -= entries[index]!.bytes
+        workingNodes -= entries[index]!.nodes
+        entries.splice(index, 1)
+      }
+      const channel: ModelAnimationChannel = {
+        target: value.target, kind: value.kind,
+        ...(value.axis === undefined ? {} : { axis: value.axis }),
+        firstFrame: 0, lastFrame: 0, interpolation: 'step',
+        samples: [{ frame: 0, timeSeconds: 0, value: value.value }],
+      }
+      let bytes = 0, nodes = 0, keyBytes = 0, keyNodes = 0
+      if (encoder !== undefined) {
+        const available = allowance.maxBytes - workingBytes
+        // Refuse obvious overflow before allocating JSON/UTF-8 copies of the candidate.
+        if (value.value.length > available || key.length > available)
+          throw new RangeError('animation layer working set exceeds aggregate budget')
+        const json = JSON.stringify({ priority: layer.priority, order, weight, channel })
+        const keyJson = channels.has(key) ? '' : JSON.stringify(key)
+        if (json.length + keyJson.length > available)
+          throw new RangeError('animation layer working set exceeds aggregate budget')
+        bytes = encoder.encode(json).length + 1
+        nodes = 15 + value.value.length + (value.axis === undefined ? 0 : 1)
+        if (!channels.has(key)) {
+          keyBytes = encoder.encode(keyJson).length + 4
+          keyNodes = 1
+        }
+        if (workingBytes + bytes + keyBytes > allowance.maxBytes || workingNodes + nodes + keyNodes > allowance.maxNodes)
+          throw new RangeError('animation layer working set exceeds aggregate budget')
+      }
+      workingBytes += bytes + keyBytes
+      workingNodes += nodes + keyNodes
+      if (!channels.has(key)) channels.set(key, entries)
+      entries.push({ priority: layer.priority, order, weight, channel, bytes, nodes })
     }
   }
-  return snapshotModelAnimations(
-    [
-      {
-        id:
-          'resolved-layers:' +
-          JSON.stringify(
-            layers.map(layer => [layer.clip.id, layer.timeSeconds, layer.loop, layer.priority]),
-          ),
-        name: 'Resolved sparse animation layers',
-        kind: 'rest-pose',
-        provenance: 'direct',
-        frames: 1,
-        channels: [...channels.values()].map(entry => entry.channel),
-      },
-    ],
-    budget,
-    signal,
-  )[0]!
+  const output: ModelAnimationChannel[] = []
+  for (const entries of channels.values()) {
+    signal?.throwIfAborted()
+    entries.sort((a, b) => a.priority - b.priority || a.order - b.order)
+    let first = -1
+    for (let index = 0; index < entries.length; index++) if (entries[index]!.weight === 1) first = index
+    let channel = first < 0 ? undefined : entries[first]!.channel
+    if (channel === undefined) throw new TypeError('fractional animation channel requires an explicit lower layer')
+    for (let index = first + 1; index < entries.length; index++) {
+      const overlay = entries[index]!
+      const rotation = channel.kind === 'rotation'
+      const size = rotation ? 4 : 3
+      const from = channel.samples![0]!.value, to = overlay.channel.samples![0]!.value
+      if (!['translation', 'rotation', 'scale'].includes(channel.kind) || channel.axis !== undefined ||
+          from.length !== size || to.length !== size)
+        throw new TypeError('fractional animation layers require whole-TRS channels')
+      const track: RenderScalarAnimationTrack = {
+        lineType: 1, globalSeqId: null,
+        keys: [{ frame: 0, vector: from }, { frame: 1, vector: to }],
+      }
+      const value = sampleTrackValue(track, overlay.weight, [], { isQuat: rotation })
+      channel = { ...overlay.channel, samples: [{ frame: 0, timeSeconds: 0, value }] }
+    }
+    output.push(channel)
+  }
+  return snapshotModelAnimations([{
+    id: 'resolved-layers:' + JSON.stringify(layers.map(layer => {
+      const identity = [layer.clip.id, layer.timeSeconds, layer.loop, layer.priority]
+      return layer.weight === undefined ? identity : [...identity, layer.weight]
+    })),
+    name: 'Resolved sparse animation layers', kind: 'rest-pose', provenance: 'direct', frames: 1,
+    channels: output,
+  }], budget, signal)[0]!
 }
 
 /**
@@ -265,6 +312,8 @@ export function snapshotModelAnimations(
     }
     if (clip.looping !== undefined && typeof clip.looping !== 'boolean')
       throw new TypeError('invalid clip looping')
+    if (clip.alwaysActive !== undefined && typeof clip.alwaysActive !== 'boolean')
+      throw new TypeError('invalid always-active clip')
     if (clip.role !== undefined && !isModelClipRole(clip.role))
       throw new TypeError('invalid clip role')
     if (clip.tags !== undefined && !isModelClipTags(clip.tags))

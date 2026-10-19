@@ -14,6 +14,7 @@ import type {
   ModelMaterialRef,
   ModelResourceRef,
   ModelSocketRef,
+  ModelNodeBehaviourRef,
 } from './asset-capabilities/model-facet-sources.js'
 import type { LogicalResourceRequirement } from './resource-session.js'
 import type { RasterResourceRequest, RasterResourceResult } from './raster-resources.js'
@@ -71,6 +72,8 @@ export interface ModelResourceAsset {
   materials?(request: PageRequest, signal?: AbortSignal): Promise<Page<ModelMaterialRef>>
   resourceReferences?(request: PageRequest, signal?: AbortSignal): Promise<Page<ModelResourceRef>>
   sockets?(request: PageRequest, signal?: AbortSignal): Promise<Page<ModelSocketRef>>
+  /** Runtime behaviour metadata retained from the original model; sourceBoneIndex joins projected skins. */
+  nodeBehaviours?(request: PageRequest, signal?: AbortSignal): Promise<Page<ModelNodeBehaviourRef>>
   readRaster(request: RasterResourceRequest, signal?: AbortSignal): Promise<RasterResourceResult>
   acquire(request: ModelResourceRequest, signal?: AbortSignal): Promise<Lease<ModelResourceAsset>>
 }

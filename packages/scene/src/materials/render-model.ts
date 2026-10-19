@@ -25,6 +25,7 @@ export const RENDER_MATERIAL_SHADER = 'modkit.render-material.v1'
 export const MATERIAL_LAYERS_SHADER = 'modkit.material-layers.v1'
 
 export interface MaterialSampleTime {
+  readonly sequenceLayers?: readonly { readonly sequenceIndex: number; readonly time: number; readonly duration: number; readonly priority: number }[]
   /** Elapsed playback time, used by independently looping concurrent tracks. */
   readonly time: number
   /** Sequence-local time after clip looping. Defaults to time. */
@@ -219,8 +220,10 @@ function validateLayer(value: JsonValue, slot: string, path: string, signal?: Ab
       throw new TypeError(
         `${path}.sceneEnvironment is true only on an envi layer without a texture or constant color`,
       )
-  } else if (layer['texturePath'] === null && layer['constantColor'] === undefined)
-    throw new TypeError(`${path} has no texture or constant color`)
+  } else if (layer['texturePath'] === null && layer['constantColor'] === undefined && layer['renderTextureChannel'] === undefined)
+    throw new TypeError(`${path} has no texture, render texture channel or constant color`)
+  if (layer['renderTextureChannel'] !== undefined)
+    integer(layer['renderTextureChannel'], `${path}.renderTextureChannel`, 0, 6)
   integer(layer['uvSource'], `${path}.uvSource`, 0, 18)
   integer(layer['channels'], `${path}.channels`, 0, 5)
   integer(layer['op'], `${path}.op`, 0, 6)
@@ -534,7 +537,11 @@ function sampleAnimated<T extends number | readonly number[]>(
   value: { value: T } & AnimatedValueTracks,
   time: MaterialSampleTime,
 ): { value: T } {
-  const sequence =
+  // Sparse properties choose their highest-priority layer; later authored layers win ties.
+  const selected = time.sequenceLayers?.reduce<NonNullable<MaterialSampleTime['sequenceLayers']>[number] | undefined>((best, layer) =>
+    value.sequenceTracks?.some(track => track.sequenceIndex === layer.sequenceIndex) &&
+    (best === undefined || layer.priority >= best.priority) ? layer : best, undefined)
+  const sequence = selected !== undefined ? value.sequenceTracks?.find(entry => entry.sequenceIndex === selected.sequenceIndex) :
     time.sequenceIndex === undefined
       ? undefined
       : value.sequenceTracks?.find(entry => entry.sequenceIndex === time.sequenceIndex)
@@ -545,7 +552,9 @@ function sampleAnimated<T extends number | readonly number[]>(
   if (track !== undefined) {
     const components = sampleTrackValue(
       track,
-      sequence?.concurrent === true ? time.time : (time.sequenceTime ?? time.time),
+      sequence?.concurrent === true ? time.time
+        : selected !== undefined ? (selected.duration > 0 ? selected.time % selected.duration : selected.time)
+          : (time.sequenceTime ?? time.time),
       [],
       sequence?.concurrent === true ? { wrapSeconds: sequence.wrapSeconds } : {},
     )

@@ -32,8 +32,8 @@ export function readPreviewLighting(
     if (ambient !== undefined) throw new TypeError('ambientLight requires a lights array')
     return undefined
   }
-  if (!Array.isArray(lights) || lights.length > 4)
-    throw new RangeError('preview supports at most four lights')
+  if (!Array.isArray(lights) || lights.length > 64)
+    throw new RangeError('preview supports at most 64 lights')
   const ambientColor = vector(ambient ?? [0, 0, 0], 'ambient')
   if (ambientColor.some(x => x < 0 || x > 1))
     throw new RangeError('preview ambient must be in 0..1')
@@ -49,6 +49,10 @@ export function readPreviewLighting(
       const direction = unit(vector(light.direction, 'direction')),
         color = vector(light.color, 'color')
       if (color.some(x => x < 0)) throw new RangeError('preview light color must be nonnegative')
+      if (light.specularColor !== undefined && vector(light.specularColor, 'specularColor').some(x => x < 0))
+        throw new RangeError('preview light specular color must be nonnegative')
+      for (const key of ['affectsOpaque', 'affectsTransparent', 'useAmbientOcclusion'] as const)
+        if (light[key] !== undefined && typeof light[key] !== 'boolean') throw new TypeError(`invalid preview light ${key}`)
       const position = light.position === undefined ? undefined : vector(light.position, 'position')
       if (light.type !== 'directional' && position === undefined)
         throw new TypeError('local preview light requires position')
@@ -59,6 +63,7 @@ export function readPreviewLighting(
         decayExponent?: number
         innerConeAngle?: number
         outerConeAngle?: number
+        coneExponent?: number
       } = {}
       for (const key of [
         'range',
@@ -67,6 +72,7 @@ export function readPreviewLighting(
         'decayExponent',
         'innerConeAngle',
         'outerConeAngle',
+        'coneExponent',
       ] as const) {
         const value = light[key]
         if (value === undefined) continue
@@ -78,6 +84,9 @@ export function readPreviewLighting(
         type: light.type,
         direction,
         color,
+        ...(light.specularColor === undefined ? {} : { specularColor: vector(light.specularColor, 'specularColor') }),
+        affectsOpaque: light.affectsOpaque ?? true, affectsTransparent: light.affectsTransparent ?? true,
+        ...(light.useAmbientOcclusion === undefined ? {} : { useAmbientOcclusion: light.useAmbientOcclusion }),
         ...(position === undefined ? {} : { position }),
         ...values,
       }
@@ -139,7 +148,7 @@ export function sampleLightGeometry(light: SceneRendererLight, position: Vec3): 
             ) / distance
           : 0
       const t = clamp((cosine - outer) / (inner - outer))
-      attenuation *= inner <= outer + 1e-6 ? (cosine >= outer ? 1 : 0) : t * t * (3 - 2 * t)
+      attenuation *= inner <= outer + 1e-6 ? (cosine >= outer ? 1 : 0) : light.coneExponent === undefined ? t * t * (3 - 2 * t) : Math.pow(t, light.coneExponent)
     }
   }
   return { vector, distance, attenuation }
@@ -170,7 +179,7 @@ export function samplePreviewLighting(rig: PreviewLighting, normal: Vec3, positi
 
 /** Shared spatial equations only; caller supplies its admitted fields and BRDF independently. */
 export const LIGHT_GEOMETRY_GLSL = `
-void sceneLightGeometry(int type, vec3 direction, vec3 lightPosition, vec4 f, vec2 cone,
+void sceneLightGeometry(int type, vec3 direction, vec3 lightPosition, vec4 f, vec3 cone,
   vec3 position, out vec3 v, out float d, out float attenuation) {
   bool local=type!=0;
   v=local?lightPosition-position:direction;
@@ -181,26 +190,26 @@ void sceneLightGeometry(int type, vec3 direction, vec3 lightPosition, vec4 f, ve
     if(type==2 && cone.y>0.0 && cone.x>=0.0) {
       float inner=cos(max(0.0,min(cone.x,cone.y))*0.5), outer=cos(max(cone.x,cone.y)*0.5);
       float cosine=d>0.0?-dot(direction,v)/d:0.0;
-      attenuation*=inner<=outer+0.000001?step(outer,cosine):smoothstep(outer,inner,cosine);
+      attenuation*=inner<=outer+0.000001?step(outer,cosine):cone.z>0.0?pow(clamp((cosine-outer)/(inner-outer),0.0,1.0),cone.z):smoothstep(outer,inner,cosine);
     }
   }
 }`
 
-/** The same preview policy in GLSL; uniform arrays retain their validated four-light ceiling. */
+/** The same preview policy in GLSL; uniform arrays retain their validated 64-light ceiling. */
 export const PREVIEW_LIGHT_GLSL = `${LIGHT_GEOMETRY_GLSL}
 uniform int previewLightingEnabled;
 uniform int previewLightCount;
 uniform vec3 previewAmbient;
-uniform vec3 previewDirections[4];
-uniform vec3 previewColors[4];
-uniform vec3 previewPositions[4];
-uniform int previewTypes[4];
-uniform vec4 previewFades[4];
-uniform vec2 previewCones[4];
+uniform vec3 previewDirections[64];
+uniform vec3 previewColors[64];
+uniform vec3 previewPositions[64];
+uniform int previewTypes[64];
+uniform vec4 previewFades[64];
+uniform vec3 previewCones[64];
 vec3 previewLighting(vec3 normal, vec3 position) {
   vec3 total=vec3(0.0);
   float nl=length(normal); vec3 n=nl>0.0?normal/nl:vec3(0.0,0.0,1.0);
-  for(int i=0;i<4;i++) {
+  for(int i=0;i<64;i++) {
     if(i>=previewLightCount) break;
     vec3 v; float d, attenuation;
     sceneLightGeometry(previewTypes[i],previewDirections[i],previewPositions[i],
@@ -236,6 +245,9 @@ export function bindPreviewLighting(
       hasFade ? (light.attenuationEnd ?? 0) : 0,
       light.decayExponent ?? 0,
     )
-    gl.uniform2f(at('previewCones'), light.innerConeAngle ?? -1, light.outerConeAngle ?? 0)
+    gl.uniform3f(at('previewCones'), light.innerConeAngle ?? -1, light.outerConeAngle ?? 0, light.coneExponent ?? 0)
+    gl.uniform3fv(at('previewSpecularColors'), light.specularColor ?? light.color)
+    gl.uniform2f(at('previewAffects'), light.affectsOpaque === false ? 0 : 1, light.affectsTransparent === false ? 0 : 1)
+    gl.uniform1f(at('previewUsesAo'), light.useAmbientOcclusion === true ? 1 : 0)
   }
 }

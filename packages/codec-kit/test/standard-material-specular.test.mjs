@@ -52,6 +52,21 @@ test('a gloss layer scales the exponent by its alpha squared', () => {
   assert.ok(Math.abs(pixel({ specularEnergyConservation: true }, gloss) - dim(5)) < 1e-6)
 })
 
+test('sub-unity gloss exponents widen highlights without changing the energy polynomial clamp', () => {
+  // Native MaterialSpecularity followed by LightingModels.BlinnShading: 20 * gloss^2,
+  // then pow(N.H, exponent). The energy correction alone clamps its input to 1..512.
+  const halfVec = [Math.sqrt(0.75), 0, -0.5]
+  for (const gloss of [0, 0.01, 0.1, 0.2, 0.5]) {
+    const power = 20 * gloss * gloss
+    const layers = { gloss: layer('gloss', [1, 1, 1, gloss]) }
+    const expected = Math.pow(0.5, power)
+    assert.ok(Math.abs(pixel({ halfVec }, layers) - expected) < 1e-10)
+    assert.ok(Math.abs(pixel({ halfVec, specularEnergyConservation: true }, layers) - expected * dim(power)) < 1e-10)
+  }
+  // A dark gloss map can produce exponent zero even at a perpendicular half-vector.
+  assert.equal(pixel({ halfVec: [1, 0, 0] }, { gloss: layer('gloss', [1, 1, 1, 0]) }), 1)
+})
+
 test('the GLSL program carries the same dim only when the material states it', () => {
   const material = {
     layers: { diffuse: layer('diffuse', [0, 0, 0, 1]), specular: layer('specular', [1, 1, 1, 1]) },

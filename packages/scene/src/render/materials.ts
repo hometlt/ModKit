@@ -21,6 +21,8 @@ import {
   RENDER_MATERIAL_SHADER,
   type StandardMaterialProgram,
 } from '../materials/index.js'
+import { renderTextureResourceId } from '../materials/standard-program.js'
+import type { RenderTextureChannel } from '@modkit/codec-kit/legacy/models/material'
 
 export interface SceneMaterialPrograms {
   /** World-only scheduling; ordinary model rendering still draws the same color passes. */
@@ -40,6 +42,8 @@ const MATERIAL_BUDGET = { maxDepth: 128, maxNodes: 1_000_000, maxBytes: 64 * 102
  */
 export type SceneMaterialContext = SceneRendererMaterialContext & {
   readonly terrainTiling?: readonly [number, number, number, number]
+  /** Completed offscreen textures; the active destination must never be included. */
+  readonly renderTextureTargets?: ReadonlyMap<string, SceneRendererTexture>
   /** Internal preparation request; each typed standard pass owns its adoption decision. */
   readonly autoSceneLighting?: boolean
 }
@@ -272,6 +276,7 @@ export function createSceneMaterialProgramSampler(
           const prepared = entry.sampler.sample(
             {
               ...entry.context,
+              ...(context?.emissiveMultiplier === undefined ? {} : { emissiveMultiplier: context.emissiveMultiplier }),
               ...(context?.sceneLighting === true && entry.context.sceneLighting === undefined
                 ? { sceneLighting: true }
                 : {}),
@@ -280,6 +285,7 @@ export function createSceneMaterialProgramSampler(
               ...(context?.terrainTiling === undefined
                 ? {}
                 : { terrainTiling: context.terrainTiling }),
+              ...(context?.renderTextureTargets === undefined ? {} : { renderTextureTargets: context.renderTextureTargets }),
             },
             diagnostics,
             sampleSignal,
@@ -293,6 +299,7 @@ export function createSceneMaterialProgramSampler(
           passes = entry.sampler.sample(
             {
               time: context?.time ?? 0,
+              ...(context?.sequenceLayers === undefined ? {} : { sequenceLayers: context.sequenceLayers }),
               ...(context?.sequenceTime === undefined ? {} : { sequenceTime: context.sequenceTime }),
               ...(context?.sequenceIndex === undefined
                 ? {}
@@ -300,6 +307,7 @@ export function createSceneMaterialProgramSampler(
             },
             {
               normalMapFormats: entry.normalMapFormats,
+              ...(context?.emissiveMultiplier === undefined ? {} : { emissiveMultiplier: context.emissiveMultiplier }),
               textureDimensions: entry.textureDimensions,
               ...(environment === undefined ? {} : { environment }),
               ...(context?.teamColor === undefined ? {} : { teamColor: context.teamColor }),
@@ -313,6 +321,9 @@ export function createSceneMaterialProgramSampler(
               ...(context?.teamColorIntensity === undefined
                 ? {}
                 : { teamColorIntensity: context.teamColorIntensity }),
+              ...(context?.renderTextureTargets === undefined ? {} : { renderTextureChannels:
+                Array.from({ length: 7 }, (_, channel) => channel as RenderTextureChannel)
+                  .filter(channel => context.renderTextureTargets!.has(renderTextureResourceId(channel))) }),
             },
             sampleSignal,
           )
@@ -335,10 +346,13 @@ export function createSceneMaterialProgramSampler(
         // The same passes (a material without tracks at another time) keep their programs object:
         // draws of it at other clocks group together and keep their GPU lease.
         let programs = entry.last
-        if (programs?.passes !== passes)
+        const targets = context?.renderTextureTargets
+        const textures = targets === undefined ? entry.bound : new Map([...entry.bound, ...targets])
+        if (programs?.passes !== passes || programs.textures.size !== textures.size ||
+            [...textures].some(([id, texture]) => programs?.textures.get(id) !== texture))
           entry.last = programs = Object.freeze({
             passes,
-            textures: entry.bound,
+            textures,
             presentation: entry.sampler.presentation,
           })
         results.set(entry.material.id, programs)
@@ -350,6 +364,12 @@ export function createSceneMaterialProgramSampler(
 
 function validateMaterialContext(context: SceneMaterialContext | undefined) {
   if (context === undefined) return
+  if (context.sequenceLayers !== undefined && (!Array.isArray(context.sequenceLayers) || context.sequenceLayers.length > 32 ||
+      context.sequenceLayers.some(layer => !Number.isSafeInteger(layer.sequenceIndex) || layer.sequenceIndex < 0 ||
+        ![layer.time, layer.duration, layer.priority].every(Number.isFinite) || layer.time < 0 || layer.duration < 0)))
+    throw new TypeError('invalid material sequence layers')
+  if (context.emissiveMultiplier !== undefined && (!Number.isFinite(context.emissiveMultiplier) || context.emissiveMultiplier < 0))
+    throw new TypeError('invalid scene emissive multiplier')
   if (context.autoSceneLighting !== undefined && typeof context.autoSceneLighting !== 'boolean')
     throw new TypeError('invalid automatic material scene lighting')
   const tiling = context.terrainTiling
