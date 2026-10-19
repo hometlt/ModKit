@@ -102,7 +102,32 @@ export interface DataWorkspaceListing extends DataWorkspaceListingQuery {
   readonly complete: boolean
 }
 
+/** Captured planning metadata stays raw and separate from decoded semantic documents. */
+export type DataWorkspaceMetadataRequirement = Readonly<
+  Pick<DataWorkspaceDocumentRequirement, 'requirementId' | 'rootId' | 'path'> & { readonly encoding: 'binary' }
+>
+
+/** An observation is data; an absence scope is only an address, never membership authority. */
+export type DataWorkspaceMetadataObservation =
+  | Readonly<{ readonly requirementId: string; readonly state: 'present'; readonly document: Readonly<
+      Pick<DataCatalogDocument, 'rootId' | 'path' | 'revision'> & { readonly bytes: Uint8Array }
+    > }>
+  | Readonly<{ readonly requirementId: string; readonly state: 'absent'; readonly scope: DataWorkspaceListingQuery }>
+
+/** Discovery grows metadata only; terminal publishes the final semantic requirements once. */
+export type DataWorkspaceDiscovery =
+  | Readonly<{ readonly state: 'expand'; readonly metadataRequirements: readonly DataWorkspaceMetadataRequirement[] }>
+  | Readonly<{ readonly state: 'terminal'; readonly documentKinds: readonly DataWorkspaceDocumentKind[];
+      readonly catalogOrder?: 'dependency-first' | 'provider-authored' }>
+  | Readonly<{ readonly state: 'refused'; readonly diagnostic: DataCatalogDiagnostic }>
+
 export interface DataWorkspacePlanRequest {
+  /** Omission preserves ordinary editor priority planning; capture requires explicit terminal coverage. */
+  readonly intent?: Readonly<{ readonly kind: 'editor' }> | Readonly<{
+    readonly kind: 'capture-inputs'; readonly documentKinds: readonly DataWorkspaceDocumentKind[]
+    readonly catalogOrder?: 'dependency-first' | 'provider-authored'
+  }>
+  readonly metadata?: readonly DataWorkspaceMetadataObservation[]
   readonly workspace: ModWorkspaceLock
   /** Preferred locale first, followed by explicit fallbacks. */
   readonly locales: readonly string[]
@@ -116,6 +141,8 @@ export interface DataWorkspacePlanRequest {
 }
 
 export interface DataWorkspacePlan {
+  /** Never infer this explicit phase from the legacy priority-plan `complete` flag. */
+  readonly discovery?: DataWorkspaceDiscovery
   readonly schemaVersion: 1
   readonly workspaceId: string
   readonly gameId: string
@@ -1533,6 +1560,8 @@ export type DataGraphIsolationPlanResult =
 
 /** Resource-plan accounting required by the additive workspace contract. */
 export interface ResolvedDataWorkspaceAnalysisRequest extends DataCatalogAnalysisRequest {
+  readonly intent?: DataWorkspacePlanRequest['intent']
+  readonly metadata?: DataWorkspacePlanRequest['metadata']
   readonly plannedDocumentCount: number
   readonly unresolvedRequirementIds: readonly string[]
 }

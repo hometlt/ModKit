@@ -6,6 +6,10 @@
  * Writers/history and resource leases retain their existing owners, budgets and cancellation.
  * Prospective destinations grant no permission and consume no read slots; provider fallback remains
  * available without ModContext. Host contains no publisher-specific catalog names or resolver.
+ * Opt-in discovery: metadata-only rounds precede one final semantic plan, using the
+ * same ResourceSession/byte reader and cumulative operation allowance. Captured data stays in
+ * a Host-private context; ordinary plan outputs/editor calls do not change. Listing consistency
+ * and per-resource revisions do not qualify negative membership, a native epoch or sealed closure.
  */
 
 import {
@@ -43,6 +47,8 @@ import {
   type DataLocalizationDocument,
   type DataWorkspaceDocumentRequirement,
   type DataWorkspaceListing,
+  type DataWorkspaceMetadataRequirement,
+  type DataWorkspaceMetadataObservation,
   type DataWorkspacePlan,
   type DataWorkspacePlanRequest,
   type ResolvedDataWorkspace,
@@ -563,6 +569,8 @@ export interface ResolvedDataWorkspaceLimits {
 }
 
 export interface AnalyzeResolvedDataWorkspaceRequest {
+  /** Capture observations are acquired inside this operation, never supplied by its caller. */
+  readonly intent?: DataWorkspacePlanRequest['intent']
   readonly services: DataHostServices
   readonly grant: PermissionGrant
   readonly budgets: ResourceBudget
@@ -593,6 +601,35 @@ export type DataWorkspaceFileLister = (
 /** Bounds of the listing round: queries per plan, paths per listing. */
 export const DATA_WORKSPACE_LISTING_LIMITS = Object.freeze({ maxQueries: 64, maxPaths: 16_384 })
 
+/** Internal operation state; never serialized in a plan or accepted as a membership authority. */
+interface DataWorkspaceDiscoveryContext {
+  readonly resources: ResourceSessionPort
+  readonly limits: Pick<ResolvedDataWorkspaceLimits, 'maxDocumentBytes' | 'maxTextBytes'>
+  phase?: 'running' | 'complete' | 'failed'
+  captured?: {
+    readonly listings: readonly DataWorkspaceListing[]
+    readonly metadata: readonly DataWorkspaceMetadataObservation[]
+    readonly documents: readonly { readonly requirement: DataWorkspaceDocumentRequirement; readonly document: DataCatalogDocument;
+      readonly source: AssetSourceRef }[]
+    readonly inputs: readonly { readonly rootId: string; readonly path: string; readonly bytes: Uint8Array;
+      readonly revision: RevisionId; readonly source: AssetSourceRef }[]
+    readonly usage: Readonly<{ requirements: number; documents: number; bytes: number; names: number; nameBytes: number; rounds: number }>
+  }
+}
+
+/** The existing single listing round's bounded I/O, shared by editor and discovery planning. */
+async function readDataWorkspaceListing(
+  query: { readonly rootId: string; readonly prefix: string }, roots: ReadonlySet<string>,
+  listFiles: DataWorkspaceFileLister, signal?: AbortSignal,
+): Promise<DataWorkspaceListing> {
+  if (!roots.has(query.rootId)) throw new TypeError(`resolved data provider asked to list unknown root ${query.rootId}`)
+  const prefix = query.prefix === '' ? '' : normalizeCompanionLogicalId(query.prefix)
+  const listed = await listFiles(query.rootId, prefix, DATA_WORKSPACE_LISTING_LIMITS.maxPaths, signal)
+  return Object.freeze({ rootId: query.rootId, prefix,
+    paths: Object.freeze(listed.paths.slice(0, DATA_WORKSPACE_LISTING_LIMITS.maxPaths)),
+    complete: listed.complete && listed.paths.length <= DATA_WORKSPACE_LISTING_LIMITS.maxPaths })
+}
+
 /**
  * Plan, and when the provider asks for directory listings and the caller can list, plan once more
  * with them. The first plan stays the answer when there is nothing to list or no lister.
@@ -601,7 +638,12 @@ export async function planDataWorkspace(
   planner: { plan(request: DataWorkspacePlanRequest): Promise<DataWorkspacePlan> },
   request: Omit<DataWorkspacePlanRequest, 'listings'>,
   listFiles?: DataWorkspaceFileLister,
+  discovery?: DataWorkspaceDiscoveryContext,
 ): Promise<DataWorkspacePlan> {
+  if (request.intent?.kind === 'capture-inputs') {
+    if (discovery === undefined) throw new TypeError('Data capture requires its Host operation context')
+    return discoverDataWorkspace(planner, request, listFiles, discovery)
+  }
   const first = await planner.plan(request)
   const queries = first.listingQueries
   if (listFiles === undefined || !Array.isArray(queries) || queries.length === 0) return first
@@ -611,26 +653,226 @@ export async function planDataWorkspace(
   const roots = new Set(request.workspace.loadOrder.map(root => root.rootId))
   const listings: DataWorkspaceListing[] = []
   for (const query of queries) {
-    if (!roots.has(query.rootId)) {
-      throw new TypeError(`resolved data provider asked to list unknown root ${query.rootId}`)
-    }
-    const prefix = query.prefix === '' ? '' : normalizeCompanionLogicalId(query.prefix)
-    const listed = await listFiles(
-      query.rootId,
-      prefix,
-      DATA_WORKSPACE_LISTING_LIMITS.maxPaths,
-      request.signal,
-    )
-    listings.push(
-      Object.freeze({
-        rootId: query.rootId,
-        prefix,
-        paths: Object.freeze(listed.paths.slice(0, DATA_WORKSPACE_LISTING_LIMITS.maxPaths)),
-        complete: listed.complete && listed.paths.length <= DATA_WORKSPACE_LISTING_LIMITS.maxPaths,
-      }),
-    )
+    listings.push(await readDataWorkspaceListing(query, roots, listFiles, request.signal))
   }
   return planner.plan({ ...request, listings: Object.freeze(listings) })
+}
+
+/** Strict branch of the same coordinator: metadata grows before one final ordered semantic plan. */
+async function discoverDataWorkspace(
+  planner: { plan(request: DataWorkspacePlanRequest): Promise<DataWorkspacePlan> },
+  request: DataWorkspacePlanRequest, listFiles: DataWorkspaceFileLister | undefined,
+  context: DataWorkspaceDiscoveryContext,
+): Promise<DataWorkspacePlan> {
+  if (context.phase !== undefined || context.captured !== undefined)
+    throw new TypeError('Data discovery context is single-operation and cannot reset allowances')
+  context.phase = 'running'
+  try {
+    const signal = request.signal
+    const resources = context.resources
+    /** Check after every provider/resource await as neither can authorize publication after close. */
+    const live = () => {
+      signal?.throwIfAborted()
+      if (resources.state() !== 'live') throw new TypeError('Data discovery resource session is disposed')
+    }
+    live()
+    if (request.metadata !== undefined || request.listings !== undefined)
+      throw new TypeError('Data discovery observations must come from this operation, not caller-supplied metadata')
+    const maximum = positiveBound(request.maxRequirements, 'maxRequirements')
+    const maxBytes = positiveBound(context.limits.maxTextBytes, 'maxTextBytes')
+    const fileBytes = positiveBound(context.limits.maxDocumentBytes, 'maxDocumentBytes')
+    const maxNames = DATA_WORKSPACE_LISTING_LIMITS.maxQueries * DATA_WORKSPACE_LISTING_LIMITS.maxPaths
+    const maxNameBytes = 64 * 1024 * 1024
+    const usage = { requirements: 0, documents: 0, bytes: 0, names: 0, nameBytes: 0, rounds: 0 }
+    /** Names and metadata discovery never get another budget on a later round. */
+    const charge = (name: string) => {
+      if (typeof name !== 'string' || name.length > maxNameBytes - usage.nameBytes || ++usage.names > maxNames)
+        throw new RangeError('Data discovery name budget exceeded')
+      usage.nameBytes += new TextEncoder().encode(name).byteLength
+      if (usage.nameBytes > maxNameBytes) throw new RangeError('Data discovery name byte budget exceeded')
+    }
+    charge(canonicalJsonStringify(request.workspace))
+    if (request.intent?.kind !== 'capture-inputs') throw new TypeError('Data discovery needs capture intent')
+    const catalogOrder = request.intent.catalogOrder ?? 'dependency-first'
+    if (catalogOrder !== 'dependency-first' && catalogOrder !== 'provider-authored')
+      throw new TypeError('Data discovery catalog order is invalid')
+    const base = structuredClone({ workspace: request.workspace, locales: request.locales,
+      maxRequirements: maximum, intent: request.intent })
+    const kinds = base.intent?.kind === 'capture-inputs' ? base.intent.documentKinds : []
+    if (kinds.length === 0 || kinds.length > 3 || new Set(kinds).size !== kinds.length ||
+        !kinds.every(kind => ['catalog', 'localization', 'usage'].includes(kind)))
+      throw new TypeError('Data discovery needs explicit distinct document kinds')
+    const roots = new Map(base.workspace.loadOrder.map((root, index) => [root.rootId, { root, index }]))
+    const rootIds = new Set(roots.keys())
+    const listings = new Map<string, DataWorkspaceListing>()
+    const obligations = new Map<string, DataWorkspaceMetadataRequirement>()
+    const metadata: DataWorkspaceMetadataObservation[] = []
+    const inputs = new Map<string, { rootId: string; path: string } & Extract<DataResourceBytesResult, { state: 'resolved' }>>()
+    let analyzerId: string | undefined
+    /** One path owner for preflight reservations and actual reads. */
+    const address = (requirement: Pick<DataWorkspaceDocumentRequirement, 'rootId' | 'path'>) => {
+      const admitted = validateDataDocumentPath(roots, requirement.rootId, requirement.path, 'Data discovery input')
+      return `${requirement.rootId}\0${admitted.path}`
+    }
+    /** One byte owner and allowance for metadata and final reads; same addressed bytes are reused. */
+    const read = async (requirement: Pick<DataWorkspaceDocumentRequirement, 'requirementId' | 'rootId' | 'path'>) => {
+      live()
+      const key = address(requirement)
+      const prior = inputs.get(key)
+      if (prior !== undefined) return prior
+      if (++usage.documents > maximum) throw new RangeError('Data discovery document budget exceeded')
+      const result = await readDataResourceBytes(resources, requirement,
+        Math.min(fileBytes, maxBytes - usage.bytes), signal, true)
+      live()
+      if (result.state === 'unresolved')
+        throw new TypeError(result.failure === 'not-found'
+          ? 'Data discovery cannot qualify absent membership from not-found'
+          : `Data discovery input failed (${result.failure}): ${result.diagnostic.message}`)
+      usage.bytes += result.bytes.byteLength
+      charge(canonicalJsonStringify(result.source)); charge(String(result.revision))
+      const input = { rootId: requirement.rootId, path: requirement.path, ...result }
+      inputs.set(key, input)
+      return input
+    }
+    for (usage.rounds = 1; usage.rounds <= 32; usage.rounds++) {
+      live()
+      const reply = await planner.plan({ ...structuredClone({ ...base,
+        listings: [...listings.values()], metadata }), ...(signal === undefined ? {} : { signal }) })
+      live()
+      // Bound large returned arrays before snapshotting them, including the ordinary diagnostics.
+      if (!Array.isArray(reply.requirements) || reply.requirements.length > maximum ||
+          !Array.isArray(reply.diagnostics) || reply.diagnostics.length > maximum ||
+          (reply.listingQueries?.length ?? 0) > DATA_WORKSPACE_LISTING_LIMITS.maxQueries ||
+          (reply.discovery?.state === 'expand' && (!Array.isArray(reply.discovery.metadataRequirements) ||
+            reply.discovery.metadataRequirements.length > maximum)) ||
+          (reply.discovery?.state === 'terminal' && (!Array.isArray(reply.discovery.documentKinds) ||
+            reply.discovery.documentKinds.length > 3)))
+        throw new RangeError('Data discovery provider result exceeds plan budgets')
+      // Includes all retained diagnostic/identity fields, not just the names selected for reads.
+      // Logical input accounting is not a heap/RSS ceiling for trusted in-process providers.
+      charge(canonicalJsonStringify(reply))
+      const plan = structuredClone(reply)
+      if (plan.discovery?.state === 'terminal') {
+        const offeredOrder = plan.discovery.catalogOrder ?? 'dependency-first'
+        if ((offeredOrder !== 'dependency-first' && offeredOrder !== 'provider-authored') || offeredOrder !== catalogOrder)
+          throw new TypeError('Data discovery terminal catalog order must match its explicit capture intent')
+      }
+      validateWorkspacePlan(plan, base.workspace, base.locales, maximum,
+        plan.discovery?.state === 'terminal' ? catalogOrder : 'dependency-first')
+      if (plan.diagnostics.some(item => item.severity === 'error'))
+        throw new TypeError('Data discovery provider reported error diagnostics')
+      if (!nonEmptyString(plan.analyzerId) || (analyzerId !== undefined && analyzerId !== plan.analyzerId))
+        throw new TypeError('Data discovery analyzer identity changed')
+      analyzerId ??= plan.analyzerId
+      const phase = plan.discovery
+      if (phase === undefined) throw new TypeError('Data discovery unsupported: legacy complete flag is not terminal coverage')
+      if (phase.state === 'refused') throw new TypeError(`Data discovery refused: ${phase.diagnostic.code}`)
+      // Admit the entire round before any listing or byte acquisition. A bad tail descriptor
+      // cannot authorize preceding reads or partially replace accepted obligations.
+      const queries: { readonly key: string; readonly query: { rootId: string; prefix: string };
+        readonly caseSensitive: boolean }[] = []
+      const queryIds = new Set<string>()
+      for (const query of plan.listingQueries ?? []) {
+        const prefix = query.prefix === '' ? '' : normalizeCompanionLogicalId(query.prefix)
+        const root = roots.get(query.rootId)
+        if (root === undefined) throw new TypeError('Data discovery listing names unknown root')
+        const key = `${query.rootId}\0${root.root.caseSensitive === true ? prefix : prefix.toLocaleLowerCase()}`
+        if (queryIds.has(key)) throw new TypeError('Data discovery repeated listing identity in a round')
+        queryIds.add(key)
+        if (listings.has(key)) continue
+        if (listFiles === undefined) throw new TypeError('Data discovery complete listing is unavailable')
+        charge(query.rootId); charge(prefix)
+        queries.push({ key, query: { rootId: query.rootId, prefix }, caseSensitive: root.root.caseSensitive === true })
+      }
+      if (listings.size + queries.length > DATA_WORKSPACE_LISTING_LIMITS.maxQueries)
+        throw new RangeError('Data discovery query budget exceeded')
+      const pendingMetadata: DataWorkspaceMetadataRequirement[] = []
+      if (phase.state === 'expand') {
+        if (plan.requirements.length !== 0) throw new TypeError('Data discovery cannot publish semantic requirements before terminal')
+        if (phase.metadataRequirements.length < obligations.size)
+          throw new TypeError('Data discovery removed prior metadata obligations')
+        const roundIds = new Set<string>()
+        for (const requirement of phase.metadataRequirements) {
+          if (!nonEmptyString(requirement.requirementId) || roundIds.has(requirement.requirementId) || requirement.encoding !== 'binary')
+            throw new TypeError('Data discovery metadata descriptor is invalid or duplicate')
+          roundIds.add(requirement.requirementId)
+          address(requirement)
+          const prior = obligations.get(requirement.requirementId)
+          if (prior !== undefined) {
+            if (prior.rootId !== requirement.rootId || prior.path !== requirement.path || prior.encoding !== requirement.encoding)
+              throw new TypeError('Data discovery retargeted a metadata identity')
+            continue
+          }
+          charge(requirement.requirementId); charge(requirement.rootId); charge(requirement.path)
+          pendingMetadata.push({ requirementId: requirement.requirementId, rootId: requirement.rootId,
+            path: requirement.path, encoding: 'binary' })
+        }
+        if ([...obligations.keys()].some(id => !roundIds.has(id))) throw new TypeError('Data discovery removed a metadata identity')
+        if (queries.length === 0 && pendingMetadata.length === 0) throw new TypeError('Data discovery made no progress')
+      } else {
+        if (phase.state !== 'terminal' || !Array.isArray(phase.documentKinds) ||
+            phase.documentKinds.length !== kinds.length || new Set(phase.documentKinds).size !== kinds.length ||
+            !kinds.every(kind => phase.documentKinds.includes(kind)) || plan.complete !== true || queries.length !== 0)
+          throw new TypeError('Data discovery terminal coverage is incomplete or still expanding')
+        for (const requirement of plan.requirements) {
+          if (!nonEmptyString(requirement.requirementId)) throw new TypeError('Data discovery semantic identity is invalid')
+          if (!kinds.includes(requirement.kind)) throw new TypeError('Data discovery semantic kind escapes requested scope')
+          if (obligations.has(requirement.requirementId)) throw new TypeError('Data discovery metadata identity reused as semantic requirement')
+          charge(requirement.requirementId); charge(requirement.rootId); charge(requirement.path)
+        }
+      }
+      const pending = phase.state === 'expand' ? pendingMetadata : plan.requirements
+      if (usage.requirements + pending.length > maximum)
+        throw new RangeError('Data discovery metadata and final requirements exceed the shared budget')
+      const newAddresses = new Set(pending.map(address).filter(key => !inputs.has(key)))
+      if (usage.documents + newAddresses.size > maximum) throw new RangeError('Data discovery document budget exceeded')
+      usage.requirements += pending.length
+
+      // Descriptors and known reservations are now admitted. Actual listing contents and byte
+      // sizes are checked by their existing owners as acquired, under the remaining allowance.
+      for (const { key, query, caseSensitive } of queries) {
+        const listed = await readDataWorkspaceListing(query, rootIds, listFiles!, signal)
+        live()
+        if (!listed.complete) throw new TypeError('Data discovery listing is partial, not complete membership evidence')
+        const seen = new Set<string>()
+        for (const path of listed.paths) {
+          charge(path)
+          const normalized = normalizeCompanionLogicalId(path)
+          const folded = caseSensitive ? normalized : normalized.toLocaleLowerCase()
+          const foldedPrefix = caseSensitive ? query.prefix : query.prefix.toLocaleLowerCase()
+          if ((foldedPrefix !== '' && folded !== foldedPrefix && !folded.startsWith(`${foldedPrefix}/`)) || seen.has(folded))
+            throw new TypeError('Data discovery listing has a scope escape or duplicate/case collision')
+          seen.add(folded)
+        }
+        listings.set(key, listed)
+      }
+      if (phase.state === 'expand') {
+        for (const descriptor of pendingMetadata) {
+          obligations.set(descriptor.requirementId, descriptor)
+          const input = await read(descriptor)
+          metadata.push({ requirementId: descriptor.requirementId, state: 'present', document: {
+            rootId: input.rootId, path: input.path, revision: input.revision, bytes: input.bytes } })
+        }
+        continue
+      }
+      const documents: NonNullable<DataWorkspaceDiscoveryContext['captured']>['documents'][number][] = []
+      for (const requirement of plan.requirements) {
+        const input = await read(requirement)
+        documents.push({ requirement, source: input.source, document: { rootId: requirement.rootId, path: requirement.path,
+          revision: input.revision, ...(requirement.encoding === 'binary' ? { text: '', bytes: input.bytes }
+            : { text: new TextDecoder('utf-8', { fatal: true }).decode(input.bytes) }) } })
+      }
+      live()
+      context.captured = structuredClone({ metadata, documents, usage, listings: [...listings.values()],
+        inputs: [...inputs.values()].map(({ rootId, path, bytes, revision, source }) => ({ rootId, path, bytes, revision, source })) })
+      context.phase = 'complete'
+      return plan
+    }
+    throw new RangeError('Data discovery round budget exceeded')
+  } catch (error) {
+    context.phase = 'failed'
+    throw error
+  }
 }
 
 export interface ResolvedDataWritableRoot {
@@ -1324,12 +1566,31 @@ function comparableLocale(value: string): string {
   return value.replace(/[-_]/gu, '').toLocaleLowerCase()
 }
 
+/** Same confined root/path admission for semantic and discovery reads. */
+function validateDataDocumentPath(
+  roots: ReadonlyMap<string, { readonly root: ModWorkspaceLock['loadOrder'][number]; readonly index: number }>,
+  rootId: string, value: string, label: string,
+) {
+  const root = roots.get(rootId)
+  if (root === undefined) throw new TypeError(`${label} names unknown root`)
+  // An empty root denotes its whole source, including game installation layers.
+  const rootPath = root.root.sourcePath === '' ? '' : confinedPath(root.root.sourcePath, `${label}.root`)
+  const path = confinedPath(value, `${label}.path`)
+  const foldedRoot = root.root.caseSensitive === true ? rootPath : rootPath.toLocaleLowerCase()
+  const foldedPath = root.root.caseSensitive === true ? path : path.toLocaleLowerCase()
+  if (rootPath !== '' && foldedPath !== foldedRoot && !foldedPath.startsWith(`${foldedRoot}/`)) {
+    throw new TypeError(`${label} escapes its root`)
+  }
+  return { ...root, path: foldedPath }
+}
+
 /** Validate bounded provider reads/destinations before I/O; destinations never expand write grants. */
 function validateWorkspacePlan(
   plan: DataWorkspacePlan,
   workspace: ModWorkspaceLock,
   locales: readonly string[],
   maximum: number,
+  catalogOrder: 'dependency-first' | 'provider-authored' = 'dependency-first',
 ): void {
   if (
     plan.schemaVersion !== 1 ||
@@ -1341,20 +1602,6 @@ function validateWorkspacePlan(
     throw new TypeError('resolved data provider returned an invalid or mismatched workspace plan')
   }
   const roots = new Map(workspace.loadOrder.map((root, index) => [root.rootId, { root, index }]))
-  /** Confine both reads and prospective destinations using the source's declared case policy. */
-  const validateDocumentPath = (rootId: string, value: string, label: string) => {
-    const root = roots.get(rootId)
-    if (root === undefined) throw new TypeError(`${label} names unknown root`)
-    // An empty root denotes its whole source, including game installation layers.
-    const rootPath = root.root.sourcePath === '' ? '' : confinedPath(root.root.sourcePath, `${label}.root`)
-    const path = confinedPath(value, `${label}.path`)
-    const foldedRoot = root.root.caseSensitive === true ? rootPath : rootPath.toLocaleLowerCase()
-    const foldedPath = root.root.caseSensitive === true ? path : path.toLocaleLowerCase()
-    if (rootPath !== '' && foldedPath !== foldedRoot && !foldedPath.startsWith(`${foldedRoot}/`)) {
-      throw new TypeError(`${label} escapes its root`)
-    }
-    return { ...root, path: foldedPath }
-  }
   if (plan.creationCandidates !== undefined) {
     if (!Array.isArray(plan.creationCandidates) || plan.creationCandidates.length > maximum) {
       throw new TypeError('workspace data creation candidates exceed the plan budget or are invalid')
@@ -1364,7 +1611,7 @@ function validateWorkspacePlan(
       if (candidate?.rootId !== workspace.activeRootId) {
         throw new TypeError('workspace data creation candidate must name the active root')
       }
-      const { path } = validateDocumentPath(candidate.rootId, candidate.path, 'workspace data creation candidate')
+      const { path } = validateDataDocumentPath(roots, candidate.rootId, candidate.path, 'workspace data creation candidate')
       const key = `${candidate.rootId}\0${path}`
       if (seen.has(key)) throw new TypeError('workspace data creation candidate is duplicated')
       seen.add(key)
@@ -1402,8 +1649,8 @@ function validateWorkspacePlan(
       throw new TypeError(`workspace data requirement ${requirement.requirementId} is duplicated`)
     }
     requirementIds.add(requirement.requirementId)
-    const root = validateDocumentPath(
-      requirement.rootId,
+    const root = validateDataDocumentPath(
+      roots, requirement.rootId,
       requirement.path,
       `workspace data requirement ${requirement.requirementId}`,
     )
@@ -1413,7 +1660,7 @@ function validateWorkspacePlan(
       if (localizationStarted) {
         throw new TypeError('catalog requirements must precede localization requirements')
       }
-      if (root.index < catalogRank) {
+      if (root.index < catalogRank && catalogOrder === 'dependency-first') {
         throw new TypeError('catalog requirements are not in dependency-first loadOrder')
       }
       catalogRank = root.index
@@ -1440,23 +1687,18 @@ function validateWorkspacePlan(
   }
 }
 
-/** Exported for its test only. */
-export async function readResourceText(
+/** The existing single Data stream reader, with failure kind preserved for strict discovery. */
+type DataResourceBytesResult =
+  | { readonly state: 'resolved'; readonly bytes: Uint8Array; readonly revision: RevisionId; readonly source: AssetSourceRef }
+  | { readonly state: 'unresolved'; readonly failure:
+      Exclude<Awaited<ReturnType<ResourceSessionPort['resolve']>>, { state: 'resolved' }>['reason'] |
+      'open-failed' | 'not-bytes' | 'read-failed'; readonly diagnostic: Diagnostic }
+
+async function readDataResourceBytes(
   resources: ResourceSessionPort,
-  requirement: DataWorkspaceDocumentRequirement,
-  maxDocumentBytes: number,
-  signal?: AbortSignal,
-): Promise<
-  | {
-      readonly state: 'resolved'
-      readonly text: string
-      /** Present for a requirement read as `encoding: 'binary'`; `text` is then empty. */
-      readonly bytes?: Uint8Array
-      readonly revision: RevisionId
-      readonly source: AssetSourceRef
-    }
-  | { readonly state: 'unresolved'; readonly diagnostic: Diagnostic }
-> {
+  requirement: Pick<DataWorkspaceDocumentRequirement, 'requirementId' | 'rootId' | 'path'>,
+  maxDocumentBytes: number, signal?: AbortSignal, strict = false,
+): Promise<DataResourceBytesResult> {
   let resolved: Awaited<ReturnType<ResourceSessionPort['resolve']>>
   try {
     resolved = await resources.resolve(
@@ -1471,7 +1713,7 @@ export async function readResourceText(
   } catch (error) {
     signal?.throwIfAborted()
     return {
-      state: 'unresolved',
+      state: 'unresolved', failure: 'open-failed',
       diagnostic: diagnostic(
         'warning',
         'x3.host/resolved-data-resource-open-failed',
@@ -1480,13 +1722,14 @@ export async function readResourceText(
     }
   }
   if (resolved.state === 'unresolved') {
-    return { state: 'unresolved', diagnostic: resolved.diagnostic }
+    return { state: 'unresolved', failure: resolved.reason, diagnostic: resolved.diagnostic }
   }
   try {
+    if (strict) signal?.throwIfAborted()
     const source = resolved.lease.value
     if (source.kind !== 'bytes') {
       return {
-        state: 'unresolved',
+        state: 'unresolved', failure: 'not-bytes',
         diagnostic: diagnostic(
           'warning',
           'x3.host/resolved-data-resource-not-bytes',
@@ -1496,7 +1739,7 @@ export async function readResourceText(
     }
     if (source.size !== undefined && source.size > BigInt(maxDocumentBytes)) {
       return {
-        state: 'unresolved',
+        state: 'unresolved', failure: 'budget-exceeded',
         diagnostic: diagnostic(
           'warning',
           'x3.host/resolved-data-document-budget-exceeded',
@@ -1508,10 +1751,11 @@ export async function readResourceText(
     let bytes = 0
     try {
       for await (const chunk of source.stream(undefined, signal)) {
+        if (strict) signal?.throwIfAborted()
         bytes += chunk.byteLength
         if (bytes > maxDocumentBytes) {
           return {
-            state: 'unresolved',
+            state: 'unresolved', failure: 'budget-exceeded',
             diagnostic: diagnostic(
               'warning',
               'x3.host/resolved-data-document-budget-exceeded',
@@ -1519,14 +1763,14 @@ export async function readResourceText(
             ),
           }
         }
-        chunks.push(chunk)
+        chunks.push(strict ? new Uint8Array(chunk) : chunk)
       }
     } catch (error) {
       // a document that opens but cannot be read (its data in an absent companion) is unresolved,
       // as one that does not open is: an optional one then drops out, a required one is named
       signal?.throwIfAborted()
       return {
-        state: 'unresolved',
+        state: 'unresolved', failure: 'read-failed',
         diagnostic: diagnostic(
           'warning',
           'x3.host/resolved-data-resource-read-failed',
@@ -1534,6 +1778,7 @@ export async function readResourceText(
         ),
       }
     }
+    if (strict) signal?.throwIfAborted()
     const content = new Uint8Array(bytes)
     let offset = 0
     for (const chunk of chunks) {
@@ -1542,15 +1787,30 @@ export async function readResourceText(
     }
     return {
       state: 'resolved',
-      ...(requirement.encoding === 'binary'
-        ? { text: '', bytes: content }
-        : { text: new TextDecoder('utf-8', { fatal: false }).decode(content) }),
+      bytes: content,
       revision: resolved.revision,
       source: Object.freeze({ ...source.ref }),
     }
   } finally {
     await resolved.lease.release()
   }
+}
+
+
+/** Existing editor projection keeps its text/binary result shape and optional-read behavior. */
+export async function readResourceText(
+  resources: ResourceSessionPort, requirement: DataWorkspaceDocumentRequirement,
+  maxDocumentBytes: number, signal?: AbortSignal,
+): Promise<
+  | { readonly state: 'resolved'; readonly text: string; readonly bytes?: Uint8Array;
+      readonly revision: RevisionId; readonly source: AssetSourceRef }
+  | { readonly state: 'unresolved'; readonly diagnostic: Diagnostic }
+> {
+  const read = await readDataResourceBytes(resources, requirement, maxDocumentBytes, signal)
+  if (read.state === 'unresolved') return { state: 'unresolved', diagnostic: read.diagnostic }
+  return { state: 'resolved', revision: read.revision, source: read.source,
+    ...(requirement.encoding === 'binary' ? { text: '', bytes: read.bytes }
+      : { text: new TextDecoder('utf-8', { fatal: false }).decode(read.bytes) }) }
 }
 
 function directDataDocumentTarget(
@@ -1930,6 +2190,18 @@ export function isolationChangeFromDataGraphProposal(
 export async function analyzeResolvedDataWorkspace(
   request: AnalyzeResolvedDataWorkspaceRequest,
 ): Promise<AnalyzedResolvedDataWorkspace> {
+  const intent = request.intent === undefined ? undefined : structuredClone(request.intent)
+  if (intent !== undefined && intent.kind !== 'editor' && intent.kind !== 'capture-inputs')
+    throw new TypeError('Unknown Data workspace analysis intent')
+  const captureIntent = intent?.kind === 'capture-inputs' ? intent : undefined
+  if (captureIntent !== undefined) {
+    if ((request.writableRoots?.length ?? 0) !== 0)
+      throw new TypeError('Data capture analysis does not accept writable roots')
+    request = { ...request, ...structuredClone({ workspace: request.workspace, locales: request.locales,
+      queries: request.queries, limits: request.limits,
+      ...(request.localizationKeys === undefined ? {} : { localizationKeys: request.localizationKeys }) }),
+      writableRoots: Object.freeze([]), intent: captureIntent }
+  }
   const limits = {
     maxRequirements: positiveBound(request.limits.maxRequirements, 'maxRequirements'),
     maxDocumentBytes: positiveBound(request.limits.maxDocumentBytes, 'maxDocumentBytes'),
@@ -1961,17 +2233,26 @@ export async function analyzeResolvedDataWorkspace(
   const diagnostics: Diagnostic[] = [...resolution.diagnostics]
   const opened: Lease<unknown>[] = []
   try {
+    const discovery: DataWorkspaceDiscoveryContext | undefined = captureIntent === undefined ? undefined
+      : { resources: request.resources, limits }
     const plan = await planDataWorkspace(
       resolution.workspace,
       {
         workspace: request.workspace,
         locales: request.locales,
         maxRequirements: limits.maxRequirements,
+        ...(captureIntent === undefined ? {} : { intent: captureIntent }),
         ...(request.signal === undefined ? {} : { signal: request.signal }),
       },
       request.listFiles,
+      discovery,
     )
-    validateWorkspacePlan(plan, request.workspace, request.locales, limits.maxRequirements)
+    validateWorkspacePlan(plan, request.workspace, request.locales, limits.maxRequirements,
+      captureIntent?.catalogOrder ?? 'dependency-first')
+    const captured = discovery?.captured
+    if (discovery !== undefined && (discovery.phase !== 'complete' || captured === undefined ||
+        captured.documents.length !== plan.requirements.length))
+      throw new TypeError('Data capture analysis requires the completed operation inputs')
     const workspaceRoots = new Map(request.workspace.loadOrder.map(root => [root.rootId, root]))
     const writableRoots = Object.freeze(
       (request.writableRoots ?? []).map(root => {
@@ -2016,14 +2297,22 @@ export async function analyzeResolvedDataWorkspace(
     const documentTargets: ResolvedDataDocumentTarget[] = []
     const unresolvedRequirementIds: string[] = []
     const revisions: string[] = []
-    for (const requirement of plan.requirements) {
+    for (const [index, requirement] of plan.requirements.entries()) {
       request.signal?.throwIfAborted()
-      const loaded = await readResourceText(
+      const retained = captured?.documents[index]
+      if (captured !== undefined && (retained === undefined ||
+          retained.requirement.requirementId !== requirement.requirementId ||
+          retained.document.rootId !== requirement.rootId || retained.document.path !== requirement.path ||
+          retained.document.revision === undefined))
+        throw new TypeError('Data capture semantic sequence no longer matches the operation')
+      const loaded = retained === undefined ? await readResourceText(
         request.resources,
         requirement,
         limits.maxDocumentBytes,
         request.signal,
-      )
+      ) : { state: 'resolved' as const, text: retained.document.text,
+        ...(retained.document.bytes === undefined ? {} : { bytes: retained.document.bytes }),
+        source: retained.source, revision: retained.document.revision! }
       if (loaded.state === 'unresolved') {
         if (requirement.required !== false) {
           diagnostics.push(loaded.diagnostic)
@@ -2031,10 +2320,11 @@ export async function analyzeResolvedDataWorkspace(
         }
         continue
       }
-      // a binary document counts its bytes against the same workspace budget
-      textBytes += loaded.bytes?.byteLength ?? new TextEncoder().encode(loaded.text).byteLength
-      if (textBytes > limits.maxTextBytes) {
-        throw new TypeError(`workspace data exceeds maxTextBytes ${limits.maxTextBytes}`)
+      // Discovery already charged metadata and semantic inputs against this operation's allowance.
+      if (captured === undefined) {
+        textBytes += loaded.bytes?.byteLength ?? new TextEncoder().encode(loaded.text).byteLength
+        if (textBytes > limits.maxTextBytes)
+          throw new TypeError(`workspace data exceeds maxTextBytes ${limits.maxTextBytes}`)
       }
       revisions.push(`${requirement.requirementId}@${String(loaded.revision)}`)
       const document = {
@@ -2046,7 +2336,7 @@ export async function analyzeResolvedDataWorkspace(
       }
       if (requirement.kind === 'catalog') {
         documents.push(document)
-        documentTargets.push(
+        if (captured === undefined) documentTargets.push(
           directDataDocumentTarget(
             requirement.rootId,
             requirement.path,
@@ -2075,7 +2365,7 @@ export async function analyzeResolvedDataWorkspace(
     if (request.resources.state() !== 'live') {
       throw new Error('resource session was disposed while workspace data was loading')
     }
-    const snapshot = await resolution.workspace.analyze({
+    const analysisInputs = {
       workspaceId: request.workspace.workspaceId,
       gameId: request.workspace.gameId,
       documents,
@@ -2096,10 +2386,23 @@ export async function analyzeResolvedDataWorkspace(
       maxEntities: limits.maxEntities,
       maxDepth: limits.maxDepth,
       ...(request.signal === undefined ? {} : { signal: request.signal }),
+    }
+    const { signal: _signal, ...cloneableInputs } = analysisInputs
+    const snapshot = await resolution.workspace.analyze(captured === undefined ? analysisInputs : {
+      ...structuredClone(cloneableInputs), ...(request.signal === undefined ? {} : { signal: request.signal }),
+      intent: structuredClone(captureIntent!),
+      metadata: structuredClone(captured.metadata),
     })
     if (request.resources.state() !== 'live') {
       throw new Error('resource session was disposed while workspace data was analyzed')
     }
+    const assertCaptureLive = () => {
+      if (captured === undefined) return
+      request.signal?.throwIfAborted()
+      if (request.resources.state() !== 'live')
+        throw new Error('resource session was disposed while capture facets were opened')
+    }
+    assertCaptureLive()
     const facetRequest = {
       snapshotId: snapshot.snapshotId,
       maxPageSize: limits.maxPageSize,
@@ -2107,19 +2410,23 @@ export async function analyzeResolvedDataWorkspace(
     }
     const schemaTree = await resolution.workspace.openSchemaTree(facetRequest)
     opened.push(schemaTree)
+    assertCaptureLive()
     const definitions = await resolution.workspace.openDefinitionTable(facetRequest)
     opened.push(definitions)
+    assertCaptureLive()
     const localization = await resolution.workspace.openLocalizationTable(facetRequest)
     opened.push(localization)
+    assertCaptureLive()
     const relations = await resolution.workspace.openRelations(facetRequest)
     opened.push(relations)
+    assertCaptureLive()
     let released = false
     const openSubjectFacts = resolution.workspace.openSubjectFacts
     const openSubjectCalculations = resolution.workspace.openSubjectCalculations
-    const resolveEditTarget = resolution.workspace.resolveEditTarget
-    const planEdit = resolution.workspace.planEdit
+    const resolveEditTarget = captured === undefined ? resolution.workspace.resolveEditTarget : undefined
+    const planEdit = captured === undefined ? resolution.workspace.planEdit : undefined
     const analyzeIsolation = resolution.workspace.analyzeIsolation
-    const planIsolation = resolution.workspace.planIsolation
+    const planIsolation = captured === undefined ? resolution.workspace.planIsolation : undefined
     const activeRootId = request.workspace.activeRootId
     const writableRootIdList = Object.freeze([...writableRootIds])
     return Object.freeze({
