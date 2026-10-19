@@ -1290,6 +1290,7 @@ export async function analyzeResolvedMapWorkspace(
               catalogEntities: asking,
               ...(request.signal === undefined ? {} : { signal: request.signal }),
             })
+    request.signal?.throwIfAborted()
     if (request.resources.state() !== 'live') {
       throw new Error('resource session was disposed while workspace map was analyzed')
     }

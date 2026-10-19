@@ -14,13 +14,15 @@ const dependency = { requirementId: 'attributes', path: 'data/attributes.bin', k
 const plan: ResolvedMapWorkspacePlan = { schemaVersion: 1, workspaceId: workspace.workspaceId, gameId: workspace.gameId,
   mapId: 'maps/Example', analyzerId: 'test/map', requirements: [main], diagnostics: [], complete: true }
 type Expand = NonNullable<ResolvedMapWorkspaceAnalysis['expandPlan']>
-async function fixture(expandPlan?: Expand, changes: { maxRequirements?: number; maxTotalBytes?: number; files?: Map<string, Uint8Array>; signal?: AbortSignal } = {}) {
+async function fixture(expandPlan?: Expand, changes: { maxRequirements?: number; maxTotalBytes?: number; files?: Map<string, Uint8Array>; signal?: AbortSignal;
+  afterAnalyze?: () => void; onProviderRelease?: () => void } = {}) {
   const observed: ResolvedMapWorkspaceAnalysisRequest[] = [], reads: string[] = [], released: string[] = []
   let providerReleases = 0
   const provider: ResolvedMapWorkspaceAnalysis = { contract: 'common.map/resolved-workspace', analyzerId: 'test/map', gameIds: ['test/map'],
     plan: async () => structuredClone(plan), ...(expandPlan === undefined ? {} : { expandPlan }),
     analyze: async request => {
       observed.push(request)
+      changes.afterAnalyze?.()
       const base = { schemaVersion: 1 as const, workspaceId: request.workspaceId, gameId: request.gameId, mapId: request.mapId, analyzerId: 'test/map' }
       return { ...base, snapshotId: request.snapshotId,
         semantic: { ...base, documentPaths: request.documents.map(document => document.path), regions: [], objects: [], catalogQueries: [], resolvedCatalogObjects: 0, diagnostics: [], complete: true },
@@ -32,7 +34,7 @@ async function fixture(expandPlan?: Expand, changes: { maxRequirements?: number;
     contributions: [{ path: 'provider.json', manifest: { schemaVersion: 1, contract: { id: 'modkit/service-provider-contribution', major: 1 }, id: 'modkit.test/map-plan', displayName: 'Map planner fixture',
       runtimeVariants: [{ variantId: 'trusted-node', entrypoint: './provider.js', target: { environments: ['node'] }, executionProfile: 'trusted-in-process', requestedPermissionClasses: [] }],
       spec: { provides: [{ offerId: 'maps', contract: 'common.map/resolved-workspace', major: 1, version: '1.0.0', facet: { gameIds: ['test/map'] } }], lifecycleScope: 'session' } } }],
-    modules: { './provider.js': { abiVersion: 1, provides: ['common.map/resolved-workspace'], createProvider: async () => ({ value: provider, release: async () => { providerReleases++ } }) } },
+    modules: { './provider.js': { abiVersion: 1, provides: ['common.map/resolved-workspace'], createProvider: async () => ({ value: provider, release: async () => { providerReleases++; changes.onProviderRelease?.() } }) } },
   })])
   const inventory = await buildInventory(linked.inputs, createHostContributionContractRegistry())
   const definitions = createBundledServiceDefinitionRegistry(); await registerServiceDefinitionsOrThrow(inventory, definitions)
@@ -121,6 +123,20 @@ it('cancels during expansion without issuing the newly requested read', async ()
     controller.abort(new Error('cancel-expansion'))
     return expand(request)
   }, { signal: controller.signal })).rejects.toThrow('cancel-expansion')
+})
+
+it('does not publish a world when cancellation arrives before an analyzer returns its snapshot', async () => {
+  const controller = new AbortController(), cancelled = new Error('cancel-completed-analysis')
+  let releases = 0
+  const operation = fixture(undefined, {signal: controller.signal,
+    afterAnalyze: () => controller.abort(cancelled), onProviderRelease: () => { releases++ },
+  }).then(async result => {
+    // The original path resolves; release it even while demonstrating that contract failure.
+    if (result.result.state === 'resolved') await result.result.release()
+    return result
+  })
+  await expect(operation).rejects.toThrow('cancel-completed-analysis')
+  expect(releases).toBe(1)
 })
 
 it('keeps the read identities and bytes owned across the optional service ABI', async () => {
