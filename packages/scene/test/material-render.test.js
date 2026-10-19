@@ -125,3 +125,11 @@ it('uses distinct resource identities after a missing texture and preserves host
   assert.deepEqual(result.textures, [])
   assert.equal(diagnostics.length, 2)
 })
+
+it('bounds each material parameters by itself, so a whole map of materials fits', () => {
+  // two materials of 600 000 nodes each: one budget of 1 000 000 for all of them refused the map
+  const heavy = id => ({ id, shader: { id: 'fixture.unknown', parameters: { values: new Array(600_000).fill(0) } } })
+  assert.doesNotThrow(() => prepareSceneMaterialPrograms([heavy('a'), heavy('b')], new Map(), undefined, []))
+  const tooHeavy = { id: 'c', shader: { id: 'fixture.unknown', parameters: { values: new Array(1_100_000).fill(0) } } }
+  assert.throws(() => prepareSceneMaterialPrograms([tooHeavy], new Map(), undefined, []))
+})

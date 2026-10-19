@@ -113,10 +113,9 @@ export function createSceneMaterialProgramSampler(
       throw new TypeError('material ids must be unique and nonempty')
     ids.add(material.id)
   }
-  const parameters = snapshotJson(
-    materials.map(material => material.shader?.parameters ?? null),
-    MATERIAL_BUDGET,
-    signal,
+  // each material's parameters within the budget: a whole map's materials together exceed it
+  const parameters = materials.map(material =>
+    snapshotJson(material.shader?.parameters ?? null, MATERIAL_BUDGET, signal),
   )
   if (!Array.isArray(parameters)) throw new TypeError('invalid material parameters')
   type Entry =

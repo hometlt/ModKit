@@ -116,3 +116,31 @@ it('draws a cliff piece through its material program, alpha-tested, not the plai
   assert.equal(pass.twoSided, false)
   void identity
 })
+
+it('alpha-tests a cliff piece without its native program too, not blending it over the terrain', () => {
+  // a cliff reopened from a UVP: base colour and alpha only, no render program
+  const plain = { id: 'rock', alphaMode: 'blend', layers: rock.layers }
+  const plan = createWorldWebGlPlan({
+    items: [
+      {
+        facet: 'objects',
+        id: 'cliff:0',
+        layerId: 'objects',
+        coordinateSpaceId: 'uvw',
+        kind: 'doodad',
+        objectId: 1,
+        derivedFrom: 'cliffs',
+        resourceId: 'cliff',
+        position: { x: 0, y: 0, z: 0 },
+        uvwPosition: { x: 0, y: 0, z: 0 },
+        uvwRotation: [0, 0, 0, 1],
+      },
+    ],
+    models: new Map([['cliff', { ...piece, materials: [plain] }]]),
+  })
+  // the world draws it by the glTF program: tested and solid, like a cliff with its own program
+  const [scene] = plan.modelMaterialScenes
+  const [pass] = scene.programs.get('rock').passes
+  assert.equal(materialIsSolid(pass), true)
+  assert.deepEqual(scene.materials.map(material => [material.alphaMode, material.alphaCutoff]), [['mask', 0.5]])
+})

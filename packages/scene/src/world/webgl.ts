@@ -2826,6 +2826,10 @@ function presentationMaterials(
           },
         },
       }
+    } else if (cliff && standard === undefined) {
+      // A cliff piece without its native render program (a UVM's material: base colour and alpha
+      // only) keeps the same rule: its alpha masks the terrain, so it is tested, not blended.
+      out = { ...out, alphaMode: 'mask' as const, alphaCutoff: 0.5 }
     }
     return out
   })
