@@ -53,12 +53,12 @@ it('keeps the full rock mask period when the diffuse texture repeats inside it',
     Float32Array.of(-.5, 0, 1.5, 0, -.5, 1))
 })
 
-it('exports masked cliff floors and vertical walls at their original positions with complementary coverage', async () => {
+it('keeps visible cliff walls under the rock and pins their shared plateau vertices', async () => {
   const positions = Float32Array.of(0, 0, 0, 2, 0, 0, 0, 0, 2,
     0, 0, 0, 2, 0, 0, 0, 1, 0,
     4, 0, 0, 5, 0, 0, 4, 1, 0)
   const batch = {
-    positions, normals: Float32Array.from({ length: 27 }, (_, i) => i % 3 === 1 ? 1 : 0),
+    positions, normals: Float32Array.from({ length: 27 }, (_, i) => i < 9 ? Number(i % 3 === 1) : Number(i % 3 === 2)),
     colors: new Float32Array(36).fill(1),
     textures: [{ id: 'ground', width: 1, height: 1, rgba: Uint8Array.of(120, 90, 60, 255) }],
     normalTextures: [], normalSwizzles: [],
@@ -71,29 +71,36 @@ it('exports masked cliff floors and vertical walls at their original positions w
       .75, .5, .75, .5, .75, .5),
     maskChannel: 3,
   }
-  const plan = { ...createWorldWebGlPlan({ items: [] }), splatTriangles: [batch],
-    bounds: { minimum: [0, 0, 0], maximum: [2, 1, 2] } }
+  const plain = { ...batch, positions: Float32Array.of(2, 0, 0, 4, 0, 0, 2, 0, 2),
+    normals: Float32Array.of(0, 1, 0, 0, 1, 0, 0, 1, 0), colors: new Float32Array(12).fill(1),
+    textureCoordinates: [new Float32Array(6)],
+    textureWeights0: Float32Array.of(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0), textureWeights1: new Float32Array(12),
+    maskTexture: undefined, maskTextureCoordinates: undefined }
+  const plan = { ...createWorldWebGlPlan({ items: [] }), splatTriangles: [batch, plain],
+    bounds: { minimum: [0, 0, 0], maximum: [6, 1, 2] } }
   const result = await worldGlb(plan, { terrainTextureSize: 64, maxBytes: 8 * 1024 * 1024 })
   const jsonLength = new DataView(result.bytes.buffer).getUint32(12, true)
   const document = JSON.parse(new TextDecoder().decode(result.bytes.subarray(20, 20 + jsonLength)))
   const bin = result.bytes.subarray(28 + jsonLength)
-  const mesh = document.meshes.find(mesh => mesh.name.includes('masked-ground'))
-  assert.ok(mesh, 'a dedicated masked terrain material is exported')
+  const mesh = document.meshes.find(mesh => mesh.name === 'world/terrain-baked')
+  assert.ok(mesh, 'cliff ground and plateau share one opaque terrain bake')
   const primitive = mesh.primitives[0]
-  assert.equal(document.accessors[primitive.indices].count, 6,
-    'the visible vertical face is retained; the completely masked face is omitted')
+  assert.equal(document.accessors[primitive.indices].count, 9,
+    'visible floor, vertical wall and plateau remain; the completely covered wall is omitted')
   const accessor = document.accessors[primitive.attributes.POSITION]
   const view = document.bufferViews[accessor.bufferView]
-  assert.deepEqual(new Float32Array(bin.buffer, bin.byteOffset + view.byteOffset, accessor.count * 3), positions.subarray(0, 18),
-    'the shared plateau edge is neither sunk nor split')
+  const written = new Float32Array(bin.buffer, bin.byteOffset + view.byteOffset, accessor.count * 3)
+  for (const from of [3, 12]) assert.deepEqual(Array.from(written.subarray(from, from + 3)), [2, 0, 0],
+    'vertices shared with the plateau stay exactly fixed')
+  assert.ok(Math.abs(written[1] + .001) < 1e-7, 'floor interior sits just under rock')
+  assert.ok(Math.abs(written[11] + .001) < 1e-7, 'vertical wall moves inward rather than being dropped')
   const material = document.materials[primitive.material]
-  assert.equal(material.alphaMode, 'MASK')
+  assert.equal(material.alphaMode, undefined, 'terrain under the rock is opaque, with no atlas alpha filtering holes')
   const image = document.images[document.textures[material.pbrMetallicRoughness.baseColorTexture.index].source]
   const imageView = document.bufferViews[image.bufferView]
   const decoded = await decodePngSamples(bin.subarray(imageView.byteOffset, imageView.byteOffset + imageView.byteLength))
   const pixels = decoded.samples
-  assert.ok(pixels.some((v, i) => i % 4 === 3 && v === 255), 'terrain appears where rock is clear')
-  assert.ok(pixels.some((v, i) => i % 4 === 3 && v < 128), 'terrain is discarded where rock is set')
+  assert.ok(pixels.every((v, i) => i % 4 !== 3 || v === 255), 'the common ground texture is fully opaque')
   const clearResult = await worldGlb({ ...plan, bounds: { minimum: [0, 0, 0], maximum: [6, 1, 2] },
     splatTriangles: [{ ...batch,
       maskTexture: { id: 'clear', width: 1024, height: 1, rgba: new Uint8Array(4096) },

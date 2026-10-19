@@ -14,8 +14,9 @@
  * ground meshes then carry planar UVs over the world's x/z extent; the overlay and decal layers that
  * the bake already holds are not written again. Vertical ground faces stretch the bake: SC2 cliff
  * walls are models and are unaffected. A masked cliff piece's ground copy (the terrain the world
- * shows where the rock's mask is clear) keeps every face at its original position. Its splats and
- * inverse rock coverage are baked into triangle charts by the same CPU renderer.
+ * shows where the rock's mask is clear) uses the same opaque ground bake behind the rock. Shared
+ * plateau vertices stay fixed; other vertices move 0.001 world units inward to avoid coincident
+ * surfaces. Faces fully covered by rock are omitted; visible vertical faces remain.
  *
  * Limits of this profile: one moment (clip time 0, the plan's poses); no animation, skins or
  * morph targets (geometry is baked); material programs (layered game shaders), team colour and
@@ -475,30 +476,13 @@ export async function worldGlb(plan: WorldWebGlPlan, options: WorldGlbOptions): 
   // mesh, with its placement baked into the vertices, so a viewer loads as many draw objects and
   // shaders as there are distinct materials, not one per placed piece.
   const groups = new Map<string, MeshGroup>()
-  const maskedGround = new Map<string, { material: number; uv: Float32Array }>()
-  const exportPrimitives: SceneRendererPrimitive[] = []
-  for (const primitive of scene.primitives) {
-    const splat = splats.get(primitive.id)
-    if (splat?.batch.maskTexture === undefined || primitive.hidden === true || isTerrainLayer(primitive.id)) {
-      exportPrimitives.push(primitive)
-      continue
-    }
-    for await (const chart of maskedGroundCharts(primitive, splat.batch,
-      { id: TERRAIN_MATERIAL, width: bakeWidth, height: bakeHeight, rgba: baked!, filter: 'linear', wrapU: 'clamp', wrapV: 'clamp' },
-      [minX, minZ, spanX, spanZ], size / Math.max(spanX, spanZ), signal)) {
-      const index = await imageTexture(chart.primitive.id, chart.width, chart.height, chart.rgba, {
-        magFilter: LINEAR, minFilter: LINEAR, wrapS: CLAMP, wrapT: CLAMP,
-      })
-      const material = addMaterial({
-        name: chart.primitive.id,
-        pbrMetallicRoughness: { baseColorTexture: { index }, metallicFactor: 0, roughnessFactor: 1 },
-        alphaMode: 'MASK', alphaCutoff: 0.5, doubleSided: true,
-      })
-      maskedGround.set(chart.primitive.id, { material, uv: chart.uv })
-      exportPrimitives.push(chart.primitive)
-    }
+  const groundAnchors = new Set<string>()
+  for (const primitive of terrainPrimitives) {
+    if (isTerrainLayer(primitive.id) || splats.get(primitive.id)?.batch.maskTexture !== undefined) continue
+    const positions = placedPrimitive(primitive).positions
+    for (let index = 0; index < positions.length; index += 3) groundAnchors.add(groundSeamKey(positions, index))
   }
-  for (const primitive of exportPrimitives) {
+  for (const primitive of scene.primitives) {
     signal?.throwIfAborted()
     if (primitive.topology !== 'triangles' || primitive.hidden === true || isTerrainLayer(primitive.id)) {
       omitted++
@@ -506,9 +490,10 @@ export async function worldGlb(plan: WorldWebGlPlan, options: WorldGlbOptions): 
     }
     // the blended ground takes the bake; terrain batches with a texture of their own (cliff pieces
     // the world draws with their terrain material) keep it, as the bake stretches on their walls
-    const masked = maskedGround.get(primitive.id)
-    const ground = masked === undefined && terrain.has(primitive.id) && baked !== undefined && !primitive.id.startsWith('world/textured-')
-    const placed = placedPrimitive(primitive)
+    const ground = terrain.has(primitive.id) && baked !== undefined && !primitive.id.startsWith('world/textured-')
+    const mask = ground ? splats.get(primitive.id)?.batch : undefined
+    const original = placedPrimitive(primitive)
+    const placed = mask?.maskTexture === undefined ? original : groundUnderRock(original, mask, groundAnchors)
     if (placed.positions.length < 9) continue
     const vertices = placed.positions.length / 3
     const normals = unitNormals(placed)
@@ -521,8 +506,7 @@ export async function worldGlb(plan: WorldWebGlPlan, options: WorldGlbOptions): 
         uv[vertex * 2 + 1] = (placed.positions[vertex * 3 + 2]! - minZ) / spanZ
       }
     }
-    if (masked !== undefined) uv = masked.uv
-    const surface = ground || masked !== undefined ? undefined : await surfaceOf(primitive.materialId)
+    const surface = ground ? undefined : await surfaceOf(primitive.materialId)
     if (surface === OMITTED_SURFACE) {
       unknownCoverage++
       continue
@@ -535,13 +519,13 @@ export async function worldGlb(plan: WorldWebGlPlan, options: WorldGlbOptions): 
     if (!ground && coordinates !== undefined && coordinates.length === vertices * 2)
       uv = surface === undefined ? coordinates : transformedUvs(coordinates, surface.transform)
     const colors =
-      !ground && masked === undefined &&
+      !ground &&
       (surface === undefined || surface.vertexColors) &&
       primitive.colors !== undefined &&
       primitive.colors.length === vertices * 4
         ? primitive.colors.map(clamp01)
         : undefined
-    const material = masked?.material ?? surface?.material ?? (await materialOf(ground ? TERRAIN_MATERIAL : primitive.materialId))
+    const material = surface?.material ?? (await materialOf(ground ? TERRAIN_MATERIAL : primitive.materialId))
     const indices = frontFacing(placed, normals)
     if (indices !== placed.indices) reversed++
     const key = `${String(material)}|${normals === undefined ? 0 : 1}${uv === undefined ? 0 : 1}${colors === undefined ? 0 : 1}`
@@ -917,29 +901,28 @@ function placedPrimitive(primitive: SceneRendererPrimitive): SceneRendererPrimit
   return { ...rest, positions, ...(normals === undefined ? {} : { normals }) }
 }
 
+/** Shared plateau vertices are identified at the world renderer's small seam tolerance. */
+const groundSeamKey = (positions: Float32Array, index: number): string =>
+  [0, 1, 2].map(axis => Math.round(positions[index + axis]! * 10_000)).join(':')
+
 /**
- * Bake masked terrain in padded, non-overlapping triangle charts using the existing splat
- * rasterizer. Chart density retains the requested terrain density and, where coverage varies,
- * the source mask's texels. Pages stay within 4096; no face is moved or discarded by slope.
+ * Opaque terrain behind an alpha-tested rock. A small inward bias avoids coincident surfaces;
+ * shared plateau vertices stay fixed, so no open seam is introduced. Keeping the common opaque
+ * bake avoids filtering unrelated triangle-chart masks in ordinary glTF viewers. Only faces whose
+ * entire filtered UV rectangle is covered by rock may be dropped; slope never decides coverage.
  */
-async function* maskedGroundCharts(
+function groundUnderRock(
   primitive: SceneRendererPrimitive,
   batch: WorldWebGlSplatBatch,
-  ground: SceneRendererTexture,
-  bounds: readonly [number, number, number, number],
-  density: number,
-  signal?: AbortSignal,
-) {
-  const placed = placedPrimitive(primitive)
-  const source = placed.positions
-  const mask = batch.maskTexture!
-  const maskUv = batch.maskTextureCoordinates!
-  const maskPixels = sceneTexturePixels(mask), channel = Math.max(0, Math.min(3, batch.maskChannel ?? 3))
-  // Classify the entire UV rectangle, including filter neighbours: uniform coverage needs no mask detail.
-  const coverageOf = (vertices: readonly number[]) => {
-    // Bilinear neighbours are included; a repeated interval never needs more than one full image.
+  anchors: ReadonlySet<string>,
+): SceneRendererPrimitive {
+  const source = primitive.positions, normals = unitNormals(primitive)
+  const mask = batch.maskTexture!, uv = batch.maskTextureCoordinates!
+  const pixels = sceneTexturePixels(mask), channel = Math.max(0, Math.min(3, batch.maskChannel ?? 3))
+  // Include bilinear neighbours; repeated rectangles never need more than one image period.
+  const canShowGround = (vertices: readonly number[]) => {
     const range = (axis: number, size: number, wrap: 'repeat' | 'clamp') => {
-      const values = vertices.map(vertex => maskUv[vertex * 2 + axis]! * size - 0.5)
+      const values = vertices.map(vertex => uv[vertex * 2 + axis]! * size - 0.5)
       let first = Math.floor(Math.min(...values)), last = Math.ceil(Math.max(...values))
       if (wrap === 'clamp') {
         first = Math.max(0, Math.min(size - 1, first)); last = Math.max(0, Math.min(size - 1, last))
@@ -948,121 +931,29 @@ async function* maskedGroundCharts(
     }
     const [x, columns] = range(0, mask.width, mask.wrapU ?? 'repeat')
     const [y, rows] = range(1, mask.height, mask.wrapV ?? 'repeat')
-    let clear = false, covered = false
     for (let row = 0; row < rows; row++) for (let column = 0; column < columns; column++) {
       const u = ((x + column) % mask.width + mask.width) % mask.width
       const v = ((y + row) % mask.height + mask.height) % mask.height
-      if (maskPixels[(v * mask.width + u) * 4 + channel]! < 128) clear = true
-      else covered = true
-      if (clear && covered) return 'mixed'
+      if (pixels[(v * mask.width + u) * 4 + channel]! < 128) return true
     }
-    return clear ? 'clear' : 'covered'
+    return false
   }
-  // Both sides of a plateau seam read the same bake, including decals, overlays and ground AO.
-  const groundUv = Float32Array.from({ length: source.length / 3 * 2 }, (_, index) => {
-    const vertex = Math.floor(index / 2), axis = index % 2
-    return (source[vertex * 3 + axis * 2]! - bounds[axis]!) / bounds[axis + 2]!
-  })
-  type Chart = { vertices: number[]; x: number; y: number; width: number; height: number;
-    left: number; length: number; cx: number; cy: number; scale: number }
-  const pages: { charts: Chart[]; width: number; height: number }[] = []
-  let page = { charts: [] as Chart[], width: 0, height: 0 }, x = 0, y = 0, row = 0
-  const count = placed.indices?.length ?? source.length / 3
+  const count = primitive.indices?.length ?? source.length / 3, kept: number[] = []
   for (let corner = 0; corner + 2 < count; corner += 3) {
-    signal?.throwIfAborted()
-    const vertices = [0, 1, 2].map(offset => placed.indices?.[corner + offset] ?? corner + offset)
-    const coverage = coverageOf(vertices)
-    if (coverage === 'covered') continue
-    const a = vertices[0]!, b = vertices[1]!, c = vertices[2]!
-    const ab = [0, 1, 2].map(axis => source[b * 3 + axis]! - source[a * 3 + axis]!)
-    const ac = [0, 1, 2].map(axis => source[c * 3 + axis]! - source[a * 3 + axis]!)
-    const length = Math.hypot(...ab)
-    if (length === 0) continue
-    const cx = ab.reduce((sum, value, axis) => sum + value * ac[axis]!, 0) / length
-    const cy = Math.sqrt(Math.max(0, ac.reduce((sum, value) => sum + value * value, 0) - cx * cx))
-    if (cy < 1e-8) continue
-    let scale = density
-    if (coverage === 'mixed') for (const [first, second] of [[a, b], [a, c], [b, c]] as const) {
-      const distance = Math.hypot(...[0, 1, 2].map(axis => source[second * 3 + axis]! - source[first * 3 + axis]!))
-      if (distance > 0) scale = Math.max(scale, Math.hypot(
-        (maskUv[second * 2]! - maskUv[first * 2]!) * mask.width,
-        (maskUv[second * 2 + 1]! - maskUv[first * 2 + 1]!) * mask.height,
-      ) / distance)
-    }
-    const left = Math.min(0, cx), extent = Math.max(length, cx) - left
-    const width = Math.max(1, Math.ceil(extent * scale)) + 4
-    const height = Math.max(1, Math.ceil(cy * scale)) + 4
-    if (width > 4096 || height > 4096)
-      throw new RangeError('a masked ground triangle exceeds the 4096 texture chart limit')
-    if (x + width > 4096) { x = 0; y += row; row = 0 }
-    if (y + height > 4096) {
-      pages.push(page)
-      page = { charts: [], width: 0, height: 0 }; x = 0; y = 0; row = 0
-    }
-    page.charts.push({ vertices, x, y, width, height, left, length, cx, cy, scale })
-    page.width = Math.max(page.width, x + width); page.height = Math.max(page.height, y + height)
-    x += width; row = Math.max(row, height)
+    const vertices = [0, 1, 2].map(offset => primitive.indices?.[corner + offset] ?? corner + offset)
+    if (canShowGround(vertices)) kept.push(...vertices)
   }
-  if (page.charts.length > 0) pages.push(page)
-  for (const [index, page] of pages.entries()) {
-    signal?.throwIfAborted()
-    const id = `${primitive.id}/masked-ground-${index}`
-    const positions: number[] = [], normals: number[] = [], uv: number[] = []
-    const atlas: number[] = []
-    // Extend source UVs to each padded rectangle; the rasterizer owns texture sampling.
-    const chartUvs = (buffer: Float32Array): Float32Array => {
-      const result: number[] = []
-      for (const chart of page.charts) for (const [qx, qy] of [[0, 0], [1, 0], [1, 1], [0, 0], [1, 1], [0, 1]]) {
-        const px = chart.left + (qx! * chart.width - 2) / chart.scale
-        const py = (qy! * chart.height - 2) / chart.scale
-        const wc = py / chart.cy, wb = (px - wc * chart.cx) / chart.length, wa = 1 - wb - wc
-        for (let component = 0; component < 2; component++) result.push(
-          wa * buffer[chart.vertices[0]! * 2 + component]! +
-          wb * buffer[chart.vertices[1]! * 2 + component]! +
-          wc * buffer[chart.vertices[2]! * 2 + component]!,
-        )
-      }
-      return Float32Array.from(result)
+  const positions = new Float32Array(kept.length * 3)
+  const copiedNormals = normals === undefined ? undefined : new Float32Array(kept.length * 3)
+  for (const [index, vertex] of kept.entries()) {
+    const from = vertex * 3, bias = anchors.has(groundSeamKey(source, from)) ? 0 : 0.001
+    for (let axis = 0; axis < 3; axis++) {
+      positions[index * 3 + axis] = source[from + axis]! - bias * (normals?.[from + axis] ?? (axis === 1 ? 1 : 0))
+      if (copiedNormals !== undefined) copiedNormals[index * 3 + axis] = normals![from + axis]!
     }
-    for (const chart of page.charts) {
-      for (const [qx, qy] of [[0, 0], [1, 0], [1, 1], [0, 0], [1, 1], [0, 1]]) atlas.push(
-        2 * (chart.x + qx! * chart.width) / page.width - 1,
-        1 - 2 * (chart.y + qy! * chart.height) / page.height, 0,
-      )
-      for (const [corner, vertex] of chart.vertices.entries()) {
-        positions.push(...source.subarray(vertex * 3, vertex * 3 + 3))
-        if (placed.normals !== undefined) normals.push(...placed.normals.subarray(vertex * 3, vertex * 3 + 3))
-        const px = corner === 0 ? 0 : corner === 1 ? chart.length : chart.cx
-        const py = corner === 2 ? chart.cy : 0
-        uv.push((chart.x + 2 + (px - chart.left) * chart.scale) / page.width,
-          (chart.y + 2 + py * chart.scale) / page.height)
-      }
-    }
-    const projected: WorldWebGlSplatBatch = { ...batch,
-      positions: Float32Array.from(atlas), normals: new Float32Array(atlas.length),
-      colors: new Float32Array(atlas.length / 3 * 4).fill(1),
-      textures: [ground], normalTextures: [], normalSwizzles: [], layerColors: [[1, 1, 1]],
-      textureCoordinates: [chartUvs(groundUv)],
-      textureWeights0: Float32Array.from({ length: atlas.length / 3 * 4 }, (_, i) => i % 4 === 0 ? 1 : 0),
-      textureWeights1: new Float32Array(atlas.length / 3 * 4),
-      maskTextureCoordinates: chartUvs(maskUv),
-    }
-    // The baked colour already includes the layer weights; keep only the original inverse mask.
-    const { weightTextures: _weights, weightTextureCoordinates: _coordinates, ...bakedBatch } = projected
-    const frame = await renderHeadless({
-      scene: { primitives: [{ id, topology: 'triangles', positions: projected.positions,
-        colors: projected.colors, materialId: id }],
-        materials: [{ id, baseColor: [1, 1, 1, 1], shading: 'unlit', doubleSided: true }],
-        lights: [], ambientLight: [1, 1, 1] },
-      camera: { viewProjection: Float32Array.of(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1) },
-      viewport: { width: page.width, height: page.height }, outputKind: 'rgba8', clearColor: [0, 0, 0, 0],
-      ...(signal === undefined ? {} : { signal }),
-    }, new Map([[id, { batch: bakedBatch, overlay: false }]]))
-    fillUncovered(frame.rgba, page.width, page.height)
-    yield { primitive: { id, topology: 'triangles' as const, positions: Float32Array.from(positions),
-      ...(normals.length === 0 ? {} : { normals: Float32Array.from(normals) }) },
-      uv: Float32Array.from(uv), rgba: frame.rgba, width: page.width, height: page.height }
   }
+  return { id: primitive.id, topology: 'triangles', positions,
+    ...(copiedNormals === undefined ? {} : { normals: copiedNormals }) }
 }
 
 /**
