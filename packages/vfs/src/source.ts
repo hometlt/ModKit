@@ -29,9 +29,11 @@ const CHUNK = 64 * 1024
 
 export function createMemorySource(id: string, bytes: Uint8Array): RandomAccessSource {
   let disposed = false
+  const streams = new Set<ReadableStreamDefaultController<Uint8Array>>()
+  const disposedError = () => new ModkitError({ code: 'x3.vfs/source-disposed', message: `source «${id}» disposed` })
   const ensureLive = () => {
     if (disposed) {
-      throw new ModkitError({ code: 'x3.vfs/source-disposed', message: `source «${id}» disposed` })
+      throw disposedError()
     }
   }
   return {
@@ -54,21 +56,38 @@ export function createMemorySource(id: string, bytes: Uint8Array): RandomAccessS
       ensureLive()
       let position = Math.max(0, start)
       const stop = Math.min(end, bytes.length)
+      let retained: ReadableStreamDefaultController<Uint8Array>
       return new ReadableStream<Uint8Array>({
-        pull(controller) {
-          throwIfAborted(signal)
-          if (position >= stop) {
-            controller.close()
-            return
-          }
-          const next = Math.min(position + CHUNK, stop)
-          controller.enqueue(bytes.slice(position, next))
-          position = next
+        start(controller) {
+          retained = controller
+          streams.add(controller)
         },
+        pull(controller) {
+          try {
+            throwIfAborted(signal)
+            ensureLive()
+            if (position >= stop) {
+              streams.delete(controller)
+              controller.close()
+              return
+            }
+            const next = Math.min(position + CHUNK, stop)
+            controller.enqueue(bytes.slice(position, next))
+            position = next
+          } catch (error) {
+            streams.delete(controller)
+            controller.error(error)
+          }
+        },
+        cancel() { streams.delete(retained) },
       })
     },
     dispose() {
+      if (disposed) return
       disposed = true
+      // Discard unread queued chunks; chunks already returned remain the caller's copies.
+      for (const controller of streams) controller.error(disposedError())
+      streams.clear()
     },
   }
 }
