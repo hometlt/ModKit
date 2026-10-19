@@ -1088,7 +1088,7 @@ describe('portable UVP map bundle', () => {
       UV_game_material: {
         params: {
           renderModel: {
-            layers: [{ label: 'alpha1', path: 'texture.dds' }],
+            layers: [{ label: 'alpha1', path: 'texture.dds' }, { label: 'height', path: 'texture.dds' }],
             standard: {
               layers: { alpha1: { slot: 'alpha1', texturePath: 'texture.dds' }, height: { slot: 'height', texturePath: 'texture.dds' } },
             },
@@ -1122,10 +1122,10 @@ describe('portable UVP map bundle', () => {
         standard: { layers: Record<string, { texturePath: string }> }
       } } } } }[]
     }).materials[0]!.extensions.UV_game_material.params.renderModel
-    expect(material.layers[0]!.path).toBe('skin.dds')
+    expect(material.layers.map(layer => layer.path)).toEqual(['skin.dds'])
     expect(material.standard.layers['alpha1']!.texturePath).toBe('skin.dds')
-    // a slot the skin lacks keeps its own texture
-    expect(material.standard.layers['height']!.texturePath).toBe('texture.dds')
+    // a textured slot the skin lacks is the base model's own; the skin replaces the material, so it goes
+    expect(material.standard.layers['height']).toBeUndefined()
   })
 })
 

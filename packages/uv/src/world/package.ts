@@ -615,8 +615,11 @@ const jsonRecord = (value: unknown): JsonRecord | undefined =>
  * `materialModel`): its materials replace the UVM's by index, and the textures delivered with the
  * model are the skin's. The UVM still names its own images, so each material's layers (their
  * `resourceId` by slot, the render model's layer `path` by label) and its glTF texture channels are
- * pointed at the skin's textures, whose images are added by name. Layers the skin lacks keep their
- * own. Returns the document unchanged when no material differs.
+ * pointed at the skin's textures, whose images are added by name. Textured layers the skin lacks are
+ * dropped, as the host replaces the whole material. Returns the document unchanged when no material
+ * differs.
+ * ponytail: the base material's scalar parameters (tiling, flags) stay; they match the skin for
+ * SC2 cliff skins, a full material swap needs a material-ref → UVM writer here.
  */
 function skinnedUvmDocument(document: JsonRecord, skin: readonly ModelMaterialRef[]): JsonRecord {
   const materials = Array.isArray(document['materials']) ? document['materials'] : []
@@ -645,27 +648,40 @@ function skinnedUvmDocument(document: JsonRecord, skin: readonly ModelMaterialRe
     if (slotIds.size === 0) return value
     const copy = structuredClone(material)
     /** Points `entry[field]` at the skin's texture of `slot`, when it names one of its own. */
-    const repoint = (entry: JsonRecord | undefined, slot: unknown, field: string): void => {
-      const id = typeof slot === 'string' ? slotIds.get(slotKey(slot)) : undefined
-      if (entry === undefined || id === undefined || entry[field] === undefined || entry[field] === id) return
+    /**
+     * Points `entry[field]` at the skin's texture of `slot`. A textured slot the skin lacks is the
+     * base model's own (MarSara's height map under a Shakuras skin): the host draws the skin's
+     * material in its place, so it goes. Returns false when the entry is to be removed.
+     */
+    const repoint = (entry: JsonRecord | undefined, slot: unknown, field: string): boolean => {
+      if (entry === undefined || entry[field] === undefined || typeof slot !== 'string') return true
+      const id = slotIds.get(slotKey(slot))
+      if (id === undefined) {
+        changed = true
+        return false
+      }
+      if (entry[field] === id) return true
       entry[field] = id
       imageFor(id)
       changed = true
+      return true
     }
     // The material's native layers and its render model (raw layers and standard program layers)
     // name textures by slot and label.
     const fields = jsonRecord(jsonRecord(jsonRecord(jsonRecord(copy['extras'])?.['modkit'])?.['material'])?.['fields'])
     for (const layer of Array.isArray(fields?.['layers']) ? fields['layers'] : []) {
       const entry = jsonRecord(layer)
-      repoint(entry, entry?.['slot'], 'resourceId')
+      if (!repoint(entry, entry?.['slot'], 'resourceId')) delete entry!['resourceId']
     }
     const renderModel = jsonRecord(jsonRecord(jsonRecord(jsonRecord(copy['extensions'])?.['UV_game_material'])?.['params'])?.['renderModel'])
-    for (const layer of Array.isArray(renderModel?.['layers']) ? renderModel['layers'] : []) {
-      const entry = jsonRecord(layer)
-      repoint(entry, entry?.['label'], 'path')
-    }
+    if (renderModel !== undefined && Array.isArray(renderModel['layers']))
+      renderModel['layers'] = renderModel['layers'].filter(layer => {
+        const entry = jsonRecord(layer)
+        return repoint(entry, entry?.['label'], 'path')
+      })
     const standardLayers = jsonRecord(jsonRecord(renderModel?.['standard'])?.['layers'])
-    for (const [slot, layer] of Object.entries(standardLayers ?? {})) repoint(jsonRecord(layer), slot, 'texturePath')
+    for (const [slot, layer] of Object.entries(standardLayers ?? {}))
+      if (!repoint(jsonRecord(layer), slot, 'texturePath')) delete standardLayers![slot]
     for (const [path, slot] of SKIN_CHANNELS) {
       const id = slotIds.get(slotKey(slot))
       let holder: JsonRecord | undefined = copy

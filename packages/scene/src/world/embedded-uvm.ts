@@ -1,4 +1,5 @@
 import { diagnostic } from '@modkit/core'
+import { resizeRgba } from '@modkit/codec-kit/raster'
 import type { RasterResourcePort, SceneRendererTexture } from '@modkit/sdk'
 import type { WorldSceneModelResult } from '@modkit/sdk/maps'
 import { readUvmContainer } from '@modkit/uv/model/container'
@@ -101,23 +102,27 @@ export function createEmbeddedUvmWorldModelDecoder(
         maxBytes,
         signal,
       )
-      for (const { image: index, source } of prepared) {
-        signal?.throwIfAborted()
+      // Only consult the package table for logical resources. Never forward a URI to the host.
+      const bytesOf = ({ image: index, source }: (typeof prepared)[number]) => {
         const candidate = images[index]
         if (typeof candidate !== 'object' || candidate === null || Array.isArray(candidate))
           throw new TypeError(`embedded UVM image ${String(index)} is invalid`)
-        const image = candidate as { readonly uri?: unknown; readonly name?: unknown }
-        const id = uvmImageResourceId(container.document, index)
+        const uri = (candidate as { readonly uri?: unknown }).uri
+        return source.kind === 'embedded'
+          ? source
+          : typeof uri === 'string'
+            ? input.mediaByUri.get(uri)
+            : undefined
+      }
+      // the textures still to read share what is left of the model's texture budget evenly
+      let pending = prepared.filter(item => bytesOf(item) !== undefined).length
+      for (const item of prepared) {
+        signal?.throwIfAborted()
+        const id = uvmImageResourceId(container.document, item.image)
         resources.push(
           Object.freeze({ id, role: 'texture' as const, provenance: 'companion' as const }),
         )
-        // Only consult the package table for logical resources. Never forward a URI to the host.
-        const embedded =
-          source.kind === 'embedded'
-            ? source
-            : typeof image.uri === 'string'
-              ? input.mediaByUri.get(image.uri)
-              : undefined
+        const embedded = bytesOf(item)
         if (embedded === undefined || rasterResources === undefined) {
           diagnostics.push(
             diagnostic(
@@ -130,12 +135,16 @@ export function createEmbeddedUvmWorldModelDecoder(
         }
         if (embedded.bytes.byteLength > maxTextureBytes)
           throw new RangeError(`embedded UVM texture ${id} exceeds maxTextureBytes`)
+        const left = Math.floor((maxTextureTotalBytes - textureBytes) / Math.max(1, pending))
+        pending -= 1
+        // Read at the per-texture limit: a texture past what is left of the model's share is
+        // shrunk below, not dropped (a package stores plain PNG, with no smaller level to pick).
         const decoded = await rasterResources.read(
           {
             kind: 'embedded',
             bytes: embedded.bytes,
             ...(embedded.mediaType === undefined ? {} : { mediaType: embedded.mediaType }),
-            maxBytes: Math.min(maxTextureBytes, maxTextureTotalBytes - textureBytes),
+            maxBytes: maxTextureBytes,
           },
           signal,
         )
@@ -151,18 +160,38 @@ export function createEmbeddedUvmWorldModelDecoder(
           )
           continue
         }
-        const decodedBytes = decoded.info.width * decoded.info.height * 4
-        if (decodedBytes > maxTextureBytes || decodedBytes > maxTextureTotalBytes - textureBytes)
-          throw new RangeError('embedded UVM textures exceed maxTextureTotalBytes')
+        if (decoded.info.width * decoded.info.height * 4 > maxTextureBytes)
+          throw new RangeError(`embedded UVM texture ${id} exceeds maxTextureBytes`)
         // These resources include packed normal/specular channels as well as color images.
         // Preserve their channel values; material presentation owns their interpretation.
-        const rgba = uvmImageTexels(decoded, { channels: 'data' })
+        let texels = {
+          width: decoded.info.width,
+          height: decoded.info.height,
+          pixels: uvmImageTexels(decoded, { channels: 'data' }),
+        }
+        // Past its share of the model's texture budget the texture halves until it fits, as a mip would.
+        let { width, height } = texels
+        while (width * height * 4 > left && (width > 1 || height > 1)) {
+          width = Math.max(1, width >> 1)
+          height = Math.max(1, height >> 1)
+        }
+        if (width * height * 4 > left) {
+          diagnostics.push(diagnostic('warning', 'x3.scene/embedded-uvm-texture-over-budget',
+            `embedded UVM texture ${id} does not fit the model's texture budget`))
+          continue
+        }
+        if (width !== texels.width || height !== texels.height) {
+          diagnostics.push(diagnostic('information', 'x3.scene/embedded-uvm-texture-reduced',
+            `embedded UVM texture ${id} reduced from ${String(texels.width)}x${String(texels.height)} to ${String(width)}x${String(height)} to fit the model's texture budget`))
+          texels = resizeRgba(texels, width, height)
+        }
+        const rgba = texels.pixels
         textureBytes += rgba.byteLength
         const filter = filters.get(id)
         const texture = Object.freeze({
           id,
-          width: decoded.info.width,
-          height: decoded.info.height,
+          width,
+          height,
           rgba,
           ...(filter === undefined ? {} : { filter }),
         })

@@ -170,20 +170,25 @@ it('enforces encoded, decoded and aggregate image budgets', async () => {
     decode = createEmbeddedUvmWorldModelDecoder(rasterPort(reads))
   await assert.rejects(decode(fixture, { ...budget, maxTextureBytes: 2 }), /maxTextureBytes/)
   assert.equal(reads.length, 0)
-  await assert.rejects(
-    decode(fixture, { ...budget, maxTextureTotalBytes: 4 }),
-    /maxTextureTotalBytes/,
+  // past the model's texture share a texture shrinks, as a mip would, instead of dropping out
+  const halved = await decode(fixture, { ...budget, maxTextureTotalBytes: 4 })
+  assert.deepEqual(halved.textures.map(texture => [texture.width, texture.height]), [[1, 1]])
+  assert.equal(halved.complete, true)
+  assert.ok(halved.diagnostics.some(item => item.code === 'x3.scene/embedded-uvm-texture-reduced'))
+  const second = await decode(
+    input([
+      { bufferView: 0, mimeType: 'image/png' },
+      { bufferView: 0, mimeType: 'image/png' },
+    ]),
+    { ...budget, maxTextureTotalBytes: 12 },
   )
-  await assert.rejects(
-    decode(
-      input([
-        { bufferView: 0, mimeType: 'image/png' },
-        { bufferView: 0, mimeType: 'image/png' },
-      ]),
-      { ...budget, maxTextureTotalBytes: 12 },
-    ),
-    /maxTextureTotalBytes/,
-  )
+  // the textures share the budget: the first does not take the room the second needs
+  assert.deepEqual(second.textures.map(texture => [texture.width, texture.height]), [[1, 1], [1, 2]])
+  assert.equal(second.complete, true)
+  const none = await decode(fixture, { ...budget, maxTextureTotalBytes: 2 })
+  assert.equal(none.textures.length, 0)
+  assert.equal(none.complete, false)
+  assert.ok(none.diagnostics.some(item => item.code === 'x3.scene/embedded-uvm-texture-over-budget'))
 })
 
 it('validates image regions and observes cancellation after raster acquisition', async () => {
