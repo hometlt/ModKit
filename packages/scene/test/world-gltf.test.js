@@ -1,0 +1,94 @@
+import assert from 'node:assert/strict'
+import { it } from 'node:test'
+import { decodePngSamples } from '@modkit/codec-kit/raster'
+import { createWorldWebGlPlan } from '../src/world/webgl.js'
+import { worldGlb } from '../src/world/gltf.js'
+
+it('keeps the full rock mask period when the diffuse texture repeats inside it', async () => {
+  const tex = { id: 'rock', width: 8, height: 1, rgba: Uint8Array.from(
+    Array.from({ length: 8 }, (_, i) => [i % 2 ? 255 : 0, i % 2 ? 0 : 255, 0, i < 4 ? 0 : 255]).flat(),
+  ) }
+  const layer = (slot, channels, extra = {}) => ({ slot, texturePath: tex.id, uvSource: 0,
+    channels, op: 2, teamColorMode: 0, invert: false, clampResult: true, wrapX: true, wrapY: true, ...extra })
+  const coords = Float32Array.of(0, 0, 1, 0, 0, 1)
+  const piece = { state: 'converted', sourceKey: 'rock', complete: true, diagnostics: [], meshes: [], nodes: [],
+    primitives: [{ id: 'rock-face', topology: 'triangles', materialId: 'rock',
+      positions: Float32Array.of(0, 0, 0, 2, 0, 0, 0, 1, 0), textureCoordinates: coords }],
+    textures: [tex], materials: [{ id: 'rock', layers: [{ slot: 'diffuse', resourceId: tex.id, uvSource: 0 }],
+      shader: { id: 'modkit.render-material.v1', parameters: { renderModel: { version: 1, standard: {
+        layers: { diffuse: layer('diffuse', 0, { uvTiling: { value: [2, 1] } }), alpha1: layer('alpha1', 2) },
+        blendMode: 1, priority: 0, specularity: 10, specMult: 1, emisMult: 1, specMode: 0,
+        alphaTestThreshold: 0, twoSided: false, unshaded: true, doubleLambert: false,
+        clampOutput: false, usesVertexColor: false, usesVertexAlpha: false,
+      } } } },
+    }],
+  }
+  const makePlan = model => createWorldWebGlPlan({ items: [{ facet: 'objects', id: 'cliff', layerId: 'objects',
+    coordinateSpaceId: 'uvw', kind: 'doodad', objectId: 1, derivedFrom: 'cliffs', resourceIds: ['rock'],
+    position: { x: 0, y: 0, z: 0 }, uvwPosition: { x: 0, y: 0, z: 0 }, uvwRotation: [0, 0, 0, 1] }],
+    models: new Map([['rock', model]]) })
+  const plan = makePlan(piece)
+  const result = await worldGlb(plan, { terrainTextureSize: 16, maxBytes: 1024 * 1024 })
+  const length = new DataView(result.bytes.buffer).getUint32(12, true)
+  const document = JSON.parse(new TextDecoder().decode(result.bytes.subarray(20, 20 + length)))
+  const bin = result.bytes.subarray(28 + length)
+  const accessor = document.accessors[document.meshes[0].primitives[0].attributes.TEXCOORD_0]
+  const view = document.bufferViews[accessor.bufferView]
+  assert.deepEqual(new Float32Array(bin.buffer, bin.byteOffset + view.byteOffset, 6), coords)
+  const imageView = document.bufferViews[document.images[0].bufferView]
+  const decoded = await decodePngSamples(bin.subarray(imageView.byteOffset, imageView.byteOffset + imageView.byteLength))
+  assert.equal(decoded.width, 16, 'two repetitions retain the diffuse texture resolution')
+  assert.deepEqual(Array.from(decoded.samples).filter((_, i) => i % 4 === 3).map(v => v >= 128),
+    Array.from({ length: 16 }, (_, i) => i >= 8))
+  // A constant mask cannot be the UV domain of a varying diffuse texture.
+  const constant = structuredClone(piece)
+  constant.materials[0].shader.parameters.renderModel.standard.layers.alpha1.uvTiling = { value: [0, 0] }
+  const constantResult = await worldGlb(makePlan(constant), { terrainTextureSize: 16, maxBytes: 1024 * 1024 })
+  const constantLength = new DataView(constantResult.bytes.buffer).getUint32(12, true)
+  const constantDocument = JSON.parse(new TextDecoder().decode(constantResult.bytes.subarray(20, 20 + constantLength)))
+  const constantAccessor = constantDocument.accessors[constantDocument.meshes[0].primitives[0].attributes.TEXCOORD_0]
+  const constantView = constantDocument.bufferViews[constantAccessor.bufferView]
+  const constantBin = constantResult.bytes.subarray(28 + constantLength)
+  assert.deepEqual(new Float32Array(constantBin.buffer, constantBin.byteOffset + constantView.byteOffset, 6),
+    Float32Array.of(-.5, 0, 1.5, 0, -.5, 1))
+})
+
+it('exports masked cliff floors and vertical walls at their original positions with complementary coverage', async () => {
+  const positions = Float32Array.of(0, 0, 0, 2, 0, 0, 0, 0, 2,
+    0, 0, 0, 2, 0, 0, 0, 1, 0)
+  const batch = {
+    positions, normals: Float32Array.from({ length: 18 }, (_, i) => i % 3 === 1 ? 1 : 0),
+    colors: new Float32Array(24).fill(1),
+    textures: [{ id: 'ground', width: 1, height: 1, rgba: Uint8Array.of(120, 90, 60, 255) }],
+    normalTextures: [], normalSwizzles: [],
+    textureCoordinates: [new Float32Array(12)],
+    textureWeights0: Float32Array.from({ length: 24 }, (_, i) => i % 4 === 0 ? 1 : 0),
+    textureWeights1: new Float32Array(24),
+    maskTexture: { id: 'rock', width: 2, height: 1,
+      rgba: Uint8Array.of(0, 0, 0, 0, 0, 0, 0, 255) },
+    maskTextureCoordinates: Float32Array.of(.1, .5, .9, .5, .1, .5, .1, .5, .9, .5, .1, .5),
+    maskChannel: 3,
+  }
+  const plan = { ...createWorldWebGlPlan({ items: [] }), splatTriangles: [batch],
+    bounds: { minimum: [0, 0, 0], maximum: [2, 1, 2] } }
+  const result = await worldGlb(plan, { terrainTextureSize: 64, maxBytes: 8 * 1024 * 1024 })
+  const jsonLength = new DataView(result.bytes.buffer).getUint32(12, true)
+  const document = JSON.parse(new TextDecoder().decode(result.bytes.subarray(20, 20 + jsonLength)))
+  const bin = result.bytes.subarray(28 + jsonLength)
+  const mesh = document.meshes.find(mesh => mesh.name.includes('masked-ground'))
+  assert.ok(mesh, 'a dedicated masked terrain material is exported')
+  const primitive = mesh.primitives[0]
+  assert.equal(document.accessors[primitive.indices].count, 6, 'the vertical face is retained')
+  const accessor = document.accessors[primitive.attributes.POSITION]
+  const view = document.bufferViews[accessor.bufferView]
+  assert.deepEqual(new Float32Array(bin.buffer, bin.byteOffset + view.byteOffset, accessor.count * 3), positions,
+    'the shared plateau edge is neither sunk nor split')
+  const material = document.materials[primitive.material]
+  assert.equal(material.alphaMode, 'MASK')
+  const image = document.images[document.textures[material.pbrMetallicRoughness.baseColorTexture.index].source]
+  const imageView = document.bufferViews[image.bufferView]
+  const decoded = await decodePngSamples(bin.subarray(imageView.byteOffset, imageView.byteOffset + imageView.byteLength))
+  const pixels = decoded.samples
+  assert.ok(pixels.some((v, i) => i % 4 === 3 && v === 255), 'terrain appears where rock is clear')
+  assert.ok(pixels.some((v, i) => i % 4 === 3 && v < 128), 'terrain is discarded where rock is set')
+})

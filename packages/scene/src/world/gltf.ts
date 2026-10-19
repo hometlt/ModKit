@@ -14,8 +14,8 @@
  * ground meshes then carry planar UVs over the world's x/z extent; the overlay and decal layers that
  * the bake already holds are not written again. Vertical ground faces stretch the bake: SC2 cliff
  * walls are models and are unaffected. A masked cliff piece's ground copy (the terrain the world
- * shows where the rock's mask is clear) is sunk just under the alpha-tested rock and loses its steep
- * faces; bake texels no ground covered take their nearest covered colour.
+ * shows where the rock's mask is clear) keeps every face at its original position. Its splats and
+ * inverse rock coverage are baked into triangle charts by the same CPU renderer.
  *
  * Limits of this profile: one moment (clip time 0, the plan's poses); no animation, skins or
  * morph targets (geometry is baked); material programs (layered game shaders), team colour and
@@ -37,7 +37,7 @@ import { sceneTexturePixels } from '../render/compressed-textures.js'
 import { prepareSceneMaterialPrograms, sampleMaterialTexture } from '../render/materials.js'
 import type { StandardMaterialProgram } from '../materials/index.js'
 import { worldHeadlessScene } from './headless.js'
-import type { WorldWebGlPlan } from './webgl.js'
+import type { WorldWebGlPlan, WorldWebGlSplatBatch } from './webgl.js'
 
 export interface WorldGlbOptions {
   /** Edge of the baked ground image, 16..4096 pixels (the headless renderer's own ceiling). */
@@ -273,7 +273,7 @@ export async function worldGlb(plan: WorldWebGlPlan, options: WorldGlbOptions): 
   }
   /**
    * A model material the world draws with a layered program (SC2 M3): its colour and coverage baked
-   * into the texture space of its first mesh-UV layer, with the program's blend.
+   * into the coverage layer's texture space (otherwise diffuse), with the program's blend.
    */
   const surfaces = new Map<string, Promise<ProgramSurface | undefined>>()
   const surfaceOf = (id: string | undefined): Promise<ProgramSurface | undefined> => {
@@ -290,9 +290,12 @@ export async function worldGlb(plan: WorldWebGlPlan, options: WorldGlbOptions): 
     const pass = programs?.passes[0]
     if (programs === undefined || pass === undefined) return undefined
     const layerOf = (slot: string) => pass.defines.layers.find(layer => layer.slot === slot)
-    const domain = (['diffuse', 'alpha1', 'alpha2'] as const)
+    // Coverage must keep its full UV period: a diffuse layer tiled twice inside an untiled mask
+    // cannot carry that mask in one repeating diffuse tile.
+    const domain = (['alpha1', 'alpha2', 'diffuse'] as const)
       .map(layerOf)
-      .find(layer => layer?.hasTexture === true && MESH_UV_SETS.has(layer.uvSource))
+      .find(layer => layer?.hasTexture === true && MESH_UV_SETS.has(layer.uvSource) &&
+        invertAffine2(layerAffine(pass, layer)) !== undefined)
     if (domain === undefined) return undefined
     const sourceOf = (layer: StandardLayerDefines) => {
       const binding = pass.textures.find(item => item.slot === layer.slot)
@@ -347,9 +350,24 @@ export async function worldGlb(plan: WorldWebGlPlan, options: WorldGlbOptions): 
     if (texture === undefined) {
       texture = (async () => {
         signal?.throwIfAborted()
-        const rgba = bakeProgramSurface(pass, domain, base.texture, contributing)
+        const inverse = invertAffine2(layerAffine(pass, domain)) ?? IDENTITY
+        let width = base.texture.width, height = base.texture.height
+        for (const { layer, source } of contributing) {
+          if (source === undefined) continue
+          const m = layerAffine(pass, layer)
+          width = Math.max(width, Math.ceil(Math.hypot(
+            (m[0] * inverse[0] + m[1] * inverse[2]) * source.texture.width,
+            (m[2] * inverse[0] + m[3] * inverse[2]) * source.texture.height,
+          )))
+          height = Math.max(height, Math.ceil(Math.hypot(
+            (m[0] * inverse[1] + m[1] * inverse[3]) * source.texture.width,
+            (m[2] * inverse[1] + m[3] * inverse[3]) * source.texture.height,
+          )))
+        }
+        width = Math.min(4096, width); height = Math.min(4096, height)
+        const rgba = bakeProgramSurface(pass, domain, base.texture, contributing, width, height)
         const filter = base.texture.filter === 'nearest' ? NEAREST : LINEAR
-        return imageTexture(`${id}#surface`, base.texture.width, base.texture.height, rgba, {
+        return imageTexture(`${id}#surface`, width, height, rgba, {
           magFilter: filter,
           minFilter: filter,
           wrapS: base.binding.wrapU === 'clamp' ? CLAMP : REPEAT,
@@ -457,7 +475,30 @@ export async function worldGlb(plan: WorldWebGlPlan, options: WorldGlbOptions): 
   // mesh, with its placement baked into the vertices, so a viewer loads as many draw objects and
   // shaders as there are distinct materials, not one per placed piece.
   const groups = new Map<string, MeshGroup>()
+  const maskedGround = new Map<string, { material: number; uv: Float32Array }>()
+  const exportPrimitives: SceneRendererPrimitive[] = []
   for (const primitive of scene.primitives) {
+    const splat = splats.get(primitive.id)
+    if (splat?.batch.maskTexture === undefined || primitive.hidden === true || isTerrainLayer(primitive.id)) {
+      exportPrimitives.push(primitive)
+      continue
+    }
+    for await (const chart of maskedGroundCharts(primitive, splat.batch,
+      { id: TERRAIN_MATERIAL, width: bakeWidth, height: bakeHeight, rgba: baked!, filter: 'linear', wrapU: 'clamp', wrapV: 'clamp' },
+      [minX, minZ, spanX, spanZ], size / Math.max(spanX, spanZ), signal)) {
+      const index = await imageTexture(chart.primitive.id, chart.width, chart.height, chart.rgba, {
+        magFilter: LINEAR, minFilter: LINEAR, wrapS: CLAMP, wrapT: CLAMP,
+      })
+      const material = addMaterial({
+        name: chart.primitive.id,
+        pbrMetallicRoughness: { baseColorTexture: { index }, metallicFactor: 0, roughnessFactor: 1 },
+        alphaMode: 'MASK', alphaCutoff: 0.5, doubleSided: true,
+      })
+      maskedGround.set(chart.primitive.id, { material, uv: chart.uv })
+      exportPrimitives.push(chart.primitive)
+    }
+  }
+  for (const primitive of exportPrimitives) {
     signal?.throwIfAborted()
     if (primitive.topology !== 'triangles' || primitive.hidden === true || isTerrainLayer(primitive.id)) {
       omitted++
@@ -465,11 +506,9 @@ export async function worldGlb(plan: WorldWebGlPlan, options: WorldGlbOptions): 
     }
     // the blended ground takes the bake; terrain batches with a texture of their own (cliff pieces
     // the world draws with their terrain material) keep it, as the bake stretches on their walls
-    const ground = terrain.has(primitive.id) && baked !== undefined && !primitive.id.startsWith('world/textured-')
-    const placed =
-      ground && splats.get(primitive.id)?.batch.maskTexture !== undefined
-        ? groundUnderRock(placedPrimitive(primitive))
-        : placedPrimitive(primitive)
+    const masked = maskedGround.get(primitive.id)
+    const ground = masked === undefined && terrain.has(primitive.id) && baked !== undefined && !primitive.id.startsWith('world/textured-')
+    const placed = placedPrimitive(primitive)
     if (placed.positions.length < 9) continue
     const vertices = placed.positions.length / 3
     const normals = unitNormals(placed)
@@ -482,7 +521,8 @@ export async function worldGlb(plan: WorldWebGlPlan, options: WorldGlbOptions): 
         uv[vertex * 2 + 1] = (placed.positions[vertex * 3 + 2]! - minZ) / spanZ
       }
     }
-    const surface = ground ? undefined : await surfaceOf(primitive.materialId)
+    if (masked !== undefined) uv = masked.uv
+    const surface = ground || masked !== undefined ? undefined : await surfaceOf(primitive.materialId)
     if (surface === OMITTED_SURFACE) {
       unknownCoverage++
       continue
@@ -495,13 +535,13 @@ export async function worldGlb(plan: WorldWebGlPlan, options: WorldGlbOptions): 
     if (!ground && coordinates !== undefined && coordinates.length === vertices * 2)
       uv = surface === undefined ? coordinates : transformedUvs(coordinates, surface.transform)
     const colors =
-      !ground &&
+      !ground && masked === undefined &&
       (surface === undefined || surface.vertexColors) &&
       primitive.colors !== undefined &&
       primitive.colors.length === vertices * 4
         ? primitive.colors.map(clamp01)
         : undefined
-    const material = surface?.material ?? (await materialOf(ground ? TERRAIN_MATERIAL : primitive.materialId))
+    const material = masked?.material ?? surface?.material ?? (await materialOf(ground ? TERRAIN_MATERIAL : primitive.materialId))
     const indices = frontFacing(placed, normals)
     if (indices !== placed.indices) reversed++
     const key = `${String(material)}|${normals === undefined ? 0 : 1}${uv === undefined ? 0 : 1}${colors === undefined ? 0 : 1}`
@@ -703,8 +743,9 @@ function bakeProgramSurface(
   domain: StandardLayerDefines,
   domainTexture: SceneRendererTexture,
   contributing: readonly Contribution[],
+  width: number,
+  height: number,
 ): Uint8Array {
-  const { width, height } = domainTexture
   const pixels = domainTexture.rgba
   const toMesh = invertAffine2(layerAffine(pass, domain)) ?? IDENTITY
   const team = [0, 1, 2].map(index => uniformOf(pass, 'u_teamColor', index, 1)) as [number, number, number]
@@ -739,7 +780,7 @@ function bakeProgramSurface(
       const value = (plan: Plan) => {
         let texel: [number, number, number, number]
         if (plan.source === undefined) texel = plan.constant
-        else if (plan.layer === domain)
+        else if (plan.layer === domain && width === domainTexture.width && height === domainTexture.height)
           texel = [pixels[offset]! / 255, pixels[offset + 1]! / 255, pixels[offset + 2]! / 255, pixels[offset + 3]! / 255]
         else {
           const [u, v] = applyAffine(plan.transform, mu, mv)
@@ -876,41 +917,131 @@ function placedPrimitive(primitive: SceneRendererPrimitive): SceneRendererPrimit
   return { ...rest, positions, ...(normals === undefined ? {} : { normals }) }
 }
 
-/** How far a cliff piece's ground copy sinks under the rock it doubles, in world units. */
-const UNDER_ROCK = 0.02
-/** A ground copy face steeper than this (|normal y|) has no place under the rock and is dropped. */
-const UNDER_ROCK_MIN_UP = 0.25
-
 /**
- * The ground copy of a masked cliff piece (SC2 TerrainAlphaMask) for a viewer without the mask:
- * the world draws every face of the piece once more as terrain and discards it where the rock is
- * set. glTF has no second texture for that discard, so the copy is sunk a little under the rock,
- * which is alpha-tested in front of it, and shows only where the rock's own mask clears it.
- * Steep faces cannot be sunk under their rock and are dropped.
+ * Bake masked terrain in padded, non-overlapping triangle charts using the existing splat
+ * rasterizer. Chart density retains both the requested terrain density and the source mask's
+ * texels; pages stay within the renderer's 4096 ceiling. No face is moved or discarded by slope.
  */
-function groundUnderRock(primitive: SceneRendererPrimitive): SceneRendererPrimitive {
-  const source = primitive.positions
-  const indices = primitive.indices
-  const count = indices?.length ?? Math.floor(source.length / 3)
-  const kept: number[] = []
-  for (let corner = 0; corner + 2 < count; corner += 3) {
-    const [a, b, c] = [0, 1, 2].map(offset => (indices?.[corner + offset] ?? corner + offset) * 3) as [number, number, number]
-    const ux = source[b]! - source[a]!, uy = source[b + 1]! - source[a + 1]!, uz = source[b + 2]! - source[a + 2]!
-    const vx = source[c]! - source[a]!, vy = source[c + 1]! - source[a + 1]!, vz = source[c + 2]! - source[a + 2]!
-    const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx
-    const length = Math.hypot(nx, ny, nz)
-    if (!(length > 0) || Math.abs(ny) / length < UNDER_ROCK_MIN_UP) continue
-    kept.push(a, b, c)
-  }
-  const positions = new Float32Array(kept.length * 3)
-  const normals = primitive.normals === undefined ? undefined : new Float32Array(kept.length * 3)
-  kept.forEach((from, index) => {
-    positions[index * 3] = source[from]!
-    positions[index * 3 + 1] = source[from + 1]! - UNDER_ROCK
-    positions[index * 3 + 2] = source[from + 2]!
-    if (normals !== undefined) normals.set(primitive.normals!.subarray(from, from + 3), index * 3)
+async function* maskedGroundCharts(
+  primitive: SceneRendererPrimitive,
+  batch: WorldWebGlSplatBatch,
+  ground: SceneRendererTexture,
+  bounds: readonly [number, number, number, number],
+  density: number,
+  signal?: AbortSignal,
+) {
+  const placed = placedPrimitive(primitive)
+  const source = placed.positions
+  const mask = batch.maskTexture!
+  const maskUv = batch.maskTextureCoordinates!
+  // Both sides of a plateau seam read the same bake, including decals, overlays and ground AO.
+  const groundUv = Float32Array.from({ length: source.length / 3 * 2 }, (_, index) => {
+    const vertex = Math.floor(index / 2), axis = index % 2
+    return (source[vertex * 3 + axis * 2]! - bounds[axis]!) / bounds[axis + 2]!
   })
-  return { id: primitive.id, topology: 'triangles', positions, ...(normals === undefined ? {} : { normals }) }
+  type Chart = { vertices: number[]; x: number; y: number; width: number; height: number;
+    left: number; length: number; cx: number; cy: number; scale: number }
+  const pages: { charts: Chart[]; width: number; height: number }[] = []
+  let page = { charts: [] as Chart[], width: 0, height: 0 }, x = 0, y = 0, row = 0
+  const count = placed.indices?.length ?? source.length / 3
+  for (let corner = 0; corner + 2 < count; corner += 3) {
+    signal?.throwIfAborted()
+    const vertices = [0, 1, 2].map(offset => placed.indices?.[corner + offset] ?? corner + offset)
+    const a = vertices[0]!, b = vertices[1]!, c = vertices[2]!
+    const ab = [0, 1, 2].map(axis => source[b * 3 + axis]! - source[a * 3 + axis]!)
+    const ac = [0, 1, 2].map(axis => source[c * 3 + axis]! - source[a * 3 + axis]!)
+    const length = Math.hypot(...ab)
+    if (length === 0) continue
+    const cx = ab.reduce((sum, value, axis) => sum + value * ac[axis]!, 0) / length
+    const cy = Math.sqrt(Math.max(0, ac.reduce((sum, value) => sum + value * value, 0) - cx * cx))
+    if (cy < 1e-8) continue
+    let scale = density
+    for (const [first, second] of [[a, b], [a, c], [b, c]] as const) {
+      const distance = Math.hypot(...[0, 1, 2].map(axis => source[second * 3 + axis]! - source[first * 3 + axis]!))
+      if (distance > 0) scale = Math.max(scale, Math.hypot(
+        (maskUv[second * 2]! - maskUv[first * 2]!) * mask.width,
+        (maskUv[second * 2 + 1]! - maskUv[first * 2 + 1]!) * mask.height,
+      ) / distance)
+    }
+    const left = Math.min(0, cx), extent = Math.max(length, cx) - left
+    const width = Math.max(1, Math.ceil(extent * scale)) + 4
+    const height = Math.max(1, Math.ceil(cy * scale)) + 4
+    if (width > 4096 || height > 4096)
+      throw new RangeError('a masked ground triangle exceeds the 4096 texture chart limit')
+    if (x + width > 4096) { x = 0; y += row; row = 0 }
+    if (y + height > 4096) {
+      pages.push(page)
+      page = { charts: [], width: 0, height: 0 }; x = 0; y = 0; row = 0
+    }
+    page.charts.push({ vertices, x, y, width, height, left, length, cx, cy, scale })
+    page.width = Math.max(page.width, x + width); page.height = Math.max(page.height, y + height)
+    x += width; row = Math.max(row, height)
+  }
+  if (page.charts.length > 0) pages.push(page)
+  for (const [index, page] of pages.entries()) {
+    signal?.throwIfAborted()
+    const id = `${primitive.id}/masked-ground-${index}`
+    const positions: number[] = [], normals: number[] = [], uv: number[] = []
+    const atlas: number[] = []
+    const maps = new Map<Float32Array, number[]>()
+    // Extend each source varying to the chart's padded rectangle; the rasterizer owns sampling.
+    const varying = (buffer: Float32Array, width: number): Float32Array => {
+      let result = maps.get(buffer)
+      if (result === undefined) {
+        result = []
+        for (const chart of page.charts) for (const [qx, qy] of [[0, 0], [1, 0], [1, 1], [0, 0], [1, 1], [0, 1]]) {
+          const px = chart.left + (qx! * chart.width - 2) / chart.scale
+          const py = (qy! * chart.height - 2) / chart.scale
+          const wc = py / chart.cy, wb = (px - wc * chart.cx) / chart.length, wa = 1 - wb - wc
+          for (let component = 0; component < width; component++) result.push(
+            wa * buffer[chart.vertices[0]! * width + component]! +
+            wb * buffer[chart.vertices[1]! * width + component]! +
+            wc * buffer[chart.vertices[2]! * width + component]!,
+          )
+        }
+        maps.set(buffer, result)
+      }
+      return Float32Array.from(result)
+    }
+    for (const chart of page.charts) {
+      for (const [qx, qy] of [[0, 0], [1, 0], [1, 1], [0, 0], [1, 1], [0, 1]]) atlas.push(
+        2 * (chart.x + qx! * chart.width) / page.width - 1,
+        1 - 2 * (chart.y + qy! * chart.height) / page.height, 0,
+      )
+      for (const [corner, vertex] of chart.vertices.entries()) {
+        positions.push(...source.subarray(vertex * 3, vertex * 3 + 3))
+        if (placed.normals !== undefined) normals.push(...placed.normals.subarray(vertex * 3, vertex * 3 + 3))
+        const px = corner === 0 ? 0 : corner === 1 ? chart.length : chart.cx
+        const py = corner === 2 ? chart.cy : 0
+        uv.push((chart.x + 2 + (px - chart.left) * chart.scale) / page.width,
+          (chart.y + 2 + py * chart.scale) / page.height)
+      }
+    }
+    const projected: WorldWebGlSplatBatch = { ...batch,
+      positions: Float32Array.from(atlas), normals: new Float32Array(atlas.length),
+      colors: new Float32Array(atlas.length / 3 * 4).fill(1),
+      textures: [ground], normalTextures: [], normalSwizzles: [], layerColors: [[1, 1, 1]],
+      textureCoordinates: [varying(groundUv, 2)],
+      textureWeights0: Float32Array.from({ length: atlas.length / 3 * 4 }, (_, i) => i % 4 === 0 ? 1 : 0),
+      textureWeights1: new Float32Array(atlas.length / 3 * 4),
+      maskTextureCoordinates: varying(maskUv, 2),
+    }
+    // The baked colour already includes the layer weights; keep only the original inverse mask.
+    const { weightTextures: _weights, weightTextureCoordinates: _coordinates, ...bakedBatch } = projected
+    const frame = await renderHeadless({
+      scene: { primitives: [{ id, topology: 'triangles', positions: projected.positions,
+        colors: projected.colors, materialId: id }],
+        materials: [{ id, baseColor: [1, 1, 1, 1], shading: 'unlit', doubleSided: true }],
+        lights: [], ambientLight: [1, 1, 1] },
+      camera: { viewProjection: Float32Array.of(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1) },
+      viewport: { width: page.width, height: page.height }, outputKind: 'rgba8', clearColor: [0, 0, 0, 0],
+      ...(signal === undefined ? {} : { signal }),
+    }, new Map([[id, { batch: bakedBatch, overlay: false }]]))
+    fillUncovered(frame.rgba, page.width, page.height)
+    yield { primitive: { id, topology: 'triangles' as const, positions: Float32Array.from(positions),
+      ...(normals.length === 0 ? {} : { normals: Float32Array.from(normals) }) },
+      uv: Float32Array.from(uv), rgba: frame.rgba, width: page.width, height: page.height }
+  }
 }
 
 /**
