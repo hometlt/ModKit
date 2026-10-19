@@ -368,6 +368,23 @@ it('joins cliff pieces that share a vertex but read different base offsets', () 
     shared.filter(height => height !== -1).sort(),
     [0.5, 0.5],
   )
+  // A reopened UVW names a piece's packaged model by resourceIds: its seams join all the same.
+  const byIds = (id, resourceId) => {
+    const { resourceId: _single, ...piece } = placed(id, resourceId)
+    return { ...piece, resourceIds: [resourceId] }
+  }
+  const reopened = createWorldWebGlPlan({
+    items: [...terrain, ...reference, byIds('cliff:a', 'a'), byIds('cliff:b', 'b')],
+    models: new Map([
+      ['a', face('a', [1, 1, 0, 2, 1, 0, 2, 0, 0])],
+      ['b', face('b', [2, 1, 0, 3, 1, 0, 3, 0, 0])],
+    ]),
+  }).opaqueTriangles.positions
+  const joined = []
+  for (let index = 0; index < reopened.length; index += 3)
+    if (Math.abs(reopened[index] - 2) < 1e-6 && Math.abs(reopened[index + 2]) < 1e-6)
+      joined.push(Math.round(reopened[index + 1] * 1000) / 1000)
+  assert.deepEqual(joined.filter(height => height !== -1).sort(), [0.5, 0.5])
 })
 
 it('lifts cliff pieces by the host base offset, not from the most common base', () => {

@@ -6140,12 +6140,20 @@ function prepareWorldStaticTerrain(
   )
   // Every placed piece registers its vertices before any piece is lifted, so shared seam vertices
   // get one offset (see `registerCliffPiece`).
+  // A piece names its model as the draw loop reads it (resourceId, resourceIds or components: a
+  // reopened UVW names packaged models by resourceIds), with the same transforms it is lifted by.
   for (const item of input.items) {
-    if (item.facet !== 'objects' || item.derivedFrom !== 'cliffs' || item.resourceId === undefined)
-      continue
-    const sampled = sampleSharedModel(item.resourceId, item)
-    if (sampled === undefined) continue
-    registerCliffPiece(sampled.primitives, worldObjectTransform(item, objectPosition(item, input)))
+    if (item.facet !== 'objects' || item.derivedFrom !== 'cliffs') continue
+    const { components } = worldObjectResourcesOf(item)
+    const sampleOf = (resourceId: string) => worldPosedSample(sampleSharedModel(resourceId, item))
+    const componentTransforms = worldComponentTransforms(components, sampleOf)
+    const transform = worldObjectTransform(item, objectPosition(item, input))
+    for (const component of components) {
+      const sampled = sampleOf(component.resourceId)
+      const componentTransform = componentTransforms.get(component.id)
+      if (sampled === undefined || componentTransform === undefined) continue
+      registerCliffPiece(sampled.primitives, multiplyComponentTransforms(transform, componentTransform))
+    }
   }
   type CliffTriangle = readonly [
     readonly [number, number, number],
