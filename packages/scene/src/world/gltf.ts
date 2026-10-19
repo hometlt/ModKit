@@ -931,6 +931,8 @@ function groundUnderRock(
     }
     const [x, columns] = range(0, mask.width, mask.wrapU ?? 'repeat')
     const [y, rows] = range(1, mask.height, mask.wrapV ?? 'repeat')
+    // Culling is optional: a broad repeated mask must not scan a whole large image per face.
+    if (columns * rows > 4096) return true
     for (let row = 0; row < rows; row++) for (let column = 0; column < columns; column++) {
       const u = ((x + column) % mask.width + mask.width) % mask.width
       const v = ((y + row) % mask.height + mask.height) % mask.height

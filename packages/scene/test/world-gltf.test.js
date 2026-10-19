@@ -108,4 +108,10 @@ it('keeps visible cliff walls under the rock and pins their shared plateau verti
     }],
   }, { terrainTextureSize: 64, maxBytes: 8 * 1024 * 1024 })
   assert.equal(clearResult.stats.triangles, 3, 'uniform clear coverage needs no oversized mask chart, even with repeated UVs')
+  const broadMask = new Uint8Array(128 * 128 * 4).fill(255)
+  const bounded = await worldGlb({ ...plan, splatTriangles: [{ ...batch,
+    maskTexture: { id: 'broad', width: 128, height: 128, rgba: broadMask },
+    maskTextureCoordinates: Float32Array.of(0, 0, 10, 0, 0, 10, 0, 0, 10, 0, 0, 10, 0, 0, 10, 0, 0, 10),
+  }] }, { terrainTextureSize: 16, maxBytes: 8 * 1024 * 1024 })
+  assert.equal(bounded.stats.triangles, 3, 'broad rectangles are kept conservatively rather than scanning the full mask per face')
 })
