@@ -1,6 +1,6 @@
 ---
 name: export-modkit-voxel-minecraft
-description: Export UVW/UVP terrain with placement-cell scale, cliff levels and slab ramps, or fill an existing surface-voxel model, to a native Minecraft Java world through MCP and render the saved world.
+description: Export UVW/UVP terrain with placement-cell scale, cliff levels and slab ramps, fill an existing surface-voxel model, or generate detached masonry cliff structure libraries through MCP and render the saved native world.
 ---
 
 # Export filled voxels to Minecraft Java
