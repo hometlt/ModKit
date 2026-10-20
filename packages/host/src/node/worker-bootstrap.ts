@@ -202,11 +202,9 @@ function installHooks(): void {
         }
       }
       verified.add(relative)
-      // Hand the verified bytes to the evaluator with the format Node resolved for the URL. JSON
-      // imports are common in generated schemas and manifests; forcing their bytes through the
-      // JavaScript parser both breaks valid modules and weakens the meaning of import attributes.
-      const format = url.endsWith('.json') ? 'json' : (context.format ?? 'module')
-      return { format, shortCircuit: true, source: bytes }
+      // Node may determine CommonJS format only here and must still admit import attributes.
+      // Preserve that metadata, but evaluate only our verified bytes, never its second read.
+      return { ...nextLoad(url, context), shortCircuit: true, source: bytes }
     },
   })
 }

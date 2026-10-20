@@ -14,7 +14,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 // Force a setup failure AFTER an actual Worker exists, without adding a production callback seam.
 const workerSetupFault = vi.hoisted(() => ({
   failStdout: false, constructions: 0, beforeThrow: undefined as (() => void) | undefined,
-  last: undefined as { threadId: number; exited: boolean; code?: number } | undefined,
+  last: undefined as { threadId: number; exited: boolean; code?: number | undefined } | undefined,
 }))
 vi.mock('node:worker_threads', async importOriginal => {
   const actual = await importOriginal<typeof import('node:worker_threads')>()
@@ -64,7 +64,9 @@ import type { LanguageProvider } from '@modkit/sdk/language'
 
 // the bootstrap is a published entry: tests run the backend from source but the worker needs the
 // built file (pnpm build), exactly like the testkit demo-worker fixture
-const bootstrapUrl = new URL('../dist/node/worker-bootstrap.js', import.meta.url)
+const bootstrapUrl = process.env['MODKIT_TEST_WORKER_BOOTSTRAP'] === undefined
+  ? new URL('../dist/node/worker-bootstrap.js', import.meta.url)
+  : pathToFileURL(process.env['MODKIT_TEST_WORKER_BOOTSTRAP'])
 const fixtureRoot = new URL('./fixtures/worker-codec/', import.meta.url)
 
 const budget: ResourceBudget = {
@@ -924,6 +926,31 @@ describe('node worker backend — verified multi-file loading through module hoo
         probe(r: unknown): Promise<{ confidence: number }>
       }
     )(context([]))
+
+  it('preserves Node format detection for a pinned CommonJS package and its require chain', async () => {
+    const files = {
+      'entry.mjs': "import { value } from './legacy/main.js'; export const abiVersion=1; export function createCodec(){return {probe:async()=>({confidence:value})}}",
+      'legacy/package.json': '{"name":"legacy-fixture"}',
+      'legacy/main.js': "exports.value = require('./helper.js').value;",
+      'legacy/helper.js': 'exports.value = 0.75;',
+    }
+    const { root, dir } = tempArtifact(files)
+    const lease = await activateWith(root, 'entry.mjs', digestsOf(dir, Object.keys(files)))
+    expect((await probeOf(lease).probe({ source: byteSource([1]), plan: {} })).confidence).toBe(0.75)
+  }, 20_000)
+
+  it('preserves Node JSON import-attribute admission while evaluating pinned bytes', async () => {
+    for (const attributed of [true, false]) {
+      const files = {
+        'entry.mjs': `import config from './config.json' ${attributed ? "with {type:'json'}" : ''}; export const abiVersion=1; export function createCodec(){return {probe:async()=>({confidence:config.value})}}`,
+        'config.json': '{"value":0.5}',
+      }
+      const { root, dir } = tempArtifact(files)
+      const opening = activateWith(root, 'entry.mjs', digestsOf(dir, Object.keys(files)))
+      if (!attributed) await expect(opening).rejects.toThrow(/attribute|json|type/iu)
+      else expect((await probeOf(await opening).probe({ source: byteSource([1]), plan: {} })).confidence).toBe(0.5)
+    }
+  }, 20_000)
 
   it('a multi-file entrypoint loads when every artifact file is verified against the inventory digests', async () => {
     const { root, dir } = tempArtifact({
