@@ -1055,6 +1055,39 @@ export function createModkitMcpServer(host: ModkitMcpHostPort): ModkitMcpServerR
       safeTool(() => runtime.worldScene(handle, query as WorldSceneQuery, context.mcpReq.signal)),
   )
   server.registerTool(
+    'modkit.model_scene',
+    {
+      title: 'Inspect, voxelize or render a model',
+      description:
+        'Process an opened model through the shared model viewer and Scene owners. info reports framing and voxel limits. voxelize clips all or southwest (min-X/max-Z in Y-up north-up view) before pinned obj2voxel surface voxelization, returning a retained GLB and explicit approximation receipt; requires output-artifacts. Surface only, one RGB sample per clipped triangle, no volume fill or Minecraft blocks; layered and blended materials refuse, so export a static base-colour GLB first. resolution is 2..128 cells along the longest cropped extent. Download and reopen the GLB, then use render to draw the actual voxel result with Modkit CPU renderer as an image block. Source unchanged.',
+      inputSchema: z.discriminatedUnion('view', [
+        z.object({ handle: handleSchema, view: z.literal('info') }).strict(),
+        z
+          .object({
+            handle: handleSchema,
+            view: z.literal('voxelize'),
+            region: z.enum(['all', 'southwest']).default('all'),
+            resolution: z.number().int().min(2).max(128).default(128),
+          })
+          .strict(),
+        z
+          .object({
+            handle: handleSchema,
+            view: z.literal('render'),
+            width: z.number().int().min(16).max(2048).default(1024),
+            height: z.number().int().min(16).max(2048).default(768),
+            yaw: z.number().finite().default(0.7),
+            pitch: z.number().min(-1.4).max(1.5).default(0.7),
+          })
+          .strict(),
+      ]),
+      outputSchema: envelopeSchema,
+      annotations: { ...readOnlyAnnotations, idempotentHint: false },
+    },
+    ({ handle, ...query }, context) =>
+      safeTool(() => runtime.modelScene(handle, query, context.mcpReq.signal)),
+  )
+  server.registerTool(
     'modkit.glb_export_options',
     {
       title: 'Inspect GLB export options',

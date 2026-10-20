@@ -75,6 +75,8 @@ import { MCP_MAX_WORLD_PAGE_ITEMS } from './protocol.js'
 import type { ModkitMcpConfiguration } from './config.js'
 
 export interface McpOpenedSubject {
+  /** Borrowed subject-bound texture access; never serialized into the MCP response. */
+  readonly rasterResources?: ModkitOpened['rasterResources']
   readonly snapshot: ModkitOpened['snapshot']
   readonly session?: AssetSession
   /** Host-owned editing authority; never serialized into MCP responses. */

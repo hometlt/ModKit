@@ -193,6 +193,10 @@
     "./toolbar": {
       "types": "./dist/toolbar/index.d.ts",
       "default": "./dist/toolbar/index.js"
+    },
+    "./model-processing": {
+      "types": "./dist/model-processing/index.d.ts",
+      "default": "./dist/model-processing/index.js"
     }
   },
   "files": [

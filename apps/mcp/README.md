@@ -56,6 +56,19 @@ they never make a partial workspace complete.
 
 ## Read-only surface
 
+- `modkit.model_scene` reads model framing (`info`), clips and surface-voxelizes a static model
+  (`voxelize`, `region: all|southwest`, `resolution: 2..128`), or draws the reopened result
+  (`render`, PNG image block). Southwest is min-X/max-Z in the normalized Y-up north-up view,
+  calculated from geometry bounds. The output uses the existing retained artifact lifecycle and
+  requires `--output-artifacts`. Shared UI/Scene owners acquire facets/textures, sample the rest
+  pose, clip polygons, call the pinned obj2voxel kernel, mesh exposed faces and serialize GLB through
+  UV. Ordinary GLB surfaces missing public material facets are read from the public byte-range
+  source by the existing glTF material/image readers, with Host decoding their embedded images.
+  Missing textures and unsupported layered/blended surfaces refuse. The receipt records cell size,
+  bounds, counts and losses: surface shell, centroid MASK coverage and one RGB per clipped triangle;
+  no solid fill, animation, PBR preservation or Minecraft block mapping. Download/reopen the GLB
+  before rendering; a source preview does not verify the output. `npx tsc -b apps/mcp` includes UI
+  and Scene through the project reference, preventing stale processing code in the built server.
 - `modkit.inventory` pages through the loaded contribution inventory.
 - `modkit.capabilities` reports configured roots, loaded extensions, profiles, and adapter limits.
 - `modkit.language` runs analysis, completion, hover, signature help, definitions, references,

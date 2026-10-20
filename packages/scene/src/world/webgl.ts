@@ -1416,7 +1416,7 @@ function pushTexturedTriangle(
 type WaterGroundVertex = readonly [number, number, number]
 
 /** One half-plane pass, shared by water and clipped terrain layers; preserve all vertex varyings. */
-function clipPolygon<T>(
+export function clipPolygon<T>(
   source: readonly T[],
   distance: (vertex: T) => number,
   interpolate: (a: T, b: T, amount: number) => T,

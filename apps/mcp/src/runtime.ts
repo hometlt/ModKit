@@ -37,6 +37,7 @@ import type {
 } from '@modkit/sdk'
 import { relationGraphNeighbourhood, type RelationGraphScan } from '@modkit/sdk'
 import { builtInMediaEncoders, MediaExportError, renderWorldMedia } from '@modkit/ui/media-export'
+import { processModelScene, type ModelProcessingRequest } from '@modkit/ui/model-processing'
 import {
   MAP_LAYER_READ_OPERATION,
   WORLD_SCENE_SOURCE_CONTRACT,
@@ -1418,10 +1419,64 @@ export class ModkitMcpRuntime {
     })
   }
 
-  /**
-   * The subject's map world as it publishes it: `info` (coordinate spaces, facets, and `edit` —
-   * the operation and object edit kind `propose_edit` takes) or one bounded page of a facet.
-   */
+  /** Shared model inspection/processing under the handle lease; MCP owns only output retention. */
+  async modelScene(
+    handle: string,
+    query: ModelProcessingRequest,
+    signal: AbortSignal,
+  ): Promise<McpEnvelope> {
+    return this.withHandle(handle, signal, async (entry, scopedSignal) => {
+      const session = entry.opened.session
+      if (session === undefined)
+        throw new McpOperationError('x3.mcp/no-session', 'No session exists.')
+      const descriptor = await session.descriptor()
+      const reservation = query.view === 'voxelize' ? this.outputs.reserve(entry.id) : undefined
+      try {
+        const result = await processModelScene(
+          session,
+          entry.opened.rasterResources,
+          query,
+          {
+            assetId: `mcp-voxel/${entry.id}`,
+            revision: String(descriptor.revision),
+            maxBytes: OUTPUT_ARTIFACT_POLICY.maxArtifactBytes,
+          },
+          scopedSignal,
+        )
+        scopedSignal.throwIfAborted()
+        const outputArtifact =
+          reservation === undefined
+            ? undefined
+            : this.outputs.commit(reservation, result.bytes!, {
+                sourceRevision: String(descriptor.revision),
+                operationId: 'modkit.model_scene/voxelize',
+              })
+        const shown =
+          query.view === 'render' && result.bytes !== undefined ? mcpImage(result.bytes) : undefined
+        if (query.view === 'render' && shown === undefined)
+          throw new McpOperationError(
+            'x3.mcp/render-too-large',
+            'The rendered model exceeds the MCP image limit.',
+          )
+        return envelope({
+          snapshotId: `model:${entry.id}@${String(descriptor.revision)}`,
+          completeness: query.view === 'voxelize' ? 'partial' : 'complete',
+          diagnostics: result.diagnostics,
+          data:
+            outputArtifact === undefined ? result.data : { outputArtifact, receipt: result.data },
+          ...(shown === undefined ? {} : { images: [shown] }),
+        })
+      } catch (error) {
+        if (error instanceof TypeError || error instanceof RangeError)
+          throw new McpOperationError('x3.mcp/model-processing-refused', error.message)
+        throw error
+      } finally {
+        if (reservation !== undefined) this.outputs.cancel(reservation)
+      }
+    })
+  }
+
+  /** Read or export the existing public world source under the subject handle's lease. */
   async worldScene(
     handle: string,
     query: WorldSceneQuery,

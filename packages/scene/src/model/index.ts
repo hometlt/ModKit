@@ -1,4 +1,6 @@
 /** Portable scene processing; this entrypoint imports no DOM, GPU, host or native codec runtime. */
+export { voxelizeScene, type SceneVoxelOptions } from './voxelize.js'
+export { readGltfModelSurfaces } from './gltf-surfaces.js'
 export {
   createModelSceneSampler,
   type ModelSceneCamera,

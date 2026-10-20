@@ -1,0 +1,4 @@
+interface:
+  display_name: "Modkit Voxel Preview"
+  short_description: "Voxelize model regions and render them with Modkit"
+  default_prompt: "Use $voxelize-modkit-model to voxelize the selected model or map GLB region and render the saved result through MCP."
