@@ -1647,6 +1647,7 @@ export async function createHostMcpPort(
           budgets: mapPreviewBudget,
           original: originalSession,
           resourcePlanResolver: mapPreviewResources,
+          ...(contentSources === undefined ? {} : { contentSources }),
           ...mapPreviewLimits,
           ...(selectionId === undefined ? {} : { selectionId }),
           ...(requestSignal === undefined ? {} : { signal: requestSignal }),

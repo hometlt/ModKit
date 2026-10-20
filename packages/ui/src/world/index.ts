@@ -479,11 +479,11 @@ export async function inspectCandidateWorld(
     // Admission count, aggregate budget and worker count do not change an individual result.
     // Only actual per-resource limits belong here, so Load more can retain previous projections.
     perModelBytes,
-    maxMeshes: Math.min(256, maxItemsPerLayer),
-    maxNodes: Math.min(1_024, maxItemsPerLayer),
-    maxPrimitives: Math.min(512, maxItemsPerLayer),
+    maxMeshes: Math.min(256, maxItemsPerLayer, maxPageItems),
+    maxNodes: Math.min(1_024, maxItemsPerLayer, maxPageItems),
+    maxPrimitives: Math.min(512, maxItemsPerLayer, maxPageItems),
     maxPrimitiveBytes: Math.min(16 * 1024 * 1024, perModelBytes),
-    maxResources: Math.min(64, maxItemsPerLayer),
+    maxResources: Math.min(64, maxItemsPerLayer, maxPageItems),
     maxTextureBytes,
     maxTextureTotalBytes,
     metersPerSourceUnit: undefined,
@@ -548,11 +548,11 @@ export async function inspectCandidateWorld(
           item.id,
           {
             maxBytes,
-            maxNodes: Math.min(1_024, maxItemsPerLayer),
-            maxMeshes: Math.min(256, maxItemsPerLayer),
-            maxPrimitives: Math.min(512, maxItemsPerLayer),
+            maxNodes: Math.min(1_024, maxItemsPerLayer, maxPageItems),
+            maxMeshes: Math.min(256, maxItemsPerLayer, maxPageItems),
+            maxPrimitives: Math.min(512, maxItemsPerLayer, maxPageItems),
             maxPrimitiveBytes: Math.min(16 * 1024 * 1024, maxBytes),
-            maxResources: Math.min(64, maxItemsPerLayer),
+            maxResources: Math.min(64, maxItemsPerLayer, maxPageItems),
             maxTextureBytes: textureBytes,
             maxTextureTotalBytes: textureBytes,
             // The world renderer uploads S3TC blocks as stored: no decode, a quarter to an eighth of

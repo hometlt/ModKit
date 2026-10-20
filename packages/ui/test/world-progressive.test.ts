@@ -151,6 +151,32 @@ function fixture(log: string[] = []): CandidateWorldSceneSource {
 }
 
 describe('progressive world preview', () => {
+  it('caps model facet requests to the source page limit as well as the layer budget', async () => {
+    const source = fixture()
+    const requests: number[] = []
+    const model = await inspectCandidateWorld(
+      {
+        ...source,
+        async model(id, request) {
+          for (const limit of [
+            request.maxNodes!,
+            request.maxMeshes,
+            request.maxPrimitives,
+            request.maxResources!,
+          ]) {
+            if (limit > 1_000) throw new RangeError('source page limit exceeded')
+            requests.push(limit)
+          }
+          return source.model!(id, request)
+        },
+      },
+      { maxLayers: 8, maxItemsPerLayer: 2_000, maxPageItems: 1_000 },
+    )
+    expect(requests).toHaveLength(8)
+    expect(Math.max(...requests)).toBe(1_000)
+    expect([...model.models!.values()].every(value => value.state === 'converted')).toBe(true)
+  })
+
   it('publishes independent geometry/texture/cliff/object snapshots in that order', async () => {
     const calls: string[] = []
     const updates: { model: CandidateWorldViewerModel; progress: WorldLoadProgress }[] = []
