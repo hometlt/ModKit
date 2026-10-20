@@ -51,7 +51,12 @@ plus `basementBlocks` when needed. Example for Amphion:
 Use the same cell scale, rise, region and texture mode. The encoder reuses the library templates
 and map assembly; shell columns replace the old ground through their top, including recess air,
 so soil cannot fill niches or protrude above straight ramp sides. Walkable terrain ramp floors
-remain from the terrain owner. Compare the saved native shell blocks and ramp tops against the
+reuse the terrain owner, with playable level datums snapped to the same integer rises as the
+modules; raw heightfield bumps must not lift a plateau or ramp above its rim.
+Ramp planes are derived from the existing side profiles and extended across the walkable
+ramp corridor within three source cells of each wall, including adjacent endpoint cells.
+Check `cliffComposition.rampFloorColumns` and native floor tops against wall tops minus 0.5.
+Submerged terrain retains its source bottom rather than snapping to a playable datum. Compare the saved native shell blocks and ramp tops against the
 cliff-only world, and inspect foot/plateau joins. The receipt records `cliffComposition`.
 
 
