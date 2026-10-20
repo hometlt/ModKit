@@ -117,3 +117,22 @@ then inspect a close view of the masonry as well as the overview.
 The outer ZIP contains a datapack folder: unpack that folder into the chosen world's datapacks
 and reload, when installing is requested. The README lists `/place template modkit:cliffs/<id>`
 and the gallery ID. Creating the ZIP does not authorize installing it into an existing save.
+
+## Place cliff modules on a map quarter
+
+Use the same native target with `layout: "map"` and `region: "southwest"` (or `"all"`).
+For example, options can include name=amphion-sw-handmade-3x5, the discovered artificial
+typePrefix, blocksPerUnit=3, cliffBlocks=5 and basementBlocks=5.
+This returns a native world ZIP directly, rather than a library/datapack. Only the selected cliff
+family is placed; terrain, water, other objects and horizontal ramp floors are omitted.
+
+The crop is the source heightfield's min-X/max-Z quarter. Geometry crossing the boundary is clipped,
+not discarded by its anchor. Module local bounds, source positions and upright quarter-turn rotations
+are applied to block centres; stair facing rotates too. Native world zero is Y=64, and the source
+vertical step/reference are reused from the terrain overlay's walkable-level inference.
+Non-unit/tilted/arbitrary-angle placements or a missing inferred cliff step refuse rather than guess.
+The conversion receipt retains the source frame, per-instance placements and material overlap count.
+Solid blocks win over module air; differing overlapping solids keep the first state and are counted.
+Inspect such joints in the actual saved-world render; a placed-module preview is not seam acceptance.
+Download, verify, extract and reopen/render this direct world ZIP using the native-world workflow above.
+
