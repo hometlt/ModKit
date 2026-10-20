@@ -90,7 +90,7 @@ For a library of vertical wall modules outside the map, open the packaged UVP an
   "schemaVersion": 1, "formatId": "minecraft-java-cliff-library",
   "options": { "name": "amphion-cliffs-3x5",
     "typePrefix": "CompoundFacilityCliff1:CliffMade20:",
-    "blocksPerUnit": 3, "cliffBlocks": 5 }
+    "blocksPerUnit": 3, "cliffBlocks": 5, "basementBlocks": 5 }
 }, "retainOutput": true }
 ```
 
@@ -99,11 +99,14 @@ cliff family, not a universal SC2 label. The Minecraft extension must actually a
 encoder. It selects unique placed types and writes one native Java 1.21.1 structure NBT per variant,
 plus one gallery representative per shape and a detached Anvil preview world.
 
-This is a stylized masonry conversion: the upper two model units become one requested rise;
-buried skirts and horizontal ramp floors are omitted. Diorite forms the white upper band, polished
-granite the cap, and stone bricks/andesite the lower wall. Blind exterior recesses keep solid stone
-backing and projecting separator posts; there are no windows or hollow rooms. Outline thickening
-and geometry normalization are recorded in library.json. It is not a colour-matched full-map export.
+This is a stylized side-wall conversion with an explicit zero datum. The upper two model units
+become cliffBlocks above zero; basementBlocks (default 5, range 1..16) adds a synthetic stone base
+below zero. With 5 + 5 the NBT is ten blocks high and zeroLevelY is local Y=5. Place it five blocks
+below the intended ground datum; library.json records placementOffsetY=-5.
+At zero a relief granite stair cornice begins the upper profile, followed by diorite and a granite
+rim. Below zero, small blind stone niches in alternating rows retain solid backing and projecting
+andesite posts. There are no windows or enclosed chambers. Two-block side shells leave broad
+plateau interiors empty; horizontal ramp floors are omitted. Preserve these styling/geometry losses.
 
 Save and verify the retained ZIP before releasing it. Extract README.md, library.json and
 preview-world.zip through the container operation. Reopen and render the saved native preview.
